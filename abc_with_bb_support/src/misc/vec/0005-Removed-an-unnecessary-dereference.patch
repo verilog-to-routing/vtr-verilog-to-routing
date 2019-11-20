@@ -1,0 +1,34 @@
+From d5cd41ce889aa61de6873a0aa44343e36739ede3 Mon Sep 17 00:00:00 2001
+From: Rafi Rubin <rafi@seas.upenn.edu>
+Date: Fri, 25 Mar 2011 01:07:43 -0400
+Subject: [PATCH 5/8] Removed an unnecessary dereference
+
+In this case the dereference was harmless, but it did make these lines
+harder to read and throws a bunch of warnings which I wanted to get rid
+of.
+---
+ abc_with_bb_support/src/misc/vec/vecInt.h |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/abc_with_bb_support/src/misc/vec/vecInt.h b/abc_with_bb_support/src/misc/vec/vecInt.h
+index ad9b7d3..3ff764a 100755
+--- a/abc_with_bb_support/src/misc/vec/vecInt.h
++++ b/abc_with_bb_support/src/misc/vec/vecInt.h
+@@ -796,11 +796,11 @@ static inline int Vec_IntTwoCountCommon( Vec_Int_t * vArr1, Vec_Int_t * vArr2 )
+     while ( pBeg1 < pEnd1 && pBeg2 < pEnd2 )
+     {
+         if ( *pBeg1 == *pBeg2 )
+-            *pBeg1++, pBeg2++, Counter++;
++            pBeg1++, pBeg2++, Counter++;
+         else if ( *pBeg1 < *pBeg2 )
+-            *pBeg1++;
++            pBeg1++;
+         else 
+-            *pBeg2++;
++            pBeg2++;
+     }
+     return Counter;
+ }
+-- 
+1.7.4.1
+

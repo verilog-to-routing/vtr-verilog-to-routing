@@ -1,0 +1,167 @@
+.model top
+.inputs pp pa0 pq pb0 pr pc0 ps pd0 pe0 pu pf0 pv pg0 pw ph0 px pi0 py pj0 pz \
+pa pb pc pd pe pf pg ph pi pj pk pl pm pn po
+.outputs pk0 pl0 pm0 pn0 po0 pp0 pq0 pr0 ps0 pt0 pu0 pv0 pw0 px0 py0 pz0
+.names pp pq pr ps pu pk0
+---1- 1
+00--- 1
+-11-1 1
+-10-0 1
+.names pq ps po [117] pl0
+-1-- 1
+---1 1
+0-0- 1
+.names pq ps pn [112] pm0
+-1-- 1
+---1 1
+0-0- 1
+.names pq ps pm [33] pn0
+-1-- 1
+0-0- 1
+1--1 1
+.names pq px py [24] [357] po0
+----1 1
+111-- 1
+1-11- 1
+1000- 1
+.names pq pz [24] [356] [358] pp0
+----1 1
+111-- 1
+11-1- 1
+1000- 1
+.names pq ps pj [92] pq0
+-1-- 1
+---1 1
+0-0- 1
+.names pq ps pi [38] pr0
+-1-- 1
+0-0- 1
+1--1 1
+.names pq pb0 pc0 [25] [362] ps0
+----1 1
+111-- 1
+1-11- 1
+1000- 1
+.names pq ps pd0 pg [29] pt0
+-1--- 1
+0--0- 1
+1-1-1 1
+1-0-0 1
+.names pq pd0 pe0 [29] [364] pu0
+----1 1
+111-- 1
+1-11- 1
+1000- 1
+.names pq ps pe [67] pv0
+-1-- 1
+---1 1
+0-0- 1
+.names pq ps pd [44] pw0
+-1-- 1
+0-0- 1
+1--1 1
+.names pq ps pc [46] px0
+-1-- 1
+0-0- 1
+1--1 1
+.names pq ps pi0 pb [23] py0
+-1--- 1
+0--0- 1
+1-1-1 1
+1-0-0 1
+.names pq pi0 pj0 [23] [370] pz0
+----1 1
+111-- 1
+1-11- 1
+1000- 1
+.names pr pu pv pw px [33]
+1---1 1
+-1--1 1
+--1-1 1
+---11 1
+00000 1
+.names pa0 pb0 pz [24] [356] [38]
+11--- 1
+-11-- 1
+-1-1- 1
+-1--1 1
+00000 1
+.names pd0 pe0 pf0 pg0 [29] [44]
+1--1- 1
+-1-1- 1
+--11- 1
+---11 1
+00000 1
+.names pd0 pe0 ph0 [29] [366] [46]
+1-1-- 1
+-11-- 1
+--11- 1
+--1-1 1
+00000 1
+.names pa0 pz [24] [356] [361] [29]
+1---- 1
+-1--- 1
+--1-- 1
+---1- 1
+----1 1
+.names pd0 pe0 ph0 [29] [366] [23]
+1---- 1
+-1--- 1
+--1-- 1
+---1- 1
+----1 1
+.names pr pu pv pw [24]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names pa0 px py pz [24] [25]
+1---- 1
+-1--- 1
+--1-- 1
+---1- 1
+----1 1
+.names pq pd0 pe0 pf0 [29] [67]
+11-1- 1
+1-11- 1
+1--11 1
+10000 1
+.names pa0 pq pz [24] [356] [92]
+111-- 1
+11-1- 1
+11--1 1
+01000 1
+.names pq pr pu pv pw [112]
+11--1 1
+1-1-1 1
+1--11 1
+10000 1
+.names pq pr pu pv [117]
+11-1 1
+1-11 1
+1000 1
+.names py px [356]
+1- 1
+-1 1
+.names pq ps pl [357]
+-1- 1
+0-0 1
+.names pq ps pk [358]
+-1- 1
+0-0 1
+.names pc0 pb0 [361]
+1- 1
+-1 1
+.names pq ps ph [362]
+-1- 1
+0-0 1
+.names pq ps pf [364]
+-1- 1
+0-0 1
+.names pg0 pf0 [366]
+1- 1
+-1 1
+.names pq ps pa [370]
+-1- 1
+0-0 1
+.end

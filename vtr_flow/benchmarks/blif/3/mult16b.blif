@@ -1,0 +1,247 @@
+.model top
+.inputs p_10 p_12 p_11 pclk p_14 p_13 p_16 p_15 p_9 p_18 p_8 p_17 p_7 p_6 p_5 \
+p_4 p_3 p_1
+.outputs p_50
+.latch    n_159 n_28 re pclk 2
+.latch    n_139 n_24 re pclk 2
+.latch    n_144 n_25 re pclk 2
+.latch    n_149 n_26 re pclk 2
+.latch    n_154 n_27 re pclk 2
+.latch    n_119 n_20 re pclk 2
+.latch    n_124 n_21 re pclk 2
+.latch    n_129 n_22 re pclk 2
+.latch    n_134 n_23 re pclk 2
+.latch    n_235 n_2 re pclk 2
+.latch    n_164 n_29 re pclk 2
+.latch    n_148 n_40 re pclk 2
+.latch    n_169 n_30 re pclk 2
+.latch    n_143 n_39 re pclk 2
+.latch    n_174 n_31 re pclk 2
+.latch    n_158 n_42 re pclk 2
+.latch    n_179 n_32 re pclk 2
+.latch    n_153 n_41 re pclk 2
+.latch    n_184 n_33 re pclk 2
+.latch    n_168 n_44 re pclk 2
+.latch    n_118 n_34 re pclk 2
+.latch    n_163 n_43 re pclk 2
+.latch    n_123 n_35 re pclk 2
+.latch    n_178 n_46 re pclk 2
+.latch    n_128 n_36 re pclk 2
+.latch    n_173 n_45 re pclk 2
+.latch    n_133 n_37 re pclk 2
+.latch    n_188 n_48 re pclk 2
+.latch    n_138 n_38 re pclk 2
+.latch    n_183 n_47 re pclk 2
+.names p_3 p_1 [78] p_50
+0-0 1
+-00 1
+111 1
+.names p_12 p_1 [83] n_159
+0-0 1
+-00 1
+111 1
+.names p_8 p_1 [90] n_139
+0-0 1
+-00 1
+111 1
+.names p_9 p_1 [91] n_144
+0-0 1
+-00 1
+111 1
+.names p_10 p_1 [92] n_149
+0-0 1
+-00 1
+111 1
+.names p_11 p_1 [93] n_154
+0-0 1
+-00 1
+111 1
+.names p_4 p_1 [94] n_119
+0-0 1
+-00 1
+111 1
+.names p_5 p_1 [95] n_124
+0-0 1
+-00 1
+111 1
+.names p_6 p_1 [97] n_129
+0-0 1
+-00 1
+111 1
+.names p_7 p_1 [98] n_134
+0-0 1
+-00 1
+111 1
+.names p_18 p_1 n_235
+11 1
+.names p_13 p_1 [88] n_164
+0-0 1
+-00 1
+111 1
+.names n_26 n_40 [77] n_148
+11- 1
+1-0 1
+-10 1
+.names p_14 p_1 [84] n_169
+0-0 1
+-00 1
+111 1
+.names n_25 n_39 [70] n_143
+11- 1
+1-0 1
+-10 1
+.names p_15 p_1 [80] n_174
+0-0 1
+-00 1
+111 1
+.names n_28 n_42 [75] n_158
+11- 1
+1-0 1
+-10 1
+.names n_33 n_47 [109] n_179
+011 1
+101 1
+110 1
+000 1
+.names n_27 n_41 [69] n_153
+11- 1
+1-0 1
+-10 1
+.names p_17 p_1 [87] n_184
+0-0 1
+-00 1
+111 1
+.names n_30 n_44 [64] n_168
+11- 1
+1-0 1
+-10 1
+.names n_20 n_34 [72] n_118
+11- 1
+1-0 1
+-10 1
+.names n_29 n_43 [71] n_163
+11- 1
+1-0 1
+-10 1
+.names n_21 n_35 [73] n_123
+11- 1
+1-0 1
+-10 1
+.names n_32 n_46 [65] n_178
+11- 1
+1-0 1
+-10 1
+.names n_22 n_36 [74] n_128
+11- 1
+1-0 1
+-10 1
+.names n_31 n_45 [67] n_173
+11- 1
+1-0 1
+-10 1
+.names n_23 n_37 [76] n_133
+11- 1
+1-0 1
+-10 1
+.names n_2 n_48 [66] n_188
+11- 1
+1-0 1
+-10 1
+.names n_24 n_38 [68] n_138
+11- 1
+1-0 1
+-10 1
+.names n_33 n_47 [531] n_183
+11- 1
+1-1 1
+-11 1
+.names p_3 p_1 [72]
+0- 1
+-0 1
+.names n_20 n_34 [78]
+11 1
+00 1
+.names p_17 p_1 [66]
+0- 1
+-0 1
+.names p_15 p_1 [65]
+0- 1
+-0 1
+.names n_32 n_46 [80]
+11 1
+00 1
+.names p_16 p_1 [109]
+0- 1
+-0 1
+.names p_14 p_1 [67]
+0- 1
+-0 1
+.names p_12 p_1 [71]
+0- 1
+-0 1
+.names n_29 n_43 [83]
+11 1
+00 1
+.names n_31 n_45 [84]
+11 1
+00 1
+.names n_2 n_48 [87]
+11 1
+00 1
+.names p_13 p_1 [64]
+0- 1
+-0 1
+.names n_30 n_44 [88]
+11 1
+00 1
+.names p_8 p_1 [70]
+0- 1
+-0 1
+.names n_25 n_39 [90]
+11 1
+00 1
+.names p_9 p_1 [77]
+0- 1
+-0 1
+.names n_26 n_40 [91]
+11 1
+00 1
+.names p_10 p_1 [69]
+0- 1
+-0 1
+.names n_27 n_41 [92]
+11 1
+00 1
+.names p_11 p_1 [75]
+0- 1
+-0 1
+.names n_28 n_42 [93]
+11 1
+00 1
+.names p_4 p_1 [73]
+0- 1
+-0 1
+.names n_21 n_35 [94]
+11 1
+00 1
+.names p_5 p_1 [74]
+0- 1
+-0 1
+.names n_22 n_36 [95]
+11 1
+00 1
+.names p_6 p_1 [76]
+0- 1
+-0 1
+.names n_23 n_37 [97]
+11 1
+00 1
+.names p_7 p_1 [68]
+0- 1
+-0 1
+.names n_24 n_38 [98]
+11 1
+00 1
+.names p_1 p_16 [531]
+11 1
+.end

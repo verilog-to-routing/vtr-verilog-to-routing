@@ -1,0 +1,71 @@
+.model bm_base_multiply
+.inputs top^clock top^reset_n top^a_in-0 top^a_in-1 top^a_in-2 top^a_in-3 top^a_in-4 \
+ top^a_in-5 top^a_in-6 top^a_in-7 top^b_in-0 top^b_in-1 top^b_in-2 top^b_in-3 \
+ top^b_in-4 top^b_in-5 top^b_in-6 top^b_in-7 top^c_in-0 top^c_in-1 top^c_in-2 \
+ top^c_in-3 top^c_in-4 top^c_in-5 top^c_in-6 top^c_in-7 top^d_in-0 top^d_in-1 \
+ top^d_in-2 top^d_in-3 top^d_in-4 top^d_in-5 top^d_in-6 top^d_in-7 top^e_in-0 \
+ top^e_in-1 top^e_in-2 top^e_in-3 top^e_in-4 top^e_in-5 top^e_in-6 top^e_in-7 \
+ top^f_in-0 top^f_in-1 top^f_in-2 top^f_in-3 top^f_in-4 top^f_in-5 top^f_in-6 \
+
+.outputs top^out0-0 top^out0-1 top^out0-2 top^out0-3 top^out0-4 top^out0-5 top^out0-6 \
+ top^out0-7 top^out0-8 top^out0-9 top^out0-10 top^out0-11 top^out0-12 top^out0-13 \
+ top^out0-14 top^out0-15 top^out1-0 top^out1-1 top^out1-2 top^out1-3 top^out1-4 \
+ top^out1-5 top^out1-6 top^out1-7 top^out1-8 top^out1-9 top^out1-10 top^out1-11 \
+ top^out1-12 top^out1-13 top^out1-14 top^out1-15 top^out2-0 top^out2-1 top^out2-2 \
+ top^out2-3 top^out2-4 top^out2-5 top^out2-6 top^out2-7 top^out2-8 top^out2-9 \
+ top^out2-10 top^out2-11 top^out2-12 top^out2-13 top^out2-14 top^out2-15 top^out3-0 \
+ top^out3-1 top^out3-2 top^out3-3 top^out3-4 top^out3-5 top^out3-6 top^out3-7 \
+ top^out3-8 top^out3-9 top^out3-10 top^out3-11 top^out3-12 top^out3-13 top^out3-14 \
+ top^out4-0 top^out4-1 top^out4-2 top^out4-3 top^out4-4 top^out4-5 top^out4-6 \
+ top^out4-7 top^out4-8 top^out4-9 top^out4-10 top^out4-11 top^out4-12 top^out4-13 \
+ top^out4-14
+
+.names gnd
+.names vcc
+1
+
+.latch gnd top^FF_NODE-54 re top^clock
+.latch gnd top^FF_NODE-55 re top^clock
+.latch gnd top^FF_NODE-56 re top^clock
+.latch gnd top^FF_NODE-57 re top^clock
+.latch gnd top^FF_NODE-58 re top^clock
+.latch gnd top^FF_NODE-59 re top^clock
+.latch gnd top^FF_NODE-60 re top^clock
+.latch gnd top^FF_NODE-61 re top^clock
+.latch top^MULTIPLY-27_8_8_16 top^FF_NODE-30 re top^clock
+.latch top^MULTIPLY-27_8_8_16 top^FF_NODE-31 re top^clock
+.latch top^MULTIPLY-27_8_8_16 top^FF_NODE-32 re top^clock
+.latch top^MULTIPLY-27_8_8_16 top^FF_NODE-33 re top^clock
+.latch top^MULTIPLY-27_8_8_16 top^FF_NODE-34 re top^clock
+.latch top^MULTIPLY-27_8_8_16 top^FF_NODE-35 re top^clock
+.latch top^MULTIPLY-27_8_8_16 top^FF_NODE-36 re top^clock
+.latch top^MULTIPLY-27_8_8_16 top^FF_NODE-37 re top^clock
+.latch top^MULTIPLY-27_8_8_16 top^FF_NODE-38 re top^clock
+.latch top^MULTIPLY-27_8_8_16 top^FF_NODE-39 re top^clock
+.latch top^MULTIPLY-27_8_8_16 top^FF_NODE-40 re top^clock
+.latch top^MULTIPLY-27_8_8_16 top^FF_NODE-41 re top^clock
+.latch top^MULTIPLY-27_8_8_16 top^FF_NODE-42 re top^clock
+.latch top^MULTIPLY-27_8_8_16 top^FF_NODE-43 re top^clock
+.latch top^MULTIPLY-27_8_8_16 top^FF_NODE-44 re top^clock
+.latch top^MULTIPLY-27_8_8_16 top^FF_NODE-45 re top^clock
+.latch top^BITWISE_AND-28^LOGICAL_AND-110 top^FF_NODE-46 re top^clock
+.latch top^BITWISE_AND-28^LOGICAL_AND-111 top^FF_NODE-47 re top^clock
+.latch top^BITWISE_AND-28^LOGICAL_AND-112 top^FF_NODE-48 re top^clock
+.latch top^BITWISE_AND-28^LOGICAL_AND-113 top^FF_NODE-49 re top^clock
+.latch top^BITWISE_AND-28^LOGICAL_AND-114 top^FF_NODE-50 re top^clock
+.latch top^BITWISE_AND-28^LOGICAL_AND-115 top^FF_NODE-51 re top^clock
+.latch top^BITWISE_AND-28^LOGICAL_AND-116 top^FF_NODE-52 re top^clock
+.latch top^BITWISE_AND-28^LOGICAL_AND-117 top^FF_NODE-53 re top^clock
+.latch top^MULTIPLY-29_8_7_15 top^FF_NODE-62 re top^clock
+.latch top^MULTIPLY-29_8_7_15 top^FF_NODE-63 re top^clock
+.latch top^MULTIPLY-29_8_7_15 top^FF_NODE-64 re top^clock
+.latch top^MULTIPLY-29_8_7_15 top^FF_NODE-65 re top^clock
+.latch top^MULTIPLY-29_8_7_15 top^FF_NODE-66 re top^clock
+.latch top^MULTIPLY-29_8_7_15 top^FF_NODE-67 re top^clock
+.latch top^MULTIPLY-29_8_7_15 top^FF_NODE-68 re top^clock
+.latch top^MULTIPLY-29_8_7_15 top^FF_NODE-69 re top^clock
+.latch top^MULTIPLY-29_8_7_15 top^FF_NODE-70 re top^clock
+.latch top^MULTIPLY-29_8_7_15 top^FF_NODE-71 re top^clock
+.latch top^MULTIPLY-29_8_7_15 top^FF_NODE-72 re top^clock
+.latch top^MULTIPLY-29_8_7_15 top^FF_NODE-73 re top^clock
+.latch top^MULTIPLY-29_8_7_15 top^FF_NODE-74 re top^cl

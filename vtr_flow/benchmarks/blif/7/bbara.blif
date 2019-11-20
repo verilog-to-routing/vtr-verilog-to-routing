@@ -1,0 +1,62 @@
+.model top
+.inputs bbara_in_3_ bbara_in_2_ bbara_in_1_ bbara_in_0_ clock
+.outputs bbara_out_1_ bbara_out_0_
+.latch    n_n23 n_n60 re clock 2
+.latch    n_n24 n_n61 re clock 2
+.latch    n_n25 n_n62 re clock 2
+.latch    n_n26 n_n63 re clock 2
+.names bbara_in_2_ bbara_in_1_ bbara_in_0_ n_n61 n_n63 bbara_out_1_
+1--01 1
+-0-01 1
+--001 1
+.names bbara_in_3_ bbara_in_2_ bbara_in_1_ bbara_in_0_ n_n61 n_n63 \
+bbara_out_0_
+--0-11 1
+---011 1
+10--11 1
+.names bbara_in_3_ bbara_in_2_ n_n62 n_n63 [50] [51] [168] n_n23
+----1-- 1
+-----1- 1
+-1----1 1
+0-1---1 1
+1-00--1 1
+.names bbara_in_2_ bbara_in_1_ bbara_in_0_ n_n60 n_n61 n_n62 [43] n_n24
+------1 1
+-0--1-- 1
+--0-1-- 1
+0--011- 1
+011-01- 1
+111100- 1
+.names bbara_in_2_ bbara_in_1_ bbara_in_0_ n_n62 [32] n_n25
+-0-1- 1
+--01- 1
+0---1 1
+.names bbara_in_3_ bbara_in_2_ [34] [182] n_n26
+---1 1
+101- 1
+.names bbara_in_3_ bbara_in_1_ bbara_in_0_ n_n60 n_n61 n_n62 n_n63 [32]
+0--0-1- 1
+011---1 1
+1110100 1
+.names bbara_in_1_ bbara_in_0_ n_n60 n_n61 n_n62 n_n63 [34]
+---1-1 1
+11101- 1
+.names bbara_in_3_ bbara_in_2_ bbara_in_1_ bbara_in_0_ n_n60 n_n61 n_n63 [43]
+10--11- 1
+10---11 1
+1011-0- 1
+.names bbara_in_2_ bbara_in_1_ bbara_in_0_ n_n61 n_n63 [50]
+11100 1
+.names bbara_in_3_ bbara_in_2_ bbara_in_1_ bbara_in_0_ n_n60 n_n61 n_n62 [51]
+--0-1-- 1
+---01-- 1
+-1--1-1 1
+00--110 1
+.names bbara_in_1_ bbara_in_0_ n_n60 n_n61 [168]
+1101 1
+.names bbara_in_2_ bbara_in_1_ bbara_in_0_ n_n60 n_n61 n_n62 n_n63 [182]
+-0----1 1
+--0---1 1
+1---0-1 1
+111110- 1
+.end

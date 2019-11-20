@@ -1,0 +1,183 @@
+.model top
+.inputs a b c d e f g h i j k l m n o p q r s t u v w x y
+.outputs q1 p1 a1 c1 b1 e1 d1 g1 f1 i1 h1 k1 z j1 m1 l1 o1 n1
+.names c [26] q1
+11 1
+.names a b p1
+01 1
+.names [22] [180] a1
+11 1
+.names [47] [48] c1
+1- 1
+-1 1
+.names [22] [183] b1
+11 1
+.names j [23] e1
+11 1
+.names [23] [185] d1
+11 1
+.names [28] [188] g1
+11 1
+.names [23] [182] f1
+11 1
+.names [43] [44] i1
+1- 1
+-1 1
+.names [205] [206] h1
+11 1
+.names [41] [42] k1
+1- 1
+-1 1
+.names [22] [209] z
+11 1
+.names [39] [40] j1
+1- 1
+-1 1
+.names [212] [213] m1
+11 1
+.names [29] [215] l1
+11 1
+.names [19] [20] o1
+1- 1
+-1 1
+.names [22] [216] n1
+11 1
+.names a b [26]
+00 1
+.names s [27] [22]
+01 1
+.names [178] [179] [27]
+11 1
+.names [25] [181] [23]
+11 1
+.names b [45] [28]
+0- 1
+-1 1
+.names [196] [197] [18]
+11 1
+.names [189] [190] [24]
+11 1
+.names [35] [214] [29]
+1- 1
+-1 1
+.names a b [25]
+11 1
+.names a [21] [32]
+1- 1
+-1 1
+.names q1 [37] [31]
+1- 1
+-1 1
+.names c k [30]
+0- 1
+-0 1
+.names c [32] [19]
+01 1
+.names k [25] [20]
+01 1
+.names b t [21]
+01 1
+.names [25] [30] [34]
+11 1
+.names x [31] [35]
+11 1
+.names t [26] [37]
+11 1
+.names [24] [210] [39]
+11 1
+.names [18] [211] [40]
+11 1
+.names [24] [207] [41]
+11 1
+.names [18] [208] [42]
+11 1
+.names [24] [191] [43]
+11 1
+.names [18] [198] [44]
+11 1
+.names [186] [187] [45]
+11 1
+.names s [27] [47]
+11 1
+.names m f1 [48]
+11 1
+.names r c [178]
+00 1
+.names [26] t [179]
+10 1
+.names k j [180]
+11 1
+.names k c [181]
+11 1
+.names l j [182]
+10 1
+.names k j [183]
+01 1
+.names l j [184]
+00 1
+.names [184] m [185]
+10 1
+.names k j [186]
+10 1
+.names m l [187]
+01 1
+.names c a [188]
+11 1
+.names t s [189]
+01 1
+.names p1 u [190]
+10 1
+.names w v [191]
+00 1
+.names m l [192]
+10 1
+.names o n [193]
+00 1
+.names v u [194]
+01 1
+.names [192] w [195]
+10 1
+.names [194] [193] [196]
+11 1
+.names [195] q1 [197]
+11 1
+.names q p [198]
+00 1
+.names e d [199]
+10 1
+.names g f [200]
+00 1
+.names i h [201]
+00 1
+.names s r [202]
+01 1
+.names [199] t [203]
+11 1
+.names [201] [200] [204]
+11 1
+.names q1 [202] [205]
+11 1
+.names [204] [203] [206]
+11 1
+.names w v [207]
+01 1
+.names q p [208]
+01 1
+.names k j [209]
+10 1
+.names w v [210]
+11 1
+.names q p [211]
+11 1
+.names r c [212]
+10 1
+.names [26] t [213]
+10 1
+.names m1 [34] [214]
+1- 1
+-1 1
+.names y j [215]
+01 1
+.names k j [216]
+00 1
+.end

@@ -1,0 +1,658 @@
+.model top
+.inputs pp pa0 pq pb0 pr pc0 ps pd0 pt pe0 pu pf0 pv pg0 pw ph0 pi0 py pj0 pz \
+pk0 pl0 pm0 pn0 po0 pp0 pa pq0 pb pr0 pc ps0 pd pt0 pe pu0 pf pv0 pg pw0 ph \
+px0 pi py0 pj pz0 pk pl pm pn po
+.outputs pa1 pb2 pc2 pc1 pa2 pb1 pe1 pf2 pd1 pg2 pd2 pg1 pe2 pf1 pi1 ph1 ph2 \
+pk1 pi2 pj1 pm1 pl1 po1 pn1 pq1 pp1 ps1 pr1 pu1 pt1 pw1 pv1 py1 px1 pz1
+.names [196] [197] pa1
+1- 1
+-1 1
+.names [80] [626] pb2
+11 1
+.names pb0 [91] pc1
+11 1
+.names pf0 pr0 pa2
+1- 1
+-1 1
+.names [191] [631] pb1
+1- 1
+-1 1
+.names [185] [186] pe1
+1- 1
+-1 1
+.names [49] [640] pf2
+11 1
+.names [177] [178] pd1
+1- 1
+-1 1
+.names [49] [648] pg2
+0- 1
+-1 1
+.names [102] [655] pd2
+0- 1
+-0 1
+.names [155] [661] pg1
+1- 1
+-1 1
+.names [102] [655] pe2
+11 1
+.names [152] [153] pf1
+1- 1
+-1 1
+.names [40] [665] ph1
+11 1
+.names [140] [674] ph2
+00 1
+.names [686] [687] pk1
+1- 1
+-1 1
+.names [140] [674] pi2
+1- 1
+-1 1
+.names [130] [131] pm1
+1- 1
+-1 1
+.names [69] [693] pl1
+1- 1
+-1 1
+.names [117] [697] po1
+11 1
+.names [56] [712] pn1
+1- 1
+-1 1
+.names ph [63] ps1
+10 1
+.names [47] [719] pr1
+1- 1
+-1 1
+.names [121] [720] pw1
+11 1
+.names [48] [122] pv1
+11 1
+.names [124] [722] py1
+11 1
+.names [124] [722] px1
+0- 1
+-0 1
+.names pc0 pd0 pz1
+1- 1
+-1 1
+.names [198] [623] [88]
+1- 1
+-1 1
+.names [81] [625] [80]
+11 1
+.names pe0 pp0 [90]
+1- 1
+-1 1
+.names pp pg [89]
+0- 1
+-0 1
+.names pv pm [91]
+1- 1
+-0 1
+.names pj [630] [85]
+11 1
+.names [48] [627] [87]
+11 1
+.names [74] [194] [92]
+1- 1
+-1 1
+.names [187] [188] [93]
+1- 1
+-1 1
+.names pa0 [181] [49]
+0- 1
+-1 1
+.names ph [179] [95]
+0- 1
+-1 1
+.names pp po [51]
+0- 1
+-0 1
+.names pd0 pd [68]
+0- 1
+-1 1
+.names ph [48] [82]
+01 1
+.names pv pm [97]
+1- 1
+-0 1
+.names [643] [644] [40]
+1- 1
+-1 1
+.names [38] [125] [36]
+11 1
+.names [159] [160] [100]
+1- 1
+-1 1
+.names pv [157] [98]
+1- 1
+-1 1
+.names [161] [652] [102]
+1- 1
+-1 1
+.names pg pi [104]
+0- 1
+-0 1
+.names pq po [103]
+0- 1
+-0 1
+.names pw [37] [81]
+00 1
+.names pa pm [48]
+00 1
+.names [682] [683] [109]
+1- 1
+-1 1
+.names [678] [679] [107]
+1- 1
+-1 1
+.names pl0 pp0 [106]
+1- 1
+-1 1
+.names [138] [139] [105]
+1- 1
+-1 1
+.names pd0 pd [79]
+11 1
+.names [74] [150] [110]
+1- 1
+-1 1
+.names pu pe [37]
+1- 1
+-1 1
+.names pq [51] [38]
+0- 1
+-1 1
+.names pp0 pq0 [50]
+1- 1
+-1 1
+.names [75] [691] [112]
+1- 1
+-1 1
+.names pf0 [72] [111]
+1- 1
+-1 1
+.names [64] [696] [117]
+1- 1
+-1 1
+.names pg0 pj [86]
+10 1
+.names [709] [710] [118]
+1- 1
+-1 1
+.names pt pi0 [63]
+0- 1
+-0 1
+.names pv pj [44]
+1- 1
+-1 1
+.names pk0 [83] [120]
+1- 1
+-1 1
+.names pt pa [119]
+0- 1
+-0 1
+.names pa0 pk0 [121]
+1- 1
+-1 1
+.names [43] [721] [122]
+1- 1
+-1 1
+.names pj [35] [124]
+1- 1
+-1 1
+.names pr ps [125]
+0- 1
+-0 1
+.names pz0 [183] [126]
+1- 1
+-1 1
+.names pj [628] [74]
+01 1
+.names pl [629] [83]
+11 1
+.names pv pg [84]
+00 1
+.names [81] [189] [94]
+1- 1
+-1 1
+.names pe0 po [96]
+0- 1
+-1 1
+.names pg [37] [99]
+1- 1
+-0 1
+.names pc pd [101]
+0- 1
+-0 1
+.names pz1 [676] [108]
+1- 1
+-1 1
+.names [78] [127] [114]
+1- 1
+-1 1
+.names pd0 pe0 [113]
+1- 1
+-1 1
+.names pe0 [79] [116]
+1- 1
+-1 1
+.names [116] [128] [115]
+1- 1
+-1 1
+.names pg0 [45] [123]
+1- 1
+-1 1
+.names ph0 pc2
+1 1
+.names pm0 pi1
+1 1
+.names pn0 pj1
+1 1
+.names pz pq1
+1 1
+.names py pp1
+1 1
+.names py0 pu1
+1 1
+.names px0 pt1
+1 1
+.names pg0 pa2 [35]
+00 1
+.names [44] [123] [41]
+01 1
+.names pf [86] [42]
+01 1
+.names pn [74] [43]
+11 1
+.names pr pk0 [45]
+01 1
+.names [120] [716] [47]
+11 1
+.names [717] [718] [52]
+11 1
+.names pj0 pa [53]
+10 1
+.names [698] [699] [54]
+11 1
+.names [82] [701] [55]
+11 1
+.names [118] [711] [56]
+11 1
+.names [702] [703] [57]
+11 1
+.names [704] [705] [58]
+11 1
+.names po [706] [59]
+11 1
+.names ph0 pj [60]
+10 1
+.names ps0 ph [61]
+10 1
+.names po0 pw0 [62]
+11 1
+.names [38] [695] [64]
+11 1
+.names pi0 ph [65]
+10 1
+.names pv pp0 [66]
+11 1
+.names pb [111] [67]
+11 1
+.names [37] [112] [69]
+11 1
+.names [38] [50] [70]
+01 1
+.names pw ph0 [71]
+11 1
+.names pa0 pk [72]
+11 1
+.names [114] [690] [75]
+11 1
+.names ph [113] [76]
+11 1
+.names [116] [689] [78]
+11 1
+.names pg [115] [127]
+01 1
+.names pd0 [51] [128]
+10 1
+.names [80] [688] [130]
+11 1
+.names ph0 pj [131]
+11 1
+.names [106] [675] [132]
+11 1
+.names pv [105] [133]
+01 1
+.names [48] [107] [134]
+01 1
+.names pa [109] [135]
+11 1
+.names pg0 pm [136]
+11 1
+.names pb pr0 [137]
+11 1
+.names pm [108] [138]
+11 1
+.names pw [79] [139]
+11 1
+.names [110] [666] [140]
+11 1
+.names pi0 pi [141]
+11 1
+.names pd0 ph [142]
+10 1
+.names pa0 [44] [150]
+11 1
+.names [103] [662] [152]
+11 1
+.names [82] [663] [153]
+11 1
+.names [100] [659] [154]
+11 1
+.names pd0 [98] [155]
+11 1
+.names po0 pv0 [156]
+11 1
+.names [99] [660] [157]
+11 1
+.names [101] [656] [159]
+11 1
+.names pi [84] [160]
+00 1
+.names pv [38] [161]
+00 1
+.names pv pp0 [162]
+10 1
+.names ph [40] [167]
+11 1
+.names pe0 po [173]
+10 1
+.names [641] [642] [177]
+11 1
+.names pc0 [97] [178]
+11 1
+.names [636] [637] [179]
+11 1
+.names [126] [634] [181]
+11 1
+.names pm [633] [183]
+01 1
+.names po [93] [185]
+01 1
+.names po0 pu0 [186]
+11 1
+.names [94] [632] [187]
+11 1
+.names pe0 [82] [188]
+11 1
+.names pg [37] [189]
+11 1
+.names [87] [92] [191]
+11 1
+.names pw [85] [192]
+01 1
+.names po0 pt0 [193]
+11 1
+.names [44] [83] [194]
+11 1
+.names pa0 [88] [196]
+11 1
+.names pb pa2 [197]
+01 1
+.names pr [44] [198]
+00 1
+.names pl pb [621]
+0- 1
+-0 1
+.names pn pm [622]
+1- 1
+-1 1
+.names [622] [621] [623]
+1- 1
+-1 1
+.names po pv [624]
+10 1
+.names [624] [48] [625]
+11 1
+.names [89] [90] [626]
+11 1
+.names pn pb [627]
+01 1
+.names pk0 pv [628]
+11 1
+.names pk pa0 [629]
+01 1
+.names pc pg0 [630]
+11 1
+.names [192] [193] [631]
+1- 1
+-1 1
+.names [79] pm [632]
+10 1
+.names pj pr [633]
+01 1
+.names pl pb [634]
+11 1
+.names ps0 pp0 [635]
+00 1
+.names [63] [68] [636]
+11 1
+.names [635] [96] [637]
+11 1
+.names px0 pm0 [638]
+00 1
+.names [638] pa2 [639]
+10 1
+.names [95] [639] [640]
+11 1
+.names [51] pv [641]
+10 1
+.names [82] [68] [642]
+10 1
+.names ps0 pp0 [643]
+1- 1
+-1 1
+.names [173] [68] [644]
+1- 1
+-0 1
+.names px0 pm0 [645]
+1- 1
+-1 1
+.names [645] pa2 [646]
+1- 1
+-1 1
+.names [646] ps1 [647]
+1- 1
+-1 1
+.names [167] [647] [648]
+1- 1
+-1 1
+.names pi pa [649]
+0- 1
+-1 1
+.names [84] [50] [650]
+1- 1
+-0 1
+.names [649] [162] [651]
+1- 1
+-1 1
+.names [651] [650] [652]
+1- 1
+-1 1
+.names pi0 ph0 [653]
+00 1
+.names pz py [654]
+00 1
+.names [654] [653] [655]
+11 1
+.names [84] pm [656]
+10 1
+.names pa pp0 [657]
+01 1
+.names [657] ph [658]
+10 1
+.names [36] [658] [659]
+11 1
+.names [51] pm [660]
+00 1
+.names [154] [156] [661]
+1- 1
+-1 1
+.names [104] pq0 [662]
+11 1
+.names [51] pe0 [663]
+01 1
+.names ph pa [664]
+10 1
+.names [81] [664] [665]
+11 1
+.names [87] pl [666]
+11 1
+.names pc0 pb0 [667]
+1- 1
+-1 1
+.names py ph0 [668]
+1- 1
+-1 1
+.names [79] pz [669]
+1- 1
+-1 1
+.names [142] [141] [670]
+1- 1
+-1 1
+.names [668] [667] [671]
+1- 1
+-1 1
+.names [669] [85] [672]
+1- 1
+-1 1
+.names [671] [670] [673]
+1- 1
+-1 1
+.names [673] [672] [674]
+1- 1
+-1 1
+.names ps pr [675]
+11 1
+.names pp0 pb0 [676]
+1- 1
+-1 1
+.names ph0 pe0 [677]
+1- 1
+-1 1
+.names pq0 pk0 [678]
+1- 1
+-1 1
+.names [677] ps0 [679]
+1- 1
+-1 1
+.names pd0 pa0 [680]
+1- 1
+-1 1
+.names pp0 pj0 [681]
+1- 1
+-1 1
+.names [63] [86] [682]
+0- 1
+-1 1
+.names [681] [680] [683]
+1- 1
+-1 1
+.names [137] [136] [684]
+1- 1
+-1 1
+.names [684] [132] [685]
+1- 1
+-1 1
+.names [134] [685] [686]
+1- 1
+-1 1
+.names [133] [135] [687]
+1- 1
+-1 1
+.names [79] pp [688]
+10 1
+.names po pp [689]
+10 1
+.names pa pv [690]
+00 1
+.names [76] ph0 [691]
+1- 1
+-1 1
+.names [67] [71] [692]
+1- 1
+-1 1
+.names [692] [70] [693]
+1- 1
+-1 1
+.names pg pv [694]
+10 1
+.names [694] [50] [695]
+11 1
+.names [66] [65] [696]
+1- 1
+-1 1
+.names pi pa [697]
+10 1
+.names pa pv [698]
+01 1
+.names [86] pf [699]
+11 1
+.names pc pg0 [700]
+01 1
+.names [700] pj [701]
+11 1
+.names pc pp0 [702]
+11 1
+.names [84] pd [703]
+11 1
+.names pq0 pq [704]
+10 1
+.names [51] pg [705]
+00 1
+.names pe0 pp [706]
+10 1
+.names [61] [60] [707]
+1- 1
+-1 1
+.names [59] [62] [708]
+1- 1
+-1 1
+.names [57] [707] [709]
+1- 1
+-1 1
+.names [708] [58] [710]
+1- 1
+-1 1
+.names [81] [48] [711]
+11 1
+.names [55] [54] [712]
+1- 1
+-1 1
+.names ps pr [713]
+01 1
+.names [48] pb [714]
+11 1
+.names [713] [44] [715]
+10 1
+.names [715] [714] [716]
+11 1
+.names ph pi0 [717]
+01 1
+.names [119] pi [718]
+10 1
+.names [52] [53] [719]
+1- 1
+-1 1
+.names ps pr [720]
+11 1
+.names [41] [42] [721]
+1- 1
+-1 1
+.names pz ph0 [722]
+00 1
+.end

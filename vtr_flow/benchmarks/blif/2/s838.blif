@@ -1,0 +1,778 @@
+.model top
+.inputs c_6 c_5 c_4 c_19 c_3 c_29 c_2 c_1 c_0 ck c_13 c_24 c_14 c_23 c_11 c_22 \
+c_12 c_21 c_17 c_28 c_31 c_18 c_27 c_32 c_15 c_26 c_16 c_25 clear c_30 c_20 \
+c_10 x c_9 c_8 c_7
+.outputs w z
+.latch    n_n76 ny_4 re ck 2
+.latch    n_n152 ny_9 re ck 2
+.latch    ni765 ny_22 re ck 2
+.latch    n_n61 ny_16 re ck 2
+.latch    n_n50 ny_23 re ck 2
+.latch    n_n60 ny_15 re ck 2
+.latch    n_n46 ny_28 re ck 2
+.latch    n_n127 ny_29 re ck 2
+.latch    ni461 ny_14 re ck 2
+.latch    n_n137 ny_21 re ck 2
+.latch    n_n71 ny_8 re ck 2
+.latch    n_n40 ny_31 re ck 2
+.latch    n_n162 ny_1 re ck 2
+.latch    ni1069 ny_30 re ck 2
+.latch    ni5 ny_2 re ck 2
+.latch    n_n65 ny_11 re ck 2
+.latch    n_n51 ny_24 re ck 2
+.latch    n_n75 ny_3 re ck 2
+.latch    ni309 ny_10 re ck 2
+.latch    n_n142 ny_17 re ck 2
+.latch    n_n66 ny_12 re ck 2
+.latch    n_n157 ny_5 re ck 2
+.latch    ni157 ny_6 re ck 2
+.latch    n_n70 ny_7 re ck 2
+.latch    n_n147 ny_13 re ck 2
+.latch    ni917 ny_26 re ck 2
+.latch    n_n56 ny_20 re ck 2
+.latch    n_n45 ny_27 re ck 2
+.latch    n_n55 ny_19 re ck 2
+.latch    n_n41 ny_32 re ck 2
+.latch    ni613 ny_18 re ck 2
+.latch    n_n132 ny_25 re ck 2
+.names ny_32 [96] w
+11 1
+.names [862] [863] z
+1- 1
+-1 1
+.names [220] [221] n_n76
+1- 1
+-1 1
+.names ny_9 n_n63 n_n152
+00 1
+.names [218] [219] ni765
+1- 1
+-1 1
+.names [212] [213] n_n61
+1- 1
+-1 1
+.names [208] [209] n_n50
+1- 1
+-1 1
+.names [206] [207] n_n60
+1- 1
+-1 1
+.names [200] [201] n_n46
+1- 1
+-1 1
+.names ny_29 n_n38 n_n127
+00 1
+.names [198] [199] ni461
+1- 1
+-1 1
+.names ny_21 n_n48 n_n137
+00 1
+.names [192] [193] n_n71
+1- 1
+-1 1
+.names [188] [189] n_n40
+1- 1
+-1 1
+.names ny_1 [88] n_n162
+01 1
+.names [186] [187] ni1069
+1- 1
+-1 1
+.names [184] [185] ni5
+1- 1
+-1 1
+.names [180] [181] n_n65
+1- 1
+-1 1
+.names [176] [177] n_n51
+1- 1
+-1 1
+.names [174] [175] n_n75
+1- 1
+-1 1
+.names [172] [173] ni309
+1- 1
+-1 1
+.names ny_17 n_n53 n_n142
+00 1
+.names [168] [169] n_n66
+1- 1
+-1 1
+.names ny_5 n_n68 n_n157
+00 1
+.names [166] [167] ni157
+1- 1
+-1 1
+.names [164] [165] n_n70
+1- 1
+-1 1
+.names ny_13 n_n58 n_n147
+00 1
+.names [162] [163] ni917
+1- 1
+-1 1
+.names [156] [157] n_n56
+1- 1
+-1 1
+.names [154] [155] n_n45
+1- 1
+-1 1
+.names [152] [153] n_n55
+1- 1
+-1 1
+.names [148] [149] n_n41
+1- 1
+-1 1
+.names [146] [147] ni613
+1- 1
+-1 1
+.names ny_25 n_n43 n_n132
+00 1
+.names ny_30 [780] [96]
+11 1
+.names ny_5 [92] n_n118
+01 1
+.names [143] [805] n_n4
+1- 1
+-1 1
+.names n_n3 [831] n_n80
+01 1
+.names [123] [844] n_n0
+1- 1
+-1 1
+.names ny_2 [783] [86]
+01 1
+.names n_n103 [796] [89]
+11 1
+.names n_n92 [800] [90]
+11 1
+.names n_n118 [786] [91]
+11 1
+.names [91] [788] [95]
+11 1
+.names [95] [789] [99]
+11 1
+.names [119] [120] [102]
+1- 1
+-1 1
+.names [740] [741] n_n48
+1- 1
+-1 1
+.names clear x [88]
+01 1
+.names ny_13 n_n58 [100]
+10 1
+.names [86] [784] [92]
+11 1
+.names [759] [760] n_n68
+1- 1
+-1 1
+.names [737] [738] n_n63
+1- 1
+-1 1
+.names [744] [745] n_n58
+1- 1
+-1 1
+.names [773] [774] n_n53
+1- 1
+-1 1
+.names [99] [790] [87]
+11 1
+.names [87] [791] n_n103
+11 1
+.names n_n63 [767] [93]
+01 1
+.names [74] [170] [103]
+1- 1
+-1 1
+.names [75] [214] [104]
+1- 1
+-1 1
+.names n_n142 [160] [76]
+1- 1
+-1 1
+.names n_n53 [777] [97]
+01 1
+.names n_n137 [210] [77]
+1- 1
+-1 1
+.names n_n48 [748] [94]
+01 1
+.names [90] [802] [72]
+11 1
+.names [144] [145] [105]
+1- 1
+-1 1
+.names [756] [757] n_n38
+1- 1
+-1 1
+.names n_n152 [182] [74]
+1- 1
+-1 1
+.names n_n147 [216] [75]
+1- 1
+-1 1
+.names [76] [158] [106]
+1- 1
+-1 1
+.names [77] [178] [107]
+1- 1
+-1 1
+.names ny_25 n_n43 [101]
+10 1
+.names [89] [797] [71]
+11 1
+.names [71] [799] n_n92
+11 1
+.names n_n162 [224] [73]
+1- 1
+-1 1
+.names n_n157 [196] [78]
+1- 1
+-1 1
+.names n_n68 [761] [98]
+01 1
+.names [138] [139] [108]
+1- 1
+-1 1
+.names [133] [819] n_n3
+1- 1
+-1 1
+.names [130] [825] n_n1
+1- 1
+-1 1
+.names n_n92 [826] [68]
+0- 1
+-1 1
+.names [87] [828] [110]
+0- 1
+-1 1
+.names c_0 x [109]
+0- 1
+-0 1
+.names [73] [222] [111]
+1- 1
+-1 1
+.names [78] [194] [112]
+1- 1
+-1 1
+.names [751] [752] n_n43
+1- 1
+-1 1
+.names [127] [128] [113]
+1- 1
+-1 1
+.names [79] [150] [114]
+1- 1
+-1 1
+.names n_n127 [190] [79]
+1- 1
+-1 1
+.names n_n132 [204] [80]
+1- 1
+-1 1
+.names [80] [202] [115]
+1- 1
+-1 1
+.names [99] [846] [69]
+11 1
+.names [90] [848] [70]
+11 1
+.names [89] [850] [81]
+11 1
+.names [91] [852] [82]
+11 1
+.names [95] [853] [83]
+11 1
+.names [86] [854] [84]
+11 1
+.names n_n118 [855] [85]
+11 1
+.names ny_10 [851] [119]
+01 1
+.names c_10 ny_10 [120]
+11 1
+.names [95] [833] [121]
+11 1
+.names [86] [835] [122]
+11 1
+.names [72] [837] [123]
+11 1
+.names [91] [838] [124]
+11 1
+.names [71] [839] [125]
+11 1
+.names ny_1 [840] [126]
+11 1
+.names ny_30 [836] [127]
+01 1
+.names c_30 ny_30 [128]
+11 1
+.names [92] [820] [129]
+11 1
+.names [89] [821] [130]
+11 1
+.names [87] [822] [131]
+11 1
+.names n_n103 [823] [132]
+11 1
+.names [72] [809] [133]
+11 1
+.names n_n92 [811] [134]
+11 1
+.names [812] [813] [135]
+11 1
+.names [71] [815] [136]
+11 1
+.names [99] [816] [137]
+11 1
+.names ny_24 [814] [138]
+11 1
+.names c_23 ny_23 [139]
+11 1
+.names n_n103 [793] [140]
+11 1
+.names n_n118 [795] [141]
+11 1
+.names [90] [801] [142]
+11 1
+.names [72] [803] [143]
+11 1
+.names ny_7 [794] [144]
+01 1
+.names c_7 ny_7 [145]
+11 1
+.names n_n53 [782] [146]
+01 1
+.names n_n142 ny_18 [147]
+11 1
+.names n_n38 [781] [148]
+01 1
+.names ny_32 [114] [149]
+11 1
+.names ny_31 n_n38 [150]
+00 1
+.names ny_19 [97] [152]
+01 1
+.names ny_19 [76] [153]
+11 1
+.names [101] [779] [154]
+11 1
+.names ny_27 [80] [155]
+11 1
+.names [97] [778] [156]
+11 1
+.names ny_20 [106] [157]
+11 1
+.names ny_19 n_n53 [158]
+00 1
+.names ny_18 n_n53 [160]
+00 1
+.names ny_26 [101] [162]
+01 1
+.names ny_26 n_n132 [163]
+11 1
+.names ny_7 [98] [164]
+01 1
+.names ny_7 [78] [165]
+11 1
+.names n_n68 [776] [166]
+01 1
+.names n_n157 ny_6 [167]
+11 1
+.names [93] [775] [168]
+11 1
+.names ny_12 [103] [169]
+11 1
+.names ny_11 n_n63 [170]
+00 1
+.names n_n63 [771] [172]
+01 1
+.names n_n152 ny_10 [173]
+11 1
+.names [769] [770] [174]
+11 1
+.names ny_3 [73] [175]
+11 1
+.names [94] [768] [176]
+11 1
+.names ny_24 [107] [177]
+11 1
+.names ny_23 n_n48 [178]
+00 1
+.names ny_11 [93] [180]
+01 1
+.names ny_11 [74] [181]
+11 1
+.names ny_10 n_n63 [182]
+00 1
+.names [88] [766] [184]
+11 1
+.names n_n162 ny_2 [185]
+11 1
+.names n_n38 [765] [186]
+01 1
+.names n_n127 ny_30 [187]
+11 1
+.names n_n38 [764] [188]
+01 1
+.names ny_31 [79] [189]
+11 1
+.names ny_30 n_n38 [190]
+00 1
+.names [98] [762] [192]
+11 1
+.names ny_8 [112] [193]
+11 1
+.names ny_7 n_n68 [194]
+00 1
+.names ny_6 n_n68 [196]
+00 1
+.names ny_14 [100] [198]
+01 1
+.names ny_14 n_n147 [199]
+11 1
+.names [101] [754] [200]
+11 1
+.names ny_28 [115] [201]
+11 1
+.names ny_27 n_n43 [202]
+00 1
+.names ny_26 n_n43 [204]
+00 1
+.names [100] [749] [206]
+11 1
+.names ny_15 [75] [207]
+11 1
+.names ny_23 [94] [208]
+01 1
+.names ny_23 [77] [209]
+11 1
+.names ny_22 n_n48 [210]
+00 1
+.names [100] [747] [212]
+11 1
+.names ny_16 [104] [213]
+11 1
+.names ny_15 n_n58 [214]
+00 1
+.names ny_14 n_n58 [216]
+00 1
+.names n_n48 [742] [218]
+01 1
+.names ny_22 n_n137 [219]
+11 1
+.names [734] [735] [220]
+11 1
+.names ny_4 [111] [221]
+11 1
+.names ny_3 [88] [222]
+01 1
+.names ny_2 [88] [224]
+01 1
+.names ny_1 ny_4 [733]
+10 1
+.names ny_3 ny_2 [734]
+11 1
+.names [733] [88] [735]
+11 1
+.names ny_8 clear [736]
+0- 1
+-1 1
+.names ny_6 ny_5 [737]
+0- 1
+-0 1
+.names [736] ny_7 [738]
+1- 1
+-0 1
+.names ny_17 clear [739]
+0- 1
+-1 1
+.names ny_19 ny_20 [740]
+0- 1
+-0 1
+.names [739] ny_18 [741]
+1- 1
+-0 1
+.names ny_21 ny_22 [742]
+10 1
+.names ny_9 clear [743]
+0- 1
+-1 1
+.names ny_10 ny_11 [744]
+0- 1
+-0 1
+.names [743] ny_12 [745]
+1- 1
+-0 1
+.names ny_15 ny_16 [746]
+10 1
+.names [746] ny_14 [747]
+11 1
+.names ny_21 ny_22 [748]
+11 1
+.names ny_14 ny_15 [749]
+10 1
+.names ny_22 clear [750]
+0- 1
+-1 1
+.names ny_21 ny_23 [751]
+0- 1
+-0 1
+.names [750] ny_24 [752]
+1- 1
+-0 1
+.names ny_26 ny_28 [753]
+10 1
+.names [753] ny_27 [754]
+11 1
+.names ny_28 clear [755]
+0- 1
+-1 1
+.names ny_27 ny_26 [756]
+0- 1
+-0 1
+.names [755] ny_25 [757]
+1- 1
+-0 1
+.names ny_4 clear [758]
+0- 1
+-1 1
+.names ny_2 ny_1 [759]
+0- 1
+-0 1
+.names [758] ny_3 [760]
+1- 1
+-0 1
+.names ny_6 ny_5 [761]
+11 1
+.names ny_7 ny_8 [762]
+10 1
+.names ny_31 ny_29 [763]
+01 1
+.names [763] ny_30 [764]
+11 1
+.names ny_30 ny_29 [765]
+01 1
+.names ny_2 ny_1 [766]
+01 1
+.names ny_10 ny_9 [767]
+11 1
+.names ny_24 ny_23 [768]
+01 1
+.names ny_2 ny_1 [769]
+11 1
+.names [88] ny_3 [770]
+10 1
+.names ny_10 ny_9 [771]
+01 1
+.names ny_16 clear [772]
+0- 1
+-1 1
+.names ny_14 ny_15 [773]
+0- 1
+-0 1
+.names [772] ny_13 [774]
+1- 1
+-0 1
+.names ny_12 ny_11 [775]
+01 1
+.names ny_6 ny_5 [776]
+01 1
+.names ny_18 ny_17 [777]
+11 1
+.names ny_19 ny_20 [778]
+10 1
+.names ny_27 ny_26 [779]
+01 1
+.names ny_31 ny_29 [780]
+11 1
+.names [96] ny_32 [781]
+10 1
+.names ny_18 ny_17 [782]
+01 1
+.names ny_1 x [783]
+01 1
+.names ny_3 ny_4 [784]
+00 1
+.names ny_6 ny_8 [785]
+00 1
+.names [785] ny_7 [786]
+10 1
+.names ny_11 ny_9 [787]
+00 1
+.names [787] ny_10 [788]
+10 1
+.names ny_13 ny_12 [789]
+00 1
+.names ny_14 ny_15 [790]
+00 1
+.names ny_17 ny_16 [791]
+00 1
+.names ny_19 c_19 [792]
+11 1
+.names [792] ny_18 [793]
+10 1
+.names ny_8 c_8 [794]
+11 1
+.names [105] ny_6 [795]
+10 1
+.names ny_18 ny_19 [796]
+00 1
+.names ny_20 ny_21 [797]
+00 1
+.names ny_23 ny_22 [798]
+00 1
+.names [798] ny_24 [799]
+10 1
+.names ny_25 ny_26 [800]
+00 1
+.names ny_27 c_27 [801]
+11 1
+.names ny_27 ny_28 [802]
+00 1
+.names ny_29 c_29 [803]
+11 1
+.names [140] [141] [804]
+1- 1
+-1 1
+.names [142] [804] [805]
+1- 1
+-1 1
+.names ny_29 c_32 [806]
+01 1
+.names ny_30 ny_31 [807]
+00 1
+.names [806] ny_32 [808]
+11 1
+.names [808] [807] [809]
+11 1
+.names ny_26 c_26 [810]
+11 1
+.names [810] ny_25 [811]
+10 1
+.names x c_2 [812]
+11 1
+.names ny_2 ny_1 [813]
+10 1
+.names ny_23 c_24 [814]
+01 1
+.names [108] ny_22 [815]
+10 1
+.names ny_14 c_14 [816]
+11 1
+.names [137] [135] [817]
+1- 1
+-1 1
+.names [136] [817] [818]
+1- 1
+-1 1
+.names [818] [134] [819]
+1- 1
+-1 1
+.names ny_5 c_5 [820]
+11 1
+.names ny_20 c_20 [821]
+11 1
+.names ny_16 c_16 [822]
+11 1
+.names ny_18 c_18 [823]
+11 1
+.names [131] [129] [824]
+1- 1
+-1 1
+.names [824] [132] [825]
+1- 1
+-1 1
+.names ny_25 c_25 [826]
+0- 1
+-0 1
+.names ny_16 c_17 [827]
+1- 1
+-0 1
+.names [827] ny_17 [828]
+1- 1
+-0 1
+.names [110] [109] [829]
+11 1
+.names n_n1 [829] [830]
+01 1
+.names [830] [68] [831]
+11 1
+.names ny_12 c_13 [832]
+01 1
+.names [832] ny_13 [833]
+11 1
+.names ny_4 c_4 [834]
+11 1
+.names [834] ny_3 [835]
+10 1
+.names ny_31 c_31 [836]
+11 1
+.names [113] ny_29 [837]
+10 1
+.names ny_9 c_9 [838]
+11 1
+.names ny_22 c_22 [839]
+11 1
+.names x c_1 [840]
+11 1
+.names [122] [126] [841]
+1- 1
+-1 1
+.names [124] [841] [842]
+1- 1
+-1 1
+.names [842] [121] [843]
+1- 1
+-1 1
+.names [125] [843] [844]
+1- 1
+-1 1
+.names ny_15 c_15 [845]
+11 1
+.names [845] ny_14 [846]
+10 1
+.names ny_28 c_28 [847]
+11 1
+.names [847] ny_27 [848]
+10 1
+.names ny_21 c_21 [849]
+11 1
+.names [849] ny_20 [850]
+10 1
+.names ny_11 c_11 [851]
+11 1
+.names [102] ny_9 [852]
+10 1
+.names ny_12 c_12 [853]
+11 1
+.names ny_3 c_3 [854]
+11 1
+.names ny_6 c_6 [855]
+11 1
+.names [85] [84] [856]
+1- 1
+-1 1
+.names [856] [82] [857]
+1- 1
+-1 1
+.names [857] [83] [858]
+1- 1
+-1 1
+.names [858] [69] [859]
+1- 1
+-1 1
+.names [81] [859] [860]
+1- 1
+-1 1
+.names [70] [860] [861]
+1- 1
+-1 1
+.names n_n4 [861] [862]
+1- 1
+-1 1
+.names n_n80 n_n0 [863]
+0- 1
+-1 1
+.end

@@ -1,0 +1,17 @@
+.model third
+.inputs top^clock top^reset_n top^in
+.outputs top^out
+
+.names gnd
+.names hbpad
+.names vcc
+1
+
+.latch top^in top^FF_NODE~0 re top^clock 0
+
+.latch top^FF_NODE~0 top^FF_NODE~1 re top^clock 0
+
+.names top^FF_NODE~1 top^out
+1 1
+.end
+

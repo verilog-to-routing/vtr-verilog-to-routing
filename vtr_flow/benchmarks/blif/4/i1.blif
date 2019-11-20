@@ -1,0 +1,59 @@
+.model top
+.inputs pv27_3 pv7_2 pv7_1 pv10_0 pv11_0 pv14_0 pv22_5 pv27_0 pv7_7 pv15_0 \
+pv22_4 pv12_0 pv29_0 pv13_0 pv7_4 pv18_0 pv7_3 pv8_0 pv7_6 pv9_0 pv16_0 pv22_3 \
+pv7_5 pv17_0 pv22_2
+.outputs pv27_4 pv32_0 pv33_0 pv34_0 pv35_0 pv36_0 pv37_0 pv38_0 pv27_2 pv27_1 \
+pv28_0 pv30_0 pv31_0
+.names pv27_3 pv22_2 pv27_4
+1- 1
+-1 1
+.names pv11_0 pv22_5 pv32_0
+11 1
+.names pv14_0 pv22_5 pv22_3 pv33_0
+101 1
+.names pv22_5 pv22_3 pv17_0 pv34_0
+011 1
+.names pv14_0 pv22_5 pv22_4 pv35_0
+101 1
+.names pv22_5 pv22_4 pv17_0 pv36_0
+011 1
+.names pv22_5 pv16_0 pv37_0
+01 1
+.names pv14_0 pv15_0 pv12_0 pv13_0 pv38_0
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [23] [95] [96] [98] pv27_2
+1--- 1
+-0-1 1
+--01 1
+.names pv27_0 pv29_0 [19] pv27_1
+--1 1
+01- 1
+.names pv10_0 [17] pv28_0
+1- 1
+-1 1
+.names pv22_5 pv18_0 pv30_0
+11 1
+.names pv11_0 pv22_5 pv31_0
+11 1
+10 1
+.names pv8_0 pv9_0 [15]
+11 1
+00 1
+.names pv29_0 pv8_0 [95] [96] [17]
+1011 1
+.names pv29_0 [15] [95] [96] [19]
+1111 1
+.names pv29_0 [95] [96] [97] [23]
+1111 1
+.names pv7_2 pv7_1 pv7_5 [95]
+000 1
+.names pv7_7 pv7_4 pv7_3 pv7_6 [96]
+0000 1
+.names pv9_0 pv8_0 [97]
+01 1
+.names pv29_0 pv27_0 [98]
+11 1
+.end

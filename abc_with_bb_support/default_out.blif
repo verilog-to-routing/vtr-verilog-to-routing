@@ -1,0 +1,29 @@
+.model simple
+.inputs top^clock top^reset_n
+.outputs top^value_out
+
+.names gnd
+.names hbpad
+.names vcc
+1
+
+.names top^LOGICAL_EQUAL~1^LOGICAL_AND~6 top^MULTI_PORT_MUX~0^LOGICAL_NOT~2 vcc gnd top^MULTI_PORT_MUX~0^MUX_2~4
+1-1- 1
+-1-1 1
+
+.latch top^MULTI_PORT_MUX~0^MUX_2~4 top^FF_NODE~3 re top^clock 0
+
+.names top^reset_n vcc top^LOGICAL_EQUAL~1^LOGICAL_XNOR~5^LOGICAL_XNOR~7
+00 1
+11 1
+
+.names top^LOGICAL_EQUAL~1^LOGICAL_XNOR~5^LOGICAL_XNOR~7 top^LOGICAL_EQUAL~1^LOGICAL_AND~6
+1 1
+
+.names top^LOGICAL_EQUAL~1^LOGICAL_AND~6 top^MULTI_PORT_MUX~0^LOGICAL_NOT~2
+0 1
+
+.names top^FF_NODE~3 top^value_out
+1 1
+.end
+

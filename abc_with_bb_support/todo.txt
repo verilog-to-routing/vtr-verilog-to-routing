@@ -1,0 +1,26 @@
+- required time support
+- printing ABC version/platform in the output files  
+- fix gcc compiler warnings
+- port "mfs" from MVSIS
+- improve AIG rewriting package
+- unify functional representation of local functions
+- additional rewriting options for delay optimization
+- experiment with yield-aware standard-cell mapping
+- improving area recovery in integrated sequential synthesis 
+- high-effort logic synthesis for hard miters (cofactoring, Boolean division)
+- mapping into MV cells
+- SAT solver with linear constraints
+- specialized synthesis for EXORs and large MUXes
+- sequential AIG rewriting initial state computation
+- placement-aware mapping
+- sequential equivalence checking
+- parser for Verilog netlists
+- hierarchy manager (hierarchical BLIF/BLIF-MV parser)
+
+- required time based on all cuts
+- comparing tts of differently derived the same cut
+- area flow based AIG rewriting
+- cut frontier adjustment
+
+
+

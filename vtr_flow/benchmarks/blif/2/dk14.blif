@@ -1,0 +1,172 @@
+.model top
+.inputs dk14_in_2_ dk14_in_0_ dk14_in_1_ clock
+.outputs dk14_out_1_ dk14_out_0_ dk14_out_4_ dk14_out_3_ dk14_out_2_
+.latch    n_n28 n_n79 re clock 2
+.latch    n_n29 n_n80 re clock 2
+.latch    n_n30 n_n81 re clock 2
+.names [42] [160] dk14_out_1_
+1- 1
+-1 1
+.names [32] [172] dk14_out_0_
+1- 1
+-1 1
+.names [23] [183] dk14_out_4_
+1- 1
+-1 1
+.names [40] [164] dk14_out_3_
+1- 1
+-1 1
+.names [18] [186] dk14_out_2_
+1- 1
+-1 1
+.names [37] [166] n_n28
+1- 1
+-1 1
+.names [30] [31] n_n29
+1- 1
+-1 1
+.names [26] [179] n_n30
+1- 1
+-1 1
+.names dk14_in_2_ dk14_in_0_ [16]
+0- 1
+-1 1
+.names dk14_in_0_ [14] [15]
+0- 1
+-1 1
+.names dk14_in_1_ dk14_out_1_ [19]
+00 1
+.names dk14_in_2_ dk14_out_1_ [14]
+1- 1
+-1 1
+.names dk14_in_2_ dk14_in_0_ [13]
+0- 1
+-0 1
+.names n_n29 [184] [17]
+11 1
+.names dk14_out_4_ [185] [18]
+11 1
+.names dk14_out_3_ [15] [20]
+00 1
+.names dk14_out_3_ [180] [21]
+01 1
+.names n_n79 [181] [22]
+11 1
+.names dk14_out_0_ [19] [23]
+01 1
+.names n_n79 n_n81 [24]
+10 1
+.names dk14_out_0_ [174] [25]
+01 1
+.names dk14_out_0_ [175] [26]
+11 1
+.names n_n80 [176] [27]
+11 1
+.names n_n80 [16] [28]
+00 1
+.names dk14_out_3_ n_n28 [29]
+11 1
+.names dk14_out_0_ [173] [30]
+01 1
+.names dk14_out_0_ [16] [31]
+01 1
+.names n_n28 [168] [32]
+01 1
+.names dk14_out_1_ [169] [33]
+01 1
+.names n_n81 [170] [34]
+11 1
+.names n_n79 [19] [35]
+01 1
+.names [14] [162] [36]
+01 1
+.names dk14_out_3_ [165] [37]
+11 1
+.names dk14_out_1_ [16] [38]
+10 1
+.names n_n81 [163] [39]
+01 1
+.names dk14_in_0_ [19] [40]
+01 1
+.names dk14_out_1_ [13] [41]
+10 1
+.names [156] [157] [42]
+11 1
+.names [13] [158] [43]
+11 1
+.names n_n81 [159] [44]
+01 1
+.names n_n79 dk14_in_1_ [156]
+10 1
+.names [13] n_n80 [157]
+10 1
+.names n_n81 dk14_in_1_ [158]
+00 1
+.names n_n79 dk14_in_2_ [159]
+01 1
+.names [44] [43] [160]
+1- 1
+-1 1
+.names n_n79 dk14_in_0_ [161]
+10 1
+.names [161] n_n80 [162]
+10 1
+.names n_n79 dk14_in_1_ [163]
+01 1
+.names [41] [39] [164]
+1- 1
+-1 1
+.names n_n81 dk14_in_0_ [165]
+00 1
+.names [36] [38] [166]
+1- 1
+-1 1
+.names n_n80 dk14_in_0_ [167]
+10 1
+.names dk14_out_1_ [167] [168]
+01 1
+.names n_n80 dk14_in_2_ [169]
+11 1
+.names n_n79 dk14_in_2_ [170]
+00 1
+.names [33] [34] [171]
+1- 1
+-1 1
+.names [171] [35] [172]
+1- 1
+-1 1
+.names n_n81 dk14_in_1_ [173]
+11 1
+.names dk14_in_1_ dk14_in_0_ [174]
+01 1
+.names dk14_in_1_ dk14_in_2_ [175]
+10 1
+.names dk14_in_1_ dk14_in_2_ [176]
+01 1
+.names [28] [27] [177]
+1- 1
+-1 1
+.names [29] [177] [178]
+1- 1
+-1 1
+.names [25] [178] [179]
+1- 1
+-1 1
+.names [15] n_n80 [180]
+11 1
+.names dk14_in_1_ dk14_in_2_ [181]
+10 1
+.names [22] [24] [182]
+1- 1
+-1 1
+.names [21] [182] [183]
+1- 1
+-1 1
+.names dk14_out_1_ dk14_in_2_ [184]
+01 1
+.names dk14_out_0_ dk14_in_0_ [185]
+10 1
+.names [17] [20] [186]
+1- 1
+-1 1
+.end

@@ -1,0 +1,14 @@
+.model top
+.inputs a b c d e
+.outputs xor5
+.names d e [2] xor5
+111 1
+001 1
+010 1
+100 1
+.names a b c [2]
+111 1
+001 1
+010 1
+100 1
+.end

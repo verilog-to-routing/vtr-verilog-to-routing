@@ -1,0 +1,416 @@
+.model top
+.inputs planet_in_4_ planet_in_3_ planet_in_6_ planet_in_5_ planet_in_0_ \
+planet_in_2_ planet_in_1_ clock
+.outputs planet_out_10_ planet_out_12_ planet_out_11_ planet_out_14_ \
+planet_out_13_ planet_out_16_ planet_out_15_ planet_out_18_ planet_out_17_ \
+planet_out_5_ planet_out_6_ planet_out_3_ planet_out_4_ planet_out_1_ \
+planet_out_2_ planet_out_0_ planet_out_9_ planet_out_7_ planet_out_8_
+.latch    n_n83 n_n331 re clock 2
+.latch    n_n84 n_n332 re clock 2
+.latch    n_n85 n_n333 re clock 2
+.latch    n_n86 n_n334 re clock 2
+.latch    n_n87 n_n335 re clock 2
+.latch    n_n88 n_n336 re clock 2
+.names planet_in_6_ planet_in_2_ planet_in_1_ n_n331 n_n332 n_n335 [1207] \
+planet_out_10_
+------1 1
+-00---- 1
+---1-1- 1
+---0-0- 1
+1--11-- 1
+.names planet_in_4_ planet_in_6_ n_n331 n_n332 n_n333 n_n334 n_n335 n_n336 \
+planet_out_12_
+--011-0- 1
+--0-1-01 1
+--01-1-0 1
+1-0---10 1
+--11101- 1
+--00101- 1
+--00000- 1
+--110-11 1
+--1000-0 1
+1-01001- 1
+-11-0000 1
+.names [1225] [1226] planet_out_11_
+1- 1
+-1 1
+.names planet_in_4_ n_n331 n_n332 n_n333 n_n334 n_n335 n_n336 planet_out_14_
+--000-- 1
+-0---10 1
+-00-01- 1
+-0-110- 1
+-11101- 1
+10-001- 1
+-110-11 1
+100--01 1
+-01-101 1
+-1-0000 1
+.names n_n331 n_n332 n_n333 n_n334 n_n335 n_n336 planet_out_13_
+1----- 1
+---1-- 1
+-----0 1
+-10--- 1
+--1-1- 1
+.names planet_in_4_ n_n331 n_n332 n_n333 n_n334 n_n335 n_n336 planet_out_16_
+-1-1--- 1
+-10-1-- 1
+-0--11- 1
+-11--0- 1
+--01-0- 1
+--11--1 1
+-1---01 1
+0----10 1
+-1---10 1
+--1000- 1
+10--1-1 1
+-01-1-1 1
+-00--00 1
+.names planet_in_4_ planet_in_6_ n_n331 n_n332 n_n333 n_n334 n_n335 n_n336 \
+planet_out_15_
+--11101- 1
+--0000-1 1
+---00011 1
+0-0-0011 1
+0-000-01 1
+--011001 1
+-1110000 1
+.names planet_in_4_ n_n331 n_n332 n_n333 n_n334 n_n335 n_n336 planet_out_18_
+---1--0 1
+----1-0 1
+-11-1-- 1
+-0-1-1- 1
+--01-1- 1
+-0--11- 1
+-1-1-0- 1
+-1--10- 1
+--100-1 1
+10---10 1
+-01--00 1
+-10--00 1
+00001-- 1
+.names planet_in_4_ planet_in_6_ n_n331 n_n332 n_n333 n_n334 n_n335 n_n336 \
+planet_out_17_
+--0-110- 1
+0-0---10 1
+--11--10 1
+--10011- 1
+--1000-1 1
+---00011 1
+--011-01 1
+1-0--101 1
+--01-101 1
+-01100-0 1
+.names planet_in_4_ n_n331 n_n332 n_n333 n_n334 n_n335 [172] [174] \
+planet_out_5_
+------1- 1
+-------1 1
+100101-- 1
+.names planet_in_2_ planet_in_1_ [67] [163] planet_out_6_
+--1- 1
+1--1 1
+-1-1 1
+.names planet_in_4_ n_n331 n_n332 n_n333 n_n334 n_n335 planet_out_3_
+10-11- 1
+-100-0 1
+.names planet_in_3_ planet_in_5_ planet_in_0_ n_n331 n_n332 n_n333 n_n334 \
+n_n335 planet_out_4_
+11-01011 1
+1-001011 1
+.names planet_in_6_ planet_in_0_ n_n331 n_n332 n_n333 n_n334 n_n335 n_n336 \
+planet_out_1_
+--1011-- 1
+-1011-1- 1
+1-110-00 1
+.names planet_in_4_ n_n331 n_n332 n_n333 n_n334 n_n336 planet_out_2_
+0--11- 1
+-1-11- 1
+-011-1 1
+.names planet_in_1_ [144] [85] [1270] planet_out_0_
+--1- 1
+---1 1
+01-- 1
+.names planet_in_2_ planet_in_1_ [134] planet_out_9_
+101 1
+.names [67] [49] planet_out_7_
+1- 1
+-1 1
+.names planet_in_4_ n_n331 n_n332 n_n333 n_n334 n_n335 [174] planet_out_8_
+------1 1
+100101- 1
+.names planet_in_2_ planet_in_1_ n_n336 [113] [1114] [1115] [1120] [1128] \
+n_n83
+------1- 1
+-------1 1
+--0-1--- 1
+--0--1-- 1
+11-1---- 1
+.names n_n336 [323] [1132] [1133] [1139] [1142] [1144] n_n84
+-1----- 1
+----1-- 1
+-----1- 1
+------1 1
+0-1---- 1
+0--1--- 1
+.names [51] [315] [316] [1148] [1151] [1153] [1156] [1158] n_n85
+-1------ 1
+--1----- 1
+----1--- 1
+-----1-- 1
+------1- 1
+-------1 1
+0--1---- 1
+.names n_n331 n_n332 n_n334 [59] [156] [1169] [1170] [1171] n_n86
+---1---- 1
+-----1-- 1
+------1- 1
+-------1 1
+011-1--- 1
+.names n_n331 n_n332 [148] [1188] [1189] [1190] n_n87
+---1-- 1
+----1- 1
+-----1 1
+111--- 1
+.names [264] [265] [1201] n_n88
+1-- 1
+-1- 1
+--1 1
+.names planet_in_4_ planet_in_5_ n_n332 n_n333 n_n334 n_n335 [64]
+000101 1
+.names planet_in_6_ n_n331 n_n332 n_n333 n_n334 n_n335 n_n336 [113]
+0110000 1
+.names planet_in_4_ planet_in_3_ planet_in_0_ n_n333 n_n334 n_n335 n_n336 \
+[127]
+---1-0- 1
+----10- 1
+1----01 1
+-1010-- 1
+0--001- 1
+.names planet_in_2_ planet_in_1_ n_n331 n_n332 n_n333 n_n334 n_n335 n_n336 \
+[67]
+11100000 1
+.names planet_in_4_ planet_in_6_ n_n331 n_n332 n_n333 n_n334 n_n335 n_n336 \
+[134]
+0-0---10 1
+-01-0000 1
+--100000 1
+.names planet_in_4_ planet_in_6_ n_n331 n_n332 n_n333 n_n334 n_n335 n_n336 \
+[144]
+0-0---10 1
+-01100-0 1
+--100000 1
+.names planet_in_4_ planet_in_3_ planet_in_5_ planet_in_0_ n_n333 n_n334 \
+n_n335 n_n336 [148]
+----111- 1
+----001- 1
+----0-01 1
+11111--0 1
+.names planet_in_3_ planet_in_6_ planet_in_5_ planet_in_0_ [51]
+0--- 1
+-1-- 1
+--1- 1
+---0 1
+.names n_n331 n_n332 n_n333 n_n334 n_n335 [59]
+0-110 1
+11101 1
+.names planet_in_3_ planet_in_6_ planet_in_5_ planet_in_0_ n_n333 n_n335 [156]
+0----- 1
+----1- 1
+-----0 1
+-101-- 1
+.names planet_in_4_ planet_in_6_ n_n331 n_n332 n_n333 n_n334 n_n335 n_n336 \
+[163]
+0-0---10 1
+-0110000 1
+.names planet_in_4_ planet_in_6_ n_n331 n_n332 n_n333 n_n334 n_n335 n_n336 \
+[49]
+1-100-1- 1
+1-1-011- 1
+1-0-001- 1
+1-011-0- 1
+1-00-0-1 1
+1-0--101 1
+1-11101- 1
+10110000 1
+.names planet_in_4_ planet_in_6_ n_n331 n_n332 n_n333 n_n334 n_n335 [85]
+001-011 1
+0-00101 1
+.names planet_in_3_ planet_in_0_ n_n331 n_n332 n_n333 n_n334 n_n335 [172]
+1001101 1
+.names planet_in_3_ planet_in_0_ n_n331 n_n332 n_n333 n_n334 n_n335 n_n336 \
+[174]
+11010000 1
+.names planet_in_4_ planet_in_3_ planet_in_5_ planet_in_0_ n_n331 n_n333 \
+n_n335 n_n336 [264]
+----1-10 1
+0---110- 1
+-0--110- 1
+--0-110- 1
+---0110- 1
+----1101 1
+.names planet_in_4_ planet_in_2_ planet_in_1_ n_n332 n_n333 n_n334 n_n335 \
+[265]
+---001- 1
+-0-00-1 1
+--000-1 1
+0--0101 1
+.names planet_in_2_ planet_in_1_ n_n331 n_n335 n_n336 [315]
+11010 1
+.names planet_in_4_ n_n331 n_n332 n_n333 n_n334 [316]
+00010 1
+.names planet_in_3_ planet_in_6_ planet_in_5_ planet_in_0_ n_n332 n_n333 \
+n_n334 n_n335 [323]
+----1110 1
+0---1011 1
+-1--1011 1
+--1-1011 1
+---01011 1
+.names planet_in_3_ planet_in_6_ n_n331 n_n332 n_n333 n_n334 [342]
+0-0101 1
+-10101 1
+.names planet_in_4_ n_n331 n_n332 n_n333 n_n334 n_n335 [352]
+000101 1
+.names planet_in_4_ planet_in_5_ planet_in_0_ planet_in_2_ planet_in_1_ n_n331 \
+n_n332 n_n333 [1114]
+---0-100 1
+----0100 1
+011---11 1
+.names planet_in_3_ planet_in_0_ n_n331 n_n332 n_n333 n_n334 n_n335 [1115]
+--10-1- 1
+--0000- 1
+0-01--0 1
+-001--0 1
+.names planet_in_4_ planet_in_3_ n_n331 n_n332 n_n333 n_n334 n_n335 [1120]
+-00011- 1
+1-111-1 1
+--11111 1
+.names planet_in_4_ planet_in_5_ n_n331 n_n332 n_n333 n_n334 n_n335 n_n336 \
+[1125]
+---0--10 1
+---01-01 1
+--00011- 1
+1-0--101 1
+--10-001 1
+111-101- 1
+.names n_n331 n_n332 [64] [127] [342] [352] [1125] [1128]
+--1---- 1
+----1-- 1
+-----1- 1
+------1 1
+01-1--- 1
+.names planet_in_2_ planet_in_1_ n_n331 n_n332 n_n333 [1132]
+---01 1
+1110- 1
+.names planet_in_3_ planet_in_0_ n_n331 n_n332 n_n334 n_n335 [1133]
+--1-1- 1
+---01- 1
+0-0100 1
+-00100 1
+.names planet_in_4_ planet_in_2_ planet_in_1_ n_n331 n_n332 n_n334 n_n335 \
+n_n336 [1139]
+1--0101- 1
+00-0--10 1
+0-00--10 1
+.names planet_in_3_ n_n331 n_n332 n_n333 n_n334 n_n335 n_n336 [1142]
+1011--- 1
+-1-011- 1
+0101-1- 1
+-000001 1
+.names planet_in_4_ n_n331 n_n332 n_n333 n_n334 n_n335 n_n336 [1144]
+-0011-- 1
+-0110-- 1
+00-1-1- 1
+-10--10 1
+-10101- 1
+000-10- 1
+-110-11 1
+.names n_n331 n_n332 n_n333 n_n334 n_n335 [1148]
+01011 1
+.names planet_in_4_ n_n331 n_n333 n_n335 n_n336 [1151]
+-010- 1
+10-10 1
+.names planet_in_4_ n_n331 n_n332 n_n333 n_n334 n_n336 [1153]
+-01-10 1
+001001 1
+.names planet_in_4_ planet_in_5_ n_n331 n_n332 n_n333 n_n334 n_n335 n_n336 \
+[1156]
+---01--0 1
+00-0101- 1
+1110101- 1
+.names planet_in_4_ n_n331 n_n332 n_n333 n_n334 n_n335 n_n336 [1158]
+--11-01 1
+--10011 1
+-100-01 1
+-1100-0 1
+000-101 1
+.names planet_in_0_ n_n331 n_n332 n_n333 n_n334 n_n335 n_n336 [1169]
+--001-1 1
+--00-11 1
+1011-1- 1
+.names planet_in_4_ planet_in_3_ n_n331 n_n332 n_n333 n_n334 n_n335 [1170]
+1-000-1 1
+-110-11 1
+.names planet_in_4_ planet_in_2_ planet_in_1_ n_n331 n_n332 n_n333 n_n335 \
+n_n336 [1171]
+---101-0 1
+---11-10 1
+00-0--10 1
+0-00--10 1
+.names planet_in_4_ planet_in_3_ n_n331 n_n332 n_n333 n_n334 n_n335 n_n336 \
+[1188]
+-----1-0 1
+0-0001-- 1
+-0101-1- 1
+.names planet_in_3_ planet_in_0_ n_n331 n_n332 n_n333 n_n334 n_n335 n_n336 \
+[1189]
+1-0011-- 1
+--10-011 1
+--1-1001 1
+-001101- 1
+.names planet_in_4_ n_n331 n_n332 n_n333 n_n334 n_n335 n_n336 [1190]
+--0011- 1
+-0-0-11 1
+1-1--10 1
+-00110- 1
+1-100-1 1
+.names planet_in_4_ planet_in_3_ n_n331 n_n332 n_n333 n_n334 n_n335 n_n336 \
+[1201]
+--01-1-- 1
+-1101--- 1
+1-0-0-1- 1
+--10-01- 1
+0-0-0--1 1
+--00--01 1
+--1100-1 1
+.names planet_in_4_ planet_in_2_ planet_in_1_ n_n331 n_n333 n_n334 n_n336 \
+[1207]
+----1-- 1
+-----1- 1
+------1 1
+-11---- 1
+1--0--- 1
+.names planet_in_4_ planet_in_5_ n_n331 n_n332 n_n333 n_n334 n_n335 n_n336 \
+[1225]
+--01-1-0 1
+-111-01- 1
+-100-01- 1
+1--1001- 1
+-0-1001- 1
+--0-0101 1
+.names planet_in_6_ planet_in_5_ n_n331 n_n332 n_n333 n_n334 n_n335 n_n336 \
+[1226]
+--0---10 1
+--1-011- 1
+--00101- 1
+--01100- 1
+--10000- 1
+-01-00-0 1
+0-1100-0 1
+.names planet_in_3_ planet_in_0_ n_n331 n_n332 n_n333 n_n334 n_n335 n_n336 \
+[1270]
+--011--0 1
+--01-1-0 1
+--11--10 1
+--100-11 1
+--001001 1
+1101--00 1
+.end

@@ -1,0 +1,8 @@
+read JAMIESON_TESTS/ava.blif; 
+resyn2; 
+read_lut JAMIESON_TESTS/lut_lib4.txt;
+fpga;
+cec;
+write_hie JAMIESON_TESTS/ava.blif JAMIESON_TESTS/ava.4.blif;
+
+time

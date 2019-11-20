@@ -1,0 +1,56 @@
+.model top
+.inputs dk27_in clock
+.outputs dk27_out_0_ dk27_out_1_
+.latch    n_n16 n_n31 re clock 2
+.latch    n_n17 n_n32 re clock 2
+.latch    n_n18 n_n33 re clock 2
+.names n_n32 n_n33 dk27_out_0_
+10 1
+.names n_n33 [11] dk27_out_1_
+11 1
+.names dk27_in [12] n_n16
+11 1
+.names [21] [22] n_n17
+1- 1
+-1 1
+.names [17] [18] n_n18
+1- 1
+-1 1
+.names [10] [16] [11]
+1- 1
+-1 1
+.names dk27_out_0_ [25] [12]
+1- 1
+-1 1
+.names [23] [24] [14]
+1- 1
+-1 1
+.names n_n31 [19] [15]
+1- 1
+-1 1
+.names n_n31 n_n33 [13]
+1- 1
+-1 1
+.names n_n31 n_n32 [10]
+00 1
+.names dk27_in n_n32 [16]
+11 1
+.names n_n32 [15] [17]
+01 1
+.names dk27_in n_n31 [18]
+01 1
+.names dk27_in n_n33 [19]
+10 1
+.names n_n33 [68] [21]
+01 1
+.names n_n33 [14] [22]
+11 1
+.names n_n31 n_n32 [23]
+01 1
+.names dk27_in n_n31 [24]
+11 1
+.names n_n32 [13] [25]
+01 1
+.names n_n32 n_n31 [68]
+00 1
+.end

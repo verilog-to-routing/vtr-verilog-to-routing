@@ -1,0 +1,5 @@
+This is a directory where unsupported syntax code rest.
+
+Until these are supported, all code must be modified to remove all instances of these unsupported commands.
+
+They were created and compiled in Quartus, which is why there are so many clutter files.

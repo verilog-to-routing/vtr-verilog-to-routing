@@ -1,0 +1,1183 @@
+.model top
+.inputs ppccconfirm pstarto ppccreqcode1 ptm0i ppccreqcode2 ptm1i ppccreqcode3 \
+ptm1l pwdcntxxxxstate1 pwdcntxxxxstate3 packl pwdcntxxxxstate2 pbus_inactive \
+ppccreq ppccsawreset plastrqsti pstarti preseti ptag_match packi ppccackcode \
+ppccack pvsacki pvtm0i psbcresetpcc pclk pslotspace_id_match pvtm1l \
+pphysrecxxxxstate1 pnubusactive pvtm0l pphysrecxxxxstate0 pcoherencystate2i \
+pgranti prqsti psinglestep pcoherencystate1i ppccreqcode0 pvackl pvacki \
+ppccsync
+.outputs pmasterxxxxen_vdbufi presetxxxxsbcresetpcc pwdcntxxxxwd_cnt1 \
+pmasterxxxxen_abufo pwdcntxxxxwd_cnt0 pwdcntxxxxwd_cnt2 pmasterxxxxen_pdbufo \
+pnubusxxxxnubusactive pphysrecxxxxnextstate0 pslavexxxxsbcreqcode2 \
+pwdcntxxxxnextstate3 pslavexxxxsbcreqcode0 pvirmachxxxxsbcsetdirty \
+pwdcntxxxxnextstate2 porxxxxen_start porxxxxsbcackcode0 pslavexxxxsbcreqcode1 \
+pslavexxxxsnoopstate_w pwdcntxxxxnextstate1 porxxxxvsacko presetxxxxreset \
+pvirmachxxxxen_vdbufo porxxxxreseto porxxxxsbcackcodelatch \
+pslavexxxxgeneratenextstate pvirmachxxxxsbcconfigure pmasterxxxxl_dbufo_if_tm0 \
+porxxxxacko pmasterxxxxsbc_writecache porxxxxen_vcntl pnubusxxxxl_pabufi \
+pnextstatexxxxcoherencystate2o pmasterxxxxrqsto porxxxxvacko \
+pslavexxxxl_vabufi pslavexxxxsnoopaddrfromproc porxxxxsbcackcode1 \
+porxxxxstarto pmasterxxxxl_pdbufi porxxxxsbcackcode2 pslavexxxxsbcreq \
+porxxxxl_dbufo porxxxxsbcackcode3 pslavexxxxsnoopvtagstate_r porxxxxtm0o \
+pphysrecxxxxnextstate1 pmasterxxxxarb_active porxxxxen_cntl porxxxxtm1o \
+pencodemuxxxxxmx_ad_8 pmasterxxxxen_pdbufi porxxxxsbcack porxxxxvtm1o \
+pslavexxxxsnoopvtag_w porxxxxvtm0o pvirmachxxxxsbccacherelease
+.latch    nresetxxxxnextstate0 nresetxxxxstate0 re pclk 2
+.latch    nnubusxxxxnextstate1 nnubusxxxxstate1 re pclk 2
+.latch    nslavexxxxnextstate0 nslavexxxxstate0 re pclk 2
+.latch    nslavexxxxnextstate1 nslavexxxxstate1 re pclk 2
+.latch    nslavexxxxnextstate2 nslavexxxxstate2 re pclk 2
+.latch    nmasterxxxxnextstate1 nmasterxxxxstate1 re pclk 2
+.latch    nmasterxxxxnextstate2 nmasterxxxxstate2 re pclk 2
+.latch    nmasterxxxxnextstate3 nmasterxxxxstate3 re pclk 2
+.latch    nnubusxxxxnextstate0 nnubusxxxxstate0 re pclk 2
+.latch    nmasterxxxxnextstate0 nmasterxxxxstate0 re pclk 2
+.latch    nresetxxxxnextstate1 nresetxxxxstate1 re pclk 2
+.latch    norxxxxset_ex_wd_cnt1 nset_ex_wd_cnt1 re pclk 2
+.latch    nresetxxxxnextstate2 nresetxxxxstate2 re pclk 2
+.latch    norxxxxreset_wd_cnt_x nreset_wd_cnt re pclk 2
+.latch    nvirmachxxxxnextstate0 nvirmachxxxxstate0 re pclk 2
+.latch    nwdcntxxxxwd_cnt_test nwd_cnt_test re pclk 2
+.latch    nvirmachxxxxnextstate1 nvirmachxxxxstate1 re pclk 2
+.latch    norxxxxincr_wd_cnt nincr_wd_cnt re pclk 2
+.latch    nwdcntxxxxnextstate0 nwdcntxxxxstate0 re pclk 2
+.latch    nmasterxxxxv_receive_begin nv_receive_begin re pclk 2
+.latch    norxxxxgen_reset ngen_reset re pclk 2
+.latch    nmasterxxxxp_receive_begin np_receive_begin re pclk 2
+.latch    nnubusxxxxintr_req nintr_req re pclk 2
+.latch    nslavexxxxintr_done nintr_done re pclk 2
+.latch    nslavexxxxv_transmit_begin nv_transmit_begin re pclk 2
+.latch    nmasterxxxxupdatereq nupdatereq re pclk 2
+.latch    nslavexxxxsnoopvtag_w nupdatedone re pclk 2
+.names psbcresetpcc nmasterxxxxstate0 pmasterxxxxen_vdbufi
+01 1
+.names preseti nresetxxxxstate0 [1867] presetxxxxsbcresetpcc
+1-- 1
+-1- 1
+--1 1
+.names ppccreqcode1 ppccreqcode2 [478] [1832] pmasterxxxxen_abufo
+0-00 1
+-000 1
+.names [123] [172] [242] [1872] pnubusxxxxnubusactive
+1-1- 1
+-1-1 1
+.names nwd_cnt_test [120] [220] [1873] pphysrecxxxxnextstate0
+1-1- 1
+-1-1 1
+.names nslavexxxxstate1 nslavexxxxstate2 [227] [422] pslavexxxxsbcreqcode2
+---1 1
+011- 1
+.names [421] [1857] [1858] [1879] pslavexxxxsbcreqcode0
+1--- 1
+-001 1
+.names pvacki nvirmachxxxxstate0 [1882] pvirmachxxxxsbcsetdirty
+111 1
+.names psbcresetpcc [243] [405] [1891] porxxxxen_start
+--1- 1
+---1 1
+01-- 1
+.names psbcresetpcc n_n157 [142] [1898] porxxxxsbcackcode0
+-1-- 1
+0-1- 1
+0--1 1
+.names ptag_match pvtm0l [245] [1858] pslavexxxxsbcreqcode1
+1110 1
+.names nslavexxxxsnoopvtag_w n_n64 pslavexxxxsnoopstate_w
+1- 1
+-0 1
+.names nmasterxxxxp_receive_begin [1860] [1906] porxxxxvsacko
+0-- 1
+-1- 1
+--1 1
+.names preseti nresetxxxxstate2 presetxxxxreset
+11 1
+.names psbcresetpcc nvirmachxxxxstate0 nvirmachxxxxstate1 \
+pvirmachxxxxen_vdbufo
+010 1
+.names preseti [248] [286] [285] porxxxxreseto
+--0- 1
+---0 1
+01-- 1
+.names psbcresetpcc [142] [1898] [1915] porxxxxsbcackcodelatch
+---1 1
+01-- 1
+0-1- 1
+.names [393] [1857] [1858] [1859] pslavexxxxgeneratenextstate
+000- 1
+-001 1
+.names ppccack pvirmachxxxxen_vdbufo [232] [283] pvirmachxxxxsbcconfigure
+-1-- 1
+0-0- 1
+0--0 1
+.names n_n215 n_n126 [1893] [1916] porxxxxacko
+1--- 1
+---1 1
+-11- 1
+.names psbcresetpcc nmasterxxxxstate0 [1918] pmasterxxxxsbc_writecache
+1-- 1
+-0- 1
+--1 1
+.names [114] [230] [250] [1924] porxxxxen_vcntl
+---1 1
+011- 1
+.names preseti nintr_done [346] [347] pnubusxxxxl_pabufi
+0--- 1
+-0-- 1
+--1- 1
+---1 1
+.names ptm1l pvtm1l pcoherencystate2i pnextstatexxxxcoherencystate2o
+001 1
+.names psbcresetpcc nmasterxxxxstate0 [213] [210] pmasterxxxxrqsto
+---1 1
+011- 1
+.names pvirmachxxxxsbccacherelease [124] [1910] porxxxxvacko
+1-- 1
+-11 1
+.names [253] [204] [1932] [1934] pslavexxxxl_vabufi
+-1-- 1
+---1 1
+1-1- 1
+.names ptm0i n_n93 [188] [191] porxxxxsbcackcode1
+--1- 1
+01-- 1
+0--1 1
+.names psbcresetpcc psinglestep n_n107 n_n126 porxxxxstarto
+001- 1
+00-1 1
+.names [228] [264] [169] [1948] porxxxxsbcackcode2
+--1- 1
+---1 1
+11-- 1
+.names [218] [227] n_n64 [422] pslavexxxxsbcreq
+--0- 1
+---1 1
+11-- 1
+.names [164] [1951] porxxxxl_dbufo
+1- 1
+-1 1
+.names preseti nresetxxxxstate2 [286] [285] porxxxxsbcackcode3
+--0- 1
+---0 1
+01-- 1
+.names n_n226 [392] [1900] pslavexxxxsnoopvtagstate_r
+-1- 1
+1-1 1
+.names [123] [124] [1750] [1910] porxxxxtm0o
+1-1- 1
+-1-1 1
+.names [234] [265] [1953] pphysrecxxxxnextstate1
+1-- 1
+-11 1
+.names psbcresetpcc [344] [345] [1954] pmasterxxxxarb_active
+01-- 1
+0-1- 1
+0--1 1
+.names [123] [155] [1955] porxxxxen_cntl
+-1- 1
+1-1 1
+.names ppccreqcode0 porxxxxtm0o [173] [150] porxxxxtm1o
+1--- 1
+-0-- 1
+--1- 1
+---1 1
+.names ppccreqcode1 ppccreqcode2 ppccreqcode3 ppccreqcode0 \
+pencodemuxxxxxmx_ad_8
+100- 1
+-000 1
+.names nmasterxxxxacko [136] [1962] porxxxxsbcack
+1-- 1
+-1- 1
+--1 1
+.names ppccreqcode1 nmasterxxxxp_receive_begin porxxxxvtm1o
+11 1
+.names nmasterxxxxp_receive_begin nslavexxxxv_transmit_begin [1860] [1964] \
+porxxxxvtm0o
+0--- 1
+-1-- 1
+--1- 1
+---1 1
+.names psbcresetpcc nvirmachxxxxstate0 nwd_cnt_test nvirmachxxxxstate1 \
+pvirmachxxxxsbccacherelease
+0110 1
+.names preseti nresetxxxxstate2 [1749] nresetxxxxnextstate0
+101 1
+.names [123] [1750] [1753] [1754] nnubusxxxxnextstate1
+11-- 1
+--11 1
+.names [225] n_n46 [585] [1757] nslavexxxxnextstate0
+--1- 1
+11-- 1
+1--1 1
+.names preseti n_n46 [1758] [1762] nslavexxxxnextstate1
+---1 1
+011- 1
+.names preseti [567] [1770] nslavexxxxnextstate2
+01- 1
+0-1 1
+.names psbcresetpcc nmasterxxxxstate0 [304] [1784] nmasterxxxxnextstate1
+---1 1
+01-- 1
+0-1- 1
+.names [539] [540] [542] [1792] nmasterxxxxnextstate2
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names psbcresetpcc n_n32 [1807] [1813] nmasterxxxxnextstate3
+---1 1
+01-- 1
+0-1- 1
+.names [123] [280] [1814] [1815] nnubusxxxxnextstate0
+11-- 1
+--11 1
+.names [485] [488] [1826] nmasterxxxxnextstate0
+1-- 1
+-1- 1
+--1 1
+.names ppccsawreset preseti nresetxxxxstate2 [284] nresetxxxxnextstate1
+-11- 1
+0--1 1
+.names ppccreqcode0 [332] [476] norxxxxset_ex_wd_cnt1
+--1 1
+11- 1
+.names preseti nresetxxxxstate2 [474] nresetxxxxnextstate2
+--1 1
+11- 1
+.names nmasterxxxxv_receive_begin [159] [470] [471] norxxxxreset_wd_cnt_x
+1--- 1
+-0-- 1
+--1- 1
+---1 1
+.names psbcresetpcc [134] [1841] nvirmachxxxxnextstate0
+--1 1
+01- 1
+.names nwdcntxxxxnextstate0 [127] [1846] nwdcntxxxxwd_cnt_test
+1-- 1
+-11 1
+.names psbcresetpcc [134] [275] [1847] nvirmachxxxxnextstate1
+01-- 1
+--11 1
+.names [220] [457] [1850] [1852] norxxxxincr_wd_cnt
+-1-- 1
+---1 1
+1-1- 1
+.names pwdcntxxxxstate3 pwdcntxxxxstate2 [464] [1843] nwdcntxxxxnextstate0
+--1- 1
+00-1 1
+.names psbcresetpcc nmasterxxxxstate3 nmasterxxxxstate0 [1772] \
+nmasterxxxxv_receive_begin
+0111 1
+.names psbcresetpcc [286] [1803] [1804] norxxxxgen_reset
+-0-- 1
+0-00 1
+.names ppccreqcode2 ppccreqcode0 [478] [1832] nmasterxxxxp_receive_begin
+11-- 1
+-11- 1
+-1-1 1
+.names pslotspace_id_match nnubusxxxxstate1 nnubusxxxxstate0 [1856] \
+nnubusxxxxintr_req
+-011 1
+1101 1
+.names preseti nslavexxxxstate0 [137] nslavexxxxintr_done
+1-1 1
+-11 1
+.names ptag_match pvtm0l [1858] [1859] nslavexxxxv_transmit_begin
+1101 1
+.names nmasterxxxxp_receive_begin [443] [1860] [1861] nmasterxxxxupdatereq
+0--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [227] [257] [256] [1863] nslavexxxxsnoopvtag_w
+1111 1
+.names pwdcntxxxxstate2 psbcresetpcc nreset_wd_cnt [127]
+111 1
+.names pwdcntxxxxstate1 pwdcntxxxxstate3 nincr_wd_cnt [239]
+1-- 1
+-0- 1
+--0 1
+.names [127] [239] [1868] [1869] nwdcntxxxxwd_cnt1
+11-- 1
+--11 1
+.names pwdcntxxxxstate3 [432] [433] nwdcntxxxxwd_cnt0
+11- 1
+1-1 1
+.names pwdcntxxxxstate3 nincr_wd_cnt [127] [431] nwdcntxxxxwd_cnt2
+---1 1
+111- 1
+.names psbcresetpcc nmasterxxxxstate0 n_n74
+1- 1
+-0 1
+.names packl nmasterxxxxstate2 [216]
+01 1
+.names packl nmasterxxxxstate2 [1786] nmasterxxxxl_dbufo_if_tm0
+011 1
+.names pstarti preseti packi [123]
+000 1
+.names pstarti nnubusxxxxstate1 nnubusxxxxstate0 [172]
+100 1
+.names nnubusxxxxstate1 nnubusxxxxstate0 nintr_done [242]
+01- 1
+1-0 1
+.names pphysrecxxxxstate1 pphysrecxxxxstate0 nv_receive_begin [120]
+-1- 1
+1-1 1
+.names ptm0i packi psbcresetpcc pphysrecxxxxstate1 [220]
+1001 1
+.names nslavexxxxstate1 nslavexxxxstate2 [218]
+01 1
+.names preseti packi nslavexxxxstate0 [227]
+000 1
+.names pvsacki nslavexxxxstate1 nslavexxxxstate2 [229]
+011 1
+.names psbcresetpcc pphysrecxxxxstate1 pphysrecxxxxstate0 np_receive_begin \
+[234]
+0111 1
+.names n_n724 [217] [412] [1890] [243]
+1--- 1
+---1 1
+-00- 1
+.names [309] [1855] n_n157
+11 1
+.names ptm1l pvtm1l pcoherencystate2i pcoherencystate1i [245]
+001- 1
+1-01 1
+00-0 1
+.names [393] [1857] [1858] [1859] n_n64
+-1-- 1
+--1- 1
+1--0 1
+.names psbcresetpcc nvirmachxxxxstate0 nwd_cnt_test nvirmachxxxxstate1 [148]
+0100 1
+.names preseti nslavexxxxstate0 [225]
+01 1
+.names [224] [249] [1907] [1909] [248]
+-11- 1
+1--1 1
+.names packi psbcresetpcc [228]
+10 1
+.names [217] [1828] [1893] [1916] nmasterxxxxacko
+---1 1
+111- 1
+.names pstarti preseti packi [1750] n_n215
+0001 1
+.names psbcresetpcc nmasterxxxxstate3 nmasterxxxxstate0 [125]
+011 1
+.names pstarti nmasterxxxxstate2 [201]
+01 1
+.names ppccreqcode1 ppccreqcode2 ppccreqcode3 ppccreq [114]
+--1- 1
+---0 1
+11-- 1
+.names nmasterxxxxstate1 nmasterxxxxstate2 nmasterxxxxstate3 [124]
+001 1
+.names psbcresetpcc psinglestep [230]
+00 1
+.names ppccconfirm [235] [217] [1828] [250]
+-1-- 1
+1-11 1
+.names pstarti nnubusxxxxstate1 nnubusxxxxstate0 [224]
+000 1
+.names nmasterxxxxstate1 nmasterxxxxstate2 nmasterxxxxstate3 [213]
+000 1
+.names packi nslavexxxxstate0 n_n301
+00 1
+.names pstarti packi nslavexxxxstate0 [253]
+11- 1
+001 1
+.names nslavexxxxstate1 nslavexxxxstate2 [257]
+0- 1
+-1 1
+.names pstarto pstarti pvtm0l nslavexxxxstate2 [256]
+-0-- 1
+---1 1
+1-1- 1
+.names [185] [1940] [1941] nmasterxxxxl_pdbufi
+1-1 1
+-11 1
+.names packl [201] [374] [1911] n_n93
+1-1- 1
+11-1 1
+.names [120] [182] [1945] [1946] [264]
+-1-- 1
+---1 1
+1-1- 1
+.names ppccreqcode2 [478] [1832] [159]
+1-- 1
+-1- 1
+--1 1
+.names ppccreqcode2 [478] [1832] [173]
+11- 1
+1-1 1
+.names pstarti nslavexxxxstate1 nslavexxxxstate2 n_n226
+100 1
+.names nslavexxxxstate0 nslavexxxxstate1 nslavexxxxstate2 [198]
+100 1
+.names ptm0i pphysrecxxxxstate0 nwd_cnt_test nv_receive_begin [265]
+-1-- 1
+---0 1
+1-1- 1
+.names pstarti pvackl nmasterxxxxstate1 nmasterxxxxstate2 [269]
+-11- 1
+0--1 1
+.names nmasterxxxxstate1 nmasterxxxxstate2 nmasterxxxxstate3 [129]
+110 1
+.names pvacki nvirmachxxxxstate0 nvirmachxxxxstate1 nv_receive_begin [134]
+011- 1
+-001 1
+.names psbcresetpcc nvirmachxxxxstate0 [232]
+00 1
+.names nvirmachxxxxstate1 nv_transmit_begin [275]
+1- 1
+-1 1
+.names pstarti nmasterxxxxstate1 nmasterxxxxstate2 [276]
+-1- 1
+0-1 1
+.names [276] [417] [1887] n_n724
+-1- 1
+1-1 1
+.names pstarti nmasterxxxxstate0 [213] n_n137
+111 1
+.names nnubusxxxxstate1 nnubusxxxxstate0 nintr_done [280]
+01- 1
+1-0 1
+.names ptag_match nslavexxxxstate1 [590] [592] n_n46
+00-- 1
+-01- 1
+-0-1 1
+.names nvirmachxxxxstate1 nv_receive_begin nv_transmit_begin [283]
+1-- 1
+-01 1
+.names preseti nresetxxxxstate0 nresetxxxxstate1 nresetxxxxstate2 [284]
+---1 1
+01-- 1
+0-1- 1
+.names [309] [113] [1855] [286]
+0-- 1
+-1- 1
+--0 1
+.names ppccreqcode3 ppccreq psbcresetpcc [1804] [285]
+0--- 1
+-0-- 1
+--1- 1
+---1 1
+.names prqsti nmasterxxxxstate1 nmasterxxxxstate2 nmasterxxxxstate3 [235]
+0001 1
+.names nmasterxxxxstate0 [114] [235] n_n107
+001 1
+.names pgranti nmasterxxxxstate1 nmasterxxxxstate2 nmasterxxxxstate3 [217]
+1110 1
+.names pbus_inactive pvsacki [217] n_n126
+101 1
+.names ppccreqcode3 ppccreq [199]
+1- 1
+-0 1
+.names nmasterxxxxstate3 nmasterxxxxstate0 [292]
+0- 1
+-1 1
+.names pslotspace_id_match ppccsync nslavexxxxstate2 nintr_req [296]
+--0- 1
+11-- 1
+-1-1 1
+.names ptm1l pstarti nslavexxxxstate2 [295]
+1-- 1
+-0- 1
+--1 1
+.names ppccreqcode2 ppccreqcode0 [221]
+11 1
+.names n_n137 [554] [557] [558] [304]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names psbcresetpcc nmasterxxxxstate1 nmasterxxxxstate0 [231]
+000 1
+.names ptm0i pstarti [308]
+1- 1
+-1 1
+.names ptm0i ptm1i nwd_cnt_test nv_receive_begin [309]
+--0- 1
+0--0 1
+-0-0 1
+.names pvsacki pvtm0i nmasterxxxxstate2 [115]
+1-0 1
+-00 1
+.names pstarti pvsacki [130]
+11 1
+00 1
+.names ppccack nslavexxxxstate1 nslavexxxxstate2 [137]
+0-- 1
+-0- 1
+--1 1
+.names nmasterxxxxstate1 nmasterxxxxstate3 [214]
+10 1
+.names ppccreqcode1 ppccreqcode2 [478] [1832] [332]
+11-- 1
+-11- 1
+-1-1 1
+.names [237] [533] [1796] [1797] [334]
+---1 1
+11-- 1
+1-1- 1
+.names prqsti nmasterxxxxstate0 [334] [529] n_n32
+---1 1
+001- 1
+.names ppccreqcode1 ppccreqcode2 ppccreqcode0 [113]
+1-- 1
+-1- 1
+--0 1
+.names pbus_inactive pvsacki pgranti psinglestep [122]
+0--- 1
+-1-- 1
+--0- 1
+---1 1
+.names nmasterxxxxstate1 nmasterxxxxstate3 [237]
+01 1
+.names [401] [403] [404] [142]
+1-- 1
+-1- 1
+--1 1
+.names ppccconfirm ppccreqcode3 pbus_inactive ppccreq [219]
+1011 1
+.names ptm1l pvtm1l pcoherencystate2i pcoherencystate1i [247]
+00-- 1
+--01 1
+.names packi nnubusxxxxstate1 nintr_done [249]
+00- 1
+-10 1
+.names pslotspace_id_match ppccsync nintr_req [300]
+-1- 1
+0-0 1
+.names ppccreqcode1 ppccreqcode2 prqsti ppccreqcode0 [305]
+--1- 1
+00-1 1
+.names [199] [547] [1788] [1789] [311]
+-1-- 1
+0-11 1
+.names nmasterxxxxstate3 [122] [1800] [1801] [324]
+1--- 1
+-01- 1
+-0-1 1
+.names packl pstarti nmasterxxxxstate2 nmasterxxxxstate3 [330]
+0-1- 1
+-011 1
+.names nwdcntxxxxwd_cnt1 pwdcntxxxxwd_cnt1
+1 1
+.names nwdcntxxxxwd_cnt0 pwdcntxxxxwd_cnt0
+1 1
+.names nwdcntxxxxwd_cnt2 pwdcntxxxxwd_cnt2
+1 1
+.names nmasterxxxxl_dbufo_if_tm0 pmasterxxxxen_pdbufo
+1 1
+.names nwdcntxxxxwd_cnt0 pwdcntxxxxnextstate3
+1 1
+.names nwdcntxxxxwd_cnt1 pwdcntxxxxnextstate2
+1 1
+.names nwdcntxxxxwd_cnt2 pwdcntxxxxnextstate1
+1 1
+.names nmasterxxxxl_dbufo_if_tm0 pmasterxxxxl_dbufo_if_tm0
+1 1
+.names nslavexxxxsnoopvtag_w pslavexxxxsnoopaddrfromproc
+1 1
+.names nmasterxxxxl_pdbufi pmasterxxxxl_pdbufi
+1 1
+.names nmasterxxxxl_pdbufi pmasterxxxxen_pdbufi
+1 1
+.names nslavexxxxsnoopvtag_w pslavexxxxsnoopvtag_w
+1 1
+.names ppccackcode psbcresetpcc nvirmachxxxxstate0 nvirmachxxxxstate1 [116]
+0010 1
+.names psbcresetpcc [144] [403] [404] [136]
+01-- 1
+0-1- 1
+0--1 1
+.names ppccreqcode2 ppccreqcode0 [1803] [1804] [144]
+1-00 1
+-100 1
+.names ppccreqcode1 ppccreqcode2 [478] [1832] [150]
+01-- 1
+0-1- 1
+0--1 1
+.names psbcresetpcc n_n724 [217] [412] [155]
+01-- 1
+0-00 1
+.names ppccreqcode2 ppccreqcode0 [478] [1832] [164]
+00-- 1
+-000 1
+.names psbcresetpcc [142] [177] [178] [169]
+01-- 1
+0-1- 1
+0--1 1
+.names preseti nresetxxxxstate1 nresetxxxxstate2 [174]
+001 1
+.names [114] [217] [1828] [1942] [177]
+1111 1
+.names ppccreqcode2 ppccreqcode0 [1803] [1804] [178]
+1100 1
+.names ptm0i pphysrecxxxxstate1 nwd_cnt_test nv_receive_begin [182]
+-10- 1
+01-0 1
+.names pstarti pvsacki nmasterxxxxstate2 [185]
+111 1
+001 1
+.names [193] [1938] [1939] [188]
+1-1 1
+-11 1
+.names packi psbcresetpcc [120] [191]
+101 1
+.names ptm0i ptm1i nv_receive_begin [193]
+100 1
+.names packi nslavexxxxstate0 n_n226 [208] [204]
+101- 1
+10-1 1
+.names pslotspace_id_match nslavexxxxstate1 nslavexxxxstate2 nintr_req [208]
+11-- 1
+-11- 1
+1-0- 1
+-1-1 1
+--01 1
+.names psbcresetpcc [342] [344] [345] [210]
+01-- 1
+0-1- 1
+0--1 1
+.names nmasterxxxxstate1 nmasterxxxxstate2 nmasterxxxxstate3 [122] [342]
+1101 1
+.names prqsti nmasterxxxxstate3 [1928] [344]
+0-1 1
+-11 1
+.names psinglestep nmasterxxxxstate3 [199] [1788] [345]
+1-01 1
+-001 1
+.names pstarti packi nnubusxxxxstate1 nnubusxxxxstate0 [346]
+0111 1
+1100 1
+.names pstarti packi nnubusxxxxstate1 nnubusxxxxstate0 [347]
+0000 1
+.names packl pvsacki nmasterxxxxstate2 [360]
+011 1
+.names packl pstarti nmasterxxxxstate2 [361]
+001 1
+.names packi psbcresetpcc pphysrecxxxxstate1 pphysrecxxxxstate0 [366]
+100- 1
+10-0 1
+.names psbcresetpcc nmasterxxxxstate1 nmasterxxxxstate3 nmasterxxxxstate0 \
+[374]
+0111 1
+.names [225] [247] [388] [1902] [381]
+1-1- 1
+11-1 1
+.names ppccack nslavexxxxstate2 [388]
+00 1
+.names preseti nslavexxxxstate0 nslavexxxxstate1 nslavexxxxstate2 [392]
+0100 1
+.names ptm1l pvtm1l pcoherencystate2i pcoherencystate1i [393]
+1-1- 1
+-11- 1
+1--0 1
+-1-0 1
+.names ppccreqcode3 ppccreq ppccreqcode0 [1804] [398]
+1110 1
+.names ppccreqcode3 ppccreq [1804] [1897] [401]
+1101 1
+.names ppccreq nmasterxxxxstate0 [124] [1895] [403]
+1011 1
+.names ppccreqcode1 ppccreqcode3 ppccreq [1804] [404]
+1110 1
+.names ptm0i ptm1i nv_receive_begin [1885] [405]
+--11 1
+11-1 1
+.names pbus_inactive [124] [113] [1889] [412]
+10-- 1
+1-01 1
+.names nmasterxxxxstate2 nmasterxxxxstate3 nmasterxxxxstate0 [417]
+110 1
+.names pvtm1l [1857] [1858] [1859] [421]
+1001 1
+.names [123] [229] [1877] [422]
+111 1
+.names pwdcntxxxxstate1 psbcresetpcc nreset_wd_cnt [431]
+111 1
+.names psbcresetpcc nreset_wd_cnt nincr_wd_cnt nwdcntxxxxstate0 [432]
+110- 1
+11-1 1
+.names pwdcntxxxxstate1 pwdcntxxxxstate2 psbcresetpcc nreset_wd_cnt [433]
+1111 1
+.names psbcresetpcc nmasterxxxxstate1 nmasterxxxxstate0 nupdatedone [442]
+0000 1
+.names ppccreqcode1 [478] [1832] [443]
+01- 1
+0-1 1
+.names packl nmasterxxxxstate2 [308] [1786] [457]
+0111 1
+.names pwdcntxxxxstate1 psbcresetpcc nset_ex_wd_cnt1 nreset_wd_cnt [464]
+0011 1
+.names pstarto pvtm0l [227] n_n226 [470]
+0111 1
+.names ppccreqcode1 ppccreqcode0 [478] [1832] [471]
+1-1- 1
+-11- 1
+1--1 1
+-1-1 1
+.names preseti nresetxxxxstate0 nresetxxxxstate1 ngen_reset [474]
+11-- 1
+1-1- 1
+1--0 1
+.names ppccreqcode1 [478] [1832] [1833] [476]
+1--1 1
+-1-1 1
+--11 1
+.names [217] [292] [1828] [1831] [478]
+01-- 1
+-10- 1
+-1-1 1
+.names psbcresetpcc nmasterxxxxstate0 [1818] [1819] [485]
+011- 1
+01-1 1
+.names nmasterxxxxstate0 [114] [230] [235] [486]
+0011 1
+.names psbcresetpcc pvackl nmasterxxxxstate3 nmasterxxxxstate0 [487]
+0111 1
+.names psbcresetpcc [213] [499] [1821] [488]
+100- 1
+1-00 1
+.names pvsacki pvtm0i nmasterxxxxstate2 nmasterxxxxstate3 [491]
+0111 1
+.names packl pstarti nmasterxxxxstate1 nmasterxxxxstate2 [493]
+0-1- 1
+00-1 1
+.names pvackl nmasterxxxxstate1 [495]
+10 1
+.names pgranti [114] [129] [1823] [499]
+0-1- 1
+-011 1
+.names [125] [115] [507] [504]
+11- 1
+1-1 1
+.names packl pstarti pvsacki nmasterxxxxstate2 [507]
+011- 1
+0001 1
+.names packl plastrqsti nmasterxxxxstate1 nmasterxxxxstate3 [511]
+0-11 1
+-011 1
+.names psinglestep nmasterxxxxstate1 nmasterxxxxstate2 nmasterxxxxstate3 [513]
+1001 1
+.names pvsacki pvackl nmasterxxxxstate1 [515]
+10- 1
+1-0 1
+.names ppccreqcode3 ppccreq [1804] [1805] [519]
+1101 1
+.names ppccreqcode3 ppccreq nmasterxxxxstate3 [1788] [529]
+0101 1
+.names ppccreqcode1 ppccreqcode2 ppccreqcode3 psinglestep [533]
+--01 1
+000- 1
+.names packl nmasterxxxxstate2 [130] [1786] [539]
+0111 1
+.names psbcresetpcc nmasterxxxxstate3 [311] [545] [540]
+0--1 1
+011- 1
+.names psbcresetpcc nmasterxxxxstate3 nmasterxxxxstate0 [115] [542]
+1--0 1
+-0-0 1
+--00 1
+.names [217] [219] [1790] [545]
+10- 1
+1-1 1
+.names nmasterxxxxstate1 nmasterxxxxstate2 nmasterxxxxstate0 [547]
+100 1
+.names packl psbcresetpcc nmasterxxxxstate1 nmasterxxxxstate0 [550]
+0011 1
+.names [199] [237] [305] [1781] [554]
+001- 1
+0-11 1
+.names pvsacki pgranti nmasterxxxxstate1 nmasterxxxxstate3 [557]
+1110 1
+.names psinglestep [217] [219] [559] [558]
+11-- 1
+-10- 1
+-1-1 1
+.names ppccreqcode1 ppccreqcode2 ppccreqcode0 [559]
+11- 1
+001 1
+.names ptag_match [592] [1764] [564]
+0-1 1
+-11 1
+.names ppccsync [198] [569] [566]
+01- 1
+0-1 1
+.names nslavexxxxstate2 n_n301 [300] [572] [567]
+1--1 1
+111- 1
+.names pstarti packi nslavexxxxstate1 nslavexxxxstate2 [569]
+1000 1
+.names nslavexxxxstate1 [573] [1767] [572]
+11- 1
+1-1 1
+.names pstarti packi pnubusactive nintr_req [573]
+10-- 1
+-010 1
+.names pstarti nslavexxxxstate1 nslavexxxxstate2 [1755] [585]
+1001 1
+.names ptm1l pvtm0l pcoherencystate2i pcoherencystate1i [590]
+01-- 1
+-10- 1
+-1-0 1
+.names ptm1l pvtm1l pcoherencystate2i pcoherencystate1i [592]
+--00 1
+000- 1
+.names nresetxxxxstate0 nresetxxxxstate1 ngen_reset [1749]
+001 1
+.names nnubusxxxxstate1 nnubusxxxxstate0 nintr_done [1750]
+011 1
+.names preseti packi nintr_done [1753]
+10- 1
+-01 1
+.names pstarti pslotspace_id_match nnubusxxxxstate1 nnubusxxxxstate0 [1754]
+1-1- 1
+0-0- 1
+1--1 1
+--01 1
+01-0 1
+-110 1
+.names preseti packi pvtm0l [1755]
+001 1
+.names pvsacki nslavexxxxstate1 nslavexxxxstate2 [1757]
+--0 1
+11- 1
+.names preseti nslavexxxxstate0 nslavexxxxstate2 [1758]
+011 1
+.names preseti packi nslavexxxxstate0 [1760]
+01- 1
+0-1 1
+.names nslavexxxxstate1 [296] [295] [1760] [1762]
+1--- 1
+-111 1
+.names nslavexxxxstate0 nslavexxxxstate1 nslavexxxxstate2 [1764]
+101 1
+.names pstarto packi pvtm0l nslavexxxxstate0 [1765]
+10-0 1
+-000 1
+.names packi pvsacki nslavexxxxstate0 [1767]
+-11 1
+0-0 1
+.names n_n226 [137] [1765] [1768]
+-0- 1
+1-1 1
+.names [564] [566] [1768] [1770]
+1-- 1
+-1- 1
+--1 1
+.names pstarti pvsacki pvtm0i nmasterxxxxstate2 [1772]
+0111 1
+.names pvsacki psbcresetpcc nmasterxxxxstate0 [1774]
+101 1
+.names psinglestep nmasterxxxxstate2 nmasterxxxxstate0 [1781]
+1-- 1
+-00 1
+.names nmasterxxxxstate1 nmasterxxxxstate3 [550] [1774] [1784]
+--1- 1
+10-1 1
+.names psbcresetpcc nmasterxxxxstate3 nmasterxxxxstate0 [1786]
+001 1
+.names prqsti nmasterxxxxstate2 nmasterxxxxstate0 [1788]
+000 1
+.names ppccreqcode1 ppccreqcode2 psinglestep ppccreqcode0 [1789]
+100- 1
+0-00 1
+.names ppccreqcode1 pvsacki psinglestep ppccreqcode0 [1790]
+1--- 1
+-1-- 1
+--1- 1
+---0 1
+.names psbcresetpcc nmasterxxxxstate1 nmasterxxxxstate0 nupdatedone [1792]
+0-1- 1
+0000 1
+.names ppccreqcode1 ppccreqcode2 ppccreq ppccreqcode0 [1796]
+--0- 1
+-1-1 1
+1--0 1
+.names nmasterxxxxstate1 nmasterxxxxstate2 nmasterxxxxstate3 [1797]
+-11 1
+100 1
+.names ppccconfirm ppccreqcode3 ppccreq [1800]
+0-- 1
+-1- 1
+--0 1
+.names ppccreqcode1 ppccreqcode2 ppccreqcode0 [1801]
+11- 1
+00- 1
+0-1 1
+1-0 1
+.names nmasterxxxxstate2 nmasterxxxxstate1 [1802]
+11 1
+.names ppccreq ppccreqcode3 [1803]
+0- 1
+-0 1
+.names nmasterxxxxstate1 nmasterxxxxstate2 nmasterxxxxstate0 [1804]
+1-- 1
+-1- 1
+--1 1
+.names ppccreqcode1 ppccreqcode2 ppccreqcode0 nmasterxxxxstate3 [1805]
+1--1 1
+-1-1 1
+--01 1
+.names n_n137 [324] [519] [1802] [1807]
+1--- 1
+--1- 1
+-1-1 1
+.names pstarti pvsacki nmasterxxxxstate2 [1809]
+0-1 1
+-01 1
+.names plastrqsti packl [1810]
+01 1
+.names [235] [511] [1811]
+1- 1
+-1 1
+.names [513] [515] [1809] [1810] [1812]
+1--- 1
+-1-1 1
+--11 1
+.names n_n74 [504] [1811] [1812] [1813]
+-1-- 1
+0-1- 1
+0--1 1
+.names pstarti ptm1i [1814]
+10 1
+.names preseti packi nnubusxxxxstate0 [1815]
+000 1
+.names pvsacki psinglestep [124] [493] [1818]
+---1 1
+1-1- 1
+-11- 1
+.names pvsacki [330] [491] [495] [1819]
+--1- 1
+---1 1
+11-- 1
+.names nmasterxxxxstate0 pstarti [1821]
+10 1
+.names ppccconfirm pbus_inactive pvsacki psinglestep [1823]
+1100 1
+.names [216] [214] [1774] [1786] [1824]
+-11- 1
+1--1 1
+.names [486] [487] [1824] [1826]
+1-- 1
+-1- 1
+--1 1
+.names pvsacki pbus_inactive [1828]
+01 1
+.names ppccconfirm prqsti nmasterxxxxstate1 nmasterxxxxstate2 [1831]
+0--- 1
+-1-- 1
+--1- 1
+---1 1
+.names ppccreqcode3 ppccreq psbcresetpcc psinglestep [1832]
+1--- 1
+-0-- 1
+--1- 1
+---1 1
+.names ppccreqcode0 ppccreqcode2 [1833]
+00 1
+.names ppccack psbcresetpcc nvirmachxxxxstate0 [1838]
+100 1
+.names nvirmachxxxxstate1 nv_transmit_begin [148] [1838] [1841]
+--1- 1
+1--1 1
+-1-1 1
+.names psbcresetpcc nreset_wd_cnt nwdcntxxxxstate0 [1843]
+111 1
+.names pwdcntxxxxstate1 pwdcntxxxxstate3 nincr_wd_cnt [1846]
+11- 1
+1-1 1
+.names ppccack psbcresetpcc nvirmachxxxxstate0 [1847]
+000 1
+.names pphysrecxxxxstate0 nwd_cnt_test nv_receive_begin [1850]
+000 1
+.names pvtm0i psbcresetpcc nv_transmit_begin [148] [1852]
+---1 1
+100- 1
+.names packi psbcresetpcc pphysrecxxxxstate1 pphysrecxxxxstate0 [1855]
+1010 1
+.names pstarti preseti packi nintr_done [1856]
+0000 1
+.names pvtm0l ptag_match [1857]
+0- 1
+-0 1
+.names preseti nslavexxxxstate0 nslavexxxxstate1 nslavexxxxstate2 [1858]
+1--- 1
+-0-- 1
+--1- 1
+---0 1
+.names pcoherencystate2i ptm1l [1859]
+10 1
+.names ppccreqcode1 [221] [478] [1832] [1860]
+-1-- 1
+0-00 1
+.names ppccreqcode2 [442] [478] [1832] [1861]
+-1-- 1
+1-1- 1
+1--1 1
+.names nslavexxxxstate1 nslavexxxxstate2 nupdatereq [1863]
+1-1 1
+-01 1
+.names ppccsawreset nresetxxxxstate1 nresetxxxxstate2 [1867]
+--1 1
+01- 1
+.names pwdcntxxxxstate2 pwdcntxxxxstate3 [1868]
+01 1
+.names psbcresetpcc nreset_wd_cnt nincr_wd_cnt [1869]
+111 1
+.names preseti packi nintr_done [1872]
+000 1
+.names psbcresetpcc packi [1873]
+00 1
+.names pnubusactive ppccsync nslavexxxxstate0 nintr_req [1877]
+1011 1
+.names ptm1l pcoherencystate2i pcoherencystate1i [1879]
+101 1
+.names pvtm0i psbcresetpcc nvirmachxxxxstate1 [1882]
+101 1
+.names plastrqsti psbcresetpcc pphysrecxxxxstate1 nwd_cnt_test [1885]
+0011 1
+.names packl plastrqsti nmasterxxxxstate0 [1887]
+101 1
+.names ppccreqcode3 ppccreq nmasterxxxxstate0 [1889]
+110 1
+.names plastrqsti packi pphysrecxxxxstate1 pphysrecxxxxstate0 [1890]
+-00- 1
+0--1 1
+-0-0 1
+.names packl nmasterxxxxstate2 [234] [1786] [1891]
+--1- 1
+01-1 1
+.names ppccconfirm psinglestep [114] [1893]
+00- 1
+-01 1
+.names ppccreqcode1 ppccreqcode2 prqsti psinglestep [1895]
+0-1- 1
+-01- 1
+0--1 1
+-0-1 1
+.names nmasterxxxxstate3 ppccreqcode2 [1897]
+11 1
+.names [217] [398] [1828] [1893] [1898]
+-1-- 1
+1-11 1
+.names pstarto preseti packi pvtm0l [1900]
+0001 1
+.names ptag_match pvtm0l nslavexxxxstate1 [1902]
+110 1
+.names psbcresetpcc pnextstatexxxxcoherencystate2o nvirmachxxxxstate0 [283] \
+[1903]
+-1-- 1
+0-01 1
+.names [148] n_n226 [392] [1900] [1904]
+1--- 1
+--1- 1
+-1-1 1
+.names [381] [1903] [1904] [1906]
+1-- 1
+-1- 1
+--1 1
+.names nnubusxxxxstate0 pstarti [1907]
+11 1
+.names nintr_done packi [1909]
+01 1
+.names pvsacki psbcresetpcc psinglestep nmasterxxxxstate0 [1910]
+0001 1
+.names psbcresetpcc nmasterxxxxstate3 nmasterxxxxstate0 [1911]
+001 1
+.names nupdatedone nmasterxxxxstate2 [1912]
+11 1
+.names preseti nresetxxxxstate2 [231] [1912] [1913]
+01-- 1
+--11 1
+.names [124] [366] [1910] [1914]
+-1- 1
+1-1 1
+.names n_n93 [1913] [1914] [1915]
+1-- 1
+-1- 1
+--1 1
+.names psbcresetpcc [124] [1910] [1916]
+0-- 1
+-0- 1
+--0 1
+.names [125] [360] [361] [1918]
+1-- 1
+-1- 1
+--1 1
+.names pstarti pvsacki psbcresetpcc nmasterxxxxstate0 [1920]
+1101 1
+.names psbcresetpcc nvirmachxxxxstate0 nvirmachxxxxstate1 [283] [1921]
+010- 1
+00-1 1
+.names [216] [125] [124] [1920] [1922]
+11-- 1
+--11 1
+.names nslavexxxxv_transmit_begin [1921] [1922] [1924]
+1-- 1
+-1- 1
+--1 1
+.names nmasterxxxxstate1 nmasterxxxxstate2 nmasterxxxxstate0 [1928]
+100 1
+.names packi nslavexxxxstate0 nslavexxxxstate2 [1930]
+000 1
+.names pvsacki nslavexxxxstate1 nslavexxxxstate2 nintr_req [1932]
+0110 1
+.names pstarti preseti nslavexxxxstate1 [1930] [1934]
+-1-- 1
+0-01 1
+.names ptm0i ptm1i pphysrecxxxxstate0 nwd_cnt_test [1938]
+--1- 1
+---0 1
+01-- 1
+.names packi psbcresetpcc pphysrecxxxxstate1 [1939]
+101 1
+.names pvsacki pvtm0i nmasterxxxxstate1 nmasterxxxxstate2 [1940]
+--1- 1
+1--0 1
+-0-0 1
+.names packl psbcresetpcc nmasterxxxxstate3 nmasterxxxxstate0 [1941]
+0011 1
+.names psinglestep ppccconfirm [1942]
+01 1
+.names ptm1i ptm0i [1945]
+01 1
+.names ptm0i ptm1i pphysrecxxxxstate1 pphysrecxxxxstate0 [1946]
+01-- 1
+--11 1
+.names ptm0i ptm1i n_n93 [174] [1948]
+---1 1
+011- 1
+101- 1
+.names ppccack [148] [232] [283] [1950]
+-1-- 1
+0-0- 1
+0--0 1
+.names ppccreqcode2 [478] [1832] [1950] [1951]
+---1 1
+000- 1
+.names packi psbcresetpcc pphysrecxxxxstate1 [1953]
+001 1
+.names pstarti nmasterxxxxstate0 [213] [217] [1954]
+---1 1
+111- 1
+.names pslotspace_id_match nnubusxxxxstate1 nnubusxxxxstate0 nintr_done [1955]
+00-- 1
+-01- 1
+0--1 1
+--11 1
+.names packl pvsacki psbcresetpcc nmasterxxxxstate0 [1960]
+1001 1
+.names [269] [309] [1855] [1960] [1961]
+-11- 1
+1--1 1
+.names n_n93 [1913] [1961] [1962]
+1-- 1
+-1- 1
+--1 1
+.names [116] [148] [1964]
+1- 1
+-1 1
+.end

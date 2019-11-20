@@ -1,0 +1,84 @@
+.model top
+.inputs dk17_in_1_ dk17_in_0_ clock
+.outputs dk17_out_2_ dk17_out_1_ dk17_out_0_
+.latch    n_n21 n_n48 re clock 2
+.latch    n_n22 n_n49 re clock 2
+.latch    n_n23 n_n50 re clock 2
+.names [19] [30] [31] dk17_out_2_
+1-- 1
+-1- 1
+--1 1
+.names [20] [28] [15] dk17_out_1_
+--1 1
+10- 1
+.names n_n50 [29] dk17_out_0_
+01 1
+.names n_n50 [44] [125] n_n21
+11- 1
+1-1 1
+.names [41] [127] n_n22
+1- 1
+-1 1
+.names dk17_in_1_ [24] [128] n_n23
+--1 1
+11- 1
+.names dk17_in_1_ n_n48 n_n50 [11]
+011 1
+.names dk17_in_0_ n_n48 [20]
+10 1
+.names n_n49 [12] [25] [24]
+-1- 1
+0-1 1
+.names dk17_in_1_ n_n50 [26]
+0- 1
+-0 1
+.names n_n49 n_n50 [28]
+1- 1
+-1 1
+.names dk17_in_0_ n_n48 n_n49 [29]
+1-1 1
+0-0 1
+-10 1
+.names n_n48 n_n50 [12]
+10 1
+.names dk17_in_0_ n_n48 n_n50 [25]
+--0 1
+10- 1
+.names dk17_in_0_ [17] [18] [15]
+01- 1
+0-1 1
+.names dk17_in_1_ n_n49 n_n50 [17]
+11- 1
+1-1 1
+.names n_n48 n_n49 n_n50 [18]
+110 1
+.names n_n49 n_n50 [129] [19]
+101 1
+.names dk17_in_0_ [32] [130] [30]
+11- 1
+1-1 1
+.names n_n49 [11] [31]
+11 1
+.names dk17_in_1_ n_n48 [32]
+11 1
+.names n_n49 n_n50 [20] [36]
+101 1
+.names dk17_in_0_ n_n49 n_n50 [41]
+010 1
+.names dk17_in_0_ n_n48 [44]
+00 1
+.names dk17_in_1_ n_n48 n_n49 [125]
+1-- 1
+-10 1
+.names [11] [20] [26] [127]
+1-- 1
+-11 1
+.names dk17_in_0_ [11] [36] [128]
+--1 1
+11- 1
+.names n_n48 dk17_in_1_ [129]
+00 1
+.names n_n48 n_n49 n_n50 [130]
+-1- 1
+1-0 1
+.end

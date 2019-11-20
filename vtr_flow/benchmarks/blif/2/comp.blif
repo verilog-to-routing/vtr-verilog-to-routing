@@ -1,0 +1,204 @@
+.model top
+.inputs pp pa0 pq pb0 pr pc0 ps pd0 pt pe0 pu pf0 pv pw px py pz pa pb pc pd \
+pe pf pg ph pi pj pk pl pm pn po
+.outputs pg0 ph0 pi0
+.names ph0 pi0 pg0
+00 1
+.names [219] [220] ph0
+11 1
+.names [224] [225] pi0
+1- 1
+-1 1
+.names [48] [202] nc1
+1- 1
+-1 1
+.names nd1 no0 nv0
+1- 1
+-1 1
+.names [15] [36] nm0
+1- 1
+-1 1
+.names nf1 ns0 nx0
+1- 1
+-1 1
+.names ne1 nq0 [3]
+00 1
+.names [11] [217] ne1
+1- 1
+-1 1
+.names [38] [207] nd1
+1- 1
+-1 1
+.names [26] [212] nf1
+1- 1
+-1 1
+.names py pi nb2
+10 1
+.names [8] [22] [14]
+1- 1
+-1 1
+.names [14] [20] nq0
+1- 1
+-1 1
+.names pc0 pm no1
+10 1
+.names no1 [54] [9]
+1- 1
+-1 1
+.names [9] [52] [15]
+1- 1
+-1 1
+.names [12] [44] [17]
+1- 1
+-1 1
+.names [17] [42] no0
+1- 1
+-1 1
+.names [10] [32] [16]
+1- 1
+-1 1
+.names [16] [30] ns0
+1- 1
+-1 1
+.names pu pe no2
+10 1
+.names no2 [24] [8]
+1- 1
+-1 1
+.names nb2 [46] [12]
+1- 1
+-1 1
+.names pq pa nb3
+10 1
+.names nb3 [34] [10]
+1- 1
+-1 1
+.names [221] [222] [4]
+11 1
+.names [3] [223] [5]
+11 1
+.names nx0 ne1 [6]
+01 1
+.names [14] [213] [11]
+01 1
+.names [8] [214] [13]
+01 1
+.names no2 [215] [18]
+01 1
+.names pu pe [19]
+01 1
+.names px ph [20]
+10 1
+.names pw pg [22]
+10 1
+.names pv pf [24]
+10 1
+.names [16] [208] [26]
+01 1
+.names [10] [209] [27]
+01 1
+.names nb3 [210] [28]
+01 1
+.names pq pa [29]
+01 1
+.names pt pd [30]
+10 1
+.names ps pc [32]
+10 1
+.names pr pb [34]
+10 1
+.names pp pf0 [36]
+01 1
+.names [17] [203] [38]
+01 1
+.names [12] [204] [39]
+01 1
+.names nb2 [205] [40]
+01 1
+.names py pi [41]
+01 1
+.names pb0 pl [42]
+10 1
+.names pa0 pk [44]
+10 1
+.names pz pj [46]
+10 1
+.names [15] [198] [48]
+01 1
+.names [9] [199] [49]
+01 1
+.names no1 [200] [50]
+01 1
+.names pc0 pm [51]
+01 1
+.names pe0 po [52]
+10 1
+.names pd0 pn [54]
+10 1
+.names pf0 pp [198]
+01 1
+.names po pe0 [199]
+10 1
+.names pn pd0 [200]
+10 1
+.names [50] [51] [201]
+1- 1
+-1 1
+.names [201] [49] [202]
+1- 1
+-1 1
+.names pl pb0 [203]
+10 1
+.names pk pa0 [204]
+10 1
+.names pj pz [205]
+10 1
+.names [40] [41] [206]
+1- 1
+-1 1
+.names [206] [39] [207]
+1- 1
+-1 1
+.names pd pt [208]
+10 1
+.names pc ps [209]
+10 1
+.names pb pr [210]
+10 1
+.names [28] [29] [211]
+1- 1
+-1 1
+.names [211] [27] [212]
+1- 1
+-1 1
+.names ph px [213]
+10 1
+.names pg pw [214]
+10 1
+.names pf pv [215]
+10 1
+.names [18] [19] [216]
+1- 1
+-1 1
+.names [216] [13] [217]
+1- 1
+-1 1
+.names nc1 nm0 [218]
+00 1
+.names nx0 nv0 [219]
+00 1
+.names [218] [3] [220]
+11 1
+.names nv0 nc1 [221]
+01 1
+.names [3] nx0 [222]
+10 1
+.names nx0 nd1 [223]
+01 1
+.names [6] nf1 [224]
+1- 1
+-1 1
+.names [5] [4] [225]
+1- 1
+-1 1
+.end

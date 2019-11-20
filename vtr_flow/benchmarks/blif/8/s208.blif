@@ -1,0 +1,41 @@
+.model top
+.inputs s208_in_10_ s208_in_1_ s208_in_0_ s208_in_3_ s208_in_2_ s208_in_5_ \
+s208_in_4_ s208_in_7_ s208_in_6_ clock s208_in_9_ s208_in_8_
+.outputs s208_out_1_ s208_out_0_
+.latch    n_n23 n_n46 re clock 2
+.latch    n_n24 n_n47 re clock 2
+.latch    n_n25 n_n48 re clock 2
+.latch    n_n26 n_n49 re clock 2
+.latch    n_n27 n_n50 re clock 2
+.names n_n46 n_n47 n_n48 n_n49 n_n50 s208_out_1_
+00000 1
+.names s208_in_10_ s208_in_1_ s208_in_0_ n_n46 [21] s208_out_0_
+1-1-- 1
+11-0- 1
+1--11 1
+.names s208_in_10_ s208_in_9_ n_n46 n_n23
+0-- 1
+-1- 1
+--0 1
+.names s208_in_10_ s208_in_9_ n_n46 n_n47 n_n24
+1001 1
+1010 1
+.names s208_in_10_ s208_in_9_ n_n46 n_n47 n_n48 n_n25
+100-1 1
+10-01 1
+10110 1
+.names s208_in_10_ s208_in_9_ n_n46 n_n47 n_n48 n_n49 n_n26
+100--1 1
+10-0-1 1
+10--01 1
+101110 1
+.names s208_in_10_ s208_in_9_ n_n46 n_n47 n_n48 n_n49 n_n50 n_n27
+-00---1 1
+101111- 1
+.names s208_in_3_ s208_in_2_ s208_in_5_ s208_in_4_ n_n47 n_n48 n_n49 n_n50 \
+[21]
+-1--1--- 1
+--1----1 1
+1---01-- 1
+---1001- 1
+.end

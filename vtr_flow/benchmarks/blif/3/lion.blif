@@ -1,0 +1,24 @@
+.model top
+.inputs lion_in_0_ lion_in_1_ clock
+.outputs lion_out
+.latch    n_n10 n_n21 re clock 2
+.latch    n_n11 n_n22 re clock 2
+.names lion_in_1_ n_n21 [8] lion_out
+--1 1
+01- 1
+.names lion_in_1_ [9] n_n10
+01 1
+.names lion_in_1_ [8] [12] n_n11
+--1 1
+11- 1
+.names lion_in_0_ n_n21 n_n22 [9]
+1-- 1
+-1- 1
+--1 1
+.names lion_in_0_ n_n21 n_n22 [8]
+--1 1
+01- 1
+.names lion_in_0_ n_n21 n_n22 [12]
+1-1 1
+-11 1
+.end

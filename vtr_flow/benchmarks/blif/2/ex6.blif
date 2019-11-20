@@ -1,0 +1,225 @@
+.model top
+.inputs ex6_in_0_ ex6_in_1_ ex6_in_2_ ex6_in_3_ ex6_in_4_ clock
+.outputs ex6_out_6_ ex6_out_7_ ex6_out_0_ ex6_out_1_ ex6_out_4_ ex6_out_5_ \
+ex6_out_2_ ex6_out_3_
+.latch    n_n39 n_n115 re clock 2
+.latch    n_n40 n_n116 re clock 2
+.latch    n_n41 n_n117 re clock 2
+.names [235] [236] ex6_out_6_
+1- 1
+-1 1
+.names [21] [22] ex6_out_7_
+1- 1
+-1 1
+.names [56] [211] ex6_out_0_
+1- 1
+-1 1
+.names [48] [49] ex6_out_1_
+1- 1
+-1 1
+.names [51] [219] ex6_out_4_
+1- 1
+-1 1
+.names [23] [24] ex6_out_5_
+1- 1
+-1 1
+.names [33] [241] ex6_out_2_
+1- 1
+-1 1
+.names ex6_out_1_ [226] ex6_out_3_
+1- 1
+-1 1
+.names [42] [228] n_n39
+1- 1
+-1 1
+.names ex6_out_2_ [28] n_n40
+1- 1
+-1 1
+.names [27] [245] n_n41
+1- 1
+-1 1
+.names ex6_in_4_ n_n116 [17]
+0- 1
+-1 1
+.names ex6_in_2_ n_n117 [18]
+11 1
+.names n_n116 n_n117 [16]
+0- 1
+-1 1
+.names ex6_in_4_ n_n115 [20]
+00 1
+.names ex6_in_2_ n_n117 [19]
+0- 1
+-1 1
+.names n_n39 n_n40 [21]
+00 1
+.names ex6_out_1_ ex6_out_5_ [22]
+00 1
+.names ex6_out_6_ ex6_out_0_ [23]
+01 1
+.names ex6_out_6_ ex6_out_2_ [24]
+00 1
+.names ex6_out_1_ [244] [25]
+01 1
+.names n_n115 [18] [26]
+11 1
+.names ex6_out_1_ [226] [27]
+01 1
+.names ex6_out_6_ [242] [28]
+01 1
+.names [20] [229] [30]
+11 1
+.names ex6_out_0_ [230] [31]
+01 1
+.names ex6_out_6_ [237] [32]
+01 1
+.names ex6_out_6_ [238] [33]
+01 1
+.names ex6_out_0_ n_n117 [34]
+11 1
+.names ex6_out_0_ [231] [35]
+01 1
+.names ex6_out_0_ [232] [36]
+01 1
+.names ex6_out_0_ [233] [37]
+11 1
+.names ex6_out_0_ [234] [38]
+11 1
+.names ex6_out_4_ [220] [39]
+01 1
+.names ex6_out_3_ [19] [40]
+01 1
+.names ex6_in_1_ ex6_out_3_ [41]
+10 1
+.names ex6_in_3_ ex6_out_4_ [42]
+01 1
+.names [221] [222] [43]
+11 1
+.names n_n116 [223] [44]
+01 1
+.names ex6_in_4_ [18] [45]
+11 1
+.names [202] [203] [48]
+11 1
+.names [19] [204] [49]
+01 1
+.names [205] [206] [50]
+11 1
+.names ex6_out_0_ [213] [51]
+11 1
+.names [17] [214] [52]
+01 1
+.names n_n117 [215] [53]
+11 1
+.names n_n116 [216] [54]
+01 1
+.names [208] [209] [55]
+11 1
+.names [20] [210] [56]
+11 1
+.names n_n115 [16] [57]
+10 1
+.names ex6_in_2_ ex6_in_1_ [202]
+10 1
+.names [20] [16] [203]
+10 1
+.names n_n116 n_n115 [204]
+01 1
+.names ex6_in_4_ ex6_in_3_ [205]
+11 1
+.names [18] n_n116 [206]
+11 1
+.names ex6_in_3_ ex6_in_2_ [207]
+10 1
+.names n_n116 ex6_in_4_ [208]
+00 1
+.names [207] n_n117 [209]
+11 1
+.names [18] ex6_in_3_ [210]
+11 1
+.names [55] [57] [211]
+1- 1
+-1 1
+.names ex6_in_3_ ex6_in_0_ [212]
+10 1
+.names [212] ex6_in_4_ [213]
+11 1
+.names ex6_in_3_ ex6_in_2_ [214]
+10 1
+.names n_n116 n_n115 [215]
+00 1
+.names n_n115 ex6_in_3_ [216]
+01 1
+.names [53] [52] [217]
+1- 1
+-1 1
+.names [50] [54] [218]
+1- 1
+-1 1
+.names [218] [217] [219]
+1- 1
+-1 1
+.names ex6_out_1_ [18] [220]
+00 1
+.names ex6_in_4_ ex6_in_0_ [221]
+10 1
+.names n_n117 n_n115 [222]
+01 1
+.names n_n115 ex6_in_2_ [223]
+11 1
+.names [43] [17] [224]
+1- 1
+-0 1
+.names [45] [44] [225]
+1- 1
+-1 1
+.names [225] [224] [226]
+1- 1
+-1 1
+.names [41] [40] [227]
+1- 1
+-1 1
+.names [39] [227] [228]
+1- 1
+-1 1
+.names ex6_in_3_ ex6_in_2_ [229]
+11 1
+.names [19] n_n115 [230]
+01 1
+.names [20] [16] [231]
+11 1
+.names [17] ex6_in_2_ [232]
+10 1
+.names n_n117 ex6_in_0_ [233]
+01 1
+.names ex6_in_4_ ex6_in_3_ [234]
+00 1
+.names [36] [35] [235]
+1- 1
+-1 1
+.names [38] [37] [236]
+1- 1
+-1 1
+.names ex6_out_0_ [16] [237]
+00 1
+.names n_n116 ex6_in_4_ [238]
+10 1
+.names [31] [30] [239]
+1- 1
+-1 1
+.names [239] [34] [240]
+1- 1
+-1 1
+.names [32] [240] [241]
+1- 1
+-1 1
+.names ex6_out_4_ [18] [242]
+01 1
+.names n_n115 ex6_in_2_ [243]
+01 1
+.names [243] [16] [244]
+10 1
+.names [25] [26] [245]
+1- 1
+-1 1
+.end

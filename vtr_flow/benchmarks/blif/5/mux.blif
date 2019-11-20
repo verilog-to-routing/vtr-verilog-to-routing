@@ -1,0 +1,37 @@
+.model top
+.inputs pp pq pr ps pt pu pa pb pc pd pe pf pg ph pi pj pk pl pm pn po
+.outputs pv
+.names pq pu [8] [7] pv
+111- 1
+01-1 1
+.names pr [110] [111] [112] [113] [8]
+100-- 1
+0--00 1
+.names pr [106] [107] [108] [109] [7]
+100-- 1
+0--00 1
+.names ps pt pk pl [106]
+010- 1
+00-0 1
+.names ps pt pi pj [107]
+110- 1
+10-0 1
+.names pp ps pt po [108]
+000- 1
+-010 1
+.names ps pt pm pn [109]
+110- 1
+10-0 1
+.names ps pt pc pd [110]
+010- 1
+00-0 1
+.names ps pt pa pb [111]
+110- 1
+10-0 1
+.names ps pt pg ph [112]
+010- 1
+00-0 1
+.names ps pt pe pf [113]
+110- 1
+10-0 1
+.end

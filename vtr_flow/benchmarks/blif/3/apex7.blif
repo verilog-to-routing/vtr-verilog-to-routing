@@ -1,0 +1,356 @@
+.model top
+.inputs pdel1 pratr pbull1 pbull0 pwatch povacc pverr_n porwd_n pvlenesr \
+pmmerr paccrpy pvacc pcat4 pvst1 pcapsd pcat3 pcat2 pcat1 plsd pvst0 pcat0 \
+pibt2 pkbg_n pmarssr pend pvsumesr pbull5 ppluto4 pstar2 pbull4 ppluto5 ppy \
+pstar3 pbull3 pcomppar pibt1 pstar0 pbull2 pibt0 pstar1 ppluto0 pfbi powl_n \
+ppluto1 piclr ppluto2 pbull6 pcat5 ppluto3
+.outputs pbull2_p pend_p pbull3_p porwd_f pbull4_p ppluto3_p pwatch_p pbull5_p \
+pbull6_p ppluto5_p ppy_p ppluto4_p plsd_p pvlenesr_p pfbi_p pstar1_p \
+pvsumesr_p paccrpy_p pkbg_f pmarssr_p pstar0_p pstar3_p pdel1_p pstar2_p \
+pvst0_p pcomppar_p powl_f psdo pvst1_p ppluto1_p pratr_p ppluto0_p povacc_p \
+ppluto2_p pbull0_p pverr_f pbull1_p
+.names pbull2 powl_n [42] pbull2_p
+111 1
+010 1
+.names pend powl_n [47] pend_p
+--1 1
+11- 1
+.names powl_n [63] pbull3_p
+11 1
+.names pwatch nc1g3 porwd_f
+0- 1
+-0 1
+.names pbull4 powl_n [41] pbull4_p
+111 1
+010 1
+.names powl_n ppluto3 [149] ppluto3_p
+--1 1
+11- 1
+.names powl_n [64] pwatch_p
+11 1
+.names pbull5 [65] [145] pbull5_p
+--1 1
+11- 1
+.names powl_n [66] [142] pbull6_p
+--1 1
+11- 1
+.names ppluto5 powl_n [139] ppluto5_p
+--1 1
+11- 1
+.names [137] [138] ppy_p
+1- 1
+-1 1
+.names ppluto4 powl_n [135] ppluto4_p
+--1 1
+11- 1
+.names n__260_m_ [134] [561] plsd_p
+-1- 1
+0-1 1
+.names pvlenesr pkbg_n powl_n pvlenesr_p
+1-1 1
+-01 1
+.names [129] [130] pfbi_p
+1- 1
+-1 1
+.names pstar1 [73] [120] pstar1_p
+--1 1
+11- 1
+.names pvsumesr powl_n [118] pvsumesr_p
+--1 1
+11- 1
+.names paccrpy powl_n [47] paccrpy_p
+--1 1
+11- 1
+.names powl_n [110] pkbg_f
+0- 1
+-1 1
+.names powl_n [75] pmarssr_p
+11 1
+.names pstar0 [37] n__44_m__inv pstar0_p
+01- 1
+1-0 1
+.names [37] [103] [570] pstar3_p
+-1- 1
+1-1 1
+.names pcapsd piclr pdel1_p
+10 1
+.names pstar2 [45] [101] pstar2_p
+--1 1
+11- 1
+.names [98] [99] pvst0_p
+1- 1
+-1 1
+.names [77] [97] [572] pcomppar_p
+-1- 1
+1-1 1
+.names pwatch ntimot [575] powl_f
+0-1 1
+-01 1
+.names [94] [95] pvst1_p
+1- 1
+-1 1
+.names n__1015_m_ [93] [577] ppluto1_p
+-1- 1
+1-1 1
+.names [59] [43] [91] pratr_p
+--1 1
+11- 1
+.names n__1015_m_ [89] [578] ppluto0_p
+-1- 1
+1-1 1
+.names pvacc piclr povacc_p
+10 1
+.names powl_n ppluto2 [54] ppluto2_p
+--1 1
+11- 1
+.names pbull0 pwatch powl_n pbull0_p
+011 1
+101 1
+.names powl_n [46] pverr_f
+0- 1
+-1 1
+.names powl_n [80] pbull1_p
+11 1
+.names pwatch nc1g3 [545] [47]
+0-1 1
+-01 1
+.names pend powl_n [59]
+11 1
+.names pbull3 pbull2 [42] [63]
+10- 1
+1-1 1
+010 1
+.names pibt2 [85] [162] nc1g3
+--1 1
+11- 1
+.names pbull3 pbull2 [42] [41]
+0-- 1
+-0- 1
+--1 1
+.names pwatch povacc pvacc [64]
+1-- 1
+-10 1
+.names pbull4 powl_n [41] [65]
+-11 1
+010 1
+.names pbull6 [41] [67] [66]
+1-1 1
+000 1
+.names pstar2 pstar0 pstar1 nc2g5
+1-- 1
+-0- 1
+--0 1
+.names pwatch powl_n nc1g3 n__260_m_
+0-- 1
+-0- 1
+--0 1
+.names pfbi powl_n n__219_m_
+0- 1
+-0 1
+.names pstar0 pstar1 [38]
+0- 1
+-0 1
+.names porwd_n pfbi [70]
+0- 1
+-1 1
+.names porwd_n n__260_m_ n__219_m_ [37]
+--0 1
+00- 1
+.names [122] [124] [566] [73]
+1-- 1
+-00 1
+.names pwatch pmarssr ntimot [75]
+-1- 1
+1-1 1
+.names pfbi powl_n [124] n__44_m__inv
+1-- 1
+-0- 1
+--1 1
+.names [106] [124] [566] [45]
+1-- 1
+-00 1
+.names pdel1 pfbi [77]
+0- 1
+-0 1
+.names pwatch ntimot [39]
+0- 1
+-0 1
+.names powl_n [83] [152] n__1015_m_
+--1 1
+11- 1
+.names pmmerr pvst0 pcomppar [43]
+--0 1
+00- 1
+.names pbull1 pbull0 pwatch [80]
+10- 1
+1-0 1
+011 1
+.names pbull1 pbull0 pwatch [42]
+0-- 1
+-0- 1
+--0 1
+.names pstar3 nc2g5 [82]
+0- 1
+-1 1
+.names pwatch nc1g3 [114] [81]
+--1 1
+11- 1
+.names pstar3 nc2g5 [81] n__42_m_
+0-1 1
+-11 1
+.names pwatch ntimot [552] [83]
+--1 1
+11- 1
+.names [548] [549] [550] ntimot
+111 1
+.names pibt1 [87] [86] [85]
+11- 1
+0-1 1
+.names pcat1 pcat0 pibt0 [84]
+0-1 1
+-00 1
+.names pfbi powl_n [112] [55]
+0-- 1
+-0- 1
+--1 1
+.names pbull5 pbull4 [67]
+0- 1
+-0 1
+.names pcat4 pibt0 pcat5 [87]
+00- 1
+-10 1
+.names pcat3 pcat2 pibt0 [86]
+0-1 1
+-00 1
+.names pvst0 psdo
+1 1
+.names pverr_n [49] [50] [46]
+11- 1
+1-1 1
+.names n__219_m_ [39] [112] [49]
+11- 1
+-11 1
+.names [82] [81] ntimot [50]
+110 1
+.names pibt2 n__1015_m_ [579] [54]
+111 1
+.names ppluto0 powl_n [89]
+11 1
+.names pratr powl_n [91]
+11 1
+.names powl_n ppluto1 [93]
+11 1
+.names ppy pfbi piclr [94]
+110 1
+.names pvst1 pfbi piclr [95]
+100 1
+.names pfbi powl_n [573] [97]
+111 1
+.names pvst1 pfbi piclr [98]
+110 1
+.names pvst0 pfbi piclr [99]
+100 1
+.names nc2g5 [37] [101]
+01 1
+.names pstar3 [45] [104] [103]
+11- 1
+1-1 1
+.names pstar2 powl_n [104]
+01 1
+.names pstar0 pstar1 powl_n [106]
+0-1 1
+-01 1
+.names pkbg_n n__42_m_ [55] [110]
+11- 1
+1-1 1
+.names pwatch nc1g3 nc2g5 [112]
+0-0 1
+-00 1
+.names pwatch pcat1 [568] [114]
+101 1
+.names pvst1 pend powl_n [118]
+111 1
+.names pstar0 pstar1 [37] [120]
+101 1
+.names pstar0 powl_n [122]
+01 1
+.names pwatch porwd_n nc1g3 [124]
+101 1
+.names nc2g5 n__260_m_ [564] [129]
+1-1 1
+-01 1
+.names n__260_m_ [70] [131] [130]
+01- 1
+-11 1
+.names pfbi powl_n nc2g5 [131]
+111 1
+.names nc2g5 [562] [563] [134]
+1-1 1
+-11 1
+.names pibt2 n__1015_m_ [559] [135]
+111 1
+.names pdel1 pfbi piclr [137]
+110 1
+.names ppy pfbi piclr [138]
+100 1
+.names pibt2 n__1015_m_ [557] [139]
+111 1
+.names powl_n pbull6 [41] [142]
+111 1
+.names [41] [555] [145]
+01 1
+.names pibt2 n__1015_m_ [553] [149]
+111 1
+.names pend powl_n [43] [152]
+111 1
+.names pibt2 pibt1 [84] [162]
+011 1
+.names pfbi powl_n nc2g5 [545]
+110 1
+.names pbull4 pbull5 [548]
+10 1
+.names pbull2 pbull3 [549]
+00 1
+.names pbull1 pbull0 pbull6 [550]
+101 1
+.names pvst1 pkbg_n pend [552]
+-0- 1
+1-1 1
+.names pibt0 pibt1 [553]
+10 1
+.names pbull5 pbull4 powl_n [555]
+011 1
+.names pibt0 pibt1 [557]
+11 1
+.names pibt0 pibt1 [559]
+01 1
+.names pstar3 pfbi nc2g5 [561]
+010 1
+.names pfbi pstar3 [562]
+0- 1
+-0 1
+.names powl_n plsd [563]
+11 1
+.names pstar0 pstar1 n__219_m_ [564]
+0-0 1
+-00 1
+.names powl_n pfbi [566]
+0- 1
+-1 1
+.names pcat0 pibt2 pibt1 [568]
+001 1
+.names pstar2 pstar3 [38] [570]
+100 1
+.names powl_n pcomppar [572]
+11 1
+.names pcomppar pdel1 [573]
+01 1
+.names pkbg_n pend piclr [575]
+100 1
+.names pibt2 pibt1 pibt0 [577]
+011 1
+.names pibt2 pibt1 pibt0 [578]
+010 1
+.names pibt0 pibt1 [579]
+00 1
+.end

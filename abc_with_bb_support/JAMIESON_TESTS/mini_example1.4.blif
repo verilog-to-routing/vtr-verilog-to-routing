@@ -1,0 +1,79 @@
+# Benchmark "test" written by ABC on Tue Aug 28 16:53:47 2007
+.model test
+.inputs a b c d e f g h i j k l m n o clk
+.outputs A0 B0 C0 D0 E0
+
+.latch        n53         D0  0
+.latch        n57         E0  0
+
+
+.subckt mult_M1 a0=a a1=b a2=c a3=d b0=e b1=f b2=g b3=h c0=m0 c1=m1 c2=m2 c3=m3 c4=m4 c5=m5 c6=m6 c7=m7
+.subckt mult_M2 a0=a a1=b a2=c a3=d b0=i b1=j b2=k b3=l c0=m20 c1=m21 c2=m22 c3=m23 c4=m24 c5=m25 c6=m26 c7=m27
+
+.names m0 m1 m20 m21 A0
+0011 1
+1111 1
+.names m24 m26 n58_1 B0
+000 1
+.names m22 n59 n57 n68 n58_1
+001- 0
+---1 0
+.names m23 m25 m27 n60 n59
+0111 0
+101- 0
+1100 0
+.names n61 n62 n63 n64 n60
+110- 0
+-0-1 0
+.names a b e f n61
+0110 1
+.names c d n62
+10 1
+.names g h n63
+01 1
+.names e f g n64
+011 1
+.names o n60 n66 n67 n57
+10-1 1
+111- 1
+.names a b m n66
+1-0 1
+-00 1
+.names a b m n n67
+0110 1
+1-11 1
+-011 1
+.names m25 m27 n60 n68
+110 1
+.names m3 n60 n71 n72 n70
+10-1 1
+-01- 1
+.names m6 m7 n71
+01 1
+.names m2 m4 n72
+00 1
+.names m3 m5 n71 n72 n73
+0111 1
+1011 1
+.names m4 m5 n60 n71 n74
+0101 1
+.names n57 n70 n73 n74 C0
+0--0 0
+-000 0
+.names m n53
+1 1
+.end
+
+
+.model mult_M1
+.inputs a0 a1 a2 a3 b0 b1 b2 b3
+.outputs c0 c1 c2 c3 c4 c5 c6 c7
+.blackbox
+.end
+
+
+.model mult_M2
+.inputs a0 a1 a2 a3 b0 b1 b2 b3
+.outputs c0 c1 c2 c3 c4 c5 c6 c7
+.blackbox
+.end

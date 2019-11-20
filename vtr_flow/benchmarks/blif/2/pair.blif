@@ -1,0 +1,3310 @@
+.model top
+.inputs pa1 pb2 pc3 pd4 pe5 pp pa0 pb3 pc2 pd5 pe4 pq pa3 pb0 pc1 pf4 pg5 pr \
+pa2 pb1 pc0 pf5 pg4 ps pa5 pd0 pe1 pf2 pg3 pt pa4 pd1 pe0 pf3 pg2 pu pb4 pc5 \
+pd2 pe3 pf0 pg1 pv pb5 pc4 pd3 pe2 pf1 pg0 pw ph0 pi1 pj2 pk3 pl4 pm5 ph1 pi0 \
+pj3 pk2 pl5 pm4 py ph2 pi3 pj0 pk1 pn4 po5 pz ph3 pi2 pj1 pk0 pn5 po4 ph4 pi5 \
+pl0 pm1 pn2 po3 ph5 pi4 pl1 pm0 pn3 po2 pj4 pk5 pl2 pm3 pn0 po1 pj5 pk4 pl3 \
+pm2 pn1 po0 pp0 pq1 pr2 ps3 pt4 pa pp1 pq0 pr3 ps2 pu4 pb pp2 pq3 pr0 ps1 pv4 \
+pc pp3 pq2 pr1 ps0 pw4 pd pp4 pq5 pt0 pu1 pv2 pw3 pe pp5 pq4 pt1 pu0 pv3 pw2 \
+pf pr4 pt2 pu3 pv0 pw1 pg pr5 ps4 pt3 pu2 pv1 pw0 ph px0 py1 pz2 pi px1 py0 \
+pz3 pj px2 py3 pz0 pk px3 py2 pz1 pl px4 pm py4 pn pz4 po
+.outputs pf6 pg7 ph8 pi9 pq10 pf7 pg6 ph9 pi8 pp10 pd6 pe7 pj8 pk9 ps10 pd7 \
+pe6 pj9 pk8 pr10 pb6 pc7 pl8 pm9 pu10 pb7 pc6 pl9 pm8 pt10 pa7 pn8 po9 pw10 \
+pa6 pn9 po8 pv10 pa9 pn6 po7 py10 pa8 pn7 po6 px10 pb8 pc9 pl6 pm7 pb9 pc8 pl7 \
+pm6 pd8 pe9 pj6 pk7 pd9 pe8 pj7 pk6 pf8 pg9 ph6 pi7 pf9 pg8 ph7 pi6 pa10 pu5 \
+pv6 pw7 px8 py9 pt5 pv7 pw6 px9 py8 pc10 pt6 pu7 pw5 pz8 pb10 pt7 pu6 pv5 pz9 \
+pe10 pr6 ps7 pd10 pr7 ps6 pg10 pp6 pq7 ps5 pf10 pp7 pq6 pi10 pp8 pq9 ph10 pp9 \
+pq8 pk10 pr8 ps9 pj10 pr9 ps8 pm10 pt8 pu9 py5 pz6 pl10 pt9 pu8 px5 pz7 po10 \
+pv8 pw9 px6 py7 pn10 pv9 pw8 px7 py6 pz5
+.names ns16 [323] pf6
+01 1
+.names [1120] [3715] pg7
+1- 1
+-1 1
+.names [1095] [3722] ph8
+1- 1
+-1 1
+.names [1072] [3747] pi9
+1- 1
+-1 1
+.names pz [331] pq10
+01 1
+.names pb [332] pf7
+01 1
+.names ns16 [334] pg6
+01 1
+.names pz [335] ph9
+01 1
+.names [176] [1050] pi8
+1- 1
+-1 1
+.names ns16 [338] pd6
+01 1
+.names [1042] [3766] pe7
+1- 1
+-1 1
+.names nt20 [340] pj8
+11 1
+.names pd4 pz pk9
+0- 1
+-1 1
+.names pz [341] ps10
+01 1
+.names [1022] [3782] pd7
+1- 1
+-1 1
+.names ns16 [344] pe6
+01 1
+.names [1012] [3787] pj9
+1- 1
+-1 1
+.names [1003] [3793] pk8
+1- 1
+-1 1
+.names [348] [3794] pr10
+11 1
+.names [983] [3809] pb6
+1- 1
+-1 1
+.names [976] [3813] pc7
+1- 1
+-1 1
+.names [176] [967] pl8
+1- 1
+-1 1
+.names [965] [3816] pm9
+1- 1
+-1 1
+.names pz [352] pu10
+01 1
+.names pb [354] pb7
+01 1
+.names ns16 [357] pc6
+01 1
+.names [944] [3826] pl9
+1- 1
+-1 1
+.names ne52 [358] pm8
+11 1
+.names pz [359] pt10
+01 1
+.names pb [364] pa7
+01 1
+.names ne52 [366] pn8
+11 1
+.names [919] [3835] po9
+1- 1
+-1 1
+.names nc54 [910] pw10
+0- 1
+-1 1
+.names [3844] [3845] pa6
+1- 1
+-1 1
+.names [897] [3847] pn9
+1- 1
+-1 1
+.names ne52 [373] po8
+11 1
+.names pz [493] pv10
+1- 1
+-0 1
+.names [177] [867] pa9
+1- 1
+-1 1
+.names pi1 [312] pn6
+1- 1
+-1 1
+.names [857] [3856] po7
+1- 1
+-1 1
+.names [377] [3857] py10
+11 1
+.names [176] [847] pa8
+1- 1
+-1 1
+.names [845] [3858] pn7
+1- 1
+-1 1
+.names [842] [843] po6
+1- 1
+-1 1
+.names [382] [3861] px10
+11 1
+.names [838] [839] pb8
+1- 1
+-1 1
+.names pz [385] pc9
+01 1
+.names [829] [3867] pm7
+1- 1
+-1 1
+.names pz [388] pb9
+01 1
+.names nt20 [3870] pc8
+11 1
+.names [822] [3872] pl7
+1- 1
+-1 1
+.names nt20 [392] pd8
+11 1
+.names [814] [3876] pe9
+1- 1
+-1 1
+.names ns16 [394] pj6
+01 1
+.names [809] [3877] pk7
+1- 1
+-1 1
+.names pz [396] pd9
+01 1
+.names nt20 [398] pe8
+11 1
+.names [792] [3882] pj7
+1- 1
+-1 1
+.names ns16 [401] pk6
+01 1
+.names nt20 [402] pf8
+11 1
+.names [777] [3889] pg9
+1- 1
+-1 1
+.names ns16 [404] ph6
+01 1
+.names pb2 pb pi7
+0- 1
+-1 1
+.names [769] [3894] pf9
+1- 1
+-1 1
+.names [176] [762] pg8
+1- 1
+-1 1
+.names [755] [3899] ph7
+1- 1
+-1 1
+.names ns16 [408] pi6
+01 1
+.names np47 [409] pa10
+01 1
+.names [3911] [3912] pu5
+1- 1
+-1 1
+.names pb [508] pv6
+1- 1
+-0 1
+.names [734] [735] pw7
+1- 1
+-1 1
+.names [177] [727] px8
+1- 1
+-1 1
+.names np47 [412] py9
+01 1
+.names [3922] [3923] pt5
+1- 1
+-1 1
+.names [707] [3925] pv7
+1- 1
+-1 1
+.names nz22 [699] pw6
+0- 1
+-1 1
+.names [692] [3928] px9
+1- 1
+-1 1
+.names ne52 [421] py8
+11 1
+.names np47 [425] pc10
+01 1
+.names pb [426] pt6
+01 1
+.names [431] [3943] pu7
+11 1
+.names [669] [3953] pw5
+1- 1
+-1 1
+.names [177] [660] pz8
+1- 1
+-1 1
+.names np47 [433] pb10
+01 1
+.names [653] [3955] pt7
+1- 1
+-1 1
+.names pb [436] pu6
+01 1
+.names [3964] [3965] pv5
+1- 1
+-1 1
+.names np47 [439] pz9
+01 1
+.names np47 [440] pe10
+01 1
+.names [626] [3966] ps7
+1- 1
+-1 1
+.names np47 [442] pd10
+01 1
+.names [621] [3968] pr7
+1- 1
+-1 1
+.names pb [444] ps6
+01 1
+.names np47 [446] pg10
+01 1
+.names [614] [615] pp6
+1- 1
+-1 1
+.names [609] [3974] pq7
+1- 1
+-1 1
+.names [3982] [3983] ps5
+1- 1
+-1 1
+.names np47 [448] pf10
+01 1
+.names [591] [3985] pp7
+1- 1
+-1 1
+.names [586] [3986] pq6
+1- 1
+-1 1
+.names [177] [578] pp8
+1- 1
+-1 1
+.names [573] [3987] pq9
+1- 1
+-1 1
+.names [571] [3988] pp9
+1- 1
+-1 1
+.names [568] [569] pq8
+1- 1
+-1 1
+.names [566] [567] pk10
+1- 1
+-1 1
+.names ne52 [3994] pr8
+11 1
+.names [561] [3995] ps9
+1- 1
+-1 1
+.names pe5 [310] pj10
+1- 1
+-1 1
+.names [556] [3997] pr9
+1- 1
+-1 1
+.names ne52 [455] ps8
+11 1
+.names [204] [456] pm10
+01 1
+.names ne52 nq38 pt8
+10 1
+.names [299] [4000] pu9
+1- 1
+-1 1
+.names [4008] [4009] py5
+1- 1
+-1 1
+.names pb [458] pz6
+01 1
+.names [280] [281] pl10
+1- 1
+-1 1
+.names [272] [4014] pt9
+1- 1
+-1 1
+.names ne52 [462] pu8
+11 1
+.names [4024] [4025] px5
+1- 1
+-1 1
+.names nt20 [463] pz7
+11 1
+.names [204] [548] po10
+1- 1
+-1 1
+.names [177] [224] pv8
+1- 1
+-1 1
+.names [466] [4033] pw9
+11 1
+.names [468] [4034] px6
+11 1
+.names nt20 [471] py7
+11 1
+.names pz [472] pn10
+01 1
+.names [199] [4037] pv9
+1- 1
+-1 1
+.names [177] [178] pw8
+1- 1
+-1 1
+.names [174] [175] px7
+1- 1
+-1 1
+.names [478] [4041] py6
+11 1
+.names [4049] [4050] pz5
+1- 1
+-1 1
+.names [1147] [3691] ns16
+1- 1
+-1 1
+.names py0 [324] [323]
+11 1
+00 1
+.names nh20 [514] nk20
+01 1
+.names nk20 nd21 [146]
+10 1
+.names [153] [3712] [326]
+1- 1
+-1 1
+.names [1123] [1124] [325]
+1- 1
+-1 1
+.names pb [481] nt20
+01 1
+.names nt20 ne19 [176]
+00 1
+.names nt20 nr20 [320]
+11 1
+.names [148] [3720] [328]
+1- 1
+-1 1
+.names [1097] [1098] [327]
+1- 1
+-1 1
+.names nj51 [485] nl51
+01 1
+.names nl51 ng41 [145]
+10 1
+.names [154] [3744] [330]
+1- 1
+-1 1
+.names [1075] [1076] [329]
+1- 1
+-1 1
+.names [1069] [1070] [331]
+1- 1
+-1 1
+.names [1065] [3752] [332]
+1- 1
+-1 1
+.names pz0 [166] [334]
+11 1
+00 1
+.names [1058] [3758] [335]
+1- 1
+-1 1
+.names pb3 nh32 [337]
+01 1
+10 1
+.names pw0 [214] [338]
+11 1
+00 1
+.names [1046] [3762] nz24
+1- 1
+-1 1
+.names nz24 nd21 [339]
+1- 1
+-1 1
+.names pc3 [268] [340]
+11 1
+00 1
+.names [1028] [3777] [341]
+1- 1
+-1 1
+.names [1025] [1026] [217]
+1- 1
+-1 1
+.names [217] nd21 [343]
+0- 1
+-1 1
+.names px0 [147] [344]
+11 1
+00 1
+.names [154] [3783] nu43
+1- 1
+-1 1
+.names nu43 ng41 [345]
+1- 1
+-1 1
+.names [155] [3791] [347]
+1- 1
+-1 1
+.names [1005] [1006] [346]
+1- 1
+-1 1
+.names pk5 nm53 [348]
+11 1
+00 1
+.names [3771] [3772] nh40
+11 1
+.names [3775] [3776] nk40
+11 1
+.names [997] [3800] nc52
+1- 1
+-1 1
+.names pz [495] ne52
+01 1
+.names pp4 [156] [316]
+10 1
+.names [277] [979] [221]
+0- 1
+-1 1
+.names [221] nd21 [349]
+0- 1
+-1 1
+.names pe3 [222] [350]
+11 1
+00 1
+.names pd4 pe4 [351]
+0- 1
+-0 1
+.names [959] [3818] [352]
+1- 1
+-1 1
+.names [949] [3825] [354]
+1- 1
+-1 1
+.names pv0 nu19 [357]
+01 1
+10 1
+.names pf3 nc52 [358]
+01 1
+10 1
+.names [932] [3832] [359]
+1- 1
+-1 1
+.names [928] [929] [364]
+1- 1
+-1 1
+.names pg3 [261] [366]
+11 1
+00 1
+.names [316] nt50 nv50
+1- 1
+-0 1
+.names ph4 [156] [367]
+11 1
+00 1
+.names pz [498] nc54
+01 1
+.names [912] [913] [369]
+1- 1
+-1 1
+.names pp5 [322] [368]
+1- 1
+-0 1
+.names pg4 nt44 [156]
+0- 1
+-0 1
+.names ph3 [258] [373]
+11 1
+00 1
+.names pz [493] nu53
+01 1
+.names ne52 nj50 [177]
+00 1
+.names pt3 [225] [374]
+11 1
+00 1
+.names nu18 [3686] [312]
+11 1
+.names no19 no28 nq19
+0- 1
+-0 1
+.names ph2 [287] [375]
+11 1
+00 1
+.names [855] [856] [377]
+1- 1
+-1 1
+.names pr5 [322] [376]
+1- 1
+-0 1
+.names pt2 [226] [380]
+11 1
+00 1
+.names [865] [866] nj26
+1- 1
+-1 1
+.names pl1 [181] no19
+0- 1
+-1 1
+.names pe1 pf1 nr18
+0- 1
+-1 1
+.names nu18 [3685] [311]
+01 1
+.names [840] [841] [382]
+1- 1
+-1 1
+.names pq5 [322] [381]
+1- 1
+-0 1
+.names pg [486] ne19
+01 1
+.names py2 [3862] [319]
+01 1
+.names [834] [3866] [385]
+1- 1
+-1 1
+.names pf2 [167] [387]
+11 1
+00 1
+.names [824] [825] [388]
+1- 1
+-1 1
+.names py2 [3869] [318]
+11 1
+.names pe2 nt26 [167]
+0- 1
+-0 1
+.names pw2 [148] [392]
+11 1
+00 1
+.names [275] [817] [227]
+0- 1
+-1 1
+.names [227] ng41 [393]
+0- 1
+-1 1
+.names pc1 [191] [394]
+11 1
+00 1
+.names pb2 pc2 [395]
+0- 1
+-0 1
+.names [801] [802] [396]
+1- 1
+-1 1
+.names [794] [795] [398]
+1- 1
+-1 1
+.names pd1 nb17 [401]
+11 1
+00 1
+.names py2 [229] [402]
+11 1
+00 1
+.names [781] [3885] nx42
+1- 1
+-1 1
+.names nx42 ng41 [403]
+1- 1
+-1 1
+.names pa1 [273] [404]
+11 1
+00 1
+.names [772] [773] [231]
+1- 1
+-1 1
+.names [231] ng41 [405]
+0- 1
+-1 1
+.names pz2 nv31 [406]
+01 1
+10 1
+.names [153] [3895] nw25
+1- 1
+-1 1
+.names nw25 nd21 [407]
+1- 1
+-1 1
+.names pb1 [140] [408]
+11 1
+00 1
+.names [749] [3903] np47
+1- 1
+-1 1
+.names pt4 [150] [409]
+11 1
+00 1
+.names pb [508] np22
+01 1
+.names pj1 no28 [410]
+0- 1
+-1 1
+.names pq3 nw39 [411]
+01 1
+10 1
+.names pr4 ny50 [412]
+01 1
+10 1
+.names po2 [414] [413]
+11 1
+00 1
+.names pb [516] nz22
+01 1
+.names [701] [702] [416]
+1- 1
+-1 1
+.names pp1 [321] [415]
+1- 1
+-0 1
+.names pq4 [420] [419]
+11 1
+00 1
+.names [686] [687] [421]
+1- 1
+-1 1
+.names pv4 [192] [425]
+11 1
+00 1
+.names [678] [3936] [426]
+1- 1
+-1 1
+.names pb nq19 [431]
+1- 1
+-0 1
+.names pn2 [167] no28
+0- 1
+-1 1
+.names [1116] [3717] nr20
+1- 1
+-1 1
+.names [3933] [3934] np21
+11 1
+.names pd3 [3944] [308]
+11 1
+.names ps3 [160] [432]
+11 1
+00 1
+.names pu4 [434] [433]
+11 1
+00 1
+.names pm2 [151] [435]
+11 1
+00 1
+.names [646] [3956] [436]
+1- 1
+-1 1
+.names ps4 [233] [439]
+11 1
+00 1
+.names px4 [168] [440]
+11 1
+00 1
+.names pl2 [234] [441]
+11 1
+00 1
+.names pw4 [141] [442]
+11 1
+00 1
+.names pk2 nm27 [234]
+0- 1
+-0 1
+.names pk2 nm27 [443]
+1- 1
+-1 1
+.names [619] [3971] [444]
+1- 1
+-1 1
+.names pz4 ny47 [446]
+11 1
+00 1
+.names po1 [3684] nu18
+0- 1
+-1 1
+.names pj2 [235] [447]
+11 1
+00 1
+.names py4 [274] [448]
+11 1
+00 1
+.names [287] [3924] [235]
+1- 1
+-1 1
+.names pi2 [594] [449]
+1- 1
+-1 1
+.names [3693] [3694] nh20
+11 1
+.names pj1 no28 [450]
+11 1
+00 1
+.names pi3 [236] [451]
+11 1
+00 1
+.names pj4 [293] [452]
+11 1
+00 1
+.names [995] [996] ni44
+1- 1
+-1 1
+.names pe0 [482] nj50
+01 1
+.names pl3 [3989] [314]
+01 1
+.names pa5 pb5 no49
+0- 1
+-1 1
+.names pl5 [183] nt50
+0- 1
+-1 1
+.names nr49 [3797] [309]
+01 1
+.names pl3 [3993] [313]
+11 1
+.names pl4 [237] [453]
+11 1
+00 1
+.names nr49 [3734] [310]
+11 1
+.names [293] [3927] [237]
+1- 1
+-1 1
+.names pk4 [559] [454]
+1- 1
+-1 1
+.names pl3 [149] [455]
+11 1
+00 1
+.names nt50 nj51 [204]
+0- 1
+-1 1
+.names [546] [3999] [456]
+1- 1
+-1 1
+.names pm3 [488] nq38
+01 1
+10 1
+.names pn4 [239] [457]
+11 1
+00 1
+.names [282] [283] [458]
+1- 1
+-1 1
+.names pi5 [3733] nr49
+1- 1
+-1 1
+.names pm4 nn45 [239]
+0- 1
+-0 1
+.names pm4 nn45 [461]
+1- 1
+-1 1
+.names pn3 [240] [462]
+11 1
+00 1
+.names ps2 [264] [463]
+11 1
+00 1
+.names ph5 [316] [464]
+01 1
+10 1
+.names po3 nk39 [465]
+01 1
+10 1
+.names pz nv50 [466]
+1- 1
+-0 1
+.names [220] [223] [468]
+1- 1
+-1 1
+.names pq1 [321] [467]
+1- 1
+-0 1
+.names pr2 [270] [471]
+11 1
+00 1
+.names [211] [4036] [472]
+1- 1
+-1 1
+.names po4 [152] [473]
+11 1
+00 1
+.names [186] [187] [474]
+1- 1
+-1 1
+.names [172] [173] [478]
+1- 1
+-1 1
+.names pr1 [321] [477]
+1- 1
+-0 1
+.names pm1 [194] [481]
+0- 1
+-1 1
+.names nu53 [303] [482]
+1- 1
+-1 1
+.names ph1 [311] nj18
+1- 1
+-1 1
+.names pn1 [180] nh22
+1- 1
+-1 1
+.names pg1 pn6 [304]
+00 1
+.names [304] [3692] nu19
+0- 1
+-1 1
+.names pl1 [181] [483]
+1- 1
+-1 1
+.names pd [483] nu22
+01 1
+.names [732] [3914] [484]
+1- 1
+-1 1
+.names nc52 [484] nw39
+11 1
+.names pc5 pj10 [303]
+00 1
+.names pg0 [303] nz50
+01 1
+.names pi0 [1088] np41
+1- 1
+-1 1
+.names pi0 [1086] nk42
+1- 1
+-1 1
+.names [992] [3796] nt44
+1- 1
+-1 1
+.names pj0 [697] nn45
+1- 1
+-1 1
+.names [3723] [3724] nj51
+11 1
+.names pr4 [170] [485]
+0- 1
+-1 1
+.names pz [3748] [182]
+1- 1
+-1 1
+.names pn5 [182] nm53
+1- 1
+-1 1
+.names px4 [168] [274]
+0- 1
+-1 1
+.names py4 [274] ny47
+0- 1
+-1 1
+.names np22 [304] [486]
+1- 1
+-1 1
+.names [766] [767] [487]
+1- 1
+-1 1
+.names nr20 [487] nv31
+11 1
+.names nc52 [489] [488]
+0- 1
+-0 1
+.names pi0 [1084] nr41
+1- 1
+-1 1
+.names nz50 nr41 [275]
+1- 1
+-0 1
+.names px3 np41 [490]
+1- 1
+-0 1
+.names pi0 [1082] nm42
+1- 1
+-1 1
+.names nn50 [3729] [170]
+0- 1
+-1 1
+.names pr4 pr5 [492]
+1- 1
+-0 1
+.names [303] ng49 [491]
+0- 1
+-1 1
+.names pm5 [189] [493]
+1- 1
+-1 1
+.names pv4 [3725] nr50
+01 1
+.names pn5 [3834] [183]
+0- 1
+-1 1
+.names pi [304] nv19
+01 1
+.names pz0 [3695] nm19
+01 1
+.names pn5 [182] [494]
+0- 1
+-1 1
+.names pc0 [494] nw53
+01 1
+.names pd5 [309] ng49
+1- 1
+-1 1
+.names nb37 [3850] [246]
+0- 1
+-1 1
+.names pq3 [875] nb39
+1- 1
+-1 1
+.names pk [1132] nt23
+1- 1
+-1 1
+.names nm19 [3697] ni19
+11 1
+.names pm5 [189] [495]
+0- 1
+-1 1
+.names pb [3683] [181]
+1- 1
+-1 1
+.names pb [3688] [180]
+1- 1
+-1 1
+.names [303] [3827] ny50
+0- 1
+-1 1
+.names nr50 [3727] nn50
+11 1
+.names ne37 [3851] [496]
+0- 1
+-1 1
+.names pq3 [881] nd39
+0- 1
+-1 1
+.names [1055] [3761] [497]
+1- 1
+-1 1
+.names nr20 [497] nh32
+11 1
+.names [862] [3855] nt26
+1- 1
+-1 1
+.names pk [1136] nr23
+1- 1
+-1 1
+.names [914] [915] [498]
+1- 1
+-1 1
+.names pb1 [140] [191]
+0- 1
+-1 1
+.names pc1 [191] nb17
+0- 1
+-1 1
+.names [1080] [1081] [154]
+1- 1
+-1 1
+.names nq29 [3760] [252]
+0- 1
+-1 1
+.names pb3 [1039] np31
+0- 1
+-1 1
+.names [1090] [3732] [500]
+1- 1
+-1 1
+.names pf0 [500] ng41
+01 1
+.names [315] [1112] [505]
+1- 1
+-1 1
+.names pj [1110] nn29
+1- 1
+-1 1
+.names nh22 [3718] [206]
+01 1
+.names [206] [1108] nf29
+1- 1
+-1 1
+.names pn1 [180] [506]
+0- 1
+-1 1
+.names pe [506] nt22
+01 1
+.names [315] [1106] [507]
+1- 1
+-1 1
+.names pj [1104] nq29
+1- 1
+-1 1
+.names pm1 [194] [508]
+1- 1
+-1 1
+.names [317] [885] [509]
+1- 1
+-1 1
+.names ph0 [883] ne37
+1- 1
+-1 1
+.names pl5 [183] [510]
+1- 1
+-1 1
+.names pb0 [510] nx53
+01 1
+.names nm53 [3848] [207]
+01 1
+.names [207] [894] nn36
+1- 1
+-1 1
+.names [317] [879] [511]
+1- 1
+-1 1
+.names ph0 [877] nb37
+1- 1
+-1 1
+.names [207] [892] nq36
+1- 1
+-1 1
+.names pl [712] nm27
+1- 1
+-1 1
+.names ni19 [3699] [142]
+0- 1
+-1 1
+.names nj18 [304] [513]
+1- 1
+-0 1
+.names pr1 pv0 [512]
+0- 1
+-1 1
+.names pv0 [142] [514]
+0- 1
+-1 1
+.names [238] [241] [515]
+1- 1
+-1 1
+.names nc52 [515] nk39
+11 1
+.names [703] [704] [516]
+1- 1
+-1 1
+.names [206] [1114] nc29
+1- 1
+-1 1
+.names [1138] [3702] [518]
+1- 1
+-1 1
+.names ph [518] nd21
+01 1
+.names pk [1134] nm24
+1- 1
+-1 1
+.names nn29 [3759] [262]
+0- 1
+-1 1
+.names pb3 [1037] nn31
+1- 1
+-1 1
+.names pk [1130] no24
+1- 1
+-1 1
+.names [1128] [1129] [153]
+1- 1
+-1 1
+.names nv19 nt23 [277]
+1- 1
+-0 1
+.names pv1 nr23 [523]
+1- 1
+-0 1
+.names pz0 [166] [273]
+0- 1
+-1 1
+.names pa1 [273] [140]
+0- 1
+-1 1
+.names ny50 [3830] [192]
+0- 1
+-1 1
+.names pv4 [192] [141]
+0- 1
+-1 1
+.names nd21 [3822] [143]
+1- 1
+-1 1
+.names pu3 nz50 [525]
+0- 1
+-1 1
+.names pu3 nz50 [524]
+1- 1
+-0 1
+.names [806] [3878] [144]
+1- 1
+-1 1
+.names pv0 nu19 [214]
+0- 1
+-0 1
+.names pw0 [214] [147]
+0- 1
+-1 1
+.names ne19 nn29 [306]
+11 1
+.names ne19 nq29 [307]
+01 1
+.names nr20 [1102] [148]
+0- 1
+-1 1
+.names nj50 ne37 [185]
+1- 1
+-0 1
+.names nj50 nb37 [305]
+11 1
+.names nc52 [554] [149]
+0- 1
+-1 1
+.names pr4 ny50 [233]
+0- 1
+-0 1
+.names ps4 [233] [150]
+0- 1
+-1 1
+.names pl2 [234] [151]
+0- 1
+-1 1
+.names pn4 [239] [152]
+0- 1
+-1 1
+.names nv19 no24 [526]
+1- 1
+-0 1
+.names nz50 nm42 [527]
+1- 1
+-0 1
+.names ne19 np31 [528]
+1- 1
+-1 1
+.names [1010] [1011] [155]
+1- 1
+-1 1
+.names nj50 nd39 [276]
+1- 1
+-1 1
+.names nj50 nb39 [529]
+0- 1
+-1 1
+.names [665] [3954] [160]
+1- 1
+-1 1
+.names [799] [800] [163]
+1- 1
+-1 1
+.names nu19 [3755] [166]
+0- 1
+-1 1
+.names pw4 [141] [168]
+0- 1
+-1 1
+.names ph5 po10 [169]
+1- 1
+-0 1
+.names nj51 [1030] [184]
+1- 1
+-1 1
+.names pl5 pn5 [189]
+1- 1
+-1 1
+.names pl1 pn1 [194]
+1- 1
+-1 1
+.names [1067] [1068] [197]
+1- 1
+-1 1
+.names [1060] [1061] [198]
+1- 1
+-1 1
+.names pu3 nz50 [201]
+01 1
+10 1
+.names nw53 nx53 [205]
+10 1
+.names nu22 nt22 [208]
+10 1
+.names [155] [3815] [222]
+1- 1
+-1 1
+.names pr3 nb39 [530]
+1- 1
+-1 1
+.names [872] [3853] [225]
+1- 1
+-1 1
+.names [853] [854] [532]
+1- 1
+-1 1
+.names pj [315] [531]
+1- 1
+-0 1
+.names nr20 [851] [226]
+0- 1
+-1 1
+.names [163] [3884] [229]
+1- 1
+-1 1
+.names pf2 [167] [287]
+0- 1
+-1 1
+.names [584] [585] [536]
+1- 1
+-1 1
+.names ph0 [317] [535]
+1- 1
+-0 1
+.names nc52 [582] [236]
+0- 1
+-1 1
+.names ph4 [156] [293]
+0- 1
+-1 1
+.names pl3 nb37 [539]
+1- 1
+-0 1
+.names [267] [4016] [240]
+1- 1
+-1 1
+.names [890] [3849] [258]
+1- 1
+-1 1
+.names [926] [3833] [261]
+1- 1
+-1 1
+.names [245] [4026] [264]
+1- 1
+-1 1
+.names [1035] [3767] [268]
+1- 1
+-1 1
+.names [218] [4035] [270]
+1- 1
+-1 1
+.names pp1 nh22 [315]
+10 1
+.names pp5 nm53 [317]
+10 1
+.names nu22 nt22 [321]
+11 1
+.names nw53 nx53 [322]
+11 1
+.names px0 [147] [324]
+0- 1
+-1 1
+.names nd21 [197] [333]
+1- 1
+-0 1
+.names ng41 [198] [336]
+1- 1
+-0 1
+.names nk40 no49 [342]
+0- 1
+-1 1
+.names pm5 pl5 [353]
+11 1
+00 1
+.names [143] [3823] [356]
+1- 1
+-1 1
+.names [951] [952] [355]
+1- 1
+-1 1
+.names pl5 pn5 [362]
+0- 1
+-1 1
+.names nh40 no49 [361]
+1- 1
+-1 1
+.names pa0 [936] [360]
+1- 1
+-1 1
+.names pr5 ny47 [363]
+0- 1
+-0 1
+.names pt1 [143] [365]
+11 1
+00 1
+.names pr5 nw53 [371]
+1- 1
+-1 1
+.names nx53 [371] [370]
+0- 1
+-1 1
+.names pp5 [205] [379]
+1- 1
+-0 1
+.names pq5 nw53 [378]
+1- 1
+-1 1
+.names pr5 [205] [384]
+1- 1
+-0 1
+.names pp5 nw53 [383]
+1- 1
+-1 1
+.names ng41 [201] [386]
+1- 1
+-0 1
+.names pl3 nl51 [390]
+1- 1
+-1 1
+.names [826] [827] [389]
+1- 1
+-1 1
+.names pw3 [144] [397]
+11 1
+00 1
+.names [797] [3881] [400]
+1- 1
+-1 1
+.names pw2 ne19 [399]
+1- 1
+-1 1
+.names pm2 [151] [414]
+0- 1
+-1 1
+.names pr1 [208] [418]
+1- 1
+-0 1
+.names pq1 nu22 [417]
+1- 1
+-1 1
+.names po4 [152] [420]
+0- 1
+-1 1
+.names nc52 [690] [423]
+0- 1
+-1 1
+.names [688] [689] [422]
+1- 1
+-1 1
+.names nj50 nb39 [424]
+0- 1
+-1 1
+.names pl1 pn1 [429]
+0- 1
+-1 1
+.names nr18 np21 [428]
+1- 1
+-1 1
+.names pc [682] [427]
+1- 1
+-1 1
+.names pr1 nb17 [430]
+0- 1
+-0 1
+.names pt4 [150] [434]
+0- 1
+-1 1
+.names pm1 pl1 [438]
+11 1
+00 1
+.names np21 [649] [437]
+1- 1
+-1 1
+.names np21 [3970] [445]
+1- 1
+-1 1
+.names pw2 nk20 [460]
+1- 1
+-1 1
+.names [284] [285] [459]
+1- 1
+-1 1
+.names pr1 nu22 [470]
+1- 1
+-1 1
+.names nt22 [470] [469]
+0- 1
+-1 1
+.names [149] [4039] [476]
+1- 1
+-1 1
+.names [188] [190] [475]
+1- 1
+-1 1
+.names pp1 nu22 [480]
+1- 1
+-1 1
+.names nt22 [480] [479]
+0- 1
+-1 1
+.names [543] [544] [489]
+1- 1
+-1 1
+.names pp5 pr5 [499]
+01 1
+10 1
+.names [504] [503] [502]
+11 1
+.names pp5 [3730] [501]
+0- 1
+-1 1
+.names pr5 nn50 [504]
+0- 1
+-0 1
+.names pq5 nr50 [503]
+0- 1
+-0 1
+.names pp1 pr1 [517]
+01 1
+10 1
+.names [522] [521] [520]
+11 1
+.names py0 [3700] [519]
+1- 1
+-1 1
+.names pr1 ni19 [522]
+0- 1
+-0 1
+.names pq1 nm19 [521]
+0- 1
+-0 1
+.names ne19 nf29 [534]
+1- 1
+-0 1
+.names ne19 nc29 [533]
+0- 1
+-0 1
+.names nj50 nq36 [538]
+1- 1
+-0 1
+.names nj50 nn36 [537]
+0- 1
+-0 1
+.names pg5 pp10
+1 1
+.names pa pl6
+1 1
+.names pe1 pm6
+1 1
+.names pj1 pr6
+1 1
+.names pa5 pi10
+1 1
+.names py ph10
+1 1
+.names pt0 px4 [137]
+11 1
+.names po0 px3 [138]
+11 1
+.names pu0 ps4 [139]
+11 1
+.names pp0 pu3 [157]
+11 1
+.names pe4 ps0 [158]
+11 1
+.names pj4 pr0 [159]
+11 1
+.names pk0 pr3 [161]
+11 1
+.names pn4 pq0 [162]
+11 1
+.names pa4 pn0 [164]
+11 1
+.names pl0 pn3 [165]
+11 1
+.names pg3 pm0 [171]
+11 1
+.names pq1 [479] [172]
+11 1
+.names [208] [480] [173]
+01 1
+.names nr20 [4040] [174]
+01 1
+.names pq2 [320] [175]
+01 1
+.names ne52 [474] [178]
+11 1
+.names [475] [4038] [186]
+11 1
+.names pp3 [476] [187]
+11 1
+.names pj3 [305] [188]
+11 1
+.names pk3 [185] [190]
+10 1
+.names pk3 nj50 [193]
+00 1
+.names pj3 nj50 [195]
+01 1
+.names nv50 [473] [199]
+01 1
+.names pb4 nv50 [200]
+11 1
+.names pf5 [169] [210]
+10 1
+.names pg5 [169] [211]
+11 1
+.names pq2 ne19 [216]
+00 1
+.names pq2 ne19 [218]
+11 1
+.names pp1 [469] [220]
+11 1
+.names [208] [470] [223]
+01 1
+.names ne52 [465] [224]
+11 1
+.names [314] [305] [238]
+11 1
+.names [313] [185] [241]
+10 1
+.names ne19 nc29 [244]
+10 1
+.names ne19 nf29 [245]
+00 1
+.names pt0 pz4 [248]
+11 1
+.names po0 pz3 [249]
+11 1
+.names pk0 pt3 [250]
+11 1
+.names pu4 pu0 [251]
+11 1
+.names pq0 pq4 [253]
+11 1
+.names pp0 pw3 [254]
+11 1
+.names pi4 ps0 [255]
+11 1
+.names pl0 pp3 [256]
+11 1
+.names pl4 pr0 [257]
+11 1
+.names pc4 pn0 [259]
+11 1
+.names pi3 pm0 [260]
+11 1
+.names pm3 [539] [266]
+01 1
+.names pm3 [185] [267]
+11 1
+.names pl3 nj50 [269]
+00 1
+.names [461] [4013] [272]
+11 1
+.names pz3 nv50 [278]
+11 1
+.names nt50 [4012] [280]
+11 1
+.names pe5 [310] [281]
+01 1
+.names [146] [4010] [282]
+01 1
+.names ps1 [459] [283]
+01 1
+.names nk20 nd21 [284]
+10 1
+.names pw2 nk20 [285]
+10 1
+.names pt0 py4 [286]
+11 1
+.names po0 py3 [288]
+11 1
+.names pp0 pv3 [289]
+11 1
+.names pt4 pu0 [290]
+11 1
+.names pf4 ps0 [291]
+11 1
+.names pk4 pr0 [292]
+11 1
+.names po4 pq0 [294]
+11 1
+.names pk0 ps3 [295]
+11 1
+.names pb4 pn0 [296]
+11 1
+.names ph3 pm0 [297]
+11 1
+.names pl0 po3 [298]
+11 1
+.names nv50 [457] [299]
+01 1
+.names pa4 nv50 [300]
+11 1
+.names pl3 [305] [543]
+01 1
+.names pl3 [185] [544]
+10 1
+.names [169] [3998] [545]
+01 1
+.names pf5 [169] [546]
+11 1
+.names pz [464] [548]
+01 1
+.names [185] [305] [554]
+10 1
+.names [454] [3996] [556]
+11 1
+.names px3 nv50 [557]
+11 1
+.names pj4 [293] [559]
+10 1
+.names nv50 [453] [561]
+01 1
+.names py3 nv50 [562]
+11 1
+.names nt50 [3992] [566]
+11 1
+.names pd5 [309] [567]
+01 1
+.names ne52 [3990] [568]
+11 1
+.names ne52 nj50 [569]
+01 1
+.names pi4 ni44 [570]
+10 1
+.names pi4 ni44 [571]
+01 1
+.names nv50 [452] [573]
+01 1
+.names pw3 nv50 [574]
+11 1
+.names ne52 [451] [578]
+11 1
+.names [536] [535] [582]
+11 1
+.names ph3 [537] [584]
+01 1
+.names ph3 [538] [585]
+11 1
+.names pb [450] [586]
+01 1
+.names [449] [3984] [591]
+11 1
+.names pv1 nq19 [592]
+11 1
+.names ph2 [287] [594]
+10 1
+.names pt2 po [598]
+11 1
+.names pa3 pn [599]
+11 1
+.names pe3 pm [600]
+11 1
+.names pw py0 [601]
+11 1
+.names pq px1 [602]
+11 1
+.names pr pu1 [603]
+11 1
+.names ps po2 [604]
+11 1
+.names pt pj2 [605]
+11 1
+.names pd1 pv [606]
+11 1
+.names pg2 pu [607]
+11 1
+.names pp pa2 [608]
+11 1
+.names nq19 [447] [609]
+01 1
+.names pw1 nq19 [610]
+11 1
+.names no19 [3973] [614]
+11 1
+.names pi1 [312] [615]
+01 1
+.names [194] [3969] [618]
+01 1
+.names nh22 [445] [619]
+01 1
+.names [443] [3967] [621]
+11 1
+.names px1 nq19 [622]
+11 1
+.names nq19 [441] [626]
+01 1
+.names py1 nq19 [627]
+11 1
+.names pq2 po [635]
+11 1
+.names px2 pn [636]
+11 1
+.names pb3 pm [637]
+11 1
+.names pw pv0 [638]
+11 1
+.names pq pr1 [639]
+11 1
+.names pp pp1 [640]
+11 1
+.names pr pm1 [641]
+11 1
+.names ps pk2 [642]
+11 1
+.names pa1 pv [643]
+11 1
+.names pb2 pu [644]
+11 1
+.names pf2 pt [645]
+11 1
+.names nh22 [437] [646]
+01 1
+.names pn1 [438] [647]
+11 1
+.names nr18 [308] [649]
+01 1
+.names nq19 [435] [653]
+01 1
+.names pz1 nq19 [654]
+11 1
+.names ne52 [432] [660]
+11 1
+.names pr3 [529] [664]
+01 1
+.names pr3 [276] [665]
+11 1
+.names po [308] [667]
+11 1
+.names pm np21 [668]
+11 1
+.names pu nr20 [669]
+10 1
+.names ps no28 [670]
+10 1
+.names pq nt20 [671]
+10 1
+.names pw2 pn [672]
+11 1
+.names pv pz0 [673]
+11 1
+.names pp pq1 [674]
+11 1
+.names pr pn1 [675]
+11 1
+.names pw pl1 [676]
+11 1
+.names pt pe2 [677]
+11 1
+.names np22 [427] [678]
+01 1
+.names nh22 [428] [679]
+01 1
+.names pm1 [429] [680]
+11 1
+.names pl1 pn1 [681]
+01 1
+.names pd1 [430] [682]
+11 1
+.names [422] [3929] [686]
+11 1
+.names pr3 [423] [687]
+11 1
+.names nj50 nd39 [688]
+00 1
+.names nj50 nb39 [689]
+10 1
+.names [276] [424] [690]
+11 1
+.names nv50 [419] [692]
+01 1
+.names pc4 nv50 [693]
+11 1
+.names pl4 [237] [697]
+10 1
+.names [416] [415] [699]
+11 1
+.names [418] [417] [701]
+11 1
+.names pr1 nt22 [702]
+10 1
+.names pr1 [3926] [703]
+01 1
+.names pq1 [517] [704]
+01 1
+.names nq19 [413] [707]
+01 1
+.names pa2 nq19 [708]
+11 1
+.names pj2 [235] [712]
+10 1
+.names ps2 po [714]
+11 1
+.names pz2 pn [715]
+11 1
+.names pd3 pm [716]
+11 1
+.names pp pz1 [717]
+11 1
+.names pw px0 [718]
+11 1
+.names pq pw1 [719]
+11 1
+.names pr pt1 [720]
+11 1
+.names ps pm2 [721]
+11 1
+.names pt pi2 [722]
+11 1
+.names pc1 pv [723]
+11 1
+.names pu pd2 [724]
+11 1
+.names ne52 [411] [727]
+11 1
+.names [185] [3913] [731]
+01 1
+.names nj50 [246] [732]
+10 1
+.names pa [410] [734]
+00 1
+.names pp2 [410] [735]
+11 1
+.names pr2 po [736]
+11 1
+.names py2 pn [737]
+11 1
+.names pc3 pm [738]
+11 1
+.names pp py1 [739]
+11 1
+.names pw pw0 [740]
+11 1
+.names pq pv1 [741]
+11 1
+.names pr ps1 [742]
+11 1
+.names ps pl2 [743]
+11 1
+.names pt ph2 [744]
+11 1
+.names pb1 pv [745]
+11 1
+.names pc2 pu [746]
+11 1
+.names [303] [3900] [749]
+11 1
+.names nm53 [3901] [750]
+01 1
+.names [407] [3896] [755]
+11 1
+.names nw25 [3897] [756]
+01 1
+.names pe3 nk20 [757]
+10 1
+.names pz1 nv19 [759]
+00 1
+.names py1 pz1 [760]
+01 1
+.names nt20 [406] [762]
+11 1
+.names [319] [306] [766]
+11 1
+.names [318] [307] [767]
+11 1
+.names [405] [3891] [768]
+11 1
+.names [231] [3892] [769]
+11 1
+.names pp3 nl51 [770]
+10 1
+.names nz50 [3890] [772]
+11 1
+.names px3 [275] [773]
+10 1
+.names [403] [3886] [776]
+11 1
+.names nx42 [3887] [777]
+01 1
+.names pq3 nl51 [778]
+10 1
+.names py3 [490] [780]
+01 1
+.names py3 [275] [781]
+11 1
+.names px3 nz50 [782]
+00 1
+.names px2 ne19 [785]
+00 1
+.names pw2 px2 [786]
+01 1
+.names pb2 pc2 [791]
+10 1
+.names pb2 pc2 [792]
+01 1
+.names [163] [3880] [794]
+01 1
+.names px2 [400] [795]
+11 1
+.names pw2 [307] [796]
+10 1
+.names pw2 [306] [797]
+00 1
+.names pw2 [307] [799]
+10 1
+.names pw2 nn29 [800]
+00 1
+.names nl51 [397] [801]
+11 1
+.names pn3 nl51 [802]
+10 1
+.names pv3 [524] [805]
+01 1
+.names pv3 [525] [806]
+11 1
+.names pd2 [395] [808]
+00 1
+.names pd2 [395] [809]
+11 1
+.names [393] [3873] [813]
+11 1
+.names [145] [3874] [814]
+11 1
+.names po3 nl51 [815]
+10 1
+.names nz50 np41 [817]
+11 1
+.names nq19 [3871] [821]
+01 1
+.names ps1 nq19 [822]
+11 1
+.names [145] [3868] [824]
+01 1
+.names pu3 [389] [825]
+01 1
+.names nl51 ng41 [826]
+10 1
+.names pl3 nl51 [827]
+10 1
+.names nq19 [387] [828]
+01 1
+.names pt1 nq19 [829]
+11 1
+.names [386] [3864] [833]
+11 1
+.names [145] [3865] [834]
+11 1
+.names pm3 nl51 [835]
+10 1
+.names nt20 [3863] [838]
+11 1
+.names nt20 ne19 [839]
+01 1
+.names [384] [383] [840]
+11 1
+.names pr5 nx53 [841]
+10 1
+.names no19 [3860] [842]
+11 1
+.names ph1 [311] [843]
+01 1
+.names pg2 nj26 [844]
+10 1
+.names pg2 nj26 [845]
+01 1
+.names nt20 [380] [847]
+11 1
+.names [532] [531] [851]
+11 1
+.names ps2 [533] [853]
+01 1
+.names ps2 [534] [854]
+11 1
+.names [379] [378] [855]
+11 1
+.names pp5 nx53 [856]
+10 1
+.names nq19 [375] [857]
+01 1
+.names pu1 nq19 [858]
+11 1
+.names pg2 nj26 [862]
+11 1
+.names pd2 [3854] [865]
+11 1
+.names pq1 pl [866]
+10 1
+.names ne52 [374] [867]
+11 1
+.names ps3 [530] [871]
+01 1
+.names ps3 [276] [872]
+11 1
+.names pr3 nj50 [873]
+00 1
+.names ph0 [246] [875]
+01 1
+.names pi3 [511] [877]
+01 1
+.names ph3 nn36 [879]
+01 1
+.names ph0 [496] [881]
+01 1
+.names pi3 [509] [883]
+11 1
+.names ph3 nq36 [885]
+11 1
+.names nj50 nq36 [889]
+00 1
+.names nj50 nn36 [890]
+10 1
+.names pg3 pf3 [892]
+11 1
+.names pg3 pf3 [894]
+00 1
+.names nv50 [3846] [896]
+01 1
+.names pu3 nv50 [897]
+11 1
+.names po0 pr5 [899]
+11 1
+.names pu0 pr4 [900]
+11 1
+.names pn0 pp5 [901]
+11 1
+.names pw4 pt0 [902]
+11 1
+.names pd4 ps0 [903]
+11 1
+.names ph4 pr0 [904]
+11 1
+.names pk0 pq3 [905]
+11 1
+.names pm4 pq0 [906]
+11 1
+.names pm5 pp0 [907]
+11 1
+.names pl0 pm3 [908]
+11 1
+.names pf3 pm0 [909]
+11 1
+.names [369] [368] [910]
+11 1
+.names pq5 [370] [912]
+11 1
+.names [205] [371] [913]
+01 1
+.names pr5 [3836] [914]
+01 1
+.names pq5 [499] [915]
+01 1
+.names nv50 [367] [918]
+01 1
+.names pv3 nv50 [919]
+11 1
+.names pf3 nj50 [925]
+00 1
+.names pf3 nj50 [926]
+11 1
+.names nk20 [365] [928]
+11 1
+.names px2 nk20 [929]
+10 1
+.names nu53 [360] [932]
+01 1
+.names nm53 [361] [933]
+01 1
+.names pm5 [362] [934]
+11 1
+.names pl5 pn5 [935]
+01 1
+.names pz4 [363] [936]
+11 1
+.names pr5 nm53 [938]
+10 1
+.names pd4 pe4 [943]
+10 1
+.names pd4 pe4 [944]
+01 1
+.names [146] [3821] [948]
+11 1
+.names [356] [3824] [949]
+11 1
+.names py2 nk20 [950]
+10 1
+.names nv19 [3819] [951]
+01 1
+.names nv19 [3820] [952]
+11 1
+.names nm53 [3817] [959]
+01 1
+.names pn5 [353] [960]
+11 1
+.names pf4 [351] [964]
+00 1
+.names pf4 [351] [965]
+11 1
+.names nt20 [350] [967]
+11 1
+.names pd3 ne19 [971]
+00 1
+.names pc3 pd3 [972]
+01 1
+.names [349] [3810] [975]
+11 1
+.names [146] [3811] [976]
+11 1
+.names pz2 nk20 [977]
+10 1
+.names nv19 nr23 [979]
+11 1
+.names pq0 [316] [981]
+11 1
+.names po0 ne52 [982]
+10 1
+.names ps0 nc52 [983]
+10 1
+.names pm0 nk40 [984]
+11 1
+.names pk0 nh40 [985]
+11 1
+.names pl5 pu0 [986]
+11 1
+.names pv4 pt0 [987]
+11 1
+.names pn0 pq5 [988]
+11 1
+.names pg4 pr0 [989]
+11 1
+.names pn5 pp0 [990]
+11 1
+.names pl0 pl3 [991]
+11 1
+.names pi4 ni44 [992]
+11 1
+.names pf4 [3795] [995]
+11 1
+.names pj0 pq5 [996]
+01 1
+.names [491] [3798] [997]
+11 1
+.names [492] [3799] [998]
+11 1
+.names [346] [3790] [1002]
+11 1
+.names [347] [3792] [1003]
+11 1
+.names nn31 [3788] [1005]
+01 1
+.names np31 [3789] [1006]
+01 1
+.names pc3 ne19 [1007]
+00 1
+.names pc3 [528] [1010]
+11 1
+.names pc3 nn31 [1011]
+01 1
+.names [345] [3784] [1012]
+11 1
+.names nu43 [3785] [1013]
+01 1
+.names pt3 nl51 [1014]
+10 1
+.names pb4 nz50 [1016]
+00 1
+.names pa4 pb4 [1017]
+01 1
+.names [343] [3779] [1021]
+11 1
+.names [217] [3780] [1022]
+11 1
+.names pa3 nk20 [1023]
+10 1
+.names nv19 [3778] [1025]
+11 1
+.names pv1 [277] [1026]
+10 1
+.names [189] [3773] [1027]
+01 1
+.names nm53 [342] [1028]
+01 1
+.names nh40 nm53 [1030]
+10 1
+.names ne19 nn31 [1034]
+11 1
+.names ne19 np31 [1035]
+01 1
+.names pj [262] [1037]
+01 1
+.names pj [252] [1039]
+01 1
+.names [339] [3763] [1041]
+11 1
+.names nz24 [3764] [1042]
+01 1
+.names pb3 nk20 [1043]
+10 1
+.names pw1 [523] [1045]
+01 1
+.names pw1 [277] [1046]
+11 1
+.names pv1 nv19 [1047]
+00 1
+.names nt20 [337] [1050]
+11 1
+.names ne19 [262] [1054]
+10 1
+.names ne19 [252] [1055]
+00 1
+.names [336] [3756] [1057]
+11 1
+.names [145] [3757] [1058]
+11 1
+.names pr3 nl51 [1059]
+10 1
+.names nz50 nm42 [1060]
+01 1
+.names nz50 nk42 [1061]
+11 1
+.names [333] [3750] [1064]
+11 1
+.names [146] [3751] [1065]
+11 1
+.names pc3 nk20 [1066]
+10 1
+.names nv19 no24 [1067]
+01 1
+.names nv19 nm24 [1068]
+11 1
+.names nm53 [3749] [1069]
+01 1
+.names pj5 nm53 [1070]
+11 1
+.names [145] [3743] [1071]
+11 1
+.names [330] [3745] [1072]
+11 1
+.names ps3 nl51 [1073]
+10 1
+.names nz50 [3738] [1075]
+01 1
+.names nz50 [3742] [1076]
+11 1
+.names pa4 nz50 [1077]
+00 1
+.names pa4 [527] [1080]
+11 1
+.names pa4 nk42 [1081]
+00 1
+.names nr41 [3737] [1082]
+11 1
+.names pu3 [3735] [1084]
+11 1
+.names np41 [3741] [1086]
+11 1
+.names pu3 [3739] [1088]
+01 1
+.names [502] [501] [1090]
+11 1
+.names [327] [3719] [1094]
+11 1
+.names [328] [3721] [1095]
+11 1
+.names pv2 [307] [1097]
+11 1
+.names pu2 [306] [1098]
+11 1
+.names pv2 ne19 [1099]
+00 1
+.names pu2 ne19 [1100]
+01 1
+.names [306] [307] [1102]
+00 1
+.names pt2 [507] [1104]
+11 1
+.names ps2 nf29 [1106]
+11 1
+.names pr2 pq2 [1108]
+11 1
+.names pt2 [505] [1110]
+01 1
+.names ps2 nc29 [1112]
+01 1
+.names pr2 pq2 [1114]
+00 1
+.names [513] [3716] [1116]
+11 1
+.names nh22 [512] [1117]
+01 1
+.names [146] [3711] [1119]
+11 1
+.names [326] [3713] [1120]
+11 1
+.names pd3 nk20 [1121]
+10 1
+.names nv19 [3706] [1123]
+01 1
+.names nv19 [3710] [1124]
+11 1
+.names py1 nv19 [1125]
+00 1
+.names py1 [526] [1128]
+11 1
+.names py1 nm24 [1129]
+00 1
+.names nt23 [3705] [1130]
+11 1
+.names pt1 [3703] [1132]
+11 1
+.names nr23 [3709] [1134]
+11 1
+.names pt1 [3707] [1136]
+01 1
+.names [520] [519] [1138]
+11 1
+.names pr1 nh22 [1144]
+10 1
+.names [304] [3687] [1147]
+11 1
+.names nh22 [3689] [1148]
+01 1
+.names pn1 pm1 [3683]
+0- 1
+-1 1
+.names pj1 pk1 [3684]
+0- 1
+-1 1
+.names nr18 pi1 [3685]
+10 1
+.names nr18 ph1 [3686]
+00 1
+.names nj18 np22 [3687]
+00 1
+.names pl1 pm1 [3688]
+0- 1
+-0 1
+.names pv0 pr1 [3689]
+11 1
+.names no19 pb [3690]
+0- 1
+-1 1
+.names [3690] [1148] [3691]
+1- 1
+-1 1
+.names [1144] nj18 [3692]
+1- 1
+-1 1
+.names pl1 pm1 [3693]
+10 1
+.names pb pn1 [3694]
+00 1
+.names py0 px0 [3695]
+00 1
+.names pc1 pa1 [3696]
+00 1
+.names [3696] pb1 [3697]
+10 1
+.names pw0 pd1 [3698]
+1- 1
+-1 1
+.names np22 [3698] [3699]
+1- 1
+-1 1
+.names px0 pp1 [3700]
+1- 1
+-0 1
+.names pw0 pv0 [3701]
+0- 1
+-1 1
+.names np22 [3701] [3702]
+1- 1
+-1 1
+.names pu1 ps1 [3703]
+11 1
+.names pv1 pw1 [3704]
+11 1
+.names [3704] px1 [3705]
+11 1
+.names no24 py1 [3706]
+11 1
+.names pu1 ps1 [3707]
+00 1
+.names pv1 pw1 [3708]
+00 1
+.names [3708] px1 [3709]
+10 1
+.names nm24 py1 [3710]
+10 1
+.names [325] pz1 [3711]
+10 1
+.names nd21 [1125] [3712]
+1- 1
+-1 1
+.names nk20 pz1 [3713]
+11 1
+.names [1121] pb [3714]
+1- 1
+-1 1
+.names [1119] [3714] [3715]
+1- 1
+-1 1
+.names [142] pv0 [3716]
+00 1
+.names [1117] pf [3717]
+1- 1
+-1 1
+.names pj pq1 [3718]
+01 1
+.names [320] pa3 [3719]
+10 1
+.names [1100] [1099] [3720]
+1- 1
+-1 1
+.names nt20 pa3 [3721]
+11 1
+.names [1094] [176] [3722]
+1- 1
+-1 1
+.names pl5 pm5 [3723]
+10 1
+.names pn5 pz [3724]
+00 1
+.names pu4 pt4 [3725]
+00 1
+.names px4 pw4 [3726]
+00 1
+.names [3726] py4 [3727]
+10 1
+.names pz4 ps4 [3728]
+1- 1
+-1 1
+.names nu53 [3728] [3729]
+1- 1
+-1 1
+.names pu4 pt4 [3730]
+1- 1
+-1 1
+.names ps4 pr4 [3731]
+0- 1
+-1 1
+.names nu53 [3731] [3732]
+1- 1
+-1 1
+.names po5 pg5 [3733]
+0- 1
+-0 1
+.names no49 pd5 [3734]
+00 1
+.names pv3 pw3 [3735]
+11 1
+.names py3 pz3 [3736]
+11 1
+.names [3736] px3 [3737]
+11 1
+.names nm42 pa4 [3738]
+11 1
+.names pv3 pw3 [3739]
+00 1
+.names py3 pz3 [3740]
+00 1
+.names [3740] px3 [3741]
+10 1
+.names nk42 pa4 [3742]
+10 1
+.names [329] pb4 [3743]
+10 1
+.names ng41 [1077] [3744]
+1- 1
+-1 1
+.names nl51 pb4 [3745]
+11 1
+.names [1073] pz [3746]
+1- 1
+-1 1
+.names [1071] [3746] [3747]
+1- 1
+-1 1
+.names pl5 pm5 [3748]
+0- 1
+-0 1
+.names pj5 pk5 [3749]
+00 1
+.names nk20 py1 [3750]
+11 1
+.names [197] py1 [3751]
+10 1
+.names [1064] [1066] [3752]
+1- 1
+-1 1
+.names pw0 pv0 [3753]
+0- 1
+-0 1
+.names py0 px0 [3754]
+0- 1
+-0 1
+.names [3754] [3753] [3755]
+1- 1
+-1 1
+.names nl51 pa4 [3756]
+11 1
+.names [198] pa4 [3757]
+10 1
+.names [1057] [1059] [3758]
+1- 1
+-1 1
+.names pu2 pa3 [3759]
+0- 1
+-1 1
+.names pv2 pa3 [3760]
+0- 1
+-0 1
+.names [1054] pj [3761]
+1- 1
+-1 1
+.names [1047] [1045] [3762]
+1- 1
+-1 1
+.names nk20 px1 [3763]
+11 1
+.names [146] px1 [3764]
+10 1
+.names [1043] pb [3765]
+1- 1
+-1 1
+.names [1041] [3765] [3766]
+1- 1
+-1 1
+.names [1034] nr20 [3767]
+1- 1
+-0 1
+.names pn3 po3 [3768]
+10 1
+.names pr3 ps3 [3769]
+00 1
+.names pp3 pq3 [3770]
+00 1
+.names [3768] pt3 [3771]
+10 1
+.names [3770] [3769] [3772]
+11 1
+.names no49 pm5 [3773]
+01 1
+.names pr3 ps3 [3774]
+11 1
+.names pp3 pq3 [3775]
+11 1
+.names [3774] pt3 [3776]
+11 1
+.names [184] [1027] [3777]
+1- 1
+-1 1
+.names nr23 pv1 [3778]
+10 1
+.names nk20 pw1 [3779]
+11 1
+.names [146] pw1 [3780]
+10 1
+.names [1023] pb [3781]
+1- 1
+-1 1
+.names [1021] [3781] [3782]
+1- 1
+-1 1
+.names [1016] [1017] [3783]
+1- 1
+-1 1
+.names nl51 pc4 [3784]
+11 1
+.names [145] pc4 [3785]
+10 1
+.names [1014] pz [3786]
+1- 1
+-1 1
+.names [1013] [3786] [3787]
+1- 1
+-1 1
+.names ne19 pc3 [3788]
+10 1
+.names ne19 pc3 [3789]
+01 1
+.names [320] pd3 [3790]
+10 1
+.names [1007] nr20 [3791]
+1- 1
+-0 1
+.names nt20 pd3 [3792]
+11 1
+.names [1002] [176] [3793]
+1- 1
+-1 1
+.names pj5 pz [3794]
+10 1
+.names pe4 pd4 [3795]
+11 1
+.names pp5 pj0 [3796]
+1- 1
+-1 1
+.names no49 pe5 [3797]
+10 1
+.names [170] pr4 [3798]
+00 1
+.names pj5 pk5 [3799]
+01 1
+.names [998] pd0 [3800]
+1- 1
+-1 1
+.names [987] [986] [3801]
+1- 1
+-1 1
+.names [989] [988] [3802]
+1- 1
+-1 1
+.names [991] [990] [3803]
+1- 1
+-1 1
+.names [3802] [3801] [3804]
+1- 1
+-1 1
+.names [3804] [3803] [3805]
+1- 1
+-1 1
+.names [984] [982] [3806]
+1- 1
+-1 1
+.names [3805] [985] [3807]
+1- 1
+-1 1
+.names [3807] [3806] [3808]
+1- 1
+-1 1
+.names [981] [3808] [3809]
+1- 1
+-1 1
+.names nk20 pv1 [3810]
+11 1
+.names [221] pv1 [3811]
+10 1
+.names [977] pb [3812]
+1- 1
+-1 1
+.names [975] [3812] [3813]
+1- 1
+-1 1
+.names nr20 [972] [3814]
+0- 1
+-1 1
+.names [3814] [971] [3815]
+1- 1
+-1 1
+.names [964] pz [3816]
+1- 1
+-1 1
+.names nk40 no49 [3817]
+10 1
+.names [184] [960] [3818]
+1- 1
+-1 1
+.names pt1 ps1 [3819]
+11 1
+.names pt1 ps1 [3820]
+00 1
+.names [355] pu1 [3821]
+10 1
+.names ps1 nv19 [3822]
+11 1
+00 1
+.names ps1 pt1 [3823]
+01 1
+10 1
+.names nk20 pu1 [3824]
+11 1
+.names [948] [950] [3825]
+1- 1
+-1 1
+.names [943] pz [3826]
+1- 1
+-1 1
+.names [938] ng49 [3827]
+1- 1
+-1 1
+.names pu4 pt4 [3828]
+0- 1
+-0 1
+.names ps4 pr4 [3829]
+0- 1
+-0 1
+.names [3829] [3828] [3830]
+1- 1
+-1 1
+.names [934] [935] [3831]
+1- 1
+-1 1
+.names [933] [3831] [3832]
+1- 1
+-1 1
+.names [925] nc52 [3833]
+1- 1
+-0 1
+.names pz pm5 [3834]
+1- 1
+-1 1
+.names [918] pz [3835]
+1- 1
+-1 1
+.names pp5 pq5 [3836]
+01 1
+.names [900] [899] [3837]
+1- 1
+-1 1
+.names [902] [901] [3838]
+1- 1
+-1 1
+.names [904] [903] [3839]
+1- 1
+-1 1
+.names [906] [905] [3840]
+1- 1
+-1 1
+.names [908] [907] [3841]
+1- 1
+-1 1
+.names [3837] [909] [3842]
+1- 1
+-1 1
+.names [3839] [3838] [3843]
+1- 1
+-1 1
+.names [3841] [3840] [3844]
+1- 1
+-1 1
+.names [3843] [3842] [3845]
+1- 1
+-1 1
+.names pg4 nt44 [3846]
+01 1
+10 1
+.names [896] pz [3847]
+1- 1
+-1 1
+.names pq5 ph0 [3848]
+10 1
+.names [889] nc52 [3849]
+1- 1
+-0 1
+.names pp3 pj3 [3850]
+1- 1
+-0 1
+.names pp3 pk3 [3851]
+0- 1
+-0 1
+.names [873] nc52 [3852]
+1- 1
+-0 1
+.names [871] [3852] [3853]
+1- 1
+-1 1
+.names pc2 pb2 [3854]
+11 1
+.names pl pp1 [3855]
+1- 1
+-1 1
+.names [858] pb [3856]
+1- 1
+-1 1
+.names [376] nc54 [3857]
+11 1
+.names [844] pb [3858]
+1- 1
+-1 1
+.names pb ph1 [3859]
+01 1
+.names [3859] nr18 [3860]
+11 1
+.names [381] nc54 [3861]
+11 1
+.names px2 pw2 [3862]
+00 1
+.names [319] pz2 [3863]
+10 1
+.names nl51 pv3 [3864]
+11 1
+.names [201] pv3 [3865]
+10 1
+.names [833] [835] [3866]
+1- 1
+-1 1
+.names [828] pb [3867]
+1- 1
+-1 1
+.names [390] pu3 [3868]
+11 1
+.names px2 pw2 [3869]
+11 1
+.names [318] pz2 [3870]
+11 1
+.names pe2 nt26 [3871]
+01 1
+10 1
+.names [821] pb [3872]
+1- 1
+-1 1
+.names nl51 px3 [3873]
+11 1
+.names [227] px3 [3874]
+10 1
+.names [815] pz [3875]
+1- 1
+-1 1
+.names [813] [3875] [3876]
+1- 1
+-1 1
+.names [808] pb [3877]
+1- 1
+-1 1
+.names [805] ng41 [3878]
+1- 1
+-1 1
+.names nr20 px2 [3879]
+10 1
+.names [3879] [399] [3880]
+11 1
+.names [796] nr20 [3881]
+1- 1
+-0 1
+.names [791] pb [3882]
+1- 1
+-1 1
+.names nr20 [786] [3883]
+0- 1
+-1 1
+.names [3883] [785] [3884]
+1- 1
+-1 1
+.names [782] [780] [3885]
+1- 1
+-1 1
+.names nl51 pz3 [3886]
+11 1
+.names [145] pz3 [3887]
+10 1
+.names [778] pz [3888]
+1- 1
+-1 1
+.names [776] [3888] [3889]
+1- 1
+-1 1
+.names np41 px3 [3890]
+10 1
+.names nl51 py3 [3891]
+11 1
+.names [145] py3 [3892]
+10 1
+.names [770] pz [3893]
+1- 1
+-1 1
+.names [768] [3893] [3894]
+1- 1
+-1 1
+.names [759] [760] [3895]
+1- 1
+-1 1
+.names nk20 pa2 [3896]
+11 1
+.names [146] pa2 [3897]
+10 1
+.names [757] pb [3898]
+1- 1
+-1 1
+.names [756] [3898] [3899]
+1- 1
+-1 1
+.names ng49 nu53 [3900]
+00 1
+.names pr5 pr4 [3901]
+11 1
+.names nt50 pz [3902]
+0- 1
+-1 1
+.names [3902] [750] [3903]
+1- 1
+-1 1
+.names [737] [736] [3904]
+1- 1
+-1 1
+.names [739] [738] [3905]
+1- 1
+-1 1
+.names [741] [740] [3906]
+1- 1
+-1 1
+.names [743] [742] [3907]
+1- 1
+-1 1
+.names [745] [744] [3908]
+1- 1
+-1 1
+.names [3904] [746] [3909]
+1- 1
+-1 1
+.names [3906] [3905] [3910]
+1- 1
+-1 1
+.names [3908] [3907] [3911]
+1- 1
+-1 1
+.names [3910] [3909] [3912]
+1- 1
+-1 1
+.names pp3 pk3 [3913]
+11 1
+.names [731] ph0 [3914]
+1- 1
+-1 1
+.names [715] [714] [3915]
+1- 1
+-1 1
+.names [717] [716] [3916]
+1- 1
+-1 1
+.names [719] [718] [3917]
+1- 1
+-1 1
+.names [721] [720] [3918]
+1- 1
+-1 1
+.names [723] [722] [3919]
+1- 1
+-1 1
+.names [3915] [724] [3920]
+1- 1
+-1 1
+.names [3917] [3916] [3921]
+1- 1
+-1 1
+.names [3919] [3918] [3922]
+1- 1
+-1 1
+.names [3921] [3920] [3923]
+1- 1
+-1 1
+.names pi2 ph2 [3924]
+0- 1
+-0 1
+.names [708] pb [3925]
+1- 1
+-1 1
+.names pp1 pq1 [3926]
+01 1
+.names pk4 pj4 [3927]
+0- 1
+-0 1
+.names [693] pz [3928]
+1- 1
+-1 1
+.names nc52 pr3 [3929]
+10 1
+.names pb3 pc3 [3930]
+00 1
+.names pe3 pa3 [3931]
+00 1
+.names pz2 pd3 [3932]
+00 1
+.names [3930] py2 [3933]
+11 1
+.names [3932] [3931] [3934]
+11 1
+.names [680] [681] [3935]
+1- 1
+-1 1
+.names [679] [3935] [3936]
+1- 1
+-1 1
+.names pj2 pf2 [3937]
+11 1
+.names ph2 pk2 [3938]
+11 1
+.names po2 pi2 [3939]
+11 1
+.names pm2 pl2 [3940]
+11 1
+.names [3938] [3937] [3941]
+11 1
+.names [3940] [3939] [3942]
+11 1
+.names [3942] [3941] [3943]
+11 1
+.names pe3 pc3 [3944]
+11 1
+.names [673] [672] [3945]
+1- 1
+-1 1
+.names [675] [674] [3946]
+1- 1
+-1 1
+.names [677] [676] [3947]
+1- 1
+-1 1
+.names [3946] [3945] [3948]
+1- 1
+-1 1
+.names [667] [3947] [3949]
+1- 1
+-1 1
+.names [668] [3948] [3950]
+1- 1
+-1 1
+.names [3949] [671] [3951]
+1- 1
+-1 1
+.names [3951] [3950] [3952]
+1- 1
+-1 1
+.names [670] [3952] [3953]
+1- 1
+-1 1
+.names [664] nc52 [3954]
+1- 1
+-0 1
+.names [654] pb [3955]
+1- 1
+-1 1
+.names [647] nh20 [3956]
+1- 1
+-1 1
+.names [636] [635] [3957]
+1- 1
+-1 1
+.names [638] [637] [3958]
+1- 1
+-1 1
+.names [640] [639] [3959]
+1- 1
+-1 1
+.names [642] [641] [3960]
+1- 1
+-1 1
+.names [644] [643] [3961]
+1- 1
+-1 1
+.names [3957] [645] [3962]
+1- 1
+-1 1
+.names [3959] [3958] [3963]
+1- 1
+-1 1
+.names [3961] [3960] [3964]
+1- 1
+-1 1
+.names [3963] [3962] [3965]
+1- 1
+-1 1
+.names [627] pb [3966]
+1- 1
+-1 1
+.names [234] nq19 [3967]
+10 1
+.names [622] pb [3968]
+1- 1
+-1 1
+.names nr18 pm1 [3969]
+01 1
+.names [308] nr18 [3970]
+0- 1
+-1 1
+.names [618] nh20 [3971]
+1- 1
+-1 1
+.names pb pi1 [3972]
+01 1
+.names nu18 [3972] [3973]
+11 1
+.names [610] pb [3974]
+1- 1
+-1 1
+.names [599] [598] [3975]
+1- 1
+-1 1
+.names [601] [600] [3976]
+1- 1
+-1 1
+.names [603] [602] [3977]
+1- 1
+-1 1
+.names [605] [604] [3978]
+1- 1
+-1 1
+.names [607] [606] [3979]
+1- 1
+-1 1
+.names [3975] [608] [3980]
+1- 1
+-1 1
+.names [3977] [3976] [3981]
+1- 1
+-1 1
+.names [3979] [3978] [3982]
+1- 1
+-1 1
+.names [3981] [3980] [3983]
+1- 1
+-1 1
+.names [235] nq19 [3984]
+10 1
+.names [592] pb [3985]
+1- 1
+-1 1
+.names no19 nh20 [3986]
+0- 1
+-1 1
+.names [574] pz [3987]
+1- 1
+-1 1
+.names [570] pz [3988]
+1- 1
+-1 1
+.names pm3 pn3 [3989]
+00 1
+.names [314] po3 [3990]
+10 1
+.names pz pd5 [3991]
+01 1
+.names [3991] no49 [3992]
+11 1
+.names pm3 pn3 [3993]
+11 1
+.names [313] po3 [3994]
+11 1
+.names [562] pz [3995]
+1- 1
+-1 1
+.names [237] nv50 [3996]
+10 1
+.names [557] pz [3997]
+1- 1
+-1 1
+.names pf5 pg5 [3998]
+00 1
+.names [545] pz [3999]
+1- 1
+-1 1
+.names [300] pz [4000]
+1- 1
+-1 1
+.names [288] [286] [4001]
+1- 1
+-1 1
+.names [290] [289] [4002]
+1- 1
+-1 1
+.names [292] [291] [4003]
+1- 1
+-1 1
+.names [295] [294] [4004]
+1- 1
+-1 1
+.names [297] [296] [4005]
+1- 1
+-1 1
+.names [4001] [298] [4006]
+1- 1
+-1 1
+.names [4003] [4002] [4007]
+1- 1
+-1 1
+.names [4005] [4004] [4008]
+1- 1
+-1 1
+.names [4007] [4006] [4009]
+1- 1
+-1 1
+.names [460] ps1 [4010]
+11 1
+.names pz pe5 [4011]
+01 1
+.names nr49 [4011] [4012]
+11 1
+.names [239] nv50 [4013]
+10 1
+.names [278] pz [4014]
+1- 1
+-1 1
+.names [269] nc52 [4015]
+1- 1
+-0 1
+.names [266] [4015] [4016]
+1- 1
+-1 1
+.names [249] [248] [4017]
+1- 1
+-1 1
+.names [251] [250] [4018]
+1- 1
+-1 1
+.names [254] [253] [4019]
+1- 1
+-1 1
+.names [256] [255] [4020]
+1- 1
+-1 1
+.names [259] [257] [4021]
+1- 1
+-1 1
+.names [4017] [260] [4022]
+1- 1
+-1 1
+.names [4019] [4018] [4023]
+1- 1
+-1 1
+.names [4021] [4020] [4024]
+1- 1
+-1 1
+.names [4023] [4022] [4025]
+1- 1
+-1 1
+.names [244] nr20 [4026]
+1- 1
+-0 1
+.names pm4 pl4 [4027]
+11 1
+.names po4 pn4 [4028]
+11 1
+.names pj4 ph4 [4029]
+11 1
+.names pq4 pk4 [4030]
+11 1
+.names [4028] [4027] [4031]
+11 1
+.names [4030] [4029] [4032]
+11 1
+.names [4032] [4031] [4033]
+11 1
+.names [467] nz22 [4034]
+11 1
+.names [216] nr20 [4035]
+1- 1
+-0 1
+.names [210] [204] [4036]
+1- 1
+-1 1
+.names [200] pz [4037]
+1- 1
+-1 1
+.names nc52 pp3 [4038]
+10 1
+.names [195] [193] [4039]
+1- 1
+-1 1
+.names nt20 pq2 [4040]
+11 1
+.names [477] nz22 [4041]
+11 1
+.names [138] [137] [4042]
+1- 1
+-1 1
+.names [157] [139] [4043]
+1- 1
+-1 1
+.names [159] [158] [4044]
+1- 1
+-1 1
+.names [162] [161] [4045]
+1- 1
+-1 1
+.names [165] [164] [4046]
+1- 1
+-1 1
+.names [4042] [171] [4047]
+1- 1
+-1 1
+.names [4044] [4043] [4048]
+1- 1
+-1 1
+.names [4046] [4045] [4049]
+1- 1
+-1 1
+.names [4048] [4047] [4050]
+1- 1
+-1 1
+.end

@@ -1,0 +1,197 @@
+.model top
+.inputs pp pa0 pq pb0 pr pc0 ps pd0 pe0 pu pf0 pv pg0 pw ph0 px pi0 py pj0 pz \
+pa pb pc pd pe pf pg ph pi pj pk pl pm pn po
+.outputs pk0 pl0 pm0 pn0 po0 pp0 pq0 pr0 ps0 pt0 pu0 pv0 pw0 px0 py0 pz0
+.names [122] [352] pk0
+1- 1
+-1 1
+.names pq [31] [353] pl0
+--1 1
+11- 1
+.names [112] [354] pm0
+1- 1
+-1 1
+.names pq [33] [355] pn0
+--1 1
+11- 1
+.names pq [34] [357] po0
+--1 1
+11- 1
+.names [97] [358] pp0
+1- 1
+-1 1
+.names pq [37] [359] pq0
+--1 1
+11- 1
+.names [87] [360] pr0
+1- 1
+-1 1
+.names pq [39] [362] ps0
+--1 1
+11- 1
+.names pq [41] [363] pt0
+--1 1
+11- 1
+.names [72] [364] pu0
+1- 1
+-1 1
+.names pq [43] [365] pv0
+--1 1
+11- 1
+.names pq [44] [367] pw0
+--1 1
+11- 1
+.names [57] [368] px0
+1- 1
+-1 1
+.names pq [47] [369] py0
+--1 1
+11- 1
+.names [20] [370] pz0
+1- 1
+-1 1
+.names pr pu pv [31]
+1-1 1
+-11 1
+000 1
+.names pw px [16] [33]
+11- 1
+-11 1
+000 1
+.names px py [24] [34]
+11- 1
+-11 1
+000 1
+.names pa0 pz [28] [37]
+11- 1
+1-1 1
+000 1
+.names pb0 pc0 [25] [39]
+11- 1
+-11 1
+000 1
+.names pd0 [25] [361] [41]
+11- 1
+1-1 1
+000 1
+.names pe0 pf0 [18] [43]
+11- 1
+-11 1
+000 1
+.names pf0 pg0 [26] [44]
+11- 1
+-11 1
+000 1
+.names ph0 pi0 [19] [47]
+11- 1
+-11 1
+000 1
+.names pr pu pv [16]
+1-- 1
+-1- 1
+--1 1
+.names pw [16] [356] [28]
+1-- 1
+-1- 1
+--1 1
+.names pd0 [25] [361] [18]
+1-- 1
+-1- 1
+--1 1
+.names pe0 [18] [26]
+1- 1
+-1 1
+.names pe0 [18] [366] [19]
+1-- 1
+-1- 1
+--1 1
+.names pw [16] [24]
+1- 1
+-1 1
+.names pa0 pz [28] [25]
+1-- 1
+-1- 1
+--1 1
+.names ph0 pi0 [19] [49]
+1-- 1
+-1- 1
+--1 1
+.names pq pj0 [49] [20]
+111 1
+100 1
+.names pq ph0 [19] [57]
+111 1
+100 1
+.names pq pe0 [18] [72]
+111 1
+100 1
+.names pq pb0 [25] [87]
+111 1
+100 1
+.names pq pz [28] [97]
+111 1
+100 1
+.names pq pw [16] [112]
+111 1
+100 1
+.names pq pr pu [122]
+111 1
+100 1
+.names pp pq ps [352]
+--1 1
+00- 1
+.names pq ps po [353]
+-1- 1
+0-0 1
+.names pq ps pn [354]
+-1- 1
+0-0 1
+.names pq ps pm [355]
+-1- 1
+0-0 1
+.names py px [356]
+1- 1
+-1 1
+.names pq ps pl [357]
+-1- 1
+0-0 1
+.names pq ps pk [358]
+-1- 1
+0-0 1
+.names pq ps pj [359]
+-1- 1
+0-0 1
+.names pq ps pi [360]
+-1- 1
+0-0 1
+.names pc0 pb0 [361]
+1- 1
+-1 1
+.names pq ps ph [362]
+-1- 1
+0-0 1
+.names pq ps pg [363]
+-1- 1
+0-0 1
+.names pq ps pf [364]
+-1- 1
+0-0 1
+.names pq ps pe [365]
+-1- 1
+0-0 1
+.names pg0 pf0 [366]
+1- 1
+-1 1
+.names pq ps pd [367]
+-1- 1
+0-0 1
+.names pq ps pc [368]
+-1- 1
+0-0 1
+.names pq ps pb [369]
+-1- 1
+0-0 1
+.names pq ps pa [370]
+-1- 1
+0-0 1
+.end

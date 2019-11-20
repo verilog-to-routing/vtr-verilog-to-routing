@@ -1,0 +1,2082 @@
+.model top
+.inputs pn3083gat pn3084gat pn3081gat pn3082gat pn3099gat pn3087gat pn3088gat \
+pn3070gat pn3085gat pn3086gat pn3094gat pn3093gat pn3089gat pn3092gat \
+pn3091gat pn3098gat pn3097gat pn3095gat pn3079gat pclk pn3065gat pn3090gat \
+pn3066gat pn3067gat pn3068gat pn3069gat pn3072gat pn3071gat pn3074gat \
+pn3100gat pn3073gat pn3076gat pn3075gat pn3080gat pn3078gat pn3077gat
+.outputs pn3113gat pn3112gat pn3111gat pn3110gat pn3117gat pn3128gat pn3116gat \
+pn3129gat pn3152gat pn3115gat pn3151gat pn3114gat pn3150gat pn3124gat \
+pn3125gat pn3119gat pn3126gat pn3118gat pn3127gat pn3120gat pn3121gat \
+pn3122gat pn3123gat pn3135gat pn3134gat pn3108gat pn3137gat pn3109gat \
+pn3136gat pn3131gat pn3130gat pn3133gat pn3148gat pn3132gat pn3149gat \
+pn3146gat pn3147gat pn3144gat pn3145gat pn3106gat pn3139gat pn3142gat \
+pn3107gat pn3138gat pn3143gat pn3104gat pn3140gat pn3105gat pn3141gat
+.latch    nn1565gat nn1332gat re pclk 2
+.latch    nn1696gat nn1775gat re pclk 2
+.latch    nn2163gat nn2454gat re pclk 2
+.latch    nn2119gat nn2117gat re pclk 2
+.latch    nii1201 nn470gat re pclk 2
+.latch    nn1632gat nn1525gat re pclk 2
+.latch    nn1330gat nn1740gat re pclk 2
+.latch    nn1361gat nn1312gat re pclk 2
+.latch    nii2813 nn2040gat re pclk 2
+.latch    nii3587 nn2121gat re pclk 2
+.latch    nii1138 nn148gat re pclk 2
+.latch    nn1564gat nn1456gat re pclk 2
+.latch    nn1945gat nn2179gat re pclk 2
+.latch    nii3339 nn2592gat re pclk 2
+.latch    nn2093gat nn2176gat re pclk 2
+.latch    nn2108gat nn2125gat re pclk 2
+.latch    nii2349 nn2190gat re pclk 2
+.latch    nn2009gat nn1871gat re pclk 2
+.latch    nn2174gat nn2169gat re pclk 2
+.latch    nn2031gat nn2110gat re pclk 2
+.latch    pn3073gat nn842gat re pclk 2
+.latch    nn1781gat nn2021gat re pclk 2
+.latch    nn2983gat nn1433gat re pclk 2
+.latch    nn2035gat nn2033gat re pclk 2
+.latch    nn1516gat nn1394gat re pclk 2
+.latch    nn1836gat nn2182gat re pclk 2
+.latch    nn827gat nn2095gat re pclk 2
+.latch    nii2319 nn2266gat re pclk 2
+.latch    nii3168 nn1496gat re pclk 2
+.latch    nii3342 nn1363gat re pclk 2
+.latch    nn2023gat nn2099gat re pclk 2
+.latch    nn1685gat nn2091gat re pclk 2
+.latch    nn1431gat nn1316gat re pclk 2
+.latch    nn2017gat nn2025gat re pclk 2
+.latch    nn748gat nn2510gat re pclk 2
+.latch    nii1227 nn156gat re pclk 2
+.latch    nn2456gat nn2514gat re pclk 2
+.latch    nn1593gat nn1588gat re pclk 2
+.latch    pn3065gat nn271gat re pclk 2
+.latch    nii1152 nn152gat re pclk 2
+.latch    nii3143 nn2458gat re pclk 2
+.latch    pn3067gat nn160gat re pclk 2
+.latch    nii1371 nn331gat re pclk 2
+.latch    nn1391gat nn1336gat re pclk 2
+.latch    nn1915gat nn1462gat re pclk 2
+.latch    pn3066gat nn337gat re pclk 2
+.latch    nii1399 nn388gat re pclk 2
+.latch    nn1613gat nn1771gat re pclk 2
+.latch    nn1800gat nn1596gat re pclk 2
+.latch    pn3069gat nn398gat re pclk 2
+.latch    nii2344 nn2135gat re pclk 2
+.latch    nn1712gat nn1678gat re pclk 2
+.latch    nii1385 nn463gat re pclk 2
+.latch    nn1713gat nn1675gat re pclk 2
+.latch    pn3070gat nn402gat re pclk 2
+.latch    nii2316 nn2262gat re pclk 2
+.latch    nn1636gat nn1508gat re pclk 2
+.latch    nii1450 nn327gat re pclk 2
+.latch    nn1927gat nn1748gat re pclk 2
+.latch    pn3072gat nn919gat re pclk 2
+.latch    nn2015gat nn2044gat re pclk 2
+.latch    nii2232 nn2644gat re pclk 2
+.latch    nii1464 nn384gat re pclk 2
+.latch    nn1567gat nn1340gat re pclk 2
+.latch    pn3071gat nn846gat re pclk 2
+.latch    nn2042gat nn2037gat re pclk 2
+.latch    nii2414 nn1975gat re pclk 2
+.latch    nii1166 nn256gat re pclk 2
+.latch    nn1717gat nn1807gat re pclk 2
+.latch    nn2556gat nn2630gat re pclk 2
+.latch    nn2911gat nn931gat re pclk 2
+.latch    nn2888gat nn322gat re pclk 2
+.latch    nn2646gat nn2502gat re pclk 2
+.latch    nii1538 nn2403gat re pclk 2
+.latch    nn2436gat nn2543gat re pclk 2
+.latch    nn2907gat nn1226gat re pclk 2
+.latch    nn2887gat nn318gat re pclk 2
+.latch    nn2057gat nn2339gat re pclk 2
+.latch    nii1550 nn2394gat re pclk 2
+.latch    nn1606gat nn2102gat re pclk 2
+.latch    nn2909gat nn1045gat re pclk 2
+.latch    nn2901gat nn561gat re pclk 2
+.latch    nn2194gat nn2270gat re pclk 2
+.latch    nii1719 nn2440gat re pclk 2
+.latch    nn2897gat nn673gat re pclk 2
+.latch    nn1882gat nn1880gat re pclk 2
+.latch    nn2912gat nn1135gat re pclk 2
+.latch    nn2890gat nn366gat re pclk 2
+.latch    nn2014gat nn2390gat re pclk 2
+.latch    nii2251 nn2407gat re pclk 2
+.latch    pn3068gat nn341gat re pclk 2
+.latch    nn2922gat nn1241gat re pclk 2
+.latch    nn2913gat nn680gat re pclk 2
+.latch    nn2198gat nn2343gat re pclk 2
+.latch    nii2260 nn2347gat re pclk 2
+.latch    nn1620gat nn2472gat re pclk 2
+.latch    nn2896gat nn1294gat re pclk 2
+.latch    nn2920gat nn816gat re pclk 2
+.latch    nn2396gat nn2399gat re pclk 2
+.latch    nn1793gat nn1389gat re pclk 2
+.latch    nn2470gat nn2319gat re pclk 2
+.latch    nn2921gat nn1080gat re pclk 2
+.latch    nn2892gat nn614gat re pclk 2
+.latch    nn567gat nn2464gat re pclk 2
+.latch    nn1827gat nn1821gat re pclk 2
+.latch    nn2894gat nn865gat re pclk 2
+.latch    nn504gat nn2526gat re pclk 2
+.latch    nn2899gat nn699gat re pclk 2
+.latch    nn1816gat nn2029gat re pclk 2
+.latch    nn933gat nn2468gat re pclk 2
+.latch    nn2925gat nn820gat re pclk 2
+.latch    nn2539gat nn2626gat re pclk 2
+.latch    nn2919gat nn1072gat re pclk 2
+.latch    nn2915gat nn777gat re pclk 2
+.latch    nn2027gat nn1829gat re pclk 2
+.latch    nn2895gat nn1148gat re pclk 2
+.latch    nn2929gat nn883gat re pclk 2
+.latch    nn2197gat nn2207gat re pclk 2
+.latch    nn2910gat nn1282gat re pclk 2
+.latch    nn2903gat nn553gat re pclk 2
+.latch    nn55gat nn2476gat re pclk 2
+.latch    nn2917gat nn707gat re pclk 2
+.latch    nn2905gat nn580gat re pclk 2
+.latch    nn2498gat nn2562gat re pclk 2
+.latch    nn2579gat nn2658gat re pclk 2
+.latch    nii1708 nn2143gat re pclk 2
+.latch    nn2914gat nn1068gat re pclk 2
+.latch    nn2923gat nn834gat re pclk 2
+.latch    nn2900gat nn824gat re pclk 2
+.latch    nn2196gat nn2203gat re pclk 2
+.latch    nn3036gat nn2495gat re pclk 2
+.latch    nn1350gat nn2084gat re pclk 2
+.latch    nn2928gat nn957gat re pclk 2
+.latch    nn2926gat nn830gat re pclk 2
+.latch    nn1610gat nn1763gat re pclk 2
+.latch    nn2971gat nn2518gat re pclk 2
+.latch    nn3016gat nn2588gat re pclk 2
+.latch    nn1626gat nn1767gat re pclk 2
+.latch    nn2557gat nn2061gat re pclk 2
+.latch    nn2927gat nn861gat re pclk 2
+.latch    nn2924gat nn838gat re pclk 2
+.latch    nn2989gat nn2155gat re pclk 2
+.latch    nn2908gat nn1197gat re pclk 2
+.latch    nn3054gat nn2640gat re pclk 2
+.latch    nn1625gat nn1834gat re pclk 2
+.latch    nn2487gat nn2139gat re pclk 2
+.latch    nn2898gat nn584gat re pclk 2
+.latch    nn2387gat nn2622gat re pclk 2
+.latch    nn2918gat nn1035gat re pclk 2
+.latch    nn2891gat nn659gat re pclk 2
+.latch    nn2886gat nn314gat re pclk 2
+.latch    nn2613gat nn2506gat re pclk 2
+.latch    nii2385 nn1899gat re pclk 2
+.latch    nn2916gat nn684gat re pclk 2
+.latch    nn2330gat nn2490gat re pclk 2
+.latch    nn2952gat nn1121gat re pclk 2
+.latch    nn2904gat nn667gat re pclk 2
+.latch    nn3010gat nn2599gat re pclk 2
+.latch    nn3053gat nn2634gat re pclk 2
+.latch    nii1630 nn1850gat re pclk 2
+.names nn1135gat [400] pn3113gat
+0- 1
+-1 1
+.names pn3112gat
+ 1
+.names nn931gat nn2394gat nn2440gat pn3111gat
+0-- 1
+-0- 1
+--0 1
+.names nn1121gat [461] pn3110gat
+0- 1
+-1 1
+.names nn748gat [739] pn3117gat
+0- 1
+-1 1
+.names nn2390gat pn3128gat
+0 1
+.names nn2970gat nn1184gat nn1201gat pn3116gat
+011 1
+101 1
+110 1
+000 1
+.names nn420gat [392] [723] pn3129gat
+--1 1
+01- 1
+.names pn3152gat
+ 1
+.names pn3115gat
+ 1
+.names [478] [3127] [3128] pn3151gat
+--1 1
+11- 1
+.names nn2190gat nn2262gat nn1282gat pn3114gat
+0-- 1
+-0- 1
+--0 1
+.names nn2454gat nn337gat [401] pn3150gat
+--1 1
+00- 1
+.names pn3116gat nn1197gat [710] pn3124gat
+--1 1
+01- 1
+10- 1
+.names nn2646gat nn291gat [392] pn3125gat
+0-- 1
+-11 1
+.names nn933gat [702] pn3119gat
+0- 1
+-1 1
+.names nn2339gat pn3126gat
+0 1
+.names nn55gat [696] pn3118gat
+0- 1
+-1 1
+.names nn2270gat pn3127gat
+0 1
+.names nn55gat [690] pn3120gat
+0- 1
+-1 1
+.names nn567gat [684] pn3121gat
+0- 1
+-1 1
+.names nn504gat [678] pn3122gat
+0- 1
+-1 1
+.names nn667gat nn120gat [672] pn3123gat
+--1 1
+01- 1
+10- 1
+.names [669] [670] [671] pn3135gat
+1-- 1
+-1- 1
+--1 1
+.names [666] [667] [668] pn3134gat
+1-- 1
+-1- 1
+--1 1
+.names nn1035gat nn3009gat pn3108gat
+0- 1
+-1 1
+.names [663] [664] [665] pn3137gat
+1-- 1
+-1- 1
+--1 1
+.names nn1072gat nn3002gat pn3109gat
+0- 1
+-1 1
+.names [660] [661] [662] pn3136gat
+1-- 1
+-1- 1
+--1 1
+.names nn419gat [524] [656] pn3131gat
+--1 1
+01- 1
+.names nn419gat [543] [651] pn3130gat
+--1 1
+01- 1
+.names nn419gat [593] [646] pn3133gat
+--1 1
+01- 1
+.names pn3148gat
+ 1
+.names nn419gat [601] [641] pn3132gat
+--1 1
+01- 1
+.names nn1880gat nn1767gat nn1834gat pn3149gat
+0-- 1
+-0- 1
+--0 1
+.names nn1871gat [418] [3157] pn3146gat
+0-1 1
+-11 1
+.names pn3147gat
+ 1
+.names nn2579gat [533] [3193] pn3144gat
+0-- 1
+-0- 1
+--0 1
+.names nn1945gat nn1836gat [418] pn3145gat
+001 1
+.names nn1871gat pn3106gat
+0 1
+.names nn1775gat nn1871gat nn1771gat pn3107gat
+01- 1
+-10 1
+.names nn1945gat [498] [3211] pn3138gat
+111 1
+.names nn2613gat [533] [3193] pn3143gat
+0-- 1
+-0- 1
+--0 1
+.names nn2990gat [374] [375] pn3104gat
+1-- 1
+-1- 1
+--1 1
+.names [372] [3216] pn3105gat
+1- 1
+-1 1
+.names [2972] [2973] [2974] nn1565gat
+111 1
+.names nn1934gat [484] [503] nn1696gat
+111 1
+.names nn1726gat nn2664gat [3002] nn2163gat
+101 1
+.names nn2121gat nn2119gat
+0 1
+.names nn830gat nii1201
+0 1
+.names nn2139gat nn1899gat [472] nn1632gat
+011 1
+.names nn1332gat nn1330gat
+0 1
+.names nn1363gat nn1361gat
+0 1
+.names nn1945gat nn1836gat nii2813
+1- 1
+-1 1
+.names nn2125gat nii3587
+0 1
+.names nn834gat nii1138
+0 1
+.names nn1726gat [386] [495] nn1564gat
+111 1
+.names nn919gat nn846gat [484] nn1945gat
+111 1
+011 1
+.names nn1775gat nii3339
+0 1
+.names nn2095gat nn2093gat
+0 1
+.names nn2110gat nn2108gat
+0 1
+.names nn2270gat nii2349
+0 1
+.names nn1726gat [546] [3012] nn2009gat
+111 1
+.names nn2176gat nn2174gat
+0 1
+.names nn2033gat nn2031gat
+0 1
+.names nn1945gat nn1836gat [3013] nn1781gat
+1-- 1
+-1- 1
+--1 1
+.names [3020] [3021] [3027] nn2983gat
+0-1 1
+-01 1
+.names nn2037gat nn2035gat
+0 1
+.names [487] [489] [3030] nn1516gat
+111 1
+.names nn1609gat [404] [1035] nn1836gat
+1-- 1
+-1- 1
+--1 1
+.names pn3087gat pn3086gat [549] nn827gat
+111 1
+.names nn2495gat nii2319
+0 1
+.names nn1394gat nii3168
+0 1
+.names nn1316gat nii3342
+0 1
+.names nn2025gat nn2023gat
+0 1
+.names nn1945gat nn1609gat [541] nn1685gat
+1-- 1
+-1- 1
+--0 1
+.names nn1433gat nn1431gat
+0 1
+.names nn2021gat nn1880gat nn1726gat nn2017gat
+0-1 1
+-01 1
+.names nn1213gat nn2889gat nn2906gat nn748gat
+011 1
+101 1
+110 1
+000 1
+.names nn614gat nii1227
+0 1
+.names nn2458gat nn2456gat
+0 1
+.names [472] [3039] nn1593gat
+11 1
+.names nn707gat nii1152
+0 1
+.names nn2592gat nii3143
+0 1
+.names nn824gat nii1371
+0 1
+.names [3044] [3045] nn1391gat
+11 1
+.names [393] [3015] [3046] nn1915gat
+001 1
+.names nn883gat nii1399
+0 1
+.names nn1934gat [484] [488] nn1613gat
+111 1
+.names [393] [494] [3047] nn1800gat
+011 1
+.names nn2339gat nii2344
+0 1
+.names nn2139gat nn1899gat [3048] nn1712gat
+111 1
+.names nn820gat nii1385
+0 1
+.names nn2139gat nn1899gat [3017] nn1713gat
+101 1
+.names nn2390gat nii2316
+0 1
+.names nn2989gat [3049] [3050] nn1636gat
+111 1
+.names nn684gat nii1450
+0 1
+.names nn1726gat [393] [494] nn1927gat
+101 1
+.names nn1775gat nn2040gat nn1316gat nn2015gat
+000 1
+.names nn2640gat nii2232
+0 1
+.names nn699gat nii1464
+0 1
+.names nn1861gat [436] [3048] nn1567gat
+101 1
+.names nn2044gat nn2042gat
+0 1
+.names nn2634gat nii2414
+0 1
+.names nn838gat nii1166
+0 1
+.names nn2143gat nn1850gat [393] nn1717gat
+010 1
+.names nn2539gat nn2990gat nn2556gat
+11 1
+.names nii1734 [1005] nn2911gat
+0- 1
+-1 1
+.names [1003] [3069] nn2888gat
+1- 1
+-1 1
+.names nn2339gat nn2270gat [459] nn2646gat
+011 1
+101 1
+110 1
+000 1
+.names nn2399gat nii1538
+0 1
+.names nn2539gat nn2143gat [393] nn2436gat
+101 1
+110 1
+.names nii1734 [992] nn2907gat
+0- 1
+-1 1
+.names [990] [3070] nn2887gat
+1- 1
+-1 1
+.names nn2664gat [400] [3054] nn2057gat
+011 1
+.names nn2343gat nii1550
+0 1
+.names nn2454gat nn271gat nn1606gat
+00 1
+.names nii1734 [985] nn2909gat
+0- 1
+-1 1
+.names [983] [3071] nn2901gat
+1- 1
+-1 1
+.names nn2664gat [512] [3054] nn2194gat
+011 1
+.names nn2562gat nii1719
+0 1
+.names pn3093gat pn3072gat [981] nn2897gat
+--1 1
+11- 1
+.names pn3100gat nn2117gat nn2125gat nn1882gat
+110 1
+.names nii1734 [978] nn2912gat
+0- 1
+-1 1
+.names [976] [3073] nn2890gat
+1- 1
+-1 1
+.names nn2664gat [528] [3053] nn2014gat
+011 1
+.names nn2207gat nii2251
+0 1
+.names pn3093gat pn3073gat [974] nn2922gat
+--1 1
+11- 1
+.names [971] [972] nn2913gat
+1- 1
+-1 1
+.names nn2014gat nn2988gat [438] nn2198gat
+101 1
+.names nn2203gat nii2260
+0 1
+.names nn919gat nn846gat [501] nn1620gat
+111 1
+.names pn3095gat pn3080gat [970] nn2896gat
+--1 1
+11- 1
+.names [967] [968] nn2920gat
+1- 1
+-1 1
+.names nn2014gat nn2988gat [461] nn2396gat
+101 1
+.names nn1861gat [495] [1055] nn1793gat
+11- 1
+1-1 1
+.names nn2472gat nn2470gat
+0 1
+.names pn3095gat pn3079gat [964] nn2921gat
+--1 1
+11- 1
+.names [959] [960] nn2892gat
+1- 1
+-1 1
+.names nn586gat nn686gat nn803gat nn567gat
+011 1
+101 1
+110 1
+000 1
+.names pn3099gat nn2319gat nn1827gat
+01 1
+.names pn3095gat pn3077gat [942] nn2894gat
+--1 1
+11- 1
+.names nn709gat nn493gat nn728gat nn504gat
+011 1
+101 1
+110 1
+000 1
+.names [388] [581] [3077] nn2899gat
+--1 1
+11- 1
+.names nn1821gat nn1816gat
+0 1
+.names nn1228gat nn1050gat nn944gat nn933gat
+011 1
+101 1
+110 1
+000 1
+.names [897] [898] [899] nn2925gat
+1-- 1
+-1- 1
+--1 1
+.names nn2014gat [3020] [3021] nn2539gat
+111 1
+.names nii1734 [895] nn2919gat
+0- 1
+-1 1
+.names [893] [3079] nn2915gat
+1- 1
+-1 1
+.names nn2029gat nn2027gat
+0 1
+.names pn3095gat pn3078gat [891] nn2895gat
+--1 1
+11- 1
+.names [885] [886] [887] nn2929gat
+1-- 1
+-1- 1
+--1 1
+.names nn2014gat nn2988gat nn3009gat nn2197gat
+101 1
+.names nii1734 [880] nn2910gat
+0- 1
+-1 1
+.names [878] [3083] nn2903gat
+1- 1
+-1 1
+.names nn343gat nn167gat nn906gat nn55gat
+011 1
+101 1
+110 1
+000 1
+.names [861] [862] nn2917gat
+1- 1
+-1 1
+.names [859] [860] nn2905gat
+1- 1
+-1 1
+.names nn2664gat nn2988gat [3054] nn2498gat
+001 1
+.names nn2409gat nn2568gat nn2579gat
+01 1
+10 1
+.names nn2543gat nii1708
+0 1
+.names pn3095gat pn3074gat [848] nn2914gat
+--1 1
+11- 1
+.names pn3065gat nn110gat [575] nn2923gat
+10- 1
+-11 1
+.names [838] [839] [840] nn2900gat
+1-- 1
+-1- 1
+--1 1
+.names nn2014gat nn2988gat nn3002gat nn2196gat
+101 1
+.names nn2664gat [3054] [3090] nn3036gat
+1-- 1
+-0- 1
+--1 1
+.names nn1880gat nn1767gat nn1834gat nn1350gat
+0-- 1
+-0- 1
+--0 1
+.names pn3095gat pn3076gat [832] nn2928gat
+--1 1
+11- 1
+.names [825] [826] nn2926gat
+1- 1
+-1 1
+.names nn1606gat [580] [2975] nn1610gat
+111 1
+.names pn3116gat nn1197gat nn2971gat
+11 1
+00 1
+.names [3092] [3093] [3094] nn3016gat
+1-- 1
+-1- 1
+--1 1
+.names nn919gat nn846gat [484] nn1626gat
+101 1
+.names nn2622gat nn2557gat
+0 1
+.names pn3095gat pn3075gat [808] nn2927gat
+--1 1
+11- 1
+.names [803] [804] nn2924gat
+1- 1
+-1 1
+.names nn2102gat nn1880gat nn1763gat nn2989gat
+0-- 1
+-00 1
+.names nii1734 [801] nn2908gat
+0- 1
+-1 1
+.names nn2014gat nn2988gat [3096] nn3054gat
+0-- 1
+-1- 1
+--1 1
+.names nn919gat nn846gat [484] nn1625gat
+001 1
+.names nn2490gat nn2487gat
+0 1
+.names [796] [797] nn2898gat
+1- 1
+-1 1
+.names nn2539gat [401] nn2387gat
+11 1
+.names nii1734 [792] nn2918gat
+0- 1
+-1 1
+.names [790] [3097] nn2891gat
+1- 1
+-1 1
+.names [787] [3098] nn2886gat
+1- 1
+-1 1
+.names nn2601gat nn2545gat nn2613gat
+01 1
+10 1
+.names nn2626gat nii2385
+0 1
+.names [771] [772] [773] nn2916gat
+1-- 1
+-1- 1
+--1 1
+.names nn2539gat nn2139gat nn1899gat nn2330gat
+10- 1
+1-0 1
+.names nii1734 [769] nn2952gat
+0- 1
+-1 1
+.names [767] [3100] nn2904gat
+1- 1
+-1 1
+.names nn667gat nn120gat nn3010gat
+11 1
+00 1
+.names nn2539gat [3101] nn3053gat
+0- 1
+-1 1
+.names nn2630gat nii1630
+0 1
+.names nn1880gat nn1767gat nn1834gat nn1831gat
+111 1
+.names nn1775gat nn2514gat nn1771gat [418]
+0-- 1
+-0- 1
+--0 1
+.names nn1821gat [3194] [3195] [509]
+0-- 1
+-11 1
+.names [402] nn1519gat [408] [506]
+--1 1
+11- 1
+.names nn1508gat [506] [3206] nn3140gat
+--1 1
+01- 1
+.names nn2394gat nn2440gat [2973] nn1861gat
+011 1
+.names nn2143gat nn2061gat nn1850gat [472]
+111 1
+.names nn1821gat nn1829gat [2975] nn1934gat
+0-1 1
+-11 1
+.names [552] [2986] [2998] nn1726gat
+0-1 1
+-01 1
+.names pn3100gat [3000] [3001] nn2664gat
+01- 1
+0-1 1
+.names nn1604gat [3064] [3065] nii1734
+1-- 1
+-1- 1
+--1 1
+.names [1033] [1034] nn2988gat
+1- 1
+-1 1
+.names nn2182gat [3025] [3026] [510]
+0-- 1
+-11 1
+.names nn2626gat nn2622gat nn2490gat nn2601gat
+111 1
+001 1
+010 1
+100 1
+.names nn2061gat nn2139gat nn1899gat [393]
+1-- 1
+-1- 1
+--1 1
+.names nn2143gat nn1850gat [494]
+11 1
+.names nn2190gat nn2262gat [512]
+0- 1
+-0 1
+.names [393] [494] [3014] nn1926gat
+011 1
+.names [489] [3017] [3019] [514]
+0-- 1
+-0- 1
+--1 1
+.names nn2394gat nn2440gat [398]
+1- 1
+-1 1
+.names nn2403gat nn2394gat nn2440gat [460]
+1-- 1
+-1- 1
+--1 1
+.names nn2403gat nn2347gat [398] nn3002gat
+10- 1
+-01 1
+010 1
+.names [480] [569] [3074] nn110gat
+01- 1
+-10 1
+.names nn152gat [465] [515]
+01 1
+10 1
+.names [478] [492] nn78gat
+11 1
+.names [480] [3074] nn182gat
+11 1
+.names nn182gat [478] [492] [388]
+00- 1
+0-0 1
+.names nn463gat [420] [516]
+01 1
+10 1
+.names nn152gat nn256gat [465] [517]
+10- 1
+-01 1
+010 1
+.names nn2562gat nn2203gat [389] [498]
+001 1
+.names nn410gat [537] [3116] nn420gat
+11- 1
+-10 1
+.names nn634gat nn414gat nn523gat nn629gat
+000 1
+.names nn634gat nn414gat nn523gat nn630gat
+010 1
+.names nn634gat nn414gat nn523gat nn632gat
+100 1
+.names nn634gat nn414gat nn523gat nn635gat
+001 1
+.names [490] [536] [3033] nn291gat
+110 1
+.names pn3085gat pn3086gat [3109] nn410gat
+111 1
+.names nn2399gat nn2203gat [497]
+01 1
+.names nn2399gat nn2207gat nn2203gat [499]
+110 1
+.names nn1945gat nn1609gat [541] nn1604gat
+001 1
+.names [3040] [3041] [3059] nn2427gat
+111 1
+.names nn2207gat nn2562gat [3058] [402]
+1-- 1
+-0- 1
+--1 1
+.names [3060] [3061] [3062] [521]
+1-- 1
+-1- 1
+--1 1
+.names nn707gat nn834gat nn838gat nn709gat
+011 1
+101 1
+110 1
+000 1
+.names nn2440gat nn2407gat [3010] [386]
+0-- 1
+-1- 1
+--1 1
+.names nn2989gat [2977] [2978] [495]
+111 1
+.names nn779gat nn2876gat nn221gat nn120gat
+011 1
+101 1
+110 1
+000 1
+.names nn2143gat nn1850gat [393] nii2926
+1-- 1
+-0- 1
+--1 1
+.names nn2143gat nn1850gat [393] nn2990gat
+10- 1
+-01 1
+010 1
+.names nn2407gat nn2347gat [460] nn3009gat
+01- 1
+0-1 1
+100 1
+.names nn291gat nn410gat [3112] nn419gat
+01- 1
+0-1 1
+.names [657] [658] [659] [524]
+1-- 1
+-1- 1
+--1 1
+.names [471] [479] [3173] nn2973gat
+1-1 1
+-11 1
+.names nn2021gat nn2099gat nn1880gat [528]
+-0- 1
+1-1 1
+.names nn1226gat nn1282gat nn2970gat
+01 1
+10 1
+.names nn398gat nn402gat nn614gat nn493gat
+011 1
+101 1
+110 1
+000 1
+.names nn2343gat nn2399gat nn2207gat [389]
+110 1
+.names pn3083gat pn3084gat [490]
+00 1
+.names pn3083gat pn3084gat pn3085gat nn1213gat
+111 1
+001 1
+010 1
+100 1
+.names nn673gat nn1241gat nn1294gat nn1228gat
+011 1
+101 1
+110 1
+000 1
+.names nn777gat nn553gat nn659gat nn779gat
+011 1
+101 1
+110 1
+000 1
+.names [538] [637] [3158] nn2981gat
+-1- 1
+1-1 1
+.names [404] [421] [533]
+0- 1
+-1 1
+.names nn2454gat nn398gat nn402gat [484]
+010 1
+.names nn919gat nn846gat [504]
+01 1
+.names pn3085gat pn3086gat [535]
+1- 1
+-1 1
+.names pn3087gat pn3086gat [536]
+1- 1
+-1 1
+.names [490] [3033] [3118] [537]
+0-- 1
+-1- 1
+--1 1
+.names nn1678gat nn1508gat nn2989gat [538]
+-01 1
+0-0 1
+.names nn2399gat nn2207gat nn2203gat nn2409gat
+011 1
+101 1
+110 1
+000 1
+.names nn2343gat nn2562gat nn2640gat nn2568gat
+111 1
+001 1
+010 1
+100 1
+.names nn1080gat nn865gat nn1148gat nn1050gat
+011 1
+101 1
+110 1
+000 1
+.names nn561gat nn366gat nn2876gat
+01 1
+10 1
+.names nn2630gat nn2543gat nn2634gat nn2545gat
+011 1
+101 1
+110 1
+000 1
+.names nn2454gat nn398gat [3006] nn1609gat
+001 1
+.names nn919gat nn846gat [481] [541]
+1-- 1
+-0- 1
+--0 1
+.names nn388gat [484] [483] [542]
+00- 1
+0-0 1
+111 1
+.names [652] [653] [654] [543]
+1-- 1
+-1- 1
+--1 1
+.names nn2403gat nn2394gat nn2440gat [461]
+01- 1
+0-1 1
+100 1
+.names nn2399gat nn2207gat nn2203gat [496]
+101 1
+.names nn777gat nn2562gat nn659gat [545]
+00- 1
+-10 1
+.names nn322gat nn553gat nn2562gat [544]
+-01 1
+0-0 1
+.names [437] [439] nn2957gat
+1- 1
+-1 1
+.names nn919gat nn846gat [503]
+10 1
+.names nn2021gat nn1880gat [546]
+0- 1
+-0 1
+.names nn1072gat nn1035gat nn1121gat nn1184gat
+011 1
+101 1
+110 1
+000 1
+.names nn2139gat nn1899gat [436]
+0- 1
+-0 1
+.names pn3087gat pn3088gat pn3086gat [478]
+100 1
+.names nn1831gat [495] [1055] nn2987gat
+01- 1
+0-1 1
+.names pn3087gat pn3086gat [491]
+01 1
+.names pn3087gat pn3086gat nn2889gat
+01 1
+10 1
+.names nn2394gat nn2440gat [438]
+0- 1
+-0 1
+.names nn2407gat nn2347gat [487]
+01 1
+.names nn2139gat nn1899gat [489]
+10 1
+.names nn919gat nn846gat [481] [404]
+101 1
+001 1
+.names nn2454gat nn398gat nn402gat [481]
+011 1
+.names pn3088gat [480] [492] [549]
+11- 1
+0-1 1
+.names nn470gat [423] [550]
+01 1
+10 1
+.names [731] [3122] [3123] [392]
+1-- 1
+-1- 1
+--1 1
+.names [725] [726] [727] [551]
+1-- 1
+-1- 1
+--1 1
+.names [1052] [2981] [2982] [552]
+1-- 1
+-11 1
+.names nn2190gat nn2135gat nn2262gat [400]
+10- 1
+-01 1
+010 1
+.names nn322gat nn318gat nn314gat nn221gat
+011 1
+101 1
+110 1
+000 1
+.names nn931gat nn1045gat nn1135gat nn1201gat
+011 1
+101 1
+110 1
+000 1
+.names nn156gat [484] [504] [557]
+00- 1
+0-0 1
+111 1
+.names nn2562gat [560] [559] [558]
+11- 1
+0-1 1
+.names [558] [3188] nn2930gat
+11 1
+.names nn919gat nn846gat [483]
+11 1
+.names nn2394gat nn2440gat nn2347gat [482]
+100 1
+.names nn2061gat nn2139gat nn1899gat [401]
+01- 1
+0-1 1
+100 1
+.names nn919gat nn846gat nn830gat nn728gat
+011 1
+101 1
+110 1
+000 1
+.names pn3088gat pn3089gat nn2906gat
+01 1
+10 1
+.names nn820gat nn883gat nn824gat nn586gat
+011 1
+101 1
+110 1
+000 1
+.names nn331gat nn327gat [424] [565]
+10- 1
+-01 1
+010 1
+.names nn2143gat [393] nn2993gat
+01 1
+10 1
+.names [490] [3033] [3034] [480]
+101 1
+.names [453] [454] [3180] nn2978gat
+1-1 1
+-11 1
+.names pn3088gat [492] [3076] [569]
+0-- 1
+-0- 1
+--1 1
+.names nn699gat nn584gat nn684gat nn686gat
+011 1
+101 1
+110 1
+000 1
+.names nn148gat [576] [575]
+01 1
+10 1
+.names nn1748gat [579] [382] [577]
+--1 1
+01- 1
+.names nn2989gat [577] [3210] nn2980gat
+--1 1
+01- 1
+.names nn1821gat nn1829gat [580]
+0- 1
+-1 1
+.names nn398gat nn402gat nn1256gat
+10 1
+.names nn384gat [582] [581]
+01 1
+10 1
+.names pn3087gat pn3093gat [583]
+0- 1
+-0 1
+.names pn3088gat pn3095gat [583] nn634gat
+0-1 1
+-01 1
+.names nn919gat nn846gat [488]
+00 1
+.names nn919gat nn846gat [481] nn1704gat
+001 1
+.names pn3086gat pn3093gat [591] nn414gat
+0-1 1
+-01 1
+.names pn3086gat pn3095gat [599] nn523gat
+0-1 1
+-01 1
+.names pn3092gat pn3091gat [585]
+1- 1
+-1 1
+.names nn2390gat nn2495gat [459]
+01 1
+10 1
+.names nn398gat nn402gat nn341gat nn343gat
+011 1
+101 1
+110 1
+000 1
+.names [490] [3031] [3032] [492]
+111 1
+.names nn1068gat nn957gat nn861gat nn944gat
+011 1
+101 1
+110 1
+000 1
+.names nn331gat [424] [590]
+01 1
+10 1
+.names pn3087gat pn3095gat [591]
+0- 1
+-0 1
+.names [647] [648] [649] [593]
+1-- 1
+-1- 1
+--1 1
+.names nn1604gat [404] [3201] nn1519gat
+0-1 1
+-11 1
+.names nn271gat nn160gat nn337gat nn167gat
+011 1
+101 1
+110 1
+000 1
+.names pn3083gat pn3084gat [3031] nn564gat
+001 1
+.names nn398gat nn402gat [501]
+11 1
+.names nn842gat nn919gat nn846gat nn906gat
+011 1
+101 1
+110 1
+000 1
+.names nn680gat nn816gat nn580gat nn803gat
+011 1
+101 1
+110 1
+000 1
+.names pn3086gat pn3095gat [600]
+0- 1
+-0 1
+.names pn3085gat pn3093gat [599]
+0- 1
+-0 1
+.names [642] [643] [644] [601]
+1-- 1
+-1- 1
+--1 1
+.names [480] [3068] [608]
+0- 1
+-1 1
+.names pn3088gat [491] [492] [607]
+0-- 1
+-0- 1
+--0 1
+.names nn919gat nn2440gat [378]
+11 1
+00 1
+.names nn388gat [484] [483] [424]
+1-- 1
+-0- 1
+--0 1
+.names nn156gat [484] [504] [465]
+1-- 1
+-0- 1
+--0 1
+.names nn634gat nn414gat nn523gat [610]
+101 1
+001 1
+.names [484] [483] [902] [420]
+0-- 1
+-0- 1
+--1 1
+.names [484] [504] [829] [423]
+0-- 1
+-0- 1
+--1 1
+.names nn1609gat [615] [3183] [614]
+--1 1
+01- 1
+.names nn634gat nn414gat nn523gat [616]
+001 1
+010 1
+.names nn120gat nn1704gat [3190] [534]
+--1 1
+11- 1
+00- 1
+.names nn398gat nn919gat nn846gat [554]
+0-- 1
+-11 1
+.names nn561gat nn2343gat nn314gat [560]
+00- 1
+-10 1
+.names nn318gat nn366gat nn2343gat [559]
+0-1 1
+-00 1
+.names nn919gat nn846gat nn2440gat [573]
+-0- 1
+0-1 1
+1-0 1
+.names nn919gat nn846gat nn2440gat [572]
+0-- 1
+-1- 1
+--0 1
+.names nn152gat nn256gat [465] [576]
+1-- 1
+-1- 1
+--1 1
+.names nn1336gat nn1604gat [3209] [579]
+--1 1
+10- 1
+.names nn331gat nn327gat [424] [582]
+1-- 1
+-1- 1
+--1 1
+.names nn2403gat nn2394gat nn2347gat [605]
+-1- 1
+0-1 1
+.names nn2562gat nn2084gat [404] [615]
+11- 1
+0-0 1
+.names nn3140gat pn3139gat
+1 1
+.names nn2980gat pn3142gat
+1 1
+.names nn3140gat pn3140gat
+1 1
+.names nn2980gat pn3141gat
+1 1
+.names pn3088gat [492] [3215] [372]
+111 1
+.names [585] nn564gat [3126] [374]
+111 1
+.names [478] [480] [375]
+11 1
+.names nn1456gat nn1519gat [390] [380]
+01- 1
+0-1 1
+.names nn1394gat nn1675gat nn1604gat [382]
+000 1
+.names nn2989gat nn1831gat [390]
+10 1
+.names nn1462gat nn1678gat nn2989gat [399]
+101 1
+.names nn2989gat [413] [3204] [407]
+01- 1
+0-1 1
+.names nn2989gat nn1831gat [3199] [408]
+101 1
+.names nn1394gat [404] [3202] [410]
+1-1 1
+-11 1
+.names nn1525gat nn1394gat nn1604gat [413]
+000 1
+.names nn2957gat nn2930gat [534] [421]
+001 1
+.names nn2343gat [496] [544] [437]
+011 1
+.names nn2203gat [389] [545] [439]
+111 1
+.names nn2973gat nn2978gat [3184] [444]
+001 1
+.names [3174] [3175] [3176] [453]
+1-1 1
+-11 1
+.names [3177] [3178] [3179] [454]
+1-1 1
+-11 1
+.names nn337gat nn2562gat nn1831gat [456]
+000 1
+.names nn2562gat nn838gat nn1831gat [458]
+001 1
+.names nn271gat nn2562gat nn1831gat [462]
+010 1
+.names nn2562gat nn834gat nn1831gat [463]
+101 1
+.names nn341gat nn2562gat nn1831gat [467]
+000 1
+.names nn614gat nn2562gat nn1831gat [468]
+001 1
+.names nn160gat nn2562gat nn1831gat [469]
+010 1
+.names nn707gat nn2562gat nn1831gat [470]
+011 1
+.names [3167] [3168] [3169] [471]
+1-1 1
+-11 1
+.names [3170] [3171] [3172] [479]
+1-1 1
+-11 1
+.names nn2562gat nn861gat nn1831gat [618]
+000 1
+.names nn580gat nn2562gat nn1831gat [619]
+001 1
+.names nn2562gat nn1068gat nn1831gat [620]
+100 1
+.names nn680gat nn2562gat nn1831gat [621]
+011 1
+.names nn865gat nn2562gat nn1831gat [622]
+000 1
+.names nn2562gat nn584gat nn1831gat [623]
+001 1
+.names nn2562gat nn957gat nn1831gat [624]
+100 1
+.names nn816gat nn2562gat nn1831gat [625]
+011 1
+.names [3160] [3161] [3163] [626]
+1-1 1
+-11 1
+.names [3164] [3165] [3166] [627]
+1-1 1
+-11 1
+.names nn673gat nn2562gat nn1831gat [628]
+000 1
+.names nn883gat nn2562gat nn1831gat [629]
+001 1
+.names nn1294gat nn2562gat nn1831gat [630]
+010 1
+.names nn2562gat nn824gat nn1831gat [631]
+101 1
+.names nn1080gat nn2562gat nn1831gat [632]
+000 1
+.names nn2562gat nn684gat nn1831gat [633]
+001 1
+.names nn1148gat nn2562gat nn1831gat [634]
+010 1
+.names nn699gat nn2562gat nn1831gat [635]
+011 1
+.names nn2592gat nn1871gat nn673gat [637]
+010 1
+.names nn420gat [3132] [3133] [641]
+01- 1
+0-1 1
+.names nn707gat nn630gat [642]
+01 1
+.names nn160gat nn635gat [643]
+01 1
+.names nn1121gat nn632gat [644]
+01 1
+.names nn420gat [3136] [3137] [646]
+01- 1
+0-1 1
+.names nn341gat nn635gat [647]
+01 1
+.names nn614gat nn630gat [648]
+01 1
+.names nn931gat nn632gat [649]
+01 1
+.names nn420gat [3105] [3106] [651]
+01- 1
+0-1 1
+.names nn271gat nn635gat [652]
+01 1
+.names nn1035gat nn632gat [653]
+01 1
+.names nn834gat nn630gat [654]
+01 1
+.names nn420gat [3134] [3135] [656]
+01- 1
+0-1 1
+.names nn337gat nn635gat [657]
+01 1
+.names nn838gat nn630gat [658]
+01 1
+.names nn1072gat nn632gat [659]
+01 1
+.names nn846gat nn419gat [616] [660]
+001 1
+.names nn1282gat nn632gat nn419gat [661]
+010 1
+.names nn420gat [3142] [3143] [662]
+01- 1
+0-1 1
+.names nn919gat nn419gat [616] [663]
+001 1
+.names nn1226gat nn632gat nn419gat [664]
+010 1
+.names nn420gat [3130] [3131] [665]
+01- 1
+0-1 1
+.names nn398gat nn419gat [616] [666]
+001 1
+.names nn1045gat nn632gat nn419gat [667]
+010 1
+.names nn420gat [3138] [3139] [668]
+01- 1
+0-1 1
+.names nn402gat nn419gat [616] [669]
+001 1
+.names nn1135gat nn632gat nn419gat [670]
+010 1
+.names nn420gat [3140] [3141] [671]
+01- 1
+0-1 1
+.names nn291gat [3142] [3143] [672]
+11- 1
+1-1 1
+.names nn824gat nn630gat [674]
+01 1
+.names nn1294gat nn635gat [676]
+01 1
+.names nn291gat [3140] [3141] [678]
+11- 1
+1-1 1
+.names nn1080gat nn635gat [680]
+01 1
+.names nn684gat nn630gat [682]
+01 1
+.names nn291gat [3138] [3139] [684]
+11- 1
+1-1 1
+.names nn1148gat nn635gat [686]
+01 1
+.names nn314gat nn632gat [688]
+01 1
+.names nn291gat [3136] [3137] [690]
+11- 1
+1-1 1
+.names nn865gat nn635gat [692]
+01 1
+.names nn322gat nn632gat [694]
+01 1
+.names nn291gat [3134] [3135] [696]
+11- 1
+1-1 1
+.names nn861gat nn635gat [698]
+01 1
+.names nn580gat nn630gat [700]
+01 1
+.names nn291gat [3132] [3133] [702]
+11- 1
+1-1 1
+.names nn957gat nn635gat [704]
+01 1
+.names nn816gat nn630gat [706]
+01 1
+.names nn291gat [3130] [3131] [710]
+11- 1
+1-1 1
+.names nn919gat nn629gat [713]
+01 1
+.names nn366gat nn632gat [715]
+01 1
+.names nn419gat [551] [723]
+01 1
+.names nn830gat nn630gat [725]
+01 1
+.names nn842gat nn635gat [726]
+01 1
+.names pn3116gat nn632gat [727]
+11 1
+.names nn634gat nn414gat [3119] [728]
+101 1
+.names nn634gat nn414gat nn523gat [729]
+110 1
+.names nn1241gat nn635gat [730]
+01 1
+.names nn632gat nn120gat [731]
+11 1
+.names pn3085gat pn3086gat [734]
+00 1
+.names nn291gat [3105] [3106] [739]
+11- 1
+1-1 1
+.names nn659gat nn632gat [741]
+01 1
+.names nn680gat nn630gat [743]
+01 1
+.names nn2143gat nn2061gat nn2139gat [748]
+0-0 1
+-10 1
+.names pn3082gat pn3095gat nii1734 [767]
+111 1
+.names pn3067gat [608] [607] [769]
+10- 1
+1-0 1
+.names nn78gat nn182gat [565] [771]
+001 1
+.names pn3079gat [480] [3074] [772]
+111 1
+.names pn3070gat [478] [492] [773]
+111 1
+.names pn3095gat pn3078gat nii1734 [787]
+111 1
+.names pn3095gat pn3074gat nii1734 [790]
+111 1
+.names pn3065gat [608] [607] [792]
+10- 1
+1-0 1
+.names pn3077gat [480] [3074] [796]
+111 1
+.names pn3068gat [478] [492] [797]
+111 1
+.names pn3073gat [608] [607] [801]
+10- 1
+1-0 1
+.names nn182gat [517] [569] [803]
+011 1
+.names pn3066gat nn182gat [569] [804]
+11- 1
+1-0 1
+.names pn3093gat pn3066gat [808]
+11 1
+.names nn182gat [550] [569] [825]
+011 1
+.names pn3073gat nn182gat [569] [826]
+11- 1
+1-0 1
+.names nn156gat nn152gat nn256gat [829]
+01- 1
+0-0 1
+.names pn3093gat pn3067gat [832]
+11 1
+.names nn78gat nn182gat [590] [838]
+001 1
+.names pn3080gat [480] [3074] [839]
+111 1
+.names pn3071gat [478] [492] [840]
+111 1
+.names pn3093gat pn3065gat [848]
+11 1
+.names pn3075gat [480] [3074] [859]
+111 1
+.names pn3066gat [478] [492] [860]
+111 1
+.names [515] nn182gat [569] [861]
+101 1
+.names pn3067gat nn182gat [569] [862]
+11- 1
+1-0 1
+.names pn3095gat pn3076gat nii1734 [878]
+111 1
+.names pn3071gat [608] [607] [880]
+10- 1
+1-0 1
+.names nn78gat nn182gat [542] [885]
+001 1
+.names pn3081gat [480] [3074] [886]
+111 1
+.names pn3072gat [478] [492] [887]
+111 1
+.names pn3093gat pn3069gat [891]
+11 1
+.names pn3095gat pn3075gat nii1734 [893]
+111 1
+.names pn3066gat [608] [607] [895]
+10- 1
+1-0 1
+.names nn78gat nn182gat [516] [897]
+001 1
+.names pn3082gat [480] [3074] [898]
+111 1
+.names pn3073gat [478] [492] [899]
+111 1
+.names nn331gat nn388gat nn327gat [902]
+10- 1
+-00 1
+.names pn3078gat [480] [3074] [921]
+111 1
+.names pn3069gat [478] [492] [922]
+111 1
+.names pn3093gat pn3068gat [942]
+11 1
+.names nn182gat [557] [569] [959]
+011 1
+.names pn3068gat nn182gat [569] [960]
+11- 1
+1-0 1
+.names pn3070gat pn3093gat [964]
+11 1
+.names pn3076gat [480] [3074] [967]
+111 1
+.names pn3067gat [478] [492] [968]
+111 1
+.names pn3093gat pn3071gat [970]
+11 1
+.names pn3074gat [480] [3074] [971]
+111 1
+.names pn3065gat [478] [492] [972]
+111 1
+.names pn3082gat pn3095gat [974]
+11 1
+.names pn3081gat pn3095gat nii1734 [976]
+111 1
+.names pn3070gat [608] [607] [978]
+10- 1
+1-0 1
+.names pn3081gat pn3095gat [981]
+11 1
+.names pn3095gat pn3080gat nii1734 [983]
+111 1
+.names pn3069gat [608] [607] [985]
+10- 1
+1-0 1
+.names pn3095gat pn3079gat nii1734 [990]
+111 1
+.names pn3072gat [608] [607] [992]
+10- 1
+1-0 1
+.names pn3095gat pn3077gat nii1734 [1003]
+111 1
+.names pn3068gat [608] [607] [1005]
+10- 1
+1-0 1
+.names nn2989gat [482] [3023] [1033]
+011 1
+.names nn2989gat [3009] [3010] [1034]
+100 1
+.names nn919gat nn846gat [481] [1035]
+011 1
+.names nn2394gat [572] [1040]
+01 1
+.names nn2394gat [573] [1041]
+11 1
+.names [378] [2988] [2989] [1047]
+111 1
+.names nn2394gat nn2440gat [2991] [1048]
+111 1
+.names [1053] [1054] [2985] [1052]
+1-1 1
+-11 1
+.names nn919gat nn846gat [2983] [1053]
+011 1
+.names nn2440gat [554] [1054]
+11 1
+.names nn2989gat [393] [494] [1055]
+001 1
+.names nn2440gat nn2394gat [2972]
+10 1
+.names nn2403gat nn2407gat nn2347gat [2973]
+010 1
+.names nn2139gat nn1899gat [472] [2974]
+001 1
+.names nn2472gat pn3100gat [2975]
+11 1
+.names nn2061gat nn2143gat [2977]
+11 1
+.names nn2139gat nn1899gat nn1850gat [2978]
+100 1
+.names nn398gat nn402gat [398] [2981]
+0-0 1
+-10 1
+.names nn398gat nn2403gat [488] [2982]
+111 1
+.names nn2440gat nn398gat [2983]
+01 1
+.names nn2403gat nn2394gat nn1256gat [2985]
+011 1
+.names nn2407gat nn2347gat nn2987gat [2986]
+011 1
+.names nn2403gat nn2394gat nn2347gat [2988]
+001 1
+.names nn398gat nn402gat nn846gat [2989]
+100 1
+.names nn2347gat nn2403gat [2991]
+01 1
+.names nn2407gat [1047] [1048] [2992]
+01- 1
+0-1 1
+.names nn2403gat nn398gat [2993]
+0- 1
+-0 1
+.names [487] nn1256gat [2993] [2995]
+0-- 1
+-1- 1
+--1 1
+.names [1040] [1041] [2995] [2997]
+1-- 1
+-1- 1
+--1 1
+.names nn2987gat [2992] [2997] [2998]
+0-- 1
+-01 1
+.names nn2588gat nn2658gat [3000]
+0- 1
+-0 1
+.names nn2510gat nn2502gat nn2506gat [3001]
+0-- 1
+-0- 1
+--0 1
+.names nn2169gat nn1312gat [3002]
+01 1
+.names nn402gat nn919gat nn846gat [3006]
+111 1
+.names nn2407gat nn2440gat [3009]
+1- 1
+-0 1
+.names nn2403gat nn2394gat nn2347gat [3010]
+0-- 1
+-1- 1
+--1 1
+.names nn1775gat nn1312gat nn2664gat [3012]
+0-0 1
+-10 1
+.names nn919gat nn846gat [484] [3013]
+101 1
+001 1
+.names nn1496gat nn2091gat nn2989gat [3014]
+1-0 1
+-10 1
+.names nn1850gat nn2143gat [3015]
+0- 1
+-1 1
+.names nn2989gat nn1740gat [3016]
+11 1
+.names nn2143gat nn2061gat nn1850gat [3017]
+101 1
+.names nn1496gat nn2091gat nn2989gat [3019]
+1-- 1
+-1- 1
+--1 1
+.names nn1926gat nii2926 [3016] [3020]
+01- 1
+0-0 1
+.names nn1740gat [514] [495] [3021]
+11- 1
+-10 1
+.names nn2407gat nn2403gat [3023]
+01 1
+.names nn2190gat nn2179gat [3025]
+00 1
+.names nn2262gat nn2135gat [3026]
+00 1
+.names [510] [1033] [1034] [3027]
+11- 1
+1-1 1
+.names nn2403gat nn2394gat nn2440gat [3028]
+111 1
+.names [3028] [472] [3030]
+11 1
+.names nn1871gat pn3093gat [3031]
+11 1
+.names pn3085gat pn3092gat pn3091gat [3032]
+11- 1
+1-1 1
+.names pn3095gat pn3085gat [3033]
+0- 1
+-1 1
+.names nn1871gat pn3094gat [3034]
+11 1
+.names nn1312gat nn2139gat nn1899gat [3039]
+110 1
+.names nn2543gat nn2630gat [3040]
+11 1
+.names nn2490gat nn2626gat [3041]
+10 1
+.names nn2399gat nn2343gat [3042]
+11 1
+.names nn2562gat nn2203gat nn2622gat [3044]
+111 1
+.names [389] [3040] [3041] [3045]
+111 1
+.names nn2403gat nn2407gat [482] [3046]
+011 1
+.names nn2403gat nn2407gat [482] [3047]
+011 1
+.names nn2143gat nn2061gat nn1850gat [3048]
+101 1
+.names nn2061gat nn2143gat [3049]
+10 1
+.names nn2139gat nn1899gat nn1850gat [3050]
+101 1
+.names nn2037gat nn2095gat [3053]
+11 1
+.names nn2095gat nn2037gat [528] [3054]
+111 1
+.names nn2203gat nn2562gat [3055]
+00 1
+.names nn2343gat nn2399gat nn2203gat [3058]
+1-- 1
+-0- 1
+--1 1
+.names nn2622gat nn2155gat [3059]
+01 1
+.names nn2543gat nn2630gat [3060]
+1- 1
+-0 1
+.names nn2155gat nn2626gat [3061]
+1- 1
+-0 1
+.names nn2490gat nn2622gat [3062]
+1- 1
+-1 1
+.names nn2207gat [3042] [3055] [3064]
+1-- 1
+011 1
+.names nn2427gat [402] [521] [3065]
+-0- 1
+0-1 1
+.names pn3087gat pn3088gat pn3086gat [3068]
+0-- 1
+-1- 1
+--0 1
+.names pn3093gat pn3068gat nii1734 [3069]
+--0 1
+111 1
+.names pn3070gat pn3093gat nii1734 [3070]
+--0 1
+111 1
+.names pn3093gat pn3071gat nii1734 [3071]
+--0 1
+111 1
+.names pn3093gat pn3072gat nii1734 [3073]
+--0 1
+111 1
+.names pn3087gat pn3088gat pn3086gat [3074]
+011 1
+.names pn3086gat pn3087gat [3076]
+1- 1
+-0 1
+.names [922] [921] [3077]
+1- 1
+-1 1
+.names pn3093gat pn3066gat nii1734 [3079]
+--0 1
+111 1
+.names pn3093gat pn3067gat nii1734 [3083]
+--0 1
+111 1
+.names nn2190gat nn2266gat nn2262gat [3090]
+01- 1
+-11 1
+100 1
+.names nn2468gat nn2526gat [3092]
+0- 1
+-0 1
+.names nn2518gat nn2476gat [3093]
+0- 1
+-0 1
+.names pn3090gat nn2464gat nn2599gat [3094]
+1-- 1
+-0- 1
+--0 1
+.names nn2644gat nn2440gat [605] [3096]
+11- 1
+1-0 1
+001 1
+.names pn3093gat pn3065gat nii1734 [3097]
+--0 1
+111 1
+.names pn3093gat pn3069gat nii1734 [3098]
+--0 1
+111 1
+.names pn3093gat pn3073gat nii1734 [3100]
+--0 1
+111 1
+.names nn1975gat nn1899gat [748] [3101]
+11- 1
+1-1 1
+000 1
+.names nn1068gat nn635gat [741] [3105]
+--1 1
+01- 1
+.names nn271gat nn629gat [743] [3106]
+--1 1
+01- 1
+.names pn3087gat pn3088gat pn3093gat [3109]
+111 1
+.names pn3093gat pn3088gat [3110]
+0- 1
+-0 1
+.names [490] [734] [3110] [3112]
+0-- 1
+-1- 1
+--1 1
+.names pn3093gat pn3088gat [3114]
+10 1
+.names [490] [535] [3114] [3116]
+111 1
+.names pn3087gat pn3088gat pn3086gat [3118]
+0-- 1
+-0- 1
+--0 1
+.names nn673gat [600] [599] [3119]
+111 1
+.names [729] [728] [3121]
+1- 1
+-1 1
+.names nn820gat nn630gat [730] [3122]
+--1 1
+01- 1
+.names nn842gat nn629gat [3121] [3123]
+--1 1
+01- 1
+.names pn3088gat pn3085gat [491] [3126]
+101 1
+.names nn1871gat [490] [3033] [3127]
+110 1
+.names [436] nn564gat [3126] [3128]
+1-- 1
+-11 1
+.names nn883gat nn630gat [713] [3130]
+--1 1
+01- 1
+.names nn673gat [610] [715] [3131]
+--1 1
+01- 1
+.names nn553gat nn632gat [704] [3132]
+--1 1
+01- 1
+.names nn160gat nn629gat [706] [3133]
+--1 1
+01- 1
+.names nn777gat nn632gat [698] [3134]
+--1 1
+01- 1
+.names nn337gat nn629gat [700] [3135]
+--1 1
+01- 1
+.names nn341gat nn629gat [692] [3136]
+--1 1
+01- 1
+.names nn584gat nn630gat [694] [3137]
+--1 1
+01- 1
+.names nn699gat nn630gat [686] [3138]
+--1 1
+01- 1
+.names nn398gat nn629gat [688] [3139]
+--1 1
+01- 1
+.names nn318gat nn632gat [680] [3140]
+--1 1
+01- 1
+.names nn402gat nn629gat [682] [3141]
+--1 1
+01- 1
+.names nn846gat nn629gat [674] [3142]
+--1 1
+01- 1
+.names nn561gat nn632gat [676] [3143]
+--1 1
+01- 1
+.names nn2169gat nn2176gat [3153]
+11 1
+.names nn2033gat nn2110gat [3154]
+11 1
+.names nn2037gat nn2095gat [3155]
+11 1
+.names [3153] [3154] [3155] [3157]
+111 1
+.names nn1831gat nn1394gat [3158]
+00 1
+.names [633] [632] [3160]
+1- 1
+-1 1
+.names [635] [634] [3161]
+1- 1
+-1 1
+.names nn2343gat nn2207gat [497] [3163]
+011 1
+.names [629] [628] [3164]
+1- 1
+-1 1
+.names [631] [630] [3165]
+1- 1
+-1 1
+.names [499] nn2343gat [3166]
+11 1
+.names [619] [618] [3167]
+1- 1
+-1 1
+.names [621] [620] [3168]
+1- 1
+-1 1
+.names nn2399gat nn2343gat [3169]
+10 1
+.names [623] [622] [3170]
+1- 1
+-1 1
+.names [625] [624] [3171]
+1- 1
+-1 1
+.names nn2399gat nn2343gat [3172]
+01 1
+.names nn2203gat nn2207gat [3173]
+11 1
+.names [458] [456] [3174]
+1- 1
+-1 1
+.names [463] [462] [3175]
+1- 1
+-1 1
+.names nn2399gat nn2343gat [3176]
+10 1
+.names [468] [467] [3177]
+1- 1
+-1 1
+.names [470] [469] [3178]
+1- 1
+-1 1
+.names nn2399gat nn2343gat [3179]
+01 1
+.names nn2203gat nn2207gat [3180]
+01 1
+.names nn2399gat nn2343gat [3181]
+0- 1
+-0 1
+.names nn2207gat nn2203gat [3181] [3183]
+0-- 1
+-0- 1
+--1 1
+.names [614] [626] [627] [3184]
+100 1
+.names nn2399gat nn2207gat nn2203gat [3188]
+001 1
+.names nn2562gat nn2203gat [389] [3190]
+0-- 1
+-1- 1
+--0 1
+.names nn1389gat nn2981gat [444] [3193]
+00- 1
+-01 1
+.names nn2021gat pn3097gat [3194]
+11 1
+.names nn1829gat nn1880gat [3195]
+11 1
+.names pn3098gat nn1775gat nn1871gat [3197]
+001 1
+.names nn1462gat nn1394gat [3199]
+01 1
+.names nn2989gat nn1340gat [3201]
+10 1
+.names nn1678gat nn1596gat [3202]
+00 1
+.names nn1588gat nn1596gat [410] [3204]
+--1 1
+01- 1
+.names [509] [399] [3197] [3205]
+-1- 1
+1-1 1
+.names [407] [3205] [3206]
+1- 1
+-1 1
+.names nn1807gat nn1340gat [3207]
+01 1
+.names [404] nn1831gat [3209]
+1- 1
+-0 1
+.names nn2989gat [380] [3207] [3210]
+-1- 1
+1-1 1
+.names nn2622gat [3040] [3041] [3211]
+111 1
+.names pn3087gat pn3088gat pn3086gat [3214]
+001 1
+.names pn3086gat pn3087gat [3215]
+00 1
+.names nn2993gat [480] [3214] [3216]
+1-- 1
+-11 1
+.end

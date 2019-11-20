@@ -1,0 +1,292 @@
+.model top
+.inputs keyb_in_0_ keyb_in_5_ keyb_in_6_ clock keyb_in_3_ keyb_in_4_ \
+keyb_in_1_ keyb_in_2_
+.outputs keyb_out_0_ keyb_out_1_
+.latch    n_n28 n_n132 re clock 2
+.latch    n_n29 n_n133 re clock 2
+.latch    n_n30 n_n134 re clock 2
+.latch    n_n31 n_n135 re clock 2
+.latch    n_n32 n_n136 re clock 2
+.names n_n135 n_n136 keyb_out_0_
+10 1
+.names [16] [575] [576] [577] keyb_out_1_
+---1 1
+11-- 1
+1-1- 1
+.names n_n132 [21] [153] [522] n_n28
+--1- 1
+---1 1
+01-- 1
+.names n_n132 [21] [139] [534] n_n29
+--1- 1
+---1 1
+01-- 1
+.names n_n135 [33] [22] [542] n_n30
+---1 1
+11-- 1
+1-1- 1
+.names n_n133 [107] [108] [558] n_n31
+---1 1
+01-- 1
+0-1- 1
+.names [572] [573] n_n32
+1- 1
+-1 1
+.names keyb_in_0_ keyb_in_1_ keyb_in_2_ [16]
+000 1
+.names keyb_in_3_ keyb_in_4_ n_n132 n_n134 [17]
+0010 1
+.names keyb_in_1_ keyb_in_2_ [20]
+01 1
+10 1
+.names keyb_in_0_ n_n132 n_n133 n_n134 [33]
+0011 1
+.names keyb_in_5_ keyb_in_6_ n_n136 [64]
+--1 1
+00- 1
+.names n_n133 n_n135 [528] [36]
+111 1
+.names n_n132 n_n134 n_n136 [46]
+000 1
+.names [58] [86] [520] [521] [21]
+11-- 1
+--11 1
+.names keyb_in_3_ keyb_in_4_ [16] [524] [30]
+1111 1
+.names [16] [17] [28] [526] [67]
+-11- 1
+1--1 1
+.names n_n132 n_n134 [25]
+01 1
+.names n_n132 n_n134 [52]
+10 1
+.names n_n133 n_n135 [60]
+11 1
+.names keyb_in_0_ keyb_in_1_ keyb_in_2_ n_n133 [28]
+00-- 1
+0-00 1
+-000 1
+.names keyb_in_6_ [76] [92] [564] [75]
+--1- 1
+---1 1
+01-- 1
+.names n_n133 [131] [132] [133] [22]
+-1-- 1
+1-1- 1
+1--1 1
+.names n_n133 n_n134 [58]
+11 1
+.names keyb_in_0_ keyb_in_1_ [54]
+10 1
+.names keyb_in_3_ keyb_in_4_ [51]
+00 1
+.names keyb_in_3_ keyb_in_4_ [19]
+01 1
+10 1
+.names keyb_in_0_ keyb_in_1_ keyb_in_2_ n_n135 [86]
+0--1 1
+000- 1
+.names keyb_in_5_ keyb_in_3_ keyb_in_4_ n_n134 [24]
+0001 1
+.names keyb_in_0_ keyb_in_1_ keyb_in_2_ n_n136 [55]
+0011 1
+0101 1
+.names keyb_in_5_ keyb_in_6_ [56]
+00 1
+.names n_n132 n_n135 [59]
+10 1
+.names keyb_in_0_ keyb_in_3_ keyb_in_1_ keyb_in_2_ [69]
+0-01 1
+0010 1
+1000 1
+.names n_n135 [17] [46] [24] [71]
+11-- 1
+0-1- 1
+0--1 1
+.names n_n133 [19] [77] [563] [76]
+1-1- 1
+-1-1 1
+.names keyb_in_3_ keyb_in_4_ n_n132 n_n134 [77]
+000- 1
+1110 1
+.names keyb_in_5_ keyb_in_3_ keyb_in_4_ [79]
+001 1
+010 1
+100 1
+.names keyb_in_0_ keyb_in_1_ keyb_in_2_ n_n135 [81]
+001- 1
+0100 1
+1000 1
+.names keyb_in_5_ n_n134 n_n135 [83]
+--1 1
+01- 1
+.names [17] [55] [48] [39]
+11- 1
+1-1 1
+.names n_n132 n_n134 [16] [51] [40]
+0111 1
+.names keyb_in_1_ keyb_in_2_ n_n135 [551] [42]
+0001 1
+.names keyb_in_6_ [16] [90] [567] [48]
+0-1- 1
+01-1 1
+.names keyb_in_0_ keyb_in_5_ keyb_in_1_ keyb_in_2_ [90]
+0001 1
+0010 1
+1000 1
+.names n_n132 n_n135 [561] [92]
+101 1
+.names keyb_in_3_ keyb_in_4_ n_n132 n_n134 [94]
+0-01 1
+-001 1
+.names [16] [25] [60] [79] [99]
+-11- 1
+11-1 1
+.names [24] [81] [107]
+11 1
+.names n_n132 [111] [113] [555] [108]
+11-- 1
+1-1- 1
+1--1 1
+.names keyb_in_3_ keyb_in_4_ [16] [83] [111]
+1111 1
+.names keyb_in_0_ n_n134 n_n135 [112]
+011 1
+.names keyb_in_3_ keyb_in_4_ [55] [113]
+001 1
+.names n_n136 [121] [122] [123] [118]
+11-- 1
+1-1- 1
+1--1 1
+.names n_n135 [22] [120]
+11 1
+.names keyb_in_3_ keyb_in_4_ [16] [544] [121]
+0011 1
+.names keyb_in_3_ keyb_in_4_ [16] [59] [122]
+0111 1
+1011 1
+.names keyb_in_0_ keyb_in_1_ keyb_in_2_ [17] [123]
+1001 1
+.names [16] [17] [64] [126]
+111 1
+.names [54] [135] [537] [539] [127]
+-1-1 1
+1-11 1
+.names keyb_in_0_ keyb_in_1_ n_n132 n_n134 [131]
+0001 1
+.names keyb_in_0_ keyb_in_1_ n_n132 n_n134 [132]
+0-10 1
+-010 1
+.names keyb_in_0_ keyb_in_1_ keyb_in_2_ n_n132 [133]
+0000 1
+.names keyb_in_0_ keyb_in_1_ n_n132 n_n134 [135]
+0011 1
+.names n_n134 [36] [146] [147] [139]
+01-- 1
+0-1- 1
+0--1 1
+.names [69] [530] [146]
+11 1
+.names keyb_in_3_ keyb_in_4_ [16] [532] [147]
+0011 1
+.names n_n133 [16] [71] [155] [153]
+-1-1 1
+011- 1
+.names [17] [515] [155]
+11 1
+.names n_n132 n_n133 n_n134 n_n135 [512]
+1101 1
+.names n_n132 n_n134 n_n135 [513]
+011 1
+.names keyb_in_5_ keyb_in_6_ n_n133 n_n135 [515]
+0010 1
+.names keyb_in_0_ keyb_in_1_ n_n135 [520]
+000 1
+.names keyb_in_3_ n_n133 n_n134 n_n136 [521]
+1000 1
+.names keyb_in_0_ keyb_in_1_ [512] [513] [522]
+011- 1
+101- 1
+00-1 1
+.names n_n132 n_n134 n_n135 [524]
+101 1
+.names keyb_in_3_ keyb_in_4_ n_n132 n_n135 [526]
+0-10 1
+-010 1
+.names keyb_in_0_ keyb_in_1_ n_n132 [528]
+001 1
+.names n_n132 n_n133 n_n135 n_n136 [530]
+0000 1
+.names n_n133 n_n135 n_n136 [532]
+011 1
+.names n_n136 [30] [67] [534]
+-1- 1
+1-1 1
+.names keyb_in_2_ n_n132 n_n134 [537]
+001 1
+.names n_n135 n_n133 [539]
+01 1
+.names [20] [33] [126] [127] [542]
+--1- 1
+---1 1
+11-- 1
+.names keyb_in_0_ keyb_in_1_ n_n135 [543]
+000 1
+.names keyb_in_5_ n_n132 n_n135 [544]
+00- 1
+-01 1
+.names keyb_in_2_ [33] [58] [543] [548]
+01-- 1
+--11 1
+.names n_n132 n_n133 n_n134 [551]
+011 1
+.names keyb_in_0_ keyb_in_1_ [24] [112] [555]
+---1 1
+001- 1
+.names keyb_in_1_ keyb_in_2_ [99] [551] [557]
+--1- 1
+00-1 1
+.names [118] [120] [548] [557] [558]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names keyb_in_3_ keyb_in_4_ n_n133 n_n136 [560]
+0000 1
+.names keyb_in_3_ keyb_in_4_ n_n134 [561]
+111 1
+.names n_n132 n_n133 n_n134 n_n135 [563]
+1000 1
+.names keyb_in_6_ n_n132 [94] [560] [564]
+--1- 1
+11-1 1
+.names keyb_in_0_ keyb_in_5_ keyb_in_1_ keyb_in_2_ [566]
+0000 1
+.names keyb_in_5_ n_n133 n_n136 [567]
+100 1
+.names n_n135 [28] [24] [40] [569]
+---1 1
+011- 1
+.names n_n135 [33] [30] [42] [570]
+--1- 1
+---1 1
+11-- 1
+.names [75] [566] [569] [570] [572]
+--1- 1
+---1 1
+11-- 1
+.names [39] [118] [120] [548] [573]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names n_n133 n_n134 n_n135 [24] [575]
+11-- 1
+--01 1
+.names n_n136 [52] [51] [56] [576]
+111- 1
+0-11 1
+.names n_n133 n_n135 [46] [528] [577]
+--1- 1
+11-1 1
+.end

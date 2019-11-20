@@ -1,0 +1,44 @@
+.model top
+.inputs pp pa pb pc pd pe pf pg ph pi pj pk pl pm pn po
+.outputs pq
+.names ne0 nc0 nd0 pq
+111 1
+001 1
+010 1
+100 1
+.names nb0 ns nt ne0
+111 1
+001 1
+010 1
+100 1
+.names pe pf nw nc0
+111 1
+001 1
+010 1
+100 1
+.names pa pb ny nd0
+111 1
+001 1
+010 1
+100 1
+.names pi pj nu nb0
+111 1
+001 1
+010 1
+100 1
+.names pp po ns
+01 1
+10 1
+.names pc pd ny
+01 1
+10 1
+.names pk pl nu
+01 1
+10 1
+.names pm pn nt
+01 1
+10 1
+.names pg ph nw
+01 1
+10 1
+.end

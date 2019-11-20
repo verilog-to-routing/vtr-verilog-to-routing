@@ -1,0 +1,26 @@
+.model top
+.inputs pa pb pc pd pe
+.outputs pf
+.names [4] [25] pf
+1- 1
+-1 1
+.names [6] [7] [2]
+1- 1
+-1 1
+.names pc pe [3]
+1- 1
+-1 1
+.names pe [24] [1]
+11 1
+.names pa [2] [4]
+11 1
+.names pb [3] [6]
+11 1
+.names pc pe [7]
+11 1
+.names pc pb [24]
+11 1
+.names [1] pd [25]
+1- 1
+-1 1
+.end

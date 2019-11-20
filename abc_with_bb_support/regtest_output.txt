@@ -1,0 +1,96 @@
+UC Berkeley, ABC 1.01 (compiled Dec 25 2006 17:15:00)
+abc 01> so regtest.script
+abc - > r examples/apex4.pla;    resyn; if; cec; ps; clp; resyn; map; cec; ps
+Networks are equivalent.
+examples/apex4: i/o =    9/  19  lat =    0  nd =  1172  aig  =  4365  lev =   7
+The shared BDD size is 917 nodes.  BDD construction time =   0.04 sec
+A simple supergate library is derived from gate library "mcnc_temp.genlib".
+Loaded 20 unique 5-input supergates from "mcnc_temp.super".  Time =   0.02 sec
+Networks are equivalent.
+examples/apex4: i/o =    9/  19  lat =    0  nd =  1734  aig  =  2576  lev =  12
+abc - > r examples/C2670.blif;   st; w 1.aig; cec 1.aig
+Networks are equivalent after structural hashing.
+abc - > r examples/C2670.blif;   st; short_names; w 1.bench; cec 1.bench
+Networks are equivalent after structural hashing.
+abc - > r examples/C2670.blif;   st; short_names; ren -s; w 1.eqn; cec 1.eqn
+Networks are equivalent.
+abc - > r examples/C2670.blif;   resyn2; if -K 8; cec; ps; u; map; cec; ps
+Networks are equivalent.
+C2670.iscas  : i/o =  233/ 140  lat =    0  nd =   120  aig  =  1056  lev =   4
+Networks are equivalent.
+C2670.iscas  : i/o =  233/ 140  lat =    0  nd =   467  aig  =   651  lev =  14
+abc - > r examples/frg2.blif;    dsd; muxes; cec; ps; clp; share; resyn; map; cec; ps
+Networks are equivalent.
+frg2         : i/o =  143/ 139  lat =    0  nd =  1648  aig  =  2268  lev =  18
+The shared BDD size is 1672 nodes.  BDD construction time =   0.14 sec
+Networks are equivalent.
+frg2         : i/o =  143/ 139  lat =    0  nd =   533  aig  =   778  lev =   8
+abc - > r examples/frg2.blif;    bdd; muxes; cec; ps; clp; st; ren -b; muxes; cec; ps
+Networks are equivalent.
+frg2         : i/o =  143/ 139  lat =    0  nd =  2868  aig  =  4221  lev =  38
+The shared BDD size is 1684 nodes.  BDD construction time =   0.14 sec
+Networks are equivalent.
+frg2         : i/o =  143/ 139  lat =    0  nd =  2331  aig  =  3180  lev =  20
+abc - > r examples/i10.blif;     resyn2; fpga; cec; ps;  u; map; cec; ps
+Networks are equivalent.
+i10          : i/o =  257/ 224  lat =    0  nd =   808  aig  =  2630  lev =  12
+Networks are equivalent.
+i10          : i/o =  257/ 224  lat =    0  nd =  1555  aig  =  1980  lev =  24
+abc - > r examples/i10.blif;     choice; fpga; cec; ps;  u; map; cec; ps
+Currently stored 3 networks with 5801 nodes will be fraiged.
+Total fraiging time =   0.39 sec
+Performing FPGA mapping with choices.
+Networks are equivalent.
+i10          : i/o =  257/ 224  lat =    0  nd =   798  aig  =  2543  lev =  12
+Performing mapping with choices.
+Networks are equivalent.
+i10          : i/o =  257/ 224  lat =    0  nd =  1463  aig  =  1993  lev =  23
+abc - > r examples/pj1.blif;     st; if; cec; ps;   u; map; cec; ps
+Networks are equivalent after structural hashing.
+exCombCkt    : i/o = 1769/1063  lat =    0  nd =  5984  aig  = 23156  lev =  52
+Networks are equivalent.
+exCombCkt    : i/o = 1769/1063  lat =    0  nd = 11474  aig  = 16032  lev =  80
+abc - > r examples/s38417.blif;  comb; w 1.blif; resyn; if; cec 1.blif; ps
+examples/s38417.blif (line 14): Skipping directive ".wire_load_slope".
+Networks are equivalent.
+s38417       : i/o = 1664/1742  lat =    0  nd =  3479  aig  = 10120  lev =   9
+abc - > r examples/s38417.blif;  resyn; if; cec; ps;   u; map; cec; ps
+examples/s38417.blif (line 14): Skipping directive ".wire_load_slope".
+examples/s38417.blif (line 14): Skipping directive ".wire_load_slope".
+Networks are equivalent.
+s38417       : i/o =   28/ 106  lat = 1636  nd =  3479  aig  = 10120  lev =   9
+examples/s38417.blif (line 14): Skipping directive ".wire_load_slope".
+Networks are equivalent.
+s38417       : i/o =   28/ 106  lat = 1636  nd =  7189  aig  =  8689  lev =  17
+abc - > r examples/s38584.bench; resyn; ren -s; fx; if; cec; ps;   u; map; cec; ps
+The network was strashed and balanced before FPGA mapping.
+Networks are equivalent.
+examples/s38584: i/o =   12/ 278  lat = 1452  nd =  4266  aig  = 12569  lev =  10
+The network was strashed and balanced before mapping.
+Networks are equivalent.
+examples/s38584: i/o =   12/ 278  lat = 1452  nd =  8135  aig  = 10674  lev =  18
+abc - > r examples/s444.blif;    b; esd -v; print_exdc; dsd; cec; ps
+The shared BDD size is 181 nodes.
+BDD nodes in the transition relation before reordering 557.
+BDD nodes in the transition relation after reordering 456.
+Reachability analysis completed in 151 iterations.
+The number of minterms in the reachable state set = 8865.
+BDD nodes in the unreachable states before reordering 124.
+BDD nodes in the unreachable states after reordering 113.
+EXDC network statistics:
+exdc         : i/o =   21/  21  lat =    0  nd =    21  cube =    86  lev =   2
+Networks are equivalent.
+s444         : i/o =    3/   6  lat =   21  nd =    82  aig  =   176  lev =   7
+abc - > r examples/s444.blif;    double; frames -F 5; w 1.blif; ffpga -K 8; cec 1.blif
+Networks are equivalent after structural hashing.
+abc - > r examples/s5378.blif;   frames -F 5; cycle; w 1.blif; ps; ret; ps; sec 1.blif
+s5378_5_frames: i/o =  175/ 245  lat =  164  and =  6629 (exor = 115)  lev =  59
+s5378_5_frames: i/o =  175/ 245  lat =  182  nd =  6957  cube =  6956  lev =  50
+Networks are equivalent after framing.
+abc - > r examples/s6669.blif;   cycle; w 1.blif; ps; ret -M 3; resyn; ps; sec 1.blif
+s6669        : i/o =   83/  55  lat =  239  nd =  3080  cube =  3080  lev =  93
+s6669        : i/o =   83/  55  lat =  183  and =  1915 (exor = 371)  lev =  97
+Networks are equivalent after fraiging.
+abc - > time
+elapse: 44.07 seconds, total: 44.07 seconds
+abc 150>

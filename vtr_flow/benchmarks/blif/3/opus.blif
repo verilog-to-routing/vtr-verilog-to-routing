@@ -1,0 +1,184 @@
+.model top
+.inputs opus_in_3_ opus_in_4_ opus_in_1_ opus_in_2_ opus_in_0_ clock
+.outputs opus_out_0_ opus_out_1_ opus_out_2_ opus_out_3_ opus_out_4_ \
+opus_out_5_
+.latch    n_n36 n_n83 re clock 2
+.latch    n_n37 n_n84 re clock 2
+.latch    n_n38 n_n85 re clock 2
+.latch    n_n39 n_n86 re clock 2
+.names [54] [193] [194] opus_out_0_
+1-- 1
+-11 1
+.names [23] [31] [216] opus_out_1_
+-1- 1
+1-1 1
+.names [56] [188] [189] opus_out_2_
+1-- 1
+-11 1
+.names [19] [24] [25] opus_out_3_
+1-- 1
+-1- 1
+--1 1
+.names [49] [197] opus_out_4_
+1- 1
+-1 1
+.names [49] [197] [200] opus_out_5_
+1-- 1
+-1- 1
+--1 1
+.names [36] [38] [208] n_n36
+1-- 1
+-1- 1
+--1 1
+.names [32] [214] n_n37
+1- 1
+-1 1
+.names [26] [28] [224] n_n38
+1-- 1
+-1- 1
+--1 1
+.names [53] [54] [206] n_n39
+1-- 1
+-1- 1
+--1 1
+.names opus_in_2_ n_n85 [16]
+01 1
+.names opus_in_2_ n_n84 n_n85 [17]
+001 1
+.names opus_in_3_ [17] [23]
+11 1
+.names opus_in_3_ opus_in_4_ [21]
+1- 1
+-0 1
+.names opus_in_1_ n_n83 [22]
+1- 1
+-1 1
+.names opus_in_3_ [17] [226] [19]
+111 1
+.names opus_in_2_ n_n85 [227] [24]
+011 1
+.names n_n83 [17] [25]
+11 1
+.names n_n37 n_n39 [219] [26]
+011 1
+.names [32] [214] [222] [27]
+1-1 1
+-11 1
+.names opus_out_0_ [206] [223] [28]
+1-1 1
+-11 1
+.names opus_in_0_ n_n83 [218] [31]
+101 1
+.names opus_in_3_ [17] [210] [32]
+111 1
+.names opus_in_2_ n_n85 [211] [33]
+001 1
+.names opus_in_2_ n_n85 [212] [34]
+011 1
+.names n_n83 [17] [35]
+11 1
+.names opus_out_5_ [202] [36]
+11 1
+.names [49] [197] [204] [37]
+1-1 1
+-11 1
+.names [49] [197] [207] [38]
+1-1 1
+-11 1
+.names opus_in_2_ n_n83 n_n85 [39]
+011 1
+.names opus_in_2_ n_n85 n_n86 [41]
+001 1
+.names opus_in_2_ n_n84 [42]
+01 1
+.names opus_in_3_ n_n83 n_n84 [44]
+100 1
+.names n_n83 [53] [54] [49]
+01- 1
+0-1 1
+.names opus_in_1_ opus_in_2_ [194] [53]
+101 1
+.names opus_in_1_ n_n83 [17] [54]
+1-1 1
+-11 1
+.names n_n83 n_n84 [189] [55]
+001 1
+.names opus_in_1_ n_n84 [191] [56]
+101 1
+.names n_n84 n_n83 [188]
+00 1
+.names opus_in_2_ n_n85 n_n86 [189]
+001 1
+.names opus_in_2_ n_n85 n_n86 [191]
+001 1
+.names n_n84 n_n83 [192]
+00 1
+.names opus_in_2_ opus_in_1_ [193]
+01 1
+.names n_n86 n_n83 [194]
+01 1
+.names n_n86 opus_in_2_ [195]
+0- 1
+-1 1
+.names [21] [192] [195] [196]
+--1 1
+01- 1
+.names [55] [56] [196] [197]
+1-- 1
+-1- 1
+--1 1
+.names n_n83 n_n85 [44] [200]
+--1 1
+11- 1
+00- 1
+.names opus_in_4_ opus_in_2_ n_n85 [201]
+001 1
+.names [49] [197] [201] [202]
+001 1
+.names n_n84 opus_in_2_ [203]
+00 1
+.names [53] [54] [203] [204]
+001 1
+.names [16] [21] [42] [205]
+--1 1
+11- 1
+.names [205] [41] [206]
+1- 1
+-1 1
+.names opus_in_1_ opus_out_0_ [206] [207]
+01- 1
+0-1 1
+.names [37] [39] [208]
+1- 1
+-1 1
+.names opus_in_4_ opus_in_1_ opus_in_0_ [210]
+10- 1
+-01 1
+.names n_n84 n_n83 [211]
+10 1
+.names n_n83 opus_in_0_ [212]
+10 1
+.names [33] [34] [35] [214]
+1-- 1
+-1- 1
+--1 1
+.names opus_in_4_ opus_in_0_ [22] [216]
+100 1
+.names opus_in_2_ n_n84 n_n85 [218]
+010 1
+.names opus_out_0_ [55] [56] [219]
+000 1
+.names n_n85 opus_in_4_ [221]
+10 1
+.names [53] [54] [221] [222]
+001 1
+.names n_n84 n_n83 [223]
+11 1
+.names [27] opus_out_1_ [224]
+1- 1
+-1 1
+.names opus_in_4_ opus_in_1_ opus_in_0_ [226]
+000 1
+.names n_n83 opus_in_0_ [227]
+11 1
+.end

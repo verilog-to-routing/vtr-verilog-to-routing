@@ -1,0 +1,205 @@
+.model top
+.inputs pc_10 pc_11 pc_12 pp_0 pclk pc_9 pc_8 pc_13 pc_7 pc_14 pc_6 pc_15 pc_5 \
+pc_16 pc_4 pc_3 pc_2 pc_1 pc_0
+.outputs pz
+.latch    ni209 n_n185 re pclk 2
+.latch    ni111 n_n182 re pclk 2
+.latch    ni112 n_n183 re pclk 2
+.latch    ni113 n_n184 re pclk 2
+.latch    ni208 n_n76 re pclk 2
+.latch    ni13 n_n179 re pclk 2
+.latch    ni14 n_n180 re pclk 2
+.latch    ni15 n_n181 re pclk 2
+.latch    ni110 n_n75 re pclk 2
+.latch    ni12 n_n74 re pclk 2
+.latch    ni210 n_n186 re pclk 2
+.latch    ni211 n_n187 re pclk 2
+.latch    ni306 n_n77 re pclk 2
+.latch    ni307 n_n78 re pclk 2
+.latch    ni308 n_n188 re pclk 2
+.latch    ni309 n_n189 re pclk 2
+.names n_n155 [35] pz
+1- 1
+-1 1
+.names n_n185 [37] ni209
+11 1
+00 1
+.names n_n182 n_n183 [45] ni111
+10- 1
+1-1 1
+010 1
+.names n_n183 [45] ni112
+11 1
+00 1
+.names n_n184 [39] [354] ni113
+11- 1
+1-0 1
+001 1
+.names n_n185 n_n76 [37] ni208
+01- 1
+-11 1
+100 1
+.names n_n179 [39] ni13
+11 1
+00 1
+.names pp_0 n_n180 n_n181 ni14
+01- 1
+-10 1
+101 1
+.names pp_0 n_n181 ni15
+01 1
+10 1
+.names n_n75 [63] ni110
+11 1
+00 1
+.names n_n179 n_n74 [39] ni12
+01- 1
+-11 1
+100 1
+.names n_n186 n_n187 n_n81 ni210
+10- 1
+1-0 1
+011 1
+.names n_n187 n_n81 ni211
+01 1
+10 1
+.names n_n77 [65] ni306
+11 1
+00 1
+.names n_n78 n_n188 [48] ni307
+10- 1
+1-1 1
+010 1
+.names n_n188 [48] ni308
+11 1
+00 1
+.names n_n189 [37] [356] ni309
+11- 1
+1-0 1
+001 1
+.names n_n154 n_n152 [70] n_n155
+1-- 1
+-1- 1
+--1 1
+.names [357] [358] [359] [49]
+111 1
+.names n_n186 n_n187 n_n81 [37]
+0-- 1
+-0- 1
+--0 1
+.names [83] [84] [362] n_n154
+1-1 1
+-11 1
+.names n_n184 [39] [354] [45]
+0-- 1
+-1- 1
+--0 1
+.names [77] [78] [365] n_n152
+1-1 1
+-11 1
+.names n_n183 [45] [355] n_n81
+101 1
+.names pp_0 n_n180 n_n181 [39]
+0-- 1
+-0- 1
+--0 1
+.names n_n180 n_n181 [50]
+00 1
+.names n_n182 n_n183 [45] [63]
+0-- 1
+-0- 1
+--1 1
+.names n_n78 n_n188 [48] [65]
+0-- 1
+-0- 1
+--1 1
+.names n_n189 [37] [356] [48]
+0-- 1
+-1- 1
+--0 1
+.names [41] [42] [376] [35]
+1-1 1
+-11 1
+.names n_n76 [43] [44] [41]
+01- 1
+0-1 1
+.names pc_12 n_n76 [42]
+11 1
+.names n_n189 [66] [67] [43]
+01- 1
+0-1 1
+.names pc_13 n_n189 [44]
+11 1
+.names n_n188 [68] [69] [66]
+01- 1
+0-1 1
+.names pc_14 n_n188 [67]
+11 1
+.names pc_16 n_n77 n_n78 [68]
+110 1
+.names pc_15 n_n78 [69]
+11 1
+.names pp_0 [368] [369] [70]
+11- 1
+1-1 1
+.names pc_2 n_n180 n_n181 [74]
+110 1
+.names n_n74 [79] [80] [77]
+01- 1
+0-1 1
+.names pc_4 n_n74 [78]
+11 1
+.names n_n184 [81] [82] [79]
+01- 1
+0-1 1
+.names pc_5 n_n184 [80]
+11 1
+.names pc_7 n_n182 n_n183 [81]
+110 1
+.names pc_6 n_n183 [82]
+11 1
+.names n_n75 [85] [86] [83]
+01- 1
+0-1 1
+.names pc_8 n_n75 [84]
+11 1
+.names n_n187 [87] [88] [85]
+01- 1
+0-1 1
+.names pc_9 n_n187 [86]
+11 1
+.names pc_11 n_n185 n_n186 [87]
+110 1
+.names pc_10 n_n186 [88]
+11 1
+.names n_n74 n_n179 [354]
+11 1
+.names n_n75 n_n182 [355]
+11 1
+.names n_n76 n_n185 [356]
+11 1
+.names n_n183 n_n182 [357]
+00 1
+.names n_n179 n_n184 [358]
+00 1
+.names n_n180 n_n181 n_n74 [359]
+000 1
+.names [49] pp_0 [362]
+11 1
+.names pp_0 n_n179 [50] [365]
+101 1
+.names n_n179 pc_3 [366]
+11 1
+.names pc_1 pc_0 n_n181 [368]
+-1- 1
+1-1 1
+.names [50] [74] [366] [369]
+-1- 1
+1-1 1
+.names n_n186 n_n75 [373]
+00 1
+.names pp_0 n_n185 n_n187 [374]
+100 1
+.names [49] [373] [374] [376]
+111 1
+.end

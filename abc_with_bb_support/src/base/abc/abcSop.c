@@ -1,0 +1,1075 @@
+/**CFile****************************************************************
+
+  FileName    [abcSop.c]
+
+  SystemName  [ABC: Logic synthesis and verification system.]
+
+  PackageName [Network and node package.]
+
+  Synopsis    [Implementation of a simple SOP representation of nodes.]
+
+  Author      [Alan Mishchenko]
+  
+  Affiliation [UC Berkeley]
+
+  Date        [Ver. 1.0. Started - June 20, 2005.]
+
+  Revision    [$Id: abcSop.c,v 1.00 2005/06/20 00:00:00 alanmi Exp $]
+
+***********************************************************************/
+
+#include "abc.h"
+
+/* 
+    The SOPs in this package are represented using char * strings.
+    For example, the SOP of the node: 
+
+       .names c d0 d1 MUX
+       01- 1
+       1-1 1
+
+    is the string: "01- 1\n1-1 1\n" where '\n' is a single char.
+*/
+
+////////////////////////////////////////////////////////////////////////
+///                        DECLARATIONS                              ///
+////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////
+///                     FUNCTION DEFINITIONS                         ///
+////////////////////////////////////////////////////////////////////////
+
+/**Function*************************************************************
+
+  Synopsis    [Registers the cube string with the network.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+char * Abc_SopRegister( Extra_MmFlex_t * pMan, char * pName )
+{
+    char * pRegName;
+    if ( pName == NULL ) return NULL;
+    pRegName = Extra_MmFlexEntryFetch( pMan, strlen(pName) + 1 );
+    strcpy( pRegName, pName );
+    return pRegName;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Creates the constant 1 cover with the given number of variables and cubes.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+char * Abc_SopStart( Extra_MmFlex_t * pMan, int nCubes, int nVars )
+{
+    char * pSopCover, * pCube;
+    int i, Length;
+
+    Length = nCubes * (nVars + 3);
+    pSopCover = Extra_MmFlexEntryFetch( pMan, Length + 1 );
+    memset( pSopCover, '-', Length );
+    pSopCover[Length] = 0;
+
+    for ( i = 0; i < nCubes; i++ )
+    {
+        pCube = pSopCover + i * (nVars + 3);
+        pCube[nVars + 0] = ' ';
+        pCube[nVars + 1] = '1';
+        pCube[nVars + 2] = '\n';
+    }
+    return pSopCover;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Creates the constant 1 cover with 0 variables.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+char * Abc_SopCreateConst1( Extra_MmFlex_t * pMan )
+{
+    return Abc_SopRegister( pMan, " 1\n" );
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Creates the constant 1 cover with 0 variables.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+char * Abc_SopCreateConst0( Extra_MmFlex_t * pMan )
+{
+    return Abc_SopRegister( pMan, " 0\n" );
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Creates the AND2 cover.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+char * Abc_SopCreateAnd2( Extra_MmFlex_t * pMan, int fCompl0, int fCompl1 )
+{
+    char Buffer[6];
+    Buffer[0] = '1' - fCompl0;
+    Buffer[1] = '1' - fCompl1;
+    Buffer[2] = ' ';
+    Buffer[3] = '1';
+    Buffer[4] = '\n';
+    Buffer[5] = 0;
+    return Abc_SopRegister( pMan, Buffer );
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Creates the multi-input AND cover.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+char * Abc_SopCreateAnd( Extra_MmFlex_t * pMan, int nVars, int * pfCompl )
+{
+    char * pSop;
+    int i;
+    pSop = Abc_SopStart( pMan, 1, nVars );
+    for ( i = 0; i < nVars; i++ )
+        pSop[i] = '1' - (pfCompl? pfCompl[i] : 0);
+    pSop[nVars + 1] = '1';
+    return pSop;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Creates the multi-input NAND cover.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+char * Abc_SopCreateNand( Extra_MmFlex_t * pMan, int nVars )
+{
+    char * pSop;
+    int i;
+    pSop = Abc_SopStart( pMan, 1, nVars );
+    for ( i = 0; i < nVars; i++ )
+        pSop[i] = '1';
+    pSop[nVars + 1] = '0';
+    return pSop;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Creates the multi-input OR cover.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+char * Abc_SopCreateOr( Extra_MmFlex_t * pMan, int nVars, int * pfCompl )
+{
+    char * pSop;
+    int i;
+    pSop = Abc_SopStart( pMan, 1, nVars );
+    for ( i = 0; i < nVars; i++ )
+        pSop[i] = '0' + (pfCompl? pfCompl[i] : 0);
+    pSop[nVars + 1] = '0';
+    return pSop;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Creates the multi-input OR cover.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+char * Abc_SopCreateOrMultiCube( Extra_MmFlex_t * pMan, int nVars, int * pfCompl )
+{
+    char * pSop, * pCube;
+    int i;
+    pSop = Abc_SopStart( pMan, nVars, nVars );
+    i = 0;
+    Abc_SopForEachCube( pSop, nVars, pCube )
+    {
+        pCube[i] = '1' - (pfCompl? pfCompl[i] : 0);
+        i++;
+    }
+    return pSop;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Creates the multi-input NOR cover.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+char * Abc_SopCreateNor( Extra_MmFlex_t * pMan, int nVars )
+{
+    char * pSop;
+    int i;
+    pSop = Abc_SopStart( pMan, 1, nVars );
+    for ( i = 0; i < nVars; i++ )
+        pSop[i] = '0';
+    return pSop;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Creates the multi-input XOR cover.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+char * Abc_SopCreateXor( Extra_MmFlex_t * pMan, int nVars )
+{
+    assert( nVars == 2 );
+    return Abc_SopRegister(pMan, "01 1\n10 1\n");
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Creates the multi-input XOR cover (special case).]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+char * Abc_SopCreateXorSpecial( Extra_MmFlex_t * pMan, int nVars )
+{
+    char * pSop;
+    pSop = Abc_SopCreateAnd( pMan, nVars, NULL );
+    pSop[nVars+1] = 'x';
+    assert( pSop[nVars+2] == '\n' );
+    return pSop;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Creates the multi-input XNOR cover.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+char * Abc_SopCreateNxor( Extra_MmFlex_t * pMan, int nVars )
+{
+    assert( nVars == 2 );
+    return Abc_SopRegister(pMan, "11 1\n00 1\n");
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Creates the MUX cover.]
+
+  Description [The first input of MUX is the control. The second input
+  is DATA1. The third input is DATA0.]
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+char * Abc_SopCreateMux( Extra_MmFlex_t * pMan )
+{
+    return Abc_SopRegister(pMan, "11- 1\n0-1 1\n");
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Creates the inv cover.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+char * Abc_SopCreateInv( Extra_MmFlex_t * pMan )
+{
+    return Abc_SopRegister(pMan, "0 1\n");
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Creates the buf cover.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+char * Abc_SopCreateBuf( Extra_MmFlex_t * pMan )
+{
+    return Abc_SopRegister(pMan, "1 1\n");
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Creates the arbitrary cover from the truth table.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+char * Abc_SopCreateFromTruth( Extra_MmFlex_t * pMan, int nVars, unsigned * pTruth )
+{
+    char * pSop, * pCube;
+    int nMints, Counter, i, k;
+    // count the number of true minterms
+    Counter = 0;
+    nMints = (1 << nVars);
+    for ( i = 0; i < nMints; i++ )
+        Counter += ((pTruth[i>>5] & (1 << (i&31))) > 0);
+    // SOP is not well-defined if the truth table is constant 0
+    assert( Counter > 0 );
+    if ( Counter == 0 )
+        return NULL;
+    // start the cover
+    pSop = Abc_SopStart( pMan, Counter, nVars );
+    // create true minterms
+    Counter = 0;
+    for ( i = 0; i < nMints; i++ )
+        if ( (pTruth[i>>5] & (1 << (i&31))) > 0 )
+        {
+            pCube = pSop + Counter * (nVars + 3);
+            for ( k = 0; k < nVars; k++ )
+                pCube[k] = '0' + ((i & (1 << k)) > 0);
+            Counter++;
+        }
+    return pSop;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Creates the cover from the ISOP computed from TT.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+char * Abc_SopCreateFromIsop( Extra_MmFlex_t * pMan, int nVars, Vec_Int_t * vCover )
+{
+    char * pSop, * pCube;
+    int i, k, Entry, Literal;
+    assert( Vec_IntSize(vCover) > 0 );
+    if ( Vec_IntSize(vCover) == 0 )
+        return NULL;
+    // start the cover
+    pSop = Abc_SopStart( pMan, Vec_IntSize(vCover), nVars );
+    // create cubes
+    Vec_IntForEachEntry( vCover, Entry, i )
+    {
+        pCube = pSop + i * (nVars + 3);
+        for ( k = 0; k < nVars; k++ )
+        {
+            Literal = 3 & (Entry >> (k << 1));
+            if ( Literal == 1 )
+                pCube[k] = '0';
+            else if ( Literal == 2 )
+                pCube[k] = '1';
+            else if ( Literal != 0 )
+                assert( 0 );
+        }
+    }
+    return pSop;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Reads the number of cubes in the cover.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Abc_SopGetCubeNum( char * pSop )
+{
+    char * pCur;
+    int nCubes = 0;
+    if ( pSop == NULL )
+        return 0;
+    for ( pCur = pSop; *pCur; pCur++ )
+        nCubes += (*pCur == '\n');
+    return nCubes;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Reads the number of SOP literals in the cover.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Abc_SopGetLitNum( char * pSop )
+{
+    char * pCur;
+    int nLits = 0;
+    if ( pSop == NULL )
+        return 0;
+    for ( pCur = pSop; *pCur; pCur++ )
+    {
+        nLits  -= (*pCur == '\n');
+        nLits  += (*pCur == '0' || *pCur == '1');
+    }
+    return nLits;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Reads the number of variables in the cover.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Abc_SopGetVarNum( char * pSop )
+{
+    char * pCur;
+    for ( pCur = pSop; *pCur != '\n'; pCur++ );
+    return pCur - pSop - 2;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Reads the phase of the cover.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Abc_SopGetPhase( char * pSop )
+{
+    int nVars = Abc_SopGetVarNum( pSop );
+    if ( pSop[nVars+1] == '0' || pSop[nVars+1] == 'n' )
+        return 0;
+    if ( pSop[nVars+1] == '1' || pSop[nVars+1] == 'x' )
+        return 1;
+    assert( 0 );
+    return -1;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Returns the i-th literal of the cover.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Abc_SopGetIthCareLit( char * pSop, int i )
+{
+    char * pCube;
+    int nVars;
+    nVars = Abc_SopGetVarNum( pSop );
+    Abc_SopForEachCube( pSop, nVars, pCube )
+        if ( pCube[i] != '-' )
+            return pCube[i] - '0';
+    return -1;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+void Abc_SopComplement( char * pSop )
+{
+    char * pCur;
+    for ( pCur = pSop; *pCur; pCur++ )
+        if ( *pCur == '\n' )
+        {
+            if ( *(pCur - 1) == '0' )
+                *(pCur - 1) = '1';
+            else if ( *(pCur - 1) == '1' )
+                *(pCur - 1) = '0';
+            else if ( *(pCur - 1) == 'x' )
+                *(pCur - 1) = 'n';
+            else if ( *(pCur - 1) == 'n' )
+                *(pCur - 1) = 'x';
+            else
+                assert( 0 );
+        }
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+bool Abc_SopIsComplement( char * pSop )
+{
+    char * pCur;
+    for ( pCur = pSop; *pCur; pCur++ )
+        if ( *pCur == '\n' )
+            return (int)(*(pCur - 1) == '0' || *(pCur - 1) == 'n');
+    assert( 0 );
+    return 0;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Checks if the cover is constant 0.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+bool Abc_SopIsConst0( char * pSop )
+{
+    return pSop[0] == ' ' && pSop[1] == '0';
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Checks if the cover is constant 1.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+bool Abc_SopIsConst1( char * pSop )
+{
+    return pSop[0] == ' ' && pSop[1] == '1';
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Checks if the cover is constant 1.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+bool Abc_SopIsBuf( char * pSop )
+{
+    if ( pSop[4] != 0 )
+        return 0;
+    if ( (pSop[0] == '1' && pSop[2] == '1') || (pSop[0] == '0' && pSop[2] == '0') )
+        return 1;
+    return 0;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Checks if the cover is constant 1.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+bool Abc_SopIsInv( char * pSop )
+{
+    if ( pSop[4] != 0 )
+        return 0;
+    if ( (pSop[0] == '0' && pSop[2] == '1') || (pSop[0] == '1' && pSop[2] == '0') )
+        return 1;
+    return 0;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Checks if the cover is AND with possibly complemented inputs.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+bool Abc_SopIsAndType( char * pSop )
+{
+    char * pCur;
+    if ( Abc_SopGetCubeNum(pSop) != 1 )
+        return 0;
+    for ( pCur = pSop; *pCur != ' '; pCur++ )
+        if ( *pCur == '-' )
+            return 0;
+    if ( pCur[1] != '1' )
+        return 0;
+    return 1;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Checks if the cover is OR with possibly complemented inputs.]
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+bool Abc_SopIsOrType( char * pSop )
+{
+    char * pCube, * pCur;
+    int nVars, nLits;
+    nVars = Abc_SopGetVarNum( pSop );
+    if ( nVars != Abc_SopGetCubeNum(pSop) )
+        return 0;
+    Abc_SopForEachCube( pSop, nVars, pCube )
+    {
+        // count the number of literals in the cube
+        nLits = 0;
+        for ( pCur = pCube; *pCur != ' '; pCur++ )
+            nLits += ( *pCur != '-' );
+        if ( nLits != 1 )
+            return 0;
+    }
+    return 1;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+int Abc_SopIsExorType( char * pSop )
+{
+    char * pCur;
+    for ( pCur = pSop; *pCur; pCur++ )
+        if ( *pCur == '\n' )
+            return (int)(*(pCur - 1) == 'x' || *(pCur - 1) == 'n');
+    assert( 0 );
+    return 0;
+}
+
+/**Function*************************************************************
+
+  Synopsis    []
+
+  Description []
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+bool Abc_SopCheck( char * pSop, int nFanins )
+{
+    char * pCubes, * pCubesOld;
+    int fFound0 = 0, fFound1 = 0;
+
+    // check the logic function of the node
+    for ( pCubes = pSop; *pCubes; pCubes++ )
+    {
+        // get the end of the next cube
+        for ( pCubesOld = pCubes; *pCubes != ' '; pCubes++ );
+        // compare the distance
+        if ( pCubes - pCubesOld != nFanins )
+        {
+            fprintf( stdout, "Abc_SopCheck: SOP has a mismatch between its cover size (%d) and its fanin number (%d).\n",
+                pCubes - pCubesOld, nFanins );
+            return 0;
+        }
+        // check the output values for this cube
+        pCubes++;
+        if ( *pCubes == '0' )
+            fFound0 = 1;
+        else if ( *pCubes == '1' )
+            fFound1 = 1;
+        else if ( *pCubes != 'x' && *pCubes != 'n' )
+        {
+            fprintf( stdout, "Abc_SopCheck: SOP has a strange character (%c) in the output part of its cube.\n", *pCubes );
+            return 0;
+        }
+        // check the last symbol (new line)
+        pCubes++;
+        if ( *pCubes != '\n' )
+        {
+            fprintf( stdout, "Abc_SopCheck: SOP has a cube without new line in the end.\n" );
+            return 0;
+        }
+    }
+    if ( fFound0 && fFound1 )
+    {
+        fprintf( stdout, "Abc_SopCheck: SOP has cubes in both phases.\n" );
+        return 0;
+    }
+    return 1;
+}
+
+
+/**Function*************************************************************
+
+  Synopsis    [Derives SOP from the truth table representation.]
+
+  Description [Truth table is expected to be in the hexadecimal notation.]
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+char * Abc_SopFromTruthBin( char * pTruth )
+{
+    char * pSopCover, * pCube;
+    int nTruthSize, nVars, Digit, Length, Mint, i, b;
+    Vec_Int_t * vMints;
+
+    // get the number of variables
+    nTruthSize = strlen(pTruth);
+    nVars = Extra_Base2Log( nTruthSize );
+    if ( nTruthSize != (1 << (nVars)) )
+    {
+        printf( "String %s does not look like a truth table of a %d-variable function.\n", pTruth, nVars );
+        return NULL;
+    }
+
+    // collect the on-set minterms
+    vMints = Vec_IntAlloc( 100 );
+    for ( i = 0; i < nTruthSize; i++ )
+    {
+        if ( pTruth[i] >= '0' && pTruth[i] <= '1' )
+            Digit = pTruth[i] - '0';
+        else
+        {
+            printf( "String %s does not look like a binary representation of the truth table.\n", pTruth );
+            return NULL;
+        }
+        if ( Digit == 1 )
+            Vec_IntPush( vMints, nTruthSize - 1 - i );
+    }
+    if ( Vec_IntSize( vMints ) == 0 || Vec_IntSize( vMints ) == nTruthSize )
+    {
+        Vec_IntFree( vMints );
+        printf( "Cannot create constant function.\n" );
+        return NULL;
+    }
+
+    // create the SOP representation of the minterms
+    Length = Vec_IntSize(vMints) * (nVars + 3);
+    pSopCover = ALLOC( char, Length + 1 );
+    pSopCover[Length] = 0;
+    Vec_IntForEachEntry( vMints, Mint, i )
+    {
+        pCube = pSopCover + i * (nVars + 3);
+        for ( b = 0; b < nVars; b++ )
+            if ( Mint & (1 << (nVars-1-b)) )
+//            if ( Mint & (1 << b) )
+                pCube[b] = '1';
+            else
+                pCube[b] = '0';
+        pCube[nVars + 0] = ' ';
+        pCube[nVars + 1] = '1';
+        pCube[nVars + 2] = '\n';
+    }
+    Vec_IntFree( vMints );
+    return pSopCover;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Derives SOP from the truth table representation.]
+
+  Description [Truth table is expected to be in the hexadecimal notation.]
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+char * Abc_SopFromTruthHex( char * pTruth )
+{
+    char * pSopCover, * pCube;
+    int nTruthSize, nVars, Digit, Length, Mint, i, b;
+    Vec_Int_t * vMints;
+
+    // get the number of variables
+    nTruthSize = strlen(pTruth);
+    nVars = Extra_Base2Log( nTruthSize ) + 2;
+    if ( nTruthSize != (1 << (nVars-2)) )
+    {
+        printf( "String %s does not look like a truth table of a %d-variable function.\n", pTruth, nVars );
+        return NULL;
+    }
+
+    // collect the on-set minterms
+    vMints = Vec_IntAlloc( 100 );
+    for ( i = 0; i < nTruthSize; i++ )
+    {
+        if ( pTruth[i] >= '0' && pTruth[i] <= '9' )
+            Digit = pTruth[i] - '0';
+        else if ( pTruth[i] >= 'a' && pTruth[i] <= 'f' )
+            Digit = 10 + pTruth[i] - 'a';
+        else if ( pTruth[i] >= 'A' && pTruth[i] <= 'F' )
+            Digit = 10 + pTruth[i] - 'A';
+        else
+        {
+            printf( "String %s does not look like a hexadecimal representation of the truth table.\n", pTruth );
+            return NULL;
+        }
+        for ( b = 0; b < 4; b++ )
+            if ( Digit & (1 << b) )
+                Vec_IntPush( vMints, 4*(nTruthSize-1-i)+b );
+    }
+
+    // create the SOP representation of the minterms
+    Length = Vec_IntSize(vMints) * (nVars + 3);
+    pSopCover = ALLOC( char, Length + 1 );
+    pSopCover[Length] = 0;
+    Vec_IntForEachEntry( vMints, Mint, i )
+    {
+        pCube = pSopCover + i * (nVars + 3);
+        for ( b = 0; b < nVars; b++ )
+//            if ( Mint & (1 << (nVars-1-b)) )
+            if ( Mint & (1 << b) )
+                pCube[b] = '1';
+            else
+                pCube[b] = '0';
+        pCube[nVars + 0] = ' ';
+        pCube[nVars + 1] = '1';
+        pCube[nVars + 2] = '\n';
+    }
+    Vec_IntFree( vMints );
+    return pSopCover;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Creates one encoder node.]
+
+  Description [Produces MV-SOP for BLIF-MV representation.]
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+char * Abc_SopEncoderPos( Extra_MmFlex_t * pMan, int iValue, int nValues )
+{
+    char Buffer[32];
+    assert( iValue < nValues );
+    sprintf( Buffer, "d0\n%d 1\n", iValue );
+    return Abc_SopRegister( pMan, Buffer );
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Creates one encoder node.]
+
+  Description [Produces MV-SOP for BLIF-MV representation.]
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+char * Abc_SopEncoderLog( Extra_MmFlex_t * pMan, int iBit, int nValues )
+{
+    char * pResult;
+    Vec_Str_t * vSop;
+    int v, Counter, fFirst = 1, nBits = Extra_Base2Log(nValues);
+    assert( iBit < nBits );
+    // count the number of literals
+    Counter = 0;
+    for ( v = 0; v < nValues; v++ )
+        Counter += ( (v & (1 << iBit)) > 0 );
+    // create the cover
+    vSop = Vec_StrAlloc( 100 );
+    Vec_StrPrintStr( vSop, "d0\n" );
+    if ( Counter > 1 )
+        Vec_StrPrintStr( vSop, "(" );
+    for ( v = 0; v < nValues; v++ )
+        if ( v & (1 << iBit) )
+        {
+            if ( fFirst )
+                fFirst = 0;
+            else
+                Vec_StrPush( vSop, ',' );
+            Vec_StrPrintNum( vSop, v );
+        }
+    if ( Counter > 1 )
+        Vec_StrPrintStr( vSop, ")" );
+    Vec_StrPrintStr( vSop, " 1\n" );
+    Vec_StrPush( vSop, 0 );
+    pResult = Abc_SopRegister( pMan, Vec_StrArray(vSop) );
+    Vec_StrFree( vSop );
+    return pResult;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Creates the decoder node.]
+
+  Description [Produces MV-SOP for BLIF-MV representation.]
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+char * Abc_SopDecoderPos( Extra_MmFlex_t * pMan, int nValues )
+{
+    char * pResult;
+    Vec_Str_t * vSop;
+    int i, k;
+    assert( nValues > 1 );
+    vSop = Vec_StrAlloc( 100 );
+    for ( i = 0; i < nValues; i++ )
+    {
+        for ( k = 0; k < nValues; k++ )
+        {
+            if ( k == i )
+                Vec_StrPrintStr( vSop, "1 " );
+            else
+                Vec_StrPrintStr( vSop, "- " );
+        }
+        Vec_StrPrintNum( vSop, i );
+        Vec_StrPush( vSop, '\n' );
+    }
+    Vec_StrPush( vSop, 0 );
+    pResult = Abc_SopRegister( pMan, Vec_StrArray(vSop) );
+    Vec_StrFree( vSop );
+    return pResult;
+}
+
+/**Function*************************************************************
+
+  Synopsis    [Creates the decover node.]
+
+  Description [Produces MV-SOP for BLIF-MV representation.]
+               
+  SideEffects []
+
+  SeeAlso     []
+
+***********************************************************************/
+char * Abc_SopDecoderLog( Extra_MmFlex_t * pMan, int nValues )
+{
+    char * pResult;
+    Vec_Str_t * vSop;
+    int i, b, nBits = Extra_Base2Log(nValues);
+    assert( nValues > 1 && nValues <= (1<<nBits) );
+    vSop = Vec_StrAlloc( 100 );
+    for ( i = 0; i < nValues; i++ )
+    {
+        for ( b = 0; b < nBits; b++ )
+        {
+            Vec_StrPrintNum( vSop, (int)((i & (1 << b)) > 0) );
+            Vec_StrPush( vSop, ' ' );
+        }
+        Vec_StrPrintNum( vSop, i );
+        Vec_StrPush( vSop, '\n' );
+    }
+    Vec_StrPush( vSop, 0 );
+    pResult = Abc_SopRegister( pMan, Vec_StrArray(vSop) );
+    Vec_StrFree( vSop );
+    return pResult;
+}
+
+////////////////////////////////////////////////////////////////////////
+///                       END OF FILE                                ///
+////////////////////////////////////////////////////////////////////////
+
+

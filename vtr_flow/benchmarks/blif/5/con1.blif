@@ -1,0 +1,17 @@
+.model top
+.inputs a b c d f g h
+.outputs f0 f1
+.names b c d f [10] f0
+----1 1
+001-- 1
+-111- 1
+.names a b d f g f1
+00--- 1
+0--1- 1
+---00 1
+-001- 1
+11-0- 1
+.names a b f h [10]
+11-- 1
+-101 1
+.end

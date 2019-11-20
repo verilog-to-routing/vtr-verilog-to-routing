@@ -1,0 +1,394 @@
+<HTML>
+<HEAD>
+    <TITLE>Verilog Formal Syntax Specification - and modified for ODIN II</TITLE>
+</HEAD>
+<BODY>
+------ Updated: Peter Jamieson, Nov,Dec, 2008 ------ <HTML>
+<PRE>
+
+     <A HREF="verilog_bnf_for_odinII_reduced.html#REF0">1. Source Text</A>
+     <A HREF="verilog_bnf_for_odinII_reduced.html#REF37">2. Declarations</A>
+     <A HREF="verilog_bnf_for_odinII_reduced.html#REF68">3. Primitive Instances</A>
+     <A HREF="verilog_bnf_for_odinII_reduced.html#REF79">4. Module  Instantiations</A>
+     <A HREF="verilog_bnf_for_odinII_reduced.html#REF89">5. Behavioral Statements</A>
+     <A HREF="verilog_bnf_for_odinII_reduced.html#REF107">6. Specify Section</A>
+     <A HREF="verilog_bnf_for_odinII_reduced.html#REF144">7. Expressions</A>
+     <A HREF="verilog_bnf_for_odinII_reduced.html#REF164">8. General </A>
+
+
+<B>Definition of Items in Formal Syntax Specifications:</B>
++-----------------------+------------------------------------------------------------+
+|      <B>Item</B>            |               <B>Meaning</B>                                     |
++-----------------------+------------------------------------------------------------+
+| White space           | may be used to separate lexical tokens                     |
++-----------------------+------------------------------------------------------------+
+| Angle brackets        | surround each description item and are not literal sym-    |
+|                       | bols. That is, they do not appear in the source descrip-   |
+|                       | tion. Any text outside angle brackets is literal.          |
++-----------------------+------------------------------------------------------------+
+| &lt;name&gt; in lower case  | is a syntax construct item                                 |
++-----------------------+------------------------------------------------------------+
+| &lt;NAME&gt; in upper case  | is a lexical token item. Its definition is a terminal node |
+|                       | in the description hierarchy -- that is, its definition    |
+|                       | does not contain any syntax construct items                |
++-----------------------+------------------------------------------------------------+
+| &lt;name&gt;?               | is an optional item                                        |
++-----------------------+------------------------------------------------------------+
+| &lt;name&gt;*               | is zero, one, or more items                                |
++-----------------------+------------------------------------------------------------+
+| &lt;name&gt;+               | is one or more items                                       |
++-----------------------+------------------------------------------------------------+
+| &lt;name&gt;&lt;,&lt;name&gt;&gt;*      | is a comma-separated list of items with at least one       |
+|                       | item in the list                                           |
++-----------------------+------------------------------------------------------------+
+| &lt;name&gt;::=             | gives a syntax definition to an item                       |
++-----------------------+------------------------------------------------------------+
+| ||=                   | introduces an alternative syntax definition                |
++-----------------------+------------------------------------------------------------+
+
+
+</PRE>
+<H2><A NAME="REF0"></A>1. Source Text</H2>
+<PRE>
+
+<A NAME="REF1"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF1">&lt;source_text&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF2">description</A>&gt;*
+
+<A NAME="REF2"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF2">&lt;description&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF3">module</A>&gt;
+
+<A NAME="REF3"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF3">&lt;module&gt;</A></B>
+	::= module &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF81">name_of_module</A>&gt; &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF5">list_of_ports</A>&gt;? ;
+		&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF11">module_item</A>&gt;*
+		endmodule
+
+<A NAME="REF4"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF4">&lt;name_of_module&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF170">IDENTIFIER</A>&gt;
+
+<A NAME="REF5"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF5">&lt;list_of_ports&gt;</A></B>
+	::= ( &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF6">port</A>&gt; &lt;,&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF6">port</A>&gt;&gt;* )
+
+<A NAME="REF6"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF6">&lt;port&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF7">port_expression</A>&gt;?
+	||= . &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF9">name_of_port</A>&gt; ( &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF7">port_expression</A>&gt;? )
+
+<A NAME="REF7"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF7">&lt;port_expression&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF8">port_reference</A>&gt;
+	||= { &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF8">port_reference</A>&gt; &lt;,&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF8">port_reference</A>&gt;&gt;* }
+
+<A NAME="REF8"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF8">&lt;port_reference&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF56">name_of_variable</A>&gt;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF56">name_of_variable</A>&gt; [ &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF146">constant_expression</A>&gt; ]
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF56">name_of_variable</A>&gt; [ &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF146">constant_expression</A>&gt; :&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF146">constant_expression</A>&gt; ]
+
+<A NAME="REF9"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF9">&lt;name_of_port&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF170">IDENTIFIER</A>&gt;
+
+<A NAME="REF10"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF10">&lt;name_of_variable&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF170">IDENTIFIER</A>&gt;
+
+<A NAME="REF11"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF11">&lt;module_item&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF38">parameter_declaration</A>&gt;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF41">input_declaration</A>&gt;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF42">output_declaration</A>&gt;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF43">inout_declaration</A>&gt;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF44">net_declaration</A>&gt;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF48">reg_declaration</A>&gt;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF69">gate_declaration</A>&gt;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF80">module_instantiation</A>&gt;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF53">continuous_assign</A>&gt;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF90">initial_statement</A>&gt;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF91">always_statement</A>&gt;
+
+</PRE>
+<H2><A NAME="REF37"></A>2. Declarations</H2>
+<PRE>
+
+<A NAME="REF38"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF38">&lt;parameter_declaration&gt;</A></B>
+	::= parameter &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF111">list_of_param_assignments</A>&gt; ;
+
+<A NAME="REF39"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF39">&lt;list_of_param_assignments&gt;</A></B>
+	::=&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF112">param_assignment</A>&gt;&lt;,&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF112">param_assignment</A>&gt;*
+
+<A NAME="REF40"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF40">&lt;param_assignment&gt;</A></B>
+	::=&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF169">identifier</A>&gt; = &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF146">constant_expression</A>&gt;
+
+<A NAME="REF41"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF41">&lt;input_declaration&gt;</A></B>
+	::= input &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF66">range</A>&gt;? &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF55">list_of_variables</A>&gt; ;
+
+<A NAME="REF42"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF42">&lt;output_declaration&gt;</A></B>
+	::= output &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF66">range</A>&gt;? &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF55">list_of_variables</A>&gt; ;
+
+<A NAME="REF43"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF43">&lt;inout_declaration&gt;</A></B>
+	::= inout &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF66">range</A>&gt;? &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF55">list_of_variables</A>&gt; ;
+
+<A NAME="REF44"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF44">&lt;net_declaration&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF46">NETTYPE</A>&gt; &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF47">expandrange</A>&gt;? &lt;&gt;? &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF55">list_of_variables</A>&gt; ;
+
+<A NAME="REF45"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF45">&lt;list_of_variables&gt;</A></B> ;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF46">NETTYPE</A>&gt; &lt; &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF47">expandrange</A>&gt;? &lt;&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF67">list_of_assignments</A>&gt; ;
+
+<A NAME="REF46"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF46">&lt;NETTYPE&gt;</A></B> is one of the following keywords:
+	wire  tri  tri1  supply0  wand  triand  tri0  supply1  wor  trior  trireg
+
+<A NAME="REF47"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF47">&lt;expandrange&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF66">range</A>&gt;
+	||= scalared &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF66">range</A>&gt;
+	||= vectored &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF66">range</A>&gt;
+
+<A NAME="REF48"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF48">&lt;reg_declaration&gt;</A></B>
+	::= reg &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF66">range</A>&gt;? &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF57">list_of_register_variables</A>&gt; ;
+
+<A NAME="REF53"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF53">&lt;continuous_assign&gt;</A></B>
+	::= assign &lt; ;<A HREF="verilog_bnf_for_odinII_reduced.html#REF67">list_of_assignments</A>&gt; ;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF46">NETTYPE</A>&gt; &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF47">expandrange</A>&gt;? &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF67">list_of_assignments</A>&gt; ;
+
+<A NAME="REF55"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF55">&lt;list_of_variables&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF56">name_of_variable</A>&gt; &lt;,&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF56">name_of_variable</A>&gt;&gt;*
+
+<A NAME="REF56"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF56">&lt;name_of_variable&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF170">IDENTIFIER</A>&gt;
+
+<A NAME="REF57"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF57">&lt;list_of_register_variables&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF58">register_variable</A>&gt; &lt;,&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF58">register_variable</A>&gt;&gt;*
+
+<A NAME="REF58"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF58">&lt;register_variable&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF59">name_of_register</A>&gt;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF60">name_of_memory</A>&gt; [ &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF146">constant_expression</A>&gt; : &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF146">constant_expression</A>&gt; ]
+
+<A NAME="REF59"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF59">&lt;name_of_register&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF170">IDENTIFIER</A>&gt;
+
+<A NAME="REF60"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF60">&lt;name_of_memory&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF170">IDENTIFIER</A>&gt;
+
+<A NAME="REF66"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF66">&lt;range&gt;</A></B>
+	::= [ &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF146">constant_expression</A>&gt; : &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF146">constant_expression</A>&gt; ]
+
+<A NAME="REF67"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF67">&lt;list_of_assignments&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF94">assignment</A>&gt; &lt;,&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF94">assignment</A>&gt;&gt;*
+
+
+</PRE>
+<H2><A NAME="REF68"></A>3. Primitive Instances</H2>
+<PRE>
+
+<A NAME="REF69"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF69">&lt;gate_declaration&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF70">GATETYPE</A>&gt; &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF72">gate_instance</A>&gt; &lt;,&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF72">gate_instance</A>&gt;&gt;* ;
+
+
+<A NAME="REF70"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF70">&lt;GATETYPE&gt;</A></B> is one of the following keywords:
+	and  nand  or  nor xor  xnor buf  bufif0 bufif1  not  notif0 notif1  pulldown pullup
+	nmos  rnmos pmos rpmos cmos rcmos   tran rtran  tranif0  rtranif0  tranif1 rtranif1
+
+<A NAME="REF72"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF72">&lt;gate_instance&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF73">name_of_gate_instance</A>&gt;? ( &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF78">terminal</A>&gt; &lt;,&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF78">terminal</A>&gt;&gt;* )
+
+<A NAME="REF73"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF73">&lt;name_of_gate_instance&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF170">IDENTIFIER</A>&gt;&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF66">range</A>&gt;?
+
+<A NAME="REF78"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF78">&lt;terminal&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF148">expression</A>&gt;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF170">IDENTIFIER</A>&gt;
+
+
+</PRE>
+<H2><A NAME="REF79"></A>4. Module Instantiations</H2>
+<PRE>
+
+<A NAME="REF80"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF80">&lt;module_instantiation&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF81">name_of_module</A>&gt; &lt;
+		&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF83">module_instance</A>&gt; &lt;,&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF83">module_instance</A>&gt;&gt;* ;
+
+<A NAME="REF81"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF81">&lt;name_of_module&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF170">IDENTIFIER</A>&gt;
+
+<A NAME="REF83"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF83">&lt;module_instance&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF84">name_of_instance</A>&gt; ( &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF85">list_of_module_connections</A>&gt;? )
+
+<A NAME="REF84"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF84">&lt;name_of_instance&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF170">IDENTIFIER</A>&gt;&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF66">range</A>&gt;?
+
+<A NAME="REF85"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF85">&lt;list_of_module_connections&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF86">module_port_connection</A>&gt; &lt;,&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF86">module_port_connection</A>&gt;&gt;*
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF88">named_port_connection</A>&gt; &lt;,&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF88">named_port_connection</A>&gt;&gt;*
+
+<A NAME="REF86"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF86">&lt;module_port_connection&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF148">expression</A>&gt;
+
+<A NAME="REF88"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF88">&lt;named_port_connection&gt;</A></B>
+	::= .&lt; IDENTIFIER&gt; ( &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF148">expression</A>&gt; )
+
+
+</PRE>
+<H2><A NAME="REF89"></A>5. Behavioral Statements</H2>
+<PRE>
+
+<A NAME="REF90"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF90">&lt;initial_statement&gt;</A></B>
+	::= initial &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF93">statement</A>&gt;
+
+<A NAME="REF91"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF91">&lt;always_statement&gt;</A></B>
+	::= always &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF93">statement</A>&gt;
+
+<A NAME="REF92"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF92">&lt;statement_or_null&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF93">statement</A>&gt;
+	||= ;
+
+<A NAME="REF93"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF93">&lt;statement&gt;</A></B>
+	::=&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF95">blocking_assignment</A>&gt; ;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF96">non_blocking_assignment</A>&gt; ;
+	||= if ( &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF148">expression</A>&gt; ) &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF92">statement_or_null</A>&gt;
+	||= if ( &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF148">expression</A>&gt; ) &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF92">statement_or_null</A>&gt; else &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF92">statement_or_null</A>&gt;
+	||= case ( &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF148">expression</A>&gt; ) &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF98">case_item</A>&gt;+ endcase
+	||= &lt;<A HREF="verilog_bnf_for_odinII.html#REF99">seq_block</A>&gt;
+	||= &lt;<A HREF="verilog_bnf_for_odinII.html#REF97">delay_or_event_control</A>&gt; &lt;<A HREF="verilog_bnf_for_odinII.html#REF92">statement_or_null</A>&gt;
+
+<A NAME="REF94"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF94">&lt;assignment&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF145">lvalue</A>&gt; = &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF148">expression</A>&gt;
+
+<A NAME="REF95"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF95">&lt;blocking_assignment&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF145">lvalue</A>&gt; = &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF148">expression</A>&gt;
+
+<A NAME="REF96"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF96">&lt;non_blocking_assignment&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF145">lvalue</A>&gt; &lt;= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF148">expression</A>&gt;
+
+<A NAME="REF97"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF97">&lt;delay_or_event_control&gt;</A></B>
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF173">event_control</A>&gt;
+
+<A NAME="REF98"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF98">&lt;case_item&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF148">expression</A>&gt; &lt;,&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF148">expression</A>&gt;&gt;* : &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF92">statement_or_null</A>&gt;
+	||= default : &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF92">statement_or_null</A>&gt;
+	||= default &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF92">statement_or_null</A>&gt;
+
+<A NAME="REF99"></A><B><A HREF="verilog_bnf_for_odinII.html#REF99">&lt;seq_block&gt;</A></B>
+	::= begin &lt;<A HREF="verilog_bnf_for_odinII.html#REF93">statement</A>&gt;* end
+
+</PRE>
+<H2><A NAME="REF107"></A>6. Specify Section</H2>
+<PRE>
+
+</PRE>
+<H2><A NAME="REF144"></A>7. Expressions</H2>
+<PRE>
+
+<A NAME="REF145"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF145">&lt;lvalue&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF169">identifier</A>&gt;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF169">identifier</A>&gt; [ &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF148">expression</A>&gt; ]
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF169">identifier</A>&gt; [ &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF146">constant_expression</A>&gt; : &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF146">constant_expression</A>&gt; ]
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF159">concatenation</A>&gt;
+
+<A NAME="REF146"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF146">&lt;constant_expression&gt;</A></B>
+	::=&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF148">expression</A>&gt;
+
+<A NAME="REF148"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF148">&lt;expression&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF153">primary</A>&gt;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF149">UNARY_OPERATOR</A>&gt; &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF153">primary</A>&gt;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF148">expression</A>&gt; &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF150">BINARY_OPERATOR</A>&gt; &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF148">expression</A>&gt;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF148">expression</A>&gt; &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF151">QUESTION_MARK</A>&gt; &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF148">expression</A>&gt; : &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF148">expression</A>&gt;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF152">STRING</A>&gt;
+
+<A NAME="REF149"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF149">&lt;UNARY_OPERATOR&gt;</A></B> is one of the following tokens:
+	+  -  !  ~  &  ~&  |  ^|  ^  ~^
+
+<A NAME="REF150"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF150">&lt;BINARY_OPERATOR&gt;</A></B> is one of the following tokens:
+	+  -  *  /  %  ==  !=  ===  !==  &amp;&  ||  &lt;  &lt;=  &gt;  &gt;=  &  |  ^  ^~  &gt;&gt;  &lt;&lt;
+
+<A NAME="REF151"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF151">&lt;QUESTION_MARK&gt;</A></B> is ? (a literal question mark).
+
+<A NAME="REF152"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF152">&lt;STRING&gt;</A></B> is text enclosed in &quot;&quot; and contained on one line.
+
+<A NAME="REF153"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF153">&lt;primary&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF154">number</A>&gt;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF169">identifier</A>&gt;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF169">identifier</A>&gt; [ &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF148">expression</A>&gt; ]
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF169">identifier</A>&gt; [ &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF146">constant_expression</A>&gt; : &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF146">constant_expression</A>&gt; ]
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF159">concatenation</A>&gt;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF160">multiple_concatenation</A>&gt;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF161">function_call</A>&gt;
+
+<A NAME="REF154"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF154">&lt;number&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF155">DECIMAL_NUMBER</A>&gt;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF156">UNSIGNED_NUMBER</A>&gt;? &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF158">BASE</A>&gt; &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF156">UNSIGNED_NUMBER</A>&gt;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF155">DECIMAL_NUMBER</A>&gt;.&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF156">UNSIGNED_NUMBER</A>&gt;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF155">DECIMAL_NUMBER</A>&gt;&lt;.&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF156">UNSIGNED_NUMBER</A>&gt;&gt;?
+		E&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF155">DECIMAL_NUMBER</A>&gt;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF155">DECIMAL_NUMBER</A>&gt;&lt;.&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF156">UNSIGNED_NUMBER</A>&gt;&gt;?
+		e&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF155">DECIMAL_NUMBER</A>&gt;
+	(Note: embedded spaces are illegal in Verilog numbers, but embedded underscore
+	characters can be used for spacing in any type of number.)
+
+<A NAME="REF155"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF155">&lt;DECIMAL_NUMBER&gt;</A></B>
+	::= A number containing a set of any of the following characters, optionally preceded by + or -
+	 	0123456789_
+
+<A NAME="REF156"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF156">&lt;UNSIGNED_NUMBER&gt;</A></B>
+	::= A number containing a set of any of the following characters:
+	        0123456789_
+
+<A NAME="REF157"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF157">&lt;NUMBER&gt;</A></B>
+	Numbers can be specified in decimal, hexadecimal, octal or binary, and may
+	optionally start with a + or -.  The &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF158">BASE</A>&gt; token controls what number digits
+	are legal.  &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF158">BASE</A>&gt; must be one of d, h, o, or b, for the bases decimal,
+	hexadecimal, octal, and binary respectively. A number can contain any set of
+	the following characters that is consistent with &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF158">BASE</A>&gt;:
+	0123456789abcdefABCDEFxXzZ?
+
+<A NAME="REF158"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF158">&lt;BASE&gt;</A></B> is one of the following tokens:
+	'b   'B   'o   'O   'd   'D   'h   'H
+
+<A NAME="REF159"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF159">&lt;concatenation&gt;</A></B>
+	::= { &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF148">expression</A>&gt; &lt;,&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF148">expression</A>&gt;&gt;* }
+
+<A NAME="REF160"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF160">&lt;multiple_concatenation&gt;</A></B>
+	::= { &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF148">expression</A>&gt; { &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF148">expression</A>&gt; &lt;,&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF148">expression</A>&gt;&gt;* } }
+
+</PRE>
+
+<H2><A NAME="REF164"></A>8. General </H2>
+<PRE>
+
+<A NAME="REF165"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF165">&lt;comment&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF166">short_comment</A>&gt;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF167">long_comment</A>&gt;
+
+<A NAME="REF166"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF166">&lt;short_comment&gt;</A></B>
+	::= // &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF168">comment_text</A>&gt; &lt;END-OF-LINE&gt;
+
+<A NAME="REF167"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF167">&lt;long_comment&gt;</A></B>
+	::= /* &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF168">comment_text</A>&gt; */
+
+<A NAME="REF168"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF168">&lt;comment_text&gt;</A></B>
+	::= The comment text is zero or more ASCII characters
+
+<A NAME="REF169"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF169">&lt;identifier&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF170">IDENTIFIER</A>&gt;&lt;.&lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF170">IDENTIFIER</A>&gt;&gt;*
+	(Note: the period may not be preceded or followed by a space.)
+
+<A NAME="REF170"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF170">&lt;IDENTIFIER&gt;</A></B>
+	An identifier is any sequence of letters, digits, dollar signs ($), and
+	underscore (_) symbol, except that the first must be a letter or the
+	underscore; the first character may not be a digit or $. Upper and lower case
+	letters are considered to be different. Identifiers may be up to 1024
+	characters long. Some Verilog-based tools do not recognize  identifier
+	characters beyond the 1024th as a significant part of the identifier. Escaped
+	identifiers start with the backslash character (\) and may include any
+	printable ASCII character. An escaped identifier ends with white space. The
+	leading backslash character is not considered to be part of the identifier.
+
+<A NAME="REF173"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF173">&lt;event_control&gt;</A></B>
+	::= @ &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF169">identifier</A>&gt;
+	||= @ ( &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF174">event_expression</A>&gt; )
+
+<A NAME="REF174"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF174">&lt;event_expression&gt;</A></B>
+	::= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF148">expression</A>&gt;
+	||= posedge &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF175">scalar_event_expression</A>&gt;
+	||= negedge &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF175">scalar_event_expression</A>&gt;
+	||= &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF174">event_expression</A>&gt; or &lt;<A HREF="verilog_bnf_for_odinII_reduced.html#REF174">event_expression</A>&gt;
+
+<A NAME="REF175"></A><B><A HREF="verilog_bnf_for_odinII_reduced.html#REF175">&lt;scalar_event_expression&gt;</A></B>
+	Scalar event expression is an expression that resolves to a one bit value.
+
+</PRE>
+</BODY>
+</HTML>
+

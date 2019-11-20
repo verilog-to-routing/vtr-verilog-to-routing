@@ -1,0 +1,6 @@
+#!/bin/csh
+
+foreach x (sao2 cht 9symml C1355 C499 bw clip 9sym rd84 o64 C1908 i3 alu2 i5 example2 t481 C880 duke2 i2 i4 vda i6 i7 i9 C3540 cordic table3)
+	echo "working on $x at `date`"
+	circ in=$x verbose loc >& out.$x
+end

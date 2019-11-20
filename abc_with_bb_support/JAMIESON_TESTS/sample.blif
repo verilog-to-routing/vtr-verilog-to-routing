@@ -1,0 +1,11 @@
+.model sample
+.inputs a00 a01 b00 b01
+.outputs y00 y01 
+
+.names a00 a01 y00
+11 1
+.names b00 b01 y01
+10 1
+
+.end
+

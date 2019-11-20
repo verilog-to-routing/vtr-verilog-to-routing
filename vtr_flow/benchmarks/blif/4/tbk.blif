@@ -1,0 +1,234 @@
+.model top
+.inputs tbk_in_3_ tbk_in_4_ tbk_in_1_ tbk_in_2_ tbk_in_5_ tbk_in_0_ clock
+.outputs tbk_out_0_ tbk_out_1_ tbk_out_2_
+.latch    n_n28 n_n129 re clock 2
+.latch    n_n29 n_n130 re clock 2
+.latch    n_n30 n_n131 re clock 2
+.latch    n_n31 n_n132 re clock 2
+.names [75] [365] [366] [367] tbk_out_0_
+1--- 1
+-111 1
+.names [71] [377] [378] tbk_out_1_
+1-- 1
+-1- 1
+--1 1
+.names [29] [77] [312] [313] tbk_out_2_
+-1-- 1
+1-11 1
+.names tbk_in_4_ tbk_out_2_ n_n29 [391] n_n28
+---1 1
+101- 1
+.names n_n130 [21] [382] [387] n_n29
+---1 1
+11-- 1
+1-1- 1
+.names tbk_in_0_ [24] [42] [399] n_n30
+--1- 1
+---1 1
+11-- 1
+.names n_n30 n_n132 [405] [410] n_n31
+---1 1
+11-- 1
+1-1- 1
+.names [61] [71] [377] [378] [21]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names n_n129 n_n29 n_n130 [391] [24]
+010- 1
+0-01 1
+.names n_n129 n_n130 n_n131 n_n132 [27]
+0000 1
+.names tbk_in_3_ tbk_in_4_ tbk_in_2_ tbk_in_5_ [29]
+0000 1
+.names tbk_in_3_ tbk_in_4_ tbk_in_1_ tbk_in_0_ [35]
+0011 1
+.names tbk_in_3_ tbk_in_4_ tbk_in_2_ tbk_in_5_ [41]
+0001 1
+.names tbk_in_1_ n_n132 [13]
+01 1
+10 1
+.names n_n129 n_n130 n_n131 [22]
+000 1
+.names tbk_in_1_ tbk_in_0_ [39]
+01 1
+.names tbk_in_0_ n_n132 [29] [22] [16]
+0111 1
+.names tbk_in_1_ tbk_in_0_ [41] [22] [20]
+0111 1
+.names n_n131 n_n132 [35] [23]
+011 1
+.names n_n29 n_n132 [391] [28]
+11- 1
+-11 1
+.names tbk_in_0_ [27] [41] [37]
+011 1
+.names n_n29 n_n131 [391] [42]
+11- 1
+-11 1
+.names tbk_in_3_ tbk_in_4_ [27] [322] [51]
+1011 1
+.names n_n130 n_n131 n_n132 [35] [54]
+10-1 1
+1-01 1
+.names tbk_in_1_ n_n132 [29] [61]
+011 1
+101 1
+.names [13] [328] [329] [330] [63]
+0111 1
+.names [13] [22] [335] [336] [64]
+0011 1
+.names [340] [341] [342] [65]
+111 1
+.names [345] [346] [347] [66]
+111 1
+.names tbk_in_1_ n_n132 [351] [352] [67]
+1111 1
+0011 1
+.names [13] [22] [355] [356] [68]
+0011 1
+.names tbk_in_1_ n_n132 [41] [361] [69]
+1111 1
+0011 1
+.names [41] [13] [22] [39] [70]
+1111 1
+.names tbk_in_3_ tbk_in_4_ [74] [75] [71]
+101- 1
+10-1 1
+.names tbk_in_2_ n_n129 [366] [367] [74]
+0111 1
+.names tbk_in_2_ n_n129 [370] [371] [75]
+0111 1
+.names tbk_in_1_ tbk_in_2_ tbk_in_0_ [77]
+111 1
+.names n_n130 n_n129 [312]
+10 1
+.names tbk_in_1_ tbk_in_0_ n_n131 n_n132 [313]
+0-11 1
+-011 1
+.names tbk_in_3_ tbk_in_4_ tbk_in_2_ tbk_in_5_ [316]
+0010 1
+.names [27] [316] [317]
+11 1
+.names n_n129 n_n131 n_n132 [35] [319]
+10-1 1
+1-01 1
+.names tbk_in_3_ tbk_in_4_ tbk_in_1_ tbk_in_0_ [320]
+1011 1
+.names [27] [320] [321]
+11 1
+.names tbk_in_1_ tbk_in_2_ tbk_in_5_ tbk_in_0_ [322]
+000- 1
+-000 1
+.names tbk_in_3_ tbk_in_4_ tbk_in_2_ tbk_in_5_ [324]
+0100 1
+.names tbk_in_3_ tbk_in_4_ tbk_in_1_ tbk_in_0_ [325]
+0111 1
+.names n_n129 n_n130 n_n131 [328]
+1-1 1
+-11 1
+.names tbk_in_3_ tbk_in_4_ tbk_in_2_ tbk_in_5_ [329]
+001- 1
+00-1 1
+.names tbk_in_1_ tbk_in_5_ tbk_in_0_ n_n130 [330]
+0010 1
+.names tbk_in_3_ tbk_in_4_ tbk_in_2_ tbk_in_5_ [335]
+001- 1
+00-1 1
+.names tbk_in_5_ tbk_in_0_ n_n130 n_n131 [336]
+0000 1
+.names tbk_in_2_ tbk_in_5_ n_n131 [340]
+001 1
+.names tbk_in_3_ tbk_in_4_ tbk_in_1_ tbk_in_0_ [341]
+0101 1
+.names tbk_in_1_ n_n129 n_n130 n_n132 [342]
+1111 1
+0110 1
+.names tbk_in_2_ tbk_in_5_ n_n129 n_n130 [345]
+001- 1
+00-1 1
+.names tbk_in_3_ tbk_in_4_ tbk_in_1_ tbk_in_0_ [346]
+1001 1
+.names tbk_in_1_ n_n129 n_n131 n_n132 [347]
+1011 1
+0010 1
+.names tbk_in_3_ tbk_in_4_ tbk_in_2_ tbk_in_5_ [351]
+0100 1
+.names tbk_in_0_ n_n129 n_n130 n_n131 [352]
+0110 1
+.names tbk_in_2_ tbk_in_5_ n_n131 [355]
+000 1
+.names tbk_in_3_ tbk_in_4_ tbk_in_0_ n_n129 [356]
+1000 1
+.names tbk_in_0_ n_n129 n_n130 n_n131 [361]
+0001 1
+.names n_n129 tbk_in_2_ [365]
+10 1
+.names tbk_in_1_ tbk_in_0_ n_n130 [366]
+111 1
+.names tbk_in_3_ tbk_in_4_ n_n131 n_n132 [367]
+0111 1
+.names tbk_in_1_ tbk_in_0_ n_n130 [370]
+110 1
+.names tbk_in_3_ tbk_in_4_ n_n131 n_n132 [371]
+1011 1
+.names [63] [64] [65] [66] [377]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names [67] [68] [69] [70] [378]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names tbk_in_0_ n_n131 [29] [382]
+011 1
+101 1
+.names [27] [324] [325] [384]
+11- 1
+1-1 1
+.names n_n130 [74] [75] [384] [386]
+---1 1
+11-- 1
+1-1- 1
+.names tbk_out_2_ [51] [54] [386] [387]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names tbk_out_2_ [317] [319] [321] [390]
+01-- 1
+0-1- 1
+0--1 1
+.names n_n129 [21] [382] [390] [391]
+---1 1
+11-- 1
+1-1- 1
+.names tbk_in_0_ n_n129 n_n130 n_n131 [393]
+1001 1
+.names n_n129 n_n130 n_n131 [395]
+001 1
+.names [29] [35] [393] [395] [396]
+1-1- 1
+-1-1 1
+.names tbk_out_2_ [37] [396] [398]
+1-- 1
+-1- 1
+--1 1
+.names n_n131 [21] [398] [399]
+--1 1
+11- 1
+.names n_n131 tbk_in_1_ [405]
+01 1
+.names tbk_out_2_ [16] [20] [23] [408]
+1--- 1
+-1-- 1
+--1- 1
+---1 1
+.names tbk_in_1_ [24] [28] [408] [410]
+--1- 1
+---1 1
+11-- 1
+.end

@@ -1,0 +1,164 @@
+.model top
+.inputs s420_in_9_ s420_in_8_ s420_in_7_ s420_in_6_ s420_in_10_ s420_in_11_ \
+s420_in_12_ s420_in_13_ s420_in_1_ s420_in_14_ s420_in_0_ s420_in_15_ \
+s420_in_16_ s420_in_17_ s420_in_5_ s420_in_18_ s420_in_4_ s420_in_3_ \
+s420_in_2_ clock
+.outputs s420_out_1_ s420_out_0_
+.latch    n_n23 n_n55 re clock 2
+.latch    n_n24 n_n56 re clock 2
+.latch    n_n25 n_n57 re clock 2
+.latch    n_n26 n_n58 re clock 2
+.latch    n_n27 n_n59 re clock 2
+.names [26] [186] s420_out_1_
+11 1
+.names s420_in_18_ [27] s420_out_0_
+11 1
+.names n_n55 [175] n_n23
+0- 1
+-1 1
+.names [54] [55] n_n24
+1- 1
+-1 1
+.names [48] [49] n_n25
+1- 1
+-1 1
+.names [46] [47] n_n26
+1- 1
+-1 1
+.names [42] [43] n_n27
+1- 1
+-1 1
+.names [15] [191] [27]
+1- 1
+-1 1
+.names s420_in_18_ [58] [29]
+1- 1
+-1 1
+.names [56] [57] [28]
+1- 1
+-1 1
+.names [52] [53] [31]
+1- 1
+-1 1
+.names n_n58 [50] [30]
+1- 1
+-1 1
+.names n_n56 n_n59 [24]
+11 1
+.names n_n55 n_n57 [34]
+0- 1
+-0 1
+.names [44] [45] [33]
+1- 1
+-1 1
+.names n_n56 n_n59 [26]
+00 1
+.names [189] [190] [37]
+1- 1
+-1 1
+.names [20] [21] [35]
+1- 1
+-1 1
+.names [18] [19] [14]
+1- 1
+-1 1
+.names n_n56 n_n59 [25]
+10 1
+.names [26] [179] [32]
+1- 1
+-1 1
+.names n_n56 n_n59 [36]
+01 1
+10 1
+.names n_n55 [14] [15]
+11 1
+.names s420_in_1_ n_n55 [16]
+10 1
+.names n_n57 [35] [18]
+01 1
+.names n_n57 [37] [19]
+11 1
+.names n_n59 [187] [20]
+11 1
+.names s420_in_2_ [36] [21]
+11 1
+.names n_n59 [188] [38]
+11 1
+.names s420_in_3_ [26] [39]
+11 1
+.names s420_in_5_ [25] [40]
+11 1
+.names s420_in_2_ [24] [41]
+11 1
+.names [184] [185] [42]
+11 1
+.names n_n23 [33] [43]
+01 1
+.names n_n57 n_n59 [44]
+10 1
+.names n_n56 n_n57 [45]
+00 1
+.names [181] [182] [46]
+11 1
+.names n_n23 [183] [47]
+01 1
+.names [31] [180] [48]
+11 1
+.names n_n23 [30] [49]
+01 1
+.names n_n57 [25] [50]
+01 1
+.names s420_in_18_ [32] [52]
+11 1
+.names n_n55 [25] [53]
+01 1
+.names [29] [177] [54]
+11 1
+.names n_n23 [28] [55]
+01 1
+.names n_n59 [178] [56]
+11 1
+.names n_n57 [25] [57]
+10 1
+.names n_n57 n_n59 [58]
+10 1
+.names s420_in_18_ s420_in_17_ [175]
+0- 1
+-1 1
+.names n_n55 s420_in_17_ [176]
+00 1
+.names [176] n_n56 [177]
+11 1
+.names n_n58 n_n56 [178]
+00 1
+.names [24] n_n55 [179]
+1- 1
+-0 1
+.names n_n57 s420_in_17_ [180]
+10 1
+.names s420_in_18_ s420_in_17_ [181]
+10 1
+.names n_n58 n_n55 [182]
+10 1
+.names [24] n_n57 [183]
+10 1
+.names s420_in_18_ s420_in_17_ [184]
+10 1
+.names [34] n_n59 [185]
+11 1
+.names n_n57 n_n55 [186]
+00 1
+.names n_n56 s420_in_3_ [187]
+11 1
+.names n_n56 s420_in_4_ [188]
+01 1
+.names [39] [38] [189]
+1- 1
+-1 1
+.names [41] [40] [190]
+1- 1
+-1 1
+.names [16] s420_in_0_ [191]
+1- 1
+-1 1
+.end

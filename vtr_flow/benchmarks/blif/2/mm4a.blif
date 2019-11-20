@@ -1,0 +1,337 @@
+.model top
+.inputs pa pclk pb pc pd pe pf pg
+.outputs pt pu pv pw
+.latch    ng0 nq re pclk 2
+.latch    nc0 nm re pclk 2
+.latch    nd0 nn re pclk 2
+.latch    ne0 no re pclk 2
+.latch    nf0 np re pclk 2
+.latch    ny ni re pclk 2
+.latch    nz nj re pclk 2
+.latch    na0 nk re pclk 2
+.latch    nb0 nl re pclk 2
+.latch    nx nh re pclk 2
+.latch    nh0 nr re pclk 2
+.latch    ni0 ns re pclk 2
+.names [83] [394] pt
+1- 1
+-1 1
+.names [73] [397] pu
+1- 1
+-1 1
+.names [39] [400] pv
+1- 1
+-1 1
+.names [32] [402] pw
+1- 1
+-1 1
+.names ne13 nc5 ng0
+01 1
+.names ne13 [110] nc0
+1- 1
+-1 1
+.names ne13 [106] nd0
+1- 1
+-1 1
+.names ne13 [102] ne0
+1- 1
+-1 1
+.names ne13 no5 nf0
+01 1
+.names pe [41] ny
+11 1
+.names pf [41] nz
+11 1
+.names pg [41] na0
+11 1
+.names ne13 [96] nb0
+1- 1
+-1 1
+.names pd [41] nx
+11 1
+.names ne13 ng5 nh0
+01 1
+.names ne13 ny4 ni0
+01 1
+.names [90] [91] nf5
+1- 1
+-1 1
+.names pc [41] ne13
+1- 1
+-0 1
+.names [112] [113] nd5
+1- 1
+-1 1
+.names pa pb [41]
+01 1
+.names pa pb [42]
+00 1
+.names [86] [393] [47]
+1- 1
+-1 1
+.names [80] [81] nx4
+1- 1
+-1 1
+.names [108] [109] nh5
+1- 1
+-1 1
+.names [75] [396] [49]
+1- 1
+-1 1
+.names [104] [105] nz4
+1- 1
+-1 1
+.names [70] [71] [52]
+1- 1
+-1 1
+.names nx4 ny4 [51]
+01 1
+10 1
+.names ni0 [36] [53]
+1- 1
+-1 1
+.names pc na2 [43]
+00 1
+.names ne13 [54] [45]
+01 1
+.names pc np1 [44]
+01 1
+.names ne13 [58] [46]
+00 1
+.names [100] [101] no5
+1- 1
+-1 1
+.names [114] [115] [54]
+1- 1
+-1 1
+.names ne13 [54] na2
+01 1
+.names [120] [121] nc5
+1- 1
+-1 1
+.names [98] [99] nt5
+1- 1
+-1 1
+.names nd5 nc5 [56]
+1- 1
+-1 1
+.names [94] [95] ng5
+1- 1
+-1 1
+.names [92] [93] ny4
+1- 1
+-1 1
+.names nh5 ng5 [57]
+1- 1
+-1 1
+.names [123] [387] [58]
+1- 1
+-1 1
+.names ne13 [58] np1
+01 1
+.names [118] [119] [63]
+1- 1
+-1 1
+.names nn [63] [62]
+0- 1
+-1 1
+.names [116] [117] [30]
+1- 1
+-1 1
+.names nz nr [66]
+1- 1
+-0 1
+.names na0 ns [65]
+1- 1
+-0 1
+.names [66] [65] [31]
+11 1
+.names ng0 [88] [48]
+1- 1
+-1 1
+.names [78] [79] [50]
+1- 1
+-1 1
+.names no [30] [55]
+0- 1
+-1 1
+.names na0 ns [60]
+1- 1
+-0 1
+.names [125] [126] [59]
+1- 1
+-1 1
+.names nq ny [61]
+0- 1
+-1 1
+.names nm ny [64]
+0- 1
+-1 1
+.names nz4 [53] [32]
+11 1
+.names nk [42] [33]
+11 1
+.names ni0 nx4 [34]
+11 1
+.names pc na0 [35]
+11 1
+.names ne13 nx4 [36]
+01 1
+.names ne0 [51] [38]
+01 1
+.names nz4 [52] [39]
+11 1
+.names nj [42] [40]
+11 1
+.names pc nz [67]
+11 1
+.names nx4 [398] [70]
+01 1
+.names ni0 nx4 [71]
+11 1
+.names nx4 [395] [72]
+01 1
+.names [41] [49] [73]
+11 1
+.names ni [42] [74]
+11 1
+.names nf5 [50] [75]
+11 1
+.names pc ny [76]
+11 1
+.names nh0 nx4 [77]
+10 1
+.names nh0 nh5 [78]
+11 1
+.names nd0 nx4 [79]
+00 1
+.names nf5 [57] [80]
+11 1
+.names nh5 ng5 [81]
+11 1
+.names nf5 [390] [82]
+01 1
+.names [41] [47] [83]
+11 1
+.names nh [42] [84]
+11 1
+.names nt5 [392] [85]
+11 1
+.names nf5 [48] [86]
+01 1
+.names pc nx [87]
+11 1
+.names nf0 nt5 [88]
+11 1
+.names [56] [389] [90]
+11 1
+.names nd5 nc5 [91]
+11 1
+.names ns [46] [92]
+11 1
+.names na0 [44] [93]
+11 1
+.names nr [46] [94]
+11 1
+.names nz [44] [95]
+11 1
+.names pa nt5 [96]
+01 1
+.names nl [45] [98]
+11 1
+.names nx [43] [99]
+11 1
+.names np [46] [100]
+11 1
+.names nx [44] [101]
+11 1
+.names pa nz4 [102]
+01 1
+.names no [45] [104]
+11 1
+.names na0 [43] [105]
+11 1
+.names pa nh5 [106]
+01 1
+.names nn [45] [108]
+11 1
+.names nz [43] [109]
+11 1
+.names pa nd5 [110]
+01 1
+.names nm [45] [112]
+11 1
+.names ny [43] [113]
+11 1
+.names na0 [55] [114]
+11 1
+.names no [30] [115]
+01 1
+.names nz [62] [116]
+11 1
+.names nn [63] [117]
+01 1
+.names [64] [388] [118]
+11 1
+.names nm ny [119]
+01 1
+.names nq [46] [120]
+11 1
+.names ny [44] [121]
+11 1
+.names [60] [385] [122]
+11 1
+.names [31] [59] [123]
+11 1
+.names na0 ns [124]
+10 1
+.names [61] [386] [125]
+11 1
+.names nq ny [126]
+01 1
+.names nz nr [385]
+10 1
+.names nx np [386]
+10 1
+.names [122] [124] [387]
+1- 1
+-1 1
+.names nx nl [388]
+10 1
+.names nt5 no5 [389]
+11 1
+.names nd5 ne13 [390]
+10 1
+.names ng0 no5 [391]
+11 1
+.names nd5 [391] [392]
+11 1
+.names [85] [87] [393]
+1- 1
+-1 1
+.names [82] [84] [394]
+1- 1
+-1 1
+.names nh5 ne13 [395]
+10 1
+.names [77] [76] [396]
+1- 1
+-1 1
+.names [72] [74] [397]
+1- 1
+-1 1
+.names ny4 ne13 [398]
+00 1
+.names [67] [40] [399]
+1- 1
+-1 1
+.names [38] [399] [400]
+1- 1
+-1 1
+.names [35] [33] [401]
+1- 1
+-1 1
+.names [34] [401] [402]
+1- 1
+-1 1
+.end

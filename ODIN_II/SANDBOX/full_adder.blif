@@ -1,0 +1,33 @@
+.model fulladder
+.inputs top^a top^b top^cin
+.outputs top^cout top^out
+
+.names gnd
+.names hbpad
+.names vcc
+1
+
+.names top^a top^b top^BITWISE_XOR~0^LOGICAL_XOR~8
+01 1
+10 1
+
+.names top^BITWISE_XOR~0^LOGICAL_XOR~8 top^cin top^BITWISE_XOR~1^LOGICAL_XOR~5
+01 1
+10 1
+
+.names top^BITWISE_XOR~0^LOGICAL_XOR~8 top^cin top^BITWISE_AND~2^LOGICAL_AND~7
+11 1
+
+.names top^BITWISE_AND~2^LOGICAL_AND~7 top^BITWISE_AND~3^LOGICAL_AND~9 top^BITWISE_OR~4^LOGICAL_OR~6
+1- 1
+-1 1
+
+.names top^a top^b top^BITWISE_AND~3^LOGICAL_AND~9
+11 1
+
+.names top^BITWISE_OR~4^LOGICAL_OR~6 top^cout
+1 1
+.names top^BITWISE_XOR~1^LOGICAL_XOR~5 top^out
+1 1
+.end
+

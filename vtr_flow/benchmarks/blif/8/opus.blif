@@ -1,0 +1,94 @@
+.model top
+.inputs opus_in_3_ opus_in_4_ opus_in_1_ opus_in_2_ opus_in_0_ clock
+.outputs opus_out_0_ opus_out_1_ opus_out_2_ opus_out_3_ opus_out_4_ \
+opus_out_5_
+.latch    n_n36 n_n83 re clock 2
+.latch    n_n37 n_n84 re clock 2
+.latch    n_n38 n_n85 re clock 2
+.latch    n_n39 n_n86 re clock 2
+.names opus_in_1_ opus_in_2_ n_n83 n_n84 n_n85 n_n86 opus_out_0_
+10-01- 1
+-0101- 1
+101--0 1
+.names opus_in_3_ opus_in_4_ opus_in_1_ opus_in_2_ opus_in_0_ n_n83 n_n84 \
+n_n85 opus_out_1_
+---01010 1
+11000001 1
+.names opus_in_1_ opus_in_2_ n_n83 n_n84 n_n85 n_n86 opus_out_2_
+10-001 1
+-00001 1
+.names opus_in_3_ opus_in_4_ opus_in_1_ opus_in_2_ opus_in_0_ n_n83 n_n84 \
+n_n85 opus_out_3_
+---011-1 1
+---0-101 1
+10000-01 1
+.names opus_in_3_ opus_in_4_ opus_in_1_ opus_in_2_ n_n83 n_n84 n_n85 n_n86 \
+opus_out_4_
+---1---- 1
+-------0 1
+01--00-- 1
+--10001- 1
+--10-001 1
+---00001 1
+.names opus_in_3_ opus_in_4_ opus_in_1_ opus_in_2_ n_n83 n_n84 n_n85 n_n86 \
+opus_out_5_
+---1---- 1
+-------0 1
+----1-1- 1
+----0-0- 1
+1---00-- 1
+01--00-- 1
+--10001- 1
+--10-001 1
+.names opus_in_3_ opus_in_4_ opus_in_1_ opus_in_2_ n_n83 n_n84 n_n85 n_n86 \
+n_n36
+---01-1- 1
+--00-1-0 1
+--10-001 1
+---00001 1
+--0000-0 1
+1-00--10 1
+-000--10 1
+--00-000 1
+---00000 1
+010000-- 1
+01-0000- 1
+10000011 1
+.names opus_in_3_ opus_in_4_ opus_in_1_ opus_in_2_ opus_in_0_ n_n83 n_n84 \
+n_n85 n_n37
+---001-1 1
+---0-101 1
+---0-010 1
+1100--01 1
+1-001-01 1
+.names opus_out_1_ n_n83 n_n37 n_n84 n_n39 [219] [222] n_n38
+1------ 1
+--1---1 1
+-1-11-- 1
+--0-11- 1
+.names opus_in_3_ opus_in_4_ opus_in_1_ opus_in_2_ n_n83 n_n84 n_n85 n_n86 \
+n_n39
+---0-1-- 1
+1--0--1- 1
+-0-0--1- 1
+---0--01 1
+--10-01- 1
+---0101- 1
+--101--0 1
+.names opus_in_1_ opus_in_2_ n_n83 n_n84 n_n85 n_n86 [219]
+-1---- 1
+0--1-- 1
+--01-- 1
+---1-1 1
+0-0-1- 1
+0-1-0- 1
+0-0--0 1
+0---00 1
+--0-00 1
+.names opus_in_4_ opus_in_1_ opus_in_2_ n_n83 n_n84 n_n85 n_n86 [222]
+0-1--1- 1
+00-0-1- 1
+00--11- 1
+0--011- 1
+0---111 1
+.end

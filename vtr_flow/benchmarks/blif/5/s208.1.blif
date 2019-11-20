@@ -1,0 +1,78 @@
+.model top
+.inputs pp_0 pclk pc_8 pc_7 pc_6 pc_5 pc_4 pc_3 pc_2 pc_1 pc_0
+.outputs pz
+.latch    ni111 n_n40 re pclk 2
+.latch    ni112 n_n90 re pclk 2
+.latch    ni113 n_n91 re pclk 2
+.latch    ni13 n_n87 re pclk 2
+.latch    ni14 n_n88 re pclk 2
+.latch    ni15 n_n89 re pclk 2
+.latch    ni110 n_n39 re pclk 2
+.latch    ni12 n_n38 re pclk 2
+.names pp_0 n_n89 n_n74 [28] [187] pz
+--1-- 1
+1---1 1
+10-1- 1
+.names n_n40 n_n90 n_n91 n_n42 ni111
+10-- 1
+1-0- 1
+1--0 1
+0111 1
+.names n_n90 n_n91 n_n42 ni112
+10- 1
+1-0 1
+011 1
+.names n_n91 n_n42 ni113
+01 1
+10 1
+.names pp_0 n_n87 n_n88 n_n89 ni13
+01-- 1
+-10- 1
+-1-0 1
+1011 1
+.names pp_0 n_n88 n_n89 ni14
+01- 1
+-10 1
+101 1
+.names pp_0 n_n89 ni15
+01 1
+10 1
+.names n_n40 n_n90 n_n91 n_n39 n_n42 ni110
+0--1- 1
+-0-1- 1
+--01- 1
+---10 1
+11101 1
+.names pp_0 n_n87 n_n88 n_n89 n_n38 ni12
+0---1 1
+-0--1 1
+--0-1 1
+---01 1
+11110 1
+.names pc_4 n_n38 [42] [43] [181] n_n74
+11--1 1
+-01-1 1
+-0-11 1
+.names pp_0 n_n87 n_n88 n_n89 n_n38 n_n42
+11111 1
+.names pc_2 n_n88 [39] [185] [186] [28]
+11--- 1
+-01-- 1
+-0-11 1
+.names pc_3 n_n87 [39]
+11 1
+.names pc_7 pc_6 n_n40 n_n90 n_n91 [42]
+-1-10 1
+1-100 1
+.names pc_5 n_n91 [43]
+11 1
+.names pp_0 n_n87 n_n88 n_n89 [181]
+1000 1
+.names pc_8 n_n40 n_n38 [185]
+100 1
+.names n_n90 n_n91 n_n87 n_n39 [186]
+0001 1
+.names pc_1 pc_0 n_n89 [187]
+-1- 1
+1-1 1
+.end

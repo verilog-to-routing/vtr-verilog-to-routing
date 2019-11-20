@@ -1,0 +1,10 @@
+bm_my_D_latch1.v
+	- Incomplete sensitivity list in combination process. Causes ModelSim to ignore a reset signal. 
+
+bm_DL_D_latch.v                 
+	Regarding: 
+	 always @(D or Clk)
+		if (Clk)
+			Q = D;	
+	- Odin fills in an "else" condition where Q = 0. ModelSim fills in no "else" condition and Q is initially set to x (unknown). 
+

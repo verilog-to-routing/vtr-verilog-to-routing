@@ -1,0 +1,12 @@
+# Benchmark "simple" written by ABC on Mon Mar 28 13:44:30 2011
+.model simple
+.inputs top^clock top^enable
+.outputs top^value_out
+
+.latch         n7 top^FF_NODE~3  0
+
+.names top^enable top^FF_NODE~3 n7
+01 1
+.names top^FF_NODE~3 top^value_out
+1 1
+.end

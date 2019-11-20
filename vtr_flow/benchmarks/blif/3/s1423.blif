@@ -1,0 +1,813 @@
+.model top
+.inputs pg7 pg6 pg5 pg4 pg3 pg2 pg1 pg0 pg9 pg8 pclk pg10 pg12 pg11 pg14 pg13 \
+pg16 pg15
+.outputs pg701bf pg702 pg726 pg727 pg729
+.latch    ng149 ng31 re pclk 2
+.latch    ng125 ng27 re pclk 2
+.latch    ng129 ng28 re pclk 2
+.latch    ng140 ng29 re pclk 2
+.latch    ng144 ng30 re pclk 2
+.latch    ng328 ng23 re pclk 2
+.latch    ng109 ng24 re pclk 2
+.latch    ng113 ng25 re pclk 2
+.latch    ng118 ng26 re pclk 2
+.latch    ng498 ng72 re pclk 2
+.latch    ng590 ng83 re pclk 2
+.latch    ng707 ng94 re pclk 2
+.latch    ng503 ng73 re pclk 2
+.latch    ng577 ng82 re pclk 2
+.latch    ng713 pg729 re pclk 2
+.latch    ng526 ng74 re pclk 2
+.latch    ng613 ng85 re pclk 2
+.latch    ng693 ng92 re pclk 2
+.latch    ng332 ng22 re pclk 2
+.latch    ng531 ng75 re pclk 2
+.latch    ng608 ng84 re pclk 2
+.latch    ng705 pg726 re pclk 2
+.latch    ng154 ng32 re pclk 2
+.latch    ng242 ng43 re pclk 2
+.latch    ng379 ng54 re pclk 2
+.latch    ng447 ng65 re pclk 2
+.latch    ng159 ng33 re pclk 2
+.latch    ng237 ng42 re pclk 2
+.latch    ng384 ng55 re pclk 2
+.latch    ng441 ng64 re pclk 2
+.latch    ng166 ng34 re pclk 2
+.latch    ng252 ng45 re pclk 2
+.latch    ng365 ng52 re pclk 2
+.latch    ng438 ng63 re pclk 2
+.latch    ng175 ng35 re pclk 2
+.latch    ng247 ng44 re pclk 2
+.latch    ng373 ng53 re pclk 2
+.latch    ng427 ng62 re pclk 2
+.latch    ng189 ng36 re pclk 2
+.latch    ng303 ng47 re pclk 2
+.latch    ng405 ng58 re pclk 2
+.latch    ng469 ng69 re pclk 2
+.latch    ng569 ng80 re pclk 2
+.latch    ng687 ng91 re pclk 2
+.latch    ng193 ng37 re pclk 2
+.latch    ng260 ng46 re pclk 2
+.latch    ng408 ng59 re pclk 2
+.latch    ng464 ng68 re pclk 2
+.latch    ng573 ng81 re pclk 2
+.latch    ng682 ng90 re pclk 2
+.latch    ng198 ng38 re pclk 2
+.latch    ng315 ng49 re pclk 2
+.latch    ng392 ng56 re pclk 2
+.latch    ng459 ng67 re pclk 2
+.latch    ng208 ng39 re pclk 2
+.latch    ng309 ng48 re pclk 2
+.latch    ng397 ng57 re pclk 2
+.latch    ng451 ng66 re pclk 2
+.latch    ng214 ng40 re pclk 2
+.latch    ng360 ng51 re pclk 2
+.latch    ng536 ng76 re pclk 2
+.latch    ng663 ng87 re pclk 2
+.latch    ng218 ng41 re pclk 2
+.latch    ng321 ng50 re pclk 2
+.latch    ng541 ng77 re pclk 2
+.latch    ng657 ng86 re pclk 2
+.latch    ng416 ng60 re pclk 2
+.latch    ng494 ng71 re pclk 2
+.latch    ng548 ng78 re pclk 2
+.latch    ng675 ng89 re pclk 2
+.latch    ng424 ng61 re pclk 2
+.latch    ng477 ng70 re pclk 2
+.latch    ng565 ng79 re pclk 2
+.latch    ng669 ng88 re pclk 2
+.names pg15 pg701bf
+0 1
+.names ng652 ng653 [1479] pg702
+001 1
+.names pg14 ng90 ng616 pg727
+00- 1
+-00 1
+.names pg14 [244] ng149
+11 1
+.names pg14 ng27 ng135 ng125
+101 1
+110 1
+.names pg14 [258] ng129
+11 1
+.names pg14 [259] ng140
+11 1
+.names pg14 ng30 [220] ng144
+101 1
+110 1
+.names pg15 ng23 [451] ng328
+--1 1
+01- 1
+.names pg14 ng24 ng700 ng109
+101 1
+110 1
+.names pg14 [271] ng113
+11 1
+.names ng26 [445] [1422] ng118
+1-1 1
+-11 1
+.names [434] [435] [436] ng498
+1-- 1
+-1- 1
+--1 1
+.names ng589 ng604 [408] ng590
+01- 1
+0-1 1
+.names [406] [407] ng707
+1- 1
+-1 1
+.names [403] [404] [405] ng503
+1-- 1
+-1- 1
+--1 1
+.names pg9 ng82 ng610 ng577
+1-1 1
+-10 1
+.names ng435 ng597 [1446] ng713
+101 1
+.names ng74 ng589 ng604 ng526
+001 1
+100 1
+.names pg11 ng85 ng610 ng613
+1-1 1
+-10 1
+.names ng657 [392] [393] ng693
+0-- 1
+-1- 1
+--1 1
+.names [455] [456] ng332
+1- 1
+-1 1
+.names [176] [237] [432] ng531
+010 1
+.names pg10 ng84 ng610 ng608
+1-1 1
+-10 1
+.names pg14 [267] ng705
+11 1
+.names pg14 ng32 [218] ng154
+101 1
+110 1
+.names ng43 ng262 ng259 ng242
+010 1
+100 1
+.names pg14 [239] ng379
+11 1
+.names pg14 ng65 ng616 ng447
+11- 1
+1-0 1
+.names [282] [1456] ng159
+11 1
+.names ng42 [356] [1457] ng237
+1-1 1
+-11 1
+.names ng55 [172] [1458] ng384
+111 1
+001 1
+.names [352] [353] ng441
+1- 1
+-1 1
+.names pg14 [283] ng166
+11 1
+.names ng45 ng259 [198] ng252
+101 1
+000 1
+.names pg14 [223] ng358 ng365
+110 1
+.names pg14 ng63 ng435 ng438
+11- 1
+1-1 1
+.names pg14 ng35 ng175
+10 1
+.names [176] [277] [366] ng247
+010 1
+.names pg14 [234] ng358 ng373
+110 1
+.names pg14 [236] ng427
+11 1
+.names pg14 [284] ng189
+11 1
+.names ng47 [206] [335] ng303
+--1 1
+11- 1
+.names ng57 [211] [332] ng405
+--1 1
+11- 1
+.names pg14 ng616 [254] ng469
+111 1
+.names pg7 ng80 ng610 ng569
+1-1 1
+-10 1
+.names ng657 [322] [323] ng687
+0-- 1
+-1- 1
+--1 1
+.names pg14 ng37 [167] ng193
+111 1
+100 1
+.names [176] [280] [366] ng260
+010 1
+.names pg14 ng59 [246] ng408
+111 1
+100 1
+.names ng68 ng476 [165] ng464
+101 1
+000 1
+.names pg8 ng81 ng610 ng573
+1-1 1
+-10 1
+.names ng657 [209] [309] ng682
+0-- 1
+-1- 1
+--1 1
+.names pg14 [286] ng198
+11 1
+.names ng49 [206] [306] ng315
+--1 1
+11- 1
+.names [261] [1468] ng392
+11 1
+.names pg14 ng616 [263] ng459
+111 1
+.names pg14 [288] ng208
+11 1
+.names ng48 [206] [298] ng309
+--1 1
+11- 1
+.names ng57 [211] [295] ng397
+--1 1
+01- 1
+.names [293] [294] ng451
+1- 1
+-1 1
+.names pg14 ng40 [164] ng214
+111 1
+100 1
+.names pg14 ng358 [1470] ng360
+101 1
+.names ng76 ng589 [197] ng536
+101 1
+000 1
+.names [193] [194] ng663
+1- 1
+-1 1
+.names pg14 [290] ng218
+11 1
+.names ng50 [206] [190] ng321
+--1 1
+11- 1
+.names [274] [1472] ng541
+11 1
+.names pg14 pg13 ng657
+11 1
+.names [184] [185] ng416
+1- 1
+-1 1
+.names [181] [182] [183] ng494
+1-- 1
+-1- 1
+--1 1
+.names [176] [255] [432] ng548
+010 1
+.names [177] [178] ng675
+1- 1
+-1 1
+.names [171] [174] ng424
+1- 1
+-1 1
+.names ng70 ng476 [248] ng477
+101 1
+000 1
+.names pg6 ng79 ng610 ng565
+1-1 1
+-10 1
+.names [155] [160] ng669
+1- 1
+-1 1
+.names ng40 [164] [1475] ng652
+001 1
+.names ng61 ng358 [1476] ng653
+111 1
+.names ng27 ng135 [1477] [222]
+1-- 1
+-0- 1
+--1 1
+.names pg14 ng616 ng476
+0- 1
+-0 1
+.names ng52 ng375 [223]
+01 1
+10 1
+.names pg9 ng90 [176] ng589
+--1 1
+10- 1
+.names pg14 ng91 ng616 ng610
+0-- 1
+-10 1
+.names ng47 ng49 [1421] [201]
+111 1
+.names pg14 ng90 ng616 [176]
+01- 1
+-10 1
+.names pg14 ng90 ng616 ng500
+0-- 1
+-10 1
+.names ng31 ng30 [220] [218]
+111 1
+.names ng34 [218] [1443] [215]
+011 1
+.names ng90 ng597 [1412] ng102
+--1 1
+11- 1
+.names ng90 ng524 [1442] ng618
+0-- 1
+-01 1
+.names ng46 ng105 [249] ng700
+00- 1
+011 1
+101 1
+.names ng38 ng618 [256] ng435
+10- 1
+-11 1
+.names [1450] [1451] [1452] [228]
+--1 1
+11- 1
+.names ng24 ng700 [1415] ng135
+011 1
+.names [1437] [1438] [1439] ng524
+1-- 1
+-1- 1
+--1 1
+.names ng52 ng53 ng375 [234]
+01- 1
+-10 1
+101 1
+.names ng62 ng61 ng358 [236]
+10- 1
+1-0 1
+011 1
+.names ng74 ng75 ng604 [237]
+01- 1
+-10 1
+101 1
+.names [438] [1427] [1428] ng616
+1-- 1
+-1- 1
+--1 1
+.names ng91 ng51 [219] ng375
+01- 1
+-11 1
+.names ng90 ng597 [1410] ng103
+--1 1
+11- 1
+.names ng53 ng91 [219] ng358
+10- 1
+1-1 1
+.names [451] [452] [1455] ng262
+001 1
+.names ng29 ng92 [465] [220]
+00- 1
+0-1 1
+.names ng92 ng54 [215] [239]
+00- 1
+-01 1
+110 1
+.names ng90 ng597 [1411] ng101
+--1 1
+11- 1
+.names ng90 ng597 [1408] ng105
+--1 1
+11- 1
+.names ng46 ng105 ng270
+11 1
+00 1
+.names [346] [347] [1459] [219]
+1-1 1
+-11 1
+.names pg8 ng64 ng90 [243]
+-01 1
+1-0 1
+.names ng85 ng84 [243] ng597
+-01 1
+0-0 1
+.names ng31 ng30 [220] [244]
+10- 1
+1-0 1
+011 1
+.names ng56 [172] [1460] [206]
+0-1 1
+-11 1
+.names [346] [347] [1462] [211]
+1-1 1
+-11 1
+.names ng45 ng104 [250] [249]
+00- 1
+0-1 1
+-01 1
+.names ng74 ng75 ng604 [197]
+0-- 1
+-0- 1
+--0 1
+.names ng69 ng68 [165] [254]
+10- 1
+1-1 1
+010 1
+.names ng78 [197] [1471] [255]
+11- 1
+1-0 1
+001 1
+.names ng92 ng34 ng35 [256]
+10- 1
+0-1 1
+.names pg7 ng90 [176] ng259
+--1 1
+10- 1
+.names ng27 ng28 ng135 [258]
+11- 1
+-10 1
+001 1
+.names ng29 ng92 [465] [259]
+00- 1
+0-1 1
+110 1
+.names pg10 ng86 [209]
+11 1
+.names ng90 ng597 [1409] ng104
+--1 1
+11- 1
+.names ng72 ng73 ng71 [188]
+1-- 1
+-1- 1
+--1 1
+.names ng55 ng56 [172] [261]
+01- 1
+-11 1
+100 1
+.names ng67 [329] [1464] [263]
+01- 1
+0-1 1
+100 1
+.names ng524 [414] [415] ng604
+11- 1
+1-1 1
+.names ng700 [370] [1453] [267]
+-1- 1
+1-0 1
+.names ng24 ng25 ng700 [271]
+11- 1
+-10 1
+001 1
+.names ng76 ng77 [197] [274]
+-1- 1
+1-0 1
+.names ng43 ng44 ng262 [277]
+01- 1
+-10 1
+101 1
+.names ng45 ng46 [198] [280]
+01- 1
+-11 1
+100 1
+.names ng32 ng33 [218] [282]
+-1- 1
+1-1 1
+.names ng34 [218] [1443] [283]
+10- 1
+1-0 1
+011 1
+.names ng36 ng91 [418] [284]
+00- 1
+0-1 1
+110 1
+.names ng37 ng38 [167] [286]
+01- 1
+-11 1
+100 1
+.names ng92 ng39 [215] [288]
+00- 1
+-01 1
+110 1
+.names ng40 ng41 [164] [290]
+11- 1
+-11 1
+000 1
+.names ng92 ng54 [215] [172]
+-0- 1
+1-0 1
+.names ng92 ng39 [215] [164]
+-1- 1
+1-0 1
+.names ng67 [329] [1464] [165]
+0-- 1
+-00 1
+.names ng36 ng91 [418] [167]
+1-- 1
+-10 1
+.names ng43 ng44 ng262 [198]
+0-- 1
+-0- 1
+--0 1
+.names ng91 ng56 [172] [291]
+0-- 1
+-10 1
+.names ng43 ng102 [230]
+01 1
+10 1
+.names ng42 ng101 [233]
+01 1
+10 1
+.names ng45 ng104 [232]
+01 1
+10 1
+.names ng58 [346] [347] [246]
+0-- 1
+-00 1
+.names ng69 ng68 [165] [248]
+0-- 1
+-0- 1
+--1 1
+.names [471] [473] [1414] [250]
+1-- 1
+-00 1
+.names ng90 [269] [1454] [268]
+11- 1
+0-1 1
+.names ng62 ng91 ng59 [269]
+11- 1
+-01 1
+.names pg11 pg14 ng88 [155]
+011 1
+.names pg11 pg14 ng87 [160]
+111 1
+.names ng60 ng358 [1473] [171]
+111 1
+.names pg14 ng61 ng358 [174]
+110 1
+.names pg11 pg14 ng89 [177]
+011 1
+.names pg11 pg14 ng88 [178]
+111 1
+.names pg0 ng63 ng500 [181]
+101 1
+.names pg3 ng63 ng500 [182]
+111 1
+.names ng71 ng500 [183]
+10 1
+.names ng60 ng358 [1473] [184]
+011 1
+.names pg14 ng60 ng358 [185]
+110 1
+.names pg14 ng49 [291] [190]
+111 1
+.names pg11 pg14 ng87 [193]
+011 1
+.names pg11 pg14 ng94 [194]
+110 1
+.names pg14 ng65 ng616 [293]
+110 1
+.names pg14 ng66 ng616 [294]
+111 1
+.names [346] [347] [1469] [295]
+001 1
+.names pg14 ng47 [291] [298]
+111 1
+.names pg14 ng48 [291] [306]
+111 1
+.names ng90 ng86 [309]
+11 1
+.names pg10 ng91 ng86 [322]
+011 1
+.names pg10 ng90 ng86 [323]
+111 1
+.names ng61 ng358 [1463] [329]
+111 1
+.names [346] [347] [1461] [332]
+001 1
+.names pg12 pg14 [291] [335]
+111 1
+.names ng38 [167] [1444] [346]
+101 1
+.names ng92 [215] ng618 [347]
+0-1 1
+-11 1
+.names pg14 ng63 ng616 [352]
+110 1
+.names pg14 ng64 ng616 [353]
+111 1
+.names [201] [451] [452] [356]
+100 1
+.names pg7 ng90 [366]
+10 1
+.names ng618 [268] [370]
+11 1
+.names pg6 ng90 ng618 [376]
+1-1 1
+-11 1
+.names ng83 ng90 ng524 [380]
+11- 1
+-11 1
+.names pg10 ng92 ng86 [392]
+011 1
+.names pg10 ng91 ng86 [393]
+111 1
+.names pg2 ng63 ng500 [403]
+101 1
+.names pg5 ng63 ng500 [404]
+111 1
+.names ng73 ng500 [405]
+10 1
+.names pg11 pg14 ng94 [406]
+011 1
+.names pg11 pg14 ng89 [407]
+110 1
+.names ng83 ng435 ng524 [408]
+11- 1
+1-1 1
+.names ng92 ng618 [416] [414]
+01- 1
+-11 1
+.names ng38 [167] [1444] [415]
+001 1
+.names ng34 [218] [1443] [416]
+111 1
+.names ng40 ng41 [164] [418]
+010 1
+.names pg9 ng90 [432]
+10 1
+.names pg1 ng63 ng500 [434]
+101 1
+.names pg4 ng63 ng500 [435]
+111 1
+.names ng72 ng500 [436]
+10 1
+.names ng70 [188] [438]
+11 1
+.names ng24 ng25 ng700 [445]
+011 1
+.names ng23 ng22 [453] [451]
+11- 1
+-11 1
+.names pg15 ng23 [452]
+01 1
+.names pg15 [455] [453]
+11 1
+.names ng22 [1418] [1419] [455]
+11- 1
+1-1 1
+.names pg15 [1420] [1421] [456]
+011 1
+.names ng27 ng28 ng135 [465]
+011 1
+.names ng44 ng103 [471]
+00 1
+.names ng43 ng102 [1413] [473]
+1-1 1
+-11 1
+.names ng43 ng102 [474]
+11 1
+.names pg4 ng90 ng78 [1408]
+10- 1
+-10 1
+.names pg3 ng90 ng77 [1409]
+10- 1
+-10 1
+.names pg2 ng90 ng76 [1410]
+10- 1
+-10 1
+.names pg0 ng74 ng90 [1411]
+-01 1
+1-0 1
+.names pg1 ng75 ng90 [1412]
+-01 1
+1-0 1
+.names ng101 ng42 [1413]
+11 1
+.names ng44 ng103 [474] [1414]
+--1 1
+11- 1
+00- 1
+.names ng26 ng25 [1415]
+11 1
+.names ng48 ng49 [1418]
+1- 1
+-1 1
+.names pg15 ng47 ng50 [1419]
+1-- 1
+-1- 1
+--1 1
+.names ng49 ng47 [1420]
+11 1
+.names ng50 ng48 [1421]
+11 1
+.names ng135 pg14 [1422]
+01 1
+.names ng67 ng71 [1424]
+01 1
+10 1
+.names ng73 ng69 [1426]
+01 1
+10 1
+.names ng72 ng68 [1424] [1427]
+--1 1
+01- 1
+10- 1
+.names ng70 [188] [1426] [1428]
+--1 1
+00- 1
+.names ng80 ng82 [1431]
+1- 1
+-1 1
+.names ng79 ng81 [1432]
+1- 1
+-1 1
+.names ng74 ng79 [1433]
+01 1
+10 1
+.names ng75 ng80 [1435]
+01 1
+10 1
+.names ng82 ng77 [1433] [1437]
+--1 1
+01- 1
+10- 1
+.names ng81 ng76 [1435] [1438]
+--1 1
+01- 1
+10- 1
+.names ng78 [1431] [1432] [1439]
+11- 1
+1-1 1
+000 1
+.names pg16 ng83 ng66 [1442]
+100 1
+.names ng33 ng32 [1443]
+11 1
+.names ng618 ng37 [1444]
+01 1
+.names ng83 pg14 [1446]
+11 1
+.names ng44 ng103 ng270 [1450]
+010 1
+100 1
+.names [230] [233] [232] [1451]
+111 1
+.names pg5 ng90 [380] [1452]
+--1 1
+10- 1
+.names ng435 [228] [376] [1453]
+--1 1
+11- 1
+.names ng35 pg6 [1454]
+11 1
+.names ng42 [1420] [1421] [1455]
+111 1
+.names pg14 [218] [1443] [1456]
+10- 1
+1-0 1
+.names [176] ng262 [366] [1457]
+000 1
+.names pg14 ng56 [172] [1458]
+10- 1
+1-1 1
+.names ng59 ng58 [1459]
+11 1
+.names ng91 pg14 [1460]
+11 1
+.names ng58 pg14 [1461]
+11 1
+.names ng58 pg14 [1462]
+01 1
+.names ng91 ng62 [1463]
+11 1
+.names ng91 ng90 [219] [1464]
+-0- 1
+0-1 1
+.names pg14 ng56 [172] [1468]
+10- 1
+1-1 1
+.names ng57 pg14 [1469]
+11 1
+.names ng91 ng51 [219] [1470]
+00- 1
+-01 1
+110 1
+.names ng77 ng76 [1471]
+11 1
+.names ng589 [197] [1471] [1472]
+01- 1
+0-0 1
+.names ng61 pg14 [1473]
+01 1
+.names ng88 ng41 [1475]
+11 1
+.names ng89 ng62 [1476]
+11 1
+.names ng94 ng28 [1477]
+1- 1
+-0 1
+.names [222] ng90 [1478]
+10 1
+.names ng87 [215] [1478] [1479]
+0-1 1
+-01 1
+.end

@@ -1,0 +1,19 @@
+.model test
+.inputs A0 A1 B0 B1 start c
+.outputs C0 C1 C2
+
+.subckt FA a=A0 b=A1 c=start carryout=CARRY1 sum=C0d
+.subckt FA a=A1 b=B1 c=CARRY1 carryout=C2d sum=C1d
+
+.latch C0d C0 re c 0
+.latch C1d C1 re c 0
+.latch C2d C2 re c 0
+
+.end
+
+.model FA
+.inputs a b c
+.outputs carryout sum
+# test
+.blackbox extra words
+.end

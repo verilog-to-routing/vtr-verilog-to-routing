@@ -1,0 +1,88 @@
+.model accum
+.inputs top^clock top^reset_n top^D~0 top^D~1 top^D~2 top^D~3
+.outputs top^Q~0 top^Q~1 top^Q~2 top^Q~3
+
+.names gnd
+.names hbpad
+.names vcc
+1
+
+.names top^reset_n top^MULTI_PORT_MUX~0^LOGICAL_NOT~1 gnd top^ADD~2^ADDER_FUNC~15 top^MULTI_PORT_MUX~0^MUX_2~11
+1-1- 1
+-1-1 1
+
+.latch top^MULTI_PORT_MUX~0^MUX_2~11 top^FF_NODE~3 re top^clock 0
+
+.names gnd top^FF_NODE~3 top^D~0 top^ADD~2^ADDER_FUNC~15
+001 1
+010 1
+100 1
+111 1
+
+.names gnd top^FF_NODE~3 top^D~0 top^ADD~2^CARRY_FUNC~16
+011 1
+100 1
+110 1
+111 1
+
+.names top^ADD~2^CARRY_FUNC~16 top^FF_NODE~4 top^D~1 top^ADD~2^ADDER_FUNC~17
+001 1
+010 1
+100 1
+111 1
+
+.names top^reset_n top^MULTI_PORT_MUX~0^LOGICAL_NOT~1 gnd top^ADD~2^ADDER_FUNC~17 top^MULTI_PORT_MUX~0^MUX_2~12
+1-1- 1
+-1-1 1
+
+.latch top^MULTI_PORT_MUX~0^MUX_2~12 top^FF_NODE~4 re top^clock 0
+
+.names top^ADD~2^CARRY_FUNC~16 top^FF_NODE~4 top^D~1 top^ADD~2^CARRY_FUNC~18
+011 1
+100 1
+110 1
+111 1
+
+.names top^ADD~2^CARRY_FUNC~18 top^FF_NODE~5 top^D~2 top^ADD~2^ADDER_FUNC~19
+001 1
+010 1
+100 1
+111 1
+
+.names top^reset_n top^MULTI_PORT_MUX~0^LOGICAL_NOT~1 gnd top^ADD~2^ADDER_FUNC~19 top^MULTI_PORT_MUX~0^MUX_2~13
+1-1- 1
+-1-1 1
+
+.latch top^MULTI_PORT_MUX~0^MUX_2~13 top^FF_NODE~5 re top^clock 0
+
+.names top^ADD~2^CARRY_FUNC~18 top^FF_NODE~5 top^D~2 top^ADD~2^CARRY_FUNC~20
+011 1
+100 1
+110 1
+111 1
+
+.names top^ADD~2^CARRY_FUNC~20 top^FF_NODE~6 top^D~3 top^ADD~2^ADDER_FUNC~21
+001 1
+010 1
+100 1
+111 1
+
+.names top^reset_n top^MULTI_PORT_MUX~0^LOGICAL_NOT~1 gnd top^ADD~2^ADDER_FUNC~21 top^MULTI_PORT_MUX~0^MUX_2~14
+1-1- 1
+-1-1 1
+
+.latch top^MULTI_PORT_MUX~0^MUX_2~14 top^FF_NODE~6 re top^clock 0
+
+.names top^reset_n top^MULTI_PORT_MUX~0^LOGICAL_NOT~1
+0 1
+
+.names top^FF_NODE~3 top^Q~0
+1 1
+.names top^FF_NODE~4 top^Q~1
+1 1
+.names top^FF_NODE~5 top^Q~2
+1 1
+.names top^FF_NODE~6 top^Q~3
+1 1
+.end
+

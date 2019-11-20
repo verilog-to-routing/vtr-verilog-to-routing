@@ -1,0 +1,336 @@
+------------------------------------------------------------------------
+r85 | kenneth.b.kent@gmail.com | 2011-09-08 14:50:35 -0400 (Thu, 08 Sep 2011) | 2 lines
+
+Fixed a bug with padding nodes
+
+------------------------------------------------------------------------
+r84 | kenneth.b.kent@gmail.com | 2011-09-06 10:12:36 -0400 (Tue, 06 Sep 2011) | 2 lines
+
+Modified padding of hard block multipliers.
+
+------------------------------------------------------------------------
+r83 | kenneth.b.kent@gmail.com | 2011-09-06 09:48:05 -0400 (Tue, 06 Sep 2011) | 2 lines
+
+Modified padding of hard block multipliers.
+
+------------------------------------------------------------------------
+r82 | kenneth.b.kent@gmail.com | 2011-08-24 19:27:45 -0400 (Wed, 24 Aug 2011) | 2 lines
+
+Added check for second argument to shift operation is a constant. Corner case of second argument is an input was not handled properly.
+
+------------------------------------------------------------------------
+r81 | JasonKaiLuu@gmail.com | 2011-08-23 17:08:46 -0400 (Tue, 23 Aug 2011) | 1 line
+
+Output some additional stats about memories found in circuit
+------------------------------------------------------------------------
+r80 | kenneth.b.kent@gmail.com | 2011-08-22 12:50:30 -0400 (Mon, 22 Aug 2011) | 2 lines
+
+Applied parameter fix patch from Eddie @ UBC. This solves some of the issues with resolving parameters and reducing nodes in the generation of a netlist from the AST.
+
+------------------------------------------------------------------------
+r79 | kenneth.b.kent@gmail.com | 2011-08-09 16:28:21 -0400 (Tue, 09 Aug 2011) | 2 lines
+
+Added two's complement for negative numbers when converting from a number to a binary string. This was preventing some benchmarks that have negative numbers from passing through the flow.
+
+------------------------------------------------------------------------
+r78 | kenneth.b.kent@gmail.com | 2011-08-08 16:51:57 -0400 (Mon, 08 Aug 2011) | 2 lines
+
+Ken: correcting an error in commiting output_blif.c
+
+------------------------------------------------------------------------
+r77 | kenneth.b.kent@gmail.com | 2011-08-08 16:47:42 -0400 (Mon, 08 Aug 2011) | 2 lines
+
+Ken: Fixed error in metlist_create_from_ast.c where we were checking the case for "MEMORY" where it should be "RAM".
+
+------------------------------------------------------------------------
+r76 | kenneth.b.kent@gmail.com | 2011-08-04 17:17:52 -0400 (Thu, 04 Aug 2011) | 2 lines
+
+Ken: Applied the patch from Eddie to add parameter support for modules.
+
+------------------------------------------------------------------------
+r75 | kenneth.b.kent@gmail.com | 2011-08-04 16:22:57 -0400 (Thu, 04 Aug 2011) | 2 lines
+
+Ken: bug fixes :)
+
+------------------------------------------------------------------------
+r74 | kenneth.b.kent@gmail.com | 2011-08-02 16:51:55 -0400 (Tue, 02 Aug 2011) | 2 lines
+
+Ken: Fixed an issue with null connection on flip flops.
+
+------------------------------------------------------------------------
+r73 | JasonKaiLuu | 2011-07-29 13:11:04 -0400 (Fri, 29 Jul 2011) | 1 line
+
+Fixed spram.v
+------------------------------------------------------------------------
+r72 | kenneth.b.kent@gmail.com | 2011-07-28 11:43:06 -0400 (Thu, 28 Jul 2011) | 2 lines
+
+Ken: Fixed the makefile issue :)
+
+------------------------------------------------------------------------
+r70 | JasonKaiLuu | 2011-07-27 17:22:03 -0400 (Wed, 27 Jul 2011) | 1 line
+
+Added beginning of large VTR paper
+------------------------------------------------------------------------
+r69 | kenneth.b.kent@gmail.com | 2011-07-27 13:15:51 -0400 (Wed, 27 Jul 2011) | 2 lines
+
+Ken: Applied patches from UBC (cleanup.patch and preprocessor-fix.patch). These should not affect functionality other than to fix two bugs previously introduced into the preprocessor.
+
+------------------------------------------------------------------------
+r68 | kenneth.b.kent@gmail.com | 2011-07-13 10:59:30 -0400 (Wed, 13 Jul 2011) | 2 lines
+
+Ken: Some corrections to output of hard blocks to fix the error in connecting cascading hard blocks together.
+
+------------------------------------------------------------------------
+r67 | shubhamj.iitkgp@gmail.com | 2011-07-06 10:40:33 -0400 (Wed, 06 Jul 2011) | 4 lines
+
+added the generic node simulation in simulate_blif.c
+added some code in read_blif.c and simulate_blif.c to simulated blif from ABC
+added a data field bit_map_line_count in nnode_t data structure
+
+------------------------------------------------------------------------
+r65 | JasonKaiLuu@gmail.com | 2011-07-04 13:48:27 -0400 (Mon, 04 Jul 2011) | 1 line
+
+Blif port output changed from port~pin_number to port[pin_number]
+------------------------------------------------------------------------
+r63 | shubhamj.iitkgp@gmail.com | 2011-06-20 13:31:32 -0400 (Mon, 20 Jun 2011) | 2 lines
+
+included the bit map reading function in read_blif.c
+added a new node type GENERIC
+------------------------------------------------------------------------
+r62 | kenneth.b.kent@gmail.com | 2011-06-08 11:24:54 -0400 (Wed, 08 Jun 2011) | 2 lines
+
+Ken: CLeaned up some of the read blif functionality.
+
+------------------------------------------------------------------------
+r61 | kenneth.b.kent@gmail.com | 2011-06-07 06:32:58 -0400 (Tue, 07 Jun 2011) | 2 lines
+
+Ken: Fixed an error with connecting output pins from hard IP blocks.
+
+------------------------------------------------------------------------
+r59 | shubhamj.iitkgp@gmail.com | 2011-06-05 15:36:27 -0400 (Sun, 05 Jun 2011) | 1 line
+
+Fixed an error in read_new_blif regarding the MUX_2 node type
+------------------------------------------------------------------------
+r58 | shubhamj.iitkgp@gmail.com | 2011-06-01 13:41:39 -0400 (Wed, 01 Jun 2011) | 3 lines
+
+created the read_blif_new.c
+Updated the makefile, another executable verify_blif.exe is been created to read in blif
+
+------------------------------------------------------------------------
+r56 | kenneth.b.kent@gmail.com | 2011-05-31 09:48:00 -0400 (Tue, 31 May 2011) | 5 lines
+
+Ken: Applied patch from Eddie Hung to fix the netlist visualizer. It
+quotes all the node names so that the subsequent dot graph is correct.
+
+I also fixed a couple of compiler warnings.
+
+------------------------------------------------------------------------
+r55 | kenneth.b.kent@gmail.com | 2011-05-30 11:01:10 -0400 (Mon, 30 May 2011) | 2 lines
+
+Ken: Fixed an error in the naming of hard block output driver pins.
+
+------------------------------------------------------------------------
+r54 | kenneth.b.kent@gmail.com | 2011-05-26 11:09:56 -0400 (Thu, 26 May 2011) | 2 lines
+
+Ken: Fixed an error in the connection of hard block output driver pins.
+
+------------------------------------------------------------------------
+r52 | kenneth.b.kent@gmail.com | 2011-05-12 08:57:30 -0400 (Thu, 12 May 2011) | 2 lines
+
+Fixed a compilation error from applied patches.
+
+------------------------------------------------------------------------
+r51 | kenneth.b.kent@gmail.com | 2011-05-11 11:37:14 -0400 (Wed, 11 May 2011) | 3 lines
+
+Applied patches from Eddie Hung @ UBC for changing the to_view_ast variable to configurable in the xml file, to output the precprocessed source file, and output the ast file in a more friendly manner with better file names.
+
+
+------------------------------------------------------------------------
+r47 | kenneth.b.kent@gmail.com | 2011-04-13 13:20:39 -0400 (Wed, 13 Apr 2011) | 3 lines
+
+Applied patches from Eddie Hung @ UBC for assignment delay (921) fix and verilog preprocessing.
+
+
+------------------------------------------------------------------------
+r45 | kenneth.b.kent@gmail.com | 2011-04-08 09:04:31 -0400 (Fri, 08 Apr 2011) | 3 lines
+
+Applied patches from Eddie Hung @ UBC for nested ifdefs, assignment delay and replication.
+
+
+------------------------------------------------------------------------
+r44 | ash.furrow | 2011-04-03 23:58:12 -0400 (Sun, 03 Apr 2011) | 1 line
+
+more work on simulation engine
+------------------------------------------------------------------------
+r43 | ash.furrow | 2011-04-03 23:58:07 -0400 (Sun, 03 Apr 2011) | 1 line
+
+more work on simulation engine
+------------------------------------------------------------------------
+r42 | ash.furrow@gmail.com | 2011-03-25 11:40:20 -0400 (Fri, 25 Mar 2011) | 1 line
+
+explicitly linked to dlfcn libraries
+------------------------------------------------------------------------
+r41 | ash.furrow | 2011-03-24 15:49:58 -0400 (Thu, 24 Mar 2011) | 1 line
+
+fixed a minor bug in writing to ModelSim output
+------------------------------------------------------------------------
+r40 | ash.furrow | 2011-03-24 15:31:48 -0400 (Thu, 24 Mar 2011) | 1 line
+
+Added description in the sim_block.h file describing how to implement generic black block testing.
+------------------------------------------------------------------------
+r39 | ash.furrow | 2011-03-24 15:23:21 -0400 (Thu, 24 Mar 2011) | 1 line
+
+More progress on the sequential circuit verfication problem
+------------------------------------------------------------------------
+r38 | ash.furrow | 2011-03-22 13:27:56 -0400 (Tue, 22 Mar 2011) | 1 line
+
+Updated documentation to reflect restrictions onf sequential circuit verification
+------------------------------------------------------------------------
+r37 | ash.furrow | 2011-03-22 13:24:45 -0400 (Tue, 22 Mar 2011) | 1 line
+
+Updated changes for sequential verification and a fixed a compiler error for dynamically loaded hard block C libraries. Sequential verification work is done, but needs to be tested to verify it works.
+------------------------------------------------------------------------
+r36 | ash.furrow | 2011-03-21 08:32:56 -0400 (Mon, 21 Mar 2011) | 1 line
+
+continued work on simulator. Fixed some minor bugs and work performed on sequential verification
+------------------------------------------------------------------------
+r32 | jamieson.peter | 2011-03-06 14:25:16 -0500 (Sun, 06 Mar 2011) | 1 line
+
+Makefile for VPR5 and VPR6 correction
+------------------------------------------------------------------------
+r31 | ash.furrow | 2011-03-05 16:22:55 -0500 (Sat, 05 Mar 2011) | 3 lines
+
+updated simulation of hardblock code and updated the README.txt file to specify how to use the hardblock simulator.
+
+
+------------------------------------------------------------------------
+r30 | ash.furrow | 2011-03-05 16:04:55 -0500 (Sat, 05 Mar 2011) | 3 lines
+
+Updated code for simulating hardblocks. Will update documentation soon.
+
+
+------------------------------------------------------------------------
+r29 | ash.furrow | 2011-03-03 11:09:59 -0500 (Thu, 03 Mar 2011) | 1 line
+
+continuing hard block simulation
+------------------------------------------------------------------------
+r28 | ash.furrow | 2011-03-03 09:48:23 -0500 (Thu, 03 Mar 2011) | 1 line
+
+Fixed bug in hard-block simulation
+------------------------------------------------------------------------
+r27 | ash.furrow | 2011-03-02 14:22:24 -0500 (Wed, 02 Mar 2011) | 1 line
+
+Added a lot of function code to have hard-block simulation in the simulator.
+------------------------------------------------------------------------
+r25 | kenneth.b.kent@gmail.com | 2011-01-27 20:38:53 -0500 (Thu, 27 Jan 2011) | 5 lines
+
+Corrected the creation of hard block memories. Needed to insert condition to
+"pad" the address line only when the logical memory is SMALLER than the
+physical. Without this check, it results in a negative offset that truncates
+the logical memory down to the size of the physical :(
+
+------------------------------------------------------------------------
+r24 | ash.furrow | 2011-01-27 12:57:37 -0500 (Thu, 27 Jan 2011) | 1 line
+
+Updated output from Odins -h command
+------------------------------------------------------------------------
+r23 | ash.furrow | 2011-01-27 12:47:43 -0500 (Thu, 27 Jan 2011) | 1 line
+
+Updated README and DOCUMENTS files to include more use information and features not handled by the simulator.
+------------------------------------------------------------------------
+r22 | ash.furrow | 2011-01-20 09:42:14 -0500 (Thu, 20 Jan 2011) | 1 line
+
+Updated code for simulator. Added dual-port memories and contributing work on getting correct sequential simulation
+------------------------------------------------------------------------
+r21 | JasonKaiLuu@gmail.com | 2011-01-12 13:12:08 -0500 (Wed, 12 Jan 2011) | 1 line
+
+Enable recursion on memory splitting
+------------------------------------------------------------------------
+r20 | JasonKaiLuu | 2010-09-21 00:45:02 -0400 (Tue, 21 Sep 2010) | 1 line
+
+Hacks to get memories to work
+------------------------------------------------------------------------
+r19 | JasonKaiLuu | 2010-09-21 00:04:26 -0400 (Tue, 21 Sep 2010) | 1 line
+
+Fixed memory splitting
+------------------------------------------------------------------------
+r18 | jamieson.peter | 2010-09-18 15:46:07 -0400 (Sat, 18 Sep 2010) | 2 lines
+
+- Temporary change to Error Jason Luu Found and needed fixed
+- Changed read_blif.c to remove pad.  Not sure if impacts Ashes work.
+------------------------------------------------------------------------
+r17 | jamieson.peter | 2010-09-02 15:52:24 -0400 (Thu, 02 Sep 2010) | 4 lines
+
+Bugs reported by Peter M.
+- Took out gc.txt from VPR 6 (experimental and not needed)
+- Fixed (0 == a) problem with changes in netlist_create_from_ast.c by making the search better
+- Fixed (a == 4) failure in ast_util.c based on (log (decimal)+1)/log(2) calculation error...forgot + 1
+------------------------------------------------------------------------
+r15 | ash.furrow@gmail.com | 2010-08-26 13:25:04 -0400 (Thu, 26 Aug 2010) | 2 lines
+
+Working on memories
+
+------------------------------------------------------------------------
+r14 | kenneth.b.kent@gmail.com | 2010-08-26 12:26:50 -0400 (Thu, 26 Aug 2010) | 3 lines
+
+Added feature to print out report of logical memories that exist in the
+verilog circuit description.
+
+------------------------------------------------------------------------
+r13 | kenneth.b.kent@gmail.com | 2010-08-26 08:56:45 -0400 (Thu, 26 Aug 2010) | 3 lines
+
+Corrected unconnected output issue with outputs. This was created by an error
+in the merge of the Odin versions.
+
+------------------------------------------------------------------------
+r12 | kenneth.b.kent@gmail.com | 2010-08-25 14:52:05 -0400 (Wed, 25 Aug 2010) | 4 lines
+
+- Merged the U of Toronto libvpr with the google repository libvpr_6. This
+should now make sharing of code easier.
+- Corrected naming issue of odin_II.c and odin_ii.c
+
+------------------------------------------------------------------------
+r11 | kenneth.b.kent@gmail.com | 2010-08-19 12:15:02 -0400 (Thu, 19 Aug 2010) | 3 lines
+
+Changed threshold for hard vs. soft multipliers to depend on the
+product of the two data widths and NOT on the maximum data width size.
+
+------------------------------------------------------------------------
+r10 | kenneth.b.kent@gmail.com | 2010-08-19 12:03:46 -0400 (Thu, 19 Aug 2010) | 3 lines
+
+Completed the merge of the simulation functionality from UNB into the
+odin-ii base code hosted at google.
+
+------------------------------------------------------------------------
+r9 | jamieson.peter | 2010-06-07 10:51:48 -0400 (Mon, 07 Jun 2010) | 1 line
+
+Including library math for Linux compilations
+------------------------------------------------------------------------
+r8 | jamieson.peter | 2010-06-03 11:56:06 -0400 (Thu, 03 Jun 2010) | 1 line
+
+Peter - Bug fix for Peter M's desire for Example 7 and 14
+------------------------------------------------------------------------
+r7 | jamieson.peter | 2010-06-03 11:40:01 -0400 (Thu, 03 Jun 2010) | 1 line
+
+Peter: Bug fix on decimal numbers with undefined bit length.  Fixes VPR benchmark diffeq_paj_convert.blif.  Causes problem with 00 as 0 which were in both des benchmarks, therefore changed those benchmarks.  Should we handle 00?
+------------------------------------------------------------------------
+r6 | jamieson.peter | 2010-06-01 15:44:08 -0400 (Tue, 01 Jun 2010) | 1 line
+
+Fix for fsm bug ... XNOR and XOR were flipped in output_blif.c
+------------------------------------------------------------------------
+r5 | jamieson.peter | 2010-05-31 10:04:56 -0400 (Mon, 31 May 2010) | 1 line
+
+
+------------------------------------------------------------------------
+r4 | jamieson.peter | 2010-05-28 16:45:39 -0400 (Fri, 28 May 2010) | 1 line
+
+Peter - Doxygen removal...going to make my own web version so it is portable
+------------------------------------------------------------------------
+r3 | jamieson.peter | 2010-05-28 14:51:27 -0400 (Fri, 28 May 2010) | 1 line
+
+Peter - Tested the base configuration of VPR 5 and VPR 6 with micro and full benchmarks.  Works
+------------------------------------------------------------------------
+r2 | jamieson.peter | 2010-05-27 16:38:24 -0400 (Thu, 27 May 2010) | 1 line
+
+Merge Files start point for Odin II
+------------------------------------------------------------------------

@@ -1,0 +1,989 @@
+  <architecture>
+  
+  <!-- ODIN II specific config -->
+  <models>
+
+	 <model name="fpu_mul">
+      <input_ports>
+	  <port name ="clk" is_clock="1"/>
+      <port name="opa"/>
+      <port name="opb"/>
+      </input_ports>
+      <output_ports> 
+      <port name="out"/>
+      <port name="control"/>
+      </output_ports> 
+    </model>
+
+	 <model name="fpu_add">
+      <input_ports>
+	  <port name ="clk" is_clock="1"/>
+      <port name="opa"/>
+      <port name="opb"/>
+      </input_ports>
+      <output_ports> 
+      <port name="out"/>
+	  <port name="control"/>
+      </output_ports> 
+    </model>
+
+
+ 
+  </models>
+  <!-- ODIN II specific config ends -->
+ 
+  <!-- Physical descriptions begin (area optimized for N8-K6-L4 -->
+  <layout auto="1.0"/>
+		<device>
+			<sizing R_minW_nmos="2800.310059" R_minW_pmos="7077.009766" ipin_mux_trans_size="1.221260"/>
+			<timing C_ipin_cblock="0.000000e+00" T_ipin_cblock="8.607000e-11"/>
+			<area grid_logic_tile_area="2292.209961"/>
+			<chan_width_distr>
+				<io width="1.000000"/>
+				<x distr="uniform" peak="1.000000"/>
+				<y distr="uniform" peak="1.000000"/>
+			</chan_width_distr>
+			<switch_block type="wilton" fs="3"/>
+		</device>
+		<switchlist>
+			<switch type="mux" name="0" R="0.000000" Cin="0.000000e+00" Cout="0.000000e+00" Tdel="1.102000e-10" mux_trans_size="1.214940" buf_size="11.910600"/>
+		</switchlist>
+		<segmentlist>
+			<segment freq="1.000000" length="4" type="unidir" Rmetal="0.000000" Cmetal="0.000000e+00">
+			<mux name="0"/>
+			<sb type="pattern">1 1 1 1 1</sb>
+			<cb type="pattern">1 1 1 1</cb>
+			</segment>
+		</segmentlist>
+
+		<complexblocklist>
+      <!-- Capacity is a unique property of I/Os, it is the maximum number of I/Os that can be placed at the same (X,Y) location on the FPGA -->
+      <pb_type name="io" capacity="3">
+        <input name="outpad" num_pins="1"/>
+        <output name="inpad" num_pins="1"/>
+        <clock name="clock" num_pins="1"/>
+
+        <!-- IOs can operate as either inputs or outputs -->
+        <mode name="inpad">
+          <pb_type name="inpad" blif_model=".input" num_pb="1">
+            <output name="inpad" num_pins="1"/>
+          </pb_type>
+          <interconnect>
+            <direct name="inpad" input="inpad.inpad" output="io.inpad">
+            <delay_constant max="9.762000e-11" in_port="inpad.inpad" out_port="io.inpad"/>
+            </direct>
+          </interconnect>
+      
+        </mode>
+        <mode name="outpad">
+          <pb_type name="outpad" blif_model=".output" num_pb="1">
+            <input name="outpad" num_pins="1"/>
+          </pb_type>
+          <interconnect>
+            <direct name="outpad" input="io.outpad" output="outpad.outpad">
+            <delay_constant max="2.700000e-11" in_port="io.outpad" out_port="outpad.outpad"/>
+            </direct>
+          </interconnect>
+        </mode>
+
+				<fc_in type="frac">1.000000</fc_in>
+				<fc_out type="frac">0.250000</fc_out>
+
+        <!-- IOs go on the periphery of the FPGA, for consistency, 
+          make it physically equivalent on all sides so that only one definition of I/Os is needed.
+          If I do not make a physically equivalent definition, then I need to define 4 different I/Os, one for each side of the FPGA
+        -->
+        <pinlocations pattern="custom">
+          <loc side="left">io.outpad io.inpad io.clock</loc>
+          <loc side="top">io.outpad io.inpad io.clock</loc>
+          <loc side="right">io.outpad io.inpad io.clock</loc>
+          <loc side="bottom">io.outpad io.inpad io.clock</loc>
+        </pinlocations>
+
+        <gridlocations>
+          <loc type="perimeter" priority="10"/>
+        </gridlocations>
+
+      </pb_type>
+      <!-- Describe general-purpose complex block -->
+      <pb_type name="clb">        
+          <input name="I" num_pins="10" equivalent="true"/>
+          <output name="O" num_pins="4" equivalent="true"/>
+          <clock name="clk" num_pins="1"/>
+          <pb_type name="ble" num_pb="4">
+             <input name="in" num_pins="4"/>
+             <output name="out" num_pins="1"/>
+             <clock name="clk" num_pins="1"/>
+             <pb_type name="soft_logic" num_pb="1">
+               <input name="in" num_pins="4"/>
+               <output name="out" num_pins="1"/>
+            <mode name="n1_lut4">
+              <pb_type name="lut4" blif_model=".names" num_pb="1" class="lut">
+                <input name="in" num_pins="4" port_class="lut_in"/>
+                <output name="out" num_pins="1" port_class="lut_out"/>
+                <!-- LUT timing using delay matrix -->
+                <delay_matrix type="max" in_port="lut4.in" out_port="lut4.out">
+                  2.581000e-10
+                  2.581000e-10
+                  2.581000e-10
+                  2.581000e-10
+                </delay_matrix>
+              </pb_type>
+              <interconnect>
+                <direct name="direct1" input="soft_logic.in[3:0]" output="lut4[0:0].in[3:0]"/>
+                <direct name="direct2" input="lut4[0:0].out" output="soft_logic.out[0:0]"/>
+              </interconnect>
+            </mode>
+             </pb_type>
+          <pb_type name="ff" blif_model=".latch" num_pb="1" class="flipflop">
+            <input name="D" num_pins="1" port_class="D"/>
+            <output name="Q" num_pins="1" port_class="Q"/>
+            <clock name="clk" num_pins="1" port_class="clock"/>
+            <T_setup value="2.359000e-10" port="ff.D" clock="clk"/>
+            <T_clock_to_Q max="1.508000e-10" port="ff.Q" clock="clk"/>
+          </pb_type>
+            <interconnect>
+              <direct name="direct1" input="soft_logic.out[0:0]" output="ff.D"/>
+              <direct name="direct2" input="ble.in" output="soft_logic.in"/>
+              <direct name="direct3" input="ble.clk" output="ff.clk"/>
+              <mux name="mux1" input="ff.Q soft_logic.out[0:0]" output="ble.out[0:0]"/>
+             </interconnect>
+          </pb_type>
+
+          <interconnect>
+            <complete name="complete1" input="clb.I ble[3:0].out" output="ble[3:0].in">
+              <delay_constant max="7.586000e-11" in_port="clb.I" out_port="ble[3:0].in" />
+              <delay_constant max="7.260000e-11" in_port="ble[3:0].out" out_port="ble[3:0].in" />
+            </complete>
+            <complete name="complete2" input="clb.clk" output="ble[3:0].clk"/>
+            <direct name="direct1" input="ble[3:0].out" output="clb.O"/>
+          </interconnect>
+				<fc_in type="frac">0.150000</fc_in>
+				<fc_out type="frac">0.250000</fc_out>
+        <pinlocations pattern="spread"/>
+        <gridlocations>
+          <loc type="fill" priority="1"/>
+        </gridlocations>
+      </pb_type>
+
+
+
+        <pb_type name="block_FPU" height="15">
+          <input name="in1" num_pins="32"/>
+          <input name="in2" num_pins="32"/>
+		  <input name="in3" num_pins="32"/>
+		  <input name="in4" num_pins="32"/>
+          <output name="out1" num_pins="32"/>
+          <output name="out2" num_pins="32"/> 
+          <output name="out3" num_pins="32"/>	 
+           <output name="control" num_pins="32"/>	  
+		  <clock name="clk" num_pins="1"/>
+
+          <mode name="FPU">
+            <pb_type name="FPU_slice" num_pb="1">
+              <input name="in1" num_pins="32"/>
+              <input name="in2" num_pins="32"/>
+			  <input name="in3" num_pins="32"/>
+              <input name="in4" num_pins="32"/>	      
+	      	  <output name="out1" num_pins="32"/>
+		      <output name="out2" num_pins="32"/>
+              <output name="out3" num_pins="32"/>	     
+ 			  <output name="control" num_pins="32"/>	  
+              <clock name="clk" num_pins="1"/>
+
+              <pb_type name="WB1" blif_model=".latch" num_pb="32" class="flipflop">
+		<input name="D" num_pins="1" port_class="D"/>
+		<output name="Q" num_pins="1" port_class="Q"/>
+		<clock name="clk" num_pins="1" port_class="clock"/>
+		<T_setup value="2.359000e-10" port="WB1.D" clock="clk"/>
+		<T_clock_to_Q max="1.508000e-10" port="WB1.Q" clock="clk"/>
+		</pb_type>
+
+              <pb_type name="WB2" blif_model=".latch" num_pb="32" class="flipflop">
+		<input name="D" num_pins="1" port_class="D"/>
+		<output name="Q" num_pins="1" port_class="Q"/>
+		<clock name="clk" num_pins="1" port_class="clock"/>
+		<T_setup value="2.359000e-10" port="WB2.D" clock="clk"/>
+		<T_clock_to_Q max="1.508000e-10" port="WB2.Q" clock="clk"/>
+		</pb_type>
+
+              <pb_type name="WB3" blif_model=".latch" num_pb="32" class="flipflop">
+		<input name="D" num_pins="1" port_class="D"/>
+		<output name="Q" num_pins="1" port_class="Q"/>
+		<clock name="clk" num_pins="1" port_class="clock"/>
+		<T_setup value="2.359000e-10" port="WB3.D" clock="clk"/>
+		<T_clock_to_Q max="1.508000e-10" port="WB3.Q" clock="clk"/>
+		</pb_type>
+
+              <pb_type name="WB4" blif_model=".latch" num_pb="32" class="flipflop">
+		<input name="D" num_pins="1" port_class="D"/>
+		<output name="Q" num_pins="1" port_class="Q"/>
+		<clock name="clk" num_pins="1" port_class="clock"/>
+		<T_setup value="2.359000e-10" port="WB4.D" clock="clk"/>
+		<T_clock_to_Q max="1.508000e-10" port="WB4.Q" clock="clk"/>
+		
+		</pb_type>
+
+              <pb_type name="feedback_reg1" blif_model=".latch" num_pb="32" class="flipflop">
+		<input name="D" num_pins="1" port_class="D"/>
+		<output name="Q" num_pins="1" port_class="Q"/>
+		<clock name="clk" num_pins="1" port_class="clock"/>
+		<T_setup value="2.359000e-10" port="feedback_reg1.D" clock="clk"/>
+		<T_clock_to_Q max="1.508000e-10" port="feedback_reg1.Q" clock="clk"/>
+		
+		</pb_type>
+      
+            <pb_type name="feedback_reg2" blif_model=".latch" num_pb="32" class="flipflop">
+		<input name="D" num_pins="1" port_class="D"/>
+		<output name="Q" num_pins="1" port_class="Q"/>
+		<clock name="clk" num_pins="1" port_class="clock"/>
+                <T_setup value="2.359000e-10" port="feedback_reg2.D" clock="clk"/>
+                <T_clock_to_Q max="1.508000e-10" port="feedback_reg2.Q" clock="clk"/>
+                
+	      </pb_type>
+
+            <pb_type name="feedback_reg3" blif_model=".latch" num_pb="32" class="flipflop">
+                <input name="D" num_pins="1" port_class="D"/>
+                <output name="Q" num_pins="1" port_class="Q"/>
+		<clock name="clk" num_pins="1" port_class="clock"/>
+   	            
+                <T_setup value="2.359000e-10" port="feedback_reg3.D" clock="clk"/>
+                <T_clock_to_Q max="1.508000e-10" port="feedback_reg3.Q" clock="clk"/>
+                
+	 	</pb_type>
+
+              <pb_type name="FM1" blif_model=".subckt fpu_mul" num_pb="1">
+		<clock name="clk" num_pins="1"/>
+                <input name="opa" num_pins="32"/>
+                <input name="opb" num_pins="32"/>
+		<output name="out" num_pins="32"/>
+		<output name="control" num_pins="8"/>
+
+                <T_setup value="2.359000e-10" port="FM1.opa" clock="clk"/>
+                <T_setup value="2.359000e-10" port="FM1.opb" clock="clk"/>
+		<T_clock_to_Q max="1.508000e-10" port="FM1.out" clock="clk"/>
+		<T_clock_to_Q max="1.508000e-10" port="FM1.control" clock="clk"/>		
+                <max_internal_delay value="2.985e-9"/>				
+
+              </pb_type>
+
+              <pb_type name="FM2" blif_model=".subckt fpu_mul" num_pb="1">
+		<clock name="clk" num_pins="1"/>
+		<input name="opa" num_pins="32"/>
+		<input name="opb" num_pins="32"/>
+		<output name="out" num_pins="32"/>
+		<output name="control" num_pins="8"/>
+                <T_setup value="2.359000e-10" port="FM2.opa" clock="clk"/>
+                <T_setup value="2.359000e-10" port="FM2.opb" clock="clk"/>
+		<T_clock_to_Q max="1.508000e-10" port="FM2.out" clock="clk"/>
+ 		<T_clock_to_Q max="1.508000e-10" port="FM2.control" clock="clk"/>
+                <max_internal_delay value="2.985e-9"/>				
+              </pb_type>
+
+              <pb_type name="FA1" blif_model=".subckt fpu_add" num_pb="1">
+		<clock name="clk" num_pins="1"/>
+		<input name="opa" num_pins="32"/>
+		<input name="opb" num_pins="32"/>
+		<output name="out" num_pins="32"/>
+		<output name="control" num_pins="8"/>
+                <T_setup value="2.359000e-10" port="FA1.opa" clock="clk"/>
+                <T_setup value="2.359000e-10" port="FA1.opb" clock="clk"/>
+		<T_clock_to_Q max="1.508000e-10" port="FA1.out" clock="clk"/>
+		<T_clock_to_Q max="1.508000e-10" port="FA1.control" clock="clk"/>
+                <max_internal_delay value="2.985e-9"/>		
+		</pb_type>
+
+              <pb_type name="FA2" blif_model=".subckt fpu_add" num_pb="1">
+		<clock name="clk" num_pins="1"/>
+		<input name="opa" num_pins="32"/>
+		<input name="opb" num_pins="32"/>
+		<output name="out" num_pins="32"/>
+		<output name="control" num_pins="8"/>
+		<T_setup value="2.359000e-10" port="FA2.opa" clock="clk"/>
+		<T_setup value="2.359000e-10" port="FA2.opb" clock="clk"/>
+		<T_clock_to_Q max="1.508000e-10" port="FA2.out" clock="clk"/>
+		<T_clock_to_Q max="1.508000e-10" port="FA2.control" clock="clk"/>
+                <max_internal_delay value="2.985e-9"/>				
+              </pb_type>
+	      <interconnect>
+		
+		<!-- Connection sequence: WB1->FM1->FA1->WB2->-WB3->FM2->FA2->WB4 -->
+		<direct name="direct9" input="FM1.control[7:0]" output="FPU_slice.control[7:0]"> </direct> 
+		<direct name="direct10" input="FM2.control[7:0]" output="FPU_slice.control[15:8]"> </direct> 
+		<direct name="direct11" input="FA1.control[7:0]" output="FPU_slice.control[23:16]"> </direct> 
+		<direct name="direct12" input="FA2.control[7:0]" output="FPU_slice.control[31:24]"> </direct> 
+
+		<!--############# WB1 ##############-->	
+		<!-- Input Mux WB1 in1 -->
+    <!-- Jason Luu removed doubled up instances of nodes; 2 pins that are redundant on a mux messes up the architecture parser, unfortunately, need to add some kind of error message before the release, running experiments now so I'm just going to log this -->
+		<mux name="WB1_in1_mux1" input="FPU_slice.in1[0:0] FPU_slice.in2[0:0] FPU_slice.in3[0:0] FPU_slice.in4[0:0] feedback_reg1[0:0].Q feedback_reg2[0:0].Q feedback_reg3[0:0].Q" output ="WB1[0:0].D"/>
+		<mux name="WB1_in1_mux2" input="FPU_slice.in1[1:1] FPU_slice.in2[1:1] FPU_slice.in3[1:1] FPU_slice.in4[1:1] feedback_reg1[1:1].Q feedback_reg2[1:1].Q feedback_reg3[1:1].Q" output ="WB1[1:1].D"/>
+		<mux name="WB1_in1_mux3" input="FPU_slice.in1[2:2] FPU_slice.in2[2:2] FPU_slice.in3[2:2] FPU_slice.in4[2:2] feedback_reg1[2:2].Q feedback_reg2[2:2].Q feedback_reg3[2:2].Q" output ="WB1[2:2].D"/>
+		<mux name="WB1_in1_mux4" input="FPU_slice.in1[3:3] FPU_slice.in2[3:3] FPU_slice.in3[3:3] FPU_slice.in4[3:3] feedback_reg1[3:3].Q feedback_reg2[3:3].Q feedback_reg3[3:3].Q" output ="WB1[3:3].D"/>
+		<mux name="WB1_in1_mux5" input="FPU_slice.in1[4:4] FPU_slice.in2[4:4] FPU_slice.in3[4:4] FPU_slice.in4[4:4] feedback_reg1[4:4].Q feedback_reg2[4:4].Q feedback_reg3[4:4].Q" output ="WB1[4:4].D"/>
+		<mux name="WB1_in1_mux6" input="FPU_slice.in1[5:5] FPU_slice.in2[5:5] FPU_slice.in3[5:5] FPU_slice.in4[5:5] feedback_reg1[5:5].Q feedback_reg2[5:5].Q feedback_reg3[5:5].Q" output ="WB1[5:5].D"/>
+		<mux name="WB1_in1_mux7" input="FPU_slice.in1[6:6] FPU_slice.in2[6:6] FPU_slice.in3[6:6] FPU_slice.in4[6:6] feedback_reg1[6:6].Q feedback_reg2[6:6].Q feedback_reg3[6:6].Q" output ="WB1[6:6].D"/>
+		<mux name="WB1_in1_mux8" input="FPU_slice.in1[7:7] FPU_slice.in2[7:7] FPU_slice.in3[7:7] FPU_slice.in4[7:7] feedback_reg1[7:7].Q feedback_reg2[7:7].Q feedback_reg3[7:7].Q" output ="WB1[7:7].D"/>
+		<mux name="WB1_in1_mux9" input="FPU_slice.in1[8:8] FPU_slice.in2[8:8] FPU_slice.in3[8:8] FPU_slice.in4[8:8] feedback_reg1[8:8].Q feedback_reg2[8:8].Q feedback_reg3[8:8].Q" output ="WB1[8:8].D"/>
+		<mux name="WB1_in1_mux10" input="FPU_slice.in1[9:9] FPU_slice.in2[9:9] FPU_slice.in3[9:9] FPU_slice.in4[9:9] feedback_reg1[9:9].Q feedback_reg2[9:9].Q feedback_reg3[9:9].Q" output ="WB1[9:9].D"/>
+		<mux name="WB1_in1_mux11" input="FPU_slice.in1[10:10] FPU_slice.in2[10:10] FPU_slice.in3[10:10] FPU_slice.in4[10:10] feedback_reg1[10:10].Q feedback_reg2[10:10].Q feedback_reg3[10:10].Q" output ="WB1[10:10].D"/>
+		<mux name="WB1_in1_mux12" input="FPU_slice.in1[11:11] FPU_slice.in2[11:11] FPU_slice.in3[11:11] FPU_slice.in4[11:11] feedback_reg1[11:11].Q feedback_reg2[11:11].Q feedback_reg3[11:11].Q" output ="WB1[11:11].D"/>
+		<mux name="WB1_in1_mux13" input="FPU_slice.in1[12:12] FPU_slice.in2[12:12] FPU_slice.in3[12:12] FPU_slice.in4[12:12] feedback_reg1[12:12].Q feedback_reg2[12:12].Q feedback_reg3[12:12].Q" output ="WB1[12:12].D"/>
+		<mux name="WB1_in1_mux14" input="FPU_slice.in1[13:13] FPU_slice.in2[13:13] FPU_slice.in3[13:13] FPU_slice.in4[13:13] feedback_reg1[13:13].Q feedback_reg2[13:13].Q feedback_reg3[13:13].Q" output ="WB1[13:13].D"/>
+		<mux name="WB1_in1_mux15" input="FPU_slice.in1[14:14] FPU_slice.in2[14:14] FPU_slice.in3[14:14] FPU_slice.in4[14:14] feedback_reg1[14:14].Q feedback_reg2[14:14].Q feedback_reg3[14:14].Q" output ="WB1[14:14].D"/>
+		<mux name="WB1_in1_mux16" input="FPU_slice.in1[15:15] FPU_slice.in2[15:15] FPU_slice.in3[15:15] FPU_slice.in4[15:15] feedback_reg1[15:15].Q feedback_reg2[15:15].Q feedback_reg3[15:15].Q" output ="WB1[15:15].D"/>
+		<mux name="WB1_in1_mux17" input="FPU_slice.in1[16:16] FPU_slice.in2[16:16] FPU_slice.in3[16:16] FPU_slice.in4[16:16] feedback_reg1[16:16].Q feedback_reg2[16:16].Q feedback_reg3[16:16].Q" output ="WB1[16:16].D"/>
+		<mux name="WB1_in1_mux18" input="FPU_slice.in1[17:17] FPU_slice.in2[17:17] FPU_slice.in3[17:17] FPU_slice.in4[17:17] feedback_reg1[17:17].Q feedback_reg2[17:17].Q feedback_reg3[17:17].Q" output ="WB1[17:17].D"/>
+		<mux name="WB1_in1_mux19" input="FPU_slice.in1[18:18] FPU_slice.in2[18:18] FPU_slice.in3[18:18] FPU_slice.in4[18:18] feedback_reg1[18:18].Q feedback_reg2[18:18].Q feedback_reg3[18:18].Q" output ="WB1[18:18].D"/>
+		<mux name="WB1_in1_mux20" input="FPU_slice.in1[19:19] FPU_slice.in2[19:19] FPU_slice.in3[19:19] FPU_slice.in4[19:19] feedback_reg1[19:19].Q feedback_reg2[19:19].Q feedback_reg3[19:19].Q" output ="WB1[19:19].D"/>
+		<mux name="WB1_in1_mux21" input="FPU_slice.in1[20:20] FPU_slice.in2[20:20] FPU_slice.in3[20:20] FPU_slice.in4[20:20] feedback_reg1[20:20].Q feedback_reg2[20:20].Q feedback_reg3[20:20].Q" output ="WB1[20:20].D"/>
+		<mux name="WB1_in1_mux22" input="FPU_slice.in1[21:21] FPU_slice.in2[21:21] FPU_slice.in3[21:21] FPU_slice.in4[21:21] feedback_reg1[21:21].Q feedback_reg2[21:21].Q feedback_reg3[21:21].Q" output ="WB1[21:21].D"/>
+		<mux name="WB1_in1_mux23" input="FPU_slice.in1[22:22] FPU_slice.in2[22:22] FPU_slice.in3[22:22] FPU_slice.in4[22:22] feedback_reg1[22:22].Q feedback_reg2[22:22].Q feedback_reg3[22:22].Q" output ="WB1[22:22].D"/>
+		<mux name="WB1_in1_mux24" input="FPU_slice.in1[23:23] FPU_slice.in2[23:23] FPU_slice.in3[23:23] FPU_slice.in4[23:23] feedback_reg1[23:23].Q feedback_reg2[23:23].Q feedback_reg3[23:23].Q" output ="WB1[23:23].D"/>
+		<mux name="WB1_in1_mux25" input="FPU_slice.in1[24:24] FPU_slice.in2[24:24] FPU_slice.in3[24:24] FPU_slice.in4[24:24] feedback_reg1[24:24].Q feedback_reg2[24:24].Q feedback_reg3[24:24].Q" output ="WB1[24:24].D"/>
+		<mux name="WB1_in1_mux26" input="FPU_slice.in1[25:25] FPU_slice.in2[25:25] FPU_slice.in3[25:25] FPU_slice.in4[25:25] feedback_reg1[25:25].Q feedback_reg2[25:25].Q feedback_reg3[25:25].Q" output ="WB1[25:25].D"/>
+		<mux name="WB1_in1_mux27" input="FPU_slice.in1[26:26] FPU_slice.in2[26:26] FPU_slice.in3[26:26] FPU_slice.in4[26:26] feedback_reg1[26:26].Q feedback_reg2[26:26].Q feedback_reg3[26:26].Q" output ="WB1[26:26].D"/>
+		<mux name="WB1_in1_mux28" input="FPU_slice.in1[27:27] FPU_slice.in2[27:27] FPU_slice.in3[27:27] FPU_slice.in4[27:27] feedback_reg1[27:27].Q feedback_reg2[27:27].Q feedback_reg3[27:27].Q" output ="WB1[27:27].D"/>
+		<mux name="WB1_in1_mux29" input="FPU_slice.in1[28:28] FPU_slice.in2[28:28] FPU_slice.in3[28:28] FPU_slice.in4[28:28] feedback_reg1[28:28].Q feedback_reg2[28:28].Q feedback_reg3[28:28].Q" output ="WB1[28:28].D"/>
+		<mux name="WB1_in1_mux30" input="FPU_slice.in1[29:29] FPU_slice.in2[29:29] FPU_slice.in3[29:29] FPU_slice.in4[29:29] feedback_reg1[29:29].Q feedback_reg2[29:29].Q feedback_reg3[29:29].Q" output ="WB1[29:29].D"/>
+		<mux name="WB1_in1_mux31" input="FPU_slice.in1[30:30] FPU_slice.in2[30:30] FPU_slice.in3[30:30] FPU_slice.in4[30:30] feedback_reg1[30:30].Q feedback_reg2[30:30].Q feedback_reg3[30:30].Q" output ="WB1[30:30].D"/>
+		<mux name="WB1_in1_mux32" input="FPU_slice.in1[31:31] FPU_slice.in2[31:31] FPU_slice.in3[31:31] FPU_slice.in4[31:31] feedback_reg1[31:31].Q feedback_reg2[31:31].Q feedback_reg3[31:31].Q" output ="WB1[31:31].D"/>
+
+
+
+		<!--############# FM1 ##############-->		
+		<!-- Input Mux FM1 in1 -->
+		<mux name="FM1_in1_mux1" input="FPU_slice.in1[0:0] FPU_slice.in2[0:0] FPU_slice.in3[0:0] FPU_slice.in4[0:0] feedback_reg1[0:0].Q feedback_reg2[0:0].Q feedback_reg3[0:0].Q WB1[0:0].Q" output ="FM1.opa[0:0]"/>
+		<mux name="FM1_in1_mux2" input="FPU_slice.in1[1:1] FPU_slice.in2[1:1] FPU_slice.in3[1:1] FPU_slice.in4[1:1] feedback_reg1[1:1].Q feedback_reg2[1:1].Q feedback_reg3[1:1].Q WB1[1:1].Q" output ="FM1.opa[1:1]"/>
+		<mux name="FM1_in1_mux3" input="FPU_slice.in1[2:2] FPU_slice.in2[2:2] FPU_slice.in3[2:2] FPU_slice.in4[2:2] feedback_reg1[2:2].Q feedback_reg2[2:2].Q feedback_reg3[2:2].Q WB1[2:2].Q" output ="FM1.opa[2:2]"/>
+		<mux name="FM1_in1_mux4" input="FPU_slice.in1[3:3] FPU_slice.in2[3:3] FPU_slice.in3[3:3] FPU_slice.in4[3:3] feedback_reg1[3:3].Q feedback_reg2[3:3].Q feedback_reg3[3:3].Q WB1[3:3].Q" output ="FM1.opa[3:3]"/>
+		<mux name="FM1_in1_mux5" input="FPU_slice.in1[4:4] FPU_slice.in2[4:4] FPU_slice.in3[4:4] FPU_slice.in4[4:4] feedback_reg1[4:4].Q feedback_reg2[4:4].Q feedback_reg3[4:4].Q WB1[4:4].Q" output ="FM1.opa[4:4]"/>
+		<mux name="FM1_in1_mux6" input="FPU_slice.in1[5:5] FPU_slice.in2[5:5] FPU_slice.in3[5:5] FPU_slice.in4[5:5] feedback_reg1[5:5].Q feedback_reg2[5:5].Q feedback_reg3[5:5].Q WB1[5:5].Q" output ="FM1.opa[5:5]"/>
+		<mux name="FM1_in1_mux7" input="FPU_slice.in1[6:6] FPU_slice.in2[6:6] FPU_slice.in3[6:6] FPU_slice.in4[6:6] feedback_reg1[6:6].Q feedback_reg2[6:6].Q feedback_reg3[6:6].Q WB1[6:6].Q" output ="FM1.opa[6:6]"/>
+		<mux name="FM1_in1_mux8" input="FPU_slice.in1[7:7] FPU_slice.in2[7:7] FPU_slice.in3[7:7] FPU_slice.in4[7:7] feedback_reg1[7:7].Q feedback_reg2[7:7].Q feedback_reg3[7:7].Q WB1[7:7].Q" output ="FM1.opa[7:7]"/>
+		<mux name="FM1_in1_mux9" input="FPU_slice.in1[8:8] FPU_slice.in2[8:8] FPU_slice.in3[8:8] FPU_slice.in4[8:8] feedback_reg1[8:8].Q feedback_reg2[8:8].Q feedback_reg3[8:8].Q WB1[8:8].Q" output ="FM1.opa[8:8]"/>
+		<mux name="FM1_in1_mux10" input="FPU_slice.in1[9:9] FPU_slice.in2[9:9] FPU_slice.in3[9:9] FPU_slice.in4[9:9] feedback_reg1[9:9].Q feedback_reg2[9:9].Q feedback_reg3[9:9].Q WB1[9:9].Q" output ="FM1.opa[9:9]"/>
+		<mux name="FM1_in1_mux11" input="FPU_slice.in1[10:10] FPU_slice.in2[10:10] FPU_slice.in3[10:10] FPU_slice.in4[10:10] feedback_reg1[10:10].Q feedback_reg2[10:10].Q feedback_reg3[10:10].Q WB1[10:10].Q" output ="FM1.opa[10:10]"/>
+		<mux name="FM1_in1_mux12" input="FPU_slice.in1[11:11] FPU_slice.in2[11:11] FPU_slice.in3[11:11] FPU_slice.in4[11:11] feedback_reg1[11:11].Q feedback_reg2[11:11].Q feedback_reg3[11:11].Q WB1[11:11].Q" output ="FM1.opa[11:11]"/>
+		<mux name="FM1_in1_mux13" input="FPU_slice.in1[12:12] FPU_slice.in2[12:12] FPU_slice.in3[12:12] FPU_slice.in4[12:12] feedback_reg1[12:12].Q feedback_reg2[12:12].Q feedback_reg3[12:12].Q WB1[12:12].Q" output ="FM1.opa[12:12]"/>
+		<mux name="FM1_in1_mux14" input="FPU_slice.in1[13:13] FPU_slice.in2[13:13] FPU_slice.in3[13:13] FPU_slice.in4[13:13] feedback_reg1[13:13].Q feedback_reg2[13:13].Q feedback_reg3[13:13].Q WB1[13:13].Q" output ="FM1.opa[13:13]"/>
+		<mux name="FM1_in1_mux15" input="FPU_slice.in1[14:14] FPU_slice.in2[14:14] FPU_slice.in3[14:14] FPU_slice.in4[14:14] feedback_reg1[14:14].Q feedback_reg2[14:14].Q feedback_reg3[14:14].Q WB1[14:14].Q" output ="FM1.opa[14:14]"/>
+		<mux name="FM1_in1_mux16" input="FPU_slice.in1[15:15] FPU_slice.in2[15:15] FPU_slice.in3[15:15] FPU_slice.in4[15:15] feedback_reg1[15:15].Q feedback_reg2[15:15].Q feedback_reg3[15:15].Q WB1[15:15].Q" output ="FM1.opa[15:15]"/>
+		<mux name="FM1_in1_mux17" input="FPU_slice.in1[16:16] FPU_slice.in2[16:16] FPU_slice.in3[16:16] FPU_slice.in4[16:16] feedback_reg1[16:16].Q feedback_reg2[16:16].Q feedback_reg3[16:16].Q WB1[16:16].Q" output ="FM1.opa[16:16]"/>
+		<mux name="FM1_in1_mux18" input="FPU_slice.in1[17:17] FPU_slice.in2[17:17] FPU_slice.in3[17:17] FPU_slice.in4[17:17] feedback_reg1[17:17].Q feedback_reg2[17:17].Q feedback_reg3[17:17].Q WB1[17:17].Q" output ="FM1.opa[17:17]"/>
+		<mux name="FM1_in1_mux19" input="FPU_slice.in1[18:18] FPU_slice.in2[18:18] FPU_slice.in3[18:18] FPU_slice.in4[18:18] feedback_reg1[18:18].Q feedback_reg2[18:18].Q feedback_reg3[18:18].Q WB1[18:18].Q" output ="FM1.opa[18:18]"/>
+		<mux name="FM1_in1_mux20" input="FPU_slice.in1[19:19] FPU_slice.in2[19:19] FPU_slice.in3[19:19] FPU_slice.in4[19:19] feedback_reg1[19:19].Q feedback_reg2[19:19].Q feedback_reg3[19:19].Q WB1[19:19].Q" output ="FM1.opa[19:19]"/>
+		<mux name="FM1_in1_mux21" input="FPU_slice.in1[20:20] FPU_slice.in2[20:20] FPU_slice.in3[20:20] FPU_slice.in4[20:20] feedback_reg1[20:20].Q feedback_reg2[20:20].Q feedback_reg3[20:20].Q WB1[20:20].Q" output ="FM1.opa[20:20]"/>
+		<mux name="FM1_in1_mux22" input="FPU_slice.in1[21:21] FPU_slice.in2[21:21] FPU_slice.in3[21:21] FPU_slice.in4[21:21] feedback_reg1[21:21].Q feedback_reg2[21:21].Q feedback_reg3[21:21].Q WB1[21:21].Q" output ="FM1.opa[21:21]"/>
+		<mux name="FM1_in1_mux23" input="FPU_slice.in1[22:22] FPU_slice.in2[22:22] FPU_slice.in3[22:22] FPU_slice.in4[22:22] feedback_reg1[22:22].Q feedback_reg2[22:22].Q feedback_reg3[22:22].Q WB1[22:22].Q" output ="FM1.opa[22:22]"/>
+		<mux name="FM1_in1_mux24" input="FPU_slice.in1[23:23] FPU_slice.in2[23:23] FPU_slice.in3[23:23] FPU_slice.in4[23:23] feedback_reg1[23:23].Q feedback_reg2[23:23].Q feedback_reg3[23:23].Q WB1[23:23].Q" output ="FM1.opa[23:23]"/>
+		<mux name="FM1_in1_mux25" input="FPU_slice.in1[24:24] FPU_slice.in2[24:24] FPU_slice.in3[24:24] FPU_slice.in4[24:24] feedback_reg1[24:24].Q feedback_reg2[24:24].Q feedback_reg3[24:24].Q WB1[24:24].Q" output ="FM1.opa[24:24]"/>
+		<mux name="FM1_in1_mux26" input="FPU_slice.in1[25:25] FPU_slice.in2[25:25] FPU_slice.in3[25:25] FPU_slice.in4[25:25] feedback_reg1[25:25].Q feedback_reg2[25:25].Q feedback_reg3[25:25].Q WB1[25:25].Q" output ="FM1.opa[25:25]"/>
+		<mux name="FM1_in1_mux27" input="FPU_slice.in1[26:26] FPU_slice.in2[26:26] FPU_slice.in3[26:26] FPU_slice.in4[26:26] feedback_reg1[26:26].Q feedback_reg2[26:26].Q feedback_reg3[26:26].Q WB1[26:26].Q" output ="FM1.opa[26:26]"/>
+		<mux name="FM1_in1_mux28" input="FPU_slice.in1[27:27] FPU_slice.in2[27:27] FPU_slice.in3[27:27] FPU_slice.in4[27:27] feedback_reg1[27:27].Q feedback_reg2[27:27].Q feedback_reg3[27:27].Q WB1[27:27].Q" output ="FM1.opa[27:27]"/>
+		<mux name="FM1_in1_mux29" input="FPU_slice.in1[28:28] FPU_slice.in2[28:28] FPU_slice.in3[28:28] FPU_slice.in4[28:28] feedback_reg1[28:28].Q feedback_reg2[28:28].Q feedback_reg3[28:28].Q WB1[28:28].Q" output ="FM1.opa[28:28]"/>
+		<mux name="FM1_in1_mux30" input="FPU_slice.in1[29:29] FPU_slice.in2[29:29] FPU_slice.in3[29:29] FPU_slice.in4[29:29] feedback_reg1[29:29].Q feedback_reg2[29:29].Q feedback_reg3[29:29].Q WB1[29:29].Q" output ="FM1.opa[29:29]"/>
+		<mux name="FM1_in1_mux31" input="FPU_slice.in1[30:30] FPU_slice.in2[30:30] FPU_slice.in3[30:30] FPU_slice.in4[30:30] feedback_reg1[30:30].Q feedback_reg2[30:30].Q feedback_reg3[30:30].Q WB1[30:30].Q" output ="FM1.opa[30:30]"/>
+		<mux name="FM1_in1_mux32" input="FPU_slice.in1[31:31] FPU_slice.in2[31:31] FPU_slice.in3[31:31] FPU_slice.in4[31:31] feedback_reg1[31:31].Q feedback_reg2[31:31].Q feedback_reg3[31:31].Q WB1[31:31].Q" output ="FM1.opa[31:31]"/>
+		
+		<!-- Input Mux FM1 in2 -->
+		<mux name="FM1_in2_mux1" input="FPU_slice.in1[0:0] FPU_slice.in2[0:0] FPU_slice.in3[0:0] FPU_slice.in4[0:0] feedback_reg1[0:0].Q feedback_reg2[0:0].Q feedback_reg3[0:0].Q WB1[0:0].Q" output ="FM1.opb[0:0]"/>
+		<mux name="FM1_in2_mux2" input="FPU_slice.in1[1:1] FPU_slice.in2[1:1] FPU_slice.in3[1:1] FPU_slice.in4[1:1] feedback_reg1[1:1].Q feedback_reg2[1:1].Q feedback_reg3[1:1].Q WB1[1:1].Q" output ="FM1.opb[1:1]"/>
+		<mux name="FM1_in2_mux3" input="FPU_slice.in1[2:2] FPU_slice.in2[2:2] FPU_slice.in3[2:2] FPU_slice.in4[2:2] feedback_reg1[2:2].Q feedback_reg2[2:2].Q feedback_reg3[2:2].Q WB1[2:2].Q" output ="FM1.opb[2:2]"/>
+		<mux name="FM1_in2_mux4" input="FPU_slice.in1[3:3] FPU_slice.in2[3:3] FPU_slice.in3[3:3] FPU_slice.in4[3:3] feedback_reg1[3:3].Q feedback_reg2[3:3].Q feedback_reg3[3:3].Q WB1[3:3].Q" output ="FM1.opb[3:3]"/>
+		<mux name="FM1_in2_mux5" input="FPU_slice.in1[4:4] FPU_slice.in2[4:4] FPU_slice.in3[4:4] FPU_slice.in4[4:4] feedback_reg1[4:4].Q feedback_reg2[4:4].Q feedback_reg3[4:4].Q WB1[4:4].Q" output ="FM1.opb[4:4]"/>
+		<mux name="FM1_in2_mux6" input="FPU_slice.in1[5:5] FPU_slice.in2[5:5] FPU_slice.in3[5:5] FPU_slice.in4[5:5] feedback_reg1[5:5].Q feedback_reg2[5:5].Q feedback_reg3[5:5].Q WB1[5:5].Q" output ="FM1.opb[5:5]"/>
+		<mux name="FM1_in2_mux7" input="FPU_slice.in1[6:6] FPU_slice.in2[6:6] FPU_slice.in3[6:6] FPU_slice.in4[6:6] feedback_reg1[6:6].Q feedback_reg2[6:6].Q feedback_reg3[6:6].Q WB1[6:6].Q" output ="FM1.opb[6:6]"/>
+		<mux name="FM1_in2_mux8" input="FPU_slice.in1[7:7] FPU_slice.in2[7:7] FPU_slice.in3[7:7] FPU_slice.in4[7:7] feedback_reg1[7:7].Q feedback_reg2[7:7].Q feedback_reg3[7:7].Q WB1[7:7].Q" output ="FM1.opb[7:7]"/>
+		<mux name="FM1_in2_mux9" input="FPU_slice.in1[8:8] FPU_slice.in2[8:8] FPU_slice.in3[8:8] FPU_slice.in4[8:8] feedback_reg1[8:8].Q feedback_reg2[8:8].Q feedback_reg3[8:8].Q WB1[8:8].Q" output ="FM1.opb[8:8]"/>
+		<mux name="FM1_in2_mux10" input="FPU_slice.in1[9:9] FPU_slice.in2[9:9] FPU_slice.in3[9:9] FPU_slice.in4[9:9] feedback_reg1[9:9].Q feedback_reg2[9:9].Q feedback_reg3[9:9].Q WB1[9:9].Q" output ="FM1.opb[9:9]"/>
+		<mux name="FM1_in2_mux11" input="FPU_slice.in1[10:10] FPU_slice.in2[10:10] FPU_slice.in3[10:10] FPU_slice.in4[10:10] feedback_reg1[10:10].Q feedback_reg2[10:10].Q feedback_reg3[10:10].Q WB1[10:10].Q" output ="FM1.opb[10:10]"/>
+		<mux name="FM1_in2_mux12" input="FPU_slice.in1[11:11] FPU_slice.in2[11:11] FPU_slice.in3[11:11] FPU_slice.in4[11:11] feedback_reg1[11:11].Q feedback_reg2[11:11].Q feedback_reg3[11:11].Q WB1[11:11].Q" output ="FM1.opb[11:11]"/>
+		<mux name="FM1_in2_mux13" input="FPU_slice.in1[12:12] FPU_slice.in2[12:12] FPU_slice.in3[12:12] FPU_slice.in4[12:12] feedback_reg1[12:12].Q feedback_reg2[12:12].Q feedback_reg3[12:12].Q WB1[12:12].Q" output ="FM1.opb[12:12]"/>
+		<mux name="FM1_in2_mux14" input="FPU_slice.in1[13:13] FPU_slice.in2[13:13] FPU_slice.in3[13:13] FPU_slice.in4[13:13] feedback_reg1[13:13].Q feedback_reg2[13:13].Q feedback_reg3[13:13].Q WB1[13:13].Q" output ="FM1.opb[13:13]"/>
+		<mux name="FM1_in2_mux15" input="FPU_slice.in1[14:14] FPU_slice.in2[14:14] FPU_slice.in3[14:14] FPU_slice.in4[14:14] feedback_reg1[14:14].Q feedback_reg2[14:14].Q feedback_reg3[14:14].Q WB1[14:14].Q" output ="FM1.opb[14:14]"/>
+		<mux name="FM1_in2_mux16" input="FPU_slice.in1[15:15] FPU_slice.in2[15:15] FPU_slice.in3[15:15] FPU_slice.in4[15:15] feedback_reg1[15:15].Q feedback_reg2[15:15].Q feedback_reg3[15:15].Q WB1[15:15].Q" output ="FM1.opb[15:15]"/>
+		<mux name="FM1_in2_mux17" input="FPU_slice.in1[16:16] FPU_slice.in2[16:16] FPU_slice.in3[16:16] FPU_slice.in4[16:16] feedback_reg1[16:16].Q feedback_reg2[16:16].Q feedback_reg3[16:16].Q WB1[16:16].Q" output ="FM1.opb[16:16]"/>
+		<mux name="FM1_in2_mux18" input="FPU_slice.in1[17:17] FPU_slice.in2[17:17] FPU_slice.in3[17:17] FPU_slice.in4[17:17] feedback_reg1[17:17].Q feedback_reg2[17:17].Q feedback_reg3[17:17].Q WB1[17:17].Q" output ="FM1.opb[17:17]"/>
+		<mux name="FM1_in2_mux19" input="FPU_slice.in1[18:18] FPU_slice.in2[18:18] FPU_slice.in3[18:18] FPU_slice.in4[18:18] feedback_reg1[18:18].Q feedback_reg2[18:18].Q feedback_reg3[18:18].Q WB1[18:18].Q" output ="FM1.opb[18:18]"/>
+		<mux name="FM1_in2_mux20" input="FPU_slice.in1[19:19] FPU_slice.in2[19:19] FPU_slice.in3[19:19] FPU_slice.in4[19:19] feedback_reg1[19:19].Q feedback_reg2[19:19].Q feedback_reg3[19:19].Q WB1[19:19].Q" output ="FM1.opb[19:19]"/>
+		<mux name="FM1_in2_mux21" input="FPU_slice.in1[20:20] FPU_slice.in2[20:20] FPU_slice.in3[20:20] FPU_slice.in4[20:20] feedback_reg1[20:20].Q feedback_reg2[20:20].Q feedback_reg3[20:20].Q WB1[20:20].Q" output ="FM1.opb[20:20]"/>
+		<mux name="FM1_in2_mux22" input="FPU_slice.in1[21:21] FPU_slice.in2[21:21] FPU_slice.in3[21:21] FPU_slice.in4[21:21] feedback_reg1[21:21].Q feedback_reg2[21:21].Q feedback_reg3[21:21].Q WB1[21:21].Q" output ="FM1.opb[21:21]"/>
+		<mux name="FM1_in2_mux23" input="FPU_slice.in1[22:22] FPU_slice.in2[22:22] FPU_slice.in3[22:22] FPU_slice.in4[22:22] feedback_reg1[22:22].Q feedback_reg2[22:22].Q feedback_reg3[22:22].Q WB1[22:22].Q" output ="FM1.opb[22:22]"/>
+		<mux name="FM1_in2_mux24" input="FPU_slice.in1[23:23] FPU_slice.in2[23:23] FPU_slice.in3[23:23] FPU_slice.in4[23:23] feedback_reg1[23:23].Q feedback_reg2[23:23].Q feedback_reg3[23:23].Q WB1[23:23].Q" output ="FM1.opb[23:23]"/>
+		<mux name="FM1_in2_mux25" input="FPU_slice.in1[24:24] FPU_slice.in2[24:24] FPU_slice.in3[24:24] FPU_slice.in4[24:24] feedback_reg1[24:24].Q feedback_reg2[24:24].Q feedback_reg3[24:24].Q WB1[24:24].Q" output ="FM1.opb[24:24]"/>
+		<mux name="FM1_in2_mux26" input="FPU_slice.in1[25:25] FPU_slice.in2[25:25] FPU_slice.in3[25:25] FPU_slice.in4[25:25] feedback_reg1[25:25].Q feedback_reg2[25:25].Q feedback_reg3[25:25].Q WB1[25:25].Q" output ="FM1.opb[25:25]"/>
+		<mux name="FM1_in2_mux27" input="FPU_slice.in1[26:26] FPU_slice.in2[26:26] FPU_slice.in3[26:26] FPU_slice.in4[26:26] feedback_reg1[26:26].Q feedback_reg2[26:26].Q feedback_reg3[26:26].Q WB1[26:26].Q" output ="FM1.opb[26:26]"/>
+		<mux name="FM1_in2_mux28" input="FPU_slice.in1[27:27] FPU_slice.in2[27:27] FPU_slice.in3[27:27] FPU_slice.in4[27:27] feedback_reg1[27:27].Q feedback_reg2[27:27].Q feedback_reg3[27:27].Q WB1[27:27].Q" output ="FM1.opb[27:27]"/>
+		<mux name="FM1_in2_mux29" input="FPU_slice.in1[28:28] FPU_slice.in2[28:28] FPU_slice.in3[28:28] FPU_slice.in4[28:28] feedback_reg1[28:28].Q feedback_reg2[28:28].Q feedback_reg3[28:28].Q WB1[28:28].Q" output ="FM1.opb[28:28]"/>
+		<mux name="FM1_in2_mux30" input="FPU_slice.in1[29:29] FPU_slice.in2[29:29] FPU_slice.in3[29:29] FPU_slice.in4[29:29] feedback_reg1[29:29].Q feedback_reg2[29:29].Q feedback_reg3[29:29].Q WB1[29:29].Q" output ="FM1.opb[29:29]"/>
+		<mux name="FM1_in2_mux31" input="FPU_slice.in1[30:30] FPU_slice.in2[30:30] FPU_slice.in3[30:30] FPU_slice.in4[30:30] feedback_reg1[30:30].Q feedback_reg2[30:30].Q feedback_reg3[30:30].Q WB1[30:30].Q" output ="FM1.opb[30:30]"/>
+		<mux name="FM1_in2_mux32" input="FPU_slice.in1[31:31] FPU_slice.in2[31:31] FPU_slice.in3[31:31] FPU_slice.in4[31:31] feedback_reg1[31:31].Q feedback_reg2[31:31].Q feedback_reg3[31:31].Q WB1[31:31].Q" output ="FM1.opb[31:31]"/>
+		
+
+		<!--############# FA1 ##############-->	
+		<!-- Input Mux FA1 in1 -->
+		<mux name="FA1_in1_mux1" input="FPU_slice.in1[0:0] FPU_slice.in2[0:0] FPU_slice.in3[0:0] FPU_slice.in4[0:0] feedback_reg1[0:0].Q feedback_reg2[0:0].Q feedback_reg3[0:0].Q WB1[0:0].Q FM1.out[0:0]" output ="FA1.opa[0:0]"/>
+		<mux name="FA1_in1_mux2" input="FPU_slice.in1[1:1] FPU_slice.in2[1:1] FPU_slice.in3[1:1] FPU_slice.in4[1:1] feedback_reg1[1:1].Q feedback_reg2[1:1].Q feedback_reg3[1:1].Q WB1[1:1].Q FM1.out[1:1]" output ="FA1.opa[1:1]"/>
+		<mux name="FA1_in1_mux3" input="FPU_slice.in1[2:2] FPU_slice.in2[2:2] FPU_slice.in3[2:2] FPU_slice.in4[2:2] feedback_reg1[2:2].Q feedback_reg2[2:2].Q feedback_reg3[2:2].Q WB1[2:2].Q FM1.out[2:2]" output ="FA1.opa[2:2]"/>
+		<mux name="FA1_in1_mux4" input="FPU_slice.in1[3:3] FPU_slice.in2[3:3] FPU_slice.in3[3:3] FPU_slice.in4[3:3] feedback_reg1[3:3].Q feedback_reg2[3:3].Q feedback_reg3[3:3].Q WB1[3:3].Q FM1.out[3:3]" output ="FA1.opa[3:3]"/>
+		<mux name="FA1_in1_mux5" input="FPU_slice.in1[4:4] FPU_slice.in2[4:4] FPU_slice.in3[4:4] FPU_slice.in4[4:4] feedback_reg1[4:4].Q feedback_reg2[4:4].Q feedback_reg3[4:4].Q WB1[4:4].Q FM1.out[4:4]" output ="FA1.opa[4:4]"/>
+		<mux name="FA1_in1_mux6" input="FPU_slice.in1[5:5] FPU_slice.in2[5:5] FPU_slice.in3[5:5] FPU_slice.in4[5:5] feedback_reg1[5:5].Q feedback_reg2[5:5].Q feedback_reg3[5:5].Q WB1[5:5].Q FM1.out[5:5]" output ="FA1.opa[5:5]"/>
+		<mux name="FA1_in1_mux7" input="FPU_slice.in1[6:6] FPU_slice.in2[6:6] FPU_slice.in3[6:6] FPU_slice.in4[6:6] feedback_reg1[6:6].Q feedback_reg2[6:6].Q feedback_reg3[6:6].Q WB1[6:6].Q FM1.out[6:6]" output ="FA1.opa[6:6]"/>
+		<mux name="FA1_in1_mux8" input="FPU_slice.in1[7:7] FPU_slice.in2[7:7] FPU_slice.in3[7:7] FPU_slice.in4[7:7] feedback_reg1[7:7].Q feedback_reg2[7:7].Q feedback_reg3[7:7].Q WB1[7:7].Q FM1.out[7:7]" output ="FA1.opa[7:7]"/>
+		<mux name="FA1_in1_mux9" input="FPU_slice.in1[8:8] FPU_slice.in2[8:8] FPU_slice.in3[8:8] FPU_slice.in4[8:8] feedback_reg1[8:8].Q feedback_reg2[8:8].Q feedback_reg3[8:8].Q WB1[8:8].Q FM1.out[8:8]" output ="FA1.opa[8:8]"/>
+		<mux name="FA1_in1_mux10" input="FPU_slice.in1[9:9] FPU_slice.in2[9:9] FPU_slice.in3[9:9] FPU_slice.in4[9:9] feedback_reg1[9:9].Q feedback_reg2[9:9].Q feedback_reg3[9:9].Q WB1[9:9].Q FM1.out[9:9]" output ="FA1.opa[9:9]"/>
+		<mux name="FA1_in1_mux11" input="FPU_slice.in1[10:10] FPU_slice.in2[10:10] FPU_slice.in3[10:10] FPU_slice.in4[10:10] feedback_reg1[10:10].Q feedback_reg2[10:10].Q feedback_reg3[10:10].Q WB1[10:10].Q FM1.out[10:10]" output ="FA1.opa[10:10]"/>
+		<mux name="FA1_in1_mux12" input="FPU_slice.in1[11:11] FPU_slice.in2[11:11] FPU_slice.in3[11:11] FPU_slice.in4[11:11] feedback_reg1[11:11].Q feedback_reg2[11:11].Q feedback_reg3[11:11].Q WB1[11:11].Q FM1.out[11:11]" output ="FA1.opa[11:11]"/>
+		<mux name="FA1_in1_mux13" input="FPU_slice.in1[12:12] FPU_slice.in2[12:12] FPU_slice.in3[12:12] FPU_slice.in4[12:12] feedback_reg1[12:12].Q feedback_reg2[12:12].Q feedback_reg3[12:12].Q WB1[12:12].Q FM1.out[12:12]" output ="FA1.opa[12:12]"/>
+		<mux name="FA1_in1_mux14" input="FPU_slice.in1[13:13] FPU_slice.in2[13:13] FPU_slice.in3[13:13] FPU_slice.in4[13:13] feedback_reg1[13:13].Q feedback_reg2[13:13].Q feedback_reg3[13:13].Q WB1[13:13].Q FM1.out[13:13]" output ="FA1.opa[13:13]"/>
+		<mux name="FA1_in1_mux15" input="FPU_slice.in1[14:14] FPU_slice.in2[14:14] FPU_slice.in3[14:14] FPU_slice.in4[14:14] feedback_reg1[14:14].Q feedback_reg2[14:14].Q feedback_reg3[14:14].Q WB1[14:14].Q FM1.out[14:14]" output ="FA1.opa[14:14]"/>
+		<mux name="FA1_in1_mux16" input="FPU_slice.in1[15:15] FPU_slice.in2[15:15] FPU_slice.in3[15:15] FPU_slice.in4[15:15] feedback_reg1[15:15].Q feedback_reg2[15:15].Q feedback_reg3[15:15].Q WB1[15:15].Q FM1.out[15:15]" output ="FA1.opa[15:15]"/>
+		<mux name="FA1_in1_mux17" input="FPU_slice.in1[16:16] FPU_slice.in2[16:16] FPU_slice.in3[16:16] FPU_slice.in4[16:16] feedback_reg1[16:16].Q feedback_reg2[16:16].Q feedback_reg3[16:16].Q WB1[16:16].Q FM1.out[16:16]" output ="FA1.opa[16:16]"/>
+		<mux name="FA1_in1_mux18" input="FPU_slice.in1[17:17] FPU_slice.in2[17:17] FPU_slice.in3[17:17] FPU_slice.in4[17:17] feedback_reg1[17:17].Q feedback_reg2[17:17].Q feedback_reg3[17:17].Q WB1[17:17].Q FM1.out[17:17]" output ="FA1.opa[17:17]"/>
+		<mux name="FA1_in1_mux19" input="FPU_slice.in1[18:18] FPU_slice.in2[18:18] FPU_slice.in3[18:18] FPU_slice.in4[18:18] feedback_reg1[18:18].Q feedback_reg2[18:18].Q feedback_reg3[18:18].Q WB1[18:18].Q FM1.out[18:18]" output ="FA1.opa[18:18]"/>
+		<mux name="FA1_in1_mux20" input="FPU_slice.in1[19:19] FPU_slice.in2[19:19] FPU_slice.in3[19:19] FPU_slice.in4[19:19] feedback_reg1[19:19].Q feedback_reg2[19:19].Q feedback_reg3[19:19].Q WB1[19:19].Q FM1.out[19:19]" output ="FA1.opa[19:19]"/>
+		<mux name="FA1_in1_mux21" input="FPU_slice.in1[20:20] FPU_slice.in2[20:20] FPU_slice.in3[20:20] FPU_slice.in4[20:20] feedback_reg1[20:20].Q feedback_reg2[20:20].Q feedback_reg3[20:20].Q WB1[20:20].Q FM1.out[20:20]" output ="FA1.opa[20:20]"/>
+		<mux name="FA1_in1_mux22" input="FPU_slice.in1[21:21] FPU_slice.in2[21:21] FPU_slice.in3[21:21] FPU_slice.in4[21:21] feedback_reg1[21:21].Q feedback_reg2[21:21].Q feedback_reg3[21:21].Q WB1[21:21].Q FM1.out[21:21]" output ="FA1.opa[21:21]"/>
+		<mux name="FA1_in1_mux23" input="FPU_slice.in1[22:22] FPU_slice.in2[22:22] FPU_slice.in3[22:22] FPU_slice.in4[22:22] feedback_reg1[22:22].Q feedback_reg2[22:22].Q feedback_reg3[22:22].Q WB1[22:22].Q FM1.out[22:22]" output ="FA1.opa[22:22]"/>
+		<mux name="FA1_in1_mux24" input="FPU_slice.in1[23:23] FPU_slice.in2[23:23] FPU_slice.in3[23:23] FPU_slice.in4[23:23] feedback_reg1[23:23].Q feedback_reg2[23:23].Q feedback_reg3[23:23].Q WB1[23:23].Q FM1.out[23:23]" output ="FA1.opa[23:23]"/>
+		<mux name="FA1_in1_mux25" input="FPU_slice.in1[24:24] FPU_slice.in2[24:24] FPU_slice.in3[24:24] FPU_slice.in4[24:24] feedback_reg1[24:24].Q feedback_reg2[24:24].Q feedback_reg3[24:24].Q WB1[24:24].Q FM1.out[24:24]" output ="FA1.opa[24:24]"/>
+		<mux name="FA1_in1_mux26" input="FPU_slice.in1[25:25] FPU_slice.in2[25:25] FPU_slice.in3[25:25] FPU_slice.in4[25:25] feedback_reg1[25:25].Q feedback_reg2[25:25].Q feedback_reg3[25:25].Q WB1[25:25].Q FM1.out[25:25]" output ="FA1.opa[25:25]"/>
+		<mux name="FA1_in1_mux27" input="FPU_slice.in1[26:26] FPU_slice.in2[26:26] FPU_slice.in3[26:26] FPU_slice.in4[26:26] feedback_reg1[26:26].Q feedback_reg2[26:26].Q feedback_reg3[26:26].Q WB1[26:26].Q FM1.out[26:26]" output ="FA1.opa[26:26]"/>
+		<mux name="FA1_in1_mux28" input="FPU_slice.in1[27:27] FPU_slice.in2[27:27] FPU_slice.in3[27:27] FPU_slice.in4[27:27] feedback_reg1[27:27].Q feedback_reg2[27:27].Q feedback_reg3[27:27].Q WB1[27:27].Q FM1.out[27:27]" output ="FA1.opa[27:27]"/>
+		<mux name="FA1_in1_mux29" input="FPU_slice.in1[28:28] FPU_slice.in2[28:28] FPU_slice.in3[28:28] FPU_slice.in4[28:28] feedback_reg1[28:28].Q feedback_reg2[28:28].Q feedback_reg3[28:28].Q WB1[28:28].Q FM1.out[28:28]" output ="FA1.opa[28:28]"/>
+		<mux name="FA1_in1_mux30" input="FPU_slice.in1[29:29] FPU_slice.in2[29:29] FPU_slice.in3[29:29] FPU_slice.in4[29:29] feedback_reg1[29:29].Q feedback_reg2[29:29].Q feedback_reg3[29:29].Q WB1[29:29].Q FM1.out[29:29]" output ="FA1.opa[29:29]"/>
+		<mux name="FA1_in1_mux31" input="FPU_slice.in1[30:30] FPU_slice.in2[30:30] FPU_slice.in3[30:30] FPU_slice.in4[30:30] feedback_reg1[30:30].Q feedback_reg2[30:30].Q feedback_reg3[30:30].Q WB1[30:30].Q FM1.out[30:30]" output ="FA1.opa[30:30]"/>
+		<mux name="FA1_in1_mux32" input="FPU_slice.in1[31:31] FPU_slice.in2[31:31] FPU_slice.in3[31:31] FPU_slice.in4[31:31] feedback_reg1[31:31].Q feedback_reg2[31:31].Q feedback_reg3[31:31].Q WB1[31:31].Q FM1.out[31:31]" output ="FA1.opa[31:31]"/>
+
+
+		<!-- Input Mux FA1 in2 -->
+		<mux name="FA1_in2_mux1" input="FPU_slice.in1[0:0] FPU_slice.in2[0:0] FPU_slice.in3[0:0] FPU_slice.in4[0:0] feedback_reg1[0:0].Q feedback_reg2[0:0].Q feedback_reg3[0:0].Q WB1[0:0].Q FM1.out[0:0]" output ="FA1.opb[0:0]"/>
+		<mux name="FA1_in2_mux2" input="FPU_slice.in1[1:1] FPU_slice.in2[1:1] FPU_slice.in3[1:1] FPU_slice.in4[1:1] feedback_reg1[1:1].Q feedback_reg2[1:1].Q feedback_reg3[1:1].Q WB1[1:1].Q FM1.out[1:1]" output ="FA1.opb[1:1]"/>
+		<mux name="FA1_in2_mux3" input="FPU_slice.in1[2:2] FPU_slice.in2[2:2] FPU_slice.in3[2:2] FPU_slice.in4[2:2] feedback_reg1[2:2].Q feedback_reg2[2:2].Q feedback_reg3[2:2].Q WB1[2:2].Q FM1.out[2:2]" output ="FA1.opb[2:2]"/>
+		<mux name="FA1_in2_mux4" input="FPU_slice.in1[3:3] FPU_slice.in2[3:3] FPU_slice.in3[3:3] FPU_slice.in4[3:3] feedback_reg1[3:3].Q feedback_reg2[3:3].Q feedback_reg3[3:3].Q WB1[3:3].Q FM1.out[3:3]" output ="FA1.opb[3:3]"/>
+		<mux name="FA1_in2_mux5" input="FPU_slice.in1[4:4] FPU_slice.in2[4:4] FPU_slice.in3[4:4] FPU_slice.in4[4:4] feedback_reg1[4:4].Q feedback_reg2[4:4].Q feedback_reg3[4:4].Q WB1[4:4].Q FM1.out[4:4]" output ="FA1.opb[4:4]"/>
+		<mux name="FA1_in2_mux6" input="FPU_slice.in1[5:5] FPU_slice.in2[5:5] FPU_slice.in3[5:5] FPU_slice.in4[5:5] feedback_reg1[5:5].Q feedback_reg2[5:5].Q feedback_reg3[5:5].Q WB1[5:5].Q FM1.out[5:5]" output ="FA1.opb[5:5]"/>
+		<mux name="FA1_in2_mux7" input="FPU_slice.in1[6:6] FPU_slice.in2[6:6] FPU_slice.in3[6:6] FPU_slice.in4[6:6] feedback_reg1[6:6].Q feedback_reg2[6:6].Q feedback_reg3[6:6].Q WB1[6:6].Q FM1.out[6:6]" output ="FA1.opb[6:6]"/>
+		<mux name="FA1_in2_mux8" input="FPU_slice.in1[7:7] FPU_slice.in2[7:7] FPU_slice.in3[7:7] FPU_slice.in4[7:7] feedback_reg1[7:7].Q feedback_reg2[7:7].Q feedback_reg3[7:7].Q WB1[7:7].Q FM1.out[7:7]" output ="FA1.opb[7:7]"/>
+		<mux name="FA1_in2_mux9" input="FPU_slice.in1[8:8] FPU_slice.in2[8:8] FPU_slice.in3[8:8] FPU_slice.in4[8:8] feedback_reg1[8:8].Q feedback_reg2[8:8].Q feedback_reg3[8:8].Q WB1[8:8].Q FM1.out[8:8]" output ="FA1.opb[8:8]"/>
+		<mux name="FA1_in2_mux10" input="FPU_slice.in1[9:9] FPU_slice.in2[9:9] FPU_slice.in3[9:9] FPU_slice.in4[9:9] feedback_reg1[9:9].Q feedback_reg2[9:9].Q feedback_reg3[9:9].Q WB1[9:9].Q FM1.out[9:9]" output ="FA1.opb[9:9]"/>
+		<mux name="FA1_in2_mux11" input="FPU_slice.in1[10:10] FPU_slice.in2[10:10] FPU_slice.in3[10:10] FPU_slice.in4[10:10] feedback_reg1[10:10].Q feedback_reg2[10:10].Q feedback_reg3[10:10].Q WB1[10:10].Q FM1.out[10:10]" output ="FA1.opb[10:10]"/>
+		<mux name="FA1_in2_mux12" input="FPU_slice.in1[11:11] FPU_slice.in2[11:11] FPU_slice.in3[11:11] FPU_slice.in4[11:11] feedback_reg1[11:11].Q feedback_reg2[11:11].Q feedback_reg3[11:11].Q WB1[11:11].Q FM1.out[11:11]" output ="FA1.opb[11:11]"/>
+		<mux name="FA1_in2_mux13" input="FPU_slice.in1[12:12] FPU_slice.in2[12:12] FPU_slice.in3[12:12] FPU_slice.in4[12:12] feedback_reg1[12:12].Q feedback_reg2[12:12].Q feedback_reg3[12:12].Q WB1[12:12].Q FM1.out[12:12]" output ="FA1.opb[12:12]"/>
+		<mux name="FA1_in2_mux14" input="FPU_slice.in1[13:13] FPU_slice.in2[13:13] FPU_slice.in3[13:13] FPU_slice.in4[13:13] feedback_reg1[13:13].Q feedback_reg2[13:13].Q feedback_reg3[13:13].Q WB1[13:13].Q FM1.out[13:13]" output ="FA1.opb[13:13]"/>
+		<mux name="FA1_in2_mux15" input="FPU_slice.in1[14:14] FPU_slice.in2[14:14] FPU_slice.in3[14:14] FPU_slice.in4[14:14] feedback_reg1[14:14].Q feedback_reg2[14:14].Q feedback_reg3[14:14].Q WB1[14:14].Q FM1.out[14:14]" output ="FA1.opb[14:14]"/>
+		<mux name="FA1_in2_mux16" input="FPU_slice.in1[15:15] FPU_slice.in2[15:15] FPU_slice.in3[15:15] FPU_slice.in4[15:15] feedback_reg1[15:15].Q feedback_reg2[15:15].Q feedback_reg3[15:15].Q WB1[15:15].Q FM1.out[15:15]" output ="FA1.opb[15:15]"/>
+		<mux name="FA1_in2_mux17" input="FPU_slice.in1[16:16] FPU_slice.in2[16:16] FPU_slice.in3[16:16] FPU_slice.in4[16:16] feedback_reg1[16:16].Q feedback_reg2[16:16].Q feedback_reg3[16:16].Q WB1[16:16].Q FM1.out[16:16]" output ="FA1.opb[16:16]"/>
+		<mux name="FA1_in2_mux18" input="FPU_slice.in1[17:17] FPU_slice.in2[17:17] FPU_slice.in3[17:17] FPU_slice.in4[17:17] feedback_reg1[17:17].Q feedback_reg2[17:17].Q feedback_reg3[17:17].Q WB1[17:17].Q FM1.out[17:17]" output ="FA1.opb[17:17]"/>
+		<mux name="FA1_in2_mux19" input="FPU_slice.in1[18:18] FPU_slice.in2[18:18] FPU_slice.in3[18:18] FPU_slice.in4[18:18] feedback_reg1[18:18].Q feedback_reg2[18:18].Q feedback_reg3[18:18].Q WB1[18:18].Q FM1.out[18:18]" output ="FA1.opb[18:18]"/>
+		<mux name="FA1_in2_mux20" input="FPU_slice.in1[19:19] FPU_slice.in2[19:19] FPU_slice.in3[19:19] FPU_slice.in4[19:19] feedback_reg1[19:19].Q feedback_reg2[19:19].Q feedback_reg3[19:19].Q WB1[19:19].Q FM1.out[19:19]" output ="FA1.opb[19:19]"/>
+		<mux name="FA1_in2_mux21" input="FPU_slice.in1[20:20] FPU_slice.in2[20:20] FPU_slice.in3[20:20] FPU_slice.in4[20:20] feedback_reg1[20:20].Q feedback_reg2[20:20].Q feedback_reg3[20:20].Q WB1[20:20].Q FM1.out[20:20]" output ="FA1.opb[20:20]"/>
+		<mux name="FA1_in2_mux22" input="FPU_slice.in1[21:21] FPU_slice.in2[21:21] FPU_slice.in3[21:21] FPU_slice.in4[21:21] feedback_reg1[21:21].Q feedback_reg2[21:21].Q feedback_reg3[21:21].Q WB1[21:21].Q FM1.out[21:21]" output ="FA1.opb[21:21]"/>
+		<mux name="FA1_in2_mux23" input="FPU_slice.in1[22:22] FPU_slice.in2[22:22] FPU_slice.in3[22:22] FPU_slice.in4[22:22] feedback_reg1[22:22].Q feedback_reg2[22:22].Q feedback_reg3[22:22].Q WB1[22:22].Q FM1.out[22:22]" output ="FA1.opb[22:22]"/>
+		<mux name="FA1_in2_mux24" input="FPU_slice.in1[23:23] FPU_slice.in2[23:23] FPU_slice.in3[23:23] FPU_slice.in4[23:23] feedback_reg1[23:23].Q feedback_reg2[23:23].Q feedback_reg3[23:23].Q WB1[23:23].Q FM1.out[23:23]" output ="FA1.opb[23:23]"/>
+		<mux name="FA1_in2_mux25" input="FPU_slice.in1[24:24] FPU_slice.in2[24:24] FPU_slice.in3[24:24] FPU_slice.in4[24:24] feedback_reg1[24:24].Q feedback_reg2[24:24].Q feedback_reg3[24:24].Q WB1[24:24].Q FM1.out[24:24]" output ="FA1.opb[24:24]"/>
+		<mux name="FA1_in2_mux26" input="FPU_slice.in1[25:25] FPU_slice.in2[25:25] FPU_slice.in3[25:25] FPU_slice.in4[25:25] feedback_reg1[25:25].Q feedback_reg2[25:25].Q feedback_reg3[25:25].Q WB1[25:25].Q FM1.out[25:25]" output ="FA1.opb[25:25]"/>
+		<mux name="FA1_in2_mux27" input="FPU_slice.in1[26:26] FPU_slice.in2[26:26] FPU_slice.in3[26:26] FPU_slice.in4[26:26] feedback_reg1[26:26].Q feedback_reg2[26:26].Q feedback_reg3[26:26].Q WB1[26:26].Q FM1.out[26:26]" output ="FA1.opb[26:26]"/>
+		<mux name="FA1_in2_mux28" input="FPU_slice.in1[27:27] FPU_slice.in2[27:27] FPU_slice.in3[27:27] FPU_slice.in4[27:27] feedback_reg1[27:27].Q feedback_reg2[27:27].Q feedback_reg3[27:27].Q WB1[27:27].Q FM1.out[27:27]" output ="FA1.opb[27:27]"/>
+		<mux name="FA1_in2_mux29" input="FPU_slice.in1[28:28] FPU_slice.in2[28:28] FPU_slice.in3[28:28] FPU_slice.in4[28:28] feedback_reg1[28:28].Q feedback_reg2[28:28].Q feedback_reg3[28:28].Q WB1[28:28].Q FM1.out[28:28]" output ="FA1.opb[28:28]"/>
+		<mux name="FA1_in2_mux30" input="FPU_slice.in1[29:29] FPU_slice.in2[29:29] FPU_slice.in3[29:29] FPU_slice.in4[29:29] feedback_reg1[29:29].Q feedback_reg2[29:29].Q feedback_reg3[29:29].Q WB1[29:29].Q FM1.out[29:29]" output ="FA1.opb[29:29]"/>
+		<mux name="FA1_in2_mux31" input="FPU_slice.in1[30:30] FPU_slice.in2[30:30] FPU_slice.in3[30:30] FPU_slice.in4[30:30] feedback_reg1[30:30].Q feedback_reg2[30:30].Q feedback_reg3[30:30].Q WB1[30:30].Q FM1.out[30:30]" output ="FA1.opb[30:30]"/>
+		<mux name="FA1_in2_mux32" input="FPU_slice.in1[31:31] FPU_slice.in2[31:31] FPU_slice.in3[31:31] FPU_slice.in4[31:31] feedback_reg1[31:31].Q feedback_reg2[31:31].Q feedback_reg3[31:31].Q WB1[31:31].Q FM1.out[31:31]" output ="FA1.opb[31:31]"/>
+
+
+		<!--############# WB2 ##############-->	
+		<!-- Input Mux WB2 in1 -->
+		<mux name="WB2_in1_mux1" input="FPU_slice.in1[0:0] FPU_slice.in2[0:0] FPU_slice.in3[0:0] FPU_slice.in4[0:0] feedback_reg1[0:0].Q feedback_reg2[0:0].Q feedback_reg3[0:0].Q WB1[0:0].Q FM1.out[0:0] FA1.out[0:0]" output ="WB2[0:0].D"/>
+		<mux name="WB2_in1_mux2" input="FPU_slice.in1[1:1] FPU_slice.in2[1:1] FPU_slice.in3[1:1] FPU_slice.in4[1:1] feedback_reg1[1:1].Q feedback_reg2[1:1].Q feedback_reg3[1:1].Q WB1[1:1].Q FM1.out[1:1] FA1.out[1:1]" output ="WB2[1:1].D"/>
+		<mux name="WB2_in1_mux3" input="FPU_slice.in1[2:2] FPU_slice.in2[2:2] FPU_slice.in3[2:2] FPU_slice.in4[2:2] feedback_reg1[2:2].Q feedback_reg2[2:2].Q feedback_reg3[2:2].Q WB1[2:2].Q FM1.out[2:2] FA1.out[2:2]" output ="WB2[2:2].D"/>
+		<mux name="WB2_in1_mux4" input="FPU_slice.in1[3:3] FPU_slice.in2[3:3] FPU_slice.in3[3:3] FPU_slice.in4[3:3] feedback_reg1[3:3].Q feedback_reg2[3:3].Q feedback_reg3[3:3].Q WB1[3:3].Q FM1.out[3:3] FA1.out[3:3]" output ="WB2[3:3].D"/>
+		<mux name="WB2_in1_mux5" input="FPU_slice.in1[4:4] FPU_slice.in2[4:4] FPU_slice.in3[4:4] FPU_slice.in4[4:4] feedback_reg1[4:4].Q feedback_reg2[4:4].Q feedback_reg3[4:4].Q WB1[4:4].Q FM1.out[4:4] FA1.out[4:4]" output ="WB2[4:4].D"/>
+		<mux name="WB2_in1_mux6" input="FPU_slice.in1[5:5] FPU_slice.in2[5:5] FPU_slice.in3[5:5] FPU_slice.in4[5:5] feedback_reg1[5:5].Q feedback_reg2[5:5].Q feedback_reg3[5:5].Q WB1[5:5].Q FM1.out[5:5] FA1.out[5:5]" output ="WB2[5:5].D"/>
+		<mux name="WB2_in1_mux7" input="FPU_slice.in1[6:6] FPU_slice.in2[6:6] FPU_slice.in3[6:6] FPU_slice.in4[6:6] feedback_reg1[6:6].Q feedback_reg2[6:6].Q feedback_reg3[6:6].Q WB1[6:6].Q FM1.out[6:6] FA1.out[6:6]" output ="WB2[6:6].D"/>
+		<mux name="WB2_in1_mux8" input="FPU_slice.in1[7:7] FPU_slice.in2[7:7] FPU_slice.in3[7:7] FPU_slice.in4[7:7] feedback_reg1[7:7].Q feedback_reg2[7:7].Q feedback_reg3[7:7].Q WB1[7:7].Q FM1.out[7:7] FA1.out[7:7]" output ="WB2[7:7].D"/>
+		<mux name="WB2_in1_mux9" input="FPU_slice.in1[8:8] FPU_slice.in2[8:8] FPU_slice.in3[8:8] FPU_slice.in4[8:8] feedback_reg1[8:8].Q feedback_reg2[8:8].Q feedback_reg3[8:8].Q WB1[8:8].Q FM1.out[8:8] FA1.out[8:8]" output ="WB2[8:8].D"/>
+		<mux name="WB2_in1_mux10" input="FPU_slice.in1[9:9] FPU_slice.in2[9:9] FPU_slice.in3[9:9] FPU_slice.in4[9:9] feedback_reg1[9:9].Q feedback_reg2[9:9].Q feedback_reg3[9:9].Q WB1[9:9].Q FM1.out[9:9] FA1.out[9:9]" output ="WB2[9:9].D"/>
+		<mux name="WB2_in1_mux11" input="FPU_slice.in1[10:10] FPU_slice.in2[10:10] FPU_slice.in3[10:10] FPU_slice.in4[10:10] feedback_reg1[10:10].Q feedback_reg2[10:10].Q feedback_reg3[10:10].Q WB1[10:10].Q FM1.out[10:10] FA1.out[10:10]" output ="WB2[10:10].D"/>
+		<mux name="WB2_in1_mux12" input="FPU_slice.in1[11:11] FPU_slice.in2[11:11] FPU_slice.in3[11:11] FPU_slice.in4[11:11] feedback_reg1[11:11].Q feedback_reg2[11:11].Q feedback_reg3[11:11].Q WB1[11:11].Q FM1.out[11:11] FA1.out[11:11]" output ="WB2[11:11].D"/>
+		<mux name="WB2_in1_mux13" input="FPU_slice.in1[12:12] FPU_slice.in2[12:12] FPU_slice.in3[12:12] FPU_slice.in4[12:12] feedback_reg1[12:12].Q feedback_reg2[12:12].Q feedback_reg3[12:12].Q WB1[12:12].Q FM1.out[12:12] FA1.out[12:12]" output ="WB2[12:12].D"/>
+		<mux name="WB2_in1_mux14" input="FPU_slice.in1[13:13] FPU_slice.in2[13:13] FPU_slice.in3[13:13] FPU_slice.in4[13:13] feedback_reg1[13:13].Q feedback_reg2[13:13].Q feedback_reg3[13:13].Q WB1[13:13].Q FM1.out[13:13] FA1.out[13:13]" output ="WB2[13:13].D"/>
+		<mux name="WB2_in1_mux15" input="FPU_slice.in1[14:14] FPU_slice.in2[14:14] FPU_slice.in3[14:14] FPU_slice.in4[14:14] feedback_reg1[14:14].Q feedback_reg2[14:14].Q feedback_reg3[14:14].Q WB1[14:14].Q FM1.out[14:14] FA1.out[14:14]" output ="WB2[14:14].D"/>
+		<mux name="WB2_in1_mux16" input="FPU_slice.in1[15:15] FPU_slice.in2[15:15] FPU_slice.in3[15:15] FPU_slice.in4[15:15] feedback_reg1[15:15].Q feedback_reg2[15:15].Q feedback_reg3[15:15].Q WB1[15:15].Q FM1.out[15:15] FA1.out[15:15]" output ="WB2[15:15].D"/>
+		<mux name="WB2_in1_mux17" input="FPU_slice.in1[16:16] FPU_slice.in2[16:16] FPU_slice.in3[16:16] FPU_slice.in4[16:16] feedback_reg1[16:16].Q feedback_reg2[16:16].Q feedback_reg3[16:16].Q WB1[16:16].Q FM1.out[16:16] FA1.out[16:16]" output ="WB2[16:16].D"/>
+		<mux name="WB2_in1_mux18" input="FPU_slice.in1[17:17] FPU_slice.in2[17:17] FPU_slice.in3[17:17] FPU_slice.in4[17:17] feedback_reg1[17:17].Q feedback_reg2[17:17].Q feedback_reg3[17:17].Q WB1[17:17].Q FM1.out[17:17] FA1.out[17:17]" output ="WB2[17:17].D"/>
+		<mux name="WB2_in1_mux19" input="FPU_slice.in1[18:18] FPU_slice.in2[18:18] FPU_slice.in3[18:18] FPU_slice.in4[18:18] feedback_reg1[18:18].Q feedback_reg2[18:18].Q feedback_reg3[18:18].Q WB1[18:18].Q FM1.out[18:18] FA1.out[18:18]" output ="WB2[18:18].D"/>
+		<mux name="WB2_in1_mux20" input="FPU_slice.in1[19:19] FPU_slice.in2[19:19] FPU_slice.in3[19:19] FPU_slice.in4[19:19] feedback_reg1[19:19].Q feedback_reg2[19:19].Q feedback_reg3[19:19].Q WB1[19:19].Q FM1.out[19:19] FA1.out[19:19]" output ="WB2[19:19].D"/>
+		<mux name="WB2_in1_mux21" input="FPU_slice.in1[20:20] FPU_slice.in2[20:20] FPU_slice.in3[20:20] FPU_slice.in4[20:20] feedback_reg1[20:20].Q feedback_reg2[20:20].Q feedback_reg3[20:20].Q WB1[20:20].Q FM1.out[20:20] FA1.out[20:20]" output ="WB2[20:20].D"/>
+		<mux name="WB2_in1_mux22" input="FPU_slice.in1[21:21] FPU_slice.in2[21:21] FPU_slice.in3[21:21] FPU_slice.in4[21:21] feedback_reg1[21:21].Q feedback_reg2[21:21].Q feedback_reg3[21:21].Q WB1[21:21].Q FM1.out[21:21] FA1.out[21:21]" output ="WB2[21:21].D"/>
+		<mux name="WB2_in1_mux23" input="FPU_slice.in1[22:22] FPU_slice.in2[22:22] FPU_slice.in3[22:22] FPU_slice.in4[22:22] feedback_reg1[22:22].Q feedback_reg2[22:22].Q feedback_reg3[22:22].Q WB1[22:22].Q FM1.out[22:22] FA1.out[22:22]" output ="WB2[22:22].D"/>
+		<mux name="WB2_in1_mux24" input="FPU_slice.in1[23:23] FPU_slice.in2[23:23] FPU_slice.in3[23:23] FPU_slice.in4[23:23] feedback_reg1[23:23].Q feedback_reg2[23:23].Q feedback_reg3[23:23].Q WB1[23:23].Q FM1.out[23:23] FA1.out[23:23]" output ="WB2[23:23].D"/>
+		<mux name="WB2_in1_mux25" input="FPU_slice.in1[24:24] FPU_slice.in2[24:24] FPU_slice.in3[24:24] FPU_slice.in4[24:24] feedback_reg1[24:24].Q feedback_reg2[24:24].Q feedback_reg3[24:24].Q WB1[24:24].Q FM1.out[24:24] FA1.out[24:24]" output ="WB2[24:24].D"/>
+		<mux name="WB2_in1_mux26" input="FPU_slice.in1[25:25] FPU_slice.in2[25:25] FPU_slice.in3[25:25] FPU_slice.in4[25:25] feedback_reg1[25:25].Q feedback_reg2[25:25].Q feedback_reg3[25:25].Q WB1[25:25].Q FM1.out[25:25] FA1.out[25:25]" output ="WB2[25:25].D"/>
+		<mux name="WB2_in1_mux27" input="FPU_slice.in1[26:26] FPU_slice.in2[26:26] FPU_slice.in3[26:26] FPU_slice.in4[26:26] feedback_reg1[26:26].Q feedback_reg2[26:26].Q feedback_reg3[26:26].Q WB1[26:26].Q FM1.out[26:26] FA1.out[26:26]" output ="WB2[26:26].D"/>
+		<mux name="WB2_in1_mux28" input="FPU_slice.in1[27:27] FPU_slice.in2[27:27] FPU_slice.in3[27:27] FPU_slice.in4[27:27] feedback_reg1[27:27].Q feedback_reg2[27:27].Q feedback_reg3[27:27].Q WB1[27:27].Q FM1.out[27:27] FA1.out[27:27]" output ="WB2[27:27].D"/>
+		<mux name="WB2_in1_mux29" input="FPU_slice.in1[28:28] FPU_slice.in2[28:28] FPU_slice.in3[28:28] FPU_slice.in4[28:28] feedback_reg1[28:28].Q feedback_reg2[28:28].Q feedback_reg3[28:28].Q WB1[28:28].Q FM1.out[28:28] FA1.out[28:28]" output ="WB2[28:28].D"/>
+		<mux name="WB2_in1_mux30" input="FPU_slice.in1[29:29] FPU_slice.in2[29:29] FPU_slice.in3[29:29] FPU_slice.in4[29:29] feedback_reg1[29:29].Q feedback_reg2[29:29].Q feedback_reg3[29:29].Q WB1[29:29].Q FM1.out[29:29] FA1.out[29:29]" output ="WB2[29:29].D"/>
+		<mux name="WB2_in1_mux31" input="FPU_slice.in1[30:30] FPU_slice.in2[30:30] FPU_slice.in3[30:30] FPU_slice.in4[30:30] feedback_reg1[30:30].Q feedback_reg2[30:30].Q feedback_reg3[30:30].Q WB1[30:30].Q FM1.out[30:30] FA1.out[30:30]" output ="WB2[30:30].D"/>
+		<mux name="WB2_in1_mux32" input="FPU_slice.in1[31:31] FPU_slice.in2[31:31] FPU_slice.in3[31:31] FPU_slice.in4[31:31] feedback_reg1[31:31].Q feedback_reg2[31:31].Q feedback_reg3[31:31].Q WB1[31:31].Q FM1.out[31:31] FA1.out[31:31]" output ="WB2[31:31].D"/>
+		
+
+		<!--############# WB3 ##############-->	
+		<!-- Input Mux WB3 in1 -->
+		<mux name="WB3_in1_mux1" input="FPU_slice.in1[0:0] FPU_slice.in2[0:0] FPU_slice.in3[0:0] FPU_slice.in4[0:0] feedback_reg1[0:0].Q feedback_reg2[0:0].Q feedback_reg3[0:0].Q WB1[0:0].Q FM1.out[0:0] FA1.out[0:0] WB2[0:0].Q" output ="WB3[0:0].D"/>
+		<mux name="WB3_in1_mux2" input="FPU_slice.in1[1:1] FPU_slice.in2[1:1] FPU_slice.in3[1:1] FPU_slice.in4[1:1] feedback_reg1[1:1].Q feedback_reg2[1:1].Q feedback_reg3[1:1].Q WB1[1:1].Q FM1.out[1:1] FA1.out[1:1] WB2[1:1].Q" output ="WB3[1:1].D"/>
+		<mux name="WB3_in1_mux3" input="FPU_slice.in1[2:2] FPU_slice.in2[2:2] FPU_slice.in3[2:2] FPU_slice.in4[2:2] feedback_reg1[2:2].Q feedback_reg2[2:2].Q feedback_reg3[2:2].Q WB1[2:2].Q FM1.out[2:2] FA1.out[2:2] WB2[2:2].Q" output ="WB3[2:2].D"/>
+		<mux name="WB3_in1_mux4" input="FPU_slice.in1[3:3] FPU_slice.in2[3:3] FPU_slice.in3[3:3] FPU_slice.in4[3:3] feedback_reg1[3:3].Q feedback_reg2[3:3].Q feedback_reg3[3:3].Q WB1[3:3].Q FM1.out[3:3] FA1.out[3:3] WB2[3:3].Q" output ="WB3[3:3].D"/>
+		<mux name="WB3_in1_mux5" input="FPU_slice.in1[4:4] FPU_slice.in2[4:4] FPU_slice.in3[4:4] FPU_slice.in4[4:4] feedback_reg1[4:4].Q feedback_reg2[4:4].Q feedback_reg3[4:4].Q WB1[4:4].Q FM1.out[4:4] FA1.out[4:4] WB2[4:4].Q" output ="WB3[4:4].D"/>
+		<mux name="WB3_in1_mux6" input="FPU_slice.in1[5:5] FPU_slice.in2[5:5] FPU_slice.in3[5:5] FPU_slice.in4[5:5] feedback_reg1[5:5].Q feedback_reg2[5:5].Q feedback_reg3[5:5].Q WB1[5:5].Q FM1.out[5:5] FA1.out[5:5] WB2[5:5].Q" output ="WB3[5:5].D"/>
+		<mux name="WB3_in1_mux7" input="FPU_slice.in1[6:6] FPU_slice.in2[6:6] FPU_slice.in3[6:6] FPU_slice.in4[6:6] feedback_reg1[6:6].Q feedback_reg2[6:6].Q feedback_reg3[6:6].Q WB1[6:6].Q FM1.out[6:6] FA1.out[6:6] WB2[6:6].Q" output ="WB3[6:6].D"/>
+		<mux name="WB3_in1_mux8" input="FPU_slice.in1[7:7] FPU_slice.in2[7:7] FPU_slice.in3[7:7] FPU_slice.in4[7:7] feedback_reg1[7:7].Q feedback_reg2[7:7].Q feedback_reg3[7:7].Q WB1[7:7].Q FM1.out[7:7] FA1.out[7:7] WB2[7:7].Q" output ="WB3[7:7].D"/>
+		<mux name="WB3_in1_mux9" input="FPU_slice.in1[8:8] FPU_slice.in2[8:8] FPU_slice.in3[8:8] FPU_slice.in4[8:8] feedback_reg1[8:8].Q feedback_reg2[8:8].Q feedback_reg3[8:8].Q WB1[8:8].Q FM1.out[8:8] FA1.out[8:8] WB2[8:8].Q" output ="WB3[8:8].D"/>
+		<mux name="WB3_in1_mux10" input="FPU_slice.in1[9:9] FPU_slice.in2[9:9] FPU_slice.in3[9:9] FPU_slice.in4[9:9] feedback_reg1[9:9].Q feedback_reg2[9:9].Q feedback_reg3[9:9].Q WB1[9:9].Q FM1.out[9:9] FA1.out[9:9] WB2[9:9].Q" output ="WB3[9:9].D"/>
+		<mux name="WB3_in1_mux11" input="FPU_slice.in1[10:10] FPU_slice.in2[10:10] FPU_slice.in3[10:10] FPU_slice.in4[10:10] feedback_reg1[10:10].Q feedback_reg2[10:10].Q feedback_reg3[10:10].Q WB1[10:10].Q FM1.out[10:10] FA1.out[10:10] WB2[10:10].Q" output ="WB3[10:10].D"/>
+		<mux name="WB3_in1_mux12" input="FPU_slice.in1[11:11] FPU_slice.in2[11:11] FPU_slice.in3[11:11] FPU_slice.in4[11:11] feedback_reg1[11:11].Q feedback_reg2[11:11].Q feedback_reg3[11:11].Q WB1[11:11].Q FM1.out[11:11] FA1.out[11:11] WB2[11:11].Q" output ="WB3[11:11].D"/>
+		<mux name="WB3_in1_mux13" input="FPU_slice.in1[12:12] FPU_slice.in2[12:12] FPU_slice.in3[12:12] FPU_slice.in4[12:12] feedback_reg1[12:12].Q feedback_reg2[12:12].Q feedback_reg3[12:12].Q WB1[12:12].Q FM1.out[12:12] FA1.out[12:12] WB2[12:12].Q" output ="WB3[12:12].D"/>
+		<mux name="WB3_in1_mux14" input="FPU_slice.in1[13:13] FPU_slice.in2[13:13] FPU_slice.in3[13:13] FPU_slice.in4[13:13] feedback_reg1[13:13].Q feedback_reg2[13:13].Q feedback_reg3[13:13].Q WB1[13:13].Q FM1.out[13:13] FA1.out[13:13] WB2[13:13].Q" output ="WB3[13:13].D"/>
+		<mux name="WB3_in1_mux15" input="FPU_slice.in1[14:14] FPU_slice.in2[14:14] FPU_slice.in3[14:14] FPU_slice.in4[14:14] feedback_reg1[14:14].Q feedback_reg2[14:14].Q feedback_reg3[14:14].Q WB1[14:14].Q FM1.out[14:14] FA1.out[14:14] WB2[14:14].Q" output ="WB3[14:14].D"/>
+		<mux name="WB3_in1_mux16" input="FPU_slice.in1[15:15] FPU_slice.in2[15:15] FPU_slice.in3[15:15] FPU_slice.in4[15:15] feedback_reg1[15:15].Q feedback_reg2[15:15].Q feedback_reg3[15:15].Q WB1[15:15].Q FM1.out[15:15] FA1.out[15:15] WB2[15:15].Q" output ="WB3[15:15].D"/>
+		<mux name="WB3_in1_mux17" input="FPU_slice.in1[16:16] FPU_slice.in2[16:16] FPU_slice.in3[16:16] FPU_slice.in4[16:16] feedback_reg1[16:16].Q feedback_reg2[16:16].Q feedback_reg3[16:16].Q WB1[16:16].Q FM1.out[16:16] FA1.out[16:16] WB2[16:16].Q" output ="WB3[16:16].D"/>
+		<mux name="WB3_in1_mux18" input="FPU_slice.in1[17:17] FPU_slice.in2[17:17] FPU_slice.in3[17:17] FPU_slice.in4[17:17] feedback_reg1[17:17].Q feedback_reg2[17:17].Q feedback_reg3[17:17].Q WB1[17:17].Q FM1.out[17:17] FA1.out[17:17] WB2[17:17].Q" output ="WB3[17:17].D"/>
+		<mux name="WB3_in1_mux19" input="FPU_slice.in1[18:18] FPU_slice.in2[18:18] FPU_slice.in3[18:18] FPU_slice.in4[18:18] feedback_reg1[18:18].Q feedback_reg2[18:18].Q feedback_reg3[18:18].Q WB1[18:18].Q FM1.out[18:18] FA1.out[18:18] WB2[18:18].Q" output ="WB3[18:18].D"/>
+		<mux name="WB3_in1_mux20" input="FPU_slice.in1[19:19] FPU_slice.in2[19:19] FPU_slice.in3[19:19] FPU_slice.in4[19:19] feedback_reg1[19:19].Q feedback_reg2[19:19].Q feedback_reg3[19:19].Q WB1[19:19].Q FM1.out[19:19] FA1.out[19:19] WB2[19:19].Q" output ="WB3[19:19].D"/>
+		<mux name="WB3_in1_mux21" input="FPU_slice.in1[20:20] FPU_slice.in2[20:20] FPU_slice.in3[20:20] FPU_slice.in4[20:20] feedback_reg1[20:20].Q feedback_reg2[20:20].Q feedback_reg3[20:20].Q WB1[20:20].Q FM1.out[20:20] FA1.out[20:20] WB2[20:20].Q" output ="WB3[20:20].D"/>
+		<mux name="WB3_in1_mux22" input="FPU_slice.in1[21:21] FPU_slice.in2[21:21] FPU_slice.in3[21:21] FPU_slice.in4[21:21] feedback_reg1[21:21].Q feedback_reg2[21:21].Q feedback_reg3[21:21].Q WB1[21:21].Q FM1.out[21:21] FA1.out[21:21] WB2[21:21].Q" output ="WB3[21:21].D"/>
+		<mux name="WB3_in1_mux23" input="FPU_slice.in1[22:22] FPU_slice.in2[22:22] FPU_slice.in3[22:22] FPU_slice.in4[22:22] feedback_reg1[22:22].Q feedback_reg2[22:22].Q feedback_reg3[22:22].Q WB1[22:22].Q FM1.out[22:22] FA1.out[22:22] WB2[22:22].Q" output ="WB3[22:22].D"/>
+		<mux name="WB3_in1_mux24" input="FPU_slice.in1[23:23] FPU_slice.in2[23:23] FPU_slice.in3[23:23] FPU_slice.in4[23:23] feedback_reg1[23:23].Q feedback_reg2[23:23].Q feedback_reg3[23:23].Q WB1[23:23].Q FM1.out[23:23] FA1.out[23:23] WB2[23:23].Q" output ="WB3[23:23].D"/>
+		<mux name="WB3_in1_mux25" input="FPU_slice.in1[24:24] FPU_slice.in2[24:24] FPU_slice.in3[24:24] FPU_slice.in4[24:24] feedback_reg1[24:24].Q feedback_reg2[24:24].Q feedback_reg3[24:24].Q WB1[24:24].Q FM1.out[24:24] FA1.out[24:24] WB2[24:24].Q" output ="WB3[24:24].D"/>
+		<mux name="WB3_in1_mux26" input="FPU_slice.in1[25:25] FPU_slice.in2[25:25] FPU_slice.in3[25:25] FPU_slice.in4[25:25] feedback_reg1[25:25].Q feedback_reg2[25:25].Q feedback_reg3[25:25].Q WB1[25:25].Q FM1.out[25:25] FA1.out[25:25] WB2[25:25].Q" output ="WB3[25:25].D"/>
+		<mux name="WB3_in1_mux27" input="FPU_slice.in1[26:26] FPU_slice.in2[26:26] FPU_slice.in3[26:26] FPU_slice.in4[26:26] feedback_reg1[26:26].Q feedback_reg2[26:26].Q feedback_reg3[26:26].Q WB1[26:26].Q FM1.out[26:26] FA1.out[26:26] WB2[26:26].Q" output ="WB3[26:26].D"/>
+		<mux name="WB3_in1_mux28" input="FPU_slice.in1[27:27] FPU_slice.in2[27:27] FPU_slice.in3[27:27] FPU_slice.in4[27:27] feedback_reg1[27:27].Q feedback_reg2[27:27].Q feedback_reg3[27:27].Q WB1[27:27].Q FM1.out[27:27] FA1.out[27:27] WB2[27:27].Q" output ="WB3[27:27].D"/>
+		<mux name="WB3_in1_mux29" input="FPU_slice.in1[28:28] FPU_slice.in2[28:28] FPU_slice.in3[28:28] FPU_slice.in4[28:28] feedback_reg1[28:28].Q feedback_reg2[28:28].Q feedback_reg3[28:28].Q WB1[28:28].Q FM1.out[28:28] FA1.out[28:28] WB2[28:28].Q" output ="WB3[28:28].D"/>
+		<mux name="WB3_in1_mux30" input="FPU_slice.in1[29:29] FPU_slice.in2[29:29] FPU_slice.in3[29:29] FPU_slice.in4[29:29] feedback_reg1[29:29].Q feedback_reg2[29:29].Q feedback_reg3[29:29].Q WB1[29:29].Q FM1.out[29:29] FA1.out[29:29] WB2[29:29].Q" output ="WB3[29:29].D"/>
+		<mux name="WB3_in1_mux31" input="FPU_slice.in1[30:30] FPU_slice.in2[30:30] FPU_slice.in3[30:30] FPU_slice.in4[30:30] feedback_reg1[30:30].Q feedback_reg2[30:30].Q feedback_reg3[30:30].Q WB1[30:30].Q FM1.out[30:30] FA1.out[30:30] WB2[30:30].Q" output ="WB3[30:30].D"/>
+		<mux name="WB3_in1_mux32" input="FPU_slice.in1[31:31] FPU_slice.in2[31:31] FPU_slice.in3[31:31] FPU_slice.in4[31:31] feedback_reg1[31:31].Q feedback_reg2[31:31].Q feedback_reg3[31:31].Q WB1[31:31].Q FM1.out[31:31] FA1.out[31:31] WB2[31:31].Q" output ="WB3[31:31].D"/>
+		
+
+		<!--############# FM2 ##############-->	
+		<!-- Input Mux FM2 in1 -->
+		<mux name="FM2_in1_mux1" input="FPU_slice.in1[0:0] FPU_slice.in2[0:0] FPU_slice.in3[0:0] FPU_slice.in4[0:0] feedback_reg1[0:0].Q feedback_reg2[0:0].Q feedback_reg3[0:0].Q WB1[0:0].Q FM1.out[0:0] FA1.out[0:0] WB2[0:0].Q WB3[0:0].Q" output ="FM2.opa[0:0]"/>
+		<mux name="FM2_in1_mux2" input="FPU_slice.in1[1:1] FPU_slice.in2[1:1] FPU_slice.in3[1:1] FPU_slice.in4[1:1] feedback_reg1[1:1].Q feedback_reg2[1:1].Q feedback_reg3[1:1].Q WB1[1:1].Q FM1.out[1:1] FA1.out[1:1] WB2[1:1].Q WB3[1:1].Q" output ="FM2.opa[1:1]"/>
+		<mux name="FM2_in1_mux3" input="FPU_slice.in1[2:2] FPU_slice.in2[2:2] FPU_slice.in3[2:2] FPU_slice.in4[2:2] feedback_reg1[2:2].Q feedback_reg2[2:2].Q feedback_reg3[2:2].Q WB1[2:2].Q FM1.out[2:2] FA1.out[2:2] WB2[2:2].Q WB3[2:2].Q" output ="FM2.opa[2:2]"/>
+		<mux name="FM2_in1_mux4" input="FPU_slice.in1[3:3] FPU_slice.in2[3:3] FPU_slice.in3[3:3] FPU_slice.in4[3:3] feedback_reg1[3:3].Q feedback_reg2[3:3].Q feedback_reg3[3:3].Q WB1[3:3].Q FM1.out[3:3] FA1.out[3:3] WB2[3:3].Q WB3[3:3].Q" output ="FM2.opa[3:3]"/>
+		<mux name="FM2_in1_mux5" input="FPU_slice.in1[4:4] FPU_slice.in2[4:4] FPU_slice.in3[4:4] FPU_slice.in4[4:4] feedback_reg1[4:4].Q feedback_reg2[4:4].Q feedback_reg3[4:4].Q WB1[4:4].Q FM1.out[4:4] FA1.out[4:4] WB2[4:4].Q WB3[4:4].Q" output ="FM2.opa[4:4]"/>
+		<mux name="FM2_in1_mux6" input="FPU_slice.in1[5:5] FPU_slice.in2[5:5] FPU_slice.in3[5:5] FPU_slice.in4[5:5] feedback_reg1[5:5].Q feedback_reg2[5:5].Q feedback_reg3[5:5].Q WB1[5:5].Q FM1.out[5:5] FA1.out[5:5] WB2[5:5].Q WB3[5:5].Q" output ="FM2.opa[5:5]"/>
+		<mux name="FM2_in1_mux7" input="FPU_slice.in1[6:6] FPU_slice.in2[6:6] FPU_slice.in3[6:6] FPU_slice.in4[6:6] feedback_reg1[6:6].Q feedback_reg2[6:6].Q feedback_reg3[6:6].Q WB1[6:6].Q FM1.out[6:6] FA1.out[6:6] WB2[6:6].Q WB3[6:6].Q" output ="FM2.opa[6:6]"/>
+		<mux name="FM2_in1_mux8" input="FPU_slice.in1[7:7] FPU_slice.in2[7:7] FPU_slice.in3[7:7] FPU_slice.in4[7:7] feedback_reg1[7:7].Q feedback_reg2[7:7].Q feedback_reg3[7:7].Q WB1[7:7].Q FM1.out[7:7] FA1.out[7:7] WB2[7:7].Q WB3[7:7].Q" output ="FM2.opa[7:7]"/>
+		<mux name="FM2_in1_mux9" input="FPU_slice.in1[8:8] FPU_slice.in2[8:8] FPU_slice.in3[8:8] FPU_slice.in4[8:8] feedback_reg1[8:8].Q feedback_reg2[8:8].Q feedback_reg3[8:8].Q WB1[8:8].Q FM1.out[8:8] FA1.out[8:8] WB2[8:8].Q WB3[8:8].Q" output ="FM2.opa[8:8]"/>
+		<mux name="FM2_in1_mux10" input="FPU_slice.in1[9:9] FPU_slice.in2[9:9] FPU_slice.in3[9:9] FPU_slice.in4[9:9] feedback_reg1[9:9].Q feedback_reg2[9:9].Q feedback_reg3[9:9].Q WB1[9:9].Q FM1.out[9:9] FA1.out[9:9] WB2[9:9].Q WB3[9:9].Q" output ="FM2.opa[9:9]"/>
+		<mux name="FM2_in1_mux11" input="FPU_slice.in1[10:10] FPU_slice.in2[10:10] FPU_slice.in3[10:10] FPU_slice.in4[10:10] feedback_reg1[10:10].Q feedback_reg2[10:10].Q feedback_reg3[10:10].Q WB1[10:10].Q FM1.out[10:10] FA1.out[10:10] WB2[10:10].Q WB3[10:10].Q" output ="FM2.opa[10:10]"/>
+		<mux name="FM2_in1_mux12" input="FPU_slice.in1[11:11] FPU_slice.in2[11:11] FPU_slice.in3[11:11] FPU_slice.in4[11:11] feedback_reg1[11:11].Q feedback_reg2[11:11].Q feedback_reg3[11:11].Q WB1[11:11].Q FM1.out[11:11] FA1.out[11:11] WB2[11:11].Q WB3[11:11].Q" output ="FM2.opa[11:11]"/>
+		<mux name="FM2_in1_mux13" input="FPU_slice.in1[12:12] FPU_slice.in2[12:12] FPU_slice.in3[12:12] FPU_slice.in4[12:12] feedback_reg1[12:12].Q feedback_reg2[12:12].Q feedback_reg3[12:12].Q WB1[12:12].Q FM1.out[12:12] FA1.out[12:12] WB2[12:12].Q WB3[12:12].Q" output ="FM2.opa[12:12]"/>
+		<mux name="FM2_in1_mux14" input="FPU_slice.in1[13:13] FPU_slice.in2[13:13] FPU_slice.in3[13:13] FPU_slice.in4[13:13] feedback_reg1[13:13].Q feedback_reg2[13:13].Q feedback_reg3[13:13].Q WB1[13:13].Q FM1.out[13:13] FA1.out[13:13] WB2[13:13].Q WB3[13:13].Q" output ="FM2.opa[13:13]"/>
+		<mux name="FM2_in1_mux15" input="FPU_slice.in1[14:14] FPU_slice.in2[14:14] FPU_slice.in3[14:14] FPU_slice.in4[14:14] feedback_reg1[14:14].Q feedback_reg2[14:14].Q feedback_reg3[14:14].Q WB1[14:14].Q FM1.out[14:14] FA1.out[14:14] WB2[14:14].Q WB3[14:14].Q" output ="FM2.opa[14:14]"/>
+		<mux name="FM2_in1_mux16" input="FPU_slice.in1[15:15] FPU_slice.in2[15:15] FPU_slice.in3[15:15] FPU_slice.in4[15:15] feedback_reg1[15:15].Q feedback_reg2[15:15].Q feedback_reg3[15:15].Q WB1[15:15].Q FM1.out[15:15] FA1.out[15:15] WB2[15:15].Q WB3[15:15].Q" output ="FM2.opa[15:15]"/>
+		<mux name="FM2_in1_mux17" input="FPU_slice.in1[16:16] FPU_slice.in2[16:16] FPU_slice.in3[16:16] FPU_slice.in4[16:16] feedback_reg1[16:16].Q feedback_reg2[16:16].Q feedback_reg3[16:16].Q WB1[16:16].Q FM1.out[16:16] FA1.out[16:16] WB2[16:16].Q WB3[16:16].Q" output ="FM2.opa[16:16]"/>
+		<mux name="FM2_in1_mux18" input="FPU_slice.in1[17:17] FPU_slice.in2[17:17] FPU_slice.in3[17:17] FPU_slice.in4[17:17] feedback_reg1[17:17].Q feedback_reg2[17:17].Q feedback_reg3[17:17].Q WB1[17:17].Q FM1.out[17:17] FA1.out[17:17] WB2[17:17].Q WB3[17:17].Q" output ="FM2.opa[17:17]"/>
+		<mux name="FM2_in1_mux19" input="FPU_slice.in1[18:18] FPU_slice.in2[18:18] FPU_slice.in3[18:18] FPU_slice.in4[18:18] feedback_reg1[18:18].Q feedback_reg2[18:18].Q feedback_reg3[18:18].Q WB1[18:18].Q FM1.out[18:18] FA1.out[18:18] WB2[18:18].Q WB3[18:18].Q" output ="FM2.opa[18:18]"/>
+		<mux name="FM2_in1_mux20" input="FPU_slice.in1[19:19] FPU_slice.in2[19:19] FPU_slice.in3[19:19] FPU_slice.in4[19:19] feedback_reg1[19:19].Q feedback_reg2[19:19].Q feedback_reg3[19:19].Q WB1[19:19].Q FM1.out[19:19] FA1.out[19:19] WB2[19:19].Q WB3[19:19].Q" output ="FM2.opa[19:19]"/>
+		<mux name="FM2_in1_mux21" input="FPU_slice.in1[20:20] FPU_slice.in2[20:20] FPU_slice.in3[20:20] FPU_slice.in4[20:20] feedback_reg1[20:20].Q feedback_reg2[20:20].Q feedback_reg3[20:20].Q WB1[20:20].Q FM1.out[20:20] FA1.out[20:20] WB2[20:20].Q WB3[20:20].Q" output ="FM2.opa[20:20]"/>
+		<mux name="FM2_in1_mux22" input="FPU_slice.in1[21:21] FPU_slice.in2[21:21] FPU_slice.in3[21:21] FPU_slice.in4[21:21] feedback_reg1[21:21].Q feedback_reg2[21:21].Q feedback_reg3[21:21].Q WB1[21:21].Q FM1.out[21:21] FA1.out[21:21] WB2[21:21].Q WB3[21:21].Q" output ="FM2.opa[21:21]"/>
+		<mux name="FM2_in1_mux23" input="FPU_slice.in1[22:22] FPU_slice.in2[22:22] FPU_slice.in3[22:22] FPU_slice.in4[22:22] feedback_reg1[22:22].Q feedback_reg2[22:22].Q feedback_reg3[22:22].Q WB1[22:22].Q FM1.out[22:22] FA1.out[22:22] WB2[22:22].Q WB3[22:22].Q" output ="FM2.opa[22:22]"/>
+		<mux name="FM2_in1_mux24" input="FPU_slice.in1[23:23] FPU_slice.in2[23:23] FPU_slice.in3[23:23] FPU_slice.in4[23:23] feedback_reg1[23:23].Q feedback_reg2[23:23].Q feedback_reg3[23:23].Q WB1[23:23].Q FM1.out[23:23] FA1.out[23:23] WB2[23:23].Q WB3[23:23].Q" output ="FM2.opa[23:23]"/>
+		<mux name="FM2_in1_mux25" input="FPU_slice.in1[24:24] FPU_slice.in2[24:24] FPU_slice.in3[24:24] FPU_slice.in4[24:24] feedback_reg1[24:24].Q feedback_reg2[24:24].Q feedback_reg3[24:24].Q WB1[24:24].Q FM1.out[24:24] FA1.out[24:24] WB2[24:24].Q WB3[24:24].Q" output ="FM2.opa[24:24]"/>
+		<mux name="FM2_in1_mux26" input="FPU_slice.in1[25:25] FPU_slice.in2[25:25] FPU_slice.in3[25:25] FPU_slice.in4[25:25] feedback_reg1[25:25].Q feedback_reg2[25:25].Q feedback_reg3[25:25].Q WB1[25:25].Q FM1.out[25:25] FA1.out[25:25] WB2[25:25].Q WB3[25:25].Q" output ="FM2.opa[25:25]"/>
+		<mux name="FM2_in1_mux27" input="FPU_slice.in1[26:26] FPU_slice.in2[26:26] FPU_slice.in3[26:26] FPU_slice.in4[26:26] feedback_reg1[26:26].Q feedback_reg2[26:26].Q feedback_reg3[26:26].Q WB1[26:26].Q FM1.out[26:26] FA1.out[26:26] WB2[26:26].Q WB3[26:26].Q" output ="FM2.opa[26:26]"/>
+		<mux name="FM2_in1_mux28" input="FPU_slice.in1[27:27] FPU_slice.in2[27:27] FPU_slice.in3[27:27] FPU_slice.in4[27:27] feedback_reg1[27:27].Q feedback_reg2[27:27].Q feedback_reg3[27:27].Q WB1[27:27].Q FM1.out[27:27] FA1.out[27:27] WB2[27:27].Q WB3[27:27].Q" output ="FM2.opa[27:27]"/>
+		<mux name="FM2_in1_mux29" input="FPU_slice.in1[28:28] FPU_slice.in2[28:28] FPU_slice.in3[28:28] FPU_slice.in4[28:28] feedback_reg1[28:28].Q feedback_reg2[28:28].Q feedback_reg3[28:28].Q WB1[28:28].Q FM1.out[28:28] FA1.out[28:28] WB2[28:28].Q WB3[28:28].Q" output ="FM2.opa[28:28]"/>
+		<mux name="FM2_in1_mux30" input="FPU_slice.in1[29:29] FPU_slice.in2[29:29] FPU_slice.in3[29:29] FPU_slice.in4[29:29] feedback_reg1[29:29].Q feedback_reg2[29:29].Q feedback_reg3[29:29].Q WB1[29:29].Q FM1.out[29:29] FA1.out[29:29] WB2[29:29].Q WB3[29:29].Q" output ="FM2.opa[29:29]"/>
+		<mux name="FM2_in1_mux31" input="FPU_slice.in1[30:30] FPU_slice.in2[30:30] FPU_slice.in3[30:30] FPU_slice.in4[30:30] feedback_reg1[30:30].Q feedback_reg2[30:30].Q feedback_reg3[30:30].Q WB1[30:30].Q FM1.out[30:30] FA1.out[30:30] WB2[30:30].Q WB3[30:30].Q" output ="FM2.opa[30:30]"/>
+		<mux name="FM2_in1_mux32" input="FPU_slice.in1[31:31] FPU_slice.in2[31:31] FPU_slice.in3[31:31] FPU_slice.in4[31:31] feedback_reg1[31:31].Q feedback_reg2[31:31].Q feedback_reg3[31:31].Q WB1[31:31].Q FM1.out[31:31] FA1.out[31:31] WB2[31:31].Q WB3[31:31].Q" output ="FM2.opa[31:31]"/>
+		
+		<!-- Input Mux FM2 in2 -->
+		<mux name="FM2_in2_mux1" input="FPU_slice.in1[0:0] FPU_slice.in2[0:0] FPU_slice.in3[0:0] FPU_slice.in4[0:0] feedback_reg1[0:0].Q feedback_reg2[0:0].Q feedback_reg3[0:0].Q WB1[0:0].Q FM1.out[0:0] FA1.out[0:0] WB2[0:0].Q WB3[0:0].Q" output ="FM2.opb[0:0]"/>
+		<mux name="FM2_in2_mux2" input="FPU_slice.in1[1:1] FPU_slice.in2[1:1] FPU_slice.in3[1:1] FPU_slice.in4[1:1] feedback_reg1[1:1].Q feedback_reg2[1:1].Q feedback_reg3[1:1].Q WB1[1:1].Q FM1.out[1:1] FA1.out[1:1] WB2[1:1].Q WB3[1:1].Q" output ="FM2.opb[1:1]"/>
+		<mux name="FM2_in2_mux3" input="FPU_slice.in1[2:2] FPU_slice.in2[2:2] FPU_slice.in3[2:2] FPU_slice.in4[2:2] feedback_reg1[2:2].Q feedback_reg2[2:2].Q feedback_reg3[2:2].Q WB1[2:2].Q FM1.out[2:2] FA1.out[2:2] WB2[2:2].Q WB3[2:2].Q" output ="FM2.opb[2:2]"/>
+		<mux name="FM2_in2_mux4" input="FPU_slice.in1[3:3] FPU_slice.in2[3:3] FPU_slice.in3[3:3] FPU_slice.in4[3:3] feedback_reg1[3:3].Q feedback_reg2[3:3].Q feedback_reg3[3:3].Q WB1[3:3].Q FM1.out[3:3] FA1.out[3:3] WB2[3:3].Q WB3[3:3].Q" output ="FM2.opb[3:3]"/>
+		<mux name="FM2_in2_mux5" input="FPU_slice.in1[4:4] FPU_slice.in2[4:4] FPU_slice.in3[4:4] FPU_slice.in4[4:4] feedback_reg1[4:4].Q feedback_reg2[4:4].Q feedback_reg3[4:4].Q WB1[4:4].Q FM1.out[4:4] FA1.out[4:4] WB2[4:4].Q WB3[4:4].Q" output ="FM2.opb[4:4]"/>
+		<mux name="FM2_in2_mux6" input="FPU_slice.in1[5:5] FPU_slice.in2[5:5] FPU_slice.in3[5:5] FPU_slice.in4[5:5] feedback_reg1[5:5].Q feedback_reg2[5:5].Q feedback_reg3[5:5].Q WB1[5:5].Q FM1.out[5:5] FA1.out[5:5] WB2[5:5].Q WB3[5:5].Q" output ="FM2.opb[5:5]"/>
+		<mux name="FM2_in2_mux7" input="FPU_slice.in1[6:6] FPU_slice.in2[6:6] FPU_slice.in3[6:6] FPU_slice.in4[6:6] feedback_reg1[6:6].Q feedback_reg2[6:6].Q feedback_reg3[6:6].Q WB1[6:6].Q FM1.out[6:6] FA1.out[6:6] WB2[6:6].Q WB3[6:6].Q" output ="FM2.opb[6:6]"/>
+		<mux name="FM2_in2_mux8" input="FPU_slice.in1[7:7] FPU_slice.in2[7:7] FPU_slice.in3[7:7] FPU_slice.in4[7:7] feedback_reg1[7:7].Q feedback_reg2[7:7].Q feedback_reg3[7:7].Q WB1[7:7].Q FM1.out[7:7] FA1.out[7:7] WB2[7:7].Q WB3[7:7].Q" output ="FM2.opb[7:7]"/>
+		<mux name="FM2_in2_mux9" input="FPU_slice.in1[8:8] FPU_slice.in2[8:8] FPU_slice.in3[8:8] FPU_slice.in4[8:8] feedback_reg1[8:8].Q feedback_reg2[8:8].Q feedback_reg3[8:8].Q WB1[8:8].Q FM1.out[8:8] FA1.out[8:8] WB2[8:8].Q WB3[8:8].Q" output ="FM2.opb[8:8]"/>
+		<mux name="FM2_in2_mux10" input="FPU_slice.in1[9:9] FPU_slice.in2[9:9] FPU_slice.in3[9:9] FPU_slice.in4[9:9] feedback_reg1[9:9].Q feedback_reg2[9:9].Q feedback_reg3[9:9].Q WB1[9:9].Q FM1.out[9:9] FA1.out[9:9] WB2[9:9].Q WB3[9:9].Q" output ="FM2.opb[9:9]"/>
+		<mux name="FM2_in2_mux11" input="FPU_slice.in1[10:10] FPU_slice.in2[10:10] FPU_slice.in3[10:10] FPU_slice.in4[10:10] feedback_reg1[10:10].Q feedback_reg2[10:10].Q feedback_reg3[10:10].Q WB1[10:10].Q FM1.out[10:10] FA1.out[10:10] WB2[10:10].Q WB3[10:10].Q" output ="FM2.opb[10:10]"/>
+		<mux name="FM2_in2_mux12" input="FPU_slice.in1[11:11] FPU_slice.in2[11:11] FPU_slice.in3[11:11] FPU_slice.in4[11:11] feedback_reg1[11:11].Q feedback_reg2[11:11].Q feedback_reg3[11:11].Q WB1[11:11].Q FM1.out[11:11] FA1.out[11:11] WB2[11:11].Q WB3[11:11].Q" output ="FM2.opb[11:11]"/>
+		<mux name="FM2_in2_mux13" input="FPU_slice.in1[12:12] FPU_slice.in2[12:12] FPU_slice.in3[12:12] FPU_slice.in4[12:12] feedback_reg1[12:12].Q feedback_reg2[12:12].Q feedback_reg3[12:12].Q WB1[12:12].Q FM1.out[12:12] FA1.out[12:12] WB2[12:12].Q WB3[12:12].Q" output ="FM2.opb[12:12]"/>
+		<mux name="FM2_in2_mux14" input="FPU_slice.in1[13:13] FPU_slice.in2[13:13] FPU_slice.in3[13:13] FPU_slice.in4[13:13] feedback_reg1[13:13].Q feedback_reg2[13:13].Q feedback_reg3[13:13].Q WB1[13:13].Q FM1.out[13:13] FA1.out[13:13] WB2[13:13].Q WB3[13:13].Q" output ="FM2.opb[13:13]"/>
+		<mux name="FM2_in2_mux15" input="FPU_slice.in1[14:14] FPU_slice.in2[14:14] FPU_slice.in3[14:14] FPU_slice.in4[14:14] feedback_reg1[14:14].Q feedback_reg2[14:14].Q feedback_reg3[14:14].Q WB1[14:14].Q FM1.out[14:14] FA1.out[14:14] WB2[14:14].Q WB3[14:14].Q" output ="FM2.opb[14:14]"/>
+		<mux name="FM2_in2_mux16" input="FPU_slice.in1[15:15] FPU_slice.in2[15:15] FPU_slice.in3[15:15] FPU_slice.in4[15:15] feedback_reg1[15:15].Q feedback_reg2[15:15].Q feedback_reg3[15:15].Q WB1[15:15].Q FM1.out[15:15] FA1.out[15:15] WB2[15:15].Q WB3[15:15].Q" output ="FM2.opb[15:15]"/>
+		<mux name="FM2_in2_mux17" input="FPU_slice.in1[16:16] FPU_slice.in2[16:16] FPU_slice.in3[16:16] FPU_slice.in4[16:16] feedback_reg1[16:16].Q feedback_reg2[16:16].Q feedback_reg3[16:16].Q WB1[16:16].Q FM1.out[16:16] FA1.out[16:16] WB2[16:16].Q WB3[16:16].Q" output ="FM2.opb[16:16]"/>
+		<mux name="FM2_in2_mux18" input="FPU_slice.in1[17:17] FPU_slice.in2[17:17] FPU_slice.in3[17:17] FPU_slice.in4[17:17] feedback_reg1[17:17].Q feedback_reg2[17:17].Q feedback_reg3[17:17].Q WB1[17:17].Q FM1.out[17:17] FA1.out[17:17] WB2[17:17].Q WB3[17:17].Q" output ="FM2.opb[17:17]"/>
+		<mux name="FM2_in2_mux19" input="FPU_slice.in1[18:18] FPU_slice.in2[18:18] FPU_slice.in3[18:18] FPU_slice.in4[18:18] feedback_reg1[18:18].Q feedback_reg2[18:18].Q feedback_reg3[18:18].Q WB1[18:18].Q FM1.out[18:18] FA1.out[18:18] WB2[18:18].Q WB3[18:18].Q" output ="FM2.opb[18:18]"/>
+		<mux name="FM2_in2_mux20" input="FPU_slice.in1[19:19] FPU_slice.in2[19:19] FPU_slice.in3[19:19] FPU_slice.in4[19:19] feedback_reg1[19:19].Q feedback_reg2[19:19].Q feedback_reg3[19:19].Q WB1[19:19].Q FM1.out[19:19] FA1.out[19:19] WB2[19:19].Q WB3[19:19].Q" output ="FM2.opb[19:19]"/>
+		<mux name="FM2_in2_mux21" input="FPU_slice.in1[20:20] FPU_slice.in2[20:20] FPU_slice.in3[20:20] FPU_slice.in4[20:20] feedback_reg1[20:20].Q feedback_reg2[20:20].Q feedback_reg3[20:20].Q WB1[20:20].Q FM1.out[20:20] FA1.out[20:20] WB2[20:20].Q WB3[20:20].Q" output ="FM2.opb[20:20]"/>
+		<mux name="FM2_in2_mux22" input="FPU_slice.in1[21:21] FPU_slice.in2[21:21] FPU_slice.in3[21:21] FPU_slice.in4[21:21] feedback_reg1[21:21].Q feedback_reg2[21:21].Q feedback_reg3[21:21].Q WB1[21:21].Q FM1.out[21:21] FA1.out[21:21] WB2[21:21].Q WB3[21:21].Q" output ="FM2.opb[21:21]"/>
+		<mux name="FM2_in2_mux23" input="FPU_slice.in1[22:22] FPU_slice.in2[22:22] FPU_slice.in3[22:22] FPU_slice.in4[22:22] feedback_reg1[22:22].Q feedback_reg2[22:22].Q feedback_reg3[22:22].Q WB1[22:22].Q FM1.out[22:22] FA1.out[22:22] WB2[22:22].Q WB3[22:22].Q" output ="FM2.opb[22:22]"/>
+		<mux name="FM2_in2_mux24" input="FPU_slice.in1[23:23] FPU_slice.in2[23:23] FPU_slice.in3[23:23] FPU_slice.in4[23:23] feedback_reg1[23:23].Q feedback_reg2[23:23].Q feedback_reg3[23:23].Q WB1[23:23].Q FM1.out[23:23] FA1.out[23:23] WB2[23:23].Q WB3[23:23].Q" output ="FM2.opb[23:23]"/>
+		<mux name="FM2_in2_mux25" input="FPU_slice.in1[24:24] FPU_slice.in2[24:24] FPU_slice.in3[24:24] FPU_slice.in4[24:24] feedback_reg1[24:24].Q feedback_reg2[24:24].Q feedback_reg3[24:24].Q WB1[24:24].Q FM1.out[24:24] FA1.out[24:24] WB2[24:24].Q WB3[24:24].Q" output ="FM2.opb[24:24]"/>
+		<mux name="FM2_in2_mux26" input="FPU_slice.in1[25:25] FPU_slice.in2[25:25] FPU_slice.in3[25:25] FPU_slice.in4[25:25] feedback_reg1[25:25].Q feedback_reg2[25:25].Q feedback_reg3[25:25].Q WB1[25:25].Q FM1.out[25:25] FA1.out[25:25] WB2[25:25].Q WB3[25:25].Q" output ="FM2.opb[25:25]"/>
+		<mux name="FM2_in2_mux27" input="FPU_slice.in1[26:26] FPU_slice.in2[26:26] FPU_slice.in3[26:26] FPU_slice.in4[26:26] feedback_reg1[26:26].Q feedback_reg2[26:26].Q feedback_reg3[26:26].Q WB1[26:26].Q FM1.out[26:26] FA1.out[26:26] WB2[26:26].Q WB3[26:26].Q" output ="FM2.opb[26:26]"/>
+		<mux name="FM2_in2_mux28" input="FPU_slice.in1[27:27] FPU_slice.in2[27:27] FPU_slice.in3[27:27] FPU_slice.in4[27:27] feedback_reg1[27:27].Q feedback_reg2[27:27].Q feedback_reg3[27:27].Q WB1[27:27].Q FM1.out[27:27] FA1.out[27:27] WB2[27:27].Q WB3[27:27].Q" output ="FM2.opb[27:27]"/>
+		<mux name="FM2_in2_mux29" input="FPU_slice.in1[28:28] FPU_slice.in2[28:28] FPU_slice.in3[28:28] FPU_slice.in4[28:28] feedback_reg1[28:28].Q feedback_reg2[28:28].Q feedback_reg3[28:28].Q WB1[28:28].Q FM1.out[28:28] FA1.out[28:28] WB2[28:28].Q WB3[28:28].Q" output ="FM2.opb[28:28]"/>
+		<mux name="FM2_in2_mux30" input="FPU_slice.in1[29:29] FPU_slice.in2[29:29] FPU_slice.in3[29:29] FPU_slice.in4[29:29] feedback_reg1[29:29].Q feedback_reg2[29:29].Q feedback_reg3[29:29].Q WB1[29:29].Q FM1.out[29:29] FA1.out[29:29] WB2[29:29].Q WB3[29:29].Q" output ="FM2.opb[29:29]"/>
+		<mux name="FM2_in2_mux31" input="FPU_slice.in1[30:30] FPU_slice.in2[30:30] FPU_slice.in3[30:30] FPU_slice.in4[30:30] feedback_reg1[30:30].Q feedback_reg2[30:30].Q feedback_reg3[30:30].Q WB1[30:30].Q FM1.out[30:30] FA1.out[30:30] WB2[30:30].Q WB3[30:30].Q" output ="FM2.opb[30:30]"/>
+		<mux name="FM2_in2_mux32" input="FPU_slice.in1[31:31] FPU_slice.in2[31:31] FPU_slice.in3[31:31] FPU_slice.in4[31:31] feedback_reg1[31:31].Q feedback_reg2[31:31].Q feedback_reg3[31:31].Q WB1[31:31].Q FM1.out[31:31] FA1.out[31:31] WB2[31:31].Q WB3[31:31].Q" output ="FM2.opb[31:31]"/>
+		
+
+		<!--############# FA2 ##############-->	
+		<!-- Input Mux FA2 in1 -->
+		<mux name="FA2_in1_mux1" input="FPU_slice.in1[0:0] FPU_slice.in2[0:0] FPU_slice.in3[0:0] FPU_slice.in4[0:0] feedback_reg1[0:0].Q feedback_reg2[0:0].Q feedback_reg3[0:0].Q WB1[0:0].Q FM1.out[0:0] FA1.out[0:0] WB2[0:0].Q WB3[0:0].Q FM2.out[0:0]" output ="FA2.opa[0:0]"/>
+		<mux name="FA2_in1_mux2" input="FPU_slice.in1[1:1] FPU_slice.in2[1:1] FPU_slice.in3[1:1] FPU_slice.in4[1:1] feedback_reg1[1:1].Q feedback_reg2[1:1].Q feedback_reg3[1:1].Q WB1[1:1].Q FM1.out[1:1] FA1.out[1:1] WB2[1:1].Q WB3[1:1].Q FM2.out[1:1]" output ="FA2.opa[1:1]"/>
+		<mux name="FA2_in1_mux3" input="FPU_slice.in1[2:2] FPU_slice.in2[2:2] FPU_slice.in3[2:2] FPU_slice.in4[2:2] feedback_reg1[2:2].Q feedback_reg2[2:2].Q feedback_reg3[2:2].Q WB1[2:2].Q FM1.out[2:2] FA1.out[2:2] WB2[2:2].Q WB3[2:2].Q FM2.out[2:2]" output ="FA2.opa[2:2]"/>
+		<mux name="FA2_in1_mux4" input="FPU_slice.in1[3:3] FPU_slice.in2[3:3] FPU_slice.in3[3:3] FPU_slice.in4[3:3] feedback_reg1[3:3].Q feedback_reg2[3:3].Q feedback_reg3[3:3].Q WB1[3:3].Q FM1.out[3:3] FA1.out[3:3] WB2[3:3].Q WB3[3:3].Q FM2.out[3:3]" output ="FA2.opa[3:3]"/>
+		<mux name="FA2_in1_mux5" input="FPU_slice.in1[4:4] FPU_slice.in2[4:4] FPU_slice.in3[4:4] FPU_slice.in4[4:4] feedback_reg1[4:4].Q feedback_reg2[4:4].Q feedback_reg3[4:4].Q WB1[4:4].Q FM1.out[4:4] FA1.out[4:4] WB2[4:4].Q WB3[4:4].Q FM2.out[4:4]" output ="FA2.opa[4:4]"/>
+		<mux name="FA2_in1_mux6" input="FPU_slice.in1[5:5] FPU_slice.in2[5:5] FPU_slice.in3[5:5] FPU_slice.in4[5:5] feedback_reg1[5:5].Q feedback_reg2[5:5].Q feedback_reg3[5:5].Q WB1[5:5].Q FM1.out[5:5] FA1.out[5:5] WB2[5:5].Q WB3[5:5].Q FM2.out[5:5]" output ="FA2.opa[5:5]"/>
+		<mux name="FA2_in1_mux7" input="FPU_slice.in1[6:6] FPU_slice.in2[6:6] FPU_slice.in3[6:6] FPU_slice.in4[6:6] feedback_reg1[6:6].Q feedback_reg2[6:6].Q feedback_reg3[6:6].Q WB1[6:6].Q FM1.out[6:6] FA1.out[6:6] WB2[6:6].Q WB3[6:6].Q FM2.out[6:6]" output ="FA2.opa[6:6]"/>
+		<mux name="FA2_in1_mux8" input="FPU_slice.in1[7:7] FPU_slice.in2[7:7] FPU_slice.in3[7:7] FPU_slice.in4[7:7] feedback_reg1[7:7].Q feedback_reg2[7:7].Q feedback_reg3[7:7].Q WB1[7:7].Q FM1.out[7:7] FA1.out[7:7] WB2[7:7].Q WB3[7:7].Q FM2.out[7:7]" output ="FA2.opa[7:7]"/>
+		<mux name="FA2_in1_mux9" input="FPU_slice.in1[8:8] FPU_slice.in2[8:8] FPU_slice.in3[8:8] FPU_slice.in4[8:8] feedback_reg1[8:8].Q feedback_reg2[8:8].Q feedback_reg3[8:8].Q WB1[8:8].Q FM1.out[8:8] FA1.out[8:8] WB2[8:8].Q WB3[8:8].Q FM2.out[8:8]" output ="FA2.opa[8:8]"/>
+		<mux name="FA2_in1_mux10" input="FPU_slice.in1[9:9] FPU_slice.in2[9:9] FPU_slice.in3[9:9] FPU_slice.in4[9:9] feedback_reg1[9:9].Q feedback_reg2[9:9].Q feedback_reg3[9:9].Q WB1[9:9].Q FM1.out[9:9] FA1.out[9:9] WB2[9:9].Q WB3[9:9].Q FM2.out[9:9]" output ="FA2.opa[9:9]"/>
+		<mux name="FA2_in1_mux11" input="FPU_slice.in1[10:10] FPU_slice.in2[10:10] FPU_slice.in3[10:10] FPU_slice.in4[10:10] feedback_reg1[10:10].Q feedback_reg2[10:10].Q feedback_reg3[10:10].Q WB1[10:10].Q FM1.out[10:10] FA1.out[10:10] WB2[10:10].Q WB3[10:10].Q FM2.out[10:10]" output ="FA2.opa[10:10]"/>
+		<mux name="FA2_in1_mux12" input="FPU_slice.in1[11:11] FPU_slice.in2[11:11] FPU_slice.in3[11:11] FPU_slice.in4[11:11] feedback_reg1[11:11].Q feedback_reg2[11:11].Q feedback_reg3[11:11].Q WB1[11:11].Q FM1.out[11:11] FA1.out[11:11] WB2[11:11].Q WB3[11:11].Q FM2.out[11:11]" output ="FA2.opa[11:11]"/>
+		<mux name="FA2_in1_mux13" input="FPU_slice.in1[12:12] FPU_slice.in2[12:12] FPU_slice.in3[12:12] FPU_slice.in4[12:12] feedback_reg1[12:12].Q feedback_reg2[12:12].Q feedback_reg3[12:12].Q WB1[12:12].Q FM1.out[12:12] FA1.out[12:12] WB2[12:12].Q WB3[12:12].Q FM2.out[12:12]" output ="FA2.opa[12:12]"/>
+		<mux name="FA2_in1_mux14" input="FPU_slice.in1[13:13] FPU_slice.in2[13:13] FPU_slice.in3[13:13] FPU_slice.in4[13:13] feedback_reg1[13:13].Q feedback_reg2[13:13].Q feedback_reg3[13:13].Q WB1[13:13].Q FM1.out[13:13] FA1.out[13:13] WB2[13:13].Q WB3[13:13].Q FM2.out[13:13]" output ="FA2.opa[13:13]"/>
+		<mux name="FA2_in1_mux15" input="FPU_slice.in1[14:14] FPU_slice.in2[14:14] FPU_slice.in3[14:14] FPU_slice.in4[14:14] feedback_reg1[14:14].Q feedback_reg2[14:14].Q feedback_reg3[14:14].Q WB1[14:14].Q FM1.out[14:14] FA1.out[14:14] WB2[14:14].Q WB3[14:14].Q FM2.out[14:14]" output ="FA2.opa[14:14]"/>
+		<mux name="FA2_in1_mux16" input="FPU_slice.in1[15:15] FPU_slice.in2[15:15] FPU_slice.in3[15:15] FPU_slice.in4[15:15] feedback_reg1[15:15].Q feedback_reg2[15:15].Q feedback_reg3[15:15].Q WB1[15:15].Q FM1.out[15:15] FA1.out[15:15] WB2[15:15].Q WB3[15:15].Q FM2.out[15:15]" output ="FA2.opa[15:15]"/>
+		<mux name="FA2_in1_mux17" input="FPU_slice.in1[16:16] FPU_slice.in2[16:16] FPU_slice.in3[16:16] FPU_slice.in4[16:16] feedback_reg1[16:16].Q feedback_reg2[16:16].Q feedback_reg3[16:16].Q WB1[16:16].Q FM1.out[16:16] FA1.out[16:16] WB2[16:16].Q WB3[16:16].Q FM2.out[16:16]" output ="FA2.opa[16:16]"/>
+		<mux name="FA2_in1_mux18" input="FPU_slice.in1[17:17] FPU_slice.in2[17:17] FPU_slice.in3[17:17] FPU_slice.in4[17:17] feedback_reg1[17:17].Q feedback_reg2[17:17].Q feedback_reg3[17:17].Q WB1[17:17].Q FM1.out[17:17] FA1.out[17:17] WB2[17:17].Q WB3[17:17].Q FM2.out[17:17]" output ="FA2.opa[17:17]"/>
+		<mux name="FA2_in1_mux19" input="FPU_slice.in1[18:18] FPU_slice.in2[18:18] FPU_slice.in3[18:18] FPU_slice.in4[18:18] feedback_reg1[18:18].Q feedback_reg2[18:18].Q feedback_reg3[18:18].Q WB1[18:18].Q FM1.out[18:18] FA1.out[18:18] WB2[18:18].Q WB3[18:18].Q FM2.out[18:18]" output ="FA2.opa[18:18]"/>
+		<mux name="FA2_in1_mux20" input="FPU_slice.in1[19:19] FPU_slice.in2[19:19] FPU_slice.in3[19:19] FPU_slice.in4[19:19] feedback_reg1[19:19].Q feedback_reg2[19:19].Q feedback_reg3[19:19].Q WB1[19:19].Q FM1.out[19:19] FA1.out[19:19] WB2[19:19].Q WB3[19:19].Q FM2.out[19:19]" output ="FA2.opa[19:19]"/>
+		<mux name="FA2_in1_mux21" input="FPU_slice.in1[20:20] FPU_slice.in2[20:20] FPU_slice.in3[20:20] FPU_slice.in4[20:20] feedback_reg1[20:20].Q feedback_reg2[20:20].Q feedback_reg3[20:20].Q WB1[20:20].Q FM1.out[20:20] FA1.out[20:20] WB2[20:20].Q WB3[20:20].Q FM2.out[20:20]" output ="FA2.opa[20:20]"/>
+		<mux name="FA2_in1_mux22" input="FPU_slice.in1[21:21] FPU_slice.in2[21:21] FPU_slice.in3[21:21] FPU_slice.in4[21:21] feedback_reg1[21:21].Q feedback_reg2[21:21].Q feedback_reg3[21:21].Q WB1[21:21].Q FM1.out[21:21] FA1.out[21:21] WB2[21:21].Q WB3[21:21].Q FM2.out[21:21]" output ="FA2.opa[21:21]"/>
+		<mux name="FA2_in1_mux23" input="FPU_slice.in1[22:22] FPU_slice.in2[22:22] FPU_slice.in3[22:22] FPU_slice.in4[22:22] feedback_reg1[22:22].Q feedback_reg2[22:22].Q feedback_reg3[22:22].Q WB1[22:22].Q FM1.out[22:22] FA1.out[22:22] WB2[22:22].Q WB3[22:22].Q FM2.out[22:22]" output ="FA2.opa[22:22]"/>
+		<mux name="FA2_in1_mux24" input="FPU_slice.in1[23:23] FPU_slice.in2[23:23] FPU_slice.in3[23:23] FPU_slice.in4[23:23] feedback_reg1[23:23].Q feedback_reg2[23:23].Q feedback_reg3[23:23].Q WB1[23:23].Q FM1.out[23:23] FA1.out[23:23] WB2[23:23].Q WB3[23:23].Q FM2.out[23:23]" output ="FA2.opa[23:23]"/>
+		<mux name="FA2_in1_mux25" input="FPU_slice.in1[24:24] FPU_slice.in2[24:24] FPU_slice.in3[24:24] FPU_slice.in4[24:24] feedback_reg1[24:24].Q feedback_reg2[24:24].Q feedback_reg3[24:24].Q WB1[24:24].Q FM1.out[24:24] FA1.out[24:24] WB2[24:24].Q WB3[24:24].Q FM2.out[24:24]" output ="FA2.opa[24:24]"/>
+		<mux name="FA2_in1_mux26" input="FPU_slice.in1[25:25] FPU_slice.in2[25:25] FPU_slice.in3[25:25] FPU_slice.in4[25:25] feedback_reg1[25:25].Q feedback_reg2[25:25].Q feedback_reg3[25:25].Q WB1[25:25].Q FM1.out[25:25] FA1.out[25:25] WB2[25:25].Q WB3[25:25].Q FM2.out[25:25]" output ="FA2.opa[25:25]"/>
+		<mux name="FA2_in1_mux27" input="FPU_slice.in1[26:26] FPU_slice.in2[26:26] FPU_slice.in3[26:26] FPU_slice.in4[26:26] feedback_reg1[26:26].Q feedback_reg2[26:26].Q feedback_reg3[26:26].Q WB1[26:26].Q FM1.out[26:26] FA1.out[26:26] WB2[26:26].Q WB3[26:26].Q FM2.out[26:26]" output ="FA2.opa[26:26]"/>
+		<mux name="FA2_in1_mux28" input="FPU_slice.in1[27:27] FPU_slice.in2[27:27] FPU_slice.in3[27:27] FPU_slice.in4[27:27] feedback_reg1[27:27].Q feedback_reg2[27:27].Q feedback_reg3[27:27].Q WB1[27:27].Q FM1.out[27:27] FA1.out[27:27] WB2[27:27].Q WB3[27:27].Q FM2.out[27:27]" output ="FA2.opa[27:27]"/>
+		<mux name="FA2_in1_mux29" input="FPU_slice.in1[28:28] FPU_slice.in2[28:28] FPU_slice.in3[28:28] FPU_slice.in4[28:28] feedback_reg1[28:28].Q feedback_reg2[28:28].Q feedback_reg3[28:28].Q WB1[28:28].Q FM1.out[28:28] FA1.out[28:28] WB2[28:28].Q WB3[28:28].Q FM2.out[28:28]" output ="FA2.opa[28:28]"/>
+		<mux name="FA2_in1_mux30" input="FPU_slice.in1[29:29] FPU_slice.in2[29:29] FPU_slice.in3[29:29] FPU_slice.in4[29:29] feedback_reg1[29:29].Q feedback_reg2[29:29].Q feedback_reg3[29:29].Q WB1[29:29].Q FM1.out[29:29] FA1.out[29:29] WB2[29:29].Q WB3[29:29].Q FM2.out[29:29]" output ="FA2.opa[29:29]"/>
+		<mux name="FA2_in1_mux31" input="FPU_slice.in1[30:30] FPU_slice.in2[30:30] FPU_slice.in3[30:30] FPU_slice.in4[30:30] feedback_reg1[30:30].Q feedback_reg2[30:30].Q feedback_reg3[30:30].Q WB1[30:30].Q FM1.out[30:30] FA1.out[30:30] WB2[30:30].Q WB3[30:30].Q FM2.out[30:30]" output ="FA2.opa[30:30]"/>
+		<mux name="FA2_in1_mux32" input="FPU_slice.in1[31:31] FPU_slice.in2[31:31] FPU_slice.in3[31:31] FPU_slice.in4[31:31] feedback_reg1[31:31].Q feedback_reg2[31:31].Q feedback_reg3[31:31].Q WB1[31:31].Q FM1.out[31:31] FA1.out[31:31] WB2[31:31].Q WB3[31:31].Q FM2.out[31:31]" output ="FA2.opa[31:31]"/>
+		
+		<!-- Input Mux FA2 in2 -->
+		<mux name="FA2_in2_mux1" input="FPU_slice.in1[0:0] FPU_slice.in2[0:0] FPU_slice.in3[0:0] FPU_slice.in4[0:0] feedback_reg1[0:0].Q feedback_reg2[0:0].Q feedback_reg3[0:0].Q WB1[0:0].Q FM1.out[0:0] FA1.out[0:0] WB2[0:0].Q WB3[0:0].Q FM2.out[0:0]" output ="FA2.opb[0:0]"/>
+		<mux name="FA2_in2_mux2" input="FPU_slice.in1[1:1] FPU_slice.in2[1:1] FPU_slice.in3[1:1] FPU_slice.in4[1:1] feedback_reg1[1:1].Q feedback_reg2[1:1].Q feedback_reg3[1:1].Q WB1[1:1].Q FM1.out[1:1] FA1.out[1:1] WB2[1:1].Q WB3[1:1].Q FM2.out[1:1]" output ="FA2.opb[1:1]"/>
+		<mux name="FA2_in2_mux3" input="FPU_slice.in1[2:2] FPU_slice.in2[2:2] FPU_slice.in3[2:2] FPU_slice.in4[2:2] feedback_reg1[2:2].Q feedback_reg2[2:2].Q feedback_reg3[2:2].Q WB1[2:2].Q FM1.out[2:2] FA1.out[2:2] WB2[2:2].Q WB3[2:2].Q FM2.out[2:2]" output ="FA2.opb[2:2]"/>
+		<mux name="FA2_in2_mux4" input="FPU_slice.in1[3:3] FPU_slice.in2[3:3] FPU_slice.in3[3:3] FPU_slice.in4[3:3] feedback_reg1[3:3].Q feedback_reg2[3:3].Q feedback_reg3[3:3].Q WB1[3:3].Q FM1.out[3:3] FA1.out[3:3] WB2[3:3].Q WB3[3:3].Q FM2.out[3:3]" output ="FA2.opb[3:3]"/>
+		<mux name="FA2_in2_mux5" input="FPU_slice.in1[4:4] FPU_slice.in2[4:4] FPU_slice.in3[4:4] FPU_slice.in4[4:4] feedback_reg1[4:4].Q feedback_reg2[4:4].Q feedback_reg3[4:4].Q WB1[4:4].Q FM1.out[4:4] FA1.out[4:4] WB2[4:4].Q WB3[4:4].Q FM2.out[4:4]" output ="FA2.opb[4:4]"/>
+		<mux name="FA2_in2_mux6" input="FPU_slice.in1[5:5] FPU_slice.in2[5:5] FPU_slice.in3[5:5] FPU_slice.in4[5:5] feedback_reg1[5:5].Q feedback_reg2[5:5].Q feedback_reg3[5:5].Q WB1[5:5].Q FM1.out[5:5] FA1.out[5:5] WB2[5:5].Q WB3[5:5].Q FM2.out[5:5]" output ="FA2.opb[5:5]"/>
+		<mux name="FA2_in2_mux7" input="FPU_slice.in1[6:6] FPU_slice.in2[6:6] FPU_slice.in3[6:6] FPU_slice.in4[6:6] feedback_reg1[6:6].Q feedback_reg2[6:6].Q feedback_reg3[6:6].Q WB1[6:6].Q FM1.out[6:6] FA1.out[6:6] WB2[6:6].Q WB3[6:6].Q FM2.out[6:6]" output ="FA2.opb[6:6]"/>
+		<mux name="FA2_in2_mux8" input="FPU_slice.in1[7:7] FPU_slice.in2[7:7] FPU_slice.in3[7:7] FPU_slice.in4[7:7] feedback_reg1[7:7].Q feedback_reg2[7:7].Q feedback_reg3[7:7].Q WB1[7:7].Q FM1.out[7:7] FA1.out[7:7] WB2[7:7].Q WB3[7:7].Q FM2.out[7:7]" output ="FA2.opb[7:7]"/>
+		<mux name="FA2_in2_mux9" input="FPU_slice.in1[8:8] FPU_slice.in2[8:8] FPU_slice.in3[8:8] FPU_slice.in4[8:8] feedback_reg1[8:8].Q feedback_reg2[8:8].Q feedback_reg3[8:8].Q WB1[8:8].Q FM1.out[8:8] FA1.out[8:8] WB2[8:8].Q WB3[8:8].Q FM2.out[8:8]" output ="FA2.opb[8:8]"/>
+		<mux name="FA2_in2_mux10" input="FPU_slice.in1[9:9] FPU_slice.in2[9:9] FPU_slice.in3[9:9] FPU_slice.in4[9:9] feedback_reg1[9:9].Q feedback_reg2[9:9].Q feedback_reg3[9:9].Q WB1[9:9].Q FM1.out[9:9] FA1.out[9:9] WB2[9:9].Q WB3[9:9].Q FM2.out[9:9]" output ="FA2.opb[9:9]"/>
+		<mux name="FA2_in2_mux11" input="FPU_slice.in1[10:10] FPU_slice.in2[10:10] FPU_slice.in3[10:10] FPU_slice.in4[10:10] feedback_reg1[10:10].Q feedback_reg2[10:10].Q feedback_reg3[10:10].Q WB1[10:10].Q FM1.out[10:10] FA1.out[10:10] WB2[10:10].Q WB3[10:10].Q FM2.out[10:10]" output ="FA2.opb[10:10]"/>
+		<mux name="FA2_in2_mux12" input="FPU_slice.in1[11:11] FPU_slice.in2[11:11] FPU_slice.in3[11:11] FPU_slice.in4[11:11] feedback_reg1[11:11].Q feedback_reg2[11:11].Q feedback_reg3[11:11].Q WB1[11:11].Q FM1.out[11:11] FA1.out[11:11] WB2[11:11].Q WB3[11:11].Q FM2.out[11:11]" output ="FA2.opb[11:11]"/>
+		<mux name="FA2_in2_mux13" input="FPU_slice.in1[12:12] FPU_slice.in2[12:12] FPU_slice.in3[12:12] FPU_slice.in4[12:12] feedback_reg1[12:12].Q feedback_reg2[12:12].Q feedback_reg3[12:12].Q WB1[12:12].Q FM1.out[12:12] FA1.out[12:12] WB2[12:12].Q WB3[12:12].Q FM2.out[12:12]" output ="FA2.opb[12:12]"/>
+		<mux name="FA2_in2_mux14" input="FPU_slice.in1[13:13] FPU_slice.in2[13:13] FPU_slice.in3[13:13] FPU_slice.in4[13:13] feedback_reg1[13:13].Q feedback_reg2[13:13].Q feedback_reg3[13:13].Q WB1[13:13].Q FM1.out[13:13] FA1.out[13:13] WB2[13:13].Q WB3[13:13].Q FM2.out[13:13]" output ="FA2.opb[13:13]"/>
+		<mux name="FA2_in2_mux15" input="FPU_slice.in1[14:14] FPU_slice.in2[14:14] FPU_slice.in3[14:14] FPU_slice.in4[14:14] feedback_reg1[14:14].Q feedback_reg2[14:14].Q feedback_reg3[14:14].Q WB1[14:14].Q FM1.out[14:14] FA1.out[14:14] WB2[14:14].Q WB3[14:14].Q FM2.out[14:14]" output ="FA2.opb[14:14]"/>
+		<mux name="FA2_in2_mux16" input="FPU_slice.in1[15:15] FPU_slice.in2[15:15] FPU_slice.in3[15:15] FPU_slice.in4[15:15] feedback_reg1[15:15].Q feedback_reg2[15:15].Q feedback_reg3[15:15].Q WB1[15:15].Q FM1.out[15:15] FA1.out[15:15] WB2[15:15].Q WB3[15:15].Q FM2.out[15:15]" output ="FA2.opb[15:15]"/>
+		<mux name="FA2_in2_mux17" input="FPU_slice.in1[16:16] FPU_slice.in2[16:16] FPU_slice.in3[16:16] FPU_slice.in4[16:16] feedback_reg1[16:16].Q feedback_reg2[16:16].Q feedback_reg3[16:16].Q WB1[16:16].Q FM1.out[16:16] FA1.out[16:16] WB2[16:16].Q WB3[16:16].Q FM2.out[16:16]" output ="FA2.opb[16:16]"/>
+		<mux name="FA2_in2_mux18" input="FPU_slice.in1[17:17] FPU_slice.in2[17:17] FPU_slice.in3[17:17] FPU_slice.in4[17:17] feedback_reg1[17:17].Q feedback_reg2[17:17].Q feedback_reg3[17:17].Q WB1[17:17].Q FM1.out[17:17] FA1.out[17:17] WB2[17:17].Q WB3[17:17].Q FM2.out[17:17]" output ="FA2.opb[17:17]"/>
+		<mux name="FA2_in2_mux19" input="FPU_slice.in1[18:18] FPU_slice.in2[18:18] FPU_slice.in3[18:18] FPU_slice.in4[18:18] feedback_reg1[18:18].Q feedback_reg2[18:18].Q feedback_reg3[18:18].Q WB1[18:18].Q FM1.out[18:18] FA1.out[18:18] WB2[18:18].Q WB3[18:18].Q FM2.out[18:18]" output ="FA2.opb[18:18]"/>
+		<mux name="FA2_in2_mux20" input="FPU_slice.in1[19:19] FPU_slice.in2[19:19] FPU_slice.in3[19:19] FPU_slice.in4[19:19] feedback_reg1[19:19].Q feedback_reg2[19:19].Q feedback_reg3[19:19].Q WB1[19:19].Q FM1.out[19:19] FA1.out[19:19] WB2[19:19].Q WB3[19:19].Q FM2.out[19:19]" output ="FA2.opb[19:19]"/>
+		<mux name="FA2_in2_mux21" input="FPU_slice.in1[20:20] FPU_slice.in2[20:20] FPU_slice.in3[20:20] FPU_slice.in4[20:20] feedback_reg1[20:20].Q feedback_reg2[20:20].Q feedback_reg3[20:20].Q WB1[20:20].Q FM1.out[20:20] FA1.out[20:20] WB2[20:20].Q WB3[20:20].Q FM2.out[20:20]" output ="FA2.opb[20:20]"/>
+		<mux name="FA2_in2_mux22" input="FPU_slice.in1[21:21] FPU_slice.in2[21:21] FPU_slice.in3[21:21] FPU_slice.in4[21:21] feedback_reg1[21:21].Q feedback_reg2[21:21].Q feedback_reg3[21:21].Q WB1[21:21].Q FM1.out[21:21] FA1.out[21:21] WB2[21:21].Q WB3[21:21].Q FM2.out[21:21]" output ="FA2.opb[21:21]"/>
+		<mux name="FA2_in2_mux23" input="FPU_slice.in1[22:22] FPU_slice.in2[22:22] FPU_slice.in3[22:22] FPU_slice.in4[22:22] feedback_reg1[22:22].Q feedback_reg2[22:22].Q feedback_reg3[22:22].Q WB1[22:22].Q FM1.out[22:22] FA1.out[22:22] WB2[22:22].Q WB3[22:22].Q FM2.out[22:22]" output ="FA2.opb[22:22]"/>
+		<mux name="FA2_in2_mux24" input="FPU_slice.in1[23:23] FPU_slice.in2[23:23] FPU_slice.in3[23:23] FPU_slice.in4[23:23] feedback_reg1[23:23].Q feedback_reg2[23:23].Q feedback_reg3[23:23].Q WB1[23:23].Q FM1.out[23:23] FA1.out[23:23] WB2[23:23].Q WB3[23:23].Q FM2.out[23:23]" output ="FA2.opb[23:23]"/>
+		<mux name="FA2_in2_mux25" input="FPU_slice.in1[24:24] FPU_slice.in2[24:24] FPU_slice.in3[24:24] FPU_slice.in4[24:24] feedback_reg1[24:24].Q feedback_reg2[24:24].Q feedback_reg3[24:24].Q WB1[24:24].Q FM1.out[24:24] FA1.out[24:24] WB2[24:24].Q WB3[24:24].Q FM2.out[24:24]" output ="FA2.opb[24:24]"/>
+		<mux name="FA2_in2_mux26" input="FPU_slice.in1[25:25] FPU_slice.in2[25:25] FPU_slice.in3[25:25] FPU_slice.in4[25:25] feedback_reg1[25:25].Q feedback_reg2[25:25].Q feedback_reg3[25:25].Q WB1[25:25].Q FM1.out[25:25] FA1.out[25:25] WB2[25:25].Q WB3[25:25].Q FM2.out[25:25]" output ="FA2.opb[25:25]"/>
+		<mux name="FA2_in2_mux27" input="FPU_slice.in1[26:26] FPU_slice.in2[26:26] FPU_slice.in3[26:26] FPU_slice.in4[26:26] feedback_reg1[26:26].Q feedback_reg2[26:26].Q feedback_reg3[26:26].Q WB1[26:26].Q FM1.out[26:26] FA1.out[26:26] WB2[26:26].Q WB3[26:26].Q FM2.out[26:26]" output ="FA2.opb[26:26]"/>
+		<mux name="FA2_in2_mux28" input="FPU_slice.in1[27:27] FPU_slice.in2[27:27] FPU_slice.in3[27:27] FPU_slice.in4[27:27] feedback_reg1[27:27].Q feedback_reg2[27:27].Q feedback_reg3[27:27].Q WB1[27:27].Q FM1.out[27:27] FA1.out[27:27] WB2[27:27].Q WB3[27:27].Q FM2.out[27:27]" output ="FA2.opb[27:27]"/>
+		<mux name="FA2_in2_mux29" input="FPU_slice.in1[28:28] FPU_slice.in2[28:28] FPU_slice.in3[28:28] FPU_slice.in4[28:28] feedback_reg1[28:28].Q feedback_reg2[28:28].Q feedback_reg3[28:28].Q WB1[28:28].Q FM1.out[28:28] FA1.out[28:28] WB2[28:28].Q WB3[28:28].Q FM2.out[28:28]" output ="FA2.opb[28:28]"/>
+		<mux name="FA2_in2_mux30" input="FPU_slice.in1[29:29] FPU_slice.in2[29:29] FPU_slice.in3[29:29] FPU_slice.in4[29:29] feedback_reg1[29:29].Q feedback_reg2[29:29].Q feedback_reg3[29:29].Q WB1[29:29].Q FM1.out[29:29] FA1.out[29:29] WB2[29:29].Q WB3[29:29].Q FM2.out[29:29]" output ="FA2.opb[29:29]"/>
+		<mux name="FA2_in2_mux31" input="FPU_slice.in1[30:30] FPU_slice.in2[30:30] FPU_slice.in3[30:30] FPU_slice.in4[30:30] feedback_reg1[30:30].Q feedback_reg2[30:30].Q feedback_reg3[30:30].Q WB1[30:30].Q FM1.out[30:30] FA1.out[30:30] WB2[30:30].Q WB3[30:30].Q FM2.out[30:30]" output ="FA2.opb[30:30]"/>
+		<mux name="FA2_in2_mux32" input="FPU_slice.in1[31:31] FPU_slice.in2[31:31] FPU_slice.in3[31:31] FPU_slice.in4[31:31] feedback_reg1[31:31].Q feedback_reg2[31:31].Q feedback_reg3[31:31].Q WB1[31:31].Q FM1.out[31:31] FA1.out[31:31] WB2[31:31].Q WB3[31:31].Q FM2.out[31:31]" output ="FA2.opb[31:31]"/>
+		
+
+		<!--############# WB4 ##############-->	
+		<!-- Input Mux WB4 in1 -->
+		<mux name="WB4_in1_mux1" input="FPU_slice.in1[0:0] FPU_slice.in2[0:0] FPU_slice.in3[0:0] FPU_slice.in4[0:0] feedback_reg1[0:0].Q feedback_reg2[0:0].Q feedback_reg3[0:0].Q WB1[0:0].Q FM1.out[0:0] FA1.out[0:0] WB2[0:0].Q WB3[0:0].Q FM2.out[0:0] FA2.out[0:0]" output ="WB4[0:0].D"/>
+		<mux name="WB4_in1_mux2" input="FPU_slice.in1[1:1] FPU_slice.in2[1:1] FPU_slice.in3[1:1] FPU_slice.in4[1:1] feedback_reg1[1:1].Q feedback_reg2[1:1].Q feedback_reg3[1:1].Q WB1[1:1].Q FM1.out[1:1] FA1.out[1:1] WB2[1:1].Q WB3[1:1].Q FM2.out[1:1] FA2.out[1:1]" output ="WB4[1:1].D"/>
+		<mux name="WB4_in1_mux3" input="FPU_slice.in1[2:2] FPU_slice.in2[2:2] FPU_slice.in3[2:2] FPU_slice.in4[2:2] feedback_reg1[2:2].Q feedback_reg2[2:2].Q feedback_reg3[2:2].Q WB1[2:2].Q FM1.out[2:2] FA1.out[2:2] WB2[2:2].Q WB3[2:2].Q FM2.out[2:2] FA2.out[2:2]" output ="WB4[2:2].D"/>
+		<mux name="WB4_in1_mux4" input="FPU_slice.in1[3:3] FPU_slice.in2[3:3] FPU_slice.in3[3:3] FPU_slice.in4[3:3] feedback_reg1[3:3].Q feedback_reg2[3:3].Q feedback_reg3[3:3].Q WB1[3:3].Q FM1.out[3:3] FA1.out[3:3] WB2[3:3].Q WB3[3:3].Q FM2.out[3:3] FA2.out[3:3]" output ="WB4[3:3].D"/>
+		<mux name="WB4_in1_mux5" input="FPU_slice.in1[4:4] FPU_slice.in2[4:4] FPU_slice.in3[4:4] FPU_slice.in4[4:4] feedback_reg1[4:4].Q feedback_reg2[4:4].Q feedback_reg3[4:4].Q WB1[4:4].Q FM1.out[4:4] FA1.out[4:4] WB2[4:4].Q WB3[4:4].Q FM2.out[4:4] FA2.out[4:4]" output ="WB4[4:4].D"/>
+		<mux name="WB4_in1_mux6" input="FPU_slice.in1[5:5] FPU_slice.in2[5:5] FPU_slice.in3[5:5] FPU_slice.in4[5:5] feedback_reg1[5:5].Q feedback_reg2[5:5].Q feedback_reg3[5:5].Q WB1[5:5].Q FM1.out[5:5] FA1.out[5:5] WB2[5:5].Q WB3[5:5].Q FM2.out[5:5] FA2.out[5:5]" output ="WB4[5:5].D"/>
+		<mux name="WB4_in1_mux7" input="FPU_slice.in1[6:6] FPU_slice.in2[6:6] FPU_slice.in3[6:6] FPU_slice.in4[6:6] feedback_reg1[6:6].Q feedback_reg2[6:6].Q feedback_reg3[6:6].Q WB1[6:6].Q FM1.out[6:6] FA1.out[6:6] WB2[6:6].Q WB3[6:6].Q FM2.out[6:6] FA2.out[6:6]" output ="WB4[6:6].D"/>
+		<mux name="WB4_in1_mux8" input="FPU_slice.in1[7:7] FPU_slice.in2[7:7] FPU_slice.in3[7:7] FPU_slice.in4[7:7] feedback_reg1[7:7].Q feedback_reg2[7:7].Q feedback_reg3[7:7].Q WB1[7:7].Q FM1.out[7:7] FA1.out[7:7] WB2[7:7].Q WB3[7:7].Q FM2.out[7:7] FA2.out[7:7]" output ="WB4[7:7].D"/>
+		<mux name="WB4_in1_mux9" input="FPU_slice.in1[8:8] FPU_slice.in2[8:8] FPU_slice.in3[8:8] FPU_slice.in4[8:8] feedback_reg1[8:8].Q feedback_reg2[8:8].Q feedback_reg3[8:8].Q WB1[8:8].Q FM1.out[8:8] FA1.out[8:8] WB2[8:8].Q WB3[8:8].Q FM2.out[8:8] FA2.out[8:8]" output ="WB4[8:8].D"/>
+		<mux name="WB4_in1_mux10" input="FPU_slice.in1[9:9] FPU_slice.in2[9:9] FPU_slice.in3[9:9] FPU_slice.in4[9:9] feedback_reg1[9:9].Q feedback_reg2[9:9].Q feedback_reg3[9:9].Q WB1[9:9].Q FM1.out[9:9] FA1.out[9:9] WB2[9:9].Q WB3[9:9].Q FM2.out[9:9] FA2.out[9:9]" output ="WB4[9:9].D"/>
+		<mux name="WB4_in1_mux11" input="FPU_slice.in1[10:10] FPU_slice.in2[10:10] FPU_slice.in3[10:10] FPU_slice.in4[10:10] feedback_reg1[10:10].Q feedback_reg2[10:10].Q feedback_reg3[10:10].Q WB1[10:10].Q FM1.out[10:10] FA1.out[10:10] WB2[10:10].Q WB3[10:10].Q FM2.out[10:10] FA2.out[10:10]" output ="WB4[10:10].D"/>
+		<mux name="WB4_in1_mux12" input="FPU_slice.in1[11:11] FPU_slice.in2[11:11] FPU_slice.in3[11:11] FPU_slice.in4[11:11] feedback_reg1[11:11].Q feedback_reg2[11:11].Q feedback_reg3[11:11].Q WB1[11:11].Q FM1.out[11:11] FA1.out[11:11] WB2[11:11].Q WB3[11:11].Q FM2.out[11:11] FA2.out[11:11]" output ="WB4[11:11].D"/>
+		<mux name="WB4_in1_mux13" input="FPU_slice.in1[12:12] FPU_slice.in2[12:12] FPU_slice.in3[12:12] FPU_slice.in4[12:12] feedback_reg1[12:12].Q feedback_reg2[12:12].Q feedback_reg3[12:12].Q WB1[12:12].Q FM1.out[12:12] FA1.out[12:12] WB2[12:12].Q WB3[12:12].Q FM2.out[12:12] FA2.out[12:12]" output ="WB4[12:12].D"/>
+		<mux name="WB4_in1_mux14" input="FPU_slice.in1[13:13] FPU_slice.in2[13:13] FPU_slice.in3[13:13] FPU_slice.in4[13:13] feedback_reg1[13:13].Q feedback_reg2[13:13].Q feedback_reg3[13:13].Q WB1[13:13].Q FM1.out[13:13] FA1.out[13:13] WB2[13:13].Q WB3[13:13].Q FM2.out[13:13] FA2.out[13:13]" output ="WB4[13:13].D"/>
+		<mux name="WB4_in1_mux15" input="FPU_slice.in1[14:14] FPU_slice.in2[14:14] FPU_slice.in3[14:14] FPU_slice.in4[14:14] feedback_reg1[14:14].Q feedback_reg2[14:14].Q feedback_reg3[14:14].Q WB1[14:14].Q FM1.out[14:14] FA1.out[14:14] WB2[14:14].Q WB3[14:14].Q FM2.out[14:14] FA2.out[14:14]" output ="WB4[14:14].D"/>
+		<mux name="WB4_in1_mux16" input="FPU_slice.in1[15:15] FPU_slice.in2[15:15] FPU_slice.in3[15:15] FPU_slice.in4[15:15] feedback_reg1[15:15].Q feedback_reg2[15:15].Q feedback_reg3[15:15].Q WB1[15:15].Q FM1.out[15:15] FA1.out[15:15] WB2[15:15].Q WB3[15:15].Q FM2.out[15:15] FA2.out[15:15]" output ="WB4[15:15].D"/>
+		<mux name="WB4_in1_mux17" input="FPU_slice.in1[16:16] FPU_slice.in2[16:16] FPU_slice.in3[16:16] FPU_slice.in4[16:16] feedback_reg1[16:16].Q feedback_reg2[16:16].Q feedback_reg3[16:16].Q WB1[16:16].Q FM1.out[16:16] FA1.out[16:16] WB2[16:16].Q WB3[16:16].Q FM2.out[16:16] FA2.out[16:16]" output ="WB4[16:16].D"/>
+		<mux name="WB4_in1_mux18" input="FPU_slice.in1[17:17] FPU_slice.in2[17:17] FPU_slice.in3[17:17] FPU_slice.in4[17:17] feedback_reg1[17:17].Q feedback_reg2[17:17].Q feedback_reg3[17:17].Q WB1[17:17].Q FM1.out[17:17] FA1.out[17:17] WB2[17:17].Q WB3[17:17].Q FM2.out[17:17] FA2.out[17:17]" output ="WB4[17:17].D"/>
+		<mux name="WB4_in1_mux19" input="FPU_slice.in1[18:18] FPU_slice.in2[18:18] FPU_slice.in3[18:18] FPU_slice.in4[18:18] feedback_reg1[18:18].Q feedback_reg2[18:18].Q feedback_reg3[18:18].Q WB1[18:18].Q FM1.out[18:18] FA1.out[18:18] WB2[18:18].Q WB3[18:18].Q FM2.out[18:18] FA2.out[18:18]" output ="WB4[18:18].D"/>
+		<mux name="WB4_in1_mux20" input="FPU_slice.in1[19:19] FPU_slice.in2[19:19] FPU_slice.in3[19:19] FPU_slice.in4[19:19] feedback_reg1[19:19].Q feedback_reg2[19:19].Q feedback_reg3[19:19].Q WB1[19:19].Q FM1.out[19:19] FA1.out[19:19] WB2[19:19].Q WB3[19:19].Q FM2.out[19:19] FA2.out[19:19]" output ="WB4[19:19].D"/>
+		<mux name="WB4_in1_mux21" input="FPU_slice.in1[20:20] FPU_slice.in2[20:20] FPU_slice.in3[20:20] FPU_slice.in4[20:20] feedback_reg1[20:20].Q feedback_reg2[20:20].Q feedback_reg3[20:20].Q WB1[20:20].Q FM1.out[20:20] FA1.out[20:20] WB2[20:20].Q WB3[20:20].Q FM2.out[20:20] FA2.out[20:20]" output ="WB4[20:20].D"/>
+		<mux name="WB4_in1_mux22" input="FPU_slice.in1[21:21] FPU_slice.in2[21:21] FPU_slice.in3[21:21] FPU_slice.in4[21:21] feedback_reg1[21:21].Q feedback_reg2[21:21].Q feedback_reg3[21:21].Q WB1[21:21].Q FM1.out[21:21] FA1.out[21:21] WB2[21:21].Q WB3[21:21].Q FM2.out[21:21] FA2.out[21:21]" output ="WB4[21:21].D"/>
+		<mux name="WB4_in1_mux23" input="FPU_slice.in1[22:22] FPU_slice.in2[22:22] FPU_slice.in3[22:22] FPU_slice.in4[22:22] feedback_reg1[22:22].Q feedback_reg2[22:22].Q feedback_reg3[22:22].Q WB1[22:22].Q FM1.out[22:22] FA1.out[22:22] WB2[22:22].Q WB3[22:22].Q FM2.out[22:22] FA2.out[22:22]" output ="WB4[22:22].D"/>
+		<mux name="WB4_in1_mux24" input="FPU_slice.in1[23:23] FPU_slice.in2[23:23] FPU_slice.in3[23:23] FPU_slice.in4[23:23] feedback_reg1[23:23].Q feedback_reg2[23:23].Q feedback_reg3[23:23].Q WB1[23:23].Q FM1.out[23:23] FA1.out[23:23] WB2[23:23].Q WB3[23:23].Q FM2.out[23:23] FA2.out[23:23]" output ="WB4[23:23].D"/>
+		<mux name="WB4_in1_mux25" input="FPU_slice.in1[24:24] FPU_slice.in2[24:24] FPU_slice.in3[24:24] FPU_slice.in4[24:24] feedback_reg1[24:24].Q feedback_reg2[24:24].Q feedback_reg3[24:24].Q WB1[24:24].Q FM1.out[24:24] FA1.out[24:24] WB2[24:24].Q WB3[24:24].Q FM2.out[24:24] FA2.out[24:24]" output ="WB4[24:24].D"/>
+		<mux name="WB4_in1_mux26" input="FPU_slice.in1[25:25] FPU_slice.in2[25:25] FPU_slice.in3[25:25] FPU_slice.in4[25:25] feedback_reg1[25:25].Q feedback_reg2[25:25].Q feedback_reg3[25:25].Q WB1[25:25].Q FM1.out[25:25] FA1.out[25:25] WB2[25:25].Q WB3[25:25].Q FM2.out[25:25] FA2.out[25:25]" output ="WB4[25:25].D"/>
+		<mux name="WB4_in1_mux27" input="FPU_slice.in1[26:26] FPU_slice.in2[26:26] FPU_slice.in3[26:26] FPU_slice.in4[26:26] feedback_reg1[26:26].Q feedback_reg2[26:26].Q feedback_reg3[26:26].Q WB1[26:26].Q FM1.out[26:26] FA1.out[26:26] WB2[26:26].Q WB3[26:26].Q FM2.out[26:26] FA2.out[26:26]" output ="WB4[26:26].D"/>
+		<mux name="WB4_in1_mux28" input="FPU_slice.in1[27:27] FPU_slice.in2[27:27] FPU_slice.in3[27:27] FPU_slice.in4[27:27] feedback_reg1[27:27].Q feedback_reg2[27:27].Q feedback_reg3[27:27].Q WB1[27:27].Q FM1.out[27:27] FA1.out[27:27] WB2[27:27].Q WB3[27:27].Q FM2.out[27:27] FA2.out[27:27]" output ="WB4[27:27].D"/>
+		<mux name="WB4_in1_mux29" input="FPU_slice.in1[28:28] FPU_slice.in2[28:28] FPU_slice.in3[28:28] FPU_slice.in4[28:28] feedback_reg1[28:28].Q feedback_reg2[28:28].Q feedback_reg3[28:28].Q WB1[28:28].Q FM1.out[28:28] FA1.out[28:28] WB2[28:28].Q WB3[28:28].Q FM2.out[28:28] FA2.out[28:28]" output ="WB4[28:28].D"/>
+		<mux name="WB4_in1_mux30" input="FPU_slice.in1[29:29] FPU_slice.in2[29:29] FPU_slice.in3[29:29] FPU_slice.in4[29:29] feedback_reg1[29:29].Q feedback_reg2[29:29].Q feedback_reg3[29:29].Q WB1[29:29].Q FM1.out[29:29] FA1.out[29:29] WB2[29:29].Q WB3[29:29].Q FM2.out[29:29] FA2.out[29:29]" output ="WB4[29:29].D"/>
+		<mux name="WB4_in1_mux31" input="FPU_slice.in1[30:30] FPU_slice.in2[30:30] FPU_slice.in3[30:30] FPU_slice.in4[30:30] feedback_reg1[30:30].Q feedback_reg2[30:30].Q feedback_reg3[30:30].Q WB1[30:30].Q FM1.out[30:30] FA1.out[30:30] WB2[30:30].Q WB3[30:30].Q FM2.out[30:30] FA2.out[30:30]" output ="WB4[30:30].D"/>
+		<mux name="WB4_in1_mux32" input="FPU_slice.in1[31:31] FPU_slice.in2[31:31] FPU_slice.in3[31:31] FPU_slice.in4[31:31] feedback_reg1[31:31].Q feedback_reg2[31:31].Q feedback_reg3[31:31].Q WB1[31:31].Q FM1.out[31:31] FA1.out[31:31] WB2[31:31].Q WB3[31:31].Q FM2.out[31:31] FA2.out[31:31]" output ="WB4[31:31].D"/>
+		
+
+		<!--############# Feedback1 ##############-->	
+		<mux name="feedback1_mux1" input="FPU_slice.in1[0:0] FPU_slice.in2[0:0] FPU_slice.in3[0:0] FPU_slice.in4[0:0] feedback_reg1[0:0].Q feedback_reg2[0:0].Q feedback_reg3[0:0].Q WB1[0:0].Q FM1.out[0:0] FA1.out[0:0] WB2[0:0].Q WB3[0:0].Q FM2.out[0:0] FA2.out[0:0] WB4[0:0].Q" output ="feedback_reg1[0:0].D"/>
+		<mux name="feedback1_mux2" input="FPU_slice.in1[1:1] FPU_slice.in2[1:1] FPU_slice.in3[1:1] FPU_slice.in4[1:1] feedback_reg1[1:1].Q feedback_reg2[1:1].Q feedback_reg3[1:1].Q WB1[1:1].Q FM1.out[1:1] FA1.out[1:1] WB2[1:1].Q WB3[1:1].Q FM2.out[1:1] FA2.out[1:1] WB4[1:1].Q" output ="feedback_reg1[1:1].D"/>
+		<mux name="feedback1_mux3" input="FPU_slice.in1[2:2] FPU_slice.in2[2:2] FPU_slice.in3[2:2] FPU_slice.in4[2:2] feedback_reg1[2:2].Q feedback_reg2[2:2].Q feedback_reg3[2:2].Q WB1[2:2].Q FM1.out[2:2] FA1.out[2:2] WB2[2:2].Q WB3[2:2].Q FM2.out[2:2] FA2.out[2:2] WB4[2:2].Q" output ="feedback_reg1[2:2].D"/>
+		<mux name="feedback1_mux4" input="FPU_slice.in1[3:3] FPU_slice.in2[3:3] FPU_slice.in3[3:3] FPU_slice.in4[3:3] feedback_reg1[3:3].Q feedback_reg2[3:3].Q feedback_reg3[3:3].Q WB1[3:3].Q FM1.out[3:3] FA1.out[3:3] WB2[3:3].Q WB3[3:3].Q FM2.out[3:3] FA2.out[3:3] WB4[3:3].Q" output ="feedback_reg1[3:3].D"/>
+		<mux name="feedback1_mux5" input="FPU_slice.in1[4:4] FPU_slice.in2[4:4] FPU_slice.in3[4:4] FPU_slice.in4[4:4] feedback_reg1[4:4].Q feedback_reg2[4:4].Q feedback_reg3[4:4].Q WB1[4:4].Q FM1.out[4:4] FA1.out[4:4] WB2[4:4].Q WB3[4:4].Q FM2.out[4:4] FA2.out[4:4] WB4[4:4].Q" output ="feedback_reg1[4:4].D"/>
+		<mux name="feedback1_mux6" input="FPU_slice.in1[5:5] FPU_slice.in2[5:5] FPU_slice.in3[5:5] FPU_slice.in4[5:5] feedback_reg1[5:5].Q feedback_reg2[5:5].Q feedback_reg3[5:5].Q WB1[5:5].Q FM1.out[5:5] FA1.out[5:5] WB2[5:5].Q WB3[5:5].Q FM2.out[5:5] FA2.out[5:5] WB4[5:5].Q" output ="feedback_reg1[5:5].D"/>
+		<mux name="feedback1_mux7" input="FPU_slice.in1[6:6] FPU_slice.in2[6:6] FPU_slice.in3[6:6] FPU_slice.in4[6:6] feedback_reg1[6:6].Q feedback_reg2[6:6].Q feedback_reg3[6:6].Q WB1[6:6].Q FM1.out[6:6] FA1.out[6:6] WB2[6:6].Q WB3[6:6].Q FM2.out[6:6] FA2.out[6:6] WB4[6:6].Q" output ="feedback_reg1[6:6].D"/>
+		<mux name="feedback1_mux8" input="FPU_slice.in1[7:7] FPU_slice.in2[7:7] FPU_slice.in3[7:7] FPU_slice.in4[7:7] feedback_reg1[7:7].Q feedback_reg2[7:7].Q feedback_reg3[7:7].Q WB1[7:7].Q FM1.out[7:7] FA1.out[7:7] WB2[7:7].Q WB3[7:7].Q FM2.out[7:7] FA2.out[7:7] WB4[7:7].Q" output ="feedback_reg1[7:7].D"/>
+		<mux name="feedback1_mux9" input="FPU_slice.in1[8:8] FPU_slice.in2[8:8] FPU_slice.in3[8:8] FPU_slice.in4[8:8] feedback_reg1[8:8].Q feedback_reg2[8:8].Q feedback_reg3[8:8].Q WB1[8:8].Q FM1.out[8:8] FA1.out[8:8] WB2[8:8].Q WB3[8:8].Q FM2.out[8:8] FA2.out[8:8] WB4[8:8].Q" output ="feedback_reg1[8:8].D"/>
+		<mux name="feedback1_mux10" input="FPU_slice.in1[9:9] FPU_slice.in2[9:9] FPU_slice.in3[9:9] FPU_slice.in4[9:9] feedback_reg1[9:9].Q feedback_reg2[9:9].Q feedback_reg3[9:9].Q WB1[9:9].Q FM1.out[9:9] FA1.out[9:9] WB2[9:9].Q WB3[9:9].Q FM2.out[9:9] FA2.out[9:9] WB4[9:9].Q" output ="feedback_reg1[9:9].D"/>
+		<mux name="feedback1_mux11" input="FPU_slice.in1[10:10] FPU_slice.in2[10:10] FPU_slice.in3[10:10] FPU_slice.in4[10:10] feedback_reg1[10:10].Q feedback_reg2[10:10].Q feedback_reg3[10:10].Q WB1[10:10].Q FM1.out[10:10] FA1.out[10:10] WB2[10:10].Q WB3[10:10].Q FM2.out[10:10] FA2.out[10:10] WB4[10:10].Q" output ="feedback_reg1[10:10].D"/>
+		<mux name="feedback1_mux12" input="FPU_slice.in1[11:11] FPU_slice.in2[11:11] FPU_slice.in3[11:11] FPU_slice.in4[11:11] feedback_reg1[11:11].Q feedback_reg2[11:11].Q feedback_reg3[11:11].Q WB1[11:11].Q FM1.out[11:11] FA1.out[11:11] WB2[11:11].Q WB3[11:11].Q FM2.out[11:11] FA2.out[11:11] WB4[11:11].Q" output ="feedback_reg1[11:11].D"/>
+		<mux name="feedback1_mux13" input="FPU_slice.in1[12:12] FPU_slice.in2[12:12] FPU_slice.in3[12:12] FPU_slice.in4[12:12] feedback_reg1[12:12].Q feedback_reg2[12:12].Q feedback_reg3[12:12].Q WB1[12:12].Q FM1.out[12:12] FA1.out[12:12] WB2[12:12].Q WB3[12:12].Q FM2.out[12:12] FA2.out[12:12] WB4[12:12].Q" output ="feedback_reg1[12:12].D"/>
+		<mux name="feedback1_mux14" input="FPU_slice.in1[13:13] FPU_slice.in2[13:13] FPU_slice.in3[13:13] FPU_slice.in4[13:13] feedback_reg1[13:13].Q feedback_reg2[13:13].Q feedback_reg3[13:13].Q WB1[13:13].Q FM1.out[13:13] FA1.out[13:13] WB2[13:13].Q WB3[13:13].Q FM2.out[13:13] FA2.out[13:13] WB4[13:13].Q" output ="feedback_reg1[13:13].D"/>
+		<mux name="feedback1_mux15" input="FPU_slice.in1[14:14] FPU_slice.in2[14:14] FPU_slice.in3[14:14] FPU_slice.in4[14:14] feedback_reg1[14:14].Q feedback_reg2[14:14].Q feedback_reg3[14:14].Q WB1[14:14].Q FM1.out[14:14] FA1.out[14:14] WB2[14:14].Q WB3[14:14].Q FM2.out[14:14] FA2.out[14:14] WB4[14:14].Q" output ="feedback_reg1[14:14].D"/>
+		<mux name="feedback1_mux16" input="FPU_slice.in1[15:15] FPU_slice.in2[15:15] FPU_slice.in3[15:15] FPU_slice.in4[15:15] feedback_reg1[15:15].Q feedback_reg2[15:15].Q feedback_reg3[15:15].Q WB1[15:15].Q FM1.out[15:15] FA1.out[15:15] WB2[15:15].Q WB3[15:15].Q FM2.out[15:15] FA2.out[15:15] WB4[15:15].Q" output ="feedback_reg1[15:15].D"/>
+		<mux name="feedback1_mux17" input="FPU_slice.in1[16:16] FPU_slice.in2[16:16] FPU_slice.in3[16:16] FPU_slice.in4[16:16] feedback_reg1[16:16].Q feedback_reg2[16:16].Q feedback_reg3[16:16].Q WB1[16:16].Q FM1.out[16:16] FA1.out[16:16] WB2[16:16].Q WB3[16:16].Q FM2.out[16:16] FA2.out[16:16] WB4[16:16].Q" output ="feedback_reg1[16:16].D"/>
+		<mux name="feedback1_mux18" input="FPU_slice.in1[17:17] FPU_slice.in2[17:17] FPU_slice.in3[17:17] FPU_slice.in4[17:17] feedback_reg1[17:17].Q feedback_reg2[17:17].Q feedback_reg3[17:17].Q WB1[17:17].Q FM1.out[17:17] FA1.out[17:17] WB2[17:17].Q WB3[17:17].Q FM2.out[17:17] FA2.out[17:17] WB4[17:17].Q" output ="feedback_reg1[17:17].D"/>
+		<mux name="feedback1_mux19" input="FPU_slice.in1[18:18] FPU_slice.in2[18:18] FPU_slice.in3[18:18] FPU_slice.in4[18:18] feedback_reg1[18:18].Q feedback_reg2[18:18].Q feedback_reg3[18:18].Q WB1[18:18].Q FM1.out[18:18] FA1.out[18:18] WB2[18:18].Q WB3[18:18].Q FM2.out[18:18] FA2.out[18:18] WB4[18:18].Q" output ="feedback_reg1[18:18].D"/>
+		<mux name="feedback1_mux20" input="FPU_slice.in1[19:19] FPU_slice.in2[19:19] FPU_slice.in3[19:19] FPU_slice.in4[19:19] feedback_reg1[19:19].Q feedback_reg2[19:19].Q feedback_reg3[19:19].Q WB1[19:19].Q FM1.out[19:19] FA1.out[19:19] WB2[19:19].Q WB3[19:19].Q FM2.out[19:19] FA2.out[19:19] WB4[19:19].Q" output ="feedback_reg1[19:19].D"/>
+		<mux name="feedback1_mux21" input="FPU_slice.in1[20:20] FPU_slice.in2[20:20] FPU_slice.in3[20:20] FPU_slice.in4[20:20] feedback_reg1[20:20].Q feedback_reg2[20:20].Q feedback_reg3[20:20].Q WB1[20:20].Q FM1.out[20:20] FA1.out[20:20] WB2[20:20].Q WB3[20:20].Q FM2.out[20:20] FA2.out[20:20] WB4[20:20].Q" output ="feedback_reg1[20:20].D"/>
+		<mux name="feedback1_mux22" input="FPU_slice.in1[21:21] FPU_slice.in2[21:21] FPU_slice.in3[21:21] FPU_slice.in4[21:21] feedback_reg1[21:21].Q feedback_reg2[21:21].Q feedback_reg3[21:21].Q WB1[21:21].Q FM1.out[21:21] FA1.out[21:21] WB2[21:21].Q WB3[21:21].Q FM2.out[21:21] FA2.out[21:21] WB4[21:21].Q" output ="feedback_reg1[21:21].D"/>
+		<mux name="feedback1_mux23" input="FPU_slice.in1[22:22] FPU_slice.in2[22:22] FPU_slice.in3[22:22] FPU_slice.in4[22:22] feedback_reg1[22:22].Q feedback_reg2[22:22].Q feedback_reg3[22:22].Q WB1[22:22].Q FM1.out[22:22] FA1.out[22:22] WB2[22:22].Q WB3[22:22].Q FM2.out[22:22] FA2.out[22:22] WB4[22:22].Q" output ="feedback_reg1[22:22].D"/>
+		<mux name="feedback1_mux24" input="FPU_slice.in1[23:23] FPU_slice.in2[23:23] FPU_slice.in3[23:23] FPU_slice.in4[23:23] feedback_reg1[23:23].Q feedback_reg2[23:23].Q feedback_reg3[23:23].Q WB1[23:23].Q FM1.out[23:23] FA1.out[23:23] WB2[23:23].Q WB3[23:23].Q FM2.out[23:23] FA2.out[23:23] WB4[23:23].Q" output ="feedback_reg1[23:23].D"/>
+		<mux name="feedback1_mux25" input="FPU_slice.in1[24:24] FPU_slice.in2[24:24] FPU_slice.in3[24:24] FPU_slice.in4[24:24] feedback_reg1[24:24].Q feedback_reg2[24:24].Q feedback_reg3[24:24].Q WB1[24:24].Q FM1.out[24:24] FA1.out[24:24] WB2[24:24].Q WB3[24:24].Q FM2.out[24:24] FA2.out[24:24] WB4[24:24].Q" output ="feedback_reg1[24:24].D"/>
+		<mux name="feedback1_mux26" input="FPU_slice.in1[25:25] FPU_slice.in2[25:25] FPU_slice.in3[25:25] FPU_slice.in4[25:25] feedback_reg1[25:25].Q feedback_reg2[25:25].Q feedback_reg3[25:25].Q WB1[25:25].Q FM1.out[25:25] FA1.out[25:25] WB2[25:25].Q WB3[25:25].Q FM2.out[25:25] FA2.out[25:25] WB4[25:25].Q" output ="feedback_reg1[25:25].D"/>
+		<mux name="feedback1_mux27" input="FPU_slice.in1[26:26] FPU_slice.in2[26:26] FPU_slice.in3[26:26] FPU_slice.in4[26:26] feedback_reg1[26:26].Q feedback_reg2[26:26].Q feedback_reg3[26:26].Q WB1[26:26].Q FM1.out[26:26] FA1.out[26:26] WB2[26:26].Q WB3[26:26].Q FM2.out[26:26] FA2.out[26:26] WB4[26:26].Q" output ="feedback_reg1[26:26].D"/>
+		<mux name="feedback1_mux28" input="FPU_slice.in1[27:27] FPU_slice.in2[27:27] FPU_slice.in3[27:27] FPU_slice.in4[27:27] feedback_reg1[27:27].Q feedback_reg2[27:27].Q feedback_reg3[27:27].Q WB1[27:27].Q FM1.out[27:27] FA1.out[27:27] WB2[27:27].Q WB3[27:27].Q FM2.out[27:27] FA2.out[27:27] WB4[27:27].Q" output ="feedback_reg1[27:27].D"/>
+		<mux name="feedback1_mux29" input="FPU_slice.in1[28:28] FPU_slice.in2[28:28] FPU_slice.in3[28:28] FPU_slice.in4[28:28] feedback_reg1[28:28].Q feedback_reg2[28:28].Q feedback_reg3[28:28].Q WB1[28:28].Q FM1.out[28:28] FA1.out[28:28] WB2[28:28].Q WB3[28:28].Q FM2.out[28:28] FA2.out[28:28] WB4[28:28].Q" output ="feedback_reg1[28:28].D"/>
+		<mux name="feedback1_mux30" input="FPU_slice.in1[29:29] FPU_slice.in2[29:29] FPU_slice.in3[29:29] FPU_slice.in4[29:29] feedback_reg1[29:29].Q feedback_reg2[29:29].Q feedback_reg3[29:29].Q WB1[29:29].Q FM1.out[29:29] FA1.out[29:29] WB2[29:29].Q WB3[29:29].Q FM2.out[29:29] FA2.out[29:29] WB4[29:29].Q" output ="feedback_reg1[29:29].D"/>
+		<mux name="feedback1_mux31" input="FPU_slice.in1[30:30] FPU_slice.in2[30:30] FPU_slice.in3[30:30] FPU_slice.in4[30:30] feedback_reg1[30:30].Q feedback_reg2[30:30].Q feedback_reg3[30:30].Q WB1[30:30].Q FM1.out[30:30] FA1.out[30:30] WB2[30:30].Q WB3[30:30].Q FM2.out[30:30] FA2.out[30:30] WB4[30:30].Q" output ="feedback_reg1[30:30].D"/>
+		<mux name="feedback1_mux32" input="FPU_slice.in1[31:31] FPU_slice.in2[31:31] FPU_slice.in3[31:31] FPU_slice.in4[31:31] feedback_reg1[31:31].Q feedback_reg2[31:31].Q feedback_reg3[31:31].Q WB1[31:31].Q FM1.out[31:31] FA1.out[31:31] WB2[31:31].Q WB3[31:31].Q FM2.out[31:31] FA2.out[31:31] WB4[31:31].Q" output ="feedback_reg1[31:31].D"/>
+		
+		<!--############# Feedback2 ##############-->	
+		<mux name="feedback2_mux1" input="FPU_slice.in1[0:0] FPU_slice.in2[0:0] FPU_slice.in3[0:0] FPU_slice.in4[0:0] feedback_reg1[0:0].Q feedback_reg2[0:0].Q feedback_reg3[0:0].Q WB1[0:0].Q FM1.out[0:0] FA1.out[0:0] WB2[0:0].Q WB3[0:0].Q FM2.out[0:0] FA2.out[0:0] WB4[0:0].Q" output ="feedback_reg2[0:0].D"/>
+		<mux name="feedback2_mux2" input="FPU_slice.in1[1:1] FPU_slice.in2[1:1] FPU_slice.in3[1:1] FPU_slice.in4[1:1] feedback_reg1[1:1].Q feedback_reg2[1:1].Q feedback_reg3[1:1].Q WB1[1:1].Q FM1.out[1:1] FA1.out[1:1] WB2[1:1].Q WB3[1:1].Q FM2.out[1:1] FA2.out[1:1] WB4[1:1].Q" output ="feedback_reg2[1:1].D"/>
+		<mux name="feedback2_mux3" input="FPU_slice.in1[2:2] FPU_slice.in2[2:2] FPU_slice.in3[2:2] FPU_slice.in4[2:2] feedback_reg1[2:2].Q feedback_reg2[2:2].Q feedback_reg3[2:2].Q WB1[2:2].Q FM1.out[2:2] FA1.out[2:2] WB2[2:2].Q WB3[2:2].Q FM2.out[2:2] FA2.out[2:2] WB4[2:2].Q" output ="feedback_reg2[2:2].D"/>
+		<mux name="feedback2_mux4" input="FPU_slice.in1[3:3] FPU_slice.in2[3:3] FPU_slice.in3[3:3] FPU_slice.in4[3:3] feedback_reg1[3:3].Q feedback_reg2[3:3].Q feedback_reg3[3:3].Q WB1[3:3].Q FM1.out[3:3] FA1.out[3:3] WB2[3:3].Q WB3[3:3].Q FM2.out[3:3] FA2.out[3:3] WB4[3:3].Q" output ="feedback_reg2[3:3].D"/>
+		<mux name="feedback2_mux5" input="FPU_slice.in1[4:4] FPU_slice.in2[4:4] FPU_slice.in3[4:4] FPU_slice.in4[4:4] feedback_reg1[4:4].Q feedback_reg2[4:4].Q feedback_reg3[4:4].Q WB1[4:4].Q FM1.out[4:4] FA1.out[4:4] WB2[4:4].Q WB3[4:4].Q FM2.out[4:4] FA2.out[4:4] WB4[4:4].Q" output ="feedback_reg2[4:4].D"/>
+		<mux name="feedback2_mux6" input="FPU_slice.in1[5:5] FPU_slice.in2[5:5] FPU_slice.in3[5:5] FPU_slice.in4[5:5] feedback_reg1[5:5].Q feedback_reg2[5:5].Q feedback_reg3[5:5].Q WB1[5:5].Q FM1.out[5:5] FA1.out[5:5] WB2[5:5].Q WB3[5:5].Q FM2.out[5:5] FA2.out[5:5] WB4[5:5].Q" output ="feedback_reg2[5:5].D"/>
+		<mux name="feedback2_mux7" input="FPU_slice.in1[6:6] FPU_slice.in2[6:6] FPU_slice.in3[6:6] FPU_slice.in4[6:6] feedback_reg1[6:6].Q feedback_reg2[6:6].Q feedback_reg3[6:6].Q WB1[6:6].Q FM1.out[6:6] FA1.out[6:6] WB2[6:6].Q WB3[6:6].Q FM2.out[6:6] FA2.out[6:6] WB4[6:6].Q" output ="feedback_reg2[6:6].D"/>
+		<mux name="feedback2_mux8" input="FPU_slice.in1[7:7] FPU_slice.in2[7:7] FPU_slice.in3[7:7] FPU_slice.in4[7:7] feedback_reg1[7:7].Q feedback_reg2[7:7].Q feedback_reg3[7:7].Q WB1[7:7].Q FM1.out[7:7] FA1.out[7:7] WB2[7:7].Q WB3[7:7].Q FM2.out[7:7] FA2.out[7:7] WB4[7:7].Q" output ="feedback_reg2[7:7].D"/>
+		<mux name="feedback2_mux9" input="FPU_slice.in1[8:8] FPU_slice.in2[8:8] FPU_slice.in3[8:8] FPU_slice.in4[8:8] feedback_reg1[8:8].Q feedback_reg2[8:8].Q feedback_reg3[8:8].Q WB1[8:8].Q FM1.out[8:8] FA1.out[8:8] WB2[8:8].Q WB3[8:8].Q FM2.out[8:8] FA2.out[8:8] WB4[8:8].Q" output ="feedback_reg2[8:8].D"/>
+		<mux name="feedback2_mux10" input="FPU_slice.in1[9:9] FPU_slice.in2[9:9] FPU_slice.in3[9:9] FPU_slice.in4[9:9] feedback_reg1[9:9].Q feedback_reg2[9:9].Q feedback_reg3[9:9].Q WB1[9:9].Q FM1.out[9:9] FA1.out[9:9] WB2[9:9].Q WB3[9:9].Q FM2.out[9:9] FA2.out[9:9] WB4[9:9].Q" output ="feedback_reg2[9:9].D"/>
+		<mux name="feedback2_mux11" input="FPU_slice.in1[10:10] FPU_slice.in2[10:10] FPU_slice.in3[10:10] FPU_slice.in4[10:10] feedback_reg1[10:10].Q feedback_reg2[10:10].Q feedback_reg3[10:10].Q WB1[10:10].Q FM1.out[10:10] FA1.out[10:10] WB2[10:10].Q WB3[10:10].Q FM2.out[10:10] FA2.out[10:10] WB4[10:10].Q" output ="feedback_reg2[10:10].D"/>
+		<mux name="feedback2_mux12" input="FPU_slice.in1[11:11] FPU_slice.in2[11:11] FPU_slice.in3[11:11] FPU_slice.in4[11:11] feedback_reg1[11:11].Q feedback_reg2[11:11].Q feedback_reg3[11:11].Q WB1[11:11].Q FM1.out[11:11] FA1.out[11:11] WB2[11:11].Q WB3[11:11].Q FM2.out[11:11] FA2.out[11:11] WB4[11:11].Q" output ="feedback_reg2[11:11].D"/>
+		<mux name="feedback2_mux13" input="FPU_slice.in1[12:12] FPU_slice.in2[12:12] FPU_slice.in3[12:12] FPU_slice.in4[12:12] feedback_reg1[12:12].Q feedback_reg2[12:12].Q feedback_reg3[12:12].Q WB1[12:12].Q FM1.out[12:12] FA1.out[12:12] WB2[12:12].Q WB3[12:12].Q FM2.out[12:12] FA2.out[12:12] WB4[12:12].Q" output ="feedback_reg2[12:12].D"/>
+		<mux name="feedback2_mux14" input="FPU_slice.in1[13:13] FPU_slice.in2[13:13] FPU_slice.in3[13:13] FPU_slice.in4[13:13] feedback_reg1[13:13].Q feedback_reg2[13:13].Q feedback_reg3[13:13].Q WB1[13:13].Q FM1.out[13:13] FA1.out[13:13] WB2[13:13].Q WB3[13:13].Q FM2.out[13:13] FA2.out[13:13] WB4[13:13].Q" output ="feedback_reg2[13:13].D"/>
+		<mux name="feedback2_mux15" input="FPU_slice.in1[14:14] FPU_slice.in2[14:14] FPU_slice.in3[14:14] FPU_slice.in4[14:14] feedback_reg1[14:14].Q feedback_reg2[14:14].Q feedback_reg3[14:14].Q WB1[14:14].Q FM1.out[14:14] FA1.out[14:14] WB2[14:14].Q WB3[14:14].Q FM2.out[14:14] FA2.out[14:14] WB4[14:14].Q" output ="feedback_reg2[14:14].D"/>
+		<mux name="feedback2_mux16" input="FPU_slice.in1[15:15] FPU_slice.in2[15:15] FPU_slice.in3[15:15] FPU_slice.in4[15:15] feedback_reg1[15:15].Q feedback_reg2[15:15].Q feedback_reg3[15:15].Q WB1[15:15].Q FM1.out[15:15] FA1.out[15:15] WB2[15:15].Q WB3[15:15].Q FM2.out[15:15] FA2.out[15:15] WB4[15:15].Q" output ="feedback_reg2[15:15].D"/>
+		<mux name="feedback2_mux17" input="FPU_slice.in1[16:16] FPU_slice.in2[16:16] FPU_slice.in3[16:16] FPU_slice.in4[16:16] feedback_reg1[16:16].Q feedback_reg2[16:16].Q feedback_reg3[16:16].Q WB1[16:16].Q FM1.out[16:16] FA1.out[16:16] WB2[16:16].Q WB3[16:16].Q FM2.out[16:16] FA2.out[16:16] WB4[16:16].Q" output ="feedback_reg2[16:16].D"/>
+		<mux name="feedback2_mux18" input="FPU_slice.in1[17:17] FPU_slice.in2[17:17] FPU_slice.in3[17:17] FPU_slice.in4[17:17] feedback_reg1[17:17].Q feedback_reg2[17:17].Q feedback_reg3[17:17].Q WB1[17:17].Q FM1.out[17:17] FA1.out[17:17] WB2[17:17].Q WB3[17:17].Q FM2.out[17:17] FA2.out[17:17] WB4[17:17].Q" output ="feedback_reg2[17:17].D"/>
+		<mux name="feedback2_mux19" input="FPU_slice.in1[18:18] FPU_slice.in2[18:18] FPU_slice.in3[18:18] FPU_slice.in4[18:18] feedback_reg1[18:18].Q feedback_reg2[18:18].Q feedback_reg3[18:18].Q WB1[18:18].Q FM1.out[18:18] FA1.out[18:18] WB2[18:18].Q WB3[18:18].Q FM2.out[18:18] FA2.out[18:18] WB4[18:18].Q" output ="feedback_reg2[18:18].D"/>
+		<mux name="feedback2_mux20" input="FPU_slice.in1[19:19] FPU_slice.in2[19:19] FPU_slice.in3[19:19] FPU_slice.in4[19:19] feedback_reg1[19:19].Q feedback_reg2[19:19].Q feedback_reg3[19:19].Q WB1[19:19].Q FM1.out[19:19] FA1.out[19:19] WB2[19:19].Q WB3[19:19].Q FM2.out[19:19] FA2.out[19:19] WB4[19:19].Q" output ="feedback_reg2[19:19].D"/>
+		<mux name="feedback2_mux21" input="FPU_slice.in1[20:20] FPU_slice.in2[20:20] FPU_slice.in3[20:20] FPU_slice.in4[20:20] feedback_reg1[20:20].Q feedback_reg2[20:20].Q feedback_reg3[20:20].Q WB1[20:20].Q FM1.out[20:20] FA1.out[20:20] WB2[20:20].Q WB3[20:20].Q FM2.out[20:20] FA2.out[20:20] WB4[20:20].Q" output ="feedback_reg2[20:20].D"/>
+		<mux name="feedback2_mux22" input="FPU_slice.in1[21:21] FPU_slice.in2[21:21] FPU_slice.in3[21:21] FPU_slice.in4[21:21] feedback_reg1[21:21].Q feedback_reg2[21:21].Q feedback_reg3[21:21].Q WB1[21:21].Q FM1.out[21:21] FA1.out[21:21] WB2[21:21].Q WB3[21:21].Q FM2.out[21:21] FA2.out[21:21] WB4[21:21].Q" output ="feedback_reg2[21:21].D"/>
+		<mux name="feedback2_mux23" input="FPU_slice.in1[22:22] FPU_slice.in2[22:22] FPU_slice.in3[22:22] FPU_slice.in4[22:22] feedback_reg1[22:22].Q feedback_reg2[22:22].Q feedback_reg3[22:22].Q WB1[22:22].Q FM1.out[22:22] FA1.out[22:22] WB2[22:22].Q WB3[22:22].Q FM2.out[22:22] FA2.out[22:22] WB4[22:22].Q" output ="feedback_reg2[22:22].D"/>
+		<mux name="feedback2_mux24" input="FPU_slice.in1[23:23] FPU_slice.in2[23:23] FPU_slice.in3[23:23] FPU_slice.in4[23:23] feedback_reg1[23:23].Q feedback_reg2[23:23].Q feedback_reg3[23:23].Q WB1[23:23].Q FM1.out[23:23] FA1.out[23:23] WB2[23:23].Q WB3[23:23].Q FM2.out[23:23] FA2.out[23:23] WB4[23:23].Q" output ="feedback_reg2[23:23].D"/>
+		<mux name="feedback2_mux25" input="FPU_slice.in1[24:24] FPU_slice.in2[24:24] FPU_slice.in3[24:24] FPU_slice.in4[24:24] feedback_reg1[24:24].Q feedback_reg2[24:24].Q feedback_reg3[24:24].Q WB1[24:24].Q FM1.out[24:24] FA1.out[24:24] WB2[24:24].Q WB3[24:24].Q FM2.out[24:24] FA2.out[24:24] WB4[24:24].Q" output ="feedback_reg2[24:24].D"/>
+		<mux name="feedback2_mux26" input="FPU_slice.in1[25:25] FPU_slice.in2[25:25] FPU_slice.in3[25:25] FPU_slice.in4[25:25] feedback_reg1[25:25].Q feedback_reg2[25:25].Q feedback_reg3[25:25].Q WB1[25:25].Q FM1.out[25:25] FA1.out[25:25] WB2[25:25].Q WB3[25:25].Q FM2.out[25:25] FA2.out[25:25] WB4[25:25].Q" output ="feedback_reg2[25:25].D"/>
+		<mux name="feedback2_mux27" input="FPU_slice.in1[26:26] FPU_slice.in2[26:26] FPU_slice.in3[26:26] FPU_slice.in4[26:26] feedback_reg1[26:26].Q feedback_reg2[26:26].Q feedback_reg3[26:26].Q WB1[26:26].Q FM1.out[26:26] FA1.out[26:26] WB2[26:26].Q WB3[26:26].Q FM2.out[26:26] FA2.out[26:26] WB4[26:26].Q" output ="feedback_reg2[26:26].D"/>
+		<mux name="feedback2_mux28" input="FPU_slice.in1[27:27] FPU_slice.in2[27:27] FPU_slice.in3[27:27] FPU_slice.in4[27:27] feedback_reg1[27:27].Q feedback_reg2[27:27].Q feedback_reg3[27:27].Q WB1[27:27].Q FM1.out[27:27] FA1.out[27:27] WB2[27:27].Q WB3[27:27].Q FM2.out[27:27] FA2.out[27:27] WB4[27:27].Q" output ="feedback_reg2[27:27].D"/>
+		<mux name="feedback2_mux29" input="FPU_slice.in1[28:28] FPU_slice.in2[28:28] FPU_slice.in3[28:28] FPU_slice.in4[28:28] feedback_reg1[28:28].Q feedback_reg2[28:28].Q feedback_reg3[28:28].Q WB1[28:28].Q FM1.out[28:28] FA1.out[28:28] WB2[28:28].Q WB3[28:28].Q FM2.out[28:28] FA2.out[28:28] WB4[28:28].Q" output ="feedback_reg2[28:28].D"/>
+		<mux name="feedback2_mux30" input="FPU_slice.in1[29:29] FPU_slice.in2[29:29] FPU_slice.in3[29:29] FPU_slice.in4[29:29] feedback_reg1[29:29].Q feedback_reg2[29:29].Q feedback_reg3[29:29].Q WB1[29:29].Q FM1.out[29:29] FA1.out[29:29] WB2[29:29].Q WB3[29:29].Q FM2.out[29:29] FA2.out[29:29] WB4[29:29].Q" output ="feedback_reg2[29:29].D"/>
+		<mux name="feedback2_mux31" input="FPU_slice.in1[30:30] FPU_slice.in2[30:30] FPU_slice.in3[30:30] FPU_slice.in4[30:30] feedback_reg1[30:30].Q feedback_reg2[30:30].Q feedback_reg3[30:30].Q WB1[30:30].Q FM1.out[30:30] FA1.out[30:30] WB2[30:30].Q WB3[30:30].Q FM2.out[30:30] FA2.out[30:30] WB4[30:30].Q" output ="feedback_reg2[30:30].D"/>
+		<mux name="feedback2_mux32" input="FPU_slice.in1[31:31] FPU_slice.in2[31:31] FPU_slice.in3[31:31] FPU_slice.in4[31:31] feedback_reg1[31:31].Q feedback_reg2[31:31].Q feedback_reg3[31:31].Q WB1[31:31].Q FM1.out[31:31] FA1.out[31:31] WB2[31:31].Q WB3[31:31].Q FM2.out[31:31] FA2.out[31:31] WB4[31:31].Q" output ="feedback_reg2[31:31].D"/>
+
+		<!--############# Feedback3 ##############-->	
+		<mux name="feedback3_mux1" input="FPU_slice.in1[0:0] FPU_slice.in2[0:0] FPU_slice.in3[0:0] FPU_slice.in4[0:0] feedback_reg1[0:0].Q feedback_reg2[0:0].Q feedback_reg3[0:0].Q WB1[0:0].Q FM1.out[0:0] FA1.out[0:0] WB2[0:0].Q WB3[0:0].Q FM2.out[0:0] FA2.out[0:0] WB4[0:0].Q" output ="feedback_reg3[0:0].D"/>
+		<mux name="feedback3_mux2" input="FPU_slice.in1[1:1] FPU_slice.in2[1:1] FPU_slice.in3[1:1] FPU_slice.in4[1:1] feedback_reg1[1:1].Q feedback_reg2[1:1].Q feedback_reg3[1:1].Q WB1[1:1].Q FM1.out[1:1] FA1.out[1:1] WB2[1:1].Q WB3[1:1].Q FM2.out[1:1] FA2.out[1:1] WB4[1:1].Q" output ="feedback_reg3[1:1].D"/>
+		<mux name="feedback3_mux3" input="FPU_slice.in1[2:2] FPU_slice.in2[2:2] FPU_slice.in3[2:2] FPU_slice.in4[2:2] feedback_reg1[2:2].Q feedback_reg2[2:2].Q feedback_reg3[2:2].Q WB1[2:2].Q FM1.out[2:2] FA1.out[2:2] WB2[2:2].Q WB3[2:2].Q FM2.out[2:2] FA2.out[2:2] WB4[2:2].Q" output ="feedback_reg3[2:2].D"/>
+		<mux name="feedback3_mux4" input="FPU_slice.in1[3:3] FPU_slice.in2[3:3] FPU_slice.in3[3:3] FPU_slice.in4[3:3] feedback_reg1[3:3].Q feedback_reg2[3:3].Q feedback_reg3[3:3].Q WB1[3:3].Q FM1.out[3:3] FA1.out[3:3] WB2[3:3].Q WB3[3:3].Q FM2.out[3:3] FA2.out[3:3] WB4[3:3].Q" output ="feedback_reg3[3:3].D"/>
+		<mux name="feedback3_mux5" input="FPU_slice.in1[4:4] FPU_slice.in2[4:4] FPU_slice.in3[4:4] FPU_slice.in4[4:4] feedback_reg1[4:4].Q feedback_reg2[4:4].Q feedback_reg3[4:4].Q WB1[4:4].Q FM1.out[4:4] FA1.out[4:4] WB2[4:4].Q WB3[4:4].Q FM2.out[4:4] FA2.out[4:4] WB4[4:4].Q" output ="feedback_reg3[4:4].D"/>
+		<mux name="feedback3_mux6" input="FPU_slice.in1[5:5] FPU_slice.in2[5:5] FPU_slice.in3[5:5] FPU_slice.in4[5:5] feedback_reg1[5:5].Q feedback_reg2[5:5].Q feedback_reg3[5:5].Q WB1[5:5].Q FM1.out[5:5] FA1.out[5:5] WB2[5:5].Q WB3[5:5].Q FM2.out[5:5] FA2.out[5:5] WB4[5:5].Q" output ="feedback_reg3[5:5].D"/>
+		<mux name="feedback3_mux7" input="FPU_slice.in1[6:6] FPU_slice.in2[6:6] FPU_slice.in3[6:6] FPU_slice.in4[6:6] feedback_reg1[6:6].Q feedback_reg2[6:6].Q feedback_reg3[6:6].Q WB1[6:6].Q FM1.out[6:6] FA1.out[6:6] WB2[6:6].Q WB3[6:6].Q FM2.out[6:6] FA2.out[6:6] WB4[6:6].Q" output ="feedback_reg3[6:6].D"/>
+		<mux name="feedback3_mux8" input="FPU_slice.in1[7:7] FPU_slice.in2[7:7] FPU_slice.in3[7:7] FPU_slice.in4[7:7] feedback_reg1[7:7].Q feedback_reg2[7:7].Q feedback_reg3[7:7].Q WB1[7:7].Q FM1.out[7:7] FA1.out[7:7] WB2[7:7].Q WB3[7:7].Q FM2.out[7:7] FA2.out[7:7] WB4[7:7].Q" output ="feedback_reg3[7:7].D"/>
+		<mux name="feedback3_mux9" input="FPU_slice.in1[8:8] FPU_slice.in2[8:8] FPU_slice.in3[8:8] FPU_slice.in4[8:8] feedback_reg1[8:8].Q feedback_reg2[8:8].Q feedback_reg3[8:8].Q WB1[8:8].Q FM1.out[8:8] FA1.out[8:8] WB2[8:8].Q WB3[8:8].Q FM2.out[8:8] FA2.out[8:8] WB4[8:8].Q" output ="feedback_reg3[8:8].D"/>
+		<mux name="feedback3_mux10" input="FPU_slice.in1[9:9] FPU_slice.in2[9:9] FPU_slice.in3[9:9] FPU_slice.in4[9:9] feedback_reg1[9:9].Q feedback_reg2[9:9].Q feedback_reg3[9:9].Q WB1[9:9].Q FM1.out[9:9] FA1.out[9:9] WB2[9:9].Q WB3[9:9].Q FM2.out[9:9] FA2.out[9:9] WB4[9:9].Q" output ="feedback_reg3[9:9].D"/>
+		<mux name="feedback3_mux11" input="FPU_slice.in1[10:10] FPU_slice.in2[10:10] FPU_slice.in3[10:10] FPU_slice.in4[10:10] feedback_reg1[10:10].Q feedback_reg2[10:10].Q feedback_reg3[10:10].Q WB1[10:10].Q FM1.out[10:10] FA1.out[10:10] WB2[10:10].Q WB3[10:10].Q FM2.out[10:10] FA2.out[10:10] WB4[10:10].Q" output ="feedback_reg3[10:10].D"/>
+		<mux name="feedback3_mux12" input="FPU_slice.in1[11:11] FPU_slice.in2[11:11] FPU_slice.in3[11:11] FPU_slice.in4[11:11] feedback_reg1[11:11].Q feedback_reg2[11:11].Q feedback_reg3[11:11].Q WB1[11:11].Q FM1.out[11:11] FA1.out[11:11] WB2[11:11].Q WB3[11:11].Q FM2.out[11:11] FA2.out[11:11] WB4[11:11].Q" output ="feedback_reg3[11:11].D"/>
+		<mux name="feedback3_mux13" input="FPU_slice.in1[12:12] FPU_slice.in2[12:12] FPU_slice.in3[12:12] FPU_slice.in4[12:12] feedback_reg1[12:12].Q feedback_reg2[12:12].Q feedback_reg3[12:12].Q WB1[12:12].Q FM1.out[12:12] FA1.out[12:12] WB2[12:12].Q WB3[12:12].Q FM2.out[12:12] FA2.out[12:12] WB4[12:12].Q" output ="feedback_reg3[12:12].D"/>
+		<mux name="feedback3_mux14" input="FPU_slice.in1[13:13] FPU_slice.in2[13:13] FPU_slice.in3[13:13] FPU_slice.in4[13:13] feedback_reg1[13:13].Q feedback_reg2[13:13].Q feedback_reg3[13:13].Q WB1[13:13].Q FM1.out[13:13] FA1.out[13:13] WB2[13:13].Q WB3[13:13].Q FM2.out[13:13] FA2.out[13:13] WB4[13:13].Q" output ="feedback_reg3[13:13].D"/>
+		<mux name="feedback3_mux15" input="FPU_slice.in1[14:14] FPU_slice.in2[14:14] FPU_slice.in3[14:14] FPU_slice.in4[14:14] feedback_reg1[14:14].Q feedback_reg2[14:14].Q feedback_reg3[14:14].Q WB1[14:14].Q FM1.out[14:14] FA1.out[14:14] WB2[14:14].Q WB3[14:14].Q FM2.out[14:14] FA2.out[14:14] WB4[14:14].Q" output ="feedback_reg3[14:14].D"/>
+		<mux name="feedback3_mux16" input="FPU_slice.in1[15:15] FPU_slice.in2[15:15] FPU_slice.in3[15:15] FPU_slice.in4[15:15] feedback_reg1[15:15].Q feedback_reg2[15:15].Q feedback_reg3[15:15].Q WB1[15:15].Q FM1.out[15:15] FA1.out[15:15] WB2[15:15].Q WB3[15:15].Q FM2.out[15:15] FA2.out[15:15] WB4[15:15].Q" output ="feedback_reg3[15:15].D"/>
+		<mux name="feedback3_mux17" input="FPU_slice.in1[16:16] FPU_slice.in2[16:16] FPU_slice.in3[16:16] FPU_slice.in4[16:16] feedback_reg1[16:16].Q feedback_reg2[16:16].Q feedback_reg3[16:16].Q WB1[16:16].Q FM1.out[16:16] FA1.out[16:16] WB2[16:16].Q WB3[16:16].Q FM2.out[16:16] FA2.out[16:16] WB4[16:16].Q" output ="feedback_reg3[16:16].D"/>
+		<mux name="feedback3_mux18" input="FPU_slice.in1[17:17] FPU_slice.in2[17:17] FPU_slice.in3[17:17] FPU_slice.in4[17:17] feedback_reg1[17:17].Q feedback_reg2[17:17].Q feedback_reg3[17:17].Q WB1[17:17].Q FM1.out[17:17] FA1.out[17:17] WB2[17:17].Q WB3[17:17].Q FM2.out[17:17] FA2.out[17:17] WB4[17:17].Q" output ="feedback_reg3[17:17].D"/>
+		<mux name="feedback3_mux19" input="FPU_slice.in1[18:18] FPU_slice.in2[18:18] FPU_slice.in3[18:18] FPU_slice.in4[18:18] feedback_reg1[18:18].Q feedback_reg2[18:18].Q feedback_reg3[18:18].Q WB1[18:18].Q FM1.out[18:18] FA1.out[18:18] WB2[18:18].Q WB3[18:18].Q FM2.out[18:18] FA2.out[18:18] WB4[18:18].Q" output ="feedback_reg3[18:18].D"/>
+		<mux name="feedback3_mux20" input="FPU_slice.in1[19:19] FPU_slice.in2[19:19] FPU_slice.in3[19:19] FPU_slice.in4[19:19] feedback_reg1[19:19].Q feedback_reg2[19:19].Q feedback_reg3[19:19].Q WB1[19:19].Q FM1.out[19:19] FA1.out[19:19] WB2[19:19].Q WB3[19:19].Q FM2.out[19:19] FA2.out[19:19] WB4[19:19].Q" output ="feedback_reg3[19:19].D"/>
+		<mux name="feedback3_mux21" input="FPU_slice.in1[20:20] FPU_slice.in2[20:20] FPU_slice.in3[20:20] FPU_slice.in4[20:20] feedback_reg1[20:20].Q feedback_reg2[20:20].Q feedback_reg3[20:20].Q WB1[20:20].Q FM1.out[20:20] FA1.out[20:20] WB2[20:20].Q WB3[20:20].Q FM2.out[20:20] FA2.out[20:20] WB4[20:20].Q" output ="feedback_reg3[20:20].D"/>
+		<mux name="feedback3_mux22" input="FPU_slice.in1[21:21] FPU_slice.in2[21:21] FPU_slice.in3[21:21] FPU_slice.in4[21:21] feedback_reg1[21:21].Q feedback_reg2[21:21].Q feedback_reg3[21:21].Q WB1[21:21].Q FM1.out[21:21] FA1.out[21:21] WB2[21:21].Q WB3[21:21].Q FM2.out[21:21] FA2.out[21:21] WB4[21:21].Q" output ="feedback_reg3[21:21].D"/>
+		<mux name="feedback3_mux23" input="FPU_slice.in1[22:22] FPU_slice.in2[22:22] FPU_slice.in3[22:22] FPU_slice.in4[22:22] feedback_reg1[22:22].Q feedback_reg2[22:22].Q feedback_reg3[22:22].Q WB1[22:22].Q FM1.out[22:22] FA1.out[22:22] WB2[22:22].Q WB3[22:22].Q FM2.out[22:22] FA2.out[22:22] WB4[22:22].Q" output ="feedback_reg3[22:22].D"/>
+		<mux name="feedback3_mux24" input="FPU_slice.in1[23:23] FPU_slice.in2[23:23] FPU_slice.in3[23:23] FPU_slice.in4[23:23] feedback_reg1[23:23].Q feedback_reg2[23:23].Q feedback_reg3[23:23].Q WB1[23:23].Q FM1.out[23:23] FA1.out[23:23] WB2[23:23].Q WB3[23:23].Q FM2.out[23:23] FA2.out[23:23] WB4[23:23].Q" output ="feedback_reg3[23:23].D"/>
+		<mux name="feedback3_mux25" input="FPU_slice.in1[24:24] FPU_slice.in2[24:24] FPU_slice.in3[24:24] FPU_slice.in4[24:24] feedback_reg1[24:24].Q feedback_reg2[24:24].Q feedback_reg3[24:24].Q WB1[24:24].Q FM1.out[24:24] FA1.out[24:24] WB2[24:24].Q WB3[24:24].Q FM2.out[24:24] FA2.out[24:24] WB4[24:24].Q" output ="feedback_reg3[24:24].D"/>
+		<mux name="feedback3_mux26" input="FPU_slice.in1[25:25] FPU_slice.in2[25:25] FPU_slice.in3[25:25] FPU_slice.in4[25:25] feedback_reg1[25:25].Q feedback_reg2[25:25].Q feedback_reg3[25:25].Q WB1[25:25].Q FM1.out[25:25] FA1.out[25:25] WB2[25:25].Q WB3[25:25].Q FM2.out[25:25] FA2.out[25:25] WB4[25:25].Q" output ="feedback_reg3[25:25].D"/>
+		<mux name="feedback3_mux27" input="FPU_slice.in1[26:26] FPU_slice.in2[26:26] FPU_slice.in3[26:26] FPU_slice.in4[26:26] feedback_reg1[26:26].Q feedback_reg2[26:26].Q feedback_reg3[26:26].Q WB1[26:26].Q FM1.out[26:26] FA1.out[26:26] WB2[26:26].Q WB3[26:26].Q FM2.out[26:26] FA2.out[26:26] WB4[26:26].Q" output ="feedback_reg3[26:26].D"/>
+		<mux name="feedback3_mux28" input="FPU_slice.in1[27:27] FPU_slice.in2[27:27] FPU_slice.in3[27:27] FPU_slice.in4[27:27] feedback_reg1[27:27].Q feedback_reg2[27:27].Q feedback_reg3[27:27].Q WB1[27:27].Q FM1.out[27:27] FA1.out[27:27] WB2[27:27].Q WB3[27:27].Q FM2.out[27:27] FA2.out[27:27] WB4[27:27].Q" output ="feedback_reg3[27:27].D"/>
+		<mux name="feedback3_mux29" input="FPU_slice.in1[28:28] FPU_slice.in2[28:28] FPU_slice.in3[28:28] FPU_slice.in4[28:28] feedback_reg1[28:28].Q feedback_reg2[28:28].Q feedback_reg3[28:28].Q WB1[28:28].Q FM1.out[28:28] FA1.out[28:28] WB2[28:28].Q WB3[28:28].Q FM2.out[28:28] FA2.out[28:28] WB4[28:28].Q" output ="feedback_reg3[28:28].D"/>
+		<mux name="feedback3_mux30" input="FPU_slice.in1[29:29] FPU_slice.in2[29:29] FPU_slice.in3[29:29] FPU_slice.in4[29:29] feedback_reg1[29:29].Q feedback_reg2[29:29].Q feedback_reg3[29:29].Q WB1[29:29].Q FM1.out[29:29] FA1.out[29:29] WB2[29:29].Q WB3[29:29].Q FM2.out[29:29] FA2.out[29:29] WB4[29:29].Q" output ="feedback_reg3[29:29].D"/>
+		<mux name="feedback3_mux31" input="FPU_slice.in1[30:30] FPU_slice.in2[30:30] FPU_slice.in3[30:30] FPU_slice.in4[30:30] feedback_reg1[30:30].Q feedback_reg2[30:30].Q feedback_reg3[30:30].Q WB1[30:30].Q FM1.out[30:30] FA1.out[30:30] WB2[30:30].Q WB3[30:30].Q FM2.out[30:30] FA2.out[30:30] WB4[30:30].Q" output ="feedback_reg3[30:30].D"/>
+		<mux name="feedback3_mux32" input="FPU_slice.in1[31:31] FPU_slice.in2[31:31] FPU_slice.in3[31:31] FPU_slice.in4[31:31] feedback_reg1[31:31].Q feedback_reg2[31:31].Q feedback_reg3[31:31].Q WB1[31:31].Q FM1.out[31:31] FA1.out[31:31] WB2[31:31].Q WB3[31:31].Q FM2.out[31:31] FA2.out[31:31] WB4[31:31].Q" output ="feedback_reg3[31:31].D"/>
+		
+
+
+		<!--############# output1 ##############-->	
+		<mux name="output1_mux1" input="FPU_slice.in1[0:0] FPU_slice.in2[0:0] FPU_slice.in3[0:0] FPU_slice.in4[0:0] feedback_reg1[0:0].Q feedback_reg2[0:0].Q feedback_reg3[0:0].Q WB1[0:0].Q FM1.out[0:0] FA1.out[0:0] WB2[0:0].Q WB3[0:0].Q FM2.out[0:0] FA2.out[0:0] WB4[0:0].Q" output ="FPU_slice.out1[0:0]"/>
+		<mux name="output1_mux2" input="FPU_slice.in1[1:1] FPU_slice.in2[1:1] FPU_slice.in3[1:1] FPU_slice.in4[1:1] feedback_reg1[1:1].Q feedback_reg2[1:1].Q feedback_reg3[1:1].Q WB1[1:1].Q FM1.out[1:1] FA1.out[1:1] WB2[1:1].Q WB3[1:1].Q FM2.out[1:1] FA2.out[1:1] WB4[1:1].Q" output ="FPU_slice.out1[1:1]"/>
+		<mux name="output1_mux3" input="FPU_slice.in1[2:2] FPU_slice.in2[2:2] FPU_slice.in3[2:2] FPU_slice.in4[2:2] feedback_reg1[2:2].Q feedback_reg2[2:2].Q feedback_reg3[2:2].Q WB1[2:2].Q FM1.out[2:2] FA1.out[2:2] WB2[2:2].Q WB3[2:2].Q FM2.out[2:2] FA2.out[2:2] WB4[2:2].Q" output ="FPU_slice.out1[2:2]"/>
+		<mux name="output1_mux4" input="FPU_slice.in1[3:3] FPU_slice.in2[3:3] FPU_slice.in3[3:3] FPU_slice.in4[3:3] feedback_reg1[3:3].Q feedback_reg2[3:3].Q feedback_reg3[3:3].Q WB1[3:3].Q FM1.out[3:3] FA1.out[3:3] WB2[3:3].Q WB3[3:3].Q FM2.out[3:3] FA2.out[3:3] WB4[3:3].Q" output ="FPU_slice.out1[3:3]"/>
+		<mux name="output1_mux5" input="FPU_slice.in1[4:4] FPU_slice.in2[4:4] FPU_slice.in3[4:4] FPU_slice.in4[4:4] feedback_reg1[4:4].Q feedback_reg2[4:4].Q feedback_reg3[4:4].Q WB1[4:4].Q FM1.out[4:4] FA1.out[4:4] WB2[4:4].Q WB3[4:4].Q FM2.out[4:4] FA2.out[4:4] WB4[4:4].Q" output ="FPU_slice.out1[4:4]"/>
+		<mux name="output1_mux6" input="FPU_slice.in1[5:5] FPU_slice.in2[5:5] FPU_slice.in3[5:5] FPU_slice.in4[5:5] feedback_reg1[5:5].Q feedback_reg2[5:5].Q feedback_reg3[5:5].Q WB1[5:5].Q FM1.out[5:5] FA1.out[5:5] WB2[5:5].Q WB3[5:5].Q FM2.out[5:5] FA2.out[5:5] WB4[5:5].Q" output ="FPU_slice.out1[5:5]"/>
+		<mux name="output1_mux7" input="FPU_slice.in1[6:6] FPU_slice.in2[6:6] FPU_slice.in3[6:6] FPU_slice.in4[6:6] feedback_reg1[6:6].Q feedback_reg2[6:6].Q feedback_reg3[6:6].Q WB1[6:6].Q FM1.out[6:6] FA1.out[6:6] WB2[6:6].Q WB3[6:6].Q FM2.out[6:6] FA2.out[6:6] WB4[6:6].Q" output ="FPU_slice.out1[6:6]"/>
+		<mux name="output1_mux8" input="FPU_slice.in1[7:7] FPU_slice.in2[7:7] FPU_slice.in3[7:7] FPU_slice.in4[7:7] feedback_reg1[7:7].Q feedback_reg2[7:7].Q feedback_reg3[7:7].Q WB1[7:7].Q FM1.out[7:7] FA1.out[7:7] WB2[7:7].Q WB3[7:7].Q FM2.out[7:7] FA2.out[7:7] WB4[7:7].Q" output ="FPU_slice.out1[7:7]"/>
+		<mux name="output1_mux9" input="FPU_slice.in1[8:8] FPU_slice.in2[8:8] FPU_slice.in3[8:8] FPU_slice.in4[8:8] feedback_reg1[8:8].Q feedback_reg2[8:8].Q feedback_reg3[8:8].Q WB1[8:8].Q FM1.out[8:8] FA1.out[8:8] WB2[8:8].Q WB3[8:8].Q FM2.out[8:8] FA2.out[8:8] WB4[8:8].Q" output ="FPU_slice.out1[8:8]"/>
+		<mux name="output1_mux10" input="FPU_slice.in1[9:9] FPU_slice.in2[9:9] FPU_slice.in3[9:9] FPU_slice.in4[9:9] feedback_reg1[9:9].Q feedback_reg2[9:9].Q feedback_reg3[9:9].Q WB1[9:9].Q FM1.out[9:9] FA1.out[9:9] WB2[9:9].Q WB3[9:9].Q FM2.out[9:9] FA2.out[9:9] WB4[9:9].Q" output ="FPU_slice.out1[9:9]"/>
+		<mux name="output1_mux11" input="FPU_slice.in1[10:10] FPU_slice.in2[10:10] FPU_slice.in3[10:10] FPU_slice.in4[10:10] feedback_reg1[10:10].Q feedback_reg2[10:10].Q feedback_reg3[10:10].Q WB1[10:10].Q FM1.out[10:10] FA1.out[10:10] WB2[10:10].Q WB3[10:10].Q FM2.out[10:10] FA2.out[10:10] WB4[10:10].Q" output ="FPU_slice.out1[10:10]"/>
+		<mux name="output1_mux12" input="FPU_slice.in1[11:11] FPU_slice.in2[11:11] FPU_slice.in3[11:11] FPU_slice.in4[11:11] feedback_reg1[11:11].Q feedback_reg2[11:11].Q feedback_reg3[11:11].Q WB1[11:11].Q FM1.out[11:11] FA1.out[11:11] WB2[11:11].Q WB3[11:11].Q FM2.out[11:11] FA2.out[11:11] WB4[11:11].Q" output ="FPU_slice.out1[11:11]"/>
+		<mux name="output1_mux13" input="FPU_slice.in1[12:12] FPU_slice.in2[12:12] FPU_slice.in3[12:12] FPU_slice.in4[12:12] feedback_reg1[12:12].Q feedback_reg2[12:12].Q feedback_reg3[12:12].Q WB1[12:12].Q FM1.out[12:12] FA1.out[12:12] WB2[12:12].Q WB3[12:12].Q FM2.out[12:12] FA2.out[12:12] WB4[12:12].Q" output ="FPU_slice.out1[12:12]"/>
+		<mux name="output1_mux14" input="FPU_slice.in1[13:13] FPU_slice.in2[13:13] FPU_slice.in3[13:13] FPU_slice.in4[13:13] feedback_reg1[13:13].Q feedback_reg2[13:13].Q feedback_reg3[13:13].Q WB1[13:13].Q FM1.out[13:13] FA1.out[13:13] WB2[13:13].Q WB3[13:13].Q FM2.out[13:13] FA2.out[13:13] WB4[13:13].Q" output ="FPU_slice.out1[13:13]"/>
+		<mux name="output1_mux15" input="FPU_slice.in1[14:14] FPU_slice.in2[14:14] FPU_slice.in3[14:14] FPU_slice.in4[14:14] feedback_reg1[14:14].Q feedback_reg2[14:14].Q feedback_reg3[14:14].Q WB1[14:14].Q FM1.out[14:14] FA1.out[14:14] WB2[14:14].Q WB3[14:14].Q FM2.out[14:14] FA2.out[14:14] WB4[14:14].Q" output ="FPU_slice.out1[14:14]"/>
+		<mux name="output1_mux16" input="FPU_slice.in1[15:15] FPU_slice.in2[15:15] FPU_slice.in3[15:15] FPU_slice.in4[15:15] feedback_reg1[15:15].Q feedback_reg2[15:15].Q feedback_reg3[15:15].Q WB1[15:15].Q FM1.out[15:15] FA1.out[15:15] WB2[15:15].Q WB3[15:15].Q FM2.out[15:15] FA2.out[15:15] WB4[15:15].Q" output ="FPU_slice.out1[15:15]"/>
+		<mux name="output1_mux17" input="FPU_slice.in1[16:16] FPU_slice.in2[16:16] FPU_slice.in3[16:16] FPU_slice.in4[16:16] feedback_reg1[16:16].Q feedback_reg2[16:16].Q feedback_reg3[16:16].Q WB1[16:16].Q FM1.out[16:16] FA1.out[16:16] WB2[16:16].Q WB3[16:16].Q FM2.out[16:16] FA2.out[16:16] WB4[16:16].Q" output ="FPU_slice.out1[16:16]"/>
+		<mux name="output1_mux18" input="FPU_slice.in1[17:17] FPU_slice.in2[17:17] FPU_slice.in3[17:17] FPU_slice.in4[17:17] feedback_reg1[17:17].Q feedback_reg2[17:17].Q feedback_reg3[17:17].Q WB1[17:17].Q FM1.out[17:17] FA1.out[17:17] WB2[17:17].Q WB3[17:17].Q FM2.out[17:17] FA2.out[17:17] WB4[17:17].Q" output ="FPU_slice.out1[17:17]"/>
+		<mux name="output1_mux19" input="FPU_slice.in1[18:18] FPU_slice.in2[18:18] FPU_slice.in3[18:18] FPU_slice.in4[18:18] feedback_reg1[18:18].Q feedback_reg2[18:18].Q feedback_reg3[18:18].Q WB1[18:18].Q FM1.out[18:18] FA1.out[18:18] WB2[18:18].Q WB3[18:18].Q FM2.out[18:18] FA2.out[18:18] WB4[18:18].Q" output ="FPU_slice.out1[18:18]"/>
+		<mux name="output1_mux20" input="FPU_slice.in1[19:19] FPU_slice.in2[19:19] FPU_slice.in3[19:19] FPU_slice.in4[19:19] feedback_reg1[19:19].Q feedback_reg2[19:19].Q feedback_reg3[19:19].Q WB1[19:19].Q FM1.out[19:19] FA1.out[19:19] WB2[19:19].Q WB3[19:19].Q FM2.out[19:19] FA2.out[19:19] WB4[19:19].Q" output ="FPU_slice.out1[19:19]"/>
+		<mux name="output1_mux21" input="FPU_slice.in1[20:20] FPU_slice.in2[20:20] FPU_slice.in3[20:20] FPU_slice.in4[20:20] feedback_reg1[20:20].Q feedback_reg2[20:20].Q feedback_reg3[20:20].Q WB1[20:20].Q FM1.out[20:20] FA1.out[20:20] WB2[20:20].Q WB3[20:20].Q FM2.out[20:20] FA2.out[20:20] WB4[20:20].Q" output ="FPU_slice.out1[20:20]"/>
+		<mux name="output1_mux22" input="FPU_slice.in1[21:21] FPU_slice.in2[21:21] FPU_slice.in3[21:21] FPU_slice.in4[21:21] feedback_reg1[21:21].Q feedback_reg2[21:21].Q feedback_reg3[21:21].Q WB1[21:21].Q FM1.out[21:21] FA1.out[21:21] WB2[21:21].Q WB3[21:21].Q FM2.out[21:21] FA2.out[21:21] WB4[21:21].Q" output ="FPU_slice.out1[21:21]"/>
+		<mux name="output1_mux23" input="FPU_slice.in1[22:22] FPU_slice.in2[22:22] FPU_slice.in3[22:22] FPU_slice.in4[22:22] feedback_reg1[22:22].Q feedback_reg2[22:22].Q feedback_reg3[22:22].Q WB1[22:22].Q FM1.out[22:22] FA1.out[22:22] WB2[22:22].Q WB3[22:22].Q FM2.out[22:22] FA2.out[22:22] WB4[22:22].Q" output ="FPU_slice.out1[22:22]"/>
+		<mux name="output1_mux24" input="FPU_slice.in1[23:23] FPU_slice.in2[23:23] FPU_slice.in3[23:23] FPU_slice.in4[23:23] feedback_reg1[23:23].Q feedback_reg2[23:23].Q feedback_reg3[23:23].Q WB1[23:23].Q FM1.out[23:23] FA1.out[23:23] WB2[23:23].Q WB3[23:23].Q FM2.out[23:23] FA2.out[23:23] WB4[23:23].Q" output ="FPU_slice.out1[23:23]"/>
+		<mux name="output1_mux25" input="FPU_slice.in1[24:24] FPU_slice.in2[24:24] FPU_slice.in3[24:24] FPU_slice.in4[24:24] feedback_reg1[24:24].Q feedback_reg2[24:24].Q feedback_reg3[24:24].Q WB1[24:24].Q FM1.out[24:24] FA1.out[24:24] WB2[24:24].Q WB3[24:24].Q FM2.out[24:24] FA2.out[24:24] WB4[24:24].Q" output ="FPU_slice.out1[24:24]"/>
+		<mux name="output1_mux26" input="FPU_slice.in1[25:25] FPU_slice.in2[25:25] FPU_slice.in3[25:25] FPU_slice.in4[25:25] feedback_reg1[25:25].Q feedback_reg2[25:25].Q feedback_reg3[25:25].Q WB1[25:25].Q FM1.out[25:25] FA1.out[25:25] WB2[25:25].Q WB3[25:25].Q FM2.out[25:25] FA2.out[25:25] WB4[25:25].Q" output ="FPU_slice.out1[25:25]"/>
+		<mux name="output1_mux27" input="FPU_slice.in1[26:26] FPU_slice.in2[26:26] FPU_slice.in3[26:26] FPU_slice.in4[26:26] feedback_reg1[26:26].Q feedback_reg2[26:26].Q feedback_reg3[26:26].Q WB1[26:26].Q FM1.out[26:26] FA1.out[26:26] WB2[26:26].Q WB3[26:26].Q FM2.out[26:26] FA2.out[26:26] WB4[26:26].Q" output ="FPU_slice.out1[26:26]"/>
+		<mux name="output1_mux28" input="FPU_slice.in1[27:27] FPU_slice.in2[27:27] FPU_slice.in3[27:27] FPU_slice.in4[27:27] feedback_reg1[27:27].Q feedback_reg2[27:27].Q feedback_reg3[27:27].Q WB1[27:27].Q FM1.out[27:27] FA1.out[27:27] WB2[27:27].Q WB3[27:27].Q FM2.out[27:27] FA2.out[27:27] WB4[27:27].Q" output ="FPU_slice.out1[27:27]"/>
+		<mux name="output1_mux29" input="FPU_slice.in1[28:28] FPU_slice.in2[28:28] FPU_slice.in3[28:28] FPU_slice.in4[28:28] feedback_reg1[28:28].Q feedback_reg2[28:28].Q feedback_reg3[28:28].Q WB1[28:28].Q FM1.out[28:28] FA1.out[28:28] WB2[28:28].Q WB3[28:28].Q FM2.out[28:28] FA2.out[28:28] WB4[28:28].Q" output ="FPU_slice.out1[28:28]"/>
+		<mux name="output1_mux30" input="FPU_slice.in1[29:29] FPU_slice.in2[29:29] FPU_slice.in3[29:29] FPU_slice.in4[29:29] feedback_reg1[29:29].Q feedback_reg2[29:29].Q feedback_reg3[29:29].Q WB1[29:29].Q FM1.out[29:29] FA1.out[29:29] WB2[29:29].Q WB3[29:29].Q FM2.out[29:29] FA2.out[29:29] WB4[29:29].Q" output ="FPU_slice.out1[29:29]"/>
+		<mux name="output1_mux31" input="FPU_slice.in1[30:30] FPU_slice.in2[30:30] FPU_slice.in3[30:30] FPU_slice.in4[30:30] feedback_reg1[30:30].Q feedback_reg2[30:30].Q feedback_reg3[30:30].Q WB1[30:30].Q FM1.out[30:30] FA1.out[30:30] WB2[30:30].Q WB3[30:30].Q FM2.out[30:30] FA2.out[30:30] WB4[30:30].Q" output ="FPU_slice.out1[30:30]"/>
+		<mux name="output1_mux32" input="FPU_slice.in1[31:31] FPU_slice.in2[31:31] FPU_slice.in3[31:31] FPU_slice.in4[31:31] feedback_reg1[31:31].Q feedback_reg2[31:31].Q feedback_reg3[31:31].Q WB1[31:31].Q FM1.out[31:31] FA1.out[31:31] WB2[31:31].Q WB3[31:31].Q FM2.out[31:31] FA2.out[31:31] WB4[31:31].Q" output ="FPU_slice.out1[31:31]"/>
+		
+		<!--############# output2 ##############-->	
+		<mux name="output2_mux1" input="FPU_slice.in1[0:0] FPU_slice.in2[0:0] FPU_slice.in3[0:0] FPU_slice.in4[0:0] feedback_reg1[0:0].Q feedback_reg2[0:0].Q feedback_reg3[0:0].Q WB1[0:0].Q FM1.out[0:0] FA1.out[0:0] WB2[0:0].Q WB3[0:0].Q FM2.out[0:0] FA2.out[0:0] WB4[0:0].Q" output ="FPU_slice.out2[0:0]"/>
+		<mux name="output2_mux2" input="FPU_slice.in1[1:1] FPU_slice.in2[1:1] FPU_slice.in3[1:1] FPU_slice.in4[1:1] feedback_reg1[1:1].Q feedback_reg2[1:1].Q feedback_reg3[1:1].Q WB1[1:1].Q FM1.out[1:1] FA1.out[1:1] WB2[1:1].Q WB3[1:1].Q FM2.out[1:1] FA2.out[1:1] WB4[1:1].Q" output ="FPU_slice.out2[1:1]"/>
+		<mux name="output2_mux3" input="FPU_slice.in1[2:2] FPU_slice.in2[2:2] FPU_slice.in3[2:2] FPU_slice.in4[2:2] feedback_reg1[2:2].Q feedback_reg2[2:2].Q feedback_reg3[2:2].Q WB1[2:2].Q FM1.out[2:2] FA1.out[2:2] WB2[2:2].Q WB3[2:2].Q FM2.out[2:2] FA2.out[2:2] WB4[2:2].Q" output ="FPU_slice.out2[2:2]"/>
+		<mux name="output2_mux4" input="FPU_slice.in1[3:3] FPU_slice.in2[3:3] FPU_slice.in3[3:3] FPU_slice.in4[3:3] feedback_reg1[3:3].Q feedback_reg2[3:3].Q feedback_reg3[3:3].Q WB1[3:3].Q FM1.out[3:3] FA1.out[3:3] WB2[3:3].Q WB3[3:3].Q FM2.out[3:3] FA2.out[3:3] WB4[3:3].Q" output ="FPU_slice.out2[3:3]"/>
+		<mux name="output2_mux5" input="FPU_slice.in1[4:4] FPU_slice.in2[4:4] FPU_slice.in3[4:4] FPU_slice.in4[4:4] feedback_reg1[4:4].Q feedback_reg2[4:4].Q feedback_reg3[4:4].Q WB1[4:4].Q FM1.out[4:4] FA1.out[4:4] WB2[4:4].Q WB3[4:4].Q FM2.out[4:4] FA2.out[4:4] WB4[4:4].Q" output ="FPU_slice.out2[4:4]"/>
+		<mux name="output2_mux6" input="FPU_slice.in1[5:5] FPU_slice.in2[5:5] FPU_slice.in3[5:5] FPU_slice.in4[5:5] feedback_reg1[5:5].Q feedback_reg2[5:5].Q feedback_reg3[5:5].Q WB1[5:5].Q FM1.out[5:5] FA1.out[5:5] WB2[5:5].Q WB3[5:5].Q FM2.out[5:5] FA2.out[5:5] WB4[5:5].Q" output ="FPU_slice.out2[5:5]"/>
+		<mux name="output2_mux7" input="FPU_slice.in1[6:6] FPU_slice.in2[6:6] FPU_slice.in3[6:6] FPU_slice.in4[6:6] feedback_reg1[6:6].Q feedback_reg2[6:6].Q feedback_reg3[6:6].Q WB1[6:6].Q FM1.out[6:6] FA1.out[6:6] WB2[6:6].Q WB3[6:6].Q FM2.out[6:6] FA2.out[6:6] WB4[6:6].Q" output ="FPU_slice.out2[6:6]"/>
+		<mux name="output2_mux8" input="FPU_slice.in1[7:7] FPU_slice.in2[7:7] FPU_slice.in3[7:7] FPU_slice.in4[7:7] feedback_reg1[7:7].Q feedback_reg2[7:7].Q feedback_reg3[7:7].Q WB1[7:7].Q FM1.out[7:7] FA1.out[7:7] WB2[7:7].Q WB3[7:7].Q FM2.out[7:7] FA2.out[7:7] WB4[7:7].Q" output ="FPU_slice.out2[7:7]"/>
+		<mux name="output2_mux9" input="FPU_slice.in1[8:8] FPU_slice.in2[8:8] FPU_slice.in3[8:8] FPU_slice.in4[8:8] feedback_reg1[8:8].Q feedback_reg2[8:8].Q feedback_reg3[8:8].Q WB1[8:8].Q FM1.out[8:8] FA1.out[8:8] WB2[8:8].Q WB3[8:8].Q FM2.out[8:8] FA2.out[8:8] WB4[8:8].Q" output ="FPU_slice.out2[8:8]"/>
+		<mux name="output2_mux10" input="FPU_slice.in1[9:9] FPU_slice.in2[9:9] FPU_slice.in3[9:9] FPU_slice.in4[9:9] feedback_reg1[9:9].Q feedback_reg2[9:9].Q feedback_reg3[9:9].Q WB1[9:9].Q FM1.out[9:9] FA1.out[9:9] WB2[9:9].Q WB3[9:9].Q FM2.out[9:9] FA2.out[9:9] WB4[9:9].Q" output ="FPU_slice.out2[9:9]"/>
+		<mux name="output2_mux11" input="FPU_slice.in1[10:10] FPU_slice.in2[10:10] FPU_slice.in3[10:10] FPU_slice.in4[10:10] feedback_reg1[10:10].Q feedback_reg2[10:10].Q feedback_reg3[10:10].Q WB1[10:10].Q FM1.out[10:10] FA1.out[10:10] WB2[10:10].Q WB3[10:10].Q FM2.out[10:10] FA2.out[10:10] WB4[10:10].Q" output ="FPU_slice.out2[10:10]"/>
+		<mux name="output2_mux12" input="FPU_slice.in1[11:11] FPU_slice.in2[11:11] FPU_slice.in3[11:11] FPU_slice.in4[11:11] feedback_reg1[11:11].Q feedback_reg2[11:11].Q feedback_reg3[11:11].Q WB1[11:11].Q FM1.out[11:11] FA1.out[11:11] WB2[11:11].Q WB3[11:11].Q FM2.out[11:11] FA2.out[11:11] WB4[11:11].Q" output ="FPU_slice.out2[11:11]"/>
+		<mux name="output2_mux13" input="FPU_slice.in1[12:12] FPU_slice.in2[12:12] FPU_slice.in3[12:12] FPU_slice.in4[12:12] feedback_reg1[12:12].Q feedback_reg2[12:12].Q feedback_reg3[12:12].Q WB1[12:12].Q FM1.out[12:12] FA1.out[12:12] WB2[12:12].Q WB3[12:12].Q FM2.out[12:12] FA2.out[12:12] WB4[12:12].Q" output ="FPU_slice.out2[12:12]"/>
+		<mux name="output2_mux14" input="FPU_slice.in1[13:13] FPU_slice.in2[13:13] FPU_slice.in3[13:13] FPU_slice.in4[13:13] feedback_reg1[13:13].Q feedback_reg2[13:13].Q feedback_reg3[13:13].Q WB1[13:13].Q FM1.out[13:13] FA1.out[13:13] WB2[13:13].Q WB3[13:13].Q FM2.out[13:13] FA2.out[13:13] WB4[13:13].Q" output ="FPU_slice.out2[13:13]"/>
+		<mux name="output2_mux15" input="FPU_slice.in1[14:14] FPU_slice.in2[14:14] FPU_slice.in3[14:14] FPU_slice.in4[14:14] feedback_reg1[14:14].Q feedback_reg2[14:14].Q feedback_reg3[14:14].Q WB1[14:14].Q FM1.out[14:14] FA1.out[14:14] WB2[14:14].Q WB3[14:14].Q FM2.out[14:14] FA2.out[14:14] WB4[14:14].Q" output ="FPU_slice.out2[14:14]"/>
+		<mux name="output2_mux16" input="FPU_slice.in1[15:15] FPU_slice.in2[15:15] FPU_slice.in3[15:15] FPU_slice.in4[15:15] feedback_reg1[15:15].Q feedback_reg2[15:15].Q feedback_reg3[15:15].Q WB1[15:15].Q FM1.out[15:15] FA1.out[15:15] WB2[15:15].Q WB3[15:15].Q FM2.out[15:15] FA2.out[15:15] WB4[15:15].Q" output ="FPU_slice.out2[15:15]"/>
+		<mux name="output2_mux17" input="FPU_slice.in1[16:16] FPU_slice.in2[16:16] FPU_slice.in3[16:16] FPU_slice.in4[16:16] feedback_reg1[16:16].Q feedback_reg2[16:16].Q feedback_reg3[16:16].Q WB1[16:16].Q FM1.out[16:16] FA1.out[16:16] WB2[16:16].Q WB3[16:16].Q FM2.out[16:16] FA2.out[16:16] WB4[16:16].Q" output ="FPU_slice.out2[16:16]"/>
+		<mux name="output2_mux18" input="FPU_slice.in1[17:17] FPU_slice.in2[17:17] FPU_slice.in3[17:17] FPU_slice.in4[17:17] feedback_reg1[17:17].Q feedback_reg2[17:17].Q feedback_reg3[17:17].Q WB1[17:17].Q FM1.out[17:17] FA1.out[17:17] WB2[17:17].Q WB3[17:17].Q FM2.out[17:17] FA2.out[17:17] WB4[17:17].Q" output ="FPU_slice.out2[17:17]"/>
+		<mux name="output2_mux19" input="FPU_slice.in1[18:18] FPU_slice.in2[18:18] FPU_slice.in3[18:18] FPU_slice.in4[18:18] feedback_reg1[18:18].Q feedback_reg2[18:18].Q feedback_reg3[18:18].Q WB1[18:18].Q FM1.out[18:18] FA1.out[18:18] WB2[18:18].Q WB3[18:18].Q FM2.out[18:18] FA2.out[18:18] WB4[18:18].Q" output ="FPU_slice.out2[18:18]"/>
+		<mux name="output2_mux20" input="FPU_slice.in1[19:19] FPU_slice.in2[19:19] FPU_slice.in3[19:19] FPU_slice.in4[19:19] feedback_reg1[19:19].Q feedback_reg2[19:19].Q feedback_reg3[19:19].Q WB1[19:19].Q FM1.out[19:19] FA1.out[19:19] WB2[19:19].Q WB3[19:19].Q FM2.out[19:19] FA2.out[19:19] WB4[19:19].Q" output ="FPU_slice.out2[19:19]"/>
+		<mux name="output2_mux21" input="FPU_slice.in1[20:20] FPU_slice.in2[20:20] FPU_slice.in3[20:20] FPU_slice.in4[20:20] feedback_reg1[20:20].Q feedback_reg2[20:20].Q feedback_reg3[20:20].Q WB1[20:20].Q FM1.out[20:20] FA1.out[20:20] WB2[20:20].Q WB3[20:20].Q FM2.out[20:20] FA2.out[20:20] WB4[20:20].Q" output ="FPU_slice.out2[20:20]"/>
+		<mux name="output2_mux22" input="FPU_slice.in1[21:21] FPU_slice.in2[21:21] FPU_slice.in3[21:21] FPU_slice.in4[21:21] feedback_reg1[21:21].Q feedback_reg2[21:21].Q feedback_reg3[21:21].Q WB1[21:21].Q FM1.out[21:21] FA1.out[21:21] WB2[21:21].Q WB3[21:21].Q FM2.out[21:21] FA2.out[21:21] WB4[21:21].Q" output ="FPU_slice.out2[21:21]"/>
+		<mux name="output2_mux23" input="FPU_slice.in1[22:22] FPU_slice.in2[22:22] FPU_slice.in3[22:22] FPU_slice.in4[22:22] feedback_reg1[22:22].Q feedback_reg2[22:22].Q feedback_reg3[22:22].Q WB1[22:22].Q FM1.out[22:22] FA1.out[22:22] WB2[22:22].Q WB3[22:22].Q FM2.out[22:22] FA2.out[22:22] WB4[22:22].Q" output ="FPU_slice.out2[22:22]"/>
+		<mux name="output2_mux24" input="FPU_slice.in1[23:23] FPU_slice.in2[23:23] FPU_slice.in3[23:23] FPU_slice.in4[23:23] feedback_reg1[23:23].Q feedback_reg2[23:23].Q feedback_reg3[23:23].Q WB1[23:23].Q FM1.out[23:23] FA1.out[23:23] WB2[23:23].Q WB3[23:23].Q FM2.out[23:23] FA2.out[23:23] WB4[23:23].Q" output ="FPU_slice.out2[23:23]"/>
+		<mux name="output2_mux25" input="FPU_slice.in1[24:24] FPU_slice.in2[24:24] FPU_slice.in3[24:24] FPU_slice.in4[24:24] feedback_reg1[24:24].Q feedback_reg2[24:24].Q feedback_reg3[24:24].Q WB1[24:24].Q FM1.out[24:24] FA1.out[24:24] WB2[24:24].Q WB3[24:24].Q FM2.out[24:24] FA2.out[24:24] WB4[24:24].Q" output ="FPU_slice.out2[24:24]"/>
+		<mux name="output2_mux26" input="FPU_slice.in1[25:25] FPU_slice.in2[25:25] FPU_slice.in3[25:25] FPU_slice.in4[25:25] feedback_reg1[25:25].Q feedback_reg2[25:25].Q feedback_reg3[25:25].Q WB1[25:25].Q FM1.out[25:25] FA1.out[25:25] WB2[25:25].Q WB3[25:25].Q FM2.out[25:25] FA2.out[25:25] WB4[25:25].Q" output ="FPU_slice.out2[25:25]"/>
+		<mux name="output2_mux27" input="FPU_slice.in1[26:26] FPU_slice.in2[26:26] FPU_slice.in3[26:26] FPU_slice.in4[26:26] feedback_reg1[26:26].Q feedback_reg2[26:26].Q feedback_reg3[26:26].Q WB1[26:26].Q FM1.out[26:26] FA1.out[26:26] WB2[26:26].Q WB3[26:26].Q FM2.out[26:26] FA2.out[26:26] WB4[26:26].Q" output ="FPU_slice.out2[26:26]"/>
+		<mux name="output2_mux28" input="FPU_slice.in1[27:27] FPU_slice.in2[27:27] FPU_slice.in3[27:27] FPU_slice.in4[27:27] feedback_reg1[27:27].Q feedback_reg2[27:27].Q feedback_reg3[27:27].Q WB1[27:27].Q FM1.out[27:27] FA1.out[27:27] WB2[27:27].Q WB3[27:27].Q FM2.out[27:27] FA2.out[27:27] WB4[27:27].Q" output ="FPU_slice.out2[27:27]"/>
+		<mux name="output2_mux29" input="FPU_slice.in1[28:28] FPU_slice.in2[28:28] FPU_slice.in3[28:28] FPU_slice.in4[28:28] feedback_reg1[28:28].Q feedback_reg2[28:28].Q feedback_reg3[28:28].Q WB1[28:28].Q FM1.out[28:28] FA1.out[28:28] WB2[28:28].Q WB3[28:28].Q FM2.out[28:28] FA2.out[28:28] WB4[28:28].Q" output ="FPU_slice.out2[28:28]"/>
+		<mux name="output2_mux30" input="FPU_slice.in1[29:29] FPU_slice.in2[29:29] FPU_slice.in3[29:29] FPU_slice.in4[29:29] feedback_reg1[29:29].Q feedback_reg2[29:29].Q feedback_reg3[29:29].Q WB1[29:29].Q FM1.out[29:29] FA1.out[29:29] WB2[29:29].Q WB3[29:29].Q FM2.out[29:29] FA2.out[29:29] WB4[29:29].Q" output ="FPU_slice.out2[29:29]"/>
+		<mux name="output2_mux31" input="FPU_slice.in1[30:30] FPU_slice.in2[30:30] FPU_slice.in3[30:30] FPU_slice.in4[30:30] feedback_reg1[30:30].Q feedback_reg2[30:30].Q feedback_reg3[30:30].Q WB1[30:30].Q FM1.out[30:30] FA1.out[30:30] WB2[30:30].Q WB3[30:30].Q FM2.out[30:30] FA2.out[30:30] WB4[30:30].Q" output ="FPU_slice.out2[30:30]"/>
+		<mux name="output2_mux32" input="FPU_slice.in1[31:31] FPU_slice.in2[31:31] FPU_slice.in3[31:31] FPU_slice.in4[31:31] feedback_reg1[31:31].Q feedback_reg2[31:31].Q feedback_reg3[31:31].Q WB1[31:31].Q FM1.out[31:31] FA1.out[31:31] WB2[31:31].Q WB3[31:31].Q FM2.out[31:31] FA2.out[31:31] WB4[31:31].Q" output ="FPU_slice.out2[31:31]"/>
+		
+
+		<!--############# output3 ##############-->	
+		<mux name="output3_mux1" input="FPU_slice.in1[0:0] FPU_slice.in2[0:0] FPU_slice.in3[0:0] FPU_slice.in4[0:0] feedback_reg1[0:0].Q feedback_reg2[0:0].Q feedback_reg3[0:0].Q WB1[0:0].Q FM1.out[0:0] FA1.out[0:0] WB2[0:0].Q WB3[0:0].Q FM2.out[0:0] FA2.out[0:0] WB4[0:0].Q" output ="FPU_slice.out3[0:0]"/>
+		<mux name="output3_mux2" input="FPU_slice.in1[1:1] FPU_slice.in2[1:1] FPU_slice.in3[1:1] FPU_slice.in4[1:1] feedback_reg1[1:1].Q feedback_reg2[1:1].Q feedback_reg3[1:1].Q WB1[1:1].Q FM1.out[1:1] FA1.out[1:1] WB2[1:1].Q WB3[1:1].Q FM2.out[1:1] FA2.out[1:1] WB4[1:1].Q" output ="FPU_slice.out3[1:1]"/>
+		<mux name="output3_mux3" input="FPU_slice.in1[2:2] FPU_slice.in2[2:2] FPU_slice.in3[2:2] FPU_slice.in4[2:2] feedback_reg1[2:2].Q feedback_reg2[2:2].Q feedback_reg3[2:2].Q WB1[2:2].Q FM1.out[2:2] FA1.out[2:2] WB2[2:2].Q WB3[2:2].Q FM2.out[2:2] FA2.out[2:2] WB4[2:2].Q" output ="FPU_slice.out3[2:2]"/>
+		<mux name="output3_mux4" input="FPU_slice.in1[3:3] FPU_slice.in2[3:3] FPU_slice.in3[3:3] FPU_slice.in4[3:3] feedback_reg1[3:3].Q feedback_reg2[3:3].Q feedback_reg3[3:3].Q WB1[3:3].Q FM1.out[3:3] FA1.out[3:3] WB2[3:3].Q WB3[3:3].Q FM2.out[3:3] FA2.out[3:3] WB4[3:3].Q" output ="FPU_slice.out3[3:3]"/>
+		<mux name="output3_mux5" input="FPU_slice.in1[4:4] FPU_slice.in2[4:4] FPU_slice.in3[4:4] FPU_slice.in4[4:4] feedback_reg1[4:4].Q feedback_reg2[4:4].Q feedback_reg3[4:4].Q WB1[4:4].Q FM1.out[4:4] FA1.out[4:4] WB2[4:4].Q WB3[4:4].Q FM2.out[4:4] FA2.out[4:4] WB4[4:4].Q" output ="FPU_slice.out3[4:4]"/>
+		<mux name="output3_mux6" input="FPU_slice.in1[5:5] FPU_slice.in2[5:5] FPU_slice.in3[5:5] FPU_slice.in4[5:5] feedback_reg1[5:5].Q feedback_reg2[5:5].Q feedback_reg3[5:5].Q WB1[5:5].Q FM1.out[5:5] FA1.out[5:5] WB2[5:5].Q WB3[5:5].Q FM2.out[5:5] FA2.out[5:5] WB4[5:5].Q" output ="FPU_slice.out3[5:5]"/>
+		<mux name="output3_mux7" input="FPU_slice.in1[6:6] FPU_slice.in2[6:6] FPU_slice.in3[6:6] FPU_slice.in4[6:6] feedback_reg1[6:6].Q feedback_reg2[6:6].Q feedback_reg3[6:6].Q WB1[6:6].Q FM1.out[6:6] FA1.out[6:6] WB2[6:6].Q WB3[6:6].Q FM2.out[6:6] FA2.out[6:6] WB4[6:6].Q" output ="FPU_slice.out3[6:6]"/>
+		<mux name="output3_mux8" input="FPU_slice.in1[7:7] FPU_slice.in2[7:7] FPU_slice.in3[7:7] FPU_slice.in4[7:7] feedback_reg1[7:7].Q feedback_reg2[7:7].Q feedback_reg3[7:7].Q WB1[7:7].Q FM1.out[7:7] FA1.out[7:7] WB2[7:7].Q WB3[7:7].Q FM2.out[7:7] FA2.out[7:7] WB4[7:7].Q" output ="FPU_slice.out3[7:7]"/>
+		<mux name="output3_mux9" input="FPU_slice.in1[8:8] FPU_slice.in2[8:8] FPU_slice.in3[8:8] FPU_slice.in4[8:8] feedback_reg1[8:8].Q feedback_reg2[8:8].Q feedback_reg3[8:8].Q WB1[8:8].Q FM1.out[8:8] FA1.out[8:8] WB2[8:8].Q WB3[8:8].Q FM2.out[8:8] FA2.out[8:8] WB4[8:8].Q" output ="FPU_slice.out3[8:8]"/>
+		<mux name="output3_mux10" input="FPU_slice.in1[9:9] FPU_slice.in2[9:9] FPU_slice.in3[9:9] FPU_slice.in4[9:9] feedback_reg1[9:9].Q feedback_reg2[9:9].Q feedback_reg3[9:9].Q WB1[9:9].Q FM1.out[9:9] FA1.out[9:9] WB2[9:9].Q WB3[9:9].Q FM2.out[9:9] FA2.out[9:9] WB4[9:9].Q" output ="FPU_slice.out3[9:9]"/>
+		<mux name="output3_mux11" input="FPU_slice.in1[10:10] FPU_slice.in2[10:10] FPU_slice.in3[10:10] FPU_slice.in4[10:10] feedback_reg1[10:10].Q feedback_reg2[10:10].Q feedback_reg3[10:10].Q WB1[10:10].Q FM1.out[10:10] FA1.out[10:10] WB2[10:10].Q WB3[10:10].Q FM2.out[10:10] FA2.out[10:10] WB4[10:10].Q" output ="FPU_slice.out3[10:10]"/>
+		<mux name="output3_mux12" input="FPU_slice.in1[11:11] FPU_slice.in2[11:11] FPU_slice.in3[11:11] FPU_slice.in4[11:11] feedback_reg1[11:11].Q feedback_reg2[11:11].Q feedback_reg3[11:11].Q WB1[11:11].Q FM1.out[11:11] FA1.out[11:11] WB2[11:11].Q WB3[11:11].Q FM2.out[11:11] FA2.out[11:11] WB4[11:11].Q" output ="FPU_slice.out3[11:11]"/>
+		<mux name="output3_mux13" input="FPU_slice.in1[12:12] FPU_slice.in2[12:12] FPU_slice.in3[12:12] FPU_slice.in4[12:12] feedback_reg1[12:12].Q feedback_reg2[12:12].Q feedback_reg3[12:12].Q WB1[12:12].Q FM1.out[12:12] FA1.out[12:12] WB2[12:12].Q WB3[12:12].Q FM2.out[12:12] FA2.out[12:12] WB4[12:12].Q" output ="FPU_slice.out3[12:12]"/>
+		<mux name="output3_mux14" input="FPU_slice.in1[13:13] FPU_slice.in2[13:13] FPU_slice.in3[13:13] FPU_slice.in4[13:13] feedback_reg1[13:13].Q feedback_reg2[13:13].Q feedback_reg3[13:13].Q WB1[13:13].Q FM1.out[13:13] FA1.out[13:13] WB2[13:13].Q WB3[13:13].Q FM2.out[13:13] FA2.out[13:13] WB4[13:13].Q" output ="FPU_slice.out3[13:13]"/>
+		<mux name="output3_mux15" input="FPU_slice.in1[14:14] FPU_slice.in2[14:14] FPU_slice.in3[14:14] FPU_slice.in4[14:14] feedback_reg1[14:14].Q feedback_reg2[14:14].Q feedback_reg3[14:14].Q WB1[14:14].Q FM1.out[14:14] FA1.out[14:14] WB2[14:14].Q WB3[14:14].Q FM2.out[14:14] FA2.out[14:14] WB4[14:14].Q" output ="FPU_slice.out3[14:14]"/>
+		<mux name="output3_mux16" input="FPU_slice.in1[15:15] FPU_slice.in2[15:15] FPU_slice.in3[15:15] FPU_slice.in4[15:15] feedback_reg1[15:15].Q feedback_reg2[15:15].Q feedback_reg3[15:15].Q WB1[15:15].Q FM1.out[15:15] FA1.out[15:15] WB2[15:15].Q WB3[15:15].Q FM2.out[15:15] FA2.out[15:15] WB4[15:15].Q" output ="FPU_slice.out3[15:15]"/>
+		<mux name="output3_mux17" input="FPU_slice.in1[16:16] FPU_slice.in2[16:16] FPU_slice.in3[16:16] FPU_slice.in4[16:16] feedback_reg1[16:16].Q feedback_reg2[16:16].Q feedback_reg3[16:16].Q WB1[16:16].Q FM1.out[16:16] FA1.out[16:16] WB2[16:16].Q WB3[16:16].Q FM2.out[16:16] FA2.out[16:16] WB4[16:16].Q" output ="FPU_slice.out3[16:16]"/>
+		<mux name="output3_mux18" input="FPU_slice.in1[17:17] FPU_slice.in2[17:17] FPU_slice.in3[17:17] FPU_slice.in4[17:17] feedback_reg1[17:17].Q feedback_reg2[17:17].Q feedback_reg3[17:17].Q WB1[17:17].Q FM1.out[17:17] FA1.out[17:17] WB2[17:17].Q WB3[17:17].Q FM2.out[17:17] FA2.out[17:17] WB4[17:17].Q" output ="FPU_slice.out3[17:17]"/>
+		<mux name="output3_mux19" input="FPU_slice.in1[18:18] FPU_slice.in2[18:18] FPU_slice.in3[18:18] FPU_slice.in4[18:18] feedback_reg1[18:18].Q feedback_reg2[18:18].Q feedback_reg3[18:18].Q WB1[18:18].Q FM1.out[18:18] FA1.out[18:18] WB2[18:18].Q WB3[18:18].Q FM2.out[18:18] FA2.out[18:18] WB4[18:18].Q" output ="FPU_slice.out3[18:18]"/>
+		<mux name="output3_mux20" input="FPU_slice.in1[19:19] FPU_slice.in2[19:19] FPU_slice.in3[19:19] FPU_slice.in4[19:19] feedback_reg1[19:19].Q feedback_reg2[19:19].Q feedback_reg3[19:19].Q WB1[19:19].Q FM1.out[19:19] FA1.out[19:19] WB2[19:19].Q WB3[19:19].Q FM2.out[19:19] FA2.out[19:19] WB4[19:19].Q" output ="FPU_slice.out3[19:19]"/>
+		<mux name="output3_mux21" input="FPU_slice.in1[20:20] FPU_slice.in2[20:20] FPU_slice.in3[20:20] FPU_slice.in4[20:20] feedback_reg1[20:20].Q feedback_reg2[20:20].Q feedback_reg3[20:20].Q WB1[20:20].Q FM1.out[20:20] FA1.out[20:20] WB2[20:20].Q WB3[20:20].Q FM2.out[20:20] FA2.out[20:20] WB4[20:20].Q" output ="FPU_slice.out3[20:20]"/>
+		<mux name="output3_mux22" input="FPU_slice.in1[21:21] FPU_slice.in2[21:21] FPU_slice.in3[21:21] FPU_slice.in4[21:21] feedback_reg1[21:21].Q feedback_reg2[21:21].Q feedback_reg3[21:21].Q WB1[21:21].Q FM1.out[21:21] FA1.out[21:21] WB2[21:21].Q WB3[21:21].Q FM2.out[21:21] FA2.out[21:21] WB4[21:21].Q" output ="FPU_slice.out3[21:21]"/>
+		<mux name="output3_mux23" input="FPU_slice.in1[22:22] FPU_slice.in2[22:22] FPU_slice.in3[22:22] FPU_slice.in4[22:22] feedback_reg1[22:22].Q feedback_reg2[22:22].Q feedback_reg3[22:22].Q WB1[22:22].Q FM1.out[22:22] FA1.out[22:22] WB2[22:22].Q WB3[22:22].Q FM2.out[22:22] FA2.out[22:22] WB4[22:22].Q" output ="FPU_slice.out3[22:22]"/>
+		<mux name="output3_mux24" input="FPU_slice.in1[23:23] FPU_slice.in2[23:23] FPU_slice.in3[23:23] FPU_slice.in4[23:23] feedback_reg1[23:23].Q feedback_reg2[23:23].Q feedback_reg3[23:23].Q WB1[23:23].Q FM1.out[23:23] FA1.out[23:23] WB2[23:23].Q WB3[23:23].Q FM2.out[23:23] FA2.out[23:23] WB4[23:23].Q" output ="FPU_slice.out3[23:23]"/>
+		<mux name="output3_mux25" input="FPU_slice.in1[24:24] FPU_slice.in2[24:24] FPU_slice.in3[24:24] FPU_slice.in4[24:24] feedback_reg1[24:24].Q feedback_reg2[24:24].Q feedback_reg3[24:24].Q WB1[24:24].Q FM1.out[24:24] FA1.out[24:24] WB2[24:24].Q WB3[24:24].Q FM2.out[24:24] FA2.out[24:24] WB4[24:24].Q" output ="FPU_slice.out3[24:24]"/>
+		<mux name="output3_mux26" input="FPU_slice.in1[25:25] FPU_slice.in2[25:25] FPU_slice.in3[25:25] FPU_slice.in4[25:25] feedback_reg1[25:25].Q feedback_reg2[25:25].Q feedback_reg3[25:25].Q WB1[25:25].Q FM1.out[25:25] FA1.out[25:25] WB2[25:25].Q WB3[25:25].Q FM2.out[25:25] FA2.out[25:25] WB4[25:25].Q" output ="FPU_slice.out3[25:25]"/>
+		<mux name="output3_mux27" input="FPU_slice.in1[26:26] FPU_slice.in2[26:26] FPU_slice.in3[26:26] FPU_slice.in4[26:26] feedback_reg1[26:26].Q feedback_reg2[26:26].Q feedback_reg3[26:26].Q WB1[26:26].Q FM1.out[26:26] FA1.out[26:26] WB2[26:26].Q WB3[26:26].Q FM2.out[26:26] FA2.out[26:26] WB4[26:26].Q" output ="FPU_slice.out3[26:26]"/>
+		<mux name="output3_mux28" input="FPU_slice.in1[27:27] FPU_slice.in2[27:27] FPU_slice.in3[27:27] FPU_slice.in4[27:27] feedback_reg1[27:27].Q feedback_reg2[27:27].Q feedback_reg3[27:27].Q WB1[27:27].Q FM1.out[27:27] FA1.out[27:27] WB2[27:27].Q WB3[27:27].Q FM2.out[27:27] FA2.out[27:27] WB4[27:27].Q" output ="FPU_slice.out3[27:27]"/>
+		<mux name="output3_mux29" input="FPU_slice.in1[28:28] FPU_slice.in2[28:28] FPU_slice.in3[28:28] FPU_slice.in4[28:28] feedback_reg1[28:28].Q feedback_reg2[28:28].Q feedback_reg3[28:28].Q WB1[28:28].Q FM1.out[28:28] FA1.out[28:28] WB2[28:28].Q WB3[28:28].Q FM2.out[28:28] FA2.out[28:28] WB4[28:28].Q" output ="FPU_slice.out3[28:28]"/>
+		<mux name="output3_mux30" input="FPU_slice.in1[29:29] FPU_slice.in2[29:29] FPU_slice.in3[29:29] FPU_slice.in4[29:29] feedback_reg1[29:29].Q feedback_reg2[29:29].Q feedback_reg3[29:29].Q WB1[29:29].Q FM1.out[29:29] FA1.out[29:29] WB2[29:29].Q WB3[29:29].Q FM2.out[29:29] FA2.out[29:29] WB4[29:29].Q" output ="FPU_slice.out3[29:29]"/>
+		<mux name="output3_mux31" input="FPU_slice.in1[30:30] FPU_slice.in2[30:30] FPU_slice.in3[30:30] FPU_slice.in4[30:30] feedback_reg1[30:30].Q feedback_reg2[30:30].Q feedback_reg3[30:30].Q WB1[30:30].Q FM1.out[30:30] FA1.out[30:30] WB2[30:30].Q WB3[30:30].Q FM2.out[30:30] FA2.out[30:30] WB4[30:30].Q" output ="FPU_slice.out3[30:30]"/>
+		<mux name="output3_mux32" input="FPU_slice.in1[31:31] FPU_slice.in2[31:31] FPU_slice.in3[31:31] FPU_slice.in4[31:31] feedback_reg1[31:31].Q feedback_reg2[31:31].Q feedback_reg3[31:31].Q WB1[31:31].Q FM1.out[31:31] FA1.out[31:31] WB2[31:31].Q WB3[31:31].Q FM2.out[31:31] FA2.out[31:31] WB4[31:31].Q" output ="FPU_slice.out3[31:31]"/>
+		
+
+		<complete name="complete1" input="FPU_slice.clk" output="FM1.clk"/>
+		<complete name="complete2" input="FPU_slice.clk" output="FM2.clk"/>
+		<complete name="complete3" input="FPU_slice.clk" output="FA1.clk"/>
+		<complete name="complete4" input="FPU_slice.clk" output="FA2.clk"/>
+                <complete name="complete5" input="FPU_slice.clk" output="WB1[31:0].clk"/>
+                <complete name="complete6" input="FPU_slice.clk" output="WB2[31:0].clk"/>
+                <complete name="complete7" input="FPU_slice.clk" output="WB3[31:0].clk"/>
+		<complete name="complete8" input="FPU_slice.clk" output="WB4[31:0].clk"/>
+		<complete name="complete9" input="FPU_slice.clk" output="feedback_reg1[31:0].clk"/>	
+		<complete name="complete10" input="FPU_slice.clk" output="feedback_reg2[31:0].clk"/>	
+                <complete name="complete11" input="FPU_slice.clk" output="feedback_reg3[31:0].clk"/>			
+              </interconnect>
+            </pb_type>
+            <interconnect>
+				<direct name="direct1" input="block_FPU.in1" output="FPU_slice.in1"> </direct>
+				<direct name="direct2" input="block_FPU.in2" output="FPU_slice.in2"> </direct>
+				<direct name="direct3" input="block_FPU.in3" output="FPU_slice.in3"> </direct>
+				<direct name="direct4" input="block_FPU.in4" output="FPU_slice.in4"> </direct>
+				<direct name="direct5" input="FPU_slice.out1" output="block_FPU.out1"> </direct>
+				<direct name="direct6" input="FPU_slice.out2" output="block_FPU.out2"> </direct>
+				<direct name="direct7" input="FPU_slice.out3" output="block_FPU.out3"> </direct> 
+				<direct name="direct8" input="FPU_slice.control" output="block_FPU.control"></direct>
+
+              <complete name="complete12" input="block_FPU.clk" output="FPU_slice.clk"/>
+            </interconnect>
+          </mode>
+
+          <fc_in type="frac">0.25</fc_in>
+        <fc_out type="frac">0.15</fc_out>
+        <pinlocations pattern="spread"/>
+
+        <gridlocations>
+          <loc type="col" start="4" repeat="8" priority="3"/>
+        </gridlocations>
+      </pb_type>
+
+
+    </complexblocklist>
+  </architecture>

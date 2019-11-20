@@ -1,0 +1,322 @@
+<?xml version="1.0"?>
+<fpga_architecture>
+
+	<!-- Device info provides high level information about the FPGA -->
+	<device_info>
+		<device_family_name>vpr</device_family_name>
+		<device_name>vpr10</device_name>
+		<devices>
+			<device> <device_name>mult</device_name> <number>-1</number> </device>
+		</devices>
+	</device_info>
+
+	<match_library>
+		<device>
+			<name>mult</name>
+			<internal_configurations>
+				<config> <target_name>multiplier_18x18</target_name><number>4</number> </config>
+			</internal_configurations>
+		</device>
+	</match_library>
+
+	<primitives>
+		<!-- 18x18 multiplier -->
+		<target>
+			<name>multiplier_18x18</name>
+			<associated_macro_name>MN_MULT</associated_macro_name>
+			<seed_macro_type>MN_MULT</seed_macro_type>
+			<matchable>TRUE</matchable>
+			<primitive>
+				<input_ports>
+					<port> <name>a</name> <width>18</width> </port>
+					<port> <name>b</name> <width>18</width> </port>
+				</input_ports>
+				<output_ports>
+					<port> <name>o</name> <width>36</width> </port>
+				</output_ports>
+				<timing_delay>14</timing_delay>
+			</primitive>
+		</target>
+	
+		<!-- VCC -->
+		<target>
+			<name>vcc</name>
+			<associated_macro_name>VCC</associated_macro_name>
+			<matchable>FALSE</matchable>
+			<primitive>
+				<input_ports>
+				<port> <name>in</name> <width>1</width> </port>
+				</input_ports>
+				<output_ports>
+					<port> <name>out</name> <width>1</width> </port>
+				</output_ports>
+				<timing_delay>0</timing_delay>
+			</primitive>
+		</target>
+	
+		<!-- GND -->
+		<target>
+			<name>gnd</name>
+			<associated_macro_name>GND</associated_macro_name>
+			<matchable>FALSE</matchable>
+			<primitive>
+				<input_ports>
+					<port> <name>in</name> <width>1</width> </port>
+				</input_ports>
+				<output_ports>
+					<port> <name>out</name> <width>1</width> </port>
+				</output_ports>
+				<timing_delay>0</timing_delay>
+			</primitive>
+		</target>
+	
+		<!-- NOT -->
+		<target>
+			<name>not</name>
+			<associated_macro_name>MN_NOT</associated_macro_name>
+			<matchable>FALSE</matchable>
+			<primitive>
+				<input_ports>
+					<port> <name>in</name> <width>1</width> </port>
+				</input_ports>
+				<output_ports>
+					<port> <name>out</name> <width>1</width> </port>
+				</output_ports>
+				<timing_delay>1</timing_delay>
+			</primitive>
+		</target>
+	
+		<!-- 2 AND gate -->
+		<target>
+			<name>and</name>
+			<associated_macro_name>MN_AND</associated_macro_name>
+			<matchable>FALSE</matchable>
+			<primitive>
+				<input_ports>
+					<port> <name>a</name> <width>1</width> </port>
+					<port> <name>b</name> <width>1</width> </port>
+				</input_ports>
+				<output_ports>
+					<port> <name>o</name> <width>1</width> </port>
+				</output_ports>
+				<timing_delay>1</timing_delay>
+			</primitive>
+		</target>
+	
+		<!-- 2 OR gate -->
+		<target>
+			<name>or</name>
+			<associated_macro_name>MN_OR</associated_macro_name>
+			<matchable>FALSE</matchable>
+			<primitive>
+				<input_ports>
+					<port> <name>a</name> <width>1</width> </port>
+					<port> <name>b</name> <width>1</width> </port>
+				</input_ports>
+				<output_ports>
+					<port> <name>o</name> <width>1</width> </port>
+				</output_ports>
+				<timing_delay>1</timing_delay>
+			</primitive>
+		</target>
+	
+		<!-- 2 NAND gate -->
+		<target>
+			<name>nand</name>
+			<associated_macro_name>MN_NAND</associated_macro_name>
+			<matchable>FALSE</matchable>
+			<primitive>
+				<input_ports>
+					<port> <name>a</name> <width>1</width> </port>
+					<port> <name>b</name> <width>1</width> </port>
+				</input_ports>
+				<output_ports>
+					<port> <name>o</name> <width>1</width> </port>
+				</output_ports>
+				<timing_delay>1</timing_delay>
+			</primitive>
+		</target>
+	
+		<!-- 2 NOR gate -->
+		<target>
+			<name>nor</name>
+			<associated_macro_name>MN_NOR</associated_macro_name>
+			<matchable>FALSE</matchable>
+			<primitive>
+				<input_ports>
+					<port> <name>a</name> <width>1</width> </port>
+					<port> <name>b</name> <width>1</width> </port>
+				</input_ports>
+				<output_ports>
+					<port> <name>o</name> <width>1</width> </port>
+				</output_ports>
+				<timing_delay>1</timing_delay>
+			</primitive>
+		</target>
+	
+		<!-- 2 XOR gate -->
+		<target>
+			<name>xor</name>
+			<associated_macro_name>MN_XOR</associated_macro_name>
+			<matchable>FALSE</matchable>
+			<primitive>
+				<input_ports>
+					<port> <name>a</name> <width>1</width> </port>
+					<port> <name>b</name> <width>1</width> </port>
+				</input_ports>
+				<output_ports>
+					<port> <name>o</name> <width>1</width> </port>
+				</output_ports>
+				<timing_delay>1</timing_delay>
+			</primitive>
+		</target>
+	
+		<!-- 2 XNOR gate -->
+		<target>
+			<name>xnor</name>
+			<associated_macro_name>MN_XNOR</associated_macro_name>
+			<matchable>FALSE</matchable>
+			<primitive>
+				<input_ports>
+					<port> <name>a</name> <width>1</width> </port>
+					<port> <name>b</name> <width>1</width> </port>
+				</input_ports>
+				<output_ports>
+					<port> <name>o</name> <width>1</width> </port>
+				</output_ports>
+				<timing_delay>1</timing_delay>
+			</primitive>
+		</target>
+	
+		<!-- 2 input MUX gate -->
+		<target>
+			<name>mux2</name>
+			<associated_macro_name>MN_MUX</associated_macro_name>
+			<matchable>FALSE</matchable>
+			<primitive>
+				<input_ports>
+					<port> <name>a</name> <width>1</width> </port>
+					<port> <name>b</name> <width>1</width> </port>
+					<port> <name>s</name> <width>1</width> </port>
+				</input_ports>
+				<output_ports>
+					<port> <name>o</name> <width>1</width> </port>
+				</output_ports>
+				<timing_delay>2</timing_delay>
+			</primitive>
+		</target>
+	
+		<!-- 2 DFF gate -->
+		<target>
+			<name>dff</name>
+			<associated_macro_name>MN_FF</associated_macro_name>
+			<matchable>FALSE</matchable>
+			<primitive>
+				<input_ports>
+					<port> <name>a</name> <width>1</width> </port>
+					<port> <name>clock</name> <width>1</width> </port>
+				</input_ports>
+				<output_ports>
+					<port> <name>o</name> <width>1</width> </port>
+				</output_ports>
+				<timing_delay>1</timing_delay>
+			</primitive>
+		</target>
+
+		<!-- BUF gate -->
+		<target>
+			<name>buf</name>
+			<associated_macro_name>MN_BUF</associated_macro_name>
+			<matchable>FALSE</matchable>
+			<primitive>
+				<input_ports>
+					<port> <name>a</name> <width>1</width> </port>
+				</input_ports>
+				<output_ports>
+					<port> <name>o</name> <width>1</width> </port>
+				</output_ports>
+				<timing_delay>1</timing_delay>
+			</primitive>
+		</target>
+	
+		<!-- 2 input CMP_EQ gate -->
+		<target>
+			<name>cmp_eq</name>
+			<associated_macro_name>MN_EQ</associated_macro_name>
+			<matchable>FALSE</matchable>
+			<primitive>
+				<input_ports>
+					<port> <name>a</name> <width>1</width> </port>
+					<port> <name>b</name> <width>1</width> </port>
+				</input_ports>
+				<output_ports>
+					<port> <name>o</name> <width>1</width> </port>
+				</output_ports>
+				<timing_delay>1</timing_delay>
+			</primitive>
+		</target>
+	
+		<!-- 2 input CMP_GT gate -->
+		<target>
+			<name>cmp_gt</name>
+			<associated_macro_name>MN_GT</associated_macro_name>
+			<matchable>FALSE</matchable>
+			<primitive>
+				<input_ports>
+					<port> <name>a</name> <width>1</width> </port>
+					<port> <name>b</name> <width>1</width> </port>
+				</input_ports>
+				<output_ports>
+					<port> <name>o</name> <width>1</width> </port>
+				</output_ports>
+				<timing_delay>1</timing_delay>
+			</primitive>
+		</target>
+	
+		<!-- 2 input adder gate -->
+		<target>
+			<name>adder</name>
+			<associated_macro_name>MN_ADD</associated_macro_name>
+			<matchable>FALSE</matchable>
+			<primitive>
+				<input_ports>
+					<port> <name>a</name> <width>1</width> </port>
+					<port> <name>b</name> <width>1</width> </port>
+<!--					<port> <name>cin</name> <width>1</width> </port>-->
+				</input_ports>
+				<output_ports>
+					<port> <name>o</name> <width>1</width> </port>
+			<!--		<port> <name>cout</name> <width>1</width> </port> -->
+				</output_ports>
+				<timing_delay>1</timing_delay>
+			</primitive>
+		</target>
+		<!-- 2 input subber gate -->
+		<target>
+			<name>subber</name>
+			<associated_macro_name>MN_SUB</associated_macro_name>
+			<matchable>FALSE</matchable>
+			<primitive>
+				<input_ports>
+					<port> <name>a</name> <width>1</width> </port>
+					<port> <name>b</name> <width>1</width> </port>
+<!--					<port> <name>cin</name> <width>1</width> </port>-->
+				</input_ports>
+				<output_ports>
+					<port> <name>o</name> <width>1</width> </port>
+			<!--		<port> <name>cout</name> <width>1</width> </port> -->
+				</output_ports>
+				<timing_delay>1</timing_delay>
+			</primitive>
+		</target>
+
+	</primitives>
+
+	<target_functional_elements>
+	</target_functional_elements>
+
+	<inferable_devices>
+	</inferable_devices>
+
+</fpga_architecture>
+

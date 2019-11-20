@@ -1,0 +1,18 @@
+r examples/apex4.pla;    resyn; if; cec; ps; clp; resyn; map; cec; ps
+r examples/C2670.blif;   st; w 1.aig; cec 1.aig
+r examples/C2670.blif;   st; short_names; w 1.bench; cec 1.bench
+r examples/C2670.blif;   st; short_names; ren -s; w 1.eqn; cec 1.eqn
+r examples/C2670.blif;   resyn2; if -K 8; cec; ps; u; map; cec; ps
+r examples/frg2.blif;    dsd; muxes; cec; ps; clp; share; resyn; map; cec; ps
+r examples/frg2.blif;    bdd; muxes; cec; ps; clp; st; ren -b; muxes; cec; ps
+r examples/i10.blif;     resyn2; fpga; cec; ps;  u; map; cec; ps
+r examples/i10.blif;     choice; fpga; cec; ps;  u; map; cec; ps
+r examples/pj1.blif;     st; if; cec; ps;   u; map; cec; ps
+r examples/s38417.blif;  comb; w 1.blif; resyn; if; cec 1.blif; ps
+r examples/s38417.blif;  resyn; if; cec; ps;   u; map; cec; ps
+r examples/s38584.bench; resyn; ren -s; fx; if; cec; ps;   u; map; cec; ps
+r examples/s444.blif;    b; esd -v; print_exdc; dsd; cec; ps
+r examples/s444.blif;    double; frames -F 5; w 1.blif; ffpga -K 8; cec 1.blif
+r examples/s5378.blif;   frames -F 5; cycle; w 1.blif; ps; ret; ps; sec 1.blif
+r examples/s6669.blif;   cycle; w 1.blif; ps; ret -M 3; resyn; ps; sec 1.blif
+time
