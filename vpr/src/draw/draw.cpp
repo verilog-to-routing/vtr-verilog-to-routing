@@ -2661,9 +2661,9 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type, ClusterBlockId b
             continue;
 
         auto physical_tile = physical_tile_type(blk_id);
-        int phy_pin = get_physical_pin(physical_tile, type, k);
+        int physical_pin = get_physical_pin(physical_tile, type, k);
 
-        iclass = physical_tile->pin_class[phy_pin];
+        iclass = physical_tile->pin_class[physical_pin];
 
         if (physical_tile->class_inf[iclass].type == DRIVER) { /* Fanout */
             if (draw_state->block_color[blk_id] == SELECTED_COLOR) {
