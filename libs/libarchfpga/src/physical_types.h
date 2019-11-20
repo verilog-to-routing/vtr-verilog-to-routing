@@ -621,6 +621,10 @@ struct t_physical_tile_type {
     std::vector<int> get_clock_pins_indices() const;
 };
 
+/** A logical pin defines the pin index of a logical block type (i.e. a top level PB type)
+ *  This structure wraps the int value of the logical pin to allow its storage in the
+ *  vtr::bimap container.
+ */
 struct t_logical_pin {
     int pin = -1;
 
@@ -637,6 +641,10 @@ struct t_logical_pin {
     }
 };
 
+/** A physical pin defines the pin index of a physical tile type (i.e. a grid tile type)
+ *  This structure wraps the int value of the physical pin to allow its storage in the
+ *  vtr::bimap container.
+ */
 struct t_physical_pin {
     int pin = -1;
 
