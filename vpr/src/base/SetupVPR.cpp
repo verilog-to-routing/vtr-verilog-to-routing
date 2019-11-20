@@ -134,12 +134,17 @@ void SetupVPR(const t_options* Options,
     }
 
     device_ctx.EMPTY_LOGICAL_BLOCK_TYPE = nullptr;
+    int max_equivalent_tiles = 0;
     for (const auto& type : device_ctx.logical_block_types) {
         if (0 == strcmp(type.name, EMPTY_BLOCK_NAME)) {
             device_ctx.EMPTY_LOGICAL_BLOCK_TYPE = &type;
-            break;
         }
+
+        max_equivalent_tiles = std::max(max_equivalent_tiles, (int)type.equivalent_tiles.size());
     }
+
+    VTR_ASSERT(max_equivalent_tiles > 0);
+    device_ctx.has_multiple_equivalent_tiles = max_equivalent_tiles > 1;
 
     VTR_ASSERT(device_ctx.EMPTY_PHYSICAL_TILE_TYPE != nullptr);
     VTR_ASSERT(device_ctx.EMPTY_LOGICAL_BLOCK_TYPE != nullptr);
