@@ -3228,7 +3228,6 @@ static void ProcessTileEquivalentSites(pugi::xml_node Parent,
         expect_only_attributes(CurSite, {"pb_type", "pin_mapping"}, loc_data);
         /* Load equivalent site name */
         auto Prop = std::string(get_attribute(CurSite, "pb_type", loc_data).value());
-        PhysicalTileType->equivalent_sites_names.push_back(Prop);
 
         auto LogicalBlockType = get_type_by_name<t_logical_block_type>(Prop.c_str(), LogicalBlockTypes);
 
@@ -3241,6 +3240,13 @@ static void ProcessTileEquivalentSites(pugi::xml_node Parent,
             ProcessEquivalentSiteDirectConnection(CurSite, PhysicalTileType, LogicalBlockType, loc_data);
         }
 
+        if (0 == strcmp(LogicalBlockType->pb_type->name, Prop.c_str())) {
+            PhysicalTileType->equivalent_sites.push_back(LogicalBlockType);
+
+            check_port_direct_mappings(PhysicalTileType, LogicalBlockType);
+        } else {
+            VTR_LOG("VAFFANCULO!");
+        }
         CurSite = CurSite.next_sibling(CurSite.name());
     }
 }
@@ -4800,27 +4806,14 @@ static void link_physical_logical_types(std::vector<t_physical_tile_type>& Physi
     for (auto& physical_tile : PhysicalTileTypes) {
         if (physical_tile.index == EMPTY_TYPE_INDEX) continue;
 
-        unsigned int logical_block_added = 0;
-        for (auto& equivalent_site_name : physical_tile.equivalent_sites_names) {
-            for (auto& logical_block : LogicalBlockTypes) {
-                if (logical_block.index == EMPTY_TYPE_INDEX) continue;
-
-                // Check the corresponding Logical Block
-                if (0 == strcmp(logical_block.pb_type->name, equivalent_site_name.c_str())) {
-                    physical_tile.equivalent_sites.push_back(&logical_block);
+        for (auto& logical_block : LogicalBlockTypes) {
+            for (auto site : physical_tile.equivalent_sites) {
+                if (0 == strcmp(logical_block.name, site->pb_type->name)) {
                     logical_block.equivalent_tiles.push_back(&physical_tile);
 
-                    check_port_direct_mappings(&physical_tile, &logical_block);
-
-                    logical_block_added++;
                     break;
                 }
             }
-        }
-
-        if (logical_block_added != physical_tile.equivalent_sites.size()) {
-            archfpga_throw(__FILE__, __LINE__,
-                           "Could not create link between the %s and all its equivalent sites.\n", physical_tile.name);
         }
     }
 
