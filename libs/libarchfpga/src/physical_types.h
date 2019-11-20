@@ -610,7 +610,6 @@ struct t_physical_tile_type {
 
     int index = -1; /* index of type descriptor in array (allows for index referencing) */
 
-    std::vector<std::string> equivalent_sites_names;
     std::vector<t_logical_block_type_ptr> equivalent_sites;
 
     /* Unordered map indexed by the logical block index.
