@@ -1,4 +1,0 @@
-This directory contains the source and makefile for the blifmap
-netlist translator utility.  It also contains one example
-blif format netlist, s1423.blif.  You can use this netlist to try
-out blifmap.

@@ -1,8 +1,9 @@
 #include <string.h>
 #include <stdio.h>
-#include "blifmap.h"
-#include "util.h"
+#include "vpack.h"
 #include "ext.h"
+#include "util.h"
+#include "read_blif.h"
 
 
 /* This source file will read in a FLAT blif netlist consisting     *
@@ -22,17 +23,32 @@
 
 
 static int *num_driver, *temp_num_pins;
-static int ilines, olines,endlines;  /* # of .input, .output and .end lines */
-static struct hash_nets **hash;
-int add_net (char *ptr, int type, int bnum, int doall); 
 
-void read_blif (FILE *blif) {
+/* # of .input, .output, .model and .end lines */
+static int ilines, olines, model_lines, endlines;  
+static struct hash_nets **hash;
+static char *model;
+static FILE *blif;
+
+
+static int add_net (char *ptr, int type, int bnum, int doall); 
+static void get_tok(char *buffer, int pass, int doall, int *done, 
+        int lut_size);
+static void init_parse(int doall);
+static void check_net (int lut_size);
+static void free_parse (void);
+static void io_line (int in_or_out, int doall);
+static void add_lut (int doall, int lut_size);
+static void add_latch (int doall, int lut_size);
+static void dum_parse (char *buf);
+static int hash_value (char *name);
+
+
+void read_blif (char *blif_file, int lut_size) {
  char buffer[BUFSIZE];
  int pass, done, doall;
- void get_tok(char *buffer, int pass, int doall, int *done);
- void init_parse(int doall);
- void check_net (void);
- void free_parse (void);
+
+ blif = my_fopen (blif_file, "r", 0);
 
  for (doall=0;doall<=1;doall++) {
     init_parse(doall);
@@ -44,17 +60,18 @@ void read_blif (FILE *blif) {
        linenum = 0;   /* Reset line number. */
        done = 0;
        while((my_fgets(buffer,BUFSIZE,blif) != NULL) && !done) {
-          get_tok(buffer, pass, doall, &done);
+          get_tok(buffer, pass, doall, &done, lut_size);
        }
        rewind (blif);  /* Start at beginning of file again */
     }
  } 
  fclose(blif);
- check_net();
+ check_net(lut_size);
  free_parse();
 }
 
-void init_parse(int doall) {
+static void init_parse(int doall) {
+
 /* Allocates and initializes the data structures needed for the parse. */
 
  int i, len;
@@ -103,6 +120,7 @@ void init_parse(int doall) {
 
  ilines = 0;
  olines = 0;
+ model_lines = 0;
  endlines = 0;
  num_p_inputs = 0;
  num_p_outputs = 0;
@@ -111,15 +129,14 @@ void init_parse(int doall) {
  num_blocks = 0;
 }
 
-void get_tok (char *buffer, int pass, int doall, int *done) {
+
+static void get_tok (char *buffer, int pass, int doall, int *done,
+       int lut_size) {
+
 /* Figures out which, if any token is at the start of this line and *
  * takes the appropriate action.                                    */
 
 #define TOKENS " \t\n"
- void io_line (int in_or_out, int doall);
- void add_lut (int doall);
- void add_latch (int doall);
- void dum_parse (char *buf);
  char *ptr; 
  
  ptr = my_strtok(buffer,TOKENS,blif,buffer);
@@ -127,7 +144,7 @@ void get_tok (char *buffer, int pass, int doall, int *done) {
  
  if (strcmp(ptr,".names") == 0) {
     if (pass == 3) {
-       add_lut(doall);
+       add_lut(doall, lut_size);
     }
     else {
        dum_parse(buffer);
@@ -137,7 +154,7 @@ void get_tok (char *buffer, int pass, int doall, int *done) {
 
  if (strcmp(ptr,".latch") == 0) {
     if (pass == 3) {
-       add_latch (doall);
+       add_latch (doall, lut_size);
     }
     else {
        dum_parse(buffer);
@@ -147,9 +164,21 @@ void get_tok (char *buffer, int pass, int doall, int *done) {
 
  if (strcmp(ptr,".model") == 0) {
     ptr = my_strtok(NULL,TOKENS,blif,buffer);
-    if (ptr != NULL) strcpy(model,ptr);
+
+    if (doall && pass == 3) { /* Only bother on main second pass. */
+       if (ptr != NULL) {
+          model = (char *) my_malloc ((strlen(ptr)+1) * sizeof(char));
+          strcpy(model,ptr);
+       }
+       else {
+          model = (char *) my_malloc (sizeof(char));
+          model[0] = '\0';
+       }
+       model_lines++;              /* For error checking only */
+    }
     return;
  }
+
  if (strcmp(ptr,".inputs") == 0) {
     if (pass == 1) {
        io_line(DRIVER, doall);
@@ -161,6 +190,7 @@ void get_tok (char *buffer, int pass, int doall, int *done) {
     }
     return;
  }
+
  if (strcmp(ptr,".outputs") == 0) {
     if (pass == 2) {
        io_line(RECEIVER, doall);
@@ -172,6 +202,7 @@ void get_tok (char *buffer, int pass, int doall, int *done) {
     }                            /* For error checking only */
     return;
  }
+
  if (strcmp(ptr,".end") == 0) {
     if (pass == 3 && doall) endlines++;   /* Error checking only */
     return;
@@ -182,75 +213,86 @@ void get_tok (char *buffer, int pass, int doall, int *done) {
 
 }
 
-void dum_parse (char *buf) {
+
+static void dum_parse (char *buf) {
+
 /* Continue parsing to the end of this (possibly continued) line. */
 
  while (my_strtok(NULL,TOKENS,blif,buf) != NULL)
        ;
 }
 
-void add_lut (int doall) {
+
+static void add_lut (int doall, int lut_size) {
+
 /* Adds a LUT (.names) currently being parsed to the block array.  Adds *
  * its pins to the nets data structure by calling add_net.  If doall is *
  * zero this is a counting pass; if it is 1 this is the final (loading) *
  * pass.                                                                */
 
- char *ptr[MAXLUT+2], buf[BUFSIZE];
+ char *ptr, saved_names[MAXLUT+2][BUFSIZE], buf[BUFSIZE];
  int i, j, len;
 
  num_blocks++;
 
 /* Count # nets connecting */
  i=0;
- while ((ptr[i] = my_strtok(NULL,TOKENS,blif,buf)) != NULL)  {
+ while ((ptr = my_strtok(NULL,TOKENS,blif,buf)) != NULL)  {
     if (i == MAXLUT+1) {
        fprintf(stderr,"Error:  LUT #%d has %d inputs.  Increase MAXLUT or"
-            "check the netlist, line %d.\n",num_blocks-1,i-1,linenum);
+            " check the netlist, line %d.\n",num_blocks-1,i-1,linenum);
        exit(1);
     }
+    strcpy (saved_names[i], ptr);
     i++;
  }
 
  if (!doall) {          /* Counting pass only ... */
     for (j=0;j<i;j++) 
-       add_net(ptr[j],RECEIVER,num_blocks-1,doall);
+       add_net(saved_names[j],RECEIVER,num_blocks-1,doall);
     return;
  }
 
  block[num_blocks-1].num_nets = i;
  block[num_blocks-1].type = LUT;
  for (i=0;i<block[num_blocks-1].num_nets-1;i++)   /* Do inputs */
-    block[num_blocks-1].nets[i+1] = add_net(ptr[i],RECEIVER,num_blocks-1,doall); 
- block[num_blocks-1].nets[0] = add_net(ptr[block[num_blocks-1].num_nets-1],
-       DRIVER,num_blocks-1,doall);
+    block[num_blocks-1].nets[i+1] = add_net (saved_names[i],RECEIVER,
+                                    num_blocks-1,doall); 
+ block[num_blocks-1].nets[0] = add_net (
+       saved_names[block[num_blocks-1].num_nets-1], DRIVER,num_blocks-1,doall);
 
  for (i=block[num_blocks-1].num_nets; i<lut_size+2; i++)
     block[num_blocks-1].nets[i] = OPEN;
 
- len = strlen (ptr[block[num_blocks-1].num_nets-1]);
+ len = strlen (saved_names[block[num_blocks-1].num_nets-1]);
  block[num_blocks-1].name = (char *) my_malloc ((len+1) * sizeof (char));
- strcpy(block[num_blocks-1].name,ptr[block[num_blocks-1].num_nets-1]);
+ strcpy(block[num_blocks-1].name, saved_names[block[num_blocks-1].num_nets-1]);
  num_luts++;
 }
 
 
-void add_latch (int doall) {
-/* Adds the flipflop (.latch) currently being parsed to the block array. *
- * Adds its pins to the nets data structure by calling add_net.  If doall*
- * is zero this is a counting pass; if it is 1 this is the final         *
- * (loading) pass.  Blif format for a latch is:                          *
- * .latch <input> <output> <type (latch on)> <control (clock)> <init_val>*
- * The latch pins are in .nets 0 to 2 in the order: Q D CLOCK.           */
+static void add_latch (int doall, int lut_size) {
 
- char *ptr[6], buf[BUFSIZE];
+/* Adds the flipflop (.latch) currently being parsed to the block array.  *
+ * Adds its pins to the nets data structure by calling add_net.  If doall *
+ * is zero this is a counting pass; if it is 1 this is the final          * 
+ * (loading) pass.  Blif format for a latch is:                           *
+ * .latch <input> <output> <type (latch on)> <control (clock)> <init_val> *
+ * The latch pins are in .nets 0 to 2 in the order: Q D CLOCK.            */
+
+ char *ptr, buf[BUFSIZE], saved_names[6][BUFSIZE];
  int i, len;
 
  num_blocks++;
 
 /* Count # parameters, making sure we don't go over 6 (avoids memory corr.) */
+/* Note that we can't rely on the tokens being around unless we copy them.  */
+
  for (i=0;i<6;i++) {
-    ptr[i] = my_strtok (NULL,TOKENS,blif,buf);
-    if (ptr[i] == NULL) break;
+    ptr = my_strtok (NULL,TOKENS,blif,buf);
+    if (ptr == NULL) 
+       break;
+    strcpy (saved_names[i], ptr);
  }
 
  if (i != 5) {
@@ -260,33 +302,34 @@ void add_latch (int doall) {
  }
 
  if (!doall) {   /* If only a counting pass ... */
-    add_net(ptr[0],RECEIVER,num_blocks-1,doall);  /* D */
-    add_net(ptr[1],DRIVER,num_blocks-1,doall);    /* Q */
-    add_net(ptr[3],RECEIVER,num_blocks-1,doall);  /* Clock */
+    add_net(saved_names[0],RECEIVER,num_blocks-1,doall);  /* D */
+    add_net(saved_names[1],DRIVER,num_blocks-1,doall);    /* Q */
+    add_net(saved_names[3],RECEIVER,num_blocks-1,doall);  /* Clock */
     return;
  }
 
  block[num_blocks-1].num_nets = 3;
  block[num_blocks-1].type = LATCH;
 
- block[num_blocks-1].nets[0] = add_net(ptr[1],DRIVER,num_blocks-1,
+ block[num_blocks-1].nets[0] = add_net(saved_names[1],DRIVER,num_blocks-1,
      doall);                                                        /* Q */
- block[num_blocks-1].nets[1] = add_net(ptr[0],RECEIVER,num_blocks-1,
+ block[num_blocks-1].nets[1] = add_net(saved_names[0],RECEIVER,num_blocks-1,
      doall);                                                        /* D */
- block[num_blocks-1].nets[lut_size+1] = add_net(ptr[3],RECEIVER,     
+ block[num_blocks-1].nets[lut_size+1] = add_net(saved_names[3],RECEIVER,     
      num_blocks-1,doall);                                           /* Clock */
 
  for (i=2;i<lut_size+1;i++) 
     block[num_blocks-1].nets[i] = OPEN;
     
- len = strlen (ptr[1]);
+ len = strlen (saved_names[1]);
  block[num_blocks-1].name = (char *) my_malloc ((len+1) * sizeof (char));
- strcpy(block[num_blocks-1].name,ptr[1]);
+ strcpy(block[num_blocks-1].name,saved_names[1]);
  num_latches++;
 }
 
 
-void io_line(int in_or_out, int doall) {  
+static void io_line(int in_or_out, int doall) {  
+
 /* Adds an input or output block to the block data structures.           *
  * in_or_out:  DRIVER for input, RECEIVER for output.                    *
  * doall:  1 for final pass when structures are loaded.  0 for           *
@@ -315,7 +358,7 @@ void io_line(int in_or_out, int doall) {
     }
     else {
        block[num_blocks-1].name = (char *) my_malloc ((len+1) *
-            sizeof (char));          /* Space for out: at start */
+            sizeof (char));     
        strcpy(block[num_blocks-1].name,ptr);
     }
 
@@ -334,7 +377,9 @@ void io_line(int in_or_out, int doall) {
  } 
 }
 
-int add_net (char *ptr, int type, int bnum, int doall) {   
+
+static int add_net (char *ptr, int type, int bnum, int doall) {   
+
 /* This routine is given a net name in *ptr, either DRIVER or RECEIVER *
  * specifying whether the block number given by bnum is driving this   *
  * net or in the fan-out and doall, which is 0 for the counting pass   *
@@ -344,7 +389,6 @@ int add_net (char *ptr, int type, int bnum, int doall) {
 
  struct hash_nets *h_ptr, *prev_ptr;
  int index, j, nindex;
- int hash_value (char *name);
 
  index = hash_value(ptr);
  h_ptr = hash[index]; 
@@ -385,7 +429,7 @@ int add_net (char *ptr, int type, int bnum, int doall) {
  /* Net was not in the hash table. */
 
  if (doall == 1) {
-    printf("Error in add_net:  the second (load) pass found could not\n");
+    printf("Error in add_net:  the second (load) pass could not\n");
     printf("find net %s in the symbol table.\n", ptr);
     exit(1);
  }
@@ -408,7 +452,9 @@ int add_net (char *ptr, int type, int bnum, int doall) {
  return (h_ptr->index);
 }
 
-int hash_value (char *name) {
+
+static int hash_value (char *name) {
+
  int i,k;
  int val=0, mult=1;
  
@@ -423,40 +469,79 @@ int hash_value (char *name) {
  return(val);
 }
 
-void echo_input (void) {
- int i, j;	
+
+void echo_input (char *blif_file, int lut_size) {
+
+/* Echo back the netlist data structures to file input.echo to *
+ * allow the user to look at the internal state of the program *
+ * and check the parsing.                                      */
+
+ int i, j, max_pin; 
  FILE *fp;
 
- printf("Input netlist file: %s  Model: %s\n",blif_file,model);
- printf("num_p_inputs: %d, num_p_outputs: %d, num_luts: %d,"
-            " num_latches: %d\n",num_p_inputs,num_p_outputs,num_luts,
-             num_latches);
- printf("num_blocks: %d, num_nets: %d\n",num_blocks,num_nets);
+ printf("Input netlist file: %s  Model: %s\n", blif_file, model);
+ printf("Primary Inputs: %d.  Primary Outputs: %d.\n", num_p_inputs,
+                num_p_outputs);
+ printf("LUTs: %d.  Latches: %d.\n", num_luts, num_latches);
+ printf("Total Blocks: %d.  Total Nets: %d\n", num_blocks, num_nets);
  
- fp = my_open ("input.echo","w",0); 
+ fp = my_fopen ("input.echo","w",0); 
+
  fprintf(fp,"Input netlist file: %s  Model: %s\n",blif_file,model);
  fprintf(fp,"num_p_inputs: %d, num_p_outputs: %d, num_luts: %d,"
             " num_latches: %d\n",num_p_inputs,num_p_outputs,num_luts,
              num_latches);
  fprintf(fp,"num_blocks: %d, num_nets: %d\n",num_blocks,num_nets);
- fprintf(fp,"\nNet\tname\t#pins\tdriver\trecvs.\n");
+
+ fprintf(fp,"\nNet\tName\t\t#Pins\tDriver\tRecvs.\n");
  for (i=0;i<num_nets;i++) {
-    fprintf(fp,"\n%d\t%s\t%d",i,net[i].name,net[i].num_pins);
+    fprintf(fp,"\n%d\t%s\t", i, net[i].name);
+    if (strlen(net[i].name) < 8)
+       fprintf(fp,"\t");         /* Name field is 16 chars wide */
+    fprintf(fp,"%d", net[i].num_pins);
     for (j=0;j<net[i].num_pins;j++) 
         fprintf(fp,"\t%d",net[i].pins[j]);
  }
-fprintf(fp,"\n\nBlocks\nblock\tname\ttype\t#nets\toutput\tinputs\n\n");
+
+ fprintf(fp,"\n\n\nBlocks\t\t\tBlock Type Legend:\n");
+ fprintf(fp,"\t\t\tINPAD = %d\tOUTPAD = %d\n", INPAD, OUTPAD);
+ fprintf(fp,"\t\t\tLUT = %d\t\tLATCH = %d\n", LUT, LATCH);
+ fprintf(fp,"\t\t\tEMPTY = %d\tLUT_AND_LATCH = %d\n\n", EMPTY, 
+       LUT_AND_LATCH);
+ 
+ fprintf(fp,"\nBlock\tName\t\tType\t#Nets\tOutput\tInputs");
+ for (i=0;i<lut_size;i++) 
+    fprintf(fp,"\t");
+ fprintf(fp,"Clock\n\n");
+
  for (i=0;i<num_blocks;i++) { 
-    fprintf(fp,"\n%d\t%s\t%d\t%d",i,block[i].name,
-       block[i].type,block[i].num_nets);
-    for (j=0;j<block[i].num_nets;j++)  
-        fprintf(fp,"\t%d",block[i].nets[j]);
+    fprintf(fp,"\n%d\t%s\t",i, block[i].name);
+    if (strlen(block[i].name) < 8)
+       fprintf(fp,"\t");         /* Name field is 16 chars wide */
+    fprintf(fp,"%d\t%d", block[i].type, block[i].num_nets);
+
+    if (block[i].type == INPAD || block[i].type == OUTPAD) 
+       max_pin = 1;
+    else
+       max_pin = lut_size+2;
+
+    for (j=0;j<max_pin;j++) {
+        if (block[i].nets[j] == OPEN) 
+           fprintf(fp,"\tOPEN");
+        else
+           fprintf(fp,"\t%d",block[i].nets[j]);
+    }
  }  
+
  fprintf(fp,"\n");
  fclose(fp);
 }
 
-void check_net (void) {
+
+static void check_net (int lut_size) {
+
+/* Checks the input netlist for obvious errors. */
+
  int i, error, iblk;
  
  error = 0;
@@ -466,11 +551,19 @@ void check_net (void) {
         ilines);
      error++;
  }
+
  if (olines != 1) {
      printf("Warning:  found %d .outputs lines; expected 1.\n",
         olines);
      error++;
  }
+
+ if (model_lines != 1) {
+     printf("Warning:  found %d .model lines; expected 1.\n",
+        model_lines);
+     error++;
+ }
+
  if (endlines != 1) {
      printf("Warning:  found %d .end lines; expected 1.\n",
         endlines);
@@ -559,8 +652,11 @@ void check_net (void) {
  }
 }
 
-void free_parse (void) {  
- /* Release memory needed only during blif network parsing. */
+
+static void free_parse (void) {  
+
+/* Release memory needed only during blif network parsing. */
+
  int i;
  struct hash_nets *h_ptr, *temp_ptr;
 
@@ -577,5 +673,3 @@ void free_parse (void) {
  free ((void *) hash);
  free ((void *) temp_num_pins);
 }
-
-

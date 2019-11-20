@@ -1,8 +1,11 @@
 #include <string.h>
 #include <stdio.h>
-#include "pr.h"
 #include "util.h"
+#include "pr.h"
 #include "ext.h"
+#include "read_netlist.h"
+#include "hash.h"
+#include <assert.h>
 
 
 /* This source file reads in a .net file.  A .net file is a netlist  *
@@ -19,18 +22,29 @@
  * clb must have the same number of pins (heterogeneous FPGAs are    *
  * currently not supported) so any pins which are not used on a clb  *
  * must be identified with the reserved word "open".  All keywords   *
- * must be lower case.  An example .clb declaration is given below.  *
+ * must be lower case.                                               *
+ *                                                                   *
+ * The lines immediately below the pinlist line must specify the     *
+ * contents of the clb.  Each .subblock line lists the name of the   *
+ * subblock, followed by the clb pin number to which each subblock   *
+ * pin should connect.  Each subblock is assummed to consist of a    *
+ * LUT with subblock_lut_size inputs, a FF, and an output.  The pin  * 
+ * order is input1, input2, ... output, clock.  The architecture     *
+ * file sets the number of subblocks per clb and the LUT size used.  *
+ * Subblocks are used only for timing analysis.  An example clb      *
+ * declaration is:                                                   *
  *                                                                   *
  * .clb name_of_clb  # comment                                       *
  *  pinlist:  net_1 net_2 my_net net_of_mine open D open             *
+ *  subblock: sub_1 0 1 2 3 open 5 open                              *
  *                                                                   *
  * Ending a line with a backslash (\) means it is continued on the   *
  * line below.  A sharp sign (#) indicates the rest of a line is     *
  * a comment.                                                        *
- * The blifmap program can be used to convert a flat blif netlist    *
+ * The vpack program can be used to convert a flat blif netlist      *
  * into .net format.                                                 *
  *                                                                   *
- * V. Betz, June 13, 1995.                                           */
+ * V. Betz, Jan. 29, 1997.                                           */
 
 /* A note about the way the character buffer, buf, is passed around. *
  * strtok does not make a local copy of the character string         *
@@ -41,21 +55,39 @@
  * to keep tokenizing it would cause problems since the buffer now   *
  * lies on a stale part of the stack and can be overwritten.         */
 
+/* Temporary storage used during parsing. */
 
 static int *num_driver, *temp_num_pins;
-static struct hash_nets **hash;
-int add_net (char *ptr, int type, int bnum, int pclass, int doall); 
+static struct s_hash **hash_table;
+static int temp_block_storage;
+
+/* Used for memory chunking. */
+
+static int chunk_bytes_avail = 0;
+static char *chunk_next_avail_mem = NULL;
+
+static int add_net (char *ptr, enum e_pin_type type, int bnum, int pclass, 
+       int doall); 
+static char *get_tok(char *buf, int doall, FILE *fp_net);
+static void add_io (int doall, int type, FILE *fp_net, char *buf);
+static char *add_clb (int doall, FILE *fp_net, char *buf);
+static void add_global (int doall, FILE *fp_net, char *buf);
+static void init_parse(int doall);
+static void check_netlist (void);
+static void free_parse (void);
+static void parse_name_and_pinlist (int doall, FILE *fp_net, char *buf);
+static int get_num_conn (int bnum);
+
 
 void read_net (char *net_file) {
- char buf[BUFSIZE];
+
+/* Main routine that parses a netlist file in my (.net) format. */
+
+ char buf[BUFSIZE], *ptr;
  int doall;
  FILE *fp_net;
- void get_tok(char *buf, int doall, FILE *fp_net);
- void init_parse(int doall);
- void check_net (void);
- void free_parse (void);
 
- fp_net = my_open (net_file, "r", 0);
+ fp_net = my_fopen (net_file, "r", 0);
 
 /* First pass builds the symbol table and counts the number of pins  *
  * on each net.  Then I allocate exactly the right amount of storage *
@@ -66,27 +98,38 @@ void read_net (char *net_file) {
     init_parse(doall);
 
     linenum = 0;   /* Reset line number. */
-    while(my_fgets(buf,BUFSIZE,fp_net) != NULL) {
-       get_tok(buf, doall, fp_net);
+    ptr = my_fgets (buf, BUFSIZE, fp_net);
+
+    while (ptr != NULL) {
+       ptr = get_tok (buf, doall, fp_net);
     }
     rewind (fp_net);  /* Start at beginning of file again */
  } 
+
  fclose(fp_net);
- check_net();
+ check_netlist ();
  free_parse();
 }
 
-void init_parse(int doall) {
+
+static void init_parse(int doall) {
+
 /* Allocates and initializes the data structures needed for the parse. */
 
- int i, len;
+ int i, j, len, nindex, pin_count;
  int *tmp_ptr;
- struct hash_nets *h_ptr;
+ struct s_hash_iterator hash_iterator;
+ struct s_hash *h_ptr;
+
 
  if (!doall) {  /* Initialization before first (counting) pass */
     num_nets = 0;  
-    hash = (struct hash_nets **) my_calloc(sizeof(struct hash_nets *),
-            HASHSIZE);
+    hash_table = alloc_hash_table ();
+
+#define INITIAL_BLOCK_STORAGE 2000
+    temp_block_storage = INITIAL_BLOCK_STORAGE;
+    num_subblocks_per_block = my_malloc (INITIAL_BLOCK_STORAGE *
+             sizeof(int));
  }
 
 /* Allocate memory for second (load) pass */ 
@@ -109,35 +152,58 @@ void init_parse(int doall) {
  * Method used below "chunks" the malloc of a bunch of small things to   *
  * reduce the memory housekeeping overhead of malloc.                    */
 
-    tmp_ptr = (int *) my_malloc (clb_size * num_blocks * sizeof(int));
+    tmp_ptr = (int *) my_malloc (pins_per_clb * num_blocks * sizeof(int));
     for (i=0;i<num_blocks;i++) 
-       block[i].nets = tmp_ptr + i * clb_size;
+       block[i].nets = tmp_ptr + i * pins_per_clb;
 
-/* I use my_small_malloc for some storage locations below.  My_small_malloc *
- * avoids the 8 byte or so overhead incurred by malloc, but does not keep   *
- * around enough information to ever free these data arrays.  If you ever   *
- * want to free this stuff or you have compatibility problems on a non      *
- * SPARC architecture, just change all the my_small_malloc calls to         *
- * my_malloc calls.                                                         */
+/* I use my_chunk_malloc for some storage locations below.  my_chunk_malloc  *
+ * avoids the 12 byte or so overhead incurred by malloc, but since I call it *
+ * with a NULL head_ptr, it will not keep around enough information to ever  *
+ * free these data arrays.  If you ever have compatibility problems on a     *
+ * non-SPARC architecture, just change all the my_chunk_malloc calls to      *
+ * my_malloc calls.                                                          */
 
-    for (i=0;i<HASHSIZE;i++) {
-       h_ptr = hash[i];   
-       while (h_ptr != NULL) {
-          net[h_ptr->index].pins = (int *) my_small_malloc(h_ptr->count *
-               sizeof(int));
-	  net_pin_class[h_ptr->index] = (int *) my_small_malloc (h_ptr->count *
-               sizeof(int));
+    hash_iterator = start_hash_table_iterator ();
+    h_ptr = get_next_hash (hash_table, &hash_iterator);
+    
+    while (h_ptr != NULL) {
+       nindex = h_ptr->index;
+       pin_count = h_ptr->count;
+       net[nindex].pins = (int *) my_chunk_malloc(pin_count *
+               sizeof(int), NULL, &chunk_bytes_avail, &chunk_next_avail_mem);
+
+       net_pin_class[nindex] = (int *) my_chunk_malloc (pin_count * 
+               sizeof(int), NULL, &chunk_bytes_avail, &chunk_next_avail_mem);
 
 /* For avoiding assigning values beyond end of pins array. */
-          temp_num_pins[h_ptr->index] = h_ptr->count;
+       temp_num_pins[nindex] = pin_count;
 
-          len = strlen (h_ptr->name);
-          net[h_ptr->index].name = (char *) my_small_malloc ((len + 1) *
-               sizeof(char));
-          strcpy (net[h_ptr->index].name, h_ptr->name);
-          h_ptr = h_ptr->next;
-       }
+       len = strlen (h_ptr->name);
+       net[nindex].name = (char *) my_chunk_malloc ((len + 1) *
+            sizeof(char), NULL, &chunk_bytes_avail, &chunk_next_avail_mem);
+       strcpy (net[nindex].name, h_ptr->name);
+       h_ptr = get_next_hash (hash_table, &hash_iterator);
     }
+
+/* Allocate storage for subblock info. (what's in each logic block) */
+   num_subblocks_per_block = (int *) my_realloc (num_subblocks_per_block,
+                  num_blocks * sizeof (int));
+   subblock_inf = (struct s_subblock **) my_malloc (num_blocks * 
+                  sizeof(struct s_block *));
+
+   for (i=0;i<num_blocks;i++) {
+      if (num_subblocks_per_block[i] == 0) 
+         subblock_inf[i] = NULL;
+      else {
+         subblock_inf[i] = (struct s_subblock *) my_chunk_malloc (
+            num_subblocks_per_block[i] * sizeof (struct s_subblock), NULL,
+            &chunk_bytes_avail, &chunk_next_avail_mem);
+         for (j=0;j<num_subblocks_per_block[i];j++) 
+            subblock_inf[i][j].inputs = (int *) my_chunk_malloc
+                 (subblock_lut_size * sizeof(int), NULL, &chunk_bytes_avail,
+                   &chunk_next_avail_mem);
+      }
+   }
  }
 
 /* Initializations for both passes. */
@@ -150,36 +216,43 @@ void init_parse(int doall) {
  num_globals = 0;
 }
 
-void get_tok (char *buf, int doall, FILE *fp_net) {
-/* Figures out which, if any token is at the start of this line and *
- * takes the appropriate action.                                    */
 
- void add_io (int doall, int type, FILE *fp_net, char *buf);
- void add_clb (int doall, FILE *fp_net, char *buf);
- void add_global (int doall, FILE *fp_net, char *buf);
+static char *get_tok (char *buf, int doall, FILE *fp_net) {
+
+/* Figures out which, if any token is at the start of this line and *
+ * takes the appropriate action.  It always returns a pointer to    *
+ * the next line (I need to do this so I can do some lookahead).    */
+
  char *ptr; 
  
  ptr = my_strtok(buf,TOKENS,fp_net,buf);
- if (ptr == NULL) return;
+
+ if (ptr == NULL) {                       /* Empty line.  Skip. */
+    ptr = my_fgets(buf, BUFSIZE, fp_net);
+    return (ptr);
+ }
  
  if (strcmp(ptr,".clb") == 0) {
-    add_clb (doall, fp_net, buf);
-    return;
+    ptr = add_clb (doall, fp_net, buf);
+    return (ptr);
  }
 
  if (strcmp(ptr,".input") == 0) {
     add_io (doall, INPAD, fp_net, buf);
-    return;
+    ptr = my_fgets(buf, BUFSIZE, fp_net);
+    return (ptr);
  }
 
  if (strcmp(ptr,".output") == 0) {
     add_io (doall, OUTPAD, fp_net, buf);
-    return;
+    ptr = my_fgets(buf, BUFSIZE, fp_net);
+    return (ptr);
  }
 
  if (strcmp(ptr,".global") == 0) {
     add_global (doall, fp_net, buf);
-    return;
+    ptr = my_fgets(buf, BUFSIZE, fp_net);
+    return (ptr);
  }
 
  printf ("Error in get_tok while parsing netlist file.\n");
@@ -188,18 +261,167 @@ void get_tok (char *buf, int doall, FILE *fp_net) {
 }
 
 
-void add_clb (int doall, FILE *fp_net, char *buf) {
+static int get_pin_number (char *ptr, int min_val, int max_val) {
+
+/* Returns either the number in ptr or OPEN.  Ptr must contain  *
+ * "open" or an integer between min_val and max_val or an error *
+ * message is printed and the routine terminates the program.   */
+
+ int val;
+
+ if (strcmp("open",ptr) == 0) 
+    return (OPEN);
+
+ val = atoi (ptr);
+
+ if (val < min_val || val > max_val) {
+    printf("Error in get_pin_number on line %d of netlist file.\n", 
+         linenum);
+    printf("Pin %d is out of legal range (%d to %d).\nAborting.\n\n",
+         val, min_val, max_val);
+    exit (1);
+ }
+
+ return (val);
+}
+
+
+static void load_subblock_array (int doall, FILE *fp_net,
+           char *temp_buf, int num_subblocks, int bnum) {
+
+/* Parses one subblock line and, if doall is 1, loads the proper   *
+ * arrays.  Each subblock line is of the format:                   *
+ * subblock: <name> <ipin0> <ipin1> .. <ipin[subblock_lut_size-1]> *
+ *          <opin> <clockpin>                                      */
+ 
+ int ipin, len, connect_to;
+ char *ptr;
+
+ ipin = 0;
+ ptr = my_strtok(NULL,TOKENS,fp_net,temp_buf);
+
+ if (ptr == NULL) {
+    printf("Error in load_subblock_array on line %d of netlist file.\n",
+             linenum);
+    printf("Subblock name is missing.\nAborting.\n\n");
+    exit (1);
+ }
+    
+/* Load subblock name if this is the load pass. */
+ if (doall == 1) {
+    len = strlen (ptr);
+    subblock_inf[bnum][num_subblocks-1].name = my_chunk_malloc ((len+1) *
+             sizeof(char), NULL, &chunk_bytes_avail, &chunk_next_avail_mem);
+    strcpy (subblock_inf[bnum][num_subblocks-1].name, ptr);
+ }
+
+ ptr = my_strtok(NULL,TOKENS,fp_net,temp_buf);
+
+ while (ptr != NULL) {    /* For each subblock pin. */
+    if (doall == 1) {
+       connect_to = get_pin_number (ptr, 0, pins_per_clb-1);
+       if (ipin < subblock_lut_size) {      /* LUT input. */
+          subblock_inf[bnum][num_subblocks-1].inputs[ipin] = connect_to;
+       }
+       else if (ipin == subblock_lut_size) {   /* LUT output. */
+          subblock_inf[bnum][num_subblocks-1].output = connect_to;
+       }
+       else if (ipin == subblock_lut_size+1) {   /* Clock input. */
+          subblock_inf[bnum][num_subblocks-1].clock = connect_to;
+       }
+    }
+    ipin++;
+    ptr = my_strtok(NULL,TOKENS,fp_net,temp_buf);
+ }
+
+ if (ipin != subblock_lut_size + 2) {
+    printf("Error in load_subblock_array at line %d of netlist file.\n",
+            linenum); 
+    printf("Subblock had %d pins, expected %d.\n", ipin, 
+            subblock_lut_size+2);
+    printf("Aborting.\n\n");
+    exit (1);
+ }
+}
+
+
+static void set_subblock_count (int bnum, int num_subblocks) {
+
+/* Sets the temporary subblock count for block bnum to num_subblocks. *
+ * Properly allocates whatever temporary storage is needed.           */
+ 
+ if (bnum >= temp_block_storage) {
+    temp_block_storage *= 2;
+    num_subblocks_per_block = (int *) my_realloc 
+            (num_subblocks_per_block, temp_block_storage * sizeof (int));
+ }
+ 
+ num_subblocks_per_block[bnum] = num_subblocks;
+}
+
+
+static char *parse_subblocks (int doall, FILE *fp_net, char *buf,
+               int bnum) {
+
+/* Loads the subblock arrays with the proper values. */
+
+ char temp_buf[BUFSIZE], *ptr;
+ int num_subblocks;
+
+ num_subblocks = 0;
+
+ while (1) {
+    ptr = my_fgets (temp_buf, BUFSIZE, fp_net);
+    if (ptr == NULL)   
+       break;          /* EOF */
+
+  /* Save line in case it's not a sublock */
+    strcpy (buf, temp_buf);
+
+    ptr = my_strtok(temp_buf,TOKENS,fp_net,temp_buf);
+    if (ptr == NULL) 
+       continue;       /* Blank or comment line.  Skip. */
+
+    if (strcmp("subblock:", temp_buf) == 0) {
+       num_subblocks++; 
+       load_subblock_array (doall, fp_net, temp_buf, num_subblocks,
+               bnum);
+    }
+    else {
+       break;  /* Subblock list has ended.  Buf contains next line. */
+    }
+ }   /* End infinite while */
+
+ if (num_subblocks < 1 || num_subblocks > max_subblocks_per_block) {
+    printf("Error in parse_subblocks on line %d of netlist file.\n",
+         linenum);
+    printf("Block #%d has %d subblocks.  Out of range.\n",
+         bnum, num_subblocks);
+    printf("Aborting.\n\n");
+    exit (1);
+ }
+
+ if (doall == 0)
+    set_subblock_count (bnum, num_subblocks);
+ else 
+    assert (num_subblocks == num_subblocks_per_block[bnum]);
+
+ return (ptr);
+}
+
+
+static char *add_clb (int doall, FILE *fp_net, char *buf) {
+
 /* Adds the clb (.clb) currently being parsed to the block array.  Adds *
  * its pins to the nets data structure by calling add_net.  If doall is *
  * zero this is a counting pass; if it is 1 this is the final (loading) *
  * pass.                                                                */
 
  char *ptr;
- int pin_index, class, type, inet;
- void parse_name_and_pinlist (int doall, FILE *fp_net, char *buf);
+ int pin_index, class, inet;
+ enum e_pin_type type;
 
-/* Note:  parse_name_and_pinlist routine increments num_blocks for me. */
-
+ num_blocks++;
  parse_name_and_pinlist (doall, fp_net, buf);
  num_clbs++;
 
@@ -211,9 +433,9 @@ void add_clb (int doall, FILE *fp_net, char *buf) {
 
  while (ptr != NULL) {
     pin_index++;
-    if (pin_index >= clb_size) {
+    if (pin_index >= pins_per_clb) {
        printf("Error in add_clb on line %d of netlist file.\n",linenum);
-       printf("Too many pins on this clb.  Expected %d.\n",clb_size);
+       printf("Too many pins on this clb.  Expected %d.\n",pins_per_clb);
        exit (1);
     }
     
@@ -234,25 +456,30 @@ void add_clb (int doall, FILE *fp_net, char *buf) {
     ptr = my_strtok(NULL,TOKENS,fp_net,buf);
  }
 
- if (pin_index != clb_size - 1) {
+ if (pin_index != pins_per_clb - 1) {
     printf("Error in add_clb on line %d of netlist file.\n",linenum);
-    printf("Expected %d pins on clb, got %d.\n", clb_size, pin_index);
+    printf("Expected %d pins on clb, got %d.\n", pins_per_clb, pin_index + 1);
     exit (1);
  }
+
+ ptr = parse_subblocks (doall, fp_net, buf, num_blocks-1);
+ return (ptr);
 }
 
 
-void add_io (int doall, int block_type, FILE *fp_net, char *buf) {
+static void add_io (int doall, int block_type, FILE *fp_net, char *buf) {
 /* Adds the INPAD or OUTPAD (specified by block_type)  currently being  *
  * parsed to the block array.  Adds its pin to the nets data structure  *
  * by calling add_net.  If doall is zero this is a counting pass; if it *
  * is 1 this is the final (loading) pass.                               */
 
  char *ptr;
- int type, inet, pin_index, i;
- void parse_name_and_pinlist (int doall, FILE *fp_net, char *buf);
+ int inet, pin_index, i;
+ enum e_pin_type type;
  
-/* Note: the routine called below increments num_blocks. */ 
+ num_blocks++;
+ if (doall == 0)
+    set_subblock_count (num_blocks-1, 0);    /* No subblocks for IO */
  parse_name_and_pinlist (doall, fp_net, buf); 
 
  if (block_type == INPAD) {
@@ -301,13 +528,14 @@ void add_io (int doall, int block_type, FILE *fp_net, char *buf) {
  }
  
  if (doall) {
-    for (i=1;i<clb_size;i++) 
+    for (i=1;i<pins_per_clb;i++) 
        block[num_blocks-1].nets[i] = OPEN;
  }
 }
 
 
-void parse_name_and_pinlist (int doall, FILE *fp_net, char *buf) {
+static void parse_name_and_pinlist (int doall, FILE *fp_net, char *buf) {
+
 /* This routine does the first part of the parsing of a block.  It is *
  * called whenever any type of block (.clb, .input or .output) is to  *
  * be parsed.  It increments the block count (num_blocks), and checks *
@@ -319,8 +547,6 @@ void parse_name_and_pinlist (int doall, FILE *fp_net, char *buf) {
 
  char *ptr;
  int len;
- 
- num_blocks++; 
  
 /* Get block name. */
  
@@ -334,7 +560,8 @@ void parse_name_and_pinlist (int doall, FILE *fp_net, char *buf) {
  
  if (doall == 1) {    /* Second (loading) pass, store block name */
     len = strlen (ptr);
-    block[num_blocks-1].name = my_small_malloc ((len + 1) * sizeof(char));
+    block[num_blocks-1].name = my_chunk_malloc ((len + 1) * sizeof(char),
+                  NULL, &chunk_bytes_avail, &chunk_next_avail_mem);
     strcpy (block[num_blocks-1].name, ptr);
  }
  
@@ -346,23 +573,21 @@ void parse_name_and_pinlist (int doall, FILE *fp_net, char *buf) {
     exit (1);
  }
  
-/* Now get pinlist from the next line. */
+/* Now get pinlist from the next line.  Note that a NULL return value *
+ * from my_gets means EOF, while a NULL return from my_strtok just    *
+ * means we had a blank or comment line.                              */
  
- ptr = my_fgets (buf, BUFSIZE, fp_net);
- if (ptr == NULL) {
-    printf("Error in parse_name_and_pinlist on line %d of netlist file.\n",
-       linenum);
-    printf("Missing pinlist: keyword.\n");
-    exit (1);
- }
- 
- ptr = my_strtok(buf,TOKENS,fp_net,buf);
- if (ptr == NULL) {
-    printf("Error in parse_name_and_pinlist on line %d of netlist file.\n",
-       linenum);
-    printf("Missing pinlist: keyword.\n");
-    exit (1);
- }
+ do {
+    ptr = my_fgets (buf, BUFSIZE, fp_net);
+    if (ptr == NULL) {
+       printf("Error in parse_name_and_pinlist on line %d of netlist file.\n",
+          linenum);
+       printf("Missing pinlist: keyword.\n");
+       exit (1);
+    }
+
+    ptr = my_strtok(buf,TOKENS,fp_net,buf);
+ } while (ptr == NULL);
  
  if (strcmp (ptr, "pinlist:") != 0) {
     printf("Error in parse_name_and_pinlist on line %d of netlist file.\n",
@@ -373,7 +598,8 @@ void parse_name_and_pinlist (int doall, FILE *fp_net, char *buf) {
 }
 
 
-void add_global (int doall, FILE *fp_net, char *buf) {
+static void add_global (int doall, FILE *fp_net, char *buf) {
+
 /* Doall is 0 for the first (counting) pass and 1 for the second        *
  * (loading) pass.  fp_net is a pointer to the netlist file.  This      *
  * routine sets the proper entry(ies) in is_global to 1 during the      *
@@ -383,9 +609,8 @@ void add_global (int doall, FILE *fp_net, char *buf) {
  * signals like clocks that generally have dedicated routing in FPGAs.  */
 
  char *ptr;
- struct hash_nets *h_ptr;
- int index, nindex;
- int hash_value (char *name);
+ struct s_hash *h_ptr;
+ int nindex;
 
 /* Do nothing if this is the counting pass. */
 
@@ -397,31 +622,25 @@ void add_global (int doall, FILE *fp_net, char *buf) {
  while (ptr != NULL) {     /* For each .global signal */
     num_globals++;
 
-    index = hash_value(ptr);
-    h_ptr = hash[index];
-    nindex = -1;             /* Flag showing net hasn't been found yet. */
+    h_ptr = get_hash_entry (hash_table, ptr);
 
-    while (h_ptr != NULL) {                /* Still something in linked list */
-       if (strcmp(h_ptr->name,ptr) == 0) { /* Net already in hash table */
-          nindex = h_ptr->index;
-          is_global[nindex] = 1;    /* Flagged as global net */
-          break;
-       }
-       h_ptr = h_ptr->next;
-    }
-  
-    if (nindex == -1) {        /* Net was not found in list! */
+    if (h_ptr == NULL) {        /* Net was not found in list! */
        printf("Error in add_global on netlist file line %d.\n",linenum);
        printf("Global signal %s does not exist.\n",ptr);
        exit(1);
     }
+   
+    nindex = h_ptr->index;
+    is_global[nindex] = 1;    /* Flagged as global net */
 
     ptr = my_strtok(NULL,TOKENS,fp_net,buf);
  }
 }
 
 
-int add_net (char *ptr, int type, int bnum, int pclass, int doall) {   
+static int add_net (char *ptr, enum e_pin_type type, int bnum, int pclass, 
+          int doall) {   
+
 /* This routine is given a net name in *ptr, either DRIVER or RECEIVER *
  * specifying whether the block number given by bnum is driving this   *
  * net or in the fan-out and doall, which is 0 for the counting pass   *
@@ -429,140 +648,168 @@ int add_net (char *ptr, int type, int bnum, int pclass, int doall) {
  * returns the net number so the calling routine can update the block  *
  * data structure.                                                     */
 
- struct hash_nets *h_ptr, *prev_ptr;
- int index, j, nindex;
- int hash_value (char *name);
+ struct s_hash *h_ptr;
+ int j, nindex;
 
- index = hash_value(ptr);
- h_ptr = hash[index]; 
- prev_ptr = h_ptr;
+ if (doall == 0) {             /* Counting pass only */
+    h_ptr = insert_in_hash_table (hash_table, ptr, num_nets);
+    nindex = h_ptr->index;
 
- while (h_ptr != NULL) {
-    if (strcmp(h_ptr->name,ptr) == 0) { /* Net already in hash table */
-       nindex = h_ptr->index;
+    if (nindex == num_nets)    /* Net was not in the hash table */
+       num_nets++;
 
-       if (!doall) {   /* Counting pass only */
-          (h_ptr->count)++;
-          return (nindex);
-       }
+    return (nindex);
+ }
 
-       net[nindex].num_pins++;
-       if (type == DRIVER) {
-          num_driver[nindex]++;
-          j=0;           /* Driver always in position 0 of pinlist */
-       }
-       else {
-          j = net[nindex].num_pins - num_driver[nindex]; 
+ else {                        /* Load pass */
+    h_ptr = get_hash_entry (hash_table, ptr);
+    nindex = h_ptr->index;
+
+    if (h_ptr == NULL) {
+       printf("Error in add_net:  the second (load) pass found could not\n"); 
+       printf("find net %s in the symbol table.\n", ptr);
+       exit(1);
+    }
+
+    net[nindex].num_pins++;
+    if (type == DRIVER) {
+       num_driver[nindex]++;
+       j=0;           /* Driver always in position 0 of pinlist */
+    }    
+
+    else {
+       j = net[nindex].num_pins - num_driver[nindex];
    /* num_driver is the number of signal drivers of this net. *
     * should always be zero or 1 unless the netlist is bad.   */
-          if (j >= temp_num_pins[nindex]) {
-             printf("Error:  Net #%d (%s) has no driver and will cause\n",
-                nindex, ptr);
-             printf("memory corruption.\n");
-             exit(1);
-          }
-       }
-       net[nindex].pins[j] = bnum;
-       net_pin_class[nindex][j] = pclass;
-       return (nindex);
-    }
-    prev_ptr = h_ptr;
-    h_ptr = h_ptr->next;
+
+       if (j >= temp_num_pins[nindex]) {
+          printf("Error:  Net #%d (%s) has no driver and will cause\n",
+             nindex, ptr);
+          printf("memory corruption.\n");
+          exit(1);
+       } 
+    }   
+    net[nindex].pins[j] = bnum;
+    net_pin_class[nindex][j] = pclass;
+    return (nindex);
  }
-
- /* Net was not in the hash table. */
-
- if (doall == 1) {
-    printf("Error in add_net:  the second (load) pass found could not\n");
-    printf("find net %s in the symbol table.\n", ptr);
-    exit(1);
- }
-
-/* Add the net (only counting pass will add nets to symbol table). */
-
- num_nets++;
- h_ptr = (struct hash_nets *) my_malloc (sizeof(struct hash_nets));
- if (prev_ptr == NULL) {
-    hash[index] = h_ptr;
- }     
- else {  
-    prev_ptr->next = h_ptr;
- }    
- h_ptr->next = NULL;
- h_ptr->index = num_nets - 1;
- h_ptr->count = 1;
- h_ptr->name = (char *) my_malloc((strlen(ptr)+1)*sizeof(char));
- strcpy(h_ptr->name,ptr);
- return (h_ptr->index);
 }
 
 
-int hash_value (char *name) {
- int i,k;
- int val=0, mult=1;
- 
- i = strlen(name);
- k = max (i-7,0);
- for (i=strlen(name)-1;i>=k;i--) {
-    val += mult*((int) name[i]);
-    mult *= 10;
- }
- val += (int) name[0];
- val %= HASHSIZE;
- return(val);
+static void print_pinnum (FILE *fp, int pinnum) {
+
+/* This routine prints out either OPEN or the pin number, to file fp. */
+
+ if (pinnum == OPEN) 
+    fprintf(fp,"\tOPEN");
+ else
+    fprintf(fp,"\t%d", pinnum);
 }
 
 
-void echo_input (char *foutput, char *net_file) {
+void netlist_echo (char *foutput, char *net_file) {
+
 /* Prints out the netlist related data structures into the file    *
  * fname.                                                          */
 
- int i, j;	
+ int i, j, ipin, max_pin;	
  FILE *fp;
  
- fp = my_open (foutput,"w",0); 
+ fp = my_fopen (foutput,"w",0); 
 
  fprintf(fp,"Input netlist file: %s\n", net_file);
  fprintf(fp,"num_p_inputs: %d, num_p_outputs: %d, num_clbs: %d\n",
              num_p_inputs,num_p_outputs,num_clbs);
  fprintf(fp,"num_blocks: %d, num_nets: %d, num_globals: %d\n",
              num_blocks, num_nets, num_globals);
- fprintf(fp,"\nNet\tname\t#pins\tdriver\t\trecvs. (block, class)\n");
+ fprintf(fp,"\nNet\tName\t\t#Pins\tDriver\t\tRecvs. (block, class)\n");
 
  for (i=0;i<num_nets;i++) {
-    fprintf(fp,"\n%d\t%s\t%d",i,net[i].name,net[i].num_pins);
+    fprintf(fp,"\n%d\t%s\t", i, net[i].name);
+    if (strlen(net[i].name) < 8)
+       fprintf(fp,"\t");         /* Name field is 16 chars wide */
+    fprintf(fp,"%d",net[i].num_pins);
     for (j=0;j<net[i].num_pins;j++) 
         fprintf(fp,"\t(%4d,%4d)",net[i].pins[j], net_pin_class[i][j]);
  }
 
- fprintf(fp,"\n\nBlocks\nblock\tname\ttype\tpin connections\n\n");
+ fprintf(fp,"\n\n\nBlock List:\t\tBlock Type Legend:\n");
+ fprintf(fp,"\t\t\tINPAD = %d\tOUTPAD = %d\n", INPAD, OUTPAD);
+ fprintf(fp,"\t\t\tCLB = %d\n\n", CLB);
+
+ fprintf(fp,"\nBlock\tName\t\tType\tPin Connections\n\n");
 
  for (i=0;i<num_blocks;i++) { 
-    fprintf(fp,"\n%d\t%s\t%d",i,block[i].name,
-       block[i].type);
-    for (j=0;j<clb_size;j++) 
-        fprintf(fp,"\t%d",block[i].nets[j]);
+    fprintf(fp,"\n%d\t%s\t",i,block[i].name);
+    if (strlen(block[i].name) < 8)
+       fprintf(fp,"\t");         /* Name field is 16 chars wide */
+    fprintf(fp,"%d", block[i].type);
+
+    if (block[i].type == INPAD || block[i].type == OUTPAD) 
+       max_pin = 1;
+    else
+       max_pin = pins_per_clb;
+ 
+    for (j=0;j<max_pin;j++) 
+        print_pinnum (fp, block[i].nets[j]);
  }  
 
  fprintf(fp,"\n");
+
+/* Now print out subblock info. */
+
+ fprintf(fp,"\n\nSubblock List:\n\n");
+
+ for (i=0;i<num_blocks;i++) {
+    if (block[i].type != CLB) 
+       continue;
+
+    fprintf(fp,"\nBlock: %d (%s)\tNum_subblocks: %d\n", i,
+                  block[i].name, num_subblocks_per_block[i]);
+
+   /* Print header. */
+
+    fprintf(fp,"Index\tName\t\tInputs");
+    for (j=0;j<subblock_lut_size;j++)
+       fprintf(fp,"\t");
+    fprintf(fp,"Output\tClock\n");
+
+   /* Print subblock info for block i. */
+
+    for (j=0;j<num_subblocks_per_block[i];j++) {
+       fprintf(fp,"%d\t%s", j, subblock_inf[i][j].name);
+       if (strlen(subblock_inf[i][j].name) < 8) 
+          fprintf(fp,"\t");         /* Name field is 16 characters */
+       for (ipin=0;ipin<subblock_lut_size;ipin++) 
+          print_pinnum (fp, subblock_inf[i][j].inputs[ipin]);
+       print_pinnum (fp, subblock_inf[i][j].output);
+       print_pinnum (fp, subblock_inf[i][j].clock);
+       fprintf(fp,"\n");
+    }
+ }
+
  fclose(fp);
 }
 
 
-void check_net (void) {
- int i, ipin, icmp, error, num_conn, class;
- int get_num_conn (int bnum);
+static void check_netlist (void) {
+
+/* Checks the input netlist for various errors.  */
+
+ int i, ipin, icmp, error, num_conn, class, isubblk, clb_pin;
+ struct s_hash **block_hash_table, *h_ptr;
+ struct s_hash_iterator hash_iterator;
  
  error = 0;
 
  for (i=0;i<num_nets;i++) {
     if (num_driver[i] != 1) {
-       printf ("Warning:  net %s has %d signals driving it.\n",
+       printf ("Error:  net %s has %d signals driving it.\n",
            net[i].name,num_driver[i]);
        error++;
     }
     if ((net[i].num_pins - num_driver[i]) < 1) {
-       printf("Warning:  net %s has no fanout.\n",net[i].name);
+       printf("Error:  net %s has no fanout.\n",net[i].name);
        error++;
     }
  }
@@ -581,7 +828,7 @@ void check_net (void) {
  * abort.                                                                  */
 
           if (num_conn == 1) {
-             for (ipin=0;ipin<clb_size;ipin++) {
+             for (ipin=0;ipin<pins_per_clb;ipin++) {
                 if (block[i].nets[ipin] != OPEN) {
                    class = clb_pin_class[ipin];
 
@@ -589,7 +836,7 @@ void check_net (void) {
                       error++;
                    }
                    else {
-                      printf("\tPin is an output -- may be a contant "
+                      printf("\tPin is an output -- may be a constant "
                         "generator.  Non-fatal, but check this.\n");
                    }
 
@@ -605,30 +852,99 @@ void check_net (void) {
 /* This case should already have been flagged as an error -- this is *
  * just a redundant double check.                                    */
 
-       if (num_conn > clb_size) {
-          printf("Warning:  logic block #%d with output %s has %d pins.\n",
+       if (num_conn > pins_per_clb) {
+          printf("Error:  logic block #%d with output %s has %d pins.\n",
              i,block[i].name,num_conn);
           error++;
        }
-    }
+
+/* Now check that the subblock information makes sense. */
+       
+       if (num_subblocks_per_block[i] < 1 || num_subblocks_per_block[i] >
+             max_subblocks_per_block) {
+          printf("Error:  block #%d (%s) contains %d subblocks.\n",
+             i, block[i].name, num_subblocks_per_block[i]);
+          error++;
+       }
+
+       for (isubblk=0;isubblk<num_subblocks_per_block[i];isubblk++) {
+          for (ipin=0;ipin<subblock_lut_size;ipin++) {  /* Input pins */
+             clb_pin = subblock_inf[i][isubblk].inputs[ipin];
+             if (clb_pin != OPEN) {
+                if (clb_pin < 0 || clb_pin > pins_per_clb) {
+                   printf("Error:  Block #%d (%s) subblock #%d (%s) pin #%d "
+                      "connects to nonexistent clb pin #%d.\n", i, 
+                      block[i].name, isubblk, subblock_inf[i][isubblk].name,
+                      ipin, clb_pin);
+                   error++;
+                }
+             }
+          }
+     
+      /* Subblock output pin. */
+          clb_pin = subblock_inf[i][isubblk].output;
+           /* Output can't be OPEN */
+          if (clb_pin < 0 || clb_pin > pins_per_clb) { 
+             printf("Error:  Block #%d (%s) subblock #%d (%s) pin #%d \n"
+                    "connects to nonexistent clb pin #%d.\n", i, 
+                    block[i].name, isubblk, subblock_inf[i][isubblk].name,
+                    ipin, clb_pin);
+             error++;
+          }
+          class = clb_pin_class[clb_pin];
+          if (class_inf[class].type != DRIVER) {
+             printf("Error:  Block #%d (%s) subblock #%d (%s) output pin \n"
+                    "connects to clb input pin #%d.\n", i, block[i].name, 
+                    isubblk, subblock_inf[i][isubblk].name, clb_pin);
+             error++;
+          }
+
+      /* Subblock clock pin. */
+          clb_pin = subblock_inf[i][isubblk].clock;
+          if (clb_pin != OPEN) {
+             if (clb_pin < 0 || clb_pin > pins_per_clb) {
+                printf("Error:  Block #%d (%s) subblock #%d (%s) pin #%d "
+                       "connects to nonexistent clb pin #%d.\n", i, 
+                        block[i].name, isubblk, subblock_inf[i][isubblk].name,
+                        ipin, clb_pin);
+                error++;
+                
+             }
+             class = clb_pin_class[clb_pin];
+             if (class_inf[class].type != RECEIVER) { 
+                printf("Error:  Block #%d (%s) subblock #%d (%s) clock pin \n"
+                       "connects to clb output pin #%d.\n", i, block[i].name, 
+                       isubblk, subblock_inf[i][isubblk].name, clb_pin);
+                error++;
+             }
+          }
+       }  /* End subblock for loop. */
+    }  /* End clb if */
 
     else {    /* IO block */
 
 /* This error check is also a redundant double check.                 */
 
        if (num_conn != 1) {
-          printf("Warning:  io block #%d (%s) of type %d"
+          printf("Error:  io block #%d (%s) of type %d"
              "has %d pins.\n", i, block[i].name, block[i].type,
              num_conn);
+          error++;
+       }
+
+  /* IO blocks must have no subblock information. */
+       if (num_subblocks_per_block[i] != 0) {
+          printf("Error:  IO block #%d (%s) contains %d subblocks.\n"
+              "Expected 0.\n", i, block[i].name, num_subblocks_per_block[i]);
           error++;
        }
     }
  }
 
-/* Check that no net connects to the same pin class more than once on  *
- * the same block.  I can think of no reason why a netlist would ever  *
- * want to do this, and it would break an assumption used in update_   *
- * markers.                                                            */
+/* Check that no net connects to the same pin class more than once on      *
+ * the same block.  I can think of no reason why a netlist would ever      *
+ * want to do this, and it would break an assumption used when updating    *
+ * the targets still to be reached when routing a net.                     */
 
  for (i=0;i<num_nets;i++) {
     for (ipin=0;ipin<net[i].num_pins-1;ipin++) {
@@ -638,7 +954,7 @@ void check_net (void) {
 
           if (net[i].pins[ipin] == net[i].pins[icmp]) {
              if (net_pin_class[i][ipin] == net_pin_class[i][icmp]) {
-                printf("Warning:  net %d (%s) pins %d and %d connect\n",
+                printf("Error:  net %d (%s) pins %d and %d connect\n",
                    i, net[i].name, ipin, icmp);
                 printf("to the same block and pin class.\n");
                 printf("This does not make sense and is not allowed.\n");
@@ -648,6 +964,26 @@ void check_net (void) {
        } 
     }
  }
+
+/* Now check that all blocks have unique names. */
+ 
+ block_hash_table = alloc_hash_table ();
+ for (i=0;i<num_blocks;i++) 
+    h_ptr = insert_in_hash_table (block_hash_table, block[i].name, i);
+
+ hash_iterator = start_hash_table_iterator ();
+ h_ptr = get_next_hash (block_hash_table, &hash_iterator);
+ 
+ while (h_ptr != NULL) {
+    if (h_ptr->count != 1) {
+       printf ("Error:  %d blocks are named %s.  Block names must be unique."
+               "\n", h_ptr->count, h_ptr->name);
+       error++;
+    }
+    h_ptr = get_next_hash (block_hash_table, &hash_iterator);
+ }
+ 
+ free_hash_table (block_hash_table);
  
  if (error != 0) {
     printf("Found %d fatal Errors in the input netlist.\n",error);
@@ -656,14 +992,15 @@ void check_net (void) {
 }
 
 
-int get_num_conn (int bnum) {
+static int get_num_conn (int bnum) {
+
 /* This routine returns the number of connections to a block. */
 
  int i, num_conn;
 
  num_conn = 0;
 
- for (i=0;i<clb_size;i++) {
+ for (i=0;i<pins_per_clb;i++) {
     if (block[bnum].nets[i] != OPEN) 
        num_conn++;
  }
@@ -672,21 +1009,11 @@ int get_num_conn (int bnum) {
 }
 
 
-void free_parse (void) {  
- /* Release memory needed only during circuit netlist parsing. */
- int i;
- struct hash_nets *h_ptr, *temp_ptr;
+static void free_parse (void) {  
 
- for (i=0;i<HASHSIZE;i++) {
-    h_ptr = hash[i];
-    while (h_ptr != NULL) {
-       free ((void *) h_ptr->name);
-       temp_ptr = h_ptr->next;
-       free ((void *) h_ptr);
-       h_ptr = temp_ptr;
-    }
- }
- free ((void *) num_driver);
- free ((void *) hash);
- free ((void *) temp_num_pins);
+/* Release memory needed only during circuit netlist parsing. */
+
+ free (num_driver);
+ free_hash_table (hash_table);
+ free (temp_num_pins);
 }

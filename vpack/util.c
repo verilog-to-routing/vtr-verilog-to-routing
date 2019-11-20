@@ -11,7 +11,8 @@
 
 int linenum;  /* Line in file being parsed. */
 
-FILE *my_open(char *fname, char *flag, int prompt) {
+FILE *my_fopen(char *fname, char *flag, int prompt) {
+
  FILE *fp;   /* prompt = 1: prompt user.  prompt=0: use fname */
 
  while (1) {
@@ -25,9 +26,10 @@ FILE *my_open(char *fname, char *flag, int prompt) {
 }
 
 void *my_calloc (size_t nelem, size_t size) {
+
  void *ret;
  if ((ret = calloc (nelem,size)) == NULL) {
-    fprintf(stderr,"Unable to calloc memory.  Aborting.\n");
+    fprintf(stderr,"Error:  Unable to calloc memory.  Aborting.\n");
     exit (1);
  }
  return (ret);
@@ -36,28 +38,44 @@ void *my_calloc (size_t nelem, size_t size) {
 void *my_malloc (size_t size) {
  void *ret;
  if ((ret = malloc (size)) == NULL) {
-    fprintf(stderr,"Unable to malloc memory.  Aborting.\n");
+    fprintf(stderr,"Error:  Unable to malloc memory.  Aborting.\n");
     exit (1);
  }
  return (ret);
 }
 
 
-void *my_small_malloc (size_t size) {
-/* This routine should only be used for allocating small data structures *
- * which WILL NEVER BE FREED.  It gets a big chunk of memory from malloc *
- * and gradually doles it out as requested.  This removes the 12-byte    *
- * or so overhead inherent in each malloced data segment, but means I    *
- * don't have enough information to ever free the memory.  All calls to  *
- * this routine may be replaced with calls to my_malloc if you ever have *
- * compatibility problems on a new architecture and you don't feel like  *
- * fixing them.  These compatibility problems would probably manifest    *
- * themselves as bus errors, seg faults and alignment violations due to  *
- * improperly aligned data.                                              */
 
-#define CHUNK_SIZE 4096
-#define FRAGMENT_THRESHOLD 40
+void *my_realloc (void *ptr, size_t size) {
 
+ void *ret;
+
+ if ((ret = realloc (ptr,size)) == NULL) {
+    fprintf(stderr,"Error:  Unable to realloc memory.  Aborting.\n");
+    exit (1);
+ }
+ return (ret);
+}
+
+
+void *my_chunk_malloc (size_t size, struct s_linked_vptr **chunk_ptr_head, 
+       int *mem_avail_ptr, char **next_mem_loc_ptr) {
+ 
+/* This routine should be used for allocating fairly small data             *
+ * structures where memory-efficiency is crucial.  This routine allocates   *
+ * large "chunks" of data, and parcels them out as requested.  Whenever     *
+ * it mallocs a new chunk it adds it to the linked list pointed to by       *
+ * chunk_ptr_head.  This list can be used to free the chunked memory.       *
+ * If chunk_ptr_head is NULL, no list of chunked memory blocks will be kept *
+ * -- this is useful for data structures that you never intend to free as   *
+ * it means you don't have to keep track of the linked lists.               *
+ * Information about the currently open "chunk" is must be stored by the    *
+ * user program.  mem_avail_ptr points to an int storing how many bytes are *
+ * left in the current chunk, while next_mem_loc_ptr is the address of a    *
+ * pointer to the next free bytes in the chunk.  To start a new chunk,      *
+ * simply set *mem_avail_ptr = 0.  Each independent set of data structures  *
+ * should use a new chunk.                                                  */
+ 
 /* To make sure the memory passed back is properly aligned, I must *
  * only send back chunks in multiples of the worst-case alignment  *
  * restriction of the machine.  On most machines this should be    *
@@ -66,29 +84,33 @@ void *my_small_malloc (size_t size) {
 
  typedef long Align;
 
- static char *mem_ptr = NULL;
+#define CHUNK_SIZE 32768
+#define FRAGMENT_THRESHOLD 100
+
  char *tmp_ptr;
- static int mem_avail;
  int aligned_size;
 
- if (mem_ptr == NULL) {
-    mem_ptr = my_malloc (CHUNK_SIZE);
-    mem_avail = CHUNK_SIZE;
- }
-
- if (mem_avail < size) {       /* Need to malloc more memory. */
+ if (*mem_avail_ptr < size) {       /* Need to malloc more memory. */
     if (size > CHUNK_SIZE) {      /* Too big, use standard routine. */
        tmp_ptr = my_malloc (size);
+
 #ifdef DEBUG
-       printf("Warning:  my_small_malloc got a request for %d bytes.\n",
+       printf("NB:  my_chunk_malloc got a request for %d bytes.\n",
           size);
-       printf("You should use my_malloc for such big requests.\n");
+       printf("You should consider using my_malloc for such big requests.\n");
 #endif
+
+       if (chunk_ptr_head != NULL) 
+          *chunk_ptr_head = insert_in_vptr_list (*chunk_ptr_head, tmp_ptr);
        return (tmp_ptr);
     }
-    if (mem_avail < FRAGMENT_THRESHOLD) {  /* Only a small scrap left. */
-       mem_ptr = my_malloc (CHUNK_SIZE);
-       mem_avail = CHUNK_SIZE;
+
+    if (*mem_avail_ptr < FRAGMENT_THRESHOLD) {  /* Only a small scrap left. */
+       *next_mem_loc_ptr = my_malloc (CHUNK_SIZE);
+       *mem_avail_ptr = CHUNK_SIZE;
+       if (chunk_ptr_head != NULL) 
+          *chunk_ptr_head = insert_in_vptr_list (*chunk_ptr_head, 
+                            *next_mem_loc_ptr);
     }
 
 /* Execute else clause only when the chunk we want is pretty big,  *
@@ -97,6 +119,8 @@ void *my_small_malloc (size_t size) {
 
     else {     
        tmp_ptr = my_malloc (size);
+       if (chunk_ptr_head != NULL) 
+          *chunk_ptr_head = insert_in_vptr_list (*chunk_ptr_head, tmp_ptr);
        return (tmp_ptr);
     }
  }
@@ -111,21 +135,46 @@ void *my_small_malloc (size_t size) {
     aligned_size = size + sizeof(Align) - size % sizeof(Align);
  }
 
- tmp_ptr = mem_ptr;
- mem_ptr += aligned_size; 
- mem_avail -= aligned_size;
- return ((void *) tmp_ptr);
+ tmp_ptr = *next_mem_loc_ptr;
+ *next_mem_loc_ptr += aligned_size; 
+ *mem_avail_ptr -= aligned_size;
+ return (tmp_ptr);
 }
+
+
+void free_chunk_memory (struct s_linked_vptr *chunk_ptr_head) {
+
+/* Frees the memory allocated by a sequence of calls to my_chunk_malloc. *
+ * All the memory allocated between calls with new_chunk == TRUE by      *
+ * my_chunk_malloc will be freed.                                        */
+
+ struct s_linked_vptr *curr_ptr, *prev_ptr;
+
+ curr_ptr = chunk_ptr_head;
  
-
-void *my_realloc (void *ptr, size_t size) {
- void *ret;
-
- if ((ret = realloc (ptr,size)) == NULL) {
-    fprintf(stderr,"Unable to realloc memory.  Aborting.\n");
-    exit (1);
+ while (curr_ptr != NULL) {
+    free (curr_ptr->data_vptr);   /* Free memory "chunk". */
+    prev_ptr = curr_ptr;
+    curr_ptr = curr_ptr->next;
+    free (prev_ptr);              /* Free memory used to track "chunk". */
  }
- return (ret);
+}
+
+
+struct s_linked_vptr *insert_in_vptr_list (struct s_linked_vptr *head,
+              void *vptr_to_add) {
+
+/* Inserts a new element at the head of a linked list of void pointers. *
+ * Returns the new head of the list.                                    */
+
+ struct s_linked_vptr *linked_vptr;
+
+ linked_vptr = (struct s_linked_vptr *) my_malloc (sizeof(struct 
+                 s_linked_vptr));
+
+ linked_vptr->data_vptr = vptr_to_add;
+ linked_vptr->next = head;
+ return (linked_vptr);     /* New head of the list */
 }
 
 
@@ -178,6 +227,7 @@ char *my_fgets(char *buf, int max_size, FILE *fp) {
 
 
 char *my_strtok(char *ptr, char *tokens, FILE *fp, char *buf) {
+
 /* Get next token, and wrap to next line if \ at end of line.    *
  * There is a bit of a "gotcha" in strtok.  It does not make a   *
  * copy of the character array which you pass by pointer on the  *
@@ -201,6 +251,7 @@ char *my_strtok(char *ptr, char *tokens, FILE *fp, char *buf) {
 
 void **alloc_matrix (int nrmin, int nrmax, int ncmin, int ncmax, 
    size_t elsize) {
+
 /* allocates an generic matrix with nrmax-nrmin + 1 rows and ncmax - *
  * ncmin + 1 columns, with each element of size elsize. i.e.         *
  * returns a pointer to a storage block [nrmin..nrmax][ncmin..ncmax].*
@@ -218,14 +269,23 @@ void **alloc_matrix (int nrmin, int nrmax, int ncmin, int ncmax,
  return ((void **) cptr);
 }
 
-void free_matrix (void **vptr, int nrmin, int nrmax, int ncmin,
+
+/* NB:  need to make the pointer type void * instead of void ** to allow   *
+ * any pointer to be passed in without a cast.                             */
+
+void free_matrix (void *vptr, int nrmin, int nrmax, int ncmin,
                   size_t elsize) {
+
  int i;
+ char **cptr;
+
+ cptr = (char **) vptr;
 
  for (i=nrmin;i<=nrmax;i++) 
-    free ((char *) vptr[i] + ncmin * elsize / sizeof (char));
- free ((char **) vptr + nrmin);   
+    free (cptr[i] + ncmin * elsize / sizeof (char));
+ free (cptr + nrmin);   
 } 
+
 
 void ***alloc_matrix3 (int nrmin, int nrmax, int ncmin, int ncmax, 
       int ndmin, int ndmax, size_t elsize) {
@@ -252,16 +312,21 @@ void ***alloc_matrix3 (int nrmin, int nrmax, int ncmin, int ncmax,
  return ((void ***) cptr);
 }
 
-void free_matrix3 (void ***vptr, int nrmin, int nrmax, int ncmin, 
-                   int ncmax, int ndmin, size_t elsize) {
+
+void free_matrix3 (void *vptr, int nrmin, int nrmax, int ncmin, int ncmax, 
+        int ndmin, size_t elsize) {
+
  int i, j;
+ char ***cptr;
+
+ cptr = (char ***) vptr;
 
  for (i=nrmin;i<=nrmax;i++) {
     for (j=ncmin;j<=ncmax;j++) 
-       free ((char *) vptr[i][j] + ndmin * elsize / sizeof (char));
-    free ((char **) vptr[i] + ncmin);
+       free (cptr[i][j] + ndmin * elsize / sizeof (char));
+    free (cptr[i] + ncmin);
  }
- free ((char ***) vptr + nrmin);   
+ free (cptr + nrmin);   
 } 
 
 
@@ -271,9 +336,9 @@ void my_srandom (int seed) {
  * architecture.                                                     */
  
 #if defined (HP)
- void srand48 (long seed);
+ void srand48 (long seed_val);
 #else
- void srandom (int seed);
+ void srandom (int seed_val);
 #endif
 
 #if defined (HP)

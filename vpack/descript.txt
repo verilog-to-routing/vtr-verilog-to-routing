@@ -1,0 +1,107 @@
+Vpack Version 2.03
+
+Fixed two bugs. 
+
+1)  The netlist compression routine that gets rid of "holes" left by 
+    empty pads and latches that got folded into LUTs didn't compress the
+    is_clock array.  This could result in the wrong signal being 
+    marked as a clock.  Now fixed.
+
+2)  Long signal names that made .latch and .names statements run over
+    multiple lines were making vpack go nuts, due to a subtle problem with
+    strtok not making local copies of things.  Now fixed.
+
+
+Vpack Version 2.02
+
+Made global_clocks and hill_climbing on by default.  Made the default
+cluster seed max_inputs.
+
+Fixed minor bug found by Yaska.  Number of LUT + FF blocks reported to
+user could be wrong when there were unused input blocks that had been
+removed.  Just affected the summary; the netlist produced was always
+correct.
+
+Made all local functions static to make code more modular.
+Changed name from blifmap to vpack.   
+
+Blifmap Version 2.01
+
+Changed output netlist so that nets which are now completely 
+contained within a cluster are removed from the top-level netlist.
+That is, the cluster subblock information still describes the
+internal connections, but the output pin that would drive that
+net is now marked as OPEN.  This avoids nets with no fanout that
+would cause problems for the placer and router in VPR, and single-
+pin nets didn't make a lot of sense anyway.
+
+Blifmap Version 2.00
+
+Complete clustering blifmap.  Fully debugged.  In addition to the
+greedy clustering algorithm, an optional hill climbing second 
+pass has been added.  It is similar in philosophy to Kernighan-Lin
+partitioning.  Two different seed generation strategies can be
+selected -- maximum sharing with the previous cluster (locality
+enhancing, I hope) or maximum number of used inputs.  The output
+routines and statistics routines have also been added.  The output
+netlist now includes information on the subblocks within a cluster.
+To get a netlist of LUT + FF logic blocks with no assumption of local
+routing from output to input, use the -no_clustering option.
+
+Blifmap Version 1.99
+
+Compress the net and block data structures after ff packing so there
+are no "holes" in them.  First pass of compression code is written
+and debugged.  It's a pure greedy algorithm with no hill climbing that
+just tries to go for maximum pin sharing.  The clustering check 
+code is also written and works.
+
+Blifmap Version 1.25
+
+Fixed bug where space was not properly malloced for model name (didn't
+appear to ever cause problems, but was a latent memory access error).
+Made several variables that were unnecessarily global into more local
+versions.  Took the command line parsing out of main and put it into a 
+parse_command subroutine.
+
+Blifmap Version 1.24
+
+Altered code to make it strictly ANSI compliant (no warning through
+strict gcc) and so that it should compile without trouble on an
+HP architecture.  Added a title banner that prints at startup.
+
+Blifmap Version 1.23
+
+Adds -global option, which will automatically make all clocks global.
+It prints a warning message if more than one clock is found.
+
+Blifmap Version 1.22
+
+Automatically removes unused inputs, with a warning message.
+
+Blifmap Version 1.21
+
+I now allow LUTs with no inputs to pass through the translater, since
+they may be constant generators.  A warning message is still generated
+though.  This version is going to Jonathan.
+
+
+Blifmap Version 1.2
+
+Changes the pin ordering for CLBs so that it is:
+
+.clb <name>
+ pinlist: LUT_in1 LUT_in2 ... LUT_inN Output Clock
+
+This will lead to nets being parsed in the same order as they
+were with a blif netlist, making it easier for me to compare 
+results with my old vpr version (using serial numbers).
+
+
+Blifmap Version 1.1
+
+Reads in circuits including latches.  Does not rebuild the symbol table 
+on the second pass, so it is better structured.  Merges LATCHES properly
+into lookup tables and writes out its output.
+
+

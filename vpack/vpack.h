@@ -5,15 +5,11 @@
 /*#define VERBOSE 1*/   /* Prints all sorts of intermediate data */
 
 enum block_types {INPAD = -2, OUTPAD, LUT, LATCH, EMPTY, LUT_AND_LATCH};
+enum e_cluster_seed {MAX_SHARING, MAX_INPUTS};
 
 #define DRIVER 0     /* Is a pin driving a net or in the fanout? */
 #define RECEIVER 1
 #define OPEN -1      /* Pin is unconnected. */
-
-/* Macros */
-
-#define max(a,b) (((a) > (b))? (a) : (b))
-#define min(a,b) ((a) > (b)? (b) : (a))
 
 struct hash_nets {char *name; int index; int count; 
    struct hash_nets *next;}; 
