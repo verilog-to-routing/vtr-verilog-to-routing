@@ -686,7 +686,7 @@ float calculate_device_utilization(const DeviceGrid& grid, std::map<t_logical_bl
             continue;
         }
 
-        t_physical_tile_type_ptr type = pick_random_physical_type(kv.first);
+        t_physical_tile_type_ptr type = pick_best_physical_type(kv.first);
 
         size_t count = kv.second;
 
