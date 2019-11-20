@@ -13,10 +13,10 @@
 static t_pl_loc** legal_pos = nullptr; /* [0..device_ctx.num_block_types-1][0..type_tsize - 1] */
 static int* num_legal_pos = nullptr;   /* [0..num_legal_pos-1] */
 
-static void alloc_legal_placements();
-static void load_legal_placements();
+static void alloc_legal_placement_locations();
+static void load_legal_placement_locations();
 
-static void free_legal_placements();
+static void free_legal_placement_locations();
 
 static int check_macro_can_be_placed(t_pl_macro pl_macro, int itype, t_pl_loc head_pos);
 static int try_place_macro(int itype, int ipos, t_pl_macro pl_macro);
@@ -29,7 +29,7 @@ static t_physical_tile_type_ptr pick_placement_type(t_logical_block_type_ptr log
                                                     int num_needed_types,
                                                     int* free_locations);
 
-static void alloc_legal_placements() {
+static void alloc_legal_placement_locations() {
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
@@ -58,7 +58,7 @@ static void alloc_legal_placements() {
     }
 }
 
-static void load_legal_placements() {
+static void load_legal_placement_locations() {
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.placement();
 
@@ -83,7 +83,7 @@ static void load_legal_placements() {
     free(index);
 }
 
-static void free_legal_placements() {
+static void free_legal_placement_locations() {
     auto& device_ctx = g_vpr_ctx.device();
 
     for (unsigned int i = 0; i < device_ctx.physical_tile_types.size(); i++) {
@@ -358,8 +358,8 @@ void initial_placement(enum e_pad_loc_type pad_loc_type,
      */
 
     // Loading legal placement locations
-    alloc_legal_placements();
-    load_legal_placements();
+    alloc_legal_placement_locations();
+    load_legal_placement_locations();
 
     int itype, ipos;
     int* free_locations; /* [0..device_ctx.num_block_types-1].
@@ -425,7 +425,7 @@ void initial_placement(enum e_pad_loc_type pad_loc_type,
     }
 
     /* Restore legal_pos */
-    load_legal_placements();
+    load_legal_placement_locations();
 
 #ifdef VERBOSE
     VTR_LOG("At end of initial_placement.\n");
@@ -434,5 +434,5 @@ void initial_placement(enum e_pad_loc_type pad_loc_type,
     }
 #endif
     free(free_locations);
-    free_legal_placements();
+    free_legal_placement_locations();
 }
