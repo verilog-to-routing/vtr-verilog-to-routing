@@ -624,7 +624,7 @@ static void power_usage_blocks(t_power_usage* power_usage) {
                     pb = cluster_ctx.clb_nlist.block_pb(iblk);
                     logical_block = cluster_ctx.clb_nlist.block_type(iblk);
                 } else {
-                    logical_block = pick_random_logical_type(physical_tile);
+                    logical_block = pick_best_logical_type(physical_tile);
                 }
 
                 /* Calculate power of this CLB */
