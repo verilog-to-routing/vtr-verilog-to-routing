@@ -4806,8 +4806,24 @@ static void link_physical_logical_types(std::vector<t_physical_tile_type>& Physi
     for (auto& physical_tile : PhysicalTileTypes) {
         if (physical_tile.index == EMPTY_TYPE_INDEX) continue;
 
+        auto& equivalent_sites = physical_tile.equivalent_sites;
+
+        auto criteria = [physical_tile](const t_logical_block_type* lhs, const t_logical_block_type* rhs) {
+            int num_physical_pins = physical_tile.num_pins / physical_tile.capacity;
+
+            int lhs_num_logical_pins = lhs->pb_type->num_pins;
+            int rhs_num_logical_pins = rhs->pb_type->num_pins;
+
+            int lhs_diff_num_pins = num_physical_pins - lhs_num_logical_pins;
+            int rhs_diff_num_pins = num_physical_pins - rhs_num_logical_pins;
+
+            return lhs_diff_num_pins < rhs_diff_num_pins;
+        };
+
+        std::sort(equivalent_sites.begin(), equivalent_sites.end(), criteria);
+
         for (auto& logical_block : LogicalBlockTypes) {
-            for (auto site : physical_tile.equivalent_sites) {
+            for (auto site : equivalent_sites) {
                 if (0 == strcmp(logical_block.name, site->pb_type->name)) {
                     logical_block.equivalent_tiles.push_back(&physical_tile);
 
@@ -4820,13 +4836,29 @@ static void link_physical_logical_types(std::vector<t_physical_tile_type>& Physi
     for (auto& logical_block : LogicalBlockTypes) {
         if (logical_block.index == EMPTY_TYPE_INDEX) continue;
 
-        if ((int)logical_block.equivalent_tiles.size() <= 0) {
+        auto& equivalent_tiles = logical_block.equivalent_tiles;
+
+        if ((int)equivalent_tiles.size() <= 0) {
             archfpga_throw(__FILE__, __LINE__,
                            "Logical Block %s does not have any equivalent tiles.\n", logical_block.name);
         }
 
         std::unordered_map<int, bool> ignored_pins_check_map;
         std::unordered_map<int, bool> global_pins_check_map;
+
+        auto criteria = [logical_block](const t_physical_tile_type* lhs, const t_physical_tile_type* rhs) {
+            int num_logical_pins = logical_block.pb_type->num_pins;
+
+            int lhs_num_physical_pins = lhs->num_pins / lhs->capacity;
+            int rhs_num_physical_pins = rhs->num_pins / rhs->capacity;
+
+            int lhs_diff_num_pins = lhs_num_physical_pins - num_logical_pins;
+            int rhs_diff_num_pins = rhs_num_physical_pins - num_logical_pins;
+
+            return lhs_diff_num_pins < rhs_diff_num_pins;
+        };
+
+        std::sort(equivalent_tiles.begin(), equivalent_tiles.end(), criteria);
 
         for (int pin = 0; pin < logical_block.pb_type->num_pins; pin++) {
             for (auto& tile : logical_block.equivalent_tiles) {

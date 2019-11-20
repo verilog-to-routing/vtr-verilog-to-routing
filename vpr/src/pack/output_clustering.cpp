@@ -64,7 +64,7 @@ static void print_stats() {
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
-        auto physical_tile = pick_random_physical_type(logical_block);
+        auto physical_tile = pick_best_physical_type(logical_block);
         for (ipin = 0; ipin < logical_block->pb_type->num_pins; ipin++) {
             int physical_pin = get_physical_pin(physical_tile, logical_block, ipin);
             auto pin_class = physical_tile->pin_class[physical_pin];
