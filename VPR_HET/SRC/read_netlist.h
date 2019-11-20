@@ -1,0 +1,11 @@
+void read_netlist(IN const char *net_file,
+		  IN int num_types,
+		  IN const struct s_type_descriptor block_types[],
+		  IN t_type_ptr IO_type,
+		  IN int io_ipin,
+		  IN int io_opin,
+		  OUT t_subblock_data * subblock_data_ptr,
+		  OUT int *num_blocks,
+		  OUT struct s_block *block_list[],
+		  OUT int *num_nets,
+		  OUT struct s_net *net_list[]);

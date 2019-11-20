@@ -1,0 +1,95 @@
+.global clk
+
+.output out:A0
+pinlist: A0 
+
+.output out:B0
+pinlist: B0 
+
+.output out:C0
+pinlist: C0 
+
+.output out:D0
+pinlist: D0 
+
+.output out:E0
+pinlist: E0 
+
+.input a
+pinlist: a 
+
+.input b
+pinlist: b 
+
+.input c
+pinlist: c 
+
+.input d
+pinlist: d 
+
+.input e
+pinlist: e 
+
+.input f
+pinlist: f 
+
+.input g
+pinlist: g 
+
+.input h
+pinlist: h 
+
+.input m
+pinlist: m 
+
+.input n
+pinlist: n 
+
+.input o
+pinlist: o 
+
+.input clk
+pinlist: clk 
+
+.clb B0
+pinlist: m24 m26 m22 m23 m25 m27 a b e f c d g h o n66 n67 open open open \
+open open B0 open open n60 open open open open n57 open open 
+subblock: B0 0 1 ble_1 open 22 open 
+subblock: n58_1 2 ble_2 ble_8 ble_9 23 open 
+subblock: n59 3 4 5 ble_3 24 open 
+subblock: n60 ble_4 ble_5 ble_6 ble_7 25 open 
+subblock: n61 6 7 8 9 26 open 
+subblock: n62 10 11 open open 27 open 
+subblock: n63 12 13 open open 28 open 
+subblock: n64 8 9 12 open 29 open 
+subblock: n57 14 ble_3 15 16 30 open 
+subblock: n68 4 5 ble_3 open 31 open 
+
+.clb E0
+pinlist: n57 a b m n m3 n60 m6 m4 m2 m5 open open open open open open open \
+open open open open E0 n66 n67 open open open open open C0 D0 clk 
+subblock: E0 0 open open open 22 32 
+subblock: n66 1 2 3 open 23 open 
+subblock: n67 1 2 3 4 24 open 
+subblock: n70 5 6 ble_4 ble_5 25 open 
+subblock: n71 7 8 open open 26 open 
+subblock: n72 9 8 open open 27 open 
+subblock: n73 5 10 ble_4 ble_5 28 open 
+subblock: n74 8 10 6 ble_4 29 open 
+subblock: C0 0 ble_3 ble_6 ble_7 30 open 
+subblock: D0 3 open open open 31 32 
+
+.clb A0
+pinlist: m0 m1 m20 m21 open open open open open open open open open open open \
+open open open open open open open A0 open open open open open open open open \
+open open 
+subblock: A0 0 1 2 3 22 open 
+
+.mult_M1 mult_M1_0
+pinlist: a b c d e f g h m0 m1 m2 m3 m4 m5 m6 open 
+subblock: sub0 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 open 
+
+.mult_M1 mult_M1_1
+pinlist: open b c d e f g h m20 m21 m22 m23 m24 m25 m26 m27 
+subblock: sub0 open 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 
+

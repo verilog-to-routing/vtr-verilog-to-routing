@@ -1,0 +1,50 @@
+Using the following values, the most critical path is determined
+block_delay=              0.10
+inter_cluster_net_delay=  1.00
+intra_cluter_net_delay=   0.10
+
+Critical path is reported from output to input
+
+Block #   30 	Name:        out:B0 	Arrival Time=   6.60 	Cluster=   -2
+Net   #   30 	Name:            B0 	Criticality =  1.00573
+Block #   37 	Name:            B0 	Arrival Time=   5.50 	Cluster=   -1
+Net   #   35 	Name:           n46 	Criticality =  1.00587
+Block #   38 	Name:           n46 	Arrival Time=   4.40 	Cluster=   -1
+Net   #   36 	Name:           n47 	Criticality =  1.00247
+Block #   39 	Name:           n47 	Arrival Time=   3.30 	Cluster=   -1
+Net   #   38 	Name:           n48 	Criticality =  1.00390
+Block #   40 	Name:           n48 	Arrival Time=   2.20 	Cluster=   -1
+Net   #   39 	Name:           n49 	Criticality =  1.00292
+Block #   41 	Name:           n49 	Arrival Time=   1.10 	Cluster=   -1
+Net   #    5 	Name:             e 	Criticality =  1.00484
+Block #    5 	Name:             e 	Arrival Time=   0.00 	Cluster=   -2
+
+
+5 clusterable blocks packed into 5 Clusters of size 10
+Total Number of Blocks on Crit Path= 7
+Number of external nets on Crit Path=6
+
+
+Using the following values, the most critical path is determined
+block_delay=              0.10
+inter_cluster_net_delay=  1.00
+intra_cluter_net_delay=   0.10
+
+Critical path is reported from output to input
+
+Block #   31 	Name:        out:C0 	Arrival Time=   4.40 	Cluster=   -2
+Net   #   31 	Name:            C0 	Criticality =  1.00458
+Block #   54 	Name:            C0 	Arrival Time=   3.30 	Cluster=    1
+Net   #   34 	Name:           n78 	Criticality =  1.00505
+Block #   45 	Name:           n78 	Arrival Time=   2.20 	Cluster=    0
+Net   #   44 	Name:           n55 	Criticality =  1.00402
+Block #   47 	Name:           n55 	Arrival Time=   1.10 	Cluster=    1
+Net   #    0 	Name:             a 	Criticality =  1.00500
+Block #    0 	Name:             a 	Arrival Time=   0.00 	Cluster=   -2
+
+
+3 clusterable blocks packed into 3 Clusters of size 10
+Total Number of Blocks on Crit Path= 5
+Number of external nets on Crit Path=4
+
+

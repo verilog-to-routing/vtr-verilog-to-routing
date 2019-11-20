@@ -1,0 +1,184 @@
+.input i_9_
+pinlist: i_9_ 
+
+.input i_10_
+pinlist: i_10_ 
+
+.input i_7_
+pinlist: i_7_ 
+
+.input i_8_
+pinlist: i_8_ 
+
+.input i_5_
+pinlist: i_5_ 
+
+.input i_6_
+pinlist: i_6_ 
+
+.input i_14_
+pinlist: i_14_ 
+
+.input i_3_
+pinlist: i_3_ 
+
+.input i_13_
+pinlist: i_13_ 
+
+.input i_4_
+pinlist: i_4_ 
+
+.input i_12_
+pinlist: i_12_ 
+
+.input i_1_
+pinlist: i_1_ 
+
+.input i_11_
+pinlist: i_11_ 
+
+.input i_2_
+pinlist: i_2_ 
+
+.input i_0_
+pinlist: i_0_ 
+
+.output out:o_1_
+pinlist: o_1_ 
+
+.output out:o_2_
+pinlist: o_2_ 
+
+.output out:o_0_
+pinlist: o_0_ 
+
+.output out:o_7_
+pinlist: o_7_ 
+
+.output out:o_8_
+pinlist: o_8_ 
+
+.output out:o_5_
+pinlist: o_5_ 
+
+.output out:o_6_
+pinlist: o_6_ 
+
+.output out:o_3_
+pinlist: o_3_ 
+
+.output out:o_4_
+pinlist: o_4_ 
+
+.clb o_6_
+pinlist: [284] [285] [38] [35] [274] i_10_ i_14_ n_n324 [18] [275] o_6_ open \
+open open open 
+subblock: o_6_ ble_1 0 1 open 10 open 
+subblock: n_n191 2 3 4 ble_3 11 open 
+subblock: [15] 5 6 open open 12 open 
+subblock: [276] 7 ble_2 8 9 13 open 
+
+.clb [12]
+pinlist: i_1_ i_2_ i_9_ i_10_ i_8_ i_7_ i_3_ open open open open open [38] \
+[35] open 
+subblock: [12] 0 1 open open 10 open 
+subblock: n_n81 2 3 4 open 11 open 
+subblock: [38] 3 5 4 6 12 open 
+subblock: [35] 5 6 ble_0 ble_1 13 open 
+
+.clb o_7_
+pinlist: i_10_ i_7_ i_8_ i_9_ i_3_ i_1_ i_2_ open open open o_7_ [18] open \
+open open 
+subblock: o_7_ 0 1 ble_2 ble_3 10 open 
+subblock: [18] 0 1 2 open 11 open 
+subblock: [45] 3 4 5 6 12 open 
+subblock: [46] 2 4 5 6 13 open 
+
+.clb n_n326
+pinlist: i_1_ i_2_ i_0_ i_3_ n_n55 n_n60 open open open open open [275] open \
+[285] open 
+subblock: n_n326 0 1 2 open 10 open 
+subblock: [275] 0 1 2 open 11 open 
+subblock: [283] 3 0 1 2 12 open 
+subblock: [285] ble_0 4 5 ble_2 13 open 
+
+.clb n_n100
+pinlist: [55] [255] i_7_ i_8_ i_0_ i_2_ open open open open n_n100 open \
+n_n324 open open 
+subblock: n_n100 ble_1 0 1 ble_3 10 open 
+subblock: [10] 2 3 4 open 11 open 
+subblock: n_n324 2 5 4 open 12 open 
+subblock: [256] 2 3 5 4 13 open 
+
+.clb o_2_
+pinlist: n_n100 i_3_ i_1_ i_2_ i_0_ i_7_ i_8_ [20] [260] open o_2_ open open \
+open open 
+subblock: o_2_ 0 ble_3 open open 10 open 
+subblock: [259] 1 2 3 4 11 open 
+subblock: [261] 5 6 1 open 12 open 
+subblock: [262] 7 ble_1 8 ble_2 13 open 
+
+.clb n_n50
+pinlist: i_1_ i_2_ i_0_ i_10_ i_7_ i_3_ n_n60 open open open open n_n55 open \
+[284] open 
+subblock: n_n50 0 1 2 open 10 open 
+subblock: n_n55 3 4 open open 11 open 
+subblock: [280] 5 0 1 2 12 open 
+subblock: [284] ble_0 ble_1 6 ble_2 13 open 
+
+.clb o_1_
+pinlist: [63] [64] [65] i_1_ i_2_ i_0_ i_4_ i_3_ [17] open o_1_ [11] open \
+open open 
+subblock: o_1_ 0 1 2 ble_3 10 open 
+subblock: [11] 3 4 5 open 11 open 
+subblock: [249] 6 4 5 open 12 open 
+subblock: [250] 7 ble_1 8 ble_2 13 open 
+
+.clb o_0_
+pinlist: [50] i_4_ i_1_ i_2_ i_0_ i_3_ [11] open open open o_0_ open open \
+open open 
+subblock: o_0_ ble_1 0 ble_3 open 10 open 
+subblock: [49] 1 2 3 4 11 open 
+subblock: [51] 5 2 3 4 12 open 
+subblock: [267] 5 1 6 ble_2 13 open 
+
+.clb o_8_
+pinlist: n_n55 [43] i_9_ i_7_ i_1_ i_2_ i_3_ i_0_ open open o_8_ open open \
+[274] open 
+subblock: o_8_ 0 ble_1 1 ble_2 10 open 
+subblock: [37] 2 3 4 5 11 open 
+subblock: [270] 2 3 6 7 12 open 
+subblock: [274] 2 3 4 5 13 open 
+
+.clb [50]
+pinlist: i_5_ i_1_ i_2_ i_0_ i_7_ i_3_ open open open open [50] [55] [63] \
+[65] open 
+subblock: [50] 0 1 2 3 10 open 
+subblock: [55] 4 5 1 3 11 open 
+subblock: [63] 5 1 2 3 12 open 
+subblock: [65] 5 1 2 3 13 open 
+
+.clb o_3_
+pinlist: i_7_ i_12_ i_11_ i_0_ i_9_ i_8_ open open open open o_3_ o_4_ n_n60 \
+open open 
+subblock: o_3_ 0 1 2 3 10 open 
+subblock: o_4_ 4 0 2 ble_3 11 open 
+subblock: n_n60 4 0 open open 12 open 
+subblock: [289] 4 0 5 3 13 open 
+
+.clb [20]
+pinlist: i_9_ i_10_ i_7_ i_12_ i_1_ open open open open open [20] [43] [255] \
+[260] open 
+subblock: [20] 0 1 open open 10 open 
+subblock: [43] 0 2 3 open 11 open 
+subblock: [255] 0 1 4 open 12 open 
+subblock: [260] 4 1 open open 13 open 
+
+.clb o_5_
+pinlist: i_13_ i_12_ i_5_ i_6_ i_4_ i_1_ i_2_ i_0_ i_10_ i_7_ o_5_ [17] [64] \
+open open 
+subblock: o_5_ 0 1 ble_3 open 10 open 
+subblock: [17] 2 3 open open 11 open 
+subblock: [64] 4 5 6 7 12 open 
+subblock: [273] 8 9 7 open 13 open 
+

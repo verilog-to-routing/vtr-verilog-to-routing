@@ -1,0 +1,43 @@
+ASSUMPTIONS
+	- blif file only has one model, one input, and one output line
+	- T-vpack uses assunmptions like all nets have one output...always first in order, lut size is set so additional
+	spots can be used.
+
+DATA STRUCTURES
+	- nets describe a signal and all the blocks it hooks up to
+	- blocks describe a unit with all the pins that hook up to it
+
+GOING THROUGH PROGRAM IN GDB
+	- parses command line and sets up main commands (main.c)
+	- parses in blif in read_blif.c
+		- does two passes.  First pass adds everything into symbol table (hash) and counts sizes of nets, 
+		second pass hooks up blocks and adds data into nets.
+		- does inputs and outputs on pass 1 and 2 creating nets.  Problem is assumes inputs are all on one 
+		line and their are no sublocks.  After does one line sets done = 1 to exit.
+		- in add_lut the actual lut values are lost...minor, but this is the part where you would record to verrify.
+	- does error checks to see if netlist is good
+	- cleans up symbol table and other parsing structures
+	- does a packing of flip flops into LUTs if no fanout between flip flop and LUT (ff_pack.c) - pack_luts_and_ffs
+	- cleans up all flip flops that have been packed with LUTs (ff_pack.c) - compress_netlist
+	- Goes into clustering
+		- does clustering
+		- output_clustering (output_clustering.c) is where the final file is written to.
+
+			
+
+THOUGHTS ON NEW PARSING
+	- subckt one per line
+	- when find subckt, parse in line, go to ".end", search for subckt entry with same name, parse in inputs
+	and outputs to a table, index each access in array line to an entry in the subckt, mark that pin, mark num
+	outputs and inputs, label subckt, move on.
+
+	- find subckt
+	- remmap all inputs and outputs an PIs and POs
+		- means rename as PI/PO ... A0 -> sub_A0, add LUT (i.e input A0 .name A0 sub_A0, output A0 .name sub_A0 A0) 
+		- means rename as PI/PO ... concern is that a fan-in will get confused and might cause flip-flop collapse
+			- if only connection then fine
+			- if ouput then fine
+		- record the blocks where these signals came from so we can reset them at output
+
+THOUGHTS ON OUTPUT REFORMING
+		
