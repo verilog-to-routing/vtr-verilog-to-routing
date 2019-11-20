@@ -185,7 +185,9 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int* free_loca
         return lhs_num_tiles < rhs_num_tiles;
     };
 
-    std::sort(sorted_pl_macros.begin(), sorted_pl_macros.end(), criteria);
+    if (device_ctx.has_multiple_equivalent_tiles) {
+        std::sort(sorted_pl_macros.begin(), sorted_pl_macros.end(), criteria);
+    }
 
     /* Macros are harder to place.  Do them first */
     for (auto pl_macro : sorted_pl_macros) {
@@ -253,6 +255,7 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int* free_loca
 static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pad_loc_type) {
     int itype, ipos;
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     auto blocks = cluster_ctx.clb_nlist.blocks();
@@ -270,7 +273,9 @@ static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pa
         return lhs_num_tiles < rhs_num_tiles;
     };
 
-    std::sort(sorted_blocks.begin(), sorted_blocks.end(), criteria);
+    if (device_ctx.has_multiple_equivalent_tiles) {
+        std::sort(sorted_blocks.begin(), sorted_blocks.end(), criteria);
+    }
 
     for (auto blk_id : sorted_blocks) {
         if (place_ctx.block_locs[blk_id].loc.x != -1) { // -1 is a sentinel for an empty block
