@@ -1,0 +1,105 @@
+This archive contains VPR, an FPGA placement and routing tool, and VPack,
+a program to pack LUTs and flip flops into coarser grained logic blocks and
+convert a netlist from blif format to VPR's .net format.  There is a detailed
+postscript manual covering everything from how to compile the programs
+to how to use them in manual422.ps
+
+To see VPR in action on the (small) sample circuit (e64 from the MCNC 
+benchmark suite) and the sample FPGA architecture files type:
+
+cd vpr (if not already there)
+vpr e64-4x4lut.net 4x4lut_sanitized.arch e64.p e64.r -route_chan_width 40 -inner_num 3
+
+The logic block for this architecture contains 4, 4-input look-up tables and
+4 flip flops along with local routing (a cluster-based logic block of size
+4).  The routing wire segments all span 4 logic blocks in this architecture.
+
+
+I've also included a simpler architecture in which a logic block is only a
+4 LUT plus a flip flop, and in which all routing wires span only one logic
+block.  To run this case, try:
+
+cd vpr (if not already there)
+vpr e64-4lut.net 4lut_sanitized.arch e64.p e64.r -route_chan_width 10 -inner_num 3
+
+
+The two netlists (e64-4x4lut.net and e64-4lut.net) were created using VPack
+on a technology-mapped netlist in .blif format, with the appropriate options
+in each case:
+
+cd vpack  (if not already there)
+vpack e64.blif e64-4x4lut.net -cluster_size 4 -inputs_per_cluster 10
+
+and
+
+cd vpack  (if not already there)
+vpack e64.blif e64-4lut.net -no_clustering
+
+
+
+There are a lot of different ways to use VPR and VPack -- see manual422.ps
+for details.
+
+-- Vaughn Betz, Jan. 26, 1999
+
+
+==============================================================================
+Contents of the archive:
+
+manual422.ps:  Postscript manual of VPR.
+README.422:     This file.
+
+./vpr
+
+  *.c, *.h:  Source code for VPR.
+
+  makefile:  Makefile for VPR.  Currently set for Solaris and gcc; you may
+             have to modify the library paths and compiler options on your
+             machine.
+
+  descript.txt:  A revision history of VPR.
+  
+  e64-4x4lut.net:  A sample netlist file from the MCNC bencmark set.  The logic
+            block contains 4 4-input LUTs and 4 FFs.
+
+  e64-4lut.net:  A sample netlist file from the MCNC benchmark set.  The logic
+            block contains 1 4-LUT and 1 FF.
+
+  4x4lut_sanitized.arch:  A sample FPGA architecture file, with a logic block
+            containing 4 4-input LUTs and 4 FFs.
+
+  4lut_sanitized.arch:  A sample FPGA architecture file, with a logic block
+            containing 1 4-LUT and 1 FF.
+
+
+./vpack
+
+  *.c, *.h:  Source code for VPACK.
+
+  makefile:  Makefile for VPACK.  May have to be modified for non Solaris
+             machines or for compilers other than gcc.
+
+  descript.txt:  Revision history of VPACK.
+
+  e64.blif:  MCNC benchmark circuit e64 technology-mapped by Flowmap to 
+             4-input LUTs.  This is a combinational circuit.
+
+  s1423.blif:  A sequential MCNC benchmark circuit.  It has been technology-
+               mapped to 4-input LUTs and flip flops by Flowmap.
+
+
+==============================================================================
+
+Major changes from VPR Version 3.99 to this Version (4.22)
+
+1) A timing-driven router has been added to VPR, and is used by default.
+
+2) VPR now supports routing architectures with wires that span more than
+   1 logic block, and architectures that include both pass transistor and
+   buffered routing switches.
+
+3) Delay extraction and timing analysis have been added to VPR, so it now
+   outputs the speed of a placed and routed circuit.
+
+4) An area model has been incorporated, so it now estimates the area required
+   to lay out an FPGA's routing.

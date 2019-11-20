@@ -1,8 +1,8 @@
 #include <stdio.h> 
 #include <string.h> 
 #include "util.h" 
-#include "pr.h"
-#include "ext.h"
+#include "vpr_types.h"
+#include "globals.h"
 #include "hash.h"
 #include "read_place.h"
 

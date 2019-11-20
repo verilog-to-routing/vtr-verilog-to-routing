@@ -1,7 +1,7 @@
 #include <stdio.h>
-#include "vpack.h"
-#include "ext.h"
 #include "util.h"
+#include "vpack.h"
+#include "globals.h"
 #include "cluster.h"
 #include "output_clustering.h"
 
@@ -139,14 +139,17 @@ static void check_clocks (boolean *is_clock, int lut_size) {
              block[iblk].type == LUT_AND_LATCH) {
        for (ipin=1;ipin<lut_size+1;ipin++) {
           inet = block[iblk].nets[ipin]; 
-          if (is_clock[inet]) {
-            printf("Error in check_clocks.  Net %d (%s) is a clock, but also\n"
-                   "connects to a LUT input on block %d (%s).\n", inet, 
-                      net[inet].name, iblk, block[iblk].name);
-            printf("This would break the current clustering implementation \n"
-                   "and is electrically questionable, so clustering has been\n"
-                   "aborted.\n");
-            exit (1);
+          if (inet != OPEN) {
+             if (is_clock[inet]) {
+                printf("Error in check_clocks.  Net %d (%s) is a clock, but "
+                       "also\n"
+                       "\tconnects to a LUT input on block %d (%s).\n", inet, 
+                       net[inet].name, iblk, block[iblk].name);
+                printf("This would break the current clustering "
+                       "implementation and is electrically\n"
+                       "\tquestionable, so clustering has been aborted.\n");
+                exit (1);
+             }
           }
        }
     }
@@ -353,13 +356,18 @@ static int get_block_by_num_ext_inputs (int ext_inps, int lut_size, int
 
  while (ptr != NULL) {
     iblk = ptr->iblk;
+
     if (cluster_of_block[iblk] == NO_CLUSTER) {
        if (clocks_feasible (iblk, 0, clocks_avail, lut_size, NULL)) 
           return (iblk);
+
+       prev_ptr = ptr;
     }
+
     else if (remove_flag == REMOVE_CLUSTERED) {
        prev_ptr->next = ptr->next;
     }
+
     ptr = ptr->next;
  }
  
@@ -1232,7 +1240,8 @@ static void check_clustering (int num_clusters, int cluster_size,
 void do_clustering (int cluster_size, int inputs_per_cluster,
        int clocks_per_cluster, int lut_size, boolean global_clocks,
        boolean *is_clock, boolean hill_climbing_flag, 
-       enum e_cluster_seed cluster_seed_type, char *out_fname) {
+       enum e_cluster_seed cluster_seed_type, boolean 
+       muxes_to_cluster_output_pins, char *out_fname) {
 
 /* Does the actual work of clustering multiple LUT+FF logic blocks *
  * into clusters.                                                  */
@@ -1288,10 +1297,11 @@ void do_clustering (int cluster_size, int inputs_per_cluster,
                cluster_occupancy);
  output_clustering (cluster_contents, cluster_occupancy, cluster_size,
                inputs_per_cluster, clocks_per_cluster, num_clusters, 
-               lut_size, global_clocks, is_clock, out_fname);
+               lut_size, global_clocks, muxes_to_cluster_output_pins,
+               is_clock, out_fname);
 
  free (cluster_occupancy);
- free_matrix ((void **) cluster_contents, 0, num_clusters-1, 0, 
+ free_matrix (cluster_contents, 0, num_clusters-1, 0, 
            sizeof (int));
  free_clustering ();
 }

@@ -1,0 +1,71 @@
+# NB:  The timing numbers in this architecture file have been modified
+# to comply with our NDA with the foundry providing us with process
+# information.  The critical path delay output by VPR WILL NOT be accurate,
+# as we have intentionally altered the delays to introduce inaccuracy.
+# The numbers are still reasonable enough to allow CAD experimentation,
+# though.  If you want real timing numbers, you'll have to insert your own
+# process data for the various, R, C, and Tdel entries.
+
+# A simple architecture.  
+
+# All wires span only one logic block, and all routing switches are tri-state
+# buffers.
+# The logic block is a single 4-LUT + FF.
+
+# Uniform channels.  Each pin appears on only one side.
+io_rat 2
+chan_width_io 1
+chan_width_x uniform 1 
+chan_width_y uniform 1
+
+# 4-input LUT.  LUT inputs first, then output, then clock.
+inpin class: 0 bottom 
+inpin class: 0 left
+inpin class: 0 top
+inpin class: 0 right
+outpin class: 1 bottom
+inpin class: 2 global top                  # Clock; shouldn't matter.
+
+# Class 0 is LUT inputs, class 1 is the output, class 2 is the clock.
+
+subblocks_per_clb 1
+subblock_lut_size 4
+
+#parameters needed only for detailed routing.
+#switch_block_type wilton
+#switch_block_type universal
+switch_block_type subset
+Fc_type fractional
+Fc_output 1
+Fc_input 1
+Fc_pad 1
+
+segment frequency: 1 length: 1 wire_switch: 0 opin_switch: 0 Frac_cb: 1. \
+         Frac_sb: 1. Rmetal: 4.16 Cmetal: 81e-15
+
+# Switch used as a tri-state buffer within the routing, and also as the
+# output buffer used to drive from a CLB output pin to a routing wire.
+ 
+switch 0  buffered: yes  R: 786.9 Cin: 7.512e-15  Cout: 10.762e-15 \
+       Tdel: 456e-12
+
+# Used only by the area model.
+ 
+R_minW_nmos 1967
+R_minW_pmos 3738
+
+# Timing info below.
+
+C_ipin_cblock 7.512e-15
+ 
+T_ipin_cblock 1.5e-9
+ 
+T_ipad 478e-12   # clk_to_Q + 2:1 mux
+T_opad 295e-12   # Tsetup
+T_sblk_opin_to_sblk_ipin 0  # No local routing
+T_clb_ipin_to_sblk_ipin 0   # No local routing
+T_sblk_opin_to_clb_opin 0.
+ 
+# Delays through the BLE (LUT and a FF)
+ 
+T_subblock T_comb: 546e-12 T_seq_in: 845e-12 T_seq_out: 478e-12

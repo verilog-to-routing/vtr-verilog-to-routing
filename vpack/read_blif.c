@@ -1,8 +1,8 @@
 #include <string.h>
 #include <stdio.h>
-#include "vpack.h"
-#include "ext.h"
 #include "util.h"
+#include "vpack.h"
+#include "globals.h"
 #include "read_blif.h"
 
 
@@ -470,7 +470,7 @@ static int hash_value (char *name) {
 }
 
 
-void echo_input (char *blif_file, int lut_size) {
+void echo_input (char *blif_file, int lut_size, char *echo_file) {
 
 /* Echo back the netlist data structures to file input.echo to *
  * allow the user to look at the internal state of the program *
@@ -485,7 +485,7 @@ void echo_input (char *blif_file, int lut_size) {
  printf("LUTs: %d.  Latches: %d.\n", num_luts, num_latches);
  printf("Total Blocks: %d.  Total Nets: %d\n", num_blocks, num_nets);
  
- fp = my_fopen ("input.echo","w",0); 
+ fp = my_fopen (echo_file, "w", 0); 
 
  fprintf(fp,"Input netlist file: %s  Model: %s\n",blif_file,model);
  fprintf(fp,"num_p_inputs: %d, num_p_outputs: %d, num_luts: %d,"
@@ -520,7 +520,13 @@ void echo_input (char *blif_file, int lut_size) {
        fprintf(fp,"\t");         /* Name field is 16 chars wide */
     fprintf(fp,"%d\t%d", block[i].type, block[i].num_nets);
 
-    if (block[i].type == INPAD || block[i].type == OUTPAD) 
+   /* I'm assuming EMPTY blocks are always INPADs when I print               *
+    * them out.  This is true right after the netlist is read in, and again  *
+    * after ff_packing and compression of the netlist.  It's not true after  *
+    * ff_packing and before netlist compression.                             */
+
+    if (block[i].type == INPAD || block[i].type == OUTPAD || 
+          block[i].type == EMPTY)
        max_pin = 1;
     else
        max_pin = lut_size+2;

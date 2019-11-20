@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <string.h>
-#include "vpack.h"
-#include "ext.h"
 #include "util.h"
+#include "vpack.h"
+#include "globals.h"
 #include "ff_pack.h"
 
 void pack_luts_and_ffs (int lut_size) {
@@ -18,6 +18,7 @@ void pack_luts_and_ffs (int lut_size) {
  * unconnected pins in a clb are set to OPEN by this routine.           */
 
  int bnum, in_blk, ipin, out_net, clock_net, in_net;
+ char *tmp_name;
 
 /* Pin ordering for the clb blocks (1 LUT + 1 FF in each block) is      *
  * output, n LUT inputs, clock input.                                   */
@@ -37,8 +38,9 @@ void pack_luts_and_ffs (int lut_size) {
              net[in_net].pins[0] = OPEN; /* This net disappears; mark. */
              out_net = block[bnum].nets[0];
              block[in_blk].nets[0] = out_net;  /* New output */
-             free (block[in_blk].name);
+             tmp_name = block[in_blk].name;
              block[in_blk].name = block[bnum].name;  /* Rename block */
+             block[bnum].name = tmp_name;      /* Keep pointer to free later */
 
 /* Clock new FF location. */
 
@@ -142,11 +144,11 @@ void compress_netlist (int lut_size) {
               else 
                  block[index].nets[ipin] = OPEN;
           }
+       }
 
-/* Note:  I don't deallocate an empty block's name here because *
- * that was ALREADY done in ff_pack.  As well, the nets element *
- * is statically allocated, so I can't deallocate it.           */
-
+       else {
+          free (block[iblk].name);
+/* The nets element is statically allocated, so I can't deallocate it.      */
        }
     }
 

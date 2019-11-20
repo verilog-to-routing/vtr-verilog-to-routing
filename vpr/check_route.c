@@ -1,33 +1,42 @@
 #include <stdio.h>
 #include "util.h"
-#include "pr.h"
-#include "ext.h"
-#include "route.h"
+#include "vpr_types.h"
+#include "globals.h"
+#include "route_export.h"
 #include "check_route.h"
+#include "check_rr_graph.h"
 
 
+/******************** Subroutines local to this module **********************/
+
+static void check_node_and_range (int inode, enum e_route_type route_type);
 static void check_source (int inode, int inet);
 static void check_sink (int inode, int inet, boolean *pin_done); 
-static void check_node (int inode, enum e_route_type route_type);
+static void check_switch (struct s_trace *tptr, int num_switch); 
 static boolean check_adjacent (int from_node, int to_node);
 static int pin_and_chan_adjacent (int pin_node, int chan_node);
 static int chanx_chany_adjacent (int chanx_node, int chany_node);
-static void reset_flags (int inet);
-static void recompute_occupancy_from_scratch (void);
+static void reset_flags (int inet, boolean *connected_to_route);
+static void recompute_occupancy_from_scratch (t_ivec **clb_opins_used_locally);
+static void check_locally_used_clb_opins (t_ivec **clb_opins_used_locally,
+         enum e_route_type route_type);
 
 
+/************************ Subroutine definitions ****************************/
 
-void check_route (enum e_route_type route_type) {
+
+void check_route (enum e_route_type route_type, int num_switch,
+        t_ivec **clb_opins_used_locally) {
  
 /* This routine checks that a routing:  (1) Describes a properly         *
  * connected path for each net, (2) this path connects all the           *
  * pins spanned by that net, and (3) that no routing resources are       *
  * oversubscribed (the occupancy of everything is recomputed from        *
- * scratch).  The .target_flag elements of the rr_nodes are used for     *
- * scratch space.                                                        */
+ * scratch).                                                             */
  
  int inet, ipin, max_pins, inode, prev_node;
  boolean valid, connects;
+ boolean *connected_to_route;    /* [0 .. num_rr_nodes-1] */
  struct s_trace *tptr;
  boolean *pin_done;
  
@@ -37,19 +46,21 @@ void check_route (enum e_route_type route_type) {
  * resources.  This was already checked in order to determine that this  *
  * is a successful routing, but I want to double check it here.          */
  
- recompute_occupancy_from_scratch ();
+ recompute_occupancy_from_scratch (clb_opins_used_locally);
  valid = feasible_routing ();
  if (valid == FALSE) {
     printf("Error in check_route -- routing resources are overused.\n");
     exit(1);
  }
+
+ check_locally_used_clb_opins (clb_opins_used_locally, route_type);
  
- for (inode=0;inode<num_rr_nodes;inode++)
-    rr_node[inode].target_flag = FALSE;    /* Will be used later. */
+ connected_to_route = (boolean *) my_calloc (num_rr_nodes, sizeof (boolean));
  
  max_pins = 0;
  for (inet=0;inet<num_nets;inet++)
-    max_pins = max(max_pins,net[inet].num_pins);
+    max_pins = max (max_pins, net[inet].num_pins);
+
  pin_done = (boolean *) my_malloc (max_pins * sizeof(boolean));
 
 /* Now check that all nets are indeed connected. */
@@ -71,8 +82,9 @@ void check_route (enum e_route_type route_type) {
     }
 
     inode = tptr->index;
-    check_node (inode, route_type);
-    rr_node[inode].target_flag = TRUE;   /* Mark as in path. */
+    check_node_and_range (inode, route_type);
+    check_switch (tptr, num_switch);
+    connected_to_route[inode] = TRUE;   /* Mark as in path. */
 
     check_source (inode, inet);
     pin_done[0] = TRUE;
@@ -84,10 +96,11 @@ void check_route (enum e_route_type route_type) {
  
     while (tptr != NULL) {
        inode = tptr->index;
-       check_node (inode, route_type);
+       check_node_and_range (inode, route_type);
+       check_switch (tptr, num_switch);
  
-       if (rr_node_draw_inf[prev_node].type == SINK) {
-          if (rr_node[inode].target_flag == FALSE) {
+       if (rr_node[prev_node].type == SINK) {
+          if (connected_to_route[inode] == FALSE) {
              printf ("Error in check_route.  Node %d does not link "
                      "into the existing routing for net %d.\n", inode, inet);
              exit(1);
@@ -103,9 +116,19 @@ void check_route (enum e_route_type route_type) {
              exit (1);
           }
  
-          rr_node[inode].target_flag = TRUE;  /* Mark as in path. */
+          if (connected_to_route[inode] && rr_node[inode].type != SINK) {
+
+ /* Note:  Can get multiple connections to the same logically-equivalent     *
+  * SINK in some logic blocks.                                               */
+
+             printf ("Error in check_route:  net %d routing is not a tree.\n",
+                      inet);
+             exit (1);
+          }
+
+          connected_to_route[inode] = TRUE;  /* Mark as in path. */
  
-          if (rr_node_draw_inf[inode].type == SINK)
+          if (rr_node[inode].type == SINK)
              check_sink (inode, inet, pin_done);
  
        }    /* End of prev_node type != SINK */
@@ -113,7 +136,7 @@ void check_route (enum e_route_type route_type) {
        tptr = tptr->next;
     }  /* End while */
  
-    if (rr_node_draw_inf[prev_node].type != SINK) {
+    if (rr_node[prev_node].type != SINK) {
        printf("Error in check_route.  Net %d does not end\n", inet);
        printf("with a SINK.\n");
        exit(1);
@@ -127,11 +150,12 @@ void check_route (enum e_route_type route_type) {
        } 
     }
   
-    reset_flags (inet);
+    reset_flags (inet, connected_to_route);
  
  }  /* End for each net */
  
  free (pin_done);
+ free (connected_to_route);
  printf("Completed routing consistency check successfully.\n\n");
  
 }
@@ -142,27 +166,39 @@ static void check_sink (int inode, int inet, boolean *pin_done) {
 /* Checks that this SINK node is one of the terminals of inet, and marks   *
  * the appropriate pin as being reached.                                   */
  
- int i, j, ipin, ifound, ptc_num, bnum;
+ int i, j, ipin, ifound, ptc_num, bnum, iclass, blk_pin;
  
  i = rr_node[inode].xlow;
  j = rr_node[inode].ylow;
- ptc_num = rr_node_draw_inf[inode].ptc_num;
+ ptc_num = rr_node[inode].ptc_num;
  ifound = 0;
  
  if (clb[i][j].type == CLB) {
     bnum = clb[i][j].u.block;
-    for (ipin=0;ipin<net[inet].num_pins;ipin++) {
-       if (net[inet].pins[ipin] == bnum && net_pin_class[inet][ipin] ==
-             ptc_num) {
-          ifound++;
-          pin_done[ipin] = TRUE;
+    for (ipin=1;ipin<net[inet].num_pins;ipin++) {  /* All net SINKs */
+
+       if (net[inet].blocks[ipin] == bnum) {
+          blk_pin = net[inet].blk_pin[ipin];
+          iclass = clb_pin_class[blk_pin];
+
+          if (iclass == ptc_num) {
+
+/* Could connect to same pin class on the same clb more than once.  Only   *
+ * update pin_done for a pin that hasn't been reached yet.                 */
+
+             if (pin_done[ipin] == FALSE) {  
+                ifound++;
+                pin_done[ipin] = TRUE;
+                break;
+             }
+          }
        } 
     }
  }
  else {  /* IO pad */
     bnum = clb[i][j].u.io_blocks[ptc_num];
     for (ipin=0;ipin<net[inet].num_pins;ipin++) {
-       if (net[inet].pins[ipin] == bnum) {   /* Pad:  no pin class */
+       if (net[inet].blocks[ipin] == bnum) {   /* Pad:  no pin class */
           ifound++;
           pin_done[ipin] = TRUE;
        } 
@@ -188,9 +224,9 @@ static void check_source (int inode, int inet) {
 /* Checks that the node passed in is a valid source for this net.        */
  
  t_rr_type rr_type;
- int i, j, ptc_num, bnum;
+ int i, j, ptc_num, bnum, blk_pin, iclass;
  
- rr_type = rr_node_draw_inf[inode].type;
+ rr_type = rr_node[inode].type;
  if (rr_type != SOURCE) {
     printf ("Error in check_source:  net %d begins with a node of type %d.\n",
             inet, rr_type);
@@ -199,8 +235,8 @@ static void check_source (int inode, int inet) {
  
  i = rr_node[inode].xlow;
  j = rr_node[inode].ylow;
- ptc_num = rr_node_draw_inf[inode].ptc_num;
- bnum = net[inet].pins[0];
+ ptc_num = rr_node[inode].ptc_num;
+ bnum = net[inet].blocks[0];
  
  if (block[bnum].x != i || block[bnum].y != j) {
     printf ("Error in check_source:  net SOURCE is in wrong location (%d,%d)."
@@ -209,7 +245,10 @@ static void check_source (int inode, int inet) {
  }
  
  if (block[bnum].type == CLB) {
-    if (ptc_num != net_pin_class[inet][0]) {
+    blk_pin = net[inet].blk_pin[0];
+    iclass = clb_pin_class[blk_pin];
+
+    if (ptc_num != iclass) {
        printf ("Error in check_source:  net SOURCE is of wrong class (%d).\n",
               ptc_num);
        exit (1);
@@ -223,9 +262,43 @@ static void check_source (int inode, int inet) {
     }
  }
 }
+
+
+static void check_switch (struct s_trace *tptr, int num_switch) {
+
+/* Checks that the switch leading from this traceback element to the next *
+ * one is a legal switch type.                                            */
+
+ int inode;
+ short switch_type;
+
+ inode = tptr->index;
+ switch_type = tptr->iswitch;
+
+ if (rr_node[inode].type != SINK) {
+    if (switch_type < 0 || switch_type >= num_switch) {
+       printf ("Error in check_switch: rr_node %d left via switch type %d.\n",
+               inode, switch_type);
+       printf ("Switch type is out of range.\n");
+       exit (1);
+    }
+ }
+
+ else {  /* Is a SINK */ 
+
+/* Without feedthroughs, there should be no switch.  If feedthroughs are    *
+ * allowed, change to treat a SINK like any other node (as above).          */
+
+    if (switch_type != OPEN) {
+       printf ("Error in check_switch:  rr_node %d is a SINK, but attempts \n"
+               "to use a switch of type %d.\n", inode, switch_type);
+       exit (1);
+    }
+ }
+}
  
  
-static void reset_flags (int inet) {
+static void reset_flags (int inet, boolean *connected_to_route) {
  
 /* This routine resets the flags of all the channel segments contained *
  * in the traceback of net inet to 0.  This allows us to check the     * 
@@ -239,7 +312,7 @@ static void reset_flags (int inet) {
  
  while (tptr != NULL) {
     inode = tptr->index;
-    rr_node[inode].target_flag = FALSE;   /* Not in routed path now. */
+    connected_to_route[inode] = FALSE;   /* Not in routed path now. */
     tptr = tptr->next;
  }
 }
@@ -274,14 +347,14 @@ static boolean check_adjacent (int from_node, int to_node) {
  
  num_adj = 0;
  
- from_type = rr_node_draw_inf[from_node].type;
+ from_type = rr_node[from_node].type;
  from_xlow = rr_node[from_node].xlow;
  from_ylow = rr_node[from_node].ylow;
- from_ptc = rr_node_draw_inf[from_node].ptc_num;
- to_type = rr_node_draw_inf[to_node].type;
+ from_ptc = rr_node[from_node].ptc_num;
+ to_type = rr_node[to_node].type;
  to_xlow = rr_node[to_node].xlow;
  to_ylow = rr_node[to_node].ylow;
- to_ptc = rr_node_draw_inf[to_node].ptc_num;
+ to_ptc = rr_node[to_node].ptc_num;
  
  switch (from_type) {
  
@@ -417,8 +490,8 @@ static int pin_and_chan_adjacent (int pin_node, int chan_node) {
  num_adj = 0;
  pin_x = rr_node[pin_node].xlow;
  pin_y = rr_node[pin_node].ylow;
- pin_ptc = rr_node_draw_inf[pin_node].ptc_num;
- chan_type = rr_node_draw_inf[chan_node].type;
+ pin_ptc = rr_node[pin_node].ptc_num;
+ chan_type = rr_node[chan_node].type;
  chan_xlow = rr_node[chan_node].xlow;
  chan_ylow = rr_node[chan_node].ylow;
  chan_xhigh = rr_node[chan_node].xhigh;
@@ -478,288 +551,20 @@ static int pin_and_chan_adjacent (int pin_node, int chan_node) {
 }
 
 
-static void check_node (int inode, enum e_route_type route_type) {
- 
-/* This routine checks that the rr_node is inside the grid and has a valid  *
- * pin number, etc.                                                         */
- 
- int xlow, ylow, xhigh, yhigh, ptc_num, bnum, capacity;
- t_rr_type rr_type;
- int nodes_per_chan, tracks_per_node;
- 
- rr_type = rr_node_draw_inf[inode].type;
- xlow = rr_node[inode].xlow;
- xhigh = rr_node[inode].xhigh;
- ylow = rr_node[inode].ylow;
- yhigh = rr_node[inode].yhigh;
- ptc_num = rr_node_draw_inf[inode].ptc_num;
- capacity = rr_node_cost_inf[inode].capacity;
- 
- if (xlow > xhigh || ylow > yhigh) {
-    printf ("Error in check_node:  rr endpoints are (%d,%d) and (%d,%d).\n",
-            xlow, ylow, xhigh, yhigh);
-    exit (1);
- }
- 
- if (xlow < 0 || xhigh > nx+1 || ylow < 0 || yhigh > ny+1) {
-    printf ("Error in check_node:  rr endpoints, (%d,%d) and (%d,%d), \n"
-            "are out of range.\n", xlow, ylow, xhigh, yhigh);
-    exit (1);
- }
- 
- if (ptc_num < 0) {
-    printf ("Error in check_node.  Inode %d (type %d) had a ptc_num\n"
-            "of %d.\n", inode, rr_type, ptc_num);
-    exit (1);
- }
- 
-/* Check that the segment is within the array and such. */
-  
- switch (rr_type) {
- 
- case SOURCE: case SINK: case IPIN: case OPIN:
-    if (xlow != xhigh || ylow != yhigh) {
-       printf ("Error in check_node:  Node %d (type %d) has endpoints of\n"
-            "(%d,%d) and (%d,%d)\n", inode, rr_type, xlow, ylow, xhigh, yhigh);
-       exit (1);
-    }
-    if (clb[xlow][ylow].type != CLB && clb[xlow][ylow].type != IO) {
-       printf ("Error in check_node:  Node %d (type %d) is at an illegal\n"
-               " clb location (%d, %d).\n", inode, rr_type, xlow, ylow);
-       exit (1);
-    }
-    break;
- 
- case CHANX:
-    if (xlow < 1 || xhigh > nx || yhigh > ny || yhigh != ylow) {
-       printf("Error in check_node:  CHANX out of range.\n");
-       printf("Endpoints: (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
-       exit(1);
-    }
-    if (route_type == GLOBAL && xlow != xhigh) {
-       printf ("Error in check_node:  node %d spans multiple channel segments\n"
-               "which is not allowed with global routing.\n", inode);
-       exit (1);
-    }
-    break;
- 
- case CHANY:
-    if (xhigh > nx || ylow < 1 || yhigh > ny || xlow != xhigh) {
-       printf("Error in check_node:  CHANY out of range.\n");
-       printf("Endpoints: (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
-       exit(1);
-    }
-    if (route_type == GLOBAL && ylow != yhigh) {
-       printf ("Error in check_node:  node %d spans multiple channel segments\n"
-               "which is not allowed with global routing.\n", inode);
-       exit (1);
-    }
-    break;
- 
- default:
-    printf("Error in check_node:  Unexpected segment type: %d\n", rr_type);
-    exit(1);
- }
- 
-/* Check that it's capacities and such make sense. */
- 
- switch (rr_type) {
- 
- case SOURCE:
-    if (clb[xlow][ylow].type == CLB) {
-       if (ptc_num >= num_class || class_inf[ptc_num].type != DRIVER) {
-          printf ("Error in check_node.  Inode %d (type %d) had a ptc_num\n"
-                  "of %d.\n", inode, rr_type, ptc_num);
-          exit (1);
-       } 
-       if (class_inf[ptc_num].num_pins != capacity) {
-          printf ("Error in check_node.  Inode %d (type %d) had a capacity\n"
-                  "of %d.\n", inode, rr_type, capacity);
-          exit (1);
-       } 
-    }
-    else {   /* IO block */
-       if (ptc_num >= clb[xlow][ylow].occ) {
-          printf ("Error in check_node.  Inode %d (type %d) had a ptc_num\n"
-                  "of %d.\n", inode, rr_type, ptc_num);
-          exit (1);
-       } 
-       bnum = clb[xlow][ylow].u.io_blocks[ptc_num];
-       if (block[bnum].type != INPAD) {
-          printf ("Error in check_node.  Inode %d (type %d) is associated "
-                  "with a block of type %d.\n", inode, rr_type,
-                   block[bnum].type);
-          exit (1);
-       } 
-       if (capacity != 1) {
-          printf ("Error in check_node:  Inode %d (type %d) had a capacity\n"
-                  "of %d.\n", inode, rr_type, capacity);
-          exit (1);
-       } 
-    }
-    break;
- 
- case SINK:
-    if (clb[xlow][ylow].type == CLB) {
-       if (ptc_num >= num_class || class_inf[ptc_num].type != RECEIVER) {
-          printf ("Error in check_node.  Inode %d (type %d) had a ptc_num\n"
-                  "of %d.\n", inode, rr_type, ptc_num);
-          exit (1);
-       } 
-       if (class_inf[ptc_num].num_pins != capacity) {
-          printf ("Error in check_node.  Inode %d (type %d) has a capacity\n"
-                  "of %d.\n", inode, rr_type, capacity);
-          exit (1);
-       } 
-    }
-    else {   /* IO block */
-       if (ptc_num >= clb[xlow][ylow].occ) {
-          printf ("Error in check_node.  Inode %d (type %d) had a ptc_num\n"
-               "of %d.\n", inode, rr_type, ptc_num);
-          exit (1);
-       } 
-       bnum = clb[xlow][ylow].u.io_blocks[ptc_num];
-       if (block[bnum].type != OUTPAD) {
-          printf ("Error in check_node.  Inode %d (type %d) is associated "
-                  "with a block of type %d.\n", inode, rr_type,
-                   block[bnum].type);
-          exit (1);
-       } 
-       if (capacity != 1) {
-          printf ("Error in check_node:  Inode %d (type %d) has a capacity\n"
-                  "of %d.\n", inode, rr_type, capacity);
-          exit (1);
-       } 
-    }
-    break;
- 
- case OPIN:
-    if (clb[xlow][ylow].type == CLB) {
-       if (ptc_num >= pins_per_clb || class_inf[clb_pin_class[ptc_num]].type
-                != DRIVER) {
-          printf ("Error in check_node.  Inode %d (type %d) had a ptc_num\n"
-                  "of %d.\n", inode, rr_type, ptc_num);
-          exit (1);
-       } 
-    }
-    else {   /* IO block */
-       if (ptc_num >= clb[xlow][ylow].occ) {
-          printf ("Error in check_node.  Inode %d (type %d) had a ptc_num\n"
-                  "of %d.\n", inode, rr_type, ptc_num);
-          exit (1);
-       } 
-       bnum = clb[xlow][ylow].u.io_blocks[ptc_num];
-       if (block[bnum].type != INPAD) {
-          printf ("Error in check_node.  Inode %d (type %d) is associated "
-                  "with a block of type %d.\n", inode, rr_type,
-                   block[bnum].type);
-          exit (1);
-       } 
-    }
-    if (capacity != 1) {
-      printf ("Error in check_node:  Inode %d (type %d) has a capacity\n"
-                  "of %d.\n", inode, rr_type, capacity);
-       exit (1);
-    }
-    break;
- 
- case IPIN:
-    if (clb[xlow][ylow].type == CLB) {
-       if (ptc_num >= pins_per_clb || class_inf[clb_pin_class[ptc_num]].type
-                != RECEIVER) {
-          printf ("Error in check_node.  Inode %d (type %d) had a ptc_num\n"
-                  "of %d.\n", inode, rr_type, ptc_num);
-          exit (1);
-       } 
-    }
-    else {   /* IO block */
-       if (ptc_num >= clb[xlow][ylow].occ) {
-          printf ("Error in check_node.  Inode %d (type %d) had a ptc_num\n"
-                  "of %d.\n", inode, rr_type, ptc_num);
-          exit (1);
-       } 
-       bnum = clb[xlow][ylow].u.io_blocks[ptc_num];
-       if (block[bnum].type != OUTPAD) {
-          printf ("Error in check_node.  Inode %d (type %d) is associated "
-                  "with a block of type %d.\n", inode, rr_type,
-                   block[bnum].type);
-          exit (1);
-       } 
-    }
-    if (capacity != 1) {
-      printf ("Error in check_node:  Inode %d (type %d) has a capacity\n"
-                  "of %d.\n", inode, rr_type, capacity);
-       exit (1);
-    }
-    break;
- 
- case CHANX:
-    if (route_type == DETAILED) {
-       nodes_per_chan = chan_width_x[ylow];
-       tracks_per_node = 1;
-    }
-    else {
-       nodes_per_chan = 1;
-       tracks_per_node = chan_width_x[ylow];
-    }
- 
-    if (ptc_num >= nodes_per_chan) {
-      printf ("Error in check_node:  Inode %d (type %d) has a ptc_num\n"
-                  "of %d.\n", inode, rr_type, ptc_num);
-       exit (1);
-    }
- 
-    if (capacity != tracks_per_node) {
-      printf ("Error in check_node:  Inode %d (type %d) has a capacity\n"
-                  "of %d.\n", inode, rr_type, capacity);
-       exit (1);
-    }
-    break;
- 
- case CHANY:
-    if (route_type == DETAILED) {
-       nodes_per_chan = chan_width_y[xlow];
-       tracks_per_node = 1;
-    }
-    else {
-       nodes_per_chan = 1;
-       tracks_per_node = chan_width_y[xlow];
-    }
- 
-    if (ptc_num >= nodes_per_chan) {
-      printf ("Error in check_node:  Inode %d (type %d) has a ptc_num\n"
-                  "of %d.\n", inode, rr_type, ptc_num);
-       exit (1);
-    }
- 
-    if (capacity != tracks_per_node) {
-      printf ("Error in check_node:  Inode %d (type %d) has a capacity\n"
-                  "of %d.\n", inode, rr_type, capacity);
-       exit (1);
-    }
-    break;
+static void recompute_occupancy_from_scratch (t_ivec **clb_opins_used_locally)
+           {
 
- default:
-    printf("Error in check_node:  Unexpected segment type: %d\n", rr_type);
-    exit(1);
+/* This routine updates the occ field in the rr_node structure according to *
+ * the resource usage of the current routing.  It does a brute force        *
+ * recompute from scratch that is useful for sanity checking.               */
 
- }
-}
-
-
-static void recompute_occupancy_from_scratch (void) {
-
-/* This routine updates the occ field in the rr_node_cost_inf structure     *
- * according to the resource usage of the current routing.  It does a brute *
- * force recompute from scratch that is useful for sanity checking.         */
-
- int inode, inet;
+ int inode, inet, iblk, iclass, ipin, num_local_opins;
  struct s_trace *tptr;
 
 /* First set the occupancy of everything to zero. */
 
  for (inode=0;inode<num_rr_nodes;inode++)
-    rr_node_cost_inf[inode].occ = 0;
+    rr_node[inode].occ = 0;
 
 /* Now go through each net and count the tracks and pins used everywhere */
 
@@ -774,9 +579,9 @@ static void recompute_occupancy_from_scratch (void) {
 
     while (1) {
        inode = tptr->index;
-       rr_node_cost_inf[inode].occ++;
+       rr_node[inode].occ++;
 
-       if (rr_node_draw_inf[inode].type == SINK) {
+       if (rr_node[inode].type == SINK) {
           tptr = tptr->next;                /* Skip next segment. */
           if (tptr == NULL)
              break;
@@ -785,4 +590,76 @@ static void recompute_occupancy_from_scratch (void) {
        tptr = tptr->next;
     }
  }
+
+/* Now update the occupancy of each of the "locally used" OPINs on each CLB *
+ * (CLB outputs used up by being directly wired to subblocks used only      *
+ * locally).                                                                */
+
+ for (iblk=0;iblk<num_blocks;iblk++) {
+    for (iclass=0;iclass<num_class;iclass++) {
+       num_local_opins = clb_opins_used_locally[iblk][iclass].nelem; 
+           /* Will always be 0 for pads or SINK classes. */
+       for (ipin=0;ipin<num_local_opins;ipin++) {
+          inode = clb_opins_used_locally[iblk][iclass].list[ipin];
+          rr_node[inode].occ++;
+       }
+    }
+ }
+}
+
+
+static void check_locally_used_clb_opins (t_ivec **clb_opins_used_locally,
+         enum e_route_type route_type) {
+
+/* Checks that enough OPINs on CLBs have been set aside (used up) to make a *
+ * legal routing if subblocks connect to OPINs directly.                    */
+
+ int iclass, iblk, num_local_opins, inode, ipin;
+ t_rr_type rr_type;
+ 
+ for (iblk=0;iblk<num_blocks;iblk++) {
+    for (iclass=0;iclass<num_class;iclass++) {
+       num_local_opins = clb_opins_used_locally[iblk][iclass].nelem;
+        /* Always 0 for pads and for SINK classes */
+
+       for (ipin=0;ipin<num_local_opins;ipin++) {
+          inode = clb_opins_used_locally[iblk][iclass].list[ipin];
+          check_node_and_range (inode, route_type);  /* Node makes sense? */
+
+         /* Now check that node is an OPIN of the right type. */
+
+          rr_type = rr_node[inode].type;
+          if (rr_type != OPIN) {
+             printf ("Error in check_locally_used_opins:  Block #%d (%s)\n"
+                    "\tclass %d locally used OPIN is of the wrong rr_type --\n"
+                    "\tit is rr_node #%d of type %d.\n", iblk, 
+                    block[iblk].name, iclass, inode, rr_type);
+             exit (1);
+          }
+
+          ipin = rr_node[inode].ptc_num;
+          if (clb_pin_class[ipin] != iclass) {
+             printf ("Error in check_locally_used_opins:  Block #%d (%s):\n"
+                    "\tExpected class %d locally used OPIN, got class %d."
+                    "\trr_node #: %d.\n", iblk, block[iblk].name, iclass, 
+                    clb_pin_class[ipin], inode);
+             exit (1);
+          }
+       }
+    }
+ }
+}
+
+
+static void check_node_and_range (int inode, enum e_route_type route_type) {
+
+/* Checks that inode is within the legal range, then calls check_node to    *
+ * check that everything else about the node is OK.                         */
+
+ if (inode < 0 || inode >= num_rr_nodes) {
+    printf ("Error in check_node_and_range:  rr_node #%d is out of legal "
+            "\trange (0 to %d).\n", inode, num_rr_nodes-1);
+    exit (1);
+ }
+ check_node (inode, route_type);
 }

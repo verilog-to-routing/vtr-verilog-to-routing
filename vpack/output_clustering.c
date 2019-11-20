@@ -1,12 +1,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "vpack.h"
-#include "ext.h"
 #include "util.h"
+#include "vpack.h"
+#include "globals.h"
 #include "output_clustering.h"
 
 #define LINELENGTH 80
+
+
+/****************** Subroutines local to this module ************************/
+
+static void print_subblock_ipin (int inet, int *io_net_mapping, int 
+         inputs_per_cluster, int cluster_size, int *column_ptr, FILE *fpout); 
+
+static void print_subblock_opin (int inet, int *io_net_mapping, int 
+     inputs_per_cluster, int *net_of_clb_pin, int *column_ptr, FILE *fpout,
+     boolean muxes_to_cluster_output_pins); 
+
+
+/**************** Subroutine definitions ************************************/
 
 static void print_string (char *str_ptr, int *column, FILE *fpout) {
 
@@ -141,13 +154,15 @@ static void print_basic_subblock (FILE *fpout, int bnum, int lut_size) {
 static void print_clbs (FILE *fpout, int *cluster_occupancy, 
           int **cluster_contents, int lut_size, int cluster_size, 
           int inputs_per_cluster, int clocks_per_cluster, 
-          int num_clusters) {
+          int num_clusters, boolean muxes_to_cluster_output_pins) {
 
 /* Prints out one cluster (clb).  Both the external pins and the *
  * internal connections are printed out.                         */
 
  int ipin, icluster, sub_blk, num_clb_pins, inet, free_pin_index;
- int column, iblk, redundant_outputs, used_outputs;
+ int column, iblk;
+ int redundant_outputs, used_outputs, total_used_ble_inputs;
+ int total_locally_generated_ble_inputs, total_bles;
 
 /* [0..num_nets-1].  Which clb pin connects to this net?   Need  *
  * separate data structures for input or output pins and clocks, *
@@ -159,6 +174,7 @@ static void print_clbs (FILE *fpout, int *cluster_occupancy,
 /* [0..num_cluster_pins].  Net connected to this clb pin. */
  int *net_of_clb_pin;
  
+
  io_net_mapping = (int *) my_malloc (num_nets * sizeof (int));
  clock_net_mapping = (int *) my_malloc (num_nets * sizeof (int));
  num_pins_in_cluster = (int *) my_malloc (num_nets * sizeof (int));
@@ -169,7 +185,12 @@ static void print_clbs (FILE *fpout, int *cluster_occupancy,
     num_pins_in_cluster[inet] = 0;
  }
 
+/* Counters used only for statistics purposes. */
+
  redundant_outputs = 0;
+ total_used_ble_inputs = 0;
+ total_locally_generated_ble_inputs = 0;
+
  num_clb_pins = inputs_per_cluster + cluster_size + clocks_per_cluster;
  net_of_clb_pin = my_malloc (num_clb_pins * sizeof(int));
  for (ipin=0;ipin<num_clb_pins;ipin++)
@@ -208,10 +229,17 @@ static void print_clbs (FILE *fpout, int *cluster_occupancy,
           inet = block[sub_blk].nets[ipin];
           if (inet != OPEN) {
              num_pins_in_cluster[inet]++;
-             if (io_net_mapping[inet] == OPEN) {
+             total_used_ble_inputs++; /* Used LUT inputs;doesn't include clk */
+
+             if (io_net_mapping[inet] == OPEN) {  /* Must get from CLB IPIN */
                 io_net_mapping[inet] = free_pin_index;
                 net_of_clb_pin[free_pin_index] = inet;
                 free_pin_index++;
+             }
+
+             else if (io_net_mapping[inet] >= inputs_per_cluster) { 
+               /* Input is locally generated (output of a BLE). */
+                total_locally_generated_ble_inputs++;
              }
           }
        }
@@ -287,23 +315,21 @@ static void print_clbs (FILE *fpout, int *cluster_occupancy,
        fprintf(fpout,"subblock: ");
        column = 11;
        print_string (block[sub_blk].name, &column, fpout);
+
        for (ipin=1;ipin<=lut_size;ipin++) {   /* Inputs first. */
           inet = block[sub_blk].nets[ipin];
-          if (inet == OPEN)
-             print_net_number (OPEN, &column, fpout);
-          else
-             print_net_number (io_net_mapping[inet], &column, fpout);
+          print_subblock_ipin (inet, io_net_mapping, inputs_per_cluster,
+                 cluster_size, &column, fpout);
        }
+
        inet = block[sub_blk].nets[0];       /* Output */
-       if (inet == OPEN)
-          print_net_number (OPEN, &column, fpout);
-       else
-          print_net_number (io_net_mapping[inet], &column, fpout);
+       print_subblock_opin (inet, io_net_mapping, inputs_per_cluster,
+                 net_of_clb_pin, &column, fpout, muxes_to_cluster_output_pins);
+
        inet = block[sub_blk].nets[lut_size+1];   /* Clock */
-          if (inet == OPEN)
-             print_net_number (OPEN, &column, fpout);
-          else
-             print_net_number (clock_net_mapping[inet], &column, fpout);
+       print_subblock_ipin (inet, clock_net_mapping, inputs_per_cluster,
+              cluster_size, &column, fpout);
+
        fprintf(fpout, "\n");
     }
  
@@ -330,10 +356,20 @@ static void print_clbs (FILE *fpout, int *cluster_occupancy,
  }
 
  used_outputs = num_blocks - num_p_inputs - num_p_outputs - redundant_outputs;
+ total_bles = num_blocks - num_p_inputs - num_p_outputs;
+
  printf("\nAverage number of cluster outputs used outside cluster: %f\n", 
            (float) used_outputs / (float) num_clusters);
+
  printf("Fraction outputs made local: %f\n", (float) redundant_outputs /
-       (float) (num_blocks - num_p_inputs - num_p_outputs));
+       (float) (total_bles));
+
+ printf ("Average number of used LUT inputs per BLE (excluding clocks): %f\n", 
+         (float) total_used_ble_inputs / (float) total_bles);
+
+ printf ("Average fraction of BLE (LUT) inputs generated locally: %f\n",
+         (float) total_locally_generated_ble_inputs / 
+         (float) total_used_ble_inputs);
 
  free (io_net_mapping);
  free (clock_net_mapping);
@@ -342,10 +378,64 @@ static void print_clbs (FILE *fpout, int *cluster_occupancy,
 }
 
 
+static void print_subblock_ipin (int inet, int *io_net_mapping, int 
+         inputs_per_cluster, int cluster_size, int *column_ptr, FILE *fpout) {
+
+/* Prints out where a subblock gets its input pin from. */
+
+ char str[BUFSIZE];
+ int ble_num;
+
+ if (inet == OPEN) {
+    print_net_number (OPEN, column_ptr, fpout);
+ }
+ else if (io_net_mapping[inet] >= inputs_per_cluster && io_net_mapping[inet] 
+                      < inputs_per_cluster + cluster_size) {
+
+   /* Subblock input comes from a BLE output within this cluster. */
+
+    ble_num = io_net_mapping[inet] - inputs_per_cluster;
+    sprintf (str, "ble_%d", ble_num);
+    print_string (str, column_ptr, fpout);
+ }
+ else {    /* Regular input or clock pin */
+    print_net_number (io_net_mapping[inet], column_ptr, fpout);
+ }
+}
+
+
+static void print_subblock_opin (int inet, int *io_net_mapping, int 
+     inputs_per_cluster, int *net_of_clb_pin, int *column_ptr, FILE *fpout, 
+     boolean muxes_to_cluster_output_pins) {
+
+/* Prints out a subblock output pin.  If the net driven by this BLE is used *
+ * only internally to the clb, then the subblock output is marked as OPEN.  */
+
+ int clb_pin;
+
+ if (inet == OPEN) {
+    printf ("Error in print_subblock_opin:  inet = %d.\n", inet);
+    exit (1);
+/*    print_net_number (OPEN, column_ptr, fpout);  */
+ }
+ else {
+    clb_pin = io_net_mapping[inet];
+    if (net_of_clb_pin[clb_pin] == OPEN && muxes_to_cluster_output_pins) { 
+      /* Output not used outside clb and subblock output not directly    *
+       * connected to the CLB output pin.                                */
+       print_net_number (OPEN, column_ptr, fpout);
+    }
+    else {
+       print_net_number (clb_pin, column_ptr, fpout);
+    }
+ }
+}
+
+
 void output_clustering (int **cluster_contents, int *cluster_occupancy,
      int cluster_size, int inputs_per_cluster, int clocks_per_cluster,
-     int num_clusters, int lut_size, boolean global_clocks,
-     boolean *is_clock, char *out_fname) {
+     int num_clusters, int lut_size, boolean global_clocks, boolean
+     muxes_to_cluster_output_pins, boolean *is_clock, char *out_fname) {
 
 /* This routine dumps out the output netlist in a format suitable for  *
  * input to vpr.  The clb pins are in the following order:             *
@@ -448,7 +538,7 @@ void output_clustering (int **cluster_contents, int *cluster_occupancy,
  if (skip_clustering == FALSE) 
     print_clbs (fpout, cluster_occupancy, cluster_contents, lut_size,
          cluster_size, inputs_per_cluster, clocks_per_cluster, 
-         num_clusters); 
+         num_clusters, muxes_to_cluster_output_pins); 
 
  fclose (fpout);
 }

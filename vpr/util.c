@@ -9,25 +9,45 @@
  * arguments as the standard library ones, but exit    *
  * the program if they find an error condition.        */
 
+
 int linenum;  /* Line in file being parsed. */
 
-FILE *my_fopen(char *fname, char *flag, int prompt) {
+
+FILE *my_fopen (char *fname, char *flag, int prompt) {
 
  FILE *fp;   /* prompt = 1: prompt user.  prompt=0: use fname */
 
  while (1) {
-    if (prompt) scanf("%s",fname);
-    if ((fp = fopen(fname,flag)) != NULL) break; 
+    if (prompt) 
+       scanf("%s",fname);
+    if ((fp = fopen(fname,flag)) != NULL)
+       break; 
     printf("Error opening file %s for %s access.\n",fname,flag);
-    if (!prompt) exit(1);
+    if (!prompt) 
+       exit(1);
     printf("Please enter another filename.\n");
  }
  return (fp);
 }
 
+
+int my_atoi (const char *str) {
+
+/* Returns the integer represented by the first part of the character       *
+ * string.  Unlike the normal atoi, I return -1 if the string doesn't       *
+ * start with a numeric digit.                                              */
+
+ if (str[0] < '0' || str[0] > '9') 
+    return (-1);
+
+ return (atoi(str));
+}
+
+
 void *my_calloc (size_t nelem, size_t size) {
 
  void *ret;
+
  if ((ret = calloc (nelem,size)) == NULL) {
     fprintf(stderr,"Error:  Unable to calloc memory.  Aborting.\n");
     exit (1);
@@ -35,10 +55,14 @@ void *my_calloc (size_t nelem, size_t size) {
  return (ret);
 }
 
+
 void *my_malloc (size_t size) {
+
  void *ret;
+
  if ((ret = malloc (size)) == NULL) {
     fprintf(stderr,"Error:  Unable to malloc memory.  Aborting.\n");
+    abort ();
     exit (1);
  }
  return (ret);
@@ -69,7 +93,7 @@ void *my_chunk_malloc (size_t size, struct s_linked_vptr **chunk_ptr_head,
  * If chunk_ptr_head is NULL, no list of chunked memory blocks will be kept *
  * -- this is useful for data structures that you never intend to free as   *
  * it means you don't have to keep track of the linked lists.               *
- * Information about the currently open "chunk" is must be stored by the    *
+ * Information about the currently open "chunk" must be stored by the       *
  * user program.  mem_avail_ptr points to an int storing how many bytes are *
  * left in the current chunk, while next_mem_loc_ptr is the address of a    *
  * pointer to the next free bytes in the chunk.  To start a new chunk,      *
@@ -94,11 +118,11 @@ void *my_chunk_malloc (size_t size, struct s_linked_vptr **chunk_ptr_head,
     if (size > CHUNK_SIZE) {      /* Too big, use standard routine. */
        tmp_ptr = my_malloc (size);
 
-#ifdef DEBUG
+/*#ifdef DEBUG
        printf("NB:  my_chunk_malloc got a request for %d bytes.\n",
           size);
        printf("You should consider using my_malloc for such big requests.\n");
-#endif
+#endif */
 
        if (chunk_ptr_head != NULL) 
           *chunk_ptr_head = insert_in_vptr_list (*chunk_ptr_head, tmp_ptr);
@@ -144,9 +168,7 @@ void *my_chunk_malloc (size_t size, struct s_linked_vptr **chunk_ptr_head,
 
 void free_chunk_memory (struct s_linked_vptr *chunk_ptr_head) {
 
-/* Frees the memory allocated by a sequence of calls to my_chunk_malloc. *
- * All the memory allocated between calls with new_chunk == TRUE by      *
- * my_chunk_malloc will be freed.                                        */
+/* Frees the memory allocated by a sequence of calls to my_chunk_malloc. */
 
  struct s_linked_vptr *curr_ptr, *prev_ptr;
 
@@ -175,6 +197,99 @@ struct s_linked_vptr *insert_in_vptr_list (struct s_linked_vptr *head,
  linked_vptr->data_vptr = vptr_to_add;
  linked_vptr->next = head;
  return (linked_vptr);     /* New head of the list */
+}
+
+
+t_linked_int *insert_in_int_list (t_linked_int *head, int data, t_linked_int **
+      free_list_head_ptr) {
+
+/* Inserts a new element at the head of a linked list of integers.  Returns  *
+ * the new head of the list.  One argument is the address of the head of     *
+ * a list of free ilist elements.  If there are any elements on this free    *
+ * list, the new element is taken from it.  Otherwise a new one is malloced. */
+
+ t_linked_int *linked_int;
+
+ if (*free_list_head_ptr != NULL) {
+    linked_int = *free_list_head_ptr;
+    *free_list_head_ptr = linked_int->next;
+ }
+ else {
+    linked_int = (t_linked_int *) my_malloc (sizeof (t_linked_int));
+ }
+  
+ linked_int->data = data;
+ linked_int->next = head;
+ return (linked_int);
+}
+
+
+void free_int_list (t_linked_int **int_list_head_ptr) { 
+ 
+/* This routine truly frees (calls free) all the integer list elements    * 
+ * on the linked list pointed to by *head, and sets head = NULL.          */ 
+ 
+ t_linked_int *linked_int, *next_linked_int;
+ 
+ linked_int = *int_list_head_ptr; 
+   
+ while (linked_int != NULL) { 
+    next_linked_int = linked_int->next;
+    free (linked_int);
+    linked_int = next_linked_int; 
+ } 
+ 
+ *int_list_head_ptr = NULL; 
+} 
+
+
+void alloc_ivector_and_copy_int_list (t_linked_int **list_head_ptr,
+            int num_items, struct s_ivec *ivec, t_linked_int
+            **free_list_head_ptr) {
+
+/* Allocates an integer vector with num_items elements and copies the       *
+ * integers from the list pointed to by list_head (of which there must be   *
+ * num_items) over to it.  The int_list is then put on the free list, and   *
+ * the list_head_ptr is set to NULL.                                        */
+
+ t_linked_int *linked_int, *list_head;
+ int i, *list;
+
+ list_head = *list_head_ptr;
+
+ if (num_items == 0) {    /* Empty list. */
+    ivec->nelem = 0;
+    ivec->list = NULL;
+    
+    if (list_head != NULL) {
+       printf ("Error in alloc_ivector_and_copy_int_list:\n Copied %d "
+           "elements, but list at %p contains more.\n", num_items, list_head);
+       exit (1);
+    }
+    return;
+ }
+ 
+ ivec->nelem = num_items;
+ list = (int *) my_malloc (num_items * sizeof (int));
+ ivec->list = list;
+ linked_int = list_head;
+ 
+ for (i=0;i<num_items-1;i++) {
+    list[i] = linked_int->data;
+    linked_int = linked_int->next;
+ }
+ 
+ list[num_items-1] = linked_int->data;
+ 
+ if (linked_int->next != NULL) {
+    printf ("Error in alloc_ivector_and_copy_int_list:\n Copied %d elements, "
+            "but list at %p contains more.\n", num_items, list_head);
+    exit (1);
+ }
+ 
+ linked_int->next = *free_list_head_ptr;
+ *free_list_head_ptr = list_head;
+ *list_head_ptr = NULL;
 }
 
 
@@ -248,6 +363,62 @@ char *my_strtok(char *ptr, char *tokens, FILE *fp, char *buf) {
     val = strtok(buf,tokens);
  }
 }
+
+
+void free_ivec_vector (struct s_ivec *ivec_vector, int nrmin, int nrmax) {
+
+/* Frees a 1D array of integer vectors.                              */
+
+ int i;  
+
+ for (i=nrmin;i<=nrmax;i++)
+    if (ivec_vector[i].nelem != 0)
+       free (ivec_vector[i].list);
+
+ free (ivec_vector + nrmin);
+}
+
+
+void free_ivec_matrix (struct s_ivec **ivec_matrix, int nrmin, int nrmax, 
+       int ncmin, int ncmax) {
+
+/* Frees a 2D matrix of integer vectors (ivecs).                     */  
+
+ int i, j;
+
+ for (i=nrmin;i<=nrmax;i++) {
+    for (j=ncmin;j<=ncmax;j++) {
+       if (ivec_matrix[i][j].nelem != 0) {
+          free (ivec_matrix[i][j].list);
+       } 
+    }
+ }     
+ 
+ free_matrix (ivec_matrix, nrmin, nrmax, ncmin, sizeof (struct s_ivec));
+}
+
+
+void free_ivec_matrix3 (struct s_ivec ***ivec_matrix3, int nrmin, int nrmax,
+       int ncmin, int ncmax, int ndmin, int ndmax) {
+
+/* Frees a 3D matrix of integer vectors (ivecs).                     */  
+
+ int i, j, k;
+
+ for (i=nrmin;i<=nrmax;i++) {
+    for (j=ncmin;j<=ncmax;j++) {
+       for (k=ndmin;k<=ndmax;k++) {
+          if (ivec_matrix3[i][j][k].nelem != 0) {
+             free (ivec_matrix3[i][j][k].list);
+          }
+       }
+    }
+ }
+ 
+ free_matrix3 (ivec_matrix3, nrmin, nrmax, ncmin, ncmax, ndmin, 
+               sizeof (struct s_ivec));
+}
+
 
 void **alloc_matrix (int nrmin, int nrmax, int ncmin, int ncmax, 
    size_t elsize) {
@@ -330,55 +501,35 @@ void free_matrix3 (void *vptr, int nrmin, int nrmax, int ncmin, int ncmax,
 } 
 
 
+/* Portable random number generator defined below.  Taken from ANSI C by  *
+ * K & R.  Not a great generator, but fast, and good enough for my needs. */
+
+#define IA 1103515245u
+#define IC 12345u
+#define IM 2147483648u
+#define CHECK_RAND 
+
+static unsigned int current_random = 0;
+
+
 void my_srandom (int seed) {
 
-/* Calls the random number generator seed function available on this *
- * architecture.                                                     */
- 
-#if defined (HP)
- void srand48 (long seed_val);
-#else
- void srandom (int seed_val);
-#endif
-
-#if defined (HP)
- srand48 (seed);
-#else
- srandom (seed);
-#endif
+ current_random = (unsigned int) seed;
 }
 
 
 int my_irand (int imax) {
 
-/* Uses random (better spectral properties) to obtain a random number *
- * which is then scaled to be an integer between 0 and imax.          */
+/* Creates a random integer between 0 and imax, inclusive.  i.e. [0..imax] */ 
 
-#define MYRANDOM_MAX 2147483647
-
- float fval;
  int ival;
 
-#if defined (SPARC)
- long random (void);
-#elif defined (SGI)
- long random (void);
-#else
- long lrand48 (void);
-#endif
+/* current_random = (current_random * IA + IC) % IM; */
+ current_random = current_random * IA + IC;  /* Use overflow to wrap */
+ ival = current_random & (IM - 1);  /* Modulus */
+ ival = (int) ((float) ival * (float) (imax + 0.999) / (float) IM);
 
-
-#if defined (SPARC)
- fval = ((float) random ()) / ((float) MYRANDOM_MAX);
-#elif defined (SGI)
- fval = ((float) random ()) / ((float) MYRANDOM_MAX);
-#else
- fval = ((float) lrand48()) / ((float) MYRANDOM_MAX);
-#endif
-
- ival = (int) (fval*(imax+1)-0.001);
-
-#ifdef DEBUG
+#ifdef CHECK_RAND
  if ((ival < 0) || (ival > imax)) {
     printf("Bad value in my_irand, imax = %d  ival = %d\n",imax,ival);
     exit(1);
@@ -386,38 +537,26 @@ int my_irand (int imax) {
 #endif
 
  return(ival);
-} 
+}
+ 
 
 float my_frand (void) {
-
-/* Uses random (better spectral properties) to obtain a random number *
- * which is scaled to be a float between 0 and 1.                     */
-
+ 
+/* Creates a random float between 0 and 1.  i.e. [0..1).        */ 
+ 
  float fval;
+ int ival;
 
-#if defined (SPARC)
- long random (void);
-#elif defined (SGI)
- long random (void);
-#else
- long lrand48 (void);
-#endif
+ current_random = current_random * IA + IC;  /* Use overflow to wrap */
+ ival = current_random & (IM - 1);  /* Modulus */
+ fval = (float) ival / (float) IM;
 
-
-#if defined (SPARC)
- fval = ((float) random ()) / ((float) MYRANDOM_MAX);
-#elif defined (SGI)
- fval = ((float) random ()) / ((float) MYRANDOM_MAX);
-#else
- fval = ((float) lrand48()) / ((float) MYRANDOM_MAX);
-#endif
-
-#ifdef DEBUG
+#ifdef CHECK_RAND
  if ((fval < 0) || (fval > 1.)) {
     printf("Bad value in my_frand, fval = %g\n",fval);
     exit(1);
  }
 #endif
-
+ 
  return(fval);
 }

@@ -1,50 +1,55 @@
 #include <string.h>
 #include <stdio.h>
 #include "util.h"
-#include "pr.h"
-#include "ext.h"
+#include "vpr_types.h"
+#include "globals.h"
 #include "read_netlist.h"
 #include "hash.h"
+#include "check_netlist.h"
 #include <assert.h>
 
 
-/* This source file reads in a .net file.  A .net file is a netlist  *
- * format defined by me to allow arbitary logic blocks (clbs) to     *
- * make up a netlist.  There are three legal block types: .input,    *
- * .output, and .clb.  To define a block, you start a line with one  *
- * of these keywords; the function of each type of block is obvious. *
- * After the block type keyword, you specify the name of this block. *
- * The line below must start with the keyword pinlist:, and gives a  *
- * list of the nets connected to the pins of this block.  .input and *
- * .output blocks are pads and have only one net connected to them.  *
- * The number of pins on a .clb block is specified in the arch-      *
- * itecture file, as are the equivalences between pins.  Each        *
- * clb must have the same number of pins (heterogeneous FPGAs are    *
- * currently not supported) so any pins which are not used on a clb  *
- * must be identified with the reserved word "open".  All keywords   *
- * must be lower case.                                               *
- *                                                                   *
- * The lines immediately below the pinlist line must specify the     *
- * contents of the clb.  Each .subblock line lists the name of the   *
- * subblock, followed by the clb pin number to which each subblock   *
- * pin should connect.  Each subblock is assummed to consist of a    *
- * LUT with subblock_lut_size inputs, a FF, and an output.  The pin  * 
- * order is input1, input2, ... output, clock.  The architecture     *
- * file sets the number of subblocks per clb and the LUT size used.  *
- * Subblocks are used only for timing analysis.  An example clb      *
- * declaration is:                                                   *
- *                                                                   *
- * .clb name_of_clb  # comment                                       *
- *  pinlist:  net_1 net_2 my_net net_of_mine open D open             *
- *  subblock: sub_1 0 1 2 3 open 5 open                              *
- *                                                                   *
- * Ending a line with a backslash (\) means it is continued on the   *
- * line below.  A sharp sign (#) indicates the rest of a line is     *
- * a comment.                                                        *
- * The vpack program can be used to convert a flat blif netlist      *
- * into .net format.                                                 *
- *                                                                   *
- * V. Betz, Jan. 29, 1997.                                           */
+/* This source file reads in a .net file.  A .net file is a netlist   *
+ * format defined by me to allow arbitary logic blocks (clbs) to      *
+ * make up a netlist.  There are three legal block types: .input,     *
+ * .output, and .clb.  To define a block, you start a line with one   *
+ * of these keywords; the function of each type of block is obvious.  *
+ * After the block type keyword, you specify the name of this block.  *
+ * The line below must start with the keyword pinlist:, and gives a   *
+ * list of the nets connected to the pins of this block.  .input and  *
+ * .output blocks are pads and have only one net connected to them.   *
+ * The number of pins on a .clb block is specified in the arch-       *
+ * itecture file, as are the equivalences between pins.  Each         *
+ * clb must have the same number of pins (heterogeneous FPGAs are     *
+ * currently not supported) so any pins which are not used on a clb   *
+ * must be identified with the reserved word "open".  All keywords    *
+ * must be lower case.                                                *
+ *                                                                    *
+ * The lines immediately below the pinlist line must specify the      *
+ * contents of the clb.  Each .subblock line lists the name of the    *
+ * subblock, followed by the clb pin number or subblock output to     *
+ * which each subblock pin should connect.  Each subblock is assummed *
+ * to consist of a LUT with subblock_lut_size inputs, a FF, and an    *
+ * output.  The pin order is input1, input2, ... output, clock.  The  *
+ * architecture file sets the number of subblocks per clb and the LUT *
+ * size used.  Subblocks are used only for timing analysis.  An       *
+ * example clb declaration is:                                        *
+ *                                                                    *
+ * .clb name_of_clb  # comment                                        *
+ *  pinlist:  net_1 net_2 my_net net_of_mine open D open              *
+ *  subblock: sub_1 0 1 2 3 open open open                            *
+ *  subblock: sub_2 1 3 ble_0 open open 5 open                        *
+ *                                                                    *
+ * Notice that the output of the first subblock (ble_0) is used only  *
+ * by the second subblock.  This is fine.                             *
+ *                                                                    *
+ * Ending a line with a backslash (\) means it is continued on the    *
+ * line below.  A sharp sign (#) indicates the rest of a line is      *
+ * a comment.                                                         *
+ * The vpack program can be used to convert a flat blif netlist       *
+ * into .net format.                                                  *
+ *                                                                    *
+ * V. Betz, Jan. 29, 1997.                                            */
 
 /* A note about the way the character buffer, buf, is passed around. *
  * strtok does not make a local copy of the character string         *
@@ -55,37 +60,78 @@
  * to keep tokenizing it would cause problems since the buffer now   *
  * lies on a stale part of the stack and can be overwritten.         */
 
+
+/*************************** Variables local to this module *****************/
+
 /* Temporary storage used during parsing. */
 
 static int *num_driver, *temp_num_pins;
 static struct s_hash **hash_table;
 static int temp_block_storage;
 
-/* Used for memory chunking. */
+/* Used for memory chunking of everything except subblock data. */
 
 static int chunk_bytes_avail = 0;
 static char *chunk_next_avail_mem = NULL;
 
-static int add_net (char *ptr, enum e_pin_type type, int bnum, int pclass, 
+
+/* Subblock data can be accessed anywhere within this module.  Pointers to *
+ * the main subblock data structures are passed back to the rest of the    *
+ * program through the subblock_data_ptr structure passed to read_net.     */
+
+static int max_subblocks_per_block;
+static int subblock_lut_size;
+static t_subblock **subblock_inf;
+static int *num_subblocks_per_block;
+
+/* The subblock data is put in its own "chunk" so it can be freed without  *
+ * hosing the other netlist data.                                          */
+
+static int ch_subblock_bytes_avail;
+static char *ch_subblock_next_avail_mem;
+static struct s_linked_vptr *ch_subblock_head_ptr;
+
+
+
+/************************ Subroutines local to this module ******************/
+
+static int add_net (char *ptr, enum e_pin_type type, int bnum, int blk_pnum, 
        int doall); 
+
 static char *get_tok(char *buf, int doall, FILE *fp_net);
 static void add_io (int doall, int type, FILE *fp_net, char *buf);
 static char *add_clb (int doall, FILE *fp_net, char *buf);
 static void add_global (int doall, FILE *fp_net, char *buf);
 static void init_parse(int doall);
-static void check_netlist (void);
 static void free_parse (void);
 static void parse_name_and_pinlist (int doall, FILE *fp_net, char *buf);
-static int get_num_conn (int bnum);
+static int get_pin_number (char *ptr); 
+
+static void load_subblock_array (int doall, FILE *fp_net, char *temp_buf, 
+     int num_subblocks, int bnum); 
+
+static void set_subblock_count (int bnum, int num_subblocks); 
+static char *parse_subblocks (int doall, FILE *fp_net, char *buf, int bnum); 
 
 
-void read_net (char *net_file) {
+
+/********************** Subroutine definitions *******************************/
+
+
+
+void read_net (char *net_file, t_subblock_data *subblock_data_ptr) {
 
 /* Main routine that parses a netlist file in my (.net) format. */
 
  char buf[BUFSIZE], *ptr;
  int doall;
  FILE *fp_net;
+
+/* Make two variables below accessible anywhere in the module because I'm *
+ * too lazy to pass them all over the place.                              */
+
+ max_subblocks_per_block = subblock_data_ptr->max_subblocks_per_block;
+ subblock_lut_size = subblock_data_ptr->subblock_lut_size;
 
  fp_net = my_fopen (net_file, "r", 0);
 
@@ -107,7 +153,14 @@ void read_net (char *net_file) {
  } 
 
  fclose(fp_net);
- check_netlist ();
+
+/* Return the three data structures below through subblock_data_ptr.        */
+
+ subblock_data_ptr->subblock_inf = subblock_inf;
+ subblock_data_ptr->num_subblocks_per_block = num_subblocks_per_block;
+ subblock_data_ptr->chunk_head_ptr = ch_subblock_head_ptr;
+
+ check_netlist (subblock_data_ptr, num_driver);
  free_parse();
 }
 
@@ -130,6 +183,10 @@ static void init_parse(int doall) {
     temp_block_storage = INITIAL_BLOCK_STORAGE;
     num_subblocks_per_block = my_malloc (INITIAL_BLOCK_STORAGE *
              sizeof(int));
+
+    ch_subblock_bytes_avail = 0;
+    ch_subblock_next_avail_mem = NULL;
+    ch_subblock_head_ptr = NULL;
  }
 
 /* Allocate memory for second (load) pass */ 
@@ -138,10 +195,9 @@ static void init_parse(int doall) {
     net = (struct s_net *) my_malloc (num_nets*sizeof(struct s_net));
     block = (struct s_block *) my_malloc (num_blocks*
         sizeof(struct s_block));   
-    is_global = (int *) my_calloc (num_nets, sizeof(int));
+    is_global = (boolean *) my_calloc (num_nets, sizeof(boolean));
     num_driver = (int *) my_malloc (num_nets * sizeof(int));
     temp_num_pins = (int *) my_malloc (num_nets * sizeof(int));
-    net_pin_class = (int **) my_malloc (num_nets * sizeof (int *));
 
     for (i=0;i<num_nets;i++) {
        num_driver[i] = 0;
@@ -169,13 +225,14 @@ static void init_parse(int doall) {
     while (h_ptr != NULL) {
        nindex = h_ptr->index;
        pin_count = h_ptr->count;
-       net[nindex].pins = (int *) my_chunk_malloc(pin_count *
+       net[nindex].blocks = (int *) my_chunk_malloc(pin_count *
                sizeof(int), NULL, &chunk_bytes_avail, &chunk_next_avail_mem);
 
-       net_pin_class[nindex] = (int *) my_chunk_malloc (pin_count * 
+       net[nindex].blk_pin = (int *) my_chunk_malloc (pin_count * 
                sizeof(int), NULL, &chunk_bytes_avail, &chunk_next_avail_mem);
 
 /* For avoiding assigning values beyond end of pins array. */
+
        temp_num_pins[nindex] = pin_count;
 
        len = strlen (h_ptr->name);
@@ -186,22 +243,24 @@ static void init_parse(int doall) {
     }
 
 /* Allocate storage for subblock info. (what's in each logic block) */
+
    num_subblocks_per_block = (int *) my_realloc (num_subblocks_per_block,
                   num_blocks * sizeof (int));
-   subblock_inf = (struct s_subblock **) my_malloc (num_blocks * 
-                  sizeof(struct s_block *));
+   subblock_inf = (t_subblock **) my_malloc (num_blocks * 
+                        sizeof(t_subblock *));
 
    for (i=0;i<num_blocks;i++) {
       if (num_subblocks_per_block[i] == 0) 
          subblock_inf[i] = NULL;
       else {
-         subblock_inf[i] = (struct s_subblock *) my_chunk_malloc (
-            num_subblocks_per_block[i] * sizeof (struct s_subblock), NULL,
-            &chunk_bytes_avail, &chunk_next_avail_mem);
+         subblock_inf[i] = (t_subblock *) my_chunk_malloc (
+              num_subblocks_per_block[i] * sizeof (t_subblock), 
+              &ch_subblock_head_ptr, &ch_subblock_bytes_avail, 
+              &ch_subblock_next_avail_mem);
          for (j=0;j<num_subblocks_per_block[i];j++) 
             subblock_inf[i][j].inputs = (int *) my_chunk_malloc
-                 (subblock_lut_size * sizeof(int), NULL, &chunk_bytes_avail,
-                   &chunk_next_avail_mem);
+                 (subblock_lut_size * sizeof(int), &ch_subblock_head_ptr, 
+                 &ch_subblock_bytes_avail, &ch_subblock_next_avail_mem);
       }
    }
  }
@@ -261,24 +320,41 @@ static char *get_tok (char *buf, int doall, FILE *fp_net) {
 }
 
 
-static int get_pin_number (char *ptr, int min_val, int max_val) {
+static int get_pin_number (char *ptr) {
 
-/* Returns either the number in ptr or OPEN.  Ptr must contain  *
- * "open" or an integer between min_val and max_val or an error *
- * message is printed and the routine terminates the program.   */
+/* Returns the pin number to which a subblock pin connects.  This pin number *
+ * can be OPEN, one of the clb pins (from 0 to clb_size-1) or a "hidden"     *
+ * pin that refers to the output of one of the subblocks within the clb      *
+ * (the output of subblock 0 is pin clb_size, the output of subblock         *
+ * max_subblocks_per_block is clb_size + max_subblocks_per_block-1).         */
 
  int val;
 
  if (strcmp("open",ptr) == 0) 
     return (OPEN);
 
- val = atoi (ptr);
+ if (strncmp ("ble_", ptr, 4) == 0) {   /* "Hidden" pin (Subblock output) */
+    val = my_atoi (ptr + 4);
+    if (val < 0 || val >= max_subblocks_per_block) {
+       printf("Error in get_pin_number on line %d of netlist file.\n", 
+            linenum);
+       printf("Pin ble_%d is out of legal range (ble_%d to ble_%d).\n"
+            "Aborting.\n\n", val, 0, max_subblocks_per_block - 1);
+       exit (1);
+    }
+    val += pins_per_clb;  /* pins_per_clb .. pins_per_clb + max_subblocks-1 */
+    return (val);
+ }
 
- if (val < min_val || val > max_val) {
+ /* Clb input pin. */
+
+ val = my_atoi (ptr);
+
+ if (val < 0 || val >= pins_per_clb) {
     printf("Error in get_pin_number on line %d of netlist file.\n", 
          linenum);
     printf("Pin %d is out of legal range (%d to %d).\nAborting.\n\n",
-         val, min_val, max_val);
+         val, 0, pins_per_clb - 1);
     exit (1);
  }
 
@@ -311,7 +387,8 @@ static void load_subblock_array (int doall, FILE *fp_net,
  if (doall == 1) {
     len = strlen (ptr);
     subblock_inf[bnum][num_subblocks-1].name = my_chunk_malloc ((len+1) *
-             sizeof(char), NULL, &chunk_bytes_avail, &chunk_next_avail_mem);
+             sizeof(char), &ch_subblock_head_ptr, &ch_subblock_bytes_avail,
+             &ch_subblock_next_avail_mem);
     strcpy (subblock_inf[bnum][num_subblocks-1].name, ptr);
  }
 
@@ -319,7 +396,7 @@ static void load_subblock_array (int doall, FILE *fp_net,
 
  while (ptr != NULL) {    /* For each subblock pin. */
     if (doall == 1) {
-       connect_to = get_pin_number (ptr, 0, pins_per_clb-1);
+       connect_to = get_pin_number (ptr);
        if (ipin < subblock_lut_size) {      /* LUT input. */
           subblock_inf[bnum][num_subblocks-1].inputs[ipin] = connect_to;
        }
@@ -382,7 +459,7 @@ static char *parse_subblocks (int doall, FILE *fp_net, char *buf,
     if (ptr == NULL) 
        continue;       /* Blank or comment line.  Skip. */
 
-    if (strcmp("subblock:", temp_buf) == 0) {
+    if (strcmp("subblock:", ptr) == 0) {
        num_subblocks++; 
        load_subblock_array (doall, fp_net, temp_buf, num_subblocks,
                bnum);
@@ -418,7 +495,7 @@ static char *add_clb (int doall, FILE *fp_net, char *buf) {
  * pass.                                                                */
 
  char *ptr;
- int pin_index, class, inet;
+ int pin_index, iclass, inet;
  enum e_pin_type type;
 
  num_blocks++;
@@ -439,11 +516,11 @@ static char *add_clb (int doall, FILE *fp_net, char *buf) {
        exit (1);
     }
     
-    class = clb_pin_class[pin_index];
-    type = class_inf[class].type;      /* DRIVER or RECEIVER */
+    iclass = clb_pin_class[pin_index];
+    type = class_inf[iclass].type;      /* DRIVER or RECEIVER */
 
     if (strcmp(ptr,"open") != 0) {     /* Pin is connected. */
-       inet = add_net(ptr,type,num_blocks-1,class,doall);
+       inet = add_net (ptr, type, num_blocks-1, pin_index, doall);
 
        if (doall)                      /* Loading pass only */
           block[num_blocks - 1].nets[pin_index] = inet; 
@@ -468,6 +545,7 @@ static char *add_clb (int doall, FILE *fp_net, char *buf) {
 
 
 static void add_io (int doall, int block_type, FILE *fp_net, char *buf) {
+
 /* Adds the INPAD or OUTPAD (specified by block_type)  currently being  *
  * parsed to the block array.  Adds its pin to the nets data structure  *
  * by calling add_net.  If doall is zero this is a counting pass; if it *
@@ -511,9 +589,11 @@ static void add_io (int doall, int block_type, FILE *fp_net, char *buf) {
        exit (1);
     }
    
-/* Note the dummy class for io pins.  Change this if necessary. */
+/* Note the dummy pin number for IO pins.  Change this if necessary. I set *
+ * them to OPEN because I want the code to crash if I try to look up the   *
+ * class of an I/O pin (since I/O pins don't have classes).                */
 
-    inet = add_net(ptr,type,num_blocks-1,-1,doall);
+    inet = add_net (ptr, type, num_blocks-1, OPEN, doall);
  
     if (doall)                      /* Loading pass only */
        block[num_blocks - 1].nets[pin_index] = inet;
@@ -600,13 +680,13 @@ static void parse_name_and_pinlist (int doall, FILE *fp_net, char *buf) {
 
 static void add_global (int doall, FILE *fp_net, char *buf) {
 
-/* Doall is 0 for the first (counting) pass and 1 for the second        *
- * (loading) pass.  fp_net is a pointer to the netlist file.  This      *
- * routine sets the proper entry(ies) in is_global to 1 during the      *
- * loading pass.  The routine does nothing during the counting pass. If *
- * is_global = 1 for a net, it will not be considered in the placement  *
- * cost function, nor will it be routed.  This is useful for global     *
- * signals like clocks that generally have dedicated routing in FPGAs.  */
+/* Doall is 0 for the first (counting) pass and 1 for the second           *
+ * (loading) pass.  fp_net is a pointer to the netlist file.  This         *
+ * routine sets the proper entry(ies) in is_global to TRUE during the      *
+ * loading pass.  The routine does nothing during the counting pass. If    *
+ * is_global = TRUE for a net, it will not be considered in the placement  *
+ * cost function, nor will it be routed.  This is useful for global        *
+ * signals like clocks that generally have dedicated routing in FPGAs.     */
 
  char *ptr;
  struct s_hash *h_ptr;
@@ -631,14 +711,14 @@ static void add_global (int doall, FILE *fp_net, char *buf) {
     }
    
     nindex = h_ptr->index;
-    is_global[nindex] = 1;    /* Flagged as global net */
+    is_global[nindex] = TRUE;    /* Flagged as global net */
 
     ptr = my_strtok(NULL,TOKENS,fp_net,buf);
  }
 }
 
 
-static int add_net (char *ptr, enum e_pin_type type, int bnum, int pclass, 
+static int add_net (char *ptr, enum e_pin_type type, int bnum, int blk_pnum, 
           int doall) {   
 
 /* This routine is given a net name in *ptr, either DRIVER or RECEIVER *
@@ -689,323 +769,10 @@ static int add_net (char *ptr, enum e_pin_type type, int bnum, int pclass,
           exit(1);
        } 
     }   
-    net[nindex].pins[j] = bnum;
-    net_pin_class[nindex][j] = pclass;
+    net[nindex].blocks[j] = bnum;
+    net[nindex].blk_pin[j] = blk_pnum;
     return (nindex);
  }
-}
-
-
-static void print_pinnum (FILE *fp, int pinnum) {
-
-/* This routine prints out either OPEN or the pin number, to file fp. */
-
- if (pinnum == OPEN) 
-    fprintf(fp,"\tOPEN");
- else
-    fprintf(fp,"\t%d", pinnum);
-}
-
-
-void netlist_echo (char *foutput, char *net_file) {
-
-/* Prints out the netlist related data structures into the file    *
- * fname.                                                          */
-
- int i, j, ipin, max_pin;	
- FILE *fp;
- 
- fp = my_fopen (foutput,"w",0); 
-
- fprintf(fp,"Input netlist file: %s\n", net_file);
- fprintf(fp,"num_p_inputs: %d, num_p_outputs: %d, num_clbs: %d\n",
-             num_p_inputs,num_p_outputs,num_clbs);
- fprintf(fp,"num_blocks: %d, num_nets: %d, num_globals: %d\n",
-             num_blocks, num_nets, num_globals);
- fprintf(fp,"\nNet\tName\t\t#Pins\tDriver\t\tRecvs. (block, class)\n");
-
- for (i=0;i<num_nets;i++) {
-    fprintf(fp,"\n%d\t%s\t", i, net[i].name);
-    if (strlen(net[i].name) < 8)
-       fprintf(fp,"\t");         /* Name field is 16 chars wide */
-    fprintf(fp,"%d",net[i].num_pins);
-    for (j=0;j<net[i].num_pins;j++) 
-        fprintf(fp,"\t(%4d,%4d)",net[i].pins[j], net_pin_class[i][j]);
- }
-
- fprintf(fp,"\n\n\nBlock List:\t\tBlock Type Legend:\n");
- fprintf(fp,"\t\t\tINPAD = %d\tOUTPAD = %d\n", INPAD, OUTPAD);
- fprintf(fp,"\t\t\tCLB = %d\n\n", CLB);
-
- fprintf(fp,"\nBlock\tName\t\tType\tPin Connections\n\n");
-
- for (i=0;i<num_blocks;i++) { 
-    fprintf(fp,"\n%d\t%s\t",i,block[i].name);
-    if (strlen(block[i].name) < 8)
-       fprintf(fp,"\t");         /* Name field is 16 chars wide */
-    fprintf(fp,"%d", block[i].type);
-
-    if (block[i].type == INPAD || block[i].type == OUTPAD) 
-       max_pin = 1;
-    else
-       max_pin = pins_per_clb;
- 
-    for (j=0;j<max_pin;j++) 
-        print_pinnum (fp, block[i].nets[j]);
- }  
-
- fprintf(fp,"\n");
-
-/* Now print out subblock info. */
-
- fprintf(fp,"\n\nSubblock List:\n\n");
-
- for (i=0;i<num_blocks;i++) {
-    if (block[i].type != CLB) 
-       continue;
-
-    fprintf(fp,"\nBlock: %d (%s)\tNum_subblocks: %d\n", i,
-                  block[i].name, num_subblocks_per_block[i]);
-
-   /* Print header. */
-
-    fprintf(fp,"Index\tName\t\tInputs");
-    for (j=0;j<subblock_lut_size;j++)
-       fprintf(fp,"\t");
-    fprintf(fp,"Output\tClock\n");
-
-   /* Print subblock info for block i. */
-
-    for (j=0;j<num_subblocks_per_block[i];j++) {
-       fprintf(fp,"%d\t%s", j, subblock_inf[i][j].name);
-       if (strlen(subblock_inf[i][j].name) < 8) 
-          fprintf(fp,"\t");         /* Name field is 16 characters */
-       for (ipin=0;ipin<subblock_lut_size;ipin++) 
-          print_pinnum (fp, subblock_inf[i][j].inputs[ipin]);
-       print_pinnum (fp, subblock_inf[i][j].output);
-       print_pinnum (fp, subblock_inf[i][j].clock);
-       fprintf(fp,"\n");
-    }
- }
-
- fclose(fp);
-}
-
-
-static void check_netlist (void) {
-
-/* Checks the input netlist for various errors.  */
-
- int i, ipin, icmp, error, num_conn, class, isubblk, clb_pin;
- struct s_hash **block_hash_table, *h_ptr;
- struct s_hash_iterator hash_iterator;
- 
- error = 0;
-
- for (i=0;i<num_nets;i++) {
-    if (num_driver[i] != 1) {
-       printf ("Error:  net %s has %d signals driving it.\n",
-           net[i].name,num_driver[i]);
-       error++;
-    }
-    if ((net[i].num_pins - num_driver[i]) < 1) {
-       printf("Error:  net %s has no fanout.\n",net[i].name);
-       error++;
-    }
- }
-
- for (i=0;i<num_blocks;i++) {
-    num_conn = get_num_conn (i);
-
-    if (block[i].type == CLB) {
-       if (num_conn < 2) {
-          printf("Warning:  logic block #%d (%s) has only %d pin.\n",
-             i,block[i].name,num_conn);
-
-/* Allow the case where we have only one OUTPUT pin connected to continue. *
- * This is used sometimes as a constant generator for a primary output,    *
- * but I will still warn the user.  If the only pin connected is an input, *
- * abort.                                                                  */
-
-          if (num_conn == 1) {
-             for (ipin=0;ipin<pins_per_clb;ipin++) {
-                if (block[i].nets[ipin] != OPEN) {
-                   class = clb_pin_class[ipin];
-
-                   if (class_inf[class].type != DRIVER) {
-                      error++;
-                   }
-                   else {
-                      printf("\tPin is an output -- may be a constant "
-                        "generator.  Non-fatal, but check this.\n");
-                   }
-
-                   break;
-                }
-             }
-          }
-          else {
-             error++;
-          }
-       }
-
-/* This case should already have been flagged as an error -- this is *
- * just a redundant double check.                                    */
-
-       if (num_conn > pins_per_clb) {
-          printf("Error:  logic block #%d with output %s has %d pins.\n",
-             i,block[i].name,num_conn);
-          error++;
-       }
-
-/* Now check that the subblock information makes sense. */
-       
-       if (num_subblocks_per_block[i] < 1 || num_subblocks_per_block[i] >
-             max_subblocks_per_block) {
-          printf("Error:  block #%d (%s) contains %d subblocks.\n",
-             i, block[i].name, num_subblocks_per_block[i]);
-          error++;
-       }
-
-       for (isubblk=0;isubblk<num_subblocks_per_block[i];isubblk++) {
-          for (ipin=0;ipin<subblock_lut_size;ipin++) {  /* Input pins */
-             clb_pin = subblock_inf[i][isubblk].inputs[ipin];
-             if (clb_pin != OPEN) {
-                if (clb_pin < 0 || clb_pin > pins_per_clb) {
-                   printf("Error:  Block #%d (%s) subblock #%d (%s) pin #%d "
-                      "connects to nonexistent clb pin #%d.\n", i, 
-                      block[i].name, isubblk, subblock_inf[i][isubblk].name,
-                      ipin, clb_pin);
-                   error++;
-                }
-             }
-          }
-     
-      /* Subblock output pin. */
-          clb_pin = subblock_inf[i][isubblk].output;
-           /* Output can't be OPEN */
-          if (clb_pin < 0 || clb_pin > pins_per_clb) { 
-             printf("Error:  Block #%d (%s) subblock #%d (%s) pin #%d \n"
-                    "connects to nonexistent clb pin #%d.\n", i, 
-                    block[i].name, isubblk, subblock_inf[i][isubblk].name,
-                    ipin, clb_pin);
-             error++;
-          }
-          class = clb_pin_class[clb_pin];
-          if (class_inf[class].type != DRIVER) {
-             printf("Error:  Block #%d (%s) subblock #%d (%s) output pin \n"
-                    "connects to clb input pin #%d.\n", i, block[i].name, 
-                    isubblk, subblock_inf[i][isubblk].name, clb_pin);
-             error++;
-          }
-
-      /* Subblock clock pin. */
-          clb_pin = subblock_inf[i][isubblk].clock;
-          if (clb_pin != OPEN) {
-             if (clb_pin < 0 || clb_pin > pins_per_clb) {
-                printf("Error:  Block #%d (%s) subblock #%d (%s) pin #%d "
-                       "connects to nonexistent clb pin #%d.\n", i, 
-                        block[i].name, isubblk, subblock_inf[i][isubblk].name,
-                        ipin, clb_pin);
-                error++;
-                
-             }
-             class = clb_pin_class[clb_pin];
-             if (class_inf[class].type != RECEIVER) { 
-                printf("Error:  Block #%d (%s) subblock #%d (%s) clock pin \n"
-                       "connects to clb output pin #%d.\n", i, block[i].name, 
-                       isubblk, subblock_inf[i][isubblk].name, clb_pin);
-                error++;
-             }
-          }
-       }  /* End subblock for loop. */
-    }  /* End clb if */
-
-    else {    /* IO block */
-
-/* This error check is also a redundant double check.                 */
-
-       if (num_conn != 1) {
-          printf("Error:  io block #%d (%s) of type %d"
-             "has %d pins.\n", i, block[i].name, block[i].type,
-             num_conn);
-          error++;
-       }
-
-  /* IO blocks must have no subblock information. */
-       if (num_subblocks_per_block[i] != 0) {
-          printf("Error:  IO block #%d (%s) contains %d subblocks.\n"
-              "Expected 0.\n", i, block[i].name, num_subblocks_per_block[i]);
-          error++;
-       }
-    }
- }
-
-/* Check that no net connects to the same pin class more than once on      *
- * the same block.  I can think of no reason why a netlist would ever      *
- * want to do this, and it would break an assumption used when updating    *
- * the targets still to be reached when routing a net.                     */
-
- for (i=0;i<num_nets;i++) {
-    for (ipin=0;ipin<net[i].num_pins-1;ipin++) {
-       for (icmp=ipin+1;icmp<net[i].num_pins;icmp++) {
-      
-          /* Two pins connect to the same block ? */
-
-          if (net[i].pins[ipin] == net[i].pins[icmp]) {
-             if (net_pin_class[i][ipin] == net_pin_class[i][icmp]) {
-                printf("Error:  net %d (%s) pins %d and %d connect\n",
-                   i, net[i].name, ipin, icmp);
-                printf("to the same block and pin class.\n");
-                printf("This does not make sense and is not allowed.\n");
-                error++;
-             }
-          }
-       } 
-    }
- }
-
-/* Now check that all blocks have unique names. */
- 
- block_hash_table = alloc_hash_table ();
- for (i=0;i<num_blocks;i++) 
-    h_ptr = insert_in_hash_table (block_hash_table, block[i].name, i);
-
- hash_iterator = start_hash_table_iterator ();
- h_ptr = get_next_hash (block_hash_table, &hash_iterator);
- 
- while (h_ptr != NULL) {
-    if (h_ptr->count != 1) {
-       printf ("Error:  %d blocks are named %s.  Block names must be unique."
-               "\n", h_ptr->count, h_ptr->name);
-       error++;
-    }
-    h_ptr = get_next_hash (block_hash_table, &hash_iterator);
- }
- 
- free_hash_table (block_hash_table);
- 
- if (error != 0) {
-    printf("Found %d fatal Errors in the input netlist.\n",error);
-    exit(1);
- }
-}
-
-
-static int get_num_conn (int bnum) {
-
-/* This routine returns the number of connections to a block. */
-
- int i, num_conn;
-
- num_conn = 0;
-
- for (i=0;i<pins_per_clb;i++) {
-    if (block[bnum].nets[i] != OPEN) 
-       num_conn++;
- }
-
- return (num_conn);
 }
 
 
