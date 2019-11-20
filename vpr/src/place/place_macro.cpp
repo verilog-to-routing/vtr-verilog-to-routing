@@ -78,7 +78,7 @@ static void find_all_the_macro(int* num_of_macro, std::vector<ClusterBlockId>& p
     num_macro = 0;
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
-        auto physical_tile = pick_random_physical_type(logical_block);
+        auto physical_tile = pick_best_physical_type(logical_block);
 
         num_blk_pins = cluster_ctx.clb_nlist.block_type(blk_id)->pb_type->num_pins;
         for (to_iblk_pin = 0; to_iblk_pin < num_blk_pins; to_iblk_pin++) {

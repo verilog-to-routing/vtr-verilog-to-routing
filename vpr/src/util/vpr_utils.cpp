@@ -317,7 +317,7 @@ std::vector<AtomPinId> find_clb_pin_connected_atom_pins(ClusterBlockId clb, int 
     auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     auto logical_block = clb_nlist.block_type(clb);
-    auto physical_tile = pick_random_physical_type(logical_block);
+    auto physical_tile = pick_best_physical_type(logical_block);
 
     int physical_pin = get_physical_pin(physical_tile, logical_block, logical_pin);
 
@@ -2151,30 +2151,15 @@ bool is_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_block_
     return std::find(equivalent_tiles.begin(), equivalent_tiles.end(), physical_tile) != equivalent_tiles.end();
 }
 
-t_physical_tile_type_ptr pick_random_physical_type(t_logical_block_type_ptr logical_block) {
-    auto equivalent_tiles = logical_block->equivalent_tiles;
-
-    size_t num_equivalent_tiles = equivalent_tiles.size();
-    int index = 0;
-
-    if (num_equivalent_tiles > 1) {
-        index = vtr::irand((int)equivalent_tiles.size() - 1);
-    }
-
-    return equivalent_tiles[index];
+/**
+ * This function returns the most common physical tile type given a logical block
+ */
+t_physical_tile_type_ptr pick_best_physical_type(t_logical_block_type_ptr logical_block) {
+    return logical_block->equivalent_tiles[0];
 }
 
-t_logical_block_type_ptr pick_random_logical_type(t_physical_tile_type_ptr physical_tile) {
-    auto equivalent_sites = physical_tile->equivalent_sites;
-
-    size_t num_equivalent_sites = equivalent_sites.size();
-    int index = 0;
-
-    if (num_equivalent_sites > 1) {
-        index = vtr::irand((int)equivalent_sites.size() - 1);
-    }
-
-    return equivalent_sites[index];
+t_logical_block_type_ptr pick_best_logical_type(t_physical_tile_type_ptr physical_tile) {
+    return physical_tile->equivalent_sites[0];
 }
 
 int get_logical_pin(t_physical_tile_type_ptr physical_tile,
