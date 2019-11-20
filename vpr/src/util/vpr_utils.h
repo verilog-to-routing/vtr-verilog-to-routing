@@ -170,8 +170,8 @@ void place_sync_external_block_connections(ClusterBlockId iblk);
 int get_max_num_pins(t_logical_block_type_ptr logical_block);
 
 bool is_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_block_type_ptr logical_block);
-t_physical_tile_type_ptr pick_random_physical_type(t_logical_block_type_ptr logical_block);
-t_logical_block_type_ptr pick_random_logical_type(t_physical_tile_type_ptr physical_tile);
+t_physical_tile_type_ptr pick_best_physical_type(t_logical_block_type_ptr logical_block);
+t_logical_block_type_ptr pick_best_logical_type(t_physical_tile_type_ptr physical_tile);
 
 int get_logical_pin(t_physical_tile_type_ptr physical_tile,
                     t_logical_block_type_ptr logical_block,

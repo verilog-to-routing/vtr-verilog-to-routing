@@ -75,7 +75,7 @@ void printClusteredNetlistStats() {
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
-        auto physical_tile = pick_random_physical_type(logical_block);
+        auto physical_tile = pick_best_physical_type(logical_block);
         num_blocks_type[logical_block->index]++;
         if (is_io_type(physical_tile)) {
             for (j = 0; j < logical_block->pb_type->num_pins; j++) {
