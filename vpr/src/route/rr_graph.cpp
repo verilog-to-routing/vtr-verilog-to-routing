@@ -2709,6 +2709,8 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
             end_pin_index = tile_port.num_pins - 1;
         }
 
+        // Add clb directs start/end pin indices based on the absolute pin position
+        // of the port defined in the direct connection. The CLB is the source one.
         clb_to_clb_directs[i].from_clb_pin_start_index = tile_port.absolute_first_pin_index + start_pin_index;
         clb_to_clb_directs[i].from_clb_pin_end_index = tile_port.absolute_first_pin_index + end_pin_index;
 
@@ -2749,6 +2751,8 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
             end_pin_index = tile_port.num_pins - 1;
         }
 
+        // Add clb directs start/end pin indices based on the absolute pin position
+        // of the port defined in the direct connection. The CLB is the destination one.
         clb_to_clb_directs[i].to_clb_pin_start_index = tile_port.absolute_first_pin_index + start_pin_index;
         clb_to_clb_directs[i].to_clb_pin_end_index = tile_port.absolute_first_pin_index + end_pin_index;
 
