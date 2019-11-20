@@ -75,13 +75,13 @@ class IntraLbPbPinLookup {
 };
 
 //Find the atom pins (driver or sinks) connected to the specified top-level CLB pin
-std::vector<AtomPinId> find_clb_pin_connected_atom_pins(ClusterBlockId clb, int log_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
+std::vector<AtomPinId> find_clb_pin_connected_atom_pins(ClusterBlockId clb, int logical_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
 
 //Find the atom pin driving to the specified top-level CLB pin
-AtomPinId find_clb_pin_driver_atom_pin(ClusterBlockId clb, int log_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
+AtomPinId find_clb_pin_driver_atom_pin(ClusterBlockId clb, int logical_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
 
 //Find the atom pins driven by the specified top-level CLB pin
-std::vector<AtomPinId> find_clb_pin_sink_atom_pins(ClusterBlockId clb, int log_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
+std::vector<AtomPinId> find_clb_pin_sink_atom_pins(ClusterBlockId clb, int logical_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
 
 std::tuple<ClusterNetId, int, int> find_pb_route_clb_input_net_pin(ClusterBlockId clb, int sink_pb_route_id);
 
