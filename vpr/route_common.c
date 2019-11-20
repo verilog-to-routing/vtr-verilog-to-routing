@@ -5,6 +5,7 @@
 #include "globals.h" 
 #include "route_export.h"
 #include "route_common.h"
+#include "route_tree_timing.h"
 #include "route_timing.h"
 #include "route_breadth_first.h"
 #include "place_and_route.h"
@@ -74,10 +75,7 @@ static struct s_linked_f_pointer *linked_f_pointer_free_head = NULL;
 /******************** Subroutines local to route_common.c *******************/
 
 static void free_trace_data (struct s_trace *tptr);
-static void init_route_structs (int bb_factor);
 static void load_route_bb (int bb_factor); 
-static void alloc_and_load_rr_node_route_structs (void);
-static void free_rr_node_route_structs (void);
 
 static struct s_trace *alloc_trace_data (void); 
 static void add_to_heap (struct s_heap *hptr);
@@ -241,6 +239,8 @@ boolean try_route (int width_fac, struct s_router_opts router_opts, struct
 
  build_rr_graph (router_opts.route_type, det_routing_arch, segment_inf,
                  timing_inf, router_opts.base_cost_type);
+ free_rr_graph_internals (router_opts.route_type, det_routing_arch, segment_inf,
+                 timing_inf, router_opts.base_cost_type);
 
 /* Allocate and load some additional rr_graph information needed only by *
  * the router.                                                           */
@@ -359,7 +359,7 @@ void pathfinder_update_cost (float pres_fac, float acc_fac) {
 }    
 
 
-static void init_route_structs (int bb_factor) {
+void init_route_structs (int bb_factor) {
 
 /* Call this before you route any nets.  It frees any old traceback and   *
  * sets the list of rr_nodes touched to empty.                            */
@@ -696,6 +696,20 @@ static t_ivec **alloc_and_load_clb_opins_used_locally (t_subblock_data
  return (clb_opins_used_locally);
 }
 
+void free_trace_structs (void) {
+  /*the trace lists are only freed after use by the timing-driven placer*/
+  /*Do not  free them after use by the router, since stats, and draw  */
+  /*routines use the trace values */
+  int i;
+
+  for (i=0; i<num_nets; i++)
+    free_traceback(i);
+
+  free(trace_head);
+  free(trace_tail);
+  trace_head = NULL;
+  trace_tail = NULL;
+}
 
 void free_route_structs (t_ivec **clb_opins_used_locally) {
 
@@ -727,7 +741,7 @@ void free_saved_routing (struct s_trace **best_routing, t_ivec
 }
 
 
-static void alloc_and_load_rr_node_route_structs (void) {
+void alloc_and_load_rr_node_route_structs (void) {
 
 /* Allocates some extra information about each rr_node that is used only   *
  * during routing.                                                         */
@@ -753,7 +767,7 @@ static void alloc_and_load_rr_node_route_structs (void) {
 }
 
 
-static void free_rr_node_route_structs (void) {
+void free_rr_node_route_structs (void) {
 
 /* Frees the extra information about each rr_node that is needed only      *
  * during routing.                                                         */

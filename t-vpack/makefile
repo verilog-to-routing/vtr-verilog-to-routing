@@ -1,10 +1,13 @@
 # This makefile is written for gcc running under Solaris on a SPARCstation.
-# To compile VPR on other systems, you may have to change:
+# To compile T-VPack on other systems, you may have to change:
 # (1) CC to the name of your C compiler.
-# (2) FLAGS should be changed to whatever options turn on maximum optimization
-#     in your compiler.
+# (2) OPT_FLAGS should be changed to whatever options turn on maximum 
+#     optimization in your compiler.
 
 CC = gcc
+#CC = purify gcc
+#CC = g++
+
 
 # Overly strict flags line below.  Lots of useless warnings, but can
 # let you look for redudant declarations.
@@ -23,21 +26,27 @@ CC = gcc
 WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -Wstrict-prototypes -O -D__USE_FIXED_PROTOTYPES__ -ansi -pedantic -Wmissing-prototypes -Wshadow -Wcast-align -D_POSIX_SOURCE
 
 DEBUG_FLAGS = -g
-OPT_FLAGS = -O3
+OPT_FLAGS = -O2
 
+#FLAGS = $(DEBUG_FLAGS)
 FLAGS = $(OPT_FLAGS)
+#FLAGS = $(WARN_FLAGS)
+
 
 #Useful flags on HP machines.
 #DEBUG_FLAGS = -Aa -g
 #OPT_FLAGS = -Aa +O3
 
-EXE = vpack
 
-OBJ = main.o util.o ff_pack.o read_blif.o cluster.o output_clustering.o
 
-SRC = main.c util.c ff_pack.c read_blif.c cluster.c output_clustering.c
 
-H = util.h vpack.h globals.h read_blif.h cluster.h ff_pack.h output_clustering.h
+EXE = t-vpack
+
+OBJ = main.o util.o ff_pack.o read_blif.o cluster.o output_clustering.o path_length.o heapsort.o
+
+SRC = main.c util.c ff_pack.c read_blif.c cluster.c output_clustering.c path_length.c heapsort.c
+
+H = util.h vpack.h globals.h read_blif.h cluster.h ff_pack.h output_clustering.h path_length.h heapsort.h
 
 LIB = -lm
 
@@ -63,3 +72,9 @@ cluster.o: cluster.c $(H)
 
 output_clustering.o: output_clustering.c $(H)
 	$(CC) -c $(FLAGS) output_clustering.c
+
+path_length.o: path_length.c $(H)
+	$(CC) -c $(FLAGS) path_length.c
+
+heapsort.o: heapsort.c $(H)
+	$(CC) -c $(FLAGS) heapsort.c

@@ -1,3 +1,28 @@
+VPack / T-VPack Version 4.30, March 25, 2000
+
+I (Vaughn) integrated my last VPack enhancements into Sandy's latest
+T-VPack code base.  He branched off of VPack Version 2.08 instead of
+2.09, so I had to put the -muxes_to_cluster_output_pins stuff in 
+to his latest code base.
+
+Also fixed a missing prototype warning on print_stats, and fixed the
+usage statement to say t-vpack instead of vpack.
+
+I bumped the version number up so this has the same version number
+as the VPR it's going to be released with.
+
+This version was released on the web.
+
+
+
+VPack / T-VPack Version 3.0, around May 1999
+
+Sandy's T-VPack algorithm enhancements to VPack.  He added timing-driven
+packing, and connection-driven packing (another variant on the basic
+VPack-style algorithm).
+
+
+
 VPack Version 2.09 -- Jan. 26, 1999
 
 Added the -muxes_to_cluster_output_pins option.  If true, then the output of

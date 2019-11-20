@@ -12,6 +12,7 @@
 #include "rr_graph.h"
 #include "path_delay.h"
 #include "net_delay.h"
+#include "timing_place.h"
 
 
 /******************* Subroutines local to this module ************************/
@@ -48,18 +49,24 @@ void place_and_route (enum e_operation operation, struct s_placer_opts
 
 
  if (placer_opts.place_freq == PLACE_NEVER) {
-    read_place (place_file, net_file, arch_file, placer_opts, chan_width_dist);
+    read_place (place_file, net_file, arch_file, placer_opts, router_opts,
+                chan_width_dist, det_routing_arch, segment_inf, timing_inf,
+                subblock_data_ptr);
  }
 
  else if (placer_opts.place_freq == PLACE_ONCE) {
-    try_place (placer_opts, annealing_sched, chan_width_dist);
+    try_place (placer_opts, annealing_sched, chan_width_dist,
+               router_opts, det_routing_arch, segment_inf,
+               timing_inf, subblock_data_ptr);
     print_place (place_file, net_file, arch_file);
  }
  
  else if (placer_opts.place_freq == PLACE_ALWAYS &&
           router_opts.fixed_channel_width != NO_FIXED_CHANNEL_WIDTH) {
     placer_opts.place_chan_width = router_opts.fixed_channel_width;
-    try_place (placer_opts, annealing_sched, chan_width_dist);
+    try_place (placer_opts, annealing_sched, chan_width_dist,
+               router_opts, det_routing_arch, segment_inf,
+               timing_inf, subblock_data_ptr);
     print_place (place_file, net_file, arch_file);
  }
  
@@ -89,7 +96,8 @@ void place_and_route (enum e_operation operation, struct s_placer_opts
     clb_opins_used_locally = alloc_route_structs (*subblock_data_ptr); 
  
     if (timing_inf.timing_analysis_enabled) {
-       net_slack = alloc_and_load_timing_graph (timing_inf, *subblock_data_ptr);       net_delay = alloc_net_delay (&net_delay_chunk_list_head);
+       net_slack = alloc_and_load_timing_graph (timing_inf, *subblock_data_ptr);       
+       net_delay = alloc_net_delay (&net_delay_chunk_list_head);
     }
     else {
        net_delay = NULL;    /* Defensive coding. */
@@ -128,6 +136,11 @@ void place_and_route (enum e_operation operation, struct s_placer_opts
            net_slack, net_delay);
  
     print_route (route_file);
+
+#ifdef PRINT_SINK_DELAYS
+    print_sink_delays("Routing_Sink_Delays.echo");
+#endif
+
     sprintf(msg,"Routing succeeded with a channel width factor of %d.",
        width_fac);
  }
@@ -212,7 +225,9 @@ static int binary_search_place_and_route (struct s_placer_opts
  
     if (placer_opts.place_freq == PLACE_ALWAYS) {
        placer_opts.place_chan_width = current;
-       try_place (placer_opts, annealing_sched, chan_width_dist);
+       try_place (placer_opts, annealing_sched, chan_width_dist,
+                  router_opts, det_routing_arch, segment_inf,
+                  timing_inf, subblock_data_ptr);
     }
     success = try_route (current, router_opts, det_routing_arch, segment_inf,
                          timing_inf, net_slack, net_delay, chan_width_dist,
@@ -282,7 +297,9 @@ static int binary_search_place_and_route (struct s_placer_opts
  
        if (placer_opts.place_freq == PLACE_ALWAYS) {
           placer_opts.place_chan_width = current;
-          try_place (placer_opts, annealing_sched, chan_width_dist);
+          try_place (placer_opts, annealing_sched, chan_width_dist,
+                     router_opts, det_routing_arch, segment_inf,
+                     timing_inf, subblock_data_ptr);
        } 
   
        success = try_route (current, router_opts, det_routing_arch,
@@ -315,11 +332,15 @@ static int binary_search_place_and_route (struct s_placer_opts
  if (placer_opts.place_freq == PLACE_ALWAYS) {
     printf("Reading best placement back in.\n");
     placer_opts.place_chan_width = final;
-    read_place (place_file, net_file, arch_file, placer_opts, chan_width_dist);
+    read_place (place_file, net_file, arch_file, placer_opts, router_opts,
+                chan_width_dist, det_routing_arch, segment_inf, timing_inf,
+                subblock_data_ptr);
  }
  
  free_rr_graph ();
  build_rr_graph (router_opts.route_type, det_routing_arch, segment_inf,
+                 timing_inf, router_opts.base_cost_type);
+ free_rr_graph_internals (router_opts.route_type, det_routing_arch, segment_inf,
                  timing_inf, router_opts.base_cost_type);
 
  restore_routing (best_routing, clb_opins_used_locally, 
@@ -336,6 +357,11 @@ static int binary_search_place_and_route (struct s_placer_opts
            net_slack, net_delay);
  
  print_route (route_file);
+
+#ifdef PRINT_SINK_DELAYS
+ print_sink_delays("Routing_Sink_Delays.echo");
+#endif
+
  
  init_draw_coords (pins_per_clb);
  sprintf(msg,"Routing succeeded with a channel width factor of %d.",

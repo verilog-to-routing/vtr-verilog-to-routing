@@ -388,109 +388,156 @@ pinlist: o_3_
 .output out:o_4_
 pinlist: o_4_ 
 
-.clb o_37_
-pinlist: [124] [65] [876] [881] [961] [963] n_n39 n_n49 [1058] open o_37_ \
-o_56_ o_3_ open open 
-subblock: o_37_ 0 1 2 3 10 open 
-subblock: o_56_ 1 2 4 5 11 open 
-subblock: o_3_ 6 ble_3 open open 12 open 
-subblock: [1060] 7 1 2 8 13 open 
+.clb n_n344
+pinlist: i_7_ i_8_ i_6_ n_n268 [787] i_30_ i_29_ [884] [885] open n_n344 \
+n_n330 [935] [973] open 
+subblock: n_n344 0 1 2 open 10 open 
+subblock: n_n330 3 ble_0 4 open 11 open 
+subblock: [935] 5 6 3 ble_0 12 open 
+subblock: [973] 3 ble_0 7 8 13 open 
 
-.clb [95]
-pinlist: i_40_ i_39_ i_41_ i_37_ i_52_ n_n292 i_38_ i_44_ open open [95] \
-n_n338 [891] [1058] open 
-subblock: [95] 0 1 2 3 10 open 
-subblock: n_n338 0 1 2 open 11 open 
-subblock: [891] 1 4 5 open 12 open 
-subblock: [1058] 1 6 7 5 13 open 
+.clb o_39_
+pinlist: [134] [847] i_3_ i_4_ i_0_ [106] [115] i_61_ i_55_ [849] o_39_ \
+n_n268 open open open 
+subblock: o_39_ ble_2 0 1 ble_3 10 open 
+subblock: n_n268 2 3 4 open 11 open 
+subblock: [70] 5 6 open open 12 open 
+subblock: [851] 7 8 ble_1 9 13 open 
+
+.clb o_8_
+pinlist: [1054] i_23_ n_n330 [808] [809] n_n49 [65] [876] [1058] open o_8_ \
+o_3_ n_n39 open open 
+subblock: o_8_ ble_2 0 open open 10 open 
+subblock: o_3_ ble_2 ble_3 open open 11 open 
+subblock: n_n39 1 2 3 4 12 open 
+subblock: [1060] 5 6 7 8 13 open 
+
+.clb o_9_
+pinlist: [131] n_n343 [804] [807] n_n330 [894] [809] [1042] open open o_9_ \
+[808] [895] open open 
+subblock: o_9_ 0 ble_3 open open 10 open 
+subblock: [808] 1 2 3 open 11 open 
+subblock: [895] 4 ble_1 5 open 12 open 
+subblock: [1043] 4 ble_1 6 7 13 open 
+
+.clb o_27_
+pinlist: [89] [912] i_52_ n_n302 n_n392 n_n303 [72] [815] [816] open o_27_ \
+o_30_ n_n271 open open 
+subblock: o_27_ 0 ble_3 1 open 10 open 
+subblock: o_30_ 2 0 ble_3 open 11 open 
+subblock: n_n271 3 4 5 open 12 open 
+subblock: [909] 6 ble_2 7 8 13 open 
+
+.clb o_19_
+pinlist: i_64_ [802] i_63_ n_n330 [793] n_n318 n_n319 [790] open open o_19_ \
+o_53_ n_n297 n_n236 open 
+subblock: o_19_ 0 ble_2 1 open 10 open 
+subblock: o_53_ 2 0 ble_2 1 11 open 
+subblock: n_n297 3 ble_3 4 open 12 open 
+subblock: n_n236 5 6 7 open 13 open 
+
+.clb o_2_
+pinlist: n_n39 [823] i_52_ n_n49 [815] [96] n_n301 [813] n_n330 [93] o_2_ \
+[131] [816] [1013] open 
+subblock: o_2_ 0 ble_1 1 open 10 open 
+subblock: [131] 2 3 4 ble_2 11 open 
+subblock: [816] 5 6 7 open 12 open 
+subblock: [1013] 8 9 4 ble_2 13 open 
+
+.clb [90]
+pinlist: i_31_ i_34_ i_33_ i_35_ i_9_ i_10_ i_11_ i_30_ i_29_ [804] [90] \
+n_n343 [793] [906] open 
+subblock: [90] 0 1 2 3 10 open 
+subblock: n_n343 4 5 6 open 11 open 
+subblock: [793] 7 8 ble_0 ble_1 12 open 
+subblock: [906] ble_0 ble_1 9 open 13 open 
+
+.clb [96]
+pinlist: i_63_ i_64_ i_57_ i_50_ i_49_ i_48_ n_n238 [870] [110] [889] [96] \
+n_n301 [65] [943] open 
+subblock: [96] 0 1 2 open 10 open 
+subblock: n_n301 3 4 5 open 11 open 
+subblock: [65] 6 ble_0 ble_1 7 12 open 
+subblock: [943] 8 ble_2 9 open 13 open 
+
+.clb o_43_
+pinlist: n_n343 n_n236 [935] i_5_ i_1_ i_2_ [87] [90] n_n271 open o_43_ [787] \
+open open open 
+subblock: o_43_ 0 1 2 ble_3 10 open 
+subblock: [787] 3 4 5 open 11 open 
+subblock: [965] 3 4 5 open 12 open 
+subblock: [968] 6 7 8 ble_2 13 open 
+
+.clb o_31_
+pinlist: n_n330 [906] n_n300 n_n332 n_n301 [795] i_57_ n_n271 [951] open \
+o_31_ [801] [802] open open 
+subblock: o_31_ 0 1 ble_3 open 10 open 
+subblock: [801] 2 3 4 5 11 open 
+subblock: [802] 6 7 ble_1 open 12 open 
+subblock: [952] 7 ble_1 8 open 13 open 
 
 .clb o_26_
-pinlist: [65] [889] [891] [895] [110] [946] [1053] open open open o_26_ [943] \
-[947] [1054] open 
-subblock: o_26_ 0 1 2 3 10 open 
-subblock: [943] 4 0 1 open 11 open 
-subblock: [947] 0 1 2 5 12 open 
-subblock: [1054] 0 1 2 6 13 open 
+pinlist: [65] [891] [895] i_58_ i_51_ n_n277 n_n212 [946] [1053] open o_26_ \
+[889] [947] [1054] open 
+subblock: o_26_ 0 ble_1 1 2 10 open 
+subblock: [889] 3 4 5 6 11 open 
+subblock: [947] 0 ble_1 1 7 12 open 
+subblock: [1054] 0 ble_1 1 8 13 open 
 
-.clb [124]
-pinlist: i_32_ i_36_ [90] n_n387 i_38_ open open open open open [124] n_n49 \
-open [1053] open 
-subblock: [124] 0 1 2 open 10 open 
-subblock: n_n49 0 1 2 3 11 open 
-subblock: [817] 1 0 open open 12 open 
-subblock: [1053] 4 2 3 ble_2 13 open 
+.clb o_56_
+pinlist: [65] [876] [961] n_n387 [774] [775] [941] n_n330 [906] [907] o_56_ \
+[110] open open open 
+subblock: o_56_ 0 1 2 ble_2 10 open 
+subblock: [110] 3 4 5 6 11 open 
+subblock: [963] ble_1 7 8 9 12 open 
 
-.clb n_n238
-pinlist: i_46_ i_47_ i_43_ i_50_ open open open open open open n_n238 n_n369 \
-[115] [1045] open 
-subblock: n_n238 0 1 2 open 10 open 
-subblock: n_n369 3 0 1 open 11 open 
-subblock: [115] 3 0 1 2 12 open 
-subblock: [1045] 3 0 1 2 13 open 
+.clb [91]
+pinlist: i_30_ i_29_ n_n318 i_18_ i_24_ i_22_ i_16_ open open open open [73] \
+n_n319 [946] open 
+subblock: [91] 0 1 open open 10 open 
+subblock: [73] 0 1 2 ble_2 11 open 
+subblock: n_n319 3 4 5 open 12 open 
+subblock: [946] 6 2 ble_0 ble_2 13 open 
 
-.clb n_n39
-pinlist: i_23_ n_n330 [808] [809] [73] [878] [894] [1042] open open n_n39 \
-[881] [895] [1043] open 
-subblock: n_n39 0 1 2 3 10 open 
-subblock: [881] 4 1 2 5 11 open 
-subblock: [895] 1 2 6 open 12 open 
-subblock: [1043] 1 2 3 7 13 open 
+.clb o_12_
+pinlist: [107] i_40_ i_39_ i_41_ i_37_ i_28_ i_25_ i_26_ [862] [863] o_12_ \
+[95] n_n318 open open 
+subblock: o_12_ 0 ble_3 open open 10 open 
+subblock: [95] 1 2 3 4 11 open 
+subblock: n_n318 5 6 7 open 12 open 
+subblock: [866] ble_1 ble_2 8 9 13 open 
 
-.clb n_n271
-pinlist: n_n302 n_n392 n_n303 n_n369 n_n387 n_n368 [1034] i_23_ open open \
-n_n271 [843] [1038] [1042] open 
-subblock: n_n271 0 1 2 open 10 open 
-subblock: [843] 3 4 1 5 11 open 
-subblock: [1038] 3 1 2 6 12 open 
-subblock: [1042] 7 0 1 2 13 open 
+.clb o_52_
+pinlist: [1013] i_46_ i_47_ i_43_ i_26_ i_18_ n_n387 [775] n_n343 [1008] \
+o_52_ n_n238 [134] open open 
+subblock: o_52_ ble_2 ble_3 0 open 10 open 
+subblock: n_n238 1 2 3 open 11 open 
+subblock: [134] 4 5 6 7 12 open 
+subblock: [1010] ble_1 8 9 open 13 open 
 
-.clb [106]
-pinlist: i_62_ i_58_ i_56_ i_60_ i_55_ i_8_ open open open open [106] n_n368 \
-[970] [1040] open 
-subblock: [106] 0 1 2 3 10 open 
-subblock: n_n368 1 2 3 open 11 open 
-subblock: [970] 0 1 2 4 12 open 
-subblock: [1040] 5 1 2 3 13 open 
+.clb o_22_
+pinlist: i_36_ n_n330 [906] [943] [947] i_21_ open open open open o_22_ o_23_ \
+[89] [907] open 
+subblock: o_22_ 0 1 2 3 10 open 
+subblock: o_23_ 1 2 ble_3 4 11 open 
+subblock: [89] 5 0 1 2 12 open 
+subblock: [907] 0 5 open open 13 open 
 
-.clb o_48_
-pinlist: [69] [1022] [95] [129] n_n277 [970] n_n271 [1017] n_n303 n_n304 \
-o_48_ [77] [1019] open open 
-subblock: o_48_ 0 1 ble_3 open 10 open 
-subblock: [77] 2 3 4 5 11 open 
-subblock: [1019] 6 4 5 7 12 open 
-subblock: [1023] 8 9 4 5 13 open 
+.clb o_40_
+pinlist: i_54_ n_n332 [795] n_n278 n_n286 [1049] n_n343 n_n236 [935] [938] \
+o_40_ o_49_ open [69] open 
+subblock: o_40_ 0 ble_2 1 2 10 open 
+subblock: o_49_ 3 ble_2 4 5 11 open 
+subblock: [130] 6 7 8 9 12 open 
+subblock: [69] 6 7 8 open 13 open 
 
-.clb n_n300
-pinlist: i_54_ i_53_ i_51_ i_55_ i_56_ i_31_ open open open open n_n300 \
-n_n212 [813] [1020] open 
-subblock: n_n300 0 1 2 open 10 open 
-subblock: n_n212 3 0 1 open 11 open 
-subblock: [813] 4 3 0 1 12 open 
-subblock: [1020] 5 0 1 2 13 open 
-
-.clb n_n301
-pinlist: i_50_ i_49_ i_48_ i_56_ i_55_ i_51_ n_n300 open open open n_n301 \
-[780] [999] [1017] open 
-subblock: n_n301 0 1 2 open 10 open 
-subblock: [780] 0 3 4 5 11 open 
-subblock: [999] 0 1 5 open 12 open 
-subblock: [1017] 0 1 2 6 13 open 
-
-.clb n_n302
-pinlist: i_45_ i_46_ i_47_ i_5_ i_43_ [989] [990] i_17_ open open n_n302 \
-[783] [991] [1014] open 
-subblock: n_n302 0 1 2 open 10 open 
-subblock: [783] 3 1 2 4 11 open 
-subblock: [991] 1 2 5 6 12 open 
-subblock: [1014] 7 1 2 5 13 open 
-
-.clb o_30_
-pinlist: i_52_ [89] n_n49 [815] [816] [72] n_n271 n_n330 [93] open o_30_ \
-[131] [909] [1013] open 
-subblock: o_30_ 0 1 ble_2 open 10 open 
-subblock: [131] 0 2 3 4 11 open 
-subblock: [909] 5 6 3 4 12 open 
-subblock: [1013] 7 8 3 4 13 open 
+.clb o_37_
+pinlist: [124] [65] [876] i_42_ i_43_ i_19_ n_n338 [73] n_n330 [808] o_37_ \
+[129] open open open 
+subblock: o_37_ 0 1 2 ble_3 10 open 
+subblock: [129] 3 4 open open 11 open 
+subblock: [878] 5 3 6 open 12 open 
+subblock: [881] 7 8 9 ble_2 13 open 
 
 .clb o_34_
 pinlist: i_14_ i_15_ i_58_ [132] i_17_ i_12_ i_45_ open open open o_34_ [790] \
@@ -500,441 +547,398 @@ subblock: [790] 0 4 1 open 11 open
 subblock: [804] 0 5 4 1 12 open 
 subblock: [1008] 0 5 1 6 13 open 
 
-.clb o_17_
-pinlist: [78] [106] [115] [959] i_3_ [861] n_n344 [768] open open o_17_ [70] \
-[107] [1004] open 
-subblock: o_17_ 0 1 2 3 10 open 
-subblock: [70] 1 2 open open 11 open 
-subblock: [107] 4 1 2 5 12 open 
-subblock: [1004] 1 6 2 7 13 open 
-
-.clb o_50_
-pinlist: i_57_ n_n297 n_n271 [801] n_n286 n_n212 [827] [999] open open o_50_ \
-o_42_ [102] open open 
-subblock: o_50_ 0 1 2 3 10 open 
-subblock: o_42_ 1 2 ble_3 open 11 open 
-subblock: [102] 4 5 6 open 12 open 
-subblock: [1000] 4 5 6 7 13 open 
-
-.clb o_13_
-pinlist: [921] [922] [924] [927] i_10_ i_14_ i_15_ n_n344 [994] [995] o_13_ \
-o_57_ n_n366 open open 
-subblock: o_13_ 0 1 2 3 10 open 
-subblock: o_57_ 0 1 2 ble_3 11 open 
-subblock: n_n366 4 5 6 open 12 open 
-subblock: [998] ble_2 7 8 9 13 open 
-
-.clb o_25_
-pinlist: i_25_ i_24_ n_n366 [88] i_18_ i_22_ i_11_ open open open o_25_ \
-n_n319 [775] [995] open 
-subblock: o_25_ 0 1 2 3 10 open 
-subblock: n_n319 4 1 5 open 11 open 
-subblock: [775] 0 1 5 open 12 open 
-subblock: [995] 0 6 4 1 13 open 
-
-.clb [134]
-pinlist: i_26_ i_18_ n_n387 [775] i_19_ i_30_ i_22_ [983] open open [134] \
-[809] [885] [986] open 
-subblock: [134] 0 1 2 3 10 open 
-subblock: [809] 0 1 4 3 11 open 
-subblock: [885] 5 0 1 6 12 open 
-subblock: [986] 0 6 2 7 13 open 
-
 .clb o_44_
-pinlist: n_n300 [94] [977] i_5_ i_1_ i_2_ i_17_ [90] n_n369 open o_44_ [787] \
-[965] open open 
-subblock: o_44_ 0 1 2 ble_3 10 open 
-subblock: [787] 3 4 5 open 11 open 
-subblock: [965] 3 4 5 open 12 open 
-subblock: [980] 5 6 7 8 13 open 
-
-.clb n_n330
-pinlist: n_n268 n_n344 [787] i_28_ i_25_ i_24_ i_29_ i_30_ [885] open n_n330 \
-[884] [935] [973] open 
-subblock: n_n330 0 1 2 open 10 open 
-subblock: [884] 3 4 5 6 11 open 
-subblock: [935] 7 6 0 1 12 open 
-subblock: [973] 0 1 ble_1 8 13 open 
-
-.clb [768]
-pinlist: i_10_ i_14_ i_11_ i_15_ open open open open open open [768] [861] \
-[956] [972] open 
-subblock: [768] 0 1 2 3 10 open 
-subblock: [861] 0 1 2 3 11 open 
-subblock: [956] 0 1 2 3 12 open 
-subblock: [972] 0 1 2 3 13 open 
-
-.clb o_43_
-pinlist: n_n343 n_n236 [935] [938] [87] [90] n_n271 [965] open open o_43_ \
-[130] [69] open open 
-subblock: o_43_ 0 1 2 ble_3 10 open 
-subblock: [130] 0 1 2 3 11 open 
-subblock: [69] 0 1 2 open 12 open 
-subblock: [968] 4 5 6 7 13 open 
-
-.clb o_22_
-pinlist: i_36_ n_n330 [906] [943] [907] [947] i_21_ [110] open open o_22_ \
-o_23_ [89] [963] open 
-subblock: o_22_ 0 1 2 3 10 open 
-subblock: o_23_ 1 2 4 5 11 open 
-subblock: [89] 6 0 1 2 12 open 
-subblock: [963] 7 1 2 4 13 open 
-
-.clb o_63_
-pinlist: i_56_ [78] [857] i_58_ i_55_ i_50_ [956] open open open o_63_ n_n278 \
-[856] [958] open 
-subblock: o_63_ 0 1 ble_2 2 10 open 
-subblock: n_n278 3 0 4 open 11 open 
-subblock: [856] 3 5 open open 12 open 
-subblock: [958] 5 3 2 6 13 open 
-
-.clb n_n392
-pinlist: i_40_ i_39_ i_37_ i_46_ i_60_ i_25_ i_24_ open open open n_n392 \
-[834] [945] [955] open 
-subblock: n_n392 0 1 2 open 10 open 
-subblock: [834] 0 1 3 4 11 open 
-subblock: [945] 0 1 3 open 12 open 
-subblock: [955] 0 1 5 6 13 open 
-
-.clb [72]
-pinlist: [884] [885] [90] [892] [96] [949] n_n271 [801] open open [72] [894] \
-open [952] open 
-subblock: [72] 0 1 open open 10 open 
-subblock: [894] 2 0 1 3 11 open 
-subblock: [951] 4 0 1 5 12 open 
-subblock: [952] 6 7 ble_2 open 13 open 
-
-.clb [91]
-pinlist: i_30_ i_29_ n_n318 n_n319 [790] i_16_ open open open open open [73] \
-n_n236 [946] open 
-subblock: [91] 0 1 open open 10 open 
-subblock: [73] 0 1 2 3 11 open 
-subblock: n_n236 2 3 4 open 12 open 
-subblock: [946] 5 2 ble_0 3 13 open 
-
-.clb n_n292
-pinlist: i_40_ i_41_ i_42_ i_3_ i_0_ i_39_ open open open open n_n292 [849] \
-[915] [941] open 
-subblock: n_n292 0 1 2 open 10 open 
-subblock: [849] 0 1 2 open 11 open 
-subblock: [915] 0 3 4 1 12 open 
-subblock: [941] 0 5 1 2 13 open 
-
-.clb o_20_
-pinlist: [95] [73] [1002] [1004] n_n344 [768] [776] [109] [825] [936] o_20_ \
-[777] [900] [938] open 
-subblock: o_20_ 0 1 2 3 10 open 
-subblock: [777] 4 5 6 open 11 open 
-subblock: [900] 4 7 5 8 12 open 
-subblock: [938] 0 7 8 9 13 open 
-
-.clb [90]
-pinlist: i_31_ i_34_ i_33_ i_35_ i_17_ i_42_ open open open open [90] n_n304 \
-[772] [936] open 
-subblock: [90] 0 1 2 3 10 open 
-subblock: n_n304 1 2 3 open 11 open 
-subblock: [772] 4 0 1 2 12 open 
-subblock: [936] 1 2 5 3 13 open 
-
-.clb n_n387
-pinlist: i_30_ i_28_ i_29_ [90] n_n343 i_7_ i_8_ i_3_ open open n_n387 [793] \
-[863] [922] open 
-subblock: n_n387 0 1 2 open 10 open 
-subblock: [793] 0 2 3 4 11 open 
-subblock: [863] 0 5 6 2 12 open 
-subblock: [922] 0 7 1 2 13 open 
-
-.clb [832]
-pinlist: i_50_ i_10_ i_14_ i_15_ i_25_ open open open open open [832] [913] \
-[919] [944] open 
-subblock: [832] 0 1 2 3 10 open 
-subblock: [913] 0 1 2 3 11 open 
-subblock: [919] 1 2 4 3 12 open 
-subblock: [944] 1 2 3 open 13 open 
-
-.clb o_27_
-pinlist: [89] [909] i_20_ i_13_ i_21_ i_16_ i_52_ open open open o_27_ [807] \
-open [961] open 
-subblock: o_27_ 0 1 ble_2 open 10 open 
-subblock: [807] 2 3 4 5 11 open 
-subblock: [912] 2 3 5 6 12 open 
-subblock: [961] 5 2 open open 13 open 
-
-.clb n_n332
-pinlist: i_59_ i_58_ i_60_ i_51_ n_n286 i_56_ i_55_ [904] open open n_n332 \
-[815] [827] [905] open 
-subblock: n_n332 0 1 2 open 10 open 
-subblock: [815] 0 1 3 4 11 open 
-subblock: [827] 0 1 5 open 12 open 
-subblock: [905] 1 5 6 7 13 open 
-
-.clb n_n277
-pinlist: i_61_ i_59_ i_60_ i_62_ i_54_ i_53_ i_35_ open open open n_n277 \
-n_n286 [781] [904] open 
-subblock: n_n277 0 1 2 open 10 open 
-subblock: n_n286 0 3 2 open 11 open 
-subblock: [781] 0 3 4 5 12 open 
-subblock: [904] 0 3 2 6 13 open 
-
-.clb n_n268
-pinlist: i_3_ i_4_ i_0_ i_9_ i_59_ i_41_ n_n392 open open open n_n268 [776] \
-[854] [899] open 
-subblock: n_n268 0 1 2 open 10 open 
-subblock: [776] 3 0 1 2 11 open 
-subblock: [854] 0 1 2 4 12 open 
-subblock: [899] 0 2 5 6 13 open 
-
-.clb o_29_
-pinlist: i_58_ [132] [832] [834] [940] [945] i_51_ n_n277 n_n212 open o_29_ \
-o_33_ o_32_ [889] open 
-subblock: o_29_ 0 1 2 3 10 open 
-subblock: o_33_ 0 1 2 4 11 open 
-subblock: o_32_ 0 1 2 5 12 open 
-subblock: [889] 0 6 7 8 13 open 
-
-.clb [795]
-pinlist: i_61_ i_62_ i_56_ i_55_ n_n268 [849] i_45_ i_37_ i_52_ open [795] \
-[851] [870] [874] open 
-subblock: [795] 0 1 2 3 10 open 
-subblock: [851] 0 3 4 5 11 open 
-subblock: [870] 1 6 2 7 12 open 
-subblock: [874] 0 3 8 open 13 open 
-
-.clb o_12_
-pinlist: [107] n_n302 [95] [819] [820] n_n318 [862] [863] i_0_ open o_12_ \
-[823] open [929] open 
-subblock: o_12_ 0 ble_2 open open 10 open 
-subblock: [823] 1 2 3 4 11 open 
-subblock: [866] 2 5 6 7 12 open 
-subblock: [929] 2 8 open open 13 open 
-
-.clb o_39_
-pinlist: [70] [134] [851] [97] [854] i_51_ i_15_ n_n344 n_n293 n_n395 o_39_ \
-o_38_ open [847] open 
-subblock: o_39_ 0 1 ble_3 2 10 open 
-subblock: o_38_ 3 1 ble_3 4 11 open 
-subblock: [844] 5 6 open open 12 open 
-subblock: [847] 7 8 9 ble_2 13 open 
-
-.clb n_n343
-pinlist: i_9_ i_10_ i_11_ i_14_ i_8_ i_43_ i_51_ open open open n_n343 n_n395 \
-[840] [1035] open 
-subblock: n_n343 0 1 2 open 10 open 
-subblock: n_n395 1 3 2 open 11 open 
-subblock: [840] 1 4 2 5 12 open 
-subblock: [1035] 1 2 6 open 13 open 
-
-.clb o_6_
-pinlist: i_14_ i_15_ [132] i_25_ i_24_ i_41_ open open open open o_6_ [839] \
-[925] [983] open 
-subblock: o_6_ 0 1 2 open 10 open 
-subblock: [839] 0 3 4 1 11 open 
-subblock: [925] 3 4 1 open 12 open 
-subblock: [983] 3 4 5 open 13 open 
+pinlist: n_n300 [977] [980] [972] [973] [1014] [95] [129] n_n277 [970] o_44_ \
+o_47_ open [77] open 
+subblock: o_44_ 0 ble_2 1 2 10 open 
+subblock: o_47_ ble_3 3 4 5 11 open 
+subblock: [94] ble_3 3 4 open 12 open 
+subblock: [77] 6 7 8 9 13 open 
 
 .clb o_0_
-pinlist: [74] [102] i_46_ i_43_ [825] [829] i_60_ open open open o_0_ [109] \
-open [857] open 
-subblock: o_0_ 0 1 ble_2 open 10 open 
-subblock: [109] 2 3 open open 11 open 
-subblock: [830] 2 3 4 5 12 open 
-subblock: [857] 2 6 3 open 13 open 
+pinlist: [102] [830] [134] [777] n_n293 [772] i_40_ i_41_ i_42_ open o_0_ \
+open [93] n_n292 open 
+subblock: o_0_ ble_1 0 1 open 10 open 
+subblock: [74] ble_2 2 3 open 11 open 
+subblock: [93] 4 ble_3 5 open 12 open 
+subblock: n_n292 6 7 8 open 13 open 
 
-.clb o_40_
-pinlist: i_54_ [130] n_n332 [795] n_n300 n_n301 [874] [1035] open open o_40_ \
-[801] [876] [1037] open 
-subblock: o_40_ 0 1 2 3 10 open 
-subblock: [801] 4 2 5 3 11 open 
-subblock: [876] 4 2 6 open 12 open 
-subblock: [1037] 2 3 7 open 13 open 
+.clb n_n302
+pinlist: i_45_ i_46_ i_47_ i_40_ i_39_ i_37_ i_41_ i_42_ i_43_ i_23_ n_n302 \
+n_n392 n_n303 [1042] open 
+subblock: n_n302 0 1 2 open 10 open 
+subblock: n_n392 3 4 5 open 11 open 
+subblock: n_n303 6 7 8 open 12 open 
+subblock: [1042] 9 ble_0 ble_1 ble_2 13 open 
 
-.clb o_1_
-pinlist: [93] [134] [777] n_n332 [780] [781] [783] open open open o_1_ [74] \
-[87] open open 
-subblock: o_1_ 0 1 2 ble_3 10 open 
-subblock: [74] 0 1 2 open 11 open 
-subblock: [87] 3 4 5 open 12 open 
-subblock: [784] 3 4 5 6 13 open 
+.clb n_n387
+pinlist: i_30_ i_28_ i_29_ i_32_ i_36_ [90] i_38_ open open open n_n387 n_n49 \
+open [1053] open 
+subblock: n_n387 0 1 2 open 10 open 
+subblock: n_n49 3 4 5 ble_0 11 open 
+subblock: [817] 4 3 open open 12 open 
+subblock: [1053] 6 5 ble_0 ble_2 13 open 
 
-.clb [96]
-pinlist: i_63_ i_64_ i_57_ n_n238 n_n301 [870] [813] n_n343 [1008] open [96] \
-[65] [816] [1010] open 
-subblock: [96] 0 1 2 open 10 open 
-subblock: [65] 3 ble_0 4 5 11 open 
-subblock: [816] ble_0 4 6 open 12 open 
-subblock: [1010] 3 7 8 open 13 open 
+.clb o_42_
+pinlist: n_n297 n_n271 n_n212 [827] i_61_ i_62_ i_60_ [999] open open o_42_ \
+[102] n_n286 open open 
+subblock: o_42_ 0 1 ble_3 open 10 open 
+subblock: [102] ble_2 2 3 open 11 open 
+subblock: n_n286 4 5 6 open 12 open 
+subblock: [1000] ble_2 2 3 7 13 open 
 
-.clb o_64_
-pinlist: i_30_ [88] n_n395 [925] n_n387 n_n392 [774] [775] [941] [926] o_64_ \
-[78] [110] [927] open 
-subblock: o_64_ 0 1 2 3 10 open 
-subblock: [78] 4 5 2 3 11 open 
-subblock: [110] 4 6 7 8 12 open 
-subblock: [927] 2 3 9 open 13 open 
+.clb o_50_
+pinlist: i_57_ n_n297 n_n271 [801] n_n330 n_n236 [793] n_n277 [970] [1017] \
+o_50_ o_51_ open open open 
+subblock: o_50_ 0 1 2 3 10 open 
+subblock: o_51_ 4 5 6 ble_2 11 open 
+subblock: [1019] 2 7 8 9 12 open 
 
-.clb [100]
-pinlist: i_7_ i_8_ i_6_ [768] i_41_ i_26_ open open open open [100] n_n344 \
-[926] [933] open 
-subblock: [100] 0 1 2 3 10 open 
-subblock: n_n344 0 1 2 open 11 open 
-subblock: [926] 0 1 4 open 12 open 
-subblock: [933] 0 1 5 open 13 open 
+.clb [775]
+pinlist: i_25_ i_24_ i_22_ i_26_ i_18_ i_19_ i_11_ n_n366 n_n344 [994] [775] \
+[809] open [998] open 
+subblock: [775] 0 1 2 open 10 open 
+subblock: [809] 3 4 5 ble_0 11 open 
+subblock: [995] 0 6 4 1 12 open 
+subblock: [998] 7 8 9 ble_2 13 open 
+
+.clb [87]
+pinlist: [780] [781] i_54_ i_53_ i_51_ i_59_ i_58_ i_60_ [874] open [87] \
+n_n300 n_n332 [876] open 
+subblock: [87] ble_2 0 1 open 10 open 
+subblock: n_n300 2 3 4 open 11 open 
+subblock: n_n332 5 6 7 open 12 open 
+subblock: [876] ble_1 ble_2 8 open 13 open 
+
+.clb [72]
+pinlist: [884] i_30_ i_26_ i_18_ i_22_ [90] [892] [96] [949] open [72] [885] \
+[894] [951] open 
+subblock: [72] 0 ble_1 open open 10 open 
+subblock: [885] 1 2 3 4 11 open 
+subblock: [894] 5 0 ble_1 6 12 open 
+subblock: [951] 7 0 ble_1 8 13 open 
 
 .clb o_10_
-pinlist: i_28_ i_15_ i_29_ i_37_ i_43_ open open open open open o_10_ o_7_ \
-[132] n_n365 open 
+pinlist: i_28_ i_15_ i_29_ i_37_ i_14_ i_43_ i_25_ i_24_ open open o_10_ o_6_ \
+[132] [884] open 
 subblock: o_10_ 0 1 2 3 10 open 
-subblock: o_7_ 1 4 ble_3 open 11 open 
-subblock: [132] 0 4 2 3 12 open 
-subblock: n_n365 0 2 3 open 13 open 
+subblock: o_6_ 4 1 ble_2 open 11 open 
+subblock: [132] 0 5 2 3 12 open 
+subblock: [884] 0 6 7 2 13 open 
 
-.clb o_28_
-pinlist: [919] [107] n_n392 n_n344 [986] [121] [856] [857] n_n369 [106] o_28_ \
-o_58_ [88] [924] open 
-subblock: o_28_ ble_2 0 open open 10 open 
-subblock: o_58_ 1 2 3 4 11 open 
-subblock: [88] 2 5 6 7 12 open 
-subblock: [924] 8 9 2 open 13 open 
+.clb o_48_
+pinlist: [69] i_61_ i_59_ i_60_ n_n369 n_n392 [1020] n_n303 n_n304 [970] \
+o_48_ n_n277 open open open 
+subblock: o_48_ 0 ble_2 ble_3 open 10 open 
+subblock: n_n277 1 2 3 open 11 open 
+subblock: [1022] 4 5 6 open 12 open 
+subblock: [1023] 7 8 ble_1 9 13 open 
+
+.clb [807]
+pinlist: i_20_ i_13_ i_21_ i_16_ i_52_ i_36_ open open open open [807] [912] \
+[949] [961] open 
+subblock: [807] 0 1 2 3 10 open 
+subblock: [912] 0 1 3 4 11 open 
+subblock: [949] 5 2 open open 12 open 
+subblock: [961] 3 0 open open 13 open 
+
+.clb [109]
+pinlist: i_46_ i_43_ i_50_ i_47_ i_51_ i_34_ i_33_ i_42_ i_35_ [95] [109] \
+[825] open [938] open 
+subblock: [109] 0 1 open open 10 open 
+subblock: [825] 2 3 4 open 11 open 
+subblock: [936] 5 6 7 8 12 open 
+subblock: [938] 9 ble_0 ble_1 ble_2 13 open 
+
+.clb [97]
+pinlist: [115] n_n292 n_n286 i_58_ i_56_ i_55_ i_54_ i_53_ open open [97] \
+n_n278 n_n212 [813] open 
+subblock: [97] ble_1 0 1 2 10 open 
+subblock: n_n278 3 4 5 open 11 open 
+subblock: n_n212 5 6 7 open 12 open 
+subblock: [813] 4 5 6 7 13 open 
+
+.clb [120]
+pinlist: i_3_ [115] i_62_ i_58_ i_56_ i_60_ i_45_ i_37_ n_n344 [768] [120] \
+[106] [870] [1004] open 
+subblock: [120] 0 ble_1 1 open 10 open 
+subblock: [106] 2 3 4 5 11 open 
+subblock: [870] 2 6 4 7 12 open 
+subblock: [1004] ble_1 8 1 9 13 open 
 
 .clb o_45_
-pinlist: [69] n_n293 [1028] n_n278 [130] n_n286 [1049] [115] n_n292 [915] \
-o_45_ o_49_ [97] [917] open 
-subblock: o_45_ ble_2 0 1 2 10 open 
-subblock: o_49_ 3 4 5 6 11 open 
-subblock: [97] 3 7 8 5 12 open 
-subblock: [917] 3 5 9 open 13 open 
+pinlist: [97] [69] [1028] i_39_ i_35_ i_37_ i_51_ i_15_ n_n344 n_n395 o_45_ \
+n_n293 open [847] open 
+subblock: o_45_ 0 1 ble_1 2 10 open 
+subblock: n_n293 3 4 5 open 11 open 
+subblock: [844] 6 7 open open 12 open 
+subblock: [847] 8 ble_1 9 ble_2 13 open 
 
-.clb o_14_
-pinlist: i_58_ [132] [913] [944] i_40_ [832] i_39_ open open open o_14_ o_15_ \
-o_59_ [940] open 
-subblock: o_14_ 0 1 2 open 10 open 
-subblock: o_15_ 0 1 3 open 11 open 
-subblock: o_59_ 4 0 1 5 12 open 
-subblock: [940] 6 4 open open 13 open 
+.clb o_41_
+pinlist: [69] [77] i_50_ i_35_ i_51_ i_46_ i_47_ [990] i_17_ open o_41_ open \
+open [1014] open 
+subblock: o_41_ 0 1 ble_2 open 10 open 
+subblock: [989] 2 3 4 open 11 open 
+subblock: [991] 5 6 ble_1 7 12 open 
+subblock: [1014] 8 5 6 ble_1 13 open 
 
-.clb o_31_
-pinlist: n_n330 [906] [952] n_n236 [793] [1019] [935] [1037] [1038] open \
-o_31_ o_51_ o_46_ n_n297 open 
-subblock: o_31_ 0 1 2 open 10 open 
-subblock: o_51_ 0 3 4 5 11 open 
-subblock: o_46_ 3 6 7 8 12 open 
-subblock: n_n297 0 3 4 open 13 open 
+.clb n_n368
+pinlist: i_58_ i_56_ i_60_ i_59_ i_51_ n_n286 i_34_ open open open n_n368 \
+[815] [827] [1028] open 
+subblock: n_n368 0 1 2 open 10 open 
+subblock: [815] 3 0 4 5 11 open 
+subblock: [827] 3 0 1 open 12 open 
+subblock: [1028] 3 6 4 open 13 open 
 
-.clb o_19_
-pinlist: i_64_ n_n297 [73] [899] [900] [1026] i_63_ i_57_ n_n271 [801] o_19_ \
-o_54_ o_53_ open open 
-subblock: o_19_ 0 1 ble_3 open 10 open 
-subblock: o_54_ 2 3 4 5 11 open 
-subblock: o_53_ 6 0 1 ble_3 12 open 
-subblock: [802] 7 8 9 open 13 open 
+.clb [768]
+pinlist: i_10_ i_14_ i_11_ i_15_ i_9_ i_3_ i_4_ i_0_ n_n344 open [768] open \
+[777] [861] open 
+subblock: [768] 0 1 2 3 10 open 
+subblock: [776] 4 5 6 7 11 open 
+subblock: [777] 8 ble_0 ble_1 open 12 open 
+subblock: [861] 0 1 2 3 13 open 
 
-.clb o_55_
-pinlist: [73] [899] [900] [969] [69] [77] [991] [972] [973] [1014] o_55_ \
-o_41_ o_47_ [94] open 
-subblock: o_55_ 0 1 2 3 10 open 
-subblock: o_41_ 4 5 6 open 11 open 
-subblock: o_47_ 5 7 8 9 12 open 
-subblock: [94] 5 7 8 open 13 open 
+.clb o_46_
+pinlist: n_n236 [935] [1038] i_61_ i_62_ i_56_ i_55_ i_58_ n_n332 [1035] \
+o_46_ [795] [970] open open 
+subblock: o_46_ 0 1 ble_3 2 10 open 
+subblock: [795] 3 4 5 6 11 open 
+subblock: [970] 4 7 5 6 12 open 
+subblock: [1037] 8 ble_1 9 open 13 open 
 
-.clb o_60_
-pinlist: i_7_ [839] [840] [843] i_62_ i_8_ i_3_ open open open o_60_ o_18_ \
-open [959] open 
-subblock: o_60_ 0 1 2 3 10 open 
-subblock: o_18_ 4 0 ble_2 3 11 open 
-subblock: [842] 2 1 open open 12 open 
-subblock: [959] 0 5 6 open 13 open 
+.clb n_n338
+pinlist: i_40_ i_39_ i_41_ i_46_ i_60_ i_42_ open open open open n_n338 [834] \
+[849] [941] open 
+subblock: n_n338 0 1 2 open 10 open 
+subblock: [834] 0 1 3 4 11 open 
+subblock: [849] 0 2 5 open 12 open 
+subblock: [941] 0 1 2 5 13 open 
 
-.clb o_36_
-pinlist: [73] [899] [900] [905] [100] [929] i_3_ [106] [115] i_35_ o_36_ \
-o_21_ [120] [969] open 
-subblock: o_36_ 0 1 2 3 10 open 
-subblock: o_21_ 0 4 ble_2 5 11 open 
-subblock: [120] 6 7 8 open 12 open 
-subblock: [969] 7 9 open open 13 open 
+.clb n_n304
+pinlist: i_34_ i_33_ i_35_ i_17_ i_31_ i_2_ [90] n_n369 open open n_n304 \
+[772] [980] [990] open 
+subblock: n_n304 0 1 2 open 10 open 
+subblock: [772] 3 4 0 1 11 open 
+subblock: [980] 5 3 6 7 12 open 
+subblock: [990] 1 0 open open 13 open 
+
+.clb o_33_
+pinlist: i_58_ [132] [832] i_39_ i_52_ n_n292 i_40_ i_38_ i_44_ open o_33_ \
+[891] open [1058] open 
+subblock: o_33_ 0 1 2 ble_2 10 open 
+subblock: [891] 3 4 5 open 11 open 
+subblock: [940] 3 6 open open 12 open 
+subblock: [1058] 3 7 8 5 13 open 
+
+.clb o_57_
+pinlist: [922] [998] i_18_ i_26_ i_43_ n_n369 [106] n_n392 open open o_57_ \
+[774] [921] [924] open 
+subblock: o_57_ ble_2 0 ble_3 1 10 open 
+subblock: [774] 2 3 open open 11 open 
+subblock: [921] 4 3 open open 12 open 
+subblock: [924] 5 6 7 open 13 open 
+
+.clb [781]
+pinlist: i_61_ i_62_ i_54_ i_53_ n_n332 [780] [783] i_55_ i_52_ i_59_ [781] \
+[784] [874] [1049] open 
+subblock: [781] 0 1 2 3 10 open 
+subblock: [784] 4 5 ble_0 6 11 open 
+subblock: [874] 0 7 8 open 12 open 
+subblock: [1049] 9 2 3 open 13 open 
+
+.clb [780]
+pinlist: i_50_ i_56_ i_55_ i_51_ i_58_ [904] i_49_ i_48_ n_n300 open [780] \
+[905] [999] [1017] open 
+subblock: [780] 0 1 2 3 10 open 
+subblock: [905] 4 1 2 5 11 open 
+subblock: [999] 0 6 3 open 12 open 
+subblock: [1017] 0 6 7 8 13 open 
+
+.clb o_62_
+pinlist: [78] n_n368 i_32_ i_36_ [90] i_50_ i_46_ i_47_ i_43_ open o_62_ \
+[124] [892] open open 
+subblock: o_62_ 0 1 ble_3 open 10 open 
+subblock: [124] 2 3 4 open 11 open 
+subblock: [892] 3 2 open open 12 open 
+subblock: [1045] 5 6 7 8 13 open 
+
+.clb o_1_
+pinlist: [93] [134] [777] [784] [97] [847] i_3_ i_4_ i_0_ i_59_ o_1_ o_38_ \
+open open open 
+subblock: o_1_ 0 1 2 3 10 open 
+subblock: o_38_ 4 1 5 ble_2 11 open 
+subblock: [854] 6 7 8 9 12 open 
 
 .clb o_35_
-pinlist: [134] [847] [917] [1010] [1013] i_42_ i_43_ i_4_ n_n369 open o_35_ \
-o_52_ [129] open open 
-subblock: o_35_ 0 1 ble_3 2 10 open 
-subblock: o_52_ 0 3 4 open 11 open 
-subblock: [129] 5 6 open open 12 open 
-subblock: [916] 7 6 8 open 13 open 
+pinlist: [134] [847] [916] i_3_ i_0_ i_41_ n_n392 i_40_ n_n278 n_n286 o_35_ \
+[899] open open open 
+subblock: o_35_ 0 1 2 ble_3 10 open 
+subblock: [899] 3 4 5 6 11 open 
+subblock: [915] 7 3 4 5 12 open 
+subblock: [917] 8 9 ble_2 open 13 open 
 
-.clb [825]
-pinlist: i_50_ i_47_ i_51_ i_33_ i_34_ i_59_ i_54_ i_53_ open open [825] \
-[990] [1028] [1049] open 
-subblock: [825] 0 1 2 open 10 open 
-subblock: [990] 3 4 open open 11 open 
-subblock: [1028] 5 4 2 open 12 open 
-subblock: [1049] 5 6 7 open 13 open 
+.clb o_36_
+pinlist: [73] [899] [905] [969] [1026] n_n344 [109] [768] [825] open o_36_ \
+o_55_ o_54_ open open 
+subblock: o_36_ 0 1 ble_3 2 10 open 
+subblock: o_55_ 0 1 ble_3 3 11 open 
+subblock: o_54_ 0 1 ble_3 4 12 open 
+subblock: [900] 5 6 7 8 13 open 
 
-.clb n_n293
-pinlist: i_39_ i_35_ i_37_ i_50_ i_51_ i_55_ [106] i_9_ open open n_n293 \
-[989] [1026] [1034] open 
-subblock: n_n293 0 1 2 open 10 open 
-subblock: [989] 3 1 4 open 11 open 
-subblock: [1026] 5 1 6 open 12 open 
-subblock: [1034] 1 7 open open 13 open 
-
-.clb [829]
-pinlist: i_45_ i_5_ i_9_ i_3_ i_0_ i_51_ n_n369 n_n392 [1020] open [829] \
-[977] [1002] [1022] open 
-subblock: [829] 0 1 open open 10 open 
-subblock: [977] 2 1 0 open 11 open 
-subblock: [1002] 3 4 5 open 12 open 
-subblock: [1022] 6 7 8 open 13 open 
-
-.clb n_n303
-pinlist: i_41_ i_42_ i_43_ n_n343 [804] [807] i_19_ n_n338 [90] open n_n303 \
-[808] [878] [906] open 
-subblock: n_n303 0 1 2 open 10 open 
-subblock: [808] 3 4 5 open 11 open 
-subblock: [878] 6 1 7 open 12 open 
-subblock: [906] 8 3 4 open 13 open 
-
-.clb n_n318
-pinlist: i_28_ i_25_ i_26_ i_18_ i_42_ i_43_ i_44_ open open open n_n318 \
-[774] [820] [921] open 
-subblock: n_n318 0 1 2 open 10 open 
-subblock: [774] 3 2 open open 11 open 
-subblock: [820] 4 5 6 open 12 open 
-subblock: [921] 5 2 open open 13 open 
+.clb o_21_
+pinlist: [73] [120] [95] [1002] [1004] i_7_ i_8_ i_6_ [768] i_0_ o_21_ o_20_ \
+open open open 
+subblock: o_21_ 0 ble_2 1 ble_3 10 open 
+subblock: o_20_ 2 0 3 4 11 open 
+subblock: [100] 5 6 7 8 12 open 
+subblock: [929] 2 9 open open 13 open 
 
 .clb o_16_
-pinlist: [120] [78] [933] [115] [1040] n_n368 [1045] n_n293 n_n292 [772] \
-o_16_ o_61_ o_62_ [93] open 
-subblock: o_16_ 0 1 2 open 10 open 
-subblock: o_61_ 1 3 4 open 11 open 
-subblock: o_62_ 1 5 6 open 12 open 
-subblock: [93] 7 8 9 open 13 open 
+pinlist: [120] [933] [106] [115] [959] [1040] n_n387 n_n392 n_n395 [925] \
+o_16_ o_17_ o_61_ [78] open 
+subblock: o_16_ 0 ble_3 1 open 10 open 
+subblock: o_17_ ble_3 2 3 4 11 open 
+subblock: o_61_ ble_3 3 5 open 12 open 
+subblock: [78] 6 7 8 9 13 open 
+
+.clb o_60_
+pinlist: i_7_ [839] [840] i_62_ n_n369 n_n387 n_n392 n_n368 open open o_60_ \
+o_18_ open open open 
+subblock: o_60_ 0 1 2 ble_3 10 open 
+subblock: o_18_ 3 0 ble_2 ble_3 11 open 
+subblock: [842] 2 1 open open 12 open 
+subblock: [843] 4 5 6 7 13 open 
+
+.clb o_13_
+pinlist: [921] [922] [924] i_10_ i_14_ i_11_ i_25_ i_24_ i_15_ [926] o_13_ \
+n_n395 [925] open open 
+subblock: o_13_ 0 1 2 ble_3 10 open 
+subblock: n_n395 3 4 5 open 11 open 
+subblock: [925] 6 7 8 open 12 open 
+subblock: [927] ble_1 ble_2 9 open 13 open 
+
+.clb o_58_
+pinlist: n_n392 n_n344 i_3_ [106] [115] [861] i_26_ i_22_ n_n387 [983] o_58_ \
+[107] open open open 
+subblock: o_58_ ble_1 0 1 ble_2 10 open 
+subblock: [107] 2 3 4 5 11 open 
+subblock: [986] 6 7 8 9 12 open 
+
+.clb o_7_
+pinlist: i_15_ i_43_ n_n365 i_38_ i_27_ i_42_ i_44_ n_n302 [95] open o_7_ \
+open open [823] open 
+subblock: o_7_ 0 1 2 open 10 open 
+subblock: [819] 3 4 open open 11 open 
+subblock: [820] 5 1 6 open 12 open 
+subblock: [823] 7 8 ble_1 ble_2 13 open 
+
+.clb o_28_
+pinlist: [919] i_56_ [78] [856] n_n392 [121] i_46_ i_60_ i_43_ open o_28_ \
+o_63_ [88] [857] open 
+subblock: o_28_ ble_2 0 open open 10 open 
+subblock: o_63_ 1 2 3 ble_3 11 open 
+subblock: [88] 4 5 3 ble_3 12 open 
+subblock: [857] 6 7 8 open 13 open 
+
+.clb n_n369
+pinlist: i_50_ i_46_ i_47_ i_4_ i_43_ i_35_ i_9_ n_n392 n_n303 open n_n369 \
+[916] open [1038] open 
+subblock: n_n369 0 1 2 open 10 open 
+subblock: [916] 3 4 ble_0 open 11 open 
+subblock: [1034] 5 6 open open 12 open 
+subblock: [1038] ble_0 7 8 ble_2 13 open 
+
+.clb o_64_
+pinlist: i_30_ [88] n_n395 [925] i_7_ i_8_ i_29_ i_3_ i_28_ open o_64_ [863] \
+[922] [959] open 
+subblock: o_64_ 0 1 2 3 10 open 
+subblock: [863] 0 4 5 6 11 open 
+subblock: [922] 0 7 8 6 12 open 
+subblock: [959] 4 5 7 open 13 open 
+
+.clb o_25_
+pinlist: i_25_ i_24_ [88] i_10_ i_14_ i_15_ open open open open o_25_ n_n366 \
+[839] [919] open 
+subblock: o_25_ 0 1 ble_1 2 10 open 
+subblock: n_n366 3 4 5 open 11 open 
+subblock: [839] 4 0 1 5 12 open 
+subblock: [919] 3 4 0 5 13 open 
+
+.clb o_24_
+pinlist: n_n365 [955] i_50_ i_10_ i_14_ i_15_ i_11_ i_58_ [857] open o_24_ \
+[832] open open open 
+subblock: o_24_ 0 1 ble_3 open 10 open 
+subblock: [832] 2 3 4 5 11 open 
+subblock: [956] 3 4 6 5 12 open 
+subblock: [958] 2 7 8 ble_2 13 open 
+
+.clb [115]
+pinlist: i_50_ i_46_ i_47_ i_43_ i_5_ i_45_ [825] open open open [115] [783] \
+open [830] open 
+subblock: [115] 0 1 2 3 10 open 
+subblock: [783] 4 1 2 3 11 open 
+subblock: [829] 5 4 open open 12 open 
+subblock: [830] 1 3 6 ble_2 13 open 
+
+.clb o_14_
+pinlist: i_58_ [132] i_50_ i_10_ i_14_ i_15_ i_11_ open open open o_14_ open \
+[944] [972] open 
+subblock: o_14_ 0 1 ble_1 open 10 open 
+subblock: [913] 2 3 4 5 11 open 
+subblock: [944] 3 4 5 open 12 open 
+subblock: [972] 3 4 6 5 13 open 
+
+.clb [840]
+pinlist: i_10_ i_8_ i_11_ i_43_ i_3_ i_0_ i_51_ i_31_ i_54_ i_53_ [840] \
+[1002] [1020] [1035] open 
+subblock: [840] 0 1 2 3 10 open 
+subblock: [1002] 4 5 6 open 11 open 
+subblock: [1020] 7 8 9 6 12 open 
+subblock: [1035] 0 2 6 open 13 open 
+
+.clb [904]
+pinlist: i_61_ i_62_ i_60_ i_35_ [106] i_55_ i_8_ i_58_ i_56_ open [904] \
+[969] [1026] [1040] open 
+subblock: [904] 0 1 2 3 10 open 
+subblock: [969] 4 3 open open 11 open 
+subblock: [1026] 5 3 4 open 12 open 
+subblock: [1040] 6 7 8 2 13 open 
+
+.clb o_32_
+pinlist: i_58_ [132] [832] i_40_ i_39_ i_46_ i_25_ i_24_ i_41_ open o_32_ \
+open [955] [983] open 
+subblock: o_32_ 0 1 2 ble_1 10 open 
+subblock: [945] 3 4 5 open 11 open 
+subblock: [955] 3 4 6 7 12 open 
+subblock: [983] 6 7 8 open 13 open 
+
+.clb o_59_
+pinlist: i_40_ i_58_ [132] [832] i_7_ i_8_ i_41_ i_26_ i_22_ open o_59_ [926] \
+[933] [994] open 
+subblock: o_59_ 0 1 2 3 10 open 
+subblock: [926] 4 5 6 open 11 open 
+subblock: [933] 4 5 7 open 12 open 
+subblock: [994] 6 8 open open 13 open 
+
+.clb o_29_
+pinlist: i_58_ [132] [832] [834] [944] i_50_ i_24_ i_6_ open open o_29_ o_15_ \
+[856] [862] open 
+subblock: o_29_ 0 1 2 3 10 open 
+subblock: o_15_ 0 1 4 open 11 open 
+subblock: [856] 0 5 open open 12 open 
+subblock: [862] 6 7 open open 13 open 
 
 .clb o_11_
-pinlist: i_15_ i_29_ i_37_ n_n365 [955] [958] i_28_ open open open o_11_ \
-o_24_ o_4_ [121] open 
+pinlist: i_15_ i_29_ i_37_ i_28_ open open open open open open o_11_ o_4_ \
+n_n365 [121] open 
 subblock: o_11_ 0 1 2 open 10 open 
-subblock: o_24_ 3 4 5 open 11 open 
-subblock: o_4_ 0 1 open open 12 open 
-subblock: [121] 6 1 open open 13 open 
-
-.clb o_2_
-pinlist: n_n39 [131] [823] [1043] [1054] i_41_ i_22_ open open open o_2_ o_9_ \
-o_8_ [994] open 
-subblock: o_2_ 0 1 2 open 10 open 
-subblock: o_9_ 1 3 open open 11 open 
-subblock: o_8_ 0 4 open open 12 open 
-subblock: [994] 5 6 open open 13 open 
-
-.clb [862]
-pinlist: i_24_ i_6_ i_36_ i_32_ i_21_ open open open open open [862] [892] \
-[907] [949] open 
-subblock: [862] 0 1 open open 10 open 
-subblock: [892] 2 3 open open 11 open 
-subblock: [907] 2 4 open open 12 open 
-subblock: [949] 2 4 open open 13 open 
+subblock: o_4_ 0 1 open open 11 open 
+subblock: n_n365 3 1 2 open 12 open 
+subblock: [121] 3 1 open open 13 open 
 
 .clb o_5_
-pinlist: i_29_ i_38_ i_27_ open open open open open open open o_5_ [819] open \
+pinlist: i_29_ i_9_ i_5_ i_45_ open open open open open open o_5_ [977] open \
 open open 
 subblock: o_5_ 0 open open open 10 open 
-subblock: [819] 1 2 open open 11 open 
+subblock: [977] 1 2 3 open 11 open 
 

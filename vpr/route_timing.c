@@ -5,8 +5,8 @@
 #include "globals.h"
 #include "route_export.h"
 #include "route_common.h"
-#include "route_timing.h"
 #include "route_tree_timing.h"
+#include "route_timing.h"
 #include "heapsort.h"
 #include "path_delay.h"
 #include "net_delay.h"
@@ -14,18 +14,7 @@
 
 /******************** Subroutines local to route_timing.c ********************/
 
-static void alloc_timing_driven_route_structs (float **pin_criticality_ptr,
-            int **sink_order_ptr, t_rt_node ***rt_node_of_sink_ptr); 
-
-static void free_timing_driven_route_structs (float *pin_criticality, int
-            *sink_order, t_rt_node **rt_node_of_sink);
-
 static int get_max_pins_per_net (void);
-
-static boolean timing_driven_route_net (int inet, float pres_fac, float 
-       max_criticality, float criticality_exp, float astar_fac, float 
-       bend_cost, float *net_slack, float *pin_criticality, int *sink_order, 
-       t_rt_node **rt_node_of_sink, float T_crit, float *net_delay);
 
 static void add_route_tree_to_heap (t_rt_node *rt_node, int target_node,
        float target_criticality, float astar_fac); 
@@ -43,7 +32,6 @@ static int get_expected_segs_to_target (int inode, int target_node, int *
 static void update_rr_base_costs (int inet, float largest_criticality); 
 
 static void timing_driven_check_net_delays (float **net_delay); 
-
 
 
 /************************ Subroutine definitions *****************************/
@@ -153,7 +141,7 @@ boolean try_timing_driven_route (struct s_router_opts router_opts, float
 }
 
 
-static void alloc_timing_driven_route_structs (float **pin_criticality_ptr, 
+void alloc_timing_driven_route_structs (float **pin_criticality_ptr, 
             int **sink_order_ptr, t_rt_node ***rt_node_of_sink_ptr) {
 
 /* Allocates all the structures needed only by the timing-driven router.   */
@@ -179,7 +167,7 @@ static void alloc_timing_driven_route_structs (float **pin_criticality_ptr,
 }
 
 
-static void free_timing_driven_route_structs (float *pin_criticality, int
+void free_timing_driven_route_structs (float *pin_criticality, int
             *sink_order, t_rt_node **rt_node_of_sink) {
 
 /* Frees all the stuctures needed only by the timing-driven router.        */
@@ -208,7 +196,7 @@ static int get_max_pins_per_net (void) {
 }
 
 
-static boolean timing_driven_route_net (int inet, float pres_fac, float 
+boolean timing_driven_route_net (int inet, float pres_fac, float 
        max_criticality, float criticality_exp, float astar_fac, float 
        bend_cost, float *net_slack, float *pin_criticality, int *sink_order, 
        t_rt_node **rt_node_of_sink, float T_crit, float *net_delay) {

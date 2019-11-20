@@ -4,16 +4,15 @@
 #include "globals.h"
 #include "cluster.h"
 #include "output_clustering.h"
+#include "path_length.h"
 
-#define NO_CLUSTER -1
-#define NEVER_CLUSTER -2
-#define NOT_VALID -10000  /* Marks gains that aren't valid */
-                          /* Ensure no gain can ever be this negative! */
 
 enum e_gain_update {GAIN, NO_GAIN};
-enum e_gain_type {SHARED_PINS, INPUT_REDUCTION};
 enum e_feasibility {FEASIBLE, INFEASIBLE};
+enum e_gain_type {HILL_CLIMBING, NOT_HILL_CLIMBING};
 enum e_removal_policy {REMOVE_CLUSTERED, LEAVE_CLUSTERED};
+enum e_net_relation_to_clustered_block {INPUT, OUTPUT};
+
 
 /* Linked list structure.  Stores one integer (iblk). */
 struct s_ilink {int iblk; struct s_ilink *next;};
@@ -25,6 +24,11 @@ struct s_ilink {int iblk; struct s_ilink *next;};
  * number speeds the code up most.                              */
 #define MARKED_FRAC 2   
 
+/* [0..num_blocks-1].  Which cluster (numbered from 0 to num_cluster - 1) *
+ * is this block in?  If not assigned to a cluster yet, it is NO_CLUSTER. *
+ * this value is also used in path_length.c*/
+int *cluster_of_block;
+
 /* [0..num_nets-1].  How many pins of each net are contained in the *
  * currently open cluster?                                          */
 static int *num_pins_of_net_in_cluster;
@@ -32,14 +36,35 @@ static int *num_pins_of_net_in_cluster;
 /* [0..num_nets-1].  Is the driver for this net in the open cluster? */
 static boolean *net_output_in_cluster;
 
-/* [0..num_blocks-1].  Which cluster (numbered from 0 to num_cluster - 1) *
- * is this block in?  If not assigned to a cluster yet, it is NO_CLUSTER. */
-static int *cluster_of_block;
+/* [0..num_blocks-1]. How suitable is this block for absorbtion into the*
+ * current cluster. Calculated using the cost function                  *
+ * gain[i]=alpha*lengthgain[i] + (1-alpha)*sharinggain[i]/(lut_size+x)  *
+ * where alpha is the tradeoff variable that determines wheter timing or*
+ * area is more important, and x is 1 if gloabal clocks, 2 otherwise */
+static float *gain;
 
-/* [0..num_blocks-1].  Reduction in number of pins to connect that would*
- * result from each block being added to the currently open cluster.    *
- * gain[iblk] is NOT_VALID if it hasn't been computed for iblk yet.     */
-static int *gain;
+
+/* [0..num_blocks-1]. What is the criticality score of this block? This*
+ * is determined by the most critical net between this block and any   *
+ * block in the current cluster */
+static float *lengthgain;
+
+
+/* [0..num_blocks-1]. How many connections will be absorbed if this block*
+ * is placed in the cluster under consideration */
+static int *connectiongain;
+
+/* [0..num_blocks-1]. How many nets on this block are already in the    *
+ * cluster under consideration */
+static int *sharinggain;
+
+/* [0..num_blocks-1]. This is the gain used for hill-climbing. It stores*
+ * the reduction in the number of pins that adding this block to the the*
+ * current cluster will have. This reflects the fact that sometimes the *
+ * addition of a block to a cluster may reduce the number of inputs     *
+ * required if it shares inputs with all other BLEs and it's output is  *
+ * used by all other BLEs in the cluster.                               */
+static int *hillgain;
 
 /* [0..num_marked_nets] and [0..num_marked_blocks] respectively.  List  *
  * the indices of the nets and blocks that have had their num_pins_of_  *
@@ -56,7 +81,13 @@ static int first_clusterable_block = -1;
  * [0..lut_size].  Unclustered_list_head[i] points to the head of the    *
  * list of LUTs with i inputs to be hooked up via external interconnect. */
 static struct s_ilink *unclustered_list_head;
-static struct s_ilink *memory_pool; /* Declared here so I can free easily. */
+static struct s_ilink *memory_pool; /*Declared here so I can free easily.*/
+
+
+/* What is the increase in a blocks gain for each net that it shares    *
+ * with blocks that are already in the cluster. Set to be               *
+ * (1-alpha)/(lut_size+x), where x is 1 if global clocks, or 2 otherwise*/   
+static float gain_for_each_net_shared;
 
 /* Does the block that drives the output of this net also appear as a   *
  * receiver (input) pin of the net?  [0..num_nets-1].  This is used     *
@@ -66,8 +97,8 @@ static struct s_ilink *memory_pool; /* Declared here so I can free easily. */
  * twice is when one connection is an output and the other is an input, *
  * so this should take care of all multiple connections.                */
 static boolean *net_output_feeds_driving_block_input;
-
-
+/*****************************************/
+/*globally accessable function*/
 int num_input_pins (int iblk) {
 
 /* Returns the number of used input pins on this block. */
@@ -98,8 +129,14 @@ int num_input_pins (int iblk) {
  
  return (conn_inps);
 }
+/*****************************************/
+/*globally accessable function*/
+int get_cluster_of_block(int blkidx) {
 
+  return(cluster_of_block[blkidx]);
+}
 
+/*****************************************/
 static int num_ext_inputs (int iblk, int lut_size) {
 
 /* Returns the number of input pins on this block that must be hooked * 
@@ -126,6 +163,7 @@ static int num_ext_inputs (int iblk, int lut_size) {
 }
 
 
+/*****************************************/
 static void check_clocks (boolean *is_clock, int lut_size) {
 
 /* Checks that nets used as clock inputs to latches are never also used *
@@ -157,6 +195,7 @@ static void check_clocks (boolean *is_clock, int lut_size) {
 }
 
 
+/*****************************************/
 static void check_for_duplicate_inputs (int lut_size) {
 
 /* Checks that each input pin of a LUT connects to a distinct net.  *
@@ -168,7 +207,7 @@ static void check_for_duplicate_inputs (int lut_size) {
  int iblk, ipin, inet;
  int *num_conns_to_net;
  
- num_conns_to_net = my_malloc (num_nets * sizeof(net));
+ num_conns_to_net = (int*) my_malloc (num_nets * sizeof(net));
 
  for (inet=0;inet<num_nets;inet++) 
     num_conns_to_net[inet] = 0;
@@ -208,7 +247,9 @@ static void check_for_duplicate_inputs (int lut_size) {
 }
 
 
-static void alloc_and_init_clustering (int lut_size, int cluster_size) {
+/*****************************************/
+static void alloc_and_init_clustering (int lut_size, int cluster_size,
+				       boolean global_clocks, float alpha) {
 
 /* Allocates the main data structures used for clustering and properly *
  * initializes them.                                                   */
@@ -217,10 +258,26 @@ static void alloc_and_init_clustering (int lut_size, int cluster_size) {
  struct s_ilink *next_ptr;
 
  cluster_of_block = (int *) my_malloc (num_blocks * sizeof(int));
- gain = (int *) my_malloc (num_blocks * sizeof (int));
+ gain = (float *) my_malloc (num_blocks * sizeof (float));
+ lengthgain=(float*) my_malloc (num_blocks * sizeof (float));
+ sharinggain=(int*) my_malloc (num_blocks * sizeof (int));
+ hillgain =(int*) my_malloc (num_blocks * sizeof (int));
+ connectiongain = (int*) my_malloc (num_blocks * sizeof (int));
+
+
+ if (global_clocks)
+   gain_for_each_net_shared=(1.0-alpha)/(float)(lut_size+1);
+ else
+   gain_for_each_net_shared=(1.0-alpha)/(float)(lut_size+2);
 
  for (i=0;i<num_blocks;i++) {
-    gain[i] = NOT_VALID;
+
+    gain[i] = 0.0;
+    lengthgain[i]= 0.0;
+    connectiongain[i] = 0;
+    sharinggain[i]=NOT_VALID;
+    hillgain[i]=NOT_VALID;
+
     if (block[i].type == LUT || block[i].type == LUT_AND_LATCH ||
                  block[i].type == LATCH) {
         cluster_of_block[i] = NO_CLUSTER;
@@ -274,6 +331,7 @@ static void alloc_and_init_clustering (int lut_size, int cluster_size) {
     }
  }
 
+
  net_output_feeds_driving_block_input = (boolean *) my_malloc (
                  num_nets * sizeof (boolean));
 
@@ -290,12 +348,17 @@ static void alloc_and_init_clustering (int lut_size, int cluster_size) {
 }
 
 
+/*****************************************/
 static void free_clustering (void) {
 
 /* Releases all the memory used by clustering data structures.   */
 
  free (cluster_of_block);
  free (gain);
+ free (hillgain);
+ free (lengthgain);
+ free (sharinggain);
+ free (connectiongain);
  free (num_pins_of_net_in_cluster);
  free (net_output_in_cluster);
  free (marked_nets);
@@ -306,6 +369,7 @@ static void free_clustering (void) {
 }
 
 
+/*****************************************/
 static boolean clocks_feasible (int iblk, int idummy, int clocks_avail,
                 int lut_size, boolean *dummy) {
 
@@ -336,6 +400,7 @@ static boolean clocks_feasible (int iblk, int idummy, int clocks_avail,
 }
 
 
+/*****************************************/
 static int get_block_by_num_ext_inputs (int ext_inps, int lut_size, int 
       clocks_avail, enum e_removal_policy remove_flag) {
 
@@ -362,6 +427,7 @@ static int get_block_by_num_ext_inputs (int ext_inps, int lut_size, int
           return (iblk);
 
        prev_ptr = ptr;
+
     }
 
     else if (remove_flag == REMOVE_CLUSTERED) {
@@ -375,6 +441,7 @@ static int get_block_by_num_ext_inputs (int ext_inps, int lut_size, int
 }
 
 
+/*****************************************/
 static int get_free_block_with_most_ext_inputs (int lut_size, int inputs_avail, 
        int clocks_avail) {
 
@@ -401,8 +468,10 @@ static int get_free_block_with_most_ext_inputs (int lut_size, int inputs_avail,
 }
 
 
+/*****************************************/
 static void reset_cluster (int *inputs_used, int *luts_used, 
-       int *clocks_used) {
+       int *clocks_used, int* next_empty_location_in_cluster, 
+       int *block_in_cluster, int cluster_size) {
 
 /* Call this routine when starting to fill up a new cluster.  It resets *
  * the gain vector, etc.                                                */
@@ -418,52 +487,134 @@ static void reset_cluster (int *inputs_used, int *luts_used,
  *inputs_used = 0;
  *luts_used = 0;
  *clocks_used = 0;
+ *next_empty_location_in_cluster=0;
 
- if (num_marked_blocks < num_blocks/MARKED_FRAC) {
-    for (i=0;i<num_marked_blocks;i++) 
-       gain[marked_blocks[i]] = NOT_VALID;
+ for (i=0;i<num_marked_blocks;i++){ 
+   gain[marked_blocks[i]] = 0.0;
+   lengthgain[marked_blocks[i]]=0.0;
+   sharinggain[marked_blocks[i]]=NOT_VALID;
+   hillgain[marked_blocks[i]]=NOT_VALID;
+   connectiongain[marked_blocks[i]]=0;
  }
- else {
-    for (i=first_clusterable_block;i<num_blocks;i++) 
-       gain[i] = NOT_VALID;
- }
- 
+
+
  num_marked_blocks = 0;
-
-/* num_marked_nets is probably always less than num_nets/2, but what the *
- * heck?                                                                 */
-
- if (num_marked_nets < num_nets/MARKED_FRAC) {
-    for (i=0;i<num_marked_nets;i++) {
-       num_pins_of_net_in_cluster[marked_nets[i]] = 0;
-       net_output_in_cluster[marked_nets[i]] = FALSE;
-    }
+                                                          
+ for (i=0;i<num_marked_nets;i++) {
+   num_pins_of_net_in_cluster[marked_nets[i]] = 0;
+   net_output_in_cluster[marked_nets[i]] = FALSE;
  }
- else {
-    for (i=0;i<num_nets;i++) {
-       num_pins_of_net_in_cluster[i] = 0;
-       net_output_in_cluster[i] = FALSE;
-    }
- }
- 
+
+ for (i=0; i<cluster_size;i++)
+   block_in_cluster[i]=NO_CLUSTER;
+
  num_marked_nets = 0;
 }
+/*****************************************/
+static void update_connection_gain_values (int inet, int clustered_block, 
+					   int pin_on_clustered_block,
+					   boolean *is_clock) {
+  /*This function is called when the connectiongain values on the net*
+   *inet require updating.   */
+
+  enum e_net_relation_to_clustered_block net_relation_to_clustered_block;
+  int iblk, ipin;
 
 
-static void mark_and_update_gain (int inet, enum e_gain_update gain_flag,
-        enum e_gain_type gain_type, int lut_size) {
+
+  if (pin_on_clustered_block==0){  
+    /*these designations are only valid for non-clock nets*/
+    net_relation_to_clustered_block=OUTPUT;
+  }
+  else{
+    net_relation_to_clustered_block=INPUT;
+  }
+    
+  if (net_relation_to_clustered_block==OUTPUT && !is_clock[inet]){
+    for (ipin=1;ipin<net[inet].num_pins;ipin++) {
+      iblk = net[inet].pins[ipin];
+      if (cluster_of_block[iblk] == NO_CLUSTER) {
+	connectiongain[iblk] ++;
+      }
+    }
+  }
+
+  if(net_relation_to_clustered_block==INPUT && !is_clock[inet]){ 
+    /*Calculate the connectiongain for the block which is driving *
+     *the net that is an input to a block in the cluster */
+
+    iblk=net[inet].pins[0];
+    if (cluster_of_block[iblk] == NO_CLUSTER) {
+      connectiongain[iblk] ++;
+    }
+  }
+}
+/*****************************************/
+static void update_length_gain_values (int inet, int clustered_block, 
+				       int pin_on_clustered_block,
+				       boolean *is_clock) {
+
+  /*This function is called when the length_gain values on the net*
+   *inet requires updating.   */
+
+  enum e_net_relation_to_clustered_block net_relation_to_clustered_block;
+  float lengain;
+  int newblk, netpin, ifirst;
+  int iblk, ipin;
+
+
+/* Check if this net lists its driving block twice.  If so, avoid  *
+ * double counting this block by skipping the first (driving) pin. */
+   if (net_output_feeds_driving_block_input[inet] == FALSE) 
+    ifirst = 0;
+  else
+    ifirst = 1;
+
+  if (pin_on_clustered_block==0){  
+    /*these designations are only valid for non-clock nets*/
+    net_relation_to_clustered_block=OUTPUT;
+  }
+  else{
+    net_relation_to_clustered_block=INPUT;
+  }
+    
+  if (net_relation_to_clustered_block==OUTPUT && !is_clock[inet]){
+    for (ipin=ifirst;ipin<net[inet].num_pins;ipin++) {
+      iblk = net[inet].pins[ipin];
+      if (cluster_of_block[iblk] == NO_CLUSTER) {
+	lengain=get_net_pin_backward_criticality(inet, ipin);
+	if (lengain>lengthgain[iblk])
+	  lengthgain[iblk]=lengain;
+      }
+    }
+  }
+
+  if(net_relation_to_clustered_block==INPUT && !is_clock[inet]){ 
+    /*Calculate the length gain for the block which is driving *
+     *the net that is an input to a block in the cluster */
+
+    newblk=net[inet].pins[0];
+    if (cluster_of_block[newblk] == NO_CLUSTER) {
+      netpin= get_net_pin_number(clustered_block, pin_on_clustered_block);
+      lengain=get_net_pin_forward_criticality(inet, netpin);
+      if (lengain>lengthgain[newblk])
+	lengthgain[newblk]=lengain;
+    }
+  }
+}
+/*****************************************/
+static void mark_and_update_partial_gain (int inet, 
+       enum e_gain_update gain_flag,
+       int lut_size, int clustered_block, int pin_on_clustered_block,
+       boolean* is_clock, boolean timing_driven, boolean connection_driven) {
 
 /* Updates the marked data structures, and if gain_flag is GAIN,  *
- * the gain when a logic block is added to a cluster.  The gain   *
- * is basically the number of input pins saved when a block is    *
- * added to a cluster (vs. putting it in a cluster with unrelated *
- * logic).  When a logic block has more than one pin of a net     *
- * connected to it (in practice this only happens when you have   *
- * a LUT + LATCH logic block where the output is fed back to an   *
- * input) the gain from a cluster to this block will increase by  *
- * however many pins the net has on this block, rather than 1.  I *
- * consider this a "feature", since it rarely occurs and such     *
- * blocks do save extra pins on the cluster.                      */
+ * the gain when a logic block is added to a cluster.  The        *
+ * sharinggain is the number of inputs that a block shares with   *
+ * blocks that are already in the cluster. Hillgain is the        *
+ * reduction in number of pins-required by adding a block to the  *
+ * cluster. The lengthgain is the criticality of the most critical*
+ * net between this block and a block in the cluster.             */
 
  int iblk, ipin, ifirst;
 
@@ -476,42 +627,121 @@ static void mark_and_update_gain (int inet, enum e_gain_update gain_flag,
 
 /* Update gains of affected blocks. */
 
- if (num_pins_of_net_in_cluster[inet] == 0 && 
-           gain_flag == GAIN) {
+ if (gain_flag == GAIN) {
 
 /* Check if this net lists its driving block twice.  If so, avoid  *
  * double counting this block by skipping the first (driving) pin. */
-
+  
     if (net_output_feeds_driving_block_input[inet] == FALSE) 
        ifirst = 0;
     else
        ifirst = 1;
-    
-    for (ipin=ifirst;ipin<net[inet].num_pins;ipin++) {
+       
+   if (num_pins_of_net_in_cluster[inet]==0) {
+     for (ipin=ifirst;ipin<net[inet].num_pins;ipin++) {
        iblk = net[inet].pins[ipin];
        if (cluster_of_block[iblk] == NO_CLUSTER) {
-          if (gain[iblk] == NOT_VALID) {
-             marked_blocks[num_marked_blocks] = iblk;
-             num_marked_blocks++;
-             if (gain_type == SHARED_PINS) 
-                gain[iblk] = 1;
-             else              /* INPUT_REDUCTION */
-                gain[iblk] = 1 - num_ext_inputs (iblk, lut_size);
-          }
-          else {
-             gain[iblk]++;
-          }
+
+	 if (sharinggain[iblk] == NOT_VALID) {
+	   marked_blocks[num_marked_blocks] = iblk;
+	   num_marked_blocks++;
+	   sharinggain[iblk]=1;
+	   hillgain[iblk] = 1 - num_ext_inputs (iblk, lut_size);
+	 }
+	 else {
+	   sharinggain[iblk]++;
+	   hillgain[iblk]++;
+	 }
        }
-    }
+     }
+   }
+
+   if (connection_driven) {
+     update_connection_gain_values(inet, clustered_block, pin_on_clustered_block, 
+				   is_clock);
+   }
+   else if (timing_driven) {
+     update_length_gain_values(inet, clustered_block, pin_on_clustered_block,
+			       is_clock);
+   }	       
  }
     
  num_pins_of_net_in_cluster[inet]++;
 }
+/*****************************************/
+static void  recompute_length_gain_values(int *block_in_cluster, 
+					  int next_empty_location_in_cluster,
+					  int lut_size,
+					  boolean global_clocks, 
+					  boolean *is_clock) {
 
+  /*This function recomputes all of the length_gain values for any *
+   *nets that are affected by blocks that have been added to       *
+   *current cluster.                                               */
 
+  int ipin, inet, iblk;
+  int i,idx;
+
+  for (i=0;i<num_marked_blocks;i++){ 
+    iblk=marked_blocks[i];
+    lengthgain[iblk] = 0.0;
+  }
+  
+  for (idx=0; idx < next_empty_location_in_cluster; idx++) {
+    iblk=block_in_cluster[idx];
+    
+    inet = block[iblk].nets[0];  /*output pin first */
+    if (inet != OPEN) {
+      if (!is_clock[inet] || !global_clocks) 
+	update_length_gain_values(inet, iblk, 0, is_clock);
+    }
+
+    for (ipin=1;ipin<=lut_size;ipin++) {   /*  LUT input pins. */
+      inet = block[iblk].nets[ipin];
+      if (inet != OPEN)
+      	update_length_gain_values(inet, iblk, ipin, is_clock);
+    }
+  }
+}
+/*****************************************/
+static void update_total_gain(float alpha, boolean timing_driven, boolean 
+			      connection_driven){
+
+  /*Updates the total  gain array to reflect the desired tradeoff between*
+   *input sharing (sharinggain) and path_length minimization (lengthgain)*/
+
+  int i, iblk;
+  
+  if (connection_driven) {
+    /*try to absorb as many connections as possible*/
+    for (i=0;i<num_marked_blocks;i++){ 
+      iblk=marked_blocks[i];    
+      gain[iblk] = (1-alpha)*(float)sharinggain[iblk] + alpha*(float)connectiongain[iblk];
+    }
+  }
+
+  else if (timing_driven) {
+    for (i=0;i<num_marked_blocks;i++){ 
+      iblk=marked_blocks[i];
+      gain[iblk] = alpha*lengthgain[iblk]+
+	gain_for_each_net_shared*(float)sharinggain[iblk]; /*1-alpha term is accounted*
+							    *for in gain_for_each...  *
+							    *this saves overhead of   *
+							    *dividing every time      */
+    }
+  }
+  else { /*non timing_driven, minimize number of inputs used*/
+    for (i=0;i<num_marked_blocks;i++){ 
+      iblk=marked_blocks[i];
+      gain[iblk] = (float)sharinggain[iblk];
+    }
+  }
+}
+/*****************************************/
 static void add_to_cluster (int new_blk, int cluster_index, int lut_size, 
       boolean *is_clock, boolean global_clocks, int *inputs_used,
-      int *luts_used, int *clocks_used) {
+      int *luts_used, int *clocks_used, float alpha, boolean timing_driven, 
+      boolean connection_driven) {
 
 /* Marks new_blk as belonging to cluster cluster_index and updates  *
  * all the gain, etc. structures.  Cluster_index should always      *
@@ -536,9 +766,11 @@ static void add_to_cluster (int new_blk, int cluster_index, int lut_size,
 
  if (inet != OPEN) {
     if (!is_clock[inet] || !global_clocks) 
-       mark_and_update_gain (inet, GAIN, SHARED_PINS, lut_size);
+      mark_and_update_partial_gain (inet, GAIN, lut_size, new_blk, 0, is_clock,
+				    timing_driven, connection_driven);
     else
-       mark_and_update_gain (inet, NO_GAIN, SHARED_PINS, lut_size);
+       mark_and_update_partial_gain (inet, NO_GAIN, lut_size, new_blk, 0, 
+				     is_clock, timing_driven, connection_driven);
 
     net_output_in_cluster[inet] = TRUE;
 
@@ -550,7 +782,8 @@ static void add_to_cluster (int new_blk, int cluster_index, int lut_size,
 
     inet = block[new_blk].nets[ipin];
     if (inet != OPEN) {
-       mark_and_update_gain (inet, GAIN, SHARED_PINS, lut_size);
+       mark_and_update_partial_gain (inet, GAIN, lut_size, new_blk, ipin, 
+				     is_clock, timing_driven, connection_driven);
 
 /* If num_pins_of_net_in_cluster != 1, then either the output is *
  * in the cluster or an input for this net is already in the     *
@@ -569,9 +802,13 @@ static void add_to_cluster (int new_blk, int cluster_index, int lut_size,
  inet = block[new_blk].nets[lut_size+1];    /* Clock input pin. */
  if (inet != OPEN) {
     if (global_clocks) 
-       mark_and_update_gain (inet, NO_GAIN, SHARED_PINS, lut_size);
+       mark_and_update_partial_gain (inet, NO_GAIN, lut_size, new_blk, 
+				     lut_size+1, is_clock, timing_driven,
+				     connection_driven);
     else
-       mark_and_update_gain (inet, GAIN, SHARED_PINS, lut_size);
+       mark_and_update_partial_gain (inet, GAIN, lut_size, new_blk, 
+				     lut_size+1, is_clock, timing_driven,
+				     connection_driven);
 
     if (num_pins_of_net_in_cluster[inet] == 1) {
        (*clocks_used)++;
@@ -583,9 +820,13 @@ static void add_to_cluster (int new_blk, int cluster_index, int lut_size,
 /* Note: unlike inputs, I'm currently assuming there is no internal *
  * connection in a cluster from LUT outputs to clock inputs.        */
  }
+
+ update_total_gain(alpha, timing_driven, connection_driven);
+
 }
 
 
+/*****************************************/
 static boolean inputs_and_clocks_feasible (int iblk, int inputs_avail, 
       int clocks_avail, int lut_size, boolean *is_clock) {
 
@@ -622,19 +863,24 @@ static boolean inputs_and_clocks_feasible (int iblk, int inputs_avail,
 }
 
 
+/*****************************************/
 static int get_highest_gain_block (int inputs_avail, int clocks_avail,
         int lut_size, boolean *is_clock, boolean (*is_feasible) (
         int iblk, int inputs_avail, int clocks_avail, int lut_size,
-        boolean *is_clock)) {
+        boolean *is_clock), enum e_gain_type gain_mode) {
 
 /* This routine finds the block with the highest gain that is   *
  * not currently in a cluster and satisfies the feasibility     *
  * function passed in as is_feasible.  If there are no feasible *
  * blocks it returns NO_CLUSTER.                                */
 
- int best_gain, best_block, i, iblk;
+ int best_block, i, iblk;
+ int best_hillgain;
+ float best_gain;
 
- best_gain = NOT_VALID + 1; 
+ best_gain = (float)NOT_VALID + 1.0; 
+ best_hillgain=NOT_VALID+1;
+
  best_block = NO_CLUSTER;
 
 /* Divide into two cases for speed only. */
@@ -644,13 +890,25 @@ static int get_highest_gain_block (int inputs_avail, int clocks_avail,
     for (i=0;i<num_marked_blocks;i++) {
        iblk = marked_blocks[i];
        if (cluster_of_block[iblk] == NO_CLUSTER) {
-          if (gain[iblk] > best_gain) {
+	 if (gain_mode != HILL_CLIMBING){
+	   if (gain[iblk] > best_gain) {
              if (is_feasible (iblk, inputs_avail, clocks_avail,
-                    lut_size, is_clock)) {
-                best_gain = gain[iblk];
-                best_block = iblk;
+			      lut_size, is_clock)) {
+
+	       best_gain = gain[iblk];
+	       best_block = iblk;
              }
-          }
+	   }
+	 }
+	 else{  /*hill climbing*/
+	   if (hillgain[iblk] > best_hillgain) {
+             if (is_feasible (iblk, inputs_avail, clocks_avail,
+			      lut_size, is_clock)) {
+	       best_hillgain = hillgain[iblk];
+	       best_block = iblk;
+             }
+	   }
+	 }
        }
     }
  }
@@ -658,13 +916,24 @@ static int get_highest_gain_block (int inputs_avail, int clocks_avail,
  else {        /* Some high fanout nets marked lots of blocks. */
     for (iblk=first_clusterable_block;iblk<num_blocks;iblk++) {
        if (cluster_of_block[iblk] == NO_CLUSTER) {
-          if (gain[iblk] > best_gain) {
+	 if (gain_mode != HILL_CLIMBING){
+	   if (gain[iblk] > best_gain) {
              if (is_feasible (iblk, inputs_avail, clocks_avail,
-                    lut_size, is_clock)) {
-                best_gain = gain[iblk];
-                best_block = iblk;
+			      lut_size, is_clock)) {
+	       best_gain = gain[iblk];
+	       best_block = iblk;
              }
-          }
+	   }
+	 }
+	 else{ /*hill climbing*/
+	   if (hillgain[iblk] > best_hillgain) {
+             if (is_feasible (iblk, inputs_avail, clocks_avail,
+			      lut_size, is_clock)) {
+	       best_hillgain = hillgain[iblk];
+	       best_block = iblk;
+             }
+	   }
+	 }
        }
     }
  }
@@ -673,8 +942,10 @@ static int get_highest_gain_block (int inputs_avail, int clocks_avail,
 }
 
 
+/*****************************************/
 static int get_lut_for_cluster (int inputs_avail, int clocks_avail, 
-       int cluster_size, int lut_size, int luts_used, boolean *is_clock) {
+       int cluster_size, int lut_size, int luts_used, boolean *is_clock,
+       boolean allow_unrelated_clustering) {
 
 /* Finds the LUT with the the greatest gain that satisifies the      *
  * input, clock and capacity constraints of a cluster that are       *
@@ -686,161 +957,23 @@ static int get_lut_for_cluster (int inputs_avail, int clocks_avail,
     return (NO_CLUSTER);
 
  best_block = get_highest_gain_block (inputs_avail, clocks_avail,
-                    lut_size, is_clock, inputs_and_clocks_feasible);
+                    lut_size, is_clock, inputs_and_clocks_feasible,
+		    NOT_HILL_CLIMBING);
 
 /* If no blocks have any gain to the current cluster, the code above *
  * will not find anything.  However, another block with no inputs in *
  * common with the cluster may still be inserted into the cluster.   */
 
- if (best_block == NO_CLUSTER) 
-    best_block = get_free_block_with_most_ext_inputs (lut_size,
-                   inputs_avail, clocks_avail);
+ if (allow_unrelated_clustering)
+   if (best_block == NO_CLUSTER) 
+     best_block = get_free_block_with_most_ext_inputs (lut_size,
+						       inputs_avail, clocks_avail);
 
  return (best_block);
 }
 
 
-
-static void load_gain_for_hill_climbing (boolean *is_clock, int lut_size) {
-
-/* Since the cost function changes during hill climbing, this routine *
- * reloads the gain (cost function) array with the correct values for *
- * the hill climbing routines.  The gain array is now used to store   *
- * the *reduction* in the number of input pins required by the        *
- * open cluster if each block were added to it.  If adding a block to *
- * the cluster would reduce the number of inputs needed, the gain will*
- * be positive.                                                       */
-
- int iblk, inet, ipin, i, output_net;
-
- if (num_marked_blocks < num_blocks / MARKED_FRAC) {
-    for (i=0;i<num_marked_blocks;i++) {
-       iblk = marked_blocks[i];
-       gain[iblk] = 0;
-
-       if (cluster_of_block[iblk] != NO_CLUSTER)
-          continue;
-
-       output_net = block[iblk].nets[0];   /* Output */
-       if (num_pins_of_net_in_cluster[output_net] > 0 && 
-                    !is_clock[output_net])
-          gain[iblk]++;
-
-       for (ipin=1;ipin<=lut_size;ipin++) {    /* Inputs */
-          inet = block[iblk].nets[ipin];
-          if (inet != OPEN) {
-             if (num_pins_of_net_in_cluster[inet] == 0 && 
-                  inet != output_net) 
-                gain[iblk]--;
-          }
-       }
-    }
- }
-
- else {        /* Lots of blocks have been marked. */
-    for (iblk=first_clusterable_block;iblk<num_blocks;iblk++) {
-       gain[iblk] = 0;
-
-       if (cluster_of_block[iblk] != NO_CLUSTER)
-          continue;
-
-       output_net = block[iblk].nets[0];   /* Output */
-       if (num_pins_of_net_in_cluster[output_net] > 0 && 
-                    !is_clock[output_net])
-          gain[iblk]++;
-
-       for (ipin=1;ipin<=lut_size;ipin++) {    /* Inputs */
-          inet = block[iblk].nets[ipin];
-          if (inet != OPEN) {
-             if (num_pins_of_net_in_cluster[inet] == 0 &&
-                   inet != output_net) 
-                gain[iblk]--;
-          }
-       }
-    
-    }
- }
-}
-
-
-static void reload_gain_for_greedy (int lut_size, boolean *is_clock, 
-        int global_clocks) {
-
-/* This routine reloads the gain array with the proper values for *
- * greedy clustering.  It is only used when one wants to find     *
- * a seed using sharing after the hill_climbing step has mucked   *
- * about with the gain array.                                     */
-
- int iblk, inet, ipin, i;
-
-  if (num_marked_blocks < num_blocks / MARKED_FRAC) {
-    for (i=0;i<num_marked_blocks;i++) {
-       iblk = marked_blocks[i];
-       gain[iblk] = 0;
-
-       if (cluster_of_block[iblk] != NO_CLUSTER)
-          continue;
-
-/* net_output_feeds_driving_block_input check avoids double counting. */
-
-       inet = block[iblk].nets[0];   /* Output */
-       if (num_pins_of_net_in_cluster[inet] > 0 && !is_clock[inet]
-              && net_output_feeds_driving_block_input == FALSE)
-          gain[iblk]++;
-
-       for (ipin=1;ipin<=lut_size;ipin++) {    /* Inputs */
-          inet = block[iblk].nets[ipin];
-          if (inet != OPEN) {
-             if (num_pins_of_net_in_cluster[inet] > 0)
-                gain[iblk]++;
-          }
-       }   
-       
-       if (!global_clocks) {
-          inet = block[iblk].nets[lut_size+1];  /* Clock */
-          if (inet != OPEN) {
-             if (num_pins_of_net_in_cluster[inet] > 1 || 
-                     (num_pins_of_net_in_cluster[inet] == 1 &&
-                     net_output_in_cluster[inet] == FALSE))
-                gain[inet]++;
-          }
-       }
-    }   
- }
-
- else {        /* Lots of blocks have been marked. */
-    for (iblk=first_clusterable_block;iblk<num_blocks;iblk++) {
-       gain[iblk] = 0;
-
-       if (cluster_of_block[iblk] != NO_CLUSTER)
-          continue;
- 
-       inet = block[iblk].nets[0];   /* Output */
-       if (num_pins_of_net_in_cluster[inet] > 0 && !is_clock[inet]
-              && net_output_feeds_driving_block_input == FALSE)
-          gain[iblk]++;
- 
-       for (ipin=1;ipin<=lut_size;ipin++) {    /* Inputs */
-          inet = block[iblk].nets[ipin];
-          if (inet != OPEN) {
-             if (num_pins_of_net_in_cluster[inet] > 0)
-                gain[iblk]++;
-          }
-       }
-       if (!global_clocks) { 
-          inet = block[iblk].nets[lut_size+1];  /* Clock */ 
-          if (inet != OPEN) { 
-             if (num_pins_of_net_in_cluster[inet] > 1 ||  
-                     (num_pins_of_net_in_cluster[inet] == 1 &&
-                     net_output_in_cluster[inet] == FALSE))
-                gain[inet]++;   
-          }
-       }
-    }   
- }
-}
-
-
+/*****************************************/
 static int get_free_block_with_fewest_ext_inputs (int lut_size, int 
           clocks_avail) {
 
@@ -861,6 +994,7 @@ static int get_free_block_with_fewest_ext_inputs (int lut_size, int
 }
 
 
+/*****************************************/
 static int get_most_feasible_block (int inputs_avail, int clocks_avail,
         int lut_size) {
 
@@ -874,7 +1008,8 @@ static int get_most_feasible_block (int inputs_avail, int clocks_avail,
  int best_connected_block, lowest_ext_input_block;
 
  best_connected_block = get_highest_gain_block (inputs_avail, 
-              clocks_avail, lut_size, NULL, clocks_feasible);
+              clocks_avail, lut_size, NULL, clocks_feasible, 
+	      HILL_CLIMBING);
 
 /* It could be that there are no clock feasible blocks with any  *
  * connection to the current cluster, or that there are blocks   *
@@ -891,7 +1026,7 @@ static int get_most_feasible_block (int inputs_avail, int clocks_avail,
     return (best_connected_block);
  
  else {
-    if (gain[best_connected_block] >= -num_ext_inputs(
+    if (hillgain[best_connected_block] >= -num_ext_inputs(
                           lowest_ext_input_block, lut_size))
        return (best_connected_block);
     else
@@ -900,8 +1035,10 @@ static int get_most_feasible_block (int inputs_avail, int clocks_avail,
 }
 
 
+/*****************************************/
 static void hill_climbing_add_to_cluster (int new_blk, int cluster_index, 
-         int lut_size, boolean *is_clock, int *clocks_avail) {
+         int lut_size, boolean *is_clock, int *clocks_avail, 
+         boolean timing_driven, boolean connection_driven) {
 
 /* Adds new_blk to the currently open cluster.  New_blk will be clock *
  * feasible but may not be input-feasible.                            */
@@ -912,16 +1049,22 @@ static void hill_climbing_add_to_cluster (int new_blk, int cluster_index,
  
  inet = block[new_blk].nets[0];    /* Output pin first. */
  if (!is_clock[inet]) 
-    mark_and_update_gain (inet, GAIN, INPUT_REDUCTION, lut_size);
+    mark_and_update_partial_gain (inet, GAIN, lut_size, new_blk, 
+				  0, is_clock, timing_driven,
+				  connection_driven);
  else
-    mark_and_update_gain (inet, NO_GAIN, INPUT_REDUCTION, lut_size);
+    mark_and_update_partial_gain (inet, NO_GAIN, lut_size, new_blk, 
+				  0, is_clock, timing_driven,
+				  connection_driven);
 
  net_output_in_cluster[inet] = TRUE;
 
  for (ipin=1;ipin<=lut_size;ipin++) {   /*  LUT input pins. */
     inet = block[new_blk].nets[ipin];
     if (inet != OPEN) 
-       mark_and_update_gain (inet, GAIN, INPUT_REDUCTION, lut_size);
+       mark_and_update_partial_gain (inet, GAIN, lut_size, new_blk, 
+				     ipin, is_clock, timing_driven, 
+				     connection_driven);
  }
 
 /* Note:  The code below ONLY WORKS when nets that go to clock inputs *
@@ -931,7 +1074,9 @@ static void hill_climbing_add_to_cluster (int new_blk, int cluster_index,
  
  inet = block[new_blk].nets[lut_size+1];    /* Clock input pin. */
  if (inet != OPEN) {
-    mark_and_update_gain (inet, NO_GAIN, INPUT_REDUCTION, lut_size);
+    mark_and_update_partial_gain (inet, NO_GAIN, lut_size, new_blk, 
+				  lut_size+1, is_clock, timing_driven,
+				  connection_driven);
  
     if (num_pins_of_net_in_cluster[inet] == 1) {
        (*clocks_avail)--;
@@ -946,10 +1091,12 @@ static void hill_climbing_add_to_cluster (int new_blk, int cluster_index,
 }
 
 
-static void  hill_climbing (int initial_inputs_avail, int clocks_avail, 
+/*****************************************/
+static int  hill_climbing (int initial_inputs_avail, int clocks_avail, 
          int cluster_size, int lut_size, int initial_luts_used, 
          int cluster_index, boolean *is_clock, boolean global_clocks,
-         enum e_cluster_seed cluster_seed_type) {
+ 	 int *next_empty_location_in_cluster, int *block_in_cluster, 
+         boolean timing_driven, boolean connection_driven) {
 
 /* This routine is called when we find that no more luts can be packed *
  * into the open cluster.  If this is because the cluster is full,     *
@@ -975,9 +1122,14 @@ static void  hill_climbing (int initial_inputs_avail, int clocks_avail,
  * block is added so that I can later "roll back" the cluster to  *
  * the last feasible configuration.                               */
 
+/*returns how many blocks added to the cluster*/
+
  static int *inputs_avail = NULL;    /* 0..cluster_size */
  static int *block_added = NULL;     /* Which block was added? */
- int luts_used, iblk, i, ipin, inet;
+ int luts_used, iblk, i;
+ int num_blocks_added;
+
+ num_blocks_added = 0;
 
 /* Only allocate once.  Ugly hack, but what can I do?  Can't free the *
  * memory easily when it's done this way either.                      */
@@ -987,12 +1139,10 @@ static void  hill_climbing (int initial_inputs_avail, int clocks_avail,
  }
 
  if (initial_luts_used == cluster_size) 
-    return;
+    return num_blocks_added;
 
  luts_used = initial_luts_used;
  inputs_avail[luts_used-1] = initial_inputs_avail;
-
- load_gain_for_hill_climbing (is_clock, lut_size);
 
  while (luts_used != cluster_size) {
     iblk = get_most_feasible_block (inputs_avail[luts_used-1], 
@@ -1001,10 +1151,15 @@ static void  hill_climbing (int initial_inputs_avail, int clocks_avail,
        break;
 
     luts_used++;
-    inputs_avail[luts_used-1] = inputs_avail[luts_used-2] + gain[iblk];
+    inputs_avail[luts_used-1] = inputs_avail[luts_used-2] + hillgain[iblk];
     block_added[luts_used-1] = iblk;
+
+    num_blocks_added++;
+    block_in_cluster[*next_empty_location_in_cluster]=iblk;
+    (*next_empty_location_in_cluster)++;
+
     hill_climbing_add_to_cluster (iblk, cluster_index, lut_size, 
-         is_clock, &clocks_avail);
+         is_clock, &clocks_avail, timing_driven, connection_driven);
 
 /* Early exit check.  Each LUT added can reduce the number of inputs *
  * required by at most one, so check if it's hopeless.               */
@@ -1020,34 +1175,20 @@ static void  hill_climbing (int initial_inputs_avail, int clocks_avail,
  * replace the i'th block with it and so on.                           */
  
  for (i=luts_used-1;i>=initial_luts_used;i--) {
-    if (inputs_avail[i] >= 0)   /* Found feasible solution! */
-       break;
-    iblk = block_added[i];
+    if (inputs_avail[i] >= 0){   /* Found feasible solution! */
+      break;
+    }
 
 /* Infeasible.  Back up one block.  */
+    (*next_empty_location_in_cluster)--;
+    num_blocks_added--;
+    iblk = block_added[i];
     cluster_of_block[iblk] = NO_CLUSTER;
-
-/* Back up code below only necessary if I need the correct gains to *
- * the current cluster in order to find the new seed block.         */
-
-    if (cluster_seed_type == MAX_SHARING) {
-       inet = block[iblk].nets[0];  /* Output */
-       net_output_in_cluster[inet] = FALSE;
-       num_pins_of_net_in_cluster[inet]--;
-    
-       for (ipin=1;ipin<=lut_size+1;ipin++) {   /* Inputs + clock */
-          inet = block[iblk].nets[ipin];
-          if (inet != OPEN) 
-             num_pins_of_net_in_cluster[inet]--; 
-       }
-    }
+    block_in_cluster[*next_empty_location_in_cluster]=NO_CLUSTER;
  }
-
- if (cluster_seed_type == MAX_SHARING) 
-    reload_gain_for_greedy (lut_size, is_clock, global_clocks);
+ return num_blocks_added;
 }
-
-
+/*****************************************/
 static void alloc_and_load_cluster_info (int ***cluster_contents_ptr, 
         int **cluster_occupancy_ptr, int num_clusters, int cluster_size) {
 
@@ -1103,6 +1244,7 @@ static void alloc_and_load_cluster_info (int ***cluster_contents_ptr,
 }
 
 
+/*****************************************/
 static void check_clustering (int num_clusters, int cluster_size, 
         int inputs_per_cluster, int clocks_per_cluster, int lut_size,
         boolean *is_clock, int **cluster_contents, int *cluster_occupancy) {
@@ -1146,7 +1288,8 @@ static void check_clustering (int num_clusters, int cluster_size,
        exit (1);
     }
 
-    inputs_used = 0;
+    inputs_used = 0; 
+
     clocks_used = 0;
 
     for (i=0;i<cluster_occupancy[icluster];i++) {
@@ -1237,57 +1380,221 @@ static void check_clustering (int num_clusters, int cluster_size,
 }
 
 
+/*****************************************/
+/*globally accessable function*/
 void do_clustering (int cluster_size, int inputs_per_cluster,
        int clocks_per_cluster, int lut_size, boolean global_clocks,
+       boolean muxes_to_cluster_output_pins,
        boolean *is_clock, boolean hill_climbing_flag, 
-       enum e_cluster_seed cluster_seed_type, boolean 
-       muxes_to_cluster_output_pins, char *out_fname) {
+       char *out_fname, boolean timing_driven, 
+       enum e_cluster_seed cluster_seed_type, float alpha, 
+       int recompute_timing_after, float block_delay, 
+       float intra_cluster_net_delay, float inter_cluster_net_delay,
+       boolean allow_unrelated_clustering, 
+       boolean allow_early_exit, boolean connection_driven){
 
 /* Does the actual work of clustering multiple LUT+FF logic blocks *
  * into clusters.                                                  */
 
+  /*note: I allow timing_driven and connection_driven to be simultaneously true*/
+  /*in this case, connection_driven is responsible for all clustering decisions*/
+  /*but timing analysis is still enabled (useful for viewing the constant delay*/
+  /*results) */
+
  int num_clusters, istart;
  int inputs_used, luts_used, clocks_used, next_blk;
  int *cluster_occupancy, **cluster_contents;
+ int blocks_since_last_analysis;
+ int farthest_block;
+ int *block_in_cluster;
+ int next_empty_location_in_cluster;
+ int num_blocks_hill_added;
+ int num_blocks_clustered;
+ boolean critical_path_minimized, dummy_bool;
+ boolean early_exit;
 
  check_clocks (is_clock, lut_size);
  check_for_duplicate_inputs (lut_size);
- alloc_and_init_clustering (lut_size, cluster_size);
+ alloc_and_init_clustering (lut_size, cluster_size, global_clocks, alpha);
+
  num_clusters = 0;
- 
- istart = get_free_block_with_most_ext_inputs (lut_size, 
-            inputs_per_cluster, clocks_per_cluster);
+ next_empty_location_in_cluster = 0;
+ blocks_since_last_analysis = 0;
+ critical_path_minimized = FALSE;
+ early_exit = FALSE;
+ num_blocks_clustered = 0;
+ num_blocks_hill_added = 0;
+
+ block_in_cluster = (int*) my_malloc (cluster_size * sizeof (int));
+
+ if (timing_driven){
+					
+   alloc_and_init_path_length(lut_size, is_clock);
+   calculate_timing_information(block_delay, inter_cluster_net_delay, 
+				intra_cluster_net_delay, 
+				num_clusters,
+				num_blocks_clustered,
+				&farthest_block);
+
+   /*print out initial critical path before clustering starts */
+   dummy_bool = report_critical_path(
+                        block_delay, inter_cluster_net_delay,
+			intra_cluster_net_delay, farthest_block,
+			cluster_size, TRUE);
+
+   if (cluster_seed_type == TIMING){
+     istart=get_most_critical_unclustered_block();
+   }
+   else {/*max input seed*/
+     istart=get_free_block_with_most_ext_inputs(lut_size,
+						inputs_per_cluster,
+						clocks_per_cluster);
+   }
+ }
+ else /*cluster seed is max input (since there is no timing information)*/
+   istart=get_free_block_with_most_ext_inputs(lut_size,
+					      inputs_per_cluster,
+					      clocks_per_cluster);
+
 
  while (istart != NO_CLUSTER) {
-    reset_cluster(&inputs_used, &luts_used, &clocks_used);
+    reset_cluster(&inputs_used, &luts_used, &clocks_used,
+		  &next_empty_location_in_cluster, block_in_cluster,
+		  cluster_size);
+
     num_clusters++;
+
+    block_in_cluster[next_empty_location_in_cluster]=istart;
+    next_empty_location_in_cluster++;
+
     add_to_cluster(istart, num_clusters - 1, lut_size, is_clock, 
-         global_clocks, &inputs_used, &luts_used, &clocks_used);
+         global_clocks, &inputs_used, &luts_used, &clocks_used, 
+         alpha, timing_driven, connection_driven);   
+
+    num_blocks_clustered ++;
+
+    if (timing_driven && !early_exit) {
+      blocks_since_last_analysis++;
+      /*it doesn't make sense to do a timing analysis here since there*
+       *is only one block clustered it would not change anything      */
+    }
 
     next_blk = get_lut_for_cluster (inputs_per_cluster - inputs_used, 
                clocks_per_cluster - clocks_used, cluster_size, lut_size,
-               luts_used, is_clock);
-
+	       luts_used, is_clock, allow_unrelated_clustering);
+    
     while (next_blk != NO_CLUSTER) {
-       add_to_cluster(next_blk, num_clusters - 1, lut_size, is_clock, 
-                  global_clocks, &inputs_used, &luts_used, &clocks_used);
-       next_blk = get_lut_for_cluster (inputs_per_cluster - inputs_used, 
+
+      block_in_cluster[next_empty_location_in_cluster]=next_blk;
+      next_empty_location_in_cluster++;
+
+      add_to_cluster(next_blk, num_clusters - 1, lut_size, is_clock, 
+                  global_clocks, &inputs_used, &luts_used, &clocks_used, 
+		  alpha, timing_driven, connection_driven);
+
+      num_blocks_clustered ++;
+
+
+
+      if (timing_driven && !early_exit) {
+	blocks_since_last_analysis++;
+	if (blocks_since_last_analysis >= recompute_timing_after) {
+	  calculate_timing_information(block_delay ,inter_cluster_net_delay, 
+				       intra_cluster_net_delay, 
+				       num_clusters,
+				       num_blocks_clustered,
+				       &farthest_block);
+
+	  recompute_length_gain_values(block_in_cluster, 
+				       next_empty_location_in_cluster,
+				       lut_size,
+				       global_clocks, is_clock);
+
+	  critical_path_minimized = report_critical_path(
+                        block_delay, inter_cluster_net_delay,
+			intra_cluster_net_delay, farthest_block,
+			cluster_size, FALSE);
+
+	  /*once we have clustered every block on the most critical path*
+	   *no further timing gains can be made. */
+
+	  if (critical_path_minimized) {
+	    /*allow unrelateed clustering now, since we are not     *
+	     *worried any more about inadvertantly absorbing blocks *
+	     *which might be on a critical path (current and future)*/
+	    allow_unrelated_clustering=TRUE;
+
+            if (allow_early_exit) {
+               /* if the critical path is minimized, and we have set this option*/
+               /* there is no need to to any more timing analysis               */
+               early_exit = TRUE;
+            }
+	  }
+
+
+	  blocks_since_last_analysis=0;
+	}
+      }
+
+      next_blk = get_lut_for_cluster (inputs_per_cluster - inputs_used, 
                   clocks_per_cluster - clocks_used, cluster_size, 
-                  lut_size, luts_used, is_clock);
+                  lut_size, luts_used, is_clock, allow_unrelated_clustering);
     }
    
-    if (hill_climbing_flag)
-       hill_climbing (inputs_per_cluster - inputs_used,
-                  clocks_per_cluster - clocks_used, cluster_size, lut_size, 
-                  luts_used, num_clusters - 1, is_clock, global_clocks,
-                  cluster_seed_type);
+    if (hill_climbing_flag && allow_unrelated_clustering) {
+       num_blocks_hill_added=hill_climbing (inputs_per_cluster - inputs_used,
+                   clocks_per_cluster - clocks_used, cluster_size, lut_size, 
+                   luts_used, num_clusters - 1, is_clock, global_clocks,
+		   &next_empty_location_in_cluster, block_in_cluster,
+                   timing_driven, connection_driven);
+       num_blocks_clustered += num_blocks_hill_added;
+    }
 
-    if (cluster_seed_type == MAX_SHARING) 
-       istart = get_lut_for_cluster (inputs_per_cluster, clocks_per_cluster,
-                cluster_size, lut_size, 0, is_clock);
-    else
-       istart = get_free_block_with_most_ext_inputs (lut_size, 
-                  inputs_per_cluster, clocks_per_cluster);
+
+    if (timing_driven){
+
+      if (num_blocks_hill_added > 0  && !early_exit) {
+	blocks_since_last_analysis += num_blocks_hill_added;
+	if (blocks_since_last_analysis >= recompute_timing_after) {
+
+	  calculate_timing_information(block_delay, inter_cluster_net_delay, 
+				       intra_cluster_net_delay, 
+				       num_clusters,
+				       num_blocks_clustered,
+				       &farthest_block);
+
+	  blocks_since_last_analysis=0;
+	}
+      }
+
+      if (cluster_seed_type == TIMING){
+	istart=get_most_critical_unclustered_block();
+      }
+      else { /*max input seed*/
+	istart=get_free_block_with_most_ext_inputs(lut_size,
+						 inputs_per_cluster,
+						 clocks_per_cluster);
+      }
+    }
+    else /*cluster seed is max input (since there is no timing information)*/
+      istart=get_free_block_with_most_ext_inputs(lut_size,
+						 inputs_per_cluster,
+						 clocks_per_cluster);
+
+ }
+
+ if (timing_driven){
+   calculate_timing_information(block_delay, inter_cluster_net_delay, 
+				intra_cluster_net_delay, 
+				num_clusters,
+				num_blocks_clustered,
+				&farthest_block);
+
+   /*print out critical path after circuit has been fully clustered*/
+   dummy_bool = report_critical_path(
+			block_delay, inter_cluster_net_delay,
+			intra_cluster_net_delay, farthest_block,
+			cluster_size, TRUE);
  }
 
  alloc_and_load_cluster_info (&cluster_contents, &cluster_occupancy, 
@@ -1301,7 +1608,12 @@ void do_clustering (int cluster_size, int inputs_per_cluster,
                is_clock, out_fname);
 
  free (cluster_occupancy);
+ free (block_in_cluster);
  free_matrix (cluster_contents, 0, num_clusters-1, 0, 
            sizeof (int));
  free_clustering ();
+
+ if (timing_driven)
+  free_path_length_memory();
+
 }

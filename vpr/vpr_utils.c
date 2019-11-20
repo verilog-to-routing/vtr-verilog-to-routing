@@ -28,6 +28,7 @@ boolean is_opin (int ipin) {
 void load_one_clb_fanout_count (int subblock_lut_size, t_subblock
          *subblock_inf, int num_subblocks, int *num_uses_of_clb_ipin,
          int *num_uses_of_sblk_opin, int iblk) {
+
  
 /* Loads the fanout counts for one block (iblk).  */
  
@@ -42,7 +43,7 @@ void load_one_clb_fanout_count (int subblock_lut_size, t_subblock
    * all conditions.                                                   */
 
     conn_pin = subblock_inf[isub].output;
-    if (conn_pin != OPEN) { 
+    if (conn_pin != OPEN) {
        if (block[iblk].nets[conn_pin] != OPEN) {  /* CLB output is used */
           num_uses_of_sblk_opin[isub]++;
        }

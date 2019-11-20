@@ -1,3 +1,17 @@
+Version 4.30, March 25, 2000
+
+- Sandy Marquardt's timing-driven placement enhancements are in this
+  version.  Previous versions of VPR had only routability-driven placement.
+
+  I cleaned up various minor things:  removed an unused #define NEVER from 
+  main.c, set the date in the title bar, and fixed a couple of mistakes in
+  the command line processor's checking for invalid combinations of 
+  options.  I regression tested this code fairly thoroughly against the
+  last release.
+
+  This version was released on the web.
+
+
 Version 4.22, Jan. 26, 1999
 
 - Changes "pr.h" to "vpr_types.h" and "ext.h" to "globals.h".

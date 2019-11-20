@@ -485,7 +485,7 @@ void echo_input (char *blif_file, int lut_size, char *echo_file) {
  printf("LUTs: %d.  Latches: %d.\n", num_luts, num_latches);
  printf("Total Blocks: %d.  Total Nets: %d\n", num_blocks, num_nets);
  
- fp = my_fopen (echo_file, "w", 0); 
+ fp = my_fopen (echo_file,"w",0); 
 
  fprintf(fp,"Input netlist file: %s  Model: %s\n",blif_file,model);
  fprintf(fp,"num_p_inputs: %d, num_p_outputs: %d, num_luts: %d,"

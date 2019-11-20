@@ -3,6 +3,12 @@
                     /* Only causes about a 1% speed degradation in V 3.10 */
 #endif
 
+/*#define PRINT_SINK_DELAYS*/ /*prints the sink delays to files*/
+/*#define PRINT_NET_SLACKS*/ /*prints out all slacks in the circuit*/
+/*#define PRINT_PLACE_CRIT_PATH*/ /*prints out placement estimated critical path*/
+/*#define PRINT_NET_DELAYS*/ /*prints out delays for all connections*/
+/*#define PRINT_TIMING_GRAPH*/ /*prints out the timing graph */
+
 #ifdef SPEC
 #define NO_GRAPHICS    /* Rips out graphics (for non-X11 systems)      */
 #define NDEBUG         /* Turns off assertion checking for extra speed */
@@ -37,7 +43,7 @@ enum pic_type {NO_PICTURE, PLACEMENT, ROUTING};  /* What's on screen? */
 
 /* For the placer.  Different types of cost functions that can be used. */
 
-enum e_place_cost_type {LINEAR_CONG, NONLINEAR_CONG};
+enum place_c_types {LINEAR_CONG, NONLINEAR_CONG};
 
 enum e_operation {PLACE_AND_ROUTE, PLACE_ONLY, ROUTE_ONLY, 
                   TIMING_ANALYSIS_ONLY};
@@ -169,12 +175,26 @@ struct s_annealing_sched {enum sched_type type; float inner_num; float init_t;
  * obvious meanings.                                                      */
 
 
-struct s_placer_opts {enum e_place_cost_type place_cost_type; float 
-       place_cost_exp; int place_chan_width; enum e_pad_loc_type 
-       pad_loc_type; char *pad_loc_file; enum pfreq place_freq; int 
-       num_regions;};
+enum e_place_algorithm {BOUNDING_BOX_PLACE, NET_TIMING_DRIVEN_PLACE, PATH_TIMING_DRIVEN_PLACE};
+struct s_placer_opts {enum e_place_algorithm place_algorithm;
+       float timing_tradeoff;
+       int block_dist;
+       enum place_c_types place_cost_type; float place_cost_exp;
+       int place_chan_width; enum e_pad_loc_type pad_loc_type; 
+       char *pad_loc_file; enum pfreq place_freq; int num_regions;
+       int recompute_crit_iter;
+       boolean enable_timing_computations;
+       int inner_loop_recompute_divider;
+       float td_place_exp_first;
+       float td_place_exp_last;};
 
 /* Various options for the placer.                                           *
+ * place_algorithm:  BOUNDING_BOX_PLACE or NET_TIMING_DRIVEN_PLACE, or       *
+ *                   PATH_TIMING_DRIVEN_PLACE                                *
+ * timing_tradeoff:  When TIMING_DRIVEN_PLACE mode, what is the tradeoff *
+ *                   timing driven and BOUNDING_BOX_PLACE.                   *
+ * block_dist:  Initial guess of how far apart blocks on the critical path   *
+ *              This is used to compute the initial slacks and criticalities *
  * place_cost_type:  LINEAR_CONG or NONLINEAR_CONG.                          *
  * place_cost_exp:  Power to which denominator is raised for linear_cong.    *
  * place_chan_width:  The channel width assumed if only one placement is     *
@@ -185,7 +205,18 @@ struct s_placer_opts {enum e_place_cost_type place_cost_type; float
  * place_freq:  Should the placement be skipped, done once, or done for each *
  *              channel width in the binary search.                          *
  * num_regions:  Used only with NONLINEAR_CONG; in that case, congestion is  *
- *               computed on an array of num_regions x num_regions basis.    */
+ *               computed on an array of num_regions x num_regions basis.    *
+ * recompute_crit_iter: how many temperature stages pass before we recompute *
+ *               criticalities based on average point to point delay         *
+ * enable_timing_computations: in bounding_box mode, normally, timing        *
+ *               information is not produced, this causes the information    *
+ *               to be computed. in *_TIMING_DRIVEN modes, this has no effect*
+ * inner_loop_crit_divider: (move_lim/inner_loop_crit_divider) determines how*
+ *               many inner_loop iterations pass before a recompute of       *
+ *               criticalities is done.                                      *
+ * td_place_exp_first: exponent that is used on the timing_driven criticlity *
+ *               it is the value that the exponent starts at.                *
+ * td_place_exp_last: value that the criticality exponent will be at the end */
 
 
 enum e_route_type {GLOBAL, DETAILED};

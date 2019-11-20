@@ -8,24 +8,36 @@
 #include "cluster.h"
 #include "output_clustering.h"
 
+#define BIG_INT 32000
+
 int num_nets, num_blocks;
 int num_p_inputs, num_p_outputs, num_luts, num_latches;
 struct s_net *net;
 struct s_block *block;
 
 static void parse_command (int argc, char *argv[], char *blif_file, 
-    char *output_file, boolean *global_clocks, int *cluster_size,
-    int *inputs_per_cluster, int *clocks_per_cluster, int *lut_size,
-    boolean *hill_climbing_flag, enum e_cluster_seed *cluster_seed_type,
-    boolean *skip_clustering, boolean *muxes_to_cluster_output_pins); 
+   char *output_file, boolean *global_clocks, int *cluster_size,
+   int *inputs_per_cluster, int *clocks_per_cluster, int *lut_size,
+   boolean *muxes_to_cluster_output_pins,
+   boolean *hill_climbing_flag, boolean *timing_driven,
+   enum e_cluster_seed *cluster_seed_type, float *alpha, 
+   int *recompute_timing_percent, float *block_delay,
+   float *intra_cluster_net_delay, float *inter_cluster_net_delay,
+   boolean *skip_clustering, boolean *allow_unrelated_clustering,
+   boolean *allow_early_exit, boolean *connection_driven);
 static int read_int_option (int argc, char *argv[], int iarg);
+static float read_float_option (int argc, char *argv[], int iarg);
 
 
 /* Vpack was written by Vaughn Betz at the University of Toronto.   *
  * It is an extension / replacement for the older blifmap program   *
  * used with earlier versions of VPR.                               *
  * Contact vaughn@eecg.utoronto.ca if you wish to use vpack in your *
- * research or if you have questions about its use.                 */
+ * research or if you have questions about its use.                 *
+ * All timing enhancements were written by Alexander (Sandy)        *
+ * Marquardt at the University of Toronto. Contact                  *
+ * arm@eecg.toronto.edu if you have any questions about these       *
+ * enhancements                                                     */
 
 static void unclustered_stats (int lut_size) {
 
@@ -81,9 +93,10 @@ static void unclustered_stats (int lut_size) {
 
 int main (int argc, char *argv[]) {
 
- char title[] = "\nVPack Version 2.09 by V. Betz\n"
+ char title[] = "\nT-Vpack / Vpack Version 4.30\n"
+                "Vaughn Betz and (modified by) Alexander(Sandy) Marquardt\n"
                 "Netlist translator/logic block packer for use with VPR\n"
-                "Source completed Jan. 26, 1999; "
+                "Source completed March 25, 2000; "
                 "compiled " __DATE__ ".\n"
                 "This code is licensed for non-commercial use only.\n\n";
 
@@ -92,8 +105,17 @@ int main (int argc, char *argv[]) {
  boolean global_clocks;
  int cluster_size, inputs_per_cluster, clocks_per_cluster;
  int lut_size;
- boolean hill_climbing_flag, skip_clustering, muxes_to_cluster_output_pins;
+ boolean muxes_to_cluster_output_pins;
+ boolean hill_climbing_flag, skip_clustering, allow_unrelated_clustering;
+ boolean timing_driven;
+ boolean allow_early_exit;
  enum e_cluster_seed cluster_seed_type;
+ float alpha;
+ int recompute_timing_after; 
+ float block_delay;
+ float intra_cluster_net_delay; 
+ float inter_cluster_net_delay;
+ boolean connection_driven;
 
  boolean *is_clock;      /* [0..num_nets-1] TRUE if a clock. */
 
@@ -101,8 +123,12 @@ int main (int argc, char *argv[]) {
 
  parse_command (argc, argv, blif_file, output_file, &global_clocks,
     &cluster_size, &inputs_per_cluster, &clocks_per_cluster, &lut_size,
-    &hill_climbing_flag, &cluster_seed_type, &skip_clustering, 
-    &muxes_to_cluster_output_pins);
+    &muxes_to_cluster_output_pins, 
+    &hill_climbing_flag, &timing_driven, &cluster_seed_type, &alpha, 
+    &recompute_timing_after, &block_delay, &intra_cluster_net_delay,
+    &inter_cluster_net_delay, &skip_clustering, &allow_unrelated_clustering,
+    &allow_early_exit, &connection_driven);
+
  
  read_blif (blif_file, lut_size);
  echo_input (blif_file, lut_size, "input.echo");
@@ -120,18 +146,23 @@ int main (int argc, char *argv[]) {
  printf("LUT+FF Logic Blocks: %d.  Total Nets: %d.\n", num_blocks - 
        num_p_outputs - num_p_inputs, num_nets);
 
+
 /* Uncomment line below if you want a dump of compressed netlist. */
-/* echo_input (blif_file, lut_size, "packed.echo");  */
+/* echo_input (blif_file, lut_size, "packed.echo"); */
 
  if (skip_clustering == FALSE) {
     do_clustering (cluster_size, inputs_per_cluster, clocks_per_cluster,
-        lut_size, global_clocks, is_clock, hill_climbing_flag,
-        cluster_seed_type, muxes_to_cluster_output_pins, output_file);
+        lut_size, global_clocks, muxes_to_cluster_output_pins,
+        is_clock, hill_climbing_flag,
+        output_file, timing_driven, cluster_seed_type, alpha, 
+        recompute_timing_after, block_delay, 
+        intra_cluster_net_delay, inter_cluster_net_delay, 
+	allow_unrelated_clustering, allow_early_exit, connection_driven);
  }
  else {
     unclustered_stats (lut_size);
     output_clustering (NULL, NULL, cluster_size, inputs_per_cluster,
-       clocks_per_cluster, 0, lut_size, global_clocks, 
+       clocks_per_cluster, 0, lut_size, global_clocks,
        muxes_to_cluster_output_pins, is_clock, output_file);
  }
 
@@ -143,11 +174,17 @@ int main (int argc, char *argv[]) {
 
 
 
+
 static void parse_command (int argc, char *argv[], char *blif_file, 
    char *output_file, boolean *global_clocks, int *cluster_size,
    int *inputs_per_cluster, int *clocks_per_cluster, int *lut_size,
-   boolean *hill_climbing_flag, enum e_cluster_seed *cluster_seed_type,
-   boolean *skip_clustering, boolean *muxes_to_cluster_output_pins) {
+   boolean *muxes_to_cluster_output_pins,
+   boolean *hill_climbing_flag, boolean *timing_driven,
+   enum e_cluster_seed *cluster_seed_type, float *alpha, 
+   int *recompute_timing_after, float *block_delay,
+   float *intra_cluster_net_delay, float *inter_cluster_net_delay,
+   boolean *skip_clustering, boolean *allow_unrelated_clustering,
+   boolean *allow_early_exit, boolean *connection_driven) {
 
 /* Parse the command line to determine user options. */
 
@@ -155,12 +192,20 @@ static void parse_command (int argc, char *argv[], char *blif_file,
  boolean inputs_per_cluster_set;
 
  if (argc < 3) {
-    printf("Usage:  vpack input.blif output.net [-lut_size <int>]\n");
+    printf("Usage:  t-vpack input.blif output.net [-lut_size <int>]\n");
     printf("\t[-cluster_size <int>] [-inputs_per_cluster <int>]\n");
     printf("\t[-clocks_per_cluster <int>] [-global_clocks on|off]\n");
-    printf("\t[-hill_climbing on|off] [-cluster_seed max_sharing|max_inputs]"
-           "\n");
-    printf("\t[-no_clustering] [-muxes_to_cluster_output_pins on|off]\n\n");
+    printf("\t[-muxes_to_cluster_output_pins on|off]\n");
+    printf("\t[-hill_climbing on|off]\n");
+    printf("\t[-timing_driven on|off]\n");
+    printf("\t[-cluster_seed timing|max_inputs] [-alpha <float>]\n");
+    printf("\t[-recompute_timing_after <int>] [-block_delay <float>]\n");
+    printf("\t[-allow_unrelated_clustering on|off]\n");
+    printf("\t[-allow_early_exit on|off]\n");
+    printf("\t[-intra_cluster_net_delay <float>] \n");
+    printf("\t[-inter_cluster_net_delay <float>] \n");
+    printf("\t[-connection_driven on|off] \n");
+    printf("\t[-no_clustering]\n\n");
     exit(1);
  }
 
@@ -172,10 +217,22 @@ static void parse_command (int argc, char *argv[], char *blif_file,
  *inputs_per_cluster = -1;  /* Dummy.  Need other params to set default. */
  inputs_per_cluster_set = FALSE;
  *clocks_per_cluster = 1;
- *hill_climbing_flag = TRUE;
- *cluster_seed_type = MAX_INPUTS;
- *skip_clustering = FALSE;
  *muxes_to_cluster_output_pins = FALSE;
+
+ *hill_climbing_flag = TRUE;
+ *skip_clustering = FALSE;
+ *allow_unrelated_clustering = TRUE;
+ *allow_early_exit = FALSE;
+ *connection_driven = FALSE;
+
+ *timing_driven = TRUE;
+ *cluster_seed_type = TIMING; /*is later set to MAX_INPUTS if we are not timing driven*/
+ *alpha=0.75;
+ *recompute_timing_after=BIG_INT; /*never recomputer timing*/
+ *block_delay=0.1;
+ *intra_cluster_net_delay=0.1;
+ *inter_cluster_net_delay=1.0;
+
 
 /* Start parsing the command line.  First two arguments are mandatory. */
 
@@ -248,21 +305,40 @@ static void parse_command (int argc, char *argv[], char *blif_file,
        continue;
     }
 
-
-    if (strcmp (argv[i],"-muxes_to_cluster_output_pins") == 0) {
+    if (strcmp (argv[i],"-allow_unrelated_clustering") == 0) {
        if (argc <= i+1) {
-          printf ("Error:  -muxes_to_cluster_output_pins option requires a "
-                     "string parameter.\n");
+          printf ("Error:  -allow_unrelated_clustering option requires a "
+		  "string parameter.\n");
           exit (1);
        }
        if (strcmp(argv[i+1], "on") == 0) {
-          *muxes_to_cluster_output_pins = TRUE;
+          *allow_unrelated_clustering = TRUE;
        }
        else if (strcmp(argv[i+1], "off") == 0) {
-          *muxes_to_cluster_output_pins = FALSE;
+          *allow_unrelated_clustering = FALSE;
        }
        else {
-          printf("Error:  -muxes_to_cluster_output_pins must be on or off.\n");
+          printf("Error:  -allow_unrelated_clustering must be on or off.\n");
+          exit (1);
+       }
+ 
+       i += 2;
+       continue;
+    }
+    if (strcmp (argv[i],"-allow_early_exit") == 0) {
+       if (argc <= i+1) {
+          printf ("Error:  -allow_early_exit option requires a "
+		  "string parameter.\n");
+          exit (1);
+       }
+       if (strcmp(argv[i+1], "on") == 0) {
+          *allow_early_exit = TRUE;
+       }
+       else if (strcmp(argv[i+1], "off") == 0) {
+          *allow_early_exit = FALSE;
+       }
+       else {
+          printf("Error:  -allow_early_exit must be on or off.\n");
           exit (1);
        }
  
@@ -270,6 +346,46 @@ static void parse_command (int argc, char *argv[], char *blif_file,
        continue;
     }
 
+    if (strcmp (argv[i],"-timing_driven") == 0) {
+       if (argc <= i+1) {
+          printf ("Error:  -timing_driven option requires a string parameter."
+                  "\n"); 
+          exit (1);    
+       } 
+       if (strcmp(argv[i+1], "on") == 0) {
+          *timing_driven = TRUE;
+       } 
+       else if (strcmp(argv[i+1], "off") == 0) {
+          *timing_driven = FALSE;
+       } 
+       else {
+          printf("Error:  -timing_driven must be on or off.\n");
+          exit (1);
+       } 
+ 
+       i += 2;
+       continue;
+    }
+    if (strcmp (argv[i],"-connection_driven") == 0) {
+       if (argc <= i+1) {
+          printf ("Error:  -connection_driven option requires a string parameter."
+                  "\n"); 
+          exit (1);    
+       } 
+       if (strcmp(argv[i+1], "on") == 0) {
+          *connection_driven = TRUE;
+       } 
+       else if (strcmp(argv[i+1], "off") == 0) {
+          *connection_driven = FALSE;
+       } 
+       else {
+          printf("Error:  -connection_driven must be on or off.\n");
+          exit (1);
+       } 
+ 
+       i += 2;
+       continue;
+    }
 
     if (strcmp(argv[i],"-cluster_seed") == 0) {
        if (argc <= i+1) {
@@ -278,22 +394,64 @@ static void parse_command (int argc, char *argv[], char *blif_file,
            exit (1);
        }
 
-       if (strcmp(argv[i+1], "max_sharing") == 0) {
-          *cluster_seed_type = MAX_SHARING;
+       if (strcmp(argv[i+1], "timing") == 0) {
+          *cluster_seed_type = TIMING;
        }
        else if (strcmp(argv[i+1], "max_inputs") == 0) {
           *cluster_seed_type = MAX_INPUTS;
        }
        else {
-          printf("Error:  -cluster_seed must be max_sharing or "
+          printf("Error:  -cluster_seed must be timing or "
              "max_inputs.\n");
           exit (1);
        }
- 
+
        i += 2;
        continue;
-    }  
+    }
 
+    if (strcmp (argv[i],"-alpha") == 0) {
+       *alpha = read_float_option (argc, argv, i);
+
+       if (*alpha > 1.0 || *alpha < 0.0) {
+          printf("Error:  alpha must be between 0 and 1.\n");
+          exit (1);
+       }
+
+       i += 2;
+       continue;
+    }
+
+    if (strcmp (argv[i],"-recompute_timing_after") == 0) {
+       *recompute_timing_after = read_int_option (argc, argv, i);
+
+       if (*recompute_timing_after < 1){
+          printf("Error:  recompute_timing_after must be >= 1\n");
+          exit (1);
+       }
+
+       i += 2;
+       continue;
+    }
+
+    if (strcmp (argv[i],"-block_delay") == 0) {
+       *block_delay = read_float_option (argc, argv, i);
+       i += 2;
+       continue;
+    }
+
+
+    if (strcmp (argv[i],"-intra_cluster_net_delay") == 0) {
+       *intra_cluster_net_delay = read_float_option (argc, argv, i);
+       i += 2;
+       continue;
+    }
+
+    if (strcmp (argv[i],"-inter_cluster_net_delay") == 0) {
+       *inter_cluster_net_delay = read_float_option (argc, argv, i);
+       i += 2;
+       continue;
+    }
 
     if (strcmp (argv[i],"-cluster_size") == 0) {
        *cluster_size = read_int_option (argc, argv, i);
@@ -326,15 +484,49 @@ static void parse_command (int argc, char *argv[], char *blif_file,
        continue;
     }
 
+   if (strcmp (argv[i],"-muxes_to_cluster_output_pins") == 0) {
+       if (argc <= i+1) {
+          printf ("Error:  -muxes_to_cluster_output_pins option requires a "
+                     "string parameter.\n");
+          exit (1);
+       }
+       if (strcmp(argv[i+1], "on") == 0) {
+          *muxes_to_cluster_output_pins = TRUE;
+       }
+       else if (strcmp(argv[i+1], "off") == 0) {
+          *muxes_to_cluster_output_pins = FALSE;
+       }
+       else {
+          printf("Error:  -muxes_to_cluster_output_pins must be on or off.\n");
+          exit (1);
+       }
+
+       i += 2;
+       continue;
+    }
+
+    
+
     printf("Unrecognized option: %s.  Aborting.\n",argv[i]);
     exit(1);
 
  }   /* End of options while loop. */
 
-/* Perform extra sanity checks. */
+/* Assign new default values if required. */
 
  if (!inputs_per_cluster_set) 
     *inputs_per_cluster = *lut_size * *cluster_size;
+
+ if (!*timing_driven) {
+   *cluster_seed_type=MAX_INPUTS;
+   *allow_unrelated_clustering = TRUE;
+ }
+ 
+ if (*recompute_timing_after == -1) {
+   *recompute_timing_after = *cluster_size;
+ }
+
+ /*additional santiy checks*/
 
  if (*inputs_per_cluster < *lut_size || *inputs_per_cluster > *cluster_size
             * *lut_size) {
@@ -352,7 +544,7 @@ static void parse_command (int argc, char *argv[], char *blif_file,
  if (*skip_clustering == TRUE) {
     if (*inputs_per_cluster != *lut_size || *cluster_size != 1 ||
            *clocks_per_cluster != 1 || *muxes_to_cluster_output_pins !=
-           FALSE) {
+            FALSE) {
        printf("Error:  Cluster attributes cannot be specified with \n");
        printf("-no_clustering enabled.\n");
        exit (1);
@@ -363,27 +555,45 @@ static void parse_command (int argc, char *argv[], char *blif_file,
 
  printf("Selected options:\n\n");
  printf("\tLut Size: %d inputs\n", *lut_size);
- printf("\tCluster size: %d (LUT+FF) logic block(s) / cluster\n", 
+ printf("\tCluster Size: %d (LUT+FF) logic block(s) / cluster\n", 
       *cluster_size);
- printf("\tDistinct Input Pins per Cluster: %d\n", *inputs_per_cluster);
- printf("\tClock Pins per Cluster: %d\n", *clocks_per_cluster);
- printf("\tClocks Routed via Dedicated Resource: %s\n",
+ printf("\tDistinct Input Pins Per Cluster: %d\n", *inputs_per_cluster);
+ printf("\tClock Pins Per Cluster: %d\n", *clocks_per_cluster);
+ printf("\tClocks Routed Via Dedicated Resource: %s\n",
       (*global_clocks) ? "Yes" : "No");
  printf("\tEach BLE output connected directly to a cluster output: %s\n",
       (*muxes_to_cluster_output_pins) ? "No" : "Yes");
 
  if (*skip_clustering) {
-    printf("\tClustering step will NOT be performed.\n");
+    printf("\tClustering Step Will NOT Be Performed.\n");
  }
  else {
-    printf("\tHill climbing during clustering: %s\n",
-         (*hill_climbing_flag) ? "Enabled" : "Disabled");
-    printf("\tClustering seed found via:  %s\n",
-         (*cluster_seed_type == MAX_SHARING) ?
-          "Maximum pin sharing with last cluster" : "Maximum inputs used");
+    printf("\tClustering Seed Found Via:  %s\n",
+           (*cluster_seed_type == TIMING) ?
+           "Most Critical Block" : "Maximum Inputs Used");
+    printf("\tHill Climbing During Clustering: %s\n",
+	   (*hill_climbing_flag) ? "Enabled" : "Disabled");
+    printf("\tAllow Unrelated Blocks to be Clustered: %s\n",
+	   (*allow_unrelated_clustering) ? "Yes" : " No "
+	   "(Yes after critical path is fully minimized)");
+    printf("\tConnection Driven Clustering: %s\n",
+	   (*connection_driven) ? "yes" : " No ");
+    if (*timing_driven){
+      printf("\tTiming Driven Clustering On\n");
+      printf("\tTiming Analysis Done Every %d blocks\n",*recompute_timing_after);
+      printf("\tAllow Early Exit: %s\n",
+           (*allow_early_exit) ? "Yes" : " No");
+      printf("\tTradeoff Parameter Alpha:%7.2f\n",*alpha);
+      printf("\tDelay Through Blocks:%7.2f\n",*block_delay);
+      printf("\tIntra Cluster Net Delay:%7.2f\n", *intra_cluster_net_delay);
+      printf("\tInter Cluster Net Delay:%7.2f\n", *inter_cluster_net_delay);
+    }
+    else
+      printf("\tTiming Driven Clustering: Off\n");
+
  }
 
- printf("\n");
+ printf("\n\n");
 }
 
 
@@ -401,6 +611,33 @@ static int read_int_option (int argc, char *argv[], int iarg) {
  
  if (argc > iarg+1)
     num_read = sscanf(argv[iarg+1],"%d",&value);
+ 
+/* Value exists and was a proper int? */
+ 
+ if (num_read != 1) {
+    printf("Error:  %s option requires an integer parameter.\n\n", argv[iarg]);
+    exit(1);
+ }
+ 
+ return (value);
+}
+
+
+static float read_float_option (int argc, char *argv[], int iarg) {
+
+/* This routine returns the value in argv[iarg+1].  This value must exist *
+ * and be an integer, or an error message is printed and the program      *
+ * exits.                                                                 */
+ 
+ float value;
+ int num_read;
+ 
+ num_read = 0;
+ 
+/* Does value exist for this option? */
+ 
+ if (argc > iarg+1)
+    num_read = sscanf(argv[iarg+1],"%f",&value);
  
 /* Value exists and was a proper int? */
  

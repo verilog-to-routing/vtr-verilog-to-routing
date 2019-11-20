@@ -10,7 +10,7 @@
 # (6) If your system does not support X11 (e.g. you're running on Windows NT)
 #     then add -DNO_GRAPHICS to the end of the "FLAGS =" line.
 
-CC = gcc
+CC = gcc 
 
 #SunOS lines below.
 #LIB_DIR = -L/usr/lib/X11R5
@@ -48,6 +48,8 @@ WARN_FLAGS = -Wall -Wpointer-arith -Wcast-qual -Wstrict-prototypes -O -D__USE_FI
 DEBUG_FLAGS = -g
 OPT_FLAGS = -O3
 
+#FLAGS = $(WARN_FLAGS)
+#FLAGS = $(DEBUG_FLAGS) 
 FLAGS = $(OPT_FLAGS)
 
 #Uncomment line below if X Windows isn't installed on your system.
@@ -59,11 +61,11 @@ FLAGS = $(OPT_FLAGS)
 
 EXE = vpr
 
-OBJ = main.o util.o read_netlist.o print_netlist.o check_netlist.o read_arch.o place_and_route.o place.o route_common.o route_timing.o route_tree_timing.o route_breadth_first.o draw.o graphics.o stats.o segment_stats.o rr_graph.o rr_graph2.o rr_graph_sbox.o rr_graph_util.o rr_graph_timing_params.o rr_graph_indexed_data.o rr_graph_area.o check_rr_graph.o check_route.o hash.o heapsort.o read_place.o net_delay.o path_delay.o path_delay2.o vpr_utils.o
+OBJ = main.o util.o read_netlist.o print_netlist.o check_netlist.o read_arch.o place_and_route.o place.o route_common.o route_timing.o route_tree_timing.o route_breadth_first.o draw.o graphics.o stats.o segment_stats.o rr_graph.o rr_graph2.o rr_graph_sbox.o rr_graph_util.o rr_graph_timing_params.o rr_graph_indexed_data.o rr_graph_area.o check_rr_graph.o check_route.o hash.o heapsort.o read_place.o net_delay.o path_delay.o path_delay2.o vpr_utils.o timing_place_lookup.o timing_place.o
 
-SRC = main.c util.c read_netlist.c print_netlist.c check_netlist.c read_arch.c place_and_route.c place.c route_common.c route_timing.c route_tree_timing.c route_breadth_first.c draw.c graphics.c stats.c segment_stats.c rr_graph.c rr_graph2.c rr_graph_sbox.c rr_graph_util.c rr_graph_timing_params.c rr_graph_indexed_data.c rr_graph_area.c check_rr_graph.c check_route.c hash.c heapsort.c read_place.c net_delay.c path_delay.c path_delay2.c test_h.c vpr_utils.c
+SRC = main.c util.c read_netlist.c print_netlist.c check_netlist.c read_arch.c place_and_route.c place.c route_common.c route_timing.c route_tree_timing.c route_breadth_first.c draw.c graphics.c stats.c segment_stats.c rr_graph.c rr_graph2.c rr_graph_sbox.c rr_graph_util.c rr_graph_timing_params.c rr_graph_indexed_data.c rr_graph_area.c check_rr_graph.c check_route.c hash.c heapsort.c read_place.c net_delay.c path_delay.c path_delay2.c test_h.c vpr_utils.c timing_place_lookup.c timing_place.c
 
-H = util.h vpr_types.h globals.h graphics.h read_netlist.h print_netlist.h check_netlist.h read_arch.h stats.h segment_stats.h draw.h place_and_route.h place.h route_export.h route_common.h route_timing.h route_tree_timing.h route_breadth_first.h rr_graph.h rr_graph2.h rr_graph_sbox.h rr_graph_util.h rr_graph_timing_params.h rr_graph_indexed_data.h rr_graph_area.h check_rr_graph.h check_route.h hash.h heapsort.h read_place.h path_delay.h path_delay2.h net_delay.h vpr_utils.h
+H = util.h vpr_types.h globals.h graphics.h read_netlist.h print_netlist.h check_netlist.h read_arch.h stats.h segment_stats.h draw.h place_and_route.h place.h route_export.h route_common.h route_timing.h route_tree_timing.h route_breadth_first.h rr_graph.h rr_graph2.h rr_graph_sbox.h rr_graph_util.h rr_graph_timing_params.h rr_graph_indexed_data.h rr_graph_area.h check_rr_graph.h check_route.h hash.h heapsort.h read_place.h path_delay.h path_delay2.h net_delay.h vpr_utils.h timing_place_lookup.h timing_place.h
 
 
 # I haven't been able to make -static work under Solaris.  Use shared
@@ -177,3 +179,9 @@ path_delay2.o: path_delay2.c $(H)
 
 vpr_utils.o: vpr_utils.c $(H)
 	$(CC) -c $(FLAGS) vpr_utils.c
+
+timing_place_lookup.o: timing_place_lookup.c $(H)
+	$(CC) -c $(FLAGS) timing_place_lookup.c
+
+timing_place.o: timing_place.c $(H)
+	$(CC) -c $(FLAGS) timing_place.c

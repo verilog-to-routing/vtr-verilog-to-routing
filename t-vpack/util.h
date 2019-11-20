@@ -96,3 +96,4 @@ int my_atoi (const char *str);
 void my_srandom (int seed);
 int my_irand (int imax);
 float my_frand (void);
+

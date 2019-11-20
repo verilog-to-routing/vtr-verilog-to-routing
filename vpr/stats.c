@@ -46,12 +46,18 @@ void routing_stats (boolean full_stats, enum e_route_type route_type,
 
     if (timing_analysis_enabled) {
        load_net_delay_from_routing (net_delay);   
-/*       print_net_delay (net_delay, "net_delay.echo");   */
 
+#ifdef PRINT_NET_DELAYS
+       print_net_delay (net_delay, "net_delay.echo"); 
+#endif
        load_timing_graph_net_delays (net_delay);
        T_crit = load_net_slack (net_slack, 0);
-/*       print_timing_graph ("timing_graph.echo");  
-       print_net_slack ("net_slack.echo", net_slack); */
+#ifdef PRINT_TIMING_GRAPH
+       print_timing_graph ("timing_graph.echo"); 
+#endif
+#ifdef PRINT_NET_SLACKS
+       print_net_slack ("net_slack.echo", net_slack);
+#endif
        printf ("\n");
        print_critical_path ("critical_path.echo");
        printf ("Critical Path: %g (s)\n", T_crit);

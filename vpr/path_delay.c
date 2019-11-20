@@ -725,7 +725,7 @@ static void build_subblock_tnodes (int *n_uses_of_sblk_opin,
              /* Check that CLB pin connects to something ->     *
               * not just a mandatory BLE to CLB opin connection */
 
-       if (block[iblk].nets[to_pin] != OPEN) { 
+       if (block[iblk].nets[to_pin] != OPEN) {
           to_node = blk_pin_to_tnode[to_pin];
           inode = sub_pin_to_tnode[isub][out_pin];
           tedge = tnode[inode].out_edges;

@@ -84,8 +84,7 @@ static void build_rr_ychan (int **rr_node_indices, enum e_route_type
 void alloc_and_load_edges_and_switches (int inode, int num_edges, 
           t_linked_edge *edge_list_head);
 
-static void alloc_and_load_net_rr_terminals (int **rr_node_indices, 
-          int nodes_per_chan);
+static void alloc_net_rr_terminals (void);
 
 static void alloc_and_load_rr_clb_source (int **rr_node_indices,
           int nodes_per_chan);
@@ -93,9 +92,38 @@ static void alloc_and_load_rr_clb_source (int **rr_node_indices,
 static int which_io_block (int iblk); 
 
 
+/*define a structure to keep track of the internal variables allocated inside */
+/*build_rr_graph. This is required so that we can later free them in          */
+/*free_rr_graph_internals. If this seems like a hack, it is. The original code*/
+/*was able to do everything within one procedure, however since the timing    */
+/*driven placer needs to continuously change the mappping of the nets to the  */
+/*rr terminals, we need to keep the internal structures active until we finish*/
+/*placement -Sandy Nov 10/98*/
+
+
+struct s_rr_graph_internal_vars {
+  int nodes_per_chan;
+  int **rr_node_indices;
+  int **pads_to_tracks;
+  struct s_ivec **tracks_to_clb_ipin;
+  struct s_ivec *tracks_to_pads;
+  int ***clb_opin_to_tracks;
+  int ***clb_ipin_to_tracks;
+  t_seg_details *seg_details_x;
+  t_seg_details *seg_details_y;
+};
+
+static struct s_rr_graph_internal_vars rr_graph_internal_vars;
 
 /******************* Subroutine definitions *******************************/
+int **get_rr_node_indices(){
 
+  return (rr_graph_internal_vars.rr_node_indices);
+}
+
+int get_nodes_per_chan() {
+  return (rr_graph_internal_vars.nodes_per_chan);
+}
 
 void build_rr_graph (enum e_route_type route_type, struct s_det_routing_arch
          det_routing_arch, t_segment_inf *segment_inf, t_timing_inf 
@@ -114,10 +142,10 @@ void build_rr_graph (enum e_route_type route_type, struct s_det_routing_arch
  int **pads_to_tracks;
  struct s_ivec **tracks_to_clb_ipin, *tracks_to_pads;
 
-/* [0..pins_per_clb-1][0..3][0..Fc_output-1].  List of tracks this pin     *
- * connects to.  Second index is the side number (see vpr_types.h).  If a  *
- * pin is not an output or input, respectively, or doesn't connect to      *
- * anything on this side, the [ipin][iside][0] element is OPEN.            */
+/* [0..pins_per_clb-1][0..3][0..Fc_output-1].  List of tracks this pin *
+ * connects to.  Second index is the side number (see pr.h).  If a pin *
+ * is not an output or input, respectively, or doesn't connect to      *
+ * anything on this side, the [ipin][iside][0] element is OPEN.        */
 
  int ***clb_opin_to_tracks, ***clb_ipin_to_tracks;
  t_seg_details *seg_details_x, *seg_details_y;  /* [0 .. nodes_per_chan-1] */
@@ -171,7 +199,8 @@ void build_rr_graph (enum e_route_type route_type, struct s_det_routing_arch
  else {    /* FRACTIONAL */
 /* Make Fc_output round up so all tracks are driven when                    *
  * Fc = W/(Nequivalent outputs), regardless of W.                           */
-    Fc_output = ceil (nodes_per_chan * det_routing_arch.Fc_output - 0.005); 
+    Fc_output = ceil (nodes_per_chan * det_routing_arch.Fc_output - 0.005);
+/*  Fc_output = nint (nodes_per_chan * det_routing_arch.Fc_output); */
     Fc_output = max (1, Fc_output);
     Fc_input = nint (nodes_per_chan * det_routing_arch.Fc_input);
     Fc_input = max (1, Fc_input);
@@ -218,6 +247,55 @@ void build_rr_graph (enum e_route_type route_type, struct s_det_routing_arch
        Fc_input, Fc_pad, nodes_per_chan, route_type, det_routing_arch, 
        seg_details_x, seg_details_y);
 
+ add_rr_graph_C_from_switches (timing_inf.C_ipin_cblock); 
+
+ alloc_and_load_rr_indexed_data (segment_inf, det_routing_arch.num_segment,
+        rr_node_indices, nodes_per_chan, det_routing_arch.wire_to_ipin_switch,
+        base_cost_type);
+        
+/* dump_rr_graph ("rr_graph.echo");  */
+ check_rr_graph (route_type, det_routing_arch.num_switch);
+
+ rr_graph_internal_vars.clb_opin_to_tracks = clb_opin_to_tracks;
+ rr_graph_internal_vars.clb_ipin_to_tracks = clb_ipin_to_tracks;
+ rr_graph_internal_vars.tracks_to_clb_ipin = tracks_to_clb_ipin;
+ rr_graph_internal_vars.tracks_to_pads = tracks_to_pads;
+ rr_graph_internal_vars.pads_to_tracks = pads_to_tracks;
+ rr_graph_internal_vars.nodes_per_chan = nodes_per_chan;
+ rr_graph_internal_vars.seg_details_x = seg_details_x;
+ rr_graph_internal_vars.seg_details_y = seg_details_y;
+ rr_graph_internal_vars.rr_node_indices = rr_node_indices;
+}
+
+
+void free_rr_graph_internals (enum e_route_type route_type, struct s_det_routing_arch
+         det_routing_arch, t_segment_inf *segment_inf, t_timing_inf 
+         timing_inf, enum e_base_cost_type base_cost_type)
+{
+  /* frees the variables that are internal to build_rr_graph.        */
+  /* this procedure should typically be called immediatley after     */
+  /* build_rr_graph, except for in the timing driven placer, which   */
+  /* is constantly modifying some of the rr_graph structures         */
+
+ int nodes_per_chan;
+ int **rr_node_indices;
+ int **pads_to_tracks;
+ struct s_ivec **tracks_to_clb_ipin, *tracks_to_pads;
+ int ***clb_opin_to_tracks, ***clb_ipin_to_tracks;
+ t_seg_details *seg_details_x, *seg_details_y;  /* [0 .. nodes_per_chan-1] */
+
+
+ clb_opin_to_tracks = rr_graph_internal_vars.clb_opin_to_tracks;
+ clb_ipin_to_tracks = rr_graph_internal_vars.clb_ipin_to_tracks;
+ tracks_to_clb_ipin = rr_graph_internal_vars.tracks_to_clb_ipin;
+ tracks_to_pads = rr_graph_internal_vars.tracks_to_pads;
+ pads_to_tracks = rr_graph_internal_vars.pads_to_tracks;
+ nodes_per_chan = rr_graph_internal_vars.nodes_per_chan;
+ seg_details_x = rr_graph_internal_vars.seg_details_x;
+ seg_details_y = rr_graph_internal_vars.seg_details_y;
+ rr_node_indices = rr_graph_internal_vars.rr_node_indices;
+
+
  free (rr_edge_done);
  free_matrix3 (clb_opin_to_tracks, 0, pins_per_clb-1, 0, 3, 0, sizeof(int));
  free_matrix3 (clb_ipin_to_tracks, 0, pins_per_clb-1, 0, 3, 0, sizeof(int));
@@ -229,17 +307,7 @@ void build_rr_graph (enum e_route_type route_type, struct s_det_routing_arch
  free_seg_details (seg_details_x, nodes_per_chan);
  free_seg_details (seg_details_y, nodes_per_chan);
 
- add_rr_graph_C_from_switches (timing_inf.C_ipin_cblock); 
-
- alloc_and_load_rr_indexed_data (segment_inf, det_routing_arch.num_segment,
-        rr_node_indices, nodes_per_chan, det_routing_arch.wire_to_ipin_switch,
-        base_cost_type);
-        
-
  free_rr_node_indices (rr_node_indices);
-
- dump_rr_graph ("rr_graph.echo");  
- check_rr_graph (route_type, det_routing_arch.num_switch);
 }
 
 
@@ -268,10 +336,10 @@ static void alloc_and_load_rr_graph (int **rr_node_indices,
     exit (1);
  }
 
- alloc_and_load_net_rr_terminals (rr_node_indices, nodes_per_chan);
+ alloc_net_rr_terminals ();
+ load_net_rr_terminals (rr_node_indices, nodes_per_chan);
 
  alloc_and_load_rr_clb_source (rr_node_indices, nodes_per_chan);
-
 
  rr_node = (t_rr_node *) my_malloc (num_rr_nodes * sizeof (t_rr_node));
  
@@ -359,7 +427,22 @@ void free_rr_graph (void) {
 }
 
 
-static void alloc_and_load_net_rr_terminals (int **rr_node_indices, 
+static void alloc_net_rr_terminals (void) {
+
+  int inet;
+
+ net_rr_terminals = (int **) my_malloc (num_nets * sizeof(int *));
+
+ for (inet=0;inet<num_nets;inet++) {
+    net_rr_terminals[inet] = (int *) my_chunk_malloc (net[inet].num_pins * 
+              sizeof (int), &rr_mem_chunk_list_head, &chunk_bytes_avail,
+	     &chunk_next_avail_mem);
+ }
+
+}
+
+
+void load_net_rr_terminals (int **rr_node_indices, 
         int nodes_per_chan) {
 
 /* Allocates and loads the net_rr_terminals data structure.  For each net   *
@@ -370,12 +453,8 @@ static void alloc_and_load_net_rr_terminals (int **rr_node_indices,
  int inet, ipin, inode, iblk, i, j, blk_pin, iclass;
  t_rr_type rr_type;
 
- net_rr_terminals = (int **) my_malloc (num_nets * sizeof(int *));
 
  for (inet=0;inet<num_nets;inet++) {
-    net_rr_terminals[inet] = (int *) my_chunk_malloc (net[inet].num_pins * 
-              sizeof (int), &rr_mem_chunk_list_head, &chunk_bytes_avail,
-              &chunk_next_avail_mem);
     
     rr_type = SOURCE;     /* First pin only */
     for (ipin=0;ipin<net[inet].num_pins;ipin++) {
@@ -400,7 +479,6 @@ static void alloc_and_load_net_rr_terminals (int **rr_node_indices,
  }
 }
 
-
 static void alloc_and_load_rr_clb_source (int **rr_node_indices,
           int nodes_per_chan) {
 
@@ -413,7 +491,7 @@ static void alloc_and_load_rr_clb_source (int **rr_node_indices,
  int iblk, i, j, iclass, inode;
  t_rr_type rr_type;
 
- rr_clb_source = (int **) alloc_matrix (0, num_blocks-1, 0, num_class-1, 
+ rr_clb_source = (int **) alloc_matrix (0, num_blocks-1, 0, num_class-1,
                   sizeof(int));
 
  for (iblk=0;iblk<num_blocks;iblk++) {
@@ -422,11 +500,11 @@ static void alloc_and_load_rr_clb_source (int **rr_node_indices,
           i = block[iblk].x;
           j = block[iblk].y;
 
-          if (class_inf[iclass].type == DRIVER) 
+          if (class_inf[iclass].type == DRIVER)
              rr_type = SOURCE;
-          else 
+          else
              rr_type = SINK;
-  
+ 
           inode = get_rr_node_index (i, j, rr_type, iclass, nodes_per_chan,
                rr_node_indices);
           rr_clb_source[iblk][iclass] = inode;
@@ -437,6 +515,7 @@ static void alloc_and_load_rr_clb_source (int **rr_node_indices,
     }
  }
 }
+
 
 
 static int which_io_block (int iblk) {

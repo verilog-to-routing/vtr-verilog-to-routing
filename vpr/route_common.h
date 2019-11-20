@@ -54,7 +54,6 @@ typedef struct {int prev_node; float pres_cost; float acc_cost; float
 extern t_rr_node_route_inf *rr_node_route_inf;       /* [0..num_rr_nodes-1] */
 extern struct s_bb *route_bb;                        /* [0..num_nets-1]     */
 
-
 /******* Subroutines in route_common used only by other router modules ******/
 
 void pathfinder_update_one_cost (struct s_trace *route_segment_start,
@@ -85,5 +84,13 @@ void free_heap_data (struct s_heap *hptr);
 
 void invalidate_heap_entries (int sink_node, int ipin_node);
 
+void init_route_structs (int bb_factor);
+
+void free_rr_node_route_structs (void);
+
+void alloc_and_load_rr_node_route_structs (void);
+
+void free_trace_structs(void);
+
 void reserve_locally_used_opins (float pres_fac, boolean rip_up_local_opins,
-          t_ivec **clb_opins_used_locally); 
+          t_ivec **clb_opins_used_locally);
