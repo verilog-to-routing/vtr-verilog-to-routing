@@ -312,42 +312,42 @@ void swap(IntraLbPbPinLookup& lhs, IntraLbPbPinLookup& rhs) {
 
 //Returns the set of pins which are connected to the top level clb pin
 //  The pin(s) may be input(s) or and output (returning the connected sinks or drivers respectively)
-std::vector<AtomPinId> find_clb_pin_connected_atom_pins(ClusterBlockId clb, int log_pin, const IntraLbPbPinLookup& pb_gpin_lookup) {
+std::vector<AtomPinId> find_clb_pin_connected_atom_pins(ClusterBlockId clb, int logical_pin, const IntraLbPbPinLookup& pb_gpin_lookup) {
     std::vector<AtomPinId> atom_pins;
     auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     auto logical_block = clb_nlist.block_type(clb);
     auto physical_tile = pick_random_physical_type(logical_block);
 
-    int phy_pin = get_physical_pin(physical_tile, logical_block, log_pin);
+    int physical_pin = get_physical_pin(physical_tile, logical_block, logical_pin);
 
-    if (is_opin(phy_pin, physical_tile)) {
+    if (is_opin(physical_pin, physical_tile)) {
         //output
-        AtomPinId driver = find_clb_pin_driver_atom_pin(clb, log_pin, pb_gpin_lookup);
+        AtomPinId driver = find_clb_pin_driver_atom_pin(clb, logical_pin, pb_gpin_lookup);
         if (driver) {
             atom_pins.push_back(driver);
         }
     } else {
         //input
-        atom_pins = find_clb_pin_sink_atom_pins(clb, log_pin, pb_gpin_lookup);
+        atom_pins = find_clb_pin_sink_atom_pins(clb, logical_pin, pb_gpin_lookup);
     }
 
     return atom_pins;
 }
 
 //Returns the atom pin which drives the top level clb output pin
-AtomPinId find_clb_pin_driver_atom_pin(ClusterBlockId clb, int log_pin, const IntraLbPbPinLookup& pb_gpin_lookup) {
+AtomPinId find_clb_pin_driver_atom_pin(ClusterBlockId clb, int logical_pin, const IntraLbPbPinLookup& pb_gpin_lookup) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    if (log_pin < 0) {
+    if (logical_pin < 0) {
         //CLB output pin has no internal driver
         return AtomPinId::INVALID();
     }
     const t_pb_routes& pb_routes = cluster_ctx.clb_nlist.block_pb(clb)->pb_route;
-    AtomNetId atom_net = pb_routes[log_pin].atom_net_id;
+    AtomNetId atom_net = pb_routes[logical_pin].atom_net_id;
 
-    int pb_pin_id = log_pin;
+    int pb_pin_id = logical_pin;
     //Trace back until the driver is reached
     while (pb_routes[pb_pin_id].driver_pb_pin_id >= 0) {
         pb_pin_id = pb_routes[pb_pin_id].driver_pb_pin_id;
@@ -366,27 +366,27 @@ AtomPinId find_clb_pin_driver_atom_pin(ClusterBlockId clb, int log_pin, const In
 }
 
 //Returns the set of atom sink pins associated with the top level clb input pin
-std::vector<AtomPinId> find_clb_pin_sink_atom_pins(ClusterBlockId clb, int log_pin, const IntraLbPbPinLookup& pb_gpin_lookup) {
+std::vector<AtomPinId> find_clb_pin_sink_atom_pins(ClusterBlockId clb, int logical_pin, const IntraLbPbPinLookup& pb_gpin_lookup) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
 
     const t_pb_routes& pb_routes = cluster_ctx.clb_nlist.block_pb(clb)->pb_route;
 
-    VTR_ASSERT_MSG(log_pin < cluster_ctx.clb_nlist.block_type(clb)->pb_type->num_pins, "Must be a valid tile pin");
+    VTR_ASSERT_MSG(logical_pin < cluster_ctx.clb_nlist.block_type(clb)->pb_type->num_pins, "Must be a valid tile pin");
 
     VTR_ASSERT(cluster_ctx.clb_nlist.block_pb(clb));
-    VTR_ASSERT_MSG(log_pin < cluster_ctx.clb_nlist.block_pb(clb)->pb_graph_node->num_pins(), "Pin must map to a top-level pb pin");
+    VTR_ASSERT_MSG(logical_pin < cluster_ctx.clb_nlist.block_pb(clb)->pb_graph_node->num_pins(), "Pin must map to a top-level pb pin");
 
-    VTR_ASSERT_MSG(pb_routes[log_pin].driver_pb_pin_id < 0, "CLB input pin should have no internal drivers");
+    VTR_ASSERT_MSG(pb_routes[logical_pin].driver_pb_pin_id < 0, "CLB input pin should have no internal drivers");
 
-    AtomNetId atom_net = pb_routes[log_pin].atom_net_id;
+    AtomNetId atom_net = pb_routes[logical_pin].atom_net_id;
     VTR_ASSERT(atom_net);
 
-    std::vector<int> connected_sink_pb_pins = find_connected_internal_clb_sink_pins(clb, log_pin);
+    std::vector<int> connected_sink_pb_pins = find_connected_internal_clb_sink_pins(clb, logical_pin);
 
     std::vector<AtomPinId> sink_atom_pins;
     for (int sink_pb_pin : connected_sink_pb_pins) {
-        //Map the log_pin_id to AtomPinId
+        //Map the logical_pin_id to AtomPinId
         AtomPinId atom_pin = find_atom_pin_for_pb_route_id(clb, sink_pb_pin, pb_gpin_lookup);
         VTR_ASSERT(atom_pin);
 
