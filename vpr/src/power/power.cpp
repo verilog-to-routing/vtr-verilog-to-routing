@@ -1009,9 +1009,6 @@ static void power_usage_routing(t_power_usage* power_usage,
                     power_ctx.commonly_used->total_cb_buffer_size += buffer_size;
                 }
                 break;
-            case INTRA_CLUSTER_EDGE:
-                VTR_ASSERT(0);
-                break;
             default:
                 power_log_msg(POWER_LOG_WARNING,
                               "The global routing-resource graph contains an unknown node type.");
