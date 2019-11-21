@@ -3,6 +3,7 @@
 #include "globals.h"
 #include "vpr_context.h"
 #include "vtr_math.h"
+#include "route_common.h"
 
 namespace util {
 
@@ -24,8 +25,6 @@ PQ_Entry::PQ_Entry(
     this->congestion_upstream = parent_congestion_upstream;
     this->R_upstream = parent_R_upstream;
     if (!starting_node) {
-        int cost_index = device_ctx.rr_nodes[set_rr_node_ind].cost_index();
-
         float Tsw = device_ctx.rr_switch_inf[switch_ind].Tdel;
         Tsw += Tsw_adjust;
         VTR_ASSERT(Tsw >= 0.f);
@@ -40,7 +39,10 @@ PQ_Entry::PQ_Entry(
             T_linear = Tsw + 0.5 * Rsw * Cnode;
         }
 
-        float base_cost = device_ctx.rr_indexed_data[cost_index].base_cost;
+        float base_cost = 0.f;
+        if (device_ctx.rr_switch_inf[switch_ind].configurable()) {
+            base_cost = get_rr_cong_cost(set_rr_node_ind);
+        }
 
         VTR_ASSERT(T_linear >= 0.);
         VTR_ASSERT(base_cost >= 0.);
@@ -88,8 +90,7 @@ util::PQ_Entry_Base_Cost::PQ_Entry_Base_Cost(
 
     if (parent != nullptr) {
         auto& device_ctx = g_vpr_ctx.device();
-        int cost_index = device_ctx.rr_nodes[set_rr_node_ind].cost_index();
-        this->base_cost = parent->base_cost + device_ctx.rr_indexed_data[cost_index].base_cost;
+        this->base_cost = parent->base_cost + (device_ctx.rr_switch_inf[switch_ind].configurable() ? get_rr_cong_cost(set_rr_node_ind) : 0);
     } else {
         this->base_cost = 0.f;
     }
