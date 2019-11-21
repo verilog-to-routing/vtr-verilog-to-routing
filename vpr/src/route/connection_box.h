@@ -22,10 +22,10 @@ struct ConnBoxLoc {
         : box_location(std::make_pair(-1, -1)) {}
     ConnBoxLoc(
         const std::pair<size_t, size_t>& a_box_location,
-        float site_pin_delay,
+        float a_site_pin_delay,
         ConnectionBoxId a_box_id)
         : box_location(a_box_location)
-        , site_pin_delay(site_pin_delay)
+        , site_pin_delay(a_site_pin_delay)
         , box_id(a_box_id) {}
 
     std::pair<size_t, size_t> box_location;
