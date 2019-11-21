@@ -56,7 +56,6 @@ void convert_rr_graph(std::vector<t_segment_inf>& vpr_segments) {
     device_ctx.rr_graph.reserve_nodes((unsigned long)device_ctx.rr_nodes.size());
 
     // Create the nodes
-    std::vector<RRNodeId> old_to_new_rr_node(device_ctx.rr_nodes.size(), RRNodeId::INVALID());
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
         auto& node = device_ctx.rr_nodes[inode];
         RRNodeId rr_node = device_ctx.rr_graph.create_node(node.type());
@@ -85,9 +84,6 @@ void convert_rr_graph(std::vector<t_segment_inf>& vpr_segments) {
         short irc_data = node.cost_index();
         short iseg = device_ctx.rr_indexed_data[irc_data].seg_index;
         device_ctx.rr_graph.set_node_segment(rr_node, RRSegmentId(iseg));
-
-        VTR_ASSERT(inode < old_to_new_rr_node.size());
-        old_to_new_rr_node[inode] = rr_node;
     }
 
     /* Reserve list of edges to be memory efficient */
@@ -104,8 +100,8 @@ void convert_rr_graph(std::vector<t_segment_inf>& vpr_segments) {
         /* Reserve input and output edges for the node: 
          * this is very important to avoid memory fragments!!! 
          */
-        device_ctx.rr_graph.reserve_node_in_edges(old_to_new_rr_node[inode], node.fan_in());
-        device_ctx.rr_graph.reserve_node_out_edges(old_to_new_rr_node[inode], node.num_edges());
+        device_ctx.rr_graph.reserve_node_in_edges(RRNodeId(inode), node.fan_in());
+        device_ctx.rr_graph.reserve_node_out_edges(RRNodeId(inode), node.num_edges());
     }
 
     /* Add edges for each node */
@@ -115,11 +111,8 @@ void convert_rr_graph(std::vector<t_segment_inf>& vpr_segments) {
             size_t isink_node = node.edge_sink_node(iedge);
             int iswitch = node.edge_switch(iedge);
 
-            VTR_ASSERT(inode < old_to_new_rr_node.size());
-            VTR_ASSERT(isink_node < old_to_new_rr_node.size());
-
-            device_ctx.rr_graph.create_edge(old_to_new_rr_node[inode],
-                                            old_to_new_rr_node[isink_node],
+            device_ctx.rr_graph.create_edge(RRNodeId(inode),
+                                            RRNodeId(isink_node),
                                             RRSwitchId(iswitch));
         }
     }
