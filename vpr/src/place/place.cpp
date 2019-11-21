@@ -940,8 +940,8 @@ static void placement_inner_loop(float t,
 
         /* Lines below prevent too much round-off error from accumulating
          * in the cost over many iterations (due to incremental updates).
-         * This round-off can lead to  error checks failing because the cost 
-         * is different from what you get when you recompute from scratch.                       
+         * This round-off can lead to  error checks failing because the cost
+         * is different from what you get when you recompute from scratch.
          */
         ++(*moves_since_cost_recompute);
         if (*moves_since_cost_recompute > MAX_MOVES_BEFORE_RECOMPUTE) {
@@ -1219,15 +1219,15 @@ static e_move_result try_swap(float t,
         VTR_ASSERT(create_move_outcome == e_create_move::VALID);
 
         /*
-         * To make evaluating the move simpler (e.g. calculating changed bounding box), 
-         * we first move the blocks to thier new locations (apply the move to 
-         * place_ctx.block_locs) and then computed the change in cost. If the move is 
+         * To make evaluating the move simpler (e.g. calculating changed bounding box),
+         * we first move the blocks to thier new locations (apply the move to
+         * place_ctx.block_locs) and then computed the change in cost. If the move is
          * accepted, the inverse look-up in place_ctx.grid_blocks is updated (committing
-         * the move). If the move is rejected the blocks are returned to their original 
+         * the move). If the move is rejected the blocks are returned to their original
          * positions (reverting place_ctx.block_locs to its original state).
          *
          * Note that the inverse look-up place_ctx.grid_blocks is only updated
-         * after move acceptance is determined, and so should not be used when 
+         * after move acceptance is determined, and so should not be used when
          * evaluating a move.
          */
 
