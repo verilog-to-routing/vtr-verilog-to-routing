@@ -113,6 +113,8 @@ e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_aff
 
     ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.z];
 
+    t_pl_loc curr_from = place_ctx.block_locs[b_from].loc;
+
     e_block_move_result outcome = e_block_move_result::VALID;
 
     // Check whether the to_location is empty
@@ -121,6 +123,13 @@ e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_aff
         outcome = record_block_move(blocks_affected, b_from, to);
 
     } else if (b_to != INVALID_BLOCK_ID) {
+        // Check whether block to is compatible with from location
+        if (b_to != EMPTY_BLOCK_ID && b_to != INVALID_BLOCK_ID) {
+            if (!(is_legal_swap_to_location(b_to, curr_from))) {
+                return e_block_move_result::ABORT;
+            }
+        }
+
         // Sets up the blocks moved
         outcome = record_block_move(blocks_affected, b_from, to);
 
@@ -253,9 +262,17 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
         ClusterBlockId b_from = place_ctx.pl_macros[imacro_from].members[imember_from].blk_index;
 
         t_pl_loc curr_to = place_ctx.block_locs[b_from].loc + swap_offset;
+        t_pl_loc curr_from = place_ctx.block_locs[b_from].loc;
 
         ClusterBlockId b_to = place_ctx.pl_macros[imacro_to].members[imember_to].blk_index;
         VTR_ASSERT_SAFE(curr_to == place_ctx.block_locs[b_to].loc);
+
+        // Check whether block to is compatible with from location
+        if (b_to != EMPTY_BLOCK_ID && b_to != INVALID_BLOCK_ID) {
+            if (!(is_legal_swap_to_location(b_to, curr_from))) {
+                return e_block_move_result::ABORT;
+            }
+        }
 
         if (!is_legal_swap_to_location(b_from, curr_to)) {
             log_move_abort("macro_from swap to location illegal");
