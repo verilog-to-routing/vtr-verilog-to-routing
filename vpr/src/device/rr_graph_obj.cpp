@@ -806,6 +806,22 @@ void RRGraph::reserve_segments(const int& num_segments) {
     this->segments_.reserve(num_segments);
 }
 
+/* Reserve the input edges for a node */
+void RRGraph::reserve_node_in_edges(const RRNodeId& node, const size_t& num_in_edges) {
+    /* Validate the node id */
+    VTR_ASSERT_SAFE(true == valid_node_id(node));
+    /* Reserve the input edge list */
+    this->node_in_edges_[node].reserve(num_in_edges);
+}
+
+/* Reserve the input edges for a node */
+void RRGraph::reserve_node_out_edges(const RRNodeId& node, const size_t& num_out_edges) {
+    /* Validate the node id */
+    VTR_ASSERT_SAFE(true == valid_node_id(node));
+    /* Reserve the input edge list */
+    this->node_out_edges_[node].reserve(num_out_edges);
+}
+
 /* Mutators */
 RRNodeId RRGraph::create_node(const t_rr_type& type) {
     //Allocate an ID

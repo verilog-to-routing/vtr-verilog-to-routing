@@ -588,6 +588,22 @@ class RRGraph {
     void reserve_switches(const int& num_switches);
     void reserve_segments(const int& num_segments);
 
+    /* Reserve the lists of input/output edges for a RR node to be memory efficient. 
+     * This function is mainly used to reserve memory space inside RRGraph,
+     * when adding a large number of nodes/edge/switches/segments,
+     * in order to avoid memory fragements
+     * 
+     * For example: 
+     *    RRGraph rr_graph;
+     *    // Add 1 source node to the RRGraph object
+     *    RRNodeId src_node = rr_graph.create_node(SOURCE);
+     *    // Reserve the output edges for the source node
+     *    rr_graph.reserve_node_out_edges(src_node, 5);
+     *    // Add your edges
+     */
+    void reserve_node_in_edges(const RRNodeId& node, const size_t& num_in_edges);
+    void reserve_node_out_edges(const RRNodeId& node, const size_t& num_out_edges);
+
     /* Add new elements (node, edge, switch, etc.) to RRGraph */
     /* Add a node to the RRGraph with a deposited type 
      * Detailed node-level information should be added using the set_node_* functions
