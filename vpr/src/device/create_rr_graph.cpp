@@ -53,10 +53,10 @@ void convert_rr_graph(std::vector<t_segment_inf>& vpr_segments) {
     }
 
     /* Reserve list of nodes to be memory efficient */
-    device_ctx.rr_graph.reserve_nodes(device_ctx.rr_nodes.size());
+    device_ctx.rr_graph.reserve_nodes((unsigned long)device_ctx.rr_nodes.size());
 
     // Create the nodes
-    std::map<int, RRNodeId> old_to_new_rr_node;
+    std::vector<RRNodeId> old_to_new_rr_node(device_ctx.rr_nodes.size(), RRNodeId::INVALID());
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
         auto& node = device_ctx.rr_nodes[inode];
         RRNodeId rr_node = device_ctx.rr_graph.create_node(node.type());
@@ -86,23 +86,19 @@ void convert_rr_graph(std::vector<t_segment_inf>& vpr_segments) {
         short iseg = device_ctx.rr_indexed_data[irc_data].seg_index;
         device_ctx.rr_graph.set_node_segment(rr_node, RRSegmentId(iseg));
 
-        VTR_ASSERT(!old_to_new_rr_node.count(inode));
+        VTR_ASSERT(inode < old_to_new_rr_node.size());
         old_to_new_rr_node[inode] = rr_node;
     }
 
     /* Reserve list of edges to be memory efficient */
-    {
-        int num_edges_to_reserve = 0;
-        for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
-            const auto& node = device_ctx.rr_nodes[inode];
-            num_edges_to_reserve += node.num_edges();
-        }
-        device_ctx.rr_graph.reserve_edges(num_edges_to_reserve);
+    unsigned long num_edges_to_reserve = 0;
+    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
+        const auto& node = device_ctx.rr_nodes[inode];
+        num_edges_to_reserve += node.num_edges();
     }
+    device_ctx.rr_graph.reserve_edges(num_edges_to_reserve);
 
     // Create the edges
-    std::map<std::pair<int, int>, RREdgeId> old_to_new_rr_edge; // Key:
-                                                                // {inode,iedge}
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
         const auto& node = device_ctx.rr_nodes[inode];
         /* Reserve input and output edges for the node: 
@@ -116,21 +112,20 @@ void convert_rr_graph(std::vector<t_segment_inf>& vpr_segments) {
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
         const auto& node = device_ctx.rr_nodes[inode];
         for (int iedge = 0; iedge < node.num_edges(); ++iedge) {
-            int isink_node = node.edge_sink_node(iedge);
+            size_t isink_node = node.edge_sink_node(iedge);
             int iswitch = node.edge_switch(iedge);
 
-            VTR_ASSERT(old_to_new_rr_node.count(inode));
-            VTR_ASSERT(old_to_new_rr_node.count(isink_node));
+            VTR_ASSERT(inode < old_to_new_rr_node.size());
+            VTR_ASSERT(isink_node < old_to_new_rr_node.size());
 
-            RREdgeId rr_edge = device_ctx.rr_graph.create_edge(old_to_new_rr_node[inode],
-                                                               old_to_new_rr_node[isink_node],
-                                                               RRSwitchId(iswitch));
-
-            auto key = std::make_pair(inode, iedge);
-            VTR_ASSERT(!old_to_new_rr_edge.count(key));
-            old_to_new_rr_edge[key] = rr_edge;
+            device_ctx.rr_graph.create_edge(old_to_new_rr_node[inode],
+                                            old_to_new_rr_node[isink_node],
+                                            RRSwitchId(iswitch));
         }
     }
+
+    /* Ensure that we reserved what we want */
+    VTR_ASSERT(num_edges_to_reserve == (unsigned long)device_ctx.rr_graph.edges().size());
 
     /* Partition edges to be two class: configurable (1st part) and
      * non-configurable (2nd part)
