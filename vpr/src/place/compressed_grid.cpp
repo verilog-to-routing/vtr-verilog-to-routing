@@ -6,19 +6,21 @@ std::vector<t_compressed_block_grid> create_compressed_block_grids() {
     auto& grid = device_ctx.grid;
 
     //Collect the set of x/y locations for each instace of a block type
-    std::vector<std::vector<vtr::Point<int>>> block_locations(device_ctx.physical_tile_types.size());
+    std::vector<std::vector<vtr::Point<int>>> block_locations(device_ctx.logical_block_types.size());
     for (size_t x = 0; x < grid.width(); ++x) {
         for (size_t y = 0; y < grid.height(); ++y) {
             const t_grid_tile& tile = grid[x][y];
             if (tile.width_offset == 0 && tile.height_offset == 0) {
-                //Only record at block root location
-                block_locations[tile.type->index].emplace_back(x, y);
+                for (auto& block : tile.type->equivalent_sites) {
+                    //Only record at block root location
+                    block_locations[block->index].emplace_back(x, y);
+                }
             }
         }
     }
 
-    std::vector<t_compressed_block_grid> compressed_type_grids(device_ctx.physical_tile_types.size());
-    for (const auto& type : device_ctx.physical_tile_types) {
+    std::vector<t_compressed_block_grid> compressed_type_grids(device_ctx.logical_block_types.size());
+    for (const auto& type : device_ctx.logical_block_types) {
         compressed_type_grids[type.index] = create_compressed_block_grid(block_locations[type.index]);
     }
 
