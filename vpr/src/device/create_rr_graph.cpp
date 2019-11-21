@@ -109,7 +109,7 @@ void convert_rr_graph(std::vector<t_segment_inf>& vpr_segments) {
          * this is very important to avoid memory fragments!!! 
          */
         device_ctx.rr_graph.reserve_node_in_edges(old_to_new_rr_node[inode], node.fan_in());
-        device_ctx.rr_graph.reserve_node_in_edges(old_to_new_rr_node[inode], node.num_edges());
+        device_ctx.rr_graph.reserve_node_out_edges(old_to_new_rr_node[inode], node.num_edges());
     }
 
     /* Add edges for each node */
