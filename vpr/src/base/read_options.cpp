@@ -245,6 +245,8 @@ struct ParseBaseCost {
             conv_value.set_value(DEMAND_ONLY_NORMALIZED_LENGTH);
         else if (str == "demand_only")
             conv_value.set_value(DEMAND_ONLY);
+        else if (str == "delay_normalized_length_bounded")
+            conv_value.set_value(DELAY_NORMALIZED_LENGTH_BOUNDED);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_router_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -265,6 +267,8 @@ struct ParseBaseCost {
             conv_value.set_value("delay_normalized_length_frequency");
         else if (val == DEMAND_ONLY_NORMALIZED_LENGTH)
             conv_value.set_value("demand_only_normalized_length");
+        else if (val == DELAY_NORMALIZED_LENGTH_BOUNDED)
+            conv_value.set_value("delay_normalized_length_bounded");
         else {
             VTR_ASSERT(val == DEMAND_ONLY);
             conv_value.set_value("demand_only");
@@ -273,7 +277,7 @@ struct ParseBaseCost {
     }
 
     std::vector<std::string> default_choices() {
-        return {"demand_only", "demand_only_normalized_length", "delay_normalized", "delay_normalized_length", "delay_normalized_frequency", "delay_normalized_length_frequency"};
+        return {"demand_only", "demand_only_normalized_length", "delay_normalized", "delay_normalized_length", "delay_normalized_length_bounded", "delay_normalized_frequency", "delay_normalized_length_frequency"};
     }
 };
 
@@ -1518,9 +1522,13 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "      to magnitude of typical routing resource delay\n"
             " * delay_normalized_length: like delay_normalized but\n"
             "      scaled by routing resource length\n"
-            " * delay_normalized_freqeuncy: like delay_normalized\n"
+            " * delay_normalized_length_bounded: like delay_normalized but\n"
+            "      scaled by routing resource length.  Scaling is normalized\n"
+            "      between 1 to 4, with min lengths getting scaled at 1,\n"
+            "      and max lengths getting scaled at 4.\n"
+            " * delay_normalized_frequency: like delay_normalized\n"
             "      but scaled inversely by segment type frequency\n"
-            " * delay_normalized_length_freqeuncy: like delay_normalized\n"
+            " * delay_normalized_length_frequency: like delay_normalized\n"
             "      but scaled by routing resource length, and inversely\n"
             "      by segment type frequency\n"
             "(Default: demand_only for breadth-first router,\n"
