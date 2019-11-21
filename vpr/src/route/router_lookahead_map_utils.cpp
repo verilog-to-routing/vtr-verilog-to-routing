@@ -5,9 +5,6 @@
 #include "vtr_math.h"
 #include "route_common.h"
 
-/* Number of CLBs I think the average conn. goes. */
-static const int CLB_DIST = 3;
-
 util::PQ_Entry::PQ_Entry(
     int set_rr_node_ind,
     int switch_ind,
@@ -31,7 +28,6 @@ util::PQ_Entry::PQ_Entry(
         float Rnode = device_ctx.rr_nodes[set_rr_node_ind].R();
 
         float T_linear = 0.f;
-        float T_quadratic = 0.f;
         if (device_ctx.rr_switch_inf[switch_ind].buffered()) {
             T_linear = Tsw + Rsw * Cnode + 0.5 * Rnode * Cnode;
         } else { /* Pass transistor */
