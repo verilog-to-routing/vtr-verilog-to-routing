@@ -7,6 +7,7 @@
 #include <map>
 #include <limits>
 
+#include "vtr_geometry.h"
 #include "vtr_vector_map.h"
 #include "vtr_log.h"
 #include "vtr_util.h"
@@ -764,7 +765,7 @@ void RRGraph::clear_dirty() {
 }
 
 /* Reserve a list of nodes */
-void RRGraph::reserve_nodes(const int& num_nodes) {
+void RRGraph::reserve_nodes(const unsigned long& num_nodes) {
     /* Reserve the full set of vectors related to nodes */
     /* Basic information */
     this->node_ids_.reserve(num_nodes);
@@ -786,7 +787,7 @@ void RRGraph::reserve_nodes(const int& num_nodes) {
 }
 
 /* Reserve a list of edges */
-void RRGraph::reserve_edges(const int& num_edges) {
+void RRGraph::reserve_edges(const unsigned long& num_edges) {
     /* Reserve the full set of vectors related to edges */
     this->edge_ids_.reserve(num_edges);
     this->edge_src_nodes_.reserve(num_edges);
@@ -795,13 +796,13 @@ void RRGraph::reserve_edges(const int& num_edges) {
 }
 
 /* Reserve a list of switches */
-void RRGraph::reserve_switches(const int& num_switches) {
+void RRGraph::reserve_switches(const size_t& num_switches) {
     this->switch_ids_.reserve(num_switches);
     this->switches_.reserve(num_switches);
 }
 
 /* Reserve a list of segments */
-void RRGraph::reserve_segments(const int& num_segments) {
+void RRGraph::reserve_segments(const size_t& num_segments) {
     this->segment_ids_.reserve(num_segments);
     this->segments_.reserve(num_segments);
 }
@@ -1132,6 +1133,7 @@ void RRGraph::partition_edges() {
 }
 
 void RRGraph::build_fast_node_lookup() const {
+    /* Free the current fast node look-up, we will rebuild a new one here */
     invalidate_fast_node_lookup();
 
     for (auto node : nodes()) {
