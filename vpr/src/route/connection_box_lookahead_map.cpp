@@ -649,6 +649,9 @@ static void run_dijkstra(int start_node_ind,
 void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
     vtr::ScopedStartFinishTimer timer("Computing connection box lookahead map");
 
+    // Initialize rr_node_route_inf if not already
+    alloc_and_load_rr_node_route_structs();
+
     size_t num_segments = segment_inf.size();
     std::vector<SamplePoint> sample_points;
     {
