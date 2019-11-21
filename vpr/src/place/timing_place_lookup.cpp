@@ -68,6 +68,7 @@ struct t_profile_info {
 static t_chan_width setup_chan_width(const t_router_opts& router_opts,
                                      t_chan_width_dist chan_width_dist);
 
+#if 0
 static float route_connection_delay(
     const RouterDelayProfiler& route_profiler,
     int source_x_loc,
@@ -89,6 +90,7 @@ static void generic_compute_matrix(
     const t_router_opts& router_opts,
     bool measure_directconnect,
     const std::set<std::string>& allowed_types);
+#endif
 
 static void generic_compute_matrix_expand(
     const RouterDelayProfiler& route_profiler,
@@ -294,6 +296,7 @@ static t_chan_width setup_chan_width(const t_router_opts& router_opts,
     return init_chan(width_fac, chan_width_dist);
 }
 
+#if 0
 static float route_connection_delay(
     const RouterDelayProfiler& route_profiler,
     int source_x,
@@ -352,6 +355,7 @@ static float route_connection_delay(
 
     return (net_delay_value);
 }
+#endif
 
 static void add_delay_to_matrix(
     vtr::Matrix<std::vector<float>>* matrix,
@@ -368,7 +372,7 @@ static void add_delay_to_matrix(
 }
 
 static void generic_compute_matrix_expand(
-    const RouterDelayProfiler& route_profiler,
+    const RouterDelayProfiler& /*route_profiler*/,
     vtr::Matrix<std::vector<float>>& matrix,
     int source_x,
     int source_y,
@@ -498,6 +502,7 @@ static void generic_compute_matrix_expand(
     }
 }
 
+#if 0
 static void generic_compute_matrix(
     const RouterDelayProfiler& route_profiler,
     vtr::Matrix<std::vector<float>>& matrix,
@@ -532,26 +537,26 @@ static void generic_compute_matrix(
                 if (matrix[delta_x][delta_y].empty()) {
                     //Only set empty target if we don't already have a valid delta delay
                     matrix[delta_x][delta_y].push_back(EMPTY_DELTA);
-#ifdef VERBOSE
+#    ifdef VERBOSE
                     VTR_LOG("Computed delay: %12s delta: %d,%d (src: %d,%d sink: %d,%d)\n",
                             "EMPTY",
                             delta_x, delta_y,
                             source_x, source_y,
                             sink_x, sink_y);
-#endif
+#    endif
                 }
             } else {
                 //Valid start/end
 
                 float delay = route_connection_delay(route_profiler, source_x, source_y, sink_x, sink_y, router_opts, measure_directconnect);
 
-#ifdef VERBOSE
+#    ifdef VERBOSE
                 VTR_LOG("Computed delay: %12g delta: %d,%d (src: %d,%d sink: %d,%d)\n",
                         delay,
                         delta_x, delta_y,
                         source_x, source_y,
                         sink_x, sink_y);
-#endif
+#    endif
                 if (matrix[delta_x][delta_y].size() == 1 && matrix[delta_x][delta_y][0] == EMPTY_DELTA) {
                     //Overwrite empty delta
                     matrix[delta_x][delta_y][0] = delay;
@@ -563,6 +568,7 @@ static void generic_compute_matrix(
         }
     }
 }
+#endif
 
 static vtr::Matrix<float> compute_delta_delays(
     const RouterDelayProfiler& route_profiler,
