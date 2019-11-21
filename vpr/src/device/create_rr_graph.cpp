@@ -105,6 +105,16 @@ void convert_rr_graph(std::vector<t_segment_inf>& vpr_segments) {
                                                                 // {inode,iedge}
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
         const auto& node = device_ctx.rr_nodes[inode];
+        /* Reserve input and output edges for the node: 
+         * this is very important to avoid memory fragments!!! 
+         */
+        device_ctx.rr_graph.reserve_node_in_edges(old_to_new_rr_node[inode], node.fan_in());
+        device_ctx.rr_graph.reserve_node_in_edges(old_to_new_rr_node[inode], node.num_edges());
+    }
+
+    /* Add edges for each node */
+    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
+        const auto& node = device_ctx.rr_nodes[inode];
         for (int iedge = 0; iedge < node.num_edges(); ++iedge) {
             int isink_node = node.edge_sink_node(iedge);
             int iswitch = node.edge_switch(iedge);
