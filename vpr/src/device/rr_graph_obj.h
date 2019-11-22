@@ -808,7 +808,7 @@ class RRGraph {
   private: /* Internal Data */
     /* Node related data */
     size_t num_nodes_;                                /* Range of node ids */
-    std::unordered_map<RRNodeId, bool> invalid_node_ids_; /* Invalid edge ids */
+    std::unordered_set<RRNodeId> invalid_node_ids_; /* Invalid edge ids */
 
     vtr::vector<RRNodeId, t_rr_type> node_types_;
 
@@ -843,7 +843,7 @@ class RRGraph {
 
     /* Edge related data */
     size_t num_edges_;                                /* Range of edge ids */
-    std::unordered_map<RREdgeId, bool> invalid_edge_ids_; /* Invalid edge ids */
+    std::unordered_set<RREdgeId> invalid_edge_ids_; /* Invalid edge ids */
     vtr::vector<RREdgeId, RRNodeId> edge_src_nodes_;
     vtr::vector<RREdgeId, RRNodeId> edge_sink_nodes_;
     vtr::vector<RREdgeId, RRSwitchId> edge_switches_;
