@@ -31,9 +31,6 @@ void convert_rr_graph(std::vector<t_segment_inf>& vpr_segments) {
      */
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    /* make sure we have a clean empty rr_graph */
-    device_ctx.rr_graph.clear();
-
     /* The number of switches are in general small,
      * reserve switches may not bring significant memory efficiency
      * So, we just use create_switch to push_back each time
