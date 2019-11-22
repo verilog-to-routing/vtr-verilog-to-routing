@@ -252,7 +252,7 @@ class RRGraph {
      *        // Do something with each segment
      *      }
      */
-    node_range nodes() const;
+    std::vector<RRNodeId> nodes() const;
     std::vector<RREdgeId> edges() const;
     switch_range switches() const;
     segment_range segments() const;
@@ -808,7 +808,9 @@ class RRGraph {
 
   private: /* Internal Data */
     /* Node related data */
-    vtr::vector<RRNodeId, RRNodeId> node_ids_; /* Unique identifiers for the nodes */
+    size_t node_id_range_;                                /* Range of node ids */
+    std::unordered_map<RRNodeId, bool> invalid_node_ids_; /* Invalid edge ids */
+
     vtr::vector<RRNodeId, t_rr_type> node_types_;
 
     vtr::vector<RRNodeId, vtr::Rect<short>> node_bounding_boxes_;
@@ -829,7 +831,7 @@ class RRGraph {
     vtr::vector<RRNodeId, std::vector<RREdgeId>> node_out_edges_;
 
     /* Edge related data */
-    size_t edge_id_range_;                               /* Range of edge ids */
+    size_t edge_id_range_;                                /* Range of edge ids */
     std::unordered_map<RREdgeId, bool> invalid_edge_ids_; /* Invalid edge ids */
     vtr::vector<RREdgeId, RRNodeId> edge_src_nodes_;
     vtr::vector<RREdgeId, RRNodeId> edge_sink_nodes_;
@@ -858,7 +860,7 @@ class RRGraph {
     /* Fast look-up to search a node by its type, coordinator and ptc_num 
      * Indexing of fast look-up: [0..xmax][0..ymax][0..NUM_TYPES-1][0..ptc_max][0..NUM_SIDES-1] 
      */
-    typedef vtr::NdMatrix<std::vector<std::vector<RRNodeId>>,3> NodeLookup;
+    typedef vtr::NdMatrix<std::vector<std::vector<RRNodeId>>, 3> NodeLookup;
     mutable NodeLookup node_lookup_;
 };
 
