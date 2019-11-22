@@ -378,7 +378,7 @@ static void process_global_blocks(std::ifstream& fp, ClusterNetId inet, const ch
                           x, y, place_ctx.block_locs[bnum].loc.x, place_ctx.block_locs[bnum].loc.y);
             }
 
-            int pin_index = cluster_ctx.clb_nlist.net_pin_physical_index(inet, pin_counter);
+            int pin_index = net_pin_tile_index(inet, pin_counter);
             if (physical_tile_type(bnum)->pin_class[pin_index] != atoi(tokens[7].c_str())) {
                 vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                           "The pin class %d of %lu net does not match given ",

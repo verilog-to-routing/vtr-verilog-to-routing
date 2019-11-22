@@ -180,6 +180,9 @@ int get_physical_pin(t_physical_tile_type_ptr physical_tile,
                      t_logical_block_type_ptr logical_block,
                      int pin);
 
+int net_pin_tile_index(const ClusterNetId net_id, int net_pin_index);
+int pin_tile_index(const ClusterPinId pin);
+
 int max_pins_per_grid_tile();
 
 void pretty_print_uint(const char* prefix, size_t value, int num_digits, int scientific_precision);
