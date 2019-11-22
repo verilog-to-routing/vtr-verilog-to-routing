@@ -982,7 +982,7 @@ void RRGraph::remove_node(const RRNodeId& node) {
     }
 
     //Mark node invalid
-    invalid_node_ids_[node] = true;
+    invalid_node_ids_.insert(node);
 
     //Invalidate the node look-up
     invalidate_fast_node_lookup();
@@ -1015,7 +1015,7 @@ void RRGraph::remove_edge(const RREdgeId& edge) {
     }
 
     /* Mark edge invalid */
-    invalid_edge_ids_[edge] = true;
+    invalid_edge_ids_.insert(edge);
 
     set_dirty();
 }
@@ -1273,12 +1273,12 @@ void RRGraph::initialize_fast_node_lookup() const {
 
 bool RRGraph::valid_node_id(const RRNodeId& node) const {
     return (size_t(node) < num_nodes_)
-           && (invalid_node_ids_.end() == invalid_node_ids_.find(node));
+           && (!invalid_node_ids_.count(node));
 }
 
 bool RRGraph::valid_edge_id(const RREdgeId& edge) const {
     return (size_t(edge) < num_edges_)
-           && (invalid_edge_ids_.end() == invalid_edge_ids_.find(edge));
+           && (!invalid_edge_ids_.count(edge));
 }
 
 /* check if a given switch id is valid or not */
