@@ -28,38 +28,14 @@ RRGraph::RRGraph() {
 /********************************************************************
  * Accessors
  *******************************************************************/
-std::vector<RRNodeId> RRGraph::nodes() const {
-    /* Create a list of valid node ids */
-    std::vector<RRNodeId> node_ids;
-    /* Reserve the edge list, since it could be very last. Also exclude the invalid node ids */
-    node_ids.reserve(num_nodes_ - invalid_node_ids_.size());
-    for (size_t id = 0; id < num_nodes_; ++id) {
-        /* Try to find if this is an invalid id or not */
-        if (!valid_node_id(RRNodeId(id))) {
-            /* Skip this id */
-            continue;
-        }
-        /* Reach here, this is a valid id, push to the edge list */
-        node_ids.push_back(RRNodeId(id));
-    }
-    return node_ids;
+RRGraph::lazy_node_range RRGraph::nodes() const {
+    return vtr::make_range(lazy_node_iterator(RRNodeId(0), invalid_node_ids_),
+                           lazy_node_iterator(RRNodeId(num_nodes_), invalid_node_ids_));
 }
 
-std::vector<RREdgeId> RRGraph::edges() const {
-    /* Create a list of valid edge ids */
-    std::vector<RREdgeId> edge_ids;
-    /* Reserve the edge list, since it could be very last. Also exclude the invalid edge ids */
-    edge_ids.reserve(num_edges_ - invalid_edge_ids_.size());
-    for (size_t id = 0; id < num_edges_; ++id) {
-        /* Try to find if this is an invalid id or not */
-        if (!valid_edge_id(RREdgeId(id))) {
-            /* Skip this id */
-            continue;
-        }
-        /* Reach here, this is a valid id, push to the edge list */
-        edge_ids.push_back(RREdgeId(id));
-    }
-    return edge_ids;
+RRGraph::lazy_edge_range RRGraph::edges() const {
+    return vtr::make_range(lazy_edge_iterator(RREdgeId(0), invalid_edge_ids_),
+                           lazy_edge_iterator(RREdgeId(num_edges_), invalid_edge_ids_));
 }
 
 RRGraph::switch_range RRGraph::switches() const {
