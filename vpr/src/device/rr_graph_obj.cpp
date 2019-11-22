@@ -393,21 +393,21 @@ RRNodeId RRGraph::find_node(const short& x, const short& y, const t_rr_type& typ
 
     /* Check if x, y, type and ptc, side is valid */
     if ((x < 0)                                     /* See if x is smaller than the index of first element */
-        || (size_t(x) > node_lookup_.size() - 1)) { /* See if x is large than the index of last element */
+        || (size_t(x) > node_lookup_.dim_size(0) - 1)) { /* See if x is large than the index of last element */
         /* Return a zero range! */
         return RRNodeId::INVALID();
     }
 
     /* Check if x, y, type and ptc, side is valid */
     if ((y < 0)                                        /* See if y is smaller than the index of first element */
-        || (size_t(y) > node_lookup_[x].size() - 1)) { /* See if y is large than the index of last element */
+        || (size_t(y) > node_lookup_.dim_size(1) - 1)) { /* See if y is large than the index of last element */
         /* Return a zero range! */
         return RRNodeId::INVALID();
     }
 
     /* Check if x, y, type and ptc, side is valid */
     /* itype is always larger than -1, we can skip checking */
-    if (itype > node_lookup_[x][y].size() - 1) { /* See if type is large than the index of last element */
+    if (itype > node_lookup_.dim_size(2) - 1) { /* See if type is large than the index of last element */
         /* Return a zero range! */
         return RRNodeId::INVALID();
     }
@@ -438,20 +438,20 @@ short RRGraph::chan_num_tracks(const short& x, const short& y, const t_rr_type& 
 
     /* Check if x, y, type and ptc is valid */
     if ((x < 0)                                     /* See if x is smaller than the index of first element */
-        || (size_t(x) > node_lookup_.size() - 1)) { /* See if x is large than the index of last element */
+        || (size_t(x) > node_lookup_.dim_size(0) - 1)) { /* See if x is large than the index of last element */
         /* Return a zero range! */
         return 0;
     }
 
     /* Check if x, y, type and ptc is valid */
     if ((y < 0)                                        /* See if y is smaller than the index of first element */
-        || (size_t(y) > node_lookup_[x].size() - 1)) { /* See if y is large than the index of last element */
+        || (size_t(y) > node_lookup_.dim_size(1) - 1)) { /* See if y is large than the index of last element */
         /* Return a zero range! */
         return 0;
     }
 
     /* Check if x, y, type and ptc is valid */
-    if ((size_t(type) > node_lookup_[x][y].size() - 1)) { /* See if type is large than the index of last element */
+    if ((size_t(type) > node_lookup_.dim_size(2) - 1)) { /* See if type is large than the index of last element */
         /* Return a zero range! */
         return 0;
     }
@@ -1136,21 +1136,18 @@ void RRGraph::build_fast_node_lookup() const {
     /* Free the current fast node look-up, we will rebuild a new one here */
     invalidate_fast_node_lookup();
 
+    /* Get the max (x,y) and then we can resize the ndmatrix */
+    vtr::Point<short> max_coord(0, 0);
+    for (auto node : nodes()) {
+        max_coord.set_x(std::max(max_coord.x(), node_xlow(node)));
+        max_coord.set_y(std::max(max_coord.y(), node_ylow(node)));
+    }
+    node_lookup_.resize({(size_t)max_coord.x() + 1, (size_t)max_coord.y() + 1, NUM_RR_TYPES + 1});
+
     for (auto node : nodes()) {
         size_t x = node_xlow(node);
-        if (x >= node_lookup_.size()) {
-            node_lookup_.resize(x + 1);
-        }
-
         size_t y = node_ylow(node);
-        if (y >= node_lookup_[x].size()) {
-            node_lookup_[x].resize(y + 1);
-        }
-
         size_t itype = node_type(node);
-        if (itype >= node_lookup_[x][y].size()) {
-            node_lookup_[x][y].resize(itype + 1);
-        }
 
         size_t ptc = node_ptc_num(node);
         if (ptc >= node_lookup_[x][y][itype].size()) {
