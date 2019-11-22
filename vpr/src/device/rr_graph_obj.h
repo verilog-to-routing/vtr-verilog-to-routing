@@ -198,6 +198,7 @@
 /* Standard header files required go first */
 #include <limits>
 #include <vector>
+#include <unordered_map>
 
 /* EXTERNAL library header files go second*/
 #include "vtr_ndmatrix.h"
@@ -224,6 +225,9 @@ class RRGraph {
     typedef vtr::Range<switch_iterator> switch_range;
     typedef vtr::Range<segment_iterator> segment_range;
 
+  public: /* Constructors */
+    RRGraph();
+
   public: /* Accessors */
     /* Aggregates: create range-based loops for nodes/edges/switches/segments
      * To iterate over the nodes/edges/switches/segments in a RRGraph, 
@@ -249,7 +253,7 @@ class RRGraph {
      *      }
      */
     node_range nodes() const;
-    edge_range edges() const;
+    std::vector<RREdgeId> edges() const;
     switch_range switches() const;
     segment_range segments() const;
 
@@ -825,7 +829,8 @@ class RRGraph {
     vtr::vector<RRNodeId, std::vector<RREdgeId>> node_out_edges_;
 
     /* Edge related data */
-    vtr::vector<RREdgeId, RREdgeId> edge_ids_; /* unique identifiers for edges */
+    size_t edge_id_range_;                               /* Range of edge ids */
+    std::unordered_map<RREdgeId, bool> invalid_edge_ids_; /* Invalid edge ids */
     vtr::vector<RREdgeId, RRNodeId> edge_src_nodes_;
     vtr::vector<RREdgeId, RRNodeId> edge_sink_nodes_;
     vtr::vector<RREdgeId, RRSwitchId> edge_switches_;

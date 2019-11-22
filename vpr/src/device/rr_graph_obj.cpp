@@ -15,13 +15,35 @@
 #include "rr_graph_obj.h"
 #include "rr_graph_obj_utils.h"
 
+/********************************************************************
+ * Constructors
+ *******************************************************************/
+RRGraph::RRGraph() {
+    /* Set edge range to be zero ! */
+    edge_id_range_ = 0;
+}
+
 //Accessors
 RRGraph::node_range RRGraph::nodes() const {
     return vtr::make_range(node_ids_.begin(), node_ids_.end());
 }
 
-RRGraph::edge_range RRGraph::edges() const {
-    return vtr::make_range(edge_ids_.begin(), edge_ids_.end());
+std::vector<RREdgeId> RRGraph::edges() const {
+    /* Create a list of valid edge ids */
+    std::vector<RREdgeId> edge_ids;
+    /* Reserve the edge list, since it could be very last. Also exclude the invalid edge ids */
+    edge_ids.reserve(edge_id_range_ - invalid_edge_ids_.size());
+    for (size_t id = 0; id < edge_id_range_; ++id) {
+        /* Try to find if this is an invalid id or not */
+        if (invalid_edge_ids_.end() != invalid_edge_ids_.find(RREdgeId(id))) {
+            VTR_ASSERT_SAFE(true == invalid_edge_ids_.at(RREdgeId(id)));
+            /* Skip this id */
+            continue;
+        }
+        /* Reach here, this is a valid id, push to the edge list */
+        edge_ids.push_back(RREdgeId(id)); 
+    }
+    return edge_ids;
 }
 
 RRGraph::switch_range RRGraph::switches() const {
@@ -789,7 +811,6 @@ void RRGraph::reserve_nodes(const unsigned long& num_nodes) {
 /* Reserve a list of edges */
 void RRGraph::reserve_edges(const unsigned long& num_edges) {
     /* Reserve the full set of vectors related to edges */
-    this->edge_ids_.reserve(num_edges);
     this->edge_src_nodes_.reserve(num_edges);
     this->edge_sink_nodes_.reserve(num_edges);
     this->edge_switches_.reserve(num_edges);
@@ -861,17 +882,17 @@ RREdgeId RRGraph::create_edge(const RRNodeId& source, const RRNodeId& sink, cons
     VTR_ASSERT(valid_node_id(sink));
     VTR_ASSERT(valid_switch_id(switch_id));
 
-    //Allocate an ID
-    RREdgeId edge_id = RREdgeId(edge_ids_.size());
+    /* Allocate an ID */
+    RREdgeId edge_id = RREdgeId(edge_id_range_);
+    /* Expand range of edge ids */
+    edge_id_range_++;
 
-    //Initialize the attributes
-    edge_ids_.push_back(edge_id);
-
+    /* Initialize the attributes */
     edge_src_nodes_.push_back(source);
     edge_sink_nodes_.push_back(sink);
     edge_switches_.push_back(switch_id);
 
-    //Add the edge to the nodes
+    /* Add the edge to the nodes */
     node_out_edges_[source].push_back(edge_id);
     node_in_edges_[sink].push_back(edge_id);
 
@@ -933,8 +954,9 @@ void RRGraph::remove_edge(const RREdgeId& edge) {
     RRNodeId src_node = edge_src_node(edge);
     RRNodeId sink_node = edge_sink_node(edge);
 
-    //Invalidate node to edge references
-    // TODO: consider making this optional (e.g. if called from remove_node)
+    /* Invalidate node to edge references
+     * TODO: consider making this optional (e.g. if called from remove_node)
+     */
     for (size_t i = 0; i < node_out_edges_[src_node].size(); ++i) {
         if (node_out_edges_[src_node][i] == edge) {
             node_out_edges_[src_node][i] = RREdgeId::INVALID();
@@ -948,8 +970,8 @@ void RRGraph::remove_edge(const RREdgeId& edge) {
         }
     }
 
-    //Mark edge invalid
-    edge_ids_[edge] = RREdgeId::INVALID();
+    /* Mark edge invalid */
+    invalid_edge_ids_[edge] = true;
 
     set_dirty();
 }
@@ -1189,7 +1211,8 @@ bool RRGraph::valid_node_id(const RRNodeId& node) const {
 }
 
 bool RRGraph::valid_edge_id(const RREdgeId& edge) const {
-    return size_t(edge) < edge_ids_.size() && edge_ids_[edge] == edge;
+    return (size_t(edge) < edge_id_range_)
+           && (invalid_edge_ids_.end() == invalid_edge_ids_.find(edge));
 }
 
 /* check if a given switch id is valid or not */
@@ -1235,9 +1258,9 @@ bool RRGraph::validate_node_sizes() const {
 }
 
 bool RRGraph::validate_edge_sizes() const {
-    return edge_src_nodes_.size() == edge_ids_.size()
-           && edge_sink_nodes_.size() == edge_ids_.size()
-           && edge_switches_.size() == edge_ids_.size();
+    return edge_src_nodes_.size() == edge_id_range_
+           && edge_sink_nodes_.size() == edge_id_range_
+           && edge_switches_.size() == edge_id_range_;
 }
 
 bool RRGraph::validate_switch_sizes() const {
@@ -1250,7 +1273,7 @@ bool RRGraph::validate_segment_sizes() const {
 
 void RRGraph::compress() {
     vtr::vector<RRNodeId, RRNodeId> node_id_map(node_ids_.size());
-    vtr::vector<RREdgeId, RREdgeId> edge_id_map(edge_ids_.size());
+    vtr::vector<RREdgeId, RREdgeId> edge_id_map(edge_id_range_);
 
     build_id_maps(node_id_map, edge_id_map);
 
@@ -1267,7 +1290,22 @@ void RRGraph::compress() {
 void RRGraph::build_id_maps(vtr::vector<RRNodeId, RRNodeId>& node_id_map,
                             vtr::vector<RREdgeId, RREdgeId>& edge_id_map) {
     node_id_map = compress_ids(node_ids_);
-    edge_id_map = compress_ids(edge_ids_);
+
+    /* Build edge ids including invalid ids and compress */
+    vtr::vector<RREdgeId, RREdgeId> edge_ids;
+    for (size_t id = 0; id < edge_id_range_; ++id) {
+        /* Try to find if this is an invalid id or not */
+        if (invalid_edge_ids_.end() != invalid_edge_ids_.find(RREdgeId(id))) {
+            VTR_ASSERT_SAFE(true == invalid_edge_ids_.at(RREdgeId(id)));
+            /* Give and invalid id */
+            edge_ids.push_back(RREdgeId::INVALID()); 
+            continue;
+        }
+        /* Reach here, this is a valid id, push to the edge list */
+        edge_ids.push_back(RREdgeId(id)); 
+    }
+    edge_id_map = compress_ids(edge_ids);
+
 }
 
 void RRGraph::clean_nodes(const vtr::vector<RRNodeId, RRNodeId>& node_id_map) {
@@ -1292,16 +1330,13 @@ void RRGraph::clean_nodes(const vtr::vector<RRNodeId, RRNodeId>& node_id_map) {
 }
 
 void RRGraph::clean_edges(const vtr::vector<RREdgeId, RREdgeId>& edge_id_map) {
-    edge_ids_ = clean_and_reorder_ids(edge_id_map);
+    edge_id_range_ = edge_id_map.size();
 
     edge_src_nodes_ = clean_and_reorder_values(edge_src_nodes_, edge_id_map);
     edge_sink_nodes_ = clean_and_reorder_values(edge_sink_nodes_, edge_id_map);
     edge_switches_ = clean_and_reorder_values(edge_switches_, edge_id_map);
 
     VTR_ASSERT(validate_edge_sizes());
-
-    VTR_ASSERT_MSG(are_contiguous(edge_ids_), "Ids should be contiguous");
-    VTR_ASSERT_MSG(all_valid(edge_ids_), "All Ids should be valid");
 }
 
 void RRGraph::rebuild_node_refs(const vtr::vector<RREdgeId, RREdgeId>& edge_id_map) {
@@ -1342,7 +1377,7 @@ void RRGraph::clear_nodes() {
 
 /* Empty all the vectors related to edges */
 void RRGraph::clear_edges() {
-    edge_ids_.clear();
+    edge_id_range_ = 0;
     edge_src_nodes_.clear();
     edge_sink_nodes_.clear();
     edge_switches_.clear();
