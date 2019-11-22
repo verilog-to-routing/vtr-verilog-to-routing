@@ -200,6 +200,7 @@
 #include <vector>
 
 /* EXTERNAL library header files go second*/
+#include "vtr_ndmatrix.h"
 #include "vtr_vector.h"
 #include "vtr_range.h"
 #include "vtr_geometry.h"
@@ -852,7 +853,7 @@ class RRGraph {
     /* Fast look-up to search a node by its type, coordinator and ptc_num 
      * Indexing of fast look-up: [0..xmax][0..ymax][0..NUM_TYPES-1][0..ptc_max][0..NUM_SIDES-1] 
      */
-    typedef std::vector<std::vector<std::vector<std::vector<std::vector<RRNodeId>>>>> NodeLookup;
+    typedef vtr::NdMatrix<std::vector<std::vector<RRNodeId>>,3> NodeLookup;
     mutable NodeLookup node_lookup_;
 };
 
