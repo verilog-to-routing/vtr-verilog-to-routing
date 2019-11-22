@@ -19,13 +19,31 @@
  * Constructors
  *******************************************************************/
 RRGraph::RRGraph() {
+    /* Set node range to be zero ! */
+    node_id_range_ = 0;
     /* Set edge range to be zero ! */
     edge_id_range_ = 0;
 }
 
-//Accessors
-RRGraph::node_range RRGraph::nodes() const {
-    return vtr::make_range(node_ids_.begin(), node_ids_.end());
+/********************************************************************
+ * Accessors
+ *******************************************************************/
+std::vector<RRNodeId> RRGraph::nodes() const {
+    /* Create a list of valid node ids */
+    std::vector<RRNodeId> node_ids;
+    /* Reserve the edge list, since it could be very last. Also exclude the invalid node ids */
+    node_ids.reserve(node_id_range_ - invalid_node_ids_.size());
+    for (size_t id = 0; id < node_id_range_; ++id) {
+        /* Try to find if this is an invalid id or not */
+        if (invalid_node_ids_.end() != invalid_node_ids_.find(RRNodeId(id))) {
+            VTR_ASSERT_SAFE(true == invalid_node_ids_.at(RRNodeId(id)));
+            /* Skip this id */
+            continue;
+        }
+        /* Reach here, this is a valid id, push to the edge list */
+        node_ids.push_back(RRNodeId(id));
+    }
+    return node_ids;
 }
 
 std::vector<RREdgeId> RRGraph::edges() const {
@@ -41,7 +59,7 @@ std::vector<RREdgeId> RRGraph::edges() const {
             continue;
         }
         /* Reach here, this is a valid id, push to the edge list */
-        edge_ids.push_back(RREdgeId(id)); 
+        edge_ids.push_back(RREdgeId(id));
     }
     return edge_ids;
 }
@@ -414,14 +432,14 @@ RRNodeId RRGraph::find_node(const short& x, const short& y, const t_rr_type& typ
     size_t iside = side;
 
     /* Check if x, y, type and ptc, side is valid */
-    if ((x < 0)                                     /* See if x is smaller than the index of first element */
+    if ((x < 0)                                          /* See if x is smaller than the index of first element */
         || (size_t(x) > node_lookup_.dim_size(0) - 1)) { /* See if x is large than the index of last element */
         /* Return a zero range! */
         return RRNodeId::INVALID();
     }
 
     /* Check if x, y, type and ptc, side is valid */
-    if ((y < 0)                                        /* See if y is smaller than the index of first element */
+    if ((y < 0)                                          /* See if y is smaller than the index of first element */
         || (size_t(y) > node_lookup_.dim_size(1) - 1)) { /* See if y is large than the index of last element */
         /* Return a zero range! */
         return RRNodeId::INVALID();
@@ -790,11 +808,11 @@ void RRGraph::clear_dirty() {
 void RRGraph::reserve_nodes(const unsigned long& num_nodes) {
     /* Reserve the full set of vectors related to nodes */
     /* Basic information */
-    this->node_ids_.reserve(num_nodes);
     this->node_types_.reserve(num_nodes);
     this->node_bounding_boxes_.reserve(num_nodes);
     this->node_capacities_.reserve(num_nodes);
     this->node_ptc_nums_.reserve(num_nodes);
+    this->node_cost_indices_.reserve(num_nodes);
     this->node_directions_.reserve(num_nodes);
     this->node_sides_.reserve(num_nodes);
     this->node_Rs_.reserve(num_nodes);
@@ -846,11 +864,12 @@ void RRGraph::reserve_node_out_edges(const RRNodeId& node, const size_t& num_out
 
 /* Mutators */
 RRNodeId RRGraph::create_node(const t_rr_type& type) {
-    //Allocate an ID
-    RRNodeId node_id = RRNodeId(node_ids_.size());
+    /* Allocate an ID */
+    RRNodeId node_id = RRNodeId(node_id_range_);
+    /* Expand range of node ids */
+    node_id_range_++;
 
-    //Initialize the attributes
-    node_ids_.push_back(node_id);
+    /* Initialize the attributes */
     node_types_.push_back(type);
 
     node_bounding_boxes_.emplace_back(-1, -1, -1, -1);
@@ -938,7 +957,7 @@ void RRGraph::remove_node(const RRNodeId& node) {
     }
 
     //Mark node invalid
-    node_ids_[node] = RRNodeId::INVALID();
+    invalid_node_ids_[node] = true;
 
     //Invalidate the node look-up
     invalidate_fast_node_lookup();
@@ -1207,7 +1226,8 @@ void RRGraph::initialize_fast_node_lookup() const {
 }
 
 bool RRGraph::valid_node_id(const RRNodeId& node) const {
-    return size_t(node) < node_ids_.size() && node_ids_[node] == node;
+    return (size_t(node) < node_id_range_)
+           && (invalid_node_ids_.end() == invalid_node_ids_.find(node));
 }
 
 bool RRGraph::valid_edge_id(const RREdgeId& edge) const {
@@ -1241,20 +1261,20 @@ bool RRGraph::validate_sizes() const {
 }
 
 bool RRGraph::validate_node_sizes() const {
-    return node_types_.size() == node_ids_.size()
-           && node_bounding_boxes_.size() == node_ids_.size()
-           && node_capacities_.size() == node_ids_.size()
-           && node_ptc_nums_.size() == node_ids_.size()
-           && node_cost_indices_.size() == node_ids_.size()
-           && node_directions_.size() == node_ids_.size()
-           && node_sides_.size() == node_ids_.size()
-           && node_Rs_.size() == node_ids_.size()
-           && node_Cs_.size() == node_ids_.size()
-           && node_segments_.size() == node_ids_.size()
-           && node_num_non_configurable_in_edges_.size() == node_ids_.size()
-           && node_num_non_configurable_out_edges_.size() == node_ids_.size()
-           && node_in_edges_.size() == node_ids_.size()
-           && node_out_edges_.size() == node_ids_.size();
+    return node_types_.size() == node_id_range_
+           && node_bounding_boxes_.size() == node_id_range_
+           && node_capacities_.size() == node_id_range_
+           && node_ptc_nums_.size() == node_id_range_
+           && node_cost_indices_.size() == node_id_range_
+           && node_directions_.size() == node_id_range_
+           && node_sides_.size() == node_id_range_
+           && node_Rs_.size() == node_id_range_
+           && node_Cs_.size() == node_id_range_
+           && node_segments_.size() == node_id_range_
+           && node_num_non_configurable_in_edges_.size() == node_id_range_
+           && node_num_non_configurable_out_edges_.size() == node_id_range_
+           && node_in_edges_.size() == node_id_range_
+           && node_out_edges_.size() == node_id_range_;
 }
 
 bool RRGraph::validate_edge_sizes() const {
@@ -1272,7 +1292,7 @@ bool RRGraph::validate_segment_sizes() const {
 }
 
 void RRGraph::compress() {
-    vtr::vector<RRNodeId, RRNodeId> node_id_map(node_ids_.size());
+    vtr::vector<RRNodeId, RRNodeId> node_id_map(node_id_range_);
     vtr::vector<RREdgeId, RREdgeId> edge_id_map(edge_id_range_);
 
     build_id_maps(node_id_map, edge_id_map);
@@ -1284,12 +1304,31 @@ void RRGraph::compress() {
 
     invalidate_fast_node_lookup();
 
+    /* Clear invalid node list */
+    invalid_node_ids_.clear();
+
+    /* Clear invalid edge list */
+    invalid_edge_ids_.clear();
+
     clear_dirty();
 }
 
 void RRGraph::build_id_maps(vtr::vector<RRNodeId, RRNodeId>& node_id_map,
                             vtr::vector<RREdgeId, RREdgeId>& edge_id_map) {
-    node_id_map = compress_ids(node_ids_);
+    /* Build node ids including invalid ids and compress */
+    vtr::vector<RRNodeId, RRNodeId> node_ids;
+    for (size_t id = 0; id < node_id_range_; ++id) {
+        /* Try to find if this is an invalid id or not */
+        if (invalid_node_ids_.end() != invalid_node_ids_.find(RRNodeId(id))) {
+            VTR_ASSERT_SAFE(true == invalid_node_ids_.at(RRNodeId(id)));
+            /* Give and invalid id */
+            node_ids.push_back(RRNodeId::INVALID());
+            continue;
+        }
+        /* Reach here, this is a valid id, push to the edge list */
+        node_ids.push_back(RRNodeId(id));
+    }
+    node_id_map = compress_ids(node_ids);
 
     /* Build edge ids including invalid ids and compress */
     vtr::vector<RREdgeId, RREdgeId> edge_ids;
@@ -1298,18 +1337,18 @@ void RRGraph::build_id_maps(vtr::vector<RRNodeId, RRNodeId>& node_id_map,
         if (invalid_edge_ids_.end() != invalid_edge_ids_.find(RREdgeId(id))) {
             VTR_ASSERT_SAFE(true == invalid_edge_ids_.at(RREdgeId(id)));
             /* Give and invalid id */
-            edge_ids.push_back(RREdgeId::INVALID()); 
+            edge_ids.push_back(RREdgeId::INVALID());
             continue;
         }
         /* Reach here, this is a valid id, push to the edge list */
-        edge_ids.push_back(RREdgeId(id)); 
+        edge_ids.push_back(RREdgeId(id));
     }
     edge_id_map = compress_ids(edge_ids);
 
 }
 
 void RRGraph::clean_nodes(const vtr::vector<RRNodeId, RRNodeId>& node_id_map) {
-    node_ids_ = clean_and_reorder_ids(node_id_map);
+    node_id_range_ = node_id_map.size();
 
     node_types_ = clean_and_reorder_values(node_types_, node_id_map);
 
@@ -1324,9 +1363,6 @@ void RRGraph::clean_nodes(const vtr::vector<RRNodeId, RRNodeId>& node_id_map) {
     node_Cs_ = clean_and_reorder_values(node_Cs_, node_id_map);
 
     VTR_ASSERT(validate_node_sizes());
-
-    VTR_ASSERT_MSG(are_contiguous(node_ids_), "Ids should be contiguous");
-    VTR_ASSERT_MSG(all_valid(node_ids_), "All Ids should be valid");
 }
 
 void RRGraph::clean_edges(const vtr::vector<RREdgeId, RREdgeId>& edge_id_map) {
@@ -1351,8 +1387,7 @@ void RRGraph::rebuild_node_refs(const vtr::vector<RREdgeId, RREdgeId>& edge_id_m
 
 /* Empty all the vectors related to nodes */
 void RRGraph::clear_nodes() {
-    node_ids_.clear();
-
+    node_id_range_ = 0;
     node_types_.clear();
     node_bounding_boxes_.clear();
 
