@@ -371,17 +371,17 @@ const t_segment_inf& RRGraph::get_segment(const RRSegmentId& segment_id) const {
  * Return a vector of the edge ids
  ***********************************************************************/
 std::vector<RREdgeId> RRGraph::find_edges(const RRNodeId& src_node, const RRNodeId& sink_node) const {
-    std::vector<RREdgeId> edges;
+    std::vector<RREdgeId> matching_edges;
 
     /* Iterate over the outgoing edges of the source node */
     for (auto edge : node_out_edges(src_node)) {
         if (edge_sink_node(edge) == sink_node) {
             /* Update edge list to return */
-            edges.push_back(edge);
+            matching_edges.push_back(edge);
         }
     }
 
-    return edges;
+    return matching_edges;
 }
 
 RRNodeId RRGraph::find_node(const short& x, const short& y, const t_rr_type& type, const int& ptc, const e_side& side) const {

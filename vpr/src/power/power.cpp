@@ -606,7 +606,7 @@ static void power_usage_blocks(t_power_usage* power_usage) {
         for (size_t y = 0; y < device_ctx.grid.height(); y++) {
             if ((device_ctx.grid[x][y].width_offset != 0)
                 || (device_ctx.grid[x][y].height_offset != 0)
-                || (device_ctx.grid[x][y].type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE)) {
+                || (device_ctx.grid[x][y].type == device_ctx.EMPTY_TYPE)) {
                 continue;
             }
 
@@ -1008,9 +1008,6 @@ static void power_usage_routing(t_power_usage* power_usage,
                     power_ctx.commonly_used->num_cb_buffers++;
                     power_ctx.commonly_used->total_cb_buffer_size += buffer_size;
                 }
-                break;
-            case INTRA_CLUSTER_EDGE:
-                VTR_ASSERT(0);
                 break;
             default:
                 power_log_msg(POWER_LOG_WARNING,

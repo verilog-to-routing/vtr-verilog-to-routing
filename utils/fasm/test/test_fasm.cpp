@@ -36,8 +36,8 @@ public:
         m_RegexStr(a_Regex), m_Regex(a_Regex) {}
 
     bool match(const std::string& str) const override {
-        std::smatch match;
-        return std::regex_match(str, match, m_Regex);
+        std::smatch smatch;
+        return std::regex_match(str, smatch, m_Regex);
     }
 
     virtual std::string describe() const override {
