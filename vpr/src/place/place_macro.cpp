@@ -495,7 +495,7 @@ static bool net_is_driven_by_direct(ClusterNetId clb_net) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     ClusterBlockId block_id = cluster_ctx.clb_nlist.net_driver_block(clb_net);
-    int pin_index = cluster_ctx.clb_nlist.net_pin_physical_index(clb_net, 0);
+    int pin_index = cluster_ctx.clb_nlist.net_pin_logical_index(clb_net, 0);
 
     auto direct = f_idirect_from_blk_pin[cluster_ctx.clb_nlist.block_type(block_id)->index][pin_index];
 

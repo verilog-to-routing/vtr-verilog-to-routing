@@ -254,6 +254,9 @@ struct PlacementContext : public Context {
     //Clustered block placement locations
     vtr::vector_map<ClusterBlockId, t_block_loc> block_locs;
 
+    //Clustered pin placement mapping with physical pin
+    vtr::vector_map<ClusterPinId, int> physical_pins;
+
     //Clustered block associated with each grid location (i.e. inverse of block_locs)
     vtr::Matrix<t_grid_blocks> grid_blocks; //[0..device_ctx.grid.width()-1][0..device_ctx.grid.width()-1]
 
