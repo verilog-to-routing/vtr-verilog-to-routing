@@ -477,14 +477,14 @@ short RRGraph::chan_num_tracks(const short& x, const short& y, const t_rr_type& 
     initialize_fast_node_lookup();
 
     /* Check if x, y, type and ptc is valid */
-    if ((x < 0)                                     /* See if x is smaller than the index of first element */
+    if ((x < 0)                                          /* See if x is smaller than the index of first element */
         || (size_t(x) > node_lookup_.dim_size(0) - 1)) { /* See if x is large than the index of last element */
         /* Return a zero range! */
         return 0;
     }
 
     /* Check if x, y, type and ptc is valid */
-    if ((y < 0)                                        /* See if y is smaller than the index of first element */
+    if ((y < 0)                                          /* See if y is smaller than the index of first element */
         || (size_t(y) > node_lookup_.dim_size(1) - 1)) { /* See if y is large than the index of last element */
         /* Return a zero range! */
         return 0;
@@ -529,15 +529,21 @@ bool RRGraph::validate_node_segment(const RRNodeId& node) const {
 /* Check if the segment id of every node is in range */
 bool RRGraph::validate_node_segments() const {
     bool all_valid = true;
-    for (auto node : nodes()) {
-        if (true == validate_node_segment(node)) {
+    for (size_t id = 0; id < node_id_range_; ++id) {
+        /* Try to find if this is an invalid id or not */
+        if (invalid_node_ids_.end() != invalid_node_ids_.find(RRNodeId(id))) {
+            VTR_ASSERT_SAFE(true == invalid_node_ids_.at(RRNodeId(id)));
+            /* Skip this id */
+            continue;
+        }
+        if (true == validate_node_segment(RRNodeId(id))) {
             continue;
         }
         /* Reach here it means we find an invalid segment id */
         all_valid = false;
         /* Print a warning! */
         VTR_LOG_WARN("Node %d has an invalid segment id (%d)!\n",
-                     size_t(node), size_t(node_segment(node)));
+                     id, size_t(node_segment(RRNodeId(id))));
     }
     return all_valid;
 }
@@ -551,15 +557,21 @@ bool RRGraph::validate_edge_switch(const RREdgeId& edge) const {
 /* Check if the switch id of every edge is in range */
 bool RRGraph::validate_edge_switches() const {
     bool all_valid = true;
-    for (auto edge : edges()) {
-        if (true == validate_edge_switch(edge)) {
+    for (size_t id = 0; id < edge_id_range_; ++id) {
+        /* Try to find if this is an invalid id or not */
+        if (invalid_edge_ids_.end() != invalid_edge_ids_.find(RREdgeId(id))) {
+            VTR_ASSERT_SAFE(true == invalid_edge_ids_.at(RREdgeId(id)));
+            /* Skip this id */
+            continue;
+        }
+        if (true == validate_edge_switch(RREdgeId(id))) {
             continue;
         }
         /* Reach here it means we find an invalid segment id */
         all_valid = false;
         /* Print a warning! */
         VTR_LOG_WARN("Edge %d has an invalid switch id (%d)!\n",
-                     size_t(edge), size_t(edge_switch(edge)));
+                     id, size_t(edge_switch(RREdgeId(id))));
     }
     return all_valid;
 }
@@ -663,8 +675,14 @@ bool RRGraph::validate_node_edges(const RRNodeId& node) const {
 /* check if all the nodes' input edges are valid */
 bool RRGraph::validate_nodes_in_edges() const {
     bool all_valid = true;
-    for (auto node : nodes()) {
-        if (true == validate_node_in_edges(node)) {
+    for (size_t id = 0; id < node_id_range_; ++id) {
+        /* Try to find if this is an invalid id or not */
+        if (invalid_node_ids_.end() != invalid_node_ids_.find(RRNodeId(id))) {
+            VTR_ASSERT_SAFE(true == invalid_node_ids_.at(RRNodeId(id)));
+            /* Skip this id */
+            continue;
+        }
+        if (true == validate_node_in_edges(RRNodeId(id))) {
             continue;
         }
         /* Reach here, it means there is something wrong! 
@@ -678,8 +696,14 @@ bool RRGraph::validate_nodes_in_edges() const {
 /* check if all the nodes' output edges are valid */
 bool RRGraph::validate_nodes_out_edges() const {
     bool all_valid = true;
-    for (auto node : nodes()) {
-        if (true == validate_node_out_edges(node)) {
+    for (size_t id = 0; id < node_id_range_; ++id) {
+        /* Try to find if this is an invalid id or not */
+        if (invalid_node_ids_.end() != invalid_node_ids_.find(RRNodeId(id))) {
+            VTR_ASSERT_SAFE(true == invalid_node_ids_.at(RRNodeId(id)));
+            /* Skip this id */
+            continue;
+        }
+        if (true == validate_node_out_edges(RRNodeId(id))) {
             continue;
         }
         /* Reach here, it means there is something wrong! 
@@ -717,15 +741,21 @@ bool RRGraph::validate_edge_sink_node(const RREdgeId& edge) const {
 /* Check if source nodes of a edge are all valid */
 bool RRGraph::validate_edge_src_nodes() const {
     bool all_valid = true;
-    for (auto edge : edges()) {
-        if (true == validate_edge_src_node(edge)) {
+    for (size_t id = 0; id < edge_id_range_; ++id) {
+        /* Try to find if this is an invalid id or not */
+        if (invalid_edge_ids_.end() != invalid_edge_ids_.find(RREdgeId(id))) {
+            VTR_ASSERT_SAFE(true == invalid_edge_ids_.at(RREdgeId(id)));
+            /* Skip this id */
+            continue;
+        }
+        if (true == validate_edge_src_node(RREdgeId(id))) {
             continue;
         }
         /* Reach here, it means there is something wrong! 
          * Print a warning  
          */
         VTR_LOG_WARN("Edge %d has a invalid source node %d!\n",
-                     size_t(edge), size_t(edge_src_node(edge)));
+                     id, size_t(edge_src_node(RREdgeId(id))));
         all_valid = false;
     }
     return all_valid;
@@ -734,15 +764,21 @@ bool RRGraph::validate_edge_src_nodes() const {
 /* Check if source nodes of a edge are all valid */
 bool RRGraph::validate_edge_sink_nodes() const {
     bool all_valid = true;
-    for (auto edge : edges()) {
-        if (true == validate_edge_sink_node(edge)) {
+    for (size_t id = 0; id < edge_id_range_; ++id) {
+        /* Try to find if this is an invalid id or not */
+        if (invalid_edge_ids_.end() != invalid_edge_ids_.find(RREdgeId(id))) {
+            VTR_ASSERT_SAFE(true == invalid_edge_ids_.at(RREdgeId(id)));
+            /* Skip this id */
+            continue;
+        }
+        if (true == validate_edge_sink_node(RREdgeId(id))) {
             continue;
         }
         /* Reach here, it means there is something wrong! 
          * Print a warning  
          */
         VTR_LOG_WARN("Edge %d has a invalid sink node %d!\n",
-                     size_t(edge), size_t(edge_sink_node(edge)));
+                     id, size_t(edge_sink_node(RREdgeId(id))));
         all_valid = false;
     }
     return all_valid;
@@ -1147,8 +1183,14 @@ void RRGraph::partition_node_out_edges(const RRNodeId& node) {
  */
 void RRGraph::partition_in_edges() {
     /* For each node */
-    for (auto node : nodes()) {
-        this->partition_node_in_edges(node);
+    for (size_t id = 0; id < node_id_range_; ++id) {
+        /* Try to find if this is an invalid id or not */
+        if (invalid_node_ids_.end() != invalid_node_ids_.find(RRNodeId(id))) {
+            VTR_ASSERT_SAFE(true == invalid_node_ids_.at(RRNodeId(id)));
+            /* Skip this id */
+            continue;
+        }
+        this->partition_node_in_edges(RRNodeId(id));
     }
 }
 
@@ -1157,8 +1199,14 @@ void RRGraph::partition_in_edges() {
  */
 void RRGraph::partition_out_edges() {
     /* For each node */
-    for (auto node : nodes()) {
-        this->partition_node_out_edges(node);
+    for (size_t id = 0; id < node_id_range_; ++id) {
+        /* Try to find if this is an invalid id or not */
+        if (invalid_node_ids_.end() != invalid_node_ids_.find(RRNodeId(id))) {
+            VTR_ASSERT_SAFE(true == invalid_node_ids_.at(RRNodeId(id)));
+            /* Skip this id */
+            continue;
+        }
+        this->partition_node_out_edges(RRNodeId(id));
     }
 }
 
@@ -1179,13 +1227,26 @@ void RRGraph::build_fast_node_lookup() const {
 
     /* Get the max (x,y) and then we can resize the ndmatrix */
     vtr::Point<short> max_coord(0, 0);
-    for (auto node : nodes()) {
-        max_coord.set_x(std::max(max_coord.x(), node_xlow(node)));
-        max_coord.set_y(std::max(max_coord.y(), node_ylow(node)));
+    for (size_t id = 0; id < node_id_range_; ++id) {
+        /* Try to find if this is an invalid id or not */
+        if (invalid_node_ids_.end() != invalid_node_ids_.find(RRNodeId(id))) {
+            VTR_ASSERT_SAFE(true == invalid_node_ids_.at(RRNodeId(id)));
+            /* Skip this id */
+            continue;
+        }
+        max_coord.set_x(std::max(max_coord.x(), node_xlow(RRNodeId(id))));
+        max_coord.set_y(std::max(max_coord.y(), node_ylow(RRNodeId(id))));
     }
     node_lookup_.resize({(size_t)max_coord.x() + 1, (size_t)max_coord.y() + 1, NUM_RR_TYPES + 1});
 
-    for (auto node : nodes()) {
+    for (size_t id = 0; id < node_id_range_; ++id) {
+        /* Try to find if this is an invalid id or not */
+        if (invalid_node_ids_.end() != invalid_node_ids_.find(RRNodeId(id))) {
+            VTR_ASSERT_SAFE(true == invalid_node_ids_.at(RRNodeId(id)));
+            /* Skip this id */
+            continue;
+        }
+        RRNodeId node = RRNodeId(id);
         size_t x = node_xlow(node);
         size_t y = node_ylow(node);
         size_t itype = node_type(node);
@@ -1376,7 +1437,14 @@ void RRGraph::clean_edges(const vtr::vector<RREdgeId, RREdgeId>& edge_id_map) {
 }
 
 void RRGraph::rebuild_node_refs(const vtr::vector<RREdgeId, RREdgeId>& edge_id_map) {
-    for (const auto& node : nodes()) {
+    for (size_t id = 0; id < node_id_range_; ++id) {
+        /* Try to find if this is an invalid id or not */
+        if (invalid_node_ids_.end() != invalid_node_ids_.find(RRNodeId(id))) {
+            VTR_ASSERT_SAFE(true == invalid_node_ids_.at(RRNodeId(id)));
+            /* Skip this id */
+            continue;
+        }
+        RRNodeId node = RRNodeId(id);
         node_in_edges_[node] = update_valid_refs(node_in_edges_[node], edge_id_map);
         node_out_edges_[node] = update_valid_refs(node_out_edges_[node], edge_id_map);
 
