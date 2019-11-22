@@ -91,15 +91,6 @@ void convert_rr_graph(std::vector<t_segment_inf>& vpr_segments) {
     }
     device_ctx.rr_graph.reserve_edges(num_edges_to_reserve);
 
-    // Create the edges
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
-        const auto& node = device_ctx.rr_nodes[inode];
-        /* Reserve input and output edges for the node: 
-         * this is very important to avoid memory fragments!!! 
-         */
-        device_ctx.rr_graph.reserve_node_inout_edges(RRNodeId(inode), node.fan_in() + node.num_edges());
-    }
-
     /* Add edges for each node */
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
         const auto& node = device_ctx.rr_nodes[inode];
@@ -121,7 +112,7 @@ void convert_rr_graph(std::vector<t_segment_inf>& vpr_segments) {
      * See how the router will use the edges and determine the strategy
      * if we want to partition the edges first or depends on the routing needs
      */
-    device_ctx.rr_graph.partition_edges();
+    device_ctx.rr_graph.rebuild_node_edges();
 
     /* Essential check for rr_graph, build look-up and  */
     if (false == device_ctx.rr_graph.validate()) {
