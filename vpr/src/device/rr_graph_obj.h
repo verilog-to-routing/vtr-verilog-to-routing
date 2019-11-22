@@ -214,49 +214,26 @@
 class RRGraph {
   public: /* Types */
 
+    //Lazy iterator utility forward declaration
     template<class ID>
-    class lazy_id_iterator : public std::iterator<std::bidirectional_iterator_tag, ID> {
-      public:
-        typedef typename std::iterator<std::bidirectional_iterator_tag, ID>::value_type value_type;
-        typedef typename std::iterator<std::bidirectional_iterator_tag, ID>::iterator iterator;
-        lazy_id_iterator(value_type init, const std::unordered_set<ID>& invalid_ids)
-            : value_(init)
-            , invalid_ids_(invalid_ids) {}
-        iterator operator++() {
-            value_ = ID(size_t(value_) + 1);
-            return *this;
-        }
-        iterator operator--() {
-            value_ = ID(size_t(value_) - 1);
-            return *this;
-        }
-        value_type operator*() const { return (invalid_ids_.count(value_)) ? ID::INVALID() : value_; }
-
-        friend bool operator==(const lazy_id_iterator<ID> lhs, const lazy_id_iterator<ID> rhs) { return lhs.value_ == rhs.value_; }
-        friend bool operator!=(const lazy_id_iterator<ID> lhs, const lazy_id_iterator<ID> rhs) { return !(lhs == rhs); }
-
-      private:
-        value_type value_;
-        const std::unordered_set<ID>& invalid_ids_;
-    };
-
-    typedef lazy_id_iterator<RRNodeId> lazy_node_iterator;
-    typedef lazy_id_iterator<RREdgeId> lazy_edge_iterator;
+    class lazy_id_iterator;
 
     /* Iterators used to create iterator-based loop for nodes/edges/switches/segments */
     typedef vtr::vector<RRNodeId, RRNodeId>::const_iterator node_iterator;
     typedef vtr::vector<RREdgeId, RREdgeId>::const_iterator edge_iterator;
     typedef vtr::vector<RRSwitchId, RRSwitchId>::const_iterator switch_iterator;
     typedef vtr::vector<RRSegmentId, RRSegmentId>::const_iterator segment_iterator;
+    typedef lazy_id_iterator<RRNodeId> lazy_node_iterator;
+    typedef lazy_id_iterator<RREdgeId> lazy_edge_iterator;
 
     /* Ranges used to create range-based loop for nodes/edges/switches/segments */
     typedef vtr::Range<node_iterator> node_range;
     typedef vtr::Range<edge_iterator> edge_range;
     typedef vtr::Range<switch_iterator> switch_range;
     typedef vtr::Range<segment_iterator> segment_range;
-
     typedef vtr::Range<lazy_node_iterator> lazy_node_range;
     typedef vtr::Range<lazy_edge_iterator> lazy_edge_range;
+
   public: /* Constructors */
     RRGraph();
 
@@ -759,6 +736,54 @@ class RRGraph {
 
     /* top-level function to free, should be called when to delete a RRGraph */
     void clear();
+
+  public: /* Type implementations */
+
+    /*
+     * This class (forward delcared above) is a template used to represent a lazily calculated 
+     * iterator of the specified ID type. The key assumption made is that the ID space is 
+     * contiguous and can be walked by incrementing the underlying ID value. To account for 
+     * invalid IDs, it keeps a reference to the invalid ID set and returns ID::INVALID() for
+     * ID values in the set.
+     *
+     * It is used to lazily create an iteration range (e.g. as returned by RRGraph::edges() RRGraph::nodes())
+     * just based on the count of allocated elements (i.e. RRGraph::num_nodes_ or RRGraph::num_edges_),
+     * and the set of any invalid IDs (i.e. RRGraph::invalid_node_ids_, RRGraph::invalid_edge_ids_).
+     */
+    template<class ID>
+    class lazy_id_iterator : public std::iterator<std::bidirectional_iterator_tag, ID> {
+      public:
+        //Since we pass ID as a template to std::iterator we need to use an explicit 'typename'
+        //to bring the value_type and iterator names into scope
+        typedef typename std::iterator<std::bidirectional_iterator_tag, ID>::value_type value_type;
+        typedef typename std::iterator<std::bidirectional_iterator_tag, ID>::iterator iterator;
+
+        lazy_id_iterator(value_type init, const std::unordered_set<ID>& invalid_ids)
+            : value_(init)
+            , invalid_ids_(invalid_ids) {}
+
+        //Advance to the next ID value
+        iterator operator++() {
+            value_ = ID(size_t(value_) + 1);
+            return *this;
+        }
+
+        //Advance to the previous ID value
+        iterator operator--() {
+            value_ = ID(size_t(value_) - 1);
+            return *this;
+        }
+
+        //Dereference the iterator
+        value_type operator*() const { return (invalid_ids_.count(value_)) ? ID::INVALID() : value_; }
+
+        friend bool operator==(const lazy_id_iterator<ID> lhs, const lazy_id_iterator<ID> rhs) { return lhs.value_ == rhs.value_; }
+        friend bool operator!=(const lazy_id_iterator<ID> lhs, const lazy_id_iterator<ID> rhs) { return !(lhs == rhs); }
+
+      private:
+        value_type value_;
+        const std::unordered_set<ID>& invalid_ids_;
+    };
 
   private: /* Internal Mutators to perform edge partitioning */
     /* classify the input edges of each node to be configurable (1st part) and non-configurable (2nd part) */
