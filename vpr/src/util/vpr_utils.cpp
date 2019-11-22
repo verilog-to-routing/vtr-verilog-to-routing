@@ -2105,24 +2105,34 @@ void print_switch_usage() {
  */
 
 void place_sync_external_block_connections(ClusterBlockId iblk) {
-    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& clb_nlist = cluster_ctx.clb_nlist;
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     VTR_ASSERT_MSG(place_ctx.block_locs[iblk].nets_and_pins_synced_to_z_coordinate == false, "Block net and pins must not be already synced");
 
-    auto type = physical_tile_type(iblk);
-    VTR_ASSERT(type->num_pins % type->capacity == 0);
-    int max_num_block_pins = type->num_pins / type->capacity;
+    auto physical_tile = physical_tile_type(iblk);
+    auto logical_block = clb_nlist.block_type(iblk);
+
+    VTR_ASSERT(physical_tile->num_pins % physical_tile->capacity == 0);
+    int max_num_block_pins = physical_tile->num_pins / physical_tile->capacity;
     /* Logical location and physical location is offset by z * max_num_block_pins */
 
-    auto& clb_nlist = cluster_ctx.clb_nlist;
     for (auto pin : clb_nlist.block_pins(iblk)) {
-        int orig_phys_pin_index = clb_nlist.pin_physical_index(pin);
-        int new_phys_pin_index = orig_phys_pin_index + place_ctx.block_locs[iblk].loc.z * max_num_block_pins;
-        clb_nlist.set_pin_physical_index(pin, new_phys_pin_index);
+        int logical_pin_index = clb_nlist.pin_logical_index(pin);
+        int physical_pin_index = get_physical_pin(physical_tile, logical_block, logical_pin_index);
+
+        int new_physical_pin_index = physical_pin_index + place_ctx.block_locs[iblk].loc.z * max_num_block_pins;
+
+        auto result = place_ctx.physical_pins.find(pin);
+        if (result != place_ctx.physical_pins.end()) {
+            place_ctx.physical_pins[pin] = new_physical_pin_index;
+        } else {
+            place_ctx.physical_pins.insert(pin, new_physical_pin_index);
+        }
     }
 
     //Mark the block as synced
-    place_ctx.block_locs[iblk].nets_and_pins_synced_to_z_coordinate = true;
+    //place_ctx.block_locs[iblk].nets_and_pins_synced_to_z_coordinate = true;
 }
 
 int get_max_num_pins(t_logical_block_type_ptr logical_block) {
@@ -2198,6 +2208,21 @@ int get_physical_pin(t_physical_tile_type_ptr physical_tile,
     }
 
     return result->second.pin;
+}
+
+int net_pin_tile_index(const ClusterNetId net_id, int net_pin_index) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    // Get the logical pin index of pin within it's logical block type
+    auto pin_id = cluster_ctx.clb_nlist.net_pin(net_id, net_pin_index);
+
+    return pin_tile_index(pin_id);
+}
+
+int pin_tile_index(const ClusterPinId pin) {
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    return place_ctx.physical_pins[pin];
 }
 
 void pretty_print_uint(const char* prefix, size_t value, int num_digits, int scientific_precision) {
