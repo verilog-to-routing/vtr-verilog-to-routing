@@ -135,7 +135,7 @@ short RRGraph::node_fan_in(const RRNodeId& node) const {
 }
 
 short RRGraph::node_fan_out(const RRNodeId& node) const {
-    return node_inout_edges_[node].size() - node_num_in_edges_[node];
+    return node_num_out_edges_[node];
 }
 
 short RRGraph::node_capacity(const RRNodeId& node) const {
@@ -214,7 +214,7 @@ short RRGraph::node_num_configurable_in_edges(const RRNodeId& node) const {
  * Get the number of configurable output edges of a node
  */
 short RRGraph::node_num_configurable_out_edges(const RRNodeId& node) const {
-    return node_inout_edges_[node].size() - node_num_in_edges_[node] - node_num_non_configurable_in_edges_[node];
+    return node_num_out_edges_[node] - node_num_non_configurable_in_edges_[node];
 }
 
 /* 
@@ -237,78 +237,65 @@ short RRGraph::node_num_non_configurable_out_edges(const RRNodeId& node) const {
     return node_num_non_configurable_out_edges_[node];
 }
 
+RRGraph::edge_range RRGraph::node_edges(const RRNodeId& node) const {
+    VTR_ASSERT_SAFE(valid_node_id(node));
+
+    return vtr::make_range(node_edges_[node].get(),
+                           node_edges_[node].get() + node_num_in_edges_[node] + node_num_out_edges_[node]);
+}
+
+RRGraph::edge_range RRGraph::node_in_edges(const RRNodeId& node) const {
+    VTR_ASSERT_SAFE(valid_node_id(node));
+
+    return vtr::make_range(node_edges_[node].get(),
+                           node_edges_[node].get() + node_num_in_edges_[node]);
+}
+
+RRGraph::edge_range RRGraph::node_out_edges(const RRNodeId& node) const {
+    VTR_ASSERT_SAFE(valid_node_id(node));
+
+    return vtr::make_range((node_edges_[node].get() + node_num_in_edges_[node]),
+                           (node_edges_[node].get() + node_num_in_edges_[node]) + node_num_out_edges_[node]);
+}
+
 /* Get the list of configurable edges from the input edges of a given node 
  * And return the range(iterators) of the list 
  */
 RRGraph::edge_range RRGraph::node_configurable_in_edges(const RRNodeId& node) const {
-    /* Make sure we will access a valid node */
     VTR_ASSERT_SAFE(valid_node_id(node));
 
-    /* By default the configurable edges will be stored at the first part of the inputedge list (0 to XX) */
-    auto begin = node_inout_edges_[node].begin();
-
-    /* By default the non-configurable edges will be stored at second part of the input edge list (XX to end) */
-    auto end = node_inout_edges_[node].begin() + node_num_in_edges_[node] - node_num_non_configurable_in_edges_[node];
-
-    return vtr::make_range(begin, end);
+    return vtr::make_range(node_edges_[node].get(),
+                           node_edges_[node].get() + node_num_in_edges_[node] - node_num_non_configurable_in_edges_[node]);
 }
 
 /* Get the list of non configurable edges from the input edges of a given node 
  * And return the range(iterators) of the list 
  */
 RRGraph::edge_range RRGraph::node_non_configurable_in_edges(const RRNodeId& node) const {
-    /* Make sure we will access a valid node */
     VTR_ASSERT_SAFE(valid_node_id(node));
 
-    /* By default the configurable edges will be stored at the first part of the edge list (0 to XX) */
-    auto begin = node_inout_edges_[node].begin() + node_num_in_edges_[node] - node_num_non_configurable_in_edges_[node];
-
-    /* By default the non-configurable edges will be stored at second part of the edge list (XX to end) */
-    auto end = node_inout_edges_[node].begin() + node_num_in_edges_[node];
-
-    return vtr::make_range(begin, end);
+    return vtr::make_range(node_edges_[node].get() + node_num_in_edges_[node] - node_num_non_configurable_in_edges_[node],
+                           node_edges_[node].get() + node_num_in_edges_[node]);
 }
 
 /* Get the list of configurable edges from the output edges of a given node 
  * And return the range(iterators) of the list 
  */
 RRGraph::edge_range RRGraph::node_configurable_out_edges(const RRNodeId& node) const {
-    /* Make sure we will access a valid node */
     VTR_ASSERT_SAFE(valid_node_id(node));
 
-    /* By default the configurable edges will be stored at the first part of the edge list (0 to XX) */
-    auto begin = node_inout_edges_[node].begin() + node_num_in_edges_[node];
-
-    /* By default the non-configurable edges will be stored at second part of the edge list (XX to end) */
-    auto end = node_inout_edges_[node].end() - node_num_non_configurable_out_edges_[node];
-
-    return vtr::make_range(begin, end);
+    return vtr::make_range((node_edges_[node].get() + node_num_in_edges_[node]),
+                           (node_edges_[node].get() + node_num_in_edges_[node]) + node_num_out_edges_[node] - node_num_non_configurable_out_edges_[node]);
 }
 
 /* Get the list of non configurable edges from the output edges of a given node 
  * And return the range(iterators) of the list 
  */
 RRGraph::edge_range RRGraph::node_non_configurable_out_edges(const RRNodeId& node) const {
-    /* Make sure we will access a valid node */
     VTR_ASSERT_SAFE(valid_node_id(node));
 
-    /* By default the configurable edges will be stored at the first part of the edge list (0 to XX) */
-    auto begin = node_inout_edges_[node].end() - node_num_non_configurable_out_edges_[node];
-
-    /* By default the non-configurable edges will be stored at second part of the edge list (XX to end) */
-    auto end = node_inout_edges_[node].end();
-
-    return vtr::make_range(begin, end);
-}
-
-RRGraph::edge_range RRGraph::node_out_edges(const RRNodeId& node) const {
-    VTR_ASSERT_SAFE(valid_node_id(node));
-    return vtr::make_range(node_inout_edges_[node].begin() + node_num_in_edges_[node], node_inout_edges_[node].end());
-}
-
-RRGraph::edge_range RRGraph::node_in_edges(const RRNodeId& node) const {
-    VTR_ASSERT_SAFE(valid_node_id(node));
-    return vtr::make_range(node_inout_edges_[node].begin(), node_inout_edges_[node].begin() + node_num_in_edges_[node]);
+    return vtr::make_range((node_edges_[node].get() + node_num_in_edges_[node]) + node_num_out_edges_[node] - node_num_non_configurable_out_edges_[node],
+                           (node_edges_[node].get() + node_num_in_edges_[node]) + node_num_out_edges_[node]);
 }
 
 //Edge attributes
@@ -818,12 +805,12 @@ void RRGraph::reserve_nodes(const unsigned long& num_nodes) {
     this->node_Cs_.reserve(num_nodes);
     this->node_segments_.reserve(num_nodes);
 
+    /* Edge-related vectors */
+    this->node_num_in_edges_.reserve(num_nodes);
+    this->node_num_out_edges_.reserve(num_nodes);
     this->node_num_non_configurable_in_edges_.reserve(num_nodes);
     this->node_num_non_configurable_out_edges_.reserve(num_nodes);
-
-    /* Edge-relate vectors */
-    this->node_num_in_edges_.reserve(num_nodes);
-    this->node_inout_edges_.reserve(num_nodes);
+    this->node_edges_.reserve(num_nodes);
 }
 
 /* Reserve a list of edges */
@@ -844,14 +831,6 @@ void RRGraph::reserve_switches(const size_t& num_switches) {
 void RRGraph::reserve_segments(const size_t& num_segments) {
     this->segment_ids_.reserve(num_segments);
     this->segments_.reserve(num_segments);
-}
-
-/* Reserve the input edges for a node */
-void RRGraph::reserve_node_inout_edges(const RRNodeId& node, const size_t& num_inout_edges) {
-    /* Validate the node id */
-    VTR_ASSERT_SAFE(true == valid_node_id(node));
-    /* Reserve the input edge list */
-    this->node_inout_edges_[node].reserve(num_inout_edges);
 }
 
 /* Mutators */
@@ -875,11 +854,12 @@ RRNodeId RRGraph::create_node(const t_rr_type& type) {
     node_Cs_.push_back(0.);
     node_segments_.push_back(RRSegmentId::INVALID());
 
-    node_num_non_configurable_in_edges_.emplace_back();  //Initially empty
-    node_num_non_configurable_out_edges_.emplace_back(); //Initially empty
+    node_edges_.emplace_back(); //Initially empty
 
-    node_num_in_edges_.emplace_back(); //Initially empty
-    node_inout_edges_.emplace_back();  //Initially empty
+    node_num_in_edges_.emplace_back(0);
+    node_num_out_edges_.emplace_back(0);
+    node_num_non_configurable_in_edges_.emplace_back(0);
+    node_num_non_configurable_out_edges_.emplace_back(0);
 
     invalidate_fast_node_lookup();
 
@@ -903,17 +883,10 @@ RREdgeId RRGraph::create_edge(const RRNodeId& source, const RRNodeId& sink, cons
     edge_sink_nodes_.push_back(sink);
     edge_switches_.push_back(switch_id);
 
-    /* Add the edge to the nodes:
-     * We use delimeter to split incoming and outgoing edges 
-     * for a node into two groups
-     * When adding the new edge, 
-     * we will add the edge id to the tail of node_inout_edge list of source node
-     * we will insert the edge id to the delimeter of node_inout_edge list of sink node
-     * the delimeter node_num_in_edges_ will be updated for the sink node!
-     */
-    node_inout_edges_[source].push_back(edge_id);
-    node_inout_edges_[sink].insert(node_inout_edges_[sink].begin() + (size_t)node_num_in_edges_[sink], edge_id);
-    node_num_in_edges_[sink]++;
+    //We do not create the entry in node_edges_ here!
+    //For memory efficiency this is done when
+    //rebuild_node_edges() is called (i.e. after all
+    //edges have been created).
 
     VTR_ASSERT(validate_sizes());
 
@@ -976,15 +949,15 @@ void RRGraph::remove_edge(const RREdgeId& edge) {
     /* Invalidate node to edge references
      * TODO: consider making this optional (e.g. if called from remove_node)
      */
-    for (size_t i = 0; i < node_inout_edges_[src_node].size(); ++i) {
-        if (node_inout_edges_[src_node][i] == edge) {
-            node_inout_edges_[src_node][i] = RREdgeId::INVALID();
+    for (size_t i = 0; i < node_num_in_edges_[src_node]; ++i) {
+        if (node_edges_[src_node][i] == edge) {
+            node_edges_[src_node][i] = RREdgeId::INVALID();
             break;
         }
     }
-    for (size_t i = 0; i < node_inout_edges_[sink_node].size(); ++i) {
-        if (node_inout_edges_[sink_node][i] == edge) {
-            node_inout_edges_[sink_node][i] = RREdgeId::INVALID();
+    for (size_t i = node_num_in_edges_[sink_node]; i < node_num_in_edges_[sink_node] + node_num_out_edges_[sink_node]; ++i) {
+        if (node_edges_[sink_node][i] == edge) {
+            node_edges_[sink_node][i] = RREdgeId::INVALID();
             break;
         }
     }
@@ -1103,84 +1076,121 @@ void RRGraph::set_node_segment(const RRNodeId& node, const RRSegmentId& segment_
 
     node_segments_[node] = segment_id;
 }
+void RRGraph::rebuild_node_edges() {
+    node_edges_.resize(nodes().size());
+    node_num_in_edges_.resize(nodes().size(), 0);
+    node_num_out_edges_.resize(nodes().size(), 0);
+    node_num_non_configurable_in_edges_.resize(nodes().size(), 0);
+    node_num_non_configurable_out_edges_.resize(nodes().size(), 0);
 
-/* For a given node in a rr_graph
- * classify the edges of each node to be configurable (1st part) and non-configurable (2nd part) 
- */
-void RRGraph::partition_node_in_edges(const RRNodeId& node) {
-    //Partition the edges so the first set of edges are all configurable, and the later are not
-    auto first_non_config_edge = std::partition(node_inout_edges_[node].begin(), node_inout_edges_[node].begin() + node_num_in_edges_[node],
-                                                [&](const RREdgeId edge) { return edge_is_configurable(edge); }); /* Condition to partition edges */
+    //Count the number of edges of each type
+    for (RREdgeId edge : edges()) {
+        if (!edge) continue;
 
-    size_t num_conf_edges = std::distance(node_inout_edges_[node].begin(), first_non_config_edge);
-    size_t num_non_conf_edges = node_num_in_edges_[node] - num_conf_edges; //Note we calculate using the size_t to get full range
+        RRNodeId src_node = edge_src_node(edge);
+        RRNodeId sink_node = edge_sink_node(edge);
+        bool config = edge_is_configurable(edge);
 
-    /* Check that within allowable range (no overflow when stored as num_non_configurable_edges_
-     */
-    VTR_ASSERT_MSG(num_non_conf_edges <= (size_t)node_num_in_edges_[node],
-                   "Exceeded RR node maximum number of non-configurable input edges");
-
-    node_num_non_configurable_in_edges_[node] = num_non_conf_edges; //Narrowing
-}
-
-/* For a given node in a rr_graph
- * classify the edges of each node to be configurable (1st part) and non-configurable (2nd part) 
- */
-void RRGraph::partition_node_out_edges(const RRNodeId& node) {
-    //Partition the edges so the first set of edges are all configurable, and the later are not
-    auto first_non_config_edge = std::partition(node_inout_edges_[node].begin() + node_num_in_edges_[node], node_inout_edges_[node].end(),
-                                                [&](const RREdgeId edge) { return edge_is_configurable(edge); }); /* Condition to partition edges */
-
-    size_t num_conf_edges = std::distance(node_inout_edges_[node].begin() + node_num_in_edges_[node], first_non_config_edge);
-    size_t num_non_conf_edges = node_inout_edges_[node].size() - node_num_in_edges_[node] - num_conf_edges; //Note we calculate using the size_t to get full range
-
-    /* Check that within allowable range (no overflow when stored as num_non_configurable_edges_
-     */
-    VTR_ASSERT_MSG(num_non_conf_edges <= node_inout_edges_[node].size() - node_num_in_edges_[node],
-                   "Exceeded RR node maximum number of non-configurable output edges");
-
-    node_num_non_configurable_out_edges_[node] = num_non_conf_edges; //Narrowing
-}
-
-/* For all nodes in a rr_graph  
- * classify the input edges of each node to be configurable (1st part) and non-configurable (2nd part) 
- */
-void RRGraph::partition_in_edges() {
-    /* For each node */
-    for (size_t id = 0; id < num_nodes_; ++id) {
-        /* Try to find if this is an invalid id or not */
-        if (!valid_node_id(RRNodeId(id))) {
-            /* Skip this id */
-            continue;
+        ++node_num_out_edges_[src_node];
+        ++node_num_in_edges_[sink_node];
+        if (!config) {
+            ++node_num_non_configurable_out_edges_[src_node];
+            ++node_num_non_configurable_in_edges_[sink_node];
         }
-        this->partition_node_in_edges(RRNodeId(id));
     }
-}
 
-/* For all nodes in a rr_graph  
- * classify the output edges of each node to be configurable (1st part) and non-configurable (2nd part) 
- */
-void RRGraph::partition_out_edges() {
-    /* For each node */
-    for (size_t id = 0; id < num_nodes_; ++id) {
-        /* Try to find if this is an invalid id or not */
-        if (!valid_node_id(RRNodeId(id))) {
-            /* Skip this id */
-            continue;
+    //Allocate precisely the correct space for each nodes edge list
+    for (RRNodeId node : nodes()) {
+        if (!node) continue;
+
+        node_edges_[node] = std::make_unique<RREdgeId[]>(node_num_in_edges_[node] + node_num_out_edges_[node]);
+    }
+
+    //Insert the edges into the node lists
+    {
+        vtr::vector<RRNodeId, int> inserted_edge_cnt(nodes().size(), 0);
+        for (RREdgeId edge : edges()) {
+            RRNodeId src_node = edge_src_node(edge);
+            RRNodeId sink_node = edge_sink_node(edge);
+
+            node_edges_[src_node][inserted_edge_cnt[src_node]++] = edge;
+            node_edges_[sink_node][inserted_edge_cnt[sink_node]++] = edge;
         }
-        this->partition_node_out_edges(RRNodeId(id));
     }
-}
 
-/* For all nodes in a rr_graph  
- * classify both input and output edges of each node 
- * to be configurable (1st part) and non-configurable (2nd part) 
- */
-void RRGraph::partition_edges() {
-    /* Partition input edges */
-    this->partition_in_edges();
-    /* Partition output edges */
-    this->partition_out_edges();
+#if 0
+    //TODO: Sanity Check remove!
+    for (RRNodeId node : nodes()) {
+        for (size_t iedge = 0; iedge < node_num_in_edges_[node] + node_num_out_edges_[node]; ++iedge) {
+            RREdgeId edge = node_edges_[node][iedge];
+            VTR_ASSERT(edge_src_node(edge) == node || edge_sink_node(edge) == node);
+        }
+    }
+#endif
+
+    //Partition each node's edge lists according to their type to line up with the counts
+
+    auto is_configurable_edge = [&](const RREdgeId edge) {
+        return edge_is_configurable(edge);
+    };
+
+    for (RRNodeId node : nodes()) {
+        if (!node) continue;
+
+        //We partition the nodes first by incoming/outgoing:
+        //
+        // +---------------------------+-----------------------------+
+        // |             in            |           out               |
+        // +---------------------------+-----------------------------+
+        //
+        //and then the two subsets by configurability. So the final ordering is:
+        //
+        // +-----------+---------------+------------+----------------+
+        // | in_config | in_non_config | out_config | out_non_config |
+        // +-----------+---------------+------------+----------------+
+        //
+
+        //Partition first into incoming/outgoing
+        auto is_incoming_edge = [&](const RREdgeId edge) {
+            return edge_sink_node(edge) == node;
+        };
+        std::partition(node_edges_[node].get(),
+                       node_edges_[node].get() + node_num_in_edges_[node] + node_num_out_edges_[node],
+                       is_incoming_edge);
+
+        //Partition incoming by configurable/non-configurable
+        std::partition(node_edges_[node].get(),
+                       node_edges_[node].get() + node_num_in_edges_[node],
+                       is_configurable_edge);
+
+        //Partition outgoing by configurable/non-configurable
+        std::partition(node_edges_[node].get() + node_num_in_edges_[node],
+                       node_edges_[node].get() + node_num_in_edges_[node] + node_num_out_edges_[node],
+                       is_configurable_edge);
+
+#if 0
+        //TODO: Sanity check remove!
+        size_t nedges = node_num_in_edges_[node] + node_num_out_edges_[node];
+        for (size_t iedge = 0; iedge < nedges; ++iedge) {
+            RREdgeId edge = node_edges_[node][iedge];
+            if (iedge < node_num_in_edges_[node]) { //Incoming
+                VTR_ASSERT(edge_sink_node(edge) == node);
+                if (iedge < node_num_in_edges_[node] - node_num_non_configurable_in_edges_[node]) {
+                    VTR_ASSERT(edge_is_configurable(edge));
+                } else {
+                    VTR_ASSERT(!edge_is_configurable(edge));
+                }
+            } else { //Outgoing
+                VTR_ASSERT(edge_src_node(edge) == node);
+                if (iedge < node_num_in_edges_[node] + node_num_out_edges_[node] - node_num_non_configurable_out_edges_[node]) {
+                    VTR_ASSERT(edge_is_configurable(edge));
+                } else {
+                    VTR_ASSERT(!edge_is_configurable(edge));
+                }
+            }
+        }
+#endif
+    }
 }
 
 void RRGraph::build_fast_node_lookup() const {
@@ -1294,7 +1304,7 @@ bool RRGraph::validate_node_sizes() const {
            && node_segments_.size() == num_nodes_
            && node_num_non_configurable_in_edges_.size() == num_nodes_
            && node_num_non_configurable_out_edges_.size() == num_nodes_
-           && node_inout_edges_.size() == num_nodes_;
+           && node_edges_.size() == num_nodes_;
 }
 
 bool RRGraph::validate_edge_sizes() const {
@@ -1383,7 +1393,8 @@ void RRGraph::clean_nodes(const vtr::vector<RRNodeId, RRNodeId>& node_id_map) {
     node_num_non_configurable_in_edges_ = clean_and_reorder_values(node_num_non_configurable_in_edges_, node_id_map);
     node_num_non_configurable_out_edges_ = clean_and_reorder_values(node_num_non_configurable_out_edges_, node_id_map);
     node_num_in_edges_ = clean_and_reorder_values(node_num_in_edges_, node_id_map);
-    node_inout_edges_ = clean_and_reorder_values(node_inout_edges_, node_id_map);
+    node_num_out_edges_ = clean_and_reorder_values(node_num_out_edges_, node_id_map);
+    //node_edges_ = clean_and_reorder_values(node_edges_, node_id_map);
 
     VTR_ASSERT(validate_node_sizes());
 }
@@ -1406,9 +1417,12 @@ void RRGraph::rebuild_node_refs(const vtr::vector<RREdgeId, RREdgeId>& edge_id_m
             continue;
         }
         RRNodeId node = RRNodeId(id);
-        node_inout_edges_[node] = update_valid_refs(node_inout_edges_[node], edge_id_map);
 
-        VTR_ASSERT_MSG(all_valid(node_inout_edges_[node]), "All Ids should be valid");
+        auto begin = node_edges_[node].get();
+        auto end = begin + node_num_in_edges_[node] + node_num_out_edges_[node];
+        update_valid_refs(begin, end, edge_id_map);
+
+        VTR_ASSERT_MSG(all_valid(begin, end), "All Ids should be valid");
     }
 }
 
@@ -1427,11 +1441,12 @@ void RRGraph::clear_nodes() {
     node_Cs_.clear();
     node_segments_.clear();
 
+    node_num_in_edges_.clear();
+    node_num_out_edges_.clear();
     node_num_non_configurable_in_edges_.clear();
     node_num_non_configurable_out_edges_.clear();
 
-    node_num_in_edges_.clear();
-    node_inout_edges_.clear();
+    node_edges_.clear();
 
     /* clean node_look_up */
     node_lookup_.clear();
