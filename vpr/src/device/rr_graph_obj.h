@@ -817,8 +817,8 @@ class RRGraph {
     vtr::vector<RRNodeId, float> node_Cs_;
     vtr::vector<RRNodeId, RRSegmentId> node_segments_; /* Segment ids for each node */
     /* Record the dividing point between configurable and non-configurable edges for each node */
-    vtr::vector<RRNodeId, size_t> node_num_non_configurable_in_edges_;
-    vtr::vector<RRNodeId, size_t> node_num_non_configurable_out_edges_;
+    vtr::vector<RRNodeId, short> node_num_non_configurable_in_edges_;
+    vtr::vector<RRNodeId, short> node_num_non_configurable_out_edges_;
 
     vtr::vector<RRNodeId, std::vector<RREdgeId>> node_in_edges_;
     vtr::vector<RRNodeId, std::vector<RREdgeId>> node_out_edges_;
