@@ -971,8 +971,8 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
                     //Asserts the ClusterBlockId is the same when ClusterNetId & pin BitIndex is provided
                     VTR_ASSERT(blk_id == clb_nlist.pin_block(*(clb_nlist.net_pins(clb_net_id).begin() + count[clb_net_id])));
                     //Asserts the block's pin index is the same
-                    VTR_ASSERT(j == clb_nlist.pin_physical_index(*(clb_nlist.net_pins(clb_net_id).begin() + count[clb_net_id])));
-                    VTR_ASSERT(j == clb_nlist.net_pin_physical_index(clb_net_id, count[clb_net_id]));
+                    VTR_ASSERT(j == clb_nlist.pin_logical_index(*(clb_nlist.net_pins(clb_net_id).begin() + count[clb_net_id])));
+                    VTR_ASSERT(j == clb_nlist.net_pin_logical_index(clb_net_id, count[clb_net_id]));
 
                     // nets connecting to global pins are marked as global nets
                     if (tile_type->is_pin_global[physical_pin]) {
@@ -986,8 +986,8 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
 
                 } else {
                     VTR_ASSERT(DRIVER == tile_type->class_inf[tile_type->pin_class[physical_pin]].type);
-                    VTR_ASSERT(j == clb_nlist.pin_physical_index(*(clb_nlist.net_pins(clb_net_id).begin())));
-                    VTR_ASSERT(j == clb_nlist.net_pin_physical_index(clb_net_id, 0));
+                    VTR_ASSERT(j == clb_nlist.pin_logical_index(*(clb_nlist.net_pins(clb_net_id).begin())));
+                    VTR_ASSERT(j == clb_nlist.net_pin_logical_index(clb_net_id, 0));
                 }
             }
         }
