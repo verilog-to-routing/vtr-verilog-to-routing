@@ -602,12 +602,11 @@ class RRGraph {
      *    RRGraph rr_graph;
      *    // Add 1 source node to the RRGraph object
      *    RRNodeId src_node = rr_graph.create_node(SOURCE);
-     *    // Reserve the output edges for the source node
-     *    rr_graph.reserve_node_out_edges(src_node, 5);
+     *    // Reserve the input and output edges for the source node
+     *    rr_graph.reserve_node_inout_edges(src_node, 5);
      *    // Add your edges
      */
-    void reserve_node_in_edges(const RRNodeId& node, const size_t& num_in_edges);
-    void reserve_node_out_edges(const RRNodeId& node, const size_t& num_out_edges);
+    void reserve_node_inout_edges(const RRNodeId& node, const size_t& num_inout_edges);
 
     /* Add new elements (node, edge, switch, etc.) to RRGraph */
     /* Add a node to the RRGraph with a deposited type 
@@ -827,8 +826,20 @@ class RRGraph {
     vtr::vector<RRNodeId, short> node_num_non_configurable_in_edges_;
     vtr::vector<RRNodeId, short> node_num_non_configurable_out_edges_;
 
-    vtr::vector<RRNodeId, std::vector<RREdgeId>> node_in_edges_;
-    vtr::vector<RRNodeId, std::vector<RREdgeId>> node_out_edges_;
+    /* Record the dividing point between input and output edges for each node
+     * Both input and output edges are stored in a list for memory efficiency 
+     * We use a dividing point to identify the groups
+     * The edges are arranged in as the following format:
+     * Index in list:
+     * 0--------------------------------------------------------------------------------------------------->N
+     * <configurable_in_edges><non_configurable_in_edges><configurable_out_edges><non_configurable_out_edges>
+     *                        |<----------------------->|^                       |<------------------------->|
+     *                node_num_non_cinfigurable_in_edges |                node_num_non_configurable_out_edges
+     *                                                   |
+     *                                       node_num_in_edges
+     */
+    vtr::vector<RRNodeId, short> node_num_in_edges_;
+    vtr::vector<RRNodeId, std::vector<RREdgeId>> node_inout_edges_;
 
     /* Edge related data */
     size_t edge_id_range_;                                /* Range of edge ids */
