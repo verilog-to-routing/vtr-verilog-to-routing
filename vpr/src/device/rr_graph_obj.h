@@ -213,6 +213,53 @@
 
 class RRGraph {
   public: /* Types */
+    class lazy_node_iterator : public std::iterator<std::bidirectional_iterator_tag, RRNodeId> {
+      public:
+        lazy_node_iterator(value_type init, const std::unordered_set<RRNodeId>& invalid_ids)
+            : value_(init)
+            , invalid_ids_(invalid_ids) {}
+        iterator operator++() {
+            value_ = RRNodeId(size_t(value_) + 1);
+            return *this;
+        }
+        iterator operator--() {
+            value_ = RRNodeId(size_t(value_) - 1);
+            return *this;
+        }
+        value_type operator*() const { return (invalid_ids_.count(value_)) ? RRNodeId::INVALID() : value_; }
+
+        friend bool operator==(const lazy_node_iterator lhs, const lazy_node_iterator rhs) { return lhs.value_ == rhs.value_; }
+        friend bool operator!=(const lazy_node_iterator lhs, const lazy_node_iterator rhs) { return !(lhs == rhs); }
+
+      private:
+        value_type value_;
+        const std::unordered_set<RRNodeId>& invalid_ids_;
+    };
+
+    class lazy_edge_iterator : public std::iterator<std::bidirectional_iterator_tag, RREdgeId> {
+      public:
+        lazy_edge_iterator(value_type init, const std::unordered_set<RREdgeId>& invalid_ids)
+            : value_(init)
+            , invalid_ids_(invalid_ids) {}
+        iterator operator++() {
+            value_ = RREdgeId(size_t(value_) + 1);
+            return *this;
+        }
+        iterator operator--() {
+            value_ = RREdgeId(size_t(value_) - 1);
+            return *this;
+        }
+        value_type operator*() const { return (invalid_ids_.count(value_)) ? RREdgeId::INVALID() : value_; }
+
+        friend bool operator==(const lazy_edge_iterator lhs, const lazy_edge_iterator rhs) { return lhs.value_ == rhs.value_; }
+        friend bool operator!=(const lazy_edge_iterator lhs, const lazy_edge_iterator rhs) { return !(lhs == rhs); }
+
+      private:
+        value_type value_;
+        const std::unordered_set<RREdgeId>& invalid_ids_;
+    };
+
+
     /* Iterators used to create iterator-based loop for nodes/edges/switches/segments */
     typedef vtr::vector<RRNodeId, RRNodeId>::const_iterator node_iterator;
     typedef vtr::vector<RREdgeId, RREdgeId>::const_iterator edge_iterator;
@@ -225,6 +272,8 @@ class RRGraph {
     typedef vtr::Range<switch_iterator> switch_range;
     typedef vtr::Range<segment_iterator> segment_range;
 
+    typedef vtr::Range<lazy_node_iterator> lazy_node_range;
+    typedef vtr::Range<lazy_edge_iterator> lazy_edge_range;
   public: /* Constructors */
     RRGraph();
 
@@ -252,8 +301,8 @@ class RRGraph {
      *        // Do something with each segment
      *      }
      */
-    std::vector<RRNodeId> nodes() const;
-    std::vector<RREdgeId> edges() const;
+    lazy_node_range nodes() const;
+    lazy_edge_range edges() const;
     switch_range switches() const;
     segment_range segments() const;
 
