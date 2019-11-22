@@ -86,8 +86,7 @@ class FasmWriterVisitor : public NetlistVisitor {
 
       t_pb_graph_node *root_clb_;
       bool current_blk_has_prefix_;
-      t_physical_tile_type_ptr physical_tile_;
-      t_logical_block_type_ptr logical_block_;
+      t_physical_tile_type_ptr blk_type_;
       std::string blk_prefix_;
       std::string clb_prefix_;
       std::map<const t_pb_graph_node *, std::string> clb_prefix_map_;
