@@ -1009,8 +1009,6 @@ void reset_rr_node_route_structs() {
 static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices) {
     vtr::vector<ClusterNetId, std::vector<int>> net_rr_terminals;
 
-    int inode, i, j, node_block_pin, iclass;
-
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
@@ -1024,19 +1022,19 @@ static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t
         int pin_count = 0;
         for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
             auto block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
-            i = place_ctx.block_locs[block_id].loc.x;
-            j = place_ctx.block_locs[block_id].loc.y;
+            int i = place_ctx.block_locs[block_id].loc.x;
+            int j = place_ctx.block_locs[block_id].loc.y;
             auto type = physical_tile_type(block_id);
 
             /* In the routing graph, each (x, y) location has unique pins on it
              * so when there is capacity, blocks are packed and their pin numbers
              * are offset to get their actual rr_node */
-            node_block_pin = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
+            int phys_pin = pin_tile_index(pin_id);
 
-            iclass = type->pin_class[node_block_pin];
+            int iclass = type->pin_class[phys_pin];
 
-            inode = get_rr_node_index(L_rr_node_indices, i, j, (pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
-                                      iclass);
+            int inode = get_rr_node_index(L_rr_node_indices, i, j, (pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
+                                          iclass);
             net_rr_terminals[net_id][pin_count] = inode;
             pin_count++;
         }
@@ -1515,7 +1513,7 @@ void print_route(FILE* fp, const vtr::vector<ClusterNetId, t_traceback>& traceba
 
             for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
                 ClusterBlockId block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
-                int pin_index = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
+                int pin_index = pin_tile_index(pin_id);
                 int iclass = physical_tile_type(block_id)->pin_class[pin_index];
 
                 fprintf(fp, "Block %s (#%zu) at (%d,%d), Pin class %d.\n",

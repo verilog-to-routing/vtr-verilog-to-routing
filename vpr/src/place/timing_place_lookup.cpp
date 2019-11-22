@@ -268,7 +268,7 @@ static t_chan_width setup_chan_width(const t_router_opts& router_opts,
     if (router_opts.fixed_channel_width == NO_FIXED_CHANNEL_WIDTH) {
         auto& device_ctx = g_vpr_ctx.device();
 
-        auto type = physical_tile_type(find_most_common_block_type(device_ctx.grid));
+        auto type = find_most_common_tile_type(device_ctx.grid);
 
         width_fac = 4 * type->num_pins;
         /*this is 2x the value that binary search starts */
@@ -365,8 +365,8 @@ static void generic_compute_matrix(
             t_physical_tile_type_ptr src_type = device_ctx.grid[source_x][source_y].type;
             t_physical_tile_type_ptr sink_type = device_ctx.grid[sink_x][sink_y].type;
 
-            bool src_or_target_empty = (src_type == device_ctx.EMPTY_TYPE
-                                        || sink_type == device_ctx.EMPTY_TYPE);
+            bool src_or_target_empty = (src_type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE
+                                        || sink_type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE);
 
             bool is_allowed_type = allowed_types.empty() || allowed_types.find(src_type->name) != allowed_types.end();
 
@@ -471,7 +471,7 @@ static vtr::Matrix<float> compute_delta_delays(
         for (y = 0; y < grid.height(); ++y) {
             auto type = grid[x][y].type;
 
-            if (type != device_ctx.EMPTY_TYPE) {
+            if (type != device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
                 if (!allowed_types.empty() && allowed_types.find(std::string(type->name)) == allowed_types.end()) {
                     continue;
                 }
@@ -501,7 +501,7 @@ static vtr::Matrix<float> compute_delta_delays(
         for (x = 0; x < grid.width(); ++x) {
             auto type = grid[x][y].type;
 
-            if (type != device_ctx.EMPTY_TYPE) {
+            if (type != device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
                 if (!allowed_types.empty() && allowed_types.find(std::string(type->name)) == allowed_types.end()) {
                     continue;
                 }
@@ -867,8 +867,8 @@ void OverrideDelayModel::compute_override_delay_model(
         InstPort from_port = parse_inst_port(direct->from_pin);
         InstPort to_port = parse_inst_port(direct->to_pin);
 
-        t_physical_tile_type_ptr from_type = find_block_type_by_name(from_port.instance_name(), device_ctx.physical_tile_types);
-        t_physical_tile_type_ptr to_type = find_block_type_by_name(to_port.instance_name(), device_ctx.physical_tile_types);
+        t_physical_tile_type_ptr from_type = find_tile_type_by_name(from_port.instance_name(), device_ctx.physical_tile_types);
+        t_physical_tile_type_ptr to_type = find_tile_type_by_name(to_port.instance_name(), device_ctx.physical_tile_types);
 
         int num_conns = from_port.port_high_index() - from_port.port_low_index() + 1;
         VTR_ASSERT_MSG(num_conns == to_port.port_high_index() - to_port.port_low_index() + 1, "Directs must have the same size to/from");
@@ -887,16 +887,16 @@ void OverrideDelayModel::compute_override_delay_model(
         std::set<std::pair<int, int>> sampled_rr_pairs;
         for (int iconn = 0; iconn < num_conns; ++iconn) {
             //Find the associated pins
-            int from_pin = find_pin(logical_block_type(from_type), from_port.port_name(), from_port.port_low_index() + iconn);
-            int to_pin = find_pin(logical_block_type(to_type), to_port.port_name(), to_port.port_low_index() + iconn);
+            int from_pin = find_pin(from_type, from_port.port_name(), from_port.port_low_index() + iconn);
+            int to_pin = find_pin(to_type, to_port.port_name(), to_port.port_low_index() + iconn);
 
             VTR_ASSERT(from_pin != OPEN);
             VTR_ASSERT(to_pin != OPEN);
 
-            int from_pin_class = find_pin_class(logical_block_type(from_type), from_port.port_name(), from_port.port_low_index() + iconn, DRIVER);
+            int from_pin_class = find_pin_class(from_type, from_port.port_name(), from_port.port_low_index() + iconn, DRIVER);
             VTR_ASSERT(from_pin_class != OPEN);
 
-            int to_pin_class = find_pin_class(logical_block_type(to_type), to_port.port_name(), to_port.port_low_index() + iconn, RECEIVER);
+            int to_pin_class = find_pin_class(to_type, to_port.port_name(), to_port.port_low_index() + iconn, RECEIVER);
             VTR_ASSERT(to_pin_class != OPEN);
 
             int src_rr = OPEN;

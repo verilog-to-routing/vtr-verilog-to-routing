@@ -51,10 +51,10 @@ struct t_mux_size_distribution {
 };
 
 struct t_clb_to_clb_directs {
-    t_logical_block_type_ptr from_clb_type;
+    t_physical_tile_type_ptr from_clb_type;
     int from_clb_pin_start_index;
     int from_clb_pin_end_index;
-    t_logical_block_type_ptr to_clb_type;
+    t_physical_tile_type_ptr to_clb_type;
     int to_clb_pin_start_index;
     int to_clb_pin_end_index;
     int switch_index; //The switch type used by this direct connection
@@ -2654,94 +2654,107 @@ static void build_unidir_rr_opins(const int i, const int j, const e_side side, c
  * TODO: The function that does this parsing in placement is poorly done because it lacks generality on heterogeniety, should replace with this one
  */
 static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_inf* directs, const int num_directs, int delayless_switch) {
-    int i, j;
-    unsigned int itype;
+    int i;
     t_clb_to_clb_directs* clb_to_clb_directs;
-    char *pb_type_name, *port_name;
+    char *tile_name, *port_name;
     int start_pin_index, end_pin_index;
-    t_pb_type* pb_type;
+    t_physical_tile_type_ptr physical_tile = nullptr;
+    t_physical_tile_port tile_port;
 
     auto& device_ctx = g_vpr_ctx.device();
 
     clb_to_clb_directs = (t_clb_to_clb_directs*)vtr::calloc(num_directs, sizeof(t_clb_to_clb_directs));
 
-    pb_type_name = nullptr;
+    tile_name = nullptr;
     port_name = nullptr;
 
     for (i = 0; i < num_directs; i++) {
-        pb_type_name = (char*)vtr::malloc((strlen(directs[i].from_pin) + strlen(directs[i].to_pin)) * sizeof(char));
+        tile_name = (char*)vtr::malloc((strlen(directs[i].from_pin) + strlen(directs[i].to_pin)) * sizeof(char));
         port_name = (char*)vtr::malloc((strlen(directs[i].from_pin) + strlen(directs[i].to_pin)) * sizeof(char));
 
         // Load from pins
         // Parse out the pb_type name, port name, and pin range
-        parse_direct_pin_name(directs[i].from_pin, directs[i].line, &start_pin_index, &end_pin_index, pb_type_name, port_name);
+        parse_direct_pin_name(directs[i].from_pin, directs[i].line, &start_pin_index, &end_pin_index, tile_name, port_name);
 
         // Figure out which type, port, and pin is used
-        for (itype = 0; itype < device_ctx.logical_block_types.size(); ++itype) {
-            if (strcmp(device_ctx.logical_block_types[itype].name, pb_type_name) == 0) {
+        for (const auto& type : device_ctx.physical_tile_types) {
+            if (strcmp(type.name, tile_name) == 0) {
+                physical_tile = &type;
                 break;
             }
         }
 
-        if (itype >= device_ctx.logical_block_types.size()) {
-            vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), directs[i].line, "Unable to find block %s.\n", pb_type_name);
+        if (physical_tile == nullptr) {
+            VPR_THROW(VPR_ERROR_ARCH, "Unable to find block %s.\n", tile_name);
         }
 
-        clb_to_clb_directs[i].from_clb_type = &device_ctx.logical_block_types[itype];
-        pb_type = clb_to_clb_directs[i].from_clb_type->pb_type;
+        clb_to_clb_directs[i].from_clb_type = physical_tile;
 
-        for (j = 0; j < pb_type->num_ports; j++) {
-            if (strcmp(pb_type->ports[j].name, port_name) == 0) {
+        bool port_found = false;
+        for (const auto& port : physical_tile->ports) {
+            if (0 == strcmp(port.name, port_name)) {
+                tile_port = port;
+                port_found = true;
                 break;
             }
         }
-        if (j >= pb_type->num_ports) {
-            vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), directs[i].line, "Unable to find port %s (on block %s).\n", port_name, pb_type_name);
+
+        if (!port_found) {
+            VPR_THROW(VPR_ERROR_ARCH, "Unable to find port %s (on block %s).\n", port_name, tile_name);
         }
 
         if (start_pin_index == OPEN) {
             VTR_ASSERT(start_pin_index == end_pin_index);
             start_pin_index = 0;
-            end_pin_index = pb_type->ports[j].num_pins - 1;
+            end_pin_index = tile_port.num_pins - 1;
         }
-        get_blk_pin_from_port_pin(clb_to_clb_directs[i].from_clb_type->index, j, start_pin_index, &clb_to_clb_directs[i].from_clb_pin_start_index);
-        get_blk_pin_from_port_pin(clb_to_clb_directs[i].from_clb_type->index, j, end_pin_index, &clb_to_clb_directs[i].from_clb_pin_end_index);
+
+        // Add clb directs start/end pin indices based on the absolute pin position
+        // of the port defined in the direct connection. The CLB is the source one.
+        clb_to_clb_directs[i].from_clb_pin_start_index = tile_port.absolute_first_pin_index + start_pin_index;
+        clb_to_clb_directs[i].from_clb_pin_end_index = tile_port.absolute_first_pin_index + end_pin_index;
 
         // Load to pins
         // Parse out the pb_type name, port name, and pin range
-        parse_direct_pin_name(directs[i].to_pin, directs[i].line, &start_pin_index, &end_pin_index, pb_type_name, port_name);
+        parse_direct_pin_name(directs[i].to_pin, directs[i].line, &start_pin_index, &end_pin_index, tile_name, port_name);
 
         // Figure out which type, port, and pin is used
-        for (itype = 0; itype < device_ctx.logical_block_types.size(); ++itype) {
-            if (strcmp(device_ctx.logical_block_types[itype].name, pb_type_name) == 0) {
+        for (const auto& type : device_ctx.physical_tile_types) {
+            if (strcmp(type.name, tile_name) == 0) {
+                physical_tile = &type;
                 break;
             }
         }
 
-        if (itype >= device_ctx.logical_block_types.size()) {
-            vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), directs[i].line, "Unable to find block %s.\n", pb_type_name);
+        if (physical_tile == nullptr) {
+            VPR_THROW(VPR_ERROR_ARCH, "Unable to find block %s.\n", tile_name);
         }
 
-        clb_to_clb_directs[i].to_clb_type = &device_ctx.logical_block_types[itype];
-        pb_type = clb_to_clb_directs[i].to_clb_type->pb_type;
+        clb_to_clb_directs[i].to_clb_type = physical_tile;
 
-        for (j = 0; j < pb_type->num_ports; j++) {
-            if (strcmp(pb_type->ports[j].name, port_name) == 0) {
+        port_found = false;
+        for (const auto& port : physical_tile->ports) {
+            if (0 == strcmp(port.name, port_name)) {
+                tile_port = port;
+                port_found = true;
                 break;
             }
         }
-        if (j >= pb_type->num_ports) {
-            vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), directs[i].line, "Unable to find port %s (on block %s).\n", port_name, pb_type_name);
+
+        if (!port_found) {
+            VPR_THROW(VPR_ERROR_ARCH, "Unable to find port %s (on block %s).\n", port_name, tile_name);
         }
 
         if (start_pin_index == OPEN) {
             VTR_ASSERT(start_pin_index == end_pin_index);
             start_pin_index = 0;
-            end_pin_index = pb_type->ports[j].num_pins - 1;
+            end_pin_index = tile_port.num_pins - 1;
         }
 
-        get_blk_pin_from_port_pin(clb_to_clb_directs[i].to_clb_type->index, j, start_pin_index, &clb_to_clb_directs[i].to_clb_pin_start_index);
-        get_blk_pin_from_port_pin(clb_to_clb_directs[i].to_clb_type->index, j, end_pin_index, &clb_to_clb_directs[i].to_clb_pin_end_index);
+        // Add clb directs start/end pin indices based on the absolute pin position
+        // of the port defined in the direct connection. The CLB is the destination one.
+        clb_to_clb_directs[i].to_clb_pin_start_index = tile_port.absolute_first_pin_index + start_pin_index;
+        clb_to_clb_directs[i].to_clb_pin_end_index = tile_port.absolute_first_pin_index + end_pin_index;
 
         if (abs(clb_to_clb_directs[i].from_clb_pin_start_index - clb_to_clb_directs[i].from_clb_pin_end_index) != abs(clb_to_clb_directs[i].to_clb_pin_start_index - clb_to_clb_directs[i].to_clb_pin_end_index)) {
             vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), directs[i].line,
@@ -2756,7 +2769,7 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
             //Use the delayless switch by default
             clb_to_clb_directs[i].switch_index = delayless_switch;
         }
-        free(pb_type_name);
+        free(tile_name);
         free(port_name);
 
         //We must be careful to clean-up anything that we may have incidentally allocated.
@@ -2804,7 +2817,7 @@ static int get_opin_direct_connecions(int x,
     /* Iterate through all direct connections */
     for (int i = 0; i < num_directs; i++) {
         /* Find matching direct clb-to-clb connections with the same type as current grid location */
-        if (clb_to_clb_directs[i].from_clb_type == logical_block_type(curr_type)) { //We are at a valid starting point
+        if (clb_to_clb_directs[i].from_clb_type == curr_type) { //We are at a valid starting point
 
             if (directs[i].from_side != NUM_SIDES && directs[i].from_side != side) continue;
 
@@ -2815,7 +2828,7 @@ static int get_opin_direct_connecions(int x,
                 && y + directs[i].y_offset > 0) {
                 //Only add connections if the target clb type matches the type in the direct specification
                 t_physical_tile_type_ptr target_type = device_ctx.grid[x + directs[i].x_offset][y + directs[i].y_offset].type;
-                if (clb_to_clb_directs[i].to_clb_type == logical_block_type(target_type)
+                if (clb_to_clb_directs[i].to_clb_type == target_type
                     && z + directs[i].z_offset < int(target_type->capacity)
                     && z + directs[i].z_offset >= 0) {
                     /* Compute index of opin with regards to given pins */

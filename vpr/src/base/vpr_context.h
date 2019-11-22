@@ -120,7 +120,10 @@ struct DeviceContext : public Context {
     /* Special pointers to identify special blocks on an FPGA: I/Os, unused, and default */
     std::set<t_physical_tile_type_ptr> input_types;
     std::set<t_physical_tile_type_ptr> output_types;
-    t_physical_tile_type_ptr EMPTY_TYPE;
+
+    /* Empty types */
+    t_physical_tile_type_ptr EMPTY_PHYSICAL_TILE_TYPE;
+    t_logical_block_type_ptr EMPTY_LOGICAL_BLOCK_TYPE;
 
     /* block_types are blocks that can be moved by the placer
      * such as: I/Os, CLBs, memories, multipliers, etc
@@ -128,6 +131,10 @@ struct DeviceContext : public Context {
      */
     std::vector<t_physical_tile_type> physical_tile_types;
     std::vector<t_logical_block_type> logical_block_types;
+
+    /* Boolean that indicates whether the architecture implements an N:M
+     * physical tiles to logical blocks mapping */
+    bool has_multiple_equivalent_tiles;
 
     /*******************************************************************
      * Routing related
@@ -240,6 +247,9 @@ struct ClusteringContext : public Context {
 struct PlacementContext : public Context {
     //Clustered block placement locations
     vtr::vector_map<ClusterBlockId, t_block_loc> block_locs;
+
+    //Clustered pin placement mapping with physical pin
+    vtr::vector_map<ClusterPinId, int> physical_pins;
 
     //Clustered block associated with each grid location (i.e. inverse of block_locs)
     vtr::Matrix<t_grid_blocks> grid_blocks; //[0..device_ctx.grid.width()-1][0..device_ctx.grid.width()-1]

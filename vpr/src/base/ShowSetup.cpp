@@ -74,15 +74,20 @@ void printClusteredNetlistStats() {
     L_num_p_outputs = 0;
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        num_blocks_type[cluster_ctx.clb_nlist.block_type(blk_id)->index]++;
-        auto type = physical_tile_type(blk_id);
-        if (is_io_type(type)) {
-            for (j = 0; j < type->num_pins; j++) {
+        auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
+        auto physical_tile = pick_best_physical_type(logical_block);
+        num_blocks_type[logical_block->index]++;
+        if (is_io_type(physical_tile)) {
+            for (j = 0; j < logical_block->pb_type->num_pins; j++) {
+                int physical_pin = get_physical_pin(physical_tile, logical_block, j);
+                auto pin_class = physical_tile->pin_class[physical_pin];
+                auto class_inf = physical_tile->class_inf[pin_class];
+
                 if (cluster_ctx.clb_nlist.block_net(blk_id, j) != ClusterNetId::INVALID()) {
-                    if (type->class_inf[type->pin_class[j]].type == DRIVER) {
+                    if (class_inf.type == DRIVER) {
                         L_num_p_inputs++;
                     } else {
-                        VTR_ASSERT(type->class_inf[type->pin_class[j]].type == RECEIVER);
+                        VTR_ASSERT(class_inf.type == RECEIVER);
                         L_num_p_outputs++;
                     }
                 }
