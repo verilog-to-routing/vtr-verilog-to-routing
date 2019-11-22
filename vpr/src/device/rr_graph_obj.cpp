@@ -1405,7 +1405,6 @@ void RRGraph::build_id_maps(vtr::vector<RRNodeId, RRNodeId>& node_id_map,
         edge_ids.push_back(RREdgeId(id));
     }
     edge_id_map = compress_ids(edge_ids);
-
 }
 
 void RRGraph::clean_nodes(const vtr::vector<RRNodeId, RRNodeId>& node_id_map) {
