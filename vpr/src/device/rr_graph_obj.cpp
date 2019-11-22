@@ -203,40 +203,6 @@ RRSegmentId RRGraph::node_segment(const RRNodeId& node) const {
     return node_segments_[node];
 }
 
-/* 
- * Get the number of configurable input edges of a node
- */
-short RRGraph::node_num_configurable_in_edges(const RRNodeId& node) const {
-    return node_num_in_edges_[node] - node_num_non_configurable_in_edges_[node];
-}
-
-/* 
- * Get the number of configurable output edges of a node
- */
-short RRGraph::node_num_configurable_out_edges(const RRNodeId& node) const {
-    return node_num_out_edges_[node] - node_num_non_configurable_in_edges_[node];
-}
-
-/* 
- * Get the number of non-configurable input edges of a node
- * Use the node_num_configurable_in_edges() 
- * when the rr_graph edges have been partitioned 
- * This can avoid unneccessary walkthrough
- */
-short RRGraph::node_num_non_configurable_in_edges(const RRNodeId& node) const {
-    return node_num_non_configurable_in_edges_[node];
-}
-
-/* 
- * Get the number of non-configurable output edges of a node
- * Use the node_num_configurable_out_edges() 
- * when the rr_graph edges have been partitioned 
- * This can avoid unneccessary walkthrough
- */
-short RRGraph::node_num_non_configurable_out_edges(const RRNodeId& node) const {
-    return node_num_non_configurable_out_edges_[node];
-}
-
 RRGraph::edge_range RRGraph::node_edges(const RRNodeId& node) const {
     VTR_ASSERT_SAFE(valid_node_id(node));
 

@@ -458,18 +458,6 @@ class RRGraph {
      */
     RRSegmentId node_segment(const RRNodeId& node) const;
 
-    /* Get the number of non-configurable incoming edges to a node */
-    short node_num_configurable_in_edges(const RRNodeId& node) const;
-
-    /* Get the number of non-configurable outgoing edges from a node */
-    short node_num_non_configurable_in_edges(const RRNodeId& node) const;
-
-    /* Get the number of configurable output edges of a node */
-    short node_num_configurable_out_edges(const RRNodeId& node) const;
-
-    /* Get the number of non-configurable output edges of a node */
-    short node_num_non_configurable_out_edges(const RRNodeId& node) const;
-
     //Returns an iterable range of all edges (incoming & outgoing) for
     //the specified node
     edge_range node_edges(const RRNodeId& node) const;
