@@ -42,6 +42,7 @@ void FasmWriterVisitor::visit_top_impl(const char* top_level_name) {
 void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
     current_blk_id_ = blk_id;
 
@@ -54,7 +55,8 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
     int y = place_ctx.block_locs[blk_id].loc.y;
     int z = place_ctx.block_locs[blk_id].loc.z;
     auto &grid_loc = device_ctx.grid[x][y];
-    blk_type_ = grid_loc.type;
+    physical_tile_ = grid_loc.type;
+    logical_block_ = cluster_ctx.clb_nlist.block_type(blk_id);
 
     blk_prefix_ = "";
     clb_prefix_ = "";
@@ -94,11 +96,11 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
       VTR_ASSERT(value != nullptr);
       std::string prefix_unsplit = value->front().as_string();
       std::vector<std::string> fasm_prefixes = vtr::split(prefix_unsplit, " \t\n");
-      if(fasm_prefixes.size() != static_cast<size_t>(blk_type_->capacity)) {
+      if(fasm_prefixes.size() != static_cast<size_t>(physical_tile_->capacity)) {
         vpr_throw(VPR_ERROR_OTHER,
                   __FILE__, __LINE__,
                   "number of fasm_prefix (%s) options (%d) for block (%s) must match capacity(%d)",
-                  prefix_unsplit.c_str(), fasm_prefixes.size(), blk_type_->name, blk_type_->capacity);
+                  prefix_unsplit.c_str(), fasm_prefixes.size(), physical_tile_->name, physical_tile_->capacity);
       }
       grid_prefix = fasm_prefixes[z];
       blk_prefix_ = grid_prefix + ".";
@@ -122,7 +124,7 @@ void FasmWriterVisitor::check_interconnect(const t_pb_routes &pb_routes, int ino
     return;
   }
 
-  t_pb_graph_pin *prev_pin = pb_graph_pin_lookup_from_index_by_type_.at(blk_type_->index)[prev_node];
+  t_pb_graph_pin *prev_pin = pb_graph_pin_lookup_from_index_by_type_.at(logical_block_->index)[prev_node];
 
   int prev_edge;
   for(prev_edge = 0; prev_edge < prev_pin->num_output_edges; prev_edge++) {

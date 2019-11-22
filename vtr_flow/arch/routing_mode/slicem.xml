@@ -63,7 +63,10 @@
   <tiles>
     <tile name="io_tile">
       <equivalent_sites>
-        <site pb_type="io_tile"/>
+        <site pb_type="io_tile">
+          <direct from="io_tile.in" to="io_tile.in"/>
+          <direct from="io_tile.out" to="io_tile.out"/>
+        </site>
       </equivalent_sites>
       <input name="in" num_pins="1"/>
       <output name="out" num_pins="1"/>
@@ -77,7 +80,58 @@
     </tile>
     <tile name="BLK_IG-SLICEM">
       <equivalent_sites>
-        <site pb_type="BLK_IG-SLICEM"/>
+        <site pb_type="BLK_IG-SLICEM">
+          <direct from="BLK_IG-SLICEM.DI" to="BLK_IG-SLICEM.DI"/>
+          <direct from="BLK_IG-SLICEM.DX" to="BLK_IG-SLICEM.DX"/>
+          <direct from="BLK_IG-SLICEM.D1" to="BLK_IG-SLICEM.D1"/>
+          <direct from="BLK_IG-SLICEM.D2" to="BLK_IG-SLICEM.D2"/>
+          <direct from="BLK_IG-SLICEM.D3" to="BLK_IG-SLICEM.D3"/>
+          <direct from="BLK_IG-SLICEM.D4" to="BLK_IG-SLICEM.D4"/>
+          <direct from="BLK_IG-SLICEM.D5" to="BLK_IG-SLICEM.D5"/>
+          <direct from="BLK_IG-SLICEM.D6" to="BLK_IG-SLICEM.D6"/>
+          <direct from="BLK_IG-SLICEM.CI" to="BLK_IG-SLICEM.CI"/>
+          <direct from="BLK_IG-SLICEM.CX" to="BLK_IG-SLICEM.CX"/>
+          <direct from="BLK_IG-SLICEM.C1" to="BLK_IG-SLICEM.C1"/>
+          <direct from="BLK_IG-SLICEM.C2" to="BLK_IG-SLICEM.C2"/>
+          <direct from="BLK_IG-SLICEM.C3" to="BLK_IG-SLICEM.C3"/>
+          <direct from="BLK_IG-SLICEM.C4" to="BLK_IG-SLICEM.C4"/>
+          <direct from="BLK_IG-SLICEM.C5" to="BLK_IG-SLICEM.C5"/>
+          <direct from="BLK_IG-SLICEM.C6" to="BLK_IG-SLICEM.C6"/>
+          <direct from="BLK_IG-SLICEM.BI" to="BLK_IG-SLICEM.BI"/>
+          <direct from="BLK_IG-SLICEM.BX" to="BLK_IG-SLICEM.BX"/>
+          <direct from="BLK_IG-SLICEM.B1" to="BLK_IG-SLICEM.B1"/>
+          <direct from="BLK_IG-SLICEM.B2" to="BLK_IG-SLICEM.B2"/>
+          <direct from="BLK_IG-SLICEM.B3" to="BLK_IG-SLICEM.B3"/>
+          <direct from="BLK_IG-SLICEM.B4" to="BLK_IG-SLICEM.B4"/>
+          <direct from="BLK_IG-SLICEM.B5" to="BLK_IG-SLICEM.B5"/>
+          <direct from="BLK_IG-SLICEM.B6" to="BLK_IG-SLICEM.B6"/>
+          <direct from="BLK_IG-SLICEM.AI" to="BLK_IG-SLICEM.AI"/>
+          <direct from="BLK_IG-SLICEM.AX" to="BLK_IG-SLICEM.AX"/>
+          <direct from="BLK_IG-SLICEM.A1" to="BLK_IG-SLICEM.A1"/>
+          <direct from="BLK_IG-SLICEM.A2" to="BLK_IG-SLICEM.A2"/>
+          <direct from="BLK_IG-SLICEM.A3" to="BLK_IG-SLICEM.A3"/>
+          <direct from="BLK_IG-SLICEM.A4" to="BLK_IG-SLICEM.A4"/>
+          <direct from="BLK_IG-SLICEM.A5" to="BLK_IG-SLICEM.A5"/>
+          <direct from="BLK_IG-SLICEM.A6" to="BLK_IG-SLICEM.A6"/>
+          <direct from="BLK_IG-SLICEM.SR" to="BLK_IG-SLICEM.SR"/>
+          <direct from="BLK_IG-SLICEM.CE" to="BLK_IG-SLICEM.CE"/>
+          <direct from="BLK_IG-SLICEM.WE" to="BLK_IG-SLICEM.WE"/>
+          <direct from="BLK_IG-SLICEM.CLK" to="BLK_IG-SLICEM.CLK"/>
+          <direct from="BLK_IG-SLICEM.CIN" to="BLK_IG-SLICEM.CIN"/>
+          <direct from="BLK_IG-SLICEM.COUT" to="BLK_IG-SLICEM.COUT"/>
+          <direct from="BLK_IG-SLICEM.DMUX" to="BLK_IG-SLICEM.DMUX"/>
+          <direct from="BLK_IG-SLICEM.D" to="BLK_IG-SLICEM.D"/>
+          <direct from="BLK_IG-SLICEM.DQ" to="BLK_IG-SLICEM.DQ"/>
+          <direct from="BLK_IG-SLICEM.CMUX" to="BLK_IG-SLICEM.CMUX"/>
+          <direct from="BLK_IG-SLICEM.C" to="BLK_IG-SLICEM.C"/>
+          <direct from="BLK_IG-SLICEM.CQ" to="BLK_IG-SLICEM.CQ"/>
+          <direct from="BLK_IG-SLICEM.BMUX" to="BLK_IG-SLICEM.BMUX"/>
+          <direct from="BLK_IG-SLICEM.B" to="BLK_IG-SLICEM.B"/>
+          <direct from="BLK_IG-SLICEM.BQ" to="BLK_IG-SLICEM.BQ"/>
+          <direct from="BLK_IG-SLICEM.AMUX" to="BLK_IG-SLICEM.AMUX"/>
+          <direct from="BLK_IG-SLICEM.A" to="BLK_IG-SLICEM.A"/>
+          <direct from="BLK_IG-SLICEM.AQ" to="BLK_IG-SLICEM.AQ"/>
+        </site>
       </equivalent_sites>
       <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
       <input name="DI" num_pins="1"/>

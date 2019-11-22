@@ -1183,6 +1183,15 @@ The following tags are common to all ``<tile>`` tags:
 
     .. arch:tag:: <site pb_type="string"/>
 
+    Each instance of site must also specify the direct connections between the physical
+    tile pins and the logical block pins.
+
+    .. arch:tag:: <direct from="string" to="string">
+
+    Attributes:
+        - ``from`` is relative to the physical tile pins
+        - ``to`` is relative to the logical block pins
+
     :req_param pb_type: Name of the corresponding pb_type.
 
     **Example: Equivalent Sites**
@@ -1190,7 +1199,12 @@ The following tags are common to all ``<tile>`` tags:
     .. code-block:: xml
 
         <equivalent_sites>
-            <site pb_type="MLAB">
+            <site pb_type="MLAB_SITE">
+                <direct from="MLAB_TILE.AX" to="MLAB_SITE.AX"/>
+                <direct from="MLAB_TILE.CX" to="MLAB_SITE.BX"/>
+                <direct from="MLAB_TILE.DX" to="MLAB_SITE.GX"/>
+                ...
+            </site>
         </equivalent_sites>
 
 .. _arch_complex_blocks:
