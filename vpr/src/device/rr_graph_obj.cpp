@@ -911,7 +911,7 @@ RRNodeId RRGraph::create_node(const t_rr_type& type) {
     node_num_non_configurable_in_edges_.emplace_back();  //Initially empty
     node_num_non_configurable_out_edges_.emplace_back(); //Initially empty
 
-    node_num_in_edges_.emplace_back();  //Initially empty
+    node_num_in_edges_.emplace_back(); //Initially empty
     node_inout_edges_.emplace_back();  //Initially empty
 
     invalidate_fast_node_lookup();
