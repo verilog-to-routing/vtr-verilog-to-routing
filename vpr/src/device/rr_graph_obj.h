@@ -213,52 +213,35 @@
 
 class RRGraph {
   public: /* Types */
-    class lazy_node_iterator : public std::iterator<std::bidirectional_iterator_tag, RRNodeId> {
+
+    template<class ID>
+    class lazy_id_iterator : public std::iterator<std::bidirectional_iterator_tag, ID> {
       public:
-        lazy_node_iterator(value_type init, const std::unordered_set<RRNodeId>& invalid_ids)
+        typedef typename std::iterator<std::bidirectional_iterator_tag, ID>::value_type value_type;
+        typedef typename std::iterator<std::bidirectional_iterator_tag, ID>::iterator iterator;
+        lazy_id_iterator(value_type init, const std::unordered_set<ID>& invalid_ids)
             : value_(init)
             , invalid_ids_(invalid_ids) {}
         iterator operator++() {
-            value_ = RRNodeId(size_t(value_) + 1);
+            value_ = ID(size_t(value_) + 1);
             return *this;
         }
         iterator operator--() {
-            value_ = RRNodeId(size_t(value_) - 1);
+            value_ = ID(size_t(value_) - 1);
             return *this;
         }
-        value_type operator*() const { return (invalid_ids_.count(value_)) ? RRNodeId::INVALID() : value_; }
+        value_type operator*() const { return (invalid_ids_.count(value_)) ? ID::INVALID() : value_; }
 
-        friend bool operator==(const lazy_node_iterator lhs, const lazy_node_iterator rhs) { return lhs.value_ == rhs.value_; }
-        friend bool operator!=(const lazy_node_iterator lhs, const lazy_node_iterator rhs) { return !(lhs == rhs); }
+        friend bool operator==(const lazy_id_iterator<ID> lhs, const lazy_id_iterator<ID> rhs) { return lhs.value_ == rhs.value_; }
+        friend bool operator!=(const lazy_id_iterator<ID> lhs, const lazy_id_iterator<ID> rhs) { return !(lhs == rhs); }
 
       private:
         value_type value_;
-        const std::unordered_set<RRNodeId>& invalid_ids_;
+        const std::unordered_set<ID>& invalid_ids_;
     };
 
-    class lazy_edge_iterator : public std::iterator<std::bidirectional_iterator_tag, RREdgeId> {
-      public:
-        lazy_edge_iterator(value_type init, const std::unordered_set<RREdgeId>& invalid_ids)
-            : value_(init)
-            , invalid_ids_(invalid_ids) {}
-        iterator operator++() {
-            value_ = RREdgeId(size_t(value_) + 1);
-            return *this;
-        }
-        iterator operator--() {
-            value_ = RREdgeId(size_t(value_) - 1);
-            return *this;
-        }
-        value_type operator*() const { return (invalid_ids_.count(value_)) ? RREdgeId::INVALID() : value_; }
-
-        friend bool operator==(const lazy_edge_iterator lhs, const lazy_edge_iterator rhs) { return lhs.value_ == rhs.value_; }
-        friend bool operator!=(const lazy_edge_iterator lhs, const lazy_edge_iterator rhs) { return !(lhs == rhs); }
-
-      private:
-        value_type value_;
-        const std::unordered_set<RREdgeId>& invalid_ids_;
-    };
-
+    typedef lazy_id_iterator<RRNodeId> lazy_node_iterator;
+    typedef lazy_id_iterator<RREdgeId> lazy_edge_iterator;
 
     /* Iterators used to create iterator-based loop for nodes/edges/switches/segments */
     typedef vtr::vector<RRNodeId, RRNodeId>::const_iterator node_iterator;
