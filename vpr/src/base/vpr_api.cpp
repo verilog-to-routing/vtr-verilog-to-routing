@@ -674,7 +674,9 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         std::string graphics_msg;
         if (route_status.success()) {
             //Sanity check the routing
-            check_route(router_opts.route_type);
+            if (!router_opts.disable_check_route) {
+                check_route(router_opts.route_type);
+            }
             get_serial_num();
 
             //Update status
