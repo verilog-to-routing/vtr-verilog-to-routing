@@ -23,7 +23,7 @@
  *routers
  ********************************************************************/
 void convert_rr_graph(std::vector<t_segment_inf>& vpr_segments) {
-    vtr::ScopedStartFinishTimer timer("Build routing resource graph object");
+    vtr::ScopedStartFinishTimer timer("Conversion to routing resource graph object");
 
     /* IMPORTANT: to build clock tree,
      * vpr added segments to the original arch segments

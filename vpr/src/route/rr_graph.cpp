@@ -332,6 +332,9 @@ void create_rr_graph(const t_graph_type graph_type,
                          base_cost_type,
                          &det_routing_arch->wire_to_rr_ipin_switch,
                          det_routing_arch->read_rr_graph_filename.c_str());
+
+            /* Create rr_graph object: load rr_nodes to the object */
+            convert_rr_graph(segment_inf);
         }
     } else {
         if (channel_widths_unchanged(device_ctx.chan_width, nodes_per_chan) && !device_ctx.rr_nodes.empty()) {
@@ -370,14 +373,14 @@ void create_rr_graph(const t_graph_type graph_type,
                                                                   det_routing_arch->wire_to_rr_ipin_switch,
                                                                   base_cost_type);
         }
+
+        /* Create rr_graph object: load rr_nodes to the object */
+        convert_rr_graph(segment_inf);
     }
 
     process_non_config_sets();
 
     print_rr_graph_stats();
-
-    /* Create rr_graph object: load rr_nodes to the object */
-    convert_rr_graph(segment_inf);
 
     //Write out rr graph file if needed
     if (!det_routing_arch->write_rr_graph_filename.empty()) {
