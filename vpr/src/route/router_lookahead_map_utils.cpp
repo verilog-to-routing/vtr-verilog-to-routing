@@ -3,9 +3,7 @@
 #include "globals.h"
 #include "vpr_context.h"
 #include "vtr_math.h"
-
-/* Number of CLBs I think the average conn. goes. */
-static const int CLB_DIST = 3;
+#include "route_common.h"
 
 util::PQ_Entry::PQ_Entry(
     int set_rr_node_ind,
@@ -22,8 +20,6 @@ util::PQ_Entry::PQ_Entry(
     this->congestion_upstream = parent_congestion_upstream;
     this->R_upstream = parent_R_upstream;
     if (!starting_node) {
-        int cost_index = device_ctx.rr_nodes[set_rr_node_ind].cost_index();
-
         float Tsw = device_ctx.rr_switch_inf[switch_ind].Tdel;
         Tsw += Tsw_adjust;
         VTR_ASSERT(Tsw >= 0.f);
@@ -32,14 +28,16 @@ util::PQ_Entry::PQ_Entry(
         float Rnode = device_ctx.rr_nodes[set_rr_node_ind].R();
 
         float T_linear = 0.f;
-        float T_quadratic = 0.f;
         if (device_ctx.rr_switch_inf[switch_ind].buffered()) {
             T_linear = Tsw + Rsw * Cnode + 0.5 * Rnode * Cnode;
         } else { /* Pass transistor */
             T_linear = Tsw + 0.5 * Rsw * Cnode;
         }
 
-        float base_cost = device_ctx.rr_indexed_data[cost_index].base_cost;
+        float base_cost = 0.f;
+        if (device_ctx.rr_switch_inf[switch_ind].configurable()) {
+            base_cost = get_rr_cong_cost(set_rr_node_ind);
+        }
 
         VTR_ASSERT(T_linear >= 0.);
         VTR_ASSERT(base_cost >= 0.);
@@ -89,8 +87,9 @@ util::PQ_Entry_Base_Cost::PQ_Entry_Base_Cost(
     auto& device_ctx = g_vpr_ctx.device();
     this->base_cost = upstream_base_costs;
     if (!starting_node) {
-        int cost_index = device_ctx.rr_nodes[set_rr_node_ind].cost_index();
-        this->base_cost += device_ctx.rr_indexed_data[cost_index].base_cost;
+        if (device_ctx.rr_switch_inf[switch_ind].configurable()) {
+            this->base_cost += get_rr_cong_cost(set_rr_node_ind);
+        }
     }
 }
 

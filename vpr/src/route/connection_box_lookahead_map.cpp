@@ -495,7 +495,6 @@ float ConnectionBoxMapLookahead::get_map_cost(int from_node_ind,
     float expected_congestion = cost_entry.congestion;
 
     expected_delay += site_pin_delay;
-    expected_congestion += site_pin_delay;
 
     float expected_cost = criticality_fac * expected_delay + (1.0 - criticality_fac) * expected_congestion;
 
@@ -648,6 +647,9 @@ static void run_dijkstra(int start_node_ind,
 // compute the cost maps for lookahead
 void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
     vtr::ScopedStartFinishTimer timer("Computing connection box lookahead map");
+
+    // Initialize rr_node_route_inf if not already
+    alloc_and_load_rr_node_route_structs();
 
     size_t num_segments = segment_inf.size();
     std::vector<SamplePoint> sample_points;

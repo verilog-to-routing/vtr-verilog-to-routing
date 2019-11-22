@@ -881,6 +881,7 @@ enum e_base_cost_type {
     DELAY_NORMALIZED_LENGTH,
     DELAY_NORMALIZED_FREQUENCY,
     DELAY_NORMALIZED_LENGTH_FREQUENCY,
+    DELAY_NORMALIZED_LENGTH_BOUNDED,
     DEMAND_ONLY,
     DEMAND_ONLY_NORMALIZED_LENGTH
 };
@@ -1137,10 +1138,6 @@ struct t_linked_f_pointer {
 
 typedef std::vector<std::vector<std::vector<std::vector<std::vector<int>>>>> t_rr_node_indices; //[0..num_rr_types-1][0..grid_width-1][0..grid_height-1][0..NUM_SIDES-1][0..max_ptc-1]
 
-/* Uncomment lines below to save some memory, at the cost of debugging ease. */
-/*enum e_rr_type {SOURCE, SINK, IPIN, OPIN, CHANX, CHANY}; */
-/* typedef short t_rr_type */
-
 /* Type of a routing resource node.  x-directed channel segment,   *
  * y-directed channel segment, input pin to a clb to pad, output   *
  * from a clb or pad (i.e. output pin of a net) and:               *
@@ -1155,12 +1152,11 @@ typedef enum e_rr_type : unsigned char {
     OPIN,
     CHANX,
     CHANY,
-    INTRA_CLUSTER_EDGE,
     NUM_RR_TYPES
 } t_rr_type;
 
-constexpr std::array<t_rr_type, NUM_RR_TYPES> RR_TYPES = {{SOURCE, SINK, IPIN, OPIN, CHANX, CHANY, INTRA_CLUSTER_EDGE}};
-constexpr std::array<const char*, NUM_RR_TYPES> rr_node_typename{{"SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY", "INTRA_CLUSTER_EDGE"}};
+constexpr std::array<t_rr_type, NUM_RR_TYPES> RR_TYPES = {{SOURCE, SINK, IPIN, OPIN, CHANX, CHANY}};
+constexpr std::array<const char*, NUM_RR_TYPES> rr_node_typename{{"SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY"}};
 
 /* Basic element used to store the traceback (routing) of each net.        *
  * index:   Array index (ID) of this routing resource node.                *

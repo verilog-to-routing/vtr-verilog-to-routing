@@ -299,6 +299,8 @@ static void generate_route_timing_reports(const t_router_opts& router_opts,
 
 static void prune_unused_non_configurable_nets(CBRR& connections_inf);
 
+static bool same_non_config_node_set(int from_node, int to_node);
+
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(const t_router_opts& router_opts,
                              const t_analysis_opts& analysis_opts,
@@ -2002,12 +2004,6 @@ static void evaluate_timing_driven_node_costs(t_heap* to,
     //From node info
     float from_node_R = device_ctx.rr_nodes[from_node].R();
 
-    //Once a connection has been made between from_node and to_node, depending on the switch, Tdel may increase due to the internal capacitance of that switch. Even though this delay physically affects from_node, we are making the adjustment on the to_node, because we know the connection used.
-
-    //To adjust for the time delay, we will need to compute the product of the Rdel that is associated with from_node and the internal capacitance of the switch. First, we will calculate Rdel_adjust. Just like in the computation for Rdel, we consider only half of from_node's resistance.
-
-    float Rdel_adjust = to->R_upstream - 0.5 * from_node_R;
-
     //Update R_upstream
     if (switch_buffered) {
         to->R_upstream = 0.; //No upstream resistance
@@ -2022,14 +2018,43 @@ static void evaluate_timing_driven_node_costs(t_heap* to,
     float Rdel = to->R_upstream - 0.5 * node_R; //Only consider half node's resistance for delay
     float Tdel = switch_Tdel + Rdel * node_C;
 
-    //Now we will adjust the Tdel to account for the delay caused by the internal capacitance.
+    //Depending on the switch used, the Tdel of the upstream node (from_node) may change due to
+    //increased loading from the switch's internal capacitance.
+    //
+    //Even though this delay physically affects from_node, we make the adjustment (now) on the to_node,
+    //since only once we've reached to to_node do we know the connection used (and the switch enabled).
+    //
+    //To adjust for the time delay, we compute the product of the Rdel associated with from_node and
+    //the internal capacitance of the switch.
+    //
+    //First, we will calculate Rdel_adjust (just like in the computation for Rdel, we consider only
+    //half of from_node's resistance).
+    float Rdel_adjust = to->R_upstream - 0.5 * from_node_R;
+
+    //Second, we adjust the Tdel to account for the delay caused by the internal capacitance.
     Tdel += Rdel_adjust * switch_Cinternal;
 
-    //Update the backward cost (upstream already included)
-    if (cost_params.criticality != 1.) {
-        to->backward_path_cost += (1. - cost_params.criticality) * get_rr_cong_cost(to_node); //Congestion cost
+    bool reached_configurably = device_ctx.rr_nodes[from_node].edge_is_configurable(iconn);
+
+    float cong_cost = 0.;
+    if (reached_configurably) {
+        cong_cost = get_rr_cong_cost(to_node);
+    } else {
+        //Reached by a non-configurable edge.
+        //Therefore the from_node and to_node are part of the same non-configurable node set.
+        VTR_ASSERT_SAFE_MSG(same_non_config_node_set(from_node, to_node),
+                            "Non-configurably connected edges should be part of the same node set");
+
+        //The congestion cost of all nodes in the set has already been accounted for (when
+        //the current path first expanded a node in the set). Therefore do *not* re-add the congestion
+        //cost.
+        cong_cost = 0.;
     }
-    to->backward_path_cost += cost_params.criticality * Tdel; //Delay cost
+
+    //Update the backward cost (upstream already included)
+    to->backward_path_cost += (1. - cost_params.criticality) * cong_cost; //Congestion cost
+    to->backward_path_cost += cost_params.criticality * Tdel;             //Delay cost
+
     if (cost_params.bend_cost != 0.) {
         t_rr_type from_type = device_ctx.rr_nodes[from_node].type();
         t_rr_type to_type = device_ctx.rr_nodes[to_node].type();
@@ -2868,4 +2893,19 @@ static void prune_unused_non_configurable_nets(CBRR& connections_inf) {
 
         free_route_tree(rt_root);
     }
+}
+
+//Returns true if both nodes are part of the same non-configurable edge set
+static bool same_non_config_node_set(int from_node, int to_node) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    auto from_itr = device_ctx.rr_node_to_non_config_node_set.find(from_node);
+    auto to_itr = device_ctx.rr_node_to_non_config_node_set.find(to_node);
+
+    if (from_itr == device_ctx.rr_node_to_non_config_node_set.end()
+        || to_itr == device_ctx.rr_node_to_non_config_node_set.end()) {
+        return false; //Not part of a non-config node set
+    }
+
+    return from_itr->second == to_itr->second; //Check for same non-config set IDs
 }

@@ -4,10 +4,10 @@
 ##############################################
 
 # Path to directory of circuits to use
-circuits_dir=tasks/regression_tests/vtr_reg_strong/strong_clock_pll/config
+circuits_dir=tasks/regression_tests/vtr_reg_strong/strong_clock_buf/config
 
 # Path to directory of architectures to use
-archs_dir=tasks/regression_tests/vtr_reg_strong/strong_clock_pll/config
+archs_dir=tasks/regression_tests/vtr_reg_strong/strong_clock_buf/config
 
 # Add circuits to list to sweep
 circuit_list_add=multiclock_buf.blif

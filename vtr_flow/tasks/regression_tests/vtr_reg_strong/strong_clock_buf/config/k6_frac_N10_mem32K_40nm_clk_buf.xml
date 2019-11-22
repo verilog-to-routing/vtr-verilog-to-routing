@@ -111,32 +111,6 @@
       </output_ports>
     </model>
 
-    <model name="pll">
-      <input_ports>
-        <port is_clock="1" name="dclk"/>
-        <port clock="dclk" name="den"/>
-        <port clock="dclk" name="dwe"/>
-        <port clock="dclk" name="daddr"/>
-        <port clock="dclk" name="di"/>
-
-        <port is_clock="1" name="clkfbin"/>
-        <port is_clock="1" name="clkin1" combinational_sink_ports="clkfbout clkout0 clkout1 clkout2 clkout3 clkout4 clkout5"/>
-        <port is_clock="1" name="clkin2" combinational_sink_ports="clkfbout clkout0 clkout1 clkout2 clkout3 clkout4 clkout5"/>
-      </input_ports>
-      <output_ports>
-        <port clock="dclk" name="do"/>
-        <port clock="dclk" name="drdy"/>
-
-        <port is_clock="1" name="clkfbout"/>
-        <port is_clock="1" name="clkout0"/>
-        <port is_clock="1" name="clkout1"/>
-        <port is_clock="1" name="clkout2"/>
-        <port is_clock="1" name="clkout3"/>
-        <port is_clock="1" name="clkout4"/>
-        <port is_clock="1" name="clkout5"/>
-      </output_ports>
-    </model>
-
     <model name="single_port_ram">
       <input_ports>
         <port name="we" clock="clk"/>
@@ -181,7 +155,11 @@
   <tiles>
     <tile name="io" capacity="8" area="0">
       <equivalent_sites>
-        <site pb_type="io"/>
+        <site pb_type="io">
+          <direct from="io.outpad" to="io.outpad"/>
+          <direct from="io.inpad" to="io.inpad"/>
+          <direct from="io.clock" to="io.clock"/>
+        </site>
       </equivalent_sites>
       <input name="outpad" num_pins="1"/>
       <output name="inpad" num_pins="1"/>
@@ -196,44 +174,23 @@
     </tile>
     <tile name="clk_control" area="0">
       <equivalent_sites>
-        <site pb_type="clk_control"/>
+        <site pb_type="clk_control">
+          <direct from="clk_control.in" to="clk_control.in"/>
+          <direct from="clk_control.out" to="clk_control.out"/>
+        </site>
       </equivalent_sites>
       <input name="in" num_pins="2"/>
       <output name="out" num_pins="1"/>
       <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
       <pinlocations pattern="spread"/>
     </tile>
-    <tile name="pll_block" area="0">
-      <equivalent_sites>
-        <site pb_type="pll_block"/>
-      </equivalent_sites>
-
-      <clock  name="dclk"     num_pins="1" />
-      <clock  name="clkfbin"  num_pins="1" />
-      <clock  name="clkin1"   num_pins="1" />
-      <clock  name="clkin2"   num_pins="1" />
-
-      <input  name="den"      num_pins="1" />
-      <input  name="dwe"      num_pins="1" />
-      <input  name="daddr"    num_pins="1" />
-      <input  name="di"       num_pins="1" />
-
-      <output name="do"       num_pins="1" />
-      <output name="drdy"     num_pins="1" />
-      <output name="clkfbout" num_pins="1" />
-      <output name="clkout0"  num_pins="1" />
-      <output name="clkout1"  num_pins="1" />
-      <output name="clkout2"  num_pins="1" />
-      <output name="clkout3"  num_pins="1" />
-      <output name="clkout4"  num_pins="1" />
-      <output name="clkout5"  num_pins="1" />
-
-      <fc in_type="frac" in_val="1" out_type="frac" out_val="1"/>
-      <pinlocations pattern="spread"/>
-    </tile>
     <tile name="clb" area="53894">
       <equivalent_sites>
-        <site pb_type="clb"/>
+        <site pb_type="clb">
+          <direct from="clb.I" to="clb.I"/>
+          <direct from="clb.O" to="clb.O"/>
+          <direct from="clb.clk" to="clb.clk"/>
+        </site>
       </equivalent_sites>
       <input name="I" num_pins="40" equivalent="full"/>
       <output name="O" num_pins="20" equivalent="none"/>
@@ -243,7 +200,11 @@
     </tile>
     <tile name="mult_36" height="4" area="396000">
       <equivalent_sites>
-        <site pb_type="mult_36"/>
+        <site pb_type="mult_36">
+          <direct from="mult_36.a" to="mult_36.a"/>
+          <direct from="mult_36.b" to="mult_36.b"/>
+          <direct from="mult_36.out" to="mult_36.out"/>
+        </site>
       </equivalent_sites>
       <input name="a" num_pins="36"/>
       <input name="b" num_pins="36"/>
@@ -253,7 +214,15 @@
     </tile>
     <tile name="memory" height="6" area="548000">
       <equivalent_sites>
-        <site pb_type="memory"/>
+        <site pb_type="memory">
+          <direct from="memory.addr1" to="memory.addr1"/>
+          <direct from="memory.addr2" to="memory.addr2"/>
+          <direct from="memory.data" to="memory.data"/>
+          <direct from="memory.we1" to="memory.we1"/>
+          <direct from="memory.we2" to="memory.we2"/>
+          <direct from="memory.out" to="memory.out"/>
+          <direct from="memory.clk" to="memory.clk"/>
+        </site>
       </equivalent_sites>
       <input name="addr1" num_pins="15"/>
       <input name="addr2" num_pins="15"/>
@@ -275,8 +244,7 @@
       <corners type="EMPTY" priority="101"/>
       <!--Fill with 'clb'-->
       <fill type="clb" priority="10"/>
-      <single type="pll_block" x="1" y="2" priority="120"/>
-      <col type="clk_control" startx="1" starty="4" priority="30"/>
+      <col type="clk_control" startx="1" starty="1" priority="30"/>
       <!--Column of 'mult_36' with 'EMPTY' blocks wherever a 'mult_36' does not fit. Vertical offset by 1 for perimeter.-->
       <col type="mult_36" startx="6" starty="1" repeatx="8" priority="20"/>
       <col type="EMPTY" startx="6" repeatx="8" starty="1" priority="19"/>
@@ -413,99 +381,6 @@
       </mode>
       <power method="ignore"/>
     </pb_type>
-    <pb_type name="pll_block">
-      <clock  name="dclk"     num_pins="1" />
-      <clock  name="clkfbin"  num_pins="1" />
-      <clock  name="clkin1"   num_pins="1" />
-      <clock  name="clkin2"   num_pins="1" />
-
-      <input  name="den"      num_pins="1" />
-      <input  name="dwe"      num_pins="1" />
-      <input  name="daddr"    num_pins="1" />
-      <input  name="di"       num_pins="1" />
-
-      <output name="do"       num_pins="1" />
-      <output name="drdy"     num_pins="1" />
-      <output name="clkfbout" num_pins="1" />
-      <output name="clkout0"  num_pins="1" />
-      <output name="clkout1"  num_pins="1" />
-      <output name="clkout2"  num_pins="1" />
-      <output name="clkout3"  num_pins="1" />
-      <output name="clkout4"  num_pins="1" />
-      <output name="clkout5"  num_pins="1" />
-
-      <mode name="pll_mode">
-        <pb_type name="pll" blif_model="pll" num_pb="1">
-          <clock  name="dclk"     num_pins="1" />
-          <clock  name="clkfbin"  num_pins="1" />
-          <clock  name="clkin1"   num_pins="1" />
-          <clock  name="clkin2"   num_pins="1" />
-
-          <input  name="den"      num_pins="1" />
-          <input  name="dwe"      num_pins="1" />
-          <input  name="daddr"    num_pins="1" />
-          <input  name="di"       num_pins="1" />
-
-          <output name="do"       num_pins="1" />
-          <output name="drdy"     num_pins="1" />
-          <output name="clkfbout" num_pins="1" />
-          <output name="clkout0"  num_pins="1" />
-          <output name="clkout1"  num_pins="1" />
-          <output name="clkout2"  num_pins="1" />
-          <output name="clkout3"  num_pins="1" />
-          <output name="clkout4"  num_pins="1" />
-          <output name="clkout5"  num_pins="1" />
-
-          <T_setup value="1e-12" port="pll.den"   clock="dclk"/>
-          <T_hold  value="1e-12" port="pll.den"   clock="dclk"/>
-          <T_setup value="1e-12" port="pll.dwe"   clock="dclk"/>
-          <T_hold  value="1e-12" port="pll.dwe"   clock="dclk"/>
-          <T_setup value="1e-12" port="pll.daddr" clock="dclk"/>
-          <T_hold  value="1e-12" port="pll.daddr" clock="dclk"/>
-          <T_setup value="1e-12" port="pll.di"    clock="dclk"/>
-          <T_hold  value="1e-12" port="pll.di"    clock="dclk"/>
-
-          <T_clock_to_Q max="1e-12" port="pll.do"   clock="dclk"/>
-          <T_clock_to_Q max="1e-12" port="pll.drdy" clock="dclk"/>
-
-          <delay_constant max="1e-12" in_port="pll.clkin1" out_port="pll.clkfbout"/>
-          <delay_constant max="1e-12" in_port="pll.clkin1" out_port="pll.clkout0"/>
-          <delay_constant max="1e-12" in_port="pll.clkin1" out_port="pll.clkout1"/>
-          <delay_constant max="1e-12" in_port="pll.clkin1" out_port="pll.clkout2"/>
-          <delay_constant max="1e-12" in_port="pll.clkin1" out_port="pll.clkout3"/>
-          <delay_constant max="1e-12" in_port="pll.clkin1" out_port="pll.clkout4"/>
-          <delay_constant max="1e-12" in_port="pll.clkin1" out_port="pll.clkout5"/>
-
-          <delay_constant max="1e-12" in_port="pll.clkin2" out_port="pll.clkfbout"/>
-          <delay_constant max="1e-12" in_port="pll.clkin2" out_port="pll.clkout0"/>
-          <delay_constant max="1e-12" in_port="pll.clkin2" out_port="pll.clkout1"/>
-          <delay_constant max="1e-12" in_port="pll.clkin2" out_port="pll.clkout2"/>
-          <delay_constant max="1e-12" in_port="pll.clkin2" out_port="pll.clkout3"/>
-          <delay_constant max="1e-12" in_port="pll.clkin2" out_port="pll.clkout4"/>
-          <delay_constant max="1e-12" in_port="pll.clkin2" out_port="pll.clkout5"/>
-        </pb_type>
-        <interconnect>
-          <direct name="dclk"     input="pll_block.dclk"    output="pll.dclk" />
-          <direct name="clkfbin"  input="pll_block.clkfbin" output="pll.clkfbin" />
-          <direct name="clkin1"   input="pll_block.clkin1"  output="pll.clkin1" />
-          <direct name="clkin2"   input="pll_block.clkin2"  output="pll.clkin2" />
-          <direct name="den"      input="pll_block.den"     output="pll.den" />
-          <direct name="dwe"      input="pll_block.dwe"     output="pll.dwe" />
-          <direct name="daddr"    input="pll_block.daddr"   output="pll.daddr" />
-          <direct name="di"       input="pll_block.di"      output="pll.di" />
-          <direct name="do"       input="pll.do"            output="pll_block.do" />
-          <direct name="drdy"     input="pll.drdy"          output="pll_block.drdy" />
-          <direct name="clkfbout" input="pll.clkfbout"      output="pll_block.clkfbout" />
-          <direct name="clkout0"  input="pll.clkout0"       output="pll_block.clkout0" />
-          <direct name="clkout1"  input="pll.clkout1"       output="pll_block.clkout1" />
-          <direct name="clkout2"  input="pll.clkout2"       output="pll_block.clkout2" />
-          <direct name="clkout3"  input="pll.clkout3"       output="pll_block.clkout3" />
-          <direct name="clkout4"  input="pll.clkout4"       output="pll_block.clkout4" />
-          <direct name="clkout5"  input="pll.clkout5"       output="pll_block.clkout5" />
-        </interconnect>
-      </mode>
-    </pb_type>
-
     <!-- Define general purpose logic block (CLB) begin -->
     <!--- Area calculation: Total Stratix IV tile area is about 8100 um^2, and a minimum width transistor 
 	   area is 60 L^2 yields a tile area of 84375 MWTAs.
