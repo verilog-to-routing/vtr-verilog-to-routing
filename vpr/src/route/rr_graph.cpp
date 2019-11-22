@@ -1379,6 +1379,9 @@ void free_rr_graph() {
      * allocated, as ALL the chunk allocated data is already free!           */
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
+    /* Clear the RRGraph object */
+    device_ctx.rr_graph.clear();
+
     device_ctx.read_rr_graph_filename.clear();
 
     device_ctx.rr_node_indices.clear();
