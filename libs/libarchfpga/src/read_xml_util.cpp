@@ -3,14 +3,14 @@
 #include "vtr_util.h"
 #include "arch_error.h"
 
-using namespace pugiutil;
+using pugiutil::ReqOpt;
 
 /* Convert bool to ReqOpt enum */
 extern ReqOpt BoolToReqOpt(bool b) {
     if (b) {
-        return REQUIRED;
+        return ReqOpt::REQUIRED;
     }
-    return OPTIONAL;
+    return ReqOpt::OPTIONAL;
 }
 
 InstPort make_inst_port(std::string str, pugi::xml_node node, const pugiutil::loc_data& loc_data) {

@@ -28,27 +28,21 @@ class NdMatrixProxy {
     //  idim: The dimension associated with this proxy
     //  dim_stride: The stride of this dimension (i.e. how many element in memory between indicies of this dimension)
     //  start: Pointer to the start of the sub-matrix this proxy represents
-    NdMatrixProxy<T, N>(const size_t* dim_sizes, size_t idim, size_t dim_stride, T* start)
+    NdMatrixProxy<T, N>(const size_t* dim_sizes, const size_t* dim_strides, T* start)
         : dim_sizes_(dim_sizes)
-        , idim_(idim)
-        , dim_stride_(dim_stride)
+        , dim_strides_(dim_strides)
         , start_(start) {}
 
     const NdMatrixProxy<T, N - 1> operator[](size_t index) const {
         VTR_ASSERT_SAFE_MSG(index >= 0, "Index out of range (below dimension minimum)");
-        VTR_ASSERT_SAFE_MSG(index < dim_sizes_[idim_], "Index out of range (above dimension maximum)");
-
-        size_t next_dim_size = dim_sizes_[idim_ + 1];
-        VTR_ASSERT_SAFE_MSG(next_dim_size > 0, "Can not index into zero-sized dimension");
-
-        //Determine the stride of the next dimension
-        size_t next_dim_stride = dim_stride_ / next_dim_size;
+        VTR_ASSERT_SAFE_MSG(index < dim_sizes_[0], "Index out of range (above dimension maximum)");
+        VTR_ASSERT_SAFE_MSG(dim_sizes_[1] > 0, "Can not index into zero-sized dimension");
 
         //Strip off one dimension
-        return NdMatrixProxy<T, N - 1>(dim_sizes_,                    //Pass the dimension information
-                                       idim_ + 1,                     //Pass the next dimension
-                                       next_dim_stride,               //Pass the stride for the next dimension
-                                       start_ + dim_stride_ * index); //Advance to index in this dimension
+        return NdMatrixProxy<T, N - 1>(
+            dim_sizes_ + 1,                    //Pass the dimension information
+            dim_strides_ + 1,                  //Pass the stride for the next dimension
+            start_ + dim_strides_[0] * index); //Advance to index in this dimension
     }
 
     NdMatrixProxy<T, N - 1> operator[](size_t index) {
@@ -58,8 +52,7 @@ class NdMatrixProxy {
 
   private:
     const size_t* dim_sizes_;
-    const size_t idim_;
-    const size_t dim_stride_;
+    const size_t* dim_strides_;
     T* start_;
 };
 
@@ -67,16 +60,15 @@ class NdMatrixProxy {
 template<typename T>
 class NdMatrixProxy<T, 1> {
   public:
-    NdMatrixProxy<T, 1>(const size_t* dim_sizes, size_t idim, size_t dim_stride, T* start)
+    NdMatrixProxy<T, 1>(const size_t* dim_sizes, const size_t* dim_stride, T* start)
         : dim_sizes_(dim_sizes)
-        , idim_(idim)
-        , dim_stride_(dim_stride)
+        , dim_strides_(dim_stride)
         , start_(start) {}
 
     const T& operator[](size_t index) const {
-        VTR_ASSERT_SAFE_MSG(dim_stride_ == 1, "Final dimension must have stride 1");
+        VTR_ASSERT_SAFE_MSG(dim_strides_[0] == 1, "Final dimension must have stride 1");
         VTR_ASSERT_SAFE_MSG(index >= 0, "Index out of range (below dimension minimum)");
-        VTR_ASSERT_SAFE_MSG(index < dim_sizes_[idim_], "Index out of range (above dimension maximum)");
+        VTR_ASSERT_SAFE_MSG(index < dim_sizes_[0], "Index out of range (above dimension maximum)");
 
         //Base case
         return start_[index];
@@ -103,8 +95,7 @@ class NdMatrixProxy<T, 1> {
 
   private:
     const size_t* dim_sizes_;
-    const size_t idim_;
-    const size_t dim_stride_;
+    const size_t* dim_strides_;
     T* start_;
 };
 
@@ -181,6 +172,17 @@ class NdMatrixBase {
         return dim_sizes_[i];
     }
 
+    // Flat accessors of NdMatrix
+    const T& get(size_t i) const {
+        VTR_ASSERT_SAFE(i < size_);
+        return data_[i];
+    }
+
+    T& get(size_t i) {
+        VTR_ASSERT_SAFE(i < size_);
+        return data_[i];
+    }
+
   public: //Mutators
     //Set all elements to 'value'
     void fill(T value) {
@@ -196,12 +198,21 @@ class NdMatrixBase {
         size_ = calc_size();
         alloc();
         fill(value);
+        if (size_ > 0) {
+            dim_strides_[0] = size_ / dim_sizes_[0];
+            for (size_t dim = 1; dim < N; ++dim) {
+                dim_strides_[dim] = dim_strides_[dim - 1] / dim_sizes_[dim];
+            }
+        } else {
+            dim_strides_.fill(0);
+        }
     }
 
     //Reset the matrix to size zero
     void clear() {
         data_.reset(nullptr);
         dim_sizes_.fill(0);
+        dim_strides_.fill(0);
         size_ = 0;
     }
 
@@ -231,6 +242,7 @@ class NdMatrixBase {
         using std::swap;
         swap(m1.size_, m2.size_);
         swap(m1.dim_sizes_, m2.dim_sizes_);
+        swap(m1.dim_strides_, m2.dim_strides_);
         swap(m1.data_, m2.data_);
     }
 
@@ -254,6 +266,7 @@ class NdMatrixBase {
   protected:
     size_t size_ = 0;
     std::array<size_t, N> dim_sizes_;
+    std::array<size_t, N> dim_strides_;
     std::unique_ptr<T[]> data_ = nullptr;
 };
 
@@ -305,17 +318,11 @@ class NdMatrix : public NdMatrixBase<T, N> {
         VTR_ASSERT_SAFE_MSG(index >= 0, "Index out of range (below dimension minimum)");
         VTR_ASSERT_SAFE_MSG(index < this->dim_sizes_[0], "Index out of range (above dimension maximum)");
 
-        //Calculate the stride for the current dimension
-        size_t dim_stride = this->size() / this->dim_size(0);
-
-        //Calculate the stride for the next dimension
-        size_t next_dim_stride = dim_stride / this->dim_size(1);
-
         //Peel off the first dimension
-        return NdMatrixProxy<T, N - 1>(this->dim_sizes_.data(),                 //Pass the dimension information
-                                       1,                                       //Pass the next dimension
-                                       next_dim_stride,                         //Pass the stride for the next dimension
-                                       this->data_.get() + dim_stride * index); //Advance to index in this dimension
+        return NdMatrixProxy<T, N - 1>(
+            this->dim_sizes_.data() + 1,                        //Pass the dimension information
+            this->dim_strides_.data() + 1,                      //Pass the stride for the next dimension
+            this->data_.get() + this->dim_strides_[0] * index); //Advance to index in this dimension
     }
 
     //Access an element

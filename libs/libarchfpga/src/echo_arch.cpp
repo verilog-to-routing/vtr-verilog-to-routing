@@ -1,5 +1,6 @@
 #include <cstring>
 #include <cstdlib>
+#include <vector>
 
 #include "echo_arch.h"
 #include "arch_types.h"
@@ -18,7 +19,10 @@ static void PrintPb_types_recPower(FILE* Echo,
 
 /* Output the data from architecture data so user can verify it
  * was interpretted correctly. */
-void EchoArch(const char* EchoFile, const t_type_descriptor* Types, const int NumTypes, const t_arch* arch) {
+void EchoArch(const char* EchoFile,
+              const std::vector<t_physical_tile_type>& PhysicalTileTypes,
+              const std::vector<t_logical_block_type>& LogicalBlockTypes,
+              const t_arch* arch) {
     int i, j;
     FILE* Echo;
     t_model* cur_model;
@@ -71,12 +75,12 @@ void EchoArch(const char* EchoFile, const t_type_descriptor* Types, const int Nu
     }
     fprintf(Echo, "*************************************************\n\n");
     fprintf(Echo, "*************************************************\n");
-    for (i = 0; i < NumTypes; ++i) {
-        fprintf(Echo, "Type: \"%s\"\n", Types[i].name);
-        fprintf(Echo, "\tcapacity: %d\n", Types[i].capacity);
-        fprintf(Echo, "\twidth: %d\n", Types[i].width);
-        fprintf(Echo, "\theight: %d\n", Types[i].height);
-        for (const t_fc_specification& fc_spec : Types[i].fc_specs) {
+    for (auto& Type : PhysicalTileTypes) {
+        fprintf(Echo, "Type: \"%s\"\n", Type.name);
+        fprintf(Echo, "\tcapacity: %d\n", Type.capacity);
+        fprintf(Echo, "\twidth: %d\n", Type.width);
+        fprintf(Echo, "\theight: %d\n", Type.height);
+        for (const t_fc_specification& fc_spec : Type.fc_specs) {
             fprintf(Echo, "fc_value_type: ");
             if (fc_spec.fc_value_type == e_fc_value_type::ABSOLUTE) {
                 fprintf(Echo, "ABSOLUTE");
@@ -93,11 +97,13 @@ void EchoArch(const char* EchoFile, const t_type_descriptor* Types, const int Nu
             }
             fprintf(Echo, "\n");
         }
-        fprintf(Echo, "\tnum_drivers: %d\n", Types[i].num_drivers);
-        fprintf(Echo, "\tnum_receivers: %d\n", Types[i].num_receivers);
-        fprintf(Echo, "\tindex: %d\n", Types[i].index);
-        if (Types[i].pb_type) {
-            PrintPb_types_rec(Echo, Types[i].pb_type, 2);
+        fprintf(Echo, "\tnum_drivers: %d\n", Type.num_drivers);
+        fprintf(Echo, "\tnum_receivers: %d\n", Type.num_receivers);
+
+        int index = Type.index;
+        fprintf(Echo, "\tindex: %d\n", index);
+        if (LogicalBlockTypes[Type.index].pb_type) {
+            PrintPb_types_rec(Echo, LogicalBlockTypes[Type.index].pb_type, 2);
         }
         fprintf(Echo, "\n");
     }
