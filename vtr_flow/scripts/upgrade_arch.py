@@ -53,7 +53,7 @@ def parse_args():
                         choices=supported_upgrades,
                         default=supported_upgrades)
     parser.add_argument("--debug", default=False, action="store_true", help="Print to stdout instead of modifying file inplace")
-    parser.add_argument("--pretty", default=False, action="store_true", help="Pretty print the output?")
+    parser.add_argument("--pretty", default=True, help="Pretty print the output? (default: %(default)s)")
 
     return parser.parse_args()
 
