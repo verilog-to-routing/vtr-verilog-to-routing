@@ -11,6 +11,8 @@ archs_dir=arch/titan
 
 # Add circuits to list to sweep
 circuit_list_add=ucsb_152_tap_fir_stratixiv_arch_timing.blif
+circuit_list_add=picosoc_symbiflow_stratixiv_arch_timing.blif
+circuit_list_add=murax_symbiflow_stratixiv_arch_timing.blif
 
 # Add architectures to list to sweep
 arch_list_add=stratixiv_arch.timing.xml
