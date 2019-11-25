@@ -280,7 +280,6 @@ endif()
 separate_arguments(
     ADDITIONAL_FLAGS UNIX_COMMAND "${SANITIZE_FLAGS} ${PROFILING_FLAGS} ${COVERAGE_FLAGS} ${LOGGING_FLAGS} ${COLORED_COMPILE}"
     )
-add_compile_options(${ADDITIONAL_FLAGS})
 separate_arguments(
     WARN_FLAGS UNIX_COMMAND "${WARN_FLAGS}"
     )
@@ -349,6 +348,8 @@ add_subdirectory(libs) #libs/CMakeLists.txt handles adding warnings flags to non
 
 #Add the various tools
 add_compile_options(${WARN_FLAGS}) #Add warn flags for VTR tools
+add_compile_options(${ADDITIONAL_FLAGS})
+link_libraries(${ADDITIONAL_FLAGS})
 add_subdirectory(vpr)
 add_subdirectory(ODIN_II)
 add_subdirectory(ace2)
