@@ -80,6 +80,7 @@
 #include "vqm2blif.h"
 #include "lut_stats.h"
 #include "vtr_error.h"
+#include "physical_types.h"
 
 #include <sys/stat.h>
 
@@ -242,7 +243,10 @@ int main(int argc, char* argv[])
     arch.power = NULL; //Must explicitly set power to null, so that libarchfpga 
                        //doesn't attempt to read in power info if it doesn't exist
 
-	t_type_descriptor *types;
+    std::vector<t_physical_tile_type> physical_tile_types;
+    std::vector<t_logical_block_type> logical_block_types;
+
+	t_logical_block_type *types;
 	int numTypes;	//used to hold information about the architecture as read by VPR's parser
 	
 	//***COMMAND-LINE ARGUMENTS***
@@ -307,11 +311,16 @@ int main(int argc, char* argv[])
     //        required when decomposing INOUT pins into input and output pins
 	cout << "\n>> Parsing architecture file " << arch_file << endl ;
     try {
-        XmlReadArch( arch_file.c_str(), false, &arch, &types, &numTypes );	//Architecture (XML) Parser call
+        XmlReadArch( arch_file.c_str(), false, &arch, physical_tile_types, logical_block_types);	//Architecture (XML) Parser call
     } catch (const vtr::VtrError& e) {
         cout << "Error at line " << e.line() << " in " << e.filename() << ": " << e.what() << endl;
         exit(1);
     }
+
+    //Really should update all code to use these... but this works for now
+    types= logical_block_types.data();
+    numTypes = logical_block_types.size();
+
 	assert ((types > 0) && (numTypes > 0));
 	assert (arch.models != NULL);
 			

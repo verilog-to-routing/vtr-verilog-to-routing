@@ -10,7 +10,7 @@
 //============================================================================================
 //				GLOBALS
 //============================================================================================
-void preprocess_netlist(t_module* module, t_arch* arch, t_type_descriptor* arch_types, int num_types,
+void preprocess_netlist(t_module* module, t_arch* arch, t_logical_block_type* arch_types, int num_types,
                         t_boolean fix_global_nets, t_boolean elaborate_ram_clocks, t_boolean single_clock_primitives,
                         t_boolean split_carry_chain_logic, t_boolean remove_const_nets);
 

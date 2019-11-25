@@ -8,6 +8,7 @@
 #include "vtr_util.h"
 #include "vtr_assert.h"
 #include "vqm2blif_util.h"
+#include "physical_types.h"
 #include <ios>
 
 
@@ -51,11 +52,11 @@ void decompose_carry_chains(t_module* module);
 bool is_arithmetic_port(t_node_port_association* node_port);
 
 //Functions to fix connections between clock nets and non-clock ports
-void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* arch, t_type_descriptor* arch_types, int num_types);
+void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* arch, t_logical_block_type* arch_types, int num_types);
 t_pin_def* find_associated_clock_net(t_node* node, t_pin_def* clock_net, t_global_nets clock_nets);
 
 //Functions to identify dual-clock RAMs and split them into seperate blocks
-void decompose_multiclock_blocks(t_module* module, t_arch* arch, t_type_descriptor* arch_types, int num_types);
+void decompose_multiclock_blocks(t_module* module, t_arch* arch, t_logical_block_type* arch_types, int num_types);
 
 void duplicate_and_split_multiclock_blocks(t_module* module, vector<t_node*>& multiclock_blocks);
 
@@ -70,9 +71,9 @@ t_node_parameter* duplicate_param(t_node_parameter* orig_param);
 t_node_port_association* duplicate_port(t_node_port_association* orig_port);
 
 //Functions to identify global nets
-void add_global_to_nonglobal_buffers(t_module* module, t_arch* arch, t_type_descriptor* arch_types, int num_types);
+void add_global_to_nonglobal_buffers(t_module* module, t_arch* arch, t_logical_block_type* arch_types, int num_types);
 
-t_global_ports identify_primitive_global_pins(t_arch* arch, t_type_descriptor* arch_types, int num_types, bool clock_only);
+t_global_ports identify_primitive_global_pins(t_arch* arch, t_logical_block_type* arch_types, int num_types, bool clock_only);
 
 t_global_nets identify_global_nets(t_module* module, t_global_ports global_port_vec);
 
@@ -100,7 +101,7 @@ t_node* add_buffer(t_module* module, t_buffer_type buffer_type, int num_buffers_
 void print_map(t_global_ports global_ports);
 //============================================================================================
 //============================================================================================
-void preprocess_netlist(t_module* module, t_arch* arch, t_type_descriptor* arch_types, int num_types, 
+void preprocess_netlist(t_module* module, t_arch* arch, t_logical_block_type* arch_types, int num_types, 
                         t_boolean fix_global_nets, t_boolean elaborate_ram_clocks, t_boolean single_clock_primitives,
                         t_boolean split_carry_chain_logic, t_boolean remove_const_nets){
     /*
@@ -1190,7 +1191,7 @@ void expand_ram_clocks(t_module* module) {
 
 }
 
-void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* arch, t_type_descriptor* arch_types, int num_types) {
+void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* arch, t_logical_block_type* arch_types, int num_types) {
     //Removes connections to clock ports if the net is not driven by a clock port.
     //VPR does not allow clock nets (anything that touches a clock pin) to connect
     //to non-clock pins.
@@ -1432,7 +1433,7 @@ t_pin_def* find_associated_clock_net(t_node* node, t_pin_def* clock_net, t_globa
 
 //============================================================================================
 //============================================================================================
-void decompose_multiclock_blocks(t_module* module, t_arch* arch, t_type_descriptor* arch_types, int num_types) {
+void decompose_multiclock_blocks(t_module* module, t_arch* arch, t_logical_block_type* arch_types, int num_types) {
     //Identify netlist multi-clock primitives
     vector<t_node*> multiclock_blocks;
     for(int i = 0; i < module->number_of_nodes; ++i) {
@@ -1975,7 +1976,7 @@ map<t_node_port_association*, t_node*> map_ports_to_split_blocks(t_node* orig_no
 
 //============================================================================================
 //============================================================================================
-void add_global_to_nonglobal_buffers(t_module* module, t_arch* arch, t_type_descriptor* arch_types, int num_types){
+void add_global_to_nonglobal_buffers(t_module* module, t_arch* arch, t_logical_block_type* arch_types, int num_types){
 
     //Identify architecture block pins which are globals
     t_global_ports global_ports = identify_primitive_global_pins(arch, arch_types, num_types, false);
@@ -2000,7 +2001,7 @@ void add_global_to_nonglobal_buffers(t_module* module, t_arch* arch, t_type_desc
 }
 
 
-t_global_ports identify_primitive_global_pins(t_arch* arch, t_type_descriptor* arch_types, int num_types, bool clock_only){
+t_global_ports identify_primitive_global_pins(t_arch* arch, t_logical_block_type* arch_types, int num_types, bool clock_only){
     t_global_ports global_ports; 
 
     if(verbose_mode) {
@@ -2008,7 +2009,7 @@ t_global_ports identify_primitive_global_pins(t_arch* arch, t_type_descriptor* a
     }
     //Add the top level pb_types
     for(int top_pb_type_index = 0; top_pb_type_index < num_types; top_pb_type_index++) {
-        t_type_descriptor type = arch_types[top_pb_type_index];
+        t_logical_block_type type = arch_types[top_pb_type_index];
 
         t_pb_type* top_level_pb_type = type.pb_type;
 
