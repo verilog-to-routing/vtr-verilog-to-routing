@@ -28,9 +28,8 @@ bool is_io_type(t_physical_tile_type_ptr type);
 bool is_empty_type(t_physical_tile_type_ptr type);
 bool is_empty_type(t_logical_block_type_ptr type);
 
-//Returns the corresponding physical/logical type given the logical/physical type as parameter
+//Returns the corresponding physical type given the logical type as parameter
 t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk);
-t_logical_block_type_ptr logical_block_type(t_physical_tile_type_ptr physical_tile_type);
 
 int get_unique_pb_graph_node_id(const t_pb_graph_node* pb_graph_node);
 
@@ -78,13 +77,13 @@ class IntraLbPbPinLookup {
 };
 
 //Find the atom pins (driver or sinks) connected to the specified top-level CLB pin
-std::vector<AtomPinId> find_clb_pin_connected_atom_pins(ClusterBlockId clb, int log_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
+std::vector<AtomPinId> find_clb_pin_connected_atom_pins(ClusterBlockId clb, int logical_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
 
 //Find the atom pin driving to the specified top-level CLB pin
-AtomPinId find_clb_pin_driver_atom_pin(ClusterBlockId clb, int log_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
+AtomPinId find_clb_pin_driver_atom_pin(ClusterBlockId clb, int logical_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
 
 //Find the atom pins driven by the specified top-level CLB pin
-std::vector<AtomPinId> find_clb_pin_sink_atom_pins(ClusterBlockId clb, int log_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
+std::vector<AtomPinId> find_clb_pin_sink_atom_pins(ClusterBlockId clb, int logical_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
 
 std::tuple<ClusterNetId, int, int> find_pb_route_clb_input_net_pin(ClusterBlockId clb, int sink_pb_route_id);
 
@@ -173,7 +172,8 @@ void place_sync_external_block_connections(ClusterBlockId iblk);
 int get_max_num_pins(t_logical_block_type_ptr logical_block);
 
 bool is_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_block_type_ptr logical_block);
-t_physical_tile_type_ptr pick_random_physical_type(t_logical_block_type_ptr logical_block);
+t_physical_tile_type_ptr pick_best_physical_type(t_logical_block_type_ptr logical_block);
+t_logical_block_type_ptr pick_best_logical_type(t_physical_tile_type_ptr physical_tile);
 
 int get_logical_pin(t_physical_tile_type_ptr physical_tile,
                     t_logical_block_type_ptr logical_block,
@@ -181,6 +181,9 @@ int get_logical_pin(t_physical_tile_type_ptr physical_tile,
 int get_physical_pin(t_physical_tile_type_ptr physical_tile,
                      t_logical_block_type_ptr logical_block,
                      int pin);
+
+int net_pin_tile_index(const ClusterNetId net_id, int net_pin_index);
+int pin_tile_index(const ClusterPinId pin);
 
 int max_pins_per_grid_tile();
 

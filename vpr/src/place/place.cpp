@@ -487,6 +487,11 @@ void try_place(const t_placer_opts& placer_opts,
 
     initial_placement(placer_opts.pad_loc_type, placer_opts.pad_loc_file.c_str());
 
+    // Update physical pin values
+    for (auto block_id : cluster_ctx.clb_nlist.blocks()) {
+        place_sync_external_block_connections(block_id);
+    }
+
     init_draw_coords((float)width_fac);
     //Enables fast look-up of atom pins connect to CLB pins
     ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, pb_gpin_lookup);
@@ -940,8 +945,8 @@ static void placement_inner_loop(float t,
 
         /* Lines below prevent too much round-off error from accumulating
          * in the cost over many iterations (due to incremental updates).
-         * This round-off can lead to  error checks failing because the cost 
-         * is different from what you get when you recompute from scratch.                       
+         * This round-off can lead to  error checks failing because the cost
+         * is different from what you get when you recompute from scratch.
          */
         ++(*moves_since_cost_recompute);
         if (*moves_since_cost_recompute > MAX_MOVES_BEFORE_RECOMPUTE) {
@@ -1219,15 +1224,15 @@ static e_move_result try_swap(float t,
         VTR_ASSERT(create_move_outcome == e_create_move::VALID);
 
         /*
-         * To make evaluating the move simpler (e.g. calculating changed bounding box), 
-         * we first move the blocks to thier new locations (apply the move to 
-         * place_ctx.block_locs) and then computed the change in cost. If the move is 
+         * To make evaluating the move simpler (e.g. calculating changed bounding box),
+         * we first move the blocks to thier new locations (apply the move to
+         * place_ctx.block_locs) and then computed the change in cost. If the move is
          * accepted, the inverse look-up in place_ctx.grid_blocks is updated (committing
-         * the move). If the move is rejected the blocks are returned to their original 
+         * the move). If the move is rejected the blocks are returned to their original
          * positions (reverting place_ctx.block_locs to its original state).
          *
          * Note that the inverse look-up place_ctx.grid_blocks is only updated
-         * after move acceptance is determined, and so should not be used when 
+         * after move acceptance is determined, and so should not be used when
          * evaluating a move.
          */
 
@@ -1385,7 +1390,7 @@ static void update_net_bb(const ClusterNetId net,
         }
     } else {
         //For large nets, update bounding box incrementally
-        int iblk_pin = cluster_ctx.clb_nlist.pin_physical_index(blk_pin);
+        int iblk_pin = pin_tile_index(blk_pin);
 
         t_physical_tile_type_ptr blk_type = physical_tile_type(blk);
         int pin_width_offset = blk_type->pin_width_offset[iblk_pin];
@@ -1491,8 +1496,8 @@ static float comp_td_point_to_point_delay(const PlaceDelayModel* delay_model, Cl
         ClusterBlockId source_block = cluster_ctx.clb_nlist.pin_block(source_pin);
         ClusterBlockId sink_block = cluster_ctx.clb_nlist.pin_block(sink_pin);
 
-        int source_block_ipin = cluster_ctx.clb_nlist.pin_physical_index(source_pin);
-        int sink_block_ipin = cluster_ctx.clb_nlist.pin_physical_index(sink_pin);
+        int source_block_ipin = cluster_ctx.clb_nlist.pin_logical_index(source_pin);
+        int sink_block_ipin = cluster_ctx.clb_nlist.pin_logical_index(sink_pin);
 
         int source_x = place_ctx.block_locs[source_block].loc.x;
         int source_y = place_ctx.block_locs[source_block].loc.y;
@@ -1799,7 +1804,7 @@ static void alloc_and_load_net_pin_indices() {
             continue;
         netpin = 0;
         for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
-            int pin_index = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
+            int pin_index = cluster_ctx.clb_nlist.pin_logical_index(pin_id);
             ClusterBlockId block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
             net_pin_indices[block_id][pin_index] = netpin;
             netpin++;
@@ -1836,7 +1841,7 @@ static void get_bb_from_scratch(ClusterNetId net_id, t_bb* coords, t_bb* num_on_
     auto& grid = device_ctx.grid;
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
-    pnum = cluster_ctx.clb_nlist.net_pin_physical_index(net_id, 0);
+    pnum = net_pin_tile_index(net_id, 0);
     VTR_ASSERT(pnum >= 0);
     x = place_ctx.block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
     y = place_ctx.block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
@@ -1855,7 +1860,7 @@ static void get_bb_from_scratch(ClusterNetId net_id, t_bb* coords, t_bb* num_on_
 
     for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
-        pnum = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
+        pnum = pin_tile_index(pin_id);
         x = place_ctx.block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
         y = place_ctx.block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
 
@@ -1995,7 +2000,7 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb* bb_coord_new) {
     auto& device_ctx = g_vpr_ctx.device();
 
     ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
-    pnum = cluster_ctx.clb_nlist.net_pin_physical_index(net_id, 0);
+    pnum = net_pin_tile_index(net_id, 0);
     x = place_ctx.block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
     y = place_ctx.block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
 
@@ -2006,7 +2011,7 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb* bb_coord_new) {
 
     for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
-        pnum = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
+        pnum = pin_tile_index(pin_id);
         x = place_ctx.block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
         y = place_ctx.block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
 

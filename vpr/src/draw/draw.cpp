@@ -2661,9 +2661,9 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type, ClusterBlockId b
             continue;
 
         auto physical_tile = physical_tile_type(blk_id);
-        int phy_pin = get_physical_pin(physical_tile, type, k);
+        int physical_pin = get_physical_pin(physical_tile, type, k);
 
-        iclass = physical_tile->pin_class[phy_pin];
+        iclass = physical_tile->pin_class[physical_pin];
 
         if (physical_tile->class_inf[iclass].type == DRIVER) { /* Fanout */
             if (draw_state->block_color[blk_id] == SELECTED_COLOR) {
@@ -2730,9 +2730,13 @@ void deselect_all() {
 }
 
 static void draw_reset_blk_color(ClusterBlockId blk_id) {
+    auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+
+    auto logical_block = clb_nlist.block_type(blk_id);
+
     t_draw_state* draw_state = get_draw_state_vars();
 
-    draw_state->block_color[blk_id] = get_block_type_color(physical_tile_type(blk_id));
+    draw_state->block_color[blk_id] = get_block_type_color(pick_best_physical_type(logical_block));
 }
 
 /**
@@ -3690,7 +3694,7 @@ static void highlight_blocks(double x, double y) {
         }
     }
 
-    if (clb_index == EMPTY_BLOCK_ID) {
+    if (clb_index == EMPTY_BLOCK_ID || clb_index == ClusterBlockId::INVALID()) {
         //Nothing found
         return;
     }

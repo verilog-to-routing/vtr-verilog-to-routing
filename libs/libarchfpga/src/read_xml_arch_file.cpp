@@ -111,11 +111,15 @@ static void ProcessTileEquivalentSites(pugi::xml_node Parent,
                                        t_physical_tile_type* PhysicalTileType,
                                        std::vector<t_logical_block_type>& LogicalBlockTypes,
                                        const pugiutil::loc_data& loc_data);
-static void ProcessEquivalentSiteDirects(pugi::xml_node Parent,
-                                         t_physical_tile_type* PhysicalTileType,
-                                         t_logical_block_type* LogicalBlockType,
-                                         std::string site_name,
-                                         const pugiutil::loc_data& loc_data);
+static void ProcessEquivalentSiteDirectConnection(pugi::xml_node Parent,
+                                                  t_physical_tile_type* PhysicalTileType,
+                                                  t_logical_block_type* LogicalBlockType,
+                                                  const pugiutil::loc_data& loc_data);
+static void ProcessEquivalentSiteCustomConnection(pugi::xml_node Parent,
+                                                  t_physical_tile_type* PhysicalTileType,
+                                                  t_logical_block_type* LogicalBlockType,
+                                                  std::string site_name,
+                                                  const pugiutil::loc_data& loc_data);
 static void ProcessPb_Type(pugi::xml_node Parent,
                            t_pb_type* pb_type,
                            t_mode* mode,
@@ -642,7 +646,7 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
             if (port.equivalent != PortEquivalence::NONE) {
                 PhysicalTileType->class_inf[num_class].num_pins = port.num_pins;
                 PhysicalTileType->class_inf[num_class].pinlist = (int*)vtr::malloc(sizeof(int) * port.num_pins);
-                PhysicalTileType->class_inf[num_class].equivalence = PhysicalTileType->ports[i].equivalent;
+                PhysicalTileType->class_inf[num_class].equivalence = port.equivalent;
             }
 
             for (k = 0; k < port.num_pins; ++k) {
@@ -3221,28 +3225,59 @@ static void ProcessTileEquivalentSites(pugi::xml_node Parent,
     while (CurSite) {
         check_node(CurSite, "site", loc_data);
 
-        expect_only_attributes(CurSite, {"pb_type", "priority"}, loc_data);
+        expect_only_attributes(CurSite, {"pb_type", "pin_mapping"}, loc_data);
         /* Load equivalent site name */
         auto Prop = std::string(get_attribute(CurSite, "pb_type", loc_data).value());
-        PhysicalTileType->equivalent_sites_names.push_back(Prop);
 
         auto LogicalBlockType = get_type_by_name<t_logical_block_type>(Prop.c_str(), LogicalBlockTypes);
 
-        auto priority = get_attribute(CurSite, "priority", loc_data, ReqOpt::OPTIONAL).as_int(0);
-        LogicalBlockType->physical_tiles_priority[priority].push_back(PhysicalTileType->index);
-        PhysicalTileType->logical_blocks_priority[priority].push_back(LogicalBlockType->index);
+        auto pin_mapping = get_attribute(CurSite, "pin_mapping", loc_data, ReqOpt::OPTIONAL).as_string("direct");
 
-        ProcessEquivalentSiteDirects(CurSite, PhysicalTileType, LogicalBlockType, Prop, loc_data);
+        if (0 == strcmp(pin_mapping, "custom")) {
+            // Pin mapping between Tile and Pb Type is user-defined
+            ProcessEquivalentSiteCustomConnection(CurSite, PhysicalTileType, LogicalBlockType, Prop, loc_data);
+        } else if (0 == strcmp(pin_mapping, "direct")) {
+            ProcessEquivalentSiteDirectConnection(CurSite, PhysicalTileType, LogicalBlockType, loc_data);
+        }
+
+        if (0 == strcmp(LogicalBlockType->pb_type->name, Prop.c_str())) {
+            PhysicalTileType->equivalent_sites.push_back(LogicalBlockType);
+
+            check_port_direct_mappings(PhysicalTileType, LogicalBlockType);
+        }
 
         CurSite = CurSite.next_sibling(CurSite.name());
     }
 }
 
-static void ProcessEquivalentSiteDirects(pugi::xml_node Parent,
-                                         t_physical_tile_type* PhysicalTileType,
-                                         t_logical_block_type* LogicalBlockType,
-                                         std::string site_name,
-                                         const pugiutil::loc_data& loc_data) {
+static void ProcessEquivalentSiteDirectConnection(pugi::xml_node Parent,
+                                                  t_physical_tile_type* PhysicalTileType,
+                                                  t_logical_block_type* LogicalBlockType,
+                                                  const pugiutil::loc_data& loc_data) {
+    int num_pins = PhysicalTileType->num_pins / PhysicalTileType->capacity;
+
+    if (num_pins != LogicalBlockType->pb_type->num_pins) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
+                       "Pin definition differ between site %s and tile %s. User-defined pin mapping is required.\n", LogicalBlockType->pb_type->name, PhysicalTileType->name);
+    }
+
+    vtr::bimap<t_logical_pin, t_physical_pin> directs_map;
+
+    for (int npin = 0; npin < num_pins; npin++) {
+        t_physical_pin physical_pin(npin);
+        t_logical_pin logical_pin(npin);
+
+        directs_map.insert(logical_pin, physical_pin);
+    }
+
+    PhysicalTileType->tile_block_pin_directs_map[LogicalBlockType->index] = directs_map;
+}
+
+static void ProcessEquivalentSiteCustomConnection(pugi::xml_node Parent,
+                                                  t_physical_tile_type* PhysicalTileType,
+                                                  t_logical_block_type* LogicalBlockType,
+                                                  std::string site_name,
+                                                  const pugiutil::loc_data& loc_data) {
     pugi::xml_node CurDirect;
 
     expect_only_children(Parent, {"direct"}, loc_data);
@@ -3280,15 +3315,15 @@ static void ProcessEquivalentSiteDirects(pugi::xml_node Parent,
 
         int num_pins = from_pins.second - from_pins.first;
         for (int i = 0; i < num_pins; i++) {
-            t_physical_pin phy_pin(from_pins.first + i);
-            t_logical_pin log_pin(to_pins.first + i);
+            t_physical_pin physical_pin(from_pins.first + i);
+            t_logical_pin logical_pin(to_pins.first + i);
 
-            auto result = directs_map.insert(log_pin, phy_pin);
+            auto result = directs_map.insert(logical_pin, physical_pin);
             if (!result.second) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
                                "Duplicate logical pin (%d) to physical pin (%d) mappings found for "
                                "Physical Tile %s and Logical Block %s.\n",
-                               log_pin.pin, phy_pin.pin, PhysicalTileType->name, LogicalBlockType->name);
+                               logical_pin.pin, physical_pin.pin, PhysicalTileType->name, LogicalBlockType->name);
             }
         }
 
@@ -4770,40 +4805,59 @@ static void link_physical_logical_types(std::vector<t_physical_tile_type>& Physi
     for (auto& physical_tile : PhysicalTileTypes) {
         if (physical_tile.index == EMPTY_TYPE_INDEX) continue;
 
-        unsigned int logical_block_added = 0;
-        for (auto& equivalent_site_name : physical_tile.equivalent_sites_names) {
-            for (auto& logical_block : LogicalBlockTypes) {
-                if (logical_block.index == EMPTY_TYPE_INDEX) continue;
+        auto& equivalent_sites = physical_tile.equivalent_sites;
 
-                // Check the corresponding Logical Block
-                if (0 == strcmp(logical_block.pb_type->name, equivalent_site_name.c_str())) {
-                    physical_tile.equivalent_sites.push_back(&logical_block);
+        auto criteria = [physical_tile](const t_logical_block_type* lhs, const t_logical_block_type* rhs) {
+            int num_physical_pins = physical_tile.num_pins / physical_tile.capacity;
+
+            int lhs_num_logical_pins = lhs->pb_type->num_pins;
+            int rhs_num_logical_pins = rhs->pb_type->num_pins;
+
+            int lhs_diff_num_pins = num_physical_pins - lhs_num_logical_pins;
+            int rhs_diff_num_pins = num_physical_pins - rhs_num_logical_pins;
+
+            return lhs_diff_num_pins < rhs_diff_num_pins;
+        };
+
+        std::sort(equivalent_sites.begin(), equivalent_sites.end(), criteria);
+
+        for (auto& logical_block : LogicalBlockTypes) {
+            for (auto site : equivalent_sites) {
+                if (0 == strcmp(logical_block.name, site->pb_type->name)) {
                     logical_block.equivalent_tiles.push_back(&physical_tile);
 
-                    check_port_direct_mappings(&physical_tile, &logical_block);
-
-                    logical_block_added++;
                     break;
                 }
             }
-        }
-
-        if (logical_block_added != physical_tile.equivalent_sites.size()) {
-            archfpga_throw(__FILE__, __LINE__,
-                           "Could not create link between the %s and all its equivalent sites.\n", physical_tile.name);
         }
     }
 
     for (auto& logical_block : LogicalBlockTypes) {
         if (logical_block.index == EMPTY_TYPE_INDEX) continue;
 
-        if ((int)logical_block.equivalent_tiles.size() <= 0) {
+        auto& equivalent_tiles = logical_block.equivalent_tiles;
+
+        if ((int)equivalent_tiles.size() <= 0) {
             archfpga_throw(__FILE__, __LINE__,
                            "Logical Block %s does not have any equivalent tiles.\n", logical_block.name);
         }
 
         std::unordered_map<int, bool> ignored_pins_check_map;
         std::unordered_map<int, bool> global_pins_check_map;
+
+        auto criteria = [logical_block](const t_physical_tile_type* lhs, const t_physical_tile_type* rhs) {
+            int num_logical_pins = logical_block.pb_type->num_pins;
+
+            int lhs_num_physical_pins = lhs->num_pins / lhs->capacity;
+            int rhs_num_physical_pins = rhs->num_pins / rhs->capacity;
+
+            int lhs_diff_num_pins = lhs_num_physical_pins - num_logical_pins;
+            int rhs_diff_num_pins = rhs_num_physical_pins - num_logical_pins;
+
+            return lhs_diff_num_pins < rhs_diff_num_pins;
+        };
+
+        std::sort(equivalent_tiles.begin(), equivalent_tiles.end(), criteria);
 
         for (int pin = 0; pin < logical_block.pb_type->num_pins; pin++) {
             for (auto& tile : logical_block.equivalent_tiles) {

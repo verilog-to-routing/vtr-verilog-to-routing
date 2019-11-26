@@ -18,9 +18,7 @@ e_create_move UniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks
 
     t_pl_loc to;
 
-    auto type = pick_random_physical_type(cluster_from_type);
-
-    if (!find_to_loc_uniform(type, rlim, from, to)) {
+    if (!find_to_loc_uniform(cluster_from_type, rlim, from, to)) {
         return e_create_move::ABORT;
     }
 

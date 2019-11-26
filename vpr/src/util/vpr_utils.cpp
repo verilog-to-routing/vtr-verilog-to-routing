@@ -312,42 +312,42 @@ void swap(IntraLbPbPinLookup& lhs, IntraLbPbPinLookup& rhs) {
 
 //Returns the set of pins which are connected to the top level clb pin
 //  The pin(s) may be input(s) or and output (returning the connected sinks or drivers respectively)
-std::vector<AtomPinId> find_clb_pin_connected_atom_pins(ClusterBlockId clb, int log_pin, const IntraLbPbPinLookup& pb_gpin_lookup) {
+std::vector<AtomPinId> find_clb_pin_connected_atom_pins(ClusterBlockId clb, int logical_pin, const IntraLbPbPinLookup& pb_gpin_lookup) {
     std::vector<AtomPinId> atom_pins;
     auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     auto logical_block = clb_nlist.block_type(clb);
-    auto physical_tile = pick_random_physical_type(logical_block);
+    auto physical_tile = pick_best_physical_type(logical_block);
 
-    int phy_pin = get_physical_pin(physical_tile, logical_block, log_pin);
+    int physical_pin = get_physical_pin(physical_tile, logical_block, logical_pin);
 
-    if (is_opin(phy_pin, physical_tile)) {
+    if (is_opin(physical_pin, physical_tile)) {
         //output
-        AtomPinId driver = find_clb_pin_driver_atom_pin(clb, log_pin, pb_gpin_lookup);
+        AtomPinId driver = find_clb_pin_driver_atom_pin(clb, logical_pin, pb_gpin_lookup);
         if (driver) {
             atom_pins.push_back(driver);
         }
     } else {
         //input
-        atom_pins = find_clb_pin_sink_atom_pins(clb, log_pin, pb_gpin_lookup);
+        atom_pins = find_clb_pin_sink_atom_pins(clb, logical_pin, pb_gpin_lookup);
     }
 
     return atom_pins;
 }
 
 //Returns the atom pin which drives the top level clb output pin
-AtomPinId find_clb_pin_driver_atom_pin(ClusterBlockId clb, int log_pin, const IntraLbPbPinLookup& pb_gpin_lookup) {
+AtomPinId find_clb_pin_driver_atom_pin(ClusterBlockId clb, int logical_pin, const IntraLbPbPinLookup& pb_gpin_lookup) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    if (log_pin < 0) {
+    if (logical_pin < 0) {
         //CLB output pin has no internal driver
         return AtomPinId::INVALID();
     }
     const t_pb_routes& pb_routes = cluster_ctx.clb_nlist.block_pb(clb)->pb_route;
-    AtomNetId atom_net = pb_routes[log_pin].atom_net_id;
+    AtomNetId atom_net = pb_routes[logical_pin].atom_net_id;
 
-    int pb_pin_id = log_pin;
+    int pb_pin_id = logical_pin;
     //Trace back until the driver is reached
     while (pb_routes[pb_pin_id].driver_pb_pin_id >= 0) {
         pb_pin_id = pb_routes[pb_pin_id].driver_pb_pin_id;
@@ -366,27 +366,27 @@ AtomPinId find_clb_pin_driver_atom_pin(ClusterBlockId clb, int log_pin, const In
 }
 
 //Returns the set of atom sink pins associated with the top level clb input pin
-std::vector<AtomPinId> find_clb_pin_sink_atom_pins(ClusterBlockId clb, int log_pin, const IntraLbPbPinLookup& pb_gpin_lookup) {
+std::vector<AtomPinId> find_clb_pin_sink_atom_pins(ClusterBlockId clb, int logical_pin, const IntraLbPbPinLookup& pb_gpin_lookup) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
 
     const t_pb_routes& pb_routes = cluster_ctx.clb_nlist.block_pb(clb)->pb_route;
 
-    VTR_ASSERT_MSG(log_pin < cluster_ctx.clb_nlist.block_type(clb)->pb_type->num_pins, "Must be a valid tile pin");
+    VTR_ASSERT_MSG(logical_pin < cluster_ctx.clb_nlist.block_type(clb)->pb_type->num_pins, "Must be a valid tile pin");
 
     VTR_ASSERT(cluster_ctx.clb_nlist.block_pb(clb));
-    VTR_ASSERT_MSG(log_pin < cluster_ctx.clb_nlist.block_pb(clb)->pb_graph_node->num_pins(), "Pin must map to a top-level pb pin");
+    VTR_ASSERT_MSG(logical_pin < cluster_ctx.clb_nlist.block_pb(clb)->pb_graph_node->num_pins(), "Pin must map to a top-level pb pin");
 
-    VTR_ASSERT_MSG(pb_routes[log_pin].driver_pb_pin_id < 0, "CLB input pin should have no internal drivers");
+    VTR_ASSERT_MSG(pb_routes[logical_pin].driver_pb_pin_id < 0, "CLB input pin should have no internal drivers");
 
-    AtomNetId atom_net = pb_routes[log_pin].atom_net_id;
+    AtomNetId atom_net = pb_routes[logical_pin].atom_net_id;
     VTR_ASSERT(atom_net);
 
-    std::vector<int> connected_sink_pb_pins = find_connected_internal_clb_sink_pins(clb, log_pin);
+    std::vector<int> connected_sink_pb_pins = find_connected_internal_clb_sink_pins(clb, logical_pin);
 
     std::vector<AtomPinId> sink_atom_pins;
     for (int sink_pb_pin : connected_sink_pb_pins) {
-        //Map the log_pin_id to AtomPinId
+        //Map the logical_pin_id to AtomPinId
         AtomPinId atom_pin = find_atom_pin_for_pb_route_id(clb, sink_pb_pin, pb_gpin_lookup);
         VTR_ASSERT(atom_pin);
 
@@ -635,20 +635,6 @@ t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk) {
     auto loc = block_loc.loc;
 
     return device_ctx.grid[loc.x][loc.y].type;
-}
-
-t_logical_block_type_ptr logical_block_type(t_physical_tile_type_ptr physical_tile_type) {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& logical_blocks = device_ctx.logical_block_types;
-
-    // Loop through the ordered map to get tiles in a decreasing priority order
-    for (auto& logical_blocks_ids : physical_tile_type->logical_blocks_priority) {
-        for (auto block_id : logical_blocks_ids.second) {
-            return &logical_blocks[block_id];
-        }
-    }
-
-    VPR_THROW(VPR_ERROR_OTHER, "No corresponding logical block type found for physical tile type %s\n", physical_tile_type->name);
 }
 
 /* Each node in the pb_graph for a top-level pb_type can be uniquely identified
@@ -2128,24 +2114,34 @@ void print_switch_usage() {
  */
 
 void place_sync_external_block_connections(ClusterBlockId iblk) {
-    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& clb_nlist = cluster_ctx.clb_nlist;
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     VTR_ASSERT_MSG(place_ctx.block_locs[iblk].nets_and_pins_synced_to_z_coordinate == false, "Block net and pins must not be already synced");
 
-    auto type = physical_tile_type(iblk);
-    VTR_ASSERT(type->num_pins % type->capacity == 0);
-    int max_num_block_pins = type->num_pins / type->capacity;
+    auto physical_tile = physical_tile_type(iblk);
+    auto logical_block = clb_nlist.block_type(iblk);
+
+    VTR_ASSERT(physical_tile->num_pins % physical_tile->capacity == 0);
+    int max_num_block_pins = physical_tile->num_pins / physical_tile->capacity;
     /* Logical location and physical location is offset by z * max_num_block_pins */
 
-    auto& clb_nlist = cluster_ctx.clb_nlist;
     for (auto pin : clb_nlist.block_pins(iblk)) {
-        int orig_phys_pin_index = clb_nlist.pin_physical_index(pin);
-        int new_phys_pin_index = orig_phys_pin_index + place_ctx.block_locs[iblk].loc.z * max_num_block_pins;
-        clb_nlist.set_pin_physical_index(pin, new_phys_pin_index);
+        int logical_pin_index = clb_nlist.pin_logical_index(pin);
+        int physical_pin_index = get_physical_pin(physical_tile, logical_block, logical_pin_index);
+
+        int new_physical_pin_index = physical_pin_index + place_ctx.block_locs[iblk].loc.z * max_num_block_pins;
+
+        auto result = place_ctx.physical_pins.find(pin);
+        if (result != place_ctx.physical_pins.end()) {
+            place_ctx.physical_pins[pin] = new_physical_pin_index;
+        } else {
+            place_ctx.physical_pins.insert(pin, new_physical_pin_index);
+        }
     }
 
     //Mark the block as synced
-    place_ctx.block_locs[iblk].nets_and_pins_synced_to_z_coordinate = true;
+    //place_ctx.block_locs[iblk].nets_and_pins_synced_to_z_coordinate = true;
 }
 
 int get_max_num_pins(t_logical_block_type_ptr logical_block) {
@@ -2174,17 +2170,15 @@ bool is_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_block_
     return std::find(equivalent_tiles.begin(), equivalent_tiles.end(), physical_tile) != equivalent_tiles.end();
 }
 
-t_physical_tile_type_ptr pick_random_physical_type(t_logical_block_type_ptr logical_block) {
-    auto equivalent_tiles = logical_block->equivalent_tiles;
+/**
+ * This function returns the most common physical tile type given a logical block
+ */
+t_physical_tile_type_ptr pick_best_physical_type(t_logical_block_type_ptr logical_block) {
+    return logical_block->equivalent_tiles[0];
+}
 
-    size_t num_equivalent_tiles = equivalent_tiles.size();
-    int index = 0;
-
-    if (num_equivalent_tiles > 1) {
-        index = vtr::irand((int)equivalent_tiles.size() - 1);
-    }
-
-    return equivalent_tiles[index];
+t_logical_block_type_ptr pick_best_logical_type(t_physical_tile_type_ptr physical_tile) {
+    return physical_tile->equivalent_sites[0];
 }
 
 int get_logical_pin(t_physical_tile_type_ptr physical_tile,
@@ -2223,6 +2217,21 @@ int get_physical_pin(t_physical_tile_type_ptr physical_tile,
     }
 
     return result->second.pin;
+}
+
+int net_pin_tile_index(const ClusterNetId net_id, int net_pin_index) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    // Get the logical pin index of pin within it's logical block type
+    auto pin_id = cluster_ctx.clb_nlist.net_pin(net_id, net_pin_index);
+
+    return pin_tile_index(pin_id);
+}
+
+int pin_tile_index(const ClusterPinId pin) {
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    return place_ctx.physical_pins[pin];
 }
 
 void pretty_print_uint(const char* prefix, size_t value, int num_digits, int scientific_precision) {

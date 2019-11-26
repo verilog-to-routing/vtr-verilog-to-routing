@@ -610,12 +610,7 @@ struct t_physical_tile_type {
 
     int index = -1; /* index of type descriptor in array (allows for index referencing) */
 
-    std::vector<std::string> equivalent_sites_names;
     std::vector<t_logical_block_type_ptr> equivalent_sites;
-
-    /* Map holding the priority for which this logical block needs to be placed.
-     * logical_blocks_priority[priority] -> vector holding the logical_block indices */
-    std::map<int, std::vector<int>> logical_blocks_priority;
 
     /* Unordered map indexed by the logical block index.
      * tile_block_pin_directs_map[logical block index][logical block pin] -> physical tile pin */
@@ -625,6 +620,10 @@ struct t_physical_tile_type {
     std::vector<int> get_clock_pins_indices() const;
 };
 
+/** A logical pin defines the pin index of a logical block type (i.e. a top level PB type)
+ *  This structure wraps the int value of the logical pin to allow its storage in the
+ *  vtr::bimap container.
+ */
 struct t_logical_pin {
     int pin = -1;
 
@@ -641,6 +640,10 @@ struct t_logical_pin {
     }
 };
 
+/** A physical pin defines the pin index of a physical tile type (i.e. a grid tile type)
+ *  This structure wraps the int value of the physical pin to allow its storage in the
+ *  vtr::bimap container.
+ */
 struct t_physical_pin {
     int pin = -1;
 
@@ -707,10 +710,6 @@ struct t_logical_block_type {
     int index = -1; /* index of type descriptor in array (allows for index referencing) */
 
     std::vector<t_physical_tile_type_ptr> equivalent_tiles;
-
-    /* Map holding the priority for which this logical block needs to be placed.
-     * physical_tiles_priority[priority] -> vector holding the physical tile indices */
-    std::map<int, std::vector<int>> physical_tiles_priority;
 };
 
 /*************************************************************************************************

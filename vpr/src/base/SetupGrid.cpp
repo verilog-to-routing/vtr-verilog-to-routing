@@ -221,15 +221,33 @@ static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def>& grid_layo
 }
 
 static std::vector<t_physical_tile_type_ptr> grid_overused_resources(const DeviceGrid& grid, std::map<t_logical_block_type_ptr, size_t> instance_counts) {
+    auto& device_ctx = g_vpr_ctx.device();
+
     std::vector<t_physical_tile_type_ptr> overused_resources;
+
+    std::unordered_map<t_physical_tile_type_ptr, size_t> min_count_map;
+    // Initialize min_count_map
+    for (const auto& physical_tile : device_ctx.physical_tile_types) {
+        min_count_map.insert(std::make_pair(&physical_tile, size_t(0)));
+    }
 
     //Are the resources satisified?
     for (auto kv : instance_counts) {
-        t_physical_tile_type_ptr type;
-        size_t min_count;
-        std::tie(type, min_count) = std::make_pair(kv.first->equivalent_tiles[0], kv.second);
+        t_physical_tile_type_ptr type = nullptr;
 
-        size_t inst_cnt = grid.num_instances(type);
+        size_t inst_cnt = 0;
+        for (auto& physical_tile : kv.first->equivalent_tiles) {
+            size_t tmp_inst_cnt = grid.num_instances(physical_tile);
+
+            if (inst_cnt <= tmp_inst_cnt) {
+                type = physical_tile;
+                inst_cnt = tmp_inst_cnt;
+            }
+        }
+
+        VTR_ASSERT(type);
+        size_t min_count = min_count_map.at(type) + kv.second;
+        min_count_map.at(type) = min_count;
 
         if (inst_cnt < min_count) {
             overused_resources.push_back(type);
@@ -668,7 +686,7 @@ float calculate_device_utilization(const DeviceGrid& grid, std::map<t_logical_bl
             continue;
         }
 
-        t_physical_tile_type_ptr type = pick_random_physical_type(kv.first);
+        t_physical_tile_type_ptr type = pick_best_physical_type(kv.first);
 
         size_t count = kv.second;
 

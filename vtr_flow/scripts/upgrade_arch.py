@@ -54,7 +54,7 @@ def parse_args():
                         choices=supported_upgrades,
                         default=supported_upgrades)
     parser.add_argument("--debug", default=False, action="store_true", help="Print to stdout instead of modifying file inplace")
-    parser.add_argument("--pretty", default=False, action="store_true", help="Pretty print the output?")
+    parser.add_argument("--pretty", default=True, help="Pretty print the output? (default: %(default)s)")
 
     return parser.parse_args()
 
@@ -1002,35 +1002,11 @@ def add_site_directs(arch):
             <pinlocations ... />
             <switchblock_locations ... />
             <equivalent_sites>
-                <site pb_type="BRAM">
-                    <direct from="BRAM_TILE.ADDRA[0:15]" to="BRAM_SITE.ADDRA[0:15]"/>
-                    <direct from="BRAM_TILE.ADDRB[0:15]" to="BRAM_SITE.ADDRB[0:15]"/>
-                    <direct from="BRAM_TILE.DATA[0:15]" to="BRAM_SITE.DATA_A[0:15]"/>
-                    <direct from="BRAM_TILE.DATA[16:31]" to="BRAM_SITE.DATA_B[0:15]"/>
-                    ...
-                </site>
+                <site pb_type="BRAM" pin_mapping="direct">
             </equivalent_sites>
         </tile>
     </tiles>
     """
-
-    TAGS_TO_COPY = ['input', 'output', 'clock']
-
-    def add_directs(equivalent_site, pb_type):
-        for child in pb_type:
-            if child.tag in TAGS_TO_COPY:
-                tile_name = equivalent_site.attrib['pb_type']
-                port = child.attrib['name']
-
-                from_to = "%s.%s" % (tile_name, port)
-
-                direct = ET.Element("direct")
-                direct.set("from", from_to)
-                direct.set("to", from_to)
-                equivalent_site.append(direct)
-
-    if arch.findall('./tiles/tile/equivalent_sites/site/direct'):
-        return False
 
     top_pb_types = []
     for pb_type in arch.iter('pb_type'):
@@ -1043,8 +1019,8 @@ def add_site_directs(arch):
 
     for pb_type in top_pb_types:
         for site in sites:
-            if pb_type.attrib['name'] == site.attrib['pb_type']:
-                add_directs(site, pb_type)
+            if 'pin_mapping' not in site.attrib:
+                site.attrib['pin_mapping'] = "direct"
 
     return True
 
