@@ -374,7 +374,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
 }
 
 void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch) {
-    vtr::ScopedStartFinishTimer timer("Create Device");
+    //vtr::ScopedStartFinishTimer timer("Create Device");
     vpr_create_device_grid(vpr_setup, arch);
 
     vpr_setup_clock_networks(vpr_setup, arch);
