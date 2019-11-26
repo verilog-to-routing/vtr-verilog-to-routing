@@ -344,13 +344,13 @@ std::pair<util::Cost_Entry, int> CostMap::get_nearby_cost_entry(const vtr::NdMat
                                                                 const vtr::Rect<int>& bounds) {
     // spiral around (cx, cy) looking for a nearby entry
     bool in_bounds = bounds.contains(vtr::Point<int>(cx, cy));
-    if(!in_bounds) {
+    if (!in_bounds) {
         return std::make_pair(util::Cost_Entry(), 0);
     }
     int n = 0;
     util::Cost_Entry fill(matrix[cx][cy]);
 
-    while(in_bounds && !fill.valid()) {
+    while (in_bounds && !fill.valid()) {
         n++;
         in_bounds = false;
         util::Cost_Entry min_entry;
@@ -505,14 +505,14 @@ static bool add_paths(int start_node_ind,
             box_id,
             delta};
 
-        if(*it != start_node_ind) {
+        if (*it != start_node_ind) {
             auto& parent_node = device_ctx.rr_nodes[parent];
             start_to_here = Entry(*it, parent_node.edge_switch((*paths)[*it].edge), &start_to_here);
             parent = *it;
         }
 
         float cost = current.cost() - start_to_here.cost();
-        if(cost < 0.f && cost > -10e-15 /* 10 femtosecond */) {
+        if (cost < 0.f && cost > -10e-15 /* 10 femtosecond */) {
             cost = 0.f;
         }
 
@@ -653,12 +653,12 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
             }
 
             /*
-            if (path_count == 0) {
-                for (auto node_ind : point.nodes) {
-                    VTR_LOG("Expanded node %s\n", describe_rr_node(node_ind).c_str());
-                }
-            }
-            */
+             * if (path_count == 0) {
+             * for (auto node_ind : point.nodes) {
+             * VTR_LOG("Expanded node %s\n", describe_rr_node(node_ind).c_str());
+             * }
+             * }
+             */
 
             total_path_count += path_count;
             if (total_path_count > MIN_PATH_COUNT) {
@@ -772,13 +772,14 @@ static vtr::Rect<int> sample_window(const vtr::Rect<int>& bounding_box, int sx, 
 
 static std::vector<SamplePoint> choose_points(const vtr::Matrix<int>& counts,
                                               const vtr::Rect<int>& window,
-                                              int min_count, int max_count) {
+                                              int min_count,
+                                              int max_count) {
     std::vector<SamplePoint> points;
     for (int y = window.ymin(); y < window.ymax(); y++) {
         for (int x = window.xmin(); x < window.xmax(); x++) {
             if (counts[x][y] >= min_count && counts[x][y] <= max_count) {
-                points.push_back(SamplePoint{ /* .location = */ vtr::Point<int>(x, y),
-                                              /* .nodes = */ {} });
+                points.push_back(SamplePoint{/* .location = */ vtr::Point<int>(x, y),
+                                             /* .nodes = */ {}});
             }
         }
     }
@@ -892,11 +893,9 @@ static std::vector<SampleRegion> find_sample_regions(int num_segments) {
                 SampleRegion region = {
                     /* .segment_type = */ i,
                     /* .grid_location = */ vtr::Point<int>(x, y),
-                    /* .points = */ choose_points(counts, window,
-                                                  quantile(histogram, 0.5), quantile(histogram, 0.7)),
-                    /* .order = */ 0
-                };
-                if(!region.points.empty()) {
+                    /* .points = */ choose_points(counts, window, quantile(histogram, 0.5), quantile(histogram, 0.7)),
+                    /* .order = */ 0};
+                if (!region.points.empty()) {
                     vtr::Point<int> location = region.points[0].location;
                     region.order = interleave(location.x()) | (interleave(location.y()) << 1);
                     sample_regions.push_back(region);
@@ -911,11 +910,10 @@ static std::vector<SampleRegion> find_sample_regions(int num_segments) {
                   return a.order < b.order;
               });
 
-
     // build an index of sample points on segment type and location
     std::map<std::tuple<int, int, int>, SamplePoint*> sample_point_index;
-    for (auto &region : sample_regions) {
-        for (auto &point : region.points) {
+    for (auto& region : sample_regions) {
+        for (auto& point : region.points) {
             sample_point_index[{region.segment_type, point.location.x(), point.location.y()}] = &point;
         }
     }

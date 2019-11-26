@@ -59,7 +59,6 @@ util::PQ_Entry_Delay::PQ_Entry_Delay(
     int set_rr_node_ind,
     int switch_ind,
     const util::PQ_Entry_Delay* parent) {
-
     this->rr_node_ind = set_rr_node_ind;
 
     if (parent != nullptr) {
@@ -87,13 +86,11 @@ util::PQ_Entry_Base_Cost::PQ_Entry_Base_Cost(
     int set_rr_node_ind,
     int switch_ind,
     const util::PQ_Entry_Base_Cost* parent) {
-
     this->rr_node_ind = set_rr_node_ind;
 
     if (parent != nullptr) {
         auto& device_ctx = g_vpr_ctx.device();
-        this->base_cost = parent->base_cost +
-            (device_ctx.rr_switch_inf[switch_ind].configurable() ? get_rr_cong_cost(set_rr_node_ind) : 0);
+        this->base_cost = parent->base_cost + (device_ctx.rr_switch_inf[switch_ind].configurable() ? get_rr_cong_cost(set_rr_node_ind) : 0);
     } else {
         this->base_cost = 0.f;
     }
@@ -234,21 +231,19 @@ void expand_dijkstra_neighbours(const std::vector<t_rr_node>& rr_nodes,
     }
 }
 
-template
-void expand_dijkstra_neighbours(const std::vector<t_rr_node>& rr_nodes,
-                                const PQ_Entry_Delay& parent_entry,
-                                std::unordered_map<int, Search_Path>& paths,
-                                std::vector<bool>& node_expanded,
-                                std::priority_queue<PQ_Entry_Delay,
-                                                    std::vector<PQ_Entry_Delay>,
-                                                    std::greater<PQ_Entry_Delay>>& pq);
-template
-void expand_dijkstra_neighbours(const std::vector<t_rr_node>& rr_nodes,
-                                const PQ_Entry_Base_Cost& parent_entry,
-                                std::unordered_map<int, Search_Path>& paths,
-                                std::vector<bool>& node_expanded,
-                                std::priority_queue<PQ_Entry_Base_Cost,
-                                                    std::vector<PQ_Entry_Base_Cost>,
-                                                    std::greater<PQ_Entry_Base_Cost>>& pq);
+template void expand_dijkstra_neighbours(const std::vector<t_rr_node>& rr_nodes,
+                                         const PQ_Entry_Delay& parent_entry,
+                                         std::unordered_map<int, Search_Path>& paths,
+                                         std::vector<bool>& node_expanded,
+                                         std::priority_queue<PQ_Entry_Delay,
+                                                             std::vector<PQ_Entry_Delay>,
+                                                             std::greater<PQ_Entry_Delay>>& pq);
+template void expand_dijkstra_neighbours(const std::vector<t_rr_node>& rr_nodes,
+                                         const PQ_Entry_Base_Cost& parent_entry,
+                                         std::unordered_map<int, Search_Path>& paths,
+                                         std::vector<bool>& node_expanded,
+                                         std::priority_queue<PQ_Entry_Base_Cost,
+                                                             std::vector<PQ_Entry_Base_Cost>,
+                                                             std::greater<PQ_Entry_Base_Cost>>& pq);
 
 } // namespace util
