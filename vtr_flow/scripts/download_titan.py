@@ -41,7 +41,7 @@ def parse_args():
              )
 
     parser.add_argument("--titan_version",
-                        default="1.3.0",
+                        default="1.3.1",
                         help="Titan release version to download")
     parser.add_argument("--vtr_flow_dir",
                         required=True,
@@ -58,6 +58,10 @@ def parse_args():
                         default="google",
                         choices=["eecg", "google"],
                         help="Download mirror")
+
+    parser.add_argument("--upgrade_archs",
+                        default=True,
+                        help="Try to upgrade included architecture files (using the upgrade_archs.py)")
 
     return parser.parse_args()
 
@@ -178,6 +182,8 @@ def extract_to_vtr_flow_dir(args, tar_gz_filename):
     titan_other_benchmarks_extract_dir = os.path.join(benchmarks_dir, 'titan_other_blif')
     titan_arch_extract_dir = os.path.join(arch_dir, 'titan')
 
+    arch_upgrade_script = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'upgrade_arch.py')
+
     if not args.force:
         #Check that all expected directories exist
         expected_dirs = [args.vtr_flow_dir, benchmarks_dir, arch_dir, titan_benchmarks_extract_dir, titan_arch_extract_dir]
@@ -208,6 +214,12 @@ def extract_to_vtr_flow_dir(args, tar_gz_filename):
                     dst_file_path = os.path.join(titan_other_benchmarks_extract_dir, filename)
                 else:
                     assert filename.endswith(".xml")
+
+                    if args.upgrade_archs:
+                        #Apply the Architecture XML upgrade script
+                        print "Upgrading architecture file:"
+                        os.system("{} {}".format(arch_upgrade_script, src_file_path))
+                    
                     dst_file_path = os.path.join(titan_arch_extract_dir, filename)
 
                 shutil.move(src_file_path, dst_file_path)
