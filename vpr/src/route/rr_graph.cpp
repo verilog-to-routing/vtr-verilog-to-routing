@@ -435,10 +435,10 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const int num_directs,
                            int* wire_to_rr_ipin_switch,
                            int* Warnings) {
-    vtr::ScopedStartFinishTimer timer("Build routing resource graph");
-
     /* Release freed memory before start building rr_graph */
     vtr::malloc_trim(0);
+
+    vtr::ScopedStartFinishTimer timer("Build routing resource graph");
 
     /* Reset warning flag */
     *Warnings = RR_GRAPH_NO_WARN;
