@@ -11,6 +11,7 @@
 #include "vtr_time.h"
 #include "vtr_geometry.h"
 #include "echo_files.h"
+#include "rr_graph.h"
 
 #include "route_timing.h"
 #include "route_common.h"
@@ -51,26 +52,26 @@ static constexpr bool BREAK_ON_MISS = false;
 static constexpr float PENALTY_FACTOR = 1.f;
 static constexpr float PENALTY_MIN = 1e-12f;
 
+static constexpr int MIN_PATH_COUNT = 1000;
+
 // a sample point for a segment type, contains all segments at the VPR location
 struct SamplePoint {
-    uint64_t order; // used to order sample points
     vtr::Point<int> location;
-    std::vector<ssize_t> samples;
-    int segment_type;
-    SamplePoint()
-        : location(0, 0) {}
+    std::vector<ssize_t> nodes;
 };
 
-// a grid of sample points
-struct SampleGrid {
-    SamplePoint point[SAMPLE_GRID_SIZE][SAMPLE_GRID_SIZE];
+struct SampleRegion {
+    int segment_type;
+    vtr::Point<int> grid_location;
+    std::vector<SamplePoint> points;
+    uint64_t order; // for sorting
 };
 
 template<typename Entry>
 static std::pair<float, int> run_dijkstra(int start_node_ind,
                                           RoutingCosts* routing_costs);
 
-static void find_inodes_for_segment_types(std::vector<SampleGrid>* inodes_for_segment);
+static std::vector<SampleRegion> find_sample_regions(int num_segments);
 
 // also known as the L1 norm
 static int manhattan_distance(const vtr::Point<int>& a, const vtr::Point<int>& b) {
@@ -593,16 +594,6 @@ static std::pair<float, int> run_dijkstra(int start_node_ind,
     return std::make_pair(max_cost, path_count);
 }
 
-static uint64_t interleave(uint32_t x) {
-    uint64_t i = x;
-    i = (i ^ (i << 16)) & 0x0000ffff0000ffff;
-    i = (i ^ (i << 8)) & 0x00ff00ff00ff00ff;
-    i = (i ^ (i << 4)) & 0x0f0f0f0f0f0f0f0f;
-    i = (i ^ (i << 2)) & 0x3333333333333333;
-    i = (i ^ (i << 1)) & 0x5555555555555555;
-    return i;
-}
-
 // compute the cost maps for lookahead
 void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
     vtr::ScopedStartFinishTimer timer("Computing connection box lookahead map");
@@ -611,30 +602,7 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
     alloc_and_load_rr_node_route_structs();
 
     size_t num_segments = segment_inf.size();
-    std::vector<SamplePoint> sample_points;
-    {
-        std::vector<SampleGrid> inodes_for_segment(num_segments);
-        find_inodes_for_segment_types(&inodes_for_segment);
-
-        // collapse into a vector
-        for (auto& grid : inodes_for_segment) {
-            for (int y = 0; y < SAMPLE_GRID_SIZE; y++) {
-                for (int x = 0; x < SAMPLE_GRID_SIZE; x++) {
-                    auto& point = grid.point[y][x];
-                    if (!point.samples.empty()) {
-                        point.order = interleave(point.location.x()) | (interleave(point.location.y()) << 1);
-                        sample_points.push_back(point);
-                    }
-                }
-            }
-        }
-    }
-
-    // sort by VPR coordinate
-    std::sort(sample_points.begin(), sample_points.end(),
-              [](const SamplePoint& a, const SamplePoint& b) {
-                  return a.order < b.order;
-              });
+    std::vector<SampleRegion> sample_regions = find_sample_regions(num_segments);
 
     /* free previous delay map and allocate new one */
     auto& device_ctx = g_vpr_ctx.device();
@@ -648,41 +616,65 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
     /* run Dijkstra's algorithm for each segment type & channel type combination */
 #if defined(VPR_USE_TBB)
     tbb::mutex all_costs_mutex;
-    tbb::parallel_for_each(sample_points, [&](const SamplePoint& point) {
+    tbb::parallel_for_each(sample_regions, [&](const SampleRegion& region) {
 #else
-    for (const auto& point : sample_points) {
+    for (const auto& region : sample_regions) {
 #endif
         // holds the cost entries for a run
         RoutingCosts delay_costs;
         RoutingCosts base_costs;
+        int total_path_count = 0;
 
-        // statistics
-        vtr::Timer run_timer;
-        int path_count = 0;
-        float max_delay_cost = 0.f;
-        float max_base_cost = 0.f;
-        for (auto node_ind : point.samples) {
-            {
-                auto result = run_dijkstra<util::PQ_Entry_Delay>(node_ind, &delay_costs);
-                max_delay_cost = std::max(max_delay_cost, result.first);
-                path_count += result.second;
+        for (auto& point : region.points) {
+            // statistics
+            vtr::Timer run_timer;
+            float max_delay_cost = 0.f;
+            float max_base_cost = 0.f;
+            int path_count = 0;
+            for (auto node_ind : point.nodes) {
+                {
+                    auto result = run_dijkstra<util::PQ_Entry_Delay>(node_ind, &delay_costs);
+                    max_delay_cost = std::max(max_delay_cost, result.first);
+                    path_count += result.second;
+                }
+                {
+                    auto result = run_dijkstra<util::PQ_Entry_Base_Cost>(node_ind, &base_costs);
+                    max_base_cost = std::max(max_base_cost, result.first);
+                    path_count += result.second;
+                }
             }
-            {
-                auto result = run_dijkstra<util::PQ_Entry_Base_Cost>(node_ind, &base_costs);
-                max_base_cost = std::max(max_base_cost, result.first);
-                path_count += result.second;
+
+            if (path_count > 0) {
+                VTR_LOG("Expanded %d paths of segment type %s(%d) starting at (%d, %d) from %d segments, max_cost %e %e (%g paths/sec)\n",
+                        path_count, segment_inf[region.segment_type].name.c_str(), region.segment_type,
+                        point.location.x(), point.location.y(),
+                        (int)point.nodes.size(),
+                        max_delay_cost, max_base_cost,
+                        path_count / run_timer.elapsed_sec());
+            }
+
+            /*
+             * if (path_count == 0) {
+             * for (auto node_ind : point.nodes) {
+             * VTR_LOG("Expanded node %s\n", describe_rr_node(node_ind).c_str());
+             * }
+             * }
+             */
+
+            total_path_count += path_count;
+            if (total_path_count > MIN_PATH_COUNT) {
+                break;
             }
         }
 
 #if defined(VPR_USE_TBB)
         all_costs_mutex.lock();
 #endif
-        VTR_LOG("Expanded %d paths of segment type %s(%d) starting at (%d, %d) from %d segments, max_cost %e %e (%g paths/sec)\n",
-                path_count, segment_inf[point.segment_type].name.c_str(), point.segment_type,
-                point.location.x(), point.location.y(),
-                (int)point.samples.size(),
-                max_delay_cost, max_base_cost,
-                path_count / run_timer.elapsed_sec());
+
+        if (total_path_count == 0) {
+            VTR_LOG("No paths found for sample region %s(%d, %d)\n",
+                    segment_inf[region.segment_type].name.c_str(), region.grid_location.x(), region.grid_location.y());
+        }
 
         // combine the cost map from this run with the final cost maps for each segment
         for (const auto& cost : delay_costs) {
@@ -779,42 +771,33 @@ static vtr::Rect<int> sample_window(const vtr::Rect<int>& bounding_box, int sx, 
                           sample(bounding_box, sx + 1, sy + 1, n));
 }
 
-static vtr::Point<int> choose_point(const vtr::Matrix<int>& counts, const vtr::Rect<int>& window, int with_count) {
-    vtr::Point<int> center = sample(window, 1, 1, 2);
-    vtr::Point<int> sample_point = center;
-    if (with_count > 0) {
-        int sample_distance = std::numeric_limits<int>::max();
-        for (int y = window.ymin(); y < window.ymax(); y++) {
-            for (int x = window.xmin(); x < window.xmax(); x++) {
-                vtr::Point<int> here(x, y);
-                if (counts[x][y] == with_count) {
-                    int distance = manhattan_distance(center, here);
-                    if (distance < sample_distance) {
-                        sample_point = here;
-                        sample_distance = distance;
-                    }
-                }
+static std::vector<SamplePoint> choose_points(const vtr::Matrix<int>& counts,
+                                              const vtr::Rect<int>& window,
+                                              int min_count,
+                                              int max_count) {
+    std::vector<SamplePoint> points;
+    for (int y = window.ymin(); y < window.ymax(); y++) {
+        for (int x = window.xmin(); x < window.xmax(); x++) {
+            if (counts[x][y] >= min_count && counts[x][y] <= max_count) {
+                points.push_back(SamplePoint{/* .location = */ vtr::Point<int>(x, y),
+                                             /* .nodes = */ {}});
             }
         }
-        VTR_ASSERT(counts[sample_point.x()][sample_point.y()] > 0);
     }
-    return sample_point;
-}
 
-// linear lookup, so consider something more sophisticated for large SAMPLE_GRID_SIZEs
-static std::pair<int, int> grid_lookup(const SampleGrid& grid, vtr::Point<int> point) {
-    for (int sy = 0; sy < SAMPLE_GRID_SIZE; sy++) {
-        for (int sx = 0; sx < SAMPLE_GRID_SIZE; sx++) {
-            if (grid.point[sy][sx].location == point) {
-                return std::make_pair(sx, sy);
-            }
-        }
-    }
-    return std::make_pair(-1, -1);
+    vtr::Point<int> center = sample(window, 1, 1, 2);
+
+    // sort by distance from center
+    std::sort(points.begin(), points.end(),
+              [&](const SamplePoint& a, const SamplePoint& b) {
+                  return manhattan_distance(a.location, center) < manhattan_distance(b.location, center);
+              });
+
+    return points;
 }
 
 // histogram is a map from segment count to number of locations having that count
-static int max_count_within_quantiles(const std::map<int, int>& histogram, float lower, float upper) {
+static int quantile(const std::map<int, int>& histogram, float ratio) {
     if (histogram.empty()) {
         return 0;
     }
@@ -822,48 +805,46 @@ static int max_count_within_quantiles(const std::map<int, int>& histogram, float
     for (const auto& entry : histogram) {
         sum += entry.second;
     }
-    int lower_limit = std::ceil(sum * lower);
-    int upper_limit = std::ceil(sum * upper);
-    std::pair<int, int> max(0, 0);
+    int limit = std::ceil(sum * ratio);
     for (const auto& entry : histogram) {
-        upper_limit -= entry.second;
-        if (lower_limit > 0) {
-            lower_limit -= entry.second;
-            if (lower_limit <= 0) {
-                max = entry;
-            }
-        } else {
-            if (entry.second >= max.second) {
-                max = entry;
-            }
-            if (upper_limit <= 0) {
-                break;
-            }
+        limit -= entry.second;
+        if (limit <= 0) {
+            return entry.first;
         }
     }
-    return max.first;
+    return 0;
 }
 
 // select a good number of segments to find
-static int select_size(const vtr::Rect<int>& box, const vtr::Matrix<int>& counts) {
+static std::map<int, int> count_histogram(const vtr::Rect<int>& box, const vtr::Matrix<int>& counts) {
     std::map<int, int> histogram;
     for (int y = box.ymin(); y < box.ymax(); y++) {
         for (int x = box.xmin(); x < box.xmax(); x++) {
             int count = counts[x][y];
             if (count > 0) {
-                histogram[count]++;
+                ++histogram[count];
             }
         }
     }
-    return max_count_within_quantiles(histogram, 0.75, 0.9);
+    return histogram;
+}
+
+static uint64_t interleave(uint32_t x) {
+    uint64_t i = x;
+    i = (i ^ (i << 16)) & 0x0000ffff0000ffff;
+    i = (i ^ (i << 8)) & 0x00ff00ff00ff00ff;
+    i = (i ^ (i << 4)) & 0x0f0f0f0f0f0f0f0f;
+    i = (i ^ (i << 2)) & 0x3333333333333333;
+    i = (i ^ (i << 1)) & 0x5555555555555555;
+    return i;
 }
 
 // for each segment type, find the nearest nodes to an equally spaced grid of points
 // within the bounding box for that segment type
-static void find_inodes_for_segment_types(std::vector<SampleGrid>* inodes_for_segment) {
+static std::vector<SampleRegion> find_sample_regions(int num_segments) {
+    std::vector<SampleRegion> sample_regions;
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_nodes = device_ctx.rr_nodes;
-    const int num_segments = inodes_for_segment->size();
     std::vector<vtr::Matrix<int>> segment_counts(num_segments);
 
     // compute bounding boxes for each segment type
@@ -886,19 +867,6 @@ static void find_inodes_for_segment_types(std::vector<SampleGrid>* inodes_for_se
         segment_counts[seg] = vtr::Matrix<int>({size_t(box.width()), size_t(box.height())}, 0);
     }
 
-    // initialize the samples vector for each sample point
-    inodes_for_segment->clear();
-    inodes_for_segment->resize(num_segments);
-    for (int i = 0; i < num_segments; i++) {
-        auto& grid = (*inodes_for_segment)[i];
-        for (int y = 0; y < SAMPLE_GRID_SIZE; y++) {
-            for (int x = 0; x < SAMPLE_GRID_SIZE; x++) {
-                grid.point[y][x].samples = std::vector<ssize_t>();
-                grid.point[y][x].segment_type = i;
-            }
-        }
-    }
-
     // count sample points
     for (size_t i = 0; i < rr_nodes.size(); i++) {
         auto& node = rr_nodes[i];
@@ -919,13 +887,35 @@ static void find_inodes_for_segment_types(std::vector<SampleGrid>* inodes_for_se
         const auto& counts = segment_counts[i];
         const auto& bounding_box = bounding_box_for_segment[i];
         if (bounding_box.empty()) continue;
-        auto& grid = (*inodes_for_segment)[i];
         for (int y = 0; y < SAMPLE_GRID_SIZE; y++) {
             for (int x = 0; x < SAMPLE_GRID_SIZE; x++) {
                 vtr::Rect<int> window = sample_window(bounding_box, x, y, SAMPLE_GRID_SIZE);
-                int selected_size = select_size(window, segment_counts[i]);
-                grid.point[y][x].location = choose_point(counts, window, selected_size);
+                auto histogram = count_histogram(window, segment_counts[i]);
+                SampleRegion region = {
+                    /* .segment_type = */ i,
+                    /* .grid_location = */ vtr::Point<int>(x, y),
+                    /* .points = */ choose_points(counts, window, quantile(histogram, 0.5), quantile(histogram, 0.7)),
+                    /* .order = */ 0};
+                if (!region.points.empty()) {
+                    vtr::Point<int> location = region.points[0].location;
+                    region.order = interleave(location.x()) | (interleave(location.y()) << 1);
+                    sample_regions.push_back(region);
+                }
             }
+        }
+    }
+
+    // sort regions
+    std::sort(sample_regions.begin(), sample_regions.end(),
+              [](const SampleRegion& a, const SampleRegion& b) {
+                  return a.order < b.order;
+              });
+
+    // build an index of sample points on segment type and location
+    std::map<std::tuple<int, int, int>, SamplePoint*> sample_point_index;
+    for (auto& region : sample_regions) {
+        for (auto& point : region.points) {
+            sample_point_index[{region.segment_type, point.location.x(), point.location.y()}] = &point;
         }
     }
 
@@ -942,12 +932,13 @@ static void find_inodes_for_segment_types(std::vector<SampleGrid>* inodes_for_se
         VTR_ASSERT(seg_index != OPEN);
         VTR_ASSERT(seg_index < num_segments);
 
-        auto& grid = (*inodes_for_segment)[seg_index];
-        auto grid_loc = grid_lookup(grid, vtr::Point<int>(loc->first, loc->second));
-        if (grid_loc.first >= 0) {
-            grid.point[grid_loc.first][grid_loc.second].samples.push_back(i);
+        auto point = sample_point_index.find({seg_index, loc->first, loc->second});
+        if (point != sample_point_index.end()) {
+            point->second->nodes.push_back(i);
         }
     }
+
+    return sample_regions;
 }
 
 #ifndef VTR_ENABLE_CAPNPROTO
