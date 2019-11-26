@@ -601,26 +601,34 @@ static void power_usage_blocks(t_power_usage* power_usage) {
 
     power_reset_tile_usage();
 
+    t_logical_block_type_ptr logical_block;
+
     /* Loop through all grid locations */
     for (size_t x = 0; x < device_ctx.grid.width(); x++) {
         for (size_t y = 0; y < device_ctx.grid.height(); y++) {
+            auto physical_tile = device_ctx.grid[x][y].type;
+
             if ((device_ctx.grid[x][y].width_offset != 0)
                 || (device_ctx.grid[x][y].height_offset != 0)
-                || (device_ctx.grid[x][y].type == device_ctx.EMPTY_TYPE)) {
+                || is_empty_type(physical_tile)) {
                 continue;
             }
 
-            for (int z = 0; z < device_ctx.grid[x][y].type->capacity; z++) {
+            for (int z = 0; z < physical_tile->capacity; z++) {
                 t_pb* pb = nullptr;
                 t_power_usage pb_power;
 
                 ClusterBlockId iblk = place_ctx.grid_blocks[x][y].blocks[z];
 
-                if (iblk != EMPTY_BLOCK_ID && iblk != INVALID_BLOCK_ID)
+                if (iblk != EMPTY_BLOCK_ID && iblk != INVALID_BLOCK_ID) {
                     pb = cluster_ctx.clb_nlist.block_pb(iblk);
+                    logical_block = cluster_ctx.clb_nlist.block_type(iblk);
+                } else {
+                    logical_block = pick_best_logical_type(physical_tile);
+                }
 
                 /* Calculate power of this CLB */
-                power_usage_pb(&pb_power, pb, logical_block_type(device_ctx.grid[x][y].type)->pb_graph_head, iblk);
+                power_usage_pb(&pb_power, pb, logical_block->pb_graph_head, iblk);
                 power_add_usage(power_usage, &pb_power);
             }
         }
