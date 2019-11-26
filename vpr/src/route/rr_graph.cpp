@@ -437,6 +437,9 @@ static void build_rr_graph(const t_graph_type graph_type,
                            int* Warnings) {
     vtr::ScopedStartFinishTimer timer("Build routing resource graph");
 
+    /* Release freed memory before start building rr_graph */
+    vtr::malloc_trim(0);
+
     /* Reset warning flag */
     *Warnings = RR_GRAPH_NO_WARN;
 
