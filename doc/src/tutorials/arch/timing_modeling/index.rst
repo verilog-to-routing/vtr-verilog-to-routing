@@ -418,3 +418,124 @@ As an example consider the following simple PLL model:
 The port named ``in_clock`` is specified as a clock sink, since it is an input port with ``is_clock="1"``  set.
 
 The port named ``out_clock`` is specified as a clock generator, since it is an *output* port with ``is_clock="1"`` set.
+
+.. _clock_buffers_timing_modeling:
+
+Clock Buffers & Muxes
+~~~~~~~~~~~~~~~~~~~~~
+Some architectures contain special primitives for buffering or controling clocks.
+VTR supports modelling these using the ``is_clock`` attritube on the model to differentiate between 'data' and 'clock' signals, allowing users to control how clocks are traced through these primitives.
+
+When VPR traces through the netlist it will propagate clocks from clock inputs to the downstream combinationally connected pins.
+
+Clock Buffers/Gates
+^^^^^^^^^^^^^^^^^^^
+Consider the following black-box clock buffer with an enable:
+
+.. code-block:: none
+
+    .subckt clkbufce \
+        in=clk3 \
+        enable=clk3_enable \
+        out=clk3_buf
+
+We wish to have VPR understand that the ``in`` port of the ``clkbufce`` connects to the ``out`` port, and that as a result the nets ``clk3`` and ``clk3_buf`` are equivalent.
+
+This is accomplished by tagging the ``in`` port as a clock (``is_clock="1"``), and combinationally connecting it to the ``out`` port (``combinational_sink_ports="out"``):
+
+.. code-block:: xml
+
+    <model name="clkbufce">
+      <input_ports>
+        <port name="in" combinational_sink_ports="out" is_clock="1"/>
+        <port name="enable" combinational_sink_ports="out"/>
+      </input_ports>
+      <output_ports>
+        <port name="out"/>
+      </output_ports>
+    </model>
+
+With the corresponding pb_type:
+
+.. code-block:: xml
+
+    <pb_type name="clkbufce" blif_model="clkbufce" num_pb="1">
+      <clock name="in" num_pins="1"/>
+      <input name="enable" num_pins="1"/>
+      <output name="out" num_pins="1"/>
+      <delay_constant max="10e-12" in_port="clkbufce.in" out_port="clkbufce.out"/>
+      <delay_constant max="5e-12" in_port="clkbufce.enable" out_port="clkbufce.out"/>
+    </pb_type>
+
+Notably, although the ``enable`` port is combinationally connected to the ``out`` port it will not be considered as a potential clock since it is not marked with ``is_clock="1"``.
+
+Clock Muxes
+^^^^^^^^^^^
+Another common clock control block is a clock mux, which selects from one of several potential clocks.
+
+For instance, consider:
+
+.. code-block:: none
+
+    .subckt clkmux \
+        clk1=clka \
+        clk2=clkb \
+        sel=select \
+        clk_out=clk_downstream
+
+which selects one of two input clocks (``clk1`` and ``clk2``) to be passed through to (``clk_out``), controlled on the value of ``sel``.
+
+This could be modelled as:
+
+.. code-block:: xml
+
+    <model name="clkmux">
+      <input_ports>
+        <port name="clk1" combinational_sink_ports="clk_out" is_clock="1"/>
+        <port name="clk2" combinational_sink_ports="clk_out" is_clock="1"/>
+        <port name="sel" combinational_sink_ports="clk_out"/>
+      </input_ports>
+      <output_ports>
+        <port name="clk_out"/>
+      </output_ports>
+    </model>
+
+    <pb_type name="clkmux" blif_model="clkmux" num_pb="1">
+      <clock name="clk1" num_pins="1"/>
+      <clock name="clk2" num_pins="1"/>
+      <input name="sel" num_pins="1"/>
+      <output name="clk_out" num_pins="1"/>
+      <delay_constant max="10e-12" in_port="clkmux.clk1" out_port="clkmux.clk_out"/>
+      <delay_constant max="10e-12" in_port="clkmux.clk2" out_port="clkmux.clk_out"/>
+      <delay_constant max="20e-12" in_port="clkmux.sel" out_port="clkmux.clk_out"/>
+    </pb_type>
+  
+where both input clock ports ``clk1`` and ``clk2`` are tagged with ``is_clock="1"`` and combinationally connected to the ``clk_out`` port.
+As a result both nets ``clka`` and ``clkb`` in the netlist would be identified as independent clocks feeding ``clk_downstream``.
+
+.. note::
+
+    Clock propagation is driven by netlist connectivity so if one of the input clock ports (e.g. ``clk1``) was disconnected in the netlist no associated clock would be created/considered.
+
+Clock Mux Timing Constraints
+""""""""""""""""""""""""""""
+
+For the clock mux example above, if the user specified the following :ref:`SDC timing constraints <sdc_commands>`:
+
+.. code-block:: tcl
+    
+    create_clock -period 3 clka
+    create_clock -period 2 clkb
+
+VPR would propagate both ``clka`` and ``clkb`` through the clock mux.
+Therefore the logic connected to ``clk_downstream`` would be analyzed for both the ``clka`` and ``clkb`` constraints.
+
+Most likely (unless ``clka`` and ``clkb`` are used elswhere) the user should additionally specify:
+
+.. code-block:: tcl
+   
+    set_clock_groups -exclusive -group clka -group clkb
+
+Which avoids analyzing paths between the two clocks (i.e. ``clka`` -> ``clkb`` and ``clkb`` -> ``clka``) which are not physically realizable.
+The muxing logic means only one clock can drive ``clk_downstream`` at any point in time (i.e. the mux enforces that ``clka`` and ``clkb`` are mutually exclusive).
+This is the behaviour of :ref:`VPR's default timing constraints <default_timing_constraints>`.

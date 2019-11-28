@@ -13,7 +13,6 @@
 #include <chrono>
 #include <cmath>
 #include <sstream>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_math.h"
@@ -26,7 +25,6 @@ using namespace std;
 #include "vpr_utils.h"
 #include "globals.h"
 #include "atom_netlist.h"
-#include "graphics.h"
 #include "read_netlist.h"
 #include "check_netlist.h"
 #include "read_blif.h"
@@ -78,6 +76,7 @@ using namespace std;
 #include "arch_util.h"
 
 #include "log.h"
+#include "iostream"
 
 #ifdef VPR_USE_TBB
 #    include <tbb/task_scheduler_init.h>
@@ -277,6 +276,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
              &vpr_setup->Timing,
              &vpr_setup->ShowGraphics,
              &vpr_setup->GraphPause,
+             &vpr_setup->SaveGraphics,
              &vpr_setup->PowerOpts);
 
     /* Check inputs are reasonable */
@@ -401,7 +401,7 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
      */
 
     //Record the resource requirement
-    std::map<t_type_ptr, size_t> num_type_instances;
+    std::map<t_logical_block_type_ptr, size_t> num_type_instances;
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         num_type_instances[cluster_ctx.clb_nlist.block_type(blk_id)]++;
     }
@@ -418,24 +418,22 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
     VTR_LOG("\n");
     VTR_LOG("Resource usage...\n");
-    for (int i = 0; i < device_ctx.num_block_types; ++i) {
-        auto type = &device_ctx.block_types[i];
+    for (const auto& type : device_ctx.physical_tile_types) {
         VTR_LOG("\tNetlist      %d\tblocks of type: %s\n",
-                num_type_instances[type], type->name);
+                num_type_instances[logical_block_type(&type)], type.name);
         VTR_LOG("\tArchitecture %d\tblocks of type: %s\n",
-                device_ctx.grid.num_instances(type), type->name);
+                device_ctx.grid.num_instances(&type), type.name);
     }
     VTR_LOG("\n");
 
     float device_utilization = calculate_device_utilization(device_ctx.grid, num_type_instances);
     VTR_LOG("Device Utilization: %.2f (target %.2f)\n", device_utilization, target_device_utilization);
-    for (int i = 0; i < device_ctx.num_block_types; ++i) {
-        auto type = &device_ctx.block_types[i];
+    for (const auto& type : device_ctx.physical_tile_types) {
         float util = 0.;
-        if (device_ctx.grid.num_instances(type) != 0) {
-            util = float(num_type_instances[type]) / device_ctx.grid.num_instances(type);
+        if (device_ctx.grid.num_instances(&type) != 0) {
+            util = float(num_type_instances[logical_block_type(&type)]) / device_ctx.grid.num_instances(&type);
         }
-        VTR_LOG("\tBlock Utilization: %.2f Type: %s\n", util, type->name);
+        VTR_LOG("\tBlock Utilization: %.2f Type: %s\n", util, type.name);
     }
     VTR_LOG("\n");
 
@@ -720,6 +718,16 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
                               std::shared_ptr<SetupHoldTimingInfo> timing_info,
                               std::shared_ptr<RoutingDelayCalculator> delay_calc,
                               vtr::vector<ClusterNetId, float*>& net_delay) {
+    if (router_needs_lookahead(vpr_setup.RouterOpts.router_algorithm)) {
+        // Prime lookahead cache to avoid adding lookahead computation cost to
+        // the routing timer.
+        get_cached_router_lookahead(
+            vpr_setup.RouterOpts.lookahead_type,
+            vpr_setup.RouterOpts.write_router_lookahead,
+            vpr_setup.RouterOpts.read_router_lookahead,
+            vpr_setup.Segments);
+    }
+
     vtr::ScopedStartFinishTimer timer("Routing");
 
     if (NO_FIXED_CHANNEL_WIDTH == fixed_channel_width || fixed_channel_width <= 0) {
@@ -746,6 +754,9 @@ RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup,
                             std::shared_ptr<SetupHoldTimingInfo> timing_info,
                             std::shared_ptr<RoutingDelayCalculator> delay_calc,
                             vtr::vector<ClusterNetId, float*>& net_delay) {
+    // Note that lookahead cache is not primed here because
+    // binary_search_place_and_route will change the channel width, and result
+    // in the lookahead cache being recomputed.
     vtr::ScopedStartFinishTimer timer("Routing");
 
     auto& router_opts = vpr_setup.RouterOpts;
@@ -814,8 +825,7 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
 
     //Create the RR graph
     create_rr_graph(graph_type,
-                    device_ctx.num_block_types,
-                    device_ctx.block_types,
+                    device_ctx.physical_tile_types,
                     device_ctx.grid,
                     chan_width,
                     device_ctx.num_arch_switches,
@@ -825,7 +835,6 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
                     router_opts.trim_empty_channels,
                     router_opts.trim_obs_channels,
                     router_opts.clock_modeling,
-                    router_opts.lookahead_type,
                     arch.Directs, arch.num_directs,
                     &warnings);
     //Initialize drawing, now that we have an RR graph
@@ -835,10 +844,9 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
 void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     /* Startup X graphics */
     init_graphics_state(vpr_setup.ShowGraphics, vpr_setup.GraphPause,
-                        vpr_setup.RouterOpts.route_type);
-    if (vpr_setup.ShowGraphics) {
+                        vpr_setup.RouterOpts.route_type, vpr_setup.SaveGraphics);
+    if (vpr_setup.ShowGraphics || vpr_setup.SaveGraphics)
         alloc_draw_structs(&arch);
-    }
 }
 
 void vpr_close_graphics(const t_vpr_setup& /*vpr_setup*/) {
@@ -872,7 +880,7 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
     //Build a dummy 10x10 device to determine the 'best' block type to use
     auto grid = create_device_grid(vpr_setup.device_layout, arch.grid_layouts, 10, 10);
 
-    auto type = find_most_common_block_type(grid);
+    auto type = physical_tile_type(find_most_common_block_type(grid));
     /* get Fc_in/out for most common block (e.g. logic blocks) */
     VTR_ASSERT(type->fc_specs.size() > 0);
 
@@ -962,7 +970,8 @@ void free_device(const t_det_routing_arch& routing_arch) {
 static void free_complex_block_types() {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    free_type_descriptors(device_ctx.block_types, device_ctx.num_block_types);
+    free_type_descriptors(device_ctx.logical_block_types);
+    free_type_descriptors(device_ctx.physical_tile_types);
     free_pb_graph_edges();
 }
 
@@ -1046,11 +1055,12 @@ void vpr_setup_vpr(t_options* Options,
                    t_router_opts* RouterOpts,
                    t_analysis_opts* AnalysisOpts,
                    t_det_routing_arch* RoutingArch,
-                   vector<t_lb_type_rr_node>** PackerRRGraph,
+                   std::vector<t_lb_type_rr_node>** PackerRRGraph,
                    std::vector<t_segment_inf>& Segments,
                    t_timing_inf* Timing,
                    bool* ShowGraphics,
                    int* GraphPause,
+                   bool* SaveGraphics,
                    t_power_opts* PowerOpts) {
     SetupVPR(Options,
              TimingEnabled,
@@ -1071,6 +1081,7 @@ void vpr_setup_vpr(t_options* Options,
              Timing,
              ShowGraphics,
              GraphPause,
+             SaveGraphics,
              PowerOpts);
 }
 
@@ -1179,9 +1190,9 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
 }
 
 /* This function performs power estimation. It relies on the
- * placement/routing results, as well as the critical path. 
+ * placement/routing results, as well as the critical path.
  * Power estimation can be performed as part of a full or
- * partial flow. More information on the power estimation functions of 
+ * partial flow. More information on the power estimation functions of
  * VPR can be found here:
  *   http://docs.verilogtorouting.org/en/latest/vtr/power_estimation/
  */

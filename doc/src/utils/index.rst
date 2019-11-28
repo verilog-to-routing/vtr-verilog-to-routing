@@ -7,3 +7,4 @@ Utilities
    :maxdepth: 2
 
    fasm
+   route_diag

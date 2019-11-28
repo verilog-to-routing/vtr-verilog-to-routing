@@ -25,6 +25,8 @@
 #include "ezgl/color.hpp"
 
 #include <cairo.h>
+#include <cairo-pdf.h>
+#include <cairo-svg.h>
 #include <gtk/gtk.h>
 
 #include <string>
@@ -38,7 +40,7 @@ class renderer;
 /**
  * The signature of a function that draws to an ezgl::canvas.
  */
-using draw_canvas_fn = void (*)(renderer &);
+using draw_canvas_fn = void (*)(renderer*);
 
 /**
  * Responsible for creating, destroying, and maintaining the rendering context of a GtkWidget.
@@ -98,12 +100,23 @@ public:
   }
 
   /**
-   * Create a temporary renderer that can be used to draw on top of the current canvas
-   *
-   * The created renderer should be used only in the same callback in which it was created
+   * Create an animation renderer that can be used to draw on top of the current canvas
    */
-  renderer create_temporary_renderer();
-
+  renderer *create_animation_renderer();
+  
+  /**
+   * print_pdf, print_svg, and print_png generate a PDF, SVG, or PNG output file showing 
+   * all the graphical content of the current canvas. 
+   * 
+   * @param file_name   name of the output file
+   * @return            returns true if the function has successfully generated the output file, otherwise
+   *                    failed due to errors such as out of memory occurs. 
+   */
+  bool print_pdf(const char *file_name, int width = 0, int height = 0);
+  bool print_svg(const char *file_name, int width = 0, int height = 0);
+  bool print_png(const char *file_name, int width = 0, int height = 0);
+  
+  
 protected:
   // Only the ezgl::application can create and initialize a canvas object.
   friend class application;
@@ -142,6 +155,9 @@ private:
 
   // The off-screen cairo context that can be drawn to
   cairo_t *m_context = nullptr;
+
+  // The animation renderer
+  renderer *m_animation_renderer = nullptr;
 
 private:
   // Called each time our drawing area widget has changed (e.g., in size).

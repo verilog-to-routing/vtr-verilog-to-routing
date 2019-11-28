@@ -1,5 +1,5 @@
 ODIN_ROOT=$(PWD)
-NB_OF_PROCESS ?= $(shell nproc --all)
+NB_OF_PROCESS ?= $(shell python -c "import multiprocessing; print(multiprocessing.cpu_count())")
 
 ################
 # build with ninja when doable
@@ -47,6 +47,7 @@ clean:
 define _build_it_gen
 _build_it_$(1): _set_$(1)
 	cd $(BUILD_DIR) &&\
+	echo "Building with $(NB_OF_PROCESS) threads" &&\
 	$(BUILDER)
 
 $(1): _build_it_$(1)

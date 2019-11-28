@@ -97,7 +97,8 @@ struct t_selected_sub_block_info {
  * will be disabled.
  */
 #    ifndef NO_GRAPHICS
-void toggle_blk_internal(GtkWidget* widget, ezgl::application* app);
+void toggle_blk_internal(GtkWidget* /*widget*/, gint /*response_id*/, gpointer data);
+
 #    endif /* NO_GRAPHICS */
 /* This function pre-allocates space to store bounding boxes for all sub-blocks. Each
  * sub-block is identified by its descriptor_type and a unique pin ID in the type.
@@ -113,7 +114,7 @@ void draw_internal_init_blk();
  * grid tiles and calls helper function to draw inside each block.
  */
 #    ifndef NO_GRAPHICS
-void draw_internal_draw_subblk(ezgl::renderer& g);
+void draw_internal_draw_subblk(ezgl::renderer* g);
 #    endif /* NO_GRAPHICS */
 
 /* Determines which part of a block to highlight, and stores it,
@@ -133,7 +134,7 @@ t_selected_sub_block_info& get_selected_sub_block_info();
  * and if there is a selected sub-block, it will highlight it's conections
  */
 
-void draw_logical_connections(ezgl::renderer& g);
+void draw_logical_connections(ezgl::renderer* g);
 
 void find_pin_index_at_model_scope(const AtomPinId the_pin, const AtomBlockId lblk, int* pin_index, int* total_pins);
 

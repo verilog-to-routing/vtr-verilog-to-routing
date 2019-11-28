@@ -25,6 +25,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define ODIN_TYPES_H
 
 #include "string_cache.h"
+#include "hierarchy_util.h"
+#include "scope_util.h"
 #include "odin_error.h"
 #include "read_xml_arch_file.h"
 #include "argparse_value.hpp"
@@ -45,7 +47,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define ODIN_LONG_STRING 0
 #define ODIN_SHORT_STRING 1
 
-#ifdef DEBUG_ODIN
+#ifndef DEBUG_ODIN
 	#define ODIN_STRING_TYPE ODIN_SHORT_STRING
 #else
 	#define ODIN_STRING_TYPE ODIN_LONG_STRING
@@ -260,7 +262,7 @@ enum ids
 	GENVAR,
 	PARAMETER,
 	LOCALPARAM,
-	INITIALS,
+	INITIAL,
 	PORT,
 	/* OTHER MODULE ITEMS */
 	MODULE_ITEMS,
@@ -271,6 +273,8 @@ enum ids
 	FUNCTION,
    	/* OTHER FUNCTION ITEMS */
   	FUNCTION_ITEMS,
+	TASK,
+	TASK_ITEMS,
 	/* primitives */
 	GATE,
 	GATE_INSTANCE,
@@ -287,12 +291,16 @@ enum ids
 	/* Function instances*/
 	FUNCTION_NAMED_INSTANCE,
 	FUNCTION_INSTANCE,
+
+	TASK_NAMED_INSTANCE,
+	TASK_INSTANCE,
 	/* Specify Items */
 	SPECIFY_ITEMS,
 	SPECIFY_PARAMETER,
 	SPECIFY_PAL_CONNECTION_STATEMENT,
 	SPECIFY_PAL_CONNECT_LIST,
 	/* statements */
+	STATEMENT,
 	BLOCK,
 	NON_BLOCKING_STATEMENT,
 	BLOCKING_STATEMENT,
@@ -335,7 +343,8 @@ struct typ
 {
 	char *identifier;
 	VNumber *vnumber = nullptr;
-
+	sc_hierarchy *hierarchy;
+	sc_scope *scope;
 	struct
 	{
 		operation_list op;
@@ -344,6 +353,7 @@ struct typ
 	{
 		short is_parameter;
 		short is_localparam;
+		short is_defparam;
 		short is_port;
 		short is_input;
 		short is_output;
@@ -362,15 +372,19 @@ struct typ
 		short is_instantiated;
 		ast_node_t **module_instantiations_instance;
 		int size_module_instantiations;
-		int index;
 	} module;
 	struct
 	{
 		short is_instantiated;
 		ast_node_t **function_instantiations_instance;
 		int size_function_instantiations;
-		int index;
 	} function;
+	struct
+	{
+		short is_instantiated;
+		ast_node_t **task_instantiations_instance;
+		int size_task_instantiations;
+	} task;
 	struct
 	{
 		int num_bit_strings;
@@ -397,6 +411,7 @@ struct ast_node_t
 
 	void *hb_port;
 	void *net_node;
+	long chunk_size;
 
 };
 
@@ -573,7 +588,7 @@ struct netlist_t
 	STRING_CACHE *out_pins_sc;
 	STRING_CACHE *nodes_sc;
 
-	t_type_ptr type;
+	t_logical_block_type_ptr type;
 
 };
 

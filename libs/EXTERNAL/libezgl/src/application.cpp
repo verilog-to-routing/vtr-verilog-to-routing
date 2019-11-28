@@ -63,7 +63,7 @@ void application::activate(GtkApplication *, gpointer user_data)
   }
 
   if(ezgl_app->initial_setup_callback != nullptr)
-    ezgl_app->initial_setup_callback(ezgl_app);
+    ezgl_app->initial_setup_callback(ezgl_app, true);
 
   g_info("application::activate successful.");
 }
@@ -87,6 +87,7 @@ application::application(application::settings s)
   g_signal_connect(m_application, "activate", G_CALLBACK(activate), this);
 
   first_run = true;
+  resume_run = false;
 }
 
 application::~application()
@@ -156,9 +157,35 @@ int application::run(setup_callback_fn initial_setup_user_callback,
   mouse_move_callback = mouse_move_user_callback;
   key_press_callback = key_press_user_callback;
 
+  if(first_run) {
+    // set the first_run flag to false
+    first_run = false;
+
+    g_info("The event loop is now starting.");
+
+    // see: https://developer.gnome.org/gio/stable/GApplication.html#g-application-run
+    return g_application_run(G_APPLICATION(m_application), 0, 0);
+  }
   // The result of calling g_application_run() again after it returns is unspecified.
-  // So we have to destruct and reconstruct the GTKApplication
-  if(!first_run) {
+  // So in the subsequent runs instead of calling g_application_run(), we will go back to the event loop using gtk_main()
+  else if(!first_run && gtk_application_get_active_window(m_application) != nullptr) {
+
+    // Call user's initial setup call
+    if(initial_setup_callback != nullptr)
+      initial_setup_callback(this, false);
+
+    // set the resume_run flag to true
+    resume_run = true;
+
+    g_info("The event loop is now resuming.");
+
+    // see: https://developer.gnome.org/gtk3/stable/gtk3-General.html#gtk-main
+    gtk_main();
+
+    return 0;
+  }
+  // But if the GTK window is closed, we will have to destruct and reconstruct the GTKApplication
+  else {
     // Destroy the GTK application
     g_object_unref(m_application);
     g_object_unref(m_builder);
@@ -168,25 +195,26 @@ int application::run(setup_callback_fn initial_setup_user_callback,
     m_builder = (gtk_builder_new());
     g_signal_connect(m_application, "startup", G_CALLBACK(startup), this);
     g_signal_connect(m_application, "activate", G_CALLBACK(activate), this);
+
+    // set the resume_run flag to false
+    resume_run = false;
+
+    g_info("The event loop is now restarting.");
+
+    // see: https://developer.gnome.org/gio/stable/GApplication.html#g-application-run
+    return g_application_run(G_APPLICATION(m_application), 0, 0);
   }
-
-  // set the first_run flag to false
-  first_run = false;
-
-  g_info("The event loop is now starting.");
-
-  // see: https://developer.gnome.org/gio/unstable/GApplication.html#g-application-run
-  return g_application_run(G_APPLICATION(m_application), 0, 0);
 }
 
 void application::quit()
 {
-  // Close the current window
-  GObject *window = get_object(m_window_id.c_str());
-  gtk_window_close(GTK_WINDOW(window));
-
-  // Quit the GTK application
-  g_application_quit(G_APPLICATION(m_application));
+  if(resume_run) {
+    // Quit the event loop (exit gtk_main())
+    gtk_main_quit();
+  } else {
+    // Quit the GTK application (exit g_application_run())
+    g_application_quit(G_APPLICATION(m_application));
+  }
 }
 
 void application::register_default_events_callbacks(ezgl::application *application)
@@ -213,6 +241,9 @@ void application::register_default_events_callbacks(ezgl::application *applicati
 
   // Connect scroll_mouse function to the mouse scroll event (up, down, left and right)
   g_signal_connect(main_canvas, "scroll_event", G_CALLBACK(scroll_mouse), application);
+
+  // Connect press_proceed function to the close button of the MainWindow
+  g_signal_connect(window, "destroy", G_CALLBACK(press_proceed), application);
 }
 
 void application::register_default_buttons_callbacks(ezgl::application *application)
@@ -410,14 +441,18 @@ void application::flush_drawing()
 
   // queue a redraw of the GtkWidget
   gtk_widget_queue_draw(drawing_area);
+
+  // run the main loop on pending events
+  while(gtk_events_pending())
+    gtk_main_iteration();
 }
 
-renderer application::get_renderer()
+renderer *application::get_renderer()
 {
   // get the main canvas
   canvas *cnv = get_canvas(m_canvas_id);
 
-  return cnv->create_temporary_renderer();
+  return cnv->create_animation_renderer();
 }
 
 void set_disable_event_loop(bool new_setting)

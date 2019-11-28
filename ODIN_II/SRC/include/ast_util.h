@@ -31,21 +31,21 @@ ast_node_t *free_resolved_tree(ast_node_t *node);
 ast_node_t *free_single_node(ast_node_t *node);
 void free_assignement_of_node_keep_tree(ast_node_t *node);
 
-void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_name_prefix, STRING_CACHE_LIST *local_string_cache_list);
+void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_name_prefix, sc_hierarchy *local_ref);
 void change_to_number_node(ast_node_t *node, long number);
 void change_to_number_node(ast_node_t *node, VNumber number);
 
-char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_prefix, STRING_CACHE_LIST *local_string_cache_list);
+char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_prefix, sc_hierarchy *local_ref);
 char *get_name_of_var_declare_at_bit(ast_node_t *var_declare, int bit);
-char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix, STRING_CACHE_LIST *local_string_cache_list);
-char_list_t *get_name_of_pins_with_prefix(ast_node_t *var_node, char *instance_name_prefix, STRING_CACHE_LIST *local_string_cache_list);
-long get_size_of_variable(ast_node_t *node, STRING_CACHE_LIST *local_string_cache_list);
+char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix, sc_hierarchy *local_ref);
+char_list_t *get_name_of_pins_with_prefix(ast_node_t *var_node, char *instance_name_prefix, sc_hierarchy *local_ref);
+long get_size_of_variable(ast_node_t *node, sc_hierarchy *local_ref);
 
 bool node_is_constant(ast_node_t *node);
 ast_node_t *fold_binary(ast_node_t **node);
 ast_node_t *fold_unary(ast_node_t **node);
 
 long clog2(long value_in, int length);
-long resolve_concat_sizes(ast_node_t *node_top, STRING_CACHE_LIST *local_string_cache_list);
+long resolve_concat_sizes(ast_node_t *node_top, sc_hierarchy *local_ref);
 
 #endif

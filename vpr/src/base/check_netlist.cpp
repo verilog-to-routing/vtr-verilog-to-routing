@@ -4,7 +4,6 @@
 
 #include <cstdio>
 #include <cstring>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -94,12 +93,12 @@ static int check_connections_to_global_clb_pins(ClusterNetId net_id, int verbosi
         ClusterBlockId blk_id = cluster_ctx.clb_nlist.pin_block(pin_id);
         int pin_index = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
 
-        if (cluster_ctx.clb_nlist.block_type(blk_id)->is_ignored_pin[pin_index] != net_is_ignored
-            && !is_io_type(cluster_ctx.clb_nlist.block_type(blk_id))) {
+        if (physical_tile_type(blk_id)->is_ignored_pin[pin_index] != net_is_ignored
+            && !is_io_type(physical_tile_type(blk_id))) {
             VTR_LOGV_WARN(verbosity > 2,
                           "Global net '%s' connects to non-global architecture pin '%s' (netlist pin '%s')\n",
                           cluster_ctx.clb_nlist.net_name(net_id).c_str(),
-                          block_type_pin_index_to_name(cluster_ctx.clb_nlist.block_type(blk_id), pin_index).c_str(),
+                          block_type_pin_index_to_name(physical_tile_type(blk_id), pin_index).c_str(),
                           cluster_ctx.clb_nlist.pin_name(pin_id).c_str());
 
             ++global_to_non_global_connection_count;
@@ -115,7 +114,7 @@ static int check_clb_conn(ClusterBlockId iblk, int num_conn) {
     auto& clb_nlist = cluster_ctx.clb_nlist;
 
     int error = 0;
-    t_type_ptr type = clb_nlist.block_type(iblk);
+    t_logical_block_type_ptr type = clb_nlist.block_type(iblk);
 
     if (num_conn == 1) {
         for (auto pin_id : clb_nlist.block_pins(iblk)) {
@@ -145,7 +144,7 @@ static int check_clb_conn(ClusterBlockId iblk, int num_conn) {
     /* This case should already have been flagged as an error -- this is *
      * just a redundant double check.                                    */
 
-    if (num_conn > type->num_pins) {
+    if (num_conn > physical_tile_type(type)->num_pins) {
         VTR_LOG_ERROR("logic block #%d with output %s has %d pins.\n",
                       iblk, cluster_ctx.clb_nlist.block_name(iblk).c_str(), num_conn);
         error++;

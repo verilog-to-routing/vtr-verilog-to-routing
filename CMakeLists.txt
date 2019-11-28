@@ -5,6 +5,13 @@ include(SupportCcache)
 
 project("VTR")
 
+#
+# VTR Build Options
+#
+set(VTR_COMPILE_OPTIONS "none" CACHE STRING "Specify whether vpr uses strict compiling options, e.g. -Werror")
+set(CACHE VTR_COMPILE_OPTIONS PROPERTY STRING strict none)
+
+
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
     message("CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
     message("CMAKE_BINARY_DIR: ${CMAKE_BINARY_DIR}")
@@ -31,6 +38,7 @@ option(VTR_ENABLE_DEBUG_LOGGING "Enable debug logging" OFF)
 #Allow the user to decide weather to compile the graphics library
 set(VPR_USE_EZGL "auto" CACHE STRING "Specify whether vpr uses the graphics library")
 set_property(CACHE VPR_USE_EZGL PROPERTY STRINGS auto off on)
+option(VTR_ENABLE_CAPNPROTO "Enable capnproto binary serialization support in VPR." ON)
 
 option(WITH_BLIFEXPLORER "Enable build with blifexplorer" OFF)
 option(WITH_LIBRTLNUMBER "Enable build with librtlnumber" OFF)
@@ -196,7 +204,7 @@ endforeach()
 
 #Suppress IPO link warnings
 set(IPO_LINK_WARN_SUPRESS_FLAGS " ")
-set(IPO_LINK_WARN_SUPRESS_FLAGS_TO_CHECK 
+set(IPO_LINK_WARN_SUPRESS_FLAGS_TO_CHECK
     "-Wno-null-dereference"
     )
 foreach(flag ${IPO_LINK_WARN_SUPRESS_FLAGS_TO_CHECK})
@@ -269,8 +277,13 @@ endif()
 #
 # Set final flags
 #
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARN_FLAGS} ${SANITIZE_FLAGS} ${PROFILING_FLAGS} ${COVERAGE_FLAGS} ${LOGGING_FLAGS} ${COLORED_COMPILE}")
-message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
+separate_arguments(
+    ADDITIONAL_FLAGS UNIX_COMMAND "${SANITIZE_FLAGS} ${PROFILING_FLAGS} ${COVERAGE_FLAGS} ${LOGGING_FLAGS} ${COLORED_COMPILE}"
+    )
+add_compile_options(${ADDITIONAL_FLAGS})
+separate_arguments(
+    WARN_FLAGS UNIX_COMMAND "${WARN_FLAGS}"
+    )
 
 
 #
@@ -301,9 +314,9 @@ enable_testing()
 set(READLINE_FOUND FALSE)
 
 
-# set VPR_USE_EZGL in the root of VTR to decide whether to add 
-# subdirectory of graphics library, which prevents users 
-# without gtk/x11 libraries installed to build. VPR_USE_EZGL is 
+# set VPR_USE_EZGL in the root of VTR to decide whether to add
+# subdirectory of graphics library, which prevents users
+# without gtk/x11 libraries installed to build. VPR_USE_EZGL is
 # being used in both the vpr CMakeLists and libs/EXTERNAL CMakeLists.
 #
 # check if GTK and X11 are installed and turn on/off graphics
@@ -314,16 +327,21 @@ if (VPR_USE_EZGL STREQUAL "auto")
 
     if(GTK3_FOUND AND X11_FOUND)
         set(VPR_USE_EZGL "on")
+        message(STATUS "VPR Graphics: Enabled")
     else()
         set(VPR_USE_EZGL "off")
+        message(STATUS "VPR Graphics: Disabled (required libraries missing, on debia/ubuntu try: sudo apt install libgtk-3 libx11-dev")
     endif()
 endif()
 
 
 #Add the various sub-projects
-add_subdirectory(libs)
-add_subdirectory(vpr)
 add_subdirectory(abc)
+add_subdirectory(libs) #libs/CMakeLists.txt handles adding warnings flags to non-external libraries
+
+#Add the various tools
+add_compile_options(${WARN_FLAGS}) #Add warn flags for VTR tools
+add_subdirectory(vpr)
 add_subdirectory(ODIN_II)
 add_subdirectory(ace2)
 add_subdirectory(utils)

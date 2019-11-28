@@ -30,19 +30,18 @@ void time_on_fanout_analysis() {}
 void profiling_initialization(unsigned /*max_net_fanout*/) {}
 
 #else
-using namespace std;
 
 constexpr unsigned int fanout_per_bin = 1;
 constexpr float criticality_per_bin = 0.05;
 
 // data structures indexed by fanout bin (ex. fanout of x is in bin x/fanout_per_bin)
-static vector<float> time_on_fanout;
-static vector<float> time_on_fanout_rebuild;
-static vector<float> time_on_criticality;
-static vector<int> itry_on_fanout;
-static vector<int> itry_on_criticality;
-static vector<int> rerouted_sinks;
-static vector<int> finished_sinks;
+static std::vector<float> time_on_fanout;
+static std::vector<float> time_on_fanout_rebuild;
+static std::vector<float> time_on_criticality;
+static std::vector<int> itry_on_fanout;
+static std::vector<int> itry_on_criticality;
+static std::vector<int> rerouted_sinks;
+static std::vector<int> finished_sinks;
 
 // action counters for what setup routing resources did
 static int entire_net_rerouted;

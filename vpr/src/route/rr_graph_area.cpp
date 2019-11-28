@@ -1,5 +1,4 @@
 #include <cmath>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -147,7 +146,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
 
     num_inputs_to_cblock = (int*)vtr::calloc(device_ctx.rr_nodes.size(), sizeof(int));
 
-    maxlen = max(device_ctx.grid.width(), device_ctx.grid.height());
+    maxlen = std::max(device_ctx.grid.width(), device_ctx.grid.height());
     cblock_counted = (bool*)vtr::calloc(maxlen, sizeof(bool));
     shared_buffer_trans = (float*)vtr::calloc(maxlen, sizeof(float));
 
@@ -183,8 +182,8 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
 
                             if (device_ctx.rr_switch_inf[iswitch].buffered()) {
                                 iseg = seg_index_of_sblock(from_node, to_node);
-                                shared_buffer_trans[iseg] = max(shared_buffer_trans[iseg],
-                                                                sharable_switch_trans[iswitch]);
+                                shared_buffer_trans[iseg] = std::max(shared_buffer_trans[iseg],
+                                                                     sharable_switch_trans[iswitch]);
 
                                 ntrans_no_sharing += unsharable_switch_trans[iswitch]
                                                      + sharable_switch_trans[iswitch];
@@ -200,8 +199,8 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
 
                         case IPIN:
                             num_inputs_to_cblock[to_node]++;
-                            max_inputs_to_cblock = max(max_inputs_to_cblock,
-                                                       num_inputs_to_cblock[to_node]);
+                            max_inputs_to_cblock = std::max(max_inputs_to_cblock,
+                                                            num_inputs_to_cblock[to_node]);
 
                             iseg = seg_index_of_cblock(from_rr_type, to_node);
 
@@ -259,8 +258,8 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
                                          + sharable_switch_trans[iswitch];
                     ntrans_sharing += unsharable_switch_trans[iswitch];
 
-                    shared_opin_buffer_trans = max(shared_opin_buffer_trans,
-                                                   sharable_switch_trans[iswitch]);
+                    shared_opin_buffer_trans = std::max(shared_opin_buffer_trans,
+                                                        sharable_switch_trans[iswitch]);
                 }
 
                 ntrans_sharing += shared_opin_buffer_trans;
@@ -350,7 +349,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
     }
 
     num_inputs_to_cblock = (int*)vtr::calloc(device_ctx.rr_nodes.size(), sizeof(int));
-    maxlen = max(device_ctx.grid.width(), device_ctx.grid.height());
+    maxlen = std::max(device_ctx.grid.width(), device_ctx.grid.height());
     cblock_counted = (bool*)vtr::calloc(maxlen, sizeof(bool));
 
     ntrans = 0;
@@ -419,8 +418,8 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
 
                         case IPIN:
                             num_inputs_to_cblock[to_node]++;
-                            max_inputs_to_cblock = max(max_inputs_to_cblock,
-                                                       num_inputs_to_cblock[to_node]);
+                            max_inputs_to_cblock = std::max(max_inputs_to_cblock,
+                                                            num_inputs_to_cblock[to_node]);
                             iseg = seg_index_of_cblock(from_rr_type, to_node);
 
                             if (cblock_counted[iseg] == false) {
@@ -600,7 +599,7 @@ float trans_per_buf(float Rbuf, float R_minW_nmos, float R_minW_pmos) {
          * ones.                                                                  */
 
         num_stage = vtr::nint(log10(R_minW_nmos / Rbuf) / log10(4.));
-        num_stage = max(num_stage, 1);
+        num_stage = std::max(num_stage, 1);
         stage_ratio = pow((float)(R_minW_nmos / Rbuf), (float)(1. / (float)num_stage));
 
         Rstage = R_minW_nmos;

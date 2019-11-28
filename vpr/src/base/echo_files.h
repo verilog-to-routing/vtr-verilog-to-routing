@@ -11,6 +11,9 @@ enum e_echo_files {
     E_ECHO_PRE_PACKING_CRITICALITY,
     E_ECHO_PRE_PACKING_MOLECULES_AND_PATTERNS,
 
+    // Intra-block routing
+    E_ECHO_INTRA_LB_FAILED_ROUTE,
+
     //Placement
     E_ECHO_INITIAL_CLB_PLACEMENT,
     E_ECHO_PLACE_MACROS,

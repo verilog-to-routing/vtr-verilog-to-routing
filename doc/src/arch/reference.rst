@@ -16,6 +16,7 @@ This tag contains all other tags in the architecture file.
 The architecture tag contains the following tags:
 
 * ``<models>``
+* ``<tiles>``
 * ``<layout>``
 * ``<device>``
 * ``<switchlist>``
@@ -40,8 +41,15 @@ Each of these contains ``<port>`` tags:
 .. arch:tag:: <port name="string" is_clock="{0 | 1} clock="string" combinational_sink_ports="string1 string2 ..."/>
 
     :req_param name: The port name.
-    :opt_param is_clock: Indicates if the port is a clock. Default: ``0``
+
+    :opt_param is_clock: Identifies if the port as a clock port.
+
+        .. seealso:: The :ref:`Primitive Timing Modelling Tutorial <arch_model_timing_tutorial>` for usage of ``is_clock`` to model clock control blocks  such as clock generators, clock buffers/gates and clock muxes.
+
+        Default: ``0``
+
     :opt_param clock: Indicates the port is sequential and controlled by the specified clock (which must be another port on the model marked with ``is_clock=1``). Default: port is treated as combinational (if unspecified)
+
     :opt_param combinational_sink_ports: A space-separated list of output ports which are combinationally connected to the current input port. Default: No combinational connections (if unspecified)
 
     Defines the port for a model.
@@ -87,6 +95,10 @@ For the ``adder`` the input ports ``a``, ``b`` and ``cin`` are each combinationa
 
 Global FPGA Information
 -----------------------
+
+.. arch:tag:: <tiles>content</tiles>
+
+    Content inside this tag contains a group of ``<pb_type>`` tags that specify the types of functional blocks and their properties.
 
 .. arch:tag:: <layout/>
 
@@ -775,61 +787,29 @@ This is specified in the content within the ``<chan_width_distr>`` tag.
 
     .. seealso:: <x distr>
 
+.. _arch_tiles:
 
-.. _arch_complex_blocks:
-
-Complex Blocks
+Physical Tiles
 --------------
 
-.. seealso:: For a step-by-step walkthrough on building a complex block see :ref:`arch_tutorial`.
+The content within the ``<tiles>`` describes the physical tiles available in the FPGA.
+Each tile type is specified with the ``<tile>`` tag withing the ``<tiles>`` tag.
 
-The content within the ``<complexblocklist>`` describes the complex blocks found within the FPGA.
-Each type of complex block is specified with a top-level ``<pb_type>`` tag within the ``<complexblocklist>`` tag.
+Tile
+~~~~
+.. arch:tag:: <tile name="string" capacity="int" width="int" height="int" area="float"/>
 
-PB Type
-~~~~~~~
-.. arch:tag:: <pb_type name="string" num_pb="int" blif_model="string" capacity="int" width="int" height="int" area="float" class="{lut|filpflop|memory}"/>
+    A tile refers to a placeable element within an FPGA architecture.
+    The following attributes are applicable to each tile.
+    The only required one is the name of the tile.
 
-    Specifies a top-level complex block, or a complex block's internal components (sub-blocks).
-    Which attributes are applicable depends on where the ``<pb_type>`` tag falls within the hierarchy:
+    **Attributes:**
 
-    * Top Level: A child of the ``<complexblocklist>``
-    * Intermediate: A child of another ``<pb_type>``
-    * Primitive/Leaf: Contains no ``<pb_type>`` children
+    :req_param name: The name of this tile.
 
-    For example:
+        The name must be unique with respect to any other sibling ``<tile>`` tag.
 
-    .. code-block:: xml
-
-        <complexblocklist>
-            <pb_type name="CLB"/> <!-- Top level -->
-                ...
-                <pb_type name="ble"/> <!-- Intermediate -->
-                    ...
-                    <pb_type name="lut"/> <!-- Primitive -->
-                        ...
-                    </pb_type>
-                    <pb_type name="ff"/> <!-- Primitive -->
-                        ...
-                    </pb_type>
-                    ...
-                </pb_type>
-                ...
-            </pb_type>
-            ...
-        </complexblocklist>
-
-    .. note: Intermediate pb_types can contain other intermediate or primitive pb_types so arbitrary hierarchies can be specified.
-
-    **General:**
-
-    :req_param name: The name of this pb_type.
-
-        The name must be unique with respect to any parent, sibling, or child ``<pb_type>``.
-
-    **Top Level Only:**
-
-    :opt_param capacity: The number of instances of this block type at each grid location
+    :opt_param capacity: The number of instances of this block type at each grid location.
 
         **Default:** ``1``
 
@@ -855,59 +835,7 @@ PB Type
 
         **Default:** from the ``<area>`` tag
 
-    **Intermediate or Primitive:**
-
-    :opt_param num_pb: The number of instances of this pb_type at the current hierarchy level.
-
-        **Default:** ``1``
-
-        For example:
-
-        .. code-block:: xml
-
-            <pb_type name="CLB">
-                ...
-                <pb_type name="ble" num_pb="10"/>
-                   ...
-                </pb_type>
-                ...
-            </pb_type>
-
-        would specify that the pb_type ``CLB`` contains 10 instances of the ``ble`` pb_type.
-
-    **Primitive Only:**
-
-    :req_param blif_model: Specifies the netlist primitive which can be implemented by this pb_type.
-
-        Accepted values:
-
-        * ``.input``: A BLIF netlist input
-
-        * ``.output``: A BLIF netlist output
-
-        * ``.names``: A BLIF .names (LUT) primitive
-
-        * ``.latch``: A BLIF .latch (DFF) primitive
-
-        * ``.subckt <custom_type>``: A user defined black-box primitive.
-
-        For example:
-
-        .. code-block:: xml
-
-            <pb_type name="my_adder" blif_model=".subckt adder"/>
-               ...
-            </pb_type>
-
-        would specify that the pb_type ``my_adder`` can implement a black-box BLIF primitive named ``adder``.
-
-        .. note:: The input/output/clock ports for primitive pb_types must match the ports specified in the ``<models>`` section.
-
-    :opt_param class: Specifies that this primitive is of a specialized type which should be treated specially.
-
-        .. seealso:: :ref:`arch_classes` for more details.
-
-The following tags are common to all <pb_type> tags:
+The following tags are common to all ``<tile>`` tags:
 
 .. arch:tag:: <input name="string" num_pins="int" equivalent="{none|full}" is_non_clock_global="{true|false}"/>
 
@@ -918,8 +846,6 @@ The following tags are common to all <pb_type> tags:
     :req_param num_pins: Number of pins the input port has.
 
     :opt_param equivalent:
-
-        .. note:: Applies only to top-level pb_type.
 
         Describes if the pins of the port are logically equivalent.
         Input logical equivalence means that the pin order can be swapped without changing functionality.
@@ -955,8 +881,6 @@ The following tags are common to all <pb_type> tags:
 
     :opt_param equivalent:
 
-        .. note:: Applies only to top-level pb_type.
-
         Describes if the pins of the output port are logically equivalent:
 
         * ``none``: No output pins are logically equivalent.
@@ -981,49 +905,6 @@ The following tags are common to all <pb_type> tags:
     Describes a clock port.
     Multple clock ports are described using multiple ``<clock>`` tags.
     *See above descriptions on inputs*
-
-.. arch:tag:: <mode name="string">
-
-    :req_param name:
-        Name for this mode.
-        Must be unique compared to other modes.
-
-    Specifies a mode of operation for the ``<pb_type>``.
-    Each child mode tag denotes a different mode of operation for the ``<pb_type>``.
-    Each mode tag may contains other ``<pb_type>`` and ``<interconnect>`` tags.
-
-    .. note:: Modes within the same parent ``<pb_type>`` are mutually exclusive.
-
-    .. note:: If a ``<pb_type>`` has only one mode of operation the mode tag can be omitted.
-
-    For example:
-
-    .. code-block:: xml
-
-        <!--A fracturable 6-input LUT-->
-        <pb_type name="lut">
-            ...
-            <mode name="lut6">
-                <!--Can be used as a single 6-LUT-->
-                <pb_type name="lut6" num_pb="1">
-                    ...
-                </pb_type>
-                ...
-            </mode>
-            ...
-            <mode name="lut5x2">
-                <!--Or as two 5-LUTs-->
-                <pb_type name="lut5" num_pb="2">
-                    ...
-                </pb_type>
-                ...
-            </mode>
-        </pb_type>
-
-    specifies the ``lut`` pb_type can be used as either a single 6-input LUT, or as two 5-input LUTs (but not both).
-
-The following tags are unique to the top level <pb_type> of a complex logic block.
-They describe how a complex block interfaces with the inter-block world.
 
 .. _arch_fc:
 
@@ -1060,7 +941,6 @@ They describe how a complex block interfaces with the inter-block world.
     .. note:: If ``<fc>`` is not specified for a complex block, the architecture's ``<default_fc>`` is used.
 
     .. note:: For unidirection routing architectures absolute :math:`F_c` values must be a multiple of 2.
-
 
     **Example:**
 
@@ -1296,6 +1176,241 @@ They describe how a complex block interfaces with the inter-block world.
                 <sb_loc type="full" xoffset="1" yoffset="1"> <!-- Right edge -->
                 <sb_loc type="full" xoffset="1" yoffset="2"> <!-- Top Right -->
             <switchblock_locations/>
+
+.. arch:tag:: <equivalent_sites>
+
+    Describes the Complex Blocks that can be placed within this tile.
+
+    .. arch:tag:: <site pb_type="string"/>
+
+    :req_param pb_type: Name of the corresponding pb_type.
+
+    **Example: Equivalent Sites**
+
+    .. code-block:: xml
+
+        <equivalent_sites>
+            <site pb_type="MLAB">
+        </equivalent_sites>
+
+.. _arch_complex_blocks:
+
+Complex Blocks
+--------------
+
+.. seealso:: For a step-by-step walkthrough on building a complex block see :ref:`arch_tutorial`.
+
+The content within the ``<complexblocklist>`` describes the complex blocks found within the FPGA.
+Each type of complex block is specified with a top-level ``<pb_type>`` tag within the ``<complexblocklist>`` tag.
+
+PB Type
+~~~~~~~
+.. arch:tag:: <pb_type name="string" num_pb="int" blif_model="string"/>
+
+    Specifies a top-level complex block, or a complex block's internal components (sub-blocks).
+    Which attributes are applicable depends on where the ``<pb_type>`` tag falls within the hierarchy:
+
+    * Top Level: A child of the ``<complexblocklist>``
+    * Intermediate: A child of another ``<pb_type>``
+    * Primitive/Leaf: Contains no ``<pb_type>`` children
+
+    For example:
+
+    .. code-block:: xml
+
+        <complexblocklist>
+            <pb_type name="CLB"/> <!-- Top level -->
+                ...
+                <pb_type name="ble"/> <!-- Intermediate -->
+                    ...
+                    <pb_type name="lut"/> <!-- Primitive -->
+                        ...
+                    </pb_type>
+                    <pb_type name="ff"/> <!-- Primitive -->
+                        ...
+                    </pb_type>
+                    ...
+                </pb_type>
+                ...
+            </pb_type>
+            ...
+        </complexblocklist>
+
+    .. note: Intermediate pb_types can contain other intermediate or primitive pb_types so arbitrary hierarchies can be specified.
+
+    **General:**
+
+    :req_param name: The name of this pb_type.
+
+        The name must be unique with respect to any parent, sibling, or child ``<pb_type>``.
+
+
+    **Top-level, Intermediate or Primitive:**
+
+    :opt_param num_pb: The number of instances of this pb_type at the current hierarchy level.
+
+        **Default:** ``1``
+
+        For example:
+
+        .. code-block:: xml
+
+            <pb_type name="CLB">
+                ...
+                <pb_type name="ble" num_pb="10"/>
+                   ...
+                </pb_type>
+                ...
+            </pb_type>
+
+        would specify that the pb_type ``CLB`` contains 10 instances of the ``ble`` pb_type.
+
+    **Primitive Only:**
+
+    :req_param blif_model: Specifies the netlist primitive which can be implemented by this pb_type.
+
+        Accepted values:
+
+        * ``.input``: A BLIF netlist input
+
+        * ``.output``: A BLIF netlist output
+
+        * ``.names``: A BLIF .names (LUT) primitive
+
+        * ``.latch``: A BLIF .latch (DFF) primitive
+
+        * ``.subckt <custom_type>``: A user defined black-box primitive.
+
+        For example:
+
+        .. code-block:: xml
+
+            <pb_type name="my_adder" blif_model=".subckt adder"/>
+               ...
+            </pb_type>
+
+        would specify that the pb_type ``my_adder`` can implement a black-box BLIF primitive named ``adder``.
+
+        .. note:: The input/output/clock ports for primitive pb_types must match the ports specified in the ``<models>`` section.
+
+    :opt_param class: Specifies that this primitive is of a specialized type which should be treated specially.
+
+        .. seealso:: :ref:`arch_classes` for more details.
+
+The following tags are common to all <pb_type> tags:
+
+.. arch:tag:: <input name="string" num_pins="int" equivalent="{none|full}" is_non_clock_global="{true|false}"/>
+
+    Defines an input port.
+    Multple input ports are described using multiple ``<input>`` tags.
+
+    :req_param name: Name of the input port.
+    :req_param num_pins: Number of pins the input port has.
+
+    :opt_param equivalent:
+
+        .. note:: Applies only to top-level pb_type.
+
+        Describes if the pins of the port are logically equivalent.
+        Input logical equivalence means that the pin order can be swapped without changing functionality.
+        For example, an AND gate has logically equivalent inputs because you can swap the order of the inputs and it’s still correct; an adder, on the otherhand, is not logically equivalent because if you swap the MSB with the LSB, the results are completely wrong.
+        LUTs are also considered logically equivalent since the logic function (LUT mask) can be rotated to account for pin swapping.
+
+        * ``none``: No input pins are logically equivalent.
+
+            Input pins can not be swapped by the router. (Generates a unique SINK rr-node for each block input port pin.)
+
+        * ``full``: All input pins are considered logically equivalent (e.g. due to logical equivalance or a full-crossbar within the cluster).
+
+            All input pins can be swapped without limitation by the router. (Generates a single SINK rr-node shared by each input port pin.)
+
+        **default:** ``none``
+
+    :opt_param is_non_clock_global:
+
+        .. note:: Applies only to top-level pb_type.
+
+        Describes if this input pin is a global signal that is not a clock.
+        Very useful for signals such as FPGA-wide asynchronous resets.
+        These signals have their own dedicated routing channels and so should not use the general interconnect fabric on the FPGA.
+
+
+.. arch:tag:: <output name="string" num_pins="int" equivalent="{none|full|instance}"/>
+
+    Defines an output port.
+    Multple output ports are described using multiple ``<output>`` tags
+
+    :req_param name: Name of the output port.
+    :req_param num_pins: Number of pins the output port has.
+
+    :opt_param equivalent:
+
+        .. note:: Applies only to top-level pb_type.
+
+        Describes if the pins of the output port are logically equivalent:
+
+        * ``none``: No output pins are logically equivalent.
+
+            Output pins can not be swapped by the router. (Generates a unique SRC rr-node for each block output port pin.)
+
+        * ``full``: All output pins are considered logically equivalent.
+
+            All output pins can be swapped without limitation by the router. For example, this option would be appropriate to model an output port which has a full crossbar between it and the logic within the block that drives it. (Generates a single SRC rr-node shared by each output port pin.)
+
+        * ``instance``: Models that sub-instances within a block (e.g. LUTs/BLEs) can be swapped to achieve a limited form of output pin logical equivalence.
+
+            Like ``full``, this generates a single SRC rr-node shared by each output port pin. However, each net originating from this source can use only one output pin from the equivalence group. This can be useful in modeling more complex forms of equivalence in which you can swap which BLE implements which function to gain access to different inputs.
+
+            .. warning:: When using ``instance`` equivalence you must be careful to ensure output swapping would not make the cluster internal routing (previously computed by the clusterer) illegal; the tool does not update the cluster internal routing due to output pin swapping.
+
+        **Default:** ``none``
+
+
+.. arch:tag:: <clock name="string" num_pins="int" equivalent="{none|full}"/>
+
+    Describes a clock port.
+    Multple clock ports are described using multiple ``<clock>`` tags.
+    *See above descriptions on inputs*
+
+.. arch:tag:: <mode name="string">
+
+    :req_param name:
+        Name for this mode.
+        Must be unique compared to other modes.
+
+    Specifies a mode of operation for the ``<pb_type>``.
+    Each child mode tag denotes a different mode of operation for the ``<pb_type>``.
+    Each mode tag may contains other ``<pb_type>`` and ``<interconnect>`` tags.
+
+    .. note:: Modes within the same parent ``<pb_type>`` are mutually exclusive.
+
+    .. note:: If a ``<pb_type>`` has only one mode of operation the mode tag can be omitted.
+
+    For example:
+
+    .. code-block:: xml
+
+        <!--A fracturable 6-input LUT-->
+        <pb_type name="lut">
+            ...
+            <mode name="lut6">
+                <!--Can be used as a single 6-LUT-->
+                <pb_type name="lut6" num_pb="1">
+                    ...
+                </pb_type>
+                ...
+            </mode>
+            ...
+            <mode name="lut5x2">
+                <!--Or as two 5-LUTs-->
+                <pb_type name="lut5" num_pb="2">
+                    ...
+                </pb_type>
+                ...
+            </mode>
+        </pb_type>
+
+    specifies the ``lut`` pb_type can be used as either a single 6-input LUT, or as two 5-input LUTs (but not both).
 
 Interconnect
 ~~~~~~~~~~~~

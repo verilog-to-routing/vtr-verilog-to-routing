@@ -13,7 +13,6 @@
 #include <cstdio>
 #include <cstring>
 #include <ctime>
-using namespace std;
 
 #include "vtr_error.h"
 #include "vtr_memory.h"

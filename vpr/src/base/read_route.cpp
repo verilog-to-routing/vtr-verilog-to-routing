@@ -17,7 +17,6 @@
 #include <sstream>
 #include <string>
 #include <unordered_set>
-using namespace std;
 
 #include "atom_netlist.h"
 #include "atom_netlist_utils.h"
@@ -43,13 +42,13 @@ using namespace std;
 #include "read_route.h"
 
 /*************Functions local to this module*************/
-static void process_route(ifstream& fp, const char* filename, int& lineno);
-static void process_nodes(ifstream& fp, ClusterNetId inet, const char* filename, int& lineno);
-static void process_nets(ifstream& fp, ClusterNetId inet, string name, std::vector<std::string> input_tokens, const char* filename, int& lineno);
-static void process_global_blocks(ifstream& fp, ClusterNetId inet, const char* filename, int& lineno);
-static void format_coordinates(int& x, int& y, string coord, ClusterNetId net, const char* filename, const int lineno);
-static void format_pin_info(string& pb_name, string& port_name, int& pb_pin_num, string input);
-static string format_name(string name);
+static void process_route(std::ifstream& fp, const char* filename, int& lineno);
+static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno);
+static void process_nets(std::ifstream& fp, ClusterNetId inet, std::string name, std::vector<std::string> input_tokens, const char* filename, int& lineno);
+static void process_global_blocks(std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno);
+static void format_coordinates(int& x, int& y, std::string coord, ClusterNetId net, const char* filename, const int lineno);
+static void format_pin_info(std::string& pb_name, std::string& port_name, int& pb_pin_num, std::string input);
+static std::string format_name(std::string name);
 
 /*************Global Functions****************************/
 bool read_route(const char* route_file, const t_router_opts& router_opts, bool verify_file_digests) {
@@ -61,9 +60,9 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     /* Begin parsing the file */
     VTR_LOG("Begin loading FPGA routing file.\n");
 
-    string header_str;
+    std::string header_str;
 
-    ifstream fp;
+    std::ifstream fp;
     fp.open(route_file);
 
     int lineno = 0;
@@ -73,7 +72,7 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
                   "Cannot open %s routing file", route_file);
     }
 
-    getline(fp, header_str);
+    std::getline(fp, header_str);
     ++lineno;
 
     std::vector<std::string> header = vtr::split(header_str);
@@ -94,7 +93,7 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     init_route_structs(router_opts.bb_factor);
 
     /*Check dimensions*/
-    getline(fp, header_str);
+    std::getline(fp, header_str);
     ++lineno;
     header.clear();
     header = vtr::split(header_str);
@@ -127,11 +126,11 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     return is_feasible;
 }
 
-static void process_route(ifstream& fp, const char* filename, int& lineno) {
+static void process_route(std::ifstream& fp, const char* filename, int& lineno) {
     /*Walks through every net and add the routing appropriately*/
-    string input;
+    std::string input;
     std::vector<std::string> tokens;
-    while (getline(fp, input)) {
+    while (std::getline(fp, input)) {
         ++lineno;
         tokens.clear();
         tokens = vtr::split(input);
@@ -148,7 +147,7 @@ static void process_route(ifstream& fp, const char* filename, int& lineno) {
     tokens.clear();
 }
 
-static void process_nets(ifstream& fp, ClusterNetId inet, string name, std::vector<std::string> input_tokens, const char* filename, int& lineno) {
+static void process_nets(std::ifstream& fp, ClusterNetId inet, std::string name, std::vector<std::string> input_tokens, const char* filename, int& lineno) {
     /* Check if the net is global or not, and process appropriately */
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
@@ -190,7 +189,7 @@ static void process_nets(ifstream& fp, ClusterNetId inet, string name, std::vect
     return;
 }
 
-static void process_nodes(ifstream& fp, ClusterNetId inet, const char* filename, int& lineno) {
+static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno) {
     /* Not a global net. Goes through every node and add it into trace.head*/
 
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
@@ -201,14 +200,14 @@ static void process_nodes(ifstream& fp, ClusterNetId inet, const char* filename,
     t_trace* tptr = route_ctx.trace[inet].head;
 
     /*remember the position of the last line in order to go back*/
-    streampos oldpos = fp.tellg();
+    std::streampos oldpos = fp.tellg();
     int inode, x, y, x2, y2, ptc, switch_id, offset;
     int node_count = 0;
-    string input;
+    std::string input;
     std::vector<std::string> tokens;
 
     /*Walk through every line that begins with Node:*/
-    while (getline(fp, input)) {
+    while (std::getline(fp, input)) {
         ++lineno;
 
         tokens.clear();
@@ -292,7 +291,7 @@ static void process_nodes(ifstream& fp, ClusterNetId inet, const char* filename,
                     t_pb_graph_pin* pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
                     t_pb_type* pb_type = pb_pin->parent_node->pb_type;
 
-                    string pb_name, port_name;
+                    std::string pb_name, port_name;
                     int pb_pin_num;
 
                     format_pin_info(pb_name, port_name, pb_pin_num, tokens[6 + offset]);
@@ -334,18 +333,18 @@ static void process_nodes(ifstream& fp, ClusterNetId inet, const char* filename,
 
 /*This function goes through all the blocks in a global net and verify it with the
  * clustered netlist and the placement */
-static void process_global_blocks(ifstream& fp, ClusterNetId inet, const char* filename, int& lineno) {
+static void process_global_blocks(std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno) {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
-    string block, bnum_str;
+    std::string block, bnum_str;
     int x, y;
     std::vector<std::string> tokens;
     int pin_counter = 0;
 
-    streampos oldpos = fp.tellg();
+    std::streampos oldpos = fp.tellg();
     /*Walk through every block line*/
-    while (getline(fp, block)) {
+    while (std::getline(fp, block)) {
         ++lineno;
         tokens.clear();
         tokens = vtr::split(block);
@@ -380,10 +379,10 @@ static void process_global_blocks(ifstream& fp, ClusterNetId inet, const char* f
             }
 
             int pin_index = cluster_ctx.clb_nlist.net_pin_physical_index(inet, pin_counter);
-            if (cluster_ctx.clb_nlist.block_type(bnum)->pin_class[pin_index] != atoi(tokens[7].c_str())) {
+            if (physical_tile_type(bnum)->pin_class[pin_index] != atoi(tokens[7].c_str())) {
                 vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                           "The pin class %d of %lu net does not match given ",
-                          atoi(tokens[7].c_str()), size_t(inet), cluster_ctx.clb_nlist.block_type(bnum)->pin_class[pin_index]);
+                          atoi(tokens[7].c_str()), size_t(inet), physical_tile_type(bnum)->pin_class[pin_index]);
             }
             pin_counter++;
         }
@@ -391,10 +390,10 @@ static void process_global_blocks(ifstream& fp, ClusterNetId inet, const char* f
     }
 }
 
-static void format_coordinates(int& x, int& y, string coord, ClusterNetId net, const char* filename, const int lineno) {
+static void format_coordinates(int& x, int& y, std::string coord, ClusterNetId net, const char* filename, const int lineno) {
     /*Parse coordinates in the form of (x,y) into correct x and y values*/
     coord = format_name(coord);
-    stringstream coord_stream(coord);
+    std::stringstream coord_stream(coord);
     if (!(coord_stream >> x)) {
         vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                   "Net %lu has coordinates that is not in the form (x,y)", size_t(net));
@@ -406,12 +405,12 @@ static void format_coordinates(int& x, int& y, string coord, ClusterNetId net, c
     }
 }
 
-static void format_pin_info(string& pb_name, string& port_name, int& pb_pin_num, string input) {
+static void format_pin_info(std::string& pb_name, std::string& port_name, int& pb_pin_num, std::string input) {
     /*Parse the pin info in the form of pb_name.port_name[pb_pin_num]
      *into its appropriate variables*/
-    stringstream pb_info(input);
-    getline(pb_info, pb_name, '.');
-    getline(pb_info, port_name, '[');
+    std::stringstream pb_info(input);
+    std::getline(pb_info, pb_name, '.');
+    std::getline(pb_info, port_name, '[');
     pb_info >> pb_pin_num;
     if (!pb_info) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -421,7 +420,7 @@ static void format_pin_info(string& pb_name, string& port_name, int& pb_pin_num,
 }
 
 /*Return actual name by extracting it out of the form of (name)*/
-static string format_name(string name) {
+static std::string format_name(std::string name) {
     if (name.length() > 2) {
         name.erase(name.begin());
         name.erase(name.end() - 1);

@@ -20,7 +20,7 @@ import shlex
 import recommonmark
 
 sys.path.append(".")
-from markdown_code_symlinks import MarkdownCodeSymlinks
+from markdown_code_symlinks import LinkParser, MarkdownSymlinksDomain
 
 # Cool looking ReadTheDocs theme
 import sphinx_rtd_theme
@@ -55,6 +55,7 @@ from vtr_version import get_vtr_version, get_vtr_release
 extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',
+    'notfound.extension',
     'sphinx_markdown_tables',
     'sdcdomain',
     'archdomain',
@@ -71,7 +72,7 @@ templates_path = []
 
 # Support rendering Markdown docs
 source_parsers = {
-   '.md': 'recommonmark.parser.CommonMarkParser',
+   '.md': 'markdown_code_symlinks.LinkParser',
 }
 
 # The suffix(es) of source filenames.
@@ -324,13 +325,34 @@ texinfo_documents = [
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
 
+# -- Options for 404 page -------------------------------------------
+
+# sphinx-notfound-page
+# https://github.com/readthedocs/sphinx-notfound-page
+notfound_context = {
+    'title': 'Page Not Found',
+    'body': '''
+<h1>Page Not Found</h1>
+<p>Sorry, we couldn't find that page.</p>
+<p>Try using the search box or go to the homepage.</p>
+''',
+}
+
 def setup(app):
-    MarkdownCodeSymlinks.find_links()
+    github_code_repo = 'https://github.com/verilog-to-routing/vtr-verilog-to-routing/'
+    github_code_branch = 'blob/master/'
+
+    docs_root_dir = os.path.realpath(os.path.dirname(__file__))
+    code_root_dir = os.path.realpath(os.path.join(docs_root_dir, "..", ".."))
+
+    MarkdownSymlinksDomain.init_domain(github_code_repo, github_code_branch,
+        docs_root_dir, code_root_dir)
+    MarkdownSymlinksDomain.find_links()
+    app.add_domain(MarkdownSymlinksDomain)
     app.add_config_value(
         'recommonmark_config', {
-            'github_code_repo': 'https://github.com/verilog-to-routing/vtr-verilog-to-routing',
+            'github_code_repo': github_code_repo,
             'enable_math': True,
             'enable_inline_math': True,
         }, True)
-    app.add_transform(MarkdownCodeSymlinks)
     app.add_stylesheet('css/vtr.css')

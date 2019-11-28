@@ -369,6 +369,11 @@ function populate_arg_from_file() {
 	_circuit_list_remove=""
 	_arch_list_add=""
 	_arch_list_remove=""
+	_local_script_synthesis_params=""
+	_local_script_simulation_params=""
+	_local_synthesis_params=""
+	_local_simulation_params=""
+	_local_regression_params=""
 
 	if [ "_$1" == "_" ] || [ ! -f "$1" ]
 	then
@@ -409,19 +414,19 @@ function populate_arg_from_file() {
 						_arch_list_add="${_arch_list_add} ${_value}"
 
 					;;_script_synthesis_params)
-						_script_synthesis_params="${_script_synthesis_params} ${_value}"
+						_local_script_synthesis_params="${_local_script_synthesis_params} ${_value}"
 
 					;;_script_simulation_params)
-						_script_simulation_params="${_script_simulation_params} ${_value}"
+						_local_script_simulation_params="${_local_script_simulation_params} ${_value}"
 
 					;;_synthesis_params)
-						_synthesis_params="${_synthesis_params} ${_value}"					
+						_local_synthesis_params="${_local_synthesis_params} ${_value}"					
 						
 					;;_simulation_params)
-						_simulation_params="${_simulation_params} ${_value}"
+						_local_simulation_params="${_local_simulation_params} ${_value}"
 
 					;;_regression_params)
-						_regression_params="${_regression_params} ${_value}"
+						_local_regression_params="${_local_regression_params} ${_value}"
 
 					;;_)
 						echo "skip" > /dev/null
@@ -435,11 +440,11 @@ function populate_arg_from_file() {
 		IFS=${OLD_IFS}
 	fi
 
-	_regression_params=$(echo "${_regression_params} ")
-	_script_simulation_params=$(echo "${_script_simulation_params} ")
-	_script_synthesis_params=$(echo "${_script_synthesis_params} ")
-	_synthesis_params=$(echo "${_synthesis_params} ")
-	_simulation_params=$(echo "${_simulation_params} ")
+	_regression_params=$(echo "${_local_regression_params} ")
+	_script_simulation_params=$(echo "${_local_script_simulation_params} ")
+	_script_synthesis_params=$(echo "${_local_script_synthesis_params} ")
+	_synthesis_params=$(echo "${_local_synthesis_params} ")
+	_simulation_params=$(echo "${_local_simulation_params} ")
 	_circuit_list=$(echo "${_circuit_list} ")
 	_arch_list=$(echo "${_arch_list} ")
 	_circuit_dir=$(echo "${THIS_DIR}/${_circuit_dir}")

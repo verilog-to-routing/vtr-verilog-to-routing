@@ -8,6 +8,7 @@
 #include "ast_util.h"
 #include "ast_elaborate.h"
 #include "parse_making_ast.h"
+#include "netlist_create_from_ast.h"
 #include "odin_util.h"
 #include "vtr_memory.h"
 #include "vtr_util.h"
@@ -15,20 +16,18 @@
 /* This files header */
 #include "ast_loop_unroll.h"
 
-ast_node_t *unroll_for_loop(ast_node_t* node, ast_node_t *parent, STRING_CACHE_LIST *local_string_cache_list)
+ast_node_t *unroll_for_loop(ast_node_t* node, ast_node_t *parent, int *num_unrolled, sc_hierarchy *local_ref, bool is_generate)
 {
 	oassert(node && node->type == FOR);
 
-	char *module_id = local_string_cache_list->instance_name_prefix;
-	long sc_spot = sc_lookup_string(module_names_to_idx, module_id);
-	oassert(sc_spot > -1);
-	ast_node_t *ast_module = (ast_node_t *)module_names_to_idx->data[sc_spot];
-
-	ast_node_t* unrolled_for = resolve_for(ast_module, node);
+	ast_node_t* unrolled_for = resolve_for(node);
 	oassert(unrolled_for != nullptr);
+
+	*num_unrolled = unrolled_for->num_children;
 	
 	/* update parent */
 	int i;
+	int this_genblk = 0;
 	for (i = 0; i < parent->num_children; i++)
 	{
 		if (node == parent->children[i])
@@ -36,8 +35,78 @@ ast_node_t *unroll_for_loop(ast_node_t* node, ast_node_t *parent, STRING_CACHE_L
 			int j;
 			for (j = i; j < (unrolled_for->num_children + i); j++)
 			{
-				add_child_to_node_at_index(parent, unrolled_for->children[j-i], j);
+				ast_node_t *child = unrolled_for->children[j-i];
+				add_child_to_node_at_index(parent, child, j);
 				unrolled_for->children[j-i] = NULL;
+
+				/* create scopes as necessary */
+				if (is_generate)
+				{
+					oassert(child->type == BLOCK);
+
+					/*  generate blocks always have scopes; parent has access to named block 
+						but not unnamed, and child always has access to parent */
+					sc_hierarchy *child_hierarchy = init_sc_hierarchy();
+					child->types.hierarchy = child_hierarchy;
+
+					child_hierarchy->top_node = child;
+					child_hierarchy->parent = local_ref;
+
+					if (child->types.identifier != NULL)
+					{
+						local_ref->block_children = (sc_hierarchy **)vtr::realloc(local_ref->block_children, sizeof(sc_hierarchy *)*(local_ref->num_block_children + 1));
+						local_ref->block_children[local_ref->num_block_children] = child_hierarchy;
+						local_ref->num_block_children++;
+					
+						/* add an array reference to this label */
+						std::string new_id(child->types.identifier);
+						new_id = new_id + "[" + std::to_string(j-i) + "]";
+						vtr::free(child->types.identifier);
+						child->types.identifier = vtr::strdup(new_id.c_str());
+
+						child_hierarchy->scope_id = node->types.identifier;
+						child_hierarchy->instance_name_prefix = make_full_ref_name(local_ref->instance_name_prefix, NULL, child->types.identifier, NULL, -1);
+					}
+					else
+					{
+						/* create a unique scope id/instance name prefix for internal use */
+						this_genblk = local_ref->num_unnamed_genblks + 1;
+						std::string new_scope_id("genblk");
+						new_scope_id = new_scope_id + std::to_string(this_genblk) + "[" + std::to_string(j-i) + "]";
+						child_hierarchy->scope_id = vtr::strdup(new_scope_id.c_str());
+						child_hierarchy->instance_name_prefix = make_full_ref_name(local_ref->instance_name_prefix, NULL, child_hierarchy->scope_id, NULL, -1);
+					}
+
+					/* string caches */
+					create_param_table_for_scope(child, child_hierarchy);
+					create_symbol_table_for_scope(child, child_hierarchy);
+				}
+				else if (child->type == BLOCK && child->types.identifier != NULL)
+				{
+					/* only create scope if child is named block */
+					sc_hierarchy *child_hierarchy = init_sc_hierarchy();
+					child->types.hierarchy = child_hierarchy;
+
+					child_hierarchy->top_node = child;
+					child_hierarchy->parent = local_ref;
+
+					local_ref->block_children = (sc_hierarchy **)vtr::realloc(local_ref->block_children, sizeof(sc_hierarchy *)*(local_ref->num_block_children + 1));
+					local_ref->block_children[local_ref->num_block_children] = child_hierarchy;
+					local_ref->num_block_children++;
+
+					/* add an array reference to this label */
+					std::string new_id(child->types.identifier);
+					new_id = new_id + "[" + std::to_string(j-i) + "]";
+					vtr::free(child->types.identifier);
+					child->types.identifier = vtr::strdup(new_id.c_str());
+
+					child_hierarchy->scope_id = node->types.identifier;
+					child_hierarchy->instance_name_prefix = make_full_ref_name(local_ref->instance_name_prefix, NULL, child->types.identifier, NULL, -1);
+
+					/* string caches */
+					create_param_table_for_scope(child, child_hierarchy);
+					create_symbol_table_for_scope(child, child_hierarchy);
+				}
 			}
 
 			oassert(j == (unrolled_for->num_children + i) && parent->children[j] == node);
@@ -45,6 +114,11 @@ ast_node_t *unroll_for_loop(ast_node_t* node, ast_node_t *parent, STRING_CACHE_L
 
 			break;
 		}
+	}
+
+	if (this_genblk > 0)
+	{
+		local_ref->num_unnamed_genblks++;
 	}
 	
 	free_whole_tree(unrolled_for);
@@ -54,7 +128,7 @@ ast_node_t *unroll_for_loop(ast_node_t* node, ast_node_t *parent, STRING_CACHE_L
 /*
  *  (function: resolve_for)
  */
-ast_node_t* resolve_for(ast_node_t *ast_module, ast_node_t* node)
+ast_node_t* resolve_for(ast_node_t* node)
 {
 	oassert(is_for_node(node));
 	oassert(node != nullptr);
@@ -87,7 +161,7 @@ ast_node_t* resolve_for(ast_node_t *ast_module, ast_node_t* node)
 	bool dup_body = cond_func(value->types.vnumber->get_value());
 	while(dup_body)
 	{
-		ast_node_t* new_body = dup_and_fill_body(ast_module, body, pre, &value, &error_code);
+		ast_node_t* new_body = dup_and_fill_body(body, pre, &value, &error_code);
 		if(error_code)
 		{
 			error_message(PARSE_ERROR, pre->line_number, pre->file_number, "%s", "Unsupported pre-condition node in for loop");
@@ -97,7 +171,7 @@ ast_node_t* resolve_for(ast_node_t *ast_module, ast_node_t* node)
 		value->types.vnumber = new VNumber(post_func(temp_vnum->get_value()));
 		delete temp_vnum;
 		
-		body_parent = body_parent ? newList_entry(body_parent, new_body) : newList(BLOCK, new_body);
+		body_parent = body_parent ? newList_entry(body_parent, new_body) : newList(BLOCK, new_body, new_body->line_number);
 		
 		dup_body = cond_func(value->types.vnumber->get_value());
 	}
@@ -355,26 +429,7 @@ post_condition_function resolve_post_condition(ast_node_t* assignment, ast_node_
 	return resolve_binary_operation(node);
 }
 
-ast_node_t* replace_named_module(ast_node_t* module, ast_node_t** value)
-{
-	ast_node_t* copy = ast_node_deep_copy(module);
-
-	oassert( value  && "Value node reference is NULL");
-	oassert( *value && "Value node is NULL");
-	oassert( (*value)->type == NUMBERS  && "Value node type is not a NUMBER");
-
-	long int val = (*value)->types.vnumber->get_value();
-	std::string concat_string(copy->children[0]->types.identifier);
-	concat_string = concat_string + "[" + std::to_string(val) + "]";
-
-	vtr::free(copy->children[0]->types.identifier);
-	copy->children[0]->types.identifier = vtr::strdup(concat_string.c_str());
-
-	free_whole_tree(module);
-	return copy;
-}
-
-ast_node_t* dup_and_fill_body(ast_node_t *ast_module, ast_node_t* body, ast_node_t* pre, ast_node_t** value, int* error_code)
+ast_node_t* dup_and_fill_body(ast_node_t* body, ast_node_t* pre, ast_node_t** value, int* error_code)
 {
 	ast_node_t* copy = ast_node_deep_copy(body);
 	for(long i = 0; i<copy->num_children; i++)
@@ -395,13 +450,9 @@ ast_node_t* dup_and_fill_body(ast_node_t *ast_module, ast_node_t* body, ast_node
 			} 
 			else if(child->type == MODULE_INSTANCE && child->children[0]->type != MODULE_INSTANCE)
 			{
-				/* give this unrolled instance a unique name */
-				copy->children[i]->children[1] = replace_named_module(child->children[1], value);
-				oassert(copy->children[i]->children[1]);
-
 				/* find and replace iteration symbol for port connections and parameters */
 				ast_node_t *named_instance = child->children[1];
-				copy->children[i]->children[1] = dup_and_fill_body(ast_module, named_instance, pre, value, error_code);
+				copy->children[i]->children[1] = dup_and_fill_body(named_instance, pre, value, error_code);
 				free_whole_tree(named_instance);
 
 				is_unrolled = true;
@@ -416,7 +467,7 @@ ast_node_t* dup_and_fill_body(ast_node_t *ast_module, ast_node_t* body, ast_node
 						if (copy->children[i]->children[j] != child->children[j]) free_whole_tree(copy->children[i]->children[j]);
 					}
 					
-					copy->children[i] = dup_and_fill_body(ast_module, child, pre, value, error_code);
+					copy->children[i] = dup_and_fill_body(child, pre, value, error_code);
 					free_whole_tree(child);
 				}
 			}

@@ -1,6 +1,5 @@
 #include <cstdio>
 #include <cstring>
-using namespace std;
 
 #include "vtr_util.h"
 #include "vtr_memory.h"
@@ -71,6 +70,9 @@ void alloc_and_load_echo_file_info() {
     //User input nelist
     setEchoFileName(E_ECHO_ATOM_NETLIST_ORIG, "atom_netlist.orig.echo.blif");
     setEchoFileName(E_ECHO_ATOM_NETLIST_CLEANED, "atom_netlist.cleaned.echo.blif");
+
+    //Intra-block routing
+    setEchoFileName(E_ECHO_INTRA_LB_FAILED_ROUTE, "intra_lb_failed_route.echo");
 
     //Timing Graphs
     setEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH, "timing_graph.pre_pack.echo");

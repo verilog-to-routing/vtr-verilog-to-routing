@@ -24,6 +24,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdio.h>
 #include <string.h>
 #include <sstream>
+#include <vector>
 
 #include "vtr_error.h"
 #include "vtr_time.h"
@@ -63,16 +64,20 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #define DEFAULT_OUTPUT "."
 
-int current_parse_file;
+int current_parse_file = -1;
 t_arch Arch;
 global_args_t global_args;
-t_type_descriptor* type_descriptors;
-int block_tag;
-int num_types=0;
+std::vector<t_physical_tile_type> physical_tile_types;
+std::vector<t_logical_block_type> logical_block_types;
+int block_tag = -1;
+ids default_net_type = WIRE;
 
 enum ODIN_ERROR_CODE
 {
 	SUCCESS,
+	ERROR_INITIALIZATION,
+	ERROR_PARSE_CONFIG,
+	ERROR_PARSE_ARGS,
 	ERROR_PARSE_ARCH,
 	ERROR_SYNTHESIS,
 	ERROR_PARSE_BLIF,
@@ -193,15 +198,22 @@ static ODIN_ERROR_CODE synthesize_verilog()
 netlist_t *start_odin_ii(int argc,char **argv)
 {
 
-	/* Some initialization */
-	one_string = vtr::strdup(ONE_VCC_CNS);
-	zero_string = vtr::strdup(ZERO_GND_ZERO);
-	pad_string = vtr::strdup(ZERO_PAD_ZERO);
+	try 
+	{
+		/* Some initialization */
+		one_string = vtr::strdup(ONE_VCC_CNS);
+		zero_string = vtr::strdup(ZERO_GND_ZERO);
+		pad_string = vtr::strdup(ZERO_PAD_ZERO);
 
-	printf("--------------------------------------------------------------------\n");
-	printf("Welcome to ODIN II version 0.1 - the better High level synthesis tools++ targetting FPGAs (mainly VPR)\n");
-	printf("Email: jamieson.peter@gmail.com and ken@unb.ca for support issues\n\n");
-
+		printf("--------------------------------------------------------------------\n");
+		printf("Welcome to ODIN II version 0.1 - the better High level synthesis tools++ targetting FPGAs (mainly VPR)\n");
+		printf("Email: jamieson.peter@gmail.com and ken@unb.ca for support issues\n\n");
+	}
+	catch(vtr::VtrError& vtr_error) 
+	{
+		printf("Odin failed to initialize %s with exit code%d\n", vtr_error.what(), ERROR_INITIALIZATION);
+		exit(ERROR_INITIALIZATION);
+	}
 
 	try 
 	{
@@ -216,13 +228,13 @@ netlist_t *start_odin_ii(int argc,char **argv)
 	} 
 	catch(vtr::VtrError& vtr_error) 
 	{
-		printf("Odin Failed Reading The command line argumenrs %s with exit code%d\n", vtr_error.what(), ERROR_PARSE_ARCH);
-		exit(ERROR_PARSE_ARCH);
+		printf("Odin Failed Reading The command line arguments  %s with exit code%d\n", vtr_error.what(), ERROR_PARSE_ARGS);
+		exit(ERROR_PARSE_ARGS);
 	}
 	catch(argparse::ArgParseError& arg_error)
 	{
-		printf("Odin Failed Reading The command line argumenrs %s with exit code%d\n", arg_error.what(), ERROR_PARSE_ARCH);
-		exit(ERROR_PARSE_ARCH);
+		printf("Odin Failed Reading The command line arguments  %s with exit code%d\n", arg_error.what(), ERROR_PARSE_ARGS);
+		exit(ERROR_PARSE_ARGS);
 	}
 
 	/* read the confirguration file .. get options presets the config values just in case theyr'e not read in with config file */
@@ -235,8 +247,8 @@ netlist_t *start_odin_ii(int argc,char **argv)
 		} 
 		catch(vtr::VtrError& vtr_error) 
 		{
-			printf("Odin Failed Reading Configuration file %s with exit code%d\n", vtr_error.what(), ERROR_PARSE_ARCH);
-			exit(ERROR_PARSE_ARCH);
+			printf("Odin Failed Reading Configuration file %s with exit code%d\n", vtr_error.what(), ERROR_PARSE_CONFIG);
+			exit(ERROR_PARSE_CONFIG);
 		}
 	}
 
@@ -246,7 +258,7 @@ netlist_t *start_odin_ii(int argc,char **argv)
 		printf("Reading FPGA Architecture file\n");
 		try 
 		{
-			XmlReadArch(global_args.arch_file.value().c_str(), false, &Arch, &type_descriptors, &num_types);
+			XmlReadArch(global_args.arch_file.value().c_str(), false, &Arch, physical_tile_types, logical_block_types);
 		} 
 		catch(vtr::VtrError& vtr_error) 
 		{
@@ -317,7 +329,8 @@ int terminate_odin_ii(netlist_t *odin_netlist)
 
 	//Clean-up
 	free_arch(&Arch);
-	free_type_descriptors(type_descriptors, num_types);
+	free_type_descriptors(logical_block_types);
+	free_type_descriptors(physical_tile_types);
 
 	return 0;
 }

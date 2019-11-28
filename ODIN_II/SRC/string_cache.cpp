@@ -194,30 +194,59 @@ sc_do_alloc(long a,
 
 STRING_CACHE * sc_free_string_cache(STRING_CACHE * sc)
 {
-    long i;
+    if(sc != NULL)
+    {
+        if (sc->string != NULL)
+        {
+            for(long i = 0; i < sc->free; i++)
+            {
+                if (sc->string[i] != NULL)
+                {
+                    vtr::free(sc->string[i]);
+                }
+                sc->string[i] = NULL;
+            }
+            vtr::free(sc->string);
+        }
+        sc->string = NULL;
 
-    if(sc == NULL) return NULL;
-    for(i = 0; i < sc->free; i++)
-	if (sc->string != NULL)
-	    vtr::free(sc->string[i]);
-    vtr::free(sc->string);
-    sc->string = NULL;
-    if(sc->data != NULL)
-	{
-	    vtr::free(sc->data);
-	    sc->data = NULL;
-	}
-    if(sc->string_hash != NULL)
-	{
-	    vtr::free(sc->string_hash);
-	    sc->string_hash = NULL;
-	}
-    if(sc->next_string != NULL)
-	{
-	    vtr::free(sc->next_string);
-	    sc->next_string = NULL;
-	}
-    vtr::free(sc);
+        if(sc->data != NULL)
+        {
+            vtr::free(sc->data);
+        }
+        sc->data = NULL;
+
+        if(sc->string_hash != NULL)
+        {
+            vtr::free(sc->string_hash);
+        }
+        sc->string_hash = NULL;
+
+        if(sc->next_string != NULL)
+        {
+            vtr::free(sc->next_string);
+        }
+        sc->next_string = NULL;
+
+        vtr::free(sc);
+    }
     sc = NULL;
+
     return sc;
+}
+
+void sc_merge_string_cache(STRING_CACHE **source_ref, STRING_CACHE *destination)
+{
+    STRING_CACHE *source = (*source_ref);
+    for(int source_spot = 0; source_spot < source->free; source_spot++)
+    {
+        long destination_spot = sc_add_string(destination, source->string[source_spot]);
+        destination->data[destination_spot] = source->data[source_spot];
+
+        source->data[source_spot] = NULL;
+    }
+
+    /* now cleanup */
+    sc_free_string_cache(source);
+    (*source_ref) = NULL;
 }

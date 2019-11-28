@@ -36,10 +36,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <mutex>
 #include <unistd.h>
 #include <thread>
-//#include <cthreads.h>
-
-//maria
-#include <sys/sysinfo.h>
 
 #define CLOCK_INITIAL_VALUE 1
 #define MAX_REPEAT_SIM 128
@@ -3384,6 +3380,8 @@ static void free_lines(lines_t *l)
 						vtr::free(l->lines[l->count]->name);
 					if(l->lines[l->count]->pins)
 						vtr::free(l->lines[l->count]->pins);
+					if(l->lines[l->count]->pin_numbers)
+						vtr::free(l->lines[l->count]->pin_numbers);
 					vtr::free(l->lines[l->count]);
 				}
 			}
@@ -3401,6 +3399,8 @@ static void free_stages(stages_t *s)
 {
 	if(s)
 	{
+		vtr::free(s->num_children); 
+	
 		if(s->stages)
 		{
 			while (s->count--)
@@ -3447,11 +3447,8 @@ static void free_test_vector(test_vector* v)
  */
 static void print_netlist_stats(stages_t *stages, int /*num_vectors*/)
 {
-	if(configuration.list_of_file_names.size() == 0)
-		printf("%s:\n", global_args.blif_file.value().c_str());
-	else
-		for(long i=0; i < configuration.list_of_file_names.size(); i++)
-			printf("%s:\n", configuration.list_of_file_names[i].c_str());
+	for(long i=0; i < configuration.list_of_file_names.size(); i++)
+		printf("%s:\n", configuration.list_of_file_names[i].c_str());
 
 	printf("  Nodes:           %d\n",    stages->num_nodes);
 	printf("  Connections:     %d\n",    stages->num_connections);

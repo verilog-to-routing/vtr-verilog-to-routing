@@ -11,7 +11,6 @@
 #include "rr_graph2.h"
 #include "rr_graph_timing_params.h"
 
-using namespace std;
 /****************** Subroutine definitions *********************************/
 
 void add_rr_graph_C_from_switches(float C_ipin_cblock) {
@@ -28,7 +27,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
      *    separating tracks from the input connection block, if enabled by      *
      *    INCLUDE_TRACK_BUFFERS)                                    	    */
 
-    int iedge, switch_index, maxlen;
+    int switch_index, maxlen;
     size_t to_node;
     int icblock, isblock, iseg_low, iseg_high;
     float Cin, Cout;
@@ -41,7 +40,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
 
-    maxlen = max(device_ctx.grid.width(), device_ctx.grid.height());
+    maxlen = std::max(device_ctx.grid.width(), device_ctx.grid.height());
     cblock_counted = (bool*)vtr::calloc(maxlen, sizeof(bool));
     buffer_Cin = (float*)vtr::calloc(maxlen, sizeof(float));
 
@@ -54,7 +53,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
         from_rr_type = device_ctx.rr_nodes[inode].type();
 
         if (from_rr_type == CHANX || from_rr_type == CHANY) {
-            for (iedge = 0; iedge < device_ctx.rr_nodes[inode].num_edges(); iedge++) {
+            for (t_edge_size iedge = 0; iedge < device_ctx.rr_nodes[inode].num_edges(); iedge++) {
                 to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
                 to_rr_type = device_ctx.rr_nodes[to_node].type();
 
@@ -94,7 +93,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
                             rr_node_C[to_node] += Cout;
                         }
                         isblock = seg_index_of_sblock(inode, to_node);
-                        buffer_Cin[isblock] = max(buffer_Cin[isblock], Cin);
+                        buffer_Cin[isblock] = std::max(buffer_Cin[isblock], Cin);
                     }
 
                 }
@@ -149,7 +148,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
         }
         /* End node is CHANX or CHANY */
         else if (from_rr_type == OPIN) {
-            for (iedge = 0; iedge < device_ctx.rr_nodes[inode].num_edges(); iedge++) {
+            for (t_edge_size iedge = 0; iedge < device_ctx.rr_nodes[inode].num_edges(); iedge++) {
                 switch_index = device_ctx.rr_nodes[inode].edge_switch(iedge);
                 to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
                 to_rr_type = device_ctx.rr_nodes[to_node].type();
@@ -173,7 +172,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
      * out what the Cout's should be */
     Couts_to_add = (float*)vtr::calloc(device_ctx.rr_nodes.size(), sizeof(float));
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        for (iedge = 0; iedge < device_ctx.rr_nodes[inode].num_edges(); iedge++) {
+        for (t_edge_size iedge = 0; iedge < device_ctx.rr_nodes[inode].num_edges(); iedge++) {
             switch_index = device_ctx.rr_nodes[inode].edge_switch(iedge);
             to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
             to_rr_type = device_ctx.rr_nodes[to_node].type();

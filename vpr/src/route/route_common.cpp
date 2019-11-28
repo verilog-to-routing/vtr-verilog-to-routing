@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <vector>
 #include <iostream>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_util.h"
@@ -163,10 +162,12 @@ void restore_routing(vtr::vector<ClusterNetId, t_trace*>& best_routing,
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         /* Free any current routing. */
+        pathfinder_update_path_cost(route_ctx.trace[net_id].head, -1, 0.f);
         free_traceback(net_id);
 
         /* Set the current routing to the saved one. */
         route_ctx.trace[net_id].head = best_routing[net_id];
+        pathfinder_update_path_cost(route_ctx.trace[net_id].head, 1, 0.f);
         best_routing[net_id] = nullptr; /* No stored routing. */
     }
 
@@ -226,8 +227,7 @@ void try_graph(int width_fac, const t_router_opts& router_opts, t_det_routing_ar
     /* Set up the routing resource graph defined by this FPGA architecture. */
     int warning_count;
     create_rr_graph(graph_type,
-                    device_ctx.num_block_types,
-                    device_ctx.block_types,
+                    device_ctx.physical_tile_types,
                     device_ctx.grid,
                     chan_width,
                     device_ctx.num_arch_switches,
@@ -237,7 +237,6 @@ void try_graph(int width_fac, const t_router_opts& router_opts, t_det_routing_ar
                     router_opts.trim_empty_channels,
                     router_opts.trim_obs_channels,
                     router_opts.clock_modeling,
-                    router_opts.lookahead_type,
                     directs, num_directs,
                     &warning_count);
 }
@@ -278,8 +277,7 @@ bool try_route(int width_fac,
     int warning_count;
 
     create_rr_graph(graph_type,
-                    device_ctx.num_block_types,
-                    device_ctx.block_types,
+                    device_ctx.physical_tile_types,
                     device_ctx.grid,
                     chan_width,
                     device_ctx.num_arch_switches,
@@ -289,7 +287,6 @@ bool try_route(int width_fac,
                     router_opts.trim_empty_channels,
                     router_opts.trim_obs_channels,
                     router_opts.clock_modeling,
-                    router_opts.lookahead_type,
                     directs, num_directs,
                     &warning_count);
 
@@ -313,11 +310,12 @@ bool try_route(int width_fac,
     } else { /* TIMING_DRIVEN route */
         VTR_LOG("Confirming router algorithm: TIMING_DRIVEN.\n");
 
-        IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.block_types, device_ctx.num_block_types);
+        IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
         ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, intra_lb_pb_pin_lookup);
 
         success = try_timing_driven_route(router_opts,
                                           analysis_opts,
+                                          segment_inf,
                                           net_delay,
                                           netlist_pin_lookup,
                                           timing_info,
@@ -574,7 +572,7 @@ static t_trace_branch traceback_branch(int node, std::unordered_set<int>& trace_
 
     std::vector<int> new_nodes_added_to_traceback = {node};
 
-    int iedge = route_ctx.rr_node_route_inf[node].prev_edge;
+    auto iedge = route_ctx.rr_node_route_inf[node].prev_edge;
     int inode = route_ctx.rr_node_route_inf[node].prev_node;
 
     while (inode != NO_PREVIOUS) {
@@ -639,9 +637,9 @@ static std::pair<t_trace*, t_trace*> add_trace_non_configurable_recurr(int node,
     t_trace* tail = nullptr;
 
     //Record the non-configurable out-going edges
-    std::vector<int> unvisited_non_configurable_edges;
+    std::vector<t_edge_size> unvisited_non_configurable_edges;
     auto& device_ctx = g_vpr_ctx.device();
-    for (int iedge : device_ctx.rr_nodes[node].non_configurable_edges()) {
+    for (auto iedge : device_ctx.rr_nodes[node].non_configurable_edges()) {
         VTR_ASSERT_SAFE(!device_ctx.rr_nodes[node].edge_is_configurable(iedge));
 
         int to_node = device_ctx.rr_nodes[node].edge_sink_node(iedge);
@@ -666,7 +664,7 @@ static std::pair<t_trace*, t_trace*> add_trace_non_configurable_recurr(int node,
 
     } else {
         //Recursive case: intermediate node with non-configurable edges
-        for (int iedge : unvisited_non_configurable_edges) {
+        for (auto iedge : unvisited_non_configurable_edges) {
             int to_node = device_ctx.rr_nodes[node].edge_sink_node(iedge);
             int iswitch = device_ctx.rr_nodes[node].edge_switch(iedge);
 
@@ -728,7 +726,7 @@ float get_rr_cong_cost(int inode) {
     auto itr = device_ctx.rr_node_to_non_config_node_set.find(inode);
     if (itr != device_ctx.rr_node_to_non_config_node_set.end()) {
         for (int node : device_ctx.rr_non_config_node_sets[itr->second]) {
-            if (node != inode) {
+            if (node == inode) {
                 continue; //Already included above
             }
 
@@ -738,7 +736,7 @@ float get_rr_cong_cost(int inode) {
     return (cost);
 }
 
-/* Returns the congestion cost of using this rr_node, *ignoring* 
+/* Returns the congestion cost of using this rr_node, *ignoring*
  * non-configurable edges */
 static float get_single_rr_cong_cost(int inode) {
     auto& device_ctx = g_vpr_ctx.device();
@@ -769,7 +767,7 @@ void mark_ends(ClusterNetId net_id) {
     }
 }
 
-void mark_remaining_ends(const vector<int>& remaining_sinks) {
+void mark_remaining_ends(const std::vector<int>& remaining_sinks) {
     // like mark_ends, but only performs it for the remaining sinks of a net
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     for (int sink_node : remaining_sinks)
@@ -883,14 +881,13 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
 
     t_clb_opins_used clb_opins_used_locally;
     int clb_pin, iclass, class_low, class_high;
-    t_type_ptr type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     clb_opins_used_locally.resize(cluster_ctx.clb_nlist.blocks().size());
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        type = cluster_ctx.clb_nlist.block_type(blk_id);
+        auto type = physical_tile_type(blk_id);
 
         get_class_range_for_block(blk_id, &class_low, &class_high);
         clb_opins_used_locally[blk_id].resize(type->num_class);
@@ -1038,7 +1035,6 @@ static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t
     vtr::vector<ClusterNetId, std::vector<int>> net_rr_terminals;
 
     int inode, i, j, node_block_pin, iclass;
-    t_type_ptr type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
@@ -1055,7 +1051,7 @@ static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t
             auto block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
             i = place_ctx.block_locs[block_id].loc.x;
             j = place_ctx.block_locs[block_id].loc.y;
-            type = cluster_ctx.clb_nlist.block_type(block_id);
+            auto type = physical_tile_type(block_id);
 
             /* In the routing graph, each (x, y) location has unique pins on it
              * so when there is capacity, blocks are packed and their pin numbers
@@ -1085,7 +1081,6 @@ static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t
     int i, j, iclass, inode;
     int class_low, class_high;
     t_rr_type rr_type;
-    t_type_ptr type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
@@ -1093,7 +1088,7 @@ static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t
     rr_blk_source.resize(cluster_ctx.clb_nlist.blocks().size());
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        type = cluster_ctx.clb_nlist.block_type(blk_id);
+        auto type = physical_tile_type(blk_id);
         get_class_range_for_block(blk_id, &class_low, &class_high);
         rr_blk_source[blk_id].resize(type->num_class);
         for (iclass = 0; iclass < type->num_class; iclass++) {
@@ -1142,7 +1137,7 @@ t_bb load_net_route_bb(ClusterNetId net_id, int bb_factor) {
      * the FPGA if necessary.  The bounding box returned by this routine
      * are different from the ones used by the placer in that they are
      * clipped to lie within (0,0) and (device_ctx.grid.width()-1,device_ctx.grid.height()-1)
-     * rather than (1,1) and (device_ctx.grid.width()-1,device_ctx.grid.height()-1).                                                            
+     * rather than (1,1) and (device_ctx.grid.width()-1,device_ctx.grid.height()-1).
      */
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
@@ -1191,10 +1186,10 @@ t_bb load_net_route_bb(ClusterNetId net_id, int bb_factor) {
 
     t_bb bb;
 
-    bb.xmin = max<int>(xmin - bb_factor, 0);
-    bb.xmax = min<int>(xmax + bb_factor, device_ctx.grid.width() - 1);
-    bb.ymin = max<int>(ymin - bb_factor, 0);
-    bb.ymax = min<int>(ymax + bb_factor, device_ctx.grid.height() - 1);
+    bb.xmin = std::max<int>(xmin - bb_factor, 0);
+    bb.xmax = std::min<int>(xmax + bb_factor, device_ctx.grid.width() - 1);
+    bb.ymin = std::max<int>(ymin - bb_factor, 0);
+    bb.ymax = std::min<int>(ymax + bb_factor, device_ctx.grid.height() - 1);
 
     return bb;
 }
@@ -1546,7 +1541,7 @@ void print_route(FILE* fp, const vtr::vector<ClusterNetId, t_traceback>& traceba
             for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
                 ClusterBlockId block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
                 int pin_index = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
-                int iclass = cluster_ctx.clb_nlist.block_type(block_id)->pin_class[pin_index];
+                int iclass = physical_tile_type(block_id)->pin_class[pin_index];
 
                 fprintf(fp, "Block %s (#%zu) at (%d,%d), Pin class %d.\n",
                         cluster_ctx.clb_nlist.block_name(block_id).c_str(), size_t(block_id),
@@ -1610,7 +1605,7 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
     int iclass, ipin;
     float cost;
     t_heap* heap_head_ptr;
-    t_type_ptr type;
+    t_physical_tile_type_ptr type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
@@ -1618,7 +1613,7 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 
     if (rip_up_local_opins) {
         for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-            type = cluster_ctx.clb_nlist.block_type(blk_id);
+            type = physical_tile_type(blk_id);
             for (iclass = 0; iclass < type->num_class; iclass++) {
                 num_local_opin = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
 
@@ -1635,7 +1630,7 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
     }
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        type = cluster_ctx.clb_nlist.block_type(blk_id);
+        type = physical_tile_type(blk_id);
         for (iclass = 0; iclass < type->num_class; iclass++) {
             num_local_opin = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
 
@@ -1785,7 +1780,7 @@ bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes) {
             auto& device_ctx = g_vpr_ctx.device();
 
             bool found = false;
-            for (int iedge = 0; iedge < device_ctx.rr_nodes[trace->index].num_edges(); ++iedge) {
+            for (t_edge_size iedge = 0; iedge < device_ctx.rr_nodes[trace->index].num_edges(); ++iedge) {
                 int to_node = device_ctx.rr_nodes[trace->index].edge_sink_node(iedge);
 
                 if (to_node == next->index) {
@@ -1928,4 +1923,20 @@ static bool validate_trace_nodes(t_trace* head, const std::unordered_set<int>& t
     }
 
     return true;
+}
+
+// True if router will use a lookahead.
+//
+// This controls whether the router lookahead cache will be primed outside of
+// the router ScopedStartFinishTimer.
+bool router_needs_lookahead(enum e_router_algorithm router_algorithm) {
+    switch (router_algorithm) {
+        case BREADTH_FIRST:
+            return false;
+        case TIMING_DRIVEN:
+            return true;
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unknown routing algorithm %d",
+                            router_algorithm);
+    }
 }

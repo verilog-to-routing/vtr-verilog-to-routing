@@ -758,19 +758,30 @@ public:
     }
     
     /***
-     * getters
+     * getters to 64 bit int
      */
     int64_t get_value()
     {
+        using integer_t = int64_t;
+        size_t bit_size = 8*sizeof(integer_t);
+
         assert_Werr( (! this->bitstring.has_unknowns() ) ,
                     "Invalid Number contains dont care values. number: " + this->bitstring.to_string(false)
         );   
 
-        int64_t result = 0;
-        BitSpace::bit_value_t pad = this->get_padding_bit(); // = this->is_negative();
-        for(size_t bit_index = 0; bit_index < this->size(); bit_index++)
+        size_t end = this->size();
+        if(end > bit_size)
         {
-            int64_t current_bit = static_cast<int64_t>(pad);
+            printf(" === Warning: Returning a 64 bit integer from a larger bitstring (%zu). The bitstring will be truncated\n", bit_size);
+            end = bit_size;
+        }
+
+        integer_t result = 0;
+        BitSpace::bit_value_t pad = this->get_padding_bit(); // = this->is_negative();
+
+        for(size_t bit_index = 0; bit_index < end; bit_index++)
+        {
+            integer_t current_bit = static_cast<integer_t>(pad);
             if(bit_index < this->size())
                 current_bit = this->bitstring.get_bit(bit_index);
 

@@ -101,31 +101,24 @@ static e_directionality switch_type_directionaity(SwitchType type) {
 }
 
 /*
- * t_type_descriptor
+ * t_physical_tile_type
  */
-
-std::vector<int> t_type_descriptor::get_clock_pins_indices() const {
-    VTR_ASSERT(this->pb_type); // assert not a nullptr
-
+std::vector<int> t_physical_tile_type::get_clock_pins_indices() const {
     std::vector<int> indices; // function return vector
 
     // Temporary variables
-    int num_input_pins = this->pb_type->num_input_pins;
-    int num_output_pins = this->pb_type->num_output_pins;
-    int num_clock_pins = this->pb_type->num_clock_pins;
-
     int clock_pins_start_idx = 0;
     int clock_pins_stop_idx = 0;
 
     for (int capacity_num = 0; capacity_num < this->capacity; capacity_num++) {
         // Ranges are picked on the basis that pins are ordered: inputs, outputs, then clock pins
         // This is because ProcessPb_type assigns pb_type port indices in that order and
-        // SetupPinLocationsAndPinClasses assigns t_type_ptr pin indices in the order of port indices
+        // SetupPinLocationsAndPinClasses assigns t_logical_block_type_ptr pin indices in the order of port indices
         // TODO: This pin ordering assumption is also used functions such as load_external_nets_and_cb
         //       either remove this assumption all togther and create a better mapping or make use of
         //       the same functions throughout the code that return the pin ranges.
-        clock_pins_start_idx = num_input_pins + num_output_pins + clock_pins_stop_idx;
-        clock_pins_stop_idx = clock_pins_start_idx + num_clock_pins;
+        clock_pins_start_idx = this->num_input_pins + this->num_output_pins + clock_pins_stop_idx;
+        clock_pins_stop_idx = clock_pins_start_idx + this->num_clock_pins;
 
         for (int pin_idx = clock_pins_start_idx; pin_idx < clock_pins_stop_idx; pin_idx++) {
             indices.push_back(pin_idx);
@@ -194,7 +187,7 @@ std::string t_pb_graph_node::hierarchical_type_name() const {
  * t_pb_graph_pin
  */
 
-std::string t_pb_graph_pin::to_string() const {
+std::string t_pb_graph_pin::to_string(const bool full_description) const {
     std::string parent_name = this->parent_node->pb_type->name;
     std::string parent_index = std::to_string(this->parent_node->placement_index);
     std::string port_name = this->port->name;
@@ -202,6 +195,8 @@ std::string t_pb_graph_pin::to_string() const {
 
     std::string pin_string = parent_name + "[" + parent_index + "]";
     pin_string += "." + port_name + "[" + pin_index + "]";
+
+    if (!full_description) return pin_string;
 
     // Traverse upward through the pb_type hierarchy, constructing
     // name that represents the whole hierarchy to reach this pin.

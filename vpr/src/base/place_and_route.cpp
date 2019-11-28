@@ -5,7 +5,6 @@
 #include <climits>
 #include <cstdlib>
 #include <cmath>
-using namespace std;
 
 #include "vtr_util.h"
 #include "vtr_memory.h"
@@ -44,7 +43,7 @@ static float comp_width(t_chan* chan, float x, float separation);
 
 /************************* Subroutine Definitions ****************************/
 
-int binary_search_place_and_route(t_placer_opts placer_opts,
+int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                                   const t_annealing_sched& annealing_sched,
                                   const t_router_opts& router_opts,
                                   const t_analysis_opts& analysis_opts,
@@ -76,6 +75,12 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
     int warnings;
 
     t_graph_type graph_type;
+
+    /* We have chosen to pass placer_opts_ref by reference because of its large size. *      
+     * However, since the value is mutated later in the function, we declare a        *
+     * mutable variable called placer_opts equal to placer_opts_ref.                  */
+
+    t_placer_opts placer_opts = placer_opts_ref;
 
     /* Allocate the major routing structures. */
 
@@ -341,7 +346,7 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
     free_rr_graph();
 
     create_rr_graph(graph_type,
-                    device_ctx.num_block_types, device_ctx.block_types,
+                    device_ctx.physical_tile_types,
                     device_ctx.grid,
                     chan_width,
                     device_ctx.num_arch_switches,
@@ -351,7 +356,6 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
                     router_opts.trim_empty_channels,
                     router_opts.trim_obs_channels,
                     router_opts.clock_modeling,
-                    router_opts.lookahead_type,
                     arch->Directs, arch->num_directs,
                     &warnings);
 
@@ -394,7 +398,7 @@ t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
         for (size_t i = 0; i < grid.height(); ++i) {
             float y = float(i) / num_channels;
             chan_width.x_list[i] = (int)floor(cfactor * comp_width(&chan_x_dist, y, separation) + 0.5);
-            chan_width.x_list[i] = max(chan_width.x_list[i], 1); //Minimum channel width 1
+            chan_width.x_list[i] = std::max(chan_width.x_list[i], 1); //Minimum channel width 1
         }
     }
 
@@ -407,7 +411,7 @@ t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
             float x = float(i) / num_channels;
 
             chan_width.y_list[i] = (int)floor(cfactor * comp_width(&chan_y_dist, x, separation) + 0.5);
-            chan_width.y_list[i] = max(chan_width.y_list[i], 1); //Minimum channel width 1
+            chan_width.y_list[i] = std::max(chan_width.y_list[i], 1); //Minimum channel width 1
         }
     }
 
@@ -415,14 +419,14 @@ t_chan_width init_chan(int cfactor, t_chan_width_dist chan_width_dist) {
     chan_width.x_max = chan_width.y_max = INT_MIN;
     chan_width.x_min = chan_width.y_min = INT_MAX;
     for (size_t i = 0; i < grid.height(); ++i) {
-        chan_width.max = max(chan_width.max, chan_width.x_list[i]);
-        chan_width.x_max = max(chan_width.x_max, chan_width.x_list[i]);
-        chan_width.x_min = min(chan_width.x_min, chan_width.x_list[i]);
+        chan_width.max = std::max(chan_width.max, chan_width.x_list[i]);
+        chan_width.x_max = std::max(chan_width.x_max, chan_width.x_list[i]);
+        chan_width.x_min = std::min(chan_width.x_min, chan_width.x_list[i]);
     }
     for (size_t i = 0; i < grid.width(); ++i) {
-        chan_width.max = max(chan_width.max, chan_width.y_list[i]);
-        chan_width.y_max = max(chan_width.y_max, chan_width.y_list[i]);
-        chan_width.y_min = min(chan_width.y_min, chan_width.y_list[i]);
+        chan_width.max = std::max(chan_width.max, chan_width.y_list[i]);
+        chan_width.y_max = std::max(chan_width.y_max, chan_width.y_list[i]);
+        chan_width.y_min = std::min(chan_width.y_min, chan_width.y_list[i]);
     }
 
 #ifdef VERBOSE

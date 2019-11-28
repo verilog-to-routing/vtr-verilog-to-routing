@@ -5,11 +5,10 @@
 #include "string_cache.h"
 #include "read_xml_arch_file.h"
 
-extern t_type_descriptor* type_descriptors;
+extern t_logical_block_type* type_descriptors;
 
 /* VERILOG SYNTHESIS GLOBALS */
-extern int yylineno;
-extern short to_view_parse;
+extern ids default_net_type;
 
 extern global_args_t global_args;
 extern config_t configuration;

@@ -241,6 +241,8 @@ struct ParseBaseCost {
             conv_value.set_value(DELAY_NORMALIZED_FREQUENCY);
         else if (str == "delay_normalized_length_frequency")
             conv_value.set_value(DELAY_NORMALIZED_LENGTH_FREQUENCY);
+        else if (str == "demand_only_normalized_length")
+            conv_value.set_value(DEMAND_ONLY_NORMALIZED_LENGTH);
         else if (str == "demand_only")
             conv_value.set_value(DEMAND_ONLY);
         else {
@@ -261,6 +263,8 @@ struct ParseBaseCost {
             conv_value.set_value("delay_normalized_frequency");
         else if (val == DELAY_NORMALIZED_LENGTH_FREQUENCY)
             conv_value.set_value("delay_normalized_length_frequency");
+        else if (val == DEMAND_ONLY_NORMALIZED_LENGTH)
+            conv_value.set_value("demand_only_normalized_length");
         else {
             VTR_ASSERT(val == DEMAND_ONLY);
             conv_value.set_value("demand_only");
@@ -269,7 +273,7 @@ struct ParseBaseCost {
     }
 
     std::vector<std::string> default_choices() {
-        return {"demand_only", "delay_normalized", "delay_normalized_length", "delay_normalized_frequency", "delay_normalized_length_frequency"};
+        return {"demand_only", "demand_only_normalized_length", "delay_normalized", "delay_normalized_length", "delay_normalized_frequency", "delay_normalized_length_frequency"};
     }
 };
 
@@ -839,6 +843,10 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .choices({"0", "1", "2"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    gfx_grp.add_argument<bool, ParseOnOff>(args.save_graphics, "--save_graphics")
+        .help("Save all graphical contents to PDF files")
+        .default_value("off");
+
     auto& gen_grp = parser.add_argument_group("general options");
 
     gen_grp.add_argument(args.show_help, "--help", "-h")
@@ -1013,6 +1021,24 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     file_grp.add_argument(args.write_rr_graph_file, "--write_rr_graph")
         .help("Writes the routing resource graph to the specified file")
         .metavar("RR_GRAPH_FILE")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument(args.read_router_lookahead, "--read_router_lookahead")
+        .help(
+            "Reads the lookahead data from the specified file instead of computing it.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument(args.write_router_lookahead, "--write_router_lookahead")
+        .help("Writes the lookahead data to the specified file.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument(args.read_placement_delay_lookup, "--read_placement_delay_lookup")
+        .help(
+            "Reads the placement delay lookup from the specified file instead of computing it.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    file_grp.add_argument(args.write_placement_delay_lookup, "--write_placement_delay_lookup")
+        .help("Writes the placement delay lookup to the specified file.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.out_file_prefix, "--outfile_prefix")
@@ -1371,6 +1397,14 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_timing_grp.add_argument(args.allowed_tiles_for_delay_model, "--allowed_tiles_for_delay_model")
+        .help(
+            "Names of allowed tile types that can be sampled during delay "
+            "modelling.  Default is to allow all tiles. Can be used to "
+            "exclude specialized tiles from placer delay sampling.")
+        .default_value("")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& route_grp = parser.add_argument_group("routing options");
 
     route_grp.add_argument(args.max_router_iterations, "--max_router_iterations")
@@ -1411,6 +1445,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .help(
             "Sets the basic cost of routing resource nodes:\n"
             " * demand_only: based on expected demand of node type\n"
+            " * demand_only_normalized_length: based on expected \n"
+            "      demand of node type normalized by length\n"
             " * delay_normalized: like demand_only but normalized\n"
             "      to magnitude of typical routing resource delay\n"
             " * delay_normalized_length: like delay_normalized but\n"
@@ -1791,22 +1827,24 @@ void set_conditional_defaults(t_options& args) {
     /*
      * Routing
      */
-    //Which routing algorithm to use?
-    if (args.RouterAlgorithm.provenance() != Provenance::SPECIFIED) {
-        if (args.timing_analysis && args.RouteType != GLOBAL) {
-            args.RouterAlgorithm.set(TIMING_DRIVEN, Provenance::INFERRED);
-        } else {
-            args.RouterAlgorithm.set(NO_TIMING, Provenance::INFERRED);
-        }
-    }
-
     //Base cost type
     if (args.base_cost_type.provenance() != Provenance::SPECIFIED) {
-        if (args.RouterAlgorithm == BREADTH_FIRST || args.RouterAlgorithm == NO_TIMING) {
+        if (args.RouterAlgorithm == BREADTH_FIRST) {
             args.base_cost_type.set(DEMAND_ONLY, Provenance::INFERRED);
         } else {
             VTR_ASSERT(args.RouterAlgorithm == TIMING_DRIVEN);
-            args.base_cost_type.set(DELAY_NORMALIZED_LENGTH, Provenance::INFERRED);
+
+            if (args.RouteType == DETAILED) {
+                if (args.timing_analysis) {
+                    args.base_cost_type.set(DELAY_NORMALIZED_LENGTH, Provenance::INFERRED);
+                } else {
+                    args.base_cost_type.set(DEMAND_ONLY_NORMALIZED_LENGTH, Provenance::INFERRED);
+                }
+            } else {
+                VTR_ASSERT(args.RouteType == GLOBAL);
+                //Global RR graphs don't have valid timing, so use demand base cost
+                args.base_cost_type.set(DEMAND_ONLY_NORMALIZED_LENGTH, Provenance::INFERRED);
+            }
         }
     }
 

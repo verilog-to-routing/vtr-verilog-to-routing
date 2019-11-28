@@ -10,8 +10,9 @@
  * The data structures that store the
  *
  * Key data types:
- * t_type_descriptor: describes a placeable complex logic block,
- * pb_type: describes the types of physical blocks within the t_type_descriptor in a hierarchy where the top block is the complex block and the leaf blocks implement one logical block
+ * t_physical_tile_type: represents the type of a tile in the device grid and describes its physical characteristics (pin locations, area, width, height, etc.)
+ * t_logical_block_type: represents and describes the type of a clustered block
+ * pb_type: describes the types of physical blocks within the t_logical_block_type in a hierarchy where the top block is the complex block and the leaf blocks implement one logical block
  * pb_graph_node: is a flattened version of pb_type so a pb_type with 10 instances will have 10 pb_graph_nodes representing each instance
  *
  * Additional notes:
@@ -51,6 +52,10 @@ struct t_pb_type_power;
 struct t_mode_power;
 struct t_interconnect_power;
 struct t_port_power;
+struct t_physical_tile_port;
+struct t_equivalent_site;
+struct t_physical_tile_type;
+struct t_logical_block_type;
 struct t_pb_type;
 struct t_pb_graph_pin_power;
 struct t_mode;
@@ -516,7 +521,28 @@ enum class e_sb_type {
 constexpr int NO_SWITCH = -1;
 constexpr int DEFAULT_SWITCH = -2;
 
-/* Describes the type for a physical logic block
+/* Describes the type for a logical block
+ * name: unique identifier for type
+ * pb_type: Internal subblocks and routing information for this physical block
+ * pb_graph_head: Head of DAG of pb_types_nodes and their edges
+ *
+ * index: Keep track of type in array for easy access
+ * physical_tile_index: index of the corresponding physical tile type
+ */
+struct t_logical_block_type {
+    char* name = nullptr;
+
+    /* Clustering info */
+    t_pb_type* pb_type = nullptr;
+    t_pb_graph_node* pb_graph_head = nullptr;
+
+    int index = -1; /* index of type descriptor in array (allows for index referencing) */
+
+    int physical_tile_index = -1; /* index of the corresponding physical tile type */
+};
+typedef const t_logical_block_type* t_logical_block_type_ptr;
+
+/* Describes the type for a physical tile
  * name: unique identifier for type
  * num_pins: Number of pins for the block
  * capacity: Number of blocks of this type that can occupy one grid tile (typically used by IOs).
@@ -552,20 +578,20 @@ constexpr int DEFAULT_SWITCH = -2;
  *                        Note that the SB is located to the top-right of the
  *                        grid tile location. [0..width-1][0..height-1]
  *
- *
- * pb_type: Internal subblocks and routing information for this physical block
- * pb_graph_head: Head of DAG of pb_types_nodes and their edges
- *
  * area: Describes how much area this logic block takes, if undefined, use default
  * type_timing_inf: timing information unique to this type
  * num_drivers: Total number of output drivers supplied
  * num_receivers: Total number of input receivers supplied
  * index: Keep track of type in array for easy access
+ * logical_tile_index: index of the corresponding logical block type
  */
-struct t_type_descriptor /* TODO rename this.  maybe physical type descriptor or complex logic block or physical logic block*/
-{
+struct t_physical_tile_type {
     char* name = nullptr;
     int num_pins = 0;
+    int num_input_pins = 0;
+    int num_output_pins = 0;
+    int num_clock_pins = 0;
+
     int capacity = 0;
 
     int width = 0;
@@ -580,6 +606,7 @@ struct t_type_descriptor /* TODO rename this.  maybe physical type descriptor or
     int num_class = 0;
     t_class* class_inf = nullptr; /* [0..num_class-1] */
 
+    std::vector<t_physical_tile_port> ports;
     std::vector<int> pin_width_offset;  //[0..num_pins-1]
     std::vector<int> pin_height_offset; //[0..num_pins-1]
     int* pin_class = nullptr;           /* [0..num_pins-1] */
@@ -591,10 +618,6 @@ struct t_type_descriptor /* TODO rename this.  maybe physical type descriptor or
     vtr::Matrix<e_sb_type> switchblock_locations;
     vtr::Matrix<int> switchblock_switch_overrides;
 
-    /* Clustering info */
-    t_pb_type* pb_type = nullptr;
-    t_pb_graph_node* pb_graph_head = nullptr;
-
     float area = 0;
 
     /* This info can be determined from class_inf and pin_class but stored for faster access */
@@ -603,10 +626,60 @@ struct t_type_descriptor /* TODO rename this.  maybe physical type descriptor or
 
     int index = -1; /* index of type descriptor in array (allows for index referencing) */
 
+    int logical_block_index = -1; /* index of the corresponding logical block type */
+
+    std::vector<t_equivalent_site> equivalent_sites;
+
     /* Returns the indices of pins that contain a clock for this physical logic block */
     std::vector<int> get_clock_pins_indices() const;
 };
-typedef const t_type_descriptor* t_type_ptr;
+typedef const t_physical_tile_type* t_physical_tile_type_ptr;
+
+/** Describes I/O and clock ports of a physical tile type
+ *
+ *  It corresponds to <port/> tags in the FPGA architecture description
+ *
+ *  Data members:
+ *      name: name of the port
+ *      is_clock: whether or not this port is a clock
+ *      is_non_clock_global: Applies to top level pb_type, this pin is not a clock but
+ *                           is a global signal (useful for stuff like global reset signals,
+ *                           perhaps useful for VCC and GND)
+ *      num_pins: the number of pins this port has
+ *      tile_type: pointer to the associated tile type
+ *      port_class: port belongs to recognized set of ports in class library
+ *      index: port index by index in array of parent pb_type
+ *      absolute_first_pin_index: absolute index of the first pin in the physical tile.
+ *                                All the other pin indices can be calculated with num_pins
+ *      port_index_by_type index of port by type (index by input, output, or clock)
+ *      equivalence: Applies to logic block I/Os and to primitive inputs only
+ */
+struct t_physical_tile_port {
+    char* name;
+    enum PORTS type;
+    bool is_clock;
+    bool is_non_clock_global;
+    int num_pins;
+    PortEquivalence equivalent = PortEquivalence::NONE;
+
+    int index;
+    int absolute_first_pin_index;
+    int port_index_by_type;
+    int tile_type_index;
+};
+
+/** Describes the equivalent sites related to a specific tile type
+ *
+ *  It corresponds to the <tile> tags in the FPGA architecture description
+ *
+ */
+struct t_equivalent_site {
+    char* pb_type_name;
+
+    // XXX Variables to hold information on mapping between site and tile
+    // XXX as well as references to the belonging pb_type and tile_type
+    //t_logical_block_type* block_type;
+};
 
 /*************************************************************************************************
  * PB Type Hierarchy                                                                             *
@@ -1043,7 +1116,8 @@ class t_pb_graph_pin {
     // and the entire sequence of pb_types in the hierarchy from the block
     // of this pin back to the cluster-level (top-level) pb_type in the
     // following format: clb[0]/lab[0]/fle[3]/ble6[0]/lut6[0].in[0]
-    std::string to_string() const;
+    // if full_description is set to false it will only return lut6[0].in[0]
+    std::string to_string(const bool full_description = true) const;
 };
 
 /** Describes a pb graph edge
@@ -1201,6 +1275,10 @@ struct t_segment_inf {
     std::vector<bool> sb;
     //float Cmetal_per_m; /* Wire capacitance (per meter) */
 };
+
+inline bool operator==(const t_segment_inf& a, const t_segment_inf& b) {
+    return a.name == b.name && a.frequency == b.frequency && a.length == b.length && a.arch_wire_switch == b.arch_wire_switch && a.arch_opin_switch == b.arch_opin_switch && a.frac_cb == b.frac_cb && a.frac_sb == b.frac_sb && a.longline == b.longline && a.Rmetal == b.Rmetal && a.Cmetal == b.Cmetal && a.directionality == b.directionality && a.cb == b.cb && a.sb == b.sb;
+}
 
 enum class SwitchType {
     MUX = 0,   //A configurable (buffered) mux (single-driver)

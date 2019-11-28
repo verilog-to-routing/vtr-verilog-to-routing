@@ -1,5 +1,4 @@
 #include <cstdio>
-using namespace std;
 
 #include "vtr_util.h"
 #include "vtr_assert.h"
@@ -305,7 +304,7 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
             /* These properties are used for vpr_to_phy_track to determine
              * * twisting of wires. */
             seg_details[cur_track].group_start = group_start;
-            seg_details[cur_track].group_size = min(ntracks + first_track - group_start, length * fac);
+            seg_details[cur_track].group_size = std::min(ntracks + first_track - group_start, length * fac);
             VTR_ASSERT(0 == seg_details[cur_track].group_size % fac);
             if (0 == seg_details[cur_track].group_size) {
                 seg_details[cur_track].group_size = length * fac;
@@ -674,7 +673,7 @@ int get_bidir_opin_connections(const int i,
     int num_conn, tr_i, tr_j, chan, seg;
     int to_switch, to_node;
     int is_connected_track;
-    t_type_ptr type;
+    t_physical_tile_type_ptr type;
     t_rr_type to_type;
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -790,7 +789,7 @@ int get_unidir_opin_connections(const int chan,
     /* Clip Fc to the number of muxes. */
     if (((Fc / 2) > num_inc_muxes) || ((Fc / 2) > num_dec_muxes)) {
         *Fc_clipped = true;
-        Fc = 2 * min(num_inc_muxes, num_dec_muxes);
+        Fc = 2 * std::min(num_inc_muxes, num_dec_muxes);
     }
 
     /* Assign tracks to meet Fc demand */
@@ -1082,7 +1081,7 @@ static void load_block_rr_indices(const DeviceGrid& grid,
         for (size_t y = 0; y < grid.height(); y++) {
             if (grid[x][y].width_offset == 0 && grid[x][y].height_offset == 0) {
                 //Process each block from it's root location
-                t_type_ptr type = grid[x][y].type;
+                auto type = grid[x][y].type;
 
                 //Assign indicies for SINKs and SOURCEs
                 // Note that SINKS/SOURCES have no side, so we always use side 0
@@ -1294,7 +1293,7 @@ int get_rr_node_index(const t_rr_node_indices& L_rr_node_indices,
     VTR_ASSERT(x >= 0 && x < int(device_ctx.grid.width()));
     VTR_ASSERT(y >= 0 && y < int(device_ctx.grid.height()));
 
-    t_type_ptr type = device_ctx.grid[x][y].type;
+    auto type = device_ctx.grid[x][y].type;
 
     /* Currently need to swap x and y for CHANX because of chan, seg convention */
     if (CHANX == rr_type) {
@@ -1406,7 +1405,6 @@ int get_track_to_pins(int seg,
      */
 
     int j, pass, iconn, phy_track, end, max_conn, ipin, x, y, num_conn;
-    t_type_ptr type;
 
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -1442,7 +1440,7 @@ int get_track_to_pins(int seg,
                 phy_track %= tracks_per_chan;
 
                 /* We need the type to find the ipin map for this type */
-                type = device_ctx.grid[x][y].type;
+                auto type = device_ctx.grid[x][y].type;
                 int width_offset = device_ctx.grid[x][y].width_offset;
                 int height_offset = device_ctx.grid[x][y].height_offset;
 
@@ -1811,7 +1809,7 @@ static int get_track_to_chan_seg(const int from_wire,
     if (sb_conn_map->count(sb_coord) > 0) {
         /* get reference to the connections vector which lists all destination wires for a given source wire
          * at a specific coordinate sb_coord */
-        vector<t_switchblock_edge>& conn_vector = (*sb_conn_map)[sb_coord];
+        std::vector<t_switchblock_edge>& conn_vector = (*sb_conn_map)[sb_coord];
 
         /* go through the connections... */
         for (int iconn = 0; iconn < (int)conn_vector.size(); ++iconn) {
@@ -2042,8 +2040,8 @@ static void get_switch_type(bool is_from_sblock,
         /* Take the smaller index unless the other
          * switch is bigger (smaller R). */
 
-        int first_switch = min(to_node_switch, from_node_switch);
-        int second_switch = max(to_node_switch, from_node_switch);
+        int first_switch = std::min(to_node_switch, from_node_switch);
+        int second_switch = std::max(to_node_switch, from_node_switch);
 
         if (used < 2) {
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -2553,7 +2551,7 @@ static int should_create_switchblock(const DeviceGrid& grid, int from_chan_coord
         x_coord = from_chan_coord;
     }
 
-    t_type_ptr blk_type = grid[x_coord][y_coord].type;
+    auto blk_type = grid[x_coord][y_coord].type;
     int width_offset = grid[x_coord][y_coord].width_offset;
     int height_offset = grid[x_coord][y_coord].height_offset;
 

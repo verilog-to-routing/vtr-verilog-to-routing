@@ -3,7 +3,6 @@
 #include <cmath>
 #include <sstream>
 #include <map>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_memory.h"
@@ -78,7 +77,7 @@ static void find_all_the_macro(int* num_of_macro, std::vector<ClusterBlockId>& p
 
     num_macro = 0;
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        num_blk_pins = cluster_ctx.clb_nlist.block_type(blk_id)->num_pins;
+        num_blk_pins = physical_tile_type(blk_id)->num_pins;
         for (to_iblk_pin = 0; to_iblk_pin < num_blk_pins; to_iblk_pin++) {
             to_net_id = cluster_ctx.clb_nlist.block_net(blk_id, to_iblk_pin);
             to_idirect = f_idirect_from_blk_pin[cluster_ctx.clb_nlist.block_type(blk_id)->index][to_iblk_pin];
@@ -408,9 +407,9 @@ void free_placement_macros_structs() {
 
     // This frees up the two arrays and set the pointers to NULL
     auto& device_ctx = g_vpr_ctx.device();
-    int itype;
+    unsigned int itype;
     if (f_idirect_from_blk_pin != nullptr) {
-        for (itype = 1; itype < device_ctx.num_block_types; itype++) {
+        for (itype = 1; itype < device_ctx.physical_tile_types.size(); itype++) {
             free(f_idirect_from_blk_pin[itype]);
         }
         free(f_idirect_from_blk_pin);
@@ -418,7 +417,7 @@ void free_placement_macros_structs() {
     }
 
     if (f_direct_type_from_blk_pin != nullptr) {
-        for (itype = 1; itype < device_ctx.num_block_types; itype++) {
+        for (itype = 1; itype < device_ctx.physical_tile_types.size(); itype++) {
             free(f_direct_type_from_blk_pin[itype]);
         }
         free(f_direct_type_from_blk_pin);
@@ -455,16 +454,15 @@ static void write_place_macros(std::string filename, const std::vector<t_pl_macr
     fprintf(f, "type      type_pin  is_direct direct_type\n");
     fprintf(f, "------------------------------------------\n");
     auto& device_ctx = g_vpr_ctx.device();
-    for (int itype = 0; itype < device_ctx.num_block_types; ++itype) {
-        t_type_descriptor* type = &device_ctx.block_types[itype];
-
-        for (int ipin = 0; ipin < type->num_pins; ++ipin) {
+    for (const auto& type : device_ctx.physical_tile_types) {
+        int itype = type.index;
+        for (int ipin = 0; ipin < type.num_pins; ++ipin) {
             if (f_idirect_from_blk_pin[itype][ipin] != OPEN) {
                 if (f_direct_type_from_blk_pin[itype][ipin] == SOURCE) {
-                    fprintf(f, "%-9s %-9d true      SOURCE    \n", type->name, ipin);
+                    fprintf(f, "%-9s %-9d true      SOURCE    \n", type.name, ipin);
                 } else {
                     VTR_ASSERT(f_direct_type_from_blk_pin[itype][ipin] == SINK);
-                    fprintf(f, "%-9s %-9d true      SINK      \n", type->name, ipin);
+                    fprintf(f, "%-9s %-9d true      SINK      \n", type.name, ipin);
                 }
             } else {
                 VTR_ASSERT(f_direct_type_from_blk_pin[itype][ipin] == OPEN);

@@ -62,6 +62,7 @@ my $create_golden = 0;
 my $check_golden = 0;
 my $calc_geomean = 0;
 my $display_qor = 0;
+my $show_failures = 0;
 my $num_cpu = 1;
 my $long_task_names = 0;
 
@@ -77,6 +78,8 @@ while ( $token = shift(@ARGV) ) {
 		$calc_geomean = 1;
 	} elsif ( $token eq "-display_qor" ) {
 		$display_qor = 1;
+	} elsif ( $token eq "-show_failures" ) {
+		$show_failures = 1;
 	} elsif ( $token eq "-long_task_names" ) {
 		$long_task_names = 1;
 	} elsif ( $token eq "-j" ) { #-j N
@@ -200,6 +203,10 @@ sub setup_single_test {
 
     if (!$long_task_names) {
         $run_params = "-short_task_names " . $run_params;
+    }
+
+    if ($show_failures) {
+        $run_params .= " -show_failures";
     }
 }
 

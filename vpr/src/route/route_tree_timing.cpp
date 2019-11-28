@@ -1,7 +1,6 @@
 #include <cstdio>
 #include <cmath>
 #include <vector>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -54,9 +53,9 @@ static t_rt_node* update_unbuffered_ancestors_C_downstream(t_rt_node* start_of_n
 
 bool verify_route_tree_recurr(t_rt_node* node, std::set<int>& seen_nodes);
 
-t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool congested);
+static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool congested, std::vector<int>* non_config_node_set_usage);
 
-static t_trace* traceback_to_route_tree_branch(t_trace* trace, std::map<int, t_rt_node*>& rr_node_to_rt);
+static t_trace* traceback_to_route_tree_branch(t_trace* trace, std::map<int, t_rt_node*>& rr_node_to_rt, std::vector<int>* non_config_node_set_usage);
 
 static std::pair<t_trace*, t_trace*> traceback_from_route_tree_recurr(t_trace* head, t_trace* tail, const t_rt_node* node);
 
@@ -258,15 +257,13 @@ add_subtree_to_route_tree(t_heap* hptr, t_rt_node** sink_rt_node_ptr) {
      * to the routing tree.  It returns the first (most upstream) new rt_node,
      * and (via a pointer) the rt_node of the new SINK. Traverses up from SINK  */
 
-    int inode;
-    short iedge, iswitch = -1;
     t_rt_node *rt_node, *downstream_rt_node, *sink_rt_node;
     t_linked_rt_edge* linked_rt_edge;
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
-    inode = hptr->index;
+    int inode = hptr->index;
 
     //if (device_ctx.rr_nodes[inode].type() != SINK) {
     //VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -290,9 +287,10 @@ add_subtree_to_route_tree(t_heap* hptr, t_rt_node** sink_rt_node_ptr) {
     downstream_rt_node = sink_rt_node;
 
     std::unordered_set<int> main_branch_visited;
+    std::unordered_set<int> all_visited;
     inode = hptr->u.prev.node;
-    iedge = hptr->u.prev.edge;
-    iswitch = device_ctx.rr_nodes[inode].edge_switch(iedge);
+    t_edge_size iedge = hptr->u.prev.edge;
+    short iswitch = device_ctx.rr_nodes[inode].edge_switch(iedge);
 
     /* For all "new" nodes in the main path */
     // inode is node index of previous node
@@ -300,9 +298,15 @@ add_subtree_to_route_tree(t_heap* hptr, t_rt_node** sink_rt_node_ptr) {
 
     while (rr_node_to_rt_node[inode] == nullptr) { //Not connected to existing routing
         main_branch_visited.insert(inode);
+        all_visited.insert(inode);
 
         linked_rt_edge = alloc_linked_rt_edge();
         linked_rt_edge->child = downstream_rt_node;
+
+        // Also mark downstream_rt_node->inode as visited to prevent
+        // add_non_configurable_to_route_tree from potentially adding
+        // downstream_rt_node to the rt tree twice.
+        all_visited.insert(downstream_rt_node->inode);
         linked_rt_edge->iswitch = iswitch;
         linked_rt_edge->next = nullptr;
 
@@ -343,7 +347,6 @@ add_subtree_to_route_tree(t_heap* hptr, t_rt_node** sink_rt_node_ptr) {
 
     //Expand (recursively) each of the main-branch nodes adding any
     //non-configurably connected nodes
-    std::unordered_set<int> all_visited = main_branch_visited;
     for (int rr_node : main_branch_visited) {
         add_non_configurable_to_route_tree(rr_node, false, all_visited);
     }
@@ -502,11 +505,11 @@ update_unbuffered_ancestors_C_downstream(t_rt_node* start_of_new_path_rt_node) {
 
     /* Having set the value of C_downstream_addition, we must check whethere the parent switch
      * is a buffered or unbuffered switch with the if statement below. If the parent switch is
-     * a buffered switch, then the parent node's downsteam capacitance is increased by the 
+     * a buffered switch, then the parent node's downsteam capacitance is increased by the
      * value of the parent switch's internal capacitance in the if statement below.
-     * Correspondingly, the ancestors' downstream capacitance will be updated by the same  
+     * Correspondingly, the ancestors' downstream capacitance will be updated by the same
      * value through the while loop. Otherwise, if the parent switch is unbuffered, then
-     * the if statement will be ignored, and the parent and ancestral nodes' downstream 
+     * the if statement will be ignored, and the parent and ancestral nodes' downstream
      * capacitance will be increased by the sum of the child's downstream capacitance with
      * the internal capacitance of the parent switch in the while loop/.*/
 
@@ -690,7 +693,7 @@ void update_net_delays_from_route_tree(float* net_delay,
 
 void update_remaining_net_delays_from_route_tree(float* net_delay,
                                                  const t_rt_node* const* rt_node_of_sink,
-                                                 const vector<int>& remaining_sinks) {
+                                                 const std::vector<int>& remaining_sinks) {
     /* Like update_net_delays_from_route_tree, but only updates the sinks that were not already routed
      * this function doesn't actually need to know about the net, just what sink pins need their net delays updated */
 
@@ -699,12 +702,20 @@ void update_remaining_net_delays_from_route_tree(float* net_delay,
 }
 
 /***************  Conversion between traceback and route tree *******************/
-t_rt_node* traceback_to_route_tree(ClusterNetId inet) {
+t_rt_node* traceback_to_route_tree(ClusterNetId inet, std::vector<int>* non_config_node_set_usage) {
     auto& route_ctx = g_vpr_ctx.routing();
-    return traceback_to_route_tree(route_ctx.trace[inet].head);
+    return traceback_to_route_tree(route_ctx.trace[inet].head, non_config_node_set_usage);
+}
+
+t_rt_node* traceback_to_route_tree(ClusterNetId inet) {
+    return traceback_to_route_tree(inet, nullptr);
 }
 
 t_rt_node* traceback_to_route_tree(t_trace* head) {
+    return traceback_to_route_tree(head, nullptr);
+}
+
+t_rt_node* traceback_to_route_tree(t_trace* head, std::vector<int>* non_config_node_set_usage) {
     /* Builds a skeleton route tree from a traceback
      * does not calculate R_upstream, C_downstream, or Tdel at all (left uninitialized)
      * returns the root of the converted route tree
@@ -720,7 +731,7 @@ t_rt_node* traceback_to_route_tree(t_trace* head) {
 
     t_trace* trace = head;
     while (trace) { //Each branch
-        trace = traceback_to_route_tree_branch(trace, rr_node_to_rt);
+        trace = traceback_to_route_tree_branch(trace, rr_node_to_rt, non_config_node_set_usage);
     }
     // Due to the recursive nature of traceback_to_route_tree_branch,
     // the source node is not properly configured.
@@ -737,7 +748,9 @@ t_rt_node* traceback_to_route_tree(t_trace* head) {
 //Note that R_upstream and C_downstream are initialized to NaN
 //
 //Returns the t_trace defining the start of the next branch
-static t_trace* traceback_to_route_tree_branch(t_trace* trace, std::map<int, t_rt_node*>& rr_node_to_rt) {
+static t_trace* traceback_to_route_tree_branch(t_trace* trace,
+                                               std::map<int, t_rt_node*>& rr_node_to_rt,
+                                               std::vector<int>* non_config_node_set_usage) {
     t_trace* next = nullptr;
 
     if (trace) {
@@ -766,6 +779,17 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace, std::map<int, t_r
             else
                 node->re_expand = true;
 
+            if (node_type == SINK) {
+                // A non-configurable edge to a sink is also a usage of the
+                // set.
+                auto set_itr = device_ctx.rr_node_to_non_config_node_set.find(inode);
+                if (non_config_node_set_usage != nullptr && set_itr != device_ctx.rr_node_to_non_config_node_set.end()) {
+                    if (device_ctx.rr_switch_inf[iswitch].configurable()) {
+                        (*non_config_node_set_usage)[set_itr->second] += 1;
+                    }
+                }
+            }
+
             //Save
             rr_node_to_rt[inode] = node;
         } else {
@@ -776,8 +800,21 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace, std::map<int, t_r
 
         next = trace->next;
         if (iswitch != OPEN) {
+            // Keep track of non-configurable set usage by looking for
+            // configurable edges that extend out of a non-configurable set.
+            //
+            // Each configurable edges from the non-configurable set is a
+            // usage of the set.
+            auto& device_ctx = g_vpr_ctx.device();
+            auto set_itr = device_ctx.rr_node_to_non_config_node_set.find(inode);
+            if (non_config_node_set_usage != nullptr && set_itr != device_ctx.rr_node_to_non_config_node_set.end()) {
+                if (device_ctx.rr_switch_inf[iswitch].configurable()) {
+                    (*non_config_node_set_usage)[set_itr->second] += 1;
+                }
+            }
+
             //Recursively construct the remaining branch
-            next = traceback_to_route_tree_branch(next, rr_node_to_rt);
+            next = traceback_to_route_tree_branch(next, rr_node_to_rt, non_config_node_set_usage);
 
             //Get the created child
             itr = rr_node_to_rt.find(trace->next->index);
@@ -891,7 +928,7 @@ t_trace* traceback_from_route_tree(ClusterNetId inet, const t_rt_node* root, int
 //Prunes a route tree (recursively) based on congestion and the 'force_prune' argument
 //
 //Returns true if the current node was pruned
-t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool force_prune) {
+static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool force_prune, std::vector<int>* non_config_node_set_usage) {
     //Recursively traverse the route tree rooted at node and remove any congested
     //sub-trees
 
@@ -901,6 +938,11 @@ t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool 
     auto& route_ctx = g_vpr_ctx.routing();
 
     bool congested = (route_ctx.rr_node_route_inf[node->inode].occ() > device_ctx.rr_nodes[node->inode].capacity());
+    int node_set = -1;
+    auto itr = device_ctx.rr_node_to_non_config_node_set.find(node->inode);
+    if (itr != device_ctx.rr_node_to_non_config_node_set.end()) {
+        node_set = itr->second;
+    }
 
     if (congested) {
         //This connection is congested -- prune it
@@ -917,7 +959,8 @@ t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool 
     t_linked_rt_edge* prev_edge = nullptr;
     t_linked_rt_edge* edge = node->u.child_list;
     while (edge) {
-        t_rt_node* child = prune_route_tree_recurr(edge->child, connections_inf, force_prune);
+        t_rt_node* child = prune_route_tree_recurr(edge->child,
+                                                   connections_inf, force_prune, non_config_node_set_usage);
 
         if (!child) { //Child was pruned
 
@@ -931,6 +974,13 @@ t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool 
 
             t_linked_rt_edge* old_edge = edge;
             edge = edge->next;
+
+            // After removing an edge, check if non_config_node_set_usage
+            // needs an update.
+            if (non_config_node_set_usage != nullptr && node_set != -1 && device_ctx.rr_switch_inf[old_edge->iswitch].configurable()) {
+                (*non_config_node_set_usage)[node_set] -= 1;
+                VTR_ASSERT((*non_config_node_set_usage)[node_set] >= 0);
+            }
 
             free_linked_rt_edge(old_edge);
 
@@ -979,18 +1029,8 @@ t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool 
         // We take the corresponding actions:
         //   1) Prune the node.
         //
-        //   2) Prune the node only if force_prune is set
-        //
-        //      Since the node was reached non-configurably it is illegal to
-        //      remove it independently of any other nodes which are non-
-        //      configurably connected to it.
-        //
-        //      As a result we only remove a non-configurably connected node
-        //      if force_prune is set.
-        //
-        //      Note that if a node upstream of the non-configurably connected
-        //      nodes becomes congested, force_prune will be set and the *entire*
-        //      set of non-configurably connected nodes will be removed.
+        //   2) Prune the node only if the node set is unused or if force_prune
+        //      is set.
         //
         //   3) Prune the node.
         //
@@ -1002,6 +1042,14 @@ t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool 
         bool reached_non_configurably = false;
         if (node->parent_node) {
             reached_non_configurably = !device_ctx.rr_switch_inf[node->parent_switch].configurable();
+
+            if (reached_non_configurably) {
+                // Check if this non-configurable node set is in use.
+                VTR_ASSERT(node_set != -1);
+                if (non_config_node_set_usage != nullptr && (*non_config_node_set_usage)[node_set] == 0) {
+                    force_prune = true;
+                }
+            }
         }
 
         if (reached_non_configurably && !force_prune) {
@@ -1012,6 +1060,53 @@ t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool 
         }
 
     } else {
+        // If this node is:
+        //   1. Part of a non-configurable node set
+        //   2. The first node in the tree that is part of the non-configurable
+        //      node set
+        //
+        //      -- and --
+        //
+        //   3. The node set is not active
+        //
+        //  Then prune this node.
+        //
+        if (non_config_node_set_usage != nullptr && node_set != -1 && device_ctx.rr_switch_inf[node->parent_switch].configurable() && (*non_config_node_set_usage)[node_set] == 0) {
+            // This node should be pruned, re-prune edges once more.
+            //
+            // If the following is true:
+            //
+            //  - The node set is unused
+            //    (e.g. (*non_config_node_set_usage)[node_set] == 0)
+            //  - This particular node still had children
+            //    (which is true by virtue of being in this else statement)
+            //
+            // Then that indicates that the node set became unused during the
+            // pruning. One or more of the children of this node will be
+            // pruned if prune_route_tree_recurr is called again, and
+            // eventually the whole node will be prunable.
+            //
+            //  Consider the following graph:
+            //
+            //  1 -> 2
+            //  2 -> 3 [non-configurable]
+            //  2 -> 4 [non-configurable]
+            //  3 -> 5
+            //  4 -> 6
+            //
+            //  Assume that nodes 5 and 6 do not connect to a sink, so they
+            //  will be pruned (as normal). When prune_route_tree_recurr
+            //  visits 2 for the first time, node 3 or 4 will remain. This is
+            //  because when prune_route_tree_recurr visits 3 or 4, it will
+            //  not have visited 4 or 3 (respectively). As a result, either
+            //  node 3 or 4 will not be pruned on the first pass, because the
+            //  node set usage count will be > 0. However after
+            //  prune_route_tree_recurr visits 2, 3 and 4, the node set usage
+            //  will be 0, so everything can be pruned.
+            return prune_route_tree_recurr(node, connections_inf,
+                                           /*force_prune=*/false, non_config_node_set_usage);
+        }
+
         //An unpruned intermediate node
         VTR_ASSERT(!force_prune);
 
@@ -1020,6 +1115,10 @@ t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool 
 }
 
 t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf) {
+    return prune_route_tree(rt_root, connections_inf, nullptr);
+}
+
+t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf, std::vector<int>* non_config_node_set_usage) {
     /* Prune a skeleton route tree of illegal branches - when there is at least 1 congested node on the path to a sink
      * This is the top level function to be called with the SOURCE node as root.
      * Returns true if the entire tree has been pruned.
@@ -1037,7 +1136,7 @@ t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf) {
     VTR_ASSERT_MSG(route_ctx.rr_node_route_inf[rt_root->inode].occ() <= device_ctx.rr_nodes[rt_root->inode].capacity(),
                    "Route tree root/SOURCE should never be congested");
 
-    return prune_route_tree_recurr(rt_root, connections_inf, false);
+    return prune_route_tree_recurr(rt_root, connections_inf, false, non_config_node_set_usage);
 }
 
 void pathfinder_update_cost_from_route_tree(const t_rt_node* rt_root, int add_or_sub, float pres_fac) {
@@ -1271,6 +1370,8 @@ bool is_valid_route_tree(const t_rt_node* root) {
             return false;
         }
 
+        C_downstream_children += device_ctx.rr_switch_inf[edge->iswitch].Cinternal;
+
         if (!device_ctx.rr_switch_inf[edge->iswitch].buffered()) {
             C_downstream_children += edge->child->C_downstream;
         }
@@ -1415,22 +1516,21 @@ t_rt_node* find_sink_rt_node(t_rt_node* rt_root, ClusterNetId net_id, ClusterPin
     int ipin = cluster_ctx.clb_nlist.pin_net_index(sink_pin);
     int sink_rr_inode = route_ctx.net_rr_terminals[net_id][ipin]; //obtain the value of the routing resource sink
 
-    return find_sink_rt_node_recurr(rt_root, sink_rr_inode); //find pointer to route tree node corresponding to sink_rr_inode
+    t_rt_node* sink_rt_node = find_sink_rt_node_recurr(rt_root, sink_rr_inode); //find pointer to route tree node corresponding to sink_rr_inode
+    VTR_ASSERT(sink_rt_node);
+    return sink_rt_node;
 }
 t_rt_node* find_sink_rt_node_recurr(t_rt_node* node, int sink_rr_inode) {
-    t_rt_node* found_node = nullptr;
-
     if (node->inode == sink_rr_inode) { //check if current node matches sink_rr_inode
         return node;
     }
 
     for (t_linked_rt_edge* edge = node->u.child_list; edge != nullptr; edge = edge->next) {
-        found_node = find_sink_rt_node_recurr(edge->child, sink_rr_inode); //process each of the children
-        VTR_ASSERT(found_node);
-        if (found_node->inode == sink_rr_inode) {
+        t_rt_node* found_node = find_sink_rt_node_recurr(edge->child, sink_rr_inode); //process each of the children
+        if (found_node && found_node->inode == sink_rr_inode) {
             //If the sink has been found downstream in the branch, we would like to immediately exit the search
             return found_node;
         }
     }
-    return found_node; //We have not reached the sink node
+    return nullptr; //We have not reached the sink node
 }

@@ -33,19 +33,6 @@ struct STRING_CACHE{
 	long *next_string;
 };
 
-struct STRING_CACHE_LIST{
-	STRING_CACHE *local_param_table_sc;
-	STRING_CACHE *local_symbol_table_sc;
-	STRING_CACHE *function_local_symbol_table_sc;
-
-	struct ast_node_t **local_symbol_table;
-	struct ast_node_t **function_local_symbol_table;
-	int num_local_symbol_table;
-	int function_num_local_symbol_table;
-
-	char *instance_name_prefix;
-};
-
 /* creates the hash where it is indexed by a string and the void ** holds the data */
 STRING_CACHE *sc_new_string_cache(void);
 /* returns an index of the spot where string is */
@@ -58,5 +45,7 @@ bool sc_remove_string(STRING_CACHE * sc, const char *string);
 
 /* free the cache */
 STRING_CACHE * sc_free_string_cache(STRING_CACHE *sc);
+
+void sc_merge_string_cache(STRING_CACHE **source_ref, STRING_CACHE *destination);
 
 #endif

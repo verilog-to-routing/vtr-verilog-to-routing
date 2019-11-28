@@ -1,7 +1,6 @@
 #include <cstring>
 #include <vector>
 #include <sstream>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_util.h"
@@ -60,13 +59,13 @@ void SetupVPR(const t_options* Options,
               t_router_opts* RouterOpts,
               t_analysis_opts* AnalysisOpts,
               t_det_routing_arch* RoutingArch,
-              vector<t_lb_type_rr_node>** PackerRRGraphs,
+              std::vector<t_lb_type_rr_node>** PackerRRGraphs,
               std::vector<t_segment_inf>& Segments,
               t_timing_inf* Timing,
               bool* ShowGraphics,
               int* GraphPause,
+              bool* SaveGraphics,
               t_power_opts* PowerOpts) {
-    int i;
     using argparse::Provenance;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
@@ -101,8 +100,11 @@ void SetupVPR(const t_options* Options,
 
     if (readArchFile == true) {
         vtr::ScopedStartFinishTimer t("Loading Architecture Description");
-        XmlReadArch(Options->ArchFile.value().c_str(), TimingEnabled, Arch, &device_ctx.block_types,
-                    &device_ctx.num_block_types);
+        XmlReadArch(Options->ArchFile.value().c_str(),
+                    TimingEnabled,
+                    Arch,
+                    device_ctx.physical_tile_types,
+                    device_ctx.logical_block_types);
     }
 
     *user_models = Arch->models;
@@ -110,17 +112,16 @@ void SetupVPR(const t_options* Options,
 
     /* TODO: this is inelegant, I should be populating this information in XmlReadArch */
     device_ctx.EMPTY_TYPE = nullptr;
-    for (i = 0; i < device_ctx.num_block_types; i++) {
-        t_type_ptr type = &device_ctx.block_types[i];
-        if (strcmp(device_ctx.block_types[i].name, EMPTY_BLOCK_NAME) == 0) {
+    for (const auto& type : device_ctx.physical_tile_types) {
+        if (strcmp(type.name, EMPTY_BLOCK_NAME) == 0) {
             VTR_ASSERT(device_ctx.EMPTY_TYPE == nullptr);
-            device_ctx.EMPTY_TYPE = type;
+            device_ctx.EMPTY_TYPE = &type;
         } else {
-            if (block_type_contains_blif_model(type, MODEL_INPUT)) {
-                device_ctx.input_types.insert(type);
+            if (block_type_contains_blif_model(logical_block_type(&type), MODEL_INPUT)) {
+                device_ctx.input_types.insert(&type);
             }
-            if (block_type_contains_blif_model(type, MODEL_OUTPUT)) {
-                device_ctx.output_types.insert(type);
+            if (block_type_contains_blif_model(logical_block_type(&type), MODEL_OUTPUT)) {
+                device_ctx.output_types.insert(&type);
             }
         }
     }
@@ -216,9 +217,10 @@ void SetupVPR(const t_options* Options,
 
     *ShowGraphics = Options->show_graphics;
 
+    *SaveGraphics = Options->save_graphics;
+
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ARCH)) {
-        EchoArch(getEchoFileName(E_ECHO_ARCH), device_ctx.block_types, device_ctx.num_block_types,
-                 Arch);
+        EchoArch(getEchoFileName(E_ECHO_ARCH), device_ctx.physical_tile_types, device_ctx.logical_block_types, Arch);
     }
 }
 
@@ -350,6 +352,9 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->first_iteration_timing_report_file = Options.router_first_iteration_timing_report_file;
 
     RouterOpts->strict_checks = Options.strict_checks;
+
+    RouterOpts->write_router_lookahead = Options.write_router_lookahead;
+    RouterOpts->read_router_lookahead = Options.read_router_lookahead;
 }
 
 static void SetupAnnealSched(const t_options& Options,
@@ -479,6 +484,11 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->move_stats_file = Options.place_move_stats_file;
 
     PlacerOpts->strict_checks = Options.strict_checks;
+
+    PlacerOpts->write_placement_delay_lookup = Options.write_placement_delay_lookup;
+    PlacerOpts->read_placement_delay_lookup = Options.read_placement_delay_lookup;
+
+    PlacerOpts->allowed_tiles_for_delay_model = Options.allowed_tiles_for_delay_model;
 }
 
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {

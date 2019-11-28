@@ -1,0 +1,711 @@
+#
+# Valgrind suppression file for EZGL
+#
+
+#pango
+{
+	libpango
+	Memcheck:Leak
+	...
+	obj:/usr/lib*/libpango*
+}
+
+#GTK
+{
+	g_type_register
+	Memcheck:Leak
+	fun:*alloc
+	...
+	fun:g_type_register_*
+	...
+	fun:_dl_init
+	...
+}
+
+{
+	g_quark_from_static_string
+	Memcheck:Leak
+	fun:*alloc
+	...
+	fun:g_quark_from_static_string
+	...
+	fun:_dl_init
+	...
+}
+
+{
+	g_main_thread
+	Memcheck:Leak
+	fun:*alloc
+	...
+	fun:g_main*
+	...
+	fun:start_thread
+	fun:clone
+}
+
+{
+	g_closure
+	Memcheck:Leak
+	match-leak-kinds:possible
+	fun:*alloc
+	...
+	fun:g_cclosure_new
+	fun:g_signal_connect_data
+	...
+}
+
+# 
+{
+	g_object
+	Memcheck:Leak
+	match-leak-kinds:possible
+	...
+	fun:g_object_new
+	...
+}
+
+{
+	g_type_register_static
+	Memcheck:Leak
+	match-leak-kinds:possible
+	...
+	fun:g_type_register_static
+	...
+}
+
+{
+	g_signal_connect_closure
+	Memcheck:Leak
+	match-leak-kinds:possible
+	...
+	fun:g_signal_connect_closure
+	fun:gtk_*group*
+	...
+}
+
+{
+	gtk_module_init
+	Memcheck:Leak
+	
+	fun:*alloc
+	...
+	fun:gtk_module_init
+	...
+}
+
+{
+	g_closure_invoke
+	Memcheck:Leak
+	
+	fun:*alloc
+	...
+	fun:g_closure_invoke
+	...
+}
+
+{
+	gtk_style_context_set_state
+	Memcheck:Leak
+	
+	fun:*alloc
+	...
+	fun:gtk_style_context_set_state
+	...
+}
+
+# 
+{
+	call_init
+	Memcheck:Leak
+	
+	fun:*alloc
+	...
+	fun:call_init
+	fun:_dl_init
+	...
+}
+
+{
+	XML_ParseBuffer
+	Memcheck:Leak
+	fun:*alloc
+	...
+	fun:XML_ParseBuffer
+	...
+}
+
+{
+	FcConfigParseAndLoad
+	Memcheck:Leak
+	fun:*alloc
+	...
+	fun:FcConfigParseAndLoad
+	...
+}
+
+# 
+{
+	g_objectv
+	Memcheck:Leak
+	
+	...
+	fun:g_object_newv
+	...
+}
+
+{
+	g_type_add_interface_static
+	Memcheck:Leak
+	match-leak-kinds:possible
+	...
+	fun:g_type_add_interface_static
+	...
+}
+
+{
+	gtk_container_get_children
+	Memcheck:Leak
+	fun:*alloc
+	...
+	fun:gtk_container_get_children
+	...
+}
+
+{
+	cairo_select_font_face
+	Memcheck:Leak
+	fun:*alloc
+	...
+	fun:cairo_select_font_face
+	...
+}
+
+{
+	libfontconfig
+	Memcheck:Leak
+	fun:*alloc
+	...
+	obj:*libfontconfig.so.*
+	...
+}
+
+{
+	X11_XGetDefault
+	Memcheck:Leak
+	fun:realloc
+	obj:*libX11.so.6.3.0
+	obj:*libX11.so.6.3.0
+	obj:*libX11.so.6.3.0
+	fun:_XlcCreateLC
+	fun:_XlcDefaultLoader
+	fun:_XOpenLC
+	fun:_XrmInitParseInfo
+	obj:*libX11.so.6.3.0
+	fun:XrmGetStringDatabase
+	obj:*libX11.so.6.3.0
+	fun:XGetDefault
+}
+
+{
+	XInternAtom_via_event_loop
+	Memcheck:Leak
+	fun:*alloc
+	fun:_XEnq
+	obj:*libX11.so.6.3.0
+	fun:_XReply
+	fun:XInternAtom
+	...
+}
+
+{
+	cairo_deep_*alloc
+	Memcheck:Leak
+	fun:*alloc
+	obj:*libcairo.*
+	...
+}
+
+#openmp
+{
+	GOMP_parallel
+	Memcheck:Leak
+	
+	fun:*alloc
+	fun:allocate_dtv
+	fun:_dl_allocate_tls
+	fun:allocate_stack
+	fun:pthread_create@@GLIBC_2.2.5
+	...
+}
+
+
+#GTK engines
+{
+	engines
+	Memcheck:Leak
+	fun:*alloc
+	...
+	obj:/usr/lib*/gtk*/*/engines*
+	...
+	obj:/usr/lib*/libgtk*
+}
+
+#nvidia
+{
+	libGL
+	Memcheck:Leak
+	...
+	obj:/usr/lib*/libGL.so*
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:g_socket_create_source
+   ...
+   fun:g_main_context_dispatch
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:g_type_class_ref
+   ...
+   fun:gtk_init_check
+   fun:gtk_init
+   obj:*libgtk-3*
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:g_markup_parse_context_parse
+   obj:*libgtk-3*
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:g_socket_new
+   obj:*libgio-2*
+   fun:g_socket_client_connect
+   obj:*libgio-2*
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:atk_add_focus_tracker
+   obj:*libgtk-3*
+   ...
+   fun:gtk_parse_args
+   fun:gtk_init_check
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:m*alloc
+   ...
+   fun:g_bus_get_sync
+   ...
+   fun:g_application_register
+   obj:*libgio-2*
+   fun:g_application_run
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   obj:*libgtk-3*
+   fun:g_closure_invoke
+   ...
+   fun:g_signal_emit_valist
+   fun:g_signal_emit
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:g_simple_async_result_complete
+   ...
+   fun:g_main_context_dispatch
+   ...
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:g_type_class_ref
+   ...
+   fun:atk_add_focus_tracker
+   obj:*libgtk-3*
+   ...
+   fun:g_option_context_parse
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:g_type_class_ref
+   obj:*libgtk-3*
+   fun:atk_add_focus_tracker
+   obj:*libgtk-3*
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:g_type_class_ref
+   obj:*libgtk-3*
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:g_dbus_proxy_new_sync
+   obj:*libgtk-3*
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:g_signal_new
+   ...
+   obj:*libgobject-2*
+   fun:g_type_class_ref
+   fun:g_object_new_valist
+   fun:g_initable_new_valist
+   fun:g_initable_new
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak 
+   fun:*alloc
+   ...
+   fun:g_signal_new
+   obj:*libgtk-3*
+   fun:g_type_class_ref
+   obj:*libgtk-3*
+   ...
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:g_signal_new
+   obj:*libgtk-3*
+   ...
+   fun:g_type_class_ref
+   obj:*libgtk-3*
+   ...
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   
+   fun:*alloc
+   ...
+   fun:g_type_class_ref
+   obj:*libgtk-3*
+   fun:atk_add_focus_tracker
+   obj:*libgtk-3*
+   ...
+   fun:g_option_context_parse
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   
+   fun:*alloc
+   ...
+   fun:g_signal_new_class_handler
+   obj:*libgtk-3*
+   ...
+   fun:g_type_class_ref
+   obj:*libgtk-3*
+   ...
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak  
+   fun:*alloc
+   ...
+   fun:g_signal_connect_data
+   obj:*libgtk-3*
+   ...
+   fun:gtk_widget_show
+   obj:*libgtk-3*
+   ...
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:g_type_class_ref
+   fun:g_object_new_valist
+   fun:g_initable_new_valist
+   fun:g_initable_new
+   fun:gvfs_dbus_mount_tracker_proxy_new_for_bus_sync
+   ...
+   fun:g_type_create_instance
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   fun:g_*alloc
+   ...
+   fun:g_type_class_ref
+   obj:*libgtk-3*
+   ...
+   fun:g_markup_parse_context_parse
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:g_type_class_ref
+   obj:*libgtk-3*
+   ...
+   fun:g_option_context_parse
+   fun:gtk_parse_args
+   fun:gtk_init_check
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:g_type_class_ref
+   fun:atk_bridge_adaptor_init
+   obj:*libgtk-3*
+   ...
+   fun:g_option_context_parse
+   fun:gtk_parse_args
+   fun:gtk_init_check
+   fun:gtk_init
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:g_signal_new
+   ...
+   fun:g_type_class_ref
+   obj:*libgtk-3*
+   fun:atk_add_focus_tracker
+   obj:*libgtk-3*
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   
+   fun:*alloc
+   ...
+   fun:g_signal_new
+   ...
+   fun:g_type_class_ref
+   obj:*libgtk-3*
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak  
+   fun:*alloc
+   ...
+   fun:g_signal_new
+   ...
+   fun:g_initable_new
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:g_signal_new
+   obj:*libgtk-3*
+   fun:g_type_class_ref
+   obj:*libgtk-3*
+   ...
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:g_signal_new
+   ...
+   fun:g_type_class_ref
+   obj:*libgtk-3*
+   ...
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak 
+   fun:*alloc
+   ...
+   fun:g_signal_new
+   ...
+   fun:g_type_class_ref
+   obj:*libgtk-3*
+   ...
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:g_signal_new
+   ...
+   fun:g_type_class_ref
+   obj:*libgtk-3*
+   ...
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak 
+   fun:*alloc
+   ...
+   fun:g_signal_new
+   ...
+   fun:g_type_class_ref
+   obj:*libgio-2.0.so.0.4002.0
+   ...
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:g_signal_new_class_handler
+   ...
+   fun:g_type_class_ref
+   obj:*libgtk-3*
+   ...
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:g_signal_connect_data
+   ...
+   fun:gtk_widget_show
+   obj:*libgtk-3*
+   ...
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:g_initable_new
+   ...
+   fun:g_type_create_instance
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:g_type_class_ref
+   obj:*libgtk-3*
+   ...
+   fun:g_markup_parse_context_parse
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:g_type_class_ref
+   obj:*libgtk-3*
+   ...
+   fun:gtk_init_check
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:atk_bridge_adaptor_init
+   obj:*libgtk-3*
+   ...
+   fun:gtk_init
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:g_application_register
+   obj:*libgio-2*
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:g_thread_new
+   obj:*libgio-2*
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:g_thread_pool_push
+   ...
+   fun:g_bus_get
+   fun:g_bus_watch_name
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:*alloc
+   ...
+   fun:g_param_spec_enum
+   ...
+   fun:g_bus_get_sync
+   obj:*libgio-*
+   fun:g_application_register
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:*alloc
+   fun:g_realloc
+   ...
+   fun:gtk_button_set_image_position
+   fun:g_object_setv
+   ...
+   obj:*libgtk-3*
+}
+{
+   <insert_a_suppression_name_here>
+   Memcheck:Leak
+   match-leak-kinds: possible
+   fun:*alloc
+   ...
+   fun:gtk_cell_renderer_render
+   ...
+   obj:*libgtk-3*
+}

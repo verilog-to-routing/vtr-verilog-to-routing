@@ -5,7 +5,6 @@
 #include <fstream>
 #include <stdlib.h>
 #include <sstream>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -28,7 +27,7 @@ using namespace std;
 /* #define DUMP_BLIF_INPUT 1 */
 
 static std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks);
-static bool try_size_device_grid(const t_arch& arch, const std::map<t_type_ptr, size_t>& num_type_instances, float target_device_utilization, std::string device_layout_name);
+static bool try_size_device_grid(const t_arch& arch, const std::map<t_logical_block_type_ptr, size_t>& num_type_instances, float target_device_utilization, std::string device_layout_name);
 
 static t_ext_pin_util_targets parse_target_external_pin_util(std::vector<std::string> specs);
 static std::string target_external_pin_util_to_string(const t_ext_pin_util_targets& ext_pin_utils);
@@ -42,7 +41,7 @@ bool try_pack(t_packer_opts* packer_opts,
               const t_model* user_models,
               const t_model* library_models,
               float interc_delay,
-              vector<t_lb_type_rr_node>* lb_type_rr_graphs) {
+              std::vector<t_lb_type_rr_node>* lb_type_rr_graphs) {
     std::unordered_set<AtomNetId> is_clock;
     std::multimap<AtomBlockId, t_pack_molecule*> atom_molecules;                     //The molecules associated with each atom block
     std::unordered_map<AtomBlockId, t_pb_graph_node*> expected_lowest_cost_pb_gnode; //The molecules associated with each atom block
@@ -170,7 +169,7 @@ bool try_pack(t_packer_opts* packer_opts,
                 }
 
                 resource_reqs += std::string(iter->first->name) + ": " + std::to_string(iter->second);
-                resource_avail += std::string(iter->first->name) + ": " + std::to_string(grid.num_instances(iter->first));
+                resource_avail += std::string(iter->first->name) + ": " + std::to_string(grid.num_instances(physical_tile_type(iter->first)));
             }
 
             VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Failed to find device which satisifies resource requirements required: %s (available %s)", resource_reqs.c_str(), resource_avail.c_str());
@@ -258,7 +257,7 @@ std::unordered_set<AtomNetId> alloc_and_load_is_clock(bool global_clocks) {
     return (is_clock);
 }
 
-static bool try_size_device_grid(const t_arch& arch, const std::map<t_type_ptr, size_t>& num_type_instances, float target_device_utilization, std::string device_layout_name) {
+static bool try_size_device_grid(const t_arch& arch, const std::map<t_logical_block_type_ptr, size_t>& num_type_instances, float target_device_utilization, std::string device_layout_name) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     //Build the device
@@ -273,23 +272,23 @@ static bool try_size_device_grid(const t_arch& arch, const std::map<t_type_ptr, 
 
     float device_utilization = calculate_device_utilization(grid, num_type_instances);
     VTR_LOG("Device Utilization: %.2f (target %.2f)\n", device_utilization, target_device_utilization);
-    std::map<t_type_ptr, float> type_util;
-    for (int i = 0; i < device_ctx.num_block_types; ++i) {
-        auto type = &device_ctx.block_types[i];
-        auto itr = num_type_instances.find(type);
+    std::map<t_logical_block_type_ptr, float> type_util;
+    for (const auto& type : device_ctx.logical_block_types) {
+        auto physical_type = physical_tile_type(&type);
+        auto itr = num_type_instances.find(&type);
         if (itr == num_type_instances.end()) continue;
 
         float num_instances = itr->second;
         float util = 0.;
-        if (device_ctx.grid.num_instances(type) != 0) {
-            util = num_instances / device_ctx.grid.num_instances(type);
+        if (device_ctx.grid.num_instances(physical_type) != 0) {
+            util = num_instances / device_ctx.grid.num_instances(physical_type);
         }
-        type_util[type] = util;
+        type_util[&type] = util;
 
         if (util > 1.) {
             fits_on_device = false;
         }
-        VTR_LOG("\tBlock Utilization: %.2f Type: %s\n", util, type->name);
+        VTR_LOG("\tBlock Utilization: %.2f Type: %s\n", util, type.name);
     }
     VTR_LOG("\n");
 
@@ -308,7 +307,7 @@ static t_ext_pin_util_targets parse_target_external_pin_util(std::vector<std::st
 
         auto& device_ctx = g_vpr_ctx.device();
         auto& grid = device_ctx.grid;
-        t_type_ptr logic_block_type = infer_logic_block_type(grid);
+        t_logical_block_type_ptr logic_block_type = infer_logic_block_type(grid);
 
         //Allowing 100% pin utilization of the logic block type can harm
         //routability, since it may allow a few (typically outlier) clusters to
@@ -412,17 +411,17 @@ static std::string target_external_pin_util_to_string(const t_ext_pin_util_targe
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    for (int itype = 0; itype < device_ctx.num_block_types; ++itype) {
-        if (is_empty_type(&device_ctx.block_types[itype])) continue;
+    for (unsigned int itype = 0; itype < device_ctx.physical_tile_types.size(); ++itype) {
+        if (is_empty_type(&device_ctx.physical_tile_types[itype])) continue;
 
-        auto blk_name = device_ctx.block_types[itype].name;
+        auto blk_name = device_ctx.physical_tile_types[itype].name;
 
         ss << blk_name << ":";
 
         auto pin_util = ext_pin_utils.get_pin_util(blk_name);
         ss << pin_util.input_pin_util << ',' << pin_util.output_pin_util;
 
-        if (itype != device_ctx.num_block_types - 1) {
+        if (itype != device_ctx.physical_tile_types.size() - 1) {
             ss << " ";
         }
     }
@@ -443,7 +442,7 @@ static t_pack_high_fanout_thresholds parse_high_fanout_thresholds(std::vector<st
 
         auto& device_ctx = g_vpr_ctx.device();
         auto& grid = device_ctx.grid;
-        t_type_ptr logic_block_type = infer_logic_block_type(grid);
+        t_logical_block_type_ptr logic_block_type = infer_logic_block_type(grid);
 
         if (logic_block_type != nullptr) {
             constexpr float LOGIC_BLOCK_TYPE_HIGH_FANOUT_THRESHOLD = 32;
@@ -505,17 +504,17 @@ static std::string high_fanout_thresholds_to_string(const t_pack_high_fanout_thr
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    for (int itype = 0; itype < device_ctx.num_block_types; ++itype) {
-        if (is_empty_type(&device_ctx.block_types[itype])) continue;
+    for (unsigned int itype = 0; itype < device_ctx.physical_tile_types.size(); ++itype) {
+        if (is_empty_type(&device_ctx.physical_tile_types[itype])) continue;
 
-        auto blk_name = device_ctx.block_types[itype].name;
+        auto blk_name = device_ctx.physical_tile_types[itype].name;
 
         ss << blk_name << ":";
 
         auto threshold = hf_thresholds.get_threshold(blk_name);
         ss << threshold;
 
-        if (itype != device_ctx.num_block_types - 1) {
+        if (itype != device_ctx.physical_tile_types.size() - 1) {
             ss << " ";
         }
     }

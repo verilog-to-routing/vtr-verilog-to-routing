@@ -63,7 +63,7 @@ short t_rr_node::capacity() const {
     return capacity_;
 }
 
-short t_rr_node::fan_in() const {
+t_edge_size t_rr_node::fan_in() const {
     return fan_in_;
 }
 
@@ -103,7 +103,7 @@ short t_rr_node::length() const {
     return std::max(yhigh_ - ylow_, xhigh_ - xlow_);
 }
 
-bool t_rr_node::edge_is_configurable(short iedge) const {
+bool t_rr_node::edge_is_configurable(t_edge_size iedge) const {
     auto iswitch = edge_switch(iedge);
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -129,7 +129,7 @@ bool t_rr_node::validate() const {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "RR Node number of edges exceeded edge capacity");
     }
 
-    short iedge = 0;
+    t_edge_size iedge = 0;
     for (auto edge : edges()) {
         if (edge < num_configurable_edges()) {
             if (!edge_is_configurable(edge)) {
@@ -218,12 +218,11 @@ void t_rr_node::set_capacity(short new_capacity) {
     capacity_ = new_capacity;
 }
 
-void t_rr_node::set_fan_in(short new_fan_in) {
-    VTR_ASSERT(new_fan_in >= 0);
+void t_rr_node::set_fan_in(t_edge_size new_fan_in) {
     fan_in_ = new_fan_in;
 }
 
-short t_rr_node::add_edge(int sink_node, int iswitch) {
+t_edge_size t_rr_node::add_edge(int sink_node, int iswitch) {
     if (edges_capacity_ == num_edges_) {
         constexpr size_t MAX_EDGE_COUNT = std::numeric_limits<decltype(edges_capacity_)>::max();
         if (edges_capacity_ == MAX_EDGE_COUNT) {
@@ -285,8 +284,8 @@ void t_rr_node::partition_edges() {
     num_non_configurable_edges_ = num_non_conf_edges; //Narrowing
 }
 
-void t_rr_node::set_num_edges(short new_num_edges) {
-    VTR_ASSERT(new_num_edges >= 0);
+void t_rr_node::set_num_edges(size_t new_num_edges) {
+    VTR_ASSERT(new_num_edges <= std::numeric_limits<t_edge_size>::max());
     num_edges_ = new_num_edges;
     edges_capacity_ = new_num_edges;
 
@@ -307,13 +306,13 @@ void t_rr_node::set_side(e_side new_side) {
     dir_side_.side = new_side;
 }
 
-void t_rr_node::set_edge_sink_node(short iedge, int sink_node) {
+void t_rr_node::set_edge_sink_node(t_edge_size iedge, int sink_node) {
     VTR_ASSERT(iedge < num_edges());
     VTR_ASSERT(sink_node >= 0);
     edges_[iedge].sink_node = sink_node;
 }
 
-void t_rr_node::set_edge_switch(short iedge, short switch_index) {
+void t_rr_node::set_edge_switch(t_edge_size iedge, short switch_index) {
     VTR_ASSERT(iedge < num_edges());
     VTR_ASSERT(switch_index >= 0);
     edges_[iedge].switch_id = switch_index;

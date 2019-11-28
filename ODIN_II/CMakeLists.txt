@@ -79,7 +79,7 @@ file(GLOB_RECURSE PARSER_SOURCES SRC/*.y)
 
 #Make the flex and bison targets
 flex_target(VerilogLexer ${LEXER_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/verilog_flex.c)
-bison_target(VerilogParser ${PARSER_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/verilog_bison.c)
+bison_target(VerilogParser ${PARSER_SOURCES} ${CMAKE_CURRENT_BINARY_DIR}/verilog_bison.c COMPILE_FLAGS "--verbose")
 add_flex_bison_dependency(VerilogLexer VerilogParser)
 
 #Get the include directories for the generated headers
@@ -112,7 +112,7 @@ add_library(libodin_ii STATIC
              ${LIB_HEADERS_H}
              ${LIB_HEADERS_HPP}
              ${LIB_SOURCES}
-             ${FLEX_VerilogLexer_OUTPUTS} 
+             ${FLEX_VerilogLexer_OUTPUTS}
              ${BISON_VerilogParser_OUTPUT_SOURCE})
 
 target_include_directories(libodin_ii PUBLIC ${LIB_INCLUDE_DIRS})
@@ -162,6 +162,21 @@ endif()
 get_target_property(ODIN_USES_IPO odin_II INTERPROCEDURAL_OPTIMIZATION)
 if (ODIN_USES_IPO)
     set_target_properties(odin_II PROPERTIES LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
+endif()
+
+set(ODIN_COMPILE_OPTIONS_FLAGS
+    #GCC-like
+    "-Werror"
+    )
+
+#add strict odin compiler flags, if set
+if(VTR_COMPILE_OPTIONS STREQUAL "strict")
+    message(STATUS "ODIN_II: building with strict flags")
+    foreach(ODIN_FLAG ${ODIN_COMPILE_OPTIONS_FLAGS})
+        message(STATUS "\tAdding CXX flag: ${ODIN_FLAG}")
+        target_compile_options(libodin_ii PRIVATE ${ODIN_FLAG})
+        target_compile_options(odin_II PRIVATE ${ODIN_FLAG})
+    endforeach()
 endif()
 
 install(TARGETS odin_II libodin_ii DESTINATION bin)

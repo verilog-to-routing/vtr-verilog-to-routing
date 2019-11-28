@@ -14,17 +14,16 @@
 #include <cstdio>
 #include <cstring>
 #include <cinttypes>
-using namespace std;
 
 #include "vtr_util.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_memory.h"
+#include "vtr_token.h"
 
 #include "vpr_error.h"
 #include "vpr_types.h"
 
-#include "token.h"
 #include "arch_types.h"
 #include "physical_types.h"
 #include "globals.h"
@@ -94,8 +93,6 @@ static void alloc_and_load_mux_interc_edges(t_interconnect* interconnect,
                                             const int num_output_sets,
                                             const int* num_output_ptrs);
 
-static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor* type);
-
 static void echo_pb_rec(const t_pb_graph_node* pb, const int level, FILE* fp);
 static void echo_pb_pins(t_pb_graph_pin** pb_graph_pins, const int num_ports, const int level, FILE* fp);
 
@@ -114,31 +111,29 @@ static bool operator<(const t_pb_graph_edge_comparator& edge1,
                       const t_pb_graph_edge_comparator& edge2);
 static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin,
                                          const int i_pin,
-                                         map<int, int>& edges_map,
+                                         std::map<int, int>& edges_map,
                                          int* line_num);
 
 /**
  * Allocate memory into types and load the pb graph with interconnect edges
  */
 void alloc_and_load_all_pb_graphs(bool load_power_structures) {
-    int i, errors;
+    int errors;
     edges_head = nullptr;
     num_edges_head = nullptr;
-    auto& device_ctx = g_vpr_ctx.device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    for (i = 0; i < device_ctx.num_block_types; i++) {
-        if (device_ctx.block_types[i].pb_type) {
-            device_ctx.block_types[i].pb_graph_head = (t_pb_graph_node*)vtr::calloc(1,
-                                                                                    sizeof(t_pb_graph_node));
+    for (auto& type : device_ctx.logical_block_types) {
+        if (type.pb_type) {
+            type.pb_graph_head = (t_pb_graph_node*)vtr::calloc(1, sizeof(t_pb_graph_node));
             int pin_count_in_cluster = 0;
-            alloc_and_load_pb_graph(device_ctx.block_types[i].pb_graph_head, nullptr,
-                                    device_ctx.block_types[i].pb_type, 0, load_power_structures, pin_count_in_cluster);
-            device_ctx.block_types[i].pb_graph_head->total_pb_pins = pin_count_in_cluster;
-            alloc_and_load_pin_locations_from_pb_graph(&device_ctx.block_types[i]);
-            load_pin_classes_in_pb_graph_head(device_ctx.block_types[i].pb_graph_head);
+            alloc_and_load_pb_graph(type.pb_graph_head, nullptr,
+                                    type.pb_type, 0, load_power_structures, pin_count_in_cluster);
+            type.pb_graph_head->total_pb_pins = pin_count_in_cluster;
+            load_pin_classes_in_pb_graph_head(type.pb_graph_head);
         } else {
-            device_ctx.block_types[i].pb_graph_head = nullptr;
-            VTR_ASSERT(&device_ctx.block_types[i] == device_ctx.EMPTY_TYPE);
+            type.pb_graph_head = nullptr;
+            VTR_ASSERT(physical_tile_type(&type) == device_ctx.EMPTY_TYPE);
         }
     }
 
@@ -147,9 +142,9 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures) {
         VTR_LOG_ERROR("in pb graph");
         exit(1);
     }
-    for (i = 0; i < device_ctx.num_block_types; i++) {
-        if (device_ctx.block_types[i].pb_type) {
-            load_pb_graph_pin_to_pin_annotations(device_ctx.block_types[i].pb_graph_head);
+    for (auto& type : device_ctx.logical_block_types) {
+        if (type.pb_type) {
+            load_pb_graph_pin_to_pin_annotations(type.pb_graph_head);
         }
     }
 }
@@ -159,7 +154,6 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures) {
  */
 void echo_pb_graph(char* filename) {
     FILE* fp;
-    int i;
 
     fp = vtr::fopen(filename, "w");
 
@@ -167,10 +161,10 @@ void echo_pb_graph(char* filename) {
     fprintf(fp, "--------------------------------------------\n\n");
 
     auto& device_ctx = g_vpr_ctx.device();
-    for (i = 0; i < device_ctx.num_block_types; i++) {
-        fprintf(fp, "type %s\n", device_ctx.block_types[i].name);
-        if (device_ctx.block_types[i].pb_graph_head)
-            echo_pb_rec(device_ctx.block_types[i].pb_graph_head, 1, fp);
+    for (auto& type : device_ctx.logical_block_types) {
+        fprintf(fp, "type %s\n", type.name);
+        if (type.pb_graph_head)
+            echo_pb_rec(type.pb_graph_head, 1, fp);
     }
 
     fclose(fp);
@@ -180,7 +174,7 @@ void echo_pb_graph(char* filename) {
  * check pb_type graph and return the number of errors
  */
 static int check_pb_graph() {
-    int i, num_errors;
+    int num_errors;
     /* TODO: Error checks to do
      * 1.  All pin and edge connections are bidirectional and match each other
      * 3.  All ports are unique in a pb_type
@@ -189,9 +183,9 @@ static int check_pb_graph() {
      */
     num_errors = 0;
     auto& device_ctx = g_vpr_ctx.device();
-    for (i = 0; i < device_ctx.num_block_types; i++) {
-        if (device_ctx.block_types[i].pb_type) {
-            check_pb_node_rec(device_ctx.block_types[i].pb_graph_head);
+    for (auto& type : device_ctx.logical_block_types) {
+        if (type.pb_type) {
+            check_pb_node_rec(type.pb_graph_head);
         }
     }
     return num_errors;
@@ -1268,178 +1262,6 @@ static t_pb_graph_pin* get_pb_graph_pin_from_name(const char* port_name,
     return nullptr;
 }
 
-static void alloc_and_load_pin_locations_from_pb_graph(t_type_descriptor* type) {
-    type->pin_width_offset.resize(type->num_pins, 0);
-    type->pin_height_offset.resize(type->num_pins, 0);
-
-    std::vector<int> physical_pin_counts(type->num_pins, 0);
-    if (type->pin_location_distribution == E_SPREAD_PIN_DISTR) {
-        /* evenly distribute pins starting at bottom left corner */
-
-        int num_sides = 4 * (type->width * type->height);
-        int side_index = 0;
-        int count = 0;
-        for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
-            for (int width = 0; width < type->width; ++width) {
-                for (int height = 0; height < type->height; ++height) {
-                    for (int pin_offset = 0; pin_offset < (type->num_pins / num_sides) + 1; ++pin_offset) {
-                        int pin_num = side_index + pin_offset * num_sides;
-                        if (pin_num < type->num_pins) {
-                            type->pinloc[width][height][side][pin_num] = true;
-                            type->pin_width_offset[pin_num] += width;
-                            type->pin_height_offset[pin_num] += height;
-                            physical_pin_counts[pin_num] += 1;
-                            count++;
-                        }
-                    }
-                    side_index++;
-                }
-            }
-        }
-        VTR_ASSERT(side_index == num_sides);
-        VTR_ASSERT(count == type->num_pins);
-    } else if (type->pin_location_distribution == E_PERIMETER_PIN_DISTR) {
-        //Add one pin at-a-time to perimeter sides in round-robin order
-        int ipin = 0;
-        while (ipin < type->num_pins) {
-            for (int width = 0; width < type->width; ++width) {
-                for (int height = 0; height < type->height; ++height) {
-                    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
-                        if (((width == 0 && side == LEFT)
-                             || (height == type->height - 1 && side == TOP)
-                             || (width == type->width - 1 && side == RIGHT)
-                             || (height == 0 && side == BOTTOM))
-                            && ipin < type->num_pins) {
-                            //On a side, with pins still to allocate
-
-                            type->pinloc[width][height][side][ipin] = true;
-                            type->pin_width_offset[ipin] += width;
-                            type->pin_height_offset[ipin] += height;
-                            physical_pin_counts[ipin] += 1;
-                            ++ipin;
-                        }
-                    }
-                }
-            }
-        }
-        VTR_ASSERT(ipin == type->num_pins);
-
-    } else if (type->pin_location_distribution == E_SPREAD_INPUTS_PERIMETER_OUTPUTS_PIN_DISTR) {
-        //Collect the sets of block input/output pins
-        std::vector<int> input_pins;
-        std::vector<int> output_pins;
-        for (int pin_num = 0; pin_num < type->num_pins; ++pin_num) {
-            int iclass = type->pin_class[pin_num];
-
-            if (type->class_inf[iclass].type == RECEIVER) {
-                input_pins.push_back(pin_num);
-            } else {
-                VTR_ASSERT(type->class_inf[iclass].type == DRIVER);
-                output_pins.push_back(pin_num);
-            }
-        }
-
-        //Allocate the inputs one pin at-a-time in a round-robin order
-        //to all sides
-        size_t ipin = 0;
-        while (ipin < input_pins.size()) {
-            for (int width = 0; width < type->width; ++width) {
-                for (int height = 0; height < type->height; ++height) {
-                    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
-                        if (ipin < input_pins.size()) {
-                            //Pins still to allocate
-
-                            int pin_num = input_pins[ipin];
-
-                            type->pinloc[width][height][side][pin_num] = true;
-                            type->pin_width_offset[pin_num] += width;
-                            type->pin_height_offset[pin_num] += height;
-                            physical_pin_counts[pin_num] += 1;
-                            ++ipin;
-                        }
-                    }
-                }
-            }
-        }
-        VTR_ASSERT(ipin == input_pins.size());
-
-        //Allocate the outputs one pin at-a-time to perimeter sides in round-robin order
-        ipin = 0;
-        while (ipin < output_pins.size()) {
-            for (int width = 0; width < type->width; ++width) {
-                for (int height = 0; height < type->height; ++height) {
-                    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
-                        if (((width == 0 && side == LEFT)
-                             || (height == type->height - 1 && side == TOP)
-                             || (width == type->width - 1 && side == RIGHT)
-                             || (height == 0 && side == BOTTOM))
-                            && ipin < output_pins.size()) {
-                            //On a perimeter side, with pins still to allocate
-
-                            int pin_num = output_pins[ipin];
-
-                            type->pinloc[width][height][side][pin_num] = true;
-                            type->pin_width_offset[pin_num] += width;
-                            type->pin_height_offset[pin_num] += height;
-                            physical_pin_counts[pin_num] += 1;
-                            ++ipin;
-                        }
-                    }
-                }
-            }
-        }
-        VTR_ASSERT(ipin == output_pins.size());
-
-    } else {
-        VTR_ASSERT(type->pin_location_distribution == E_CUSTOM_PIN_DISTR);
-        int count = 0;
-        for (int width = 0; width < type->width; ++width) {
-            for (int height = 0; height < type->height; ++height) {
-                for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
-                    for (int pin = 0; pin < type->num_pin_loc_assignments[width][height][side]; ++pin) {
-                        int* num_pb_graph_node_pins = nullptr; /* number of pins in a set [0..num_sets-1] */
-                        int num_pb_graph_node_sets = 0;
-
-                        t_pb_graph_pin*** pb_graph_node_pins;
-                        pb_graph_node_pins = alloc_and_load_port_pin_ptrs_from_string(type->pb_type->modes[0].interconnect[0].line_num,
-                                                                                      type->pb_graph_head,
-                                                                                      type->pb_graph_head->child_pb_graph_nodes[0],
-                                                                                      type->pin_loc_assignments[width][height][side][pin],
-                                                                                      &num_pb_graph_node_pins,
-                                                                                      &num_pb_graph_node_sets, false, false);
-                        VTR_ASSERT(num_pb_graph_node_sets == 1);
-
-                        for (int pin_index = 0; pin_index < num_pb_graph_node_pins[0]; ++pin_index) {
-                            int pin_num = pb_graph_node_pins[0][pin_index]->pin_count_in_cluster;
-                            VTR_ASSERT(pin_num < type->num_pins / type->capacity);
-                            for (int capacity = 0; capacity < type->capacity; ++capacity) {
-                                type->pinloc[width][height][side][pin_num + capacity * type->num_pins / type->capacity] = true;
-                                type->pin_width_offset[pin_num + capacity * type->num_pins / type->capacity] += width;
-                                type->pin_height_offset[pin_num + capacity * type->num_pins / type->capacity] += height;
-                                physical_pin_counts[pin_num + capacity * type->num_pins / type->capacity] += 1;
-                                VTR_ASSERT(count < type->num_pins);
-                            }
-                        }
-                        vtr::free(pb_graph_node_pins[0]);
-                        vtr::free(pb_graph_node_pins);
-                        vtr::free(num_pb_graph_node_pins);
-                    }
-                }
-            }
-        }
-    }
-
-    for (int ipin = 0; ipin < type->num_pins; ++ipin) {
-        VTR_ASSERT(physical_pin_counts[ipin] >= 1);
-
-        type->pin_width_offset[ipin] /= physical_pin_counts[ipin];
-        type->pin_height_offset[ipin] /= physical_pin_counts[ipin];
-
-        VTR_ASSERT(type->pin_width_offset[ipin] >= 0 && type->pin_width_offset[ipin] < type->width);
-        VTR_ASSERT(type->pin_height_offset[ipin] >= 0 && type->pin_height_offset[ipin] < type->height);
-    }
-}
-
 static void echo_pb_rec(const t_pb_graph_node* pb_graph_node, const int level, FILE* fp) {
     int i, j, k;
 
@@ -1611,7 +1433,7 @@ static void echo_pb_pins(t_pb_graph_pin** pb_graph_pins, const int num_ports, co
 static void check_pb_node_rec(const t_pb_graph_node* pb_graph_node) {
     int i, j, k;
     int line_num = 0;
-    map<int, int> logic_equivalent_pins_map;
+    std::map<int, int> logic_equivalent_pins_map;
 
     for (i = 0; i < pb_graph_node->num_input_ports; i++) {
         for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
@@ -1664,8 +1486,8 @@ static void check_repeated_edges_at_pb_pin(t_pb_graph_pin* cur_pin) {
     int i_edge, i_pin;
     t_pb_graph_edge* cur_edge;
     t_pb_graph_edge_comparator edges_info;
-    map<t_pb_graph_edge_comparator, int> edges_map;
-    pair<map<t_pb_graph_edge_comparator, int>::iterator, bool> ret_edges_map;
+    std::map<t_pb_graph_edge_comparator, int> edges_map;
+    std::pair<std::map<t_pb_graph_edge_comparator, int>::iterator, bool> ret_edges_map;
 
     // First check the incoming edges into cur_pin
     for (i_edge = 0; i_edge < cur_pin->num_input_edges; i_edge++) {
@@ -1677,7 +1499,7 @@ static void check_repeated_edges_at_pb_pin(t_pb_graph_pin* cur_pin) {
             edges_info.output_pin = cur_pin;
             edges_info.input_pin_id_in_cluster = cur_edge->input_pins[i_pin]->pin_count_in_cluster;
             edges_info.output_pin_id_in_cluster = cur_pin->pin_count_in_cluster;
-            ret_edges_map = edges_map.insert(pair<t_pb_graph_edge_comparator, int>(edges_info, 0));
+            ret_edges_map = edges_map.insert(std::pair<t_pb_graph_edge_comparator, int>(edges_info, 0));
             if (!ret_edges_map.second) {
                 // Print out the connection that already exists in the map and then the new one
                 // we are trying to insert into the map.
@@ -1723,7 +1545,7 @@ static bool operator<(const t_pb_graph_edge_comparator& edge1,
  */
 static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin,
                                          const int i_pin,
-                                         map<int, int>& logic_equivalent_pins_map,
+                                         std::map<int, int>& logic_equivalent_pins_map,
                                          int* line_num) {
     int i, j, edge_count;
     t_pb_graph_edge* cur_edge;
@@ -1739,7 +1561,7 @@ static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin,
         for (j = 0; j < cur_edge->num_output_pins; j++) {
             if (i_pin == 0) {
                 // First pin of an equivalent port, populate edges_map first
-                logic_equivalent_pins_map.insert(pair<int, int>(cur_edge->output_pins[j]->pin_count_in_cluster, 0));
+                logic_equivalent_pins_map.insert(std::pair<int, int>(cur_edge->output_pins[j]->pin_count_in_cluster, 0));
             } else {
                 // Rest of the pins of an equivalent port, they should connect to the
                 // same set of pins

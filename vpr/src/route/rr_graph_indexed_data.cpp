@@ -1,5 +1,4 @@
 #include <cmath> /* Needed only for sqrt call (remove if sqrt removed) */
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -28,6 +27,8 @@ static void load_rr_indexed_data_T_values(int index_start,
                                           t_rr_type rr_type,
                                           int nodes_per_chan,
                                           const t_rr_node_indices& L_rr_node_indices);
+
+static void fixup_rr_indexed_data_T_values(size_t num_segment);
 
 static std::vector<size_t> count_rr_segment_types();
 
@@ -115,6 +116,8 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
     load_rr_indexed_data_T_values((CHANX_COST_INDEX_START + num_segment),
                                   num_segment, CHANY, nodes_per_chan, L_rr_node_indices);
 
+    fixup_rr_indexed_data_T_values(num_segment);
+
     load_rr_indexed_data_base_costs(nodes_per_chan, L_rr_node_indices,
                                     base_cost_type);
 }
@@ -150,7 +153,7 @@ static void load_rr_indexed_data_base_costs(int nodes_per_chan,
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    if (base_cost_type == DEMAND_ONLY) {
+    if (base_cost_type == DEMAND_ONLY || base_cost_type == DEMAND_ONLY_NORMALIZED_LENGTH) {
         delay_normalization_fac = 1.;
     } else {
         delay_normalization_fac = get_delay_normalization_fac(nodes_per_chan, L_rr_node_indices);
@@ -174,7 +177,7 @@ static void load_rr_indexed_data_base_costs(int nodes_per_chan,
         if (base_cost_type == DELAY_NORMALIZED || base_cost_type == DEMAND_ONLY) {
             device_ctx.rr_indexed_data[index].base_cost = delay_normalization_fac;
 
-        } else if (base_cost_type == DELAY_NORMALIZED_LENGTH) {
+        } else if (base_cost_type == DELAY_NORMALIZED_LENGTH || base_cost_type == DEMAND_ONLY_NORMALIZED_LENGTH) {
             device_ctx.rr_indexed_data[index].base_cost = delay_normalization_fac / device_ctx.rr_indexed_data[index].inv_length;
 
         } else if (base_cost_type == DELAY_NORMALIZED_FREQUENCY) {
@@ -425,4 +428,30 @@ static void load_rr_indexed_data_T_values(int index_start,
     free(switch_T_total);
     free(switch_Cinternal_total);
     free(switches_buffered);
+}
+
+static void fixup_rr_indexed_data_T_values(size_t num_segment) {
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+
+    // Scan CHANX/CHANY indexed data and search for uninitialized costs.
+    //
+    // This would occur if a segment ends up only being used as CHANX or a
+    // CHANY, but not both.  If this occurs, then copying the orthogonal
+    // pair's cost data is likely a better choice than leaving it as -1.
+    //
+    // The primary reason for this fixup is to avoid propagating negative
+    // values in cost functions.
+    for (size_t cost_index = CHANX_COST_INDEX_START;
+         cost_index < CHANX_COST_INDEX_START + 2 * num_segment; cost_index++) {
+        int ortho_cost_index = device_ctx.rr_indexed_data[cost_index].ortho_cost_index;
+
+        // Check if this data is uninitialized, but the orthogonal data is
+        // initialized.
+        if (device_ctx.rr_indexed_data[cost_index].T_linear == OPEN && device_ctx.rr_indexed_data[ortho_cost_index].T_linear != OPEN) {
+            // Copy orthogonal data over.
+            device_ctx.rr_indexed_data[cost_index].T_linear = device_ctx.rr_indexed_data[ortho_cost_index].T_linear;
+            device_ctx.rr_indexed_data[cost_index].T_quadratic = device_ctx.rr_indexed_data[ortho_cost_index].T_quadratic;
+            device_ctx.rr_indexed_data[cost_index].C_load = device_ctx.rr_indexed_data[ortho_cost_index].C_load;
+        }
+    }
 }

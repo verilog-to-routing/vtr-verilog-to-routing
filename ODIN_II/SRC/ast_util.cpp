@@ -40,6 +40,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 char **get_name_of_pins_number(ast_node_t *var_node, int start, int width);
 char *get_name_of_pin_number(ast_node_t *var_node, int bit);
 void update_tree_tag(ast_node_t *node, int cases, int tagged);
+STRING_CACHE *copy_param_table_sc(STRING_CACHE *to_copy);
 
 // HIGH LEVEL AST TAG
 	static int high_level_id;
@@ -379,13 +380,11 @@ ast_node_t **expand_node_list_at(ast_node_t **list, long old_size, long to_add, 
  * (function: make_concat_into_list_of_strings)
  * 	0th idx will be the MSbit
  *-------------------------------------------------------------------------------------------*/
-void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_name_prefix, STRING_CACHE_LIST *local_string_cache_list)
+void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_name_prefix, sc_hierarchy *local_ref)
 {
 	long i;
 	int j;
 	ast_node_t *rnode[3] = { 0 };
-
-	STRING_CACHE *local_symbol_table_sc = local_string_cache_list->local_symbol_table_sc;
 
 	concat_top->types.concat.num_bit_strings = 0;
 	concat_top->types.concat.bit_strings = NULL;
@@ -395,7 +394,7 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 	{
 		if (concat_top->children[i]->type == CONCATENATE)
 		{
-			make_concat_into_list_of_strings(concat_top->children[i], instance_name_prefix, local_string_cache_list);
+			make_concat_into_list_of_strings(concat_top->children[i], instance_name_prefix, local_ref);
 		}
 	}
 
@@ -404,19 +403,18 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 		if (concat_top->children[i]->type == IDENTIFIERS)
 		{
 			char *temp_string = make_full_ref_name(NULL, NULL, NULL, concat_top->children[i]->types.identifier, -1);
-			long sc_spot;
-			if ((sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string)) == -1)
+			ast_node_t *var_declare = resolve_hierarchical_name_reference(local_ref, temp_string);
+			if (var_declare == NULL)
 			{
 				error_message(NETLIST_ERROR, concat_top->line_number, concat_top->file_number, "Missing declaration of this symbol %s\n", temp_string);
 			}
 			else
 			{
-				ast_node_t *var_declare = (ast_node_t*)local_symbol_table_sc->data[sc_spot];
 				if (var_declare->children[1] == NULL)
 				{
 					concat_top->types.concat.num_bit_strings ++;
 					concat_top->types.concat.bit_strings = (char**)vtr::realloc(concat_top->types.concat.bit_strings, sizeof(char*)*(concat_top->types.concat.num_bit_strings));
-					concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings-1] = get_name_of_pin_at_bit(concat_top->children[i], -1, instance_name_prefix, local_string_cache_list);
+					concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings-1] = get_name_of_pin_at_bit(concat_top->children[i], -1, instance_name_prefix, local_ref);
 				}
 				else if (var_declare->children[3] == NULL)
 				{
@@ -429,7 +427,7 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 					{
 						concat_top->types.concat.num_bit_strings ++;
 						concat_top->types.concat.bit_strings = (char**)vtr::realloc(concat_top->types.concat.bit_strings, sizeof(char*)*(concat_top->types.concat.num_bit_strings));
-						concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings-1] = get_name_of_pin_at_bit(concat_top->children[i], j, instance_name_prefix, local_string_cache_list);
+						concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings-1] = get_name_of_pin_at_bit(concat_top->children[i], j, instance_name_prefix, local_ref);
 					}
 				}
 				else if (var_declare->children[3] != NULL)
@@ -443,7 +441,7 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 		{
 			concat_top->types.concat.num_bit_strings ++;
 			concat_top->types.concat.bit_strings = (char**)vtr::realloc(concat_top->types.concat.bit_strings, sizeof(char*)*(concat_top->types.concat.num_bit_strings));
-			concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings-1] = get_name_of_pin_at_bit(concat_top->children[i], 0, instance_name_prefix, local_string_cache_list);
+			concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings-1] = get_name_of_pin_at_bit(concat_top->children[i], 0, instance_name_prefix, local_ref);
 		}
 		else if (concat_top->children[i]->type == RANGE_REF)
 		{
@@ -460,7 +458,7 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 				concat_top->types.concat.num_bit_strings ++;
 				concat_top->types.concat.bit_strings = (char**)vtr::realloc(concat_top->types.concat.bit_strings, sizeof(char*)*(concat_top->types.concat.num_bit_strings));
 				concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings-1] =
-					get_name_of_pin_at_bit(concat_top->children[i], ((rnode[1]->types.vnumber->get_value() - rnode[2]->types.vnumber->get_value()))-j, instance_name_prefix, local_string_cache_list);
+					get_name_of_pin_at_bit(concat_top->children[i], ((rnode[1]->types.vnumber->get_value() - rnode[2]->types.vnumber->get_value()))-j, instance_name_prefix, local_ref);
 			}
 		}
 		else if (concat_top->children[i]->type == NUMBERS)
@@ -472,7 +470,7 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 				{
 					concat_top->types.concat.num_bit_strings ++;
 					concat_top->types.concat.bit_strings = (char**)vtr::realloc(concat_top->types.concat.bit_strings, sizeof(char*)*(concat_top->types.concat.num_bit_strings));
-					concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings-1] = get_name_of_pin_at_bit(concat_top->children[i], j, instance_name_prefix, local_string_cache_list);
+					concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings-1] = get_name_of_pin_at_bit(concat_top->children[i], j, instance_name_prefix, local_ref);
 				
 				}
 			}
@@ -488,7 +486,7 @@ void make_concat_into_list_of_strings(ast_node_t *concat_top, char *instance_nam
 			{
 				concat_top->types.concat.num_bit_strings ++;
 				concat_top->types.concat.bit_strings = (char**)vtr::realloc(concat_top->types.concat.bit_strings, sizeof(char*)*(concat_top->types.concat.num_bit_strings));
-				concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings-1] = get_name_of_pin_at_bit(concat_top->children[i], j, instance_name_prefix, local_string_cache_list);
+				concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings-1] = get_name_of_pin_at_bit(concat_top->children[i], j, instance_name_prefix, local_ref);
 			}
 		}
 		else 
@@ -560,12 +558,12 @@ char *get_name_of_var_declare_at_bit(ast_node_t *var_declare, int bit)
  * (function: get_name of_port_at_bit)
  * 	Assume module connections can be one of: Array entry, Concat, Signal, Array range reference
  *-------------------------------------------------------------------------------------------*/
-char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_prefix, STRING_CACHE_LIST *local_string_cache_list)
+char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_prefix, sc_hierarchy *local_ref)
 {
 	char *return_string = NULL;
 	ast_node_t *rnode[3] = { 0 };
 
-	STRING_CACHE *local_symbol_table_sc = local_string_cache_list->local_symbol_table_sc;
+	// STRING_CACHE *local_symbol_table_sc = local_ref->local_symbol_table_sc;
 
 	if (var_node->type == ARRAY_REF)
 	{
@@ -593,22 +591,22 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 	}
 	else if (var_node->type == IDENTIFIERS)
 	{
-		long sc_spot;
+		ast_node_t *symbol_node;
 		int pin_index = 0;
 
-		if ((sc_spot = sc_lookup_string(local_symbol_table_sc, var_node->types.identifier)) == -1)
+		if ((symbol_node = resolve_hierarchical_name_reference(local_ref, var_node->types.identifier)) == NULL)
 		{
 			error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Missing declaration of this symbol %s\n", var_node->types.identifier);
 		}
 
-		if (((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[1] == NULL)
+		if (symbol_node->children[1] == NULL)
 		{
 			pin_index = bit;
 		}
-		else if (((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[3] == NULL)
+		else if (symbol_node->children[3] == NULL)
 		{
-			oassert(((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[2]->type == NUMBERS);
-			pin_index = ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->children[2]->types.vnumber->get_value() + bit;
+			oassert(symbol_node->children[2]->type == NUMBERS);
+			pin_index = symbol_node->children[2]->types.vnumber->get_value() + bit;
 		}
 		else
 			oassert(false);
@@ -632,7 +630,7 @@ char *get_name_of_pin_at_bit(ast_node_t *var_node, int bit, char *instance_name_
 			if (var_node->types.concat.num_bit_strings == -1)
 			{
 				/* If this hasn't been made into a string list then do it */
-				make_concat_into_list_of_strings(var_node, instance_name_prefix, local_string_cache_list);
+				make_concat_into_list_of_strings(var_node, instance_name_prefix, local_ref);
 			}
 
 			return_string = (char*)vtr::malloc(sizeof(char)*strlen(var_node->types.concat.bit_strings[bit])+1);
@@ -661,7 +659,7 @@ char **get_name_of_pins_number(ast_node_t *var_node, int /*start*/, int width)
 
 	return_string = (char**)vtr::malloc(sizeof(char*)*width);
 	int i;
-	for (i = 0; i < width; i++)//
+	for (i = 0; i < width; i++)
 	{
 		return_string[i] = get_name_of_pin_number(var_node, i);
 	}
@@ -682,6 +680,7 @@ char *get_name_of_pin_number(ast_node_t *var_node, int bit)
 		case BitSpace::_1: return_string = vtr::strdup(ONE_VCC_CNS); break;
 		case BitSpace::_0: return_string = vtr::strdup(ZERO_GND_ZERO); break;
 		case BitSpace::_x: return_string = vtr::strdup(ZERO_GND_ZERO); break;
+		case BitSpace::_z: return_string = vtr::strdup(ZERO_PAD_ZERO); break;
 		default: 
 			error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Unrecognised character %c in binary string \"%s\"!\n", c, var_node->types.vnumber->to_bit_string().c_str());
 			break;
@@ -695,16 +694,13 @@ char *get_name_of_pin_number(ast_node_t *var_node, int bit)
  * 	Assume module connections can be one of: Array entry, Concat, Signal, Array range reference
  * 	Return a list of strings
  *-------------------------------------------------------------------------------------------*/
-char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix, STRING_CACHE_LIST *local_string_cache_list)
+char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix, sc_hierarchy *local_ref)
 { 
 	char **return_string = NULL;
 	char_list_t *return_list = (char_list_t*)vtr::malloc(sizeof(char_list_t));
 	ast_node_t *rnode[3] = { 0 };
 	int i;
 	int width = 0;
-
-	STRING_CACHE *local_symbol_table_sc = local_string_cache_list->local_symbol_table_sc;
-	STRING_CACHE *function_local_symbol_table_sc = local_string_cache_list->function_local_symbol_table_sc;
 
 	if (var_node->type == ARRAY_REF)
 	{
@@ -740,20 +736,11 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix, 
 	else if (var_node->type == IDENTIFIERS)
 	{
 		/* need to look in the symbol table for details about this identifier (i.e. is it a port) */
-		long sc_spot;
 
-		ast_node_t *sym_node = NULL;
 		char *temp_string = make_full_ref_name(NULL, NULL, NULL, var_node->types.identifier, -1);
+		ast_node_t *sym_node = resolve_hierarchical_name_reference(local_ref, temp_string);
 
-		if ((sc_spot = sc_lookup_string(function_local_symbol_table_sc, temp_string)) > -1)
-		{
-			sym_node = (ast_node_t*)function_local_symbol_table_sc->data[sc_spot];
-		}
-		else if ((sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string)) > -1)
-		{
-			sym_node = (ast_node_t*)local_symbol_table_sc->data[sc_spot];
-		}
-		else 
+		if (sym_node == NULL)
 		{
 			error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Missing declaration of this symbol %s\n", temp_string);
 		}
@@ -808,7 +795,7 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix, 
 		{
 			if (var_node->types.concat.num_bit_strings == -1)
 			{
-				make_concat_into_list_of_strings(var_node, instance_name_prefix, local_string_cache_list);
+				make_concat_into_list_of_strings(var_node, instance_name_prefix, local_ref);
 			}
 
 			width = var_node->types.concat.num_bit_strings;
@@ -834,14 +821,14 @@ char_list_t *get_name_of_pins(ast_node_t *var_node, char *instance_name_prefix, 
 /*---------------------------------------------------------------------------------------------
  * (function: get_name_of_pins_with_prefix
  *-------------------------------------------------------------------------------------------*/
-char_list_t *get_name_of_pins_with_prefix(ast_node_t *var_node, char *instance_name_prefix, STRING_CACHE_LIST *local_string_cache_list)
+char_list_t *get_name_of_pins_with_prefix(ast_node_t *var_node, char *instance_name_prefix, sc_hierarchy *local_ref)
 {
 	int i;
 	char_list_t *return_list;
 	char *temp_str;
 
 	/* get the list */
-	return_list = get_name_of_pins(var_node, instance_name_prefix, local_string_cache_list);
+	return_list = get_name_of_pins(var_node, instance_name_prefix, local_ref);
 
 	for (i = 0; i < return_list->num_strings; i++)
 	{
@@ -857,15 +844,13 @@ char_list_t *get_name_of_pins_with_prefix(ast_node_t *var_node, char *instance_n
 /*----------------------------------------------------------------------------
  * (function: get_size_of_variable)
  *--------------------------------------------------------------------------*/
-long get_size_of_variable(ast_node_t *node, STRING_CACHE_LIST *local_string_cache_list)
+long get_size_of_variable(ast_node_t *node, sc_hierarchy *local_ref)
 {
 	long assignment_size = 0;
 	long sc_spot = 0;
 	ast_node_t *var_declare = NULL;
 
-	STRING_CACHE *local_symbol_table_sc = local_string_cache_list->local_symbol_table_sc;
-	STRING_CACHE *function_local_symbol_table_sc = local_string_cache_list->function_local_symbol_table_sc;
-	STRING_CACHE *local_param_table_sc = local_string_cache_list->local_param_table_sc;
+	STRING_CACHE *local_param_table_sc = local_ref->local_param_table_sc;
 
 	switch(node->type)
 	{
@@ -889,17 +874,10 @@ long get_size_of_variable(ast_node_t *node, STRING_CACHE_LIST *local_string_cach
 				return assignment_size;
 			}
 
-			sc_spot = sc_lookup_string(local_symbol_table_sc, node->types.identifier);
-			if (sc_spot > -1)
+			ast_node_t *sym_node = resolve_hierarchical_name_reference(local_ref, node->types.identifier);
+			if (sym_node != NULL)
 			{
-				var_declare = (ast_node_t *)local_symbol_table_sc->data[sc_spot];
-				break;
-			}
-			
-			sc_spot = sc_lookup_string(function_local_symbol_table_sc, node->types.identifier);
-			if (sc_spot > -1)
-			{
-				var_declare = (ast_node_t *)function_local_symbol_table_sc->data[sc_spot];
+				var_declare = sym_node; // (ast_node_t *)local_symbol_table_sc->data[sc_spot];
 				break;
 			}
 
@@ -909,10 +887,10 @@ long get_size_of_variable(ast_node_t *node, STRING_CACHE_LIST *local_string_cach
 
 		case ARRAY_REF:
 		{
-			sc_spot = sc_lookup_string(local_symbol_table_sc, node->children[0]->types.identifier);
-			if (sc_spot > -1)
+			ast_node_t *sym_node = resolve_hierarchical_name_reference(local_ref, node->children[0]->types.identifier);
+			if (sym_node != NULL)
 			{
-				var_declare = (ast_node_t *)local_symbol_table_sc->data[sc_spot];
+				var_declare = sym_node;
 				break;
 			}
 			
@@ -928,7 +906,7 @@ long get_size_of_variable(ast_node_t *node, STRING_CACHE_LIST *local_string_cach
 
 		case CONCATENATE:
 		{
-			assignment_size = resolve_concat_sizes(node, local_string_cache_list);
+			assignment_size = resolve_concat_sizes(node, local_ref);
 			return assignment_size;
 		}
 
@@ -995,7 +973,9 @@ ast_node_t *ast_node_deep_copy(ast_node_t *node){
 		node_copy->children = (ast_node_t**)vtr::calloc(node->num_children, sizeof(ast_node_t*));
 
 		//Recursively copy its children
-		for(long i = 0; i < node->num_children; i++){
+		for(long i = 0; i < node->num_children; i++)
+		{
+			oassert(node != node->children[i]);
 			node_copy->children[i] = ast_node_deep_copy(node->children[i]);
 		}
 	}
@@ -1431,6 +1411,8 @@ void initial_node(ast_node_t *new_node, ids id, int line_number, int file_number
 	new_node->net_node = 0;
 	new_node->types.vnumber = nullptr;
 	new_node->types.identifier = NULL;
+	new_node->types.hierarchy = NULL;
+	new_node->chunk_size = 1;
 }
 
 /*---------------------------------------------------------------------------
@@ -1462,7 +1444,7 @@ long clog2(long value_in, int length)
 /*---------------------------------------------------------------------------
  * (function: resolve_concat_sizes)
  *-------------------------------------------------------------------------*/
-long resolve_concat_sizes(ast_node_t *node_top, STRING_CACHE_LIST *local_string_cache_list)
+long resolve_concat_sizes(ast_node_t *node_top, sc_hierarchy *local_ref)
 {
 	long concatenation_size = 0;
 
@@ -1474,7 +1456,7 @@ long resolve_concat_sizes(ast_node_t *node_top, STRING_CACHE_LIST *local_string_
 			{
 				for (int i = 0; i < node_top->num_children; i++)
 				{
-					concatenation_size += resolve_concat_sizes(node_top->children[i], local_string_cache_list);
+					concatenation_size += resolve_concat_sizes(node_top->children[i], local_ref);
 				}
 			}
 			break;
@@ -1483,7 +1465,7 @@ long resolve_concat_sizes(ast_node_t *node_top, STRING_CACHE_LIST *local_string_
 			case ARRAY_REF:
 			case RANGE_REF:
 			{
-				concatenation_size += get_size_of_variable(node_top, local_string_cache_list);
+				concatenation_size += get_size_of_variable(node_top, local_ref);
 			}
 			break;
 
@@ -1493,7 +1475,7 @@ long resolve_concat_sizes(ast_node_t *node_top, STRING_CACHE_LIST *local_string_
 				long max_size = 0;
 				for (int i = 0; i < node_top->num_children; i++)
 				{
-					long this_size = resolve_concat_sizes(node_top->children[i], local_string_cache_list);
+					long this_size = resolve_concat_sizes(node_top->children[i], local_ref);
 					if (this_size > max_size) max_size = this_size;
 				}
 				concatenation_size += max_size;
@@ -1503,8 +1485,8 @@ long resolve_concat_sizes(ast_node_t *node_top, STRING_CACHE_LIST *local_string_
 			case IF_Q:
 			{
 				/* check true/false expressions */
-				long true_length = resolve_concat_sizes(node_top->children[1], local_string_cache_list);
-				long false_length = resolve_concat_sizes(node_top->children[2], local_string_cache_list);
+				long true_length = resolve_concat_sizes(node_top->children[1], local_ref);
+				long false_length = resolve_concat_sizes(node_top->children[2], local_ref);
 				concatenation_size += (true_length > false_length) ? true_length : false_length;
 			}
 			break;

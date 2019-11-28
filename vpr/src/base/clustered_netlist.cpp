@@ -24,7 +24,7 @@ t_pb* ClusteredNetlist::block_pb(const ClusterBlockId id) const {
     return block_pbs_[id];
 }
 
-t_type_ptr ClusteredNetlist::block_type(const ClusterBlockId id) const {
+t_logical_block_type_ptr ClusteredNetlist::block_type(const ClusterBlockId id) const {
     VTR_ASSERT_SAFE(valid_block_id(id));
 
     return block_types_[id];
@@ -52,7 +52,7 @@ int ClusteredNetlist::block_pin_net_index(const ClusterBlockId blk_id, const int
 
 ClusterPinId ClusteredNetlist::block_pin(const ClusterBlockId blk, const int phys_pin_index) const {
     VTR_ASSERT_SAFE(valid_block_id(blk));
-    VTR_ASSERT_SAFE_MSG(phys_pin_index >= 0 && phys_pin_index < block_type(blk)->num_pins, "Physical pin index must be in range");
+    VTR_ASSERT_SAFE_MSG(phys_pin_index >= 0 && phys_pin_index < physical_tile_type(block_type(blk))->num_pins, "Physical pin index must be in range");
 
     return block_logical_pins_[blk][phys_pin_index];
 }
@@ -113,7 +113,7 @@ bool ClusteredNetlist::net_is_global(const ClusterNetId id) const {
  * Mutators
  *
  */
-ClusterBlockId ClusteredNetlist::create_block(const char* name, t_pb* pb, t_type_ptr type) {
+ClusterBlockId ClusteredNetlist::create_block(const char* name, t_pb* pb, t_logical_block_type_ptr type) {
     ClusterBlockId blk_id = find_block(name);
     if (blk_id == ClusterBlockId::INVALID()) {
         blk_id = Netlist::create_block(name);
@@ -122,7 +122,7 @@ ClusterBlockId ClusteredNetlist::create_block(const char* name, t_pb* pb, t_type
         block_types_.insert(blk_id, type);
 
         //Allocate and initialize every potential pin of the block
-        block_logical_pins_.insert(blk_id, std::vector<ClusterPinId>(type->num_pins, ClusterPinId::INVALID()));
+        block_logical_pins_.insert(blk_id, std::vector<ClusterPinId>(physical_tile_type(type)->num_pins, ClusterPinId::INVALID()));
     }
 
     //Check post-conditions: size
@@ -254,7 +254,7 @@ void ClusteredNetlist::clean_nets_impl(const vtr::vector_map<ClusterNetId, Clust
 void ClusteredNetlist::rebuild_block_refs_impl(const vtr::vector_map<ClusterPinId, ClusterPinId>& /*pin_id_map*/,
                                                const vtr::vector_map<ClusterPortId, ClusterPortId>& /*port_id_map*/) {
     for (auto blk : blocks()) {
-        block_logical_pins_[blk] = std::vector<ClusterPinId>(block_type(blk)->num_pins, ClusterPinId::INVALID()); //Reset
+        block_logical_pins_[blk] = std::vector<ClusterPinId>(physical_tile_type(blk)->num_pins, ClusterPinId::INVALID()); //Reset
         for (auto pin : block_pins(blk)) {
             int phys_pin_index = pin_physical_index(pin);
             block_logical_pins_[blk][phys_pin_index] = pin;

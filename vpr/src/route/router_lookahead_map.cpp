@@ -27,8 +27,6 @@
 #include "vtr_time.h"
 #include "router_lookahead_map.h"
 
-using namespace std;
-
 /* the cost map is computed by running a Dijkstra search from channel segment rr nodes at the specified reference coordinate */
 #define REF_X 3
 #define REF_Y 3
@@ -75,7 +73,7 @@ class Cost_Entry {
  * in the final lookahead cost map */
 class Expansion_Cost_Entry {
   private:
-    vector<Cost_Entry> cost_vector;
+    std::vector<Cost_Entry> cost_vector;
 
     Cost_Entry get_smallest_entry();
     Cost_Entry get_average_entry();
@@ -198,7 +196,7 @@ static int get_start_node_ind(int start_x, int start_y, int target_x, int target
  * to that pin is stored is added to an entry in the routing_cost_map */
 static void run_dijkstra(int start_node_ind, int start_x, int start_y, t_routing_cost_map& routing_cost_map);
 /* iterates over the children of the specified node and selectively pushes them onto the priority queue */
-static void expand_dijkstra_neighbours(PQ_Entry parent_entry, vector<float>& node_visited_costs, vector<bool>& node_expanded, priority_queue<PQ_Entry>& pq);
+static void expand_dijkstra_neighbours(PQ_Entry parent_entry, std::vector<float>& node_visited_costs, std::vector<bool>& node_expanded, std::priority_queue<PQ_Entry>& pq);
 /* sets the lookahead cost map entries based on representative cost entries from routing_cost_map */
 static void set_lookahead_map_costs(int segment_index, e_rr_type chan_type, t_routing_cost_map& routing_cost_map);
 /* fills in missing lookahead map entries by copying the cost of the closest valid entry */
@@ -308,7 +306,7 @@ static int get_start_node_ind(int start_x, int start_y, int target_x, int target
 
     VTR_ASSERT(rr_type == CHANX || rr_type == CHANY);
 
-    const vector<int>& channel_node_list = device_ctx.rr_node_indices[rr_type][start_x][start_y][0];
+    const std::vector<int>& channel_node_list = device_ctx.rr_node_indices[rr_type][start_x][start_y][0];
 
     /* find first node in channel that has specified segment index and goes in the desired direction */
     for (unsigned itrack = 0; itrack < channel_node_list.size(); itrack++) {
@@ -349,12 +347,12 @@ static void run_dijkstra(int start_node_ind, int start_x, int start_y, t_routing
     auto& device_ctx = g_vpr_ctx.device();
 
     /* a list of boolean flags (one for each rr node) to figure out if a certain node has already been expanded */
-    vector<bool> node_expanded(device_ctx.rr_nodes.size(), false);
+    std::vector<bool> node_expanded(device_ctx.rr_nodes.size(), false);
     /* for each node keep a list of the cost with which that node has been visited (used to determine whether to push
      * a candidate node onto the expansion queue */
-    vector<float> node_visited_costs(device_ctx.rr_nodes.size(), -1.0);
+    std::vector<float> node_visited_costs(device_ctx.rr_nodes.size(), -1.0);
     /* a priority queue for expansion */
-    priority_queue<PQ_Entry> pq;
+    std::priority_queue<PQ_Entry> pq;
 
     /* first entry has no upstream delay or congestion */
     PQ_Entry first_entry(start_node_ind, UNDEFINED, 0, 0, 0, true);
@@ -392,14 +390,14 @@ static void run_dijkstra(int start_node_ind, int start_x, int start_y, t_routing
 }
 
 /* iterates over the children of the specified node and selectively pushes them onto the priority queue */
-static void expand_dijkstra_neighbours(PQ_Entry parent_entry, vector<float>& node_visited_costs, vector<bool>& node_expanded, priority_queue<PQ_Entry>& pq) {
+static void expand_dijkstra_neighbours(PQ_Entry parent_entry, std::vector<float>& node_visited_costs, std::vector<bool>& node_expanded, std::priority_queue<PQ_Entry>& pq) {
     auto& device_ctx = g_vpr_ctx.device();
 
     int parent_ind = parent_entry.rr_node_ind;
 
     auto& parent_node = device_ctx.rr_nodes[parent_ind];
 
-    for (int iedge = 0; iedge < parent_node.num_edges(); iedge++) {
+    for (t_edge_size iedge = 0; iedge < parent_node.num_edges(); iedge++) {
         int child_node_ind = parent_node.edge_sink_node(iedge);
         int switch_ind = parent_node.edge_switch(iedge);
 
@@ -568,7 +566,7 @@ Cost_Entry Expansion_Cost_Entry::get_median_entry() {
     float bin_size = delay_diff / (float)num_bins;
 
     /* sort the cost entries into bins */
-    vector<vector<Cost_Entry> > entry_bins(num_bins, vector<Cost_Entry>());
+    std::vector<std::vector<Cost_Entry> > entry_bins(num_bins, std::vector<Cost_Entry>());
     for (auto entry : this->cost_vector) {
         float bin_num = floor((entry.delay - min_del_entry.delay) / bin_size);
 

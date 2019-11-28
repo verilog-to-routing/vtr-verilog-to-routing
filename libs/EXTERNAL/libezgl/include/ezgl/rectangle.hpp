@@ -40,17 +40,17 @@ public:
   /**
    * Create a rectangle from two diagonally opposite points.
    */
-  rectangle(point2d origin, point2d top_right) : m_first(origin), m_second(top_right)
+  rectangle(point2d origin_pt, point2d top_right_pt) : m_first(origin_pt), m_second(top_right_pt)
   {
   }
 
   /**
    * Create a rectangle with a given width and height.
    */
-  rectangle(point2d origin, double width, double height) : m_first(origin), m_second(origin)
+  rectangle(point2d origin_pt, double rec_width, double rec_height) : m_first(origin_pt), m_second(origin_pt)
   {
-    m_second.x += width;
-    m_second.y += height;
+    m_second.x += rec_width;
+    m_second.y += rec_height;
   }
 
   /**

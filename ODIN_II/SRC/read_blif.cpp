@@ -368,12 +368,12 @@ void create_latch_node_and_driver(FILE *file, Hashtable *output_nets_hash)
 
 	/* add names and type information to the created input pins */
 	npin_t *new_pin = allocate_npin();
-	new_pin->name = names[0];
+	new_pin->name = vtr::strdup(names[0]);
 	new_pin->type = INPUT;
 	add_input_pin_to_node(new_node, new_pin,0);
 
 	new_pin = allocate_npin();
-	new_pin->name = names[3];
+	new_pin->name = vtr::strdup(names[3]);
 	new_pin->type = INPUT;
 	add_input_pin_to_node(new_node, new_pin,1);
 
@@ -399,6 +399,9 @@ void create_latch_node_and_driver(FILE *file, Hashtable *output_nets_hash)
 	output_nets_hash->add(new_node->name, new_net);
 
 	/* Free the char** names */
+	for (i = 0; i < input_token_count; i++)
+		vtr::free(names[i]);
+			
 	vtr::free(names);
 	vtr::free(ptr);
 }
@@ -534,9 +537,19 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, Hashtable *o
 	// Index the mappings in a hard_block_ports struct.
 	hard_block_ports *ports = get_hard_block_ports(mappings, count);
 
+	for (i = 0; i < count; i++)
+	{
+		vtr::free(mappings[i]);
+		mappings[i] = NULL;
+	}
+	
+	vtr::free(mappings);
+	mappings = NULL;
+
+
 	// Look up the model in the models cache.
  	hard_block_model *model = NULL;
- 	if (!(model = get_hard_block_model(subcircuit_name, ports, models)))
+ 	if ((subcircuit_name != NULL) && (!(model = get_hard_block_model(subcircuit_name, ports, models))))
  	{
  		// If the model isn's present, scan ahead and find it.
  		model = read_hard_block_model(subcircuit_name, ports, file);
@@ -639,8 +652,7 @@ void create_hard_block_nodes(hard_block_models *models, FILE *file, Hashtable *o
 
   	free_hard_block_ports(ports);
   	mapping_index->destroy_free_items();
-	delete mapping_index;
-  	vtr::free(mappings);
+	delete mapping_index;		
   	vtr::free(names);
 
 
@@ -677,10 +689,6 @@ void create_internal_node_and_driver(FILE *file, Hashtable *output_nets_hash)
 	{
 		skip_reading_bit_map = true;
 		free_nnode(new_node);
-		for(int i = 0; i < input_count; i++)
-		{
-			vtr::free(names[i]);
-		}
 	}
 	else
 	{
@@ -723,7 +731,7 @@ void create_internal_node_and_driver(FILE *file, Hashtable *output_nets_hash)
 		for(i = 0; i <= input_count-2; i++)
 		{
 			npin_t *new_pin = allocate_npin();
-			new_pin->name = names[i];
+			new_pin->name = vtr::strdup(names[i]);
 			new_pin->type = INPUT;
 			add_input_pin_to_node(new_node, new_pin, i);
 		}
@@ -781,6 +789,9 @@ void create_internal_node_and_driver(FILE *file, Hashtable *output_nets_hash)
 
 	}
 	/* Free the char** names */
+	for(int i = 0; i < input_count; i++)
+		vtr::free(names[i]);
+
 	vtr::free(names);
 }
 
@@ -1380,7 +1391,7 @@ hard_block_model *read_hard_block_model(char *name_subckt, hard_block_ports *por
 		while (vtr::fgets(buffer, READ_BLIF_BUFFER, file))
 		{
 			char *token = vtr::strtok(buffer,TOKENS, file, buffer);
-			// match .model followed buy the subcircuit name.
+			// match .model followed by the subcircuit name.
 			if (token && !strcmp(token,".model") && !strcmp(vtr::strtok(NULL,TOKENS, file, buffer), name_subckt))
 			{
 				model = (hard_block_model *)vtr::calloc(1, sizeof(hard_block_model));
@@ -1397,27 +1408,30 @@ hard_block_model *read_hard_block_model(char *name_subckt, hard_block_ports *por
 				while (vtr::fgets(buffer, READ_BLIF_BUFFER, file))
 				{
 					char *first_word = vtr::strtok(buffer, TOKENS, file, buffer);
-					if(!strcmp(first_word, ".inputs"))
+					if(first_word)
 					{
-						char *name;
-						while ((name = vtr::strtok(NULL, TOKENS, file, buffer)))
+						if(!strcmp(first_word, ".inputs"))
 						{
-							model->inputs->names = (char **)vtr::realloc(model->inputs->names, sizeof(char *) * (model->inputs->count + 1));
-							model->inputs->names[model->inputs->count++] = vtr::strdup(name);
+							char *name;
+							while ((name = vtr::strtok(NULL, TOKENS, file, buffer)))
+							{
+								model->inputs->names = (char **)vtr::realloc(model->inputs->names, sizeof(char *) * (model->inputs->count + 1));
+								model->inputs->names[model->inputs->count++] = vtr::strdup(name);
+							}
 						}
-					}
-					else if(!strcmp(first_word, ".outputs"))
-					{
-						char *name;
-						while ((name = vtr::strtok(NULL, TOKENS, file, buffer)))
+						else if(!strcmp(first_word, ".outputs"))
 						{
-							model->outputs->names = (char **)vtr::realloc(model->outputs->names, sizeof(char *) * (model->outputs->count + 1));
-							model->outputs->names[model->outputs->count++] = vtr::strdup(name);
+							char *name;
+							while ((name = vtr::strtok(NULL, TOKENS, file, buffer)))
+							{
+								model->outputs->names = (char **)vtr::realloc(model->outputs->names, sizeof(char *) * (model->outputs->count + 1));
+								model->outputs->names[model->outputs->count++] = vtr::strdup(name);
+							}
 						}
-					}
-					else if(!strcmp(first_word, ".end"))
-					{
-						break;
+						else if(!strcmp(first_word, ".end"))
+						{
+							break;
+						}
 					}
 				}
 				break;
@@ -1528,7 +1542,7 @@ hard_block_ports *get_hard_block_ports(char **pins, int count)
 	ports->count = 0;
 	ports->sizes = NULL;
 	ports->names = NULL;
-	char *prev_portname = 0;
+	char *prev_portname = NULL;
 	int i;
 	for (i = 0; i < count; i++)
 	{
@@ -1540,13 +1554,20 @@ hard_block_ports *get_hard_block_ports(char **pins, int count)
 			ports->names = (char **)vtr::realloc(ports->names, sizeof(char *) * (ports->count + 1));
 
 			ports->sizes[ports->count] = 0;
-			ports->names[ports->count] = portname;
+			ports->names[ports->count] = vtr::strdup(portname);
 			ports->count++;
+
 		}
 
-		ports->sizes[ports->count-1]++;
+		if ( prev_portname != NULL )
+			vtr::free(prev_portname);
+
 		prev_portname = portname;
+		ports->sizes[ports->count-1]++;
 	}
+
+	if ( prev_portname != NULL )
+		vtr::free(prev_portname);
 
 	ports->signature = generate_hard_block_ports_signature(ports);
 	ports->index     = index_names(ports->names, ports->count);
@@ -1782,6 +1803,7 @@ void free_hard_block_model(hard_block_model *model)
 	free_hard_block_ports(model->input_ports);
 	free_hard_block_ports(model->output_ports);
 
+	vtr::free(model->name); 
 	vtr::free(model);
 }
 

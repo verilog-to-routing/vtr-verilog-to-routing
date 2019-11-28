@@ -24,7 +24,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #ifndef AST_ELABORATE_H
 #define AST_ELABORATE_H
 
-int simplify_ast_module(ast_node_t **ast_module, STRING_CACHE_LIST *local_string_cache_list);
-ast_node_t *reduce_expressions(ast_node_t *node, ast_node_t *parent, STRING_CACHE_LIST *local_string_cache_list, long *max_size, long assignment_size, bool is_generate_region);
+int simplify_ast_module(ast_node_t **ast_module, sc_hierarchy *local_ref);
+void create_param_table_for_scope(ast_node_t* module_items, sc_hierarchy *local_ref);
 
 #endif

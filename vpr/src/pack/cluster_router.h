@@ -11,9 +11,9 @@
 #include "pack_types.h"
 
 /* Constructors/Destructors */
-t_lb_router_data* alloc_and_load_router_data(vector<t_lb_type_rr_node>* lb_type_graph, t_type_ptr type);
+t_lb_router_data* alloc_and_load_router_data(std::vector<t_lb_type_rr_node>* lb_type_graph, t_logical_block_type_ptr type);
 void free_router_data(t_lb_router_data* router_data);
-void free_intra_lb_nets(vector<t_intra_lb_net>* intra_lb_nets);
+void free_intra_lb_nets(std::vector<t_intra_lb_net>* intra_lb_nets);
 
 /* Routing Functions */
 void add_atom_as_target(t_lb_router_data* router_data, const AtomBlockId blk_id);
@@ -23,7 +23,7 @@ bool try_intra_lb_route(t_lb_router_data* router_data, int verbosity, t_mode_sel
 void reset_intra_lb_route(t_lb_router_data* router_data);
 
 /* Accessor Functions */
-t_pb_routes alloc_and_load_pb_route(const vector<t_intra_lb_net>* intra_lb_nets, t_pb_graph_node* pb_graph_head);
+t_pb_routes alloc_and_load_pb_route(const std::vector<t_intra_lb_net>* intra_lb_nets, t_pb_graph_node* pb_graph_head);
 void free_pb_route(t_pb_route* free_pb_route);
 
 #endif

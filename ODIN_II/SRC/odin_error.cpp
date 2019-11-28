@@ -6,6 +6,10 @@
 #include <stdarg.h> 
 #include <stdlib.h>
 
+std::vector<std::pair<std::string,int>> include_file_names;
+
+int delayed_errors = 0;
+
 const char *odin_error_STR[] =
 {
 	"NO_ERROR",
@@ -19,28 +23,38 @@ const char *odin_error_STR[] =
 	"ACE",
 };
 
-static void print_file_name(long file)
+void verify_delayed_error()
 {
-	if (file >= 0 && file < configuration.list_of_file_names.size())
-		fprintf(stderr," (File: %s)", configuration.list_of_file_names[file].c_str());
+	if(delayed_errors)
+	{
+		error_message(PARSE_ERROR, -1, -1, "Parser found (%d) errors in your syntax, exiting", delayed_errors);
+	}
 }
 
-static void print_line_number(long line_number)
+static std::string make_marker_from_str(std::string str, int column)
 {
-	if (line_number >= 0)
-		fprintf(stderr," (Line number: %ld)", line_number+1);
+	str.erase(column);
+	for(int i=0; i<str.size(); i++)
+	{
+		if(str[i] != ' ' && str[i] != '\t')
+		{
+			str[i] = ' ';
+		}
+	}
+
+	str += "^~~~";
+	return str;
 }
 
-static void print_culprit_line(long line_number, long file)
+static void print_culprit_line(long column, long line_number, long file)
 {
-	if (file >= 0 && file < configuration.list_of_file_names.size()
+	std::string culprit_line = "";
+	if (file >= 0 && file <  include_file_names.size()
 	&& line_number >= 0)
 	{
-		FILE *input_file = fopen(configuration.list_of_file_names[file].c_str(), "r");
+		FILE *input_file = fopen( include_file_names[file].first.c_str(), "r");
 		if(input_file)
-		{
-			fprintf(stderr,"\t");
-		
+		{		
 			bool copy_characters = false;
 			int current_line_number = 0;
 
@@ -56,16 +70,21 @@ static void print_culprit_line(long line_number, long file)
 						break;
 					}
 				} else if (copy_characters) {
-					fprintf(stderr,"%c",c);
+					culprit_line.push_back(c);
 				}
 			}
-			fprintf(stderr,"\n");
 			fclose(input_file);
+		}
+		fprintf(stderr,"%s\n", culprit_line.c_str());
+		if(column > 0)
+		{
+			delayed_errors++;
+			fprintf(stderr,"%s\n", make_marker_from_str(culprit_line, column).c_str());
 		}
 	}
 }
 
-void _log_message(odin_error error_type, long line_number, long file, bool soft_error, const char *function_file_name, long function_line, const char *function_name, const char *message, ...)
+void _log_message(odin_error error_type, long column, long line_number, long file, bool soft_error, const char *function_file_name, long function_line, const char *function_name, const char *message, ...)
 {
 	va_list ap;
 
@@ -83,15 +102,18 @@ void _log_message(odin_error error_type, long line_number, long file, bool soft_
 
 
 	if(soft_error)
-		fprintf(stderr,"WARNING ");		
+	{
+		if(column == -1)
+			fprintf(stderr,"WARNING (%ld)::",warning_count);	
+	}	
 	else
-		fprintf(stderr,"ERROR ");
+		fprintf(stderr,"ERROR (%ld)::", warning_count);
 
-	fprintf(stderr,"(%ld):%s",warning_count, odin_error_STR[error_type]);
+	fprintf(stderr,"%s", odin_error_STR[error_type]);
 
-	print_file_name(file);
-	print_line_number(line_number);
-		
+	if (file >= 0 && file <  include_file_names.size())
+		fprintf(stderr," %s::%ld",  include_file_names[file].first.c_str(), line_number+1);
+
 	if (message != NULL)
 	{
 		fprintf(stderr," ");
@@ -105,7 +127,7 @@ void _log_message(odin_error error_type, long line_number, long file, bool soft_
 
 
 
-	print_culprit_line(line_number, file);
+	print_culprit_line(column, line_number, file);
 
 	fflush(stderr);
 	_verbose_assert(soft_error,"", function_file_name, function_line, function_name);

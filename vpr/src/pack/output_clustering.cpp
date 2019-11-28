@@ -7,7 +7,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <vector>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -33,14 +32,15 @@ using namespace std;
 
 /****************** Static variables local to this module ************************/
 
-static t_pb_graph_pin*** pb_graph_pin_lookup_from_index_by_type = nullptr; /* [0..device_ctx.num_block_types-1][0..num_pb_graph_pins-1] lookup pointer to pb_graph_pin from pb_graph_pin index */
+static t_pb_graph_pin*** pb_graph_pin_lookup_from_index_by_type = nullptr; /* [0..device_ctx.logical_block_types.size()-1][0..num_pb_graph_pins-1] lookup pointer to pb_graph_pin from pb_graph_pin index */
 
 /**************** Subroutine definitions ************************************/
 
 /* Prints out one cluster (clb).  Both the external pins and the *
  * internal connections are printed out.                         */
 static void print_stats() {
-    int ipin, itype;
+    int ipin;
+    unsigned int itype;
     int total_nets_absorbed;
     std::unordered_map<AtomNetId, bool> nets_absorbed;
 
@@ -52,9 +52,9 @@ static void print_stats() {
 
     num_clb_types = num_clb_inputs_used = num_clb_outputs_used = nullptr;
 
-    num_clb_types = (int*)vtr::calloc(device_ctx.num_block_types, sizeof(int));
-    num_clb_inputs_used = (int*)vtr::calloc(device_ctx.num_block_types, sizeof(int));
-    num_clb_outputs_used = (int*)vtr::calloc(device_ctx.num_block_types, sizeof(int));
+    num_clb_types = (int*)vtr::calloc(device_ctx.logical_block_types.size(), sizeof(int));
+    num_clb_inputs_used = (int*)vtr::calloc(device_ctx.logical_block_types.size(), sizeof(int));
+    num_clb_outputs_used = (int*)vtr::calloc(device_ctx.logical_block_types.size(), sizeof(int));
 
     for (auto net_id : atom_ctx.nlist.nets()) {
         nets_absorbed[net_id] = true;
@@ -63,17 +63,18 @@ static void print_stats() {
     /* Counters used only for statistics purposes. */
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        for (ipin = 0; ipin < cluster_ctx.clb_nlist.block_type(blk_id)->num_pins; ipin++) {
+        auto type = physical_tile_type(blk_id);
+        for (ipin = 0; ipin < type->num_pins; ipin++) {
             if (cluster_ctx.clb_nlist.block_pb(blk_id)->pb_route.empty()) {
                 ClusterNetId clb_net_id = cluster_ctx.clb_nlist.block_net(blk_id, ipin);
                 if (clb_net_id != ClusterNetId::INVALID()) {
                     auto net_id = atom_ctx.lookup.atom_net(clb_net_id);
                     VTR_ASSERT(net_id);
                     nets_absorbed[net_id] = false;
-                    if (cluster_ctx.clb_nlist.block_type(blk_id)->class_inf[cluster_ctx.clb_nlist.block_type(blk_id)->pin_class[ipin]].type == RECEIVER) {
-                        num_clb_inputs_used[cluster_ctx.clb_nlist.block_type(blk_id)->index]++;
-                    } else if (cluster_ctx.clb_nlist.block_type(blk_id)->class_inf[cluster_ctx.clb_nlist.block_type(blk_id)->pin_class[ipin]].type == DRIVER) {
-                        num_clb_outputs_used[cluster_ctx.clb_nlist.block_type(blk_id)->index]++;
+                    if (type->class_inf[type->pin_class[ipin]].type == RECEIVER) {
+                        num_clb_inputs_used[type->index]++;
+                    } else if (type->class_inf[type->pin_class[ipin]].type == DRIVER) {
+                        num_clb_outputs_used[type->index]++;
                     }
                 }
             } else {
@@ -85,25 +86,25 @@ static void print_stats() {
                     auto atom_net_id = pb->pb_route[pb_graph_pin_id].atom_net_id;
                     if (atom_net_id) {
                         nets_absorbed[atom_net_id] = false;
-                        if (cluster_ctx.clb_nlist.block_type(blk_id)->class_inf[cluster_ctx.clb_nlist.block_type(blk_id)->pin_class[ipin]].type == RECEIVER) {
-                            num_clb_inputs_used[cluster_ctx.clb_nlist.block_type(blk_id)->index]++;
-                        } else if (cluster_ctx.clb_nlist.block_type(blk_id)->class_inf[cluster_ctx.clb_nlist.block_type(blk_id)->pin_class[ipin]].type == DRIVER) {
-                            num_clb_outputs_used[cluster_ctx.clb_nlist.block_type(blk_id)->index]++;
+                        if (type->class_inf[type->pin_class[ipin]].type == RECEIVER) {
+                            num_clb_inputs_used[type->index]++;
+                        } else if (type->class_inf[type->pin_class[ipin]].type == DRIVER) {
+                            num_clb_outputs_used[type->index]++;
                         }
                     }
                 }
             }
         }
-        num_clb_types[cluster_ctx.clb_nlist.block_type(blk_id)->index]++;
+        num_clb_types[type->index]++;
     }
 
-    for (itype = 0; itype < device_ctx.num_block_types; itype++) {
+    for (itype = 0; itype < device_ctx.logical_block_types.size(); itype++) {
         if (num_clb_types[itype] == 0) {
             VTR_LOG("\t%s: # blocks: %d, average # input + clock pins used: %g, average # output pins used: %g\n",
-                    device_ctx.block_types[itype].name, num_clb_types[itype], 0.0, 0.0);
+                    device_ctx.logical_block_types[itype].name, num_clb_types[itype], 0.0, 0.0);
         } else {
             VTR_LOG("\t%s: # blocks: %d, average # input + clock pins used: %g, average # output pins used: %g\n",
-                    device_ctx.block_types[itype].name, num_clb_types[itype],
+                    device_ctx.logical_block_types[itype].name, num_clb_types[itype],
                     (float)num_clb_inputs_used[itype] / (float)num_clb_types[itype],
                     (float)num_clb_outputs_used[itype] / (float)num_clb_types[itype]);
         }
@@ -136,7 +137,7 @@ static const char* clustering_xml_net_text(AtomNetId net_id) {
     }
 }
 
-static std::string clustering_xml_interconnect_text(t_type_ptr type, int inode, const t_pb_routes& pb_route) {
+static std::string clustering_xml_interconnect_text(t_logical_block_type_ptr type, int inode, const t_pb_routes& pb_route) {
     if (!pb_route.count(inode) || !pb_route[inode].atom_net_id) {
         return "open";
     }
@@ -183,7 +184,7 @@ static std::string clustering_xml_interconnect_text(t_type_ptr type, int inode, 
  * cannot simply be marked open as that would lose the routing information. Instead, a block must be
  * output that reflects the routing resources used. This function handles both cases.
  */
-static void clustering_xml_open_block(pugi::xml_node parent_node, t_type_ptr type, t_pb_graph_node* pb_graph_node, int pb_index, bool is_used, const t_pb_routes& pb_route) {
+static void clustering_xml_open_block(pugi::xml_node parent_node, t_logical_block_type_ptr type, t_pb_graph_node* pb_graph_node, int pb_index, bool is_used, const t_pb_routes& pb_route) {
     int i, j, k, m;
     const t_pb_type *pb_type, *child_pb_type;
     t_mode* mode = nullptr;
@@ -327,7 +328,7 @@ static void clustering_xml_open_block(pugi::xml_node parent_node, t_type_ptr typ
 }
 
 /* outputs a block that is used (i.e. has configuration) and all of its child blocks */
-static void clustering_xml_block(pugi::xml_node parent_node, t_type_ptr type, t_pb* pb, int pb_index, const t_pb_routes& pb_route) {
+static void clustering_xml_block(pugi::xml_node parent_node, t_logical_block_type_ptr type, t_pb* pb, int pb_index, const t_pb_routes& pb_route) {
     int i, j, k, m;
     const t_pb_type *pb_type, *child_pb_type;
     t_pb_graph_node* pb_graph_node;
@@ -539,9 +540,9 @@ void output_clustering(const vtr::vector<ClusterBlockId, std::vector<t_intra_lb_
         }
     }
 
-    pb_graph_pin_lookup_from_index_by_type = new t_pb_graph_pin**[device_ctx.num_block_types];
-    for (int itype = 0; itype < device_ctx.num_block_types; itype++) {
-        pb_graph_pin_lookup_from_index_by_type[itype] = alloc_and_load_pb_graph_pin_lookup_from_index(&device_ctx.block_types[itype]);
+    pb_graph_pin_lookup_from_index_by_type = new t_pb_graph_pin**[device_ctx.logical_block_types.size()];
+    for (unsigned int itype = 0; itype < device_ctx.logical_block_types.size(); itype++) {
+        pb_graph_pin_lookup_from_index_by_type[itype] = alloc_and_load_pb_graph_pin_lookup_from_index(&device_ctx.logical_block_types[itype]);
     }
 
     pugi::xml_document out_xml;
@@ -615,7 +616,7 @@ void output_clustering(const vtr::vector<ClusterBlockId, std::vector<t_intra_lb_
         }
     }
 
-    for (int itype = 0; itype < device_ctx.num_block_types; itype++) {
+    for (unsigned int itype = 0; itype < device_ctx.logical_block_types.size(); itype++) {
         free_pb_graph_pin_lookup_from_index(pb_graph_pin_lookup_from_index_by_type[itype]);
     }
     delete[] pb_graph_pin_lookup_from_index_by_type;

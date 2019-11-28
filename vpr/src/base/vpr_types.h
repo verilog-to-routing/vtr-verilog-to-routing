@@ -38,6 +38,7 @@
 #include "vtr_vector.h"
 #include "vtr_util.h"
 #include "vtr_flat_map.h"
+#include "vtr_cache.h"
 
 /*******************************************************************************
  * Global data types and constants
@@ -200,6 +201,9 @@ class t_pack_high_fanout_thresholds {
     int default_;
     std::map<std::string, int> overrides_;
 };
+
+/* Type used to express rr_node edge index. */
+typedef uint16_t t_edge_size;
 
 /* these are defined later, but need to declare here because it is used */
 class t_rr_node;
@@ -440,7 +444,7 @@ struct t_net_power {
  * width_offset: Number of grid tiles reserved based on width (right) of a block
  * height_offset: Number of grid tiles reserved based on height (top) of a block */
 struct t_grid_tile {
-    t_type_ptr type = nullptr;
+    t_physical_tile_type_ptr type = nullptr;
     int width_offset = 0;
     int height_offset = 0;
     const t_metadata_dict* meta = nullptr;
@@ -617,33 +621,6 @@ struct t_place_region {
     float cost;
 };
 
-/* Stores the information of the move for a block that is       *
- * moved during placement                                       *
- * block_num: the index of the moved block                      *
- * xold: the x_coord that the block is moved from               *
- * xnew: the x_coord that the block is moved to                 *
- * yold: the y_coord that the block is moved from               *
- * xnew: the x_coord that the block is moved to                 */
-struct t_pl_moved_block {
-    ClusterBlockId block_num;
-    t_pl_loc old_loc;
-    t_pl_loc new_loc;
-};
-
-/* Stores the list of blocks to be moved in a swap during       *
- * placement.                                                   *
- * num_moved_blocks: total number of blocks moved when          *
- *                   swapping two blocks.                       *
- * moved blocks: a list of moved blocks data structure with     *
- *               information on the move.                       *
- *               [0...num_moved_blocks-1]                       */
-struct t_pl_blocks_to_be_moved {
-    int num_moved_blocks;
-    std::vector<t_pl_moved_block> moved_blocks;
-    std::unordered_set<t_pl_loc> moved_from;
-    std::unordered_set<t_pl_loc> moved_to;
-};
-
 /* Represents the placement location of a clustered block
  * x: x-coordinate
  * y: y-coordinate
@@ -791,6 +768,13 @@ enum class e_reducer {
     GEOMEAN
 };
 
+enum class e_file_type {
+    PDF,
+    PNG,
+    SVG,
+    NONE
+};
+
 struct t_placer_opts {
     enum e_place_algorithm place_algorithm;
     float timing_tradeoff;
@@ -821,6 +805,15 @@ struct t_placer_opts {
     std::string post_place_timing_report_file;
 
     bool strict_checks;
+
+    std::string write_placement_delay_lookup;
+    std::string read_placement_delay_lookup;
+
+    // Tile types that should be used during delay sampling.
+    //
+    // Useful for excluding tiles that have abnormal delay behavior, e.g.
+    // clock tree elements like PLL's, global/local clock buffers, etc.
+    std::string allowed_tiles_for_delay_model;
 };
 
 /* All the parameters controlling the router's operation are in this        *
@@ -874,17 +867,19 @@ enum e_route_type {
     GLOBAL,
     DETAILED
 };
+
 enum e_router_algorithm {
     BREADTH_FIRST,
     TIMING_DRIVEN,
-    NO_TIMING
 };
+
 enum e_base_cost_type {
     DELAY_NORMALIZED,
     DELAY_NORMALIZED_LENGTH,
     DELAY_NORMALIZED_FREQUENCY,
     DELAY_NORMALIZED_LENGTH_FREQUENCY,
-    DEMAND_ONLY
+    DEMAND_ONLY,
+    DEMAND_ONLY_NORMALIZED_LENGTH
 };
 enum e_routing_failure_predictor {
     OFF,
@@ -953,6 +948,9 @@ struct t_router_opts {
     float reconvergence_cpd_threshold;
     std::string first_iteration_timing_report_file;
     bool strict_checks;
+
+    std::string write_router_lookahead;
+    std::string read_router_lookahead;
 };
 
 struct t_analysis_opts {
@@ -1136,10 +1134,6 @@ struct t_linked_f_pointer {
 
 typedef std::vector<std::vector<std::vector<std::vector<std::vector<int>>>>> t_rr_node_indices; //[0..num_rr_types-1][0..grid_width-1][0..grid_height-1][0..NUM_SIDES-1][0..max_ptc-1]
 
-/* Uncomment lines below to save some memory, at the cost of debugging ease. */
-/*enum e_rr_type {SOURCE, SINK, IPIN, OPIN, CHANX, CHANY}; */
-/* typedef short t_rr_type */
-
 /* Type of a routing resource node.  x-directed channel segment,   *
  * y-directed channel segment, input pin to a clb to pad, output   *
  * from a clb or pad (i.e. output pin of a net) and:               *
@@ -1154,12 +1148,11 @@ typedef enum e_rr_type : unsigned char {
     OPIN,
     CHANX,
     CHANY,
-    INTRA_CLUSTER_EDGE,
     NUM_RR_TYPES
 } t_rr_type;
 
-constexpr std::array<t_rr_type, NUM_RR_TYPES> RR_TYPES = {{SOURCE, SINK, IPIN, OPIN, CHANX, CHANY, INTRA_CLUSTER_EDGE}};
-constexpr std::array<const char*, NUM_RR_TYPES> rr_node_typename{{"SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY", "INTRA_CLUSTER_EDGE"}};
+constexpr std::array<t_rr_type, NUM_RR_TYPES> RR_TYPES = {{SOURCE, SINK, IPIN, OPIN, CHANX, CHANY}};
+constexpr std::array<const char*, NUM_RR_TYPES> rr_node_typename{{"SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY"}};
 
 /* Basic element used to store the traceback (routing) of each net.        *
  * index:   Array index (ID) of this routing resource node.                *
@@ -1195,7 +1188,7 @@ struct t_trace {
  * occ:        The current occupancy of the associated rr node              */
 struct t_rr_node_route_inf {
     int prev_node;
-    short prev_edge;
+    t_edge_size prev_edge;
 
     float pres_cost;
     float acc_cost;
@@ -1295,6 +1288,7 @@ struct t_vpr_setup {
     float constant_net_delay;            /* timing information when place and route not run */
     bool ShowGraphics;                   /* option to show graphics */
     int GraphPause;                      /* user interactiveness graphics option */
+    bool SaveGraphics;                   /* option to save graphical contents to pdf, png, or svg */
     t_power_opts PowerOpts;
     std::string device_layout;
     e_constant_net_method constant_net_method; //How constant nets should be handled

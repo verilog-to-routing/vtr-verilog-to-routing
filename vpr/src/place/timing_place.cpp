@@ -1,6 +1,5 @@
 #include <cstdio>
 #include <cmath>
-using namespace std;
 
 #include "vtr_util.h"
 #include "vtr_memory.h"
@@ -35,8 +34,8 @@ static void alloc_crit(vtr::t_chunk* chunk_list_ptr) {
     f_timing_place_crit.resize(cluster_ctx.clb_nlist.nets().size());
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        tmp_ptr = (float*)vtr::chunk_malloc((cluster_ctx.clb_nlist.net_sinks(net_id).size()) * sizeof(float), chunk_list_ptr);
-        f_timing_place_crit[net_id] = tmp_ptr - 1; /* [1..num_sinks] */
+        tmp_ptr = (float*)vtr::chunk_malloc((cluster_ctx.clb_nlist.net_pins(net_id).size()) * sizeof(float), chunk_list_ptr);
+        f_timing_place_crit[net_id] = tmp_ptr;
     }
 }
 

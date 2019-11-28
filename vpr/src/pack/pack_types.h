@@ -241,7 +241,7 @@ struct t_lb_router_data {
     int explore_id_index;                 /* used in conjunction with node_traceback to determine whether or not a location has been explored.  By using a unique identifier every route, I don't have to clear the previous route exploration */
 
     /* Current type */
-    t_type_ptr lb_type;
+    t_logical_block_type_ptr lb_type;
 
     /* Parameters used by router */
     t_lb_router_params params;

@@ -2,12 +2,6 @@ cmake_minimum_required(VERSION 3.9)
 
 project("vpr")
 
-#
-# VPR Build Options
-#
-set(VPR_COMPILE_OPTIONS "none" CACHE STRING "Specify whether vpr uses strict compiling options, e.g. -Werror")
-set(CACHE VPR_COMPILE_OPTIONS PROPERTY STRING strict none)
-
 set(VPR_EXECUTION_ENGINE "auto" CACHE STRING "Specify the framework for (potential) parallel execution")
 set_property(CACHE VPR_EXECUTION_ENGINE PROPERTY STRINGS auto serial tbb)
 
@@ -16,8 +10,11 @@ option(VPR_USE_SIGNAL_HANDLER "Should VPR use a signal handler to intercept sign
 set(VPR_PGO_CONFIG "none" CACHE STRING "Configure VPR Profile-Guided Optimization (PGO). prof_gen: built executable will produce profiling info, prof_use: built executable will be optimized based on generated profiling info, none: disable pgo")
 set_property(CACHE VPR_PGO_CONFIG PROPERTY STRINGS prof_gen prof_use none)
 
+#Handle graphics setup
+set(GRAPHICS_DEFINES "")
 
 if (VPR_USE_EZGL STREQUAL "on")
+    message(STATUS "EZGL: graphics enabled")
     set(
         RESOURCE_LIST
         # Strip all the whitespace characters from ui file
@@ -28,6 +25,9 @@ if (VPR_USE_EZGL STREQUAL "on")
          ${CMAKE_CURRENT_SOURCE_DIR}/../libs/EXTERNAL/libezgl/gcr-cmake/macros)
 
     include(GlibCompileResourcesSupport)
+else()
+    list(APPEND GRAPHICS_DEFINES "-DNO_GRAPHICS")
+    message(STATUS "EZGL: graphics disabled")
 endif()
 
 #
@@ -40,6 +40,10 @@ file(GLOB_RECURSE EXEC_SOURCES src/main.cpp)
 file(GLOB_RECURSE LIB_SOURCES src/*/*.cpp)
 file(GLOB_RECURSE LIB_HEADERS src/*/*.h)
 files_to_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)
+
+if(${VTR_ENABLE_CAPNPROTO})
+    add_definitions("-DVTR_ENABLE_CAPNPROTO")
+endif()
 
 #Create the library
 add_library(libvpr STATIC
@@ -56,14 +60,13 @@ target_link_libraries(libvpr
                         libarchfpga
                         libsdcparse
                         libblifparse
-			libeasygl
                         libtatum
                         libargparse
                         libpugixml)
 
 #link graphics library only when graphics set to on
 if (VPR_USE_EZGL STREQUAL "on")
-    target_link_libraries(libvpr 
+    target_link_libraries(libvpr
 			     ezgl)
 
     compile_gresources(
@@ -95,6 +98,12 @@ if (VPR_USE_EZGL STREQUAL "on")
     #Create the executable with resources
     list(APPEND EXEC_SOURCES ${CMAKE_CURRENT_BINARY_DIR}/resources.C)
 
+endif()
+
+target_compile_definitions(libvpr PUBLIC ${GRAPHICS_DEFINES})
+
+if(${VTR_ENABLE_CAPNPROTO})
+    target_link_libraries(libvpr libvtrcapnproto)
 endif()
 
 add_executable(vpr ${EXEC_SOURCES})
@@ -157,7 +166,7 @@ else()
     message(ERROR "Unsupported VPR_PGO_CONFIG '${VPR_PGO_CONFIG}'")
 endif()
 
-if (VPR_COMPILE_OPTIONS STREQUAL "strict")
+if (VTR_COMPILE_OPTIONS STREQUAL "strict")
     message(STATUS "VPR: building with strict flags")
     foreach(flag ${VPR_COMPILE_OPTIONS_FLAGS})
         message(STATUS "\tAdding CXX flag: ${flag}")

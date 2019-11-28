@@ -12,7 +12,7 @@
 #include "read_xml_arch_file.h"
 #include "read_xml_util.h"
 
-static void free_all_pb_graph_nodes(t_type_descriptor* type_descriptors, int num_type_descriptors);
+static void free_all_pb_graph_nodes(std::vector<t_logical_block_type>& type_descriptors);
 static void free_pb_graph(t_pb_graph_node* pb_graph_node);
 static void free_pb_type(t_pb_type* pb_type);
 
@@ -215,57 +215,75 @@ void free_arch(t_arch* arch) {
     }
 }
 
-void free_type_descriptors(t_type_descriptor* type_descriptors, int num_type_descriptors) {
-    free_all_pb_graph_nodes(type_descriptors, num_type_descriptors);
-
-    for (int i = 0; i < num_type_descriptors; ++i) {
-        vtr::free(type_descriptors[i].name);
-        if (i == EMPTY_TYPE_INDEX) {
+void free_type_descriptors(std::vector<t_physical_tile_type>& type_descriptors) {
+    for (auto& type : type_descriptors) {
+        vtr::free(type.name);
+        if (type.index == EMPTY_TYPE_INDEX) {
             continue;
         }
 
-        for (int width = 0; width < type_descriptors[i].width; ++width) {
-            for (int height = 0; height < type_descriptors[i].height; ++height) {
+        for (int width = 0; width < type.width; ++width) {
+            for (int height = 0; height < type.height; ++height) {
                 for (int side = 0; side < 4; ++side) {
-                    for (int pin = 0; pin < type_descriptors[i].num_pin_loc_assignments[width][height][side]; ++pin) {
-                        if (type_descriptors[i].pin_loc_assignments[width][height][side][pin])
-                            vtr::free(type_descriptors[i].pin_loc_assignments[width][height][side][pin]);
+                    for (int pin = 0; pin < type.num_pin_loc_assignments[width][height][side]; ++pin) {
+                        if (type.pin_loc_assignments[width][height][side][pin])
+                            vtr::free(type.pin_loc_assignments[width][height][side][pin]);
                     }
-                    vtr::free(type_descriptors[i].pinloc[width][height][side]);
-                    vtr::free(type_descriptors[i].pin_loc_assignments[width][height][side]);
+                    vtr::free(type.pinloc[width][height][side]);
+                    vtr::free(type.pin_loc_assignments[width][height][side]);
                 }
-                vtr::free(type_descriptors[i].pinloc[width][height]);
-                vtr::free(type_descriptors[i].pin_loc_assignments[width][height]);
-                vtr::free(type_descriptors[i].num_pin_loc_assignments[width][height]);
+                vtr::free(type.pinloc[width][height]);
+                vtr::free(type.pin_loc_assignments[width][height]);
+                vtr::free(type.num_pin_loc_assignments[width][height]);
             }
-            vtr::free(type_descriptors[i].pinloc[width]);
-            vtr::free(type_descriptors[i].pin_loc_assignments[width]);
-            vtr::free(type_descriptors[i].num_pin_loc_assignments[width]);
+            vtr::free(type.pinloc[width]);
+            vtr::free(type.pin_loc_assignments[width]);
+            vtr::free(type.num_pin_loc_assignments[width]);
         }
-        vtr::free(type_descriptors[i].pinloc);
-        vtr::free(type_descriptors[i].pin_loc_assignments);
-        vtr::free(type_descriptors[i].num_pin_loc_assignments);
+        vtr::free(type.pinloc);
+        vtr::free(type.pin_loc_assignments);
+        vtr::free(type.num_pin_loc_assignments);
 
-        for (int j = 0; j < type_descriptors[i].num_class; ++j) {
-            vtr::free(type_descriptors[i].class_inf[j].pinlist);
+        for (int j = 0; j < type.num_class; ++j) {
+            vtr::free(type.class_inf[j].pinlist);
         }
-        vtr::free(type_descriptors[i].class_inf);
-        vtr::free(type_descriptors[i].is_ignored_pin);
-        vtr::free(type_descriptors[i].is_pin_global);
-        vtr::free(type_descriptors[i].pin_class);
+        vtr::free(type.class_inf);
+        vtr::free(type.is_ignored_pin);
+        vtr::free(type.is_pin_global);
+        vtr::free(type.pin_class);
 
-        free_pb_type(type_descriptors[i].pb_type);
-        delete type_descriptors[i].pb_type;
+        for (auto equivalent_site : type.equivalent_sites) {
+            vtr::free(equivalent_site.pb_type_name);
+        }
+
+        for (auto port : type.ports) {
+            vtr::free(port.name);
+        }
     }
-    delete[] type_descriptors;
+    type_descriptors.clear();
 }
 
-static void free_all_pb_graph_nodes(t_type_descriptor* type_descriptors, int num_type_descriptors) {
-    for (int i = 0; i < num_type_descriptors; i++) {
-        if (type_descriptors[i].pb_type) {
-            if (type_descriptors[i].pb_graph_head) {
-                free_pb_graph(type_descriptors[i].pb_graph_head);
-                vtr::free(type_descriptors[i].pb_graph_head);
+void free_type_descriptors(std::vector<t_logical_block_type>& type_descriptors) {
+    free_all_pb_graph_nodes(type_descriptors);
+
+    for (auto& type : type_descriptors) {
+        vtr::free(type.name);
+        if (type.index == EMPTY_TYPE_INDEX) {
+            continue;
+        }
+
+        free_pb_type(type.pb_type);
+        delete type.pb_type;
+    }
+    type_descriptors.clear();
+}
+
+static void free_all_pb_graph_nodes(std::vector<t_logical_block_type>& type_descriptors) {
+    for (auto& type : type_descriptors) {
+        if (type.pb_type) {
+            if (type.pb_graph_head) {
+                free_pb_graph(type.pb_graph_head);
+                vtr::free(type.pb_graph_head);
             }
         }
     }
@@ -524,26 +542,33 @@ t_port* findPortByName(const char* name, t_pb_type* pb_type, int* high_index, in
     return port;
 }
 
-void SetupEmptyType(t_type_descriptor* cb_type_descriptors,
-                    t_type_ptr EMPTY_TYPE) {
-    t_type_descriptor* type;
-    type = &cb_type_descriptors[EMPTY_TYPE->index];
-    type->name = vtr::strdup("EMPTY");
-    type->num_pins = 0;
-    type->width = 1;
-    type->height = 1;
-    type->capacity = 0;
-    type->num_drivers = 0;
-    type->num_receivers = 0;
-    type->pinloc = nullptr;
-    type->num_class = 0;
-    type->class_inf = nullptr;
-    type->pin_class = nullptr;
-    type->is_ignored_pin = nullptr;
-    type->pb_type = nullptr;
-    type->area = UNDEFINED;
-    type->switchblock_locations = vtr::Matrix<e_sb_type>({{size_t(type->width), size_t(type->height)}}, e_sb_type::FULL);
-    type->switchblock_switch_overrides = vtr::Matrix<int>({{size_t(type->width), size_t(type->height)}}, DEFAULT_SWITCH);
+t_physical_tile_type SetupEmptyPhysicalType() {
+    t_physical_tile_type type;
+    type.name = vtr::strdup("EMPTY");
+    type.num_pins = 0;
+    type.width = 1;
+    type.height = 1;
+    type.capacity = 0;
+    type.num_drivers = 0;
+    type.num_receivers = 0;
+    type.pinloc = nullptr;
+    type.num_class = 0;
+    type.class_inf = nullptr;
+    type.pin_class = nullptr;
+    type.is_ignored_pin = nullptr;
+    type.area = UNDEFINED;
+    type.switchblock_locations = vtr::Matrix<e_sb_type>({{size_t(type.width), size_t(type.height)}}, e_sb_type::FULL);
+    type.switchblock_switch_overrides = vtr::Matrix<int>({{size_t(type.width), size_t(type.height)}}, DEFAULT_SWITCH);
+
+    return type;
+}
+
+t_logical_block_type SetupEmptyLogicalType() {
+    t_logical_block_type type;
+    type.name = vtr::strdup("EMPTY");
+    type.pb_type = nullptr;
+
+    return type;
 }
 
 void alloc_and_load_default_child_for_pb_type(t_pb_type* pb_type,
@@ -1079,12 +1104,10 @@ void CreateModelLibrary(t_arch* arch) {
 }
 
 void SyncModelsPbTypes(t_arch* arch,
-                       const t_type_descriptor* Types,
-                       const int NumTypes) {
-    int i;
-    for (i = 0; i < NumTypes; i++) {
-        if (Types[i].pb_type != nullptr) {
-            SyncModelsPbTypes_rec(arch, Types[i].pb_type);
+                       const std::vector<t_logical_block_type>& Types) {
+    for (auto& Type : Types) {
+        if (Type.pb_type != nullptr) {
+            SyncModelsPbTypes_rec(arch, Type.pb_type);
         }
     }
 }

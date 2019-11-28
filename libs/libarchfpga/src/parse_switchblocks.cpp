@@ -32,8 +32,7 @@
 #include "physical_types.h"
 #include "parse_switchblocks.h"
 
-using namespace std;
-using namespace pugiutil;
+using pugiutil::ReqOpt;
 
 /**** Function Declarations ****/
 /*---- Functions for Parsing Switchblocks from Architecture ----*/
@@ -85,7 +84,7 @@ void read_sb_wireconns(const t_arch_switch_inf* /*switches*/, int /*num_switches
     pugi::xml_node SubElem;
 
     /* count the number of specified wire connections for this SB */
-    num_wireconns = count_children(Node, "wireconn", loc_data, OPTIONAL);
+    num_wireconns = count_children(Node, "wireconn", loc_data, ReqOpt::OPTIONAL);
     sb->wireconns.reserve(num_wireconns);
 
     if (num_wireconns > 0) {
@@ -266,11 +265,11 @@ void read_sb_switchfuncs(pugi::xml_node Node, t_switchblock_inf* sb, const pugiu
     pugi::xml_node SubElem;
 
     /* get the number of specified permutation functions */
-    int num_funcs = count_children(Node, "func", loc_data, OPTIONAL);
+    int num_funcs = count_children(Node, "func", loc_data, ReqOpt::OPTIONAL);
 
     const char* func_type;
     const char* func_formula;
-    vector<string>* func_ptr;
+    std::vector<std::string>* func_ptr;
 
     /* used to index into permutation map of switchblock */
     SB_Side_Connection conn;
@@ -319,7 +318,7 @@ void read_sb_switchfuncs(pugi::xml_node Node, t_switchblock_inf* sb, const pugiu
         func_ptr = &(sb->permutation_map[conn]);
 
         /* Here we load the specified switch function(s) */
-        func_ptr->push_back(string(func_formula));
+        func_ptr->push_back(std::string(func_formula));
 
         func_ptr = nullptr;
         /* get the next switchblock function */

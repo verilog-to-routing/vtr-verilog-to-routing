@@ -66,6 +66,7 @@ apt-get install \
 	libfontconfig1-dev \
 	libx11-dev \
 	libxft-dev \
+	libgtk-3-dev \
 	perl \
 	liblist-moreutils-perl \
 	python \

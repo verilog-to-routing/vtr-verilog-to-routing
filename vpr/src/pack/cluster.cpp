@@ -40,7 +40,6 @@
 #include <map>
 #include <algorithm>
 #include <fstream>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -152,7 +151,7 @@ static void check_for_duplicate_inputs ();
 static bool is_atom_blk_in_pb(const AtomBlockId blk_id, const t_pb* pb);
 
 static void add_molecule_to_pb_stats_candidates(t_pack_molecule* molecule,
-                                                map<AtomBlockId, float>& gain,
+                                                std::map<AtomBlockId, float>& gain,
                                                 t_pb* pb,
                                                 int max_queue_size);
 
@@ -248,17 +247,17 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
                               const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
                               ClusterBlockId clb_index,
                               t_pack_molecule* molecule,
-                              std::map<t_type_ptr, size_t>& num_used_type_instances,
+                              std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
                               const float target_device_utilization,
                               const int num_models,
                               const int max_cluster_size,
                               const t_arch* arch,
                               std::string device_layout_name,
-                              vector<t_lb_type_rr_node>* lb_type_rr_graphs,
+                              std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
                               t_lb_router_data** router_data,
                               const int detailed_routing_stage,
                               ClusteredNetlist* clb_nlist,
-                              const std::map<const t_model*, std::vector<t_type_ptr>>& primitive_candidate_block_types,
+                              const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
                               int verbosity,
                               bool enable_pin_feasibility_filter,
                               bool balance_block_type_utilization,
@@ -323,7 +322,7 @@ static std::vector<AtomBlockId> initialize_seed_atoms(const e_cluster_seed seed_
 
 static t_pack_molecule* get_highest_gain_seed_molecule(int* seedindex, const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules, const std::vector<AtomBlockId> seed_atoms);
 
-static float get_molecule_gain(t_pack_molecule* molecule, map<AtomBlockId, float>& blk_gain);
+static float get_molecule_gain(t_pack_molecule* molecule, std::map<AtomBlockId, float>& blk_gain);
 static int compare_molecule_gain(const void* a, const void* b);
 int net_sinks_reachable_in_cluster(const t_pb_graph_pin* driver_pb_gpin, const int depth, const AtomNetId net_id);
 
@@ -335,7 +334,7 @@ static void load_transitive_fanout_candidates(ClusterBlockId cluster_index,
                                               vtr::vector<ClusterBlockId, std::vector<AtomNetId>>& clb_inter_blk_nets,
                                               int transitive_fanout_threshold);
 
-static std::map<const t_model*, std::vector<t_type_ptr>> identify_primitive_candidate_block_types();
+static std::map<const t_model*, std::vector<t_logical_block_type_ptr>> identify_primitive_candidate_block_types();
 
 static void update_molecule_chain_info(t_pack_molecule* chain_molecule, const t_pb_graph_node* root_primitive);
 
@@ -347,13 +346,13 @@ static t_pb_graph_pin* get_driver_pb_graph_pin(const t_pb* driver_pb, const Atom
 
 static void update_pb_type_count(const t_pb* pb, std::unordered_map<std::string, int>& pb_type_count);
 
-static void update_le_count(const t_pb* pb, const t_type_ptr logic_block_type, const t_pb_type* le_pb_type, std::vector<int>& le_count);
+static void update_le_count(const t_pb* pb, const t_logical_block_type_ptr logic_block_type, const t_pb_type* le_pb_type, std::vector<int>& le_count);
 
 static void print_pb_type_count(std::unordered_map<std::string, int>& pb_type_count);
 
-static t_type_ptr identify_logic_block_type(std::map<const t_model*, std::vector<t_type_ptr>>& primitive_candidate_block_types);
+static t_logical_block_type_ptr identify_logic_block_type(std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
 
-static t_pb_type* identify_le_block_type(t_type_ptr logic_block_type);
+static t_pb_type* identify_le_block_type(t_logical_block_type_ptr logic_block_type);
 
 static bool pb_used_for_blif_model(const t_pb* pb, std::string blif_model_name);
 
@@ -361,19 +360,19 @@ static void print_le_count(std::vector<int>& le_count, const t_pb_type* le_pb_ty
 
 /*****************************************/
 /*globally accessible function*/
-std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
-                                           const t_analysis_opts& analysis_opts,
-                                           const t_arch* arch,
-                                           t_pack_molecule* molecule_head,
-                                           int num_models,
-                                           const std::unordered_set<AtomNetId>& is_clock,
-                                           std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
-                                           const std::unordered_map<AtomBlockId, t_pb_graph_node*>& expected_lowest_cost_pb_gnode,
-                                           bool allow_unrelated_clustering,
-                                           bool balance_block_type_utilization,
-                                           std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
-                                           const t_ext_pin_util_targets& ext_pin_util_targets,
-                                           const t_pack_high_fanout_thresholds& high_fanout_thresholds) {
+std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
+                                                         const t_analysis_opts& analysis_opts,
+                                                         const t_arch* arch,
+                                                         t_pack_molecule* molecule_head,
+                                                         int num_models,
+                                                         const std::unordered_set<AtomNetId>& is_clock,
+                                                         std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
+                                                         const std::unordered_map<AtomBlockId, t_pb_graph_node*>& expected_lowest_cost_pb_gnode,
+                                                         bool allow_unrelated_clustering,
+                                                         bool balance_block_type_utilization,
+                                                         std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
+                                                         const t_ext_pin_util_targets& ext_pin_util_targets,
+                                                         const t_pack_high_fanout_thresholds& high_fanout_thresholds) {
     /* Does the actual work of clustering multiple netlist blocks *
      * into clusters.                                                  */
 
@@ -389,7 +388,7 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
      *****************************************************************/
     VTR_ASSERT(packer_opts.packer_algorithm == PACK_GREEDY);
 
-    int i, num_molecules, blocks_since_last_analysis, num_clb,
+    int num_molecules, blocks_since_last_analysis, num_clb,
         num_blocks_hill_added, max_cluster_size, cur_cluster_size,
         max_pb_depth, cur_pb_depth, num_unrelated_clustering_attempts,
         seedindex, savedseedindex /* index of next most timing critical block */,
@@ -397,7 +396,7 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
 
     const int verbosity = packer_opts.pack_verbosity;
 
-    std::map<t_type_ptr, size_t> num_used_type_instances;
+    std::map<t_logical_block_type_ptr, size_t> num_used_type_instances;
 
     bool is_cluster_legal;
     enum e_block_pack_status block_pack_status;
@@ -451,11 +450,12 @@ std::map<t_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
 
     num_molecules = count_molecules(molecule_head);
 
-    for (i = 0; i < device_ctx.num_block_types; i++) {
-        if (device_ctx.EMPTY_TYPE == &device_ctx.block_types[i])
+    for (const auto& type : device_ctx.logical_block_types) {
+        if (device_ctx.EMPTY_TYPE == physical_tile_type(&type))
             continue;
-        cur_cluster_size = get_max_primitives_in_pb_type(device_ctx.block_types[i].pb_type);
-        cur_pb_depth = get_max_depth_of_pb_type(device_ctx.block_types[i].pb_type);
+
+        cur_cluster_size = get_max_primitives_in_pb_type(type.pb_type);
+        cur_pb_depth = get_max_depth_of_pb_type(type.pb_type);
         if (cur_cluster_size > max_cluster_size) {
             max_cluster_size = cur_cluster_size;
         }
@@ -810,7 +810,7 @@ static bool is_atom_blk_in_pb(const AtomBlockId blk_id, const t_pb* pb) {
 
 /* Add blk to list of feasible blocks sorted according to gain */
 static void add_molecule_to_pb_stats_candidates(t_pack_molecule* molecule,
-                                                map<AtomBlockId, float>& gain,
+                                                std::map<AtomBlockId, float>& gain,
                                                 t_pb* pb,
                                                 int max_queue_size) {
     int i, j;
@@ -870,7 +870,7 @@ static void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats
 
     /* alloc and load list of molecules to pack */
     unclustered_list_head = (t_molecule_link*)vtr::calloc(max_molecule_stats.num_used_ext_inputs + 1, sizeof(t_molecule_link));
-    unclustered_list_head_size = max_molecule_stats.num_used_ext_inputs;
+    unclustered_list_head_size = max_molecule_stats.num_used_ext_inputs + 1;
 
     for (int i = 0; i <= max_molecule_stats.num_used_ext_inputs; i++) {
         unclustered_list_head[i].next = nullptr;
@@ -1925,17 +1925,17 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
                               const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
                               ClusterBlockId clb_index,
                               t_pack_molecule* molecule,
-                              std::map<t_type_ptr, size_t>& num_used_type_instances,
+                              std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
                               const float target_device_utilization,
                               const int num_models,
                               const int max_cluster_size,
                               const t_arch* arch,
                               std::string device_layout_name,
-                              vector<t_lb_type_rr_node>* lb_type_rr_graphs,
+                              std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
                               t_lb_router_data** router_data,
                               const int detailed_routing_stage,
                               ClusteredNetlist* clb_nlist,
-                              const std::map<const t_model*, std::vector<t_type_ptr>>& primitive_candidate_block_types,
+                              const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
                               int verbosity,
                               bool enable_pin_feasibility_filter,
                               bool balance_block_type_utilization,
@@ -1954,7 +1954,7 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
 
     auto itr = primitive_candidate_block_types.find(root_model);
     VTR_ASSERT(itr != primitive_candidate_block_types.end());
-    std::vector<t_type_ptr> candidate_types = itr->second;
+    std::vector<t_logical_block_type_ptr> candidate_types = itr->second;
 
     if (balance_block_type_utilization) {
         //We sort the candidate types in ascending order by their current utilization.
@@ -1962,9 +1962,9 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
         //This is a naive approach to try balancing utilization when multiple types can
         //support the same primitive(s).
         std::stable_sort(candidate_types.begin(), candidate_types.end(),
-                         [&](t_type_ptr lhs, t_type_ptr rhs) {
-                             float lhs_util = vtr::safe_ratio<float>(num_used_type_instances[lhs], device_ctx.grid.num_instances(lhs));
-                             float rhs_util = vtr::safe_ratio<float>(num_used_type_instances[rhs], device_ctx.grid.num_instances(rhs));
+                         [&](t_logical_block_type_ptr lhs, t_logical_block_type_ptr rhs) {
+                             float lhs_util = vtr::safe_ratio<float>(num_used_type_instances[lhs], device_ctx.grid.num_instances(physical_tile_type(lhs)));
+                             float rhs_util = vtr::safe_ratio<float>(num_used_type_instances[rhs], device_ctx.grid.num_instances(physical_tile_type(rhs)));
                              //Lower util first
                              return lhs_util < rhs_util;
                          });
@@ -2056,7 +2056,7 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
     num_used_type_instances[clb_nlist->block_type(clb_index)]++;
 
     /* Expand FPGA size if needed */
-    if (num_used_type_instances[clb_nlist->block_type(clb_index)] > device_ctx.grid.num_instances(clb_nlist->block_type(clb_index))) {
+    if (num_used_type_instances[clb_nlist->block_type(clb_index)] > device_ctx.grid.num_instances(physical_tile_type(clb_index))) {
         device_ctx.grid = create_device_grid(device_layout_name, arch->grid_layouts, num_used_type_instances, target_device_utilization);
         VTR_LOGV(verbosity > 0, "Not enough resources expand FPGA size to (%d x %d)\n",
                  device_ctx.grid.width(), device_ctx.grid.height());
@@ -2212,7 +2212,7 @@ void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
                     }
                     if (success) {
                         add_molecule_to_pb_stats_candidates(molecule,
-                                                            cur_pb->pb_stats->gain, cur_pb, min(feasible_block_array_size, AAPACK_MAX_HIGH_FANOUT_EXPLORE));
+                                                            cur_pb->pb_stats->gain, cur_pb, std::min(feasible_block_array_size, AAPACK_MAX_HIGH_FANOUT_EXPLORE));
                         count++;
                     }
                 }
@@ -2260,7 +2260,7 @@ void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
             }
             if (success) {
                 add_molecule_to_pb_stats_candidates(molecule,
-                                                    cur_pb->pb_stats->gain, cur_pb, min(feasible_block_array_size, AAPACK_MAX_TRANSITIVE_EXPLORE));
+                                                    cur_pb->pb_stats->gain, cur_pb, std::min(feasible_block_array_size, AAPACK_MAX_TRANSITIVE_EXPLORE));
             }
         }
     }
@@ -2722,7 +2722,7 @@ static t_pack_molecule* get_highest_gain_seed_molecule(int* seedindex, const std
  * + molecule_base_gain*some_factor
  * - introduced_input_nets_of_unrelated_blocks_pulled_in_by_molecule*some_other_factor
  */
-static float get_molecule_gain(t_pack_molecule* molecule, map<AtomBlockId, float>& blk_gain) {
+static float get_molecule_gain(t_pack_molecule* molecule, std::map<AtomBlockId, float>& blk_gain) {
     float gain;
     int i;
     int num_introduced_inputs_of_indirectly_related_block;
@@ -3190,8 +3190,8 @@ static void load_transitive_fanout_candidates(ClusterBlockId clb_index,
     }
 }
 
-static std::map<const t_model*, std::vector<t_type_ptr>> identify_primitive_candidate_block_types() {
-    std::map<const t_model*, std::vector<t_type_ptr>> model_candidates;
+static std::map<const t_model*, std::vector<t_logical_block_type_ptr>> identify_primitive_candidate_block_types() {
+    std::map<const t_model*, std::vector<t_logical_block_type_ptr>> model_candidates;
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& atom_nlist = atom_ctx.nlist;
     auto& device_ctx = g_vpr_ctx.device();
@@ -3205,10 +3205,9 @@ static std::map<const t_model*, std::vector<t_type_ptr>> identify_primitive_cand
     for (auto model : unique_models) {
         model_candidates[model] = {};
 
-        for (int itype = 0; itype < device_ctx.num_block_types; ++itype) {
-            t_type_ptr type = &device_ctx.block_types[itype];
-            if (block_type_contains_blif_model(type, model->name)) {
-                model_candidates[model].push_back(type);
+        for (auto const& type : device_ctx.logical_block_types) {
+            if (block_type_contains_blif_model(&type, model->name)) {
+                model_candidates[model].push_back(&type);
             }
         }
     }
@@ -3380,7 +3379,7 @@ static void print_pb_type_count(std::unordered_map<std::string, int>& pb_type_co
  * This function identifies the logic block type which is
  * defined by the block type which has a lut primitive
  */
-static t_type_ptr identify_logic_block_type(std::map<const t_model*, std::vector<t_type_ptr>>& primitive_candidate_block_types) {
+static t_logical_block_type_ptr identify_logic_block_type(std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
     std::string lut_name = ".names";
 
     for (auto& model : primitive_candidate_block_types) {
@@ -3398,7 +3397,7 @@ static t_type_ptr identify_logic_block_type(std::map<const t_model*, std::vector
  * is found by searching a cluster type to find the first pb_type (from the top
  * of the hierarchy clb->LE) that has more than one instance within the cluster.
  */
-static t_pb_type* identify_le_block_type(t_type_ptr logic_block_type) {
+static t_pb_type* identify_le_block_type(t_logical_block_type_ptr logic_block_type) {
     // if there is no CLB-like cluster, then there is no LE pb_block
     if (!logic_block_type)
         return nullptr;
@@ -3425,7 +3424,7 @@ static t_pb_type* identify_le_block_type(t_type_ptr logic_block_type) {
 /**
  * This function updates the le_count data structure from the given packed cluster
  */
-static void update_le_count(const t_pb* pb, const t_type_ptr logic_block_type, const t_pb_type* le_pb_type, std::vector<int>& le_count) {
+static void update_le_count(const t_pb* pb, const t_logical_block_type_ptr logic_block_type, const t_pb_type* le_pb_type, std::vector<int>& le_count) {
     // if this cluster doesn't contain LEs or there
     // are no les in this architecture, ignore it
     if (!logic_block_type || pb->pb_graph_node != logic_block_type->pb_graph_head || !le_pb_type)

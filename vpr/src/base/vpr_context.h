@@ -3,7 +3,6 @@
 #include <unordered_map>
 #include <memory>
 #include <vector>
-#include <csignal> //for sig_atomic_t
 
 #include "vpr_types.h"
 #include "vtr_ndmatrix.h"
@@ -19,7 +18,9 @@
 #include "clock_network_builders.h"
 #include "clock_connection_builders.h"
 #include "route_traceback.h"
+#include "router_lookahead.h"
 #include "place_macro.h"
+#include "compressed_grid.h"
 
 //A Context is collection of state relating to a particular part of VPR
 //
@@ -117,16 +118,16 @@ struct DeviceContext : public Context {
     DeviceGrid grid; /* FPGA complex block grid [0 .. grid.width()-1][0 .. grid.height()-1] */
 
     /* Special pointers to identify special blocks on an FPGA: I/Os, unused, and default */
-    std::set<t_type_ptr> input_types;
-    std::set<t_type_ptr> output_types;
-    t_type_ptr EMPTY_TYPE;
+    std::set<t_physical_tile_type_ptr> input_types;
+    std::set<t_physical_tile_type_ptr> output_types;
+    t_physical_tile_type_ptr EMPTY_TYPE;
 
     /* block_types are blocks that can be moved by the placer
      * such as: I/Os, CLBs, memories, multipliers, etc
      * Different types of physical block are contained in type descriptors
      */
-    int num_block_types;
-    t_type_descriptor* block_types;
+    std::vector<t_physical_tile_type> physical_tile_types;
+    std::vector<t_logical_block_type> logical_block_types;
 
     /*******************************************************************
      * Routing related
@@ -157,7 +158,7 @@ struct DeviceContext : public Context {
     int num_arch_switches;
     t_arch_switch_inf* arch_switch_inf; /* [0..(num_arch_switches-1)] */
 
-    // Clock Newtworks
+    // Clock Networks
     std::vector<std::unique_ptr<ClockNetwork>> clock_networks;
     std::vector<std::unique_ptr<ClockConnection>> clock_connections;
 
@@ -200,6 +201,10 @@ struct DeviceContext : public Context {
      * Clock Network
      ********************************************************************/
     t_clock_arch* clock_arch;
+
+    // Name of rrgraph file read (if any).
+    // Used to determine when reading rrgraph if file is already loaded.
+    std::string read_rr_graph_filename;
 };
 
 //State relating to power analysis
@@ -248,6 +253,11 @@ struct PlacementContext : public Context {
     // The pl_macros array stores all the placement macros (usually carry chains).
     std::vector<t_pl_macro> pl_macros;
 
+    //Compressed grid space for each block type
+    //Used to efficiently find logically 'adjacent' blocks of the same block type even though
+    //the may be physically far apart
+    t_compressed_block_grids compressed_block_grids;
+
     //SHA256 digest of the .place file (used for unique identification and consistency checking)
     std::string placement_id;
 };
@@ -277,6 +287,13 @@ struct RoutingContext : public Context {
 
     //SHA256 digest of the .route file (used for unique identification and consistency checking)
     std::string routing_id;
+
+    // Cache of router lookahead object.
+    //
+    // Cache key: (lookahead type, read lookahead (if any), segment definitions).
+    vtr::Cache<std::tuple<e_router_lookahead, std::string, std::vector<t_segment_inf>>,
+               RouterLookahead>
+        cached_router_lookahead_;
 };
 
 //This object encapsulates VPR's state. There is typically a single instance which is
@@ -340,10 +357,6 @@ class VprContext : public Context {
     const RoutingContext& routing() const { return routing_; }
     RoutingContext& mutable_routing() { return routing_; }
 
-    //Should the program pause at the next convenient time?
-    bool forced_pause() const { return force_pause_; }
-    void set_forced_pause(bool val) { force_pause_ = val; }
-
   private:
     DeviceContext device_;
 
@@ -355,10 +368,6 @@ class VprContext : public Context {
     ClusteringContext clustering_;
     PlacementContext placement_;
     RoutingContext routing_;
-
-    //We use a volatile sig_atomic_t to ensures signals
-    //set the value atomicly
-    volatile sig_atomic_t force_pause_ = false;
 };
 
 #endif

@@ -39,6 +39,7 @@ addons:
     - libxml++2.6-dev
     - perl
     - python
+    - python-lxml
     - texinfo
     - time
     - valgrind
@@ -75,8 +76,6 @@ stages:
   #   if: type != cron
   - name: Test
     if: type != cron
-  - name: Build Compatibility
-    if: type != cron
   - name: Build Coverity
     if: type = cron
 
@@ -104,67 +103,68 @@ jobs:
       name: "Basic Regression Tests"
       script:
         - ./.github/travis/build.sh
-        - ./run_reg_test.pl vtr_reg_basic -j2
+        - ./run_reg_test.pl vtr_reg_basic -show_failures -j2
     - stage: Test
       name: "Strong Regression Tests"
       script:
         - ./.github/travis/build.sh
-        - travis_wait 30 ./run_reg_test.pl vtr_reg_strong -j2
+        - travis_wait 30 ./run_reg_test.pl vtr_reg_strong -show_failures -j2
     - stage: Test
       name: "Basic Valgrind Memory Tests"
       script:
         - ./.github/travis/build.sh
-        - ./run_reg_test.pl vtr_reg_valgrind_small -j2
+        - ./run_reg_test.pl vtr_reg_valgrind_small -show_failures -j2
     - stage: Test
       name: "ODIN-II Micro Tests"
       script:
         - ./.github/travis/build.sh
-        - ./run_reg_test.pl odin_reg_micro -j2
+        - ./run_reg_test.pl odin_reg_micro -show_failures -j2
 
-    - stage: Build Compatibility
-      name: "GCC 5 (Ubuntu Xenial - 16.04)"
+    - stage: Test
+      name: "Build Compatibility: GCC 5 (Ubuntu Xenial - 16.04)"
       env:
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
         - BUILD_TYPE=release_strict
       script:
         - ./.github/travis/build.sh
-    - stage: Build Compatibility
-      name: "GCC 6 (Debian Stretch)"
+    - stage: Test
+      name: "Build Compatibility: GCC 6 (Debian Stretch)"
       env:
         - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
         - BUILD_TYPE=release_strict
       script:
         - ./.github/travis/build.sh
-    - stage: Build Compatibility
-      name: "GCC 7 (Ubuntu Bionic - 18.04)"
+    - stage: Test
+      name: "Build Compatibility: GCC 7 (Ubuntu Bionic - 18.04)"
       env:
          - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
       script:
         - ./.github/travis/build.sh
-    - stage: Build Compatibility
-      name: "GCC 8 (Ubuntu Latest)"
+    - stage: Test
+      name: "Build Compatibility: GCC 8 (Ubuntu Latest)"
       env:
          - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
       script:
         - ./.github/travis/build.sh
-    - stage: Build Compatibility
-      name: "GCC 9 (Latest Release)"
+    - stage: Test
+      name: "Build Compatibility: GCC 9 (Latest Release)"
       env:
          - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
       script:
         - ./.github/travis/build.sh
-    - stage: Build Compatibility
-      name: "clang-6.0 (Debian + Ubuntu common)"
+    - stage: Test
+      name: "Build Compatibility: Clang 6 (Debian + Ubuntu common)"
       env:
          - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
       script:
         - ./.github/travis/build.sh
-    - stage: Build Compatibility
-      name: "clang-8 (Latest Release)"
+    - stage: Test
+      name: "Build Compatibility: Clang 8 (Latest Release)"
       env:
          - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
       script:
         - ./.github/travis/build.sh
+
     - stage: Build Coverity
       name: "Coverity Scan"
       env:

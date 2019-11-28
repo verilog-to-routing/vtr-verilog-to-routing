@@ -14,7 +14,6 @@
 
 #include <cstdio>
 #include <cstring>
-using namespace std;
 
 #include "vtr_assert.h"
 #include "vtr_memory.h"
@@ -58,20 +57,20 @@ static void flush_intermediate_queues(t_cluster_placement_stats* cluster_placeme
  */
 t_cluster_placement_stats* alloc_and_load_cluster_placement_stats() {
     t_cluster_placement_stats* cluster_placement_stats_list;
-    int i;
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    cluster_placement_stats_list = (t_cluster_placement_stats*)vtr::calloc(device_ctx.num_block_types,
+    cluster_placement_stats_list = (t_cluster_placement_stats*)vtr::calloc(device_ctx.logical_block_types.size(),
                                                                            sizeof(t_cluster_placement_stats));
-    for (i = 0; i < device_ctx.num_block_types; i++) {
-        if (device_ctx.EMPTY_TYPE != &device_ctx.block_types[i]) {
-            cluster_placement_stats_list[i].valid_primitives = (t_cluster_placement_primitive**)vtr::calloc(
-                get_max_primitives_in_pb_type(device_ctx.block_types[i].pb_type) + 1,
+    for (const auto& type : device_ctx.logical_block_types) {
+        if (device_ctx.EMPTY_TYPE != physical_tile_type(&type)) {
+            cluster_placement_stats_list[type.index].valid_primitives = (t_cluster_placement_primitive**)vtr::calloc(
+                get_max_primitives_in_pb_type(type.pb_type) + 1,
                 sizeof(t_cluster_placement_primitive*)); /* too much memory allocated but shouldn't be a problem */
-            cluster_placement_stats_list[i].curr_molecule = nullptr;
-            load_cluster_placement_stats_for_pb_graph_node(&cluster_placement_stats_list[i],
-                                                           device_ctx.block_types[i].pb_graph_head);
+
+            cluster_placement_stats_list[type.index].curr_molecule = nullptr;
+            load_cluster_placement_stats_for_pb_graph_node(&cluster_placement_stats_list[type.index],
+                                                           type.pb_graph_head);
         }
     }
     return cluster_placement_stats_list;
@@ -223,38 +222,38 @@ void reset_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_
  */
 void free_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_stats_list) {
     t_cluster_placement_primitive *cur, *next;
-    int i, j;
     auto& device_ctx = g_vpr_ctx.device();
 
-    for (i = 0; i < device_ctx.num_block_types; i++) {
-        cur = cluster_placement_stats_list[i].tried;
+    for (const auto& type : device_ctx.logical_block_types) {
+        int index = type.index;
+        cur = cluster_placement_stats_list[index].tried;
         while (cur != nullptr) {
             next = cur->next_primitive;
             free(cur);
             cur = next;
         }
-        cur = cluster_placement_stats_list[i].in_flight;
+        cur = cluster_placement_stats_list[index].in_flight;
         while (cur != nullptr) {
             next = cur->next_primitive;
             free(cur);
             cur = next;
         }
-        cur = cluster_placement_stats_list[i].invalid;
+        cur = cluster_placement_stats_list[index].invalid;
         while (cur != nullptr) {
             next = cur->next_primitive;
             free(cur);
             cur = next;
         }
-        for (j = 0; j < cluster_placement_stats_list[i].num_pb_types; j++) {
-            cur = cluster_placement_stats_list[i].valid_primitives[j]->next_primitive;
+        for (int j = 0; j < cluster_placement_stats_list[index].num_pb_types; j++) {
+            cur = cluster_placement_stats_list[index].valid_primitives[j]->next_primitive;
             while (cur != nullptr) {
                 next = cur->next_primitive;
                 free(cur);
                 cur = next;
             }
-            free(cluster_placement_stats_list[i].valid_primitives[j]);
+            free(cluster_placement_stats_list[index].valid_primitives[j]);
         }
-        free(cluster_placement_stats_list[i].valid_primitives);
+        free(cluster_placement_stats_list[index].valid_primitives);
     }
     free(cluster_placement_stats_list);
 }

@@ -34,7 +34,7 @@ function simple_func;
 	input in3;
 	input in4;
 
-	simple_func <= in1[1] & in2[0] | in3 ^ in4;
+	simple_func = in1[1] & in2[0] | in3 ^ in4;
 endfunction
 
 assign part1 = simple_func(a_in[`BITS-1:0], b_in[`BITS-1:0], c_in[0], d_in[0]) & a_in;

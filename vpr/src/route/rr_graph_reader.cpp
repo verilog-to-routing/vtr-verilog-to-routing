@@ -46,9 +46,6 @@
 
 #include "rr_graph_reader.h"
 
-using namespace std;
-using namespace pugiutil;
-
 /*********************** Subroutines local to this module *******************/
 void process_switches(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void verify_segments(pugi::xml_node parent, const pugiutil::loc_data& loc_data, const std::vector<t_segment_inf>& segment_inf);
@@ -57,7 +54,7 @@ void process_blocks(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void verify_grid(pugi::xml_node parent, const pugiutil::loc_data& loc_data, const DeviceGrid& grid);
 void process_nodes(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, int* wire_to_rr_ipin_switch, const int num_rr_switches);
-void process_channels(t_chan_width& chan_width, pugi::xml_node parent, const pugiutil::loc_data& loc_data);
+void process_channels(t_chan_width& chan_width, const DeviceGrid& grid, pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void process_rr_node_indices(const DeviceGrid& grid);
 void process_seg_id(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void set_cost_indices(pugi::xml_node parent, const pugiutil::loc_data& loc_data, const bool is_global_graph, const int num_seg_types);
@@ -69,7 +66,6 @@ void set_cost_indices(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
  * structures as well*/
 void load_rr_file(const t_graph_type graph_type,
                   const DeviceGrid& grid,
-                  t_chan_width nodes_per_chan,
                   const std::vector<t_segment_inf>& segment_inf,
                   const enum e_base_cost_type base_cost_type,
                   int* wire_to_rr_ipin_switch,
@@ -97,7 +93,7 @@ void load_rr_file(const t_graph_type graph_type,
         auto rr_graph = get_single_child(doc, "rr_graph", loc_data);
 
         //Check for errors
-        Prop = get_attribute(rr_graph, "tool_version", loc_data, OPTIONAL).as_string(nullptr);
+        Prop = get_attribute(rr_graph, "tool_version", loc_data, pugiutil::OPTIONAL).as_string(nullptr);
         if (Prop != nullptr) {
             if (strcmp(Prop, vtr::VERSION) != 0) {
                 VTR_LOG("\n");
@@ -106,8 +102,8 @@ void load_rr_file(const t_graph_type graph_type,
                 VTR_LOG("\n");
             }
         }
-        Prop = get_attribute(rr_graph, "tool_comment", loc_data, OPTIONAL).as_string(nullptr);
-        string correct_string = "Generated from arch file ";
+        Prop = get_attribute(rr_graph, "tool_comment", loc_data, pugiutil::OPTIONAL).as_string(nullptr);
+        std::string correct_string = "Generated from arch file ";
         correct_string += get_arch_file_name();
         if (Prop != nullptr) {
             if (Prop != correct_string) {
@@ -131,7 +127,8 @@ void load_rr_file(const t_graph_type graph_type,
         VTR_LOG("Starting build routing resource graph...\n");
 
         next_component = get_first_child(rr_graph, "channels", loc_data);
-        process_channels(nodes_per_chan, next_component, loc_data);
+        t_chan_width nodes_per_chan;
+        process_channels(nodes_per_chan, grid, next_component, loc_data);
 
         /* Decode the graph_type */
         bool is_global_graph = (GRAPH_GLOBAL == graph_type ? true : false);
@@ -177,10 +174,11 @@ void load_rr_file(const t_graph_type graph_type,
         process_seg_id(next_component, loc_data);
 
         device_ctx.chan_width = nodes_per_chan;
+        device_ctx.read_rr_graph_filename = std::string(read_rr_graph_name);
 
-        check_rr_graph(graph_type, grid, device_ctx.block_types);
+        check_rr_graph(graph_type, grid, device_ctx.physical_tile_types);
 
-    } catch (XmlError& e) {
+    } catch (pugiutil::XmlError& e) {
         vpr_throw(VPR_ERROR_ROUTE, read_rr_graph_name, e.line(), "%s", e.what());
     }
 }
@@ -195,7 +193,7 @@ void process_switches(pugi::xml_node parent, const pugiutil::loc_data& loc_data)
     while (Switch) {
         int iSwitch = get_attribute(Switch, "id", loc_data).as_int();
         auto& rr_switch = device_ctx.rr_switch_inf[iSwitch];
-        const char* name = get_attribute(Switch, "name", loc_data, OPTIONAL).as_string(nullptr);
+        const char* name = get_attribute(Switch, "name", loc_data, pugiutil::OPTIONAL).as_string(nullptr);
         bool found_arch_name = false;
         if (name != nullptr) {
             for (int i = 0; i < device_ctx.num_arch_switches; ++i) {
@@ -229,7 +227,7 @@ void process_switches(pugi::xml_node parent, const pugiutil::loc_data& loc_data)
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid switch type '%s'\n", switch_type_str.c_str());
         }
         rr_switch.set_type(switch_type);
-        SwitchSubnode = get_single_child(Switch, "timing", loc_data, OPTIONAL);
+        SwitchSubnode = get_single_child(Switch, "timing", loc_data, pugiutil::OPTIONAL);
         if (SwitchSubnode) {
             rr_switch.R = get_attribute(SwitchSubnode, "R", loc_data).as_float();
             rr_switch.Cin = get_attribute(SwitchSubnode, "Cin", loc_data).as_float();
@@ -266,9 +264,9 @@ void process_seg_id(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
         id = get_attribute(rr_node, "id", loc_data).as_int();
         auto& node = device_ctx.rr_nodes[id];
 
-        segmentSubnode = get_single_child(rr_node, "segment", loc_data, OPTIONAL);
+        segmentSubnode = get_single_child(rr_node, "segment", loc_data, pugiutil::OPTIONAL);
         if (segmentSubnode) {
-            attribute = get_attribute(segmentSubnode, "segment_id", loc_data, OPTIONAL);
+            attribute = get_attribute(segmentSubnode, "segment_id", loc_data, pugiutil::OPTIONAL);
             if (attribute) {
                 int seg_id = get_attribute(segmentSubnode, "segment_id", loc_data).as_int(0);
                 device_ctx.rr_indexed_data[node.cost_index()].seg_index = seg_id;
@@ -356,7 +354,7 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
         node.set_ptc_num(get_attribute(locSubnode, "ptc", loc_data).as_int());
 
         //-------
-        timingSubnode = get_single_child(rr_node, "timing", loc_data, OPTIONAL);
+        timingSubnode = get_single_child(rr_node, "timing", loc_data, pugiutil::OPTIONAL);
 
         float R = 0.;
         float C = 0.;
@@ -372,7 +370,7 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
         //  <metadata>
         //    <meta name='grid_prefix' >CLBLL_L_</meta>
         //  </metadata>
-        auto metadata = get_single_child(rr_node, "metadata", loc_data, OPTIONAL);
+        auto metadata = get_single_child(rr_node, "metadata", loc_data, pugiutil::OPTIONAL);
         if (metadata) {
             auto rr_node_meta = get_first_child(metadata, "meta", loc_data);
             while (rr_node_meta) {
@@ -396,7 +394,7 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, in
 
     edges = get_first_child(parent, "edge", loc_data);
     //count the number of edges and store it in a vector
-    vector<int> num_edges_for_node;
+    std::vector<size_t> num_edges_for_node;
     num_edges_for_node.resize(device_ctx.rr_nodes.size(), 0);
 
     while (edges) {
@@ -408,12 +406,17 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, in
         }
 
         num_edges_for_node[source_node]++;
-        device_ctx.rr_nodes[source_node].set_num_edges(num_edges_for_node[source_node]);
         edges = edges.next_sibling(edges.name());
     }
 
     //reset this vector in order to start count for num edges again
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
+        if (num_edges_for_node[inode] > std::numeric_limits<t_edge_size>::max()) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "source node %d edge count %d is too high",
+                            inode, num_edges_for_node[inode]);
+        }
+        device_ctx.rr_nodes[inode].set_num_edges(num_edges_for_node[inode]);
         num_edges_for_node[inode] = 0;
     }
 
@@ -424,7 +427,7 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, in
     std::vector<int> count_for_wire_to_ipin_switches;
     count_for_wire_to_ipin_switches.resize(num_rr_switches, 0);
     //first is index, second is count
-    pair<int, int> most_frequent_switch(-1, 0);
+    std::pair<int, int> most_frequent_switch(-1, 0);
 
     while (edges) {
         size_t source_node = get_attribute(edges, "src_node", loc_data).as_uint();
@@ -459,7 +462,7 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, in
         device_ctx.rr_nodes[source_node].set_edge_switch(num_edges_for_node[source_node], switch_id);
 
         // Read the metadata for the edge
-        auto metadata = get_single_child(edges, "metadata", loc_data, OPTIONAL);
+        auto metadata = get_single_child(edges, "metadata", loc_data, pugiutil::OPTIONAL);
         if (metadata) {
             auto edges_meta = get_first_child(metadata, "meta", loc_data);
             while (edges_meta) {
@@ -481,7 +484,7 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, in
 }
 
 /* All channel info is read in and loaded into device_ctx.chan_width*/
-void process_channels(t_chan_width& chan_width, pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
+void process_channels(t_chan_width& chan_width, const DeviceGrid& grid, pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
     pugi::xml_node channel, channelLists;
 
     channel = get_first_child(parent, "channel", loc_data);
@@ -491,6 +494,8 @@ void process_channels(t_chan_width& chan_width, pugi::xml_node parent, const pug
     chan_width.y_min = get_attribute(channel, "y_min", loc_data).as_uint();
     chan_width.x_max = get_attribute(channel, "x_max", loc_data).as_uint();
     chan_width.y_max = get_attribute(channel, "y_max", loc_data).as_uint();
+    chan_width.x_list.resize(grid.height());
+    chan_width.y_list.resize(grid.width());
 
     channelLists = get_first_child(parent, "x_list", loc_data);
     while (channelLists) {
@@ -565,7 +570,7 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
     Block = get_first_child(parent, "block_type", loc_data);
     auto& device_ctx = g_vpr_ctx.mutable_device();
     while (Block) {
-        auto block_info = device_ctx.block_types[get_attribute(Block, "id", loc_data).as_int(0)];
+        auto block_info = device_ctx.physical_tile_types[get_attribute(Block, "id", loc_data).as_int(0)];
 
         const char* name = get_attribute(Block, "name", loc_data).as_string(nullptr);
 
@@ -583,9 +588,9 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
                             "Architecture file does not match RR graph's block height");
         }
 
-        pin_class = get_first_child(Block, "pin_class", loc_data, OPTIONAL);
+        pin_class = get_first_child(Block, "pin_class", loc_data, pugiutil::OPTIONAL);
 
-        block_info.num_class = count_children(Block, "pin_class", loc_data, OPTIONAL);
+        block_info.num_class = count_children(Block, "pin_class", loc_data, pugiutil::OPTIONAL);
 
         for (int classNum = 0; classNum < block_info.num_class; classNum++) {
             auto& class_inf = block_info.class_inf[classNum];
@@ -615,7 +620,7 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
                                 "Incorrect number of pins in %d pin_class in block %s", classNum, block_info.name);
             }
 
-            pin = get_first_child(pin_class, "pin", loc_data, OPTIONAL);
+            pin = get_first_child(pin_class, "pin", loc_data, pugiutil::OPTIONAL);
             while (pin) {
                 auto num = get_attribute(pin, "ptc", loc_data).as_uint();
                 auto index = pin_index_by_num(class_inf, num);
@@ -651,7 +656,7 @@ void verify_segments(pugi::xml_node parent, const pugiutil::loc_data& loc_data, 
                             "Architecture file does not match RR graph's segment name: arch uses %s, RR graph uses %s", segment_inf[segNum].name.c_str(), name);
         }
 
-        subnode = get_single_child(parent, "timing", loc_data, OPTIONAL);
+        subnode = get_single_child(parent, "timing", loc_data, pugiutil::OPTIONAL);
 
         if (subnode) {
             if (segment_inf[segNum].Rmetal != get_attribute(subnode, "R_per_meter", loc_data).as_float(0)) {
@@ -856,21 +861,22 @@ void set_cost_indices(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
     /*Go through each rr_node and use the segment ids to set CHANX and CHANY cost index*/
     rr_node = get_first_child(parent, "node", loc_data);
 
-    for (size_t i = 0; i < device_ctx.rr_nodes.size(); i++) {
-        auto& node = device_ctx.rr_nodes[i];
+    while (rr_node) {
+        int inode = get_attribute(rr_node, "id", loc_data).as_int();
+        auto& node = device_ctx.rr_nodes[inode];
 
         /*CHANX and CHANY cost index is dependent on the segment id*/
 
-        segmentSubnode = get_single_child(rr_node, "segment", loc_data, OPTIONAL);
+        segmentSubnode = get_single_child(rr_node, "segment", loc_data, pugiutil::OPTIONAL);
         if (segmentSubnode) {
-            attribute = get_attribute(segmentSubnode, "segment_id", loc_data, OPTIONAL);
+            attribute = get_attribute(segmentSubnode, "segment_id", loc_data, pugiutil::OPTIONAL);
             if (attribute) {
                 int seg_id = get_attribute(segmentSubnode, "segment_id", loc_data).as_int(0);
                 if (is_global_graph) {
                     node.set_cost_index(0);
-                } else if (device_ctx.rr_nodes[i].type() == CHANX) {
+                } else if (node.type() == CHANX) {
                     node.set_cost_index(CHANX_COST_INDEX_START + seg_id);
-                } else if (device_ctx.rr_nodes[i].type() == CHANY) {
+                } else if (node.type() == CHANY) {
                     node.set_cost_index(CHANX_COST_INDEX_START + num_seg_types + seg_id);
                 }
             }

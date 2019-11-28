@@ -34,23 +34,25 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "parse_making_ast.h"
 #include "string_cache.h"
 #include "verilog_bison_user_defined.h"
-#include "verilog_preprocessor.h"
+#include "verilog_bison.h"
 #include "hard_blocks.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
 
-extern int yylineno;
+#include "scope_util.h"
 
 //for module
-STRING_CACHE **defines_for_module_sc;
+
 STRING_CACHE *modules_inputs_sc;
 STRING_CACHE *modules_outputs_sc;
 STRING_CACHE *module_instances_sc;
 
 //for function
-STRING_CACHE **defines_for_function_sc;
 STRING_CACHE *functions_inputs_sc;
 STRING_CACHE *functions_outputs_sc;
+
+STRING_CACHE *tasks_inputs_sc;
+STRING_CACHE *tasks_outputs_sc;
 
 STRING_CACHE *module_names_to_idx;
 STRING_CACHE *instantiated_modules;
@@ -62,78 +64,59 @@ int size_function_instantiations;
 ast_node_t **function_instantiations_instance_by_module;
 int size_function_instantiations_by_module;
 
+ast_node_t **task_instantiations_instance;
+int size_task_instantiations;
+ast_node_t **task_instantiations_instance_by_module;
+int size_task_instantiations_by_module;
+
 long num_modules;
 ast_node_t **ast_modules;
 
 int num_functions;
 ast_node_t **ast_functions;
+
+long num_tasks;
+ast_node_t **ast_tasks;
+
 ast_node_t **all_file_items_list;
 int size_all_file_items_list;
-
-short to_view_parse;
 
 /*
  * File-scope function declarations
  */
 ast_node_t *newFunctionAssigning(ast_node_t *expression1, ast_node_t *expression2, int line_number);
 ast_node_t *resolve_ports(ids top_type, ast_node_t *symbol_list);
+bool is_valid_identifier(char *str);
 
 /*---------------------------------------------------------------------------------------------
  * (function: parse_to_ast)
  *-------------------------------------------------------------------------------------------*/
 void parse_to_ast()
 {
-	extern FILE *yyin;
-	extern int yylineno;
+	extern void push_include(const char *file_name);
 
-	/* hooks into macro at the top of verilog_flex.l that shows the tokens as they're parsed.  Set to true if you want to see it go...*/
-	to_view_parse = configuration.print_parse_tokens;
-
-	/* initialize the parser */
-	init_veri_preproc();
 
 	/* read all the files in the configuration file */
-	current_parse_file =0;
-	while (current_parse_file < configuration.list_of_file_names.size())
+	current_parse_file = configuration.list_of_file_names.size()-1;
+	int parse_counter = current_parse_file;
+
+	while (parse_counter >= 0)
 	{
-		assert_supported_file_extension(configuration.list_of_file_names[current_parse_file], current_parse_file);
-
-		yyin = fopen(configuration.list_of_file_names[current_parse_file].c_str(), "r");
-		if (yyin == NULL)
-		{
-			error_message(ARG_ERROR, -1, -1, "cannot open file: %s\n", configuration.list_of_file_names[current_parse_file].c_str());
-		}
-
-		yyin = veri_preproc(yyin);
-
-		/* reset the line count */
-		yylineno = 0;
-
-		/* setup the local parser structures for a file */
-		init_parser_for_file();
-		/* parse next file */
-		yyparse();
-
-		fclose(yyin);
-		current_parse_file++;
+		push_include(configuration.list_of_file_names[parse_counter].c_str());
+		parse_counter--;
 	}
 
-	/* clean up all the structures in the parser */
-	cleanup_veri_preproc();
+	current_parse_file = 0;
+
+	/* parse all the files */
+	yyparse();
+
+	/* verify that the parser did not trigger delayed errors */
+	verify_delayed_error();
 
 	/* for error messages - this is in case we use any of the parser functions after parsing (i.e. create_case_control_signals()) */
 	current_parse_file = -1;
 }
-
-/* --------------------------------------------------------------------------------------------
- --------------------------------------------------------------------------------------------
- --------------------------------------------------------------------------------------------
-BASIC PARSING FUNCTIONS
- Assume that all `defines are constants so we can change the constant into a number (see def_reduct by performing a search in this file)
- --------------------------------------------------------------------------------------------
- --------------------------------------------------------------------------------------------
- --------------------------------------------------------------------------------------------*/
-
 
 /*---------------------------------------------------------------------------------------------
  * (function: init_parser)
@@ -141,20 +124,30 @@ BASIC PARSING FUNCTIONS
 void init_parser()
 {
 
-	defines_for_module_sc = NULL;
-
-	defines_for_function_sc = NULL;
+	/* create string caches to hookup PORTS with INPUT and OUTPUTs.  This is made per module and will be cleaned and remade at next_module */
+	modules_inputs_sc = sc_new_string_cache();
+	modules_outputs_sc = sc_new_string_cache();
+	functions_inputs_sc = sc_new_string_cache();
+	functions_outputs_sc = sc_new_string_cache();
+	tasks_inputs_sc = sc_new_string_cache();
+	tasks_outputs_sc = sc_new_string_cache();
+	instantiated_modules = sc_new_string_cache();
+	module_instances_sc = sc_new_string_cache();
 	/* record of each of the individual modules */
 	num_modules = 0; // we're going to record all the modules in a list so we can build a tree of them later
 	num_functions = 0;
+	num_tasks = 0;
 	ast_modules = NULL;
 	ast_functions = NULL;
+	ast_tasks = NULL;
 	function_instantiations_instance = NULL;
 	module_variables_not_defined = NULL;
 	size_module_variables_not_defined = 0;
   	size_function_instantiations = 0;
   	function_instantiations_instance_by_module = NULL;
 	size_function_instantiations_by_module = 0;
+	size_task_instantiations = 0;
+	size_task_instantiations_by_module = 0;
 
 	/* keeps track of all the ast roots */
 	all_file_items_list = NULL;
@@ -166,47 +159,12 @@ void init_parser()
  *-------------------------------------------------------------------------------------------*/
 void cleanup_parser()
 {
-	long i;
-
-	/* frees all the defines for module string caches (used for parameters) */
-
-	for (i = 0; i <= num_modules; i++)
-	{
-		sc_free_string_cache(defines_for_module_sc[i]);
-	}
-
-	vtr::free(defines_for_module_sc);
-
-}
-
-/*---------------------------------------------------------------------------------------------
- * (function: init_parser_for_file)
- *-------------------------------------------------------------------------------------------*/
-void init_parser_for_file()
-{
-	/* crrate a hash for defines so we can look them up when we find them */
-	defines_for_module_sc = (STRING_CACHE**)vtr::realloc(defines_for_module_sc, sizeof(STRING_CACHE*)*(num_modules+1));
-	defines_for_module_sc[num_modules] = sc_new_string_cache();
-
-	/* create string caches to hookup PORTS with INPUT and OUTPUTs.  This is made per module and will be cleaned and remade at next_module */
-	modules_inputs_sc = sc_new_string_cache();
-	modules_outputs_sc = sc_new_string_cache();
-	functions_inputs_sc = sc_new_string_cache();
-	functions_outputs_sc = sc_new_string_cache();
-	instantiated_modules = sc_new_string_cache();
-	module_instances_sc = sc_new_string_cache();
-}
-
-/*---------------------------------------------------------------------------------------------
- * (function: clean_up_parser_for_file)
- *-------------------------------------------------------------------------------------------*/
-void cleanup_parser_for_file()
-{
-	/* create string caches to hookup PORTS with INPUT and OUTPUTs.  This is made per module and will be cleaned and remade at next_module */
 	modules_inputs_sc = sc_free_string_cache(modules_inputs_sc);
 	modules_outputs_sc = sc_free_string_cache(modules_outputs_sc);
 	functions_inputs_sc = sc_free_string_cache(functions_inputs_sc);
 	functions_outputs_sc = sc_free_string_cache(functions_outputs_sc);
+	tasks_inputs_sc = sc_free_string_cache(tasks_inputs_sc);
+	tasks_outputs_sc = sc_free_string_cache(tasks_outputs_sc);
 	instantiated_modules = sc_free_string_cache(instantiated_modules);
 	module_instances_sc = sc_free_string_cache(module_instances_sc);
 }
@@ -257,22 +215,22 @@ ast_node_t *newNumberNode(char *num, int line_number)
 /*---------------------------------------------------------------------------------------------
  * (function: newList)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *newList(ids node_type, ast_node_t *child)
+ast_node_t *newList(ids node_type, ast_node_t *child, int line_number)
 {
 	/* create a node for this array reference */
-	ast_node_t* new_node = create_node_w_type(node_type, yylineno, current_parse_file);
+	ast_node_t* new_node = create_node_w_type(node_type, line_number, current_parse_file);
 	/* allocate child nodes to this node */
-	allocate_children_to_node(new_node, { child });
+	if (child) allocate_children_to_node(new_node, { child });
 
 	return new_node;
 }
 
-ast_node_t *newfunctionList(ids node_type, ast_node_t *child)
+ast_node_t *newfunctionList(ids node_type, ast_node_t *child, int line_number)
 {
     /* create a output node for this array reference that is going to be the first child */
-   	ast_node_t* output_node = create_node_w_type(IDENTIFIERS, yylineno, current_parse_file);
+   	ast_node_t* output_node = create_node_w_type(IDENTIFIERS, line_number, current_parse_file);
     /* create a node for this array reference */
-	ast_node_t* new_node = create_node_w_type(node_type, yylineno, current_parse_file);
+	ast_node_t* new_node = create_node_w_type(node_type, line_number, current_parse_file);
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, { output_node, child });
 
@@ -285,7 +243,7 @@ ast_node_t *newfunctionList(ids node_type, ast_node_t *child)
 ast_node_t *newList_entry(ast_node_t *list, ast_node_t *child)
 {
 	/* allocate child nodes to this node */
-	add_child_to_node(list, child);
+	if (child) add_child_to_node(list, child);
 
 	return list;
 }
@@ -293,10 +251,10 @@ ast_node_t *newList_entry(ast_node_t *list, ast_node_t *child)
 /*---------------------------------------------------------------------------------------------
  * (function: newListReplicate)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child)
+ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child, int line_number)
 {
 	/* create a node for this array reference */
-	ast_node_t* new_node = create_node_w_type(REPLICATE, yylineno, current_parse_file);
+	ast_node_t* new_node = create_node_w_type(REPLICATE, line_number, current_parse_file);
 
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, { exp, child });
@@ -304,7 +262,26 @@ ast_node_t *newListReplicate(ast_node_t *exp, ast_node_t *child)
 	return new_node;
 }
 
-static ast_node_t *resolve_symbol_node(ids top_type, ast_node_t *symbol_node)
+/*---------------------------------------------------------------------------------------------
+ * (function: newBlock)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *newBlock(char *id, ast_node_t *block_node)
+{
+	oassert(block_node->type == BLOCK);
+	if(id)
+	{
+		block_node->types.identifier = id;
+		block_node->types.scope = pop_scope();
+	}
+	else
+	{
+		merge_top_scopes();
+	}
+
+	return block_node;
+}
+
+static ast_node_t *resolve_symbol_node(ast_node_t *symbol_node)
 {
 	ast_node_t *to_return = NULL;
 
@@ -313,17 +290,11 @@ static ast_node_t *resolve_symbol_node(ids top_type, ast_node_t *symbol_node)
 		case IDENTIFIERS:
 		{
 			ast_node_t *newNode = NULL;
-			if(top_type == MODULE) 
+
+			long sc_spot = sc_lookup_string(current_scope->param_sc, symbol_node->types.identifier);
+			if(sc_spot != -1)
 			{
-				long sc_spot = sc_lookup_string(defines_for_module_sc[num_modules], symbol_node->types.identifier);
-				if(sc_spot != -1)
-					newNode = (ast_node_t *)defines_for_module_sc[num_modules]->data[sc_spot];
-			}
-       		else if(top_type == FUNCTION) 
-			{
-				long sc_spot = sc_lookup_string(defines_for_function_sc[num_functions], symbol_node->types.identifier);
-				if (sc_spot != -1)
-					newNode = (ast_node_t *)defines_for_function_sc[num_functions]->data[sc_spot];
+				newNode = (ast_node_t *)current_scope->param_sc->data[sc_spot];
 			}
 
 			if (newNode && newNode->types.variable.is_parameter == true)
@@ -367,7 +338,7 @@ ast_node_t *resolve_ports(ids top_type, ast_node_t *symbol_list)
 
 			if (!unprocessed_ports)
 			{
-				unprocessed_ports = newList(VAR_DECLARE_LIST, this_port);
+				unprocessed_ports = newList(VAR_DECLARE_LIST, this_port, this_port->line_number);
 			} 
 			else 
 			{
@@ -394,17 +365,17 @@ ast_node_t *resolve_ports(ids top_type, ast_node_t *symbol_list)
 				/* range */
 				if (symbol_list->children[j]->children[1] == NULL)
 				{
-					symbol_list->children[j]->children[1] = this_port->children[1];
-					symbol_list->children[j]->children[2] = this_port->children[2];
-					symbol_list->children[j]->children[3] = this_port->children[3];
-					symbol_list->children[j]->children[4] = this_port->children[4];
+					symbol_list->children[j]->children[1] = ast_node_deep_copy(this_port->children[1]);
+					symbol_list->children[j]->children[2] = ast_node_deep_copy(this_port->children[2]);
+					symbol_list->children[j]->children[3] = ast_node_deep_copy(this_port->children[3]);
+					symbol_list->children[j]->children[4] = ast_node_deep_copy(this_port->children[4]);
 
 					if (this_port->num_children == 8)
 					{
 						symbol_list->children[j]->children = (ast_node_t**) realloc(symbol_list->children[j]->children, sizeof(ast_node_t*)*8);
 						symbol_list->children[j]->children[7] = symbol_list->children[j]->children[5];
-						symbol_list->children[j]->children[5] = this_port->children[5];
-						symbol_list->children[j]->children[6] = this_port->children[6];
+						symbol_list->children[j]->children[5] = ast_node_deep_copy(this_port->children[5]);
+						symbol_list->children[j]->children[6] = ast_node_deep_copy(this_port->children[6]);
 					}
 				}
 
@@ -458,6 +429,28 @@ ast_node_t *resolve_ports(ids top_type, ast_node_t *symbol_list)
 					error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, "No matching declaration for port %s\n", symbol_list->children[i]->children[0]->types.identifier);
 				}
 			}
+			else if(top_type == TASK)
+			{
+				/* find the related INPUT or OUTPUT definition and store that instead */
+				if ((sc_spot = sc_lookup_string(tasks_inputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
+				{
+					oassert(((ast_node_t*)tasks_inputs_sc->data[sc_spot])->type == VAR_DECLARE);
+					free_whole_tree(symbol_list->children[i]);
+					symbol_list->children[i] = (ast_node_t*)tasks_inputs_sc->data[sc_spot];
+					oassert(symbol_list->children[i]->types.variable.is_input);
+				}
+				else if ((sc_spot = sc_lookup_string(tasks_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1)
+				{
+					oassert(((ast_node_t*)tasks_outputs_sc->data[sc_spot])->type == VAR_DECLARE);
+					free_whole_tree(symbol_list->children[i]);
+					symbol_list->children[i] = (ast_node_t*)tasks_outputs_sc->data[sc_spot];
+					oassert(symbol_list->children[i]->types.variable.is_output);
+				}
+				else
+				{
+					error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, "No matching declaration for port %s\n", symbol_list->children[i]->children[0]->types.identifier);
+				}
+			}
 
 			symbol_list->children[i]->types.variable.is_port = true;
 		}
@@ -468,10 +461,27 @@ ast_node_t *resolve_ports(ids top_type, ast_node_t *symbol_list)
 
 ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_node_t *port, bool is_signed)
 {
+	oassert((top_type == MODULE || top_type == FUNCTION || top_type == TASK) 
+		&& "can only use MODULE, FUNCTION ot TASK as top type");
+
 	long sc_spot;
+	const char *top_type_name = NULL;
 	STRING_CACHE *this_inputs_sc = NULL;
 	STRING_CACHE *this_outputs_sc = NULL;
-	const char *top_type_name = (top_type == MODULE) ? "Module" : "Function";
+
+	if(top_type == MODULE)
+	{
+		top_type_name = "Module";
+	}
+	else if(top_type == FUNCTION)
+	{
+		top_type_name = "Function";
+	}
+	else 
+	{
+		top_type_name = "Task";
+	}
+
 	ids temp_net_id = NO_ID;
 
 	if (port->types.variable.is_port)
@@ -489,6 +499,11 @@ ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
 	{
 		this_inputs_sc = functions_inputs_sc;
 		this_outputs_sc = functions_outputs_sc;
+	}
+	else if(top_type == TASK)
+	{
+		this_inputs_sc = tasks_inputs_sc;
+		this_outputs_sc = tasks_outputs_sc;
 	}
 
 	/* look for processed inputs with this name */
@@ -681,41 +696,8 @@ ast_node_t *markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
 	return port;
 }
 
-ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parameter, bool is_signed)
-{
-	oassert((top_type == MODULE || top_type == FUNCTION) 
-		&& "can only use MODULE or FUNCTION as top type");
-		
-	long sc_spot;
-	STRING_CACHE **this_defines_sc = NULL;
-	long this_num_modules = 0;
-
-	if (top_type == MODULE)
-	{
-		this_defines_sc = defines_for_module_sc;
-		this_num_modules = num_modules;
-
-	}
-	else if (top_type == FUNCTION)
-	{
-		this_defines_sc = defines_for_function_sc;
-		this_num_modules = num_functions;
-	}
-
-	oassert(this_defines_sc);
-	oassert(this_defines_sc[this_num_modules]);
-
-	/* create an entry in the symbol table for this parameter */
-	if ((sc_spot = sc_lookup_string(this_defines_sc[this_num_modules], parameter->children[0]->types.identifier)) > -1)
-	{
-		error_message(PARSE_ERROR, parameter->children[5]->line_number, current_parse_file, 
-				"Module already has parameter with this name (%s)\n", parameter->children[0]->types.identifier);
-	}
-	sc_spot = sc_add_string(this_defines_sc[this_num_modules], parameter->children[0]->types.identifier);
-	
-	this_defines_sc[this_num_modules]->data[sc_spot] = (void*)parameter->children[5];
-
-
+ast_node_t *markAndProcessParameterWith(ids id, ast_node_t *parameter, bool is_signed)
+{	
 	if (id == PARAMETER)
 	{
 		parameter->children[5]->types.variable.is_parameter = true;
@@ -737,6 +719,20 @@ ast_node_t *markAndProcessParameterWith(ids top_type, ids id, ast_node_t *parame
 	parameter->children[5]->types.variable.is_signed = is_signed;
 	parameter->types.variable.is_signed = is_signed;
 
+	long sc_spot = -1;
+
+	oassert(current_scope->param_sc);
+
+	/* create an entry in the symbol table for this parameter */
+	if ((sc_spot = sc_lookup_string(current_scope->param_sc, parameter->children[0]->types.identifier)) > -1)
+	{
+		error_message(PARSE_ERROR, parameter->children[5]->line_number, current_parse_file, 
+				"Module already has parameter with this name (%s)\n", parameter->children[0]->types.identifier);
+	}
+	sc_spot = sc_add_string(current_scope->param_sc, parameter->children[0]->types.identifier);
+	
+	current_scope->param_sc->data[sc_spot] = (void*)parameter->children[5];
+
 	return parameter;
 }
 
@@ -751,8 +747,8 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 	{
 		if(symbol_list->children[0] && symbol_list->children[0]->children[1])
 		{
-			range_max = resolve_symbol_node(top_type, symbol_list->children[0]->children[1]);
-			range_min = resolve_symbol_node(top_type, symbol_list->children[0]->children[2]);
+			range_max = resolve_symbol_node(symbol_list->children[0]->children[1]);
+			range_min = resolve_symbol_node(symbol_list->children[0]->children[2]);
 		}
 
 		for (i = 0; i < symbol_list->num_children; i++)
@@ -760,18 +756,18 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 
 			if ((symbol_list->children[i]->children[1] == NULL) && (symbol_list->children[i]->children[2] == NULL))
 			{
-				symbol_list->children[i]->children[1] = range_max;
-				symbol_list->children[i]->children[2] = range_min;
+				symbol_list->children[i]->children[1] = ast_node_deep_copy(range_max);
+				symbol_list->children[i]->children[2] = ast_node_deep_copy(range_min);
 			}
 			
-			if(top_type == MODULE) {
+			if(top_type == MODULE || top_type == TASK) {
 
 				switch(id)
 				{
 					case PARAMETER:
 					case LOCALPARAM:
 					{
-						markAndProcessParameterWith(top_type, id, symbol_list->children[i], is_signed);
+						markAndProcessParameterWith(id, symbol_list->children[i], is_signed);
 						break;
 					}
 					case INPUT:
@@ -818,7 +814,7 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 					case PARAMETER:
 					case LOCALPARAM:
 					{
-						markAndProcessParameterWith(top_type, id, symbol_list->children[i], is_signed);
+						markAndProcessParameterWith( id, symbol_list->children[i], is_signed);
 						break;
 					}
 					case INPUT:
@@ -859,7 +855,60 @@ ast_node_t *markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t *symbo
 						oassert(false);
 				}
 			}
+			else if (top_type == BLOCK)
+			{
+				switch(id)
+				{
+					case LOCALPARAM:
+					{
+						markAndProcessParameterWith(id, symbol_list->children[i], is_signed);
+						break;
+					}
+					case WIRE:
+						if (is_signed)
+						{
+							/* cannot support signed nets right now */
+							error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, 
+									"Odin does not handle signed nets (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
+						}
+						symbol_list->children[i]->types.variable.is_wire = true;
+						break;
+					case REG:
+						if (is_signed)
+						{
+							/* cannot support signed regs right now */
+							error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, 
+									"Odin does not handle signed regs (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
+						}
+						symbol_list->children[i]->types.variable.is_reg = true;
+						break;
+					case INTEGER:
+						oassert(is_signed && "Integers must always be signed");
+						symbol_list->children[i]->types.variable.is_signed = is_signed;			
+						symbol_list->children[i]->types.variable.is_integer = true;
+						break;
+					case GENVAR:
+						oassert(is_signed && "Genvars must always be signed");
+						symbol_list->children[i]->types.variable.is_signed = is_signed;			
+						symbol_list->children[i]->types.variable.is_genvar = true;
+						break;
+					default:
+						oassert(false);
+				}
+			}
 
+		}
+
+		/* parameters don't live in the AST */
+		if (top_type != BLOCK && (id == PARAMETER || id == LOCALPARAM))
+		{
+			for (i = 0; i < symbol_list->num_children; i++)
+			{
+				symbol_list->children[i]->children[5] = NULL;
+			}
+
+			free_whole_tree(symbol_list);
+			symbol_list = NULL;
 		}
 	}
 
@@ -1079,7 +1128,7 @@ ast_node_t *newNonBlocking(ast_node_t *expression1, ast_node_t *expression2, int
 ast_node_t *newInitial(ast_node_t *expression1, int line_number)
 {
 	/* create a node for this array reference */
-	ast_node_t* new_node = create_node_w_type(INITIALS, line_number, current_parse_file);
+	ast_node_t* new_node = create_node_w_type(INITIAL, line_number, current_parse_file);
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, { expression1 });
 
@@ -1195,21 +1244,38 @@ ast_node_t *newAlways(ast_node_t *delay_control, ast_node_t *statement, int line
 
 	return new_node;
 }
+
+ast_node_t *newStatement(ast_node_t *statement, int line_number)
+{
+	/* create a node for this array reference */
+	ast_node_t* new_node = create_node_w_type(STATEMENT, line_number, current_parse_file);
+	/* allocate child nodes to this node */
+	allocate_children_to_node(new_node, { statement });
+
+	return new_node;
+}
+
 /*---------------------------------------------------------------------------------------------
  * (function: newModuleConnection)
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newModuleConnection(char* id, ast_node_t *expression, int line_number)
 {
-	ast_node_t *symbol_node;
+	ast_node_t *symbol_node = NULL;
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(MODULE_CONNECT, line_number, current_parse_file);
-	if (id != NULL)
+	if (id)
 	{
+		if(!is_valid_identifier(id))
+		{
+			error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", id);
+		}
 		symbol_node = newSymbolNode(id, line_number);
 	}
-	else
+
+	if(expression == NULL)
 	{
-		symbol_node = NULL;
+		char *number =  vtr::strdup("'bz");
+		expression = newNumberNode(number,line_number);
 	}
 
 	/* allocate child nodes to this node */
@@ -1228,6 +1294,10 @@ ast_node_t *newModuleParameter(char* id, ast_node_t *expression, int line_number
 	ast_node_t* new_node = create_node_w_type(MODULE_PARAMETER, line_number, current_parse_file);
 	if (id != NULL)
 	{
+		if (!is_valid_identifier(id))
+		{
+			error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", id);
+		}
 		symbol_node = newSymbolNode(id, line_number);
 	}
 
@@ -1247,6 +1317,11 @@ ast_node_t *newModuleParameter(char* id, ast_node_t *expression, int line_number
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newModuleNamedInstance(char* unique_name, ast_node_t *module_connect_list, ast_node_t *module_parameter_list, int line_number)
 {
+	if (!is_valid_identifier(unique_name))
+	{
+		error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", unique_name);
+	}
+
 	ast_node_t *symbol_node = newSymbolNode(unique_name, line_number);
 
 	/* create a node for this array reference */
@@ -1258,7 +1333,7 @@ ast_node_t *newModuleNamedInstance(char* unique_name, ast_node_t *module_connect
 }
 
 /*---------------------------------------------------------------------------------------------
- * (function: newModuleNamedInstance)
+ * (function: newFunctionNamedInstance)
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newFunctionNamedInstance(ast_node_t *module_connect_list, ast_node_t *module_parameter_list, int line_number)
 {
@@ -1276,11 +1351,58 @@ ast_node_t *newFunctionNamedInstance(ast_node_t *module_connect_list, ast_node_t
 
 	return new_node;
 }
+
+/*---------------------------------------------------------------------------------------------
+ * (function: newTaskNamedInstance)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *newTaskNamedInstance(ast_node_t *module_connect_list, int line_number)
+{
+	std::string buffer("task_instance_");
+	buffer += std::to_string(size_task_instantiations_by_module);
+
+	char *unique_name = vtr::strdup(buffer.c_str());
+
+    ast_node_t *symbol_node = newSymbolNode(unique_name, line_number);
+
+    /* create a node for this array reference */
+	ast_node_t* new_node = create_node_w_type(TASK_NAMED_INSTANCE, line_number, current_parse_file);
+	/* allocate child nodes to this node */
+	allocate_children_to_node(new_node, { symbol_node, module_connect_list });
+
+	return new_node;
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: newTaskInstance)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *newTaskInstance(char *task_name, ast_node_t *task_named_instace, ast_node_t *task_parameter_list, int line_number)
+{
+	ast_node_t *symbol_node = newSymbolNode(task_name, line_number);
+
+    /* create a node for this array reference */
+	ast_node_t* new_node = create_node_w_type(TASK_INSTANCE, line_number, current_parse_file);
+	/* allocate child nodes to this node */
+	add_child_to_node_at_index(task_named_instace, {task_parameter_list}, 2);
+	allocate_children_to_node(new_node, { symbol_node, task_named_instace });
+
+	/* store the module symbol name that this calls in a list that will at the end be asociated with the module node */
+	task_instantiations_instance_by_module = (ast_node_t **)vtr::realloc(task_instantiations_instance_by_module, sizeof(ast_node_t*)*(size_task_instantiations_by_module+1));
+	task_instantiations_instance_by_module[size_task_instantiations_by_module] = new_node;
+	size_task_instantiations_by_module++;
+
+	return new_node;
+}
+	
 /*-------------------------------------------------------------------------
  * (function: newHardBlockInstance)
  *-----------------------------------------------------------------------*/
 ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named_instance, int line_number)
 {
+	if (!is_valid_identifier(module_ref_name))
+	{
+		error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", module_ref_name);
+	}
+
 	ast_node_t *symbol_node = newSymbolNode(module_ref_name, line_number);
 
 	// create a node for this array reference
@@ -1307,6 +1429,11 @@ ast_node_t *newHardBlockInstance(char* module_ref_name, ast_node_t *module_named
  *-----------------------------------------------------------------------*/
 ast_node_t *newModuleInstance(char* module_ref_name, ast_node_t *module_named_instance, int line_number)
 {
+	if (!is_valid_identifier(module_ref_name))
+	{
+		error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", module_ref_name);
+	}
+
 	long i;
 	/* create a node for this array reference */
 	ast_node_t* new_master_node = create_node_w_type(MODULE_INSTANCE, line_number, current_parse_file);
@@ -1374,6 +1501,11 @@ ast_node_t *newFunctionInstance(char* function_ref_name, ast_node_t *function_na
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newGateInstance(char* gate_instance_name, ast_node_t *expression1, ast_node_t *expression2, ast_node_t *expression3, int line_number)
 {
+	if (!is_valid_identifier(gate_instance_name))
+	{
+		error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", gate_instance_name);
+	}
+
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(GATE_INSTANCE, line_number, current_parse_file);
 	ast_node_t *symbol_node = NULL;
@@ -1385,7 +1517,7 @@ ast_node_t *newGateInstance(char* gate_instance_name, ast_node_t *expression1, a
 
 	char *newChar = vtr::strdup(expression1->types.identifier);
 	ast_node_t *newVar = newVarDeclare(newChar, NULL, NULL, NULL, NULL, NULL, line_number);
-	ast_node_t *newVarList = newList(VAR_DECLARE_LIST, newVar);
+	ast_node_t *newVarList = newList(VAR_DECLARE_LIST, newVar, line_number);
 	ast_node_t *newVarMaked = markAndProcessSymbolListWith(MODULE,WIRE, newVarList, false);
 	if(size_module_variables_not_defined == 0){
 		module_variables_not_defined = (ast_node_t **)vtr::calloc(1, sizeof(ast_node_t*));
@@ -1403,6 +1535,11 @@ ast_node_t *newGateInstance(char* gate_instance_name, ast_node_t *expression1, a
 
 ast_node_t *newMultipleInputsGateInstance(char* gate_instance_name, ast_node_t *expression1, ast_node_t *expression2, ast_node_t *expression3, int line_number)
 {
+	if (!is_valid_identifier(gate_instance_name))
+	{
+		error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", gate_instance_name);
+	}
+	
     long i;
 	/* create a node for this array reference */
 	ast_node_t* new_node = create_node_w_type(GATE_INSTANCE, line_number, current_parse_file);
@@ -1418,7 +1555,7 @@ ast_node_t *newMultipleInputsGateInstance(char* gate_instance_name, ast_node_t *
 
     ast_node_t *newVar = newVarDeclare(newChar, NULL, NULL, NULL, NULL, NULL, line_number);
 
-    ast_node_t *newVarList = newList(VAR_DECLARE_LIST, newVar);
+    ast_node_t *newVarList = newList(VAR_DECLARE_LIST, newVar, line_number);
 
     ast_node_t *newVarMarked = markAndProcessSymbolListWith(MODULE, WIRE, newVarList, false);
 
@@ -1461,10 +1598,31 @@ ast_node_t *newGate(operation_list op_id, ast_node_t *gate_instance, int line_nu
 
 
 /*---------------------------------------------------------------------------------------------
+ * (function: newDefparamVarDeclare)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t *newDefparamVarDeclare(char* symbol, ast_node_t *expression1, ast_node_t *expression2, ast_node_t *expression3, ast_node_t *expression4, ast_node_t *value, int line_number)
+{
+	ast_node_t *symbol_node = newSymbolNode(symbol, line_number);
+
+	/* create a node for this array reference */
+	ast_node_t* new_node = create_node_w_type(VAR_DECLARE, line_number, current_parse_file);
+
+	/* allocate child nodes to this node */
+	allocate_children_to_node(new_node, { symbol_node, expression1, expression2, expression3, expression4, value });
+
+	return new_node;
+}
+
+/*---------------------------------------------------------------------------------------------
  * (function: newVarDeclare)
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newVarDeclare(char* symbol, ast_node_t *expression1, ast_node_t *expression2, ast_node_t *expression3, ast_node_t *expression4, ast_node_t *value, int line_number)
 {
+	if (!is_valid_identifier(symbol))
+	{
+		error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", symbol);
+	}
+
 	ast_node_t *symbol_node = newSymbolNode(symbol, line_number);
 
 	/* create a node for this array reference */
@@ -1482,6 +1640,11 @@ ast_node_t *newVarDeclare(char* symbol, ast_node_t *expression1, ast_node_t *exp
 
 ast_node_t *newIntegerTypeVarDeclare(char* symbol, ast_node_t * /*expression1*/ , ast_node_t * /*expression2*/ , ast_node_t *expression3, ast_node_t *expression4, ast_node_t *value, int line_number)
 {
+	if (!is_valid_identifier(symbol))
+	{
+		error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", symbol);
+	}
+
 	ast_node_t *symbol_node = newSymbolNode(symbol, line_number);
 
     ast_node_t *number_node_with_value_31 = create_tree_node_number(31L, line_number,current_parse_file);
@@ -1502,6 +1665,11 @@ ast_node_t *newIntegerTypeVarDeclare(char* symbol, ast_node_t * /*expression1*/ 
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newModule(char* module_name, ast_node_t *list_of_parameters, ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number)
 {
+	if (!is_valid_identifier(module_name))
+	{
+		error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", module_name);
+	}
+
 	int i;
 	long j, k;
 	long sc_spot;
@@ -1528,10 +1696,15 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_parameters, ast_nod
 		add_child_to_node_at_index(list_of_module_items, port_declarations, 0);
 	}
 
-	/* parameters are expected to be in module items */
+
+	/* parameters don't live in the AST */
 	if (list_of_parameters)
 	{
-		add_child_to_node_at_index(list_of_module_items, list_of_parameters, 0);
+		for (i = 0; i < list_of_parameters->num_children; i++)
+		{
+			list_of_parameters->children[i]->children[5] = NULL;
+		}
+		free_whole_tree(list_of_parameters);
 	}
 
 
@@ -1543,12 +1716,16 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_parameters, ast_nod
 	{
 		new_node->types.module.is_instantiated = (sc_lookup_string(instantiated_modules, module_name) != -1);
 	}
-	new_node->types.module.index = num_modules;
+	new_node->types.scope = pop_scope();
 
 	new_node->types.function.function_instantiations_instance = function_instantiations_instance_by_module;
 	new_node->types.function.size_function_instantiations = size_function_instantiations_by_module;
 	new_node->types.function.is_instantiated = false;
-	new_node->types.function.index = num_functions;
+
+	new_node->types.task.task_instantiations_instance = task_instantiations_instance_by_module;
+	new_node->types.task.size_task_instantiations = size_task_instantiations_by_module;
+	new_node->types.task.is_instantiated = false;
+
 	/* record this module in the list of modules (for evaluation later in terms of just nodes) */
 	ast_modules = (ast_node_t **)vtr::realloc(ast_modules, sizeof(ast_node_t*)*(num_modules+1));
 	ast_modules[num_modules] = new_node;
@@ -1587,36 +1764,53 @@ ast_node_t *newModule(char* module_name, ast_node_t *list_of_parameters, ast_nod
  * ----------------------------------------------------
  * (function: newFunction)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number) //function and module declaration work the same way (Lucas Cambuim)
-{
 
+ast_node_t *newFunction(ast_node_t *function_return, ast_node_t *list_of_ports, ast_node_t *list_of_module_items, int line_number, bool automatic)
+{
 	long i,j;
 	long sc_spot;
-	ast_node_t *var_node;
-	ast_node_t *symbol_node, *output_node;
+	char *label = NULL;
+	ast_node_t *var_node = NULL;
+	ast_node_t *symbol_node = NULL;
+
+	if(automatic)
+	{
+		warning_message(PARSE_ERROR, line_number, current_parse_file, "%s",  "ODIN II does not (yet) differentiate between automatic and static tasks & functions.IGNORING ");
+	}
+
+	if(function_return->children[0]->types.variable.is_integer)
+	{
+		warning_message(PARSE_ERROR, line_number, current_parse_file,"%s", "ODIN_II does not fully support input/output integers in functions");
+	}
+
+	if(list_of_ports == NULL )
+	{
+		list_of_ports = create_node_w_type(VAR_DECLARE_LIST, line_number, current_parse_file);
+	}
+	
+	label = vtr::strdup(function_return->children[0]->children[0]->types.identifier);
+
+	var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, line_number);
+
+	add_child_to_node_at_index(list_of_ports, var_node, 0);
 
 
-	char *function_name = vtr::strdup(list_of_ports->children[0]->children[0]->types.identifier);
+	char *function_name = vtr::strdup(function_return->children[0]->children[0]->types.identifier);
 
-	output_node = newList(VAR_DECLARE_LIST, list_of_ports->children[0]);
+	if (!is_valid_identifier(function_name))
+	{
+		error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", function_name);
+	}
 
-	markAndProcessSymbolListWith(FUNCTION, OUTPUT, output_node, list_of_ports->children[0]->types.variable.is_signed);
-
-	add_child_to_node_at_index(list_of_module_items, output_node, 0);
-
-	char *label = vtr::strdup(list_of_ports->children[0]->children[0]->types.identifier);
-
-	var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, yylineno);
-
-	list_of_ports->children[0] = var_node;
+	add_child_to_node_at_index(list_of_module_items, function_return, 0);
 
 
 	for(i = 0; i < list_of_module_items->num_children; i++) {
 		if(list_of_module_items->children[i]->type == VAR_DECLARE_LIST){
 			for(j = 0; j < list_of_module_items->children[i]->num_children; j++) {
 				if(list_of_module_items->children[i]->children[j]->types.variable.is_input){
-                    label = vtr::strdup(list_of_module_items->children[i]->children[j]->children[0]->types.identifier);
-                    var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, yylineno);
+                   label = vtr::strdup(list_of_module_items->children[i]->children[j]->children[0]->types.identifier);
+                    var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, line_number);
 					newList_entry(list_of_ports,var_node);
 				}
 			}
@@ -1638,7 +1832,9 @@ ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_it
 	/* allocate child nodes to this node */
 	allocate_children_to_node(new_node, { symbol_node, list_of_ports, list_of_module_items });
 
-	/* store the list of modules this module instantiates */
+
+	/* store the list of functions this function instantiates */
+	new_node->types.scope = pop_scope();
 	new_node->types.function.function_instantiations_instance = function_instantiations_instance;
 	new_node->types.function.size_function_instantiations = size_function_instantiations;
 	new_node->types.function.is_instantiated = false;
@@ -1659,17 +1855,142 @@ ast_node_t *newFunction(ast_node_t *list_of_ports, ast_node_t *list_of_module_it
 
 	return new_node;
 }
+
+ast_node_t *newTask(char *task_name, ast_node_t *list_of_ports, ast_node_t *list_of_task_items, int line_number, bool automatic)
+{
+	long sc_spot;
+	ast_node_t *symbol_node = newSymbolNode(task_name, line_number);
+	ast_node_t *var_node = NULL;
+	ast_node_t *port_declarations = NULL;
+	char *label = NULL;
+
+	if(automatic)
+	{
+		warning_message(PARSE_ERROR, line_number, 0, "%s", "ODIN II does not (yet) differentiate between automatic and static tasks & functions. IGNORING");
+	}
+	
+	/* create a node for this array reference */
+	ast_node_t* new_node = create_node_w_type(TASK, line_number, current_parse_file);
+
+	for(int i = 0; i < list_of_task_items->num_children; i++)
+	{
+		if(list_of_task_items->children[i]->type == VAR_DECLARE_LIST)
+		{
+			for(int j = 0; j < list_of_task_items->children[i]->num_children; j++)
+			{
+				if(	   list_of_task_items->children[i]->children[j]->types.variable.is_input)
+				{
+					label = vtr::strdup(list_of_task_items->children[i]->children[j]->children[0]->types.identifier);
+                    var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, line_number);
+					var_node->types.variable.is_input = true;
+					if(list_of_ports)
+					{
+						newList_entry(list_of_ports,var_node);
+					}
+					else
+					{
+						list_of_ports = newList(VAR_DECLARE_LIST, var_node, line_number);
+					}
+				}
+				else if(list_of_task_items->children[i]->children[j]->types.variable.is_output)
+				{
+					label = vtr::strdup(list_of_task_items->children[i]->children[j]->children[0]->types.identifier);
+                    var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, line_number);
+					var_node->types.variable.is_output = true;
+					if(list_of_ports)
+					{
+						newList_entry(list_of_ports,var_node);
+					}
+					else
+					{
+						list_of_ports = newList(VAR_DECLARE_LIST, var_node, line_number);
+					}
+				}
+				else if(list_of_task_items->children[i]->children[j]->types.variable.is_inout)
+				{
+					label = vtr::strdup(list_of_task_items->children[i]->children[j]->children[0]->types.identifier);
+                    var_node = newVarDeclare(label, NULL, NULL, NULL, NULL, NULL, line_number);
+					var_node->types.variable.is_inout = true;
+					if(list_of_ports)
+					{
+						newList_entry(list_of_ports,var_node);
+					}
+					else
+					{
+						list_of_ports = newList(VAR_DECLARE_LIST, var_node, line_number);
+					}
+				}
+			}
+		}
+	}
+
+	if(list_of_ports)
+	{
+		port_declarations = resolve_ports(TASK, list_of_ports);
+	}
+	/* ports are expected to be in module items */
+	if (port_declarations)
+	{
+		add_child_to_node_at_index(list_of_task_items, port_declarations, 0);
+	}
+
+	/* allocate child nodes to this node */
+	allocate_children_to_node(new_node, { symbol_node, list_of_ports, list_of_task_items });
+
+	new_node->types.scope = pop_scope();
+	/* store the list of tasks and functions this task instantiates */
+	new_node->types.task.task_instantiations_instance = task_instantiations_instance;
+	new_node->types.task.size_task_instantiations = size_task_instantiations;
+	new_node->types.task.is_instantiated = false;
+
+	new_node->types.function.function_instantiations_instance = function_instantiations_instance;
+	new_node->types.function.size_function_instantiations = size_function_instantiations;
+	new_node->types.function.is_instantiated = false;
+
+	/* record this module in the list of modules (for evaluation later in terms of just nodes) */
+	ast_tasks = (ast_node_t **)vtr::realloc(ast_tasks, sizeof(ast_node_t*)*(num_tasks+1));
+	ast_tasks[num_tasks] = new_node;
+
+	sc_spot = sc_add_string(module_names_to_idx, task_name);
+		if (module_names_to_idx->data[sc_spot] != NULL)
+	{
+		error_message(PARSE_ERROR, line_number, current_parse_file, "task names with the same name -> %s\n", task_name);
+	}
+
+	/* store the data which is an idx here */
+	module_names_to_idx->data[sc_spot] = (void*)new_node;
+
+	/* now that we've bottom up built the parse tree for this task, go to the next task */
+	next_task();
+
+	return new_node;
+
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: next_task)
+ *-------------------------------------------------------------------------------------------*/
+void next_task()
+{
+	num_tasks++;
+
+	/* create a new list for the instantiations list */
+	task_instantiations_instance = NULL;
+	size_task_instantiations = 0;
+
+	/* old ones are done so clean */
+	sc_free_string_cache(tasks_inputs_sc);
+	sc_free_string_cache(tasks_outputs_sc);
+	/* make for next task */
+	tasks_inputs_sc = sc_new_string_cache();
+	tasks_outputs_sc = sc_new_string_cache();
+}
 /*---------------------------------------------------------------------------------------------
  * (function: next_function)
  *-------------------------------------------------------------------------------------------*/
 void next_function()
 {
 	num_functions++;
-    //num_modules++;
-
-	/* define the string cache for the next function */
-	defines_for_function_sc = (STRING_CACHE**)vtr::realloc(defines_for_function_sc, sizeof(STRING_CACHE*)*(num_functions+1));
-	defines_for_function_sc[num_functions] = sc_new_string_cache();
 
 	/* create a new list for the instantiations list */
 	function_instantiations_instance = NULL;
@@ -1691,9 +2012,6 @@ void next_module()
     num_functions = 0;
 
 	/* define the string cache for the next module */
-	defines_for_module_sc = (STRING_CACHE**)vtr::realloc(defines_for_module_sc, sizeof(STRING_CACHE*)*(num_modules+1));
-	defines_for_module_sc[num_modules] = sc_new_string_cache();
-
 	function_instantiations_instance_by_module = NULL;
 	size_function_instantiations_by_module = 0;
 
@@ -1712,41 +2030,31 @@ void next_module()
 /*--------------------------------------------------------------------------
  * (function: newDefparam)
  *------------------------------------------------------------------------*/
-ast_node_t *newDefparam(ids /*id*/, ast_node_t *val, int line_number)
+ast_node_t *newDefparam(ids top_type, ast_node_t *val, int line_number)
 {
 	ast_node_t *new_node = NULL;
 
 	if(val)
 	{
-		if(val->num_children > 1)
+		for (int i = 0; i < val->num_children; i++)
 		{
-			std::string module_instance_name = "";
-			for(long i = 0; i < val->num_children - 1; i++)
-			{
-				oassert(val->children[i]->num_children > 0);
-
-				if( i != 0 || val->num_children < 2 )
-				{
-					module_instance_name += ".";
-				}
-
-				module_instance_name += val->children[i]->children[0]->types.identifier;
-			}
-
-			new_node = val->children[(val->num_children - 1)];
+			new_node = val->children[i];
 
 			new_node->type = MODULE_PARAMETER;
-			new_node->types.variable.is_parameter = true;
-			new_node->children[5]->types.variable.is_parameter = true;
-			new_node->types.identifier = vtr::strdup(module_instance_name.c_str());
+			new_node->types.variable.is_defparam = true;
+			new_node->children[5]->types.variable.is_defparam = true;
 			new_node->line_number = line_number;
 
-			val->children[(val->num_children - 1)] = NULL;
-			val = free_whole_tree(val);			
+			/* defparams within named or generate blocks are handled during elaboration */
+			if (top_type != BLOCK)
+			{
+				long sc_spot = sc_add_string(current_scope->defparam_sc, new_node->children[0]->types.identifier);
+				current_scope->defparam_sc->data[sc_spot] = (void *)new_node;
+			}
 		}
-	}
+	}	
 
-	return new_node;
+	return val;
 }
 
 /* --------------------------------------------------------------------------------------------
@@ -1847,6 +2155,10 @@ void graphVizOutputAst_traverse_node(FILE *fp, ast_node_t *node, ast_node_t *fro
  *-------------------------------------------------------------------------------------------*/
 ast_node_t *newVarDeclare2D(char* symbol, ast_node_t *expression1, ast_node_t *expression2, ast_node_t *expression3, ast_node_t *expression4, ast_node_t *expression5, ast_node_t *expression6,ast_node_t *value, int line_number)
 {
+	if (!is_valid_identifier(symbol))
+	{
+		error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", symbol);
+	}
 	ast_node_t *symbol_node = newSymbolNode(symbol, line_number);
 
 	/* create a node for this array reference */
@@ -1882,4 +2194,25 @@ ast_node_t *newRangeRef2D(char *id, ast_node_t *expression1, ast_node_t *express
 	allocate_children_to_node(new_node, { symbol_node, expression1, expression2, expression3, expression4 });
 
 	return new_node;
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: is_valid_identifier) for identifiers
+ *-------------------------------------------------------------------------------------------*/
+bool is_valid_identifier(char *str)
+{
+	if (str)
+	{
+		int i = 0;
+		char ch = str[i];
+		while (ch != 0)
+		{
+			if (ch == '.')
+			{
+				return false;
+			}
+			ch = str[++i];
+		}
+	}
+	return true;
 }

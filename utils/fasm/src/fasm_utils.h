@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
 namespace fasm {
 
@@ -21,6 +22,18 @@ void parse_name_with_optional_index(const std::string in, std::string *name, int
 std::vector<std::string> split_fasm_entry(std::string entry,
                                                  std::string delims,
                                                  std::string ignore);
+
+// Searches for tags in given string, returns their names in a vector.
+std::vector<std::string> find_tags_in_feature (const std::string& a_String);
+
+// Substitutes tags found in a string with their values provided by the map.
+// Thorws an error if a tag is found in the string and its value is not present
+// in the map.
+//
+// a_Feature - Fasm feature string (or any other string)
+// a_Tags    - Map with tags and their values
+std::string substitute_tags (const std::string& a_Feature,
+                             const std::map<const std::string, std::string>& a_Tags);
 
 } // namespace fasm
 
