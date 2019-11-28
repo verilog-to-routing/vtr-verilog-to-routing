@@ -282,49 +282,46 @@ static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pa
 
         auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
 
-        /* Don't do IOs if the user specifies IOs; we'll read those locations later. */
-        if (!(is_io_type(pick_best_physical_type(logical_block)) && pad_loc_type == USER)) {
-            /* Randomly select a free location of the appropriate type for blk_id.
-             * We have a linearized list of all the free locations that can
-             * accommodate a block of that type in free_locations[itype].
-             * Choose one randomly and put blk_id there. Then we don't want to pick
-             * that location again, so remove it from the free_locations array.
-             */
+        /* Randomly select a free location of the appropriate type for blk_id.
+         * We have a linearized list of all the free locations that can
+         * accommodate a block of that type in free_locations[itype].
+         * Choose one randomly and put blk_id there. Then we don't want to pick
+         * that location again, so remove it from the free_locations array.
+         */
 
-            auto type = pick_placement_type(logical_block, 1, free_locations);
+        auto type = pick_placement_type(logical_block, 1, free_locations);
 
-            if (type == nullptr) {
-                VPR_FATAL_ERROR(VPR_ERROR_PLACE,
-                                "Initial placement failed.\n"
-                                "Could not place block %s (#%zu); no free locations of type %s (#%d).\n",
-                                cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), logical_block->name, logical_block->index);
-            }
-
-            itype = type->index;
-
-            t_pl_loc to;
-            initial_placement_location(free_locations, ipos, itype, to);
-
-            // Make sure that the position is EMPTY_BLOCK before placing the block down
-            VTR_ASSERT(place_ctx.grid_blocks[to.x][to.y].blocks[to.z] == EMPTY_BLOCK_ID);
-
-            place_ctx.grid_blocks[to.x][to.y].blocks[to.z] = blk_id;
-            place_ctx.grid_blocks[to.x][to.y].usage++;
-
-            place_ctx.block_locs[blk_id].loc = to;
-
-            //Mark IOs as fixed if specifying a (fixed) random placement
-            if (is_io_type(pick_best_physical_type(logical_block)) && pad_loc_type == RANDOM) {
-                place_ctx.block_locs[blk_id].is_fixed = true;
-            }
-
-            /* Ensure randomizer doesn't pick this location again, since it's occupied. Could shift all the
-             * legal positions in legal_pos to remove the entry (choice) we just used, but faster to
-             * just move the last entry in legal_pos to the spot we just used and decrement the
-             * count of free_locations. */
-            legal_pos[itype][ipos] = legal_pos[itype][free_locations[itype] - 1]; /* overwrite used block position */
-            free_locations[itype]--;
+        if (type == nullptr) {
+            VPR_FATAL_ERROR(VPR_ERROR_PLACE,
+                            "Initial placement failed.\n"
+                            "Could not place block %s (#%zu); no free locations of type %s (#%d).\n",
+                            cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), logical_block->name, logical_block->index);
         }
+
+        itype = type->index;
+
+        t_pl_loc to;
+        initial_placement_location(free_locations, ipos, itype, to);
+
+        // Make sure that the position is EMPTY_BLOCK before placing the block down
+        VTR_ASSERT(place_ctx.grid_blocks[to.x][to.y].blocks[to.z] == EMPTY_BLOCK_ID);
+
+        place_ctx.grid_blocks[to.x][to.y].blocks[to.z] = blk_id;
+        place_ctx.grid_blocks[to.x][to.y].usage++;
+
+        place_ctx.block_locs[blk_id].loc = to;
+
+        //Mark IOs as fixed if specifying a (fixed) random placement
+        if (is_io_type(pick_best_physical_type(logical_block)) && pad_loc_type == RANDOM) {
+            place_ctx.block_locs[blk_id].is_fixed = true;
+        }
+
+        /* Ensure randomizer doesn't pick this location again, since it's occupied. Could shift all the
+         * legal positions in legal_pos to remove the entry (choice) we just used, but faster to
+         * just move the last entry in legal_pos to the spot we just used and decrement the
+         * count of free_locations. */
+        legal_pos[itype][ipos] = legal_pos[itype][free_locations[itype] - 1]; /* overwrite used block position */
+        free_locations[itype]--;
     }
 }
 
@@ -394,6 +391,10 @@ void initial_placement(enum e_pad_loc_type pad_loc_type,
         place_ctx.block_locs[blk_id].loc = t_pl_loc();
     }
 
+    if (pad_loc_type == USER) {
+        read_user_pad_loc(pad_loc_file);
+    }
+
     initial_placement_pl_macros(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, free_locations);
 
     // All the macros are placed, update the legal_pos[][] array
@@ -416,10 +417,6 @@ void initial_placement(enum e_pad_loc_type pad_loc_type,
     } // Finish updating the legal_pos[][] and free_locations[] array
 
     initial_placement_blocks(free_locations, pad_loc_type);
-
-    if (pad_loc_type == USER) {
-        read_user_pad_loc(pad_loc_file);
-    }
 
     /* Restore legal_pos */
     load_legal_placement_locations();
