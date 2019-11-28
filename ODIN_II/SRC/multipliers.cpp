@@ -1456,7 +1456,7 @@ void iterate_multipliers(netlist_t *netlist)
 
 		mula = node->input_port_sizes[0];
 		mulb = node->input_port_sizes[1];
-        int mult_size = std::min<int>(mula, mulb);
+        int mult_size = std::max<int>(mula, mulb);
         bool operand_1bit = (mula == 1 || mulb == 1);
 		if (mula < mulb)
 		{
