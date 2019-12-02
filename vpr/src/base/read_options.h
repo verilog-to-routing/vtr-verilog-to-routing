@@ -118,6 +118,7 @@ struct t_options {
     argparse::ArgValue<std::string> allowed_tiles_for_delay_model;
 
     /* Router Options */
+    argparse::ArgValue<bool> disable_check_rr_graph;
     argparse::ArgValue<int> max_router_iterations;
     argparse::ArgValue<float> first_iter_pres_fac;
     argparse::ArgValue<float> initial_pres_fac;
