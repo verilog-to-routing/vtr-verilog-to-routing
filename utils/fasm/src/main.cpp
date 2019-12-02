@@ -72,6 +72,7 @@ int main(int argc, const char **argv) {
         vpr_setup.PackerOpts.doPacking    = STAGE_LOAD;
         vpr_setup.PlacerOpts.doPlacement  = STAGE_LOAD;
         vpr_setup.RouterOpts.doRouting    = STAGE_LOAD;
+        vpr_setup.RouterOpts.read_edge_metadata = true;
         vpr_setup.AnalysisOpts.doAnalysis = STAGE_SKIP;
 
         bool flow_succeeded = false;

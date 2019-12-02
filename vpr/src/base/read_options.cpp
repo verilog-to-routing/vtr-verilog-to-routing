@@ -1642,6 +1642,11 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("-2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument<bool, ParseOnOff>(args.disable_check_rr_graph, "--disable_check_rr_graph")
+        .help("Disables checking rr graph when reading from disk.")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& analysis_grp = parser.add_argument_group("analysis options");
 
     analysis_grp.add_argument<bool, ParseOnOff>(args.full_stats, "--full_stats")
