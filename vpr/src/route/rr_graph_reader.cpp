@@ -53,7 +53,7 @@ void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void process_blocks(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void verify_grid(pugi::xml_node parent, const pugiutil::loc_data& loc_data, const DeviceGrid& grid);
 void process_nodes(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
-void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, int* wire_to_rr_ipin_switch, const int num_rr_switches);
+void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, int* wire_to_rr_ipin_switch, const int num_rr_switches, bool read_edge_metadata);
 void process_channels(t_chan_width& chan_width, const DeviceGrid& grid, pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void process_rr_node_indices(const DeviceGrid& grid);
 void process_seg_id(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
@@ -69,7 +69,9 @@ void load_rr_file(const t_graph_type graph_type,
                   const std::vector<t_segment_inf>& segment_inf,
                   const enum e_base_cost_type base_cost_type,
                   int* wire_to_rr_ipin_switch,
-                  const char* read_rr_graph_name) {
+                  const char* read_rr_graph_name,
+                  bool read_edge_metadata,
+                  bool do_check_rr_graph) {
     vtr::ScopedStartFinishTimer timer("Loading routing resource graph");
 
     const char* Prop;
@@ -154,7 +156,7 @@ void load_rr_file(const t_graph_type graph_type,
         process_switches(next_component, loc_data);
 
         next_component = get_single_child(rr_graph, "rr_edges", loc_data);
-        process_edges(next_component, loc_data, wire_to_rr_ipin_switch, numSwitches);
+        process_edges(next_component, loc_data, wire_to_rr_ipin_switch, numSwitches, read_edge_metadata);
 
         //Partition the rr graph edges for efficient access to configurable/non-configurable
         //edge subsets. Must be done after RR switches have been allocated
@@ -176,7 +178,9 @@ void load_rr_file(const t_graph_type graph_type,
         device_ctx.chan_width = nodes_per_chan;
         device_ctx.read_rr_graph_filename = std::string(read_rr_graph_name);
 
-        check_rr_graph(graph_type, grid, device_ctx.physical_tile_types);
+        if (do_check_rr_graph) {
+            check_rr_graph(graph_type, grid, device_ctx.physical_tile_types);
+        }
 
     } catch (pugiutil::XmlError& e) {
         vpr_throw(VPR_ERROR_ROUTE, read_rr_graph_name, e.line(), "%s", e.what());
@@ -336,15 +340,15 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
 
         if (node.type() == IPIN || node.type() == OPIN) {
             e_side side;
-            std::string side_str = get_attribute(locSubnode, "side", loc_data).as_string();
-            if (side_str == "LEFT") {
+            const char* side_str = get_attribute(locSubnode, "side", loc_data).as_string();
+            if (strcmp(side_str, "LEFT") == 0) {
                 side = LEFT;
-            } else if (side_str == "RIGHT") {
+            } else if (strcmp(side_str, "RIGHT") == 0) {
                 side = RIGHT;
-            } else if (side_str == "TOP") {
+            } else if (strcmp(side_str, "TOP") == 0) {
                 side = TOP;
             } else {
-                VTR_ASSERT(side_str == "BOTTOM");
+                VTR_ASSERT(strcmp(side_str, "BOTTOM") == 0);
                 side = BOTTOM;
             }
             node.set_side(side);
@@ -388,7 +392,7 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
 
 /*Loads the edges information from file into vpr. Nodes and switches must be loaded
  * before calling this function*/
-void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, int* wire_to_rr_ipin_switch, const int num_rr_switches) {
+void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, int* wire_to_rr_ipin_switch, const int num_rr_switches, bool read_edge_metadata) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     pugi::xml_node edges;
 
@@ -462,16 +466,18 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, in
         device_ctx.rr_nodes[source_node].set_edge_switch(num_edges_for_node[source_node], switch_id);
 
         // Read the metadata for the edge
-        auto metadata = get_single_child(edges, "metadata", loc_data, pugiutil::OPTIONAL);
-        if (metadata) {
-            auto edges_meta = get_first_child(metadata, "meta", loc_data);
-            while (edges_meta) {
-                auto key = get_attribute(edges_meta, "name", loc_data).as_string();
+        if (read_edge_metadata) {
+            auto metadata = get_single_child(edges, "metadata", loc_data, pugiutil::OPTIONAL);
+            if (metadata) {
+                auto edges_meta = get_first_child(metadata, "meta", loc_data);
+                while (edges_meta) {
+                    auto key = get_attribute(edges_meta, "name", loc_data).as_string();
 
-                vpr::add_rr_edge_metadata(source_node, sink_node, switch_id,
-                                          key, edges_meta.child_value());
+                    vpr::add_rr_edge_metadata(source_node, sink_node, switch_id,
+                                              key, edges_meta.child_value());
 
-                edges_meta = edges_meta.next_sibling(edges_meta.name());
+                    edges_meta = edges_meta.next_sibling(edges_meta.name());
+                }
             }
         }
         num_edges_for_node[source_node]++;
