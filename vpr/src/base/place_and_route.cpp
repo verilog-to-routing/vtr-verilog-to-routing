@@ -357,7 +357,9 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                     router_opts.trim_obs_channels,
                     router_opts.clock_modeling,
                     arch->Directs, arch->num_directs,
-                    &warnings);
+                    &warnings,
+                    router_opts.read_edge_metadata,
+                    router_opts.do_check_rr_graph);
 
     init_draw_coords(final);
     restore_routing(best_routing, route_ctx.clb_opins_used_locally, saved_clb_opins_used_locally);
