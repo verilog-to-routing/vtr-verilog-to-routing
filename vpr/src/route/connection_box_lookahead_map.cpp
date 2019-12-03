@@ -915,7 +915,7 @@ static std::vector<SampleRegion> find_sample_regions(int num_segments) {
     std::map<std::tuple<int, int, int>, SamplePoint*> sample_point_index;
     for (auto& region : sample_regions) {
         for (auto& point : region.points) {
-            sample_point_index[{region.segment_type, point.location.x(), point.location.y()}] = &point;
+            sample_point_index[std::make_tuple(region.segment_type, point.location.x(), point.location.y())] = &point;
         }
     }
 
@@ -932,7 +932,7 @@ static std::vector<SampleRegion> find_sample_regions(int num_segments) {
         VTR_ASSERT(seg_index != OPEN);
         VTR_ASSERT(seg_index < num_segments);
 
-        auto point = sample_point_index.find({seg_index, loc->first, loc->second});
+        auto point = sample_point_index.find(std::make_tuple(seg_index, loc->first, loc->second));
         if (point != sample_point_index.end()) {
             point->second->nodes.push_back(i);
         }
