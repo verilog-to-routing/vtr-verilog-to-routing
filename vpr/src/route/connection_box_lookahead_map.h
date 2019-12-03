@@ -32,15 +32,6 @@ struct RoutingCostKey {
     }
 };
 
-// Data in the RoutingCosts map
-struct RoutingCost {
-    // source and destination node indices
-    int from_node, to_node;
-
-    // cost entry for the route
-    util::Cost_Entry cost_entry;
-};
-
 // hash implementation for RoutingCostKey
 struct HashRoutingCostKey {
     std::size_t operator()(RoutingCostKey const& key) const noexcept {
