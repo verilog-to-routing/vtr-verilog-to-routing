@@ -42,6 +42,7 @@ _The following are changes which have been implemented in the VTR master branch 
 ### Fixed
 
 ### Deprecated
+ * VPR's breadth-first router (use the timing-driven router, which provides supperiour QoR and Run-time)
 
 ### Removed
 
