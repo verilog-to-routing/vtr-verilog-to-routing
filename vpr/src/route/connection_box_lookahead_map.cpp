@@ -54,17 +54,34 @@ static constexpr float PENALTY_MIN = 1e-12f;
 
 static constexpr int MIN_PATH_COUNT = 1000;
 
+// quantiles (like percentiles but 0-1) of segment count to use as a selection criteria
+// choose locations with higher, but not extreme, counts of each segment type
+static constexpr double kSamplingCountLowerQuantile = 0.5;
+static constexpr double kSamplingCountUpperQuantile = 0.7;
+
 // a sample point for a segment type, contains all segments at the VPR location
 struct SamplePoint {
+    // canonical location
     vtr::Point<int> location;
+
+    // nodes to expand
     std::vector<ssize_t> nodes;
 };
 
 struct SampleRegion {
+    // all nodes in `points' have this segment type
     int segment_type;
+
+    // location on the sample grid
     vtr::Point<int> grid_location;
+
+    // locations to try
+    // The computation will keep expanding each of the points
+    // until a number of paths (segment -> connection box) are found.
     std::vector<SamplePoint> points;
-    uint64_t order; // for sorting
+
+    // used to sort the regions to improve caching
+    uint64_t order;
 };
 
 template<typename Entry>
@@ -350,6 +367,7 @@ std::pair<util::Cost_Entry, int> CostMap::get_nearby_cost_entry(const vtr::NdMat
     }
     int n = 0;
     util::Cost_Entry fill(matrix[cx][cy]);
+    fill.fill = true;
 
     while (in_bounds && !fill.valid()) {
         n++;
@@ -448,6 +466,15 @@ float ConnectionBoxMapLookahead::get_map_cost(int from_node_ind,
 
     float expected_cost = criticality_fac * expected_delay + (1.0 - criticality_fac) * expected_congestion;
 
+    VTR_LOGV_DEBUG(f_router_debug, "Requested lookahead from node %d to %d\n", from_node_ind, to_node_ind);
+    const std::string& segment_name = device_ctx.segment_inf[from_seg_index].name;
+    const std::string& box_name = device_ctx.connection_boxes.get_connection_box(box_id)->name;
+    VTR_LOGV_DEBUG(f_router_debug, "Lookahead returned %s (%d) to %s (%zu) with distance (%zd, %zd)\n",
+                   segment_name.c_str(), from_seg_index,
+                   box_name.c_str(),
+                   size_t(box_id),
+                   dx, dy);
+    VTR_LOGV_DEBUG(f_router_debug, "Lookahead delay: %g\n", expected_delay);
     VTR_LOGV_DEBUG(f_router_debug, "Lookahead congestion: %g\n", expected_congestion);
     VTR_LOGV_DEBUG(f_router_debug, "Criticality: %g\n", criticality_fac);
     VTR_LOGV_DEBUG(f_router_debug, "Lookahead cost: %g\n", expected_cost);
@@ -535,9 +562,12 @@ static bool add_paths(int start_node_ind,
     return new_sample_found;
 }
 
-/* runs Dijkstra's algorithm from specified node until all nodes have been
+/* Runs Dijkstra's algorithm from specified node until all nodes have been
  * visited. Each time a pin is visited, the delay/congestion information
- * to that pin is stored to an entry in the routing_cost_map */
+ * to that pin is stored to an entry in the routing_cost_map.
+ *
+ * Returns the maximum (last) minimum cost path stored, and
+ * the number of paths from start_node_ind stored. */
 template<typename Entry>
 static std::pair<float, int> run_dijkstra(int start_node_ind,
                                           RoutingCosts* routing_costs) {
@@ -573,9 +603,6 @@ static std::pair<float, int> run_dijkstra(int start_node_ind,
 
         int node_ind = current.rr_node_ind;
 
-        // the last cost should be the highest
-        max_cost = current.cost();
-
         /* check that we haven't already expanded from this node */
         if (node_expanded[node_ind]) {
             continue;
@@ -583,6 +610,9 @@ static std::pair<float, int> run_dijkstra(int start_node_ind,
 
         /* if this node is an ipin record its congestion/delay in the routing_cost_map */
         if (device_ctx.rr_nodes[node_ind].type() == IPIN) {
+            // the last cost should be the highest
+            max_cost = current.cost();
+
             path_count++;
             add_paths<Entry>(start_node_ind, current, &paths, routing_costs);
         } else {
@@ -672,8 +702,8 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
 #endif
 
         if (total_path_count == 0) {
-            VTR_LOG("No paths found for sample region %s(%d, %d)\n",
-                    segment_inf[region.segment_type].name.c_str(), region.grid_location.x(), region.grid_location.y());
+            VTR_LOG_WARN("No paths found for sample region %s(%d, %d)\n",
+                         segment_inf[region.segment_type].name.c_str(), region.grid_location.x(), region.grid_location.y());
         }
 
         // combine the cost map from this run with the final cost maps for each segment
@@ -775,6 +805,7 @@ static std::vector<SamplePoint> choose_points(const vtr::Matrix<int>& counts,
                                               const vtr::Rect<int>& window,
                                               int min_count,
                                               int max_count) {
+    VTR_ASSERT(min_count <= max_count);
     std::vector<SamplePoint> points;
     for (int y = window.ymin(); y < window.ymax(); y++) {
         for (int x = window.xmin(); x < window.xmax(); x++) {
@@ -829,6 +860,13 @@ static std::map<int, int> count_histogram(const vtr::Rect<int>& box, const vtr::
     return histogram;
 }
 
+// Used to calculate each region's `order.'
+// A space-filling curve will order the regions so that
+// nearby points stay close in order. A Hilbert curve might
+// be better, but a Morton (Z)-order curve is easy to compute,
+// because it's just interleaving binary bits, so this
+// function interleaves with 0's so that the X and Y
+// dimensions can then be OR'ed together.
 static uint64_t interleave(uint32_t x) {
     uint64_t i = x;
     i = (i ^ (i << 16)) & 0x0000ffff0000ffff;
@@ -842,6 +880,7 @@ static uint64_t interleave(uint32_t x) {
 // for each segment type, find the nearest nodes to an equally spaced grid of points
 // within the bounding box for that segment type
 static std::vector<SampleRegion> find_sample_regions(int num_segments) {
+    vtr::ScopedStartFinishTimer timer("finding sample regions");
     std::vector<SampleRegion> sample_regions;
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_nodes = device_ctx.rr_nodes;
@@ -894,11 +933,22 @@ static std::vector<SampleRegion> find_sample_regions(int num_segments) {
                 SampleRegion region = {
                     /* .segment_type = */ i,
                     /* .grid_location = */ vtr::Point<int>(x, y),
-                    /* .points = */ choose_points(counts, window, quantile(histogram, 0.5), quantile(histogram, 0.7)),
+                    /* .points = */ choose_points(counts, window, quantile(histogram, kSamplingCountLowerQuantile), quantile(histogram, kSamplingCountUpperQuantile)),
                     /* .order = */ 0};
                 if (!region.points.empty()) {
+                    /* In order to improve caching, the list of sample points are
+                     * sorted to keep points that are nearby on the Euclidean plane also
+                     * nearby in the vector of sample points.
+                     *
+                     * This means subsequent expansions on the same thread are likely
+                     * to cover a similar set of nodes, so they are more likely to be
+                     * cached. This improves performance by about 7%, which isn't a lot,
+                     * but not a bad improvement for a few lines of code. */
                     vtr::Point<int> location = region.points[0].location;
+
+                    // interleave bits of X and Y for a Z-curve ordering.
                     region.order = interleave(location.x()) | (interleave(location.y()) << 1);
+
                     sample_regions.push_back(region);
                 }
             }
@@ -962,11 +1012,13 @@ void ConnectionBoxMapLookahead::write(const std::string& file) const {
 static void ToCostEntry(util::Cost_Entry* out, const VprCostEntry::Reader& in) {
     out->delay = in.getDelay();
     out->congestion = in.getCongestion();
+    out->fill = in.getFill();
 }
 
 static void FromCostEntry(VprCostEntry::Builder* out, const util::Cost_Entry& in) {
     out->setDelay(in.delay);
     out->setCongestion(in.congestion);
+    out->setFill(in.fill);
 }
 
 static void ToVprVector2D(std::pair<int, int>* out, const VprVector2D::Reader& in) {

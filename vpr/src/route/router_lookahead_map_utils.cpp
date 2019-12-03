@@ -7,9 +7,6 @@
 
 namespace util {
 
-/* Number of CLBs I think the average conn. goes. */
-static const int CLB_DIST = 3;
-
 PQ_Entry::PQ_Entry(
     int set_rr_node_ind,
     int switch_ind,
@@ -90,7 +87,11 @@ util::PQ_Entry_Base_Cost::PQ_Entry_Base_Cost(
 
     if (parent != nullptr) {
         auto& device_ctx = g_vpr_ctx.device();
-        this->base_cost = parent->base_cost + (device_ctx.rr_switch_inf[switch_ind].configurable() ? get_rr_cong_cost(set_rr_node_ind) : 0);
+        if (device_ctx.rr_switch_inf[switch_ind].configurable()) {
+            this->base_cost = parent->base_cost + get_rr_cong_cost(set_rr_node_ind);
+        } else {
+            this->base_cost = parent->base_cost;
+        }
     } else {
         this->base_cost = 0.f;
     }
