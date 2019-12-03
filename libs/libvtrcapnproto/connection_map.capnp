@@ -5,6 +5,7 @@ using Matrix = import "matrix.capnp";
 struct VprCostEntry {
     delay @0 :Float32;
     congestion @1 :Float32;
+    fill @2 :Bool;
 }
 
 struct VprVector2D {

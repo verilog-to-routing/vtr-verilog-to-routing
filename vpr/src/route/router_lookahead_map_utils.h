@@ -42,14 +42,17 @@ class Cost_Entry {
   public:
     float delay;
     float congestion;
+    bool fill;
 
     Cost_Entry() {
         delay = std::numeric_limits<float>::infinity();
         congestion = std::numeric_limits<float>::infinity();
+        fill = false;
     }
     Cost_Entry(float set_delay, float set_congestion) {
         delay = set_delay;
         congestion = set_congestion;
+        fill = false;
     }
 
     bool valid() const {
