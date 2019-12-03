@@ -41,6 +41,7 @@ supported_upgrades = [
     "upgrade_complex_sb_num_conns",
     "add_missing_comb_model_internal_timing_edges",
     "add_tile_tags",
+    "add_site_directs",
 ]
 
 def parse_args():
@@ -141,6 +142,11 @@ def main():
 
     if "add_tile_tags" in args.features:
         result = add_tile_tags(arch)
+        if result:
+            modified = True
+
+    if "add_site_directs" in args.features:
+        result = add_site_directs(arch)
         if result:
             modified = True
 
@@ -932,7 +938,7 @@ def add_tile_tags(arch):
 
 
     if arch.findall('./tiles'):
-        return False
+            return False
 
     models = arch.find('./models')
 
@@ -966,6 +972,57 @@ def add_tile_tags(arch):
 
     return True
 
+def add_site_directs(arch):
+    """
+    This function adds the direct pin mappings between a physical
+    tile and a corresponding logical block.
+
+    Note: the example below is only for explanatory reasons, the signal names are invented
+
+    BEFORE:
+    <tiles>
+        <tile name="BRAM_TILE" area="2" height="4" width="1" capacity="1">
+            <inputs ... />
+            <outputs ... />
+            <fc ... />
+            <pinlocations ... />
+            <switchblock_locations ... />
+            <equivalent_sites>
+                <site pb_type="BRAM_SITE"/>
+            </equivalent_sites>
+        </tile>
+    </tiles>
+
+    AFTER:
+    <tiles>
+        <tile name="BRAM_TILE" area="2" height="4" width="1" capacity="1">
+            <inputs ... />
+            <outputs ... />
+            <fc ... />
+            <pinlocations ... />
+            <switchblock_locations ... />
+            <equivalent_sites>
+                <site pb_type="BRAM" pin_mapping="direct">
+            </equivalent_sites>
+        </tile>
+    </tiles>
+    """
+
+    top_pb_types = []
+    for pb_type in arch.iter('pb_type'):
+        if pb_type.getparent().tag == 'complexblocklist':
+            top_pb_types.append(pb_type)
+
+    sites = []
+    for pb_type in arch.iter('site'):
+        sites.append(pb_type)
+
+    for pb_type in top_pb_types:
+        for site in sites:
+            if 'pin_mapping' not in site.attrib:
+                site.attrib['pin_mapping'] = "direct"
+
+    return True
 
 if __name__ == "__main__":
     main()

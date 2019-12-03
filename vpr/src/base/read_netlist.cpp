@@ -860,7 +860,6 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
 
     ext_nhash = alloc_hash_table();
 
-    t_physical_tile_type_ptr tile_type;
     t_logical_block_type_ptr block_type;
 
     /* Assumes that complex block pins are ordered inputs, outputs, globals */
@@ -868,14 +867,13 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
     /* Determine the external nets of complex block */
     for (auto blk_id : clb_nlist.blocks()) {
         block_type = clb_nlist.block_type(blk_id);
-        tile_type = physical_tile_type(block_type);
         const t_pb* pb = clb_nlist.block_pb(blk_id);
 
         ipin = 0;
         VTR_ASSERT(block_type->pb_type->num_input_pins
                        + block_type->pb_type->num_output_pins
                        + block_type->pb_type->num_clock_pins
-                   == tile_type->num_pins / tile_type->capacity);
+                   == block_type->pb_type->num_pins);
 
         int num_input_ports = pb->pb_graph_node->num_input_ports;
         int num_output_ports = pb->pb_graph_node->num_output_ports;
@@ -951,14 +949,16 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
      * and blocks point back to net pins */
     for (auto blk_id : clb_nlist.blocks()) {
         block_type = clb_nlist.block_type(blk_id);
-        tile_type = physical_tile_type(block_type);
-        for (j = 0; j < tile_type->num_pins; j++) {
+        auto tile_type = pick_best_physical_type(block_type);
+        for (j = 0; j < block_type->pb_type->num_pins; j++) {
+            int physical_pin = get_physical_pin(tile_type, block_type, j);
+
             //Iterate through each pin of the block, and see if there is a net allocated/used for it
             clb_net_id = clb_nlist.block_net(blk_id, j);
 
             if (clb_net_id != ClusterNetId::INVALID()) {
                 //Verify old and new CLB netlists have the same # of pins per net
-                if (RECEIVER == tile_type->class_inf[tile_type->pin_class[j]].type) {
+                if (RECEIVER == tile_type->class_inf[tile_type->pin_class[physical_pin]].type) {
                     count[clb_net_id]++;
 
                     if (count[clb_net_id] > (int)clb_nlist.net_sinks(clb_net_id).size()) {
@@ -971,23 +971,23 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
                     //Asserts the ClusterBlockId is the same when ClusterNetId & pin BitIndex is provided
                     VTR_ASSERT(blk_id == clb_nlist.pin_block(*(clb_nlist.net_pins(clb_net_id).begin() + count[clb_net_id])));
                     //Asserts the block's pin index is the same
-                    VTR_ASSERT(j == clb_nlist.pin_physical_index(*(clb_nlist.net_pins(clb_net_id).begin() + count[clb_net_id])));
-                    VTR_ASSERT(j == clb_nlist.net_pin_physical_index(clb_net_id, count[clb_net_id]));
+                    VTR_ASSERT(j == clb_nlist.pin_logical_index(*(clb_nlist.net_pins(clb_net_id).begin() + count[clb_net_id])));
+                    VTR_ASSERT(j == clb_nlist.net_pin_logical_index(clb_net_id, count[clb_net_id]));
 
                     // nets connecting to global pins are marked as global nets
-                    if (tile_type->is_pin_global[j]) {
+                    if (tile_type->is_pin_global[physical_pin]) {
                         clb_nlist.set_net_is_global(clb_net_id, true);
                     }
 
-                    if (tile_type->is_ignored_pin[j]) {
+                    if (tile_type->is_ignored_pin[physical_pin]) {
                         clb_nlist.set_net_is_ignored(clb_net_id, true);
                     }
                     /* Error check performed later to ensure no mixing of ignored and non ignored signals */
 
                 } else {
-                    VTR_ASSERT(DRIVER == tile_type->class_inf[tile_type->pin_class[j]].type);
-                    VTR_ASSERT(j == clb_nlist.pin_physical_index(*(clb_nlist.net_pins(clb_net_id).begin())));
-                    VTR_ASSERT(j == clb_nlist.net_pin_physical_index(clb_net_id, 0));
+                    VTR_ASSERT(DRIVER == tile_type->class_inf[tile_type->pin_class[physical_pin]].type);
+                    VTR_ASSERT(j == clb_nlist.pin_logical_index(*(clb_nlist.net_pins(clb_net_id).begin())));
+                    VTR_ASSERT(j == clb_nlist.net_pin_logical_index(clb_net_id, 0));
                 }
             }
         }
@@ -999,8 +999,11 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
         for (auto pin_id : clb_nlist.net_sinks(net_id)) {
             bool is_ignored_net = clb_nlist.net_is_ignored(net_id);
             block_type = clb_nlist.block_type(clb_nlist.pin_block(pin_id));
-            tile_type = physical_tile_type(block_type);
-            if (tile_type->is_ignored_pin[clb_nlist.pin_physical_index(pin_id)] != is_ignored_net) {
+            auto tile_type = pick_best_physical_type(block_type);
+            int logical_pin = clb_nlist.pin_logical_index(pin_id);
+            int physical_pin = get_physical_pin(tile_type, block_type, logical_pin);
+
+            if (tile_type->is_ignored_pin[physical_pin] != is_ignored_net) {
                 VTR_LOG_WARN(
                     "Netlist connects net %s to both global and non-global pins.\n",
                     clb_nlist.net_name(net_id).c_str());

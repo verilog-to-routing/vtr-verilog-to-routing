@@ -37,7 +37,7 @@ class DeviceGrid {
     //traditional 2-d indexing to be used
     vtr::Matrix<t_grid_tile> grid_;
 
-    std::map<t_logical_block_type_ptr, size_t> instance_counts_;
+    std::map<t_physical_tile_type_ptr, size_t> instance_counts_;
 
     std::vector<t_physical_tile_type_ptr> limiting_resources_;
 };
