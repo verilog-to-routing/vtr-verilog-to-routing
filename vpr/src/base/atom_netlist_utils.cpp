@@ -29,6 +29,9 @@ int infer_and_mark_block_sequential_outputs_constant(AtomNetlist& netlist, AtomB
 //Returns the set of input ports which are combinationally connected to output_port
 std::vector<AtomPortId> find_combinationally_connected_input_ports(const AtomNetlist& netlist, AtomPortId output_port);
 
+//Returns the set of clock ports which are combinationally connected to output_port
+std::vector<AtomPortId> find_combinationally_connected_clock_ports(const AtomNetlist& netlist, AtomPortId output_port);
+
 std::vector<AtomBlockId> identify_buffer_luts(const AtomNetlist& netlist);
 bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk);
 bool is_removable_block(const AtomNetlist& netlist, const AtomBlockId blk, std::string* reason = nullptr);
@@ -651,6 +654,28 @@ std::vector<AtomPortId> find_combinationally_connected_input_ports(const AtomNet
         for (const std::string& sink_port_name : input_model_port->combinational_sink_ports) {
             if (sink_port_name == out_port_name) {
                 upstream_ports.push_back(input_port);
+            }
+        }
+    }
+
+    return upstream_ports;
+}
+
+std::vector<AtomPortId> find_combinationally_connected_clock_ports(const AtomNetlist& netlist, AtomPortId output_port) {
+    std::vector<AtomPortId> upstream_ports;
+
+    VTR_ASSERT(netlist.port_type(output_port) == PortType::OUTPUT);
+
+    std::string out_port_name = netlist.port_name(output_port);
+
+    AtomBlockId blk = netlist.port_block(output_port);
+
+    //Look through each block input port to find those which are combinationally connected to the output port
+    for (AtomPortId clock_port : netlist.block_clock_ports(blk)) {
+        const t_model_ports* clock_model_port = netlist.port_model(clock_port);
+        for (const std::string& sink_port_name : clock_model_port->combinational_sink_ports) {
+            if (sink_port_name == out_port_name) {
+                upstream_ports.push_back(clock_port);
             }
         }
     }
@@ -1353,7 +1378,7 @@ std::set<AtomNetId> find_netlist_physical_clock_nets(const AtomNetlist& netlist)
     return clock_nets;
 }
 
-//Finds all logical clock drivers in the netlist
+//Finds all logical clock drivers in the netlist (by back-tracing through logic)
 std::set<AtomPinId> find_netlist_logical_clock_drivers(const AtomNetlist& netlist) {
     auto clock_nets = find_netlist_physical_clock_nets(netlist);
 
@@ -1362,26 +1387,60 @@ std::set<AtomPinId> find_netlist_logical_clock_drivers(const AtomNetlist& netlis
     //However, some of them may be the same logical clock (e.g. if there are
     //buffers between them). Here we trace-back through any clock buffers
     //to find the true source
+    size_t assumed_buffer_count = 0;
     std::set<AtomNetId> prev_clock_nets;
     while (prev_clock_nets != clock_nets) { //Still tracing back
         prev_clock_nets = clock_nets;
         clock_nets.clear();
 
         for (auto clk_net : prev_clock_nets) {
-            auto driver_block = netlist.net_driver_block(clk_net);
+            AtomPinId driver_pin = netlist.net_driver(clk_net);
+            AtomPortId driver_port = netlist.pin_port(driver_pin);
+            AtomBlockId driver_blk = netlist.port_block(driver_port);
 
-            if (is_buffer(netlist, driver_block)) {
-                //Driver is a buffer lut, use it's input net
-                auto input_pins = netlist.block_input_pins(driver_block);
-                VTR_ASSERT(input_pins.size() == 1);
-                auto input_pin = *input_pins.begin();
+            std::vector<AtomPortId> upstream_ports;
 
-                auto input_net = netlist.pin_net(input_pin);
-                clock_nets.insert(input_net);
+            if (netlist.block_model(driver_blk)->name == std::string(".names")) {
+                //For .names we allow tracing back through data connections
+                //which allows us to traceback through white-box .names buffers
+                upstream_ports = find_combinationally_connected_input_ports(netlist, driver_port);
             } else {
+                //For black boxes, we only trace back through inputs marked as clocks
+                upstream_ports = find_combinationally_connected_clock_ports(netlist, driver_port);
+            }
+
+            if (upstream_ports.empty()) {
+                //This net is a root net of a clock, keep it
                 clock_nets.insert(clk_net);
+            } else {
+                //Trace the clock back through any combinational logic
+                //
+                // We are assuming that the combinational connections are independent and non-inverting.
+                // If this is not the case, it is up to the end-user to specify the clocks explicitly
+                // at the intermediate pins in the netlist.
+                for (AtomPortId upstream_port : upstream_ports) {
+                    for (AtomPinId upstream_pin : netlist.port_pins(upstream_port)) {
+                        AtomNetId upstream_net = netlist.pin_net(upstream_pin);
+
+                        VTR_ASSERT(upstream_net);
+
+                        VTR_LOG_WARN("Assuming clocks may propagate through %s (%s) from pin %s to %s (assuming a non-inverting buffer).\n",
+                                     netlist.block_name(driver_blk).c_str(), netlist.block_model(driver_blk)->name,
+                                     netlist.pin_name(upstream_pin).c_str(), netlist.pin_name(driver_pin).c_str());
+
+                        clock_nets.insert(upstream_net);
+                        ++assumed_buffer_count;
+                    }
+                }
             }
         }
+    }
+
+    if (assumed_buffer_count > 0) {
+        VTR_LOG_WARN(
+            "Assumed %zu netlist logic connections may be clock buffers. "
+            "To override this behaviour explicitly create clocks at the appropriate netlist pins.\n",
+            assumed_buffer_count);
     }
 
     //Extract the net drivers

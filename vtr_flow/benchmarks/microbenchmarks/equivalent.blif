@@ -1,9 +1,0 @@
-.model top
-.inputs in
-.outputs out
-.names $false
-.names $true
-1
-.subckt IO_0 in=in out=out_1
-.subckt IO_1 in=out_1 out=out
-.end
