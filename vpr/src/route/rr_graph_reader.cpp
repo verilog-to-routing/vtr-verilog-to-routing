@@ -47,13 +47,13 @@
 #include "rr_graph_reader.h"
 
 /*********************** Subroutines local to this module *******************/
+void process_connection_boxes(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void process_switches(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void verify_segments(pugi::xml_node parent, const pugiutil::loc_data& loc_data, const std::vector<t_segment_inf>& segment_inf);
 void verify_blocks(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void process_blocks(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void verify_grid(pugi::xml_node parent, const pugiutil::loc_data& loc_data, const DeviceGrid& grid);
 void process_nodes(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
-void process_connection_boxes(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, int* wire_to_rr_ipin_switch, const int num_rr_switches);
 void process_channels(t_chan_width& chan_width, const DeviceGrid& grid, pugi::xml_node parent, const pugiutil::loc_data& loc_data);
 void process_rr_node_indices(const DeviceGrid& grid);
@@ -182,11 +182,12 @@ void load_rr_file(const t_graph_type graph_type,
 
         process_seg_id(next_component, loc_data);
 
+        device_ctx.connection_boxes.create_sink_back_ref();
+
         device_ctx.chan_width = nodes_per_chan;
         device_ctx.read_rr_graph_filename = std::string(read_rr_graph_name);
 
         check_rr_graph(graph_type, grid, device_ctx.physical_tile_types);
-        device_ctx.connection_boxes.create_sink_back_ref();
 
     } catch (pugiutil::XmlError& e) {
         vpr_throw(VPR_ERROR_ROUTE, read_rr_graph_name, e.line(), "%s", e.what());
