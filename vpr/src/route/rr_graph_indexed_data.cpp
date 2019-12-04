@@ -168,6 +168,14 @@ static void load_rr_indexed_data_base_costs(int nodes_per_chan,
     size_t total_segments = std::accumulate(rr_segment_counts.begin(), rr_segment_counts.end(), 0u);
 
     /* Load base costs for CHANX and CHANY segments */
+    float max_length = 0;
+    float min_length = 1;
+    if (base_cost_type == DELAY_NORMALIZED_LENGTH_BOUNDED) {
+        for (index = CHANX_COST_INDEX_START; index < device_ctx.rr_indexed_data.size(); index++) {
+            float length = (1 / device_ctx.rr_indexed_data[index].inv_length);
+            max_length = std::max(max_length, length);
+        }
+    }
 
     //Future Work: Since we can now have wire types which don't connect to IPINs,
     //             perhaps consider lowering cost of wires which connect to IPINs
@@ -179,6 +187,15 @@ static void load_rr_indexed_data_base_costs(int nodes_per_chan,
 
         } else if (base_cost_type == DELAY_NORMALIZED_LENGTH || base_cost_type == DEMAND_ONLY_NORMALIZED_LENGTH) {
             device_ctx.rr_indexed_data[index].base_cost = delay_normalization_fac / device_ctx.rr_indexed_data[index].inv_length;
+
+        } else if (base_cost_type == DELAY_NORMALIZED_LENGTH_BOUNDED) {
+            float length = (1 / device_ctx.rr_indexed_data[index].inv_length);
+            if (max_length != min_length) {
+                float length_scale = 1.f + 3.f * (length - min_length) / (max_length - min_length);
+                device_ctx.rr_indexed_data[index].base_cost = delay_normalization_fac * length_scale;
+            } else {
+                device_ctx.rr_indexed_data[index].base_cost = delay_normalization_fac;
+            }
 
         } else if (base_cost_type == DELAY_NORMALIZED_FREQUENCY) {
             int seg_index = device_ctx.rr_indexed_data[index].seg_index;

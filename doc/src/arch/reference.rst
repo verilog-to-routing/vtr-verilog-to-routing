@@ -799,7 +799,7 @@ Tile
 ~~~~
 .. arch:tag:: <tile name="string" capacity="int" width="int" height="int" area="float"/>
 
-    A tile refers to a placeable element within an FPGA architecture.
+    A tile refers to a placeable element within an FPGA architecture and describes its physical compositions on the grid.
     The following attributes are applicable to each tile.
     The only required one is the name of the tile.
 
@@ -1179,19 +1179,46 @@ The following tags are common to all ``<tile>`` tags:
 
 .. arch:tag:: <equivalent_sites>
 
-    Describes the Complex Blocks that can be placed within this tile.
+    .. seealso:: For a step-by-step walkthrough on describing equivalent sites see :ref:`equivalent_sites_tutorial`.
 
-    .. arch:tag:: <site pb_type="string"/>
+    Describes the Complex Blocks that can be placed within a tile.
+    Each physical tile can comprehend a number from 1 to N of possible Complex Blocks, or ``sites``.
+    A ``site`` corresponds to a top-level Complex Block that must be placeable in at least 1 physical tile locations.
+
+    .. arch:tag:: <site pb_type="string" pin_mapping="string"/>
 
     :req_param pb_type: Name of the corresponding pb_type.
 
-    **Example: Equivalent Sites**
+    :opt_param pin_mapping: Specifies whether the pin mapping between physical tile and logical pb_type:
 
-    .. code-block:: xml
+            * ``direct``: the pin mapping does not need to be specified as the tile pin definition is equal to the corresponding pb_type one;
+            * ``custom``: the pin mapping is user-defined.
 
-        <equivalent_sites>
-            <site pb_type="MLAB">
-        </equivalent_sites>
+
+            **Default:** ``direct``
+
+        **Example: Equivalent Sites**
+
+        .. code-block:: xml
+
+            <equivalent_sites>
+                <site pb_type="MLAB_SITE" pin_mapping="direct"/>
+            </equivalent_sites>
+
+        .. arch:tag:: <direct from="string" to="string">
+
+            Desctibes the mapping of a physical tile's port on the logical block's (pb_type) port.
+            ``direct`` is an option sub-tag of ``site``.
+
+            .. note:: This tag is need only if the pin_mapping of the ``site`` is defined as ``custom``
+
+            Attributes:
+                - ``from`` is relative to the physical tile pins
+                - ``to`` is relative to the logical block pins
+
+                .. code-block:: xml
+
+                    <direct from="MLAB_TILE.CX" to="MLAB_SITE.BX"/>
 
 .. _arch_complex_blocks:
 

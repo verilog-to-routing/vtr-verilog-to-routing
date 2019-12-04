@@ -30,8 +30,8 @@ t_logical_block_type_ptr ClusteredNetlist::block_type(const ClusterBlockId id) c
     return block_types_[id];
 }
 
-ClusterNetId ClusteredNetlist::block_net(const ClusterBlockId blk_id, const int phys_pin_index) const {
-    auto pin_id = block_pin(blk_id, phys_pin_index);
+ClusterNetId ClusteredNetlist::block_net(const ClusterBlockId blk_id, const int logical_pin_index) const {
+    auto pin_id = block_pin(blk_id, logical_pin_index);
 
     if (pin_id) {
         return pin_net(pin_id);
@@ -50,11 +50,11 @@ int ClusteredNetlist::block_pin_net_index(const ClusterBlockId blk_id, const int
     return OPEN;
 }
 
-ClusterPinId ClusteredNetlist::block_pin(const ClusterBlockId blk, const int phys_pin_index) const {
+ClusterPinId ClusteredNetlist::block_pin(const ClusterBlockId blk, const int logical_pin_index) const {
     VTR_ASSERT_SAFE(valid_block_id(blk));
-    VTR_ASSERT_SAFE_MSG(phys_pin_index >= 0 && phys_pin_index < physical_tile_type(block_type(blk))->num_pins, "Physical pin index must be in range");
+    VTR_ASSERT_SAFE_MSG(logical_pin_index >= 0 && logical_pin_index < static_cast<ssize_t>(block_logical_pins_[blk].size()), "Logical pin index must be in range");
 
-    return block_logical_pins_[blk][phys_pin_index];
+    return block_logical_pins_[blk][logical_pin_index];
 }
 
 bool ClusteredNetlist::block_contains_primary_input(const ClusterBlockId blk) const {
@@ -75,17 +75,17 @@ bool ClusteredNetlist::block_contains_primary_output(const ClusterBlockId blk) c
  * Pins
  *
  */
-int ClusteredNetlist::pin_physical_index(const ClusterPinId id) const {
-    VTR_ASSERT_SAFE(valid_pin_id(id));
+int ClusteredNetlist::pin_logical_index(const ClusterPinId pin_id) const {
+    VTR_ASSERT_SAFE(valid_pin_id(pin_id));
 
-    return pin_physical_index_[id];
+    return pin_logical_index_[pin_id];
 }
 
-int ClusteredNetlist::net_pin_physical_index(const ClusterNetId net_id, int net_pin_index) const {
+int ClusteredNetlist::net_pin_logical_index(const ClusterNetId net_id, int net_pin_index) const {
     auto pin_id = net_pin(net_id, net_pin_index);
 
     if (pin_id) {
-        return pin_physical_index(pin_id);
+        return pin_logical_index(pin_id);
     }
 
     return OPEN; //No valid pin found
@@ -122,7 +122,7 @@ ClusterBlockId ClusteredNetlist::create_block(const char* name, t_pb* pb, t_logi
         block_types_.insert(blk_id, type);
 
         //Allocate and initialize every potential pin of the block
-        block_logical_pins_.insert(blk_id, std::vector<ClusterPinId>(physical_tile_type(type)->num_pins, ClusterPinId::INVALID()));
+        block_logical_pins_.insert(blk_id, std::vector<ClusterPinId>(get_max_num_pins(type), ClusterPinId::INVALID()));
     }
 
     //Check post-conditions: size
@@ -133,20 +133,6 @@ ClusterBlockId ClusteredNetlist::create_block(const char* name, t_pb* pb, t_logi
     VTR_ASSERT(block_type(blk_id) == type);
 
     return blk_id;
-}
-
-void ClusteredNetlist::set_pin_physical_index(const ClusterPinId pin, const int phys_pin_index) {
-    VTR_ASSERT_SAFE(valid_pin_id(pin));
-    auto blk = pin_block(pin);
-
-    int old_phys_pin_index = pin_physical_index(pin);
-
-    //Invalidate old mapping
-    block_logical_pins_[blk][old_phys_pin_index] = ClusterPinId::INVALID();
-
-    //Update mappings
-    pin_physical_index_[pin] = phys_pin_index;
-    block_logical_pins_[blk][phys_pin_index] = pin;
 }
 
 ClusterPortId ClusteredNetlist::create_port(const ClusterBlockId blk_id, const std::string name, BitIndex width, PortType type) {
@@ -169,7 +155,7 @@ ClusterPortId ClusteredNetlist::create_port(const ClusterBlockId blk_id, const s
 ClusterPinId ClusteredNetlist::create_pin(const ClusterPortId port_id, BitIndex port_bit, const ClusterNetId net_id, const PinType pin_type_, int pin_index, bool is_const) {
     ClusterPinId pin_id = Netlist::create_pin(port_id, port_bit, net_id, pin_type_, is_const);
 
-    pin_physical_index_.push_back(pin_index);
+    pin_logical_index_.push_back(pin_index);
 
     ClusterBlockId block_id = port_block(port_id);
     block_logical_pins_[block_id][pin_index] = pin_id;
@@ -242,7 +228,7 @@ void ClusteredNetlist::clean_ports_impl(const vtr::vector_map<ClusterPortId, Clu
 
 void ClusteredNetlist::clean_pins_impl(const vtr::vector_map<ClusterPinId, ClusterPinId>& pin_id_map) {
     //Update all the pin values
-    pin_physical_index_ = clean_and_reorder_values(pin_physical_index_, pin_id_map);
+    pin_logical_index_ = clean_and_reorder_values(pin_logical_index_, pin_id_map);
 }
 
 void ClusteredNetlist::clean_nets_impl(const vtr::vector_map<ClusterNetId, ClusterNetId>& net_id_map) {
@@ -254,10 +240,10 @@ void ClusteredNetlist::clean_nets_impl(const vtr::vector_map<ClusterNetId, Clust
 void ClusteredNetlist::rebuild_block_refs_impl(const vtr::vector_map<ClusterPinId, ClusterPinId>& /*pin_id_map*/,
                                                const vtr::vector_map<ClusterPortId, ClusterPortId>& /*port_id_map*/) {
     for (auto blk : blocks()) {
-        block_logical_pins_[blk] = std::vector<ClusterPinId>(physical_tile_type(blk)->num_pins, ClusterPinId::INVALID()); //Reset
+        block_logical_pins_[blk] = std::vector<ClusterPinId>(get_max_num_pins(block_type(blk)), ClusterPinId::INVALID()); //Reset
         for (auto pin : block_pins(blk)) {
-            int phys_pin_index = pin_physical_index(pin);
-            block_logical_pins_[blk][phys_pin_index] = pin;
+            int logical_pin_index = pin_logical_index(pin);
+            block_logical_pins_[blk][logical_pin_index] = pin;
         }
     }
 }
@@ -283,7 +269,7 @@ void ClusteredNetlist::shrink_to_fit_impl() {
     block_logical_pins_.shrink_to_fit();
 
     //Pin data
-    pin_physical_index_.shrink_to_fit();
+    pin_logical_index_.shrink_to_fit();
 
     //Net data
     net_is_ignored_.shrink_to_fit();
@@ -310,7 +296,7 @@ bool ClusteredNetlist::validate_port_sizes_impl(size_t /*num_ports*/) const {
 }
 
 bool ClusteredNetlist::validate_pin_sizes_impl(size_t num_pins) const {
-    if (pin_physical_index_.size() != num_pins) {
+    if (pin_logical_index_.size() != num_pins) {
         return false;
     }
     return true;
