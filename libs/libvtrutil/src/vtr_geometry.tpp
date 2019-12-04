@@ -62,12 +62,6 @@ void Point<T>::swap() {
  * Rect
  */
 template<class T>
-Rect<T>::Rect()
-    : Rect<T>(Point<T>(0, 0), Point<T>(0, 0)) {
-    //pass
-}
-
-template<class T>
 Rect<T>::Rect(T left_val, T bottom_val, T right_val, T top_val)
     : Rect<T>(Point<T>(left_val, bottom_val), Point<T>(right_val, top_val)) {
     //pass
@@ -77,14 +71,6 @@ template<class T>
 Rect<T>::Rect(Point<T> bottom_left_val, Point<T> top_right_val)
     : bottom_left_(bottom_left_val)
     , top_right_(top_right_val) {
-    //pass
-}
-
-template<class T>
-Rect<T>::Rect(Point<T> bottom_left_val, T size)
-    : bottom_left_(bottom_left_val)
-    , top_right_(bottom_left_val.x() + size,
-                 bottom_left_val.y() + size) {
     //pass
 }
 
@@ -150,11 +136,6 @@ bool Rect<T>::coincident(Point<T> point) const {
 }
 
 template<class T>
-bool Rect<T>::empty() const {
-    return xmax() <= xmin() || ymax() <= ymin();
-}
-
-template<class T>
 bool operator==(const Rect<T>& lhs, const Rect<T>& rhs) {
     return lhs.bottom_left() == rhs.bottom_left()
            && lhs.top_right() == rhs.top_right();
@@ -183,19 +164,6 @@ void Rect<T>::set_xmax(T xmax_val) {
 template<class T>
 void Rect<T>::set_ymax(T ymax_val) {
     top_right_.set_y(ymax_val);
-}
-
-template<class T>
-Rect<T> operator|(const Rect<T>& lhs, const Rect<T>& rhs) {
-    return Rect<T>(std::min(lhs.xmin(), rhs.xmin()),
-                   std::min(lhs.ymin(), rhs.ymin()),
-                   std::max(lhs.xmax(), rhs.xmax()),
-                   std::max(lhs.ymax(), rhs.ymax()));
-}
-
-template<class T>
-Rect<T>& operator|=(Rect<T>& lhs, const Rect<T>& rhs) {
-    return lhs = lhs | rhs;
 }
 
 /*
