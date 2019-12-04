@@ -182,6 +182,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
         };
         vpr_init(sizeof(argv)/sizeof(argv[0]), argv,
                 &options, &vpr_setup, &arch);
+        vpr_setup.RouterOpts.read_edge_metadata = true;
         bool flow_succeeded = vpr_flow(vpr_setup, arch);
         REQUIRE(flow_succeeded == true);
 
@@ -220,6 +221,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
     vpr_setup.PackerOpts.doPacking    = STAGE_LOAD;
     vpr_setup.PlacerOpts.doPlacement  = STAGE_LOAD;
     vpr_setup.RouterOpts.doRouting    = STAGE_LOAD;
+    vpr_setup.RouterOpts.read_edge_metadata = true;
     vpr_setup.AnalysisOpts.doAnalysis = STAGE_SKIP;
 
     bool flow_succeeded = vpr_flow(vpr_setup, arch);
