@@ -111,43 +111,22 @@ void SetupVPR(const t_options* Options,
     *library_models = Arch->model_library;
 
     /* TODO: this is inelegant, I should be populating this information in XmlReadArch */
-    device_ctx.EMPTY_PHYSICAL_TILE_TYPE = nullptr;
+    device_ctx.EMPTY_TYPE = nullptr;
     for (const auto& type : device_ctx.physical_tile_types) {
         if (strcmp(type.name, EMPTY_BLOCK_NAME) == 0) {
-            VTR_ASSERT(device_ctx.EMPTY_PHYSICAL_TILE_TYPE == nullptr);
-            device_ctx.EMPTY_PHYSICAL_TILE_TYPE = &type;
+            VTR_ASSERT(device_ctx.EMPTY_TYPE == nullptr);
+            device_ctx.EMPTY_TYPE = &type;
         } else {
-            for (const auto& equivalent_site : type.equivalent_sites) {
-                if (block_type_contains_blif_model(equivalent_site, MODEL_INPUT)) {
-                    device_ctx.input_types.insert(&type);
-                    break;
-                }
+            if (block_type_contains_blif_model(logical_block_type(&type), MODEL_INPUT)) {
+                device_ctx.input_types.insert(&type);
             }
-
-            for (const auto& equivalent_site : type.equivalent_sites) {
-                if (block_type_contains_blif_model(equivalent_site, MODEL_OUTPUT)) {
-                    device_ctx.output_types.insert(&type);
-                    break;
-                }
+            if (block_type_contains_blif_model(logical_block_type(&type), MODEL_OUTPUT)) {
+                device_ctx.output_types.insert(&type);
             }
         }
     }
 
-    device_ctx.EMPTY_LOGICAL_BLOCK_TYPE = nullptr;
-    int max_equivalent_tiles = 0;
-    for (const auto& type : device_ctx.logical_block_types) {
-        if (0 == strcmp(type.name, EMPTY_BLOCK_NAME)) {
-            device_ctx.EMPTY_LOGICAL_BLOCK_TYPE = &type;
-        }
-
-        max_equivalent_tiles = std::max(max_equivalent_tiles, (int)type.equivalent_tiles.size());
-    }
-
-    VTR_ASSERT(max_equivalent_tiles > 0);
-    device_ctx.has_multiple_equivalent_tiles = max_equivalent_tiles > 1;
-
-    VTR_ASSERT(device_ctx.EMPTY_PHYSICAL_TILE_TYPE != nullptr);
-    VTR_ASSERT(device_ctx.EMPTY_LOGICAL_BLOCK_TYPE != nullptr);
+    VTR_ASSERT(device_ctx.EMPTY_TYPE != nullptr);
 
     if (device_ctx.input_types.empty()) {
         VPR_ERROR(VPR_ERROR_ARCH,
@@ -160,7 +139,6 @@ void SetupVPR(const t_options* Options,
     }
 
     Segments = Arch->Segments;
-    device_ctx.segment_inf = Arch->Segments;
 
     SetupSwitches(*Arch, RoutingArch, Arch->Switches, Arch->num_switches);
     SetupRoutingArch(*Arch, RoutingArch);
@@ -323,7 +301,6 @@ static void SetupRoutingArch(const t_arch& Arch,
 }
 
 static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts) {
-    RouterOpts->do_check_rr_graph = !Options.disable_check_rr_graph;
     RouterOpts->astar_fac = Options.astar_fac;
     RouterOpts->bb_factor = Options.bb_factor;
     RouterOpts->criticality_exp = Options.criticality_exp;
@@ -372,11 +349,11 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->max_convergence_count = Options.router_max_convergence_count;
     RouterOpts->reconvergence_cpd_threshold = Options.router_reconvergence_cpd_threshold;
     RouterOpts->first_iteration_timing_report_file = Options.router_first_iteration_timing_report_file;
+
     RouterOpts->strict_checks = Options.strict_checks;
 
     RouterOpts->write_router_lookahead = Options.write_router_lookahead;
     RouterOpts->read_router_lookahead = Options.read_router_lookahead;
-    RouterOpts->disable_check_route = Options.disable_check_route;
 }
 
 static void SetupAnnealSched(const t_options& Options,

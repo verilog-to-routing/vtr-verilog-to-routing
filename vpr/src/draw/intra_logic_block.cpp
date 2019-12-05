@@ -68,7 +68,7 @@ void draw_internal_alloc_blk() {
     draw_coords->blk_info.resize(device_ctx.logical_block_types.size());
 
     for (const auto& type : device_ctx.logical_block_types) {
-        if (&type == device_ctx.EMPTY_LOGICAL_BLOCK_TYPE) {
+        if (physical_tile_type(&type) == device_ctx.EMPTY_TYPE) {
             continue;
         }
 
@@ -92,12 +92,10 @@ void draw_internal_init_blk() {
     auto& device_ctx = g_vpr_ctx.device();
     for (const auto& type : device_ctx.physical_tile_types) {
         /* Empty block has no sub_blocks */
-        if (is_empty_type(&type)) {
+        if (&type == device_ctx.EMPTY_TYPE)
             continue;
-        }
 
-        auto logical_block = pick_best_logical_type(&type);
-        pb_graph_head_node = logical_block->pb_graph_head;
+        pb_graph_head_node = logical_block_type(&type)->pb_graph_head;
         int type_descriptor_index = type.index;
 
         int num_sub_tiles = type.capacity;
@@ -131,7 +129,7 @@ void draw_internal_init_blk() {
                                   clb_bbox.width(), clb_bbox.height());
 
         /* Determine the max number of sub_block levels in the FPGA */
-        draw_state->max_sub_blk_lvl = std::max(draw_internal_find_max_lvl(*logical_block->pb_type),
+        draw_state->max_sub_blk_lvl = std::max(draw_internal_find_max_lvl(*logical_block_type(&type)->pb_type),
                                                draw_state->max_sub_blk_lvl);
     }
 }
@@ -153,7 +151,7 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
                 continue;
 
             /* Don't draw if tile is empty. This includes corners. */
-            if (device_ctx.grid[i][j].type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE)
+            if (device_ctx.grid[i][j].type == device_ctx.EMPTY_TYPE)
                 continue;
 
             int num_sub_tiles = device_ctx.grid[i][j].type->capacity;

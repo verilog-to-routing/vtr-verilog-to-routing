@@ -173,25 +173,29 @@ void check_route(enum e_route_type route_type) {
 /* Checks that this SINK node is one of the terminals of inet, and marks   *
  * the appropriate pin as being reached.                                   */
 static void check_sink(int inode, ClusterNetId net_id, bool* pin_done) {
+    int i, j, ifound, ptc_num, iclass, iblk, pin_index;
+    ClusterBlockId bnum;
+    unsigned int ipin;
+    t_physical_tile_type_ptr type;
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
     VTR_ASSERT(device_ctx.rr_nodes[inode].type() == SINK);
-    int i = device_ctx.rr_nodes[inode].xlow();
-    int j = device_ctx.rr_nodes[inode].ylow();
-    auto type = device_ctx.grid[i][j].type;
+    i = device_ctx.rr_nodes[inode].xlow();
+    j = device_ctx.rr_nodes[inode].ylow();
+    type = device_ctx.grid[i][j].type;
     /* For sinks, ptc_num is the class */
-    int ptc_num = device_ctx.rr_nodes[inode].ptc_num();
-    int ifound = 0;
+    ptc_num = device_ctx.rr_nodes[inode].ptc_num();
+    ifound = 0;
 
-    for (int iblk = 0; iblk < type->capacity; iblk++) {
-        ClusterBlockId bnum = place_ctx.grid_blocks[i][j].blocks[iblk]; /* Hardcoded to one cluster_ctx block*/
-        unsigned int ipin = 1;
+    for (iblk = 0; iblk < type->capacity; iblk++) {
+        bnum = place_ctx.grid_blocks[i][j].blocks[iblk]; /* Hardcoded to one cluster_ctx block*/
+        ipin = 1;
         for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
             if (cluster_ctx.clb_nlist.pin_block(pin_id) == bnum) {
-                int pin_index = pin_tile_index(pin_id);
-                int iclass = type->pin_class[pin_index];
+                pin_index = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
+                iclass = type->pin_class[pin_index];
                 if (iclass == ptc_num) {
                     /* Could connect to same pin class on the same clb more than once.  Only   *
                      * update pin_done for a pin that hasn't been reached yet.                 */
@@ -221,23 +225,27 @@ static void check_sink(int inode, ClusterNetId net_id, bool* pin_done) {
 
 /* Checks that the node passed in is a valid source for this net. */
 static void check_source(int inode, ClusterNetId net_id) {
+    t_rr_type rr_type;
+    t_physical_tile_type_ptr type;
+    ClusterBlockId blk_id;
+    int i, j, ptc_num, node_block_pin, iclass;
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
-    t_rr_type rr_type = device_ctx.rr_nodes[inode].type();
+    rr_type = device_ctx.rr_nodes[inode].type();
     if (rr_type != SOURCE) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "in check_source: net %d begins with a node of type %d.\n", size_t(net_id), rr_type);
     }
 
-    int i = device_ctx.rr_nodes[inode].xlow();
-    int j = device_ctx.rr_nodes[inode].ylow();
+    i = device_ctx.rr_nodes[inode].xlow();
+    j = device_ctx.rr_nodes[inode].ylow();
     /* for sinks and sources, ptc_num is class */
-    int ptc_num = device_ctx.rr_nodes[inode].ptc_num();
+    ptc_num = device_ctx.rr_nodes[inode].ptc_num();
     /* First node_block for net is the source */
-    ClusterBlockId blk_id = cluster_ctx.clb_nlist.net_driver_block(net_id);
-    auto type = device_ctx.grid[i][j].type;
+    blk_id = cluster_ctx.clb_nlist.net_driver_block(net_id);
+    type = device_ctx.grid[i][j].type;
 
     if (place_ctx.block_locs[blk_id].loc.x != i || place_ctx.block_locs[blk_id].loc.y != j) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -245,9 +253,8 @@ static void check_source(int inode, ClusterNetId net_id) {
     }
 
     //Get the driver pin's index in the block
-    auto physical_pin = net_pin_tile_index(net_id, 0);
-
-    int iclass = type->pin_class[physical_pin];
+    node_block_pin = cluster_ctx.clb_nlist.net_pin_physical_index(net_id, 0);
+    iclass = type->pin_class[node_block_pin];
 
     if (ptc_num != iclass) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,

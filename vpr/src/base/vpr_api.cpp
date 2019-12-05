@@ -417,35 +417,22 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 
     VTR_LOG("\n");
     VTR_LOG("Resource usage...\n");
-    for (const auto& type : device_ctx.logical_block_types) {
-        if (is_empty_type(&type)) continue;
-
-        VTR_LOG("\tNetlist\n\t\t%d\tblocks of type: %s\n",
-                num_type_instances[&type], type.name);
-
-        VTR_LOG("\tArchitecture\n");
-        for (const auto equivalent_tile : type.equivalent_tiles) {
-            VTR_LOG("\t\t%d\tblocks of type: %s\n",
-                    device_ctx.grid.num_instances(equivalent_tile), equivalent_tile->name);
-        }
+    for (const auto& type : device_ctx.physical_tile_types) {
+        VTR_LOG("\tNetlist      %d\tblocks of type: %s\n",
+                num_type_instances[logical_block_type(&type)], type.name);
+        VTR_LOG("\tArchitecture %d\tblocks of type: %s\n",
+                device_ctx.grid.num_instances(&type), type.name);
     }
     VTR_LOG("\n");
 
     float device_utilization = calculate_device_utilization(device_ctx.grid, num_type_instances);
     VTR_LOG("Device Utilization: %.2f (target %.2f)\n", device_utilization, target_device_utilization);
     for (const auto& type : device_ctx.physical_tile_types) {
-        if (is_empty_type(&type)) {
-            continue;
-        }
-
+        float util = 0.;
         if (device_ctx.grid.num_instances(&type) != 0) {
-            float util = 0.;
-            VTR_LOG("\tPhysical Tile %s:\n", type.name);
-            for (auto logical_block : type.equivalent_sites) {
-                util = float(num_type_instances[logical_block]) / device_ctx.grid.num_instances(&type);
-                VTR_LOG("\tBlock Utilization: %.2f Logical Block: %s\n", util, logical_block->name);
-            }
+            util = float(num_type_instances[logical_block_type(&type)]) / device_ctx.grid.num_instances(&type);
         }
+        VTR_LOG("\tBlock Utilization: %.2f Type: %s\n", util, type.name);
     }
     VTR_LOG("\n");
 
@@ -687,9 +674,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         std::string graphics_msg;
         if (route_status.success()) {
             //Sanity check the routing
-            if (!router_opts.disable_check_route) {
-                check_route(router_opts.route_type);
-            }
+            check_route(router_opts.route_type);
             get_serial_num();
 
             //Update status
@@ -850,9 +835,7 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
                     router_opts.trim_obs_channels,
                     router_opts.clock_modeling,
                     arch.Directs, arch.num_directs,
-                    &warnings,
-                    router_opts.read_edge_metadata,
-                    router_opts.do_check_rr_graph);
+                    &warnings);
     //Initialize drawing, now that we have an RR graph
     init_draw_coords(chan_width_fac);
 }
@@ -896,7 +879,7 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
     //Build a dummy 10x10 device to determine the 'best' block type to use
     auto grid = create_device_grid(vpr_setup.device_layout, arch.grid_layouts, 10, 10);
 
-    auto type = find_most_common_tile_type(grid);
+    auto type = physical_tile_type(find_most_common_block_type(grid));
     /* get Fc_in/out for most common block (e.g. logic blocks) */
     VTR_ASSERT(type->fc_specs.size() > 0);
 
