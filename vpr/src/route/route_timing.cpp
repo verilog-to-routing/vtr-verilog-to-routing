@@ -147,15 +147,15 @@ static bool timing_driven_route_sink(ClusterNetId net_id,
                                      RouterStats& router_stats);
 
 static bool timing_driven_pre_route_to_clock_root(
-        ClusterNetId net_id,
-        int sink_node,
-        const t_conn_cost_params cost_params,
-        float pres_fac,
-        int high_fanout_threshold,
-        t_rt_node* rt_root,
-        const RouterLookahead& router_lookahead,
-        SpatialRouteTreeLookup& spatial_rt_lookup,
-        RouterStats& router_stats);
+    ClusterNetId net_id,
+    int sink_node,
+    const t_conn_cost_params cost_params,
+    float pres_fac,
+    int high_fanout_threshold,
+    t_rt_node* rt_root,
+    const RouterLookahead& router_lookahead,
+    SpatialRouteTreeLookup& spatial_rt_lookup,
+    RouterStats& router_stats);
 
 static t_heap* timing_driven_route_connection_from_route_tree_high_fanout(t_rt_node* rt_root,
                                                                           int sink_node,
@@ -1006,14 +1006,14 @@ bool timing_driven_route_net(ClusterNetId net_id,
     cost_params.delay_budget = ((budgeting_inf.if_set()) ? &conn_delay_budget : nullptr);
 
     // Pre-route to clock source for clock nets (marked as global nets)
-    if (cluster_ctx.clb_nlist.net_is_global(net_id) && router_opts.two_stage_clock_routing){
+    if (cluster_ctx.clb_nlist.net_is_global(net_id) && router_opts.two_stage_clock_routing) {
         VTR_ASSERT(router_opts.clock_modeling == DEDICATED_NETWORK);
         int sink_node = device_ctx.virtual_clock_network_root_idx;
         enable_router_debug(router_opts, net_id, sink_node);
         // Set to the max timing criticality which should intern minimize clock insertion
         // delay by selecting a direct route from the clock source to the virtual sink
         cost_params.criticality = router_opts.max_criticality;
-        if(!timing_driven_pre_route_to_clock_root(
+        if (!timing_driven_pre_route_to_clock_root(
                 net_id,
                 sink_node,
                 cost_params,
@@ -1083,16 +1083,15 @@ bool timing_driven_route_net(ClusterNetId net_id,
 }
 
 static bool timing_driven_pre_route_to_clock_root(
-        ClusterNetId net_id,
-        int sink_node,
-        const t_conn_cost_params cost_params,
-        float pres_fac,
-        int high_fanout_threshold,
-        t_rt_node* rt_root,
-        const RouterLookahead& router_lookahead,
-        SpatialRouteTreeLookup& spatial_rt_lookup,
-        RouterStats& router_stats) {
-
+    ClusterNetId net_id,
+    int sink_node,
+    const t_conn_cost_params cost_params,
+    float pres_fac,
+    int high_fanout_threshold,
+    t_rt_node* rt_root,
+    const RouterLookahead& router_lookahead,
+    SpatialRouteTreeLookup& spatial_rt_lookup,
+    RouterStats& router_stats) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& m_route_ctx = g_vpr_ctx.mutable_routing();
@@ -1171,10 +1170,10 @@ static bool timing_driven_pre_route_to_clock_root(
     // - free up vitual sink occupancy
     disable_expansion_and_remove_sink_from_route_tree_nodes(rt_root);
     VTR_LOGV_DEBUG(f_router_debug, "Traceback tail before update %d \n",
-        route_ctx.trace[net_id].tail->index);
+                   route_ctx.trace[net_id].tail->index);
     drop_traceback_tail(net_id);
     VTR_LOGV_DEBUG(f_router_debug, "Updated traceback ptrs: %d %d \n",
-        route_ctx.trace[net_id].head->index, route_ctx.trace[net_id].tail->index);
+                   route_ctx.trace[net_id].head->index, route_ctx.trace[net_id].tail->index);
     m_route_ctx.rr_node_route_inf[sink_node].set_occ(0);
 
     // routed to a sink successfully
@@ -1765,7 +1764,7 @@ static t_rt_node* setup_routing_resources(int itry,
     return rt_root;
 }
 
-void disable_expansion_and_remove_sink_from_route_tree_nodes(t_rt_node* rt_node){
+void disable_expansion_and_remove_sink_from_route_tree_nodes(t_rt_node* rt_node) {
     /* Remove sink in route tree and mark all nodes
      * leading to the sink as unexpandable.
      */
@@ -1776,9 +1775,9 @@ void disable_expansion_and_remove_sink_from_route_tree_nodes(t_rt_node* rt_node)
 
     while (linked_rt_edge != nullptr) {
         child_node = linked_rt_edge->child;
-        if (device_ctx.rr_nodes[child_node->inode].type() == SINK){
+        if (device_ctx.rr_nodes[child_node->inode].type() == SINK) {
             VTR_LOGV_DEBUG(f_router_debug,
-                "Removing sink %d from route tree\n", child_node->inode);
+                           "Removing sink %d from route tree\n", child_node->inode);
             rt_node->u.child_list = nullptr;
             rt_node->u.next = nullptr;
             free(child_node);
@@ -1786,7 +1785,7 @@ void disable_expansion_and_remove_sink_from_route_tree_nodes(t_rt_node* rt_node)
         } else {
             rt_node->re_expand = false;
             VTR_LOGV_DEBUG(f_router_debug,
-                "unexpanding: %d in route tree\n", rt_node->inode);
+                           "unexpanding: %d in route tree\n", rt_node->inode);
         }
         disable_expansion_and_remove_sink_from_route_tree_nodes(child_node);
         linked_rt_edge = linked_rt_edge->next;
