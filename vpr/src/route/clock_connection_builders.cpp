@@ -49,6 +49,9 @@ void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_
     auto& rr_nodes = device_ctx.rr_nodes;
     auto& rr_node_indices = device_ctx.rr_node_indices;
 
+    int virtual_clock_network_root_idx = create_virtual_clock_network_sink_node(switch_location.x, switch_location.y);
+    device_ctx.virtual_clock_network_root_idx = virtual_clock_network_root_idx;
+
     // rr_node indices for x and y channel routing wires and clock wires to connect to
     auto x_wire_indices = get_rr_node_chan_wires_at_location(
         rr_node_indices, CHANX, switch_location.x, switch_location.y);
@@ -73,7 +76,30 @@ void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_
         for (size_t i = 0; i < num_wires_y; i++) {
             rr_nodes[y_wire_indices[i]].add_edge(clock_index, rr_switch_idx);
         }
+
+        // Connect to virtual clock sink node
+        // used by the two stage router
+        rr_nodes[clock_index].add_edge(virtual_clock_network_root_idx, rr_switch_idx);
     }
+}
+
+int RoutingToClockConnection::create_virtual_clock_network_sink_node(
+    int x,
+    int y) {
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto& rr_nodes = device_ctx.rr_nodes;
+    rr_nodes.emplace_back();
+    auto node_index = rr_nodes.size() - 1;
+
+    rr_nodes[node_index].set_coordinates(x, y, x, y);
+    rr_nodes[node_index].set_capacity(1);
+    rr_nodes[node_index].set_cost_index(SINK_COST_INDEX);
+    rr_nodes[node_index].set_type(SINK);
+    float R = 0.;
+    float C = 0.;
+    rr_nodes[node_index].set_rc_index(find_create_rr_rc_data(R, C));
+
+    return node_index;
 }
 
 /*

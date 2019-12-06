@@ -907,9 +907,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "Specifies how constant nets (i.e. those driven to a constant\n"
             "value) are handled:\n"
             " * global: Treat constant nets as globals (not routed)\n"
-            " * route : Treat constant nets as normal nets (routed)\n"
-            " * dedicated_network : Build a dedicated clock network based on the\n"
-            "                       clock network specified in the architecture file\n")
+            " * route : Treat constant nets as normal nets (routed)\n")
         .default_value("global")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -919,8 +917,19 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             " * ideal: Treat clock pins as ideal\n"
             "          (i.e. no routing delays on clocks)\n"
             " * route: Treat the clock pins as normal nets\n"
-            "          (i.e. routed using inter-block routing)\n")
+            "          (i.e. routed using inter-block routing)\n"
+            " * dedicated_network : Build a dedicated clock network based on the\n"
+            "                       clock network specified in the architecture file\n")
         .default_value("ideal")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    gen_grp.add_argument<bool, ParseOnOff>(args.two_stage_clock_routing, "--two_stage_clock_routing")
+        .help(
+            "Routes clock nets in two stages if using a dedicated clock network.\n"
+            " * First stage: From the Net source to a dedicated clock network source\n"
+            " * Second stage: From the clock network source to net sinks\n")
+        .default_value("off")
+        .action(argparse::Action::STORE_TRUE)
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     gen_grp.add_argument<bool, ParseOnOff>(args.exit_before_pack, "--exit_before_pack")

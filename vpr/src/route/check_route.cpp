@@ -442,7 +442,8 @@ static bool check_adjacent(int from_node, int to_node) {
             } else if (to_type == CHANY) {
                 num_adj += chanx_chany_adjacent(from_node, to_node);
             } else {
-                VTR_ASSERT(0);
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                "in check_adjacent: %d and %d are not adjacent", from_node, to_node);
             }
             break;
 
@@ -473,7 +474,8 @@ static bool check_adjacent(int from_node, int to_node) {
             } else if (to_type == CHANX) {
                 num_adj += chanx_chany_adjacent(to_node, from_node);
             } else {
-                VTR_ASSERT(0);
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                "in check_adjacent: %d and %d are not adjacent", from_node, to_node);
             }
             break;
 

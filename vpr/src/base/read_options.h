@@ -56,6 +56,7 @@ struct t_options {
     argparse::ArgValue<float> target_device_utilization;
     argparse::ArgValue<e_constant_net_method> constant_net_method;
     argparse::ArgValue<e_clock_modeling> clock_modeling;
+    argparse::ArgValue<bool> two_stage_clock_routing;
     argparse::ArgValue<bool> exit_before_pack;
     argparse::ArgValue<bool> strict_checks;
     argparse::ArgValue<std::string> disable_errors;

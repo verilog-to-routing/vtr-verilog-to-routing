@@ -274,8 +274,8 @@ int ClockRib::create_chanx_wire(int x_start,
     rr_nodes[node_index].set_type(CHANX);
     rr_nodes[node_index].set_capacity(1);
     rr_nodes[node_index].set_track_num(ptc_num);
-    auto rc_index = find_create_rr_rc_data(x_chan_wire.layer.r_metal, x_chan_wire.layer.c_metal);
-    rr_nodes[node_index].set_rc_index(rc_index);
+    rr_nodes[node_index].set_rc_index(find_create_rr_rc_data(
+        x_chan_wire.layer.r_metal, x_chan_wire.layer.c_metal));
     rr_nodes[node_index].set_direction(direction);
 
     short seg_index = 0;
@@ -523,8 +523,8 @@ int ClockSpine::create_chany_wire(int y_start,
     rr_nodes[node_index].set_type(CHANY);
     rr_nodes[node_index].set_capacity(1);
     rr_nodes[node_index].set_track_num(ptc_num);
-    auto rc_index = find_create_rr_rc_data(y_chan_wire.layer.r_metal, y_chan_wire.layer.c_metal);
-    rr_nodes[node_index].set_rc_index(rc_index);
+    rr_nodes[node_index].set_rc_index(find_create_rr_rc_data(
+        y_chan_wire.layer.r_metal, y_chan_wire.layer.c_metal));
     rr_nodes[node_index].set_direction(direction);
 
     short seg_index = 0;

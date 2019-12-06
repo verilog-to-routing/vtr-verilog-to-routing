@@ -54,6 +54,7 @@ class RoutingToClockConnection : public ClockConnection {
      */
     /* Connects the inter-block routing to the clock source at the specified coordinates */
     void create_switches(const ClockRRGraphBuilder& clock_graph);
+    int create_virtual_clock_network_sink_node(int x, int y);
 };
 
 class ClockToClockConneciton : public ClockConnection {
