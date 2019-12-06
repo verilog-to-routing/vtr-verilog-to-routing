@@ -61,6 +61,7 @@ TEST_CASE("Rect", "[vtr_geometry/Rect]") {
             REQUIRE(r2.contains({6, 4}));
             REQUIRE_FALSE(r2.contains({100, 4}));
             REQUIRE_FALSE(r2.contains(pi_2));
+            REQUIRE(vtr::Rect<int>(pi_1).contains(pi_1));
         }
 
         SECTION("strictly_contains_int") {
@@ -78,7 +79,19 @@ TEST_CASE("Rect", "[vtr_geometry/Rect]") {
         }
 
         SECTION("bounds_int") {
-            REQUIRE(r1 == (r3 | r4));
+            REQUIRE(r1 == bounding_box(r3, r4));
+        }
+
+        SECTION("empty_int") {
+            REQUIRE(vtr::Rect<int>().empty());
+        }
+
+        SECTION("sample_int") {
+            auto r = vtr::Rect<int>(pi_1, pi_2);
+            REQUIRE(sample(r, 0, 0, 17) == pi_1);
+            REQUIRE(sample(r, 17, 17, 17) == pi_2);
+            auto inside = sample(r, 3, 11, 17);
+            REQUIRE(r.contains(inside));
         }
     }
 
@@ -92,6 +105,7 @@ TEST_CASE("Rect", "[vtr_geometry/Rect]") {
         vtr::Rect<float> r4(pf_1, pf_2);
         vtr::Rect<float> r5(pf_1, pf_3);
         vtr::Rect<float> r6(pf_3, pf_2);
+        // vtr::Rect<float> r7(pf_1); // <-- will fail to compile
 
         SECTION("equality_float") {
             REQUIRE(r3 == r4);
@@ -140,7 +154,11 @@ TEST_CASE("Rect", "[vtr_geometry/Rect]") {
         }
 
         SECTION("bounds_float") {
-            REQUIRE(r3 == (r5 | r6));
+            REQUIRE(r3 == bounding_box(r5, r6));
+        }
+
+        SECTION("empty_float") {
+            REQUIRE(vtr::Rect<float>().empty());
         }
     }
 }

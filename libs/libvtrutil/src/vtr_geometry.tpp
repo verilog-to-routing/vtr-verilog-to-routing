@@ -80,11 +80,13 @@ Rect<T>::Rect(Point<T> bottom_left_val, Point<T> top_right_val)
     //pass
 }
 
+//Only defined for integral types
 template<class T>
-Rect<T>::Rect(Point<T> bottom_left_val, T size)
-    : bottom_left_(bottom_left_val)
-    , top_right_(bottom_left_val.x() + size,
-                 bottom_left_val.y() + size) {
+template<typename U, typename std::enable_if<std::is_integral<U>::value>::type...>
+Rect<T>::Rect(Point<U> point)
+    : bottom_left_(point)
+    , top_right_(point.x() + 1,
+                 point.y() + 1) {
     //pass
 }
 
@@ -166,6 +168,22 @@ bool operator!=(const Rect<T>& lhs, const Rect<T>& rhs) {
 }
 
 template<class T>
+Rect<T> bounding_box(const Rect<T>& lhs, const Rect<T>& rhs) {
+    return Rect<T>(std::min(lhs.xmin(), rhs.xmin()),
+                   std::min(lhs.ymin(), rhs.ymin()),
+                   std::max(lhs.xmax(), rhs.xmax()),
+                   std::max(lhs.ymax(), rhs.ymax()));
+}
+
+//Only defined for integral types
+template<typename T, typename std::enable_if<std::is_integral<T>::value>::type...>
+Point<T> sample(const vtr::Rect<T>& r, T x, T y, T d) {
+    VTR_ASSERT(d > 0);
+    return Point<T>((r.xmin() * (d - x) + r.xmax() * x + d / 2) / d,
+                    (r.ymin() * (d - y) + r.ymax() * y + d / 2) / d);
+}
+
+template<class T>
 void Rect<T>::set_xmin(T xmin_val) {
     bottom_left_.set_x(xmin_val);
 }
@@ -186,16 +204,9 @@ void Rect<T>::set_ymax(T ymax_val) {
 }
 
 template<class T>
-Rect<T> operator|(const Rect<T>& lhs, const Rect<T>& rhs) {
-    return Rect<T>(std::min(lhs.xmin(), rhs.xmin()),
-                   std::min(lhs.ymin(), rhs.ymin()),
-                   std::max(lhs.xmax(), rhs.xmax()),
-                   std::max(lhs.ymax(), rhs.ymax()));
-}
-
-template<class T>
-Rect<T>& operator|=(Rect<T>& lhs, const Rect<T>& rhs) {
-    return lhs = lhs | rhs;
+Rect<T>& Rect<T>::expand_bounding_box(const Rect<T>& other) {
+    *this = bounding_box(*this, other);
+    return *this;
 }
 
 /*

@@ -49,12 +49,14 @@ class Cost_Entry {
         congestion = std::numeric_limits<float>::infinity();
         fill = false;
     }
-    Cost_Entry(float set_delay, float set_congestion) {
-        delay = set_delay;
-        congestion = set_congestion;
-        fill = false;
-    }
-
+    Cost_Entry(float set_delay, float set_congestion)
+        : delay(set_delay)
+        , congestion(set_congestion)
+        , fill(false) {}
+    Cost_Entry(float set_delay, float set_congestion, bool set_fill)
+        : delay(set_delay)
+        , congestion(set_congestion)
+        , fill(set_fill) {}
     bool valid() const {
         return std::isfinite(delay) && std::isfinite(congestion);
     }
@@ -141,16 +143,20 @@ class PQ_Entry {
     }
 };
 
-// A version of PQ_Entry that only calculates and stores the delay (cost.)
+// A version of PQ_Entry that only calculates and stores the delay.
 class PQ_Entry_Delay {
   public:
     int rr_node_ind;  //index in device_ctx.rr_nodes that this entry represents
     float delay_cost; //the cost of the path to get to this node
 
-    PQ_Entry_Delay(int set_rr_node_ind, int /*switch_ind*/, float parent_cost, bool starting_node);
+    PQ_Entry_Delay(int set_rr_node_ind, int /*switch_ind*/, const PQ_Entry_Delay* parent);
 
     float cost() const {
         return delay_cost;
+    }
+
+    void adjust_Tsw(float amount) {
+        delay_cost += amount;
     }
 
     bool operator>(const PQ_Entry_Delay& obj) const {
@@ -158,15 +164,20 @@ class PQ_Entry_Delay {
     }
 };
 
+// A version of PQ_Entry that only calculates and stores the base cost.
 class PQ_Entry_Base_Cost {
   public:
     int rr_node_ind; //index in device_ctx.rr_nodes that this entry represents
     float base_cost;
 
-    PQ_Entry_Base_Cost(int set_rr_node_ind, int /*switch_ind*/, float parent_cost, bool starting_node);
+    PQ_Entry_Base_Cost(int set_rr_node_ind, int /*switch_ind*/, const PQ_Entry_Base_Cost* parent);
 
     float cost() const {
         return base_cost;
+    }
+
+    void adjust_Tsw(float /* amount */) {
+        // do nothing
     }
 
     bool operator>(const PQ_Entry_Base_Cost& obj) const {
@@ -180,46 +191,16 @@ struct Search_Path {
     int edge;
 };
 
-} // namespace util
-
 /* iterates over the children of the specified node and selectively pushes them onto the priority queue */
 template<typename Entry>
 void expand_dijkstra_neighbours(const std::vector<t_rr_node>& rr_nodes,
                                 const Entry& parent_entry,
-                                std::unordered_map<int, util::Search_Path>& paths,
+                                std::unordered_map<int, Search_Path>& paths,
                                 std::vector<bool>& node_expanded,
                                 std::priority_queue<Entry,
                                                     std::vector<Entry>,
-                                                    std::greater<Entry>>& pq) {
-    int parent_ind = parent_entry.rr_node_ind;
+                                                    std::greater<Entry>>& pq);
 
-    auto& parent_node = rr_nodes[parent_ind];
-
-    for (int iedge = 0; iedge < parent_node.num_edges(); iedge++) {
-        int child_node_ind = parent_node.edge_sink_node(iedge);
-        int switch_ind = parent_node.edge_switch(iedge);
-
-        /* skip this child if it has already been expanded from */
-        if (node_expanded[child_node_ind]) {
-            continue;
-        }
-
-        Entry child_entry(child_node_ind, switch_ind, parent_entry.cost(), false);
-        VTR_ASSERT(child_entry.cost() >= 0);
-        pq.push(child_entry);
-
-        /* Create (if it doesn't exist) or update (if the new cost is lower)
-         * to specified node */
-        util::Search_Path path_entry = {child_entry.cost(), parent_ind, iedge};
-        auto result = paths.insert(std::make_pair(
-            child_node_ind,
-            path_entry));
-        if (!result.second) {
-            if (child_entry.cost() < result.first->second.cost) {
-                result.first->second = path_entry;
-            }
-        }
-    }
-}
+} // namespace util
 
 #endif
