@@ -96,7 +96,7 @@ class t_metadata_value {
         : value_(o.value_) {}
 
     // Return string value.
-    std::string as_string() const { return value_; }
+    const std::string& as_string() const { return value_; }
 
   private:
     std::string value_;
