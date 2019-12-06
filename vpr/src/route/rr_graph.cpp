@@ -331,7 +331,9 @@ void create_rr_graph(const t_graph_type graph_type,
                          segment_inf,
                          base_cost_type,
                          &det_routing_arch->wire_to_rr_ipin_switch,
-                         det_routing_arch->read_rr_graph_filename.c_str());
+                         det_routing_arch->read_rr_graph_filename.c_str(),
+                         /*read_edge_metadata=*/true,
+                         /*do_check_rr_graph=*/true);
         }
     } else {
         if (channel_widths_unchanged(device_ctx.chan_width, nodes_per_chan) && !device_ctx.rr_nodes.empty()) {
@@ -725,7 +727,7 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     //Partition the rr graph edges for efficient access to configurable/non-configurable
     //edge subsets. Must be done after RR switches have been allocated
-    partition_rr_graph_edges(device_ctx);
+    partition_rr_graph_edges(&device_ctx.rr_nodes);
 
     //Save the channel widths for the newly constructed graph
     device_ctx.chan_width = nodes_per_chan;
