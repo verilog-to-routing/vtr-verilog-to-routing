@@ -1435,7 +1435,7 @@ short *mutate (short *parent)
 {
 	short *new_chromosome = (short*) vtr::malloc (sizeof(short)*num_of_adders);
 	// Find a point and flip the chromosome from there
-	int cross_point = rand()%num_of_adders;
+	// int cross_point = rand()%num_of_adders;
 	// Find points based on the mutation rate and change their values randomly
 	int mutation_rate = 0.05;
 	int num_of_genes_will_be_changed = mutation_rate*num_of_adders;
