@@ -1629,6 +1629,7 @@ void instantiate_add_w_carry_block(short type, int *width, nnode_t *node, short 
 							previous_carry = make_adder(CARRY_FUNC, current_adder, previous_carry, width, i, netlist, node, subtraction, mark);
 
 						connect_output_pin_to_node(width, i, 0, node, current_adder, subtraction);
+						break;
 					}
 					//Carry Select Adder
 					case CSLA:
@@ -1647,6 +1648,7 @@ void instantiate_add_w_carry_block(short type, int *width, nnode_t *node, short 
 							previous_carry = make_mux_2to1(previous_carry, previous_carry_vcc, previous_carry_gnd, node, mark);
 
 						connect_output_pin_to_node(width, i, 0, node, current_adder, subtraction);
+						break;
 					}
 					//binary to excess Carry Select Adder
 					case BEC_CSLA:
@@ -1665,6 +1667,7 @@ void instantiate_add_w_carry_block(short type, int *width, nnode_t *node, short 
 							previous_carry = make_mux_2to1(previous_carry, previous_carry_vcc, previous_carry_gnd, node, mark);
 
 						connect_output_pin_to_node(width, i, 0, node, current_adder, subtraction);
+						break;
 					}
 					default:
 					{

@@ -166,6 +166,10 @@ static ODIN_ERROR_CODE synthesize_verilog()
 	printf("Performing Partial Map to target device\n");
 	partial_map_top(verilog_netlist);
 
+	// MEHRSHAD //
+	partial_map_adders_GA_top(verilog_netlist);
+	// MEHRSHAD //
+
 	/* Find any unused logic in the netlist and remove it */
 	remove_unused_logic(verilog_netlist);
 
