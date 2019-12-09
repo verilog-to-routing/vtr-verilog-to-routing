@@ -850,17 +850,17 @@ bool remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity) {
     AtomBlockType driver_block_type = netlist.block_type(netlist.pin_block(new_driver));
     bool driver_is_pi = (driver_block_type == AtomBlockType::INPAD);
     bool po_in_input_sinks = std::any_of(input_sinks.begin(), input_sinks.end(),
-                                   [&](AtomPinId pin_id) {
-                                       VTR_ASSERT(netlist.pin_type(pin_id) == PinType::SINK);
-                                       AtomBlockId blk_id = netlist.pin_block(pin_id);
-                                       return netlist.block_type(blk_id) == AtomBlockType::OUTPAD;
-                                   });
+                                         [&](AtomPinId pin_id) {
+                                             VTR_ASSERT(netlist.pin_type(pin_id) == PinType::SINK);
+                                             AtomBlockId blk_id = netlist.pin_block(pin_id);
+                                             return netlist.block_type(blk_id) == AtomBlockType::OUTPAD;
+                                         });
     bool po_in_output_sinks = std::any_of(output_sinks.begin(), output_sinks.end(),
-                                   [&](AtomPinId pin_id) {
-                                       VTR_ASSERT(netlist.pin_type(pin_id) == PinType::SINK);
-                                       AtomBlockId blk_id = netlist.pin_block(pin_id);
-                                       return netlist.block_type(blk_id) == AtomBlockType::OUTPAD;
-                                   });
+                                          [&](AtomPinId pin_id) {
+                                              VTR_ASSERT(netlist.pin_type(pin_id) == PinType::SINK);
+                                              AtomBlockId blk_id = netlist.pin_block(pin_id);
+                                              return netlist.block_type(blk_id) == AtomBlockType::OUTPAD;
+                                          });
 
     std::string new_net_name;
     if (!driver_is_pi && !po_in_input_sinks && !po_in_output_sinks) {
