@@ -814,10 +814,16 @@ bool remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity) {
     auto input_net = netlist.pin_net(input_pin);
     auto output_net = netlist.pin_net(output_pin);
 
-    VTR_LOGV_WARN(verbosity > 2, "Attempting to remove buffer '%s' (%s) from net '%s' to net '%s'\n", netlist.block_name(blk).c_str(), netlist.block_model(blk)->name, netlist.net_name(input_net).c_str(), netlist.net_name(output_net).c_str());
+    VTR_LOGV_WARN(verbosity > 1, "Attempting to remove buffer '%s' (%s) from net '%s' to net '%s'\n", netlist.block_name(blk).c_str(), netlist.block_model(blk)->name, netlist.net_name(input_net).c_str(), netlist.net_name(output_net).c_str());
 
     //Collect the new driver and sink pins
     AtomPinId new_driver = netlist.net_driver(input_net);
+
+    if (!new_driver) {
+        VTR_LOGV_WARN(verbosity > 2, "Buffer '%s' has no input and will not be absorbed (left to be swept)\n", netlist.block_name(blk).c_str(), netlist.block_model(blk)->name, netlist.net_name(input_net).c_str(), netlist.net_name(output_net).c_str());
+        return false; //Dangling/undriven input, leave buffer to be swept
+    }
+
     VTR_ASSERT(netlist.pin_type(new_driver) == PinType::DRIVER);
 
     std::vector<AtomPinId> new_sinks;
@@ -881,7 +887,7 @@ bool remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity) {
 
     size_t initial_input_net_pins = netlist.net_pins(input_net).size();
 
-    VTR_LOGV_WARN(verbosity > 1, "%s is a LUT buffer and will be absorbed\n", netlist.block_name(blk).c_str());
+    VTR_LOGV_WARN(verbosity > 2, "%s is a LUT buffer and will be absorbed\n", netlist.block_name(blk).c_str());
 
     //Remove the buffer
     //
@@ -895,8 +901,9 @@ bool remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity) {
     netlist.remove_net(output_net);
 
     //Create the new merged net
-    netlist.add_net(new_net_name, new_driver, new_sinks);
+    AtomNetId new_net = netlist.add_net(new_net_name, new_driver, new_sinks);
 
+    VTR_ASSERT(netlist.net_pins(new_net).size() == initial_input_net_pins - 1 + output_sinks.size());
     return true;
 }
 
