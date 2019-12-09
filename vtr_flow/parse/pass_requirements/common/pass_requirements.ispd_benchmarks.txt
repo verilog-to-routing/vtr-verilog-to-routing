@@ -1,0 +1,6 @@
+#Pass requirements specific to the Titan benchmarks
+
+num_IO;Range(0.95,1.05)
+num_CLB;Range(0.95,1.05)
+num_DSP;Range(0.95,1.05)
+num_BRAM;Range(0.95,1.05)
