@@ -841,7 +841,13 @@ bool remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity) {
     // Note that the driver can only (potentially) be an INPAD, and the sinks only (potentially) OUTPADs
     AtomBlockType driver_block_type = netlist.block_type(netlist.pin_block(new_driver));
     bool driver_is_pi = (driver_block_type == AtomBlockType::INPAD);
-    bool po_in_sinks = std::any_of(new_sinks.begin(), new_sinks.end(),
+    bool po_in_input_sinks = std::any_of(input_sinks.begin(), input_sinks.end(),
+                                   [&](AtomPinId pin_id) {
+                                       VTR_ASSERT(netlist.pin_type(pin_id) == PinType::SINK);
+                                       AtomBlockId blk_id = netlist.pin_block(pin_id);
+                                       return netlist.block_type(blk_id) == AtomBlockType::OUTPAD;
+                                   });
+    bool po_in_output_sinks = std::any_of(output_sinks.begin(), output_sinks.end(),
                                    [&](AtomPinId pin_id) {
                                        VTR_ASSERT(netlist.pin_type(pin_id) == PinType::SINK);
                                        AtomBlockId blk_id = netlist.pin_block(pin_id);
@@ -849,21 +855,22 @@ bool remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity) {
                                    });
 
     std::string new_net_name;
-    if (!driver_is_pi && !po_in_sinks) {
+    if (!driver_is_pi && !po_in_input_sinks && !po_in_output_sinks) {
         //No PIs or POs, we can choose arbitarily in this case
         new_net_name = netlist.net_name(output_net);
 
-    } else if (driver_is_pi && !po_in_sinks) {
-        //Must use the input name to perserve primary-input name
+    } else if ((driver_is_pi || po_in_input_sinks) && !po_in_output_sinks) {
+        //Must use the input name to perserve primary-input or primary-output name
         new_net_name = netlist.net_name(input_net);
 
-    } else if (!driver_is_pi && po_in_sinks) {
+    } else if ((!driver_is_pi && !po_in_input_sinks) && po_in_output_sinks) {
         //Must use the output name to perserve primary-output name
         new_net_name = netlist.net_name(output_net);
 
     } else {
-        VTR_ASSERT(driver_is_pi && po_in_sinks);
-        //This is a buffered connection from a primary input, to primary output
+        VTR_ASSERT((driver_is_pi || po_in_input_sinks) && po_in_output_sinks);
+        //This is a buffered connection from a primary input to primary output, or to
+        //more than one primary output.
         //TODO: consider implications of removing these...
 
         //Do not remove such buffers
