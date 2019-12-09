@@ -814,6 +814,8 @@ bool remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity) {
     auto input_net = netlist.pin_net(input_pin);
     auto output_net = netlist.pin_net(output_pin);
 
+    VTR_LOGV_WARN(verbosity > 2, "Attempting to remove buffer '%s' (%s) from net '%s' to net '%s'\n", netlist.block_name(blk).c_str(), netlist.block_model(blk)->name, netlist.net_name(input_net).c_str(), netlist.net_name(output_net).c_str());
+
     //Collect the new driver and sink pins
     AtomPinId new_driver = netlist.net_driver(input_net);
     VTR_ASSERT(netlist.pin_type(new_driver) == PinType::DRIVER);
