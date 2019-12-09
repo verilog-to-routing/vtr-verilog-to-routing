@@ -32,12 +32,13 @@ std::vector<AtomPortId> find_combinationally_connected_input_ports(const AtomNet
 //Returns the set of clock ports which are combinationally connected to output_port
 std::vector<AtomPortId> find_combinationally_connected_clock_ports(const AtomNetlist& netlist, AtomPortId output_port);
 
-std::vector<AtomBlockId> identify_buffer_luts(const AtomNetlist& netlist);
 bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk);
 bool is_removable_block(const AtomNetlist& netlist, const AtomBlockId blk, std::string* reason = nullptr);
 bool is_removable_input(const AtomNetlist& netlist, const AtomBlockId blk, std::string* reason = nullptr);
 bool is_removable_output(const AtomNetlist& netlist, const AtomBlockId blk, std::string* reason = nullptr);
-void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity);
+
+//Attempts to remove the specified buffer LUT blk from the netlist. Returns true if successful.
+bool remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity);
 
 std::string make_unconn(size_t& unconn_count, PinType type);
 void cube_to_minterms_recurr(std::vector<vtr::LogicValue> cube, std::vector<size_t>& minterms);
@@ -688,27 +689,19 @@ void absorb_buffer_luts(AtomNetlist& netlist, int verbosity) {
     //we then remove those luts, replacing the net's they drove with the inputs to the
     //buffer lut
 
-    //Find buffer luts
-    auto buffer_luts = identify_buffer_luts(netlist);
-
-    VTR_LOGV(verbosity > 0, "Absorbing %zu LUT buffers\n", buffer_luts.size());
+    size_t removed_buffer_count = 0;
 
     //Remove the buffer luts
-    for (auto blk : buffer_luts) {
-        remove_buffer_lut(netlist, blk, verbosity);
-    }
-
-    //TODO: absorb inverter LUTs?
-}
-
-std::vector<AtomBlockId> identify_buffer_luts(const AtomNetlist& netlist) {
-    std::vector<AtomBlockId> buffer_luts;
     for (auto blk : netlist.blocks()) {
         if (is_buffer_lut(netlist, blk)) {
-            buffer_luts.push_back(blk);
+            if (remove_buffer_lut(netlist, blk, verbosity)) {
+                ++removed_buffer_count;
+            }
         }
     }
-    return buffer_luts;
+    VTR_LOGV(verbosity > 0, "Absorbed %zu LUT buffers\n", removed_buffer_count);
+
+    //TODO: absorb inverter LUTs?
 }
 
 bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk) {
@@ -772,7 +765,7 @@ bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk) {
     return false;
 }
 
-void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity) {
+bool remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity) {
     //General net connectivity, numbers equal pin ids
     //
     // 1  in    2 ----- m+1  out
@@ -874,7 +867,7 @@ void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity) {
         //TODO: consider implications of removing these...
 
         //Do not remove such buffers
-        return;
+        return false;
     }
 
     size_t initial_input_net_pins = netlist.net_pins(input_net).size();
@@ -894,6 +887,8 @@ void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity) {
 
     //Create the new merged net
     netlist.add_net(new_net_name, new_driver, new_sinks);
+
+    return true;
 }
 
 bool is_removable_block(const AtomNetlist& netlist, const AtomBlockId blk_id, std::string* reason) {
