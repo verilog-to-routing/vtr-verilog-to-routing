@@ -383,15 +383,6 @@ my $in_mode;
 my $tpp      = XML::TreePP->new();
 my $xml_tree = $tpp->parsefile($architecture_file_path);
 
-# Get lut size if undefined
-if (!defined $lut_size) {
-    $lut_size = xml_find_LUT_Kvalue($xml_tree);
-}
-if ( $lut_size < 1 ) {
-    $error_status = "failed: cannot determine arch LUT k-value";
-    $error_code = 1;
-}
-
 # Get memory size
 $mem_size = xml_find_mem_size($xml_tree);
 
@@ -528,6 +519,16 @@ if (    $starting_stage <= $stage_idx_abc
 	#added so that valgrind will not run on abc and perl because of existing memory errors
 	my $skip_valgrind = $valgrind;
 	$valgrind = 0;
+
+
+    # Get lut size if undefined
+    if (!defined $lut_size) {
+        $lut_size = xml_find_LUT_Kvalue($xml_tree);
+    }
+    if ( $lut_size < 1 ) {
+        $error_status = "failed: cannot determine arch LUT k-value";
+        $error_code = 1;
+    }
 
 	my @clock_list;
 
