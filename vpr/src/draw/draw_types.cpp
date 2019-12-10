@@ -108,13 +108,16 @@ ezgl::rectangle t_draw_coords::get_absolute_pb_bbox(const ClusterBlockId clb_ind
     return result;
 }
 
-ezgl::rectangle t_draw_coords::get_absolute_clb_bbox(const ClusterBlockId clb_index, const t_logical_block_type_ptr type) {
-    return get_pb_bbox(clb_index, *type->pb_graph_head);
+ezgl::rectangle t_draw_coords::get_absolute_clb_bbox(const ClusterBlockId clb_index, const t_logical_block_type_ptr block_type) {
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    t_pl_loc loc = place_ctx.block_locs[clb_index].loc;
+    return get_pb_bbox(loc.x, loc.y, loc.z, block_type);
 }
 
 ezgl::rectangle t_draw_coords::get_absolute_clb_bbox(int grid_x, int grid_y, int sub_block_index) {
     auto& device_ctx = g_vpr_ctx.device();
-    return get_pb_bbox(grid_x, grid_y, sub_block_index, *pick_best_logical_type(device_ctx.grid[grid_x][grid_y].type)->pb_graph_head);
+    return get_pb_bbox(grid_x, grid_y, sub_block_index, pick_best_logical_type(device_ctx.grid[grid_x][grid_y].type));
 }
 
 ezgl::rectangle t_draw_coords::get_absolute_clb_bbox(int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr logical_block_type) {
