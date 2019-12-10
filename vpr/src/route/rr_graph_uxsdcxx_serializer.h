@@ -97,7 +97,7 @@ class MetadataBind {
     std::string value_;
 };
 
-class RrGraphImpl : public uxsd::RrGraphBase<
+class RrGraphSerializer : public uxsd::RrGraphBase<
                         /*ChannelReadContext =*/void*,
                         /*XListReadContext =*/int,
                         /*YListReadContext =*/int,
@@ -153,7 +153,7 @@ class RrGraphImpl : public uxsd::RrGraphBase<
                         /*RrEdgesWriteContext =*/void*,
                         /*RrGraphWriteContext =*/void*> {
   public:
-    RrGraphImpl(
+    RrGraphSerializer(
         bool is_global_graph,
         bool read_edge_metadata,
         t_chan_width* chan_width,
