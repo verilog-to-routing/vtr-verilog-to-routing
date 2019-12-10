@@ -47,7 +47,12 @@ void load_rr_file(const t_graph_type graph_type,
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
     RrGraphSerializer reader(
-        GRAPH_GLOBAL == graph_type,
+        graph_type,
+        base_cost_type,
+        wire_to_rr_ipin_switch,
+        do_check_rr_graph,
+        read_rr_graph_name,
+        &device_ctx.read_rr_graph_filename,
         read_edge_metadata,
         &device_ctx.chan_width,
         &device_ctx.rr_nodes,
@@ -85,12 +90,4 @@ void load_rr_file(const t_graph_type graph_type,
             "Expecting .xml or .bin format\n",
             read_rr_graph_name);
     }
-
-    reader.finish_rr_graph_read(
-        graph_type,
-        base_cost_type,
-        wire_to_rr_ipin_switch,
-        do_check_rr_graph,
-        read_rr_graph_name,
-        &device_ctx.read_rr_graph_filename);
 }

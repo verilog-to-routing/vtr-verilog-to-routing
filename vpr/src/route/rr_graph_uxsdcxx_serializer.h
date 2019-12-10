@@ -98,63 +98,68 @@ class MetadataBind {
 };
 
 class RrGraphSerializer : public uxsd::RrGraphBase<
-                        /*ChannelReadContext =*/void*,
-                        /*XListReadContext =*/int,
-                        /*YListReadContext =*/int,
-                        /*ChannelsReadContext =*/void*,
-                        /*TimingReadContext =*/const t_rr_switch_inf*,
-                        /*SizingReadContext =*/const t_rr_switch_inf*,
-                        /*SwitchReadContext =*/const t_rr_switch_inf*,
-                        /*SwitchesReadContext =*/void*,
-                        /*SegmentTimingReadContext =*/const t_segment_inf*,
-                        /*SegmentReadContext =*/const t_segment_inf*,
-                        /*SegmentsReadContext =*/void*,
-                        /*PinReadContext =*/std::pair<const t_physical_tile_type*, int>,
-                        /*PinClassReadContext =*/std::pair<const t_physical_tile_type*, const t_class*>,
-                        /*BlockTypeReadContext =*/const t_physical_tile_type*,
-                        /*BlockTypesReadContext =*/void*,
-                        /*GridLocReadContext =*/const t_grid_tile*,
-                        /*GridLocsReadContext =*/void*,
-                        /*NodeLocReadContext =*/const t_rr_node*,
-                        /*NodeTimingReadContext =*/const t_rr_node*,
-                        /*NodeSegmentReadContext =*/const t_rr_node*,
-                        /*MetaReadContext =*/const std::pair<const std::string, std::vector<t_metadata_value>>*,
-                        /*MetadataReadContext =*/const t_metadata_dict*,
-                        /*NodeReadContext =*/const t_rr_node*,
-                        /*RrNodesReadContext =*/void*,
-                        /*EdgeReadContext =*/void*,
-                        /*RrEdgesReadContext =*/void*,
-                        /*RrGraphReadContext =*/void*,
-                        /*ChannelWriteContext =*/void*,
-                        /*XListWriteContext =*/void*,
-                        /*YListWriteContext =*/void*,
-                        /*ChannelsWriteContext =*/void*,
-                        /*TimingWriteContext =*/t_rr_switch_inf*,
-                        /*SizingWriteContext =*/t_rr_switch_inf*,
-                        /*SwitchWriteContext =*/t_rr_switch_inf*,
-                        /*SwitchesWriteContext =*/void*,
-                        /*SegmentTimingWriteContext =*/const t_segment_inf*,
-                        /*SegmentWriteContext =*/const t_segment_inf*,
-                        /*SegmentsWriteContext =*/void*,
-                        /*PinWriteContext =*/void*,
-                        /*PinClassWriteContext =*/void*,
-                        /*BlockTypeWriteContext =*/const t_physical_tile_type*,
-                        /*BlockTypesWriteContext =*/void*,
-                        /*GridLocWriteContext =*/void*,
-                        /*GridLocsWriteContext =*/void*,
-                        /*NodeLocWriteContext =*/int,
-                        /*NodeTimingWriteContext =*/int,
-                        /*NodeSegmentWriteContext =*/int,
-                        /*MetaWriteContext =*/MetadataBind*,
-                        /*MetadataWriteContext =*/MetadataBind*,
-                        /*NodeWriteContext =*/int,
-                        /*RrNodesWriteContext =*/void*,
-                        /*EdgeWriteContext =*/MetadataBind*,
-                        /*RrEdgesWriteContext =*/void*,
-                        /*RrGraphWriteContext =*/void*> {
+                              /*ChannelReadContext =*/void*,
+                              /*XListReadContext =*/int,
+                              /*YListReadContext =*/int,
+                              /*ChannelsReadContext =*/void*,
+                              /*TimingReadContext =*/const t_rr_switch_inf*,
+                              /*SizingReadContext =*/const t_rr_switch_inf*,
+                              /*SwitchReadContext =*/const t_rr_switch_inf*,
+                              /*SwitchesReadContext =*/void*,
+                              /*SegmentTimingReadContext =*/const t_segment_inf*,
+                              /*SegmentReadContext =*/const t_segment_inf*,
+                              /*SegmentsReadContext =*/void*,
+                              /*PinReadContext =*/std::pair<const t_physical_tile_type*, int>,
+                              /*PinClassReadContext =*/std::pair<const t_physical_tile_type*, const t_class*>,
+                              /*BlockTypeReadContext =*/const t_physical_tile_type*,
+                              /*BlockTypesReadContext =*/void*,
+                              /*GridLocReadContext =*/const t_grid_tile*,
+                              /*GridLocsReadContext =*/void*,
+                              /*NodeLocReadContext =*/const t_rr_node*,
+                              /*NodeTimingReadContext =*/const t_rr_node*,
+                              /*NodeSegmentReadContext =*/const t_rr_node*,
+                              /*MetaReadContext =*/const std::pair<const std::string, std::vector<t_metadata_value>>*,
+                              /*MetadataReadContext =*/const t_metadata_dict*,
+                              /*NodeReadContext =*/const t_rr_node*,
+                              /*RrNodesReadContext =*/void*,
+                              /*EdgeReadContext =*/void*,
+                              /*RrEdgesReadContext =*/void*,
+                              /*RrGraphReadContext =*/void*,
+                              /*ChannelWriteContext =*/void*,
+                              /*XListWriteContext =*/void*,
+                              /*YListWriteContext =*/void*,
+                              /*ChannelsWriteContext =*/void*,
+                              /*TimingWriteContext =*/t_rr_switch_inf*,
+                              /*SizingWriteContext =*/t_rr_switch_inf*,
+                              /*SwitchWriteContext =*/t_rr_switch_inf*,
+                              /*SwitchesWriteContext =*/void*,
+                              /*SegmentTimingWriteContext =*/const t_segment_inf*,
+                              /*SegmentWriteContext =*/const t_segment_inf*,
+                              /*SegmentsWriteContext =*/void*,
+                              /*PinWriteContext =*/void*,
+                              /*PinClassWriteContext =*/void*,
+                              /*BlockTypeWriteContext =*/const t_physical_tile_type*,
+                              /*BlockTypesWriteContext =*/void*,
+                              /*GridLocWriteContext =*/void*,
+                              /*GridLocsWriteContext =*/void*,
+                              /*NodeLocWriteContext =*/int,
+                              /*NodeTimingWriteContext =*/int,
+                              /*NodeSegmentWriteContext =*/int,
+                              /*MetaWriteContext =*/MetadataBind*,
+                              /*MetadataWriteContext =*/MetadataBind*,
+                              /*NodeWriteContext =*/int,
+                              /*RrNodesWriteContext =*/void*,
+                              /*EdgeWriteContext =*/MetadataBind*,
+                              /*RrEdgesWriteContext =*/void*,
+                              /*RrGraphWriteContext =*/void*> {
   public:
     RrGraphSerializer(
-        bool is_global_graph,
+        const t_graph_type graph_type,
+        const enum e_base_cost_type base_cost_type,
+        int* wire_to_rr_ipin_switch,
+        bool do_check_rr_graph,
+        const char* read_rr_graph_name,
+        std::string* read_rr_graph_filename,
         bool read_edge_metadata,
         t_chan_width* chan_width,
         std::vector<t_rr_node>* rr_nodes,
@@ -169,13 +174,18 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
         const std::unordered_map<int, t_metadata_dict>& rr_node_metadata,
         const std::unordered_map<std::tuple<int, int, short>,
                                  t_metadata_dict>& rr_edge_metadata)
-        : is_global_graph_(is_global_graph)
+        : graph_type_(graph_type)
+        , base_cost_type_(base_cost_type)
+        , wire_to_rr_ipin_switch_(wire_to_rr_ipin_switch)
+        , do_check_rr_graph_(do_check_rr_graph)
+        , read_rr_graph_name_(read_rr_graph_name)
         , read_edge_metadata_(read_edge_metadata)
         , chan_width_(chan_width)
         , rr_nodes_(rr_nodes)
         , rr_switch_inf_(rr_switch_inf)
         , rr_indexed_data_(rr_indexed_data)
         , rr_node_indices_(rr_node_indices)
+        , read_rr_graph_filename_(read_rr_graph_filename)
         , num_arch_switches_(num_arch_switches)
         , arch_switch_inf_(arch_switch_inf)
         , segment_inf_(segment_inf)
@@ -185,7 +195,6 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
         , rr_edge_metadata_(rr_edge_metadata) {}
 
     void start_load() override {}
-    void finish_load() override {}
     void start_write() override {}
     void finish_write() override {}
 
@@ -768,7 +777,7 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
         }
 
         auto& node = (*rr_nodes_)[inode];
-        if (is_global_graph_) {
+        if (GRAPH_GLOBAL == graph_type_) {
             node.set_cost_index(0);
         } else if (node.type() == CHANX) {
             node.set_cost_index(CHANX_COST_INDEX_START + segment_id);
@@ -1057,7 +1066,8 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
 
         edges_.clear();
         edges_.shrink_to_fit();
-        wire_to_rr_ipin_switch_ = most_frequent_switch.first;
+        VTR_ASSERT(wire_to_rr_ipin_switch_ != nullptr);
+        *wire_to_rr_ipin_switch_ = most_frequent_switch.first;
     }
 
     /** Generated for complex type "rr_graph":
@@ -1531,15 +1541,7 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
         return nullptr;
     }
 
-    void finish_rr_graph_read(
-        const t_graph_type graph_type,
-        const enum e_base_cost_type base_cost_type,
-        int* wire_to_rr_ipin_switch,
-        bool do_check_rr_graph,
-        const char* read_rr_graph_name,
-        std::string* read_rr_graph_filename) {
-        *wire_to_rr_ipin_switch = wire_to_rr_ipin_switch_;
-
+    void finish_load() override {
         //Partition the rr graph edges for efficient access to configurable/non-configurable
         //edge subsets. Must be done after RR switches have been allocated
         partition_rr_graph_edges(rr_nodes_);
@@ -1548,23 +1550,26 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
 
         init_fan_in(*rr_nodes_, rr_nodes_->size());
 
-        int max_chan_width = (is_global_graph_ ? 1 : chan_width_->max);
+        bool is_global_graph = GRAPH_GLOBAL == graph_type_;
+        int max_chan_width = (is_global_graph ? 1 : chan_width_->max);
         alloc_and_load_rr_indexed_data(
             segment_inf_,
             *rr_node_indices_,
             max_chan_width,
-            *wire_to_rr_ipin_switch,
-            base_cost_type);
+            *wire_to_rr_ipin_switch_,
+            base_cost_type_);
 
         VTR_ASSERT(rr_indexed_data_->size() == seg_index_.size());
         for (size_t i = 0; i < seg_index_.size(); ++i) {
             (*rr_indexed_data_)[i].seg_index = seg_index_[i];
         }
 
-        read_rr_graph_filename->assign(read_rr_graph_name);
+        VTR_ASSERT(read_rr_graph_filename_ != nullptr);
+        VTR_ASSERT(read_rr_graph_name_ != nullptr);
+        read_rr_graph_filename_->assign(read_rr_graph_name_);
 
-        if (do_check_rr_graph) {
-            check_rr_graph(graph_type, grid_, physical_tile_types_);
+        if (do_check_rr_graph_) {
+            check_rr_graph(graph_type_, grid_, physical_tile_types_);
         }
     }
 
@@ -1727,7 +1732,11 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
         }
     }
 
-    const bool is_global_graph_;
+    const t_graph_type graph_type_;
+    const enum e_base_cost_type base_cost_type_;
+    int* wire_to_rr_ipin_switch_;
+    const bool do_check_rr_graph_;
+    const char* read_rr_graph_name_;
     const bool read_edge_metadata_;
     t_chan_width* chan_width_;
     std::vector<t_rr_node>* rr_nodes_;
@@ -1735,7 +1744,7 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
     std::vector<t_rr_indexed_data>* rr_indexed_data_;
     std::vector<int> seg_index_;
     t_rr_node_indices* rr_node_indices_;
-    int wire_to_rr_ipin_switch_;
+    std::string* read_rr_graph_filename_;
 
     const size_t num_arch_switches_;
     const t_arch_switch_inf* arch_switch_inf_;
