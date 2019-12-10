@@ -4907,7 +4907,8 @@ static void check_port_direct_mappings(t_physical_tile_type_ptr physical_tile, t
 
     if (pb_type->num_pins != (int)pin_direct_mapping.size()) {
         archfpga_throw(__FILE__, __LINE__,
-                       "Logical and Physical types have a different number of ports.\n");
+                       "Logical block (%s) and Physical tile (%s) have a different number of ports.\n",
+                       logical_block->name, physical_tile->name);
     }
 
     for (auto pin_map : pin_direct_mapping) {
@@ -4921,7 +4922,8 @@ static void check_port_direct_mappings(t_physical_tile_type_ptr physical_tile, t
             || tile_port->num_pins != block_port->num_pins
             || tile_port->equivalent != block_port->equivalent) {
             archfpga_throw(__FILE__, __LINE__,
-                           "Logical and Physical types do not have equivalent port specifications.\n");
+                           "Logical block (%s) and Physical tile (%s) do not have equivalent port specifications.\n",
+                           logical_block->name, physical_tile->name);
         }
     }
 }
