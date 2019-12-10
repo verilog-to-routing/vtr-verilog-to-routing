@@ -65,7 +65,8 @@ void load_rr_file(const t_graph_type graph_type,
     if (vtr::check_file_name_extension(read_rr_graph_name, ".xml")) {
         try {
             std::ifstream file(read_rr_graph_name);
-            pugi::xml_parse_result result = uxsd::load_rr_graph_xml(reader, file);
+            void* context;
+            pugi::xml_parse_result result = uxsd::load_rr_graph_xml(reader, context, file);
             if (!result) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Failed to parse input.");
             }
@@ -75,7 +76,8 @@ void load_rr_file(const t_graph_type graph_type,
 #ifdef VTR_ENABLE_CAPNPROTO
     } else if (vtr::check_file_name_extension(read_rr_graph_name, ".capnp")) {
         MmapFile f(read_rr_graph_name);
-        uxsd::load_rr_graph_capnp(reader, f.getData());
+        void* context;
+        uxsd::load_rr_graph_capnp(reader, f.getData(), context);
 #endif
     } else {
         VTR_LOG_WARN(
