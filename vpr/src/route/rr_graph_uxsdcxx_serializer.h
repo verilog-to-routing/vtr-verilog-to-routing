@@ -266,49 +266,10 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
         sw->name = name;
     }
     inline void set_switch_type(uxsd::enum_switch_type type, t_rr_switch_inf*& sw) override {
-        SwitchType switch_type = SwitchType::INVALID;
-        switch (type) {
-            case uxsd::enum_switch_type::TRISTATE:
-                switch_type = SwitchType::TRISTATE;
-                break;
-            case uxsd::enum_switch_type::MUX:
-                switch_type = SwitchType::MUX;
-                break;
-            case uxsd::enum_switch_type::PASS_GATE:
-                switch_type = SwitchType::PASS_GATE;
-                break;
-            case uxsd::enum_switch_type::SHORT:
-                switch_type = SwitchType::SHORT;
-                break;
-            case uxsd::enum_switch_type::BUFFER:
-                switch_type = SwitchType::BUFFER;
-                break;
-            default:
-                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                "Invalid switch type '%d'\n", type);
-        }
-
-        sw->set_type(switch_type);
+        sw->set_type(from_uxsd_switch_type(type));
     }
     inline uxsd::enum_switch_type get_switch_type(const t_rr_switch_inf*& sw) override {
-        switch (sw->type()) {
-            case SwitchType::TRISTATE:
-                return uxsd::enum_switch_type::TRISTATE;
-            case SwitchType::MUX:
-                return uxsd::enum_switch_type::MUX;
-            case SwitchType::PASS_GATE:
-                return uxsd::enum_switch_type::PASS_GATE;
-            case SwitchType::SHORT:
-                return uxsd::enum_switch_type::SHORT;
-            case SwitchType::BUFFER:
-                return uxsd::enum_switch_type::BUFFER;
-            default:
-                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                "Invalid switch type '%d'\n",
-                                sw->type());
-        }
-
-        return uxsd::enum_switch_type::UXSD_INVALID;
+        return to_uxsd_switch_type(sw->type());
     }
 
     inline t_rr_switch_inf* init_switch_timing(t_rr_switch_inf*& sw) override {
@@ -436,26 +397,11 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
     inline void set_node_loc_side(uxsd::enum_loc_side side, int& inode) override {
         auto& node = (*rr_nodes_)[inode];
 
-        switch (side) {
-            case uxsd::enum_loc_side::UXSD_INVALID:
-                // node_loc.side is only expected on IPIN/OPIN
-                VTR_ASSERT(!(node.type() == IPIN || node.type() == OPIN));
-                break;
-            case uxsd::enum_loc_side::LEFT:
-                node.set_side(LEFT);
-                break;
-            case uxsd::enum_loc_side::RIGHT:
-                node.set_side(RIGHT);
-                break;
-            case uxsd::enum_loc_side::TOP:
-                node.set_side(TOP);
-                break;
-            case uxsd::enum_loc_side::BOTTOM:
-                node.set_side(BOTTOM);
-                break;
-            default:
-                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                "Invalid side %d", side);
+        if (uxsd::enum_loc_side::UXSD_INVALID == side) {
+            // node_loc.side is only expected on IPIN/OPIN
+            VTR_ASSERT(!(node.type() == IPIN || node.type() == OPIN));
+        } else {
+            node.set_side(from_uxsd_loc_side(side));
         }
     }
 
@@ -489,19 +435,7 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
     }
     inline uxsd::enum_loc_side get_node_loc_side(const t_rr_node*& node) override {
         if (node->type() == IPIN || node->type() == OPIN) {
-            switch (node->side()) {
-                case LEFT:
-                    return uxsd::enum_loc_side::LEFT;
-                case RIGHT:
-                    return uxsd::enum_loc_side::RIGHT;
-                case TOP:
-                    return uxsd::enum_loc_side::TOP;
-                case BOTTOM:
-                    return uxsd::enum_loc_side::BOTTOM;
-                default:
-                    VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                    "Invalid side %d", node->side());
-            }
+            return to_uxsd_loc_side(node->side());
         } else {
             return uxsd::enum_loc_side::UXSD_INVALID;
         }
@@ -532,17 +466,7 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
     }
     inline uxsd::enum_node_direction get_node_direction(const t_rr_node*& node) override {
         if (node->type() == CHANX || node->type() == CHANY) {
-            switch (node->direction()) {
-                case INC_DIRECTION:
-                    return uxsd::enum_node_direction::INC_DIR;
-                case DEC_DIRECTION:
-                    return uxsd::enum_node_direction::DEC_DIR;
-                case BI_DIRECTION:
-                    return uxsd::enum_node_direction::BI_DIR;
-                default:
-                    VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                    "Invalid direction %d", node->direction());
-            }
+            return to_uxsd_node_direction(node->direction());
         } else {
             return uxsd::enum_node_direction::UXSD_INVALID;
         }
@@ -551,25 +475,7 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
         return node - &(*rr_nodes_)[0];
     }
     inline uxsd::enum_node_type get_node_type(const t_rr_node*& node) override {
-        switch (node->type()) {
-            case CHANX:
-                return uxsd::enum_node_type::CHANX;
-            case CHANY:
-                return uxsd::enum_node_type::CHANY;
-            case SOURCE:
-                return uxsd::enum_node_type::SOURCE;
-            case SINK:
-                return uxsd::enum_node_type::SINK;
-            case OPIN:
-                return uxsd::enum_node_type::OPIN;
-            case IPIN:
-                return uxsd::enum_node_type::IPIN;
-            default:
-                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                "Invalid type %d", node->type());
-        }
-
-        return uxsd::enum_node_type::UXSD_INVALID;
+        return to_uxsd_node_type(node->type());
     }
     inline const t_rr_node* get_node_loc(const t_rr_node*& node) override {
         return node;
@@ -735,22 +641,10 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
      */
     inline void set_node_direction(uxsd::enum_node_direction direction, int& inode) override {
         auto& node = (*rr_nodes_)[inode];
-        switch (direction) {
-            case uxsd::enum_node_direction::UXSD_INVALID:
-                VTR_ASSERT(!(node.type() == CHANX || node.type() == CHANY));
-                return;
-            case uxsd::enum_node_direction::INC_DIR:
-                node.set_direction(INC_DIRECTION);
-                break;
-            case uxsd::enum_node_direction::DEC_DIR:
-                node.set_direction(DEC_DIRECTION);
-                break;
-            case uxsd::enum_node_direction::BI_DIR:
-                node.set_direction(BI_DIRECTION);
-                break;
-            default:
-                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                "Invalid node direction %d", direction);
+        if (direction == uxsd::enum_node_direction::UXSD_INVALID) {
+            VTR_ASSERT(!(node.type() == CHANX || node.type() == CHANY));
+        } else {
+            node.set_direction(from_uxsd_node_direction(direction));
         }
     }
 
@@ -810,28 +704,23 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
         metadata_bind_.set_node_target(id);
 
         node.set_capacity(capacity);
+        node.set_type(from_uxsd_node_type(type));
 
-        switch (type) {
-            case uxsd::enum_node_type::CHANX:
-                node.set_type(CHANX);
+        switch (node.type()) {
+            case CHANX:
                 break;
-            case uxsd::enum_node_type::CHANY:
-                node.set_type(CHANY);
+            case CHANY:
                 break;
-            case uxsd::enum_node_type::SOURCE:
-                node.set_type(SOURCE);
+            case SOURCE:
                 node.set_cost_index(SOURCE_COST_INDEX);
                 break;
-            case uxsd::enum_node_type::SINK:
-                node.set_type(SINK);
+            case SINK:
                 node.set_cost_index(SINK_COST_INDEX);
                 break;
-            case uxsd::enum_node_type::OPIN:
-                node.set_type(OPIN);
+            case OPIN:
                 node.set_cost_index(OPIN_COST_INDEX);
                 break;
-            case uxsd::enum_node_type::IPIN:
-                node.set_type(IPIN);
+            case IPIN:
                 node.set_cost_index(IPIN_COST_INDEX);
                 break;
             default:
@@ -1310,19 +1199,7 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
         return pin_value_.c_str();
     }
     inline uxsd::enum_pin_type get_pin_class_type(std::pair<const t_physical_tile_type*, const t_class*>& context) override {
-        auto type = context.second->type;
-        switch (type) {
-            case OPEN:
-                return uxsd::enum_pin_type::OPEN;
-            case DRIVER:
-                return uxsd::enum_pin_type::OUTPUT;
-            case RECEIVER:
-                return uxsd::enum_pin_type::INPUT;
-            default:
-                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                "Unknown pin class type %d", type);
-        }
-        return uxsd::enum_pin_type::UXSD_INVALID;
+        return to_uxsd_pin_type(context.second->type);
     }
     inline size_t num_pin_class_pin(std::pair<const t_physical_tile_type*, const t_class*>& context) override {
         return context.second->num_pins;
@@ -1375,24 +1252,7 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
     }
 
     inline void* add_block_type_pin_class(const t_physical_tile_type*& /*ctx*/, uxsd::enum_pin_type type) override {
-        e_pin_type pin_type;
-
-        switch (type) {
-            case uxsd::enum_pin_type::OPEN:
-                pin_type = OPEN;
-                break;
-            case uxsd::enum_pin_type::OUTPUT:
-                pin_type = DRIVER;
-                break;
-            case uxsd::enum_pin_type::INPUT:
-                pin_type = RECEIVER;
-                break;
-            default:
-                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                "Unknown pin class type %d", type);
-        }
-
-        if (pin_class_checker_.get_current_pin_class().type != pin_type) {
+        if (pin_class_checker_.get_current_pin_class().type != from_uxsd_pin_type(type)) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                             "Architecture file does not match RR graph's block type");
         }
@@ -1730,6 +1590,190 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
                 }
             }
         }
+    }
+
+    // Enum converters from/to uxsd types
+
+    e_side from_uxsd_loc_side(uxsd::enum_loc_side side) {
+        switch (side) {
+            case uxsd::enum_loc_side::LEFT:
+                return LEFT;
+                break;
+            case uxsd::enum_loc_side::RIGHT:
+                return RIGHT;
+                break;
+            case uxsd::enum_loc_side::TOP:
+                return TOP;
+            case uxsd::enum_loc_side::BOTTOM:
+                return BOTTOM;
+                break;
+            default:
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                "Invalid side %d", side);
+        }
+    }
+
+    uxsd::enum_loc_side to_uxsd_loc_side(e_side side) {
+        switch (side) {
+            case LEFT:
+                return uxsd::enum_loc_side::LEFT;
+            case RIGHT:
+                return uxsd::enum_loc_side::RIGHT;
+            case TOP:
+                return uxsd::enum_loc_side::TOP;
+            case BOTTOM:
+                return uxsd::enum_loc_side::BOTTOM;
+            default:
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                "Invalid side %d", side);
+        }
+    }
+
+    e_direction from_uxsd_node_direction(uxsd::enum_node_direction direction) {
+        switch (direction) {
+            case uxsd::enum_node_direction::INC_DIR:
+                return INC_DIRECTION;
+            case uxsd::enum_node_direction::DEC_DIR:
+                return DEC_DIRECTION;
+            case uxsd::enum_node_direction::BI_DIR:
+                return BI_DIRECTION;
+            default:
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                "Invalid node direction %d", direction);
+        }
+    }
+
+    uxsd::enum_node_direction to_uxsd_node_direction(e_direction direction) {
+        switch (direction) {
+            case INC_DIRECTION:
+                return uxsd::enum_node_direction::INC_DIR;
+            case DEC_DIRECTION:
+                return uxsd::enum_node_direction::DEC_DIR;
+            case BI_DIRECTION:
+                return uxsd::enum_node_direction::BI_DIR;
+            default:
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                "Invalid direction %d", direction);
+        }
+    }
+
+    t_rr_type from_uxsd_node_type(uxsd::enum_node_type type) {
+        switch (type) {
+            case uxsd::enum_node_type::CHANX:
+                return CHANX;
+            case uxsd::enum_node_type::CHANY:
+                return CHANY;
+            case uxsd::enum_node_type::SOURCE:
+                return SOURCE;
+            case uxsd::enum_node_type::SINK:
+                return SINK;
+            case uxsd::enum_node_type::OPIN:
+                return OPIN;
+            case uxsd::enum_node_type::IPIN:
+                return IPIN;
+            default:
+                VPR_FATAL_ERROR(
+                    VPR_ERROR_OTHER,
+                    "Invalid node type %d",
+                    type);
+        }
+    }
+    uxsd::enum_node_type to_uxsd_node_type(t_rr_type type) {
+        switch (type) {
+            case CHANX:
+                return uxsd::enum_node_type::CHANX;
+            case CHANY:
+                return uxsd::enum_node_type::CHANY;
+            case SOURCE:
+                return uxsd::enum_node_type::SOURCE;
+            case SINK:
+                return uxsd::enum_node_type::SINK;
+            case OPIN:
+                return uxsd::enum_node_type::OPIN;
+            case IPIN:
+                return uxsd::enum_node_type::IPIN;
+            default:
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                "Invalid type %d", type);
+        }
+
+        return uxsd::enum_node_type::UXSD_INVALID;
+    }
+
+    SwitchType from_uxsd_switch_type(uxsd::enum_switch_type type) {
+        SwitchType switch_type = SwitchType::INVALID;
+        switch (type) {
+            case uxsd::enum_switch_type::TRISTATE:
+                switch_type = SwitchType::TRISTATE;
+                break;
+            case uxsd::enum_switch_type::MUX:
+                switch_type = SwitchType::MUX;
+                break;
+            case uxsd::enum_switch_type::PASS_GATE:
+                switch_type = SwitchType::PASS_GATE;
+                break;
+            case uxsd::enum_switch_type::SHORT:
+                switch_type = SwitchType::SHORT;
+                break;
+            case uxsd::enum_switch_type::BUFFER:
+                switch_type = SwitchType::BUFFER;
+                break;
+            default:
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                "Invalid switch type '%d'\n", type);
+        }
+
+        return switch_type;
+    }
+
+    uxsd::enum_switch_type to_uxsd_switch_type(SwitchType type) {
+        switch (type) {
+            case SwitchType::TRISTATE:
+                return uxsd::enum_switch_type::TRISTATE;
+            case SwitchType::MUX:
+                return uxsd::enum_switch_type::MUX;
+            case SwitchType::PASS_GATE:
+                return uxsd::enum_switch_type::PASS_GATE;
+            case SwitchType::SHORT:
+                return uxsd::enum_switch_type::SHORT;
+            case SwitchType::BUFFER:
+                return uxsd::enum_switch_type::BUFFER;
+            default:
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                "Invalid switch type '%d'\n",
+                                type);
+        }
+
+        return uxsd::enum_switch_type::UXSD_INVALID;
+    }
+
+    e_pin_type from_uxsd_pin_type(uxsd::enum_pin_type type) {
+        switch (type) {
+            case uxsd::enum_pin_type::OPEN:
+                return OPEN;
+            case uxsd::enum_pin_type::OUTPUT:
+                return DRIVER;
+            case uxsd::enum_pin_type::INPUT:
+                return RECEIVER;
+            default:
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                "Unknown pin class type %d", type);
+        }
+    }
+
+    uxsd::enum_pin_type to_uxsd_pin_type(e_pin_type type) {
+        switch (type) {
+            case OPEN:
+                return uxsd::enum_pin_type::OPEN;
+            case DRIVER:
+                return uxsd::enum_pin_type::OUTPUT;
+            case RECEIVER:
+                return uxsd::enum_pin_type::INPUT;
+            default:
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                                "Unknown pin class type %d", type);
+        }
+        return uxsd::enum_pin_type::UXSD_INVALID;
     }
 
     const t_graph_type graph_type_;
