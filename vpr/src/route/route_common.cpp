@@ -1054,7 +1054,7 @@ static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t
             /* In the routing graph, each (x, y) location has unique pins on it
              * so when there is capacity, blocks are packed and their pin numbers
              * are offset to get their actual rr_node */
-            int phys_pin = pin_tile_index(pin_id);
+            int phys_pin = tile_pin_index(pin_id);
 
             int iclass = type->pin_class[phys_pin];
 
@@ -1538,7 +1538,7 @@ void print_route(FILE* fp, const vtr::vector<ClusterNetId, t_traceback>& traceba
 
             for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
                 ClusterBlockId block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
-                int pin_index = pin_tile_index(pin_id);
+                int pin_index = tile_pin_index(pin_id);
                 int iclass = physical_tile_type(block_id)->pin_class[pin_index];
 
                 fprintf(fp, "Block %s (#%zu) at (%d,%d), Pin class %d.\n",
