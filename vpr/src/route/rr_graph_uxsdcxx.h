@@ -5,6 +5,7 @@
  * Modify only if your build process doesn't involve regenerating this file.
  *
  * Cmdline: ../uxsdcxx.py rr_graph.xsd
+ * Input file: /usr/local/google/home/keithrothman/cat_x/uxsdcxx/upstream_rr_graph/rr_graph.xsd
  * md5sum of input file: f9c827f7ecf1ac2f15d57c67bbba4399
  */
 
@@ -24,75 +25,75 @@
 /* All uxsdcxx functions and structs live in this namespace. */
 namespace uxsd {
 /* Declarations for internal load functions for the complex types. */
-template<class T>
-inline void load_channel(const pugi::xml_node& root, T& out, const void* data, void* iter);
+template<class T, typename Context>
+inline void load_channel(const pugi::xml_node& root, T& out, Context& context);
 inline void load_channel_required_attributes(const pugi::xml_node& root, int* chan_width_max, int* x_max, int* x_min, int* y_max, int* y_min);
-template<class T>
-inline void load_x_list(const pugi::xml_node& root, T& out, const void* data, void* iter);
+template<class T, typename Context>
+inline void load_x_list(const pugi::xml_node& root, T& out, Context& context);
 inline void load_x_list_required_attributes(const pugi::xml_node& root, unsigned int* index, int* info);
-template<class T>
-inline void load_y_list(const pugi::xml_node& root, T& out, const void* data, void* iter);
+template<class T, typename Context>
+inline void load_y_list(const pugi::xml_node& root, T& out, Context& context);
 inline void load_y_list_required_attributes(const pugi::xml_node& root, unsigned int* index, int* info);
-template<class T>
-inline void load_channels(const pugi::xml_node& root, T& out, const void* data, void* iter);
-template<class T>
-inline void load_timing(const pugi::xml_node& root, T& out, const void* data, void* iter);
-template<class T>
-inline void load_sizing(const pugi::xml_node& root, T& out, const void* data, void* iter);
+template<class T, typename Context>
+inline void load_channels(const pugi::xml_node& root, T& out, Context& context);
+template<class T, typename Context>
+inline void load_timing(const pugi::xml_node& root, T& out, Context& context);
+template<class T, typename Context>
+inline void load_sizing(const pugi::xml_node& root, T& out, Context& context);
 inline void load_sizing_required_attributes(const pugi::xml_node& root, float* buf_size, float* mux_trans_size);
-template<class T>
-inline void load_switch(const pugi::xml_node& root, T& out, const void* data, void* iter);
+template<class T, typename Context>
+inline void load_switch(const pugi::xml_node& root, T& out, Context& context);
 inline void load_switch_required_attributes(const pugi::xml_node& root, int* id);
-template<class T>
-inline void load_switches(const pugi::xml_node& root, T& out, const void* data, void* iter);
-template<class T>
-inline void load_segment_timing(const pugi::xml_node& root, T& out, const void* data, void* iter);
-template<class T>
-inline void load_segment(const pugi::xml_node& root, T& out, const void* data, void* iter);
+template<class T, typename Context>
+inline void load_switches(const pugi::xml_node& root, T& out, Context& context);
+template<class T, typename Context>
+inline void load_segment_timing(const pugi::xml_node& root, T& out, Context& context);
+template<class T, typename Context>
+inline void load_segment(const pugi::xml_node& root, T& out, Context& context);
 inline void load_segment_required_attributes(const pugi::xml_node& root, int* id);
-template<class T>
-inline void load_segments(const pugi::xml_node& root, T& out, const void* data, void* iter);
-template<class T>
-inline void load_pin(const pugi::xml_node& root, T& out, const void* data, void* iter);
+template<class T, typename Context>
+inline void load_segments(const pugi::xml_node& root, T& out, Context& context);
+template<class T, typename Context>
+inline void load_pin(const pugi::xml_node& root, T& out, Context& context);
 inline void load_pin_required_attributes(const pugi::xml_node& root, int* ptc);
-template<class T>
-inline void load_pin_class(const pugi::xml_node& root, T& out, const void* data, void* iter);
+template<class T, typename Context>
+inline void load_pin_class(const pugi::xml_node& root, T& out, Context& context);
 inline void load_pin_class_required_attributes(const pugi::xml_node& root, enum_pin_type* type);
-template<class T>
-inline void load_block_type(const pugi::xml_node& root, T& out, const void* data, void* iter);
+template<class T, typename Context>
+inline void load_block_type(const pugi::xml_node& root, T& out, Context& context);
 inline void load_block_type_required_attributes(const pugi::xml_node& root, int* height, int* id, int* width);
-template<class T>
-inline void load_block_types(const pugi::xml_node& root, T& out, const void* data, void* iter);
-template<class T>
-inline void load_grid_loc(const pugi::xml_node& root, T& out, const void* data, void* iter);
+template<class T, typename Context>
+inline void load_block_types(const pugi::xml_node& root, T& out, Context& context);
+template<class T, typename Context>
+inline void load_grid_loc(const pugi::xml_node& root, T& out, Context& context);
 inline void load_grid_loc_required_attributes(const pugi::xml_node& root, int* block_type_id, int* height_offset, int* width_offset, int* x, int* y);
-template<class T>
-inline void load_grid_locs(const pugi::xml_node& root, T& out, const void* data, void* iter);
-template<class T>
-inline void load_node_loc(const pugi::xml_node& root, T& out, const void* data, void* iter);
+template<class T, typename Context>
+inline void load_grid_locs(const pugi::xml_node& root, T& out, Context& context);
+template<class T, typename Context>
+inline void load_node_loc(const pugi::xml_node& root, T& out, Context& context);
 inline void load_node_loc_required_attributes(const pugi::xml_node& root, int* ptc, int* xhigh, int* xlow, int* yhigh, int* ylow);
-template<class T>
-inline void load_node_timing(const pugi::xml_node& root, T& out, const void* data, void* iter);
+template<class T, typename Context>
+inline void load_node_timing(const pugi::xml_node& root, T& out, Context& context);
 inline void load_node_timing_required_attributes(const pugi::xml_node& root, float* C, float* R);
-template<class T>
-inline void load_node_segment(const pugi::xml_node& root, T& out, const void* data, void* iter);
+template<class T, typename Context>
+inline void load_node_segment(const pugi::xml_node& root, T& out, Context& context);
 inline void load_node_segment_required_attributes(const pugi::xml_node& root, int* segment_id);
-template<class T>
-inline void load_meta(const pugi::xml_node& root, T& out, const void* data, void* iter);
-template<class T>
-inline void load_metadata(const pugi::xml_node& root, T& out, const void* data, void* iter);
-template<class T>
-inline void load_node(const pugi::xml_node& root, T& out, const void* data, void* iter);
+template<class T, typename Context>
+inline void load_meta(const pugi::xml_node& root, T& out, Context& context);
+template<class T, typename Context>
+inline void load_metadata(const pugi::xml_node& root, T& out, Context& context);
+template<class T, typename Context>
+inline void load_node(const pugi::xml_node& root, T& out, Context& context);
 inline void load_node_required_attributes(const pugi::xml_node& root, unsigned int* capacity, unsigned int* id, enum_node_type* type);
-template<class T>
-inline void load_rr_nodes(const pugi::xml_node& root, T& out, const void* data, void* iter);
-template<class T>
-inline void load_edge(const pugi::xml_node& root, T& out, const void* data, void* iter);
+template<class T, typename Context>
+inline void load_rr_nodes(const pugi::xml_node& root, T& out, Context& context);
+template<class T, typename Context>
+inline void load_edge(const pugi::xml_node& root, T& out, Context& context);
 inline void load_edge_required_attributes(const pugi::xml_node& root, unsigned int* sink_node, unsigned int* src_node, unsigned int* switch_id);
-template<class T>
-inline void load_rr_edges(const pugi::xml_node& root, T& out, const void* data, void* iter);
-template<class T>
-inline void load_rr_graph(const pugi::xml_node& root, T& out, const void* data, void* iter);
+template<class T, typename Context>
+inline void load_rr_edges(const pugi::xml_node& root, T& out, Context& context);
+template<class T, typename Context>
+inline void load_rr_graph(const pugi::xml_node& root, T& out, Context& context);
 
 /* Declarations for internal write functions for the complex types. */
 template<class T>
@@ -131,39 +132,39 @@ template<class T>
 inline void write_rr_graph(T& in, std::ostream& os, const void* data, void* iter);
 
 /* Load function for the root element. */
-template<class T>
-inline pugi::xml_parse_result load_rr_graph_xml(T& out, std::istream& is) {
-    static_assert(std::is_base_of<RrGraphBase, T>::value, "Base class not derived from RrGraphBase");
+template<class T, typename Context>
+inline pugi::xml_parse_result load_rr_graph_xml(T& out, Context& context, std::istream& is) {
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load(is);
     if (!result) return result;
+    out.start_load();
     for (pugi::xml_node node = doc.first_child(); node; node = node.next_sibling()) {
         if (std::strcmp(node.name(), "rr_graph") == 0) {
             /* If errno is set up to this point, it messes with strtol errno checking. */
             errno = 0;
-            load_rr_graph(node, out, nullptr, nullptr);
+            load_rr_graph(node, out, context);
         } else
             throw std::runtime_error("Invalid root-level element " + std::string(node.name()));
     }
+    out.finish_load();
     return result;
 }
 
 /* Write function for the root element. */
-template<class T>
-inline void write_rr_graph_xml(T& in, std::ostream& os) {
-    static_assert(std::is_base_of<RrGraphBase, T>::value, "Base class not derived from RrGraphBase");
-    const void* data = nullptr;
-    void* iter = nullptr;
+template<class T, typename Context>
+inline void write_rr_graph_xml(T& in, Context& context, std::ostream& os) {
+    in.start_write();
     os << "<rr_graph";
-    if ((bool)in.get_rr_graph_tool_comment(data, iter))
-        os << " tool_comment=\"" << in.get_rr_graph_tool_comment(data, iter) << "\"";
-    if ((bool)in.get_rr_graph_tool_name(data, iter))
-        os << " tool_name=\"" << in.get_rr_graph_tool_name(data, iter) << "\"";
-    if ((bool)in.get_rr_graph_tool_version(data, iter))
-        os << " tool_version=\"" << in.get_rr_graph_tool_version(data, iter) << "\"";
+    if ((bool)in.get_rr_graph_tool_comment(context))
+        os << " tool_comment=\"" << in.get_rr_graph_tool_comment(context) << "\"";
+    if ((bool)in.get_rr_graph_tool_name(context))
+        os << " tool_name=\"" << in.get_rr_graph_tool_name(context) << "\"";
+    if ((bool)in.get_rr_graph_tool_version(context))
+        os << " tool_version=\"" << in.get_rr_graph_tool_version(context) << "\"";
     os << ">\n";
-    write_rr_graph(in, os, nullptr, nullptr);
+    write_rr_graph(in, os, context);
     os << "</rr_graph>\n";
+    in.finish_write();
 }
 
 typedef const uint32_t __attribute__((aligned(1))) triehash_uu32;
@@ -177,6 +178,7 @@ static_assert(alignof(triehash_uu64) == 1, "Unaligned 64-bit access not found.")
 #endif
 
 /* Tokens for attribute and node names. */
+
 enum class atok_t_channel { CHAN_WIDTH_MAX,
                             X_MAX,
                             X_MIN,
@@ -196,6 +198,7 @@ enum class gtok_t_channels { CHANNEL,
                              X_LIST,
                              Y_LIST };
 constexpr const char* gtok_lookup_t_channels[] = {"channel", "x_list", "y_list"};
+
 enum class atok_t_timing { CIN,
                            CINTERNAL,
                            COUT,
@@ -217,6 +220,7 @@ constexpr const char* atok_lookup_t_switch[] = {"id", "name", "type"};
 
 enum class gtok_t_switches { SWITCH };
 constexpr const char* gtok_lookup_t_switches[] = {"switch"};
+
 enum class atok_t_segment_timing { C_PER_METER,
                                    R_PER_METER };
 constexpr const char* atok_lookup_t_segment_timing[] = {"C_per_meter", "R_per_meter"};
@@ -229,6 +233,7 @@ constexpr const char* atok_lookup_t_segment[] = {"id", "name"};
 
 enum class gtok_t_segments { SEGMENT };
 constexpr const char* gtok_lookup_t_segments[] = {"segment"};
+
 enum class atok_t_pin { PTC };
 constexpr const char* atok_lookup_t_pin[] = {"ptc"};
 
@@ -247,6 +252,7 @@ constexpr const char* atok_lookup_t_block_type[] = {"height", "id", "name", "wid
 
 enum class gtok_t_block_types { BLOCK_TYPE };
 constexpr const char* gtok_lookup_t_block_types[] = {"block_type"};
+
 enum class atok_t_grid_loc { BLOCK_TYPE_ID,
                              HEIGHT_OFFSET,
                              WIDTH_OFFSET,
@@ -256,6 +262,7 @@ constexpr const char* atok_lookup_t_grid_loc[] = {"block_type_id", "height_offse
 
 enum class gtok_t_grid_locs { GRID_LOC };
 constexpr const char* gtok_lookup_t_grid_locs[] = {"grid_loc"};
+
 enum class atok_t_node_loc { PTC,
                              SIDE,
                              XHIGH,
@@ -2502,34 +2509,31 @@ inline void load_edge_required_attributes(const pugi::xml_node& root, unsigned i
     std::bitset<3> test_astate = astate | std::bitset<3>(0b000);
     if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_edge);
 }
-template<class T>
-inline void load_channel(const pugi::xml_node& root, T& out, const void* data, void* iter) {
+template<class T, typename Context>
+inline void load_channel(const pugi::xml_node& root, T& out, Context& context) {
     (void)root;
     (void)out;
-    (void)data;
-    (void)iter;
+    (void)context;
 
     if (root.first_child().type() == pugi::node_element)
         throw std::runtime_error("Unexpected child element in <channel>.");
 }
 
-template<class T>
-inline void load_x_list(const pugi::xml_node& root, T& out, const void* data, void* iter) {
+template<class T, typename Context>
+inline void load_x_list(const pugi::xml_node& root, T& out, Context& context) {
     (void)root;
     (void)out;
-    (void)data;
-    (void)iter;
+    (void)context;
 
     if (root.first_child().type() == pugi::node_element)
         throw std::runtime_error("Unexpected child element in <x_list>.");
 }
 
-template<class T>
-inline void load_y_list(const pugi::xml_node& root, T& out, const void* data, void* iter) {
+template<class T, typename Context>
+inline void load_y_list(const pugi::xml_node& root, T& out, Context& context) {
     (void)root;
     (void)out;
-    (void)data;
-    (void)iter;
+    (void)context;
 
     if (root.first_child().type() == pugi::node_element)
         throw std::runtime_error("Unexpected child element in <y_list>.");
@@ -2543,12 +2547,11 @@ constexpr int gstate_t_channels[NUM_T_CHANNELS_STATES][NUM_T_CHANNELS_INPUTS] = 
     {-1, 1, -1},
     {2, -1, -1},
 };
-template<class T>
-inline void load_channels(const pugi::xml_node& root, T& out, const void* data, void* iter) {
+template<class T, typename Context>
+inline void load_channels(const pugi::xml_node& root, T& out, Context& context) {
     (void)root;
     (void)out;
-    (void)data;
-    (void)iter;
+    (void)context;
 
     if (root.first_attribute())
         throw std::runtime_error("Unexpected attribute in <channels>.");
@@ -2568,31 +2571,25 @@ inline void load_channels(const pugi::xml_node& root, T& out, const void* data, 
                 int channel_y_max;
                 int channel_y_min;
                 load_channel_required_attributes(node, &channel_chan_width_max, &channel_x_max, &channel_x_min, &channel_y_max, &channel_y_min);
-                const void* child_data;
-                void* child_iter;
-                std::tie(child_data, child_iter) = out.init_channels_channel(data, iter, channel_chan_width_max, channel_x_max, channel_x_min, channel_y_max, channel_y_min);
-                load_channel(node, out, child_data, child_iter);
-                out.finish_channels_channel(child_data, child_iter);
+                auto child_context = out.init_channels_channel(context, channel_chan_width_max, channel_x_max, channel_x_min, channel_y_max, channel_y_min);
+                load_channel(node, out, child_context);
+                out.finish_channels_channel(child_context);
             } break;
             case gtok_t_channels::X_LIST: {
                 unsigned int x_list_index;
                 int x_list_info;
                 load_x_list_required_attributes(node, &x_list_index, &x_list_info);
-                const void* child_data;
-                void* child_iter;
-                std::tie(child_data, child_iter) = out.add_channels_x_list(data, iter, x_list_index, x_list_info);
-                load_x_list(node, out, child_data, child_iter);
-                out.finish_channels_x_list(child_data, child_iter);
+                auto child_context = out.add_channels_x_list(context, x_list_index, x_list_info);
+                load_x_list(node, out, child_context);
+                out.finish_channels_x_list(child_context);
             } break;
             case gtok_t_channels::Y_LIST: {
                 unsigned int y_list_index;
                 int y_list_info;
                 load_y_list_required_attributes(node, &y_list_index, &y_list_info);
-                const void* child_data;
-                void* child_iter;
-                std::tie(child_data, child_iter) = out.add_channels_y_list(data, iter, y_list_index, y_list_info);
-                load_y_list(node, out, child_data, child_iter);
-                out.finish_channels_y_list(child_data, child_iter);
+                auto child_context = out.add_channels_y_list(context, y_list_index, y_list_info);
+                load_y_list(node, out, child_context);
+                out.finish_channels_y_list(child_context);
             } break;
             default:
                 break; /* Not possible. */
@@ -2601,30 +2598,29 @@ inline void load_channels(const pugi::xml_node& root, T& out, const void* data, 
     if (state != 0) dfa_error("end of input", gstate_t_channels[state], gtok_lookup_t_channels, 3);
 }
 
-template<class T>
-inline void load_timing(const pugi::xml_node& root, T& out, const void* data, void* iter) {
+template<class T, typename Context>
+inline void load_timing(const pugi::xml_node& root, T& out, Context& context) {
     (void)root;
     (void)out;
-    (void)data;
-    (void)iter;
+    (void)context;
 
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
         atok_t_timing in = lex_attr_t_timing(attr.name());
         switch (in) {
             case atok_t_timing::CIN:
-                out.set_timing_Cin(load_float(attr.value()), data, iter);
+                out.set_timing_Cin(load_float(attr.value()), context);
                 break;
             case atok_t_timing::CINTERNAL:
-                out.set_timing_Cinternal(load_float(attr.value()), data, iter);
+                out.set_timing_Cinternal(load_float(attr.value()), context);
                 break;
             case atok_t_timing::COUT:
-                out.set_timing_Cout(load_float(attr.value()), data, iter);
+                out.set_timing_Cout(load_float(attr.value()), context);
                 break;
             case atok_t_timing::R:
-                out.set_timing_R(load_float(attr.value()), data, iter);
+                out.set_timing_R(load_float(attr.value()), context);
                 break;
             case atok_t_timing::TDEL:
-                out.set_timing_Tdel(load_float(attr.value()), data, iter);
+                out.set_timing_Tdel(load_float(attr.value()), context);
                 break;
             default:
                 break; /* Not possible. */
@@ -2635,23 +2631,21 @@ inline void load_timing(const pugi::xml_node& root, T& out, const void* data, vo
         throw std::runtime_error("Unexpected child element in <timing>.");
 }
 
-template<class T>
-inline void load_sizing(const pugi::xml_node& root, T& out, const void* data, void* iter) {
+template<class T, typename Context>
+inline void load_sizing(const pugi::xml_node& root, T& out, Context& context) {
     (void)root;
     (void)out;
-    (void)data;
-    (void)iter;
+    (void)context;
 
     if (root.first_child().type() == pugi::node_element)
         throw std::runtime_error("Unexpected child element in <sizing>.");
 }
 
-template<class T>
-inline void load_switch(const pugi::xml_node& root, T& out, const void* data, void* iter) {
+template<class T, typename Context>
+inline void load_switch(const pugi::xml_node& root, T& out, Context& context) {
     (void)root;
     (void)out;
-    (void)data;
-    (void)iter;
+    (void)context;
 
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
         atok_t_switch in = lex_attr_t_switch(attr.name());
@@ -2660,10 +2654,10 @@ inline void load_switch(const pugi::xml_node& root, T& out, const void* data, vo
                 /* Attribute id is already set */
                 break;
             case atok_t_switch::NAME:
-                out.set_switch_name(attr.value(), data, iter);
+                out.set_switch_name(attr.value(), context);
                 break;
             case atok_t_switch::TYPE:
-                out.set_switch_type(lex_enum_switch_type(attr.value(), true), data, iter);
+                out.set_switch_type(lex_enum_switch_type(attr.value(), true), context);
                 break;
             default:
                 break; /* Not possible. */
@@ -2679,21 +2673,17 @@ inline void load_switch(const pugi::xml_node& root, T& out, const void* data, vo
             throw std::runtime_error("Duplicate element " + std::string(node.name()) + " in <switch>.");
         switch (in) {
             case gtok_t_switch::TIMING: {
-                const void* child_data;
-                void* child_iter;
-                std::tie(child_data, child_iter) = out.init_switch_timing(data, iter);
-                load_timing(node, out, child_data, child_iter);
-                out.finish_switch_timing(child_data, child_iter);
+                auto child_context = out.init_switch_timing(context);
+                load_timing(node, out, child_context);
+                out.finish_switch_timing(child_context);
             } break;
             case gtok_t_switch::SIZING: {
                 float sizing_buf_size;
                 float sizing_mux_trans_size;
                 load_sizing_required_attributes(node, &sizing_buf_size, &sizing_mux_trans_size);
-                const void* child_data;
-                void* child_iter;
-                std::tie(child_data, child_iter) = out.init_switch_sizing(data, iter, sizing_buf_size, sizing_mux_trans_size);
-                load_sizing(node, out, child_data, child_iter);
-                out.finish_switch_sizing(child_data, child_iter);
+                auto child_context = out.init_switch_sizing(context, sizing_buf_size, sizing_mux_trans_size);
+                load_sizing(node, out, child_context);
+                out.finish_switch_sizing(child_context);
             } break;
             default:
                 break; /* Not possible. */
@@ -2709,12 +2699,11 @@ constexpr int gstate_t_switches[NUM_T_SWITCHES_STATES][NUM_T_SWITCHES_INPUTS] = 
     {0},
     {0},
 };
-template<class T>
-inline void load_switches(const pugi::xml_node& root, T& out, const void* data, void* iter) {
+template<class T, typename Context>
+inline void load_switches(const pugi::xml_node& root, T& out, Context& context) {
     (void)root;
     (void)out;
-    (void)data;
-    (void)iter;
+    (void)context;
 
     if (root.first_attribute())
         throw std::runtime_error("Unexpected attribute in <switches>.");
@@ -2730,11 +2719,9 @@ inline void load_switches(const pugi::xml_node& root, T& out, const void* data, 
             case gtok_t_switches::SWITCH: {
                 int switch_id;
                 load_switch_required_attributes(node, &switch_id);
-                const void* child_data;
-                void* child_iter;
-                std::tie(child_data, child_iter) = out.add_switches_switch(data, iter, switch_id);
-                load_switch(node, out, child_data, child_iter);
-                out.finish_switches_switch(child_data, child_iter);
+                auto child_context = out.add_switches_switch(context, switch_id);
+                load_switch(node, out, child_context);
+                out.finish_switches_switch(child_context);
             } break;
             default:
                 break; /* Not possible. */
@@ -2743,21 +2730,20 @@ inline void load_switches(const pugi::xml_node& root, T& out, const void* data, 
     if (state != 0) dfa_error("end of input", gstate_t_switches[state], gtok_lookup_t_switches, 1);
 }
 
-template<class T>
-inline void load_segment_timing(const pugi::xml_node& root, T& out, const void* data, void* iter) {
+template<class T, typename Context>
+inline void load_segment_timing(const pugi::xml_node& root, T& out, Context& context) {
     (void)root;
     (void)out;
-    (void)data;
-    (void)iter;
+    (void)context;
 
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
         atok_t_segment_timing in = lex_attr_t_segment_timing(attr.name());
         switch (in) {
             case atok_t_segment_timing::C_PER_METER:
-                out.set_segment_timing_C_per_meter(load_float(attr.value()), data, iter);
+                out.set_segment_timing_C_per_meter(load_float(attr.value()), context);
                 break;
             case atok_t_segment_timing::R_PER_METER:
-                out.set_segment_timing_R_per_meter(load_float(attr.value()), data, iter);
+                out.set_segment_timing_R_per_meter(load_float(attr.value()), context);
                 break;
             default:
                 break; /* Not possible. */
@@ -2768,12 +2754,11 @@ inline void load_segment_timing(const pugi::xml_node& root, T& out, const void* 
         throw std::runtime_error("Unexpected child element in <segment_timing>.");
 }
 
-template<class T>
-inline void load_segment(const pugi::xml_node& root, T& out, const void* data, void* iter) {
+template<class T, typename Context>
+inline void load_segment(const pugi::xml_node& root, T& out, Context& context) {
     (void)root;
     (void)out;
-    (void)data;
-    (void)iter;
+    (void)context;
 
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
         atok_t_segment in = lex_attr_t_segment(attr.name());
@@ -2782,7 +2767,7 @@ inline void load_segment(const pugi::xml_node& root, T& out, const void* data, v
                 /* Attribute id is already set */
                 break;
             case atok_t_segment::NAME:
-                out.set_segment_name(attr.value(), data, iter);
+                out.set_segment_name(attr.value(), context);
                 break;
             default:
                 break; /* Not possible. */
@@ -2798,11 +2783,9 @@ inline void load_segment(const pugi::xml_node& root, T& out, const void* data, v
             throw std::runtime_error("Duplicate element " + std::string(node.name()) + " in <segment>.");
         switch (in) {
             case gtok_t_segment::TIMING: {
-                const void* child_data;
-                void* child_iter;
-                std::tie(child_data, child_iter) = out.init_segment_timing(data, iter);
-                load_segment_timing(node, out, child_data, child_iter);
-                out.finish_segment_timing(child_data, child_iter);
+                auto child_context = out.init_segment_timing(context);
+                load_segment_timing(node, out, child_context);
+                out.finish_segment_timing(child_context);
             } break;
             default:
                 break; /* Not possible. */
@@ -2818,12 +2801,11 @@ constexpr int gstate_t_segments[NUM_T_SEGMENTS_STATES][NUM_T_SEGMENTS_INPUTS] = 
     {0},
     {0},
 };
-template<class T>
-inline void load_segments(const pugi::xml_node& root, T& out, const void* data, void* iter) {
+template<class T, typename Context>
+inline void load_segments(const pugi::xml_node& root, T& out, Context& context) {
     (void)root;
     (void)out;
-    (void)data;
-    (void)iter;
+    (void)context;
 
     if (root.first_attribute())
         throw std::runtime_error("Unexpected attribute in <segments>.");
@@ -2839,11 +2821,9 @@ inline void load_segments(const pugi::xml_node& root, T& out, const void* data, 
             case gtok_t_segments::SEGMENT: {
                 int segment_id;
                 load_segment_required_attributes(node, &segment_id);
-                const void* child_data;
-                void* child_iter;
-                std::tie(child_data, child_iter) = out.add_segments_segment(data, iter, segment_id);
-                load_segment(node, out, child_data, child_iter);
-                out.finish_segments_segment(child_data, child_iter);
+                auto child_context = out.add_segments_segment(context, segment_id);
+                load_segment(node, out, child_context);
+                out.finish_segments_segment(child_context);
             } break;
             default:
                 break; /* Not possible. */
@@ -2852,14 +2832,13 @@ inline void load_segments(const pugi::xml_node& root, T& out, const void* data, 
     if (state != 0) dfa_error("end of input", gstate_t_segments[state], gtok_lookup_t_segments, 1);
 }
 
-template<class T>
-inline void load_pin(const pugi::xml_node& root, T& out, const void* data, void* iter) {
+template<class T, typename Context>
+inline void load_pin(const pugi::xml_node& root, T& out, Context& context) {
     (void)root;
     (void)out;
-    (void)data;
-    (void)iter;
+    (void)context;
 
-    out.set_pin_value(root.child_value(), data, iter);
+    out.set_pin_value(root.child_value(), context);
     if (root.first_child().type() == pugi::node_element)
         throw std::runtime_error("Unexpected child element in <pin>.");
 }
@@ -2870,12 +2849,11 @@ constexpr int gstate_t_pin_class[NUM_T_PIN_CLASS_STATES][NUM_T_PIN_CLASS_INPUTS]
     {0},
     {0},
 };
-template<class T>
-inline void load_pin_class(const pugi::xml_node& root, T& out, const void* data, void* iter) {
+template<class T, typename Context>
+inline void load_pin_class(const pugi::xml_node& root, T& out, Context& context) {
     (void)root;
     (void)out;
-    (void)data;
-    (void)iter;
+    (void)context;
 
     int next, state = 1;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
@@ -2888,11 +2866,9 @@ inline void load_pin_class(const pugi::xml_node& root, T& out, const void* data,
             case gtok_t_pin_class::PIN: {
                 int pin_ptc;
                 load_pin_required_attributes(node, &pin_ptc);
-                const void* child_data;
-                void* child_iter;
-                std::tie(child_data, child_iter) = out.add_pin_class_pin(data, iter, pin_ptc);
-                load_pin(node, out, child_data, child_iter);
-                out.finish_pin_class_pin(child_data, child_iter);
+                auto child_context = out.add_pin_class_pin(context, pin_ptc);
+                load_pin(node, out, child_context);
+                out.finish_pin_class_pin(child_context);
             } break;
             default:
                 break; /* Not possible. */
@@ -2906,12 +2882,11 @@ constexpr const int NUM_T_BLOCK_TYPE_INPUTS = 1;
 constexpr int gstate_t_block_type[NUM_T_BLOCK_TYPE_STATES][NUM_T_BLOCK_TYPE_INPUTS] = {
     {0},
 };
-template<class T>
-inline void load_block_type(const pugi::xml_node& root, T& out, const void* data, void* iter) {
+template<class T, typename Context>
+inline void load_block_type(const pugi::xml_node& root, T& out, Context& context) {
     (void)root;
     (void)out;
-    (void)data;
-    (void)iter;
+    (void)context;
 
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
         atok_t_block_type in = lex_attr_t_block_type(attr.name());
@@ -2923,7 +2898,7 @@ inline void load_block_type(const pugi::xml_node& root, T& out, const void* data
                 /* Attribute id is already set */
                 break;
             case atok_t_block_type::NAME:
-                out.set_block_type_name(attr.value(), data, iter);
+                out.set_block_type_name(attr.value(), context);
                 break;
             case atok_t_block_type::WIDTH:
                 /* Attribute width is already set */
@@ -2944,11 +2919,9 @@ inline void load_block_type(const pugi::xml_node& root, T& out, const void* data
             case gtok_t_block_type::PIN_CLASS: {
                 enum_pin_type pin_class_type;
                 load_pin_class_required_attributes(node, &pin_class_type);
-                const void* child_data;
-                void* child_iter;
-                std::tie(child_data, child_iter) = out.add_block_type_pin_class(data, iter, pin_class_type);
-                load_pin_class(node, out, child_data, child_iter);
-                out.finish_block_type_pin_class(child_data, child_iter);
+                auto child_context = out.add_block_type_pin_class(context, pin_class_type);
+                load_pin_class(node, out, child_context);
+                out.finish_block_type_pin_class(child_context);
             } break;
             default:
                 break; /* Not possible. */
@@ -2963,12 +2936,11 @@ constexpr int gstate_t_block_types[NUM_T_BLOCK_TYPES_STATES][NUM_T_BLOCK_TYPES_I
     {0},
     {0},
 };
-template<class T>
-inline void load_block_types(const pugi::xml_node& root, T& out, const void* data, void* iter) {
+template<class T, typename Context>
+inline void load_block_types(const pugi::xml_node& root, T& out, Context& context) {
     (void)root;
     (void)out;
-    (void)data;
-    (void)iter;
+    (void)context;
 
     if (root.first_attribute())
         throw std::runtime_error("Unexpected attribute in <block_types>.");
@@ -2986,11 +2958,9 @@ inline void load_block_types(const pugi::xml_node& root, T& out, const void* dat
                 int block_type_id;
                 int block_type_width;
                 load_block_type_required_attributes(node, &block_type_height, &block_type_id, &block_type_width);
-                const void* child_data;
-                void* child_iter;
-                std::tie(child_data, child_iter) = out.add_block_types_block_type(data, iter, block_type_height, block_type_id, block_type_width);
-                load_block_type(node, out, child_data, child_iter);
-                out.finish_block_types_block_type(child_data, child_iter);
+                auto child_context = out.add_block_types_block_type(context, block_type_height, block_type_id, block_type_width);
+                load_block_type(node, out, child_context);
+                out.finish_block_types_block_type(child_context);
             } break;
             default:
                 break; /* Not possible. */
@@ -2999,12 +2969,11 @@ inline void load_block_types(const pugi::xml_node& root, T& out, const void* dat
     if (state != 0) dfa_error("end of input", gstate_t_block_types[state], gtok_lookup_t_block_types, 1);
 }
 
-template<class T>
-inline void load_grid_loc(const pugi::xml_node& root, T& out, const void* data, void* iter) {
+template<class T, typename Context>
+inline void load_grid_loc(const pugi::xml_node& root, T& out, Context& context) {
     (void)root;
     (void)out;
-    (void)data;
-    (void)iter;
+    (void)context;
 
     if (root.first_child().type() == pugi::node_element)
         throw std::runtime_error("Unexpected child element in <grid_loc>.");
@@ -3016,12 +2985,11 @@ constexpr int gstate_t_grid_locs[NUM_T_GRID_LOCS_STATES][NUM_T_GRID_LOCS_INPUTS]
     {0},
     {0},
 };
-template<class T>
-inline void load_grid_locs(const pugi::xml_node& root, T& out, const void* data, void* iter) {
+template<class T, typename Context>
+inline void load_grid_locs(const pugi::xml_node& root, T& out, Context& context) {
     (void)root;
     (void)out;
-    (void)data;
-    (void)iter;
+    (void)context;
 
     if (root.first_attribute())
         throw std::runtime_error("Unexpected attribute in <grid_locs>.");
@@ -3041,11 +3009,9 @@ inline void load_grid_locs(const pugi::xml_node& root, T& out, const void* data,
                 int grid_loc_x;
                 int grid_loc_y;
                 load_grid_loc_required_attributes(node, &grid_loc_block_type_id, &grid_loc_height_offset, &grid_loc_width_offset, &grid_loc_x, &grid_loc_y);
-                const void* child_data;
-                void* child_iter;
-                std::tie(child_data, child_iter) = out.add_grid_locs_grid_loc(data, iter, grid_loc_block_type_id, grid_loc_height_offset, grid_loc_width_offset, grid_loc_x, grid_loc_y);
-                load_grid_loc(node, out, child_data, child_iter);
-                out.finish_grid_locs_grid_loc(child_data, child_iter);
+                auto child_context = out.add_grid_locs_grid_loc(context, grid_loc_block_type_id, grid_loc_height_offset, grid_loc_width_offset, grid_loc_x, grid_loc_y);
+                load_grid_loc(node, out, child_context);
+                out.finish_grid_locs_grid_loc(child_context);
             } break;
             default:
                 break; /* Not possible. */
@@ -3054,12 +3020,11 @@ inline void load_grid_locs(const pugi::xml_node& root, T& out, const void* data,
     if (state != 0) dfa_error("end of input", gstate_t_grid_locs[state], gtok_lookup_t_grid_locs, 1);
 }
 
-template<class T>
-inline void load_node_loc(const pugi::xml_node& root, T& out, const void* data, void* iter) {
+template<class T, typename Context>
+inline void load_node_loc(const pugi::xml_node& root, T& out, Context& context) {
     (void)root;
     (void)out;
-    (void)data;
-    (void)iter;
+    (void)context;
 
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
         atok_t_node_loc in = lex_attr_t_node_loc(attr.name());
@@ -3068,7 +3033,7 @@ inline void load_node_loc(const pugi::xml_node& root, T& out, const void* data, 
                 /* Attribute ptc is already set */
                 break;
             case atok_t_node_loc::SIDE:
-                out.set_node_loc_side(lex_enum_loc_side(attr.value(), true), data, iter);
+                out.set_node_loc_side(lex_enum_loc_side(attr.value(), true), context);
                 break;
             case atok_t_node_loc::XHIGH:
                 /* Attribute xhigh is already set */
@@ -3091,47 +3056,44 @@ inline void load_node_loc(const pugi::xml_node& root, T& out, const void* data, 
         throw std::runtime_error("Unexpected child element in <node_loc>.");
 }
 
-template<class T>
-inline void load_node_timing(const pugi::xml_node& root, T& out, const void* data, void* iter) {
+template<class T, typename Context>
+inline void load_node_timing(const pugi::xml_node& root, T& out, Context& context) {
     (void)root;
     (void)out;
-    (void)data;
-    (void)iter;
+    (void)context;
 
     if (root.first_child().type() == pugi::node_element)
         throw std::runtime_error("Unexpected child element in <node_timing>.");
 }
 
-template<class T>
-inline void load_node_segment(const pugi::xml_node& root, T& out, const void* data, void* iter) {
+template<class T, typename Context>
+inline void load_node_segment(const pugi::xml_node& root, T& out, Context& context) {
     (void)root;
     (void)out;
-    (void)data;
-    (void)iter;
+    (void)context;
 
     if (root.first_child().type() == pugi::node_element)
         throw std::runtime_error("Unexpected child element in <node_segment>.");
 }
 
-template<class T>
-inline void load_meta(const pugi::xml_node& root, T& out, const void* data, void* iter) {
+template<class T, typename Context>
+inline void load_meta(const pugi::xml_node& root, T& out, Context& context) {
     (void)root;
     (void)out;
-    (void)data;
-    (void)iter;
+    (void)context;
 
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
         atok_t_meta in = lex_attr_t_meta(attr.name());
         switch (in) {
             case atok_t_meta::NAME:
-                out.set_meta_name(attr.value(), data, iter);
+                out.set_meta_name(attr.value(), context);
                 break;
             default:
                 break; /* Not possible. */
         }
     }
 
-    out.set_meta_value(root.child_value(), data, iter);
+    out.set_meta_value(root.child_value(), context);
     if (root.first_child().type() == pugi::node_element)
         throw std::runtime_error("Unexpected child element in <meta>.");
 }
@@ -3142,12 +3104,11 @@ constexpr int gstate_t_metadata[NUM_T_METADATA_STATES][NUM_T_METADATA_INPUTS] = 
     {0},
     {0},
 };
-template<class T>
-inline void load_metadata(const pugi::xml_node& root, T& out, const void* data, void* iter) {
+template<class T, typename Context>
+inline void load_metadata(const pugi::xml_node& root, T& out, Context& context) {
     (void)root;
     (void)out;
-    (void)data;
-    (void)iter;
+    (void)context;
 
     if (root.first_attribute())
         throw std::runtime_error("Unexpected attribute in <metadata>.");
@@ -3161,11 +3122,9 @@ inline void load_metadata(const pugi::xml_node& root, T& out, const void* data, 
         state = next;
         switch (in) {
             case gtok_t_metadata::META: {
-                const void* child_data;
-                void* child_iter;
-                std::tie(child_data, child_iter) = out.add_metadata_meta(data, iter);
-                load_meta(node, out, child_data, child_iter);
-                out.finish_metadata_meta(child_data, child_iter);
+                auto child_context = out.add_metadata_meta(context);
+                load_meta(node, out, child_context);
+                out.finish_metadata_meta(child_context);
             } break;
             default:
                 break; /* Not possible. */
@@ -3174,12 +3133,11 @@ inline void load_metadata(const pugi::xml_node& root, T& out, const void* data, 
     if (state != 0) dfa_error("end of input", gstate_t_metadata[state], gtok_lookup_t_metadata, 1);
 }
 
-template<class T>
-inline void load_node(const pugi::xml_node& root, T& out, const void* data, void* iter) {
+template<class T, typename Context>
+inline void load_node(const pugi::xml_node& root, T& out, Context& context) {
     (void)root;
     (void)out;
-    (void)data;
-    (void)iter;
+    (void)context;
 
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
         atok_t_node in = lex_attr_t_node(attr.name());
@@ -3188,7 +3146,7 @@ inline void load_node(const pugi::xml_node& root, T& out, const void* data, void
                 /* Attribute capacity is already set */
                 break;
             case atok_t_node::DIRECTION:
-                out.set_node_direction(lex_enum_node_direction(attr.value(), true), data, iter);
+                out.set_node_direction(lex_enum_node_direction(attr.value(), true), context);
                 break;
             case atok_t_node::ID:
                 /* Attribute id is already set */
@@ -3216,37 +3174,29 @@ inline void load_node(const pugi::xml_node& root, T& out, const void* data, void
                 int node_loc_yhigh;
                 int node_loc_ylow;
                 load_node_loc_required_attributes(node, &node_loc_ptc, &node_loc_xhigh, &node_loc_xlow, &node_loc_yhigh, &node_loc_ylow);
-                const void* child_data;
-                void* child_iter;
-                std::tie(child_data, child_iter) = out.init_node_loc(data, iter, node_loc_ptc, node_loc_xhigh, node_loc_xlow, node_loc_yhigh, node_loc_ylow);
-                load_node_loc(node, out, child_data, child_iter);
-                out.finish_node_loc(child_data, child_iter);
+                auto child_context = out.init_node_loc(context, node_loc_ptc, node_loc_xhigh, node_loc_xlow, node_loc_yhigh, node_loc_ylow);
+                load_node_loc(node, out, child_context);
+                out.finish_node_loc(child_context);
             } break;
             case gtok_t_node::TIMING: {
                 float node_timing_C;
                 float node_timing_R;
                 load_node_timing_required_attributes(node, &node_timing_C, &node_timing_R);
-                const void* child_data;
-                void* child_iter;
-                std::tie(child_data, child_iter) = out.init_node_timing(data, iter, node_timing_C, node_timing_R);
-                load_node_timing(node, out, child_data, child_iter);
-                out.finish_node_timing(child_data, child_iter);
+                auto child_context = out.init_node_timing(context, node_timing_C, node_timing_R);
+                load_node_timing(node, out, child_context);
+                out.finish_node_timing(child_context);
             } break;
             case gtok_t_node::SEGMENT: {
                 int node_segment_segment_id;
                 load_node_segment_required_attributes(node, &node_segment_segment_id);
-                const void* child_data;
-                void* child_iter;
-                std::tie(child_data, child_iter) = out.init_node_segment(data, iter, node_segment_segment_id);
-                load_node_segment(node, out, child_data, child_iter);
-                out.finish_node_segment(child_data, child_iter);
+                auto child_context = out.init_node_segment(context, node_segment_segment_id);
+                load_node_segment(node, out, child_context);
+                out.finish_node_segment(child_context);
             } break;
             case gtok_t_node::METADATA: {
-                const void* child_data;
-                void* child_iter;
-                std::tie(child_data, child_iter) = out.init_node_metadata(data, iter);
-                load_metadata(node, out, child_data, child_iter);
-                out.finish_node_metadata(child_data, child_iter);
+                auto child_context = out.init_node_metadata(context);
+                load_metadata(node, out, child_context);
+                out.finish_node_metadata(child_context);
             } break;
             default:
                 break; /* Not possible. */
@@ -3262,12 +3212,11 @@ constexpr int gstate_t_rr_nodes[NUM_T_RR_NODES_STATES][NUM_T_RR_NODES_INPUTS] = 
     {0},
     {0},
 };
-template<class T>
-inline void load_rr_nodes(const pugi::xml_node& root, T& out, const void* data, void* iter) {
+template<class T, typename Context>
+inline void load_rr_nodes(const pugi::xml_node& root, T& out, Context& context) {
     (void)root;
     (void)out;
-    (void)data;
-    (void)iter;
+    (void)context;
 
     if (root.first_attribute())
         throw std::runtime_error("Unexpected attribute in <rr_nodes>.");
@@ -3285,11 +3234,9 @@ inline void load_rr_nodes(const pugi::xml_node& root, T& out, const void* data, 
                 unsigned int node_id;
                 enum_node_type node_type;
                 load_node_required_attributes(node, &node_capacity, &node_id, &node_type);
-                const void* child_data;
-                void* child_iter;
-                std::tie(child_data, child_iter) = out.add_rr_nodes_node(data, iter, node_capacity, node_id, node_type);
-                load_node(node, out, child_data, child_iter);
-                out.finish_rr_nodes_node(child_data, child_iter);
+                auto child_context = out.add_rr_nodes_node(context, node_capacity, node_id, node_type);
+                load_node(node, out, child_context);
+                out.finish_rr_nodes_node(child_context);
             } break;
             default:
                 break; /* Not possible. */
@@ -3298,12 +3245,11 @@ inline void load_rr_nodes(const pugi::xml_node& root, T& out, const void* data, 
     if (state != 0) dfa_error("end of input", gstate_t_rr_nodes[state], gtok_lookup_t_rr_nodes, 1);
 }
 
-template<class T>
-inline void load_edge(const pugi::xml_node& root, T& out, const void* data, void* iter) {
+template<class T, typename Context>
+inline void load_edge(const pugi::xml_node& root, T& out, Context& context) {
     (void)root;
     (void)out;
-    (void)data;
-    (void)iter;
+    (void)context;
 
     std::bitset<1> gstate = 0;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
@@ -3314,11 +3260,9 @@ inline void load_edge(const pugi::xml_node& root, T& out, const void* data, void
             throw std::runtime_error("Duplicate element " + std::string(node.name()) + " in <edge>.");
         switch (in) {
             case gtok_t_edge::METADATA: {
-                const void* child_data;
-                void* child_iter;
-                std::tie(child_data, child_iter) = out.init_edge_metadata(data, iter);
-                load_metadata(node, out, child_data, child_iter);
-                out.finish_edge_metadata(child_data, child_iter);
+                auto child_context = out.init_edge_metadata(context);
+                load_metadata(node, out, child_context);
+                out.finish_edge_metadata(child_context);
             } break;
             default:
                 break; /* Not possible. */
@@ -3334,12 +3278,11 @@ constexpr int gstate_t_rr_edges[NUM_T_RR_EDGES_STATES][NUM_T_RR_EDGES_INPUTS] = 
     {0},
     {0},
 };
-template<class T>
-inline void load_rr_edges(const pugi::xml_node& root, T& out, const void* data, void* iter) {
+template<class T, typename Context>
+inline void load_rr_edges(const pugi::xml_node& root, T& out, Context& context) {
     (void)root;
     (void)out;
-    (void)data;
-    (void)iter;
+    (void)context;
 
     if (root.first_attribute())
         throw std::runtime_error("Unexpected attribute in <rr_edges>.");
@@ -3357,11 +3300,9 @@ inline void load_rr_edges(const pugi::xml_node& root, T& out, const void* data, 
                 unsigned int edge_src_node;
                 unsigned int edge_switch_id;
                 load_edge_required_attributes(node, &edge_sink_node, &edge_src_node, &edge_switch_id);
-                const void* child_data;
-                void* child_iter;
-                std::tie(child_data, child_iter) = out.add_rr_edges_edge(data, iter, edge_sink_node, edge_src_node, edge_switch_id);
-                load_edge(node, out, child_data, child_iter);
-                out.finish_rr_edges_edge(child_data, child_iter);
+                auto child_context = out.add_rr_edges_edge(context, edge_sink_node, edge_src_node, edge_switch_id);
+                load_edge(node, out, child_context);
+                out.finish_rr_edges_edge(child_context);
             } break;
             default:
                 break; /* Not possible. */
@@ -3370,24 +3311,23 @@ inline void load_rr_edges(const pugi::xml_node& root, T& out, const void* data, 
     if (state != 0) dfa_error("end of input", gstate_t_rr_edges[state], gtok_lookup_t_rr_edges, 1);
 }
 
-template<class T>
-inline void load_rr_graph(const pugi::xml_node& root, T& out, const void* data, void* iter) {
+template<class T, typename Context>
+inline void load_rr_graph(const pugi::xml_node& root, T& out, Context& context) {
     (void)root;
     (void)out;
-    (void)data;
-    (void)iter;
+    (void)context;
 
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
         atok_t_rr_graph in = lex_attr_t_rr_graph(attr.name());
         switch (in) {
             case atok_t_rr_graph::TOOL_COMMENT:
-                out.set_rr_graph_tool_comment(attr.value(), data, iter);
+                out.set_rr_graph_tool_comment(attr.value(), context);
                 break;
             case atok_t_rr_graph::TOOL_NAME:
-                out.set_rr_graph_tool_name(attr.value(), data, iter);
+                out.set_rr_graph_tool_name(attr.value(), context);
                 break;
             case atok_t_rr_graph::TOOL_VERSION:
-                out.set_rr_graph_tool_version(attr.value(), data, iter);
+                out.set_rr_graph_tool_version(attr.value(), context);
                 break;
             default:
                 break; /* Not possible. */
@@ -3403,53 +3343,39 @@ inline void load_rr_graph(const pugi::xml_node& root, T& out, const void* data, 
             throw std::runtime_error("Duplicate element " + std::string(node.name()) + " in <rr_graph>.");
         switch (in) {
             case gtok_t_rr_graph::CHANNELS: {
-                const void* child_data;
-                void* child_iter;
-                std::tie(child_data, child_iter) = out.init_rr_graph_channels(data, iter);
-                load_channels(node, out, child_data, child_iter);
-                out.finish_rr_graph_channels(child_data, child_iter);
+                auto child_context = out.init_rr_graph_channels(context);
+                load_channels(node, out, child_context);
+                out.finish_rr_graph_channels(child_context);
             } break;
             case gtok_t_rr_graph::SWITCHES: {
-                const void* child_data;
-                void* child_iter;
-                std::tie(child_data, child_iter) = out.init_rr_graph_switches(data, iter);
-                load_switches(node, out, child_data, child_iter);
-                out.finish_rr_graph_switches(child_data, child_iter);
+                auto child_context = out.init_rr_graph_switches(context);
+                load_switches(node, out, child_context);
+                out.finish_rr_graph_switches(child_context);
             } break;
             case gtok_t_rr_graph::SEGMENTS: {
-                const void* child_data;
-                void* child_iter;
-                std::tie(child_data, child_iter) = out.init_rr_graph_segments(data, iter);
-                load_segments(node, out, child_data, child_iter);
-                out.finish_rr_graph_segments(child_data, child_iter);
+                auto child_context = out.init_rr_graph_segments(context);
+                load_segments(node, out, child_context);
+                out.finish_rr_graph_segments(child_context);
             } break;
             case gtok_t_rr_graph::BLOCK_TYPES: {
-                const void* child_data;
-                void* child_iter;
-                std::tie(child_data, child_iter) = out.init_rr_graph_block_types(data, iter);
-                load_block_types(node, out, child_data, child_iter);
-                out.finish_rr_graph_block_types(child_data, child_iter);
+                auto child_context = out.init_rr_graph_block_types(context);
+                load_block_types(node, out, child_context);
+                out.finish_rr_graph_block_types(child_context);
             } break;
             case gtok_t_rr_graph::GRID: {
-                const void* child_data;
-                void* child_iter;
-                std::tie(child_data, child_iter) = out.init_rr_graph_grid(data, iter);
-                load_grid_locs(node, out, child_data, child_iter);
-                out.finish_rr_graph_grid(child_data, child_iter);
+                auto child_context = out.init_rr_graph_grid(context);
+                load_grid_locs(node, out, child_context);
+                out.finish_rr_graph_grid(child_context);
             } break;
             case gtok_t_rr_graph::RR_NODES: {
-                const void* child_data;
-                void* child_iter;
-                std::tie(child_data, child_iter) = out.init_rr_graph_rr_nodes(data, iter);
-                load_rr_nodes(node, out, child_data, child_iter);
-                out.finish_rr_graph_rr_nodes(child_data, child_iter);
+                auto child_context = out.init_rr_graph_rr_nodes(context);
+                load_rr_nodes(node, out, child_context);
+                out.finish_rr_graph_rr_nodes(child_context);
             } break;
             case gtok_t_rr_graph::RR_EDGES: {
-                const void* child_data;
-                void* child_iter;
-                std::tie(child_data, child_iter) = out.init_rr_graph_rr_edges(data, iter);
-                load_rr_edges(node, out, child_data, child_iter);
-                out.finish_rr_graph_rr_edges(child_data, child_iter);
+                auto child_context = out.init_rr_graph_rr_edges(context);
+                load_rr_edges(node, out, child_context);
+                out.finish_rr_graph_rr_edges(child_context);
             } break;
             default:
                 break; /* Not possible. */
@@ -3460,373 +3386,380 @@ inline void load_rr_graph(const pugi::xml_node& root, T& out, const void* data, 
 }
 
 /* Internal writing functions, which uxsdcxx uses to write out a class. */
-template<class T>
-inline void write_channels(T& in, std::ostream& os, const void* data, void* iter) {
+template<class T, typename Context>
+inline void write_channels(T& in, std::ostream& os, Context& context) {
     (void)in;
     (void)os;
-    (void)data;
-    (void)iter;
-    const void* child_data;
-    void* child_iter;
-    std::tie(child_data, child_iter) = in.get_channels_channel(data, iter);
-    os << "<channel";
-    os << " chan_width_max=\"" << in.get_channel_chan_width_max(child_data, child_iter) << "\"";
-    os << " x_max=\"" << in.get_channel_x_max(child_data, child_iter) << "\"";
-    os << " x_min=\"" << in.get_channel_x_min(child_data, child_iter) << "\"";
-    os << " y_max=\"" << in.get_channel_y_max(child_data, child_iter) << "\"";
-    os << " y_min=\"" << in.get_channel_y_min(child_data, child_iter) << "\"";
-    os << "/>\n";
-    for (size_t i = 0, n = in.num_channels_x_list(data, iter); i < n; i++) {
-        std::tie(child_data, child_iter) = in.get_channels_x_list(i, data, iter);
-        os << "<x_list";
-        os << " index=\"" << in.get_x_list_index(child_data, child_iter) << "\"";
-        os << " info=\"" << in.get_x_list_info(child_data, child_iter) << "\"";
+    (void)context;
+    {
+        auto child_context = in.get_channels_channel(context);
+        os << "<channel";
+        os << " chan_width_max=\"" << in.get_channel_chan_width_max(child_context) << "\"";
+        os << " x_max=\"" << in.get_channel_x_max(child_context) << "\"";
+        os << " x_min=\"" << in.get_channel_x_min(child_context) << "\"";
+        os << " y_max=\"" << in.get_channel_y_max(child_context) << "\"";
+        os << " y_min=\"" << in.get_channel_y_min(child_context) << "\"";
         os << "/>\n";
     }
-    for (size_t i = 0, n = in.num_channels_y_list(data, iter); i < n; i++) {
-        std::tie(child_data, child_iter) = in.get_channels_y_list(i, data, iter);
-        os << "<y_list";
-        os << " index=\"" << in.get_y_list_index(child_data, child_iter) << "\"";
-        os << " info=\"" << in.get_y_list_info(child_data, child_iter) << "\"";
-        os << "/>\n";
+    {
+        for (size_t i = 0, n = in.num_channels_x_list(context); i < n; i++) {
+            auto child_context = in.get_channels_x_list(i, context);
+            os << "<x_list";
+            os << " index=\"" << in.get_x_list_index(child_context) << "\"";
+            os << " info=\"" << in.get_x_list_info(child_context) << "\"";
+            os << "/>\n";
+        }
+    }
+    {
+        for (size_t i = 0, n = in.num_channels_y_list(context); i < n; i++) {
+            auto child_context = in.get_channels_y_list(i, context);
+            os << "<y_list";
+            os << " index=\"" << in.get_y_list_index(child_context) << "\"";
+            os << " info=\"" << in.get_y_list_info(child_context) << "\"";
+            os << "/>\n";
+        }
     }
 }
 
-template<class T>
-inline void write_switch(T& in, std::ostream& os, const void* data, void* iter) {
+template<class T, typename Context>
+inline void write_switch(T& in, std::ostream& os, Context& context) {
     (void)in;
     (void)os;
-    (void)data;
-    (void)iter;
-    const void* child_data;
-    void* child_iter;
-    if (in.has_switch_timing(data, iter)) {
-        std::tie(child_data, child_iter) = in.get_switch_timing(data, iter);
-        os << "<timing";
-        if ((bool)in.get_timing_Cin(child_data, child_iter))
-            os << " Cin=\"" << in.get_timing_Cin(child_data, child_iter) << "\"";
-        if ((bool)in.get_timing_Cinternal(child_data, child_iter))
-            os << " Cinternal=\"" << in.get_timing_Cinternal(child_data, child_iter) << "\"";
-        if ((bool)in.get_timing_Cout(child_data, child_iter))
-            os << " Cout=\"" << in.get_timing_Cout(child_data, child_iter) << "\"";
-        if ((bool)in.get_timing_R(child_data, child_iter))
-            os << " R=\"" << in.get_timing_R(child_data, child_iter) << "\"";
-        if ((bool)in.get_timing_Tdel(child_data, child_iter))
-            os << " Tdel=\"" << in.get_timing_Tdel(child_data, child_iter) << "\"";
-        os << "/>\n";
+    (void)context;
+    {
+        if (in.has_switch_timing(context)) {
+            auto child_context = in.get_switch_timing(context);
+            os << "<timing";
+            if ((bool)in.get_timing_Cin(child_context))
+                os << " Cin=\"" << in.get_timing_Cin(child_context) << "\"";
+            if ((bool)in.get_timing_Cinternal(child_context))
+                os << " Cinternal=\"" << in.get_timing_Cinternal(child_context) << "\"";
+            if ((bool)in.get_timing_Cout(child_context))
+                os << " Cout=\"" << in.get_timing_Cout(child_context) << "\"";
+            if ((bool)in.get_timing_R(child_context))
+                os << " R=\"" << in.get_timing_R(child_context) << "\"";
+            if ((bool)in.get_timing_Tdel(child_context))
+                os << " Tdel=\"" << in.get_timing_Tdel(child_context) << "\"";
+            os << "/>\n";
+        }
     }
-    std::tie(child_data, child_iter) = in.get_switch_sizing(data, iter);
-    os << "<sizing";
-    os << " buf_size=\"" << in.get_sizing_buf_size(child_data, child_iter) << "\"";
-    os << " mux_trans_size=\"" << in.get_sizing_mux_trans_size(child_data, child_iter) << "\"";
-    os << "/>\n";
-}
-
-template<class T>
-inline void write_switches(T& in, std::ostream& os, const void* data, void* iter) {
-    (void)in;
-    (void)os;
-    (void)data;
-    (void)iter;
-    const void* child_data;
-    void* child_iter;
-    for (size_t i = 0, n = in.num_switches_switch(data, iter); i < n; i++) {
-        std::tie(child_data, child_iter) = in.get_switches_switch(i, data, iter);
-        os << "<switch";
-        os << " id=\"" << in.get_switch_id(child_data, child_iter) << "\"";
-        os << " name=\"" << in.get_switch_name(child_data, child_iter) << "\"";
-        if ((bool)in.get_switch_type(child_data, child_iter))
-            os << " type=\"" << lookup_switch_type[(int)in.get_switch_type(child_data, child_iter)] << "\"";
-        os << ">";
-        write_switch(in, os, child_data, child_iter);
-        os << "</switch>\n";
-    }
-}
-
-template<class T>
-inline void write_segment(T& in, std::ostream& os, const void* data, void* iter) {
-    (void)in;
-    (void)os;
-    (void)data;
-    (void)iter;
-    const void* child_data;
-    void* child_iter;
-    if (in.has_segment_timing(data, iter)) {
-        std::tie(child_data, child_iter) = in.get_segment_timing(data, iter);
-        os << "<timing";
-        if ((bool)in.get_segment_timing_C_per_meter(child_data, child_iter))
-            os << " C_per_meter=\"" << in.get_segment_timing_C_per_meter(child_data, child_iter) << "\"";
-        if ((bool)in.get_segment_timing_R_per_meter(child_data, child_iter))
-            os << " R_per_meter=\"" << in.get_segment_timing_R_per_meter(child_data, child_iter) << "\"";
+    {
+        auto child_context = in.get_switch_sizing(context);
+        os << "<sizing";
+        os << " buf_size=\"" << in.get_sizing_buf_size(child_context) << "\"";
+        os << " mux_trans_size=\"" << in.get_sizing_mux_trans_size(child_context) << "\"";
         os << "/>\n";
     }
 }
 
-template<class T>
-inline void write_segments(T& in, std::ostream& os, const void* data, void* iter) {
+template<class T, typename Context>
+inline void write_switches(T& in, std::ostream& os, Context& context) {
     (void)in;
     (void)os;
-    (void)data;
-    (void)iter;
-    const void* child_data;
-    void* child_iter;
-    for (size_t i = 0, n = in.num_segments_segment(data, iter); i < n; i++) {
-        std::tie(child_data, child_iter) = in.get_segments_segment(i, data, iter);
-        os << "<segment";
-        os << " id=\"" << in.get_segment_id(child_data, child_iter) << "\"";
-        os << " name=\"" << in.get_segment_name(child_data, child_iter) << "\"";
-        os << ">";
-        write_segment(in, os, child_data, child_iter);
-        os << "</segment>\n";
+    (void)context;
+    {
+        for (size_t i = 0, n = in.num_switches_switch(context); i < n; i++) {
+            auto child_context = in.get_switches_switch(i, context);
+            os << "<switch";
+            os << " id=\"" << in.get_switch_id(child_context) << "\"";
+            os << " name=\"" << in.get_switch_name(child_context) << "\"";
+            if ((bool)in.get_switch_type(child_context))
+                os << " type=\"" << lookup_switch_type[(int)in.get_switch_type(child_context)] << "\"";
+            os << ">";
+            write_switch(in, os, child_context);
+            os << "</switch>\n";
+        }
     }
 }
 
-template<class T>
-inline void write_pin(T& in, std::ostream& os, const void* data, void* iter) {
+template<class T, typename Context>
+inline void write_segment(T& in, std::ostream& os, Context& context) {
     (void)in;
     (void)os;
-    (void)data;
-    (void)iter;
-    os << in.get_pin_value(data, iter);
-}
-
-template<class T>
-inline void write_pin_class(T& in, std::ostream& os, const void* data, void* iter) {
-    (void)in;
-    (void)os;
-    (void)data;
-    (void)iter;
-    const void* child_data;
-    void* child_iter;
-    for (size_t i = 0, n = in.num_pin_class_pin(data, iter); i < n; i++) {
-        std::tie(child_data, child_iter) = in.get_pin_class_pin(i, data, iter);
-        os << "<pin";
-        os << " ptc=\"" << in.get_pin_ptc(child_data, child_iter) << "\"";
-        os << ">";
-        write_pin(in, os, child_data, child_iter);
-        os << "</pin>\n";
+    (void)context;
+    {
+        if (in.has_segment_timing(context)) {
+            auto child_context = in.get_segment_timing(context);
+            os << "<timing";
+            if ((bool)in.get_segment_timing_C_per_meter(child_context))
+                os << " C_per_meter=\"" << in.get_segment_timing_C_per_meter(child_context) << "\"";
+            if ((bool)in.get_segment_timing_R_per_meter(child_context))
+                os << " R_per_meter=\"" << in.get_segment_timing_R_per_meter(child_context) << "\"";
+            os << "/>\n";
+        }
     }
 }
 
-template<class T>
-inline void write_block_type(T& in, std::ostream& os, const void* data, void* iter) {
+template<class T, typename Context>
+inline void write_segments(T& in, std::ostream& os, Context& context) {
     (void)in;
     (void)os;
-    (void)data;
-    (void)iter;
-    const void* child_data;
-    void* child_iter;
-    for (size_t i = 0, n = in.num_block_type_pin_class(data, iter); i < n; i++) {
-        std::tie(child_data, child_iter) = in.get_block_type_pin_class(i, data, iter);
-        os << "<pin_class";
-        os << " type=\"" << lookup_pin_type[(int)in.get_pin_class_type(child_data, child_iter)] << "\"";
-        os << ">";
-        write_pin_class(in, os, child_data, child_iter);
-        os << "</pin_class>\n";
+    (void)context;
+    {
+        for (size_t i = 0, n = in.num_segments_segment(context); i < n; i++) {
+            auto child_context = in.get_segments_segment(i, context);
+            os << "<segment";
+            os << " id=\"" << in.get_segment_id(child_context) << "\"";
+            os << " name=\"" << in.get_segment_name(child_context) << "\"";
+            os << ">";
+            write_segment(in, os, child_context);
+            os << "</segment>\n";
+        }
     }
 }
 
-template<class T>
-inline void write_block_types(T& in, std::ostream& os, const void* data, void* iter) {
+template<class T, typename Context>
+inline void write_pin(T& in, std::ostream& os, Context& context) {
     (void)in;
     (void)os;
-    (void)data;
-    (void)iter;
-    const void* child_data;
-    void* child_iter;
-    for (size_t i = 0, n = in.num_block_types_block_type(data, iter); i < n; i++) {
-        std::tie(child_data, child_iter) = in.get_block_types_block_type(i, data, iter);
-        os << "<block_type";
-        os << " height=\"" << in.get_block_type_height(child_data, child_iter) << "\"";
-        os << " id=\"" << in.get_block_type_id(child_data, child_iter) << "\"";
-        os << " name=\"" << in.get_block_type_name(child_data, child_iter) << "\"";
-        os << " width=\"" << in.get_block_type_width(child_data, child_iter) << "\"";
-        os << ">";
-        write_block_type(in, os, child_data, child_iter);
-        os << "</block_type>\n";
+    (void)context;
+    os << in.get_pin_value(context);
+}
+
+template<class T, typename Context>
+inline void write_pin_class(T& in, std::ostream& os, Context& context) {
+    (void)in;
+    (void)os;
+    (void)context;
+    {
+        for (size_t i = 0, n = in.num_pin_class_pin(context); i < n; i++) {
+            auto child_context = in.get_pin_class_pin(i, context);
+            os << "<pin";
+            os << " ptc=\"" << in.get_pin_ptc(child_context) << "\"";
+            os << ">";
+            write_pin(in, os, child_context);
+            os << "</pin>\n";
+        }
     }
 }
 
-template<class T>
-inline void write_grid_locs(T& in, std::ostream& os, const void* data, void* iter) {
+template<class T, typename Context>
+inline void write_block_type(T& in, std::ostream& os, Context& context) {
     (void)in;
     (void)os;
-    (void)data;
-    (void)iter;
-    const void* child_data;
-    void* child_iter;
-    for (size_t i = 0, n = in.num_grid_locs_grid_loc(data, iter); i < n; i++) {
-        std::tie(child_data, child_iter) = in.get_grid_locs_grid_loc(i, data, iter);
-        os << "<grid_loc";
-        os << " block_type_id=\"" << in.get_grid_loc_block_type_id(child_data, child_iter) << "\"";
-        os << " height_offset=\"" << in.get_grid_loc_height_offset(child_data, child_iter) << "\"";
-        os << " width_offset=\"" << in.get_grid_loc_width_offset(child_data, child_iter) << "\"";
-        os << " x=\"" << in.get_grid_loc_x(child_data, child_iter) << "\"";
-        os << " y=\"" << in.get_grid_loc_y(child_data, child_iter) << "\"";
+    (void)context;
+    {
+        for (size_t i = 0, n = in.num_block_type_pin_class(context); i < n; i++) {
+            auto child_context = in.get_block_type_pin_class(i, context);
+            os << "<pin_class";
+            os << " type=\"" << lookup_pin_type[(int)in.get_pin_class_type(child_context)] << "\"";
+            os << ">";
+            write_pin_class(in, os, child_context);
+            os << "</pin_class>\n";
+        }
+    }
+}
+
+template<class T, typename Context>
+inline void write_block_types(T& in, std::ostream& os, Context& context) {
+    (void)in;
+    (void)os;
+    (void)context;
+    {
+        for (size_t i = 0, n = in.num_block_types_block_type(context); i < n; i++) {
+            auto child_context = in.get_block_types_block_type(i, context);
+            os << "<block_type";
+            os << " height=\"" << in.get_block_type_height(child_context) << "\"";
+            os << " id=\"" << in.get_block_type_id(child_context) << "\"";
+            os << " name=\"" << in.get_block_type_name(child_context) << "\"";
+            os << " width=\"" << in.get_block_type_width(child_context) << "\"";
+            os << ">";
+            write_block_type(in, os, child_context);
+            os << "</block_type>\n";
+        }
+    }
+}
+
+template<class T, typename Context>
+inline void write_grid_locs(T& in, std::ostream& os, Context& context) {
+    (void)in;
+    (void)os;
+    (void)context;
+    {
+        for (size_t i = 0, n = in.num_grid_locs_grid_loc(context); i < n; i++) {
+            auto child_context = in.get_grid_locs_grid_loc(i, context);
+            os << "<grid_loc";
+            os << " block_type_id=\"" << in.get_grid_loc_block_type_id(child_context) << "\"";
+            os << " height_offset=\"" << in.get_grid_loc_height_offset(child_context) << "\"";
+            os << " width_offset=\"" << in.get_grid_loc_width_offset(child_context) << "\"";
+            os << " x=\"" << in.get_grid_loc_x(child_context) << "\"";
+            os << " y=\"" << in.get_grid_loc_y(child_context) << "\"";
+            os << "/>\n";
+        }
+    }
+}
+
+template<class T, typename Context>
+inline void write_meta(T& in, std::ostream& os, Context& context) {
+    (void)in;
+    (void)os;
+    (void)context;
+    os << in.get_meta_value(context);
+}
+
+template<class T, typename Context>
+inline void write_metadata(T& in, std::ostream& os, Context& context) {
+    (void)in;
+    (void)os;
+    (void)context;
+    {
+        for (size_t i = 0, n = in.num_metadata_meta(context); i < n; i++) {
+            auto child_context = in.get_metadata_meta(i, context);
+            os << "<meta";
+            os << " name=\"" << in.get_meta_name(child_context) << "\"";
+            os << ">";
+            write_meta(in, os, child_context);
+            os << "</meta>\n";
+        }
+    }
+}
+
+template<class T, typename Context>
+inline void write_node(T& in, std::ostream& os, Context& context) {
+    (void)in;
+    (void)os;
+    (void)context;
+    {
+        auto child_context = in.get_node_loc(context);
+        os << "<loc";
+        os << " ptc=\"" << in.get_node_loc_ptc(child_context) << "\"";
+        if ((bool)in.get_node_loc_side(child_context))
+            os << " side=\"" << lookup_loc_side[(int)in.get_node_loc_side(child_context)] << "\"";
+        os << " xhigh=\"" << in.get_node_loc_xhigh(child_context) << "\"";
+        os << " xlow=\"" << in.get_node_loc_xlow(child_context) << "\"";
+        os << " yhigh=\"" << in.get_node_loc_yhigh(child_context) << "\"";
+        os << " ylow=\"" << in.get_node_loc_ylow(child_context) << "\"";
         os << "/>\n";
     }
-}
-
-template<class T>
-inline void write_meta(T& in, std::ostream& os, const void* data, void* iter) {
-    (void)in;
-    (void)os;
-    (void)data;
-    (void)iter;
-    os << in.get_meta_value(data, iter);
-}
-
-template<class T>
-inline void write_metadata(T& in, std::ostream& os, const void* data, void* iter) {
-    (void)in;
-    (void)os;
-    (void)data;
-    (void)iter;
-    const void* child_data;
-    void* child_iter;
-    for (size_t i = 0, n = in.num_metadata_meta(data, iter); i < n; i++) {
-        std::tie(child_data, child_iter) = in.get_metadata_meta(i, data, iter);
-        os << "<meta";
-        os << " name=\"" << in.get_meta_name(child_data, child_iter) << "\"";
-        os << ">";
-        write_meta(in, os, child_data, child_iter);
-        os << "</meta>\n";
+    {
+        if (in.has_node_timing(context)) {
+            auto child_context = in.get_node_timing(context);
+            os << "<timing";
+            os << " C=\"" << in.get_node_timing_C(child_context) << "\"";
+            os << " R=\"" << in.get_node_timing_R(child_context) << "\"";
+            os << "/>\n";
+        }
+    }
+    {
+        if (in.has_node_segment(context)) {
+            auto child_context = in.get_node_segment(context);
+            os << "<segment";
+            os << " segment_id=\"" << in.get_node_segment_segment_id(child_context) << "\"";
+            os << "/>\n";
+        }
+    }
+    {
+        if (in.has_node_metadata(context)) {
+            auto child_context = in.get_node_metadata(context);
+            os << "<metadata>\n";
+            write_metadata(in, os, child_context);
+            os << "</metadata>\n";
+        }
     }
 }
 
-template<class T>
-inline void write_node(T& in, std::ostream& os, const void* data, void* iter) {
+template<class T, typename Context>
+inline void write_rr_nodes(T& in, std::ostream& os, Context& context) {
     (void)in;
     (void)os;
-    (void)data;
-    (void)iter;
-    const void* child_data;
-    void* child_iter;
-    std::tie(child_data, child_iter) = in.get_node_loc(data, iter);
-    os << "<loc";
-    os << " ptc=\"" << in.get_node_loc_ptc(child_data, child_iter) << "\"";
-    if ((bool)in.get_node_loc_side(child_data, child_iter))
-        os << " side=\"" << lookup_loc_side[(int)in.get_node_loc_side(child_data, child_iter)] << "\"";
-    os << " xhigh=\"" << in.get_node_loc_xhigh(child_data, child_iter) << "\"";
-    os << " xlow=\"" << in.get_node_loc_xlow(child_data, child_iter) << "\"";
-    os << " yhigh=\"" << in.get_node_loc_yhigh(child_data, child_iter) << "\"";
-    os << " ylow=\"" << in.get_node_loc_ylow(child_data, child_iter) << "\"";
-    os << "/>\n";
-    if (in.has_node_timing(data, iter)) {
-        std::tie(child_data, child_iter) = in.get_node_timing(data, iter);
-        os << "<timing";
-        os << " C=\"" << in.get_node_timing_C(child_data, child_iter) << "\"";
-        os << " R=\"" << in.get_node_timing_R(child_data, child_iter) << "\"";
-        os << "/>\n";
-    }
-    if (in.has_node_segment(data, iter)) {
-        std::tie(child_data, child_iter) = in.get_node_segment(data, iter);
-        os << "<segment";
-        os << " segment_id=\"" << in.get_node_segment_segment_id(child_data, child_iter) << "\"";
-        os << "/>\n";
-    }
-    if (in.has_node_metadata(data, iter)) {
-        std::tie(child_data, child_iter) = in.get_node_metadata(data, iter);
-        os << "<metadata>\n";
-        write_metadata(in, os, child_data, child_iter);
-        os << "</metadata>\n";
+    (void)context;
+    {
+        for (size_t i = 0, n = in.num_rr_nodes_node(context); i < n; i++) {
+            auto child_context = in.get_rr_nodes_node(i, context);
+            os << "<node";
+            os << " capacity=\"" << in.get_node_capacity(child_context) << "\"";
+            if ((bool)in.get_node_direction(child_context))
+                os << " direction=\"" << lookup_node_direction[(int)in.get_node_direction(child_context)] << "\"";
+            os << " id=\"" << in.get_node_id(child_context) << "\"";
+            os << " type=\"" << lookup_node_type[(int)in.get_node_type(child_context)] << "\"";
+            os << ">";
+            write_node(in, os, child_context);
+            os << "</node>\n";
+        }
     }
 }
 
-template<class T>
-inline void write_rr_nodes(T& in, std::ostream& os, const void* data, void* iter) {
+template<class T, typename Context>
+inline void write_edge(T& in, std::ostream& os, Context& context) {
     (void)in;
     (void)os;
-    (void)data;
-    (void)iter;
-    const void* child_data;
-    void* child_iter;
-    for (size_t i = 0, n = in.num_rr_nodes_node(data, iter); i < n; i++) {
-        std::tie(child_data, child_iter) = in.get_rr_nodes_node(i, data, iter);
-        os << "<node";
-        os << " capacity=\"" << in.get_node_capacity(child_data, child_iter) << "\"";
-        if ((bool)in.get_node_direction(child_data, child_iter))
-            os << " direction=\"" << lookup_node_direction[(int)in.get_node_direction(child_data, child_iter)] << "\"";
-        os << " id=\"" << in.get_node_id(child_data, child_iter) << "\"";
-        os << " type=\"" << lookup_node_type[(int)in.get_node_type(child_data, child_iter)] << "\"";
-        os << ">";
-        write_node(in, os, child_data, child_iter);
-        os << "</node>\n";
+    (void)context;
+    {
+        if (in.has_edge_metadata(context)) {
+            auto child_context = in.get_edge_metadata(context);
+            os << "<metadata>\n";
+            write_metadata(in, os, child_context);
+            os << "</metadata>\n";
+        }
     }
 }
 
-template<class T>
-inline void write_edge(T& in, std::ostream& os, const void* data, void* iter) {
+template<class T, typename Context>
+inline void write_rr_edges(T& in, std::ostream& os, Context& context) {
     (void)in;
     (void)os;
-    (void)data;
-    (void)iter;
-    const void* child_data;
-    void* child_iter;
-    if (in.has_edge_metadata(data, iter)) {
-        std::tie(child_data, child_iter) = in.get_edge_metadata(data, iter);
-        os << "<metadata>\n";
-        write_metadata(in, os, child_data, child_iter);
-        os << "</metadata>\n";
+    (void)context;
+    {
+        for (size_t i = 0, n = in.num_rr_edges_edge(context); i < n; i++) {
+            auto child_context = in.get_rr_edges_edge(i, context);
+            os << "<edge";
+            os << " sink_node=\"" << in.get_edge_sink_node(child_context) << "\"";
+            os << " src_node=\"" << in.get_edge_src_node(child_context) << "\"";
+            os << " switch_id=\"" << in.get_edge_switch_id(child_context) << "\"";
+            os << ">";
+            write_edge(in, os, child_context);
+            os << "</edge>\n";
+        }
     }
 }
 
-template<class T>
-inline void write_rr_edges(T& in, std::ostream& os, const void* data, void* iter) {
+template<class T, typename Context>
+inline void write_rr_graph(T& in, std::ostream& os, Context& context) {
     (void)in;
     (void)os;
-    (void)data;
-    (void)iter;
-    const void* child_data;
-    void* child_iter;
-    for (size_t i = 0, n = in.num_rr_edges_edge(data, iter); i < n; i++) {
-        std::tie(child_data, child_iter) = in.get_rr_edges_edge(i, data, iter);
-        os << "<edge";
-        os << " sink_node=\"" << in.get_edge_sink_node(child_data, child_iter) << "\"";
-        os << " src_node=\"" << in.get_edge_src_node(child_data, child_iter) << "\"";
-        os << " switch_id=\"" << in.get_edge_switch_id(child_data, child_iter) << "\"";
-        os << ">";
-        write_edge(in, os, child_data, child_iter);
-        os << "</edge>\n";
+    (void)context;
+    {
+        auto child_context = in.get_rr_graph_channels(context);
+        os << "<channels>\n";
+        write_channels(in, os, child_context);
+        os << "</channels>\n";
     }
-}
-
-template<class T>
-inline void write_rr_graph(T& in, std::ostream& os, const void* data, void* iter) {
-    (void)in;
-    (void)os;
-    (void)data;
-    (void)iter;
-    const void* child_data;
-    void* child_iter;
-    std::tie(child_data, child_iter) = in.get_rr_graph_channels(data, iter);
-    os << "<channels>\n";
-    write_channels(in, os, child_data, child_iter);
-    os << "</channels>\n";
-    std::tie(child_data, child_iter) = in.get_rr_graph_switches(data, iter);
-    os << "<switches>\n";
-    write_switches(in, os, child_data, child_iter);
-    os << "</switches>\n";
-    std::tie(child_data, child_iter) = in.get_rr_graph_segments(data, iter);
-    os << "<segments>\n";
-    write_segments(in, os, child_data, child_iter);
-    os << "</segments>\n";
-    std::tie(child_data, child_iter) = in.get_rr_graph_block_types(data, iter);
-    os << "<block_types>\n";
-    write_block_types(in, os, child_data, child_iter);
-    os << "</block_types>\n";
-    std::tie(child_data, child_iter) = in.get_rr_graph_grid(data, iter);
-    os << "<grid>\n";
-    write_grid_locs(in, os, child_data, child_iter);
-    os << "</grid>\n";
-    std::tie(child_data, child_iter) = in.get_rr_graph_rr_nodes(data, iter);
-    os << "<rr_nodes>\n";
-    write_rr_nodes(in, os, child_data, child_iter);
-    os << "</rr_nodes>\n";
-    std::tie(child_data, child_iter) = in.get_rr_graph_rr_edges(data, iter);
-    os << "<rr_edges>\n";
-    write_rr_edges(in, os, child_data, child_iter);
-    os << "</rr_edges>\n";
+    {
+        auto child_context = in.get_rr_graph_switches(context);
+        os << "<switches>\n";
+        write_switches(in, os, child_context);
+        os << "</switches>\n";
+    }
+    {
+        auto child_context = in.get_rr_graph_segments(context);
+        os << "<segments>\n";
+        write_segments(in, os, child_context);
+        os << "</segments>\n";
+    }
+    {
+        auto child_context = in.get_rr_graph_block_types(context);
+        os << "<block_types>\n";
+        write_block_types(in, os, child_context);
+        os << "</block_types>\n";
+    }
+    {
+        auto child_context = in.get_rr_graph_grid(context);
+        os << "<grid>\n";
+        write_grid_locs(in, os, child_context);
+        os << "</grid>\n";
+    }
+    {
+        auto child_context = in.get_rr_graph_rr_nodes(context);
+        os << "<rr_nodes>\n";
+        write_rr_nodes(in, os, child_context);
+        os << "</rr_nodes>\n";
+    }
+    {
+        auto child_context = in.get_rr_graph_rr_edges(context);
+        os << "<rr_edges>\n";
+        write_rr_edges(in, os, child_context);
+        os << "</rr_edges>\n";
+    }
 }
 
 inline void dfa_error(const char* wrong, const int* states, const char* const* lookup, int len) {
