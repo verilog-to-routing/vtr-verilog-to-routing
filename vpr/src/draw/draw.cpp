@@ -500,6 +500,11 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
         }
     }
 
+    //Block placements may have changed since previous invocation,
+    //so we need to update the block colors in case blocks have changed
+    //the tiles where they are implemented
+    draw_reset_blk_colors();
+
     if (draw_state->show_graphics) {
         application.update_message(msg);
         application.refresh_drawing();
@@ -934,6 +939,7 @@ static void drawplace(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
     ClusterBlockId bnum;
@@ -961,15 +967,20 @@ static void drawplace(ezgl::renderer* g) {
                 if (bnum == INVALID_BLOCK_ID) continue;
                 //Determine the block color
                 ezgl::color block_color;
+                t_logical_block_type_ptr logical_block_type = nullptr;
                 if (bnum != EMPTY_BLOCK_ID) {
                     block_color = draw_state->block_color[bnum];
+                    logical_block_type = cluster_ctx.clb_nlist.block_type(bnum);
                 } else {
                     block_color = get_block_type_color(device_ctx.grid[i][j].type);
                     block_color = lighten_color(block_color, EMPTY_BLOCK_LIGHTEN_FACTOR);
+
+                    auto tile_type = device_ctx.grid[i][j].type;
+                    logical_block_type = pick_best_logical_type(tile_type);
                 }
                 g->set_color(block_color);
                 /* Get coords of current sub_tile */
-                ezgl::rectangle abs_clb_bbox = draw_coords->get_absolute_clb_bbox(i, j, k);
+                ezgl::rectangle abs_clb_bbox = draw_coords->get_absolute_clb_bbox(i, j, k, logical_block_type);
                 ezgl::point2d center = abs_clb_bbox.center();
 
                 g->fill_rectangle(abs_clb_bbox);
@@ -980,7 +991,6 @@ static void drawplace(ezgl::renderer* g) {
                 g->draw_rectangle(abs_clb_bbox);
                 /* Draw text if the space has parts of the netlist */
                 if (bnum != EMPTY_BLOCK_ID && bnum != INVALID_BLOCK_ID) {
-                    auto& cluster_ctx = g_vpr_ctx.clustering();
                     std::string name = cluster_ctx.clb_nlist.block_name(bnum) + vtr::string_fmt(" (#%zu)", size_t(bnum));
 
                     g->draw_text(center, name.c_str(), abs_clb_bbox.width(), abs_clb_bbox.height());
@@ -2730,13 +2740,27 @@ void deselect_all() {
 }
 
 static void draw_reset_blk_color(ClusterBlockId blk_id) {
-    auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-
-    auto logical_block = clb_nlist.block_type(blk_id);
-
     t_draw_state* draw_state = get_draw_state_vars();
 
-    draw_state->block_color[blk_id] = get_block_type_color(pick_best_physical_type(logical_block));
+    auto& place_ctx = g_vpr_ctx.placement();
+
+    t_physical_tile_type_ptr tile_type = nullptr;
+    if (place_ctx.block_locs.empty()) {
+        //No placement, use best guess tile type color
+        auto& cluster_ctx = g_vpr_ctx.clustering();
+
+        tile_type = pick_best_physical_type(cluster_ctx.clb_nlist.block_type(blk_id));
+    } else {
+        //Color the block to match the tile where it is placed
+        auto& device_ctx = g_vpr_ctx.device();
+        auto& grid = device_ctx.grid;
+
+        t_pl_loc loc = place_ctx.block_locs[blk_id].loc;
+
+        tile_type = grid[loc.x][loc.y].type;
+    }
+
+    draw_state->block_color[blk_id] = get_block_type_color(tile_type);
 }
 
 /**

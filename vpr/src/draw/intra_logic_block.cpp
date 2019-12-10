@@ -90,17 +90,24 @@ void draw_internal_init_blk() {
     t_pb_graph_node* pb_graph_head_node;
 
     auto& device_ctx = g_vpr_ctx.device();
-    for (const auto& type : device_ctx.physical_tile_types) {
+    for (const auto& type : device_ctx.logical_block_types) {
         /* Empty block has no sub_blocks */
         if (is_empty_type(&type)) {
             continue;
         }
 
-        auto logical_block = pick_best_logical_type(&type);
-        pb_graph_head_node = logical_block->pb_graph_head;
+        pb_graph_head_node = type.pb_graph_head;
         int type_descriptor_index = type.index;
 
-        int num_sub_tiles = type.capacity;
+        //We use the maximum over all tiles which can implement this logical block type
+        int num_sub_tiles = 1;
+        int width = 1;
+        int height = 1;
+        for (const auto& tile : type.equivalent_tiles) {
+            num_sub_tiles = std::max(num_sub_tiles, tile->capacity);
+            width = std::max(width, tile->width);
+            height = std::max(height, tile->height);
+        }
 
         // set the clb dimensions
         ezgl::rectangle& clb_bbox = draw_coords->blk_info.at(type_descriptor_index).subblk_array.at(0);
@@ -110,17 +117,17 @@ void draw_internal_init_blk() {
         // note, that all clbs of the same type are the same size,
         // and that consequently we have *one* model for each type.
         bot_left = {0, 0};
-        if (size_t(type.width) > device_ctx.grid.width() || size_t(type.height) > device_ctx.grid.height()) {
+        if (size_t(width) > device_ctx.grid.width() || size_t(height) > device_ctx.grid.height()) {
             // in this case, the clb certainly wont't fit, but this prevents
             // an out-of-bounds access, and provides some sort of (probably right)
             // value
             top_right = ezgl::point2d(
-                (draw_coords->tile_x[1] - draw_coords->tile_x[0]) * (type.width - 1),
-                (draw_coords->tile_y[1] - draw_coords->tile_y[0]) * (type.height - 1));
+                (draw_coords->tile_x[1] - draw_coords->tile_x[0]) * (width - 1),
+                (draw_coords->tile_y[1] - draw_coords->tile_y[0]) * (height - 1));
         } else {
             top_right = ezgl::point2d(
-                draw_coords->tile_x[type.width - 1],
-                draw_coords->tile_y[type.height - 1]);
+                draw_coords->tile_x[width - 1],
+                draw_coords->tile_y[height - 1]);
         }
         top_right += ezgl::point2d(
             draw_coords->get_tile_width() / num_sub_tiles,
@@ -131,7 +138,7 @@ void draw_internal_init_blk() {
                                   clb_bbox.width(), clb_bbox.height());
 
         /* Determine the max number of sub_block levels in the FPGA */
-        draw_state->max_sub_blk_lvl = std::max(draw_internal_find_max_lvl(*logical_block->pb_type),
+        draw_state->max_sub_blk_lvl = std::max(draw_internal_find_max_lvl(*type.pb_type),
                                                draw_state->max_sub_blk_lvl);
     }
 }
