@@ -68,7 +68,7 @@ void draw_internal_alloc_blk() {
     draw_coords->blk_info.resize(device_ctx.logical_block_types.size());
 
     for (const auto& type : device_ctx.logical_block_types) {
-        if (&type == device_ctx.EMPTY_LOGICAL_BLOCK_TYPE) {
+        if (is_empty_type(&type)) {
             continue;
         }
 
@@ -153,7 +153,7 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
                 continue;
 
             /* Don't draw if tile is empty. This includes corners. */
-            if (device_ctx.grid[i][j].type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE)
+            if (is_empty_type(device_ctx.grid[i][j].type))
                 continue;
 
             int num_sub_tiles = device_ctx.grid[i][j].type->capacity;
