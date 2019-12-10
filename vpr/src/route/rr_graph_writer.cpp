@@ -45,12 +45,14 @@ void write_rr_graph(const char* file_name, const std::vector<t_segment_inf>& seg
     std::fstream fp;
     fp.open(file_name, std::fstream::out | std::fstream::trunc);
     if (vtr::check_file_name_extension(file_name, ".xml")) {
-        uxsd::write_rr_graph_xml(reader, fp);
+        void* context;
+        uxsd::write_rr_graph_xml(reader, context, fp);
 #ifdef VTR_ENABLE_CAPNPROTO
     } else if (vtr::check_file_name_extension(file_name, ".capnp")) {
         ::capnp::MallocMessageBuilder builder;
         auto rr_graph = builder.initRoot<ucap::RrGraph>();
-        uxsd::write_rr_graph_capnp(reader, rr_graph);
+        void* context;
+        uxsd::write_rr_graph_capnp(reader, context, rr_graph);
         writeMessageToFile(file_name, &builder);
 #endif
     } else {
