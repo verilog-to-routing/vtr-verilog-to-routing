@@ -216,6 +216,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     vpr_setup->device_layout = options->device_layout;
     vpr_setup->constant_net_method = options->constant_net_method;
     vpr_setup->clock_modeling = options->clock_modeling;
+    vpr_setup->two_stage_clock_routing = options->two_stage_clock_routing;
     vpr_setup->exit_before_pack = options->exit_before_pack;
 
     VTR_LOG("\n");
@@ -687,9 +688,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         std::string graphics_msg;
         if (route_status.success()) {
             //Sanity check the routing
-            if (!router_opts.disable_check_route) {
-                check_route(router_opts.route_type);
-            }
+            check_route(router_opts.route_type);
             get_serial_num();
 
             //Update status
@@ -850,9 +849,7 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
                     router_opts.trim_obs_channels,
                     router_opts.clock_modeling,
                     arch.Directs, arch.num_directs,
-                    &warnings,
-                    router_opts.read_edge_metadata,
-                    router_opts.do_check_rr_graph);
+                    &warnings);
     //Initialize drawing, now that we have an RR graph
     init_draw_coords(chan_width_fac);
 }

@@ -19,7 +19,6 @@ endif()
 # Each schema used should appear here.
 capnp_generate_cpp(CAPNP_SRCS CAPNP_HDRS
     place_delay_model.capnp
-    connection_map.capnp
     matrix.capnp
     )
 

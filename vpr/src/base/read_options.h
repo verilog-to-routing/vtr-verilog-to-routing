@@ -56,6 +56,7 @@ struct t_options {
     argparse::ArgValue<float> target_device_utilization;
     argparse::ArgValue<e_constant_net_method> constant_net_method;
     argparse::ArgValue<e_clock_modeling> clock_modeling;
+    argparse::ArgValue<bool> two_stage_clock_routing;
     argparse::ArgValue<bool> exit_before_pack;
     argparse::ArgValue<bool> strict_checks;
     argparse::ArgValue<std::string> disable_errors;
@@ -118,7 +119,6 @@ struct t_options {
     argparse::ArgValue<std::string> allowed_tiles_for_delay_model;
 
     /* Router Options */
-    argparse::ArgValue<bool> disable_check_rr_graph;
     argparse::ArgValue<int> max_router_iterations;
     argparse::ArgValue<float> first_iter_pres_fac;
     argparse::ArgValue<float> initial_pres_fac;
@@ -133,7 +133,6 @@ struct t_options {
     argparse::ArgValue<bool> verify_binary_search;
     argparse::ArgValue<e_router_algorithm> RouterAlgorithm;
     argparse::ArgValue<int> min_incremental_reroute_fanout;
-    argparse::ArgValue<bool> disable_check_route;
 
     /* Timing-driven router options only */
     argparse::ArgValue<float> astar_fac;
@@ -153,7 +152,6 @@ struct t_options {
     argparse::ArgValue<int> router_max_convergence_count;
     argparse::ArgValue<float> router_reconvergence_cpd_threshold;
     argparse::ArgValue<std::string> router_first_iteration_timing_report_file;
-    argparse::ArgValue<std::string> lookahead_search_locations;
 
     /* Analysis options */
     argparse::ArgValue<bool> full_stats;

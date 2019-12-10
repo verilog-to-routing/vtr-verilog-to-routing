@@ -29,12 +29,16 @@ int infer_and_mark_block_sequential_outputs_constant(AtomNetlist& netlist, AtomB
 //Returns the set of input ports which are combinationally connected to output_port
 std::vector<AtomPortId> find_combinationally_connected_input_ports(const AtomNetlist& netlist, AtomPortId output_port);
 
-std::vector<AtomBlockId> identify_buffer_luts(const AtomNetlist& netlist);
+//Returns the set of clock ports which are combinationally connected to output_port
+std::vector<AtomPortId> find_combinationally_connected_clock_ports(const AtomNetlist& netlist, AtomPortId output_port);
+
 bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk);
 bool is_removable_block(const AtomNetlist& netlist, const AtomBlockId blk, std::string* reason = nullptr);
 bool is_removable_input(const AtomNetlist& netlist, const AtomBlockId blk, std::string* reason = nullptr);
 bool is_removable_output(const AtomNetlist& netlist, const AtomBlockId blk, std::string* reason = nullptr);
-void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity);
+
+//Attempts to remove the specified buffer LUT blk from the netlist. Returns true if successful.
+bool remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity);
 
 std::string make_unconn(size_t& unconn_count, PinType type);
 void cube_to_minterms_recurr(std::vector<vtr::LogicValue> cube, std::vector<size_t>& minterms);
@@ -658,32 +662,46 @@ std::vector<AtomPortId> find_combinationally_connected_input_ports(const AtomNet
     return upstream_ports;
 }
 
+std::vector<AtomPortId> find_combinationally_connected_clock_ports(const AtomNetlist& netlist, AtomPortId output_port) {
+    std::vector<AtomPortId> upstream_ports;
+
+    VTR_ASSERT(netlist.port_type(output_port) == PortType::OUTPUT);
+
+    std::string out_port_name = netlist.port_name(output_port);
+
+    AtomBlockId blk = netlist.port_block(output_port);
+
+    //Look through each block input port to find those which are combinationally connected to the output port
+    for (AtomPortId clock_port : netlist.block_clock_ports(blk)) {
+        const t_model_ports* clock_model_port = netlist.port_model(clock_port);
+        for (const std::string& sink_port_name : clock_model_port->combinational_sink_ports) {
+            if (sink_port_name == out_port_name) {
+                upstream_ports.push_back(clock_port);
+            }
+        }
+    }
+
+    return upstream_ports;
+}
+
 void absorb_buffer_luts(AtomNetlist& netlist, int verbosity) {
     //First we look through the netlist to find LUTs with identity logic functions
     //we then remove those luts, replacing the net's they drove with the inputs to the
     //buffer lut
 
-    //Find buffer luts
-    auto buffer_luts = identify_buffer_luts(netlist);
-
-    VTR_LOGV(verbosity > 0, "Absorbing %zu LUT buffers\n", buffer_luts.size());
+    size_t removed_buffer_count = 0;
 
     //Remove the buffer luts
-    for (auto blk : buffer_luts) {
-        remove_buffer_lut(netlist, blk, verbosity);
-    }
-
-    //TODO: absorb inverter LUTs?
-}
-
-std::vector<AtomBlockId> identify_buffer_luts(const AtomNetlist& netlist) {
-    std::vector<AtomBlockId> buffer_luts;
     for (auto blk : netlist.blocks()) {
         if (is_buffer_lut(netlist, blk)) {
-            buffer_luts.push_back(blk);
+            if (remove_buffer_lut(netlist, blk, verbosity)) {
+                ++removed_buffer_count;
+            }
         }
     }
-    return buffer_luts;
+    VTR_LOGV(verbosity > 0, "Absorbed %zu LUT buffers\n", removed_buffer_count);
+
+    //TODO: absorb inverter LUTs?
 }
 
 bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk) {
@@ -747,7 +765,7 @@ bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk) {
     return false;
 }
 
-void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity) {
+bool remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity) {
     //General net connectivity, numbers equal pin ids
     //
     // 1  in    2 ----- m+1  out
@@ -796,8 +814,16 @@ void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity) {
     auto input_net = netlist.pin_net(input_pin);
     auto output_net = netlist.pin_net(output_pin);
 
+    VTR_LOGV_WARN(verbosity > 1, "Attempting to remove buffer '%s' (%s) from net '%s' to net '%s'\n", netlist.block_name(blk).c_str(), netlist.block_model(blk)->name, netlist.net_name(input_net).c_str(), netlist.net_name(output_net).c_str());
+
     //Collect the new driver and sink pins
     AtomPinId new_driver = netlist.net_driver(input_net);
+
+    if (!new_driver) {
+        VTR_LOGV_WARN(verbosity > 2, "Buffer '%s' has no input and will not be absorbed (left to be swept)\n", netlist.block_name(blk).c_str(), netlist.block_model(blk)->name, netlist.net_name(input_net).c_str(), netlist.net_name(output_net).c_str());
+        return false; //Dangling/undriven input, leave buffer to be swept
+    }
+
     VTR_ASSERT(netlist.pin_type(new_driver) == PinType::DRIVER);
 
     std::vector<AtomPinId> new_sinks;
@@ -823,38 +849,45 @@ void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity) {
     // Note that the driver can only (potentially) be an INPAD, and the sinks only (potentially) OUTPADs
     AtomBlockType driver_block_type = netlist.block_type(netlist.pin_block(new_driver));
     bool driver_is_pi = (driver_block_type == AtomBlockType::INPAD);
-    bool po_in_sinks = std::any_of(new_sinks.begin(), new_sinks.end(),
-                                   [&](AtomPinId pin_id) {
-                                       VTR_ASSERT(netlist.pin_type(pin_id) == PinType::SINK);
-                                       AtomBlockId blk_id = netlist.pin_block(pin_id);
-                                       return netlist.block_type(blk_id) == AtomBlockType::OUTPAD;
-                                   });
+    bool po_in_input_sinks = std::any_of(input_sinks.begin(), input_sinks.end(),
+                                         [&](AtomPinId pin_id) {
+                                             VTR_ASSERT(netlist.pin_type(pin_id) == PinType::SINK);
+                                             AtomBlockId blk_id = netlist.pin_block(pin_id);
+                                             return netlist.block_type(blk_id) == AtomBlockType::OUTPAD;
+                                         });
+    bool po_in_output_sinks = std::any_of(output_sinks.begin(), output_sinks.end(),
+                                          [&](AtomPinId pin_id) {
+                                              VTR_ASSERT(netlist.pin_type(pin_id) == PinType::SINK);
+                                              AtomBlockId blk_id = netlist.pin_block(pin_id);
+                                              return netlist.block_type(blk_id) == AtomBlockType::OUTPAD;
+                                          });
 
     std::string new_net_name;
-    if (!driver_is_pi && !po_in_sinks) {
+    if (!driver_is_pi && !po_in_input_sinks && !po_in_output_sinks) {
         //No PIs or POs, we can choose arbitarily in this case
         new_net_name = netlist.net_name(output_net);
 
-    } else if (driver_is_pi && !po_in_sinks) {
-        //Must use the input name to perserve primary-input name
+    } else if ((driver_is_pi || po_in_input_sinks) && !po_in_output_sinks) {
+        //Must use the input name to perserve primary-input or primary-output name
         new_net_name = netlist.net_name(input_net);
 
-    } else if (!driver_is_pi && po_in_sinks) {
+    } else if ((!driver_is_pi && !po_in_input_sinks) && po_in_output_sinks) {
         //Must use the output name to perserve primary-output name
         new_net_name = netlist.net_name(output_net);
 
     } else {
-        VTR_ASSERT(driver_is_pi && po_in_sinks);
-        //This is a buffered connection from a primary input, to primary output
+        VTR_ASSERT((driver_is_pi || po_in_input_sinks) && po_in_output_sinks);
+        //This is a buffered connection from a primary input to primary output, or to
+        //more than one primary output.
         //TODO: consider implications of removing these...
 
         //Do not remove such buffers
-        return;
+        return false;
     }
 
     size_t initial_input_net_pins = netlist.net_pins(input_net).size();
 
-    VTR_LOGV_WARN(verbosity > 1, "%s is a LUT buffer and will be absorbed\n", netlist.block_name(blk).c_str());
+    VTR_LOGV_WARN(verbosity > 2, "%s is a LUT buffer and will be absorbed\n", netlist.block_name(blk).c_str());
 
     //Remove the buffer
     //
@@ -868,7 +901,10 @@ void remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity) {
     netlist.remove_net(output_net);
 
     //Create the new merged net
-    netlist.add_net(new_net_name, new_driver, new_sinks);
+    AtomNetId new_net = netlist.add_net(new_net_name, new_driver, new_sinks);
+
+    VTR_ASSERT(netlist.net_pins(new_net).size() == initial_input_net_pins - 1 + output_sinks.size());
+    return true;
 }
 
 bool is_removable_block(const AtomNetlist& netlist, const AtomBlockId blk_id, std::string* reason) {
@@ -1353,7 +1389,7 @@ std::set<AtomNetId> find_netlist_physical_clock_nets(const AtomNetlist& netlist)
     return clock_nets;
 }
 
-//Finds all logical clock drivers in the netlist
+//Finds all logical clock drivers in the netlist (by back-tracing through logic)
 std::set<AtomPinId> find_netlist_logical_clock_drivers(const AtomNetlist& netlist) {
     auto clock_nets = find_netlist_physical_clock_nets(netlist);
 
@@ -1362,26 +1398,60 @@ std::set<AtomPinId> find_netlist_logical_clock_drivers(const AtomNetlist& netlis
     //However, some of them may be the same logical clock (e.g. if there are
     //buffers between them). Here we trace-back through any clock buffers
     //to find the true source
+    size_t assumed_buffer_count = 0;
     std::set<AtomNetId> prev_clock_nets;
     while (prev_clock_nets != clock_nets) { //Still tracing back
         prev_clock_nets = clock_nets;
         clock_nets.clear();
 
         for (auto clk_net : prev_clock_nets) {
-            auto driver_block = netlist.net_driver_block(clk_net);
+            AtomPinId driver_pin = netlist.net_driver(clk_net);
+            AtomPortId driver_port = netlist.pin_port(driver_pin);
+            AtomBlockId driver_blk = netlist.port_block(driver_port);
 
-            if (is_buffer(netlist, driver_block)) {
-                //Driver is a buffer lut, use it's input net
-                auto input_pins = netlist.block_input_pins(driver_block);
-                VTR_ASSERT(input_pins.size() == 1);
-                auto input_pin = *input_pins.begin();
+            std::vector<AtomPortId> upstream_ports;
 
-                auto input_net = netlist.pin_net(input_pin);
-                clock_nets.insert(input_net);
+            if (netlist.block_model(driver_blk)->name == std::string(".names")) {
+                //For .names we allow tracing back through data connections
+                //which allows us to traceback through white-box .names buffers
+                upstream_ports = find_combinationally_connected_input_ports(netlist, driver_port);
             } else {
+                //For black boxes, we only trace back through inputs marked as clocks
+                upstream_ports = find_combinationally_connected_clock_ports(netlist, driver_port);
+            }
+
+            if (upstream_ports.empty()) {
+                //This net is a root net of a clock, keep it
                 clock_nets.insert(clk_net);
+            } else {
+                //Trace the clock back through any combinational logic
+                //
+                // We are assuming that the combinational connections are independent and non-inverting.
+                // If this is not the case, it is up to the end-user to specify the clocks explicitly
+                // at the intermediate pins in the netlist.
+                for (AtomPortId upstream_port : upstream_ports) {
+                    for (AtomPinId upstream_pin : netlist.port_pins(upstream_port)) {
+                        AtomNetId upstream_net = netlist.pin_net(upstream_pin);
+
+                        VTR_ASSERT(upstream_net);
+
+                        VTR_LOG_WARN("Assuming clocks may propagate through %s (%s) from pin %s to %s (assuming a non-inverting buffer).\n",
+                                     netlist.block_name(driver_blk).c_str(), netlist.block_model(driver_blk)->name,
+                                     netlist.pin_name(upstream_pin).c_str(), netlist.pin_name(driver_pin).c_str());
+
+                        clock_nets.insert(upstream_net);
+                        ++assumed_buffer_count;
+                    }
+                }
             }
         }
+    }
+
+    if (assumed_buffer_count > 0) {
+        VTR_LOG_WARN(
+            "Assumed %zu netlist logic connections may be clock buffers. "
+            "To override this behaviour explicitly create clocks at the appropriate netlist pins.\n",
+            assumed_buffer_count);
     }
 
     //Extract the net drivers
