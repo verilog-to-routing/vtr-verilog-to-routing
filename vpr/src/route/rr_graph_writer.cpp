@@ -9,7 +9,7 @@
 
 #include <cstdio>
 #include <fstream>
-#include "rr_graph_uxsdcxx_interface_impl.h"
+#include "rr_graph_uxsdcxx_serializer.h"
 #include "rr_graph_uxsdcxx.h"
 #ifdef VTR_ENABLE_CAPNPROTO
 #    include "capnp/serialize.h"
@@ -26,7 +26,7 @@
 void write_rr_graph(const char* file_name, const std::vector<t_segment_inf>& segment_inf) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    RrGraphImpl reader(
+    RrGraphSerializer reader(
         /*is_global_graph=*/false,
         /*read_edge_metadata=*/false,
         &device_ctx.chan_width,
@@ -48,7 +48,7 @@ void write_rr_graph(const char* file_name, const std::vector<t_segment_inf>& seg
         void* context;
         uxsd::write_rr_graph_xml(reader, context, fp);
 #ifdef VTR_ENABLE_CAPNPROTO
-    } else if (vtr::check_file_name_extension(file_name, ".capnp")) {
+    } else if (vtr::check_file_name_extension(file_name, ".bin")) {
         ::capnp::MallocMessageBuilder builder;
         auto rr_graph = builder.initRoot<ucap::RrGraph>();
         void* context;

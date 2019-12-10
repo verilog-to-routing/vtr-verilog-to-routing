@@ -15,7 +15,7 @@
 
 #include "rr_graph_reader.h"
 
-#include "rr_graph_uxsdcxx_interface_impl.h"
+#include "rr_graph_uxsdcxx_serializer.h"
 #include "rr_graph_uxsdcxx.h"
 
 #include <fstream>
@@ -46,7 +46,7 @@ void load_rr_file(const t_graph_type graph_type,
     vtr::ScopedStartFinishTimer timer("Loading routing resource graph");
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
-    RrGraphImpl reader(
+    RrGraphSerializer reader(
         GRAPH_GLOBAL == graph_type,
         read_edge_metadata,
         &device_ctx.chan_width,
@@ -74,7 +74,7 @@ void load_rr_file(const t_graph_type graph_type,
             vpr_throw(VPR_ERROR_ROUTE, read_rr_graph_name, e.line(), "%s", e.what());
         }
 #ifdef VTR_ENABLE_CAPNPROTO
-    } else if (vtr::check_file_name_extension(read_rr_graph_name, ".capnp")) {
+    } else if (vtr::check_file_name_extension(read_rr_graph_name, ".bin")) {
         MmapFile f(read_rr_graph_name);
         void* context;
         uxsd::load_rr_graph_capnp(reader, f.getData(), context);
@@ -82,7 +82,7 @@ void load_rr_file(const t_graph_type graph_type,
     } else {
         VTR_LOG_WARN(
             "RR graph file '%s' may be in incorrect format. "
-            "Expecting .xml or .capnp format\n",
+            "Expecting .xml or .bin format\n",
             read_rr_graph_name);
     }
 
