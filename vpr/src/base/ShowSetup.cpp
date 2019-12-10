@@ -202,6 +202,9 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             case DELAY_NORMALIZED_LENGTH:
                 VTR_LOG("DELAY_NORMALIZED_LENGTH\n");
                 break;
+            case DELAY_NORMALIZED_LENGTH_BOUNDED:
+                VTR_LOG("DELAY_NORMALIZED_LENGTH_BOUNDED\n");
+                break;
             case DELAY_NORMALIZED_FREQUENCY:
                 VTR_LOG("DELAY_NORMALIZED_FREQUENCY\n");
                 break;

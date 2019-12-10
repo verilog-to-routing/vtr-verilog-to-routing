@@ -62,6 +62,12 @@ void Point<T>::swap() {
  * Rect
  */
 template<class T>
+Rect<T>::Rect()
+    : Rect<T>(Point<T>(0, 0), Point<T>(0, 0)) {
+    //pass
+}
+
+template<class T>
 Rect<T>::Rect(T left_val, T bottom_val, T right_val, T top_val)
     : Rect<T>(Point<T>(left_val, bottom_val), Point<T>(right_val, top_val)) {
     //pass
@@ -71,6 +77,16 @@ template<class T>
 Rect<T>::Rect(Point<T> bottom_left_val, Point<T> top_right_val)
     : bottom_left_(bottom_left_val)
     , top_right_(top_right_val) {
+    //pass
+}
+
+//Only defined for integral types
+template<class T>
+template<typename U, typename std::enable_if<std::is_integral<U>::value>::type...>
+Rect<T>::Rect(Point<U> point)
+    : bottom_left_(point)
+    , top_right_(point.x() + 1,
+                 point.y() + 1) {
     //pass
 }
 
@@ -136,6 +152,11 @@ bool Rect<T>::coincident(Point<T> point) const {
 }
 
 template<class T>
+bool Rect<T>::empty() const {
+    return xmax() <= xmin() || ymax() <= ymin();
+}
+
+template<class T>
 bool operator==(const Rect<T>& lhs, const Rect<T>& rhs) {
     return lhs.bottom_left() == rhs.bottom_left()
            && lhs.top_right() == rhs.top_right();
@@ -144,6 +165,22 @@ bool operator==(const Rect<T>& lhs, const Rect<T>& rhs) {
 template<class T>
 bool operator!=(const Rect<T>& lhs, const Rect<T>& rhs) {
     return !(lhs == rhs);
+}
+
+template<class T>
+Rect<T> bounding_box(const Rect<T>& lhs, const Rect<T>& rhs) {
+    return Rect<T>(std::min(lhs.xmin(), rhs.xmin()),
+                   std::min(lhs.ymin(), rhs.ymin()),
+                   std::max(lhs.xmax(), rhs.xmax()),
+                   std::max(lhs.ymax(), rhs.ymax()));
+}
+
+//Only defined for integral types
+template<typename T, typename std::enable_if<std::is_integral<T>::value>::type...>
+Point<T> sample(const vtr::Rect<T>& r, T x, T y, T d) {
+    VTR_ASSERT(d > 0);
+    return Point<T>((r.xmin() * (d - x) + r.xmax() * x + d / 2) / d,
+                    (r.ymin() * (d - y) + r.ymax() * y + d / 2) / d);
 }
 
 template<class T>
@@ -164,6 +201,12 @@ void Rect<T>::set_xmax(T xmax_val) {
 template<class T>
 void Rect<T>::set_ymax(T ymax_val) {
     top_right_.set_y(ymax_val);
+}
+
+template<class T>
+Rect<T>& Rect<T>::expand_bounding_box(const Rect<T>& other) {
+    *this = bounding_box(*this, other);
+    return *this;
 }
 
 /*
