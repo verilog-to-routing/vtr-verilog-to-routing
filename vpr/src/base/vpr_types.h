@@ -625,13 +625,11 @@ struct t_place_region {
  * x: x-coordinate
  * y: y-coordinate
  * z: occupancy coordinate
- * is_fixed: true if this block's position is fixed by the user and shouldn't be moved during annealing
- * nets_and_pins_synced_to_z_coordinate: true if the associated clb's pins have been synced to the z location (i.e. after placement) */
+ * is_fixed: true if this block's position is fixed by the user and shouldn't be moved during annealing */
 struct t_block_loc {
     t_pl_loc loc;
 
     bool is_fixed = false;
-    bool nets_and_pins_synced_to_z_coordinate = false;
 };
 
 /* Stores the clustered blocks placed at a particular grid location */
