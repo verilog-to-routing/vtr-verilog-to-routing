@@ -27,7 +27,12 @@ void write_rr_graph(const char* file_name, const std::vector<t_segment_inf>& seg
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     RrGraphSerializer reader(
-        /*is_global_graph=*/false,
+        /*graph_type=*/t_graph_type(),
+        /*base_cost_type=*/e_base_cost_type(),
+        /*wire_to_rr_ipin_switch=*/nullptr,
+        /*do_check_rr_graph=*/false,
+        /*read_rr_graph_name=*/nullptr,
+        /*read_rr_graph_filename=*/nullptr,
         /*read_edge_metadata=*/false,
         &device_ctx.chan_width,
         &device_ctx.rr_nodes,
