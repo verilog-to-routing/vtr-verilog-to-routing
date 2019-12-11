@@ -59,7 +59,7 @@ void button_for_toggle_blk_internal() {
     t_draw_state* draw_state = get_draw_state_vars();
 
     //spin box for toggle_blk_internal, set the range and increment step
-    GtkWidget* toggle_blk_internal_widget = gtk_spin_button_new_with_range(0., (double)draw_state->max_sub_blk_lvl, 1.);
+    GtkWidget* toggle_blk_internal_widget = gtk_spin_button_new_with_range(0., (double)(draw_state->max_sub_blk_lvl - 1), 1.);
     GtkWidget* toggle_blk_internal_label = gtk_label_new("Toggle Block Internal:");
     gtk_widget_set_name(toggle_blk_internal_widget, "toggle_blk_internal");
 

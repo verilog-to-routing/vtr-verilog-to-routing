@@ -40,7 +40,6 @@
 static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, float parent_width, float parent_height);
 static int draw_internal_find_max_lvl(const t_pb_type& pb_type);
 static void draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, int num_pb_types, int type_index, int num_pb, int pb_index, float parent_width, float parent_height, float* blk_width, float* blk_height);
-static bool is_top_lvl_block_highlighted(const ClusterBlockId blk_id);
 std::vector<AtomBlockId> collect_pb_atoms(const t_pb* pb);
 void collect_pb_atoms_recurr(const t_pb* pb, std::vector<AtomBlockId>& atoms);
 t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const ezgl::point2d& local_pt, int max_depth);
@@ -141,6 +140,7 @@ void draw_internal_init_blk() {
         draw_state->max_sub_blk_lvl = std::max(draw_internal_find_max_lvl(*type.pb_type),
                                                draw_state->max_sub_blk_lvl);
     }
+    //draw_state->max_sub_blk_lvl -= 1;
 }
 
 #    ifndef NO_GRAPHICS
@@ -338,47 +338,33 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     if (pb_type->depth > draw_state->show_blk_internal) {
         return;
     }
+
     /// first draw box ///
 
-    if (pb_type->depth == 0) {
-        if (!is_top_lvl_block_highlighted(clb_index)) {
-            // if this is a top level pb, and only if it isn't selected (ie. a funny colour),
-            // overwrite it. (but stil draw the text)
+    if (pb->name != nullptr) {
+        // If block is used, draw it in colour with solid border.
+        g->set_line_dash(ezgl::line_dash::none);
 
-            g->set_color(ezgl::WHITE);
-            g->fill_rectangle(abs_bbox);
-            g->set_color(ezgl::BLACK);
-            g->set_line_dash(ezgl::line_dash::none);
-            g->draw_rectangle(abs_bbox);
+        // determine default background color
+        if (sel_sub_info.is_selected(pb->pb_graph_node, clb_index)) {
+            g->set_color(SELECTED_COLOR);
+        } else if (sel_sub_info.is_sink_of_selected(pb->pb_graph_node, clb_index)) {
+            g->set_color(DRIVES_IT_COLOR);
+        } else if (sel_sub_info.is_source_of_selected(pb->pb_graph_node, clb_index)) {
+            g->set_color(DRIVEN_BY_IT_COLOR);
+        } else {
+            g->set_color(draw_state->block_color[clb_index]);
         }
     } else {
-        if (pb->name != nullptr) {
-            // If block is used, draw it in colour with solid border.
-            g->set_line_dash(ezgl::line_dash::none);
+        // If block is not used, draw as empty block (ie. white
+        // background with dashed border).
 
-            // determine default background color
-            if (sel_sub_info.is_selected(pb->pb_graph_node, clb_index)) {
-                g->set_color(SELECTED_COLOR);
-            } else if (sel_sub_info.is_sink_of_selected(pb->pb_graph_node, clb_index)) {
-                g->set_color(DRIVES_IT_COLOR);
-            } else if (sel_sub_info.is_source_of_selected(pb->pb_graph_node, clb_index)) {
-                g->set_color(DRIVEN_BY_IT_COLOR);
-            } else if (pb_type->depth != draw_state->show_blk_internal && pb->child_pbs != nullptr) {
-                g->set_color(ezgl::WHITE); // draw anything else that will have a child as white
-            } else {
-                g->set_color(draw_state->block_color[clb_index]);
-            }
-        } else {
-            // If block is not used, draw as empty block (ie. white
-            // background with dashed border).
-
-            g->set_line_dash(ezgl::line_dash::asymmetric_5_3);
-            g->set_color(ezgl::WHITE);
-        }
-        g->fill_rectangle(abs_bbox);
-        g->set_color(ezgl::BLACK);
-        g->draw_rectangle(abs_bbox);
+        g->set_line_dash(ezgl::line_dash::asymmetric_5_3);
+        g->set_color(ezgl::WHITE);
     }
+    g->fill_rectangle(abs_bbox);
+    g->set_color(ezgl::BLACK);
+    g->draw_rectangle(abs_bbox);
 
     /// then draw text ///
 
@@ -393,7 +379,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
             int tot_len = type_len + name_len;
             char* blk_tag = (char*)vtr::malloc((tot_len + 8) * sizeof(char));
 
-            sprintf(blk_tag, "%s(%s)", pb_type->name, pb->name);
+            sprintf(blk_tag, "%s (%s)", pb_type->name, pb->name);
 
             g->draw_text(
                 abs_bbox.center(),
@@ -444,10 +430,10 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
 
             t_pb_type* pb_child_type = child_pb->pb_graph_node->pb_type;
 
-            // don't go farther if 0 modes
-            if (pb_child_type == nullptr || pb_child_type->num_modes == 0) {
+            if (pb_child_type == nullptr) {
                 continue;
             }
+
             // now recurse
             draw_internal_pb(clb_index, child_pb, abs_bbox, type, g);
         }
@@ -661,22 +647,6 @@ void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_p
     }
 }
 #    endif /* NO_GRAPHICS */
-
-/* This function checks whether a top-level clb has been highlighted. It does
- * so by checking whether the color in this block is default color.
- */
-static bool is_top_lvl_block_highlighted(const ClusterBlockId blk_id) {
-    t_draw_state* draw_state;
-
-    /* Call accessor function to retrieve global variables. */
-    draw_state = get_draw_state_vars();
-
-    if (draw_state->block_color[blk_id] == get_block_type_color(get_physical_tile_type(blk_id))) {
-        return false;
-    }
-
-    return true;
-}
 
 int highlight_sub_block(const ezgl::point2d& point_in_clb, ClusterBlockId clb_index, t_pb* pb) {
     t_draw_state* draw_state = get_draw_state_vars();
