@@ -1310,10 +1310,9 @@ t_heap* timing_driven_route_connection_from_route_tree(t_rt_node* rt_root,
                                                        const RouterLookahead& router_lookahead,
                                                        std::vector<int>& modified_rr_node_inf,
                                                        RouterStats& router_stats) {
-    // re-explore route tree from root to add any new nodes (buildheap afterwards)
-    // route tree needs to be repushed onto the heap since each node's cost is target specific
+    //Re-add route nodes from the existing route tree to the heap.
+    //They need to be repushed onto the heap since each node's cost is target specific.
     add_route_tree_to_heap(rt_root, sink_node, cost_params, router_lookahead, router_stats);
-    heap_::build_heap(); // via sifting down everything
 
     int source_node = rt_root->inode;
 
@@ -1553,7 +1552,6 @@ std::vector<t_heap> timing_driven_find_all_shortest_paths_from_route_tree(t_rt_n
                                                   /*write_lookahead=*/"", /*read_lookahead=*/"",
                                                   /*segment_inf=*/{});
     add_route_tree_to_heap(rt_root, target_node, cost_params, *router_lookahead, router_stats);
-    heap_::build_heap(); // via sifting down everything
 
     auto res = timing_driven_find_all_shortest_paths_from_heap(cost_params, bounding_box, modified_rr_node_inf, router_stats);
 
@@ -1834,6 +1832,8 @@ void disable_expansion_and_remove_sink_from_route_tree_nodes(t_rt_node* rt_node)
     }
 }
 
+//Adds the route tree rooted at rt_node to the heap, preparing it to be
+//used as branch-points for further routing.
 static void add_route_tree_to_heap(t_rt_node* rt_node,
                                    int target_node,
                                    const t_conn_cost_params cost_params,
@@ -1868,7 +1868,13 @@ static void add_route_tree_to_heap(t_rt_node* rt_node,
     }
 }
 
-static t_bb add_high_fanout_route_tree_to_heap(t_rt_node* rt_root, int target_node, const t_conn_cost_params cost_params, const RouterLookahead& router_lookahead, const SpatialRouteTreeLookup& spatial_rt_lookup, t_bb net_bounding_box, RouterStats& router_stats) {
+static t_bb add_high_fanout_route_tree_to_heap(t_rt_node* rt_root,
+                                               int target_node,
+                                               const t_conn_cost_params cost_params,
+                                               const RouterLookahead& router_lookahead,
+                                               const SpatialRouteTreeLookup& spatial_rt_lookup,
+                                               t_bb net_bounding_box,
+                                               RouterStats& router_stats) {
     //For high fanout nets we only add those route tree nodes which are spatially close
     //to the sink.
     //
@@ -1993,8 +1999,8 @@ static void add_route_tree_node_to_heap(t_rt_node* rt_node,
 
     VTR_LOGV_DEBUG(f_router_debug, "  Adding node %8d to heap from init route tree with cost %g (%s)\n", inode, tot_cost, describe_rr_node(inode).c_str());
 
-    heap_::push_back_node(inode, tot_cost, NO_PREVIOUS, NO_PREVIOUS,
-                          backward_path_cost, R_upstream);
+    heap_::add_node_to_heap(inode, tot_cost, NO_PREVIOUS, NO_PREVIOUS,
+                            backward_path_cost, R_upstream);
 
     ++router_stats.heap_pushes;
 }

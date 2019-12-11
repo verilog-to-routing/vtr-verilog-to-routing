@@ -90,6 +90,7 @@ void sift_down(size_t hole);
 void sift_up(size_t tail, t_heap* const hptr);
 void push_back(t_heap* const hptr);
 void push_back_node(int inode, float total_cost, int prev_node, int prev_edge, float backward_path_cost, float R_upstream);
+void add_node_to_heap(int inode, float total_cost, int prev_node, int prev_edge, float backward_path_cost, float R_upstream);
 bool is_valid();
 void pop_heap();
 void print_heap();
