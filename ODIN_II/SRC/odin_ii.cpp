@@ -593,10 +593,6 @@ void get_options(int argc, char** argv) {
 	int thread_requested = global_args.parralelized_simulation;
 	int max_thread = std::thread::hardware_concurrency();
 
-	global_args.parralelized_simulation.set(
-		std::max(1, std::min( thread_requested, std::min( (CONCURENCY_LIMIT-1) , max_thread ))), argparse::Provenance::SPECIFIED
-	);
-
 	//Allow some config values to be overriden from command line
 	if (!global_args.verilog_files.value().empty())
 	{
@@ -638,7 +634,6 @@ void get_options(int argc, char** argv) {
 	{
 		warning_message(ARG_ERROR,-1,-1, "%s", "Permissive flag is ON. Undefined behaviour may occur\n");
 	}
-
 }
 
 /*---------------------------------------------------------------------------

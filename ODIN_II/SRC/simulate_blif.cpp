@@ -218,7 +218,7 @@ static void print_ancestry(nnode_t *node, int generations);
 static nnode_t *print_update_trace(nnode_t *bottom_node, int cycle);
 
 int number_of_workers = 0;
-int num_of_clock = 0; 
+int num_of_clock = 0;
 
 /*
  * Performs simulation.
@@ -244,7 +244,6 @@ void simulate_netlist(netlist_t *netlist)
 	}
 
 	simulate_steps(sim_data,min_coverage);
-
 
 	fflush(sim_data->out);
 	fprintf(sim_data->modelsim_out, "run %ld\n", sim_data->num_vectors*100);
@@ -556,12 +555,11 @@ static void simulate_cycle(int cycle, stages_t *s)
 		int nodes_per_thread = s->counts[i]/number_of_workers;
 		int remainder_nodes_per_thread = s->counts[i]%number_of_workers;
 
-
 		for (int id =0; id < number_of_workers; id++)
 		{
 			int start = previous_end;
 			int end = start + nodes_per_thread + ((remainder_nodes_per_thread > 0)? 1: 0);
-			
+
 			remainder_nodes_per_thread -= 1;
 			previous_end = end + 1;
 
@@ -573,13 +571,12 @@ static void simulate_cycle(int cycle, stages_t *s)
 					compute_and_store_part(start,end,i,s,cycle);
 			}
 
-
 		}	
-	
-	for (auto &worker: workers)
-		worker.join();
 
-	total_run_time += wall_time()-time;
+		for (auto &worker: workers) 
+			worker.join();
+
+		total_run_time += wall_time()-time;
 	}
 }
 
@@ -2102,7 +2099,6 @@ static void read_write_to_memory(nnode_t *node , signal_list_t *input_address, s
 	}
 }
 
-
 /*
  * Computes single port memory.
  */
@@ -3415,7 +3411,6 @@ static void free_stages(stages_t *s)
 		vtr::free(s);
 	}
 }
-
 
 /*
  * Free the given test_vector.

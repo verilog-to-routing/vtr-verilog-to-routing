@@ -102,6 +102,7 @@ struct global_args_t
     argparse::ArgValue<bool> show_help;
 
 	argparse::ArgValue<std::string> adder_def; //carry skip adder skip size
+	
     // defines if the first cin of an adder/subtractor is connected to a global gnd/vdd
     // or generated using a dummy adder with both inputs set to gnd/vdd
     argparse::ArgValue<bool> adder_cin_global;
