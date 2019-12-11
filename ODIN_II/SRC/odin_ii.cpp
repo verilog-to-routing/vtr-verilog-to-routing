@@ -589,10 +589,6 @@ void get_options(int argc, char** argv) {
 		error_message(ARG_ERROR,0,-1, "%s", "Must include only one of either:\n\ta config file(-c)\n\ta blif file(-b)\n\ta verilog file(-V)\n");
 	}
 
-	//adjust thread count
-	int thread_requested = global_args.parralelized_simulation;
-	int max_thread = std::thread::hardware_concurrency();
-
 	//Allow some config values to be overriden from command line
 	if (!global_args.verilog_files.value().empty())
 	{
