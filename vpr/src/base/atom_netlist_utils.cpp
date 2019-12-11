@@ -863,26 +863,16 @@ bool remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity) {
                                           });
 
     std::string new_net_name;
-    if (!driver_is_pi && !po_in_input_sinks && !po_in_output_sinks) {
-        //No PIs or POs, we can choose arbitarily in this case
-        new_net_name = netlist.net_name(output_net);
 
-    } else if ((driver_is_pi || po_in_input_sinks) && !po_in_output_sinks) {
+    if ((driver_is_pi || po_in_input_sinks) && !po_in_output_sinks) {
         //Must use the input name to perserve primary-input or primary-output name
         new_net_name = netlist.net_name(input_net);
-
-    } else if ((!driver_is_pi && !po_in_input_sinks) && po_in_output_sinks) {
+    } else if (!(driver_is_pi || po_in_input_sinks) && po_in_output_sinks) {
         //Must use the output name to perserve primary-output name
         new_net_name = netlist.net_name(output_net);
-
     } else {
-        VTR_ASSERT((driver_is_pi || po_in_input_sinks) && po_in_output_sinks);
-        //This is a buffered connection from a primary input to primary output, or to
-        //more than one primary output.
-        //TODO: consider implications of removing these...
-
-        //Do not remove such buffers
-        return false;
+        //Arbitrarily merge the net names
+        new_net_name = netlist.net_name(input_net) + "__" + netlist.net_name(output_net);
     }
 
     size_t initial_input_net_pins = netlist.net_pins(input_net).size();
