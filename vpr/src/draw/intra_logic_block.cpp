@@ -671,17 +671,8 @@ static bool is_top_lvl_block_highlighted(const ClusterBlockId blk_id, const t_lo
     /* Call accessor function to retrieve global variables. */
     draw_state = get_draw_state_vars();
 
-    if (type->index < 3) {
-        if (draw_state->block_color[blk_id] == blk_LIGHTGREY)
-            return false;
-    } else if (type->index < 3 + MAX_BLOCK_COLOURS) {
-        if (draw_state->block_color[blk_id] == block_colors[MAX_BLOCK_COLOURS + type->index - 3])
-            //        if (draw_state->block_color[blk_id] == to_ezgl_color((color_types)(BISQUE + MAX_BLOCK_COLOURS + type->index - 3)))
-            return false;
-    } else {
-        if (draw_state->block_color[blk_id] == block_colors[2 * MAX_BLOCK_COLOURS - 1])
-            //        if (draw_state->block_color[blk_id] == to_ezgl_color((color_types)(BISQUE + 2 * MAX_BLOCK_COLOURS - 1)))
-            return false;
+    if (draw_state->block_color[blk_id] == get_block_type_color(get_physical_tile_type(blk_id))) {
+        return false;
     }
 
     return true;
