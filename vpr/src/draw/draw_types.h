@@ -172,7 +172,6 @@ struct t_draw_state {
     e_route_type draw_route_type = GLOBAL;
     char default_message[vtr::bufsize];
     vtr::vector<ClusterNetId, ezgl::color> net_color;
-    vtr::vector<ClusterBlockId, ezgl::color> block_color;
     t_draw_rr_node* draw_rr_node = nullptr;
     std::shared_ptr<const SetupTimingInfo> setup_timing_info;
     const t_arch* arch_info = nullptr;
@@ -185,6 +184,16 @@ struct t_draw_state {
     void reset_nets_congestion_and_rr();
 
     bool showing_sub_blocks();
+
+    ezgl::color block_color(ClusterBlockId blk) const;
+    void set_block_color(ClusterBlockId blk, ezgl::color color);
+    void reset_block_color(ClusterBlockId blk);
+    void reset_block_colors();
+
+  private:
+    friend void alloc_draw_structs(const t_arch* arch);
+    vtr::vector<ClusterBlockId, ezgl::color> block_color_;
+    vtr::vector<ClusterBlockId, bool> use_default_block_color_;
 };
 
 /* For each cluster type, this structure stores drawing

@@ -499,11 +499,6 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
         }
     }
 
-    //Block placements may have changed since previous invocation,
-    //so we need to update the block colors in case blocks have changed
-    //the tiles where they are implemented
-    draw_reset_blk_colors();
-
     if (draw_state->show_graphics) {
         application.update_message(msg);
         application.refresh_drawing();
@@ -830,7 +825,8 @@ void alloc_draw_structs(const t_arch* arch) {
     draw_internal_alloc_blk();
 
     draw_state->net_color.resize(cluster_ctx.clb_nlist.nets().size());
-    draw_state->block_color.resize(cluster_ctx.clb_nlist.blocks().size());
+    draw_state->block_color_.resize(cluster_ctx.clb_nlist.blocks().size());
+    draw_state->use_default_block_color_.resize(cluster_ctx.clb_nlist.blocks().size());
 
     /* Space is allocated for draw_rr_node but not initialized because we do *
      * not yet know information about the routing resources.				  */
@@ -968,7 +964,7 @@ static void drawplace(ezgl::renderer* g) {
                 ezgl::color block_color;
                 t_logical_block_type_ptr logical_block_type = nullptr;
                 if (bnum != EMPTY_BLOCK_ID) {
-                    block_color = draw_state->block_color[bnum];
+                    block_color = draw_state->block_color(bnum);
                     logical_block_type = cluster_ctx.clb_nlist.block_type(bnum);
                 } else {
                     block_color = get_block_type_color(device_ctx.grid[i][j].type);
@@ -2675,7 +2671,7 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type, ClusterBlockId b
         iclass = physical_tile->pin_class[physical_pin];
 
         if (physical_tile->class_inf[iclass].type == DRIVER) { /* Fanout */
-            if (draw_state->block_color[blk_id] == SELECTED_COLOR) {
+            if (draw_state->block_color(blk_id) == SELECTED_COLOR) {
                 /* If block already highlighted, de-highlight the fanout. (the deselect case)*/
                 draw_state->net_color[net_id] = ezgl::BLACK;
                 for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
@@ -2687,11 +2683,11 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type, ClusterBlockId b
                 draw_state->net_color[net_id] = DRIVES_IT_COLOR;
                 for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
                     fanblk = cluster_ctx.clb_nlist.pin_block(pin_id);
-                    draw_state->block_color[fanblk] = DRIVES_IT_COLOR;
+                    draw_state->set_block_color(fanblk, DRIVES_IT_COLOR);
                 }
             }
         } else { /* This net is fanin to the block. */
-            if (draw_state->block_color[blk_id] == SELECTED_COLOR) {
+            if (draw_state->block_color(blk_id) == SELECTED_COLOR) {
                 /* If block already highlighted, de-highlight the fanin. (the deselect case)*/
                 draw_state->net_color[net_id] = ezgl::BLACK;
                 fanblk = cluster_ctx.clb_nlist.net_driver_block(net_id); /* DRIVER to net */
@@ -2700,17 +2696,17 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type, ClusterBlockId b
                 /* Highlight the fanin */
                 draw_state->net_color[net_id] = DRIVEN_BY_IT_COLOR;
                 fanblk = cluster_ctx.clb_nlist.net_driver_block(net_id); /* DRIVER to net */
-                draw_state->block_color[fanblk] = DRIVEN_BY_IT_COLOR;
+                draw_state->set_block_color(fanblk, DRIVEN_BY_IT_COLOR);
             }
         }
     }
 
-    if (draw_state->block_color[blk_id] == SELECTED_COLOR) {
+    if (draw_state->block_color(blk_id) == SELECTED_COLOR) {
         /* If block already highlighted, de-highlight the selected block. */
         draw_reset_blk_color(blk_id);
     } else {
         /* Highlight the selected block. */
-        draw_state->block_color[blk_id] = SELECTED_COLOR;
+        draw_state->set_block_color(blk_id, SELECTED_COLOR);
     }
 }
 
@@ -2740,26 +2736,7 @@ void deselect_all() {
 
 static void draw_reset_blk_color(ClusterBlockId blk_id) {
     t_draw_state* draw_state = get_draw_state_vars();
-
-    auto& place_ctx = g_vpr_ctx.placement();
-
-    t_physical_tile_type_ptr tile_type = nullptr;
-    if (place_ctx.block_locs.empty()) {
-        //No placement, use best guess tile type color
-        auto& cluster_ctx = g_vpr_ctx.clustering();
-
-        tile_type = pick_best_physical_type(cluster_ctx.clb_nlist.block_type(blk_id));
-    } else {
-        //Color the block to match the tile where it is placed
-        auto& device_ctx = g_vpr_ctx.device();
-        auto& grid = device_ctx.grid;
-
-        t_pl_loc loc = place_ctx.block_locs[blk_id].loc;
-
-        tile_type = grid[loc.x][loc.y].type;
-    }
-
-    draw_state->block_color[blk_id] = get_block_type_color(tile_type);
+    draw_state->reset_block_color(blk_id);
 }
 
 /**
@@ -3360,7 +3337,7 @@ static void draw_block_pin_util() {
 
     for (auto blk : blks) {
         ezgl::color color = to_ezgl_color(cmap->color(pin_util[blk]));
-        draw_state->block_color[blk] = color;
+        draw_state->set_block_color(blk, color);
     }
 
     draw_state->color_map = std::move(cmap);

@@ -353,7 +353,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
         } else if (sel_sub_info.is_source_of_selected(pb->pb_graph_node, clb_index)) {
             g->set_color(DRIVEN_BY_IT_COLOR);
         } else {
-            g->set_color(draw_state->block_color[clb_index]);
+            g->set_color(draw_state->block_color(clb_index));
         }
     } else {
         // If block is not used, draw as empty block (ie. white

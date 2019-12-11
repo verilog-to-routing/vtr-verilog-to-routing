@@ -4,11 +4,34 @@
 #    include "draw_types.h"
 #    include "globals.h"
 #    include "vpr_utils.h"
+#    include "draw.h"
 #    include <utility>
 
 /*******************************************
  * begin t_draw_state function definitions *
  *******************************************/
+ezgl::color t_draw_state::block_color(ClusterBlockId blk) const {
+    if (use_default_block_color_[blk]) {
+        t_physical_tile_type_ptr tile_type = get_physical_tile_type(blk);
+        return get_block_type_color(tile_type);
+    } else {
+        return block_color_[blk];
+    }
+}
+
+void t_draw_state::set_block_color(ClusterBlockId blk, ezgl::color color) {
+    block_color_[blk] = color;
+    use_default_block_color_[blk] = false;
+}
+
+void t_draw_state::reset_block_color(ClusterBlockId blk) {
+    use_default_block_color_[blk] = true;
+}
+void t_draw_state::reset_block_colors() {
+    std::fill(use_default_block_color_.begin(),
+              use_default_block_color_.end(),
+              true);
+}
 
 void t_draw_state::reset_nets_congestion_and_rr() {
     show_nets = DRAW_NO_NETS;
@@ -19,6 +42,7 @@ void t_draw_state::reset_nets_congestion_and_rr() {
 bool t_draw_state::showing_sub_blocks() {
     return show_blk_internal > 0;
 }
+
 /**************************************************
  * begin t_draw_pb_type_info function definitions *
  **************************************************/
