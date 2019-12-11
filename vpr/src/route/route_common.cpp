@@ -1283,6 +1283,25 @@ void push_back_node(int inode, float total_cost, int prev_node, int prev_edge, f
     push_back(hptr);
 }
 
+void add_node_to_heap(int inode, float total_cost, int prev_node, int prev_edge, float backward_path_cost, float R_upstream) {
+    /* Puts an rr_node on the heap with the same condition as node_to_heap,
+     * but do not fix heap property yet as that is more efficiently done from
+     * bottom up with build_heap    */
+
+    auto& route_ctx = g_vpr_ctx.routing();
+    if (total_cost >= route_ctx.rr_node_route_inf[inode].path_cost)
+        return;
+
+    t_heap* hptr = alloc_heap_data();
+    hptr->index = inode;
+    hptr->cost = total_cost;
+    hptr->u.prev.node = prev_node;
+    hptr->u.prev.edge = prev_edge;
+    hptr->backward_path_cost = backward_path_cost;
+    hptr->R_upstream = R_upstream;
+    add_to_heap(hptr);
+}
+
 bool is_valid() {
     for (size_t i = 1; (int)i <= heap_tail >> 1; ++i) {
         if ((int)left(i) < heap_tail && heap[left(i)]->cost < heap[i]->cost) return false;
