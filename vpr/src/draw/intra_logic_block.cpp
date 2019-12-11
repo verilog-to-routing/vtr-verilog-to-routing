@@ -40,7 +40,7 @@
 static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, float parent_width, float parent_height);
 static int draw_internal_find_max_lvl(const t_pb_type& pb_type);
 static void draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, int num_pb_types, int type_index, int num_pb, int pb_index, float parent_width, float parent_height, float* blk_width, float* blk_height);
-static bool is_top_lvl_block_highlighted(const ClusterBlockId blk_id, const t_logical_block_type_ptr type);
+static bool is_top_lvl_block_highlighted(const ClusterBlockId blk_id);
 std::vector<AtomBlockId> collect_pb_atoms(const t_pb* pb);
 void collect_pb_atoms_recurr(const t_pb* pb, std::vector<AtomBlockId>& atoms);
 t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const ezgl::point2d& local_pt, int max_depth);
@@ -341,7 +341,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     /// first draw box ///
 
     if (pb_type->depth == 0) {
-        if (!is_top_lvl_block_highlighted(clb_index, type)) {
+        if (!is_top_lvl_block_highlighted(clb_index)) {
             // if this is a top level pb, and only if it isn't selected (ie. a funny colour),
             // overwrite it. (but stil draw the text)
 
@@ -665,7 +665,7 @@ void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_p
 /* This function checks whether a top-level clb has been highlighted. It does
  * so by checking whether the color in this block is default color.
  */
-static bool is_top_lvl_block_highlighted(const ClusterBlockId blk_id, const t_logical_block_type_ptr type) {
+static bool is_top_lvl_block_highlighted(const ClusterBlockId blk_id) {
     t_draw_state* draw_state;
 
     /* Call accessor function to retrieve global variables. */
