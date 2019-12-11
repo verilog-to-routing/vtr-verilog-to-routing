@@ -2114,6 +2114,20 @@ t_logical_block_type_ptr pick_best_logical_type(t_physical_tile_type_ptr physica
     return physical_tile->equivalent_sites[0];
 }
 
+t_physical_tile_type_ptr get_physical_tile_type(const ClusterBlockId blk) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
+    if (place_ctx.block_locs.empty()) { //No placement, pick best match
+        return pick_best_physical_type(cluster_ctx.clb_nlist.block_type(blk));
+    } else { //Have placement, select physical tile implementing blk
+        auto& device_ctx = g_vpr_ctx.device();
+
+        t_pl_loc loc = place_ctx.block_locs[blk].loc;
+
+        return device_ctx.grid[loc.x][loc.y].type;
+    }
+}
+
 int get_logical_pin(t_physical_tile_type_ptr physical_tile,
                     t_logical_block_type_ptr logical_block,
                     int pin) {

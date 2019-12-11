@@ -124,7 +124,6 @@ static t_edge_size find_edge(int prev_inode, int inode);
 
 static void draw_color_map_legend(const vtr::ColorMap& cmap, ezgl::renderer* g);
 
-ezgl::color get_block_type_color(t_physical_tile_type_ptr type);
 ezgl::color lighten_color(ezgl::color color, float amount);
 
 static void draw_block_pin_util();

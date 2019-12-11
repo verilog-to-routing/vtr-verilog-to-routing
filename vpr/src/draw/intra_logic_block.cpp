@@ -356,9 +356,6 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
             // If block is used, draw it in colour with solid border.
             g->set_line_dash(ezgl::line_dash::none);
 
-            // type_index indicates what type of block.
-            const int type_index = type->index;
-
             // determine default background color
             if (sel_sub_info.is_selected(pb->pb_graph_node, clb_index)) {
                 g->set_color(SELECTED_COLOR);
@@ -368,12 +365,8 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
                 g->set_color(DRIVEN_BY_IT_COLOR);
             } else if (pb_type->depth != draw_state->show_blk_internal && pb->child_pbs != nullptr) {
                 g->set_color(ezgl::WHITE); // draw anything else that will have a child as white
-            } else if (type_index < 3) {
-                g->set_color(blk_LIGHTGREY);
-            } else if (type_index < 3 + MAX_BLOCK_COLOURS) {
-                g->set_color((block_colors[MAX_BLOCK_COLOURS + type_index - 3]));
             } else {
-                g->set_color((block_colors[2 * MAX_BLOCK_COLOURS - 1]));
+                g->set_color(draw_state->block_color[clb_index]);
             }
         } else {
             // If block is not used, draw as empty block (ie. white
