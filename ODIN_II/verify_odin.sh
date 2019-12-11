@@ -899,7 +899,6 @@ function run_suite() {
 		current_input="${input_list[0]}"
 		input_list=( "${input_list[@]:1}" )
 
-<<<<<<< HEAD
 		if [ -d "${current_input}" ]
 		then
 			if [ -f "${current_input}/task_list.conf" ]
@@ -915,23 +914,6 @@ function run_suite() {
 							input_path=$(ls -d -1 ${THIS_DIR}/${input_path} 2> /dev/null)
 							;;
 					esac
-=======
-			_vtr_reg_*)
-				run_vtr_reg ${current_input}
-				;;
-
-			*)
-				if [ ! -d "${current_input}" ]
-				then
-					echo "Invalid Directory for task: ${current_input}"
-				elif [ -f "${current_input}/task_list.conf" ]
-				then
-					for input_path in $(cat ${current_input}/task_list.conf)
-					do
-						input_path=$(ls -d -1 ${THIS_DIR}/${input_path})
-						task_list=( ${task_list[@]} ${input_path[@]} )
-					done
->>>>>>> parent of c0bdf4a62... remove deprecated or unmaintained experimental path, (fix Coverity issue)
 					
 					input_list=( ${input_list[@]} ${input_path[@]} )
 				done

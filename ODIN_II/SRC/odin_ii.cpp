@@ -442,9 +442,9 @@ void get_options(int argc, char** argv) {
 			;
 
 	other_grp.add_argument(global_args.adder_def, "--adder_type")
-			.help("input file defining adder_type, default is to use \"optimized\" values, use \"ripple\" to fall back onto simple ripple adder")
-			.default_value("default")
-			.metavar("INPUT_FILE")
+			.help("DEPRECATED")
+			.default_value("N/A")
+			.metavar("N/A")
 			;
 
     other_grp.add_argument(global_args.adder_cin_global, "--adder_cin_global")
@@ -516,7 +516,7 @@ void get_options(int argc, char** argv) {
 			;
 
 	other_sim_grp.add_argument(global_args.parralelized_simulation_in_batch, "--batch")
-			.help("use batch mode simultation")
+			.help("DEPRECATED")
 			.default_value("false")
 			.action(argparse::Action::STORE_TRUE)
 			.metavar("BATCH FLAG")
@@ -593,22 +593,6 @@ void get_options(int argc, char** argv) {
 	int thread_requested = global_args.parralelized_simulation;
 	int max_thread = std::thread::hardware_concurrency();
 
-	// the old multithreaded mode can only use as many thread as the buffer size
-	if (!global_args.parralelized_simulation_in_batch)
-	{
-		global_args.parralelized_simulation.set(
-			std::max(1, std::min( thread_requested, std::min( CONCURENCY_LIMIT, max_thread )))
-			,argparse::Provenance::SPECIFIED
-		);
-	}
-	else
-	{
-		global_args.parralelized_simulation.set(
-			std::max(1, std::min( thread_requested, max_thread) )
-			,argparse::Provenance::SPECIFIED
-		);
-	}
-
 	//Allow some config values to be overriden from command line
 	if (!global_args.verilog_files.value().empty())
 	{
@@ -649,10 +633,6 @@ void get_options(int argc, char** argv) {
 	if(global_args.permissive.value())
 	{
 		warning_message(ARG_ERROR,-1,-1, "%s", "Permissive flag is ON. Undefined behaviour may occur\n");
-	}
-
-	if (global_args.adder_def.provenance() == argparse::Provenance::SPECIFIED) {
-		printf("using experimental soft_logic optimization \n");
 	}
 }
 

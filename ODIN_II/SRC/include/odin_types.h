@@ -102,6 +102,7 @@ struct global_args_t
     argparse::ArgValue<bool> show_help;
 
 	argparse::ArgValue<std::string> adder_def; //carry skip adder skip size
+	
     // defines if the first cin of an adder/subtractor is connected to a global gnd/vdd
     // or generated using a dummy adder with both inputs set to gnd/vdd
     argparse::ArgValue<bool> adder_cin_global;
@@ -461,8 +462,6 @@ struct nnode_t
 	netlist_t* internal_netlist; // this is a point of having a subgraph in a node
 
 	std::vector<std::vector<signed char>> memory_data;
-	std::map<int,std::map<long,std::vector<signed char>>> memory_directory;
-	std::mutex memory_mtx;
 	//(int cycle, int num_input_pins, npin_t *inputs, int num_output_pins, npin_t *outputs);
 	void (*simulate_block_cycle)(int, int, int*, int, int*);
 
@@ -486,20 +485,6 @@ struct nnode_t
 	unsigned char generic_output; //describes the output (1 or 0) of generic blocks
 };
 
-
-// Ace_Obj_Info_t; /* Activity info for each node */
-struct ace_obj_info_t
-{
-	int value;
-	int num_ones;
-	int num_toggles;
-	double static_prob;
-	double switch_prob;
-	double switch_act;
-	double prob0to1;
-	double prob1to0;
-	int depth;
-};
 
 struct npin_t
 {
