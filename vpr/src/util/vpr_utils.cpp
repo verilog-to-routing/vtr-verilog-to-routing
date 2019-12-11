@@ -505,67 +505,13 @@ std::tuple<ClusterNetId, int, int> find_pb_route_clb_input_net_pin(ClusterBlockI
         return std::make_tuple(ClusterNetId::INVALID(), -1, -1);
     }
 
-    //To account for capacity > 1 blocks we need to convert the pb_pin to the clb pin
-    int clb_pin = find_pb_pin_clb_pin(clb, curr_pb_pin_id);
-    VTR_ASSERT(clb_pin >= 0);
-
-    //clb_pin should be a top-level CLB input
-    ClusterNetId clb_net_idx = cluster_ctx.clb_nlist.block_net(clb, clb_pin);
-    int clb_net_pin_idx = cluster_ctx.clb_nlist.block_pin_net_index(clb, clb_pin);
+    //curr_pb_pin should be a top-level CLB input
+    ClusterNetId clb_net_idx = cluster_ctx.clb_nlist.block_net(clb, curr_pb_pin_id);
+    int clb_net_pin_idx = cluster_ctx.clb_nlist.block_pin_net_index(clb, curr_pb_pin_id);
     VTR_ASSERT(clb_net_idx != ClusterNetId::INVALID());
     VTR_ASSERT(clb_net_pin_idx >= 0);
 
-    return std::tuple<ClusterNetId, int, int>(clb_net_idx, clb_pin, clb_net_pin_idx);
-}
-
-//Return the pb pin index corresponding to the pin clb_pin on block clb
-// Given a clb_pin index on a this function will return the corresponding
-// pin index on the pb_type (accounting for the possible z-coordinate offset).
-int find_clb_pb_pin(ClusterBlockId clb, int clb_pin) {
-    auto& place_ctx = g_vpr_ctx.placement();
-
-    auto type = physical_tile_type(clb);
-    VTR_ASSERT_MSG(clb_pin < type->num_pins, "Must be a valid top-level pin");
-
-    int pb_pin = -1;
-    if (place_ctx.block_locs[clb].nets_and_pins_synced_to_z_coordinate) {
-        //Pins have been offset by z-coordinate, need to remove offset
-
-        VTR_ASSERT(type->num_pins % type->capacity == 0);
-        int num_basic_block_pins = type->num_pins / type->capacity;
-        /* Logical location and physical location is offset by z * max_num_block_pins */
-
-        pb_pin = clb_pin - place_ctx.block_locs[clb].loc.z * num_basic_block_pins;
-    } else {
-        pb_pin = clb_pin;
-    }
-
-    VTR_ASSERT(pb_pin >= 0);
-
-    return pb_pin;
-}
-
-//Inverse of find_clb_pb_pin()
-int find_pb_pin_clb_pin(ClusterBlockId clb, int pb_pin) {
-    auto& place_ctx = g_vpr_ctx.placement();
-
-    auto type = physical_tile_type(clb);
-
-    int clb_pin = -1;
-    if (place_ctx.block_locs[clb].nets_and_pins_synced_to_z_coordinate) {
-        //Pins have been offset by z-coordinate, need to remove offset
-        VTR_ASSERT(type->num_pins % type->capacity == 0);
-        int num_basic_block_pins = type->num_pins / type->capacity;
-        /* Logical location and physical location is offset by z * max_num_block_pins */
-
-        clb_pin = pb_pin + place_ctx.block_locs[clb].loc.z * num_basic_block_pins;
-    } else {
-        //No offset
-        clb_pin = pb_pin;
-    }
-    VTR_ASSERT(clb_pin >= 0);
-
-    return clb_pin;
+    return std::tuple<ClusterNetId, int, int>(clb_net_idx, curr_pb_pin_id, clb_net_pin_idx);
 }
 
 bool is_clb_external_pin(ClusterBlockId blk_id, int pb_pin_id) {
@@ -2117,7 +2063,6 @@ void place_sync_external_block_connections(ClusterBlockId iblk) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& clb_nlist = cluster_ctx.clb_nlist;
     auto& place_ctx = g_vpr_ctx.mutable_placement();
-    VTR_ASSERT_MSG(place_ctx.block_locs[iblk].nets_and_pins_synced_to_z_coordinate == false, "Block net and pins must not be already synced");
 
     auto physical_tile = physical_tile_type(iblk);
     auto logical_block = clb_nlist.block_type(iblk);
@@ -2139,9 +2084,6 @@ void place_sync_external_block_connections(ClusterBlockId iblk) {
             place_ctx.physical_pins.insert(pin, new_physical_pin_index);
         }
     }
-
-    //Mark the block as synced
-    //place_ctx.block_locs[iblk].nets_and_pins_synced_to_z_coordinate = true;
 }
 
 int get_max_num_pins(t_logical_block_type_ptr logical_block) {
@@ -2219,16 +2161,16 @@ int get_physical_pin(t_physical_tile_type_ptr physical_tile,
     return result->second.pin;
 }
 
-int net_pin_tile_index(const ClusterNetId net_id, int net_pin_index) {
+int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     // Get the logical pin index of pin within it's logical block type
     auto pin_id = cluster_ctx.clb_nlist.net_pin(net_id, net_pin_index);
 
-    return pin_tile_index(pin_id);
+    return tile_pin_index(pin_id);
 }
 
-int pin_tile_index(const ClusterPinId pin) {
+int tile_pin_index(const ClusterPinId pin) {
     auto& place_ctx = g_vpr_ctx.placement();
 
     return place_ctx.physical_pins[pin];

@@ -628,13 +628,11 @@ struct t_place_region {
  * x: x-coordinate
  * y: y-coordinate
  * z: occupancy coordinate
- * is_fixed: true if this block's position is fixed by the user and shouldn't be moved during annealing
- * nets_and_pins_synced_to_z_coordinate: true if the associated clb's pins have been synced to the z location (i.e. after placement) */
+ * is_fixed: true if this block's position is fixed by the user and shouldn't be moved during annealing */
 struct t_block_loc {
     t_pl_loc loc;
 
     bool is_fixed = false;
-    bool nets_and_pins_synced_to_z_coordinate = false;
 };
 
 /* Stores the clustered blocks placed at a particular grid location */
@@ -945,6 +943,7 @@ struct t_router_opts {
     float congested_routing_iteration_threshold_frac;
     e_route_bb_update route_bb_update;
     enum e_clock_modeling clock_modeling; //How clock pins and nets should be handled
+    bool two_stage_clock_routing;         //How clock nets on dedicated networks should be routed
     int high_fanout_threshold;
     int router_debug_net;
     int router_debug_sink_rr;
@@ -1299,6 +1298,7 @@ struct t_vpr_setup {
     std::string device_layout;
     e_constant_net_method constant_net_method; //How constant nets should be handled
     e_clock_modeling clock_modeling;           //How clocks should be handled
+    bool two_stage_clock_routing;              //How clocks should be routed in the presence of a dedicated clock network
     bool exit_before_pack;                     //Exits early before starting packing (useful for collecting statistics without running/loading any stages)
 };
 

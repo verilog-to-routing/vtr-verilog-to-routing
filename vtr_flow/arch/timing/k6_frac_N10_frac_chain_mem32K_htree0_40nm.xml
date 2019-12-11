@@ -1528,8 +1528,8 @@
       <tap from="ROUTING" to="spine1.drive" locationx="W/2" locationy="H/2" switch="0" fc_val="1.0"/>
       <tap from="spine1.tap" to="rib1.drive" switch="0" fc_val="0.5"/>
       <!-- "clock" is a special to addreass used to indicate that the connections are going
-                to all clock pins. TODO: switch to specify a port name. In this case the clock
-                port names are clk for the clb clock pins and clock for the io clock pins -->
+           to all clock pins. TODO: switch to specify a port name. In this case the clock
+           port names are clk for the clb clock pins and clock for the io clock pins -->
       <tap from="rib1.tap" to="CLOCK" switch="ipin_cblock" fc_val="1"/>
     </clock_routing>
   </clocknetworks>

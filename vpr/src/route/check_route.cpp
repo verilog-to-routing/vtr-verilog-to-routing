@@ -190,7 +190,7 @@ static void check_sink(int inode, ClusterNetId net_id, bool* pin_done) {
         unsigned int ipin = 1;
         for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
             if (cluster_ctx.clb_nlist.pin_block(pin_id) == bnum) {
-                int pin_index = pin_tile_index(pin_id);
+                int pin_index = tile_pin_index(pin_id);
                 int iclass = type->pin_class[pin_index];
                 if (iclass == ptc_num) {
                     /* Could connect to same pin class on the same clb more than once.  Only   *
@@ -245,7 +245,7 @@ static void check_source(int inode, ClusterNetId net_id) {
     }
 
     //Get the driver pin's index in the block
-    auto physical_pin = net_pin_tile_index(net_id, 0);
+    auto physical_pin = net_pin_to_tile_pin_index(net_id, 0);
 
     int iclass = type->pin_class[physical_pin];
 
@@ -435,7 +435,8 @@ static bool check_adjacent(int from_node, int to_node) {
             } else if (to_type == CHANY) {
                 num_adj += chanx_chany_adjacent(from_node, to_node);
             } else {
-                VTR_ASSERT(0);
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                "in check_adjacent: %d and %d are not adjacent", from_node, to_node);
             }
             break;
 
@@ -466,7 +467,8 @@ static bool check_adjacent(int from_node, int to_node) {
             } else if (to_type == CHANX) {
                 num_adj += chanx_chany_adjacent(to_node, from_node);
             } else {
-                VTR_ASSERT(0);
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                "in check_adjacent: %d and %d are not adjacent", from_node, to_node);
             }
             break;
 

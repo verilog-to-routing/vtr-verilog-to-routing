@@ -30,6 +30,7 @@ void mark_remaining_ends(const std::vector<int>& remaining_sinks);
 void node_to_heap(int inode, float cost, int prev_node, int prev_edge, float backward_path_cost, float R_upstream);
 
 void free_traceback(ClusterNetId net_id);
+void drop_traceback_tail(ClusterNetId net_id);
 void free_traceback(t_trace* tptr);
 
 void add_to_mod_list(int inode, std::vector<int>& modified_rr_node_inf);

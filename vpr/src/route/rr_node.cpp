@@ -118,6 +118,7 @@ float t_rr_node::R() const {
 
 float t_rr_node::C() const {
     auto& device_ctx = g_vpr_ctx.device();
+    VTR_ASSERT(rc_index() < (short)device_ctx.rr_rc_data.size());
     return device_ctx.rr_rc_data[rc_index()].C;
 }
 

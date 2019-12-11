@@ -171,6 +171,12 @@ struct DeviceContext : public Context {
     std::vector<std::unique_ptr<ClockNetwork>> clock_networks;
     std::vector<std::unique_ptr<ClockConnection>> clock_connections;
 
+    // rr_node idx that connects to the input of all clock network wires
+    // Useful for two stage clock routing
+    // XXX: currently only one place to source the clock networks so only storing
+    //      a single value
+    int virtual_clock_network_root_idx;
+
     /** Attributes for each rr_node.
      * key:     rr_node index
      * value:   map of <attribute_name, attribute_value>

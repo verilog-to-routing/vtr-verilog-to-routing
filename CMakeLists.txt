@@ -295,6 +295,14 @@ add_custom_target(get_titan_benchmarks
     COMMENT "Downloading (~1GB) and extracting Titan benchmarks (~10GB) into VTR source tree.")
 
 #
+# ISPD Benchmarks
+#
+add_custom_target(get_ispd_benchmarks
+    COMMAND ./vtr_flow/scripts/download_ispd.py --vtr_flow_dir ./vtr_flow
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Downloading (~50MB) and extracting Titan benchmarks (~0.5GB) into VTR source tree.")
+
+#
 # Unit Testing
 #
 enable_testing()
