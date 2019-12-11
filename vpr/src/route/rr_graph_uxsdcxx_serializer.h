@@ -39,13 +39,24 @@ class MetadataBind {
   public:
     MetadataBind()
         : is_node_(false)
-        , is_edge_(false) {}
+        , is_edge_(false)
+        , ignore_(false) {}
+
+    ~MetadataBind() {
+        assert_clear();
+        VTR_ASSERT(!is_node_);
+        VTR_ASSERT(!is_edge_);
+    }
 
     void set_name(const char* name) {
-        name_.assign(name);
+        if (!ignore_) {
+            name_.assign(name);
+        }
     }
     void set_value(const char* value) {
-        value_.assign(value);
+        if (!ignore_) {
+            value_.assign(value);
+        }
     }
     void set_node_target(int inode) {
         VTR_ASSERT(!is_node_);
@@ -65,6 +76,10 @@ class MetadataBind {
         switch_id_ = switch_id;
     }
 
+    void set_ignore() {
+        ignore_ = true;
+    }
+
     void bind() {
         if (is_node_) {
             vpr::add_rr_node_metadata(inode_,
@@ -72,9 +87,14 @@ class MetadataBind {
         } else if (is_edge_) {
             vpr::add_rr_edge_metadata(inode_, sink_node_, switch_id_,
                                       std::move(name_), std::move(value_));
+        } else if (ignore_) {
+            // Do nothing.
         } else {
-            VTR_ASSERT(is_node_ || is_edge_);
+            VTR_ASSERT(is_node_ || is_edge_ || ignore_);
         }
+
+        is_node_ = false;
+        is_edge_ = false;
     }
 
     void assert_clear() {
@@ -82,7 +102,8 @@ class MetadataBind {
         VTR_ASSERT(value_.empty());
     }
 
-    void finish_meta() {
+    void finish() {
+        assert_clear();
         is_node_ = false;
         is_edge_ = false;
     }
@@ -90,11 +111,113 @@ class MetadataBind {
   private:
     bool is_node_;
     bool is_edge_;
+    bool ignore_;
     int inode_;
     int sink_node_;
     int switch_id_;
     std::string name_;
     std::string value_;
+};
+
+// Context for walking metadata.
+class t_metadata_dict_iterator {
+  public:
+    explicit t_metadata_dict_iterator(const t_metadata_dict* d)
+        : meta(d)
+        , current_index(0) {}
+
+    size_t size() {
+        return meta->size();
+    }
+
+    const t_metadata_dict::value_type* advance(int n) {
+        if (n != current_index) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Iterator out of sync %d != %d",
+                            n, current_index);
+        }
+
+        current_index += 1;
+        if (n == 0) {
+            iter = meta->cbegin();
+        } else {
+            ++iter;
+        }
+
+        VTR_ASSERT(iter != meta->end());
+        return &*iter;
+    }
+
+  private:
+    const t_metadata_dict* meta;
+    t_metadata_dict::const_iterator iter;
+    int current_index;
+};
+
+class EdgeWalker {
+  public:
+    void initialize(const std::vector<t_rr_node>* nodes) {
+        nodes_ = nodes;
+        num_edges_ = 0;
+        current_src_inode_ = 0;
+        current_edge_ = 0;
+        current_idx_ = 0;
+
+        for (const auto& node : *nodes) {
+            num_edges_ += node.num_edges();
+        }
+    }
+
+    size_t num_edges() const {
+        return num_edges_;
+    }
+
+    int current_src_node() const {
+        return current_src_inode_;
+    }
+    int current_sink_node() const {
+        VTR_ASSERT(current_src_inode_ < nodes_->size());
+        return (*nodes_)[current_src_inode_].edge_sink_node(current_edge_);
+    }
+    int current_switch_id_node() const {
+        VTR_ASSERT(current_src_inode_ < nodes_->size());
+        return (*nodes_)[current_src_inode_].edge_switch(current_edge_);
+    }
+
+    size_t advance(int n) {
+        VTR_ASSERT(current_idx_ < num_edges_);
+        VTR_ASSERT(current_src_inode_ < nodes_->size());
+
+        if (n > 0) {
+            current_edge_ += 1;
+        }
+
+        if (current_edge_ >= (*nodes_)[current_src_inode_].num_edges()) {
+            // Done with current_src_inode_, advance to the end of the
+            // node list, or the next node with at least 1 edge.
+            current_edge_ = 0;
+
+            do {
+                current_src_inode_ += 1;
+
+                // This is the last edge, return now.
+                if (current_src_inode_ == nodes_->size()) {
+                    VTR_ASSERT(current_idx_ + 1 == num_edges_);
+                    return current_idx_++;
+                }
+            } while ((*nodes_)[current_src_inode_].num_edges() < 1);
+        }
+
+        VTR_ASSERT(current_src_inode_ < nodes_->size());
+
+        return current_idx_++;
+    }
+
+  private:
+    const std::vector<t_rr_node>* nodes_;
+    size_t num_edges_;
+    size_t current_src_inode_;
+    size_t current_edge_;
+    size_t current_idx_;
 };
 
 class RrGraphSerializer : public uxsd::RrGraphBase<
@@ -109,8 +232,8 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
                               /*SegmentTimingReadContext =*/const t_segment_inf*,
                               /*SegmentReadContext =*/const t_segment_inf*,
                               /*SegmentsReadContext =*/void*,
-                              /*PinReadContext =*/std::pair<const t_physical_tile_type*, int>,
-                              /*PinClassReadContext =*/std::pair<const t_physical_tile_type*, const t_class*>,
+                              /*PinReadContext =*/const std::pair<const t_physical_tile_type*, int>,
+                              /*PinClassReadContext =*/const std::pair<const t_physical_tile_type*, const t_class*>,
                               /*BlockTypeReadContext =*/const t_physical_tile_type*,
                               /*BlockTypesReadContext =*/void*,
                               /*GridLocReadContext =*/const t_grid_tile*,
@@ -118,12 +241,12 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
                               /*NodeLocReadContext =*/const t_rr_node*,
                               /*NodeTimingReadContext =*/const t_rr_node*,
                               /*NodeSegmentReadContext =*/const t_rr_node*,
-                              /*MetaReadContext =*/const std::pair<const std::string, std::vector<t_metadata_value>>*,
-                              /*MetadataReadContext =*/const t_metadata_dict*,
+                              /*MetaReadContext =*/const t_metadata_dict::value_type*,
+                              /*MetadataReadContext =*/t_metadata_dict_iterator,
                               /*NodeReadContext =*/const t_rr_node*,
                               /*RrNodesReadContext =*/void*,
-                              /*EdgeReadContext =*/void*,
-                              /*RrEdgesReadContext =*/void*,
+                              /*EdgeReadContext =*/const EdgeWalker*,
+                              /*RrEdgesReadContext =*/EdgeWalker,
                               /*RrGraphReadContext =*/void*,
                               /*ChannelWriteContext =*/void*,
                               /*XListWriteContext =*/void*,
@@ -136,20 +259,20 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
                               /*SegmentTimingWriteContext =*/const t_segment_inf*,
                               /*SegmentWriteContext =*/const t_segment_inf*,
                               /*SegmentsWriteContext =*/void*,
-                              /*PinWriteContext =*/void*,
-                              /*PinClassWriteContext =*/void*,
-                              /*BlockTypeWriteContext =*/const t_physical_tile_type*,
+                              /*PinWriteContext =*/const std::pair<const t_physical_tile_type*, int>,
+                              /*PinClassWriteContext =*/std::tuple<const t_physical_tile_type*, const t_class*, int>,
+                              /*BlockTypeWriteContext =*/std::pair<const t_physical_tile_type*, int>,
                               /*BlockTypesWriteContext =*/void*,
                               /*GridLocWriteContext =*/void*,
                               /*GridLocsWriteContext =*/void*,
                               /*NodeLocWriteContext =*/int,
                               /*NodeTimingWriteContext =*/int,
                               /*NodeSegmentWriteContext =*/int,
-                              /*MetaWriteContext =*/MetadataBind*,
-                              /*MetadataWriteContext =*/MetadataBind*,
+                              /*MetaWriteContext =*/MetadataBind,
+                              /*MetadataWriteContext =*/MetadataBind,
                               /*NodeWriteContext =*/int,
                               /*RrNodesWriteContext =*/void*,
-                              /*EdgeWriteContext =*/MetadataBind*,
+                              /*EdgeWriteContext =*/MetadataBind,
                               /*RrEdgesWriteContext =*/void*,
                               /*RrGraphWriteContext =*/void*> {
   public:
@@ -174,18 +297,18 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
         const std::unordered_map<int, t_metadata_dict>& rr_node_metadata,
         const std::unordered_map<std::tuple<int, int, short>,
                                  t_metadata_dict>& rr_edge_metadata)
-        : graph_type_(graph_type)
-        , base_cost_type_(base_cost_type)
-        , wire_to_rr_ipin_switch_(wire_to_rr_ipin_switch)
-        , do_check_rr_graph_(do_check_rr_graph)
-        , read_rr_graph_name_(read_rr_graph_name)
-        , read_edge_metadata_(read_edge_metadata)
+        : wire_to_rr_ipin_switch_(wire_to_rr_ipin_switch)
         , chan_width_(chan_width)
         , rr_nodes_(rr_nodes)
         , rr_switch_inf_(rr_switch_inf)
         , rr_indexed_data_(rr_indexed_data)
         , rr_node_indices_(rr_node_indices)
         , read_rr_graph_filename_(read_rr_graph_filename)
+        , graph_type_(graph_type)
+        , base_cost_type_(base_cost_type)
+        , do_check_rr_graph_(do_check_rr_graph)
+        , read_rr_graph_name_(read_rr_graph_name)
+        , read_edge_metadata_(read_edge_metadata)
         , num_arch_switches_(num_arch_switches)
         , arch_switch_inf_(arch_switch_inf)
         , segment_inf_(segment_inf)
@@ -339,9 +462,6 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
         rr_switch_inf_->shrink_to_fit();
     }
 
-  private:
-    MetadataBind metadata_bind_;
-
   public:
     /** Generated for complex type "meta":
      * <xs:complexType name="meta">
@@ -352,15 +472,11 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
      *   </xs:simpleContent>
      * </xs:complexType>
      */
-    inline void set_meta_name(const char* name, MetadataBind*& bind) override {
-        if (bind != nullptr) {
-            bind->set_name(name);
-        }
+    inline void set_meta_name(const char* name, MetadataBind& bind) override {
+        bind.set_name(name);
     }
-    inline void set_meta_value(const char* value, MetadataBind*& bind) override {
-        if (bind != nullptr) {
-            bind->set_value(value);
-        }
+    inline void set_meta_value(const char* value, MetadataBind& bind) override {
+        bind.set_value(value);
     }
 
     /** Generated for complex type "metadata":
@@ -370,18 +486,11 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
      *   </xs:sequence>
      * </xs:complexType>
      */
-    inline MetadataBind* add_metadata_meta(MetadataBind*& bind) override {
-        if (bind != nullptr) {
-            bind->assert_clear();
-            return bind;
-        } else {
-            return nullptr;
-        }
+    inline MetadataBind add_metadata_meta(MetadataBind& bind) override {
+        return bind;
     }
-    inline void finish_metadata_meta(MetadataBind*& bind) override {
-        if (bind != nullptr) {
-            bind->bind();
-        }
+    inline void finish_metadata_meta(MetadataBind& bind) override {
+        bind.bind();
     }
 
     /** Generated for complex type "node_loc":
@@ -405,29 +514,19 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
         }
     }
 
-    inline const char* get_meta_name(const std::pair<const std::string, std::vector<t_metadata_value>>*& meta_value) override {
+    inline const char* get_meta_name(const t_metadata_dict::value_type*& meta_value) override {
         return meta_value->first.c_str();
     }
-    inline const char* get_meta_value(const std::pair<const std::string, std::vector<t_metadata_value>>*& meta_value) override {
+    inline const char* get_meta_value(const t_metadata_dict::value_type*& meta_value) override {
         VTR_ASSERT(meta_value->second.size() == 1);
         return meta_value->second[0].as_string().c_str();
     }
-    inline size_t num_metadata_meta(const t_metadata_dict*& meta) override {
-        return meta->size();
+    inline size_t num_metadata_meta(t_metadata_dict_iterator& itr) override {
+        return itr.size();
     }
 
-  private:
-    t_metadata_dict::const_iterator iter_;
-
-  public:
-    inline const std::pair<const std::string, std::vector<t_metadata_value>>* get_metadata_meta(int n, const struct t_metadata_dict*& meta) override {
-        if (n == 0) {
-            iter_ = meta->begin();
-        } else {
-            ++iter_;
-        }
-        VTR_ASSERT(iter_ != meta->end());
-        return &*iter_;
+    inline const t_metadata_dict::value_type* get_metadata_meta(int n, t_metadata_dict_iterator& itr) override {
+        return itr.advance(n);
     }
 
     inline int get_node_loc_ptc(const t_rr_node*& node) override {
@@ -492,9 +591,9 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
     inline bool has_node_segment(const t_rr_node*& node) override {
         return (*rr_indexed_data_)[node->cost_index()].seg_index != -1;
     }
-    inline const t_metadata_dict* get_node_metadata(const t_rr_node*& node) override {
+    inline t_metadata_dict_iterator get_node_metadata(const t_rr_node*& node) override {
         const auto itr = rr_node_metadata_.find(get_node_id(node));
-        return &itr->second;
+        return t_metadata_dict_iterator(&itr->second);
     }
     inline bool has_node_metadata(const t_rr_node*& node) override {
         const auto itr = rr_node_metadata_.find(get_node_id(node));
@@ -507,138 +606,47 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
         return &(*rr_nodes_)[n];
     }
 
-  private:
-    class EdgeWalker {
-      public:
-        size_t initialize(const std::vector<t_rr_node>* nodes) {
-            nodes_ = nodes;
-            num_edges_ = 0;
-            current_src_inode_ = 0;
-            current_edge_ = 0;
-            current_idx_ = 0;
-
-            for (const auto& node : *nodes) {
-                num_edges_ += node.num_edges();
-            }
-
-            return num_edges_;
-        }
-
-        int current_src_node() const {
-            return current_src_inode_;
-        }
-        int current_sink_node() const {
-            VTR_ASSERT(current_src_inode_ < nodes_->size());
-            return (*nodes_)[current_src_inode_].edge_sink_node(current_edge_);
-        }
-        int current_switch_id_node() const {
-            VTR_ASSERT(current_src_inode_ < nodes_->size());
-            return (*nodes_)[current_src_inode_].edge_switch(current_edge_);
-        }
-
-        size_t advance(int n) {
-            VTR_ASSERT(current_idx_ < num_edges_);
-            VTR_ASSERT(current_src_inode_ < nodes_->size());
-
-            if (n > 0) {
-                current_edge_ += 1;
-            }
-
-            if (current_edge_ >= (*nodes_)[current_src_inode_].num_edges()) {
-                // Done with current_src_inode_, advance to the end of the
-                // node list, or the next node with at least 1 edge.
-                current_edge_ = 0;
-
-                do {
-                    current_src_inode_ += 1;
-
-                    // This is the last edge, return now.
-                    if (current_src_inode_ == nodes_->size()) {
-                        VTR_ASSERT(current_idx_ + 1 == num_edges_);
-                        return current_idx_++;
-                    }
-                } while ((*nodes_)[current_src_inode_].num_edges() < 1);
-            }
-
-            VTR_ASSERT(current_src_inode_ < nodes_->size());
-
-            return current_idx_++;
-        }
-
-      private:
-        const std::vector<t_rr_node>* nodes_;
-        size_t num_edges_;
-        size_t current_src_inode_;
-        size_t current_edge_;
-        size_t current_idx_;
-    };
-
-    EdgeWalker walker_;
-
-  public:
-    inline unsigned int get_edge_sink_node(void*& /*ctx*/) override {
-        return walker_.current_sink_node();
+    inline unsigned int get_edge_sink_node(const EdgeWalker*& walker) override {
+        return walker->current_sink_node();
     }
-    inline unsigned int get_edge_src_node(void*& /*ctx*/) override {
-        return walker_.current_src_node();
+    inline unsigned int get_edge_src_node(const EdgeWalker*& walker) override {
+        return walker->current_src_node();
     }
-    inline unsigned int get_edge_switch_id(void*& /*ctx*/) override {
-        return walker_.current_switch_id_node();
+    inline unsigned int get_edge_switch_id(const EdgeWalker*& walker) override {
+        return walker->current_switch_id_node();
     }
-    inline const t_metadata_dict* get_edge_metadata(void*& /*ctx*/) override {
-        return &rr_edge_metadata_.find(
-                                     std::make_tuple(
-                                         walker_.current_src_node(),
-                                         walker_.current_sink_node(),
-                                         walker_.current_switch_id_node()))
-                    ->second;
+    inline t_metadata_dict_iterator get_edge_metadata(const EdgeWalker*& walker) override {
+        return t_metadata_dict_iterator(&rr_edge_metadata_.find(
+                                                              std::make_tuple(
+                                                                  walker->current_src_node(),
+                                                                  walker->current_sink_node(),
+                                                                  walker->current_switch_id_node()))
+                                             ->second);
     }
-    inline bool has_edge_metadata(void*& /*ctx*/) override {
+    inline bool has_edge_metadata(const EdgeWalker*& walker) override {
         return rr_edge_metadata_.find(
                    std::make_tuple(
-                       walker_.current_src_node(),
-                       walker_.current_sink_node(),
-                       walker_.current_switch_id_node()))
+                       walker->current_src_node(),
+                       walker->current_sink_node(),
+                       walker->current_switch_id_node()))
                != rr_edge_metadata_.end();
     }
-    inline size_t num_rr_edges_edge(void*& /*ctx*/) override {
-        return walker_.initialize(rr_nodes_);
+    inline size_t num_rr_edges_edge(EdgeWalker& walker) override {
+        return walker.num_edges();
     }
-    inline void* get_rr_edges_edge(int n, void*& /*ctx*/) override {
-        size_t cur = walker_.advance(n);
+    inline const EdgeWalker* get_rr_edges_edge(int n, EdgeWalker& walker) override {
+        size_t cur = walker.advance(n);
         if ((ssize_t)cur != n) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Incorrect edge index %zu != %d", cur, n);
         }
-        return nullptr;
+        return &walker;
+    }
+    inline EdgeWalker get_rr_graph_rr_edges(void*& /*ctx*/) override {
+        EdgeWalker walker;
+        walker.initialize(rr_nodes_);
+        return walker;
     }
 
-    /** Generated for complex type "node_timing":
-     * <xs:complexType name="node_timing">
-     *   <xs:attribute name="R" type="xs:float" use="required" />
-     *   <xs:attribute name="C" type="xs:float" use="required" />
-     * </xs:complexType>
-     */
-
-    /** Generated for complex type "node_segment":
-     * <xs:complexType name="node_segment">
-     *   <xs:attribute name="segment_id" type="xs:int" use="required" />
-     * </xs:complexType>
-     */
-
-    /** Generated for complex type "node":
-     * <xs:complexType name="node">
-     *   <xs:all>
-     *     <xs:element name="loc" type="node_loc" />
-     *     <xs:element minOccurs="0" name="timing" type="node_timing" />
-     *     <xs:element minOccurs="0" name="segment" type="node_segment" />
-     *     <xs:element minOccurs="0" name="metadata" type="metadata" />
-     *   </xs:all>
-     *   <xs:attribute name="id" type="xs:unsignedInt" use="required" />
-     *   <xs:attribute name="type" type="node_type" use="required" />
-     *   <xs:attribute name="direction" type="node_direction" />
-     *   <xs:attribute name="capacity" type="xs:unsignedInt" use="required" />
-     * </xs:complexType>
-     */
     inline void set_node_direction(uxsd::enum_node_direction direction, int& inode) override {
         auto& node = (*rr_nodes_)[inode];
         if (direction == uxsd::enum_node_direction::UXSD_INVALID) {
@@ -684,11 +692,13 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
     }
     inline void finish_node_segment(int& /*inode*/) override {}
 
-    inline MetadataBind* init_node_metadata(int& /*inode*/) override {
-        metadata_bind_.assert_clear();
-        return &metadata_bind_;
+    inline MetadataBind init_node_metadata(int& inode) override {
+        MetadataBind bind;
+        bind.set_node_target(inode);
+        return bind;
     }
-    inline void finish_node_metadata(MetadataBind*& /*bind*/) override {
+    inline void finish_node_metadata(MetadataBind& bind) override {
+        bind.finish();
     }
 
     /** Generated for complex type "rr_nodes":
@@ -701,7 +711,6 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
     inline int add_rr_nodes_node(void*& /*ctx*/, unsigned int capacity, unsigned int id, uxsd::enum_node_type type) override {
         make_room_in_vector(rr_nodes_, id);
         auto& node = (*rr_nodes_)[id];
-        metadata_bind_.set_node_target(id);
 
         node.set_capacity(capacity);
         node.set_type(from_uxsd_node_type(type));
@@ -736,7 +745,6 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
     }
     inline void finish_rr_nodes_node(int& inode) override {
         auto& node = (*rr_nodes_)[inode];
-        metadata_bind_.finish_meta();
         node.set_num_edges(0);
     }
 
@@ -759,14 +767,11 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
      *   <xs:attribute name="switch_id" type="xs:unsignedInt" use="required" />
      * </xs:complexType>
      */
-    inline MetadataBind* init_edge_metadata(MetadataBind*& bind) override {
-        if (read_edge_metadata_) {
-            return bind;
-        } else {
-            return nullptr;
-        }
+    inline MetadataBind init_edge_metadata(MetadataBind& bind) override {
+        return bind;
     }
-    inline void finish_edge_metadata(MetadataBind*& /*bind*/) override {
+    inline void finish_edge_metadata(MetadataBind& bind) override {
+        bind.finish();
     }
 
     /** Generated for complex type "channels":
@@ -864,10 +869,6 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
     inline void finish_rr_graph_channels(void*& /*ctx*/) override {
     }
 
-  private:
-    std::vector<std::tuple<unsigned int, unsigned int, unsigned int>> edges_;
-
-  public:
     /** Generated for complex type "rr_edges":
      * <xs:complexType name="rr_edges">
      *   <xs:choice maxOccurs="unbounded">
@@ -875,19 +876,25 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
      *   </xs:choice>
      * </xs:complexType>
      */
-    inline MetadataBind* add_rr_edges_edge(void*& /*ctx*/, unsigned int sink_node, unsigned int src_node, unsigned int switch_id) override {
+    inline MetadataBind add_rr_edges_edge(void*& /*ctx*/, unsigned int sink_node, unsigned int src_node, unsigned int switch_id) override {
         if (src_node >= rr_nodes_->size()) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                             "source_node %d is larger than rr_nodes.size() %d",
                             src_node, rr_nodes_->size());
         }
 
-        metadata_bind_.set_edge_target(src_node, sink_node, switch_id);
+        MetadataBind bind;
+        if (read_edge_metadata_) {
+            bind.set_edge_target(src_node, sink_node, switch_id);
+        } else {
+            bind.set_ignore();
+        }
+
         edges_.push_back(std::make_tuple(src_node, sink_node, switch_id));
-        return &metadata_bind_;
+        return bind;
     }
-    inline void finish_rr_edges_edge(MetadataBind*& /*ctx*/) override {
-        metadata_bind_.finish_meta();
+    inline void finish_rr_edges_edge(MetadataBind& bind) override {
+        bind.finish();
     }
     inline void* init_rr_graph_rr_edges(void*& /*ctx*/) override {
         return nullptr;
@@ -1079,83 +1086,6 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
     inline void finish_rr_graph_segments(void*& /*ctx*/) override {
     }
 
-  private:
-    class PinClassChecker {
-      public:
-        PinClassChecker()
-            : tile_type_(nullptr)
-            , pin_count_(0) {}
-
-        void set_tile(const t_physical_tile_type* tile_type) {
-            VTR_ASSERT(tile_type_ == nullptr);
-            tile_type_ = tile_type;
-            pin_class_index_ = 0;
-        }
-
-        void next_pin_class() {
-            VTR_ASSERT(tile_type_ != nullptr);
-            if (get_current_pin_class().num_pins != (ssize_t)pin_count_) {
-                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                "Incorrect number of pins (%zu != %u) in %zu pin_class in block %s",
-                                pin_count_, get_current_pin_class().num_pins,
-                                pin_class_index_, tile_type_->name);
-            }
-            pin_class_index_ += 1;
-            current_pin_name_.clear();
-            pin_count_ = 0;
-        }
-
-        bool done_with_pin_classes() const {
-            VTR_ASSERT(tile_type_ != nullptr);
-            return (ssize_t)pin_class_index_ == tile_type_->num_class;
-        }
-
-        const t_class& get_current_pin_class() const {
-            VTR_ASSERT(tile_type_ != nullptr);
-            VTR_ASSERT((ssize_t)pin_class_index_ < tile_type_->num_class);
-            return tile_type_->class_inf[pin_class_index_];
-        }
-
-        void clear() {
-            tile_type_ = nullptr;
-        }
-
-        void set_pin_ptc(int ptc) {
-            int index = pin_index_by_num(get_current_pin_class(), ptc);
-            if (index < 0) {
-                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                "Architecture file does not match RR graph's block pin list: invalid ptc for pin class");
-            }
-
-            pin_count_ += 1;
-            current_pin_name_ = block_type_pin_index_to_name(
-                tile_type_,
-                get_current_pin_class().pinlist[index]);
-        }
-        const std::string get_pin_name() const {
-            VTR_ASSERT(tile_type_ != nullptr);
-            VTR_ASSERT(!current_pin_name_.empty());
-            return current_pin_name_;
-        }
-
-      private:
-        static int pin_index_by_num(const t_class& class_inf, int num) {
-            for (int index = 0; index < class_inf.num_pins; ++index) {
-                if (num == class_inf.pinlist[index]) {
-                    return index;
-                }
-            }
-            return -1;
-        }
-        const t_physical_tile_type* tile_type_;
-        size_t pin_class_index_;
-        std::string current_pin_name_;
-        size_t pin_count_;
-    };
-
-    PinClassChecker pin_class_checker_;
-
-  public:
     /** Generated for complex type "pin":
      * <xs:complexType name="pin">
      *   <xs:simpleContent>
@@ -1165,17 +1095,19 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
      *   </xs:simpleContent>
      * </xs:complexType>
      */
-    inline void set_pin_value(const char* value, void*& /*ctx*/) override {
-        if (pin_class_checker_.get_pin_name() != value) {
+
+    inline void set_pin_value(const char* value, const std::pair<const t_physical_tile_type*, int>& context) override {
+        const t_physical_tile_type* tile;
+        int ptc;
+        std::tie(tile, ptc) = context;
+        if (block_type_pin_index_to_name(tile, ptc) != value) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                             "Architecture file does not match RR graph's block pin list");
         }
     }
+    inline void finish_pin_class_pin(const std::pair<const t_physical_tile_type*, int>& /*ctx*/) override {
+    }
 
-  private:
-    std::string pin_value_;
-
-  public:
     /** Generated for complex type "pin_class":
      * <xs:complexType name="pin_class">
      *   <xs:sequence>
@@ -1184,29 +1116,58 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
      *   <xs:attribute name="type" type="pin_type" use="required" />
      * </xs:complexType>
      */
-    inline void* add_pin_class_pin(void*& /*ctx*/, int ptc) override {
-        pin_class_checker_.set_pin_ptc(ptc);
-        return nullptr;
+    inline const std::pair<const t_physical_tile_type*, int> add_pin_class_pin(std::tuple<const t_physical_tile_type*, const t_class*, int>& context, int ptc) override {
+        const t_physical_tile_type* tile;
+        const t_class* class_inf;
+        std::tie(tile, class_inf, std::ignore) = context;
+
+        // Count number of pins on this pin class.
+        int& pin_count = std::get<2>(context);
+        pin_count += 1;
+        return std::make_pair(tile, ptc);
     }
-    inline void finish_pin_class_pin(void*& /*ctx*/) override {
+    inline void finish_block_type_pin_class(std::tuple<const t_physical_tile_type*, const t_class*, int>& context) override {
+        const t_physical_tile_type* tile;
+        const t_class* class_inf;
+        int pin_count;
+        std::tie(tile, class_inf, pin_count) = context;
+        auto class_idx = class_inf - &tile->class_inf[0];
+        if (class_inf->num_pins != pin_count) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Incorrect number of pins (%zu != %u) in %zu pin_class in block %s",
+                            pin_count, class_inf->num_pins,
+                            class_idx, tile->name);
+        }
     }
 
-    inline int get_pin_ptc(std::pair<const t_physical_tile_type*, int>& context) override {
-        return context.second;
-    }
-    inline const char* get_pin_value(std::pair<const t_physical_tile_type*, int>& context) override {
-        pin_value_ = block_type_pin_index_to_name(context.first, context.second);
-        return pin_value_.c_str();
-    }
-    inline uxsd::enum_pin_type get_pin_class_type(std::pair<const t_physical_tile_type*, const t_class*>& context) override {
+    inline uxsd::enum_pin_type get_pin_class_type(const std::pair<const t_physical_tile_type*, const t_class*>& context) override {
         return to_uxsd_pin_type(context.second->type);
     }
-    inline size_t num_pin_class_pin(std::pair<const t_physical_tile_type*, const t_class*>& context) override {
+    inline size_t num_pin_class_pin(const std::pair<const t_physical_tile_type*, const t_class*>& context) override {
         return context.second->num_pins;
     }
-    inline std::pair<const t_physical_tile_type*, int> get_pin_class_pin(int n, std::pair<const t_physical_tile_type*, const t_class*>& context) override {
-        return std::make_pair(context.first, context.second->pinlist[n]);
+
+    inline const char* get_pin_value(const std::pair<const t_physical_tile_type*, int>& context) override {
+        const t_physical_tile_type* tile;
+        int ptc;
+        std::tie(tile, ptc) = context;
+        temp_string_ = block_type_pin_index_to_name(tile, ptc);
+        return temp_string_.c_str();
     }
+    inline int get_pin_ptc(const std::pair<const t_physical_tile_type*, int>& context) override {
+        const t_physical_tile_type* tile;
+        int ptc;
+        std::tie(tile, ptc) = context;
+
+        return ptc;
+    }
+    inline const std::pair<const t_physical_tile_type*, int> get_pin_class_pin(int n, const std::pair<const t_physical_tile_type*, const t_class*>& context) override {
+        const t_physical_tile_type* tile;
+        const t_class* class_inf;
+        std::tie(tile, class_inf) = context;
+        return std::make_pair(tile, class_inf->pinlist[n]);
+    }
+
     inline int get_block_type_height(const t_physical_tile_type*& tile) override {
         return tile->height;
     }
@@ -1222,14 +1183,8 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
     inline size_t num_block_type_pin_class(const t_physical_tile_type*& tile) override {
         return tile->num_class;
     }
-    inline std::pair<const t_physical_tile_type*, const t_class*> get_block_type_pin_class(int n, const t_physical_tile_type*& tile) override {
+    inline const std::pair<const t_physical_tile_type*, const t_class*> get_block_type_pin_class(int n, const t_physical_tile_type*& tile) override {
         return std::make_pair(tile, &tile->class_inf[n]);
-    }
-    inline size_t num_block_types_block_type(void*& /*ctx*/) override {
-        return physical_tile_types_.size();
-    }
-    inline const t_physical_tile_type* get_block_types_block_type(int n, void*& /*ctx*/) override {
-        return &physical_tile_types_[n];
     }
 
     /** Generated for complex type "block_type":
@@ -1243,25 +1198,13 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
      *   <xs:attribute name="height" type="xs:int" use="required" />
      * </xs:complexType>
      */
-    inline void set_block_type_name(const char* name, const t_physical_tile_type*& block_info) override {
-        if (strcmp(block_info->name, name) != 0) {
+    inline void set_block_type_name(const char* name, std::pair<const t_physical_tile_type*, int>& context) override {
+        const t_physical_tile_type* tile = context.first;
+        if (strcmp(tile->name, name) != 0) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                             "Architecture file does not match RR graph's block name: arch uses name %s, RR graph uses name %s",
-                            block_info->name, name);
+                            tile->name, name);
         }
-    }
-
-    inline void* add_block_type_pin_class(const t_physical_tile_type*& /*ctx*/, uxsd::enum_pin_type type) override {
-        if (pin_class_checker_.get_current_pin_class().type != from_uxsd_pin_type(type)) {
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                            "Architecture file does not match RR graph's block type");
-        }
-
-        return nullptr;
-    }
-
-    inline void finish_block_type_pin_class(void*& /*ctx*/) override {
-        pin_class_checker_.next_pin_class();
     }
 
     /** Generated for complex type "block_types":
@@ -1271,7 +1214,7 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
      *   </xs:sequence>
      * </xs:complexType>
      */
-    inline const t_physical_tile_type* add_block_types_block_type(void*& /*ctx*/, int height, int id, int width) override {
+    inline std::pair<const t_physical_tile_type*, int> add_block_types_block_type(void*& /*ctx*/, int height, int id, int width) override {
         const auto& block_info = physical_tile_types_.at(id);
         if (block_info.width != width) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
@@ -1282,12 +1225,35 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
                             "Architecture file does not match RR graph's block height");
         }
 
-        pin_class_checker_.set_tile(&block_info);
-        return &block_info;
+        // Going to count how many classes are found.
+        return std::make_pair(&block_info, 0);
     }
-    inline void finish_block_types_block_type(const t_physical_tile_type*& /*ctx*/) override {
-        VTR_ASSERT(pin_class_checker_.done_with_pin_classes());
-        pin_class_checker_.clear();
+    inline std::tuple<const t_physical_tile_type*, const t_class*, int> add_block_type_pin_class(std::pair<const t_physical_tile_type*, int>& context, uxsd::enum_pin_type type) override {
+        const t_physical_tile_type* tile = context.first;
+        int& num_classes = context.second;
+
+        // Count number of pin classes
+        VTR_ASSERT(num_classes < tile->num_class);
+        const t_class* class_inf = &context.first->class_inf[num_classes++];
+
+        if (class_inf->type != from_uxsd_pin_type(type)) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Architecture file does not match RR graph's block type");
+        }
+
+        return std::make_tuple(tile, class_inf, 0);
+    }
+    inline void finish_block_types_block_type(std::pair<const t_physical_tile_type*, int>& context) override {
+        const t_physical_tile_type* tile = context.first;
+        int num_classes = context.second;
+        VTR_ASSERT(tile->num_class == num_classes);
+    }
+
+    inline size_t num_block_types_block_type(void*& /*ctx*/) override {
+        return physical_tile_types_.size();
+    }
+    inline const t_physical_tile_type* get_block_types_block_type(int n, void*& /*ctx*/) override {
+        return &physical_tile_types_[n];
     }
     inline void* init_rr_graph_block_types(void*& /*ctx*/) override {
         return nullptr;
@@ -1364,14 +1330,10 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
         return &grid_.matrix().get(n);
     }
 
-  private:
-    std::string tool_comment_;
-
-  public:
     inline const char* get_rr_graph_tool_comment(void*& /*ctx*/) override {
-        tool_comment_.assign("Generated from arch file ");
-        tool_comment_ += get_arch_file_name();
-        return tool_comment_.c_str();
+        temp_string_.assign("Generated from arch file ");
+        temp_string_ += get_arch_file_name();
+        return temp_string_.c_str();
     }
     inline const char* get_rr_graph_tool_name(void*& /*ctx*/) override {
         return "vpr";
@@ -1395,9 +1357,6 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
         return nullptr;
     }
     inline void* get_rr_graph_rr_nodes(void*& /*ctx*/) override {
-        return nullptr;
-    }
-    inline void* get_rr_graph_rr_edges(void*& /*ctx*/) override {
         return nullptr;
     }
 
@@ -1776,19 +1735,26 @@ class RrGraphSerializer : public uxsd::RrGraphBase<
         return uxsd::enum_pin_type::UXSD_INVALID;
     }
 
-    const t_graph_type graph_type_;
-    const enum e_base_cost_type base_cost_type_;
+    // Temporary storage
+    std::vector<std::tuple<unsigned int, unsigned int, unsigned int>> edges_;
+    std::vector<int> seg_index_;
+    std::string temp_string_;
+
+    // Output for loads, and constant data for writes.
     int* wire_to_rr_ipin_switch_;
-    const bool do_check_rr_graph_;
-    const char* read_rr_graph_name_;
-    const bool read_edge_metadata_;
     t_chan_width* chan_width_;
     std::vector<t_rr_node>* rr_nodes_;
     std::vector<t_rr_switch_inf>* rr_switch_inf_;
     std::vector<t_rr_indexed_data>* rr_indexed_data_;
-    std::vector<int> seg_index_;
     t_rr_node_indices* rr_node_indices_;
     std::string* read_rr_graph_filename_;
+
+    // Constant data for loads and writes.
+    const t_graph_type graph_type_;
+    const enum e_base_cost_type base_cost_type_;
+    const bool do_check_rr_graph_;
+    const char* read_rr_graph_name_;
+    const bool read_edge_metadata_;
 
     const size_t num_arch_switches_;
     const t_arch_switch_inf* arch_switch_inf_;
