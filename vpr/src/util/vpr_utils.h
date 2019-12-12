@@ -165,10 +165,11 @@ t_logical_block_type_ptr pick_best_logical_type(t_physical_tile_type_ptr physica
 //the best expected physical tile the block should use (if no valid placement).
 t_physical_tile_type_ptr get_physical_tile_type(const ClusterBlockId blk);
 
-int get_logical_pin(t_physical_tile_type_ptr physical_tile,
-                    t_logical_block_type_ptr logical_block,
-                    int pin);
 int get_physical_pin(t_physical_tile_type_ptr physical_tile,
+                     int z_index,
+                     t_logical_block_type_ptr logical_block,
+                     int pin);
+int get_physical_pin(const ClusterBlockId blk,
                      t_logical_block_type_ptr logical_block,
                      int pin);
 
