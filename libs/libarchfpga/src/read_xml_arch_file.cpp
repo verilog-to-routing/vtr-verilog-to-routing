@@ -813,6 +813,14 @@ static void LoadPinLoc(pugi::xml_node Locations,
         VTR_ASSERT(ipin == output_pins.size());
 
     } else {
+        int capacity;
+        if (type->capacity_type == e_capacity_type::DUPLICATE) {
+            capacity = type->capacity;
+        } else {
+            VTR_ASSERT(type->capacity_type == e_capacity_type::EXPLICIT);
+            capacity = 1;
+        }
+
         VTR_ASSERT(type->pin_location_distribution == E_CUSTOM_PIN_DISTR);
         for (int width = 0; width < type->width; ++width) {
             for (int height = 0; height < type->height; ++height) {
@@ -833,12 +841,12 @@ static void LoadPinLoc(pugi::xml_node Locations,
                         }
 
                         for (int pin_num = pin_range.first; pin_num < pin_range.second; ++pin_num) {
-                            VTR_ASSERT(pin_num < type->num_pins / type->capacity);
-                            for (int capacity = 0; capacity < type->capacity; ++capacity) {
-                                type->pinloc[width][height][side][pin_num + capacity * type->num_pins / type->capacity] = true;
-                                type->pin_width_offset[pin_num + capacity * type->num_pins / type->capacity] += width;
-                                type->pin_height_offset[pin_num + capacity * type->num_pins / type->capacity] += height;
-                                physical_pin_counts[pin_num + capacity * type->num_pins / type->capacity] += 1;
+                            VTR_ASSERT(pin_num < type->num_pins / capacity);
+                            for (int icapacity = 0; icapacity < capacity; ++icapacity) {
+                                type->pinloc[width][height][side][pin_num + icapacity * type->num_pins / capacity] = true;
+                                type->pin_width_offset[pin_num + icapacity * type->num_pins / capacity] += width;
+                                type->pin_height_offset[pin_num + icapacity * type->num_pins / capacity] += height;
+                                physical_pin_counts[pin_num + icapacity * type->num_pins / capacity] += 1;
                             }
                         }
                     }
@@ -888,6 +896,8 @@ static std::pair<int, std::pair<int, int>> ProcessPinString(pugi::xml_node Locat
                            pin_loc_string);
         }
 
+        instance_idx = vtr::atoi(token.data);
+
         token_index++;
         token = tokens[token_index];
 
@@ -900,7 +910,6 @@ static std::pair<int, std::pair<int, int>> ProcessPinString(pugi::xml_node Locat
         token_index++;
         token = tokens[token_index];
 
-        instance_idx = vtr::atoi(token.data);
     }
 
     if (token.type != TOKEN_DOT) {
@@ -3333,7 +3342,7 @@ static void ProcessEquivalentSiteDirectConnection(pugi::xml_node Parent,
                        "Pin definition differ between site %s and tile %s. User-defined pin mapping is required.\n", LogicalBlockType->pb_type->name, PhysicalTileType->name);
     }
 
-    if (PhysicalTileType->capacity_type == e_capacity_type::EXPLICIT) {
+    if (PhysicalTileType->capacity_type != e_capacity_type::DUPLICATE) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
                        "Custom site pins are required if capacity_type == explicit\n");
     }
@@ -5015,7 +5024,15 @@ static void check_port_direct_mappings(t_physical_tile_type_ptr physical_tile, t
 
     auto& pin_direct_mapping = physical_tile->tile_block_pin_directs_map.at(logical_block->index);
 
-    if (pb_type->num_pins != (int)pin_direct_mapping.size()) {
+    int capacity;
+    if (physical_tile->capacity_type == e_capacity_type::DUPLICATE) {
+        capacity = 1;
+    } else {
+        VTR_ASSERT(physical_tile->capacity_type == e_capacity_type::EXPLICIT);
+        capacity = physical_tile->capacity;
+    }
+
+    if (pb_type->num_pins * capacity != (int)pin_direct_mapping.size()) {
         archfpga_throw(__FILE__, __LINE__,
                        "Logical block (%s) and Physical tile (%s) have a different number of ports.\n",
                        logical_block->name, physical_tile->name);
