@@ -951,7 +951,7 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
         block_type = clb_nlist.block_type(blk_id);
         auto tile_type = pick_best_physical_type(block_type);
         for (j = 0; j < block_type->pb_type->num_pins; j++) {
-            int physical_pin = get_physical_pin(tile_type, block_type, j);
+            int physical_pin = get_physical_pin(tile_type, /*z_index=*/0, block_type, j);
 
             //Iterate through each pin of the block, and see if there is a net allocated/used for it
             clb_net_id = clb_nlist.block_net(blk_id, j);
@@ -1001,7 +1001,7 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
             block_type = clb_nlist.block_type(clb_nlist.pin_block(pin_id));
             auto tile_type = pick_best_physical_type(block_type);
             int logical_pin = clb_nlist.pin_logical_index(pin_id);
-            int physical_pin = get_physical_pin(tile_type, block_type, logical_pin);
+            int physical_pin = get_physical_pin(tile_type, /*z_index=*/0, block_type, logical_pin);
 
             if (tile_type->is_ignored_pin[physical_pin] != is_ignored_net) {
                 VTR_LOG_WARN(
