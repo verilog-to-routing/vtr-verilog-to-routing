@@ -378,6 +378,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
 
     RouterOpts->router_heap = Options.router_heap;
     RouterOpts->disable_check_route = Options.disable_check_route;
+    RouterOpts->quick_check_route = Options.quick_check_route;
 }
 
 static void SetupAnnealSched(const t_options& Options,

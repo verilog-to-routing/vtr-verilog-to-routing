@@ -704,7 +704,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         if (route_status.success()) {
             //Sanity check the routing
             if (!router_opts.disable_check_route) {
-                check_route(router_opts.route_type);
+                check_route(router_opts.route_type, router_opts.quick_check_route);
             }
             get_serial_num();
 
