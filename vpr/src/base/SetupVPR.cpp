@@ -379,6 +379,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
 
     RouterOpts->write_router_lookahead = Options.write_router_lookahead;
     RouterOpts->read_router_lookahead = Options.read_router_lookahead;
+    RouterOpts->quick_check_route = Options.quick_check_route;
 }
 
 static void SetupAnnealSched(const t_options& Options,

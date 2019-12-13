@@ -959,6 +959,7 @@ struct t_router_opts {
 
     std::string write_router_lookahead;
     std::string read_router_lookahead;
+    bool quick_check_route;
 };
 
 struct t_analysis_opts {

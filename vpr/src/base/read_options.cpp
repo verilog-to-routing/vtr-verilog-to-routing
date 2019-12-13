@@ -1671,6 +1671,10 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     route_timing_grp.add_argument(args.router_first_iteration_timing_report_file, "--router_first_iter_timing_report")
         .help("Name of the post first routing iteration timing report file (not generated if unspecfied)")
         .default_value("")
+
+            route_timing_grp.add_argument<bool, ParseOnOff>(args.quick_check_route, "--quick_check_route")
+        .help("Runs check_route, disabling slow checks, once routing step has finished or when routing file is loaded")
+        .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.router_debug_net, "--router_debug_net")
