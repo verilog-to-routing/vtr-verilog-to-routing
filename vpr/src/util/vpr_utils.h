@@ -41,6 +41,8 @@ void get_pin_range_for_block(const ClusterBlockId blk_id,
 
 void sync_grid_to_blocks();
 
+void fread_secure(void* var, size_t size, unsigned int count, FILE* fp);
+
 //Returns the name of the pin_index'th pin on the specified block type
 std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_index);
 
@@ -165,10 +167,11 @@ t_logical_block_type_ptr pick_best_logical_type(t_physical_tile_type_ptr physica
 //the best expected physical tile the block should use (if no valid placement).
 t_physical_tile_type_ptr get_physical_tile_type(const ClusterBlockId blk);
 
-int get_logical_pin(t_physical_tile_type_ptr physical_tile,
-                    t_logical_block_type_ptr logical_block,
-                    int pin);
 int get_physical_pin(t_physical_tile_type_ptr physical_tile,
+                     int z_index,
+                     t_logical_block_type_ptr logical_block,
+                     int pin);
+int get_physical_pin(const ClusterBlockId blk,
                      t_logical_block_type_ptr logical_block,
                      int pin);
 

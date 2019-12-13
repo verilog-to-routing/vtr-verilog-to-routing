@@ -523,6 +523,12 @@ enum class e_sb_type {
 
 };
 
+enum class e_capacity_type {
+    DUPLICATE, // Capacity duplicates ports.
+    EXPLICIT   // Capacity increases the number of logical tiles, but does not
+               // modify the physical ports.
+};
+
 constexpr int NO_SWITCH = -1;
 constexpr int DEFAULT_SWITCH = -2;
 
@@ -577,6 +583,7 @@ struct t_physical_tile_type {
     int num_clock_pins = 0;
 
     int capacity = 0;
+    e_capacity_type capacity_type = e_capacity_type::DUPLICATE;
 
     int width = 0;
     int height = 0;
@@ -625,18 +632,20 @@ struct t_physical_tile_type {
  *  vtr::bimap container.
  */
 struct t_logical_pin {
+    int z_index = -1;
     int pin = -1;
 
-    t_logical_pin(int value) {
+    t_logical_pin(int z_index_value, int value) {
+        z_index = z_index_value;
         pin = value;
     }
 
     bool operator==(const t_logical_pin o) const {
-        return pin == o.pin;
+        return z_index == o.z_index && pin == o.pin;
     }
 
     bool operator<(const t_logical_pin o) const {
-        return pin < o.pin;
+        return std::make_pair(z_index, pin) < std::make_pair(o.z_index, o.pin);
     }
 };
 

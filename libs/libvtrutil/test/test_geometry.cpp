@@ -20,108 +20,146 @@ TEST_CASE("Point", "[vtr_geometry/Point]") {
 }
 
 TEST_CASE("Rect", "[vtr_geometry/Rect]") {
-    vtr::Point<int> pi_1(5, 3);
-    vtr::Point<int> pi_2(10, 11);
+    // int tests
+    {
+        vtr::Point<int> pi_1(5, 3);
+        vtr::Point<int> pi_2(10, 11);
+        vtr::Point<int> pi_3(7, 9);
 
-    vtr::Rect<int> r1(pi_1.x(), pi_1.y(), pi_2.x(), pi_2.y());
-    vtr::Rect<int> r2(pi_1, pi_2);
+        vtr::Rect<int> r1(pi_1.x(), pi_1.y(), pi_2.x(), pi_2.y());
+        vtr::Rect<int> r2(pi_1, pi_2);
+        vtr::Rect<int> r3(pi_1, pi_3);
+        vtr::Rect<int> r4(pi_3, pi_2);
 
-    SECTION("equality") {
-        REQUIRE(r1 == r2);
+        SECTION("equality") {
+            REQUIRE(r1 == r2);
+        }
+
+        SECTION("location") {
+            REQUIRE(r1.xmin() == pi_1.x());
+            REQUIRE(r1.xmax() == pi_2.x());
+            REQUIRE(r1.ymin() == pi_1.y());
+            REQUIRE(r1.ymax() == pi_2.y());
+        }
+
+        SECTION("point_accessors") {
+            REQUIRE(r1.bottom_left() == pi_1);
+            REQUIRE(r1.top_right() == pi_2);
+            REQUIRE(r2.bottom_left() == pi_1);
+            REQUIRE(r2.top_right() == pi_2);
+        }
+
+        SECTION("dimensions") {
+            REQUIRE(r1.width() == 5);
+            REQUIRE(r1.height() == 8);
+            REQUIRE(r2.width() == 5);
+            REQUIRE(r2.height() == 8);
+        }
+
+        SECTION("contains_int") {
+            REQUIRE(r2.contains(pi_1));
+            REQUIRE(r2.contains({6, 4}));
+            REQUIRE_FALSE(r2.contains({100, 4}));
+            REQUIRE_FALSE(r2.contains(pi_2));
+            REQUIRE(vtr::Rect<int>(pi_1).contains(pi_1));
+        }
+
+        SECTION("strictly_contains_int") {
+            REQUIRE_FALSE(r2.strictly_contains(pi_1));
+            REQUIRE(r2.strictly_contains({6, 4}));
+            REQUIRE_FALSE(r2.strictly_contains({100, 4}));
+            REQUIRE_FALSE(r2.strictly_contains(pi_2));
+        }
+
+        SECTION("coincident_int") {
+            REQUIRE(r2.coincident(pi_1));
+            REQUIRE(r2.coincident({6, 4}));
+            REQUIRE_FALSE(r2.coincident({100, 4}));
+            REQUIRE(r2.coincident(pi_2));
+        }
+
+        SECTION("bounds_int") {
+            REQUIRE(r1 == bounding_box(r3, r4));
+        }
+
+        SECTION("empty_int") {
+            REQUIRE(vtr::Rect<int>().empty());
+        }
+
+        SECTION("sample_int") {
+            auto r = vtr::Rect<int>(pi_1, pi_2);
+            REQUIRE(sample(r, 0, 0, 17) == pi_1);
+            REQUIRE(sample(r, 17, 17, 17) == pi_2);
+            auto inside = sample(r, 3, 11, 17);
+            REQUIRE(r.contains(inside));
+        }
     }
 
-    SECTION("location") {
-        REQUIRE(r1.xmin() == pi_1.x());
-        REQUIRE(r1.xmax() == pi_2.x());
-        REQUIRE(r1.ymin() == pi_1.y());
-        REQUIRE(r1.ymax() == pi_2.y());
-    }
+    // float tests
+    {
+        vtr::Point<float> pf_1(5.3, 3.9);
+        vtr::Point<float> pf_2(10.5, 11.1);
+        vtr::Point<float> pf_3(7.2, 9.4);
 
-    SECTION("point_accessors") {
-        REQUIRE(r1.bottom_left() == pi_1);
-        REQUIRE(r1.top_right() == pi_2);
-        REQUIRE(r2.bottom_left() == pi_1);
-        REQUIRE(r2.top_right() == pi_2);
-    }
+        vtr::Rect<float> r3(pf_1.x(), pf_1.y(), pf_2.x(), pf_2.y());
+        vtr::Rect<float> r4(pf_1, pf_2);
+        vtr::Rect<float> r5(pf_1, pf_3);
+        vtr::Rect<float> r6(pf_3, pf_2);
+        // vtr::Rect<float> r7(pf_1); // <-- will fail to compile
 
-    SECTION("dimensions") {
-        REQUIRE(r1.width() == 5);
-        REQUIRE(r1.height() == 8);
-        REQUIRE(r2.width() == 5);
-        REQUIRE(r2.height() == 8);
-    }
+        SECTION("equality_float") {
+            REQUIRE(r3 == r4);
+        }
 
-    SECTION("contains_int") {
-        REQUIRE(r2.contains(pi_1));
-        REQUIRE(r2.contains({6, 4}));
-        REQUIRE_FALSE(r2.contains({100, 4}));
-        REQUIRE_FALSE(r2.contains(pi_2));
-    }
+        SECTION("location_float") {
+            REQUIRE(r3.xmin() == pf_1.x());
+            REQUIRE(r3.xmax() == pf_2.x());
+            REQUIRE(r3.ymin() == pf_1.y());
+            REQUIRE(r3.ymax() == pf_2.y());
+        }
 
-    SECTION("strictly_contains_int") {
-        REQUIRE_FALSE(r2.strictly_contains(pi_1));
-        REQUIRE(r2.strictly_contains({6, 4}));
-        REQUIRE_FALSE(r2.strictly_contains({100, 4}));
-        REQUIRE_FALSE(r2.strictly_contains(pi_2));
-    }
+        SECTION("point_accessors_float") {
+            REQUIRE(r3.bottom_left() == pf_1);
+            REQUIRE(r3.top_right() == pf_2);
+            REQUIRE(r4.bottom_left() == pf_1);
+            REQUIRE(r4.top_right() == pf_2);
+        }
 
-    SECTION("coincident_int") {
-        REQUIRE(r2.coincident(pi_1));
-        REQUIRE(r2.coincident({6, 4}));
-        REQUIRE_FALSE(r2.coincident({100, 4}));
-        REQUIRE(r2.coincident(pi_2));
-    }
+        SECTION("dimensions") {
+            REQUIRE(r3.width() == Approx(5.2));
+            REQUIRE(r3.height() == Approx(7.2));
+            REQUIRE(r4.width() == Approx(5.2));
+            REQUIRE(r4.height() == Approx(7.2));
+        }
 
-    vtr::Point<float> pf_1(5.3, 3.9);
-    vtr::Point<float> pf_2(10.5, 11.1);
+        SECTION("contains_float") {
+            REQUIRE(r4.contains(pf_1));
+            REQUIRE(r4.contains({6, 4}));
+            REQUIRE_FALSE(r4.contains({100, 4}));
+            REQUIRE_FALSE(r4.contains(pf_2));
+        }
 
-    vtr::Rect<float> r3(pf_1.x(), pf_1.y(), pf_2.x(), pf_2.y());
-    vtr::Rect<float> r4(pf_1, pf_2);
+        SECTION("strictly_contains_float") {
+            REQUIRE_FALSE(r4.strictly_contains(pf_1));
+            REQUIRE(r4.strictly_contains({6, 4}));
+            REQUIRE_FALSE(r4.strictly_contains({100, 4}));
+            REQUIRE_FALSE(r4.strictly_contains(pf_2));
+        }
 
-    SECTION("equality_float") {
-        REQUIRE(r3 == r4);
-    }
+        SECTION("coincident_float") {
+            REQUIRE(r4.coincident(pf_1));
+            REQUIRE(r4.coincident({6, 4}));
+            REQUIRE_FALSE(r4.coincident({100, 4}));
+            REQUIRE(r4.coincident(pf_2));
+        }
 
-    SECTION("location_float") {
-        REQUIRE(r3.xmin() == pf_1.x());
-        REQUIRE(r3.xmax() == pf_2.x());
-        REQUIRE(r3.ymin() == pf_1.y());
-        REQUIRE(r3.ymax() == pf_2.y());
-    }
+        SECTION("bounds_float") {
+            REQUIRE(r3 == bounding_box(r5, r6));
+        }
 
-    SECTION("point_accessors_float") {
-        REQUIRE(r3.bottom_left() == pf_1);
-        REQUIRE(r3.top_right() == pf_2);
-        REQUIRE(r4.bottom_left() == pf_1);
-        REQUIRE(r4.top_right() == pf_2);
-    }
-
-    SECTION("dimensions") {
-        REQUIRE(r3.width() == Approx(5.2));
-        REQUIRE(r3.height() == Approx(7.2));
-        REQUIRE(r4.width() == Approx(5.2));
-        REQUIRE(r4.height() == Approx(7.2));
-    }
-
-    SECTION("contains_float") {
-        REQUIRE(r4.contains(pf_1));
-        REQUIRE(r4.contains({6, 4}));
-        REQUIRE_FALSE(r4.contains({100, 4}));
-        REQUIRE_FALSE(r4.contains(pf_2));
-    }
-
-    SECTION("strictly_contains_float") {
-        REQUIRE_FALSE(r4.strictly_contains(pf_1));
-        REQUIRE(r4.strictly_contains({6, 4}));
-        REQUIRE_FALSE(r4.strictly_contains({100, 4}));
-        REQUIRE_FALSE(r4.strictly_contains(pf_2));
-    }
-
-    SECTION("coincident_float") {
-        REQUIRE(r4.coincident(pf_1));
-        REQUIRE(r4.coincident({6, 4}));
-        REQUIRE_FALSE(r4.coincident({100, 4}));
-        REQUIRE(r4.coincident(pf_2));
+        SECTION("empty_float") {
+            REQUIRE(vtr::Rect<float>().empty());
+        }
     }
 }
 
