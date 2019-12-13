@@ -3,6 +3,7 @@
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_memory.h"
+#include "vtr_time.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -626,18 +627,13 @@ static void check_node_and_range(int inode, enum e_route_type route_type) {
 //Checks that all non-configurable edges are in a legal configuration
 //This check is slow, so it has been moved out of check_route()
 static void check_all_non_configurable_edges() {
-    VTR_LOG("\n");
-    VTR_LOG("Checking to ensure non-configurable edges are legal...\n");
-
+    vtr::ScopedStartFinishTimer timer("Checking to ensure non-configurable edges are legal");
     auto non_configurable_rr_sets = identify_non_configurable_rr_sets();
-
     auto& cluster_ctx = g_vpr_ctx.clustering();
+
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         check_non_configurable_edges(net_id, non_configurable_rr_sets);
     }
-
-    VTR_LOG("Completed non-configurable edge check successfully.\n");
-    VTR_LOG("\n");
 }
 
 //Checks that the specified routing is legal with respect to non-configurable edges
