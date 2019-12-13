@@ -167,7 +167,6 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int* free_loca
     ClusterBlockId blk_id;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.placement();
 
     auto& pl_macros = place_ctx.pl_macros;
@@ -185,9 +184,7 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int* free_loca
         return lhs_num_tiles < rhs_num_tiles;
     };
 
-    if (device_ctx.has_multiple_equivalent_tiles) {
-        std::sort(sorted_pl_macros.begin(), sorted_pl_macros.end(), criteria);
-    }
+    std::stable_sort(sorted_pl_macros.begin(), sorted_pl_macros.end(), criteria);
 
     /* Macros are harder to place.  Do them first */
     for (auto pl_macro : sorted_pl_macros) {
@@ -196,57 +193,57 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int* free_loca
 
         // Assume that all the blocks in the macro are of the same type
         blk_id = pl_macro.members[0].blk_index;
-        auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
-        auto type = pick_placement_type(logical_block, int(pl_macro.members.size()), free_locations);
+        auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
 
-        if (type == nullptr) {
-            VPR_FATAL_ERROR(VPR_ERROR_PLACE,
-                            "Initial placement failed.\n"
-                            "Could not place macro length %zu with head block %s (#%zu); not enough free locations of type %s (#%d).\n"
-                            "VPR cannot auto-size for your circuit, please resize the FPGA manually.\n",
-                            pl_macro.members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), logical_block->name, logical_block->index);
-        }
+        for (auto tile_type : block_type->equivalent_tiles) { //Try each possible tile type
+            itype = tile_type->index;
 
-        itype = type->index;
+            // Try to place the macro first, if can be placed - place them, otherwise try again
+            for (itry = 0; itry < macros_max_num_tries && macro_placed == false; itry++) {
+                // Choose a random position for the head
+                ipos = vtr::irand(free_locations[itype] - 1);
 
-        // Try to place the macro first, if can be placed - place them, otherwise try again
-        for (itry = 0; itry < macros_max_num_tries && macro_placed == false; itry++) {
-            // Choose a random position for the head
-            ipos = vtr::irand(free_locations[itype] - 1);
-
-            // Try to place the macro
-            macro_placed = try_place_macro(itype, ipos, pl_macro);
-
-        } // Finished all tries
-
-        if (macro_placed == false) {
-            // if a macro still could not be placed after macros_max_num_tries times,
-            // go through the chip exhaustively to find a legal placement for the macro
-            // place the macro on the first location that is legal
-            // then set macro_placed = true;
-            // if there are no legal positions, error out
-
-            // Exhaustive placement of carry macros
-            for (ipos = 0; ipos < free_locations[itype] && macro_placed == false; ipos++) {
                 // Try to place the macro
                 macro_placed = try_place_macro(itype, ipos, pl_macro);
 
-            } // Exhausted all the legal placement position for this macro
+            } // Finished all tries
 
-            // If macro could not be placed after exhaustive placement, error out
             if (macro_placed == false) {
-                // Error out
-                VPR_FATAL_ERROR(VPR_ERROR_PLACE,
-                                "Initial placement failed.\n"
-                                "Could not place macro length %zu with head block %s (#%zu); not enough free locations of type %s (#%d).\n"
-                                "Please manually size the FPGA because VPR can't do this yet.\n",
-                                pl_macro.members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), device_ctx.physical_tile_types[itype].name, itype);
-            }
+                // if a macro still could not be placed after macros_max_num_tries times,
+                // go through the chip exhaustively to find a legal placement for the macro
+                // place the macro on the first location that is legal
+                // then set macro_placed = true;
+                // if there are no legal positions, error out
 
-        } else {
-            // This macro has been placed successfully, proceed to place the next macro
-            continue;
+                // Exhaustive placement of carry macros
+                for (ipos = 0; ipos < free_locations[itype] && macro_placed == false; ipos++) {
+                    // Try to place the macro
+                    macro_placed = try_place_macro(itype, ipos, pl_macro);
+
+                } // Exhausted all the legal placement position for this macro
+
+                // If macro could not be placed after exhaustive placement, error out
+            } else {
+                // This macro has been placed successfully
+                break;
+            }
         }
+
+        if (macro_placed == false) {
+            std::vector<std::string> tried_types;
+            for (auto tile_type : block_type->equivalent_tiles) {
+                tried_types.push_back(tile_type->name);
+            }
+            std::string tried_types_str = "{" + vtr::join(tried_types, ", ") + "}";
+
+            // Error out
+            VPR_FATAL_ERROR(VPR_ERROR_PLACE,
+                            "Initial placement failed.\n"
+                            "Could not place macro length %zu with head block %s (#%zu); not enough free locations of type(s) %s.\n"
+                            "Please manually size the FPGA because VPR can't do this yet.\n",
+                            pl_macro.members.size(), cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), tried_types_str.c_str());
+        }
+
     } // Finish placing all the pl_macros successfully
 }
 
@@ -285,46 +282,49 @@ static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pa
 
         auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
 
-        /* Randomly select a free location of the appropriate type for blk_id.
-         * We have a linearized list of all the free locations that can
-         * accommodate a block of that type in free_locations[itype].
-         * Choose one randomly and put blk_id there. Then we don't want to pick
-         * that location again, so remove it from the free_locations array.
-         */
+        /* Don't do IOs if the user specifies IOs; we'll read those locations later. */
+        if (!(is_io_type(pick_best_physical_type(logical_block)) && pad_loc_type == USER)) {
+            /* Randomly select a free location of the appropriate type for blk_id.
+             * We have a linearized list of all the free locations that can
+             * accommodate a block of that type in free_locations[itype].
+             * Choose one randomly and put blk_id there. Then we don't want to pick
+             * that location again, so remove it from the free_locations array.
+             */
 
-        auto type = pick_placement_type(logical_block, 1, free_locations);
+            auto type = pick_placement_type(logical_block, 1, free_locations);
 
-        if (type == nullptr) {
-            VPR_FATAL_ERROR(VPR_ERROR_PLACE,
-                            "Initial placement failed.\n"
-                            "Could not place block %s (#%zu); no free locations of type %s (#%d).\n",
-                            cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), logical_block->name, logical_block->index);
+            if (type == nullptr) {
+                VPR_FATAL_ERROR(VPR_ERROR_PLACE,
+                                "Initial placement failed.\n"
+                                "Could not place block %s (#%zu); no free locations of type %s (#%d).\n",
+                                cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), logical_block->name, logical_block->index);
+            }
+
+            itype = type->index;
+
+            t_pl_loc to;
+            initial_placement_location(free_locations, ipos, itype, to);
+
+            // Make sure that the position is EMPTY_BLOCK before placing the block down
+            VTR_ASSERT(place_ctx.grid_blocks[to.x][to.y].blocks[to.z] == EMPTY_BLOCK_ID);
+
+            place_ctx.grid_blocks[to.x][to.y].blocks[to.z] = blk_id;
+            place_ctx.grid_blocks[to.x][to.y].usage++;
+
+            place_ctx.block_locs[blk_id].loc = to;
+
+            //Mark IOs as fixed if specifying a (fixed) random placement
+            if (is_io_type(pick_best_physical_type(logical_block)) && pad_loc_type == RANDOM) {
+                place_ctx.block_locs[blk_id].is_fixed = true;
+            }
+
+            /* Ensure randomizer doesn't pick this location again, since it's occupied. Could shift all the
+             * legal positions in legal_pos to remove the entry (choice) we just used, but faster to
+             * just move the last entry in legal_pos to the spot we just used and decrement the
+             * count of free_locations. */
+            legal_pos[itype][ipos] = legal_pos[itype][free_locations[itype] - 1]; /* overwrite used block position */
+            free_locations[itype]--;
         }
-
-        itype = type->index;
-
-        t_pl_loc to;
-        initial_placement_location(free_locations, ipos, itype, to);
-
-        // Make sure that the position is EMPTY_BLOCK before placing the block down
-        VTR_ASSERT(place_ctx.grid_blocks[to.x][to.y].blocks[to.z] == EMPTY_BLOCK_ID);
-
-        place_ctx.grid_blocks[to.x][to.y].blocks[to.z] = blk_id;
-        place_ctx.grid_blocks[to.x][to.y].usage++;
-
-        place_ctx.block_locs[blk_id].loc = to;
-
-        //Mark IOs as fixed if specifying a (fixed) random placement
-        if (is_io_type(pick_best_physical_type(logical_block)) && pad_loc_type == RANDOM) {
-            place_ctx.block_locs[blk_id].is_fixed = true;
-        }
-
-        /* Ensure randomizer doesn't pick this location again, since it's occupied. Could shift all the
-         * legal positions in legal_pos to remove the entry (choice) we just used, but faster to
-         * just move the last entry in legal_pos to the spot we just used and decrement the
-         * count of free_locations. */
-        legal_pos[itype][ipos] = legal_pos[itype][free_locations[itype] - 1]; /* overwrite used block position */
-        free_locations[itype]--;
     }
 }
 
@@ -394,10 +394,6 @@ void initial_placement(enum e_pad_loc_type pad_loc_type,
         place_ctx.block_locs[blk_id].loc = t_pl_loc();
     }
 
-    if (pad_loc_type == USER) {
-        read_user_pad_loc(pad_loc_file);
-    }
-
     initial_placement_pl_macros(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, free_locations);
 
     // All the macros are placed, update the legal_pos[][] array
@@ -420,6 +416,10 @@ void initial_placement(enum e_pad_loc_type pad_loc_type,
     } // Finish updating the legal_pos[][] and free_locations[] array
 
     initial_placement_blocks(free_locations, pad_loc_type);
+
+    if (pad_loc_type == USER) {
+        read_user_pad_loc(pad_loc_file);
+    }
 
     /* Restore legal_pos */
     load_legal_placement_locations();

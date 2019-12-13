@@ -172,7 +172,6 @@ struct t_draw_state {
     e_route_type draw_route_type = GLOBAL;
     char default_message[vtr::bufsize];
     vtr::vector<ClusterNetId, ezgl::color> net_color;
-    vtr::vector<ClusterBlockId, ezgl::color> block_color;
     t_draw_rr_node* draw_rr_node = nullptr;
     std::shared_ptr<const SetupTimingInfo> setup_timing_info;
     const t_arch* arch_info = nullptr;
@@ -185,6 +184,16 @@ struct t_draw_state {
     void reset_nets_congestion_and_rr();
 
     bool showing_sub_blocks();
+
+    ezgl::color block_color(ClusterBlockId blk) const;
+    void set_block_color(ClusterBlockId blk, ezgl::color color);
+    void reset_block_color(ClusterBlockId blk);
+    void reset_block_colors();
+
+  private:
+    friend void alloc_draw_structs(const t_arch* arch);
+    vtr::vector<ClusterBlockId, ezgl::color> block_color_;
+    vtr::vector<ClusterBlockId, bool> use_default_block_color_;
 };
 
 /* For each cluster type, this structure stores drawing
@@ -228,7 +237,8 @@ struct t_draw_coords {
      * clb, from this data structure
      */
     ezgl::rectangle get_pb_bbox(ClusterBlockId clb_index, const t_pb_graph_node& pb_gnode);
-    ezgl::rectangle get_pb_bbox(int grid_x, int grid_y, int sub_block_index, const t_pb_graph_node& pb_gnode);
+    ezgl::rectangle get_pb_bbox(int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr type, const t_pb_graph_node& pb_gnode);
+    ezgl::rectangle get_pb_bbox(int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr type);
 
     /**
      * Return a bounding box for the given pb in the given
@@ -242,6 +252,8 @@ struct t_draw_coords {
      */
     ezgl::rectangle get_absolute_clb_bbox(const ClusterBlockId clb_index, const t_logical_block_type_ptr type);
     ezgl::rectangle get_absolute_clb_bbox(int grid_x, int grid_y, int sub_block_index);
+
+    ezgl::rectangle get_absolute_clb_bbox(int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr block_type);
 
   private:
     float tile_width;

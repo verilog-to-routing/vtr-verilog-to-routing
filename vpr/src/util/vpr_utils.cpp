@@ -1917,15 +1917,6 @@ static int convert_switch_index(int* switch_index, int* fanin) {
     return -1;
 }
 
-void fread_secure(void* var, size_t size, unsigned int count, FILE* fp) {
-    auto result = fread(var, size, count, fp);
-    if (result != count) {
-        VPR_THROW(VPR_ERROR_OTHER, "ERROR reading file\n");
-    }
-
-    return;
-}
-
 /*
  * print out number of usage for every switch (type / fanin combination)
  * (referring to rr_graph.c: alloc_rr_switch_inf())
@@ -2121,6 +2112,20 @@ t_physical_tile_type_ptr pick_best_physical_type(t_logical_block_type_ptr logica
 
 t_logical_block_type_ptr pick_best_logical_type(t_physical_tile_type_ptr physical_tile) {
     return physical_tile->equivalent_sites[0];
+}
+
+t_physical_tile_type_ptr get_physical_tile_type(const ClusterBlockId blk) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
+    if (place_ctx.block_locs.empty()) { //No placement, pick best match
+        return pick_best_physical_type(cluster_ctx.clb_nlist.block_type(blk));
+    } else { //Have placement, select physical tile implementing blk
+        auto& device_ctx = g_vpr_ctx.device();
+
+        t_pl_loc loc = place_ctx.block_locs[blk].loc;
+
+        return device_ctx.grid[loc.x][loc.y].type;
+    }
 }
 
 int get_logical_pin(t_physical_tile_type_ptr physical_tile,
