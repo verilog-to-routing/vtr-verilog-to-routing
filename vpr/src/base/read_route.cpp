@@ -23,6 +23,7 @@
 #include "rr_graph.h"
 #include "vtr_assert.h"
 #include "vtr_util.h"
+#include "vtr_time.h"
 #include "tatum/echo_writer.hpp"
 #include "vtr_log.h"
 #include "check_route.h"
@@ -40,6 +41,7 @@
 #include "echo_files.h"
 #include "route_common.h"
 #include "read_route.h"
+#include "rr_graph2.h"
 
 /*************Functions local to this module*************/
 static void process_route(std::ifstream& fp, const char* filename, int& lineno);
@@ -194,7 +196,7 @@ static void process_nets(std::ifstream& fp, ClusterNetId inet, std::string name,
 static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno) {
     /* Not a global net. Goes through every node and add it into trace.head*/
 
-    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     auto& place_ctx = g_vpr_ctx.placement();
@@ -207,6 +209,45 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
     int node_count = 0;
     std::string input;
     std::vector<std::string> tokens;
+
+    // Build lookup from SOURCE/SINK node to ClusterBlockId.
+    std::unordered_map<int, ClusterBlockId> node_to_block;
+
+    {
+        vtr::ScopedStartFinishTimer timer("Building ClusterBlockId lookup");
+
+        for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+            int pin_count = 0;
+            for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
+                auto block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
+
+                const auto* logical_tile = cluster_ctx.clb_nlist.block_type(block_id);
+                const auto* physical_tile = physical_tile_type(block_id);
+                VTR_ASSERT(block_id);
+                int i = place_ctx.block_locs[block_id].loc.x;
+                int j = place_ctx.block_locs[block_id].loc.y;
+
+                int logical_pin_index = cluster_ctx.clb_nlist.pin_logical_index(pin_id);
+                int physical_pin_index = get_physical_pin(
+                    physical_tile, place_ctx.block_locs[block_id].loc.z,
+                    logical_tile, logical_pin_index);
+                int physical_pin_class = physical_tile->pin_class[physical_pin_index];
+                int class_inode = get_rr_node_index(device_ctx.rr_node_indices,
+                                                    i, j, (pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
+                                                    physical_pin_class);
+
+                auto result = node_to_block.insert(std::make_pair(class_inode, block_id));
+                if (!result.second && result.first->second != block_id) {
+                    vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
+                              "Clustered netlist has inconsistent rr node mapping, class rr node %d has two block ids %zu and %zu?",
+                              class_inode, (size_t)block_id, result.first->second);
+                }
+                pin_count++;
+            }
+        }
+
+        VTR_LOG("ClusterBlockId lookup has %zu entries\n", node_to_block.size());
+    }
 
     /*Walk through every line that begins with Node:*/
     while (std::getline(fp, input)) {
@@ -287,9 +328,22 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
             if (tokens[6 + offset] != "Switch:") {
                 /*This is an opin or ipin, process its pin nums*/
                 if (!is_io_type(device_ctx.grid[x][y].type) && (tokens[2] == "IPIN" || tokens[2] == "OPIN")) {
+                    // Convert this IPIN/OPIN back to class.
+                    auto rr_type = device_ctx.rr_nodes[inode].type();
+                    VTR_ASSERT(rr_type == IPIN || rr_type == OPIN);
                     int pin_num = device_ctx.rr_nodes[inode].ptc_num();
-                    int height_offset = device_ctx.grid[x][y].height_offset;
-                    ClusterBlockId iblock = place_ctx.grid_blocks[x][y - height_offset].blocks[0];
+                    int iclass = device_ctx.grid[x][y].type->pin_class[pin_num];
+                    int class_inode = get_rr_node_index(device_ctx.rr_node_indices,
+                                                        x, y, (rr_type == OPIN ? SOURCE : SINK), iclass);
+
+                    auto itr = node_to_block.find(class_inode);
+                    if (itr == node_to_block.end()) {
+                        vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
+                                  "Class RR node %d does not have an associated ClusterBlockId?", class_inode);
+                    }
+
+                    ClusterBlockId iblock = itr->second;
+                    VTR_ASSERT(iblock);
                     t_pb_graph_pin* pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
                     t_pb_type* pb_type = pb_pin->parent_node->pb_type;
 

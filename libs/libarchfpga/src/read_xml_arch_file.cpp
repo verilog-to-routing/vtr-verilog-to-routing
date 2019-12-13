@@ -909,7 +909,6 @@ static std::pair<int, std::pair<int, int>> ProcessPinString(pugi::xml_node Locat
 
         token_index++;
         token = tokens[token_index];
-
     }
 
     if (token.type != TOKEN_DOT) {
