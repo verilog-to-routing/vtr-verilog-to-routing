@@ -1001,6 +1001,7 @@ struct t_router_opts {
     bool exit_after_first_routing_iteration;
 
     bool disable_check_route;
+    bool quick_check_route;
 };
 
 struct t_analysis_opts {
