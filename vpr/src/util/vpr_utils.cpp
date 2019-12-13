@@ -195,15 +195,21 @@ std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_
 
     std::string pin_name = type->name;
 
-    if (type->capacity > 1) {
-        int pins_per_inst = type->num_pins / type->capacity;
-        int inst_num = pin_index / pins_per_inst;
-        pin_index %= pins_per_inst;
+    if (type->capacity_type == e_capacity_type::DUPLICATE) {
+        if (type->capacity > 1) {
+            int pins_per_inst = type->num_pins / type->capacity;
+            int inst_num = pin_index / pins_per_inst;
+            pin_index %= pins_per_inst;
 
-        pin_name += "[" + std::to_string(inst_num) + "]";
+            pin_name += "[" + std::to_string(inst_num) + "]";
+        }
+
+        pin_name += ".";
+    } else {
+        VTR_ASSERT(type->capacity_type == e_capacity_type::EXPLICIT);
+        VTR_ASSERT(pin_index < type->num_pins);
+        pin_name += ".";
     }
-
-    pin_name += ".";
 
     for (auto const& port : type->ports) {
         if (pin_index >= port.absolute_first_pin_index && pin_index < port.absolute_first_pin_index + port.num_pins) {
@@ -2057,18 +2063,18 @@ void place_sync_external_block_connections(ClusterBlockId iblk) {
     auto physical_tile = physical_tile_type(iblk);
     auto logical_block = clb_nlist.block_type(iblk);
 
-    VTR_ASSERT(physical_tile->num_pins % physical_tile->capacity == 0);
     for (auto pin : clb_nlist.block_pins(iblk)) {
         int logical_pin_index = clb_nlist.pin_logical_index(pin);
-        int new_physical_pin_index = get_physical_pin(
+
+        int new_physical_pin = get_physical_pin(
             physical_tile, place_ctx.block_locs[iblk].loc.z,
             logical_block, logical_pin_index);
-
-        auto result = place_ctx.physical_pins.find(pin);
-        if (result != place_ctx.physical_pins.end()) {
-            place_ctx.physical_pins[pin] = new_physical_pin_index;
+        auto iter = place_ctx.physical_pins.find(pin);
+        if (iter != place_ctx.physical_pins.end()) {
+            *iter = new_physical_pin;
         } else {
-            place_ctx.physical_pins.insert(pin, new_physical_pin_index);
+            place_ctx.physical_pins.insert(
+                pin, new_physical_pin);
         }
     }
 }
