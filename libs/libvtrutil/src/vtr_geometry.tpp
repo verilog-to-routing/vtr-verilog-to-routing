@@ -80,6 +80,7 @@ Rect<T>::Rect(Point<T> bottom_left_val, Point<T> top_right_val)
     //pass
 }
 
+//Only defined for integral types
 template<class T>
 template<typename U, typename std::enable_if<std::is_integral<U>::value>::type...>
 Rect<T>::Rect(Point<U> point)
@@ -174,6 +175,7 @@ Rect<T> bounding_box(const Rect<T>& lhs, const Rect<T>& rhs) {
                    std::max(lhs.ymax(), rhs.ymax()));
 }
 
+//Only defined for integral types
 template<typename T, typename std::enable_if<std::is_integral<T>::value>::type...>
 Point<T> sample(const vtr::Rect<T>& r, T x, T y, T d) {
     VTR_ASSERT(d > 0 && x <= d && y <= d && !r.empty());
