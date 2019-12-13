@@ -141,6 +141,7 @@ struct t_options {
     argparse::ArgValue<bool> read_rr_edge_metadata;
     argparse::ArgValue<bool> exit_after_first_routing_iteration;
     argparse::ArgValue<bool> disable_check_route;
+    argparse::ArgValue<bool> quick_check_route;
 
     /* Timing-driven router options only */
     argparse::ArgValue<float> astar_fac;
