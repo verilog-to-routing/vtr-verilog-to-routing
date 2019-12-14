@@ -6,9 +6,6 @@
  * and so are not currently used in commercial architectures. */
 #define INCLUDE_TRACK_BUFFERS false
 
-#define BINARY_MAGIC_NUM 0x42525247
-#define BINARY_FILE_VERSION 1
-
 #include "device_grid.h"
 
 enum e_graph_type {
@@ -41,17 +38,12 @@ void create_rr_graph(const t_graph_type graph_type,
                      const enum e_clock_modeling clock_modeling,
                      const t_direct_inf* directs,
                      const int num_directs,
-                     int* Warnings,
-                     bool read_edge_metadata,
-                     bool do_check_rr_graph);
+                     int* Warnings);
 
 void free_rr_graph();
 
 //Returns a brief one-line summary of an RR node
 std::string describe_rr_node(int inode);
-
-void print_rr_node(FILE* fp, const std::vector<t_rr_node>& L_rr_node, int inode);
-void write_rr_node(FILE* fp, const std::vector<t_rr_node>& L_rr_node, int inode);
 
 void init_fan_in(std::vector<t_rr_node>& L_rr_node, const int num_rr_nodes);
 

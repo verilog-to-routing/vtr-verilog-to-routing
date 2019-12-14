@@ -2666,7 +2666,7 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type, ClusterBlockId b
             continue;
 
         auto physical_tile = physical_tile_type(blk_id);
-        int physical_pin = get_physical_pin(physical_tile, /*z_index=*/0, type, k);
+        int physical_pin = get_physical_pin(physical_tile, type, k);
 
         iclass = physical_tile->pin_class[physical_pin];
 
