@@ -1,10 +1,12 @@
 #ifndef VTR_GEOMETRY_H
 #define VTR_GEOMETRY_H
 #include "vtr_range.h"
+#include "vtr_assert.h"
 
 #include <vector>
 #include <tuple>
 #include <limits>
+#include <type_traits>
 
 namespace vtr {
 
@@ -75,9 +77,16 @@ class Point {
 template<class T>
 class Rect {
   public: //Constructors
+    Rect();
     Rect(T left_val, T bottom_val, T right_val, T top_val);
     Rect(Point<T> bottom_left_val, Point<T> top_right_val);
-    Rect();
+
+    //Constructs a rectangle that only contains the given point
+    //  Rect(p1).contains(p2) => p1 == p2
+    //It is only enabled for integral types, because making this work for floating point types would be difficult and brittle.
+    //The following line only enables the constructor if std::is_integral<T>::value == true
+    template<typename U = T, typename std::enable_if<std::is_integral<U>::value>::type...>
+    Rect(Point<U> point);
 
   public: //Accessors
     //Co-ordinates
@@ -101,6 +110,11 @@ class Rect {
     //Returns true if the point is coincident with the rectangle (including the top-right edges)
     bool coincident(Point<T> point) const;
 
+    //Returns true if no points are contained in the rectangle
+    //  rect.empty() => not exists p. rect.contains(p)
+    //  This also implies either the width or height is 0.
+    bool empty() const;
+
     friend bool operator== <>(const Rect<T>& lhs, const Rect<T>& rhs);
     friend bool operator!= <>(const Rect<T>& lhs, const Rect<T>& rhs);
 
@@ -111,10 +125,26 @@ class Rect {
     void set_xmax(T xmax_val);
     void set_ymax(T ymax_val);
 
+    //Equivalent to `*this = bounding_box(*this, other)`
+    Rect<T>& expand_bounding_box(const Rect<T>& other);
+
   private:
     Point<T> bottom_left_;
     Point<T> top_right_;
 };
+
+//Return the smallest rectangle containing both given rectangles
+//Note that this isn't a union and the resulting rectangle may include points not in either given rectangle
+template<class T>
+Rect<T> bounding_box(const Rect<T>& lhs, const Rect<T>& rhs);
+
+//Sample on a uniformly spaced grid within a rectangle
+//  sample(vtr::Rect(l, h), 0, 0, M) == l
+//  sample(vtr::Rect(l, h), M, M, M) == h
+//To avoid the edges, use `sample(r, x+1, y+1, N+1) for x, y, in 0..N-1
+//Only defined for integral types
+template<typename T, typename std::enable_if<std::is_integral<T>::value>::type...>
+Point<T> sample(const vtr::Rect<T>& r, T x, T y, T d);
 
 //A 2D line
 template<class T>

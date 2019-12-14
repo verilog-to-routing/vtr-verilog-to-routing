@@ -32,6 +32,7 @@
 #include "rr_graph_writer.h"
 #include "rr_graph_reader.h"
 #include "router_lookahead_map.h"
+#include "connection_box_lookahead_map.h"
 #include "rr_graph_clock.h"
 
 #include "rr_types.h"
@@ -318,7 +319,9 @@ void create_rr_graph(const t_graph_type graph_type,
                      const enum e_clock_modeling clock_modeling,
                      const t_direct_inf* directs,
                      const int num_directs,
-                     int* Warnings) {
+                     int* Warnings,
+                     bool read_edge_metadata,
+                     bool do_check_rr_graph) {
     const auto& device_ctx = g_vpr_ctx.device();
 
     if (!det_routing_arch->read_rr_graph_filename.empty()) {
@@ -330,7 +333,9 @@ void create_rr_graph(const t_graph_type graph_type,
                          segment_inf,
                          base_cost_type,
                          &det_routing_arch->wire_to_rr_ipin_switch,
-                         det_routing_arch->read_rr_graph_filename.c_str());
+                         det_routing_arch->read_rr_graph_filename.c_str(),
+                         read_edge_metadata,
+                         do_check_rr_graph);
         }
     } else {
         if (channel_widths_unchanged(device_ctx.chan_width, nodes_per_chan) && !device_ctx.rr_nodes.empty()) {
@@ -2507,6 +2512,54 @@ static vtr::NdMatrix<std::vector<int>, 4> alloc_and_load_track_to_pin_lookup(vtr
     }
 
     return track_to_pin_lookup;
+}
+
+/* Writes out data (excludes fasm metadata) about node inode to binary in file fp *
+ * Writes data in the following order: int inode, t_rr_type type, e_direction     *
+ * direction (if CHANX or CHANY), uint16_t capacity, length 5 uint16_t array pos, *
+ * e_side side (if IPIN or OPIN), float R, float C, uint16_t num_edges.Then loops *
+ * through every edge writing out int edge_sink node and uint16_t edge_switch.    */
+void write_rr_node(FILE* fp, const std::vector<t_rr_node>& L_rr_node, int inode) {
+    const auto& rr_node = L_rr_node[inode];
+    t_rr_type type = rr_node.type();
+    uint16_t num_edges = rr_node.num_edges();
+    int edge_sink_node;
+    uint16_t edge_switch;
+    uint16_t capacity = (uint16_t)rr_node.capacity();
+    float R = rr_node.R();
+    float C = rr_node.C();
+    uint16_t pos[5];
+
+    pos[0] = rr_node.xlow();
+    pos[1] = rr_node.ylow();
+    pos[2] = rr_node.xhigh();
+    pos[3] = rr_node.yhigh();
+    pos[4] = rr_node.ptc_num();
+
+    fwrite(&inode, sizeof(inode), 1, fp);
+    fwrite(&type, sizeof(type), 1, fp);
+    if (rr_node.type() == CHANX || rr_node.type() == CHANY) {
+        e_direction direction = rr_node.direction();
+        fwrite(&direction, sizeof(direction), 1, fp);
+    }
+    fwrite(&capacity, sizeof(capacity), 1, fp);
+    fwrite(pos, sizeof(*pos), 5, fp);
+
+    if (rr_node.type() == IPIN || rr_node.type() == OPIN) {
+        e_side side = rr_node.side();
+        fwrite(&side, sizeof(side), 1, fp);
+    }
+
+    fwrite(&R, sizeof(R), 1, fp);
+    fwrite(&C, sizeof(C), 1, fp);
+    fwrite(&num_edges, sizeof(num_edges), 1, fp);
+
+    for (int iedge = 0; iedge < rr_node.num_edges(); ++iedge) {
+        edge_sink_node = rr_node.edge_sink_node(iedge);
+        edge_switch = rr_node.edge_switch(iedge);
+        fwrite(&edge_sink_node, sizeof(edge_sink_node), 1, fp);
+        fwrite(&edge_switch, sizeof(edge_switch), 1, fp);
+    }
 }
 
 std::string describe_rr_node(int inode) {
