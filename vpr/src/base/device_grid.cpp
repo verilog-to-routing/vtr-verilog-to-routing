@@ -7,7 +7,7 @@ DeviceGrid::DeviceGrid(std::string grid_name, vtr::Matrix<t_grid_tile> grid)
     count_instances();
 }
 
-DeviceGrid::DeviceGrid(std::string grid_name, vtr::Matrix<t_grid_tile> grid, std::vector<t_physical_tile_type_ptr> limiting_res)
+DeviceGrid::DeviceGrid(std::string grid_name, vtr::Matrix<t_grid_tile> grid, std::vector<t_logical_block_type_ptr> limiting_res)
     : DeviceGrid(grid_name, grid) {
     limiting_resources_ = limiting_res;
 }

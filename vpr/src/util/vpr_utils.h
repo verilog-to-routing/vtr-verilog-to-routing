@@ -156,13 +156,22 @@ void place_sync_external_block_connections(ClusterBlockId iblk);
 int get_max_num_pins(t_logical_block_type_ptr logical_block);
 
 bool is_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_block_type_ptr logical_block);
+
+//Returns the physical tile type which 'best' matches logical_block
 t_physical_tile_type_ptr pick_best_physical_type(t_logical_block_type_ptr logical_block);
+
+//Returns the logical block type which 'best' matches the physical tile
 t_logical_block_type_ptr pick_best_logical_type(t_physical_tile_type_ptr physical_tile);
 
-int get_logical_pin(t_physical_tile_type_ptr physical_tile,
-                    t_logical_block_type_ptr logical_block,
-                    int pin);
+//Returns the current tile implemnting blk (if placement is valid), or
+//the best expected physical tile the block should use (if no valid placement).
+t_physical_tile_type_ptr get_physical_tile_type(const ClusterBlockId blk);
+
 int get_physical_pin(t_physical_tile_type_ptr physical_tile,
+                     int z_index,
+                     t_logical_block_type_ptr logical_block,
+                     int pin);
+int get_physical_pin(const ClusterBlockId blk,
                      t_logical_block_type_ptr logical_block,
                      int pin);
 

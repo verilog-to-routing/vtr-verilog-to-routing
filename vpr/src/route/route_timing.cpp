@@ -179,7 +179,6 @@ static std::vector<t_heap> timing_driven_find_all_shortest_paths_from_heap(const
                                                                            RouterStats& router_stats);
 
 void disable_expansion_and_remove_sink_from_route_tree_nodes(t_rt_node* node);
-
 static inline void timing_driven_expand_cheapest(t_heap* cheapest,
                                                  int target_node,
                                                  const t_conn_cost_params cost_params,
@@ -1602,8 +1601,8 @@ static void timing_driven_expand_cheapest(t_heap* cheapest,
 
     int inode = cheapest->index;
 
-    float old_total_cost = route_ctx.rr_node_route_inf[inode].path_cost;
-    float old_back_cost = route_ctx.rr_node_route_inf[inode].backward_path_cost;
+    float best_total_cost = route_ctx.rr_node_route_inf[inode].path_cost;
+    float best_back_cost = route_ctx.rr_node_route_inf[inode].backward_path_cost;
 
     float new_total_cost = cheapest->cost;
     float new_back_cost = cheapest->backward_path_cost;
@@ -1616,7 +1615,9 @@ static void timing_driven_expand_cheapest(t_heap* cheapest,
      * than one with higher cost.  Test whether or not I should disallow   *
      * re-expansion based on a higher total cost.                          */
 
-    if (old_total_cost > new_total_cost && old_back_cost > new_back_cost) {
+    if (best_total_cost > new_total_cost && best_back_cost > new_back_cost) {
+        //Explore from this node, since the current/new partial path has the best cost
+        //found so far
         VTR_LOGV_DEBUG(f_router_debug, "    Better cost to %d\n", inode);
         VTR_LOGV_DEBUG(f_router_debug, "    New total cost: %g\n", new_total_cost);
         VTR_LOGV_DEBUG(f_router_debug, "    New back cost: %g\n", new_back_cost);
@@ -1634,9 +1635,11 @@ static void timing_driven_expand_cheapest(t_heap* cheapest,
                                         target_node,
                                         router_stats);
     } else {
+        //Post-heap prune, do not re-explore from the current/new partial path as it
+        //has worse cost than the best partial path to this node found so far
         VTR_LOGV_DEBUG(f_router_debug, "    Worse cost to %d\n", inode);
-        VTR_LOGV_DEBUG(f_router_debug, "    Old total cost: %g\n", old_total_cost);
-        VTR_LOGV_DEBUG(f_router_debug, "    Old back cost: %g\n", old_back_cost);
+        VTR_LOGV_DEBUG(f_router_debug, "    Old total cost: %g\n", best_total_cost);
+        VTR_LOGV_DEBUG(f_router_debug, "    Old back cost: %g\n", best_back_cost);
         VTR_LOGV_DEBUG(f_router_debug, "    New total cost: %g\n", new_total_cost);
         VTR_LOGV_DEBUG(f_router_debug, "    New back cost: %g\n", new_back_cost);
     }
@@ -2089,22 +2092,25 @@ static inline void timing_driven_add_to_heap(const t_conn_cost_params& cost_para
 
     auto& route_ctx = g_vpr_ctx.routing();
 
-    float old_next_total_cost = route_ctx.rr_node_route_inf[to_node].path_cost;
-    float old_next_back_cost = route_ctx.rr_node_route_inf[to_node].backward_path_cost;
+    float best_total_cost = route_ctx.rr_node_route_inf[to_node].path_cost;
+    float best_back_cost = route_ctx.rr_node_route_inf[to_node].backward_path_cost;
 
-    float new_next_total_cost = next->cost;
-    float new_next_back_cost = next->backward_path_cost;
+    float new_total_cost = next->cost;
+    float new_back_cost = next->backward_path_cost;
 
-    if (old_next_total_cost > new_next_total_cost && old_next_back_cost > new_next_back_cost) {
-        //Add node to the heap only if the current cost is less than its historic cost, since
-        //there is no point in for the router to expand more expensive paths.
+    VTR_ASSERT_SAFE(next->index == to_node);
+
+    if (new_total_cost < best_total_cost && new_back_cost < best_back_cost) {
+        //Add node to the heap only if the cost via the current partial path is less than the
+        //best known cost, since there is no reason for the router to expand more expensive paths.
+        //
+        //Pre-heap prune to keep the heap small, by not putting paths which are known to be
+        //sub-optimal (at this point in time) into the heap.
         VTR_LOGV_DEBUG(f_router_debug, "  Adding node %8d to heap from init route tree with cost %g (%s)\n",
-                       next->index, new_next_total_cost, describe_rr_node(next->index).c_str());
+                       next->index, new_total_cost, describe_rr_node(next->index).c_str());
         add_to_heap(next);
         ++router_stats.heap_pushes;
-    }
-
-    else {
+    } else {
         free_heap_data(next);
     }
 }

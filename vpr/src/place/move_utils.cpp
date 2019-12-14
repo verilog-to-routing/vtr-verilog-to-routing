@@ -217,8 +217,8 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
     //At the moment, we only support blk_to being the first element of the 'to' macro.
     //
     //For instance, this means that we can swap two carry chains so long as one starts
-    //below the other (not a big limitation since swapping in the oppostie direction would
-    //allow these blocks to swap)
+    //below the other (not a big limitation since swapping in the opposite direction
+    //allows these blocks to swap)
     if (place_ctx.pl_macros[imacro_to].members[0].blk_index != blk_to) {
         int imember_to = 0;
         auto outcome = record_macro_swaps(blocks_affected, imacro_to, imember_to, -swap_offset);

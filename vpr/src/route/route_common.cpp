@@ -86,7 +86,8 @@ static t_trace_branch traceback_branch(int node, std::unordered_set<int>& main_b
 static std::pair<t_trace*, t_trace*> add_trace_non_configurable(t_trace* head, t_trace* tail, int node, std::unordered_set<int>& visited);
 static std::pair<t_trace*, t_trace*> add_trace_non_configurable_recurr(int node, std::unordered_set<int>& visited, int depth = 0);
 
-static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices);
+static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices,
+                                                                         std::unordered_map<int, ClusterBlockId>* rr_net_map);
 static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t_rr_node_indices& L_rr_node_indices);
 
 static t_clb_opins_used alloc_and_load_clb_opins_used_locally();
@@ -479,7 +480,7 @@ void init_route_structs(int bb_factor) {
     Bucket::init(device_ctx.grid);
 
     //Various look-ups
-    route_ctx.net_rr_terminals = load_net_rr_terminals(device_ctx.rr_node_indices);
+    route_ctx.net_rr_terminals = load_net_rr_terminals(device_ctx.rr_node_indices, &route_ctx.rr_net_map);
     route_ctx.route_bb = load_route_bb(bb_factor);
     route_ctx.rr_blk_source = load_rr_clb_sources(device_ctx.rr_node_indices);
     route_ctx.clb_opins_used_locally = alloc_and_load_clb_opins_used_locally();
@@ -990,7 +991,11 @@ void reset_rr_node_route_structs() {
 /* Allocates and loads the route_ctx.net_rr_terminals data structure. For each net it stores the rr_node   *
  * index of the SOURCE of the net and all the SINKs of the net [clb_nlist.nets()][clb_nlist.net_pins()].    *
  * Entry [inet][pnum] stores the rr index corresponding to the SOURCE (opin) or SINK (ipin) of the pin.     */
-static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices) {
+static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(
+    const t_rr_node_indices& L_rr_node_indices,
+    std::unordered_map<int, ClusterBlockId>* rr_net_map) {
+    VTR_ASSERT(rr_net_map != nullptr);
+    rr_net_map->clear();
     vtr::vector<ClusterNetId, std::vector<int>> net_rr_terminals;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1020,6 +1025,16 @@ static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t
             int inode = get_rr_node_index(L_rr_node_indices, i, j, (pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
                                           iclass);
             net_rr_terminals[net_id][pin_count] = inode;
+
+            auto result = rr_net_map->insert(std::make_pair(inode, block_id));
+            // If the map already contains an entry for inode, make sure it
+            // is consistent with the existing entry.
+            if (!result.second && block_id != result.first->second) {
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                "Clustered netlist has inconsistent rr node mapping, class rr node %d has two block ids %zu and %zu?",
+                                inode, (size_t)block_id, (size_t)result.first->second);
+            }
+
             pin_count++;
         }
     }
@@ -1263,11 +1278,18 @@ void print_route(FILE* fp, const vtr::vector<ClusterNetId, t_traceback>& traceba
                     fprintf(fp, "%d  ", device_ctx.rr_nodes[inode].ptc_num());
 
                     if (!is_io_type(device_ctx.grid[ilow][jlow].type) && (rr_type == IPIN || rr_type == OPIN)) {
+                        // Go from IPIN/OPIN to SOURCE/SINK
+                        auto* type = device_ctx.grid[ilow][jlow].type;
                         int pin_num = device_ctx.rr_nodes[inode].ptc_num();
-                        int xoffset = device_ctx.grid[ilow][jlow].width_offset;
-                        int yoffset = device_ctx.grid[ilow][jlow].height_offset;
-                        ClusterBlockId iblock = place_ctx.grid_blocks[ilow - xoffset][jlow - yoffset].blocks[0];
-                        VTR_ASSERT(iblock);
+                        int iclass = type->pin_class[pin_num];
+                        int class_inode = get_rr_node_index(device_ctx.rr_node_indices,
+                                                            ilow, jlow, (rr_type == OPIN ? SOURCE : SINK), iclass);
+
+                        // Use the rr_net_map to go from class inode back to ClusterBlockId.
+                        auto itr = route_ctx.rr_net_map.find(class_inode);
+                        VTR_ASSERT(itr != route_ctx.rr_net_map.end());
+                        ClusterBlockId iblock = itr->second;
+
                         t_pb_graph_pin* pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
                         t_pb_type* pb_type = pb_pin->parent_node->pb_type;
                         fprintf(fp, " %s.%s[%d] ", pb_type->name, pb_pin->port->name, pb_pin->pin_number);

@@ -800,6 +800,8 @@ void try_place(const t_placer_opts& placer_opts,
     size_t total_swap_attempts = num_swap_rejected + num_swap_accepted + num_swap_aborted;
     VTR_ASSERT(total_swap_attempts > 0);
 
+    print_resources_utilization();
+
     size_t num_swap_print_digits = ceil(log10(total_swap_attempts));
     float reject_rate = (float)num_swap_rejected / total_swap_attempts;
     float accept_rate = (float)num_swap_accepted / total_swap_attempts;
@@ -811,8 +813,6 @@ void try_place(const t_placer_opts& placer_opts,
     VTR_LOG("\tSwaps aborted : %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_aborted, 100 * abort_rate);
 
     report_aborted_moves();
-
-    print_resources_utilization();
 
     free_placement_structs(placer_opts);
     if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
@@ -2572,6 +2572,9 @@ static void print_resources_utilization() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
 
+    int max_block_name = 0;
+    int max_tile_name = 0;
+
     //Record the resource requirement
     std::map<t_logical_block_type_ptr, size_t> num_type_instances;
     std::map<t_logical_block_type_ptr, std::map<t_physical_tile_type_ptr, size_t>> num_placed_instances;
@@ -2584,15 +2587,17 @@ static void print_resources_utilization() {
 
         num_type_instances[logical_block]++;
         num_placed_instances[logical_block][physical_tile]++;
+
+        max_block_name = std::max<int>(max_block_name, strlen(logical_block->name));
+        max_tile_name = std::max<int>(max_tile_name, strlen(physical_tile->name));
     }
 
+    VTR_LOG("\n");
+    VTR_LOG("Placement resource usage:\n");
     for (auto logical_block : num_type_instances) {
-        VTR_LOG("Logical Block: %s\n", logical_block.first->name);
-        VTR_LOG("\tInstances -> %d\n", logical_block.second);
-
-        VTR_LOG("\tPhysical Tiles used:\n");
         for (auto physical_tile : num_placed_instances[logical_block.first]) {
-            VTR_LOG("\t\t%s: %d\n", physical_tile.first->name, physical_tile.second);
+            VTR_LOG("  %-*s implemented as %-*s: %d\n", max_block_name, logical_block.first->name, max_tile_name, physical_tile.first->name, physical_tile.second);
         }
     }
+    VTR_LOG("\n");
 }

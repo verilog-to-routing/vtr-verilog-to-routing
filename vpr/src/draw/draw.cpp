@@ -124,7 +124,6 @@ static t_edge_size find_edge(int prev_inode, int inode);
 
 static void draw_color_map_legend(const vtr::ColorMap& cmap, ezgl::renderer* g);
 
-ezgl::color get_block_type_color(t_physical_tile_type_ptr type);
 ezgl::color lighten_color(ezgl::color color, float amount);
 
 static void draw_block_pin_util();
@@ -826,7 +825,8 @@ void alloc_draw_structs(const t_arch* arch) {
     draw_internal_alloc_blk();
 
     draw_state->net_color.resize(cluster_ctx.clb_nlist.nets().size());
-    draw_state->block_color.resize(cluster_ctx.clb_nlist.blocks().size());
+    draw_state->block_color_.resize(cluster_ctx.clb_nlist.blocks().size());
+    draw_state->use_default_block_color_.resize(cluster_ctx.clb_nlist.blocks().size());
 
     /* Space is allocated for draw_rr_node but not initialized because we do *
      * not yet know information about the routing resources.				  */
@@ -934,6 +934,7 @@ static void drawplace(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
     ClusterBlockId bnum;
@@ -961,15 +962,20 @@ static void drawplace(ezgl::renderer* g) {
                 if (bnum == INVALID_BLOCK_ID) continue;
                 //Determine the block color
                 ezgl::color block_color;
+                t_logical_block_type_ptr logical_block_type = nullptr;
                 if (bnum != EMPTY_BLOCK_ID) {
-                    block_color = draw_state->block_color[bnum];
+                    block_color = draw_state->block_color(bnum);
+                    logical_block_type = cluster_ctx.clb_nlist.block_type(bnum);
                 } else {
                     block_color = get_block_type_color(device_ctx.grid[i][j].type);
                     block_color = lighten_color(block_color, EMPTY_BLOCK_LIGHTEN_FACTOR);
+
+                    auto tile_type = device_ctx.grid[i][j].type;
+                    logical_block_type = pick_best_logical_type(tile_type);
                 }
                 g->set_color(block_color);
                 /* Get coords of current sub_tile */
-                ezgl::rectangle abs_clb_bbox = draw_coords->get_absolute_clb_bbox(i, j, k);
+                ezgl::rectangle abs_clb_bbox = draw_coords->get_absolute_clb_bbox(i, j, k, logical_block_type);
                 ezgl::point2d center = abs_clb_bbox.center();
 
                 g->fill_rectangle(abs_clb_bbox);
@@ -980,7 +986,6 @@ static void drawplace(ezgl::renderer* g) {
                 g->draw_rectangle(abs_clb_bbox);
                 /* Draw text if the space has parts of the netlist */
                 if (bnum != EMPTY_BLOCK_ID && bnum != INVALID_BLOCK_ID) {
-                    auto& cluster_ctx = g_vpr_ctx.clustering();
                     std::string name = cluster_ctx.clb_nlist.block_name(bnum) + vtr::string_fmt(" (#%zu)", size_t(bnum));
 
                     g->draw_text(center, name.c_str(), abs_clb_bbox.width(), abs_clb_bbox.height());
@@ -2661,12 +2666,12 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type, ClusterBlockId b
             continue;
 
         auto physical_tile = physical_tile_type(blk_id);
-        int physical_pin = get_physical_pin(physical_tile, type, k);
+        int physical_pin = get_physical_pin(physical_tile, /*z_index=*/0, type, k);
 
         iclass = physical_tile->pin_class[physical_pin];
 
         if (physical_tile->class_inf[iclass].type == DRIVER) { /* Fanout */
-            if (draw_state->block_color[blk_id] == SELECTED_COLOR) {
+            if (draw_state->block_color(blk_id) == SELECTED_COLOR) {
                 /* If block already highlighted, de-highlight the fanout. (the deselect case)*/
                 draw_state->net_color[net_id] = ezgl::BLACK;
                 for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
@@ -2678,11 +2683,11 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type, ClusterBlockId b
                 draw_state->net_color[net_id] = DRIVES_IT_COLOR;
                 for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
                     fanblk = cluster_ctx.clb_nlist.pin_block(pin_id);
-                    draw_state->block_color[fanblk] = DRIVES_IT_COLOR;
+                    draw_state->set_block_color(fanblk, DRIVES_IT_COLOR);
                 }
             }
         } else { /* This net is fanin to the block. */
-            if (draw_state->block_color[blk_id] == SELECTED_COLOR) {
+            if (draw_state->block_color(blk_id) == SELECTED_COLOR) {
                 /* If block already highlighted, de-highlight the fanin. (the deselect case)*/
                 draw_state->net_color[net_id] = ezgl::BLACK;
                 fanblk = cluster_ctx.clb_nlist.net_driver_block(net_id); /* DRIVER to net */
@@ -2691,17 +2696,17 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type, ClusterBlockId b
                 /* Highlight the fanin */
                 draw_state->net_color[net_id] = DRIVEN_BY_IT_COLOR;
                 fanblk = cluster_ctx.clb_nlist.net_driver_block(net_id); /* DRIVER to net */
-                draw_state->block_color[fanblk] = DRIVEN_BY_IT_COLOR;
+                draw_state->set_block_color(fanblk, DRIVEN_BY_IT_COLOR);
             }
         }
     }
 
-    if (draw_state->block_color[blk_id] == SELECTED_COLOR) {
+    if (draw_state->block_color(blk_id) == SELECTED_COLOR) {
         /* If block already highlighted, de-highlight the selected block. */
         draw_reset_blk_color(blk_id);
     } else {
         /* Highlight the selected block. */
-        draw_state->block_color[blk_id] = SELECTED_COLOR;
+        draw_state->set_block_color(blk_id, SELECTED_COLOR);
     }
 }
 
@@ -2730,13 +2735,8 @@ void deselect_all() {
 }
 
 static void draw_reset_blk_color(ClusterBlockId blk_id) {
-    auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-
-    auto logical_block = clb_nlist.block_type(blk_id);
-
     t_draw_state* draw_state = get_draw_state_vars();
-
-    draw_state->block_color[blk_id] = get_block_type_color(pick_best_physical_type(logical_block));
+    draw_state->reset_block_color(blk_id);
 }
 
 /**
@@ -3337,7 +3337,7 @@ static void draw_block_pin_util() {
 
     for (auto blk : blks) {
         ezgl::color color = to_ezgl_color(cmap->color(pin_util[blk]));
-        draw_state->block_color[blk] = color;
+        draw_state->set_block_color(blk, color);
     }
 
     draw_state->color_map = std::move(cmap);

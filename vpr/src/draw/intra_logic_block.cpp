@@ -40,7 +40,6 @@
 static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, float parent_width, float parent_height);
 static int draw_internal_find_max_lvl(const t_pb_type& pb_type);
 static void draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, int num_pb_types, int type_index, int num_pb, int pb_index, float parent_width, float parent_height, float* blk_width, float* blk_height);
-static bool is_top_lvl_block_highlighted(const ClusterBlockId blk_id, const t_logical_block_type_ptr type);
 std::vector<AtomBlockId> collect_pb_atoms(const t_pb* pb);
 void collect_pb_atoms_recurr(const t_pb* pb, std::vector<AtomBlockId>& atoms);
 t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const ezgl::point2d& local_pt, int max_depth);
@@ -68,7 +67,7 @@ void draw_internal_alloc_blk() {
     draw_coords->blk_info.resize(device_ctx.logical_block_types.size());
 
     for (const auto& type : device_ctx.logical_block_types) {
-        if (&type == device_ctx.EMPTY_LOGICAL_BLOCK_TYPE) {
+        if (is_empty_type(&type)) {
             continue;
         }
 
@@ -90,17 +89,24 @@ void draw_internal_init_blk() {
     t_pb_graph_node* pb_graph_head_node;
 
     auto& device_ctx = g_vpr_ctx.device();
-    for (const auto& type : device_ctx.physical_tile_types) {
+    for (const auto& type : device_ctx.logical_block_types) {
         /* Empty block has no sub_blocks */
         if (is_empty_type(&type)) {
             continue;
         }
 
-        auto logical_block = pick_best_logical_type(&type);
-        pb_graph_head_node = logical_block->pb_graph_head;
+        pb_graph_head_node = type.pb_graph_head;
         int type_descriptor_index = type.index;
 
-        int num_sub_tiles = type.capacity;
+        //We use the maximum over all tiles which can implement this logical block type
+        int num_sub_tiles = 1;
+        int width = 1;
+        int height = 1;
+        for (const auto& tile : type.equivalent_tiles) {
+            num_sub_tiles = std::max(num_sub_tiles, tile->capacity);
+            width = std::max(width, tile->width);
+            height = std::max(height, tile->height);
+        }
 
         // set the clb dimensions
         ezgl::rectangle& clb_bbox = draw_coords->blk_info.at(type_descriptor_index).subblk_array.at(0);
@@ -110,17 +116,17 @@ void draw_internal_init_blk() {
         // note, that all clbs of the same type are the same size,
         // and that consequently we have *one* model for each type.
         bot_left = {0, 0};
-        if (size_t(type.width) > device_ctx.grid.width() || size_t(type.height) > device_ctx.grid.height()) {
+        if (size_t(width) > device_ctx.grid.width() || size_t(height) > device_ctx.grid.height()) {
             // in this case, the clb certainly wont't fit, but this prevents
             // an out-of-bounds access, and provides some sort of (probably right)
             // value
             top_right = ezgl::point2d(
-                (draw_coords->tile_x[1] - draw_coords->tile_x[0]) * (type.width - 1),
-                (draw_coords->tile_y[1] - draw_coords->tile_y[0]) * (type.height - 1));
+                (draw_coords->tile_x[1] - draw_coords->tile_x[0]) * (width - 1),
+                (draw_coords->tile_y[1] - draw_coords->tile_y[0]) * (height - 1));
         } else {
             top_right = ezgl::point2d(
-                draw_coords->tile_x[type.width - 1],
-                draw_coords->tile_y[type.height - 1]);
+                draw_coords->tile_x[width - 1],
+                draw_coords->tile_y[height - 1]);
         }
         top_right += ezgl::point2d(
             draw_coords->get_tile_width() / num_sub_tiles,
@@ -131,9 +137,10 @@ void draw_internal_init_blk() {
                                   clb_bbox.width(), clb_bbox.height());
 
         /* Determine the max number of sub_block levels in the FPGA */
-        draw_state->max_sub_blk_lvl = std::max(draw_internal_find_max_lvl(*logical_block->pb_type),
+        draw_state->max_sub_blk_lvl = std::max(draw_internal_find_max_lvl(*type.pb_type),
                                                draw_state->max_sub_blk_lvl);
     }
+    //draw_state->max_sub_blk_lvl -= 1;
 }
 
 #    ifndef NO_GRAPHICS
@@ -153,7 +160,7 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
                 continue;
 
             /* Don't draw if tile is empty. This includes corners. */
-            if (device_ctx.grid[i][j].type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE)
+            if (is_empty_type(device_ctx.grid[i][j].type))
                 continue;
 
             int num_sub_tiles = device_ctx.grid[i][j].type->capacity;
@@ -331,54 +338,33 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     if (pb_type->depth > draw_state->show_blk_internal) {
         return;
     }
+
     /// first draw box ///
 
-    if (pb_type->depth == 0) {
-        if (!is_top_lvl_block_highlighted(clb_index, type)) {
-            // if this is a top level pb, and only if it isn't selected (ie. a funny colour),
-            // overwrite it. (but stil draw the text)
+    if (pb->name != nullptr) {
+        // If block is used, draw it in colour with solid border.
+        g->set_line_dash(ezgl::line_dash::none);
 
-            g->set_color(ezgl::WHITE);
-            g->fill_rectangle(abs_bbox);
-            g->set_color(ezgl::BLACK);
-            g->set_line_dash(ezgl::line_dash::none);
-            g->draw_rectangle(abs_bbox);
+        // determine default background color
+        if (sel_sub_info.is_selected(pb->pb_graph_node, clb_index)) {
+            g->set_color(SELECTED_COLOR);
+        } else if (sel_sub_info.is_sink_of_selected(pb->pb_graph_node, clb_index)) {
+            g->set_color(DRIVES_IT_COLOR);
+        } else if (sel_sub_info.is_source_of_selected(pb->pb_graph_node, clb_index)) {
+            g->set_color(DRIVEN_BY_IT_COLOR);
+        } else {
+            g->set_color(draw_state->block_color(clb_index));
         }
     } else {
-        if (pb->name != nullptr) {
-            // If block is used, draw it in colour with solid border.
-            g->set_line_dash(ezgl::line_dash::none);
+        // If block is not used, draw as empty block (ie. white
+        // background with dashed border).
 
-            // type_index indicates what type of block.
-            const int type_index = type->index;
-
-            // determine default background color
-            if (sel_sub_info.is_selected(pb->pb_graph_node, clb_index)) {
-                g->set_color(SELECTED_COLOR);
-            } else if (sel_sub_info.is_sink_of_selected(pb->pb_graph_node, clb_index)) {
-                g->set_color(DRIVES_IT_COLOR);
-            } else if (sel_sub_info.is_source_of_selected(pb->pb_graph_node, clb_index)) {
-                g->set_color(DRIVEN_BY_IT_COLOR);
-            } else if (pb_type->depth != draw_state->show_blk_internal && pb->child_pbs != nullptr) {
-                g->set_color(ezgl::WHITE); // draw anything else that will have a child as white
-            } else if (type_index < 3) {
-                g->set_color(blk_LIGHTGREY);
-            } else if (type_index < 3 + MAX_BLOCK_COLOURS) {
-                g->set_color((block_colors[MAX_BLOCK_COLOURS + type_index - 3]));
-            } else {
-                g->set_color((block_colors[2 * MAX_BLOCK_COLOURS - 1]));
-            }
-        } else {
-            // If block is not used, draw as empty block (ie. white
-            // background with dashed border).
-
-            g->set_line_dash(ezgl::line_dash::asymmetric_5_3);
-            g->set_color(ezgl::WHITE);
-        }
-        g->fill_rectangle(abs_bbox);
-        g->set_color(ezgl::BLACK);
-        g->draw_rectangle(abs_bbox);
+        g->set_line_dash(ezgl::line_dash::asymmetric_5_3);
+        g->set_color(ezgl::WHITE);
     }
+    g->fill_rectangle(abs_bbox);
+    g->set_color(ezgl::BLACK);
+    g->draw_rectangle(abs_bbox);
 
     /// then draw text ///
 
@@ -393,7 +379,7 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
             int tot_len = type_len + name_len;
             char* blk_tag = (char*)vtr::malloc((tot_len + 8) * sizeof(char));
 
-            sprintf(blk_tag, "%s(%s)", pb_type->name, pb->name);
+            sprintf(blk_tag, "%s (%s)", pb_type->name, pb->name);
 
             g->draw_text(
                 abs_bbox.center(),
@@ -444,10 +430,10 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
 
             t_pb_type* pb_child_type = child_pb->pb_graph_node->pb_type;
 
-            // don't go farther if 0 modes
-            if (pb_child_type == nullptr || pb_child_type->num_modes == 0) {
+            if (pb_child_type == nullptr) {
                 continue;
             }
+
             // now recurse
             draw_internal_pb(clb_index, child_pb, abs_bbox, type, g);
         }
@@ -661,31 +647,6 @@ void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_p
     }
 }
 #    endif /* NO_GRAPHICS */
-
-/* This function checks whether a top-level clb has been highlighted. It does
- * so by checking whether the color in this block is default color.
- */
-static bool is_top_lvl_block_highlighted(const ClusterBlockId blk_id, const t_logical_block_type_ptr type) {
-    t_draw_state* draw_state;
-
-    /* Call accessor function to retrieve global variables. */
-    draw_state = get_draw_state_vars();
-
-    if (type->index < 3) {
-        if (draw_state->block_color[blk_id] == blk_LIGHTGREY)
-            return false;
-    } else if (type->index < 3 + MAX_BLOCK_COLOURS) {
-        if (draw_state->block_color[blk_id] == block_colors[MAX_BLOCK_COLOURS + type->index - 3])
-            //        if (draw_state->block_color[blk_id] == to_ezgl_color((color_types)(BISQUE + MAX_BLOCK_COLOURS + type->index - 3)))
-            return false;
-    } else {
-        if (draw_state->block_color[blk_id] == block_colors[2 * MAX_BLOCK_COLOURS - 1])
-            //        if (draw_state->block_color[blk_id] == to_ezgl_color((color_types)(BISQUE + 2 * MAX_BLOCK_COLOURS - 1)))
-            return false;
-    }
-
-    return true;
-}
 
 int highlight_sub_block(const ezgl::point2d& point_in_clb, ClusterBlockId clb_index, t_pb* pb) {
     t_draw_state* draw_state = get_draw_state_vars();

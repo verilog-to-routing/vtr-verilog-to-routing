@@ -177,8 +177,9 @@ void check_rr_graph(const t_graph_type graph_type,
                     if (node.type() == IPIN || node.type() == OPIN) {
                         if (has_adjacent_channel(node, device_ctx.grid)) {
                             auto block_type = device_ctx.grid[node.xlow()][node.ylow()].type;
-                            VTR_LOG_ERROR("in check_rr_graph: node %d (%s) at (%d,%d) block=%s side=%s has no fanin.\n",
-                                          inode, node.type_string(), node.xlow(), node.ylow(), block_type->name, node.side_string());
+                            std::string pin_name = block_type_pin_index_to_name(block_type, node.pin_num());
+                            VTR_LOG_ERROR("in check_rr_graph: node %d (%s) at (%d,%d) block=%s side=%s pin=%s has no fanin.\n",
+                                          inode, node.type_string(), node.xlow(), node.ylow(), block_type->name, node.side_string(), pin_name.c_str());
                         }
                     } else {
                         VTR_LOG_ERROR("in check_rr_graph: node %d (%s) has no fanin.\n",

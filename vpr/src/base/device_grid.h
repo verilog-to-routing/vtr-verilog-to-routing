@@ -8,7 +8,7 @@ class DeviceGrid {
   public:
     DeviceGrid() = default;
     DeviceGrid(std::string grid_name, vtr::Matrix<t_grid_tile> grid);
-    DeviceGrid(std::string grid_name, vtr::Matrix<t_grid_tile> grid, std::vector<t_physical_tile_type_ptr> limiting_res);
+    DeviceGrid(std::string grid_name, vtr::Matrix<t_grid_tile> grid, std::vector<t_logical_block_type_ptr> limiting_res);
 
     const std::string& name() const { return name_; }
 
@@ -25,7 +25,7 @@ class DeviceGrid {
 
     //Returns the block types which limits the device size (may be empty if
     //resource limits were not considered when selecting the device).
-    std::vector<t_physical_tile_type_ptr> limiting_resources() const { return limiting_resources_; }
+    std::vector<t_logical_block_type_ptr> limiting_resources() const { return limiting_resources_; }
 
   private:
     void count_instances();
@@ -39,7 +39,7 @@ class DeviceGrid {
 
     std::map<t_physical_tile_type_ptr, size_t> instance_counts_;
 
-    std::vector<t_physical_tile_type_ptr> limiting_resources_;
+    std::vector<t_logical_block_type_ptr> limiting_resources_;
 };
 
 #endif
