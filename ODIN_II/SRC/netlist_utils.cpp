@@ -87,6 +87,7 @@ nnode_t* allocate_nnode() {
 	new_node->initial_value = 0;
 
 	new_node->generic_output = -1;
+	new_node->stat = NULL;
 
 	return new_node;
 }
@@ -99,7 +100,8 @@ nnode_t *free_nnode(nnode_t *to_free)
 	if (to_free)
 	{
 		/* need to free node_data */
-
+		if(to_free->stat)
+			vtr::free(to_free->stat);
 		for (int i = 0; i < to_free->num_input_pins; i++) {
 			if (to_free->input_pins[i] && to_free->input_pins[i]->name) {
 				vtr::free(to_free->input_pins[i]->name);

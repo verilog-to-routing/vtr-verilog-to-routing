@@ -75,6 +75,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 struct ast_node_t;
 struct nnode_t;
+struct nnode_stats_t;
 struct npin_t;
 struct nnet_t;
 struct netlist_t;
@@ -91,6 +92,9 @@ struct global_args_t
 	argparse::ArgValue<std::string> output_file;
 	argparse::ArgValue<std::string> arch_file; // Name of the FPGA architecture file
 	argparse::ArgValue<bool> permissive; //turn possible_errors into warnings
+
+	argparse::ArgValue<std::string> generate_stats;
+	argparse::ArgValue<std::string> generate_stats_verbose;
 
 	argparse::ArgValue<std::string> high_level_block; //Legacy option, no longer used
 
@@ -483,6 +487,7 @@ struct nnode_t
 	
 	//Generic gate output
 	unsigned char generic_output; //describes the output (1 or 0) of generic blocks
+	nnode_stats_t *stat;
 };
 
 struct npin_t
@@ -507,7 +512,6 @@ struct npin_t
 	unsigned long coverage;
 	bool is_default; // The pin is feeding a mux from logic representing an else or default.
 	bool is_implied; // This signal is implied.
-
 };
 
 struct nnet_t
@@ -523,7 +527,7 @@ struct nnet_t
 
 	short unique_net_data_id;
 	void *net_data;
-
+	short traversal_id;
 	/////////////////////
 	// For simulation
 	std::shared_ptr<AtomicBuffer> values;
@@ -531,6 +535,14 @@ struct nnet_t
 	signed char has_initial_value; // initial value assigned?
 	signed char initial_value; // initial net value
 	//////////////////////
+};
+
+struct nnode_stats_t{
+	int depth; // perhaps more accurately calls level, as in level from CO
+	unsigned int min_dist_to_out;
+	unsigned int max_dist_to_out;
+	float avg_max_dist;
+	short traversal_id; // combo loop detection
 };
 
 struct signal_list_t

@@ -61,6 +61,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_path.h"
 #include "vtr_memory.h"
 
+#include "generate_blif_stats.h"
+
 
 #define DEFAULT_OUTPUT "."
 
@@ -237,7 +239,7 @@ netlist_t *start_odin_ii(int argc,char **argv)
 		exit(ERROR_PARSE_ARGS);
 	}
 
-	/* read the confirguration file .. get options presets the config values just in case theyr'e not read in with config file */
+	/* read the confirguration file .. get options presets the config values just in case they're not read in with config file */
 	if (global_args.config_file.provenance() == argparse::Provenance::SPECIFIED)
 	{
 		printf("Reading Configuration file\n");
@@ -260,7 +262,7 @@ netlist_t *start_odin_ii(int argc,char **argv)
 		{
 			XmlReadArch(global_args.arch_file.value().c_str(), false, &Arch, physical_tile_types, logical_block_types);
 		} 
-		catch(vtr::VtrError& vtr_error) 
+		catch(vtr::VtrError& vtr_error)
 		{
 			printf("Odin Failed to load architecture file: %s with exit code%d\n", vtr_error.what(), ERROR_PARSE_ARCH);
 			exit(ERROR_PARSE_ARCH);
@@ -278,33 +280,47 @@ netlist_t *start_odin_ii(int argc,char **argv)
 		}
 	}
 
-	/*************************************************************
-	 * begin simulation section
-	 */
 	netlist_t *odin_netlist = NULL;
 
-	if(global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED
-	|| global_args.interactive_simulation 
-	|| global_args.sim_num_test_vectors 
-	|| global_args.sim_vector_input_file.provenance() == argparse::Provenance::SPECIFIED)
+	/* read the blif */
+	if(global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED || global_args.sim_vector_input_file.provenance() == argparse::Provenance::SPECIFIED)
 	{
 		// if we started with a verilog file read the output that was made since
 		// the simulator can only simulate blifs
-		if(global_args.blif_file.provenance() != argparse::Provenance::SPECIFIED)
-		{
-			configuration.list_of_file_names = { global_args.output_file };
-			current_parse_file =0;
-		}
-
-		try 
+		//configuration.list_of_file_names = { global_args.output_file };
+		//configuration.list_of_file_names = { global_args.generate_stats };
+		current_parse_file =0;
+		try
 		{
 			odin_netlist = read_blif();
-		} 
-		catch(vtr::VtrError& vtr_error) 
+		}
+		catch(vtr::VtrError& vtr_error)
 		{
 			printf("Odin Failed to load blif file: %s with exit code:%d \n", vtr_error.what(), ERROR_PARSE_BLIF);
 			exit(ERROR_PARSE_BLIF);
 		}
+	}
+	
+	/* Generate the statistics for the current Netlist */
+	if(global_args.generate_stats.provenance() == argparse::Provenance::SPECIFIED || global_args.generate_stats_verbose.provenance() == argparse::Provenance::SPECIFIED)
+	{	
+		bool verbose_stats = false;
+		bool gen_stats_verilog_input = false;
+		if(!odin_netlist && verilog_netlist)
+		{
+			gen_stats_verilog_input = true;
+			odin_netlist = verilog_netlist;
+		}
+		std::string outputStats = global_args.generate_stats;
+		if(global_args.generate_stats_verbose.provenance() == argparse::Provenance::SPECIFIED){
+			verbose_stats = true;
+			outputStats = global_args.generate_stats_verbose;
+		}
+		printf("Collecting Statistics\n");
+		output_blif_stats(outputStats, odin_netlist, verbose_stats);
+		// Verilog input returns NULL normally for netlist so we should do the same
+		if(gen_stats_verilog_input == true)
+			return NULL;
 	}
 
 	/* Simulate netlist */
@@ -398,6 +414,21 @@ void get_options(int argc, char** argv) {
 			;
 
 	auto& other_grp = parser.add_argument_group("other options");
+
+	other_grp.add_argument(global_args.generate_stats, "--stat")
+			.help("Generate netlist statistics with BLIF input instead of writing out BLIF, specify filename")
+			//.nargs('?') TODO: get '?' implementation merged separately
+			//.default_value("stats.txt") // this won't work until '?' implementation is merged separately
+			.metavar("GENERATE_BLIF_STAT") // This could probably be more specific, metavar is stat output log
+			;
+
+	other_grp.add_argument(global_args.generate_stats_verbose, "--stat_verbose")
+			.help("Generate netlist statistics to specified output, include vcc/gnd stats and levels, greatly increased number of traversals and memory usage required")
+			//.default_value("stats.txt")
+			.metavar("GENERATE_BLIF_STAT_V") // This could probably be more specific, metavar is stat output log
+			;
+	
+	//other_grp.add_argument()
 
 	other_grp.add_argument(global_args.show_help, "-h")
 			.help("Display this help message")
