@@ -582,7 +582,7 @@ static void simulate_cycle(int cycle, stages_t *s)
 
 		}	
 
-		for (auto &worker: workers)		
+		for (auto &worker: workers)	
 			worker.join();
 
 		total_run_time += wall_time()-time;
