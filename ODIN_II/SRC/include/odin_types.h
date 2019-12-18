@@ -57,6 +57,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 /* unique numbers to mark the nodes as we DFS traverse the netlist */
 #define PARTIAL_MAP_TRAVERSE_VALUE 10
+// MEHRSHAD //
+#define PARTIAL_MAP_TRAVERSE_VALUE_GA_ADDERS 11
+// MEHRSHAD //
 #define OUTPUT_TRAVERSE_VALUE 12
 #define COUNT_NODES 14 /* NOTE that you can't call countnodes one after the other or the mark will be incorrect */
 #define COMBO_LOOP 15
@@ -499,6 +502,10 @@ struct npin_t
 
 	edge_type_e sensitivity;
 
+	// MEHRSHAD //
+	short traverse_visited; // a way to mark if we've visited yet
+	// MEHRSHAD //
+
 	////////////////////
 	// For simulation
 	std::shared_ptr<AtomicBuffer> values;
@@ -524,6 +531,10 @@ struct nnet_t
 
 	short unique_net_data_id;
 	void *net_data;
+
+	// MEHRSHAD //
+	short traverse_visited; // a way to mark if we've visited yet
+	// MEHRSHAD //
 
 	/////////////////////
 	// For simulation
