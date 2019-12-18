@@ -217,6 +217,7 @@ static void flag_undriven_input_pins(nnode_t *node);
 static void print_ancestry(nnode_t *node, int generations);
 static nnode_t *print_update_trace(nnode_t *bottom_node, int cycle);
 
+
 int number_of_workers = 0;
 int num_of_clock = 0;
 
@@ -264,6 +265,7 @@ void simulate_netlist(netlist_t *netlist)
 
 	sim_data = terminate_simulation(sim_data);
 }
+
 
 /**
  * Initialize simulation
@@ -406,6 +408,7 @@ void simulate_steps(sim_data_t *sim_data,double min_coverage)
 	
 	int increment_vector_by = global_args.sim_num_test_vectors;
 
+
 	double current_coverage =0.0;
 	int cycle=0;
 	while(cycle < sim_data->num_vectors)
@@ -460,10 +463,16 @@ void simulate_steps(sim_data_t *sim_data,double min_coverage)
 
 		// Delay drawing of the progress bar until the second wave to improve the accuracy of the ETA.
 		if ((sim_data->num_vectors == 1) || cycle)
+		{
 			progress_bar_position = print_progress_bar(
 					(cycle+1)/(double)(sim_data->num_vectors), progress_bar_position, progress_bar_length, sim_data->total_time);
+		}
+
 		cycle++;
 	}
+
+
+
 
 }
 
@@ -573,7 +582,7 @@ static void simulate_cycle(int cycle, stages_t *s)
 
 		}	
 
-		for (auto &worker: workers) 
+		for (auto &worker: workers)	
 			worker.join();
 
 		total_run_time += wall_time()-time;
@@ -853,7 +862,6 @@ static stages_t *stage_ordered_nodes(nnode_t **ordered_nodes, int num_ordered_no
 	stage_nodes.clear();
 	return s;
 }
-
 
 /*
  * Given a node, this function will simulate that node's new outputs,
@@ -2086,7 +2094,6 @@ static void read_write_to_memory(nnode_t *node , signal_list_t *input_address, s
 				new_values[i]= get_pin_value(data_in->pins[i],cycle-1);
 			}
 		}
-
  		node->memory_data[address] = new_values; 
 	}
 
