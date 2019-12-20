@@ -42,9 +42,7 @@ void check_route(enum e_route_type route_type) {
     int max_pins, inode, prev_node;
     unsigned int ipin;
     bool valid, connects;
-    bool* connected_to_route; /* [0 .. device_ctx.rr_nodes.size()-1] */
     t_trace* tptr;
-    bool* pin_done;
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -70,21 +68,21 @@ void check_route(enum e_route_type route_type) {
 
     auto non_configurable_rr_sets = identify_non_configurable_rr_sets();
 
-    connected_to_route = (bool*)vtr::calloc(device_ctx.rr_nodes.size(), sizeof(bool));
+    auto connected_to_route = std::make_unique<bool[]>(device_ctx.rr_nodes.size());
+    std::fill_n(connected_to_route.get(), device_ctx.rr_nodes.size(), false);
 
     max_pins = 0;
     for (auto net_id : cluster_ctx.clb_nlist.nets())
         max_pins = std::max(max_pins, (int)cluster_ctx.clb_nlist.net_pins(net_id).size());
 
-    pin_done = (bool*)vtr::malloc(max_pins * sizeof(bool));
+    auto pin_done = std::make_unique<bool[]>(max_pins);
 
     /* Now check that all nets are indeed connected. */
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id) || cluster_ctx.clb_nlist.net_sinks(net_id).size() == 0) /* Skip ignored nets. */
             continue;
 
-        for (ipin = 0; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++)
-            pin_done[ipin] = false;
+        std::fill_n(pin_done.get(), cluster_ctx.clb_nlist.net_pins(net_id).size(), false);
 
         /* Check the SOURCE of the net. */
         tptr = route_ctx.trace[net_id].head;
@@ -132,7 +130,7 @@ void check_route(enum e_route_type route_type) {
                 connected_to_route[inode] = true; /* Mark as in path. */
 
                 if (device_ctx.rr_nodes[inode].type() == SINK) {
-                    check_sink(inode, net_id, pin_done);
+                    check_sink(inode, net_id, pin_done.get());
                     num_sinks += 1;
                 }
 
@@ -160,12 +158,10 @@ void check_route(enum e_route_type route_type) {
 
         check_net_for_stubs(net_id);
 
-        reset_flags(net_id, connected_to_route);
+        reset_flags(net_id, connected_to_route.get());
 
     } /* End for each net */
 
-    free(pin_done);
-    free(connected_to_route);
     VTR_LOG("Completed routing consistency check successfully.\n");
     VTR_LOG("\n");
 }

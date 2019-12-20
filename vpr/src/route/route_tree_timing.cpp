@@ -91,7 +91,7 @@ bool alloc_route_tree_timing_structs(bool exists_ok) {
 
 void free_route_tree_timing_structs() {
     /* Frees the structures needed to build routing trees, and really frees
-     * (i.e. calls free) all the data on the free lists.                         */
+     * (i.e. deletes) all the data on the free lists.                         */
 
     t_rt_node *rt_node, *next_node;
     t_linked_rt_edge *rt_edge, *next_edge;
@@ -102,7 +102,7 @@ void free_route_tree_timing_structs() {
 
     while (rt_node != nullptr) {
         next_node = rt_node->u.next;
-        free(rt_node);
+        delete rt_node;
         rt_node = next_node;
     }
 
@@ -112,7 +112,7 @@ void free_route_tree_timing_structs() {
 
     while (rt_edge != nullptr) {
         next_edge = rt_edge->next;
-        free(rt_edge);
+        delete rt_edge;
         rt_edge = next_edge;
     }
 
@@ -131,7 +131,7 @@ alloc_rt_node() {
     if (rt_node != nullptr) {
         rt_node_free_list = rt_node->u.next;
     } else {
-        rt_node = (t_rt_node*)vtr::malloc(sizeof(t_rt_node));
+        rt_node = new t_rt_node;
     }
 
     return (rt_node);
@@ -156,7 +156,7 @@ alloc_linked_rt_edge() {
     if (linked_rt_edge != nullptr) {
         rt_edge_free_list = linked_rt_edge->next;
     } else {
-        linked_rt_edge = (t_linked_rt_edge*)vtr::malloc(sizeof(t_linked_rt_edge));
+        linked_rt_edge = new t_linked_rt_edge;
     }
 
     VTR_ASSERT(linked_rt_edge != nullptr);
