@@ -27,7 +27,7 @@ We have some guidelines in place to help catch most of these problems:
     ```
     since it performs much more thorough testing.
 
-    It is typically a good idea to run tests regularily as you make changes.
+    It is typically a good idea to run tests regularly as you make changes.
     If you have failures see [how to debugging failed tests](#debugging-failed-tests).
 
 2.  The automated [BuildBot](http://builds.verilogtorouting.org:8080/waterfall) will perform more extensive regressions tests and mark which revisions are stable.
@@ -45,7 +45,7 @@ We have some guidelines in place to help catch most of these problems:
 5.  Keep in sync with the master branch as regularly as you can (i.e. `git pull` or `git pull --rebase`).
     The longer code deviates from the trunk, the more painful it is to integrate back into the trunk.
 
-Whatever system that we come up with will not be foolproof so be conscientious about how your changes will effect other developers.
+Whatever system that we come up with will not be foolproof so be conscientious about how your changes will affect other developers.
 
 # Code Formatting
 
@@ -80,12 +80,12 @@ There are 4 main regression tests:
     This regression test is *not* suitable for evaluating QoR or performance.
     It's primary purpose is to make sure the various tools do not crash/fail in the basic VTR flow.
 
-    QoR checks in this regression test are primarily 'canary' checks to catch gross degredations in QoR.
-    Ocassionally, code changes can cause QoR failures (e.g. due to CAD noise -- particularly on small benchmarks); usually such failures are not a concern if the QoR differences are small.
+    QoR checks in this regression test are primarily 'canary' checks to catch gross degradations in QoR.
+    Occasionally, code changes can cause QoR failures (e.g. due to CAD noise -- particularly on small benchmarks); usually such failures are not a concern if the QoR differences are small.
 
 * `vtr_reg_strong`: ~20 minutes serial, ~15 minutes with `-j4`
 
-    **Goal:** Broad functionaly check
+    **Goal:** Broad functionality check
 
     **Feature Coverage:** High
 
@@ -96,8 +96,8 @@ There are 4 main regression tests:
     This regression test is *not* suitable for evaluating QoR or performance.
     It's primary purpose is try and achieve high functionality coverage.
 
-    QoR checks in this regression test are primarily 'canary' checks to catch gross degredations in QoR.
-    Ocassionally, changes can cause QoR failures (e.g. due to CAD noise -- particularly on small benchmarks); usually such failures are not a concern if the QoR differences are small.
+    QoR checks in this regression test are primarily 'canary' checks to catch gross degradations in QoR.
+    Occasionally, changes can cause QoR failures (e.g. due to CAD noise -- particularly on small benchmarks); usually such failures are not a concern if the QoR differences are small.
 
 * `vtr_reg_nightly`: ~6 hours with `-j3`
 
@@ -176,7 +176,7 @@ These can be run with:
 $ ./run_reg_test.pl odin_reg_micro
 $ ./run_reg_test.pl odin_reg_full
 ```
-and should be used when makeing changes to Odin.
+and should be used when making changes to Odin.
 
 ## Unit Tests
 
@@ -317,12 +317,12 @@ We could also manually re-run the tools (e.g. with a debugger) using files in th
 # Evaluating Quality of Result (QoR) Changes
 VTR uses highly tuned and optimized algorithms and data structures.
 Changes which effect these can have significant impacts on the quality of VTR's design implementations (timing, area etc.) and VTR's run-time/memory usage.
-Such changes need to be evaluated carefully before they are pushed/merged to ensure no quality degredation occurs.
+Such changes need to be evaluated carefully before they are pushed/merged to ensure no quality degradation occurs.
 
-If you are unsure of what level of QoR evaluation is neccessary for your changes, please ask a VTR developer for guidance.
+If you are unsure of what level of QoR evaluation is necessary for your changes, please ask a VTR developer for guidance.
 
 ## General QoR Evaluation Principles
-The goal of performing a QoR evaluation is to measure precisely the impact of a set of code/architecture/benchmark changes on both the quality of VTR's design implemenation (i.e. the result of VTR's optimizations), and on tool run-time and memory usage.
+The goal of performing a QoR evaluation is to measure precisely the impact of a set of code/architecture/benchmark changes on both the quality of VTR's design implementation (i.e. the result of VTR's optimizations), and on tool run-time and memory usage.
 
 This process is made more challenging by the fact that many of VTR's optimization algorithms are based on heuristics (some of which depend on randomization).
 This means that VTR's implementation results are dependent upon:
@@ -334,14 +334,14 @@ This effect can be viewed as an intrinsic 'noise' or 'variance' to any QoR measu
 
 There are typically two key methods used to measure the 'true' QoR:
 
-1. Averaging metrics accross multiple architectures and benchmark circuits.
+1. Averaging metrics across multiple architectures and benchmark circuits.
 
 2. Averaging metrics multiple runs of the same architecture and benchmark, but using different random number generator seeds
 
     This is a further variance reduction technique, although it can be very CPU-time intensive.
-    A typical example would be to sweep an entire benchmark set accross 3 or 5 different seeds.
+    A typical example would be to sweep an entire benchmark set across 3 or 5 different seeds.
 
-In practise any algorithm changes will likely cause improvements on some architecture/benchmark combinations, and degredations on others.
+In practice any algorithm changes will likely cause improvements on some architecture/benchmark combinations, and degradations on others.
 As a result we primarily focus on the *average* behaviour of a change to evaluate its impact.
 However extreme outlier behaviour on particular circuits is also important, since it may indicate bugs or other unexpected behaviour.
 
@@ -375,7 +375,7 @@ Run-time/Memory Usage Metrics:
 
 \*  Note that the minimum channel width route time is chaotic and can be highly variable (e.g. 10x variation is not unusual). Minimum channel width routing performs a binary search to find the minimum channel width. Since route time is highly dependent on congestion, run-time is highly dependent on the precise channel widths searched (which may change due to perturbations).
 
-In practise you will likely want to consider additional and more detailed metrics, particularly those directly related to the changes you are making.
+In practice you will likely want to consider additional and more detailed metrics, particularly those directly related to the changes you are making.
 For example, if your change related to hold-time optimization you would want to include hold-time related metrics such as `hold_TNS` (hold total negative slack) and `hold_WNS` (hold worst negative slack).
 If your change related to packing, you would want to report additional packing-related metrics, such as the number of clusters formed by each block type (e.g. numbers of CLBs, RAMs, DSPs, IOs).
 
@@ -392,11 +392,11 @@ In order to draw reasonably general conclusions about the impact of a change we 
 
     This ensures we can optimize and scale to large problem spaces.
 
-In practise (for various reasons) satisfying both of these goals simultaneously is challenging.
+In practice (for various reasons) satisfying both of these goals simultaneously is challenging.
 The key goal here is to ensure the benchmark set is not unreasonably biased in some manner (e.g. benchmarks which are too small, benchmarks too skewed to a particular application domain).
 
 ### Fairly measuring tool run-time
-Accurately and fairly measuring the run-time of computer programs is challenging in practise.
+Accurately and fairly measuring the run-time of computer programs is challenging in practice.
 A variety of factors effect run-time including:
 
 * Operating System
@@ -458,8 +458,8 @@ k6_frac_N10_frac_chain_mem32K_40nm.xml	ch_intrinsics.v   	common       	9f591f6-
 
 The Titan benchmarks are a group of large benchmark circuits from a wide range of applications, which are compatible with the VTR project.
 The are typically used as post-technology mapped netlists which have been pre-synthesized with Quartus.
-They are substantially larger and more realistic than the VTR benchmarks, but can only target specificly compatible architectures.
-They are used primarily to evaluate the optimization quality and scalability of VTR's CAD algorithms while targetting a fixed architecture (e.g. at a fixed channel width).
+They are substantially larger and more realistic than the VTR benchmarks, but can only target specifically compatible architectures.
+They are used primarily to evaluate the optimization quality and scalability of VTR's CAD algorithms while targeting a fixed architecture (e.g. at a fixed channel width).
 
 A typical approach to evaluating an algorithm change would be to run `vtr_reg_titan` task from the weekly regression test:
 
@@ -496,7 +496,7 @@ A general method is as follows:
 1. Normalize all metrics to the values in the baseline measurements (this makes the relative changes easy to evaluate)
 2. Produce tables for each set of QoR measurements showing the per-benchmark relative values for each metric
 3. Calculate the GEOMEAN over all benchmarks for each normalized metric
-4. Produce a summary table showing the Metric Geomeans for each set of QoR measurments
+4. Produce a summary table showing the Metric Geomeans for each set of QoR measurements
 
 ### QoR Comparison Gotchas
 There are a variety of 'gotchas' you need to avoid to ensure fair comparisons:
@@ -603,7 +603,7 @@ Based on these metrics we then calculate the following ratios and summary.
 | crit_path_route_time        | 1.00     | 0.96     |
 | max_vpr_mem                 | 1.00     | 0.89     |
 
-From the results we can see that our change, on average, achieved a small reduction in the number of logic blocks (0.95) in return for a 2% increase in minimum channel width and 1% increase in routed wirelength. From a run-time persepective the packer is substantially faster (0.42).
+From the results we can see that our change, on average, achieved a small reduction in the number of logic blocks (0.95) in return for a 2% increase in minimum channel width and 1% increase in routed wirelength. From a run-time perspective the packer is substantially faster (0.42).
 
 ### Automated QoR Comparison Script
 To automate some of the QoR comparison VTR includes a script to compare pares_resutls.txt files and generate a spreadsheet including the ratio and summary tables.
@@ -617,7 +617,7 @@ will produce ratio tables and a summary table for the files parse_results1.txt, 
 
 # Adding Tests
 
-Any time you add a feature to VTR you **must** add a test which exercies the feature.
+Any time you add a feature to VTR you **must** add a test which exercises the feature.
 This ensures that regression tests will detect if the feature breaks in the future.
 
 Consider which regression test suite your test should be added to (see [Running Tests](#running-tests) descriptions).
@@ -840,7 +840,7 @@ To submit a build to coverity do the following:
 
 1. [Download](https://scan.coverity.com/download) the coverity build tool
 
-2. Configure VTR to perform a *debug* build. This ensures that all assertions are enabled, without assertions coverity may report bugs that are gaurded against by assertions. We also set VTR asserts to the highest level.
+2. Configure VTR to perform a *debug* build. This ensures that all assertions are enabled, without assertions coverity may report bugs that are guarded against by assertions. We also set VTR asserts to the highest level.
 
     ```shell
     #From the VTR root
@@ -866,7 +866,7 @@ Note that we explicitly asked for gcc and g++, the coverity build tool defaults 
 
 5. Submit the archive through the coverity web interface
 
-Once the build has been analyzed you can browse the latest results throught the coverity web interface
+Once the build has been analyzed you can browse the latest results through the coverity web interface
 
 ### No files emitted
 If you get the following warning from cov-build:

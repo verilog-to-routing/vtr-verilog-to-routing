@@ -2,30 +2,30 @@
 #------------------------------------------------------------------------#
 #  Run a regression test on the batch system                             #
 #   - runs the regression tests given as input parameters                #
-# 	- parses and checks results upon completion							 #
-#   - tests can be found in <vtr_flow>/tasks/regression_tests/      #
+#       - parses and checks results upon completion                      #
+#   - tests can be found in <vtr_flow>/tasks/regression_tests/           #
 #                                                                        #
 #  Usage:                                                                #
 #  <While in the top-level directory>                                    #
 #  run_reg_test.pl <TEST1> <TEST2> ...                                   #
-#  									                                     #
-#  Options:								                                 #
-#	-create_golden:  Will create/overwrite the golden results with       #
-#	those of the most recent execution				                     #
-#	quick_test: Will run quick test in top-level directory before 	     #
-# 	running specified regression tests.	                                 #
-#	-display_qor: Will display quality of results of most recent         #
-# 	build of specified regression test.				                     #
-#									                                     #
-#  Notes: <TEST> argument is of the format: <project>_reg_<suite>   	 #
-#  See <vtr_flow_path>/tasks/regression_tests for more information.	     #
-#									                                     #
-#  Currently available:							                         #
-#		- vtr_reg_basic						                             #
-#		- vtr_reg_strong					                             #
-#		- vtr_reg_nightly					                             #
-#		- vtr_reg_weekly                                                 #
-#									                                     #
+#                                                                        #
+#  Options:                                                              #
+#       -create_golden:  Will create/overwrite the golden results with   #
+#       those of the most recent execution                               #
+#       quick_test: Will run quick test in top-level directory before    #
+#       running specified regression tests.                              #
+#       -display_qor: Will display quality of results of most recent     #
+#       build of specified regression test.                              #
+#                                                                        #
+#  Notes: <TEST> argument is of the format: <project>_reg_<suite>        #
+#  See <vtr_flow_path>/tasks/regression_tests for more information.      #
+#                                                                        #
+#  Currently available:                                                  #
+#               - vtr_reg_basic                                          #
+#               - vtr_reg_strong                                         #
+#               - vtr_reg_nightly                                        #
+#               - vtr_reg_weekly                                         #
+#                                                                        #
 #------------------------------------------------------------------------#
 
 use strict;
