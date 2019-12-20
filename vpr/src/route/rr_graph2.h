@@ -214,9 +214,9 @@ void load_sblock_pattern_lookup(const int i,
                                 const enum e_switch_block_type switch_block_type,
                                 t_sblock_pattern& sblock_pattern);
 
-int* get_seg_track_counts(const int num_sets,
-                          const std::vector<t_segment_inf>& segment_inf,
-                          const bool use_full_seg_groups);
+std::unique_ptr<int[]> get_seg_track_counts(const int num_sets,
+                                            const std::vector<t_segment_inf>& segment_inf,
+                                            const bool use_full_seg_groups);
 
 void dump_seg_details(const t_chan_seg_details* seg_details,
                       int max_chan_width,

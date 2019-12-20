@@ -520,7 +520,7 @@ static void build_rr_graph(const t_graph_type graph_type,
         VTR_ASSERT(max_chan_width % 2 == 0);
         total_sets /= 2;
     }
-    int* sets_per_seg_type = get_seg_track_counts(total_sets, segment_inf, use_full_seg_groups);
+    auto sets_per_seg_type = get_seg_track_counts(total_sets, segment_inf, use_full_seg_groups);
 
     if (is_global_graph) {
         //All pins can connect during global routing
@@ -529,13 +529,13 @@ static void build_rr_graph(const t_graph_type graph_type,
         Fc_out = std::vector<vtr::Matrix<int>>(types.size(), ones);
     } else {
         bool Fc_clipped = false;
-        Fc_in = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type, max_chan_width,
+        Fc_in = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type.get(), max_chan_width,
                                          e_fc_type::IN, directionality, &Fc_clipped);
         if (Fc_clipped) {
             *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
         }
         Fc_clipped = false;
-        Fc_out = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type, max_chan_width,
+        Fc_out = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type.get(), max_chan_width,
                                           e_fc_type::OUT, directionality, &Fc_clipped);
         if (Fc_clipped) {
             *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
@@ -571,7 +571,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     }
 
     auto perturb_ipins = alloc_and_load_perturb_ipins(types.size(), segment_inf.size(),
-                                                      sets_per_seg_type, Fc_in, Fc_out, directionality);
+                                                      sets_per_seg_type.get(), Fc_in, Fc_out, directionality);
     /* END FC */
 
     /* Alloc node lookups, count nodes, alloc rr nodes */
@@ -655,7 +655,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     for (unsigned int itype = 0; itype < types.size(); ++itype) {
         ipin_to_track_map[itype] = alloc_and_load_pin_to_track_map(RECEIVER,
                                                                    Fc_in[itype], &types[itype], perturb_ipins[itype], directionality,
-                                                                   segment_inf.size(), sets_per_seg_type);
+                                                                   segment_inf.size(), sets_per_seg_type.get());
 
         track_to_pin_lookup[itype] = alloc_and_load_track_to_pin_lookup(ipin_to_track_map[itype], Fc_in[itype], types[itype].width, types[itype].height,
                                                                         types[itype].num_pins, max_chan_width, segment_inf.size());
@@ -672,7 +672,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                                                               max_chan_width, segment_inf);
             opin_to_track_map[itype] = alloc_and_load_pin_to_track_map(DRIVER,
                                                                        Fc_out[itype], &types[itype], perturb_opins, directionality,
-                                                                       segment_inf.size(), sets_per_seg_type);
+                                                                       segment_inf.size(), sets_per_seg_type.get());
         }
     }
     /* END OPIN MAP */
@@ -733,10 +733,6 @@ static void build_rr_graph(const t_graph_type graph_type,
     if (sb_conn_map) {
         free_switchblock_permutations(sb_conn_map);
         sb_conn_map = nullptr;
-    }
-    if (sets_per_seg_type) {
-        free(sets_per_seg_type);
-        sets_per_seg_type = nullptr;
     }
 
     free_type_track_to_pin_map(track_to_pin_lookup, types, max_chan_width);

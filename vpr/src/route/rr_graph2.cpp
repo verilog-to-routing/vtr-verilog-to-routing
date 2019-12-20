@@ -88,26 +88,26 @@ static int vpr_to_phy_track(const int itrack,
                             const t_chan_seg_details* seg_details,
                             const enum e_directionality directionality);
 
-static int* label_wire_muxes(const int chan_num,
-                             const int seg_num,
-                             const t_chan_seg_details* seg_details,
-                             const int seg_type_index,
-                             const int max_len,
-                             const enum e_direction dir,
-                             const int max_chan_width,
-                             const bool check_cb,
-                             int* num_wire_muxes,
-                             int* num_wire_muxes_cb_restricted);
+static std::unique_ptr<int[]> label_wire_muxes(const int chan_num,
+                                               const int seg_num,
+                                               const t_chan_seg_details* seg_details,
+                                               const int seg_type_index,
+                                               const int max_len,
+                                               const enum e_direction dir,
+                                               const int max_chan_width,
+                                               const bool check_cb,
+                                               int* num_wire_muxes,
+                                               int* num_wire_muxes_cb_restricted);
 
-static int* label_incoming_wires(const int chan_num,
-                                 const int seg_num,
-                                 const int sb_seg,
-                                 const t_chan_seg_details* seg_details,
-                                 const int max_len,
-                                 const enum e_direction dir,
-                                 const int max_chan_width,
-                                 int* num_incoming_wires,
-                                 int* num_ending_wires);
+static std::unique_ptr<int[]> label_incoming_wires(const int chan_num,
+                                                   const int seg_num,
+                                                   const int sb_seg,
+                                                   const t_chan_seg_details* seg_details,
+                                                   const int max_len,
+                                                   const enum e_direction dir,
+                                                   const int max_chan_width,
+                                                   int* num_incoming_wires,
+                                                   int* num_ending_wires);
 
 static int find_label_of_track(int* wire_mux_on_track,
                                int num_wire_muxes,
@@ -143,16 +143,14 @@ static bool should_apply_switch_override(int switch_override);
  * no longer less than the requested number of tracks. As a final
  * step, if we were closer to target before last more, undo it
  * and end up with a result that uses fewer tracks than given. */
-int* get_seg_track_counts(const int num_sets,
-                          const std::vector<t_segment_inf>& segment_inf,
-                          const bool use_full_seg_groups) {
-    int* result;
-    double* demand;
+std::unique_ptr<int[]> get_seg_track_counts(const int num_sets,
+                                            const std::vector<t_segment_inf>& segment_inf,
+                                            const bool use_full_seg_groups) {
     int imax, freq_sum, assigned, size;
     double scale, max, reduce;
 
-    result = (int*)vtr::malloc(sizeof(int) * segment_inf.size());
-    demand = (double*)vtr::malloc(sizeof(double) * segment_inf.size());
+    auto result = std::make_unique<int[]>(segment_inf.size());
+    auto demand = std::make_unique<double[]>(segment_inf.size());
 
     /* Scale factor so we can divide by any length
      * and still use integers */
@@ -199,13 +197,6 @@ int* get_seg_track_counts(const int num_sets,
         result[imax] -= size;
     }
 
-    /* Free temps */
-    if (demand) {
-        vtr::free(demand);
-        demand = nullptr;
-    }
-
-    /* This must be freed by caller */
     return result;
 }
 
@@ -228,7 +219,6 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
     int cur_track, ntracks, itrack, length, j, index;
     int arch_wire_switch, arch_opin_switch, fac, num_sets, tmp;
     int group_start, first_track;
-    int* sets_per_seg_type = nullptr;
     t_seg_details* seg_details = nullptr;
     bool longline;
 
@@ -245,8 +235,8 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
     }
 
     /* Map segment type fractions and groupings to counts of tracks */
-    sets_per_seg_type = get_seg_track_counts((*max_chan_width / fac),
-                                             segment_inf, use_full_seg_groups);
+    auto sets_per_seg_type = get_seg_track_counts((*max_chan_width / fac),
+                                                  segment_inf, use_full_seg_groups);
 
     /* Count the number tracks actually assigned. */
     tmp = 0;
@@ -355,9 +345,6 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
             ++cur_track;
         }
     } /* End for each segment type. */
-
-    /* free variables */
-    vtr::free(sets_per_seg_type);
 
     if (num_seg_details) {
         *num_seg_details = cur_track;
@@ -761,8 +748,6 @@ int get_unidir_opin_connections(const int chan,
     /* Gets a linked list of Fc nodes of specified seg_type_index to connect
      * to in given chan seg. Fc_ofs is used for the opin staggering pattern. */
 
-    int* inc_muxes = nullptr;
-    int* dec_muxes = nullptr;
     int num_inc_muxes, num_dec_muxes, iconn;
     int inc_inode_index, dec_inode_index;
     int inc_mux, dec_mux;
@@ -781,10 +766,10 @@ int get_unidir_opin_connections(const int chan,
 
     /* Get the lists of possible muxes. */
     int dummy;
-    inc_muxes = label_wire_muxes(chan, seg, seg_details, seg_type_index, max_len,
-                                 INC_DIRECTION, max_chan_width, true, &num_inc_muxes, &dummy);
-    dec_muxes = label_wire_muxes(chan, seg, seg_details, seg_type_index, max_len,
-                                 DEC_DIRECTION, max_chan_width, true, &num_dec_muxes, &dummy);
+    auto inc_muxes = label_wire_muxes(chan, seg, seg_details, seg_type_index, max_len,
+                                      INC_DIRECTION, max_chan_width, true, &num_inc_muxes, &dummy);
+    auto dec_muxes = label_wire_muxes(chan, seg, seg_details, seg_type_index, max_len,
+                                      DEC_DIRECTION, max_chan_width, true, &num_dec_muxes, &dummy);
 
     /* Clip Fc to the number of muxes. */
     if (((Fc / 2) > num_inc_muxes) || ((Fc / 2) > num_dec_muxes)) {
@@ -821,15 +806,6 @@ int get_unidir_opin_connections(const int chan,
 
         rr_edges_to_create.emplace_back(from_rr_node, dec_inode_index, seg_details[dec_track].arch_opin_switch());
         ++num_edges;
-    }
-
-    if (inc_muxes) {
-        vtr::free(inc_muxes);
-        inc_muxes = nullptr;
-    }
-    if (dec_muxes) {
-        vtr::free(dec_muxes);
-        dec_muxes = nullptr;
     }
 
     return num_edges;
@@ -1865,7 +1841,6 @@ static int get_unidir_track_to_chan_seg(const int from_track,
                                         const int from_rr_node,
                                         t_rr_edge_info_set& rr_edges_to_create) {
     int num_labels = 0;
-    int* mux_labels = nullptr;
 
     /* x, y coords for get_rr_node lookups */
     int to_x = (CHANX == to_type ? to_seg : to_chan);
@@ -1883,15 +1858,11 @@ static int get_unidir_track_to_chan_seg(const int from_track,
 
     /* get list of muxes to which we can connect */
     int dummy;
-    mux_labels = label_wire_muxes(to_chan, to_seg, seg_details, UNDEFINED, max_len,
-                                  to_dir, max_chan_width, false, &num_labels, &dummy);
+    auto mux_labels = label_wire_muxes(to_chan, to_seg, seg_details, UNDEFINED, max_len,
+                                       to_dir, max_chan_width, false, &num_labels, &dummy);
 
     /* Can't connect if no muxes. */
     if (num_labels < 1) {
-        if (mux_labels) {
-            vtr::free(mux_labels);
-            mux_labels = nullptr;
-        }
         return 0;
     }
 
@@ -1944,10 +1915,6 @@ static int get_unidir_track_to_chan_seg(const int from_track,
         }
     }
 
-    if (mux_labels) {
-        vtr::free(mux_labels);
-        mux_labels = nullptr;
-    }
     return count;
 }
 
@@ -2174,8 +2141,8 @@ void load_sblock_pattern_lookup(const int i,
 
     /* SB's range from (0, 0) to (grid.width() - 2, grid.height() - 2) */
     /* First find all four sides' incoming wires */
-    int* wire_mux_on_track[4];
-    int* incoming_wire_label[4];
+    std::unique_ptr<int[]> wire_mux_on_track[4];
+    std::unique_ptr<int[]> incoming_wire_label[4];
     int num_incoming_wires[4];
     int num_ending_wires[4];
     int num_wire_muxes[4];
@@ -2329,7 +2296,7 @@ void load_sblock_pattern_lookup(const int i,
                          * use any pattern such as Wilton */
                         /* In the direct connect case, I know for sure the init mux is at the same track #
                          * as this ending wire, but still need to find the init mux label for Fs > 3 */
-                        int mux = find_label_of_track(wire_mux_on_track[to_side],
+                        int mux = find_label_of_track(wire_mux_on_track[to_side].get(),
                                                       num_wire_muxes[to_side], itrack);
                         sblock_pattern[i][j][side_opp][to_side][itrack][0] = mux;
                     } else {
@@ -2346,27 +2313,18 @@ void load_sblock_pattern_lookup(const int i,
             }
         }
     }
-
-    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
-        if (incoming_wire_label[side]) {
-            vtr::free(incoming_wire_label[side]);
-        }
-        if (wire_mux_on_track[side]) {
-            vtr::free(wire_mux_on_track[side]);
-        }
-    }
 }
 
-static int* label_wire_muxes(const int chan_num,
-                             const int seg_num,
-                             const t_chan_seg_details* seg_details,
-                             const int seg_type_index,
-                             const int max_len,
-                             const enum e_direction dir,
-                             const int max_chan_width,
-                             const bool check_cb,
-                             int* num_wire_muxes,
-                             int* num_wire_muxes_cb_restricted) {
+static std::unique_ptr<int[]> label_wire_muxes(const int chan_num,
+                                               const int seg_num,
+                                               const t_chan_seg_details* seg_details,
+                                               const int seg_type_index,
+                                               const int max_len,
+                                               const enum e_direction dir,
+                                               const int max_chan_width,
+                                               const bool check_cb,
+                                               int* num_wire_muxes,
+                                               int* num_wire_muxes_cb_restricted) {
     /* Labels the muxes on that side (seg_num, chan_num, direction). The returned array
      * maps a label to the actual track #: array[0] = <the track number of the first/lowest mux>
      * This routine orders wire muxes by their natural order, i.e. track #
@@ -2374,7 +2332,7 @@ static int* label_wire_muxes(const int chan_num,
      * only looks at segments that belong to the specified segment type. */
 
     int itrack, start, end, num_labels, num_labels_restricted, pass;
-    int* labels = nullptr;
+    std::unique_ptr<int[]> labels;
     bool is_endpoint;
 
     /* COUNT pass then a LOAD pass */
@@ -2383,7 +2341,7 @@ static int* label_wire_muxes(const int chan_num,
     for (pass = 0; pass < 2; ++pass) {
         /* Alloc the list on LOAD pass */
         if (pass > 0) {
-            labels = (int*)vtr::malloc(sizeof(int) * num_labels);
+            labels = std::make_unique<int[]>(num_labels);
             num_labels = 0;
         }
 
@@ -2442,25 +2400,25 @@ static int* label_wire_muxes(const int chan_num,
     return labels;
 }
 
-static int* label_incoming_wires(const int chan_num,
-                                 const int seg_num,
-                                 const int sb_seg,
-                                 const t_chan_seg_details* seg_details,
-                                 const int max_len,
-                                 const enum e_direction dir,
-                                 const int max_chan_width,
-                                 int* num_incoming_wires,
-                                 int* num_ending_wires) {
+static std::unique_ptr<int[]> label_incoming_wires(const int chan_num,
+                                                   const int seg_num,
+                                                   const int sb_seg,
+                                                   const t_chan_seg_details* seg_details,
+                                                   const int max_len,
+                                                   const enum e_direction dir,
+                                                   const int max_chan_width,
+                                                   int* num_incoming_wires,
+                                                   int* num_ending_wires) {
     /* Labels the incoming wires on that side (seg_num, chan_num, direction).
      * The returned array maps a track # to a label: array[0] = <the new hash value/label for track 0>,
      * the labels 0,1,2,.. identify consecutive incoming wires that have sblock (passing wires with sblock and ending wires) */
 
     int itrack, start, end, i, num_passing, num_ending, pass;
-    int* labels;
     bool sblock_exists, is_endpoint;
 
     /* Alloc the list of labels for the tracks */
-    labels = (int*)vtr::malloc(max_chan_width * sizeof(int));
+    auto labels = std::make_unique<int[]>(max_chan_width);
+
     for (i = 0; i < max_chan_width; ++i) {
         labels[i] = UN_SET; /* crash hard if unset */
     }
