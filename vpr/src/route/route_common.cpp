@@ -44,9 +44,9 @@ struct t_trace_branch {
 
 /**************** Static variables local to route_common.c ******************/
 
-static t_heap** heap; /* Indexed from [1..heap_size] */
-static int heap_size; /* Number of slots in the heap array */
-static int heap_tail; /* Index of first unused slot in the heap array */
+static t_heap** heap = nullptr; /* Indexed from [1..heap_size] */
+static int heap_size;           /* Number of slots in the heap array */
+static int heap_tail;           /* Index of first unused slot in the heap array */
 
 /* For managing my own list of currently free heap data structures.     */
 static t_heap* heap_free_head = nullptr;
@@ -467,14 +467,18 @@ void pathfinder_update_cost(float pres_fac, float acc_fac) {
     }
 }
 
+// Note: malloc()/free() must be used for the heap,
+//       or realloc() must be eliminated from add_to_heap()
+//       because there is no C++ equivalent.
 void init_heap(const DeviceGrid& grid) {
     if (heap != nullptr) {
         vtr::free(heap + 1);
-        heap = nullptr;
     }
+
     heap_size = (grid.width() - 1) * (grid.height() - 1);
-    heap = (t_heap**)vtr::malloc(heap_size * sizeof(t_heap*));
-    heap--; /* heap stores from [1..heap_size] */
+
+    // heap stores from [1..heap_size]
+    heap = (t_heap**)vtr::malloc(heap_size * sizeof(t_heap*)) - 1;
     heap_tail = 1;
 }
 

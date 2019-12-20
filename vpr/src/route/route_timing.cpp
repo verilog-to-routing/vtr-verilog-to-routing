@@ -846,17 +846,11 @@ void alloc_timing_driven_route_structs(float** pin_criticality_ptr,
                                        t_rt_node*** rt_node_of_sink_ptr) {
     /* Allocates all the structures needed only by the timing-driven router.   */
 
-    int max_pins_per_net = get_max_pins_per_net();
-    int max_sinks = std::max(max_pins_per_net - 1, 0);
+    int max_sinks = std::max(get_max_pins_per_net() - 1, 0);
 
-    float* pin_criticality = (float*)vtr::malloc(max_sinks * sizeof(float));
-    *pin_criticality_ptr = pin_criticality - 1; /* First sink is pin #1. */
-
-    int* sink_order = (int*)vtr::malloc(max_sinks * sizeof(int));
-    *sink_order_ptr = sink_order - 1;
-
-    t_rt_node** rt_node_of_sink = (t_rt_node**)vtr::malloc(max_sinks * sizeof(t_rt_node*));
-    *rt_node_of_sink_ptr = rt_node_of_sink - 1;
+    *pin_criticality_ptr = new float[max_sinks] - 1; /* First sink is pin #1. */
+    *sink_order_ptr = new int[max_sinks] - 1;
+    *rt_node_of_sink_ptr = new t_rt_node*[max_sinks] - 1;
 
     alloc_route_tree_timing_structs();
 }
@@ -869,11 +863,11 @@ void free_timing_driven_route_structs(float* pin_criticality, int* sink_order, t
     /* Frees all the structures needed only by the timing-driven router.        */
 
     // coverity[offset_free : Intentional]
-    free(pin_criticality + 1); /* Starts at index 1. */
+    delete[](pin_criticality + 1); /* Starts at index 1. */
     // coverity[offset_free : Intentional]
-    free(sink_order + 1);
+    delete[](sink_order + 1);
     // coverity[offset_free : Intentional]
-    free(rt_node_of_sink + 1);
+    delete[](rt_node_of_sink + 1);
 
     free_route_tree_timing_structs();
 }
