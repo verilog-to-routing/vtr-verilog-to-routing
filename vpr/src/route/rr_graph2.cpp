@@ -294,7 +294,7 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
             seg_details[cur_track].longline = longline;
 
             /* Stagger the start points in for each track set. The
-             * pin mappings should be aware of this when chosing an
+             * pin mappings should be aware of this when choosing an
              * intelligent way of connecting pins and tracks.
              * cur_track is used as an offset so that extra tracks
              * from different segment types are hopefully better
@@ -1083,7 +1083,7 @@ static void load_block_rr_indices(const DeviceGrid& grid,
                 //Process each block from it's root location
                 auto type = grid[x][y].type;
 
-                //Assign indicies for SINKs and SOURCEs
+                //Assign indices for SINKs and SOURCEs
                 // Note that SINKS/SOURCES have no side, so we always use side 0
                 for (int iclass = 0; iclass < type->num_class; ++iclass) {
                     auto class_type = type->class_inf[iclass].type;
@@ -1100,7 +1100,7 @@ static void load_block_rr_indices(const DeviceGrid& grid,
                 VTR_ASSERT(indices[SOURCE][x][y][0].size() == size_t(type->num_class));
                 VTR_ASSERT(indices[SINK][x][y][0].size() == size_t(type->num_class));
 
-                //Assign indicies for IPINs and OPINs at all offsets from root
+                //Assign indices for IPINs and OPINs at all offsets from root
                 for (int ipin = 0; ipin < type->num_pins; ++ipin) {
                     for (int width_offset = 0; width_offset < type->width; ++width_offset) {
                         int x_tile = x + width_offset;
@@ -1350,7 +1350,7 @@ int find_average_rr_node_index(int device_width,
                                const t_rr_node_indices& L_rr_node_indices) {
     /* Find and return the index to a rr_node that is located at the "center" *
      * of the current grid array, if possible.  In the event the "center" of  *
-     * the grid array is an EMPTY or IO node, then retry alterate locations.  *
+     * the grid array is an EMPTY or IO node, then retry alternate locations.  *
      * Worst case, this function will simply return the 1st non-EMPTY and     *
      * non-IO node.                                                           */
 
@@ -1522,7 +1522,7 @@ int get_track_to_tracks(const int from_chan,
     int start_sb_seg = from_seg - 1;
 
     //The absolute coordinate along the channel where the switch block at the
-    //end of the current wire segment is lcoated
+    //end of the current wire segment is located
     int end_sb_seg = get_seg_end(from_seg_details, from_track, from_seg, from_chan, chan_len);
 
     /* Figure out the sides of SB the from_wire will use */
@@ -1964,7 +1964,7 @@ bool is_sblock(const int chan, int wire_seg, const int sb_seg, const int track, 
     /* Make sure they gave us correct start */
     wire_seg = get_seg_start(seg_details, track, chan, wire_seg);
 
-    ofs = sb_seg - wire_seg + 1; /* Ofset 0 is behind us, so add 1 */
+    ofs = sb_seg - wire_seg + 1; /* Offset 0 is behind us, so add 1 */
 
     VTR_ASSERT(ofs >= 0);
     VTR_ASSERT(ofs < (length + 1));
@@ -2098,7 +2098,7 @@ t_sblock_pattern alloc_sblock_pattern_lookup(const DeviceGrid& grid,
 
     /* Do chunked allocations to make freeing easier, speed up malloc and free, and
      * reduce some of the memory overhead. Could use fewer malloc's but this way
-     * avoids all considerations of pointer sizes and allignment. */
+     * avoids all considerations of pointer sizes and alignment. */
 
     /* Alloc each list of pointers in one go. items is a running product that increases
      * with each new dimension of the matrix. */
@@ -2152,11 +2152,11 @@ void load_sblock_pattern_lookup(const int i,
      * ending wires (the word "incoming" is sometimes dropped for ease of discussion). It appropriately
      * labels all the wires on each side by the following order: By the call to label_incoming_wires,
      * which labels for one side, the order is such that the incoming ending wires (always with sblock)
-     * are labelled first 0,1,2,... p-1, then the incoming passing wires with sblock are labelled
+     * are labeled first 0,1,2,... p-1, then the incoming passing wires with sblock are labeled
      * p,p+1,p+2,... k-1 (for total of k). By this convention, one can easily distinguish the ending
      * wires from the passing wires by checking a label against num_ending_wires variable.
      *
-     * After labelling all the incoming wires, this routine labels the muxes on the side we're currently
+     * After labeling all the incoming wires, this routine labels the muxes on the side we're currently
      * connecting to (iterated for four sides of the sblock), called the to_side. The label scheme is
      * the natural order of the muxes by their track #. Also we find the number of muxes.
      *
@@ -2189,7 +2189,7 @@ void load_sblock_pattern_lookup(const int i,
         num_ending_wires[side] = 0;
         num_wire_muxes[side] = 0;
 
-        /* Skip the side and leave the zero'd value if the
+        /* Skip the side and leave the zeroed value if the
          * channel segment doesn't exist. */
         bool skip = true;
         switch (side) {
@@ -2214,7 +2214,7 @@ void load_sblock_pattern_lookup(const int i,
                 }
                 break;
             default:
-                VTR_ASSERT_MSG(false, "Unrecognzied side");
+                VTR_ASSERT_MSG(false, "Unrecognized side");
                 break;
         }
         if (skip) {
@@ -2339,7 +2339,7 @@ void load_sblock_pattern_lookup(const int i,
                          * side, so there's nothing to be done here (at Fs=3, this connection is implicit for passing
                          * wires and at Fs>3 the code in this function seems to create heavily unbalanced
                          * switch patterns). Additionally, the code in build_rr_chan() explicitly skips
-                         * connections from wire segment midpoints to the opposide sb side (for switch block patterns
+                         * connections from wire segment midpoints to the opposite sb side (for switch block patterns
                          * generated with this function) so any such assignment to sblock_pattern will be ignored anyway. */
                     }
                 }
@@ -2539,7 +2539,7 @@ static int find_label_of_track(int* wire_mux_on_track,
 }
 
 static int should_create_switchblock(const DeviceGrid& grid, int from_chan_coord, int from_seg_coord, t_rr_type from_chan_type, t_rr_type to_chan_type) {
-    //Convert the chan/seg indicies to real x/y coordinates
+    //Convert the chan/seg indices to real x/y coordinates
     int y_coord;
     int x_coord;
     if (from_chan_type == CHANX) {

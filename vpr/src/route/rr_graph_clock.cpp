@@ -11,11 +11,12 @@
 #include "vtr_log.h"
 #include "vpr_error.h"
 
-void ClockRRGraphBuilder::create_and_append_clock_rr_graph(std::vector<t_segment_inf>& segment_inf,
-                                                           const float R_minW_nmos,
-                                                           const float R_minW_pmos,
-                                                           int wire_to_rr_ipin_switch,
-                                                           const enum e_base_cost_type base_cost_type) {
+void ClockRRGraphBuilder::
+    create_and_append_clock_rr_graph(std::vector<t_segment_inf>& segment_inf,
+                                     const float R_minW_nmos,
+                                     const float R_minW_pmos,
+                                     int wire_to_rr_ipin_switch,
+                                     const enum e_base_cost_type base_cost_type) {
     vtr::printf_info("Starting clock network routing resource graph generation...\n");
     clock_t begin = clock();
 

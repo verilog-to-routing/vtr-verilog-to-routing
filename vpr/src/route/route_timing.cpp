@@ -558,7 +558,7 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
                 best_routing_metrics.used_wirelength = wirelength_info.used_wirelength();
             }
 
-            //Decrease pres_fac so that criticl connections will take more direct routes
+            //Decrease pres_fac so that critical connections will take more direct routes
             //Note that we use first_iter_pres_fac here (typically zero), and switch to
             //use initial_pres_fac on the next iteration.
             pres_fac = router_opts.first_iter_pres_fac;
@@ -655,7 +655,7 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
             //
             //By scaling the bounding boxes here, we slowly increase the router's search
             //space in hopes of it allowing signals to move further out of the way to
-            //aleviate the conflicts.
+            //alleviate the conflicts.
             if (itry_conflicted_mode % BB_SCALE_ITER_COUNT == 0) {
                 //We scale the bounding boxes by BB_SCALE_FACTOR,
                 //every BB_SCALE_ITER_COUNT iterations. This ensures
@@ -858,7 +858,7 @@ void alloc_timing_driven_route_structs(float** pin_criticality_ptr,
  * Suggest using a timing_driven_route_structs struct. Memory is managed for you
  */
 void free_timing_driven_route_structs(float* pin_criticality, int* sink_order, t_rt_node** rt_node_of_sink) {
-    /* Frees all the stuctures needed only by the timing-driven router.        */
+    /* Frees all the structures needed only by the timing-driven router.        */
 
     // coverity[offset_free : Intentional]
     free(pin_criticality + 1); /* Starts at index 1. */
@@ -1007,7 +1007,7 @@ bool timing_driven_route_net(ClusterNetId net_id,
 
     // Pre-route to clock source for clock nets (marked as global nets)
     if (cluster_ctx.clb_nlist.net_is_global(net_id) && router_opts.two_stage_clock_routing) {
-        VTR_ASSERT(router_opts.clock_modeling == DEDICATED_NETWORK);
+        //VTR_ASSERT(router_opts.clock_modeling == DEDICATED_NETWORK);
         int sink_node = device_ctx.virtual_clock_network_root_idx;
         enable_router_debug(router_opts, net_id, sink_node);
         // Set to the max timing criticality which should intern minimize clock insertion
@@ -1160,14 +1160,14 @@ static bool timing_driven_pre_route_to_clock_root(
     pathfinder_update_path_cost(new_route_start_tptr, 1, pres_fac);
     empty_heap();
 
-    // need to guarentee ALL nodes' path costs are HUGE_POSITIVE_FLOAT at the start of routing to a sink
+    // need to guarantee ALL nodes' path costs are HUGE_POSITIVE_FLOAT at the start of routing to a sink
     // do this by resetting all the path_costs that have been touched while routing to the current sink
     reset_path_costs(modified_rr_node_inf);
 
     // Post route trace back and route tree clean up:
     // - remove sink from trace back and route tree
     // - fix routing for all nodes leading to the sink
-    // - free up vitual sink occupancy
+    // - free up virtual sink occupancy
     disable_expansion_and_remove_sink_from_route_tree_nodes(rt_root);
     VTR_LOGV_DEBUG(f_router_debug, "Traceback tail before update %d \n",
                    route_ctx.trace[net_id].tail->index);
@@ -1281,7 +1281,7 @@ static bool timing_driven_route_sink(ClusterNetId net_id,
     pathfinder_update_path_cost(new_route_start_tptr, 1, pres_fac);
     empty_heap();
 
-    // need to guarentee ALL nodes' path costs are HUGE_POSITIVE_FLOAT at the start of routing to a sink
+    // need to guarantee ALL nodes' path costs are HUGE_POSITIVE_FLOAT at the start of routing to a sink
     // do this by resetting all the path_costs that have been touched while routing to the current sink
     reset_path_costs(modified_rr_node_inf);
 
@@ -1614,7 +1614,7 @@ static void timing_driven_expand_cheapest(t_heap* cheapest,
         VTR_LOGV_DEBUG(f_router_debug, "    Better cost to %d\n", inode);
         VTR_LOGV_DEBUG(f_router_debug, "    New total cost: %g\n", new_total_cost);
         VTR_LOGV_DEBUG(f_router_debug, "    New back cost: %g\n", new_back_cost);
-        VTR_LOGV_DEBUG(f_router_debug, "      Setting path costs for assicated node %d (from %d edge %d)\n", cheapest->index, cheapest->u.prev.node, cheapest->u.prev.edge);
+        VTR_LOGV_DEBUG(f_router_debug, "      Setting path costs for associated node %d (from %d edge %d)\n", cheapest->index, cheapest->u.prev.node, cheapest->u.prev.edge);
 
         add_to_mod_list(cheapest->index, modified_rr_node_inf);
 
@@ -1628,7 +1628,7 @@ static void timing_driven_expand_cheapest(t_heap* cheapest,
                                         target_node,
                                         router_stats);
     } else {
-        //Post-heap prune, do not re-explore from the current/new partial path as it 
+        //Post-heap prune, do not re-explore from the current/new partial path as it
         //has worse cost than the best partial path to this node found so far
         VTR_LOGV_DEBUG(f_router_debug, "    Worse cost to %d\n", inode);
         VTR_LOGV_DEBUG(f_router_debug, "    Old total cost: %g\n", best_total_cost);
@@ -1686,7 +1686,7 @@ static t_rt_node* setup_routing_resources(int itry,
         // convert the previous iteration's traceback into a route tree
         rt_root = traceback_to_route_tree(net_id);
 
-        //Santiy check that route tree and traceback are equivalent before pruning
+        //Sanity check that route tree and traceback are equivalent before pruning
         VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
 
         // check for edge correctness
@@ -1712,7 +1712,7 @@ static t_rt_node* setup_routing_resources(int itry,
             //Sanity check the traceback for self-consistency
             VTR_ASSERT_DEBUG(validate_traceback(route_ctx.trace[net_id].head));
 
-            //Santiy check that route tree and traceback are equivalent after pruning
+            //Sanity check that route tree and traceback are equivalent after pruning
             VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
 
             // put the updated costs of the route tree nodes back into pathfinder
@@ -1724,7 +1724,7 @@ static t_rt_node* setup_routing_resources(int itry,
             //Initialize only to source
             rt_root = init_route_tree_to_source(net_id);
 
-            //NOTE: We leave the traceback uninitiailized, so update_traceback()
+            //NOTE: We leave the traceback uninitialized, so update_traceback()
             //      will correctly add the SOURCE node when the branch to
             //      the first SINK is found.
             VTR_ASSERT(route_ctx.trace[net_id].head == nullptr);
@@ -1980,7 +1980,7 @@ static void timing_driven_expand_neighbours(t_heap* current,
         target_bb.ymax = device_ctx.rr_nodes[target_node].yhigh();
     }
 
-    //For each node associated with the current heap element, expand all of it's neighbours
+    //For each node associated with the current heap element, expand all of it's neighbors
     int num_edges = device_ctx.rr_nodes[current->index].num_edges();
     for (int iconn = 0; iconn < num_edges; iconn++) {
         int to_node = device_ctx.rr_nodes[current->index].edge_sink_node(iconn);
@@ -2031,7 +2031,7 @@ static void timing_driven_expand_neighbour(t_heap* current,
 
     /* Prune away IPINs that lead to blocks other than the target one.  Avoids  *
      * the issue of how to cost them properly so they don't get expanded before *
-     * more promising routes, but makes route-throughs (via CLBs) impossible.   *
+     * more promising routes, but makes route-through (via CLBs) impossible.   *
      * Change this if you want to investigate route-throughs.                   */
     if (target_node != OPEN) {
         t_rr_type to_type = device_ctx.rr_nodes[to_node].type();
@@ -2506,7 +2506,7 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
             // rr sink node index corresponding to this connection terminal
             auto rr_sink_node = route_ctx.net_rr_terminals[net_id][ipin];
 
-            //Clear any forced re-routing from the previuos iteration
+            //Clear any forced re-routing from the previous iteration
             forcible_reroute_connection_flag[net_id][rr_sink_node] = false;
 
             // skip if connection is internal to a block such that SOURCE->OPIN->IPIN->SINK directly, which would have 0 time delay
@@ -2802,7 +2802,7 @@ static size_t dynamic_update_bounding_boxes(const std::vector<ClusterNetId>& upd
 
         if (routing_head == nullptr) continue; //Skip if no routing
 
-        //We do not adjust the boundig boxes of high fanout nets, since they
+        //We do not adjust the bounding boxes of high fanout nets, since they
         //use different bounding boxes based on the target location.
         //
         //This ensures that the delta values calculated below are always non-negative
@@ -2870,8 +2870,8 @@ static t_bb calc_current_bb(const t_trace* head) {
     for (const t_trace* elem = head; elem != nullptr; elem = elem->next) {
         const t_rr_node& node = device_ctx.rr_nodes[elem->index];
         //The router interprets RR nodes which cross the boundary as being
-        //'within' of the BB. Only thos which are *strictly* out side the
-        //box are exluded, hence we use the nodes xhigh/yhigh for xmin/xmax,
+        //'within' of the BB. Only those which are *strictly* out side the
+        //box are excluded, hence we use the nodes xhigh/yhigh for xmin/xmax,
         //and xlow/ylow for xmax/ymax calculations
         bb.xmin = std::min<int>(bb.xmin, node.xhigh());
         bb.ymin = std::min<int>(bb.ymin, node.yhigh());
@@ -3027,7 +3027,7 @@ static void prune_unused_non_configurable_nets(CBRR& connections_inf) {
             continue;
         }
 
-        //Santiy check that route tree and traceback are equivalent before pruning
+        //Sanity check that route tree and traceback are equivalent before pruning
         VTR_ASSERT(verify_traceback_route_tree_equivalent(
             route_ctx.trace[net_id].head, rt_root));
 

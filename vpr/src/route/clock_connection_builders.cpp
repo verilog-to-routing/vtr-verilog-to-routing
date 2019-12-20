@@ -41,8 +41,8 @@ void RoutingToClockConnection::set_fc_val(float fc_val) {
 
 void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_graph) {
     // Initialize random seed
-    // Must be done durring every call inorder for restored rr_graphs after a binary
-    // search to be consistant
+    // Must be done during every call in order for restored rr_graphs after a binary
+    // search to be consistent
     std::srand(seed);
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
@@ -151,7 +151,7 @@ void ClockToClockConneciton::create_switches(const ClockRRGraphBuilder& clock_gr
             x,
             y);
 
-        // boundry conditions:
+        // boundary conditions:
         // y at gird height and height -1 connections share the same drive point
         if (y == int(grid.height() - 2)) {
             y = y - 1;
@@ -219,7 +219,7 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
 
     for (size_t x = 0; x < grid.width(); x++) {
         for (size_t y = 0; y < grid.height(); y++) {
-            //Avoid boundry
+            //Avoid boundary
             if ((y == 0 && x == 0) || (x == grid.width() - 1 && y == grid.height() - 1)) {
                 continue;
             }
@@ -259,7 +259,7 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
                         continue;
                     }
 
-                    //Adjust boundry connections (TODO: revisist if chany connections)
+                    //Adjust boundary connections (TODO: revisit if chany connections)
                     int clock_x_offset = 0;
                     int clock_y_offset = 0;
                     if (x == 0) {

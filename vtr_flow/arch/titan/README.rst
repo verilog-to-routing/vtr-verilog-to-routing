@@ -1,5 +1,5 @@
 The `Titan <http://www.eecg.utoronto.ca/~kmurray/titan/>` benchmarks and 
-architectures are distributed seperately from VTR due to their large size.
+architectures are distributed separately from VTR due to their large size.
 
 To integrate them into VTR run:
 
