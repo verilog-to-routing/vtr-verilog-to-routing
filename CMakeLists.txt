@@ -396,3 +396,12 @@ list(APPEND DIRS_TO_FORMAT_CPP "${CMAKE_CURRENT_SOURCE_DIR}/libs/libvtrutil")
 list(APPEND DIRS_TO_FORMAT_CPP "${CMAKE_CURRENT_SOURCE_DIR}/libs/libpugiutil")
 list(APPEND DIRS_TO_FORMAT_CPP "${CMAKE_CURRENT_SOURCE_DIR}/libs/liblog")
 include(AutoClangFormat)
+
+# Adds convenience methods, see cmake/cleanCppExtensions.cmake
+# include(cleanCppExtensions)
+
+# Creates options to turn on sanitizers, see cmake/sanitizers.cmake
+# include(sanitizers)
+
+# Adds misc targets: format, cppcheck, tidy, see cmake/cleanCppExtensions.cmake
+# addMiscTargets()

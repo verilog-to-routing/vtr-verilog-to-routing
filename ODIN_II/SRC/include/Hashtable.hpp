@@ -35,11 +35,11 @@ private:
 public:
 
 	// Adds an item to the hashtable.
-	void   add                (std::string key, void *item);
+	void   add                (const std::string& key, void *item);
 	// Removes an item from the hashtable. If the item is not present, a null pointer is returned.
-	void*  remove             (std::string key);
+	void*  remove             (const std::string& key);
 	// Gets an item from the hashtable without removing it. If the item is not present, a null pointer is returned.
-	void*  get                (std::string key);
+	void*  get                (const std::string& key);
 	// Check to see if the hashtable is empty.
 	bool   is_empty           ();
 	// calls free on each item.

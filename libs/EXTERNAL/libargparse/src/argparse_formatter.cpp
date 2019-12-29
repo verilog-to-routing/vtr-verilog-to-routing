@@ -216,7 +216,7 @@ namespace argparse {
             std::stringstream choices_ss;
             choices_ss << "{";
             bool first = true;
-            for(auto choice : arg.choices()) {
+            for(const auto& choice : arg.choices()) {
                 if (!first) {
                     choices_ss << ", ";
                 }

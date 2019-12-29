@@ -1,4 +1,6 @@
 #include "read_options.h"
+
+#include <utility>
 #include "constant_nets.h"
 #include "clock_modeling.h"
 #include "vpr_error.h"
@@ -29,7 +31,7 @@ t_options read_options(int argc, const char** argv) {
 }
 
 struct ParseOnOff {
-    ConvertedValue<bool> from_str(std::string str) {
+    ConvertedValue<bool> from_str(const std::string& str) {
         ConvertedValue<bool> conv_value;
         if (str == "on")
             conv_value.set_value(true);
@@ -61,7 +63,7 @@ struct ParseOnOff {
 };
 
 struct ParseCircuitFormat {
-    ConvertedValue<e_circuit_format> from_str(std::string str) {
+    ConvertedValue<e_circuit_format> from_str(const std::string& str) {
         ConvertedValue<e_circuit_format> conv_value;
         if (str == "auto")
             conv_value.set_value(e_circuit_format::AUTO);
@@ -97,7 +99,7 @@ struct ParseCircuitFormat {
     }
 };
 struct ParseRoutePredictor {
-    ConvertedValue<e_routing_failure_predictor> from_str(std::string str) {
+    ConvertedValue<e_routing_failure_predictor> from_str(const std::string& str) {
         ConvertedValue<e_routing_failure_predictor> conv_value;
         if (str == "safe")
             conv_value.set_value(SAFE);
@@ -133,7 +135,7 @@ struct ParseRoutePredictor {
 };
 
 struct ParseRouterAlgorithm {
-    ConvertedValue<e_router_algorithm> from_str(std::string str) {
+    ConvertedValue<e_router_algorithm> from_str(const std::string& str) {
         ConvertedValue<e_router_algorithm> conv_value;
         if (str == "breadth_first")
             conv_value.set_value(BREADTH_FIRST);
@@ -164,7 +166,7 @@ struct ParseRouterAlgorithm {
 };
 
 struct RouteBudgetsAlgorithm {
-    ConvertedValue<e_routing_budgets_algorithm> from_str(std::string str) {
+    ConvertedValue<e_routing_budgets_algorithm> from_str(const std::string& str) {
         ConvertedValue<e_routing_budgets_algorithm> conv_value;
         if (str == "minimax")
             conv_value.set_value(MINIMAX);
@@ -200,7 +202,7 @@ struct RouteBudgetsAlgorithm {
 };
 
 struct ParseRouteType {
-    ConvertedValue<e_route_type> from_str(std::string str) {
+    ConvertedValue<e_route_type> from_str(const std::string& str) {
         ConvertedValue<e_route_type> conv_value;
         if (str == "global")
             conv_value.set_value(GLOBAL);
@@ -231,7 +233,7 @@ struct ParseRouteType {
 };
 
 struct ParseBaseCost {
-    ConvertedValue<e_base_cost_type> from_str(std::string str) {
+    ConvertedValue<e_base_cost_type> from_str(const std::string& str) {
         ConvertedValue<e_base_cost_type> conv_value;
         if (str == "delay_normalized")
             conv_value.set_value(DELAY_NORMALIZED);
@@ -278,7 +280,7 @@ struct ParseBaseCost {
 };
 
 struct ParsePlaceAlgorithm {
-    ConvertedValue<e_place_algorithm> from_str(std::string str) {
+    ConvertedValue<e_place_algorithm> from_str(const std::string& str) {
         ConvertedValue<e_place_algorithm> conv_value;
         if (str == "bounding_box")
             conv_value.set_value(BOUNDING_BOX_PLACE);
@@ -309,7 +311,7 @@ struct ParsePlaceAlgorithm {
 };
 
 struct ParseClusterSeed {
-    ConvertedValue<e_cluster_seed> from_str(std::string str) {
+    ConvertedValue<e_cluster_seed> from_str(const std::string& str) {
         ConvertedValue<e_cluster_seed> conv_value;
         if (str == "timing")
             conv_value.set_value(e_cluster_seed::TIMING);
@@ -356,7 +358,7 @@ struct ParseClusterSeed {
 };
 
 struct ParseConstantNetMethod {
-    ConvertedValue<e_constant_net_method> from_str(std::string str) {
+    ConvertedValue<e_constant_net_method> from_str(const std::string& str) {
         ConvertedValue<e_constant_net_method> conv_value;
         if (str == "global")
             conv_value.set_value(CONSTANT_NET_GLOBAL);
@@ -387,7 +389,7 @@ struct ParseConstantNetMethod {
 };
 
 struct ParseTimingReportDetail {
-    ConvertedValue<e_timing_report_detail> from_str(std::string str) {
+    ConvertedValue<e_timing_report_detail> from_str(const std::string& str) {
         ConvertedValue<e_timing_report_detail> conv_value;
         if (str == "netlist")
             conv_value.set_value(e_timing_report_detail::NETLIST);
@@ -422,7 +424,7 @@ struct ParseTimingReportDetail {
 };
 
 struct ParseClockModeling {
-    ConvertedValue<e_clock_modeling> from_str(std::string str) {
+    ConvertedValue<e_clock_modeling> from_str(const std::string& str) {
         ConvertedValue<e_clock_modeling> conv_value;
         if (str == "ideal")
             conv_value.set_value(IDEAL_CLOCK);
@@ -460,7 +462,7 @@ struct ParseClockModeling {
 };
 
 struct ParseUnrelatedClustering {
-    ConvertedValue<e_unrelated_clustering> from_str(std::string str) {
+    ConvertedValue<e_unrelated_clustering> from_str(const std::string& str) {
         ConvertedValue<e_unrelated_clustering> conv_value;
         if (str == "on")
             conv_value.set_value(e_unrelated_clustering::ON);
@@ -498,7 +500,7 @@ struct ParseUnrelatedClustering {
 };
 
 struct ParseBalanceBlockTypeUtil {
-    ConvertedValue<e_balance_block_type_util> from_str(std::string str) {
+    ConvertedValue<e_balance_block_type_util> from_str(const std::string& str) {
         ConvertedValue<e_balance_block_type_util> conv_value;
         if (str == "on")
             conv_value.set_value(e_balance_block_type_util::ON);
@@ -536,7 +538,7 @@ struct ParseBalanceBlockTypeUtil {
 };
 
 struct ParseConstGenInference {
-    ConvertedValue<e_const_gen_inference> from_str(std::string str) {
+    ConvertedValue<e_const_gen_inference> from_str(const std::string& str) {
         ConvertedValue<e_const_gen_inference> conv_value;
         if (str == "none")
             conv_value.set_value(e_const_gen_inference::NONE);
@@ -574,7 +576,7 @@ struct ParseConstGenInference {
 };
 
 struct ParseIncrRerouteDelayRipup {
-    ConvertedValue<e_incr_reroute_delay_ripup> from_str(std::string str) {
+    ConvertedValue<e_incr_reroute_delay_ripup> from_str(const std::string& str) {
         ConvertedValue<e_incr_reroute_delay_ripup> conv_value;
         if (str == "on")
             conv_value.set_value(e_incr_reroute_delay_ripup::ON);
@@ -612,7 +614,7 @@ struct ParseIncrRerouteDelayRipup {
 };
 
 struct ParseRouteBBUpdate {
-    ConvertedValue<e_route_bb_update> from_str(std::string str) {
+    ConvertedValue<e_route_bb_update> from_str(const std::string& str) {
         ConvertedValue<e_route_bb_update> conv_value;
         if (str == "static")
             conv_value.set_value(e_route_bb_update::STATIC);
@@ -646,7 +648,7 @@ struct ParseRouteBBUpdate {
 };
 
 struct ParseRouterLookahead {
-    ConvertedValue<e_router_lookahead> from_str(std::string str) {
+    ConvertedValue<e_router_lookahead> from_str(const std::string& str) {
         ConvertedValue<e_router_lookahead> conv_value;
         if (str == "classic")
             conv_value.set_value(e_router_lookahead::CLASSIC);
@@ -680,7 +682,7 @@ struct ParseRouterLookahead {
 };
 
 struct ParsePlaceDelayModel {
-    ConvertedValue<PlaceDelayModelType> from_str(std::string str) {
+    ConvertedValue<PlaceDelayModelType> from_str(const std::string& str) {
         ConvertedValue<PlaceDelayModelType> conv_value;
         if (str == "delta")
             conv_value.set_value(PlaceDelayModelType::DELTA);
@@ -714,7 +716,7 @@ struct ParsePlaceDelayModel {
 };
 
 struct ParseReducer {
-    ConvertedValue<e_reducer> from_str(std::string str) {
+    ConvertedValue<e_reducer> from_str(const std::string& str) {
         ConvertedValue<e_reducer> conv_value;
         if (str == "min")
             conv_value.set_value(e_reducer::MIN);
@@ -763,7 +765,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         "\n"
         "Attempts to find the minimum routable channel width, unless a fixed"
         " channel width is specified with --route_chan_width.";
-    auto parser = argparse::ArgumentParser(prog_name, description);
+    auto parser = argparse::ArgumentParser(std::move(prog_name), description);
 
     std::string epilog = vtr::replace_all(
         "Usage Examples\n"

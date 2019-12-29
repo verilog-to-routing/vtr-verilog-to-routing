@@ -1,4 +1,6 @@
 #include "router_delay_profiling.h"
+
+#include <utility>
 #include "globals.h"
 #include "route_tree_type.h"
 #include "route_common.h"
@@ -188,7 +190,7 @@ void alloc_routing_structs(t_chan_width chan_width,
     create_rr_graph(graph_type,
                     device_ctx.physical_tile_types,
                     device_ctx.grid,
-                    chan_width,
+                    std::move(chan_width),
                     device_ctx.num_arch_switches,
                     det_routing_arch,
                     segment_inf,

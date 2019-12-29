@@ -39,7 +39,7 @@ namespace argparse {
         return false;
     }
 
-    bool is_valid_choice(std::string str, const std::vector<std::string>& choices) {
+    bool is_valid_choice(const std::string& str, const std::vector<std::string>& choices) {
         if (choices.empty()) return true;
 
         auto find_iter = std::find(choices.begin(), choices.end(), str);
@@ -74,7 +74,7 @@ namespace argparse {
         return res;
     }
 
-    std::vector<std::string> wrap_width(std::string str, size_t width, std::vector<std::string> break_strs) {
+    std::vector<std::string> wrap_width(std::string str, size_t width, const std::vector<std::string>& break_strs) {
         std::vector<std::string> wrapped_lines;
 
         size_t start = 0;
@@ -114,13 +114,13 @@ namespace argparse {
         return wrapped_lines;
     }
 
-    std::string basename(std::string filepath) {
+    std::string basename(const std::string& filepath) {
 #ifdef _WIN32
         //Windows uses back-slash as directory divider
         auto pos = filepath.rfind("\\");
 #else
         //*nix-like uses forward-slash as directory divider
-        auto pos = filepath.rfind("/");
+        auto pos = filepath.rfind('/');
 #endif
         if (pos == std::string::npos) {
             pos = 0;

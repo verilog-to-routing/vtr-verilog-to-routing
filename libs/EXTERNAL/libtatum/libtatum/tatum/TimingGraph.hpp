@@ -53,6 +53,7 @@
  * support is added), it may be a good idea apply these modifications automatically as needed.
  *
  */
+#include <utility>
 #include <vector>
 #include <set>
 #include <limits>
@@ -305,17 +306,17 @@ std::vector<std::vector<NodeId>> identify_combinational_loops(const TimingGraph&
 //Returns the set of nodes transitively connected (either fanin or fanout) to nodes in through_nodes
 //up to max_depth (default infinite) hops away
 std::vector<NodeId> find_transitively_connected_nodes(const TimingGraph& tg, 
-                                                      const std::vector<NodeId> through_nodes, 
+                                                      const std::vector<NodeId>& through_nodes, 
                                                       size_t max_depth=std::numeric_limits<size_t>::max());
 
 //Returns the set of nodes in the transitive fanin of nodes in sinks up to max_depth (default infinite) hops away
 std::vector<NodeId> find_transitive_fanin_nodes(const TimingGraph& tg, 
-                                                const std::vector<NodeId> sinks, 
+                                                const std::vector<NodeId>& sinks, 
                                                 size_t max_depth=std::numeric_limits<size_t>::max());
 
 //Returns the set of nodes in the transitive fanout of nodes in sources up to max_depth (default infinite) hops away
 std::vector<NodeId> find_transitive_fanout_nodes(const TimingGraph& tg,
-                                                 const std::vector<NodeId> sources, 
+                                                 const std::vector<NodeId>& sources, 
                                                  size_t max_depth=std::numeric_limits<size_t>::max());
 
 EdgeType infer_edge_type(const TimingGraph& tg, EdgeId edge);
@@ -324,7 +325,7 @@ EdgeType infer_edge_type(const TimingGraph& tg, EdgeId edge);
 struct GraphIdMaps {
     GraphIdMaps(tatum::util::linear_map<NodeId,NodeId> node_map,
                 tatum::util::linear_map<EdgeId,EdgeId> edge_map)
-        : node_id_map(node_map), edge_id_map(edge_map) {}
+        : node_id_map(std::move(node_map)), edge_id_map(std::move(edge_map)) {}
     tatum::util::linear_map<NodeId,NodeId> node_id_map;
     tatum::util::linear_map<EdgeId,EdgeId> edge_id_map;
 };

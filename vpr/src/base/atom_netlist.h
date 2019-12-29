@@ -139,7 +139,7 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
     //  truth_table : The single-output cover defining the block's logic function
     //                The truth_table is optional and only relevant for LUTs (where it describes the logic function)
     //                and Flip-Flops/latches (where it consists of a single entry defining the initial state).
-    AtomBlockId create_block(const std::string name, const t_model* model, const TruthTable truth_table = TruthTable());
+    AtomBlockId create_block(const std::string& name, const t_model* model, const TruthTable& truth_table = TruthTable());
 
     //Create or return an existing port in the netlist
     //  blk_id      : The block the port is associated with
@@ -156,13 +156,13 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
 
     //Create an empty, or return an existing net in the netlist
     //  name    : The unique name of the net
-    AtomNetId create_net(const std::string name); //An empty or existing net
+    AtomNetId create_net(const std::string& name); //An empty or existing net
 
     //Create a completely specified net from specified driver and sinks
     //  name    : The name of the net (Note: must not already exist)
     //  driver  : The net's driver pin
     //  sinks   : The net's sink pins
-    AtomNetId add_net(const std::string name, AtomPinId driver, std::vector<AtomPinId> sinks);
+    AtomNetId add_net(const std::string& name, AtomPinId driver, std::vector<AtomPinId> sinks);
 
   private: //Private members
     /*

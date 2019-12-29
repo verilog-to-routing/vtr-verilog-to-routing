@@ -33,7 +33,7 @@ namespace tatum { namespace detail {
 
             void print_path_line_no_incr(std::ostream& os, std::string point, tatum::Time path) const;
 
-            void print_path_line(std::ostream& os, std::string point, std::string incr, std::string path) const;
+            void print_path_line(std::ostream& os, const std::string& point, const std::string& incr, const std::string& path) const;
 
             void print_divider(std::ostream& os) const;
 
@@ -62,22 +62,22 @@ class TimingReporter {
                        float unit_scale=1e-9,
                        size_t precision=3);
     public:
-        void report_timing_setup(std::string filename, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
+        void report_timing_setup(const std::string& filename, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
         void report_timing_setup(std::ostream& os, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
 
-        void report_timing_hold(std::string filename, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
+        void report_timing_hold(const std::string& filename, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
         void report_timing_hold(std::ostream& os, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t npaths=REPORT_TIMING_DEFAULT_NPATHS) const;
 
-        void report_skew_setup(std::string filename, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t nworst=REPORT_TIMING_DEFAULT_NPATHS) const;
+        void report_skew_setup(const std::string& filename, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t nworst=REPORT_TIMING_DEFAULT_NPATHS) const;
         void report_skew_setup(std::ostream& os, const tatum::SetupTimingAnalyzer& setup_analyzer, size_t nworst=REPORT_TIMING_DEFAULT_NPATHS) const;
 
-        void report_skew_hold(std::string filename, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t nworst=REPORT_TIMING_DEFAULT_NPATHS) const;
+        void report_skew_hold(const std::string& filename, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t nworst=REPORT_TIMING_DEFAULT_NPATHS) const;
         void report_skew_hold(std::ostream& os, const tatum::HoldTimingAnalyzer& hold_analyzer, size_t nworst=REPORT_TIMING_DEFAULT_NPATHS) const;
 
-        void report_unconstrained_setup(std::string filename, const tatum::SetupTimingAnalyzer& setup_analyzer) const;
+        void report_unconstrained_setup(const std::string& filename, const tatum::SetupTimingAnalyzer& setup_analyzer) const;
         void report_unconstrained_setup(std::ostream& os, const tatum::SetupTimingAnalyzer& setup_analyzer) const;
 
-        void report_unconstrained_hold(std::string filename, const tatum::HoldTimingAnalyzer& hold_analyzer) const;
+        void report_unconstrained_hold(const std::string& filename, const tatum::HoldTimingAnalyzer& hold_analyzer) const;
         void report_unconstrained_hold(std::ostream& os, const tatum::HoldTimingAnalyzer& hold_analyzer) const;
 
     private:

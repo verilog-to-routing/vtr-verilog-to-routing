@@ -47,7 +47,7 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
 static void process_nets(std::ifstream& fp, ClusterNetId inet, std::string name, std::vector<std::string> input_tokens, const char* filename, int& lineno);
 static void process_global_blocks(std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno);
 static void format_coordinates(int& x, int& y, std::string coord, ClusterNetId net, const char* filename, const int lineno);
-static void format_pin_info(std::string& pb_name, std::string& port_name, int& pb_pin_num, std::string input);
+static void format_pin_info(std::string& pb_name, std::string& port_name, int& pb_pin_num, const std::string& input);
 static std::string format_name(std::string name);
 
 /*************Global Functions****************************/
@@ -405,7 +405,7 @@ static void format_coordinates(int& x, int& y, std::string coord, ClusterNetId n
     }
 }
 
-static void format_pin_info(std::string& pb_name, std::string& port_name, int& pb_pin_num, std::string input) {
+static void format_pin_info(std::string& pb_name, std::string& port_name, int& pb_pin_num, const std::string& input) {
     /*Parse the pin info in the form of pb_name.port_name[pb_pin_num]
      *into its appropriate variables*/
     std::stringstream pb_info(input);

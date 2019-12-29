@@ -40,6 +40,7 @@
 #include <map>
 #include <algorithm>
 #include <fstream>
+#include <utility>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -320,7 +321,7 @@ static std::vector<AtomBlockId> initialize_seed_atoms(const e_cluster_seed seed_
                                                       const t_molecule_stats& max_molecule_stats,
                                                       const vtr::vector<AtomBlockId, float>& atom_criticality);
 
-static t_pack_molecule* get_highest_gain_seed_molecule(int* seedindex, const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules, const std::vector<AtomBlockId> seed_atoms);
+static t_pack_molecule* get_highest_gain_seed_molecule(int* seedindex, const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules, const std::vector<AtomBlockId>& seed_atoms);
 
 static float get_molecule_gain(t_pack_molecule* molecule, std::map<AtomBlockId, float>& blk_gain);
 static int compare_molecule_gain(const void* a, const void* b);
@@ -354,7 +355,7 @@ static t_logical_block_type_ptr identify_logic_block_type(std::map<const t_model
 
 static t_pb_type* identify_le_block_type(t_logical_block_type_ptr logic_block_type);
 
-static bool pb_used_for_blif_model(const t_pb* pb, std::string blif_model_name);
+static bool pb_used_for_blif_model(const t_pb* pb, const std::string& blif_model_name);
 
 static void print_le_count(std::vector<int>& le_count, const t_pb_type* le_pb_type);
 
@@ -2072,7 +2073,7 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
     }
 
     if (num_used_type_instances[block_type] > num_instances) {
-        device_ctx.grid = create_device_grid(device_layout_name, arch->grid_layouts, num_used_type_instances, target_device_utilization);
+        device_ctx.grid = create_device_grid(std::move(device_layout_name), arch->grid_layouts, num_used_type_instances, target_device_utilization);
         VTR_LOGV(verbosity > 0, "Not enough resources expand FPGA size to (%d x %d)\n",
                  device_ctx.grid.width(), device_ctx.grid.height());
     }
@@ -2704,7 +2705,7 @@ static std::vector<AtomBlockId> initialize_seed_atoms(const e_cluster_seed seed_
     return seed_atoms;
 }
 
-static t_pack_molecule* get_highest_gain_seed_molecule(int* seedindex, const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules, const std::vector<AtomBlockId> seed_atoms) {
+static t_pack_molecule* get_highest_gain_seed_molecule(int* seedindex, const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules, const std::vector<AtomBlockId>& seed_atoms) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
     while (*seedindex < static_cast<int>(seed_atoms.size())) {
@@ -3482,7 +3483,7 @@ static void update_le_count(const t_pb* pb, const t_logical_block_type_ptr logic
  * This function returns true if the given physical block has
  * a primitive matching the given blif model and is used
  */
-static bool pb_used_for_blif_model(const t_pb* pb, std::string blif_model_name) {
+static bool pb_used_for_blif_model(const t_pb* pb, const std::string& blif_model_name) {
     auto pb_graph_node = pb->pb_graph_node;
     auto pb_type = pb_graph_node->pb_type;
     auto mode = &pb_type->modes[pb->mode];

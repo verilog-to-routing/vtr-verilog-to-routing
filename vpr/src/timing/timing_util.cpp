@@ -281,8 +281,8 @@ float find_hold_total_negative_slack(const tatum::HoldTimingAnalyzer& hold_analy
     return tns;
 }
 
-tatum::NodeId find_origin_node_for_hold_slack(const tatum::TimingTags::tag_range arrival_tags,
-                                              const tatum::TimingTags::tag_range required_tags,
+tatum::NodeId find_origin_node_for_hold_slack(const tatum::TimingTags::tag_range& arrival_tags,
+                                              const tatum::TimingTags::tag_range& required_tags,
                                               float slack) {
     /*Given the slack, arrival, and required tags of a certain timing node,
      * its origin node is found*/
@@ -538,7 +538,7 @@ float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info, cons
 
 float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_req,
                                const std::map<DomainPair, float>& domains_worst_slack,
-                               const tatum::TimingTags::tag_range tags) {
+                               const tatum::TimingTags::tag_range& tags) {
     //Allowable round-off tolerance during criticality calculation
     constexpr float CRITICALITY_ROUND_OFF_TOLERANCE = 1e-4;
 
@@ -600,7 +600,7 @@ float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_re
     return max_crit;
 }
 
-void print_tatum_cpds(std::vector<tatum::TimingPathInfo> cpds) {
+void print_tatum_cpds(const std::vector<tatum::TimingPathInfo>& cpds) {
     for (auto path : cpds) {
         VTR_LOG("Tatum   %zu -> %zu: least_slack=%g cpd=%g\n", size_t(path.launch_domain()), size_t(path.capture_domain()), float(path.slack()), float(path.delay()));
     }

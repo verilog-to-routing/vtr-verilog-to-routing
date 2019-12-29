@@ -2,6 +2,7 @@
 #define CLOCK_NETWORK_BUILDERS_H
 
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "clock_fwd.h"
@@ -129,8 +130,8 @@ class ClockRib : public ClockNetwork {
     ClockRib(Wire wire1, WireRepeat repeat1, RibDrive drive1, RibTaps tap1)
         : x_chan_wire(wire1)
         , repeat(repeat1)
-        , drive(drive1)
-        , tap(tap1) {}
+        , drive(std::move(drive1))
+        , tap(std::move(tap1)) {}
     /*
      * Getters
      */

@@ -3,6 +3,7 @@
 
 #include "vtr_error.h"
 #include <cstdarg>
+#include <utility>
 
 //Note that we mark this function with the C++11 attribute 'noreturn'
 //as it will throw exceptions and not return normally. This can help
@@ -12,7 +13,7 @@
 class ArchFpgaError : public vtr::VtrError {
   public:
     ArchFpgaError(std::string msg = "", std::string new_filename = "", size_t new_linenumber = -1)
-        : vtr::VtrError(msg, new_filename, new_linenumber) {}
+        : vtr::VtrError(std::move(msg), std::move(new_filename), new_linenumber) {}
 };
 
 #endif

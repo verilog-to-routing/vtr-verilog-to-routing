@@ -19,7 +19,7 @@ extern ezgl::application application;
 
 #endif /* NO_GRAPHICS */
 
-void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type pic_on_screen_val, std::shared_ptr<SetupTimingInfo> timing_info);
+void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type pic_on_screen_val, const std::shared_ptr<SetupTimingInfo>& timing_info);
 //Initializes the drawing locations.
 //FIXME: Currently broken if no rr-graph is loaded
 void init_draw_coords(float clb_width);

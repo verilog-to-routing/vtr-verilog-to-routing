@@ -8,6 +8,7 @@
 #include "vtr_error.h"
 
 #include <random>
+#include <utility>
 #include <math.h>
 
 /*
@@ -15,11 +16,11 @@
  */
 
 void RoutingToClockConnection::set_clock_name_to_connect_to(std::string clock_name) {
-    clock_to_connect_to = clock_name;
+    clock_to_connect_to = std::move(clock_name);
 }
 
 void RoutingToClockConnection::set_clock_switch_point_name(std::string clock_switch_point_name) {
-    switch_point_name = clock_switch_point_name;
+    switch_point_name = std::move(clock_switch_point_name);
 }
 
 void RoutingToClockConnection::set_switch_location(int x, int y) {
@@ -107,19 +108,19 @@ int RoutingToClockConnection::create_virtual_clock_network_sink_node(
  */
 
 void ClockToClockConneciton::set_from_clock_name(std::string clock_name) {
-    from_clock = clock_name;
+    from_clock = std::move(clock_name);
 }
 
 void ClockToClockConneciton::set_from_clock_switch_point_name(std::string switch_point_name) {
-    from_switch = switch_point_name;
+    from_switch = std::move(switch_point_name);
 }
 
 void ClockToClockConneciton::set_to_clock_name(std::string clock_name) {
-    to_clock = clock_name;
+    to_clock = std::move(clock_name);
 }
 
 void ClockToClockConneciton::set_to_clock_switch_point_name(std::string switch_point_name) {
-    to_switch = switch_point_name;
+    to_switch = std::move(switch_point_name);
 }
 
 void ClockToClockConneciton::set_switch(int rr_switch_index) {
@@ -191,12 +192,12 @@ void ClockToClockConneciton::create_switches(const ClockRRGraphBuilder& clock_gr
  */
 
 void ClockToPinsConnection::set_clock_name_to_connect_from(std::string clock_name) {
-    clock_to_connect_from = clock_name;
+    clock_to_connect_from = std::move(clock_name);
 }
 
 void ClockToPinsConnection::set_clock_switch_point_name(
     std::string connection_switch_point_name) {
-    switch_point_name = connection_switch_point_name;
+    switch_point_name = std::move(connection_switch_point_name);
 }
 
 void ClockToPinsConnection::set_switch(int rr_switch_index) {

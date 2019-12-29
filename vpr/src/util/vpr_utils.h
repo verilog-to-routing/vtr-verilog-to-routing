@@ -89,12 +89,12 @@ std::tuple<ClusterNetId, int, int> find_pb_route_clb_input_net_pin(ClusterBlockI
 const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, std::string port_name);
 
 //Returns the graph pin matching name at pin index
-const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, std::string port_name, int index);
+const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const std::string& port_name, int index);
 
 AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin);
 
 //Returns the physical tile type matching a given physical tile type name, or nullptr (if not found)
-t_physical_tile_type_ptr find_tile_type_by_name(std::string name, const std::vector<t_physical_tile_type>& types);
+t_physical_tile_type_ptr find_tile_type_by_name(const std::string& name, const std::vector<t_physical_tile_type>& types);
 
 //Returns the logical block type which is most common in the device grid
 t_logical_block_type_ptr find_most_common_block_type(const DeviceGrid& grid);
@@ -108,13 +108,13 @@ InstPort parse_inst_port(std::string str);
 
 int find_pin_class(t_physical_tile_type_ptr type, std::string port_name, int pin_index_in_port, e_pin_type pin_type);
 
-int find_pin(t_physical_tile_type_ptr type, std::string port_name, int pin_index_in_port);
+int find_pin(t_physical_tile_type_ptr type, const std::string& port_name, int pin_index_in_port);
 
 //Returns the block type which is most likely the logic block
 t_logical_block_type_ptr infer_logic_block_type(const DeviceGrid& grid);
 
 //Returns true if the specified block type contains the specified blif model name
-bool block_type_contains_blif_model(t_logical_block_type_ptr type, std::string blif_model_name);
+bool block_type_contains_blif_model(t_logical_block_type_ptr type, const std::string& blif_model_name);
 
 //Returns true of a pb_type (or it's children) contain the specified blif model name
 bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::string& blif_model_name);

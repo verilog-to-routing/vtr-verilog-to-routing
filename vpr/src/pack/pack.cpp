@@ -5,6 +5,7 @@
 #include <fstream>
 #include <stdlib.h>
 #include <sstream>
+#include <utility>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -266,7 +267,7 @@ static bool try_size_device_grid(const t_arch& arch, const std::map<t_logical_bl
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     //Build the device
-    auto grid = create_device_grid(device_layout_name, arch.grid_layouts, num_type_instances, target_device_utilization);
+    auto grid = create_device_grid(std::move(device_layout_name), arch.grid_layouts, num_type_instances, target_device_utilization);
 
     /*
      *Report on the device
@@ -353,7 +354,7 @@ static t_ext_pin_util_targets parse_target_external_pin_util(std::vector<std::st
         bool default_set = false;
         std::set<std::string> seen_block_types;
 
-        for (auto spec : specs) {
+        for (const auto& spec : specs) {
             t_ext_pin_util target_ext_pin_util(1., 1.);
 
             auto block_values = vtr::split(spec, ":");
@@ -469,7 +470,7 @@ static t_pack_high_fanout_thresholds parse_high_fanout_thresholds(std::vector<st
         bool default_set = false;
         std::set<std::string> seen_block_types;
 
-        for (auto spec : specs) {
+        for (const auto& spec : specs) {
             auto block_values = vtr::split(spec, ":");
             std::string block_type;
             std::string value;

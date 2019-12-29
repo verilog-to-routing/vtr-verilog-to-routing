@@ -45,7 +45,7 @@ static void find_all_the_macro(int* num_of_macro, std::vector<ClusterBlockId>& p
 
 static void alloc_and_load_imacro_from_iblk(const std::vector<t_pl_macro>& macros);
 
-static void write_place_macros(std::string filename, const std::vector<t_pl_macro>& macros);
+static void write_place_macros(const std::string& filename, const std::vector<t_pl_macro>& macros);
 
 static bool is_constant_clb_net(ClusterNetId clb_net);
 
@@ -432,7 +432,7 @@ void free_placement_macros_structs() {
     }
 }
 
-static void write_place_macros(std::string filename, const std::vector<t_pl_macro>& macros) {
+static void write_place_macros(const std::string& filename, const std::vector<t_pl_macro>& macros) {
     FILE* f = vtr::fopen(filename.c_str(), "w");
 
     auto& cluster_ctx = g_vpr_ctx.clustering();

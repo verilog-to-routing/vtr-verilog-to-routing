@@ -1,3 +1,4 @@
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 #include <cmath>
@@ -287,7 +288,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            t_chan_width nodes_per_chan,
                            const enum e_switch_block_type sb_type,
                            const int Fs,
-                           const std::vector<t_switchblock_inf> switchblocks,
+                           const std::vector<t_switchblock_inf>& switchblocks,
                            const int num_arch_switches,
                            const std::vector<t_segment_inf>& segment_inf,
                            const int global_route_switch,
@@ -308,7 +309,7 @@ static void build_rr_graph(const t_graph_type graph_type,
 void create_rr_graph(const t_graph_type graph_type,
                      const std::vector<t_physical_tile_type>& block_types,
                      const DeviceGrid& grid,
-                     const t_chan_width nodes_per_chan,
+                     const t_chan_width& nodes_per_chan,
                      const int num_arch_switches,
                      t_det_routing_arch* det_routing_arch,
                      std::vector<t_segment_inf>& segment_inf,
@@ -413,7 +414,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            t_chan_width nodes_per_chan,
                            const enum e_switch_block_type sb_type,
                            const int Fs,
-                           const std::vector<t_switchblock_inf> switchblocks,
+                           const std::vector<t_switchblock_inf>& switchblocks,
                            const int num_arch_switches,
                            const std::vector<t_segment_inf>& segment_inf,
                            const int global_route_switch,
@@ -986,7 +987,7 @@ static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(const int L_n
                 }
 
                 if ((Fc_in[itype][0][iseg] <= tracks_in_seg_type - 2)
-                    && (fabs(Fc_ratio - vtr::nint(Fc_ratio))
+                    && (std::fabs(Fc_ratio - vtr::nint(Fc_ratio))
                         < (0.5 / (float)tracks_in_seg_type))) {
                     result[itype][iseg] = true;
                 }
@@ -2956,7 +2957,7 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type
      *  case.								*/
 
     /* get an upper bound on the number of prime factors of num_wire_types	*/
-    max_primes = (int)floor(log((float)num_wire_types) / log(2.0));
+    max_primes = (int)floor(std::log((float)num_wire_types) / log(2.0));
     max_primes = std::max(max_primes, 1); //Minimum of 1 to ensure we allocate space for at least one prime_factor
 
     prime_factors = (int*)vtr::malloc(max_primes * sizeof(int));
@@ -2994,7 +2995,7 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type
 
         n = step_size / prime_factors[i];
         n = n - (float)vtr::nint(n); /* fractinal part */
-        if (fabs(n) < threshold) {
+        if (std::fabs(n) < threshold) {
             perturb_opins[0] = true;
             break;
         } else {

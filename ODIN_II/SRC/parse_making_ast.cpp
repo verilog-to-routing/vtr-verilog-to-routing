@@ -2069,7 +2069,7 @@ int unique_label_count;
 /*---------------------------------------------------------------------------
  * (function: graphVizOutputAst)
  *-------------------------------------------------------------------------*/
-void graphVizOutputAst(std::string path, ast_node_t *top)
+void graphVizOutputAst(const std::string& path, ast_node_t *top)
 {
 	char path_and_file[4096];
 	FILE *fp;

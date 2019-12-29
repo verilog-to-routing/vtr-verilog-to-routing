@@ -39,7 +39,7 @@
 
 std::string string_of_radix_to_bitstring(std::string orig_string, size_t radix);
 
-inline void _assert_Werr(bool cond, const char *FUNCT, int LINE, std::string error_string)
+inline void _assert_Werr(bool cond, const char *FUNCT, int LINE, const std::string& error_string)
 {
     if (!cond) { 
         std::cerr << std::endl << "ERROR: " << FUNCT << "::" << std::to_string(LINE) << " Assert 'assert_Werr' Failed:\t" << error_string << "!" << std::endl << std::endl;

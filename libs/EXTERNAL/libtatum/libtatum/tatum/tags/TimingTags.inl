@@ -239,7 +239,7 @@ inline std::pair<bool,TimingTags::iterator> TimingTags::find_data_required_with_
 
 inline size_t TimingTags::capacity() const { return capacity_; }
 
-inline TimingTags::iterator TimingTags::insert(iterator iter, const TimingTag& tag) {
+inline TimingTags::iterator TimingTags::insert(const iterator& iter, const TimingTag& tag) {
     size_t index = std::distance(begin(), iter);
     TATUM_ASSERT(index <= size());
 

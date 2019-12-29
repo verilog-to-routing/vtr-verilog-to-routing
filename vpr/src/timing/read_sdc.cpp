@@ -1128,7 +1128,7 @@ void apply_single_clock_default_timing_constraints(const AtomNetlist& netlist,
                                                    const AtomPinId clock_driver,
                                                    tatum::TimingConstraints& tc) {
     AtomNetId clock_net = netlist.pin_net(clock_driver);
-    std::string clock_name = netlist.net_name(clock_net);
+    const std::string& clock_name = netlist.net_name(clock_net);
 
     VTR_LOG("Setting default timing constraints:\n");
     VTR_LOG("   * constrain all primay inputs and primary outputs on netlist clock '%s'\n", clock_name.c_str());
@@ -1176,7 +1176,7 @@ void apply_multi_clock_default_timing_constraints(const AtomNetlist& netlist,
         AtomNetId clock_net = netlist.pin_net(clock_driver);
 
         //Create the clock
-        std::string clock_name = netlist.net_name(clock_net);
+        const std::string& clock_name = netlist.net_name(clock_net);
         tatum::DomainId clock = tc.create_clock_domain(clock_name);
 
         //Mark the clock domain source

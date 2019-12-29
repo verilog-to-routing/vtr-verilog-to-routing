@@ -28,7 +28,7 @@ enum {
 void create_rr_graph(const t_graph_type graph_type,
                      const std::vector<t_physical_tile_type>& block_types,
                      const DeviceGrid& grid,
-                     t_chan_width nodes_per_chan,
+                     const t_chan_width& nodes_per_chan,
                      const int num_arch_switches,
                      t_det_routing_arch* det_routing_arch,
                      std::vector<t_segment_inf>& segment_inf,

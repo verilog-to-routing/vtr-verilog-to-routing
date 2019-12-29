@@ -2,6 +2,7 @@
 #include <unordered_set>
 #include <regex>
 #include <algorithm>
+#include <utility>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -228,7 +229,8 @@ std::vector<std::string> block_type_class_index_to_pin_names(t_physical_tile_typ
     t_class& class_inf = type->class_inf[class_index];
 
     std::vector<std::string> pin_names;
-    for (int ipin = 0; ipin < class_inf.num_pins; ++ipin) {
+    pin_names.reserve(class_inf.num_pins);
+for (int ipin = 0; ipin < class_inf.num_pins; ++ipin) {
         pin_names.push_back(block_type_pin_index_to_name(type, class_inf.pinlist[ipin]));
     }
 
@@ -636,7 +638,7 @@ void get_pin_range_for_block(const ClusterBlockId blk_id,
     *pin_high = (place_ctx.block_locs[blk_id].loc.z + 1) * (type->num_pins / type->capacity) - 1;
 }
 
-t_physical_tile_type_ptr find_tile_type_by_name(std::string name, const std::vector<t_physical_tile_type>& types) {
+t_physical_tile_type_ptr find_tile_type_by_name(const std::string& name, const std::vector<t_physical_tile_type>& types) {
     for (auto const& type : types) {
         if (type.name == name) {
             return &type;
@@ -736,7 +738,7 @@ t_physical_tile_type_ptr find_most_common_tile_type(const DeviceGrid& grid) {
 }
 
 InstPort parse_inst_port(std::string str) {
-    InstPort inst_port(str);
+    InstPort inst_port(std::move(str));
 
     auto& device_ctx = g_vpr_ctx.device();
     auto blk_type = find_tile_type_by_name(inst_port.instance_name(), device_ctx.physical_tile_types);
@@ -778,7 +780,7 @@ InstPort parse_inst_port(std::string str) {
 int find_pin_class(t_physical_tile_type_ptr type, std::string port_name, int pin_index_in_port, e_pin_type pin_type) {
     int iclass = OPEN;
 
-    int ipin = find_pin(type, port_name, pin_index_in_port);
+    int ipin = find_pin(type, std::move(port_name), pin_index_in_port);
 
     if (ipin != OPEN) {
         iclass = type->pin_class[ipin];
@@ -790,7 +792,7 @@ int find_pin_class(t_physical_tile_type_ptr type, std::string port_name, int pin
     return iclass;
 }
 
-int find_pin(t_physical_tile_type_ptr type, std::string port_name, int pin_index_in_port) {
+int find_pin(t_physical_tile_type_ptr type, const std::string& port_name, int pin_index_in_port) {
     int ipin = OPEN;
     int port_base_ipin = 0;
     int num_pins = OPEN;
@@ -813,7 +815,7 @@ int find_pin(t_physical_tile_type_ptr type, std::string port_name, int pin_index
 }
 
 //Returns true if the specified block type contains the specified blif model name
-bool block_type_contains_blif_model(t_logical_block_type_ptr type, std::string blif_model_name) {
+bool block_type_contains_blif_model(t_logical_block_type_ptr type, const std::string& blif_model_name) {
     return pb_type_contains_blif_model(type->pb_type, blif_model_name);
 }
 
@@ -1174,7 +1176,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int 
 }
 
 const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, std::string port_name) {
-    const t_pb_graph_pin* gpin = find_pb_graph_pin(pb_gnode, port_name, 0);
+    const t_pb_graph_pin* gpin = find_pb_graph_pin(pb_gnode, std::move(port_name), 0);
 
     if (gpin != nullptr) {
         return gpin->port;
@@ -1182,7 +1184,7 @@ const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, std::string po
     return nullptr;
 }
 
-const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, std::string port_name, int index) {
+const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const std::string& port_name, int index) {
     for (int iport = 0; iport < pb_gnode->num_input_ports; iport++) {
         if (pb_gnode->num_input_pins[iport] < index) continue;
 

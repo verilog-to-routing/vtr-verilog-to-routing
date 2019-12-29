@@ -26,8 +26,8 @@
 
 static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def>& grid_layouts, const std::map<t_logical_block_type_ptr, size_t>& minimum_instance_counts, float maximum_device_utilization);
 static std::vector<t_logical_block_type_ptr> grid_overused_resources(const DeviceGrid& grid, std::map<t_logical_block_type_ptr, size_t> instance_counts);
-static bool grid_satisfies_instance_counts(const DeviceGrid& grid, std::map<t_logical_block_type_ptr, size_t> instance_counts, float maximum_utilization);
-static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, size_t height, bool warn_out_of_range = true, std::vector<t_logical_block_type_ptr> limiting_resources = std::vector<t_logical_block_type_ptr>());
+static bool grid_satisfies_instance_counts(const DeviceGrid& grid, const std::map<t_logical_block_type_ptr, size_t>& instance_counts, float maximum_utilization);
+static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t width, size_t height, bool warn_out_of_range = true, const std::vector<t_logical_block_type_ptr>& limiting_resources = std::vector<t_logical_block_type_ptr>());
 
 static void CheckGrid(const DeviceGrid& grid);
 
@@ -278,7 +278,7 @@ static std::vector<t_logical_block_type_ptr> grid_overused_resources(const Devic
     return overused_resources;
 }
 
-static bool grid_satisfies_instance_counts(const DeviceGrid& grid, std::map<t_logical_block_type_ptr, size_t> instance_counts, float maximum_utilization) {
+static bool grid_satisfies_instance_counts(const DeviceGrid& grid, const std::map<t_logical_block_type_ptr, size_t>& instance_counts, float maximum_utilization) {
     //Are the resources satisified?
     auto overused_resources = grid_overused_resources(grid, instance_counts);
 
@@ -297,7 +297,7 @@ static bool grid_satisfies_instance_counts(const DeviceGrid& grid, std::map<t_lo
 }
 
 //Build the specified device grid
-static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_width, size_t grid_height, bool warn_out_of_range, const std::vector<t_logical_block_type_ptr> limiting_resources) {
+static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_width, size_t grid_height, bool warn_out_of_range, const std::vector<t_logical_block_type_ptr>& limiting_resources) {
     if (grid_def.grid_type == GridDefType::FIXED) {
         if (grid_def.width != int(grid_width) || grid_def.height != int(grid_height)) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
@@ -677,7 +677,7 @@ static void CheckGrid(const DeviceGrid& grid) {
     }
 }
 
-float calculate_device_utilization(const DeviceGrid& grid, std::map<t_logical_block_type_ptr, size_t> instance_counts) {
+float calculate_device_utilization(const DeviceGrid& grid, const std::map<t_logical_block_type_ptr, size_t>& instance_counts) {
     //Record the resources of the grid
     std::map<t_physical_tile_type_ptr, size_t> grid_resources;
     for (size_t x = 0; x < grid.width(); ++x) {

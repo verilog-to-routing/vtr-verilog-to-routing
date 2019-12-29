@@ -171,7 +171,7 @@ class TimingTags {
         std::pair<bool,iterator> find_data_required_with_valid_data_arrival(DomainId launch_domain, DomainId capture_domain);
 
 
-        iterator insert(iterator iter, const TimingTag& tag);
+        iterator insert(const iterator& iter, const TimingTag& tag);
         void grow_insert(size_t index, const TimingTag& tag);
 
         void increment_size(TagType type);
@@ -204,18 +204,18 @@ class TimingTags {
  */
 
 //Return the tag from the range [first,last) which has the lowest value
-TimingTags::const_iterator find_minimum_tag(TimingTags::tag_range tags);
+TimingTags::const_iterator find_minimum_tag(const TimingTags::tag_range& tags);
 
 //Return the tag from the range [first,last) which has the highest value
-TimingTags::const_iterator find_maximum_tag(TimingTags::tag_range tags);
+TimingTags::const_iterator find_maximum_tag(const TimingTags::tag_range& tags);
 
 //Return the tag for the specified clock domains
-TimingTags::const_iterator find_tag(TimingTags::tag_range tags,
+TimingTags::const_iterator find_tag(const TimingTags::tag_range& tags,
                                            DomainId launch_domain, 
                                            DomainId capture_domain);
 
 //Returns true of the specified set of tags would constrain a node of type node_type
-bool is_constrained(NodeType node_type, TimingTags::tag_range tags);
+bool is_constrained(NodeType node_type, const TimingTags::tag_range& tags);
 
 } //namepsace
 

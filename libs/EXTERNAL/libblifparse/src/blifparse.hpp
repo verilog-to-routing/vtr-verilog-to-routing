@@ -95,7 +95,7 @@ class Callback {
 /*
  * External functions for loading an SDC file
  */
-void blif_parse_filename(std::string filename, Callback& callback);
+void blif_parse_filename(const std::string& filename, Callback& callback);
 void blif_parse_filename(const char* filename, Callback& callback);
 
 //Loads from 'blif'. 'filename' only used to pass a filename to callback and can be left unspecified

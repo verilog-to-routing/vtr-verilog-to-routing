@@ -118,7 +118,7 @@ static void ProcessEquivalentSiteDirectConnection(pugi::xml_node Parent,
 static void ProcessEquivalentSiteCustomConnection(pugi::xml_node Parent,
                                                   t_physical_tile_type* PhysicalTileType,
                                                   t_logical_block_type* LogicalBlockType,
-                                                  std::string site_name,
+                                                  const std::string& site_name,
                                                   const pugiutil::loc_data& loc_data);
 static void ProcessPb_Type(pugi::xml_node Parent,
                            t_pb_type* pb_type,
@@ -212,15 +212,15 @@ void warn_model_missing_timing(pugi::xml_node model_tag, const pugiutil::loc_dat
 bool check_model_clocks(pugi::xml_node model_tag, const pugiutil::loc_data& loc_data, const t_model* model);
 bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_arch& arch);
 const t_pin_to_pin_annotation* find_sequential_annotation(const t_pb_type* pb_type, const t_model_ports* port, enum e_pin_to_pin_delay_annotations annot_type);
-const t_pin_to_pin_annotation* find_combinational_annotation(const t_pb_type* pb_type, std::string in_port, std::string out_port);
+const t_pin_to_pin_annotation* find_combinational_annotation(const t_pb_type* pb_type, const std::string& in_port, const std::string& out_port);
 std::string inst_port_to_port_name(std::string inst_port);
 
 static bool attribute_to_bool(const pugi::xml_node node,
                               const pugi::xml_attribute attr,
                               const pugiutil::loc_data& loc_data);
-int find_switch_by_name(const t_arch& arch, std::string switch_name);
+int find_switch_by_name(const t_arch& arch, const std::string& switch_name);
 
-e_side string_to_side(std::string side_str);
+e_side string_to_side(const std::string& side_str);
 
 static void link_physical_logical_types(std::vector<t_physical_tile_type>& PhysicalTileTypes,
                                         std::vector<t_logical_block_type>& LogicalBlockTypes);
@@ -3276,7 +3276,7 @@ static void ProcessEquivalentSiteDirectConnection(pugi::xml_node Parent,
 static void ProcessEquivalentSiteCustomConnection(pugi::xml_node Parent,
                                                   t_physical_tile_type* PhysicalTileType,
                                                   t_logical_block_type* LogicalBlockType,
-                                                  std::string site_name,
+                                                  const std::string& site_name,
                                                   const pugiutil::loc_data& loc_data) {
     pugi::xml_node CurDirect;
 
@@ -4727,7 +4727,7 @@ const t_pin_to_pin_annotation* find_sequential_annotation(const t_pb_type* pb_ty
     return nullptr;
 }
 
-const t_pin_to_pin_annotation* find_combinational_annotation(const t_pb_type* pb_type, std::string in_port, std::string out_port) {
+const t_pin_to_pin_annotation* find_combinational_annotation(const t_pb_type* pb_type, const std::string& in_port, const std::string& out_port) {
     for (int iannot = 0; iannot < pb_type->num_annotations; ++iannot) {
         const t_pin_to_pin_annotation* annot = &pb_type->annotations[iannot];
         for (const auto& annot_in_str : vtr::split(annot->input_pins)) {
@@ -4770,7 +4770,7 @@ static bool attribute_to_bool(const pugi::xml_node node,
     return false;
 }
 
-int find_switch_by_name(const t_arch& arch, std::string switch_name) {
+int find_switch_by_name(const t_arch& arch, const std::string& switch_name) {
     for (int iswitch = 0; iswitch < arch.num_switches; ++iswitch) {
         const t_arch_switch_inf& arch_switch = arch.Switches[iswitch];
         if (arch_switch.name == switch_name) {
@@ -4781,7 +4781,7 @@ int find_switch_by_name(const t_arch& arch, std::string switch_name) {
     return OPEN;
 }
 
-e_side string_to_side(std::string side_str) {
+e_side string_to_side(const std::string& side_str) {
     e_side side = NUM_SIDES;
     if (side_str.empty()) {
         side = NUM_SIDES;

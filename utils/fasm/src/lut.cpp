@@ -58,7 +58,7 @@ const LogicVec & Lut::table() {
   return table_;
 }
 
-LutOutputDefinition::LutOutputDefinition(std::string definition) {
+LutOutputDefinition::LutOutputDefinition(const std::string& definition) {
   // Parse LUT.INIT[63:0] into
   // fasm_feature = LUT.INIT
   // start_bit = 0

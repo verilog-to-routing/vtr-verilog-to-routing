@@ -2,6 +2,7 @@
 #include <unordered_set>
 #include <queue>
 #include <numeric>
+#include <utility>
 
 #include "atom_netlist.h"
 
@@ -17,7 +18,7 @@
  *
  */
 AtomNetlist::AtomNetlist(std::string name, std::string id)
-    : Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId>(name, id) {}
+    : Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId>(std::move(name), std::move(id)) {}
 
 /*
  *
@@ -107,7 +108,7 @@ AtomBlockId AtomNetlist::find_atom_pin_driver(const AtomBlockId blk_id, const t_
  * Mutators
  *
  */
-AtomBlockId AtomNetlist::create_block(const std::string name, const t_model* model, const TruthTable truth_table) {
+AtomBlockId AtomNetlist::create_block(const std::string& name, const t_model* model, const TruthTable& truth_table) {
     AtomBlockId blk_id = Netlist::create_block(name);
 
     //Initialize the data
@@ -175,7 +176,7 @@ AtomPinId AtomNetlist::create_pin(const AtomPortId port_id, BitIndex port_bit, c
     return pin_id;
 }
 
-AtomNetId AtomNetlist::create_net(const std::string name) {
+AtomNetId AtomNetlist::create_net(const std::string& name) {
     AtomNetId net_id = Netlist::create_net(name);
 
     //Check post-conditions: size
@@ -184,8 +185,8 @@ AtomNetId AtomNetlist::create_net(const std::string name) {
     return net_id;
 }
 
-AtomNetId AtomNetlist::add_net(const std::string name, AtomPinId driver, std::vector<AtomPinId> sinks) {
-    return Netlist::add_net(name, driver, sinks);
+AtomNetId AtomNetlist::add_net(const std::string& name, AtomPinId driver, std::vector<AtomPinId> sinks) {
+    return Netlist::add_net(name, driver, std::move(sinks));
 }
 
 void AtomNetlist::remove_block_impl(const AtomBlockId /*blk_id*/) {

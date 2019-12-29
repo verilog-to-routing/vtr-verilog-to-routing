@@ -145,7 +145,7 @@ char* getOutputFileName(enum e_output_files ename) {
     return outputFileNames[(int)ename];
 }
 
-void alloc_and_load_output_file_names(const std::string default_name) {
+void alloc_and_load_output_file_names(const std::string& default_name) {
     char* name;
 
     if (outputFileNames == nullptr) {

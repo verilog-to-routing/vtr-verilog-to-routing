@@ -11,7 +11,7 @@ bin/
 #
 CMakeCache.txt
 CMakeFiles
-build
+build*/
 
 #
 #VTR Tasks

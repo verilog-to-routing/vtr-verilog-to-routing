@@ -1,15 +1,17 @@
 #include "device_grid.h"
+
+#include <utility>
 #include "vpr_utils.h"
 
 DeviceGrid::DeviceGrid(std::string grid_name, vtr::Matrix<t_grid_tile> grid)
-    : name_(grid_name)
-    , grid_(grid) {
+    : name_(std::move(grid_name))
+    , grid_(std::move(grid)) {
     count_instances();
 }
 
 DeviceGrid::DeviceGrid(std::string grid_name, vtr::Matrix<t_grid_tile> grid, std::vector<t_logical_block_type_ptr> limiting_res)
-    : DeviceGrid(grid_name, grid) {
-    limiting_resources_ = limiting_res;
+    : DeviceGrid(std::move(grid_name), std::move(grid)) {
+    limiting_resources_ = std::move(limiting_res);
 }
 
 size_t DeviceGrid::num_instances(t_physical_tile_type_ptr type) const {

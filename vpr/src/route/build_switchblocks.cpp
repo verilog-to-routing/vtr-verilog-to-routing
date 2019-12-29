@@ -129,6 +129,7 @@
 #include <algorithm>
 #include <iterator>
 #include <iostream>
+#include <utility>
 
 #include "vtr_assert.h"
 #include "vtr_memory.h"
@@ -877,7 +878,7 @@ static int evaluate_num_conns_formula(std::string num_conns_formula, int from_wi
     vars.set_var_value("from", from_wire_count);
     vars.set_var_value("to", to_wire_count);
 
-    return parse_formula(num_conns_formula, vars);
+    return parse_formula(std::move(num_conns_formula), vars);
 }
 
 /* Here we find the correct channel (x or y), and the coordinates to index into it based on the

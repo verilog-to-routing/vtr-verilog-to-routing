@@ -28,6 +28,7 @@
 #define PHYSICAL_TYPES_H
 
 #include <functional>
+#include <utility>
 #include <vector>
 #include <unordered_map>
 #include <string>
@@ -91,7 +92,7 @@ enum class e_sb_type;
 class t_metadata_value {
   public:
     explicit t_metadata_value(std::string v)
-        : value_(v) {}
+        : value_(std::move(v)) {}
     explicit t_metadata_value(const t_metadata_value& o)
         : value_(o.value_) {}
 
@@ -107,14 +108,14 @@ struct t_metadata_dict : std::unordered_map<
                              std::string,
                              std::vector<t_metadata_value>> {
     // Is this key present in the map?
-    inline bool has(std::string key) const {
+    inline bool has(const std::string& key) const {
         return this->count(key) >= 1;
     }
 
     // Get all metadata values matching key.
     //
     // Returns nullptr if key is not found.
-    inline const std::vector<t_metadata_value>* get(std::string key) const {
+    inline const std::vector<t_metadata_value>* get(const std::string& key) const {
         auto iter = this->find(key);
         if (iter != this->end()) {
             return &iter->second;
@@ -127,7 +128,7 @@ struct t_metadata_dict : std::unordered_map<
     // Returns nullptr if key is not found or if multiple values are prsent
     // per key.
     inline const t_metadata_value* one(std::string key) const {
-        auto values = get(key);
+        auto values = get(std::move(key));
         if (values == nullptr) {
             return nullptr;
         }
@@ -138,11 +139,11 @@ struct t_metadata_dict : std::unordered_map<
     }
 
     // Adds value to key.
-    void add(std::string key, std::string value) {
+    void add(const std::string& key, std::string value) {
         // Get the iterator to the key, which may already have elements if
         // add was called with this key in the past.
         auto iter_inserted = this->emplace(key, std::vector<t_metadata_value>());
-        iter_inserted.first->second.push_back(t_metadata_value(value));
+        iter_inserted.first->second.push_back(t_metadata_value(std::move(value)));
     }
 };
 
@@ -259,10 +260,10 @@ enum e_sb_location {
  */
 struct t_grid_loc_spec {
     t_grid_loc_spec(std::string start, std::string end, std::string repeat, std::string incr)
-        : start_expr(start)
-        , end_expr(end)
-        , repeat_expr(repeat)
-        , incr_expr(incr) {}
+        : start_expr(std::move(start))
+        , end_expr(std::move(end))
+        , repeat_expr(std::move(repeat))
+        , incr_expr(std::move(incr)) {}
 
     std::string start_expr; //Starting position (inclusive)
     std::string end_expr;   //Ending position (inclusive)
@@ -341,7 +342,7 @@ struct t_grid_loc_spec {
  */
 struct t_grid_loc_def {
     t_grid_loc_def(std::string block_type_val, int priority_val)
-        : block_type(block_type_val)
+        : block_type(std::move(block_type_val))
         , priority(priority_val)
         , x("0", "W-1", "max(w+1,W)", "w") //Fill in x direction, no repeat, incr by block width
         , y("0", "H-1", "max(h+1,H)", "h") //Fill in y direction, no repeat, incr by block height

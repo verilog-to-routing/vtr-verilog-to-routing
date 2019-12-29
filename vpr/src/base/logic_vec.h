@@ -1,6 +1,7 @@
 #ifndef LOGIC_VEC_H
 #define LOGIC_VEC_H
 
+#include <utility>
 #include <vector>
 #include <ostream>
 
@@ -16,7 +17,7 @@ class LogicVec {
              vtr::LogicValue init_value) //Default value
         : values_(size_val, init_value) {}
     LogicVec(std::vector<vtr::LogicValue> values)
-        : values_(values) {}
+        : values_(std::move(values)) {}
 
     //Array indexing operator
     const vtr::LogicValue& operator[](size_t i) const { return values_[i]; }

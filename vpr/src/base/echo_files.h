@@ -79,7 +79,7 @@ void free_echo_file_info();
 
 void setOutputFileName(enum e_output_files ename, const char* name, const char* default_name);
 char* getOutputFileName(enum e_output_files ename);
-void alloc_and_load_output_file_names(const std::string default_name);
+void alloc_and_load_output_file_names(const std::string& default_name);
 void free_output_file_names();
 
 #endif

@@ -13,9 +13,9 @@
 #include <sstream>
 
 static MetalLayer get_metal_layer_from_name(
-    std::string metal_layer_name,
+    const std::string& metal_layer_name,
     std::unordered_map<std::string, t_metal_layer> clock_metal_layers,
-    std::string clock_network_name);
+    const std::string& clock_network_name);
 static void setup_clock_network_wires(const t_arch& Arch, std::vector<t_segment_inf>& segment_inf);
 static void setup_clock_connections(const t_arch& Arch);
 
@@ -41,7 +41,7 @@ void setup_clock_network_wires(const t_arch& Arch, std::vector<t_segment_inf>& s
     vars.set_var_value("W", grid.width());
     vars.set_var_value("H", grid.height());
 
-    for (auto clock_network_arch : clock_networks_arch) {
+    for (const auto& clock_network_arch : clock_networks_arch) {
         switch (clock_network_arch.type) {
             case e_clock_type::SPINE: {
                 std::unique_ptr<ClockSpine> spine = std::make_unique<ClockSpine>();
@@ -126,7 +126,7 @@ void setup_clock_connections(const t_arch& Arch) {
     vars.set_var_value("W", grid.width());
     vars.set_var_value("H", grid.height());
 
-    for (auto clock_connection_arch : clock_connections_arch) {
+    for (const auto& clock_connection_arch : clock_connections_arch) {
         if (clock_connection_arch.from == "ROUTING") {
             clock_connections_device.emplace_back(new RoutingToClockConnection);
             if (RoutingToClockConnection* routing_to_clock = dynamic_cast<RoutingToClockConnection*>(clock_connections_device.back().get())) {
@@ -178,9 +178,9 @@ void setup_clock_connections(const t_arch& Arch) {
 }
 
 MetalLayer get_metal_layer_from_name(
-    std::string metal_layer_name,
+    const std::string& metal_layer_name,
     std::unordered_map<std::string, t_metal_layer> clock_metal_layers,
-    std::string clock_network_name) {
+    const std::string& clock_network_name) {
     auto itter = clock_metal_layers.find(metal_layer_name);
 
     if (itter == clock_metal_layers.end()) {

@@ -3,6 +3,7 @@
 #include <cmath>
 #include <time.h>
 #include <limits>
+#include <utility>
 
 #include "vtr_assert.h"
 #include "vtr_ndmatrix.h"
@@ -51,7 +52,7 @@ constexpr float IMPOSSIBLE_DELTA = std::numeric_limits<float>::infinity(); //Ind
 struct t_profile_loc {
     t_profile_loc(int x, int y, std::vector<vtr::Point<int>> delta_values)
         : root(x, y)
-        , deltas(delta_values) {}
+        , deltas(std::move(delta_values)) {}
 
     vtr::Point<int> root;
     std::vector<vtr::Point<int>> deltas;

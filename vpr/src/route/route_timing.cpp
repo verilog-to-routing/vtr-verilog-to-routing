@@ -1,3 +1,4 @@
+#include <cmath>
 #include <cstdio>
 #include <ctime>
 #include <cmath>
@@ -283,7 +284,7 @@ static void print_route_status(int itry,
                                const RouterStats& router_stats,
                                const OveruseInfo& overuse_info,
                                const WirelengthInfo& wirelength_info,
-                               std::shared_ptr<const SetupHoldTimingInfo> timing_info,
+                               const std::shared_ptr<const SetupHoldTimingInfo>& timing_info,
                                float est_success_iteration);
 
 static std::string describe_unrouteable_connection(const int source_node, const int sink_node);
@@ -296,11 +297,11 @@ static t_bb calc_current_bb(const t_trace* head);
 static bool is_better_quality_routing(const vtr::vector<ClusterNetId, t_traceback>& best_routing,
                                       const RoutingMetrics& best_routing_metrics,
                                       const WirelengthInfo& wirelength_info,
-                                      std::shared_ptr<const SetupHoldTimingInfo> timing_info);
+                                      const std::shared_ptr<const SetupHoldTimingInfo>& timing_info);
 
 static bool early_reconvergence_exit_heuristic(const t_router_opts& router_opts,
                                                int itry_since_last_convergence,
-                                               std::shared_ptr<const SetupHoldTimingInfo> timing_info,
+                                               const std::shared_ptr<const SetupHoldTimingInfo>& timing_info,
                                                const RoutingMetrics& best_routing_metrics);
 
 static void generate_route_timing_reports(const t_router_opts& router_opts,
@@ -318,8 +319,8 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
                              const std::vector<t_segment_inf>& segment_inf,
                              vtr::vector<ClusterNetId, float*>& net_delay,
                              const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                             std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                             std::shared_ptr<RoutingDelayCalculator> delay_calc,
+                             const std::shared_ptr<SetupHoldTimingInfo>& timing_info,
+                             const std::shared_ptr<RoutingDelayCalculator>& delay_calc,
                              ScreenUpdatePriority first_iteration_priority) {
     /* Timing-driven routing algorithm.  The timing graph (includes slack)   *
      * must have already been allocated, and net_delay must have been allocated. *
@@ -781,7 +782,7 @@ bool try_timing_driven_route_net(ClusterNetId net_id,
                                  vtr::vector<ClusterNetId, float*>& net_delay,
                                  const RouterLookahead& router_lookahead,
                                  const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                                 std::shared_ptr<SetupTimingInfo> timing_info,
+                                 const std::shared_ptr<SetupTimingInfo>& timing_info,
                                  route_budgets& budgeting_inf,
                                  bool& was_rerouted) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -940,7 +941,7 @@ bool timing_driven_route_net(ClusterNetId net_id,
                              float* net_delay,
                              const RouterLookahead& router_lookahead,
                              const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                             std::shared_ptr<const SetupTimingInfo> timing_info,
+                             const std::shared_ptr<const SetupTimingInfo>& timing_info,
                              route_budgets& budgeting_inf) {
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
@@ -2282,7 +2283,7 @@ static bool timing_driven_check_net_delays(vtr::vector<ClusterNetId, float*>& ne
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
             if (net_delay_check[net_id][ipin] == 0.) { /* Should be only GLOBAL nets */
-                if (fabs(net_delay[net_id][ipin]) > ERROR_TOL) {
+                if (std::fabs(net_delay[net_id][ipin]) > ERROR_TOL) {
                     VPR_ERROR(VPR_ERROR_ROUTE,
                               "in timing_driven_check_net_delays: net %lu pin %d.\n"
                               "\tIncremental calc. net_delay is %g, but from scratch net delay is %g.\n",
@@ -2491,7 +2492,7 @@ void Connection_based_routing_resources::set_lower_bound_connection_delays(vtr::
  * 1. the connection is critical enough
  * 2. the connection is suboptimal, in comparison to lower_bound_connection_delay  */
 bool Connection_based_routing_resources::forcibly_reroute_connections(float max_criticality,
-                                                                      std::shared_ptr<const SetupTimingInfo> timing_info,
+                                                                      const std::shared_ptr<const SetupTimingInfo>& timing_info,
                                                                       const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                                                       vtr::vector<ClusterNetId, float*>& net_delay) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -2640,7 +2641,7 @@ static void print_route_status_header() {
     VTR_LOG("---- ------ ------- ---- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
 }
 
-static void print_route_status(int itry, double elapsed_sec, float pres_fac, int num_bb_updated, const RouterStats& router_stats, const OveruseInfo& overuse_info, const WirelengthInfo& wirelength_info, std::shared_ptr<const SetupHoldTimingInfo> timing_info, float est_success_iteration) {
+static void print_route_status(int itry, double elapsed_sec, float pres_fac, int num_bb_updated, const RouterStats& router_stats, const OveruseInfo& overuse_info, const WirelengthInfo& wirelength_info, const std::shared_ptr<const SetupHoldTimingInfo>& timing_info, float est_success_iteration) {
     //Iteration
     VTR_LOG("%4d", itry);
 
@@ -2933,7 +2934,7 @@ void enable_router_debug(const t_router_opts& router_opts, ClusterNetId net, int
 static bool is_better_quality_routing(const vtr::vector<ClusterNetId, t_traceback>& best_routing,
                                       const RoutingMetrics& best_routing_metrics,
                                       const WirelengthInfo& wirelength_info,
-                                      std::shared_ptr<const SetupHoldTimingInfo> timing_info) {
+                                      const std::shared_ptr<const SetupHoldTimingInfo>& timing_info) {
     if (best_routing.empty()) {
         return true; //First legal routing
     }
@@ -2971,7 +2972,7 @@ static bool is_better_quality_routing(const vtr::vector<ClusterNetId, t_tracebac
 
 static bool early_reconvergence_exit_heuristic(const t_router_opts& router_opts,
                                                int itry_since_last_convergence,
-                                               std::shared_ptr<const SetupHoldTimingInfo> timing_info,
+                                               const std::shared_ptr<const SetupHoldTimingInfo>& timing_info,
                                                const RoutingMetrics& best_routing_metrics) {
     //Give-up on reconvergent routing if the CPD improvement after the
     //first iteration since convergence is small, compared to the best

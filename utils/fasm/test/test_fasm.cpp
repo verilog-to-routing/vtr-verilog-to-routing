@@ -250,8 +250,8 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
             continue;
         }
 
-        if (line.find("#") != std::string::npos) {
-            auto init_pos = line.find("#");
+        if (line.find('#') != std::string::npos) {
+            auto init_pos = line.find('#');
             lut_def = line.substr(init_pos+2);
             continue;
         }

@@ -145,11 +145,11 @@ void set_log_file(const char* filename);
 static std::unordered_set<std::string> warnings_to_suppress;
 static std::string noisy_warn_log_file;
 
-void add_warnings_to_suppress(std::string function_name);
+void add_warnings_to_suppress(const std::string& function_name);
 
 // This function creates a new log file to hold the suppressed warnings.
 // If the file already exists, it is cleared out first.
-void set_noisy_warn_log_file(std::string log_file_name);
+void set_noisy_warn_log_file(const std::string& log_file_name);
 
 // This function checks whether the function from which the warning has been called
 // is in the set of warnings_to_suppress. If so, the warning is printed on the

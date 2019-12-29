@@ -5,6 +5,7 @@
  * hanlding the retrieval of line numbers (useful for error messages)
  */
 
+#include <utility>
 #include <vector>
 #include "pugixml.hpp"
 
@@ -16,7 +17,7 @@ class loc_data {
     loc_data() = default;
 
     loc_data(std::string filename_val)
-        : filename_(filename_val) {
+        : filename_(std::move(filename_val)) {
         build_loc_data();
     }
 

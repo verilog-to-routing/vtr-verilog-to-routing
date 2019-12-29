@@ -1,5 +1,7 @@
 #ifndef TATUM_TIMING_PATH_HPP
 #define TATUM_TIMING_PATH_HPP
+#include <utility>
+#include <utility>
 #include <vector>
 
 #include "tatum/report/TimingPathFwd.hpp"
@@ -88,7 +90,7 @@ class TimingSubPath {
     public:
         TimingSubPath() = default;
         TimingSubPath(std::vector<TimingPathElem> elems)
-            : elements_(elems) {}
+            : elements_(std::move(std::move(elems))) {}
 
         path_elem_range elements() const { 
             return util::make_range(elements_.begin(),
@@ -116,9 +118,9 @@ class TimingPath {
                    const TimingPathElem& data_required_elem,
                    const TimingTag& slack)
             : path_info_(info)
-            , clock_launch_path_(clock_launch)
-            , data_arrival_path_(data_arrival)
-            , clock_capture_path_(clock_capture)
+            , clock_launch_path_(std::move(std::move(clock_launch)))
+            , data_arrival_path_(std::move(std::move(data_arrival)))
+            , clock_capture_path_(std::move(std::move(clock_capture)))
             , data_required_element_(data_required_elem)
             , slack_tag_(slack) {
             //pass

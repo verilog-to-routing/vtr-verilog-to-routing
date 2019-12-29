@@ -122,7 +122,7 @@ class TimingConstraints {
         void print_constraints() const;
     public: //Mutators
         ///\returns The DomainId of the clock with the specified name (will be created if it doesn not exist)
-        DomainId create_clock_domain(const std::string name);
+        DomainId create_clock_domain(const std::string& name);
 
         ///Sets the setup constraint between src_domain and sink_domain with value constraint
         void set_setup_constraint(const DomainId src_domain, const DomainId sink_domain, const Time constraint);

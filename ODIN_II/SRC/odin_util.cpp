@@ -57,7 +57,7 @@ long shift_left_value_with_overflow_check(long input_value, long shift_by)
 	return input_value << shift_by;
 }
 
-std::string get_file_extension(std::string input_file)
+std::string get_file_extension(const std::string& input_file)
 {
 	auto dot_location = input_file.find_last_of('.');
 	if( dot_location != std::string::npos )
@@ -70,7 +70,7 @@ std::string get_file_extension(std::string input_file)
 	}
 }
 
-void create_directory(std::string path)
+void create_directory(const std::string& path)
 {
 	// CREATE OUTPUT DIRECTORY
 	int error_code = 0;
@@ -86,7 +86,7 @@ void create_directory(std::string path)
 	}
 }
 
-void assert_supported_file_extension(std::string input_file, int line_number, int file_number)
+void assert_supported_file_extension(const std::string& input_file, int line_number, int file_number)
 {
 	bool supported = false;
 	std::string extension = get_file_extension(input_file);
@@ -1017,7 +1017,7 @@ void trim_string(char* string, const char *chars)
 /**
  * verifies only one condition evaluates to true
  */
-bool only_one_is_true(std::vector<bool> tested)
+bool only_one_is_true(const std::vector<bool>& tested)
 {
 	bool previous_value = false;
 	for(bool next_value: tested)

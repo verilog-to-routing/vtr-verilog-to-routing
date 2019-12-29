@@ -1499,8 +1499,8 @@ private:
       lastModified = clock.now();
     }
 
-    bool tryTransferChild(EntryImpl& entry, const FsNode::Type type, kj::Maybe<Date> lastModified,
-                          kj::Maybe<uint64_t> size, const Directory& fromDirectory,
+    bool tryTransferChild(EntryImpl& entry, const FsNode::Type type, const kj::Maybe<Date>& lastModified,
+                          const kj::Maybe<uint64_t>& size, const Directory& fromDirectory,
                           PathPtr fromPath, TransferMode mode) {
       switch (type) {
         case FsNode::Type::FILE:

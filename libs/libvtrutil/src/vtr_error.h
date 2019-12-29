@@ -3,14 +3,15 @@
 
 #include <stdexcept>
 #include <string>
+#include <utility>
 
 namespace vtr {
 
 class VtrError : public std::runtime_error {
   public:
-    VtrError(std::string msg = "", std::string new_filename = "", size_t new_linenumber = -1)
+    VtrError(const std::string& msg = "", std::string new_filename = "", size_t new_linenumber = -1)
         : std::runtime_error(msg)
-        , filename_(new_filename)
+        , filename_(std::move(new_filename))
         , linenumber_(new_linenumber) {}
 
     //Returns the filename associated with this error

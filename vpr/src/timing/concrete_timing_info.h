@@ -1,6 +1,8 @@
 #ifndef VPR_CONCRETE_TIMING_INFO_H
 #define VPR_CONCRETE_TIMING_INFO_H
 
+#include <utility>
+
 #include "vtr_log.h"
 #include "timing_util.h"
 #include "vpr_error.h"
@@ -9,7 +11,7 @@
 
 #include "tatum/report/graphviz_dot_writer.hpp"
 
-void warn_unconstrained(std::shared_ptr<const tatum::TimingAnalyzer> analyzer);
+void warn_unconstrained(const std::shared_ptr<const tatum::TimingAnalyzer>& analyzer);
 
 //NOTE: These classes should not be used directly but created with the
 //      make_*_timing_info() functions in timing_info.h, and used through
@@ -23,10 +25,10 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
                             std::shared_ptr<const tatum::TimingConstraints> timing_constraints_v,
                             std::shared_ptr<DelayCalc> delay_calc,
                             std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer_v)
-        : timing_graph_(timing_graph_v)
-        , timing_constraints_(timing_constraints_v)
+        : timing_graph_(std::move(timing_graph_v))
+        , timing_constraints_(std::move(timing_constraints_v))
         , delay_calc_(delay_calc)
-        , setup_analyzer_(analyzer_v)
+        , setup_analyzer_(std::move(analyzer_v))
         , slack_crit_(g_vpr_ctx.atom().nlist, g_vpr_ctx.atom().lookup) {
         //pass
     }
@@ -172,10 +174,10 @@ class ConcreteHoldTimingInfo : public HoldTimingInfo {
                            std::shared_ptr<const tatum::TimingConstraints> timing_constraints_v,
                            std::shared_ptr<DelayCalc> delay_calc,
                            std::shared_ptr<tatum::HoldTimingAnalyzer> analyzer_v)
-        : timing_graph_(timing_graph_v)
-        , timing_constraints_(timing_constraints_v)
+        : timing_graph_(std::move(timing_graph_v))
+        , timing_constraints_(std::move(timing_constraints_v))
         , delay_calc_(delay_calc)
-        , hold_analyzer_(analyzer_v)
+        , hold_analyzer_(std::move(analyzer_v))
         , slack_crit_(g_vpr_ctx.atom().nlist, g_vpr_ctx.atom().lookup) {
         //pass
     }
@@ -264,10 +266,10 @@ template<class DelayCalc>
 class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
   public:
     //Constructors
-    ConcreteSetupHoldTimingInfo(std::shared_ptr<const tatum::TimingGraph> timing_graph_v,
-                                std::shared_ptr<const tatum::TimingConstraints> timing_constraints_v,
+    ConcreteSetupHoldTimingInfo(const std::shared_ptr<const tatum::TimingGraph>& timing_graph_v,
+                                const std::shared_ptr<const tatum::TimingConstraints>& timing_constraints_v,
                                 std::shared_ptr<DelayCalc> delay_calc,
-                                std::shared_ptr<tatum::SetupHoldTimingAnalyzer> analyzer_v)
+                                const std::shared_ptr<tatum::SetupHoldTimingAnalyzer>& analyzer_v)
         : setup_timing_(timing_graph_v, timing_constraints_v, delay_calc, analyzer_v)
         , hold_timing_(timing_graph_v, timing_constraints_v, delay_calc, analyzer_v)
         , setup_hold_analyzer_(analyzer_v) {

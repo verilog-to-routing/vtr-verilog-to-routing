@@ -345,7 +345,7 @@ void processAttrsParams(pugi::xml_node Parent, const char* child_name, T& atom_n
             std::string cval = Cur.text().get();
             bool found = false;
             // Look for corresponding key-value in range from AtomNetlist
-            for (auto bitem : atom_net_range) {
+            for (const auto& bitem : atom_net_range) {
                 if (bitem.first == cname) {
                     if (bitem.second != cval) {
                         // Found in AtomNetlist range, but values don't match
@@ -365,7 +365,7 @@ void processAttrsParams(pugi::xml_node Parent, const char* child_name, T& atom_n
         }
     }
     // Check for attrs/params in AtomNetlist but not in .net file
-    for (auto bitem : atom_net_range) {
+    for (const auto& bitem : atom_net_range) {
         if (kvs.find(bitem.first) == kvs.end())
             vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(Parent),
                       ".net file and .blif file do not match, %s %s missing in .net file.\n",

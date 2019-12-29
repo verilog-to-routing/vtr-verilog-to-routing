@@ -14,7 +14,7 @@
 #include "rtl_utils.hpp"
 
 #define bad_ops(test) _bad_ops(test, __func__, __LINE__)
-inline static std::string _bad_ops(std::string test, const char *FUNCT, int LINE)	
+inline static std::string _bad_ops(const std::string& test, const char *FUNCT, int LINE)	
 {	
 	std::cerr << "INVALID INPUT OPS: (" << test << ")@" << FUNCT << "::" << std::to_string(LINE) << std::endl;	
 	std::abort();
@@ -28,7 +28,7 @@ inline static std::string _bad_ops(std::string test, const char *FUNCT, int LINE
  * 	This is used for testing purposes only, unused in ODIN as the input is already preprocessed
  */
 
-static std::string arithmetic(std::string op, std::string a_in)
+static std::string arithmetic(const std::string& op, const std::string& a_in)
 {
 
 	VNumber a(a_in);
@@ -53,7 +53,7 @@ static std::string arithmetic(std::string op, std::string a_in)
 	).to_full_string();
 }
 
-static std::string arithmetic(std::string a_in, std::string op, std::string b_in)
+static std::string arithmetic(const std::string& a_in, const std::string& op, const std::string& b_in)
 {
 
 	VNumber a(a_in);
@@ -101,7 +101,8 @@ static std::string arithmetic(std::string a_in, std::string op, std::string b_in
 int main(int argc, char** argv) 
 {
 	std::vector<std::string> input;
-	for(int i=0; i < argc; i++)		input.push_back(argv[i]);
+	input.reserve(argc);
+for(int i=0; i < argc; i++)		input.push_back(argv[i]);
 
 	std::string result = "";
 

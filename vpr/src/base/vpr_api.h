@@ -75,7 +75,7 @@ RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup,
 RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
                              const t_arch& arch,
                              int fixed_channel_width,
-                             std::shared_ptr<SetupHoldTimingInfo> timing_info,
+                             const std::shared_ptr<SetupHoldTimingInfo>& timing_info,
                              vtr::vector<ClusterNetId, float*>& net_delay); //Loads a previous routing
 
 bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status); //Perform or skips the analysis stage

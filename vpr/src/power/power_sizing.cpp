@@ -21,6 +21,7 @@
  */
 
 /************************* INCLUDES *********************************/
+#include <cmath>
 #include <cstring>
 #include <cmath>
 
@@ -144,7 +145,7 @@ static double power_count_transistors_mux(t_mux_arch* mux_arch) {
 
     for (lvl_idx = 0; lvl_idx < mux_arch->levels; lvl_idx++) {
         /* Assume there is decoder logic */
-        transistor_cnt += ceil(log(max_inputs[lvl_idx]) / log((double)2.0))
+        transistor_cnt += ceil(std::log(max_inputs[lvl_idx]) / log((double)2.0))
                           * power_count_transistor_SRAM_bit();
 
         /*
@@ -249,7 +250,7 @@ void power_sizing_init(const t_arch* arch) {
     auto& power_ctx = g_vpr_ctx.power();
 
     // tech size = 2 lambda, so lambda^2/4.0 = tech^2
-    f_MTA_area = ((POWER_MTA_L * POWER_MTA_W) / 4.0) * pow(power_ctx.tech->tech_size, (float)2.0);
+    f_MTA_area = ((POWER_MTA_L * POWER_MTA_W) / 4.0) * std::pow(power_ctx.tech->tech_size, (float)2.0);
 
     // Determines physical size of different PBs
     power_size_pb();

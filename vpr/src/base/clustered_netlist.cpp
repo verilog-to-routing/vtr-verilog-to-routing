@@ -1,5 +1,7 @@
 #include "clustered_netlist.h"
 
+#include <utility>
+
 #include "vtr_assert.h"
 #include "vpr_error.h"
 
@@ -11,7 +13,7 @@
  *
  */
 ClusteredNetlist::ClusteredNetlist(std::string name, std::string id)
-    : Netlist<ClusterBlockId, ClusterPortId, ClusterPinId, ClusterNetId>(name, id) {}
+    : Netlist<ClusterBlockId, ClusterPortId, ClusterPinId, ClusterNetId>(std::move(name), std::move(id)) {}
 
 /*
  *
@@ -135,7 +137,7 @@ ClusterBlockId ClusteredNetlist::create_block(const char* name, t_pb* pb, t_logi
     return blk_id;
 }
 
-ClusterPortId ClusteredNetlist::create_port(const ClusterBlockId blk_id, const std::string name, BitIndex width, PortType type) {
+ClusterPortId ClusteredNetlist::create_port(const ClusterBlockId blk_id, const std::string& name, BitIndex width, PortType type) {
     ClusterPortId port_id = find_port(blk_id, name);
     if (!port_id) {
         port_id = Netlist::create_port(blk_id, name, width, type);
@@ -166,7 +168,7 @@ ClusterPinId ClusteredNetlist::create_pin(const ClusterPortId port_id, BitIndex 
     return pin_id;
 }
 
-ClusterNetId ClusteredNetlist::create_net(const std::string name) {
+ClusterNetId ClusteredNetlist::create_net(const std::string& name) {
     //Check if the net has already been created
     StringId name_id = create_string(name);
     ClusterNetId net_id = find_net(name_id);

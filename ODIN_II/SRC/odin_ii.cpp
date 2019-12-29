@@ -336,7 +336,7 @@ int terminate_odin_ii(netlist_t *odin_netlist)
 }
 
 struct ParseInitRegState {
-	int from_str(std::string str) 
+	int from_str(const std::string& str) 
 	{
 		if      (str == "0") return 0;
 		else if (str == "1") return 1;

@@ -174,7 +174,7 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int* free_loca
     // Sorting blocks to place to have most constricted ones to be placed first
     std::vector<t_pl_macro> sorted_pl_macros(pl_macros.begin(), pl_macros.end());
 
-    auto criteria = [&cluster_ctx](const t_pl_macro lhs, t_pl_macro rhs) {
+    auto criteria = [&cluster_ctx](const t_pl_macro& lhs, t_pl_macro rhs) {
         auto lhs_logical_block = cluster_ctx.clb_nlist.block_type(lhs.members[0].blk_index);
         auto rhs_logical_block = cluster_ctx.clb_nlist.block_type(rhs.members[0].blk_index);
 

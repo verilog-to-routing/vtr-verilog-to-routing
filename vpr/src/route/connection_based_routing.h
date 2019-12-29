@@ -121,7 +121,7 @@ class Connection_based_routing_resources {
     // check each connection of each net to see if any satisfy the criteria described above (for the forcible_reroute_connection_flag data structure)
     // and if so, mark them to be rerouted
     bool forcibly_reroute_connections(float max_criticality,
-                                      std::shared_ptr<const SetupTimingInfo> timing_info,
+                                      const std::shared_ptr<const SetupTimingInfo>& timing_info,
                                       const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                       vtr::vector<ClusterNetId, float*>& net_delay);
 };

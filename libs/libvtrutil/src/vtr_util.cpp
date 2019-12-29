@@ -18,7 +18,7 @@ static int cont;                 /* line continued? (used by strtok)*/
 
 //Splits the string 'text' along the specified delimiter characters in 'delims'
 //The split strings (excluding the delimiters) are returned
-std::vector<std::string> split(const char* text, const std::string delims) {
+std::vector<std::string> split(const char* text, const std::string& delims) {
     if (text) {
         std::string text_str(text);
         return split(text_str, delims);
@@ -26,7 +26,7 @@ std::vector<std::string> split(const char* text, const std::string delims) {
     return std::vector<std::string>();
 }
 
-std::vector<std::string> split(const std::string& text, const std::string delims) {
+std::vector<std::string> split(const std::string& text, const std::string& delims) {
     std::vector<std::string> tokens;
 
     std::string curr_tok;
@@ -87,7 +87,7 @@ std::string replace_all(const std::string& input, const std::string& search, con
 }
 
 //Retruns true if str starts with prefix
-bool starts_with(std::string str, std::string prefix) {
+bool starts_with(const std::string& str, const std::string& prefix) {
     return str.find(prefix) == 0;
 }
 

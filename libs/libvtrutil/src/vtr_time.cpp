@@ -1,5 +1,7 @@
 #include "vtr_time.h"
 
+#include <utility>
+
 #include "vtr_log.h"
 #include "vtr_rusage.h"
 
@@ -25,7 +27,7 @@ float Timer::delta_max_rss_mib() const {
 }
 
 ScopedActionTimer::ScopedActionTimer(std::string action_str)
-    : action_(action_str)
+    : action_(std::move(action_str))
     , depth_(f_timer_depth++) {
 }
 
@@ -57,7 +59,7 @@ int ScopedActionTimer::depth() const {
 }
 
 ScopedFinishTimer::ScopedFinishTimer(std::string action_str)
-    : ScopedActionTimer(action_str) {
+    : ScopedActionTimer(std::move(action_str)) {
 }
 
 ScopedFinishTimer::~ScopedFinishTimer() {
@@ -69,7 +71,7 @@ ScopedFinishTimer::~ScopedFinishTimer() {
 }
 
 ScopedStartFinishTimer::ScopedStartFinishTimer(std::string action_str)
-    : ScopedActionTimer(action_str) {
+    : ScopedActionTimer(std::move(action_str)) {
     vtr::printf_info("%s%s\n", pad().c_str(), action().c_str());
 }
 

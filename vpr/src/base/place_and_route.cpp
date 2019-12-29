@@ -1,5 +1,6 @@
 #include <sys/types.h>
 
+#include <cmath>
 #include <cstdio>
 #include <ctime>
 #include <climits>
@@ -54,8 +55,8 @@ int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                                   t_det_routing_arch* det_routing_arch,
                                   std::vector<t_segment_inf>& segment_inf,
                                   vtr::vector<ClusterNetId, float*>& net_delay,
-                                  std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                                  std::shared_ptr<RoutingDelayCalculator> delay_calc) {
+                                  const std::shared_ptr<SetupHoldTimingInfo>& timing_info,
+                                  const std::shared_ptr<RoutingDelayCalculator>& delay_calc) {
     /* This routine performs a binary search to find the minimum number of      *
      * tracks per channel required to successfully route a circuit, and returns *
      * that minimum width_fac.                                                  */
@@ -462,7 +463,7 @@ static float comp_width(t_chan* chan, float x, float separation) {
         case GAUSSIAN:
             val = (x - chan->xpeak) * (x - chan->xpeak)
                   / (2 * chan->width * chan->width);
-            val = chan->peak * exp(-val);
+            val = chan->peak * std::exp(-val);
             val += chan->dc;
             break;
 

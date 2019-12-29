@@ -13,6 +13,7 @@
 #include <string.h>
 #include <string>
 #include <sstream>
+#include <utility>
 #include <vector>
 #include <stack>
 #include <utility>
@@ -253,7 +254,7 @@ static void parse_comma_separated_wire_points(const char* ch, std::vector<t_wire
 
 static void parse_num_conns(std::string num_conns, t_wireconn_inf& wireconn) {
     //num_conns is now interpretted as a formula and processed in build_switchblocks
-    wireconn.num_conns_formula = num_conns;
+    wireconn.num_conns_formula = std::move(num_conns);
 }
 
 /* Loads permutation funcs specified under Node into t_switchblock_inf. Node should be

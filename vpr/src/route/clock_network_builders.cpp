@@ -1,5 +1,7 @@
 #include "clock_network_builders.h"
 
+#include <utility>
+
 #include "globals.h"
 
 #include "vtr_assert.h"
@@ -17,7 +19,7 @@ void populate_segment_values(int seg_index,
                              int length,
                              MetalLayer layer,
                              std::vector<t_segment_inf>& segment_inf) {
-    segment_inf[seg_index].name = name;
+    segment_inf[seg_index].name = std::move(name);
     segment_inf[seg_index].length = length;
     segment_inf[seg_index].frequency = 1;
     segment_inf[seg_index].Rmetal = layer.r_metal;
@@ -49,7 +51,7 @@ std::string ClockNetwork::get_name() const {
  */
 
 void ClockNetwork::set_clock_name(std::string clock_name) {
-    clock_name_ = clock_name;
+    clock_name_ = std::move(clock_name);
 }
 
 void ClockNetwork::set_num_instance(int num_inst) {
@@ -121,7 +123,7 @@ void ClockRib::set_drive_switch(int switch_idx) {
 }
 
 void ClockRib::set_drive_name(std::string name) {
-    drive.name = name;
+    drive.name = std::move(name);
 }
 
 void ClockRib::set_tap_locations(int offset_x, int increment_x) {
@@ -130,7 +132,7 @@ void ClockRib::set_tap_locations(int offset_x, int increment_x) {
 }
 
 void ClockRib::set_tap_name(std::string name) {
-    tap.name = name;
+    tap.name = std::move(name);
 }
 
 /*
@@ -367,7 +369,7 @@ void ClockSpine::set_drive_switch(int switch_idx) {
 }
 
 void ClockSpine::set_drive_name(std::string name) {
-    drive.name = name;
+    drive.name = std::move(name);
 }
 
 void ClockSpine::set_tap_locations(int offset_y, int increment_y) {
@@ -376,7 +378,7 @@ void ClockSpine::set_tap_locations(int offset_y, int increment_y) {
 }
 
 void ClockSpine::set_tap_name(std::string name) {
-    tap.name = name;
+    tap.name = std::move(name);
 }
 
 /*

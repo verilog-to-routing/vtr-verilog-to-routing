@@ -132,7 +132,7 @@ static bool is_char_number(const char ch);
 static bool is_operator(const char ch);
 
 // returns true if the specified name is an known function operator
-static bool is_function(std::string name);
+static bool is_function(const std::string& name);
 
 // returns the length of any identifier (e.g. name, function) starting at the beginning of str
 static int identifier_length(const char* str);
@@ -142,7 +142,7 @@ static bool goto_next_char(int* str_ind, const string& pw_formula, char ch);
 
 /**** Function Implementations ****/
 /* returns integer result according to specified non-piece-wise formula and data */
-int parse_formula(std::string formula, const t_formula_data& mydata) {
+int parse_formula(const std::string& formula, const t_formula_data& mydata) {
     int result = -1;
 
     /* output in reverse-polish notation */
@@ -730,7 +730,7 @@ static bool is_operator(const char ch) {
     }
 }
 
-static bool is_function(std::string name) {
+static bool is_function(const std::string& name) {
     if (name == "min"
         || name == "max"
         || name == "gcd"

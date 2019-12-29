@@ -20,6 +20,7 @@
  */
 
 /************************* INCLUDES *********************************/
+#include <cmath>
 #include <cstring>
 #include <cmath>
 #include <map>
@@ -188,7 +189,7 @@ int power_calc_buffer_num_stages(float final_stage_size,
     } else if (final_stage_size < desired_stage_effort)
         N = 2;
     else {
-        N = (int)(log(final_stage_size) / log(desired_stage_effort) + 1);
+        N = (int)(std::log(final_stage_size) / std::log(desired_stage_effort) + 1);
 
         /* We always round down.
          * Perhaps N+1 would be closer to the desired stage effort, but the delay savings

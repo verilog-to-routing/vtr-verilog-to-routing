@@ -20,6 +20,7 @@
 #include <algorithm>
 #include "vpr_context.h"
 #include <fstream>
+#include <utility>
 #include "vpr_error.h"
 #include "globals.h"
 #include "tatum/util/tatum_assert.hpp"
@@ -128,7 +129,7 @@ void route_budgets::load_route_budgets(vtr::vector<ClusterNetId, float*>& net_de
         allocate_slack_using_weights(net_delay, netlist_pin_lookup);
         calculate_delay_targets();
     } else if (router_opts.routing_budgets_algorithm == SCALE_DELAY) {
-        allocate_slack_using_delays_and_criticalities(net_delay, timing_info, netlist_pin_lookup, router_opts);
+        allocate_slack_using_delays_and_criticalities(net_delay, std::move(timing_info), netlist_pin_lookup, router_opts);
     }
     set = true;
 }
@@ -293,7 +294,7 @@ void route_budgets::set_min_max_budgets_equal() {
     }
 }
 
-float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> timing_info, vtr::vector<ClusterNetId, float*>& temp_budgets, vtr::vector<ClusterNetId, float*>& net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup, analysis_type analysis_type, bool keep_in_bounds, slack_allocated_type slack_type) {
+float route_budgets::minimax_PERT(const std::shared_ptr<SetupHoldTimingInfo>& timing_info, vtr::vector<ClusterNetId, float*>& temp_budgets, vtr::vector<ClusterNetId, float*>& net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup, analysis_type analysis_type, bool keep_in_bounds, slack_allocated_type slack_type) {
     /*This function uses weights to calculate how much slack to allocate to a connection.
      * The weights are deteremined by how much delay of the whole path is present in this connection*/
 
@@ -343,7 +344,7 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> timing_in
     return max_budget_change;
 }
 
-float route_budgets::calculate_clb_pin_slack(ClusterNetId net_id, int ipin, std::shared_ptr<SetupHoldTimingInfo> timing_info, const ClusteredPinAtomPinsLookup& netlist_pin_lookup, analysis_type type, AtomPinId& atom_pin) {
+float route_budgets::calculate_clb_pin_slack(ClusterNetId net_id, int ipin, const std::shared_ptr<SetupHoldTimingInfo>& timing_info, const ClusteredPinAtomPinsLookup& netlist_pin_lookup, analysis_type type, AtomPinId& atom_pin) {
     /*Calculates the slack for the specific clb pin. Takes the minimum slack. Keeps track of the pin
      * used in this calculation so it can be used again for getting the total path delay*/
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -387,7 +388,7 @@ float route_budgets::calculate_clb_pin_slack(ClusterNetId net_id, int ipin, std:
     return clb_min_slack;
 }
 
-float route_budgets::get_total_path_delay(std::shared_ptr<const tatum::SetupHoldTimingAnalyzer> timing_analyzer,
+float route_budgets::get_total_path_delay(const std::shared_ptr<const tatum::SetupHoldTimingAnalyzer>& timing_analyzer,
                                           analysis_type analysis_type,
                                           tatum::NodeId timing_node) {
     /*The total path delay through a connection is calculated using the arrival and required time
@@ -454,7 +455,7 @@ float route_budgets::get_total_path_delay(std::shared_ptr<const tatum::SetupHold
 }
 
 void route_budgets::allocate_slack_using_delays_and_criticalities(vtr::vector<ClusterNetId, float*>& net_delay,
-                                                                  std::shared_ptr<SetupTimingInfo> timing_info,
+                                                                  const std::shared_ptr<SetupTimingInfo>& timing_info,
                                                                   const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                                                   const t_router_opts& router_opts) {
     /*Simplifies the budget calculation. The pin criticality describes 1-slack ratio

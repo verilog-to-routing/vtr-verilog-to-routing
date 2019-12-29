@@ -45,7 +45,7 @@ struct Abc_ManTime_t_
 
 #define TOLERANCE 0.001
 
-static inline int          Abc_FloatEqual( float x, float y )     { return fabs(x-y) < TOLERANCE; }
+static inline int          Abc_FloatEqual( float x, float y )     { return fabsf(x-y) < TOLERANCE; }
 
 // static functions
 static Abc_ManTime_t *     Abc_ManTimeStart( Abc_Ntk_t * pNtk );

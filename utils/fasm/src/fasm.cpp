@@ -415,7 +415,7 @@ static LogicVec lut_outputs(const t_pb* atom_pb, size_t num_inputs, const t_pb_r
     return lut.table();
 }
 
-static const t_metadata_dict *get_fasm_type(const t_pb_graph_node* pb_graph_node, std::string target_type) {
+static const t_metadata_dict *get_fasm_type(const t_pb_graph_node* pb_graph_node, const std::string& target_type) {
   if(pb_graph_node == nullptr) {
     return nullptr;
   }
@@ -564,7 +564,7 @@ void FasmWriterVisitor::check_for_param(const t_pb *atom) {
         VTR_ASSERT(value != nullptr);
 
         std::string fasm_params = value->as_string();
-        for(const auto param : vtr::split(fasm_params, "\n")) {
+        for(const auto& param : vtr::split(fasm_params, "\n")) {
           auto param_parts = split_fasm_entry(param, "=", "\t ");
             if(param_parts.size() == 0) {
                 continue;
@@ -584,7 +584,7 @@ void FasmWriterVisitor::check_for_param(const t_pb *atom) {
 
     auto &params = iter->second;
 
-    for(auto param : atom_ctx.nlist.block_params(atom_blk_id)) {
+    for(const auto& param : atom_ctx.nlist.block_params(atom_blk_id)) {
         auto feature = params.EmitFasmFeature(param.first, param.second);
 
         if(feature.size() > 0) {
@@ -669,7 +669,7 @@ void FasmWriterVisitor::find_clb_prefix(const t_pb_graph_node *node,
     }
 }
 
-void FasmWriterVisitor::output_fasm_mux(std::string fasm_mux,
+void FasmWriterVisitor::output_fasm_mux(const std::string& fasm_mux,
                                         t_interconnect *interconnect,
                                         t_pb_graph_pin *mux_input_pin) {
     auto *pb_name = mux_input_pin->parent_node->pb_type->name;
@@ -741,11 +741,11 @@ void FasmWriterVisitor::output_fasm_mux(std::string fasm_mux,
         pb_name, pb_index, port_name, pin_index, fasm_mux.c_str());
 }
 
-void FasmWriterVisitor::output_fasm_features(const std::string features) const {
+void FasmWriterVisitor::output_fasm_features(const std::string& features) const {
   output_fasm_features(features, clb_prefix_, blk_prefix_);
 }
 
-void FasmWriterVisitor::output_fasm_features(const std::string features, const std::string clb_prefix, const std::string blk_prefix) const {
+void FasmWriterVisitor::output_fasm_features(const std::string& features, const std::string& clb_prefix, const std::string& blk_prefix) const {
   std::stringstream os(features);
 
   while(os) {

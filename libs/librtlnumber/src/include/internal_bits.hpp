@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <string>
 #include <algorithm>
+#include <utility>
 #include <vector>
 #include <bitset>
 #include "rtl_utils.hpp"
@@ -687,7 +688,7 @@ private:
 
     VNumber(BitSpace::VerilogBits other_bitstring, bool other_defined_size, bool other_sign)
     {
-        bitstring = BitSpace::VerilogBits(other_bitstring);
+        bitstring = BitSpace::VerilogBits(std::move(other_bitstring));
         sign = other_sign;
         defined_size = other_defined_size;
     }

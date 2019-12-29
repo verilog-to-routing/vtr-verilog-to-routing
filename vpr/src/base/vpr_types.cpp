@@ -6,7 +6,7 @@ t_ext_pin_util_targets::t_ext_pin_util_targets(float default_in_util, float defa
     defaults_.output_pin_util = default_out_util;
 }
 
-t_ext_pin_util t_ext_pin_util_targets::get_pin_util(std::string block_type_name) const {
+t_ext_pin_util t_ext_pin_util_targets::get_pin_util(const std::string& block_type_name) const {
     auto itr = overrides_.find(block_type_name);
     if (itr != overrides_.end()) {
         return itr->second;
@@ -14,7 +14,7 @@ t_ext_pin_util t_ext_pin_util_targets::get_pin_util(std::string block_type_name)
     return defaults_;
 }
 
-void t_ext_pin_util_targets::set_block_pin_util(std::string block_type_name, t_ext_pin_util target) {
+void t_ext_pin_util_targets::set_block_pin_util(const std::string& block_type_name, t_ext_pin_util target) {
     overrides_[block_type_name] = target;
 }
 
@@ -29,11 +29,11 @@ void t_pack_high_fanout_thresholds::set_default(int threshold) {
     default_ = threshold;
 }
 
-void t_pack_high_fanout_thresholds::set(std::string block_type_name, int threshold) {
+void t_pack_high_fanout_thresholds::set(const std::string& block_type_name, int threshold) {
     overrides_[block_type_name] = threshold;
 }
 
-int t_pack_high_fanout_thresholds::get_threshold(std::string block_type_name) const {
+int t_pack_high_fanout_thresholds::get_threshold(const std::string& block_type_name) const {
     auto itr = overrides_.find(block_type_name);
     if (itr != overrides_.end()) {
         return itr->second;

@@ -2,6 +2,7 @@
 #include <ctime>
 #include <cmath>
 #include <algorithm>
+#include <utility>
 #include <vector>
 #include <iostream>
 
@@ -318,8 +319,8 @@ bool try_route(int width_fac,
                                           segment_inf,
                                           net_delay,
                                           netlist_pin_lookup,
-                                          timing_info,
-                                          delay_calc,
+                                          std::move(timing_info),
+                                          std::move(delay_calc),
                                           first_iteration_priority);
 
         profiling::time_on_fanout_analysis();

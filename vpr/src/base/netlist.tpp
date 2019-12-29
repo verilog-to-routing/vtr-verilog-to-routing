@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <numeric>
+#include <utility>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -37,8 +38,8 @@ NetId NetlistIdRemapper<BlockId, PortId, PinId, NetId>::new_net_id(NetId old_id)
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 Netlist<BlockId, PortId, PinId, NetId>::Netlist(std::string name, std::string id)
-    : netlist_name_(name)
-    , netlist_id_(id) {}
+    : netlist_name_(std::move(name))
+    , netlist_id_(std::move(id)) {}
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
 Netlist<BlockId, PortId, PinId, NetId>::~Netlist() = default;
@@ -611,7 +612,7 @@ bool Netlist<BlockId, PortId, PinId, NetId>::verify_lookups() const {
  *
  */
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-BlockId Netlist<BlockId, PortId, PinId, NetId>::create_block(const std::string name) {
+BlockId Netlist<BlockId, PortId, PinId, NetId>::create_block(const std::string& name) {
     //Must have a non-empty name
     VTR_ASSERT_MSG(!name.empty(), "Non-Empty block name");
 
@@ -654,7 +655,7 @@ BlockId Netlist<BlockId, PortId, PinId, NetId>::create_block(const std::string n
 }
 
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
-PortId Netlist<BlockId, PortId, PinId, NetId>::create_port(const BlockId blk_id, const std::string name, BitIndex width, PortType type) {
+PortId Netlist<BlockId, PortId, PinId, NetId>::create_port(const BlockId blk_id, const std::string& name, BitIndex width, PortType type) {
     //Check pre-conditions
     VTR_ASSERT_MSG(valid_block_id(blk_id), "Valid block id");
 
@@ -1951,7 +1952,7 @@ typename Netlist<BlockId, PortId, PinId, NetId>::StringId Netlist<BlockId, PortI
         string_ids_.push_back(str_id);
 
         //Store the reverse look-up
-        auto key = str;
+        const auto& key = str;
         string_to_string_id_[key] = str_id;
 
         //Initialize the data

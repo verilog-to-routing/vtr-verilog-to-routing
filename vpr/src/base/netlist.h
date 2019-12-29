@@ -760,14 +760,14 @@ class Netlist {
   protected: //Protected Mutators
     //Create or return an existing block in the netlist
     //  name        : The unique name of the block
-    BlockId create_block(const std::string name);
+    BlockId create_block(const std::string& name);
 
     //Create or return an existing port in the netlist
     //  blk_id      : The block the port is associated with
     //  name        : The name of the port (must match the name of a port in the block's model)
     //  width       : The width (number of bits) of the port
     //  type        : The type of the port (INPUT, OUTPUT, CLOCK)
-    PortId create_port(const BlockId blk_id, const std::string name, BitIndex width, PortType type);
+    PortId create_port(const BlockId blk_id, const std::string& name, BitIndex width, PortType type);
 
     //Create or return an existing pin in the netlist
     //  port_id    : The port this pin is associated with

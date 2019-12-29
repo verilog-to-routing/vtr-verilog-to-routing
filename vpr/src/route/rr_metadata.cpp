@@ -1,5 +1,7 @@
 #include "rr_metadata.h"
 
+#include <utility>
+
 #include "globals.h"
 
 namespace vpr {
@@ -11,7 +13,7 @@ const t_metadata_value* rr_node_metadata(int src_node, std::string key) {
         return nullptr;
     }
     auto& data = device_ctx.rr_node_metadata.at(src_node);
-    return data.one(key);
+    return data.one(std::move(key));
 }
 
 void add_rr_node_metadata(int src_node, std::string key, std::string value) {
@@ -21,7 +23,7 @@ void add_rr_node_metadata(int src_node, std::string key, std::string value) {
         device_ctx.rr_node_metadata.emplace(src_node, t_metadata_dict());
     }
     auto& data = device_ctx.rr_node_metadata.at(src_node);
-    data.add(key, value);
+    data.add(std::move(key), std::move(value));
 }
 
 const t_metadata_value* rr_edge_metadata(int src_node, int sink_id, short switch_id, std::string key) {
@@ -33,7 +35,7 @@ const t_metadata_value* rr_edge_metadata(int src_node, int sink_id, short switch
         return nullptr;
     }
 
-    return iter->second.one(key);
+    return iter->second.one(std::move(key));
 }
 
 void add_rr_edge_metadata(int src_node, int sink_id, short switch_id, std::string key, std::string value) {
@@ -43,7 +45,7 @@ void add_rr_edge_metadata(int src_node, int sink_id, short switch_id, std::strin
         device_ctx.rr_edge_metadata.emplace(rr_edge, t_metadata_dict());
     }
     auto& data = device_ctx.rr_edge_metadata.at(rr_edge);
-    data.add(key, value);
+    data.add(std::move(key), std::move(value));
 }
 
 } // namespace vpr

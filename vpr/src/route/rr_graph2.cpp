@@ -38,7 +38,7 @@ static void load_block_rr_indices(const DeviceGrid& grid,
                                   t_rr_node_indices& indices,
                                   int* index);
 
-static int get_bidir_track_to_chan_seg(const std::vector<int> conn_tracks,
+static int get_bidir_track_to_chan_seg(const std::vector<int>& conn_tracks,
                                        const t_rr_node_indices& L_rr_node_indices,
                                        const int to_chan,
                                        const int to_seg,
@@ -1705,7 +1705,7 @@ int get_track_to_tracks(const int from_chan,
     return num_conn;
 }
 
-static int get_bidir_track_to_chan_seg(const std::vector<int> conn_tracks,
+static int get_bidir_track_to_chan_seg(const std::vector<int>& conn_tracks,
                                        const t_rr_node_indices& L_rr_node_indices,
                                        const int to_chan,
                                        const int to_seg,

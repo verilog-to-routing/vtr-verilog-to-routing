@@ -10,8 +10,8 @@ namespace vtr {
 
 //Splits the string 'text' along the specified delimiter characters in 'delims'
 //The split strings (excluding the delimiters) are returned
-std::vector<std::string> split(const char* text, const std::string delims = " \t\n");
-std::vector<std::string> split(const std::string& text, const std::string delims = " \t\n");
+std::vector<std::string> split(const char* text, const std::string& delims = " \t\n");
+std::vector<std::string> split(const std::string& text, const std::string& delims = " \t\n");
 
 //Returns 'input' with the first instance of 'search' replaced with 'replace'
 std::string replace_first(const std::string& input, const std::string& search, const std::string& replace);
@@ -20,7 +20,7 @@ std::string replace_first(const std::string& input, const std::string& search, c
 std::string replace_all(const std::string& input, const std::string& search, const std::string& replace);
 
 //Retruns true if str starts with prefix
-bool starts_with(std::string str, std::string prefix);
+bool starts_with(const std::string& str, const std::string& prefix);
 
 //Returns a std::string formatted using a printf-style format string
 std::string string_fmt(const char* fmt, ...);
@@ -33,7 +33,7 @@ std::string vstring_fmt(const char* fmt, va_list args);
 //  For example the sequence {"home", "user", "my_files", "test.blif"} with delim="/"
 //  would return "home/user/my_files/test.blif"
 template<typename Iter>
-std::string join(Iter begin, Iter end, std::string delim);
+std::string join(Iter begin, Iter end, const std::string& delim);
 
 template<typename Container>
 std::string join(Container container, std::string delim);
@@ -77,7 +77,7 @@ std::vector<std::string> ReadLineTokens(FILE* InFile, int* LineNum);
  * Template implementations
  */
 template<typename Iter>
-std::string join(Iter begin, Iter end, std::string delim) {
+std::string join(Iter begin, Iter end, const std::string& delim) {
     std::string joined_str;
     for (auto iter = begin; iter != end; ++iter) {
         joined_str += *iter;

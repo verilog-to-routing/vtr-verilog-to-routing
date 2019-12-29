@@ -4,7 +4,7 @@
 namespace argparse {
 
     template<typename T> 
-    T as(std::string str) {
+    T as(const std::string& str) {
         
         std::stringstream ss(str);
 
@@ -19,7 +19,7 @@ namespace argparse {
     }
 
     template<typename Container>
-    std::string join(Container container, std::string join_str) {
+    std::string join(Container container, const std::string& join_str) {
         std::stringstream ss;
 
         bool first = true;

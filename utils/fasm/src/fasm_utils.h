@@ -13,7 +13,7 @@ namespace fasm {
 // in="A[5]" parts to *name="A", *index=5
 //
 // Throws vpr exception if parsing fails.
-void parse_name_with_optional_index(const std::string in, std::string *name, int *index);
+void parse_name_with_optional_index(const std::string& in, std::string *name, int *index);
 
 // Split FASM entry into parts.
 //
@@ -21,7 +21,7 @@ void parse_name_with_optional_index(const std::string in, std::string *name, int
 // ignore - Characters to ignore.
 std::vector<std::string> split_fasm_entry(std::string entry,
                                                  std::string delims,
-                                                 std::string ignore);
+                                                 const std::string& ignore);
 
 // Searches for tags in given string, returns their names in a vector.
 std::vector<std::string> find_tags_in_feature (const std::string& a_String);

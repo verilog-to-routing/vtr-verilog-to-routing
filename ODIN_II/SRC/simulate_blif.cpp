@@ -2170,7 +2170,7 @@ static void instantiate_memory(nnode_t *node, long data_width, long addr_width)
 	}
 }
 
-static int parse_mif_radix(std::string radix)
+static int parse_mif_radix(const std::string& radix)
 {
 		return 	(radix == "HEX")	?	16:
 				(radix == "DEC")	?	10:
@@ -2759,7 +2759,7 @@ static test_vector *parse_test_vector(char *buffer)
  *
  * If you want better randomness, call srand at some point.
  */
-static bool contains_a_substr_of_name(std::vector<std::string> held, const char *name_in)
+static bool contains_a_substr_of_name(const std::vector<std::string>& held, const char *name_in)
 {
 	if(!name_in)
 		return false;

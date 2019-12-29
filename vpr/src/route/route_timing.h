@@ -18,8 +18,8 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
                              const std::vector<t_segment_inf>& segment_inf,
                              vtr::vector<ClusterNetId, float*>& net_delay,
                              const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                             std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                             std::shared_ptr<RoutingDelayCalculator> delay_calc,
+                             const std::shared_ptr<SetupHoldTimingInfo>& timing_info,
+                             const std::shared_ptr<RoutingDelayCalculator>& delay_calc,
                              ScreenUpdatePriority first_iteration_priority);
 
 bool try_timing_driven_route_net(ClusterNetId net_id,
@@ -33,7 +33,7 @@ bool try_timing_driven_route_net(ClusterNetId net_id,
                                  vtr::vector<ClusterNetId, float*>& net_delay,
                                  const RouterLookahead& router_lookahead,
                                  const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                                 std::shared_ptr<SetupTimingInfo> timing_info,
+                                 const std::shared_ptr<SetupTimingInfo>& timing_info,
                                  route_budgets& budgeting_inf,
                                  bool& was_rerouted);
 
@@ -48,7 +48,7 @@ bool timing_driven_route_net(ClusterNetId net_id,
                              float* net_delay,
                              const RouterLookahead& router_lookahead,
                              const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                             std::shared_ptr<const SetupTimingInfo> timing_info,
+                             const std::shared_ptr<const SetupTimingInfo>& timing_info,
                              route_budgets& budgeting_inf);
 
 void alloc_timing_driven_route_structs(float** pin_criticality_ptr,

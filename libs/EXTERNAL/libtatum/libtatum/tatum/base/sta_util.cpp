@@ -1,3 +1,4 @@
+#include <cmath>
 #include <ctime>
 #include <iostream>
 #include <iomanip>
@@ -25,7 +26,7 @@ float time_sec(struct timespec start, struct timespec end) {
 
 void print_histogram(const std::vector<float>& values, int nbuckets) {
     nbuckets = std::min(values.size(), (size_t) nbuckets);
-    int values_per_bucket = ceil((float) values.size() / nbuckets);
+    int values_per_bucket = std::ceil((float) values.size() / nbuckets);
 
     std::vector<float> buckets(nbuckets);
 
@@ -105,7 +106,7 @@ void print_node_fanout_histogram(const TimingGraph& tg, int nbuckets) {
 }
 
 
-void print_timing_graph(std::shared_ptr<const TimingGraph> tg) {
+void print_timing_graph(const std::shared_ptr<const TimingGraph>& tg) {
     for(const NodeId node_id : tg->nodes()) {
         cout << "Node: " << node_id;
         cout << " Type: " << tg->node_type(node_id);
@@ -121,7 +122,7 @@ void print_timing_graph(std::shared_ptr<const TimingGraph> tg) {
     }
 }
 
-void print_levelization(std::shared_ptr<const TimingGraph> tg) {
+void print_levelization(const std::shared_ptr<const TimingGraph>& tg) {
     cout << "Num Levels: " << tg->levels().size() << "\n";
     for(const LevelId level_id : tg->levels()) {
         const auto& level = tg->level_nodes(level_id);
@@ -302,7 +303,7 @@ void print_hold_tags(const TimingGraph& tg, const HoldTimingAnalyzer& analyzer) 
 }
 
 
-void dump_level_times(std::string fname, const TimingGraph& timing_graph, std::map<std::string,float> serial_prof_data, std::map<std::string,float> parallel_prof_data) {
+void dump_level_times(const std::string& fname, const TimingGraph& timing_graph, std::map<std::string,float> serial_prof_data, std::map<std::string,float> parallel_prof_data) {
     //Per-level speed-up
     //cout << "Level Speed-Ups by width:" << endl;
     std::map<int,std::vector<LevelId>,std::greater<int>> widths_to_levels;
@@ -313,7 +314,7 @@ void dump_level_times(std::string fname, const TimingGraph& timing_graph, std::m
 
     std::ofstream of(fname);
     of << "Width,Level,serial_fwd,serial_bck,parallel_fwd,parallel_bck"<< endl;
-    for(auto kv : widths_to_levels) {
+    for(const auto& kv : widths_to_levels) {
         int width = kv.first;
         for(const auto ilevel : kv.second) {
             std::stringstream key_fwd;

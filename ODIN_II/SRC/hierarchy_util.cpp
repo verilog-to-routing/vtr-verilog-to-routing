@@ -6,7 +6,7 @@
 STRING_CACHE *copy_param_table_sc(STRING_CACHE *to_copy);
 
 ast_node_t *resolve_hierarchical_name_reference_by_path_search(sc_hierarchy *local_ref, std::string identifier);
-ast_node_t *resolve_hierarchical_name_reference_by_upward_search(sc_hierarchy *local_ref, std::string identifier);
+ast_node_t *resolve_hierarchical_name_reference_by_upward_search(sc_hierarchy *local_ref, const std::string& identifier);
 
 sc_hierarchy *init_sc_hierarchy()
 {
@@ -326,7 +326,7 @@ ast_node_t *resolve_hierarchical_name_reference_by_path_search(sc_hierarchy *loc
 /*---------------------------------------------------------------------------
  * (function: resolve_hierarchical_name_reference_by_upward_search)
  *-------------------------------------------------------------------------*/
-ast_node_t *resolve_hierarchical_name_reference_by_upward_search(sc_hierarchy *local_ref, std::string identifier)
+ast_node_t *resolve_hierarchical_name_reference_by_upward_search(sc_hierarchy *local_ref, const std::string& identifier)
 {
 	if (!identifier.empty())
 	{

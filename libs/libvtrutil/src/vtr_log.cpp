@@ -19,11 +19,11 @@ void set_log_file(const char* filename) {
 
 } // namespace vtr
 
-void add_warnings_to_suppress(std::string function_name) {
+void add_warnings_to_suppress(const std::string& function_name) {
     warnings_to_suppress.insert(function_name);
 }
 
-void set_noisy_warn_log_file(std::string log_file_name) {
+void set_noisy_warn_log_file(const std::string& log_file_name) {
     std::ofstream log;
     log.open(log_file_name, std::ifstream::out | std::ifstream::trunc);
     log.close();

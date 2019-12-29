@@ -14,17 +14,17 @@
 
 namespace tatum {
 
-void write_tags(std::ostream& os, const std::string& type, const TimingTags::tag_range tags, const NodeId node_id);
-void write_slacks(std::ostream& os, const std::string& type, const TimingTags::tag_range tags, const EdgeId edge);
-void write_slacks(std::ostream& os, const std::string& type, const TimingTags::tag_range tags, const NodeId edge);
+void write_tags(std::ostream& os, const std::string& type, const TimingTags::tag_range& tags, const NodeId node_id);
+void write_slacks(std::ostream& os, const std::string& type, const TimingTags::tag_range& tags, const EdgeId edge);
+void write_slacks(std::ostream& os, const std::string& type, const TimingTags::tag_range& tags, const NodeId edge);
 
-void write_echo(std::string filename, const TimingGraph& tg, const TimingConstraints& tc, const DelayCalculator& dc, const std::shared_ptr<const TimingAnalyzer> analyzer) {
+void write_echo(const std::string& filename, const TimingGraph& tg, const TimingConstraints& tc, const DelayCalculator& dc, const std::shared_ptr<const TimingAnalyzer>& analyzer) {
     std::ofstream os(filename);
 
     write_echo(os, tg, tc, dc, analyzer);
 }
 
-void write_echo(std::ostream& os, const TimingGraph& tg, const TimingConstraints& tc, const DelayCalculator& dc, const std::shared_ptr<const TimingAnalyzer> analyzer) {
+void write_echo(std::ostream& os, const TimingGraph& tg, const TimingConstraints& tc, const DelayCalculator& dc, const std::shared_ptr<const TimingAnalyzer>& analyzer) {
     write_timing_graph(os, tg);
     write_timing_constraints(os, tc);
     write_delay_model(os, tg, dc);
@@ -227,7 +227,7 @@ void write_timing_constraints(std::ostream& os, const TimingConstraints& tc) {
     os << "\n";
 }
 
-void write_analysis_result(std::ostream& os, const TimingGraph& tg, const std::shared_ptr<const TimingAnalyzer> analyzer) {
+void write_analysis_result(std::ostream& os, const TimingGraph& tg, const std::shared_ptr<const TimingAnalyzer>& analyzer) {
     os << "analysis_result:\n";
 
     auto setup_analyzer = std::dynamic_pointer_cast<const SetupTimingAnalyzer>(analyzer);
@@ -287,7 +287,7 @@ void write_analysis_result(std::ostream& os, const TimingGraph& tg, const std::s
     os << "\n";
 }
 
-void write_tags(std::ostream& os, const std::string& type, const TimingTags::tag_range tags, const NodeId node_id) {
+void write_tags(std::ostream& os, const std::string& type, const TimingTags::tag_range& tags, const NodeId node_id) {
     for(const auto& tag : tags) {
         TATUM_ASSERT(tag.type() != TagType::SLACK);
 
@@ -314,7 +314,7 @@ void write_tags(std::ostream& os, const std::string& type, const TimingTags::tag
     }
 }
 
-void write_slacks(std::ostream& os, const std::string& type, const TimingTags::tag_range tags, const EdgeId edge) {
+void write_slacks(std::ostream& os, const std::string& type, const TimingTags::tag_range& tags, const EdgeId edge) {
     for(const auto& tag : tags) {
         TATUM_ASSERT(tag.type() == TagType::SLACK);
 
@@ -341,7 +341,7 @@ void write_slacks(std::ostream& os, const std::string& type, const TimingTags::t
     }
 }
 
-void write_slacks(std::ostream& os, const std::string& type, const TimingTags::tag_range tags, const NodeId node) {
+void write_slacks(std::ostream& os, const std::string& type, const TimingTags::tag_range& tags, const NodeId node) {
     for(const auto& tag : tags) {
         TATUM_ASSERT(tag.type() == TagType::SLACK);
 

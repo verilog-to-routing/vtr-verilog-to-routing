@@ -532,12 +532,12 @@ Cost_Entry Expansion_Cost_Entry::get_geomean_entry() {
     float geomean_delay = 0;
     float geomean_cong = 0;
     for (auto cost_entry : this->cost_vector) {
-        geomean_delay += log(cost_entry.delay);
-        geomean_cong += log(cost_entry.congestion);
+        geomean_delay += std::log(cost_entry.delay);
+        geomean_cong += std::log(cost_entry.congestion);
     }
 
-    geomean_delay = exp(geomean_delay / (float)this->cost_vector.size());
-    geomean_cong = exp(geomean_cong / (float)this->cost_vector.size());
+    geomean_delay = std::exp(geomean_delay / (float)this->cost_vector.size());
+    geomean_cong = std::exp(geomean_cong / (float)this->cost_vector.size());
 
     return Cost_Entry(geomean_delay, geomean_cong);
 }
@@ -568,7 +568,7 @@ Cost_Entry Expansion_Cost_Entry::get_median_entry() {
     /* sort the cost entries into bins */
     std::vector<std::vector<Cost_Entry> > entry_bins(num_bins, std::vector<Cost_Entry>());
     for (auto entry : this->cost_vector) {
-        float bin_num = floor((entry.delay - min_del_entry.delay) / bin_size);
+        float bin_num = std::floor((entry.delay - min_del_entry.delay) / bin_size);
 
         VTR_ASSERT(vtr::nint(bin_num) >= 0 && vtr::nint(bin_num) <= num_bins);
         if (vtr::nint(bin_num) == num_bins) {

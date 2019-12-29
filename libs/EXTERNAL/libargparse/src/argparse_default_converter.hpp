@@ -1,6 +1,7 @@
 #ifndef ARGPARSE_DEFAULT_CONVERTER_HPP
 #define ARGPARSE_DEFAULT_CONVERTER_HPP
 #include <sstream>
+#include <utility>
 #include <vector>
 #include <typeinfo>
 #include "argparse_error.hpp"
@@ -38,7 +39,7 @@ arg_type() { return ""; } //Empty
 template<typename T>
 class DefaultConverter {
     public:
-        ConvertedValue<T> from_str(std::string str) {
+        ConvertedValue<T> from_str(const std::string& str) {
             std::stringstream ss(str);
 
             T val = T();
@@ -124,12 +125,12 @@ class DefaultConverter<std::string> {
     public:
         ConvertedValue<std::string> from_str(std::string str) { 
             ConvertedValue<std::string> converted_value;
-            converted_value.set_value(str);
+            converted_value.set_value(std::move(str));
             return converted_value;
         }
         ConvertedValue<std::string> to_str(std::string val) {
             ConvertedValue<std::string> converted_value;
-            converted_value.set_value(val);
+            converted_value.set_value(std::move(val));
             return converted_value;
         }
         std::vector<std::string> default_choices() { return {}; }
@@ -140,7 +141,7 @@ class DefaultConverter<std::string> {
 template<>
 class DefaultConverter<const char*> {
     public:
-        ConvertedValue<const char*> from_str(std::string str) { 
+        ConvertedValue<const char*> from_str(const std::string& str) { 
             ConvertedValue<const char*> val;
             val.set_value(strdup(str.c_str()));
             return val;
@@ -158,7 +159,7 @@ class DefaultConverter<const char*> {
 template<>
 class DefaultConverter<char*> {
     public:
-        ConvertedValue<char*> from_str(std::string str) { 
+        ConvertedValue<char*> from_str(const std::string& str) { 
             ConvertedValue<char*> val;
             val.set_value(strdup(str.c_str()));
             return val;

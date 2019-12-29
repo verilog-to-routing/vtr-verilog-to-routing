@@ -1,3 +1,4 @@
+#include <cmath>
 #include <cstdio>
 #include <cmath>
 
@@ -63,7 +64,7 @@ void load_criticalities(SetupTimingInfo& timing_info, float crit_exponent, const
             /* The placer likes a great deal of contrast between criticalities.
              * Since path criticality varies much more than timing, we "sharpen" timing
              * criticality by taking it to some power, crit_exponent (between 1 and 8 by default). */
-            f_timing_place_crit[net_id][ipin] = pow(clb_pin_crit, crit_exponent);
+            f_timing_place_crit[net_id][ipin] = std::pow(clb_pin_crit, crit_exponent);
         }
     }
 }

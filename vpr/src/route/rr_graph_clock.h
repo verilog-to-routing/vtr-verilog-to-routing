@@ -50,14 +50,14 @@ class SwitchPoints {
     /* Example: x,y = middle of the chip, switch_point_name == name of main drive
      * of global clock spine, returns the rr_nodes of all the clock spines that
      * start the newtork there*/
-    std::vector<int> get_rr_node_indices_at_location(std::string switch_point_name,
+    std::vector<int> get_rr_node_indices_at_location(const std::string& switch_point_name,
                                                      int x,
                                                      int y) const;
 
-    std::set<std::pair<int, int>> get_switch_locations(std::string switch_point_name) const;
+    std::set<std::pair<int, int>> get_switch_locations(const std::string& switch_point_name) const;
 
     /** Setters **/
-    void insert_switch_node_idx(std::string switch_point_name, int x, int y, int node_idx);
+    void insert_switch_node_idx(const std::string& switch_point_name, int x, int y, int node_idx);
 };
 
 class ClockRRGraphBuilder {
@@ -74,20 +74,20 @@ class ClockRRGraphBuilder {
     std::unordered_map<std::string, SwitchPoints> clock_name_to_switch_points;
 
     /* Saves a map from switch rr_node idx -> {x, y} location */
-    void add_switch_location(std::string clock_name,
+    void add_switch_location(const std::string& clock_name,
                              std::string switch_point_name,
                              int x,
                              int y,
                              int node_index);
 
     /* Returns the rr_node idx of the switch at location {x, y} */
-    std::vector<int> get_rr_node_indices_at_switch_location(std::string clock_name,
+    std::vector<int> get_rr_node_indices_at_switch_location(const std::string& clock_name,
                                                             std::string switch_point_name,
                                                             int x,
                                                             int y) const;
 
     /* Returns all the switch locations for the a certain clock network switch */
-    std::set<std::pair<int, int>> get_switch_locations(std::string clock_name,
+    std::set<std::pair<int, int>> get_switch_locations(const std::string& clock_name,
                                                        std::string switch_point_name) const;
 
   public:

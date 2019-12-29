@@ -179,7 +179,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     //  name        : The name of the port (must match the name of a port in the block's model)
     //  width       : The width (number of bits) of the port
     //  type        : The type of the port (INPUT, OUTPUT, or CLOCK)
-    ClusterPortId create_port(const ClusterBlockId blk_id, const std::string name, BitIndex width, PortType type);
+    ClusterPortId create_port(const ClusterBlockId blk_id, const std::string& name, BitIndex width, PortType type);
 
     //Create or return an existing pin in the netlist
     //  port_id    : The port this pin is associated with
@@ -192,7 +192,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 
     //Create an empty, or return an existing net in the netlist
     //  name     : The unique name of the net
-    ClusterNetId create_net(const std::string name);
+    ClusterNetId create_net(const std::string& name);
 
     //Sets the flag in net_ignored_ = state
     void set_net_is_ignored(ClusterNetId net_id, bool state);

@@ -261,7 +261,7 @@ const char *edge_type_blif_str(nnode_t *node)
 	}
 }
 
-edge_type_e edge_type_blif_enum(std::string edge_kind_str)
+edge_type_e edge_type_blif_enum(const std::string& edge_kind_str)
 {
 
 	if		(edge_kind_str == "fe")	return FALLING_EDGE_SENSITIVITY;

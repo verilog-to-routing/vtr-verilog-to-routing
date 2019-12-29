@@ -13,6 +13,7 @@
  * messages if the requested item does not exists).
  */
 
+#include <utility>
 #include <vector>
 #include <stdexcept>
 #include <cstdio>
@@ -26,9 +27,9 @@ namespace pugiutil {
 //An error produced while getting an XML node/attribute
 class XmlError : public std::runtime_error {
   public:
-    XmlError(std::string msg = "", std::string new_filename = "", size_t new_linenumber = -1)
+    XmlError(const std::string& msg = "", std::string new_filename = "", size_t new_linenumber = -1)
         : std::runtime_error(msg)
-        , filename_(new_filename)
+        , filename_(std::move(new_filename))
         , linenumber_(new_linenumber) {}
 
     //Returns the filename associated with this error
@@ -49,7 +50,7 @@ class XmlError : public std::runtime_error {
 //
 //Returns loc_data look-up for xml node line numbers
 loc_data load_xml(pugi::xml_document& doc,     //Document object to be loaded with file contents
-                  const std::string filename); //Filename to load from
+                  const std::string& filename); //Filename to load from
 
 //Defines whether something (e.g. a node/attribute) is optional or required.
 //  We use this to improve clarity at the function call site (compared to just
@@ -118,7 +119,7 @@ size_t count_children(const pugi::xml_node node,
 //  loc_data - XML file location data
 //  expected_count - The expected number of child nodes
 void expect_child_node_count(const pugi::xml_node node,
-                             std::string child_name,
+                             const std::string& child_name,
                              size_t expected_count,
                              const loc_data& loc_data);
 
@@ -159,7 +160,7 @@ void expect_only_attributes(const pugi::xml_node node,
 //  loc_data - XML file location data
 void expect_only_attributes(const pugi::xml_node node,
                             std::vector<std::string> attribute_names,
-                            std::string explanation,
+                            const std::string& explanation,
                             const loc_data& loc_data);
 
 //Counts the number of attributes on the specified node
