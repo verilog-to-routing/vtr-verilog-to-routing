@@ -31,6 +31,8 @@
 #include <kj/encoding.h>
 #include <kj/map.h>
 
+#include <utility>
+
 namespace capnp {
 
 struct JsonCodec::Impl {
@@ -189,7 +191,7 @@ void JsonCodec::setHasMode(HasMode mode) { impl->hasMode = mode; }
 kj::String JsonCodec::encode(DynamicValue::Reader value, Type type) const {
   MallocMessageBuilder message;
   auto json = message.getRoot<JsonValue>();
-  encode(value, type, json);
+  encode(std::move(value), type, json);
   return encodeRaw(json);
 }
 
@@ -213,7 +215,7 @@ kj::String JsonCodec::encodeRaw(JsonValue::Reader value) const {
   return impl->encodeRaw(value, 0, multiline, false).flatten();
 }
 
-void JsonCodec::encode(DynamicValue::Reader input, Type type, JsonValue::Builder output) const {
+void JsonCodec::encode(const DynamicValue::Reader& input, Type type, JsonValue::Builder output) const {
   // TODO(someday): For interfaces, check for handlers on superclasses, per documentation...
   // TODO(someday): For branded types, should we check for handlers on the generic?
   // TODO(someday): Allow registering handlers for "all structs", "all lists", etc?
@@ -362,7 +364,7 @@ void JsonCodec::encode(DynamicValue::Reader input, Type type, JsonValue::Builder
   }
 }
 
-void JsonCodec::encodeField(StructSchema::Field field, DynamicValue::Reader input,
+void JsonCodec::encodeField(StructSchema::Field field, const DynamicValue::Reader& input,
                             JsonValue::Builder output) const {
   KJ_IF_MAYBE(handler, impl->fieldHandlers.find(field)) {
     (*handler)->encodeBase(*this, input, output);
@@ -1210,10 +1212,10 @@ private:
                    kj::OneOf<StructSchema::Field, Type> type, DynamicValue::Reader value)
         : ownName(prefix.size() > 0 ? kj::str(prefix, name) : nullptr),
           name(prefix.size() > 0 ? ownName : name),
-          type(type), value(value) {}
+          type(type), value(std::move(value)) {}
   };
 
-  void gatherForEncode(const JsonCodec& codec, DynamicValue::Reader input,
+  void gatherForEncode(const JsonCodec& codec, const DynamicValue::Reader& input,
                        kj::StringPtr prefix, kj::StringPtr morePrefix,
                        kj::Vector<FlattenedField>& flattenedFields) const {
     kj::String ownPrefix;

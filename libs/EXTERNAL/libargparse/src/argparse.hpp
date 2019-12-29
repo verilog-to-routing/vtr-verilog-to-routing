@@ -37,7 +37,7 @@ namespace argparse {
             ArgumentParser(std::string prog_name, std::string description_str=std::string(), std::ostream& os=std::cout);
 
             //Overrides the program name
-            ArgumentParser& prog(std::string prog, bool basename_only=true);
+            ArgumentParser& prog(const std::string& prog, bool basename_only=true);
 
             //Sets the program version
             ArgumentParser& version(std::string version);
@@ -294,7 +294,7 @@ namespace argparse {
     template<typename T, typename Converter>
     class SingleValueArgument : public Argument {
         public: //Constructors
-            SingleValueArgument(ArgValue<T>& dest, std::string long_opt, std::string short_opt)
+            SingleValueArgument(ArgValue<T>& dest, const std::string& long_opt, const std::string& short_opt)
                 : Argument(long_opt, short_opt)
                 , dest_(dest)
                 {}
@@ -364,7 +364,7 @@ namespace argparse {
     template<typename Converter>
     class SingleValueArgument<bool,Converter> : public Argument {
         public: //Constructors
-            SingleValueArgument(ArgValue<bool>& dest, std::string long_opt, std::string short_opt)
+            SingleValueArgument(ArgValue<bool>& dest, const std::string& long_opt, const std::string& short_opt)
                 : Argument(long_opt, short_opt)
                 , dest_(dest)
                 {}
@@ -432,7 +432,7 @@ namespace argparse {
     template<typename T, typename Converter>
     class MultiValueArgument : public Argument {
         public: //Constructors
-            MultiValueArgument(ArgValue<T>& dest, std::string long_opt, std::string short_opt)
+            MultiValueArgument(ArgValue<T>& dest, const std::string& long_opt, const std::string& short_opt)
                 : Argument(long_opt, short_opt)
                 , dest_(dest)
                 {}
@@ -440,7 +440,7 @@ namespace argparse {
         public: //Mutators
             void set_dest_to_default() override {
                 auto& target = dest_.mutable_value(Provenance::DEFAULT);
-                for (auto default_str : default_value_) {
+                for (const auto& default_str : default_value_) {
                     auto val = Converter().from_str(default_str);
                     target.insert(std::end(target), val.value());
                 }

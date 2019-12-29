@@ -342,7 +342,7 @@ void Abc_SclTimeNode( SC_Man * p, Abc_Obj_t * pObj, int fDept )
         if ( fDept )
         {
             SC_Pair * pDepOut  = Abc_SclObjDept( p, pObj );
-            float EstDelta = p->EstLinear * log( Value );
+            float EstDelta = p->EstLinear * logf( Value );
             DeptRise = pDepOut->rise;
             DeptFall = pDepOut->fall;
             pDepOut->rise += EstDelta;
@@ -374,7 +374,7 @@ void Abc_SclTimeNode( SC_Man * p, Abc_Obj_t * pObj, int fDept )
         else
         {
             SC_Pair * pArrOut  = Abc_SclObjTime( p, pObj );
-            float EstDelta = p->EstLinear * log( Value );
+            float EstDelta = p->EstLinear * logf( Value );
             pArrOut->rise += EstDelta;
             pArrOut->fall += EstDelta;
         }
@@ -864,7 +864,7 @@ void Abc_SclPrintBuffersOne( SC_Man * p, Abc_Obj_t * pObj, int nOffset )
     printf( "L =%5.0f ff   ",  Abc_SclCountNonBufferLoad(p, pObj) );
     printf( "Lx =%5.0f ff  ",  100.0*Abc_SclCountNonBufferLoad(p, pObj)/p->EstLoadAve );
     printf( "Dx =%5.0f ps  ",  Abc_SclCountNonBufferDelay(p, pObj)/Abc_SclCountNonBufferFanouts(pObj) - Abc_SclObjTimeOne(p, pObj, 1) );
-    printf( "Cx =%5.0f ps",    (Abc_SclCountNonBufferDelay(p, pObj)/Abc_SclCountNonBufferFanouts(pObj) - Abc_SclObjTimeOne(p, pObj, 1))/log(Abc_SclCountNonBufferLoad(p, pObj)/p->EstLoadAve) );
+    printf( "Cx =%5.0f ps",    (Abc_SclCountNonBufferDelay(p, pObj)/Abc_SclCountNonBufferFanouts(pObj) - Abc_SclObjTimeOne(p, pObj, 1))/logf(Abc_SclCountNonBufferLoad(p, pObj)/p->EstLoadAve) );
     }
     printf( "\n" );
 }

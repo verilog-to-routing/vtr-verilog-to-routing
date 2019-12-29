@@ -2,10 +2,11 @@
 #include "vpr_utils.h"
 
 #include <regex>
+#include <utility>
 
 namespace fasm {
 
-void parse_name_with_optional_index(const std::string in, std::string *name, int *index) {
+void parse_name_with_optional_index(const std::string& in, std::string *name, int *index) {
   auto in_parts = vtr::split(in, "[]");
 
   if(in_parts.size() == 1) {
@@ -22,14 +23,14 @@ void parse_name_with_optional_index(const std::string in, std::string *name, int
 
 std::vector<std::string> split_fasm_entry(std::string entry,
                                                  std::string delims,
-                                                 std::string ignore) {
+                                                 const std::string& ignore) {
   for (size_t ii=0; ii<entry.length(); ii++) {
     while (ignore.find(entry[ii]) != std::string::npos) {
       entry.erase(ii, 1);
     }
   }
 
-  return vtr::split(entry, delims);
+  return vtr::split(entry, std::move(delims));
 }
 
 std::vector<std::string> find_tags_in_feature (const std::string& a_String) {
@@ -61,7 +62,7 @@ std::string substitute_tags (const std::string& a_Feature, const std::map<const 
 
     // Check if those tags are defined, If not then throw an error
     bool have_errors = false;
-    for (auto tag: tags) {
+    for (const auto& tag: tags) {
         if (a_Tags.count(tag) == 0) {
             vtr::printf_error(__FILE__, __LINE__, "fasm placeholder '%s' not defined!", tag.c_str());
             have_errors = true;
@@ -77,7 +78,7 @@ std::string substitute_tags (const std::string& a_Feature, const std::map<const 
 
     // Substitute tags
     std::string feature(a_Feature);
-    for (auto tag: tags) {
+    for (const auto& tag: tags) {
         std::regex regex("\\{" + tag + "\\}");
         feature = std::regex_replace(feature, regex, a_Tags.at(tag));
     }

@@ -11,7 +11,7 @@ namespace argparse {
             typedef T value_type;
         public:
             void set_value(T val) { errored_ = false; value_ = val; }
-            void set_error(std::string msg) { errored_ = true; error_msg_ = msg; }
+            void set_error(const std::string& msg) { errored_ = true; error_msg_ = msg; }
 
             T value() const { return value_; }
             std::string error() const { return error_msg_; }
@@ -81,11 +81,11 @@ namespace argparse {
                 return value_;
             }
 
-            void set_argument_group(std::string grp) {
+            void set_argument_group(const std::string& grp) {
                 argument_group_ = grp;
             }
 
-            void set_argument_name(std::string name_str) {
+            void set_argument_name(const std::string& name_str) {
                 argument_name_ = name_str;
             }
         private:

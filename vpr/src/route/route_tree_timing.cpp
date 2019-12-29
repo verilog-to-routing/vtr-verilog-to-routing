@@ -1,3 +1,4 @@
+#include <cmath>
 #include <cstdio>
 #include <cmath>
 #include <vector>
@@ -73,7 +74,7 @@ void collect_route_tree_connections(const t_rt_node* node, std::multiset<std::tu
 
 constexpr float epsilon = 1e-15;
 static bool equal_approx(float a, float b) {
-    return fabs(a - b) < epsilon;
+    return std::fabs(a - b) < epsilon;
 }
 
 bool alloc_route_tree_timing_structs(bool exists_ok) {

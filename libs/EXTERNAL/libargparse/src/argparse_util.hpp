@@ -24,21 +24,21 @@ namespace argparse {
     bool is_argument(std::string str, const std::map<std::string,std::shared_ptr<Argument>>& arg_map);
 
     //Returns true if str is in choices, or choices is empty
-    bool is_valid_choice(std::string str, const std::vector<std::string>& choices);
+    bool is_valid_choice(const std::string& str, const std::vector<std::string>& choices);
 
     //Returns 'str' interpreted as type T
     // Throws an exception if conversion fails
     template<typename T> 
-    T as(std::string str);
+    T as(const std::string& str);
 
     template<typename Container>
-    std::string join(Container container, std::string join_str);
+    std::string join(Container container, const std::string& join_str);
 
     char* strdup(const char* str);
 
-    std::vector<std::string> wrap_width(std::string str, size_t width, std::vector<std::string> split_str={" ", "/"});
+    std::vector<std::string> wrap_width(std::string str, size_t width, const std::vector<std::string>& split_str={" ", "/"});
 
-    std::string basename(std::string filepath);
+    std::string basename(const std::string& filepath);
 } //namespace
 
 #include "argparse_util.tpp"

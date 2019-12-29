@@ -35,7 +35,7 @@ void Callback::param(std::string /*name*/, std::string /*value*/) {
  * the blif commands.  See blif.h for data structure
  * detials.
  */
-void blif_parse_filename(std::string filename, Callback& callback) {
+void blif_parse_filename(const std::string& filename, Callback& callback) {
     blif_parse_filename(filename.c_str(), callback);
 }
 

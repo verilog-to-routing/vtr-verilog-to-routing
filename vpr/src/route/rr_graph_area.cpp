@@ -598,9 +598,9 @@ float trans_per_buf(float Rbuf, float R_minW_nmos, float R_minW_pmos) {
         /* Target stage ratio = 4.  1 minimum width buffer, then num_stage bigger *
          * ones.                                                                  */
 
-        num_stage = vtr::nint(log10(R_minW_nmos / Rbuf) / log10(4.));
+        num_stage = vtr::nint(std::log10(R_minW_nmos / Rbuf) / log10(4.));
         num_stage = std::max(num_stage, 1);
-        stage_ratio = pow((float)(R_minW_nmos / Rbuf), (float)(1. / (float)num_stage));
+        stage_ratio = std::pow((float)(R_minW_nmos / Rbuf), (float)(1. / (float)num_stage));
 
         Rstage = R_minW_nmos;
         trans_count = 0.;
@@ -637,7 +637,7 @@ static float trans_per_mux(int num_inputs, float trans_sram_bit, float pass_tran
         /* This is a large multiplexer so design it using a two-level multiplexer   *
          * + 0.00001 is to make sure exact square roots two don't get rounded down  *
          * to one lower level.                                                      */
-        num_second_stage_trans = (int)floor((float)sqrt((float)num_inputs) + 0.00001);
+        num_second_stage_trans = (int)floor((float)std::sqrt((float)num_inputs) + 0.00001);
         pass_trans = (num_inputs + num_second_stage_trans) * pass_trans_area;
         sram_trans = (ceil((float)num_inputs / num_second_stage_trans - 0.00001)
                       + num_second_stage_trans)
@@ -689,11 +689,11 @@ static float trans_per_R(float Rtrans, float R_minW_trans) {
     } else if (trans_area_eq == AREA_IMPROVED_NMOS_ONLY) {
         /* New transistor area estimation equation. Here only NMOS transistors
          * are taken into account */
-        trans_area = 0.447 + 0.128 * drive_strength + 0.391 * sqrt(drive_strength);
+        trans_area = 0.447 + 0.128 * drive_strength + 0.391 * std::sqrt(drive_strength);
     } else if (trans_area_eq == AREA_IMPROVED_MIXED) {
         /* New transistor area estimation equation. Here both NMOS and PMOS
          * transistors are taken into account (extra spacing needed for N-wells) */
-        trans_area = 0.518 + 0.127 * drive_strength + 0.428 * sqrt(drive_strength);
+        trans_area = 0.518 + 0.127 * drive_strength + 0.428 * std::sqrt(drive_strength);
     } else {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unrecognized transistor area model: %d\n", (int)trans_area_eq);
     }

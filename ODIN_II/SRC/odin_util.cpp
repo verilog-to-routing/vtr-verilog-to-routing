@@ -56,7 +56,7 @@ long shift_left_value_with_overflow_check(long input_value, long shift_by, loc_t
     return input_value << shift_by;
 }
 
-std::string get_file_extension(std::string input_file) {
+std::string get_file_extension(const std::string& input_file) {
     auto dot_location = input_file.find_last_of('.');
     if (dot_location != std::string::npos) {
         return input_file.substr(dot_location);
@@ -65,7 +65,7 @@ std::string get_file_extension(std::string input_file) {
     }
 }
 
-void create_directory(std::string path) {
+void create_directory(const std::string& path) {
     // CREATE OUTPUT DIRECTORY
     int error_code = 0;
 #ifdef WIN32
@@ -79,7 +79,7 @@ void create_directory(std::string path) {
     }
 }
 
-void assert_supported_file_extension(std::string input_file, loc_t loc) {
+void assert_supported_file_extension(const std::string& input_file, loc_t loc) {
     bool supported = false;
     std::string extension = get_file_extension(input_file);
     for (int i = 0; i < file_extension_supported_END && !supported; i++) {
@@ -830,7 +830,16 @@ std::string find_substring(char* src, const char* sKey, int flag) {
  * Prints the time in appropriate units.
  */
 void print_time(double time) {
-    printf("%.1fms", time * 1000);
+    if (time > 24 * 3600)
+        printf("%.1fd", time / (24 * 3600.0));
+    else if (time > 3600)
+        printf("%.1fh", time / 3600.0);
+    else if (time > 60)
+        printf("%.1fm", time / 60.0);
+    else if (time > 1)
+        printf("%.1fs", time);
+    else
+        printf("%.1fms", time * 1000);
 }
 
 /*
@@ -963,7 +972,7 @@ bool output_vector_headers_equal(char* buffer1, char* buffer2) {
 /**
  * verifies only one condition evaluates to true
  */
-bool only_one_is_true(std::vector<bool> tested) {
+bool only_one_is_true(const std::vector<bool>& tested) {
     bool previous_value = false;
     for (bool next_value : tested) {
         if (!previous_value && next_value)

@@ -10,7 +10,7 @@ class InstPort {
     static constexpr int UNSPECIFIED = -1;
 
     InstPort() = default;
-    InstPort(std::string str);
+    InstPort(const std::string& str);
     std::string instance_name() const { return instance_.name; }
     std::string port_name() const { return port_.name; }
 
@@ -79,7 +79,7 @@ void primitives_annotation_clock_match(t_pin_to_pin_annotation* annotation,
                                        t_pb_type* parent_pb_type);
 
 bool segment_exists(const t_arch* arch, std::string name);
-const t_segment_inf* find_segment(const t_arch* arch, std::string name);
+const t_segment_inf* find_segment(const t_arch* arch, const std::string& name);
 bool is_library_model(const char* model_name);
 bool is_library_model(const t_model* model);
 

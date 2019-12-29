@@ -874,7 +874,7 @@ std::vector<std::vector<NodeId>> identify_combinational_loops(const TimingGraph&
 }
 
 std::vector<NodeId> find_transitively_connected_nodes(const TimingGraph& tg, 
-                                                      const std::vector<NodeId> through_nodes, 
+                                                      const std::vector<NodeId>& through_nodes, 
                                                       size_t max_depth) {
     std::vector<NodeId> nodes;
 
@@ -890,7 +890,7 @@ std::vector<NodeId> find_transitively_connected_nodes(const TimingGraph& tg,
 }
 
 std::vector<NodeId> find_transitive_fanin_nodes(const TimingGraph& tg, 
-                                                const std::vector<NodeId> sinks, 
+                                                const std::vector<NodeId>& sinks, 
                                                 size_t max_depth) {
     std::vector<NodeId> nodes;
 
@@ -905,7 +905,7 @@ std::vector<NodeId> find_transitive_fanin_nodes(const TimingGraph& tg,
 }
 
 std::vector<NodeId> find_transitive_fanout_nodes(const TimingGraph& tg, 
-                                                 const std::vector<NodeId> sources, 
+                                                 const std::vector<NodeId>& sources, 
                                                  size_t max_depth) {
     std::vector<NodeId> nodes;
 

@@ -23,10 +23,10 @@ void print_level_histogram(const TimingGraph& tg, int nbuckets);
 void print_node_fanin_histogram(const TimingGraph& tg, int nbuckets);
 void print_node_fanout_histogram(const TimingGraph& tg, int nbuckets);
 
-void print_timing_graph(std::shared_ptr<const TimingGraph> tg);
-void print_levelization(std::shared_ptr<const TimingGraph> tg);
+void print_timing_graph(const std::shared_ptr<const TimingGraph>& tg);
+void print_levelization(const std::shared_ptr<const TimingGraph>& tg);
 
-void dump_level_times(std::string fname, const TimingGraph& timing_graph, std::map<std::string,float> serial_prof_data, std::map<std::string,float> parallel_prof_data);
+void dump_level_times(const std::string& fname, const TimingGraph& timing_graph, std::map<std::string,float> serial_prof_data, std::map<std::string,float> parallel_prof_data);
 
 
 

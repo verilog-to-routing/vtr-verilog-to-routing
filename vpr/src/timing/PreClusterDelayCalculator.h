@@ -1,5 +1,7 @@
 #ifndef PRE_CLUSTER_DELAY_CALCULATOR_H
 #define PRE_CLUSTER_DELAY_CALCULATOR_H
+#include <utility>
+
 #include "vtr_assert.h"
 
 #include "tatum/Time.hpp"
@@ -21,7 +23,7 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
         : netlist_(netlist)
         , netlist_lookup_(netlist_lookup)
         , inter_cluster_net_delay_(intercluster_net_delay)
-        , block_to_pb_gnode_(expected_lowest_cost_pb_gnode) {
+        , block_to_pb_gnode_(std::move(expected_lowest_cost_pb_gnode)) {
         //nop
     }
 

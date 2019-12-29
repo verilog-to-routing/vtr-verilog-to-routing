@@ -35,7 +35,7 @@ class Lut {
 // Utility class that creates a FASM feature directive based on the FASM LUT definition.
 struct LutOutputDefinition {
   // Definition should be of the format <feature>[<end_bit>:<start_bit].
-  LutOutputDefinition(std::string definition);
+  LutOutputDefinition(const std::string& definition);
 
   // Return a FASM feature directive for a wire from input specified to output.
   // Also known as a route through LUT.

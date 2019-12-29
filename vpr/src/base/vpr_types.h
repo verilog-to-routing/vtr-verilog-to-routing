@@ -631,7 +631,7 @@ struct t_pl_loc {
     t_pl_loc(int xloc, int yloc, int sub_tile_loc)
         : x(xloc)
         , y(yloc)
-        , sub_tile(sub_tile_loc) {}
+        , z(zloc) {}
 
     int x = OPEN;
     int y = OPEN;

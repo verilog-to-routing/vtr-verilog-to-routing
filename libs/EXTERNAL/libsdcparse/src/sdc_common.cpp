@@ -5,6 +5,7 @@
 #include <cassert>
 #include <cmath>
 #include <memory>
+#include <utility>
 
 #include "sdc_common.hpp"
 #include "sdc_error.hpp"
@@ -47,7 +48,7 @@ void sdc_create_clock_add_targets(Callback& callback, const Lexer& lexer, Create
                   "If you want to define multiple targets specify them as a list (e.g. \"{target1 target2}\").\n");
     }
 
-    sdc_create_clock.targets = target_group;
+    sdc_create_clock.targets = std::move(target_group);
 }
 
 void add_sdc_create_clock(Callback& callback, const Lexer& lexer, CreateClock& sdc_create_clock) {
@@ -140,7 +141,7 @@ void sdc_set_io_delay_set_ports(Callback& callback, const Lexer& lexer, SetIoDel
         sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "Currently only a single get_ports command is supported.\n"); 
     }
 
-    sdc_set_io_delay.target_ports = ports;
+    sdc_set_io_delay.target_ports = std::move(ports);
 }
 
 void add_sdc_set_io_delay(Callback& callback, const Lexer& lexer, SetIoDelay& sdc_set_io_delay) {
@@ -176,7 +177,7 @@ void sdc_set_clock_groups_set_type(Callback& callback, const Lexer& lexer, SetCl
     sdc_set_clock_groups.type = type;
 }
 
-void sdc_set_clock_groups_add_group(Callback& /*callback*/, const Lexer& /*lexer*/, SetClockGroups& sdc_set_clock_groups, StringGroup clock_group) {
+void sdc_set_clock_groups_add_group(Callback& /*callback*/, const Lexer& /*lexer*/, SetClockGroups& sdc_set_clock_groups, const StringGroup& clock_group) {
     assert(clock_group.type == StringGroupType::CLOCK || clock_group.type == StringGroupType::STRING);
 
     //Duplicate and insert the clock group
@@ -206,7 +207,7 @@ void add_sdc_set_clock_groups(Callback& callback, const Lexer& lexer, SetClockGr
  */
 void sdc_set_false_path_add_to_from_group(Callback& callback, const Lexer& lexer, 
                                                             SetFalsePath& sdc_set_false_path, 
-                                                            StringGroup group, 
+                                                            const StringGroup& group, 
                                                             FromToType to_from_dir) {
     assert(group.type == StringGroupType::CLOCK || group.type == StringGroupType::STRING);
 
@@ -255,7 +256,7 @@ void sdc_set_min_max_delay_set_value(Callback& callback, const Lexer& lexer, Set
     sdc_set_min_max_delay.value = min_max_delay;
 }
 
-void sdc_set_min_max_delay_add_to_from_group(Callback& callback, const Lexer& lexer, SetMinMaxDelay& sdc_set_min_max_delay, StringGroup group, FromToType to_from_dir) {
+void sdc_set_min_max_delay_add_to_from_group(Callback& callback, const Lexer& lexer, SetMinMaxDelay& sdc_set_min_max_delay, const StringGroup& group, FromToType to_from_dir) {
     assert(group.type == StringGroupType::CLOCK || group.type == StringGroupType::STRING);
 
     //Error checking
@@ -321,7 +322,7 @@ void sdc_set_multicycle_path_set_mcp_value(Callback& callback, const Lexer& lexe
 }
 
 void sdc_set_multicycle_path_add_to_from_group(Callback& callback, const Lexer& lexer, SetMulticyclePath& sdc_set_multicycle_path, 
-                                                                     StringGroup group, 
+                                                                     const StringGroup& group, 
                                                                      FromToType to_from_dir) {
     assert(group.type == StringGroupType::CLOCK || group.type == StringGroupType::STRING || group.type == StringGroupType::PIN);
 
@@ -388,7 +389,7 @@ void sdc_set_clock_uncertainty_set_value(Callback& callback, const Lexer& lexer,
 }
 
 void sdc_set_clock_uncertainty_add_to_from_group(Callback& callback, const Lexer& lexer, SetClockUncertainty& sdc_set_clock_uncertainty, 
-                                                                     StringGroup group, 
+                                                                     const StringGroup& group, 
                                                                      FromToType to_from_dir) {
     assert(group.type == StringGroupType::CLOCK || group.type == StringGroupType::STRING);
 
@@ -468,7 +469,7 @@ void sdc_set_clock_latency_set_value(Callback& callback, const Lexer& lexer, Set
     sdc_set_clock_latency.value = value;
 }
 
-void sdc_set_clock_latency_set_clocks(Callback& callback, const Lexer& lexer, SetClockLatency& sdc_set_clock_latency, StringGroup target_clocks) {
+void sdc_set_clock_latency_set_clocks(Callback& callback, const Lexer& lexer, SetClockLatency& sdc_set_clock_latency, const StringGroup& target_clocks) {
     if(target_clocks.type != StringGroupType::CLOCK) {
         sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "Target clocks must be specified with 'get_clocks'.\n"); 
     }
@@ -503,7 +504,7 @@ void add_sdc_set_clock_latency(Callback& callback, const Lexer& lexer, SetClockL
  */
 void sdc_set_disable_timing_add_to_from_group(Callback& callback, const Lexer& lexer, 
                                                             SetDisableTiming& sdc_set_disable_timing, 
-                                                            StringGroup group, 
+                                                            const StringGroup& group, 
                                                             FromToType to_from_dir) {
 
     //Error checking
@@ -591,7 +592,7 @@ void sdc_set_timing_derate_value(Callback& callback, const Lexer& lexer, SetTimi
     sdc_set_timing_derate.value = value;
 }
 
-void sdc_set_timing_derate_targets(Callback& callback, const Lexer& lexer, SetTimingDerate& sdc_set_timing_derate, StringGroup targets) {
+void sdc_set_timing_derate_targets(Callback& callback, const Lexer& lexer, SetTimingDerate& sdc_set_timing_derate, const StringGroup& targets) {
     if(targets.type != StringGroupType::CELL) {
         sdc_error_wrap(callback, lexer.lineno(), lexer.text(), "Only get_cells is supported with set_timing_derate.\n"); 
     }

@@ -4,6 +4,7 @@
 #include <limits>
 #include <algorithm>
 #include <string>
+#include <utility>
 
 #include "vtr_assert.h"
 
@@ -84,7 +85,7 @@ PowerCallibSize* PowerCallibInputs::get_entry_bound(bool lower,
 
 PowerSpicedComponent::PowerSpicedComponent(std::string component_name,
                                            float (*usage_fn)(int num_inputs, float transistor_size)) {
-    name = component_name;
+    name = std::move(component_name);
     component_usage = usage_fn;
 
     /* Always pad with a high and low entry */

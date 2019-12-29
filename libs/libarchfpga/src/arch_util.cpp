@@ -1,5 +1,6 @@
 #include <cstring>
 #include <sstream>
+#include <utility>
 
 #include "vtr_assert.h"
 #include "vtr_memory.h"
@@ -18,9 +19,7 @@ static void free_all_pb_graph_nodes(std::vector<t_logical_block_type>& type_desc
 static void free_pb_graph(t_pb_graph_node* pb_graph_node);
 static void free_pb_type(t_pb_type* pb_type);
 
-/******************** End Subroutine declarations ****************************/
-
-InstPort::InstPort(std::string str) {
+InstPort::InstPort(const std::string& str) {
     std::vector<std::string> inst_port = vtr::split(str, ".");
 
     if (inst_port.size() == 1) {
@@ -1304,7 +1303,7 @@ void primitives_annotation_clock_match(t_pin_to_pin_annotation* annotation,
     }
 }
 
-const t_segment_inf* find_segment(const t_arch* arch, std::string name) {
+const t_segment_inf* find_segment(const t_arch* arch, const std::string& name) {
     for (size_t i = 0; i < (arch->Segments).size(); ++i) {
         const t_segment_inf* seg = &arch->Segments[i];
         if (seg->name == name) {
@@ -1316,7 +1315,7 @@ const t_segment_inf* find_segment(const t_arch* arch, std::string name) {
 }
 
 bool segment_exists(const t_arch* arch, std::string name) {
-    return find_segment(arch, name) != nullptr;
+    return find_segment(arch, std::move(name)) != nullptr;
 }
 
 bool is_library_model(const char* model_name) {

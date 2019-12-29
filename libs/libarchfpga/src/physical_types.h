@@ -28,6 +28,7 @@
 #define PHYSICAL_TYPES_H
 
 #include <functional>
+#include <utility>
 #include <vector>
 #include <unordered_map>
 #include <string>
@@ -261,10 +262,10 @@ enum e_sb_location {
  */
 struct t_grid_loc_spec {
     t_grid_loc_spec(std::string start, std::string end, std::string repeat, std::string incr)
-        : start_expr(start)
-        , end_expr(end)
-        , repeat_expr(repeat)
-        , incr_expr(incr) {}
+        : start_expr(std::move(start))
+        , end_expr(std::move(end))
+        , repeat_expr(std::move(repeat))
+        , incr_expr(std::move(incr)) {}
 
     std::string start_expr; //Starting position (inclusive)
     std::string end_expr;   //Ending position (inclusive)
@@ -343,7 +344,7 @@ struct t_grid_loc_spec {
  */
 struct t_grid_loc_def {
     t_grid_loc_def(std::string block_type_val, int priority_val)
-        : block_type(block_type_val)
+        : block_type(std::move(block_type_val))
         , priority(priority_val)
         , x("0", "W-1", "max(w+1,W)", "w") //Fill in x direction, no repeat, incr by block width
         , y("0", "H-1", "max(h+1,H)", "h") //Fill in y direction, no repeat, incr by block height

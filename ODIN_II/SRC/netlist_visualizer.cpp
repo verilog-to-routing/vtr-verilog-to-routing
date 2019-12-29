@@ -43,7 +43,7 @@ void backward_traversal_net_graph_display(FILE* out, uintptr_t marker_value, nno
 /*---------------------------------------------------------------------------------------------
  * (function: graphVizOutputNetlist)
  *-------------------------------------------------------------------------------------------*/
-void graphVizOutputNetlist(std::string path, const char* name, uintptr_t marker_value, netlist_t* netlist) {
+void graphVizOutputNetlist(const std::string& path, const char* name, uintptr_t marker_value, netlist_t* netlist) {
     char path_and_file[4096];
     FILE* fp;
 
@@ -163,7 +163,7 @@ void depth_first_traverse_visualize(nnode_t* node, FILE* fp, uintptr_t traverse_
 /*---------------------------------------------------------------------------------------------
  * (function: graphVizOutputCobinationalNet)
  *-------------------------------------------------------------------------------------------*/
-void graphVizOutputCombinationalNet(std::string path, const char* name, uintptr_t marker_value, nnode_t* current_node) {
+void graphVizOutputCombinationalNet(const std::string& path, const char* name, uintptr_t marker_value, nnode_t* current_node) {
     char path_and_file[4096];
     FILE* fp;
 

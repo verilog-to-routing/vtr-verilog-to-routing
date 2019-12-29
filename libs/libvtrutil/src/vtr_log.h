@@ -40,6 +40,7 @@
  *
  * Each of the three message types also have a VTR_LOGF_* variant,
  * which will cause the message to be logged for a custom file and
+ * line location.
  *
  * For example:
  *

@@ -17,6 +17,7 @@
 #include <chrono>
 #include <cmath>
 #include <sstream>
+#include <utility>
 
 #include "vtr_assert.h"
 #include "vtr_math.h"
@@ -248,7 +249,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
      * Initialize the functions names for which VPR_ERRORs
      * are demoted to VTR_LOG_WARNs
      */
-    for (std::string func_name : vtr::split(options->disable_errors, std::string(":"))) {
+    for (const std::string& func_name : vtr::split(options->disable_errors, std::string(":"))) {
         map_error_activation_status(func_name);
     }
 
@@ -269,7 +270,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     }
 
     set_noisy_warn_log_file(warn_log_file);
-    for (std::string func_name : vtr::split(warn_functions, std::string(":"))) {
+    for (const std::string& func_name : vtr::split(warn_functions, std::string(":"))) {
         add_warnings_to_suppress(func_name);
     }
 
@@ -817,8 +818,8 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
                             &vpr_setup.RoutingArch,
                             vpr_setup.Segments,
                             net_delay,
-                            timing_info,
-                            delay_calc,
+                            std::move(timing_info),
+                            std::move(delay_calc),
                             arch.Chans,
                             arch.Directs, arch.num_directs,
                             ScreenUpdatePriority::MAJOR);
@@ -848,8 +849,8 @@ RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup,
                                               &vpr_setup.RoutingArch,
                                               vpr_setup.Segments,
                                               net_delay,
-                                              timing_info,
-                                              delay_calc);
+                                              std::move(timing_info),
+                                              std::move(delay_calc));
 
     bool status = (min_W > 0);
     return RouteStatus(status, min_W);
@@ -858,8 +859,8 @@ RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup,
 RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
                              const t_arch& /*arch*/,
                              int fixed_channel_width,
-                             std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                             ClbNetPinsMatrix<float>& net_delay) {
+                             const std::shared_ptr<SetupHoldTimingInfo>& timing_info,
+                             vtr::vector<ClusterNetId, float*>& net_delay) {
     vtr::ScopedStartFinishTimer timer("Load Routing");
     if (NO_FIXED_CHANNEL_WIDTH == fixed_channel_width) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Fixed channel width must be specified when loading routing (was %d)", fixed_channel_width);

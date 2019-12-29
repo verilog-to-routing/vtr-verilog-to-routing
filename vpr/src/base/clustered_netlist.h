@@ -220,7 +220,7 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
      *
      *   @param name  The unique name of the net
      */
-    ClusterNetId create_net(const std::string name);
+    ClusterNetId create_net(const std::string& name);
 
     ///@brief Sets the flag in net_ignored_ = state
     void set_net_is_ignored(ClusterNetId net_id, bool state);

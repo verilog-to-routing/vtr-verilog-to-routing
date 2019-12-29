@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
+#include <utility>
 #include <vector>
 
 #include "tatum/util/tatum_math.hpp"
@@ -29,13 +30,13 @@ void ReportTimingPathHelper::update_print_path(std::ostream& os, std::string poi
 
     tatum::Time incr = path - prev_path_;
 
-    print_path_line(os, point, to_printable_string(incr, unit_scale_, precision_), to_printable_string(path, unit_scale_, precision_));
+    print_path_line(os, std::move(point), to_printable_string(incr, unit_scale_, precision_), to_printable_string(path, unit_scale_, precision_));
 
     prev_path_ = path;
 }
 
 void ReportTimingPathHelper::update_print_path_no_incr(std::ostream& os, std::string point, tatum::Time path) {
-    print_path_line(os, point, "", to_printable_string(path, unit_scale_, precision_));
+    print_path_line(os, std::move(point), "", to_printable_string(path, unit_scale_, precision_));
 
     prev_path_ = path;
 }
@@ -45,10 +46,10 @@ void ReportTimingPathHelper::reset_path() {
 }
 
 void ReportTimingPathHelper::print_path_line_no_incr(std::ostream& os, std::string point, tatum::Time path) const {
-    print_path_line(os, point, "", to_printable_string(path, unit_scale_, precision_));
+    print_path_line(os, std::move(point), "", to_printable_string(path, unit_scale_, precision_));
 }
 
-void ReportTimingPathHelper::print_path_line(std::ostream& os, std::string point, std::string incr, std::string path) const {
+void ReportTimingPathHelper::print_path_line(std::ostream& os, const std::string& point, const std::string& incr, const std::string& path) const {
     os << std::setw(point_width_) << std::left << point;
     os << std::setw(incr_width_) << std::right << incr;
     os << std::setw(path_width_) << std::right << path;
@@ -84,7 +85,7 @@ TimingReporter::TimingReporter(const TimingGraphNameResolver& name_resolver,
     //pass
 }
 
-void TimingReporter::report_timing_setup(std::string filename, 
+void TimingReporter::report_timing_setup(const std::string& filename, 
                                          const SetupTimingAnalyzer& setup_analyzer,
                                          size_t npaths) const {
     std::ofstream os(filename);
@@ -99,7 +100,7 @@ void TimingReporter::report_timing_setup(std::ostream& os,
     report_timing(os, paths);
 }
 
-void TimingReporter::report_timing_hold(std::string filename, 
+void TimingReporter::report_timing_hold(const std::string& filename, 
                                          const HoldTimingAnalyzer& hold_analyzer,
                                          size_t npaths) const {
     std::ofstream os(filename);
@@ -114,7 +115,7 @@ void TimingReporter::report_timing_hold(std::ostream& os,
     report_timing(os, paths);
 }
 
-void TimingReporter::report_skew_setup(std::string filename, 
+void TimingReporter::report_skew_setup(const std::string& filename, 
                                          const SetupTimingAnalyzer& setup_analyzer,
                                          size_t nworst) const {
     std::ofstream os(filename);
@@ -132,7 +133,7 @@ void TimingReporter::report_skew_setup(std::ostream& os,
     os << "#End of clock skew for setup timing startpoint/endpoint report\n";
 }
 
-void TimingReporter::report_skew_hold(std::string filename, 
+void TimingReporter::report_skew_hold(const std::string& filename, 
                                          const HoldTimingAnalyzer& hold_analyzer,
                                          size_t nworst) const {
     std::ofstream os(filename);
@@ -150,7 +151,7 @@ void TimingReporter::report_skew_hold(std::ostream& os,
     os << "#End of clock skew for hold timing startpoint/endpoint report\n";
 }
 
-void TimingReporter::report_unconstrained_setup(std::string filename, 
+void TimingReporter::report_unconstrained_setup(const std::string& filename, 
                                                           const tatum::SetupTimingAnalyzer& setup_analyzer) const {
     std::ofstream os(filename);
     report_unconstrained_setup(os, setup_analyzer);
@@ -170,7 +171,7 @@ void TimingReporter::report_unconstrained_setup(std::ostream& os,
     os << "#End of unconstrained setup startpoint/endpoint report\n";
 }
 
-void TimingReporter::report_unconstrained_hold(std::string filename, 
+void TimingReporter::report_unconstrained_hold(const std::string& filename, 
                                                          const tatum::HoldTimingAnalyzer& hold_analyzer) const {
     std::ofstream os(filename);
     report_unconstrained_hold(os, hold_analyzer);
@@ -694,7 +695,7 @@ bool TimingReporter::nearly_equal(const Time& lhs, const Time& rhs) const {
 
 size_t TimingReporter::estimate_point_print_width(const TimingPath& path) const {
     size_t width = 60; //default
-    for(auto subpath : {path.clock_launch_path(), path.data_arrival_path(), path.clock_capture_path()}) {
+    for(const auto& subpath : {path.clock_launch_path(), path.data_arrival_path(), path.clock_capture_path()}) {
         for(auto elem : subpath.elements()) {
             //Take the longest typical point name
             std::string point = name_resolver_.node_name(elem.node()) + " (" + name_resolver_.node_type_name(elem.node()) + ")";
