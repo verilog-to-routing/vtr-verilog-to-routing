@@ -1203,7 +1203,7 @@ static void normalize_xbar(const float fraction_wires_used, t_xbar_matrix* xbar)
      * this vector is created here, but is updated inside the count_switch_configurations function */
     std::vector<int> config;
     config.reserve((int)count_map.size());
-for (int i = 0; i < (int)count_map.size(); i++) {
+    for (int i = 0; i < (int)count_map.size(); i++) {
         config.push_back(0);
     }
 

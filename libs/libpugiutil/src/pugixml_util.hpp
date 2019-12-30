@@ -49,7 +49,7 @@ class XmlError : public std::runtime_error {
 //Loads the XML file specified by filename into the passed pugi::xml_docment
 //
 //Returns loc_data look-up for xml node line numbers
-loc_data load_xml(pugi::xml_document& doc,     //Document object to be loaded with file contents
+loc_data load_xml(pugi::xml_document& doc,      //Document object to be loaded with file contents
                   const std::string& filename); //Filename to load from
 
 //Defines whether something (e.g. a node/attribute) is optional or required.

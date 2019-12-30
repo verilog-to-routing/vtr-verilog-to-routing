@@ -7,7 +7,7 @@ namespace pugiutil {
 //Loads the XML file specified by filename into the passed pugi::xml_document
 //
 //Returns loc_data look-up for xml node line numbers
-loc_data load_xml(pugi::xml_document& doc,      //Document object to be loaded with file contents
+loc_data load_xml(pugi::xml_document& doc,       //Document object to be loaded with file contents
                   const std::string& filename) { //Filename to load from
     auto location_data = loc_data(filename);
 
