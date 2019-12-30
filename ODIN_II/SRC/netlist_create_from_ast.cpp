@@ -231,8 +231,8 @@ ast_node_t *find_top_module()
 
 
 	/* check for which module wasn't marked as instantiated...this one will be the top */
-	std::string module_name_list("");
-	std::string desired_module("");
+	std::string module_name_list;
+	std::string desired_module;
 	bool found_desired_module = false;
 
 	if ( global_args.top_level_module_name.provenance() == argparse::Provenance::SPECIFIED )
@@ -243,7 +243,7 @@ ast_node_t *find_top_module()
 
 	for (i = 0; i < num_modules ; i++)
 	{
-		std::string current_module = "";
+		std::string current_module;
 
 		if( ast_modules[i]->children[0]->types.identifier )
 		{	
@@ -3180,7 +3180,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 
 				if(address->count > right_memory->addr_width)
 				{
-					std::string unused_pins_name = "";
+					std::string unused_pins_name;
 					for(long i = right_memory->addr_width; i < address->count; i++)
 					{
 						if (address->pins && address->pins[i] && address->pins[i]->name)
@@ -3275,7 +3275,7 @@ signal_list_t *assignment_alias(ast_node_t* assignment, char *instance_name_pref
 				{
 					if(address->count > left_memory->addr_width)
 					{
-						std::string unused_pins_name = "";
+						std::string unused_pins_name;
 						for(long i = left_memory->addr_width; i < address->count; i++)
 						{
 							if (address->pins && address->pins[i] && address->pins[i]->name)

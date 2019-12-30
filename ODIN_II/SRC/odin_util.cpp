@@ -97,7 +97,7 @@ void assert_supported_file_extension(const std::string& input_file, int line_num
 
 	if(! supported)
 	{
-		std::string supported_extension_list = "";
+		std::string supported_extension_list;
 		for(int i=0; i<file_extension_supported_END; i++)
 		{
 			supported_extension_list += " "; 

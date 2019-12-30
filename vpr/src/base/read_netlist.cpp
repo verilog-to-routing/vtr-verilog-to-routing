@@ -654,7 +654,7 @@ static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route, 
 
                     if (strcmp(pins[i].c_str(), "open") != 0) {
                         //For connected pins look-up the inter-block net index associated with it
-                        AtomNetId net_id = atom_ctx.nlist.find_net(pins[i].c_str());
+                        AtomNetId net_id = atom_ctx.nlist.find_net(pins[i]);
                         if (!net_id) {
                             VPR_FATAL_ERROR(VPR_ERROR_NET_F,
                                             ".blif and .net do not match, unknown net %s found in .net file.\n.",
@@ -734,7 +734,7 @@ static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route, 
                     const t_pb_graph_pin* pb_gpin = &pb->pb_graph_node->output_pins[out_port][i];
                     int rr_node_index = pb_gpin->pin_count_in_cluster;
                     if (strcmp(pins[i].c_str(), "open") != 0) {
-                        AtomNetId net_id = atom_ctx.nlist.find_net(pins[i].c_str());
+                        AtomNetId net_id = atom_ctx.nlist.find_net(pins[i]);
                         if (!net_id) {
                             VPR_FATAL_ERROR(VPR_ERROR_NET_F,
                                             ".blif and .net do not match, unknown net %s found in .net file.\n",

@@ -1190,7 +1190,7 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
 
         //Write the post-syntesis netlist
         if (vpr_setup.AnalysisOpts.gen_post_synthesis_netlist) {
-            netlist_writer(atom_ctx.nlist.netlist_name().c_str(), analysis_delay_calc);
+            netlist_writer(atom_ctx.nlist.netlist_name(), analysis_delay_calc);
         }
 
         //Do power analysis

@@ -208,7 +208,7 @@ int parse_piecewise_formula(const char* formula, const t_formula_data& mydata) {
         }
         tmp_ind_count = str_ind - tmp_ind_start; /* range start is between { and : */
         substr = pw_formula.substr(tmp_ind_start, tmp_ind_count);
-        range_start = parse_formula(substr.c_str(), mydata);
+        range_start = parse_formula(substr, mydata);
 
         /* get the end of the range */
         tmp_ind_start = str_ind + 1;
@@ -218,7 +218,7 @@ int parse_piecewise_formula(const char* formula, const t_formula_data& mydata) {
         }
         tmp_ind_count = str_ind - tmp_ind_start; /* range end is between : and } */
         substr = pw_formula.substr(tmp_ind_start, tmp_ind_count);
-        range_end = parse_formula(substr.c_str(), mydata);
+        range_end = parse_formula(substr, mydata);
 
         if (range_start > range_end) {
             archfpga_throw(__FILE__, __LINE__, "parse_piecewise_formula: range_start, %d, is bigger than range end, %d\n", range_start, range_end);
@@ -254,7 +254,7 @@ int parse_piecewise_formula(const char* formula, const t_formula_data& mydata) {
     substr = pw_formula.substr(tmp_ind_start, tmp_ind_count);
 
     /* now parse the formula corresponding to the appropriate piece-wise range */
-    result = parse_formula(substr.c_str(), mydata);
+    result = parse_formula(substr, mydata);
 
     return result;
 }
@@ -387,7 +387,7 @@ static void get_formula_object(const char* ch, int& ichar, const t_formula_data&
         }
         ichar--;
         fobj->type = E_FML_NUMBER;
-        fobj->data.num = vtr::atoi(ss.str().c_str());
+        fobj->data.num = vtr::atoi(ss.str());
     } else {
         switch ((*ch)) {
             case '+':

@@ -48,7 +48,7 @@ static std::string make_marker_from_str(std::string str, int column)
 
 static void print_culprit_line(long column, long line_number, long file)
 {
-	std::string culprit_line = "";
+	std::string culprit_line;
 	if (file >= 0 && file <  include_file_names.size()
 	&& line_number >= 0)
 	{

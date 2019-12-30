@@ -174,7 +174,7 @@ static std::string handle_fasm_prefix(const t_metadata_dict *meta,
 }
 
 std::string FasmWriterVisitor::build_clb_prefix(const t_pb *pb, const t_pb_graph_node* pb_graph_node, bool* is_parent_pb_null) const {
-  std::string clb_prefix = "";
+  std::string clb_prefix;
 
   const t_pb *pb_for_graph_node = nullptr;
 

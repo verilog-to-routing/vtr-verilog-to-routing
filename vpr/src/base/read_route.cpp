@@ -97,7 +97,7 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     ++lineno;
     header.clear();
     header = vtr::split(header_str);
-    if (header[0] == "Array" && header[1] == "size:" && (vtr::atou(header[2].c_str()) != device_ctx.grid.width() || vtr::atou(header[4].c_str()) != device_ctx.grid.height())) {
+    if (header[0] == "Array" && header[1] == "size:" && (vtr::atou(header[2]) != device_ctx.grid.width() || vtr::atou(header[4]) != device_ctx.grid.height())) {
         vpr_throw(VPR_ERROR_ROUTE, route_file, lineno,
                   "Device dimensions %sx%s specified in the routing file does not match given %dx%d ",
                   header[2].c_str(), header[4].c_str(), device_ctx.grid.width(), device_ctx.grid.height());

@@ -399,7 +399,7 @@ void instantiate_hard_multiplier(nnode_t *node, short mark, netlist_t * /*netlis
 
 	declare_hard_multiplier(node);
 
-	std::string node_name = "";
+	std::string node_name;
 	if( node->name )
 	{	
 		node_name = node->name;

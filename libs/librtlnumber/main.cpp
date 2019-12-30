@@ -104,7 +104,7 @@ int main(int argc, char** argv)
 	input.reserve(argc);
 for(int i=0; i < argc; i++)		input.push_back(argv[i]);
 
-	std::string result = "";
+	std::string result;
 
 	if(argc < 3)
 	{
