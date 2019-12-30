@@ -145,7 +145,7 @@ int main(int argc, char** argv) {
     for (int i = 0; i < argc; i++)
         input.push_back(argv[i]);
 
-    std::string result = "";
+    std::string result;
 
     if (argc < 3) {
         ERR_MSG("Not Enough Arguments: " << std::to_string(argc - 1));

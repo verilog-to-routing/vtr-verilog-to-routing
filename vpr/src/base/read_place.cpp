@@ -119,7 +119,7 @@ void read_place_header(std::ifstream& placement_file,
             std::string place_netlist_id = tokens[3];
             std::string place_netlist_file = tokens[1];
 
-            if (place_netlist_id != cluster_ctx.clb_nlist.netlist_id().c_str()) {
+            if (place_netlist_id != cluster_ctx.clb_nlist.netlist_id()) {
                 auto msg = vtr::string_fmt(
                     "The packed netlist file that generated placement (File: '%s' ID: '%s')"
                     " does not match current netlist (File: '%s' ID: '%s')",

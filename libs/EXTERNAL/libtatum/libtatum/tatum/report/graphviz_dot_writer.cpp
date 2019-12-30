@@ -165,7 +165,7 @@ void GraphvizDotWriter::write_dot_edge(std::ostream& os, const EdgeId edge, cons
 
         EdgeType edge_type = tg_.edge_type(edge);
 
-        std::string color = "";
+        std::string color;
         os << "\t" << node_name(src_node) << " -> " << node_name(sink_node);
         os << " [ label=\"" << edge;
         if(edge_type == EdgeType::PRIMITIVE_CLOCK_CAPTURE) {
