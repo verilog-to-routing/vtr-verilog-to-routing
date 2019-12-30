@@ -95,8 +95,8 @@ static double power_count_transistors_connectionbox() {
     /* Muxes to IPINs */
     transistor_cnt += inputs
                       * power_count_transistors_mux(
-                          power_get_mux_arch(power_ctx.commonly_used->max_IPIN_fanin,
-                                             power_ctx.arch->mux_transistor_size));
+                            power_get_mux_arch(power_ctx.commonly_used->max_IPIN_fanin,
+                                               power_ctx.arch->mux_transistor_size));
 
     return transistor_cnt;
 }
@@ -231,9 +231,9 @@ static double power_count_transistors_interc(t_interconnect* interc) {
             transistor_cnt += interc->interconnect_power->num_output_ports
                               * interc->interconnect_power->num_pins_per_port
                               * power_count_transistors_mux(
-                                  power_get_mux_arch(
-                                      interc->interconnect_power->num_input_ports,
-                                      power_ctx.arch->mux_transistor_size));
+                                    power_get_mux_arch(
+                                        interc->interconnect_power->num_input_ports,
+                                        power_ctx.arch->mux_transistor_size));
             break;
         }
         default:
