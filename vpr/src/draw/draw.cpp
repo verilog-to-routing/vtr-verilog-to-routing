@@ -790,12 +790,21 @@ void toggle_router_rr_costs(GtkWidget* /*widget*/, gint /*response_id*/, gpointe
     gchar* combo_box_content = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(toggle_router_rr_costs));
     if (strcmp(combo_box_content, "None") == 0) {
         new_state = DRAW_NO_ROUTER_RR_COST;
-    } else if (strcmp(combo_box_content, "Total") == 0)
+    } else if (strcmp(combo_box_content, "Total") == 0) {
         new_state = DRAW_ROUTER_RR_COST_TOTAL;
-    else if (strcmp(combo_box_content, "Known") == 0)
+    } else if (strcmp(combo_box_content, "Known") == 0) {
         new_state = DRAW_ROUTER_RR_COST_KNOWN;
-    else
+    } else if (strcmp(combo_box_content, "Expected") == 0) {
         new_state = DRAW_ROUTER_RR_COST_EXPECTED;
+    } else if (strcmp(combo_box_content, "Total (with edges)") == 0) {
+        new_state = DRAW_ROUTER_RR_COST_TOTAL_WITH_EDGES;
+    } else if (strcmp(combo_box_content, "Known (with edges)") == 0) {
+        new_state = DRAW_ROUTER_RR_COST_KNOWN_WITH_EDGES;
+    } else if (strcmp(combo_box_content, "Expected (with edges)") == 0) {
+        new_state = DRAW_ROUTER_RR_COST_EXPECTED_WITH_EDGES;
+    } else {
+        VPR_THROW(VPR_ERROR_DRAW, "Unrecognzied draw RR cost option");
+    }
 
     g_free(combo_box_content);
     draw_state->show_router_rr_cost = new_state;
@@ -3477,11 +3486,11 @@ static void draw_routing_util(ezgl::renderer* g) {
 }
 
 static float get_router_rr_cost(const t_rr_node_route_inf node_inf, e_draw_router_rr_cost draw_router_rr_cost) {
-    if (draw_router_rr_cost == DRAW_ROUTER_RR_COST_TOTAL) {
+    if (draw_router_rr_cost == DRAW_ROUTER_RR_COST_TOTAL || draw_router_rr_cost == DRAW_ROUTER_RR_COST_TOTAL_WITH_EDGES) {
         return node_inf.path_cost;
-    } else if (draw_router_rr_cost == DRAW_ROUTER_RR_COST_KNOWN) {
+    } else if (draw_router_rr_cost == DRAW_ROUTER_RR_COST_KNOWN || draw_router_rr_cost == DRAW_ROUTER_RR_COST_KNOWN_WITH_EDGES) {
         return node_inf.backward_path_cost;
-    } else if (draw_router_rr_cost == DRAW_ROUTER_RR_COST_EXPECTED) {
+    } else if (draw_router_rr_cost == DRAW_ROUTER_RR_COST_EXPECTED || draw_router_rr_cost == DRAW_ROUTER_RR_COST_EXPECTED_WITH_EDGES) {
         return node_inf.path_cost - node_inf.backward_path_cost;
     }
 
@@ -3516,13 +3525,14 @@ static void draw_router_rr_costs(ezgl::renderer* g) {
     if (!all_nan) {
         draw_rr_costs(g, rr_costs, false);
     }
-    if (draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_TOTAL) {
+    if (draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_TOTAL || draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_TOTAL_WITH_EDGES) {
         application.update_message("Routing Expected Total Cost (known + estimate)");
-    } else if (draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_KNOWN) {
+    } else if (draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_KNOWN || draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_KNOWN_WITH_EDGES) {
         application.update_message("Routing Known Cost (from source to node)");
-    } else {
+    } else if (draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_EXPECTED || draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_EXPECTED_WITH_EDGES) {
         application.update_message("Routing Expected Cost (from node to target)");
-        VTR_ASSERT(draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_EXPECTED);
+    } else {
+        VPR_THROW(VPR_ERROR_DRAW, "Invalid Router RR cost drawing type");
     }
 }
 
@@ -3534,6 +3544,10 @@ static void draw_rr_costs(ezgl::renderer* g, const std::vector<float>& rr_costs,
     auto& device_ctx = g_vpr_ctx.device();
 
     g->set_line_width(0);
+
+    bool with_edges = (draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_TOTAL_WITH_EDGES
+                       || draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_KNOWN_WITH_EDGES
+                       || draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_EXPECTED_WITH_EDGES);
 
     VTR_ASSERT(rr_costs.size() == device_ctx.rr_nodes.size());
 
@@ -3571,7 +3585,7 @@ static void draw_rr_costs(ezgl::renderer* g, const std::vector<float>& rr_costs,
             case CHANX: //fallthrough
             case CHANY:
                 draw_rr_chan(inode, color, g);
-                //draw_rr_edges(inode, g);
+                if (with_edges) draw_rr_edges(inode, g);
                 break;
 
             case IPIN: //fallthrough
@@ -3579,7 +3593,7 @@ static void draw_rr_costs(ezgl::renderer* g, const std::vector<float>& rr_costs,
                 break;
             case OPIN:
                 draw_rr_pin(inode, color, g);
-                //draw_rr_edges(inode, g);
+                if (with_edges) draw_rr_edges(inode, g);
                 break;
             case SOURCE:
             case SINK:
