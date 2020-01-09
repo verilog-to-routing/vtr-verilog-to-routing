@@ -128,8 +128,8 @@ ezgl::color lighten_color(ezgl::color color, float amount);
 
 static void draw_block_pin_util();
 
-static float get_router_rr_cost(const t_rr_node_route_inf node_inf, e_draw_router_rr_cost draw_router_rr_cost);
-static void draw_router_rr_costs(ezgl::renderer* g);
+static float get_router_expansion_cost(const t_rr_node_route_inf node_inf, e_draw_router_expansion_cost draw_router_expansion_cost);
+static void draw_router_expansion_costs(ezgl::renderer* g);
 
 static void draw_rr_costs(ezgl::renderer* g, const std::vector<float>& rr_costs, bool lowest_cost_first = true);
 
@@ -256,7 +256,7 @@ void draw_main_canvas(ezgl::renderer* g) {
 
         draw_routing_costs(g);
 
-        draw_router_rr_costs(g);
+        draw_router_expansion_costs(g);
 
         draw_routing_util(g);
 
@@ -328,7 +328,7 @@ void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app, bool is_new_wind
     button_for_toggle_congestion_cost();
     button_for_toggle_routing_bounding_box();
     button_for_toggle_routing_util();
-    button_for_toggle_router_rr_costs();
+    button_for_toggle_router_expansion_costs();
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -341,14 +341,14 @@ void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app, bool is_new_wind
     std::string toggle_routing_congestion_cost = "toggle_routing_congestion_cost";
     std::string toggle_routing_bounding_box = "toggle_routing_bounding_box";
     std::string toggle_routing_util = "toggle_rr";
-    std::string toggle_router_rr_costs = "toggle_router_rr_costs";
+    std::string toggle_router_expansion_costs = "toggle_router_expansion_costs";
 
     delete_button(toggle_rr.c_str());
     delete_button(toggle_congestion.c_str());
     delete_button(toggle_routing_congestion_cost.c_str());
     delete_button(toggle_routing_bounding_box.c_str());
     delete_button(toggle_routing_util.c_str());
-    delete_button(toggle_router_rr_costs.c_str());
+    delete_button(toggle_router_expansion_costs.c_str());
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -384,7 +384,7 @@ void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app, bool is_new_win
     button_for_toggle_congestion_cost();
     button_for_toggle_routing_bounding_box();
     button_for_toggle_routing_util();
-    button_for_toggle_router_rr_costs();
+    button_for_toggle_router_expansion_costs();
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -779,37 +779,37 @@ void toggle_crit_path(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*da
     application.refresh_drawing();
 }
 
-void toggle_router_rr_costs(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
-    /* this is the callback function for runtime created toggle_router_rr_costs button 
+void toggle_router_expansion_costs(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    /* this is the callback function for runtime created toggle_router_expansion_costs button 
      * which is written in button.cpp                                         */
     t_draw_state* draw_state = get_draw_state_vars();
-    std::string button_name = "toggle_router_rr_costs";
-    auto toggle_router_rr_costs = find_button(button_name.c_str());
+    std::string button_name = "toggle_router_expansion_costs";
+    auto toggle_router_expansion_costs = find_button(button_name.c_str());
 
-    e_draw_router_rr_cost new_state;
-    gchar* combo_box_content = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(toggle_router_rr_costs));
+    e_draw_router_expansion_cost new_state;
+    gchar* combo_box_content = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(toggle_router_expansion_costs));
     if (strcmp(combo_box_content, "None") == 0) {
-        new_state = DRAW_NO_ROUTER_RR_COST;
+        new_state = DRAW_NO_ROUTER_EXPANSION_COST;
     } else if (strcmp(combo_box_content, "Total") == 0) {
-        new_state = DRAW_ROUTER_RR_COST_TOTAL;
+        new_state = DRAW_ROUTER_EXPANSION_COST_TOTAL;
     } else if (strcmp(combo_box_content, "Known") == 0) {
-        new_state = DRAW_ROUTER_RR_COST_KNOWN;
+        new_state = DRAW_ROUTER_EXPANSION_COST_KNOWN;
     } else if (strcmp(combo_box_content, "Expected") == 0) {
-        new_state = DRAW_ROUTER_RR_COST_EXPECTED;
+        new_state = DRAW_ROUTER_EXPANSION_COST_EXPECTED;
     } else if (strcmp(combo_box_content, "Total (with edges)") == 0) {
-        new_state = DRAW_ROUTER_RR_COST_TOTAL_WITH_EDGES;
+        new_state = DRAW_ROUTER_EXPANSION_COST_TOTAL_WITH_EDGES;
     } else if (strcmp(combo_box_content, "Known (with edges)") == 0) {
-        new_state = DRAW_ROUTER_RR_COST_KNOWN_WITH_EDGES;
+        new_state = DRAW_ROUTER_EXPANSION_COST_KNOWN_WITH_EDGES;
     } else if (strcmp(combo_box_content, "Expected (with edges)") == 0) {
-        new_state = DRAW_ROUTER_RR_COST_EXPECTED_WITH_EDGES;
+        new_state = DRAW_ROUTER_EXPANSION_COST_EXPECTED_WITH_EDGES;
     } else {
         VPR_THROW(VPR_ERROR_DRAW, "Unrecognzied draw RR cost option");
     }
 
     g_free(combo_box_content);
-    draw_state->show_router_rr_cost = new_state;
+    draw_state->show_router_expansion_cost = new_state;
 
-    if (draw_state->show_router_rr_cost == DRAW_NO_ROUTER_RR_COST) {
+    if (draw_state->show_router_expansion_cost == DRAW_NO_ROUTER_EXPANSION_COST) {
         application.update_message(draw_state->default_message);
     }
     application.refresh_drawing();
@@ -3485,21 +3485,21 @@ static void draw_routing_util(ezgl::renderer* g) {
     draw_state->color_map = std::move(cmap);
 }
 
-static float get_router_rr_cost(const t_rr_node_route_inf node_inf, e_draw_router_rr_cost draw_router_rr_cost) {
-    if (draw_router_rr_cost == DRAW_ROUTER_RR_COST_TOTAL || draw_router_rr_cost == DRAW_ROUTER_RR_COST_TOTAL_WITH_EDGES) {
+static float get_router_expansion_cost(const t_rr_node_route_inf node_inf, e_draw_router_expansion_cost draw_router_expansion_cost) {
+    if (draw_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_TOTAL || draw_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_TOTAL_WITH_EDGES) {
         return node_inf.path_cost;
-    } else if (draw_router_rr_cost == DRAW_ROUTER_RR_COST_KNOWN || draw_router_rr_cost == DRAW_ROUTER_RR_COST_KNOWN_WITH_EDGES) {
+    } else if (draw_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_KNOWN || draw_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_KNOWN_WITH_EDGES) {
         return node_inf.backward_path_cost;
-    } else if (draw_router_rr_cost == DRAW_ROUTER_RR_COST_EXPECTED || draw_router_rr_cost == DRAW_ROUTER_RR_COST_EXPECTED_WITH_EDGES) {
+    } else if (draw_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_EXPECTED || draw_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_EXPECTED_WITH_EDGES) {
         return node_inf.path_cost - node_inf.backward_path_cost;
     }
 
     VPR_THROW(VPR_ERROR_DRAW, "Invalid Router RR cost drawing type");
 }
 
-static void draw_router_rr_costs(ezgl::renderer* g) {
+static void draw_router_expansion_costs(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
-    if (draw_state->show_router_rr_cost == DRAW_NO_ROUTER_RR_COST) {
+    if (draw_state->show_router_expansion_cost == DRAW_NO_ROUTER_EXPANSION_COST) {
         return;
     }
 
@@ -3509,7 +3509,7 @@ static void draw_router_rr_costs(ezgl::renderer* g) {
     std::vector<float> rr_costs(device_ctx.rr_nodes.size());
 
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
-        float cost = get_router_rr_cost(routing_ctx.rr_node_route_inf[inode], draw_state->show_router_rr_cost);
+        float cost = get_router_expansion_cost(routing_ctx.rr_node_route_inf[inode], draw_state->show_router_expansion_cost);
         rr_costs[inode] = cost;
     }
 
@@ -3525,11 +3525,11 @@ static void draw_router_rr_costs(ezgl::renderer* g) {
     if (!all_nan) {
         draw_rr_costs(g, rr_costs, false);
     }
-    if (draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_TOTAL || draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_TOTAL_WITH_EDGES) {
+    if (draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_TOTAL || draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_TOTAL_WITH_EDGES) {
         application.update_message("Routing Expected Total Cost (known + estimate)");
-    } else if (draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_KNOWN || draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_KNOWN_WITH_EDGES) {
+    } else if (draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_KNOWN || draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_KNOWN_WITH_EDGES) {
         application.update_message("Routing Known Cost (from source to node)");
-    } else if (draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_EXPECTED || draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_EXPECTED_WITH_EDGES) {
+    } else if (draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_EXPECTED || draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_EXPECTED_WITH_EDGES) {
         application.update_message("Routing Expected Cost (from node to target)");
     } else {
         VPR_THROW(VPR_ERROR_DRAW, "Invalid Router RR cost drawing type");
@@ -3545,9 +3545,9 @@ static void draw_rr_costs(ezgl::renderer* g, const std::vector<float>& rr_costs,
 
     g->set_line_width(0);
 
-    bool with_edges = (draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_TOTAL_WITH_EDGES
-                       || draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_KNOWN_WITH_EDGES
-                       || draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_EXPECTED_WITH_EDGES);
+    bool with_edges = (draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_TOTAL_WITH_EDGES
+                       || draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_KNOWN_WITH_EDGES
+                       || draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_EXPECTED_WITH_EDGES);
 
     VTR_ASSERT(rr_costs.size() == device_ctx.rr_nodes.size());
 
