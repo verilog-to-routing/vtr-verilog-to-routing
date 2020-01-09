@@ -299,34 +299,34 @@ void button_for_toggle_routing_util() {
                              toggle_routing_util_widget);
 }
 
-void button_for_toggle_router_rr_costs() {
+void button_for_toggle_router_expansion_costs() {
     GObject* main_window = application.get_object(application.get_main_window_id().c_str());
     GObject* main_window_grid = application.get_object("InnerGrid");
 
-    GtkWidget* toggle_router_rr_costs_widget = gtk_combo_box_text_new();
-    GtkWidget* toggle_router_rr_costs_label = gtk_label_new("Toggle Router RR Costs:");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_router_rr_costs_widget), "None");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_router_rr_costs_widget), "Total");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_router_rr_costs_widget), "Known");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_router_rr_costs_widget), "Expected");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_router_rr_costs_widget), "Total (with edges)");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_router_rr_costs_widget), "Known (with edges)");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_router_rr_costs_widget), "Expected (with edges)");
-    gtk_combo_box_set_active((GtkComboBox*)toggle_router_rr_costs_widget, 0); // default set to None which has an index 0
-    gtk_widget_set_name(toggle_router_rr_costs_widget, "toggle_router_rr_costs");
+    GtkWidget* toggle_router_expansion_costs_widget = gtk_combo_box_text_new();
+    GtkWidget* toggle_router_expansion_costs_label = gtk_label_new("Toggle Router Expansion Costs:");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_router_expansion_costs_widget), "None");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_router_expansion_costs_widget), "Total");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_router_expansion_costs_widget), "Known");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_router_expansion_costs_widget), "Expected");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_router_expansion_costs_widget), "Total (with edges)");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_router_expansion_costs_widget), "Known (with edges)");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_router_expansion_costs_widget), "Expected (with edges)");
+    gtk_combo_box_set_active((GtkComboBox*)toggle_router_expansion_costs_widget, 0); // default set to None which has an index 0
+    gtk_widget_set_name(toggle_router_expansion_costs_widget, "toggle_router_expansion_costs");
 
     //attach to the grid
-    gtk_grid_attach((GtkGrid*)main_window_grid, toggle_router_rr_costs_label, label_left_start_col, button_row++, box_width, box_height);
-    gtk_grid_attach((GtkGrid*)main_window_grid, toggle_router_rr_costs_widget, box_left_start_col, button_row++, box_width, box_height);
+    gtk_grid_attach((GtkGrid*)main_window_grid, toggle_router_expansion_costs_label, label_left_start_col, button_row++, box_width, box_height);
+    gtk_grid_attach((GtkGrid*)main_window_grid, toggle_router_expansion_costs_widget, box_left_start_col, button_row++, box_width, box_height);
 
     //show newly added contents
     gtk_widget_show_all((GtkWidget*)main_window);
 
     //connect signals
-    g_signal_connect_swapped(GTK_COMBO_BOX_TEXT(toggle_router_rr_costs_widget),
+    g_signal_connect_swapped(GTK_COMBO_BOX_TEXT(toggle_router_expansion_costs_widget),
                              "changed",
-                             G_CALLBACK(toggle_router_rr_costs),
-                             toggle_router_rr_costs_widget);
+                             G_CALLBACK(toggle_router_expansion_costs),
+                             toggle_router_expansion_costs_widget);
 }
 
 void delete_button(const char* button_name) {
