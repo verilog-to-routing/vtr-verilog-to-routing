@@ -1622,12 +1622,12 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     route_timing_grp.add_argument(args.router_debug_net, "--router_debug_net")
         .help(
-            "Controls when router debugging is enabled.\n"
+            "Controls when router debugging is enabled for nets.\n"
             " * For values >= 0, the value is taken as the net ID for\n"
             "   which to enable router debug output.\n"
             " * For value == -1, router debug output is enabled for\n"
             "   all nets.\n"
-            " * For values < -1, all net-sbased router debug output is disabled.\n"
+            " * For values < -1, all net-based router debug output is disabled.\n"
             "Note if VPR as compiled without debug logging enabled this will produce only limited output.\n")
         .default_value("-2")
         .show_in(argparse::ShowIn::HELP_ONLY);
@@ -1638,6 +1638,16 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             " * For values >= 0, the value is taken as the sink RR Node ID for\n"
             "   which to enable router debug output.\n"
             " * For values < 0, sink-based router debug output is disabled.\n"
+            "Note if VPR as compiled without debug logging enabled this will produce only limited output.\n")
+        .default_value("-2")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument(args.router_debug_iteration, "--router_debug_iteration")
+        .help(
+            "Controls when router debugging is enabled for the specific router iteration.\n"
+            " * For values >= 0, the value is taken as the iteration number for\n"
+            "   which to enable router debug output.\n"
+            " * For values < 0, all iteration-based router debug output is disabled.\n"
             "Note if VPR as compiled without debug logging enabled this will produce only limited output.\n")
         .default_value("-2")
         .show_in(argparse::ShowIn::HELP_ONLY);
