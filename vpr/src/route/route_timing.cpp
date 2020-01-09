@@ -173,6 +173,8 @@ static t_heap* timing_driven_route_connection_from_heap(int sink_node,
                                                         std::vector<int>& modified_rr_node_inf,
                                                         RouterStats& router_stats);
 
+static void empty_heap_annotating_node_route_inf(std::vector<int>& modified_rr_node_inf);
+
 static std::vector<t_heap> timing_driven_find_all_shortest_paths_from_heap(const t_conn_cost_params cost_params,
                                                                            t_bb bounding_box,
                                                                            std::vector<int>& modified_rr_node_inf,
@@ -1399,7 +1401,13 @@ static t_heap* timing_driven_route_connection_from_route_tree_high_fanout(t_rt_n
                                                                           RouterStats& router_stats) {
     // re-explore route tree from root to add any new nodes (buildheap afterwards)
     // route tree needs to be repushed onto the heap since each node's cost is target specific
-    t_bb high_fanout_bb = add_high_fanout_route_tree_to_heap(rt_root, sink_node, cost_params, router_lookahead, spatial_rt_lookup, net_bounding_box, router_stats);
+    t_bb high_fanout_bb = add_high_fanout_route_tree_to_heap(rt_root,
+                                                             sink_node,
+                                                             cost_params,
+                                                             router_lookahead,
+                                                             spatial_rt_lookup,
+                                                             net_bounding_box,
+                                                             router_stats);
     heap_::build_heap(); // via sifting down everything
 
     int source_node = rt_root->inode;
@@ -1497,12 +1505,36 @@ static t_heap* timing_driven_route_connection_from_heap(int sink_node,
         cheapest = nullptr;
     }
 
+    if (f_router_debug) {
+        //Update known path costs for nodes pushed but not popped, useful for debugging
+        empty_heap_annotating_node_route_inf(modified_rr_node_inf);
+    }
+
     if (cheapest == nullptr) { /* Impossible routing.  No path for net. */
         VTR_LOGV_DEBUG(f_router_debug, "  Empty heap (no path found)\n");
         return nullptr;
     }
 
     return cheapest;
+}
+
+static void empty_heap_annotating_node_route_inf(std::vector<int>& modified_rr_node_inf) {
+    //Pop any remaining nodes in the heap and annotate their costs
+    //
+    //Useful for visualizing router expansion in graphics, as it shows
+    //the cost of all nodes considered by the router (e.g. nodes never
+    //expanded, such as parts of the initial route tree far from the
+    //target).
+    auto& routing_ctx = g_vpr_ctx.mutable_routing();
+    while (!is_empty_heap()) {
+        t_heap* tmp = get_heap_head();
+
+        routing_ctx.rr_node_route_inf[tmp->index].path_cost = tmp->cost;
+        routing_ctx.rr_node_route_inf[tmp->index].backward_path_cost = tmp->backward_path_cost;
+        modified_rr_node_inf.push_back(tmp->index);
+
+        free_heap_data(tmp);
+    }
 }
 
 //Find shortest paths from specified route tree to all nodes in the RR graph
