@@ -309,6 +309,9 @@ void button_for_toggle_router_rr_costs() {
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_router_rr_costs_widget), "Total");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_router_rr_costs_widget), "Known");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_router_rr_costs_widget), "Expected");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_router_rr_costs_widget), "Total (with edges)");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_router_rr_costs_widget), "Known (with edges)");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_router_rr_costs_widget), "Expected (with edges)");
     gtk_combo_box_set_active((GtkComboBox*)toggle_router_rr_costs_widget, 0); // default set to None which has an index 0
     gtk_widget_set_name(toggle_router_rr_costs_widget, "toggle_router_rr_costs");
 
