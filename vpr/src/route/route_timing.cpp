@@ -954,8 +954,6 @@ bool timing_driven_route_net(ClusterNetId net_id,
 
     unsigned int num_sinks = cluster_ctx.clb_nlist.net_sinks(net_id).size();
 
-    VTR_LOGV_DEBUG(f_router_debug, "Routing Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
-
     t_rt_node* rt_root = setup_routing_resources(itry, net_id, num_sinks, pres_fac, router_opts.min_incremental_reroute_fanout, connections_inf, rt_node_of_sink);
 
     bool high_fanout = is_high_fanout(num_sinks, router_opts.high_fanout_threshold);
@@ -1011,7 +1009,11 @@ bool timing_driven_route_net(ClusterNetId net_id,
     if (cluster_ctx.clb_nlist.net_is_global(net_id) && router_opts.two_stage_clock_routing) {
         VTR_ASSERT(router_opts.clock_modeling == DEDICATED_NETWORK);
         int sink_node = device_ctx.virtual_clock_network_root_idx;
-        enable_router_debug(router_opts, net_id, sink_node);
+
+        enable_router_debug(router_opts, net_id, sink_node, itry);
+
+        VTR_LOGV_DEBUG(f_router_debug, "Pre-routing global net %zu\n", size_t(net_id));
+
         // Set to the max timing criticality which should intern minimize clock insertion
         // delay by selecting a direct route from the clock source to the virtual sink
         cost_params.criticality = router_opts.max_criticality;
@@ -1034,7 +1036,9 @@ bool timing_driven_route_net(ClusterNetId net_id,
 
         int sink_rr = route_ctx.net_rr_terminals[net_id][target_pin];
 
-        enable_router_debug(router_opts, net_id, sink_rr);
+        enable_router_debug(router_opts, net_id, sink_rr, itry);
+
+        VTR_LOGV_DEBUG(f_router_debug, "Routing Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
 
         cost_params.criticality = pin_criticality[target_pin];
 
@@ -2919,45 +2923,20 @@ static t_bb calc_current_bb(const t_trace* head) {
     return bb;
 }
 
-void enable_router_debug(const t_router_opts& router_opts, ClusterNetId net, int sink_rr) {
-    bool all_net_debug = (router_opts.router_debug_net == -1);
+void enable_router_debug(const t_router_opts& router_opts, ClusterNetId net, int sink_rr, int router_iteration) {
+    bool active_net_debug = (router_opts.router_debug_net >= -1);
+    bool active_sink_debug = (router_opts.router_debug_sink_rr >= 0);
+    bool active_iteration_debug = (router_opts.router_debug_iteration >= 0);
 
-    bool specific_net_debug = (router_opts.router_debug_net >= 0);
-    bool specific_sink_debug = (router_opts.router_debug_sink_rr >= 0);
+    bool match_net = (ClusterNetId(router_opts.router_debug_net) == net || router_opts.router_debug_net == -1);
+    bool match_sink = (router_opts.router_debug_sink_rr == sink_rr || router_opts.router_debug_sink_rr < 0);
+    bool match_iteration = (router_opts.router_debug_iteration == router_iteration || router_opts.router_debug_iteration < 0);
 
-    bool match_net = (ClusterNetId(router_opts.router_debug_net) == net);
-    bool match_sink = (router_opts.router_debug_sink_rr == sink_rr);
+    f_router_debug = active_net_debug || active_sink_debug || active_iteration_debug;
 
-    if (all_net_debug) {
-        VTR_ASSERT(!specific_net_debug);
-
-        if (specific_sink_debug) {
-            //Specific sink specified, debug if sink matches
-            f_router_debug = match_sink;
-        } else {
-            //Debug all nets (no specific sink specified)
-            f_router_debug = true;
-        }
-    } else if (specific_net_debug) {
-        if (specific_sink_debug) {
-            //Debug if both net and sink match
-            f_router_debug = match_net && match_sink;
-        } else {
-            f_router_debug = match_net;
-        }
-    } else if (specific_sink_debug) {
-        VTR_ASSERT(!all_net_debug);
-        VTR_ASSERT(!specific_net_debug);
-
-        //Debug if match sink
-        f_router_debug = match_sink;
-    } else {
-        VTR_ASSERT(!all_net_debug);
-        VTR_ASSERT(!specific_net_debug);
-        VTR_ASSERT(!specific_sink_debug);
-        //Disable debug output
-        f_router_debug = false;
-    }
+    if (active_net_debug) f_router_debug &= match_net;
+    if (active_sink_debug) f_router_debug &= match_sink;
+    if (active_iteration_debug) f_router_debug &= match_iteration;
 
 #ifndef VTR_ENABLE_DEBUG_LOGGING
     VTR_LOGV_WARN(f_router_debug, "Limited router debug output provided since compiled without VTR_ENABLE_DEBUG_LOGGING defined\n");

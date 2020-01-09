@@ -941,6 +941,7 @@ struct t_router_opts {
     int high_fanout_threshold;
     int router_debug_net;
     int router_debug_sink_rr;
+    int router_debug_iteration;
     e_router_lookahead lookahead_type;
     int max_convergence_count;
     float reconvergence_cpd_threshold;
