@@ -2545,8 +2545,6 @@ void act_on_key_press(ezgl::application* /*app*/, GdkEventKey* /*event*/, char* 
 #    endif
 
 void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x, double y) {
-    app->update_message("Mouse Clicked");
-
     //  std::cout << "User clicked the ";
 
     if (event->button == 1) {
@@ -3573,7 +3571,7 @@ static void draw_rr_costs(ezgl::renderer* g, const std::vector<float>& rr_costs,
             case CHANX: //fallthrough
             case CHANY:
                 draw_rr_chan(inode, color, g);
-                draw_rr_edges(inode, g);
+                //draw_rr_edges(inode, g);
                 break;
 
             case IPIN: //fallthrough
@@ -3581,7 +3579,7 @@ static void draw_rr_costs(ezgl::renderer* g, const std::vector<float>& rr_costs,
                 break;
             case OPIN:
                 draw_rr_pin(inode, color, g);
-                draw_rr_edges(inode, g);
+                //draw_rr_edges(inode, g);
                 break;
             case SOURCE:
             case SINK:
