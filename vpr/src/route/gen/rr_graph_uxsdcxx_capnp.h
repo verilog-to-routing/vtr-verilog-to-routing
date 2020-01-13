@@ -5,7 +5,6 @@
  * Modify only if your build process doesn't involve regenerating this file.
  *
  * Cmdline: ../uxsdcap.py rr_graph.xsd
- * Input file: /usr/local/google/home/keithrothman/cat_x/uxsdcxx/upstream_rr_graph/rr_graph.xsd
  * md5sum of input file: f9c827f7ecf1ac2f15d57c67bbba4399
  */
 #include <stdexcept>
