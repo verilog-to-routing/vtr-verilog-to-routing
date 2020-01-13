@@ -220,61 +220,44 @@ class EdgeWalker {
     size_t current_idx_;
 };
 
-class RrGraphSerializer : public uxsd::RrGraphBase<
-                              /*ChannelReadContext =*/void*,
-                              /*XListReadContext =*/int,
-                              /*YListReadContext =*/int,
-                              /*ChannelsReadContext =*/void*,
-                              /*TimingReadContext =*/const t_rr_switch_inf*,
-                              /*SizingReadContext =*/const t_rr_switch_inf*,
-                              /*SwitchReadContext =*/const t_rr_switch_inf*,
-                              /*SwitchesReadContext =*/void*,
-                              /*SegmentTimingReadContext =*/const t_segment_inf*,
-                              /*SegmentReadContext =*/const t_segment_inf*,
-                              /*SegmentsReadContext =*/void*,
-                              /*PinReadContext =*/const std::pair<const t_physical_tile_type*, int>,
-                              /*PinClassReadContext =*/const std::pair<const t_physical_tile_type*, const t_class*>,
-                              /*BlockTypeReadContext =*/const t_physical_tile_type*,
-                              /*BlockTypesReadContext =*/void*,
-                              /*GridLocReadContext =*/const t_grid_tile*,
-                              /*GridLocsReadContext =*/void*,
-                              /*NodeLocReadContext =*/const t_rr_node*,
-                              /*NodeTimingReadContext =*/const t_rr_node*,
-                              /*NodeSegmentReadContext =*/const t_rr_node*,
-                              /*MetaReadContext =*/const t_metadata_dict::value_type*,
-                              /*MetadataReadContext =*/t_metadata_dict_iterator,
-                              /*NodeReadContext =*/const t_rr_node*,
-                              /*RrNodesReadContext =*/void*,
-                              /*EdgeReadContext =*/const EdgeWalker*,
-                              /*RrEdgesReadContext =*/EdgeWalker,
-                              /*RrGraphReadContext =*/void*,
-                              /*ChannelWriteContext =*/void*,
-                              /*XListWriteContext =*/void*,
-                              /*YListWriteContext =*/void*,
-                              /*ChannelsWriteContext =*/void*,
-                              /*TimingWriteContext =*/t_rr_switch_inf*,
-                              /*SizingWriteContext =*/t_rr_switch_inf*,
-                              /*SwitchWriteContext =*/t_rr_switch_inf*,
-                              /*SwitchesWriteContext =*/void*,
-                              /*SegmentTimingWriteContext =*/const t_segment_inf*,
-                              /*SegmentWriteContext =*/const t_segment_inf*,
-                              /*SegmentsWriteContext =*/void*,
-                              /*PinWriteContext =*/const std::pair<const t_physical_tile_type*, int>,
-                              /*PinClassWriteContext =*/std::tuple<const t_physical_tile_type*, const t_class*, int>,
-                              /*BlockTypeWriteContext =*/std::pair<const t_physical_tile_type*, int>,
-                              /*BlockTypesWriteContext =*/void*,
-                              /*GridLocWriteContext =*/void*,
-                              /*GridLocsWriteContext =*/void*,
-                              /*NodeLocWriteContext =*/int,
-                              /*NodeTimingWriteContext =*/int,
-                              /*NodeSegmentWriteContext =*/int,
-                              /*MetaWriteContext =*/MetadataBind,
-                              /*MetadataWriteContext =*/MetadataBind,
-                              /*NodeWriteContext =*/int,
-                              /*RrNodesWriteContext =*/void*,
-                              /*EdgeWriteContext =*/MetadataBind,
-                              /*RrEdgesWriteContext =*/void*,
-                              /*RrGraphWriteContext =*/void*> {
+struct RrGraphContextTypes : public uxsd::DefaultRrGraphContextTypes {
+    using XListReadContext = int;
+    using YListReadContext = int;
+    using TimingReadContext = const t_rr_switch_inf*;
+    using SizingReadContext = const t_rr_switch_inf*;
+    using SwitchReadContext = const t_rr_switch_inf*;
+    using SegmentTimingReadContext = const t_segment_inf*;
+    using SegmentReadContext = const t_segment_inf*;
+    using PinReadContext = const std::pair<const t_physical_tile_type*, int>;
+    using PinClassReadContext = const std::pair<const t_physical_tile_type*, const t_class*>;
+    using BlockTypeReadContext = const t_physical_tile_type*;
+    using GridLocReadContext = const t_grid_tile*;
+    using NodeLocReadContext = const t_rr_node*;
+    using NodeTimingReadContext = const t_rr_node*;
+    using NodeSegmentReadContext = const t_rr_node*;
+    using MetaReadContext = const t_metadata_dict::value_type*;
+    using MetadataReadContext = t_metadata_dict_iterator;
+    using NodeReadContext = const t_rr_node*;
+    using EdgeReadContext = const EdgeWalker*;
+    using RrEdgesReadContext = EdgeWalker;
+    using TimingWriteContext = t_rr_switch_inf*;
+    using SizingWriteContext = t_rr_switch_inf*;
+    using SwitchWriteContext = t_rr_switch_inf*;
+    using SegmentTimingWriteContext = const t_segment_inf*;
+    using SegmentWriteContext = const t_segment_inf*;
+    using PinWriteContext = const std::pair<const t_physical_tile_type*, int>;
+    using PinClassWriteContext = std::tuple<const t_physical_tile_type*, const t_class*, int>;
+    using BlockTypeWriteContext = std::pair<const t_physical_tile_type*, int>;
+    using NodeLocWriteContext = int;
+    using NodeTimingWriteContext = int;
+    using NodeSegmentWriteContext = int;
+    using MetaWriteContext = MetadataBind;
+    using MetadataWriteContext = MetadataBind;
+    using NodeWriteContext = int;
+    using EdgeWriteContext = MetadataBind;
+};
+
+class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
   public:
     RrGraphSerializer(
         const t_graph_type graph_type,
