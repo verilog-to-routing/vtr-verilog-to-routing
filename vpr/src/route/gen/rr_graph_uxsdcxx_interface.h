@@ -5,7 +5,6 @@
  * Modify only if your build process doesn't involve regenerating this file.
  *
  * Cmdline: ../uxsdcxx.py rr_graph.xsd
- * Input file: /usr/local/google/home/keithrothman/cat_x/uxsdcxx/upstream_rr_graph/rr_graph.xsd
  * md5sum of input file: f9c827f7ecf1ac2f15d57c67bbba4399
  */
 
@@ -50,61 +49,64 @@ enum class enum_loc_side { UXSD_INVALID = 0,
                            BOTTOM };
 
 /* Base class for the schema. */
-template<
-    typename ChannelReadContext = void*,
-    typename XListReadContext = void*,
-    typename YListReadContext = void*,
-    typename ChannelsReadContext = void*,
-    typename TimingReadContext = void*,
-    typename SizingReadContext = void*,
-    typename SwitchReadContext = void*,
-    typename SwitchesReadContext = void*,
-    typename SegmentTimingReadContext = void*,
-    typename SegmentReadContext = void*,
-    typename SegmentsReadContext = void*,
-    typename PinReadContext = void*,
-    typename PinClassReadContext = void*,
-    typename BlockTypeReadContext = void*,
-    typename BlockTypesReadContext = void*,
-    typename GridLocReadContext = void*,
-    typename GridLocsReadContext = void*,
-    typename NodeLocReadContext = void*,
-    typename NodeTimingReadContext = void*,
-    typename NodeSegmentReadContext = void*,
-    typename MetaReadContext = void*,
-    typename MetadataReadContext = void*,
-    typename NodeReadContext = void*,
-    typename RrNodesReadContext = void*,
-    typename EdgeReadContext = void*,
-    typename RrEdgesReadContext = void*,
-    typename RrGraphReadContext = void*,
-    typename ChannelWriteContext = void*,
-    typename XListWriteContext = void*,
-    typename YListWriteContext = void*,
-    typename ChannelsWriteContext = void*,
-    typename TimingWriteContext = void*,
-    typename SizingWriteContext = void*,
-    typename SwitchWriteContext = void*,
-    typename SwitchesWriteContext = void*,
-    typename SegmentTimingWriteContext = void*,
-    typename SegmentWriteContext = void*,
-    typename SegmentsWriteContext = void*,
-    typename PinWriteContext = void*,
-    typename PinClassWriteContext = void*,
-    typename BlockTypeWriteContext = void*,
-    typename BlockTypesWriteContext = void*,
-    typename GridLocWriteContext = void*,
-    typename GridLocsWriteContext = void*,
-    typename NodeLocWriteContext = void*,
-    typename NodeTimingWriteContext = void*,
-    typename NodeSegmentWriteContext = void*,
-    typename MetaWriteContext = void*,
-    typename MetadataWriteContext = void*,
-    typename NodeWriteContext = void*,
-    typename RrNodesWriteContext = void*,
-    typename EdgeWriteContext = void*,
-    typename RrEdgesWriteContext = void*,
-    typename RrGraphWriteContext = void*>
+struct DefaultRrGraphContextTypes {
+    using ChannelReadContext = void*;
+    using XListReadContext = void*;
+    using YListReadContext = void*;
+    using ChannelsReadContext = void*;
+    using TimingReadContext = void*;
+    using SizingReadContext = void*;
+    using SwitchReadContext = void*;
+    using SwitchesReadContext = void*;
+    using SegmentTimingReadContext = void*;
+    using SegmentReadContext = void*;
+    using SegmentsReadContext = void*;
+    using PinReadContext = void*;
+    using PinClassReadContext = void*;
+    using BlockTypeReadContext = void*;
+    using BlockTypesReadContext = void*;
+    using GridLocReadContext = void*;
+    using GridLocsReadContext = void*;
+    using NodeLocReadContext = void*;
+    using NodeTimingReadContext = void*;
+    using NodeSegmentReadContext = void*;
+    using MetaReadContext = void*;
+    using MetadataReadContext = void*;
+    using NodeReadContext = void*;
+    using RrNodesReadContext = void*;
+    using EdgeReadContext = void*;
+    using RrEdgesReadContext = void*;
+    using RrGraphReadContext = void*;
+    using ChannelWriteContext = void*;
+    using XListWriteContext = void*;
+    using YListWriteContext = void*;
+    using ChannelsWriteContext = void*;
+    using TimingWriteContext = void*;
+    using SizingWriteContext = void*;
+    using SwitchWriteContext = void*;
+    using SwitchesWriteContext = void*;
+    using SegmentTimingWriteContext = void*;
+    using SegmentWriteContext = void*;
+    using SegmentsWriteContext = void*;
+    using PinWriteContext = void*;
+    using PinClassWriteContext = void*;
+    using BlockTypeWriteContext = void*;
+    using BlockTypesWriteContext = void*;
+    using GridLocWriteContext = void*;
+    using GridLocsWriteContext = void*;
+    using NodeLocWriteContext = void*;
+    using NodeTimingWriteContext = void*;
+    using NodeSegmentWriteContext = void*;
+    using MetaWriteContext = void*;
+    using MetadataWriteContext = void*;
+    using NodeWriteContext = void*;
+    using RrNodesWriteContext = void*;
+    using EdgeWriteContext = void*;
+    using RrEdgesWriteContext = void*;
+    using RrGraphWriteContext = void*;
+};
+
+template<typename ContextTypes = DefaultRrGraphContextTypes>
 class RrGraphBase {
   public:
     virtual ~RrGraphBase() {}
@@ -121,11 +123,11 @@ class RrGraphBase {
      *   <xs:attribute name="y_max" type="xs:int" use="required" />
      * </xs:complexType>
      */
-    virtual inline int get_channel_chan_width_max(ChannelReadContext& ctx) = 0;
-    virtual inline int get_channel_x_max(ChannelReadContext& ctx) = 0;
-    virtual inline int get_channel_x_min(ChannelReadContext& ctx) = 0;
-    virtual inline int get_channel_y_max(ChannelReadContext& ctx) = 0;
-    virtual inline int get_channel_y_min(ChannelReadContext& ctx) = 0;
+    virtual inline int get_channel_chan_width_max(typename ContextTypes::ChannelReadContext& ctx) = 0;
+    virtual inline int get_channel_x_max(typename ContextTypes::ChannelReadContext& ctx) = 0;
+    virtual inline int get_channel_x_min(typename ContextTypes::ChannelReadContext& ctx) = 0;
+    virtual inline int get_channel_y_max(typename ContextTypes::ChannelReadContext& ctx) = 0;
+    virtual inline int get_channel_y_min(typename ContextTypes::ChannelReadContext& ctx) = 0;
 
     /** Generated for complex type "x_list":
      * <xs:complexType name="x_list">
@@ -133,8 +135,8 @@ class RrGraphBase {
      *   <xs:attribute name="info" type="xs:int" use="required" />
      * </xs:complexType>
      */
-    virtual inline unsigned int get_x_list_index(XListReadContext& ctx) = 0;
-    virtual inline int get_x_list_info(XListReadContext& ctx) = 0;
+    virtual inline unsigned int get_x_list_index(typename ContextTypes::XListReadContext& ctx) = 0;
+    virtual inline int get_x_list_info(typename ContextTypes::XListReadContext& ctx) = 0;
 
     /** Generated for complex type "y_list":
      * <xs:complexType name="y_list">
@@ -142,8 +144,8 @@ class RrGraphBase {
      *   <xs:attribute name="info" type="xs:int" use="required" />
      * </xs:complexType>
      */
-    virtual inline unsigned int get_y_list_index(YListReadContext& ctx) = 0;
-    virtual inline int get_y_list_info(YListReadContext& ctx) = 0;
+    virtual inline unsigned int get_y_list_index(typename ContextTypes::YListReadContext& ctx) = 0;
+    virtual inline int get_y_list_info(typename ContextTypes::YListReadContext& ctx) = 0;
 
     /** Generated for complex type "channels":
      * <xs:complexType name="channels">
@@ -154,17 +156,17 @@ class RrGraphBase {
      *   </xs:sequence>
      * </xs:complexType>
      */
-    virtual inline ChannelWriteContext init_channels_channel(ChannelsWriteContext& ctx, int chan_width_max, int x_max, int x_min, int y_max, int y_min) = 0;
-    virtual inline void finish_channels_channel(ChannelWriteContext& ctx) = 0;
-    virtual inline ChannelReadContext get_channels_channel(ChannelsReadContext& ctx) = 0;
-    virtual inline XListWriteContext add_channels_x_list(ChannelsWriteContext& ctx, unsigned int index, int info) = 0;
-    virtual inline void finish_channels_x_list(XListWriteContext& ctx) = 0;
-    virtual inline size_t num_channels_x_list(ChannelsReadContext& ctx) = 0;
-    virtual inline XListReadContext get_channels_x_list(int n, ChannelsReadContext& ctx) = 0;
-    virtual inline YListWriteContext add_channels_y_list(ChannelsWriteContext& ctx, unsigned int index, int info) = 0;
-    virtual inline void finish_channels_y_list(YListWriteContext& ctx) = 0;
-    virtual inline size_t num_channels_y_list(ChannelsReadContext& ctx) = 0;
-    virtual inline YListReadContext get_channels_y_list(int n, ChannelsReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::ChannelWriteContext init_channels_channel(typename ContextTypes::ChannelsWriteContext& ctx, int chan_width_max, int x_max, int x_min, int y_max, int y_min) = 0;
+    virtual inline void finish_channels_channel(typename ContextTypes::ChannelWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::ChannelReadContext get_channels_channel(typename ContextTypes::ChannelsReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::XListWriteContext add_channels_x_list(typename ContextTypes::ChannelsWriteContext& ctx, unsigned int index, int info) = 0;
+    virtual inline void finish_channels_x_list(typename ContextTypes::XListWriteContext& ctx) = 0;
+    virtual inline size_t num_channels_x_list(typename ContextTypes::ChannelsReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::XListReadContext get_channels_x_list(int n, typename ContextTypes::ChannelsReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::YListWriteContext add_channels_y_list(typename ContextTypes::ChannelsWriteContext& ctx, unsigned int index, int info) = 0;
+    virtual inline void finish_channels_y_list(typename ContextTypes::YListWriteContext& ctx) = 0;
+    virtual inline size_t num_channels_y_list(typename ContextTypes::ChannelsReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::YListReadContext get_channels_y_list(int n, typename ContextTypes::ChannelsReadContext& ctx) = 0;
 
     /** Generated for complex type "timing":
      * <xs:complexType name="timing">
@@ -175,16 +177,16 @@ class RrGraphBase {
      *   <xs:attribute name="Tdel" type="xs:float" />
      * </xs:complexType>
      */
-    virtual inline float get_timing_Cin(TimingReadContext& ctx) = 0;
-    virtual inline void set_timing_Cin(float Cin, TimingWriteContext& ctx) = 0;
-    virtual inline float get_timing_Cinternal(TimingReadContext& ctx) = 0;
-    virtual inline void set_timing_Cinternal(float Cinternal, TimingWriteContext& ctx) = 0;
-    virtual inline float get_timing_Cout(TimingReadContext& ctx) = 0;
-    virtual inline void set_timing_Cout(float Cout, TimingWriteContext& ctx) = 0;
-    virtual inline float get_timing_R(TimingReadContext& ctx) = 0;
-    virtual inline void set_timing_R(float R, TimingWriteContext& ctx) = 0;
-    virtual inline float get_timing_Tdel(TimingReadContext& ctx) = 0;
-    virtual inline void set_timing_Tdel(float Tdel, TimingWriteContext& ctx) = 0;
+    virtual inline float get_timing_Cin(typename ContextTypes::TimingReadContext& ctx) = 0;
+    virtual inline void set_timing_Cin(float Cin, typename ContextTypes::TimingWriteContext& ctx) = 0;
+    virtual inline float get_timing_Cinternal(typename ContextTypes::TimingReadContext& ctx) = 0;
+    virtual inline void set_timing_Cinternal(float Cinternal, typename ContextTypes::TimingWriteContext& ctx) = 0;
+    virtual inline float get_timing_Cout(typename ContextTypes::TimingReadContext& ctx) = 0;
+    virtual inline void set_timing_Cout(float Cout, typename ContextTypes::TimingWriteContext& ctx) = 0;
+    virtual inline float get_timing_R(typename ContextTypes::TimingReadContext& ctx) = 0;
+    virtual inline void set_timing_R(float R, typename ContextTypes::TimingWriteContext& ctx) = 0;
+    virtual inline float get_timing_Tdel(typename ContextTypes::TimingReadContext& ctx) = 0;
+    virtual inline void set_timing_Tdel(float Tdel, typename ContextTypes::TimingWriteContext& ctx) = 0;
 
     /** Generated for complex type "sizing":
      * <xs:complexType name="sizing">
@@ -192,8 +194,8 @@ class RrGraphBase {
      *   <xs:attribute name="buf_size" type="xs:float" use="required" />
      * </xs:complexType>
      */
-    virtual inline float get_sizing_buf_size(SizingReadContext& ctx) = 0;
-    virtual inline float get_sizing_mux_trans_size(SizingReadContext& ctx) = 0;
+    virtual inline float get_sizing_buf_size(typename ContextTypes::SizingReadContext& ctx) = 0;
+    virtual inline float get_sizing_mux_trans_size(typename ContextTypes::SizingReadContext& ctx) = 0;
 
     /** Generated for complex type "switch":
      * <xs:complexType name="switch">
@@ -206,18 +208,18 @@ class RrGraphBase {
      *   <xs:attribute name="type" type="switch_type" />
      * </xs:complexType>
      */
-    virtual inline int get_switch_id(SwitchReadContext& ctx) = 0;
-    virtual inline const char* get_switch_name(SwitchReadContext& ctx) = 0;
-    virtual inline void set_switch_name(const char* name, SwitchWriteContext& ctx) = 0;
-    virtual inline enum_switch_type get_switch_type(SwitchReadContext& ctx) = 0;
-    virtual inline void set_switch_type(enum_switch_type type, SwitchWriteContext& ctx) = 0;
-    virtual inline TimingWriteContext init_switch_timing(SwitchWriteContext& ctx) = 0;
-    virtual inline void finish_switch_timing(TimingWriteContext& ctx) = 0;
-    virtual inline TimingReadContext get_switch_timing(SwitchReadContext& ctx) = 0;
-    virtual inline bool has_switch_timing(SwitchReadContext& ctx) = 0;
-    virtual inline SizingWriteContext init_switch_sizing(SwitchWriteContext& ctx, float buf_size, float mux_trans_size) = 0;
-    virtual inline void finish_switch_sizing(SizingWriteContext& ctx) = 0;
-    virtual inline SizingReadContext get_switch_sizing(SwitchReadContext& ctx) = 0;
+    virtual inline int get_switch_id(typename ContextTypes::SwitchReadContext& ctx) = 0;
+    virtual inline const char* get_switch_name(typename ContextTypes::SwitchReadContext& ctx) = 0;
+    virtual inline void set_switch_name(const char* name, typename ContextTypes::SwitchWriteContext& ctx) = 0;
+    virtual inline enum_switch_type get_switch_type(typename ContextTypes::SwitchReadContext& ctx) = 0;
+    virtual inline void set_switch_type(enum_switch_type type, typename ContextTypes::SwitchWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::TimingWriteContext init_switch_timing(typename ContextTypes::SwitchWriteContext& ctx) = 0;
+    virtual inline void finish_switch_timing(typename ContextTypes::TimingWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::TimingReadContext get_switch_timing(typename ContextTypes::SwitchReadContext& ctx) = 0;
+    virtual inline bool has_switch_timing(typename ContextTypes::SwitchReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::SizingWriteContext init_switch_sizing(typename ContextTypes::SwitchWriteContext& ctx, float buf_size, float mux_trans_size) = 0;
+    virtual inline void finish_switch_sizing(typename ContextTypes::SizingWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::SizingReadContext get_switch_sizing(typename ContextTypes::SwitchReadContext& ctx) = 0;
 
     /** Generated for complex type "switches":
      * <xs:complexType name="switches">
@@ -226,10 +228,10 @@ class RrGraphBase {
      *   </xs:sequence>
      * </xs:complexType>
      */
-    virtual inline SwitchWriteContext add_switches_switch(SwitchesWriteContext& ctx, int id) = 0;
-    virtual inline void finish_switches_switch(SwitchWriteContext& ctx) = 0;
-    virtual inline size_t num_switches_switch(SwitchesReadContext& ctx) = 0;
-    virtual inline SwitchReadContext get_switches_switch(int n, SwitchesReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::SwitchWriteContext add_switches_switch(typename ContextTypes::SwitchesWriteContext& ctx, int id) = 0;
+    virtual inline void finish_switches_switch(typename ContextTypes::SwitchWriteContext& ctx) = 0;
+    virtual inline size_t num_switches_switch(typename ContextTypes::SwitchesReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::SwitchReadContext get_switches_switch(int n, typename ContextTypes::SwitchesReadContext& ctx) = 0;
 
     /** Generated for complex type "segment_timing":
      * <xs:complexType name="segment_timing">
@@ -237,10 +239,10 @@ class RrGraphBase {
      *   <xs:attribute name="C_per_meter" type="xs:float" />
      * </xs:complexType>
      */
-    virtual inline float get_segment_timing_C_per_meter(SegmentTimingReadContext& ctx) = 0;
-    virtual inline void set_segment_timing_C_per_meter(float C_per_meter, SegmentTimingWriteContext& ctx) = 0;
-    virtual inline float get_segment_timing_R_per_meter(SegmentTimingReadContext& ctx) = 0;
-    virtual inline void set_segment_timing_R_per_meter(float R_per_meter, SegmentTimingWriteContext& ctx) = 0;
+    virtual inline float get_segment_timing_C_per_meter(typename ContextTypes::SegmentTimingReadContext& ctx) = 0;
+    virtual inline void set_segment_timing_C_per_meter(float C_per_meter, typename ContextTypes::SegmentTimingWriteContext& ctx) = 0;
+    virtual inline float get_segment_timing_R_per_meter(typename ContextTypes::SegmentTimingReadContext& ctx) = 0;
+    virtual inline void set_segment_timing_R_per_meter(float R_per_meter, typename ContextTypes::SegmentTimingWriteContext& ctx) = 0;
 
     /** Generated for complex type "segment":
      * <xs:complexType name="segment">
@@ -251,13 +253,13 @@ class RrGraphBase {
      *   <xs:attribute name="name" type="xs:string" use="required" />
      * </xs:complexType>
      */
-    virtual inline int get_segment_id(SegmentReadContext& ctx) = 0;
-    virtual inline const char* get_segment_name(SegmentReadContext& ctx) = 0;
-    virtual inline void set_segment_name(const char* name, SegmentWriteContext& ctx) = 0;
-    virtual inline SegmentTimingWriteContext init_segment_timing(SegmentWriteContext& ctx) = 0;
-    virtual inline void finish_segment_timing(SegmentTimingWriteContext& ctx) = 0;
-    virtual inline SegmentTimingReadContext get_segment_timing(SegmentReadContext& ctx) = 0;
-    virtual inline bool has_segment_timing(SegmentReadContext& ctx) = 0;
+    virtual inline int get_segment_id(typename ContextTypes::SegmentReadContext& ctx) = 0;
+    virtual inline const char* get_segment_name(typename ContextTypes::SegmentReadContext& ctx) = 0;
+    virtual inline void set_segment_name(const char* name, typename ContextTypes::SegmentWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::SegmentTimingWriteContext init_segment_timing(typename ContextTypes::SegmentWriteContext& ctx) = 0;
+    virtual inline void finish_segment_timing(typename ContextTypes::SegmentTimingWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::SegmentTimingReadContext get_segment_timing(typename ContextTypes::SegmentReadContext& ctx) = 0;
+    virtual inline bool has_segment_timing(typename ContextTypes::SegmentReadContext& ctx) = 0;
 
     /** Generated for complex type "segments":
      * <xs:complexType name="segments">
@@ -266,10 +268,10 @@ class RrGraphBase {
      *   </xs:sequence>
      * </xs:complexType>
      */
-    virtual inline SegmentWriteContext add_segments_segment(SegmentsWriteContext& ctx, int id) = 0;
-    virtual inline void finish_segments_segment(SegmentWriteContext& ctx) = 0;
-    virtual inline size_t num_segments_segment(SegmentsReadContext& ctx) = 0;
-    virtual inline SegmentReadContext get_segments_segment(int n, SegmentsReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::SegmentWriteContext add_segments_segment(typename ContextTypes::SegmentsWriteContext& ctx, int id) = 0;
+    virtual inline void finish_segments_segment(typename ContextTypes::SegmentWriteContext& ctx) = 0;
+    virtual inline size_t num_segments_segment(typename ContextTypes::SegmentsReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::SegmentReadContext get_segments_segment(int n, typename ContextTypes::SegmentsReadContext& ctx) = 0;
 
     /** Generated for complex type "pin":
      * <xs:complexType name="pin">
@@ -280,9 +282,9 @@ class RrGraphBase {
      *   </xs:simpleContent>
      * </xs:complexType>
      */
-    virtual inline int get_pin_ptc(PinReadContext& ctx) = 0;
-    virtual inline void set_pin_value(const char* value, PinWriteContext& ctx) = 0;
-    virtual inline const char* get_pin_value(PinReadContext& ctx) = 0;
+    virtual inline int get_pin_ptc(typename ContextTypes::PinReadContext& ctx) = 0;
+    virtual inline void set_pin_value(const char* value, typename ContextTypes::PinWriteContext& ctx) = 0;
+    virtual inline const char* get_pin_value(typename ContextTypes::PinReadContext& ctx) = 0;
 
     /** Generated for complex type "pin_class":
      * <xs:complexType name="pin_class">
@@ -292,11 +294,11 @@ class RrGraphBase {
      *   <xs:attribute name="type" type="pin_type" use="required" />
      * </xs:complexType>
      */
-    virtual inline enum_pin_type get_pin_class_type(PinClassReadContext& ctx) = 0;
-    virtual inline PinWriteContext add_pin_class_pin(PinClassWriteContext& ctx, int ptc) = 0;
-    virtual inline void finish_pin_class_pin(PinWriteContext& ctx) = 0;
-    virtual inline size_t num_pin_class_pin(PinClassReadContext& ctx) = 0;
-    virtual inline PinReadContext get_pin_class_pin(int n, PinClassReadContext& ctx) = 0;
+    virtual inline enum_pin_type get_pin_class_type(typename ContextTypes::PinClassReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::PinWriteContext add_pin_class_pin(typename ContextTypes::PinClassWriteContext& ctx, int ptc) = 0;
+    virtual inline void finish_pin_class_pin(typename ContextTypes::PinWriteContext& ctx) = 0;
+    virtual inline size_t num_pin_class_pin(typename ContextTypes::PinClassReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::PinReadContext get_pin_class_pin(int n, typename ContextTypes::PinClassReadContext& ctx) = 0;
 
     /** Generated for complex type "block_type":
      * <xs:complexType name="block_type">
@@ -309,15 +311,15 @@ class RrGraphBase {
      *   <xs:attribute name="height" type="xs:int" use="required" />
      * </xs:complexType>
      */
-    virtual inline int get_block_type_height(BlockTypeReadContext& ctx) = 0;
-    virtual inline int get_block_type_id(BlockTypeReadContext& ctx) = 0;
-    virtual inline const char* get_block_type_name(BlockTypeReadContext& ctx) = 0;
-    virtual inline void set_block_type_name(const char* name, BlockTypeWriteContext& ctx) = 0;
-    virtual inline int get_block_type_width(BlockTypeReadContext& ctx) = 0;
-    virtual inline PinClassWriteContext add_block_type_pin_class(BlockTypeWriteContext& ctx, enum_pin_type type) = 0;
-    virtual inline void finish_block_type_pin_class(PinClassWriteContext& ctx) = 0;
-    virtual inline size_t num_block_type_pin_class(BlockTypeReadContext& ctx) = 0;
-    virtual inline PinClassReadContext get_block_type_pin_class(int n, BlockTypeReadContext& ctx) = 0;
+    virtual inline int get_block_type_height(typename ContextTypes::BlockTypeReadContext& ctx) = 0;
+    virtual inline int get_block_type_id(typename ContextTypes::BlockTypeReadContext& ctx) = 0;
+    virtual inline const char* get_block_type_name(typename ContextTypes::BlockTypeReadContext& ctx) = 0;
+    virtual inline void set_block_type_name(const char* name, typename ContextTypes::BlockTypeWriteContext& ctx) = 0;
+    virtual inline int get_block_type_width(typename ContextTypes::BlockTypeReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::PinClassWriteContext add_block_type_pin_class(typename ContextTypes::BlockTypeWriteContext& ctx, enum_pin_type type) = 0;
+    virtual inline void finish_block_type_pin_class(typename ContextTypes::PinClassWriteContext& ctx) = 0;
+    virtual inline size_t num_block_type_pin_class(typename ContextTypes::BlockTypeReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::PinClassReadContext get_block_type_pin_class(int n, typename ContextTypes::BlockTypeReadContext& ctx) = 0;
 
     /** Generated for complex type "block_types":
      * <xs:complexType name="block_types">
@@ -326,10 +328,10 @@ class RrGraphBase {
      *   </xs:sequence>
      * </xs:complexType>
      */
-    virtual inline BlockTypeWriteContext add_block_types_block_type(BlockTypesWriteContext& ctx, int height, int id, int width) = 0;
-    virtual inline void finish_block_types_block_type(BlockTypeWriteContext& ctx) = 0;
-    virtual inline size_t num_block_types_block_type(BlockTypesReadContext& ctx) = 0;
-    virtual inline BlockTypeReadContext get_block_types_block_type(int n, BlockTypesReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::BlockTypeWriteContext add_block_types_block_type(typename ContextTypes::BlockTypesWriteContext& ctx, int height, int id, int width) = 0;
+    virtual inline void finish_block_types_block_type(typename ContextTypes::BlockTypeWriteContext& ctx) = 0;
+    virtual inline size_t num_block_types_block_type(typename ContextTypes::BlockTypesReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::BlockTypeReadContext get_block_types_block_type(int n, typename ContextTypes::BlockTypesReadContext& ctx) = 0;
 
     /** Generated for complex type "grid_loc":
      * <xs:complexType name="grid_loc">
@@ -340,11 +342,11 @@ class RrGraphBase {
      *   <xs:attribute name="height_offset" type="xs:int" use="required" />
      * </xs:complexType>
      */
-    virtual inline int get_grid_loc_block_type_id(GridLocReadContext& ctx) = 0;
-    virtual inline int get_grid_loc_height_offset(GridLocReadContext& ctx) = 0;
-    virtual inline int get_grid_loc_width_offset(GridLocReadContext& ctx) = 0;
-    virtual inline int get_grid_loc_x(GridLocReadContext& ctx) = 0;
-    virtual inline int get_grid_loc_y(GridLocReadContext& ctx) = 0;
+    virtual inline int get_grid_loc_block_type_id(typename ContextTypes::GridLocReadContext& ctx) = 0;
+    virtual inline int get_grid_loc_height_offset(typename ContextTypes::GridLocReadContext& ctx) = 0;
+    virtual inline int get_grid_loc_width_offset(typename ContextTypes::GridLocReadContext& ctx) = 0;
+    virtual inline int get_grid_loc_x(typename ContextTypes::GridLocReadContext& ctx) = 0;
+    virtual inline int get_grid_loc_y(typename ContextTypes::GridLocReadContext& ctx) = 0;
 
     /** Generated for complex type "grid_locs":
      * <xs:complexType name="grid_locs">
@@ -353,10 +355,10 @@ class RrGraphBase {
      *   </xs:sequence>
      * </xs:complexType>
      */
-    virtual inline GridLocWriteContext add_grid_locs_grid_loc(GridLocsWriteContext& ctx, int block_type_id, int height_offset, int width_offset, int x, int y) = 0;
-    virtual inline void finish_grid_locs_grid_loc(GridLocWriteContext& ctx) = 0;
-    virtual inline size_t num_grid_locs_grid_loc(GridLocsReadContext& ctx) = 0;
-    virtual inline GridLocReadContext get_grid_locs_grid_loc(int n, GridLocsReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::GridLocWriteContext add_grid_locs_grid_loc(typename ContextTypes::GridLocsWriteContext& ctx, int block_type_id, int height_offset, int width_offset, int x, int y) = 0;
+    virtual inline void finish_grid_locs_grid_loc(typename ContextTypes::GridLocWriteContext& ctx) = 0;
+    virtual inline size_t num_grid_locs_grid_loc(typename ContextTypes::GridLocsReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::GridLocReadContext get_grid_locs_grid_loc(int n, typename ContextTypes::GridLocsReadContext& ctx) = 0;
 
     /** Generated for complex type "node_loc":
      * <xs:complexType name="node_loc">
@@ -368,13 +370,13 @@ class RrGraphBase {
      *   <xs:attribute name="ptc" type="xs:int" use="required" />
      * </xs:complexType>
      */
-    virtual inline int get_node_loc_ptc(NodeLocReadContext& ctx) = 0;
-    virtual inline enum_loc_side get_node_loc_side(NodeLocReadContext& ctx) = 0;
-    virtual inline void set_node_loc_side(enum_loc_side side, NodeLocWriteContext& ctx) = 0;
-    virtual inline int get_node_loc_xhigh(NodeLocReadContext& ctx) = 0;
-    virtual inline int get_node_loc_xlow(NodeLocReadContext& ctx) = 0;
-    virtual inline int get_node_loc_yhigh(NodeLocReadContext& ctx) = 0;
-    virtual inline int get_node_loc_ylow(NodeLocReadContext& ctx) = 0;
+    virtual inline int get_node_loc_ptc(typename ContextTypes::NodeLocReadContext& ctx) = 0;
+    virtual inline enum_loc_side get_node_loc_side(typename ContextTypes::NodeLocReadContext& ctx) = 0;
+    virtual inline void set_node_loc_side(enum_loc_side side, typename ContextTypes::NodeLocWriteContext& ctx) = 0;
+    virtual inline int get_node_loc_xhigh(typename ContextTypes::NodeLocReadContext& ctx) = 0;
+    virtual inline int get_node_loc_xlow(typename ContextTypes::NodeLocReadContext& ctx) = 0;
+    virtual inline int get_node_loc_yhigh(typename ContextTypes::NodeLocReadContext& ctx) = 0;
+    virtual inline int get_node_loc_ylow(typename ContextTypes::NodeLocReadContext& ctx) = 0;
 
     /** Generated for complex type "node_timing":
      * <xs:complexType name="node_timing">
@@ -382,15 +384,15 @@ class RrGraphBase {
      *   <xs:attribute name="C" type="xs:float" use="required" />
      * </xs:complexType>
      */
-    virtual inline float get_node_timing_C(NodeTimingReadContext& ctx) = 0;
-    virtual inline float get_node_timing_R(NodeTimingReadContext& ctx) = 0;
+    virtual inline float get_node_timing_C(typename ContextTypes::NodeTimingReadContext& ctx) = 0;
+    virtual inline float get_node_timing_R(typename ContextTypes::NodeTimingReadContext& ctx) = 0;
 
     /** Generated for complex type "node_segment":
      * <xs:complexType name="node_segment">
      *   <xs:attribute name="segment_id" type="xs:int" use="required" />
      * </xs:complexType>
      */
-    virtual inline int get_node_segment_segment_id(NodeSegmentReadContext& ctx) = 0;
+    virtual inline int get_node_segment_segment_id(typename ContextTypes::NodeSegmentReadContext& ctx) = 0;
 
     /** Generated for complex type "meta":
      * <xs:complexType name="meta">
@@ -401,10 +403,10 @@ class RrGraphBase {
      *   </xs:simpleContent>
      * </xs:complexType>
      */
-    virtual inline const char* get_meta_name(MetaReadContext& ctx) = 0;
-    virtual inline void set_meta_name(const char* name, MetaWriteContext& ctx) = 0;
-    virtual inline void set_meta_value(const char* value, MetaWriteContext& ctx) = 0;
-    virtual inline const char* get_meta_value(MetaReadContext& ctx) = 0;
+    virtual inline const char* get_meta_name(typename ContextTypes::MetaReadContext& ctx) = 0;
+    virtual inline void set_meta_name(const char* name, typename ContextTypes::MetaWriteContext& ctx) = 0;
+    virtual inline void set_meta_value(const char* value, typename ContextTypes::MetaWriteContext& ctx) = 0;
+    virtual inline const char* get_meta_value(typename ContextTypes::MetaReadContext& ctx) = 0;
 
     /** Generated for complex type "metadata":
      * <xs:complexType name="metadata">
@@ -413,10 +415,10 @@ class RrGraphBase {
      *   </xs:sequence>
      * </xs:complexType>
      */
-    virtual inline MetaWriteContext add_metadata_meta(MetadataWriteContext& ctx) = 0;
-    virtual inline void finish_metadata_meta(MetaWriteContext& ctx) = 0;
-    virtual inline size_t num_metadata_meta(MetadataReadContext& ctx) = 0;
-    virtual inline MetaReadContext get_metadata_meta(int n, MetadataReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::MetaWriteContext add_metadata_meta(typename ContextTypes::MetadataWriteContext& ctx) = 0;
+    virtual inline void finish_metadata_meta(typename ContextTypes::MetaWriteContext& ctx) = 0;
+    virtual inline size_t num_metadata_meta(typename ContextTypes::MetadataReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::MetaReadContext get_metadata_meta(int n, typename ContextTypes::MetadataReadContext& ctx) = 0;
 
     /** Generated for complex type "node":
      * <xs:complexType name="node">
@@ -432,26 +434,26 @@ class RrGraphBase {
      *   <xs:attribute name="capacity" type="xs:unsignedInt" use="required" />
      * </xs:complexType>
      */
-    virtual inline unsigned int get_node_capacity(NodeReadContext& ctx) = 0;
-    virtual inline enum_node_direction get_node_direction(NodeReadContext& ctx) = 0;
-    virtual inline void set_node_direction(enum_node_direction direction, NodeWriteContext& ctx) = 0;
-    virtual inline unsigned int get_node_id(NodeReadContext& ctx) = 0;
-    virtual inline enum_node_type get_node_type(NodeReadContext& ctx) = 0;
-    virtual inline NodeLocWriteContext init_node_loc(NodeWriteContext& ctx, int ptc, int xhigh, int xlow, int yhigh, int ylow) = 0;
-    virtual inline void finish_node_loc(NodeLocWriteContext& ctx) = 0;
-    virtual inline NodeLocReadContext get_node_loc(NodeReadContext& ctx) = 0;
-    virtual inline NodeTimingWriteContext init_node_timing(NodeWriteContext& ctx, float C, float R) = 0;
-    virtual inline void finish_node_timing(NodeTimingWriteContext& ctx) = 0;
-    virtual inline NodeTimingReadContext get_node_timing(NodeReadContext& ctx) = 0;
-    virtual inline bool has_node_timing(NodeReadContext& ctx) = 0;
-    virtual inline NodeSegmentWriteContext init_node_segment(NodeWriteContext& ctx, int segment_id) = 0;
-    virtual inline void finish_node_segment(NodeSegmentWriteContext& ctx) = 0;
-    virtual inline NodeSegmentReadContext get_node_segment(NodeReadContext& ctx) = 0;
-    virtual inline bool has_node_segment(NodeReadContext& ctx) = 0;
-    virtual inline MetadataWriteContext init_node_metadata(NodeWriteContext& ctx) = 0;
-    virtual inline void finish_node_metadata(MetadataWriteContext& ctx) = 0;
-    virtual inline MetadataReadContext get_node_metadata(NodeReadContext& ctx) = 0;
-    virtual inline bool has_node_metadata(NodeReadContext& ctx) = 0;
+    virtual inline unsigned int get_node_capacity(typename ContextTypes::NodeReadContext& ctx) = 0;
+    virtual inline enum_node_direction get_node_direction(typename ContextTypes::NodeReadContext& ctx) = 0;
+    virtual inline void set_node_direction(enum_node_direction direction, typename ContextTypes::NodeWriteContext& ctx) = 0;
+    virtual inline unsigned int get_node_id(typename ContextTypes::NodeReadContext& ctx) = 0;
+    virtual inline enum_node_type get_node_type(typename ContextTypes::NodeReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::NodeLocWriteContext init_node_loc(typename ContextTypes::NodeWriteContext& ctx, int ptc, int xhigh, int xlow, int yhigh, int ylow) = 0;
+    virtual inline void finish_node_loc(typename ContextTypes::NodeLocWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::NodeLocReadContext get_node_loc(typename ContextTypes::NodeReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::NodeTimingWriteContext init_node_timing(typename ContextTypes::NodeWriteContext& ctx, float C, float R) = 0;
+    virtual inline void finish_node_timing(typename ContextTypes::NodeTimingWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::NodeTimingReadContext get_node_timing(typename ContextTypes::NodeReadContext& ctx) = 0;
+    virtual inline bool has_node_timing(typename ContextTypes::NodeReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::NodeSegmentWriteContext init_node_segment(typename ContextTypes::NodeWriteContext& ctx, int segment_id) = 0;
+    virtual inline void finish_node_segment(typename ContextTypes::NodeSegmentWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::NodeSegmentReadContext get_node_segment(typename ContextTypes::NodeReadContext& ctx) = 0;
+    virtual inline bool has_node_segment(typename ContextTypes::NodeReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::MetadataWriteContext init_node_metadata(typename ContextTypes::NodeWriteContext& ctx) = 0;
+    virtual inline void finish_node_metadata(typename ContextTypes::MetadataWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::MetadataReadContext get_node_metadata(typename ContextTypes::NodeReadContext& ctx) = 0;
+    virtual inline bool has_node_metadata(typename ContextTypes::NodeReadContext& ctx) = 0;
 
     /** Generated for complex type "rr_nodes":
      * <xs:complexType name="rr_nodes">
@@ -460,10 +462,10 @@ class RrGraphBase {
      *   </xs:choice>
      * </xs:complexType>
      */
-    virtual inline NodeWriteContext add_rr_nodes_node(RrNodesWriteContext& ctx, unsigned int capacity, unsigned int id, enum_node_type type) = 0;
-    virtual inline void finish_rr_nodes_node(NodeWriteContext& ctx) = 0;
-    virtual inline size_t num_rr_nodes_node(RrNodesReadContext& ctx) = 0;
-    virtual inline NodeReadContext get_rr_nodes_node(int n, RrNodesReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::NodeWriteContext add_rr_nodes_node(typename ContextTypes::RrNodesWriteContext& ctx, unsigned int capacity, unsigned int id, enum_node_type type) = 0;
+    virtual inline void finish_rr_nodes_node(typename ContextTypes::NodeWriteContext& ctx) = 0;
+    virtual inline size_t num_rr_nodes_node(typename ContextTypes::RrNodesReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::NodeReadContext get_rr_nodes_node(int n, typename ContextTypes::RrNodesReadContext& ctx) = 0;
 
     /** Generated for complex type "edge":
      * <xs:complexType name="edge">
@@ -475,13 +477,13 @@ class RrGraphBase {
      *   <xs:attribute name="switch_id" type="xs:unsignedInt" use="required" />
      * </xs:complexType>
      */
-    virtual inline unsigned int get_edge_sink_node(EdgeReadContext& ctx) = 0;
-    virtual inline unsigned int get_edge_src_node(EdgeReadContext& ctx) = 0;
-    virtual inline unsigned int get_edge_switch_id(EdgeReadContext& ctx) = 0;
-    virtual inline MetadataWriteContext init_edge_metadata(EdgeWriteContext& ctx) = 0;
-    virtual inline void finish_edge_metadata(MetadataWriteContext& ctx) = 0;
-    virtual inline MetadataReadContext get_edge_metadata(EdgeReadContext& ctx) = 0;
-    virtual inline bool has_edge_metadata(EdgeReadContext& ctx) = 0;
+    virtual inline unsigned int get_edge_sink_node(typename ContextTypes::EdgeReadContext& ctx) = 0;
+    virtual inline unsigned int get_edge_src_node(typename ContextTypes::EdgeReadContext& ctx) = 0;
+    virtual inline unsigned int get_edge_switch_id(typename ContextTypes::EdgeReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::MetadataWriteContext init_edge_metadata(typename ContextTypes::EdgeWriteContext& ctx) = 0;
+    virtual inline void finish_edge_metadata(typename ContextTypes::MetadataWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::MetadataReadContext get_edge_metadata(typename ContextTypes::EdgeReadContext& ctx) = 0;
+    virtual inline bool has_edge_metadata(typename ContextTypes::EdgeReadContext& ctx) = 0;
 
     /** Generated for complex type "rr_edges":
      * <xs:complexType name="rr_edges">
@@ -490,10 +492,10 @@ class RrGraphBase {
      *   </xs:choice>
      * </xs:complexType>
      */
-    virtual inline EdgeWriteContext add_rr_edges_edge(RrEdgesWriteContext& ctx, unsigned int sink_node, unsigned int src_node, unsigned int switch_id) = 0;
-    virtual inline void finish_rr_edges_edge(EdgeWriteContext& ctx) = 0;
-    virtual inline size_t num_rr_edges_edge(RrEdgesReadContext& ctx) = 0;
-    virtual inline EdgeReadContext get_rr_edges_edge(int n, RrEdgesReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::EdgeWriteContext add_rr_edges_edge(typename ContextTypes::RrEdgesWriteContext& ctx, unsigned int sink_node, unsigned int src_node, unsigned int switch_id) = 0;
+    virtual inline void finish_rr_edges_edge(typename ContextTypes::EdgeWriteContext& ctx) = 0;
+    virtual inline size_t num_rr_edges_edge(typename ContextTypes::RrEdgesReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::EdgeReadContext get_rr_edges_edge(int n, typename ContextTypes::RrEdgesReadContext& ctx) = 0;
 
     /** Generated for complex type "rr_graph":
      * <xs:complexType xmlns:xs="http://www.w3.org/2001/XMLSchema">
@@ -511,33 +513,33 @@ class RrGraphBase {
      *     <xs:attribute name="tool_comment" type="xs:string" />
      *   </xs:complexType>
      */
-    virtual inline const char* get_rr_graph_tool_comment(RrGraphReadContext& ctx) = 0;
-    virtual inline void set_rr_graph_tool_comment(const char* tool_comment, RrGraphWriteContext& ctx) = 0;
-    virtual inline const char* get_rr_graph_tool_name(RrGraphReadContext& ctx) = 0;
-    virtual inline void set_rr_graph_tool_name(const char* tool_name, RrGraphWriteContext& ctx) = 0;
-    virtual inline const char* get_rr_graph_tool_version(RrGraphReadContext& ctx) = 0;
-    virtual inline void set_rr_graph_tool_version(const char* tool_version, RrGraphWriteContext& ctx) = 0;
-    virtual inline ChannelsWriteContext init_rr_graph_channels(RrGraphWriteContext& ctx) = 0;
-    virtual inline void finish_rr_graph_channels(ChannelsWriteContext& ctx) = 0;
-    virtual inline ChannelsReadContext get_rr_graph_channels(RrGraphReadContext& ctx) = 0;
-    virtual inline SwitchesWriteContext init_rr_graph_switches(RrGraphWriteContext& ctx) = 0;
-    virtual inline void finish_rr_graph_switches(SwitchesWriteContext& ctx) = 0;
-    virtual inline SwitchesReadContext get_rr_graph_switches(RrGraphReadContext& ctx) = 0;
-    virtual inline SegmentsWriteContext init_rr_graph_segments(RrGraphWriteContext& ctx) = 0;
-    virtual inline void finish_rr_graph_segments(SegmentsWriteContext& ctx) = 0;
-    virtual inline SegmentsReadContext get_rr_graph_segments(RrGraphReadContext& ctx) = 0;
-    virtual inline BlockTypesWriteContext init_rr_graph_block_types(RrGraphWriteContext& ctx) = 0;
-    virtual inline void finish_rr_graph_block_types(BlockTypesWriteContext& ctx) = 0;
-    virtual inline BlockTypesReadContext get_rr_graph_block_types(RrGraphReadContext& ctx) = 0;
-    virtual inline GridLocsWriteContext init_rr_graph_grid(RrGraphWriteContext& ctx) = 0;
-    virtual inline void finish_rr_graph_grid(GridLocsWriteContext& ctx) = 0;
-    virtual inline GridLocsReadContext get_rr_graph_grid(RrGraphReadContext& ctx) = 0;
-    virtual inline RrNodesWriteContext init_rr_graph_rr_nodes(RrGraphWriteContext& ctx) = 0;
-    virtual inline void finish_rr_graph_rr_nodes(RrNodesWriteContext& ctx) = 0;
-    virtual inline RrNodesReadContext get_rr_graph_rr_nodes(RrGraphReadContext& ctx) = 0;
-    virtual inline RrEdgesWriteContext init_rr_graph_rr_edges(RrGraphWriteContext& ctx) = 0;
-    virtual inline void finish_rr_graph_rr_edges(RrEdgesWriteContext& ctx) = 0;
-    virtual inline RrEdgesReadContext get_rr_graph_rr_edges(RrGraphReadContext& ctx) = 0;
+    virtual inline const char* get_rr_graph_tool_comment(typename ContextTypes::RrGraphReadContext& ctx) = 0;
+    virtual inline void set_rr_graph_tool_comment(const char* tool_comment, typename ContextTypes::RrGraphWriteContext& ctx) = 0;
+    virtual inline const char* get_rr_graph_tool_name(typename ContextTypes::RrGraphReadContext& ctx) = 0;
+    virtual inline void set_rr_graph_tool_name(const char* tool_name, typename ContextTypes::RrGraphWriteContext& ctx) = 0;
+    virtual inline const char* get_rr_graph_tool_version(typename ContextTypes::RrGraphReadContext& ctx) = 0;
+    virtual inline void set_rr_graph_tool_version(const char* tool_version, typename ContextTypes::RrGraphWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::ChannelsWriteContext init_rr_graph_channels(typename ContextTypes::RrGraphWriteContext& ctx) = 0;
+    virtual inline void finish_rr_graph_channels(typename ContextTypes::ChannelsWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::ChannelsReadContext get_rr_graph_channels(typename ContextTypes::RrGraphReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::SwitchesWriteContext init_rr_graph_switches(typename ContextTypes::RrGraphWriteContext& ctx) = 0;
+    virtual inline void finish_rr_graph_switches(typename ContextTypes::SwitchesWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::SwitchesReadContext get_rr_graph_switches(typename ContextTypes::RrGraphReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::SegmentsWriteContext init_rr_graph_segments(typename ContextTypes::RrGraphWriteContext& ctx) = 0;
+    virtual inline void finish_rr_graph_segments(typename ContextTypes::SegmentsWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::SegmentsReadContext get_rr_graph_segments(typename ContextTypes::RrGraphReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::BlockTypesWriteContext init_rr_graph_block_types(typename ContextTypes::RrGraphWriteContext& ctx) = 0;
+    virtual inline void finish_rr_graph_block_types(typename ContextTypes::BlockTypesWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::BlockTypesReadContext get_rr_graph_block_types(typename ContextTypes::RrGraphReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::GridLocsWriteContext init_rr_graph_grid(typename ContextTypes::RrGraphWriteContext& ctx) = 0;
+    virtual inline void finish_rr_graph_grid(typename ContextTypes::GridLocsWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::GridLocsReadContext get_rr_graph_grid(typename ContextTypes::RrGraphReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::RrNodesWriteContext init_rr_graph_rr_nodes(typename ContextTypes::RrGraphWriteContext& ctx) = 0;
+    virtual inline void finish_rr_graph_rr_nodes(typename ContextTypes::RrNodesWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::RrNodesReadContext get_rr_graph_rr_nodes(typename ContextTypes::RrGraphReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::RrEdgesWriteContext init_rr_graph_rr_edges(typename ContextTypes::RrGraphWriteContext& ctx) = 0;
+    virtual inline void finish_rr_graph_rr_edges(typename ContextTypes::RrEdgesWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::RrEdgesReadContext get_rr_graph_rr_edges(typename ContextTypes::RrGraphReadContext& ctx) = 0;
 };
 
 } /* namespace uxsd */
