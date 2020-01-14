@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 ###################################################################################
 # This script is used to extract and verify statistics of one or more VTR tasks.

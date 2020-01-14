@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 ###################################################################################
 # This script runs the VTR flow for a single benchmark circuit and architecture
 # file.

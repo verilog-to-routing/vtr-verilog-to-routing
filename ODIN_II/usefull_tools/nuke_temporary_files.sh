@@ -1,4 +1,4 @@
-#/bin/bash
+#/usr/bin/env bash
 
 VTR_ROOT=$(git rev-parse --show-toplevel)
 

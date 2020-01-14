@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 EXP_NAME="FIR_filters"
 
 SOURCE="${BASH_SOURCE[0]}"

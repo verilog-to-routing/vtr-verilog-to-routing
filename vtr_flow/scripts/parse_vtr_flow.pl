@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 ###################################################################################
 # This script is used to extract statistics from a single execution of the VTR flow
 #

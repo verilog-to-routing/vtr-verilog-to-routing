@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 #------------------------------------------------------------------------#
 #  Run a regression test on the batch system                             #
 #   - runs the regression tests given as input parameters                #

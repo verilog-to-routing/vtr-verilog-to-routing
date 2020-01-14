@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 
 #------------------------------------------------------------------------------
 # acm2values.pl: generates calls acm on the commandline
