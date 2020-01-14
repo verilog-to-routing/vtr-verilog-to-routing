@@ -412,6 +412,10 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
      *   </xs:sequence>
      * </xs:complexType>
      */
+    inline void preallocate_switches_switch(void*& /*ctx*/, size_t size) override {
+        rr_switch_inf_->reserve(size);
+    }
+
     inline t_rr_switch_inf* add_switches_switch(void*& /*ctx*/, int id) override {
         make_room_in_vector(rr_switch_inf_, id);
 
@@ -469,6 +473,8 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
      *   </xs:sequence>
      * </xs:complexType>
      */
+    inline void preallocate_metadata_meta(MetadataBind& /*bind*/, size_t /*size*/) override {
+    }
     inline MetadataBind add_metadata_meta(MetadataBind& bind) override {
         return bind;
     }
@@ -691,6 +697,9 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
      *   </xs:choice>
      * </xs:complexType>
      */
+    inline void preallocate_rr_nodes_node(void*& /*ctx*/, size_t size) override {
+        rr_nodes_->reserve(size);
+    }
     inline int add_rr_nodes_node(void*& /*ctx*/, unsigned int capacity, unsigned int id, uxsd::enum_node_type type) override {
         make_room_in_vector(rr_nodes_, id);
         auto& node = (*rr_nodes_)[id];
@@ -797,6 +806,9 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return nullptr;
     }
 
+    inline void preallocate_channels_x_list(void*& /*ctx*/, size_t size) override {
+    }
+
     inline void* add_channels_x_list(void*& /*ctx*/, unsigned int index, int info) override {
         if (index >= chan_width_->x_list.size()) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
@@ -819,6 +831,9 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
     inline int get_channels_x_list(int n, void*& /*iter*/) override {
         return n;
+    }
+
+    inline void preallocate_channels_y_list(void*& /*ctx*/, size_t size) override {
     }
 
     inline void* add_channels_y_list(void*& /*ctx*/, unsigned int index, int info) override {
@@ -859,6 +874,9 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
      *   </xs:choice>
      * </xs:complexType>
      */
+    inline void preallocate_rr_edges_edge(void*& /*ctx*/, size_t size) override {
+        edges_.reserve(size);
+    }
     inline MetadataBind add_rr_edges_edge(void*& /*ctx*/, unsigned int sink_node, unsigned int src_node, unsigned int switch_id) override {
         if (src_node >= rr_nodes_->size()) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
@@ -1052,6 +1070,13 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
      *   </xs:sequence>
      * </xs:complexType>
      */
+    inline void preallocate_segments_segment(void*& /*ctx*/, size_t size) override {
+        if (size != segment_inf_.size()) {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                            "Architecture contains %zu segments and rr graph contains %zu segments",
+                            segment_inf_.size(), size);
+        }
+    }
     inline const t_segment_inf* add_segments_segment(void*& /*ctx*/, int id) override {
         return &segment_inf_.at(id);
     }
@@ -1099,6 +1124,19 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
      *   <xs:attribute name="type" type="pin_type" use="required" />
      * </xs:complexType>
      */
+    inline void preallocate_pin_class_pin(std::tuple<const t_physical_tile_type*, const t_class*, int>& context, size_t size) override {
+        const t_physical_tile_type* tile;
+        const t_class* class_inf;
+        std::tie(tile, class_inf, std::ignore) = context;
+        auto class_idx = class_inf - &tile->class_inf[0];
+
+        if (class_inf->num_pins != (ssize_t)size) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Incorrect number of pins (%zu != %u) in %zu pin_class in block %s",
+                            size, class_inf->num_pins,
+                            class_idx, tile->name);
+        }
+    }
     inline const std::pair<const t_physical_tile_type*, int> add_pin_class_pin(std::tuple<const t_physical_tile_type*, const t_class*, int>& context, int ptc) override {
         const t_physical_tile_type* tile;
         const t_class* class_inf;
@@ -1197,6 +1235,13 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
      *   </xs:sequence>
      * </xs:complexType>
      */
+    void preallocate_block_types_block_type(void*& /*ctx*/, size_t size) override {
+        if (physical_tile_types_.size() != size) {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                            "Architecture defines %zu block types, but rr graph contains %zu block types.",
+                            physical_tile_types_.size(), size);
+        }
+    }
     inline std::pair<const t_physical_tile_type*, int> add_block_types_block_type(void*& /*ctx*/, int height, int id, int width) override {
         const auto& block_info = physical_tile_types_.at(id);
         if (block_info.width != width) {
@@ -1211,6 +1256,11 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
         // Going to count how many classes are found.
         return std::make_pair(&block_info, 0);
     }
+    inline void preallocate_block_type_pin_class(std::pair<const t_physical_tile_type*, int>& context, size_t size) override {
+        const t_physical_tile_type* tile = context.first;
+        VTR_ASSERT(tile->num_class == (ssize_t)size);
+    }
+
     inline std::tuple<const t_physical_tile_type*, const t_class*, int> add_block_type_pin_class(std::pair<const t_physical_tile_type*, int>& context, uxsd::enum_pin_type type) override {
         const t_physical_tile_type* tile = context.first;
         int& num_classes = context.second;
@@ -1260,6 +1310,13 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
      *   </xs:sequence>
      * </xs:complexType>
      */
+    inline void preallocate_grid_locs_grid_loc(void*& /*ctx*/, size_t size) override {
+        if (grid_.matrix().size() != size) {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                            "Architecture file contains %zu grid locations, rr graph contains %zu grid locations.",
+                            grid_.matrix().size(), size);
+        }
+    }
     inline void* add_grid_locs_grid_loc(void*& /*ctx*/, int block_type_id, int height_offset, int width_offset, int x, int y) override {
         const t_grid_tile& grid_tile = grid_[x][y];
 
