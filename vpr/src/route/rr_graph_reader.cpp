@@ -71,10 +71,7 @@ void load_rr_file(const t_graph_type graph_type,
         try {
             std::ifstream file(read_rr_graph_name);
             void* context;
-            pugi::xml_parse_result result = uxsd::load_rr_graph_xml(reader, context, file);
-            if (!result) {
-                VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Failed to parse input.");
-            }
+            uxsd::load_rr_graph_xml(reader, context, read_rr_graph_name, file);
         } catch (pugiutil::XmlError& e) {
             vpr_throw(VPR_ERROR_ROUTE, read_rr_graph_name, e.line(), "%s", e.what());
         }
@@ -82,7 +79,7 @@ void load_rr_file(const t_graph_type graph_type,
     } else if (vtr::check_file_name_extension(read_rr_graph_name, ".bin")) {
         MmapFile f(read_rr_graph_name);
         void* context;
-        uxsd::load_rr_graph_capnp(reader, f.getData(), context);
+        uxsd::load_rr_graph_capnp(reader, f.getData(), context, read_rr_graph_name);
 #endif
     } else {
         VTR_LOG_WARN(

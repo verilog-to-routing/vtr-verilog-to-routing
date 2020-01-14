@@ -8,10 +8,13 @@
  * md5sum of input file: f9c827f7ecf1ac2f15d57c67bbba4399
  */
 
+#include <functional>
+
 #include <bitset>
 #include <cassert>
 #include <cstring>
 #include <iostream>
+#include <sstream>
 #include <memory>
 #include <string>
 #include <vector>
@@ -20,79 +23,87 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "pugixml.hpp"
+
 #include "rr_graph_uxsdcxx_interface.h"
 /* All uxsdcxx functions and structs live in this namespace. */
 namespace uxsd {
+
+/**
+ * Internal function for getting line and column number from file based on
+ * byte offset.
+ */
+inline void get_line_number(const char* filename, std::ptrdiff_t offset, int* line, int* col);
+
 /* Declarations for internal load functions for the complex types. */
 template<class T, typename Context>
-inline void load_channel(const pugi::xml_node& root, T& out, Context& context);
-inline void load_channel_required_attributes(const pugi::xml_node& root, int* chan_width_max, int* x_max, int* x_min, int* y_max, int* y_min);
+inline void load_channel(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
+inline void load_channel_required_attributes(const pugi::xml_node& root, int* chan_width_max, int* x_max, int* x_min, int* y_max, int* y_min, const std::function<void(const char*)>* report_error);
 template<class T, typename Context>
-inline void load_x_list(const pugi::xml_node& root, T& out, Context& context);
-inline void load_x_list_required_attributes(const pugi::xml_node& root, unsigned int* index, int* info);
+inline void load_x_list(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
+inline void load_x_list_required_attributes(const pugi::xml_node& root, unsigned int* index, int* info, const std::function<void(const char*)>* report_error);
 template<class T, typename Context>
-inline void load_y_list(const pugi::xml_node& root, T& out, Context& context);
-inline void load_y_list_required_attributes(const pugi::xml_node& root, unsigned int* index, int* info);
+inline void load_y_list(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
+inline void load_y_list_required_attributes(const pugi::xml_node& root, unsigned int* index, int* info, const std::function<void(const char*)>* report_error);
 template<class T, typename Context>
-inline void load_channels(const pugi::xml_node& root, T& out, Context& context);
+inline void load_channels(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
 template<class T, typename Context>
-inline void load_timing(const pugi::xml_node& root, T& out, Context& context);
+inline void load_timing(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
 template<class T, typename Context>
-inline void load_sizing(const pugi::xml_node& root, T& out, Context& context);
-inline void load_sizing_required_attributes(const pugi::xml_node& root, float* buf_size, float* mux_trans_size);
+inline void load_sizing(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
+inline void load_sizing_required_attributes(const pugi::xml_node& root, float* buf_size, float* mux_trans_size, const std::function<void(const char*)>* report_error);
 template<class T, typename Context>
-inline void load_switch(const pugi::xml_node& root, T& out, Context& context);
-inline void load_switch_required_attributes(const pugi::xml_node& root, int* id);
+inline void load_switch(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
+inline void load_switch_required_attributes(const pugi::xml_node& root, int* id, const std::function<void(const char*)>* report_error);
 template<class T, typename Context>
-inline void load_switches(const pugi::xml_node& root, T& out, Context& context);
+inline void load_switches(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
 template<class T, typename Context>
-inline void load_segment_timing(const pugi::xml_node& root, T& out, Context& context);
+inline void load_segment_timing(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
 template<class T, typename Context>
-inline void load_segment(const pugi::xml_node& root, T& out, Context& context);
-inline void load_segment_required_attributes(const pugi::xml_node& root, int* id);
+inline void load_segment(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
+inline void load_segment_required_attributes(const pugi::xml_node& root, int* id, const std::function<void(const char*)>* report_error);
 template<class T, typename Context>
-inline void load_segments(const pugi::xml_node& root, T& out, Context& context);
+inline void load_segments(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
 template<class T, typename Context>
-inline void load_pin(const pugi::xml_node& root, T& out, Context& context);
-inline void load_pin_required_attributes(const pugi::xml_node& root, int* ptc);
+inline void load_pin(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
+inline void load_pin_required_attributes(const pugi::xml_node& root, int* ptc, const std::function<void(const char*)>* report_error);
 template<class T, typename Context>
-inline void load_pin_class(const pugi::xml_node& root, T& out, Context& context);
-inline void load_pin_class_required_attributes(const pugi::xml_node& root, enum_pin_type* type);
+inline void load_pin_class(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
+inline void load_pin_class_required_attributes(const pugi::xml_node& root, enum_pin_type* type, const std::function<void(const char*)>* report_error);
 template<class T, typename Context>
-inline void load_block_type(const pugi::xml_node& root, T& out, Context& context);
-inline void load_block_type_required_attributes(const pugi::xml_node& root, int* height, int* id, int* width);
+inline void load_block_type(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
+inline void load_block_type_required_attributes(const pugi::xml_node& root, int* height, int* id, int* width, const std::function<void(const char*)>* report_error);
 template<class T, typename Context>
-inline void load_block_types(const pugi::xml_node& root, T& out, Context& context);
+inline void load_block_types(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
 template<class T, typename Context>
-inline void load_grid_loc(const pugi::xml_node& root, T& out, Context& context);
-inline void load_grid_loc_required_attributes(const pugi::xml_node& root, int* block_type_id, int* height_offset, int* width_offset, int* x, int* y);
+inline void load_grid_loc(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
+inline void load_grid_loc_required_attributes(const pugi::xml_node& root, int* block_type_id, int* height_offset, int* width_offset, int* x, int* y, const std::function<void(const char*)>* report_error);
 template<class T, typename Context>
-inline void load_grid_locs(const pugi::xml_node& root, T& out, Context& context);
+inline void load_grid_locs(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
 template<class T, typename Context>
-inline void load_node_loc(const pugi::xml_node& root, T& out, Context& context);
-inline void load_node_loc_required_attributes(const pugi::xml_node& root, int* ptc, int* xhigh, int* xlow, int* yhigh, int* ylow);
+inline void load_node_loc(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
+inline void load_node_loc_required_attributes(const pugi::xml_node& root, int* ptc, int* xhigh, int* xlow, int* yhigh, int* ylow, const std::function<void(const char*)>* report_error);
 template<class T, typename Context>
-inline void load_node_timing(const pugi::xml_node& root, T& out, Context& context);
-inline void load_node_timing_required_attributes(const pugi::xml_node& root, float* C, float* R);
+inline void load_node_timing(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
+inline void load_node_timing_required_attributes(const pugi::xml_node& root, float* C, float* R, const std::function<void(const char*)>* report_error);
 template<class T, typename Context>
-inline void load_node_segment(const pugi::xml_node& root, T& out, Context& context);
-inline void load_node_segment_required_attributes(const pugi::xml_node& root, int* segment_id);
+inline void load_node_segment(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
+inline void load_node_segment_required_attributes(const pugi::xml_node& root, int* segment_id, const std::function<void(const char*)>* report_error);
 template<class T, typename Context>
-inline void load_meta(const pugi::xml_node& root, T& out, Context& context);
+inline void load_meta(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
 template<class T, typename Context>
-inline void load_metadata(const pugi::xml_node& root, T& out, Context& context);
+inline void load_metadata(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
 template<class T, typename Context>
-inline void load_node(const pugi::xml_node& root, T& out, Context& context);
-inline void load_node_required_attributes(const pugi::xml_node& root, unsigned int* capacity, unsigned int* id, enum_node_type* type);
+inline void load_node(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
+inline void load_node_required_attributes(const pugi::xml_node& root, unsigned int* capacity, unsigned int* id, enum_node_type* type, const std::function<void(const char*)>* report_error);
 template<class T, typename Context>
-inline void load_rr_nodes(const pugi::xml_node& root, T& out, Context& context);
+inline void load_rr_nodes(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
 template<class T, typename Context>
-inline void load_edge(const pugi::xml_node& root, T& out, Context& context);
-inline void load_edge_required_attributes(const pugi::xml_node& root, unsigned int* sink_node, unsigned int* src_node, unsigned int* switch_id);
+inline void load_edge(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
+inline void load_edge_required_attributes(const pugi::xml_node& root, unsigned int* sink_node, unsigned int* src_node, unsigned int* switch_id, const std::function<void(const char*)>* report_error);
 template<class T, typename Context>
-inline void load_rr_edges(const pugi::xml_node& root, T& out, Context& context);
+inline void load_rr_edges(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
 template<class T, typename Context>
-inline void load_rr_graph(const pugi::xml_node& root, T& out, Context& context);
+inline void load_rr_graph(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug);
 
 /* Declarations for internal write functions for the complex types. */
 template<class T>
@@ -132,21 +143,39 @@ inline void write_rr_graph(T& in, std::ostream& os, const void* data, void* iter
 
 /* Load function for the root element. */
 template<class T, typename Context>
-inline pugi::xml_parse_result load_rr_graph_xml(T& out, Context& context, std::istream& is) {
+inline void load_rr_graph_xml(T& out, Context& context, const char* filename, std::istream& is) {
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load(is);
-    if (!result) return result;
-    out.start_load();
+    if (!result) {
+        int line, col;
+        get_line_number(filename, result.offset, &line, &col);
+        std::stringstream msg;
+        msg << "Unable to load XML file '" << filename << "', ";
+        msg << result.description() << " (line: " << line;
+        msg << " col: " << col << ")";
+        out.error_encountered(filename, line, msg.str().c_str());
+    }
+    ptrdiff_t offset_debug = 0;
+    std::function<void(const char*)> report_error = [filename, &out, &offset_debug](const char* message) {
+        int line, col;
+        get_line_number(filename, offset_debug, &line, &col);
+        out.error_encountered(filename, line, message);
+        // If error_encountered didn't throw, throw now to unwind.
+        throw std::runtime_error(message);
+    };
+    out.start_load(&report_error);
+
     for (pugi::xml_node node = doc.first_child(); node; node = node.next_sibling()) {
         if (std::strcmp(node.name(), "rr_graph") == 0) {
             /* If errno is set up to this point, it messes with strtol errno checking. */
             errno = 0;
-            load_rr_graph(node, out, context);
-        } else
-            throw std::runtime_error("Invalid root-level element " + std::string(node.name()));
+            load_rr_graph(node, out, context, &report_error, &offset_debug);
+        } else {
+            offset_debug = node.offset_debug();
+            report_error(("Invalid root-level element " + std::string(node.name())).c_str());
+        }
     }
     out.finish_load();
-    return result;
 }
 
 /* Write function for the root element. */
@@ -318,7 +347,7 @@ enum class atok_t_rr_graph { TOOL_COMMENT,
 constexpr const char* atok_lookup_t_rr_graph[] = {"tool_comment", "tool_name", "tool_version"};
 
 /* Internal lexers. These convert the PugiXML node names to input tokens. */
-inline atok_t_channel lex_attr_t_channel(const char* in) {
+inline atok_t_channel lex_attr_t_channel(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 5:
@@ -393,10 +422,11 @@ inline atok_t_channel lex_attr_t_channel(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized attribute " + std::string(in) + " of <channel>.");
+    (*report_error)(("Found unrecognized attribute " + std::string(in) + " of <channel>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
 
-inline atok_t_x_list lex_attr_t_x_list(const char* in) {
+inline atok_t_x_list lex_attr_t_x_list(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 4:
@@ -426,10 +456,11 @@ inline atok_t_x_list lex_attr_t_x_list(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized attribute " + std::string(in) + " of <x_list>.");
+    (*report_error)(("Found unrecognized attribute " + std::string(in) + " of <x_list>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
 
-inline atok_t_y_list lex_attr_t_y_list(const char* in) {
+inline atok_t_y_list lex_attr_t_y_list(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 4:
@@ -459,10 +490,11 @@ inline atok_t_y_list lex_attr_t_y_list(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized attribute " + std::string(in) + " of <y_list>.");
+    (*report_error)(("Found unrecognized attribute " + std::string(in) + " of <y_list>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
 
-inline gtok_t_channels lex_node_t_channels(const char* in) {
+inline gtok_t_channels lex_node_t_channels(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 6:
@@ -531,10 +563,11 @@ inline gtok_t_channels lex_node_t_channels(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized child " + std::string(in) + " of <channels>.");
+    (*report_error)(("Found unrecognized child " + std::string(in) + " of <channels>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
 
-inline atok_t_timing lex_attr_t_timing(const char* in) {
+inline atok_t_timing lex_attr_t_timing(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 1:
@@ -597,10 +630,11 @@ inline atok_t_timing lex_attr_t_timing(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized attribute " + std::string(in) + " of <timing>.");
+    (*report_error)(("Found unrecognized attribute " + std::string(in) + " of <timing>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
 
-inline atok_t_sizing lex_attr_t_sizing(const char* in) {
+inline atok_t_sizing lex_attr_t_sizing(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 8:
@@ -642,10 +676,11 @@ inline atok_t_sizing lex_attr_t_sizing(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized attribute " + std::string(in) + " of <sizing>.");
+    (*report_error)(("Found unrecognized attribute " + std::string(in) + " of <sizing>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
 
-inline gtok_t_switch lex_node_t_switch(const char* in) {
+inline gtok_t_switch lex_node_t_switch(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 6:
@@ -687,9 +722,10 @@ inline gtok_t_switch lex_node_t_switch(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized child " + std::string(in) + " of <switch>.");
+    (*report_error)(("Found unrecognized child " + std::string(in) + " of <switch>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
-inline atok_t_switch lex_attr_t_switch(const char* in) {
+inline atok_t_switch lex_attr_t_switch(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 2:
@@ -722,10 +758,11 @@ inline atok_t_switch lex_attr_t_switch(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized attribute " + std::string(in) + " of <switch>.");
+    (*report_error)(("Found unrecognized attribute " + std::string(in) + " of <switch>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
 
-inline gtok_t_switches lex_node_t_switches(const char* in) {
+inline gtok_t_switches lex_node_t_switches(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 6:
@@ -752,10 +789,11 @@ inline gtok_t_switches lex_node_t_switches(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized child " + std::string(in) + " of <switches>.");
+    (*report_error)(("Found unrecognized child " + std::string(in) + " of <switches>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
 
-inline atok_t_segment_timing lex_attr_t_segment_timing(const char* in) {
+inline atok_t_segment_timing lex_attr_t_segment_timing(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 11:
@@ -809,10 +847,11 @@ inline atok_t_segment_timing lex_attr_t_segment_timing(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized attribute " + std::string(in) + " of <segment_timing>.");
+    (*report_error)(("Found unrecognized attribute " + std::string(in) + " of <segment_timing>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
 
-inline gtok_t_segment lex_node_t_segment(const char* in) {
+inline gtok_t_segment lex_node_t_segment(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 6:
@@ -839,9 +878,10 @@ inline gtok_t_segment lex_node_t_segment(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized child " + std::string(in) + " of <segment>.");
+    (*report_error)(("Found unrecognized child " + std::string(in) + " of <segment>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
-inline atok_t_segment lex_attr_t_segment(const char* in) {
+inline atok_t_segment lex_attr_t_segment(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 2:
@@ -871,10 +911,11 @@ inline atok_t_segment lex_attr_t_segment(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized attribute " + std::string(in) + " of <segment>.");
+    (*report_error)(("Found unrecognized attribute " + std::string(in) + " of <segment>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
 
-inline gtok_t_segments lex_node_t_segments(const char* in) {
+inline gtok_t_segments lex_node_t_segments(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 7:
@@ -907,10 +948,11 @@ inline gtok_t_segments lex_node_t_segments(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized child " + std::string(in) + " of <segments>.");
+    (*report_error)(("Found unrecognized child " + std::string(in) + " of <segments>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
 
-inline atok_t_pin lex_attr_t_pin(const char* in) {
+inline atok_t_pin lex_attr_t_pin(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 3:
@@ -937,10 +979,11 @@ inline atok_t_pin lex_attr_t_pin(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized attribute " + std::string(in) + " of <pin>.");
+    (*report_error)(("Found unrecognized attribute " + std::string(in) + " of <pin>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
 
-inline gtok_t_pin_class lex_node_t_pin_class(const char* in) {
+inline gtok_t_pin_class lex_node_t_pin_class(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 3:
@@ -967,9 +1010,10 @@ inline gtok_t_pin_class lex_node_t_pin_class(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized child " + std::string(in) + " of <pin_class>.");
+    (*report_error)(("Found unrecognized child " + std::string(in) + " of <pin_class>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
-inline atok_t_pin_class lex_attr_t_pin_class(const char* in) {
+inline atok_t_pin_class lex_attr_t_pin_class(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 4:
@@ -984,10 +1028,11 @@ inline atok_t_pin_class lex_attr_t_pin_class(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized attribute " + std::string(in) + " of <pin_class>.");
+    (*report_error)(("Found unrecognized attribute " + std::string(in) + " of <pin_class>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
 
-inline gtok_t_block_type lex_node_t_block_type(const char* in) {
+inline gtok_t_block_type lex_node_t_block_type(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 9:
@@ -1008,9 +1053,10 @@ inline gtok_t_block_type lex_node_t_block_type(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized child " + std::string(in) + " of <block_type>.");
+    (*report_error)(("Found unrecognized child " + std::string(in) + " of <block_type>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
-inline atok_t_block_type lex_attr_t_block_type(const char* in) {
+inline atok_t_block_type lex_attr_t_block_type(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 2:
@@ -1076,10 +1122,11 @@ inline atok_t_block_type lex_attr_t_block_type(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized attribute " + std::string(in) + " of <block_type>.");
+    (*report_error)(("Found unrecognized attribute " + std::string(in) + " of <block_type>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
 
-inline gtok_t_block_types lex_node_t_block_types(const char* in) {
+inline gtok_t_block_types lex_node_t_block_types(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 10:
@@ -1106,10 +1153,11 @@ inline gtok_t_block_types lex_node_t_block_types(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized child " + std::string(in) + " of <block_types>.");
+    (*report_error)(("Found unrecognized child " + std::string(in) + " of <block_types>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
 
-inline atok_t_grid_loc lex_attr_t_grid_loc(const char* in) {
+inline atok_t_grid_loc lex_attr_t_grid_loc(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 1:
@@ -1178,10 +1226,11 @@ inline atok_t_grid_loc lex_attr_t_grid_loc(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized attribute " + std::string(in) + " of <grid_loc>.");
+    (*report_error)(("Found unrecognized attribute " + std::string(in) + " of <grid_loc>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
 
-inline gtok_t_grid_locs lex_node_t_grid_locs(const char* in) {
+inline gtok_t_grid_locs lex_node_t_grid_locs(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 8:
@@ -1196,10 +1245,11 @@ inline gtok_t_grid_locs lex_node_t_grid_locs(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized child " + std::string(in) + " of <grid_locs>.");
+    (*report_error)(("Found unrecognized child " + std::string(in) + " of <grid_locs>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
 
-inline atok_t_node_loc lex_attr_t_node_loc(const char* in) {
+inline atok_t_node_loc lex_attr_t_node_loc(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 3:
@@ -1265,10 +1315,11 @@ inline atok_t_node_loc lex_attr_t_node_loc(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized attribute " + std::string(in) + " of <node_loc>.");
+    (*report_error)(("Found unrecognized attribute " + std::string(in) + " of <node_loc>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
 
-inline atok_t_node_timing lex_attr_t_node_timing(const char* in) {
+inline atok_t_node_timing lex_attr_t_node_timing(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 1:
@@ -1286,10 +1337,11 @@ inline atok_t_node_timing lex_attr_t_node_timing(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized attribute " + std::string(in) + " of <node_timing>.");
+    (*report_error)(("Found unrecognized attribute " + std::string(in) + " of <node_timing>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
 
-inline atok_t_node_segment lex_attr_t_node_segment(const char* in) {
+inline atok_t_node_segment lex_attr_t_node_segment(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 10:
@@ -1316,10 +1368,11 @@ inline atok_t_node_segment lex_attr_t_node_segment(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized attribute " + std::string(in) + " of <node_segment>.");
+    (*report_error)(("Found unrecognized attribute " + std::string(in) + " of <node_segment>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
 
-inline atok_t_meta lex_attr_t_meta(const char* in) {
+inline atok_t_meta lex_attr_t_meta(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 4:
@@ -1334,10 +1387,11 @@ inline atok_t_meta lex_attr_t_meta(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized attribute " + std::string(in) + " of <meta>.");
+    (*report_error)(("Found unrecognized attribute " + std::string(in) + " of <meta>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
 
-inline gtok_t_metadata lex_node_t_metadata(const char* in) {
+inline gtok_t_metadata lex_node_t_metadata(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 4:
@@ -1352,10 +1406,11 @@ inline gtok_t_metadata lex_node_t_metadata(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized child " + std::string(in) + " of <metadata>.");
+    (*report_error)(("Found unrecognized child " + std::string(in) + " of <metadata>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
 
-inline gtok_t_node lex_node_t_node(const char* in) {
+inline gtok_t_node lex_node_t_node(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 3:
@@ -1439,9 +1494,10 @@ inline gtok_t_node lex_node_t_node(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized child " + std::string(in) + " of <node>.");
+    (*report_error)(("Found unrecognized child " + std::string(in) + " of <node>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
-inline atok_t_node lex_attr_t_node(const char* in) {
+inline atok_t_node lex_attr_t_node(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 2:
@@ -1495,10 +1551,11 @@ inline atok_t_node lex_attr_t_node(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized attribute " + std::string(in) + " of <node>.");
+    (*report_error)(("Found unrecognized attribute " + std::string(in) + " of <node>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
 
-inline gtok_t_rr_nodes lex_node_t_rr_nodes(const char* in) {
+inline gtok_t_rr_nodes lex_node_t_rr_nodes(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 4:
@@ -1513,10 +1570,11 @@ inline gtok_t_rr_nodes lex_node_t_rr_nodes(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized child " + std::string(in) + " of <rr_nodes>.");
+    (*report_error)(("Found unrecognized child " + std::string(in) + " of <rr_nodes>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
 
-inline gtok_t_edge lex_node_t_edge(const char* in) {
+inline gtok_t_edge lex_node_t_edge(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 8:
@@ -1531,9 +1589,10 @@ inline gtok_t_edge lex_node_t_edge(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized child " + std::string(in) + " of <edge>.");
+    (*report_error)(("Found unrecognized child " + std::string(in) + " of <edge>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
-inline atok_t_edge lex_attr_t_edge(const char* in) {
+inline atok_t_edge lex_attr_t_edge(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 8:
@@ -1572,10 +1631,11 @@ inline atok_t_edge lex_attr_t_edge(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized attribute " + std::string(in) + " of <edge>.");
+    (*report_error)(("Found unrecognized attribute " + std::string(in) + " of <edge>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
 
-inline gtok_t_rr_edges lex_node_t_rr_edges(const char* in) {
+inline gtok_t_rr_edges lex_node_t_rr_edges(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 4:
@@ -1590,10 +1650,11 @@ inline gtok_t_rr_edges lex_node_t_rr_edges(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized child " + std::string(in) + " of <rr_edges>.");
+    (*report_error)(("Found unrecognized child " + std::string(in) + " of <rr_edges>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
 
-inline gtok_t_rr_graph lex_node_t_rr_graph(const char* in) {
+inline gtok_t_rr_graph lex_node_t_rr_graph(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 4:
@@ -1656,9 +1717,10 @@ inline gtok_t_rr_graph lex_node_t_rr_graph(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized child " + std::string(in) + " of <rr_graph>.");
+    (*report_error)(("Found unrecognized child " + std::string(in) + " of <rr_graph>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
-inline atok_t_rr_graph lex_attr_t_rr_graph(const char* in) {
+inline atok_t_rr_graph lex_attr_t_rr_graph(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 9:
@@ -1703,25 +1765,26 @@ inline atok_t_rr_graph lex_attr_t_rr_graph(const char* in) {
         default:
             break;
     }
-    throw std::runtime_error("Found unrecognized attribute " + std::string(in) + " of <rr_graph>.");
+    (*report_error)(("Found unrecognized attribute " + std::string(in) + " of <rr_graph>.").c_str());
+    throw std::runtime_error("Unreachable code!");
 }
 
 /**
  * Internal error function for xs:choice and xs:sequence validators.
  */
-inline void dfa_error(const char* wrong, const int* states, const char* const* lookup, int len);
+inline void dfa_error(const char* wrong, const int* states, const char* const* lookup, int len, const std::function<void(const char*)>* report_error);
 
 /**
  * Internal error function for xs:all validators.
  */
 template<std::size_t N>
-inline void all_error(std::bitset<N> gstate, const char* const* lookup);
+inline void all_error(std::bitset<N> gstate, const char* const* lookup, const std::function<void(const char*)>* report_error);
 
 /**
  * Internal error function for attribute validators.
  */
 template<std::size_t N>
-inline void attr_error(std::bitset<N> astate, const char* const* lookup);
+inline void attr_error(std::bitset<N> astate, const char* const* lookup, const std::function<void(const char*)>* report_error);
 
 /* Lookup tables for enums. */
 constexpr const char* lookup_switch_type[] = {"UXSD_INVALID", "mux", "tristate", "pass_gate", "short", "buffer"};
@@ -1731,7 +1794,7 @@ constexpr const char* lookup_node_direction[] = {"UXSD_INVALID", "INC_DIR", "DEC
 constexpr const char* lookup_loc_side[] = {"UXSD_INVALID", "LEFT", "RIGHT", "TOP", "BOTTOM"};
 
 /* Lexers(string->token functions) for enums. */
-inline enum_switch_type lex_enum_switch_type(const char* in, bool throw_on_invalid) {
+inline enum_switch_type lex_enum_switch_type(const char* in, bool throw_on_invalid, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 3:
@@ -1819,11 +1882,11 @@ inline enum_switch_type lex_enum_switch_type(const char* in, bool throw_on_inval
             break;
     }
     if (throw_on_invalid)
-        throw std::runtime_error("Found unrecognized enum value " + std::string(in) + " of enum_switch_type.");
+        (*report_error)(("Found unrecognized enum value " + std::string(in) + " of enum_switch_type.").c_str());
     return enum_switch_type::UXSD_INVALID;
 }
 
-inline enum_pin_type lex_enum_pin_type(const char* in, bool throw_on_invalid) {
+inline enum_pin_type lex_enum_pin_type(const char* in, bool throw_on_invalid, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 4:
@@ -1875,11 +1938,11 @@ inline enum_pin_type lex_enum_pin_type(const char* in, bool throw_on_invalid) {
             break;
     }
     if (throw_on_invalid)
-        throw std::runtime_error("Found unrecognized enum value " + std::string(in) + " of enum_pin_type.");
+        (*report_error)(("Found unrecognized enum value " + std::string(in) + " of enum_pin_type.").c_str());
     return enum_pin_type::UXSD_INVALID;
 }
 
-inline enum_node_type lex_enum_node_type(const char* in, bool throw_on_invalid) {
+inline enum_node_type lex_enum_node_type(const char* in, bool throw_on_invalid, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 4:
@@ -1940,11 +2003,11 @@ inline enum_node_type lex_enum_node_type(const char* in, bool throw_on_invalid) 
             break;
     }
     if (throw_on_invalid)
-        throw std::runtime_error("Found unrecognized enum value " + std::string(in) + " of enum_node_type.");
+        (*report_error)(("Found unrecognized enum value " + std::string(in) + " of enum_node_type.").c_str());
     return enum_node_type::UXSD_INVALID;
 }
 
-inline enum_node_direction lex_enum_node_direction(const char* in, bool throw_on_invalid) {
+inline enum_node_direction lex_enum_node_direction(const char* in, bool throw_on_invalid, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 6:
@@ -2020,11 +2083,11 @@ inline enum_node_direction lex_enum_node_direction(const char* in, bool throw_on
             break;
     }
     if (throw_on_invalid)
-        throw std::runtime_error("Found unrecognized enum value " + std::string(in) + " of enum_node_direction.");
+        (*report_error)(("Found unrecognized enum value " + std::string(in) + " of enum_node_direction.").c_str());
     return enum_node_direction::UXSD_INVALID;
 }
 
-inline enum_loc_side lex_enum_loc_side(const char* in, bool throw_on_invalid) {
+inline enum_loc_side lex_enum_loc_side(const char* in, bool throw_on_invalid, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
     switch (len) {
         case 3:
@@ -2097,146 +2160,146 @@ inline enum_loc_side lex_enum_loc_side(const char* in, bool throw_on_invalid) {
             break;
     }
     if (throw_on_invalid)
-        throw std::runtime_error("Found unrecognized enum value " + std::string(in) + " of enum_loc_side.");
+        (*report_error)(("Found unrecognized enum value " + std::string(in) + " of enum_loc_side.").c_str());
     return enum_loc_side::UXSD_INVALID;
 }
 
 /* Internal loading functions, which validate and load a PugiXML DOM tree into memory. */
-inline int load_int(const char* in) {
+inline int load_int(const char* in, const std::function<void(const char*)>* report_error) {
     int out;
     out = std::strtol(in, NULL, 10);
     if (errno != 0)
-        throw std::runtime_error("Invalid value `" + std::string(in) + "` when loading into a int.");
+        (*report_error)(("Invalid value `" + std::string(in) + "` when loading into a int.").c_str());
     return out;
 }
 
-inline unsigned int load_unsigned_int(const char* in) {
+inline unsigned int load_unsigned_int(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int out;
     out = std::strtoul(in, NULL, 10);
     if (errno != 0)
-        throw std::runtime_error("Invalid value `" + std::string(in) + "` when loading into a unsigned int.");
+        (*report_error)(("Invalid value `" + std::string(in) + "` when loading into a unsigned int.").c_str());
     return out;
 }
 
-inline float load_float(const char* in) {
+inline float load_float(const char* in, const std::function<void(const char*)>* report_error) {
     float out;
     out = std::strtof(in, NULL);
     if (errno != 0)
-        throw std::runtime_error("Invalid value `" + std::string(in) + "` when loading into a float.");
+        (*report_error)(("Invalid value `" + std::string(in) + "` when loading into a float.").c_str());
     return out;
 }
-inline void load_channel_required_attributes(const pugi::xml_node& root, int* chan_width_max, int* x_max, int* x_min, int* y_max, int* y_min) {
+inline void load_channel_required_attributes(const pugi::xml_node& root, int* chan_width_max, int* x_max, int* x_min, int* y_max, int* y_min, const std::function<void(const char*)>* report_error) {
     std::bitset<5> astate = 0;
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
-        atok_t_channel in = lex_attr_t_channel(attr.name());
+        atok_t_channel in = lex_attr_t_channel(attr.name(), report_error);
         if (astate[(int)in] == 0)
             astate[(int)in] = 1;
         else
-            throw std::runtime_error("Duplicate attribute " + std::string(attr.name()) + " in <channel>.");
+            (*report_error)(("Duplicate attribute " + std::string(attr.name()) + " in <channel>.").c_str());
         switch (in) {
             case atok_t_channel::CHAN_WIDTH_MAX:
-                *chan_width_max = load_int(attr.value());
+                *chan_width_max = load_int(attr.value(), report_error);
                 break;
             case atok_t_channel::X_MAX:
-                *x_max = load_int(attr.value());
+                *x_max = load_int(attr.value(), report_error);
                 break;
             case atok_t_channel::X_MIN:
-                *x_min = load_int(attr.value());
+                *x_min = load_int(attr.value(), report_error);
                 break;
             case atok_t_channel::Y_MAX:
-                *y_max = load_int(attr.value());
+                *y_max = load_int(attr.value(), report_error);
                 break;
             case atok_t_channel::Y_MIN:
-                *y_min = load_int(attr.value());
+                *y_min = load_int(attr.value(), report_error);
                 break;
             default:
                 break; /* Not possible. */
         }
     }
     std::bitset<5> test_astate = astate | std::bitset<5>(0b00000);
-    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_channel);
+    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_channel, report_error);
 }
 
-inline void load_x_list_required_attributes(const pugi::xml_node& root, unsigned int* index, int* info) {
+inline void load_x_list_required_attributes(const pugi::xml_node& root, unsigned int* index, int* info, const std::function<void(const char*)>* report_error) {
     std::bitset<2> astate = 0;
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
-        atok_t_x_list in = lex_attr_t_x_list(attr.name());
+        atok_t_x_list in = lex_attr_t_x_list(attr.name(), report_error);
         if (astate[(int)in] == 0)
             astate[(int)in] = 1;
         else
-            throw std::runtime_error("Duplicate attribute " + std::string(attr.name()) + " in <x_list>.");
+            (*report_error)(("Duplicate attribute " + std::string(attr.name()) + " in <x_list>.").c_str());
         switch (in) {
             case atok_t_x_list::INDEX:
-                *index = load_unsigned_int(attr.value());
+                *index = load_unsigned_int(attr.value(), report_error);
                 break;
             case atok_t_x_list::INFO:
-                *info = load_int(attr.value());
+                *info = load_int(attr.value(), report_error);
                 break;
             default:
                 break; /* Not possible. */
         }
     }
     std::bitset<2> test_astate = astate | std::bitset<2>(0b00);
-    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_x_list);
+    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_x_list, report_error);
 }
 
-inline void load_y_list_required_attributes(const pugi::xml_node& root, unsigned int* index, int* info) {
+inline void load_y_list_required_attributes(const pugi::xml_node& root, unsigned int* index, int* info, const std::function<void(const char*)>* report_error) {
     std::bitset<2> astate = 0;
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
-        atok_t_y_list in = lex_attr_t_y_list(attr.name());
+        atok_t_y_list in = lex_attr_t_y_list(attr.name(), report_error);
         if (astate[(int)in] == 0)
             astate[(int)in] = 1;
         else
-            throw std::runtime_error("Duplicate attribute " + std::string(attr.name()) + " in <y_list>.");
+            (*report_error)(("Duplicate attribute " + std::string(attr.name()) + " in <y_list>.").c_str());
         switch (in) {
             case atok_t_y_list::INDEX:
-                *index = load_unsigned_int(attr.value());
+                *index = load_unsigned_int(attr.value(), report_error);
                 break;
             case atok_t_y_list::INFO:
-                *info = load_int(attr.value());
+                *info = load_int(attr.value(), report_error);
                 break;
             default:
                 break; /* Not possible. */
         }
     }
     std::bitset<2> test_astate = astate | std::bitset<2>(0b00);
-    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_y_list);
+    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_y_list, report_error);
 }
 
-inline void load_sizing_required_attributes(const pugi::xml_node& root, float* buf_size, float* mux_trans_size) {
+inline void load_sizing_required_attributes(const pugi::xml_node& root, float* buf_size, float* mux_trans_size, const std::function<void(const char*)>* report_error) {
     std::bitset<2> astate = 0;
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
-        atok_t_sizing in = lex_attr_t_sizing(attr.name());
+        atok_t_sizing in = lex_attr_t_sizing(attr.name(), report_error);
         if (astate[(int)in] == 0)
             astate[(int)in] = 1;
         else
-            throw std::runtime_error("Duplicate attribute " + std::string(attr.name()) + " in <sizing>.");
+            (*report_error)(("Duplicate attribute " + std::string(attr.name()) + " in <sizing>.").c_str());
         switch (in) {
             case atok_t_sizing::BUF_SIZE:
-                *buf_size = load_float(attr.value());
+                *buf_size = load_float(attr.value(), report_error);
                 break;
             case atok_t_sizing::MUX_TRANS_SIZE:
-                *mux_trans_size = load_float(attr.value());
+                *mux_trans_size = load_float(attr.value(), report_error);
                 break;
             default:
                 break; /* Not possible. */
         }
     }
     std::bitset<2> test_astate = astate | std::bitset<2>(0b00);
-    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_sizing);
+    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_sizing, report_error);
 }
 
-inline void load_switch_required_attributes(const pugi::xml_node& root, int* id) {
+inline void load_switch_required_attributes(const pugi::xml_node& root, int* id, const std::function<void(const char*)>* report_error) {
     std::bitset<3> astate = 0;
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
-        atok_t_switch in = lex_attr_t_switch(attr.name());
+        atok_t_switch in = lex_attr_t_switch(attr.name(), report_error);
         if (astate[(int)in] == 0)
             astate[(int)in] = 1;
         else
-            throw std::runtime_error("Duplicate attribute " + std::string(attr.name()) + " in <switch>.");
+            (*report_error)(("Duplicate attribute " + std::string(attr.name()) + " in <switch>.").c_str());
         switch (in) {
             case atok_t_switch::ID:
-                *id = load_int(attr.value());
+                *id = load_int(attr.value(), report_error);
                 break;
             case atok_t_switch::NAME:
                 /* Attribute name set after element init */
@@ -2249,20 +2312,20 @@ inline void load_switch_required_attributes(const pugi::xml_node& root, int* id)
         }
     }
     std::bitset<3> test_astate = astate | std::bitset<3>(0b100);
-    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_switch);
+    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_switch, report_error);
 }
 
-inline void load_segment_required_attributes(const pugi::xml_node& root, int* id) {
+inline void load_segment_required_attributes(const pugi::xml_node& root, int* id, const std::function<void(const char*)>* report_error) {
     std::bitset<2> astate = 0;
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
-        atok_t_segment in = lex_attr_t_segment(attr.name());
+        atok_t_segment in = lex_attr_t_segment(attr.name(), report_error);
         if (astate[(int)in] == 0)
             astate[(int)in] = 1;
         else
-            throw std::runtime_error("Duplicate attribute " + std::string(attr.name()) + " in <segment>.");
+            (*report_error)(("Duplicate attribute " + std::string(attr.name()) + " in <segment>.").c_str());
         switch (in) {
             case atok_t_segment::ID:
-                *id = load_int(attr.value());
+                *id = load_int(attr.value(), report_error);
                 break;
             case atok_t_segment::NAME:
                 /* Attribute name set after element init */
@@ -2272,270 +2335,279 @@ inline void load_segment_required_attributes(const pugi::xml_node& root, int* id
         }
     }
     std::bitset<2> test_astate = astate | std::bitset<2>(0b00);
-    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_segment);
+    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_segment, report_error);
 }
 
-inline void load_pin_required_attributes(const pugi::xml_node& root, int* ptc) {
+inline void load_pin_required_attributes(const pugi::xml_node& root, int* ptc, const std::function<void(const char*)>* report_error) {
     std::bitset<1> astate = 0;
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
-        atok_t_pin in = lex_attr_t_pin(attr.name());
+        atok_t_pin in = lex_attr_t_pin(attr.name(), report_error);
         if (astate[(int)in] == 0)
             astate[(int)in] = 1;
         else
-            throw std::runtime_error("Duplicate attribute " + std::string(attr.name()) + " in <pin>.");
+            (*report_error)(("Duplicate attribute " + std::string(attr.name()) + " in <pin>.").c_str());
         switch (in) {
             case atok_t_pin::PTC:
-                *ptc = load_int(attr.value());
+                *ptc = load_int(attr.value(), report_error);
                 break;
             default:
                 break; /* Not possible. */
         }
     }
     std::bitset<1> test_astate = astate | std::bitset<1>(0b0);
-    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_pin);
+    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_pin, report_error);
 }
 
-inline void load_pin_class_required_attributes(const pugi::xml_node& root, enum_pin_type* type) {
+inline void load_pin_class_required_attributes(const pugi::xml_node& root, enum_pin_type* type, const std::function<void(const char*)>* report_error) {
     std::bitset<1> astate = 0;
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
-        atok_t_pin_class in = lex_attr_t_pin_class(attr.name());
+        atok_t_pin_class in = lex_attr_t_pin_class(attr.name(), report_error);
         if (astate[(int)in] == 0)
             astate[(int)in] = 1;
         else
-            throw std::runtime_error("Duplicate attribute " + std::string(attr.name()) + " in <pin_class>.");
+            (*report_error)(("Duplicate attribute " + std::string(attr.name()) + " in <pin_class>.").c_str());
         switch (in) {
             case atok_t_pin_class::TYPE:
-                *type = lex_enum_pin_type(attr.value(), true);
+                *type = lex_enum_pin_type(attr.value(), true, report_error);
                 break;
             default:
                 break; /* Not possible. */
         }
     }
     std::bitset<1> test_astate = astate | std::bitset<1>(0b0);
-    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_pin_class);
+    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_pin_class, report_error);
 }
 
-inline void load_block_type_required_attributes(const pugi::xml_node& root, int* height, int* id, int* width) {
+inline void load_block_type_required_attributes(const pugi::xml_node& root, int* height, int* id, int* width, const std::function<void(const char*)>* report_error) {
     std::bitset<4> astate = 0;
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
-        atok_t_block_type in = lex_attr_t_block_type(attr.name());
+        atok_t_block_type in = lex_attr_t_block_type(attr.name(), report_error);
         if (astate[(int)in] == 0)
             astate[(int)in] = 1;
         else
-            throw std::runtime_error("Duplicate attribute " + std::string(attr.name()) + " in <block_type>.");
+            (*report_error)(("Duplicate attribute " + std::string(attr.name()) + " in <block_type>.").c_str());
         switch (in) {
             case atok_t_block_type::HEIGHT:
-                *height = load_int(attr.value());
+                *height = load_int(attr.value(), report_error);
                 break;
             case atok_t_block_type::ID:
-                *id = load_int(attr.value());
+                *id = load_int(attr.value(), report_error);
                 break;
             case atok_t_block_type::NAME:
                 /* Attribute name set after element init */
                 break;
             case atok_t_block_type::WIDTH:
-                *width = load_int(attr.value());
+                *width = load_int(attr.value(), report_error);
                 break;
             default:
                 break; /* Not possible. */
         }
     }
     std::bitset<4> test_astate = astate | std::bitset<4>(0b0000);
-    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_block_type);
+    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_block_type, report_error);
 }
 
-inline void load_grid_loc_required_attributes(const pugi::xml_node& root, int* block_type_id, int* height_offset, int* width_offset, int* x, int* y) {
+inline void load_grid_loc_required_attributes(const pugi::xml_node& root, int* block_type_id, int* height_offset, int* width_offset, int* x, int* y, const std::function<void(const char*)>* report_error) {
     std::bitset<5> astate = 0;
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
-        atok_t_grid_loc in = lex_attr_t_grid_loc(attr.name());
+        atok_t_grid_loc in = lex_attr_t_grid_loc(attr.name(), report_error);
         if (astate[(int)in] == 0)
             astate[(int)in] = 1;
         else
-            throw std::runtime_error("Duplicate attribute " + std::string(attr.name()) + " in <grid_loc>.");
+            (*report_error)(("Duplicate attribute " + std::string(attr.name()) + " in <grid_loc>.").c_str());
         switch (in) {
             case atok_t_grid_loc::BLOCK_TYPE_ID:
-                *block_type_id = load_int(attr.value());
+                *block_type_id = load_int(attr.value(), report_error);
                 break;
             case atok_t_grid_loc::HEIGHT_OFFSET:
-                *height_offset = load_int(attr.value());
+                *height_offset = load_int(attr.value(), report_error);
                 break;
             case atok_t_grid_loc::WIDTH_OFFSET:
-                *width_offset = load_int(attr.value());
+                *width_offset = load_int(attr.value(), report_error);
                 break;
             case atok_t_grid_loc::X:
-                *x = load_int(attr.value());
+                *x = load_int(attr.value(), report_error);
                 break;
             case atok_t_grid_loc::Y:
-                *y = load_int(attr.value());
+                *y = load_int(attr.value(), report_error);
                 break;
             default:
                 break; /* Not possible. */
         }
     }
     std::bitset<5> test_astate = astate | std::bitset<5>(0b00000);
-    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_grid_loc);
+    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_grid_loc, report_error);
 }
 
-inline void load_node_loc_required_attributes(const pugi::xml_node& root, int* ptc, int* xhigh, int* xlow, int* yhigh, int* ylow) {
+inline void load_node_loc_required_attributes(const pugi::xml_node& root, int* ptc, int* xhigh, int* xlow, int* yhigh, int* ylow, const std::function<void(const char*)>* report_error) {
     std::bitset<6> astate = 0;
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
-        atok_t_node_loc in = lex_attr_t_node_loc(attr.name());
+        atok_t_node_loc in = lex_attr_t_node_loc(attr.name(), report_error);
         if (astate[(int)in] == 0)
             astate[(int)in] = 1;
         else
-            throw std::runtime_error("Duplicate attribute " + std::string(attr.name()) + " in <node_loc>.");
+            (*report_error)(("Duplicate attribute " + std::string(attr.name()) + " in <node_loc>.").c_str());
         switch (in) {
             case atok_t_node_loc::PTC:
-                *ptc = load_int(attr.value());
+                *ptc = load_int(attr.value(), report_error);
                 break;
             case atok_t_node_loc::SIDE:
                 /* Attribute side set after element init */
                 break;
             case atok_t_node_loc::XHIGH:
-                *xhigh = load_int(attr.value());
+                *xhigh = load_int(attr.value(), report_error);
                 break;
             case atok_t_node_loc::XLOW:
-                *xlow = load_int(attr.value());
+                *xlow = load_int(attr.value(), report_error);
                 break;
             case atok_t_node_loc::YHIGH:
-                *yhigh = load_int(attr.value());
+                *yhigh = load_int(attr.value(), report_error);
                 break;
             case atok_t_node_loc::YLOW:
-                *ylow = load_int(attr.value());
+                *ylow = load_int(attr.value(), report_error);
                 break;
             default:
                 break; /* Not possible. */
         }
     }
     std::bitset<6> test_astate = astate | std::bitset<6>(0b000010);
-    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_node_loc);
+    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_node_loc, report_error);
 }
 
-inline void load_node_timing_required_attributes(const pugi::xml_node& root, float* C, float* R) {
+inline void load_node_timing_required_attributes(const pugi::xml_node& root, float* C, float* R, const std::function<void(const char*)>* report_error) {
     std::bitset<2> astate = 0;
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
-        atok_t_node_timing in = lex_attr_t_node_timing(attr.name());
+        atok_t_node_timing in = lex_attr_t_node_timing(attr.name(), report_error);
         if (astate[(int)in] == 0)
             astate[(int)in] = 1;
         else
-            throw std::runtime_error("Duplicate attribute " + std::string(attr.name()) + " in <node_timing>.");
+            (*report_error)(("Duplicate attribute " + std::string(attr.name()) + " in <node_timing>.").c_str());
         switch (in) {
             case atok_t_node_timing::C:
-                *C = load_float(attr.value());
+                *C = load_float(attr.value(), report_error);
                 break;
             case atok_t_node_timing::R:
-                *R = load_float(attr.value());
+                *R = load_float(attr.value(), report_error);
                 break;
             default:
                 break; /* Not possible. */
         }
     }
     std::bitset<2> test_astate = astate | std::bitset<2>(0b00);
-    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_node_timing);
+    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_node_timing, report_error);
 }
 
-inline void load_node_segment_required_attributes(const pugi::xml_node& root, int* segment_id) {
+inline void load_node_segment_required_attributes(const pugi::xml_node& root, int* segment_id, const std::function<void(const char*)>* report_error) {
     std::bitset<1> astate = 0;
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
-        atok_t_node_segment in = lex_attr_t_node_segment(attr.name());
+        atok_t_node_segment in = lex_attr_t_node_segment(attr.name(), report_error);
         if (astate[(int)in] == 0)
             astate[(int)in] = 1;
         else
-            throw std::runtime_error("Duplicate attribute " + std::string(attr.name()) + " in <node_segment>.");
+            (*report_error)(("Duplicate attribute " + std::string(attr.name()) + " in <node_segment>.").c_str());
         switch (in) {
             case atok_t_node_segment::SEGMENT_ID:
-                *segment_id = load_int(attr.value());
+                *segment_id = load_int(attr.value(), report_error);
                 break;
             default:
                 break; /* Not possible. */
         }
     }
     std::bitset<1> test_astate = astate | std::bitset<1>(0b0);
-    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_node_segment);
+    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_node_segment, report_error);
 }
 
-inline void load_node_required_attributes(const pugi::xml_node& root, unsigned int* capacity, unsigned int* id, enum_node_type* type) {
+inline void load_node_required_attributes(const pugi::xml_node& root, unsigned int* capacity, unsigned int* id, enum_node_type* type, const std::function<void(const char*)>* report_error) {
     std::bitset<4> astate = 0;
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
-        atok_t_node in = lex_attr_t_node(attr.name());
+        atok_t_node in = lex_attr_t_node(attr.name(), report_error);
         if (astate[(int)in] == 0)
             astate[(int)in] = 1;
         else
-            throw std::runtime_error("Duplicate attribute " + std::string(attr.name()) + " in <node>.");
+            (*report_error)(("Duplicate attribute " + std::string(attr.name()) + " in <node>.").c_str());
         switch (in) {
             case atok_t_node::CAPACITY:
-                *capacity = load_unsigned_int(attr.value());
+                *capacity = load_unsigned_int(attr.value(), report_error);
                 break;
             case atok_t_node::DIRECTION:
                 /* Attribute direction set after element init */
                 break;
             case atok_t_node::ID:
-                *id = load_unsigned_int(attr.value());
+                *id = load_unsigned_int(attr.value(), report_error);
                 break;
             case atok_t_node::TYPE:
-                *type = lex_enum_node_type(attr.value(), true);
+                *type = lex_enum_node_type(attr.value(), true, report_error);
                 break;
             default:
                 break; /* Not possible. */
         }
     }
     std::bitset<4> test_astate = astate | std::bitset<4>(0b0010);
-    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_node);
+    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_node, report_error);
 }
 
-inline void load_edge_required_attributes(const pugi::xml_node& root, unsigned int* sink_node, unsigned int* src_node, unsigned int* switch_id) {
+inline void load_edge_required_attributes(const pugi::xml_node& root, unsigned int* sink_node, unsigned int* src_node, unsigned int* switch_id, const std::function<void(const char*)>* report_error) {
     std::bitset<3> astate = 0;
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
-        atok_t_edge in = lex_attr_t_edge(attr.name());
+        atok_t_edge in = lex_attr_t_edge(attr.name(), report_error);
         if (astate[(int)in] == 0)
             astate[(int)in] = 1;
         else
-            throw std::runtime_error("Duplicate attribute " + std::string(attr.name()) + " in <edge>.");
+            (*report_error)(("Duplicate attribute " + std::string(attr.name()) + " in <edge>.").c_str());
         switch (in) {
             case atok_t_edge::SINK_NODE:
-                *sink_node = load_unsigned_int(attr.value());
+                *sink_node = load_unsigned_int(attr.value(), report_error);
                 break;
             case atok_t_edge::SRC_NODE:
-                *src_node = load_unsigned_int(attr.value());
+                *src_node = load_unsigned_int(attr.value(), report_error);
                 break;
             case atok_t_edge::SWITCH_ID:
-                *switch_id = load_unsigned_int(attr.value());
+                *switch_id = load_unsigned_int(attr.value(), report_error);
                 break;
             default:
                 break; /* Not possible. */
         }
     }
     std::bitset<3> test_astate = astate | std::bitset<3>(0b000);
-    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_edge);
+    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_edge, report_error);
 }
 template<class T, typename Context>
-inline void load_channel(const pugi::xml_node& root, T& out, Context& context) {
+inline void load_channel(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
     (void)root;
     (void)out;
     (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     if (root.first_child().type() == pugi::node_element)
-        throw std::runtime_error("Unexpected child element in <channel>.");
+        (*report_error)("Unexpected child element in <channel>.");
 }
 
 template<class T, typename Context>
-inline void load_x_list(const pugi::xml_node& root, T& out, Context& context) {
+inline void load_x_list(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
     (void)root;
     (void)out;
     (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     if (root.first_child().type() == pugi::node_element)
-        throw std::runtime_error("Unexpected child element in <x_list>.");
+        (*report_error)("Unexpected child element in <x_list>.");
 }
 
 template<class T, typename Context>
-inline void load_y_list(const pugi::xml_node& root, T& out, Context& context) {
+inline void load_y_list(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
     (void)root;
     (void)out;
     (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     if (root.first_child().type() == pugi::node_element)
-        throw std::runtime_error("Unexpected child element in <y_list>.");
+        (*report_error)("Unexpected child element in <y_list>.");
 }
 
 constexpr int NUM_T_CHANNELS_STATES = 4;
@@ -2547,13 +2619,16 @@ constexpr int gstate_t_channels[NUM_T_CHANNELS_STATES][NUM_T_CHANNELS_INPUTS] = 
     {2, -1, -1},
 };
 template<class T, typename Context>
-inline void load_channels(const pugi::xml_node& root, T& out, Context& context) {
+inline void load_channels(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
     (void)root;
     (void)out;
     (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     if (root.first_attribute())
-        throw std::runtime_error("Unexpected attribute in <channels>.");
+        (*report_error)("Unexpected attribute in <channels>.");
 
     // Preallocate arrays by counting child nodes (if any)
     size_t x_list_count = 0;
@@ -2561,10 +2636,11 @@ inline void load_channels(const pugi::xml_node& root, T& out, Context& context) 
     {
         int next, state = 3;
         for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
-            gtok_t_channels in = lex_node_t_channels(node.name());
+            *offset_debug = node.offset_debug();
+            gtok_t_channels in = lex_node_t_channels(node.name(), report_error);
             next = gstate_t_channels[state][(int)in];
             if (next == -1)
-                dfa_error(gtok_lookup_t_channels[(int)in], gstate_t_channels[state], gtok_lookup_t_channels, 3);
+                dfa_error(gtok_lookup_t_channels[(int)in], gstate_t_channels[state], gtok_lookup_t_channels, 3, report_error);
             state = next;
             switch (in) {
                 case gtok_t_channels::CHANNEL:
@@ -2585,10 +2661,11 @@ inline void load_channels(const pugi::xml_node& root, T& out, Context& context) 
     }
     int next, state = 3;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
-        gtok_t_channels in = lex_node_t_channels(node.name());
+        *offset_debug = node.offset_debug();
+        gtok_t_channels in = lex_node_t_channels(node.name(), report_error);
         next = gstate_t_channels[state][(int)in];
         if (next == -1)
-            dfa_error(gtok_lookup_t_channels[(int)in], gstate_t_channels[state], gtok_lookup_t_channels, 3);
+            dfa_error(gtok_lookup_t_channels[(int)in], gstate_t_channels[state], gtok_lookup_t_channels, 3, report_error);
         state = next;
         switch (in) {
             case gtok_t_channels::CHANNEL: {
@@ -2597,57 +2674,60 @@ inline void load_channels(const pugi::xml_node& root, T& out, Context& context) 
                 int channel_x_min;
                 int channel_y_max;
                 int channel_y_min;
-                load_channel_required_attributes(node, &channel_chan_width_max, &channel_x_max, &channel_x_min, &channel_y_max, &channel_y_min);
+                load_channel_required_attributes(node, &channel_chan_width_max, &channel_x_max, &channel_x_min, &channel_y_max, &channel_y_min, report_error);
                 auto child_context = out.init_channels_channel(context, channel_chan_width_max, channel_x_max, channel_x_min, channel_y_max, channel_y_min);
-                load_channel(node, out, child_context);
+                load_channel(node, out, child_context, report_error, offset_debug);
                 out.finish_channels_channel(child_context);
             } break;
             case gtok_t_channels::X_LIST: {
                 unsigned int x_list_index;
                 int x_list_info;
-                load_x_list_required_attributes(node, &x_list_index, &x_list_info);
+                load_x_list_required_attributes(node, &x_list_index, &x_list_info, report_error);
                 auto child_context = out.add_channels_x_list(context, x_list_index, x_list_info);
-                load_x_list(node, out, child_context);
+                load_x_list(node, out, child_context, report_error, offset_debug);
                 out.finish_channels_x_list(child_context);
             } break;
             case gtok_t_channels::Y_LIST: {
                 unsigned int y_list_index;
                 int y_list_info;
-                load_y_list_required_attributes(node, &y_list_index, &y_list_info);
+                load_y_list_required_attributes(node, &y_list_index, &y_list_info, report_error);
                 auto child_context = out.add_channels_y_list(context, y_list_index, y_list_info);
-                load_y_list(node, out, child_context);
+                load_y_list(node, out, child_context, report_error, offset_debug);
                 out.finish_channels_y_list(child_context);
             } break;
             default:
                 break; /* Not possible. */
         }
     }
-    if (state != 0) dfa_error("end of input", gstate_t_channels[state], gtok_lookup_t_channels, 3);
+    if (state != 0) dfa_error("end of input", gstate_t_channels[state], gtok_lookup_t_channels, 3, report_error);
 }
 
 template<class T, typename Context>
-inline void load_timing(const pugi::xml_node& root, T& out, Context& context) {
+inline void load_timing(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
     (void)root;
     (void)out;
     (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
-        atok_t_timing in = lex_attr_t_timing(attr.name());
+        atok_t_timing in = lex_attr_t_timing(attr.name(), report_error);
         switch (in) {
             case atok_t_timing::CIN:
-                out.set_timing_Cin(load_float(attr.value()), context);
+                out.set_timing_Cin(load_float(attr.value(), report_error), context);
                 break;
             case atok_t_timing::CINTERNAL:
-                out.set_timing_Cinternal(load_float(attr.value()), context);
+                out.set_timing_Cinternal(load_float(attr.value(), report_error), context);
                 break;
             case atok_t_timing::COUT:
-                out.set_timing_Cout(load_float(attr.value()), context);
+                out.set_timing_Cout(load_float(attr.value(), report_error), context);
                 break;
             case atok_t_timing::R:
-                out.set_timing_R(load_float(attr.value()), context);
+                out.set_timing_R(load_float(attr.value(), report_error), context);
                 break;
             case atok_t_timing::TDEL:
-                out.set_timing_Tdel(load_float(attr.value()), context);
+                out.set_timing_Tdel(load_float(attr.value(), report_error), context);
                 break;
             default:
                 break; /* Not possible. */
@@ -2655,27 +2735,33 @@ inline void load_timing(const pugi::xml_node& root, T& out, Context& context) {
     }
 
     if (root.first_child().type() == pugi::node_element)
-        throw std::runtime_error("Unexpected child element in <timing>.");
+        (*report_error)("Unexpected child element in <timing>.");
 }
 
 template<class T, typename Context>
-inline void load_sizing(const pugi::xml_node& root, T& out, Context& context) {
+inline void load_sizing(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
     (void)root;
     (void)out;
     (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     if (root.first_child().type() == pugi::node_element)
-        throw std::runtime_error("Unexpected child element in <sizing>.");
+        (*report_error)("Unexpected child element in <sizing>.");
 }
 
 template<class T, typename Context>
-inline void load_switch(const pugi::xml_node& root, T& out, Context& context) {
+inline void load_switch(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
     (void)root;
     (void)out;
     (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
-        atok_t_switch in = lex_attr_t_switch(attr.name());
+        atok_t_switch in = lex_attr_t_switch(attr.name(), report_error);
         switch (in) {
             case atok_t_switch::ID:
                 /* Attribute id is already set */
@@ -2684,7 +2770,7 @@ inline void load_switch(const pugi::xml_node& root, T& out, Context& context) {
                 out.set_switch_name(attr.value(), context);
                 break;
             case atok_t_switch::TYPE:
-                out.set_switch_type(lex_enum_switch_type(attr.value(), true), context);
+                out.set_switch_type(lex_enum_switch_type(attr.value(), true, report_error), context);
                 break;
             default:
                 break; /* Not possible. */
@@ -2693,23 +2779,24 @@ inline void load_switch(const pugi::xml_node& root, T& out, Context& context) {
 
     std::bitset<2> gstate = 0;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
-        gtok_t_switch in = lex_node_t_switch(node.name());
+        *offset_debug = node.offset_debug();
+        gtok_t_switch in = lex_node_t_switch(node.name(), report_error);
         if (gstate[(int)in] == 0)
             gstate[(int)in] = 1;
         else
-            throw std::runtime_error("Duplicate element " + std::string(node.name()) + " in <switch>.");
+            (*report_error)(("Duplicate element " + std::string(node.name()) + " in <switch>.").c_str());
         switch (in) {
             case gtok_t_switch::TIMING: {
                 auto child_context = out.init_switch_timing(context);
-                load_timing(node, out, child_context);
+                load_timing(node, out, child_context, report_error, offset_debug);
                 out.finish_switch_timing(child_context);
             } break;
             case gtok_t_switch::SIZING: {
                 float sizing_buf_size;
                 float sizing_mux_trans_size;
-                load_sizing_required_attributes(node, &sizing_buf_size, &sizing_mux_trans_size);
+                load_sizing_required_attributes(node, &sizing_buf_size, &sizing_mux_trans_size, report_error);
                 auto child_context = out.init_switch_sizing(context, sizing_buf_size, sizing_mux_trans_size);
-                load_sizing(node, out, child_context);
+                load_sizing(node, out, child_context, report_error, offset_debug);
                 out.finish_switch_sizing(child_context);
             } break;
             default:
@@ -2717,7 +2804,7 @@ inline void load_switch(const pugi::xml_node& root, T& out, Context& context) {
         }
     }
     std::bitset<2> test_gstate = gstate | std::bitset<2>(0b01);
-    if (!test_gstate.all()) all_error(test_gstate, gtok_lookup_t_switch);
+    if (!test_gstate.all()) all_error(test_gstate, gtok_lookup_t_switch, report_error);
 }
 
 constexpr int NUM_T_SWITCHES_STATES = 2;
@@ -2727,23 +2814,27 @@ constexpr int gstate_t_switches[NUM_T_SWITCHES_STATES][NUM_T_SWITCHES_INPUTS] = 
     {0},
 };
 template<class T, typename Context>
-inline void load_switches(const pugi::xml_node& root, T& out, Context& context) {
+inline void load_switches(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
     (void)root;
     (void)out;
     (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     if (root.first_attribute())
-        throw std::runtime_error("Unexpected attribute in <switches>.");
+        (*report_error)("Unexpected attribute in <switches>.");
 
     // Preallocate arrays by counting child nodes (if any)
     size_t switch_count = 0;
     {
         int next, state = 1;
         for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
-            gtok_t_switches in = lex_node_t_switches(node.name());
+            *offset_debug = node.offset_debug();
+            gtok_t_switches in = lex_node_t_switches(node.name(), report_error);
             next = gstate_t_switches[state][(int)in];
             if (next == -1)
-                dfa_error(gtok_lookup_t_switches[(int)in], gstate_t_switches[state], gtok_lookup_t_switches, 1);
+                dfa_error(gtok_lookup_t_switches[(int)in], gstate_t_switches[state], gtok_lookup_t_switches, 1, report_error);
             state = next;
             switch (in) {
                 case gtok_t_switches::SWITCH:
@@ -2758,40 +2849,44 @@ inline void load_switches(const pugi::xml_node& root, T& out, Context& context) 
     }
     int next, state = 1;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
-        gtok_t_switches in = lex_node_t_switches(node.name());
+        *offset_debug = node.offset_debug();
+        gtok_t_switches in = lex_node_t_switches(node.name(), report_error);
         next = gstate_t_switches[state][(int)in];
         if (next == -1)
-            dfa_error(gtok_lookup_t_switches[(int)in], gstate_t_switches[state], gtok_lookup_t_switches, 1);
+            dfa_error(gtok_lookup_t_switches[(int)in], gstate_t_switches[state], gtok_lookup_t_switches, 1, report_error);
         state = next;
         switch (in) {
             case gtok_t_switches::SWITCH: {
                 int switch_id;
-                load_switch_required_attributes(node, &switch_id);
+                load_switch_required_attributes(node, &switch_id, report_error);
                 auto child_context = out.add_switches_switch(context, switch_id);
-                load_switch(node, out, child_context);
+                load_switch(node, out, child_context, report_error, offset_debug);
                 out.finish_switches_switch(child_context);
             } break;
             default:
                 break; /* Not possible. */
         }
     }
-    if (state != 0) dfa_error("end of input", gstate_t_switches[state], gtok_lookup_t_switches, 1);
+    if (state != 0) dfa_error("end of input", gstate_t_switches[state], gtok_lookup_t_switches, 1, report_error);
 }
 
 template<class T, typename Context>
-inline void load_segment_timing(const pugi::xml_node& root, T& out, Context& context) {
+inline void load_segment_timing(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
     (void)root;
     (void)out;
     (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
-        atok_t_segment_timing in = lex_attr_t_segment_timing(attr.name());
+        atok_t_segment_timing in = lex_attr_t_segment_timing(attr.name(), report_error);
         switch (in) {
             case atok_t_segment_timing::C_PER_METER:
-                out.set_segment_timing_C_per_meter(load_float(attr.value()), context);
+                out.set_segment_timing_C_per_meter(load_float(attr.value(), report_error), context);
                 break;
             case atok_t_segment_timing::R_PER_METER:
-                out.set_segment_timing_R_per_meter(load_float(attr.value()), context);
+                out.set_segment_timing_R_per_meter(load_float(attr.value(), report_error), context);
                 break;
             default:
                 break; /* Not possible. */
@@ -2799,17 +2894,20 @@ inline void load_segment_timing(const pugi::xml_node& root, T& out, Context& con
     }
 
     if (root.first_child().type() == pugi::node_element)
-        throw std::runtime_error("Unexpected child element in <segment_timing>.");
+        (*report_error)("Unexpected child element in <segment_timing>.");
 }
 
 template<class T, typename Context>
-inline void load_segment(const pugi::xml_node& root, T& out, Context& context) {
+inline void load_segment(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
     (void)root;
     (void)out;
     (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
-        atok_t_segment in = lex_attr_t_segment(attr.name());
+        atok_t_segment in = lex_attr_t_segment(attr.name(), report_error);
         switch (in) {
             case atok_t_segment::ID:
                 /* Attribute id is already set */
@@ -2824,15 +2922,16 @@ inline void load_segment(const pugi::xml_node& root, T& out, Context& context) {
 
     std::bitset<1> gstate = 0;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
-        gtok_t_segment in = lex_node_t_segment(node.name());
+        *offset_debug = node.offset_debug();
+        gtok_t_segment in = lex_node_t_segment(node.name(), report_error);
         if (gstate[(int)in] == 0)
             gstate[(int)in] = 1;
         else
-            throw std::runtime_error("Duplicate element " + std::string(node.name()) + " in <segment>.");
+            (*report_error)(("Duplicate element " + std::string(node.name()) + " in <segment>.").c_str());
         switch (in) {
             case gtok_t_segment::TIMING: {
                 auto child_context = out.init_segment_timing(context);
-                load_segment_timing(node, out, child_context);
+                load_segment_timing(node, out, child_context, report_error, offset_debug);
                 out.finish_segment_timing(child_context);
             } break;
             default:
@@ -2840,7 +2939,7 @@ inline void load_segment(const pugi::xml_node& root, T& out, Context& context) {
         }
     }
     std::bitset<1> test_gstate = gstate | std::bitset<1>(0b1);
-    if (!test_gstate.all()) all_error(test_gstate, gtok_lookup_t_segment);
+    if (!test_gstate.all()) all_error(test_gstate, gtok_lookup_t_segment, report_error);
 }
 
 constexpr int NUM_T_SEGMENTS_STATES = 2;
@@ -2850,23 +2949,27 @@ constexpr int gstate_t_segments[NUM_T_SEGMENTS_STATES][NUM_T_SEGMENTS_INPUTS] = 
     {0},
 };
 template<class T, typename Context>
-inline void load_segments(const pugi::xml_node& root, T& out, Context& context) {
+inline void load_segments(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
     (void)root;
     (void)out;
     (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     if (root.first_attribute())
-        throw std::runtime_error("Unexpected attribute in <segments>.");
+        (*report_error)("Unexpected attribute in <segments>.");
 
     // Preallocate arrays by counting child nodes (if any)
     size_t segment_count = 0;
     {
         int next, state = 1;
         for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
-            gtok_t_segments in = lex_node_t_segments(node.name());
+            *offset_debug = node.offset_debug();
+            gtok_t_segments in = lex_node_t_segments(node.name(), report_error);
             next = gstate_t_segments[state][(int)in];
             if (next == -1)
-                dfa_error(gtok_lookup_t_segments[(int)in], gstate_t_segments[state], gtok_lookup_t_segments, 1);
+                dfa_error(gtok_lookup_t_segments[(int)in], gstate_t_segments[state], gtok_lookup_t_segments, 1, report_error);
             state = next;
             switch (in) {
                 case gtok_t_segments::SEGMENT:
@@ -2881,35 +2984,39 @@ inline void load_segments(const pugi::xml_node& root, T& out, Context& context) 
     }
     int next, state = 1;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
-        gtok_t_segments in = lex_node_t_segments(node.name());
+        *offset_debug = node.offset_debug();
+        gtok_t_segments in = lex_node_t_segments(node.name(), report_error);
         next = gstate_t_segments[state][(int)in];
         if (next == -1)
-            dfa_error(gtok_lookup_t_segments[(int)in], gstate_t_segments[state], gtok_lookup_t_segments, 1);
+            dfa_error(gtok_lookup_t_segments[(int)in], gstate_t_segments[state], gtok_lookup_t_segments, 1, report_error);
         state = next;
         switch (in) {
             case gtok_t_segments::SEGMENT: {
                 int segment_id;
-                load_segment_required_attributes(node, &segment_id);
+                load_segment_required_attributes(node, &segment_id, report_error);
                 auto child_context = out.add_segments_segment(context, segment_id);
-                load_segment(node, out, child_context);
+                load_segment(node, out, child_context, report_error, offset_debug);
                 out.finish_segments_segment(child_context);
             } break;
             default:
                 break; /* Not possible. */
         }
     }
-    if (state != 0) dfa_error("end of input", gstate_t_segments[state], gtok_lookup_t_segments, 1);
+    if (state != 0) dfa_error("end of input", gstate_t_segments[state], gtok_lookup_t_segments, 1, report_error);
 }
 
 template<class T, typename Context>
-inline void load_pin(const pugi::xml_node& root, T& out, Context& context) {
+inline void load_pin(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
     (void)root;
     (void)out;
     (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     out.set_pin_value(root.child_value(), context);
     if (root.first_child().type() == pugi::node_element)
-        throw std::runtime_error("Unexpected child element in <pin>.");
+        (*report_error)("Unexpected child element in <pin>.");
 }
 
 constexpr int NUM_T_PIN_CLASS_STATES = 2;
@@ -2919,20 +3026,24 @@ constexpr int gstate_t_pin_class[NUM_T_PIN_CLASS_STATES][NUM_T_PIN_CLASS_INPUTS]
     {0},
 };
 template<class T, typename Context>
-inline void load_pin_class(const pugi::xml_node& root, T& out, Context& context) {
+inline void load_pin_class(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
     (void)root;
     (void)out;
     (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     // Preallocate arrays by counting child nodes (if any)
     size_t pin_count = 0;
     {
         int next, state = 1;
         for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
-            gtok_t_pin_class in = lex_node_t_pin_class(node.name());
+            *offset_debug = node.offset_debug();
+            gtok_t_pin_class in = lex_node_t_pin_class(node.name(), report_error);
             next = gstate_t_pin_class[state][(int)in];
             if (next == -1)
-                dfa_error(gtok_lookup_t_pin_class[(int)in], gstate_t_pin_class[state], gtok_lookup_t_pin_class, 1);
+                dfa_error(gtok_lookup_t_pin_class[(int)in], gstate_t_pin_class[state], gtok_lookup_t_pin_class, 1, report_error);
             state = next;
             switch (in) {
                 case gtok_t_pin_class::PIN:
@@ -2947,24 +3058,25 @@ inline void load_pin_class(const pugi::xml_node& root, T& out, Context& context)
     }
     int next, state = 1;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
-        gtok_t_pin_class in = lex_node_t_pin_class(node.name());
+        *offset_debug = node.offset_debug();
+        gtok_t_pin_class in = lex_node_t_pin_class(node.name(), report_error);
         next = gstate_t_pin_class[state][(int)in];
         if (next == -1)
-            dfa_error(gtok_lookup_t_pin_class[(int)in], gstate_t_pin_class[state], gtok_lookup_t_pin_class, 1);
+            dfa_error(gtok_lookup_t_pin_class[(int)in], gstate_t_pin_class[state], gtok_lookup_t_pin_class, 1, report_error);
         state = next;
         switch (in) {
             case gtok_t_pin_class::PIN: {
                 int pin_ptc;
-                load_pin_required_attributes(node, &pin_ptc);
+                load_pin_required_attributes(node, &pin_ptc, report_error);
                 auto child_context = out.add_pin_class_pin(context, pin_ptc);
-                load_pin(node, out, child_context);
+                load_pin(node, out, child_context, report_error, offset_debug);
                 out.finish_pin_class_pin(child_context);
             } break;
             default:
                 break; /* Not possible. */
         }
     }
-    if (state != 0) dfa_error("end of input", gstate_t_pin_class[state], gtok_lookup_t_pin_class, 1);
+    if (state != 0) dfa_error("end of input", gstate_t_pin_class[state], gtok_lookup_t_pin_class, 1, report_error);
 }
 
 constexpr int NUM_T_BLOCK_TYPE_STATES = 1;
@@ -2973,13 +3085,16 @@ constexpr int gstate_t_block_type[NUM_T_BLOCK_TYPE_STATES][NUM_T_BLOCK_TYPE_INPU
     {0},
 };
 template<class T, typename Context>
-inline void load_block_type(const pugi::xml_node& root, T& out, Context& context) {
+inline void load_block_type(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
     (void)root;
     (void)out;
     (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
-        atok_t_block_type in = lex_attr_t_block_type(attr.name());
+        atok_t_block_type in = lex_attr_t_block_type(attr.name(), report_error);
         switch (in) {
             case atok_t_block_type::HEIGHT:
                 /* Attribute height is already set */
@@ -3003,10 +3118,11 @@ inline void load_block_type(const pugi::xml_node& root, T& out, Context& context
     {
         int next, state = 0;
         for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
-            gtok_t_block_type in = lex_node_t_block_type(node.name());
+            *offset_debug = node.offset_debug();
+            gtok_t_block_type in = lex_node_t_block_type(node.name(), report_error);
             next = gstate_t_block_type[state][(int)in];
             if (next == -1)
-                dfa_error(gtok_lookup_t_block_type[(int)in], gstate_t_block_type[state], gtok_lookup_t_block_type, 1);
+                dfa_error(gtok_lookup_t_block_type[(int)in], gstate_t_block_type[state], gtok_lookup_t_block_type, 1, report_error);
             state = next;
             switch (in) {
                 case gtok_t_block_type::PIN_CLASS:
@@ -3021,24 +3137,25 @@ inline void load_block_type(const pugi::xml_node& root, T& out, Context& context
     }
     int next, state = 0;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
-        gtok_t_block_type in = lex_node_t_block_type(node.name());
+        *offset_debug = node.offset_debug();
+        gtok_t_block_type in = lex_node_t_block_type(node.name(), report_error);
         next = gstate_t_block_type[state][(int)in];
         if (next == -1)
-            dfa_error(gtok_lookup_t_block_type[(int)in], gstate_t_block_type[state], gtok_lookup_t_block_type, 1);
+            dfa_error(gtok_lookup_t_block_type[(int)in], gstate_t_block_type[state], gtok_lookup_t_block_type, 1, report_error);
         state = next;
         switch (in) {
             case gtok_t_block_type::PIN_CLASS: {
                 enum_pin_type pin_class_type;
-                load_pin_class_required_attributes(node, &pin_class_type);
+                load_pin_class_required_attributes(node, &pin_class_type, report_error);
                 auto child_context = out.add_block_type_pin_class(context, pin_class_type);
-                load_pin_class(node, out, child_context);
+                load_pin_class(node, out, child_context, report_error, offset_debug);
                 out.finish_block_type_pin_class(child_context);
             } break;
             default:
                 break; /* Not possible. */
         }
     }
-    if (state != 0) dfa_error("end of input", gstate_t_block_type[state], gtok_lookup_t_block_type, 1);
+    if (state != 0) dfa_error("end of input", gstate_t_block_type[state], gtok_lookup_t_block_type, 1, report_error);
 }
 
 constexpr int NUM_T_BLOCK_TYPES_STATES = 2;
@@ -3048,23 +3165,27 @@ constexpr int gstate_t_block_types[NUM_T_BLOCK_TYPES_STATES][NUM_T_BLOCK_TYPES_I
     {0},
 };
 template<class T, typename Context>
-inline void load_block_types(const pugi::xml_node& root, T& out, Context& context) {
+inline void load_block_types(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
     (void)root;
     (void)out;
     (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     if (root.first_attribute())
-        throw std::runtime_error("Unexpected attribute in <block_types>.");
+        (*report_error)("Unexpected attribute in <block_types>.");
 
     // Preallocate arrays by counting child nodes (if any)
     size_t block_type_count = 0;
     {
         int next, state = 1;
         for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
-            gtok_t_block_types in = lex_node_t_block_types(node.name());
+            *offset_debug = node.offset_debug();
+            gtok_t_block_types in = lex_node_t_block_types(node.name(), report_error);
             next = gstate_t_block_types[state][(int)in];
             if (next == -1)
-                dfa_error(gtok_lookup_t_block_types[(int)in], gstate_t_block_types[state], gtok_lookup_t_block_types, 1);
+                dfa_error(gtok_lookup_t_block_types[(int)in], gstate_t_block_types[state], gtok_lookup_t_block_types, 1, report_error);
             state = next;
             switch (in) {
                 case gtok_t_block_types::BLOCK_TYPE:
@@ -3079,36 +3200,40 @@ inline void load_block_types(const pugi::xml_node& root, T& out, Context& contex
     }
     int next, state = 1;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
-        gtok_t_block_types in = lex_node_t_block_types(node.name());
+        *offset_debug = node.offset_debug();
+        gtok_t_block_types in = lex_node_t_block_types(node.name(), report_error);
         next = gstate_t_block_types[state][(int)in];
         if (next == -1)
-            dfa_error(gtok_lookup_t_block_types[(int)in], gstate_t_block_types[state], gtok_lookup_t_block_types, 1);
+            dfa_error(gtok_lookup_t_block_types[(int)in], gstate_t_block_types[state], gtok_lookup_t_block_types, 1, report_error);
         state = next;
         switch (in) {
             case gtok_t_block_types::BLOCK_TYPE: {
                 int block_type_height;
                 int block_type_id;
                 int block_type_width;
-                load_block_type_required_attributes(node, &block_type_height, &block_type_id, &block_type_width);
+                load_block_type_required_attributes(node, &block_type_height, &block_type_id, &block_type_width, report_error);
                 auto child_context = out.add_block_types_block_type(context, block_type_height, block_type_id, block_type_width);
-                load_block_type(node, out, child_context);
+                load_block_type(node, out, child_context, report_error, offset_debug);
                 out.finish_block_types_block_type(child_context);
             } break;
             default:
                 break; /* Not possible. */
         }
     }
-    if (state != 0) dfa_error("end of input", gstate_t_block_types[state], gtok_lookup_t_block_types, 1);
+    if (state != 0) dfa_error("end of input", gstate_t_block_types[state], gtok_lookup_t_block_types, 1, report_error);
 }
 
 template<class T, typename Context>
-inline void load_grid_loc(const pugi::xml_node& root, T& out, Context& context) {
+inline void load_grid_loc(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
     (void)root;
     (void)out;
     (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     if (root.first_child().type() == pugi::node_element)
-        throw std::runtime_error("Unexpected child element in <grid_loc>.");
+        (*report_error)("Unexpected child element in <grid_loc>.");
 }
 
 constexpr int NUM_T_GRID_LOCS_STATES = 2;
@@ -3118,23 +3243,27 @@ constexpr int gstate_t_grid_locs[NUM_T_GRID_LOCS_STATES][NUM_T_GRID_LOCS_INPUTS]
     {0},
 };
 template<class T, typename Context>
-inline void load_grid_locs(const pugi::xml_node& root, T& out, Context& context) {
+inline void load_grid_locs(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
     (void)root;
     (void)out;
     (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     if (root.first_attribute())
-        throw std::runtime_error("Unexpected attribute in <grid_locs>.");
+        (*report_error)("Unexpected attribute in <grid_locs>.");
 
     // Preallocate arrays by counting child nodes (if any)
     size_t grid_loc_count = 0;
     {
         int next, state = 1;
         for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
-            gtok_t_grid_locs in = lex_node_t_grid_locs(node.name());
+            *offset_debug = node.offset_debug();
+            gtok_t_grid_locs in = lex_node_t_grid_locs(node.name(), report_error);
             next = gstate_t_grid_locs[state][(int)in];
             if (next == -1)
-                dfa_error(gtok_lookup_t_grid_locs[(int)in], gstate_t_grid_locs[state], gtok_lookup_t_grid_locs, 1);
+                dfa_error(gtok_lookup_t_grid_locs[(int)in], gstate_t_grid_locs[state], gtok_lookup_t_grid_locs, 1, report_error);
             state = next;
             switch (in) {
                 case gtok_t_grid_locs::GRID_LOC:
@@ -3149,10 +3278,11 @@ inline void load_grid_locs(const pugi::xml_node& root, T& out, Context& context)
     }
     int next, state = 1;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
-        gtok_t_grid_locs in = lex_node_t_grid_locs(node.name());
+        *offset_debug = node.offset_debug();
+        gtok_t_grid_locs in = lex_node_t_grid_locs(node.name(), report_error);
         next = gstate_t_grid_locs[state][(int)in];
         if (next == -1)
-            dfa_error(gtok_lookup_t_grid_locs[(int)in], gstate_t_grid_locs[state], gtok_lookup_t_grid_locs, 1);
+            dfa_error(gtok_lookup_t_grid_locs[(int)in], gstate_t_grid_locs[state], gtok_lookup_t_grid_locs, 1, report_error);
         state = next;
         switch (in) {
             case gtok_t_grid_locs::GRID_LOC: {
@@ -3161,32 +3291,35 @@ inline void load_grid_locs(const pugi::xml_node& root, T& out, Context& context)
                 int grid_loc_width_offset;
                 int grid_loc_x;
                 int grid_loc_y;
-                load_grid_loc_required_attributes(node, &grid_loc_block_type_id, &grid_loc_height_offset, &grid_loc_width_offset, &grid_loc_x, &grid_loc_y);
+                load_grid_loc_required_attributes(node, &grid_loc_block_type_id, &grid_loc_height_offset, &grid_loc_width_offset, &grid_loc_x, &grid_loc_y, report_error);
                 auto child_context = out.add_grid_locs_grid_loc(context, grid_loc_block_type_id, grid_loc_height_offset, grid_loc_width_offset, grid_loc_x, grid_loc_y);
-                load_grid_loc(node, out, child_context);
+                load_grid_loc(node, out, child_context, report_error, offset_debug);
                 out.finish_grid_locs_grid_loc(child_context);
             } break;
             default:
                 break; /* Not possible. */
         }
     }
-    if (state != 0) dfa_error("end of input", gstate_t_grid_locs[state], gtok_lookup_t_grid_locs, 1);
+    if (state != 0) dfa_error("end of input", gstate_t_grid_locs[state], gtok_lookup_t_grid_locs, 1, report_error);
 }
 
 template<class T, typename Context>
-inline void load_node_loc(const pugi::xml_node& root, T& out, Context& context) {
+inline void load_node_loc(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
     (void)root;
     (void)out;
     (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
-        atok_t_node_loc in = lex_attr_t_node_loc(attr.name());
+        atok_t_node_loc in = lex_attr_t_node_loc(attr.name(), report_error);
         switch (in) {
             case atok_t_node_loc::PTC:
                 /* Attribute ptc is already set */
                 break;
             case atok_t_node_loc::SIDE:
-                out.set_node_loc_side(lex_enum_loc_side(attr.value(), true), context);
+                out.set_node_loc_side(lex_enum_loc_side(attr.value(), true, report_error), context);
                 break;
             case atok_t_node_loc::XHIGH:
                 /* Attribute xhigh is already set */
@@ -3206,37 +3339,46 @@ inline void load_node_loc(const pugi::xml_node& root, T& out, Context& context) 
     }
 
     if (root.first_child().type() == pugi::node_element)
-        throw std::runtime_error("Unexpected child element in <node_loc>.");
+        (*report_error)("Unexpected child element in <node_loc>.");
 }
 
 template<class T, typename Context>
-inline void load_node_timing(const pugi::xml_node& root, T& out, Context& context) {
+inline void load_node_timing(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
     (void)root;
     (void)out;
     (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     if (root.first_child().type() == pugi::node_element)
-        throw std::runtime_error("Unexpected child element in <node_timing>.");
+        (*report_error)("Unexpected child element in <node_timing>.");
 }
 
 template<class T, typename Context>
-inline void load_node_segment(const pugi::xml_node& root, T& out, Context& context) {
+inline void load_node_segment(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
     (void)root;
     (void)out;
     (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     if (root.first_child().type() == pugi::node_element)
-        throw std::runtime_error("Unexpected child element in <node_segment>.");
+        (*report_error)("Unexpected child element in <node_segment>.");
 }
 
 template<class T, typename Context>
-inline void load_meta(const pugi::xml_node& root, T& out, Context& context) {
+inline void load_meta(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
     (void)root;
     (void)out;
     (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
-        atok_t_meta in = lex_attr_t_meta(attr.name());
+        atok_t_meta in = lex_attr_t_meta(attr.name(), report_error);
         switch (in) {
             case atok_t_meta::NAME:
                 out.set_meta_name(attr.value(), context);
@@ -3248,7 +3390,7 @@ inline void load_meta(const pugi::xml_node& root, T& out, Context& context) {
 
     out.set_meta_value(root.child_value(), context);
     if (root.first_child().type() == pugi::node_element)
-        throw std::runtime_error("Unexpected child element in <meta>.");
+        (*report_error)("Unexpected child element in <meta>.");
 }
 
 constexpr int NUM_T_METADATA_STATES = 2;
@@ -3258,23 +3400,27 @@ constexpr int gstate_t_metadata[NUM_T_METADATA_STATES][NUM_T_METADATA_INPUTS] = 
     {0},
 };
 template<class T, typename Context>
-inline void load_metadata(const pugi::xml_node& root, T& out, Context& context) {
+inline void load_metadata(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
     (void)root;
     (void)out;
     (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     if (root.first_attribute())
-        throw std::runtime_error("Unexpected attribute in <metadata>.");
+        (*report_error)("Unexpected attribute in <metadata>.");
 
     // Preallocate arrays by counting child nodes (if any)
     size_t meta_count = 0;
     {
         int next, state = 1;
         for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
-            gtok_t_metadata in = lex_node_t_metadata(node.name());
+            *offset_debug = node.offset_debug();
+            gtok_t_metadata in = lex_node_t_metadata(node.name(), report_error);
             next = gstate_t_metadata[state][(int)in];
             if (next == -1)
-                dfa_error(gtok_lookup_t_metadata[(int)in], gstate_t_metadata[state], gtok_lookup_t_metadata, 1);
+                dfa_error(gtok_lookup_t_metadata[(int)in], gstate_t_metadata[state], gtok_lookup_t_metadata, 1, report_error);
             state = next;
             switch (in) {
                 case gtok_t_metadata::META:
@@ -3289,38 +3435,42 @@ inline void load_metadata(const pugi::xml_node& root, T& out, Context& context) 
     }
     int next, state = 1;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
-        gtok_t_metadata in = lex_node_t_metadata(node.name());
+        *offset_debug = node.offset_debug();
+        gtok_t_metadata in = lex_node_t_metadata(node.name(), report_error);
         next = gstate_t_metadata[state][(int)in];
         if (next == -1)
-            dfa_error(gtok_lookup_t_metadata[(int)in], gstate_t_metadata[state], gtok_lookup_t_metadata, 1);
+            dfa_error(gtok_lookup_t_metadata[(int)in], gstate_t_metadata[state], gtok_lookup_t_metadata, 1, report_error);
         state = next;
         switch (in) {
             case gtok_t_metadata::META: {
                 auto child_context = out.add_metadata_meta(context);
-                load_meta(node, out, child_context);
+                load_meta(node, out, child_context, report_error, offset_debug);
                 out.finish_metadata_meta(child_context);
             } break;
             default:
                 break; /* Not possible. */
         }
     }
-    if (state != 0) dfa_error("end of input", gstate_t_metadata[state], gtok_lookup_t_metadata, 1);
+    if (state != 0) dfa_error("end of input", gstate_t_metadata[state], gtok_lookup_t_metadata, 1, report_error);
 }
 
 template<class T, typename Context>
-inline void load_node(const pugi::xml_node& root, T& out, Context& context) {
+inline void load_node(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
     (void)root;
     (void)out;
     (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
-        atok_t_node in = lex_attr_t_node(attr.name());
+        atok_t_node in = lex_attr_t_node(attr.name(), report_error);
         switch (in) {
             case atok_t_node::CAPACITY:
                 /* Attribute capacity is already set */
                 break;
             case atok_t_node::DIRECTION:
-                out.set_node_direction(lex_enum_node_direction(attr.value(), true), context);
+                out.set_node_direction(lex_enum_node_direction(attr.value(), true, report_error), context);
                 break;
             case atok_t_node::ID:
                 /* Attribute id is already set */
@@ -3335,11 +3485,12 @@ inline void load_node(const pugi::xml_node& root, T& out, Context& context) {
 
     std::bitset<4> gstate = 0;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
-        gtok_t_node in = lex_node_t_node(node.name());
+        *offset_debug = node.offset_debug();
+        gtok_t_node in = lex_node_t_node(node.name(), report_error);
         if (gstate[(int)in] == 0)
             gstate[(int)in] = 1;
         else
-            throw std::runtime_error("Duplicate element " + std::string(node.name()) + " in <node>.");
+            (*report_error)(("Duplicate element " + std::string(node.name()) + " in <node>.").c_str());
         switch (in) {
             case gtok_t_node::LOC: {
                 int node_loc_ptc;
@@ -3347,29 +3498,29 @@ inline void load_node(const pugi::xml_node& root, T& out, Context& context) {
                 int node_loc_xlow;
                 int node_loc_yhigh;
                 int node_loc_ylow;
-                load_node_loc_required_attributes(node, &node_loc_ptc, &node_loc_xhigh, &node_loc_xlow, &node_loc_yhigh, &node_loc_ylow);
+                load_node_loc_required_attributes(node, &node_loc_ptc, &node_loc_xhigh, &node_loc_xlow, &node_loc_yhigh, &node_loc_ylow, report_error);
                 auto child_context = out.init_node_loc(context, node_loc_ptc, node_loc_xhigh, node_loc_xlow, node_loc_yhigh, node_loc_ylow);
-                load_node_loc(node, out, child_context);
+                load_node_loc(node, out, child_context, report_error, offset_debug);
                 out.finish_node_loc(child_context);
             } break;
             case gtok_t_node::TIMING: {
                 float node_timing_C;
                 float node_timing_R;
-                load_node_timing_required_attributes(node, &node_timing_C, &node_timing_R);
+                load_node_timing_required_attributes(node, &node_timing_C, &node_timing_R, report_error);
                 auto child_context = out.init_node_timing(context, node_timing_C, node_timing_R);
-                load_node_timing(node, out, child_context);
+                load_node_timing(node, out, child_context, report_error, offset_debug);
                 out.finish_node_timing(child_context);
             } break;
             case gtok_t_node::SEGMENT: {
                 int node_segment_segment_id;
-                load_node_segment_required_attributes(node, &node_segment_segment_id);
+                load_node_segment_required_attributes(node, &node_segment_segment_id, report_error);
                 auto child_context = out.init_node_segment(context, node_segment_segment_id);
-                load_node_segment(node, out, child_context);
+                load_node_segment(node, out, child_context, report_error, offset_debug);
                 out.finish_node_segment(child_context);
             } break;
             case gtok_t_node::METADATA: {
                 auto child_context = out.init_node_metadata(context);
-                load_metadata(node, out, child_context);
+                load_metadata(node, out, child_context, report_error, offset_debug);
                 out.finish_node_metadata(child_context);
             } break;
             default:
@@ -3377,7 +3528,7 @@ inline void load_node(const pugi::xml_node& root, T& out, Context& context) {
         }
     }
     std::bitset<4> test_gstate = gstate | std::bitset<4>(0b1110);
-    if (!test_gstate.all()) all_error(test_gstate, gtok_lookup_t_node);
+    if (!test_gstate.all()) all_error(test_gstate, gtok_lookup_t_node, report_error);
 }
 
 constexpr int NUM_T_RR_NODES_STATES = 2;
@@ -3387,23 +3538,27 @@ constexpr int gstate_t_rr_nodes[NUM_T_RR_NODES_STATES][NUM_T_RR_NODES_INPUTS] = 
     {0},
 };
 template<class T, typename Context>
-inline void load_rr_nodes(const pugi::xml_node& root, T& out, Context& context) {
+inline void load_rr_nodes(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
     (void)root;
     (void)out;
     (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     if (root.first_attribute())
-        throw std::runtime_error("Unexpected attribute in <rr_nodes>.");
+        (*report_error)("Unexpected attribute in <rr_nodes>.");
 
     // Preallocate arrays by counting child nodes (if any)
     size_t node_count = 0;
     {
         int next, state = 1;
         for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
-            gtok_t_rr_nodes in = lex_node_t_rr_nodes(node.name());
+            *offset_debug = node.offset_debug();
+            gtok_t_rr_nodes in = lex_node_t_rr_nodes(node.name(), report_error);
             next = gstate_t_rr_nodes[state][(int)in];
             if (next == -1)
-                dfa_error(gtok_lookup_t_rr_nodes[(int)in], gstate_t_rr_nodes[state], gtok_lookup_t_rr_nodes, 1);
+                dfa_error(gtok_lookup_t_rr_nodes[(int)in], gstate_t_rr_nodes[state], gtok_lookup_t_rr_nodes, 1, report_error);
             state = next;
             switch (in) {
                 case gtok_t_rr_nodes::NODE:
@@ -3418,45 +3573,50 @@ inline void load_rr_nodes(const pugi::xml_node& root, T& out, Context& context) 
     }
     int next, state = 1;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
-        gtok_t_rr_nodes in = lex_node_t_rr_nodes(node.name());
+        *offset_debug = node.offset_debug();
+        gtok_t_rr_nodes in = lex_node_t_rr_nodes(node.name(), report_error);
         next = gstate_t_rr_nodes[state][(int)in];
         if (next == -1)
-            dfa_error(gtok_lookup_t_rr_nodes[(int)in], gstate_t_rr_nodes[state], gtok_lookup_t_rr_nodes, 1);
+            dfa_error(gtok_lookup_t_rr_nodes[(int)in], gstate_t_rr_nodes[state], gtok_lookup_t_rr_nodes, 1, report_error);
         state = next;
         switch (in) {
             case gtok_t_rr_nodes::NODE: {
                 unsigned int node_capacity;
                 unsigned int node_id;
                 enum_node_type node_type;
-                load_node_required_attributes(node, &node_capacity, &node_id, &node_type);
+                load_node_required_attributes(node, &node_capacity, &node_id, &node_type, report_error);
                 auto child_context = out.add_rr_nodes_node(context, node_capacity, node_id, node_type);
-                load_node(node, out, child_context);
+                load_node(node, out, child_context, report_error, offset_debug);
                 out.finish_rr_nodes_node(child_context);
             } break;
             default:
                 break; /* Not possible. */
         }
     }
-    if (state != 0) dfa_error("end of input", gstate_t_rr_nodes[state], gtok_lookup_t_rr_nodes, 1);
+    if (state != 0) dfa_error("end of input", gstate_t_rr_nodes[state], gtok_lookup_t_rr_nodes, 1, report_error);
 }
 
 template<class T, typename Context>
-inline void load_edge(const pugi::xml_node& root, T& out, Context& context) {
+inline void load_edge(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
     (void)root;
     (void)out;
     (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     std::bitset<1> gstate = 0;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
-        gtok_t_edge in = lex_node_t_edge(node.name());
+        *offset_debug = node.offset_debug();
+        gtok_t_edge in = lex_node_t_edge(node.name(), report_error);
         if (gstate[(int)in] == 0)
             gstate[(int)in] = 1;
         else
-            throw std::runtime_error("Duplicate element " + std::string(node.name()) + " in <edge>.");
+            (*report_error)(("Duplicate element " + std::string(node.name()) + " in <edge>.").c_str());
         switch (in) {
             case gtok_t_edge::METADATA: {
                 auto child_context = out.init_edge_metadata(context);
-                load_metadata(node, out, child_context);
+                load_metadata(node, out, child_context, report_error, offset_debug);
                 out.finish_edge_metadata(child_context);
             } break;
             default:
@@ -3464,7 +3624,7 @@ inline void load_edge(const pugi::xml_node& root, T& out, Context& context) {
         }
     }
     std::bitset<1> test_gstate = gstate | std::bitset<1>(0b1);
-    if (!test_gstate.all()) all_error(test_gstate, gtok_lookup_t_edge);
+    if (!test_gstate.all()) all_error(test_gstate, gtok_lookup_t_edge, report_error);
 }
 
 constexpr int NUM_T_RR_EDGES_STATES = 2;
@@ -3474,23 +3634,27 @@ constexpr int gstate_t_rr_edges[NUM_T_RR_EDGES_STATES][NUM_T_RR_EDGES_INPUTS] = 
     {0},
 };
 template<class T, typename Context>
-inline void load_rr_edges(const pugi::xml_node& root, T& out, Context& context) {
+inline void load_rr_edges(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
     (void)root;
     (void)out;
     (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     if (root.first_attribute())
-        throw std::runtime_error("Unexpected attribute in <rr_edges>.");
+        (*report_error)("Unexpected attribute in <rr_edges>.");
 
     // Preallocate arrays by counting child nodes (if any)
     size_t edge_count = 0;
     {
         int next, state = 1;
         for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
-            gtok_t_rr_edges in = lex_node_t_rr_edges(node.name());
+            *offset_debug = node.offset_debug();
+            gtok_t_rr_edges in = lex_node_t_rr_edges(node.name(), report_error);
             next = gstate_t_rr_edges[state][(int)in];
             if (next == -1)
-                dfa_error(gtok_lookup_t_rr_edges[(int)in], gstate_t_rr_edges[state], gtok_lookup_t_rr_edges, 1);
+                dfa_error(gtok_lookup_t_rr_edges[(int)in], gstate_t_rr_edges[state], gtok_lookup_t_rr_edges, 1, report_error);
             state = next;
             switch (in) {
                 case gtok_t_rr_edges::EDGE:
@@ -3505,36 +3669,40 @@ inline void load_rr_edges(const pugi::xml_node& root, T& out, Context& context) 
     }
     int next, state = 1;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
-        gtok_t_rr_edges in = lex_node_t_rr_edges(node.name());
+        *offset_debug = node.offset_debug();
+        gtok_t_rr_edges in = lex_node_t_rr_edges(node.name(), report_error);
         next = gstate_t_rr_edges[state][(int)in];
         if (next == -1)
-            dfa_error(gtok_lookup_t_rr_edges[(int)in], gstate_t_rr_edges[state], gtok_lookup_t_rr_edges, 1);
+            dfa_error(gtok_lookup_t_rr_edges[(int)in], gstate_t_rr_edges[state], gtok_lookup_t_rr_edges, 1, report_error);
         state = next;
         switch (in) {
             case gtok_t_rr_edges::EDGE: {
                 unsigned int edge_sink_node;
                 unsigned int edge_src_node;
                 unsigned int edge_switch_id;
-                load_edge_required_attributes(node, &edge_sink_node, &edge_src_node, &edge_switch_id);
+                load_edge_required_attributes(node, &edge_sink_node, &edge_src_node, &edge_switch_id, report_error);
                 auto child_context = out.add_rr_edges_edge(context, edge_sink_node, edge_src_node, edge_switch_id);
-                load_edge(node, out, child_context);
+                load_edge(node, out, child_context, report_error, offset_debug);
                 out.finish_rr_edges_edge(child_context);
             } break;
             default:
                 break; /* Not possible. */
         }
     }
-    if (state != 0) dfa_error("end of input", gstate_t_rr_edges[state], gtok_lookup_t_rr_edges, 1);
+    if (state != 0) dfa_error("end of input", gstate_t_rr_edges[state], gtok_lookup_t_rr_edges, 1, report_error);
 }
 
 template<class T, typename Context>
-inline void load_rr_graph(const pugi::xml_node& root, T& out, Context& context) {
+inline void load_rr_graph(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
     (void)root;
     (void)out;
     (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
-        atok_t_rr_graph in = lex_attr_t_rr_graph(attr.name());
+        atok_t_rr_graph in = lex_attr_t_rr_graph(attr.name(), report_error);
         switch (in) {
             case atok_t_rr_graph::TOOL_COMMENT:
                 out.set_rr_graph_tool_comment(attr.value(), context);
@@ -3552,45 +3720,46 @@ inline void load_rr_graph(const pugi::xml_node& root, T& out, Context& context) 
 
     std::bitset<7> gstate = 0;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
-        gtok_t_rr_graph in = lex_node_t_rr_graph(node.name());
+        *offset_debug = node.offset_debug();
+        gtok_t_rr_graph in = lex_node_t_rr_graph(node.name(), report_error);
         if (gstate[(int)in] == 0)
             gstate[(int)in] = 1;
         else
-            throw std::runtime_error("Duplicate element " + std::string(node.name()) + " in <rr_graph>.");
+            (*report_error)(("Duplicate element " + std::string(node.name()) + " in <rr_graph>.").c_str());
         switch (in) {
             case gtok_t_rr_graph::CHANNELS: {
                 auto child_context = out.init_rr_graph_channels(context);
-                load_channels(node, out, child_context);
+                load_channels(node, out, child_context, report_error, offset_debug);
                 out.finish_rr_graph_channels(child_context);
             } break;
             case gtok_t_rr_graph::SWITCHES: {
                 auto child_context = out.init_rr_graph_switches(context);
-                load_switches(node, out, child_context);
+                load_switches(node, out, child_context, report_error, offset_debug);
                 out.finish_rr_graph_switches(child_context);
             } break;
             case gtok_t_rr_graph::SEGMENTS: {
                 auto child_context = out.init_rr_graph_segments(context);
-                load_segments(node, out, child_context);
+                load_segments(node, out, child_context, report_error, offset_debug);
                 out.finish_rr_graph_segments(child_context);
             } break;
             case gtok_t_rr_graph::BLOCK_TYPES: {
                 auto child_context = out.init_rr_graph_block_types(context);
-                load_block_types(node, out, child_context);
+                load_block_types(node, out, child_context, report_error, offset_debug);
                 out.finish_rr_graph_block_types(child_context);
             } break;
             case gtok_t_rr_graph::GRID: {
                 auto child_context = out.init_rr_graph_grid(context);
-                load_grid_locs(node, out, child_context);
+                load_grid_locs(node, out, child_context, report_error, offset_debug);
                 out.finish_rr_graph_grid(child_context);
             } break;
             case gtok_t_rr_graph::RR_NODES: {
                 auto child_context = out.init_rr_graph_rr_nodes(context);
-                load_rr_nodes(node, out, child_context);
+                load_rr_nodes(node, out, child_context, report_error, offset_debug);
                 out.finish_rr_graph_rr_nodes(child_context);
             } break;
             case gtok_t_rr_graph::RR_EDGES: {
                 auto child_context = out.init_rr_graph_rr_edges(context);
-                load_rr_edges(node, out, child_context);
+                load_rr_edges(node, out, child_context, report_error, offset_debug);
                 out.finish_rr_graph_rr_edges(child_context);
             } break;
             default:
@@ -3598,7 +3767,7 @@ inline void load_rr_graph(const pugi::xml_node& root, T& out, Context& context) 
         }
     }
     std::bitset<7> test_gstate = gstate | std::bitset<7>(0b0000000);
-    if (!test_gstate.all()) all_error(test_gstate, gtok_lookup_t_rr_graph);
+    if (!test_gstate.all()) all_error(test_gstate, gtok_lookup_t_rr_graph, report_error);
 }
 
 /* Internal writing functions, which uxsdcxx uses to write out a class. */
@@ -3978,7 +4147,7 @@ inline void write_rr_graph(T& in, std::ostream& os, Context& context) {
     }
 }
 
-inline void dfa_error(const char* wrong, const int* states, const char* const* lookup, int len) {
+inline void dfa_error(const char* wrong, const int* states, const char* const* lookup, int len, const std::function<void(const char*)>* report_error) {
     std::vector<std::string> expected;
     for (int i = 0; i < len; i++) {
         if (states[i] != -1) expected.push_back(lookup[i]);
@@ -3988,11 +4157,11 @@ inline void dfa_error(const char* wrong, const int* states, const char* const* l
     for (unsigned int i = 1; i < expected.size(); i++)
         expected_or += std::string(" or ") + expected[i];
 
-    throw std::runtime_error("Expected " + expected_or + ", found " + std::string(wrong));
+    (*report_error)(("Expected " + expected_or + ", found " + std::string(wrong)).c_str());
 }
 
 template<std::size_t N>
-inline void all_error(std::bitset<N> gstate, const char* const* lookup) {
+inline void all_error(std::bitset<N> gstate, const char* const* lookup, const std::function<void(const char*)>* report_error) {
     std::vector<std::string> missing;
     for (unsigned int i = 0; i < N; i++) {
         if (gstate[i] == 0) missing.push_back(lookup[i]);
@@ -4002,11 +4171,11 @@ inline void all_error(std::bitset<N> gstate, const char* const* lookup) {
     for (unsigned int i = 1; i < missing.size(); i++)
         missing_and += std::string(", ") + missing[i];
 
-    throw std::runtime_error("Didn't find required elements " + missing_and + ".");
+    (*report_error)(("Didn't find required elements " + missing_and + ".").c_str());
 }
 
 template<std::size_t N>
-inline void attr_error(std::bitset<N> astate, const char* const* lookup) {
+inline void attr_error(std::bitset<N> astate, const char* const* lookup, const std::function<void(const char*)>* report_error) {
     std::vector<std::string> missing;
     for (unsigned int i = 0; i < N; i++) {
         if (astate[i] == 0) missing.push_back(lookup[i]);
@@ -4016,7 +4185,49 @@ inline void attr_error(std::bitset<N> astate, const char* const* lookup) {
     for (unsigned int i = 1; i < missing.size(); i++)
         missing_and += std::string(", ") + missing[i];
 
-    throw std::runtime_error("Didn't find required attributes " + missing_and + ".");
+    (*report_error)(("Didn't find required attributes " + missing_and + ".").c_str());
+}
+
+inline void get_line_number(const char* filename, std::ptrdiff_t target_offset, int* line, int* col) {
+    FILE* f = fopen(filename, "rb");
+
+    if (f == nullptr) {
+        throw std::runtime_error(std::string("Failed to open file") + filename);
+    }
+
+    int current_line = 1;
+    std::ptrdiff_t offset = 0;
+    std::ptrdiff_t last_line_offset = 0;
+    std::ptrdiff_t current_line_offset = 0;
+
+    char buffer[1024];
+    std::size_t size;
+
+    while ((size = fread(buffer, 1, sizeof(buffer), f)) > 0) {
+        for (std::size_t i = 0; i < size; ++i) {
+            if (buffer[i] == '\n') {
+                current_line += 1;
+                last_line_offset = current_line_offset;
+                current_line_offset = offset + i;
+
+                if (target_offset < current_line_offset) {
+                    if (target_offset < last_line_offset) {
+                        throw std::runtime_error("Assertion violation");
+                    }
+
+                    *line = current_line - 1;
+                    *col = target_offset - last_line_offset;
+                    return;
+                }
+            }
+        }
+
+        offset += size;
+    }
+
+    *line = current_line;
+    *col = target_offset - current_line_offset;
+    fclose(f);
 }
 
 } /* namespace uxsd */
