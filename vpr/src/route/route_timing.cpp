@@ -1635,7 +1635,7 @@ static void timing_driven_expand_cheapest(t_heap* cheapest,
                                         target_node,
                                         router_stats);
     } else {
-        //Post-heap prune, do not re-explore from the current/new partial path as it 
+        //Post-heap prune, do not re-explore from the current/new partial path as it
         //has worse cost than the best partial path to this node found so far
         VTR_LOGV_DEBUG(f_router_debug, "    Worse cost to %d\n", inode);
         VTR_LOGV_DEBUG(f_router_debug, "    Old total cost: %g\n", best_total_cost);
