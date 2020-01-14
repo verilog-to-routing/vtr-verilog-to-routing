@@ -343,15 +343,23 @@ inline void load_channels_capnp_type(const ucap::Channels::Reader& root, T& out,
         load_channel_capnp_type(root.getChannel(), out, child_context);
         out.finish_channels_channel(child_context);
     }
-    for (const auto& el : root.getXLists()) {
-        auto child_context = out.add_channels_x_list(context, el.getIndex(), el.getInfo());
-        load_x_list_capnp_type(el, out, child_context);
-        out.finish_channels_x_list(child_context);
+    {
+        auto data = root.getXLists();
+        out.preallocate_channels_x_list(context, data.size());
+        for (const auto& el : data) {
+            auto child_context = out.add_channels_x_list(context, el.getIndex(), el.getInfo());
+            load_x_list_capnp_type(el, out, child_context);
+            out.finish_channels_x_list(child_context);
+        }
     }
-    for (const auto& el : root.getYLists()) {
-        auto child_context = out.add_channels_y_list(context, el.getIndex(), el.getInfo());
-        load_y_list_capnp_type(el, out, child_context);
-        out.finish_channels_y_list(child_context);
+    {
+        auto data = root.getYLists();
+        out.preallocate_channels_y_list(context, data.size());
+        for (const auto& el : data) {
+            auto child_context = out.add_channels_y_list(context, el.getIndex(), el.getInfo());
+            load_y_list_capnp_type(el, out, child_context);
+            out.finish_channels_y_list(child_context);
+        }
     }
 }
 
@@ -401,10 +409,14 @@ inline void load_switches_capnp_type(const ucap::Switches::Reader& root, T& out,
     (void)out;
     (void)context;
 
-    for (const auto& el : root.getSwitches()) {
-        auto child_context = out.add_switches_switch(context, el.getId());
-        load_switch_capnp_type(el, out, child_context);
-        out.finish_switches_switch(child_context);
+    {
+        auto data = root.getSwitches();
+        out.preallocate_switches_switch(context, data.size());
+        for (const auto& el : data) {
+            auto child_context = out.add_switches_switch(context, el.getId());
+            load_switch_capnp_type(el, out, child_context);
+            out.finish_switches_switch(child_context);
+        }
     }
 }
 
@@ -438,10 +450,14 @@ inline void load_segments_capnp_type(const ucap::Segments::Reader& root, T& out,
     (void)out;
     (void)context;
 
-    for (const auto& el : root.getSegments()) {
-        auto child_context = out.add_segments_segment(context, el.getId());
-        load_segment_capnp_type(el, out, child_context);
-        out.finish_segments_segment(child_context);
+    {
+        auto data = root.getSegments();
+        out.preallocate_segments_segment(context, data.size());
+        for (const auto& el : data) {
+            auto child_context = out.add_segments_segment(context, el.getId());
+            load_segment_capnp_type(el, out, child_context);
+            out.finish_segments_segment(child_context);
+        }
     }
 }
 
@@ -460,10 +476,14 @@ inline void load_pin_class_capnp_type(const ucap::PinClass::Reader& root, T& out
     (void)out;
     (void)context;
 
-    for (const auto& el : root.getPins()) {
-        auto child_context = out.add_pin_class_pin(context, el.getPtc());
-        load_pin_capnp_type(el, out, child_context);
-        out.finish_pin_class_pin(child_context);
+    {
+        auto data = root.getPins();
+        out.preallocate_pin_class_pin(context, data.size());
+        for (const auto& el : data) {
+            auto child_context = out.add_pin_class_pin(context, el.getPtc());
+            load_pin_capnp_type(el, out, child_context);
+            out.finish_pin_class_pin(child_context);
+        }
     }
 }
 
@@ -474,10 +494,14 @@ inline void load_block_type_capnp_type(const ucap::BlockType::Reader& root, T& o
     (void)context;
 
     out.set_block_type_name(root.getName().cStr(), context);
-    for (const auto& el : root.getPinClasses()) {
-        auto child_context = out.add_block_type_pin_class(context, conv_enum_pin_type(el.getType()));
-        load_pin_class_capnp_type(el, out, child_context);
-        out.finish_block_type_pin_class(child_context);
+    {
+        auto data = root.getPinClasses();
+        out.preallocate_block_type_pin_class(context, data.size());
+        for (const auto& el : data) {
+            auto child_context = out.add_block_type_pin_class(context, conv_enum_pin_type(el.getType()));
+            load_pin_class_capnp_type(el, out, child_context);
+            out.finish_block_type_pin_class(child_context);
+        }
     }
 }
 
@@ -487,10 +511,14 @@ inline void load_block_types_capnp_type(const ucap::BlockTypes::Reader& root, T&
     (void)out;
     (void)context;
 
-    for (const auto& el : root.getBlockTypes()) {
-        auto child_context = out.add_block_types_block_type(context, el.getHeight(), el.getId(), el.getWidth());
-        load_block_type_capnp_type(el, out, child_context);
-        out.finish_block_types_block_type(child_context);
+    {
+        auto data = root.getBlockTypes();
+        out.preallocate_block_types_block_type(context, data.size());
+        for (const auto& el : data) {
+            auto child_context = out.add_block_types_block_type(context, el.getHeight(), el.getId(), el.getWidth());
+            load_block_type_capnp_type(el, out, child_context);
+            out.finish_block_types_block_type(child_context);
+        }
     }
 }
 
@@ -507,10 +535,14 @@ inline void load_grid_locs_capnp_type(const ucap::GridLocs::Reader& root, T& out
     (void)out;
     (void)context;
 
-    for (const auto& el : root.getGridLocs()) {
-        auto child_context = out.add_grid_locs_grid_loc(context, el.getBlockTypeId(), el.getHeightOffset(), el.getWidthOffset(), el.getX(), el.getY());
-        load_grid_loc_capnp_type(el, out, child_context);
-        out.finish_grid_locs_grid_loc(child_context);
+    {
+        auto data = root.getGridLocs();
+        out.preallocate_grid_locs_grid_loc(context, data.size());
+        for (const auto& el : data) {
+            auto child_context = out.add_grid_locs_grid_loc(context, el.getBlockTypeId(), el.getHeightOffset(), el.getWidthOffset(), el.getX(), el.getY());
+            load_grid_loc_capnp_type(el, out, child_context);
+            out.finish_grid_locs_grid_loc(child_context);
+        }
     }
 }
 
@@ -553,10 +585,14 @@ inline void load_metadata_capnp_type(const ucap::Metadata::Reader& root, T& out,
     (void)out;
     (void)context;
 
-    for (const auto& el : root.getMetas()) {
-        auto child_context = out.add_metadata_meta(context);
-        load_meta_capnp_type(el, out, child_context);
-        out.finish_metadata_meta(child_context);
+    {
+        auto data = root.getMetas();
+        out.preallocate_metadata_meta(context, data.size());
+        for (const auto& el : data) {
+            auto child_context = out.add_metadata_meta(context);
+            load_meta_capnp_type(el, out, child_context);
+            out.finish_metadata_meta(child_context);
+        }
     }
 }
 
@@ -595,10 +631,14 @@ inline void load_rr_nodes_capnp_type(const ucap::RrNodes::Reader& root, T& out, 
     (void)out;
     (void)context;
 
-    for (const auto& el : root.getNodes()) {
-        auto child_context = out.add_rr_nodes_node(context, el.getCapacity(), el.getId(), conv_enum_node_type(el.getType()));
-        load_node_capnp_type(el, out, child_context);
-        out.finish_rr_nodes_node(child_context);
+    {
+        auto data = root.getNodes();
+        out.preallocate_rr_nodes_node(context, data.size());
+        for (const auto& el : data) {
+            auto child_context = out.add_rr_nodes_node(context, el.getCapacity(), el.getId(), conv_enum_node_type(el.getType()));
+            load_node_capnp_type(el, out, child_context);
+            out.finish_rr_nodes_node(child_context);
+        }
     }
 }
 
@@ -621,10 +661,14 @@ inline void load_rr_edges_capnp_type(const ucap::RrEdges::Reader& root, T& out, 
     (void)out;
     (void)context;
 
-    for (const auto& el : root.getEdges()) {
-        auto child_context = out.add_rr_edges_edge(context, el.getSinkNode(), el.getSrcNode(), el.getSwitchId());
-        load_edge_capnp_type(el, out, child_context);
-        out.finish_rr_edges_edge(child_context);
+    {
+        auto data = root.getEdges();
+        out.preallocate_rr_edges_edge(context, data.size());
+        for (const auto& el : data) {
+            auto child_context = out.add_rr_edges_edge(context, el.getSinkNode(), el.getSrcNode(), el.getSwitchId());
+            load_edge_capnp_type(el, out, child_context);
+            out.finish_rr_edges_edge(child_context);
+        }
     }
 }
 
