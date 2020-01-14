@@ -159,10 +159,12 @@ class RrGraphBase {
     virtual inline typename ContextTypes::ChannelWriteContext init_channels_channel(typename ContextTypes::ChannelsWriteContext& ctx, int chan_width_max, int x_max, int x_min, int y_max, int y_min) = 0;
     virtual inline void finish_channels_channel(typename ContextTypes::ChannelWriteContext& ctx) = 0;
     virtual inline typename ContextTypes::ChannelReadContext get_channels_channel(typename ContextTypes::ChannelsReadContext& ctx) = 0;
+    virtual inline void preallocate_channels_x_list(typename ContextTypes::ChannelsWriteContext& ctx, size_t size) = 0;
     virtual inline typename ContextTypes::XListWriteContext add_channels_x_list(typename ContextTypes::ChannelsWriteContext& ctx, unsigned int index, int info) = 0;
     virtual inline void finish_channels_x_list(typename ContextTypes::XListWriteContext& ctx) = 0;
     virtual inline size_t num_channels_x_list(typename ContextTypes::ChannelsReadContext& ctx) = 0;
     virtual inline typename ContextTypes::XListReadContext get_channels_x_list(int n, typename ContextTypes::ChannelsReadContext& ctx) = 0;
+    virtual inline void preallocate_channels_y_list(typename ContextTypes::ChannelsWriteContext& ctx, size_t size) = 0;
     virtual inline typename ContextTypes::YListWriteContext add_channels_y_list(typename ContextTypes::ChannelsWriteContext& ctx, unsigned int index, int info) = 0;
     virtual inline void finish_channels_y_list(typename ContextTypes::YListWriteContext& ctx) = 0;
     virtual inline size_t num_channels_y_list(typename ContextTypes::ChannelsReadContext& ctx) = 0;
@@ -228,6 +230,7 @@ class RrGraphBase {
      *   </xs:sequence>
      * </xs:complexType>
      */
+    virtual inline void preallocate_switches_switch(typename ContextTypes::SwitchesWriteContext& ctx, size_t size) = 0;
     virtual inline typename ContextTypes::SwitchWriteContext add_switches_switch(typename ContextTypes::SwitchesWriteContext& ctx, int id) = 0;
     virtual inline void finish_switches_switch(typename ContextTypes::SwitchWriteContext& ctx) = 0;
     virtual inline size_t num_switches_switch(typename ContextTypes::SwitchesReadContext& ctx) = 0;
@@ -268,6 +271,7 @@ class RrGraphBase {
      *   </xs:sequence>
      * </xs:complexType>
      */
+    virtual inline void preallocate_segments_segment(typename ContextTypes::SegmentsWriteContext& ctx, size_t size) = 0;
     virtual inline typename ContextTypes::SegmentWriteContext add_segments_segment(typename ContextTypes::SegmentsWriteContext& ctx, int id) = 0;
     virtual inline void finish_segments_segment(typename ContextTypes::SegmentWriteContext& ctx) = 0;
     virtual inline size_t num_segments_segment(typename ContextTypes::SegmentsReadContext& ctx) = 0;
@@ -295,6 +299,7 @@ class RrGraphBase {
      * </xs:complexType>
      */
     virtual inline enum_pin_type get_pin_class_type(typename ContextTypes::PinClassReadContext& ctx) = 0;
+    virtual inline void preallocate_pin_class_pin(typename ContextTypes::PinClassWriteContext& ctx, size_t size) = 0;
     virtual inline typename ContextTypes::PinWriteContext add_pin_class_pin(typename ContextTypes::PinClassWriteContext& ctx, int ptc) = 0;
     virtual inline void finish_pin_class_pin(typename ContextTypes::PinWriteContext& ctx) = 0;
     virtual inline size_t num_pin_class_pin(typename ContextTypes::PinClassReadContext& ctx) = 0;
@@ -316,6 +321,7 @@ class RrGraphBase {
     virtual inline const char* get_block_type_name(typename ContextTypes::BlockTypeReadContext& ctx) = 0;
     virtual inline void set_block_type_name(const char* name, typename ContextTypes::BlockTypeWriteContext& ctx) = 0;
     virtual inline int get_block_type_width(typename ContextTypes::BlockTypeReadContext& ctx) = 0;
+    virtual inline void preallocate_block_type_pin_class(typename ContextTypes::BlockTypeWriteContext& ctx, size_t size) = 0;
     virtual inline typename ContextTypes::PinClassWriteContext add_block_type_pin_class(typename ContextTypes::BlockTypeWriteContext& ctx, enum_pin_type type) = 0;
     virtual inline void finish_block_type_pin_class(typename ContextTypes::PinClassWriteContext& ctx) = 0;
     virtual inline size_t num_block_type_pin_class(typename ContextTypes::BlockTypeReadContext& ctx) = 0;
@@ -328,6 +334,7 @@ class RrGraphBase {
      *   </xs:sequence>
      * </xs:complexType>
      */
+    virtual inline void preallocate_block_types_block_type(typename ContextTypes::BlockTypesWriteContext& ctx, size_t size) = 0;
     virtual inline typename ContextTypes::BlockTypeWriteContext add_block_types_block_type(typename ContextTypes::BlockTypesWriteContext& ctx, int height, int id, int width) = 0;
     virtual inline void finish_block_types_block_type(typename ContextTypes::BlockTypeWriteContext& ctx) = 0;
     virtual inline size_t num_block_types_block_type(typename ContextTypes::BlockTypesReadContext& ctx) = 0;
@@ -355,6 +362,7 @@ class RrGraphBase {
      *   </xs:sequence>
      * </xs:complexType>
      */
+    virtual inline void preallocate_grid_locs_grid_loc(typename ContextTypes::GridLocsWriteContext& ctx, size_t size) = 0;
     virtual inline typename ContextTypes::GridLocWriteContext add_grid_locs_grid_loc(typename ContextTypes::GridLocsWriteContext& ctx, int block_type_id, int height_offset, int width_offset, int x, int y) = 0;
     virtual inline void finish_grid_locs_grid_loc(typename ContextTypes::GridLocWriteContext& ctx) = 0;
     virtual inline size_t num_grid_locs_grid_loc(typename ContextTypes::GridLocsReadContext& ctx) = 0;
@@ -415,6 +423,7 @@ class RrGraphBase {
      *   </xs:sequence>
      * </xs:complexType>
      */
+    virtual inline void preallocate_metadata_meta(typename ContextTypes::MetadataWriteContext& ctx, size_t size) = 0;
     virtual inline typename ContextTypes::MetaWriteContext add_metadata_meta(typename ContextTypes::MetadataWriteContext& ctx) = 0;
     virtual inline void finish_metadata_meta(typename ContextTypes::MetaWriteContext& ctx) = 0;
     virtual inline size_t num_metadata_meta(typename ContextTypes::MetadataReadContext& ctx) = 0;
@@ -462,6 +471,7 @@ class RrGraphBase {
      *   </xs:choice>
      * </xs:complexType>
      */
+    virtual inline void preallocate_rr_nodes_node(typename ContextTypes::RrNodesWriteContext& ctx, size_t size) = 0;
     virtual inline typename ContextTypes::NodeWriteContext add_rr_nodes_node(typename ContextTypes::RrNodesWriteContext& ctx, unsigned int capacity, unsigned int id, enum_node_type type) = 0;
     virtual inline void finish_rr_nodes_node(typename ContextTypes::NodeWriteContext& ctx) = 0;
     virtual inline size_t num_rr_nodes_node(typename ContextTypes::RrNodesReadContext& ctx) = 0;
@@ -492,6 +502,7 @@ class RrGraphBase {
      *   </xs:choice>
      * </xs:complexType>
      */
+    virtual inline void preallocate_rr_edges_edge(typename ContextTypes::RrEdgesWriteContext& ctx, size_t size) = 0;
     virtual inline typename ContextTypes::EdgeWriteContext add_rr_edges_edge(typename ContextTypes::RrEdgesWriteContext& ctx, unsigned int sink_node, unsigned int src_node, unsigned int switch_id) = 0;
     virtual inline void finish_rr_edges_edge(typename ContextTypes::EdgeWriteContext& ctx) = 0;
     virtual inline size_t num_rr_edges_edge(typename ContextTypes::RrEdgesReadContext& ctx) = 0;
