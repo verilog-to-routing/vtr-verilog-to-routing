@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 #------------------------------------------------------------------------#
 #  Run an experiment on the batch system                                 #
 #   - runs an experiment script                                          #

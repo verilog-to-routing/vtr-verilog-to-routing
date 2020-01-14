@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 THIS_SCRIPT_PATH=$(readlink -f $0)
 THIS_DIR=$(dirname ${THIS_SCRIPT_PATH})

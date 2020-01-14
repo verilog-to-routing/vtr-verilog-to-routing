@@ -1,5 +1,5 @@
-#!/bin/bash
-SHELL=/bin/bash
+#!/usr/bin/env bash
+SHELL=$(type -P bash)
 FAILURE=0
 
 THIS_SCRIPT_PATH=$(readlink -f $0)
@@ -975,7 +975,7 @@ function run_task() {
 
 function run_vtr_reg() {
 	cd ${THIS_DIR}/..
-	/usr/bin/perl run_reg_test.pl -j ${_NUMBER_OF_PROCESS} $1
+	/usr/bin/env perl run_reg_test.pl -j ${_NUMBER_OF_PROCESS} $1
 	cd ${THIS_DIR}
 }
 

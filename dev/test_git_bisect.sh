@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #This script is useful to find the offending commit using git bisec
 #

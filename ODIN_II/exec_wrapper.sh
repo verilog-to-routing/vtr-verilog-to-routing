@@ -1,5 +1,5 @@
-#!/bin/bash
-SHELL=/bin/bash
+#!/usr/bin/env bash
+SHELL=$(type -P bash)
 
 THIS_SCRIPT_PATH=$(readlink -f $0)
 THIS_DIR=$(dirname ${THIS_SCRIPT_PATH})

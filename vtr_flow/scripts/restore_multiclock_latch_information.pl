@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 ################################################################################
 # Developed by Aaron G. Graham (aaron.graham@unb.ca) and
 #  Dr. Kenneth B. Kent (ken@unb.ca) for ODIN II at the

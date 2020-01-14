@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #Authors: Aaron Graham (aaron.graham@unb.ca, aarongraham9@gmail.com),
 #         Jean-Philippe Legault (jlegault@unb.ca, jeanphilippe.legault@gmail.com) and
 #          Dr. Kenneth B. Kent (ken@unb.ca)

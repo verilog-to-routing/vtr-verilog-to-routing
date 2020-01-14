@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 ###################################################################################
 # This script executes one or more VTR tasks
 #
@@ -613,7 +613,7 @@ sub create_run_script {
 
     open(my $fh, '>', $run_script_file);
 
-    print $fh "#!/bin/bash\n";
+    print $fh "#!/usr/bin/env bash\n";
     print $fh "\n";
     print $fh "VTR_RUNTIME_ESTIMATE_SECONDS=$runtime_est\n";
     print $fh "VTR_MEMORY_ESTIMATE_BYTES=$memory_est\n";
