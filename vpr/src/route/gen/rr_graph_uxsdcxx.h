@@ -2555,6 +2555,34 @@ inline void load_channels(const pugi::xml_node& root, T& out, Context& context) 
     if (root.first_attribute())
         throw std::runtime_error("Unexpected attribute in <channels>.");
 
+    // Preallocate arrays by counting child nodes (if any)
+    size_t x_list_count = 0;
+    size_t y_list_count = 0;
+    {
+        int next, state = 3;
+        for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
+            gtok_t_channels in = lex_node_t_channels(node.name());
+            next = gstate_t_channels[state][(int)in];
+            if (next == -1)
+                dfa_error(gtok_lookup_t_channels[(int)in], gstate_t_channels[state], gtok_lookup_t_channels, 3);
+            state = next;
+            switch (in) {
+                case gtok_t_channels::CHANNEL:
+                    break;
+                case gtok_t_channels::X_LIST:
+                    x_list_count += 1;
+                    break;
+                case gtok_t_channels::Y_LIST:
+                    y_list_count += 1;
+                    break;
+                default:
+                    break; /* Not possible. */
+            }
+        }
+
+        out.preallocate_channels_x_list(context, x_list_count);
+        out.preallocate_channels_y_list(context, y_list_count);
+    }
     int next, state = 3;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
         gtok_t_channels in = lex_node_t_channels(node.name());
@@ -2707,6 +2735,27 @@ inline void load_switches(const pugi::xml_node& root, T& out, Context& context) 
     if (root.first_attribute())
         throw std::runtime_error("Unexpected attribute in <switches>.");
 
+    // Preallocate arrays by counting child nodes (if any)
+    size_t switch_count = 0;
+    {
+        int next, state = 1;
+        for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
+            gtok_t_switches in = lex_node_t_switches(node.name());
+            next = gstate_t_switches[state][(int)in];
+            if (next == -1)
+                dfa_error(gtok_lookup_t_switches[(int)in], gstate_t_switches[state], gtok_lookup_t_switches, 1);
+            state = next;
+            switch (in) {
+                case gtok_t_switches::SWITCH:
+                    switch_count += 1;
+                    break;
+                default:
+                    break; /* Not possible. */
+            }
+        }
+
+        out.preallocate_switches_switch(context, switch_count);
+    }
     int next, state = 1;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
         gtok_t_switches in = lex_node_t_switches(node.name());
@@ -2809,6 +2858,27 @@ inline void load_segments(const pugi::xml_node& root, T& out, Context& context) 
     if (root.first_attribute())
         throw std::runtime_error("Unexpected attribute in <segments>.");
 
+    // Preallocate arrays by counting child nodes (if any)
+    size_t segment_count = 0;
+    {
+        int next, state = 1;
+        for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
+            gtok_t_segments in = lex_node_t_segments(node.name());
+            next = gstate_t_segments[state][(int)in];
+            if (next == -1)
+                dfa_error(gtok_lookup_t_segments[(int)in], gstate_t_segments[state], gtok_lookup_t_segments, 1);
+            state = next;
+            switch (in) {
+                case gtok_t_segments::SEGMENT:
+                    segment_count += 1;
+                    break;
+                default:
+                    break; /* Not possible. */
+            }
+        }
+
+        out.preallocate_segments_segment(context, segment_count);
+    }
     int next, state = 1;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
         gtok_t_segments in = lex_node_t_segments(node.name());
@@ -2854,6 +2924,27 @@ inline void load_pin_class(const pugi::xml_node& root, T& out, Context& context)
     (void)out;
     (void)context;
 
+    // Preallocate arrays by counting child nodes (if any)
+    size_t pin_count = 0;
+    {
+        int next, state = 1;
+        for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
+            gtok_t_pin_class in = lex_node_t_pin_class(node.name());
+            next = gstate_t_pin_class[state][(int)in];
+            if (next == -1)
+                dfa_error(gtok_lookup_t_pin_class[(int)in], gstate_t_pin_class[state], gtok_lookup_t_pin_class, 1);
+            state = next;
+            switch (in) {
+                case gtok_t_pin_class::PIN:
+                    pin_count += 1;
+                    break;
+                default:
+                    break; /* Not possible. */
+            }
+        }
+
+        out.preallocate_pin_class_pin(context, pin_count);
+    }
     int next, state = 1;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
         gtok_t_pin_class in = lex_node_t_pin_class(node.name());
@@ -2907,6 +2998,27 @@ inline void load_block_type(const pugi::xml_node& root, T& out, Context& context
         }
     }
 
+    // Preallocate arrays by counting child nodes (if any)
+    size_t pin_class_count = 0;
+    {
+        int next, state = 0;
+        for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
+            gtok_t_block_type in = lex_node_t_block_type(node.name());
+            next = gstate_t_block_type[state][(int)in];
+            if (next == -1)
+                dfa_error(gtok_lookup_t_block_type[(int)in], gstate_t_block_type[state], gtok_lookup_t_block_type, 1);
+            state = next;
+            switch (in) {
+                case gtok_t_block_type::PIN_CLASS:
+                    pin_class_count += 1;
+                    break;
+                default:
+                    break; /* Not possible. */
+            }
+        }
+
+        out.preallocate_block_type_pin_class(context, pin_class_count);
+    }
     int next, state = 0;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
         gtok_t_block_type in = lex_node_t_block_type(node.name());
@@ -2944,6 +3056,27 @@ inline void load_block_types(const pugi::xml_node& root, T& out, Context& contex
     if (root.first_attribute())
         throw std::runtime_error("Unexpected attribute in <block_types>.");
 
+    // Preallocate arrays by counting child nodes (if any)
+    size_t block_type_count = 0;
+    {
+        int next, state = 1;
+        for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
+            gtok_t_block_types in = lex_node_t_block_types(node.name());
+            next = gstate_t_block_types[state][(int)in];
+            if (next == -1)
+                dfa_error(gtok_lookup_t_block_types[(int)in], gstate_t_block_types[state], gtok_lookup_t_block_types, 1);
+            state = next;
+            switch (in) {
+                case gtok_t_block_types::BLOCK_TYPE:
+                    block_type_count += 1;
+                    break;
+                default:
+                    break; /* Not possible. */
+            }
+        }
+
+        out.preallocate_block_types_block_type(context, block_type_count);
+    }
     int next, state = 1;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
         gtok_t_block_types in = lex_node_t_block_types(node.name());
@@ -2993,6 +3126,27 @@ inline void load_grid_locs(const pugi::xml_node& root, T& out, Context& context)
     if (root.first_attribute())
         throw std::runtime_error("Unexpected attribute in <grid_locs>.");
 
+    // Preallocate arrays by counting child nodes (if any)
+    size_t grid_loc_count = 0;
+    {
+        int next, state = 1;
+        for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
+            gtok_t_grid_locs in = lex_node_t_grid_locs(node.name());
+            next = gstate_t_grid_locs[state][(int)in];
+            if (next == -1)
+                dfa_error(gtok_lookup_t_grid_locs[(int)in], gstate_t_grid_locs[state], gtok_lookup_t_grid_locs, 1);
+            state = next;
+            switch (in) {
+                case gtok_t_grid_locs::GRID_LOC:
+                    grid_loc_count += 1;
+                    break;
+                default:
+                    break; /* Not possible. */
+            }
+        }
+
+        out.preallocate_grid_locs_grid_loc(context, grid_loc_count);
+    }
     int next, state = 1;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
         gtok_t_grid_locs in = lex_node_t_grid_locs(node.name());
@@ -3112,6 +3266,27 @@ inline void load_metadata(const pugi::xml_node& root, T& out, Context& context) 
     if (root.first_attribute())
         throw std::runtime_error("Unexpected attribute in <metadata>.");
 
+    // Preallocate arrays by counting child nodes (if any)
+    size_t meta_count = 0;
+    {
+        int next, state = 1;
+        for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
+            gtok_t_metadata in = lex_node_t_metadata(node.name());
+            next = gstate_t_metadata[state][(int)in];
+            if (next == -1)
+                dfa_error(gtok_lookup_t_metadata[(int)in], gstate_t_metadata[state], gtok_lookup_t_metadata, 1);
+            state = next;
+            switch (in) {
+                case gtok_t_metadata::META:
+                    meta_count += 1;
+                    break;
+                default:
+                    break; /* Not possible. */
+            }
+        }
+
+        out.preallocate_metadata_meta(context, meta_count);
+    }
     int next, state = 1;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
         gtok_t_metadata in = lex_node_t_metadata(node.name());
@@ -3220,6 +3395,27 @@ inline void load_rr_nodes(const pugi::xml_node& root, T& out, Context& context) 
     if (root.first_attribute())
         throw std::runtime_error("Unexpected attribute in <rr_nodes>.");
 
+    // Preallocate arrays by counting child nodes (if any)
+    size_t node_count = 0;
+    {
+        int next, state = 1;
+        for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
+            gtok_t_rr_nodes in = lex_node_t_rr_nodes(node.name());
+            next = gstate_t_rr_nodes[state][(int)in];
+            if (next == -1)
+                dfa_error(gtok_lookup_t_rr_nodes[(int)in], gstate_t_rr_nodes[state], gtok_lookup_t_rr_nodes, 1);
+            state = next;
+            switch (in) {
+                case gtok_t_rr_nodes::NODE:
+                    node_count += 1;
+                    break;
+                default:
+                    break; /* Not possible. */
+            }
+        }
+
+        out.preallocate_rr_nodes_node(context, node_count);
+    }
     int next, state = 1;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
         gtok_t_rr_nodes in = lex_node_t_rr_nodes(node.name());
@@ -3286,6 +3482,27 @@ inline void load_rr_edges(const pugi::xml_node& root, T& out, Context& context) 
     if (root.first_attribute())
         throw std::runtime_error("Unexpected attribute in <rr_edges>.");
 
+    // Preallocate arrays by counting child nodes (if any)
+    size_t edge_count = 0;
+    {
+        int next, state = 1;
+        for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
+            gtok_t_rr_edges in = lex_node_t_rr_edges(node.name());
+            next = gstate_t_rr_edges[state][(int)in];
+            if (next == -1)
+                dfa_error(gtok_lookup_t_rr_edges[(int)in], gstate_t_rr_edges[state], gtok_lookup_t_rr_edges, 1);
+            state = next;
+            switch (in) {
+                case gtok_t_rr_edges::EDGE:
+                    edge_count += 1;
+                    break;
+                default:
+                    break; /* Not possible. */
+            }
+        }
+
+        out.preallocate_rr_edges_edge(context, edge_count);
+    }
     int next, state = 1;
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
         gtok_t_rr_edges in = lex_node_t_rr_edges(node.name());
