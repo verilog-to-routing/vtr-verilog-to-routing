@@ -806,7 +806,7 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return nullptr;
     }
 
-    inline void preallocate_channels_x_list(void*& /*ctx*/, size_t size) override {
+    inline void preallocate_channels_x_list(void*& /*ctx*/, size_t /*size*/) override {
     }
 
     inline void* add_channels_x_list(void*& /*ctx*/, unsigned int index, int info) override {
@@ -833,7 +833,7 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return n;
     }
 
-    inline void preallocate_channels_y_list(void*& /*ctx*/, size_t size) override {
+    inline void preallocate_channels_y_list(void*& /*ctx*/, size_t /*size*/) override {
     }
 
     inline void* add_channels_y_list(void*& /*ctx*/, unsigned int index, int info) override {
