@@ -122,9 +122,10 @@ class MetadataBind {
 // Context for walking metadata.
 class t_metadata_dict_iterator {
   public:
-    explicit t_metadata_dict_iterator(const t_metadata_dict* d)
+    explicit t_metadata_dict_iterator(const t_metadata_dict* d, const std::function<void(const char*)>* report_error)
         : meta(d)
-        , current_index(0) {}
+        , current_index(0)
+        , report_error_(report_error) {}
 
     size_t size() {
         return meta->size();
@@ -132,8 +133,9 @@ class t_metadata_dict_iterator {
 
     const t_metadata_dict::value_type* advance(int n) {
         if (n != current_index) {
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Iterator out of sync %d != %d",
-                            n, current_index);
+            (*report_error_)(vtr::string_fmt("Iterator out of sync %d != %d",
+                                             n, current_index)
+                                 .c_str());
         }
 
         current_index += 1;
@@ -151,6 +153,7 @@ class t_metadata_dict_iterator {
     const t_metadata_dict* meta;
     t_metadata_dict::const_iterator iter;
     int current_index;
+    const std::function<void(const char*)>* report_error_;
 };
 
 class EdgeWalker {
@@ -300,9 +303,14 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
         , rr_node_metadata_(rr_node_metadata)
         , rr_edge_metadata_(rr_edge_metadata) {}
 
-    void start_load() override {}
+    void start_load(const std::function<void(const char*)>* report_error_in) override {
+        report_error_ = report_error_in;
+    }
     void start_write() override {}
     void finish_write() override {}
+    void error_encountered(const char* file, int line, const char* message) override {
+        vpr_throw(VPR_ERROR_ROUTE, file, line, "%s", message);
+    }
 
     /** Generated for complex type "timing":
      * <xs:complexType name="timing">
@@ -365,8 +373,7 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
             }
         }
         if (!found_arch_name) {
-            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                            "Switch name '%s' not found in architecture\n", name);
+            report_error("Switch name '%s' not found in architecture\n", name);
         }
 
         sw->name = name;
@@ -582,7 +589,7 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
     inline t_metadata_dict_iterator get_node_metadata(const t_rr_node*& node) override {
         const auto itr = rr_node_metadata_.find(get_node_id(node));
-        return t_metadata_dict_iterator(&itr->second);
+        return t_metadata_dict_iterator(&itr->second, report_error_);
     }
     inline bool has_node_metadata(const t_rr_node*& node) override {
         const auto itr = rr_node_metadata_.find(get_node_id(node));
@@ -610,7 +617,8 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
                                                                   walker->current_src_node(),
                                                                   walker->current_sink_node(),
                                                                   walker->current_switch_id_node()))
-                                             ->second);
+                                             ->second,
+                                        report_error_);
     }
     inline bool has_edge_metadata(const EdgeWalker*& walker) override {
         return rr_edge_metadata_.find(
@@ -626,7 +634,7 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline const EdgeWalker* get_rr_edges_edge(int n, EdgeWalker& walker) override {
         size_t cur = walker.advance(n);
         if ((ssize_t)cur != n) {
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Incorrect edge index %zu != %d", cur, n);
+            report_error("Incorrect edge index %zu != %d", cur, n);
         }
         return &walker;
     }
@@ -662,9 +670,9 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline void finish_node_timing(int& /*inode*/) override {}
     inline int init_node_segment(int& inode, int segment_id) override {
         if (segment_id > (ssize_t)segment_inf_.size()) {
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                            "Specified segment %d is larger than number of known segments %zu",
-                            segment_inf_.size());
+            report_error(
+                "Specified segment %d is larger than number of known segments %zu",
+                segment_inf_.size());
         }
 
         auto& node = (*rr_nodes_)[inode];
@@ -725,8 +733,7 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 node.set_cost_index(IPIN_COST_INDEX);
                 break;
             default:
-                VPR_FATAL_ERROR(
-                    VPR_ERROR_OTHER,
+                report_error(
                     "Invalid node type %d",
                     type);
         }
@@ -811,9 +818,9 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     inline void* add_channels_x_list(void*& /*ctx*/, unsigned int index, int info) override {
         if (index >= chan_width_->x_list.size()) {
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                            "index %d on x_list exceeds x_list size %u",
-                            index, chan_width_->x_list.size());
+            report_error(
+                "index %d on x_list exceeds x_list size %u",
+                index, chan_width_->x_list.size());
         }
         chan_width_->x_list[index] = info;
         return nullptr;
@@ -838,9 +845,9 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     inline void* add_channels_y_list(void*& /*ctx*/, unsigned int index, int info) override {
         if (index >= chan_width_->y_list.size()) {
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                            "index %d on y_list exceeds y_list size %u",
-                            index, chan_width_->y_list.size());
+            report_error(
+                "index %d on y_list exceeds y_list size %u",
+                index, chan_width_->y_list.size());
         }
         chan_width_->y_list[index] = info;
 
@@ -879,9 +886,9 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
     inline MetadataBind add_rr_edges_edge(void*& /*ctx*/, unsigned int sink_node, unsigned int src_node, unsigned int switch_id) override {
         if (src_node >= rr_nodes_->size()) {
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                            "source_node %d is larger than rr_nodes.size() %d",
-                            src_node, rr_nodes_->size());
+            report_error(
+                "source_node %d is larger than rr_nodes.size() %d",
+                src_node, rr_nodes_->size());
         }
 
         MetadataBind bind;
@@ -908,9 +915,9 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
         for (size_t inode = 0; inode < rr_nodes_->size(); inode++) {
             if (num_edges_for_node[inode] > std::numeric_limits<t_edge_size>::max()) {
-                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                "source node %d edge count %d is too high",
-                                inode, num_edges_for_node[inode]);
+                report_error(
+                    "source node %d edge count %d is too high",
+                    inode, num_edges_for_node[inode]);
             }
             (*rr_nodes_)[inode].set_num_edges(num_edges_for_node[inode]);
             num_edges_for_node[inode] = 0;
@@ -930,15 +937,15 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
             auto switch_id = std::get<2>(edge);
 
             if (sink_node >= rr_nodes_->size()) {
-                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                "sink_node %u is larger than rr_nodes.size() %zu",
-                                sink_node, rr_nodes_->size());
+                report_error(
+                    "sink_node %u is larger than rr_nodes.size() %zu",
+                    sink_node, rr_nodes_->size());
             }
 
             if (switch_id >= rr_switch_inf_->size()) {
-                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                "switch_id %u is larger than num_rr_switches %zu",
-                                switch_id, rr_switch_inf_->size());
+                report_error(
+                    "switch_id %u is larger than num_rr_switches %zu",
+                    switch_id, rr_switch_inf_->size());
             }
 
             auto& node = (*rr_nodes_)[source_node];
@@ -1015,8 +1022,8 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
     inline void set_segment_timing_C_per_meter(float C_per_meter, const t_segment_inf*& segment) override {
         if (segment->Cmetal != C_per_meter) {
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                            "Architecture file does not match RR graph's segment C_per_meter");
+            report_error(
+                "Architecture file does not match RR graph's segment C_per_meter");
         }
     }
     inline float get_segment_timing_R_per_meter(const t_segment_inf*& segment) override {
@@ -1024,8 +1031,8 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
     inline void set_segment_timing_R_per_meter(float R_per_meter, const t_segment_inf*& segment) override {
         if (segment->Rmetal != R_per_meter) {
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                            "Architecture file does not match RR graph's segment R_per_meter");
+            report_error(
+                "Architecture file does not match RR graph's segment R_per_meter");
         }
     }
 
@@ -1046,9 +1053,9 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
     inline void set_segment_name(const char* name, const t_segment_inf*& segment) override {
         if (segment->name != name) {
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                            "Architecture file does not match RR graph's segment name: arch uses %s, RR graph uses %s",
-                            segment->name.c_str(), name);
+            report_error(
+                "Architecture file does not match RR graph's segment name: arch uses %s, RR graph uses %s",
+                segment->name.c_str(), name);
         }
     }
     inline const t_segment_inf* init_segment_timing(const t_segment_inf*& segment) override {
@@ -1072,9 +1079,9 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
      */
     inline void preallocate_segments_segment(void*& /*ctx*/, size_t size) override {
         if (size != segment_inf_.size()) {
-            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                            "Architecture contains %zu segments and rr graph contains %zu segments",
-                            segment_inf_.size(), size);
+            report_error(
+                "Architecture contains %zu segments and rr graph contains %zu segments",
+                segment_inf_.size(), size);
         }
     }
     inline const t_segment_inf* add_segments_segment(void*& /*ctx*/, int id) override {
@@ -1109,8 +1116,8 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
         int ptc;
         std::tie(tile, ptc) = context;
         if (block_type_pin_index_to_name(tile, ptc) != value) {
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                            "Architecture file does not match RR graph's block pin list");
+            report_error(
+                "Architecture file does not match RR graph's block pin list");
         }
     }
     inline void finish_pin_class_pin(const std::pair<const t_physical_tile_type*, int>& /*ctx*/) override {
@@ -1131,10 +1138,10 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
         auto class_idx = class_inf - &tile->class_inf[0];
 
         if (class_inf->num_pins != (ssize_t)size) {
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                            "Incorrect number of pins (%zu != %u) in %zu pin_class in block %s",
-                            size, class_inf->num_pins,
-                            class_idx, tile->name);
+            report_error(
+                "Incorrect number of pins (%zu != %u) in %zu pin_class in block %s",
+                size, class_inf->num_pins,
+                class_idx, tile->name);
         }
     }
     inline const std::pair<const t_physical_tile_type*, int> add_pin_class_pin(std::tuple<const t_physical_tile_type*, const t_class*, int>& context, int ptc) override {
@@ -1154,10 +1161,10 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
         std::tie(tile, class_inf, pin_count) = context;
         auto class_idx = class_inf - &tile->class_inf[0];
         if (class_inf->num_pins != pin_count) {
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                            "Incorrect number of pins (%zu != %u) in %zu pin_class in block %s",
-                            pin_count, class_inf->num_pins,
-                            class_idx, tile->name);
+            report_error(
+                "Incorrect number of pins (%zu != %u) in %zu pin_class in block %s",
+                pin_count, class_inf->num_pins,
+                class_idx, tile->name);
         }
     }
 
@@ -1222,9 +1229,9 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline void set_block_type_name(const char* name, std::pair<const t_physical_tile_type*, int>& context) override {
         const t_physical_tile_type* tile = context.first;
         if (strcmp(tile->name, name) != 0) {
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                            "Architecture file does not match RR graph's block name: arch uses name %s, RR graph uses name %s",
-                            tile->name, name);
+            report_error(
+                "Architecture file does not match RR graph's block name: arch uses name %s, RR graph uses name %s",
+                tile->name, name);
         }
     }
 
@@ -1237,20 +1244,20 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
      */
     void preallocate_block_types_block_type(void*& /*ctx*/, size_t size) override {
         if (physical_tile_types_.size() != size) {
-            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                            "Architecture defines %zu block types, but rr graph contains %zu block types.",
-                            physical_tile_types_.size(), size);
+            report_error(
+                "Architecture defines %zu block types, but rr graph contains %zu block types.",
+                physical_tile_types_.size(), size);
         }
     }
     inline std::pair<const t_physical_tile_type*, int> add_block_types_block_type(void*& /*ctx*/, int height, int id, int width) override {
         const auto& block_info = physical_tile_types_.at(id);
         if (block_info.width != width) {
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                            "Architecture file does not match RR graph's block width");
+            report_error(
+                "Architecture file does not match RR graph's block width");
         }
         if (block_info.height != height) {
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                            "Architecture file does not match RR graph's block height");
+            report_error(
+                "Architecture file does not match RR graph's block height");
         }
 
         // Going to count how many classes are found.
@@ -1270,8 +1277,8 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
         const t_class* class_inf = &context.first->class_inf[num_classes++];
 
         if (class_inf->type != from_uxsd_pin_type(type)) {
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                            "Architecture file does not match RR graph's block type");
+            report_error(
+                "Architecture file does not match RR graph's block type");
         }
 
         return std::make_tuple(tile, class_inf, 0);
@@ -1312,27 +1319,27 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
      */
     inline void preallocate_grid_locs_grid_loc(void*& /*ctx*/, size_t size) override {
         if (grid_.matrix().size() != size) {
-            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                            "Architecture file contains %zu grid locations, rr graph contains %zu grid locations.",
-                            grid_.matrix().size(), size);
+            report_error(
+                "Architecture file contains %zu grid locations, rr graph contains %zu grid locations.",
+                grid_.matrix().size(), size);
         }
     }
     inline void* add_grid_locs_grid_loc(void*& /*ctx*/, int block_type_id, int height_offset, int width_offset, int x, int y) override {
         const t_grid_tile& grid_tile = grid_[x][y];
 
         if (grid_tile.type->index != block_type_id) {
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                            "Architecture file does not match RR graph's block_type_id at (%d, %d): arch used ID %d, RR graph used ID %d.", x, y,
-                            (grid_tile.type->index), block_type_id);
+            report_error(
+                "Architecture file does not match RR graph's block_type_id at (%d, %d): arch used ID %d, RR graph used ID %d.", x, y,
+                (grid_tile.type->index), block_type_id);
         }
         if (grid_tile.width_offset != width_offset) {
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                            "Architecture file does not match RR graph's width_offset at (%d, %d)", x, y);
+            report_error(
+                "Architecture file does not match RR graph's width_offset at (%d, %d)", x, y);
         }
 
         if (grid_tile.height_offset != height_offset) {
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                            "Architecture file does not match RR graph's height_offset at (%d, %d)", x, y);
+            report_error(
+                "Architecture file does not match RR graph's height_offset at (%d, %d)", x, y);
         }
         return nullptr;
     }
@@ -1552,9 +1559,9 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
                     for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                         count = node.ptc_num();
                         if (count >= int(indices[CHANX][iy][ix][0].size())) {
-                            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                            "Ptc index %d for CHANX (%d, %d) is out of bounds, size = %zu",
-                                            count, ix, iy, indices[CHANX][iy][ix][0].size());
+                            report_error(
+                                "Ptc index %d for CHANX (%d, %d) is out of bounds, size = %zu",
+                                count, ix, iy, indices[CHANX][iy][ix][0].size());
                         }
                         indices[CHANX][iy][ix][0][count] = inode;
                     }
@@ -1564,9 +1571,9 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
                     for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
                         count = node.ptc_num();
                         if (count >= int(indices[CHANY][ix][iy][0].size())) {
-                            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                            "Ptc index %d for CHANY (%d, %d) is out of bounds, size = %zu",
-                                            count, ix, iy, indices[CHANY][ix][iy][0].size());
+                            report_error(
+                                "Ptc index %d for CHANY (%d, %d) is out of bounds, size = %zu",
+                                count, ix, iy, indices[CHANY][ix][iy][0].size());
                         }
                         indices[CHANY][ix][iy][0][count] = inode;
                     }
@@ -1607,8 +1614,8 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 return BOTTOM;
                 break;
             default:
-                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                "Invalid side %d", side);
+                report_error(
+                    "Invalid side %d", side);
         }
     }
 
@@ -1623,8 +1630,8 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
             case BOTTOM:
                 return uxsd::enum_loc_side::BOTTOM;
             default:
-                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                "Invalid side %d", side);
+                report_error(
+                    "Invalid side %d", side);
         }
     }
 
@@ -1637,8 +1644,8 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
             case uxsd::enum_node_direction::BI_DIR:
                 return BI_DIRECTION;
             default:
-                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                "Invalid node direction %d", direction);
+                report_error(
+                    "Invalid node direction %d", direction);
         }
     }
 
@@ -1651,8 +1658,8 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
             case BI_DIRECTION:
                 return uxsd::enum_node_direction::BI_DIR;
             default:
-                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                "Invalid direction %d", direction);
+                report_error(
+                    "Invalid direction %d", direction);
         }
     }
 
@@ -1671,8 +1678,7 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
             case uxsd::enum_node_type::IPIN:
                 return IPIN;
             default:
-                VPR_FATAL_ERROR(
-                    VPR_ERROR_OTHER,
+                report_error(
                     "Invalid node type %d",
                     type);
         }
@@ -1692,8 +1698,8 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
             case IPIN:
                 return uxsd::enum_node_type::IPIN;
             default:
-                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                "Invalid type %d", type);
+                report_error(
+                    "Invalid type %d", type);
         }
 
         return uxsd::enum_node_type::UXSD_INVALID;
@@ -1718,8 +1724,8 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 switch_type = SwitchType::BUFFER;
                 break;
             default:
-                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                "Invalid switch type '%d'\n", type);
+                report_error(
+                    "Invalid switch type '%d'\n", type);
         }
 
         return switch_type;
@@ -1738,9 +1744,9 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
             case SwitchType::BUFFER:
                 return uxsd::enum_switch_type::BUFFER;
             default:
-                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                "Invalid switch type '%d'\n",
-                                type);
+                report_error(
+                    "Invalid switch type '%d'\n",
+                    type);
         }
 
         return uxsd::enum_switch_type::UXSD_INVALID;
@@ -1755,8 +1761,8 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
             case uxsd::enum_pin_type::INPUT:
                 return RECEIVER;
             default:
-                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                "Unknown pin class type %d", type);
+                report_error(
+                    "Unknown pin class type %d", type);
         }
     }
 
@@ -1769,10 +1775,27 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
             case RECEIVER:
                 return uxsd::enum_pin_type::INPUT;
             default:
-                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                "Unknown pin class type %d", type);
+                report_error(
+                    "Unknown pin class type %d", type);
         }
         return uxsd::enum_pin_type::UXSD_INVALID;
+    }
+
+    [[noreturn]] void report_error(const char* fmt, ...) {
+        // Make a variable argument list
+        va_list va_args;
+
+        // Initialize variable argument list
+        va_start(va_args, fmt);
+
+        //Format string
+        std::string str = vtr::vstring_fmt(fmt, va_args);
+
+        // Reset variable argument list
+        va_end(va_args);
+
+        (*report_error_)(str.c_str());
+        throw std::runtime_error("Unreachable line!");
     }
 
     // Temporary storage
@@ -1804,4 +1827,5 @@ class RrGraphSerializer : public uxsd::RrGraphBase<RrGraphContextTypes> {
     const std::unordered_map<int, t_metadata_dict>& rr_node_metadata_;
     const std::unordered_map<std::tuple<int, int, short>,
                              t_metadata_dict>& rr_edge_metadata_;
+    const std::function<void(const char*)>* report_error_;
 };

@@ -8,6 +8,8 @@
  * md5sum of input file: f9c827f7ecf1ac2f15d57c67bbba4399
  */
 
+#include <functional>
+
 /* All uxsdcxx functions and structs live in this namespace. */
 
 #include <cstdlib>
@@ -110,10 +112,11 @@ template<typename ContextTypes = DefaultRrGraphContextTypes>
 class RrGraphBase {
   public:
     virtual ~RrGraphBase() {}
-    virtual void start_load() = 0;
+    virtual void start_load(const std::function<void(const char*)>* report_error) = 0;
     virtual void finish_load() = 0;
     virtual void start_write() = 0;
     virtual void finish_write() = 0;
+    virtual void error_encountered(const char* file, int line, const char* message) = 0;
     /** Generated for complex type "channel":
      * <xs:complexType name="channel">
      *   <xs:attribute name="chan_width_max" type="xs:int" use="required" />
