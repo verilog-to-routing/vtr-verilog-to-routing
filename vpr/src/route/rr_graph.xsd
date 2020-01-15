@@ -20,6 +20,9 @@
   In addition to being used for code generation, this schema can be used to
   validate whether an rr graph XML conforms to this schema.
 
+  Additional documentation is available at
+  https://github.com/duck2/uxsdcxx/blob/master/README.md
+
 -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
