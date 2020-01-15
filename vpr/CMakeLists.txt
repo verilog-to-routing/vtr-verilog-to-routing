@@ -265,7 +265,7 @@ add_custom_target(
         ${CMAKE_CURRENT_SOURCE_DIR}/src/route/gen
     COMMAND ${CMAKE_COMMAND} -E copy
         rr_graph_generate/rr_graph_uxsdcxx.capnp
-        ${CMAKE_CURRENT_SOURCE_DIR}/../libs/libvtrcapnproto
+        ${CMAKE_CURRENT_SOURCE_DIR}/../libs/libvtrcapnproto/gen
     DEPENDS
         ${CMAKE_CURRENT_SOURCE_DIR}/src/route/rr_graph.xsd
     WORKING_DIRECTORY

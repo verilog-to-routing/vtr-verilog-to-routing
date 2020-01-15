@@ -20,7 +20,7 @@ endif()
 capnp_generate_cpp(CAPNP_SRCS CAPNP_HDRS
     place_delay_model.capnp
     matrix.capnp
-    rr_graph_uxsdcxx.capnp
+    gen/rr_graph_uxsdcxx.capnp
     )
 
 add_library(libvtrcapnproto STATIC
@@ -33,6 +33,7 @@ add_library(libvtrcapnproto STATIC
 target_include_directories(libvtrcapnproto PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}/gen
     )
 target_link_libraries(libvtrcapnproto
     libvtrutil
