@@ -504,7 +504,11 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
         if (uxsd::enum_loc_side::UXSD_INVALID == side) {
             // node_loc.side is only expected on IPIN/OPIN
-            VTR_ASSERT(!(node.type() == IPIN || node.type() == OPIN));
+            if (node.type() == IPIN || node.type() == OPIN) {
+                report_error(
+                    "inode %d is type %d, which requires a side, but no side was supplied.",
+                    inode, node.type());
+            }
         } else {
             node.set_side(from_uxsd_loc_side(side));
         }
@@ -647,7 +651,11 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline void set_node_direction(uxsd::enum_node_direction direction, int& inode) final {
         auto& node = (*rr_nodes_)[inode];
         if (direction == uxsd::enum_node_direction::UXSD_INVALID) {
-            VTR_ASSERT(!(node.type() == CHANX || node.type() == CHANY));
+            if (node.type() == CHANX || node.type() == CHANY) {
+                report_error(
+                    "inode %d is type %d, which requires a direction, but no direction was supplied.",
+                    inode, node.type());
+            }
         } else {
             node.set_direction(from_uxsd_node_direction(direction));
         }
@@ -1265,7 +1273,9 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
     inline void preallocate_block_type_pin_class(std::pair<const t_physical_tile_type*, int>& context, size_t size) final {
         const t_physical_tile_type* tile = context.first;
-        VTR_ASSERT(tile->num_class == (ssize_t)size);
+        if (tile->num_class != (ssize_t)size) {
+            report_error("Architecture file does not match block type");
+        }
     }
 
     inline std::tuple<const t_physical_tile_type*, const t_class*, int> add_block_type_pin_class(std::pair<const t_physical_tile_type*, int>& context, uxsd::enum_pin_type type) final {
@@ -1273,7 +1283,9 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         int& num_classes = context.second;
 
         // Count number of pin classes
-        VTR_ASSERT(num_classes < tile->num_class);
+        if (num_classes >= tile->num_class) {
+            report_error("Architecture file does not match block type");
+        }
         const t_class* class_inf = &context.first->class_inf[num_classes++];
 
         if (class_inf->type != from_uxsd_pin_type(type)) {
@@ -1286,7 +1298,9 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline void finish_block_types_block_type(std::pair<const t_physical_tile_type*, int>& context) final {
         const t_physical_tile_type* tile = context.first;
         int num_classes = context.second;
-        VTR_ASSERT(tile->num_class == num_classes);
+        if (tile->num_class != num_classes) {
+            report_error("Architecture file does not match block type");
+        }
     }
 
     inline size_t num_block_types_block_type(void*& /*ctx*/) final {
