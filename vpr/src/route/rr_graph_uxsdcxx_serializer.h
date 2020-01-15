@@ -301,7 +301,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         , physical_tile_types_(physical_tile_types)
         , grid_(grid)
         , rr_node_metadata_(rr_node_metadata)
-        , rr_edge_metadata_(rr_edge_metadata) {}
+        , rr_edge_metadata_(rr_edge_metadata)
+        , report_error_(nullptr) {}
 
     void start_load(const std::function<void(const char*)>* report_error_in) final {
         report_error_ = report_error_in;
@@ -327,24 +328,28 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline float get_timing_Cin(const t_rr_switch_inf*& sw) final {
         return sw->Cin;
     }
+
     inline void set_timing_Cinternal(float Cinternal, t_rr_switch_inf*& sw) final {
         sw->Cinternal = Cinternal;
     }
     inline float get_timing_Cinternal(const t_rr_switch_inf*& sw) final {
         return sw->Cinternal;
     }
+
     inline void set_timing_Cout(float Cout, t_rr_switch_inf*& sw) final {
         sw->Cout = Cout;
     }
     inline float get_timing_Cout(const t_rr_switch_inf*& sw) final {
         return sw->Cout;
     }
+
     inline void set_timing_R(float R, t_rr_switch_inf*& sw) final {
         sw->R = R;
     }
     inline float get_timing_R(const t_rr_switch_inf*& sw) final {
         return sw->R;
     }
+
     inline void set_timing_Tdel(float Tdel, t_rr_switch_inf*& sw) final {
         sw->Tdel = Tdel;
     }
@@ -364,6 +369,12 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      * </xs:complexType>
      */
     inline void set_switch_name(const char* name, t_rr_switch_inf*& sw) final {
+        // Switch names are required to be allocated in the architecture,
+        // so search the arch_switch_inf_ for the relevant name, and set the
+        // rr graph switch structure with that copy of the string.
+        //
+        // If the switch name is not present in the architecture, generate an
+        // error.
         bool found_arch_name = false;
         for (size_t i = 0; i < num_arch_switches_; ++i) {
             if (strcmp(name, arch_switch_inf_[i].name) == 0) {
@@ -378,6 +389,10 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
         sw->name = name;
     }
+    inline const char* get_switch_name(const t_rr_switch_inf*& sw) final {
+        return sw->name;
+    }
+
     inline void set_switch_type(uxsd::enum_switch_type type, t_rr_switch_inf*& sw) final {
         sw->set_type(from_uxsd_switch_type(type));
     }
@@ -389,6 +404,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return sw;
     }
     inline void finish_switch_timing(t_rr_switch_inf*& /*sw*/) final {}
+
     inline const t_rr_switch_inf* get_switch_timing(const t_rr_switch_inf*& sw) final {
         return sw;
     }
@@ -405,6 +421,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline const t_rr_switch_inf* get_switch_sizing(const t_rr_switch_inf*& sw) final {
         return sw;
     }
+
     inline float get_sizing_buf_size(const t_rr_switch_inf*& sw) final {
         return sw->buf_size;
     }
@@ -424,6 +441,10 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
 
     inline t_rr_switch_inf* add_switches_switch(void*& /*ctx*/, int id) final {
+        // make_room_in_vector will not allocate if preallocate_switches_switch
+        // was invoked, but on formats that lack size on read,
+        // make_room_in_vector will use an allocation pattern that is
+        // amoritized O(1).
         make_room_in_vector(rr_switch_inf_, id);
 
         (*rr_switch_inf_)[id].R = 0;
@@ -445,18 +466,16 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline int get_switch_id(const t_rr_switch_inf*& sw) final {
         return sw - &(*rr_switch_inf_)[0];
     }
-    inline const char* get_switch_name(const t_rr_switch_inf*& sw) final {
-        return sw->name;
-    }
 
     inline void* init_rr_graph_switches(void*& /*ctx*/) final {
         return nullptr;
     }
     inline void finish_rr_graph_switches(void*& /*ctx*/) final {
+        // If make_room_in_vector was used for allocation, this ensures that
+        // the final storage has no overhead.
         rr_switch_inf_->shrink_to_fit();
     }
 
-  public:
     /** Generated for complex type "meta":
      * <xs:complexType name="meta">
      *   <xs:simpleContent>
@@ -469,8 +488,16 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline void set_meta_name(const char* name, MetadataBind& bind) final {
         bind.set_name(name);
     }
+    inline const char* get_meta_name(const t_metadata_dict::value_type*& meta_value) final {
+        return meta_value->first.c_str();
+    }
+
     inline void set_meta_value(const char* value, MetadataBind& bind) final {
         bind.set_value(value);
+    }
+    inline const char* get_meta_value(const t_metadata_dict::value_type*& meta_value) final {
+        VTR_ASSERT(meta_value->second.size() == 1);
+        return meta_value->second[0].as_string().c_str();
     }
 
     /** Generated for complex type "metadata":
@@ -489,6 +516,13 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         bind.bind();
     }
 
+    inline size_t num_metadata_meta(t_metadata_dict_iterator& itr) final {
+        return itr.size();
+    }
+    inline const t_metadata_dict::value_type* get_metadata_meta(int n, t_metadata_dict_iterator& itr) final {
+        return itr.advance(n);
+    }
+
     /** Generated for complex type "node_loc":
      * <xs:complexType name="node_loc">
      *   <xs:attribute name="xlow" type="xs:int" use="required" />
@@ -499,45 +533,21 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      *   <xs:attribute name="ptc" type="xs:int" use="required" />
      * </xs:complexType>
      */
-    inline void set_node_loc_side(uxsd::enum_loc_side side, int& inode) final {
+
+    inline int init_node_loc(int& inode, int ptc, int xhigh, int xlow, int yhigh, int ylow) final {
         auto& node = (*rr_nodes_)[inode];
 
-        if (uxsd::enum_loc_side::UXSD_INVALID == side) {
-            // node_loc.side is only expected on IPIN/OPIN
-            if (node.type() == IPIN || node.type() == OPIN) {
-                report_error(
-                    "inode %d is type %d, which requires a side, but no side was supplied.",
-                    inode, node.type());
-            }
-        } else {
-            node.set_side(from_uxsd_loc_side(side));
-        }
+        node.set_coordinates(xlow, ylow, xhigh, yhigh);
+        node.set_ptc_num(ptc);
+        return inode;
     }
-
-    inline const char* get_meta_name(const t_metadata_dict::value_type*& meta_value) final {
-        return meta_value->first.c_str();
-    }
-    inline const char* get_meta_value(const t_metadata_dict::value_type*& meta_value) final {
-        VTR_ASSERT(meta_value->second.size() == 1);
-        return meta_value->second[0].as_string().c_str();
-    }
-    inline size_t num_metadata_meta(t_metadata_dict_iterator& itr) final {
-        return itr.size();
-    }
-
-    inline const t_metadata_dict::value_type* get_metadata_meta(int n, t_metadata_dict_iterator& itr) final {
-        return itr.advance(n);
+    inline void finish_node_loc(int& /*inode*/) final {}
+    inline const t_rr_node* get_node_loc(const t_rr_node*& node) final {
+        return node;
     }
 
     inline int get_node_loc_ptc(const t_rr_node*& node) final {
         return node->ptc_num();
-    }
-    inline uxsd::enum_loc_side get_node_loc_side(const t_rr_node*& node) final {
-        if (node->type() == IPIN || node->type() == OPIN) {
-            return to_uxsd_loc_side(node->side());
-        } else {
-            return uxsd::enum_loc_side::UXSD_INVALID;
-        }
     }
     inline int get_node_loc_xhigh(const t_rr_node*& node) final {
         return node->xhigh();
@@ -551,131 +561,60 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline int get_node_loc_ylow(const t_rr_node*& node) final {
         return node->ylow();
     }
-    inline float get_node_timing_C(const t_rr_node*& node) final {
-        return node->C();
-    }
-    inline float get_node_timing_R(const t_rr_node*& node) final {
-        return node->R();
-    }
-    inline int get_node_segment_segment_id(const t_rr_node*& node) final {
-        return (*rr_indexed_data_)[node->cost_index()].seg_index;
-    }
-    inline unsigned int get_node_capacity(const t_rr_node*& node) final {
-        return node->capacity();
-    }
-    inline uxsd::enum_node_direction get_node_direction(const t_rr_node*& node) final {
-        if (node->type() == CHANX || node->type() == CHANY) {
-            return to_uxsd_node_direction(node->direction());
-        } else {
-            return uxsd::enum_node_direction::UXSD_INVALID;
-        }
-    }
-    inline unsigned int get_node_id(const t_rr_node*& node) final {
-        return node - &(*rr_nodes_)[0];
-    }
-    inline uxsd::enum_node_type get_node_type(const t_rr_node*& node) final {
-        return to_uxsd_node_type(node->type());
-    }
-    inline const t_rr_node* get_node_loc(const t_rr_node*& node) final {
-        return node;
-    }
-    inline const t_rr_node* get_node_timing(const t_rr_node*& node) final {
-        return node;
-    }
-    inline bool has_node_timing(const t_rr_node*& /*node*/) final {
-        return true;
-    }
-    inline const t_rr_node* get_node_segment(const t_rr_node*& node) final {
-        return node;
-    }
-    inline bool has_node_segment(const t_rr_node*& node) final {
-        return (*rr_indexed_data_)[node->cost_index()].seg_index != -1;
-    }
-    inline t_metadata_dict_iterator get_node_metadata(const t_rr_node*& node) final {
-        const auto itr = rr_node_metadata_.find(get_node_id(node));
-        return t_metadata_dict_iterator(&itr->second, report_error_);
-    }
-    inline bool has_node_metadata(const t_rr_node*& node) final {
-        const auto itr = rr_node_metadata_.find(get_node_id(node));
-        return itr != rr_node_metadata_.end();
-    }
-    inline size_t num_rr_nodes_node(void*& /*ctx*/) final {
-        return rr_nodes_->size();
-    }
-    inline const t_rr_node* get_rr_nodes_node(int n, void*& /*ctx*/) final {
-        return &(*rr_nodes_)[n];
-    }
 
-    inline unsigned int get_edge_sink_node(const EdgeWalker*& walker) final {
-        return walker->current_sink_node();
-    }
-    inline unsigned int get_edge_src_node(const EdgeWalker*& walker) final {
-        return walker->current_src_node();
-    }
-    inline unsigned int get_edge_switch_id(const EdgeWalker*& walker) final {
-        return walker->current_switch_id_node();
-    }
-    inline t_metadata_dict_iterator get_edge_metadata(const EdgeWalker*& walker) final {
-        return t_metadata_dict_iterator(&rr_edge_metadata_.find(
-                                                              std::make_tuple(
-                                                                  walker->current_src_node(),
-                                                                  walker->current_sink_node(),
-                                                                  walker->current_switch_id_node()))
-                                             ->second,
-                                        report_error_);
-    }
-    inline bool has_edge_metadata(const EdgeWalker*& walker) final {
-        return rr_edge_metadata_.find(
-                   std::make_tuple(
-                       walker->current_src_node(),
-                       walker->current_sink_node(),
-                       walker->current_switch_id_node()))
-               != rr_edge_metadata_.end();
-    }
-    inline size_t num_rr_edges_edge(EdgeWalker& walker) final {
-        return walker.num_edges();
-    }
-    inline const EdgeWalker* get_rr_edges_edge(int n, EdgeWalker& walker) final {
-        size_t cur = walker.advance(n);
-        if ((ssize_t)cur != n) {
-            report_error("Incorrect edge index %zu != %d", cur, n);
-        }
-        return &walker;
-    }
-    inline EdgeWalker get_rr_graph_rr_edges(void*& /*ctx*/) final {
-        EdgeWalker walker;
-        walker.initialize(rr_nodes_);
-        return walker;
-    }
-
-    inline void set_node_direction(uxsd::enum_node_direction direction, int& inode) final {
+    inline void set_node_loc_side(uxsd::enum_loc_side side, int& inode) final {
         auto& node = (*rr_nodes_)[inode];
-        if (direction == uxsd::enum_node_direction::UXSD_INVALID) {
-            if (node.type() == CHANX || node.type() == CHANY) {
+
+        if (uxsd::enum_loc_side::UXSD_INVALID == side) {
+            // node_loc.side is only expected on IPIN/OPIN.
+            if (node.type() == IPIN || node.type() == OPIN) {
                 report_error(
-                    "inode %d is type %d, which requires a direction, but no direction was supplied.",
+                    "inode %d is type %d, which requires a side, but no side was supplied.",
                     inode, node.type());
             }
         } else {
-            node.set_direction(from_uxsd_node_direction(direction));
+            node.set_side(from_uxsd_loc_side(side));
+        }
+    }
+    inline uxsd::enum_loc_side get_node_loc_side(const t_rr_node*& node) final {
+        if (node->type() == IPIN || node->type() == OPIN) {
+            return to_uxsd_loc_side(node->side());
+        } else {
+            return uxsd::enum_loc_side::UXSD_INVALID;
         }
     }
 
-    inline int init_node_loc(int& inode, int ptc, int xhigh, int xlow, int yhigh, int ylow) final {
-        auto& node = (*rr_nodes_)[inode];
-
-        node.set_coordinates(xlow, ylow, xhigh, yhigh);
-        node.set_ptc_num(ptc);
-        return inode;
-    }
-    inline void finish_node_loc(int& /*inode*/) final {}
-
+    /** Generated for complex type "node_timing":
+     * <xs:complexType name="node_timing">
+     *   <xs:attribute name="R" type="xs:float" use="required" />
+     *   <xs:attribute name="C" type="xs:float" use="required" />
+     * </xs:complexType>
+     */
     inline int init_node_timing(int& inode, float C, float R) final {
         auto& node = (*rr_nodes_)[inode];
         node.set_rc_index(find_create_rr_rc_data(R, C));
         return inode;
     }
     inline void finish_node_timing(int& /*inode*/) final {}
+    inline const t_rr_node* get_node_timing(const t_rr_node*& node) final {
+        return node;
+    }
+    inline bool has_node_timing(const t_rr_node*& /*node*/) final {
+        return true;
+    }
+
+    inline float get_node_timing_C(const t_rr_node*& node) final {
+        return node->C();
+    }
+    inline float get_node_timing_R(const t_rr_node*& node) final {
+        return node->R();
+    }
+
+    /** Generated for complex type "node_segment":
+     * <xs:complexType name="node_segment">
+     *   <xs:attribute name="segment_id" type="xs:int" use="required" />
+     * </xs:complexType>
+     */
     inline int init_node_segment(int& inode, int segment_id) final {
         if (segment_id > (ssize_t)segment_inf_.size()) {
             report_error(
@@ -696,6 +635,16 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return inode;
     }
     inline void finish_node_segment(int& /*inode*/) final {}
+    inline int get_node_segment_segment_id(const t_rr_node*& node) final {
+        return (*rr_indexed_data_)[node->cost_index()].seg_index;
+    }
+
+    inline const t_rr_node* get_node_segment(const t_rr_node*& node) final {
+        return node;
+    }
+    inline bool has_node_segment(const t_rr_node*& node) final {
+        return (*rr_indexed_data_)[node->cost_index()].seg_index != -1;
+    }
 
     inline MetadataBind init_node_metadata(int& inode) final {
         MetadataBind bind;
@@ -704,6 +653,14 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
     inline void finish_node_metadata(MetadataBind& bind) final {
         bind.finish();
+    }
+    inline t_metadata_dict_iterator get_node_metadata(const t_rr_node*& node) final {
+        const auto itr = rr_node_metadata_.find(get_node_id(node));
+        return t_metadata_dict_iterator(&itr->second, report_error_);
+    }
+    inline bool has_node_metadata(const t_rr_node*& node) final {
+        const auto itr = rr_node_metadata_.find(get_node_id(node));
+        return itr != rr_node_metadata_.end();
     }
 
     /** Generated for complex type "rr_nodes":
@@ -717,6 +674,10 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         rr_nodes_->reserve(size);
     }
     inline int add_rr_nodes_node(void*& /*ctx*/, unsigned int capacity, unsigned int id, uxsd::enum_node_type type) final {
+        // make_room_in_vector will not allocate if preallocate_rr_nodes_node
+        // was invoked, but on formats that lack size on read,
+        // make_room_in_vector will use an allocation pattern that is
+        // amoritized O(1).
         make_room_in_vector(rr_nodes_, id);
         auto& node = (*rr_nodes_)[id];
 
@@ -754,6 +715,42 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         auto& node = (*rr_nodes_)[inode];
         node.set_num_edges(0);
     }
+    inline size_t num_rr_nodes_node(void*& /*ctx*/) final {
+        return rr_nodes_->size();
+    }
+    inline const t_rr_node* get_rr_nodes_node(int n, void*& /*ctx*/) final {
+        return &(*rr_nodes_)[n];
+    }
+
+    inline unsigned int get_node_capacity(const t_rr_node*& node) final {
+        return node->capacity();
+    }
+    inline unsigned int get_node_id(const t_rr_node*& node) final {
+        return node - &(*rr_nodes_)[0];
+    }
+    inline uxsd::enum_node_type get_node_type(const t_rr_node*& node) final {
+        return to_uxsd_node_type(node->type());
+    }
+
+    inline void set_node_direction(uxsd::enum_node_direction direction, int& inode) final {
+        auto& node = (*rr_nodes_)[inode];
+        if (direction == uxsd::enum_node_direction::UXSD_INVALID) {
+            if (node.type() == CHANX || node.type() == CHANY) {
+                report_error(
+                    "inode %d is type %d, which requires a direction, but no direction was supplied.",
+                    inode, node.type());
+            }
+        } else {
+            node.set_direction(from_uxsd_node_direction(direction));
+        }
+    }
+    inline uxsd::enum_node_direction get_node_direction(const t_rr_node*& node) final {
+        if (node->type() == CHANX || node->type() == CHANY) {
+            return to_uxsd_node_direction(node->direction());
+        } else {
+            return uxsd::enum_node_direction::UXSD_INVALID;
+        }
+    }
 
     inline void* init_rr_graph_rr_nodes(void*& /*ctx*/) final {
         rr_nodes_->clear();
@@ -761,9 +758,18 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return nullptr;
     }
     inline void finish_rr_graph_rr_nodes(void*& /*ctx*/) final {
+        // If make_room_in_vector was used for allocation, this ensures that
+        // the final storage has no overhead.
         rr_nodes_->shrink_to_fit();
     }
 
+    /** Generated for complex type "rr_edges":
+     * <xs:complexType name="rr_edges">
+     *   <xs:choice maxOccurs="unbounded">
+     *     <xs:element name="edge" type="edge" />
+     *   </xs:choice>
+     * </xs:complexType>
+     */
     /** Generated for complex type "edge":
      * <xs:complexType name="edge">
      *   <xs:all>
@@ -774,11 +780,152 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      *   <xs:attribute name="switch_id" type="xs:unsignedInt" use="required" />
      * </xs:complexType>
      */
+    inline void preallocate_rr_edges_edge(void*& /*ctx*/, size_t size) final {
+        edges_.reserve(size);
+    }
+    inline MetadataBind add_rr_edges_edge(void*& /*ctx*/, unsigned int sink_node, unsigned int src_node, unsigned int switch_id) final {
+        if (src_node >= rr_nodes_->size()) {
+            report_error(
+                "source_node %d is larger than rr_nodes.size() %d",
+                src_node, rr_nodes_->size());
+        }
+
+        MetadataBind bind;
+        if (read_edge_metadata_) {
+            bind.set_edge_target(src_node, sink_node, switch_id);
+        } else {
+            bind.set_ignore();
+        }
+
+        // If preallocate_rr_edges_edge is not invoked, this push_back is
+        // still amoritized O(1) as guarenteed by std::vector.
+        edges_.push_back(std::make_tuple(src_node, sink_node, switch_id));
+        return bind;
+    }
+    inline void finish_rr_edges_edge(MetadataBind& bind) final {
+        bind.finish();
+    }
+    inline size_t num_rr_edges_edge(EdgeWalker& walker) final {
+        return walker.num_edges();
+    }
+    inline const EdgeWalker* get_rr_edges_edge(int n, EdgeWalker& walker) final {
+        size_t cur = walker.advance(n);
+        if ((ssize_t)cur != n) {
+            report_error("Incorrect edge index %zu != %d", cur, n);
+        }
+        return &walker;
+    }
+
+    inline unsigned int get_edge_sink_node(const EdgeWalker*& walker) final {
+        return walker->current_sink_node();
+    }
+    inline unsigned int get_edge_src_node(const EdgeWalker*& walker) final {
+        return walker->current_src_node();
+    }
+    inline unsigned int get_edge_switch_id(const EdgeWalker*& walker) final {
+        return walker->current_switch_id_node();
+    }
+
     inline MetadataBind init_edge_metadata(MetadataBind& bind) final {
         return bind;
     }
     inline void finish_edge_metadata(MetadataBind& bind) final {
         bind.finish();
+    }
+    inline t_metadata_dict_iterator get_edge_metadata(const EdgeWalker*& walker) final {
+        return t_metadata_dict_iterator(&rr_edge_metadata_.find(
+                                                              std::make_tuple(
+                                                                  walker->current_src_node(),
+                                                                  walker->current_sink_node(),
+                                                                  walker->current_switch_id_node()))
+                                             ->second,
+                                        report_error_);
+    }
+    inline bool has_edge_metadata(const EdgeWalker*& walker) final {
+        return rr_edge_metadata_.find(
+                   std::make_tuple(
+                       walker->current_src_node(),
+                       walker->current_sink_node(),
+                       walker->current_switch_id_node()))
+               != rr_edge_metadata_.end();
+    }
+
+    inline void* init_rr_graph_rr_edges(void*& /*ctx*/) final {
+        return nullptr;
+    }
+    inline void finish_rr_graph_rr_edges(void*& /*ctx*/) final {
+        // edges_ now contains the full edge list, copy edges out to the
+        // relevant nodes.
+        std::vector<size_t> num_edges_for_node(rr_nodes_->size());
+        for (const auto& edge : edges_) {
+            num_edges_for_node[std::get<0>(edge)]++;
+        }
+
+        for (size_t inode = 0; inode < rr_nodes_->size(); inode++) {
+            if (num_edges_for_node[inode] > std::numeric_limits<t_edge_size>::max()) {
+                report_error(
+                    "source node %d edge count %d is too high",
+                    inode, num_edges_for_node[inode]);
+            }
+            (*rr_nodes_)[inode].set_num_edges(num_edges_for_node[inode]);
+            num_edges_for_node[inode] = 0;
+        }
+
+        /*initialize a vector that keeps track of the number of wire to ipin switches
+         * There should be only one wire to ipin switch. In case there are more, make sure to
+         * store the most frequent switch */
+        std::vector<int> count_for_wire_to_ipin_switches;
+        count_for_wire_to_ipin_switches.resize(rr_switch_inf_->size(), 0);
+        //first is index, second is count
+        std::pair<int, int> most_frequent_switch(-1, 0);
+
+        for (const auto& edge : edges_) {
+            auto source_node = std::get<0>(edge);
+            auto sink_node = std::get<1>(edge);
+            auto switch_id = std::get<2>(edge);
+
+            if (sink_node >= rr_nodes_->size()) {
+                report_error(
+                    "sink_node %u is larger than rr_nodes.size() %zu",
+                    sink_node, rr_nodes_->size());
+            }
+
+            if (switch_id >= rr_switch_inf_->size()) {
+                report_error(
+                    "switch_id %u is larger than num_rr_switches %zu",
+                    switch_id, rr_switch_inf_->size());
+            }
+
+            auto& node = (*rr_nodes_)[source_node];
+
+            /*Keeps track of the number of the specific type of switch that connects a wire to an ipin
+             * use the pair data structure to keep the maximum*/
+            if (node.type() == CHANX || node.type() == CHANY) {
+                if ((*rr_nodes_)[sink_node].type() == IPIN) {
+                    count_for_wire_to_ipin_switches[switch_id]++;
+                    if (count_for_wire_to_ipin_switches[switch_id] > most_frequent_switch.second) {
+                        most_frequent_switch.first = switch_id;
+                        most_frequent_switch.second = count_for_wire_to_ipin_switches[switch_id];
+                    }
+                }
+            }
+
+            //set edge in correct rr_node data structure
+            node.set_edge_sink_node(num_edges_for_node[source_node], sink_node);
+            node.set_edge_switch(num_edges_for_node[source_node], switch_id);
+            num_edges_for_node[source_node]++;
+        }
+
+        edges_.clear();
+        edges_.shrink_to_fit();
+        VTR_ASSERT(wire_to_rr_ipin_switch_ != nullptr);
+        *wire_to_rr_ipin_switch_ = most_frequent_switch.first;
+    }
+
+    inline EdgeWalker get_rr_graph_rr_edges(void*& /*ctx*/) final {
+        EdgeWalker walker;
+        walker.initialize(rr_nodes_);
+        return walker;
     }
 
     /** Generated for complex type "channels":
@@ -882,149 +1029,24 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline void finish_rr_graph_channels(void*& /*ctx*/) final {
     }
 
-    /** Generated for complex type "rr_edges":
-     * <xs:complexType name="rr_edges">
-     *   <xs:choice maxOccurs="unbounded">
-     *     <xs:element name="edge" type="edge" />
-     *   </xs:choice>
-     * </xs:complexType>
-     */
-    inline void preallocate_rr_edges_edge(void*& /*ctx*/, size_t size) final {
-        edges_.reserve(size);
-    }
-    inline MetadataBind add_rr_edges_edge(void*& /*ctx*/, unsigned int sink_node, unsigned int src_node, unsigned int switch_id) final {
-        if (src_node >= rr_nodes_->size()) {
-            report_error(
-                "source_node %d is larger than rr_nodes.size() %d",
-                src_node, rr_nodes_->size());
-        }
-
-        MetadataBind bind;
-        if (read_edge_metadata_) {
-            bind.set_edge_target(src_node, sink_node, switch_id);
-        } else {
-            bind.set_ignore();
-        }
-
-        edges_.push_back(std::make_tuple(src_node, sink_node, switch_id));
-        return bind;
-    }
-    inline void finish_rr_edges_edge(MetadataBind& bind) final {
-        bind.finish();
-    }
-    inline void* init_rr_graph_rr_edges(void*& /*ctx*/) final {
-        return nullptr;
-    }
-    inline void finish_rr_graph_rr_edges(void*& /*ctx*/) final {
-        std::vector<size_t> num_edges_for_node(rr_nodes_->size());
-        for (const auto& edge : edges_) {
-            num_edges_for_node[std::get<0>(edge)]++;
-        }
-
-        for (size_t inode = 0; inode < rr_nodes_->size(); inode++) {
-            if (num_edges_for_node[inode] > std::numeric_limits<t_edge_size>::max()) {
-                report_error(
-                    "source node %d edge count %d is too high",
-                    inode, num_edges_for_node[inode]);
-            }
-            (*rr_nodes_)[inode].set_num_edges(num_edges_for_node[inode]);
-            num_edges_for_node[inode] = 0;
-        }
-
-        /*initialize a vector that keeps track of the number of wire to ipin switches
-         * There should be only one wire to ipin switch. In case there are more, make sure to
-         * store the most frequent switch */
-        std::vector<int> count_for_wire_to_ipin_switches;
-        count_for_wire_to_ipin_switches.resize(rr_switch_inf_->size(), 0);
-        //first is index, second is count
-        std::pair<int, int> most_frequent_switch(-1, 0);
-
-        for (const auto& edge : edges_) {
-            auto source_node = std::get<0>(edge);
-            auto sink_node = std::get<1>(edge);
-            auto switch_id = std::get<2>(edge);
-
-            if (sink_node >= rr_nodes_->size()) {
-                report_error(
-                    "sink_node %u is larger than rr_nodes.size() %zu",
-                    sink_node, rr_nodes_->size());
-            }
-
-            if (switch_id >= rr_switch_inf_->size()) {
-                report_error(
-                    "switch_id %u is larger than num_rr_switches %zu",
-                    switch_id, rr_switch_inf_->size());
-            }
-
-            auto& node = (*rr_nodes_)[source_node];
-
-            /*Keeps track of the number of the specific type of switch that connects a wire to an ipin
-             * use the pair data structure to keep the maximum*/
-            if (node.type() == CHANX || node.type() == CHANY) {
-                if ((*rr_nodes_)[sink_node].type() == IPIN) {
-                    count_for_wire_to_ipin_switches[switch_id]++;
-                    if (count_for_wire_to_ipin_switches[switch_id] > most_frequent_switch.second) {
-                        most_frequent_switch.first = switch_id;
-                        most_frequent_switch.second = count_for_wire_to_ipin_switches[switch_id];
-                    }
-                }
-            }
-
-            //set edge in correct rr_node data structure
-            node.set_edge_sink_node(num_edges_for_node[source_node], sink_node);
-            node.set_edge_switch(num_edges_for_node[source_node], switch_id);
-            num_edges_for_node[source_node]++;
-        }
-
-        edges_.clear();
-        edges_.shrink_to_fit();
-        VTR_ASSERT(wire_to_rr_ipin_switch_ != nullptr);
-        *wire_to_rr_ipin_switch_ = most_frequent_switch.first;
-    }
-
-    /** Generated for complex type "rr_graph":
-     * <xs:complexType xmlns:xs="http://www.w3.org/2001/XMLSchema">
-     *     <xs:all>
-     *       <xs:element name="channels" type="channels" />
-     *       <xs:element name="switches" type="switches" />
-     *       <xs:element name="segments" type="segments" />
-     *       <xs:element name="block_types" type="block_types" />
-     *       <xs:element name="grid" type="grid_locs" />
-     *       <xs:element name="rr_nodes" type="rr_nodes" />
-     *       <xs:element name="rr_edges" type="rr_edges" />
-     *     </xs:all>
-     *     <xs:attribute name="tool_name" type="xs:string" />
-     *     <xs:attribute name="tool_version" type="xs:string" />
-     *     <xs:attribute name="tool_comment" type="xs:string" />
-     *   </xs:complexType>
-     */
-    inline void set_rr_graph_tool_comment(const char* tool_comment, void*& /*ctx*/) final {
-        std::string correct_string = "Generated from arch file ";
-        correct_string += get_arch_file_name();
-        if (correct_string != tool_comment) {
-            VTR_LOG("\n");
-            VTR_LOG_WARN("This RR graph file is based on %s while your input architecture file is %s compatability issues may arise\n",
-                         get_arch_file_name(), tool_comment);
-            VTR_LOG("\n");
-        }
-    }
-    inline void set_rr_graph_tool_name(const char* /*tool_name*/, void*& /*ctx*/) final {
-    }
-    inline void set_rr_graph_tool_version(const char* tool_version, void*& /*ctx*/) final {
-        if (strcmp(tool_version, vtr::VERSION) != 0) {
-            VTR_LOG("\n");
-            VTR_LOG_WARN("This architecture version is for VPR %s while your current VPR version is %s compatability issues may arise\n",
-                         vtr::VERSION, tool_version);
-            VTR_LOG("\n");
-        }
-    }
-
     /** Generated for complex type "segment_timing":
      * <xs:complexType name="segment_timing">
      *   <xs:attribute name="R_per_meter" type="xs:float" />
      *   <xs:attribute name="C_per_meter" type="xs:float" />
      * </xs:complexType>
      */
+    inline const t_segment_inf* init_segment_timing(const t_segment_inf*& segment) final {
+        return segment;
+    }
+    inline void finish_segment_timing(const t_segment_inf*& /*segment*/) final {}
+
+    inline const t_segment_inf* get_segment_timing(const t_segment_inf*& segment) final {
+        return segment;
+    }
+    inline bool has_segment_timing(const t_segment_inf*& /*segment*/) final {
+        return true;
+    }
+
     inline float get_segment_timing_C_per_meter(const t_segment_inf*& segment) final {
         return segment->Cmetal;
     }
@@ -1034,6 +1056,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 "Architecture file does not match RR graph's segment C_per_meter");
         }
     }
+
     inline float get_segment_timing_R_per_meter(const t_segment_inf*& segment) final {
         return segment->Rmetal;
     }
@@ -1065,17 +1088,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 "Architecture file does not match RR graph's segment name: arch uses %s, RR graph uses %s",
                 segment->name.c_str(), name);
         }
-    }
-    inline const t_segment_inf* init_segment_timing(const t_segment_inf*& segment) final {
-        return segment;
-    }
-    inline void finish_segment_timing(const t_segment_inf*& /*segment*/) final {}
-
-    inline const t_segment_inf* get_segment_timing(const t_segment_inf*& segment) final {
-        return segment;
-    }
-    inline bool has_segment_timing(const t_segment_inf*& /*segment*/) final {
-        return true;
     }
 
     /** Generated for complex type "segments":
@@ -1391,6 +1403,43 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return &grid_.matrix().get(n);
     }
 
+    /** Generated for complex type "rr_graph":
+     * <xs:complexType xmlns:xs="http://www.w3.org/2001/XMLSchema">
+     *     <xs:all>
+     *       <xs:element name="channels" type="channels" />
+     *       <xs:element name="switches" type="switches" />
+     *       <xs:element name="segments" type="segments" />
+     *       <xs:element name="block_types" type="block_types" />
+     *       <xs:element name="grid" type="grid_locs" />
+     *       <xs:element name="rr_nodes" type="rr_nodes" />
+     *       <xs:element name="rr_edges" type="rr_edges" />
+     *     </xs:all>
+     *     <xs:attribute name="tool_name" type="xs:string" />
+     *     <xs:attribute name="tool_version" type="xs:string" />
+     *     <xs:attribute name="tool_comment" type="xs:string" />
+     *   </xs:complexType>
+     */
+    inline void set_rr_graph_tool_comment(const char* tool_comment, void*& /*ctx*/) final {
+        std::string correct_string = "Generated from arch file ";
+        correct_string += get_arch_file_name();
+        if (correct_string != tool_comment) {
+            VTR_LOG("\n");
+            VTR_LOG_WARN("This RR graph file is based on %s while your input architecture file is %s compatability issues may arise\n",
+                         get_arch_file_name(), tool_comment);
+            VTR_LOG("\n");
+        }
+    }
+    inline void set_rr_graph_tool_name(const char* /*tool_name*/, void*& /*ctx*/) final {
+    }
+    inline void set_rr_graph_tool_version(const char* tool_version, void*& /*ctx*/) final {
+        if (strcmp(tool_version, vtr::VERSION) != 0) {
+            VTR_LOG("\n");
+            VTR_LOG_WARN("This architecture version is for VPR %s while your current VPR version is %s compatability issues may arise\n",
+                         vtr::VERSION, tool_version);
+            VTR_LOG("\n");
+        }
+    }
+
     inline const char* get_rr_graph_tool_comment(void*& /*ctx*/) final {
         temp_string_.assign("Generated from arch file ");
         temp_string_ += get_arch_file_name();
@@ -1402,6 +1451,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline const char* get_rr_graph_tool_version(void*& /*ctx*/) final {
         return vtr::VERSION;
     }
+
     inline void* get_rr_graph_channels(void*& /*ctx*/) final {
         return nullptr;
     }
@@ -1422,8 +1472,9 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
 
     void finish_load() final {
-        //Partition the rr graph edges for efficient access to configurable/non-configurable
-        //edge subsets. Must be done after RR switches have been allocated
+        // Partition the rr graph edges for efficient access to
+        // configurable/non-configurable edge subsets. Must be done after RR
+        // switches have been allocated.
         partition_rr_graph_edges(rr_nodes_);
 
         process_rr_node_indices();
@@ -1808,7 +1859,12 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         // Reset variable argument list
         va_end(va_args);
 
-        (*report_error_)(str.c_str());
+        if (report_error_) {
+            (*report_error_)(str.c_str());
+        } else {
+            throw std::runtime_error(str);
+        }
+
         throw std::runtime_error("Unreachable line!");
     }
 
