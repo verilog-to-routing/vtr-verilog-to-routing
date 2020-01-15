@@ -5,8 +5,35 @@
   XML 1.0 Schema for rr_graph structure developed based on documentation here:
   http://vtr-verilog-to-routing.readthedocs.io/en/latest/vpr/file_formats.html#routing-resource-graph-file-format-xml
 -->
+
+<!--
+  The root of the XSD file is the xs:schema.  With the xs:schema are 3 types
+  relevant to the code generated:
+
+- xs:complexType : This defines a child tag within the schema.  Most of the
+                   schema is made of these.
+- xs:simpleType : These define string enumerations (e.g. the "switch" tag
+                  "type" enumeration).
+- xs:element : There is one xs:element that is the direct child of the root
+               xs:schema, and this the definition of the root tag.
+
+  In addition to being used for code generation, this schema can be used to
+  validate whether an rr graph XML conforms to this schema.
+
+-->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
+  <!-- This is an example leaf tag definition.  All of the children of the
+       the type are simply attribute's, and all of the attributes are
+       integers (via type="xs:int") and are required (use="required").
+
+       Other useful types are "xs:unsignedInt" for unsigned ints, and
+       "xs:float" for single precision floats, and "xs:string" for strings.
+
+       For strings with a set of valid values (e.g. enumerations), the "type"
+       attribute should be the name of a xs:simpleType that defines an
+       xs:restriction / xs:enumeration.  This will be demostrated later.
+  -->
   <xs:complexType name="channel">
     <xs:attribute name="chan_width_max" type="xs:int" use="required"/>
     <xs:attribute name="x_min" type="xs:int" use="required"/>
@@ -16,6 +43,7 @@
   </xs:complexType>
 
   <xs:complexType name="x_list">
+    <!-- Here is an example of an unsigned int -->
     <xs:attribute name="index" type="xs:unsignedInt" use="required"/>
     <xs:attribute name="info" type="xs:int" use="required"/>
   </xs:complexType>
@@ -25,6 +53,30 @@
     <xs:attribute name="info" type="xs:int" use="required"/>
   </xs:complexType>
 
+  <!-- This an example tag definition that is made up of child tags.
+       In this case there are three types of child tags.  The "channel" tag
+       has one instance, which is the default.
+
+       Both x_list and y_list can have multiple instances, so
+       maxOccurs="unbounded" is added to indicate that more than 1 are allowed,
+       and that there is no upper bound.
+
+       In all three cases, the type string refers to a xs:complexType that was
+       defined above.
+  -->
+  <xs:complexType name="channels">
+    <xs:sequence>
+      <xs:element name="channel" type="channel"/>
+      <xs:element name="x_list" type="x_list" maxOccurs="unbounded"/>
+      <xs:element name="y_list" type="y_list" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- This is an example string enumeration type definition.
+       The type of the enumeration is a string, hence the base="xs:string".
+       Inside of the xs:restriction are the allowed values that this enumeration
+       can take.
+    -->
   <xs:simpleType name="switch_type">
     <xs:restriction base="xs:string">
       <xs:enumeration value="mux"/>
@@ -36,6 +88,11 @@
   </xs:simpleType>
 
   <xs:complexType name="timing">
+    <!-- Here is an example of an optional attribute.  In the previous
+         definitions use="required" was specified indicating that the
+         attribute must be present.  In this case, these attributes are not
+         required, so they do not specified use="required".
+    -->
     <xs:attribute name="R" type="xs:float"/>
     <xs:attribute name="Cin" type="xs:float"/>
     <xs:attribute name="Cinternal" type="xs:float"/>
@@ -48,13 +105,33 @@
     <xs:attribute name="buf_size" type="xs:float" use="required"/>
   </xs:complexType>
 
+  <!-- All the complexType's prior to this one have been either entirely tags
+      (e.g. channels) or just attributes.  This is an example where both
+      attributes and tags are present.
+
+      The attributes are direct children of the xs:complexType as before.
+      The child tags go inside the xs:all.  In this case the "timing" tag is
+      optional, so minOccurs="0" is set to allow the tag to be absent.
+
+      The "sizing" tag is required, and 1 instance is expected.  This is the
+      default, and so no additional attributes are required.
+  -->
   <xs:complexType name="switch">
     <xs:all>
       <xs:element name="timing" type="timing" minOccurs="0"/>
       <xs:element name="sizing" type="sizing"/>
     </xs:all>
     <xs:attribute name="id" type="xs:int" use="required"/>
+
+    <!-- This is the first example of a string.  This definition allows for
+         any string to be defined as the "name" attribute.
+    -->
     <xs:attribute name="name" type="xs:string" use="required"/>
+
+    <!-- This is the first example of a string enumeration being used.
+         The attribute "type" is a string enumeration, and uses the
+         xs:simpleType "switch_type" defined above.
+    -->
     <xs:attribute name="type" type="switch_type"/>
   </xs:complexType>
 
@@ -71,6 +148,12 @@
     <xs:attribute name="name" type="xs:string" use="required"/>
   </xs:complexType>
 
+  <!-- All previous tags only contained tags, attributes, or tags and
+       attributes. In this case, the tag has an attribute and it has contents
+       in the tag itself.
+
+       Example tag that conforms to this schema: <pin ptc="5">CLK</pin>
+  -->
   <xs:complexType name="pin">
     <xs:simpleContent>
       <xs:extension base="xs:string">
@@ -78,6 +161,9 @@
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
+
+  <!-- All remaining definitions are variations on the structures documented
+       above. -->
 
   <xs:complexType name="pin_class">
     <xs:sequence>
@@ -194,14 +280,6 @@
     <xs:attribute name="switch_id" type="xs:unsignedInt" use="required"/>
   </xs:complexType>
 
-  <xs:complexType name="channels">
-    <xs:sequence>
-      <xs:element name="channel" type="channel"/>
-      <xs:element name="x_list" type="x_list" maxOccurs="unbounded"/>
-      <xs:element name="y_list" type="y_list" maxOccurs="unbounded"/>
-    </xs:sequence>
-  </xs:complexType>
-
   <xs:complexType name="switches">
     <xs:sequence>
       <xs:element name="switch" type="switch" maxOccurs="unbounded"/>
@@ -231,13 +309,17 @@
       <xs:element name="node" type="node"/>
     </xs:choice>
   </xs:complexType>
-  
+
   <xs:complexType name="rr_edges">
     <xs:choice maxOccurs="unbounded">
       <xs:element name="edge" type="edge"/>
     </xs:choice>
   </xs:complexType>
 
+  <!-- This last definition is the root tag definition.  The name of the
+       xs:element is the root tag, and the contents of the xs:complexType
+       defines what attributes and subtags are expected.
+    -->
   <xs:element name="rr_graph">
     <xs:complexType>
       <xs:all>
