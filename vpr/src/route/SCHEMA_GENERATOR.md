@@ -45,7 +45,7 @@ VPR to disk).
 The methods starting with `preallocate_`, `add_`, `init_`, and `finish_`
 are associated with the reader interface.  The reader interface has three additionals methods, `start_load`, `finish_load` and `error_encountered`.
 
-The methdos starting with `get_`, `has_` and `size_` are associated with
+The methods starting with `get_`, `has_` and `size_` are associated with
 the writer interface.  The writer interface has two additionals methods, `start_load`, and `finish_load`.
 
 #### Load interface
