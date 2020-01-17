@@ -105,32 +105,32 @@ class string_view {
     size_t size_;
 };
 
-bool operator==(string_view lhs,
-                string_view rhs) noexcept {
+inline bool operator==(string_view lhs,
+                       string_view rhs) noexcept {
     return lhs.size() == rhs.size() && strncmp(lhs.data(), rhs.data(), std::min(lhs.size(), rhs.size())) == 0;
 }
-bool operator!=(string_view lhs,
-                string_view rhs) noexcept {
+inline bool operator!=(string_view lhs,
+                       string_view rhs) noexcept {
     return lhs.size() != rhs.size() || strncmp(lhs.data(), rhs.data(), std::min(lhs.size(), rhs.size())) != 0;
 }
-bool operator<(string_view lhs,
-               string_view rhs) noexcept {
+inline bool operator<(string_view lhs,
+                      string_view rhs) noexcept {
     return std::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
 }
-bool operator>=(string_view lhs,
-                string_view rhs) noexcept {
+inline bool operator>=(string_view lhs,
+                       string_view rhs) noexcept {
     return !std::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
 }
-bool operator>(string_view lhs,
-               string_view rhs) noexcept {
+inline bool operator>(string_view lhs,
+                      string_view rhs) noexcept {
     return rhs < lhs;
 }
-bool operator<=(string_view lhs,
-                string_view rhs) noexcept {
+inline bool operator<=(string_view lhs,
+                       string_view rhs) noexcept {
     return rhs >= lhs;
 }
 
-std::ostream& operator<<(std::ostream& os, string_view const& value) {
+inline std::ostream& operator<<(std::ostream& os, string_view const& value) {
     for (const auto& c : value) {
         os << c;
     }

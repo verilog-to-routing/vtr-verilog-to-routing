@@ -376,7 +376,7 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
             while (rr_node_meta) {
                 auto key = get_attribute(rr_node_meta, "name", loc_data).as_string();
 
-                vpr::add_rr_node_metadata(inode, key, rr_node_meta.child_value());
+                vpr::add_rr_node_metadata(inode, vtr::string_view(key), vtr::string_view(rr_node_meta.child_value()));
 
                 rr_node_meta = rr_node_meta.next_sibling(rr_node_meta.name());
             }
@@ -469,7 +469,7 @@ void process_edges(pugi::xml_node parent, const pugiutil::loc_data& loc_data, in
                 auto key = get_attribute(edges_meta, "name", loc_data).as_string();
 
                 vpr::add_rr_edge_metadata(source_node, sink_node, switch_id,
-                                          key, edges_meta.child_value());
+                                          vtr::string_view(key), vtr::string_view(edges_meta.child_value()));
 
                 edges_meta = edges_meta.next_sibling(edges_meta.name());
             }

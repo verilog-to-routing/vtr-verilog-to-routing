@@ -134,11 +134,11 @@ class interned_string_iterator {
     vtr::string_view view_;
 };
 
-bool operator==(const interned_string_iterator& lhs, const interned_string_iterator& rhs) {
+inline bool operator==(const interned_string_iterator& lhs, const interned_string_iterator& rhs) {
     return lhs.internment_ == rhs.internment_ && lhs.num_parts_ == rhs.num_parts_ && lhs.parts_ == rhs.parts_ && lhs.part_idx_ == rhs.part_idx_ && lhs.str_idx_ == rhs.str_idx_ && lhs.view_ == rhs.view_;
 }
 
-bool operator!=(const interned_string_iterator& lhs, const interned_string_iterator& rhs) {
+inline bool operator!=(const interned_string_iterator& lhs, const interned_string_iterator& rhs) {
     return !(lhs == rhs);
 }
 
@@ -180,6 +180,15 @@ class interned_string {
     //
     // internment must the object that generated this interned_string.
     void get(const string_internment* internment, std::string* output) const;
+
+    // Returns the underlying string as a std::string.
+    //
+    // This method will allocated memory.
+    std::string get(const string_internment* internment) const {
+        std::string result;
+        get(internment, &result);
+        return result;
+    }
 
     // Bind the parent string_internment and return a bound_interned_string
     // object.  That bound_interned_string lifetime must be shorter than this
@@ -258,28 +267,28 @@ class interned_string {
     std::array<uint8_t, kSizeSize + kMaxParts * kBytesPerId> storage_;
 };
 
-bool operator==(interned_string lhs,
-                interned_string rhs) noexcept {
+inline bool operator==(interned_string lhs,
+                       interned_string rhs) noexcept {
     return lhs.storage_ == rhs.storage_;
 }
-bool operator!=(interned_string lhs,
-                interned_string rhs) noexcept {
+inline bool operator!=(interned_string lhs,
+                       interned_string rhs) noexcept {
     return lhs.storage_ != rhs.storage_;
 }
-bool operator<(bound_interned_string lhs,
-               bound_interned_string rhs) noexcept {
+inline bool operator<(bound_interned_string lhs,
+                      bound_interned_string rhs) noexcept {
     return std::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
 }
-bool operator>=(bound_interned_string lhs,
-                bound_interned_string rhs) noexcept {
+inline bool operator>=(bound_interned_string lhs,
+                       bound_interned_string rhs) noexcept {
     return !std::lexicographical_compare(lhs.begin(), lhs.end(), rhs.begin(), rhs.end());
 }
-bool operator>(bound_interned_string lhs,
-               bound_interned_string rhs) noexcept {
+inline bool operator>(bound_interned_string lhs,
+                      bound_interned_string rhs) noexcept {
     return rhs < lhs;
 }
-bool operator<=(bound_interned_string lhs,
-                bound_interned_string rhs) noexcept {
+inline bool operator<=(bound_interned_string lhs,
+                       bound_interned_string rhs) noexcept {
     return rhs >= lhs;
 }
 
@@ -357,7 +366,7 @@ class string_internment {
     std::unordered_map<std::string, StringId> string_to_id_;
 };
 
-void interned_string::get(const string_internment* internment, std::string* output) const {
+inline void interned_string::get(const string_internment* internment, std::string* output) const {
     // Implements
     // kSplitChar.join(interned_string->get_string(id(idx)) for idx in range(num_parts())));
     size_t parts = num_parts();
@@ -380,7 +389,7 @@ void interned_string::get(const string_internment* internment, std::string* outp
     }
 }
 
-interned_string_iterator::interned_string_iterator(const string_internment* internment, std::array<StringId, kMaxParts> intern_ids, size_t n)
+inline interned_string_iterator::interned_string_iterator(const string_internment* internment, std::array<StringId, kMaxParts> intern_ids, size_t n)
     : internment_(internment)
     , num_parts_(n)
     , parts_(intern_ids)
@@ -393,7 +402,7 @@ interned_string_iterator::interned_string_iterator(const string_internment* inte
     }
 }
 
-interned_string_iterator& interned_string_iterator::operator++() {
+inline interned_string_iterator& interned_string_iterator::operator++() {
     if (num_parts_ == size_t(-1)) {
         throw std::out_of_range("Invalid iterator");
     }
@@ -427,22 +436,22 @@ interned_string_iterator& interned_string_iterator::operator++() {
     return *this;
 }
 
-interned_string_iterator interned_string_iterator::operator++(int) {
+inline interned_string_iterator interned_string_iterator::operator++(int) {
     interned_string_iterator prev = *this;
     ++*this;
 
     return prev;
 }
 
-interned_string_iterator bound_interned_string::begin() const {
+inline interned_string_iterator bound_interned_string::begin() const {
     return str_->begin(internment_);
 }
 
-interned_string_iterator bound_interned_string::end() const {
+inline interned_string_iterator bound_interned_string::end() const {
     return interned_string_iterator();
 }
 
-std::ostream& operator<<(std::ostream& os, bound_interned_string const& value) {
+inline std::ostream& operator<<(std::ostream& os, bound_interned_string const& value) {
     for (const auto& c : value) {
         os << c;
     }
