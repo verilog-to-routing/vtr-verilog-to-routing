@@ -107,6 +107,89 @@ struct hash<std::tuple<int, int, short>> {
 };
 } // namespace std
 
+// MetadataStorage is a two phase data structure.  In the first phase,
+// metadata is added cheaply by simply pushing onto a vector.  This is
+// unsuitable for lookup, but is fast, and because strings are interned, not
+// too expensive memory wise.
+//
+// The second phase occurs after all data has been inserted.  When/if a lookup
+// is needed, the vector is sorted and the final metadata lookup is generated.
+// In the event that the lookup is never needed, this saves the time spent
+// building the lookup, and reduces the number of outstanding memory
+// allocations dramatically.
+template<typename LookupKey>
+class MetadataStorage {
+  public:
+    void add_metadata(const LookupKey& lookup_key, vtr::interned_string meta_key, vtr::interned_string meta_value) {
+        // Can only add metadata prior to building the map.
+        VTR_ASSERT(map_.empty());
+        data_.push_back(std::make_tuple(lookup_key, meta_key, meta_value));
+    }
+
+    typename vtr::flat_map<LookupKey, t_metadata_dict>::const_iterator find(const LookupKey& lookup_key) const {
+        check_for_map();
+
+        return map_.find(lookup_key);
+    }
+
+    void clear() {
+        data_.clear();
+        map_.clear();
+    }
+
+    size_t size() const {
+        check_for_map();
+        return map_.size();
+    }
+
+    typename vtr::flat_map<LookupKey, t_metadata_dict>::const_iterator begin() const {
+        check_for_map();
+        return map_.begin();
+    }
+
+    typename vtr::flat_map<LookupKey, t_metadata_dict>::const_iterator end() const {
+        check_for_map();
+        return map_.end();
+    }
+
+  private:
+    // Check to see if the map has been built yet, builds it if it hasn't been
+    // built.
+    void check_for_map() const {
+        if (map_.empty() && !data_.empty()) {
+            build_map();
+        }
+    }
+
+    // Constructs the metadata lookup map from the flat data.
+    void build_map() const {
+        VTR_ASSERT(!data_.empty());
+        VTR_ASSERT(map_.empty());
+
+        std::sort(data_.begin(), data_.end(), [](const std::tuple<LookupKey, vtr::interned_string, vtr::interned_string>& lhs, const std::tuple<LookupKey, vtr::interned_string, vtr::interned_string>& rhs) {
+            return std::get<0>(lhs) < std::get<0>(rhs);
+        });
+
+        std::vector<typename vtr::flat_map<LookupKey, t_metadata_dict>::value_type> storage;
+        storage.push_back(std::make_pair(std::get<0>(data_[0]), t_metadata_dict()));
+        for (const auto& value : data_) {
+            if (storage.back().first != std::get<0>(value)) {
+                storage.push_back(std::make_pair(std::get<0>(value), t_metadata_dict()));
+            }
+
+            storage.back().second.add(std::get<1>(value), std::get<2>(value));
+        }
+
+        map_.assign(std::move(storage));
+
+        data_.clear();
+        data_.shrink_to_fit();
+    }
+
+    mutable std::vector<std::tuple<LookupKey, vtr::interned_string, vtr::interned_string>> data_;
+    mutable vtr::flat_map<LookupKey, t_metadata_dict> map_;
+};
+
 //State relating the device
 //
 //This should contain only data structures describing the targeted device.
@@ -179,7 +262,7 @@ struct DeviceContext : public Context {
      * key:     rr_node index
      * value:   map of <attribute_name, attribute_value>
      */
-    std::unordered_map<int, t_metadata_dict> rr_node_metadata;
+    MetadataStorage<int> rr_node_metadata;
     /* Attributes for each rr_edge                                             *
      * key:     <source rr_node_index, sink rr_node_index, iswitch>            *
      * iswitch: Index of the switch type used to go from this rr_node to       *
@@ -187,8 +270,7 @@ struct DeviceContext : public Context {
      *          (i.e. this node is the last one (a SINK) in a branch of the    *
      *          net's routing).                                                *
      * value:   map of <attribute_name, attribute_value>                       */
-    std::unordered_map<std::tuple<int, int, short>,
-                       t_metadata_dict>
+    MetadataStorage<std::tuple<int, int, short>>
         rr_edge_metadata;
 
     /*
