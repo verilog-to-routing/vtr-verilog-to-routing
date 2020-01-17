@@ -104,9 +104,10 @@ class t_metadata_value {
 };
 
 // Metadata storage dictionary.
-struct t_metadata_dict : std::unordered_map<
+struct t_metadata_dict : vtr::flat_map<
                              vtr::interned_string,
-                             std::vector<t_metadata_value>> {
+                             std::vector<t_metadata_value>,
+                             vtr::interned_string_less> {
     // Is this key present in the map?
     inline bool has(vtr::interned_string key) const {
         return this->count(key) >= 1;
@@ -142,7 +143,7 @@ struct t_metadata_dict : std::unordered_map<
     void add(vtr::interned_string key, vtr::interned_string value) {
         // Get the iterator to the key, which may already have elements if
         // add was called with this key in the past.
-        auto iter_inserted = this->emplace(key, std::vector<t_metadata_value>());
+        auto iter_inserted = this->emplace(std::make_pair(key, std::vector<t_metadata_value>()));
         iter_inserted.first->second.push_back(t_metadata_value(value));
     }
 };

@@ -57,6 +57,7 @@ namespace vtr {
 // Forward declare classes for pointers.
 class string_internment;
 class interned_string;
+class interned_string_less;
 
 // StrongId for identifying unique string pieces.
 struct interned_string_tag;
@@ -219,6 +220,7 @@ class interned_string {
     friend bool operator!=(interned_string lhs,
                            interned_string rhs) noexcept;
     friend std::hash<interned_string>;
+    friend interned_string_less;
 
   private:
     void set_num_parts(size_t n) {
@@ -457,6 +459,13 @@ inline std::ostream& operator<<(std::ostream& os, bound_interned_string const& v
     }
     return os;
 }
+
+class interned_string_less {
+  public:
+    bool operator()(const vtr::interned_string& lhs, const vtr::interned_string& rhs) const {
+        return lhs.storage_ < rhs.storage_;
+    }
+};
 
 } // namespace vtr
 
