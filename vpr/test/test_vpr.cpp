@@ -23,25 +23,31 @@ TEST_CASE("read_arch_metadata", "[vpr]") {
     XmlReadArch(kArchFile, /*timing_enabled=*/false,
                 &arch, physical_tile_types, logical_block_types);
 
+    auto type_str = arch.strings.intern_string(vtr::string_view("type"));
+    auto pb_type_type = arch.strings.intern_string(vtr::string_view("pb_type_type"));
+    auto single = arch.strings.intern_string(vtr::string_view("single"));
+    auto mode_str = arch.strings.intern_string(vtr::string_view("mode"));
+    auto interconnect_str = arch.strings.intern_string(vtr::string_view("interconnect"));
+
     bool found_perimeter_meta = false;
     bool found_single_meta = false;
     for (const auto& grid_def : arch.grid_layouts) {
         for (const auto& loc_def : grid_def.loc_defs) {
             if (loc_def.block_type == "io") {
                 REQUIRE(loc_def.meta != nullptr);
-                REQUIRE(loc_def.meta->has("type"));
-                auto* value = loc_def.meta->one("type");
+                REQUIRE(loc_def.meta->has(type_str));
+                auto* value = loc_def.meta->one(type_str);
                 REQUIRE(value != nullptr);
-                CHECK_THAT(value->as_string(), Equals("io"));
+                CHECK_THAT(value->as_string().get(&arch.strings), Equals("io"));
                 found_perimeter_meta = true;
             }
 
             if (loc_def.block_type == "clb" && loc_def.x.start_expr == "5" && loc_def.y.start_expr == "5") {
                 REQUIRE(loc_def.meta != nullptr);
-                REQUIRE(loc_def.meta->has("single"));
-                auto* value = loc_def.meta->one("single");
+                REQUIRE(loc_def.meta->has(single));
+                auto* value = loc_def.meta->one(single);
                 REQUIRE(value != nullptr);
-                CHECK_THAT(value->as_string(), Equals("clb"));
+                CHECK_THAT(value->as_string().get(&arch.strings), Equals("clb"));
                 found_single_meta = true;
             }
         }
@@ -58,10 +64,10 @@ TEST_CASE("read_arch_metadata", "[vpr]") {
         if (strcmp("io", type.name) == 0) {
             found_pb_type = true;
             REQUIRE(type.pb_type != nullptr);
-            REQUIRE(type.pb_type->meta.has("pb_type_type"));
-            auto* pb_type_value = type.pb_type->meta.one("pb_type_type");
+            REQUIRE(type.pb_type->meta.has(pb_type_type));
+            auto* pb_type_value = type.pb_type->meta.one(pb_type_type);
             REQUIRE(pb_type_value != nullptr);
-            CHECK_THAT(pb_type_value->as_string(), Equals("pb_type = io"));
+            CHECK_THAT(pb_type_value->as_string().get(&arch.strings), Equals("pb_type = io"));
 
             REQUIRE(type.pb_type->num_modes > 0);
             REQUIRE(type.pb_type->modes != nullptr);
@@ -71,10 +77,10 @@ TEST_CASE("read_arch_metadata", "[vpr]") {
                     found_mode = true;
                     const auto* mode = &type.pb_type->modes[imode];
 
-                    REQUIRE(mode->meta.has("mode"));
-                    auto* mode_value = mode->meta.one("mode");
+                    REQUIRE(mode->meta.has(mode_str));
+                    auto* mode_value = mode->meta.one(mode_str);
                     REQUIRE(mode_value != nullptr);
-                    CHECK_THAT(mode_value->as_string(), Equals("inpad"));
+                    CHECK_THAT(mode_value->as_string().get(&arch.strings), Equals("inpad"));
 
                     CHECK(mode->num_interconnect > 0);
                     REQUIRE(mode->interconnect != nullptr);
@@ -82,10 +88,10 @@ TEST_CASE("read_arch_metadata", "[vpr]") {
                     for (int iint = 0; iint < mode->num_interconnect; ++iint) {
                         if (strcmp("inpad", mode->interconnect[iint].name) == 0) {
                             found_direct = true;
-                            REQUIRE(mode->interconnect[iint].meta.has("interconnect"));
-                            auto* interconnect_value = mode->interconnect[iint].meta.one("interconnect");
+                            REQUIRE(mode->interconnect[iint].meta.has(interconnect_str));
+                            auto* interconnect_value = mode->interconnect[iint].meta.one(interconnect_str);
                             REQUIRE(interconnect_value != nullptr);
-                            CHECK_THAT(interconnect_value->as_string(), Equals("inpad_iconnect"));
+                            CHECK_THAT(interconnect_value->as_string().get(&arch.strings), Equals("inpad_iconnect"));
                             break;
                         }
                     }
@@ -138,8 +144,8 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
         sink_inode = device_ctx.rr_nodes[src_inode].edge_sink_node(0);
         switch_id = device_ctx.rr_nodes[src_inode].edge_switch(0);
 
-        vpr::add_rr_node_metadata(src_inode, "node", "test node");
-        vpr::add_rr_edge_metadata(src_inode, sink_inode, switch_id, "edge", "test edge");
+        vpr::add_rr_node_metadata(src_inode, vtr::string_view("node"), vtr::string_view("test node"));
+        vpr::add_rr_edge_metadata(src_inode, sink_inode, switch_id, vtr::string_view("edge"), vtr::string_view("test edge"));
 
         write_rr_graph(kRrGraphFile, vpr_setup.Segments);
         vpr_free_all(arch, vpr_setup);
@@ -170,12 +176,15 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
     CHECK(device_ctx.rr_node_metadata.size() == 1);
     CHECK(device_ctx.rr_edge_metadata.size() == 1);
 
+    auto node = arch.strings.intern_string(vtr::string_view("node"));
+    auto edge = arch.strings.intern_string(vtr::string_view("edge"));
+
     for (const auto& node_meta : device_ctx.rr_node_metadata) {
         CHECK(node_meta.first == src_inode);
-        REQUIRE(node_meta.second.has("node"));
-        auto* value = node_meta.second.one("node");
+        REQUIRE(node_meta.second.has(node));
+        auto* value = node_meta.second.one(node);
         REQUIRE(value != nullptr);
-        CHECK_THAT(value->as_string(), Equals("test node"));
+        CHECK_THAT(value->as_string().get(&arch.strings), Equals("test node"));
     }
 
     for (const auto& edge_meta : device_ctx.rr_edge_metadata) {
@@ -183,10 +192,10 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
         CHECK(std::get<1>(edge_meta.first) == sink_inode);
         CHECK(std::get<2>(edge_meta.first) == switch_id);
 
-        REQUIRE(edge_meta.second.has("edge"));
-        auto* value = edge_meta.second.one("edge");
+        REQUIRE(edge_meta.second.has(edge));
+        auto* value = edge_meta.second.one(edge);
         REQUIRE(value != nullptr);
-        CHECK_THAT(value->as_string(), Equals("test edge"));
+        CHECK_THAT(value->as_string().get(&arch.strings), Equals("test edge"));
     }
     vpr_free_all(arch, vpr_setup);
 }

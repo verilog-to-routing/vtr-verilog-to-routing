@@ -28,7 +28,15 @@
 
 namespace fasm {
 
-FasmWriterVisitor::FasmWriterVisitor(std::ostream& f) : os_(f) {}
+FasmWriterVisitor::FasmWriterVisitor(vtr::string_internment *strings, std::ostream& f) : strings_(strings), os_(f),
+    fasm_lut(strings->intern_string(vtr::string_view("fasm_lut"))),
+    fasm_features(strings->intern_string(vtr::string_view("fasm_features"))),
+    fasm_params(strings->intern_string(vtr::string_view("fasm_params"))),
+    fasm_prefix(strings->intern_string(vtr::string_view("fasm_prefix"))),
+    fasm_placeholders(strings->intern_string(vtr::string_view("fasm_placeholders"))),
+    fasm_type(strings->intern_string(vtr::string_view("fasm_type"))),
+    fasm_mux(strings->intern_string(vtr::string_view("fasm_mux"))) {
+}
 
 void FasmWriterVisitor::visit_top_impl(const char* top_level_name) {
     (void)top_level_name;
@@ -64,12 +72,12 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
 
     // Get placeholder list (if provided)
     tags_.clear();
-    if(grid_loc.meta != nullptr && grid_loc.meta->has("fasm_placeholders")) {
-      auto* value = grid_loc.meta->get("fasm_placeholders");
+    if(grid_loc.meta != nullptr && grid_loc.meta->has(fasm_placeholders)) {
+      auto* value = grid_loc.meta->get(fasm_placeholders);
       VTR_ASSERT(value != nullptr);
 
       // Parse placeholder definition
-      std::vector<std::string> tag_defs = vtr::split(value->front().as_string(), "\n");
+      std::vector<std::string> tag_defs = vtr::split(value->front().as_string().get(strings_), "\n");
       for (auto& tag_def: tag_defs) {
         auto parts = split_fasm_entry(tag_def, "=:", "\t ");
         if (parts.size() == 0) {
@@ -91,10 +99,10 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
     }
 
     std::string grid_prefix;
-    if(grid_loc.meta != nullptr && grid_loc.meta->has("fasm_prefix")) {
-      auto* value = grid_loc.meta->get("fasm_prefix");
+    if(grid_loc.meta != nullptr && grid_loc.meta->has(fasm_prefix)) {
+      auto* value = grid_loc.meta->get(fasm_prefix);
       VTR_ASSERT(value != nullptr);
-      std::string prefix_unsplit = value->front().as_string();
+      std::string prefix_unsplit = value->front().as_string().get(strings_);
       std::vector<std::string> fasm_prefixes = vtr::split(prefix_unsplit, " \t\n");
       if(fasm_prefixes.size() != static_cast<size_t>(physical_tile_->capacity)) {
         vpr_throw(VPR_ERROR_OTHER,
@@ -136,31 +144,31 @@ void FasmWriterVisitor::check_interconnect(const t_pb_routes &pb_routes, int ino
   VTR_ASSERT(prev_edge < prev_pin->num_output_edges);
 
   auto *interconnect = prev_pin->output_edges[prev_edge]->interconnect;
-  if(interconnect->meta.has("fasm_mux")) {
-    auto* value = interconnect->meta.get("fasm_mux");
+  if(interconnect->meta.has(fasm_mux)) {
+    auto* value = interconnect->meta.get(fasm_mux);
     VTR_ASSERT(value != nullptr);
-    std::string fasm_mux = value->front().as_string();
-    output_fasm_mux(fasm_mux, interconnect, prev_pin);
+    std::string fasm_mux_str = value->front().as_string().get(strings_);
+    output_fasm_mux(fasm_mux_str, interconnect, prev_pin);
   }
 }
 
-static std::string handle_fasm_prefix(const t_metadata_dict *meta,
-        const t_pb_graph_node *pb_graph_node, const t_pb_type *pb_type) {
-  bool has_prefix = meta != nullptr && meta->has("fasm_prefix");
+std::string FasmWriterVisitor::handle_fasm_prefix(const t_metadata_dict *meta,
+        const t_pb_graph_node *pb_graph_node, const t_pb_type *pb_type) const {
+  bool has_prefix = meta != nullptr && meta->has(fasm_prefix);
   if(!has_prefix) {
       return "";
   }
 
-  auto* value = meta->one("fasm_prefix");
+  auto* value = meta->one(fasm_prefix);
   VTR_ASSERT(value != nullptr);
-  auto fasm_prefix_unsplit = value->as_string();
-  auto fasm_prefix = vtr::split(fasm_prefix_unsplit, " \t\n");
+  auto fasm_prefix_unsplit = value->as_string().get(strings_);
+  auto fasm_prefixes = vtr::split(fasm_prefix_unsplit, " \t\n");
   VTR_ASSERT(pb_type->num_pb >= 0);
-  if(fasm_prefix.size() != static_cast<size_t>(pb_type->num_pb)) {
+  if(fasm_prefixes.size() != static_cast<size_t>(pb_type->num_pb)) {
     vpr_throw(VPR_ERROR_OTHER,
               __FILE__, __LINE__,
               "number of fasm_prefix (%s) options (%d) for block (%s) must match capacity(%d)",
-              fasm_prefix_unsplit.c_str(), fasm_prefix.size(), pb_type->name, pb_type->num_pb);
+              fasm_prefix_unsplit.c_str(), fasm_prefixes.size(), pb_type->name, pb_type->num_pb);
   }
 
   if(pb_graph_node->placement_index >= pb_type->num_pb) {
@@ -170,7 +178,7 @@ static std::string handle_fasm_prefix(const t_metadata_dict *meta,
               fasm_prefix_unsplit.c_str(), pb_type->num_pb);
   }
 
-  return fasm_prefix.at(pb_graph_node->placement_index) + ".";
+  return fasm_prefixes.at(pb_graph_node->placement_index) + ".";
 }
 
 std::string FasmWriterVisitor::build_clb_prefix(const t_pb *pb, const t_pb_graph_node* pb_graph_node, bool* is_parent_pb_null) const {
@@ -246,14 +254,14 @@ void FasmWriterVisitor::check_features(const t_metadata_dict *meta) const {
     return;
   }
 
-  if(!meta->has("fasm_features")) {
+  if(!meta->has(fasm_features)) {
     return;
   }
 
-  auto* value = meta->one("fasm_features");
+  auto* value = meta->one(fasm_features);
   VTR_ASSERT(value != nullptr);
 
-  output_fasm_features(value->as_string());
+  output_fasm_features(value->as_string().get(strings_));
 }
 
 void FasmWriterVisitor::visit_all_impl(const t_pb_routes &pb_routes, const t_pb* pb) {
@@ -415,7 +423,7 @@ static LogicVec lut_outputs(const t_pb* atom_pb, size_t num_inputs, const t_pb_r
     return lut.table();
 }
 
-static const t_metadata_dict *get_fasm_type(const t_pb_graph_node* pb_graph_node, std::string target_type) {
+const t_metadata_dict *FasmWriterVisitor::get_fasm_type(const t_pb_graph_node* pb_graph_node, std::string target_type) const {
   if(pb_graph_node == nullptr) {
     return nullptr;
   }
@@ -425,26 +433,26 @@ static const t_metadata_dict *get_fasm_type(const t_pb_graph_node* pb_graph_node
   }
 
   const t_metadata_dict *meta = nullptr;
-  if(pb_graph_node->pb_type->meta.has("fasm_type")) {
+  if(pb_graph_node->pb_type->meta.has(fasm_type)) {
     meta = &pb_graph_node->pb_type->meta;
   }
 
   if(pb_graph_node->pb_type->parent_mode != nullptr) {
     VTR_ASSERT(pb_graph_node->pb_type->parent_mode->parent_pb_type != nullptr);
     const t_pb_type *pb_type = pb_graph_node->pb_type->parent_mode->parent_pb_type;
-    if(pb_graph_node->pb_type->parent_mode->meta.has("fasm_type")) {
+    if(pb_graph_node->pb_type->parent_mode->meta.has(fasm_type)) {
       meta = &pb_graph_node->pb_type->parent_mode->meta;
     } else if(pb_type->num_modes <= 1) {
-      if(pb_type->meta.has("fasm_type")) {
+      if(pb_type->meta.has(fasm_type)) {
         meta = &pb_type->meta;
       }
     }
   }
 
   if(meta != nullptr) {
-    auto* value = meta->one("fasm_type");
+    auto* value = meta->one(fasm_type);
     VTR_ASSERT(value != nullptr);
-    if(value->as_string() == target_type) {
+    if(value->as_string().get(strings_) == target_type) {
       return meta;
     }
   }
@@ -460,14 +468,14 @@ const LutOutputDefinition* FasmWriterVisitor::find_lut(const t_pb_graph_node* pb
     if(iter == lut_definitions_.end()) {
       const t_metadata_dict *meta = get_fasm_type(pb_graph_node, "LUT");
       if(meta != nullptr) {
-        VTR_ASSERT(meta->has("fasm_lut"));
-        auto* value = meta->one("fasm_lut");
+        VTR_ASSERT(meta->has(fasm_lut));
+        auto* value = meta->one(fasm_lut);
         VTR_ASSERT(value != nullptr);
 
         std::vector<std::pair<std::string, LutOutputDefinition>> luts;
         luts.push_back(std::make_pair(
             vtr::string_fmt("%s[0]", pb_graph_node->pb_type->name),
-            LutOutputDefinition(value->as_string())));
+            LutOutputDefinition(value->as_string().get(strings_))));
 
         auto insert_result = lut_definitions_.insert(
             std::make_pair(pb_graph_node->pb_type, luts));
@@ -477,11 +485,11 @@ const LutOutputDefinition* FasmWriterVisitor::find_lut(const t_pb_graph_node* pb
 
       meta = get_fasm_type(pb_graph_node, "SPLIT_LUT");
       if(meta != nullptr) {
-        VTR_ASSERT(meta->has("fasm_lut"));
-        auto* value = meta->one("fasm_lut");
+        VTR_ASSERT(meta->has(fasm_lut));
+        auto* value = meta->one(fasm_lut);
         VTR_ASSERT(value != nullptr);
-        std::string fasm_lut = value->as_string();
-        auto lut_parts = split_fasm_entry(fasm_lut, "\n", "\t ");
+        std::string fasm_lut_str = value->as_string().get(strings_);
+        auto lut_parts = split_fasm_entry(fasm_lut_str, "\n", "\t ");
         if(__builtin_popcount(lut_parts.size()) != 1) {
           vpr_throw(VPR_ERROR_OTHER,
                     __FILE__, __LINE__,
@@ -497,7 +505,7 @@ const LutOutputDefinition* FasmWriterVisitor::find_lut(const t_pb_graph_node* pb
             vpr_throw(VPR_ERROR_OTHER,
                       __FILE__, __LINE__,
                       "Split lut definition fasm_lut = %s does not parse.",
-                      fasm_lut.c_str());
+                      fasm_lut_str.c_str());
           }
 
           luts.push_back(std::make_pair(
@@ -552,7 +560,7 @@ void FasmWriterVisitor::check_for_param(const t_pb *atom) {
     }
 
     const auto *meta = &atom->pb_graph_node->pb_type->meta;
-    if(!meta->has("fasm_params")) {
+    if(!meta->has(fasm_params)) {
         return;
     }
 
@@ -560,11 +568,11 @@ void FasmWriterVisitor::check_for_param(const t_pb *atom) {
 
     if(iter == parameters_.end()) {
         Parameters params;
-        auto* value = meta->one("fasm_params");
+        auto* value = meta->one(fasm_params);
         VTR_ASSERT(value != nullptr);
 
-        std::string fasm_params = value->as_string();
-        for(const auto param : vtr::split(fasm_params, "\n")) {
+        std::string fasm_params_str = value->as_string().get(strings_);
+        for(const auto param : vtr::split(fasm_params_str, "\n")) {
           auto param_parts = split_fasm_entry(param, "=", "\t ");
             if(param_parts.size() == 0) {
                 continue;
@@ -620,9 +628,9 @@ void FasmWriterVisitor::visit_atom_impl(const t_pb* atom) {
 
 void FasmWriterVisitor::walk_route_tree(const t_rt_node *root) {
     for (t_linked_rt_edge* edge = root->u.child_list; edge != nullptr; edge = edge->next) {
-        auto *meta = vpr::rr_edge_metadata(root->inode, edge->child->inode, edge->iswitch, "fasm_features");
+        auto *meta = vpr::rr_edge_metadata(root->inode, edge->child->inode, edge->iswitch, fasm_features);
         if(meta != nullptr) {
-            output_fasm_features(meta->as_string(), "", "");
+            output_fasm_features(meta->as_string().get(strings_), "", "");
         }
 
         walk_route_tree(edge->child);
@@ -669,14 +677,14 @@ void FasmWriterVisitor::find_clb_prefix(const t_pb_graph_node *node,
     }
 }
 
-void FasmWriterVisitor::output_fasm_mux(std::string fasm_mux,
+void FasmWriterVisitor::output_fasm_mux(std::string fasm_mux_str,
                                         t_interconnect *interconnect,
                                         t_pb_graph_pin *mux_input_pin) {
     auto *pb_name = mux_input_pin->parent_node->pb_type->name;
     auto pb_index = mux_input_pin->parent_node->placement_index;
     auto *port_name = mux_input_pin->port->name;
     auto pin_index = mux_input_pin->pin_number;
-    auto mux_inputs = vtr::split(fasm_mux, "\n");
+    auto mux_inputs = vtr::split(fasm_mux_str, "\n");
 
     bool have_prefix = false;
     std::string clb_prefix;
@@ -713,7 +721,7 @@ void FasmWriterVisitor::output_fasm_mux(std::string fasm_mux,
       bool root_level_connection = interconnect->parent_mode->parent_pb_type ==
           mux_input_pin->parent_node->pb_type;
 
-      auto fasm_features = vtr::join(vtr::split(mux_parts[1], ","), "\n");
+      auto fasm_features_str = vtr::join(vtr::split(mux_parts[1], ","), "\n");
 
 
       if(root_level_connection) {
@@ -721,7 +729,7 @@ void FasmWriterVisitor::output_fasm_mux(std::string fasm_mux,
         // pb_type_prefixes_, not on the mux input.
         if(mux_pb_name == pb_name && mux_port_name == port_name && mux_pin_index == pin_index) {
           if(mux_parts[1] != "NULL") {
-            output_fasm_features(fasm_features, clb_prefix, blk_prefix_);
+            output_fasm_features(fasm_features_str, clb_prefix, blk_prefix_);
           }
           return;
         }
@@ -730,7 +738,7 @@ void FasmWriterVisitor::output_fasm_mux(std::string fasm_mux,
                 mux_port_name == port_name &&
                 mux_pin_index == pin_index) {
         if(mux_parts[1] != "NULL") {
-          output_fasm_features(fasm_features, clb_prefix, blk_prefix_);
+          output_fasm_features(fasm_features_str, clb_prefix, blk_prefix_);
         }
         return;
       }
@@ -738,7 +746,7 @@ void FasmWriterVisitor::output_fasm_mux(std::string fasm_mux,
 
     vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
         "fasm_mux %s[%d].%s[%d] found no matches in:\n%s\n",
-        pb_name, pb_index, port_name, pin_index, fasm_mux.c_str());
+        pb_name, pb_index, port_name, pin_index, fasm_mux_str.c_str());
 }
 
 void FasmWriterVisitor::output_fasm_features(const std::string features) const {

@@ -63,14 +63,15 @@ void write_rr_graph(const char* file_name, const std::vector<t_segment_inf>& seg
 }
 
 static void add_metadata_to_xml(std::fstream& fp, const char* tab_prefix, const t_metadata_dict& meta) {
+    auto& device_ctx = g_vpr_ctx.device();
     fp << tab_prefix << "<metadata>" << std::endl;
 
     for (const auto& meta_elem : meta) {
-        const std::string& key = meta_elem.first;
+        const auto& key = meta_elem.first;
         const std::vector<t_metadata_value>& values = meta_elem.second;
         for (const auto& value : values) {
-            fp << tab_prefix << "\t<meta name=\"" << key << "\"";
-            fp << ">" << value.as_string() << "</meta>" << std::endl;
+            fp << tab_prefix << "\t<meta name=\"" << key.bind(&device_ctx.arch->strings) << "\"";
+            fp << ">" << value.as_string().bind(&device_ctx.arch->strings) << "</meta>" << std::endl;
         }
     }
     fp << tab_prefix << "</metadata>" << std::endl;

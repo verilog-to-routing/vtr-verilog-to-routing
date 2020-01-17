@@ -190,9 +190,10 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
             for(t_edge_size iedge = 0; iedge < device_ctx.rr_nodes[inode].num_edges(); ++iedge) {
                 auto sink_inode = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
                 auto switch_id = device_ctx.rr_nodes[inode].edge_switch(iedge);
+                auto value = vtr::string_fmt("%d_%d_%zu",
+                            inode, sink_inode, switch_id);
                 vpr::add_rr_edge_metadata(inode, sink_inode, switch_id,
-                        "fasm_features", vtr::string_fmt("%d_%d_%zu",
-                            inode, sink_inode, switch_id));
+                        vtr::string_view("fasm_features"), vtr::string_view(value.data(), value.size()));
             }
         }
 
@@ -225,7 +226,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
     REQUIRE(flow_succeeded == true);
 
     std::stringstream fasm_string;
-    fasm::FasmWriterVisitor visitor(fasm_string);
+    fasm::FasmWriterVisitor visitor(&arch.strings, fasm_string);
     NetlistWalker nl_walker(visitor);
     nl_walker.walk();
 
