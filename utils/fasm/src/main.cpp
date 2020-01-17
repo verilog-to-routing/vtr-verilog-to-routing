@@ -35,12 +35,13 @@ constexpr int INTERRUPTED_EXIT_CODE = 3; //VPR was interrupted by the user (e.g.
  * Writes FASM file based on the netlist name by walking the netlist.
  */
 static bool write_fasm() {
+  auto& device_ctx = g_vpr_ctx.mutable_device();
   auto& atom_ctx = g_vpr_ctx.atom();
 
   std::string fasm_filename = atom_ctx.nlist.netlist_name() + ".fasm";
   vtr::printf("Writing Implementation FASM: %s\n", fasm_filename.c_str());
   std::ofstream fasm_os(fasm_filename);
-  fasm::FasmWriterVisitor visitor(fasm_os);
+  fasm::FasmWriterVisitor visitor(&device_ctx.arch->strings, fasm_os);
   NetlistWalker nl_walker(visitor);
   nl_walker.walk();
 
