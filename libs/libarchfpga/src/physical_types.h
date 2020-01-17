@@ -39,6 +39,7 @@
 #include "vtr_ndmatrix.h"
 #include "vtr_hash.h"
 #include "vtr_bimap.h"
+#include "vtr_string_interning.h"
 
 #include "logic_types.h"
 #include "clock_types.h"
@@ -90,31 +91,31 @@ enum class e_sb_type;
 // Metadata value storage.
 class t_metadata_value {
   public:
-    explicit t_metadata_value(std::string v)
+    explicit t_metadata_value(vtr::interned_string v)
         : value_(v) {}
     explicit t_metadata_value(const t_metadata_value& o)
         : value_(o.value_) {}
 
     // Return string value.
-    const std::string& as_string() const { return value_; }
+    vtr::interned_string as_string() const { return value_; }
 
   private:
-    std::string value_;
+    vtr::interned_string value_;
 };
 
 // Metadata storage dictionary.
 struct t_metadata_dict : std::unordered_map<
-                             std::string,
+                             vtr::interned_string,
                              std::vector<t_metadata_value>> {
     // Is this key present in the map?
-    inline bool has(std::string key) const {
+    inline bool has(vtr::interned_string key) const {
         return this->count(key) >= 1;
     }
 
     // Get all metadata values matching key.
     //
     // Returns nullptr if key is not found.
-    inline const std::vector<t_metadata_value>* get(std::string key) const {
+    inline const std::vector<t_metadata_value>* get(vtr::interned_string key) const {
         auto iter = this->find(key);
         if (iter != this->end()) {
             return &iter->second;
@@ -126,7 +127,7 @@ struct t_metadata_dict : std::unordered_map<
     //
     // Returns nullptr if key is not found or if multiple values are prsent
     // per key.
-    inline const t_metadata_value* one(std::string key) const {
+    inline const t_metadata_value* one(vtr::interned_string key) const {
         auto values = get(key);
         if (values == nullptr) {
             return nullptr;
@@ -138,7 +139,7 @@ struct t_metadata_dict : std::unordered_map<
     }
 
     // Adds value to key.
-    void add(std::string key, std::string value) {
+    void add(vtr::interned_string key, vtr::interned_string value) {
         // Get the iterator to the key, which may already have elements if
         // add was called with this key in the past.
         auto iter_inserted = this->emplace(key, std::vector<t_metadata_value>());
@@ -1587,6 +1588,8 @@ struct t_clock_arch_spec {
 
 /*   Detailed routing architecture */
 struct t_arch {
+    mutable vtr::string_internment strings;
+
     char* architecture_id; //Secure hash digest of the architecture file to uniquely identify this architecture
 
     t_chan_width_dist Chans;
