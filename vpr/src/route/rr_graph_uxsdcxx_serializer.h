@@ -297,6 +297,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         , rr_node_metadata_(rr_node_metadata)
         , rr_edge_metadata_(rr_edge_metadata)
         , strings_(strings)
+        , empty_(strings_->intern_string(vtr::string_view("")))
         , report_error_(nullptr) {}
 
     void start_load(const std::function<void(const char*)>* report_error_in) final {
@@ -2028,5 +2029,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     MetadataStorage<int>* rr_node_metadata_;
     MetadataStorage<std::tuple<int, int, short>>* rr_edge_metadata_;
     vtr::string_internment* strings_;
+    vtr::interned_string empty_;
     const std::function<void(const char*)>* report_error_;
 };
