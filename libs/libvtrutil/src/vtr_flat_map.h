@@ -86,6 +86,10 @@ class flat_map {
 
     //direct vector constructor
     explicit flat_map(std::vector<value_type>&& values) {
+        assign(std::move(values));
+    }
+
+    void assign(std::vector<value_type>&& values) {
         //By moving the values this should be more efficient
         //than the range constructor which must copy each element
         vec_ = std::move(values);
@@ -166,6 +170,19 @@ class flat_map {
         }
     }
 
+    std::pair<iterator, bool> emplace(const value_type&& value) {
+        auto iter = lower_bound(value.first);
+        if (iter != end() && keys_equivalent(iter->first, value.first)) {
+            //Found existing
+            return std::make_pair(iter, false);
+        } else {
+            //Emplace
+            iter = emplace(iter, value);
+
+            return std::make_pair(iter, true);
+        }
+    }
+
     //Insert value with position hint
     iterator insert(const_iterator position, const value_type& value) {
         //In a legal position
@@ -173,6 +190,17 @@ class flat_map {
         VTR_ASSERT((size() > 0 && position == --end()) || position == end() || !value_comp()(*(position + 1), value));
 
         iterator iter = vec_.insert(position, value);
+
+        return iter;
+    }
+
+    //Emplace value with position hint
+    iterator emplace(const_iterator position, const value_type& value) {
+        //In a legal position
+        VTR_ASSERT(position == begin() || value_comp()(*(position - 1), value));
+        VTR_ASSERT((size() > 0 && position == --end()) || position == end() || !value_comp()(*(position + 1), value));
+
+        iterator iter = vec_.emplace(position, value);
 
         return iter;
     }
