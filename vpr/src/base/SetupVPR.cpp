@@ -285,6 +285,7 @@ static void SetupSwitches(const t_arch& Arch,
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].R = 0.;
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].Cin = 0.;
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].Cout = 0.;
+    device_ctx.arch_switch_inf[RoutingArch->delayless_switch].penalty_cost = 0.;
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, 0.);
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].mux_trans_size = 0.;
