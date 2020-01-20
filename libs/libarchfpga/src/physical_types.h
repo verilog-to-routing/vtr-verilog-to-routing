@@ -1374,6 +1374,7 @@ struct t_arch_switch_inf {
     float Cin = 0.;
     float Cout = 0.;
     float Cinternal = 0.;
+    float penalty_cost = 0.;
     float mux_trans_size = 1.;
     BufferSize buf_size_type = BufferSize::AUTO;
     float buf_size = 0.;
@@ -1438,6 +1439,7 @@ struct t_rr_switch_inf {
     float Cout = 0.;
     float Cinternal = 0.;
     float Tdel = 0.;
+    float penalty_cost = 0.;
     float mux_trans_size = 0.;
     float buf_size = 0.;
     const char* name = nullptr;
