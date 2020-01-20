@@ -6,7 +6,7 @@
  *
  * Cmdline: uxsdcxx/uxsdcxx.py rr_graph.xsd
  * Input file: rr_graph.xsd
- * md5sum of input file: 40e83d2ea6556761d4e29f21324b1871
+ * md5sum of input file: c4f47394efd27f5819c943829c111204
  */
 
 #include <functional>
@@ -237,8 +237,9 @@ enum class atok_t_timing { CIN,
                            CINTERNAL,
                            COUT,
                            R,
-                           TDEL };
-constexpr const char* atok_lookup_t_timing[] = {"Cin", "Cinternal", "Cout", "R", "Tdel"};
+                           TDEL,
+                           PENALTY_COST };
+constexpr const char* atok_lookup_t_timing[] = {"Cin", "Cinternal", "Cout", "R", "Tdel", "penalty_cost"};
 
 enum class atok_t_sizing { BUF_SIZE,
                            MUX_TRANS_SIZE };
@@ -620,6 +621,21 @@ inline atok_t_timing lex_attr_t_timing(const char* in, const std::function<void(
                     switch (in[8]) {
                         case onechar('l', 0, 8):
                             return atok_t_timing::CINTERNAL;
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                default:
+                    break;
+            }
+            break;
+        case 12:
+            switch (*((triehash_uu64*)&in[0])) {
+                case onechar('p', 0, 64) | onechar('e', 8, 64) | onechar('n', 16, 64) | onechar('a', 24, 64) | onechar('l', 32, 64) | onechar('t', 40, 64) | onechar('y', 48, 64) | onechar('_', 56, 64):
+                    switch (*((triehash_uu32*)&in[8])) {
+                        case onechar('c', 0, 32) | onechar('o', 8, 32) | onechar('s', 16, 32) | onechar('t', 24, 32):
+                            return atok_t_timing::PENALTY_COST;
                             break;
                         default:
                             break;
@@ -2710,6 +2726,9 @@ inline void load_timing(const pugi::xml_node& root, T& out, Context& context, co
             case atok_t_timing::TDEL:
                 out.set_timing_Tdel(load_float(attr.value(), report_error), context);
                 break;
+            case atok_t_timing::PENALTY_COST:
+                out.set_timing_penalty_cost(load_float(attr.value(), report_error), context);
+                break;
             default:
                 break; /* Not possible. */
         }
@@ -3834,6 +3853,8 @@ inline void write_switch(T& in, std::ostream& os, Context& context) {
                 os << " R=\"" << in.get_timing_R(child_context) << "\"";
             if ((bool)in.get_timing_Tdel(child_context))
                 os << " Tdel=\"" << in.get_timing_Tdel(child_context) << "\"";
+            if ((bool)in.get_timing_penalty_cost(child_context))
+                os << " penalty_cost=\"" << in.get_timing_penalty_cost(child_context) << "\"";
             os << "/>\n";
         }
     }
