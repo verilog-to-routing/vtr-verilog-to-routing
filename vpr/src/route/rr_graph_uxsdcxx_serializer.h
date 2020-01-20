@@ -355,6 +355,13 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return sw->Tdel;
     }
 
+    inline void set_timing_penalty_cost(float penalty_cost, t_rr_switch_inf*& sw) final {
+        sw->penalty_cost = penalty_cost;
+    }
+    inline float get_timing_penalty_cost(const t_rr_switch_inf*& sw) final {
+        return sw->penalty_cost;
+    }
+
     /** Generated for complex type "switch":
      * <xs:complexType name="switch">
      *   <xs:all>

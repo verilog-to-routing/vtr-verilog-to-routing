@@ -884,6 +884,7 @@ void load_rr_switch_from_arch_switch(int arch_switch_idx,
     device_ctx.rr_switch_inf[rr_switch_idx].Cin = device_ctx.arch_switch_inf[arch_switch_idx].Cin;
     device_ctx.rr_switch_inf[rr_switch_idx].Cinternal = device_ctx.arch_switch_inf[arch_switch_idx].Cinternal;
     device_ctx.rr_switch_inf[rr_switch_idx].Cout = device_ctx.arch_switch_inf[arch_switch_idx].Cout;
+    device_ctx.rr_switch_inf[rr_switch_idx].penalty_cost = device_ctx.arch_switch_inf[arch_switch_idx].penalty_cost;
     device_ctx.rr_switch_inf[rr_switch_idx].Tdel = rr_switch_Tdel;
     device_ctx.rr_switch_inf[rr_switch_idx].mux_trans_size = device_ctx.arch_switch_inf[arch_switch_idx].mux_trans_size;
     if (device_ctx.arch_switch_inf[arch_switch_idx].buf_size_type == BufferSize::AUTO) {
