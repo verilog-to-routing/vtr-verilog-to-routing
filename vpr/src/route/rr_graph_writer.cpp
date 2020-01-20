@@ -187,7 +187,7 @@ void write_rr_switches(std::fstream& fp) {
         }
         fp << ">" << std::endl;
 
-        fp << "\t\t\t<timing R=\"" << std::setprecision(FLOAT_PRECISION) << rr_switch.R << "\" Cin=\"" << std::setprecision(FLOAT_PRECISION) << rr_switch.Cin << "\" Cout=\"" << std::setprecision(FLOAT_PRECISION) << rr_switch.Cout << "\" Cinternal=\"" << std::setprecision(FLOAT_PRECISION) << rr_switch.Cinternal << "\" Tdel=\"" << std::setprecision(FLOAT_PRECISION) << rr_switch.Tdel << "\"/>" << std::endl;
+        fp << "\t\t\t<timing R=\"" << std::setprecision(FLOAT_PRECISION) << rr_switch.R << "\" Cin=\"" << std::setprecision(FLOAT_PRECISION) << rr_switch.Cin << "\" Cout=\"" << std::setprecision(FLOAT_PRECISION) << rr_switch.Cout << "\" Cinternal=\"" << std::setprecision(FLOAT_PRECISION) << rr_switch.Cinternal << "\" Tdel=\"" << std::setprecision(FLOAT_PRECISION) << rr_switch.Tdel << "\" penalty_cost=\"" << std::setprecision(FLOAT_PRECISION) << rr_switch.penalty_cost << "\"/>" << std::endl;
         fp << "\t\t\t<sizing mux_trans_size=\"" << std::setprecision(FLOAT_PRECISION) << rr_switch.mux_trans_size << "\" buf_size=\"" << std::setprecision(FLOAT_PRECISION) << rr_switch.buf_size << "\"/>" << std::endl;
         fp << "\t\t</switch>" << std::endl;
     }
