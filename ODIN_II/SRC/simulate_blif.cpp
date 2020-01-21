@@ -467,7 +467,7 @@ void simulate_steps(sim_data_t *sim_data,double min_coverage)
 			progress_bar_position = print_progress_bar(
 					(cycle+1)/(double)(sim_data->num_vectors), progress_bar_position, progress_bar_length, sim_data->total_time);
 		}
- 		
+
 		cycle++;
 	}
 
@@ -2094,7 +2094,7 @@ static void read_write_to_memory(nnode_t *node , signal_list_t *input_address, s
 				new_values[i]= get_pin_value(data_in->pins[i],cycle-1);
 			}
 		}
-		node->memory_data[address] = new_values;
+ 		node->memory_data[address] = new_values;
 	}
 
 	/**
