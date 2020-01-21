@@ -2094,7 +2094,7 @@ static void read_write_to_memory(nnode_t *node , signal_list_t *input_address, s
 				new_values[i]= get_pin_value(data_in->pins[i],cycle-1);
 			}
 		}
- 		node->memory_data[address] = new_values;
+ 		node->memory_data[address] = new_values; 
 	}
 
 	/**
