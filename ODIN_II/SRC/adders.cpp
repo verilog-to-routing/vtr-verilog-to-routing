@@ -30,8 +30,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "odin_types.h"
 #include "odin_util.h"
 #include "node_creation_library.h"
-#include "soft_logic_def_parser.h"
 #include "adders.h"
+#include "ga_adder.hpp"
 #include "netlist_utils.h"
 #include "partial_map.h"
 #include "read_xml_arch_file.h"
@@ -1580,31 +1580,7 @@ void instantiate_add_w_carry_block(short type, int *width, nnode_t *node, short 
 	{
 		std::string my_type 			= "soft";
 		std::string sub_structure = "default";
-		blk_size 									= width[0]-start_pin;
-
-		soft_sub_structure *def = fetch_blk("+",width[0]-start_pin);
-		if(def)
-		{
-			blk_size = (def->bitsize > blk_size)? blk_size: def->bitsize;
-
-			//don't optimize small circuit
-			if(blk_size != 1)
-			{
-				my_type 			= def->type;
-				sub_structure = def->name;
-			}
-
-			/* pretty print info */
-			if(current_counter == 1)
-				printf("\n::%s\n[target-bit_size:<%d>START]~", node->name, width[0]-start_pin);
-
-			printf("~[<%s><%s>::%d]~",my_type.c_str(), sub_structure.c_str(), blk_size);
-
-			if(blk_size+start_pin == width[0]){
-				printf("~[END::sub_module_count:<%d>] \n", current_counter);
-				fflush(stdout);
-			}
-		}
+		blk_size 									= width[0]-start_pin;		
 
 		nnode_t *previous_carry = initial_carry;
 		nnode_t *previous_carry_gnd = netlist->gnd_node;

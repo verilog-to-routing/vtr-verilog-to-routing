@@ -37,6 +37,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "odin_globals.h"
 
 #include "adders.h"
+#include "ga_adder.hpp"
 
 #include "vtr_memory.h"
 #include "vtr_list.h"

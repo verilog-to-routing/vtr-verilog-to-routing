@@ -34,7 +34,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #include "arch_util.h"
 
-#include "soft_logic_def_parser.h"
 #include "odin_globals.h"
 #include "odin_types.h"
 #include "netlist_utils.h"
@@ -57,6 +56,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #include "netlist_visualizer.h"
 #include "adders.h"
+#include "ga_adder.hpp"
 #include "subtractions.h"
 #include "vtr_util.h"
 #include "vtr_path.h"
@@ -96,9 +96,6 @@ static ODIN_ERROR_CODE synthesize_verilog()
 	find_hard_adders();
 	//find_hard_adders_for_sub();
 	register_hard_blocks();
-
-	/* get odin soft_logic definition file */
-	read_soft_def_file(hard_adders);
 
 	module_names_to_idx = sc_new_string_cache();
 
@@ -166,9 +163,8 @@ static ODIN_ERROR_CODE synthesize_verilog()
 	printf("Performing Partial Map to target device\n");
 	partial_map_top(verilog_netlist);
 
-	// MEHRSHAD //
-	partial_map_adders_GA_top(verilog_netlist);
-	// MEHRSHAD //
+	if (configuration.ga_adder)
+		partial_map_adders_top(verilog_netlist);
 
 	/* Find any unused logic in the netlist and remove it */
 	remove_unused_logic(verilog_netlist);
@@ -441,7 +437,7 @@ void get_options(int argc, char** argv) {
 			.action(argparse::Action::STORE_TRUE)
 			;
 
-	other_grp.add_argument(global_args.adder_def, "--adder_type")
+	other_grp.add_argument(global_args.show_help, "--adder_type")
 			.help("DEPRECATED")
 			.default_value("N/A")
 			.metavar("N/A")
@@ -457,6 +453,12 @@ void get_options(int argc, char** argv) {
             .help("Allow to overwrite the top level module that odin would use")
 			.metavar("TOP_LEVEL_MODULE_NAME")
             ;
+
+	other_grp.add_argument(global_args.ga_adder, "-GA")
+			.help("Activing Genetic Algorithm for adder configuration")
+			.default_value("false")
+			.action(argparse::Action::STORE_TRUE)
+			;
 
 	auto& rand_sim_grp = parser.add_argument_group("random simulation options");
 
@@ -589,6 +591,15 @@ void get_options(int argc, char** argv) {
 		error_message(ARG_ERROR,0,-1, "%s", "Must include only one of either:\n\ta config file(-c)\n\ta blif file(-b)\n\ta verilog file(-V)\n");
 	}
 
+	//adjust thread count
+	int thread_requested = global_args.parralelized_simulation;
+	int max_thread = std::thread::hardware_concurrency();
+
+	global_args.parralelized_simulation.set(
+		std::max(1, std::min( thread_requested, std::min( (CONCURENCY_LIMIT-1) , max_thread )))
+		,argparse::Provenance::SPECIFIED
+	);
+
 	//Allow some config values to be overriden from command line
 	if (!global_args.verilog_files.value().empty())
 	{
@@ -610,6 +621,10 @@ void get_options(int argc, char** argv) {
 
 	if (global_args.write_ast_as_dot.provenance() == argparse::Provenance::SPECIFIED) {
 		configuration.output_ast_graphs = global_args.write_ast_as_dot;
+	}
+
+	if (global_args.ga_adder.provenance() == argparse::Provenance::SPECIFIED) {
+		configuration.ga_adder = global_args.ga_adder;
 	}
 
     if (global_args.adder_cin_global.provenance() == argparse::Provenance::SPECIFIED) {
@@ -641,6 +656,7 @@ void set_default_config()
 	configuration.output_type = std::string("blif");
 	configuration.output_ast_graphs = 0;
 	configuration.output_netlist_graphs = 0;
+	configuration.ga_adder = 0;
 	configuration.print_parse_tokens = 0;
 	configuration.output_preproc_source = 0; // TODO: unused
 	configuration.debug_output_path = std::string(DEFAULT_OUTPUT);
