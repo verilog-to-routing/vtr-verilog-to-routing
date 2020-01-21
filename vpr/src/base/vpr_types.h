@@ -1131,8 +1131,6 @@ struct t_linked_f_pointer {
     float* fptr;
 };
 
-typedef std::vector<std::vector<std::vector<std::vector<std::vector<int>>>>> t_rr_node_indices; //[0..num_rr_types-1][0..grid_width-1][0..grid_height-1][0..NUM_SIDES-1][0..max_ptc-1]
-
 /* Type of a routing resource node.  x-directed channel segment,   *
  * y-directed channel segment, input pin to a clb to pad, output   *
  * from a clb or pad (i.e. output pin of a net) and:               *
@@ -1152,6 +1150,9 @@ typedef enum e_rr_type : unsigned char {
 
 constexpr std::array<t_rr_type, NUM_RR_TYPES> RR_TYPES = {{SOURCE, SINK, IPIN, OPIN, CHANX, CHANY}};
 constexpr std::array<const char*, NUM_RR_TYPES> rr_node_typename{{"SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY"}};
+
+//[0..num_rr_types-1][0..grid_width-1][0..grid_height-1][0..NUM_SIDES-1][0..max_ptc-1]
+typedef std::array<vtr::NdMatrix<std::vector<int>, 3>, NUM_RR_TYPES> t_rr_node_indices;
 
 /* Basic element used to store the traceback (routing) of each net.        *
  * index:   Array index (ID) of this routing resource node.                *
