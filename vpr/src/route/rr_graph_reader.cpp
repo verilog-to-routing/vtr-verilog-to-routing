@@ -681,8 +681,6 @@ void process_rr_node_indices(const DeviceGrid& grid) {
 
     auto& indices = device_ctx.rr_node_indices;
 
-    indices.resize(NUM_RR_TYPES);
-
     typedef struct max_ptc {
         short chanx_max_ptc = 0;
         short chany_max_ptc = 0;
@@ -699,21 +697,9 @@ void process_rr_node_indices(const DeviceGrid& grid) {
     /* Alloc the lookup table */
     for (t_rr_type rr_type : RR_TYPES) {
         if (rr_type == CHANX) {
-            indices[rr_type].resize(grid.height());
-            for (size_t y = 0; y < grid.height(); ++y) {
-                indices[rr_type][y].resize(grid.width());
-                for (size_t x = 0; x < grid.width(); ++x) {
-                    indices[rr_type][y][x].resize(NUM_SIDES);
-                }
-            }
+            indices[rr_type].resize({grid.height(), grid.width(), NUM_SIDES});
         } else {
-            indices[rr_type].resize(grid.width());
-            for (size_t x = 0; x < grid.width(); ++x) {
-                indices[rr_type][x].resize(grid.height());
-                for (size_t y = 0; y < grid.height(); ++y) {
-                    indices[rr_type][x][y].resize(NUM_SIDES);
-                }
-            }
+            indices[rr_type].resize({grid.width(), grid.height(), NUM_SIDES});
         }
     }
 
@@ -826,8 +812,8 @@ void process_rr_node_indices(const DeviceGrid& grid) {
                 int root_x = x - width_offset;
                 int root_y = y - height_offset;
 
-                indices[SOURCE][x][y] = indices[SOURCE][root_x][root_y];
-                indices[SINK][x][y] = indices[SINK][root_x][root_y];
+                indices[SOURCE][x][y][0] = indices[SOURCE][root_x][root_y][0];
+                indices[SINK][x][y][0] = indices[SINK][root_x][root_y][0];
             }
         }
     }

@@ -33,6 +33,8 @@ class NdMatrixProxy {
         , dim_strides_(dim_strides)
         , start_(start) {}
 
+    NdMatrixProxy<T, N>& operator=(const NdMatrixProxy<T, N>& other) = delete;
+
     const NdMatrixProxy<T, N - 1> operator[](size_t index) const {
         VTR_ASSERT_SAFE_MSG(index >= 0, "Index out of range (below dimension minimum)");
         VTR_ASSERT_SAFE_MSG(index < dim_sizes_[0], "Index out of range (above dimension maximum)");
@@ -64,6 +66,8 @@ class NdMatrixProxy<T, 1> {
         : dim_sizes_(dim_sizes)
         , dim_strides_(dim_stride)
         , start_(start) {}
+
+    NdMatrixProxy<T, 1>& operator=(const NdMatrixProxy<T, 1>& other) = delete;
 
     const T& operator[](size_t index) const {
         VTR_ASSERT_SAFE_MSG(dim_strides_[0] == 1, "Final dimension must have stride 1");

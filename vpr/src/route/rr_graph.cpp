@@ -1374,11 +1374,11 @@ void free_rr_graph() {
 
     device_ctx.read_rr_graph_filename.clear();
 
-    device_ctx.rr_node_indices.clear();
+    for (auto& data : device_ctx.rr_node_indices) {
+        data.clear();
+    }
 
     device_ctx.rr_nodes.clear();
-
-    device_ctx.rr_node_indices.clear();
 
     device_ctx.rr_indexed_data.clear();
 
