@@ -437,7 +437,7 @@ void get_options(int argc, char** argv) {
 			.action(argparse::Action::STORE_TRUE)
 			;
 
-	other_grp.add_argument(global_args.show_help, "--adder_type")
+	other_grp.add_argument(global_args.adder_def, "--adder_type")
 			.help("DEPRECATED")
 			.default_value("N/A")
 			.metavar("N/A")
