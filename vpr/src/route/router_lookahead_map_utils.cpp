@@ -58,8 +58,9 @@ util::PQ_Entry_Delay::PQ_Entry_Delay(
     const util::PQ_Entry_Delay* parent) {
     this->rr_node_ind = set_rr_node_ind;
 
+    auto& device_ctx = g_vpr_ctx.device();
+
     if (parent != nullptr) {
-        auto& device_ctx = g_vpr_ctx.device();
         float Tsw = device_ctx.rr_switch_inf[switch_ind].Tdel;
         float Rsw = device_ctx.rr_switch_inf[switch_ind].R;
         float Cnode = device_ctx.rr_nodes[set_rr_node_ind].C();
@@ -77,6 +78,8 @@ util::PQ_Entry_Delay::PQ_Entry_Delay(
     } else {
         this->delay_cost = 0.f;
     }
+
+    this->delay_cost += device_ctx.rr_switch_inf[switch_ind].penalty_cost;
 }
 
 util::PQ_Entry_Base_Cost::PQ_Entry_Base_Cost(
@@ -85,8 +88,9 @@ util::PQ_Entry_Base_Cost::PQ_Entry_Base_Cost(
     const util::PQ_Entry_Base_Cost* parent) {
     this->rr_node_ind = set_rr_node_ind;
 
+    auto& device_ctx = g_vpr_ctx.device();
+
     if (parent != nullptr) {
-        auto& device_ctx = g_vpr_ctx.device();
         if (device_ctx.rr_switch_inf[switch_ind].configurable()) {
             this->base_cost = parent->base_cost + get_rr_cong_cost(set_rr_node_ind);
         } else {
@@ -95,6 +99,8 @@ util::PQ_Entry_Base_Cost::PQ_Entry_Base_Cost(
     } else {
         this->base_cost = 0.f;
     }
+
+    this->base_cost += device_ctx.rr_switch_inf[switch_ind].penalty_cost;
 }
 
 /* returns cost entry with the smallest delay */
