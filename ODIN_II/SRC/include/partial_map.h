@@ -26,6 +26,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #ifndef PARTIAL_MAP_H
 #define PARTIAL_MAP_H
 
+
 // PROTOTYPES
 void partial_map_top(netlist_t *netlist);
 void instantiate_add_w_carry(short type, nnode_t *node, short mark, netlist_t *netlist);
