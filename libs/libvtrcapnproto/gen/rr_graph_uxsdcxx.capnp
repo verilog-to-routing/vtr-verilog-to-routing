@@ -2,10 +2,11 @@
 # https://github.com/duck2/uxsdcxx
 # Modify only if your build process doesn't involve regenerating this file.
 #
-# Cmdline: ../uxsdcap.py rr_graph.xsd
-# md5sum of input file: f9c827f7ecf1ac2f15d57c67bbba4399
+# Cmdline: uxsdcxx/uxsdcap.py rr_graph.xsd
+# Input file: rr_graph.xsd
+# md5sum of input file: 6fee035821b20cff3b738f20cc32be20
 
-@0xd66cda3fb80f116e;
+@0xb0bd50cf984beaca;
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("ucap");
 
@@ -136,6 +137,18 @@ struct BlockTypes {
 	blockTypes @0 :List(BlockType);
 }
 
+struct ConnectionBoxDeclaration {
+	id @0 :UInt32;
+	name @1 :Text;
+}
+
+struct ConnectionBoxes {
+	numBoxes @0 :UInt32;
+	xDim @1 :UInt32;
+	yDim @2 :UInt32;
+	connectionBoxes @3 :List(ConnectionBoxDeclaration);
+}
+
 struct GridLoc {
 	blockTypeId @0 :Int32;
 	heightOffset @1 :Int32;
@@ -175,6 +188,18 @@ struct Metadata {
 	metas @0 :List(Meta);
 }
 
+struct CanonicalLoc {
+	x @0 :UInt32;
+	y @1 :UInt32;
+}
+
+struct ConnectionBoxAnnotation {
+	id @0 :UInt32;
+	sitePinDelay @1 :Float32;
+	x @2 :UInt32;
+	y @3 :UInt32;
+}
+
 struct Node {
 	capacity @0 :UInt32;
 	direction @1 :NodeDirection;
@@ -184,6 +209,8 @@ struct Node {
 	timing @5 :NodeTiming;
 	segment @6 :NodeSegment;
 	metadata @7 :Metadata;
+	canonicalLoc @8 :CanonicalLoc;
+	connectionBox @9 :ConnectionBoxAnnotation;
 }
 
 struct RrNodes {
@@ -209,7 +236,8 @@ struct RrGraph {
 	switches @4 :Switches;
 	segments @5 :Segments;
 	blockTypes @6 :BlockTypes;
-	grid @7 :GridLocs;
-	rrNodes @8 :RrNodes;
-	rrEdges @9 :RrEdges;
+	connectionBoxes @7 :ConnectionBoxes;
+	grid @8 :GridLocs;
+	rrNodes @9 :RrNodes;
+	rrEdges @10 :RrEdges;
 }
