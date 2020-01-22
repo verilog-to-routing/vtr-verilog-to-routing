@@ -1,6 +1,7 @@
 #ifndef ARCH_UTIL_H
 #define ARCH_UTIL_H
 
+#include <regex>
 #include "physical_types.h"
 
 class InstPort {
@@ -74,4 +75,11 @@ bool segment_exists(const t_arch* arch, std::string name);
 const t_segment_inf* find_segment(const t_arch* arch, std::string name);
 bool is_library_model(const char* model_name);
 bool is_library_model(const t_model* model);
+
+//Returns true if the specified block type contains the specified blif model name
+bool block_type_contains_blif_model(t_logical_block_type_ptr type, const std::string& blif_model_name);
+
+//Returns true of a pb_type (or it's children) contain the specified blif model name
+bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::string& blif_model_name);
+
 #endif
