@@ -239,11 +239,7 @@ void DeltaDelayModel::write(const std::string& file) const {
 
 void OverrideDelayModel::read(const std::string& file) {
     MmapFile f(file);
-
-    /* Increase reader limit to 1G words. */
-    ::capnp::ReaderOptions opts = ::capnp::ReaderOptions();
-    opts.traversalLimitInWords = 1024 * 1024 * 1024;
-    ::capnp::FlatArrayMessageReader reader(f.getData(), opts);
+    ::capnp::FlatArrayMessageReader reader(f.getData());
 
     vtr::Matrix<float> delays;
     auto model = reader.getRoot<VprOverrideDelayModel>();
