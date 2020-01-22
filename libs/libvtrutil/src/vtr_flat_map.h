@@ -122,13 +122,22 @@ class flat_map {
     }
 
     mapped_type& operator[](const key_type& key) {
-        auto iter = find(key);
+        auto iter = std::lower_bound(begin(), end(), key, value_comp());
         if (iter == end()) {
-            //Not found
-            iter = insert(std::make_pair(key, mapped_type())).first;
+            // The new element should be placed at the end, so do so.
+            vec_.emplace_back(std::make_pair(key, mapped_type()));
+            return vec_.back().second;
+        } else {
+            if (iter->first == key) {
+                // The element already exists, return it.
+                return iter->second;
+            } else {
+                // The element does not exist, insert such that vector remains
+                // sorted.
+                iter = vec_.emplace(iter, std::make_pair(key, mapped_type()));
+                return iter->second;
+            }
         }
-
-        return iter->second;
     }
 
     mapped_type& at(const key_type& key) {
