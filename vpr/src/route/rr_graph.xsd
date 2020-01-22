@@ -261,12 +261,26 @@
     <xs:attribute name="segment_id" type="xs:int" use="required"/>
   </xs:complexType>
 
+  <xs:complexType name="connection_box_annotation">
+    <xs:attribute name="x" type="xs:unsignedInt" use="required"/>
+    <xs:attribute name="y" type="xs:unsignedInt" use="required"/>
+    <xs:attribute name="id" type="xs:unsignedInt" use="required"/>
+    <xs:attribute name="site_pin_delay" type="xs:float" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="canonical_loc">
+    <xs:attribute name="x" type="xs:unsignedInt" use="required"/>
+    <xs:attribute name="y" type="xs:unsignedInt" use="required"/>
+  </xs:complexType>
+
   <xs:complexType name="node">
     <xs:all>
       <xs:element name="loc" type="node_loc"/>
       <xs:element name="timing" type="node_timing" minOccurs="0"/>
       <xs:element name="segment" type="node_segment" minOccurs="0"/>
       <xs:element name="metadata" type="metadata" minOccurs="0"/>
+      <xs:element name="canonical_loc" type="canonical_loc" minOccurs="0"/>
+      <xs:element name="connection_box" type="connection_box_annotation" minOccurs="0"/>
     </xs:all>
     <xs:attribute name="id" type="xs:unsignedInt" use="required"/>
     <xs:attribute name="type" type="node_type" use="required"/>
@@ -281,6 +295,20 @@
     <xs:attribute name="src_node" type="xs:unsignedInt" use="required"/>
     <xs:attribute name="sink_node" type="xs:unsignedInt" use="required"/>
     <xs:attribute name="switch_id" type="xs:unsignedInt" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="connection_box_declaration">
+    <xs:attribute name="id" type="xs:unsignedInt" use="required"/>
+    <xs:attribute name="name" type="xs:string" use="required"/>
+  </xs:complexType>
+
+  <xs:complexType name="connection_boxes">
+    <xs:sequence>
+      <xs:element name="connection_box" type="connection_box_declaration" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="x_dim" type="xs:unsignedInt" use="required"/>
+    <xs:attribute name="y_dim" type="xs:unsignedInt" use="required"/>
+    <xs:attribute name="num_boxes" type="xs:unsignedInt" use="required"/>
   </xs:complexType>
 
   <xs:complexType name="switches">
@@ -330,6 +358,7 @@
         <xs:element name="switches" type="switches"/>
         <xs:element name="segments" type="segments"/>
         <xs:element name="block_types" type="block_types"/>
+        <xs:element name="connection_boxes" type="connection_boxes" minOccurs="0"/>
         <xs:element name="grid" type="grid_locs"/>
         <xs:element name="rr_nodes" type="rr_nodes"/>
         <xs:element name="rr_edges" type="rr_edges"/>
