@@ -37,10 +37,13 @@ void make_room_in_vector(T* vec, size_t elem_position) {
 
 class MetadataBind {
   public:
-    MetadataBind()
+    MetadataBind(vtr::string_internment* strings, vtr::interned_string empty)
         : is_node_(false)
         , is_edge_(false)
-        , ignore_(false) {}
+        , ignore_(false)
+        , strings_(strings)
+        , name_(empty)
+        , value_(empty) {}
 
     ~MetadataBind() {
         assert_clear();
@@ -50,12 +53,12 @@ class MetadataBind {
 
     void set_name(const char* name) {
         if (!ignore_) {
-            name_.assign(name);
+            name_ = strings_->intern_string(vtr::string_view(name));
         }
     }
     void set_value(const char* value) {
         if (!ignore_) {
-            value_.assign(value);
+            value_ = strings_->intern_string(vtr::string_view(value));
         }
     }
     void set_node_target(int inode) {
@@ -82,17 +85,11 @@ class MetadataBind {
 
     void bind() {
         if (is_node_) {
-            vpr::add_rr_node_metadata(inode_,
-                                      vtr::string_view(name_.data(), name_.size()),
-                                      vtr::string_view(value_.data(), value_.size()));
-            name_.clear();
-            value_.clear();
+            vpr::add_rr_node_metadata(inode_, name_, value_);
         } else if (is_edge_) {
             vpr::add_rr_edge_metadata(inode_, sink_node_, switch_id_,
-                                      vtr::string_view(name_.data(), name_.size()),
-                                      vtr::string_view(value_.data(), value_.size()));
-            name_.clear();
-            value_.clear();
+                                      name_,
+                                      value_);
         } else if (ignore_) {
             // Do nothing.
         } else {
@@ -104,8 +101,6 @@ class MetadataBind {
     }
 
     void assert_clear() {
-        VTR_ASSERT(name_.empty());
-        VTR_ASSERT(value_.empty());
     }
 
     void finish() {
@@ -121,8 +116,9 @@ class MetadataBind {
     int inode_;
     int sink_node_;
     int switch_id_;
-    std::string name_;
-    std::string value_;
+    vtr::string_internment* strings_;
+    vtr::interned_string name_;
+    vtr::interned_string value_;
 };
 
 // Context for walking metadata.
@@ -822,7 +818,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
 
     inline MetadataBind init_node_metadata(int& inode) final {
-        MetadataBind bind;
+        MetadataBind bind(strings_, empty_);
         bind.set_node_target(inode);
         return bind;
     }
@@ -966,7 +962,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 src_node, rr_nodes_->size());
         }
 
-        MetadataBind bind;
+        MetadataBind bind(strings_, empty_);
         if (read_edge_metadata_) {
             bind.set_edge_target(src_node, sink_node, switch_id);
         } else {
