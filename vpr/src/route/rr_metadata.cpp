@@ -14,6 +14,13 @@ const t_metadata_value* rr_node_metadata(int src_node, vtr::interned_string key)
     return iter->second.one(key);
 }
 
+void add_rr_node_metadata(int src_node, vtr::interned_string key, vtr::interned_string value) {
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+    device_ctx.rr_node_metadata.add_metadata(src_node,
+                                             key,
+                                             value);
+}
+
 void add_rr_node_metadata(int src_node, vtr::string_view key, vtr::string_view value) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     device_ctx.rr_node_metadata.add_metadata(src_node,
@@ -39,6 +46,14 @@ void add_rr_edge_metadata(int src_node, int sink_id, short switch_id, vtr::strin
     device_ctx.rr_edge_metadata.add_metadata(rr_edge,
                                              device_ctx.arch->strings.intern_string(key),
                                              device_ctx.arch->strings.intern_string(value));
+}
+
+void add_rr_edge_metadata(int src_node, int sink_id, short switch_id, vtr::interned_string key, vtr::interned_string value) {
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto rr_edge = std::make_tuple(src_node, sink_id, switch_id);
+    device_ctx.rr_edge_metadata.add_metadata(rr_edge,
+                                             key,
+                                             value);
 }
 
 } // namespace vpr
