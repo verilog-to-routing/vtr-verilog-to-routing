@@ -143,8 +143,7 @@ struct t_metadata_dict : vtr::flat_map<
     void add(vtr::interned_string key, vtr::interned_string value) {
         // Get the iterator to the key, which may already have elements if
         // add was called with this key in the past.
-        auto iter_inserted = this->emplace(std::make_pair(key, std::vector<t_metadata_value>()));
-        iter_inserted.first->second.push_back(t_metadata_value(value));
+        (*this)[key].emplace_back(t_metadata_value(value));
     }
 };
 
