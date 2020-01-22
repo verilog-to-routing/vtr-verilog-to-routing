@@ -2303,9 +2303,9 @@ static void evaluate_timing_driven_node_costs(t_heap* to,
     }
 
     //Update the backward cost (upstream already included)
-    to->backward_path_cost += (1. - cost_params.criticality) * cong_cost;       //Congestion cost
-    to->backward_path_cost += cost_params.criticality * Tdel;                   //Delay cost
-    to->backward_path_cost += cost_params.criticality * switch_penalty_cost;    //Penalty cost
+    to->backward_path_cost += (1. - cost_params.criticality) * cong_cost; //Congestion cost
+    to->backward_path_cost += cost_params.criticality * Tdel;             //Delay cost
+    to->backward_path_cost += switch_penalty_cost;                        //Penalty cost
 
     if (cost_params.bend_cost != 0.) {
         t_rr_type from_type = device_ctx.rr_nodes[from_node].type();
