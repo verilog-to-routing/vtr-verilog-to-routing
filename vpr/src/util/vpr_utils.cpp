@@ -72,7 +72,6 @@ static AtomPinId find_atom_pin_for_pb_route_id(ClusterBlockId clb, int pb_route_
 
 static bool block_type_contains_blif_model(t_logical_block_type_ptr type, const std::regex& blif_model_regex);
 static bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::regex& blif_model_regex);
-
 /******************** Subroutine definitions *********************************/
 
 const t_model* find_model(const t_model* models, const std::string& name, bool required) {
@@ -545,15 +544,11 @@ bool is_opin(int ipin, t_physical_tile_type_ptr type) {
 }
 
 bool is_input_type(t_physical_tile_type_ptr type) {
-    auto& device_ctx = g_vpr_ctx.device();
-
-    return device_ctx.input_types.count(type);
+    return type->is_input_type;
 }
 
 bool is_output_type(t_physical_tile_type_ptr type) {
-    auto& device_ctx = g_vpr_ctx.device();
-
-    return device_ctx.output_types.count(type);
+    return type->is_output_type;
 }
 
 bool is_io_type(t_physical_tile_type_ptr type) {
@@ -812,45 +807,9 @@ int find_pin(t_physical_tile_type_ptr type, std::string port_name, int pin_index
     return ipin;
 }
 
-//Returns true if the specified block type contains the specified blif model name
-bool block_type_contains_blif_model(t_logical_block_type_ptr type, std::string blif_model_name) {
-    return pb_type_contains_blif_model(type->pb_type, blif_model_name);
-}
-
 static bool block_type_contains_blif_model(t_logical_block_type_ptr type, const std::regex& blif_model_regex) {
     return pb_type_contains_blif_model(type->pb_type, blif_model_regex);
 }
-
-//Returns true of a pb_type (or it's children) contain the specified blif model name
-bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::string& blif_model_name) {
-    if (!pb_type) {
-        return false;
-    }
-
-    if (pb_type->blif_model != nullptr) {
-        //Leaf pb_type
-        VTR_ASSERT(pb_type->num_modes == 0);
-        if (blif_model_name == pb_type->blif_model
-            || ".subckt " + blif_model_name == pb_type->blif_model) {
-            return true;
-        } else {
-            return false;
-        }
-    } else {
-        for (int imode = 0; imode < pb_type->num_modes; ++imode) {
-            const t_mode* mode = &pb_type->modes[imode];
-
-            for (int ichild = 0; ichild < mode->num_pb_type_children; ++ichild) {
-                const t_pb_type* pb_type_child = &mode->pb_type_children[ichild];
-                if (pb_type_contains_blif_model(pb_type_child, blif_model_name)) {
-                    return true;
-                }
-            }
-        }
-    }
-    return false;
-}
-
 static bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::regex& blif_model_regex) {
     if (!pb_type) {
         return false;

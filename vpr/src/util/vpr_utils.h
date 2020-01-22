@@ -3,7 +3,6 @@
 
 #include <vector>
 #include <string>
-#include <regex>
 
 #include "vpr_types.h"
 #include "atom_netlist.h"
@@ -112,12 +111,6 @@ int find_pin(t_physical_tile_type_ptr type, std::string port_name, int pin_index
 
 //Returns the block type which is most likely the logic block
 t_logical_block_type_ptr infer_logic_block_type(const DeviceGrid& grid);
-
-//Returns true if the specified block type contains the specified blif model name
-bool block_type_contains_blif_model(t_logical_block_type_ptr type, std::string blif_model_name);
-
-//Returns true of a pb_type (or it's children) contain the specified blif model name
-bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::string& blif_model_name);
 
 int get_max_primitives_in_pb_type(t_pb_type* pb_type);
 int get_max_depth_of_pb_type(t_pb_type* pb_type);

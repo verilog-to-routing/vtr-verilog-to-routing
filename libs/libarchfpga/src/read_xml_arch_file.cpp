@@ -98,6 +98,7 @@ static void ProcessTiles(pugi::xml_node Node,
                          const t_default_fc_spec& arch_def_fc,
                          t_arch& arch,
                          const pugiutil::loc_data& loc_data);
+static void MarkIoTypes(std::vector<t_physical_tile_type>& PhysicalTileTypes);
 static void ProcessTileProps(pugi::xml_node Node,
                              t_physical_tile_type* PhysicalTileType,
                              const pugiutil::loc_data& loc_data);
@@ -401,6 +402,7 @@ void XmlReadArch(const char* ArchFile,
         SyncModelsPbTypes(arch, LogicalBlockTypes);
         UpdateAndCheckModels(arch);
 
+        MarkIoTypes(PhysicalTileTypes);
     } catch (pugiutil::XmlError& e) {
         archfpga_throw(ArchFile, e.line(),
                        "%s", e.what());
@@ -3045,6 +3047,27 @@ static void ProcessTiles(pugi::xml_node Node,
         CurTileType = CurTileType.next_sibling(CurTileType.name());
     }
     tile_type_descriptors.clear();
+}
+
+static void MarkIoTypes(std::vector<t_physical_tile_type>& PhysicalTileTypes) {
+    for (auto& type : PhysicalTileTypes) {
+        type.is_input_type = false;
+        type.is_output_type = false;
+
+        for (const auto& equivalent_site : type.equivalent_sites) {
+            if (block_type_contains_blif_model(equivalent_site, MODEL_INPUT)) {
+                type.is_input_type = true;
+                break;
+            }
+        }
+
+        for (const auto& equivalent_site : type.equivalent_sites) {
+            if (block_type_contains_blif_model(equivalent_site, MODEL_OUTPUT)) {
+                type.is_output_type = true;
+                break;
+            }
+        }
+    }
 }
 
 static void ProcessTileProps(pugi::xml_node Node,
