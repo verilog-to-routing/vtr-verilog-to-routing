@@ -173,7 +173,7 @@ class t_rr_node {
     t_edge_size edges_capacity_ = 0;
     uint8_t num_non_configurable_edges_ = 0;
 
-    int8_t cost_index_ = -1;
+    uint16_t cost_index_ = -1;
     int16_t rc_index_ = -1;
 
     int16_t xlow_ = -1;
@@ -227,6 +227,7 @@ struct t_rr_indexed_data {
     float T_linear;
     float T_quadratic;
     float C_load;
+    float penalty_cost;
 };
 
 /*
