@@ -112,24 +112,20 @@ void SetupVPR(const t_options* Options,
 
     /* TODO: this is inelegant, I should be populating this information in XmlReadArch */
     device_ctx.EMPTY_PHYSICAL_TILE_TYPE = nullptr;
-    for (const auto& type : device_ctx.physical_tile_types) {
+    int num_inputs = 0;
+    int num_outputs = 0;
+    for (auto& type : device_ctx.physical_tile_types) {
         if (strcmp(type.name, EMPTY_BLOCK_NAME) == 0) {
             VTR_ASSERT(device_ctx.EMPTY_PHYSICAL_TILE_TYPE == nullptr);
             device_ctx.EMPTY_PHYSICAL_TILE_TYPE = &type;
-        } else {
-            for (const auto& equivalent_site : type.equivalent_sites) {
-                if (block_type_contains_blif_model(equivalent_site, MODEL_INPUT)) {
-                    device_ctx.input_types.insert(&type);
-                    break;
-                }
-            }
+        }
 
-            for (const auto& equivalent_site : type.equivalent_sites) {
-                if (block_type_contains_blif_model(equivalent_site, MODEL_OUTPUT)) {
-                    device_ctx.output_types.insert(&type);
-                    break;
-                }
-            }
+        if (type.is_input_type) {
+            num_inputs += 1;
+        }
+
+        if (type.is_output_type) {
+            num_outputs += 1;
         }
     }
 
@@ -149,12 +145,12 @@ void SetupVPR(const t_options* Options,
     VTR_ASSERT(device_ctx.EMPTY_PHYSICAL_TILE_TYPE != nullptr);
     VTR_ASSERT(device_ctx.EMPTY_LOGICAL_BLOCK_TYPE != nullptr);
 
-    if (device_ctx.input_types.empty()) {
+    if (num_inputs == 0) {
         VPR_ERROR(VPR_ERROR_ARCH,
                   "Architecture contains no top-level block type containing '.input' models");
     }
 
-    if (device_ctx.output_types.empty()) {
+    if (num_outputs == 0) {
         VPR_ERROR(VPR_ERROR_ARCH,
                   "Architecture contains no top-level block type containing '.output' models");
     }
