@@ -618,6 +618,9 @@ struct t_physical_tile_type {
 
     /* Returns the indices of pins that contain a clock for this physical logic block */
     std::vector<int> get_clock_pins_indices() const;
+
+    bool is_input_type;
+    bool is_output_type;
 };
 
 /** A logical pin defines the pin index of a logical block type (i.e. a top level PB type)
