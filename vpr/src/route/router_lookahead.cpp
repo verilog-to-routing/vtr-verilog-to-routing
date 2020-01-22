@@ -91,7 +91,7 @@ float ClassicLookahead::classic_wire_lookahead_cost(int inode, int target_node, 
                  + R_upstream * (num_segs_same_dir * same_data.C_load + num_segs_ortho_dir * ortho_data.C_load)
                  + ipin_data.T_linear;
 
-    float expected_cost = criticality * penalty_cost + criticality * Tdel + (1. - criticality) * cong_cost;
+    float expected_cost = penalty_cost + criticality * Tdel + (1. - criticality) * cong_cost;
     return (expected_cost);
 }
 
