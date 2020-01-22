@@ -39,6 +39,7 @@
 use strict;
 use warnings;
 use Cwd;
+use Sys::Hostname;
 use File::Spec;
 use POSIX;
 use File::Copy;
@@ -1175,6 +1176,8 @@ open( RESULTS, "> $results_path" );
 # Output vpr status and runtime
 print RESULTS "vpr_status=$q\n";
 print RESULTS "vpr_seconds=$seconds\n";
+print RESULTS "rundir=" . getcwd() . "\n";
+print RESULTS "hostname=" . hostname() . "\n";
 
 # Parse VPR output
 if ( open( VPROUT, "< vpr.out" ) ) {
