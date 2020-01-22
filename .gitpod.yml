@@ -1,0 +1,10 @@
+image:
+  file: .gitpod.Dockerfile
+tasks:
+- command: pyenv global 3.7.4 &&
+           chmod +x envconfig.sh
+
+vscode:
+  extensions:
+    - ms-vscode.cmake-tools@1.2.3:qLtqI3aUcEBX9EpuK0ZCyw==
+    - ms-vscode.cpptools@0.26.2:Pq/tmf2WN3SanVzB4xZc1g==

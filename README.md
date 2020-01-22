@@ -1,4 +1,5 @@
 # Verilog to Routing (VTR)
+[![Gitpod Ready-to-Code](https://img.shields.io/badge/Gitpod-Ready--to--Code-blue?logo=gitpod)](https://gitpod.io/#https://github.com/Loksu/vtr-verilog-to-routing)
 [![Build Status](https://travis-ci.com/verilog-to-routing/vtr-verilog-to-routing.svg?branch=master)](https://travis-ci.org/verilog-to-routing/vtr-verilog-to-routing) [![Documentation Status](https://readthedocs.org/projects/vtr/badge/?version=latest)](http://docs.verilogtorouting.org/en/latest/?badge=latest)
 
 ## Introduction
