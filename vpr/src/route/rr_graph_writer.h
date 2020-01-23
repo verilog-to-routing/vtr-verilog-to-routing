@@ -6,6 +6,8 @@
 #ifndef RR_GRAPH_WRITER_H
 #define RR_GRAPH_WRITER_H
 
+#include "physical_types.h"
+
 void write_rr_graph(const char* file_name, const std::vector<t_segment_inf>& segment_inf);
 
 #endif

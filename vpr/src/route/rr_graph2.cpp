@@ -1030,13 +1030,11 @@ static void load_chan_rr_indices(const int max_chan_width,
                                  const t_chan_details& chan_details,
                                  t_rr_node_indices& indices,
                                  int* index) {
-    VTR_ASSERT(indices[type].size() == size_t(num_chans));
+    VTR_ASSERT(indices[type].dim_size(0) == size_t(num_chans));
+    VTR_ASSERT(indices[type].dim_size(1) == size_t(chan_len));
+    VTR_ASSERT(indices[type].dim_size(2) == NUM_SIDES);
     for (int chan = 0; chan < num_chans - 1; ++chan) {
-        VTR_ASSERT(indices[type][chan].size() == size_t(chan_len));
-
         for (int seg = 1; seg < chan_len - 1; ++seg) {
-            VTR_ASSERT(indices[type][chan][seg].size() == NUM_SIDES);
-
             /* Alloc the track inode lookup list */
             //Since channels have no side, we just use the first side
             indices[type][chan][seg][0].resize(max_chan_width, OPEN);
@@ -1154,8 +1152,8 @@ static void load_block_rr_indices(const DeviceGrid& grid,
                 int root_x = x - width_offset;
                 int root_y = y - height_offset;
 
-                indices[SOURCE][x][y] = indices[SOURCE][root_x][root_y];
-                indices[SINK][x][y] = indices[SINK][root_x][root_y];
+                indices[SOURCE][x][y][0] = indices[SOURCE][root_x][root_y][0];
+                indices[SINK][x][y][0] = indices[SINK][root_x][root_y][0];
             }
         }
     }
@@ -1173,24 +1171,11 @@ t_rr_node_indices alloc_and_load_rr_node_indices(const int max_chan_width,
     t_rr_node_indices indices;
 
     /* Alloc the lookup table */
-    indices.resize(NUM_RR_TYPES);
     for (t_rr_type rr_type : RR_TYPES) {
         if (rr_type == CHANX) {
-            indices[rr_type].resize(grid.height());
-            for (size_t y = 0; y < grid.height(); ++y) {
-                indices[rr_type][y].resize(grid.width());
-                for (size_t x = 0; x < grid.width(); ++x) {
-                    indices[rr_type][y][x].resize(NUM_SIDES);
-                }
-            }
+            indices[rr_type].resize({grid.height(), grid.width(), NUM_SIDES});
         } else {
-            indices[rr_type].resize(grid.width());
-            for (size_t x = 0; x < grid.width(); ++x) {
-                indices[rr_type][x].resize(grid.height());
-                for (size_t y = 0; y < grid.height(); ++y) {
-                    indices[rr_type][x][y].resize(NUM_SIDES);
-                }
-            }
+            indices[rr_type].resize({grid.width(), grid.height(), NUM_SIDES});
         }
     }
 
@@ -2581,10 +2566,10 @@ static bool should_apply_switch_override(int switch_override) {
     return false;
 }
 
-void partition_rr_graph_edges(DeviceContext& device_ctx) {
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
-        device_ctx.rr_nodes[inode].partition_edges();
+void partition_rr_graph_edges(std::vector<t_rr_node>* rr_nodes) {
+    for (auto& node : *rr_nodes) {
+        node.partition_edges();
 
-        VTR_ASSERT_SAFE(device_ctx.rr_nodes[inode].validate());
+        VTR_ASSERT_SAFE(node.validate());
     }
 }
