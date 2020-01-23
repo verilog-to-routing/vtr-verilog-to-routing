@@ -98,6 +98,7 @@ static void ProcessTiles(pugi::xml_node Node,
                          const t_default_fc_spec& arch_def_fc,
                          t_arch& arch,
                          const pugiutil::loc_data& loc_data);
+static void MarkIoTypes(std::vector<t_physical_tile_type>& PhysicalTileTypes);
 static void ProcessTileProps(pugi::xml_node Node,
                              t_physical_tile_type* PhysicalTileType,
                              const pugiutil::loc_data& loc_data);
@@ -120,7 +121,8 @@ static void ProcessEquivalentSiteCustomConnection(pugi::xml_node Parent,
                                                   t_logical_block_type* LogicalBlockType,
                                                   std::string site_name,
                                                   const pugiutil::loc_data& loc_data);
-static void ProcessPb_Type(pugi::xml_node Parent,
+static void ProcessPb_Type(vtr::string_internment* strings,
+                           pugi::xml_node Parent,
                            t_pb_type* pb_type,
                            t_mode* mode,
                            const bool timing_enabled,
@@ -135,9 +137,9 @@ static void ProcessPinToPinAnnotations(pugi::xml_node parent,
                                        t_pin_to_pin_annotation* annotation,
                                        t_pb_type* parent_pb_type,
                                        const pugiutil::loc_data& loc_data);
-static void ProcessInterconnect(pugi::xml_node Parent, t_mode* mode, const pugiutil::loc_data& loc_data);
-static void ProcessMode(pugi::xml_node Parent, t_mode* mode, const bool timing_enabled, const t_arch& arch, const pugiutil::loc_data& loc_data);
-static t_metadata_dict ProcessMetadata(pugi::xml_node Parent, const pugiutil::loc_data& loc_data);
+static void ProcessInterconnect(vtr::string_internment* strings, pugi::xml_node Parent, t_mode* mode, const pugiutil::loc_data& loc_data);
+static void ProcessMode(vtr::string_internment* strings, pugi::xml_node Parent, t_mode* mode, const bool timing_enabled, const t_arch& arch, const pugiutil::loc_data& loc_data);
+static t_metadata_dict ProcessMetadata(vtr::string_internment* strings, pugi::xml_node Parent, const pugiutil::loc_data& loc_data);
 static void Process_Fc_Values(pugi::xml_node Node, t_default_fc_spec& spec, const pugiutil::loc_data& loc_data);
 static void Process_Fc(pugi::xml_node Node,
                        t_physical_tile_type* PhysicalTileType,
@@ -157,13 +159,9 @@ static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan* chan, const pu
 static void ProcessModels(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data);
 static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data);
 static void ProcessLayout(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data);
-static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data);
+static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data);
 static void ProcessDevice(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& arch_def_fc, const pugiutil::loc_data& loc_data);
-static void ProcessComplexBlocks(pugi::xml_node Node,
-                                 std::vector<t_logical_block_type>& LogicalBlockTypes,
-                                 t_arch& arch,
-                                 const bool timing_enabled,
-                                 const pugiutil::loc_data& loc_data);
+static void ProcessComplexBlocks(vtr::string_internment* strings, pugi::xml_node Node, std::vector<t_logical_block_type>& LogicalBlockTypes, t_arch& arch, const bool timing_enabled, const pugiutil::loc_data& loc_data);
 static void ProcessSwitches(pugi::xml_node Node,
                             t_arch_switch_inf** Switches,
                             int* NumSwitches,
@@ -320,7 +318,7 @@ void XmlReadArch(const char* ArchFile,
 
         /* Process logical block types */
         Next = get_single_child(architecture, "complexblocklist", loc_data);
-        ProcessComplexBlocks(Next, LogicalBlockTypes, *arch, timing_enabled, loc_data);
+        ProcessComplexBlocks(&arch->strings, Next, LogicalBlockTypes, *arch, timing_enabled, loc_data);
 
         /* Process logical block types */
         Next = get_single_child(architecture, "tiles", loc_data);
@@ -401,6 +399,7 @@ void XmlReadArch(const char* ArchFile,
         SyncModelsPbTypes(arch, LogicalBlockTypes);
         UpdateAndCheckModels(arch);
 
+        MarkIoTypes(PhysicalTileTypes);
     } catch (pugiutil::XmlError& e) {
         archfpga_throw(ArchFile, e.line(),
                        "%s", e.what());
@@ -1352,7 +1351,7 @@ static void ProcessPb_TypePowerEstMethod(pugi::xml_node Parent, t_pb_type* pb_ty
 }
 
 /* Takes in a pb_type, allocates and loads data for it and recurses downwards */
-static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type* pb_type, t_mode* mode, const bool timing_enabled, const t_arch& arch, const pugiutil::loc_data& loc_data) {
+static void ProcessPb_Type(vtr::string_internment* strings, pugi::xml_node Parent, t_pb_type* pb_type, t_mode* mode, const bool timing_enabled, const t_arch& arch, const pugiutil::loc_data& loc_data) {
     int num_ports, i, j, k, num_annotations;
     const char* Prop;
     pugi::xml_node Cur;
@@ -1607,7 +1606,7 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type* pb_type, t_mode* mo
             pb_type->modes = new t_mode[pb_type->num_modes];
             pb_type->modes[i].parent_pb_type = pb_type;
             pb_type->modes[i].index = i;
-            ProcessMode(Parent, &pb_type->modes[i], timing_enabled, arch, loc_data);
+            ProcessMode(strings, Parent, &pb_type->modes[i], timing_enabled, arch, loc_data);
             i++;
         } else {
             pb_type->modes = new t_mode[pb_type->num_modes];
@@ -1617,7 +1616,7 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type* pb_type, t_mode* mo
                 if (0 == strcmp(Cur.name(), "mode")) {
                     pb_type->modes[i].parent_pb_type = pb_type;
                     pb_type->modes[i].index = i;
-                    ProcessMode(Cur, &pb_type->modes[i], timing_enabled, arch, loc_data);
+                    ProcessMode(strings, Cur, &pb_type->modes[i], timing_enabled, arch, loc_data);
 
                     ret_mode_names = mode_names.insert(std::pair<std::string, int>(pb_type->modes[i].name, 0));
                     if (!ret_mode_names.second) {
@@ -1638,7 +1637,7 @@ static void ProcessPb_Type(pugi::xml_node Parent, t_pb_type* pb_type, t_mode* mo
     pb_port_names.clear();
     mode_names.clear();
 
-    pb_type->meta = ProcessMetadata(Parent, loc_data);
+    pb_type->meta = ProcessMetadata(strings, Parent, loc_data);
     ProcessPb_TypePower(Parent, pb_type, loc_data);
 }
 
@@ -1873,7 +1872,7 @@ static void ProcessPb_TypePort(pugi::xml_node Parent, t_port* port, e_power_esti
     ProcessPb_TypePort_Power(Parent, port, power_method, loc_data);
 }
 
-static void ProcessInterconnect(pugi::xml_node Parent, t_mode* mode, const pugiutil::loc_data& loc_data) {
+static void ProcessInterconnect(vtr::string_internment* strings, pugi::xml_node Parent, t_mode* mode, const pugiutil::loc_data& loc_data) {
     int num_interconnect = 0;
     int num_complete, num_direct, num_mux;
     int i, j, k, L_index, num_annotations;
@@ -1927,7 +1926,7 @@ static void ProcessInterconnect(pugi::xml_node Parent, t_mode* mode, const pugiu
 
             Prop = get_attribute(Cur, "name", loc_data).value();
             mode->interconnect[i].name = vtr::strdup(Prop);
-            mode->interconnect[i].meta = ProcessMetadata(Cur, loc_data);
+            mode->interconnect[i].meta = ProcessMetadata(strings, Cur, loc_data);
 
             ret_interc_names = interc_names.insert(std::pair<std::string, int>(mode->interconnect[i].name, 0));
             if (!ret_interc_names.second) {
@@ -1989,7 +1988,7 @@ static void ProcessInterconnect(pugi::xml_node Parent, t_mode* mode, const pugiu
     VTR_ASSERT(i == num_interconnect);
 }
 
-static void ProcessMode(pugi::xml_node Parent, t_mode* mode, const bool timing_enabled, const t_arch& arch, const pugiutil::loc_data& loc_data) {
+static void ProcessMode(vtr::string_internment* strings, pugi::xml_node Parent, t_mode* mode, const bool timing_enabled, const t_arch& arch, const pugiutil::loc_data& loc_data) {
     int i;
     const char* Prop;
     pugi::xml_node Cur;
@@ -2012,7 +2011,7 @@ static void ProcessMode(pugi::xml_node Parent, t_mode* mode, const bool timing_e
         Cur = get_first_child(Parent, "pb_type", loc_data);
         while (Cur != nullptr) {
             if (0 == strcmp(Cur.name(), "pb_type")) {
-                ProcessPb_Type(Cur, &mode->pb_type_children[i], mode, timing_enabled, arch, loc_data);
+                ProcessPb_Type(strings, Cur, &mode->pb_type_children[i], mode, timing_enabled, arch, loc_data);
 
                 ret_pb_types = pb_type_names.insert(
                     std::pair<std::string, int>(mode->pb_type_children[i].name, 0));
@@ -2037,18 +2036,17 @@ static void ProcessMode(pugi::xml_node Parent, t_mode* mode, const bool timing_e
     if (!implied_mode) {
         // Implied mode metadata is attached to the pb_type, rather than
         // the t_mode object.
-        mode->meta = ProcessMetadata(Parent, loc_data);
+        mode->meta = ProcessMetadata(strings, Parent, loc_data);
     }
 
     /* Clear STL map used for duplicate checks */
     pb_type_names.clear();
 
     Cur = get_single_child(Parent, "interconnect", loc_data);
-    ProcessInterconnect(Cur, mode, loc_data);
+    ProcessInterconnect(strings, Cur, mode, loc_data);
 }
 
-static t_metadata_dict ProcessMetadata(pugi::xml_node Parent,
-                                       const pugiutil::loc_data& loc_data) {
+static t_metadata_dict ProcessMetadata(vtr::string_internment* strings, pugi::xml_node Parent, const pugiutil::loc_data& loc_data) {
     //	<metadata>
     //	  <meta>CLBLL_L_</meta>
     //	</metadata>
@@ -2057,10 +2055,11 @@ static t_metadata_dict ProcessMetadata(pugi::xml_node Parent,
     if (metadata) {
         auto meta_tag = get_first_child(metadata, "meta", loc_data);
         while (meta_tag) {
-            std::string key = get_attribute(meta_tag, "name", loc_data).as_string();
+            auto key = get_attribute(meta_tag, "name", loc_data).as_string();
 
             auto value = meta_tag.child_value();
-            data.add(key, value);
+            data.add(strings->intern_string(vtr::string_view(key)),
+                     strings->intern_string(vtr::string_view(value)));
             meta_tag = meta_tag.next_sibling(meta_tag.name());
         }
     }
@@ -2616,13 +2615,13 @@ static void ProcessLayout(pugi::xml_node layout_tag, t_arch* arch, const pugiuti
     VTR_ASSERT_MSG(auto_layout_cnt == 0 || auto_layout_cnt == 1, "<auto_layout> may appear at most once");
 
     for (auto layout_type_tag : layout_tag.children()) {
-        t_grid_def grid_def = ProcessGridLayout(layout_type_tag, loc_data);
+        t_grid_def grid_def = ProcessGridLayout(&arch->strings, layout_type_tag, loc_data);
 
         arch->grid_layouts.emplace_back(std::move(grid_def));
     }
 }
 
-static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data) {
+static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data) {
     t_grid_def grid_def;
 
     //Determine the grid specification type
@@ -2660,7 +2659,7 @@ static t_grid_def ProcessGridLayout(pugi::xml_node layout_type_tag, const pugiut
         auto loc_type = loc_spec_tag.name();
         auto type_name = get_attribute(loc_spec_tag, "type", loc_data).value();
         int priority = get_attribute(loc_spec_tag, "priority", loc_data).as_int();
-        t_metadata_dict meta = ProcessMetadata(loc_spec_tag, loc_data);
+        t_metadata_dict meta = ProcessMetadata(strings, loc_spec_tag, loc_data);
 
         if (loc_type == std::string("perimeter")) {
             expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
@@ -3111,6 +3110,27 @@ static void ProcessTiles(pugi::xml_node Node,
     tile_type_descriptors.clear();
 }
 
+static void MarkIoTypes(std::vector<t_physical_tile_type>& PhysicalTileTypes) {
+    for (auto& type : PhysicalTileTypes) {
+        type.is_input_type = false;
+        type.is_output_type = false;
+
+        for (const auto& equivalent_site : type.equivalent_sites) {
+            if (block_type_contains_blif_model(equivalent_site, MODEL_INPUT)) {
+                type.is_input_type = true;
+                break;
+            }
+        }
+
+        for (const auto& equivalent_site : type.equivalent_sites) {
+            if (block_type_contains_blif_model(equivalent_site, MODEL_OUTPUT)) {
+                type.is_output_type = true;
+                break;
+            }
+        }
+    }
+}
+
 static void ProcessTileProps(pugi::xml_node Node,
                              t_physical_tile_type* PhysicalTileType,
                              const pugiutil::loc_data& loc_data) {
@@ -3445,11 +3465,7 @@ static void ProcessEquivalentSiteCustomConnection(pugi::xml_node Parent,
 
 /* Takes in node pointing to <typelist> and loads all the
  * child type objects. */
-static void ProcessComplexBlocks(pugi::xml_node Node,
-                                 std::vector<t_logical_block_type>& LogicalBlockTypes,
-                                 t_arch& arch,
-                                 const bool timing_enabled,
-                                 const pugiutil::loc_data& loc_data) {
+static void ProcessComplexBlocks(vtr::string_internment* strings, pugi::xml_node Node, std::vector<t_logical_block_type>& LogicalBlockTypes, t_arch& arch, const bool timing_enabled, const pugiutil::loc_data& loc_data) {
     pugi::xml_node CurBlockType;
     pugi::xml_node Cur;
     std::map<std::string, int> pb_type_descriptors;
@@ -3485,7 +3501,7 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
         /* Load pb_type info to assign to the Logical Block Type */
         LogicalBlockType.pb_type = new t_pb_type;
         LogicalBlockType.pb_type->name = vtr::strdup(LogicalBlockType.name);
-        ProcessPb_Type(CurBlockType, LogicalBlockType.pb_type, nullptr, timing_enabled, arch, loc_data);
+        ProcessPb_Type(strings, CurBlockType, LogicalBlockType.pb_type, nullptr, timing_enabled, arch, loc_data);
 
         LogicalBlockType.index = index;
 

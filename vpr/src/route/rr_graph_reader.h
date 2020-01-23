@@ -2,6 +2,8 @@
 
 #ifndef RR_GRAPH_READER_H
 #define RR_GRAPH_READER_H
+
+#include "rr_graph.h"
 #include "device_grid.h"
 
 void load_rr_file(const t_graph_type graph_type,
