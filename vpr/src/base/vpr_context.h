@@ -197,7 +197,7 @@ class MetadataStorage {
 
         VTR_ASSERT(idx + 1 == count);
 
-        map_.assign(std::move(storage));
+        map_.assign_sorted(std::move(storage));
 
         data_.clear();
         data_.shrink_to_fit();
