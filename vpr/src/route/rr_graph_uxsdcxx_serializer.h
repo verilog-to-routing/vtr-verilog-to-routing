@@ -963,6 +963,9 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      */
     inline void preallocate_rr_edges_edge(void*& /*ctx*/, size_t size) final {
         edges_.reserve(size);
+        if (read_edge_metadata_) {
+            rr_edge_metadata_->reserve(size);
+        }
     }
     inline MetadataBind add_rr_edges_edge(void*& /*ctx*/, unsigned int sink_node, unsigned int src_node, unsigned int switch_id) final {
         if (src_node >= rr_nodes_->size()) {
