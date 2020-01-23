@@ -6,7 +6,7 @@
  *
  * Cmdline: uxsdcxx/uxsdcxx.py rr_graph.xsd
  * Input file: rr_graph.xsd
- * md5sum of input file: 6fee035821b20cff3b738f20cc32be20
+ * md5sum of input file: d9e439fa173fdf56b51feeed0ac48272
  */
 
 #include <functional>
@@ -191,6 +191,7 @@ class RrGraphBase {
      *   <xs:attribute name="Cinternal" type="xs:float" />
      *   <xs:attribute name="Cout" type="xs:float" />
      *   <xs:attribute name="Tdel" type="xs:float" />
+     *   <xs:attribute name="penalty_cost" type="xs:float" />
      * </xs:complexType>
      */
     virtual inline float get_timing_Cin(typename ContextTypes::TimingReadContext& ctx) = 0;
@@ -203,6 +204,8 @@ class RrGraphBase {
     virtual inline void set_timing_R(float R, typename ContextTypes::TimingWriteContext& ctx) = 0;
     virtual inline float get_timing_Tdel(typename ContextTypes::TimingReadContext& ctx) = 0;
     virtual inline void set_timing_Tdel(float Tdel, typename ContextTypes::TimingWriteContext& ctx) = 0;
+    virtual inline float get_timing_penalty_cost(typename ContextTypes::TimingReadContext& ctx) = 0;
+    virtual inline void set_timing_penalty_cost(float penalty_cost, typename ContextTypes::TimingWriteContext& ctx) = 0;
 
     /** Generated for complex type "sizing":
      * <xs:complexType name="sizing">
