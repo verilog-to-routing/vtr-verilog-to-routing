@@ -182,7 +182,7 @@ class MetadataStorage {
             storage.back().second.add(std::get<1>(value), std::get<2>(value));
         }
 
-        map_.assign(std::move(storage));
+        map_.assign_sorted(std::move(storage));
 
         data_.clear();
         data_.shrink_to_fit();
