@@ -27,7 +27,10 @@ RUN apt-get update \
   libxml++2.6-dev \
   python-lxml \
   qt5-default \
-  wget
+  wget \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
+
 
 # Give back control
 USER root
