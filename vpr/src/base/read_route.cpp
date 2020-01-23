@@ -23,7 +23,6 @@
 #include "rr_graph.h"
 #include "vtr_assert.h"
 #include "vtr_util.h"
-#include "vtr_time.h"
 #include "tatum/echo_writer.hpp"
 #include "vtr_log.h"
 #include "check_route.h"
@@ -41,16 +40,14 @@
 #include "echo_files.h"
 #include "route_common.h"
 #include "read_route.h"
-#include "rr_graph2.h"
 
 /*************Functions local to this module*************/
-static void process_route(std::ifstream& fp, const char* filename, int& lineno, const std::unordered_map<int, ClusterBlockId>& node_to_block);
-static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno, const std::unordered_map<int, ClusterBlockId>& node_to_block);
-static void process_nets(std::ifstream& fp, ClusterNetId inet, std::string name, std::vector<std::string> input_tokens, const char* filename, int& lineno, const std::unordered_map<int, ClusterBlockId>& node_to_block);
+static void process_route(std::ifstream& fp, const char* filename, int& lineno);
+static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno);
+static void process_nets(std::ifstream& fp, ClusterNetId inet, std::string name, std::vector<std::string> input_tokens, const char* filename, int& lineno);
 static void process_global_blocks(std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno);
 static void format_coordinates(int& x, int& y, std::string coord, ClusterNetId net, const char* filename, const int lineno);
 static void format_pin_info(std::string& pb_name, std::string& port_name, int& pb_pin_num, std::string input);
-static void build_cluster_block_map(std::unordered_map<int, ClusterBlockId>* node_to_block);
 static std::string format_name(std::string name);
 
 /*************Global Functions****************************/
@@ -58,7 +55,7 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     /* Reads in the routing file to fill in the trace.head and t_clb_opins_used data structure.
      * Perform a series of verification tests to ensure the netlist, placement, and routing
      * files match */
-    auto& device_ctx = g_vpr_ctx.device();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& place_ctx = g_vpr_ctx.placement();
     /* Begin parsing the file */
     VTR_LOG("Begin loading FPGA routing file.\n");
@@ -106,12 +103,8 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
                   header[2].c_str(), header[4].c_str(), device_ctx.grid.width(), device_ctx.grid.height());
     }
 
-    // Build lookup from SOURCE/SINK node to ClusterBlockId.
-    std::unordered_map<int, ClusterBlockId> node_to_block;
-    build_cluster_block_map(&node_to_block);
-
     /* Read in every net */
-    process_route(fp, route_file, lineno, node_to_block);
+    process_route(fp, route_file, lineno);
 
     fp.close();
 
@@ -133,7 +126,7 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     return is_feasible;
 }
 
-static void process_route(std::ifstream& fp, const char* filename, int& lineno, const std::unordered_map<int, ClusterBlockId>& node_to_block) {
+static void process_route(std::ifstream& fp, const char* filename, int& lineno) {
     /*Walks through every net and add the routing appropriately*/
     std::string input;
     std::vector<std::string> tokens;
@@ -147,56 +140,16 @@ static void process_route(std::ifstream& fp, const char* filename, int& lineno, 
             continue; //Skip commented lines
         } else if (tokens[0] == "Net") {
             ClusterNetId inet(atoi(tokens[1].c_str()));
-            process_nets(fp, inet, tokens[2], tokens, filename, lineno, node_to_block);
+            process_nets(fp, inet, tokens[2], tokens, filename, lineno);
         }
     }
 
     tokens.clear();
 }
 
-static void build_cluster_block_map(std::unordered_map<int, ClusterBlockId>* node_to_block) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& device_ctx = g_vpr_ctx.device();
-
-    vtr::ScopedStartFinishTimer timer("Building ClusterBlockId lookup");
-
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        int pin_count = 0;
-        for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
-            auto block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
-
-            const auto* logical_tile = cluster_ctx.clb_nlist.block_type(block_id);
-            const auto* physical_tile = physical_tile_type(block_id);
-            VTR_ASSERT(block_id);
-            int i = place_ctx.block_locs[block_id].loc.x;
-            int j = place_ctx.block_locs[block_id].loc.y;
-
-            int logical_pin_index = cluster_ctx.clb_nlist.pin_logical_index(pin_id);
-            int physical_pin_index = get_physical_pin(
-                physical_tile, place_ctx.block_locs[block_id].loc.z,
-                logical_tile, logical_pin_index);
-            int physical_pin_class = physical_tile->pin_class[physical_pin_index];
-            int class_inode = get_rr_node_index(device_ctx.rr_node_indices,
-                                                i, j, (pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
-                                                physical_pin_class);
-
-            auto result = node_to_block->insert(std::make_pair(class_inode, block_id));
-            if (!result.second && result.first->second != block_id) {
-                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                "Clustered netlist has inconsistent rr node mapping, class rr node %d has two block ids %zu and %zu?",
-                                class_inode, (size_t)block_id, result.first->second);
-            }
-            pin_count++;
-        }
-    }
-
-    VTR_LOG("ClusterBlockId lookup has %zu entries\n", node_to_block->size());
-}
-
-static void process_nets(std::ifstream& fp, ClusterNetId inet, std::string name, std::vector<std::string> input_tokens, const char* filename, int& lineno, const std::unordered_map<int, ClusterBlockId>& node_to_block) {
+static void process_nets(std::ifstream& fp, ClusterNetId inet, std::string name, std::vector<std::string> input_tokens, const char* filename, int& lineno) {
     /* Check if the net is global or not, and process appropriately */
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
     if (input_tokens.size() > 3 && input_tokens[3] == "global"
         && input_tokens[4] == "net" && input_tokens[5] == "connecting:") {
@@ -230,18 +183,19 @@ static void process_nets(std::ifstream& fp, ClusterNetId inet, std::string name,
                       name.c_str(), size_t(inet), cluster_ctx.clb_nlist.net_name(inet).c_str());
         }
 
-        process_nodes(fp, inet, filename, lineno, node_to_block);
+        process_nodes(fp, inet, filename, lineno);
     }
     input_tokens.clear();
     return;
 }
 
-static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno, const std::unordered_map<int, ClusterBlockId>& node_to_block) {
+static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno) {
     /* Not a global net. Goes through every node and add it into trace.head*/
 
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+    auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
+    auto& place_ctx = g_vpr_ctx.placement();
 
     t_trace* tptr = route_ctx.trace[inet].head;
 
@@ -331,22 +285,9 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
             if (tokens[6 + offset] != "Switch:") {
                 /*This is an opin or ipin, process its pin nums*/
                 if (!is_io_type(device_ctx.grid[x][y].type) && (tokens[2] == "IPIN" || tokens[2] == "OPIN")) {
-                    // Convert this IPIN/OPIN back to class.
-                    auto rr_type = device_ctx.rr_nodes[inode].type();
-                    VTR_ASSERT(rr_type == IPIN || rr_type == OPIN);
                     int pin_num = device_ctx.rr_nodes[inode].ptc_num();
-                    int iclass = device_ctx.grid[x][y].type->pin_class[pin_num];
-                    int class_inode = get_rr_node_index(device_ctx.rr_node_indices,
-                                                        x, y, (rr_type == OPIN ? SOURCE : SINK), iclass);
-
-                    auto itr = node_to_block.find(class_inode);
-                    if (itr == node_to_block.end()) {
-                        vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
-                                  "Class RR node %d does not have an associated ClusterBlockId?", class_inode);
-                    }
-
-                    ClusterBlockId iblock = itr->second;
-                    VTR_ASSERT(iblock);
+                    int height_offset = device_ctx.grid[x][y].height_offset;
+                    ClusterBlockId iblock = place_ctx.grid_blocks[x][y - height_offset].blocks[0];
                     t_pb_graph_pin* pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
                     t_pb_type* pb_type = pb_pin->parent_node->pb_type;
 
@@ -393,7 +334,7 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
 /*This function goes through all the blocks in a global net and verify it with the
  * clustered netlist and the placement */
 static void process_global_blocks(std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
     std::string block, bnum_str;

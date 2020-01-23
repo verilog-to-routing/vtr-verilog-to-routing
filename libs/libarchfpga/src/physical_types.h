@@ -523,12 +523,6 @@ enum class e_sb_type {
 
 };
 
-enum class e_capacity_type {
-    DUPLICATE, // Capacity duplicates ports.
-    EXPLICIT   // Capacity increases the number of logical tiles, but does not
-               // modify the physical ports.
-};
-
 constexpr int NO_SWITCH = -1;
 constexpr int DEFAULT_SWITCH = -2;
 
@@ -583,7 +577,6 @@ struct t_physical_tile_type {
     int num_clock_pins = 0;
 
     int capacity = 0;
-    e_capacity_type capacity_type = e_capacity_type::DUPLICATE;
 
     int width = 0;
     int height = 0;
@@ -632,20 +625,18 @@ struct t_physical_tile_type {
  *  vtr::bimap container.
  */
 struct t_logical_pin {
-    int z_index = -1;
     int pin = -1;
 
-    t_logical_pin(int z_index_value, int value) {
-        z_index = z_index_value;
+    t_logical_pin(int value) {
         pin = value;
     }
 
     bool operator==(const t_logical_pin o) const {
-        return z_index == o.z_index && pin == o.pin;
+        return pin == o.pin;
     }
 
     bool operator<(const t_logical_pin o) const {
-        return std::make_pair(z_index, pin) < std::make_pair(o.z_index, o.pin);
+        return pin < o.pin;
     }
 };
 
@@ -1383,7 +1374,6 @@ struct t_arch_switch_inf {
     float Cin = 0.;
     float Cout = 0.;
     float Cinternal = 0.;
-    float penalty_cost = 0.;
     float mux_trans_size = 1.;
     BufferSize buf_size_type = BufferSize::AUTO;
     float buf_size = 0.;
@@ -1448,7 +1438,6 @@ struct t_rr_switch_inf {
     float Cout = 0.;
     float Cinternal = 0.;
     float Tdel = 0.;
-    float penalty_cost = 0.;
     float mux_trans_size = 0.;
     float buf_size = 0.;
     const char* name = nullptr;

@@ -104,10 +104,7 @@ constexpr const char* EMPTY_BLOCK_NAME = "EMPTY";
 enum class e_router_lookahead {
     CLASSIC, //VPR's classic lookahead (assumes uniform wire types)
     MAP,     //Lookahead considering different wire types (see Oleg Petelin's MASc Thesis)
-    NO_OP,   //A no-operation lookahead which always returns zero
-    CONNECTION_BOX_MAP,
-    // Lookahead considering different wire types and IPIN
-    // connection box.
+    NO_OP    //A no-operation lookahead which always returns zero
 };
 
 enum class e_route_bb_update {
@@ -879,7 +876,6 @@ enum e_base_cost_type {
     DELAY_NORMALIZED_LENGTH,
     DELAY_NORMALIZED_FREQUENCY,
     DELAY_NORMALIZED_LENGTH_FREQUENCY,
-    DELAY_NORMALIZED_LENGTH_BOUNDED,
     DEMAND_ONLY,
     DEMAND_ONLY_NORMALIZED_LENGTH
 };
@@ -909,8 +905,6 @@ enum class e_incr_reroute_delay_ripup {
 constexpr int NO_FIXED_CHANNEL_WIDTH = -1;
 
 struct t_router_opts {
-    bool read_edge_metadata = false;
-    bool do_check_rr_graph = true;
     float first_iter_pres_fac;
     float initial_pres_fac;
     float pres_fac_mult;
@@ -955,8 +949,6 @@ struct t_router_opts {
 
     std::string write_router_lookahead;
     std::string read_router_lookahead;
-    bool disable_check_route;
-    bool quick_check_route;
 };
 
 struct t_analysis_opts {
