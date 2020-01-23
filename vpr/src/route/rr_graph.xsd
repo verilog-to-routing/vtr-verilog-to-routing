@@ -101,6 +101,7 @@
     <xs:attribute name="Cinternal" type="xs:float"/>
     <xs:attribute name="Cout" type="xs:float"/>
     <xs:attribute name="Tdel" type="xs:float"/>
+    <xs:attribute name="penalty_cost" type="xs:float"/>
   </xs:complexType>
 
   <xs:complexType name="sizing">
