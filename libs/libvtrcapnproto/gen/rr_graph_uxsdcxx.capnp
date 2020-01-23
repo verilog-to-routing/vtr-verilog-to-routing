@@ -4,9 +4,9 @@
 #
 # Cmdline: uxsdcxx/uxsdcap.py rr_graph.xsd
 # Input file: rr_graph.xsd
-# md5sum of input file: 6fee035821b20cff3b738f20cc32be20
+# md5sum of input file: d9e439fa173fdf56b51feeed0ac48272
 
-@0xb0bd50cf984beaca;
+@0xa90e1cca7f71265c;
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("ucap");
 
@@ -81,6 +81,7 @@ struct Timing {
 	cout @2 :Float32;
 	r @3 :Float32;
 	tdel @4 :Float32;
+	penaltyCost @5 :Float32;
 }
 
 struct Sizing {

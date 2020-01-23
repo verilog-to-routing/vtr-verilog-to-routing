@@ -6,7 +6,7 @@
  *
  * Cmdline: uxsdcxx/uxsdcap.py rr_graph.xsd
  * Input file: rr_graph.xsd
- * md5sum of input file: 6fee035821b20cff3b738f20cc32be20
+ * md5sum of input file: d9e439fa173fdf56b51feeed0ac48272
  */
 
 #include <functional>
@@ -429,6 +429,7 @@ inline void load_timing_capnp_type(const ucap::Timing::Reader& root, T& out, Con
     out.set_timing_Cout(root.getCout(), context);
     out.set_timing_R(root.getR(), context);
     out.set_timing_Tdel(root.getTdel(), context);
+    out.set_timing_penalty_cost(root.getPenaltyCost(), context);
 }
 
 template<class T, typename Context>
@@ -1021,6 +1022,8 @@ inline void write_switch_capnp_type(T& in, ucap::Switch::Builder& root, Context&
             switch_timing.setR(in.get_timing_R(child_context));
         if ((bool)in.get_timing_Tdel(child_context))
             switch_timing.setTdel(in.get_timing_Tdel(child_context));
+        if ((bool)in.get_timing_penalty_cost(child_context))
+            switch_timing.setPenaltyCost(in.get_timing_penalty_cost(child_context));
     }
 
     {
