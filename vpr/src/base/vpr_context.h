@@ -122,6 +122,10 @@ struct hash<std::tuple<int, int, short>> {
 template<typename LookupKey>
 class MetadataStorage {
   public:
+    void reserve(size_t s) {
+        VTR_ASSERT(map_.empty());
+        data_.reserve(s);
+    }
     void add_metadata(const LookupKey& lookup_key, vtr::interned_string meta_key, vtr::interned_string meta_value) {
         // Can only add metadata prior to building the map.
         VTR_ASSERT(map_.empty());
