@@ -574,8 +574,10 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     device_ctx.rr_node_indices = alloc_and_load_rr_node_indices(max_chan_width, grid,
                                                                 &num_rr_nodes, chan_details_x, chan_details_y);
+    size_t expected_node_count = num_rr_nodes;
     if (clock_modeling == DEDICATED_NETWORK) {
-        device_ctx.rr_nodes.reserve(num_rr_nodes + ClockRRGraphBuilder::estimate_additional_nodes(grid));
+        expected_node_count += ClockRRGraphBuilder::estimate_additional_nodes(grid);
+        device_ctx.rr_nodes.reserve(expected_node_count);
     }
     device_ctx.rr_nodes.resize(num_rr_nodes);
 
@@ -691,6 +693,12 @@ static void build_rr_graph(const t_graph_type graph_type,
         directs, num_directs, clb_to_clb_directs,
         is_global_graph,
         clock_modeling);
+
+    // Verify no incremental node allocation.
+    if (device_ctx.rr_nodes.size() > expected_node_count) {
+        VTR_LOG_ERROR("Expected no more than %zu nodes, have %zu nodes",
+                      expected_node_count, device_ctx.rr_nodes.size());
+    }
 
     /* Update rr_nodes capacities if global routing */
     if (graph_type == GRAPH_GLOBAL) {
