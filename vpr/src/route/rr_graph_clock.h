@@ -74,10 +74,18 @@ class ClockRRGraphBuilder {
 
   public:
     ClockRRGraphBuilder(
-        std::vector<t_rr_node>* rr_nodes,
-        t_rr_edge_info_set* rr_edges_to_create)
-        : rr_nodes_(rr_nodes)
-        , rr_edges_to_create_(rr_edges_to_create) {
+        const t_chan_width& chan_width,
+        const DeviceGrid& grid,
+        std::vector<t_rr_node>* rr_nodes)
+        : chan_width_(chan_width)
+        , grid_(grid)
+        , rr_nodes_(rr_nodes)
+        , chanx_ptc_idx_(0)
+        , chany_ptc_idx_(0) {
+    }
+
+    const DeviceGrid& grid() const {
+        return grid_;
     }
 
     /* Saves a map from switch rr_node idx -> {x, y} location */
@@ -97,26 +105,32 @@ class ClockRRGraphBuilder {
     std::set<std::pair<int, int>> get_switch_locations(std::string clock_name,
                                                        std::string switch_point_name) const;
 
-    static size_t estimate_additional_nodes();
+    void update_chan_width(t_chan_width* chan_width) const;
+
+    static size_t estimate_additional_nodes(const DeviceGrid& grid);
 
   public:
     /* Creates the routing resourse (rr) graph of the clock network and appends it to the
      * existing rr graph created in build_rr_graph for inter-block and intra-block routing. */
-    static void create_and_append_clock_rr_graph(
-        std::vector<t_rr_node>& L_rr_node,
-        int num_seg_types,
-        t_rr_edge_info_set& rr_edges_to_create);
+    void create_and_append_clock_rr_graph(int num_seg_types,
+                                          t_rr_edge_info_set* rr_edges_to_create);
 
   private:
     /* loop over all of the clock networks and create their wires */
     void create_clock_networks_wires(const std::vector<std::unique_ptr<ClockNetwork>>& clock_networks,
-                                     int num_segments);
+                                     int num_segments,
+                                     t_rr_edge_info_set* rr_edges_to_create);
 
     /* loop over all clock routing connections and create the switches and connections */
-    void create_clock_networks_switches(const std::vector<std::unique_ptr<ClockConnection>>& clock_connections);
+    void create_clock_networks_switches(const std::vector<std::unique_ptr<ClockConnection>>& clock_connections,
+                                        t_rr_edge_info_set* rr_edges_to_create);
 
+    const t_chan_width& chan_width_;
+    const DeviceGrid& grid_;
     std::vector<t_rr_node>* rr_nodes_;
-    t_rr_edge_info_set* rr_edges_to_create_;
+
+    int chanx_ptc_idx_;
+    int chany_ptc_idx_;
 };
 
 #endif

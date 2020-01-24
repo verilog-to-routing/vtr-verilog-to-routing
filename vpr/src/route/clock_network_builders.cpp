@@ -175,10 +175,7 @@ void ClockRib::create_segments(std::vector<t_segment_inf>& segment_inf) {
     populate_segment_values(index, name, length, x_chan_wire.layer, segment_inf);
 }
 
-size_t ClockRib::estimate_additional_nodes() {
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& grid = device_ctx.grid;
-
+size_t ClockRib::estimate_additional_nodes(const DeviceGrid& grid) {
     // Avoid an infinite loop
     VTR_ASSERT(repeat.y > 0);
     VTR_ASSERT(repeat.x > 0);
@@ -225,8 +222,7 @@ void ClockRib::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphB
     // to calculate the cost_index
     (void)num_segments;
 
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& grid = device_ctx.grid;
+    const auto& grid = clock_graph.grid();
 
     int ptc_num = clock_graph.get_and_increment_chanx_ptc_num(); // used for drawing
 
@@ -465,11 +461,8 @@ void ClockSpine::create_segments(std::vector<t_segment_inf>& segment_inf) {
     populate_segment_values(index, name, length, y_chan_wire.layer, segment_inf);
 }
 
-size_t ClockSpine::estimate_additional_nodes() {
+size_t ClockSpine::estimate_additional_nodes(const DeviceGrid& grid) {
     size_t num_additional_nodes = 0;
-
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& grid = device_ctx.grid;
 
     // Avoid an infinite loop
     VTR_ASSERT(repeat.y > 0);
@@ -512,8 +505,7 @@ void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGrap
                                                                      std::vector<t_rr_node>* rr_nodes,
                                                                      t_rr_edge_info_set* rr_edges_to_create,
                                                                      int num_segments) {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& grid = device_ctx.grid;
+    auto& grid = clock_graph.grid();
 
     int ptc_num = clock_graph.get_and_increment_chany_ptc_num(); // used for drawing
 
@@ -665,7 +657,7 @@ void ClockHTree::create_segments(std::vector<t_segment_inf>& segment_inf) {
     VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "HTrees are not yet supported.\n");
 }
 
-size_t ClockHTree::estimate_additional_nodes() {
+size_t ClockHTree::estimate_additional_nodes(const DeviceGrid& /*grid*/) {
     return 0;
 }
 
