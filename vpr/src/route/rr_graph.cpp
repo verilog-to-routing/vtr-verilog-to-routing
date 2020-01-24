@@ -694,7 +694,10 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     /* Update rr_nodes capacities if global routing */
     if (graph_type == GRAPH_GLOBAL) {
-        for (size_t i = 0; i < device_ctx.rr_nodes.size(); i++) {
+        // Using num_rr_nodes here over device_ctx.rr_nodes.size() because
+        // clock_modeling::DEDICATED_NETWORK will append some rr nodes after
+        // the regular graph.
+        for (size_t i = 0; i < num_rr_nodes; i++) {
             if (device_ctx.rr_nodes[i].type() == CHANX) {
                 int ylow = device_ctx.rr_nodes[i].ylow();
                 device_ctx.rr_nodes[i].set_capacity(nodes_per_chan.x_list[ylow]);

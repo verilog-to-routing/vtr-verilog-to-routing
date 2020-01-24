@@ -241,6 +241,11 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
     cost_index = device_ctx.rr_nodes[inode].cost_index();
     type = nullptr;
 
+    // Virtual clock network sink is special, ignore.
+    if (device_ctx.virtual_clock_network_root_idx == inode) {
+        return;
+    }
+
     const auto& grid = device_ctx.grid;
     if (xlow > xhigh || ylow > yhigh) {
         VPR_ERROR(VPR_ERROR_ROUTE,
