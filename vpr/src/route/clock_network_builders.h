@@ -112,7 +112,7 @@ class ClockNetwork {
         t_rr_edge_info_set* rr_edges_to_create,
         int num_segments)
         = 0;
-    virtual size_t estimate_additional_nodes() = 0;
+    virtual size_t estimate_additional_nodes(const DeviceGrid& grid) = 0;
 };
 
 class ClockRib : public ClockNetwork {
@@ -166,7 +166,7 @@ class ClockRib : public ClockNetwork {
                                                              std::vector<t_rr_node>* rr_nodes,
                                                              t_rr_edge_info_set* rr_edges_to_create,
                                                              int num_segments) override;
-    size_t estimate_additional_nodes() override;
+    size_t estimate_additional_nodes(const DeviceGrid& grid) override;
     int create_chanx_wire(int x_start,
                           int x_end,
                           int y,
@@ -225,7 +225,7 @@ class ClockSpine : public ClockNetwork {
                                                              std::vector<t_rr_node>* rr_nodes,
                                                              t_rr_edge_info_set* rr_edges_to_create,
                                                              int num_segments) override;
-    size_t estimate_additional_nodes() override;
+    size_t estimate_additional_nodes(const DeviceGrid& grid) override;
     int create_chany_wire(int y_start,
                           int y_end,
                           int x,
@@ -260,7 +260,7 @@ class ClockHTree : private ClockNetwork {
                                                              std::vector<t_rr_node>* rr_nodes,
                                                              t_rr_edge_info_set* rr_edges_to_create,
                                                              int num_segments) override;
-    size_t estimate_additional_nodes() override;
+    size_t estimate_additional_nodes(const DeviceGrid& grid) override;
 };
 
 #endif

@@ -148,32 +148,32 @@ static int get_opin_direct_connecions(int x,
                                       const int num_directs,
                                       const t_clb_to_clb_directs* clb_to_clb_directs);
 
-static void alloc_and_load_rr_graph(std::vector<t_rr_node>& L_rr_node,
-                                    const int num_seg_types,
-                                    const t_chan_details& chan_details_x,
-                                    const t_chan_details& chan_details_y,
-                                    const t_track_to_pin_lookup& track_to_pin_lookup,
-                                    const t_pin_to_track_lookup& opin_to_track_map,
-                                    const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
-                                    t_sb_connection_map* sb_conn_map,
-                                    const DeviceGrid& grid,
-                                    const int Fs,
-                                    t_sblock_pattern& sblock_pattern,
-                                    const std::vector<vtr::Matrix<int>>& Fc_out,
-                                    vtr::NdMatrix<int, 3>& Fc_xofs,
-                                    vtr::NdMatrix<int, 3>& Fc_yofs,
-                                    const t_rr_node_indices& L_rr_node_indices,
-                                    const int max_chan_width,
-                                    const t_chan_width& chan_width,
-                                    const int wire_to_ipin_switch,
-                                    const int delayless_switch,
-                                    const enum e_directionality directionality,
-                                    bool* Fc_clipped,
-                                    const t_direct_inf* directs,
-                                    const int num_directs,
-                                    const t_clb_to_clb_directs* clb_to_clb_directs,
-                                    bool is_global_graph,
-                                    const enum e_clock_modeling clock_modeling);
+static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(std::vector<t_rr_node>& L_rr_node,
+                                                                  const int num_seg_types,
+                                                                  const t_chan_details& chan_details_x,
+                                                                  const t_chan_details& chan_details_y,
+                                                                  const t_track_to_pin_lookup& track_to_pin_lookup,
+                                                                  const t_pin_to_track_lookup& opin_to_track_map,
+                                                                  const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
+                                                                  t_sb_connection_map* sb_conn_map,
+                                                                  const DeviceGrid& grid,
+                                                                  const int Fs,
+                                                                  t_sblock_pattern& sblock_pattern,
+                                                                  const std::vector<vtr::Matrix<int>>& Fc_out,
+                                                                  vtr::NdMatrix<int, 3>& Fc_xofs,
+                                                                  vtr::NdMatrix<int, 3>& Fc_yofs,
+                                                                  const t_rr_node_indices& L_rr_node_indices,
+                                                                  const int max_chan_width,
+                                                                  const t_chan_width& chan_width,
+                                                                  const int wire_to_ipin_switch,
+                                                                  const int delayless_switch,
+                                                                  const enum e_directionality directionality,
+                                                                  bool* Fc_clipped,
+                                                                  const t_direct_inf* directs,
+                                                                  const int num_directs,
+                                                                  const t_clb_to_clb_directs* clb_to_clb_directs,
+                                                                  bool is_global_graph,
+                                                                  const enum e_clock_modeling clock_modeling);
 
 static float pattern_fmod(float a, float b);
 static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 5>& tracks_connected_to_pin,
@@ -575,7 +575,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     device_ctx.rr_node_indices = alloc_and_load_rr_node_indices(max_chan_width, grid,
                                                                 &num_rr_nodes, chan_details_x, chan_details_y);
     if (clock_modeling == DEDICATED_NETWORK) {
-        device_ctx.rr_nodes.reserve(num_rr_nodes + ClockRRGraphBuilder::estimate_additional_nodes());
+        device_ctx.rr_nodes.reserve(num_rr_nodes + ClockRRGraphBuilder::estimate_additional_nodes(grid));
     }
     device_ctx.rr_nodes.resize(num_rr_nodes);
 
@@ -676,20 +676,21 @@ static void build_rr_graph(const t_graph_type graph_type,
     /* END OPIN MAP */
 
     bool Fc_clipped = false;
-    alloc_and_load_rr_graph(device_ctx.rr_nodes, segment_inf.size(),
-                            chan_details_x, chan_details_y,
-                            track_to_pin_lookup, opin_to_track_map,
-                            switch_block_conn, sb_conn_map, grid, Fs, unidir_sb_pattern,
-                            Fc_out, Fc_xofs, Fc_yofs, device_ctx.rr_node_indices,
-                            max_chan_width,
-                            nodes_per_chan,
-                            wire_to_arch_ipin_switch,
-                            delayless_switch,
-                            directionality,
-                            &Fc_clipped,
-                            directs, num_directs, clb_to_clb_directs,
-                            is_global_graph,
-                            clock_modeling);
+    auto update_chan_width = alloc_and_load_rr_graph(
+        device_ctx.rr_nodes, segment_inf.size(),
+        chan_details_x, chan_details_y,
+        track_to_pin_lookup, opin_to_track_map,
+        switch_block_conn, sb_conn_map, grid, Fs, unidir_sb_pattern,
+        Fc_out, Fc_xofs, Fc_yofs, device_ctx.rr_node_indices,
+        max_chan_width,
+        nodes_per_chan,
+        wire_to_arch_ipin_switch,
+        delayless_switch,
+        directionality,
+        &Fc_clipped,
+        directs, num_directs, clb_to_clb_directs,
+        is_global_graph,
+        clock_modeling);
 
     /* Update rr_nodes capacities if global routing */
     if (graph_type == GRAPH_GLOBAL) {
@@ -704,6 +705,8 @@ static void build_rr_graph(const t_graph_type graph_type,
             }
         }
     }
+
+    update_chan_width(&nodes_per_chan);
 
     /* Allocate and load routing resource switches, which are derived from the switches from the architecture file,
      * based on their fanin in the rr graph. This routine also adjusts the rr nodes to point to these new rr switches */
@@ -1171,32 +1174,32 @@ static void free_type_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
 
 /* Does the actual work of allocating the rr_graph and filling all the *
  * appropriate values.  Everything up to this was just a prelude!      */
-static void alloc_and_load_rr_graph(std::vector<t_rr_node>& L_rr_node,
-                                    const int num_seg_types,
-                                    const t_chan_details& chan_details_x,
-                                    const t_chan_details& chan_details_y,
-                                    const t_track_to_pin_lookup& track_to_pin_lookup,
-                                    const t_pin_to_track_lookup& opin_to_track_map,
-                                    const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
-                                    t_sb_connection_map* sb_conn_map,
-                                    const DeviceGrid& grid,
-                                    const int Fs,
-                                    t_sblock_pattern& sblock_pattern,
-                                    const std::vector<vtr::Matrix<int>>& Fc_out,
-                                    vtr::NdMatrix<int, 3>& Fc_xofs,
-                                    vtr::NdMatrix<int, 3>& Fc_yofs,
-                                    const t_rr_node_indices& L_rr_node_indices,
-                                    const int max_chan_width,
-                                    const t_chan_width& chan_width,
-                                    const int wire_to_ipin_switch,
-                                    const int delayless_switch,
-                                    const enum e_directionality directionality,
-                                    bool* Fc_clipped,
-                                    const t_direct_inf* directs,
-                                    const int num_directs,
-                                    const t_clb_to_clb_directs* clb_to_clb_directs,
-                                    bool is_global_graph,
-                                    const enum e_clock_modeling clock_modeling) {
+static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(std::vector<t_rr_node>& L_rr_node,
+                                                                  const int num_seg_types,
+                                                                  const t_chan_details& chan_details_x,
+                                                                  const t_chan_details& chan_details_y,
+                                                                  const t_track_to_pin_lookup& track_to_pin_lookup,
+                                                                  const t_pin_to_track_lookup& opin_to_track_map,
+                                                                  const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
+                                                                  t_sb_connection_map* sb_conn_map,
+                                                                  const DeviceGrid& grid,
+                                                                  const int Fs,
+                                                                  t_sblock_pattern& sblock_pattern,
+                                                                  const std::vector<vtr::Matrix<int>>& Fc_out,
+                                                                  vtr::NdMatrix<int, 3>& Fc_xofs,
+                                                                  vtr::NdMatrix<int, 3>& Fc_yofs,
+                                                                  const t_rr_node_indices& L_rr_node_indices,
+                                                                  const int max_chan_width,
+                                                                  const t_chan_width& chan_width,
+                                                                  const int wire_to_ipin_switch,
+                                                                  const int delayless_switch,
+                                                                  const enum e_directionality directionality,
+                                                                  bool* Fc_clipped,
+                                                                  const t_direct_inf* directs,
+                                                                  const int num_directs,
+                                                                  const t_clb_to_clb_directs* clb_to_clb_directs,
+                                                                  bool is_global_graph,
+                                                                  const enum e_clock_modeling clock_modeling) {
     //We take special care when creating RR graph edges (there are typically many more
     //edges than nodes in an RR graph).
     //
@@ -1294,17 +1297,25 @@ static void alloc_and_load_rr_graph(std::vector<t_rr_node>& L_rr_node,
         }
     }
 
+    std::function<void(t_chan_width*)> update_chan_width = [](t_chan_width*) {
+    };
     if (clock_modeling == DEDICATED_NETWORK) {
-        ClockRRGraphBuilder::create_and_append_clock_rr_graph(
-            L_rr_node,
+        ClockRRGraphBuilder builder(
+            chan_width, grid, &L_rr_node);
+        builder.create_and_append_clock_rr_graph(
             num_seg_types,
-            rr_edges_to_create);
+            &rr_edges_to_create);
         uniquify_edges(rr_edges_to_create);
         alloc_and_load_edges(L_rr_node, rr_edges_to_create);
         rr_edges_to_create.clear();
+        update_chan_width = [builder](t_chan_width* chan_width) {
+            builder.update_chan_width(chan_width);
+        };
     }
 
     init_fan_in(L_rr_node, L_rr_node.size());
+
+    return update_chan_width;
 }
 
 static void build_bidir_rr_opins(const int i,

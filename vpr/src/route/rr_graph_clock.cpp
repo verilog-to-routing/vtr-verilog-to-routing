@@ -12,27 +12,25 @@
 #include "vtr_time.h"
 #include "vpr_error.h"
 
-void ClockRRGraphBuilder::create_and_append_clock_rr_graph(
-    std::vector<t_rr_node>& L_rr_node,
-    int num_seg_types,
-    t_rr_edge_info_set& rr_edges_to_create) {
+void ClockRRGraphBuilder::create_and_append_clock_rr_graph(int num_seg_types,
+                                                           t_rr_edge_info_set* rr_edges_to_create) {
     vtr::ScopedStartFinishTimer timer("Build clock network routing resource graph");
 
     const auto& device_ctx = g_vpr_ctx.device();
     auto& clock_networks = device_ctx.clock_networks;
     auto& clock_routing = device_ctx.clock_connections;
 
-    ClockRRGraphBuilder clock_graph = ClockRRGraphBuilder(&L_rr_node, &rr_edges_to_create);
-    clock_graph.create_clock_networks_wires(clock_networks, num_seg_types);
-    clock_graph.create_clock_networks_switches(clock_routing);
+    create_clock_networks_wires(clock_networks, num_seg_types, rr_edges_to_create);
+    create_clock_networks_switches(clock_routing, rr_edges_to_create);
 }
 
 // Clock network information comes from the arch file
 void ClockRRGraphBuilder::create_clock_networks_wires(const std::vector<std::unique_ptr<ClockNetwork>>& clock_networks,
-                                                      int num_segments) {
+                                                      int num_segments,
+                                                      t_rr_edge_info_set* rr_edges_to_create) {
     // Add rr_nodes for each clock network wire
     for (auto& clock_network : clock_networks) {
-        clock_network->create_rr_nodes_for_clock_network_wires(*this, rr_nodes_, rr_edges_to_create_, num_segments);
+        clock_network->create_rr_nodes_for_clock_network_wires(*this, rr_nodes_, rr_edges_to_create, num_segments);
     }
 
     // Reduce the capacity of rr_nodes for performance
@@ -40,9 +38,10 @@ void ClockRRGraphBuilder::create_clock_networks_wires(const std::vector<std::uni
 }
 
 // Clock switch information comes from the arch file
-void ClockRRGraphBuilder::create_clock_networks_switches(const std::vector<std::unique_ptr<ClockConnection>>& clock_connections) {
+void ClockRRGraphBuilder::create_clock_networks_switches(const std::vector<std::unique_ptr<ClockConnection>>& clock_connections,
+                                                         t_rr_edge_info_set* rr_edges_to_create) {
     for (auto& clock_connection : clock_connections) {
-        clock_connection->create_switches(*this, rr_edges_to_create_);
+        clock_connection->create_switches(*this, rr_edges_to_create);
     }
 }
 
@@ -137,51 +136,42 @@ std::set<std::pair<int, int>> SwitchPoint::get_switch_locations() const {
 }
 
 int ClockRRGraphBuilder::get_and_increment_chanx_ptc_num() {
-    auto& device_ctx = g_vpr_ctx.mutable_device();
-    auto& grid = device_ctx.grid;
-    auto* channel_width = &device_ctx.chan_width;
-
     // ptc_num is determined by the channel width
     // The channel width lets the drawing engine how much to space the LBs appart
-    int ptc_num = channel_width->x_max++;
-    if (channel_width->x_max > channel_width->max) {
-        channel_width->max = channel_width->x_max;
-    }
-
-    for (size_t i = 0; i < grid.height(); ++i) {
-        device_ctx.chan_width.x_list[i]++;
-    }
-
+    int ptc_num = chan_width_.x_max + (chanx_ptc_idx_++);
     return ptc_num;
 }
 
 int ClockRRGraphBuilder::get_and_increment_chany_ptc_num() {
-    auto& device_ctx = g_vpr_ctx.mutable_device();
-    auto& grid = device_ctx.grid;
-    auto* channel_width = &device_ctx.chan_width;
-
     // ptc_num is determined by the channel width
     // The channel width lets the drawing engine how much to space the LBs appart
-    int ptc_num = channel_width->y_max++;
-    if (channel_width->y_max > channel_width->max) {
-        channel_width->max = channel_width->y_max;
-    }
-
-    for (size_t i = 0; i < grid.width(); ++i) {
-        device_ctx.chan_width.y_list[i]++;
-    }
-
+    int ptc_num = chan_width_.y_max + (chany_ptc_idx_++);
     return ptc_num;
 }
 
-size_t ClockRRGraphBuilder::estimate_additional_nodes() {
+void ClockRRGraphBuilder::update_chan_width(t_chan_width* chan_width) const {
+    chan_width->x_max += chanx_ptc_idx_;
+    chan_width->y_max += chany_ptc_idx_;
+    chan_width->max = std::max(chan_width->max, chan_width->x_max);
+    chan_width->max = std::max(chan_width->max, chan_width->y_max);
+
+    for (size_t i = 0; i < grid_.height(); ++i) {
+        chan_width->x_list[i] += chanx_ptc_idx_;
+    }
+    for (size_t i = 0; i < grid_.width(); ++i) {
+        chan_width->y_list[i] += chany_ptc_idx_;
+    }
+}
+
+size_t ClockRRGraphBuilder::estimate_additional_nodes(const DeviceGrid& grid) {
     size_t num_additional_nodes = 0;
 
     const auto& device_ctx = g_vpr_ctx.device();
     auto& clock_networks = device_ctx.clock_networks;
     auto& clock_routing = device_ctx.clock_connections;
+
     for (auto& clock_network : clock_networks) {
-        num_additional_nodes += clock_network->estimate_additional_nodes();
+        num_additional_nodes += clock_network->estimate_additional_nodes(grid);
     }
     for (auto& clock_connection : clock_routing) {
         num_additional_nodes += clock_connection->estimate_additional_nodes();
