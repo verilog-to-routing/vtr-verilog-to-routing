@@ -179,3 +179,18 @@ size_t ClockRRGraphBuilder::estimate_additional_nodes(const DeviceGrid& grid) {
 
     return num_additional_nodes;
 }
+
+void ClockRRGraphBuilder::add_edge(t_rr_edge_info_set* rr_edges_to_create,
+                                   int src_node,
+                                   int sink_node,
+                                   int arch_switch_idx) const {
+    const auto& device_ctx = g_vpr_ctx.device();
+    VTR_ASSERT(arch_switch_idx < device_ctx.num_arch_switches);
+    rr_edges_to_create->emplace_back(src_node, sink_node, arch_switch_idx);
+
+    const auto& sw = device_ctx.arch_switch_inf[arch_switch_idx];
+    if (!sw.buffered() && !sw.configurable()) {
+        // This is short, create a reverse edge.
+        rr_edges_to_create->emplace_back(sink_node, src_node, arch_switch_idx);
+    }
+}
