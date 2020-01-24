@@ -145,8 +145,7 @@ size_t ClockToClockConneciton::estimate_additional_nodes() {
 }
 
 void ClockToClockConneciton::create_switches(const ClockRRGraphBuilder& clock_graph, t_rr_edge_info_set* rr_edges_to_create) {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& grid = device_ctx.grid;
+    auto& grid = clock_graph.grid();
 
     auto to_locations = clock_graph.get_switch_locations(to_clock, to_switch);
 
@@ -227,7 +226,7 @@ size_t ClockToPinsConnection::estimate_additional_nodes() {
 void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_graph, t_rr_edge_info_set* rr_edges_to_create) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_node_indices = device_ctx.rr_node_indices;
-    auto& grid = device_ctx.grid;
+    auto& grid = clock_graph.grid();
 
     for (size_t x = 0; x < grid.width(); x++) {
         for (size_t y = 0; y < grid.height(); y++) {
