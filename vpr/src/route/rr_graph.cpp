@@ -148,8 +148,7 @@ static int get_opin_direct_connecions(int x,
                                       const int num_directs,
                                       const t_clb_to_clb_directs* clb_to_clb_directs);
 
-static void alloc_and_load_rr_graph(const int num_nodes,
-                                    std::vector<t_rr_node>& L_rr_node,
+static void alloc_and_load_rr_graph(std::vector<t_rr_node>& L_rr_node,
                                     const int num_seg_types,
                                     const t_chan_details& chan_details_x,
                                     const t_chan_details& chan_details_y,
@@ -173,7 +172,8 @@ static void alloc_and_load_rr_graph(const int num_nodes,
                                     const t_direct_inf* directs,
                                     const int num_directs,
                                     const t_clb_to_clb_directs* clb_to_clb_directs,
-                                    bool is_global_graph);
+                                    bool is_global_graph,
+                                    const enum e_clock_modeling clock_modeling);
 
 static float pattern_fmod(float a, float b);
 static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 5>& tracks_connected_to_pin,
@@ -296,6 +296,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const float R_minW_nmos,
                            const float R_minW_pmos,
                            const enum e_base_cost_type base_cost_type,
+                           const enum e_clock_modeling clock_modeling,
                            const bool trim_empty_channels,
                            const bool trim_obs_channels,
                            const t_direct_inf* directs,
@@ -356,19 +357,12 @@ void create_rr_graph(const t_graph_type graph_type,
                        det_routing_arch->R_minW_nmos,
                        det_routing_arch->R_minW_pmos,
                        base_cost_type,
+                       clock_modeling,
                        trim_empty_channels,
                        trim_obs_channels,
                        directs, num_directs,
                        &det_routing_arch->wire_to_rr_ipin_switch,
                        Warnings);
-
-        if (clock_modeling == DEDICATED_NETWORK) {
-            ClockRRGraphBuilder::create_and_append_clock_rr_graph(segment_inf,
-                                                                  det_routing_arch->R_minW_nmos,
-                                                                  det_routing_arch->R_minW_pmos,
-                                                                  det_routing_arch->wire_to_rr_ipin_switch,
-                                                                  base_cost_type);
-        }
     }
 
     process_non_config_sets();
@@ -422,6 +416,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const float R_minW_nmos,
                            const float R_minW_pmos,
                            const enum e_base_cost_type base_cost_type,
+                           const enum e_clock_modeling clock_modeling,
                            const bool trim_empty_channels,
                            const bool trim_obs_channels,
                            const t_direct_inf* directs,
@@ -579,6 +574,9 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     device_ctx.rr_node_indices = alloc_and_load_rr_node_indices(max_chan_width, grid,
                                                                 &num_rr_nodes, chan_details_x, chan_details_y);
+    if (clock_modeling == DEDICATED_NETWORK) {
+        device_ctx.rr_nodes.reserve(num_rr_nodes + ClockRRGraphBuilder::estimate_additional_nodes());
+    }
     device_ctx.rr_nodes.resize(num_rr_nodes);
 
     /* These are data structures used by the the unidir opin mapping. They are used
@@ -678,7 +676,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     /* END OPIN MAP */
 
     bool Fc_clipped = false;
-    alloc_and_load_rr_graph(device_ctx.rr_nodes.size(), device_ctx.rr_nodes, segment_inf.size(),
+    alloc_and_load_rr_graph(device_ctx.rr_nodes, segment_inf.size(),
                             chan_details_x, chan_details_y,
                             track_to_pin_lookup, opin_to_track_map,
                             switch_block_conn, sb_conn_map, grid, Fs, unidir_sb_pattern,
@@ -690,7 +688,8 @@ static void build_rr_graph(const t_graph_type graph_type,
                             directionality,
                             &Fc_clipped,
                             directs, num_directs, clb_to_clb_directs,
-                            is_global_graph);
+                            is_global_graph,
+                            clock_modeling);
 
     /* Update rr_nodes capacities if global routing */
     if (graph_type == GRAPH_GLOBAL) {
@@ -1172,8 +1171,7 @@ static void free_type_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
 
 /* Does the actual work of allocating the rr_graph and filling all the *
  * appropriate values.  Everything up to this was just a prelude!      */
-static void alloc_and_load_rr_graph(const int num_nodes,
-                                    std::vector<t_rr_node>& L_rr_node,
+static void alloc_and_load_rr_graph(std::vector<t_rr_node>& L_rr_node,
                                     const int num_seg_types,
                                     const t_chan_details& chan_details_x,
                                     const t_chan_details& chan_details_y,
@@ -1197,7 +1195,8 @@ static void alloc_and_load_rr_graph(const int num_nodes,
                                     const t_direct_inf* directs,
                                     const int num_directs,
                                     const t_clb_to_clb_directs* clb_to_clb_directs,
-                                    bool is_global_graph) {
+                                    bool is_global_graph,
+                                    const enum e_clock_modeling clock_modeling) {
     //We take special care when creating RR graph edges (there are typically many more
     //edges than nodes in an RR graph).
     //
@@ -1295,7 +1294,17 @@ static void alloc_and_load_rr_graph(const int num_nodes,
         }
     }
 
-    init_fan_in(L_rr_node, num_nodes);
+    if (clock_modeling == DEDICATED_NETWORK) {
+        ClockRRGraphBuilder::create_and_append_clock_rr_graph(
+            L_rr_node,
+            num_seg_types,
+            rr_edges_to_create);
+        uniquify_edges(rr_edges_to_create);
+        alloc_and_load_edges(L_rr_node, rr_edges_to_create);
+        rr_edges_to_create.clear();
+    }
+
+    init_fan_in(L_rr_node, L_rr_node.size());
 }
 
 static void build_bidir_rr_opins(const int i,
