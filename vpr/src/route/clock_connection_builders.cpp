@@ -27,8 +27,8 @@ void RoutingToClockConnection::set_switch_location(int x, int y) {
     switch_location.y = y;
 }
 
-void RoutingToClockConnection::set_switch(int rr_switch_index) {
-    rr_switch_idx = rr_switch_index;
+void RoutingToClockConnection::set_switch(int arch_switch_index) {
+    arch_switch_idx = arch_switch_index;
 }
 
 void RoutingToClockConnection::set_fc_val(float fc_val) {
@@ -74,18 +74,18 @@ void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_
         // Connect to x-channel wires
         unsigned num_wires_x = x_wire_indices.size() * fc;
         for (size_t i = 0; i < num_wires_x; i++) {
-            rr_edges_to_create->emplace_back(x_wire_indices[i], clock_index, rr_switch_idx);
+            clock_graph.add_edge(rr_edges_to_create, x_wire_indices[i], clock_index, arch_switch_idx);
         }
 
         // Connect to y-channel wires
         unsigned num_wires_y = y_wire_indices.size() * fc;
         for (size_t i = 0; i < num_wires_y; i++) {
-            rr_edges_to_create->emplace_back(y_wire_indices[i], clock_index, rr_switch_idx);
+            clock_graph.add_edge(rr_edges_to_create, y_wire_indices[i], clock_index, arch_switch_idx);
         }
 
         // Connect to virtual clock sink node
         // used by the two stage router
-        rr_edges_to_create->emplace_back(clock_index, virtual_clock_network_root_idx, rr_switch_idx);
+        clock_graph.add_edge(rr_edges_to_create, clock_index, virtual_clock_network_root_idx, arch_switch_idx);
     }
 }
 
@@ -128,8 +128,8 @@ void ClockToClockConneciton::set_to_clock_switch_point_name(std::string switch_p
     to_switch = switch_point_name;
 }
 
-void ClockToClockConneciton::set_switch(int rr_switch_index) {
-    rr_switch_idx = rr_switch_index;
+void ClockToClockConneciton::set_switch(int arch_switch_index) {
+    arch_switch_idx = arch_switch_index;
 }
 
 void ClockToClockConneciton::set_fc_val(float fc_val) {
@@ -187,7 +187,7 @@ void ClockToClockConneciton::create_switches(const ClockRRGraphBuilder& clock_gr
                 if (from_itter == from_rr_node_indices.end()) {
                     from_itter = from_rr_node_indices.begin();
                 }
-                rr_edges_to_create->emplace_back(*from_itter, to_index, rr_switch_idx);
+                clock_graph.add_edge(rr_edges_to_create, *from_itter, to_index, arch_switch_idx);
                 from_itter++;
             }
         }
@@ -207,8 +207,8 @@ void ClockToPinsConnection::set_clock_switch_point_name(
     switch_point_name = connection_switch_point_name;
 }
 
-void ClockToPinsConnection::set_switch(int rr_switch_index) {
-    rr_switch_idx = rr_switch_index;
+void ClockToPinsConnection::set_switch(int arch_switch_index) {
+    arch_switch_idx = arch_switch_index;
 }
 
 void ClockToPinsConnection::set_fc_val(float fc_val) {
@@ -301,7 +301,7 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
 
                     //Create edges depending on Fc
                     for (size_t i = 0; i < clock_network_indices.size() * fc; i++) {
-                        rr_edges_to_create->emplace_back(clock_network_indices[i], clock_pin_node_idx, rr_switch_idx);
+                        clock_graph.add_edge(rr_edges_to_create, clock_network_indices[i], clock_pin_node_idx, arch_switch_idx);
                     }
                 }
             }
