@@ -68,10 +68,17 @@ class ClockRRGraphBuilder {
     int get_and_increment_chanx_ptc_num();
     int get_and_increment_chany_ptc_num();
 
-  public:
     /* Reverse lookup for to find the clock source and tap locations for each clock_network
      * The map key is the the clock network name and value are all the switch points*/
     std::unordered_map<std::string, SwitchPoints> clock_name_to_switch_points;
+
+  public:
+    ClockRRGraphBuilder(
+        std::vector<t_rr_node>* rr_nodes,
+        t_rr_edge_info_set* rr_edges_to_create)
+        : rr_nodes_(rr_nodes)
+        , rr_edges_to_create_(rr_edges_to_create) {
+    }
 
     /* Saves a map from switch rr_node idx -> {x, y} location */
     void add_switch_location(std::string clock_name,
@@ -90,41 +97,26 @@ class ClockRRGraphBuilder {
     std::set<std::pair<int, int>> get_switch_locations(std::string clock_name,
                                                        std::string switch_point_name) const;
 
+    static size_t estimate_additional_nodes();
+
   public:
     /* Creates the routing resourse (rr) graph of the clock network and appends it to the
      * existing rr graph created in build_rr_graph for inter-block and intra-block routing. */
-    static void create_and_append_clock_rr_graph(std::vector<t_segment_inf>& segment_inf,
-                                                 const float R_minW_nmos,
-                                                 const float R_minW_pmos,
-                                                 int wire_to_rr_ipin_switch,
-                                                 const enum e_base_cost_type base_cost_type);
+    static void create_and_append_clock_rr_graph(
+        std::vector<t_rr_node>& L_rr_node,
+        int num_seg_types,
+        t_rr_edge_info_set& rr_edges_to_create);
 
   private:
     /* loop over all of the clock networks and create their wires */
-    void create_clock_networks_wires(std::vector<std::unique_ptr<ClockNetwork>>& clock_networks,
+    void create_clock_networks_wires(const std::vector<std::unique_ptr<ClockNetwork>>& clock_networks,
                                      int num_segments);
 
     /* loop over all clock routing connections and create the switches and connections */
-    void create_clock_networks_switches(std::vector<std::unique_ptr<ClockConnection>>& clock_connections);
+    void create_clock_networks_switches(const std::vector<std::unique_ptr<ClockConnection>>& clock_connections);
 
-    /* Adds the architecture switches that the clock rr_nodes use to the rr switches and
-     * maps the newly added rr_switches to the nodes.
-     * The input nodes_start_idx ~ corresponds to the rr_node index of the first node
-     * used to create the clock network. Every node from node_start_idx..rr_nodes.size-1
-     * is a node in the clock network.*/
-    // TODO: Change to account for swtich fanin. Note: this function is simular to
-    //       remap_rr_node_switch_indices but does not take into account node fanin.
-    void add_rr_switches_and_map_to_nodes(size_t nodes_start_idx,
-                                          const float R_minW_nmos,
-                                          const float R_minW_pmos);
-
-    /* Returns the index of the newly added rr_switch. The rr_switch information is coppied
-     * in from the arch_switch information */
-    // TODO: Does not account for fanin information when copping Tdel. Note: this function
-    //       is simular to load_rr_switch_inf but does not take into account node fanin.
-    int add_rr_switch_from_arch_switch_inf(int arch_switch_idx,
-                                           const float R_minW_nmos,
-                                           const float R_minW_pmos);
+    std::vector<t_rr_node>* rr_nodes_;
+    t_rr_edge_info_set* rr_edges_to_create_;
 };
 
 #endif

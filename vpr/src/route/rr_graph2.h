@@ -235,6 +235,7 @@ void dump_sblock_pattern(const t_sblock_pattern& sblock_pattern,
                          const char* fname);
 
 //Partitions RR graph edges to allow fast access to configurable/non-configurabe edge subsets
+struct DeviceContext;
 void partition_rr_graph_edges(DeviceContext& device_ctx);
 
 #endif
