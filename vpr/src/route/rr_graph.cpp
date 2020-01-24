@@ -697,7 +697,7 @@ static void build_rr_graph(const t_graph_type graph_type,
         // Using num_rr_nodes here over device_ctx.rr_nodes.size() because
         // clock_modeling::DEDICATED_NETWORK will append some rr nodes after
         // the regular graph.
-        for (size_t i = 0; i < num_rr_nodes; i++) {
+        for (int i = 0; i < num_rr_nodes; i++) {
             if (device_ctx.rr_nodes[i].type() == CHANX) {
                 int ylow = device_ctx.rr_nodes[i].ylow();
                 device_ctx.rr_nodes[i].set_capacity(nodes_per_chan.x_list[ylow]);
@@ -1311,8 +1311,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(std::vector<t_
         uniquify_edges(rr_edges_to_create);
         alloc_and_load_edges(L_rr_node, rr_edges_to_create);
         rr_edges_to_create.clear();
-        update_chan_width = [builder](t_chan_width* chan_width) {
-            builder.update_chan_width(chan_width);
+        update_chan_width = [builder](t_chan_width* c) {
+            builder.update_chan_width(c);
         };
     }
 
