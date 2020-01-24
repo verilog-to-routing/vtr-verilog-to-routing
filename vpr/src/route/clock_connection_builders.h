@@ -5,6 +5,7 @@
 
 #include "clock_fwd.h"
 
+#include "rr_graph2.h"
 #include "rr_graph_clock.h"
 
 class ClockRRGraphBuilder;
@@ -26,7 +27,8 @@ class ClockConnection {
     /*
      * Member functions
      */
-    virtual void create_switches(const ClockRRGraphBuilder& clock_graph) = 0;
+    virtual void create_switches(const ClockRRGraphBuilder& clock_graph, t_rr_edge_info_set* rr_edges_to_create) = 0;
+    virtual size_t estimate_additional_nodes() = 0;
 };
 
 class RoutingToClockConnection : public ClockConnection {
@@ -53,7 +55,8 @@ class RoutingToClockConnection : public ClockConnection {
      * Member functions
      */
     /* Connects the inter-block routing to the clock source at the specified coordinates */
-    void create_switches(const ClockRRGraphBuilder& clock_graph);
+    void create_switches(const ClockRRGraphBuilder& clock_graph, t_rr_edge_info_set* rr_edges_to_create) override;
+    size_t estimate_additional_nodes() override;
     int create_virtual_clock_network_sink_node(int x, int y);
 };
 
@@ -81,7 +84,8 @@ class ClockToClockConneciton : public ClockConnection {
      * Member functions
      */
     /* Connects a clock tap to a clock source */
-    void create_switches(const ClockRRGraphBuilder& clock_graph);
+    void create_switches(const ClockRRGraphBuilder& clock_graph, t_rr_edge_info_set* rr_edges_to_create) override;
+    size_t estimate_additional_nodes() override;
 };
 
 /* This class currently only supports Clock Network to clock pin connection.
@@ -106,7 +110,8 @@ class ClockToPinsConnection : public ClockConnection {
      * Member functions
      */
     /* Connects the clock tap to block pins */
-    void create_switches(const ClockRRGraphBuilder& clock_graph);
+    void create_switches(const ClockRRGraphBuilder& clock_graph, t_rr_edge_info_set* rr_edges_to_create) override;
+    size_t estimate_additional_nodes() override;
 };
 
 #endif
