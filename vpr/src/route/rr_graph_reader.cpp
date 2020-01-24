@@ -262,7 +262,7 @@ void process_seg_id(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
 
     while (rr_node) {
         id = get_attribute(rr_node, "id", loc_data).as_int();
-        auto& node = device_ctx.rr_nodes[id];
+        auto node = device_ctx.rr_nodes[id];
 
         segmentSubnode = get_single_child(rr_node, "segment", loc_data, pugiutil::OPTIONAL);
         if (segmentSubnode) {
@@ -289,7 +289,7 @@ void process_nodes(pugi::xml_node parent, const pugiutil::loc_data& loc_data) {
 
     while (rr_node) {
         int inode = get_attribute(rr_node, "id", loc_data).as_int();
-        auto& node = device_ctx.rr_nodes[inode];
+        auto node = device_ctx.rr_nodes[inode];
 
         const char* node_type = get_attribute(rr_node, "type", loc_data).as_string();
         if (strcmp(node_type, "CHANX") == 0) {
@@ -726,7 +726,7 @@ void process_rr_node_indices(const DeviceGrid& grid) {
      * Note that CHANX and CHANY 's x and y are swapped due to the chan and seg convention.
      */
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        auto& node = device_ctx.rr_nodes[inode];
+        auto node = device_ctx.rr_nodes[inode];
         if (node.type() == SOURCE || node.type() == SINK) {
             for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                 for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
@@ -788,7 +788,7 @@ void process_rr_node_indices(const DeviceGrid& grid) {
     int count;
     /* CHANX and CHANY need to reevaluated with its ptc num as the correct index*/
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        auto& node = device_ctx.rr_nodes[inode];
+        auto node = device_ctx.rr_nodes[inode];
         if (node.type() == CHANX) {
             for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
                 for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
@@ -863,7 +863,7 @@ void set_cost_indices(pugi::xml_node parent, const pugiutil::loc_data& loc_data,
 
     while (rr_node) {
         int inode = get_attribute(rr_node, "id", loc_data).as_int();
-        auto& node = device_ctx.rr_nodes[inode];
+        auto node = device_ctx.rr_nodes[inode];
 
         /*CHANX and CHANY cost index is dependent on the segment id*/
 

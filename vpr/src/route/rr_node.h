@@ -1,5 +1,6 @@
 #ifndef RR_NODE_H
 #define RR_NODE_H
+
 #include "rr_node_fwd.h"
 #include "vpr_types.h"
 
@@ -7,43 +8,13 @@
 
 #include <memory>
 #include <cstdint>
-/* Main structure describing one routing resource node.  Everything in       *
- * this structure should describe the graph -- information needed only       *
- * to store algorithm-specific data should be stored in one of the           *
- * parallel rr_node_* structures.                                            *
- *                                                                           *
- * xlow, xhigh, ylow, yhigh:  Integer coordinates (see route.c for           *
- *       coordinate system) of the ends of this routing resource.            *
- *       xlow = xhigh and ylow = yhigh for pins or for segments of           *
- *       length 1.  These values are used to decide whether or not this      *
- *       node should be added to the expansion heap, based on things         *
- *       like whether it's outside the net bounding box or is moving         *
- *       further away from the target, etc.                                  *
- * type:  What is this routing resource?                                     *
- * ptc_num:  Pin, track or class number, depending on rr_node type.          *
- *           Needed to properly draw.                                        *
- * cost_index: An integer index into the table of routing resource indexed   *
- *             data t_rr_index_data (this indirection allows quick dynamic   *
- *             changes of rr base costs, and some memory storage savings for *
- *             fields that have only a few distinct values).                 *
- * capacity:   Capacity of this node (number of routes that can use it).     *
- * num_edges:  Number of edges exiting this node.  That is, the number       *
- *             of nodes to which it connects.                                *
- * edges[0..num_edges-1]:  Array of indices of the neighbours of this        *
- *                         node.                                             *
- * switches[0..num_edges-1]:  Array of switch indexes for each of the        *
- *                            edges leaving this node.                       *
- *                                                                           *
- * direction: if the node represents a track, this field                     *
- *            indicates the direction of the track. Otherwise                *
- *            the value contained in the field should be                     *
- *            ignored.                                                       *
- * side: The side of a grid location where an IPIN or OPIN is located.       *
- *       This field is valid only for IPINs and OPINs and should be ignored  *
- *       otherwise.                                                          */
 
 class t_rr_node {
   public: //Types
+    t_rr_node(t_rr_node_storage* storage, RRNodeId id)
+        : storage_(storage)
+        , id_(id) {}
+
     //An iterator that dereferences to an edge index
     //
     //Used inconjunction with vtr::Range to return ranges of edge indices
@@ -72,25 +43,19 @@ class t_rr_node {
     typedef vtr::Range<edge_idx_iterator> edge_idx_range;
 
   public: //Accessors
-    t_rr_type type() const { return type_; }
+    t_rr_type type() const;
     const char* type_string() const; /* Retrieve type as a string */
 
     edge_idx_range edges() const { return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges())); }
     edge_idx_range configurable_edges() const { return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges() - num_non_configurable_edges())); }
     edge_idx_range non_configurable_edges() const { return vtr::make_range(edge_idx_iterator(num_edges() - num_non_configurable_edges()), edge_idx_iterator(num_edges())); }
 
-    t_edge_size num_edges() const { return num_edges_; }
-    t_edge_size num_configurable_edges() const { return num_edges() - num_non_configurable_edges(); }
-    t_edge_size num_non_configurable_edges() const { return num_non_configurable_edges_; }
+    t_edge_size num_edges() const;
+    t_edge_size num_configurable_edges() const;
+    t_edge_size num_non_configurable_edges() const;
 
-    int edge_sink_node(t_edge_size iedge) const {
-        VTR_ASSERT_SAFE(iedge < num_edges());
-        return edges_[iedge].sink_node;
-    }
-    short edge_switch(t_edge_size iedge) const {
-        VTR_ASSERT_SAFE(iedge < num_edges());
-        return edges_[iedge].switch_id;
-    }
+    int edge_sink_node(t_edge_size iedge) const;
+    short edge_switch(t_edge_size iedge) const;
 
     bool edge_is_configurable(t_edge_size iedge) const;
     t_edge_size fan_in() const;
@@ -157,43 +122,21 @@ class t_rr_node {
     void set_direction(e_direction);
     void set_side(e_side);
 
-  private: //Types
-    //The edge information is stored in a structure to economize on the number of pointers held
-    //by t_rr_node (to save memory), and is not exposed externally
-    struct t_rr_edge {
-        int sink_node = -1;   //The ID of the sink RR node associated with this edge
-        short switch_id = -1; //The ID of the switch type this edge represents
-    };
+    void next_node() {
+        id_ = RRNodeId((size_t)(id_) + 1);
+    }
+
+    RRNodeId id() const {
+        return id_;
+    }
+
+    void prev_node() {
+        id_ = RRNodeId((size_t)(id_)-1);
+    }
 
   private: //Data
-    //Note: we use a plain array and use small types for sizes to save space vs std::vector
-    //      (using std::vector's nearly doubles the size of the class)
-    std::unique_ptr<t_rr_edge[]> edges_ = nullptr;
-    t_edge_size num_edges_ = 0;
-    t_edge_size edges_capacity_ = 0;
-    uint8_t num_non_configurable_edges_ = 0;
-
-    int8_t cost_index_ = -1;
-    int16_t rc_index_ = -1;
-
-    int16_t xlow_ = -1;
-    int16_t ylow_ = -1;
-    int16_t xhigh_ = -1;
-    int16_t yhigh_ = -1;
-
-    t_rr_type type_ = NUM_RR_TYPES;
-    union {
-        e_direction direction; //Valid only for CHANX/CHANY
-        e_side side;           //Valid only for IPINs/OPINs
-    } dir_side_;
-
-    union {
-        int16_t pin_num;
-        int16_t track_num;
-        int16_t class_num;
-    } ptc_;
-    t_edge_size fan_in_ = 0;
-    uint16_t capacity_ = 0;
+    t_rr_node_storage* storage_;
+    RRNodeId id_;
 };
 
 /* Data that is pointed to by the .cost_index member of t_rr_node.  It's     *
@@ -260,5 +203,7 @@ struct t_rr_rc_data {
  * The returned indicies index into DeviceContext.rr_rc_data.
  */
 short find_create_rr_rc_data(const float R, const float C);
+
+#include "rr_node_impl.h"
 
 #endif
