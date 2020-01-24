@@ -139,9 +139,11 @@ $ ./run_reg_test.pl vtr_reg_basic
 $ ./run_reg_test.pl vtr_reg_strong
 ```
 
-The *nightly* and *weekly* regressions require the Titan benchmarks which can be integrated into your VTR tree with:
+The *nightly* and *weekly* regressions require the Titan and ISPD benchmarks
+which can be integrated into your VTR tree with:
 ```shell
 make get_titan_benchmarks
+make get_ispd_benchmarks
 ```
 They can then be run using `run_reg_test.pl`:
 ```shell
@@ -183,6 +185,80 @@ VTR also has a limited set of unit tests, which can be run with:
 #From the VTR root directory
 $ make && make test
 ```
+
+### Running tests on presubmits via Kokoro
+
+Because of the long runtime for nightly and weekly tests, a kokoro job can be
+used to run these tests once a Pull Request (PR) has been made at
+https://github.com/verilog-to-routing/vtr-verilog-to-routing.
+
+Any pull request made by a contributor of the verilog-to-routing GitHub project
+on https://github.com/verilog-to-routing/ will get a set of jobs immediately.
+Non-contributors can request a contributor on the project add a label
+"kokoro:force-run" to the PR. Kokoro will then detect the tag, remove the tag,
+and then and issue jobs for that PR.  If the tag remains after being added,
+there may not be an available Kokoro runner, so wait.
+
+#### Re-running tests on Kokoro
+
+If a job fails due to an intermittent failure or a re-run is desired, a
+contributor can add the label "kokoro:force-run" to re-issue jobs for that PR.
+
+#### Checking results from Kokoro tests
+
+Currently there is not a way for an in-flight job to be monitored.
+
+Once a job has been completed, the stdout and the output files (e.g.
+parse\_results.txt) are available by following the "Details" link that appears
+on the PR.
+
+The stdout from run is available on the "Invocation Log" tab.  The log should
+be displayed, and can be downloaded via the "Download Full Log" button on the
+same tab.
+
+Output files (e.g. parse\_results.txt) can be found by following the "GCS"
+link on the "Invocation Details" tab.  Individual files can be downloaded by
+using the GCS browser.  If many files are desired, use "gsutil" to download
+the logs from GCS.
+
+#### Example of downloading logs from GCS
+
+An GCS example link from the "Invocation Details" tab:
+
+```
+https://pantheon.corp.google.com/storage/browser/vtr-verilog-to-routing/artifacts/prod/foss-fpga-tools/verilog-to-routing/upstream/presubmit/nightly/52/20200123-165906
+```
+
+To download all the files from that run, remove
+`https://pantheon.corp.google.com/storage/browser/` from the beginning of the
+URL, and invoke gsutil with the remainder, like so:
+
+```
+gsutil -m cp -R gs://vtr-verilog-to-routing/artifacts/prod/foss-fpga-tools/verilog-to-routing/upstream/presubmit/nightly/52/20200123-165906 .
+```
+
+This will download all of the logs to the current working directory.
+
+#### Kokoro runner details
+
+Kokoro runners are a standard
+[`n1-highmem-16`](https://cloud.google.com/compute/docs/machine-types#n1_high-memory_machine_types)
+VM with a 4 TB `pd-standard` disk used to perform the build of VPR and run the
+tests.
+
+#### What to do if kokoro jobs are not starting?
+
+There are several reasons kokoro jobs might not be starting.
+Try adding the "kokoro:force-run" label if it is not already added, or remove
+and add it if it already was added.
+
+If adding the label has no affect, check GCS status, as a GCS disruption will
+also disrupt kokoro.
+
+Another reason jobs may not start is if there is a large backlog of jobs
+running, there may be no runners left to start.  In this case, someone with
+kokoro management rights may need to terminate stale jobs, or wait for job
+timeouts.
 
 # Debugging Failed Tests
 
