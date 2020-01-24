@@ -933,7 +933,7 @@ static void remap_rr_node_switch_indices(const t_arch_switch_fanin& switch_fanin
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        auto& from_node = device_ctx.rr_nodes[inode];
+        auto from_node = device_ctx.rr_nodes[inode];
         int num_edges = from_node.num_edges();
         for (int iedge = 0; iedge < num_edges; iedge++) {
             const t_rr_node& to_node = device_ctx.rr_nodes[from_node.edge_sink_node(iedge)];

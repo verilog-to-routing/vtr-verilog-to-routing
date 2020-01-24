@@ -2051,10 +2051,10 @@ static void draw_rr_pin(int inode, const ezgl::color& color, ezgl::renderer* g) 
  * the physical pin is on.                                                  */
 void draw_get_rr_pin_coords(int inode, float* xcen, float* ycen) {
     auto& device_ctx = g_vpr_ctx.device();
-    draw_get_rr_pin_coords(&device_ctx.rr_nodes[inode], xcen, ycen);
+    draw_get_rr_pin_coords(device_ctx.rr_nodes[inode], xcen, ycen);
 }
 
-void draw_get_rr_pin_coords(const t_rr_node* node, float* xcen, float* ycen) {
+void draw_get_rr_pin_coords(const t_rr_node node, float* xcen, float* ycen) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
     int i, j, k, ipin, pins_per_sub_tile;
@@ -2062,13 +2062,13 @@ void draw_get_rr_pin_coords(const t_rr_node* node, float* xcen, float* ycen) {
     t_physical_tile_type_ptr type;
     auto& device_ctx = g_vpr_ctx.device();
 
-    i = node->xlow();
-    j = node->ylow();
+    i = node.xlow();
+    j = node.ylow();
 
     xc = draw_coords->tile_x[i];
     yc = draw_coords->tile_y[j];
 
-    ipin = node->ptc_num();
+    ipin = node.ptc_num();
     type = device_ctx.grid[i][j].type;
     pins_per_sub_tile = type->num_pins / type->capacity;
     k = ipin / pins_per_sub_tile;
@@ -2080,7 +2080,7 @@ void draw_get_rr_pin_coords(const t_rr_node* node, float* xcen, float* ycen) {
     step = (float)(draw_coords->get_tile_width()) / (float)(type->num_pins + type->capacity);
     offset = (ipin + k + 1) * step;
 
-    switch (node->side()) {
+    switch (node.side()) {
         case LEFT:
             yc += offset;
             break;
@@ -2101,7 +2101,7 @@ void draw_get_rr_pin_coords(const t_rr_node* node, float* xcen, float* ycen) {
 
         default:
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                      "in draw_get_rr_pin_coords: Unexpected side %s.\n", node->side_string());
+                      "in draw_get_rr_pin_coords: Unexpected side %s.\n", node.side_string());
             break;
     }
 
