@@ -74,26 +74,38 @@ inline t_rr_type t_rr_node::type() const {
 }
 
 inline t_edge_size t_rr_node::num_edges() const {
-    return storage_->get(id_).num_edges_;
+    return storage_->num_edges(id_);
+}
+
+inline edge_idx_range t_rr_node::edges() const {
+    return storage_->edges(id_);
+}
+
+inline edge_idx_range t_rr_node::configurable_edges() const {
+    return storage_->configurable_edges(id_);
+}
+inline edge_idx_range t_rr_node::non_configurable_edges() const {
+    return storage_->non_configurable_edges(id_);
 }
 
 inline t_edge_size t_rr_node::num_non_configurable_edges() const {
-    return storage_->get(id_).num_non_configurable_edges_;
+    return storage_->num_non_configurable_edges(id_);
 }
 
 inline t_edge_size t_rr_node::num_configurable_edges() const {
-    return num_edges() - num_non_configurable_edges();
+    return storage_->num_configurable_edges(id_);
 }
 
 inline int t_rr_node::edge_sink_node(t_edge_size iedge) const {
-    return storage_->get(id_).edges_.get()[iedge].sink_node;
+    size_t inode = (size_t)storage_->edge_sink_node(id_, iedge);
+    return inode;
 }
 inline short t_rr_node::edge_switch(t_edge_size iedge) const {
-    return storage_->get(id_).edges_.get()[iedge].switch_id;
+    return storage_->edge_switch(id_, iedge);
 }
 
 inline t_edge_size t_rr_node::fan_in() const {
-    return storage_->get(id_).fan_in_;
+    return storage_->fan_in(id_);
 }
 
 inline short t_rr_node::xlow() const {

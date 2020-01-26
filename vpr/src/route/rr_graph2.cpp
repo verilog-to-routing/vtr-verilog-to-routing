@@ -2565,11 +2565,3 @@ static bool should_apply_switch_override(int switch_override) {
     }
     return false;
 }
-
-void partition_rr_graph_edges(std::vector<t_rr_node>* rr_nodes) {
-    for (auto& node : *rr_nodes) {
-        node.partition_edges();
-
-        VTR_ASSERT_SAFE(node.validate());
-    }
-}

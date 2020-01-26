@@ -15,40 +15,13 @@ class t_rr_node {
         : storage_(storage)
         , id_(id) {}
 
-    //An iterator that dereferences to an edge index
-    //
-    //Used inconjunction with vtr::Range to return ranges of edge indices
-    class edge_idx_iterator : public std::iterator<std::bidirectional_iterator_tag, t_edge_size> {
-      public:
-        edge_idx_iterator(value_type init)
-            : value_(init) {}
-        iterator operator++() {
-            value_ += 1;
-            return *this;
-        }
-        iterator operator--() {
-            value_ -= 1;
-            return *this;
-        }
-        reference operator*() { return value_; }
-        pointer operator->() { return &value_; }
-
-        friend bool operator==(const edge_idx_iterator lhs, const edge_idx_iterator rhs) { return lhs.value_ == rhs.value_; }
-        friend bool operator!=(const edge_idx_iterator lhs, const edge_idx_iterator rhs) { return !(lhs == rhs); }
-
-      private:
-        value_type value_;
-    };
-
-    typedef vtr::Range<edge_idx_iterator> edge_idx_range;
-
   public: //Accessors
     t_rr_type type() const;
     const char* type_string() const; /* Retrieve type as a string */
 
-    edge_idx_range edges() const { return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges())); }
-    edge_idx_range configurable_edges() const { return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges() - num_non_configurable_edges())); }
-    edge_idx_range non_configurable_edges() const { return vtr::make_range(edge_idx_iterator(num_edges() - num_non_configurable_edges()), edge_idx_iterator(num_edges())); }
+    edge_idx_range edges() const;
+    edge_idx_range configurable_edges() const;
+    edge_idx_range non_configurable_edges() const;
 
     t_edge_size num_edges() const;
     t_edge_size num_configurable_edges() const;
@@ -88,24 +61,6 @@ class t_rr_node {
 
   public: //Mutators
     void set_type(t_rr_type new_type);
-
-    t_edge_size add_edge(int sink_node, int iswitch);
-
-    void shrink_to_fit();
-
-    //Partitions all edges so that configurable and non-configurable edges
-    //are organized for efficient access.
-    //
-    //Must be called before configurable_edges(), non_configurable_edges(),
-    //num_configurable_edges(), num_non_configurable_edges() to ensure they
-    //are correct.
-    void partition_edges();
-
-    void set_num_edges(size_t); //Note will remove any previous edges
-    void set_edge_sink_node(t_edge_size iedge, int sink_node);
-    void set_edge_switch(t_edge_size iedge, short switch_index);
-
-    void set_fan_in(t_edge_size);
 
     void set_coordinates(short x1, short y1, short x2, short y2);
 

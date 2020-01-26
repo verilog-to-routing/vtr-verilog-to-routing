@@ -67,8 +67,6 @@ struct t_pin_loc {
     e_side side;
 };
 
-typedef std::vector<std::map<int, int>> t_arch_switch_fanin;
-
 /******************* Variables local to this module. ***********************/
 
 /********************* Subroutines local to this module. *******************/
@@ -824,44 +822,11 @@ static void alloc_and_load_rr_switch_inf(const int num_arch_switches, const floa
 static void alloc_rr_switch_inf(t_arch_switch_fanin& arch_switch_fanins) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    int num_rr_switches = 0;
-    {
-        //Collect the fan-in per switch type for each node in the graph
-        //
-        //Note that since we don't store backward edge info in the RR graph we need to walk
-        //the whole graph to get the per-switch-type fanin info
-        std::vector<vtr::flat_map<int, int>> inward_switch_inf(device_ctx.rr_nodes.size()); //[to_node][arch_switch] -> fanin
-        for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
-            for (auto iedge : device_ctx.rr_nodes[inode].edges()) {
-                int iswitch = device_ctx.rr_nodes[inode].edge_switch(iedge);
-                int to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
-
-                if (inward_switch_inf[to_node].count(iswitch) == 0) {
-                    inward_switch_inf[to_node][iswitch] = 0;
-                }
-                inward_switch_inf[to_node][iswitch]++;
-            }
-        }
-
-        //Record the unique switch type/fanin combinations
-        for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
-            for (auto& switch_fanin : inward_switch_inf[inode]) {
-                int iswitch, fanin;
-                std::tie(iswitch, fanin) = switch_fanin;
-
-                if (device_ctx.arch_switch_inf[iswitch].fixed_Tdel()) {
-                    //If delay is independent of fanin drop the unique fanin info
-                    fanin = UNDEFINED;
-                }
-
-                if (arch_switch_fanins[iswitch].count(fanin) == 0) {        //New fanin for this switch
-                    arch_switch_fanins[iswitch][fanin] = num_rr_switches++; //Assign it a unique index
-                }
-            }
-        }
-    }
-
     /* allocate space for the rr_switch_inf array */
+    size_t num_rr_switches = device_ctx.rr_nodes.count_rr_switches(
+        device_ctx.num_arch_switches,
+        device_ctx.arch_switch_inf,
+        arch_switch_fanins);
     device_ctx.rr_switch_inf.resize(num_rr_switches);
 }
 
@@ -932,27 +897,7 @@ void load_rr_switch_from_arch_switch(int arch_switch_idx,
 static void remap_rr_node_switch_indices(const t_arch_switch_fanin& switch_fanin) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        auto from_node = device_ctx.rr_nodes[inode];
-        int num_edges = from_node.num_edges();
-        for (int iedge = 0; iedge < num_edges; iedge++) {
-            const t_rr_node& to_node = device_ctx.rr_nodes[from_node.edge_sink_node(iedge)];
-            /* get the switch which this edge uses and its fanin */
-            int switch_index = from_node.edge_switch(iedge);
-            int fanin = to_node.fan_in();
-
-            if (switch_fanin[switch_index].count(UNDEFINED) == 1) {
-                fanin = UNDEFINED;
-            }
-
-            auto itr = switch_fanin[switch_index].find(fanin);
-            VTR_ASSERT(itr != switch_fanin[switch_index].end());
-
-            int rr_switch_index = itr->second;
-
-            from_node.set_edge_switch(iedge, rr_switch_index);
-        }
-    }
+    device_ctx.rr_nodes.remap_rr_node_switch_indices(switch_fanin);
 }
 
 static void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
@@ -1326,7 +1271,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(t_rr_node_stor
         };
     }
 
-    init_fan_in(L_rr_node, L_rr_node.size());
+    L_rr_node.init_fan_in();
 
     return update_chan_width;
 }
@@ -1483,9 +1428,6 @@ static void build_rr_sinks_sources(const int i,
              * leads to.  If route throughs are allowed, you may want to increase the  *
              * base cost of OPINs and/or SOURCES so they aren't used excessively.      */
 
-            /* Initialize to unconnected */
-            L_rr_node[inode].set_num_edges(0);
-
             L_rr_node[inode].set_cost_index(SINK_COST_INDEX);
             L_rr_node[inode].set_type(SINK);
         }
@@ -1555,24 +1497,6 @@ static void build_rr_sinks_sources(const int i,
     }
 
     //Create the actual edges
-}
-
-void init_fan_in(t_rr_node_storage& L_rr_node, const int num_rr_nodes) {
-    //Loads fan-ins for all nodes
-
-    //Reset all fan-ins to zero
-    for (int i = 0; i < num_rr_nodes; i++) {
-        L_rr_node[i].set_fan_in(0);
-    }
-
-    //Walk the graph and increment fanin on all downstream nodes
-    for (int i = 0; i < num_rr_nodes; i++) {
-        for (t_edge_size iedge = 0; iedge < L_rr_node[i].num_edges(); iedge++) {
-            int to_node = L_rr_node[i].edge_sink_node(iedge);
-
-            L_rr_node[to_node].set_fan_in(L_rr_node[to_node].fan_in() + 1);
-        }
-    }
 }
 
 /* Allocates/loads edges for nodes belonging to specified channel segment and initializes
@@ -1758,54 +1682,7 @@ void uniquify_edges(t_rr_edge_info_set& rr_edges_to_create) {
 
 void alloc_and_load_edges(t_rr_node_storage& L_rr_node,
                           const t_rr_edge_info_set& rr_edges_to_create) {
-    /* Sets up all the edge related information for rr_node */
-
-    struct compare_from_node {
-        auto operator()(const t_rr_edge_info& lhs, const int from_node) {
-            return lhs.from_node < from_node;
-        }
-        auto operator()(const int from_node, const t_rr_edge_info& rhs) {
-            return from_node < rhs.from_node;
-        }
-    };
-
-    std::set<int> from_nodes;
-    for (auto& edge : rr_edges_to_create) {
-        from_nodes.insert(edge.from_node);
-    }
-
-    VTR_ASSERT_SAFE(std::is_sorted(rr_edges_to_create.begin(), rr_edges_to_create.end()));
-
-    for (int inode : from_nodes) {
-        auto edge_range = std::equal_range(rr_edges_to_create.begin(), rr_edges_to_create.end(), inode, compare_from_node());
-
-        size_t edge_count = std::distance(edge_range.first, edge_range.second);
-
-        if (L_rr_node[inode].num_edges() == 0) {
-            //Create initial edges
-            //
-            //Note that we do this in bulk instead of via add_edge() to reduce
-            //memory fragmentation
-
-            L_rr_node[inode].set_num_edges(edge_count);
-
-            int iedge = 0;
-            for (auto itr = edge_range.first; itr != edge_range.second; ++itr) {
-                VTR_ASSERT(itr->from_node == inode);
-
-                L_rr_node[inode].set_edge_sink_node(iedge, itr->to_node);
-                L_rr_node[inode].set_edge_switch(iedge, itr->switch_type);
-                ++iedge;
-            }
-        } else {
-            //Add new edge incrementally
-            //
-            //This should occur relatively rarely (e.g. a backward bidir edge) so memory fragmentation shouldn't be a big problem
-            for (auto itr = edge_range.first; itr != edge_range.second; ++itr) {
-                L_rr_node[inode].add_edge(itr->to_node, itr->switch_type);
-            }
-        }
-    }
+    L_rr_node.alloc_and_load_edges(&rr_edges_to_create);
 }
 
 /* allocate pin to track map for each segment type individually and then combine into a single
@@ -2547,7 +2424,7 @@ std::string describe_rr_node(int inode) {
 
     std::string msg = vtr::string_fmt("RR node: %d", inode);
 
-    const auto& rr_node = device_ctx.rr_nodes[inode];
+    auto rr_node = device_ctx.rr_nodes[inode];
 
     msg += vtr::string_fmt(" type: %s", rr_node.type_string());
 

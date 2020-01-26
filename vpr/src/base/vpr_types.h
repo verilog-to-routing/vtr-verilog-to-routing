@@ -1318,4 +1318,6 @@ class RouteStatus {
 
 typedef vtr::vector<ClusterBlockId, std::vector<std::vector<int>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
 
+typedef std::vector<std::map<int, int>> t_arch_switch_fanin;
+
 #endif
