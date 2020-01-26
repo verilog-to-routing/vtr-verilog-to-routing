@@ -2,6 +2,8 @@
 #define _RR_NODE_STORAGE_
 
 #include "rr_node_fwd.h"
+#include "rr_graph2.h"
+#include "vtr_log.h"
 
 /* Main structure describing one routing resource node.  Everything in       *
  * this structure should describe the graph -- information needed only       *
@@ -38,20 +40,6 @@
  *       This field is valid only for IPINs and OPINs and should be ignored  *
  *       otherwise.                                                          */
 struct t_rr_node_data {
-    //The edge information is stored in a structure to economize on the number of pointers held
-    //by t_rr_node (to save memory), and is not exposed externally
-    struct t_rr_edge {
-        int sink_node = -1;   //The ID of the sink RR node associated with this edge
-        short switch_id = -1; //The ID of the switch type this edge represents
-    };
-
-    //Note: we use a plain array and use small types for sizes to save space vs std::vector
-    //      (using std::vector's nearly doubles the size of the class)
-    std::unique_ptr<t_rr_edge[]> edges_ = nullptr;
-    t_edge_size num_edges_ = 0;
-    t_edge_size edges_capacity_ = 0;
-    uint8_t num_non_configurable_edges_ = 0;
-
     int8_t cost_index_ = -1;
     int16_t rc_index_ = -1;
 
@@ -71,17 +59,25 @@ struct t_rr_node_data {
         int16_t track_num;
         int16_t class_num;
     } ptc_;
-    t_edge_size fan_in_ = 0;
+
     uint16_t capacity_ = 0;
 };
 
 // RR node and edge storage class.
 class t_rr_node_storage {
   public:
+    t_rr_node_storage() {
+        clear();
+    }
+
     void reserve(size_t size) {
+        // No edges can be assigned if mutating the rr node array.
+        VTR_ASSERT(!edges_read_);
         storage_.reserve(size);
     }
     void resize(size_t size) {
+        // No edges can be assigned if mutating the rr node array.
+        VTR_ASSERT(!edges_read_);
         storage_.resize(size);
     }
     size_t size() const {
@@ -93,13 +89,28 @@ class t_rr_node_storage {
 
     void clear() {
         storage_.clear();
+        first_edge_.clear();
+        fan_in_.clear();
+        edge_src_node_.clear();
+        edge_dest_node_.clear();
+        edge_switch_.clear();
+        edges_read_ = false;
+        partitioned_ = false;
+        remapped_edges_ = false;
     }
 
     void shrink_to_fit() {
         storage_.shrink_to_fit();
+        first_edge_.shrink_to_fit();
+        fan_in_.shrink_to_fit();
+        edge_src_node_.shrink_to_fit();
+        edge_dest_node_.shrink_to_fit();
+        edge_switch_.shrink_to_fit();
     }
 
     void emplace_back() {
+        // No edges can be assigned if mutating the rr node array.
+        VTR_ASSERT(!edges_read_);
         storage_.emplace_back();
     }
 
@@ -119,7 +130,152 @@ class t_rr_node_storage {
 
     friend class t_rr_node;
 
+    /****************
+     * Edge methods *
+     ****************/
+
+    // Edge initialization ordering:
+    //  1. Use reserve_edges/emplace_back_edge/alloc_and_load_edges to
+    //     initialize edges.  All edges must be added prior to calling any
+    //     methods that read edge data.
+    //
+    //     Note: Either arch_switch_inf indicies or rr_switch_inf should be
+    //     used with emplace_back_edge and alloc_and_load_edges.  Do not mix
+    //     indicies, otherwise things will be break.
+    //
+    //  2. The following methods read from the edge data, and lock out the
+    //     edge mutation methods (e.g. emplace_back_edge/alloc_and_load_edges):
+    //       - init_fan_in
+    //       - partition_edges
+    //       - count_rr_switches
+    //       - remap_rr_node_switch_indices
+    //       - mark_edges_as_rr_switch_ids
+    //
+    //  3. If edge_switch values are arch_switch_inf indicies,
+    //     remap_rr_node_switch_indices must be called prior to calling
+    //     partition_edges.
+    //
+    //     If edge_switch values are rr_switch_inf indices,
+    //     mark_edges_as_rr_switch_ids must be called prior to calling
+    //     partition_edges.
+    //
+    //  4. init_fan_in can be invoked any time after edges have been
+    //     initialized.
+    //
+    //  5. The following methods must only be called after partition_edges
+    //     have been invoked:
+    //      - edges
+    //      - configurable_edges
+    //      - non_configurable_edges
+    //      - num_edges
+    //      - num_configurable_edges
+    //      - edge_id
+    //      - edge_sink_node
+    //      - edge_switch
+
+    /* Edge mutators */
+
+    // Reserve at least num_edges in the edge backing arrays.
+    void reserve_edges(size_t num_edges);
+
+    // Adds ones edge.  This method is efficient if reserve_edges was called with
+    // the number of edges present in the graph.  This method is still
+    // amortized O(1), like std::vector::emplace_back, but both runtime and
+    // peak memory usage will be higher if reallocation is required.
+    void emplace_back_edge(RRNodeId src, RRNodeId dest, short edge_switch);
+
+    // Adds a batch of edges.
+    void alloc_and_load_edges(const t_rr_edge_info_set* rr_edges_to_create);
+
+    /* Edge finalization methods */
+
+    // Counts the number of rr switches needed based on fan in.
+    //
+    // init_fan_in does not need to be invoked before this method.
+    size_t count_rr_switches(
+        size_t num_arch_switches,
+        t_arch_switch_inf* arch_switch_inf,
+        t_arch_switch_fanin& arch_switch_fanins) const;
+
+    // Maps arch_switch_inf indicies to rr_switch_inf indicies.
+    //
+    // This must be called before partition_edges if edges were created with
+    // arch_switch_inf indicies.
+    void remap_rr_node_switch_indices(const t_arch_switch_fanin& switch_fanin);
+
+    // Marks that edge switch values are rr switch indicies.
+    //
+    // This must be called before partition_edges if edges were created with
+    // rr_switch_inf indicies.
+    void mark_edges_as_rr_switch_ids();
+
+    // Sorts edge data such that configurable edges appears before
+    // non-configurable edges.
+    void partition_edges();
+
+    // Validate that edge data is partitioned correctly.
+    bool validate() const;
+
+    /* Edge accessors
+     *
+     * Only call these methods after partition_edges has been invoked. */
+    edge_idx_range edges(const RRNodeId& id) const {
+        return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id)));
+    }
+    edge_idx_range configurable_edges(const RRNodeId& id) const {
+        return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id) - num_non_configurable_edges(id)));
+    }
+    edge_idx_range non_configurable_edges(const RRNodeId& id) const {
+        return vtr::make_range(edge_idx_iterator(num_edges(id) - num_non_configurable_edges(id)), edge_idx_iterator(num_edges(id)));
+    }
+
+    t_edge_size num_edges(const RRNodeId& id) const {
+        RREdgeId first_id = first_edge_[id];
+        RREdgeId second_id = (&first_edge_[id])[1];
+        return (size_t)second_id - (size_t)first_id;
+    }
+
+    t_edge_size num_configurable_edges(const RRNodeId& id) const;
+    t_edge_size num_non_configurable_edges(const RRNodeId& id) const;
+
+    RREdgeId edge_id(const RRNodeId& id, t_edge_size iedge) const {
+        RREdgeId first_edge = first_edge_[id];
+        RREdgeId ret((size_t)first_edge + iedge);
+        VTR_ASSERT_SAFE(ret < (&first_edge_[id])[1]);
+        return ret;
+    }
+    RRNodeId edge_sink_node(const RREdgeId& edge) const {
+        return edge_dest_node_[edge];
+    }
+    RRNodeId edge_sink_node(const RRNodeId& id, t_edge_size iedge) const {
+        return edge_sink_node(edge_id(id, iedge));
+    }
+    short edge_switch(const RREdgeId& edge) const {
+        return edge_switch_[edge];
+    }
+    short edge_switch(const RRNodeId& id, t_edge_size iedge) const {
+        return edge_switch(edge_id(id, iedge));
+    }
+
+    /******************
+     * Fan-in methods *
+     ******************/
+
+    /* Init per node fan-in data.  Should only be called after all edges have
+     * been allocated */
+    void init_fan_in();
+
+    /* Retrieve fan_in for RRNodeId, init_fan_in must have been called first. */
+    t_edge_size fan_in(RRNodeId id) {
+        return fan_in_[id];
+    }
+
   private:
+    friend struct edge_swapper;
+    friend class edge_sort_iterator;
+    friend class edge_compare_src_node;
+    friend class edge_compare_src_node_and_configurable_first;
+
     t_rr_node_data& get(const RRNodeId& id) {
         return storage_[id];
     }
@@ -127,7 +283,24 @@ class t_rr_node_storage {
         return storage_[id];
     }
 
+    // Take allocated edges in edge_src_node_/ edge_dest_node_ / edge_switch_
+    // sort, and assign the first edge for each
+    void assign_edges();
+
+    // Verify that first_edge_ array correctly partitions rr edge data.
+    bool verify_first_edges() const;
+
     vtr::vector<RRNodeId, t_rr_node_data> storage_;
+    vtr::vector<RRNodeId, RREdgeId> first_edge_;
+    vtr::vector<RRNodeId, t_edge_size> fan_in_;
+
+    vtr::vector<RREdgeId, RRNodeId> edge_src_node_;
+    vtr::vector<RREdgeId, RRNodeId> edge_dest_node_;
+    vtr::vector<RREdgeId, short> edge_switch_;
+
+    mutable bool edges_read_;
+    bool remapped_edges_;
+    bool partitioned_;
 };
 
 #endif /* _RR_NODE_STORAGE_ */
