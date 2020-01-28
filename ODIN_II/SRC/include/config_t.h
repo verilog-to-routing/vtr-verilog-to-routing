@@ -17,6 +17,8 @@ struct config_t
 	bool print_parse_tokens; // switch that controls whether or not each token is printed during parsing
 	bool output_preproc_source; // TODO: unused
 	bool ga_adder; // enable genetic algorithm for adder configuration
+	bool cp_analyser; // enable critical path analyser
+
 	
 	int min_hard_multiplier; // threshold from hard to soft logic
 	int mult_padding; // setting how multipliers are padded to fit fixed size

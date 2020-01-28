@@ -57,6 +57,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "netlist_visualizer.h"
 #include "adders.h"
 #include "ga_adder.hpp"
+#include "cp_analyser.hpp"
 #include "subtractions.h"
 #include "vtr_util.h"
 #include "vtr_path.h"
@@ -162,6 +163,9 @@ static ODIN_ERROR_CODE synthesize_verilog()
 	/* point where we convert netlist to FPGA or other hardware target compatible format */
 	printf("Performing Partial Map to target device\n");
 	partial_map_top(verilog_netlist);
+
+	if (configuration.cp_analyser)
+		dfs_to_cp(verilog_netlist);
 
 	if (configuration.ga_adder)
 		partial_map_adders_top(verilog_netlist);
@@ -459,6 +463,11 @@ void get_options(int argc, char** argv) {
 			.default_value("false")
 			.action(argparse::Action::STORE_TRUE)
 			;
+	other_grp.add_argument(global_args.cp_analyser, "-CP")
+			.help("Activing Critical Path Analyser")
+			.default_value("false")
+			.action(argparse::Action::STORE_TRUE)
+			;
 
 	auto& rand_sim_grp = parser.add_argument_group("random simulation options");
 
@@ -627,6 +636,10 @@ void get_options(int argc, char** argv) {
 		configuration.ga_adder = global_args.ga_adder;
 	}
 
+	if (global_args.cp_analyser.provenance() == argparse::Provenance::SPECIFIED) {
+		configuration.cp_analyser = global_args.cp_analyser;
+	}
+
     if (global_args.adder_cin_global.provenance() == argparse::Provenance::SPECIFIED) {
         configuration.adder_cin_global = global_args.adder_cin_global;
     }
@@ -657,6 +670,7 @@ void set_default_config()
 	configuration.output_ast_graphs = 0;
 	configuration.output_netlist_graphs = 0;
 	configuration.ga_adder = 0;
+	configuration.cp_analyser = 0;
 	configuration.print_parse_tokens = 0;
 	configuration.output_preproc_source = 0; // TODO: unused
 	configuration.debug_output_path = std::string(DEFAULT_OUTPUT);

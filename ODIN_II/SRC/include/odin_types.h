@@ -59,8 +59,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define PARTIAL_MAP_TRAVERSE_VALUE 10
 
 #define PARTIAL_MAP_TRAVERSE_VALUE_GA_ADDERS 11
-#define PARTIAL_MAP_TRAVERSE_VALUE_CP_S2E_ANALYSOR 12
-#define PARTIAL_MAP_TRAVERSE_VALUE_CP_E2S_ANALYSOR 13
+#define TRAVERSE_VALUE_CP_S2E 12
+#define TRAVERSE_VALUE_CP_E2S 13
 
 
 #define OUTPUT_TRAVERSE_VALUE 12
@@ -108,6 +108,8 @@ struct global_args_t
     argparse::ArgValue<bool> show_help;
 
 	argparse::ArgValue<bool> ga_adder; // enable ga_adder
+	argparse::ArgValue<bool> cp_analyser; // enable cp_analyser
+
 	
     // defines if the first cin of an adder/subtractor is connected to a global gnd/vdd
     // or generated using a dummy adder with both inputs set to gnd/vdd

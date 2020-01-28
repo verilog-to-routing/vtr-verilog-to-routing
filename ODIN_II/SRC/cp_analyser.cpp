@@ -6,7 +6,7 @@
 /*---------------------------------------------------------------------------------------------
  * function: dfs_to_cp() it starts from head and end of the netlist to calculate critical path
  *-------------------------------------------------------------------------------------------*/
-void dfs_to_cp(short marker_value_s2e, short marker_value_e2s, netlist_t *netlist)
+void dfs_to_cp(netlist_t *netlist)
 {
 	int i;
 
@@ -15,13 +15,13 @@ void dfs_to_cp(short marker_value_s2e, short marker_value_e2s, netlist_t *netlis
 	{
 		if (netlist->top_input_nodes[i] != NULL)
 		{
-			dfs_s2e_cp(netlist->top_input_nodes[i], marker_value_s2e, netlist);
+			dfs_s2e_cp(netlist->top_input_nodes[i], TRAVERSE_VALUE_CP_S2E, netlist);
 		}
 	}
 	/* now traverse the ground and vcc pins  */
-	dfs_s2e_cp(netlist->vcc_node, marker_value_s2e, netlist);
-	dfs_s2e_cp(netlist->pad_node, marker_value_s2e, netlist);
-	dfs_s2e_cp(netlist->gnd_node, marker_value_s2e, netlist);
+	dfs_s2e_cp(netlist->vcc_node, TRAVERSE_VALUE_CP_S2E, netlist);
+	dfs_s2e_cp(netlist->pad_node, TRAVERSE_VALUE_CP_S2E, netlist);
+	dfs_s2e_cp(netlist->gnd_node, TRAVERSE_VALUE_CP_S2E, netlist);
 
 
 	/* start with the primary output list */
@@ -29,13 +29,13 @@ void dfs_to_cp(short marker_value_s2e, short marker_value_e2s, netlist_t *netlis
 	{
 		if (netlist->top_output_nodes[i] != NULL)
 		{
-			dfs_e2s_cp(netlist->top_output_nodes[i], marker_value_e2s, netlist);
+			dfs_e2s_cp(netlist->top_output_nodes[i], TRAVERSE_VALUE_CP_E2S, netlist);
 		}
 	}
 	/* now traverse the ground and vcc pins  */
-	dfs_e2s_cp(netlist->vcc_node, marker_value_e2s, netlist);
-	dfs_e2s_cp(netlist->pad_node, marker_value_e2s, netlist);
-	dfs_e2s_cp(netlist->gnd_node, marker_value_e2s, netlist);
+	dfs_e2s_cp(netlist->vcc_node, TRAVERSE_VALUE_CP_E2S, netlist);
+	dfs_e2s_cp(netlist->pad_node, TRAVERSE_VALUE_CP_E2S, netlist);
+	dfs_e2s_cp(netlist->gnd_node, TRAVERSE_VALUE_CP_E2S, netlist);
 }
 
 /*---------------------------------------------------------------------------------------------
