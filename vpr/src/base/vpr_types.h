@@ -39,6 +39,7 @@
 #include "vtr_util.h"
 #include "vtr_flat_map.h"
 #include "vtr_cache.h"
+#include "vtr_string_view.h"
 
 /*******************************************************************************
  * Global data types and constants
@@ -1099,7 +1100,11 @@ class t_chan_seg_details {
 
     int index() const { return seg_detail_->index; }
 
-    const std::string &type_name() const { return seg_detail_->type_name; }
+    const vtr::string_view type_name() const {
+        return vtr::string_view(
+                seg_detail_->type_name.data(),
+                seg_detail_->type_name.size());
+    }
 
   public: //Modifiers
     void set_length(int new_len) { length_ = new_len; }

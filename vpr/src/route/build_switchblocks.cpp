@@ -133,6 +133,7 @@
 #include "vtr_assert.h"
 #include "vtr_memory.h"
 #include "vtr_log.h"
+#include "vtr_string_view.h"
 
 #include "vpr_error.h"
 
@@ -179,7 +180,7 @@ struct t_wire_switchpoint {
 
 /************ Typedefs ************/
 /* Used to get info about a given wire type based on the name */
-typedef std::map<std::string, Wire_Info> t_wire_type_sizes;
+typedef std::map<vtr::string_view, Wire_Info> t_wire_type_sizes;
 
 /************ Function Declarations ************/
 /* Counts the number of wires in each wire type in the specified channel */
@@ -575,8 +576,8 @@ static bool is_core(const DeviceGrid& grid, int x, int y) {
 
 /* Counts the number of wires in each wire type in the specified channel */
 static void count_wire_type_sizes(const t_chan_seg_details* channel, int nodes_per_chan, t_wire_type_sizes* wire_type_sizes) {
-    std::string wire_type;
-    std::string new_type;
+    vtr::string_view wire_type;
+    vtr::string_view new_type;
     int new_length, length;
     int new_start, start;
     int num_wires = 0;
@@ -617,7 +618,9 @@ static std::vector<t_wire_switchpoint> get_switchpoint_wires(const DeviceGrid& g
     for (const t_wire_switchpoints& wire_switchpoints : wire_switchpoints_vec) {
         std::vector<t_wire_switchpoint> collected_wire_switchpoints;
 
-        const auto& wire_type = wire_switchpoints.segment_name;
+        auto wire_type = vtr::string_view(
+                wire_switchpoints.segment_name.data(),
+                wire_switchpoints.segment_name.size());
         const auto& points = wire_switchpoints.switchpoints;
 
         if ((*wire_type_sizes).find(wire_type) == (*wire_type_sizes).end()) {
