@@ -20,6 +20,25 @@ static void check_rr_edge(int from_node, int from_edge, int to_node);
 
 /************************ Subroutine definitions ****************************/
 
+class node_edge_sorter {
+  public:
+    bool operator()(const std::pair<int, int>& lhs, const std::pair<int, int>& rhs) const {
+        return lhs.first < rhs.first;
+    }
+
+    bool operator()(const std::pair<int, int>& lhs, const int& rhs) const {
+        return lhs.first < rhs;
+    }
+
+    bool operator()(const int& lhs, const std::pair<int, int>& rhs) const {
+        return lhs < rhs.first;
+    }
+
+    bool operator()(const int& lhs, const int& rhs) const {
+        return lhs < rhs;
+    }
+};
+
 void check_rr_graph(const t_graph_type graph_type,
                     const DeviceGrid& grid,
                     const std::vector<t_physical_tile_type>& types) {
@@ -33,6 +52,8 @@ void check_rr_graph(const t_graph_type graph_type,
     auto total_edges_to_node = std::vector<int>(device_ctx.rr_nodes.size());
     auto switch_types_from_current_to_node = std::vector<unsigned char>(device_ctx.rr_nodes.size());
     const int num_rr_switches = device_ctx.rr_switch_inf.size();
+
+    std::vector<std::pair<int, int>> edges;
 
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         device_ctx.rr_nodes[inode].validate();
@@ -55,8 +76,9 @@ void check_rr_graph(const t_graph_type graph_type,
         check_rr_node(inode, route_type, device_ctx);
 
         /* Check all the connectivity (edges, etc.) information.                    */
+        edges.resize(0);
+        edges.reserve(num_edges);
 
-        std::map<int, std::vector<int>> edges_from_current_to_node;
         for (int iedge = 0; iedge < num_edges; iedge++) {
             int to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
 
@@ -69,7 +91,7 @@ void check_rr_graph(const t_graph_type graph_type,
 
             check_rr_edge(inode, iedge, to_node);
 
-            edges_from_current_to_node[to_node].push_back(iedge);
+            edges.emplace_back(to_node, iedge);
             total_edges_to_node[to_node]++;
 
             auto switch_type = device_ctx.rr_nodes[inode].edge_switch(iedge);
@@ -82,13 +104,22 @@ void check_rr_graph(const t_graph_type graph_type,
             }
         } /* End for all edges of node. */
 
+        std::sort(edges.begin(), edges.end(), [](const std::pair<int, int>& lhs, const std::pair<int, int>& rhs) {
+            return lhs.first < rhs.first;
+        });
+
         //Check that multiple edges between the same from/to nodes make sense
         for (int iedge = 0; iedge < num_edges; iedge++) {
             int to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
 
-            if (edges_from_current_to_node[to_node].size() == 1) continue; //Single edges are always OK
+            auto range = std::equal_range(edges.begin(), edges.end(),
+                                          to_node, node_edge_sorter());
 
-            VTR_ASSERT_MSG(edges_from_current_to_node[to_node].size() > 1, "Expect multiple edges");
+            size_t num_edges_to_node = std::distance(range.first, range.second);
+
+            if (num_edges_to_node == 1) continue; //Single edges are always OK
+
+            VTR_ASSERT_MSG(num_edges_to_node > 1, "Expect multiple edges");
 
             t_rr_type to_rr_type = device_ctx.rr_nodes[to_node].type();
 
@@ -97,7 +128,7 @@ void check_rr_graph(const t_graph_type graph_type,
                 || (rr_type != CHANX && rr_type != CHANY)) {
                 VPR_ERROR(VPR_ERROR_ROUTE,
                           "in check_rr_graph: node %d (%s) connects to node %d (%s) %zu times - multi-connections only expected for CHAN->CHAN.\n",
-                          inode, rr_node_typename[rr_type], to_node, rr_node_typename[to_rr_type], edges_from_current_to_node[to_node].size());
+                          inode, rr_node_typename[rr_type], to_node, rr_node_typename[to_rr_type], num_edges_to_node);
             }
 
             //Between two wire segments
@@ -109,7 +140,8 @@ void check_rr_graph(const t_graph_type graph_type,
             //
             //Identify any such edges with identical switches
             std::map<short, int> switch_counts;
-            for (auto edge : edges_from_current_to_node[to_node]) {
+            for (const auto& to_edge : vtr::Range<decltype(edges)::const_iterator>(range.first, range.second)) {
+                auto edge = to_edge.second;
                 auto edge_switch = device_ctx.rr_nodes[inode].edge_switch(edge);
 
                 switch_counts[edge_switch]++;

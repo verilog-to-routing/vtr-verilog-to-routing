@@ -2,104 +2,18 @@
 #include "arch_error.h"
 #include "vtr_util.h"
 #include "vtr_math.h"
-#include <vector>
-#include <stack>
 #include <string>
 #include <sstream>
-#include <cstring> //memset
 
 using std::stack;
 using std::string;
 using std::stringstream;
 using std::vector;
 
-/**** Enums ****/
-/* Used to identify the type of symbolic formula object */
-typedef enum e_formula_obj {
-    E_FML_UNDEFINED = 0,
-    E_FML_NUMBER,
-    E_FML_BRACKET,
-    E_FML_COMMA,
-    E_FML_OPERATOR,
-    E_FML_NUM_FORMULA_OBJS
-} t_formula_obj;
-
-/* Used to identify an operator in a formula */
-typedef enum e_operator {
-    E_OP_UNDEFINED = 0,
-    E_OP_ADD,
-    E_OP_SUB,
-    E_OP_MULT,
-    E_OP_DIV,
-    E_OP_MIN,
-    E_OP_MAX,
-    E_OP_GCD,
-    E_OP_LCM,
-    E_OP_NUM_OPS
-} t_operator;
-
-/**** Class Definitions ****/
-/* This class is used to represent an object in a formula, such as
- * a number, a bracket, an operator, or a variable */
-class Formula_Object {
-  public:
-    /* indicates the type of formula object this is */
-    t_formula_obj type;
-
-    /* object data, accessed based on what kind of object this is */
-    union u_Data {
-        int num;           /*for number objects*/
-        t_operator op;     /*for operator objects*/
-        bool left_bracket; /*for bracket objects -- specifies if this is a left bracket*/
-
-        u_Data() { memset(this, 0, sizeof(u_Data)); }
-    } data;
-
-    Formula_Object() {
-        this->type = E_FML_UNDEFINED;
-    }
-
-    std::string to_string() const {
-        if (type == E_FML_NUMBER) {
-            return std::to_string(data.num);
-        } else if (type == E_FML_BRACKET) {
-            if (data.left_bracket) {
-                return "(";
-            } else {
-                return ")";
-            }
-        } else if (type == E_FML_COMMA) {
-            return ",";
-        } else if (type == E_FML_OPERATOR) {
-            if (data.op == E_OP_ADD) {
-                return "+";
-            } else if (data.op == E_OP_SUB) {
-                return "-";
-            } else if (data.op == E_OP_MULT) {
-                return "*";
-            } else if (data.op == E_OP_DIV) {
-                return "/";
-            } else if (data.op == E_OP_MIN) {
-                return "min";
-            } else if (data.op == E_OP_MAX) {
-                return "max";
-            } else if (data.op == E_OP_GCD) {
-                return "gcd";
-            } else if (data.op == E_OP_LCM) {
-                return "lcm";
-            } else {
-                return "???"; //Unkown
-            }
-        } else {
-            return "???"; //Unkown
-        }
-    }
-};
-
 /*---- Functions for Parsing the Symbolic Formulas ----*/
 
 /* converts specified formula to a vector in reverse-polish notation */
-static void formula_to_rpn(const char* formula, const t_formula_data& mydata, vector<Formula_Object>& rpn_output);
+static void formula_to_rpn(const char* formula, const t_formula_data& mydata, vector<Formula_Object>& rpn_output, stack<Formula_Object>& op_stack);
 
 static void get_formula_object(const char* ch, int& ichar, const t_formula_data& mydata, Formula_Object* fobj);
 
@@ -142,14 +56,15 @@ static bool goto_next_char(int* str_ind, const string& pw_formula, char ch);
 
 /**** Function Implementations ****/
 /* returns integer result according to specified non-piece-wise formula and data */
-int parse_formula(std::string formula, const t_formula_data& mydata) {
+int FormulaParser::parse_formula(std::string formula, const t_formula_data& mydata) {
     int result = -1;
 
     /* output in reverse-polish notation */
-    vector<Formula_Object> rpn_output;
+    auto& rpn_output = rpn_output_;
+    rpn_output.clear();
 
     /* now we have to run the shunting-yard algorithm to convert formula to reverse polish notation */
-    formula_to_rpn(formula.c_str(), mydata, rpn_output);
+    formula_to_rpn(formula.c_str(), mydata, rpn_output, op_stack_);
 
     /* then we run an RPN parser to get the final result */
     result = parse_rpn_vector(rpn_output);
@@ -171,7 +86,7 @@ int parse_formula(std::string formula, const t_formula_data& mydata) {
  *
  * {start_0:end_0} formula_0; ... {start_i;end_i} formula_i; ...
  */
-int parse_piecewise_formula(const char* formula, const t_formula_data& mydata) {
+int FormulaParser::parse_piecewise_formula(const char* formula, const t_formula_data& mydata) {
     int result = -1;
     int str_ind = 0;
     int str_size = 0;
@@ -283,9 +198,13 @@ static bool goto_next_char(int* str_ind, const string& pw_formula, char ch) {
 
 /* Parses the specified formula using a shunting yard algorithm (see wikipedia). The function's result
  * is stored in the rpn_output vector in reverse-polish notation */
-static void formula_to_rpn(const char* formula, const t_formula_data& mydata, vector<Formula_Object>& rpn_output) {
-    stack<Formula_Object> op_stack; /* stack for handling operators and brackets in formula */
-    Formula_Object fobj;            /* for parsing formula objects */
+static void formula_to_rpn(const char* formula, const t_formula_data& mydata, vector<Formula_Object>& rpn_output, stack<Formula_Object>& op_stack) {
+    // Empty op_stack.
+    while (!op_stack.empty()) {
+        op_stack.pop();
+    }
+
+    Formula_Object fobj; /* for parsing formula objects */
 
     int ichar = 0;
     const char* ch = nullptr;
@@ -764,7 +683,7 @@ static int identifier_length(const char* str) {
 }
 
 /* checks if the specified formula is piece-wise defined */
-bool is_piecewise_formula(const char* formula) {
+bool FormulaParser::is_piecewise_formula(const char* formula) {
     bool result = false;
     /* if formula is piecewise, we expect '{' to be the very first character */
     if ('{' == formula[0]) {

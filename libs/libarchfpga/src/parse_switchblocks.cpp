@@ -447,7 +447,7 @@ static void check_wireconn(const t_arch* arch, const t_wireconn_inf& wireconn) {
 /*---- Functions for Parsing the Symbolic Switchblock Formulas ----*/
 
 /* returns integer result according to the specified switchblock formula and data. formula may be piece-wise */
-int get_sb_formula_raw_result(const char* formula, const t_formula_data& mydata) {
+int get_sb_formula_raw_result(FormulaParser& formula_parser, const char* formula, const t_formula_data& mydata) {
     /* the result of the formula will be an integer */
     int result = -1;
 
@@ -459,11 +459,11 @@ int get_sb_formula_raw_result(const char* formula, const t_formula_data& mydata)
     }
 
     /* parse based on whether formula is piece-wise or not */
-    if (is_piecewise_formula(formula)) {
+    if (formula_parser.is_piecewise_formula(formula)) {
         //EXPERIMENTAL
-        result = parse_piecewise_formula(formula, mydata);
+        result = formula_parser.parse_piecewise_formula(formula, mydata);
     } else {
-        result = parse_formula(formula, mydata);
+        result = formula_parser.parse_formula(formula, mydata);
     }
 
     return result;

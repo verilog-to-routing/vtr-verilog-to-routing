@@ -2,7 +2,10 @@
 #define EXPR_EVAL_H
 #include <map>
 #include <string>
+#include <vector>
+#include <stack>
 #include "arch_error.h"
+#include <cstring>
 
 /**** Structs ****/
 
@@ -24,12 +27,107 @@ class t_formula_data {
     std::map<std::string, int> vars_;
 };
 
-/* returns integer result according to specified formula and data */
-int parse_formula(std::string formula, const t_formula_data& mydata);
+/**** Enums ****/
+/* Used to identify the type of symbolic formula object */
+typedef enum e_formula_obj {
+    E_FML_UNDEFINED = 0,
+    E_FML_NUMBER,
+    E_FML_BRACKET,
+    E_FML_COMMA,
+    E_FML_OPERATOR,
+    E_FML_NUM_FORMULA_OBJS
+} t_formula_obj;
 
-/* returns integer result according to specified piece-wise formula and data */
-int parse_piecewise_formula(const char* formula, const t_formula_data& mydata);
+/* Used to identify an operator in a formula */
+typedef enum e_operator {
+    E_OP_UNDEFINED = 0,
+    E_OP_ADD,
+    E_OP_SUB,
+    E_OP_MULT,
+    E_OP_DIV,
+    E_OP_MIN,
+    E_OP_MAX,
+    E_OP_GCD,
+    E_OP_LCM,
+    E_OP_NUM_OPS
+} t_operator;
 
-/* checks if the specified formula is piece-wise defined */
-bool is_piecewise_formula(const char* formula);
+/**** Class Definitions ****/
+/* This class is used to represent an object in a formula, such as
+ * a number, a bracket, an operator, or a variable */
+class Formula_Object {
+  public:
+    /* indicates the type of formula object this is */
+    t_formula_obj type;
+
+    /* object data, accessed based on what kind of object this is */
+    union u_Data {
+        int num;           /*for number objects*/
+        t_operator op;     /*for operator objects*/
+        bool left_bracket; /*for bracket objects -- specifies if this is a left bracket*/
+
+        u_Data() { memset(this, 0, sizeof(u_Data)); }
+    } data;
+
+    Formula_Object() {
+        this->type = E_FML_UNDEFINED;
+    }
+
+    std::string to_string() const {
+        if (type == E_FML_NUMBER) {
+            return std::to_string(data.num);
+        } else if (type == E_FML_BRACKET) {
+            if (data.left_bracket) {
+                return "(";
+            } else {
+                return ")";
+            }
+        } else if (type == E_FML_COMMA) {
+            return ",";
+        } else if (type == E_FML_OPERATOR) {
+            if (data.op == E_OP_ADD) {
+                return "+";
+            } else if (data.op == E_OP_SUB) {
+                return "-";
+            } else if (data.op == E_OP_MULT) {
+                return "*";
+            } else if (data.op == E_OP_DIV) {
+                return "/";
+            } else if (data.op == E_OP_MIN) {
+                return "min";
+            } else if (data.op == E_OP_MAX) {
+                return "max";
+            } else if (data.op == E_OP_GCD) {
+                return "gcd";
+            } else if (data.op == E_OP_LCM) {
+                return "lcm";
+            } else {
+                return "???"; //Unkown
+            }
+        } else {
+            return "???"; //Unkown
+        }
+    }
+};
+
+class FormulaParser {
+  public:
+    FormulaParser() = default;
+    FormulaParser(const FormulaParser&) = delete;
+    FormulaParser& operator=(const FormulaParser&) = delete;
+
+    /* returns integer result according to specified formula and data */
+    int parse_formula(std::string formula, const t_formula_data& mydata);
+
+    /* returns integer result according to specified piece-wise formula and data */
+    int parse_piecewise_formula(const char* formula, const t_formula_data& mydata);
+
+    /* checks if the specified formula is piece-wise defined */
+    static bool is_piecewise_formula(const char* formula);
+
+  private:
+    std::vector<Formula_Object> rpn_output_;
+    std::stack<Formula_Object> op_stack_; /* stack for handling operators and brackets in formula */
+};
+
 #endif
