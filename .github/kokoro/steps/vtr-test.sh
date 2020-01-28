@@ -5,6 +5,11 @@ if [ -z $VTR_TEST ]; then
 	exit 1
 fi
 
+if [ -z $MAX_CORES ]; then
+	echo "Missing $$MAX_CORES value"
+	exit 1
+fi
+
 if [ -z $NUM_CORES ]; then
 	echo "Missing $$NUM_CORES value"
 	exit 1
@@ -19,4 +24,5 @@ echo $PWD
 pwd
 pwd -L
 pwd -P
+export VPR_NUM_WORKERS=$MAX_CORES
 ./run_reg_test.pl $VTR_TEST -show_failures -j$NUM_CORES
