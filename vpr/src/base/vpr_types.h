@@ -1099,7 +1099,7 @@ class t_chan_seg_details {
 
     int index() const { return seg_detail_->index; }
 
-    std::string type_name() const { return seg_detail_->type_name; }
+    const std::string &type_name() const { return seg_detail_->type_name; }
 
   public: //Modifiers
     void set_length(int new_len) { length_ = new_len; }

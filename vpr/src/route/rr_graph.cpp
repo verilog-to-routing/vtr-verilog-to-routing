@@ -35,6 +35,7 @@
 #include "rr_graph_clock.h"
 
 #include "rr_types.h"
+#include "gperftools/heap-profiler.h"
 
 //#define VERBOSE
 
@@ -339,6 +340,8 @@ void create_rr_graph(const t_graph_type graph_type,
             VTR_LOG("RR graph channel widths unchanged, skipping RR graph rebuild\n");
             return;
         }
+
+        HeapProfilerStart("vpr_build_rr");
 
         free_rr_graph();
 
