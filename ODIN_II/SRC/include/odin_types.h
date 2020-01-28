@@ -104,6 +104,7 @@ struct global_args_t
     argparse::ArgValue<bool> all_warnings;
     argparse::ArgValue<bool> show_help;
 
+	argparse::ArgValue<bool> adder_def; // DEPRECATED
 	argparse::ArgValue<bool> ga_adder; // enable ga_adder
 	
     // defines if the first cin of an adder/subtractor is connected to a global gnd/vdd
