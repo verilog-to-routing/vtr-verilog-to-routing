@@ -1,5 +1,6 @@
 #include "catch.hpp"
 
+#include "vtr_string_view.h"
 #include "vtr_string_interning.h"
 
 TEST_CASE("String view", "[vtr_string_view/string_view]") {
