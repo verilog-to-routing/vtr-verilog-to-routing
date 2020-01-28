@@ -31,7 +31,7 @@ class InstPort {
         int high_idx = UNSPECIFIED;
     };
 
-    name_index parse_name_index(std::string str);
+    name_index parse_name_index(const std::string &str);
 
     name_index instance_;
     name_index port_;
