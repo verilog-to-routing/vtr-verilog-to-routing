@@ -160,7 +160,6 @@ void check_route(enum e_route_type route_type, bool quick) {
 
     } /* End for each net */
 
-
     if (!quick) {
         check_all_non_configurable_edges();
     }
