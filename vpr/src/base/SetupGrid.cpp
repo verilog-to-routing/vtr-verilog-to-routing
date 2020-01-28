@@ -325,6 +325,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
         }
     }
 
+    FormulaParser p;
     std::set<t_physical_tile_type_ptr> seen_types;
     for (const auto& grid_loc_def : grid_def.loc_defs) {
         //Fill in the block types according to the specification
@@ -353,10 +354,10 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
         VTR_ASSERT_MSG(!xspec.incr_expr.empty(), "x increment must be specified");
         VTR_ASSERT_MSG(!xspec.repeat_expr.empty(), "x repeat must be specified");
 
-        size_t startx = parse_formula(xspec.start_expr, vars);
-        size_t endx = parse_formula(xspec.end_expr, vars);
-        size_t incrx = parse_formula(xspec.incr_expr, vars);
-        size_t repeatx = parse_formula(xspec.repeat_expr, vars);
+        size_t startx = p.parse_formula(xspec.start_expr, vars);
+        size_t endx = p.parse_formula(xspec.end_expr, vars);
+        size_t incrx = p.parse_formula(xspec.incr_expr, vars);
+        size_t repeatx = p.parse_formula(xspec.repeat_expr, vars);
 
         //Load the y specification
         auto& yspec = grid_loc_def.y;
@@ -366,10 +367,10 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
         VTR_ASSERT_MSG(!yspec.incr_expr.empty(), "y increment must be specified");
         VTR_ASSERT_MSG(!yspec.repeat_expr.empty(), "y repeat must be specified");
 
-        size_t starty = parse_formula(yspec.start_expr, vars);
-        size_t endy = parse_formula(yspec.end_expr, vars);
-        size_t incry = parse_formula(yspec.incr_expr, vars);
-        size_t repeaty = parse_formula(yspec.repeat_expr, vars);
+        size_t starty = p.parse_formula(yspec.start_expr, vars);
+        size_t endy = p.parse_formula(yspec.end_expr, vars);
+        size_t incry = p.parse_formula(yspec.incr_expr, vars);
+        size_t repeaty = p.parse_formula(yspec.repeat_expr, vars);
 
         //Check start against the device dimensions
         // Start locations outside the device will never create block instances
