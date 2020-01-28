@@ -4800,7 +4800,7 @@ static void link_physical_logical_types(std::vector<t_physical_tile_type>& Physi
 
         auto& equivalent_sites = physical_tile.equivalent_sites;
 
-        auto criteria = [physical_tile](const t_logical_block_type* lhs, const t_logical_block_type* rhs) {
+        auto criteria = [&physical_tile](const t_logical_block_type* lhs, const t_logical_block_type* rhs) {
             int num_physical_pins = physical_tile.num_pins / physical_tile.capacity;
 
             int lhs_num_logical_pins = lhs->pb_type->num_pins;
@@ -4838,7 +4838,7 @@ static void link_physical_logical_types(std::vector<t_physical_tile_type>& Physi
         std::unordered_map<int, bool> ignored_pins_check_map;
         std::unordered_map<int, bool> global_pins_check_map;
 
-        auto criteria = [logical_block](const t_physical_tile_type* lhs, const t_physical_tile_type* rhs) {
+        auto criteria = [&logical_block](const t_physical_tile_type* lhs, const t_physical_tile_type* rhs) {
             int num_logical_pins = logical_block.pb_type->num_pins;
 
             int lhs_num_physical_pins = lhs->num_pins / lhs->capacity;
