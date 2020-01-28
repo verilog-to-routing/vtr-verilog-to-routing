@@ -39,6 +39,7 @@
 #include "vtr_ndmatrix.h"
 #include "vtr_hash.h"
 #include "vtr_bimap.h"
+#include "vtr_string_interning.h"
 
 #include "logic_types.h"
 #include "clock_types.h"
@@ -90,31 +91,32 @@ enum class e_sb_type;
 // Metadata value storage.
 class t_metadata_value {
   public:
-    explicit t_metadata_value(std::string v)
+    explicit t_metadata_value(vtr::interned_string v)
         : value_(v) {}
     explicit t_metadata_value(const t_metadata_value& o)
         : value_(o.value_) {}
 
     // Return string value.
-    std::string as_string() const { return value_; }
+    vtr::interned_string as_string() const { return value_; }
 
   private:
-    std::string value_;
+    vtr::interned_string value_;
 };
 
 // Metadata storage dictionary.
-struct t_metadata_dict : std::unordered_map<
-                             std::string,
-                             std::vector<t_metadata_value>> {
+struct t_metadata_dict : vtr::flat_map<
+                             vtr::interned_string,
+                             std::vector<t_metadata_value>,
+                             vtr::interned_string_less> {
     // Is this key present in the map?
-    inline bool has(std::string key) const {
+    inline bool has(vtr::interned_string key) const {
         return this->count(key) >= 1;
     }
 
     // Get all metadata values matching key.
     //
     // Returns nullptr if key is not found.
-    inline const std::vector<t_metadata_value>* get(std::string key) const {
+    inline const std::vector<t_metadata_value>* get(vtr::interned_string key) const {
         auto iter = this->find(key);
         if (iter != this->end()) {
             return &iter->second;
@@ -126,7 +128,7 @@ struct t_metadata_dict : std::unordered_map<
     //
     // Returns nullptr if key is not found or if multiple values are prsent
     // per key.
-    inline const t_metadata_value* one(std::string key) const {
+    inline const t_metadata_value* one(vtr::interned_string key) const {
         auto values = get(key);
         if (values == nullptr) {
             return nullptr;
@@ -138,11 +140,10 @@ struct t_metadata_dict : std::unordered_map<
     }
 
     // Adds value to key.
-    void add(std::string key, std::string value) {
+    void add(vtr::interned_string key, vtr::interned_string value) {
         // Get the iterator to the key, which may already have elements if
         // add was called with this key in the past.
-        auto iter_inserted = this->emplace(key, std::vector<t_metadata_value>());
-        iter_inserted.first->second.push_back(t_metadata_value(value));
+        (*this)[key].emplace_back(t_metadata_value(value));
     }
 };
 
@@ -523,6 +524,12 @@ enum class e_sb_type {
 
 };
 
+enum class e_capacity_type {
+    DUPLICATE, // Capacity duplicates ports.
+    EXPLICIT   // Capacity increases the number of logical tiles, but does not
+               // modify the physical ports.
+};
+
 constexpr int NO_SWITCH = -1;
 constexpr int DEFAULT_SWITCH = -2;
 
@@ -577,6 +584,7 @@ struct t_physical_tile_type {
     int num_clock_pins = 0;
 
     int capacity = 0;
+    e_capacity_type capacity_type = e_capacity_type::DUPLICATE;
 
     int width = 0;
     int height = 0;
@@ -618,6 +626,9 @@ struct t_physical_tile_type {
 
     /* Returns the indices of pins that contain a clock for this physical logic block */
     std::vector<int> get_clock_pins_indices() const;
+
+    bool is_input_type;
+    bool is_output_type;
 };
 
 /** A logical pin defines the pin index of a logical block type (i.e. a top level PB type)
@@ -625,18 +636,20 @@ struct t_physical_tile_type {
  *  vtr::bimap container.
  */
 struct t_logical_pin {
+    int z_index = -1;
     int pin = -1;
 
-    t_logical_pin(int value) {
+    t_logical_pin(int z_index_value, int value) {
+        z_index = z_index_value;
         pin = value;
     }
 
     bool operator==(const t_logical_pin o) const {
-        return pin == o.pin;
+        return z_index == o.z_index && pin == o.pin;
     }
 
     bool operator<(const t_logical_pin o) const {
-        return pin < o.pin;
+        return std::make_pair(z_index, pin) < std::make_pair(o.z_index, o.pin);
     }
 };
 
@@ -1374,6 +1387,7 @@ struct t_arch_switch_inf {
     float Cin = 0.;
     float Cout = 0.;
     float Cinternal = 0.;
+    float penalty_cost = 0.;
     float mux_trans_size = 1.;
     BufferSize buf_size_type = BufferSize::AUTO;
     float buf_size = 0.;
@@ -1438,6 +1452,7 @@ struct t_rr_switch_inf {
     float Cout = 0.;
     float Cinternal = 0.;
     float Tdel = 0.;
+    float penalty_cost = 0.;
     float mux_trans_size = 0.;
     float buf_size = 0.;
     const char* name = nullptr;
@@ -1585,6 +1600,8 @@ struct t_clock_arch_spec {
 
 /*   Detailed routing architecture */
 struct t_arch {
+    mutable vtr::string_internment strings;
+
     char* architecture_id; //Secure hash digest of the architecture file to uniquely identify this architecture
 
     t_chan_width_dist Chans;

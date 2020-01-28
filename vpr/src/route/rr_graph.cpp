@@ -32,6 +32,7 @@
 #include "rr_graph_writer.h"
 #include "rr_graph_reader.h"
 #include "router_lookahead_map.h"
+#include "connection_box_lookahead_map.h"
 #include "rr_graph_clock.h"
 
 #include "rr_types.h"
@@ -318,7 +319,9 @@ void create_rr_graph(const t_graph_type graph_type,
                      const enum e_clock_modeling clock_modeling,
                      const t_direct_inf* directs,
                      const int num_directs,
-                     int* Warnings) {
+                     int* Warnings,
+                     bool read_edge_metadata,
+                     bool do_check_rr_graph) {
     const auto& device_ctx = g_vpr_ctx.device();
 
     if (!det_routing_arch->read_rr_graph_filename.empty()) {
@@ -330,7 +333,9 @@ void create_rr_graph(const t_graph_type graph_type,
                          segment_inf,
                          base_cost_type,
                          &det_routing_arch->wire_to_rr_ipin_switch,
-                         det_routing_arch->read_rr_graph_filename.c_str());
+                         det_routing_arch->read_rr_graph_filename.c_str(),
+                         read_edge_metadata,
+                         do_check_rr_graph);
         }
     } else {
         if (channel_widths_unchanged(device_ctx.chan_width, nodes_per_chan) && !device_ctx.rr_nodes.empty()) {
@@ -712,7 +717,7 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     //Partition the rr graph edges for efficient access to configurable/non-configurable
     //edge subsets. Must be done after RR switches have been allocated
-    partition_rr_graph_edges(device_ctx);
+    partition_rr_graph_edges(&device_ctx.rr_nodes);
 
     //Save the channel widths for the newly constructed graph
     device_ctx.chan_width = nodes_per_chan;
@@ -896,6 +901,7 @@ void load_rr_switch_from_arch_switch(int arch_switch_idx,
     device_ctx.rr_switch_inf[rr_switch_idx].Cin = device_ctx.arch_switch_inf[arch_switch_idx].Cin;
     device_ctx.rr_switch_inf[rr_switch_idx].Cinternal = device_ctx.arch_switch_inf[arch_switch_idx].Cinternal;
     device_ctx.rr_switch_inf[rr_switch_idx].Cout = device_ctx.arch_switch_inf[arch_switch_idx].Cout;
+    device_ctx.rr_switch_inf[rr_switch_idx].penalty_cost = device_ctx.arch_switch_inf[arch_switch_idx].penalty_cost;
     device_ctx.rr_switch_inf[rr_switch_idx].Tdel = rr_switch_Tdel;
     device_ctx.rr_switch_inf[rr_switch_idx].mux_trans_size = device_ctx.arch_switch_inf[arch_switch_idx].mux_trans_size;
     if (device_ctx.arch_switch_inf[arch_switch_idx].buf_size_type == BufferSize::AUTO) {
@@ -1374,11 +1380,11 @@ void free_rr_graph() {
 
     device_ctx.read_rr_graph_filename.clear();
 
-    device_ctx.rr_node_indices.clear();
+    for (auto& data : device_ctx.rr_node_indices) {
+        data.clear();
+    }
 
     device_ctx.rr_nodes.clear();
-
-    device_ctx.rr_node_indices.clear();
 
     device_ctx.rr_indexed_data.clear();
 

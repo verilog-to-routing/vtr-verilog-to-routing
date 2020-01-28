@@ -53,7 +53,7 @@ namespace fasm {
 class FasmWriterVisitor : public NetlistVisitor {
 
   public:
-      FasmWriterVisitor(std::ostream& f);
+      FasmWriterVisitor(vtr::string_internment *strings, std::ostream& f);
 
   private:
       void visit_top_impl(const char* top_level_name) override;
@@ -81,7 +81,11 @@ class FasmWriterVisitor : public NetlistVisitor {
       // Walk from node to parents and search for a CLB prefix.
       void find_clb_prefix(const t_pb_graph_node *node,
         bool *have_prefix, std::string *clb_prefix) const;
+      std::string handle_fasm_prefix(const t_metadata_dict *meta,
+        const t_pb_graph_node *pb_graph_node, const t_pb_type *pb_type) const;
+      const t_metadata_dict *get_fasm_type(const t_pb_graph_node* pb_graph_node, std::string target_type) const;
 
+      vtr::string_internment *strings_;
       std::ostream& os_;
 
       t_pb_graph_node *root_clb_;
@@ -97,6 +101,14 @@ class FasmWriterVisitor : public NetlistVisitor {
       std::map<const t_pb_type*, Parameters> parameters_;
 
       std::map<const std::string, std::string> tags_;
+
+      vtr::interned_string fasm_lut;
+      vtr::interned_string fasm_features;
+      vtr::interned_string fasm_params;
+      vtr::interned_string fasm_prefix;
+      vtr::interned_string fasm_placeholders;
+      vtr::interned_string fasm_type;
+      vtr::interned_string fasm_mux;
 };
 
 } // namespace fasm
