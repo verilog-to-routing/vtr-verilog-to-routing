@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <regex>
 
 #include "vpr_types.h"
 #include "atom_netlist.h"
@@ -112,6 +113,12 @@ int find_pin(t_physical_tile_type_ptr type, std::string port_name, int pin_index
 //Returns the block type which is most likely the logic block
 t_logical_block_type_ptr infer_logic_block_type(const DeviceGrid& grid);
 
+//Returns true if the specified block type contains the specified blif model name
+bool block_type_contains_blif_model(t_logical_block_type_ptr type, std::string blif_model_name);
+
+//Returns true of a pb_type (or it's children) contain the specified blif model name
+bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::string& blif_model_name);
+
 int get_max_primitives_in_pb_type(t_pb_type* pb_type);
 int get_max_depth_of_pb_type(t_pb_type* pb_type);
 int get_max_nets_in_pb_type(const t_pb_type* pb_type);
@@ -158,11 +165,10 @@ t_logical_block_type_ptr pick_best_logical_type(t_physical_tile_type_ptr physica
 //the best expected physical tile the block should use (if no valid placement).
 t_physical_tile_type_ptr get_physical_tile_type(const ClusterBlockId blk);
 
+int get_logical_pin(t_physical_tile_type_ptr physical_tile,
+                    t_logical_block_type_ptr logical_block,
+                    int pin);
 int get_physical_pin(t_physical_tile_type_ptr physical_tile,
-                     int z_index,
-                     t_logical_block_type_ptr logical_block,
-                     int pin);
-int get_physical_pin(const ClusterBlockId blk,
                      t_logical_block_type_ptr logical_block,
                      int pin);
 

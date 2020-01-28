@@ -71,12 +71,8 @@ void alloc_and_load_rr_indexed_data(const std::vector<t_segment_inf>& segment_in
         device_ctx.rr_indexed_data[i].T_linear = OPEN;
         device_ctx.rr_indexed_data[i].T_quadratic = OPEN;
         device_ctx.rr_indexed_data[i].C_load = OPEN;
-        device_ctx.rr_indexed_data[i].penalty_cost = 0.;
     }
-
     device_ctx.rr_indexed_data[IPIN_COST_INDEX].T_linear = device_ctx.rr_switch_inf[wire_to_ipin_switch].Tdel;
-
-    device_ctx.rr_indexed_data[IPIN_COST_INDEX].penalty_cost = device_ctx.rr_switch_inf[wire_to_ipin_switch].penalty_cost;
 
     /* X-directed segments. */
     for (iseg = 0; iseg < num_segment; iseg++) {
@@ -172,14 +168,6 @@ static void load_rr_indexed_data_base_costs(int nodes_per_chan,
     size_t total_segments = std::accumulate(rr_segment_counts.begin(), rr_segment_counts.end(), 0u);
 
     /* Load base costs for CHANX and CHANY segments */
-    float max_length = 0;
-    float min_length = 1;
-    if (base_cost_type == DELAY_NORMALIZED_LENGTH_BOUNDED) {
-        for (index = CHANX_COST_INDEX_START; index < device_ctx.rr_indexed_data.size(); index++) {
-            float length = (1 / device_ctx.rr_indexed_data[index].inv_length);
-            max_length = std::max(max_length, length);
-        }
-    }
 
     //Future Work: Since we can now have wire types which don't connect to IPINs,
     //             perhaps consider lowering cost of wires which connect to IPINs
@@ -191,15 +179,6 @@ static void load_rr_indexed_data_base_costs(int nodes_per_chan,
 
         } else if (base_cost_type == DELAY_NORMALIZED_LENGTH || base_cost_type == DEMAND_ONLY_NORMALIZED_LENGTH) {
             device_ctx.rr_indexed_data[index].base_cost = delay_normalization_fac / device_ctx.rr_indexed_data[index].inv_length;
-
-        } else if (base_cost_type == DELAY_NORMALIZED_LENGTH_BOUNDED) {
-            float length = (1 / device_ctx.rr_indexed_data[index].inv_length);
-            if (max_length != min_length) {
-                float length_scale = 1.f + 3.f * (length - min_length) / (max_length - min_length);
-                device_ctx.rr_indexed_data[index].base_cost = delay_normalization_fac * length_scale;
-            } else {
-                device_ctx.rr_indexed_data[index].base_cost = delay_normalization_fac;
-            }
 
         } else if (base_cost_type == DELAY_NORMALIZED_FREQUENCY) {
             int seg_index = device_ctx.rr_indexed_data[index].seg_index;
@@ -315,8 +294,8 @@ static void load_rr_indexed_data_T_values(int index_start,
      * segment. */
 
     int itrack, inode, cost_index;
-    float *C_total, *R_total;                                                                     /* [0..device_ctx.rr_indexed_data.size() - 1] */
-    double *switch_R_total, *switch_T_total, *switch_Cinternal_total, *switch_penalty_cost_total; /* [0..device_ctx.rr_indexed_data.size() - 1] */
+    float *C_total, *R_total;                                         /* [0..device_ctx.rr_indexed_data.size() - 1] */
+    double *switch_R_total, *switch_T_total, *switch_Cinternal_total; /* [0..device_ctx.rr_indexed_data.size() - 1] */
     short* switches_buffered;
     int* num_nodes_of_index; /* [0..device_ctx.rr_indexed_data.size() - 1] */
     float Rnode, Cnode, Rsw, Tsw, Cinternalsw;
@@ -336,7 +315,6 @@ static void load_rr_indexed_data_T_values(int index_start,
     switch_R_total = (double*)vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof(double));
     switch_T_total = (double*)vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof(double));
     switch_Cinternal_total = (double*)vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof(double));
-    switch_penalty_cost_total = (double*)vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof(double));
     switches_buffered = (short*)vtr::calloc(device_ctx.rr_indexed_data.size(), sizeof(short));
 
     /* initialize switches_buffered array */
@@ -362,7 +340,6 @@ static void load_rr_indexed_data_T_values(int index_start,
         double avg_switch_R = 0;
         double avg_switch_T = 0;
         double avg_switch_Cinternal = 0;
-        double avg_switch_penalty_cost = 0;
         int num_switches = 0;
         short buffered = UNDEFINED;
         for (int iedge = 0; iedge < num_edges; iedge++) {
@@ -373,7 +350,6 @@ static void load_rr_indexed_data_T_values(int index_start,
                 avg_switch_R += device_ctx.rr_switch_inf[switch_index].R;
                 avg_switch_T += device_ctx.rr_switch_inf[switch_index].Tdel;
                 avg_switch_Cinternal += device_ctx.rr_switch_inf[switch_index].Cinternal;
-                avg_switch_penalty_cost += device_ctx.rr_switch_inf[switch_index].penalty_cost;
 
                 num_switches++;
             }
@@ -391,7 +367,6 @@ static void load_rr_indexed_data_T_values(int index_start,
         switch_R_total[cost_index] += avg_switch_R;
         switch_T_total[cost_index] += avg_switch_T;
         switch_Cinternal_total[cost_index] += avg_switch_Cinternal;
-        switch_penalty_cost_total[cost_index] += avg_switch_penalty_cost;
         if (buffered == UNDEFINED) {
             /* this segment does not have any outgoing edges to other general routing wires */
             continue;
@@ -443,8 +418,6 @@ static void load_rr_indexed_data_T_values(int index_start,
                 device_ctx.rr_indexed_data[cost_index].T_quadratic = (Rsw + Rnode) * 0.5
                                                                      * Cnode;
             }
-
-            device_ctx.rr_indexed_data[cost_index].penalty_cost = (float)switch_penalty_cost_total[cost_index] / num_nodes_of_index[cost_index];
         }
     }
 
@@ -454,7 +427,6 @@ static void load_rr_indexed_data_T_values(int index_start,
     free(switch_R_total);
     free(switch_T_total);
     free(switch_Cinternal_total);
-    free(switch_penalty_cost_total);
     free(switches_buffered);
 }
 

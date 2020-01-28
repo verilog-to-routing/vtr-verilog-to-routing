@@ -3,7 +3,7 @@
 #include "physical_types.h"
 #include "route_common.h"
 
-void check_route(enum e_route_type route_type, bool quick);
+void check_route(enum e_route_type route_type);
 
 void recompute_occupancy_from_scratch();
 

@@ -182,7 +182,6 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
         };
         vpr_init(sizeof(argv)/sizeof(argv[0]), argv,
                 &options, &vpr_setup, &arch);
-        vpr_setup.RouterOpts.read_edge_metadata = true;
         bool flow_succeeded = vpr_flow(vpr_setup, arch);
         REQUIRE(flow_succeeded == true);
 
@@ -191,10 +190,9 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
             for(t_edge_size iedge = 0; iedge < device_ctx.rr_nodes[inode].num_edges(); ++iedge) {
                 auto sink_inode = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
                 auto switch_id = device_ctx.rr_nodes[inode].edge_switch(iedge);
-                auto value = vtr::string_fmt("%d_%d_%zu",
-                            inode, sink_inode, switch_id);
                 vpr::add_rr_edge_metadata(inode, sink_inode, switch_id,
-                        vtr::string_view("fasm_features"), vtr::string_view(value.data(), value.size()));
+                        "fasm_features", vtr::string_fmt("%d_%d_%zu",
+                            inode, sink_inode, switch_id));
             }
         }
 
@@ -221,14 +219,13 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
     vpr_setup.PackerOpts.doPacking    = STAGE_LOAD;
     vpr_setup.PlacerOpts.doPlacement  = STAGE_LOAD;
     vpr_setup.RouterOpts.doRouting    = STAGE_LOAD;
-    vpr_setup.RouterOpts.read_edge_metadata = true;
     vpr_setup.AnalysisOpts.doAnalysis = STAGE_SKIP;
 
     bool flow_succeeded = vpr_flow(vpr_setup, arch);
     REQUIRE(flow_succeeded == true);
 
     std::stringstream fasm_string;
-    fasm::FasmWriterVisitor visitor(&arch.strings, fasm_string);
+    fasm::FasmWriterVisitor visitor(fasm_string);
     NetlistWalker nl_walker(visitor);
     nl_walker.walk();
 

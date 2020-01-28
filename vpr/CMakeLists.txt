@@ -248,26 +248,3 @@ add_test(NAME test_vpr
     COMMAND test_vpr --use-colour=yes
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test
     )
-
-add_custom_target(
-    generate_rr_graph_serializers
-    COMMAND ${CMAKE_COMMAND} -E remove_directory rr_graph_generate
-    COMMAND ${CMAKE_COMMAND} -E make_directory rr_graph_generate
-    COMMAND ${CMAKE_COMMAND} -E chdir rr_graph_generate git clone https://github.com/duck2/uxsdcxx
-    COMMAND ${CMAKE_COMMAND} -E chdir rr_graph_generate/uxsdcxx git checkout interface-consumer
-    COMMAND python3 -mpip install --user -r rr_graph_generate/uxsdcxx/requirements.txt
-    COMMAND ${CMAKE_COMMAND} -E chdir rr_graph_generate python3 uxsdcxx/uxsdcxx.py ${CMAKE_CURRENT_SOURCE_DIR}/src/route/rr_graph.xsd
-    COMMAND ${CMAKE_COMMAND} -E chdir rr_graph_generate python3 uxsdcxx/uxsdcap.py ${CMAKE_CURRENT_SOURCE_DIR}/src/route/rr_graph.xsd
-    COMMAND ${CMAKE_COMMAND} -E copy
-        rr_graph_generate/rr_graph_uxsdcxx.h
-        rr_graph_generate/rr_graph_uxsdcxx_capnp.h
-        rr_graph_generate/rr_graph_uxsdcxx_interface.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/route/gen
-    COMMAND ${CMAKE_COMMAND} -E copy
-        rr_graph_generate/rr_graph_uxsdcxx.capnp
-        ${CMAKE_CURRENT_SOURCE_DIR}/../libs/libvtrcapnproto/gen
-    DEPENDS
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/route/rr_graph.xsd
-    WORKING_DIRECTORY
-        ${CMAKE_CURRENT_BINARY_DIR}
-        )

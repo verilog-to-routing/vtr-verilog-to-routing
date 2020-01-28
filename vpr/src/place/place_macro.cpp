@@ -82,7 +82,7 @@ static void find_all_the_macro(int* num_of_macro, std::vector<ClusterBlockId>& p
 
         num_blk_pins = cluster_ctx.clb_nlist.block_type(blk_id)->pb_type->num_pins;
         for (to_iblk_pin = 0; to_iblk_pin < num_blk_pins; to_iblk_pin++) {
-            int to_physical_pin = get_physical_pin(physical_tile, /*z_index=*/0, logical_block, to_iblk_pin);
+            int to_physical_pin = get_physical_pin(physical_tile, logical_block, to_iblk_pin);
 
             to_net_id = cluster_ctx.clb_nlist.block_net(blk_id, to_iblk_pin);
             to_idirect = f_idirect_from_blk_pin[physical_tile->index][to_physical_pin];
@@ -102,7 +102,7 @@ static void find_all_the_macro(int* num_of_macro, std::vector<ClusterBlockId>& p
                     || (is_constant_clb_net(to_net_id)
                         && !net_is_driven_by_direct(to_net_id)))) {
                 for (from_iblk_pin = 0; from_iblk_pin < num_blk_pins; from_iblk_pin++) {
-                    int from_physical_pin = get_physical_pin(physical_tile, /*z_index=*/0, logical_block, from_iblk_pin);
+                    int from_physical_pin = get_physical_pin(physical_tile, logical_block, from_iblk_pin);
 
                     from_net_id = cluster_ctx.clb_nlist.block_net(blk_id, from_iblk_pin);
                     from_idirect = f_idirect_from_blk_pin[physical_tile->index][from_physical_pin];

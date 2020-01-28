@@ -197,9 +197,7 @@ void alloc_routing_structs(t_chan_width chan_width,
                     router_opts.trim_obs_channels,
                     router_opts.clock_modeling,
                     directs, num_directs,
-                    &warnings,
-                    router_opts.read_edge_metadata,
-                    router_opts.do_check_rr_graph);
+                    &warnings);
 
     alloc_and_load_rr_node_route_structs();
 

@@ -95,7 +95,7 @@ static int check_connections_to_global_clb_pins(ClusterNetId net_id, int verbosi
         auto physical_type = pick_best_physical_type(logical_type);
 
         int log_index = cluster_ctx.clb_nlist.pin_logical_index(pin_id);
-        int pin_index = get_physical_pin(physical_type, /*z_index=*/0, logical_type, log_index);
+        int pin_index = get_physical_pin(physical_type, logical_type, log_index);
 
         if (physical_type->is_ignored_pin[pin_index] != net_is_ignored
             && !is_io_type(physical_type)) {
