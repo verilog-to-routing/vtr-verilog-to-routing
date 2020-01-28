@@ -62,7 +62,6 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define TRAVERSE_VALUE_CP_S2E 12
 #define TRAVERSE_VALUE_CP_E2S 13
 
-
 #define OUTPUT_TRAVERSE_VALUE 12
 #define COUNT_NODES 14 /* NOTE that you can't call countnodes one after the other or the mark will be incorrect */
 #define COMBO_LOOP 15
@@ -107,6 +106,7 @@ struct global_args_t
     argparse::ArgValue<bool> all_warnings;
     argparse::ArgValue<bool> show_help;
 
+	argparse::ArgValue<bool> adder_def; // DEPRECATED
 	argparse::ArgValue<bool> ga_adder; // enable ga_adder
 	argparse::ArgValue<bool> cp_analyser; // enable cp_analyser
 
@@ -510,6 +510,10 @@ struct npin_t
 	char *mapping;    // name of mapped port from hard block
 
 	edge_type_e sensitivity;
+
+	// MEHRSHAD //
+	short traverse_visited; // a way to mark if we've visited yet
+	// MEHRSHAD //
 
 	////////////////////
 	// For simulation

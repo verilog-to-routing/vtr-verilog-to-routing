@@ -51,7 +51,7 @@ void dfs_s2e_cp(nnode_t *node, int traverse_mark_number, netlist_t *netlist)
 
 		/* mark that we have visitied this node now */
 		node->traverse_visited = traverse_mark_number;
-
+    
 		for (i = 0; i < node->num_output_pins; i++)
 		{
 			if (node->output_pins[i]->net)
@@ -69,6 +69,7 @@ void dfs_s2e_cp(nnode_t *node, int traverse_mark_number, netlist_t *netlist)
 							{
 							/* recursive call point */
 								dfs_s2e_cp(next_net->fanout_pins[j]->node, traverse_mark_number, netlist);
+
 							}
 						}
 					}
