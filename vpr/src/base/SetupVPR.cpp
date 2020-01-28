@@ -322,6 +322,7 @@ static void SetupRoutingArch(const t_arch& Arch,
 }
 
 static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts) {
+    RouterOpts->do_check_rr_graph = !Options.disable_check_rr_graph;
     RouterOpts->astar_fac = Options.astar_fac;
     RouterOpts->bb_factor = Options.bb_factor;
     RouterOpts->criticality_exp = Options.criticality_exp;
@@ -344,6 +345,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->router_algorithm = Options.RouterAlgorithm;
     RouterOpts->fixed_channel_width = Options.RouteChanWidth;
     RouterOpts->min_channel_width_hint = Options.min_route_chan_width_hint;
+    RouterOpts->read_edge_metadata = Options.read_edge_metadata;
 
     //TODO document these?
     RouterOpts->trim_empty_channels = false; /* DEFAULT */
