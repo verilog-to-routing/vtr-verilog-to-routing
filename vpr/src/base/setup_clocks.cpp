@@ -16,19 +16,20 @@ static MetalLayer get_metal_layer_from_name(
     std::string metal_layer_name,
     std::unordered_map<std::string, t_metal_layer> clock_metal_layers,
     std::string clock_network_name);
-static void setup_clock_network_wires(const t_arch& Arch, std::vector<t_segment_inf>& segment_inf);
-static void setup_clock_connections(const t_arch& Arch);
+static void setup_clock_network_wires(const t_arch& Arch, FormulaParser& p, std::vector<t_segment_inf>& segment_inf);
+static void setup_clock_connections(const t_arch& Arch, FormulaParser& p);
 
 void setup_clock_networks(const t_arch& Arch, std::vector<t_segment_inf>& segment_inf) {
-    setup_clock_network_wires(Arch, segment_inf);
-    setup_clock_connections(Arch);
+    FormulaParser p;
+    setup_clock_network_wires(Arch, p, segment_inf);
+    setup_clock_connections(Arch, p);
 }
 
 /**
  * Parses the clock architecture information and modifies the architecture segment
  * information.
  */
-void setup_clock_network_wires(const t_arch& Arch, std::vector<t_segment_inf>& segment_inf) {
+void setup_clock_network_wires(const t_arch& Arch, FormulaParser& p, std::vector<t_segment_inf>& segment_inf) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& clock_networks_device = device_ctx.clock_networks;
     auto& grid = device_ctx.grid;
@@ -53,18 +54,18 @@ void setup_clock_network_wires(const t_arch& Arch, std::vector<t_segment_inf>& s
                     clock_metal_layers,
                     clock_network_arch.name));
                 spine->set_initial_wire_location(
-                    parse_formula(clock_network_arch.wire.start, vars),
-                    parse_formula(clock_network_arch.wire.end, vars),
-                    parse_formula(clock_network_arch.wire.position, vars));
+                    p.parse_formula(clock_network_arch.wire.start, vars),
+                    p.parse_formula(clock_network_arch.wire.end, vars),
+                    p.parse_formula(clock_network_arch.wire.position, vars));
                 spine->set_wire_repeat(
-                    parse_formula(clock_network_arch.repeat.x, vars),
-                    parse_formula(clock_network_arch.repeat.y, vars));
-                spine->set_drive_location(parse_formula(clock_network_arch.drive.offset, vars));
+                    p.parse_formula(clock_network_arch.repeat.x, vars),
+                    p.parse_formula(clock_network_arch.repeat.y, vars));
+                spine->set_drive_location(p.parse_formula(clock_network_arch.drive.offset, vars));
                 spine->set_drive_switch(clock_network_arch.drive.arch_switch_idx);
                 spine->set_drive_name(clock_network_arch.drive.name);
                 spine->set_tap_locations(
-                    parse_formula(clock_network_arch.tap.offset, vars),
-                    parse_formula(clock_network_arch.tap.increment, vars));
+                    p.parse_formula(clock_network_arch.tap.offset, vars),
+                    p.parse_formula(clock_network_arch.tap.increment, vars));
                 spine->set_tap_name(clock_network_arch.tap.name);
 
                 spine->create_segments(segment_inf);
@@ -82,18 +83,18 @@ void setup_clock_network_wires(const t_arch& Arch, std::vector<t_segment_inf>& s
                     clock_metal_layers,
                     clock_network_arch.name));
                 rib->set_initial_wire_location(
-                    parse_formula(clock_network_arch.wire.start, vars),
-                    parse_formula(clock_network_arch.wire.end, vars),
-                    parse_formula(clock_network_arch.wire.position, vars));
+                    p.parse_formula(clock_network_arch.wire.start, vars),
+                    p.parse_formula(clock_network_arch.wire.end, vars),
+                    p.parse_formula(clock_network_arch.wire.position, vars));
                 rib->set_wire_repeat(
-                    parse_formula(clock_network_arch.repeat.x, vars),
-                    parse_formula(clock_network_arch.repeat.y, vars));
-                rib->set_drive_location(parse_formula(clock_network_arch.drive.offset, vars));
+                    p.parse_formula(clock_network_arch.repeat.x, vars),
+                    p.parse_formula(clock_network_arch.repeat.y, vars));
+                rib->set_drive_location(p.parse_formula(clock_network_arch.drive.offset, vars));
                 rib->set_drive_switch(clock_network_arch.drive.arch_switch_idx);
                 rib->set_drive_name(clock_network_arch.drive.name);
                 rib->set_tap_locations(
-                    parse_formula(clock_network_arch.tap.offset, vars),
-                    parse_formula(clock_network_arch.tap.increment, vars));
+                    p.parse_formula(clock_network_arch.tap.offset, vars),
+                    p.parse_formula(clock_network_arch.tap.increment, vars));
                 rib->set_tap_name(clock_network_arch.tap.name);
 
                 rib->create_segments(segment_inf);
@@ -114,7 +115,7 @@ void setup_clock_network_wires(const t_arch& Arch, std::vector<t_segment_inf>& s
     clock_networks_device.shrink_to_fit();
 }
 
-void setup_clock_connections(const t_arch& Arch) {
+void setup_clock_connections(const t_arch& Arch, FormulaParser& p) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& clock_connections_device = device_ctx.clock_connections;
     auto& grid = device_ctx.grid;
@@ -138,8 +139,8 @@ void setup_clock_connections(const t_arch& Arch) {
                 routing_to_clock->set_clock_switch_point_name(names[1]);
 
                 routing_to_clock->set_switch_location(
-                    parse_formula(clock_connection_arch.locationx, vars),
-                    parse_formula(clock_connection_arch.locationy, vars));
+                    p.parse_formula(clock_connection_arch.locationx, vars),
+                    p.parse_formula(clock_connection_arch.locationy, vars));
                 routing_to_clock->set_switch(clock_connection_arch.arch_switch_idx);
                 routing_to_clock->set_fc_val(clock_connection_arch.fc);
             }
