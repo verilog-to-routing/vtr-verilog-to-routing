@@ -2152,7 +2152,7 @@ int get_physical_pin(t_physical_tile_type_ptr physical_tile,
                      int pin) {
     t_logical_pin logical_pin(pin);
 
-    const auto &direct_map = physical_tile->tile_block_pin_directs_map.at(logical_block->index);
+    const auto& direct_map = physical_tile->tile_block_pin_directs_map.at(logical_block->index);
     auto result = direct_map.find(logical_pin);
 
     if (result == direct_map.end()) {
