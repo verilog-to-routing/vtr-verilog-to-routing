@@ -1,11 +1,10 @@
 #include "cp_analyser.hpp"
 
 #include "odin_types.h"
-#include "netlist_utils.h"
 
 
 /*---------------------------------------------------------------------------------------------
- * (function: depth_first_traversal_to_parital_map()
+ * function: dfs_to_cp() it starts from head and end of the netlist to calculate critical path
  *-------------------------------------------------------------------------------------------*/
 void dfs_to_cp(short marker_value_s2e, short marker_value_e2s, netlist_t *netlist)
 {
@@ -44,7 +43,7 @@ void dfs_to_cp(short marker_value_s2e, short marker_value_e2s, netlist_t *netlis
  *-------------------------------------------------------------------------------------------*/
 void dfs_s2e_cp(nnode_t *node, int traverse_mark_number, netlist_t *netlist)
 {
-	int i, j, k;
+	int i, j;
 
 	if (node->traverse_visited != traverse_mark_number)
 	{
@@ -92,7 +91,7 @@ void dfs_s2e_cp(nnode_t *node, int traverse_mark_number, netlist_t *netlist)
  *-------------------------------------------------------------------------------------------*/
 void dfs_e2s_cp(nnode_t *node, int traverse_mark_number, netlist_t *netlist)
 {
-	int i, j, k;
+	int i;
 
 	if (node->traverse_visited != traverse_mark_number)
 	{

@@ -57,14 +57,12 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 /* unique numbers to mark the nodes as we DFS traverse the netlist */
 #define PARTIAL_MAP_TRAVERSE_VALUE 10
-<<<<<<< Updated upstream
-=======
-// MEHRSHAD //
+
 #define PARTIAL_MAP_TRAVERSE_VALUE_GA_ADDERS 11
 #define PARTIAL_MAP_TRAVERSE_VALUE_CP_S2E_ANALYSOR 12
 #define PARTIAL_MAP_TRAVERSE_VALUE_CP_E2S_ANALYSOR 13
-// MEHRSHAD //
->>>>>>> Stashed changes
+
+
 #define OUTPUT_TRAVERSE_VALUE 12
 #define COUNT_NODES 14 /* NOTE that you can't call countnodes one after the other or the mark will be incorrect */
 #define COMBO_LOOP 15
@@ -537,15 +535,10 @@ struct nnet_t
 	short unique_net_data_id;
 	void *net_data;
 
-<<<<<<< Updated upstream
-=======
-	// MEHRSHAD //
 	short traverse_visited; // a way to mark if we've visited yet
 	int cp_up;
 	int cp_down;
-	// MEHRSHAD //
 
->>>>>>> Stashed changes
 	/////////////////////
 	// For simulation
 	std::shared_ptr<AtomicBuffer> values;
