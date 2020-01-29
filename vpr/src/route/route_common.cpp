@@ -473,14 +473,16 @@ void pathfinder_update_cost(float pres_fac, float acc_fac) {
 //       or realloc() must be eliminated from add_to_heap()
 //       because there is no C++ equivalent.
 void init_heap(const DeviceGrid& grid) {
-    if (heap != nullptr) {
-        vtr::free(heap + 1);
+    size_t target_heap_size = (grid.width() - 1) * (grid.height() - 1);
+    if (heap == nullptr || heap_size < target_heap_size) {
+        if (heap != nullptr) {
+            vtr::free(heap + 1);
+            heap = nullptr;
+        }
+        heap_size = (grid.width() - 1) * (grid.height() - 1);
+        heap = (t_heap**)vtr::malloc(heap_size * sizeof(t_heap*));
+        heap--; /* heap stores from [1..heap_size] */
     }
-
-    heap_size = (grid.width() - 1) * (grid.height() - 1);
-
-    // heap stores from [1..heap_size]
-    heap = (t_heap**)vtr::malloc(heap_size * sizeof(t_heap*)) - 1;
     heap_tail = 1;
 }
 
