@@ -13,7 +13,7 @@ class PlaceDelayModel {
 
     // Computes place delay model.
     virtual void compute(
-        const RouterDelayProfiler& route_profiler,
+        RouterDelayProfiler& route_profiler,
         const t_placer_opts& placer_opts,
         const t_router_opts& router_opts,
         int longest_length)
@@ -45,7 +45,7 @@ class DeltaDelayModel : public PlaceDelayModel {
         : delays_(std::move(delta_delays)) {}
 
     void compute(
-        const RouterDelayProfiler& router,
+        RouterDelayProfiler& router,
         const t_placer_opts& placer_opts,
         const t_router_opts& router_opts,
         int longest_length) override;
@@ -65,7 +65,7 @@ class DeltaDelayModel : public PlaceDelayModel {
 class OverrideDelayModel : public PlaceDelayModel {
   public:
     void compute(
-        const RouterDelayProfiler& route_profiler,
+        RouterDelayProfiler& route_profiler,
         const t_placer_opts& placer_opts,
         const t_router_opts& router_opts,
         int longest_length) override;
@@ -84,7 +84,7 @@ class OverrideDelayModel : public PlaceDelayModel {
   private:
     std::unique_ptr<DeltaDelayModel> base_delay_model_;
 
-    void compute_override_delay_model(const RouterDelayProfiler& router,
+    void compute_override_delay_model(RouterDelayProfiler& router,
                                       const t_router_opts& router_opts);
 
     struct t_override {

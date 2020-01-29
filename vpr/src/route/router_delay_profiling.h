@@ -9,9 +9,10 @@
 class RouterDelayProfiler {
   public:
     RouterDelayProfiler(const RouterLookahead* lookahead);
-    bool calculate_delay(int source_node, int sink_node, const t_router_opts& router_opts, float* net_delay) const;
+    bool calculate_delay(int source_node, int sink_node, const t_router_opts& router_opts, float* net_delay);
 
   private:
+    std::vector<int> modified_rr_node_inf_;
     const RouterLookahead* router_lookahead_;
 };
 
