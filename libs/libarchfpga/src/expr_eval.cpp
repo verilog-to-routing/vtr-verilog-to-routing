@@ -291,7 +291,10 @@ static void get_formula_object(const char* ch, int& ichar, const t_formula_data&
         } else {
             //A variable
             fobj->type = E_FML_NUMBER;
-            fobj->data.num = mydata.get_var_value(var_name);
+            fobj->data.num = mydata.get_var_value(
+                vtr::string_view(
+                    var_name.data(),
+                    var_name.size()));
         }
 
         ichar += (id_len - 1); //-1 since ichar is incremented at end of loop in formula_to_rpn()
