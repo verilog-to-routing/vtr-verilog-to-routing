@@ -262,7 +262,7 @@ class t_rr_graph_storage {
     size_t count_rr_switches(
         size_t num_arch_switches,
         t_arch_switch_inf* arch_switch_inf,
-        t_arch_switch_fanin& arch_switch_fanins) const;
+        t_arch_switch_fanin& arch_switch_fanins);
 
     // Maps arch_switch_inf indicies to rr_switch_inf indicies.
     //
@@ -340,7 +340,7 @@ class t_rr_graph_storage {
   private:
     friend struct edge_swapper;
     friend class edge_sort_iterator;
-    friend class edge_compare_src_node;
+    friend class edge_compare_dest_node;
     friend class edge_compare_src_node_and_configurable_first;
 
     t_rr_node_data& get(const RRNodeId& id) {
