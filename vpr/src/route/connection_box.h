@@ -4,11 +4,13 @@
 // This class relates IPIN rr nodes with connection box type and locations, used
 // for connection box driven map lookahead.
 
+#include <map>
+#include <string>
 #include <tuple>
-#include "vtr_strong_id.h"
+
 #include "vtr_flat_map.h"
 #include "vtr_range.h"
-#include <map>
+#include "vtr_strong_id.h"
 
 struct connection_box_tag {};
 typedef vtr::StrongId<connection_box_tag> ConnectionBoxId;
