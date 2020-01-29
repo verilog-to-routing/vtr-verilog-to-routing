@@ -13,7 +13,7 @@ RouterDelayProfiler::RouterDelayProfiler(
     const RouterLookahead* lookahead)
     : router_lookahead_(lookahead) {}
 
-bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const t_router_opts& router_opts, float* net_delay) const {
+bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const t_router_opts& router_opts, float* net_delay) {
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
      * to route this net, even ignoring congestion, it returns false.  In this  *
@@ -43,11 +43,11 @@ bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const 
 
     init_heap(device_ctx.grid);
 
-    std::vector<int> modified_rr_node_inf;
+    modified_rr_node_inf_.clear();
     RouterStats router_stats;
     t_heap* cheapest = timing_driven_route_connection_from_route_tree(rt_root,
                                                                       sink_node, cost_params, bounding_box, *router_lookahead_,
-                                                                      modified_rr_node_inf, router_stats);
+                                                                      modified_rr_node_inf_, router_stats);
 
     bool found_path = (cheapest != nullptr);
     if (found_path) {
@@ -65,7 +65,7 @@ bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const 
 
     //Reset for the next router call
     empty_heap();
-    reset_path_costs(modified_rr_node_inf);
+    reset_path_costs(modified_rr_node_inf_);
 
     return found_path;
 }

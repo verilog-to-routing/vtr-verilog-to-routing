@@ -144,7 +144,8 @@ static bool timing_driven_route_sink(ClusterNetId net_id,
                                      t_rt_node** rt_node_of_sink,
                                      const RouterLookahead& router_lookahead,
                                      SpatialRouteTreeLookup& spatial_rt_lookup,
-                                     RouterStats& router_stats);
+                                     RouterStats& router_stats,
+                                     std::vector<int>* scratch);
 
 static bool timing_driven_pre_route_to_clock_root(
     ClusterNetId net_id,
@@ -414,6 +415,7 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
     t_clb_opins_used best_clb_opins_used_locally;
     RoutingMetrics best_routing_metrics;
     int legal_convergence_count = 0;
+    std::vector<int> scratch;
 
     /*
      * On the first routing iteration ignore congestion to get reasonable net
@@ -475,7 +477,8 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
                                                            netlist_pin_lookup,
                                                            route_timing_info,
                                                            budgeting_inf,
-                                                           was_rerouted);
+                                                           was_rerouted,
+                                                           &scratch);
             if (!is_routable) {
                 return (false); //Impossible to route
             }
@@ -791,7 +794,8 @@ bool try_timing_driven_route_net(ClusterNetId net_id,
                                  const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                  std::shared_ptr<SetupTimingInfo> timing_info,
                                  route_budgets& budgeting_inf,
-                                 bool& was_rerouted) {
+                                 bool& was_rerouted,
+                                 std::vector<int>* scratch) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
@@ -821,7 +825,8 @@ bool try_timing_driven_route_net(ClusterNetId net_id,
                                             router_lookahead,
                                             netlist_pin_lookup,
                                             timing_info,
-                                            budgeting_inf);
+                                            budgeting_inf,
+                                            scratch);
 
         profiling::net_fanout_end(cluster_ctx.clb_nlist.net_sinks(net_id).size());
 
@@ -949,7 +954,8 @@ bool timing_driven_route_net(ClusterNetId net_id,
                              const RouterLookahead& router_lookahead,
                              const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                              std::shared_ptr<const SetupTimingInfo> timing_info,
-                             route_budgets& budgeting_inf) {
+                             route_budgets& budgeting_inf,
+                             std::vector<int>* scratch) {
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
      * to route this net, even ignoring congestion, it returns false.  In this  *
@@ -1073,7 +1079,8 @@ bool timing_driven_route_net(ClusterNetId net_id,
                                       rt_root, rt_node_of_sink,
                                       router_lookahead,
                                       spatial_route_tree_lookup,
-                                      router_stats))
+                                      router_stats,
+                                      scratch))
             return false;
 
         ++router_stats.connections_routed;
@@ -1211,7 +1218,8 @@ static bool timing_driven_route_sink(ClusterNetId net_id,
                                      t_rt_node** rt_node_of_sink,
                                      const RouterLookahead& router_lookahead,
                                      SpatialRouteTreeLookup& spatial_rt_lookup,
-                                     RouterStats& router_stats) {
+                                     RouterStats& router_stats,
+                                     std::vector<int>* scratch) {
     /* Build a path from the existing route tree rooted at rt_root to the target_node
      * add this branch to the existing route tree and update pathfinder costs and rr_node_route_inf to reflect this */
     auto& route_ctx = g_vpr_ctx.mutable_routing();
@@ -1225,7 +1233,9 @@ static bool timing_driven_route_sink(ClusterNetId net_id,
 
     VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
 
-    std::vector<int> modified_rr_node_inf;
+    std::vector<int>& modified_rr_node_inf = *scratch;
+    modified_rr_node_inf.resize(0);
+
     t_heap* cheapest = nullptr;
     t_bb bounding_box = route_ctx.route_bb[net_id];
 
