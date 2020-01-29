@@ -341,7 +341,7 @@ void create_rr_graph(const t_graph_type graph_type,
             return;
         }
 
-        HeapProfilerStart("vpr_build_rr");
+        //HeapProfilerStart("vpr_build_rr");
 
         free_rr_graph();
 
