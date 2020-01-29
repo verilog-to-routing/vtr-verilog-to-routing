@@ -18,7 +18,11 @@
 
 #include "ga_adder.hpp"
 
-short *fittest;
+adder_t **adders_list;
+adder_type_e *chromosome;
+long num_of_adders = 0;
+
+adder_type_e *fittest;
 int chromosome_fitness;
 
 npin_t **cloud_pins_list;
@@ -29,22 +33,56 @@ int num_cloud_pins;
 int num_cloud_nets;
 int num_cloud_nodes;
 
+void instantiate_soft_adder(nnode_t *node, short mark, netlist_t *netlist)
+{
+	// instantiate_add_w_carry(node, traverse_number, netlist);
+	adders_list = (adder_t **)vtr::realloc (adders_list, sizeof(adder_t*)*(num_of_adders+1));
+	chromosome = (adder_type_e*)vtr::realloc (chromosome, sizeof(adder_type_e)*(num_of_adders+1));
+	adders_list[num_of_adders] = allocate_adder_t();
+
+	//set the variable of the the adder_list array
+	adders_list[num_of_adders]->node = node;
+
+	adders_list[num_of_adders]->input->pins = node->input_pins;
+	adders_list[num_of_adders]->input->count = node->num_input_pins;
+	adders_list[num_of_adders]->input->is_adder = 'y';
+	
+	adders_list[num_of_adders]->output->pins = node->output_pins;
+	adders_list[num_of_adders]->output->count = node->num_output_pins;
+	adders_list[num_of_adders]->output->is_adder = 'y';
+
+	chromosome[num_of_adders] = adders_list[num_of_adders]->type;
+	num_of_adders++;
+}
+
+/*----------------------------------------------------------------------
+ * (function: allocate_adder_t) 
+ *--------------------------------------------------------------------*/
+adder_t* allocate_adder_t ()
+{
+	adder_t* new_adder = (adder_t *)vtr::malloc(sizeof(adder_t));
+
+	new_adder->input = init_signal_list();
+	new_adder->output = init_signal_list();
+
+	return new_adder;
+}
+
 /*----------------------------------------------------------------------
  * (function: partial_map_adders_top) 
  *--------------------------------------------------------------------*/
 void partial_map_adders_top(netlist_t *netlist)
 {
-	long generation_counter = 0;
 	generation_t *previous_generation = NULL;
 	generation_t *current_generation = NULL;
 
-	while (/*find the fittest configuration*/1)
+	for(int generation_counter = 0; generation_counter < 10; generation_counter++)
 	{
 		current_generation = create_generation(previous_generation, generation_counter);
-		generation_counter++;
 
-		for (int i=0; i<CHILDREN_NUM+1; i++)
+		for (int i=0; i<GENERATION_SIZE; i++)
 		{
+			vtr::free(chromosome);
 			chromosome = current_generation->chromosomes[i];
 			partial_map_adders(netlist);
 			// calculate fitness and find the fittest of the generation and change the flag of while if neccesary
@@ -52,11 +90,16 @@ void partial_map_adders_top(netlist_t *netlist)
 		}
 
 		previous_generation = current_generation;
-
-		if (generation_counter == 10) break;
+		if(NULL == fittest || false /* add fitness function here */)
+		{
+			int size_of_chromosome = sizeof(adder_type_e) * num_of_adders;
+			fittest = (adder_type_e*) vtr::malloc(size_of_chromosome);
+			memcpy(fittest, chromosome ,size_of_chromosome);
+		}
 	}
 
 	// create logic based on the fittest configuration
+	vtr::free(chromosome);
 	chromosome = fittest;
 	partial_map_adders(netlist);
 
@@ -106,7 +149,7 @@ void destroy_adders()
 *------------------------------------------------------------------*/
 adder_t *create_empty_adder (adder_t *previous_adder)
 {
-	adder_t *new_adder = (adder_t *) vtr::malloc (sizeof(adder_t));
+	adder_t *new_adder = allocate_adder_t();
 
 	new_adder->node = (nnode_t *) vtr::malloc(sizeof(nnode_t));
 	// Make copy of input pins
@@ -215,30 +258,33 @@ generation_t* create_generation (generation_t *previous_generation, int generati
 	// Initialization the structure of new generation
 	generation_t *new_generation = (generation_t *) vtr::malloc (sizeof(generation_t));
 	// Initilization of chromosomes in new generation
-	new_generation->fittest = (short *) vtr::malloc(sizeof(short)*num_of_adders);
-	new_generation->chromosomes = (short **) vtr::malloc(sizeof(short*)*CHILDREN_NUM+1);
-	for (int i=0; i<CHILDREN_NUM+1; i++)
-		new_generation->chromosomes[i] = (short *) vtr::malloc (sizeof(short)*num_of_adders);
-	
+	new_generation->fittest = (adder_type_e *) vtr::malloc(sizeof(adder_type_e)*num_of_adders);
+	new_generation->chromosomes = (adder_type_e **) vtr::malloc(sizeof(adder_type_e*)*GENERATION_SIZE);
 	// Here the value setting of the new generation chromosomes will occur
+	int chromosome_index = 0;
 	// The first chromosome of each generation is the parent
+	int parent_chromosome = chromosome_index;
+	chromosome_index += 1;
+
 	if (generation_counter == 0)
 	{
 		// Considering the parent of the first generation as the chromosome which is produced by the first traverse
-		new_generation->chromosomes[0] = chromosome;
-		new_generation->fitnesses[0] = chromosome_fitness;
+		new_generation->chromosomes[parent_chromosome] = chromosome;
+		new_generation->fitnesses[parent_chromosome] = chromosome_fitness;
 	}
 	else
 	{
-		new_generation->chromosomes[0] = previous_generation->fittest;
-		new_generation->fitnesses[0] = -1;
+		new_generation->chromosomes[parent_chromosome] = previous_generation->fittest;
+		new_generation->fitnesses[parent_chromosome] = -1;
 	}
-
-	for (int i=1; i<CHILDREN_NUM+1; i++)
+	while (chromosome_index < GENERATION_SIZE)
 	{
+		new_generation->chromosomes[chromosome_index] = (adder_type_e *) vtr::malloc (sizeof(adder_type_e)*num_of_adders);
+
 		// The children of each generation will be mutated with their parent chromosome
-		new_generation->chromosomes[i] = mutate (new_generation->chromosomes[0]);
-		new_generation->fitnesses[i] = -1;
+		new_generation->chromosomes[chromosome_index] = mutate (new_generation->chromosomes[parent_chromosome]);
+		new_generation->fitnesses[chromosome_index] = -1;
+		chromosome_index += 1;
 	}
 
 	return new_generation;
@@ -250,9 +296,9 @@ generation_t* create_generation (generation_t *previous_generation, int generati
 * which should be mutated randomly, and after that, it changes their 
 * values through rand function.
 *--------------------------------------------------------------------*/
-short *mutate (short *parent)
+adder_type_e *mutate (adder_type_e *parent)
 {
-	short *new_chromosome = (short*) vtr::malloc (sizeof(short)*num_of_adders);
+	adder_type_e *new_chromosome = (adder_type_e*) vtr::malloc (sizeof(adder_type_e)*num_of_adders);
 	// Find a point and flip the chromosome from there
 	// int cross_point = rand()%num_of_adders;
 	// Find points based on the mutation rate and change their values randomly
@@ -260,12 +306,14 @@ short *mutate (short *parent)
 	int num_of_genes_will_be_changed = mutation_rate*num_of_adders;
 
 	for (int i=0; i<num_of_adders; i++)
+	{
 		new_chromosome[i] = parent[i];
+	}
 
 	while (num_of_genes_will_be_changed != 0)
 	{
 		int point = rand()%num_of_adders;
-		new_chromosome[point] = rand()%3;
+		new_chromosome[point] = static_cast<adder_type_e>( rand() % adder_type_END );
 
 		num_of_genes_will_be_changed--;
 	}

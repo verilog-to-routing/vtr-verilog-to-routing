@@ -58,15 +58,10 @@ void instantiate_GE(nnode_t *node, operation_list type, short mark, netlist_t *n
 void instantiate_GT(nnode_t *node, operation_list type, short mark, netlist_t *netlist);
 void instantiate_shift_left_or_right(nnode_t *node, operation_list type, short mark, netlist_t *netlist);
 void instantiate_arithmetic_shift_right(nnode_t *node, short mark, netlist_t *netlist);
-void instantiate_unary_sub(nnode_t *node, short mark, netlist_t *netlist);
-void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist);
+void instantiate_unary_sub(adder_type_e type, nnode_t *node, short mark, netlist_t *netlist);
+void instantiate_sub_w_carry(adder_type_e type, nnode_t *node, short mark, netlist_t *netlist);
 
 void instantiate_soft_logic_ram(nnode_t *node, short mark, netlist_t *netlist);
-
-adder_t **adders_list;
-short *chromosome;
-
-long num_of_adders = 0;
 
 /*-------------------------------------------------------------------------
  * (function: partial_map_top)
@@ -192,67 +187,87 @@ void partial_map_node(nnode_t *node, short traverse_number, netlist_t *netlist)
 			break;
 
 		case ADD:
-			if (hard_adders && node->bit_width >= min_threshold_adder){
+			if (hard_adders && node->bit_width >= min_threshold_adder)
+			{
 				// Check if the size of this adder is greater than the hard vs soft logic threshold
-					instantiate_hard_adder(node, traverse_number, netlist);
-			}else{
-				// instantiate_add_w_carry(node, traverse_number, netlist);
-				adders_list = (adder_t **)vtr::realloc (adders_list, sizeof(adder_t*)*(num_of_adders+1));
-				chromosome = (short *)vtr::realloc (chromosome, sizeof(short)*(num_of_adders+1));
-				adders_list[num_of_adders] = (adder_t *)vtr::malloc(sizeof(adder_t));
-
-				//set the variable of the the adder_list array
-				adders_list[num_of_adders]->node = node;
-
-				adders_list[num_of_adders]->input->pins = node->input_pins;
-				adders_list[num_of_adders]->input->count = node->num_input_pins;
-				adders_list[num_of_adders]->input->is_adder = 'y';
-				
-				adders_list[num_of_adders]->output->pins = node->output_pins;
-				adders_list[num_of_adders]->output->count = node->num_output_pins;
-				adders_list[num_of_adders]->output->is_adder = 'y';
-
-				chromosome[num_of_adders] = adders_list[num_of_adders]->type;
-				num_of_adders++;
-
+				instantiate_hard_adder(node, traverse_number, netlist);
+			}
+			else
+			{
+				instantiate_soft_adder(node, traverse_number, netlist);
 			}
 			break;
+
 		case MINUS:
-			if (hard_adders)
+			if (hard_adders && node->bit_width >= min_threshold_adder)
 			{
 				if(node->num_input_port_sizes == 3)
 				{
 					int max_num = (node->input_port_sizes[0] >= node->input_port_sizes[1])? node->input_port_sizes[0] : node->input_port_sizes[1];
 					if (max_num >= min_add)
+					{
 						instantiate_hard_adder_subtraction(node, traverse_number, netlist);
+					}
 					else
-						instantiate_add_w_carry(DEFAULT, node, traverse_number, netlist);
+					{
+						/**
+						 * TODO: ! add this type to the list of adders 
+						 * this needs to be post-process differently than a regular adder
+						 * but it still is an adder
+						 */
+						instantiate_add_w_carry(RCA, node, traverse_number, netlist);
+					}
 				}
 				else if (node->num_input_port_sizes == 2)
 				{
-					instantiate_sub_w_carry(node, traverse_number, netlist);
+					/**
+					 * TODO: ! add this type to the list of adders 
+					 * this needs to be post-process differently than a regular adder
+					 * but it still is an adder
+					 */
+					instantiate_sub_w_carry(RCA, node, traverse_number, netlist);
 				}
 				else if (node->num_input_port_sizes == 1)
 				{
-					instantiate_unary_sub(node, traverse_number, netlist);
+					/**
+					 * TODO: ! add this type to the list of adders 
+					 * this needs to be post-process differently than a regular adder
+					 * but it still is an adder
+					 */
+					instantiate_unary_sub(RCA, node, traverse_number, netlist);
 				}
 				else
+				{
 					oassert(false);
+				}
 			}
-			else{
+			else
+			{
 				if (node->num_input_port_sizes == 2)
 				{
-					instantiate_sub_w_carry(node, traverse_number, netlist);
+					/**
+					 * TODO: ! add this type to the list of adders 
+					 * this needs to be post-process differently than a regular adder
+					 * but it still is an adder
+					 */
+					instantiate_sub_w_carry(RCA, node, traverse_number, netlist);
 				}
 				else if (node->num_input_port_sizes == 1)
 				{
-					instantiate_unary_sub(node, traverse_number, netlist);
+					/**
+					 * TODO: ! add this type to the list of adders 
+					 * this needs to be post-process differently than a regular adder
+					 * but it still is an adder
+					 */
+					instantiate_unary_sub(RCA, node, traverse_number, netlist);
 				}
 				else
+				{
 					oassert(false);
+				}
 			}
-
 			break;
+
 		case LOGICAL_EQUAL:
 		case NOT_EQUAL:
 			instantiate_EQUAL(node, node->type, traverse_number, netlist);
@@ -645,7 +660,7 @@ void instantiate_bitwise_logic(nnode_t *node, operation_list op, short mark, net
  *	multi-output logic functions (BLIF).  We use one function for the
  *	add, and one for the carry.
  *------------------------------------------------------------------------*/
-void instantiate_add_w_carry(short type, nnode_t *node, short mark, netlist_t *netlist)
+void instantiate_add_w_carry(adder_type_e type, nnode_t *node, short mark, netlist_t *netlist)
 {
 		// define locations in array when fetching pins
 	const int out = 0, input_a = 1, input_b = 2, pinout_count = 3;
@@ -672,7 +687,7 @@ void instantiate_add_w_carry(short type, nnode_t *node, short mark, netlist_t *n
  * 	This subtraction is intended for sof subtraction with output formats that can't handle
  * 	multi output logic functions.  We split the add and the carry over two logic functions.
  *-------------------------------------------------------------------------------------------*/
-void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist)
+void instantiate_sub_w_carry(adder_type_e type, nnode_t *node, short mark, netlist_t *netlist)
 {
 		// define locations in array when fetching pins
 	const int out = 0, input_a = 1, input_b = 2, pinout_count = 3;
@@ -693,7 +708,7 @@ void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist)
 		width[input_b] = node->input_port_sizes[1];
 	}
 
-	instantiate_add_w_carry_block(DEFAULT, width, node, mark, netlist, 1);
+	instantiate_add_w_carry_block(type, width, node, mark, netlist, 1);
 
 	vtr::free(width);
 }
@@ -702,9 +717,9 @@ void instantiate_sub_w_carry(nnode_t *node, short mark, netlist_t *netlist)
  * (function:  instantiate_unary_sub )
  *	Does 2's complement which is the equivalent of a unary subtraction as a HW implementation.
  *-------------------------------------------------------------------------------------------*/
-void instantiate_unary_sub(nnode_t *node, short mark, netlist_t *netlist)
+void instantiate_unary_sub(adder_type_e type, nnode_t *node, short mark, netlist_t *netlist)
 {
-	instantiate_sub_w_carry(node, mark, netlist);
+	instantiate_sub_w_carry(type, node, mark, netlist);
 }
 
 

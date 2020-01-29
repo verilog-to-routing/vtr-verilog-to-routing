@@ -106,7 +106,7 @@ struct global_args_t
     argparse::ArgValue<bool> all_warnings;
     argparse::ArgValue<bool> show_help;
 
-	argparse::ArgValue<bool> adder_def; // DEPRECATED
+	argparse::ArgValue<std::string> adder_def; // DEPRECATED
 	argparse::ArgValue<bool> ga_adder; // enable ga_adder
 	argparse::ArgValue<bool> cp_analyser; // enable cp_analyser
 
@@ -345,6 +345,14 @@ enum ids
 	// EDDIE: new enum value for ids to replace MEMORY from operation_t
 	RAM,
 	ids_END
+};
+
+enum adder_type_e
+{
+    RCA, // default, ripple carry adder
+    CSLA, // carry select adder
+    BE_CSLA, // binary excess carry select adder 
+	adder_type_END
 };
 
 struct typ

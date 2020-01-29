@@ -1571,7 +1571,7 @@ nnode_t *make_adder(operation_list funct, nnode_t *current_adder, nnode_t *previ
  * the first bit is built from an/xor gate, everything between could be anything
  * create a single adder block using adder_type_definition file input to select blk size and type
  *-------------------------------------------------------------------------------------------*/
-void instantiate_add_w_carry_block(short type, int *width, nnode_t *node, short mark, netlist_t *netlist, short subtraction)
+void instantiate_add_w_carry_block(adder_type_e type, int *width, nnode_t *node, short mark, netlist_t *netlist, short subtraction)
 {
 	//set the default
 	int blk_size 							= width[0];
@@ -1597,7 +1597,7 @@ void instantiate_add_w_carry_block(short type, int *width, nnode_t *node, short 
 				switch (type)
 				{
 					// Ripple Carry Adder
-					case DEFAULT:
+					case RCA:
 					{
 						//build adder
 						nnode_t *current_adder = make_adder(ADDER_FUNC, NULL, previous_carry, width, i, netlist, node, subtraction, mark);
@@ -1627,7 +1627,7 @@ void instantiate_add_w_carry_block(short type, int *width, nnode_t *node, short 
 						break;
 					}
 					//binary to excess Carry Select Adder
-					case BEC_CSLA:
+					case BE_CSLA:
 					{
 						nnode_t *current_adder_gnd = make_adder(ADDER_FUNC, NULL, previous_carry_gnd, width, i, netlist, node, subtraction, mark);
 						if(construct_last_carry_flag)
