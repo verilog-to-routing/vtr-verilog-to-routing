@@ -1102,8 +1102,8 @@ class t_chan_seg_details {
 
     const vtr::string_view type_name() const {
         return vtr::string_view(
-                seg_detail_->type_name.data(),
-                seg_detail_->type_name.size());
+            seg_detail_->type_name.data(),
+            seg_detail_->type_name.size());
     }
 
   public: //Modifiers

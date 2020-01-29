@@ -619,8 +619,8 @@ static std::vector<t_wire_switchpoint> get_switchpoint_wires(const DeviceGrid& g
         std::vector<t_wire_switchpoint> collected_wire_switchpoints;
 
         auto wire_type = vtr::string_view(
-                wire_switchpoints.segment_name.data(),
-                wire_switchpoints.segment_name.size());
+            wire_switchpoints.segment_name.data(),
+            wire_switchpoints.segment_name.size());
         const auto& points = wire_switchpoints.switchpoints;
 
         if ((*wire_type_sizes).find(wire_type) == (*wire_type_sizes).end()) {
