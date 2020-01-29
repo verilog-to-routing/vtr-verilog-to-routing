@@ -37,6 +37,10 @@ typedef std::vector<t_rr_edge_info> t_rr_edge_info_set;
 
 typedef vtr::NdMatrix<short, 6> t_sblock_pattern;
 
+struct t_opin_connections_scratchpad {
+    std::array<std::vector<int>, 8> scratch;
+};
+
 /******************* Subroutines exported by rr_graph2.c *********************/
 
 t_rr_node_indices alloc_and_load_rr_node_indices(const int max_chan_width,
@@ -52,11 +56,12 @@ int get_rr_node_index(int x,
                       const t_rr_node_indices& L_rr_node_indices);
 
 //Returns all the rr nodes associated with the specified coordinate (i.e. accross sides)
-std::vector<int> get_rr_node_indices(const t_rr_node_indices& L_rr_node_indices,
-                                     int x,
-                                     int y,
-                                     t_rr_type rr_type,
-                                     int ptc);
+void get_rr_node_indices(const t_rr_node_indices& L_rr_node_indices,
+                         int x,
+                         int y,
+                         t_rr_type rr_type,
+                         int ptc,
+                         std::vector<int>* indices);
 
 //Returns all x-channel or y-channel wires at the specified location
 std::vector<int> get_rr_node_chan_wires_at_location(const t_rr_node_indices& L_rr_node_indices,
@@ -164,7 +169,8 @@ int get_unidir_opin_connections(const int chan,
                                 const int max_len,
                                 const int max_chan_width,
                                 const t_rr_node_indices& L_rr_node_indices,
-                                bool* Fc_clipped);
+                                bool* Fc_clipped,
+                                t_opin_connections_scratchpad* scratchpad);
 
 int get_track_to_pins(int seg,
                       int chan,
@@ -199,7 +205,8 @@ int get_track_to_tracks(const int from_chan,
                         const enum e_directionality directionality,
                         const t_rr_node_indices& L_rr_node_indices,
                         const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
-                        t_sb_connection_map* sb_conn_map);
+                        t_sb_connection_map* sb_conn_map,
+                        t_opin_connections_scratchpad* scratchpad);
 
 t_sblock_pattern alloc_sblock_pattern_lookup(const DeviceGrid& grid,
                                              const int max_chan_width);
@@ -212,7 +219,8 @@ void load_sblock_pattern_lookup(const int i,
                                 const t_chan_details& chan_details_y,
                                 const int Fs,
                                 const enum e_switch_block_type switch_block_type,
-                                t_sblock_pattern& sblock_pattern);
+                                t_sblock_pattern& sblock_pattern,
+                                t_opin_connections_scratchpad* scratchpad);
 
 int* get_seg_track_counts(const int num_sets,
                           const std::vector<t_segment_inf>& segment_inf,

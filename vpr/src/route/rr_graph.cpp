@@ -114,7 +114,8 @@ static void build_bidir_rr_opins(const int i,
                                  const t_direct_inf* directs,
                                  const int num_directs,
                                  const t_clb_to_clb_directs* clb_to_clb_directs,
-                                 const int num_seg_types);
+                                 const int num_seg_types,
+                                 t_opin_connections_scratchpad* scratchpad);
 
 static void build_unidir_rr_opins(const int i,
                                   const int j,
@@ -133,7 +134,8 @@ static void build_unidir_rr_opins(const int i,
                                   const t_direct_inf* directs,
                                   const int num_directs,
                                   const t_clb_to_clb_directs* clb_to_clb_directs,
-                                  const int num_seg_types);
+                                  const int num_seg_types,
+                                  t_opin_connections_scratchpad* scratchpad);
 
 static int get_opin_direct_connecions(int x,
                                       int y,
@@ -145,7 +147,8 @@ static int get_opin_direct_connecions(int x,
                                       const t_rr_graph_storage& rr_nodes,
                                       const t_direct_inf* directs,
                                       const int num_directs,
-                                      const t_clb_to_clb_directs* clb_to_clb_directs);
+                                      const t_clb_to_clb_directs* clb_to_clb_directs,
+                                      t_opin_connections_scratchpad* scratchpad);
 
 static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(t_rr_graph_storage& L_rr_node,
                                                                   const int num_seg_types,
@@ -212,7 +215,8 @@ static void build_rr_sinks_sources(const int i,
                                    t_rr_edge_info_set& rr_edges_to_create,
                                    const t_rr_node_indices& L_rr_node_indices,
                                    const int delayless_switch,
-                                   const DeviceGrid& grid);
+                                   const DeviceGrid& grid,
+                                   t_opin_connections_scratchpad* scratchpad);
 
 static void build_rr_chan(const int i,
                           const int j,
@@ -232,7 +236,8 @@ static void build_rr_chan(const int i,
                           t_rr_edge_info_set& created_rr_edges,
                           t_rr_graph_storage& L_rr_node,
                           const int wire_to_ipin_switch,
-                          const enum e_directionality directionality);
+                          const enum e_directionality directionality,
+                          t_opin_connections_scratchpad* scratchpad);
 
 void uniquify_edges(t_rr_edge_info_set& rr_edges_to_create);
 
@@ -631,13 +636,15 @@ static void build_rr_graph(const t_graph_type graph_type,
         } else {
             /* it looks like we get unbalanced muxing from this switch block code with Fs > 3 */
             VTR_ASSERT(Fs == 3);
+            t_opin_connections_scratchpad scratchpad;
 
             unidir_sb_pattern = alloc_sblock_pattern_lookup(grid, max_chan_width);
             for (size_t i = 0; i < grid.width() - 1; i++) {
                 for (size_t j = 0; j < grid.height() - 1; j++) {
                     load_sblock_pattern_lookup(i, j, grid, &nodes_per_chan,
                                                chan_details_x, chan_details_y,
-                                               Fs, sb_type, unidir_sb_pattern);
+                                               Fs, sb_type, unidir_sb_pattern,
+                                               &scratchpad);
                 }
             }
 
@@ -1176,6 +1183,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(t_rr_graph_sto
     //RR graph creation is the high-watermark of VPR's memory use.
     t_rr_edge_info_set rr_edges_to_create;
 
+    t_opin_connections_scratchpad scratchpad;
+
     /* If Fc gets clipped, this will be flagged to true */
     *Fc_clipped = false;
 
@@ -1183,7 +1192,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(t_rr_graph_sto
     for (size_t i = 0; i < grid.width(); ++i) {
         for (size_t j = 0; j < grid.height(); ++j) {
             build_rr_sinks_sources(i, j, L_rr_node, rr_edges_to_create, L_rr_node_indices,
-                                   delayless_switch, grid);
+                                   delayless_switch, grid, &scratchpad);
 
             //Create the actual SOURCE->OPIN, IPIN->SINK edges
             uniquify_edges(rr_edges_to_create);
@@ -1200,14 +1209,14 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(t_rr_graph_sto
                     build_bidir_rr_opins(i, j, side, L_rr_node_indices, L_rr_node,
                                          opin_to_track_map, Fc_out, rr_edges_to_create, chan_details_x, chan_details_y,
                                          grid,
-                                         directs, num_directs, clb_to_clb_directs, num_seg_types);
+                                         directs, num_directs, clb_to_clb_directs, num_seg_types, &scratchpad);
                 } else {
                     VTR_ASSERT(UNI_DIRECTIONAL == directionality);
                     bool clipped;
                     build_unidir_rr_opins(i, j, side, grid, Fc_out, max_chan_width,
                                           chan_details_x, chan_details_y, Fc_xofs, Fc_yofs,
                                           rr_edges_to_create, &clipped, L_rr_node_indices, L_rr_node,
-                                          directs, num_directs, clb_to_clb_directs, num_seg_types);
+                                          directs, num_directs, clb_to_clb_directs, num_seg_types, &scratchpad);
                     if (clipped) {
                         *Fc_clipped = true;
                     }
@@ -1233,7 +1242,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(t_rr_graph_sto
                               sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
                               L_rr_node_indices, rr_edges_to_create, L_rr_node,
                               wire_to_ipin_switch,
-                              directionality);
+                              directionality, &scratchpad);
 
                 //Create the actual CHAN->CHAN edges
                 uniquify_edges(rr_edges_to_create);
@@ -1248,7 +1257,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(t_rr_graph_sto
                               sblock_pattern, Fs / 3, chan_details_x, chan_details_y,
                               L_rr_node_indices, rr_edges_to_create, L_rr_node,
                               wire_to_ipin_switch,
-                              directionality);
+                              directionality, &scratchpad);
 
                 //Create the actual CHAN->CHAN edges
                 uniquify_edges(rr_edges_to_create);
@@ -1293,7 +1302,8 @@ static void build_bidir_rr_opins(const int i,
                                  const t_direct_inf* directs,
                                  const int num_directs,
                                  const t_clb_to_clb_directs* clb_to_clb_directs,
-                                 const int num_seg_types) {
+                                 const int num_seg_types,
+                                 t_opin_connections_scratchpad* scratchpad) {
     //Don't connect pins which are not adjacent to channels around the perimeter
     if ((i == 0 && side != RIGHT)
         || (i == int(grid.width() - 1) && side != LEFT)
@@ -1338,7 +1348,7 @@ static void build_bidir_rr_opins(const int i,
         /* Add in direct connections */
         get_opin_direct_connecions(i, j, side, pin_index,
                                    node_index, rr_edges_to_create, L_rr_node_indices, rr_nodes,
-                                   directs, num_directs, clb_to_clb_directs);
+                                   directs, num_directs, clb_to_clb_directs, scratchpad);
     }
 }
 
@@ -1380,7 +1390,8 @@ static void build_rr_sinks_sources(const int i,
                                    t_rr_edge_info_set& rr_edges_to_create,
                                    const t_rr_node_indices& L_rr_node_indices,
                                    const int delayless_switch,
-                                   const DeviceGrid& grid) {
+                                   const DeviceGrid& grid,
+                                   t_opin_connections_scratchpad* scratchpad) {
     /* Loads IPIN, SINK, SOURCE, and OPIN.
      * Loads IPIN to SINK edges, and SOURCE to OPIN edges */
 
@@ -1408,7 +1419,8 @@ static void build_rr_sinks_sources(const int i,
                 for (int height_offset = 0; height_offset < type->height; ++height_offset) {
                     for (int ipin = 0; ipin < class_inf[iclass].num_pins; ++ipin) {
                         int pin_num = class_inf[iclass].pinlist[ipin];
-                        auto physical_pins = get_rr_node_indices(L_rr_node_indices, i + width_offset, j + height_offset, OPIN, pin_num);
+                        std::vector<int>& physical_pins = scratchpad->scratch[0];
+                        get_rr_node_indices(L_rr_node_indices, i + width_offset, j + height_offset, OPIN, pin_num, &physical_pins);
                         opin_nodes.insert(opin_nodes.end(), physical_pins.begin(), physical_pins.end());
                     }
                 }
@@ -1522,7 +1534,8 @@ static void build_rr_chan(const int x_coord,
                           t_rr_edge_info_set& rr_edges_to_create,
                           t_rr_graph_storage& L_rr_node,
                           const int wire_to_ipin_switch,
-                          const enum e_directionality directionality) {
+                          const enum e_directionality directionality,
+                          t_opin_connections_scratchpad* scratchpad) {
     /* this function builds both x and y-directed channel segments, so set up our
      * coordinates based on channel type */
 
@@ -1603,7 +1616,7 @@ static void build_rr_chan(const int x_coord,
                                                  from_seg_details, to_seg_details, opposite_chan_details,
                                                  directionality,
                                                  L_rr_node_indices,
-                                                 switch_block_conn, sb_conn_map);
+                                                 switch_block_conn, sb_conn_map, scratchpad);
             }
         }
         if (chan_coord < chan_dimension) {
@@ -1621,7 +1634,7 @@ static void build_rr_chan(const int x_coord,
                                                  from_seg_details, to_seg_details, opposite_chan_details,
                                                  directionality,
                                                  L_rr_node_indices,
-                                                 switch_block_conn, sb_conn_map);
+                                                 switch_block_conn, sb_conn_map, scratchpad);
             }
         }
 
@@ -1651,7 +1664,7 @@ static void build_rr_chan(const int x_coord,
                                                      from_seg_details, to_seg_details, from_chan_details,
                                                      directionality,
                                                      L_rr_node_indices,
-                                                     switch_block_conn, sb_conn_map);
+                                                     switch_block_conn, sb_conn_map, scratchpad);
                 }
             }
         }
@@ -2472,7 +2485,7 @@ std::string describe_rr_node(int inode) {
 
     return msg;
 }
-static void build_unidir_rr_opins(const int i, const int j, const e_side side, const DeviceGrid& grid, const std::vector<vtr::Matrix<int>>& Fc_out, const int max_chan_width, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, vtr::NdMatrix<int, 3>& Fc_xofs, vtr::NdMatrix<int, 3>& Fc_yofs, t_rr_edge_info_set& rr_edges_to_create, bool* Fc_clipped, const t_rr_node_indices& L_rr_node_indices, const t_rr_graph_storage& rr_nodes, const t_direct_inf* directs, const int num_directs, const t_clb_to_clb_directs* clb_to_clb_directs, const int num_seg_types) {
+static void build_unidir_rr_opins(const int i, const int j, const e_side side, const DeviceGrid& grid, const std::vector<vtr::Matrix<int>>& Fc_out, const int max_chan_width, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, vtr::NdMatrix<int, 3>& Fc_xofs, vtr::NdMatrix<int, 3>& Fc_yofs, t_rr_edge_info_set& rr_edges_to_create, bool* Fc_clipped, const t_rr_node_indices& L_rr_node_indices, const t_rr_graph_storage& rr_nodes, const t_direct_inf* directs, const int num_directs, const t_clb_to_clb_directs* clb_to_clb_directs, const int num_seg_types, t_opin_connections_scratchpad* scratchpad) {
     /*
      * This routine adds the edges from opins to channels at the specified
      * grid location (i,j) and grid tile side
@@ -2549,7 +2562,7 @@ static void build_unidir_rr_opins(const int i, const int j, const e_side side, c
                                         opin_node_index,
                                         rr_edges_to_create,
                                         Fc_ofs, max_len, max_chan_width,
-                                        L_rr_node_indices, &clipped);
+                                        L_rr_node_indices, &clipped, scratchpad);
             if (clipped) {
                 *Fc_clipped = true;
             }
@@ -2557,7 +2570,7 @@ static void build_unidir_rr_opins(const int i, const int j, const e_side side, c
 
         /* Add in direct connections */
         get_opin_direct_connecions(i, j, side, pin_index, opin_node_index, rr_edges_to_create, L_rr_node_indices, rr_nodes,
-                                   directs, num_directs, clb_to_clb_directs);
+                                   directs, num_directs, clb_to_clb_directs, scratchpad);
     }
 }
 
@@ -2710,7 +2723,8 @@ static int get_opin_direct_connecions(int x,
                                       const t_rr_graph_storage& rr_nodes,
                                       const t_direct_inf* directs,
                                       const int num_directs,
-                                      const t_clb_to_clb_directs* clb_to_clb_directs) {
+                                      const t_clb_to_clb_directs* clb_to_clb_directs,
+                                      t_opin_connections_scratchpad* scratchpad) {
     auto& device_ctx = g_vpr_ctx.device();
 
     t_physical_tile_type_ptr curr_type = device_ctx.grid[x][y].type;
@@ -2785,7 +2799,8 @@ static int get_opin_direct_connecions(int x,
                         //if (ipin > target_type->num_pins) continue; //Invalid z-offset
 
                         /* Add new ipin edge to list of edges */
-                        std::vector<int> inodes;
+                        std::vector<int>& inodes = scratchpad->scratch[0];
+                        inodes.resize(0);
 
                         if (directs[i].to_side != NUM_SIDES) {
                             //Explicit side specified, only create if pin exists on that side
@@ -2796,8 +2811,8 @@ static int get_opin_direct_connecions(int x,
                             }
                         } else {
                             //No side specified, get all candidates
-                            inodes = get_rr_node_indices(L_rr_node_indices, x + directs[i].x_offset, y + directs[i].y_offset,
-                                                         IPIN, ipin);
+                            get_rr_node_indices(L_rr_node_indices, x + directs[i].x_offset, y + directs[i].y_offset,
+                                                IPIN, ipin, &inodes);
                         }
 
                         if (inodes.size() > 0) {
