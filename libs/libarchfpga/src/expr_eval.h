@@ -7,24 +7,37 @@
 #include "arch_error.h"
 #include <cstring>
 
+#include "vtr_string_view.h"
+#include "vtr_flat_map.h"
+
 /**** Structs ****/
 
 class t_formula_data {
   public:
-    void set_var_value(std::string var, int value) { vars_[var] = value; }
+    void clear() {
+        vars_.clear();
+    }
 
-    int get_var_value(std::string var) const {
+    void set_var_value(vtr::string_view var, int value) { vars_[var] = value; }
+    void set_var_value(const char* var, int value) { vars_[vtr::string_view(var)] = value; }
+
+    int get_var_value(const std::string& var) const {
+        return get_var_value(vtr::string_view(var.data(), var.size()));
+    }
+
+    int get_var_value(vtr::string_view var) const {
         auto iter = vars_.find(var);
         if (iter == vars_.end()) {
+            std::string copy(var.data(), var.size());
             archfpga_throw(__FILE__, __LINE__,
-                           "No value found for variable '%s' from expression\n", var.c_str());
+                           "No value found for variable '%s' from expression\n", copy.c_str());
         }
 
         return iter->second;
     }
 
   private:
-    std::map<std::string, int> vars_;
+    vtr::flat_map<vtr::string_view, int> vars_;
 };
 
 /**** Enums ****/
