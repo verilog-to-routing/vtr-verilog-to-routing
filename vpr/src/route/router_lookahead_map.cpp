@@ -240,10 +240,13 @@ void compute_router_lookahead(int num_segments) {
     alloc_cost_map(num_segments);
 
     /* run Dijkstra's algorithm for each segment type & channel type combination */
+
+    /* allocate the cost map for use with each iseg/chan_type */
+    t_routing_cost_map routing_cost_map({device_ctx.grid.width(), device_ctx.grid.height()});
     for (int iseg = 0; iseg < num_segments; iseg++) {
         for (e_rr_type chan_type : {CHANX, CHANY}) {
-            /* allocate the cost map for this iseg/chan_type */
-            t_routing_cost_map routing_cost_map({device_ctx.grid.width(), device_ctx.grid.height()});
+            /* reset cost most for this segment */
+            routing_cost_map.fill(Expansion_Cost_Entry());
 
             for (int ref_inc = 0; ref_inc < 3; ref_inc++) {
                 for (int track_offset = 0; track_offset < MAX_TRACK_OFFSET; track_offset += 2) {
