@@ -192,11 +192,16 @@ struct t_reachable_wire_inf {
 typedef vtr::Matrix<Expansion_Cost_Entry> t_routing_cost_map; //[0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
 
 typedef std::vector<std::vector<std::map<int, t_reachable_wire_inf>>> t_src_opin_reachable_wires; //[0..device_ctx.physical_tile_types.size()-1][0..max_ptc-1][wire_seg_index]
-                                                                                                  // ^                                           ^             ^
-                                                                                                  // |                                           |             |
-                                                                                                  // physical block type index                   |             Reachable wire info
-                                                                                                  //                                             |
-                                                                                                  //                                             SOURCE/OPIN ptc
+
+struct t_dijkstra_data {
+    /* a list of boolean flags (one for each rr node) to figure out if a certain node has already been expanded */
+    std::vector<bool> node_expanded;
+    /* for each node keep a list of the cost with which that node has been visited (used to determine whether to push
+     * a candidate node onto the expansion queue */
+    std::vector<float> node_visited_costs;
+    /* a priority queue for expansion */
+    std::priority_queue<PQ_Entry> pq;
+};
 
 /******** File-Scope Variables ********/
 
@@ -220,7 +225,7 @@ static void free_cost_map();
 static int get_start_node_ind(int start_x, int start_y, int target_x, int target_y, t_rr_type rr_type, int seg_index, int track_offset);
 /* runs Dijkstra's algorithm from specified node until all nodes have been visited. Each time a pin is visited, the delay/congestion information
  * to that pin is stored is added to an entry in the routing_cost_map */
-static void run_dijkstra(int start_node_ind, int start_x, int start_y, t_routing_cost_map& routing_cost_map);
+static void run_dijkstra(int start_node_ind, int start_x, int start_y, t_routing_cost_map& routing_cost_map, t_dijkstra_data* data);
 /* iterates over the children of the specified node and selectively pushes them onto the priority queue */
 static void expand_dijkstra_neighbours(PQ_Entry parent_entry, std::vector<float>& node_visited_costs, std::vector<bool>& node_expanded, std::priority_queue<PQ_Entry>& pq);
 /* sets the lookahead cost map entries based on representative cost entries from routing_cost_map */
@@ -377,6 +382,7 @@ static void compute_router_wire_lookahead(int num_segments) {
 
     /* allocate the cost map for use with each iseg/chan_type */
     t_routing_cost_map routing_cost_map({device_ctx.grid.width(), device_ctx.grid.height()});
+    t_dijkstra_data data;
     for (int iseg = 0; iseg < num_segments; iseg++) {
         for (e_rr_type chan_type : {CHANX, CHANY}) {
             /* reset cost most for this segment */
@@ -394,7 +400,7 @@ static void compute_router_wire_lookahead(int num_segments) {
                     }
 
                     /* run Dijkstra's algorithm */
-                    run_dijkstra(start_node_ind, REF_X + ref_inc, REF_Y + ref_inc, routing_cost_map);
+                    run_dijkstra(start_node_ind, REF_X + ref_inc, REF_Y + ref_inc, routing_cost_map, &data);
                 }
             }
 
@@ -430,6 +436,7 @@ static void compute_router_src_opin_lookahead() {
     };
 
     std::priority_queue<t_pq_entry> pq;
+    std::vector<int> rr_node_indices;
 
     //We assume that the routing connectivity of each instance of a physical tile is the same,
     //and so only measure one instance of each type
@@ -442,7 +449,8 @@ static void compute_router_src_opin_lookahead() {
         }
 
         for (e_rr_type rr_type : {SOURCE, OPIN}) {
-            for (int inode : get_rr_node_indices(device_ctx.rr_node_indices, sample_loc.x(), sample_loc.y(), rr_type)) {
+            get_rr_node_indices(device_ctx.rr_node_indices, sample_loc.x(), sample_loc.y(), rr_type, &rr_node_indices);
+            for (int inode : rr_node_indices) {
                 if (inode < 0) continue;
 
                 int ptc = device_ctx.rr_nodes[inode].ptc_num();
@@ -610,16 +618,22 @@ static void free_cost_map() {
 
 /* runs Dijkstra's algorithm from specified node until all nodes have been visited. Each time a pin is visited, the delay/congestion information
  * to that pin is stored is added to an entry in the routing_cost_map */
-static void run_dijkstra(int start_node_ind, int start_x, int start_y, t_routing_cost_map& routing_cost_map) {
+static void run_dijkstra(int start_node_ind, int start_x, int start_y, t_routing_cost_map& routing_cost_map, t_dijkstra_data* data) {
     auto& device_ctx = g_vpr_ctx.device();
 
-    /* a list of boolean flags (one for each rr node) to figure out if a certain node has already been expanded */
-    std::vector<bool> node_expanded(device_ctx.rr_nodes.size(), false);
-    /* for each node keep a list of the cost with which that node has been visited (used to determine whether to push
-     * a candidate node onto the expansion queue */
-    std::vector<float> node_visited_costs(device_ctx.rr_nodes.size(), -1.0);
+    std::vector<bool>& node_expanded = data->node_expanded;
+    node_expanded.resize(device_ctx.rr_nodes.size());
+    std::fill(node_expanded.begin(), node_expanded.end(), false);
+
+    std::vector<float>& node_visited_costs = data->node_visited_costs;
+    node_visited_costs.resize(device_ctx.rr_nodes.size());
+    std::fill(node_visited_costs.begin(), node_visited_costs.end(), -1.0);
+
     /* a priority queue for expansion */
-    std::priority_queue<PQ_Entry> pq;
+    std::priority_queue<PQ_Entry>& pq = data->pq;
+    while (!pq.empty()) {
+        pq.pop();
+    }
 
     /* first entry has no upstream delay or congestion */
     PQ_Entry first_entry(start_node_ind, UNDEFINED, 0, 0, 0, true);
