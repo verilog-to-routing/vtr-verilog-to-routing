@@ -35,7 +35,8 @@ bool try_timing_driven_route_net(ClusterNetId net_id,
                                  const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                  std::shared_ptr<SetupTimingInfo> timing_info,
                                  route_budgets& budgeting_inf,
-                                 bool& was_rerouted);
+                                 bool& was_rerouted,
+                                 std::vector<int>* scratch);
 
 bool timing_driven_route_net(ClusterNetId net_id,
                              int itry,
@@ -49,7 +50,8 @@ bool timing_driven_route_net(ClusterNetId net_id,
                              const RouterLookahead& router_lookahead,
                              const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                              std::shared_ptr<const SetupTimingInfo> timing_info,
-                             route_budgets& budgeting_inf);
+                             route_budgets& budgeting_inf,
+                             std::vector<int>* scratch);
 
 void alloc_timing_driven_route_structs(float** pin_criticality_ptr,
                                        int** sink_order_ptr,
