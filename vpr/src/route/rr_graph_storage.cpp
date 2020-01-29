@@ -254,6 +254,43 @@ class edge_compare_src_node_and_configurable_first {
     const std::vector<t_rr_switch_inf>& rr_switch_inf_;
 };
 
+class edge_compare_dest_node {
+  public:
+    bool operator()(const t_rr_edge_info& lhs, const edge_swapper& rhs) {
+        auto lhs_dest_node = RRNodeId(lhs.to_node);
+
+        auto rhs_edge = RREdgeId(rhs.idx_);
+        auto rhs_dest_node = rhs.storage_->edge_dest_node_[rhs_edge];
+
+        return lhs_dest_node < rhs_dest_node;
+    }
+
+    bool operator()(const t_rr_edge_info& lhs, const t_rr_edge_info& rhs) {
+        auto lhs_dest_node = lhs.to_node;
+
+        auto rhs_dest_node = rhs.to_node;
+
+        return lhs_dest_node < rhs_dest_node;
+    }
+    bool operator()(const edge_swapper& lhs, const t_rr_edge_info& rhs) {
+        auto lhs_edge = RREdgeId(lhs.idx_);
+        auto lhs_dest_node = lhs.storage_->edge_dest_node_[lhs_edge];
+
+        auto rhs_dest_node = RRNodeId(rhs.to_node);
+
+        return lhs_dest_node < rhs_dest_node;
+    }
+    bool operator()(const edge_swapper& lhs, const edge_swapper& rhs) {
+        auto lhs_edge = RREdgeId(lhs.idx_);
+        auto lhs_dest_node = lhs.storage_->edge_dest_node_[lhs_edge];
+
+        auto rhs_edge = RREdgeId(rhs.idx_);
+        auto rhs_dest_node = rhs.storage_->edge_dest_node_[rhs_edge];
+
+        return lhs_dest_node < rhs_dest_node;
+    }
+};
+
 void t_rr_graph_storage::assign_first_edges() {
     VTR_ASSERT(first_edge_.empty());
 
@@ -334,37 +371,51 @@ void t_rr_graph_storage::init_fan_in() {
 size_t t_rr_graph_storage::count_rr_switches(
     size_t num_arch_switches,
     t_arch_switch_inf* arch_switch_inf,
-    t_arch_switch_fanin& arch_switch_fanins) const {
+    t_arch_switch_fanin& arch_switch_fanins) {
+    VTR_ASSERT(!partitioned_);
     VTR_ASSERT(!remapped_edges_);
 
     edges_read_ = true;
     int num_rr_switches = 0;
 
-    //Collect the fan-in per switch type for each node in the graph
+    // Sort by destination node to collect per node/per switch fan in
+    // values.
     //
-    //Note that since we don't store backward edge info in the RR graph we need to walk
-    //the whole graph to get the per-switch-type fanin info
-    vtr::vector<RRNodeId, vtr::flat_map<int, int>> inward_switch_inf(size()); //[to_node][arch_switch] -> fanin
-    for (size_t iedge = 0; iedge < edge_src_node_.size(); ++iedge) {
-        RREdgeId edge = RREdgeId(iedge);
+    // This sort is safe to do because partition_edges() has not been invoked yet.
+    std::stable_sort(
+        edge_sort_iterator(this, 0),
+        edge_sort_iterator(this, edge_dest_node_.size()),
+        edge_compare_dest_node());
 
-        int iswitch = edge_switch_[edge];
-        RRNodeId to_node = edge_dest_node_[edge];
-
-        if (inward_switch_inf[to_node].count(iswitch) == 0) {
-            inward_switch_inf[to_node][iswitch] = 0;
-        }
-        inward_switch_inf[to_node][iswitch]++;
-    }
-
+    //Collect the fan-in per switch type for each node in the graph
     //Record the unique switch type/fanin combinations
-    for (size_t inode = 0; inode < size(); ++inode) {
-        RRNodeId node = RRNodeId(inode);
-        for (auto& switch_fanin : inward_switch_inf[node]) {
-            int iswitch, fanin;
-            std::tie(iswitch, fanin) = switch_fanin;
+    std::vector<int> arch_switch_counts;
+    arch_switch_counts.resize(num_arch_switches, 0);
+    auto first_edge = edge_dest_node_.begin();
+    do {
+        RRNodeId node = *first_edge;
+        auto last_edge = std::find_if(first_edge, edge_dest_node_.end(), [node](const RRNodeId& other) {
+            return other != node;
+        });
 
+        size_t first_edge_offset = first_edge - edge_dest_node_.begin();
+        size_t last_edge_offset = last_edge - edge_dest_node_.begin();
+
+        std::fill(arch_switch_counts.begin(), arch_switch_counts.end(), 0);
+        for (auto edge_switch : vtr::Range<decltype(edge_switch_)::const_iterator>(
+                 edge_switch_.begin() + first_edge_offset,
+                 edge_switch_.begin() + last_edge_offset)) {
+            arch_switch_counts[edge_switch] += 1;
+        }
+
+        for (size_t iswitch = 0; iswitch < arch_switch_counts.size(); ++iswitch) {
+            if (arch_switch_counts[iswitch] == 0) {
+                continue;
+            }
+
+            auto fanin = arch_switch_counts[iswitch];
             VTR_ASSERT_SAFE(iswitch < (ssize_t)num_arch_switches);
+
             if (arch_switch_inf[iswitch].fixed_Tdel()) {
                 //If delay is independent of fanin drop the unique fanin info
                 fanin = UNDEFINED;
@@ -374,7 +425,10 @@ size_t t_rr_graph_storage::count_rr_switches(
                 arch_switch_fanins[iswitch][fanin] = num_rr_switches++; //Assign it a unique index
             }
         }
-    }
+
+        first_edge = last_edge;
+
+    } while (first_edge != edge_dest_node_.end());
 
     return num_rr_switches;
 }
