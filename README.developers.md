@@ -226,11 +226,11 @@ the logs from GCS.
 An GCS example link from the "Invocation Details" tab:
 
 ```
-https://pantheon.corp.google.com/storage/browser/vtr-verilog-to-routing/artifacts/prod/foss-fpga-tools/verilog-to-routing/upstream/presubmit/nightly/52/20200123-165906
+https://console.cloud.google.com/storage/browser/vtr-verilog-to-routing/artifacts/prod/foss-fpga-tools/verilog-to-routing/upstream/presubmit/nightly/75/20200129-124904
 ```
 
 To download all the files from that run, remove
-`https://pantheon.corp.google.com/storage/browser/` from the beginning of the
+`https://console.cloud.google.com/storage/browser/` from the beginning of the
 URL, and invoke gsutil with the remainder, like so:
 
 ```
