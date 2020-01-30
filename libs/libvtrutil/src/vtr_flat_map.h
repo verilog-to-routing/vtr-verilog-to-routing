@@ -10,10 +10,10 @@
 namespace vtr {
 
 //Forward declaration
-template<class K, class V, class Compare = std::less<K>, class Storage = std::vector<std::pair<K, V>>>
+template<class K, class V, class Compare = std::less<K>>
 class flat_map;
 
-template<class K, class V, class Compare = std::less<K>, class Storage = std::vector<std::pair<K, V>>>
+template<class K, class V, class Compare = std::less<K>>
 class flat_map2;
 
 //Helper function to create a flat map from a vector of pairs
@@ -48,7 +48,7 @@ flat_map2<K, V> make_flat_map2(std::vector<std::pair<K, V>>&& vec) {
 // consider using the range or vector-based constructors which initializes the flat_map in
 // O(NlogN) time.
 //
-template<class K, class T, class Compare, class Storage>
+template<class K, class T, class Compare>
 class flat_map {
   public:
     typedef K key_type;
@@ -57,12 +57,12 @@ class flat_map {
     typedef Compare key_compare;
     typedef value_type& reference;
     typedef const value_type& const_reference;
-    typedef typename Storage::iterator iterator;
-    typedef typename Storage::const_iterator const_iterator;
-    typedef typename Storage::reverse_iterator reverse_iterator;
-    typedef typename Storage::const_reverse_iterator const_reverse_iterator;
-    typedef typename Storage::difference_type difference_type;
-    typedef typename Storage::size_type size_type;
+    typedef typename std::vector<value_type>::iterator iterator;
+    typedef typename std::vector<value_type>::const_iterator const_iterator;
+    typedef typename std::vector<value_type>::reverse_iterator reverse_iterator;
+    typedef typename std::vector<value_type>::const_reverse_iterator const_reverse_iterator;
+    typedef typename std::vector<value_type>::difference_type difference_type;
+    typedef typename std::vector<value_type>::size_type size_type;
 
     class value_compare;
 
@@ -85,28 +85,13 @@ class flat_map {
     }
 
     //direct vector constructor
-    explicit flat_map(Storage&& values) {
-        assign(std::move(values));
-    }
-
-    void assign(Storage&& values) {
+    explicit flat_map(std::vector<value_type>&& values) {
         //By moving the values this should be more efficient
         //than the range constructor which must copy each element
         vec_ = std::move(values);
 
         sort();
         uniquify();
-    }
-
-    void assign_sorted(Storage&& values) {
-        //By moving the values this should be more efficient
-        //than the range constructor which must copy each element
-        vec_ = std::move(values);
-        if (vec_.size() > 1) {
-            for (size_t i = 0; i < vec_.size() - 1; ++i) {
-                VTR_ASSERT_SAFE(vec_[i].first < vec_[i + 1].first);
-            }
-        }
     }
 
     iterator begin() { return vec_.begin(); }
@@ -137,22 +122,13 @@ class flat_map {
     }
 
     mapped_type& operator[](const key_type& key) {
-        auto iter = std::lower_bound(begin(), end(), key, value_comp());
+        auto iter = find(key);
         if (iter == end()) {
-            // The new element should be placed at the end, so do so.
-            vec_.emplace_back(std::make_pair(key, mapped_type()));
-            return vec_.back().second;
-        } else {
-            if (iter->first == key) {
-                // The element already exists, return it.
-                return iter->second;
-            } else {
-                // The element does not exist, insert such that vector remains
-                // sorted.
-                iter = vec_.emplace(iter, std::make_pair(key, mapped_type()));
-                return iter->second;
-            }
+            //Not found
+            iter = insert(std::make_pair(key, mapped_type())).first;
         }
+
+        return iter->second;
     }
 
     mapped_type& at(const key_type& key) {
@@ -181,37 +157,13 @@ class flat_map {
         }
     }
 
-    std::pair<iterator, bool> emplace(const value_type&& value) {
-        auto iter = lower_bound(value.first);
-        if (iter != end() && keys_equivalent(iter->first, value.first)) {
-            //Found existing
-            return std::make_pair(iter, false);
-        } else {
-            //Emplace
-            iter = emplace(iter, value);
-
-            return std::make_pair(iter, true);
-        }
-    }
-
     //Insert value with position hint
     iterator insert(const_iterator position, const value_type& value) {
         //In a legal position
         VTR_ASSERT(position == begin() || value_comp()(*(position - 1), value));
-        VTR_ASSERT((size() > 0 && (position + 1) == end()) || position == end() || !value_comp()(*(position + 1), value));
+        VTR_ASSERT((size() > 0 && position == --end()) || position == end() || !value_comp()(*(position + 1), value));
 
         iterator iter = vec_.insert(position, value);
-
-        return iter;
-    }
-
-    //Emplace value with position hint
-    iterator emplace(const_iterator position, const value_type& value) {
-        //In a legal position
-        VTR_ASSERT(position == begin() || value_comp()(*(position - 1), value));
-        VTR_ASSERT((size() > 0 && (position + 1) == end()) || position == end() || !value_comp()(*(position + 1), value));
-
-        iterator iter = vec_.emplace(position, value);
 
         return iter;
     }
@@ -357,15 +309,15 @@ class flat_map {
     }
 
   private:
-    Storage vec_;
+    std::vector<value_type> vec_;
 };
 
 //Like flat_map, but operator[] never inserts and directly returns the mapped value
-template<class K, class T, class Compare, class Storage>
-class flat_map2 : public flat_map<K, T, Compare, Storage> {
+template<class K, class T, class Compare>
+class flat_map2 : public flat_map<K, T, Compare> {
   public:
     flat_map2() {}
-    explicit flat_map2(std::vector<typename flat_map2<K, T, Compare, Storage>::value_type>&& values)
+    explicit flat_map2(std::vector<typename flat_map2<K, T, Compare>::value_type>&& values)
         : flat_map<K, T, Compare>(std::move(values)) {}
 
     const T& operator[](const K& key) const {
@@ -381,8 +333,8 @@ class flat_map2 : public flat_map<K, T, Compare, Storage> {
     }
 };
 
-template<class K, class T, class Compare, class Storage>
-class flat_map<K, T, Compare, Storage>::value_compare {
+template<class K, class T, class Compare>
+class flat_map<K, T, Compare>::value_compare {
     friend class flat_map;
 
   public:

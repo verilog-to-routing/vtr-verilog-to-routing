@@ -19,9 +19,7 @@ endif()
 # Each schema used should appear here.
 capnp_generate_cpp(CAPNP_SRCS CAPNP_HDRS
     place_delay_model.capnp
-    connection_map.capnp
     matrix.capnp
-    gen/rr_graph_uxsdcxx.capnp
     )
 
 add_library(libvtrcapnproto STATIC
@@ -34,7 +32,6 @@ add_library(libvtrcapnproto STATIC
 target_include_directories(libvtrcapnproto PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
-    ${CMAKE_CURRENT_BINARY_DIR}/gen
     )
 target_link_libraries(libvtrcapnproto
     libvtrutil

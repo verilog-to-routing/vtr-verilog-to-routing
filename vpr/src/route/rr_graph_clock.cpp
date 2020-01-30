@@ -37,7 +37,7 @@ void ClockRRGraphBuilder::create_and_append_clock_rr_graph(std::vector<t_segment
 
     // "Partition the rr graph edges for efficient access to configurable/non-configurable
     //  edge subsets. Must be done after RR switches have been allocated"
-    partition_rr_graph_edges(&device_ctx.rr_nodes);
+    partition_rr_graph_edges(device_ctx);
 
     alloc_and_load_rr_indexed_data(segment_inf, device_ctx.rr_node_indices,
                                    chan_width->max, wire_to_rr_ipin_switch, base_cost_type);

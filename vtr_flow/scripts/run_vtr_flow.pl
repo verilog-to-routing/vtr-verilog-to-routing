@@ -113,7 +113,6 @@ my @valgrind_args	        = ("--leak-check=full", "--suppressions=$vtr_flow_path
 my $abc_quote_addition      = 0;
 my @forwarded_vpr_args;   # VPR arguments that pass through the script
 my $verify_rr_graph         = 0;
-my $rr_graph_ext            = ".xml";
 my $check_route             = 0;
 my $check_place             = 0;
 my $use_old_abc_script      = 0;
@@ -187,9 +186,7 @@ while ( scalar(@ARGV) != 0 ) { #While non-empty
 	} elsif ( $token eq "-min_hard_adder_size" ) {
 		$min_hard_adder_size = shift(@ARGV);
 	} elsif ( $token eq "-verify_rr_graph" ){
-		$verify_rr_graph = 1;
-	} elsif ( $token eq "-rr_graph_ext" ){
-		$rr_graph_ext = shift(@ARGV);
+            $verify_rr_graph = 1;
     } elsif ( $token eq "-check_route" ){
             $check_route = 1;
     } elsif ( $token eq "-check_place" ){
@@ -992,7 +989,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 	} else { # specified channel width
         my $fixed_W_log_file = "vpr.out";
 
-        my $rr_graph_out_file = "rr_graph" . $rr_graph_ext;
+        my $rr_graph_out_file = "rr_graph.xml";
 
         my @fixed_W_extra_vpr_args = @forwarded_vpr_args;
 
@@ -1023,7 +1020,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
         if ($do_second_vpr_run) {
             my @second_run_extra_vpr_args = @forwarded_vpr_args;
 
-            my $rr_graph_out_file2 = "rr_graph2" . $rr_graph_ext;
+            my $rr_graph_out_file2 = "rr_graph2.xml";
             if ($verify_rr_graph){
                 push( @second_run_extra_vpr_args, ("--read_rr_graph", $rr_graph_out_file));
                 push( @second_run_extra_vpr_args, ("--write_rr_graph", $rr_graph_out_file2));

@@ -19,10 +19,6 @@ class DeviceGrid {
     auto operator[](size_t index) const { return grid_[index]; }
     auto operator[](size_t index) { return grid_[index]; }
 
-    const vtr::Matrix<t_grid_tile>& matrix() const {
-        return grid_;
-    }
-
     void clear();
 
     size_t num_instances(t_physical_tile_type_ptr type) const;
