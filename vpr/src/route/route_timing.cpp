@@ -429,12 +429,40 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
      *
      * Subsequent iterations use the net delays from the previous iteration.
      */
+    std::shared_ptr<SetupTimingInfo> route_timing_info;
+    {
+        vtr::ScopedStartFinishTimer init_timing_timer("Initializing router criticalities");
+        if (timing_info) {
+            if (router_opts.initial_timing == e_router_initial_timing::ALL_CRITICAL) {
+                //First routing iteration, make all nets critical for a min-delay routing
+                route_timing_info = make_constant_timing_info(1.);
+            } else {
+                VTR_ASSERT(router_opts.initial_timing == e_router_initial_timing::LOOKAHEAD);
+
+                {
+                    //Estimate initial connection delays from the router lookahead
+                    init_net_delay_from_lookahead(*router_lookahead, net_delay);
+
+                    //Run STA to get estimated criticalities
+                    timing_info->update();
+                }
+                route_timing_info = timing_info;
+            }
+        } else {
+            //Not timing driven, force criticality to zero for a routability-driven routing
+            route_timing_info = make_constant_timing_info(0.);
+        }
+        print_router_criticality_histogram(*route_timing_info, netlist_pin_lookup);
+    }
+
     RouterStats router_stats;
     timing_driven_route_structs route_structs;
     float prev_iter_cumm_time = 0;
     vtr::Timer iteration_timer;
     int num_net_bounding_boxes_updated = 0;
     int itry_since_last_convergence = -1;
+
+    print_route_status_header();
     for (itry = 1; itry <= router_opts.max_router_iterations; ++itry) {
         RouterStats router_iteration_stats;
         std::vector<ClusterNetId> rerouted_nets;
@@ -443,40 +471,6 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
         for (auto net_id : cluster_ctx.clb_nlist.nets()) {
             route_ctx.net_status[net_id].is_routed = false;
             route_ctx.net_status[net_id].is_fixed = false;
-        }
-
-        std::shared_ptr<SetupTimingInfo> route_timing_info;
-        if (timing_info) {
-            if (itry == 1) {
-                vtr::ScopedStartFinishTimer init_timing_timer("Initializing router criticalities");
-                if (router_opts.initial_timing == e_router_initial_timing::ALL_CRITICAL) {
-                    //First routing iteration, make all nets critical for a min-delay routing
-                    route_timing_info = make_constant_timing_info(1.);
-                } else {
-                    VTR_ASSERT(router_opts.initial_timing == e_router_initial_timing::LOOKAHEAD);
-
-                    {
-                        //Estimate initial connection delays from the router lookahead
-                        init_net_delay_from_lookahead(*router_lookahead, net_delay);
-
-                        //Run STA to get estimated criticalities
-                        timing_info->update();
-                    }
-                    route_timing_info = timing_info;
-                }
-                //print_router_criticality_histogram(*route_timing_info, netlist_pin_lookup);
-            } else {
-                //Other iterations user the true criticality
-                route_timing_info = timing_info;
-            }
-        } else {
-            //Not timing driven, force criticality to zero for a routability-driven routing
-            route_timing_info = make_constant_timing_info(0.);
-        }
-        print_router_criticality_histogram(*route_timing_info, netlist_pin_lookup);
-
-        if (itry == 1) {
-            print_route_status_header();
         }
 
         if (itry_since_last_convergence >= 0) {
@@ -530,6 +524,11 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
             //Note that the net delays have already been updated by timing_driven_route_net
             timing_info->update();
             timing_info->set_warn_unconstrained(false); //Don't warn again about unconstrained nodes again during routing
+
+            //Use the real timing analysis criticalities for subsequent routing iterations
+            //  'route_timing_info' is what is actually passed into the net/connection routers,
+            //  and for the 1st iteration may not be the actual STA results (e.g. all criticalities set to 1)
+            route_timing_info = timing_info;
 
             critical_path = timing_info->least_slack_critical_path();
 
@@ -2947,7 +2946,7 @@ static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahea
 
         int source_rr = route_ctx.net_rr_terminals[net_id][0];
 
-        {   //BFS from source until first wires.
+        { //BFS from source until first wires.
             //Due to the structure of the RR graph this should be a most 2 hops
             q.push(source_rr);
             while (!q.empty()) {
