@@ -112,24 +112,20 @@ void SetupVPR(const t_options* Options,
 
     /* TODO: this is inelegant, I should be populating this information in XmlReadArch */
     device_ctx.EMPTY_PHYSICAL_TILE_TYPE = nullptr;
-    for (const auto& type : device_ctx.physical_tile_types) {
+    int num_inputs = 0;
+    int num_outputs = 0;
+    for (auto& type : device_ctx.physical_tile_types) {
         if (strcmp(type.name, EMPTY_BLOCK_NAME) == 0) {
             VTR_ASSERT(device_ctx.EMPTY_PHYSICAL_TILE_TYPE == nullptr);
             device_ctx.EMPTY_PHYSICAL_TILE_TYPE = &type;
-        } else {
-            for (const auto& equivalent_site : type.equivalent_sites) {
-                if (block_type_contains_blif_model(equivalent_site, MODEL_INPUT)) {
-                    device_ctx.input_types.insert(&type);
-                    break;
-                }
-            }
+        }
 
-            for (const auto& equivalent_site : type.equivalent_sites) {
-                if (block_type_contains_blif_model(equivalent_site, MODEL_OUTPUT)) {
-                    device_ctx.output_types.insert(&type);
-                    break;
-                }
-            }
+        if (type.is_input_type) {
+            num_inputs += 1;
+        }
+
+        if (type.is_output_type) {
+            num_outputs += 1;
         }
     }
 
@@ -149,17 +145,18 @@ void SetupVPR(const t_options* Options,
     VTR_ASSERT(device_ctx.EMPTY_PHYSICAL_TILE_TYPE != nullptr);
     VTR_ASSERT(device_ctx.EMPTY_LOGICAL_BLOCK_TYPE != nullptr);
 
-    if (device_ctx.input_types.empty()) {
+    if (num_inputs == 0) {
         VPR_ERROR(VPR_ERROR_ARCH,
                   "Architecture contains no top-level block type containing '.input' models");
     }
 
-    if (device_ctx.output_types.empty()) {
+    if (num_outputs == 0) {
         VPR_ERROR(VPR_ERROR_ARCH,
                   "Architecture contains no top-level block type containing '.output' models");
     }
 
     Segments = Arch->Segments;
+    device_ctx.segment_inf = Arch->Segments;
 
     SetupSwitches(*Arch, RoutingArch, Arch->Switches, Arch->num_switches);
     SetupRoutingArch(*Arch, RoutingArch);
@@ -284,6 +281,7 @@ static void SetupSwitches(const t_arch& Arch,
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].R = 0.;
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].Cin = 0.;
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].Cout = 0.;
+    device_ctx.arch_switch_inf[RoutingArch->delayless_switch].penalty_cost = 0.;
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, 0.);
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].mux_trans_size = 0.;
@@ -322,6 +320,7 @@ static void SetupRoutingArch(const t_arch& Arch,
 }
 
 static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts) {
+    RouterOpts->do_check_rr_graph = !Options.disable_check_rr_graph;
     RouterOpts->astar_fac = Options.astar_fac;
     RouterOpts->bb_factor = Options.bb_factor;
     RouterOpts->criticality_exp = Options.criticality_exp;
@@ -344,6 +343,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->router_algorithm = Options.RouterAlgorithm;
     RouterOpts->fixed_channel_width = Options.RouteChanWidth;
     RouterOpts->min_channel_width_hint = Options.min_route_chan_width_hint;
+    RouterOpts->read_edge_metadata = Options.read_edge_metadata;
 
     //TODO document these?
     RouterOpts->trim_empty_channels = false; /* DEFAULT */
@@ -371,11 +371,12 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->max_convergence_count = Options.router_max_convergence_count;
     RouterOpts->reconvergence_cpd_threshold = Options.router_reconvergence_cpd_threshold;
     RouterOpts->first_iteration_timing_report_file = Options.router_first_iteration_timing_report_file;
-
     RouterOpts->strict_checks = Options.strict_checks;
 
     RouterOpts->write_router_lookahead = Options.write_router_lookahead;
     RouterOpts->read_router_lookahead = Options.read_router_lookahead;
+    RouterOpts->disable_check_route = Options.disable_check_route;
+    RouterOpts->quick_check_route = Options.quick_check_route;
 }
 
 static void SetupAnnealSched(const t_options& Options,
