@@ -468,7 +468,7 @@ void pathfinder_update_cost(float pres_fac, float acc_fac) {
 }
 
 void init_heap(const DeviceGrid& grid) {
-    size_t target_heap_size = (grid.width() - 1) * (grid.height() - 1);
+    ssize_t target_heap_size = (grid.width() - 1) * (grid.height() - 1);
     if (heap == nullptr || heap_size < target_heap_size) {
         if (heap != nullptr) {
             vtr::free(heap + 1);
