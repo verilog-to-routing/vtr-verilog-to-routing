@@ -698,17 +698,21 @@ void reset_path_costs(const std::vector<int>& visited_rr_nodes) {
 /* Returns the *congestion* cost of using this rr_node. */
 float get_rr_cong_cost(int inode) {
     auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
 
     float cost = get_single_rr_cong_cost(inode);
 
-    auto itr = device_ctx.rr_node_to_non_config_node_set.find(inode);
-    if (itr != device_ctx.rr_node_to_non_config_node_set.end()) {
-        for (int node : device_ctx.rr_non_config_node_sets[itr->second]) {
-            if (node == inode) {
-                continue; //Already included above
-            }
+    if (route_ctx.non_configurable_bitset.get(inode)) {
+        // Access unordered_map only when the node is part of a non-configurable set
+        auto itr = device_ctx.rr_node_to_non_config_node_set.find(inode);
+        if (itr != device_ctx.rr_node_to_non_config_node_set.end()) {
+            for (int node : device_ctx.rr_non_config_node_sets[itr->second]) {
+                if (node == inode) {
+                    continue; //Already included above
+                }
 
-            cost += get_single_rr_cong_cost(node);
+                cost += get_single_rr_cong_cost(node);
+            }
         }
     }
     return (cost);
@@ -931,7 +935,14 @@ void alloc_and_load_rr_node_route_structs() {
     auto& device_ctx = g_vpr_ctx.device();
 
     route_ctx.rr_node_route_inf.resize(device_ctx.rr_nodes.size());
+    route_ctx.non_configurable_bitset.resize(device_ctx.rr_nodes.size());
+    route_ctx.non_configurable_bitset.fill(false);
+
     reset_rr_node_route_structs();
+
+    for (auto i : device_ctx.rr_node_to_non_config_node_set) {
+        route_ctx.non_configurable_bitset.set(i.first, true);
+    }
 }
 
 void reset_rr_node_route_structs() {
