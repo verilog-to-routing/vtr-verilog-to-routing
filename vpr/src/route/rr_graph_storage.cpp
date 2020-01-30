@@ -414,7 +414,7 @@ size_t t_rr_graph_storage::count_rr_switches(
             }
 
             auto fanin = arch_switch_counts[iswitch];
-            VTR_ASSERT_SAFE(iswitch < (ssize_t)num_arch_switches);
+            VTR_ASSERT_SAFE(iswitch < num_arch_switches);
 
             if (arch_switch_inf[iswitch].fixed_Tdel()) {
                 //If delay is independent of fanin drop the unique fanin info
