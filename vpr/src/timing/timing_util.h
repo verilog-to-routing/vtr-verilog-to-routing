@@ -38,6 +38,11 @@ float find_node_setup_slack(const tatum::SetupTimingAnalyzer& setup_analyzer, ta
 //Returns a setup slack histogram
 std::vector<HistogramBucket> create_setup_slack_histogram(const tatum::SetupTimingAnalyzer& setup_analyzer, size_t num_bins = 10);
 
+//Returns a criticality histogram
+std::vector<HistogramBucket> create_criticality_histogram(const SetupTimingInfo& setup_timing,
+                                                          const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                                                          size_t num_bins = 10);
+
 //Print a useful summary of timing information
 void print_setup_timing_summary(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer);
 
