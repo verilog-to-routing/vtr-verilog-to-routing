@@ -149,6 +149,47 @@ std::vector<HistogramBucket> create_setup_slack_histogram(const tatum::SetupTimi
     return histogram;
 }
 
+std::vector<HistogramBucket> create_criticality_histogram(const SetupTimingInfo& setup_timing,
+                                                          const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                                                          size_t num_bins) {
+    std::vector<HistogramBucket> histogram;
+    float step = 1. / num_bins;
+
+    //Create the bins
+    float curr_div = 0.;
+    for (size_t i = 0; i < num_bins; ++i) {
+        float min = curr_div;
+        float max = curr_div + step;
+        histogram.emplace_back(min, max);
+
+        curr_div += step;
+    }
+
+    //To avoid round-off errors we force the max value of the last bucket equal to the max criticalty
+    histogram[histogram.size() - 1].max_value = 1.;
+
+    auto cmp = [](const HistogramBucket& bucket, float crit) {
+        return bucket.max_value < crit;
+    };
+
+    //Count the criticalities into the buckets
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        auto sinks = cluster_ctx.clb_nlist.net_sinks(net_id);
+
+        for (auto pin : sinks) {
+            float crit = calculate_clb_net_pin_criticality(setup_timing, netlist_pin_lookup, pin);
+
+            auto iter = std::lower_bound(histogram.begin(), histogram.end(), crit, cmp);
+            VTR_ASSERT(iter != histogram.end());
+
+            iter->count++;
+        }
+    }
+
+    return histogram;
+}
+
 void print_setup_timing_summary(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer) {
     auto& timing_ctx = g_vpr_ctx.timing();
 
