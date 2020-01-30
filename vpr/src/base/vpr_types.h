@@ -112,6 +112,11 @@ enum class e_route_bb_update {
     DYNAMIC //Rotuer net bounding boxes are updated
 };
 
+enum class e_router_initial_timing {
+    ALL_CRITICAL,
+    LOOKAHEAD
+};
+
 enum class e_const_gen_inference {
     NONE,    //No constant generator inference
     COMB,    //Only combinational constant generator inference
@@ -945,6 +950,7 @@ struct t_router_opts {
     e_router_lookahead lookahead_type;
     int max_convergence_count;
     float reconvergence_cpd_threshold;
+    e_router_initial_timing initial_timing;
     std::string first_iteration_timing_report_file;
     bool strict_checks;
 

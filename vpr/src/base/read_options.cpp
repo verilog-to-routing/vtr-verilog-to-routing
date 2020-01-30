@@ -756,6 +756,37 @@ struct ParseReducer {
     }
 };
 
+struct ParseRouterFirstIterTiming {
+    ConvertedValue<e_router_initial_timing> from_str(std::string str) {
+        ConvertedValue<e_router_initial_timing> conv_value;
+        if (str == "all_critical")
+            conv_value.set_value(e_router_initial_timing::ALL_CRITICAL);
+        else if (str == "lookahead")
+            conv_value.set_value(e_router_initial_timing::LOOKAHEAD);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_router_initial_timing (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_router_initial_timing val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_router_initial_timing::ALL_CRITICAL)
+            conv_value.set_value("all_critical");
+        else {
+            VTR_ASSERT(val == e_router_initial_timing::LOOKAHEAD);
+            conv_value.set_value("lookahead");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"all_critical", "lookahead"};
+    }
+};
+
 argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args) {
     std::string description =
         "Implements the specified circuit onto the target FPGA architecture"
@@ -1613,6 +1644,18 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             " For example, a value of 0.99 means the router will not give up on reconvergent"
             " routing if it thinks a > 1% CPD reduction is possible.")
         .default_value("0.99")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<e_router_initial_timing, ParseRouterFirstIterTiming>(args.router_initial_timing, "--router_initial_timing")
+        .help(
+            "Controls how criticality is determined at the start of the first routing iteration.\n"
+            " * all_critical: All connections are considered timing\n"
+            "                 critical.\n"
+            " * lookahead   : Connection criticalities are determined\n"
+            "                 from timing analysis assuming best-case\n"
+            "                 connection delays as estimated by the\n"
+            "                 router's lookahead.\n")
+        .default_value("all_critical")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.router_first_iteration_timing_report_file, "--router_first_iter_timing_report")
