@@ -545,6 +545,7 @@ static void check_rr_edge(int from_node, int iedge, int to_node) {
 
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, msg.c_str());
             }
+            break;
         case SwitchType::TRISTATE:  //Fallthrough
         case SwitchType::MUX:       //Fallthrough
         case SwitchType::PASS_GATE: //Fallthrough

@@ -277,7 +277,7 @@ PinType Netlist<BlockId, PortId, PinId, NetId>::pin_type(const PinId pin_id) con
 
     PinType type = PinType::OPEN;
     switch (port_type(port_id)) {
-        case PortType::INPUT: /*fallthrough */;
+        case PortType::INPUT: /*fallthrough */
         case PortType::CLOCK:
             type = PinType::SINK;
             break;
