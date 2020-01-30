@@ -452,6 +452,7 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
             //Not timing driven, force criticality to zero for a routability-driven routing
             route_timing_info = make_constant_timing_info(0.);
         }
+        VTR_LOG("Initial Net Connection Criticality Histogram:\n");
         print_router_criticality_histogram(*route_timing_info, netlist_pin_lookup);
     }
 
@@ -796,6 +797,9 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
         if (f_router_debug) print_invalid_routing_info();
 #endif
     }
+
+    VTR_LOG("Final Net Connection Criticality Histogram:\n");
+    print_router_criticality_histogram(*route_timing_info, netlist_pin_lookup);
 
     VTR_LOG("Router Stats: total_nets_routed: %zu total_connections_routed: %zu total_heap_pushes: %zu total_heap_pops: %zu\n",
             router_stats.nets_routed, router_stats.connections_routed, router_stats.heap_pushes, router_stats.heap_pops);
@@ -2621,7 +2625,6 @@ static void print_route_status(int itry, double elapsed_sec, float pres_fac, int
 }
 
 static void print_router_criticality_histogram(const SetupTimingInfo& timing_info, const ClusteredPinAtomPinsLookup& netlist_pin_lookup) {
-    VTR_LOG("Net Connection Criticality Histogram:\n");
     print_histogram(create_criticality_histogram(timing_info, netlist_pin_lookup, 10));
 }
 
