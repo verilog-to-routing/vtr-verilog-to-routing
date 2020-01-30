@@ -195,5 +195,4 @@ void make_room_in_vector(T* vec, size_t elem_position) {
 
     vec->resize(elem_position + 1);
 }
-
 #endif
