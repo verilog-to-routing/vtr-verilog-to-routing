@@ -1650,6 +1650,11 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument<bool, ParseOnOff>(args.read_edge_metadata, "--read_edge_metadata")
+        .help("Read edge metadata from --read_rr_graph.  Edge metadata is not used in core VPR algorithms, and is typically not read to save runtime and memory. (Default: off).")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_timing_grp.add_argument(args.router_debug_net, "--router_debug_net")
         .help(
             "Controls when router debugging is enabled.\n"

@@ -343,6 +343,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->router_algorithm = Options.RouterAlgorithm;
     RouterOpts->fixed_channel_width = Options.RouteChanWidth;
     RouterOpts->min_channel_width_hint = Options.min_route_chan_width_hint;
+    RouterOpts->read_edge_metadata = Options.read_edge_metadata;
 
     //TODO document these?
     RouterOpts->trim_empty_channels = false; /* DEFAULT */
