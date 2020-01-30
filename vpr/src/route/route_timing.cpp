@@ -4,6 +4,7 @@
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
+#include <queue>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -294,6 +295,9 @@ static void print_route_status(int itry,
                                std::shared_ptr<const SetupHoldTimingInfo> timing_info,
                                float est_success_iteration);
 
+static void print_router_criticality_histogram(const SetupTimingInfo& timing_info,
+                                               const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
+
 static std::string describe_unrouteable_connection(const int source_node, const int sink_node);
 
 static bool is_high_fanout(int fanout, int fanout_threshold);
@@ -319,6 +323,9 @@ static void generate_route_timing_reports(const t_router_opts& router_opts,
 static void prune_unused_non_configurable_nets(CBRR& connections_inf);
 
 static bool same_non_config_node_set(int from_node, int to_node);
+
+static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
+                                          vtr::vector<ClusterNetId, float*>& net_delay);
 
 /************************ Subroutine definitions *****************************/
 bool try_timing_driven_route(const t_router_opts& router_opts,
@@ -423,7 +430,6 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
      * Subsequent iterations use the net delays from the previous iteration.
      */
     RouterStats router_stats;
-    print_route_status_header();
     timing_driven_route_structs route_structs;
     float prev_iter_cumm_time = 0;
     vtr::Timer iteration_timer;
@@ -442,8 +448,23 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
         std::shared_ptr<SetupTimingInfo> route_timing_info;
         if (timing_info) {
             if (itry == 1) {
-                //First routing iteration, make all nets critical for a min-delay routing
-                route_timing_info = make_constant_timing_info(1.);
+                vtr::ScopedStartFinishTimer init_timing_timer("Initializing router criticalities");
+                if (router_opts.initial_timing == e_router_initial_timing::ALL_CRITICAL) {
+                    //First routing iteration, make all nets critical for a min-delay routing
+                    route_timing_info = make_constant_timing_info(1.);
+                } else {
+                    VTR_ASSERT(router_opts.initial_timing == e_router_initial_timing::LOOKAHEAD);
+
+                    {
+                        //Estimate initial connection delays from the router lookahead
+                        init_net_delay_from_lookahead(*router_lookahead, net_delay);
+
+                        //Run STA to get estimated criticalities
+                        timing_info->update();
+                    }
+                    route_timing_info = timing_info;
+                }
+                //print_router_criticality_histogram(*route_timing_info, netlist_pin_lookup);
             } else {
                 //Other iterations user the true criticality
                 route_timing_info = timing_info;
@@ -451,6 +472,11 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
         } else {
             //Not timing driven, force criticality to zero for a routability-driven routing
             route_timing_info = make_constant_timing_info(0.);
+        }
+        print_router_criticality_histogram(*route_timing_info, netlist_pin_lookup);
+
+        if (itry == 1) {
+            print_route_status_header();
         }
 
         if (itry_since_last_convergence >= 0) {
@@ -2589,6 +2615,11 @@ static void print_route_status(int itry, double elapsed_sec, float pres_fac, int
     fflush(stdout);
 }
 
+static void print_router_criticality_histogram(const SetupTimingInfo& timing_info, const ClusteredPinAtomPinsLookup& netlist_pin_lookup) {
+    VTR_LOG("Net Connection Criticality Histogram:\n");
+    print_histogram(create_criticality_histogram(timing_info, netlist_pin_lookup, 10));
+}
+
 static std::string describe_unrouteable_connection(const int source_node, const int sink_node) {
     std::string msg = vtr::string_fmt(
         "Cannot route from %s (%s) to "
@@ -2891,4 +2922,78 @@ static bool same_non_config_node_set(int from_node, int to_node) {
     }
 
     return from_itr->second == to_itr->second; //Check for same non-config set IDs
+}
+
+//Initializes net_delay based on best-case delay estimates from the router lookahead
+static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
+                                          vtr::vector<ClusterNetId, float*>& net_delay) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
+
+    //The map lookahead requires that we start from a wire (rather than a SOURCE/PIN)
+    //
+    //As a result, to use itwe need to find the wires which are 'reachable' from the source,
+    //which we do via a BFS
+    std::queue<int> q;
+    std::vector<int> reachable_wires;
+
+    t_conn_cost_params cost_params;
+    cost_params.criticality = 1.; //Ensures lookahead returns delay value
+
+    size_t missing_delays = 0;
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) continue;
+
+        int source_rr = route_ctx.net_rr_terminals[net_id][0];
+
+        {   //BFS from source until first wires.
+            //Due to the structure of the RR graph this should be a most 2 hops
+            q.push(source_rr);
+            while (!q.empty()) {
+                int curr_rr = q.front();
+                q.pop();
+
+                auto curr_rr_type = device_ctx.rr_nodes[curr_rr].type();
+
+                if (curr_rr_type == CHANX || curr_rr_type == CHANY) {
+                    reachable_wires.push_back(curr_rr);
+                } else {
+                    //Expand
+                    for (int iedge : device_ctx.rr_nodes[curr_rr].edges()) {
+                        int next_rr = device_ctx.rr_nodes[curr_rr].edge_sink_node(iedge);
+                        q.push(next_rr);
+                    }
+                }
+            }
+        }
+
+        for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
+            int sink_rr = route_ctx.net_rr_terminals[net_id][ipin];
+
+            float min_delay = std::numeric_limits<float>::infinity();
+
+            for (int wire_rr : reachable_wires) {
+                float est_delay = router_lookahead.get_expected_cost(wire_rr, sink_rr, cost_params, 0.);
+                min_delay = std::min(min_delay, est_delay);
+            }
+
+            if (std::isinf(min_delay)) { //Found no wires to estimate delay from...
+                //VTR_LOG_WARN("Failed to get delay estimate for initial criticality from %s to %s (assuming 0 delay)\n",
+                //rr_node_arch_name(source_rr).c_str(),
+                //rr_node_arch_name(sink_rr).c_str());
+                min_delay = 0.;
+                ++missing_delays;
+            }
+
+            net_delay[net_id][ipin] = min_delay;
+        }
+
+        //Reset for next net
+        while (!q.empty()) { //There is not std::queue::clear()...
+            q.pop();
+        }
+        reachable_wires.clear();
+    }
+    VTR_LOG_WARN("Failed to get delay estimates for initial criticality for %zu net connections (assumed zero delay)\n", missing_delays);
 }
