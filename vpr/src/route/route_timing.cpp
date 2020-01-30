@@ -189,7 +189,13 @@ static void timing_driven_expand_cheapest(t_heap* cheapest,
                                           std::vector<int>& modified_rr_node_inf,
                                           RouterStats& router_stats);
 
-static t_rt_node* setup_routing_resources(int itry, ClusterNetId net_id, unsigned num_sinks, float pres_fac, int min_incremental_reroute_fanout, CBRR& incremental_rerouting_res, t_rt_node** rt_node_of_sink);
+static t_rt_node* setup_routing_resources(int itry,
+                                          ClusterNetId net_id,
+                                          unsigned num_sinks,
+                                          float pres_fac,
+                                          int min_incremental_reroute_fanout,
+                                          CBRR& incremental_rerouting_res,
+                                          t_rt_node** rt_node_of_sink);
 
 static void add_route_tree_to_heap(t_rt_node* rt_node,
                                    int target_node,
@@ -954,7 +960,15 @@ bool timing_driven_route_net(ClusterNetId net_id,
 
     unsigned int num_sinks = cluster_ctx.clb_nlist.net_sinks(net_id).size();
 
-    t_rt_node* rt_root = setup_routing_resources(itry, net_id, num_sinks, pres_fac, router_opts.min_incremental_reroute_fanout, connections_inf, rt_node_of_sink);
+    VTR_LOGV_DEBUG(f_router_debug, "Routing Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
+
+    t_rt_node* rt_root = setup_routing_resources(itry,
+                                                 net_id,
+                                                 num_sinks,
+                                                 pres_fac,
+                                                 router_opts.min_incremental_reroute_fanout,
+                                                 connections_inf,
+                                                 rt_node_of_sink);
 
     bool high_fanout = is_high_fanout(num_sinks, router_opts.high_fanout_threshold);
 
