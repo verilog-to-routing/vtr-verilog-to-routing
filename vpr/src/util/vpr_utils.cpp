@@ -2099,7 +2099,7 @@ int max_pins_per_grid_tile() {
 }
 
 bool is_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_block_type_ptr logical_block) {
-    const auto &equivalent_tiles = logical_block->equivalent_tiles;
+    const auto& equivalent_tiles = logical_block->equivalent_tiles;
     return std::find(equivalent_tiles.begin(), equivalent_tiles.end(), physical_tile) != equivalent_tiles.end();
 }
 
