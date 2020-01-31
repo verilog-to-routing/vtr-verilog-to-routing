@@ -4,8 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: ../uxsdcxx.py rr_graph.xsd
- * md5sum of input file: f9c827f7ecf1ac2f15d57c67bbba4399
+ * Cmdline: uxsdcxx/uxsdcxx.py rr_graph.xsd
+ * Input file: rr_graph.xsd
+ * md5sum of input file: 40e83d2ea6556761d4e29f21324b1871
  */
 
 #include <functional>
@@ -134,6 +135,7 @@ class RrGraphBase {
 
     /** Generated for complex type "x_list":
      * <xs:complexType name="x_list">
+     *   
      *   <xs:attribute name="index" type="xs:unsignedInt" use="required" />
      *   <xs:attribute name="info" type="xs:int" use="required" />
      * </xs:complexType>
@@ -175,6 +177,7 @@ class RrGraphBase {
 
     /** Generated for complex type "timing":
      * <xs:complexType name="timing">
+     *   
      *   <xs:attribute name="R" type="xs:float" />
      *   <xs:attribute name="Cin" type="xs:float" />
      *   <xs:attribute name="Cinternal" type="xs:float" />
@@ -209,7 +212,9 @@ class RrGraphBase {
      *     <xs:element name="sizing" type="sizing" />
      *   </xs:all>
      *   <xs:attribute name="id" type="xs:int" use="required" />
+     *   
      *   <xs:attribute name="name" type="xs:string" use="required" />
+     *   
      *   <xs:attribute name="type" type="switch_type" />
      * </xs:complexType>
      */

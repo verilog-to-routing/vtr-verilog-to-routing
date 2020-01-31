@@ -4,8 +4,9 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: ../uxsdcxx.py rr_graph.xsd
- * md5sum of input file: f9c827f7ecf1ac2f15d57c67bbba4399
+ * Cmdline: uxsdcxx/uxsdcxx.py rr_graph.xsd
+ * Input file: rr_graph.xsd
+ * md5sum of input file: 40e83d2ea6556761d4e29f21324b1871
  */
 
 #include <functional>
