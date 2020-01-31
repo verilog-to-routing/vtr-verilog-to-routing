@@ -40,6 +40,7 @@ void RoutingToClockConnection::set_fc_val(float fc_val) {
  */
 
 size_t RoutingToClockConnection::estimate_additional_nodes() {
+    // 1 rr node is being added as the virtual clock sink.
     return 1;
 }
 
