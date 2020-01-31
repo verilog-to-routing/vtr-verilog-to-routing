@@ -254,7 +254,6 @@ add_custom_target(
     COMMAND ${CMAKE_COMMAND} -E remove_directory rr_graph_generate
     COMMAND ${CMAKE_COMMAND} -E make_directory rr_graph_generate
     COMMAND ${CMAKE_COMMAND} -E chdir rr_graph_generate git clone https://github.com/duck2/uxsdcxx
-    COMMAND ${CMAKE_COMMAND} -E chdir rr_graph_generate/uxsdcxx git checkout interface-consumer
     COMMAND python3 -mpip install --user -r rr_graph_generate/uxsdcxx/requirements.txt
     COMMAND ${CMAKE_COMMAND} -E chdir rr_graph_generate python3 uxsdcxx/uxsdcxx.py ${CMAKE_CURRENT_SOURCE_DIR}/src/route/rr_graph.xsd
     COMMAND ${CMAKE_COMMAND} -E chdir rr_graph_generate python3 uxsdcxx/uxsdcap.py ${CMAKE_CURRENT_SOURCE_DIR}/src/route/rr_graph.xsd
