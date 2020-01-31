@@ -1238,6 +1238,35 @@ std::vector<int> get_rr_node_indices(const t_rr_node_indices& L_rr_node_indices,
     return indices;
 }
 
+std::vector<int> get_rr_node_indices(const t_rr_node_indices& L_rr_node_indices,
+                                     int x,
+                                     int y,
+                                     t_rr_type rr_type,
+                                     e_side side) {
+    if (rr_type == SOURCE
+        || rr_type == SINK
+        || rr_type == CHANX
+        || rr_type == CHANY) {
+        VTR_ASSERT_MSG(side == NUM_SIDES, "Non-IPINs/OPINs must not specify side");
+        return L_rr_node_indices[rr_type][x][y][0];
+    } else {
+        VTR_ASSERT(rr_type == OPIN || rr_type == IPIN);
+        if (side == NUM_SIDES) {
+            //All sides
+            std::vector<int> nodes;
+            for (e_side tmp_side : SIDES) {
+                const auto& side_nodes = get_rr_node_indices(L_rr_node_indices, x, y, rr_type, tmp_side);
+                nodes.insert(nodes.end(), side_nodes.begin(), side_nodes.end());
+            }
+            return nodes;
+
+        } else {
+            //Side specified
+            return L_rr_node_indices[rr_type][x][y][side];
+        }
+    }
+}
+
 int get_rr_node_index(const t_rr_node_indices& L_rr_node_indices,
                       int x,
                       int y,
