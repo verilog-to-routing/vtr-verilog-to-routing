@@ -44,6 +44,11 @@ void check_rr_graph(const t_graph_type graph_type,
             continue;
         }
 
+        // Virtual clock network sink is special, ignore.
+        if (device_ctx.virtual_clock_network_root_idx == inode) {
+            continue;
+        }
+
         t_rr_type rr_type = device_ctx.rr_nodes[inode].type();
         int num_edges = device_ctx.rr_nodes[inode].num_edges();
 
@@ -240,11 +245,6 @@ void check_rr_node(int inode, enum e_route_type route_type, const DeviceContext&
     capacity = device_ctx.rr_nodes[inode].capacity();
     cost_index = device_ctx.rr_nodes[inode].cost_index();
     type = nullptr;
-
-    // Virtual clock network sink is special, ignore.
-    if (device_ctx.virtual_clock_network_root_idx == inode) {
-        return;
-    }
 
     const auto& grid = device_ctx.grid;
     if (xlow > xhigh || ylow > yhigh) {
