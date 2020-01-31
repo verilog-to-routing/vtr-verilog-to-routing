@@ -11,6 +11,11 @@ Point<T>::Point(T x_val, T y_val) noexcept
 }
 
 template<class T>
+Point<T>::Point() {
+    //pass
+}
+
+template<class T>
 T Point<T>::x() const {
     return x_;
 }
@@ -87,6 +92,11 @@ Rect<T>::Rect(Point<U> point)
     : bottom_left_(point)
     , top_right_(point.x() + 1,
                  point.y() + 1) {
+    //pass
+}
+
+template<class T>
+Rect<T>::Rect() {
     //pass
 }
 

@@ -38,6 +38,16 @@ bool all_valid(const Container& values) {
     return true;
 }
 
+template<typename Iterator>
+bool all_valid(Iterator begin, Iterator end) {
+    for (auto itr = begin; itr != end; ++itr) {
+        if (!*itr) {
+            return false;
+        }
+    }
+    return true;
+}
+
 //Builds a mapping from old to new ids by skipping values marked invalid
 template<typename Container>
 Container compress_ids(const Container& ids) {
@@ -160,6 +170,22 @@ ValueContainer update_valid_refs(const ValueContainer& values, const IdContainer
         }
     }
     return updated;
+}
+
+template<typename Iterator, typename IdContainer>
+void update_valid_refs(Iterator begin, Iterator end, const IdContainer& id_map) {
+    for (auto itr = begin; itr != end; ++itr) {
+        auto orig_val = *itr;
+        if (orig_val) {
+            //Original item valid
+
+            auto new_val = id_map[orig_val];
+            if (new_val) {
+                //The original item exists in the new mapping
+                *itr = new_val;
+            }
+        }
+    }
 }
 
 #endif

@@ -198,8 +198,10 @@
 /* Standard header files required go first */
 #include <limits>
 #include <vector>
+#include <unordered_map>
 
 /* EXTERNAL library header files go second*/
+#include "vtr_ndmatrix.h"
 #include "vtr_vector.h"
 #include "vtr_range.h"
 #include "vtr_geometry.h"
@@ -211,17 +213,28 @@
 
 class RRGraph {
   public: /* Types */
+    //Lazy iterator utility forward declaration
+    template<class ID>
+    class lazy_id_iterator;
+
     /* Iterators used to create iterator-based loop for nodes/edges/switches/segments */
     typedef vtr::vector<RRNodeId, RRNodeId>::const_iterator node_iterator;
     typedef vtr::vector<RREdgeId, RREdgeId>::const_iterator edge_iterator;
     typedef vtr::vector<RRSwitchId, RRSwitchId>::const_iterator switch_iterator;
     typedef vtr::vector<RRSegmentId, RRSegmentId>::const_iterator segment_iterator;
+    typedef lazy_id_iterator<RRNodeId> lazy_node_iterator;
+    typedef lazy_id_iterator<RREdgeId> lazy_edge_iterator;
 
     /* Ranges used to create range-based loop for nodes/edges/switches/segments */
     typedef vtr::Range<node_iterator> node_range;
-    typedef vtr::Range<edge_iterator> edge_range;
+    typedef vtr::Range<RREdgeId*> edge_range;
     typedef vtr::Range<switch_iterator> switch_range;
     typedef vtr::Range<segment_iterator> segment_range;
+    typedef vtr::Range<lazy_node_iterator> lazy_node_range;
+    typedef vtr::Range<lazy_edge_iterator> lazy_edge_range;
+
+  public: /* Constructors */
+    RRGraph();
 
   public: /* Accessors */
     /* Aggregates: create range-based loops for nodes/edges/switches/segments
@@ -247,8 +260,8 @@ class RRGraph {
      *        // Do something with each segment
      *      }
      */
-    node_range nodes() const;
-    edge_range edges() const;
+    lazy_node_range nodes() const;
+    lazy_edge_range edges() const;
     switch_range switches() const;
     segment_range segments() const;
 
@@ -445,29 +458,21 @@ class RRGraph {
      */
     RRSegmentId node_segment(const RRNodeId& node) const;
 
-    /* Get the number of non-configurable incoming edges to a node */
-    short node_num_configurable_in_edges(const RRNodeId& node) const;
-
-    /* Get the number of non-configurable outgoing edges from a node */
-    short node_num_non_configurable_in_edges(const RRNodeId& node) const;
-
-    /* Get the number of configurable output edges of a node */
-    short node_num_configurable_out_edges(const RRNodeId& node) const;
-
-    /* Get the number of non-configurable output edges of a node */
-    short node_num_non_configurable_out_edges(const RRNodeId& node) const;
-
-    /* Get the range (list) of edges related to a given node */
-    edge_range node_configurable_in_edges(const RRNodeId& node) const;
-    edge_range node_non_configurable_in_edges(const RRNodeId& node) const;
-    edge_range node_configurable_out_edges(const RRNodeId& node) const;
-    edge_range node_non_configurable_out_edges(const RRNodeId& node) const;
+    //Returns an iterable range of all edges (incoming & outgoing) for
+    //the specified node
+    edge_range node_edges(const RRNodeId& node) const;
 
     /* Get a list of edge ids, which are incoming edges to a node */
     edge_range node_in_edges(const RRNodeId& node) const;
 
     /* Get a list of edge ids, which are outgoing edges from a node */
     edge_range node_out_edges(const RRNodeId& node) const;
+
+    /* Get the range (list) of edges related to a given node */
+    edge_range node_configurable_in_edges(const RRNodeId& node) const;
+    edge_range node_non_configurable_in_edges(const RRNodeId& node) const;
+    edge_range node_configurable_out_edges(const RRNodeId& node) const;
+    edge_range node_non_configurable_out_edges(const RRNodeId& node) const;
 
     /* Edge-related attributes 
      * An example to explain the terminology used in RRGraph
@@ -583,10 +588,10 @@ class RRGraph {
      *      rr_graph.create_node(CHANX);
      *    }
      */
-    void reserve_nodes(const int& num_nodes);
-    void reserve_edges(const int& num_edges);
-    void reserve_switches(const int& num_switches);
-    void reserve_segments(const int& num_segments);
+    void reserve_nodes(const unsigned long& num_nodes);
+    void reserve_edges(const unsigned long& num_edges);
+    void reserve_switches(const size_t& num_switches);
+    void reserve_segments(const size_t& num_segments);
 
     /* Add new elements (node, edge, switch, etc.) to RRGraph */
     /* Add a node to the RRGraph with a deposited type 
@@ -596,6 +601,7 @@ class RRGraph {
      *   set_node_xlow(node, 0);
      */
     RRNodeId create_node(const t_rr_type& type);
+
     /* Add a edge to the RRGraph, by providing the source and sink node 
      * This function will automatically create a node and
      * configure the nodes and edges in connection   
@@ -690,15 +696,14 @@ class RRGraph {
     /* Set the routing segment linked to a node, only applicable to CHANX and CHANY */
     void set_node_segment(const RRNodeId& node, const RRSegmentId& segment_index);
 
-    /* Edge partitioning is performed for efficiency, 
-     * so we can store configurable and non-configurable edge lists for a node in one vector, 
-     * and efficiently iterate over all edges, or only the configurable or non-configurable subsets.
-     * This function will re-organize the incoming and outgoing edges of each node, 
-     * i.e., node_in_edges() and node_out_edges():
-     * 1. configurable edges (1st part of the vectors) 
-     * 2. non-configurable edges (2nd part of the vectors) 
+    /*
+     * Build the node to edge references to allow iteration through
+     * a node's in/out edges.
+     *
+     * Must be called before any node_*_in_edges() or node_*_out_edges() member
+     * functions can be called.
      */
-    void partition_edges();
+    void rebuild_node_edges();
 
     /* Graph-level Clean-up, remove invalid nodes/edges etc.
      * This will clear the dirty flag (query by is_dirty()) of RRGraph object, if it was set 
@@ -708,18 +713,52 @@ class RRGraph {
     /* top-level function to free, should be called when to delete a RRGraph */
     void clear();
 
-  private: /* Internal Mutators to perform edge partitioning */
-    /* classify the input edges of each node to be configurable (1st part) and non-configurable (2nd part) */
-    void partition_node_in_edges(const RRNodeId& node);
+  public: /* Type implementations */
+    /*
+     * This class (forward delcared above) is a template used to represent a lazily calculated 
+     * iterator of the specified ID type. The key assumption made is that the ID space is 
+     * contiguous and can be walked by incrementing the underlying ID value. To account for 
+     * invalid IDs, it keeps a reference to the invalid ID set and returns ID::INVALID() for
+     * ID values in the set.
+     *
+     * It is used to lazily create an iteration range (e.g. as returned by RRGraph::edges() RRGraph::nodes())
+     * just based on the count of allocated elements (i.e. RRGraph::num_nodes_ or RRGraph::num_edges_),
+     * and the set of any invalid IDs (i.e. RRGraph::invalid_node_ids_, RRGraph::invalid_edge_ids_).
+     */
+    template<class ID>
+    class lazy_id_iterator : public std::iterator<std::bidirectional_iterator_tag, ID> {
+      public:
+        //Since we pass ID as a template to std::iterator we need to use an explicit 'typename'
+        //to bring the value_type and iterator names into scope
+        typedef typename std::iterator<std::bidirectional_iterator_tag, ID>::value_type value_type;
+        typedef typename std::iterator<std::bidirectional_iterator_tag, ID>::iterator iterator;
 
-    /* classify the output edges of each node to be configurable (1st part) and non-configurable (2nd part) */
-    void partition_node_out_edges(const RRNodeId& node);
+        lazy_id_iterator(value_type init, const std::unordered_set<ID>& invalid_ids)
+            : value_(init)
+            , invalid_ids_(invalid_ids) {}
 
-    /* classify the input edges of each node to be configurable (1st part) and non-configurable (2nd part) */
-    void partition_in_edges();
+        //Advance to the next ID value
+        iterator operator++() {
+            value_ = ID(size_t(value_) + 1);
+            return *this;
+        }
 
-    /* classify the output edges of each node to be configurable (1st part) and non-configurable (2nd part) */
-    void partition_out_edges();
+        //Advance to the previous ID value
+        iterator operator--() {
+            value_ = ID(size_t(value_) - 1);
+            return *this;
+        }
+
+        //Dereference the iterator
+        value_type operator*() const { return (invalid_ids_.count(value_)) ? ID::INVALID() : value_; }
+
+        friend bool operator==(const lazy_id_iterator<ID> lhs, const lazy_id_iterator<ID> rhs) { return lhs.value_ == rhs.value_; }
+        friend bool operator!=(const lazy_id_iterator<ID> lhs, const lazy_id_iterator<ID> rhs) { return !(lhs == rhs); }
+
+      private:
+        value_type value_;
+        const std::unordered_set<ID>& invalid_ids_;
+    };
 
   private: /* Internal free functions */
     void clear_nodes();
@@ -787,7 +826,9 @@ class RRGraph {
 
   private: /* Internal Data */
     /* Node related data */
-    vtr::vector<RRNodeId, RRNodeId> node_ids_; /* Unique identifiers for the nodes */
+    size_t num_nodes_;                              /* Range of node ids */
+    std::unordered_set<RRNodeId> invalid_node_ids_; /* Invalid edge ids */
+
     vtr::vector<RRNodeId, t_rr_type> node_types_;
 
     vtr::vector<RRNodeId, vtr::Rect<short>> node_bounding_boxes_;
@@ -800,15 +841,44 @@ class RRGraph {
     vtr::vector<RRNodeId, float> node_Rs_;
     vtr::vector<RRNodeId, float> node_Cs_;
     vtr::vector<RRNodeId, RRSegmentId> node_segments_; /* Segment ids for each node */
-    /* Record the dividing point between configurable and non-configurable edges for each node */
-    vtr::vector<RRNodeId, size_t> node_num_non_configurable_in_edges_;
-    vtr::vector<RRNodeId, size_t> node_num_non_configurable_out_edges_;
 
-    vtr::vector<RRNodeId, std::vector<RREdgeId>> node_in_edges_;
-    vtr::vector<RRNodeId, std::vector<RREdgeId>> node_out_edges_;
+    /*
+     * We store the edges assoicated with each node in a single array per node (for memory efficiency).
+     *
+     * The array of edges is sorted into sub-ranges to allow for easy iteration (with node_in_edges(),
+     * node_non_configurable_out_edges() etc.).
+     *
+     * For a particular 'node' we store the sizes of the various sub-ranges in the node_num_* members,
+     * from which the delimiters for each sub-range can be calculated.
+     *
+     *
+     *  node_edges_[node]:
+     *
+     *  
+     *                   node_num_non_configurable_in_edges_[node]      node_num_non_configurable_out_edges_[node]
+     *                         <------------------->                    <-------------------->
+     *     
+     *     +------------------+---------------------+------------------+----------------------+
+     *     |  in_edges_config | in_edges_non_config | out_edges_config | out_edges_non_config |
+     *     +------------------+---------------------+------------------+----------------------+
+     *                                                                                        
+     *      <--------------------------------------> <--------------------------------------->
+     *              node_num_in_edges_[node]                 node_num_out_edges_[node]        
+     *
+     * All elements of node_edges_ should be initialized after all edges have been created (with create_edge()),
+     * by calling rebuild_node_edges(), which will allocate node_edges_, add the relevant edges and partition
+     * each node's arrays into the appropriate. rebuild_node_edges() also initializes all the node_num_* members
+     * based on the edges (created with create_edge()) in the edge_* members.
+     */
+    vtr::vector<RRNodeId, uint16_t> node_num_in_edges_;
+    vtr::vector<RRNodeId, uint16_t> node_num_out_edges_;
+    vtr::vector<RRNodeId, uint16_t> node_num_non_configurable_in_edges_;
+    vtr::vector<RRNodeId, uint16_t> node_num_non_configurable_out_edges_;
+    vtr::vector<RRNodeId, std::unique_ptr<RREdgeId[]>> node_edges_;
 
     /* Edge related data */
-    vtr::vector<RREdgeId, RREdgeId> edge_ids_; /* unique identifiers for edges */
+    size_t num_edges_;                              /* Range of edge ids */
+    std::unordered_set<RREdgeId> invalid_edge_ids_; /* Invalid edge ids */
     vtr::vector<RREdgeId, RRNodeId> edge_src_nodes_;
     vtr::vector<RREdgeId, RRNodeId> edge_sink_nodes_;
     vtr::vector<RREdgeId, RRSwitchId> edge_switches_;
@@ -836,7 +906,7 @@ class RRGraph {
     /* Fast look-up to search a node by its type, coordinator and ptc_num 
      * Indexing of fast look-up: [0..xmax][0..ymax][0..NUM_TYPES-1][0..ptc_max][0..NUM_SIDES-1] 
      */
-    typedef std::vector<std::vector<std::vector<std::vector<std::vector<RRNodeId>>>>> NodeLookup;
+    typedef vtr::NdMatrix<std::vector<std::vector<RRNodeId>>, 3> NodeLookup;
     mutable NodeLookup node_lookup_;
 };
 

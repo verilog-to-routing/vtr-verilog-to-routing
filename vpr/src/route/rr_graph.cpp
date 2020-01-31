@@ -33,6 +33,7 @@
 #include "rr_graph_reader.h"
 #include "router_lookahead_map.h"
 #include "rr_graph_clock.h"
+#include "create_rr_graph.h"
 
 #include "rr_types.h"
 
@@ -331,6 +332,9 @@ void create_rr_graph(const t_graph_type graph_type,
                          base_cost_type,
                          &det_routing_arch->wire_to_rr_ipin_switch,
                          det_routing_arch->read_rr_graph_filename.c_str());
+
+            /* Create rr_graph object: load rr_nodes to the object */
+            convert_rr_graph(segment_inf);
         }
     } else {
         if (channel_widths_unchanged(device_ctx.chan_width, nodes_per_chan) && !device_ctx.rr_nodes.empty()) {
@@ -369,6 +373,9 @@ void create_rr_graph(const t_graph_type graph_type,
                                                                   det_routing_arch->wire_to_rr_ipin_switch,
                                                                   base_cost_type);
         }
+
+        /* Create rr_graph object: load rr_nodes to the object */
+        convert_rr_graph(segment_inf);
     }
 
     process_non_config_sets();
@@ -428,7 +435,13 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const int num_directs,
                            int* wire_to_rr_ipin_switch,
                            int* Warnings) {
+    /* Release freed memory before start building rr_graph */
+    vtr::malloc_trim(0);
+
     vtr::ScopedStartFinishTimer timer("Build routing resource graph");
+
+    /* Release freed memory before start building rr_graph */
+    vtr::malloc_trim(0);
 
     /* Reset warning flag */
     *Warnings = RR_GRAPH_NO_WARN;
@@ -1371,6 +1384,9 @@ void free_rr_graph() {
     /* Before adding any more free calls here, be sure the data is NOT chunk *
      * allocated, as ALL the chunk allocated data is already free!           */
     auto& device_ctx = g_vpr_ctx.mutable_device();
+
+    /* Clear the RRGraph object */
+    device_ctx.rr_graph.clear();
 
     device_ctx.read_rr_graph_filename.clear();
 
