@@ -305,10 +305,19 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         , report_error_(nullptr) {}
 
     void start_load(const std::function<void(const char*)>* report_error_in) final {
+        // report_error_in should be invoked if RrGraphSerializer encounters
+        // an error during the read.
         report_error_ = report_error_in;
     }
     void start_write() final {}
     void finish_write() final {}
+
+    // error_encountered will be invoked by the reader implementation whenever
+    // any error is encountered.
+    //
+    // This method should **not** be invoked from within RrGraphSerializer,
+    // instead the error should be reported via report_error.  This enables
+    // the reader implementation to add context (e.g. file and line number).
     void error_encountered(const char* file, int line, const char* message) final {
         vpr_throw(VPR_ERROR_ROUTE, file, line, "%s", message);
     }
