@@ -187,9 +187,13 @@ void DeltaDelayModel::read(const std::string& file) {
     // when the object leaves scope.
     MmapFile f(file);
 
+    /* Increase reader limit to 1G words to allow for large files. */
+    ::capnp::ReaderOptions opts = ::capnp::ReaderOptions();
+    opts.traversalLimitInWords = 1024 * 1024 * 1024;
+
     // FlatArrayMessageReader is used to read the message from the data array
     // provided by MmapFile.
-    ::capnp::FlatArrayMessageReader reader(f.getData());
+    ::capnp::FlatArrayMessageReader reader(f.getData(), opts);
 
     // When reading capnproto files the Reader object to use is named
     // <schema name>::Reader.
@@ -239,7 +243,11 @@ void DeltaDelayModel::write(const std::string& file) const {
 
 void OverrideDelayModel::read(const std::string& file) {
     MmapFile f(file);
-    ::capnp::FlatArrayMessageReader reader(f.getData());
+
+    /* Increase reader limit to 1G words to allow for large files. */
+    ::capnp::ReaderOptions opts = ::capnp::ReaderOptions();
+    opts.traversalLimitInWords = 1024 * 1024 * 1024;
+    ::capnp::FlatArrayMessageReader reader(f.getData(), opts);
 
     vtr::Matrix<float> delays;
     auto model = reader.getRoot<VprOverrideDelayModel>();

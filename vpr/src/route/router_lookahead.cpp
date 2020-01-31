@@ -105,6 +105,14 @@ void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
     compute_router_lookahead(segment_inf.size());
 }
 
+void MapLookahead::read(const std::string& file) {
+    read_router_lookahead(file);
+}
+
+void MapLookahead::write(const std::string& file) const {
+    write_router_lookahead(file);
+}
+
 float NoOpLookahead::get_expected_cost(int /*current_node*/, int /*target_node*/, const t_conn_cost_params& /*params*/, float /*R_upstream*/) const {
     return 0.;
 }

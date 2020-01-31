@@ -27,6 +27,14 @@
 #include "vtr_time.h"
 #include "router_lookahead_map.h"
 
+#ifdef VTR_ENABLE_CAPNPROTO
+#    include "capnp/serialize.h"
+#    include "map_lookahead.capnp.h"
+#    include "ndmatrix_serdes.h"
+#    include "mmap_file.h"
+#    include "serdes_utils.h"
+#endif /* VTR_ENABLE_CAPNPROTO */
+
 /* the cost map is computed by running a Dijkstra search from channel segment rr nodes at the specified reference coordinate */
 #define REF_X 3
 #define REF_Y 3
@@ -677,3 +685,59 @@ static void print_cost_map() {
         }
     }
 }
+//
+// When writing capnp targetted serialization, always allow compilation when
+// VTR_ENABLE_CAPNPROTO=OFF.  Generally this means throwing an exception
+// instead.
+//
+#ifndef VTR_ENABLE_CAPNPROTO
+
+#    define DISABLE_ERROR                               \
+        "is disabled because VTR_ENABLE_CAPNPROTO=OFF." \
+        "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable."
+
+void read_router_lookahead(const std::string& /*file*/) {
+    VPR_THROW(VPR_ERROR_PLACE, "MapLookahead::read " DISABLE_ERROR);
+}
+
+void DeltaDelayModel::write(const std::string& /*file*/) const {
+    VPR_THROW(VPR_ERROR_PLACE, "MapLookahead::write " DISABLE_ERROR);
+}
+
+#else /* VTR_ENABLE_CAPNPROTO */
+
+static void ToCostEntry(Cost_Entry* out, const VprMapCostEntry::Reader& in) {
+    out->delay = in.getDelay();
+    out->congestion = in.getCongestion();
+}
+
+static void FromCostEntry(VprMapCostEntry::Builder* out, const Cost_Entry& in) {
+    out->setDelay(in.delay);
+    out->setCongestion(in.congestion);
+}
+
+void read_router_lookahead(const std::string& file) {
+    MmapFile f(file);
+
+    /* Increase reader limit to 1G words to allow for large files. */
+    ::capnp::ReaderOptions opts = ::capnp::ReaderOptions();
+    opts.traversalLimitInWords = 1024 * 1024 * 1024;
+    ::capnp::FlatArrayMessageReader reader(f.getData(), opts);
+
+    auto map = reader.getRoot<VprMapLookahead>();
+
+    ToNdMatrix<4, VprMapCostEntry, Cost_Entry>(&f_cost_map, map.getCostMap(), ToCostEntry);
+}
+
+void write_router_lookahead(const std::string& file) {
+    ::capnp::MallocMessageBuilder builder;
+
+    auto map = builder.initRoot<VprMapLookahead>();
+
+    auto cost_map = map.initCostMap();
+    FromNdMatrix<4, VprMapCostEntry, Cost_Entry>(&cost_map, f_cost_map, FromCostEntry);
+
+    writeMessageToFile(file, &builder);
+}
+
+#endif

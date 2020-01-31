@@ -21,6 +21,7 @@ capnp_generate_cpp(CAPNP_SRCS CAPNP_HDRS
     place_delay_model.capnp
     matrix.capnp
     gen/rr_graph_uxsdcxx.capnp
+    map_lookahead.capnp
     )
 
 add_library(libvtrcapnproto STATIC
