@@ -58,6 +58,12 @@ std::vector<int> get_rr_node_indices(const t_rr_node_indices& L_rr_node_indices,
                                      t_rr_type rr_type,
                                      int ptc);
 
+std::vector<int> get_rr_node_indices(const t_rr_node_indices& L_rr_node_indices,
+                                     int x,
+                                     int y,
+                                     t_rr_type rr_type,
+                                     e_side side = NUM_SIDES);
+
 //Returns all x-channel or y-channel wires at the specified location
 std::vector<int> get_rr_node_chan_wires_at_location(const t_rr_node_indices& L_rr_node_indices,
                                                     t_rr_type rr_type,
