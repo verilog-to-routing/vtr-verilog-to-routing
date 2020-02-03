@@ -354,8 +354,25 @@ class t_rr_graph_storage {
     vtr::vector<RREdgeId, RRNodeId> edge_dest_node_;
     vtr::vector<RREdgeId, short> edge_switch_;
 
+    // Has any edges been read?
+    //
+    // Any method that mutates edge storage will be locked out after this
+    // variable is set.
+    //
+    // Reading any of the following members should set this flag:
+    //  - edge_src_node_
+    //  - edge_dest_node_
+    //  - edge_switch_
     mutable bool edges_read_;
+
+    // Set after either remap_rr_node_switch_indices or mark_edges_as_rr_switch_ids
+    // has been called.
+    //
+    // remap_rr_node_switch_indices converts indices to arch_switch_inf into
+    // indices to rr_switch_inf.
     bool remapped_edges_;
+
+    // Set after partition_edges has been called.
     bool partitioned_;
 };
 
