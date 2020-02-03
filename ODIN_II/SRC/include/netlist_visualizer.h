@@ -4,7 +4,7 @@
 #include <string>
 #include "odin_types.h"
 
-void graphVizOutputNetlist(std::string path, const char* name, short marker_value, netlist_t *input_netlist);
-void graphVizOutputCombinationalNet(std::string path, const char* name, short marker_value, nnode_t *current_node);
+void graphVizOutputNetlist(std::string path, const char* name, short marker_value, netlist_t* input_netlist);
+void graphVizOutputCombinationalNet(std::string path, const char* name, short marker_value, nnode_t* current_node);
 
 #endif
