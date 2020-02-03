@@ -11,7 +11,7 @@
 
 class t_rr_node {
   public: //Types
-    t_rr_node(t_rr_node_storage* storage, RRNodeId id)
+    t_rr_node(t_rr_graph_storage* storage, RRNodeId id)
         : storage_(storage)
         , id_(id) {}
 
@@ -90,7 +90,7 @@ class t_rr_node {
     }
 
   private: //Data
-    t_rr_node_storage* storage_;
+    t_rr_graph_storage* storage_;
     RRNodeId id_;
 };
 

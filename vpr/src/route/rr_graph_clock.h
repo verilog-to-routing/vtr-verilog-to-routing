@@ -15,7 +15,7 @@
 
 class ClockNetwork;
 class ClockConnection;
-class t_rr_node_storage;
+class t_rr_graph_storage;
 
 class SwitchPoint {
     /* A switch point object: keeps information on the location and and rr_node indices
@@ -77,7 +77,7 @@ class ClockRRGraphBuilder {
     ClockRRGraphBuilder(
         const t_chan_width& chan_width,
         const DeviceGrid& grid,
-        t_rr_node_storage* rr_nodes)
+        t_rr_graph_storage* rr_nodes)
         : chan_width_(chan_width)
         , grid_(grid)
         , rr_nodes_(rr_nodes)
@@ -133,7 +133,7 @@ class ClockRRGraphBuilder {
 
     const t_chan_width& chan_width_;
     const DeviceGrid& grid_;
-    t_rr_node_storage* rr_nodes_;
+    t_rr_graph_storage* rr_nodes_;
 
     int chanx_ptc_idx_;
     int chany_ptc_idx_;
