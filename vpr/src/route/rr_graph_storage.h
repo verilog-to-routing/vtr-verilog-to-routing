@@ -340,7 +340,7 @@ class t_rr_graph_storage {
 
     // Take allocated edges in edge_src_node_/ edge_dest_node_ / edge_switch_
     // sort, and assign the first edge for each
-    void assign_edges();
+    void assign_first_edges();
 
     // Verify that first_edge_ array correctly partitions rr edge data.
     bool verify_first_edges() const;
