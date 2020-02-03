@@ -1,6 +1,8 @@
 #ifndef _RR_NODE_STORAGE_
 #define _RR_NODE_STORAGE_
 
+#include <exception>
+
 #include "rr_node_fwd.h"
 #include "rr_graph2.h"
 #include "vtr_log.h"
@@ -39,7 +41,7 @@
  * side: The side of a grid location where an IPIN or OPIN is located.       *
  *       This field is valid only for IPINs and OPINs and should be ignored  *
  *       otherwise.                                                          */
-struct t_rr_node_data {
+struct alignas(16) t_rr_node_data {
     int8_t cost_index_ = -1;
     int16_t rc_index_ = -1;
 
@@ -54,13 +56,42 @@ struct t_rr_node_data {
         e_side side;           //Valid only for IPINs/OPINs
     } dir_side_;
 
+    uint16_t capacity_ = 0;
+};
+
+struct t_rr_node_ptc_data {
     union {
         int16_t pin_num;
         int16_t track_num;
         int16_t class_num;
     } ptc_;
+};
 
-    uint16_t capacity_ = 0;
+static_assert(sizeof(t_rr_node_data) == 16, "Check t_rr_node_data size");
+static_assert(alignof(t_rr_node_data) == 16, "Check t_rr_node_data size");
+
+template<class T>
+struct aligned_allocator {
+    using value_type = T;
+    using pointer = T*;
+    using const_pointer = const T*;
+    using reference = T&;
+    using const_reference = const T&;
+    using size_type = std::size_t;
+    using difference_type = std::ptrdiff_t;
+
+    pointer allocate(size_type n, const void* /*hint*/ = 0) {
+        void* data;
+        int ret = posix_memalign(&data, alignof(T), sizeof(T) * n);
+        if (ret != 0) {
+            throw std::bad_alloc();
+        }
+        return static_cast<pointer>(data);
+    }
+
+    void deallocate(T* p, size_type /*n*/) {
+        free(p);
+    }
 };
 
 // RR node and edge storage class.
@@ -74,11 +105,13 @@ class t_rr_node_storage {
         // No edges can be assigned if mutating the rr node array.
         VTR_ASSERT(!edges_read_);
         storage_.reserve(size);
+        ptc_.reserve(size);
     }
     void resize(size_t size) {
         // No edges can be assigned if mutating the rr node array.
         VTR_ASSERT(!edges_read_);
         storage_.resize(size);
+        ptc_.resize(size);
     }
     size_t size() const {
         return storage_.size();
@@ -89,6 +122,7 @@ class t_rr_node_storage {
 
     void clear() {
         storage_.clear();
+        ptc_.clear();
         first_edge_.clear();
         fan_in_.clear();
         edge_src_node_.clear();
@@ -101,6 +135,7 @@ class t_rr_node_storage {
 
     void shrink_to_fit() {
         storage_.shrink_to_fit();
+        ptc_.shrink_to_fit();
         first_edge_.shrink_to_fit();
         fan_in_.shrink_to_fit();
         edge_src_node_.shrink_to_fit();
@@ -112,6 +147,7 @@ class t_rr_node_storage {
         // No edges can be assigned if mutating the rr node array.
         VTR_ASSERT(!edges_read_);
         storage_.emplace_back();
+        ptc_.emplace_back();
     }
 
     node_idx_iterator begin() const;
@@ -129,6 +165,25 @@ class t_rr_node_storage {
     t_rr_node back();
 
     friend class t_rr_node;
+
+    /****************
+     * Node methods *
+     ****************/
+
+    const char* node_type_string(RRNodeId id) const;
+    t_rr_type node_type(RRNodeId id) const;
+
+    /* PTC set methods */
+    void set_node_ptc_num(RRNodeId id, short);
+    void set_node_pin_num(RRNodeId id, short);   //Same as set_ptc_num() by checks type() is consistent
+    void set_node_track_num(RRNodeId id, short); //Same as set_ptc_num() by checks type() is consistent
+    void set_node_class_num(RRNodeId id, short); //Same as set_ptc_num() by checks type() is consistent
+
+    /* PTC get methods */
+    short node_ptc_num(RRNodeId id) const;
+    short node_pin_num(RRNodeId id) const;   //Same as ptc_num() but checks that type() is consistent
+    short node_track_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
+    short node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
 
     /****************
      * Edge methods *
@@ -290,7 +345,8 @@ class t_rr_node_storage {
     // Verify that first_edge_ array correctly partitions rr edge data.
     bool verify_first_edges() const;
 
-    vtr::vector<RRNodeId, t_rr_node_data> storage_;
+    vtr::vector<RRNodeId, t_rr_node_data, aligned_allocator<t_rr_node_data>> storage_;
+    vtr::vector<RRNodeId, t_rr_node_ptc_data> ptc_;
     vtr::vector<RRNodeId, RREdgeId> first_edge_;
     vtr::vector<RRNodeId, t_edge_size> fan_in_;
 

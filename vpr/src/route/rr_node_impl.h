@@ -126,28 +126,19 @@ inline short t_rr_node::capacity() const {
 }
 
 inline short t_rr_node::ptc_num() const {
-    return storage_->get(id_).ptc_.pin_num;
+    return storage_->node_ptc_num(id_);
 }
 
 inline short t_rr_node::pin_num() const {
-    if (type() != IPIN && type() != OPIN) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'pin_num' for non-IPIN/OPIN type '%s'", type_string());
-    }
-    return storage_->get(id_).ptc_.pin_num;
+    return storage_->node_pin_num(id_);
 }
 
 inline short t_rr_node::track_num() const {
-    if (type() != CHANX && type() != CHANY) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'track_num' for non-CHANX/CHANY type '%s'", type_string());
-    }
-    return storage_->get(id_).ptc_.track_num;
+    return storage_->node_track_num(id_);
 }
 
 inline short t_rr_node::class_num() const {
-    if (type() != SOURCE && type() != SINK) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'class_num' for non-SOURCE/SINK type '%s'", type_string());
-    }
-    return storage_->get(id_).ptc_.class_num;
+    return storage_->node_class_num(id_);
 }
 
 inline short t_rr_node::cost_index() const {
