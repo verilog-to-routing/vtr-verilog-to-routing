@@ -21,6 +21,8 @@ constexpr size_t kEdgeToNodeRatio = 10;
 
 void t_rr_graph_storage::alloc_and_load_edges(const t_rr_edge_info_set* rr_edges_to_create) {
     // Cannot mutate edges once edges have been read!
+    VTR_ASSERT(!edges_read_);
+
     size_t required_size = edge_src_node_.size() + rr_edges_to_create->size();
     if (edge_src_node_.capacity() < required_size) {
         size_t new_capacity = std::min(edge_src_node_.capacity(), storage_.size() * kEdgeToNodeRatio);
