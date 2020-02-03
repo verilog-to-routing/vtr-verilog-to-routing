@@ -45,7 +45,7 @@ void check_rr_graph(const t_graph_type graph_type,
         }
 
         // Virtual clock network sink is special, ignore.
-        if (device_ctx.virtual_clock_network_root_idx == inode) {
+        if (device_ctx.virtual_clock_network_root_idx == int(inode)) {
             continue;
         }
 
