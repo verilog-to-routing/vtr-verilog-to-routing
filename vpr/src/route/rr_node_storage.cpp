@@ -455,3 +455,56 @@ bool t_rr_node_storage::validate() const {
     }
     return all_valid;
 }
+
+const char* t_rr_node_storage::node_type_string(RRNodeId id) const {
+    return rr_node_typename[node_type(id)];
+}
+t_rr_type t_rr_node_storage::node_type(RRNodeId id) const {
+    return storage_[id].type_;
+}
+
+void t_rr_node_storage::set_node_ptc_num(RRNodeId id, short new_ptc_num) {
+    ptc_[id].ptc_.pin_num = new_ptc_num; //TODO: eventually remove
+}
+void t_rr_node_storage::set_node_pin_num(RRNodeId id, short new_pin_num) {
+    if (node_type(id) != IPIN && node_type(id) != OPIN) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'pin_num' for non-IPIN/OPIN type '%s'", node_type_string(id));
+    }
+    ptc_[id].ptc_.pin_num = new_pin_num;
+}
+
+void t_rr_node_storage::set_node_track_num(RRNodeId id, short new_track_num) {
+    if (node_type(id) != CHANX && node_type(id) != CHANY) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'track_num' for non-CHANX/CHANY type '%s'", node_type_string(id));
+    }
+    ptc_[id].ptc_.track_num = new_track_num;
+}
+
+void t_rr_node_storage::set_node_class_num(RRNodeId id, short new_class_num) {
+    if (node_type(id) != SOURCE && node_type(id) != SINK) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'class_num' for non-SOURCE/SINK type '%s'", node_type_string(id));
+    }
+    ptc_[id].ptc_.class_num = new_class_num;
+}
+
+short t_rr_node_storage::node_ptc_num(RRNodeId id) const {
+    return ptc_[id].ptc_.pin_num;
+}
+short t_rr_node_storage::node_pin_num(RRNodeId id) const {
+    if (node_type(id) != IPIN && node_type(id) != OPIN) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'pin_num' for non-IPIN/OPIN type '%s'", node_type_string(id));
+    }
+    return ptc_[id].ptc_.pin_num;
+}
+short t_rr_node_storage::node_track_num(RRNodeId id) const {
+    if (node_type(id) != CHANX && node_type(id) != CHANY) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'track_num' for non-CHANX/CHANY type '%s'", node_type_string(id));
+    }
+    return ptc_[id].ptc_.track_num;
+}
+short t_rr_node_storage::node_class_num(RRNodeId id) const {
+    if (node_type(id) != SOURCE && node_type(id) != SINK) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'class_num' for non-SOURCE/SINK type '%s'", node_type_string(id));
+    }
+    return ptc_[id].ptc_.class_num;
+}

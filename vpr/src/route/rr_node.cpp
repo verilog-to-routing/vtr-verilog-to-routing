@@ -105,32 +105,19 @@ void t_rr_node::set_coordinates(short x1, short y1, short x2, short y2) {
 }
 
 void t_rr_node::set_ptc_num(short new_ptc_num) {
-    auto& node = storage_->get(id_);
-    node.ptc_.pin_num = new_ptc_num; //TODO: eventually remove
+    storage_->set_node_ptc_num(id_, new_ptc_num);
 }
 
 void t_rr_node::set_pin_num(short new_pin_num) {
-    if (type() != IPIN && type() != OPIN) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'pin_num' for non-IPIN/OPIN type '%s'", type_string());
-    }
-    auto& node = storage_->get(id_);
-    node.ptc_.pin_num = new_pin_num;
+    storage_->set_node_pin_num(id_, new_pin_num);
 }
 
 void t_rr_node::set_track_num(short new_track_num) {
-    if (type() != CHANX && type() != CHANY) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'track_num' for non-CHANX/CHANY type '%s'", type_string());
-    }
-    auto& node = storage_->get(id_);
-    node.ptc_.track_num = new_track_num;
+    storage_->set_node_track_num(id_, new_track_num);
 }
 
 void t_rr_node::set_class_num(short new_class_num) {
-    if (type() != SOURCE && type() != SINK) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'class_num' for non-SOURCE/SINK type '%s'", type_string());
-    }
-    auto& node = storage_->get(id_);
-    node.ptc_.class_num = new_class_num;
+    storage_->set_node_class_num(id_, new_class_num);
 }
 
 void t_rr_node::set_cost_index(size_t new_cost_index) {
