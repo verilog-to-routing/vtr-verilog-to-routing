@@ -93,8 +93,8 @@ struct edge_swapper {
     operator t_rr_edge_info() const {
         VTR_ASSERT(idx_ < storage_->edge_src_node_.size());
         t_rr_edge_info info(
-            (size_t)storage_->edge_src_node_[RREdgeId(idx_)],
-            (size_t)storage_->edge_dest_node_[RREdgeId(idx_)],
+            size_t(storage_->edge_src_node_[RREdgeId(idx_)]),
+            size_t(storage_->edge_dest_node_[RREdgeId(idx_)]),
             storage_->edge_switch_[RREdgeId(idx_)]);
 
         return info;
@@ -273,7 +273,7 @@ void t_rr_graph_storage::assign_first_edges() {
     while (true) {
         VTR_ASSERT(first_id < num_edges);
         VTR_ASSERT(second_id < num_edges);
-        size_t current_node_id = (size_t)edge_src_node_[RREdgeId(second_id)];
+        size_t current_node_id = size_t(edge_src_node_[RREdgeId(second_id)]);
         if (node_id < current_node_id) {
             // All edges belonging to node_id are assigned.
             while (node_id < current_node_id) {
@@ -311,9 +311,9 @@ bool t_rr_graph_storage::verify_first_edges() const {
     for (size_t iedge = 0; iedge < num_edges; ++iedge) {
         RRNodeId src_node = edge_src_node_.at(RREdgeId(iedge));
         RREdgeId first_edge = first_edge_.at(src_node);
-        RREdgeId second_edge = first_edge_.at(RRNodeId((size_t)src_node + 1));
-        VTR_ASSERT(iedge >= (size_t)first_edge);
-        VTR_ASSERT(iedge < (size_t)second_edge);
+        RREdgeId second_edge = first_edge_.at(RRNodeId(size_t(src_node) + 1));
+        VTR_ASSERT(iedge >= size_t(first_edge));
+        VTR_ASSERT(iedge < size_t(second_edge));
     }
 
     return true;
@@ -439,16 +439,16 @@ t_edge_size t_rr_graph_storage::num_configurable_edges(const RRNodeId& id) const
     VTR_ASSERT(!first_edge_.empty() && remapped_edges_);
 
     const auto& device_ctx = g_vpr_ctx.device();
-    auto first_id = (size_t)first_edge_[id];
-    auto second_id = (size_t)(&first_edge_[id])[1];
-    for (size_t idx = first_id; idx < second_id; ++idx) {
+    auto first_id = size_t(first_edge_[id]);
+    auto last_id = size_t((&first_edge_[id])[1]);
+    for (size_t idx = first_id; idx < last_id; ++idx) {
         auto switch_idx = edge_switch_[RREdgeId(idx)];
         if (!device_ctx.rr_switch_inf[switch_idx].configurable()) {
             return idx - first_id;
         }
     }
 
-    return second_id - first_id;
+    return last_id - first_id;
 }
 
 t_edge_size t_rr_graph_storage::num_non_configurable_edges(const RRNodeId& id) const {

@@ -286,8 +286,8 @@ class t_rr_graph_storage {
 
     t_edge_size num_edges(const RRNodeId& id) const {
         RREdgeId first_id = first_edge_[id];
-        RREdgeId second_id = (&first_edge_[id])[1];
-        return (size_t)second_id - (size_t)first_id;
+        RREdgeId last_id = (&first_edge_[id])[1];
+        return size_t(last_id) - size_t(first_id);
     }
 
     t_edge_size num_configurable_edges(const RRNodeId& id) const;
@@ -295,7 +295,7 @@ class t_rr_graph_storage {
 
     RREdgeId edge_id(const RRNodeId& id, t_edge_size iedge) const {
         RREdgeId first_edge = first_edge_[id];
-        RREdgeId ret((size_t)first_edge + iedge);
+        RREdgeId ret(size_t(first_edge) + iedge);
         VTR_ASSERT_SAFE(ret < (&first_edge_[id])[1]);
         return ret;
     }
