@@ -372,6 +372,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->max_convergence_count = Options.router_max_convergence_count;
     RouterOpts->reconvergence_cpd_threshold = Options.router_reconvergence_cpd_threshold;
     RouterOpts->initial_timing = Options.router_initial_timing;
+    RouterOpts->update_lower_bound_delays = Options.router_update_lower_bound_delays;
     RouterOpts->first_iteration_timing_report_file = Options.router_first_iteration_timing_report_file;
 
     RouterOpts->strict_checks = Options.strict_checks;

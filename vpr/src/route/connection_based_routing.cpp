@@ -42,9 +42,9 @@ Connection_based_routing_resources::Connection_based_routing_resources()
         auto& net_forcible_reroute_connection_flag = forcible_reroute_connection_flag[net_id];
 
         unsigned int num_pins = cluster_ctx.clb_nlist.net_pins(net_id).size();
-        net_node_to_pin.reserve(num_pins - 1);                      // not looking up on the SOURCE pin
-        net_lower_bound_connection_delay.reserve(num_pins - 1);     // will be filled in after the 1st iteration's
-        net_forcible_reroute_connection_flag.reserve(num_pins - 1); // all false to begin with
+        net_node_to_pin.reserve(num_pins);                                                         // not looking up on the SOURCE pin
+        net_lower_bound_connection_delay.resize(num_pins, std::numeric_limits<float>::infinity()); // will be filled in after the 1st iteration's
+        net_forcible_reroute_connection_flag.reserve(num_pins);                                    // all false to begin with
 
         for (unsigned int ipin = 1; ipin < num_pins; ++ipin) {
             // rr sink node index corresponding to this connection terminal
@@ -125,8 +125,15 @@ void Connection_based_routing_resources::set_lower_bound_connection_delays(vtr::
         auto& net_lower_bound_connection_delay = lower_bound_connection_delay[net_id];
 
         for (unsigned int ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
-            net_lower_bound_connection_delay.push_back(net_delay[net_id][ipin]);
+            net_lower_bound_connection_delay[ipin] = net_delay[net_id][ipin];
         }
+    }
+}
+
+void Connection_based_routing_resources::update_lower_bound_connection_delay(ClusterNetId net, int ipin, float delay) {
+    if (lower_bound_connection_delay[net][ipin] > delay) {
+        //VTR_LOG("Found better connection delay for Net %zu Pin %d (was: %g, now: %g)\n", size_t(net), ipin, lower_bound_connection_delay[net][ipin], delay);
+        lower_bound_connection_delay[net][ipin] = delay;
     }
 }
 

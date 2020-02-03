@@ -951,6 +951,8 @@ struct t_router_opts {
     int max_convergence_count;
     float reconvergence_cpd_threshold;
     e_router_initial_timing initial_timing;
+    bool update_lower_bound_delays;
+
     std::string first_iteration_timing_report_file;
     bool strict_checks;
 
