@@ -46,36 +46,36 @@ VNumber V_LOGICAL_NOT(VNumber& a);
 VNumber V_REPLICATE(VNumber& a, VNumber& n_times);
 VNumber V_CONCAT(std::vector<VNumber> concat_list);
 
-VNumber V_BITWISE_AND(VNumber& a,VNumber& b);
-VNumber V_BITWISE_OR(VNumber& a,VNumber& b);
-VNumber V_BITWISE_XOR(VNumber& a,VNumber& b);
-VNumber V_BITWISE_NAND(VNumber& a,VNumber& b);
-VNumber V_BITWISE_NOR(VNumber& a,VNumber& b);
-VNumber V_BITWISE_XNOR(VNumber& a,VNumber& b);
+VNumber V_BITWISE_AND(VNumber& a, VNumber& b);
+VNumber V_BITWISE_OR(VNumber& a, VNumber& b);
+VNumber V_BITWISE_XOR(VNumber& a, VNumber& b);
+VNumber V_BITWISE_NAND(VNumber& a, VNumber& b);
+VNumber V_BITWISE_NOR(VNumber& a, VNumber& b);
+VNumber V_BITWISE_XNOR(VNumber& a, VNumber& b);
 
 VNumber V_SIGNED_SHIFT_LEFT(VNumber& a, VNumber& b);
 VNumber V_SIGNED_SHIFT_RIGHT(VNumber& a, VNumber& b);
 VNumber V_SHIFT_LEFT(VNumber& a, VNumber& b);
 VNumber V_SHIFT_RIGHT(VNumber& a, VNumber& b);
 
-VNumber V_LOGICAL_AND(VNumber& a,VNumber& b);
-VNumber V_LOGICAL_OR(VNumber& a,VNumber& b);
+VNumber V_LOGICAL_AND(VNumber& a, VNumber& b);
+VNumber V_LOGICAL_OR(VNumber& a, VNumber& b);
 
-VNumber V_LT(VNumber& a,VNumber& b);
-VNumber V_GT(VNumber& a,VNumber& b);
-VNumber V_LE(VNumber& a,VNumber& b);
-VNumber V_GE(VNumber& a,VNumber& b);
-VNumber V_EQUAL(VNumber& a,VNumber& b);
-VNumber V_NOT_EQUAL(VNumber& a,VNumber& b);
-VNumber V_CASE_EQUAL(VNumber& a,VNumber& b);
-VNumber V_CASE_NOT_EQUAL(VNumber& a,VNumber& b);
+VNumber V_LT(VNumber& a, VNumber& b);
+VNumber V_GT(VNumber& a, VNumber& b);
+VNumber V_LE(VNumber& a, VNumber& b);
+VNumber V_GE(VNumber& a, VNumber& b);
+VNumber V_EQUAL(VNumber& a, VNumber& b);
+VNumber V_NOT_EQUAL(VNumber& a, VNumber& b);
+VNumber V_CASE_EQUAL(VNumber& a, VNumber& b);
+VNumber V_CASE_NOT_EQUAL(VNumber& a, VNumber& b);
 
-VNumber V_ADD(VNumber& a,VNumber& b);
-VNumber V_MINUS(VNumber& a,VNumber& b);
-VNumber V_MULTIPLY(VNumber& a,VNumber& b);
-VNumber V_POWER(VNumber& a,VNumber& b);
-VNumber V_DIV(VNumber& a,VNumber& b);
-VNumber V_MOD(VNumber& a,VNumber& b);
+VNumber V_ADD(VNumber& a, VNumber& b);
+VNumber V_MINUS(VNumber& a, VNumber& b);
+VNumber V_MULTIPLY(VNumber& a, VNumber& b);
+VNumber V_POWER(VNumber& a, VNumber& b);
+VNumber V_DIV(VNumber& a, VNumber& b);
+VNumber V_MOD(VNumber& a, VNumber& b);
 
 /**
  * Ternary Operator
