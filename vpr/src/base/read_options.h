@@ -152,6 +152,7 @@ struct t_options {
     argparse::ArgValue<e_router_lookahead> router_lookahead_type;
     argparse::ArgValue<int> router_max_convergence_count;
     argparse::ArgValue<float> router_reconvergence_cpd_threshold;
+    argparse::ArgValue<bool> router_update_lower_bound_delays;
     argparse::ArgValue<std::string> router_first_iteration_timing_report_file;
     argparse::ArgValue<e_router_initial_timing> router_initial_timing;
 

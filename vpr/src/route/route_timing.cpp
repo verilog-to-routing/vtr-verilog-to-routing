@@ -1109,6 +1109,12 @@ bool timing_driven_route_net(ClusterNetId net_id,
     // may have to update timing delay of the previously legally reached sinks since downstream capacitance could be changed
     update_net_delays_from_route_tree(net_delay, rt_node_of_sink, net_id);
 
+    if (router_opts.update_lower_bound_delays) {
+        for (int ipin : remaining_targets) {
+            connections_inf.update_lower_bound_connection_delay(net_id, ipin, net_delay[ipin]);
+        }
+    }
+
     if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
         for (unsigned ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
             if (net_delay[ipin] == 0) { // should be SOURCE->OPIN->IPIN->SINK

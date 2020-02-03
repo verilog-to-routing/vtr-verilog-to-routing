@@ -1663,6 +1663,11 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("all_critical")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument<bool, ParseOnOff>(args.router_update_lower_bound_delays, "--router_update_lower_bound_delays")
+        .help("Controls whether the router updates lower bound connection delays after the 1st routing iteration.")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_timing_grp.add_argument(args.router_first_iteration_timing_report_file, "--router_first_iter_timing_report")
         .help("Name of the post first routing iteration timing report file (not generated if unspecfied)")
         .default_value("")
