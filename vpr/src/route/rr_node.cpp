@@ -1,5 +1,5 @@
 #include "rr_node.h"
-#include "rr_node_storage.h"
+#include "rr_graph_storage.h"
 #include "globals.h"
 #include "vpr_error.h"
 
