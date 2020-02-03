@@ -2936,15 +2936,7 @@ static bool same_non_config_node_set(int from_node, int to_node) {
 static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
                                           vtr::vector<ClusterNetId, float*>& net_delay) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
-
-    //The map lookahead requires that we start from a wire (rather than a SOURCE/PIN)
-    //
-    //As a result, to use itwe need to find the wires which are 'reachable' from the source,
-    //which we do via a BFS
-    std::queue<int> q;
-    std::vector<int> reachable_wires;
 
     t_conn_cost_params cost_params;
     cost_params.criticality = 1.; //Ensures lookahead returns delay value
@@ -2955,53 +2947,21 @@ static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahea
 
         int source_rr = route_ctx.net_rr_terminals[net_id][0];
 
-        { //BFS from source until first wires.
-            //Due to the structure of the RR graph this should be a most 2 hops
-            q.push(source_rr);
-            while (!q.empty()) {
-                int curr_rr = q.front();
-                q.pop();
-
-                auto curr_rr_type = device_ctx.rr_nodes[curr_rr].type();
-
-                if (curr_rr_type == CHANX || curr_rr_type == CHANY) {
-                    reachable_wires.push_back(curr_rr);
-                } else {
-                    //Expand
-                    for (int iedge : device_ctx.rr_nodes[curr_rr].edges()) {
-                        int next_rr = device_ctx.rr_nodes[curr_rr].edge_sink_node(iedge);
-                        q.push(next_rr);
-                    }
-                }
-            }
-        }
-
         for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
             int sink_rr = route_ctx.net_rr_terminals[net_id][ipin];
 
-            float min_delay = std::numeric_limits<float>::infinity();
-
-            for (int wire_rr : reachable_wires) {
-                float est_delay = router_lookahead.get_expected_cost(wire_rr, sink_rr, cost_params, 0.);
-                min_delay = std::min(min_delay, est_delay);
-            }
-
-            if (std::isinf(min_delay)) { //Found no wires to estimate delay from...
+            float est_delay = router_lookahead.get_expected_cost(source_rr, sink_rr, cost_params, /*R_upstream=*/0.);
+            if (std::isinf(est_delay)) { //Found no wires to estimate delay from...
                 //VTR_LOG_WARN("Failed to get delay estimate for initial criticality from %s to %s (assuming 0 delay)\n",
                 //rr_node_arch_name(source_rr).c_str(),
                 //rr_node_arch_name(sink_rr).c_str());
-                min_delay = 0.;
+
+                est_delay = 0.; //Usually these indicate special direct-connects which are fast
                 ++missing_delays;
             }
 
-            net_delay[net_id][ipin] = min_delay;
+            net_delay[net_id][ipin] = est_delay;
         }
-
-        //Reset for next net
-        while (!q.empty()) { //There is not std::queue::clear()...
-            q.pop();
-        }
-        reachable_wires.clear();
     }
     VTR_LOG_WARN("Failed to get delay estimates for initial criticality for %zu net connections (assumed zero delay)\n", missing_delays);
 }
