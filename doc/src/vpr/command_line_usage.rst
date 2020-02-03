@@ -182,6 +182,15 @@ General Options
 
      **Default:** ``ideal``
 
+.. option:: --two_stage_clock_routing
+
+    Routes clock nets in two stages using a dedicated clock network.
+
+     * First stage: From the net source (e.g. an I/O pin) to a dedicated clock network source (e.g. center of chip)
+     * Second stage: From the clock network source to net sinks.
+
+     **Default:** ``off``
+
 .. option:: --exit_before_pack {on | off}
 
     Causes VPR to exit before packing starts (useful for statistics collection).
