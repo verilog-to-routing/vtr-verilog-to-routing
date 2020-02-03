@@ -20,32 +20,31 @@
  *    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA
  */
 
-
-struct STRING_CACHE{
-	long size;
-	long string_hash_size;
-	long free;
-	long mod;
-	long mul;
-	char **string;
-	void **data;
-	long *string_hash;
-	long *next_string;
+struct STRING_CACHE {
+    long size;
+    long string_hash_size;
+    long free;
+    long mod;
+    long mul;
+    char** string;
+    void** data;
+    long* string_hash;
+    long* next_string;
 };
 
 /* creates the hash where it is indexed by a string and the void ** holds the data */
-STRING_CACHE *sc_new_string_cache(void);
+STRING_CACHE* sc_new_string_cache(void);
 /* returns an index of the spot where string is */
-long sc_lookup_string(STRING_CACHE *sc, const char * string);
+long sc_lookup_string(STRING_CACHE* sc, const char* string);
 /* adds an element into the cache and returns and id...check with cache_name->data[i] == NULL to see if already added */
-long sc_add_string(STRING_CACHE *sc, const char *string);
-int sc_valid_id(STRING_CACHE *sc, long string_id);
-void * sc_do_alloc(long, long);
-bool sc_remove_string(STRING_CACHE * sc, const char *string);
+long sc_add_string(STRING_CACHE* sc, const char* string);
+int sc_valid_id(STRING_CACHE* sc, long string_id);
+void* sc_do_alloc(long, long);
+bool sc_remove_string(STRING_CACHE* sc, const char* string);
 
 /* free the cache */
-STRING_CACHE * sc_free_string_cache(STRING_CACHE *sc);
+STRING_CACHE* sc_free_string_cache(STRING_CACHE* sc);
 
-void sc_merge_string_cache(STRING_CACHE **source_ref, STRING_CACHE *destination);
+void sc_merge_string_cache(STRING_CACHE** source_ref, STRING_CACHE* destination);
 
 #endif

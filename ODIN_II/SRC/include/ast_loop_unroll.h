@@ -15,20 +15,15 @@
 typedef std::function<bool(long)> condition_function;
 typedef std::function<long(long)> post_condition_function;
 
-ast_node_t *unroll_for_loop(ast_node_t* node, ast_node_t *parent, int *num_unrolled, sc_hierarchy *local_ref, bool is_generate);
+ast_node_t* unroll_for_loop(ast_node_t* node, ast_node_t* parent, int* num_unrolled, sc_hierarchy* local_ref, bool is_generate);
 
-inline bool is_for_node(ast_node_t* node)
-{
+inline bool is_for_node(ast_node_t* node) {
     return node && node->type == FOR;
 }
 
 /* IMPORTANT: as support for more complex pre conditions is added, update this function. */
-inline bool is_unsupported_pre(ast_node_t* node){
-    return  (node == nullptr ||
-            node->type != BLOCKING_STATEMENT ||
-            node->num_children != 2 ||
-            node->children[1] == nullptr ||
-            node->children[1]->type != NUMBERS);
+inline bool is_unsupported_pre(ast_node_t* node) {
+    return (node == nullptr || node->type != BLOCKING_STATEMENT || node->num_children != 2 || node->children[1] == nullptr || node->children[1]->type != NUMBERS);
 }
 bool is_unsupported_post(ast_node_t* node, ast_node_t* symbol);
 bool is_unsupported_condition(ast_node_t* node, ast_node_t* symbol);
