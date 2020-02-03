@@ -254,7 +254,7 @@ class edge_compare_src_node_and_configurable_first {
     const std::vector<t_rr_switch_inf>& rr_switch_inf_;
 };
 
-void t_rr_graph_storage::assign_edges() {
+void t_rr_graph_storage::assign_first_edges() {
     VTR_ASSERT(first_edge_.empty());
 
     // Last element is a dummy element
@@ -418,6 +418,11 @@ void t_rr_graph_storage::partition_edges() {
     VTR_ASSERT(remapped_edges_);
 
     const auto& device_ctx = g_vpr_ctx.device();
+    // This sort ensures two things:
+    //  - Edges are stored in ascending source node order.  This is required
+    //    by assign_first_edges()
+    //  - Edges within a source node have the configurable edges before the
+    //    non-configurable edges.
     std::stable_sort(
         edge_sort_iterator(this, 0),
         edge_sort_iterator(this, edge_src_node_.size()),
@@ -425,7 +430,7 @@ void t_rr_graph_storage::partition_edges() {
 
     partitioned_ = true;
 
-    assign_edges();
+    assign_first_edges();
 
     VTR_ASSERT_SAFE(validate());
 }
