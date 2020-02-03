@@ -95,9 +95,9 @@ struct aligned_allocator {
 };
 
 // RR node and edge storage class.
-class t_rr_node_storage {
+class t_rr_graph_storage {
   public:
-    t_rr_node_storage() {
+    t_rr_graph_storage() {
         clear();
     }
 

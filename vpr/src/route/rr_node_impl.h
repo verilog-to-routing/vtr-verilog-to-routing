@@ -2,7 +2,7 @@
 #define _RR_NODE_IMPL_H_
 
 #include "rr_node.h"
-#include "rr_node_storage.h"
+#include "rr_graph_storage.h"
 
 #include "vpr_error.h"
 
@@ -29,43 +29,43 @@ class node_idx_iterator : public std::iterator<std::bidirectional_iterator_tag, 
     t_rr_node value_;
 };
 
-inline node_idx_iterator t_rr_node_storage::begin() const {
-    return node_idx_iterator(t_rr_node(const_cast<t_rr_node_storage*>(this), RRNodeId(0)));
+inline node_idx_iterator t_rr_graph_storage::begin() const {
+    return node_idx_iterator(t_rr_node(const_cast<t_rr_graph_storage*>(this), RRNodeId(0)));
 }
 
-inline node_idx_iterator t_rr_node_storage::end() const {
-    return node_idx_iterator(t_rr_node(const_cast<t_rr_node_storage*>(this), RRNodeId(size())));
+inline node_idx_iterator t_rr_graph_storage::end() const {
+    return node_idx_iterator(t_rr_node(const_cast<t_rr_graph_storage*>(this), RRNodeId(size())));
 }
 
-inline const t_rr_node t_rr_node_storage::operator[](size_t idx) const {
-    return t_rr_node(const_cast<t_rr_node_storage*>(this), RRNodeId(idx));
+inline const t_rr_node t_rr_graph_storage::operator[](size_t idx) const {
+    return t_rr_node(const_cast<t_rr_graph_storage*>(this), RRNodeId(idx));
 }
 
-inline t_rr_node t_rr_node_storage::operator[](size_t idx) {
+inline t_rr_node t_rr_graph_storage::operator[](size_t idx) {
     return t_rr_node(this, RRNodeId(idx));
 }
 
-inline const t_rr_node t_rr_node_storage::at(size_t idx) const {
+inline const t_rr_node t_rr_graph_storage::at(size_t idx) const {
     VTR_ASSERT(idx < storage_.size());
-    return t_rr_node(const_cast<t_rr_node_storage*>(this), RRNodeId(idx));
+    return t_rr_node(const_cast<t_rr_graph_storage*>(this), RRNodeId(idx));
 }
 
-inline t_rr_node t_rr_node_storage::at(size_t idx) {
+inline t_rr_node t_rr_graph_storage::at(size_t idx) {
     VTR_ASSERT(idx < storage_.size());
     return t_rr_node(this, RRNodeId(idx));
 }
 
-inline const t_rr_node t_rr_node_storage::front() const {
-    return t_rr_node(const_cast<t_rr_node_storage*>(this), RRNodeId(0));
+inline const t_rr_node t_rr_graph_storage::front() const {
+    return t_rr_node(const_cast<t_rr_graph_storage*>(this), RRNodeId(0));
 }
-inline t_rr_node t_rr_node_storage::front() {
+inline t_rr_node t_rr_graph_storage::front() {
     return t_rr_node(this, RRNodeId(0));
 }
 
-inline const t_rr_node t_rr_node_storage::back() const {
-    return t_rr_node(const_cast<t_rr_node_storage*>(this), RRNodeId(size() - 1));
+inline const t_rr_node t_rr_graph_storage::back() const {
+    return t_rr_node(const_cast<t_rr_graph_storage*>(this), RRNodeId(size() - 1));
 }
-inline t_rr_node t_rr_node_storage::back() {
+inline t_rr_node t_rr_graph_storage::back() {
     return t_rr_node(this, RRNodeId(size() - 1));
 }
 

@@ -103,7 +103,7 @@ static void build_bidir_rr_opins(const int i,
                                  const int j,
                                  const e_side side,
                                  const t_rr_node_indices& L_rr_node_indices,
-                                 const t_rr_node_storage& rr_nodes,
+                                 const t_rr_graph_storage& rr_nodes,
                                  const t_pin_to_track_lookup& opin_to_track_map,
                                  const std::vector<vtr::Matrix<int>>& Fc_out,
                                  t_rr_edge_info_set& created_rr_edges,
@@ -128,7 +128,7 @@ static void build_unidir_rr_opins(const int i,
                                   t_rr_edge_info_set& created_rr_edges,
                                   bool* Fc_clipped,
                                   const t_rr_node_indices& L_rr_node_indices,
-                                  const t_rr_node_storage& rr_nodes,
+                                  const t_rr_graph_storage& rr_nodes,
                                   const t_direct_inf* directs,
                                   const int num_directs,
                                   const t_clb_to_clb_directs* clb_to_clb_directs,
@@ -141,12 +141,12 @@ static int get_opin_direct_connecions(int x,
                                       int from_rr_node,
                                       t_rr_edge_info_set& rr_edges_to_create,
                                       const t_rr_node_indices& L_rr_node_indices,
-                                      const t_rr_node_storage& rr_nodes,
+                                      const t_rr_graph_storage& rr_nodes,
                                       const t_direct_inf* directs,
                                       const int num_directs,
                                       const t_clb_to_clb_directs* clb_to_clb_directs);
 
-static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(t_rr_node_storage& L_rr_node,
+static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(t_rr_graph_storage& L_rr_node,
                                                                   const int num_seg_types,
                                                                   const t_chan_details& chan_details_x,
                                                                   const t_chan_details& chan_details_y,
@@ -207,7 +207,7 @@ static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(const int L_n
 
 static void build_rr_sinks_sources(const int i,
                                    const int j,
-                                   t_rr_node_storage& L_rr_node,
+                                   t_rr_graph_storage& L_rr_node,
                                    t_rr_edge_info_set& rr_edges_to_create,
                                    const t_rr_node_indices& L_rr_node_indices,
                                    const int delayless_switch,
@@ -229,13 +229,13 @@ static void build_rr_chan(const int i,
                           const t_chan_details& chan_details_y,
                           const t_rr_node_indices& L_rr_node_indices,
                           t_rr_edge_info_set& created_rr_edges,
-                          t_rr_node_storage& L_rr_node,
+                          t_rr_graph_storage& L_rr_node,
                           const int wire_to_ipin_switch,
                           const enum e_directionality directionality);
 
 void uniquify_edges(t_rr_edge_info_set& rr_edges_to_create);
 
-void alloc_and_load_edges(t_rr_node_storage& L_rr_node,
+void alloc_and_load_edges(t_rr_graph_storage& L_rr_node,
                           const t_rr_edge_info_set& rr_edges_to_create);
 
 static void alloc_and_load_rr_switch_inf(const int num_arch_switches,
@@ -273,7 +273,7 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<
                                                               const enum e_directionality directionality,
                                                               bool* Fc_clipped);
 
-static int pick_best_direct_connect_target_rr_node(const t_rr_node_storage& rr_nodes,
+static int pick_best_direct_connect_target_rr_node(const t_rr_graph_storage& rr_nodes,
                                                    int from_rr,
                                                    const std::vector<int>& candidate_rr_nodes);
 
@@ -1132,7 +1132,7 @@ static void free_type_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
 
 /* Does the actual work of allocating the rr_graph and filling all the *
  * appropriate values.  Everything up to this was just a prelude!      */
-static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(t_rr_node_storage& L_rr_node,
+static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(t_rr_graph_storage& L_rr_node,
                                                                   const int num_seg_types,
                                                                   const t_chan_details& chan_details_x,
                                                                   const t_chan_details& chan_details_y,
@@ -1280,7 +1280,7 @@ static void build_bidir_rr_opins(const int i,
                                  const int j,
                                  const e_side side,
                                  const t_rr_node_indices& L_rr_node_indices,
-                                 const t_rr_node_storage& rr_nodes,
+                                 const t_rr_graph_storage& rr_nodes,
                                  const t_pin_to_track_lookup& opin_to_track_map,
                                  const std::vector<vtr::Matrix<int>>& Fc_out,
                                  t_rr_edge_info_set& rr_edges_to_create,
@@ -1373,7 +1373,7 @@ void free_rr_graph() {
 
 static void build_rr_sinks_sources(const int i,
                                    const int j,
-                                   t_rr_node_storage& L_rr_node,
+                                   t_rr_graph_storage& L_rr_node,
                                    t_rr_edge_info_set& rr_edges_to_create,
                                    const t_rr_node_indices& L_rr_node_indices,
                                    const int delayless_switch,
@@ -1517,7 +1517,7 @@ static void build_rr_chan(const int x_coord,
                           const t_chan_details& chan_details_y,
                           const t_rr_node_indices& L_rr_node_indices,
                           t_rr_edge_info_set& rr_edges_to_create,
-                          t_rr_node_storage& L_rr_node,
+                          t_rr_graph_storage& L_rr_node,
                           const int wire_to_ipin_switch,
                           const enum e_directionality directionality) {
     /* this function builds both x and y-directed channel segments, so set up our
@@ -1680,7 +1680,7 @@ void uniquify_edges(t_rr_edge_info_set& rr_edges_to_create) {
     rr_edges_to_create.erase(std::unique(rr_edges_to_create.begin(), rr_edges_to_create.end()), rr_edges_to_create.end());
 }
 
-void alloc_and_load_edges(t_rr_node_storage& L_rr_node,
+void alloc_and_load_edges(t_rr_graph_storage& L_rr_node,
                           const t_rr_edge_info_set& rr_edges_to_create) {
     L_rr_node.alloc_and_load_edges(&rr_edges_to_create);
 }
@@ -2469,7 +2469,7 @@ std::string describe_rr_node(int inode) {
 
     return msg;
 }
-static void build_unidir_rr_opins(const int i, const int j, const e_side side, const DeviceGrid& grid, const std::vector<vtr::Matrix<int>>& Fc_out, const int max_chan_width, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, vtr::NdMatrix<int, 3>& Fc_xofs, vtr::NdMatrix<int, 3>& Fc_yofs, t_rr_edge_info_set& rr_edges_to_create, bool* Fc_clipped, const t_rr_node_indices& L_rr_node_indices, const t_rr_node_storage& rr_nodes, const t_direct_inf* directs, const int num_directs, const t_clb_to_clb_directs* clb_to_clb_directs, const int num_seg_types) {
+static void build_unidir_rr_opins(const int i, const int j, const e_side side, const DeviceGrid& grid, const std::vector<vtr::Matrix<int>>& Fc_out, const int max_chan_width, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, vtr::NdMatrix<int, 3>& Fc_xofs, vtr::NdMatrix<int, 3>& Fc_yofs, t_rr_edge_info_set& rr_edges_to_create, bool* Fc_clipped, const t_rr_node_indices& L_rr_node_indices, const t_rr_graph_storage& rr_nodes, const t_direct_inf* directs, const int num_directs, const t_clb_to_clb_directs* clb_to_clb_directs, const int num_seg_types) {
     /*
      * This routine adds the edges from opins to channels at the specified
      * grid location (i,j) and grid tile side
@@ -2704,7 +2704,7 @@ static int get_opin_direct_connecions(int x,
                                       int from_rr_node,
                                       t_rr_edge_info_set& rr_edges_to_create,
                                       const t_rr_node_indices& L_rr_node_indices,
-                                      const t_rr_node_storage& rr_nodes,
+                                      const t_rr_graph_storage& rr_nodes,
                                       const t_direct_inf* directs,
                                       const int num_directs,
                                       const t_clb_to_clb_directs* clb_to_clb_directs) {
@@ -2916,7 +2916,7 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type
     return perturb_opins;
 }
 
-static int pick_best_direct_connect_target_rr_node(const t_rr_node_storage& rr_nodes,
+static int pick_best_direct_connect_target_rr_node(const t_rr_graph_storage& rr_nodes,
                                                    int from_rr,
                                                    const std::vector<int>& candidate_rr_nodes) {
     //With physically equivalent pins there may be multiple candidate rr nodes (which are equivalent)
