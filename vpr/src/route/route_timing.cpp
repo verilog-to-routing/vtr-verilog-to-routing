@@ -2963,5 +2963,5 @@ static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahea
             net_delay[net_id][ipin] = est_delay;
         }
     }
-    VTR_LOG_WARN("Failed to get delay estimates for initial criticality for %zu net connections (assumed zero delay)\n", missing_delays);
+    VTR_LOGV_WARN(missing_delays > 0, "Failed to get delay estimates for initial criticality for %zu net connections (assumed zero delay)\n", missing_delays);
 }
