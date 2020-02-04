@@ -2,7 +2,7 @@
 #define ROUTER_DELAY_PROFILING_H_
 
 #include "vpr_types.h"
-#include "router_lookahead.h"
+#include "route_timing.h"
 
 #include <vector>
 
@@ -12,8 +12,8 @@ class RouterDelayProfiler {
     bool calculate_delay(int source_node, int sink_node, const t_router_opts& router_opts, float* net_delay);
 
   private:
-    std::vector<int> modified_rr_node_inf_;
-    const RouterLookahead* router_lookahead_;
+    RouterStats router_stats_;
+    Router router_;
 };
 
 std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const t_router_opts& router_opts);

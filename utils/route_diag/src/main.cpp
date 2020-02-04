@@ -91,7 +91,6 @@ static void do_one_route(int source_node, int sink_node,
 
     init_heap(device_ctx.grid);
 
-    std::vector<int> modified_rr_node_inf;
     RouterStats router_stats;
     auto router_lookahead = make_router_lookahead(
             router_opts.lookahead_type,
@@ -99,7 +98,13 @@ static void do_one_route(int source_node, int sink_node,
             router_opts.read_router_lookahead,
             segment_inf
             );
-    t_heap* cheapest = timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, bounding_box, *router_lookahead, modified_rr_node_inf, router_stats);
+
+    Router router(
+            *router_lookahead,
+            device_ctx.rr_nodes,
+            device_ctx.rr_rc_data,
+            device_ctx.rr_switch_inf);
+    t_heap* cheapest = router.timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, bounding_box, router_stats);
 
     bool found_path = (cheapest != nullptr);
     if (found_path) {
@@ -125,7 +130,7 @@ static void do_one_route(int source_node, int sink_node,
 
     //Reset for the next router call
     empty_heap();
-    reset_path_costs(modified_rr_node_inf);
+    router.reset_path_costs();
 }
 
 static void profile_source(int source_rr_node,

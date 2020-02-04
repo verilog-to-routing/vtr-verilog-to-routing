@@ -520,9 +520,6 @@ bool t_rr_graph_storage::validate() const {
 const char* t_rr_graph_storage::node_type_string(RRNodeId id) const {
     return rr_node_typename[node_type(id)];
 }
-t_rr_type t_rr_graph_storage::node_type(RRNodeId id) const {
-    return storage_[id].type_;
-}
 
 void t_rr_graph_storage::set_node_ptc_num(RRNodeId id, short new_ptc_num) {
     ptc_[id].ptc_.pin_num = new_ptc_num; //TODO: eventually remove
