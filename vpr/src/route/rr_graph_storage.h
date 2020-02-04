@@ -182,8 +182,10 @@ class t_rr_graph_storage {
      * Node methods *
      ****************/
 
+    t_rr_type node_type(RRNodeId id) const {
+        return storage_[id].type_;
+    }
     const char* node_type_string(RRNodeId id) const;
-    t_rr_type node_type(RRNodeId id) const;
 
     /* PTC set methods */
     void set_node_ptc_num(RRNodeId id, short);
