@@ -4,7 +4,6 @@
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
-#include <queue>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
