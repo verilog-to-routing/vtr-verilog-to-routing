@@ -1432,9 +1432,100 @@ void remove_fanout_pins_from_net(nnet_t *net, npin_t * /*pin*/, int id)
 // }
 // }
 
+void DFS (short marker_value, netlist_t *netlist)
+{
+	int i;
+
+	/* Start with the primary input list*/
+	for (i=0; i < netlist->num_top_input_nodes; i++)
+	{
+		if (netlist->top_input_nodes[i] != NULL)
+		{
+			DFS_node(netlist->top_input_nodes[i], marker_value, netlist);
+		}
+
+	}
+	for (i=0 ; i< netlist->num_top_input_nodes; i++)
+	{
+		if (netlist->top_input_nodes[i] != NULL)
+		{
+			put_critical_path_values(netlist->top_input_nodes[i], marker_value+1, netlist); 
+		}
+	}
+}
 
 
+void DFS_node (nnode_t *node, int traverse_mark_number, netlist_t *netlist){
+void put_critical_path_value (nnode_t *node, int traverse_mark_number, netlist_t *netlist)
+{
+	if (node->traverse_visited != traverse_mark_number)
+
+	node->traverse_visited = traverse_mark_number; 
+
+	for (i = 0; i< node->num_output_pin; i++)
+	{
+		if (node->output_pins[i]->net)
+			{
+				nnet_t *next_net = node->output_pins[i]->net;
+                next_net->previous_delay++;
+
+				if(next_net->fanout_pins)
+				{
+					for (j = 0; j < next_net->num_fanout_pins; j++)
+					{
+						if (next_net->fanout_pins[j])
+						{
+							if (next_net->fanout_pins[j]->node)
+							{
+							/* recursive call point */
+								DFS_node(next_net->fanout_pins[j]->node, traverse_mark_number, netlist);
+							}
+						}
+					}
+				}
+			}
+		}
+
+	}
+}
 
 
+void put_critical_path_values (nnode_t *node, int traverse_mark_number, netlist_t *netlist) {
 
+	if (node->traverse_visited != traverse_mark_number)
+	{
 
+		node->traverse_visited = traverse_mark_number;
+
+        int previous_delay = 0;
+
+        for ( int k = 0; k < node->num_input_pins; k++ )
+        {
+            if ( node->input_pins[k]->net->previous_delay > previous_delay )
+                node->critical_path = node->input_pins[k]->net->previous_delay;
+        }
+
+		for (i = 0; i < node->num_output_pins; i++)
+		{
+			if (node->output_pins[i]->net)
+			{
+				nnet_t *next_net = node->output_pins[i]->net;
+				if(next_net->fanout_pins)
+				{
+					for (j = 0; j < next_net->num_fanout_pins; j++)
+					{
+						if (next_net->fanout_pins[j])
+						{
+							if (next_net->fanout_pins[j]->node)
+							{
+							/* recursive call point */
+								put_critical_path_values(next_net->fanout_pins[j]->node, traverse_mark_number, netlist);
+							}
+						}
+					}
+				}
+			}
+		}
+
+	}
+}

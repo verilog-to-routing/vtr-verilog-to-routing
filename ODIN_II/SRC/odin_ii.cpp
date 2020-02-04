@@ -162,7 +162,11 @@ static ODIN_ERROR_CODE synthesize_verilog()
 
 	/* point where we convert netlist to FPGA or other hardware target compatible format */
 	printf("Performing Partial Map to target device\n");
-	partial_map_top(verilog_netlist);
+	 partial_map_top(verilog_netlist);
+	 
+	 //Consider the value of depth traversal in this section equal as 15
+	 DFS(15, verilog_netlist); 
+	
 
 	/* Find any unused logic in the netlist and remove it */
 	remove_unused_logic(verilog_netlist);
