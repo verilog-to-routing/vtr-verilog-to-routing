@@ -15,7 +15,8 @@ RouterDelayProfiler::RouterDelayProfiler(
           *lookahead,
           g_vpr_ctx.device().rr_nodes,
           g_vpr_ctx.device().rr_rc_data,
-          g_vpr_ctx.device().rr_switch_inf) {}
+          g_vpr_ctx.device().rr_switch_inf,
+          g_vpr_ctx.mutable_routing().rr_node_route_inf) {}
 
 bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const t_router_opts& router_opts, float* net_delay) {
     /* Returns true as long as found some way to hook up this net, even if that *
@@ -80,6 +81,7 @@ bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const 
 //Returns the shortest path delay from src_node to all RR nodes in the RR graph, or NaN if no path exists
 std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const t_router_opts& router_opts) {
     auto& device_ctx = g_vpr_ctx.device();
+    auto& routing_ctx = g_vpr_ctx.mutable_routing();
 
     std::vector<float> path_delays_to(device_ctx.rr_nodes.size(), std::numeric_limits<float>::quiet_NaN());
 
@@ -103,7 +105,8 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
         *router_lookahead,
         device_ctx.rr_nodes,
         device_ctx.rr_rc_data,
-        device_ctx.rr_switch_inf);
+        device_ctx.rr_switch_inf,
+        routing_ctx.rr_node_route_inf);
     RouterStats router_stats;
 
     init_heap(device_ctx.grid);

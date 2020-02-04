@@ -103,7 +103,8 @@ static void do_one_route(int source_node, int sink_node,
             *router_lookahead,
             device_ctx.rr_nodes,
             device_ctx.rr_rc_data,
-            device_ctx.rr_switch_inf);
+            device_ctx.rr_switch_inf,
+            g_vpr_ctx.mutable_routing().rr_node_route_inf);
     t_heap* cheapest = router.timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, bounding_box, router_stats);
 
     bool found_path = (cheapest != nullptr);

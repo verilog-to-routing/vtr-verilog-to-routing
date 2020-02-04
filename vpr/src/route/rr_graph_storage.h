@@ -187,6 +187,23 @@ class t_rr_graph_storage {
     }
     const char* node_type_string(RRNodeId id) const;
 
+    int16_t node_rc_index(RRNodeId id) const {
+        return storage_[id].rc_index_;
+    }
+
+    short xlow(RRNodeId id) const {
+        return storage_[id].xlow_;
+    }
+    short ylow(RRNodeId id) const {
+        return storage_[id].ylow_;
+    }
+    short xhigh(RRNodeId id) const {
+        return storage_[id].xhigh_;
+    }
+    short yhigh(RRNodeId id) const {
+        return storage_[id].yhigh_;
+    }
+
     /* PTC set methods */
     void set_node_ptc_num(RRNodeId id, short);
     void set_node_pin_num(RRNodeId id, short);   //Same as set_ptc_num() by checks type() is consistent

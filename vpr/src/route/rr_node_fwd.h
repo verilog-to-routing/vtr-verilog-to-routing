@@ -19,10 +19,10 @@ struct rr_node_id_tag;
 struct rr_edge_id_tag;
 
 //A unique identifier for a node in the rr graph
-typedef vtr::StrongId<rr_node_id_tag> RRNodeId;
+typedef vtr::StrongId<rr_node_id_tag, unsigned int> RRNodeId;
 
 //A unique identifier for an edge in the rr graph
-typedef vtr::StrongId<rr_edge_id_tag> RREdgeId;
+typedef vtr::StrongId<rr_edge_id_tag, unsigned int> RREdgeId;
 
 //An iterator that dereferences to an edge index
 //

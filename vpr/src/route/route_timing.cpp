@@ -357,7 +357,8 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
         *router_lookahead,
         device_ctx.rr_nodes,
         device_ctx.rr_rc_data,
-        device_ctx.rr_switch_inf);
+        device_ctx.rr_switch_inf,
+        route_ctx.rr_node_route_inf);
 
     /*
      * On the first routing iteration ignore congestion to get reasonable net
@@ -1080,18 +1081,6 @@ bool timing_driven_route_net(Router& router,
     return (true);
 }
 
-void Router::update_cheapest(t_heap* cheapest) {
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
-
-    //Record final link to target
-    add_to_mod_list(cheapest->index, modified_rr_node_inf_);
-
-    route_ctx.rr_node_route_inf[cheapest->index].prev_node = cheapest->u.prev.node;
-    route_ctx.rr_node_route_inf[cheapest->index].prev_edge = cheapest->u.prev.edge;
-    route_ctx.rr_node_route_inf[cheapest->index].path_cost = cheapest->cost;
-    route_ctx.rr_node_route_inf[cheapest->index].backward_path_cost = cheapest->backward_path_cost;
-}
-
 static bool timing_driven_pre_route_to_clock_root(
     Router& router,
     ClusterNetId net_id,
@@ -1546,7 +1535,7 @@ std::vector<t_heap> Router::timing_driven_find_all_shortest_paths_from_route_tre
 std::vector<t_heap> Router::timing_driven_find_all_shortest_paths_from_heap(
     const t_conn_cost_params cost_params,
     t_bb bounding_box) {
-    std::vector<t_heap> cheapest_paths(rr_nodes_.size());
+    std::vector<t_heap> cheapest_paths(rr_nodes_->size());
 
     VTR_ASSERT_SAFE(heap_::is_valid());
 
@@ -1592,12 +1581,11 @@ void Router::timing_driven_expand_cheapest(t_heap* cheapest,
                                            int target_node,
                                            const t_conn_cost_params cost_params,
                                            t_bb bounding_box) {
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
-
     int inode = cheapest->index;
 
-    float best_total_cost = route_ctx.rr_node_route_inf[inode].path_cost;
-    float best_back_cost = route_ctx.rr_node_route_inf[inode].backward_path_cost;
+    t_rr_node_route_inf* route_inf = &rr_node_route_inf_[inode];
+    float best_total_cost = route_inf->path_cost;
+    float best_back_cost = route_inf->backward_path_cost;
 
     float new_total_cost = cheapest->cost;
     float new_back_cost = cheapest->backward_path_cost;
@@ -1618,7 +1606,7 @@ void Router::timing_driven_expand_cheapest(t_heap* cheapest,
         VTR_LOGV_DEBUG(f_router_debug, "    New back cost: %g\n", new_back_cost);
         VTR_LOGV_DEBUG(f_router_debug, "      Setting path costs for associated node %d (from %d edge %d)\n", cheapest->index, cheapest->u.prev.node, cheapest->u.prev.edge);
 
-        update_cheapest(cheapest);
+        update_cheapest(cheapest, route_inf);
 
         timing_driven_expand_neighbours(cheapest, cost_params, bounding_box,
                                         target_node);
@@ -1971,22 +1959,24 @@ void Router::timing_driven_expand_neighbours(t_heap* current,
     /* Puts all the rr_nodes adjacent to current on the heap.
      */
 
-    auto& device_ctx = g_vpr_ctx.device();
-
     t_bb target_bb;
     if (target_node != OPEN) {
-        target_bb.xmin = device_ctx.rr_nodes[target_node].xlow();
-        target_bb.ymin = device_ctx.rr_nodes[target_node].ylow();
-        target_bb.xmax = device_ctx.rr_nodes[target_node].xhigh();
-        target_bb.ymax = device_ctx.rr_nodes[target_node].yhigh();
+        target_bb.xmin = rr_nodes_->xlow(RRNodeId(target_node));
+        target_bb.ymin = rr_nodes_->ylow(RRNodeId(target_node));
+        target_bb.xmax = rr_nodes_->xhigh(RRNodeId(target_node));
+        target_bb.ymax = rr_nodes_->yhigh(RRNodeId(target_node));
     }
 
     //For each node associated with the current heap element, expand all of it's neighbors
-    int num_edges = device_ctx.rr_nodes[current->index].num_edges();
+    int from_node_int = current->index;
+    RRNodeId from_node(from_node_int);
+    int num_edges = rr_nodes_->num_edges(from_node);
     for (int iconn = 0; iconn < num_edges; iconn++) {
-        int to_node = device_ctx.rr_nodes[current->index].edge_sink_node(iconn);
+        RRNodeId to_node = rr_nodes_->edge_sink_node(from_node, iconn);
         timing_driven_expand_neighbour(current,
-                                       current->index, iconn, to_node,
+                                       from_node_int,
+                                       iconn,
+                                       size_t(to_node),
                                        cost_params,
                                        bounding_box,
                                        target_node,
@@ -2000,17 +1990,16 @@ void Router::timing_driven_expand_neighbours(t_heap* current,
 void Router::timing_driven_expand_neighbour(t_heap* current,
                                             const int from_node,
                                             const t_edge_size from_edge,
-                                            const int to_node,
+                                            const int to_node_int,
                                             const t_conn_cost_params cost_params,
                                             const t_bb bounding_box,
                                             int target_node,
                                             const t_bb target_bb) {
-    auto& device_ctx = g_vpr_ctx.device();
-
-    int to_xlow = device_ctx.rr_nodes[to_node].xlow();
-    int to_ylow = device_ctx.rr_nodes[to_node].ylow();
-    int to_xhigh = device_ctx.rr_nodes[to_node].xhigh();
-    int to_yhigh = device_ctx.rr_nodes[to_node].yhigh();
+    RRNodeId to_node(to_node_int);
+    int to_xlow = rr_nodes_->xlow(to_node);
+    int to_ylow = rr_nodes_->ylow(to_node);
+    int to_xhigh = rr_nodes_->xhigh(to_node);
+    int to_yhigh = rr_nodes_->yhigh(to_node);
 
     if (to_xhigh < bounding_box.xmin      //Strictly left of BB left-edge
         || to_xlow > bounding_box.xmax    //Strictly right of BB right-edge
@@ -2020,7 +2009,7 @@ void Router::timing_driven_expand_neighbour(t_heap* current,
                        "      Pruned expansion of node %d edge %d -> %d"
                        " (to node location %d,%dx%d,%d outside of expanded"
                        " net bounding box %d,%dx%d,%d)\n",
-                       from_node, from_edge, to_node,
+                       from_node, from_edge, to_node_int,
                        to_xlow, to_ylow, to_xhigh, to_yhigh,
                        bounding_box.xmin, bounding_box.ymin, bounding_box.xmax, bounding_box.ymax);
         return; /* Node is outside (expanded) bounding box. */
@@ -2031,7 +2020,7 @@ void Router::timing_driven_expand_neighbour(t_heap* current,
      * more promising routes, but makes route-through (via CLBs) impossible.   *
      * Change this if you want to investigate route-throughs.                   */
     if (target_node != OPEN) {
-        t_rr_type to_type = device_ctx.rr_nodes[to_node].type();
+        t_rr_type to_type = rr_nodes_->node_type(to_node);
         if (to_type == IPIN) {
             //Check if this IPIN leads to the target block
             // IPIN's of the target block should be contained within it's bounding box
@@ -2043,7 +2032,7 @@ void Router::timing_driven_expand_neighbour(t_heap* current,
                                "      Pruned expansion of node %d edge %d -> %d"
                                " (to node is IPIN at %d,%dx%d,%d which does not"
                                " lead to target block %d,%dx%d,%d)\n",
-                               from_node, from_edge, to_node,
+                               from_node, from_edge, to_node_int,
                                to_xlow, to_ylow, to_xhigh, to_yhigh,
                                target_bb.xmin, target_bb.ymin, target_bb.xmax, target_bb.ymax);
                 return;
@@ -2052,12 +2041,12 @@ void Router::timing_driven_expand_neighbour(t_heap* current,
     }
 
     VTR_LOGV_DEBUG(f_router_debug, "      Expanding node %d edge %d -> %d\n",
-                   from_node, from_edge, to_node);
+                   from_node, from_edge, to_node_int);
 
     timing_driven_add_to_heap(cost_params,
                               current,
                               from_node,
-                              to_node,
+                              to_node_int,
                               from_edge,
                               target_node);
 }
@@ -2080,10 +2069,8 @@ void Router::timing_driven_add_to_heap(const t_conn_cost_params cost_params,
     timing_driven_expand_node(cost_params,
                               next, from_node, to_node, iconn, target_node);
 
-    auto& route_ctx = g_vpr_ctx.routing();
-
-    float best_total_cost = route_ctx.rr_node_route_inf[to_node].path_cost;
-    float best_back_cost = route_ctx.rr_node_route_inf[to_node].backward_path_cost;
+    float best_total_cost = rr_node_route_inf_[to_node].path_cost;
+    float best_back_cost = rr_node_route_inf_[to_node].backward_path_cost;
 
     float new_total_cost = next->cost;
     float new_back_cost = next->backward_path_cost;
@@ -2139,7 +2126,7 @@ void Router::evaluate_timing_driven_node_costs(t_heap* to,
      */
 
     //Info for the switch connecting from_node to_node
-    int iswitch = rr_nodes_[from_node].edge_switch(iconn);
+    int iswitch = rr_nodes_->edge_switch(RRNodeId(from_node), iconn);
     bool switch_buffered = rr_switch_inf_[iswitch].buffered();
     bool reached_configurably = rr_switch_inf_[iswitch].configurable();
     float switch_R = rr_switch_inf_[iswitch].R;
@@ -2147,12 +2134,12 @@ void Router::evaluate_timing_driven_node_costs(t_heap* to,
     float switch_Cinternal = rr_switch_inf_[iswitch].Cinternal;
 
     //To node info
-    auto rc_index = rr_nodes_[to_node].rc_index();
+    auto rc_index = rr_nodes_->node_rc_index(RRNodeId(to_node));
     float node_C = rr_rc_data_[rc_index].C;
     float node_R = rr_rc_data_[rc_index].R;
 
     //From node info
-    float from_node_R = rr_rc_data_[rr_nodes_[from_node].rc_index()].R;
+    float from_node_R = rr_rc_data_[rr_nodes_->node_rc_index(RRNodeId(from_node))].R;
 
     //Update R_upstream
     if (switch_buffered) {
@@ -2204,8 +2191,8 @@ void Router::evaluate_timing_driven_node_costs(t_heap* to,
     to->backward_path_cost += cost_params.criticality * Tdel;             //Delay cost
 
     if (cost_params.bend_cost != 0.) {
-        t_rr_type from_type = rr_nodes_[from_node].type();
-        t_rr_type to_type = rr_nodes_[to_node].type();
+        t_rr_type from_type = rr_nodes_->node_type(RRNodeId(from_node));
+        t_rr_type to_type = rr_nodes_->node_type(RRNodeId(to_node));
         if ((from_type == CHANX && to_type == CHANY) || (from_type == CHANY && to_type == CHANX)) {
             to->backward_path_cost += cost_params.bend_cost; //Bend cost
         }

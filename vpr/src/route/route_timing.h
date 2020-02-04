@@ -20,11 +20,13 @@ class Router {
         const RouterLookahead& router_lookahead,
         const t_rr_graph_storage& rr_nodes,
         const std::vector<t_rr_rc_data>& rr_rc_data,
-        const std::vector<t_rr_switch_inf>& rr_switch_inf)
+        const std::vector<t_rr_switch_inf>& rr_switch_inf,
+        std::vector<t_rr_node_route_inf>& rr_node_route_inf)
         : router_lookahead_(router_lookahead)
-        , rr_nodes_(rr_nodes)
-        , rr_rc_data_(rr_rc_data)
-        , rr_switch_inf_(rr_switch_inf) {}
+        , rr_nodes_(&rr_nodes)
+        , rr_rc_data_(rr_rc_data.data())
+        , rr_switch_inf_(rr_switch_inf.data())
+        , rr_node_route_inf_(rr_node_route_inf.data()) {}
 
     void clear_modified_rr_node_info() {
         modified_rr_node_inf_.clear();
@@ -56,7 +58,26 @@ class Router {
         RouterStats& router_stats);
 
   private:
-    void update_cheapest(t_heap* cheapest);
+    void add_to_mod_list(int inode) {
+        if (std::isinf(rr_node_route_inf_[inode].path_cost)) {
+            modified_rr_node_inf_.push_back(inode);
+        }
+    }
+
+    void update_cheapest(t_heap* cheapest) {
+        update_cheapest(cheapest, &rr_node_route_inf_[cheapest->index]);
+    }
+
+    void update_cheapest(t_heap* cheapest, t_rr_node_route_inf* route_inf) {
+        //Record final link to target
+        add_to_mod_list(cheapest->index);
+
+        route_inf->prev_node = cheapest->u.prev.node;
+        route_inf->prev_edge = cheapest->u.prev.edge;
+        route_inf->path_cost = cheapest->cost;
+        route_inf->backward_path_cost = cheapest->backward_path_cost;
+    }
+
     t_heap* timing_driven_route_connection_from_route_tree(
         t_rt_node* rt_root,
         int sink_node,
@@ -111,9 +132,10 @@ class Router {
         t_bb bounding_box);
 
     const RouterLookahead& router_lookahead_;
-    const t_rr_graph_storage& rr_nodes_;
-    const std::vector<t_rr_rc_data>& rr_rc_data_;
-    const std::vector<t_rr_switch_inf>& rr_switch_inf_;
+    const t_rr_graph_storage* rr_nodes_;
+    const t_rr_rc_data* rr_rc_data_;
+    const t_rr_switch_inf* rr_switch_inf_;
+    t_rr_node_route_inf* rr_node_route_inf_;
     std::vector<int> modified_rr_node_inf_;
     RouterStats* router_stats_;
 };
