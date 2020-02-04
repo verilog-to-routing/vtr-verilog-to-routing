@@ -7,10 +7,18 @@
  * to complete the route. While this method is efficient, it can run into trouble with architectures that use
  * multiple interconnected wire types.
  *
- * The lookahead in this file pre-computes delay/congestion costs up and to the right of a starting tile. This generates
- * delay/congestion tables for {CHANX, CHANY} channel types, over all wire types defined in the architecture file.
- * See Section 3.2.4 in Oleg Petelin's MASc thesis (2016) for more discussion.
+ * The lookahead in this file performs undirected Dijkstra searches to evaluate many paths through the routing network,
+ * starting from all the different wire types in the routing architecture. This ensures the lookahead captures the 
+ * effect of inter-wire connectivity. This information is then reduced into a delta_x delta_y based lookup table for 
+ * reach source wire type (f_cost_map). This is used for estimates from CHANX/CHANY -> SINK nodes. See Section 3.2.4 
+ * in Oleg Petelin's MASc thesis (2016) for more discussion.
  *
+ * To handle estimates starting from SOURCE/OPIN's the lookahead also creates a small side look-up table of the wire types
+ * which are reachable from each physical tile type's SOURCEs/OPINs (f_src_opin_reachable_wires). This is used for
+ * SRC/OPIN -> CHANX/CHANY estimates.
+ *
+ * In the case of SRC/OPIN -> SINK estimates the resuls from the two look-ups are added together (and the minimum taken
+ * if there are multiple possiblities).
  */
 
 #include <cmath>
@@ -243,6 +251,11 @@ float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticali
 
     e_rr_type from_type = from_node.type();
     if (from_type == SOURCE || from_type == OPIN) {
+        //When estimating costs from a SOURCE/OPIN we look-up to find which wire types (and the
+        //cost to reach them) in f_src_opin_reachable_wires. Once we know what wire types are
+        //reachable, we query the f_wire_cost_map (i.e. the wire lookahead) to get the final
+        //delay to reach the sink.
+
         t_physical_tile_type_ptr tile_type = device_ctx.grid[from_node.xlow()][from_node.ylow()].type;
         auto tile_index = std::distance(&device_ctx.physical_tile_types[0], tile_type);
 
@@ -262,6 +275,7 @@ float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticali
 
     } else {
         VTR_ASSERT_SAFE(from_type == CHANX || from_type == CHANY);
+        //When estimating costs from a wire, we directly look-up the result in the wire lookahead (f_wire_cost_map)
 
         int from_cost_index = from_node.cost_index();
         int from_seg_index = device_ctx.rr_indexed_data[from_cost_index].seg_index;
@@ -296,7 +310,12 @@ Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int delta_x, in
 void compute_router_lookahead(int num_segments) {
     vtr::ScopedStartFinishTimer timer("Computing router lookahead map");
 
+    //First compute the delay map when starting from the various wire types
+    //(CHANX/CHANY)in the routing architecture
     compute_router_wire_lookahead(num_segments);
+
+    //Next, compute which wire types are accessible (and the cost to reach them)
+    //from the different physical tile type's SOURCEs & OPINs
     compute_router_src_opin_lookahead();
 }
 
@@ -393,10 +412,10 @@ static void compute_router_src_opin_lookahead() {
                 root.inode = inode;
 
                 /*
-                 * Perform Djikstra from the SOURCE/OPIN of interest, to the the first
+                 * Perform Djikstra from the SOURCE/OPIN of interest, stopping at the the first
                  * reachable wires.
                  *
-                 * Note that in typical RR graphs are structured:
+                 * Note that typical RR graphs are structured:
                  *
                  *      SOURCE ---> OPIN --> CHANX/CHANY
                  *              |
@@ -404,8 +423,8 @@ static void compute_router_src_opin_lookahead() {
                  *              |
                  *             ...
                  *
-                 * There is a fixed number of hops from SOURCE/OPIN to CHANX/CHANY, so
-                 * this is very fast (i.e. O(1))
+                 * and there is a fixed number of hops from SOURCE/OPIN to CHANX/CHANY
+                 * (usually 2), so this is very fast (i.e. O(1))
                  */
                 pq.push(root);
                 while (!pq.empty()) {
