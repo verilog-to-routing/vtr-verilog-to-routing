@@ -202,17 +202,14 @@ std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_
 
     pin_name += ".";
 
-    int curr_index = 0;
     for (auto const& port : type->ports) {
-        if (curr_index + port.num_pins > pin_index) {
+        if (pin_index >= port.absolute_first_pin_index && pin_index < port.absolute_first_pin_index + port.num_pins) {
             //This port contains the desired pin index
-            int index_in_port = pin_index - curr_index;
+            int index_in_port = pin_index - port.absolute_first_pin_index;
             pin_name += port.name;
             pin_name += "[" + std::to_string(index_in_port) + "]";
             return pin_name;
         }
-
-        curr_index += port.num_pins;
     }
 
     return "<UNKOWN>";
@@ -229,7 +226,9 @@ std::vector<std::string> block_type_class_index_to_pin_names(t_physical_tile_typ
 
     std::vector<std::string> pin_names;
     for (int ipin = 0; ipin < class_inf.num_pins; ++ipin) {
-        pin_names.push_back(block_type_pin_index_to_name(type, class_inf.pinlist[ipin]));
+        int pin_index = class_inf.pinlist[ipin];
+        VTR_ASSERT(type->pin_class[pin_index] == class_index);
+        pin_names.push_back(block_type_pin_index_to_name(type, pin_index));
     }
 
     return pin_names;
