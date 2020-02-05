@@ -83,10 +83,16 @@ class MetadataBind {
     void bind() {
         if (is_node_) {
             vpr::add_rr_node_metadata(inode_,
-                                      std::move(name_), std::move(value_));
+                                      vtr::string_view(name_.data(), name_.size()),
+                                      vtr::string_view(value_.data(), value_.size()));
+            name_.clear();
+            value_.clear();
         } else if (is_edge_) {
             vpr::add_rr_edge_metadata(inode_, sink_node_, switch_id_,
-                                      std::move(name_), std::move(value_));
+                                      vtr::string_view(name_.data(), name_.size()),
+                                      vtr::string_view(value_.data(), value_.size()));
+            name_.clear();
+            value_.clear();
         } else if (ignore_) {
             // Do nothing.
         } else {
@@ -280,9 +286,9 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         const std::vector<t_segment_inf>& segment_inf,
         const std::vector<t_physical_tile_type>& physical_tile_types,
         const DeviceGrid& grid,
-        const std::unordered_map<int, t_metadata_dict>& rr_node_metadata,
-        const std::unordered_map<std::tuple<int, int, short>,
-                                 t_metadata_dict>& rr_edge_metadata)
+        MetadataStorage<int>* rr_node_metadata,
+        MetadataStorage<std::tuple<int, int, short>>* rr_edge_metadata,
+        vtr::string_internment* strings)
         : wire_to_rr_ipin_switch_(wire_to_rr_ipin_switch)
         , chan_width_(chan_width)
         , rr_nodes_(rr_nodes)
@@ -302,6 +308,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         , grid_(grid)
         , rr_node_metadata_(rr_node_metadata)
         , rr_edge_metadata_(rr_edge_metadata)
+        , strings_(strings)
         , report_error_(nullptr) {}
 
     void start_load(const std::function<void(const char*)>* report_error_in) final {
@@ -497,8 +504,14 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline void set_meta_name(const char* name, MetadataBind& bind) final {
         bind.set_name(name);
     }
+
+  private:
+    std::string temp_;
+
+  public:
     inline const char* get_meta_name(const t_metadata_dict::value_type*& meta_value) final {
-        return meta_value->first.c_str();
+        meta_value->first.get(strings_, &temp_);
+        return temp_.c_str();
     }
 
     inline void set_meta_value(const char* value, MetadataBind& bind) final {
@@ -506,7 +519,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
     inline const char* get_meta_value(const t_metadata_dict::value_type*& meta_value) final {
         VTR_ASSERT(meta_value->second.size() == 1);
-        return meta_value->second[0].as_string().c_str();
+        meta_value->second[0].as_string().get(strings_, &temp_);
+        return temp_.c_str();
     }
 
     /** Generated for complex type "metadata":
@@ -664,12 +678,12 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         bind.finish();
     }
     inline t_metadata_dict_iterator get_node_metadata(const t_rr_node*& node) final {
-        const auto itr = rr_node_metadata_.find(get_node_id(node));
+        const auto itr = rr_node_metadata_->find(get_node_id(node));
         return t_metadata_dict_iterator(&itr->second, report_error_);
     }
     inline bool has_node_metadata(const t_rr_node*& node) final {
-        const auto itr = rr_node_metadata_.find(get_node_id(node));
-        return itr != rr_node_metadata_.end();
+        const auto itr = rr_node_metadata_->find(get_node_id(node));
+        return itr != rr_node_metadata_->end();
     }
 
     /** Generated for complex type "rr_nodes":
@@ -842,7 +856,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         bind.finish();
     }
     inline t_metadata_dict_iterator get_edge_metadata(const EdgeWalker*& walker) final {
-        return t_metadata_dict_iterator(&rr_edge_metadata_.find(
+        return t_metadata_dict_iterator(&rr_edge_metadata_->find(
                                                               std::make_tuple(
                                                                   walker->current_src_node(),
                                                                   walker->current_sink_node(),
@@ -851,12 +865,12 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                                         report_error_);
     }
     inline bool has_edge_metadata(const EdgeWalker*& walker) final {
-        return rr_edge_metadata_.find(
+        return rr_edge_metadata_->find(
                    std::make_tuple(
                        walker->current_src_node(),
                        walker->current_sink_node(),
                        walker->current_switch_id_node()))
-               != rr_edge_metadata_.end();
+               != rr_edge_metadata_->end();
     }
 
     inline void* init_rr_graph_rr_edges(void*& /*ctx*/) final {
@@ -1520,8 +1534,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         /* Alloc the lookup table */
         auto& indices = *rr_node_indices_;
 
-        indices.resize(NUM_RR_TYPES);
-
         typedef struct max_ptc {
             short chanx_max_ptc = 0;
             short chany_max_ptc = 0;
@@ -1538,21 +1550,9 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         /* Alloc the lookup table */
         for (t_rr_type rr_type : RR_TYPES) {
             if (rr_type == CHANX) {
-                indices[rr_type].resize(grid_.height());
-                for (size_t y = 0; y < grid_.height(); ++y) {
-                    indices[rr_type][y].resize(grid_.width());
-                    for (size_t x = 0; x < grid_.width(); ++x) {
-                        indices[rr_type][y][x].resize(NUM_SIDES);
-                    }
-                }
+                indices[rr_type].resize({grid_.height(), grid_.width(), NUM_SIDES});
             } else {
-                indices[rr_type].resize(grid_.width());
-                for (size_t x = 0; x < grid_.width(); ++x) {
-                    indices[rr_type][x].resize(grid_.height());
-                    for (size_t y = 0; y < grid_.height(); ++y) {
-                        indices[rr_type][x][y].resize(NUM_SIDES);
-                    }
-                }
+                indices[rr_type].resize({grid_.width(), grid_.height(), NUM_SIDES});
             }
         }
 
@@ -1665,8 +1665,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                     int root_x = x - width_offset;
                     int root_y = y - height_offset;
 
-                    indices[SOURCE][x][y] = indices[SOURCE][root_x][root_y];
-                    indices[SINK][x][y] = indices[SINK][root_x][root_y];
+                    indices[SOURCE][x][y][0] = indices[SOURCE][root_x][root_y][0];
+                    indices[SINK][x][y][0] = indices[SINK][root_x][root_y][0];
                 }
             }
         }
@@ -1903,8 +1903,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     const std::vector<t_segment_inf>& segment_inf_;
     const std::vector<t_physical_tile_type>& physical_tile_types_;
     const DeviceGrid& grid_;
-    const std::unordered_map<int, t_metadata_dict>& rr_node_metadata_;
-    const std::unordered_map<std::tuple<int, int, short>,
-                             t_metadata_dict>& rr_edge_metadata_;
+    MetadataStorage<int>* rr_node_metadata_;
+    MetadataStorage<std::tuple<int, int, short>>* rr_edge_metadata_;
+    vtr::string_internment* strings_;
     const std::function<void(const char*)>* report_error_;
 };
