@@ -59,4 +59,8 @@ bool placer_breakpoint_reached();
 // Should be setted in the breakpoint calculation algorithm
 void set_placer_breakpoint_reached(bool);
 
+bool find_to_loc_median(t_logical_block_type_ptr type, const t_bb* limit_coords, const t_pl_loc from,
+                    t_pl_loc& to);
+
+
 #endif

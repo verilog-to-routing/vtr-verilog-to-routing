@@ -575,6 +575,7 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->effort_scaling = Options.place_effort_scaling;
     PlacerOpts->timing_update_type = Options.timing_update_type;
     PlacerOpts->enable_analytic_placer = Options.enable_analytic_placer;
+    PlacerOpts->place_static_move_prob = Options.place_static_move_prob;
 }
 
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {

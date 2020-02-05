@@ -1754,6 +1754,15 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("false")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument(args.place_static_move_prob, "--place_static_move_prob")
+        .help(
+            "The Probability of different move in Simulated Annealing."
+            "The order of moves is: {uniformMove, MedianMove}")
+        .nargs('+')
+        .default_value({"0.5,0.5"})
+
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& place_timing_grp = parser.add_argument_group("timing-driven placement options");
 
     place_timing_grp.add_argument(args.PlaceTimingTradeoff, "--timing_tradeoff")

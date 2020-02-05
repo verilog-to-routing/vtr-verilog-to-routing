@@ -38,7 +38,7 @@
 #include "move_utils.h"
 #include "read_place.h"
 
-#include "uniform_move_generator.h"
+#include "static_move_generator.h"
 
 #include "PlacementDelayCalculator.h"
 #include "VprTimingGraphResolver.h"
@@ -448,7 +448,7 @@ void try_place(const t_placer_opts& placer_opts,
         }
     }
 
-    move_generator = std::make_unique<UniformMoveGenerator>();
+    move_generator = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_move_prob);
 
     width_fac = placer_opts.place_chan_width;
 

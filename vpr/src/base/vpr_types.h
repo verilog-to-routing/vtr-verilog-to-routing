@@ -1026,6 +1026,7 @@ struct t_placer_opts {
 
     std::string write_placement_delay_lookup;
     std::string read_placement_delay_lookup;
+    std::vector<float> place_static_move_prob;
 
     /**
      * @brief Tile types that should be used during delay sampling.

@@ -50,4 +50,8 @@ std::vector<t_compressed_block_grid> create_compressed_block_grids();
 t_compressed_block_grid create_compressed_block_grid(const std::vector<vtr::Point<int>>& locations);
 
 int grid_to_compressed(const std::vector<int>& coords, int point);
+
+//Elgammal
+int grid_to_compressed_approx(const std::vector<int>& coords, int point);
+
 #endif
