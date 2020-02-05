@@ -6,6 +6,7 @@
 #include "rr_node_fwd.h"
 #include "rr_graph2.h"
 #include "vtr_log.h"
+#include "vpr_utils.h"
 
 /* Main structure describing one routing resource node.  Everything in       *
  * this structure should describe the graph -- information needed only       *
@@ -99,6 +100,17 @@ class t_rr_graph_storage {
   public:
     t_rr_graph_storage() {
         clear();
+    }
+
+    // Makes room in storage for RRNodeId in amoritized O(1) fashion.
+    //
+    // This results in an allocation pattern similiar to what would happen
+    // if push_back(x) / emplace_back() were used if underlying storage
+    // was not preallocated.
+    void make_room_for_node(RRNodeId elem_position) {
+        make_room_in_vector(&storage_, size_t(elem_position));
+        ptc_.reserve(storage_.capacity());
+        ptc_.resize(storage_.size());
     }
 
     void reserve(size_t size) {
