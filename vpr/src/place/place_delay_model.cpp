@@ -188,8 +188,7 @@ void DeltaDelayModel::read(const std::string& file) {
     MmapFile f(file);
 
     /* Increase reader limit to 1G words to allow for large files. */
-    ::capnp::ReaderOptions opts = ::capnp::ReaderOptions();
-    opts.traversalLimitInWords = 1024 * 1024 * 1024;
+    ::capnp::ReaderOptions opts = default_large_capnp_opts();
 
     // FlatArrayMessageReader is used to read the message from the data array
     // provided by MmapFile.
@@ -245,8 +244,7 @@ void OverrideDelayModel::read(const std::string& file) {
     MmapFile f(file);
 
     /* Increase reader limit to 1G words to allow for large files. */
-    ::capnp::ReaderOptions opts = ::capnp::ReaderOptions();
-    opts.traversalLimitInWords = 1024 * 1024 * 1024;
+    ::capnp::ReaderOptions opts = default_large_capnp_opts();
     ::capnp::FlatArrayMessageReader reader(f.getData(), opts);
 
     vtr::Matrix<float> delays;

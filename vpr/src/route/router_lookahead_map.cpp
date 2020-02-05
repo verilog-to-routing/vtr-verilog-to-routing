@@ -59,23 +59,6 @@ enum e_representative_entry_method {
     MEDIAN
 };
 
-/* f_cost_map is an array of these cost entries that specifies delay/congestion estimates
- * to travel relative x/y distances */
-class Cost_Entry {
-  public:
-    float delay;
-    float congestion;
-
-    Cost_Entry() {
-        delay = -1.0;
-        congestion = -1.0;
-    }
-    Cost_Entry(float set_delay, float set_congestion) {
-        delay = set_delay;
-        congestion = set_congestion;
-    }
-};
-
 /* a class that stores delay/congestion information for a given relative coordinate during the Dijkstra expansion.
  * since it stores multiple cost entries, it is later boiled down to a single representative cost entry to be stored
  * in the final lookahead cost map */
@@ -181,11 +164,6 @@ class PQ_Entry {
         return (this->cost > obj.cost);
     }
 };
-
-/* provides delay/congestion estimates to travel specified distances
- * in the x/y direction */
-typedef vtr::NdMatrix<Cost_Entry, 4> t_cost_map; //[0..1][[0..num_seg_types-1]0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
-                                                 //[0..1] entry distinguish between CHANX/CHANY start nodes respectively
 
 /* used during Dijkstra expansion to store delay/congestion info lists for each relative coordinate for a given segment and channel type.
  * the list at each coordinate is later boiled down to a single representative cost entry to be stored in the final cost map */
@@ -720,8 +698,7 @@ void read_router_lookahead(const std::string& file) {
     MmapFile f(file);
 
     /* Increase reader limit to 1G words to allow for large files. */
-    ::capnp::ReaderOptions opts = ::capnp::ReaderOptions();
-    opts.traversalLimitInWords = 1024 * 1024 * 1024;
+    ::capnp::ReaderOptions opts = default_large_capnp_opts();
     ::capnp::FlatArrayMessageReader reader(f.getData(), opts);
 
     auto map = reader.getRoot<VprMapLookahead>();
