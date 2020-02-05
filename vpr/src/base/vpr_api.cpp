@@ -602,6 +602,16 @@ bool vpr_place_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 }
 
 void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch) {
+    if (placer_needs_lookahead(vpr_setup)) {
+        // Prime lookahead cache to avoid adding lookahead computation cost to
+        // the placer timer.
+        get_cached_router_lookahead(
+            vpr_setup.RouterOpts.lookahead_type,
+            vpr_setup.RouterOpts.write_router_lookahead,
+            vpr_setup.RouterOpts.read_router_lookahead,
+            vpr_setup.Segments);
+    }
+
     vtr::ScopedStartFinishTimer timer("Placement");
 
     try_place(vpr_setup.PlacerOpts,

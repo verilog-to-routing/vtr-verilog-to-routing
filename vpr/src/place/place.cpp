@@ -2609,3 +2609,7 @@ static void print_resources_utilization() {
     }
     VTR_LOG("\n");
 }
+
+bool placer_needs_lookahead(const t_vpr_setup& vpr_setup) {
+    return (vpr_setup.PlacerOpts.place_algorithm == PATH_TIMING_DRIVEN_PLACE);
+}
