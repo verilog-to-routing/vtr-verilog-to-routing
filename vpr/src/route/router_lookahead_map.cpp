@@ -36,6 +36,7 @@
 #include "vtr_geometry.h"
 #include "router_lookahead_map.h"
 #include "rr_graph2.h"
+#include "rr_graph.h"
 #include "route_common.h"
 
 #ifdef VTR_ENABLE_CAPNPROTO
@@ -203,6 +204,8 @@ typedef std::vector<std::vector<std::map<int, t_reachable_wire_inf>>> t_src_opin
 
 /******** File-Scope Variables ********/
 
+constexpr int DIRECT_CONNECT_SPECIAL_SEG_TYPE = -1;
+
 //Look-up table from CHANX/CHANY (to SINKs) for various distances
 t_wire_cost_map f_wire_cost_map;
 
@@ -265,13 +268,30 @@ float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticali
         for (const auto& kv : f_src_opin_reachable_wires[tile_index][from_node.ptc_num()]) {
             const t_reachable_wire_inf& reachable_wire_inf = kv.second;
 
-            Cost_Entry wire_cost_entry = get_wire_cost_entry(reachable_wire_inf.wire_rr_type, reachable_wire_inf.wire_seg_index, delta_x, delta_y);
+            Cost_Entry wire_cost_entry;
+            if (reachable_wire_inf.wire_rr_type == SINK) {
+                //Some pins maybe reachable via a direct (OPIN -> IPIN) connection.
+                //In the lookahead, we treat such connections as 'special' wire types
+                //with no delay/congestion cost
+                wire_cost_entry.delay = 0;
+                wire_cost_entry.congestion = 0;
+            } else {
+                //For an actual accessible wire, we query the wire look-up to get it's
+                //delay and congestion cost estimates
+                wire_cost_entry = get_wire_cost_entry(reachable_wire_inf.wire_rr_type, reachable_wire_inf.wire_seg_index, delta_x, delta_y);
+            }
 
             float this_cost = (criticality_fac) * (reachable_wire_inf.congestion + wire_cost_entry.congestion)
                               + (1. - criticality_fac) * (reachable_wire_inf.delay + wire_cost_entry.delay);
 
             expected_cost = std::min(expected_cost, this_cost);
         }
+
+        VTR_ASSERT_SAFE_MSG(std::isfinite(expected_cost),
+                            vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
+                                            rr_node_arch_name(from_node_ind).c_str(),
+                                            describe_rr_node(from_node_ind).c_str())
+                                .c_str());
 
     } else {
         VTR_ASSERT_SAFE(from_type == CHANX || from_type == CHANY);
@@ -413,9 +433,10 @@ static void compute_router_src_opin_lookahead() {
 
                 /*
                  * Perform Djikstra from the SOURCE/OPIN of interest, stopping at the the first
-                 * reachable wires.
+                 * reachable wires (i.e until we hit the inter-block routing network), or a SINK
+                 * (via a direct-connect).
                  *
-                 * Note that typical RR graphs are structured:
+                 * Note that typical RR graphs are structured :
                  *
                  *      SOURCE ---> OPIN --> CHANX/CHANY
                  *              |
@@ -423,8 +444,12 @@ static void compute_router_src_opin_lookahead() {
                  *              |
                  *             ...
                  *
-                 * and there is a fixed number of hops from SOURCE/OPIN to CHANX/CHANY
-                 * (usually 2), so this is very fast (i.e. O(1))
+                 *   possibly with direct-connects of the form:
+                 *
+                 *      SOURCE --> OPIN --> IPIN --> SINK
+                 *
+                 * and there is a small number of fixed hops from SOURCE/OPIN to CHANX/CHANY or
+                 * to a SINK (via a direct-connect), so this runs very fast (i.e. O(1))
                  */
                 pq.push(root);
                 while (!pq.empty()) {
@@ -432,20 +457,32 @@ static void compute_router_src_opin_lookahead() {
                     pq.pop();
 
                     e_rr_type curr_rr_type = device_ctx.rr_nodes[curr.inode].type();
-                    if (curr_rr_type == CHANX || curr_rr_type == CHANY) {
-                        int cost_index = device_ctx.rr_nodes[curr.inode].cost_index();
-                        int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
+                    if (curr_rr_type == CHANX || curr_rr_type == CHANY || curr_rr_type == SINK) {
+                        //We stop expansion at any CHANX/CHANY/SINK
+                        int seg_index;
+                        if (curr_rr_type != SINK) {
+                            //It's a wire, figure out its type
+                            int cost_index = device_ctx.rr_nodes[curr.inode].cost_index();
+                            seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
+                        } else {
+                            //This is a direct-connect path between an IPIN and OPIN,
+                            //which terminated at a SINK.
+                            //
+                            //We treat this as a 'special' wire type
+                            seg_index = DIRECT_CONNECT_SPECIAL_SEG_TYPE;
+                        }
 
+                        //Keep costs of the best path to reach each wire type
                         if (!f_src_opin_reachable_wires[itile][ptc].count(seg_index)
                             || curr.delay < f_src_opin_reachable_wires[itile][ptc][seg_index].delay) {
-                            //Keep Best
                             f_src_opin_reachable_wires[itile][ptc][seg_index].wire_rr_type = curr_rr_type;
                             f_src_opin_reachable_wires[itile][ptc][seg_index].wire_seg_index = seg_index;
                             f_src_opin_reachable_wires[itile][ptc][seg_index].delay = curr.delay;
                             f_src_opin_reachable_wires[itile][ptc][seg_index].congestion = curr.congestion;
                         }
 
-                    } else if (curr_rr_type == OPIN) {
+                    } else if (curr_rr_type == SOURCE || curr_rr_type == OPIN || curr_rr_type == IPIN) {
+                        //We allow expansion through SOURCE/OPIN/IPIN types
                         int cost_index = device_ctx.rr_nodes[curr.inode].cost_index();
                         float incr_cong = device_ctx.rr_indexed_data[cost_index].base_cost; //Current nodes congestion cost
 
@@ -462,15 +499,13 @@ static void compute_router_src_opin_lookahead() {
 
                             pq.push(next);
                         }
-
                     } else {
-                        //Pass
-                        //
-                        //Don't explore other RR types
-
-                        //TODO: consider direct-connects
+                        VPR_ERROR(VPR_ERROR_ROUTE, "Unrecognized RR type");
                     }
                 }
+
+                VTR_LOGV_WARN(f_src_opin_reachable_wires[itile][ptc].empty(),
+                              "Found no reachable wires from %s\n", rr_node_arch_name(inode).c_str());
             }
         }
     }
