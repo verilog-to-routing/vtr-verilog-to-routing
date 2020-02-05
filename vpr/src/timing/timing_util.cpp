@@ -605,3 +605,41 @@ void print_tatum_cpds(std::vector<tatum::TimingPathInfo> cpds) {
         VTR_LOG("Tatum   %zu -> %zu: least_slack=%g cpd=%g\n", size_t(path.launch_domain()), size_t(path.capture_domain()), float(path.slack()), float(path.delay()));
     }
 }
+
+void write_setup_timing_graph_dot(std::string filename, SetupTimingInfo& timing_info, tatum::NodeId debug_node) {
+    auto& timing_graph = *timing_info.timing_graph();
+
+    auto dot_writer = tatum::make_graphviz_dot_writer(timing_graph, *timing_info.delay_calculator());
+
+    std::vector<tatum::NodeId> nodes;
+    if (debug_node) {
+        //Transitive fanin/fanout
+        nodes = tatum::find_transitively_connected_nodes(timing_graph, {debug_node});
+    } else {
+        //All
+        auto tg_nodes = timing_graph.nodes();
+        nodes = std::vector<tatum::NodeId>(tg_nodes.begin(), tg_nodes.end());
+    }
+    dot_writer.set_nodes_to_dump(nodes);
+
+    dot_writer.write_dot_file(filename, *timing_info.setup_analyzer());
+}
+
+void write_hold_timing_graph_dot(std::string filename, HoldTimingInfo& timing_info, tatum::NodeId debug_node) {
+    auto& timing_graph = *timing_info.timing_graph();
+
+    auto dot_writer = tatum::make_graphviz_dot_writer(timing_graph, *timing_info.delay_calculator());
+
+    std::vector<tatum::NodeId> nodes;
+    if (debug_node) {
+        //Transitive fanin/fanout
+        nodes = tatum::find_transitively_connected_nodes(timing_graph, {debug_node});
+    } else {
+        //All
+        auto tg_nodes = timing_graph.nodes();
+        nodes = std::vector<tatum::NodeId>(tg_nodes.begin(), tg_nodes.end());
+    }
+    dot_writer.set_nodes_to_dump(nodes);
+
+    dot_writer.write_dot_file(filename, *timing_info.hold_analyzer());
+}
