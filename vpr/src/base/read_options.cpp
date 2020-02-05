@@ -1685,6 +1685,16 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    analysis_grp.add_argument(args.echo_dot_timing_graph_node, "--echo_dot_timing_graph_node")
+        .help(
+            "Controls how the timing graph echo file in DOT/GraphViz format is created when\n"
+            "'--echo_file on' is set:\n"
+            " * -1: All nodes are dumped into the DOT file\n"
+            " * >= 0: Only the transitive fanin/fanout of the node is dumped (easier to view)\n"
+            " * a string: Interpretted as a VPR pin name which is converted to a node id, and dumped as above\n")
+        .default_value("-1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& power_grp = parser.add_argument_group("power analysis options");
 
     power_grp.add_argument<bool, ParseOnOff>(args.do_power, "--power")

@@ -606,6 +606,39 @@ void print_tatum_cpds(std::vector<tatum::TimingPathInfo> cpds) {
     }
 }
 
+tatum::NodeId id_or_pin_name_to_tnode(std::string pin_name_or_tnode) {
+    std::istringstream ss(pin_name_or_tnode);
+    int id;
+    if (ss >> id) { //Successfully converted
+
+        if (id < 0) {
+            return tatum::NodeId::INVALID();
+        } else {
+            return tatum::NodeId(id);
+        }
+    }
+
+    return pin_name_to_tnode(pin_name_or_tnode);
+}
+
+tatum::NodeId pin_name_to_tnode(std::string pin_name) {
+    auto& atom_ctx = g_vpr_ctx.atom();
+
+    AtomPinId pin = atom_ctx.nlist.find_pin(pin_name);
+
+    if (!pin) {
+        VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Failed to find pin named '%s'\n", pin_name.c_str());
+    }
+
+    tatum::NodeId tnode = atom_ctx.lookup.atom_pin_tnode(pin);
+
+    if (!tnode) {
+        VPR_THROW(VPR_ERROR_TIMING, "Failed to find tnode for pin '%s' (pin: %zu)\n", pin_name.c_str(), size_t(pin));
+    }
+
+    return tnode;
+}
+
 void write_setup_timing_graph_dot(std::string filename, SetupTimingInfo& timing_info, tatum::NodeId debug_node) {
     auto& timing_graph = *timing_info.timing_graph();
 
