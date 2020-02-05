@@ -960,6 +960,7 @@ struct t_analysis_opts {
     int timing_report_npaths;
     e_timing_report_detail timing_report_detail;
     bool timing_report_skew;
+    std::string echo_dot_timing_graph_node;
 };
 
 /* Defines the detailed routing architecture of the FPGA.  Only important   *

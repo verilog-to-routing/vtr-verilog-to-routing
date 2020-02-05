@@ -697,6 +697,11 @@ class Netlist {
     //  port_bit: The bit index of the pin in the port
     PinId find_pin(const PortId port_id, BitIndex port_bit) const;
 
+    //Returns the PinId of the specified pin or PinId::INVALID() if not found
+    //NOTE: this method is SLOW, O(num_pins) -- avoid if possible
+    //  name : The name of the pin
+    PinId find_pin(const std::string name) const;
+
   public: //Public Mutators
     //Add the specified pin to the specified net as pin_type. Automatically removes
     //any previous net connection for this pin.
