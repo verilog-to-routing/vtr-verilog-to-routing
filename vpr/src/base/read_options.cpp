@@ -395,6 +395,8 @@ struct ParseTimingReportDetail {
             conv_value.set_value(e_timing_report_detail::AGGREGATED);
         else if (str == "detailed")
             conv_value.set_value(e_timing_report_detail::DETAILED_ROUTING);
+        else if (str == "debug")
+            conv_value.set_value(e_timing_report_detail::DEBUG);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_timing_report_detail (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -412,12 +414,15 @@ struct ParseTimingReportDetail {
         } else if (val == e_timing_report_detail::DETAILED_ROUTING) {
             VTR_ASSERT(val == e_timing_report_detail::DETAILED_ROUTING);
             conv_value.set_value("detailed");
+        } else {
+            VTR_ASSERT(val == e_timing_report_detail::DEBUG);
+            conv_value.set_value("debug");
         }
         return conv_value;
     }
 
     std::vector<std::string> default_choices() {
-        return {"netlist", "aggregated", "detailed"};
+        return {"netlist", "aggregated", "detailed", "debug"};
     }
 };
 
@@ -1676,7 +1681,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "Controls how much detail is provided in timing reports.\n"
             " * netlist: Shows only netlist pins\n"
             " * aggregated: Like 'netlist', but also shows aggregated intra-block/inter-block delays\n"
-            " * detailed: Lke 'aggregated' but shows detailed routing instead of aggregated inter-block delays\n")
+            " * detailed: Like 'aggregated' but shows detailed routing instead of aggregated inter-block delays\n"
+            " * debug: Like 'detailed' but shows additional tool internal debug information\n")
         .default_value("netlist")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
