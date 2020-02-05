@@ -725,7 +725,7 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     //Partition the rr graph edges for efficient access to configurable/non-configurable
     //edge subsets. Must be done after RR switches have been allocated
-    partition_rr_graph_edges(&device_ctx.rr_nodes);
+    device_ctx.rr_nodes.partition_edges();
 
     //Save the channel widths for the newly constructed graph
     device_ctx.chan_width = nodes_per_chan;
