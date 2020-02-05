@@ -64,8 +64,9 @@ void load_rr_file(const t_graph_type graph_type,
         segment_inf,
         device_ctx.physical_tile_types,
         grid,
-        device_ctx.rr_node_metadata,
-        device_ctx.rr_edge_metadata);
+        &device_ctx.rr_node_metadata,
+        &device_ctx.rr_edge_metadata,
+        &device_ctx.arch->strings);
 
     if (vtr::check_file_name_extension(read_rr_graph_name, ".xml")) {
         try {
