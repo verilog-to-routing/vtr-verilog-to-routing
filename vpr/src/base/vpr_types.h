@@ -894,6 +894,7 @@ enum class e_timing_report_detail {
     NETLIST,          //Only show netlist elements
     AGGREGATED,       //Show aggregated intra-block and inter-block delays
     DETAILED_ROUTING, //Show inter-block routing resources used
+    DEBUG,            //Show additional internal debugging information
 };
 
 enum class e_incr_reroute_delay_ripup {
