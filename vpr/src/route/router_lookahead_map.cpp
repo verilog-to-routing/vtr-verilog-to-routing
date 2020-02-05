@@ -855,7 +855,8 @@ static void get_xy_deltas(int from_node_ind, int to_node_ind, int* delta_x, int*
 
     /* account for wire direction. lookahead map was computed by looking up and to the right starting at INC wires. for targets
      * that are opposite of the wire direction, let's add 1 to delta_seg */
-    if ((to_seg < from_seg_low && from.direction() == INC_DIRECTION) || (to_seg > from_seg_high && from.direction() == DEC_DIRECTION)) {
+    if ((from.type() == CHANX || from.type() == CHANY)
+        && ((to_seg < from_seg_low && from.direction() == INC_DIRECTION) || (to_seg > from_seg_high && from.direction() == DEC_DIRECTION))) {
         delta_seg++;
     }
 
