@@ -1759,7 +1759,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "The Probability of different move in Simulated Annealing."
             "The order of moves is: {uniformMove, MedianMove}")
         .nargs('+')
-        .default_value({"0.5,0.5"})
+        .default_value({"50,50"})
 
         .show_in(argparse::ShowIn::HELP_ONLY);
 
