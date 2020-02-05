@@ -44,6 +44,9 @@ class TimingInfo {
     //Return the underlying timing analyzer
     virtual std::shared_ptr<const tatum::TimingAnalyzer> analyzer() const = 0;
 
+    //Return the underlying delay calculator
+    virtual std::shared_ptr<const tatum::DelayCalculator> delay_calculator() const = 0;
+
     //Return the underlying timing graph
     virtual std::shared_ptr<const tatum::TimingGraph> timing_graph() const = 0;
 
@@ -61,6 +64,9 @@ class TimingInfo {
 class SetupTimingInfo : public virtual TimingInfo {
   public:
     //Accessors
+
+    //Returns the underlying setup timing analyzer
+    virtual std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer() const = 0;
 
     //Return the critical path with the least slack
     virtual tatum::TimingPathInfo least_slack_critical_path() const = 0;
@@ -83,9 +89,6 @@ class SetupTimingInfo : public virtual TimingInfo {
     //Return the setup criticality of the worst connection passing through pin
     virtual float setup_pin_criticality(AtomPinId pin) const = 0;
 
-    //Return the underlying timing analyzer
-    virtual std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer() const = 0;
-
   public:
     //Mutators
     virtual void update_setup() = 0;
@@ -99,6 +102,9 @@ class HoldTimingInfo : public virtual TimingInfo {
   public:
     //Accessors
 
+    //Returns the underlying hold timing analyzer
+    virtual std::shared_ptr<const tatum::HoldTimingAnalyzer> hold_analyzer() const = 0;
+
     //Return the total negative slack w.r.t. hold constraints
     virtual float hold_total_negative_slack() const = 0;
 
@@ -110,9 +116,6 @@ class HoldTimingInfo : public virtual TimingInfo {
 
     //Return the hold criticality of the worst connection passing through pin
     virtual float hold_pin_criticality(AtomPinId pin) const = 0;
-
-    //Return the underlying timing analyzer
-    virtual std::shared_ptr<const tatum::HoldTimingAnalyzer> hold_analyzer() const = 0;
 
   public:
     //Mutators
