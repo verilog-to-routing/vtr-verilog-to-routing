@@ -92,7 +92,7 @@ float MapLookahead::get_expected_cost(int current_node, int target_node, const t
 
     t_rr_type rr_type = device_ctx.rr_nodes[current_node].type();
 
-    if (rr_type == CHANX || rr_type == CHANY) {
+    if (rr_type == CHANX || rr_type == CHANY || rr_type == SOURCE || rr_type == OPIN) {
         return get_lookahead_map_cost(current_node, target_node, params.criticality);
     } else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */
         return (device_ctx.rr_indexed_data[SINK_COST_INDEX].base_cost);
