@@ -120,14 +120,6 @@ endif()
 
 
 #
-# VPR compiler options
-#
-set(VPR_COMPILE_OPTIONS_FLAGS
-    #GCC-like
-    "-Werror"
-    )
-
-#
 # Profile Guilded Optimization Configuration
 #
 set(PROF_GEN_FLAGS_TO_CHECK
@@ -166,17 +158,21 @@ else()
     message(ERROR "Unsupported VPR_PGO_CONFIG '${VPR_PGO_CONFIG}'")
 endif()
 
-if (VTR_COMPILE_OPTIONS STREQUAL "strict")
+if (VTR_ENABLE_STRICT_COMPILE)
     message(STATUS "VPR: building with strict flags")
-    foreach(flag ${VPR_COMPILE_OPTIONS_FLAGS})
+
+    set(VPR_STRICT_COMPILE_FLAGS_TO_CHECK
+        #GCC-like
+        "-Werror"
+        )
+
+    foreach(flag ${VPR_STRICT_COMPILE_FLAGS_TO_CHECK})
         message(STATUS "\tAdding CXX flag: ${flag}")
         target_compile_options(libvpr PRIVATE ${flag})
         target_compile_options(vpr PRIVATE ${flag})
         target_link_libraries(vpr ${flag})
     endforeach()
 endif()
-
-    find_package(TBB)
 
 #
 # Execution Engine Configuration
