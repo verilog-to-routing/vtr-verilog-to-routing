@@ -100,7 +100,8 @@ class Router {
     void timing_driven_expand_neighbour(
         t_heap* current,
         const int from_node,
-        const t_edge_size from_edge,
+        const RREdgeId from_edge,
+        const t_edge_size from_edge_int,
         const int to_node,
         const t_conn_cost_params cost_params,
         const t_bb bounding_box,
@@ -111,13 +112,7 @@ class Router {
         const t_heap* current,
         const int from_node,
         const int to_node,
-        const int iconn,
-        const int target_node);
-    void timing_driven_expand_node(
-        const t_conn_cost_params cost_params,
-        t_heap* current,
-        const int from_node,
-        const int to_node,
+        const RREdgeId from_edge,
         const int iconn,
         const int target_node);
     void evaluate_timing_driven_node_costs(
@@ -125,7 +120,7 @@ class Router {
         const t_conn_cost_params cost_params,
         const int from_node,
         const int to_node,
-        const int iconn,
+        const RREdgeId from_edge,
         const int target_node);
     std::vector<t_heap> timing_driven_find_all_shortest_paths_from_heap(
         const t_conn_cost_params cost_params,

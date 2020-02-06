@@ -316,18 +316,23 @@ class t_rr_graph_storage {
     }
 
     t_edge_size num_edges(const RRNodeId& id) const {
-        RREdgeId first_id = first_edge_[id];
-        RREdgeId last_id = (&first_edge_[id])[1];
-        return size_t(last_id) - size_t(first_id);
+        return size_t(last_edge(id)) - size_t(first_edge(id));
+    }
+
+    RREdgeId first_edge(const RRNodeId& id) const {
+        return first_edge_[id];
+    }
+    RREdgeId last_edge(const RRNodeId& id) const {
+        return (&first_edge_[id])[1];
     }
 
     t_edge_size num_configurable_edges(const RRNodeId& id) const;
     t_edge_size num_non_configurable_edges(const RRNodeId& id) const;
 
     RREdgeId edge_id(const RRNodeId& id, t_edge_size iedge) const {
-        RREdgeId first_edge = first_edge_[id];
+        RREdgeId first_edge = this->first_edge(id);
         RREdgeId ret(size_t(first_edge) + iedge);
-        VTR_ASSERT_SAFE(ret < (&first_edge_[id])[1]);
+        VTR_ASSERT_SAFE(ret < last_edge(id));
         return ret;
     }
     RRNodeId edge_sink_node(const RREdgeId& edge) const {
