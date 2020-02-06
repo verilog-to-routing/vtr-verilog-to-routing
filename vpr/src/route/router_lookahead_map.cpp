@@ -38,6 +38,7 @@
 #include "rr_graph2.h"
 #include "rr_graph.h"
 #include "route_common.h"
+#include "route_timing.h"
 
 #ifdef VTR_ENABLE_CAPNPROTO
 #    include "capnp/serialize.h"
@@ -186,11 +187,6 @@ struct t_reachable_wire_inf {
     float delay;
 };
 
-/* provides delay/congestion estimates to travel specified distances
- * in the x/y direction */
-typedef vtr::NdMatrix<Cost_Entry, 4> t_wire_cost_map; //[0..1][[0..num_seg_types-1]0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
-                                                      //[0..1] entry distinguish between CHANX/CHANY start nodes respectively
-
 /* used during Dijkstra expansion to store delay/congestion info lists for each relative coordinate for a given segment and channel type.
  * the list at each coordinate is later boiled down to a single representative cost entry to be stored in the final cost map */
 typedef vtr::Matrix<Expansion_Cost_Entry> t_routing_cost_map; //[0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
@@ -237,6 +233,33 @@ static Cost_Entry get_nearby_cost_entry(int x, int y, int segment_index, int cha
 static void get_xy_deltas(int from_node_ind, int to_node_ind, int* delta_x, int* delta_y);
 
 static void print_cost_map();
+
+/******** Interface class member function definitions ********/
+float MapLookahead::get_expected_cost(int current_node, int target_node, const t_conn_cost_params& params, float /*R_upstream*/) const {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    t_rr_type rr_type = device_ctx.rr_nodes[current_node].type();
+
+    if (rr_type == CHANX || rr_type == CHANY || rr_type == SOURCE || rr_type == OPIN) {
+        return get_lookahead_map_cost(current_node, target_node, params.criticality);
+    } else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */
+        return (device_ctx.rr_indexed_data[SINK_COST_INDEX].base_cost);
+    } else { /* Change this if you want to investigate route-throughs */
+        return (0.);
+    }
+}
+
+void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
+    compute_router_lookahead(segment_inf.size());
+}
+
+void MapLookahead::read(const std::string& file) {
+    read_router_lookahead(file);
+}
+
+void MapLookahead::write(const std::string& file) const {
+    write_router_lookahead(file);
+}
 
 /******** Function Definitions ********/
 /* queries the lookahead_map (should have been computed prior to routing) to get the expected cost

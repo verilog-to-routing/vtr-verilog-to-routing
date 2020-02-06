@@ -2,6 +2,15 @@
 
 #include <string>
 #include "vtr_ndmatrix.h"
+#include "router_lookahead.h"
+
+class MapLookahead : public RouterLookahead {
+  protected:
+    float get_expected_cost(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
+    void compute(const std::vector<t_segment_inf>& segment_inf) override;
+    void read(const std::string& file) override;
+    void write(const std::string& file) const override;
+};
 
 /* f_cost_map is an array of these cost entries that specifies delay/congestion estimates
  * to travel relative x/y distances */
@@ -22,8 +31,8 @@ class Cost_Entry {
 
 /* provides delay/congestion estimates to travel specified distances
  * in the x/y direction */
-typedef vtr::NdMatrix<Cost_Entry, 4> t_cost_map; //[0..1][[0..num_seg_types-1]0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
-                                                 //[0..1] entry distinguish between CHANX/CHANY start nodes respectively
+typedef vtr::NdMatrix<Cost_Entry, 4> t_wire_cost_map; //[0..1][[0..num_seg_types-1]0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
+                                                      //[0..1] entry distinguish between CHANX/CHANY start nodes respectively
 
 void read_router_lookahead(const std::string& file);
 void write_router_lookahead(const std::string& file);
