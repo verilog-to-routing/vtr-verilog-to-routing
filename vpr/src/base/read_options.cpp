@@ -1984,6 +1984,13 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("64")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument<float>(args.router_high_fanout_max_slope, "--router_high_fanout_max_slope")
+        .help(
+            "Maximum routing predictor slope where high fanout routing is enabled.\n"
+            " -1.0 is normal progress, 0 is no progress.")
+        .default_value("-0.5")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_timing_grp.add_argument<e_router_lookahead, ParseRouterLookahead>(args.router_lookahead_type, "--router_lookahead")
         .help(
             "Controls what lookahead the router uses to calculate cost of completing a connection.\n"

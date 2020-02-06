@@ -78,7 +78,7 @@ static bool timing_driven_route_sink(
     unsigned itarget,
     int target_pin,
     const t_conn_cost_params cost_params,
-    int high_fanout_threshold,
+    const t_router_opts& router_opts,
     t_rt_node* rt_root,
     t_rt_node** rt_node_of_sink,
     SpatialRouteTreeLookup& spatial_rt_lookup,
@@ -1049,7 +1049,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
                                       itarget,
                                       target_pin,
                                       cost_params,
-                                      router_opts.high_fanout_threshold,
+                                      router_opts,
                                       rt_root, rt_node_of_sink,
                                       spatial_route_tree_lookup,
                                       router_stats,
@@ -1189,7 +1189,7 @@ static bool timing_driven_route_sink(
     unsigned itarget,
     int target_pin,
     const t_conn_cost_params cost_params,
-    int high_fanout_threshold,
+    const t_router_opts& router_opts,
     t_rt_node* rt_root,
     t_rt_node** rt_node_of_sink,
     SpatialRouteTreeLookup& spatial_rt_lookup,
@@ -1215,7 +1215,7 @@ static bool timing_driven_route_sink(
     t_bb bounding_box = route_ctx.route_bb[net_id];
 
     bool net_is_global = cluster_ctx.clb_nlist.net_is_global(net_id);
-    bool high_fanout = is_high_fanout(cluster_ctx.clb_nlist.net_sinks(net_id).size(), high_fanout_threshold);
+    bool high_fanout = is_high_fanout(cluster_ctx.clb_nlist.net_sinks(net_id).size(), router_opts.high_fanout_threshold);
     constexpr float HIGH_FANOUT_CRITICALITY_THRESHOLD = 0.9;
     bool sink_critical = (cost_params.criticality > HIGH_FANOUT_CRITICALITY_THRESHOLD);
     bool net_is_clock = route_ctx.is_clock_net[net_id] != 0;
@@ -1223,7 +1223,7 @@ static bool timing_driven_route_sink(
     //We normally route high fanout nets by only adding spatially close-by routing to the heap (reduces run-time).
     //However, if the current sink is 'critical' from a timing perspective, we put the entire route tree back onto
     //the heap to ensure it has more flexibility to find the best path.
-    if (high_fanout && !sink_critical && !net_is_global && !net_is_clock && !(routing_predictor.get_slope() > -0.5)) {
+    if (high_fanout && !sink_critical && !net_is_global && !net_is_clock && !(routing_predictor.get_slope() > router_opts.high_fanout_max_slope)) {
         std::tie(found_path, cheapest) = router.timing_driven_route_connection_from_route_tree_high_fanout(rt_root,
                                                                                                            sink_node,
                                                                                                            cost_params,
