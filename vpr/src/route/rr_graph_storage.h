@@ -216,6 +216,10 @@ class t_rr_graph_storage {
     short node_track_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
     short node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
 
+    inline void prefetch_node(RRNodeId id) const {
+        __builtin_prefetch(&storage_[id], 0, 0);
+    }
+
     /****************
      * Edge methods *
      ****************/

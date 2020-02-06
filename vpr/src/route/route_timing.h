@@ -64,11 +64,11 @@ class Router {
         }
     }
 
-    void update_cheapest(t_heap* cheapest) {
+    inline void update_cheapest(t_heap* cheapest) {
         update_cheapest(cheapest, &rr_node_route_inf_[cheapest->index]);
     }
 
-    void update_cheapest(t_heap* cheapest, t_rr_node_route_inf* route_inf) {
+    inline void update_cheapest(t_heap* cheapest, t_rr_node_route_inf* route_inf) {
         //Record final link to target
         add_to_mod_list(cheapest->index);
 
