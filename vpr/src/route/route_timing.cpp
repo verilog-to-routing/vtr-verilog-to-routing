@@ -1975,6 +1975,16 @@ void Router::timing_driven_expand_neighbours(t_heap* current,
     int num_edges = size_t(last_edge) - size_t(first_edge);
     for (int iconn = 0; iconn < num_edges; iconn++) {
         RREdgeId from_edge(size_t(first_edge) + iconn);
+
+        RRNodeId to_node = rr_nodes_->edge_sink_node(from_edge);
+        rr_nodes_->prefetch_node(to_node);
+
+        int switch_idx = rr_nodes_->edge_switch(from_edge);
+        __builtin_prefetch(&rr_switch_inf_[switch_idx], 0, 0);
+    }
+
+    for (int iconn = 0; iconn < num_edges; iconn++) {
+        RREdgeId from_edge(size_t(first_edge) + iconn);
         RRNodeId to_node = rr_nodes_->edge_sink_node(from_edge);
         timing_driven_expand_neighbour(current,
                                        from_node_int,
