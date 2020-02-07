@@ -109,6 +109,8 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     fp.close();
 
     /*Correctly set up the clb opins*/
+    reserve_locally_used_opins(router_opts.initial_pres_fac,
+                               router_opts.acc_fac, false);
     recompute_occupancy_from_scratch();
 
     /* Note: This pres_fac is not necessarily correct since it isn't the first routing iteration*/

@@ -560,6 +560,7 @@ void recompute_occupancy_from_scratch() {
             /* Will always be 0 for pads or SINK classes. */
             for (ipin = 0; ipin < num_local_opins; ipin++) {
                 inode = route_ctx.clb_opins_used_locally[blk_id][iclass][ipin];
+                VTR_ASSERT(inode >= 0 && inode < (ssize_t)device_ctx.rr_nodes.size());
                 route_ctx.rr_node_route_inf[inode].set_occ(route_ctx.rr_node_route_inf[inode].occ() + 1);
             }
         }

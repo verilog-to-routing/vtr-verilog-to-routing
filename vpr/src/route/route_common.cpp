@@ -1644,6 +1644,7 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
                 /* Always 0 for pads and for RECEIVER (IPIN) classes */
                 for (ipin = 0; ipin < num_local_opin; ipin++) {
                     inode = route_ctx.clb_opins_used_locally[blk_id][iclass][ipin];
+                    VTR_ASSERT(inode >= 0 && inode < (ssize_t)device_ctx.rr_nodes.size());
                     adjust_one_rr_occ_and_apcost(inode, -1, pres_fac, acc_fac);
                 }
             }
