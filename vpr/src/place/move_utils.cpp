@@ -124,7 +124,7 @@ e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_aff
     } else if (b_to != INVALID_BLOCK_ID) {
         // Check whether block to is compatible with from location
         if (b_to != EMPTY_BLOCK_ID && b_to != INVALID_BLOCK_ID) {
-            if (!(is_legal_swap_to_location(b_to, curr_from))) {
+            if (!(is_legal_swap_to_location(b_to, curr_from)) || place_ctx.block_locs[b_to].is_fixed) {
                 return e_block_move_result::ABORT;
             }
         }
@@ -434,6 +434,7 @@ bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to) {
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
 
     if (to.x < 0 || to.x >= int(device_ctx.grid.width())
         || to.y < 0 || to.y >= int(device_ctx.grid.height())
@@ -441,6 +442,15 @@ bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to) {
         || !is_tile_compatible(device_ctx.grid[to.x][to.y].type, cluster_ctx.clb_nlist.block_type(blk))) {
         return false;
     }
+
+    // If the destination block is user constrained, abort this swap
+    auto b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.z];
+    if (b_to != INVALID_BLOCK_ID && b_to != EMPTY_BLOCK_ID) {
+        if (place_ctx.block_locs[b_to].is_fixed) {
+            return false;
+        }
+    }
+
     return true;
 }
 
