@@ -374,6 +374,8 @@ void create_rr_graph(const t_graph_type graph_type,
 
     process_non_config_sets();
 
+    verify_rr_node_indices(grid, device_ctx.rr_node_indices, device_ctx.rr_nodes);
+
     print_rr_graph_stats();
 
     //Write out rr graph file if needed

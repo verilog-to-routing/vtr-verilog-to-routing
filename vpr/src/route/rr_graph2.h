@@ -7,6 +7,8 @@
 #include "rr_types.h"
 #include "device_grid.h"
 
+struct t_rr_graph_storage; //Forward declaration
+
 /******************* Types shared by rr_graph2 functions *********************/
 
 enum e_seg_details_type {
@@ -48,6 +50,8 @@ t_rr_node_indices alloc_and_load_rr_node_indices(const int max_chan_width,
                                                  int* index,
                                                  const t_chan_details& chan_details_x,
                                                  const t_chan_details& chan_details_y);
+
+bool verify_rr_node_indices(const DeviceGrid& grid, const t_rr_node_indices& rr_node_indices, const t_rr_graph_storage& rr_nodes);
 
 int get_rr_node_index(int x,
                       int y,
