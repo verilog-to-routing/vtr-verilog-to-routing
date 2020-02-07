@@ -488,6 +488,8 @@ struct nnode_t
 	//Generic gate output
 	unsigned char generic_output; //describes the output (1 or 0) of generic blocks
 	nnode_stats_t *stat;
+
+	int critical_path_value;
 };
 
 struct npin_t
@@ -535,6 +537,8 @@ struct nnet_t
 	signed char has_initial_value; // initial value assigned?
 	signed char initial_value; // initial net value
 	//////////////////////
+
+	int critical_path_value;
 };
 
 struct nnode_stats_t{
