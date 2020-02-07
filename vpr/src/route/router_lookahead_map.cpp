@@ -48,10 +48,6 @@
 #    include "serdes_utils.h"
 #endif /* VTR_ENABLE_CAPNPROTO */
 
-/* the cost map is computed by running a Dijkstra search from channel segment rr nodes at the specified reference coordinate */
-#define REF_X 3
-#define REF_Y 3
-
 /* we will profile delay/congestion using this many tracks for each wire type */
 #define MAX_TRACK_OFFSET 16
 
@@ -192,6 +188,11 @@ struct t_reachable_wire_inf {
 typedef vtr::Matrix<Expansion_Cost_Entry> t_routing_cost_map; //[0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
 
 typedef std::vector<std::vector<std::map<int, t_reachable_wire_inf>>> t_src_opin_reachable_wires; //[0..device_ctx.physical_tile_types.size()-1][0..max_ptc-1][wire_seg_index]
+                                                                                                  // ^                                           ^             ^
+                                                                                                  // |                                           |             |
+                                                                                                  // physical block type index                   |             Reachable wire info
+                                                                                                  //                                             |
+                                                                                                  //                                             SOURCE/OPIN ptc
 
 struct t_dijkstra_data {
     /* a list of boolean flags (one for each rr node) to figure out if a certain node has already been expanded */
@@ -215,7 +216,7 @@ t_src_opin_reachable_wires f_src_opin_reachable_wires;
 
 /******** File-Scope Functions ********/
 Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int delta_x, int delta_y);
-static void compute_router_wire_lookahead(int num_segments);
+static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf);
 static void compute_router_src_opin_lookahead();
 static vtr::Point<int> pick_sample_tile(t_physical_tile_type_ptr tile_type);
 
@@ -255,7 +256,7 @@ float MapLookahead::get_expected_cost(int current_node, int target_node, const t
 }
 
 void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
-    compute_router_lookahead(segment_inf.size());
+    compute_router_lookahead(segment_inf);
 }
 
 void MapLookahead::read(const std::string& file) {
@@ -355,44 +356,77 @@ Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int delta_x, in
 
 /* Computes the lookahead map to be used by the router. If a map was computed prior to this, a new one will not be computed again.
  * The rr graph must have been built before calling this function. */
-void compute_router_lookahead(int num_segments) {
+void compute_router_lookahead(const std::vector<t_segment_inf>& segment_inf) {
     vtr::ScopedStartFinishTimer timer("Computing router lookahead map");
 
     //First compute the delay map when starting from the various wire types
     //(CHANX/CHANY)in the routing architecture
-    compute_router_wire_lookahead(num_segments);
+    compute_router_wire_lookahead(segment_inf);
 
     //Next, compute which wire types are accessible (and the cost to reach them)
     //from the different physical tile type's SOURCEs & OPINs
     compute_router_src_opin_lookahead();
 }
 
-static void compute_router_wire_lookahead(int num_segments) {
+static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf) {
     vtr::ScopedStartFinishTimer timer("Computing wire lookahead");
 
     f_wire_cost_map.clear();
 
     auto& device_ctx = g_vpr_ctx.device();
+    auto& grid = device_ctx.grid;
 
     /* free previous delay map and allocate new one */
     free_cost_map();
-    alloc_cost_map(num_segments);
+    alloc_cost_map(segment_inf.size());
+
+    int longest_length = 0;
+    for (const auto& seg_inf : segment_inf) {
+        longest_length = std::max(longest_length, seg_inf.length);
+    }
+
+    //Start sampling at the lower left non-corner
+    int ref_x = 1;
+    int ref_y = 1;
+
+    //Sample from locations near the reference location (to capture maximum distance paths)
+    //Also sample from locations at least the longest wire length away from the edge (to avoid
+    //edge effects for shorter distances)
+    std::vector<int> ref_increments = {0, 1, 2,
+                                       longest_length, longest_length + 1, longest_length + 2};
+
+    //Uniquify the increments (avoid sampling the same locations repeatedly if they happen to
+    //overlap)
+    std::sort(ref_increments.begin(), ref_increments.end());
+    ref_increments.erase(std::unique(ref_increments.begin(), ref_increments.end()), ref_increments.end());
+
+    //Upper right non-corner
+    int target_x = device_ctx.grid.width() - 2;
+    int target_y = device_ctx.grid.height() - 2;
 
     /* run Dijkstra's algorithm for each segment type & channel type combination */
-
-    /* allocate the cost map for use with each iseg/chan_type */
-    t_routing_cost_map routing_cost_map({device_ctx.grid.width(), device_ctx.grid.height()});
     t_dijkstra_data data;
-    for (int iseg = 0; iseg < num_segments; iseg++) {
+    t_routing_cost_map routing_cost_map;
+
+    for (int iseg = 0; iseg < int(segment_inf.size()); iseg++) {
         for (e_rr_type chan_type : {CHANX, CHANY}) {
             /* reset cost most for this segment */
             routing_cost_map.fill(Expansion_Cost_Entry());
 
-            for (int ref_inc = 0; ref_inc < 3; ref_inc++) {
+            bool found_sample = false;
+            for (int ref_inc : ref_increments) {
+                int sample_x = ref_x + ref_inc;
+                int sample_y = ref_y + ref_inc;
+
+                if (sample_x >= int(grid.width())) continue;
+                if (sample_y >= int(grid.height())) continue;
+
+                VTR_LOG("Sampling at (%d,%d)\n", sample_x, sample_y);
+
                 for (int track_offset = 0; track_offset < MAX_TRACK_OFFSET; track_offset += 2) {
                     /* get the rr node index from which to start routing */
-                    int start_node_ind = get_start_node_ind(REF_X + ref_inc, REF_Y + ref_inc,
-                                                            device_ctx.grid.width() - 2, device_ctx.grid.height() - 2, //non-corner upper right
+                    int start_node_ind = get_start_node_ind(sample_x, sample_y,
+                                                            target_x, target_y, //non-corner upper right
                                                             chan_type, iseg, track_offset);
 
                     if (start_node_ind == UNDEFINED) {
@@ -400,8 +434,16 @@ static void compute_router_wire_lookahead(int num_segments) {
                     }
 
                     /* run Dijkstra's algorithm */
-                    run_dijkstra(start_node_ind, REF_X + ref_inc, REF_Y + ref_inc, routing_cost_map, &data);
+                    run_dijkstra(start_node_ind, sample_x, sample_y, routing_cost_map, &data);
+
+                    found_sample = true;
                 }
+            }
+
+            if (!found_sample) {
+                VPR_ERROR(VPR_ERROR_ROUTE, "Failed to find sample location for segment type '%s' (length %d)\n",
+                          segment_inf[iseg].name.c_str(),
+                          segment_inf[iseg].length);
             }
 
             /* boil down the cost list in routing_cost_map at each coordinate to a representative cost entry and store it in the lookahead
@@ -414,7 +456,7 @@ static void compute_router_wire_lookahead(int num_segments) {
         }
     }
 
-    if (false) print_cost_map();
+    if (true) print_cost_map();
 }
 
 static void compute_router_src_opin_lookahead() {
@@ -579,13 +621,23 @@ static int get_start_node_ind(int start_x, int start_y, int target_x, int target
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    VTR_ASSERT(rr_type == CHANX || rr_type == CHANY);
+    int start_lookup_x = start_x;
+    int start_lookup_y = start_y;
+    if (rr_type == CHANX) {
+        //Bizarely, rr_node_indices stores CHANX with swapped x/y...
+        std::swap(start_lookup_x, start_lookup_y);
+    }
 
-    const std::vector<int>& channel_node_list = device_ctx.rr_node_indices[rr_type][start_x][start_y][0];
+    const std::vector<int>& channel_node_list = device_ctx.rr_node_indices[rr_type][start_lookup_x][start_lookup_y][0];
 
     /* find first node in channel that has specified segment index and goes in the desired direction */
     for (unsigned itrack = 0; itrack < channel_node_list.size(); itrack++) {
         int node_ind = channel_node_list[itrack];
+
+        if (node_ind < 0) continue;
+
+        VTR_ASSERT(node_ind >= 0);
+        VTR_ASSERT(device_ctx.rr_nodes[node_ind].type() == rr_type);
 
         e_direction node_direction = device_ctx.rr_nodes[node_ind].direction();
         int node_cost_ind = device_ctx.rr_nodes[node_ind].cost_index();
@@ -767,7 +819,8 @@ static Cost_Entry get_nearby_cost_entry(int x, int y, int segment_index, int cha
         copy_y = vtr::nint((float)x * slope);
     }
 
-    //VTR_ASSERT(copy_x > 0 || copy_y > 0); //Asertion fails in practise. TODO: debug
+    copy_y = std::max(copy_y, 0); //Clip to zero
+    copy_x = std::max(copy_x, 0); //Clip to zero
 
     Cost_Entry copy_entry = f_wire_cost_map[chan_index][segment_index][copy_x][copy_y];
 

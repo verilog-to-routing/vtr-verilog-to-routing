@@ -39,7 +39,7 @@ void write_router_lookahead(const std::string& file);
 
 /* Computes the lookahead map to be used by the router. If a map was computed prior to this, a new one will not be computed again.
  * The rr graph must have been built before calling this function. */
-void compute_router_lookahead(int num_segments);
+void compute_router_lookahead(const std::vector<t_segment_inf>& segment_inf);
 
 /* queries the lookahead_map (should have been computed prior to routing) to get the expected cost
  * from the specified source to the specified target */
