@@ -9,6 +9,7 @@
 
 #include <cstdio>
 #include <fstream>
+#include <limits>
 #include "rr_graph_uxsdcxx_serializer.h"
 #include "rr_graph_uxsdcxx.h"
 #ifdef VTR_ENABLE_CAPNPROTO
@@ -48,9 +49,10 @@ void write_rr_graph(const char* file_name, const std::vector<t_segment_inf>& seg
         &device_ctx.rr_edge_metadata,
         &device_ctx.arch->strings);
 
-    std::fstream fp;
-    fp.open(file_name, std::fstream::out | std::fstream::trunc);
     if (vtr::check_file_name_extension(file_name, ".xml")) {
+        std::fstream fp;
+        fp.open(file_name, std::fstream::out | std::fstream::trunc);
+        fp.precision(std::numeric_limits<float>::max_digits10);
         void* context;
         uxsd::write_rr_graph_xml(reader, context, fp);
 #ifdef VTR_ENABLE_CAPNPROTO
