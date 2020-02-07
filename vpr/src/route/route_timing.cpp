@@ -2082,7 +2082,6 @@ void Router::timing_driven_add_to_heap(const t_conn_cost_params cost_params,
     next.backward_path_cost = current->backward_path_cost;
     next.R_upstream = current->R_upstream;
 
-
     VTR_LOGV_DEBUG(f_router_debug, "      Expanding to node %d (%s)\n", to_node, describe_rr_node(to_node).c_str());
 
     evaluate_timing_driven_node_costs(&next,
