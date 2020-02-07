@@ -218,7 +218,8 @@ t_src_opin_reachable_wires f_src_opin_reachable_wires;
 Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int delta_x, int delta_y);
 static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf);
 static void compute_router_src_opin_lookahead();
-static vtr::Point<int> pick_sample_tile(t_physical_tile_type_ptr tile_type);
+static vtr::Point<int> pick_sample_tile(t_physical_tile_type_ptr tile_type, vtr::Point<int> start);
+void dijkstra_flood_to_wires(int itile, int inode, t_src_opin_reachable_wires& src_opin_reachable_wires);
 
 static void alloc_cost_map(int num_segments);
 static void free_cost_map();
@@ -291,29 +292,46 @@ float get_lookahead_map_cost(int from_node_ind, int to_node_ind, float criticali
         t_physical_tile_type_ptr tile_type = device_ctx.grid[from_node.xlow()][from_node.ylow()].type;
         auto tile_index = std::distance(&device_ctx.physical_tile_types[0], tile_type);
 
-        //From the current SOURCE/OPIN we look-up the wiretypes which are reachable
-        //and then add the estimates from those wire types for the distance of interest.
-        //If there are multiple options we use the minimum value.
-        for (const auto& kv : f_src_opin_reachable_wires[tile_index][from_node.ptc_num()]) {
-            const t_reachable_wire_inf& reachable_wire_inf = kv.second;
+        if (f_src_opin_reachable_wires[tile_index][from_node.ptc_num()].empty()) {
+            //During lookahead profiling we were unable to find any wires which connected
+            //to this PTC.
+            //
+            //This can sometimes occur at very low channel widths (e.g. during min W search on
+            //small designs) where W discretization combined with fraction Fc may cause some
+            //pins/sources to be left disconnected.
+            //
+            //Such RR graphs are of course unroutable, but that should be determined by the
+            //router. So just return an arbitrary value here rather than error.
 
-            Cost_Entry wire_cost_entry;
-            if (reachable_wire_inf.wire_rr_type == SINK) {
-                //Some pins maybe reachable via a direct (OPIN -> IPIN) connection.
-                //In the lookahead, we treat such connections as 'special' wire types
-                //with no delay/congestion cost
-                wire_cost_entry.delay = 0;
-                wire_cost_entry.congestion = 0;
-            } else {
-                //For an actual accessible wire, we query the wire look-up to get it's
-                //delay and congestion cost estimates
-                wire_cost_entry = get_wire_cost_entry(reachable_wire_inf.wire_rr_type, reachable_wire_inf.wire_seg_index, delta_x, delta_y);
+            //We choose to return the largest (non-infinite) value possible.
+            //This should ensure that the router de-prioritizes exploring it,
+            //but does not forbid the router from trying.
+            expected_cost = std::numeric_limits<float>::max();
+        } else {
+            //From the current SOURCE/OPIN we look-up the wiretypes which are reachable
+            //and then add the estimates from those wire types for the distance of interest.
+            //If there are multiple options we use the minimum value.
+            for (const auto& kv : f_src_opin_reachable_wires[tile_index][from_node.ptc_num()]) {
+                const t_reachable_wire_inf& reachable_wire_inf = kv.second;
+
+                Cost_Entry wire_cost_entry;
+                if (reachable_wire_inf.wire_rr_type == SINK) {
+                    //Some pins maybe reachable via a direct (OPIN -> IPIN) connection.
+                    //In the lookahead, we treat such connections as 'special' wire types
+                    //with no delay/congestion cost
+                    wire_cost_entry.delay = 0;
+                    wire_cost_entry.congestion = 0;
+                } else {
+                    //For an actual accessible wire, we query the wire look-up to get it's
+                    //delay and congestion cost estimates
+                    wire_cost_entry = get_wire_cost_entry(reachable_wire_inf.wire_rr_type, reachable_wire_inf.wire_seg_index, delta_x, delta_y);
+                }
+
+                float this_cost = (criticality_fac) * (reachable_wire_inf.congestion + wire_cost_entry.congestion)
+                                  + (1. - criticality_fac) * (reachable_wire_inf.delay + wire_cost_entry.delay);
+
+                expected_cost = std::min(expected_cost, this_cost);
             }
-
-            float this_cost = (criticality_fac) * (reachable_wire_inf.congestion + wire_cost_entry.congestion)
-                              + (1. - criticality_fac) * (reachable_wire_inf.delay + wire_cost_entry.delay);
-
-            expected_cost = std::min(expected_cost, this_cost);
         }
 
         VTR_ASSERT_SAFE_MSG(std::isfinite(expected_cost),
@@ -406,7 +424,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
 
     /* run Dijkstra's algorithm for each segment type & channel type combination */
     t_dijkstra_data data;
-    t_routing_cost_map routing_cost_map;
+    t_routing_cost_map routing_cost_map({device_ctx.grid.width(), device_ctx.grid.height()});
 
     for (int iseg = 0; iseg < int(segment_inf.size()); iseg++) {
         for (e_rr_type chan_type : {CHANX, CHANY}) {
@@ -421,7 +439,12 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
                 if (sample_x >= int(grid.width())) continue;
                 if (sample_y >= int(grid.height())) continue;
 
-                VTR_LOG("Sampling at (%d,%d)\n", sample_x, sample_y);
+                VTR_LOG("Sampling from (%d,%d) for %s %s (length %d)\n",
+                        sample_x,
+                        sample_y,
+                        rr_node_typename[chan_type],
+                        segment_inf[iseg].name.c_str(),
+                        segment_inf[iseg].length);
 
                 for (int track_offset = 0; track_offset < MAX_TRACK_OFFSET; track_offset += 2) {
                     /* get the rr node index from which to start routing */
@@ -456,7 +479,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
         }
     }
 
-    if (true) print_cost_map();
+    if (false) print_cost_map();
 }
 
 static void compute_router_src_opin_lookahead() {
@@ -467,134 +490,76 @@ static void compute_router_src_opin_lookahead() {
 
     f_src_opin_reachable_wires.resize(device_ctx.physical_tile_types.size());
 
-    struct t_pq_entry {
-        float delay;
-        float congestion;
-        int inode;
-
-        bool operator<(const t_pq_entry& rhs) const {
-            return this->delay < rhs.delay;
-        }
-    };
-
-    std::priority_queue<t_pq_entry> pq;
-    std::vector<int> rr_node_indices;
+    std::vector<int> rr_nodes_at_loc;
 
     //We assume that the routing connectivity of each instance of a physical tile is the same,
     //and so only measure one instance of each type
     for (size_t itile = 0; itile < device_ctx.physical_tile_types.size(); ++itile) {
-        vtr::Point<int> sample_loc = pick_sample_tile(&device_ctx.physical_tile_types[itile]);
-
-        if (sample_loc.x() < 0 || sample_loc.y() < 0) {
-            VTR_LOG_WARN("Failed to find sample location for tile type '%s'\n", device_ctx.physical_tile_types[itile].name);
-            continue;
-        }
-
         for (e_rr_type rr_type : {SOURCE, OPIN}) {
-            get_rr_node_indices(device_ctx.rr_node_indices, sample_loc.x(), sample_loc.y(), rr_type, &rr_node_indices);
-            for (int inode : rr_node_indices) {
-                if (inode < 0) continue;
+            vtr::Point<int> sample_loc(-1, -1);
 
-                int ptc = device_ctx.rr_nodes[inode].ptc_num();
+            size_t num_sampled_locs = 0;
+            bool ptcs_with_no_reachable_wires = true;
+            while (ptcs_with_no_reachable_wires) { //Haven't found wire connected to ptc
+                ptcs_with_no_reachable_wires = false;
 
-                if (ptc >= int(f_src_opin_reachable_wires[itile].size())) {
-                    //Inefficient work-around
-                    f_src_opin_reachable_wires[itile].resize(ptc + 1);
+                sample_loc = pick_sample_tile(&device_ctx.physical_tile_types[itile], sample_loc);
+
+                if (sample_loc.x() == -1 && sample_loc.y() == -1) {
+                    //No untried instances of the current tile type left
+                    VTR_LOG_WARN("Found no %ssample locations for %s in %s\n",
+                                 (num_sampled_locs == 0) ? "" : "more ",
+                                 rr_node_typename[rr_type],
+                                 device_ctx.physical_tile_types[itile].name);
+                    break;
                 }
 
-                t_pq_entry root;
-                root.congestion = 0.;
-                root.delay = 0.;
-                root.inode = inode;
+                get_rr_node_indices(device_ctx.rr_node_indices, sample_loc.x(), sample_loc.y(), rr_type, &rr_nodes_at_loc);
+                for (int inode : rr_nodes_at_loc) {
+                    if (inode < 0) continue;
 
-                /*
-                 * Perform Djikstra from the SOURCE/OPIN of interest, stopping at the the first
-                 * reachable wires (i.e until we hit the inter-block routing network), or a SINK
-                 * (via a direct-connect).
-                 *
-                 * Note that typical RR graphs are structured :
-                 *
-                 *      SOURCE ---> OPIN --> CHANX/CHANY
-                 *              |
-                 *              --> OPIN --> CHANX/CHANY
-                 *              |
-                 *             ...
-                 *
-                 *   possibly with direct-connects of the form:
-                 *
-                 *      SOURCE --> OPIN --> IPIN --> SINK
-                 *
-                 * and there is a small number of fixed hops from SOURCE/OPIN to CHANX/CHANY or
-                 * to a SINK (via a direct-connect), so this runs very fast (i.e. O(1))
-                 */
-                pq.push(root);
-                while (!pq.empty()) {
-                    t_pq_entry curr = pq.top();
-                    pq.pop();
+                    int ptc = device_ctx.rr_nodes[inode].ptc_num();
 
-                    e_rr_type curr_rr_type = device_ctx.rr_nodes[curr.inode].type();
-                    if (curr_rr_type == CHANX || curr_rr_type == CHANY || curr_rr_type == SINK) {
-                        //We stop expansion at any CHANX/CHANY/SINK
-                        int seg_index;
-                        if (curr_rr_type != SINK) {
-                            //It's a wire, figure out its type
-                            int cost_index = device_ctx.rr_nodes[curr.inode].cost_index();
-                            seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
-                        } else {
-                            //This is a direct-connect path between an IPIN and OPIN,
-                            //which terminated at a SINK.
-                            //
-                            //We treat this as a 'special' wire type
-                            seg_index = DIRECT_CONNECT_SPECIAL_SEG_TYPE;
-                        }
+                    if (ptc >= int(f_src_opin_reachable_wires[itile].size())) {
+                        f_src_opin_reachable_wires[itile].resize(ptc + 1); //Inefficient but functional...
+                    }
 
-                        //Keep costs of the best path to reach each wire type
-                        if (!f_src_opin_reachable_wires[itile][ptc].count(seg_index)
-                            || curr.delay < f_src_opin_reachable_wires[itile][ptc][seg_index].delay) {
-                            f_src_opin_reachable_wires[itile][ptc][seg_index].wire_rr_type = curr_rr_type;
-                            f_src_opin_reachable_wires[itile][ptc][seg_index].wire_seg_index = seg_index;
-                            f_src_opin_reachable_wires[itile][ptc][seg_index].delay = curr.delay;
-                            f_src_opin_reachable_wires[itile][ptc][seg_index].congestion = curr.congestion;
-                        }
+                    //Find the wire types which are reachable from inode and record them and
+                    //the cost to reach them
+                    dijkstra_flood_to_wires(itile, inode, f_src_opin_reachable_wires);
 
-                    } else if (curr_rr_type == SOURCE || curr_rr_type == OPIN || curr_rr_type == IPIN) {
-                        //We allow expansion through SOURCE/OPIN/IPIN types
-                        int cost_index = device_ctx.rr_nodes[curr.inode].cost_index();
-                        float incr_cong = device_ctx.rr_indexed_data[cost_index].base_cost; //Current nodes congestion cost
+                    if (f_src_opin_reachable_wires[itile][ptc].empty()) {
+                        VTR_LOG_WARN("Found no reachable wires from %s (%s) at (%d,%d)\n",
+                                     rr_node_typename[rr_type],
+                                     rr_node_arch_name(inode).c_str(),
+                                     sample_loc.x(),
+                                     sample_loc.y());
 
-                        for (int iedge : device_ctx.rr_nodes[curr.inode].edges()) {
-                            int iswitch = device_ctx.rr_nodes[curr.inode].edge_switch(iedge);
-                            float incr_delay = device_ctx.rr_switch_inf[iswitch].Tdel;
-
-                            int inext = device_ctx.rr_nodes[curr.inode].edge_sink_node(iedge);
-
-                            t_pq_entry next;
-                            next.congestion = curr.congestion + incr_cong; //Of current node
-                            next.delay = curr.delay + incr_delay;          //To reach next node
-                            next.inode = inext;
-
-                            pq.push(next);
-                        }
-                    } else {
-                        VPR_ERROR(VPR_ERROR_ROUTE, "Unrecognized RR type");
+                        ptcs_with_no_reachable_wires = true;
                     }
                 }
 
-                VTR_LOGV_WARN(f_src_opin_reachable_wires[itile][ptc].empty(),
-                              "Found no reachable wires from %s\n", rr_node_arch_name(inode).c_str());
+                ++num_sampled_locs;
+            }
+            if (ptcs_with_no_reachable_wires) {
+                VPR_ERROR(VPR_ERROR_ROUTE, "Some SOURCE/OPINs have no reachable wires\n");
             }
         }
     }
 }
 
-static vtr::Point<int> pick_sample_tile(t_physical_tile_type_ptr tile_type) {
+static vtr::Point<int> pick_sample_tile(t_physical_tile_type_ptr tile_type, vtr::Point<int> prev) {
     //Very simple for now, just pick the fist matching tile found
     vtr::Point<int> loc(OPEN, OPEN);
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& grid = device_ctx.grid;
-    for (size_t x = 0; x < grid.width(); ++x) {
-        for (size_t y = 0; y < grid.height(); ++y) {
+    for (int x = prev.x(); x < int(grid.width()); ++x) {
+        if (x < 0) continue;
+
+        for (int y = prev.y() + 1; y < int(grid.height()); ++y) {
+            if (y < 0) continue;
+
             if (grid[x][y].type == tile_type) {
                 loc.set_x(x);
                 loc.set_y(y);
@@ -603,6 +568,102 @@ static vtr::Point<int> pick_sample_tile(t_physical_tile_type_ptr tile_type) {
     }
 
     return loc;
+}
+
+void dijkstra_flood_to_wires(int itile, int inode, t_src_opin_reachable_wires& src_opin_reachable_wires) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    struct t_pq_entry {
+        float delay;
+        float congestion;
+        int inode;
+
+        bool operator<(const t_pq_entry& rhs) const {
+            return this->delay < rhs.delay;
+        };
+    };
+
+    std::priority_queue<t_pq_entry> pq;
+
+    t_pq_entry root;
+    root.congestion = 0.;
+    root.delay = 0.;
+    root.inode = inode;
+
+    int ptc = device_ctx.rr_nodes[inode].ptc_num();
+
+    /*
+     * Perform Djikstra from the SOURCE/OPIN of interest, stopping at the the first
+     * reachable wires (i.e until we hit the inter-block routing network), or a SINK
+     * (via a direct-connect).
+     *
+     * Note that typical RR graphs are structured :
+     *
+     *      SOURCE ---> OPIN --> CHANX/CHANY
+     *              |
+     *              --> OPIN --> CHANX/CHANY
+     *              |
+     *             ...
+     *
+     *   possibly with direct-connects of the form:
+     *
+     *      SOURCE --> OPIN --> IPIN --> SINK
+     *
+     * and there is a small number of fixed hops from SOURCE/OPIN to CHANX/CHANY or
+     * to a SINK (via a direct-connect), so this runs very fast (i.e. O(1))
+     */
+    pq.push(root);
+    while (!pq.empty()) {
+        t_pq_entry curr = pq.top();
+        pq.pop();
+
+        e_rr_type curr_rr_type = device_ctx.rr_nodes[curr.inode].type();
+        if (curr_rr_type == CHANX || curr_rr_type == CHANY || curr_rr_type == SINK) {
+            //We stop expansion at any CHANX/CHANY/SINK
+            int seg_index;
+            if (curr_rr_type != SINK) {
+                //It's a wire, figure out its type
+                int cost_index = device_ctx.rr_nodes[curr.inode].cost_index();
+                seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
+            } else {
+                //This is a direct-connect path between an IPIN and OPIN,
+                //which terminated at a SINK.
+                //
+                //We treat this as a 'special' wire type
+                seg_index = DIRECT_CONNECT_SPECIAL_SEG_TYPE;
+            }
+
+            //Keep costs of the best path to reach each wire type
+            if (!src_opin_reachable_wires[itile][ptc].count(seg_index)
+                || curr.delay < src_opin_reachable_wires[itile][ptc][seg_index].delay) {
+                src_opin_reachable_wires[itile][ptc][seg_index].wire_rr_type = curr_rr_type;
+                src_opin_reachable_wires[itile][ptc][seg_index].wire_seg_index = seg_index;
+                src_opin_reachable_wires[itile][ptc][seg_index].delay = curr.delay;
+                src_opin_reachable_wires[itile][ptc][seg_index].congestion = curr.congestion;
+            }
+
+        } else if (curr_rr_type == SOURCE || curr_rr_type == OPIN || curr_rr_type == IPIN) {
+            //We allow expansion through SOURCE/OPIN/IPIN types
+            int cost_index = device_ctx.rr_nodes[curr.inode].cost_index();
+            float incr_cong = device_ctx.rr_indexed_data[cost_index].base_cost; //Current nodes congestion cost
+
+            for (int iedge : device_ctx.rr_nodes[curr.inode].edges()) {
+                int iswitch = device_ctx.rr_nodes[curr.inode].edge_switch(iedge);
+                float incr_delay = device_ctx.rr_switch_inf[iswitch].Tdel;
+
+                int inext = device_ctx.rr_nodes[curr.inode].edge_sink_node(iedge);
+
+                t_pq_entry next;
+                next.congestion = curr.congestion + incr_cong; //Of current node
+                next.delay = curr.delay + incr_delay;          //To reach next node
+                next.inode = inext;
+
+                pq.push(next);
+            }
+        } else {
+            VPR_ERROR(VPR_ERROR_ROUTE, "Unrecognized RR type");
+        }
+    }
 }
 
 /* returns index of a node from which to start routing */
