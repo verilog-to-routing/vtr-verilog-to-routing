@@ -940,6 +940,8 @@ static std::vector<SampleRegion> find_sample_regions(int num_segments) {
         for (int y = 0; y < SAMPLE_GRID_SIZE; y++) {
             for (int x = 0; x < SAMPLE_GRID_SIZE; x++) {
                 vtr::Rect<int> window = sample_window(bounding_box, x, y, SAMPLE_GRID_SIZE);
+                if (window.empty()) continue;
+
                 auto histogram = count_histogram(window, segment_counts[i]);
                 SampleRegion region = {
                     /* .segment_type = */ i,
