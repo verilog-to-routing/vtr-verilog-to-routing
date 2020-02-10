@@ -177,14 +177,14 @@ class t_rr_node {
  *          the chain driven by the driver.  0 for buffered segments.        */
 
 struct t_rr_indexed_data {
-    float base_cost;
-    float saved_base_cost;
-    int ortho_cost_index;
-    int seg_index;
-    float inv_length;
-    float T_linear;
-    float T_quadratic;
-    float C_load;
+    float base_cost = std::numeric_limits<float>::quiet_NaN();
+    float saved_base_cost = std::numeric_limits<float>::quiet_NaN();
+    int ortho_cost_index = OPEN;
+    int seg_index = OPEN;
+    float inv_length = std::numeric_limits<float>::quiet_NaN();
+    float T_linear = std::numeric_limits<float>::quiet_NaN();
+    float T_quadratic = std::numeric_limits<float>::quiet_NaN();
+    float C_load = std::numeric_limits<float>::quiet_NaN();
 };
 
 #include "rr_node_impl.h"
