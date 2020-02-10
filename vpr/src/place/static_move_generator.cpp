@@ -13,6 +13,10 @@ StaticMoveGenerator::StaticMoveGenerator(const std::vector<float> & prob){
 	move_generator2 = std::make_unique<MedianMoveGenerator>();
 	avail_moves.push_back(std::move(move_generator2));
 
+	std::unique_ptr<MoveGenerator> move_generator3;
+	move_generator3 = std::make_unique<WeightedMedianMoveGenerator>();
+	avail_moves.push_back(std::move(move_generator3));	
+
 	moves_prob = prob;
 }
 

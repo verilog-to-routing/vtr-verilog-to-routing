@@ -2,7 +2,9 @@
 #define VPR_STATIC_MOVE_GEN_H
 #include "move_generator.h"
 #include "median_move_generator.h"
+#include "weighted_median_move_generator.h"
 #include "uniform_move_generator.h"
+
 
 class StaticMoveGenerator : public MoveGenerator {
 private:

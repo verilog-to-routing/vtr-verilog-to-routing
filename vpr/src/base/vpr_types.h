@@ -532,6 +532,20 @@ struct t_bb {
 };
 
 /**
+ * @brief Stores the bounding box of a net in terms of the minimum and
+ *        maximum coordinates of the blocks forming the net, clipped to
+ *        the region: (1..device_ctx.grid.width()-2, 1..device_ctx.grid.height()-1)
+ *        and the timing cost of the net terminal that caused each edge. 
+ *        This is useful for some directed move generators.
+ */
+struct t_bb_cost {
+    std::pair<int,float> xmin={0,0.0};
+    std::pair<int,float> xmax={0,0.0};
+    std::pair<int,float> ymin={0,0.0};
+    std::pair<int,float> ymax={0,0.0};
+};
+
+/**
  * @brief An offset between placement locations (t_pl_loc)
  *
  * x: x-offset
