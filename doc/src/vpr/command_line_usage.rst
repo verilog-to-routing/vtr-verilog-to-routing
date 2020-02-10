@@ -182,12 +182,14 @@ General Options
 
      **Default:** ``ideal``
 
-.. option:: --two_stage_clock_routing
+.. option:: --two_stage_clock_routing {on | off}
 
     Routes clock nets in two stages using a dedicated clock network.
 
-     * First stage: From the net source (e.g. an I/O pin) to a dedicated clock network source (e.g. center of chip)
-     * Second stage: From the clock network source to net sinks.
+     * First stage: From the net source (e.g. an I/O pin) to a dedicated clock network root (e.g. center of chip)
+     * Second stage: From the clock network root to net sinks.
+
+    Note this option only works when specifying a clock architecture, see :ref:`Clock Architecture Format <clock_architecture_format>`; it does not work when reading a routing resource graph (i.e. :option:`--read_rr_graph`).
 
      **Default:** ``off``
 
