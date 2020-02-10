@@ -1221,10 +1221,14 @@ std::vector<int> get_rr_node_indices(const t_rr_node_indices& L_rr_node_indices,
                                      e_side side) {
     if (rr_type == SOURCE
         || rr_type == SINK
-        || rr_type == CHANX
         || rr_type == CHANY) {
         VTR_ASSERT_MSG(side == NUM_SIDES, "Non-IPINs/OPINs must not specify side");
         return L_rr_node_indices[rr_type][x][y][0];
+    } else if (rr_type == CHANX) {
+        VTR_ASSERT_MSG(side == NUM_SIDES, "Non-IPINs/OPINs must not specify side");
+
+        //CHANX uses an odd swapped x/y convention...
+        return L_rr_node_indices[rr_type][y][x][0];
     } else {
         VTR_ASSERT(rr_type == OPIN || rr_type == IPIN);
         if (side == NUM_SIDES) {
