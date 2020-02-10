@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <limits>
 #include "vtr_ndmatrix.h"
 #include "router_lookahead.h"
 
@@ -19,10 +20,11 @@ class Cost_Entry {
     float delay;
     float congestion;
 
-    Cost_Entry() {
-        delay = -1.0;
-        congestion = -1.0;
+    Cost_Entry()
+        : Cost_Entry(std::numeric_limits<float>::quiet_NaN(),
+                     std::numeric_limits<float>::quiet_NaN()) {
     }
+
     Cost_Entry(float set_delay, float set_congestion) {
         delay = set_delay;
         congestion = set_congestion;
