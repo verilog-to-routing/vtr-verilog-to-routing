@@ -1883,6 +1883,8 @@ The ``<segment>`` tag and its contents are described below.
     .. note::
         The switch used in unidirectional segment mode must be buffered.
 
+.. _clock_architecture_format:
+
 Clocks
 ------
 
