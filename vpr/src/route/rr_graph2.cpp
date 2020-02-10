@@ -2756,3 +2756,37 @@ static bool should_apply_switch_override(int switch_override) {
     }
     return false;
 }
+
+/*
+ * Utility
+ */
+void add_to_rr_node_indices(t_rr_node_indices& rr_node_indices, const t_rr_graph_storage& rr_nodes, int inode) {
+    const t_rr_node& rr_node = rr_nodes[inode];
+
+    for (int x = rr_node.xlow(); x <= rr_node.xhigh(); ++x) {
+        for (int y = rr_node.ylow(); y <= rr_node.yhigh(); ++y) {
+            auto rr_type = rr_node.type();
+            if (rr_type == IPIN || rr_type == OPIN) {
+                insert_at_ptc_index(rr_node_indices[rr_node.type()][x][y][rr_node.side()], rr_node.ptc_num(), inode);
+            } else if (rr_type == CHANX) {
+                //CHANX uses odd swapped x/y indices....
+                insert_at_ptc_index(rr_node_indices[rr_node.type()][y][x][0], rr_node.ptc_num(), inode);
+            } else {
+                insert_at_ptc_index(rr_node_indices[rr_node.type()][x][y][0], rr_node.ptc_num(), inode);
+            }
+        }
+    }
+}
+
+void insert_at_ptc_index(std::vector<int>& rr_indices, int ptc, int inode) {
+    if (ptc >= int(rr_indices.size())) {
+        rr_indices.resize(ptc + 1, OPEN); //Functional, but inefficient allocations...
+    }
+
+    if (rr_indices[ptc] == inode) {
+        return;
+    }
+
+    VTR_ASSERT(rr_indices[ptc] == OPEN);
+    rr_indices[ptc] = inode;
+}
