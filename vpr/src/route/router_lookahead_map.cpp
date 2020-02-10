@@ -422,29 +422,17 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
     int target_x = device_ctx.grid.width() - 2;
     int target_y = device_ctx.grid.height() - 2;
 
-    /* run Dijkstra's algorithm for each segment type & channel type combination */
-    t_dijkstra_data data;
-    t_routing_cost_map routing_cost_map({device_ctx.grid.width(), device_ctx.grid.height()});
-
+    //Profile each wire segment type
     for (int iseg = 0; iseg < int(segment_inf.size()); iseg++) {
+        //First try to pick good representative sample locations for each type
+        std::map<t_rr_type, std::vector<int>> sample_nodes;
         for (e_rr_type chan_type : {CHANX, CHANY}) {
-            /* reset cost most for this segment */
-            routing_cost_map.fill(Expansion_Cost_Entry());
-
-            bool found_sample = false;
             for (int ref_inc : ref_increments) {
                 int sample_x = ref_x + ref_inc;
                 int sample_y = ref_y + ref_inc;
 
                 if (sample_x >= int(grid.width())) continue;
                 if (sample_y >= int(grid.height())) continue;
-
-                VTR_LOG("Sampling from (%d,%d) for %s %s (length %d)\n",
-                        sample_x,
-                        sample_y,
-                        rr_node_typename[chan_type],
-                        segment_inf[iseg].name.c_str(),
-                        segment_inf[iseg].length);
 
                 for (int track_offset = 0; track_offset < MAX_TRACK_OFFSET; track_offset += 2) {
                     /* get the rr node index from which to start routing */
@@ -456,26 +444,77 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
                         continue;
                     }
 
-                    /* run Dijkstra's algorithm */
-                    run_dijkstra(start_node_ind, sample_x, sample_y, routing_cost_map, &data);
-
-                    found_sample = true;
+                    sample_nodes[chan_type].push_back(start_node_ind);
                 }
             }
+        }
 
-            if (!found_sample) {
-                VPR_ERROR(VPR_ERROR_ROUTE, "Failed to find sample location for segment type '%s' (length %d)\n",
-                          segment_inf[iseg].name.c_str(),
-                          segment_inf[iseg].length);
+        //If we failed to find any representative sample locations, search exhaustively
+        //
+        //This is to ensure we sample 'unusual' wire types which may not exist in all channels
+        //(e.g. clock routing)
+        for (e_rr_type chan_type : {CHANX, CHANY}) {
+            if (!sample_nodes[chan_type].empty()) continue;
+
+            //Try an exhaustive search to find a suitable sample point
+            for (int inode = 0; inode < int(device_ctx.rr_nodes.size()); ++inode) {
+                if (device_ctx.rr_nodes[inode].type() != chan_type) continue;
+
+                int cost_index = device_ctx.rr_nodes[inode].cost_index();
+                VTR_ASSERT(cost_index != OPEN);
+
+                int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
+
+                if (seg_index == iseg) {
+                    sample_nodes[chan_type].push_back(inode);
+                }
+
+                if (sample_nodes[chan_type].size() >= ref_increments.size()) {
+                    break;
+                }
             }
+        }
 
-            /* boil down the cost list in routing_cost_map at each coordinate to a representative cost entry and store it in the lookahead
-             * cost map */
-            set_lookahead_map_costs(iseg, chan_type, routing_cost_map);
+        //Finally, now that we have a list of sample locations, run a Djikstra flood from
+        //each sample location to profile the routing network from this type
 
-            /* fill in missing entries in the lookahead cost map by copying the closest cost entries (cost map was computed based on
-             * a reference coordinate > (0,0) so some entries that represent a cross-chip distance have not been computed) */
-            fill_in_missing_lookahead_entries(iseg, chan_type);
+        t_dijkstra_data dijkstra_data;
+        t_routing_cost_map routing_cost_map({device_ctx.grid.width(), device_ctx.grid.height()});
+
+        for (e_rr_type chan_type : {CHANX, CHANY}) {
+            if (sample_nodes[chan_type].empty()) {
+                VTR_LOG_WARN("Unable to find any sample location for segment %s type '%s' (length %d)\n",
+                             rr_node_typename[chan_type],
+                             segment_inf[iseg].name.c_str(),
+                             segment_inf[iseg].length);
+            } else {
+                //reset cost for this segment
+                routing_cost_map.fill(Expansion_Cost_Entry());
+
+                for (int sample_node : sample_nodes[chan_type]) {
+                    int sample_x = device_ctx.rr_nodes[sample_node].xlow();
+                    int sample_y = device_ctx.rr_nodes[sample_node].ylow();
+
+                    if (device_ctx.rr_nodes[sample_node].direction() == DEC_DIRECTION) {
+                        sample_x = device_ctx.rr_nodes[sample_node].xhigh();
+                        sample_y = device_ctx.rr_nodes[sample_node].yhigh();
+                    }
+
+                    run_dijkstra(sample_node,
+                                 sample_x,
+                                 sample_y,
+                                 routing_cost_map,
+                                 &dijkstra_data);
+                }
+
+                /* boil down the cost list in routing_cost_map at each coordinate to a representative cost entry and store it in the lookahead
+                 * cost map */
+                set_lookahead_map_costs(iseg, chan_type, routing_cost_map);
+
+                /* fill in missing entries in the lookahead cost map by copying the closest cost entries (cost map was computed based on
+                 * a reference coordinate > (0,0) so some entries that represent a cross-chip distance have not been computed) */
+                fill_in_missing_lookahead_entries(iseg, chan_type);
+            }
         }
     }
 
@@ -887,7 +926,11 @@ static Cost_Entry get_nearby_cost_entry(int x, int y, int segment_index, int cha
 
     /* if the entry to be copied is also empty, recurse */
     if (copy_entry.delay < 0 && copy_entry.congestion < 0) {
-        copy_entry = get_nearby_cost_entry(copy_x, copy_y, segment_index, chan_index);
+        if (copy_y == 0 && copy_x == 0) {
+            copy_entry = Cost_Entry(0., 0.);
+        } else {
+            copy_entry = get_nearby_cost_entry(copy_x, copy_y, segment_index, chan_index);
+        }
     }
 
     return copy_entry;
