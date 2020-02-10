@@ -6,7 +6,8 @@ static void get_bb_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* coord
 bool sort_by_weights(const std::pair<int,float> &a, const std::pair<int,float> &b);
 
 
-e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float ) {
+e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float ,
+    std::vector<float>& X_coord, std::vector<float>& Y_coord) {
     /* Pick a random block to be swapped with another random block.   */
     ClusterBlockId b_from = pick_from_block();
     if (!b_from) {

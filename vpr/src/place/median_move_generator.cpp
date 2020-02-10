@@ -4,7 +4,8 @@
 //#include "math.h"
 static void get_bb_for_net_excluding_block(ClusterNetId net_id, t_bb* coords, ClusterBlockId block_id);
 
-e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float ) {
+e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float,
+std::vector<float>& X_coord, std::vector<float>& Y_coord) {
     /* Pick a random block to be swapped with another random block.   */
     ClusterBlockId b_from = pick_from_block();
     if (!b_from) {
@@ -23,31 +24,32 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     t_pl_loc to;
 
     t_bb coords,limit_coords;
-    std::vector<int> X,Y;
+    X_coord.clear();
+    Y_coord.clear();
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(b_from)) {
         ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
         //if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
         //    continue;
                 
         get_bb_for_net_excluding_block(net_id, &coords, b_from);
-        X.push_back(coords.xmin);
-        X.push_back(coords.xmax);
-        Y.push_back(coords.ymin);
-        Y.push_back(coords.ymax);
+        X_coord.push_back(coords.xmin);
+        X_coord.push_back(coords.xmax);
+        Y_coord.push_back(coords.ymin);
+        Y_coord.push_back(coords.ymax);
     }
-    std::sort(X.begin(),X.end());
-    std::sort(Y.begin(),Y.end());
+    std::sort(X_coord.begin(),X_coord.end());
+    std::sort(Y_coord.begin(),Y_coord.end());
 
-    VTR_ASSERT(X.size()>0);
-    VTR_ASSERT(Y.size()>0);
+    VTR_ASSERT(X_coord.size()>0);
+    VTR_ASSERT(Y_coord.size()>0);
 
-    limit_coords.xmin = X[floor((X.size()-1)/2)];
-    limit_coords.xmax = X[floor((X.size()-1)/2)+1];
+    limit_coords.xmin = X_coord[floor((X_coord.size()-1)/2)];
+    limit_coords.xmax = X_coord[floor((X_coord.size()-1)/2)+1];
 
-    limit_coords.ymin = Y[floor((Y.size()-1)/2)];
-    limit_coords.ymax = Y[floor((Y.size()-1)/2)+1];
+    limit_coords.ymin = Y_coord[floor((Y_coord.size()-1)/2)];
+    limit_coords.ymax = Y_coord[floor((Y_coord.size()-1)/2)+1];
 
-    VTR_ASSERT(floor((Y.size()-1)/2)+1 < Y.size());
+    VTR_ASSERT(floor((Y_coord.size()-1)/2)+1 < Y_coord.size());
     VTR_ASSERT(limit_coords.xmin <= limit_coords.xmax);
     VTR_ASSERT(limit_coords.ymin <= limit_coords.ymax);
     

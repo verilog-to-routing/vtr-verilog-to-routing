@@ -3,7 +3,8 @@
 #include "move_generator.h"
 
 class UniformMoveGenerator : public MoveGenerator {
-    e_create_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float rlim);
+    e_create_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float rlim,
+    	std::vector<float>& , std::vector<float>& );
 };
 
 #endif

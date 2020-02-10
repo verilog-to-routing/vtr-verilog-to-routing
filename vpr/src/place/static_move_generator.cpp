@@ -21,7 +21,8 @@ StaticMoveGenerator::StaticMoveGenerator(const std::vector<float> & prob){
 }
 
 
-e_create_move StaticMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim) {
+e_create_move StaticMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim
+	, std::vector<float>& X_coord, std::vector<float>& Y_coord) {
 
     std::vector<float> accumulated_prob;
 	accumulated_prob.push_back(moves_prob[0]);
@@ -32,8 +33,8 @@ e_create_move StaticMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
 	float rand_num = vtr::irand(100);
 	for(size_t i =0; i < accumulated_prob.size(); i++){
 		if(rand_num <= accumulated_prob[i]){
-			return avail_moves[i]->propose_move(blocks_affected, rlim);
+			return avail_moves[i]->propose_move(blocks_affected, rlim, X_coord, Y_coord);
 		}
 	}
-	return avail_moves[avail_moves.size()-1]->propose_move(blocks_affected, rlim);
+	return avail_moves[avail_moves.size()-1]->propose_move(blocks_affected, rlim, X_coord, Y_coord);
 }
