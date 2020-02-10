@@ -648,10 +648,11 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
             num_net_bounding_boxes_updated = dynamic_update_bounding_boxes(rerouted_nets, router_opts.high_fanout_threshold);
         }
 
-        if (itry >= high_effort_congestion_mode_iteration_threshold) {
+        if (itry >= high_effort_congestion_mode_iteration_threshold || routing_predictor.get_slope() > router_opts.congested_routing_slope_threshold) {
             //We are approaching the maximum number of routing iterations,
             //and still do not have a legal routing. Switch to a mode which
             //focuses more on attempting to resolve routing conflicts.
+            VTR_LOG("Enabling CONFLICTED router congestion mode\n");
             router_congestion_mode = RouterCongestionMode::CONFLICTED;
         }
 

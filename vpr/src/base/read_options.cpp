@@ -1612,6 +1612,13 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("1.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument<float>(args.router_congested_routing_slope_threshold, "--router_congested_routing_slope_threshold")
+        .help(
+            "Routing predictor slope where router enters a high effort mode to resolve lingering routing congestion.\n"
+            " -1.0 is normal progress, 0 is no progress.")
+        .default_value("-0.05")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_timing_grp.add_argument<e_route_bb_update, ParseRouteBBUpdate>(args.route_bb_update, "--route_bb_update")
         .help(
             "Controls how the router's net bounding boxes are updated:\n"

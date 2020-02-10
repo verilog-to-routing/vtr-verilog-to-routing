@@ -146,6 +146,7 @@ struct t_options {
     argparse::ArgValue<float> congested_routing_iteration_threshold_frac;
     argparse::ArgValue<e_route_bb_update> route_bb_update;
     argparse::ArgValue<int> router_high_fanout_threshold;
+    argparse::ArgValue<float> router_congested_routing_slope_threshold;
     argparse::ArgValue<int> router_debug_net;
     argparse::ArgValue<int> router_debug_sink_rr;
     argparse::ArgValue<int> router_debug_iteration;
