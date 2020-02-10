@@ -273,6 +273,15 @@ void draw_main_canvas(ezgl::renderer* g) {
         draw_color_map_legend(*draw_state->color_map, g);
         draw_state->color_map.reset(); //Free color map in preparation for next redraw
     }
+
+    if (draw_state->auto_proceed) {
+        //Automatically exit the event loop, so user's don't need to manually click proceed
+
+        //Avoid trying to repeatedly exit (which would cause errors in GTK)
+        draw_state->auto_proceed = false;
+
+        application.quit(); //Ensure we leave the event loop
+    }
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -410,99 +419,80 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
     else
         ezgl::set_disable_event_loop(false);
 
-    //Has the user asked us to pause at the next screen updated?
-    if (int(priority) >= draw_state->gr_automode || draw_state->forced_pause) {
+    ezgl::setup_callback_fn init_setup = nullptr;
+
+    /* If it's the type of picture displayed has changed, set up the proper  *
+     * buttons.                                                              */
+    if (draw_state->pic_on_screen != pic_on_screen_val) { //State changed
+        application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
+
+        draw_state->setup_timing_info = setup_timing_info;
+
+        if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == NO_PICTURE) {
+            if (setup_timing_info) {
+                init_setup = initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path;
+            } else {
+                init_setup = initial_setup_NO_PICTURE_to_PLACEMENT;
+            }
+            draw_state->save_graphics_file_base = "vpr_placement";
+
+        } else if (pic_on_screen_val == ROUTING && draw_state->pic_on_screen == PLACEMENT) {
+            //Routing, opening after placement
+            init_setup = initial_setup_PLACEMENT_to_ROUTING;
+            draw_state->save_graphics_file_base = "vpr_routing";
+
+        } else if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == ROUTING) {
+            init_setup = initial_setup_ROUTING_to_PLACEMENT;
+            draw_state->save_graphics_file_base = "vpr_placement";
+
+        } else if (pic_on_screen_val == ROUTING && draw_state->pic_on_screen == NO_PICTURE) {
+            //Routing opening first
+            if (setup_timing_info) {
+                init_setup = initial_setup_NO_PICTURE_to_ROUTING_with_crit_path;
+            } else {
+                init_setup = initial_setup_NO_PICTURE_to_ROUTING;
+            }
+            draw_state->save_graphics_file_base = "vpr_routing";
+        }
+
+        draw_state->pic_on_screen = pic_on_screen_val;
+
+    } else {
+        //No change (e.g. paused)
+        init_setup = nullptr;
+    }
+
+    bool state_change = (init_setup != nullptr);
+    bool should_pause = int(priority) >= draw_state->gr_automode;
+
+    //If there was a state change, we must call ezgl::application::run() to update the buttons.
+    //However, by default this causes graphics to pause for user interaction.
+    //
+    //If the priority is such that we shouldn't pause we need to continue automatically, so
+    //the user won't need to click manually.
+    draw_state->auto_proceed = (state_change && !should_pause);
+
+    if (state_change                   //Must update buttons
+        || should_pause                //The priority means graphics should pause for user interaction
+        || draw_state->forced_pause) { //The user asked to pause
+
         if (draw_state->forced_pause) {
             VTR_LOG("Pausing in interactive graphics (user pressed 'Pause')\n");
             draw_state->forced_pause = false; //Reset pause flag
         }
-        vtr::strncpy(draw_state->default_message, msg, vtr::bufsize);
 
-        /* If it's the type of picture displayed has changed, set up the proper  *
-         * buttons.                                                              */
-        if (draw_state->pic_on_screen != pic_on_screen_val) { //State changed
-
-            if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == NO_PICTURE) {
-                draw_state->pic_on_screen = pic_on_screen_val;
-                //Placement first to open
-                if (setup_timing_info) {
-                    draw_state->setup_timing_info = setup_timing_info;
-                    application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                    if (draw_state->save_graphics) {
-                        std::string extension = "pdf";
-                        std::string file_name = "vpr_placement";
-                        save_graphics(extension, file_name);
-                    }
-                    application.run(initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
-                } else {
-                    draw_state->setup_timing_info = setup_timing_info;
-                    application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                    if (draw_state->save_graphics) {
-                        std::string extension = "pdf";
-                        std::string file_name = "vpr_placement";
-                        save_graphics(extension, file_name);
-                    }
-                    application.run(initial_setup_NO_PICTURE_to_PLACEMENT, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
-                }
-            } else if (pic_on_screen_val == ROUTING && draw_state->pic_on_screen == PLACEMENT) {
-                //Routing, opening after placement
-                draw_state->setup_timing_info = setup_timing_info;
-                draw_state->pic_on_screen = pic_on_screen_val;
-
-                application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                if (draw_state->save_graphics) {
-                    std::string extension = "pdf";
-                    std::string file_name = "vpr_routing";
-                    save_graphics(extension, file_name);
-                }
-                application.run(initial_setup_PLACEMENT_to_ROUTING, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
-            } else if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == ROUTING) {
-                draw_state->setup_timing_info = setup_timing_info;
-                draw_state->pic_on_screen = pic_on_screen_val;
-
-                //Placement, opening after routing
-                application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                if (draw_state->save_graphics) {
-                    std::string extension = "pdf";
-                    std::string file_name = "vpr_placement";
-                    save_graphics(extension, file_name);
-                }
-                application.run(initial_setup_ROUTING_to_PLACEMENT, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
-            } else if (pic_on_screen_val == ROUTING
-                       && draw_state->pic_on_screen == NO_PICTURE) {
-                draw_state->pic_on_screen = pic_on_screen_val;
-
-                //Routing opening first
-                if (setup_timing_info) {
-                    draw_state->setup_timing_info = setup_timing_info;
-                    application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                    if (draw_state->save_graphics) {
-                        std::string extension = "pdf";
-                        std::string file_name = "vpr_routing";
-                        save_graphics(extension, file_name);
-                    }
-                    application.run(initial_setup_NO_PICTURE_to_ROUTING_with_crit_path, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
-                } else {
-                    draw_state->setup_timing_info = setup_timing_info;
-                    application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                    if (draw_state->save_graphics) {
-                        std::string extension = "pdf";
-                        std::string file_name = "vpr_routing";
-                        save_graphics(extension, file_name);
-                    }
-                    application.run(initial_setup_NO_PICTURE_to_ROUTING, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
-                }
-            }
-        } else {
-            //No change (e.g. paused)
-            application.run(nullptr, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
-        }
+        application.run(init_setup, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
     }
 
     if (draw_state->show_graphics) {
         application.update_message(msg);
         application.refresh_drawing();
         application.flush_drawing();
+    }
+
+    if (draw_state->save_graphics) {
+        std::string extension = "pdf";
+        save_graphics(extension, draw_state->save_graphics_file_base);
     }
 
 #else

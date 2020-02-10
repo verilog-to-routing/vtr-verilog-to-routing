@@ -142,8 +142,9 @@ typedef struct {
  * max_sub_blk_lvl: The maximum number of sub-block levels among all
  *                  physical block types in the FPGA.
  * show_graphics: Whether graphics is enabled.
- * gr_automode: How often is user input required. (0: each t,
- *				1: each place, 2: never)
+ * gr_automode: How often is user input required. (0: each t, 1: each place, 2: never)
+ * auto_proceed: Should we automatically finish drawing (instead of waiting in the event
+ *               loop for user interaction?
  * draw_route_type: GLOBAL or DETAILED
  * default_message: default screen message on screen
  * net_color: color in which each net should be drawn.
@@ -155,6 +156,8 @@ typedef struct {
  *				 ROUTING is on screen.
  *				 [0..device_ctx.rr_nodes.size()-1]
  * save_graphics: Whether to generate an output graphcis file
+ * force_pause: Should we pause for user interaction (since the user requested it)
+ * save_graphics_file_base: Base of save graphis file name (i.e. before extension)
  */
 struct t_draw_state {
     pic_type pic_on_screen = NO_PICTURE;
@@ -172,6 +175,7 @@ struct t_draw_state {
     int show_blk_internal = 0;
     bool show_graphics = false;
     int gr_automode = 0;
+    bool auto_proceed = false;
     e_route_type draw_route_type = GLOBAL;
     char default_message[vtr::bufsize];
     vtr::vector<ClusterNetId, ezgl::color> net_color;
@@ -181,6 +185,8 @@ struct t_draw_state {
     std::unique_ptr<const vtr::ColorMap> color_map = nullptr;
     bool save_graphics = false;
     bool forced_pause = false;
+
+    std::string save_graphics_file_base = "vpr";
 
     t_draw_state() = default;
 
