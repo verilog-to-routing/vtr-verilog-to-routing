@@ -242,6 +242,10 @@ static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_
 static Cost_Entry get_nearby_cost_entry(int x, int y, int segment_index, int chan_index);
 /* returns the absolute delta_x and delta_y offset required to reach to_node from from_node */
 static void get_xy_deltas(int from_node_ind, int to_node_ind, int* delta_x, int* delta_y);
+static void adjust_rr_position(const t_rr_node& rr, int& x, int& y);
+static void adjust_rr_pin_position(const t_rr_node& rr, int& x, int& y);
+static void adjust_rr_wire_position(const t_rr_node& rr, int& x, int& y);
+static void adjust_rr_src_sink_position(const t_rr_node& rr, int& x, int& y);
 
 static void print_wire_cost_map(const std::vector<t_segment_inf>& segment_inf);
 static void print_router_cost_map(const t_routing_cost_map& router_cost_map);
@@ -812,6 +816,8 @@ static void run_dijkstra(int start_node_ind, int start_x, int start_y, t_routing
             if (ipin_x >= start_x && ipin_y >= start_y) {
                 int delta_x, delta_y;
                 get_xy_deltas(start_node_ind, node_ind, &delta_x, &delta_y);
+                delta_x = std::abs(delta_x);
+                delta_y = std::abs(delta_y);
 
                 routing_cost_map[delta_x][delta_y].add_cost_entry(current.delay, current.congestion_upstream);
             }
@@ -1042,6 +1048,19 @@ static void get_xy_deltas(int from_node_ind, int to_node_ind, int* delta_x, int*
     auto& from = device_ctx.rr_nodes[from_node_ind];
     auto& to = device_ctx.rr_nodes[to_node_ind];
 
+#if 1
+    int from_x = 0;
+    int from_y = 0;
+    adjust_rr_position(from, from_x, from_y);
+
+    int to_x = 0;
+    int to_y = 0;
+    adjust_rr_position(to, to_x, to_y);
+
+    *delta_x = to_x - from_x;
+    *delta_y = to_y - from_y;
+
+#else
     /* get chan/seg coordinates of the from/to nodes. seg coordinate is along the wire,
      * chan coordinate is orthogonal to the wire */
     int from_seg_low = from.xlow();
@@ -1101,6 +1120,96 @@ static void get_xy_deltas(int from_node_ind, int to_node_ind, int* delta_x, int*
         *delta_x = delta_chan;
         *delta_y = delta_seg;
     }
+#endif
+}
+
+static void adjust_rr_position(const t_rr_node& rr, int& x, int& y) {
+    if (is_chan(rr.type())) {
+        adjust_rr_wire_position(rr, x, y);
+    } else if (is_pin(rr.type())) {
+        adjust_rr_pin_position(rr, x, y);
+    } else {
+        VTR_ASSERT_SAFE(is_src_sink(rr.type()));
+        adjust_rr_src_sink_position(rr, x, y);
+    }
+}
+
+static void adjust_rr_pin_position(const t_rr_node& rr, int& x, int& y) {
+    /*
+     * VPR uses a co-ordinate system where wires above and to the right of a block
+     * are at the same location as the block:
+     *
+     *
+     *       <-----------C
+     *    D
+     *    |  +---------+  ^
+     *    |  |         |  |
+     *    |  |  (1,1)  |  |
+     *    |  |         |  |
+     *    V  +---------+  |
+     *                    A
+     *     B----------->                  
+     *
+     * So wires are located as follows:
+     *
+     *      A: (1, 1) CHANY
+     *      B: (1, 0) CHANX
+     *      C: (1, 1) CHANX
+     *      D: (0, 1) CHANY
+     *
+     * But all pins incident on the surrounding channels
+     * would be at (1,1) along with a relevant side.
+     *
+     * In the following, we adjust the positions of pins to
+     * account for the channel they are incident too.
+     *
+     * Note that blocks at (0,*) such as IOs, may have (unconnected)
+     * pins on the left side, so we also clip the minimum x to zero.
+     * Similarly for blocks at (*,0) we clip the minimum y to zero.
+     */
+
+    VTR_ASSERT_SAFE(is_pin(rr.type()));
+    VTR_ASSERT_SAFE(rr.xlow() == rr.xhigh());
+    VTR_ASSERT_SAFE(rr.ylow() == rr.yhigh());
+
+    x = rr.xlow();
+    y = rr.ylow();
+
+    if (rr.side() == LEFT) {
+        x -= 1;
+        x = std::max(x, 0);
+    } else if (rr.side() == BOTTOM && y > 0) {
+        y -= 1;
+        y = std::max(y, 0);
+    }
+}
+
+static void adjust_rr_wire_position(const t_rr_node& rr, int& x, int& y) {
+    VTR_ASSERT_SAFE(is_chan(rr.type()));
+    if (rr.direction() == DEC_DIRECTION) {
+        x = rr.xhigh();
+        y = rr.yhigh();
+    } else if (rr.direction() == INC_DIRECTION) {
+        x = rr.xlow();
+        y = rr.ylow();
+    } else {
+        VTR_ASSERT_SAFE(rr.direction() == BI_DIRECTION);
+        //Not sure what to do here...
+        //Try average for now.
+        x = vtr::nint((rr.xlow() + rr.xhigh()) / 2.);
+        y = vtr::nint((rr.ylow() + rr.yhigh()) / 2.);
+    }
+}
+
+static void adjust_rr_src_sink_position(const t_rr_node& rr, int& x, int& y) {
+    //SOURCE/SINK nodes assume the full dimensions of their
+    //associated block
+    //
+    //Use the average position.
+    VTR_ASSERT_SAFE(is_src_sink(rr.type()));
+
+    x = vtr::nint((rr.xlow() + rr.xhigh()) / 2.);
+    y = vtr::nint((rr.ylow() + rr.yhigh()) / 2.);
 }
 
 static void print_wire_cost_map(const std::vector<t_segment_inf>& segment_inf) {
