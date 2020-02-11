@@ -184,6 +184,7 @@ const std::vector<ezgl::color> kelly_max_contrast_colors = {
 ezgl::application::settings settings("/ezgl/main.ui",
                                      "MainWindow",
                                      "MainCanvas",
+                                     "org.verilogtorouting.vpr.PID" + std::to_string(vtr::get_pid()),
                                      setup_default_ezgl_callbacks);
 ezgl::application application(settings);
 
