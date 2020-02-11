@@ -159,8 +159,10 @@ class PQ_Entry {
             //
             //    TODO: figure out whether anything's wrong with the calculation above and use that instead. If not, add the other
             //          terms like T_quadratic and R_upstream to the calculation below (they are == 0 or UNDEFINED for buffered archs I think)
-            VTR_ASSERT(device_ctx.rr_indexed_data[cost_index].T_quadratic <= 0.);
-            VTR_ASSERT(device_ctx.rr_indexed_data[cost_index].C_load <= 0.);
+
+            //NOTE: We neglect the T_quadratic and C_load terms and Switch R, so this lookahead is likely
+            //      less accurate on unbuffered (e.g. pass-gate) architectures
+
             this->delay += device_ctx.rr_indexed_data[cost_index].T_linear;
 
             this->congestion_upstream += device_ctx.rr_indexed_data[cost_index].base_cost;
