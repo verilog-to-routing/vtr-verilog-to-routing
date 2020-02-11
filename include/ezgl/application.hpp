@@ -96,6 +96,15 @@ public:
     std::string canvas_identifier;
 
     /**
+     * A user-defined name of the GTK application
+     *
+     * Application identifiers should follow the following format:
+     * https://developer.gnome.org/gio/stable/GApplication.html#g-application-id-is-valid
+     * Use g_application_id_is_valid () to check its validity
+     */
+    std::string application_identifier;
+
+    /**
      * Specify the function that will connect GUI objects to user-defined callbacks.
      *
      * GUI objects (i.e., a GObject) can be retrieved from this application object. These objects can then be connected
@@ -112,15 +121,18 @@ public:
      * Create the settings structure with default values
      */
     settings()
-    : main_ui_resource("/ezgl/main.ui"), window_identifier("MainWindow"), canvas_identifier("MainCanvas"), setup_callbacks(nullptr)
+    : main_ui_resource("/ezgl/main.ui"), window_identifier("MainWindow"), canvas_identifier("MainCanvas"), application_identifier("ezgl.app"),
+      setup_callbacks(nullptr)
     {
     }
 
     /**
      * Create the settings structure with user-defined values
      */
-    settings(std::string m_resource, std::string w_identifier, std::string c_identifier, connect_g_objects_fn s_callbacks = nullptr)
-    : main_ui_resource(m_resource), window_identifier(w_identifier), canvas_identifier(c_identifier), setup_callbacks(s_callbacks)
+    settings(std::string m_resource, std::string w_identifier, std::string c_identifier, std::string a_identifier = "ezgl.app",
+        connect_g_objects_fn s_callbacks = nullptr)
+    : main_ui_resource(m_resource), window_identifier(w_identifier), canvas_identifier(c_identifier), application_identifier(a_identifier),
+      setup_callbacks(s_callbacks)
     {
     }
   };
@@ -339,6 +351,9 @@ private:
 
   // The ID of the main canvas
   std::string m_canvas_id;
+
+  // The ID of the GTK application
+  std::string m_application_id;
 
   // The GTK application.
   GtkApplication *m_application;
