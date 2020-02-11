@@ -489,7 +489,8 @@ struct nnode_t
 	unsigned char generic_output; //describes the output (1 or 0) of generic blocks
 	nnode_stats_t *stat;
 
-	int critical_path_value;
+	int critical_path_value_up;
+	int critical_path_value_down; 
 };
 
 struct npin_t
@@ -538,7 +539,9 @@ struct nnet_t
 	signed char initial_value; // initial net value
 	//////////////////////
 
-	int critical_path_value;
+	int critical_path_value_up;
+	int critical_path_value_down; 
+
 };
 
 struct nnode_stats_t{
