@@ -271,7 +271,9 @@ void output_node(nnode_t* node, short /*traverse_number*/, FILE* fp) {
         case BITWISE_NOT:
             define_set_input_logical_function(node, "0 1\n", fp);
             break;
-
+        case BUF_NODE:
+            define_set_input_logical_function(node, "1 1\n", fp);
+            break;
         case LOGICAL_AND:
         case LOGICAL_OR:
         case LOGICAL_XOR:
@@ -327,7 +329,6 @@ void output_node(nnode_t* node, short /*traverse_number*/, FILE* fp) {
         case BITWISE_XNOR:
         case BITWISE_XOR:
         case BITWISE_OR:
-        case BUF_NODE:
         case MULTI_PORT_MUX:
         case SL:
         case SR:

@@ -54,7 +54,7 @@ int yylex(void);
 %token <num_value> vNUMBER vDELAY_ID
 %token vALWAYS vAUTOMATIC vINITIAL vSPECIFY vAND vASSIGN vBEGIN vCASE vDEFAULT vELSE vEND vENDCASE
 %token vENDMODULE vENDSPECIFY vENDGENERATE vENDFUNCTION vENDTASK vIF vINOUT vINPUT vMODULE vGENERATE vFUNCTION vTASK
-%token vOUTPUT vPARAMETER vLOCALPARAM vPOSEDGE vXNOR vXOR vDEFPARAM voANDAND vNAND vNEGEDGE vNOR vNOT vOR vFOR
+%token vOUTPUT vPARAMETER vLOCALPARAM vPOSEDGE vXNOR vXOR vDEFPARAM voANDAND vNAND vNEGEDGE vNOR vNOT vOR vFOR vBUF
 %token voOROR voLTE voGTE voPAL voSLEFT voSRIGHT voASRIGHT voEQUAL voNOTEQUAL voCASEEQUAL
 %token voCASENOTEQUAL voXNOR voNAND voNOR vWHILE vINTEGER vCLOG2 vGENVAR
 %token vPLUS_COLON vMINUS_COLON vSPECPARAM voUNSIGNED voSIGNED vSIGNED vCFUNC
@@ -452,6 +452,7 @@ gate_declaration:
 	| vOR list_of_multiple_inputs_gate_declaration_instance ';'	{$$ = newGate(BITWISE_OR, $2, my_yylineno);}
 	| vXNOR list_of_multiple_inputs_gate_declaration_instance ';'	{$$ = newGate(BITWISE_XNOR, $2, my_yylineno);}
 	| vXOR list_of_multiple_inputs_gate_declaration_instance ';'	{$$ = newGate(BITWISE_XOR, $2, my_yylineno);}
+	| vBUF list_of_single_input_gate_declaration_instance ';'	{$$ = newGate(BUF_NODE, $2, my_yylineno);}
 	;
 
 list_of_multiple_inputs_gate_declaration_instance:

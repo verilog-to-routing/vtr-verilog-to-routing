@@ -771,6 +771,13 @@ static bool compute_and_store_value(nnode_t* node, int cycle) {
         case MULTIPLY:
             compute_multiply_node(node, cycle);
             break;
+        case BUF_NODE: // pass through the values
+        {
+            verify_i_o_availabilty(node, 1, 1);
+            signed char pin = get_pin_value(node->input_pins[0], cycle);
+            update_pin_value(node->output_pins[0], pin, cycle);
+            break;
+        }
         case LOGICAL_AND: // &&
         {
             verify_i_o_availabilty(node, -1, 1);
@@ -1088,7 +1095,6 @@ static bool compute_and_store_value(nnode_t* node, int cycle) {
         case BITWISE_XNOR:
         case BITWISE_XOR:
         case BITWISE_OR:
-        case BUF_NODE:
         case MULTI_PORT_MUX:
         case SL:
         case SR:

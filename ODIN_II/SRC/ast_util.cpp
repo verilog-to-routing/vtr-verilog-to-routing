@@ -975,6 +975,11 @@ ast_node_t* fold_unary(ast_node_t** node) {
                 success = true;
                 break;
 
+            case BUF_NODE:
+                vresult = voperand_0;
+                success = true;
+                break;
+
             case MINUS:
                 vresult = V_MINUS(voperand_0);
                 success = true;
