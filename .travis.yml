@@ -107,7 +107,7 @@ jobs:
       env:
           #In order to get compilation warnings produced per source file, we must do a non-IPO build
           #We also turn warnings into errors for this target by doing a strict compile
-        - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_STRICT_COMPILE=on -DVTR_ENABLE_IPO_BUILD=off"
+        - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_STRICT_COMPILE=on -DVTR_IPO_BUILD=off"
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
       script:
         - ./.github/travis/build.sh
