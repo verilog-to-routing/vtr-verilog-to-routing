@@ -97,6 +97,9 @@ template<typename T>
 std::string join(std::initializer_list<T> list, std::string delim) {
     return join(list.begin(), list.end(), delim);
 }
+
+int get_pid();
+
 } // namespace vtr
 
 #endif
