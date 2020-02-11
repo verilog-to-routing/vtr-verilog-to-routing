@@ -1191,6 +1191,10 @@ typedef enum e_rr_type : unsigned char {
 constexpr std::array<t_rr_type, NUM_RR_TYPES> RR_TYPES = {{SOURCE, SINK, IPIN, OPIN, CHANX, CHANY}};
 constexpr std::array<const char*, NUM_RR_TYPES> rr_node_typename{{"SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY"}};
 
+constexpr bool is_pin(e_rr_type type) { return (type == IPIN || type == OPIN); }
+constexpr bool is_chan(e_rr_type type) { return (type == CHANX || type == CHANY); }
+constexpr bool is_src_sink(e_rr_type type) { return (type == SOURCE || type == SINK); }
+
 //[0..num_rr_types-1][0..grid_width-1][0..grid_height-1][0..NUM_SIDES-1][0..max_ptc-1]
 typedef std::array<vtr::NdMatrix<std::vector<int>, 3>, NUM_RR_TYPES> t_rr_node_indices;
 
