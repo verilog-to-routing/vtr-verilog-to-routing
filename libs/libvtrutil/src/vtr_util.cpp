@@ -10,6 +10,10 @@
 #include "vtr_memory.h"
 #include "vtr_error.h"
 
+#if defined(__unix__)
+#    include <unistd.h> //For getpid()
+#endif
+
 namespace vtr {
 
 std::string out_file_prefix;     /* used by fopen */
@@ -375,6 +379,14 @@ std::vector<std::string> ReadLineTokens(FILE* InFile, int* LineNum) {
     ++(*LineNum);
 
     return vtr::split(line);
+}
+
+int get_pid() {
+#if defined(__unix__)
+    return getpid();
+#else
+    return -1;
+#endif
 }
 
 } // namespace vtr
