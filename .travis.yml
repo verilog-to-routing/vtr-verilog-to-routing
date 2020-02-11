@@ -137,7 +137,7 @@ jobs:
         - ./run_reg_test.pl vtr_reg_valgrind_small -show_failures -j2
       name: "Sanitized Basic Regression Tests"
       env:
-        - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DWITH_BLIFEXPLORER=on"
+        - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on"
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
       script:
         - ./.github/travis/build.sh
@@ -145,7 +145,7 @@ jobs:
     - stage: Test
       name: "Sanitized Strong Regression Tests"
       env:
-        - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DWITH_BLIFEXPLORER=on"
+        - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on"
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
       script:
         - ./.github/travis/build.sh
