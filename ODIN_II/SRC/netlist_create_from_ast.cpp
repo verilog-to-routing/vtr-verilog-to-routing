@@ -3473,6 +3473,10 @@ signal_list_t* create_operation_node(ast_node_t* op, signal_list_t** input_lists
             output_port_width = max_input_port_width;
             input_port_width = output_port_width;
             break;
+        case BUF_NODE:
+            output_port_width = max_input_port_width;
+            input_port_width = output_port_width;
+            break;
         case ADD: // +
             /* add the largest bit width + the other input padded with 0's */
             return_list->is_adder = true;
