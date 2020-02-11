@@ -22,6 +22,9 @@
  * This example shows you how to create an application using the EZGL library.
  */
 
+#include <iostream>
+#include <chrono>
+#include <thread>
 #include "ezgl/application.hpp"
 #include "ezgl/graphics.hpp"
 
@@ -31,6 +34,7 @@ void act_on_mouse_move(ezgl::application *application, GdkEventButton *event, do
 void act_on_key_press(ezgl::application *application, GdkEventKey *event, char *key_name);
 void initial_setup(ezgl::application *application, bool new_window);
 void test_button(GtkWidget *widget, ezgl::application *application);
+void animate_button(GtkWidget *widget, ezgl::application *application);
 
 /**
  * Draw to the main canvas using the provided graphics object.
@@ -474,6 +478,9 @@ void initial_setup(ezgl::application *application, bool /*new_window*/)
 
   // Create a Test button and link it with test_button callback fn.
   application->create_button("Test", 6, test_button);
+
+  // Create the Animate button and link it with animate_button callback fn.
+  application->create_button("Animate", 7, animate_button);
 }
 
 /**
@@ -538,12 +545,34 @@ void test_button(GtkWidget */*widget*/, ezgl::application *application)
   
   // Redraw the main canvas
   application->refresh_drawing();
-
-  // Draw a temporary rectangle border
-  ezgl::renderer *g = application->get_renderer();
-  g->set_line_width(1);
-  g->set_color(ezgl::BLACK);
-  g->draw_rectangle({{0, 0}, 1100, 1150});
-  application->flush_drawing();
 }
 
+/**
+ * A callback function to the Animate button
+ */
+void animate_button(GtkWidget */*widget*/, ezgl::application *application)
+{
+  // Get a renderer that can be used to draw on top of the main canvas
+  ezgl::renderer *g = application->get_renderer();
+
+  // Set line attributes
+  g->set_line_width(2);
+  g->set_color(ezgl::RED);
+  g->set_line_dash(ezgl::line_dash::asymmetric_5_3);
+
+  ezgl::point2d start_point = {100, 0};
+
+  // Do some animation
+  for (int i = 0; i < 50; i++) {
+    // Draw a line
+    g->draw_line(start_point, start_point + ezgl::point2d(500, 10));
+    start_point += {10, 20};
+
+    // Flush the drawings done by the renderer to the screen
+    application->flush_drawing();
+
+    // Add some delay
+    std::chrono::milliseconds duration(50);
+    std::this_thread::sleep_for(duration);
+  }
+}
