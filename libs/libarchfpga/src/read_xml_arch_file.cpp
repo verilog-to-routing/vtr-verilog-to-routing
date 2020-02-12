@@ -2503,6 +2503,11 @@ static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::se
                            "Model port '%s' cannot be both a clock and a non-clock signal simultaneously", model_port->name);
         }
 
+        if (model_port->name == nullptr) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(port),
+                           "Model port is missing a name");
+        }
+
         if (port_names.count(model_port->name)) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(port),
                            "Duplicate model port named '%s'", model_port->name);
