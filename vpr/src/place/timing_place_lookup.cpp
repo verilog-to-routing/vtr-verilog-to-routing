@@ -353,6 +353,7 @@ static void generic_compute_matrix(
     const t_router_opts& router_opts,
     bool measure_directconnect,
     const std::set<std::string>& allowed_types) {
+    vtr::ScopedStartFinishTimer t(vtr::string_fmt("Profiling from (%d,%d)", source_x, source_y));
     int delta_x, delta_y;
     int sink_x, sink_y;
 
