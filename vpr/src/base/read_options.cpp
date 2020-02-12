@@ -1732,7 +1732,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     route_timing_grp.add_argument<e_router_lookahead, ParseRouterLookahead>(args.router_lookahead_type, "--router_lookahead")
         .help(
             "Controls what lookahead the router uses to calculate cost of completing a connection.\n"
-            " * classic: The classic VPR lookahead\n"
+            " * classic: The classic VPR lookahead (may perform better on un-buffered routing\n"
+            "            architectures)\n"
             " * map: A more advanced lookahead which accounts for diverse wire type\n")
         .default_value("map")
         .show_in(argparse::ShowIn::HELP_ONLY);
