@@ -75,6 +75,13 @@ static bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::reg
 static t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type);
 static void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type);
 
+struct t_pin_inst_port {
+    int capacity_instance; //within capacity
+    int port_index;        //Port index
+    int pin_index_in_port; //Pin's index within the port
+};
+static t_pin_inst_port block_type_pin_index_to_pin_inst(t_physical_tile_type_ptr type, int pin_index);
+
 /******************** Subroutine definitions *********************************/
 
 const t_model* find_model(const t_model* models, const std::string& name, bool required) {
@@ -189,6 +196,26 @@ void sync_grid_to_blocks() {
     }
 }
 
+static t_pin_inst_port block_type_pin_index_to_pin_inst(t_physical_tile_type_ptr type, int pin_index) {
+    int pins_per_inst = type->num_pins / type->capacity;
+    int inst_num = pin_index / pins_per_inst;
+    pin_index %= pins_per_inst;
+
+    t_pin_inst_port pin_inst_port;
+    pin_inst_port.capacity_instance = inst_num;
+    pin_inst_port.port_index = OPEN;
+    pin_inst_port.pin_index_in_port = OPEN;
+
+    for (auto const& port : type->ports) {
+        if (pin_index >= port.absolute_first_pin_index && pin_index < port.absolute_first_pin_index + port.num_pins) {
+            pin_inst_port.port_index = port.index;
+            pin_inst_port.pin_index_in_port = pin_index - port.absolute_first_pin_index;
+            break;
+        }
+    }
+    return pin_inst_port;
+}
+
 std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_index) {
     VTR_ASSERT(pin_index < type->num_pins);
 
@@ -226,11 +253,61 @@ std::vector<std::string> block_type_class_index_to_pin_names(t_physical_tile_typ
 
     t_class& class_inf = type->class_inf[class_index];
 
-    std::vector<std::string> pin_names;
+    std::vector<t_pin_inst_port> pin_info;
     for (int ipin = 0; ipin < class_inf.num_pins; ++ipin) {
         int pin_index = class_inf.pinlist[ipin];
-        VTR_ASSERT(type->pin_class[pin_index] == class_index);
-        pin_names.push_back(block_type_pin_index_to_name(type, pin_index));
+        pin_info.push_back(block_type_pin_index_to_pin_inst(type, pin_index));
+    }
+
+    auto cmp = [](const t_pin_inst_port& lhs, const t_pin_inst_port& rhs) {
+        return std::tie(lhs.capacity_instance, lhs.port_index, lhs.pin_index_in_port)
+               < std::tie(rhs.capacity_instance, rhs.port_index, rhs.pin_index_in_port);
+    };
+
+    //Ensure all the pins are in order
+    std::sort(pin_info.begin(), pin_info.end(), cmp);
+
+    //Determine ranges for each capacity instance and port pair
+    std::map<std::pair<int, int>, std::pair<int, int>> pin_ranges;
+    for (const auto& pin_inf : pin_info) {
+        auto key = std::make_pair(pin_inf.capacity_instance, pin_inf.port_index);
+        if (!pin_ranges.count(key)) {
+            pin_ranges[key].first = pin_inf.pin_index_in_port;
+            pin_ranges[key].second = pin_inf.pin_index_in_port;
+        } else {
+            VTR_ASSERT(pin_ranges[key].second == pin_inf.pin_index_in_port - 1);
+            pin_ranges[key].second = pin_inf.pin_index_in_port;
+        }
+    }
+
+    //Format pin ranges
+    std::vector<std::string> pin_names;
+    for (auto kv : pin_ranges) {
+        auto type_port = kv.first;
+        auto pins = kv.second;
+
+        int icapacity = type_port.first;
+        int iport = type_port.second;
+        int ipin_start = pins.first;
+        int ipin_end = pins.second;
+
+        std::string pin_name;
+        if (ipin_start == ipin_end) {
+            pin_name = vtr::string_fmt("%s[%d].%s[%d]",
+                                       type->name,
+                                       icapacity,
+                                       type->ports[iport].name,
+                                       ipin_start);
+        } else {
+            pin_name = vtr::string_fmt("%s[%d].%s[%d:%d]",
+                                       type->name,
+                                       icapacity,
+                                       type->ports[iport].name,
+                                       ipin_start,
+                                       ipin_end);
+        }
+
+        pin_names.push_back(pin_name);
     }
 
     return pin_names;
