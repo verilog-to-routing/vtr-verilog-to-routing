@@ -39,7 +39,7 @@
 #define POWER_MTA_L (POWER_DRC_MIN_L + 2 * POWER_DRC_MIN_DIFF_L + POWER_DRC_SPACING)
 
 /************************* FUNCTION DECLARATION *********************/
-void power_sizing_init(const t_arch* arch);
+void power_sizing_init();
 double power_count_transistors_buffer(float buffer_size);
 double power_transistor_area(double num_transistors);
 #endif
