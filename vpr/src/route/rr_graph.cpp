@@ -705,7 +705,7 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     // Verify no incremental node allocation.
     if (device_ctx.rr_nodes.size() > expected_node_count) {
-        VTR_LOG_ERROR("Expected no more than %zu nodes, have %zu nodes",
+        VTR_LOG_ERROR("Expected no more than %zu nodes, have %zu nodes\n",
                       expected_node_count, device_ctx.rr_nodes.size());
     }
 
