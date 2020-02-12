@@ -71,7 +71,7 @@ class IntraLbPbPinLookup {
   private:
     std::vector<t_logical_block_type> block_types_;
 
-    t_pb_graph_pin*** intra_lb_pb_pin_lookup_;
+    std::vector<t_pb_graph_pin**> intra_lb_pb_pin_lookup_;
 };
 
 //Find the atom pins (driver or sinks) connected to the specified top-level CLB pin

@@ -270,8 +270,8 @@ std::string rr_node_arch_name(int inode) {
 }
 
 IntraLbPbPinLookup::IntraLbPbPinLookup(const std::vector<t_logical_block_type>& block_types)
-    : block_types_(block_types) {
-    intra_lb_pb_pin_lookup_ = new t_pb_graph_pin**[block_types_.size()];
+    : block_types_(block_types)
+    , intra_lb_pb_pin_lookup_(block_types.size(), nullptr) {
     for (unsigned int itype = 0; itype < block_types_.size(); ++itype) {
         intra_lb_pb_pin_lookup_[itype] = alloc_and_load_pb_graph_pin_lookup_from_index(&block_types[itype]);
     }
@@ -294,8 +294,6 @@ IntraLbPbPinLookup::~IntraLbPbPinLookup() {
     for (unsigned int itype = 0; itype < device_ctx.logical_block_types.size(); itype++) {
         free_pb_graph_pin_lookup_from_index(intra_lb_pb_pin_lookup_[itype]);
     }
-
-    delete[] intra_lb_pb_pin_lookup_;
 }
 
 const t_pb_graph_pin* IntraLbPbPinLookup::pb_gpin(unsigned int itype, int ipin) const {
