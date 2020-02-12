@@ -76,7 +76,11 @@ _set_clang_tidy: $(ODIN_BUILD_DIR)/.tidy.build
 	cd $(BUILD_DIR) &&\
 	cmake  $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_TIDY=on ..
 
-BUILD_IT_TARGETS = build debug warn gcov clang_tidy
+_set_sanitize: $(ODIN_BUILD_DIR)/.sanitize.build
+	cd $(BUILD_DIR) &&\
+	cmake  $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_SANITIZE=on ..
+
+BUILD_IT_TARGETS = build debug warn gcov clang_tidy sanitize
 $(foreach  t,$(BUILD_IT_TARGETS), $(eval $(call _build_it_gen,$(t))))
 
 scrub:

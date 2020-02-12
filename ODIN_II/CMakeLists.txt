@@ -69,6 +69,22 @@ if(ODIN_COVERAGE)
 
 endif()
 
+if(ODIN_SANITIZE)
+
+    message("*** Compiling with Odin Coverage flags")
+
+    set(ODIN_EXTRA_FLAGS
+        "-g"
+        "-fsanitize=address"
+        ${ODIN_EXTRA_FLAGS}
+    )
+
+    set(ODIN_EXTRA_LINK_FLAGS
+        "-fsanitize=address"
+    )
+
+endif()
+
 #Flex and Bison are used to generate the parser
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)

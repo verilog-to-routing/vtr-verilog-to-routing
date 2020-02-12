@@ -1717,6 +1717,10 @@ void connect_hard_block_and_alias(ast_node_t* hb_instance, char* instance_name_p
 
                 /* Search for the old_input name */
                 sc_spot_input_old = sc_lookup_string(input_nets_sc, alias_name);
+                if (sc_spot_input_old == -1) {
+                    sc_spot_input_old = sc_add_string(input_nets_sc, alias_name);
+                    input_nets_sc->data[sc_spot_input_old] = NULL;
+                }
 
                 /* check if the instantiation pin exists */
                 if ((sc_spot_output = sc_lookup_string(output_nets_sc, full_name)) == -1) {
