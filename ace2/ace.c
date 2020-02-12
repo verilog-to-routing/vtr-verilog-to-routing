@@ -299,6 +299,7 @@ int ace_calc_activity(Abc_Ntk_t * ntk, int num_vectors, char * clk_name) {
 		VTR_ASSERT(info2->switch_act >= 0);
 	}
     Vec_PtrFree(nodes_logic);
+    Vec_PtrFree(nodes_all);
     Vec_PtrFree(latches_in_cycles_vec);
 
 	return error;
@@ -443,6 +444,7 @@ int main(int argc, char * argv[]) {
 		Io_WriteHie(ntk, blif_file_name, new_blif_file_name);
 		printf("Done\n");
 	}
+    Abc_NtkDelete(new_ntk);
 
 	fflush(0);
 	return 0;
