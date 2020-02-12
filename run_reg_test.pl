@@ -62,6 +62,7 @@ my $create_golden = 0;
 my $check_golden = 0;
 my $calc_geomean = 0;
 my $display_qor = 0;
+my $skip_qor = 0;
 my $show_failures = 0;
 my $num_cpu = 1;
 my $long_task_names = 0;
@@ -78,6 +79,8 @@ while ( $token = shift(@ARGV) ) {
 		$calc_geomean = 1;
 	} elsif ( $token eq "-display_qor" ) {
 		$display_qor = 1;
+	} elsif ( $token eq "-skip_qor" ) {
+		$skip_qor = 1;
 	} elsif ( $token eq "-show_failures" ) {
 		$show_failures = 1;
 	} elsif ( $token eq "-long_task_names" ) {
@@ -156,6 +159,8 @@ if ( $#tests > -1 ) {
             # Create/Check golden results
             if ($create_golden) {
                 parse_single_test("create", "calculate");
+            } elsif ($skip_qor) {
+                print "\nSkipping QoR checks...\n";
             } else {
                 my $qor_test_failures = parse_single_test("check", "calculate");
                 print "\nTest '$test' had $qor_test_failures qor test failures\n";
