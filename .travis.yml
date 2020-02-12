@@ -139,6 +139,7 @@ jobs:
       env:
         - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on"
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+        - BUILD_TYPE=debug
       script:
         - ./.github/travis/build.sh
         - ./run_reg_test.pl vtr_reg_basic -show_failures -j2
@@ -147,6 +148,7 @@ jobs:
       env:
         - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on"
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+        - BUILD_TYPE=debug
       script:
         - ./.github/travis/build.sh
         - travis_wait 30 ./run_reg_test.pl vtr_reg_strong -show_failures -j2
