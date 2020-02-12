@@ -71,7 +71,7 @@ class FasmWriterVisitor : public NetlistVisitor {
       void check_features(const t_metadata_dict *meta) const;
       void check_interconnect(const t_pb_routes &pb_route, int inode);
       void check_for_lut(const t_pb* atom);
-      void output_fasm_mux(std::string fasm_mux, t_interconnect *interconnect, t_pb_graph_pin *mux_input_pin);
+      void output_fasm_mux(std::string fasm_mux, t_interconnect *interconnect, const t_pb_graph_pin *mux_input_pin);
       void walk_routing();
       void walk_route_tree(const t_rt_node *root);
       std::string build_clb_prefix(const t_pb *pb, const t_pb_graph_node* pb_graph_node, bool* is_parent_pb_null) const;
@@ -96,7 +96,7 @@ class FasmWriterVisitor : public NetlistVisitor {
       std::string clb_prefix_;
       std::map<const t_pb_graph_node *, std::string> clb_prefix_map_;
       ClusterBlockId current_blk_id_;
-      std::vector<t_pb_graph_pin**> pb_graph_pin_lookup_from_index_by_type_;
+      IntraLbPbPinLookup pb_graph_pin_lookup_from_index_by_type_;
       std::map<const t_pb_type*, std::vector<std::pair<std::string, LutOutputDefinition>>> lut_definitions_;
       std::map<const t_pb_type*, Parameters> parameters_;
 
