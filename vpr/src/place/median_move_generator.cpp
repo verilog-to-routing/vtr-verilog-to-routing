@@ -1,6 +1,8 @@
 #include "median_move_generator.h"
 #include "globals.h"
 #include <algorithm>
+
+const int HIGH_FANOUT = 10;
 //#include "math.h"
 static void get_bb_for_net_excluding_block(ClusterNetId net_id, t_bb* coords, ClusterBlockId block_id);
 
@@ -28,9 +30,10 @@ std::vector<float>& X_coord, std::vector<float>& Y_coord) {
     Y_coord.clear();
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(b_from)) {
         ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
-        //if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
-        //    continue;
-                
+        if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
+            continue;
+        if(cluster_ctx.clb_nlist.net_pins(net_id).size()<= HIGH_FANOUT)
+            continue;
         get_bb_for_net_excluding_block(net_id, &coords, b_from);
         X_coord.push_back(coords.xmin);
         X_coord.push_back(coords.xmax);
@@ -40,8 +43,8 @@ std::vector<float>& X_coord, std::vector<float>& Y_coord) {
     std::sort(X_coord.begin(),X_coord.end());
     std::sort(Y_coord.begin(),Y_coord.end());
 
-    VTR_ASSERT(X_coord.size()>0);
-    VTR_ASSERT(Y_coord.size()>0);
+    if((X_coord.size()==0) || (Y_coord.size()==0))
+        return e_create_move::ABORT;
 
     limit_coords.xmin = X_coord[floor((X_coord.size()-1)/2)];
     limit_coords.xmax = X_coord[floor((X_coord.size()-1)/2)+1];
