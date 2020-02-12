@@ -142,7 +142,8 @@ jobs:
         - BUILD_TYPE=debug
       script:
         - ./.github/travis/build.sh
-        - ./run_reg_test.pl vtr_reg_basic -show_failures -j2
+        #We skip QoR since we are only checking for errors in sanitizer runs
+        - ./run_reg_test.pl vtr_reg_basic -show_failures -skip_qor -j2
     - stage: Test
       name: "Sanitized Strong Regression Tests"
       env:
@@ -151,7 +152,8 @@ jobs:
         - BUILD_TYPE=debug
       script:
         - ./.github/travis/build.sh
-        - travis_wait 30 ./run_reg_test.pl vtr_reg_strong -show_failures -j2
+        #We skip QoR since we are only checking for errors in sanitizer runs
+        - travis_wait 60 ./run_reg_test.pl vtr_reg_strong -show_failures -skip_qor -j2
     - stage: Test
       name: "ODIN-II Micro Tests"
       env:
