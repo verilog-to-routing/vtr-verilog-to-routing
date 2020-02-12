@@ -10,6 +10,7 @@
 #include "globals.h"
 #include "rr_graph_util.h"
 #include "rr_graph2.h"
+#include "rr_graph.h"
 #include "rr_graph_indexed_data.h"
 #include "read_xml_arch_file.h"
 
@@ -479,7 +480,9 @@ static void calculate_average_switch(int inode, double& avg_switch_R, double& av
                     buffered = 0;
                 }
             } else if (buffered != device_ctx.rr_switch_inf[switch_index].buffered()) {
-                VPR_ERROR(VPR_ERROR_ROUTE, "Inconsitent buffering of node children");
+                VTR_LOG_WARN("Inconsitent buffering of children of rr node %s (%s)\n",
+                             rr_node_arch_name(inode).c_str(),
+                             describe_rr_node(inode).c_str());
             }
 
             num_switches++;
