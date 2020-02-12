@@ -2563,13 +2563,13 @@ static void print_route_status(int itry, double elapsed_sec, float pres_fac, int
     constexpr int OVERUSE_DIGITS = 7;
     constexpr int OVERUSE_SCI_PRECISION = 2;
     pretty_print_uint(" ", overuse_info.overused_nodes(), OVERUSE_DIGITS, OVERUSE_SCI_PRECISION);
-    VTR_LOG(" (%6.3f%)", overuse_info.overused_node_ratio() * 100);
+    VTR_LOG(" (%6.3f%%)", overuse_info.overused_node_ratio() * 100);
 
     //Wirelength
     constexpr int WL_DIGITS = 7;
     constexpr int WL_SCI_PRECISION = 2;
     pretty_print_uint(" ", wirelength_info.used_wirelength(), WL_DIGITS, WL_SCI_PRECISION);
-    VTR_LOG(" (%4.1f%)", wirelength_info.used_wirelength_ratio() * 100);
+    VTR_LOG(" (%4.1f%%)", wirelength_info.used_wirelength_ratio() * 100);
 
     //CPD
     if (timing_info) {

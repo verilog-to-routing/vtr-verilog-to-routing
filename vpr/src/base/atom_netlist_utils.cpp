@@ -1475,7 +1475,7 @@ void print_netlist_clock_info(const AtomNetlist& netlist) {
             auto blk_id = netlist.pin_block(pin_id);
             clk_blks.insert(blk_id);
         }
-        VTR_LOG("  Netlist Clock '%s' Fanout: %zu pins (%.1f%), %zu blocks (%.1f%)\n", netlist.net_name(net_id).c_str(), fanout, 100. * float(fanout) / netlist.pins().size(), clk_blks.size(), 100 * float(clk_blks.size()) / netlist.blocks().size());
+        VTR_LOG("  Netlist Clock '%s' Fanout: %zu pins (%.1f%%), %zu blocks (%.1f%%)\n", netlist.net_name(net_id).c_str(), fanout, 100. * float(fanout) / netlist.pins().size(), clk_blks.size(), 100 * float(clk_blks.size()) / netlist.blocks().size());
     }
 }
 
