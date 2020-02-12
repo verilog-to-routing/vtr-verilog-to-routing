@@ -148,7 +148,7 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
         vpr::add_rr_node_metadata(src_inode, vtr::string_view("node"), vtr::string_view("test node"));
         vpr::add_rr_edge_metadata(src_inode, sink_inode, switch_id, vtr::string_view("edge"), vtr::string_view("test edge"));
 
-        write_rr_graph(kRrGraphFile, vpr_setup.Segments);
+        write_rr_graph(kRrGraphFile);
         vpr_free_all(arch, vpr_setup);
     }
 

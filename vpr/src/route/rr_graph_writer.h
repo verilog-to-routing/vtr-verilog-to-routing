@@ -8,6 +8,6 @@
 
 #include "physical_types.h"
 
-void write_rr_graph(const char* file_name, const std::vector<t_segment_inf>& segment_inf);
+void write_rr_graph(const char* file_name);
 
 #endif

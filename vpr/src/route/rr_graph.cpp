@@ -315,7 +315,7 @@ void create_rr_graph(const t_graph_type graph_type,
                      const t_chan_width nodes_per_chan,
                      const int num_arch_switches,
                      t_det_routing_arch* det_routing_arch,
-                     std::vector<t_segment_inf>& segment_inf,
+                     const std::vector<t_segment_inf>& segment_inf,
                      const enum e_base_cost_type base_cost_type,
                      const bool trim_empty_channels,
                      const bool trim_obs_channels,
@@ -378,7 +378,7 @@ void create_rr_graph(const t_graph_type graph_type,
 
     //Write out rr graph file if needed
     if (!det_routing_arch->write_rr_graph_filename.empty()) {
-        write_rr_graph(det_routing_arch->write_rr_graph_filename.c_str(), segment_inf);
+        write_rr_graph(det_routing_arch->write_rr_graph_filename.c_str());
     }
 }
 
@@ -455,6 +455,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     }
 
     /* START SEG_DETAILS */
+    device_ctx.rr_segments = segment_inf;
     int num_seg_details = 0;
     t_seg_details* seg_details = nullptr;
 
