@@ -293,8 +293,7 @@ IntraLbPbPinLookup& IntraLbPbPinLookup::operator=(IntraLbPbPinLookup rhs) {
 }
 
 IntraLbPbPinLookup::~IntraLbPbPinLookup() {
-    auto& device_ctx = g_vpr_ctx.device();
-    for (unsigned int itype = 0; itype < device_ctx.logical_block_types.size(); itype++) {
+    for (unsigned int itype = 0; itype < intra_lb_pb_pin_lookup_.size(); ++itype) {
         free_pb_graph_pin_lookup_from_index(intra_lb_pb_pin_lookup_[itype]);
     }
 }
