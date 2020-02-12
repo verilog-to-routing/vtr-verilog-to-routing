@@ -45,7 +45,7 @@ static void power_mux_node_max_inputs(t_mux_node* mux_node,
                                       float* max_inputs);
 static double power_count_transistors_interc(t_interconnect* interc);
 static double power_count_transistors_pb_node(t_pb_graph_node* pb_node);
-static double power_count_transistors_switchbox(const t_arch* arch);
+static double power_count_transistors_switchbox();
 static double power_count_transistors_primitive(t_pb_type* pb_type);
 static double power_count_transistors_LUT(int LUT_inputs,
                                           float transistor_size);
@@ -57,7 +57,7 @@ static double power_count_transistors_levr();
 static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
                                              bool pin_is_an_input);
 static double power_transistors_for_pb_node(t_pb_graph_node* pb_node);
-static double power_transistors_per_tile(const t_arch* arch);
+static double power_transistors_per_tile();
 static void power_size_pb();
 static void power_size_pb_rec(t_pb_graph_node* pb_node);
 static void power_size_pin_to_interconnect(t_interconnect* interc,
@@ -243,7 +243,7 @@ static double power_count_transistors_interc(t_interconnect* interc) {
     return transistor_cnt;
 }
 
-void power_sizing_init(const t_arch* arch) {
+void power_sizing_init() {
     float transistors_per_tile;
 
     auto& power_ctx = g_vpr_ctx.power();
@@ -255,7 +255,7 @@ void power_sizing_init(const t_arch* arch) {
     power_size_pb();
 
     /* Find # of transistors in each tile type */
-    transistors_per_tile = power_transistors_per_tile(arch);
+    transistors_per_tile = power_transistors_per_tile();
 
     /* Calculate CLB tile size
      *  - Assume a square tile
@@ -270,7 +270,7 @@ void power_sizing_init(const t_arch* arch) {
  * It returns the number of transistors in a grid of the FPGA (logic block,
  * switch box, 2 connection boxes)
  */
-static double power_transistors_per_tile(const t_arch* arch) {
+static double power_transistors_per_tile() {
     auto& device_ctx = g_vpr_ctx.device();
 
     double transistor_cnt = 0.;
@@ -278,7 +278,7 @@ static double power_transistors_per_tile(const t_arch* arch) {
     auto type = find_most_common_block_type(device_ctx.grid);
     transistor_cnt += power_transistors_for_pb_node(type->pb_graph_head);
 
-    transistor_cnt += 2 * power_count_transistors_switchbox(arch);
+    transistor_cnt += 2 * power_count_transistors_switchbox();
 
     transistor_cnt += 2 * power_count_transistors_connectionbox();
 
@@ -357,7 +357,7 @@ static double power_count_transistors_pb_node(t_pb_graph_node* pb_node) {
 /**
  * This function counts the maximum number of transistors in a switch box
  */
-static double power_count_transistors_switchbox(const t_arch* arch) {
+static double power_count_transistors_switchbox() {
     double transistor_cnt = 0.;
     double transistors_per_buf_mux = 0.;
 
@@ -373,18 +373,20 @@ static double power_count_transistors_switchbox(const t_arch* arch) {
         power_get_mux_arch(power_ctx.commonly_used->max_routing_mux_size,
                            power_ctx.arch->mux_transistor_size));
 
-    for (size_t seg_idx = 0; seg_idx < (arch->Segments).size(); seg_idx++) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    for (size_t seg_idx = 0; seg_idx < device_ctx.rr_segments.size(); seg_idx++) {
         /* In each switchbox, the different types of segments occur with relative freqencies.
          * Thus the total number of wires of each segment type is (#tracks * freq * 2).
          * The (x2) factor accounts for vertical and horizontal tracks.
          * Of the wires of each segment type only (1/seglength) will have a mux&buffer.
          */
-        float freq_frac = (float)arch->Segments[seg_idx].frequency
+        float freq_frac = (float)device_ctx.rr_segments[seg_idx].frequency
                           / (float)MAX_CHANNEL_WIDTH;
 
         transistor_cnt += transistors_per_buf_mux * 2 * freq_frac
                           * power_ctx.solution_inf.channel_width
-                          * (1 / (float)arch->Segments[seg_idx].length);
+                          * (1 / (float)device_ctx.rr_segments[seg_idx].length);
     }
 
     return transistor_cnt;
