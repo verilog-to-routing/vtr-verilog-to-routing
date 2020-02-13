@@ -13,6 +13,7 @@ import fnmatch
 import errno
 import tempfile
 import shutil
+import glob
 
 class DownloadError(Exception):
     pass
@@ -203,7 +204,21 @@ def extract_to_vtr_flow_dir(args, tar_gz_filename):
         with tarfile.TarFile.open(tar_gz_filename, mode="r|*") as tar_file:
             tar_file.extractall(path=tmpdir, members=extract_callback(tar_file))
 
-        #Move the extracted files to the relevant directories
+        #Move the extracted files to the relevant directories, SDC files first (since we
+        #need to look up the BLIF name to make it match)
+        for dirpath, dirnames, filenames in os.walk(tmpdir):
+            for filename in filenames:
+                src_file_path = os.path.join(dirpath, filename)
+                dst_file_path = None
+                if fnmatch.fnmatch(src_file_path, "*/titan_release*/benchmarks/titan23/*/*.sdc"):
+                    dst_file_path = os.path.join(titan_benchmarks_extract_dir, determine_sdc_name(dirpath))
+                elif fnmatch.fnmatch(src_file_path, "*/titan_release*/benchmarks/other_benchmarks/*/*.sdc"):
+                    dst_file_path = os.path.join(titan_other_benchmarks_extract_dir, determine_sdc_name(dirpath))
+
+                if dst_file_path:
+                    shutil.move(src_file_path, dst_file_path)
+
+        #Then BLIFs
         for dirpath, dirnames, filenames in os.walk(tmpdir):
             for filename in filenames:
                 src_file_path = os.path.join(dirpath, filename)
@@ -212,8 +227,7 @@ def extract_to_vtr_flow_dir(args, tar_gz_filename):
                     dst_file_path = os.path.join(titan_benchmarks_extract_dir, filename)
                 elif fnmatch.fnmatch(src_file_path, "*/titan_release*/benchmarks/other_benchmarks/*/*/*.blif"):
                     dst_file_path = os.path.join(titan_other_benchmarks_extract_dir, filename)
-                else:
-                    assert filename.endswith(".xml")
+                elif filename.endswith(".xml"):
 
                     if args.upgrade_archs:
                         #Apply the Architecture XML upgrade script
@@ -222,7 +236,8 @@ def extract_to_vtr_flow_dir(args, tar_gz_filename):
                     
                     dst_file_path = os.path.join(titan_arch_extract_dir, filename)
 
-                shutil.move(src_file_path, dst_file_path)
+                if dst_file_path:
+                    shutil.move(src_file_path, dst_file_path)
 
     finally:
         #Clean-up
@@ -230,12 +245,35 @@ def extract_to_vtr_flow_dir(args, tar_gz_filename):
 
     print "Done"
 
+def determine_sdc_name(dirpath):
+    """
+    To have VTR pick up the SDC name, we need to match the corresponding BLIF file name
+    """
+    benchmark_dir = os.path.dirname(dirpath) #Benchmark dir
+    pattern = os.path.join(benchmark_dir, "*/*.blif")
+    blif_paths = glob.glob(pattern)
+
+    assert len(blif_paths) == 1
+
+    blif_path = blif_paths[0]
+
+    blif_file = os.path.basename(blif_path)
+    blif_name, ext = os.path.splitext(blif_file)
+
+    return blif_name + ".sdc"
+
 def extract_callback(members):
     for tarinfo in members:
         if fnmatch.fnmatch(tarinfo.name, "titan_release*/benchmarks/titan23/*/*/*.blif"):
             print tarinfo.name
             yield tarinfo
-        elif fnmatch.fnmatch(tarinfo.name, "titan_release*/benchmarks/other_benchmarks/*/*/*.blif"):
+        elif fnmatch.fnmatch(tarinfo.name, "titan_release*/benchmarks/titan23/*/sdc/vpr.sdc"):
+            print tarinfo.name
+            yield tarinfo
+        if fnmatch.fnmatch(tarinfo.name, "titan_release*/benchmarks/other_benchmarks/*/*/*.blif"):
+            print tarinfo.name
+            yield tarinfo
+        elif fnmatch.fnmatch(tarinfo.name, "titan_release*/benchmarks/other_benchmarks/*/sdc/vpr.sdc"):
             print tarinfo.name
             yield tarinfo
         elif fnmatch.fnmatch(tarinfo.name, "titan_release*/arch/stratixiv*.xml"):
