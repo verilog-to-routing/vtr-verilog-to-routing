@@ -85,6 +85,12 @@ _GENERATE_BENCH="off"
 _GENERATE_OUTPUT="off"
 _GENERATE_CONFIG="off"
 _FORCE_SIM="off"
+_DRY_RUN_ARG=""
+
+###################
+# you can adjust this to test this suite, this allow to test different exit code,
+# Don't expose the variable since it simply adds complexity for no reason
+_DRY_RUN_EXIT_CODE="0"
 
 function help() {
 
@@ -104,6 +110,7 @@ printf "Called program with $INPUT
 		-c|--clean                      $(_prt_cur_arg off ) Clean temporary directory
 		-f|--force_simulate             $(_prt_cur_arg ${_FORCE_SIM}) Force the simulation to be executed regardless of the config
 		--override						$(_prt_cur_arg ${_OVERRIDE_CONFIG}) if a config file is passed in, override arguments rather than append
+		--dry_run                       $(_prt_cur_arg ${_DRY_RUN_ARG}) performs a dry run to check the validity of the task and flow 
 
 	OPTIONS
 		-h|--help                       $(_prt_cur_arg off) print this
@@ -343,6 +350,11 @@ function parse_args() {
 					_OVERRIDE_CONFIG="on"
 					echo "Forcing override of config"    
 
+				;;--dry_run)
+					# we pass the dry_run flag to the wrapper
+					_DRY_RUN_ARG="--dry_run ${_DRY_RUN_EXIT_CODE}"
+					echo "Performing a dry run"
+
 				;;*) 
 					PARSE_SUBTEST="on"
 			esac
@@ -552,8 +564,6 @@ function populate_arg_from_file() {
 
 	_circuit_list=$(echo ${_circuit_list})
 
-
-
 	if [ "_${_arch_dir}" != "_" ]
 	then
 		_arch_dir=$(readlink -f ${_arch_dir})
@@ -597,7 +607,8 @@ function populate_arg_from_file() {
 }
 
 function formated_find() {
-	find $1/ -name $2 | sed 's:\s+|\n+: :g' | sed 's:^\s*|\s*$::g'
+	# sort the output alphabeticaly
+	find $1/ -name $2 | sed 's:\s+|\n+: :g' | sed 's:^\s*|\s*$::g' | sort
 }
 
 function run_bench_in_parallel() {
@@ -800,10 +811,11 @@ function sim() {
 
 				run_this_test="on"
 
-				if [ "_${_SUBTEST_LIST}" != "_" ];
+				if 	echo " ${_SUBTEST_LIST}" | grep "${TEST_FULL_REF}" &> /dev/null ||
+					[ -d ${NEW_RUN_DIR}/${TEST_FULL_REF} ]
 				then
-					echo ${_SUBTEST_LIST} | grep "${TEST_FULL_REF}" &> /dev/null
-					[ "$?" != "0" ] && run_this_test="off"
+					# skip duplicate tests
+					run_this_test="off"
 				fi
 
 				if [ "${run_this_test}" == "on" ];
@@ -823,6 +835,7 @@ function sim() {
 						synthesis_params_file=${DIR}/synthesis_params
 
 						wrapper_command="${WRAPPER_EXEC}
+								${_DRY_RUN_ARG}
 								${_script_synthesis_params}
 								--log_file ${DIR}/synthesis.log
 								--test_name ${TEST_FULL_REF}
@@ -846,6 +859,7 @@ function sim() {
 						simulation_params_file=${DIR}/simulation_params
 
 						wrapper_command="${WRAPPER_EXEC}
+											${_DRY_RUN_ARG}
 											${_script_simulation_params}
 											--log_file ${DIR}/simulation.log
 											--test_name ${TEST_FULL_REF}
@@ -1047,26 +1061,31 @@ init_temp
 
 parse_args $INPUT
 
-if [ ! -x ${ODIN_EXEC} ]
+if [ ! -x "${ODIN_EXEC}" ]
 then
 	echo "Unable to find ${ODIN_EXEC}"
 	_exit_with_code "-1"
 fi
 
-if [ ! -x ${WRAPPER_EXEC} ]
+if [ ! -x "${WRAPPER_EXEC}" ]
 then
 	echo "Unable to find ${WRAPPER_EXEC}"
 	_exit_with_code "-1"
 fi
 
-if [ "_${_TEST}" == "_" ]
-then
-	echo "No test is passed in must pass a test directory containing either a task_list.conf or a task.conf"
-	help
-	_exit_with_code "-1"
-fi
-
-_TEST=$(readlink -f ${_TEST})
+case "_${_TEST}" in
+	_)
+		echo "No test is passed in must pass a test directory containing either a task_list.conf or a task.conf"
+		help
+		_exit_with_code "-1"
+		;;
+	_vtr_reg_*)
+		# do not fix path
+		;;
+	*)
+		_TEST=$(readlink -f ${_TEST})
+		;;
+esac
 _TEST_NAME=$(basename ${_TEST})
 
 echo "Task: ${_TEST_NAME} (${_TEST})"

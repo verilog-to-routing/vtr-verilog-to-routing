@@ -39,6 +39,7 @@ USE_TIME="on"
 USE_LOGS="on"
 COLORIZE_OUTPUT="off"
 VERBOSE="0"
+DRY_RUN=""
 
 function print_exit_type() {
 	CODE="$1"
@@ -101,7 +102,14 @@ Usage: ./exec_wrapper.sh [options] <path/to/arguments.file>
 			--limit_ressource				            * limit ressource usage using ulimit -m (25% of hrdw memory) and nice value of 19
 			--verbosity [0, 1, 2]						* [0] no output, [1] output on error, [2] output the log to stdout
 			--no_color                                  * force no color on output
+			--dry_run  [exit_code]                      * performs a dry run, without actually run the tool and return the defined exit_code
 "
+}
+
+function dry_runner() {
+	# this simply prints the argument and return passed
+	echo "$*"
+	return $(( ${DRY_RUN} + 0 ))
 }
 
 function log_it {
@@ -292,7 +300,6 @@ do
 					perf)
 						TOOL_LIST="perf ${TOOL_LIST}"
 						EXEC_PREFIX="${PERF_EXEC} ${EXEC_PREFIX}"
-						shift
 						;;
 					*)
 						echo "Invalid tool $2 passed in"
@@ -304,6 +311,11 @@ do
 				shift
 			fi
 			;;
+		--dry_run)
+			DRY_RUN="$2"
+			shift
+			;;
+
 		*) 
 			break
 			;;
@@ -351,6 +363,13 @@ then
 	EXEC_PREFIX="timeout ${TIME_LIMIT} ${EXEC_PREFIX}"
 	log_it "running with timeout ${TIME_LIMIT}\n"
 fi
+
+if [ "_${DRY_RUN}" != "_" ]
+then
+	EXEC_PREFIX="dry_runner ${EXEC_PREFIX}"
+	log_it "running a dry run with exit code ${DRY_RUN}\n"
+fi
+
 dump_log
 
 pretty_print_status ""
