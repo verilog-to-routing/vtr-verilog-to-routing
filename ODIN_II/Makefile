@@ -64,15 +64,15 @@ _set_debug: $(ODIN_BUILD_DIR)/.debug.build
 
 _set_warn: $(ODIN_BUILD_DIR)/.warn.build
 	cd $(BUILD_DIR) &&\
-	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_WARN=on ..
+	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DVTR_IPO_BUILD=off -DODIN_WARN=on ..
 
 _set_gcov: $(ODIN_BUILD_DIR)/.gcov.build
 	cd $(BUILD_DIR) &&\
-	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_COVERAGE=on ..
+	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DVTR_IPO_BUILD=off -DODIN_COVERAGE=on ..
 
 _set_clang_tidy: $(ODIN_BUILD_DIR)/.tidy.build
 	cd $(BUILD_DIR) &&\
-	cmake  $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_TIDY=on ..
+	cmake  $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DVTR_IPO_BUILD=off -DODIN_TIDY=on ..
 
 _set_sanitize: $(ODIN_BUILD_DIR)/.sanitize.build
 	cd $(BUILD_DIR) &&\
