@@ -93,6 +93,16 @@ gcovr:
 cppcheck:
 	cppcheck . 1> /dev/null 
 
+test_light_coverage:
+	$(MAKE) gcov
+	./verify_odin.sh -t regression_test/benchmark/suite/light_suite -j $(NB_OF_PROCESS)
+	$(MAKE) gcovr
+
+test_full_coverage:
+	$(MAKE) test_light_coverage
+	./verify_odin.sh -t regression_test/benchmark/suite/heavy_suite -j $(NB_OF_PROCESS)
+	$(MAKE) gcovr
+
 test:
 # rebuild with sanitize flags on to run the same test as travis
 	$(MAKE) sanitize

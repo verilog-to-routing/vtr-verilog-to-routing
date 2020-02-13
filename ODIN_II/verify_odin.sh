@@ -24,14 +24,19 @@ ODIN_EXEC="${THIS_DIR}/odin_II"
 
 BENCHMARK_DIR="${REGRESSION_DIR}/benchmark"
 
+VTR_REG_PREFIX="vtr_reg_"
 VTR_REG_DIR="${THIS_DIR}/../vtr_flow/tasks/regression_tests"
 VTR_REG_LIST=$(ls ${VTR_REG_DIR} | grep "vtr_reg")
 
 SUITE_DIR="${BENCHMARK_DIR}/suite"
+RELAPATH_SUITE_DIR=$(realapath_from ${SUITE_DIR} ${PWD})
 SUITE_LIST=$(ls ${SUITE_DIR})
 
 TASK_DIR="${BENCHMARK_DIR}/task"
+RELAPATH_TASK_DIR=$(realapath_from ${TASK_DIR} ${PWD})
 TASK_LIST=$(ls ${TASK_DIR})
+
+RTL_REG_PREFIX="rtl_reg"
 
 PREVIOUS_RUN_DIR=""
 NEW_RUN_DIR="${REGRESSION_DIR}/run001/"
@@ -73,7 +78,7 @@ _prt_cur_arg() {
 ##############
 # defaults
 _TEST=""
-_TEST_NAME=""
+_TEST_INPUT_LIST=()
 _SUBTEST_LIST=""
 _NUMBER_OF_PROCESS="1"
 _SIM_COUNT="1"
@@ -117,23 +122,24 @@ printf "Called program with $INPUT
 		-j|--nb_of_process < N >        $(_prt_cur_arg ${_NUMBER_OF_PROCESS}) Number of process requested to be used
 		-d|--output_dir < /abs/path >   $(_prt_cur_arg ${_RUN_DIR_OVERRIDE}) Change the run directory output
 		-C|--config <path/to/config>	$(_prt_cur_arg ${_EXTRA_CONFIG}) Add a config file to append to the config for the tests
-		-t|--test < test name >         $(_prt_cur_arg ${_TEST}) Test name is either a absolute or relative path to 
+		-t|--test < test name >         $(_prt_cur_arg ${_TEST_INPUT_LIST[@]}) Test name is either a absolute or relative path to 
 		                                                       a directory containing a task.conf, task_list.conf 
 		                                                       (see CONFIG FILE HELP) or one of the following predefined test
 
 	AVAILABLE_TEST:
 
-	  regression_test/benchmark/suite/     
-$( echo "${SUITE_LIST}" | awk '{print "\t                                  " $0}')
+		${RELAPATH_SUITE_DIR}/
+$( echo "${SUITE_LIST}" | awk '{print "\t\t\t" $0}')
 
-	  regression_test/benchmark/task/
-$( echo "${TASK_LIST}" | awk '{print "\t                                 " $0}')
+		${RELAPATH_TASK_DIR}/
+$( echo "${TASK_LIST}" | awk '{print "\t\t\t" $0}')
 
-	  vtr_reg_
-$( echo "${VTR_REG_LIST}" | awk '{print "\t          " substr($0,9)}')
+	  ${VTR_REG_PREFIX}
+$( echo "${VTR_REG_LIST}" | awk '{print "\t\t\t" substr($0,9)}')
 
+	  ${RTL_REG_PREFIX}
 
-	CONFIG FILE HELP:
+CONFIG FILE HELP:
 "
 
 config_help
@@ -190,7 +196,7 @@ function create_temp() {
 		ln -s ${NEW_RUN_DIR} ${REGRESSION_DIR}/latest
 
 		# put in the passed parameter for keepsake 
-		echo ${_TEST} > ${NEW_RUN_DIR}/cmd.task
+		echo "tests ${_TEST_INPUT_LIST[@]}" > ${NEW_RUN_DIR}/cmd.task
 		echo "========="
 		echo "$0 ${INPUT}" >> ${NEW_RUN_DIR}/cmd.task
 	fi
@@ -284,8 +290,8 @@ function parse_args() {
 						echo "empty argument for $1"
 						_exit_with_code "-1"
 					fi
-
-					_TEST="$2"
+					# concat tests
+					_TEST_INPUT_LIST=( ${_TEST_INPUT_LIST} "$2" )
 					shift
 
 				;;-d|--output_dir)
@@ -640,8 +646,7 @@ function sim() {
 		_exit_with_code "-1"
 	elif [ ! -f ${benchmark_dir}/task.conf ]
 	then
-		echo "invalid benchmark directory parameter passed: ${benchmark_dir}, contains no task.conf file"
-		config_help
+		echo "invalid benchmark directory parameter passed: ${benchmark_dir}, contains no task.conf file, see CONFIG_HELP in --help"
 		_exit_with_code "-1"
 	fi
 
@@ -738,8 +743,7 @@ function sim() {
 					;;
 
 				*)
-					echo "Unknown internal parameter passed: ${_regression_param}"
-					config_help 
+					echo "Unknown internal parameter passed: ${_regression_param}, see CONFIG_HELP in --help"
 					_exit_with_code "-1"
 					;;
 			esac
@@ -978,8 +982,7 @@ function run_task() {
 			echo_bm_conf ${test_dir} > ${new_test_dir}/task.conf
 		else
 			echo "no config file found in the directory ${test_dir}"
-			echo "please make sure a .conf file exist, you can use '--build_config' to generate one"
-			config_help
+			echo "please make sure a .conf file exist, you can use '--build_config' to generate one, see CONFIG_HELP in --help"
 		fi
 	else
 		create_temp
@@ -988,69 +991,81 @@ function run_task() {
 }
 
 function run_vtr_reg() {
-	cd ${THIS_DIR}/..
+	pushd ${THIS_DIR}/..
 	/usr/bin/env perl run_reg_test.pl -j ${_NUMBER_OF_PROCESS} $1
-	cd ${THIS_DIR}
+	popd
 }
 
-input_list=()
+function run_rtl_reg() {
+	pushd ${THIS_DIR}/../libs/librtlnumber
+	./verify_librtlnumber.sh
+	popd
+}
+
 task_list=()
 vtr_reg_list=()
+rtl_lib_test="off"
 
 function run_suite() {
-	while [ "_${input_list}" != "_" ]
+	while [ "_${_TEST_INPUT_LIST[*]}" != "_" ]
 	do
-		current_input="${input_list[0]}"
-		input_list=( "${input_list[@]:1}" )
+		current_input="${_TEST_INPUT_LIST[0]}"
+		_TEST_INPUT_LIST=( "${_TEST_INPUT_LIST[@]:1}" )
 
-		if [ -d "${current_input}" ]
-		then
-			if [ -f "${current_input}/task_list.conf" ]
-			then
-
-				for input_path in $(cat ${current_input}/task_list.conf)
+		case "_${current_input}" in
+			_);;
+			_${VTR_REG_PREFIX}*)
+				vtr_reg_list=( ${vtr_reg_list[@]} ${current_input} )
+				;;
+			_${RTL_REG_PREFIX})
+				rtl_lib_test="on"
+				;;
+			*)
+				# bash expand when possible
+				for possible_test in $(ls -d -1 ${current_input} 2> /dev/null)
 				do
-					case "_${input_path}" in
-						_);;
-						*vtr_reg_*);;
-						*)
-							# bash expand when possible
-							input_path=$(ls -d -1 ${THIS_DIR}/${input_path} 2> /dev/null)
-							;;
-					esac
-
-					input_list=( ${input_list[@]} ${input_path[@]} )
+					if [ ! -d "${possible_test}" ]
+					then
+						echo "no such Directory for task: ${possible_test}"
+					elif [ -f "${possible_test}/task_list.conf" ]
+					then
+						_TEST_INPUT_LIST=( ${_TEST_INPUT_LIST[@]} $(cat ${possible_test}/task_list.conf) )
+					elif [ -f "${possible_test}/task.conf" ]
+					then
+						task_list=( ${task_list[@]} ${possible_test} )
+					else
+						echo "Invalid Directory for task: ${possible_test}"
+					fi
 				done
-				
-			elif [ -f "${current_input}/task.conf" ]
-			then
-				task_list=( ${task_list[@]} ${current_input} )
-			else
-				echo "Invalid Directory for task: ${current_input}"
-			fi
-		else
-			case "_${current_input}" in
-				*vtr_reg_*)
-					vtr_reg_list=( ${vtr_reg_list[@]} ${current_input} )
-					;;
-
-				*)
-					echo "no such Directory for task: ${current_input}"
-					;;
-			esac
-		fi
-
+				;;
+		esac
 	done
 
-	for task in "${task_list[@]}"
+	TEST_COUNT="0"
+
+	if [ "_${rtl_lib_test}" == "_on" ];
+	then
+		run_rtl_reg
+		TEST_COUNT=$(( ${TEST_COUNT} + 1 ))
+	fi
+
+	for task in ${task_list[@]}
 	do
 		run_task "${task}"
+		TEST_COUNT=$(( ${TEST_COUNT} + 1 ))
 	done
 
-	for vtr_reg in "${vtr_reg_list[@]}"
+	for vtr_reg in ${vtr_reg_list[@]}
 	do
 		run_vtr_reg ${vtr_reg}
+		TEST_COUNT=$(( ${TEST_COUNT} + 1 ))
 	done
+
+	if [ "_${TEST_COUNT}" == "_0" ];
+	then
+		echo "No test is passed in must pass a test directory containing either a task_list.conf or a task.conf, see --help"
+		_exit_with_code "-1"
+	fi
 }
 #########################################################
 #	START HERE
@@ -1073,24 +1088,7 @@ then
 	_exit_with_code "-1"
 fi
 
-case "_${_TEST}" in
-	_)
-		echo "No test is passed in must pass a test directory containing either a task_list.conf or a task.conf"
-		help
-		_exit_with_code "-1"
-		;;
-	_vtr_reg_*)
-		# do not fix path
-		;;
-	*)
-		_TEST=$(readlink -f ${_TEST})
-		;;
-esac
-_TEST_NAME=$(basename ${_TEST})
-
-echo "Task: ${_TEST_NAME} (${_TEST})"
-
-input_list=( "${_TEST}" )
+echo "Task: ${_TEST_INPUT_LIST[@]}"
 
 run_suite
 
