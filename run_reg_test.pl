@@ -426,8 +426,6 @@ sub run_odin_test {
 		$return_status = system($odin_cmd."task/large");
 	} elsif ( $token eq "odin_reg_operators" ) {
 		$return_status = system($odin_cmd."task/operators");
-	} elsif ( $token eq "odin_reg_valgrind_operators" ) {
-		$return_status = system($odin_cmd."task/valgrind_operators");
 	} elsif ( $token eq "odin_reg_arch" ) {
 		$return_status = system($odin_cmd."task/arch");
 	} elsif ( $token eq "odin_reg_syntax" ) {

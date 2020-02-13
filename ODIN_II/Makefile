@@ -19,8 +19,6 @@ endif
 BUILD_TYPE ?= release
 MAKEFLAGS := -s
 
-CMAKE_ARGS = -DVTR_IPO_BUILD="off"
-
 BUILD_DIR=../build
 ODIN_BUILD_DIR=$(BUILD_DIR)/ODIN_II
 
@@ -62,7 +60,7 @@ _set_build: $(ODIN_BUILD_DIR)/.regular.build
 
 _set_debug: $(ODIN_BUILD_DIR)/.debug.build
 	cd $(BUILD_DIR) &&\
-	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_DEBUG=on ..
+	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DVTR_IPO_BUILD=off -DODIN_DEBUG=on ..
 
 _set_warn: $(ODIN_BUILD_DIR)/.warn.build
 	cd $(BUILD_DIR) &&\
@@ -78,7 +76,7 @@ _set_clang_tidy: $(ODIN_BUILD_DIR)/.tidy.build
 
 _set_sanitize: $(ODIN_BUILD_DIR)/.sanitize.build
 	cd $(BUILD_DIR) &&\
-	cmake  $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_SANITIZE=on ..
+	cmake  $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DVTR_IPO_BUILD=off -DODIN_SANITIZE=on ..
 
 BUILD_IT_TARGETS = build debug warn gcov clang_tidy sanitize
 $(foreach  t,$(BUILD_IT_TARGETS), $(eval $(call _build_it_gen,$(t))))
@@ -96,7 +94,19 @@ cppcheck:
 	cppcheck . 1> /dev/null 
 
 test:
-	./verify_odin.sh -t regression_test/benchmark/suite/pre_commit -j $(NB_OF_PROCESS)
+# rebuild with sanitize flags on to run the same test as travis
+	$(MAKE) sanitize
+	./verify_odin.sh -t regression_test/benchmark/suite/light_suite -j $(NB_OF_PROCESS)
+	./verify_odin.sh -t vtr_reg_basic -j $(NB_OF_PROCESS)
+	./verify_odin.sh -t vtr_reg_strong -j $(NB_OF_PROCESS)
 
 large_test:
-	./verify_odin.sh -t regression_test/benchmark/suite/pre_merge -j $(NB_OF_PROCESS)
+# larger test should run with regular flags to speed up the process
+	$(MAKE) build
+	./verify_odin.sh -t regression_test/benchmark/suite/heavy_suite -j $(NB_OF_PROCESS)
+
+pre_merge:
+	$(MAKE) test
+	$(MAKE) large_test
+	
+
