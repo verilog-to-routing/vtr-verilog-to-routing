@@ -364,14 +364,14 @@ Implementation Quality Metrics:
 
 Run-time/Memory Usage Metrics:
 
-| Metric                      | Meaning                                                                   | Sensitivity |
-|-----------------------------|---------------------------------------------------------------------------|-------------|
-| vtr_flow_elapsed_time       | Wall-clock time to complete the VTR flow                                  | Low         |
-| pack_time                   | Wall-clock time VPR spent during packing                                  | Low         |
-| place_time                  | Wall-clock time VPR spent during placement                                | Low         |
-| min_chan_width_route_time   | Wall-clock time VPR spent during routing at the relaxed channel width     | High\*      |
-| crit_path_route_time        | Wall-clock time VPR spent during routing at the relaxed channel width     | Low         |
-| max_vpr_mem                 | Maximum memory used by VPR (in kilobytes)                                 | Low         |
+| Metric                      | Meaning                                                                        | Sensitivity |
+|-----------------------------|--------------------------------------------------------------------------------|-------------|
+| vtr_flow_elapsed_time       | Wall-clock time to complete the VTR flow                                       | Low         |
+| pack_time                   | Wall-clock time VPR spent during packing                                       | Low         |
+| place_time                  | Wall-clock time VPR spent during placement                                     | Low         |
+| min_chan_width_route_time   | Wall-clock time VPR spent during routing at the minimum routable channel width | High\*      |
+| crit_path_route_time        | Wall-clock time VPR spent during routing at the relaxed channel width          | Low         |
+| max_vpr_mem                 | Maximum memory used by VPR (in kilobytes)                                      | Low         |
 
 \*  Note that the minimum channel width route time is chaotic and can be highly variable (e.g. 10x variation is not unusual). Minimum channel width routing performs a binary search to find the minimum channel width. Since route time is highly dependent on congestion, run-time is highly dependent on the precise channel widths searched (which may change due to perturbations).
 
@@ -606,7 +606,7 @@ Based on these metrics we then calculate the following ratios and summary.
 From the results we can see that our change, on average, achieved a small reduction in the number of logic blocks (0.95) in return for a 2% increase in minimum channel width and 1% increase in routed wirelength. From a run-time perspective the packer is substantially faster (0.42).
 
 ### Automated QoR Comparison Script
-To automate some of the QoR comparison VTR includes a script to compare pares_resutls.txt files and generate a spreadsheet including the ratio and summary tables.
+To automate some of the QoR comparison VTR includes a script to compare `parse_results.txt` files and generate a spreadsheet including the ratio and summary tables.
 
 For example:
 ```shell
