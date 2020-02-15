@@ -1482,6 +1482,12 @@ ast_node_t* newModule(char* module_name, ast_node_t* list_of_parameters, ast_nod
     ast_node_t* new_node = create_node_w_type(MODULE, line_number, current_parse_file);
 
     /* mark all the ports symbols as ports */
+    if (list_of_ports == NULL) {
+        warning_message(PARSE_ERROR, line_number, current_parse_file,
+                        "there are no ports for the module (%s), all logic will be dropped since it is not driving an output\n",
+                        module_name);
+    }
+
     ast_node_t* port_declarations = resolve_ports(MODULE, list_of_ports);
 
     /* ports are expected to be in module items */
@@ -1638,7 +1644,6 @@ ast_node_t* newTask(char* task_name, ast_node_t* list_of_ports, ast_node_t* list
     long sc_spot;
     ast_node_t* symbol_node = newSymbolNode(task_name, line_number);
     ast_node_t* var_node = NULL;
-    ast_node_t* port_declarations = NULL;
     char* label = NULL;
 
     if (automatic) {
@@ -1683,9 +1688,7 @@ ast_node_t* newTask(char* task_name, ast_node_t* list_of_ports, ast_node_t* list
         }
     }
 
-    if (list_of_ports) {
-        port_declarations = resolve_ports(TASK, list_of_ports);
-    }
+    ast_node_t* port_declarations = resolve_ports(TASK, list_of_ports);
     /* ports are expected to be in module items */
     if (port_declarations) {
         add_child_to_node_at_index(list_of_task_items, port_declarations, 0);
