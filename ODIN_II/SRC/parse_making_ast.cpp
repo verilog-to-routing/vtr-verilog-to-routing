@@ -298,100 +298,101 @@ static ast_node_t* resolve_symbol_node(ast_node_t* symbol_node) {
 
 ast_node_t* resolve_ports(ids top_type, ast_node_t* symbol_list) {
     ast_node_t* unprocessed_ports = NULL;
-    long sc_spot;
+    if (symbol_list) {
+        for (long i = 0; i < symbol_list->num_children; i++) {
+            if (symbol_list->children[i]->types.variable.is_port) {
+                ast_node_t* this_port = symbol_list->children[i];
 
-    for (long i = 0; i < symbol_list->num_children; i++) {
-        if (symbol_list->children[i]->types.variable.is_port) {
-            ast_node_t* this_port = symbol_list->children[i];
+                if (!unprocessed_ports) {
+                    unprocessed_ports = newList(VAR_DECLARE_LIST, this_port, this_port->line_number);
+                } else {
+                    unprocessed_ports = newList_entry(unprocessed_ports, this_port);
+                }
 
-            if (!unprocessed_ports) {
-                unprocessed_ports = newList(VAR_DECLARE_LIST, this_port, this_port->line_number);
+                /* grab and update all typeless ports immediately following this one */
+                long j = 0;
+                for (j = i + 1; j < symbol_list->num_children && !(symbol_list->children[j]->types.variable.is_port); j++) {
+                    /* port type */
+                    symbol_list->children[j]->types.variable.is_input = this_port->types.variable.is_input;
+                    symbol_list->children[j]->types.variable.is_output = this_port->types.variable.is_output;
+                    symbol_list->children[j]->types.variable.is_inout = this_port->types.variable.is_inout;
+
+                    /* net type */
+                    symbol_list->children[j]->types.variable.is_wire = this_port->types.variable.is_wire;
+                    symbol_list->children[j]->types.variable.is_reg = this_port->types.variable.is_reg;
+                    symbol_list->children[j]->types.variable.is_integer = this_port->types.variable.is_integer;
+
+                    /* signedness */
+                    symbol_list->children[j]->types.variable.is_signed = this_port->types.variable.is_signed;
+
+                    /* range */
+                    if (symbol_list->children[j]->children[1] == NULL) {
+                        symbol_list->children[j]->children[1] = ast_node_deep_copy(this_port->children[1]);
+                        symbol_list->children[j]->children[2] = ast_node_deep_copy(this_port->children[2]);
+                        symbol_list->children[j]->children[3] = ast_node_deep_copy(this_port->children[3]);
+                        symbol_list->children[j]->children[4] = ast_node_deep_copy(this_port->children[4]);
+
+                        if (this_port->num_children == 8) {
+                            symbol_list->children[j]->children = (ast_node_t**)realloc(symbol_list->children[j]->children, sizeof(ast_node_t*) * 8);
+                            symbol_list->children[j]->children[7] = symbol_list->children[j]->children[5];
+                            symbol_list->children[j]->children[5] = ast_node_deep_copy(this_port->children[5]);
+                            symbol_list->children[j]->children[6] = ast_node_deep_copy(this_port->children[6]);
+                        }
+                    }
+
+                    /* error checking */
+                    symbol_list->children[j] = markAndProcessPortWith(MODULE, NO_ID, NO_ID, symbol_list->children[j], this_port->types.variable.is_signed);
+                }
             } else {
-                unprocessed_ports = newList_entry(unprocessed_ports, this_port);
-            }
+                long sc_spot = -1;
 
-            /* grab and update all typeless ports immediately following this one */
-            long j = 0;
-            for (j = i + 1; j < symbol_list->num_children && !(symbol_list->children[j]->types.variable.is_port); j++) {
-                /* port type */
-                symbol_list->children[j]->types.variable.is_input = this_port->types.variable.is_input;
-                symbol_list->children[j]->types.variable.is_output = this_port->types.variable.is_output;
-                symbol_list->children[j]->types.variable.is_inout = this_port->types.variable.is_inout;
-
-                /* net type */
-                symbol_list->children[j]->types.variable.is_wire = this_port->types.variable.is_wire;
-                symbol_list->children[j]->types.variable.is_reg = this_port->types.variable.is_reg;
-                symbol_list->children[j]->types.variable.is_integer = this_port->types.variable.is_integer;
-
-                /* signedness */
-                symbol_list->children[j]->types.variable.is_signed = this_port->types.variable.is_signed;
-
-                /* range */
-                if (symbol_list->children[j]->children[1] == NULL) {
-                    symbol_list->children[j]->children[1] = ast_node_deep_copy(this_port->children[1]);
-                    symbol_list->children[j]->children[2] = ast_node_deep_copy(this_port->children[2]);
-                    symbol_list->children[j]->children[3] = ast_node_deep_copy(this_port->children[3]);
-                    symbol_list->children[j]->children[4] = ast_node_deep_copy(this_port->children[4]);
-
-                    if (this_port->num_children == 8) {
-                        symbol_list->children[j]->children = (ast_node_t**)realloc(symbol_list->children[j]->children, sizeof(ast_node_t*) * 8);
-                        symbol_list->children[j]->children[7] = symbol_list->children[j]->children[5];
-                        symbol_list->children[j]->children[5] = ast_node_deep_copy(this_port->children[5]);
-                        symbol_list->children[j]->children[6] = ast_node_deep_copy(this_port->children[6]);
+                if (top_type == MODULE) {
+                    /* find the related INPUT or OUTPUT definition and store that instead */
+                    if ((sc_spot = sc_lookup_string(modules_inputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1) {
+                        oassert(((ast_node_t*)modules_inputs_sc->data[sc_spot])->type == VAR_DECLARE);
+                        free_whole_tree(symbol_list->children[i]);
+                        symbol_list->children[i] = (ast_node_t*)modules_inputs_sc->data[sc_spot];
+                        oassert(symbol_list->children[i]->types.variable.is_input);
+                    } else if ((sc_spot = sc_lookup_string(modules_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1) {
+                        oassert(((ast_node_t*)modules_outputs_sc->data[sc_spot])->type == VAR_DECLARE);
+                        free_whole_tree(symbol_list->children[i]);
+                        symbol_list->children[i] = (ast_node_t*)modules_outputs_sc->data[sc_spot];
+                        oassert(symbol_list->children[i]->types.variable.is_output);
+                    } else {
+                        error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, "No matching declaration for port %s\n", symbol_list->children[i]->children[0]->types.identifier);
+                    }
+                } else if (top_type == FUNCTION) {
+                    /* find the related INPUT or OUTPUT definition and store that instead */
+                    if ((sc_spot = sc_lookup_string(functions_inputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1) {
+                        oassert(((ast_node_t*)functions_inputs_sc->data[sc_spot])->type == VAR_DECLARE);
+                        free_whole_tree(symbol_list->children[i]);
+                        symbol_list->children[i] = (ast_node_t*)functions_inputs_sc->data[sc_spot];
+                        oassert(symbol_list->children[i]->types.variable.is_input);
+                    } else if ((sc_spot = sc_lookup_string(functions_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1) {
+                        oassert(((ast_node_t*)functions_outputs_sc->data[sc_spot])->type == VAR_DECLARE);
+                        free_whole_tree(symbol_list->children[i]);
+                        symbol_list->children[i] = (ast_node_t*)functions_outputs_sc->data[sc_spot];
+                        oassert(symbol_list->children[i]->types.variable.is_output);
+                    } else {
+                        error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, "No matching declaration for port %s\n", symbol_list->children[i]->children[0]->types.identifier);
+                    }
+                } else if (top_type == TASK) {
+                    /* find the related INPUT or OUTPUT definition and store that instead */
+                    if ((sc_spot = sc_lookup_string(tasks_inputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1) {
+                        oassert(((ast_node_t*)tasks_inputs_sc->data[sc_spot])->type == VAR_DECLARE);
+                        free_whole_tree(symbol_list->children[i]);
+                        symbol_list->children[i] = (ast_node_t*)tasks_inputs_sc->data[sc_spot];
+                        oassert(symbol_list->children[i]->types.variable.is_input);
+                    } else if ((sc_spot = sc_lookup_string(tasks_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1) {
+                        oassert(((ast_node_t*)tasks_outputs_sc->data[sc_spot])->type == VAR_DECLARE);
+                        free_whole_tree(symbol_list->children[i]);
+                        symbol_list->children[i] = (ast_node_t*)tasks_outputs_sc->data[sc_spot];
+                        oassert(symbol_list->children[i]->types.variable.is_output);
+                    } else {
+                        error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, "No matching declaration for port %s\n", symbol_list->children[i]->children[0]->types.identifier);
                     }
                 }
-
-                /* error checking */
-                symbol_list->children[j] = markAndProcessPortWith(MODULE, NO_ID, NO_ID, symbol_list->children[j], this_port->types.variable.is_signed);
             }
-        } else {
-            if (top_type == MODULE) {
-                /* find the related INPUT or OUTPUT definition and store that instead */
-                if ((sc_spot = sc_lookup_string(modules_inputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1) {
-                    oassert(((ast_node_t*)modules_inputs_sc->data[sc_spot])->type == VAR_DECLARE);
-                    free_whole_tree(symbol_list->children[i]);
-                    symbol_list->children[i] = (ast_node_t*)modules_inputs_sc->data[sc_spot];
-                    oassert(symbol_list->children[i]->types.variable.is_input);
-                } else if ((sc_spot = sc_lookup_string(modules_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1) {
-                    oassert(((ast_node_t*)modules_outputs_sc->data[sc_spot])->type == VAR_DECLARE);
-                    free_whole_tree(symbol_list->children[i]);
-                    symbol_list->children[i] = (ast_node_t*)modules_outputs_sc->data[sc_spot];
-                    oassert(symbol_list->children[i]->types.variable.is_output);
-                } else {
-                    error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, "No matching declaration for port %s\n", symbol_list->children[i]->children[0]->types.identifier);
-                }
-            } else if (top_type == FUNCTION) {
-                /* find the related INPUT or OUTPUT definition and store that instead */
-                if ((sc_spot = sc_lookup_string(functions_inputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1) {
-                    oassert(((ast_node_t*)functions_inputs_sc->data[sc_spot])->type == VAR_DECLARE);
-                    free_whole_tree(symbol_list->children[i]);
-                    symbol_list->children[i] = (ast_node_t*)functions_inputs_sc->data[sc_spot];
-                    oassert(symbol_list->children[i]->types.variable.is_input);
-                } else if ((sc_spot = sc_lookup_string(functions_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1) {
-                    oassert(((ast_node_t*)functions_outputs_sc->data[sc_spot])->type == VAR_DECLARE);
-                    free_whole_tree(symbol_list->children[i]);
-                    symbol_list->children[i] = (ast_node_t*)functions_outputs_sc->data[sc_spot];
-                    oassert(symbol_list->children[i]->types.variable.is_output);
-                } else {
-                    error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, "No matching declaration for port %s\n", symbol_list->children[i]->children[0]->types.identifier);
-                }
-            } else if (top_type == TASK) {
-                /* find the related INPUT or OUTPUT definition and store that instead */
-                if ((sc_spot = sc_lookup_string(tasks_inputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1) {
-                    oassert(((ast_node_t*)tasks_inputs_sc->data[sc_spot])->type == VAR_DECLARE);
-                    free_whole_tree(symbol_list->children[i]);
-                    symbol_list->children[i] = (ast_node_t*)tasks_inputs_sc->data[sc_spot];
-                    oassert(symbol_list->children[i]->types.variable.is_input);
-                } else if ((sc_spot = sc_lookup_string(tasks_outputs_sc, symbol_list->children[i]->children[0]->types.identifier)) != -1) {
-                    oassert(((ast_node_t*)tasks_outputs_sc->data[sc_spot])->type == VAR_DECLARE);
-                    free_whole_tree(symbol_list->children[i]);
-                    symbol_list->children[i] = (ast_node_t*)tasks_outputs_sc->data[sc_spot];
-                    oassert(symbol_list->children[i]->types.variable.is_output);
-                } else {
-                    error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, "No matching declaration for port %s\n", symbol_list->children[i]->children[0]->types.identifier);
-                }
-            }
-
             symbol_list->children[i]->types.variable.is_port = true;
         }
     }
