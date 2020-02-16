@@ -17,7 +17,7 @@ elseif(NOT Qt5Gui_FOUND)
     message(STATUS "Failed to find Qt5Gui required for blifexplorer (on debian/ubuntu try 'sudo apt install qt5-default')")
 elseif(NOT Qt5Core_FOUND)
     message(STATUS "Failed to find Qt5Core required for blifexplorer (on debian/ubuntu try 'sudo apt install qt5-default')")
-else
+else()
     set(CMAKE_AUTOMOC ON)
     set(CMAKE_AUTOUIC ON)
     set(CMAKE_AUTORCC ON)
