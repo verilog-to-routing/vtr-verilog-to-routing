@@ -1152,14 +1152,6 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
         VPR_FATAL_ERROR(VPR_ERROR_ANALYSIS, "No routing loaded -- can not perform post-routing analysis");
     }
 
-    vtr::vector<ClusterNetId, float*> net_delay;
-    vtr::t_chunk net_delay_ch;
-    if (vpr_setup.TimingEnabled) {
-        //Load the net delays
-        net_delay = alloc_net_delay(&net_delay_ch);
-        load_net_delay_from_routing(net_delay);
-    }
-
     routing_stats(vpr_setup.RouterOpts.full_stats, vpr_setup.RouterOpts.route_type,
                   vpr_setup.Segments,
                   vpr_setup.RoutingArch.R_minW_nmos,
@@ -1169,6 +1161,13 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
                   vpr_setup.RoutingArch.wire_to_rr_ipin_switch);
 
     if (vpr_setup.TimingEnabled) {
+        vtr::vector<ClusterNetId, float*> net_delay;
+        vtr::t_chunk net_delay_ch;
+
+        //Load the net delays
+        net_delay = alloc_net_delay(&net_delay_ch);
+        load_net_delay_from_routing(net_delay);
+
         //Do final timing analysis
         auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay);
         auto timing_info = make_setup_hold_timing_info(analysis_delay_calc);
