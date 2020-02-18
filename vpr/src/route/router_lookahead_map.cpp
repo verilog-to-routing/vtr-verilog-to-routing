@@ -423,7 +423,7 @@ static void compute_router_src_opin_lookahead() {
 
         bool operator<(const t_pq_entry& rhs) const {
             return this->delay < rhs.delay;
-        };
+        }
     };
 
     std::priority_queue<t_pq_entry> pq;
