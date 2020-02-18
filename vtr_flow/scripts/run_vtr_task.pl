@@ -440,7 +440,7 @@ sub generate_single_task_actions {
                 my $expect_fail = "";
                 my $expected_vpr_status = ret_expected_vpr_status($circuit, $arch, $full_params_dirname, $golden_results_file);
                 if ($expected_vpr_status ne "success" and $expected_vpr_status ne "Unkown") {
-                    $expect_fail = "-expect_fail";
+                    $expect_fail = "-expect_fail '$expected_vpr_status'";
                 }
 
                 my $show_failure_args = "";

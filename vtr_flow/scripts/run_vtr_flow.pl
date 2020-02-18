@@ -119,7 +119,7 @@ my $check_route             = 0;
 my $check_place             = 0;
 my $use_old_abc_script      = 0;
 my $run_name = "";
-my $expect_fail = 0;
+my $expect_fail = undef;
 my $verbosity = 0;
 my $odin_adder_config_path = "default";
 my $odin_adder_cin_global = "";
@@ -200,7 +200,7 @@ while ( scalar(@ARGV) != 0 ) { #While non-empty
     } elsif ( $token eq "-name"){
             $run_name = shift(@ARGV);
     } elsif ( $token eq "-expect_fail"){
-            $expect_fail = 1;
+            $expect_fail = shift(@ARGV);
     }
     elsif ( $token eq "-verbose"){
             $verbosity = 1;
@@ -1193,10 +1193,23 @@ print RESULTS "error=$error\n";
 
 close(RESULTS);
 
-if ($expect_fail) {
+if (defined $expect_fail) {
+    my $old_error_status = $error_status;
+
+    my $failure_matched = 0;
+
     if ($error_code != 0) {
+        if ($q eq $expect_fail) {
+            $failure_matched = 1;
+        } else {
+            $failure_matched = 0;
+        }
+    } else { #Did not fail
+        $failure_matched = 0;
+    }
+
+    if ($failure_matched) {
         #Failed as expected, invert message
-        my $old_error_status = $error_status;
         $error_code = 0;
         $error_status = "OK";
         if ($verbosity > 0) {
@@ -1206,7 +1219,9 @@ if ($expect_fail) {
         }
     } else {
         #Passed when expected failure
-        $error_status = "failed: expected to fail but was " . $error_status;
+        $error_status = "failed: expected to fail";
+        $error_status .= " with '" . $expect_fail . "'";
+        $error_status .= " but was '" . $q . "'";
     }
 }
 
@@ -1314,7 +1329,7 @@ sub system_with_timeout {
 			my $return_code = $? >> 8;
 
 			if ( $did_crash eq "true" ) {
-                if ($show_failures && !$expect_fail) {
+                if ($show_failures && not defined $expect_fail) {
                     my $abs_log_path = Cwd::abs_path($_[1]);
                     print "\n   Failed log file follows ($abs_log_path):\n";
                     cat_file($_[1], "\t> ");
@@ -1322,7 +1337,7 @@ sub system_with_timeout {
 				return "crashed";
 			}
 			elsif ( $return_code != 0 ) {
-                if ($show_failures && !$expect_fail) {
+                if ($show_failures && not defined $expect_fail) {
                     my $abs_log_path = Cwd::abs_path($_[1]);
                     print "\n   Failed log file follows ($abs_log_path):\n";
                     cat_file($_[1], "\t> ");
