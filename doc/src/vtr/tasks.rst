@@ -132,6 +132,14 @@ Optional Fields
 
     Multiple `script_params_list_add` can be provided which are addded to the cartesian product of configurations to be evaluated.
 
+* **sdc_dir**: Directory path to benchmark SDC files.
+
+    Absolute path or relative to ``$VTR_ROOT/vtr_flow/``.
+
+    If provided, each benchmark will look for a similarly named SDC file.
+
+    For instance with ``circuit_list_add=my_circuit.v`` or ``circuit_list_add=my_circuit.blif``, the flow would look for an SDC file named ``my_circuit.sdc`` within the specified ``sdc_dir``.
+
 * **pass_requirements_file**: :ref:`vtr_pass_requirements` file.
 
     Absolute path or relative to ``$VTR_ROOT/vtr_flow/parse/pass_requirements/`` or ``$VTR_ROOT/vtr_flow/tasks/<task_name>/config/``

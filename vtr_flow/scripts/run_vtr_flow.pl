@@ -86,8 +86,8 @@ my $stage_idx_vpr    = 5;
 
 my $circuit_file_path      = expand_user_path( shift(@ARGV) );
 my $architecture_file_path = expand_user_path( shift(@ARGV) );
-my $sdc_file_path;
-my $pad_file_path;
+my $sdc_file_path = undef;
+my $pad_file_path = undef;
 
 my $ext;
 my $starting_stage          = stage_index("odin");
@@ -419,6 +419,12 @@ my $ace_output_act_path = "$temp_dir$ace_output_act_name";
 my $prevpr_output_file_name = "$benchmark_name" . file_ext_for_stage($stage_idx_prevpr, $circuit_suffix);
 my $prevpr_output_file_path = "$temp_dir$prevpr_output_file_name";
 
+my $prevpr_sdc_file_name = "$benchmark_name" . ".sdc";
+my $prevpr_sdc_file_path = "$temp_dir$prevpr_output_file_name";
+
+my $prevpr_pad_file_name = "$benchmark_name" . ".pad";
+my $prevpr_pad_file_path = "$temp_dir$prevpr_output_file_name";
+
 my $vpr_route_output_file_name = "$benchmark_name.route";
 my $vpr_route_output_file_path = "$temp_dir$vpr_route_output_file_name";
 my $vpr_postsynthesis_netlist = "";
@@ -428,13 +434,29 @@ my $vpr_postsynthesis_netlist = "";
 #system "cp $circuit_path $temp_dir/$benchmark_name" . file_ext_for_stage($starting_stage - 1);
 #system "cp $odin2_base_config"
 
+#Copy architecture
 my $architecture_file_path_new = "$temp_dir$architecture_file_name";
 copy( $architecture_file_path, $architecture_file_path_new );
 $architecture_file_path = $architecture_file_path_new;
 
+#Copy circuit
 my $circuit_file_path_new = "$temp_dir$benchmark_name" . file_ext_for_stage($starting_stage - 1, $circuit_suffix);
 copy( $circuit_file_path, $circuit_file_path_new );
 $circuit_file_path = $circuit_file_path_new;
+
+#Copy SDC file
+if (defined $sdc_file_path) {
+    my $sdc_file_path_new = "$temp_dir$prevpr_sdc_file_name";
+    copy($sdc_file_path, $sdc_file_path_new);
+    $sdc_file_path = $sdc_file_path_new;
+}
+
+#Copy PAD file
+if (defined $pad_file_path) {
+    my $pad_file_path_new = "$temp_dir$prevpr_pad_file_name";
+    copy($pad_file_path, $pad_file_path_new);
+    $pad_file_path = $pad_file_path_new;
+}
 
 # Call executable and time it
 my $StartTime = time;
