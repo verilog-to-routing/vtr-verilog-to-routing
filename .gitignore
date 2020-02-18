@@ -33,7 +33,9 @@ quick_test/*
 titan_release*.tar.gz
 vtr_flow/arch/titan/*.xml
 vtr_flow/benchmarks/titan_blif/*.blif
+vtr_flow/benchmarks/titan_blif/*.sdc
 vtr_flow/benchmarks/titan_other_blif/*.blif
+vtr_flow/benchmarks/titan_other_blif/*.sdc
 
 
 #
