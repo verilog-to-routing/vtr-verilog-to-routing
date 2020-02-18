@@ -6,6 +6,9 @@
 # Path to directory of circuits to use
 circuits_dir=benchmarks/titan_other_blif
 
+# Path to directory of SDC files
+sdc_dir=benchmarks/titan_other_blif
+
 # Path to directory of architectures to use
 archs_dir=arch/titan
 
@@ -46,5 +49,6 @@ qor_parse_file=qor_vpr_titan.txt
 # Pass requirements
 pass_requirements_file=pass_requirements_vpr_titan.txt
 
-script_params=-starting_stage vpr --route_chan_width 300 --max_router_iterations 400 --router_lookahead map
+#Don't absorb buffer LUTs to ensure netlist is consistent with SDC file
+script_params=-starting_stage vpr --route_chan_width 300 --max_router_iterations 400 --router_lookahead map --absorb_buffer_luts off
 
