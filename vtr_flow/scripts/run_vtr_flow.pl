@@ -203,7 +203,7 @@ while ( scalar(@ARGV) != 0 ) { #While non-empty
             $expect_fail = 1;
     }
     elsif ( $token eq "-verbose"){
-            $expect_fail = shift(@ARGV);
+            $verbosity = 1;
     }
 	elsif ( $token eq "-adder_type"){
 		$odin_adder_config_path = shift(@ARGV);
@@ -1196,10 +1196,11 @@ close(RESULTS);
 if ($expect_fail) {
     if ($error_code != 0) {
         #Failed as expected, invert message
+        my $old_error_status = $error_status;
         $error_code = 0;
         $error_status = "OK";
         if ($verbosity > 0) {
-            $error_status .= "(as expected " . $error_status . ")";
+            $error_status .= " (as expected " . $old_error_status . ")";
         } else {
             $error_status .= "*";
         }
