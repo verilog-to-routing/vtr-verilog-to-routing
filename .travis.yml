@@ -145,17 +145,18 @@ jobs:
         - ./.github/travis/build.sh
         #We skip QoR since we are only checking for errors in sanitizer runs
         - ./run_reg_test.pl vtr_reg_basic -show_failures -skip_qor -j2
-    - stage: Test
-      name: "Sanitized Strong Regression Tests"
-      env:
-        - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on"
-        - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
-        - BUILD_TYPE=debug
-        - LSAN_OPTIONS="exitcode=42" #Use a non-standard exit code to ensure LSAN errors are detected
-      script:
-        - ./.github/travis/build.sh
-        #We skip QoR since we are only checking for errors in sanitizer runs
-        - travis_wait 60 ./run_reg_test.pl vtr_reg_strong -show_failures -skip_qor -j2
+    #Currently strong regression with sanitizers is disabled as it exceeds the maximum travis job run-time
+    #- stage: Test
+      #name: "Sanitized Strong Regression Tests"
+      #env:
+        #- CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on"
+        #- MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+        #- BUILD_TYPE=debug
+        #- LSAN_OPTIONS="exitcode=42" #Use a non-standard exit code to ensure LSAN errors are detected
+      #script:
+        #- ./.github/travis/build.sh
+        ##We skip QoR since we are only checking for errors in sanitizer runs
+        #- travis_wait 60 ./run_reg_test.pl vtr_reg_strong -show_failures -skip_qor -j2
     - stage: Test
       name: "ODIN-II Micro Tests"
       env:
