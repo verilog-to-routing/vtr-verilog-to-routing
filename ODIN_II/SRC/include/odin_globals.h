@@ -14,8 +14,7 @@ extern global_args_t global_args;
 extern config_t configuration;
 extern int current_parse_file;
 
-extern long num_modules;
-extern ast_node_t** ast_modules;
+extern ast_t* verilog_ast;
 extern STRING_CACHE* module_names_to_idx;
 
 extern STRING_CACHE* output_nets_sc;
@@ -23,7 +22,6 @@ extern STRING_CACHE* input_nets_sc;
 
 extern netlist_t* verilog_netlist;
 
-extern ast_node_t* top_module;
 extern nnode_t** top_input_nodes;
 extern long num_top_input_nodes;
 extern nnode_t** top_output_nodes;

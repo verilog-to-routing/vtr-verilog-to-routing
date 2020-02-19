@@ -3,7 +3,11 @@
 
 #include "odin_types.h"
 
-void add_tag_data();
+void add_tag_data(ast_t* ast);
+
+ast_t* allocate_ast();
+ast_t* free_ast(ast_t* to_delete);
+void add_top_module_to_ast(ast_t* verilog_ast, ast_node_t* to_add);
 
 ast_node_t* create_node_w_type_no_count(ids id, int line_number, int file_number);
 ast_node_t* create_node_w_type(ids id, int line_number, int file_number);

@@ -147,6 +147,81 @@ void verify_genvars(ast_node_t* node, sc_hierarchy* local_ref, char*** other_gen
 ast_node_t* look_for_matching_hard_block(ast_node_t* node, char* hard_block_name, sc_hierarchy* local_ref);
 ast_node_t* look_for_matching_soft_logic(ast_node_t* node, char* hard_block_name);
 
+/*---------------------------------------------------------------------------------------------
+ * (function: find_top_module)
+ * 	Finds the top module based on that it is not called by anyone else
+ * 	Assumes there is only one top
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t* find_top_module(ast_t* ast) {
+    ast_node_t* top_entry = NULL;
+
+    long number_of_top_modules = 0;
+
+    /* check for which module wasn't marked as instantiated...this one will be the top */
+    std::string module_name_list("");
+    std::string desired_module("");
+    bool found_desired_module = true;
+
+    if (global_args.top_level_module_name.provenance() == argparse::Provenance::SPECIFIED) {
+        found_desired_module = false;
+        desired_module = global_args.top_level_module_name;
+        printf("Using Top Level Module: %s\n", desired_module.c_str());
+    }
+
+    if (ast->top_modules_count < 1) {
+        module_name_list = "N/A";
+    } else {
+        for (long i = 0; i < ast->top_modules_count; i++) {
+            std::string current_module = "";
+
+            if (ast->top_modules[i]->children[0]->types.identifier) {
+                current_module = ast->top_modules[i]->children[0]->types.identifier;
+            }
+
+            if (current_module != "") {
+                if (desired_module != "" && current_module == desired_module) {
+                    // append the name
+                    module_name_list = std::string("\t") + current_module;
+                    top_entry = ast->top_modules[i];
+                    found_desired_module = true;
+                    number_of_top_modules = 1;
+                    break;
+                } else if (!(ast->top_modules[i]->types.module.is_instantiated)) {
+                    /**
+                     * Check to see if the module is a hard block 
+                     * a hard block is never the top level!
+                     */
+                    long sc_spot;
+
+                    if (-1 == (sc_spot = sc_lookup_string(hard_block_names, current_module.c_str()))) {
+                        // append the name
+                        module_name_list += std::string("\t") + current_module;
+
+                        if (number_of_top_modules > 0)
+                            module_name_list += "\n";
+
+                        number_of_top_modules += 1;
+                        top_entry = ast->top_modules[i];
+                    }
+                }
+            }
+        }
+    }
+
+    /* check atleast one module is top ... and only one */
+    if (!found_desired_module) {
+        warning_message(NETLIST_ERROR, -1, -1, "Could not find the desired top level module: %s\n", desired_module.c_str());
+    }
+
+    if (number_of_top_modules > 1) {
+        error_message(NETLIST_ERROR, -1, -1, "Found multiple top level modules\n%s", module_name_list.c_str());
+    } else {
+        printf("==========================\nDetected Top Level Module: %s\n==========================\n", module_name_list.c_str());
+    }
+
+    return top_entry;
+}
+
 int simplify_ast_module(ast_node_t** ast_module, sc_hierarchy* local_ref) {
     /* resolve constant expressions in string caches */
     bool is_module = (*ast_module)->type == MODULE ? true : false;
@@ -728,9 +803,7 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
                     long sc_spot_2 = sc_add_string(module_names_to_idx, temp_instance_name);
                     oassert(sc_spot_2 > -1 && module_names_to_idx->data[sc_spot_2] == NULL);
                     module_names_to_idx->data[sc_spot_2] = (void*)instance;
-
-                    ast_modules = (ast_node_t**)vtr::realloc(ast_modules, sizeof(ast_node_t*) * (sc_spot_2 + 1));
-                    ast_modules[sc_spot_2] = instance;
+                    add_top_module_to_ast(verilog_ast, instance);
 
                     /* create the string cache list for the instantiated module */
                     sc_hierarchy* original_sc_hierarchy = ((ast_node_t*)module_names_to_idx->data[sc_spot])->types.hierarchy;
@@ -779,9 +852,7 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
                     long sc_spot_2 = sc_add_string(module_names_to_idx, temp_instance_name);
                     oassert(sc_spot_2 > -1 && module_names_to_idx->data[sc_spot_2] == NULL);
                     module_names_to_idx->data[sc_spot_2] = (void*)instance;
-
-                    ast_modules = (ast_node_t**)vtr::realloc(ast_modules, sizeof(ast_node_t*) * (sc_spot_2 + 1));
-                    ast_modules[sc_spot_2] = instance;
+                    add_top_module_to_ast(verilog_ast, instance);
 
                     /* create the string cache list for the instantiated module */
                     sc_hierarchy* original_sc_hierarchy = ((ast_node_t*)module_names_to_idx->data[sc_spot])->types.hierarchy;
@@ -871,8 +942,7 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
                     oassert(sc_spot_2 > -1 && module_names_to_idx->data[sc_spot_2] == NULL);
                     module_names_to_idx->data[sc_spot_2] = (void*)instance;
 
-                    ast_modules = (ast_node_t**)vtr::realloc(ast_modules, sizeof(ast_node_t*) * (sc_spot_2 + 1));
-                    ast_modules[sc_spot_2] = instance;
+                    add_top_module_to_ast(verilog_ast, instance);
 
                     /* create the string cache list for the instantiated module */
                     sc_hierarchy* original_sc_hierarchy = ((ast_node_t*)module_names_to_idx->data[sc_spot])->types.hierarchy;
@@ -1366,8 +1436,7 @@ ast_node_t* finalize_ast(ast_node_t* node, ast_node_t* parent, sc_hierarchy* loc
 
                         sc_spot = sc_add_string(module_names_to_idx, temp_instance_name);
                         module_names_to_idx->data[sc_spot] = (void*)instance;
-                        ast_modules = (ast_node_t**)vtr::realloc(ast_modules, sizeof(ast_node_t*) * (sc_spot + 1));
-                        ast_modules[sc_spot] = instance;
+                        add_top_module_to_ast(verilog_ast, instance);
 
                         /* create the string cache list for the instantiated module */
                         sc_hierarchy* original_sc_hierarchy = ((ast_node_t*)module_names_to_idx->data[sc_spot])->types.hierarchy;

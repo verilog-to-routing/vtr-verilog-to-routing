@@ -125,7 +125,7 @@ void output_blif(const char* file_name, netlist_t* netlist) {
         error_message(NETLIST_ERROR, -1, -1, "Could not open output file %s\n", file_name);
     }
 
-    fprintf(out, ".model %s\n", top_module->children[0]->types.identifier);
+    fprintf(out, ".model %s\n", netlist->identifier);
 
     /* generate all the signals */
 

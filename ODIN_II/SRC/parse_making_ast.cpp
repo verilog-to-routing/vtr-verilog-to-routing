@@ -42,7 +42,6 @@
 #include "scope_util.h"
 
 //for module
-
 STRING_CACHE* modules_inputs_sc;
 STRING_CACHE* modules_outputs_sc;
 STRING_CACHE* module_instances_sc;
@@ -69,8 +68,8 @@ int size_task_instantiations;
 ast_node_t** task_instantiations_instance_by_module;
 int size_task_instantiations_by_module;
 
+ast_t* verilog_ast;
 long num_modules;
-ast_node_t** ast_modules;
 
 int num_functions;
 ast_node_t** ast_functions;
@@ -118,7 +117,9 @@ void parse_to_ast() {
 /*---------------------------------------------------------------------------------------------
  * (function: init_parser)
  *-------------------------------------------------------------------------------------------*/
-void init_parser() {
+ast_t* init_parser() {
+    ast_t* ast = allocate_ast();
+
     /* create string caches to hookup PORTS with INPUT and OUTPUTs.  This is made per module and will be cleaned and remade at next_module */
     modules_inputs_sc = sc_new_string_cache();
     modules_outputs_sc = sc_new_string_cache();
@@ -132,7 +133,6 @@ void init_parser() {
     num_modules = 0; // we're going to record all the modules in a list so we can build a tree of them later
     num_functions = 0;
     num_tasks = 0;
-    ast_modules = NULL;
     ast_functions = NULL;
     ast_tasks = NULL;
     function_instantiations_instance = NULL;
@@ -147,6 +147,8 @@ void init_parser() {
     /* keeps track of all the ast roots */
     all_file_items_list = NULL;
     size_all_file_items_list = 0;
+
+    return ast;
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -1278,9 +1280,9 @@ ast_node_t* newModuleInstance(char* module_ref_name, ast_node_t* module_named_in
         sc_add_string(instantiated_modules, module_ref_name);
 
         /* if this module has already been parsed, update */
-        for (int j = 0; j < num_modules; j++) {
-            if (sc_lookup_string(instantiated_modules, ast_modules[j]->children[0]->types.identifier) != -1) {
-                ast_modules[j]->types.module.is_instantiated = true;
+        for (int j = 0; j < verilog_ast->top_modules_count; j++) {
+            if (sc_lookup_string(instantiated_modules, verilog_ast->top_modules[j]->children[0]->types.identifier) != -1) {
+                verilog_ast->top_modules[j]->types.module.is_instantiated = true;
             }
         }
     }
@@ -1521,8 +1523,7 @@ ast_node_t* newModule(char* module_name, ast_node_t* list_of_parameters, ast_nod
     new_node->types.task.is_instantiated = false;
 
     /* record this module in the list of modules (for evaluation later in terms of just nodes) */
-    ast_modules = (ast_node_t**)vtr::realloc(ast_modules, sizeof(ast_node_t*) * (num_modules + 1));
-    ast_modules[num_modules] = new_node;
+    add_top_module_to_ast(verilog_ast, new_node);
     for (i = 0; i < size_module_variables_not_defined; i++) {
         short variable_found = false;
         for (j = 0; j < list_of_module_items->num_children && variable_found == false; j++) {
@@ -1625,8 +1626,8 @@ ast_node_t* newFunction(ast_node_t* function_return, ast_node_t* list_of_ports, 
     new_node->types.function.is_instantiated = false;
 
     /* record this module in the list of modules (for evaluation later in terms of just nodes) */
-    ast_modules = (ast_node_t**)vtr::realloc(ast_modules, sizeof(ast_node_t*) * (num_modules + 1));
-    ast_modules[num_modules] = new_node;
+    ast_functions = (ast_node_t**)vtr::realloc(ast_functions, sizeof(ast_node_t*) * (num_functions + 1));
+    ast_functions[num_functions] = new_node;
     sc_spot = sc_add_string(module_names_to_idx, function_name);
     if (module_names_to_idx->data[sc_spot] != NULL) {
         error_message(PARSE_ERROR, line_number, current_parse_file, "module names with the same name -> %s\n", function_name);
