@@ -1569,27 +1569,25 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             if (node.type() == SOURCE || node.type() == SINK) {
                 for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                     for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
-                        if (node.type() == SOURCE) {
-                            indices[SOURCE][ix][iy][0].push_back(inode);
-                            indices[SINK][ix][iy][0].push_back(OPEN);
-                        } else {
-                            VTR_ASSERT(node.type() == SINK);
-                            indices[SINK][ix][iy][0].push_back(inode);
-                            indices[SOURCE][ix][iy][0].push_back(OPEN);
+                        if (node.ptc_num() >= (int)indices[SOURCE][ix][iy][0].size()) {
+                            indices[SOURCE][ix][iy][0].resize(node.ptc_num() + 1, OPEN);
                         }
+                        if (node.ptc_num() >= (int)indices[SINK][ix][iy][0].size()) {
+                            indices[SINK][ix][iy][0].resize(node.ptc_num() + 1, OPEN);
+                        }
+                        indices[node.type()][ix][iy][0][node.ptc_num()] = inode;
                     }
                 }
             } else if (node.type() == IPIN || node.type() == OPIN) {
                 for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                     for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
-                        if (node.type() == OPIN) {
-                            indices[OPIN][ix][iy][node.side()].push_back(inode);
-                            indices[IPIN][ix][iy][node.side()].push_back(OPEN);
-                        } else {
-                            VTR_ASSERT(node.type() == IPIN);
-                            indices[IPIN][ix][iy][node.side()].push_back(inode);
-                            indices[OPIN][ix][iy][node.side()].push_back(OPEN);
+                        if (node.ptc_num() >= (int)indices[OPIN][ix][iy][node.side()].size()) {
+                            indices[OPIN][ix][iy][node.side()].resize(node.ptc_num() + 1, OPEN);
                         }
+                        if (node.ptc_num() >= (int)indices[IPIN][ix][iy][node.side()].size()) {
+                            indices[IPIN][ix][iy][node.side()].resize(node.ptc_num() + 1, OPEN);
+                        }
+                        indices[node.type()][ix][iy][node.side()][node.ptc_num()] = inode;
                     }
                 }
             } else if (node.type() == CHANX) {
