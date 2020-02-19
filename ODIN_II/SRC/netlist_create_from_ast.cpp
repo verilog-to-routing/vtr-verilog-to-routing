@@ -1340,7 +1340,7 @@ void create_symbol_table_for_scope(ast_node_t* module_items, sc_hierarchy* local
                         sc_spot = sc_lookup_string(local_symbol_table_sc, temp_string);
                         if (sc_spot == -1) {
                             implicit_declarations = (ast_node_t**)vtr::realloc(implicit_declarations, sizeof(ast_node_t*) * (num_implicit_declarations + 1));
-                            implicit_declarations[0] = module_items->children[i]->children[0]->children[0];
+                            implicit_declarations[num_implicit_declarations] = module_items->children[i]->children[0]->children[0];
                             num_implicit_declarations++;
                         }
                         vtr::free(temp_string);
