@@ -1,3 +1,5 @@
+#ifndef ODIN_TYPES_H
+#define ODIN_TYPES_H
 /*
  *
  * Permission is hereby granted, free of charge, to any person
@@ -21,8 +23,6 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  * OTHER DEALINGS IN THE SOFTWARE.
  */
-#ifndef ODIN_TYPES_H
-#define ODIN_TYPES_H
 
 #include "string_cache.h"
 #include "hierarchy_util.h"
@@ -526,7 +526,14 @@ struct char_list_t {
     int num_strings;
 };
 
+struct ast_t {
+    ast_node_t** top_modules;
+    int top_modules_count;
+};
+
 struct netlist_t {
+    char* identifier;
+
     nnode_t* gnd_node;
     nnode_t* vcc_node;
     nnode_t* pad_node;

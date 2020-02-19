@@ -68,7 +68,7 @@ void update_tree_tag(ast_node_t* node, int high_level_block_type_to_search, int 
 /*---------------------------------------------------------------------------
  * (function: add_tag_data)
  *-------------------------------------------------------------------------*/
-void add_tag_data() {
+void add_tag_data(ast_t* ast) {
     long i;
     high_level_id = -1;
 
@@ -82,12 +82,50 @@ void add_tag_data() {
     }
 
     if (type != NO_ID) {
-        for (i = 0; i < num_modules; i++)
-            update_tree_tag(ast_modules[i], type, -1);
+        for (i = 0; i < ast->top_modules_count; i++)
+            update_tree_tag(ast->top_modules[i], type, -1);
     }
 }
 
 // END HIGH LEVEL TAG
+
+/*---------------------------------------------------------------------------
+ * (function: allocate_ast)
+ *-------------------------------------------------------------------------*/
+ast_t* allocate_ast() {
+    ast_t* new_ast;
+
+    new_ast = (ast_t*)vtr::calloc(1, sizeof(ast_t));
+    oassert(new_ast != NULL);
+
+    new_ast->top_modules = NULL;
+    new_ast->top_modules_count = 0;
+
+    return new_ast;
+}
+
+/*---------------------------------------------------------------------------
+ * (function: free_ast)
+ *-------------------------------------------------------------------------*/
+ast_t* free_ast(ast_t* to_delete) {
+    vtr::free(to_delete);
+    to_delete = NULL;
+    return to_delete;
+}
+
+/*---------------------------------------------------------------------------
+ * (function: add_top_module_to_ast)
+ *-------------------------------------------------------------------------*/
+void add_top_module_to_ast(ast_t* ast, ast_node_t* to_add) {
+    oassert(ast);
+    if (to_add) {
+        ast->top_modules_count += 1;
+        ast->top_modules
+            = (ast_node_t**)vtr::realloc(ast->top_modules, sizeof(ast_node_t*) * ast->top_modules_count);
+
+        ast->top_modules[ast->top_modules_count - 1] = to_add;
+    }
+}
 
 /*---------------------------------------------------------------------------
  * (function: create_node_w_type)

@@ -1,3 +1,5 @@
+#ifndef AST_ELABORATE_H
+#define AST_ELABORATE_H
 /*
  * Permission is hereby granted, free of charge, to any person
  * obtaining a copy of this software and associated documentation
@@ -21,9 +23,9 @@
  * OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef AST_ELABORATE_H
-#define AST_ELABORATE_H
+#include "odin_types.h"
 
+ast_node_t* find_top_module(ast_t* ast);
 int simplify_ast_module(ast_node_t** ast_module, sc_hierarchy* local_ref);
 void create_param_table_for_scope(ast_node_t* module_items, sc_hierarchy* local_ref);
 

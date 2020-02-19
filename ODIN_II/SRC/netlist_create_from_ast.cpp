@@ -69,8 +69,6 @@ char* one_string;
 char* zero_string;
 char* pad_string;
 
-ast_node_t* top_module;
-
 netlist_t* verilog_netlist;
 
 int netlist_create_line_number = -2;
@@ -79,8 +77,6 @@ circuit_type_e type_of_circuit;
 edge_type_e circuit_edge;
 
 /* PROTOTYPES */
-ast_node_t* find_top_module();
-
 void convert_ast_to_netlist_recursing_via_modules(ast_node_t** current_module, char* instance_name, sc_hierarchy* local_ref, int level);
 signal_list_t* netlist_expand_ast_of_module(ast_node_t** node, char* instance_name_prefix, sc_hierarchy* local_ref);
 
@@ -137,7 +133,7 @@ void look_for_clocks(netlist_t* netlist);
 /*---------------------------------------------------------------------------------------------
  * (function: create_netlist)
  *--------------------------------------------------------------------------*/
-void create_netlist() {
+void create_netlist(ast_t* ast) {
     /* just build all the fundamental elements, and then hookup with port definitions...every net has
      * a named net as a variable instance...even modules...the only trick with modules will
      * be instance names.  There are a few implied nets as in Muxes for cases, signals
@@ -158,41 +154,43 @@ void create_netlist() {
     }
 
     /* we will find the top module */
-    top_module = find_top_module();
-    top_module->types.hierarchy->top_node = top_module;
+    ast_node_t* top_module = find_top_module(ast);
+    if (top_module) {
+        top_module->types.hierarchy->top_node = top_module;
 
-    /* Since the modules are in a tree, we will bottom up build the netlist.  Essentially,
-     * we will go to the leafs of the module tree, build them upwards such that when we search for the nets,
-     * we will find them and can hook them up at that point */
+        /* Since the modules are in a tree, we will bottom up build the netlist.  Essentially,
+         * we will go to the leafs of the module tree, build them upwards such that when we search for the nets,
+         * we will find them and can hook them up at that point */
 
-    /* PASS 1 - we make all the nets based on registers defined in modules */
+        /* PASS 1 - we make all the nets based on registers defined in modules */
 
-    /* initialize the string caches that hold the aliasing of module nets and input pins */
-    output_nets_sc = sc_new_string_cache();
-    input_nets_sc = sc_new_string_cache();
-    /* initialize the storage of the top level drivers.  Assigned in create_top_driver_nets */
-    verilog_netlist = allocate_netlist();
+        /* initialize the string caches that hold the aliasing of module nets and input pins */
+        output_nets_sc = sc_new_string_cache();
+        input_nets_sc = sc_new_string_cache();
+        /* initialize the storage of the top level drivers.  Assigned in create_top_driver_nets */
+        verilog_netlist = allocate_netlist();
 
-    sc_hierarchy* top_sc_list = top_module->types.hierarchy;
-    oassert(top_sc_list);
-    top_sc_list->instance_name_prefix = vtr::strdup(top_module->children[0]->types.identifier);
-    top_sc_list->scope_id = vtr::strdup(top_module->children[0]->types.identifier);
+        sc_hierarchy* top_sc_list = top_module->types.hierarchy;
+        oassert(top_sc_list);
+        top_sc_list->instance_name_prefix = vtr::strdup(top_module->children[0]->types.identifier);
+        top_sc_list->scope_id = vtr::strdup(top_module->children[0]->types.identifier);
+        verilog_netlist->identifier = vtr::strdup(top_module->children[0]->types.identifier);
+        /* elaboration */
+        simplify_ast_module(&top_module, top_sc_list);
 
-    /* elaboration */
-    simplify_ast_module(&top_module, top_sc_list);
+        /* now recursively parse the modules by going through the tree of modules starting at top */
+        create_top_driver_nets(top_module, top_sc_list->instance_name_prefix, top_sc_list);
+        init_implicit_memory_index();
+        convert_ast_to_netlist_recursing_via_modules(&top_module, top_sc_list->instance_name_prefix, top_sc_list, 0);
+        free_implicit_memory_index_and_finalize_memories();
+        create_top_output_nodes(top_module, top_sc_list->instance_name_prefix, top_sc_list);
 
-    /* now recursively parse the modules by going through the tree of modules starting at top */
-    create_top_driver_nets(top_module, top_sc_list->instance_name_prefix, top_sc_list);
-    init_implicit_memory_index();
-    convert_ast_to_netlist_recursing_via_modules(&top_module, top_sc_list->instance_name_prefix, top_sc_list, 0);
-    free_implicit_memory_index_and_finalize_memories();
-    create_top_output_nodes(top_module, top_sc_list->instance_name_prefix, top_sc_list);
+        /* clean up string caches */
+        free_sc_hierarchy(top_sc_list);
 
-    /* clean up string caches */
-    free_sc_hierarchy(top_sc_list);
-
-    /* now look for high-level signals */
-    look_for_clocks(verilog_netlist);
+        /* now look for high-level signals */
+        look_for_clocks(verilog_netlist);
+    }
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -206,79 +204,6 @@ void look_for_clocks(netlist_t* netlist) {
             netlist->ff_nodes[i]->input_pins[1]->net->driver_pin->node->type = CLOCK_NODE;
         }
     }
-}
-
-/*---------------------------------------------------------------------------------------------
- * (function: find_top_module)
- * 	Finds the top module based on that it is not called by anyone else
- * 	Assumes there is only one top
- *-------------------------------------------------------------------------------------------*/
-ast_node_t* find_top_module() {
-    long i;
-    long sc_spot;
-    int found_top = -1;
-    long number_of_top_modules = 0;
-
-    /* check for which module wasn't marked as instantiated...this one will be the top */
-    std::string module_name_list("");
-    std::string desired_module("");
-    bool found_desired_module = false;
-
-    if (global_args.top_level_module_name.provenance() == argparse::Provenance::SPECIFIED) {
-        desired_module = global_args.top_level_module_name;
-        printf("Using Top Level Module: %s\n", desired_module.c_str());
-    }
-
-    for (i = 0; i < num_modules; i++) {
-        std::string current_module = "";
-
-        if (ast_modules[i]->children[0]->types.identifier) {
-            current_module = ast_modules[i]->children[0]->types.identifier;
-        }
-
-        if (current_module != "") {
-            if (desired_module != "" && current_module == desired_module) {
-                // append the name
-                module_name_list = std::string("\t") + current_module;
-                found_top = i;
-                found_desired_module = true;
-                number_of_top_modules = 1;
-                break;
-            } else if (!(ast_modules[i]->types.module.is_instantiated)) {
-                /**
-                 * Check to see if the module is a hard block 
-                 * a hard block is never the top level!
-                 * if there is only one module, then this is our top and should not collide 
-                 */
-                if (num_modules == 1
-                    || -1 == (sc_spot = sc_lookup_string(hard_block_names, current_module.c_str()))) {
-                    // append the name
-                    module_name_list += std::string("\t") + current_module;
-
-                    if (number_of_top_modules > 0)
-                        module_name_list += "\n";
-
-                    number_of_top_modules += 1;
-                    found_top = i;
-                }
-            }
-        }
-    }
-
-    /* check atleast one module is top ... and only one */
-    if (!found_desired_module && desired_module != "") {
-        warning_message(NETLIST_ERROR, -1, -1, "Could not find the desired top level module: %s\n", desired_module.c_str());
-    }
-
-    if (number_of_top_modules < 1) {
-        error_message(NETLIST_ERROR, -1, -1, "%s", "Could not find a top level module\n");
-    } else if (number_of_top_modules > 1) {
-        error_message(NETLIST_ERROR, -1, -1, "Found multiple top level modules\n%s", module_name_list.c_str());
-    } else {
-        printf("==========================\nDetected Top Level Module: %s\n==========================\n", module_name_list.c_str());
-    }
-
-    return ast_modules[found_top];
 }
 
 /*---------------------------------------------------------------------------------------------

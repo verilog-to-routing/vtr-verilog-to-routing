@@ -7,13 +7,9 @@
 void parse_to_ast();
 
 /* INITIALISATIONS */
-void init_parser();
+ast_t* init_parser();
 void cleanup_parser();
-
 void cleanup_hard_blocks();
-
-void init_parser_for_file();
-void cleanup_parser_for_file();
 
 /* GENERAL PARSER NODES */
 ast_node_t* newSymbolNode(char* id, int line_number);
