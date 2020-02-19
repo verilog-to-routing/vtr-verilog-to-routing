@@ -1,13 +1,14 @@
 #include "weighted_median_move_generator.h"
 #include "globals.h"
 #include <algorithm>
-//#include "math.h"
-static void get_bb_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* coords, ClusterBlockId block_id);
-bool sort_by_weights(const std::pair<int,float> &a, const std::pair<int,float> &b);
+#include "math.h"
+const int HIGH_FANOUT = 10;
+
+static void get_bb_for_net_excluding_block(ClusterNetId net_id, t_bb* coords, ClusterBlockId block_id);
 
 
 e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float ,
-    std::vector<float>& X_coord, std::vector<float>& Y_coord) {
+    std::vector<int>& X_coord, std::vector<int>& Y_coord) {
     /* Pick a random block to be swapped with another random block.   */
     ClusterBlockId b_from = pick_from_block();
     if (!b_from) {
@@ -25,36 +26,36 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     /* Calculate the median region */
     t_pl_loc to;
 
-    t_bb_cost coords;
+    t_bb coords;
     t_bb limit_coords;
+    X_coord.clear();
+    Y_coord.clear();
 
-    std::vector<std::pair<int,float>> X,Y;
+    //std::vector<std::pair<int,float>> X,Y;
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(b_from)) {
         ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
-        //if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
-        //    continue;
+        if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
+            continue;
+        if(cluster_ctx.clb_nlist.net_pins(net_id).size() >  HIGH_FANOUT)
+            continue;
                 
         get_bb_for_net_excluding_block(net_id, &coords, b_from);
-        X.push_back(coords.xmin);
-        X.push_back(coords.xmax);
-        Y.push_back(coords.ymin);
-        Y.push_back(coords.ymax);
+        X_coord.push_back(coords.xmin);
+        X_coord.push_back(coords.xmax);
+        Y_coord.push_back(coords.ymin);
+        Y_coord.push_back(coords.ymax);
     }
-    std::sort(X.begin(),X.end(), sort_by_weights);
-    std::sort(Y.begin(),Y.end(), sort_by_weights);
+    std::sort(X_coord.begin(),X_coord.end());
+    std::sort(Y_coord.begin(),Y_coord.end());
 
-    VTR_ASSERT(X.size()>0);
-    VTR_ASSERT(Y.size()>0);
+    if((X_coord.size()==0) || (Y_coord.size()==0))
+        return e_create_move::ABORT;
 
-    limit_coords.xmin = X[floor((X.size()-1)/2)].first;
-    limit_coords.xmax = X[floor((X.size()-1)/2)+1].first;
+    limit_coords.xmin = X_coord[floor((X_coord.size()-1)/2)];
+    limit_coords.xmax = X_coord[floor((X_coord.size()-1)/2)+1];
 
-    limit_coords.ymin = Y[floor((Y.size()-1)/2)].first;
-    limit_coords.ymax = Y[floor((Y.size()-1)/2)+1].first;
-
-    VTR_ASSERT(floor((Y.size()-1)/2)+1 < Y.size());
-    VTR_ASSERT(limit_coords.xmin <= limit_coords.xmax);
-    VTR_ASSERT(limit_coords.ymin <= limit_coords.ymax);
+    limit_coords.ymin = Y_coord[floor((Y_coord.size()-1)/2)];
+    limit_coords.ymax = Y_coord[floor((Y_coord.size()-1)/2)+1];
     
     
     if (!find_to_loc_median(cluster_from_type, &limit_coords, from, to)) {
@@ -69,7 +70,7 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
 /* This routine finds the bounding box of a net from scratch excluding   *
  * a specific block. This is very useful in some directed moves.         *
  * It updates coordinates of the bb                                      */
-static void get_bb_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* coords, ClusterBlockId block_id) {
+static void get_bb_for_net_excluding_block(ClusterNetId net_id, t_bb* coords, ClusterBlockId block_id) {
     int pnum, x, y, xmin, xmax, ymin, ymax;
     float xmin_cost,xmax_cost,ymin_cost,ymax_cost;
     xmin=0;
@@ -135,15 +136,8 @@ static void get_bb_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* coord
 
     /* Copy the coordinates and number on edges information into the proper   *
      * structures.                                                            */
-    coords->xmin = std::make_pair(xmin,xmin_cost);
-    coords->xmax = std::make_pair(xmax,xmax_cost);
-    coords->ymin = std::make_pair(ymin,ymin_cost);
-    coords->ymax = std::make_pair(ymax,ymax_cost);
+    coords->xmin = round(xmin*xmin_cost);
+    coords->xmax = round(xmax*xmax_cost);
+    coords->ymin = round(ymin*ymin_cost);
+    coords->ymax = round(ymax*ymax_cost);
 }
-
-
-bool sort_by_weights(const std::pair<int,float> &a, 
-              const std::pair<int,float> &b) 
-{ 
-    return (a.first*a.second < b.first*b.second); 
-} 

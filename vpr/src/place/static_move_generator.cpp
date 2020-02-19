@@ -17,22 +17,23 @@ StaticMoveGenerator::StaticMoveGenerator(const std::vector<float> & prob){
 	move_generator3 = std::make_unique<WeightedMedianMoveGenerator>();
 	avail_moves.push_back(std::move(move_generator3));	
 
-	moves_prob = prob;
+	std::unique_ptr<MoveGenerator> move_generator4;
+	move_generator4 = std::make_unique<WeightedCentroidMoveGenerator>();
+	avail_moves.push_back(std::move(move_generator4));	
+
+	moves_prob.push_back(prob[0]);
+	for(size_t i =1; i < prob.size(); i++){
+		moves_prob.push_back(prob[i]+moves_prob[i-1]);
+	}
 }
 
 
 e_create_move StaticMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim
-	, std::vector<float>& X_coord, std::vector<float>& Y_coord) {
-
-    std::vector<float> accumulated_prob;
-	accumulated_prob.push_back(moves_prob[0]);
-	for(size_t i =1; i < moves_prob.size(); i++){
-		accumulated_prob.push_back(moves_prob[i]+accumulated_prob[i-1]);
-	}
+	, std::vector<int>& X_coord, std::vector<int>& Y_coord) {
 
 	float rand_num = vtr::irand(100);
-	for(size_t i =0; i < accumulated_prob.size(); i++){
-		if(rand_num <= accumulated_prob[i]){
+	for(size_t i =0; i < moves_prob.size(); i++){
+		if(rand_num <= moves_prob[i]){
 			return avail_moves[i]->propose_move(blocks_affected, rlim, X_coord, Y_coord);
 		}
 	}

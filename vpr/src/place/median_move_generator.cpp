@@ -7,7 +7,7 @@ const int HIGH_FANOUT = 10;
 static void get_bb_for_net_excluding_block(ClusterNetId net_id, t_bb* coords, ClusterBlockId block_id);
 
 e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float,
-std::vector<float>& X_coord, std::vector<float>& Y_coord) {
+std::vector<int>& X_coord, std::vector<int>& Y_coord) {
     /* Pick a random block to be swapped with another random block.   */
     ClusterBlockId b_from = pick_from_block();
     if (!b_from) {
@@ -32,7 +32,7 @@ std::vector<float>& X_coord, std::vector<float>& Y_coord) {
         ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
             continue;
-        if(cluster_ctx.clb_nlist.net_pins(net_id).size()<= HIGH_FANOUT)
+        if(cluster_ctx.clb_nlist.net_pins(net_id).size() > HIGH_FANOUT)
             continue;
         get_bb_for_net_excluding_block(net_id, &coords, b_from);
         X_coord.push_back(coords.xmin);
@@ -51,10 +51,6 @@ std::vector<float>& X_coord, std::vector<float>& Y_coord) {
 
     limit_coords.ymin = Y_coord[floor((Y_coord.size()-1)/2)];
     limit_coords.ymax = Y_coord[floor((Y_coord.size()-1)/2)+1];
-
-    VTR_ASSERT(floor((Y_coord.size()-1)/2)+1 < Y_coord.size());
-    VTR_ASSERT(limit_coords.xmin <= limit_coords.xmax);
-    VTR_ASSERT(limit_coords.ymin <= limit_coords.ymax);
     
     
     if (!find_to_loc_median(cluster_from_type, &limit_coords, from, to)) {

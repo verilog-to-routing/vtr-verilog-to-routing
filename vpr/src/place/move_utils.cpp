@@ -675,16 +675,6 @@ bool find_to_loc_median(t_logical_block_type_ptr type,
     /* Find a legal swap to location for the given type, starting from 'from.x' and 'from.y' *
      * The limiting box (limit_coords) is physical coords. This function is like             *
      * find_to_loc_uniform but with limits is a coord box instead of rlim                    */
-    /*
-    VTR_LOG("###: xmin= %d , xmax= %d \n",limit_coords->xmin, limit_coords->xmax);
-    if(limit_coords->xmin == limit_coords->xmax)
-        VTR_LOG("I found the bug: xmin= %d , xmax= %d \n",limit_coords->xmin, limit_coords->xmax);
-
-    VTR_LOG("###: ymin= %d , ymax= %d \n",limit_coords->ymin, limit_coords->ymax);
-    if(limit_coords->ymin == limit_coords->ymax)
-        VTR_LOG("I found the bug: ymin= %d , ymax= %d \n",limit_coords->ymin, limit_coords->ymax);
-
-    */
 
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
 
@@ -760,6 +750,141 @@ bool find_to_loc_median(t_logical_block_type_ptr type,
         //At this point we know y_lower_iter and y_upper_iter
         //bound the range of valid blocks at this x-location, which
         //are within y range
+        std::unordered_set<int> tried_dy;
+        while (!legal && (int)tried_dy.size() < y_range) { //Until legal or all possibilities exhausted
+            //Randomly pick a y location
+            int dy = vtr::irand(y_range - 1);
+
+            //Record this y location as tried
+            auto res2 = tried_dy.insert(dy);
+            if (!res2.second) {
+                continue; //Already tried this position
+            }
+
+            //Key in the y-dimension is the compressed index location
+            cy_to = (y_lower_iter + dy)->first;
+
+            VTR_ASSERT(cy_to >= min_cy);
+            VTR_ASSERT(cy_to <= max_cy);
+
+            if (cx_from == cx_to && cy_from == cy_to) {
+                continue; //Same from/to location -- try again for new y-position
+            } else {
+                legal = true;
+            }
+        }
+    }
+
+    if (!legal) {
+        //No valid position found
+        return false;
+    }
+
+    VTR_ASSERT(cx_to != OPEN);
+    VTR_ASSERT(cy_to != OPEN);
+
+    //Convert to true (uncompressed) grid locations
+    to.x = compressed_block_grid.compressed_to_grid_x[cx_to];
+    to.y = compressed_block_grid.compressed_to_grid_y[cy_to];
+
+    auto& grid = g_vpr_ctx.device().grid;
+
+    auto to_type = grid[to.x][to.y].type;
+
+    //Each x/y location contains only a single type, so we can pick a random
+    //z (capcity) location
+    to.z = vtr::irand(to_type->capacity - 1);
+
+    VTR_ASSERT_MSG(is_tile_compatible(to_type, type), "Type must be compatible");
+    VTR_ASSERT_MSG(grid[to.x][to.y].width_offset == 0, "Should be at block base location");
+    VTR_ASSERT_MSG(grid[to.x][to.y].height_offset == 0, "Should be at block base location");
+
+    return true;
+}
+
+bool find_to_loc_centroid(t_logical_block_type_ptr type,
+                         float rlim,
+                         const t_pl_loc from,
+                         const t_pl_loc centroid,
+                         t_pl_loc& to) {
+    //Finds a legal swap to location for the given type, starting from 'from.x' and 'from.y'
+    //
+    //Note that the range limit (rlim) is applied in a logical sense (i.e. 'compressed' grid space consisting
+    //of the same block types, and not the physical grid space). This means, for example, that columns of 'rare'
+    //blocks (e.g. DSPs/RAMs) which are physically far appart but logically adjacent will be swappable even
+    //at an rlim fo 1.
+    //
+    //This ensures that such blocks don't get locked down too early during placement (as would be the
+    //case with a physical distance rlim)
+
+    //Retrieve the compressed block grid for this block type
+    const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
+
+    //Determine the rlim in each dimension
+    int rlim_x = std::min<int>(compressed_block_grid.compressed_to_grid_x.size(), rlim);
+    int rlim_y = std::min<int>(compressed_block_grid.compressed_to_grid_y.size(), rlim); /* for aspect_ratio != 1 case. */
+
+    //Determine the coordinates in the compressed grid space of the current block
+    int cx_from = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, centroid.x);
+    int cy_from = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_y, centroid.y);
+
+    //Determine the valid compressed grid location ranges
+    int min_cx = std::max(0, cx_from - rlim_x);
+    int max_cx = std::min<int>(compressed_block_grid.compressed_to_grid_x.size() - 1, cx_from + rlim_x);
+    int delta_cx = max_cx - min_cx;
+
+    int min_cy = std::max(0, cy_from - rlim_y);
+    int max_cy = std::min<int>(compressed_block_grid.compressed_to_grid_y.size() - 1, cy_from + rlim_y);
+
+    int cx_to = OPEN;
+    int cy_to = OPEN;
+    std::unordered_set<int> tried_cx_to;
+    bool legal = false;
+    while (!legal && (int)tried_cx_to.size() < delta_cx) { //Until legal or all possibilities exhaused
+        //Pick a random x-location within [min_cx, max_cx],
+        //until we find a legal swap, or have exhuasted all possiblites
+        cx_to = min_cx + vtr::irand(delta_cx);
+
+        VTR_ASSERT(cx_to >= min_cx);
+        VTR_ASSERT(cx_to <= max_cx);
+
+        //Record this x location as tried
+        auto res = tried_cx_to.insert(cx_to);
+        if (!res.second) {
+            continue; //Already tried this position
+        }
+
+        //Pick a random y location
+        //
+        //We are careful here to consider that there may be a sparse
+        //set of candidate blocks in the y-axis at this x location.
+        //
+        //The candidates are stored in a flat_map so we can efficiently find the set of valid
+        //candidates with upper/lower bound.
+        auto y_lower_iter = compressed_block_grid.grid[cx_to].lower_bound(min_cy);
+        if (y_lower_iter == compressed_block_grid.grid[cx_to].end()) {
+            continue;
+        }
+
+        auto y_upper_iter = compressed_block_grid.grid[cx_to].upper_bound(max_cy);
+
+        if (y_lower_iter->first > min_cy) {
+            //No valid blocks at this x location which are within rlim_y
+            //
+            //Fall back to allow the whole y range
+            y_lower_iter = compressed_block_grid.grid[cx_to].begin();
+            y_upper_iter = compressed_block_grid.grid[cx_to].end();
+
+            min_cy = y_lower_iter->first;
+            max_cy = (y_upper_iter - 1)->first;
+        }
+
+        int y_range = std::distance(y_lower_iter, y_upper_iter);
+        VTR_ASSERT(y_range >= 0);
+
+        //At this point we know y_lower_iter and y_upper_iter
+        //bound the range of valid blocks at this x-location, which
+        //are within rlim_y
         std::unordered_set<int> tried_dy;
         while (!legal && (int)tried_dy.size() < y_range) { //Until legal or all possibilities exhausted
             //Randomly pick a y location

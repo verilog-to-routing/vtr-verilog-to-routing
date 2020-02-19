@@ -3,6 +3,7 @@
 #include "move_generator.h"
 #include "median_move_generator.h"
 #include "weighted_median_move_generator.h"
+#include "weighted_centroid_move_generator.h"
 #include "uniform_move_generator.h"
 
 
@@ -14,6 +15,6 @@ private:
 
 public:
 	StaticMoveGenerator(const std::vector<float> & prob);
-    e_create_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float rlim, std::vector<float>& X_coord, std::vector<float>& Y_coord);
+    e_create_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float rlim, std::vector<int>& X_coord, std::vector<int>& Y_coord);
 };
 #endif
