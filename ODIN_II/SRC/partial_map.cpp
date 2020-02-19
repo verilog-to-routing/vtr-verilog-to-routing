@@ -165,7 +165,9 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
             break;
 
         case ADD: {
-            if (node->num_input_port_sizes == 2) {
+            if (node->num_input_port_sizes == 1) {
+                instantiate_buffer(node, traverse_number, netlist);
+            } else {
                 int max_num = (node->input_port_sizes[0] >= node->input_port_sizes[1]) ? node->input_port_sizes[0] : node->input_port_sizes[1];
                 if (hard_adders && max_num >= configuration.min_hard_adder) {
                     // Check if the size of this adder is greater than the hard vs soft logic threshold
@@ -173,27 +175,21 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
                 } else {
                     instantiate_add_w_carry(node, traverse_number, netlist);
                 }
-            } else if (node->num_input_port_sizes == 1) {
-                instantiate_buffer(node, traverse_number, netlist);
-            } else {
-                oassert(false && node->num_input_port_sizes && "Invalid port size, must be 2 or 1");
             }
             break;
         }
         case MINUS: {
-            if (node->num_input_port_sizes == 3) {
+            if (node->num_input_port_sizes == 1) {
+                instantiate_unary_sub(node, traverse_number, netlist);
+            } else if (node->num_input_port_sizes == 2) {
+                instantiate_sub_w_carry(node, traverse_number, netlist);
+            } else {
                 int max_num = (node->input_port_sizes[0] >= node->input_port_sizes[1]) ? node->input_port_sizes[0] : node->input_port_sizes[1];
                 if (hard_adders && max_num >= configuration.min_hard_adder) {
                     instantiate_hard_adder_subtraction(node, traverse_number, netlist);
                 } else {
                     instantiate_add_w_carry(node, traverse_number, netlist);
                 }
-            } else if (node->num_input_port_sizes == 2) {
-                instantiate_sub_w_carry(node, traverse_number, netlist);
-            } else if (node->num_input_port_sizes == 1) {
-                instantiate_unary_sub(node, traverse_number, netlist);
-            } else {
-                oassert(false && node->num_input_port_sizes && "Invalid port size, must be 3, 2 or 1");
             }
             break;
         }
