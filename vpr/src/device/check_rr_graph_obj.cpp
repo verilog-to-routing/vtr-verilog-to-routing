@@ -18,9 +18,10 @@ static bool check_rr_graph_node_duplicated_edges(const RRGraph& rr_graph,
 
     /* Check each input edges */
     for (const auto edge : rr_graph.node_in_edges(node)) {
-        auto result = edge_counter.insert(std::pair<RREdgeId, size_t>(edge, 1));
-        if (false == result.second) {
-            result.first->second++;
+        if (0 < edge_counter.count(edge)) {
+            edge_counter[edge]++;
+        } else {
+            edge_counter[edge] = 1;
         }
     }
 
