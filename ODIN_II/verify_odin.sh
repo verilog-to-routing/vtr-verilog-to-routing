@@ -511,12 +511,6 @@ function populate_arg_from_file() {
 		_simulation_params="${_local_simulation_params} ${_simulation_params}"
 	fi
 
-	if [ "_${#_circuit_list_add[@]}" == "_0" ]
-	then
-		echo "Passed a config file with no circuit to test"
-		_exit_with_code "-1"
-	fi
-
 	for circuit_list_item in "${_circuit_list_add[@]}"
 	do
 		if [ ! -f "${circuit_list_item}" ]
@@ -527,21 +521,27 @@ function populate_arg_from_file() {
 		fi
 	done
 
+	if [ "_${#_circuit_list[*]}" == "_" ]
+	then
+		echo "Passed a config file with no circuit to test"
+		_exit_with_code "-1"
+	fi
 	
-	if [ "_${#_arch_list_add[@]}" == "_0" ]
+
+	for arch_list_item in "${_arch_list_add[@]}"
+	do
+		if [ ! -f "${arch_list_item}" ]
+		then
+			echo "file ${arch_list_item} not found, skipping"
+		else
+			_arch_list+=( "${arch_list_item}" )
+		fi
+	done
+
+	if [ "_${#_arch_list[*]}" == "_" ]
 	then
 		echo "Passed a config file with no architecture, defaulting to no_arch"
 		_arch_list+=( "no_arch" )
-	else
-		for arch_list_item in "${_arch_list_add[@]}"
-		do
-			if [ ! -f "${arch_list_item}" ]
-			then
-				echo "file ${arch_list_item} not found, skipping"
-			else
-				_arch_list+=( "${arch_list_item}" )
-			fi
-		done
 	fi
 
 }
