@@ -192,7 +192,11 @@ void instantiate_simple_soft_multiplier(nnode_t* node, short mark, netlist_t* ne
 
     /* cleanup and map the adders */
     for (long i = 0; i < adder_count; i++) {
-        partial_map_node(adders_for_partial_products[i], mark, netlist);
+        if (mark == -1) {
+            partial_map_node(adders_for_partial_products[i], mark, netlist);
+        } else {
+            add_list = insert_in_vptr_list(add_list, adders_for_partial_products[i]);
+        }
     }
     vtr::free(adders_for_partial_products);
 
