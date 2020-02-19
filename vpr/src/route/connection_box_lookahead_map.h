@@ -50,6 +50,7 @@ typedef std::unordered_map<RoutingCostKey, float, HashRoutingCostKey> RoutingCos
 class CostMap {
   public:
     void set_counts(size_t seg_count, size_t box_count);
+    void build_segment_map();
     int node_to_segment(int from_node_ind) const;
     util::Cost_Entry find_cost(int from_seg_index, ConnectionBoxId box_id, int delta_x, int delta_y) const;
     void set_cost_map(const RoutingCosts& delay_costs, const RoutingCosts& base_costs);
