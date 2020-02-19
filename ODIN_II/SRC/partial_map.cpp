@@ -45,8 +45,6 @@
 void depth_first_traversal_to_partial_map(short marker_value, netlist_t* netlist);
 void depth_first_traverse_partial_map(nnode_t* node, int traverse_mark_number, netlist_t* netlist);
 
-void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist);
-
 void instantiate_not_logic(nnode_t* node, short mark, netlist_t* netlist);
 void instantiate_buffer(nnode_t* node, short mark, netlist_t* netlist);
 void instantiate_bitwise_logic(nnode_t* node, operation_list op, short mark, netlist_t* netlist);
@@ -59,6 +57,7 @@ void instantiate_shift_left_or_right(nnode_t* node, operation_list type, short m
 void instantiate_arithmetic_shift_right(nnode_t* node, short mark, netlist_t* netlist);
 void instantiate_unary_sub(nnode_t* node, short mark, netlist_t* netlist);
 void instantiate_sub_w_carry(nnode_t* node, short mark, netlist_t* netlist);
+void instantiate_add_w_carry(nnode_t* node, short mark, netlist_t* netlist);
 
 void instantiate_soft_logic_ram(nnode_t* node, short mark, netlist_t* netlist);
 
@@ -165,38 +164,39 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
             /* don't need to do anything since this is a reduction */
             break;
 
-        case ADD:
-            if (hard_adders && node->bit_width >= min_threshold_adder) {
-                // Check if the size of this adder is greater than the hard vs soft logic threshold
-                instantiate_hard_adder(node, traverse_number, netlist);
+        case ADD: {
+            if (node->num_input_port_sizes == 2) {
+                int max_num = (node->input_port_sizes[0] >= node->input_port_sizes[1]) ? node->input_port_sizes[0] : node->input_port_sizes[1];
+                if (hard_adders && max_num >= configuration.min_hard_adder) {
+                    // Check if the size of this adder is greater than the hard vs soft logic threshold
+                    instantiate_hard_adder(node, traverse_number, netlist);
+                } else {
+                    instantiate_add_w_carry(node, traverse_number, netlist);
+                }
+            } else if (node->num_input_port_sizes == 1) {
+                instantiate_buffer(node, traverse_number, netlist);
             } else {
-                instantiate_add_w_carry(node, traverse_number, netlist);
+                oassert(false && node->num_input_port_sizes && "Invalid port size, must be 2 or 1");
             }
             break;
-        case MINUS:
-            if (hard_adders) {
-                if (node->num_input_port_sizes == 3) {
-                    int max_num = (node->input_port_sizes[0] >= node->input_port_sizes[1]) ? node->input_port_sizes[0] : node->input_port_sizes[1];
-                    if (max_num >= min_add)
-                        instantiate_hard_adder_subtraction(node, traverse_number, netlist);
-                    else
-                        instantiate_add_w_carry(node, traverse_number, netlist);
-                } else if (node->num_input_port_sizes == 2) {
-                    instantiate_sub_w_carry(node, traverse_number, netlist);
-                } else if (node->num_input_port_sizes == 1) {
-                    instantiate_unary_sub(node, traverse_number, netlist);
-                } else
-                    oassert(false);
+        }
+        case MINUS: {
+            if (node->num_input_port_sizes == 3) {
+                int max_num = (node->input_port_sizes[0] >= node->input_port_sizes[1]) ? node->input_port_sizes[0] : node->input_port_sizes[1];
+                if (hard_adders && max_num >= configuration.min_hard_adder) {
+                    instantiate_hard_adder_subtraction(node, traverse_number, netlist);
+                } else {
+                    instantiate_add_w_carry(node, traverse_number, netlist);
+                }
+            } else if (node->num_input_port_sizes == 2) {
+                instantiate_sub_w_carry(node, traverse_number, netlist);
+            } else if (node->num_input_port_sizes == 1) {
+                instantiate_unary_sub(node, traverse_number, netlist);
             } else {
-                if (node->num_input_port_sizes == 2) {
-                    instantiate_sub_w_carry(node, traverse_number, netlist);
-                } else if (node->num_input_port_sizes == 1) {
-                    instantiate_unary_sub(node, traverse_number, netlist);
-                } else
-                    oassert(false);
+                oassert(false && node->num_input_port_sizes && "Invalid port size, must be 3, 2 or 1");
             }
-
             break;
+        }
         case LOGICAL_EQUAL:
         case NOT_EQUAL:
             instantiate_EQUAL(node, node->type, traverse_number, netlist);
@@ -223,7 +223,7 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
             int mult_size = std::max<int>(node->input_port_sizes[0], node->input_port_sizes[1]);
             if (hard_multipliers && mult_size >= min_mult) {
                 instantiate_hard_multiplier(node, traverse_number, netlist);
-            } else if (!hard_adders) {
+            } else {
                 instantiate_simple_soft_multiplier(node, traverse_number, netlist);
             }
             break;
@@ -570,6 +570,7 @@ void instantiate_add_w_carry(nnode_t* node, short mark, netlist_t* netlist) {
     instantiate_add_w_carry_block(width, node, mark, netlist, 0);
 
     vtr::free(width);
+    free_nnode(node);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -597,6 +598,7 @@ void instantiate_sub_w_carry(nnode_t* node, short mark, netlist_t* netlist) {
     instantiate_add_w_carry_block(width, node, mark, netlist, 1);
 
     vtr::free(width);
+    free_nnode(node);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -605,6 +607,7 @@ void instantiate_sub_w_carry(nnode_t* node, short mark, netlist_t* netlist) {
  *-------------------------------------------------------------------------------------------*/
 void instantiate_unary_sub(nnode_t* node, short mark, netlist_t* netlist) {
     instantiate_sub_w_carry(node, mark, netlist);
+    // node is already freed
 }
 
 /*---------------------------------------------------------------------------------------------

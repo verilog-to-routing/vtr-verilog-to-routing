@@ -49,8 +49,6 @@ extern vtr::t_linked_vptr* add_list;
 extern vtr::t_linked_vptr* chain_list;
 extern vtr::t_linked_vptr* processed_adder_list;
 extern int total;
-extern int min_add;
-extern int min_threshold_adder;
 
 void init_add_distribution();
 void report_add_distribution();

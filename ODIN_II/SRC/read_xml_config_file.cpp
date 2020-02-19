@@ -179,7 +179,6 @@ void set_default_optimization_settings(config_t* config) {
     config->min_hard_adder = 0;
     config->fixed_hard_adder = 0;
     config->split_hard_adder = 1;
-    config->min_threshold_adder = 0;
     return;
 }
 
@@ -244,12 +243,6 @@ void read_optimizations(pugi::xml_node a_node, config_t* config, const pugiutil:
             config->min_hard_adder = atoi(prop);
         } else /* Default: No minimum hard adder size */
             config->min_hard_adder = 0;
-
-        prop = get_attribute(child, "threshold_size", loc_data, OPTIONAL).as_string(NULL);
-        if (prop != NULL) {
-            config->min_threshold_adder = atoi(prop);
-        } else /* Default: No minimum hard adder size */
-            config->min_threshold_adder = 0;
 
         prop = get_attribute(child, "padding", loc_data, OPTIONAL).as_string(NULL);
         if (prop != NULL) {

@@ -375,8 +375,8 @@ void split_adder_for_sub(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int
                 }
 
                 max_num = (lefta >= leftb) ? lefta : leftb;
-                // if fixed_hard_adder = 0, and the left of a and b is more than min_add, then adder need to be remain the same size.
-                if (max_num >= min_add || lefta + leftb == 0)
+                // if fixed_hard_adder = 0, and the left of a and b is more than min_hard_adder, then adder need to be remain the same size.
+                if (max_num >= configuration.min_hard_adder || lefta + leftb == 0)
                     init_split_adder_for_sub(nodeo, node[i], a, sizea, b, sizeb, cin, cout, i, flag);
                 else {
                     // Using soft logic to do the addition, No need to pad as the same size
@@ -608,7 +608,7 @@ void iterate_adders_for_sub(netlist_t* netlist) {
                 b = node->input_port_sizes[0];
             num = (a >= b) ? a : b;
 
-            if (num >= min_threshold_adder) {
+            if (num >= configuration.min_hard_adder) {
                 // how many subtractors base on a can split
                 if ((a + 1) % sizea == 0)
                     counta = (a + offset) / sizea;

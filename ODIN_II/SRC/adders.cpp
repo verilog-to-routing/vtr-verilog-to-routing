@@ -51,8 +51,6 @@ t_linked_vptr* processed_adder_list = NULL;
 t_linked_vptr* chain_list = NULL;
 int total = 0;
 int* adder = NULL;
-int min_add = 0;
-int min_threshold_adder = 0;
 
 netlist_t* the_netlist;
 
@@ -122,8 +120,6 @@ void report_add_distribution() {
 void find_hard_adders() {
     hard_adders = Arch.models;
     //Disable the size in configuration file.(The threshold for the extra bits).
-    //min_add = configuration.min_hard_adder;
-    min_threshold_adder = configuration.min_threshold_adder;
 
     while (hard_adders != NULL) {
         if (strcmp(hard_adders->name, "adder") == 0) {
@@ -384,7 +380,6 @@ void init_split_adder(nnode_t* node, nnode_t* ptr, int a, int sizea, int b, int 
 
     /* Copy properties from original node */
     ptr->type = node->type;
-    ptr->bit_width = node->bit_width;
     ptr->related_ast_node = node->related_ast_node;
     ptr->traverse_visited = node->traverse_visited;
     ptr->node_data = NULL;
@@ -646,8 +641,8 @@ void split_adder(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int cin, in
                 }
 
                 max_num = (lefta >= leftb) ? lefta : leftb;
-                // if fixed_hard_adder = 0, and the left of a and b is more than min_add, then adder need to be remain the same size.
-                if (max_num >= min_add)
+                // if fixed_hard_adder = 0, and the left of a and b is more than min_hard_adder, then adder need to be remain the same size.
+                if (max_num >= configuration.min_hard_adder)
                     init_split_adder(nodeo, node[i], a, sizea, b, sizeb, cin, cout, i, flag, netlist);
                 else {
                     // Using soft logic to do the addition, No need to pad as the same size
@@ -828,8 +823,7 @@ void iterate_adders(netlist_t* netlist) {
         a = node->input_port_sizes[0];
         b = node->input_port_sizes[1];
         num = (a >= b) ? a : b;
-        node->bit_width = num;
-        if (num >= min_threshold_adder && num >= min_add) {
+        if (num >= configuration.min_hard_adder) {
             // if the first cin in a chain is fed by a global input (offset = 0) the adder width is the
             // input width + 1 (to pass the last cout -> sumout) divided by size of the adder input ports
             // otherwise (offset = 1) a dummy adder is added to the chain to feed the first cin with gnd

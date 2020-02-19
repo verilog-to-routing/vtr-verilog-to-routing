@@ -29,15 +29,13 @@ struct config_t {
     int split_memory_depth;
 
     //add by Sen
-    // Threshold from hard to soft logic(extra bits)
-    int min_hard_adder;
+
+    int min_hard_adder; // Threshold from hard to soft logic
     int add_padding; // setting how multipliers are padded to fit fixed size
     // Flag for fixed or variable hard mult (1 or 0)
     int fixed_hard_adder;
     // Flag for splitting hard multipliers If fixed_hard_multiplier is set, this must be 1.
     int split_hard_adder;
-    //  Threshold from hard to soft logic
-    int min_threshold_adder;
     // defines if the first cin of an adder/subtractor is connected to a global gnd/vdd
     // or generated using a dummy adder with both inputs set to gnd/vdd
     bool adder_cin_global;
