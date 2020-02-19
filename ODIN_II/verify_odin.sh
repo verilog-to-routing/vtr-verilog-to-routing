@@ -774,23 +774,18 @@ function sim() {
 			input_blif_file=""
 			
 			case "${circuit_file}" in
-				*.v)
-					input_verilog_file="${circuit}"
-					_synthesis="on"
-				;;
 				*.blif)
 					input_blif_file="${circuit}"
 					# disable synthesis for blif files
 					_synthesis="off"
 				;;
 				*)
+					_synthesis="on"
 					if [ ${_concat_circuit_list} == "on" ]
 					then
 						input_verilog_file="${circuit_list_temp}"
-						_synthesis="on"
 					else
-						echo "Invalid circuit passed in: ${circuit}, skipping"
-						continue
+						input_verilog_file="${circuit}"
 					fi
 				;;
 			esac
@@ -1002,6 +997,12 @@ function run_rtl_reg() {
 	popd
 }
 
+function build_test() {
+	pushd $1
+	make -f task.mk build
+	popd
+}
+
 task_list=()
 vtr_reg_list=()
 rtl_lib_test="off"
@@ -1027,14 +1028,22 @@ function run_suite() {
 					if [ ! -d "${possible_test}" ]
 					then
 						echo "no such Directory for task: ${possible_test}"
-					elif [ -f "${possible_test}/task_list.conf" ]
-					then
-						_TEST_INPUT_LIST=( ${_TEST_INPUT_LIST[@]} $(cat ${possible_test}/task_list.conf) )
-					elif [ -f "${possible_test}/task.conf" ]
-					then
-						task_list=( ${task_list[@]} ${possible_test} )
 					else
-						echo "Invalid Directory for task: ${possible_test}"
+						# build test when necessary
+						if [ -f "${possible_test}/task.mk" ]
+						then
+							build_test "${possible_test}"
+						fi
+
+						if [ -f "${possible_test}/task_list.conf" ]
+						then
+							_TEST_INPUT_LIST=( ${_TEST_INPUT_LIST[@]} $(cat ${possible_test}/task_list.conf) )
+						elif [ -f "${possible_test}/task.conf" ]
+						then
+							task_list=( ${task_list[@]} ${possible_test} )
+						else
+							echo "Invalid Directory for task: ${possible_test}"
+						fi
 					fi
 				done
 				;;
