@@ -110,17 +110,8 @@ static vtr::Point<T> closest_point_in_rect(const vtr::Rect<T>& r, const vtr::Poi
     }
 }
 
-// resize internal data structures
-void CostMap::set_counts(size_t seg_count, size_t box_count) {
-    cost_map_.clear();
-    offset_.clear();
-    penalty_.clear();
-    cost_map_.resize({seg_count, box_count});
-    offset_.resize({seg_count, box_count});
-    penalty_.resize({seg_count, box_count});
-    seg_count_ = seg_count;
-    box_count_ = box_count;
-
+// build the segment map
+void CostMap::build_segment_map() {
     const auto& device_ctx = g_vpr_ctx.device();
     segment_map_.resize(device_ctx.rr_nodes.size());
     for (size_t i = 0; i < segment_map_.size(); ++i) {
@@ -131,6 +122,18 @@ void CostMap::set_counts(size_t seg_count, size_t box_count) {
 
         segment_map_[i] = from_seg_index;
     }
+}
+
+// resize internal data structures
+void CostMap::set_counts(size_t seg_count, size_t box_count) {
+    cost_map_.clear();
+    offset_.clear();
+    penalty_.clear();
+    cost_map_.resize({seg_count, box_count});
+    offset_.resize({seg_count, box_count});
+    penalty_.resize({seg_count, box_count});
+    seg_count_ = seg_count;
+    box_count_ = box_count;
 }
 
 // cached node -> segment map
@@ -638,6 +641,7 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
     auto& device_ctx = g_vpr_ctx.device();
     cost_map_.set_counts(segment_inf.size(),
                          device_ctx.connection_boxes.num_connection_box_types());
+    cost_map_.build_segment_map();
 
     VTR_ASSERT(REPRESENTATIVE_ENTRY_METHOD == util::SMALLEST);
     RoutingCosts all_delay_costs;
@@ -1053,22 +1057,13 @@ static void FromFloat(VprFloatEntry::Builder* out, const float& in) {
 }
 
 void CostMap::read(const std::string& file) {
+    build_segment_map();
     MmapFile f(file);
 
     ::capnp::ReaderOptions opts = default_large_capnp_opts();
     ::capnp::FlatArrayMessageReader reader(f.getData(), opts);
 
     auto cost_map = reader.getRoot<VprCostMap>();
-
-    {
-        const auto& segment_map = cost_map.getSegmentMap();
-        segment_map_.resize(segment_map.size());
-        auto dst_iter = segment_map_.begin();
-        for (const auto& src : segment_map) {
-            *dst_iter++ = src;
-        }
-    }
-
     {
         const auto& offset = cost_map.getOffset();
         ToNdMatrix<2, VprVector2D, std::pair<int, int>>(
@@ -1092,13 +1087,6 @@ void CostMap::write(const std::string& file) const {
     ::capnp::MallocMessageBuilder builder;
 
     auto cost_map = builder.initRoot<VprCostMap>();
-
-    {
-        auto segment_map = cost_map.initSegmentMap(segment_map_.size());
-        for (size_t i = 0; i < segment_map_.size(); ++i) {
-            segment_map.set(i, segment_map_[i]);
-        }
-    }
 
     {
         auto offset = cost_map.initOffset();
