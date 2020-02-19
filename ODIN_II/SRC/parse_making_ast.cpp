@@ -1464,94 +1464,89 @@ ast_node_t* newIntegerTypeVarDeclare(char* symbol, ast_node_t* /*expression1*/, 
  * (function: newModule)
  *-------------------------------------------------------------------------------------------*/
 ast_node_t* newModule(char* module_name, ast_node_t* list_of_parameters, ast_node_t* list_of_ports, ast_node_t* list_of_module_items, int line_number) {
+    ast_node_t* new_node = NULL;
+    long sc_spot = sc_lookup_string(hard_block_names, module_name);
+
     if (!is_valid_identifier(module_name)) {
-        error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", module_name);
-    }
-
-    int i;
-    long j, k;
-    long sc_spot;
-    ast_node_t* symbol_node = newSymbolNode(module_name, line_number);
-
-    if (sc_lookup_string(hard_block_names, module_name) != -1
-        || !strcmp(module_name, SINGLE_PORT_RAM_string)
-        || !strcmp(module_name, DUAL_PORT_RAM_string)) {
+        error_message(PARSE_ERROR, line_number, current_parse_file,
+                      "Invalid character in identifier (%s)\n",
+                      module_name);
+    } else if (sc_spot != -1
+               || !strcmp(module_name, SINGLE_PORT_RAM_string)
+               || !strcmp(module_name, DUAL_PORT_RAM_string)) {
         error_message(PARSE_ERROR, line_number, current_parse_file,
                       "Module name collides with hard block of the same name (%s)\n", module_name);
-    }
-
-    /* create a node for this array reference */
-    ast_node_t* new_node = create_node_w_type(MODULE, line_number, current_parse_file);
-
-    /* mark all the ports symbols as ports */
-    if (list_of_ports == NULL) {
+    } else if (list_of_ports == NULL) {
         warning_message(PARSE_ERROR, line_number, current_parse_file,
                         "there are no ports for the module (%s), all logic will be dropped since it is not driving an output\n",
                         module_name);
-    }
+    } else {
+        /* create a node for this array reference */
+        new_node = create_node_w_type(MODULE, line_number, current_parse_file);
+        ast_node_t* symbol_node = newSymbolNode(module_name, line_number);
+        /* mark all the ports symbols as ports */
+        ast_node_t* port_declarations = resolve_ports(MODULE, list_of_ports);
 
-    ast_node_t* port_declarations = resolve_ports(MODULE, list_of_ports);
-
-    /* ports are expected to be in module items */
-    if (port_declarations) {
-        add_child_to_node_at_index(list_of_module_items, port_declarations, 0);
-    }
-
-    /* parameters don't live in the AST */
-    if (list_of_parameters) {
-        for (i = 0; i < list_of_parameters->num_children; i++) {
-            list_of_parameters->children[i]->children[5] = NULL;
+        /* ports are expected to be in module items */
+        if (port_declarations) {
+            add_child_to_node_at_index(list_of_module_items, port_declarations, 0);
         }
-        free_whole_tree(list_of_parameters);
-    }
 
-    /* allocate child nodes to this node */
-    allocate_children_to_node(new_node, {symbol_node, list_of_ports, list_of_module_items});
+        /* parameters don't live in the AST */
+        if (list_of_parameters) {
+            for (long i = 0; i < list_of_parameters->num_children; i++) {
+                list_of_parameters->children[i]->children[5] = NULL;
+            }
+            free_whole_tree(list_of_parameters);
+        }
 
-    /* check if this module has been instantiated */
-    if (new_node->types.module.is_instantiated == false) {
-        new_node->types.module.is_instantiated = (sc_lookup_string(instantiated_modules, module_name) != -1);
-    }
-    new_node->types.scope = pop_scope();
+        /* allocate child nodes to this node */
+        allocate_children_to_node(new_node, {symbol_node, list_of_ports, list_of_module_items});
 
-    new_node->types.function.function_instantiations_instance = function_instantiations_instance_by_module;
-    new_node->types.function.size_function_instantiations = size_function_instantiations_by_module;
-    new_node->types.function.is_instantiated = false;
+        /* check if this module has been instantiated */
+        if (new_node->types.module.is_instantiated == false) {
+            new_node->types.module.is_instantiated = (sc_lookup_string(instantiated_modules, module_name) != -1);
+        }
+        new_node->types.scope = pop_scope();
 
-    new_node->types.task.task_instantiations_instance = task_instantiations_instance_by_module;
-    new_node->types.task.size_task_instantiations = size_task_instantiations_by_module;
-    new_node->types.task.is_instantiated = false;
+        new_node->types.function.function_instantiations_instance = function_instantiations_instance_by_module;
+        new_node->types.function.size_function_instantiations = size_function_instantiations_by_module;
+        new_node->types.function.is_instantiated = false;
 
-    /* record this module in the list of modules (for evaluation later in terms of just nodes) */
-    add_top_module_to_ast(verilog_ast, new_node);
-    for (i = 0; i < size_module_variables_not_defined; i++) {
-        short variable_found = false;
-        for (j = 0; j < list_of_module_items->num_children && variable_found == false; j++) {
-            if (list_of_module_items->children[j]->type == VAR_DECLARE_LIST) {
-                for (k = 0; k < list_of_module_items->children[j]->num_children; k++) {
-                    if (strcmp(list_of_module_items->children[j]->children[k]->children[0]->types.identifier, module_variables_not_defined[i]->children[0]->children[0]->types.identifier) == 0)
-                        variable_found = true;
+        new_node->types.task.task_instantiations_instance = task_instantiations_instance_by_module;
+        new_node->types.task.size_task_instantiations = size_task_instantiations_by_module;
+        new_node->types.task.is_instantiated = false;
+
+        /* record this module in the list of modules (for evaluation later in terms of just nodes) */
+        add_top_module_to_ast(verilog_ast, new_node);
+        for (long i = 0; i < size_module_variables_not_defined; i++) {
+            short variable_found = false;
+            for (long j = 0; j < list_of_module_items->num_children && variable_found == false; j++) {
+                if (list_of_module_items->children[j]->type == VAR_DECLARE_LIST) {
+                    for (long k = 0; k < list_of_module_items->children[j]->num_children; k++) {
+                        if (strcmp(list_of_module_items->children[j]->children[k]->children[0]->types.identifier, module_variables_not_defined[i]->children[0]->children[0]->types.identifier) == 0)
+                            variable_found = true;
+                    }
                 }
             }
+            if (!variable_found)
+                add_child_to_node_at_index(list_of_module_items, module_variables_not_defined[i], 0);
+            else
+                free_whole_tree(module_variables_not_defined[i]);
         }
-        if (!variable_found)
-            add_child_to_node_at_index(list_of_module_items, module_variables_not_defined[i], 0);
-        else
-            free_whole_tree(module_variables_not_defined[i]);
+
+        /* clean up */
+        vtr::free(module_variables_not_defined);
+        sc_spot = sc_add_string(module_names_to_idx, module_name);
+        if (module_names_to_idx->data[sc_spot] != NULL) {
+            error_message(PARSE_ERROR, line_number, current_parse_file, "module names with the same name -> %s\n", module_name);
+        }
+        /* store the data which is an idx here */
+        module_names_to_idx->data[sc_spot] = (void*)new_node;
+
+        /* now that we've bottom up built the parse tree for this module, go to the next module */
+        next_module();
     }
-
-    /* clean up */
-    vtr::free(module_variables_not_defined);
-    sc_spot = sc_add_string(module_names_to_idx, module_name);
-    if (module_names_to_idx->data[sc_spot] != NULL) {
-        error_message(PARSE_ERROR, line_number, current_parse_file, "module names with the same name -> %s\n", module_name);
-    }
-    /* store the data which is an idx here */
-    module_names_to_idx->data[sc_spot] = (void*)new_node;
-
-    /* now that we've bottom up built the parse tree for this module, go to the next module */
-    next_module();
-
     return new_node;
 }
 
