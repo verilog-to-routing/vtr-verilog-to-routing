@@ -24,5 +24,5 @@ echo $PWD
 pwd
 pwd -L
 pwd -P
-export VPR_NUM_WORKERS=$MAX_CORES
+export VPR_NUM_WORKERS=1
 ./run_reg_test.pl $VTR_TEST -show_failures -j$NUM_CORES
