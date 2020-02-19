@@ -46,6 +46,11 @@ void chunk_delete(T* obj, t_chunk* /*chunk_info*/) {
 //Cross platform wrapper around GNU's malloc_trim()
 // TODO: This is only used in one place within VPR, consider removing it
 int malloc_trim(size_t pad);
+
+// This is a macro because it has to be.  rw and locality must be constants,
+// not just constexpr.
+#define VTR_PREFETCH(addr, rw, locality) __builtin_prefetch(addr, rw, locality)
+
 } // namespace vtr
 
 #endif

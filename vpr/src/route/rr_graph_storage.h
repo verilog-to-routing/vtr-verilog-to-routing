@@ -6,6 +6,7 @@
 #include "rr_node_fwd.h"
 #include "rr_graph2.h"
 #include "vtr_log.h"
+#include "vtr_memory.h"
 #include "vpr_utils.h"
 
 /* Main structure describing one routing resource node.  Everything in       *
@@ -217,7 +218,7 @@ class t_rr_graph_storage {
     short node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
 
     inline void prefetch_node(RRNodeId id) const {
-        __builtin_prefetch(&storage_[id], 0, 0);
+        VTR_PREFETCH(&storage_[id], 0, 0);
     }
 
     /****************
