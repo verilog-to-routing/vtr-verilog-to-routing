@@ -283,6 +283,7 @@ struct RoutingContext : public Context {
 
     vtr::vector<ClusterNetId, std::vector<int>> net_rr_terminals; /* [0..num_nets-1][0..num_pins-1] */
     std::unordered_map<int, ClusterBlockId> rr_net_map;
+    vtr::vector<ClusterNetId, uint8_t> is_clock_net; /* [0..num_nets-1] */
 
     vtr::vector<ClusterBlockId, std::vector<int>> rr_blk_source; /* [0..num_blocks-1][0..num_class-1] */
 
