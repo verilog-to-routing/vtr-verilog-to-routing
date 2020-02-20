@@ -49,6 +49,9 @@ int malloc_trim(size_t pad);
 
 // This is a macro because it has to be.  rw and locality must be constants,
 // not just constexpr.
+//
+// This generates a prefetch instruction on all architectures that include it.
+// This is all modern x86 and ARM64 platforms.
 #define VTR_PREFETCH(addr, rw, locality) __builtin_prefetch(addr, rw, locality)
 
 } // namespace vtr

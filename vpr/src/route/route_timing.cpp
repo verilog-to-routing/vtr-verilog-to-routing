@@ -1973,6 +1973,24 @@ void Router::timing_driven_expand_neighbours(t_heap* current,
     RREdgeId first_edge = rr_nodes_->first_edge(from_node);
     RREdgeId last_edge = rr_nodes_->last_edge(from_node);
     int num_edges = size_t(last_edge) - size_t(first_edge);
+
+    // This is a simple prefetch that prefetches:
+    //  - RR node data reachable from this node
+    //  - rr switch data to reach those nodes from this node.
+    //
+    // This code will be a NOP on compiler targets that do not have a
+    // builtin to emit prefetch instructions.
+    //
+    // This code will be a NOP on CPU targets that lack prefetch instructions.
+    // All modern x86 and ARM64 platforms provide prefetch instructions.
+    //
+    // This code delivers ~6-8% reduction in wallclock time when running Titan
+    // benchmarks, and was specifically measured against the gsm_switch and
+    // directrf vtr_reg_weekly running in high effort.
+    //
+    //  - directrf_stratixiv_arch_timing.blif
+    //  - gsm_switch_stratixiv_arch_timing.blif
+    //
     for (int iconn = 0; iconn < num_edges; iconn++) {
         RREdgeId from_edge(size_t(first_edge) + iconn);
 
