@@ -28,6 +28,7 @@
 #include "read_xml_arch_file.h"
 #include "draw.h"
 #include "echo_files.h"
+#include "atom_netlist_utils.h"
 
 #include "route_profiling.h"
 
@@ -106,6 +107,7 @@ static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub, float pres_f
 bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes);
 static bool validate_trace_nodes(t_trace* head, const std::unordered_set<int>& trace_nodes);
 static float get_single_rr_cong_cost(int inode);
+static vtr::vector<ClusterNetId, uint8_t> load_is_clock_net();
 
 /************************** Subroutine definitions ***************************/
 
@@ -502,6 +504,7 @@ void init_route_structs(int bb_factor) {
 
     //Various look-ups
     route_ctx.net_rr_terminals = load_net_rr_terminals(device_ctx.rr_node_indices, &route_ctx.rr_net_map);
+    route_ctx.is_clock_net = load_is_clock_net();
     route_ctx.route_bb = load_route_bb(bb_factor);
     route_ctx.rr_blk_source = load_rr_clb_sources(device_ctx.rr_node_indices);
     route_ctx.clb_opins_used_locally = alloc_and_load_clb_opins_used_locally();
@@ -1129,15 +1132,63 @@ static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t
     return rr_blk_source;
 }
 
+static vtr::vector<ClusterNetId, uint8_t> load_is_clock_net() {
+    vtr::vector<ClusterNetId, uint8_t> is_clock_net;
+
+    auto& atom_ctx = g_vpr_ctx.atom();
+    std::set<AtomNetId> clock_nets = find_netlist_physical_clock_nets(atom_ctx.nlist);
+
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto nets = cluster_ctx.clb_nlist.nets();
+
+    is_clock_net.resize(nets.size());
+    for (auto net_id : nets) {
+        is_clock_net[net_id] = clock_nets.find(atom_ctx.lookup.atom_net(net_id)) != clock_nets.end();
+    }
+
+    return is_clock_net;
+}
+
 vtr::vector<ClusterNetId, t_bb> load_route_bb(int bb_factor) {
     vtr::vector<ClusterNetId, t_bb> route_bb;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.routing();
+
+    t_bb full_device_bounding_box;
+    {
+        auto& device_ctx = g_vpr_ctx.device();
+        full_device_bounding_box.xmin = 0;
+        full_device_bounding_box.ymin = 0;
+        full_device_bounding_box.xmax = device_ctx.grid.width() - 1;
+        full_device_bounding_box.ymax = device_ctx.grid.height() - 1;
+    }
 
     auto nets = cluster_ctx.clb_nlist.nets();
     route_bb.resize(nets.size());
     for (auto net_id : nets) {
-        route_bb[net_id] = load_net_route_bb(net_id, bb_factor);
+        if (!route_ctx.is_clock_net[net_id]) {
+            route_bb[net_id] = load_net_route_bb(net_id, bb_factor);
+        } else {
+            // Clocks should use a bounding box that includes the entire
+            // fabric. This is because when a clock spine extends from a global
+            // buffer point to the net target, the default bounding box
+            // behavior may prevent the router from finding a path using the
+            // clock network. This is not catastrophic if the only path to the
+            // clock sink is via the clock network, because eventually the
+            // heap will empty and the router will use the full part bounding
+            // box anyways.
+            //
+            // However if there exists path that goes from the clock network
+            // to the general interconnect and back, without leaving the
+            // bounding box, the router will find it.  This could be a very
+            // suboptimal route.
+            //
+            // It is safe to use the full device bounding box on clock nets
+            // because clock networks tend to be specialized and have low
+            // density.
+            route_bb[net_id] = full_device_bounding_box;
+        }
     }
     return route_bb;
 }
