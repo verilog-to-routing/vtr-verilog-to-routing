@@ -1007,7 +1007,19 @@ bool timing_driven_route_net(ClusterNetId net_id,
     for (int ipin : remaining_targets) {
         if (timing_info) {
             auto clb_pin = cluster_ctx.clb_nlist.net_pin(net_id, ipin);
-            pin_criticality[ipin] = calculate_clb_net_pin_criticality(*timing_info, netlist_pin_lookup, clb_pin);
+            if (!route_ctx.is_clock_net[net_id]) {
+                pin_criticality[ipin] = calculate_clb_net_pin_criticality(*timing_info, netlist_pin_lookup, clb_pin);
+            } else {
+                // Use max_criticality for clock nets.
+                // calculate_clb_net_pin_criticality likely doesn't generate
+                // good values for clock nets.
+                //
+                // This will cause them to use min delay paths rather than
+                // avoid congestion. As a future enchancement, the clock nets
+                // should likely route for min slew, but that is a larger
+                // change.
+                pin_criticality[ipin] = router_opts.max_criticality;
+            }
 
             /* Pin criticality is between 0 and 1.
              * Shift it downwards by 1 - max_criticality (max_criticality is 0.99 by default,
@@ -1261,11 +1273,12 @@ static bool timing_driven_route_sink(ClusterNetId net_id,
     bool high_fanout = is_high_fanout(cluster_ctx.clb_nlist.net_sinks(net_id).size(), high_fanout_threshold);
     constexpr float HIGH_FANOUT_CRITICALITY_THRESHOLD = 0.9;
     bool sink_critical = (cost_params.criticality > HIGH_FANOUT_CRITICALITY_THRESHOLD);
+    bool net_is_clock = route_ctx.is_clock_net[net_id] != 0;
 
     //We normally route high fanout nets by only adding spatially close-by routing to the heap (reduces run-time).
     //However, if the current sink is 'critical' from a timing perspective, we put the entire route tree back onto
     //the heap to ensure it has more flexibility to find the best path.
-    if (high_fanout && !sink_critical && !net_is_global) {
+    if (high_fanout && !sink_critical && !net_is_global && !net_is_clock) {
         cheapest = timing_driven_route_connection_from_route_tree_high_fanout(rt_root,
                                                                               sink_node,
                                                                               cost_params,
