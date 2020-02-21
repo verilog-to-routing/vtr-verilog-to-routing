@@ -14,6 +14,15 @@
 
 int get_max_pins_per_net();
 
+// This class encapsolates the timing driven connection router.
+//
+// In particular, this class routes from some initial set of sources to a
+// particular sink.
+//
+// When the ConnectionRouter is used, it mutates the provided
+// rr_node_route_inf.  The routed path can be found by tracing from the sink
+// node (which is returned) through the rr_node_route_inf.  See
+// update_traceback as an example of this tracing.
 class ConnectionRouter {
   public:
     ConnectionRouter(
@@ -28,14 +37,24 @@ class ConnectionRouter {
         , rr_switch_inf_(rr_switch_inf.data())
         , rr_node_route_inf_(rr_node_route_inf.data()) {}
 
+    // Clear's the modified list.  Should be called after reset_path_costs
+    // have been called.
     void clear_modified_rr_node_info() {
         modified_rr_node_inf_.clear();
     }
 
+    // Reset modified data in rr_node_route_inf based on modified_rr_node_inf.
     void reset_path_costs() {
         ::reset_path_costs(modified_rr_node_inf_);
     }
 
+    // Finds a path from the route tree rooted at rt_root to sink_node
+    //
+    // This is used when you want to allow previous routing of the same net to
+    // serve as valid start locations for the current connection.
+    //
+    // Returns either the last element of the path, or nullptr if no path is
+    // found
     t_heap* timing_driven_route_connection_from_route_tree(
         t_rt_node* rt_root,
         int sink_node,
@@ -43,6 +62,11 @@ class ConnectionRouter {
         t_bb bounding_box,
         RouterStats& router_stats);
 
+    // Finds a path from the route tree rooted at rt_root to sink_node for a
+    // high fanout net.
+    //
+    // Unlike timing_driven_route_connection_from_route_tree(), only part of
+    // the route tree which is spatially close to the sink is added to the heap.
     t_heap* timing_driven_route_connection_from_route_tree_high_fanout(
         t_rt_node* rt_root,
         int sink_node,
@@ -51,6 +75,10 @@ class ConnectionRouter {
         const SpatialRouteTreeLookup& spatial_rt_lookup,
         RouterStats& router_stats);
 
+    // Finds a path from the route tree rooted at rt_root to all sinks
+    // available.
+    //
+    // Each element of the returned vector is a reachable sink.
     std::vector<t_heap> timing_driven_find_all_shortest_paths_from_route_tree(
         t_rt_node* rt_root,
         const t_conn_cost_params cost_params,
@@ -58,12 +86,15 @@ class ConnectionRouter {
         RouterStats& router_stats);
 
   private:
+    // Mark that inode has been modified, and needs to be reset in
+    // reset_path_costs.
     void add_to_mod_list(int inode) {
         if (std::isinf(rr_node_route_inf_[inode].path_cost)) {
             modified_rr_node_inf_.push_back(inode);
         }
     }
 
+    // Update the route path to the node pointed to by cheapest.
     inline void update_cheapest(t_heap* cheapest) {
         update_cheapest(cheapest, &rr_node_route_inf_[cheapest->index]);
     }
@@ -78,20 +109,34 @@ class ConnectionRouter {
         route_inf->backward_path_cost = cheapest->backward_path_cost;
     }
 
+    // Common logic from timing_driven_route_connection_from_route_tree and
+    // timing_driven_route_connection_from_route_tree_high_fanout for running
+    // connection router.
     t_heap* timing_driven_route_connection_from_route_tree(
         t_rt_node* rt_root,
         int sink_node,
         const t_conn_cost_params cost_params,
         t_bb bounding_box);
+
+    // Finds a path to sink_node, starting from the elements currently in the
+    // heap.
+    //
+    // This is the core maze routing routine.
+    //
+    // Returns either the last element of the path, or nullptr if no path is
+    // found
     t_heap* timing_driven_route_connection_from_heap(
         int sink_node,
         const t_conn_cost_params cost_params,
         t_bb bounding_box);
+
+    // Expand this current node if it is the cheapest path to this node.
     void timing_driven_expand_cheapest(
         t_heap* cheapest,
         int target_node,
         const t_conn_cost_params cost_params,
         t_bb bounding_box);
+
     void timing_driven_expand_neighbours(
         t_heap* current,
         const t_conn_cost_params cost_params,

@@ -1441,8 +1441,8 @@ t_heap* ConnectionRouter::timing_driven_route_connection_from_route_tree_high_fa
 //
 //Returns either the last element of the path, or nullptr if no path is found
 t_heap* ConnectionRouter::timing_driven_route_connection_from_heap(int sink_node,
-                                                         const t_conn_cost_params cost_params,
-                                                         t_bb bounding_box) {
+                                                                   const t_conn_cost_params cost_params,
+                                                                   t_bb bounding_box) {
     VTR_ASSERT_SAFE(heap_::is_valid());
 
     if (is_empty_heap()) { //No source
@@ -1578,9 +1578,9 @@ std::vector<t_heap> ConnectionRouter::timing_driven_find_all_shortest_paths_from
 }
 
 void ConnectionRouter::timing_driven_expand_cheapest(t_heap* cheapest,
-                                           int target_node,
-                                           const t_conn_cost_params cost_params,
-                                           t_bb bounding_box) {
+                                                     int target_node,
+                                                     const t_conn_cost_params cost_params,
+                                                     t_bb bounding_box) {
     int inode = cheapest->index;
 
     t_rr_node_route_inf* route_inf = &rr_node_route_inf_[inode];
@@ -1953,9 +1953,9 @@ static void add_route_tree_node_to_heap(t_rt_node* rt_node,
 }
 
 void ConnectionRouter::timing_driven_expand_neighbours(t_heap* current,
-                                             const t_conn_cost_params cost_params,
-                                             t_bb bounding_box,
-                                             int target_node) {
+                                                       const t_conn_cost_params cost_params,
+                                                       t_bb bounding_box,
+                                                       int target_node) {
     /* Puts all the rr_nodes adjacent to current on the heap.
      */
 
@@ -2020,14 +2020,14 @@ void ConnectionRouter::timing_driven_expand_neighbours(t_heap* current,
 //RR nodes outside the expanded bounding box specified in bounding_box are not added
 //to the heap.
 void ConnectionRouter::timing_driven_expand_neighbour(t_heap* current,
-                                            const int from_node,
-                                            const RREdgeId from_edge,
-                                            const t_edge_size from_edge_int,
-                                            const int to_node_int,
-                                            const t_conn_cost_params cost_params,
-                                            const t_bb bounding_box,
-                                            int target_node,
-                                            const t_bb target_bb) {
+                                                      const int from_node,
+                                                      const RREdgeId from_edge,
+                                                      const t_edge_size from_edge_int,
+                                                      const int to_node_int,
+                                                      const t_conn_cost_params cost_params,
+                                                      const t_bb bounding_box,
+                                                      int target_node,
+                                                      const t_bb target_bb) {
     RRNodeId to_node(to_node_int);
     int to_xlow = rr_nodes_->node_xlow(to_node);
     int to_ylow = rr_nodes_->node_ylow(to_node);
@@ -2087,12 +2087,12 @@ void ConnectionRouter::timing_driven_expand_neighbour(t_heap* current,
 
 //Add to_node to the heap, and also add any nodes which are connected by non-configurable edges
 void ConnectionRouter::timing_driven_add_to_heap(const t_conn_cost_params cost_params,
-                                       const t_heap* current,
-                                       const int from_node,
-                                       const int to_node,
-                                       const RREdgeId from_edge,
-                                       const int iconn,
-                                       const int target_node) {
+                                                 const t_heap* current,
+                                                 const int from_node,
+                                                 const int to_node,
+                                                 const RREdgeId from_edge,
+                                                 const int iconn,
+                                                 const int target_node) {
     t_heap next;
 
     //Costs initialized to current
@@ -2138,11 +2138,11 @@ void ConnectionRouter::timing_driven_add_to_heap(const t_conn_cost_params cost_p
 
 //Calculates the cost of reaching to_node
 void ConnectionRouter::evaluate_timing_driven_node_costs(t_heap* to,
-                                               const t_conn_cost_params cost_params,
-                                               const int from_node,
-                                               const int to_node,
-                                               const RREdgeId from_edge,
-                                               const int target_node) {
+                                                         const t_conn_cost_params cost_params,
+                                                         const int from_node,
+                                                         const int to_node,
+                                                         const RREdgeId from_edge,
+                                                         const int target_node) {
     /* new_costs.backward_cost: is the "known" part of the cost to this node -- the
      * congestion cost of all the routing resources back to the existing route
      * plus the known delay of the total path back to the source.
