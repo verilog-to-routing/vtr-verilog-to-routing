@@ -13,7 +13,7 @@ class RouterDelayProfiler {
 
   private:
     RouterStats router_stats_;
-    Router router_;
+    ConnectionRouter router_;
 };
 
 std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const t_router_opts& router_opts);

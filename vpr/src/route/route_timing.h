@@ -14,9 +14,9 @@
 
 int get_max_pins_per_net();
 
-class Router {
+class ConnectionRouter {
   public:
-    Router(
+    ConnectionRouter(
         const RouterLookahead& router_lookahead,
         const t_rr_graph_storage& rr_nodes,
         const std::vector<t_rr_rc_data>& rr_rc_data,
@@ -144,7 +144,7 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
                              std::shared_ptr<RoutingDelayCalculator> delay_calc,
                              ScreenUpdatePriority first_iteration_priority);
 
-bool try_timing_driven_route_net(Router& router,
+bool try_timing_driven_route_net(ConnectionRouter& router,
                                  ClusterNetId net_id,
                                  int itry,
                                  float pres_fac,
@@ -159,7 +159,7 @@ bool try_timing_driven_route_net(Router& router,
                                  route_budgets& budgeting_inf,
                                  bool& was_rerouted);
 
-bool timing_driven_route_net(Router& router,
+bool timing_driven_route_net(ConnectionRouter& router,
                              ClusterNetId net_id,
                              int itry,
                              float pres_fac,

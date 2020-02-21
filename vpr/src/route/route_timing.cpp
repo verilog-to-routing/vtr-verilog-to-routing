@@ -137,7 +137,7 @@ bool f_router_debug = false;
 static void empty_heap_annotating_node_route_inf(std::vector<int>& modified_rr_node_inf);
 
 static bool timing_driven_route_sink(
-    Router& router,
+    ConnectionRouter& router,
     ClusterNetId net_id,
     unsigned itarget,
     int target_pin,
@@ -150,7 +150,7 @@ static bool timing_driven_route_sink(
     RouterStats& router_stats);
 
 static bool timing_driven_pre_route_to_clock_root(
-    Router& router,
+    ConnectionRouter& router,
     ClusterNetId net_id,
     int sink_node,
     const t_conn_cost_params cost_params,
@@ -353,7 +353,7 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
     std::vector<int> scratch;
 
     const auto& device_ctx = g_vpr_ctx.device();
-    Router router(
+    ConnectionRouter router(
         *router_lookahead,
         device_ctx.rr_nodes,
         device_ctx.rr_rc_data,
@@ -745,7 +745,7 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
     return routing_is_successful;
 }
 
-bool try_timing_driven_route_net(Router& router,
+bool try_timing_driven_route_net(ConnectionRouter& router,
                                  ClusterNetId net_id,
                                  int itry,
                                  float pres_fac,
@@ -898,7 +898,7 @@ struct Criticality_comp {
     }
 };
 
-bool timing_driven_route_net(Router& router,
+bool timing_driven_route_net(ConnectionRouter& router,
                              ClusterNetId net_id,
                              int itry,
                              float pres_fac,
@@ -1082,7 +1082,7 @@ bool timing_driven_route_net(Router& router,
 }
 
 static bool timing_driven_pre_route_to_clock_root(
-    Router& router,
+    ConnectionRouter& router,
     ClusterNetId net_id,
     int sink_node,
     const t_conn_cost_params cost_params,
@@ -1172,7 +1172,7 @@ static bool timing_driven_pre_route_to_clock_root(
 }
 
 static bool timing_driven_route_sink(
-    Router& router,
+    ConnectionRouter& router,
     ClusterNetId net_id,
     unsigned itarget,
     int target_pin,
@@ -1278,7 +1278,7 @@ static bool timing_driven_route_sink(
 //as valid start locations for the current connection.
 //
 //Returns either the last element of the path, or nullptr if no path is found
-t_heap* Router::timing_driven_route_connection_from_route_tree(
+t_heap* ConnectionRouter::timing_driven_route_connection_from_route_tree(
     t_rt_node* rt_root,
     int sink_node,
     const t_conn_cost_params cost_params,
@@ -1292,7 +1292,7 @@ t_heap* Router::timing_driven_route_connection_from_route_tree(
     return cheapest;
 }
 
-t_heap* Router::timing_driven_route_connection_from_route_tree(
+t_heap* ConnectionRouter::timing_driven_route_connection_from_route_tree(
     t_rt_node* rt_root,
     int sink_node,
     const t_conn_cost_params cost_params,
@@ -1376,7 +1376,7 @@ t_heap* Router::timing_driven_route_connection_from_route_tree(
 //
 //Unlike timing_driven_route_connection_from_route_tree(), only part of the route tree
 //which is spatially close to the sink is added to the heap.
-t_heap* Router::timing_driven_route_connection_from_route_tree_high_fanout(
+t_heap* ConnectionRouter::timing_driven_route_connection_from_route_tree_high_fanout(
     t_rt_node* rt_root,
     int sink_node,
     const t_conn_cost_params cost_params,
@@ -1440,7 +1440,7 @@ t_heap* Router::timing_driven_route_connection_from_route_tree_high_fanout(
 //This is the core maze routing routine.
 //
 //Returns either the last element of the path, or nullptr if no path is found
-t_heap* Router::timing_driven_route_connection_from_heap(int sink_node,
+t_heap* ConnectionRouter::timing_driven_route_connection_from_heap(int sink_node,
                                                          const t_conn_cost_params cost_params,
                                                          t_bb bounding_box) {
     VTR_ASSERT_SAFE(heap_::is_valid());
@@ -1508,7 +1508,7 @@ static void empty_heap_annotating_node_route_inf(std::vector<int>& modified_rr_n
 }
 
 //Find shortest paths from specified route tree to all nodes in the RR graph
-std::vector<t_heap> Router::timing_driven_find_all_shortest_paths_from_route_tree(
+std::vector<t_heap> ConnectionRouter::timing_driven_find_all_shortest_paths_from_route_tree(
     t_rt_node* rt_root,
     const t_conn_cost_params cost_params,
     t_bb bounding_box,
@@ -1532,7 +1532,7 @@ std::vector<t_heap> Router::timing_driven_find_all_shortest_paths_from_route_tre
 //
 //Note that to re-use code used for the regular A*-based router we use a
 //no-operation lookahead which always returns zero.
-std::vector<t_heap> Router::timing_driven_find_all_shortest_paths_from_heap(
+std::vector<t_heap> ConnectionRouter::timing_driven_find_all_shortest_paths_from_heap(
     const t_conn_cost_params cost_params,
     t_bb bounding_box) {
     std::vector<t_heap> cheapest_paths(rr_nodes_->size());
@@ -1577,7 +1577,7 @@ std::vector<t_heap> Router::timing_driven_find_all_shortest_paths_from_heap(
     return cheapest_paths;
 }
 
-void Router::timing_driven_expand_cheapest(t_heap* cheapest,
+void ConnectionRouter::timing_driven_expand_cheapest(t_heap* cheapest,
                                            int target_node,
                                            const t_conn_cost_params cost_params,
                                            t_bb bounding_box) {
@@ -1952,7 +1952,7 @@ static void add_route_tree_node_to_heap(t_rt_node* rt_node,
     ++router_stats.heap_pushes;
 }
 
-void Router::timing_driven_expand_neighbours(t_heap* current,
+void ConnectionRouter::timing_driven_expand_neighbours(t_heap* current,
                                              const t_conn_cost_params cost_params,
                                              t_bb bounding_box,
                                              int target_node) {
@@ -2019,7 +2019,7 @@ void Router::timing_driven_expand_neighbours(t_heap* current,
 //Conditionally adds to_node to the router heap (via path from from_node via from_edge).
 //RR nodes outside the expanded bounding box specified in bounding_box are not added
 //to the heap.
-void Router::timing_driven_expand_neighbour(t_heap* current,
+void ConnectionRouter::timing_driven_expand_neighbour(t_heap* current,
                                             const int from_node,
                                             const RREdgeId from_edge,
                                             const t_edge_size from_edge_int,
@@ -2086,7 +2086,7 @@ void Router::timing_driven_expand_neighbour(t_heap* current,
 }
 
 //Add to_node to the heap, and also add any nodes which are connected by non-configurable edges
-void Router::timing_driven_add_to_heap(const t_conn_cost_params cost_params,
+void ConnectionRouter::timing_driven_add_to_heap(const t_conn_cost_params cost_params,
                                        const t_heap* current,
                                        const int from_node,
                                        const int to_node,
@@ -2137,7 +2137,7 @@ void Router::timing_driven_add_to_heap(const t_conn_cost_params cost_params,
 }
 
 //Calculates the cost of reaching to_node
-void Router::evaluate_timing_driven_node_costs(t_heap* to,
+void ConnectionRouter::evaluate_timing_driven_node_costs(t_heap* to,
                                                const t_conn_cost_params cost_params,
                                                const int from_node,
                                                const int to_node,

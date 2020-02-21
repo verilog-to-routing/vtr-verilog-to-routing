@@ -99,7 +99,7 @@ static void do_one_route(int source_node, int sink_node,
             segment_inf
             );
 
-    Router router(
+    ConnectionRouter router(
             *router_lookahead,
             device_ctx.rr_nodes,
             device_ctx.rr_rc_data,
