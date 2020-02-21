@@ -202,11 +202,11 @@ util::Cost_Entry util::Expansion_Cost_Entry::get_median_entry() const {
 template<typename Entry>
 void expand_dijkstra_neighbours(const t_rr_graph_storage& rr_nodes,
                                 const Entry& parent_entry,
-                                std::unordered_map<int, util::Search_Path>& paths,
-                                std::vector<bool>& node_expanded,
+                                std::vector<util::Search_Path>* paths,
+                                std::vector<bool>* node_expanded,
                                 std::priority_queue<Entry,
                                                     std::vector<Entry>,
-                                                    std::greater<Entry>>& pq) {
+                                                    std::greater<Entry>>* pq) {
     int parent_ind = parent_entry.rr_node_ind;
 
     auto& parent_node = rr_nodes[parent_ind];
@@ -216,41 +216,37 @@ void expand_dijkstra_neighbours(const t_rr_graph_storage& rr_nodes,
         int switch_ind = parent_node.edge_switch(iedge);
 
         /* skip this child if it has already been expanded from */
-        if (node_expanded[child_node_ind]) {
+        if ((*node_expanded)[child_node_ind]) {
             continue;
         }
 
         Entry child_entry(child_node_ind, switch_ind, &parent_entry);
         VTR_ASSERT(child_entry.cost() >= 0);
-        pq.push(child_entry);
 
         /* Create (if it doesn't exist) or update (if the new cost is lower)
          * to specified node */
         Search_Path path_entry = {child_entry.cost(), parent_ind, iedge};
-        auto result = paths.insert(std::make_pair(
-            child_node_ind,
-            path_entry));
-        if (!result.second) {
-            if (child_entry.cost() < result.first->second.cost) {
-                result.first->second = path_entry;
-            }
+        auto& path = (*paths)[child_node_ind];
+        if (path_entry.cost < path.cost) {
+            pq->push(child_entry);
+            path = path_entry;
         }
     }
 }
 
 template void expand_dijkstra_neighbours(const t_rr_graph_storage& rr_nodes,
                                          const PQ_Entry_Delay& parent_entry,
-                                         std::unordered_map<int, Search_Path>& paths,
-                                         std::vector<bool>& node_expanded,
+                                         std::vector<Search_Path>* paths,
+                                         std::vector<bool>* node_expanded,
                                          std::priority_queue<PQ_Entry_Delay,
                                                              std::vector<PQ_Entry_Delay>,
-                                                             std::greater<PQ_Entry_Delay>>& pq);
+                                                             std::greater<PQ_Entry_Delay>>* pq);
 template void expand_dijkstra_neighbours(const t_rr_graph_storage& rr_nodes,
                                          const PQ_Entry_Base_Cost& parent_entry,
-                                         std::unordered_map<int, Search_Path>& paths,
-                                         std::vector<bool>& node_expanded,
+                                         std::vector<Search_Path>* paths,
+                                         std::vector<bool>* node_expanded,
                                          std::priority_queue<PQ_Entry_Base_Cost,
                                                              std::vector<PQ_Entry_Base_Cost>,
-                                                             std::greater<PQ_Entry_Base_Cost>>& pq);
+                                                             std::greater<PQ_Entry_Base_Cost>>* pq);
 
 } // namespace util
