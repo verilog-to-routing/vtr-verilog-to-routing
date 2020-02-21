@@ -14,9 +14,8 @@
 
 int get_max_pins_per_net();
 
-// This class encapsolates the timing driven connection router.
-//
-// In particular, this class routes from some initial set of sources to a
+// This class encapsolates the timing driven connection router. This class
+// routes from some initial set of sources (via the input rt tree to a
 // particular sink.
 //
 // When the ConnectionRouter is used, it mutates the provided
@@ -79,6 +78,11 @@ class ConnectionRouter {
     // available.
     //
     // Each element of the returned vector is a reachable sink.
+    //
+    // If cost_params.astar_fac is set to 0, this effectively becomes
+    // Dijkstra's algorithm with a modified exit condition (runs until heap is
+    // empty).  When using cost_params.astar_fac = 0, for efficiency the
+    // RouterLookahead used should be the NoOpLookahead.
     std::vector<t_heap> timing_driven_find_all_shortest_paths_from_route_tree(
         t_rt_node* rt_root,
         const t_conn_cost_params cost_params,
@@ -123,6 +127,8 @@ class ConnectionRouter {
     //
     // This is the core maze routing routine.
     //
+    // Note: For understanding the connection router, start here.
+    //
     // Returns either the last element of the path, or nullptr if no path is
     // found
     t_heap* timing_driven_route_connection_from_heap(
@@ -130,18 +136,25 @@ class ConnectionRouter {
         const t_conn_cost_params cost_params,
         t_bb bounding_box);
 
-    // Expand this current node if it is the cheapest path to this node.
+    // Expand this current node if it is a cheaper path.
     void timing_driven_expand_cheapest(
         t_heap* cheapest,
         int target_node,
         const t_conn_cost_params cost_params,
         t_bb bounding_box);
 
+    // Expand each neighbor of the current node.
     void timing_driven_expand_neighbours(
         t_heap* current,
         const t_conn_cost_params cost_params,
         t_bb bounding_box,
         int target_node);
+
+    // Conditionally adds to_node to the router heap (via path from from_node
+    // via from_edge).
+    //
+    // RR nodes outside bounding box specified in bounding_box are not added
+    // to the heap.
     void timing_driven_expand_neighbour(
         t_heap* current,
         const int from_node,
@@ -152,6 +165,9 @@ class ConnectionRouter {
         const t_bb bounding_box,
         int target_node,
         const t_bb target_bb);
+
+    // Add to_node to the heap, and also add any nodes which are connected by
+    // non-configurable edges
     void timing_driven_add_to_heap(
         const t_conn_cost_params cost_params,
         const t_heap* current,
@@ -160,6 +176,8 @@ class ConnectionRouter {
         const RREdgeId from_edge,
         const int iconn,
         const int target_node);
+
+    // Calculates the cost of reaching to_node
     void evaluate_timing_driven_node_costs(
         t_heap* to,
         const t_conn_cost_params cost_params,
@@ -167,6 +185,8 @@ class ConnectionRouter {
         const int to_node,
         const RREdgeId from_edge,
         const int target_node);
+
+    // Find paths from current heap to all nodes in the RR graph
     std::vector<t_heap> timing_driven_find_all_shortest_paths_from_heap(
         const t_conn_cost_params cost_params,
         t_bb bounding_box);
