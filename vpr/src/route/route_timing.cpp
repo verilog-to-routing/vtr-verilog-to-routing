@@ -1961,10 +1961,10 @@ void Router::timing_driven_expand_neighbours(t_heap* current,
 
     t_bb target_bb;
     if (target_node != OPEN) {
-        target_bb.xmin = rr_nodes_->xlow(RRNodeId(target_node));
-        target_bb.ymin = rr_nodes_->ylow(RRNodeId(target_node));
-        target_bb.xmax = rr_nodes_->xhigh(RRNodeId(target_node));
-        target_bb.ymax = rr_nodes_->yhigh(RRNodeId(target_node));
+        target_bb.xmin = rr_nodes_->node_xlow(RRNodeId(target_node));
+        target_bb.ymin = rr_nodes_->node_ylow(RRNodeId(target_node));
+        target_bb.xmax = rr_nodes_->node_xhigh(RRNodeId(target_node));
+        target_bb.ymax = rr_nodes_->node_yhigh(RRNodeId(target_node));
     }
 
     //For each node associated with the current heap element, expand all of it's neighbors
@@ -2029,10 +2029,10 @@ void Router::timing_driven_expand_neighbour(t_heap* current,
                                             int target_node,
                                             const t_bb target_bb) {
     RRNodeId to_node(to_node_int);
-    int to_xlow = rr_nodes_->xlow(to_node);
-    int to_ylow = rr_nodes_->ylow(to_node);
-    int to_xhigh = rr_nodes_->xhigh(to_node);
-    int to_yhigh = rr_nodes_->yhigh(to_node);
+    int to_xlow = rr_nodes_->node_xlow(to_node);
+    int to_ylow = rr_nodes_->node_ylow(to_node);
+    int to_xhigh = rr_nodes_->node_xhigh(to_node);
+    int to_yhigh = rr_nodes_->node_yhigh(to_node);
 
     if (to_xhigh < bounding_box.xmin      //Strictly left of BB left-edge
         || to_xlow > bounding_box.xmax    //Strictly right of BB right-edge

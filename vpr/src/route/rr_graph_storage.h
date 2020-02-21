@@ -14,6 +14,12 @@
  * to store algorithm-specific data should be stored in one of the           *
  * parallel rr_node_* structures.                                            *
  *                                                                           *
+ * This structure should **only** contain data used in the inner loop of the *
+ * router.  This data is consider "hot" and the router performance is        *
+ * sensitive to layout and size of this "hot" data.
+ *
+ * Cold data should be stored seperately in t_rr_graph_storage.              *
+ *                                                                           *
  * xlow, xhigh, ylow, yhigh:  Integer coordinates (see route.c for           *
  *       coordinate system) of the ends of this routing resource.            *
  *       xlow = xhigh and ylow = yhigh for pins or for segments of           *
@@ -22,19 +28,11 @@
  *       like whether it's outside the net bounding box or is moving         *
  *       further away from the target, etc.                                  *
  * type:  What is this routing resource?                                     *
- * ptc_num:  Pin, track or class number, depending on rr_node type.          *
- *           Needed to properly draw.                                        *
  * cost_index: An integer index into the table of routing resource indexed   *
  *             data t_rr_index_data (this indirection allows quick dynamic   *
  *             changes of rr base costs, and some memory storage savings for *
  *             fields that have only a few distinct values).                 *
  * capacity:   Capacity of this node (number of routes that can use it).     *
- * num_edges:  Number of edges exiting this node.  That is, the number       *
- *             of nodes to which it connects.                                *
- * edges[0..num_edges-1]:  Array of indices of the neighbours of this        *
- *                         node.                                             *
- * switches[0..num_edges-1]:  Array of switch indexes for each of the        *
- *                            edges leaving this node.                       *
  *                                                                           *
  * direction: if the node represents a track, this field                     *
  *            indicates the direction of the track. Otherwise                *
@@ -61,6 +59,11 @@ struct alignas(16) t_rr_node_data {
     uint16_t capacity_ = 0;
 };
 
+/* t_rr_node_ptc_data is cold data is therefore kept seperate from
+ * t_rr_node_data.
+ *
+ * ptc_num:  Pin, track or class number, depending on rr_node type.          *
+ *           Needed to properly draw.                                        */
 struct t_rr_node_ptc_data {
     union {
         int16_t pin_num;
@@ -72,6 +75,11 @@ struct t_rr_node_ptc_data {
 static_assert(sizeof(t_rr_node_data) == 16, "Check t_rr_node_data size");
 static_assert(alignof(t_rr_node_data) == 16, "Check t_rr_node_data size");
 
+// aligned_allocator is a STL allocator that allocates memory in an aligned
+// fashion (if supported by the platform).
+//
+// It is worth noting the C++20 std::allocator does aligned allocations, but
+// C++20 has poor support.
 template<class T>
 struct aligned_allocator {
     using value_type = T;
@@ -84,7 +92,7 @@ struct aligned_allocator {
 
     pointer allocate(size_type n, const void* /*hint*/ = 0) {
         void* data;
-        int ret = posix_memalign(&data, alignof(T), sizeof(T) * n);
+        int ret = vtr::memalign(&data, alignof(T), sizeof(T) * n);
         if (ret != 0) {
             throw std::bad_alloc();
         }
@@ -92,16 +100,63 @@ struct aligned_allocator {
     }
 
     void deallocate(T* p, size_type /*n*/) {
-        free(p);
+        vtr::free(p);
     }
 };
 
 // RR node and edge storage class.
+//
+// Description:
+//
+// This class stores the detailed routing graph.  Each node within the graph is
+// identified by a RRNodeId.  Each edge within the graph is identified by a
+// RREdgeId.
+//
+// Each node contains data about the node itself, for example look at the
+// comment t_rr_node_data. Each node also has a set of RREdgeId's that all have
+// RRNodeId as the source node.
+//
+// Each edge is defined by the source node, destination node, and the switch
+// index that connects the source to the destination node.
+//
+// NOTE: The switch index represents either an index into arch_switch_inf
+// **or** rr_switch_inf.  During rr graph construction, the switch index is
+// always is an index into arch_switch_inf.  Once the graph is completed, the
+// RR graph construction code coverts all arch_switch_inf indicies
+// into rr_switch_inf indicies via the remap_rr_node_switch_indices method.
+//
+// Usage notes and assumptions:
+//
+// This class broadly speak is used by two types of code:
+//  - Code that writes to the rr graph
+//  - Code that reads from the rr graph
+//
+// Within VPR, there are two locations that the rr graph is expected to be
+// modified, either:
+//  - During the building of the rr graph in rr_graph.cpp
+//  - During the reading of a static rr graph from a file in rr_graph_reader
+//  / rr_graph_uxsdcxx_serializer.
+//
+// It is expected and assume that once the graph is completed, the graph is
+// fixed until the entire graph is cleared.  This object enforces this
+// assumption with state flags.  In particular RR graph edges are assumpted
+// to be write only during construction of the RR graph, and read only
+// otherwise.  See the description of the "Edge methods" for details.
+//
+// Broadly speaking there are two sets of methods.  Methods for reading and
+// writing RR nodes, and methods for reading and writing RR edges. The node
+// methods can be found underneath the header "Node methods" and the edge
+// methods can be found underneath the header "Edge methods".
+//
 class t_rr_graph_storage {
   public:
     t_rr_graph_storage() {
         clear();
     }
+
+    /***************************
+     * Node allocation methods *
+     ***************************/
 
     // Makes room in storage for RRNodeId in amoritized O(1) fashion.
     //
@@ -114,25 +169,35 @@ class t_rr_graph_storage {
         ptc_.resize(storage_.size());
     }
 
+    // Reserve storage for RR nodes.
     void reserve(size_t size) {
         // No edges can be assigned if mutating the rr node array.
         VTR_ASSERT(!edges_read_);
         storage_.reserve(size);
         ptc_.reserve(size);
     }
+
+    // Resize node storage to accomidate size RR nodes.
     void resize(size_t size) {
         // No edges can be assigned if mutating the rr node array.
         VTR_ASSERT(!edges_read_);
         storage_.resize(size);
         ptc_.resize(size);
     }
+
+    // Number of RR nodes that can be accessed.
     size_t size() const {
         return storage_.size();
     }
+
+    // Is the RR graph currently empty?
     bool empty() const {
         return storage_.empty();
     }
 
+    // Remove all nodes and edges from the RR graph.
+    //
+    // This method re-enables graph mutation if the graph was read-only.
     void clear() {
         storage_.clear();
         ptc_.clear();
@@ -146,6 +211,10 @@ class t_rr_graph_storage {
         remapped_edges_ = false;
     }
 
+    // Shrink memory usage of the RR graph storage.
+    //
+    // Note that this will temporary increase the amount of storage required
+    // to allocate the small array and copy the data.
     void shrink_to_fit() {
         storage_.shrink_to_fit();
         ptc_.shrink_to_fit();
@@ -156,12 +225,34 @@ class t_rr_graph_storage {
         edge_switch_.shrink_to_fit();
     }
 
+    // Append 1 more RR node to the RR graph.
     void emplace_back() {
         // No edges can be assigned if mutating the rr node array.
         VTR_ASSERT(!edges_read_);
         storage_.emplace_back();
         ptc_.emplace_back();
     }
+
+    /*
+     * Node proxy methods
+     *
+     * The following methods implement an interface that appears to be
+     * equivalent to the interface exposed by std::vector<t_rr_node>.
+     * This was done for backwards compability. See t_rr_node for more details.
+     *
+     * Proxy methods:
+     *
+     * - begin()
+     * - end()
+     * - operator[]
+     * - at()
+     * - front
+     * - back
+     *
+     * These methods should not be used by new VPR code, and instead access
+     * methods that use RRNodeId and RREdgeId should be used.
+     *
+     **********************/
 
     node_idx_iterator begin() const;
 
@@ -177,8 +268,6 @@ class t_rr_graph_storage {
     const t_rr_node back() const;
     t_rr_node back();
 
-    friend class t_rr_node;
-
     /****************
      * Node methods *
      ****************/
@@ -192,18 +281,45 @@ class t_rr_graph_storage {
         return storage_[id].rc_index_;
     }
 
-    short xlow(RRNodeId id) const {
+    short node_xlow(RRNodeId id) const {
         return storage_[id].xlow_;
     }
-    short ylow(RRNodeId id) const {
+    short node_ylow(RRNodeId id) const {
         return storage_[id].ylow_;
     }
-    short xhigh(RRNodeId id) const {
+    short node_xhigh(RRNodeId id) const {
         return storage_[id].xhigh_;
     }
-    short yhigh(RRNodeId id) const {
+    short node_yhigh(RRNodeId id) const {
         return storage_[id].yhigh_;
     }
+
+    short node_capacity(RRNodeId id) const {
+        return storage_[id].capacity_;
+    }
+    short node_cost_index(RRNodeId id) const {
+        return storage_[id].cost_index_;
+    }
+
+    e_direction node_direction(RRNodeId id) const {
+        if (node_type(id) != CHANX && node_type(id) != CHANY) {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'direction' for non-channel type '%s'", node_type_string(id));
+        }
+        return storage_[id].dir_side_.direction;
+    }
+
+    e_side node_side(RRNodeId id) const {
+        if (node_type(id) != IPIN && node_type(id) != OPIN) {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'side' for non-IPIN/OPIN type '%s'", node_type_string(id));
+        }
+        return storage_[id].dir_side_.side;
+    }
+
+    /* PTC get methods */
+    short node_ptc_num(RRNodeId id) const;
+    short node_pin_num(RRNodeId id) const;   //Same as ptc_num() but checks that type() is consistent
+    short node_track_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
+    short node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
 
     /* PTC set methods */
     void set_node_ptc_num(RRNodeId id, short);
@@ -211,11 +327,13 @@ class t_rr_graph_storage {
     void set_node_track_num(RRNodeId id, short); //Same as set_ptc_num() by checks type() is consistent
     void set_node_class_num(RRNodeId id, short); //Same as set_ptc_num() by checks type() is consistent
 
-    /* PTC get methods */
-    short node_ptc_num(RRNodeId id) const;
-    short node_pin_num(RRNodeId id) const;   //Same as ptc_num() but checks that type() is consistent
-    short node_track_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
-    short node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
+    void set_node_type(RRNodeId id, t_rr_type new_type);
+    void set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2);
+    void set_node_cost_index(RRNodeId, size_t new_cost_index);
+    void set_node_rc_index(RRNodeId, short new_rc_index);
+    void set_node_capacity(RRNodeId, short new_capacity);
+    void set_node_direction(RRNodeId, e_direction new_direction);
+    void set_node_side(RRNodeId, e_side new_side);
 
     inline void prefetch_node(RRNodeId id) const {
         VTR_PREFETCH(&storage_[id], 0, 0);
@@ -309,6 +427,23 @@ class t_rr_graph_storage {
 
     /* Edge accessors
      *
+     * Preferred access methods:
+     * - first_edge(RRNodeId)
+     * - last_edge(RRNodeId)
+     * - edge_sink_node(RREdgeId)
+     * - edge_switch(RREdgeId)
+     *
+     * Legacy/deprecated access methods:
+     * - edges(RRNodeId)
+     * - configurable_edges(RRNodeId)
+     * - non_configurable_edges(RRNodeId)
+     * - num_edges(RRNodeId)
+     * - num_configurable_edges(RRNodeId)
+     * - num_non_configurable_edges(RRNodeId)
+     * - edge_id(RRNodeId, t_edge_size)
+     * - edge_sink_node(RRNodeId, t_edge_size)
+     * - edge_switch(RRNodeId, t_edge_size)
+     *
      * Only call these methods after partition_edges has been invoked. */
     edge_idx_range edges(const RRNodeId& id) const {
         return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id)));
@@ -323,7 +458,15 @@ class t_rr_graph_storage {
     t_edge_size num_edges(const RRNodeId& id) const {
         return size_t(last_edge(id)) - size_t(first_edge(id));
     }
+    t_edge_size num_configurable_edges(const RRNodeId& id) const;
+    t_edge_size num_non_configurable_edges(const RRNodeId& id) const;
 
+    // Get the first and last RREdgeId for the specified RRNodeId.
+    //
+    // The edges belonging to RRNodeId is [first_edge, last_edge), excluding
+    // last_edge.
+    //
+    // If first_edge == last_edge, then a RRNodeId has no edges.
     RREdgeId first_edge(const RRNodeId& id) const {
         return first_edge_[id];
     }
@@ -331,24 +474,39 @@ class t_rr_graph_storage {
         return (&first_edge_[id])[1];
     }
 
-    t_edge_size num_configurable_edges(const RRNodeId& id) const;
-    t_edge_size num_non_configurable_edges(const RRNodeId& id) const;
-
+    // Retrieve the RREdgeId for iedge'th edge in RRNodeId.
+    //
+    // This method should generally not be used, and instead first_edge and
+    // last_edge should be used.
     RREdgeId edge_id(const RRNodeId& id, t_edge_size iedge) const {
         RREdgeId first_edge = this->first_edge(id);
         RREdgeId ret(size_t(first_edge) + iedge);
         VTR_ASSERT_SAFE(ret < last_edge(id));
         return ret;
     }
+
+    // Get the destination node for the specified edge.
     RRNodeId edge_sink_node(const RREdgeId& edge) const {
         return edge_dest_node_[edge];
     }
+
+    // Get the destination node for the iedge'th edge from specified RRNodeId.
+    //
+    // This method should generally not be used, and instead first_edge and
+    // last_edge should be used.
     RRNodeId edge_sink_node(const RRNodeId& id, t_edge_size iedge) const {
         return edge_sink_node(edge_id(id, iedge));
     }
+
+    // Get the switch used for the specified edge.
     short edge_switch(const RREdgeId& edge) const {
         return edge_switch_[edge];
     }
+
+    // Get the switch used for the iedge'th edge from specified RRNodeId.
+    //
+    // This method should generally not be used, and instead first_edge and
+    // last_edge should be used.
     short edge_switch(const RRNodeId& id, t_edge_size iedge) const {
         return edge_switch(edge_id(id, iedge));
     }
@@ -372,13 +530,6 @@ class t_rr_graph_storage {
     friend class edge_compare_dest_node;
     friend class edge_compare_src_node_and_configurable_first;
 
-    t_rr_node_data& get(const RRNodeId& id) {
-        return storage_[id];
-    }
-    const t_rr_node_data& get(const RRNodeId& id) const {
-        return storage_[id];
-    }
-
     // Take allocated edges in edge_src_node_/ edge_dest_node_ / edge_switch_
     // sort, and assign the first edge for each
     void assign_first_edges();
@@ -386,14 +537,46 @@ class t_rr_graph_storage {
     // Verify that first_edge_ array correctly partitions rr edge data.
     bool verify_first_edges() const;
 
+    /*****************
+     * Graph storage
+     *
+     * RR graph storage generally speaking includes two types of data:
+     *  - **Hot** data is used in the core place and route algorithm.
+     *    The layout and size of data stored in **hot** storage will likely
+     *    have a significant affect on router performance.  Any changes to
+     *    hot data should carefully considered and measured, see
+     *    README.developers.md.
+     *
+     *  - **Cold** data is not used in the core place and route algorithms,
+     *    so it isn't as critical to be measure the affects, but it **is**
+     *    important to watch the overall memory usage of this data.
+     *
+     *****************/
+
+    // storage_ stores the core RR node data used by the router and is **very**
+    // hot.
     vtr::vector<RRNodeId, t_rr_node_data, aligned_allocator<t_rr_node_data>> storage_;
+
+    // The PTC data is cold data, and is generally not used during the inner
+    // loop of either the placer or router.
     vtr::vector<RRNodeId, t_rr_node_ptc_data> ptc_;
+
+    // This array stores the first edge of each RRNodeId.  Not that the length
+    // of this vector is always storage_.size() + 1, where the last value is
+    // always equal to the number of edges in the final graph.
     vtr::vector<RRNodeId, RREdgeId> first_edge_;
+
+    // Fan in counts for each RR node.
     vtr::vector<RRNodeId, t_edge_size> fan_in_;
 
+    // Edge storage.
     vtr::vector<RREdgeId, RRNodeId> edge_src_node_;
     vtr::vector<RREdgeId, RRNodeId> edge_dest_node_;
     vtr::vector<RREdgeId, short> edge_switch_;
+
+    /***************
+     * State flags *
+     ***************/
 
     // Has any edges been read?
     //

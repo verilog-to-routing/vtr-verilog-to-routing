@@ -1,6 +1,7 @@
 #ifndef VTR_MEMORY_H
 #define VTR_MEMORY_H
 #include <cstddef>
+#include <cstdlib>
 
 namespace vtr {
 struct t_linked_vptr; //Forward declaration
@@ -46,6 +47,10 @@ void chunk_delete(T* obj, t_chunk* /*chunk_info*/) {
 //Cross platform wrapper around GNU's malloc_trim()
 // TODO: This is only used in one place within VPR, consider removing it
 int malloc_trim(size_t pad);
+
+inline int memalign(void** ptr_out, size_t align, size_t size) {
+    return posix_memalign(ptr_out, align, size);
+}
 
 // This is a macro because it has to be.  rw and locality must be constants,
 // not just constexpr.

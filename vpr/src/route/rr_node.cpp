@@ -30,8 +30,9 @@ const char* t_rr_node::side_string() const {
 
 //Returns the max 'length' over the x or y direction
 short t_rr_node::length() const {
-    const auto& node = storage_->get(id_);
-    return std::max(node.yhigh_ - node.ylow_, node.xhigh_ - node.xlow_);
+    return std::max(
+        storage_->node_yhigh(id_) - storage_->node_ylow(id_),
+        storage_->node_xhigh(id_) - storage_->node_xlow(id_));
 }
 
 bool t_rr_node::edge_is_configurable(t_edge_size iedge) const {
@@ -77,8 +78,7 @@ bool t_rr_node::validate() const {
 }
 
 void t_rr_node::set_type(t_rr_type new_type) {
-    auto& node = storage_->get(id_);
-    node.type_ = new_type;
+    storage_->set_node_type(id_, new_type);
 }
 
 /*
@@ -86,22 +86,7 @@ void t_rr_node::set_type(t_rr_type new_type) {
  * They do not have to be in any particular order.
  */
 void t_rr_node::set_coordinates(short x1, short y1, short x2, short y2) {
-    auto& node = storage_->get(id_);
-    if (x1 < x2) {
-        node.xlow_ = x1;
-        node.xhigh_ = x2;
-    } else {
-        node.xlow_ = x2;
-        node.xhigh_ = x1;
-    }
-
-    if (y1 < y2) {
-        node.ylow_ = y1;
-        node.yhigh_ = y2;
-    } else {
-        node.ylow_ = y2;
-        node.yhigh_ = y1;
-    }
+    storage_->set_node_coordinates(id_, x1, y1, x2, y2);
 }
 
 void t_rr_node::set_ptc_num(short new_ptc_num) {
@@ -121,39 +106,23 @@ void t_rr_node::set_class_num(short new_class_num) {
 }
 
 void t_rr_node::set_cost_index(size_t new_cost_index) {
-    auto& node = storage_->get(id_);
-    if (new_cost_index >= std::numeric_limits<decltype(node.cost_index_)>::max()) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set cost_index_ %zu above cost_index storage max value.",
-                        new_cost_index);
-    }
-    node.cost_index_ = new_cost_index;
+    storage_->set_node_cost_index(id_, new_cost_index);
 }
 
 void t_rr_node::set_rc_index(short new_rc_index) {
-    auto& node = storage_->get(id_);
-    node.rc_index_ = new_rc_index;
+    storage_->set_node_rc_index(id_, new_rc_index);
 }
 
 void t_rr_node::set_capacity(short new_capacity) {
-    VTR_ASSERT(new_capacity >= 0);
-    auto& node = storage_->get(id_);
-    node.capacity_ = new_capacity;
+    storage_->set_node_capacity(id_, new_capacity);
 }
 
 void t_rr_node::set_direction(e_direction new_direction) {
-    if (type() != CHANX && type() != CHANY) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'direction' for non-channel type '%s'", type_string());
-    }
-    auto& node = storage_->get(id_);
-    node.dir_side_.direction = new_direction;
+    storage_->set_node_direction(id_, new_direction);
 }
 
 void t_rr_node::set_side(e_side new_side) {
-    if (type() != IPIN && type() != OPIN) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'side' for non-channel type '%s'", type_string());
-    }
-    auto& node = storage_->get(id_);
-    node.dir_side_.side = new_side;
+    storage_->set_node_side(id_, new_side);
 }
 
 t_rr_rc_data::t_rr_rc_data(float Rval, float Cval) noexcept
