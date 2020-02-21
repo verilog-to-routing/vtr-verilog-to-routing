@@ -1,5 +1,7 @@
 #ifndef _RR_NODE_IMPL_H_
 #define _RR_NODE_IMPL_H_
+// This file provides the inline proxy implemenation for t_rr_node.
+// See the t_rr_node class comment for additional details.
 
 #include "rr_node.h"
 #include "rr_graph_storage.h"
@@ -70,7 +72,7 @@ inline t_rr_node t_rr_graph_storage::back() {
 }
 
 inline t_rr_type t_rr_node::type() const {
-    return storage_->get(id_).type_;
+    return storage_->node_type(id_);
 }
 
 inline t_edge_size t_rr_node::num_edges() const {
@@ -109,20 +111,20 @@ inline t_edge_size t_rr_node::fan_in() const {
 }
 
 inline short t_rr_node::xlow() const {
-    return storage_->get(id_).xlow_;
+    return storage_->node_xlow(id_);
 }
 inline short t_rr_node::ylow() const {
-    return storage_->get(id_).ylow_;
+    return storage_->node_ylow(id_);
 }
 inline short t_rr_node::xhigh() const {
-    return storage_->get(id_).xhigh_;
+    return storage_->node_xhigh(id_);
 }
 inline short t_rr_node::yhigh() const {
-    return storage_->get(id_).yhigh_;
+    return storage_->node_yhigh(id_);
 }
 
 inline short t_rr_node::capacity() const {
-    return storage_->get(id_).capacity_;
+    return storage_->node_capacity(id_);
 }
 
 inline short t_rr_node::ptc_num() const {
@@ -142,25 +144,19 @@ inline short t_rr_node::class_num() const {
 }
 
 inline short t_rr_node::cost_index() const {
-    return storage_->get(id_).cost_index_;
+    return storage_->node_cost_index(id_);
 }
 
 inline short t_rr_node::rc_index() const {
-    return storage_->get(id_).rc_index_;
+    return storage_->node_rc_index(id_);
 }
 
 inline e_direction t_rr_node::direction() const {
-    if (type() != CHANX && type() != CHANY) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'direction' for non-channel type '%s'", type_string());
-    }
-    return storage_->get(id_).dir_side_.direction;
+    return storage_->node_direction(id_);
 }
 
 inline e_side t_rr_node::side() const {
-    if (type() != IPIN && type() != OPIN) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'side' for non-IPIN/OPIN type '%s'", type_string());
-    }
-    return storage_->get(id_).dir_side_.side;
+    return storage_->node_side(id_);
 }
 
 #endif /* _RR_NODE_IMPL_H_ */
