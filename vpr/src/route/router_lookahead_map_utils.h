@@ -195,11 +195,11 @@ struct Search_Path {
 template<typename Entry>
 void expand_dijkstra_neighbours(const t_rr_graph_storage& rr_nodes,
                                 const Entry& parent_entry,
-                                std::unordered_map<int, Search_Path>& paths,
-                                std::vector<bool>& node_expanded,
+                                std::vector<Search_Path>* paths,
+                                std::vector<bool>* node_expanded,
                                 std::priority_queue<Entry,
                                                     std::vector<Entry>,
-                                                    std::greater<Entry>>& pq);
+                                                    std::greater<Entry>>* pq);
 
 } // namespace util
 

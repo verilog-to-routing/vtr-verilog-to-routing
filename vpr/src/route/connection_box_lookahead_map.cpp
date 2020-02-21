@@ -86,6 +86,8 @@ struct SampleRegion {
 
 template<typename Entry>
 static std::pair<float, int> run_dijkstra(int start_node_ind,
+                                          std::vector<bool>* node_expanded,
+                                          std::vector<util::Search_Path>* paths,
                                           RoutingCosts* routing_costs);
 
 static std::vector<SampleRegion> find_sample_regions(int num_segments);
@@ -495,7 +497,7 @@ float ConnectionBoxMapLookahead::get_map_cost(int from_node_ind,
 template<typename Entry>
 static bool add_paths(int start_node_ind,
                       Entry current,
-                      std::unordered_map<int, util::Search_Path>* paths,
+                      const std::vector<util::Search_Path>& paths,
                       RoutingCosts* routing_costs) {
     auto& device_ctx = g_vpr_ctx.device();
     ConnectionBoxId box_id;
@@ -511,7 +513,8 @@ static bool add_paths(int start_node_ind,
 
     // reconstruct the path
     std::vector<int> path;
-    for (int i = (*paths)[node_ind].parent; i != start_node_ind; i = (*paths)[i].parent) {
+    for (int i = paths[node_ind].parent; i != start_node_ind; i = paths[i].parent) {
+        VTR_ASSERT(i != -1);
         path.push_back(i);
     }
     path.push_back(start_node_ind);
@@ -538,7 +541,7 @@ static bool add_paths(int start_node_ind,
 
         if (*it != start_node_ind) {
             auto& parent_node = device_ctx.rr_nodes[parent];
-            start_to_here = Entry(*it, parent_node.edge_switch((*paths)[*it].edge), &start_to_here);
+            start_to_here = Entry(*it, parent_node.edge_switch(paths[*it].edge), &start_to_here);
             parent = *it;
         }
 
@@ -573,6 +576,8 @@ static bool add_paths(int start_node_ind,
  * the number of paths from start_node_ind stored. */
 template<typename Entry>
 static std::pair<float, int> run_dijkstra(int start_node_ind,
+                                          std::vector<bool>* node_expanded,
+                                          std::vector<util::Search_Path>* paths,
                                           RoutingCosts* routing_costs) {
     auto& device_ctx = g_vpr_ctx.device();
     int path_count = 0;
@@ -584,12 +589,12 @@ static std::pair<float, int> run_dijkstra(int start_node_ind,
 
     /* a list of boolean flags (one for each rr node) to figure out if a
      * certain node has already been expanded */
-    std::vector<bool> node_expanded(device_ctx.rr_nodes.size(), false);
+    std::fill(node_expanded->begin(), node_expanded->end(), false);
     /* For each node keep a list of the cost with which that node has been
      * visited (used to determine whether to push a candidate node onto the
      * expansion queue.
      * Also store the parent node so we can reconstruct a specific path. */
-    std::unordered_map<int, util::Search_Path> paths;
+    std::fill(paths->begin(), paths->end(), util::Search_Path{std::numeric_limits<float>::infinity(), -1, -1});
     /* a priority queue for expansion */
     std::priority_queue<Entry, std::vector<Entry>, std::greater<Entry>> pq;
 
@@ -607,7 +612,7 @@ static std::pair<float, int> run_dijkstra(int start_node_ind,
         int node_ind = current.rr_node_ind;
 
         /* check that we haven't already expanded from this node */
-        if (node_expanded[node_ind]) {
+        if ((*node_expanded)[node_ind]) {
             continue;
         }
 
@@ -617,11 +622,11 @@ static std::pair<float, int> run_dijkstra(int start_node_ind,
             max_cost = current.cost();
 
             path_count++;
-            add_paths<Entry>(start_node_ind, current, &paths, routing_costs);
+            add_paths<Entry>(start_node_ind, current, *paths, routing_costs);
         } else {
             util::expand_dijkstra_neighbours(device_ctx.rr_nodes,
-                                             current, paths, node_expanded, pq);
-            node_expanded[node_ind] = true;
+                                             current, paths, node_expanded, &pq);
+            (*node_expanded)[node_ind] = true;
         }
     }
     return std::make_pair(max_cost, path_count);
@@ -658,6 +663,8 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
         RoutingCosts delay_costs;
         RoutingCosts base_costs;
         int total_path_count = 0;
+        std::vector<bool> node_expanded(device_ctx.rr_nodes.size());
+        std::vector<util::Search_Path> paths(device_ctx.rr_nodes.size());
 
         for (auto& point : region.points) {
             // statistics
@@ -667,12 +674,12 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
             int path_count = 0;
             for (auto node_ind : point.nodes) {
                 {
-                    auto result = run_dijkstra<util::PQ_Entry_Delay>(node_ind, &delay_costs);
+                    auto result = run_dijkstra<util::PQ_Entry_Delay>(node_ind, &node_expanded, &paths, &delay_costs);
                     max_delay_cost = std::max(max_delay_cost, result.first);
                     path_count += result.second;
                 }
                 {
-                    auto result = run_dijkstra<util::PQ_Entry_Base_Cost>(node_ind, &base_costs);
+                    auto result = run_dijkstra<util::PQ_Entry_Base_Cost>(node_ind, &node_expanded, &paths, &base_costs);
                     max_base_cost = std::max(max_base_cost, result.first);
                     path_count += result.second;
                 }
