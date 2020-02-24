@@ -1,0 +1,4 @@
+test_name                                                         ,architecture                          ,blif                    ,exit,max_rss(MiB),exec_time(ms),simulation_time(ms),test_coverage(%)
+hard_blocks/adder_hard_block/k6_frac_N10_frac_chain_mem32K_40nm   ,k6_frac_N10_frac_chain_mem32K_40nm.xml,adder_hard_block.blif   ,0   ,25.7        ,109.8        ,7.5                ,100.0
+hard_blocks/adder_hard_block/k6_frac_N10_frac_chain_mem32K_40nm   ,k6_frac_N10_frac_chain_mem32K_40nm.xml,adder_hard_block.blif   ,0   ,25.7        ,109.8        ,7.5                ,100.0
+hard_blocks/multiply_hard_block/k6_frac_N10_frac_chain_mem32K_40nm,k6_frac_N10_frac_chain_mem32K_40nm.xml,multiply_hard_block.blif,0   ,25.5        ,101.1        ,5.4                ,100.0

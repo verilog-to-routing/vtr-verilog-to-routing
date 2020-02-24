@@ -44,6 +44,10 @@ circuit_dir=${PATH_FROM_ODIN_ROOT}/${dir}
 
 # glob all the benchmark!
 circuit_list_add=*.sv
+
+synthesis_parse_file=regression_test/parse_result/conf/synth.conf
+simulation_parse_file=regression_test/parse_result/conf/sim.conf
+
 EOF
     echo "${PATH_FROM_ODIN_ROOT}/${dir}" >> task_list.conf
 done

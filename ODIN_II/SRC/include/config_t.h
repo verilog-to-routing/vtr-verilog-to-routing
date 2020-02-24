@@ -11,10 +11,11 @@ struct config_t {
     std::string output_type; // string name of the type of output file
 
     std::string debug_output_path; // path for where to output the debug outputs
-    bool output_ast_graphs;        // switch that outputs ast graphs per node for use with GRaphViz tools
-    bool output_netlist_graphs;    // switch that outputs netlist graphs per node for use with GraphViz tools
-    bool print_parse_tokens;       // switch that controls whether or not each token is printed during parsing
-    bool output_preproc_source;    // TODO: unused
+    bool is_verilog_input;
+    bool output_ast_graphs;     // switch that outputs ast graphs per node for use with GRaphViz tools
+    bool output_netlist_graphs; // switch that outputs netlist graphs per node for use with GraphViz tools
+    bool print_parse_tokens;    // switch that controls whether or not each token is printed during parsing
+    bool output_preproc_source; // TODO: unused
 
     int min_hard_multiplier; // threshold from hard to soft logic
     int mult_padding;        // setting how multipliers are padded to fit fixed size

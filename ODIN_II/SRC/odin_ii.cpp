@@ -171,13 +171,7 @@ static ODIN_ERROR_CODE synthesize_verilog() {
 
         cleanup_parser();
 
-        elaboration_time = wall_time() - elaboration_time;
-
-        printf("Successful High-level synthesis by Odin\n\tBlif file available at %s\n\tRan in ", global_args.output_file.value().c_str());
-        print_time(elaboration_time);
-        printf("\n");
-        printf("--------------------------------------------------------------------\n");
-
+        printf("Successful High-level synthesis by Odin\n\tBlif file available at %s\n", global_args.output_file.value().c_str());
         report_mult_distribution();
         report_add_distribution();
         report_sub_distribution();
@@ -186,18 +180,19 @@ static ODIN_ERROR_CODE synthesize_verilog() {
         //cleanup netlist
         free_netlist(verilog_netlist);
     } else {
-        elaboration_time = wall_time() - elaboration_time;
-
-        printf("No blif genereated, Empty input or no module declared\n\tRan in ");
-        print_time(elaboration_time);
-        printf("\n");
-        printf("--------------------------------------------------------------------\n");
+        printf("No blif genereated, Empty input or no module declared\n");
     }
+    elaboration_time = wall_time() - elaboration_time;
+    printf("Elaboration Time: ");
+    print_time(elaboration_time);
+    printf("\n--------------------------------------------------------------------\n");
 
     return SUCCESS;
 }
 
 netlist_t* start_odin_ii(int argc, char** argv) {
+    double total_time = wall_time();
+
     try {
         /* Some initialization */
         one_string = vtr::strdup(ONE_VCC_CNS);
@@ -249,22 +244,28 @@ netlist_t* start_odin_ii(int argc, char** argv) {
             printf("Odin Failed to load architecture file: %s with exit code%d\n", vtr_error.what(), ERROR_PARSE_ARCH);
             exit(ERROR_PARSE_ARCH);
         }
+        printf("Architecture: %s\n", basename(global_args.arch_file.value().c_str()));
     }
 
     /* do High level Synthesis */
-    if (global_args.blif_file.provenance() != argparse::Provenance::SPECIFIED) {
+    if (!configuration.list_of_file_names.empty() && configuration.is_verilog_input) {
         ODIN_ERROR_CODE error_code = synthesize_verilog();
         if (error_code) {
             printf("Odin Failed to parse Verilog with exit status: %d\n", error_code);
             exit(error_code);
         }
+
+        printf("Verilog: ");
+        for (std::string v_file : global_args.verilog_files.value()) {
+            printf("%s ", basename(v_file.c_str()));
+        }
+        printf("\n");
     }
 
     /*************************************************************
      * begin simulation section
      */
     netlist_t* odin_netlist = NULL;
-
     if (global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED
         || global_args.interactive_simulation
         || global_args.sim_num_test_vectors
@@ -274,6 +275,8 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         if (global_args.blif_file.provenance() != argparse::Provenance::SPECIFIED) {
             configuration.list_of_file_names = {global_args.output_file};
             current_parse_file = 0;
+        } else {
+            printf("Blif: %s\n", basename(global_args.blif_file.value().c_str()));
         }
 
         try {
@@ -294,6 +297,10 @@ netlist_t* start_odin_ii(int argc, char** argv) {
     }
 
     printf("--------------------------------------------------------------------\n");
+    total_time = wall_time() - total_time;
+    printf("Total time: ");
+    print_time(total_time);
+    printf("\n");
     printf("Odin ran with exit status: %d\n", SUCCESS);
     return odin_netlist;
 }
@@ -537,6 +544,7 @@ void get_options(int argc, char** argv) {
     if (!global_args.verilog_files.value().empty()) {
         //parse comma separated list of verilog files
         configuration.list_of_file_names = global_args.verilog_files.value();
+        configuration.is_verilog_input = true;
     } else if (global_args.blif_file.provenance() == argparse::Provenance::SPECIFIED) {
         configuration.list_of_file_names = {std::string(global_args.blif_file)};
     }

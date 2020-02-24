@@ -18,6 +18,7 @@ endif
 #    debug
 BUILD_TYPE ?= release
 MAKEFLAGS := -s
+CMAKE_ARGS = -DVTR_IPO_BUILD=off
 
 BUILD_DIR=../build
 ODIN_BUILD_DIR=$(BUILD_DIR)/ODIN_II
@@ -58,25 +59,25 @@ _set_build: $(ODIN_BUILD_DIR)/.regular.build
 	cd $(BUILD_DIR) &&\
 	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) ..
 
-_set_debug: $(ODIN_BUILD_DIR)/.debug.build
+_set_debug: $(ODIN_BUILD_DIR)/.debug.build 
 	cd $(BUILD_DIR) &&\
-	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DVTR_IPO_BUILD=off -DODIN_DEBUG=on ..
+	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_DEBUG=on ..
 
 _set_warn: $(ODIN_BUILD_DIR)/.warn.build
 	cd $(BUILD_DIR) &&\
-	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DVTR_IPO_BUILD=off -DODIN_WARN=on ..
+	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_WARN=on ..
 
 _set_gcov: $(ODIN_BUILD_DIR)/.gcov.build
 	cd $(BUILD_DIR) &&\
-	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DVTR_IPO_BUILD=off -DODIN_COVERAGE=on ..
+	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_COVERAGE=on ..
 
 _set_clang_tidy: $(ODIN_BUILD_DIR)/.tidy.build
 	cd $(BUILD_DIR) &&\
-	cmake  $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DVTR_IPO_BUILD=off -DODIN_TIDY=on ..
+	cmake  $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_TIDY=on ..
 
 _set_sanitize: $(ODIN_BUILD_DIR)/.sanitize.build
 	cd $(BUILD_DIR) &&\
-	cmake  $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DVTR_IPO_BUILD=off -DODIN_SANITIZE=on ..
+	cmake  $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_SANITIZE=on ..
 
 BUILD_IT_TARGETS = build debug warn gcov clang_tidy sanitize
 $(foreach  t,$(BUILD_IT_TARGETS), $(eval $(call _build_it_gen,$(t))))
@@ -93,30 +94,34 @@ gcovr:
 cppcheck:
 	cppcheck . 1> /dev/null 
 
-test_light_coverage:
+test_coverage:
 	$(MAKE) gcov
-	./verify_odin.sh -t regression_test/benchmark/suite/light_suite -j $(NB_OF_PROCESS)
-	$(MAKE) gcovr
-
-test_full_coverage:
-	$(MAKE) test_light_coverage
-	./verify_odin.sh -t regression_test/benchmark/suite/heavy_suite -j $(NB_OF_PROCESS)
+	./verify_odin.sh -j $(NB_OF_PROCESS) \
+		-t regression_test/benchmark/suite/light_suite
 	$(MAKE) gcovr
 
 test:
 # rebuild with sanitize flags on to run the same test as travis
 	$(MAKE) sanitize
-	./verify_odin.sh -t regression_test/benchmark/suite/light_suite -j $(NB_OF_PROCESS)
-	./verify_odin.sh -t vtr_reg_basic -j $(NB_OF_PROCESS)
-	./verify_odin.sh -t vtr_reg_strong -j $(NB_OF_PROCESS)
-
-large_test:
+	./verify_odin.sh -j $(NB_OF_PROCESS) \
+		-t regression_test/benchmark/suite/light_suite \
+		-t vtr_reg_basic \
+		-t vtr_reg_strong
 # larger test should run with regular flags to speed up the process
 	$(MAKE) build
-	./verify_odin.sh -t regression_test/benchmark/suite/heavy_suite -j $(NB_OF_PROCESS)
+	./verify_odin.sh -j $(NB_OF_PROCESS) \
+		-t regression_test/benchmark/suite/heavy_suite
 
-pre_merge:
-	$(MAKE) test
-	$(MAKE) large_test
-	
-
+qor:
+# rebuild with sanitize flags on to run the same test as travis
+	$(MAKE) sanitize
+	./verify_odin.sh -j $(NB_OF_PROCESS) \
+		--regenerate_qor \
+		-t regression_test/benchmark/suite/light_suite \
+		-t vtr_reg_basic \
+		-t vtr_reg_strong
+# larger test should run with regular flags to speed up the process
+	$(MAKE) build
+	./verify_odin.sh -j $(NB_OF_PROCESS) \
+		--regenerate_qor \
+		-t regression_test/benchmark/suite/heavy_suite

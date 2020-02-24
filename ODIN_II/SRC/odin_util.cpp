@@ -830,16 +830,7 @@ std::string find_substring(char* src, const char* sKey, int flag) {
  * Prints the time in appropriate units.
  */
 void print_time(double time) {
-    if (time > 24 * 3600)
-        printf("%.1fd", time / (24 * 3600.0));
-    else if (time > 3600)
-        printf("%.1fh", time / 3600.0);
-    else if (time > 60)
-        printf("%.1fm", time / 60.0);
-    else if (time > 1)
-        printf("%.1fs", time);
-    else
-        printf("%.1fms", time * 1000);
+    printf("%.1fms", time * 1000);
 }
 
 /*
