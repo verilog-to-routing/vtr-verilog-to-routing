@@ -87,5 +87,41 @@ function realapath_from() {
 	# reconstructed_path is complete
 	# c: ../../a/somewhere
 
-	echo ${reconstructed_path}
+	echo "${reconstructed_path}"
+}
+
+function pretty_print_status() {
+	colorize=$1
+	color_in=$2
+	display_name=$3
+	result="${*:4}"
+
+
+	head_color=""
+	tail_color=""
+	if [ "_${colorize}" == "_on" ]
+	then
+		head_color="\033[0m"
+		tail_color="\033[0m"
+		case ${color_in} in
+			red|RED)
+				head_color="\033[0;31m"
+			;;
+			green|GREEN)
+				head_color="\033[0;32m"
+			;;
+			yellow|YELLOW)
+				head_color="\033[0;33m"
+			;;
+		esac
+	fi
+
+	if [ "_${result}" == "_" ]
+	then
+		line=$(printf '\040%.0s\040%.0s' {1..36})
+		printf "  ${line} ${display_name}\n"
+	else
+		line=$(printf '\040%.0s\056%.0s' {1..36})
+		printf "  ${head_color}${result}${line:${#result}}${tail_color} ${display_name}\n"
+	fi
 }

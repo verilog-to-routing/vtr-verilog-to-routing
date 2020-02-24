@@ -1,0 +1,258 @@
+test_name                                                                      ,architecture                          ,verilog                                 ,exit,max_rss(MiB),exec_time(ms),synthesis_time(ms)
+micro/bm_add_lpm/k6_frac_N10_frac_chain_mem32K_40nm                            ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_add_lpm.v                            ,0   ,25.2        ,113.8        ,3.7
+micro/bm_add_lpm/k6_frac_N10_frac_chain_mem32K_40nm                            ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_add_lpm.v                            ,0   ,25.2        ,113.8        ,3.7
+micro/bm_add_lpm/k6_N10_40nm                                                   ,k6_N10_40nm.xml                       ,bm_add_lpm.v                            ,0   ,14.8        ,33.5         ,14.2
+micro/bm_add_lpm/k6_N10_mem32K_40nm                                            ,k6_N10_mem32K_40nm.xml                ,bm_add_lpm.v                            ,0   ,24.0        ,226.5        ,3.1
+micro/bm_add_lpm/no_arch                                                       ,                                      ,bm_add_lpm.v                            ,0   ,11.8        ,11.8         ,8.8
+micro/bm_and_log/k6_frac_N10_frac_chain_mem32K_40nm                            ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_and_log.v                            ,0   ,25.4        ,151.9        ,9.1
+micro/bm_and_log/k6_N10_40nm                                                   ,k6_N10_40nm.xml                       ,bm_and_log.v                            ,0   ,15.0        ,37.4         ,14.9
+micro/bm_and_log/k6_N10_mem32K_40nm                                            ,k6_N10_mem32K_40nm.xml                ,bm_and_log.v                            ,0   ,25.0        ,119.8        ,8.1
+micro/bm_and_log/no_arch                                                       ,                                      ,bm_and_log.v                            ,0   ,12.6        ,29.1         ,26.0
+micro/bm_arithmetic_unused_bits/k6_frac_N10_frac_chain_mem32K_40nm             ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_arithmetic_unused_bits.v             ,0   ,43.9        ,340.1        ,169.7
+micro/bm_arithmetic_unused_bits/k6_N10_40nm                                    ,k6_N10_40nm.xml                       ,bm_arithmetic_unused_bits.v             ,0   ,75.5        ,417.8        ,397.2
+micro/bm_arithmetic_unused_bits/k6_N10_mem32K_40nm                             ,k6_N10_mem32K_40nm.xml                ,bm_arithmetic_unused_bits.v             ,0   ,43.6        ,421.8        ,207.9
+micro/bm_arithmetic_unused_bits/no_arch                                        ,                                      ,bm_arithmetic_unused_bits.v             ,0   ,73.2        ,519.2        ,516.3
+micro/bm_base_multiply/k6_frac_N10_frac_chain_mem32K_40nm                      ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_base_multiply.v                      ,0   ,29.2        ,243.8        ,53.1
+micro/bm_base_multiply/k6_N10_40nm                                             ,k6_N10_40nm.xml                       ,bm_base_multiply.v                      ,0   ,21.2        ,81.2         ,61.5
+micro/bm_base_multiply/k6_N10_mem32K_40nm                                      ,k6_N10_mem32K_40nm.xml                ,bm_base_multiply.v                      ,0   ,28.9        ,206.6        ,46.4
+micro/bm_base_multiply/no_arch                                                 ,                                      ,bm_base_multiply.v                      ,0   ,19.4        ,73.7         ,59.1
+micro/bm_dag1_log/k6_frac_N10_frac_chain_mem32K_40nm                           ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_dag1_log.v                           ,0   ,25.2        ,137.0        ,4.8
+micro/bm_dag1_log/k6_N10_40nm                                                  ,k6_N10_40nm.xml                       ,bm_dag1_log.v                           ,0   ,15.0        ,21.1         ,5.4
+micro/bm_dag1_log/k6_N10_mem32K_40nm                                           ,k6_N10_mem32K_40nm.xml                ,bm_dag1_log.v                           ,0   ,24.7        ,173.4        ,5.2
+micro/bm_dag1_log_mod/k6_frac_N10_frac_chain_mem32K_40nm                       ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_dag1_log_mod.v                       ,0   ,27.5        ,186.8        ,25.9
+micro/bm_dag1_log_mod/k6_N10_40nm                                              ,k6_N10_40nm.xml                       ,bm_dag1_log_mod.v                       ,0   ,17.3        ,42.2         ,14.4
+micro/bm_dag1_log_mod/k6_N10_mem32K_40nm                                       ,k6_N10_mem32K_40nm.xml                ,bm_dag1_log_mod.v                       ,0   ,26.7        ,146.7        ,15.6
+micro/bm_dag1_log_mod/no_arch                                                  ,                                      ,bm_dag1_log_mod.v                       ,0   ,15.4        ,20.9         ,15.2
+micro/bm_dag1_log/no_arch                                                      ,                                      ,bm_dag1_log.v                           ,0   ,12.5        ,13.4         ,10.5
+micro/bm_dag1_lpm/k6_frac_N10_frac_chain_mem32K_40nm                           ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_dag1_lpm.v                           ,0   ,25.7        ,207.4        ,8.1
+micro/bm_dag1_lpm/k6_N10_40nm                                                  ,k6_N10_40nm.xml                       ,bm_dag1_lpm.v                           ,0   ,15.1        ,30.4         ,6.1
+micro/bm_dag1_lpm/k6_N10_mem32K_40nm                                           ,k6_N10_mem32K_40nm.xml                ,bm_dag1_lpm.v                           ,0   ,24.6        ,132.8        ,4.8
+micro/bm_dag1_lpm/no_arch                                                      ,                                      ,bm_dag1_lpm.v                           ,0   ,12.5        ,25.9         ,19.6
+micro/bm_dag1_mod/k6_frac_N10_frac_chain_mem32K_40nm                           ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_dag1_mod.v                           ,0   ,27.4        ,186.9        ,14.9
+micro/bm_dag1_mod/k6_N10_40nm                                                  ,k6_N10_40nm.xml                       ,bm_dag1_mod.v                           ,0   ,17.3        ,27.5         ,13.8
+micro/bm_dag1_mod/k6_N10_mem32K_40nm                                           ,k6_N10_mem32K_40nm.xml                ,bm_dag1_mod.v                           ,0   ,26.8        ,115.3        ,13.5
+micro/bm_dag1_mod/no_arch                                                      ,                                      ,bm_dag1_mod.v                           ,0   ,15.2        ,45.8         ,38.6
+micro/bm_dag2_log/k6_frac_N10_frac_chain_mem32K_40nm                           ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_dag2_log.v                           ,0   ,25.5        ,166.5        ,9.2
+micro/bm_dag2_log/k6_N10_40nm                                                  ,k6_N10_40nm.xml                       ,bm_dag2_log.v                           ,0   ,14.9        ,26.7         ,5.3
+micro/bm_dag2_log/k6_N10_mem32K_40nm                                           ,k6_N10_mem32K_40nm.xml                ,bm_dag2_log.v                           ,0   ,24.9        ,113.0        ,5.1
+micro/bm_dag2_log_mod/k6_frac_N10_frac_chain_mem32K_40nm                       ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_dag2_log_mod.v                       ,0   ,27.5        ,224.1        ,23.7
+micro/bm_dag2_log_mod/k6_N10_40nm                                              ,k6_N10_40nm.xml                       ,bm_dag2_log_mod.v                       ,0   ,17.5        ,39.0         ,20.0
+micro/bm_dag2_log_mod/k6_N10_mem32K_40nm                                       ,k6_N10_mem32K_40nm.xml                ,bm_dag2_log_mod.v                       ,0   ,26.6        ,163.0        ,12.9
+micro/bm_dag2_log_mod/no_arch                                                  ,                                      ,bm_dag2_log_mod.v                       ,0   ,15.7        ,41.6         ,38.4
+micro/bm_dag2_log/no_arch                                                      ,                                      ,bm_dag2_log.v                           ,0   ,12.4        ,18.4         ,15.4
+micro/bm_dag2_lpm/k6_frac_N10_frac_chain_mem32K_40nm                           ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_dag2_lpm.v                           ,0   ,25.6        ,130.6        ,6.0
+micro/bm_dag2_lpm/k6_N10_40nm                                                  ,k6_N10_40nm.xml                       ,bm_dag2_lpm.v                           ,0   ,14.9        ,26.0         ,11.5
+micro/bm_dag2_lpm/k6_N10_mem32K_40nm                                           ,k6_N10_mem32K_40nm.xml                ,bm_dag2_lpm.v                           ,0   ,24.5        ,99.3         ,3.7
+micro/bm_dag2_lpm/no_arch                                                      ,                                      ,bm_dag2_lpm.v                           ,0   ,12.5        ,9.0          ,5.8
+micro/bm_dag2_mod/k6_frac_N10_frac_chain_mem32K_40nm                           ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_dag2_mod.v                           ,0   ,27.3        ,131.4        ,11.8
+micro/bm_dag2_mod/k6_N10_40nm                                                  ,k6_N10_40nm.xml                       ,bm_dag2_mod.v                           ,0   ,17.5        ,42.2         ,28.9
+micro/bm_dag2_mod/k6_N10_mem32K_40nm                                           ,k6_N10_mem32K_40nm.xml                ,bm_dag2_mod.v                           ,0   ,26.4        ,102.7        ,10.3
+micro/bm_dag2_mod/no_arch                                                      ,                                      ,bm_dag2_mod.v                           ,0   ,15.2        ,33.5         ,20.2
+micro/bm_dag3_log/k6_frac_N10_frac_chain_mem32K_40nm                           ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_dag3_log.v                           ,0   ,25.5        ,134.7        ,6.3
+micro/bm_dag3_log/k6_N10_40nm                                                  ,k6_N10_40nm.xml                       ,bm_dag3_log.v                           ,0   ,15.4        ,20.8         ,6.7
+micro/bm_dag3_log/k6_N10_mem32K_40nm                                           ,k6_N10_mem32K_40nm.xml                ,bm_dag3_log.v                           ,0   ,24.9        ,106.0        ,6.1
+micro/bm_dag3_log_mod/k6_frac_N10_frac_chain_mem32K_40nm                       ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_dag3_log_mod.v                       ,0   ,28.2        ,139.1        ,16.5
+micro/bm_dag3_log_mod/k6_N10_40nm                                              ,k6_N10_40nm.xml                       ,bm_dag3_log_mod.v                       ,0   ,18.5        ,45.1         ,25.9
+micro/bm_dag3_log_mod/k6_N10_mem32K_40nm                                       ,k6_N10_mem32K_40nm.xml                ,bm_dag3_log_mod.v                       ,0   ,27.6        ,135.9        ,21.1
+micro/bm_dag3_log_mod/no_arch                                                  ,                                      ,bm_dag3_log_mod.v                       ,0   ,16.6        ,28.1         ,25.2
+micro/bm_dag3_log/no_arch                                                      ,                                      ,bm_dag3_log.v                           ,0   ,12.9        ,19.7         ,16.4
+micro/bm_dag3_lpm/k6_frac_N10_frac_chain_mem32K_40nm                           ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_dag3_lpm.v                           ,0   ,25.5        ,107.4        ,6.3
+micro/bm_dag3_lpm/k6_N10_40nm                                                  ,k6_N10_40nm.xml                       ,bm_dag3_lpm.v                           ,0   ,15.4        ,24.6         ,9.7
+micro/bm_dag3_lpm/k6_N10_mem32K_40nm                                           ,k6_N10_mem32K_40nm.xml                ,bm_dag3_lpm.v                           ,0   ,25.1        ,108.2        ,5.9
+micro/bm_dag3_lpm_log/k6_frac_N10_frac_chain_mem32K_40nm                       ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_dag3_lpm_log.v                       ,0   ,25.6        ,104.4        ,5.5
+micro/bm_dag3_lpm_log/k6_N10_40nm                                              ,k6_N10_40nm.xml                       ,bm_dag3_lpm_log.v                       ,0   ,15.6        ,26.4         ,13.1
+micro/bm_dag3_lpm_log/k6_N10_mem32K_40nm                                       ,k6_N10_mem32K_40nm.xml                ,bm_dag3_lpm_log.v                       ,0   ,25.1        ,127.8        ,8.8
+micro/bm_dag3_lpm_log_mod/k6_frac_N10_frac_chain_mem32K_40nm                   ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_dag3_lpm_log_mod.v                   ,0   ,28.3        ,133.9        ,42.5
+micro/bm_dag3_lpm_log_mod/k6_N10_40nm                                          ,k6_N10_40nm.xml                       ,bm_dag3_lpm_log_mod.v                   ,0   ,18.0        ,39.1         ,23.0
+micro/bm_dag3_lpm_log_mod/k6_N10_mem32K_40nm                                   ,k6_N10_mem32K_40nm.xml                ,bm_dag3_lpm_log_mod.v                   ,0   ,27.6        ,114.7        ,17.2
+micro/bm_dag3_lpm_log_mod/no_arch                                              ,                                      ,bm_dag3_lpm_log_mod.v                   ,0   ,16.7        ,50.0         ,46.3
+micro/bm_dag3_lpm_log/no_arch                                                  ,                                      ,bm_dag3_lpm_log.v                       ,0   ,12.8        ,13.0         ,9.7
+micro/bm_dag3_lpm_mod/k6_frac_N10_frac_chain_mem32K_40nm                       ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_dag3_lpm_mod.v                       ,0   ,28.9        ,131.9        ,24.0
+micro/bm_dag3_lpm_mod/k6_N10_40nm                                              ,k6_N10_40nm.xml                       ,bm_dag3_lpm_mod.v                       ,0   ,18.6        ,44.1         ,25.3
+micro/bm_dag3_lpm_mod/k6_N10_mem32K_40nm                                       ,k6_N10_mem32K_40nm.xml                ,bm_dag3_lpm_mod.v                       ,0   ,28.3        ,124.5        ,18.1
+micro/bm_dag3_lpm_mod/no_arch                                                  ,                                      ,bm_dag3_lpm_mod.v                       ,0   ,16.8        ,29.6         ,25.9
+micro/bm_dag3_lpm/no_arch                                                      ,                                      ,bm_dag3_lpm.v                           ,0   ,12.9        ,13.7         ,10.0
+micro/bm_dag3_mod/k6_frac_N10_frac_chain_mem32K_40nm                           ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_dag3_mod.v                           ,0   ,28.2        ,152.9        ,20.6
+micro/bm_dag3_mod/k6_N10_40nm                                                  ,k6_N10_40nm.xml                       ,bm_dag3_mod.v                           ,0   ,17.8        ,44.5         ,29.7
+micro/bm_dag3_mod/k6_N10_mem32K_40nm                                           ,k6_N10_mem32K_40nm.xml                ,bm_dag3_mod.v                           ,0   ,27.4        ,123.2        ,21.5
+micro/bm_dag3_mod/no_arch                                                      ,                                      ,bm_dag3_mod.v                           ,0   ,15.9        ,39.4         ,36.6
+micro/bm_dag4_mod/k6_frac_N10_frac_chain_mem32K_40nm                           ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_dag4_mod.v                           ,0   ,27.6        ,120.4        ,14.2
+micro/bm_dag4_mod/k6_N10_40nm                                                  ,k6_N10_40nm.xml                       ,bm_dag4_mod.v                           ,0   ,17.0        ,28.8         ,14.8
+micro/bm_dag4_mod/k6_N10_mem32K_40nm                                           ,k6_N10_mem32K_40nm.xml                ,bm_dag4_mod.v                           ,0   ,26.7        ,174.7        ,58.4
+micro/bm_dag4_mod/no_arch                                                      ,                                      ,bm_dag4_mod.v                           ,0   ,15.2        ,39.3         ,32.9
+micro/bm_DL_16_1_mux/k6_frac_N10_frac_chain_mem32K_40nm                        ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_DL_16_1_mux.v                        ,0   ,29.9        ,167.6        ,28.8
+micro/bm_DL_16_1_mux/k6_N10_40nm                                               ,k6_N10_40nm.xml                       ,bm_DL_16_1_mux.v                        ,0   ,20.1        ,53.0         ,40.0
+micro/bm_DL_16_1_mux/k6_N10_mem32K_40nm                                        ,k6_N10_mem32K_40nm.xml                ,bm_DL_16_1_mux.v                        ,0   ,29.2        ,119.4        ,24.5
+micro/bm_DL_16_1_mux/no_arch                                                   ,                                      ,bm_DL_16_1_mux.v                        ,0   ,17.2        ,39.4         ,36.0
+micro/bm_DL_2_1_mux/k6_frac_N10_frac_chain_mem32K_40nm                         ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_DL_2_1_mux.v                         ,0   ,24.5        ,117.0        ,1.6
+micro/bm_DL_2_1_mux/k6_N10_40nm                                                ,k6_N10_40nm.xml                       ,bm_DL_2_1_mux.v                         ,0   ,14.0        ,18.7         ,3.8
+micro/bm_DL_2_1_mux/k6_N10_mem32K_40nm                                         ,k6_N10_mem32K_40nm.xml                ,bm_DL_2_1_mux.v                         ,0   ,23.8        ,103.4        ,1.7
+micro/bm_DL_2_1_mux/no_arch                                                    ,                                      ,bm_DL_2_1_mux.v                         ,0   ,11.0        ,19.6         ,2.7
+micro/bm_DL_2_4_encoder/k6_frac_N10_frac_chain_mem32K_40nm                     ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_DL_2_4_encoder.v                     ,0   ,25.0        ,109.3        ,3.9
+micro/bm_DL_2_4_encoder/k6_N10_40nm                                            ,k6_N10_40nm.xml                       ,bm_DL_2_4_encoder.v                     ,0   ,14.8        ,19.2         ,5.0
+micro/bm_DL_2_4_encoder/k6_N10_mem32K_40nm                                     ,k6_N10_mem32K_40nm.xml                ,bm_DL_2_4_encoder.v                     ,0   ,24.3        ,114.4        ,3.9
+micro/bm_DL_2_4_encoder/no_arch                                                ,                                      ,bm_DL_2_4_encoder.v                     ,0   ,11.6        ,9.4          ,4.6
+micro/bm_DL_2_cascaded_flip_flops/k6_frac_N10_frac_chain_mem32K_40nm           ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_DL_2_cascaded_flip_flops.v           ,0   ,24.6        ,108.1        ,1.9
+micro/bm_DL_2_cascaded_flip_flops/k6_N10_40nm                                  ,k6_N10_40nm.xml                       ,bm_DL_2_cascaded_flip_flops.v           ,0   ,14.1        ,20.8         ,4.4
+micro/bm_DL_2_cascaded_flip_flops/k6_N10_mem32K_40nm                           ,k6_N10_mem32K_40nm.xml                ,bm_DL_2_cascaded_flip_flops.v           ,0   ,23.7        ,111.8        ,1.9
+micro/bm_DL_2_cascaded_flip_flops/no_arch                                      ,                                      ,bm_DL_2_cascaded_flip_flops.v           ,0   ,11.2        ,10.8         ,7.7
+micro/bm_DL_4_16_encoder/k6_frac_N10_frac_chain_mem32K_40nm                    ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_DL_4_16_encoder.v                    ,0   ,27.0        ,135.8        ,17.2
+micro/bm_DL_4_16_encoder/k6_N10_40nm                                           ,k6_N10_40nm.xml                       ,bm_DL_4_16_encoder.v                    ,0   ,16.7        ,36.1         ,22.5
+micro/bm_DL_4_16_encoder/k6_N10_mem32K_40nm                                    ,k6_N10_mem32K_40nm.xml                ,bm_DL_4_16_encoder.v                    ,0   ,26.5        ,110.4        ,18.1
+micro/bm_DL_4_16_encoder/no_arch                                               ,                                      ,bm_DL_4_16_encoder.v                    ,0   ,14.5        ,32.2         ,20.4
+micro/bm_DL_4_1_mux/k6_frac_N10_frac_chain_mem32K_40nm                         ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_DL_4_1_mux.v                         ,0   ,25.1        ,93.2         ,2.8
+micro/bm_DL_4_1_mux/k6_N10_40nm                                                ,k6_N10_40nm.xml                       ,bm_DL_4_1_mux.v                         ,0   ,14.4        ,21.1         ,9.5
+micro/bm_DL_4_1_mux/k6_N10_mem32K_40nm                                         ,k6_N10_mem32K_40nm.xml                ,bm_DL_4_1_mux.v                         ,0   ,24.4        ,98.2         ,3.7
+micro/bm_DL_4_1_mux/no_arch                                                    ,                                      ,bm_DL_4_1_mux.v                         ,0   ,11.8        ,11.6         ,3.9
+micro/bm_DL_4_bit_comparator/k6_frac_N10_frac_chain_mem32K_40nm                ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_DL_4_bit_comparator.v                ,0   ,24.8        ,107.6        ,3.8
+micro/bm_DL_4_bit_comparator/k6_N10_40nm                                       ,k6_N10_40nm.xml                       ,bm_DL_4_bit_comparator.v                ,0   ,14.6        ,15.9         ,4.0
+micro/bm_DL_4_bit_comparator/k6_N10_mem32K_40nm                                ,k6_N10_mem32K_40nm.xml                ,bm_DL_4_bit_comparator.v                ,0   ,24.5        ,94.1         ,4.0
+micro/bm_DL_4_bit_comparator/no_arch                                           ,                                      ,bm_DL_4_bit_comparator.v                ,0   ,11.7        ,7.5          ,4.6
+micro/bm_DL_4_bit_shift_register/k6_frac_N10_frac_chain_mem32K_40nm            ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_DL_4_bit_shift_register.v            ,0   ,25.7        ,106.5        ,6.5
+micro/bm_DL_4_bit_shift_register/k6_N10_40nm                                   ,k6_N10_40nm.xml                       ,bm_DL_4_bit_shift_register.v            ,0   ,15.2        ,27.7         ,11.3
+micro/bm_DL_4_bit_shift_register/k6_N10_mem32K_40nm                            ,k6_N10_mem32K_40nm.xml                ,bm_DL_4_bit_shift_register.v            ,0   ,24.9        ,100.0        ,10.1
+micro/bm_DL_4_bit_shift_register/no_arch                                       ,                                      ,bm_DL_4_bit_shift_register.v            ,0   ,13.1        ,11.6         ,8.6
+micro/bm_DL_74381_ALU/k6_frac_N10_frac_chain_mem32K_40nm                       ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_DL_74381_ALU.v                       ,0   ,25.3        ,126.6        ,7.6
+micro/bm_DL_74381_ALU/k6_N10_40nm                                              ,k6_N10_40nm.xml                       ,bm_DL_74381_ALU.v                       ,0   ,15.2        ,28.0         ,9.7
+micro/bm_DL_74381_ALU/k6_N10_mem32K_40nm                                       ,k6_N10_mem32K_40nm.xml                ,bm_DL_74381_ALU.v                       ,0   ,25.1        ,121.3        ,7.8
+micro/bm_DL_74381_ALU/no_arch                                                  ,                                      ,bm_DL_74381_ALU.v                       ,0   ,12.1        ,29.5         ,24.3
+micro/bm_DL_BCD_7_segment_without_x/k6_frac_N10_frac_chain_mem32K_40nm         ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_DL_BCD_7_segment_without_x.v         ,0   ,26.4        ,112.8        ,12.6
+micro/bm_DL_BCD_7_segment_without_x/k6_N10_40nm                                ,k6_N10_40nm.xml                       ,bm_DL_BCD_7_segment_without_x.v         ,0   ,16.1        ,33.8         ,19.2
+micro/bm_DL_BCD_7_segment_without_x/k6_N10_mem32K_40nm                         ,k6_N10_mem32K_40nm.xml                ,bm_DL_BCD_7_segment_without_x.v         ,0   ,26.0        ,119.2        ,11.5
+micro/bm_DL_BCD_7_segment_without_x/no_arch                                    ,                                      ,bm_DL_BCD_7_segment_without_x.v         ,0   ,14.0        ,32.6         ,28.8
+micro/bm_DL_BCD_adder/k6_frac_N10_frac_chain_mem32K_40nm                       ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_DL_BCD_adder.v                       ,0   ,25.7        ,118.5        ,6.6
+micro/bm_DL_BCD_adder/k6_N10_40nm                                              ,k6_N10_40nm.xml                       ,bm_DL_BCD_adder.v                       ,0   ,15.2        ,27.1         ,11.4
+micro/bm_DL_BCD_adder/k6_N10_mem32K_40nm                                       ,k6_N10_mem32K_40nm.xml                ,bm_DL_BCD_adder.v                       ,0   ,25.4        ,104.3        ,6.1
+micro/bm_DL_BCD_adder/no_arch                                                  ,                                      ,bm_DL_BCD_adder.v                       ,0   ,12.6        ,28.5         ,25.6
+micro/bm_DL_behavioural_full_adder/k6_frac_N10_frac_chain_mem32K_40nm          ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_DL_behavioural_full_adder.v          ,0   ,24.6        ,98.0         ,2.1
+micro/bm_DL_behavioural_full_adder/k6_N10_40nm                                 ,k6_N10_40nm.xml                       ,bm_DL_behavioural_full_adder.v          ,0   ,14.3        ,24.2         ,2.1
+micro/bm_DL_behavioural_full_adder/k6_N10_mem32K_40nm                          ,k6_N10_mem32K_40nm.xml                ,bm_DL_behavioural_full_adder.v          ,0   ,24.1        ,86.6         ,2.1
+micro/bm_DL_behavioural_full_adder/no_arch                                     ,                                      ,bm_DL_behavioural_full_adder.v          ,0   ,11.6        ,6.3          ,3.6
+micro/bm_DL_Dff_w_synch_reset/k6_frac_N10_frac_chain_mem32K_40nm               ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_DL_Dff_w_synch_reset.v               ,0   ,24.6        ,108.8        ,2.0
+micro/bm_DL_Dff_w_synch_reset/k6_N10_40nm                                      ,k6_N10_40nm.xml                       ,bm_DL_Dff_w_synch_reset.v               ,0   ,14.2        ,23.5         ,2.2
+micro/bm_DL_Dff_w_synch_reset/k6_N10_mem32K_40nm                               ,k6_N10_mem32K_40nm.xml                ,bm_DL_Dff_w_synch_reset.v               ,0   ,23.7        ,108.6        ,2.4
+micro/bm_DL_Dff_w_synch_reset/no_arch                                          ,                                      ,bm_DL_Dff_w_synch_reset.v               ,0   ,11.2        ,15.0         ,12.0
+micro/bm_DL_D_flipflop/k6_frac_N10_frac_chain_mem32K_40nm                      ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_DL_D_flipflop.v                      ,0   ,24.4        ,137.8        ,1.5
+micro/bm_DL_D_flipflop/k6_N10_40nm                                             ,k6_N10_40nm.xml                       ,bm_DL_D_flipflop.v                      ,0   ,14.1        ,22.4         ,3.7
+micro/bm_DL_D_flipflop/k6_N10_mem32K_40nm                                      ,k6_N10_mem32K_40nm.xml                ,bm_DL_D_flipflop.v                      ,0   ,24.0        ,139.2        ,1.6
+micro/bm_DL_D_flipflop/no_arch                                                 ,                                      ,bm_DL_D_flipflop.v                      ,0   ,11.2        ,4.8          ,2.0
+micro/bm_DL_four_bit_adder_continuous_assign/k6_frac_N10_frac_chain_mem32K_40nm,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_DL_four_bit_adder_continuous_assign.v,0   ,25.5        ,120.5        ,7.0
+micro/bm_DL_four_bit_adder_continuous_assign/k6_N10_40nm                       ,k6_N10_40nm.xml                       ,bm_DL_four_bit_adder_continuous_assign.v,0   ,15.1        ,28.9         ,10.9
+micro/bm_DL_four_bit_adder_continuous_assign/k6_N10_mem32K_40nm                ,k6_N10_mem32K_40nm.xml                ,bm_DL_four_bit_adder_continuous_assign.v,0   ,24.6        ,115.2        ,7.9
+micro/bm_DL_four_bit_adder_continuous_assign/no_arch                           ,                                      ,bm_DL_four_bit_adder_continuous_assign.v,0   ,12.3        ,22.6         ,19.4
+micro/bm_DL_logic_w_Dff2/k6_frac_N10_frac_chain_mem32K_40nm                    ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_DL_logic_w_Dff2.v                    ,0   ,24.7        ,109.2        ,2.1
+micro/bm_DL_logic_w_Dff2/k6_N10_40nm                                           ,k6_N10_40nm.xml                       ,bm_DL_logic_w_Dff2.v                    ,0   ,14.4        ,16.4         ,4.0
+micro/bm_DL_logic_w_Dff2/k6_N10_mem32K_40nm                                    ,k6_N10_mem32K_40nm.xml                ,bm_DL_logic_w_Dff2.v                    ,0   ,23.9        ,125.4        ,2.2
+micro/bm_DL_logic_w_Dff2/no_arch                                               ,                                      ,bm_DL_logic_w_Dff2.v                    ,0   ,11.7        ,7.9          ,4.9
+micro/bm_DL_logic_w_Dff/k6_frac_N10_frac_chain_mem32K_40nm                     ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_DL_logic_w_Dff.v                     ,0   ,24.7        ,142.6        ,2.4
+micro/bm_DL_logic_w_Dff/k6_N10_40nm                                            ,k6_N10_40nm.xml                       ,bm_DL_logic_w_Dff.v                     ,0   ,14.3        ,16.6         ,2.4
+micro/bm_DL_logic_w_Dff/k6_N10_mem32K_40nm                                     ,k6_N10_mem32K_40nm.xml                ,bm_DL_logic_w_Dff.v                     ,0   ,23.9        ,92.0         ,2.0
+micro/bm_DL_logic_w_Dff/no_arch                                                ,                                      ,bm_DL_logic_w_Dff.v                     ,0   ,11.4        ,9.7          ,2.5
+micro/bm_DL_structural_logic2/k6_frac_N10_frac_chain_mem32K_40nm               ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_DL_structural_logic2.v               ,0   ,24.7        ,103.2        ,2.7
+micro/bm_DL_structural_logic2/k6_N10_40nm                                      ,k6_N10_40nm.xml                       ,bm_DL_structural_logic2.v               ,0   ,14.0        ,19.6         ,2.4
+micro/bm_DL_structural_logic2/k6_N10_mem32K_40nm                               ,k6_N10_mem32K_40nm.xml                ,bm_DL_structural_logic2.v               ,0   ,24.2        ,110.4        ,3.1
+micro/bm_DL_structural_logic2/no_arch                                          ,                                      ,bm_DL_structural_logic2.v               ,0   ,11.5        ,6.2          ,3.3
+micro/bm_DL_structural_logic/k6_frac_N10_frac_chain_mem32K_40nm                ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_DL_structural_logic.v                ,0   ,24.6        ,132.8        ,3.7
+micro/bm_DL_structural_logic/k6_N10_40nm                                       ,k6_N10_40nm.xml                       ,bm_DL_structural_logic.v                ,0   ,14.2        ,15.8         ,2.7
+micro/bm_DL_structural_logic/k6_N10_mem32K_40nm                                ,k6_N10_mem32K_40nm.xml                ,bm_DL_structural_logic.v                ,0   ,23.6        ,83.5         ,1.8
+micro/bm_DL_structural_logic/no_arch                                           ,                                      ,bm_DL_structural_logic.v                ,0   ,11.4        ,7.5          ,2.6
+micro/bm_expr_all_mod/k6_frac_N10_frac_chain_mem32K_40nm                       ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_expr_all_mod.v                       ,0   ,48.1        ,364.6        ,206.3
+micro/bm_expr_all_mod/k6_N10_40nm                                              ,k6_N10_40nm.xml                       ,bm_expr_all_mod.v                       ,0   ,39.1        ,199.6        ,187.0
+micro/bm_expr_all_mod/k6_N10_mem32K_40nm                                       ,k6_N10_mem32K_40nm.xml                ,bm_expr_all_mod.v                       ,0   ,48.0        ,262.3        ,178.1
+micro/bm_expr_all_mod/no_arch                                                  ,                                      ,bm_expr_all_mod.v                       ,0   ,37.6        ,208.5        ,205.7
+micro/bm_functional_test/k6_frac_N10_frac_chain_mem32K_40nm                    ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_functional_test.v                    ,0   ,31.1        ,193.4        ,86.0
+micro/bm_functional_test/k6_N10_40nm                                           ,k6_N10_40nm.xml                       ,bm_functional_test.v                    ,0   ,23.0        ,76.7         ,63.5
+micro/bm_functional_test/k6_N10_mem32K_40nm                                    ,k6_N10_mem32K_40nm.xml                ,bm_functional_test.v                    ,0   ,31.1        ,255.0        ,51.1
+micro/bm_functional_test/no_arch                                               ,                                      ,bm_functional_test.v                    ,0   ,20.9        ,75.0         ,71.7
+micro/bm_if_collapse/k6_frac_N10_frac_chain_mem32K_40nm                        ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_if_collapse.v                        ,0   ,26.8        ,144.2        ,10.5
+micro/bm_if_collapse/k6_N10_40nm                                               ,k6_N10_40nm.xml                       ,bm_if_collapse.v                        ,0   ,17.0        ,26.4         ,14.6
+micro/bm_if_collapse/k6_N10_mem32K_40nm                                        ,k6_N10_mem32K_40nm.xml                ,bm_if_collapse.v                        ,0   ,26.2        ,103.6        ,9.9
+micro/bm_if_collapse/no_arch                                                   ,                                      ,bm_if_collapse.v                        ,0   ,14.2        ,21.0         ,17.5
+micro/bm_if_common/k6_frac_N10_frac_chain_mem32K_40nm                          ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_if_common.v                          ,0   ,26.6        ,100.7        ,8.9
+micro/bm_if_common/k6_N10_40nm                                                 ,k6_N10_40nm.xml                       ,bm_if_common.v                          ,0   ,16.3        ,39.4         ,17.8
+micro/bm_if_common/k6_N10_mem32K_40nm                                          ,k6_N10_mem32K_40nm.xml                ,bm_if_common.v                          ,0   ,26.3        ,104.6        ,12.2
+micro/bm_if_common/no_arch                                                     ,                                      ,bm_if_common.v                          ,0   ,14.3        ,26.0         ,23.3
+micro/bm_if_reset/k6_frac_N10_frac_chain_mem32K_40nm                           ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_if_reset.v                           ,0   ,26.4        ,114.7        ,9.9
+micro/bm_if_reset/k6_N10_40nm                                                  ,k6_N10_40nm.xml                       ,bm_if_reset.v                           ,0   ,16.2        ,37.5         ,9.1
+micro/bm_if_reset/k6_N10_mem32K_40nm                                           ,k6_N10_mem32K_40nm.xml                ,bm_if_reset.v                           ,0   ,25.5        ,99.5         ,10.4
+micro/bm_if_reset/no_arch                                                      ,                                      ,bm_if_reset.v                           ,0   ,13.5        ,20.3         ,17.3
+micro/bm_lpm_all/k6_frac_N10_frac_chain_mem32K_40nm                            ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_lpm_all.v                            ,0   ,32.5        ,211.8        ,85.7
+micro/bm_lpm_all/k6_N10_40nm                                                   ,k6_N10_40nm.xml                       ,bm_lpm_all.v                            ,0   ,22.4        ,95.6         ,80.7
+micro/bm_lpm_all/k6_N10_mem32K_40nm                                            ,k6_N10_mem32K_40nm.xml                ,bm_lpm_all.v                            ,0   ,32.0        ,184.5        ,74.6
+micro/bm_lpm_all/no_arch                                                       ,                                      ,bm_lpm_all.v                            ,0   ,20.3        ,104.0        ,101.0
+micro/bm_lpm_concat/k6_frac_N10_frac_chain_mem32K_40nm                         ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_lpm_concat.v                         ,0   ,28.7        ,123.8        ,22.7
+micro/bm_lpm_concat/k6_N10_40nm                                                ,k6_N10_40nm.xml                       ,bm_lpm_concat.v                         ,0   ,18.9        ,45.0         ,29.2
+micro/bm_lpm_concat/k6_N10_mem32K_40nm                                         ,k6_N10_mem32K_40nm.xml                ,bm_lpm_concat.v                         ,0   ,28.5        ,124.6        ,25.9
+micro/bm_lpm_concat/no_arch                                                    ,                                      ,bm_lpm_concat.v                         ,0   ,16.5        ,41.4         ,34.0
+micro/bm_match1_str_arch/k6_frac_N10_frac_chain_mem32K_40nm                    ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_match1_str_arch.v                    ,0   ,28.2        ,115.5        ,21.0
+micro/bm_match1_str_arch/k6_N10_40nm                                           ,k6_N10_40nm.xml                       ,bm_match1_str_arch.v                    ,0   ,33.0        ,182.1        ,165.8
+micro/bm_match1_str_arch/k6_N10_mem32K_40nm                                    ,k6_N10_mem32K_40nm.xml                ,bm_match1_str_arch.v                    ,0   ,27.6        ,112.9        ,25.0
+micro/bm_match1_str_arch/no_arch                                               ,                                      ,bm_match1_str_arch.v                    ,0   ,30.7        ,161.6        ,156.4
+micro/bm_match2_str_arch/k6_frac_N10_frac_chain_mem32K_40nm                    ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_match2_str_arch.v                    ,0   ,28.9        ,181.2        ,27.2
+micro/bm_match2_str_arch/k6_N10_40nm                                           ,k6_N10_40nm.xml                       ,bm_match2_str_arch.v                    ,0   ,28.4        ,161.1        ,148.8
+micro/bm_match2_str_arch/k6_N10_mem32K_40nm                                    ,k6_N10_mem32K_40nm.xml                ,bm_match2_str_arch.v                    ,0   ,28.3        ,118.3        ,25.3
+micro/bm_match2_str_arch/no_arch                                               ,                                      ,bm_match2_str_arch.v                    ,0   ,26.2        ,157.0        ,153.7
+micro/bm_match3_str_arch/k6_frac_N10_frac_chain_mem32K_40nm                    ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_match3_str_arch.v                    ,0   ,27.0        ,107.7        ,14.4
+micro/bm_match3_str_arch/k6_N10_40nm                                           ,k6_N10_40nm.xml                       ,bm_match3_str_arch.v                    ,0   ,18.0        ,36.0         ,23.0
+micro/bm_match3_str_arch/k6_N10_mem32K_40nm                                    ,k6_N10_mem32K_40nm.xml                ,bm_match3_str_arch.v                    ,0   ,26.9        ,107.6        ,14.3
+micro/bm_match3_str_arch/no_arch                                               ,                                      ,bm_match3_str_arch.v                    ,0   ,15.7        ,32.6         ,29.6
+micro/bm_match4_str_arch/k6_frac_N10_frac_chain_mem32K_40nm                    ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_match4_str_arch.v                    ,0   ,29.6        ,165.3        ,28.3
+micro/bm_match4_str_arch/k6_N10_40nm                                           ,k6_N10_40nm.xml                       ,bm_match4_str_arch.v                    ,0   ,23.2        ,94.4         ,81.7
+micro/bm_match4_str_arch/k6_N10_mem32K_40nm                                    ,k6_N10_mem32K_40nm.xml                ,bm_match4_str_arch.v                    ,0   ,29.1        ,119.2        ,32.6
+micro/bm_match4_str_arch/no_arch                                               ,                                      ,bm_match4_str_arch.v                    ,0   ,20.7        ,85.8         ,82.6
+micro/bm_match5_str_arch/k6_frac_N10_frac_chain_mem32K_40nm                    ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_match5_str_arch.v                    ,0   ,28.2        ,132.0        ,21.2
+micro/bm_match5_str_arch/k6_N10_40nm                                           ,k6_N10_40nm.xml                       ,bm_match5_str_arch.v                    ,0   ,24.0        ,100.6        ,84.9
+micro/bm_match5_str_arch/k6_N10_mem32K_40nm                                    ,k6_N10_mem32K_40nm.xml                ,bm_match5_str_arch.v                    ,0   ,27.6        ,111.8        ,22.4
+micro/bm_match5_str_arch/no_arch                                               ,                                      ,bm_match5_str_arch.v                    ,0   ,21.5        ,95.6         ,90.9
+micro/bm_match6_str_arch/k6_frac_N10_frac_chain_mem32K_40nm                    ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_match6_str_arch.v                    ,0   ,27.0        ,138.7        ,17.0
+micro/bm_match6_str_arch/k6_N10_40nm                                           ,k6_N10_40nm.xml                       ,bm_match6_str_arch.v                    ,0   ,17.8        ,46.9         ,30.1
+micro/bm_match6_str_arch/k6_N10_mem32K_40nm                                    ,k6_N10_mem32K_40nm.xml                ,bm_match6_str_arch.v                    ,0   ,26.3        ,115.7        ,13.7
+micro/bm_match6_str_arch/no_arch                                               ,                                      ,bm_match6_str_arch.v                    ,0   ,15.5        ,62.6         ,59.4
+micro/bm_mod/k6_frac_N10_frac_chain_mem32K_40nm                                ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_mod.v                                ,0   ,25.4        ,109.6        ,6.5
+micro/bm_mod/k6_N10_40nm                                                       ,k6_N10_40nm.xml                       ,bm_mod.v                                ,0   ,14.9        ,25.3         ,10.0
+micro/bm_mod/k6_N10_mem32K_40nm                                                ,k6_N10_mem32K_40nm.xml                ,bm_mod.v                                ,0   ,24.8        ,114.6        ,7.4
+micro/bm_mod/no_arch                                                           ,                                      ,bm_mod.v                                ,0   ,12.8        ,11.0         ,7.9
+micro/bm_my_D_latch1/k6_frac_N10_frac_chain_mem32K_40nm                        ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_my_D_latch1.v                        ,0   ,25.0        ,108.0        ,2.0
+micro/bm_my_D_latch1/k6_N10_40nm                                               ,k6_N10_40nm.xml                       ,bm_my_D_latch1.v                        ,0   ,14.0        ,30.3         ,4.2
+micro/bm_my_D_latch1/k6_N10_mem32K_40nm                                        ,k6_N10_mem32K_40nm.xml                ,bm_my_D_latch1.v                        ,0   ,24.2        ,100.0        ,2.8
+micro/bm_my_D_latch1/no_arch                                                   ,                                      ,bm_my_D_latch1.v                        ,0   ,11.5        ,7.2          ,2.5
+micro/bm_my_D_latch2/k6_frac_N10_frac_chain_mem32K_40nm                        ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_my_D_latch2.v                        ,0   ,24.5        ,105.5        ,1.3
+micro/bm_my_D_latch2/k6_N10_40nm                                               ,k6_N10_40nm.xml                       ,bm_my_D_latch2.v                        ,0   ,14.2        ,23.1         ,2.2
+micro/bm_my_D_latch2/k6_N10_mem32K_40nm                                        ,k6_N10_mem32K_40nm.xml                ,bm_my_D_latch2.v                        ,0   ,23.7        ,96.0         ,1.5
+micro/bm_my_D_latch2/no_arch                                                   ,                                      ,bm_my_D_latch2.v                        ,0   ,10.5        ,5.1          ,2.0
+micro/bm_stmt_all_mod/k6_frac_N10_frac_chain_mem32K_40nm                       ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_stmt_all_mod.v                       ,0   ,27.6        ,130.1        ,18.0
+micro/bm_stmt_all_mod/k6_N10_40nm                                              ,k6_N10_40nm.xml                       ,bm_stmt_all_mod.v                       ,0   ,17.3        ,37.6         ,22.9
+micro/bm_stmt_all_mod/k6_N10_mem32K_40nm                                       ,k6_N10_mem32K_40nm.xml                ,bm_stmt_all_mod.v                       ,0   ,26.9        ,112.5        ,21.8
+micro/bm_stmt_all_mod/no_arch                                                  ,                                      ,bm_stmt_all_mod.v                       ,0   ,15.4        ,41.9         ,38.6
+micro/bm_stmt_compare_padding/k6_frac_N10_frac_chain_mem32K_40nm               ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_stmt_compare_padding.v               ,0   ,26.6        ,106.3        ,11.5
+micro/bm_stmt_compare_padding/k6_N10_40nm                                      ,k6_N10_40nm.xml                       ,bm_stmt_compare_padding.v               ,0   ,16.1        ,23.6         ,12.2
+micro/bm_stmt_compare_padding/k6_N10_mem32K_40nm                               ,k6_N10_mem32K_40nm.xml                ,bm_stmt_compare_padding.v               ,0   ,26.0        ,119.4        ,14.5
+micro/bm_stmt_compare_padding/no_arch                                          ,                                      ,bm_stmt_compare_padding.v               ,0   ,13.9        ,18.0         ,15.0
+micro/bm_tester/k6_frac_N10_frac_chain_mem32K_40nm                             ,k6_frac_N10_frac_chain_mem32K_40nm.xml,bm_tester.v                             ,0   ,25.8        ,113.7        ,9.1
+micro/bm_tester/k6_N10_40nm                                                    ,k6_N10_40nm.xml                       ,bm_tester.v                             ,0   ,15.6        ,23.9         ,12.1
+micro/bm_tester/k6_N10_mem32K_40nm                                             ,k6_N10_mem32K_40nm.xml                ,bm_tester.v                             ,0   ,25.4        ,114.4        ,9.6
+micro/bm_tester/no_arch                                                        ,                                      ,bm_tester.v                             ,0   ,12.9        ,18.0         ,14.6
+micro/case_generate/k6_frac_N10_frac_chain_mem32K_40nm                         ,k6_frac_N10_frac_chain_mem32K_40nm.xml,case_generate.v                         ,0   ,30.1        ,138.7        ,24.3
+micro/case_generate/k6_N10_40nm                                                ,k6_N10_40nm.xml                       ,case_generate.v                         ,0   ,20.5        ,40.7         ,28.7
+micro/case_generate/k6_N10_mem32K_40nm                                         ,k6_N10_mem32K_40nm.xml                ,case_generate.v                         ,0   ,29.9        ,115.9        ,23.8
+micro/case_generate/no_arch                                                    ,                                      ,case_generate.v                         ,0   ,19.0        ,51.4         ,48.2
+micro/generate/k6_frac_N10_frac_chain_mem32K_40nm                              ,k6_frac_N10_frac_chain_mem32K_40nm.xml,generate.v                              ,0   ,30.2        ,124.3        ,25.2
+micro/generate/k6_N10_40nm                                                     ,k6_N10_40nm.xml                       ,generate.v                              ,0   ,20.1        ,44.6         ,30.8
+micro/generate/k6_N10_mem32K_40nm                                              ,k6_N10_mem32K_40nm.xml                ,generate.v                              ,0   ,29.5        ,109.7        ,23.5
+micro/generate/no_arch                                                         ,                                      ,generate.v                              ,0   ,18.9        ,31.7         ,28.8
+micro/if_generate/k6_frac_N10_frac_chain_mem32K_40nm                           ,k6_frac_N10_frac_chain_mem32K_40nm.xml,if_generate.v                           ,0   ,30.7        ,121.2        ,24.3
+micro/if_generate/k6_N10_40nm                                                  ,k6_N10_40nm.xml                       ,if_generate.v                           ,0   ,21.0        ,44.8         ,32.5
+micro/if_generate/k6_N10_mem32K_40nm                                           ,k6_N10_mem32K_40nm.xml                ,if_generate.v                           ,0   ,30.3        ,123.9        ,24.8
+micro/if_generate/no_arch                                                      ,                                      ,if_generate.v                           ,0   ,19.7        ,57.2         ,54.0
+micro/parameter_2/k6_frac_N10_frac_chain_mem32K_40nm                           ,k6_frac_N10_frac_chain_mem32K_40nm.xml,parameter_2.v                           ,0   ,27.3        ,119.0        ,12.7
+micro/parameter_2/k6_N10_40nm                                                  ,k6_N10_40nm.xml                       ,parameter_2.v                           ,0   ,19.6        ,43.5         ,29.3
+micro/parameter_2/k6_N10_mem32K_40nm                                           ,k6_N10_mem32K_40nm.xml                ,parameter_2.v                           ,0   ,29.4        ,139.3        ,27.6
+micro/parameter_2/no_arch                                                      ,                                      ,parameter_2.v                           ,0   ,17.1        ,36.5         ,33.1
+micro/parameter/k6_frac_N10_frac_chain_mem32K_40nm                             ,k6_frac_N10_frac_chain_mem32K_40nm.xml,parameter.v                             ,0   ,27.4        ,173.8        ,21.0
+micro/parameter/k6_N10_40nm                                                    ,k6_N10_40nm.xml                       ,parameter.v                             ,0   ,19.7        ,38.6         ,24.9
+micro/parameter/k6_N10_mem32K_40nm                                             ,k6_N10_mem32K_40nm.xml                ,parameter.v                             ,0   ,29.2        ,123.1        ,22.9
+micro/parameter/no_arch                                                        ,                                      ,parameter.v                             ,0   ,17.1        ,29.3         ,26.6
+micro/param_override/k6_frac_N10_frac_chain_mem32K_40nm                        ,k6_frac_N10_frac_chain_mem32K_40nm.xml,param_override.v                        ,0   ,26.9        ,127.3        ,15.9
+micro/param_override/k6_N10_40nm                                               ,k6_N10_40nm.xml                       ,param_override.v                        ,0   ,22.5        ,52.2         ,34.4
+micro/param_override/k6_N10_mem32K_40nm                                        ,k6_N10_mem32K_40nm.xml                ,param_override.v                        ,0   ,28.9        ,128.6        ,25.5
+micro/param_override/no_arch                                                   ,                                      ,param_override.v                        ,0   ,19.9        ,43.7         ,39.8

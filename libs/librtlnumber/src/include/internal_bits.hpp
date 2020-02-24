@@ -360,11 +360,9 @@ class BitFields {
      */
     template<typename Addr_t>
     char get_as_char(Addr_t address) {
-        size_t start = (8 * (address));
-        size_t end = (8 * (address + 1)) - 1;
         char value = 0;
-        for (size_t i = start; i <= end; i++) {
-            value += (((this->get_bit(i)) ? 1 : 0) << i);
+        for (size_t i = 0; i < 8; i++) {
+            value += (((this->get_bit((address * 8) + i)) ? 1 : 0) << i);
         }
 
         return value;

@@ -1,0 +1,8 @@
+test_name                                                 ,architecture                          ,verilog       ,exit,max_rss(MiB),exec_time(ms),synthesis_time(ms)
+rs_decoder/rs_decoder_1/k6_frac_N10_frac_chain_mem32K_40nm,k6_frac_N10_frac_chain_mem32K_40nm.xml,rs_decoder_1.v,0   ,1124.4      ,2226.8       ,2057.4
+rs_decoder/rs_decoder_1/k6_frac_N10_frac_chain_mem32K_40nm,k6_frac_N10_frac_chain_mem32K_40nm.xml,rs_decoder_1.v,0   ,1124.4      ,2226.8       ,2057.4
+rs_decoder/rs_decoder_1/k6_N10_40nm                       ,k6_N10_40nm.xml                       ,rs_decoder_1.v,0   ,1226.0      ,2000.7       ,1980.8
+rs_decoder/rs_decoder_1/k6_N10_mem32K_40nm                ,k6_N10_mem32K_40nm.xml                ,rs_decoder_1.v,0   ,1186.2      ,2281.3       ,2167.6
+rs_decoder/rs_decoder_2/k6_frac_N10_frac_chain_mem32K_40nm,k6_frac_N10_frac_chain_mem32K_40nm.xml,rs_decoder_2.v,0   ,1557.2      ,6477.2       ,6308.2
+rs_decoder/rs_decoder_2/k6_N10_40nm                       ,k6_N10_40nm.xml                       ,rs_decoder_2.v,0   ,1551.7      ,6125.8       ,6113.4
+rs_decoder/rs_decoder_2/k6_N10_mem32K_40nm                ,k6_N10_mem32K_40nm.xml                ,rs_decoder_2.v,0   ,1560.4      ,5295.7       ,5200.3

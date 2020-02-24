@@ -1,0 +1,5 @@
+test_name                                                           ,architecture          ,blif                         ,exit,max_rss(MiB),exec_time(ms),simulation_time(ms),test_coverage(%)
+multi_edge_reader_writer/multi_edge_reader_writer/k6_N10_40nm       ,k6_N10_40nm.xml       ,multi_edge_reader_writer.blif,0   ,16.0        ,79.5         ,51.9               ,100.0
+multi_edge_reader_writer/multi_edge_reader_writer/k6_N10_40nm       ,k6_N10_40nm.xml       ,multi_edge_reader_writer.blif,0   ,16.0        ,79.5         ,51.9               ,100.0
+multi_edge_reader_writer/multi_edge_reader_writer/k6_N10_mem32K_40nm,k6_N10_mem32K_40nm.xml,multi_edge_reader_writer.blif,0   ,34.6        ,170.9        ,89.7               ,100.0
+multi_edge_reader_writer/multi_edge_reader_writer/no_arch           ,                      ,multi_edge_reader_writer.blif,0   ,13.2        ,72.4         ,57.5               ,100.0
