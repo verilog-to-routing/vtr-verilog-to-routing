@@ -1,4 +1,8 @@
-module (Clk, Reset, CntOut);
+module deassign_bm (
+  Clk, 
+  Reset, 
+  CntOut
+);
 
 input Clk;
 input Reset;
