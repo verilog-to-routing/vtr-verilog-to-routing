@@ -1,5 +1,5 @@
 test_name                                                             ,architecture          ,verilog                    ,exit,max_rss(MiB),exec_time(ms),synthesis_time(ms)
-multi_clock_reader_writer/multi_clock_reader_writer/k6_N10_40nm       ,k6_N10_40nm.xml       ,multi_clock_reader_writer.v,0   ,25.0        ,89.4         ,69.7
-multi_clock_reader_writer/multi_clock_reader_writer/k6_N10_40nm       ,k6_N10_40nm.xml       ,multi_clock_reader_writer.v,0   ,25.0        ,89.4         ,69.7
-multi_clock_reader_writer/multi_clock_reader_writer/k6_N10_mem32K_40nm,k6_N10_mem32K_40nm.xml,multi_clock_reader_writer.v,0   ,33.9        ,159.3        ,51.9
-multi_clock_reader_writer/multi_clock_reader_writer/no_arch           ,                      ,multi_clock_reader_writer.v,0   ,23.3        ,58.8         ,56.1
+multi_clock_reader_writer/multi_clock_reader_writer/k6_N10_40nm       ,k6_N10_40nm.xml       ,multi_clock_reader_writer.v,0   ,24.8        ,18.2         ,14.4
+multi_clock_reader_writer/multi_clock_reader_writer/k6_N10_40nm       ,k6_N10_40nm.xml       ,multi_clock_reader_writer.v,0   ,24.8        ,18.2         ,14.4
+multi_clock_reader_writer/multi_clock_reader_writer/k6_N10_mem32K_40nm,k6_N10_mem32K_40nm.xml,multi_clock_reader_writer.v,0   ,34.1        ,39.9         ,15.8
+multi_clock_reader_writer/multi_clock_reader_writer/no_arch           ,                      ,multi_clock_reader_writer.v,0   ,23.6        ,16.3         ,15.3

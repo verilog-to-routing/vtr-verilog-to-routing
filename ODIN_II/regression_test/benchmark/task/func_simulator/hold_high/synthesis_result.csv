@@ -1,5 +1,5 @@
 test_name                                 ,architecture          ,verilog        ,exit,max_rss(MiB),exec_time(ms),synthesis_time(ms)
-hold_high/freq_division/k6_N10_40nm       ,k6_N10_40nm.xml       ,freq_division.v,0   ,15.2        ,27.3         ,9.6
-hold_high/freq_division/k6_N10_40nm       ,k6_N10_40nm.xml       ,freq_division.v,0   ,15.2        ,27.3         ,9.6
-hold_high/freq_division/k6_N10_mem32K_40nm,k6_N10_mem32K_40nm.xml,freq_division.v,0   ,24.9        ,103.9        ,6.3
-hold_high/freq_division/no_arch           ,                      ,freq_division.v,0   ,12.6        ,21.1         ,16.9
+hold_high/freq_division/k6_N10_40nm       ,k6_N10_40nm.xml       ,freq_division.v,0   ,15.6        ,6.1          ,2.3
+hold_high/freq_division/k6_N10_40nm       ,k6_N10_40nm.xml       ,freq_division.v,0   ,15.6        ,6.1          ,2.3
+hold_high/freq_division/k6_N10_mem32K_40nm,k6_N10_mem32K_40nm.xml,freq_division.v,0   ,25.0        ,28.2         ,2.4
+hold_high/freq_division/no_arch           ,                      ,freq_division.v,0   ,12.5        ,3.5          ,2.5
