@@ -1,5 +1,5 @@
 test_name                                                           ,architecture          ,verilog                   ,exit,max_rss(MiB),exec_time(ms),synthesis_time(ms)
-multi_edge_reader_writer/multi_edge_reader_writer/k6_N10_40nm       ,k6_N10_40nm.xml       ,multi_edge_reader_writer.v,0   ,16.5        ,22.6         ,9.4
-multi_edge_reader_writer/multi_edge_reader_writer/k6_N10_40nm       ,k6_N10_40nm.xml       ,multi_edge_reader_writer.v,0   ,16.5        ,22.6         ,9.4
-multi_edge_reader_writer/multi_edge_reader_writer/k6_N10_mem32K_40nm,k6_N10_mem32K_40nm.xml,multi_edge_reader_writer.v,0   ,25.6        ,117.4        ,8.9
-multi_edge_reader_writer/multi_edge_reader_writer/no_arch           ,                      ,multi_edge_reader_writer.v,0   ,14.2        ,18.8         ,14.8
+multi_edge_reader_writer/multi_edge_reader_writer/k6_N10_40nm       ,k6_N10_40nm.xml       ,multi_edge_reader_writer.v,0   ,16.2        ,6.9          ,3.0
+multi_edge_reader_writer/multi_edge_reader_writer/k6_N10_40nm       ,k6_N10_40nm.xml       ,multi_edge_reader_writer.v,0   ,16.2        ,6.9          ,3.0
+multi_edge_reader_writer/multi_edge_reader_writer/k6_N10_mem32K_40nm,k6_N10_mem32K_40nm.xml,multi_edge_reader_writer.v,0   ,25.7        ,27.0         ,2.8
+multi_edge_reader_writer/multi_edge_reader_writer/no_arch           ,                      ,multi_edge_reader_writer.v,0   ,13.9        ,4.4          ,3.4
