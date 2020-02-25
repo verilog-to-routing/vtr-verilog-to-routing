@@ -91,10 +91,6 @@ Rect<T>::Rect(Point<U> point)
 }
 
 template<class T>
-    //pass
-}
-
-template<class T>
 T Rect<T>::xmin() const {
     return bottom_left_.x();
 }
