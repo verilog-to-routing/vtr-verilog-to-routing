@@ -1,8 +1,8 @@
-test_name                                                 ,architecture                          ,blif             ,exit,max_rss(MiB),exec_time(ms),simulation_time(ms),test_coverage(%)
-rs_decoder/rs_decoder_1/k6_frac_N10_frac_chain_mem32K_40nm,k6_frac_N10_frac_chain_mem32K_40nm.xml,rs_decoder_1.blif,0   ,212.1       ,632.6        ,526.3              ,100.0
-rs_decoder/rs_decoder_1/k6_frac_N10_frac_chain_mem32K_40nm,k6_frac_N10_frac_chain_mem32K_40nm.xml,rs_decoder_1.blif,0   ,212.1       ,632.6        ,526.3              ,100.0
-rs_decoder/rs_decoder_1/k6_N10_40nm                       ,k6_N10_40nm.xml                       ,rs_decoder_1.blif,0   ,233.4       ,665.0        ,589.1              ,100.0
-rs_decoder/rs_decoder_1/k6_N10_mem32K_40nm                ,k6_N10_mem32K_40nm.xml                ,rs_decoder_1.blif,0   ,212.0       ,617.0        ,523.2              ,100.0
-rs_decoder/rs_decoder_2/k6_frac_N10_frac_chain_mem32K_40nm,k6_frac_N10_frac_chain_mem32K_40nm.xml,rs_decoder_2.blif,0   ,825.5       ,1864.7       ,1421.3             ,100.0
-rs_decoder/rs_decoder_2/k6_N10_40nm                       ,k6_N10_40nm.xml                       ,rs_decoder_2.blif,0   ,925.4       ,1977.0       ,1568.6             ,100.0
-rs_decoder/rs_decoder_2/k6_N10_mem32K_40nm                ,k6_N10_mem32K_40nm.xml                ,rs_decoder_2.blif,0   ,828.7       ,1862.2       ,1437.5             ,100.0
+test_name                                                 ,  architecture                          ,  blif             ,  exit,  max_rss(MiB),  exec_time(ms),  simulation_time(ms),  test_coverage(%)
+rs_decoder/rs_decoder_1/k6_frac_N10_frac_chain_mem32K_40nm,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  rs_decoder_1.blif,  0   ,  212.0       ,  634.4        ,  528.1              ,  100.0
+rs_decoder/rs_decoder_1/k6_frac_N10_frac_chain_mem32K_40nm,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  rs_decoder_1.blif,  0   ,  212.0       ,  634.4        ,  528.1              ,  100.0
+rs_decoder/rs_decoder_1/k6_N10_40nm                       ,  k6_N10_40nm.xml                       ,  rs_decoder_1.blif,  0   ,  233.7       ,  659.8        ,  584.7              ,  100.0
+rs_decoder/rs_decoder_1/k6_N10_mem32K_40nm                ,  k6_N10_mem32K_40nm.xml                ,  rs_decoder_1.blif,  0   ,  211.7       ,  622.3        ,  528.3              ,  100.0
+rs_decoder/rs_decoder_2/k6_frac_N10_frac_chain_mem32K_40nm,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  rs_decoder_2.blif,  0   ,  826.6       ,  1899.2       ,  1458.7             ,  100.0
+rs_decoder/rs_decoder_2/k6_N10_40nm                       ,  k6_N10_40nm.xml                       ,  rs_decoder_2.blif,  0   ,  925.3       ,  2007.9       ,  1597.5             ,  100.0
+rs_decoder/rs_decoder_2/k6_N10_mem32K_40nm                ,  k6_N10_mem32K_40nm.xml                ,  rs_decoder_2.blif,  0   ,  827.4       ,  1871.2       ,  1448.1             ,  100.0

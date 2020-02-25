@@ -1,3 +1,3 @@
-test_name                                                 ,architecture          ,blif                          ,exit,max_rss(MiB),exec_time(ms),simulation_time(ms),test_coverage(%)
-best_coverage/multi_clock_reader_writer/k6_N10_mem32K_40nm,k6_N10_mem32K_40nm.xml,multi_clock_reader_writer.blif,0   ,38.7        ,111.6        ,79.9               ,100.0
-best_coverage/multi_clock_reader_writer/k6_N10_mem32K_40nm,k6_N10_mem32K_40nm.xml,multi_clock_reader_writer.blif,0   ,38.7        ,111.6        ,79.9               ,100.0
+test_name                                                 ,  architecture          ,  blif                          ,  exit,  max_rss(MiB),  exec_time(ms),  simulation_time(ms),  test_coverage(%)
+best_coverage/multi_clock_reader_writer/k6_N10_mem32K_40nm,  k6_N10_mem32K_40nm.xml,  multi_clock_reader_writer.blif,  0   ,  38.8        ,  107.6        ,  79.7               ,  100.0
+best_coverage/multi_clock_reader_writer/k6_N10_mem32K_40nm,  k6_N10_mem32K_40nm.xml,  multi_clock_reader_writer.blif,  0   ,  38.8        ,  107.6        ,  79.7               ,  100.0

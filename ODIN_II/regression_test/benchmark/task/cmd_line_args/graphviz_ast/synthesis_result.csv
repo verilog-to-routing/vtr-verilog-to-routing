@@ -1,3 +1,3 @@
-test_name                                                  ,architecture          ,verilog                      ,exit,max_rss(MiB),exec_time(ms),synthesis_time(ms)
-graphviz_ast/twobits_arithmetic_multiply/k6_N10_mem32K_40nm,k6_N10_mem32K_40nm.xml,twobits_arithmetic_multiply.v,0   ,24.3        ,25.2         ,1.1
-graphviz_ast/twobits_arithmetic_multiply/k6_N10_mem32K_40nm,k6_N10_mem32K_40nm.xml,twobits_arithmetic_multiply.v,0   ,24.3        ,25.2         ,1.1
+test_name                                                  ,  architecture          ,  verilog                      ,  exit,  max_rss(MiB),  exec_time(ms),  synthesis_time(ms)
+graphviz_ast/twobits_arithmetic_multiply/k6_N10_mem32K_40nm,  k6_N10_mem32K_40nm.xml,  twobits_arithmetic_multiply.v,  0   ,  24.3        ,  25.2         ,  1.2
+graphviz_ast/twobits_arithmetic_multiply/k6_N10_mem32K_40nm,  k6_N10_mem32K_40nm.xml,  twobits_arithmetic_multiply.v,  0   ,  24.3        ,  25.2         ,  1.2

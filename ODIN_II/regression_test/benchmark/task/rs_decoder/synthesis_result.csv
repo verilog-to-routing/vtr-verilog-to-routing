@@ -1,8 +1,8 @@
-test_name                                                 ,architecture                          ,verilog       ,exit,max_rss(MiB),exec_time(ms),synthesis_time(ms)
-rs_decoder/rs_decoder_1/k6_frac_N10_frac_chain_mem32K_40nm,k6_frac_N10_frac_chain_mem32K_40nm.xml,rs_decoder_1.v,0   ,1124.6      ,587.6        ,561.9
-rs_decoder/rs_decoder_1/k6_frac_N10_frac_chain_mem32K_40nm,k6_frac_N10_frac_chain_mem32K_40nm.xml,rs_decoder_1.v,0   ,1124.6      ,587.6        ,561.9
-rs_decoder/rs_decoder_1/k6_N10_40nm                       ,k6_N10_40nm.xml                       ,rs_decoder_1.v,0   ,1225.9      ,614.1        ,610.2
-rs_decoder/rs_decoder_1/k6_N10_mem32K_40nm                ,k6_N10_mem32K_40nm.xml                ,rs_decoder_1.v,0   ,1186.4      ,613.2        ,588.9
-rs_decoder/rs_decoder_2/k6_frac_N10_frac_chain_mem32K_40nm,k6_frac_N10_frac_chain_mem32K_40nm.xml,rs_decoder_2.v,0   ,1556.9      ,1871.8       ,1846.2
-rs_decoder/rs_decoder_2/k6_N10_40nm                       ,k6_N10_40nm.xml                       ,rs_decoder_2.v,0   ,1552.0      ,1939.6       ,1935.7
-rs_decoder/rs_decoder_2/k6_N10_mem32K_40nm                ,k6_N10_mem32K_40nm.xml                ,rs_decoder_2.v,0   ,1560.4      ,1910.0       ,1885.7
+test_name                                                 ,  architecture                          ,  verilog       ,  exit,  max_rss(MiB),  exec_time(ms),  synthesis_time(ms)
+rs_decoder/rs_decoder_1/k6_frac_N10_frac_chain_mem32K_40nm,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  rs_decoder_1.v,  0   ,  1124.4      ,  588.6        ,  562.9
+rs_decoder/rs_decoder_1/k6_frac_N10_frac_chain_mem32K_40nm,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  rs_decoder_1.v,  0   ,  1124.4      ,  588.6        ,  562.9
+rs_decoder/rs_decoder_1/k6_N10_40nm                       ,  k6_N10_40nm.xml                       ,  rs_decoder_1.v,  0   ,  1225.9      ,  610.8        ,  606.8
+rs_decoder/rs_decoder_1/k6_N10_mem32K_40nm                ,  k6_N10_mem32K_40nm.xml                ,  rs_decoder_1.v,  0   ,  1186.4      ,  613.0        ,  588.8
+rs_decoder/rs_decoder_2/k6_frac_N10_frac_chain_mem32K_40nm,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  rs_decoder_2.v,  0   ,  1557.1      ,  1873.7       ,  1848.0
+rs_decoder/rs_decoder_2/k6_N10_40nm                       ,  k6_N10_40nm.xml                       ,  rs_decoder_2.v,  0   ,  1551.8      ,  1949.1       ,  1945.3
+rs_decoder/rs_decoder_2/k6_N10_mem32K_40nm                ,  k6_N10_mem32K_40nm.xml                ,  rs_decoder_2.v,  0   ,  1560.5      ,  1922.5       ,  1898.3

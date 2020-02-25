@@ -1,5 +1,5 @@
-test_name                      ,architecture          ,blif   ,exit,max_rss(MiB),exec_time(ms),simulation_time(ms),test_coverage(%)
-ff_timing/ff/k6_N10_40nm       ,k6_N10_40nm.xml       ,ff.blif,0   ,13.3        ,6.2          ,1.7                ,100.0
-ff_timing/ff/k6_N10_40nm       ,k6_N10_40nm.xml       ,ff.blif,0   ,13.3        ,6.2          ,1.7                ,100.0
-ff_timing/ff/k6_N10_mem32K_40nm,k6_N10_mem32K_40nm.xml,ff.blif,0   ,23.5        ,27.8         ,1.7                ,100.0
-ff_timing/ff/no_arch           ,                      ,ff.blif,0   ,10.3        ,3.5          ,1.7                ,100.0
+test_name                      ,  architecture          ,  blif   ,  exit,  max_rss(MiB),  exec_time(ms),  simulation_time(ms),  test_coverage(%)
+ff_timing/ff/k6_N10_40nm       ,  k6_N10_40nm.xml       ,  ff.blif,  0   ,  13.5        ,  6.2          ,  1.7                ,  100.0
+ff_timing/ff/k6_N10_40nm       ,  k6_N10_40nm.xml       ,  ff.blif,  0   ,  13.5        ,  6.2          ,  1.7                ,  100.0
+ff_timing/ff/k6_N10_mem32K_40nm,  k6_N10_mem32K_40nm.xml,  ff.blif,  0   ,  23.5        ,  26.6         ,  1.7                ,  100.0
+ff_timing/ff/no_arch           ,  n/a                   ,  ff.blif,  0   ,  10.3        ,  3.6          ,  1.7                ,  100.0

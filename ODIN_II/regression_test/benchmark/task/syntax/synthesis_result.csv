@@ -1,146 +1,146 @@
-test_name,architecture,verilog,exit,max_rss(MiB),exec_time(ms),synthesis_time(ms)
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.3         ,21.7         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.3         ,21.7         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,6.0         ,27.3         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.0         ,8.7          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.7         ,4.3          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.4         ,15.9         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.9         ,3.4          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.8         ,20.9         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.0         ,5.0          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.3         ,25.8         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.1         ,1.0          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,134 ,-1          ,-1           ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,134 ,-1          ,-1           ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,139 ,-1          ,-1           ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,139 ,-1          ,-1           ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,139 ,-1          ,-1           ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,139 ,-1          ,-1           ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.1         ,19.4         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.1         ,1.6          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.8         ,30.3         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.9         ,6.6          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.6         ,22.0         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.4         ,5.9          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.5         ,24.1         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.2         ,1.8          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,134 ,-1          ,-1           ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,134 ,-1          ,-1           ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,134 ,-1          ,-1           ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,134 ,-1          ,-1           ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.1         ,17.2         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.1         ,2.8          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,6.8         ,30.5         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.5         ,11.7         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.2         ,16.9         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.0         ,3.4          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,6.2         ,35.6         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,134 ,-1          ,-1           ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,134.5       ,2729.0       ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,258.5       ,3064.4       ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.4         ,24.3         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.0         ,2.6          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.5         ,21.1         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.8         ,10.7         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,134 ,-1          ,-1           ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,134 ,-1          ,-1           ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.4         ,13.3         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.1         ,1.0          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,7.4         ,28.0         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,28.3        ,112.8        ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,7.9         ,34.7         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,28.8        ,132.0        ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.5         ,18.1         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.7         ,1.4          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.3         ,13.4         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.1         ,1.4          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.1         ,13.4         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.2         ,1.6          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.3         ,14.0         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.1         ,3.0          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.2         ,16.4         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.0         ,16.4         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.5         ,20.2         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.1         ,2.1          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.4         ,14.2         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.2         ,2.0          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.3         ,15.6         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.9         ,3.2          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.4         ,12.9         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.0         ,4.0          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.2         ,19.2         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.7         ,5.7          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.8         ,18.7         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.6         ,10.4         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.8         ,20.7         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.4         ,9.1          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.8         ,25.8         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.4         ,9.2          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.8         ,18.6         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,6.1         ,10.8         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,7.1         ,31.9         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,20.2        ,101.0        ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.3         ,16.9         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.4         ,5.9          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.4         ,13.3         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.1         ,2.0          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.3         ,11.0         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.1         ,2.0          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,134 ,-1          ,-1           ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,134 ,-1          ,-1           ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.8         ,21.7         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,6.7         ,17.3         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,134 ,-1          ,-1           ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,134 ,-1          ,-1           ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.8         ,25.3         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.1         ,20.2         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.4         ,14.2         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.0         ,2.1          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,6.2         ,17.7         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.6         ,4.1          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.5         ,19.7         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.7         ,3.1          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,6.0         ,22.7         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.4         ,8.9          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.2         ,13.5         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.1         ,0.7          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.2         ,14.9         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.2         ,0.8          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.4         ,18.6         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.2         ,0.4          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.5         ,23.7         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.9         ,9.7          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.2         ,14.3         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.3         ,1.4          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.5         ,11.6         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.0         ,1.8          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.3         ,13.3         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.7         ,8.5          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.5         ,14.2         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.6         ,1.8          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,16.5        ,145.1        ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,16.7        ,155.2        ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,26.2        ,335.9        ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,27.8        ,383.9        ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,6.4         ,23.4         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.4         ,11.9         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.3         ,18.4         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.0         ,3.3          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.4         ,16.2         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.1         ,1.3          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.4         ,13.9         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.2         ,1.1          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.1         ,19.0         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,18.4        ,126.8        ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.3         ,15.2         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.1         ,1.3          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.2         ,11.7         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.0         ,2.1          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.1         ,13.1         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.0         ,1.0          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,134 ,-1          ,-1           ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,134 ,-1          ,-1           ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.4         ,18.2         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.2         ,1.4          ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,5.5         ,12.1         ,-1
-'n/a'    ,'n/a'       ,'n/a'  ,0   ,4.2         ,1.1          ,-1
+test_name                                                                                       ,  architecture                          ,  verilog                                                 ,  exit,  max_rss(MiB),  exec_time(ms),  synthesis_time(ms)
+syntax/8_bit_for_pass_through/k6_frac_N10_frac_chain_mem32K_40nm                                ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  8_bit_for_pass_through.v                                ,  0   ,  26.8        ,  53.0         ,  5.1
+syntax/8_bit_for_pass_through/k6_frac_N10_frac_chain_mem32K_40nm                                ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  8_bit_for_pass_through.v                                ,  0   ,  26.8        ,  53.0         ,  5.1
+syntax/8_bit_for_pass_through_module/k6_frac_N10_frac_chain_mem32K_40nm                         ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  8_bit_for_pass_through_module.v                         ,  0   ,  29.3        ,  54.8         ,  9.2
+syntax/8_bit_for_pass_through_module/no_arch                                                    ,  n/a                                   ,  8_bit_for_pass_through_module.v                         ,  0   ,  17.0        ,  11.8         ,  10.3
+syntax/8_bit_for_pass_through/no_arch                                                           ,  n/a                                   ,  8_bit_for_pass_through.v                                ,  0   ,  13.9        ,  6.6          ,  5.5
+syntax/8_bit_for_pass_through_off_by_1/k6_frac_N10_frac_chain_mem32K_40nm                       ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  8_bit_for_pass_through_off_by_1.v                       ,  0   ,  27.7        ,  44.0         ,  6.2
+syntax/8_bit_for_pass_through_off_by_1/no_arch                                                  ,  n/a                                   ,  8_bit_for_pass_through_off_by_1.v                       ,  0   ,  15.2        ,  6.3          ,  5.3
+syntax/8_bit_pass_through_module/k6_frac_N10_frac_chain_mem32K_40nm                             ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  8_bit_pass_through_module.v                             ,  0   ,  28.3        ,  52.4         ,  7.0
+syntax/8_bit_pass_through_module/no_arch                                                        ,  n/a                                   ,  8_bit_pass_through_module.v                             ,  0   ,  15.7        ,  13.6         ,  12.2
+syntax/and_primitive/k6_frac_N10_frac_chain_mem32K_40nm                                         ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  and_primitive.v                                         ,  0   ,  24.4        ,  47.4         ,  0.7
+syntax/and_primitive/no_arch                                                                    ,  n/a                                   ,  and_primitive.v                                         ,  0   ,  11.2        ,  2.3          ,  0.9
+syntax/bm_dag5_mod/k6_frac_N10_frac_chain_mem32K_40nm                                           ,  n/a                                   ,  n/a                                                     ,  134 ,  -1          ,  -1           ,  -1
+syntax/bm_dag5_mod/no_arch                                                                      ,  n/a                                   ,  n/a                                                     ,  134 ,  -1          ,  -1           ,  -1
+syntax/bm_dag6_mod_log/k6_frac_N10_frac_chain_mem32K_40nm                                       ,  n/a                                   ,  n/a                                                     ,  1   ,  -1          ,  -1           ,  -1
+syntax/bm_dag6_mod_log/no_arch                                                                  ,  n/a                                   ,  n/a                                                     ,  1   ,  -1          ,  -1           ,  -1
+syntax/bm_dag7_mod_log/k6_frac_N10_frac_chain_mem32K_40nm                                       ,  n/a                                   ,  n/a                                                     ,  1   ,  -1          ,  -1           ,  -1
+syntax/bm_dag7_mod_log/no_arch                                                                  ,  n/a                                   ,  n/a                                                     ,  1   ,  -1          ,  -1           ,  -1
+syntax/bm_DL_4_bit_updown_counter/k6_frac_N10_frac_chain_mem32K_40nm                            ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  bm_DL_4_bit_updown_counter.v                            ,  0   ,  25.4        ,  45.4         ,  2.3
+syntax/bm_DL_4_bit_updown_counter/no_arch                                                       ,  n/a                                   ,  bm_DL_4_bit_updown_counter.v                            ,  0   ,  12.6        ,  4.0          ,  2.5
+syntax/bm_DL_nbit_adder_with_carryout_and_overflow/k6_frac_N10_frac_chain_mem32K_40nm           ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  bm_DL_nbit_adder_with_carryout_and_overflow.v           ,  0   ,  28.3        ,  54.7         ,  10.5
+syntax/bm_DL_nbit_adder_with_carryout_and_overflow/no_arch                                      ,  n/a                                   ,  bm_DL_nbit_adder_with_carryout_and_overflow.v           ,  0   ,  15.7        ,  12.6         ,  11.2
+syntax/bm_DL_nbit_adder_with_carryout_and_overflow_simplified/k6_frac_N10_frac_chain_mem32K_40nm,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  bm_DL_nbit_adder_with_carryout_and_overflow_simplified.v,  0   ,  27.1        ,  49.5         ,  7.0
+syntax/bm_DL_nbit_adder_with_carryout_and_overflow_simplified/no_arch                           ,  n/a                                   ,  bm_DL_nbit_adder_with_carryout_and_overflow_simplified.v,  0   ,  14.1        ,  10.2         ,  8.7
+syntax/bm_DL_simple_fsm/k6_frac_N10_frac_chain_mem32K_40nm                                      ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  bm_DL_simple_fsm.v                                      ,  0   ,  25.1        ,  47.7         ,  2.4
+syntax/bm_DL_simple_fsm/no_arch                                                                 ,  n/a                                   ,  bm_DL_simple_fsm.v                                      ,  0   ,  12.0        ,  4.0          ,  2.6
+syntax/bm_function_1/k6_frac_N10_frac_chain_mem32K_40nm                                         ,  n/a                                   ,  n/a                                                     ,  134 ,  -1          ,  -1           ,  -1
+syntax/bm_function_1/no_arch                                                                    ,  n/a                                   ,  n/a                                                     ,  134 ,  -1          ,  -1           ,  -1
+syntax/bm_function_2/k6_frac_N10_frac_chain_mem32K_40nm                                         ,  n/a                                   ,  n/a                                                     ,  134 ,  -1          ,  -1           ,  -1
+syntax/bm_function_2/no_arch                                                                    ,  n/a                                   ,  n/a                                                     ,  134 ,  -1          ,  -1           ,  -1
+syntax/bm_jk_rtl/k6_frac_N10_frac_chain_mem32K_40nm                                             ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  bm_jk_rtl.v                                             ,  0   ,  25.1        ,  45.5         ,  1.6
+syntax/bm_jk_rtl/no_arch                                                                        ,  n/a                                   ,  bm_jk_rtl.v                                             ,  0   ,  12.2        ,  3.4          ,  1.9
+syntax/bm_log_all/k6_frac_N10_frac_chain_mem32K_40nm                                            ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  bm_log_all.v                                            ,  0   ,  30.2        ,  63.5         ,  17.4
+syntax/bm_log_all/no_arch                                                                       ,  n/a                                   ,  bm_log_all.v                                            ,  0   ,  17.8        ,  14.9         ,  13.3
+syntax/bm_simple_memory/k6_frac_N10_frac_chain_mem32K_40nm                                      ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  bm_simple_memory.v                                      ,  0   ,  25.3        ,  41.4         ,  2.4
+syntax/bm_simple_memory/no_arch                                                                 ,  n/a                                   ,  bm_simple_memory.v                                      ,  0   ,  12.8        ,  4.6          ,  3.3
+syntax/both_ram/k6_frac_N10_frac_chain_mem32K_40nm                                              ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  both_ram.v                                              ,  0   ,  29.2        ,  60.2         ,  14.5
+syntax/both_ram/no_arch                                                                         ,  n/a                                   ,  n/a                                                     ,  134 ,  -1          ,  -1           ,  -1
+syntax/cf_fft_1024_16/k6_frac_N10_frac_chain_mem32K_40nm                                        ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  cf_fft_1024_16.v                                        ,  0   ,  1723.8      ,  53059.3      ,  53014.2
+syntax/cf_fft_1024_16/no_arch                                                                   ,  n/a                                   ,  cf_fft_1024_16.v                                        ,  0   ,  1720.1      ,  57747.8      ,  57746.5
+syntax/complex_post_for_loop/k6_frac_N10_frac_chain_mem32K_40nm                                 ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  complex_post_for_loop.v                                 ,  0   ,  27.0        ,  49.5         ,  3.9
+syntax/complex_post_for_loop/no_arch                                                            ,  n/a                                   ,  complex_post_for_loop.v                                 ,  0   ,  13.8        ,  7.3          ,  5.8
+syntax/constant_module_inst/k6_frac_N10_frac_chain_mem32K_40nm                                  ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  constant_module_inst.v                                  ,  0   ,  26.2        ,  49.7         ,  4.1
+syntax/constant_module_inst/no_arch                                                             ,  n/a                                   ,  constant_module_inst.v                                  ,  0   ,  14.6        ,  7.7          ,  6.1
+syntax/deassign/k6_frac_N10_frac_chain_mem32K_40nm                                              ,  n/a                                   ,  n/a                                                     ,  134 ,  -1          ,  -1           ,  -1
+syntax/deassign/no_arch                                                                         ,  n/a                                   ,  n/a                                                     ,  134 ,  -1          ,  -1           ,  -1
+syntax/delay_syntax/k6_frac_N10_frac_chain_mem32K_40nm                                          ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  delay_syntax.v                                          ,  1   ,  24.6        ,  49.2         ,  1.3
+syntax/delay_syntax/no_arch                                                                     ,  n/a                                   ,  delay_syntax.v                                          ,  1   ,  11.3        ,  3.1          ,  1.5
+syntax/diffeq_f_systemC/k6_frac_N10_frac_chain_mem32K_40nm                                      ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  diffeq_f_systemC.v                                      ,  0   ,  32.0        ,  83.9         ,  30.6
+syntax/diffeq_f_systemC/no_arch                                                                 ,  n/a                                   ,  diffeq_f_systemC.v                                      ,  0   ,  131.5       ,  250.4        ,  248.7
+syntax/diffeq_paj_convert/k6_frac_N10_frac_chain_mem32K_40nm                                    ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  diffeq_paj_convert.v                                    ,  0   ,  39.7        ,  101.6        ,  47.1
+syntax/diffeq_paj_convert/no_arch                                                               ,  n/a                                   ,  diffeq_paj_convert.v                                    ,  0   ,  128.4       ,  274.5        ,  272.1
+syntax/fir_scu_rtl_restructured_for_cmm_exp/k6_frac_N10_frac_chain_mem32K_40nm                  ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  fir_scu_rtl_restructured_for_cmm_exp.v                  ,  1   ,  25.2        ,  55.3         ,  3.0
+syntax/fir_scu_rtl_restructured_for_cmm_exp/no_arch                                             ,  n/a                                   ,  fir_scu_rtl_restructured_for_cmm_exp.v                  ,  1   ,  12.5        ,  5.1          ,  3.4
+syntax/flip_flop_enable/k6_frac_N10_frac_chain_mem32K_40nm                                      ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  flip_flop_enable.v                                      ,  0   ,  25.5        ,  57.6         ,  2.1
+syntax/flip_flop_enable/no_arch                                                                 ,  n/a                                   ,  flip_flop_enable.v                                      ,  0   ,  12.1        ,  4.2          ,  2.5
+syntax/flip_flop_enable_w_begin_label/k6_frac_N10_frac_chain_mem32K_40nm                        ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  flip_flop_enable_w_begin_label.v                        ,  0   ,  25.3        ,  52.8         ,  1.7
+syntax/flip_flop_enable_w_begin_label/no_arch                                                   ,  n/a                                   ,  flip_flop_enable_w_begin_label.v                        ,  0   ,  12.1        ,  9.8          ,  8.2
+syntax/for_loop_adv_post/k6_frac_N10_frac_chain_mem32K_40nm                                     ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  for_loop_adv_post.v                                     ,  0   ,  25.8        ,  64.0         ,  4.0
+syntax/for_loop_adv_post/no_arch                                                                ,  n/a                                   ,  for_loop_adv_post.v                                     ,  0   ,  12.8        ,  6.3          ,  4.8
+syntax/for_loop_adv_pre/k6_frac_N10_frac_chain_mem32K_40nm                                      ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  for_loop_adv_pre.v                                      ,  0   ,  26.6        ,  61.9         ,  6.7
+syntax/for_loop_adv_pre/no_arch                                                                 ,  n/a                                   ,  for_loop_adv_pre.v                                      ,  0   ,  13.5        ,  8.1          ,  6.4
+syntax/freq_division/k6_frac_N10_frac_chain_mem32K_40nm                                         ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  freq_division.v                                         ,  0   ,  25.7        ,  55.6         ,  5.3
+syntax/freq_division/no_arch                                                                    ,  n/a                                   ,  freq_division.v                                         ,  0   ,  12.7        ,  5.5          ,  3.9
+syntax/function_automatic/k6_frac_N10_frac_chain_mem32K_40nm                                    ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  function_automatic.v                                    ,  0   ,  25.2        ,  55.3         ,  2.0
+syntax/function_automatic/no_arch                                                               ,  n/a                                   ,  function_automatic.v                                    ,  0   ,  12.4        ,  4.9          ,  3.2
+syntax/function_hdr/k6_frac_N10_frac_chain_mem32K_40nm                                          ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  function_hdr.v                                          ,  0   ,  26.7        ,  60.9         ,  7.3
+syntax/function_hdr/no_arch                                                                     ,  n/a                                   ,  function_hdr.v                                          ,  0   ,  13.6        ,  9.0          ,  7.4
+syntax/function_syntax/k6_frac_N10_frac_chain_mem32K_40nm                                       ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  function_syntax.v                                       ,  0   ,  24.8        ,  54.6         ,  1.4
+syntax/function_syntax/no_arch                                                                  ,  n/a                                   ,  function_syntax.v                                       ,  0   ,  11.7        ,  3.4          ,  1.7
+syntax/h7_of_8_bit_for_pass_through/k6_frac_N10_frac_chain_mem32K_40nm                          ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  h7_of_8_bit_for_pass_through.v                          ,  0   ,  26.6        ,  56.9         ,  6.1
+syntax/h7_of_8_bit_for_pass_through/no_arch                                                     ,  n/a                                   ,  h7_of_8_bit_for_pass_through.v                          ,  0   ,  13.4        ,  8.4          ,  6.3
+syntax/ifdef-else-syntax/k6_frac_N10_frac_chain_mem32K_40nm                                     ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  ifdef-else-syntax.v                                     ,  0   ,  29.2        ,  69.5         ,  14.5
+syntax/ifdef-else-syntax/no_arch                                                                ,  n/a                                   ,  ifdef-else-syntax.v                                     ,  0   ,  19.4        ,  30.4         ,  28.8
+syntax/ifndef-else-syntax/k6_frac_N10_frac_chain_mem32K_40nm                                    ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  ifndef-else-syntax.v                                    ,  0   ,  29.5        ,  66.2         ,  13.4
+syntax/ifndef-else-syntax/no_arch                                                               ,  n/a                                   ,  ifndef-else-syntax.v                                    ,  0   ,  19.7        ,  24.4         ,  22.7
+syntax/include-syntax/k6_frac_N10_frac_chain_mem32K_40nm                                        ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  include-syntax.v                                        ,  0   ,  29.3        ,  67.4         ,  14.3
+syntax/include-syntax/no_arch                                                                   ,  n/a                                   ,  include-syntax.v                                        ,  0   ,  19.4        ,  24.5         ,  22.8
+syntax/inferred_DPram/k6_frac_N10_frac_chain_mem32K_40nm                                        ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  inferred_DPram.v                                        ,  0   ,  30.6        ,  75.0         ,  13.9
+syntax/inferred_DPram/no_arch                                                                   ,  n/a                                   ,  inferred_DPram.v                                        ,  0   ,  18.4        ,  21.0         ,  19.3
+syntax/inferred_ram_w_clog2/k6_frac_N10_frac_chain_mem32K_40nm                                  ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  inferred_ram_w_clog2.v                                  ,  0   ,  56.1        ,  111.6        ,  61.1
+syntax/inferred_ram_w_clog2/no_arch                                                             ,  n/a                                   ,  inferred_ram_w_clog2.v                                  ,  0   ,  165.2       ,  243.8        ,  242.2
+syntax/inferred_SPram/k6_frac_N10_frac_chain_mem32K_40nm                                        ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  inferred_SPram.v                                        ,  0   ,  28.1        ,  61.9         ,  8.4
+syntax/inferred_SPram/no_arch                                                                   ,  n/a                                   ,  inferred_SPram.v                                        ,  0   ,  16.6        ,  14.5         ,  12.8
+syntax/l2_and_h2_of_8_bit_for_pass_through/k6_frac_N10_frac_chain_mem32K_40nm                   ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  l2_and_h2_of_8_bit_for_pass_through.v                   ,  0   ,  26.2        ,  50.7         ,  4.5
+syntax/l2_and_h2_of_8_bit_for_pass_through/no_arch                                              ,  n/a                                   ,  l2_and_h2_of_8_bit_for_pass_through.v                   ,  0   ,  13.0        ,  7.6          ,  5.9
+syntax/macro_in_module_declaration/k6_frac_N10_frac_chain_mem32K_40nm                           ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  macro_in_module_declaration.v                           ,  0   ,  25.2        ,  57.3         ,  3.1
+syntax/macro_in_module_declaration/no_arch                                                      ,  n/a                                   ,  macro_in_module_declaration.v                           ,  0   ,  12.3        ,  6.1          ,  4.5
+syntax/matrix_multiplication/k6_frac_N10_frac_chain_mem32K_40nm                                 ,  n/a                                   ,  n/a                                                     ,  134 ,  -1          ,  -1           ,  -1
+syntax/matrix_multiplication/no_arch                                                            ,  n/a                                   ,  n/a                                                     ,  134 ,  -1          ,  -1           ,  -1
+syntax/memlooptesting/k6_frac_N10_frac_chain_mem32K_40nm                                        ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  memlooptesting.v                                        ,  0   ,  27.2        ,  68.3         ,  10.8
+syntax/memlooptesting/no_arch                                                                   ,  n/a                                   ,  memlooptesting.v                                        ,  0   ,  19.1        ,  27.6         ,  25.8
+syntax/memory_combinational/k6_frac_N10_frac_chain_mem32K_40nm                                  ,  n/a                                   ,  n/a                                                     ,  134 ,  -1          ,  -1           ,  -1
+syntax/memory_combinational/no_arch                                                             ,  n/a                                   ,  n/a                                                     ,  134 ,  -1          ,  -1           ,  -1
+syntax/multi_clock_reader_writer/k6_frac_N10_frac_chain_mem32K_40nm                             ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  multi_clock_reader_writer.v                             ,  0   ,  34.6        ,  82.7         ,  26.5
+syntax/multi_clock_reader_writer/no_arch                                                        ,  n/a                                   ,  multi_clock_reader_writer.v                             ,  0   ,  23.4        ,  34.9         ,  33.4
+syntax/multi_edge_reader_writer/k6_frac_N10_frac_chain_mem32K_40nm                              ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  multi_edge_reader_writer.v                              ,  0   ,  26.7        ,  60.9         ,  4.9
+syntax/multi_edge_reader_writer/no_arch                                                         ,  n/a                                   ,  multi_edge_reader_writer.v                              ,  0   ,  14.0        ,  8.5          ,  6.8
+syntax/multi_module_io_data_types/k6_frac_N10_frac_chain_mem32K_40nm                            ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  multi_module_io_data_types.v                            ,  0   ,  26.5        ,  62.4         ,  8.6
+syntax/multi_module_io_data_types/no_arch                                                       ,  n/a                                   ,  multi_module_io_data_types.v                            ,  0   ,  13.7        ,  8.9          ,  7.5
+syntax/multi_module/k6_frac_N10_frac_chain_mem32K_40nm                                          ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  multi_module.v                                          ,  0   ,  26.0        ,  54.1         ,  5.7
+syntax/multi_module/no_arch                                                                     ,  n/a                                   ,  multi_module.v                                          ,  0   ,  12.7        ,  9.4          ,  7.7
+syntax/nested-ifdef-syntax/k6_frac_N10_frac_chain_mem32K_40nm                                   ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  nested-ifdef-syntax.v                                   ,  0   ,  29.3        ,  69.9         ,  13.4
+syntax/nested-ifdef-syntax/no_arch                                                              ,  n/a                                   ,  nested-ifdef-syntax.v                                   ,  0   ,  19.5        ,  27.5         ,  25.9
+syntax/no_input/k6_frac_N10_frac_chain_mem32K_40nm                                              ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  no_input.v                                              ,  0   ,  24.6        ,  49.3         ,  0.8
+syntax/no_input/no_arch                                                                         ,  n/a                                   ,  no_input.v                                              ,  0   ,  10.6        ,  2.8          ,  1.1
+syntax/no_output/k6_frac_N10_frac_chain_mem32K_40nm                                             ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  no_output.v                                             ,  0   ,  24.4        ,  54.9         ,  0.7
+syntax/no_output/no_arch                                                                        ,  n/a                                   ,  no_output.v                                             ,  0   ,  10.7        ,  3.0          ,  1.1
+syntax/no_port/k6_frac_N10_frac_chain_mem32K_40nm                                               ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  no_port.v                                               ,  1   ,  23.6        ,  49.7         ,  0.3
+syntax/no_port/no_arch                                                                          ,  n/a                                   ,  no_port.v                                               ,  1   ,  10.2        ,  2.2          ,  0.5
+syntax/not_enough_wires/k6_frac_N10_frac_chain_mem32K_40nm                                      ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  not_enough_wires.v                                      ,  0   ,  26.1        ,  57.6         ,  4.8
+syntax/not_enough_wires/no_arch                                                                 ,  n/a                                   ,  not_enough_wires.v                                      ,  0   ,  12.7        ,  7.2          ,  5.6
+syntax/part_select/k6_frac_N10_frac_chain_mem32K_40nm                                           ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  part_select.v                                           ,  0   ,  25.5        ,  55.7         ,  2.3
+syntax/part_select/no_arch                                                                      ,  n/a                                   ,  part_select.v                                           ,  0   ,  12.4        ,  5.4          ,  3.7
+syntax/preprocessor_complex_define/k6_frac_N10_frac_chain_mem32K_40nm                           ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  preprocessor_complex_define.v                           ,  0   ,  25.7        ,  50.4         ,  3.1
+syntax/preprocessor_complex_define/no_arch                                                      ,  n/a                                   ,  preprocessor_complex_define.v                           ,  0   ,  12.7        ,  8.7          ,  7.0
+syntax/preprocessor_define/k6_frac_N10_frac_chain_mem32K_40nm                                   ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  preprocessor_define.v                                   ,  0   ,  25.5        ,  54.8         ,  3.1
+syntax/preprocessor_define/no_arch                                                              ,  n/a                                   ,  preprocessor_define.v                                   ,  0   ,  12.9        ,  5.8          ,  4.1
+syntax/preprocessor_define_with_comment/k6_frac_N10_frac_chain_mem32K_40nm                      ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  preprocessor_define_with_comment.v                      ,  0   ,  25.3        ,  58.3         ,  3.1
+syntax/preprocessor_define_with_comment/no_arch                                                 ,  n/a                                   ,  preprocessor_define_with_comment.v                      ,  0   ,  12.7        ,  5.6          ,  3.8
+syntax/rs_decoder_1/k6_frac_N10_frac_chain_mem32K_40nm                                          ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  rs_decoder_1.v                                          ,  0   ,  1124.9      ,  932.1        ,  881.8
+syntax/rs_decoder_1/no_arch                                                                     ,  n/a                                   ,  rs_decoder_1.v                                          ,  0   ,  1225.3      ,  943.7        ,  942.0
+syntax/rs_decoder_2/k6_frac_N10_frac_chain_mem32K_40nm                                          ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  rs_decoder_2.v                                          ,  0   ,  1557.3      ,  2767.2       ,  2717.6
+syntax/rs_decoder_2/no_arch                                                                     ,  n/a                                   ,  rs_decoder_2.v                                          ,  0   ,  1550.4      ,  2924.3       ,  2922.6
+syntax/sign_extend_nomem/k6_frac_N10_frac_chain_mem32K_40nm                                     ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  sign_extend_nomem.v                                     ,  0   ,  34.6        ,  84.7         ,  27.2
+syntax/sign_extend_nomem/no_arch                                                                ,  n/a                                   ,  sign_extend_nomem.v                                     ,  0   ,  23.0        ,  33.2         ,  31.4
+syntax/simple_function/k6_frac_N10_frac_chain_mem32K_40nm                                       ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  simple_function.v                                       ,  0   ,  25.5        ,  55.0         ,  2.5
+syntax/simple_function/no_arch                                                                  ,  n/a                                   ,  simple_function.v                                       ,  0   ,  12.1        ,  4.1          ,  2.6
+syntax/simple_module/k6_frac_N10_frac_chain_mem32K_40nm                                         ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  simple_module.v                                         ,  0   ,  25.7        ,  52.9         ,  2.4
+syntax/simple_module/no_arch                                                                    ,  n/a                                   ,  simple_module.v                                         ,  0   ,  12.2        ,  4.6          ,  2.9
+syntax/simple_task/k6_frac_N10_frac_chain_mem32K_40nm                                           ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  simple_task.v                                           ,  0   ,  25.5        ,  59.4         ,  2.6
+syntax/simple_task/no_arch                                                                      ,  n/a                                   ,  simple_task.v                                           ,  0   ,  12.5        ,  4.5          ,  2.9
+syntax/spram_big/k6_frac_N10_frac_chain_mem32K_40nm                                             ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  spram_big.v                                             ,  0   ,  26.8        ,  62.5         ,  7.1
+syntax/spram_big/no_arch                                                                        ,  n/a                                   ,  spram_big.v                                             ,  0   ,  146.0       ,  234.1        ,  232.4
+syntax/task_automatic/k6_frac_N10_frac_chain_mem32K_40nm                                        ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  task_automatic.v                                        ,  0   ,  25.2        ,  55.8         ,  2.6
+syntax/task_automatic/no_arch                                                                   ,  n/a                                   ,  task_automatic.v                                        ,  0   ,  12.2        ,  4.3          ,  2.7
+syntax/task_multiple_instances/k6_frac_N10_frac_chain_mem32K_40nm                               ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  task_multiple_instances.v                               ,  0   ,  25.5        ,  57.7         ,  3.4
+syntax/task_multiple_instances/no_arch                                                          ,  n/a                                   ,  task_multiple_instances.v                               ,  0   ,  12.4        ,  5.6          ,  3.9
+syntax/timescale_syntax/k6_frac_N10_frac_chain_mem32K_40nm                                      ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  timescale_syntax.v                                      ,  0   ,  24.6        ,  54.5         ,  0.8
+syntax/timescale_syntax/no_arch                                                                 ,  n/a                                   ,  timescale_syntax.v                                      ,  0   ,  11.2        ,  2.7          ,  1.0
+syntax/top_and/k6_frac_N10_frac_chain_mem32K_40nm                                               ,  n/a                                   ,  n/a                                                     ,  134 ,  -1          ,  -1           ,  -1
+syntax/top_and/no_arch                                                                          ,  n/a                                   ,  n/a                                                     ,  134 ,  -1          ,  -1           ,  -1
+syntax/unconnected_input/k6_frac_N10_frac_chain_mem32K_40nm                                     ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  unconnected_input.v                                     ,  0   ,  25.2        ,  44.7         ,  2.7
+syntax/unconnected_input/no_arch                                                                ,  n/a                                   ,  unconnected_input.v                                     ,  0   ,  12.6        ,  5.1          ,  3.4
+syntax/undeclared_signal/k6_frac_N10_frac_chain_mem32K_40nm                                     ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  undeclared_signal.v                                     ,  0   ,  25.0        ,  56.2         ,  1.6
+syntax/undeclared_signal/no_arch                                                                ,  n/a                                   ,  undeclared_signal.v                                     ,  0   ,  12.0        ,  3.1          ,  1.8

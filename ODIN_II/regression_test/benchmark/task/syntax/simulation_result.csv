@@ -1,127 +1,121 @@
-test_name,architecture,blif ,exit,max_rss(MiB),exec_time(ms),simulation_time(ms),test_coverage(%)
-'n/a'    ,'n/a'       ,'n/a',0   ,5.5         ,21.1         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.5         ,21.1         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.1         ,17.9         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.1         ,4.9          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.1         ,2.5          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.1         ,24.3         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.2         ,1.9          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.2         ,29.2         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.1         ,3.0          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.2         ,14.8         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.2         ,1.5          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,6.4         ,18.8         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.0         ,1.5          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,6.8         ,33.1         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.6         ,6.8          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,6.6         ,22.9         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.6         ,7.2          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.5         ,14.2         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.0         ,2.5          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.4         ,13.2         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.0         ,2.2          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,6.3         ,26.6         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.5         ,11.7         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,11.9        ,25.9         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.5         ,5.0          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,91.4        ,173.8        ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,70.5        ,3490.2       ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,136.5       ,3517.3       ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.3         ,15.7         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.2         ,11.2         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,13.2        ,26.6         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.7         ,5.5          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.4         ,13.5         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.1         ,1.3          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,7.8         ,56.0         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,15.2        ,166.4        ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,8.8         ,78.0         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,16.2        ,181.6        ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',6   ,-1          ,-1           ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',6   ,-1          ,-1           ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.3         ,17.0         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.0         ,1.4          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.5         ,16.6         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.0         ,1.6          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.2         ,15.0         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.1         ,14.1         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.4         ,19.7         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.0         ,2.3          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.2         ,11.5         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.1         ,2.1          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,6.5         ,23.4         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.1         ,2.1          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,6.5         ,14.5         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.1         ,3.3          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.2         ,13.2         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.2         ,1.0          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.4         ,15.1         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.1         ,3.3          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,6.7         ,29.9         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.3         ,20.6         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,6.7         ,18.3         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.3         ,26.6         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,6.5         ,20.5         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.6         ,16.0         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,62.7        ,118.1        ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,6.3         ,34.1         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,176.4       ,314.4        ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,22.3        ,269.5        ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.3         ,18.1         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.0         ,3.7          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.2         ,24.2         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.1         ,2.2          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.4         ,19.3         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.2         ,3.3          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,62.8        ,143.6        ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,6.9         ,42.3         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.2         ,23.0         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.8         ,7.0          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,13.4        ,29.0         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.1         ,3.6          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.1         ,27.2         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.5         ,3.8          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.4         ,22.7         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.2         ,2.9          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,6.7         ,31.9         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.6         ,24.8         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',134 ,-1          ,-1           ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',134 ,-1          ,-1           ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.4         ,12.4         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.2         ,1.0          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',6   ,-1          ,-1           ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',6   ,-1          ,-1           ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.2         ,14.5         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.0         ,1.2          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.2         ,13.1         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.2         ,3.1          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,6.5         ,17.4         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.1         ,8.2          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,6.6         ,14.9         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.3         ,2.3          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,6.5         ,19.2         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,3.9         ,8.0          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,11.1        ,93.3         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,9.7         ,74.2         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,20.0        ,511.1        ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,19.0        ,458.2        ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.5         ,44.0         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.5         ,4.7          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,6.6         ,19.8         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.0         ,2.3          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,6.4         ,15.0         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.3         ,2.8          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,6.7         ,20.0         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.0         ,1.6          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,34.6        ,69.0         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,21.5        ,381.7        ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,6.6         ,15.6         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.0         ,1.8          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,6.4         ,14.8         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.2         ,3.5          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.4         ,13.4         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.2         ,1.0          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.4         ,13.5         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.1         ,7.6          ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,5.4         ,12.9         ,-1                 ,-1
-'n/a'    ,'n/a'       ,'n/a',0   ,4.0         ,1.1          ,-1                 ,-1
+test_name                                                                                       ,  architecture                          ,  blif                                                       ,  exit,  max_rss(MiB),  exec_time(ms),  simulation_time(ms),  test_coverage(%)
+syntax/8_bit_for_pass_through/k6_frac_N10_frac_chain_mem32K_40nm                                ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  8_bit_for_pass_through.blif                                ,  0   ,  24.2        ,  41.0         ,  0.6                ,  100.0
+syntax/8_bit_for_pass_through/k6_frac_N10_frac_chain_mem32K_40nm                                ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  8_bit_for_pass_through.blif                                ,  0   ,  24.2        ,  41.0         ,  0.6                ,  100.0
+syntax/8_bit_for_pass_through_module/k6_frac_N10_frac_chain_mem32K_40nm                         ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  8_bit_for_pass_through_module.blif                         ,  0   ,  24.0        ,  43.8         ,  0.8                ,  100.0
+syntax/8_bit_for_pass_through_module/no_arch                                                    ,  n/a                                   ,  8_bit_for_pass_through_module.blif                         ,  0   ,  10.9        ,  4.2          ,  0.6                ,  100.0
+syntax/8_bit_for_pass_through/no_arch                                                           ,  n/a                                   ,  8_bit_for_pass_through.blif                                ,  0   ,  10.5        ,  6.7          ,  3.5                ,  100.0
+syntax/8_bit_for_pass_through_off_by_1/k6_frac_N10_frac_chain_mem32K_40nm                       ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  8_bit_for_pass_through_off_by_1.blif                       ,  0   ,  23.9        ,  34.5         ,  0.3                ,  100.0
+syntax/8_bit_for_pass_through_off_by_1/no_arch                                                  ,  n/a                                   ,  8_bit_for_pass_through_off_by_1.blif                       ,  0   ,  10.8        ,  3.8          ,  0.6                ,  100.0
+syntax/8_bit_pass_through_module/k6_frac_N10_frac_chain_mem32K_40nm                             ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  8_bit_pass_through_module.blif                             ,  0   ,  24.4        ,  48.6         ,  0.7                ,  100.0
+syntax/8_bit_pass_through_module/no_arch                                                        ,  n/a                                   ,  8_bit_pass_through_module.blif                             ,  0   ,  10.7        ,  4.3          ,  0.8                ,  100.0
+syntax/and_primitive/k6_frac_N10_frac_chain_mem32K_40nm                                         ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  and_primitive.blif                                         ,  0   ,  23.6        ,  40.2         ,  0.2                ,  66.7
+syntax/and_primitive/no_arch                                                                    ,  n/a                                   ,  and_primitive.blif                                         ,  0   ,  10.5        ,  1.8          ,  0.2                ,  66.7
+syntax/bm_DL_4_bit_updown_counter/k6_frac_N10_frac_chain_mem32K_40nm                            ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  bm_DL_4_bit_updown_counter.blif                            ,  0   ,  25.5        ,  44.7         ,  0.3                ,  86.7
+syntax/bm_DL_4_bit_updown_counter/no_arch                                                       ,  n/a                                   ,  bm_DL_4_bit_updown_counter.blif                            ,  0   ,  10.5        ,  3.3          ,  0.4                ,  86.7
+syntax/bm_DL_nbit_adder_with_carryout_and_overflow/k6_frac_N10_frac_chain_mem32K_40nm           ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  bm_DL_nbit_adder_with_carryout_and_overflow.blif           ,  0   ,  26.9        ,  89.3         ,  2.1                ,  66.2
+syntax/bm_DL_nbit_adder_with_carryout_and_overflow/no_arch                                      ,  n/a                                   ,  bm_DL_nbit_adder_with_carryout_and_overflow.blif           ,  0   ,  12.6        ,  10.2         ,  2.9                ,  71.1
+syntax/bm_DL_nbit_adder_with_carryout_and_overflow_simplified/k6_frac_N10_frac_chain_mem32K_40nm,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  bm_DL_nbit_adder_with_carryout_and_overflow_simplified.blif,  0   ,  26.8        ,  67.6         ,  2.0                ,  66.8
+syntax/bm_DL_nbit_adder_with_carryout_and_overflow_simplified/no_arch                           ,  n/a                                   ,  bm_DL_nbit_adder_with_carryout_and_overflow_simplified.blif,  0   ,  12.3        ,  11.5         ,  3.9                ,  71.5
+syntax/bm_DL_simple_fsm/k6_frac_N10_frac_chain_mem32K_40nm                                      ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  bm_DL_simple_fsm.blif                                      ,  0   ,  24.0        ,  48.3         ,  0.5                ,  85.0
+syntax/bm_DL_simple_fsm/no_arch                                                                 ,  n/a                                   ,  bm_DL_simple_fsm.blif                                      ,  0   ,  10.5        ,  3.0          ,  0.5                ,  85.0
+syntax/bm_jk_rtl/k6_frac_N10_frac_chain_mem32K_40nm                                             ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  bm_jk_rtl.blif                                             ,  0   ,  24.1        ,  51.6         ,  0.4                ,  92.9
+syntax/bm_jk_rtl/no_arch                                                                        ,  n/a                                   ,  bm_jk_rtl.blif                                             ,  0   ,  10.6        ,  3.3          ,  0.4                ,  92.9
+syntax/bm_log_all/k6_frac_N10_frac_chain_mem32K_40nm                                            ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  bm_log_all.blif                                            ,  0   ,  35.9        ,  60.5         ,  8.4                ,  65.7
+syntax/bm_log_all/no_arch                                                                       ,  n/a                                   ,  bm_log_all.blif                                            ,  0   ,  23.2        ,  26.2         ,  11.6               ,  65.7
+syntax/bm_simple_memory/k6_frac_N10_frac_chain_mem32K_40nm                                      ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  bm_simple_memory.blif                                      ,  0   ,  31.0        ,  83.1         ,  23.8               ,  100.0
+syntax/bm_simple_memory/no_arch                                                                 ,  n/a                                   ,  bm_simple_memory.blif                                      ,  0   ,  11.9        ,  7.5          ,  2.0                ,  86.6
+syntax/both_ram/k6_frac_N10_frac_chain_mem32K_40nm                                              ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  both_ram.blif                                              ,  0   ,  121.2       ,  365.9        ,  273.5              ,  77.9
+syntax/cf_fft_1024_16/k6_frac_N10_frac_chain_mem32K_40nm                                        ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  cf_fft_1024_16.blif                                        ,  0   ,  1871.3      ,  14101.8      ,  7279.8             ,  100.0
+syntax/cf_fft_1024_16/no_arch                                                                   ,  n/a                                   ,  cf_fft_1024_16.blif                                        ,  0   ,  1996.1      ,  38812.0      ,  18961.2            ,  100.0
+syntax/complex_post_for_loop/k6_frac_N10_frac_chain_mem32K_40nm                                 ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  complex_post_for_loop.blif                                 ,  0   ,  23.9        ,  44.4         ,  0.5                ,  100.0
+syntax/complex_post_for_loop/no_arch                                                            ,  n/a                                   ,  complex_post_for_loop.blif                                 ,  0   ,  10.6        ,  4.9          ,  0.6                ,  100.0
+syntax/constant_module_inst/k6_frac_N10_frac_chain_mem32K_40nm                                  ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  constant_module_inst.blif                                  ,  0   ,  33.1        ,  64.6         ,  27.4               ,  100.0
+syntax/constant_module_inst/no_arch                                                             ,  n/a                                   ,  constant_module_inst.blif                                  ,  0   ,  12.6        ,  9.8          ,  2.6                ,  93.3
+syntax/diffeq_f_systemC/k6_frac_N10_frac_chain_mem32K_40nm                                      ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  diffeq_f_systemC.blif                                      ,  0   ,  39.7        ,  135.4        ,  12.3               ,  100.0
+syntax/diffeq_f_systemC/no_arch                                                                 ,  n/a                                   ,  diffeq_f_systemC.blif                                      ,  0   ,  389.6       ,  457.3        ,  137.5              ,  96.9
+syntax/diffeq_paj_convert/k6_frac_N10_frac_chain_mem32K_40nm                                    ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  diffeq_paj_convert.blif                                    ,  0   ,  55.4        ,  178.1        ,  24.2               ,  99.9
+syntax/diffeq_paj_convert/no_arch                                                               ,  n/a                                   ,  diffeq_paj_convert.blif                                    ,  0   ,  441.9       ,  506.0        ,  157.3              ,  95.1
+syntax/flip_flop_enable/k6_frac_N10_frac_chain_mem32K_40nm                                      ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  flip_flop_enable.blif                                      ,  0   ,  23.8        ,  46.7         ,  0.2                ,  100.0
+syntax/flip_flop_enable/no_arch                                                                 ,  n/a                                   ,  flip_flop_enable.blif                                      ,  0   ,  10.2        ,  2.5          ,  0.3                ,  100.0
+syntax/flip_flop_enable_w_begin_label/k6_frac_N10_frac_chain_mem32K_40nm                        ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  flip_flop_enable_w_begin_label.blif                        ,  0   ,  23.8        ,  51.0         ,  0.2                ,  100.0
+syntax/flip_flop_enable_w_begin_label/no_arch                                                   ,  n/a                                   ,  flip_flop_enable_w_begin_label.blif                        ,  0   ,  10.3        ,  2.2          ,  0.2                ,  100.0
+syntax/for_loop_adv_post/k6_frac_N10_frac_chain_mem32K_40nm                                     ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  for_loop_adv_post.blif                                     ,  0   ,  24.1        ,  47.4         ,  0.6                ,  100.0
+syntax/for_loop_adv_post/no_arch                                                                ,  n/a                                   ,  for_loop_adv_post.blif                                     ,  0   ,  10.9        ,  3.6          ,  0.6                ,  100.0
+syntax/for_loop_adv_pre/k6_frac_N10_frac_chain_mem32K_40nm                                      ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  for_loop_adv_pre.blif                                      ,  0   ,  24.2        ,  52.8         ,  0.6                ,  100.0
+syntax/for_loop_adv_pre/no_arch                                                                 ,  n/a                                   ,  for_loop_adv_pre.blif                                      ,  0   ,  10.4        ,  4.5          ,  1.2                ,  100.0
+syntax/freq_division/k6_frac_N10_frac_chain_mem32K_40nm                                         ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  freq_division.blif                                         ,  0   ,  24.1        ,  51.5         ,  0.7                ,  100.0
+syntax/freq_division/no_arch                                                                    ,  n/a                                   ,  freq_division.blif                                         ,  0   ,  10.4        ,  4.3          ,  0.6                ,  100.0
+syntax/function_automatic/k6_frac_N10_frac_chain_mem32K_40nm                                    ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  function_automatic.blif                                    ,  0   ,  25.2        ,  47.4         ,  0.4                ,  96.8
+syntax/function_automatic/no_arch                                                               ,  n/a                                   ,  function_automatic.blif                                    ,  0   ,  10.6        ,  2.5          ,  0.3                ,  96.9
+syntax/function_hdr/k6_frac_N10_frac_chain_mem32K_40nm                                          ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  function_hdr.blif                                          ,  0   ,  25.3        ,  52.6         ,  0.4                ,  96.8
+syntax/function_hdr/no_arch                                                                     ,  n/a                                   ,  function_hdr.blif                                          ,  0   ,  10.6        ,  3.4          ,  0.5                ,  96.9
+syntax/function_syntax/k6_frac_N10_frac_chain_mem32K_40nm                                       ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  function_syntax.blif                                       ,  0   ,  23.5        ,  43.5         ,  0.2                ,  100.0
+syntax/function_syntax/no_arch                                                                  ,  n/a                                   ,  function_syntax.blif                                       ,  0   ,  10.2        ,  2.5          ,  0.2                ,  100.0
+syntax/h7_of_8_bit_for_pass_through/k6_frac_N10_frac_chain_mem32K_40nm                          ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  h7_of_8_bit_for_pass_through.blif                          ,  0   ,  24.0        ,  47.7         ,  0.3                ,  100.0
+syntax/h7_of_8_bit_for_pass_through/no_arch                                                     ,  n/a                                   ,  h7_of_8_bit_for_pass_through.blif                          ,  0   ,  10.9        ,  3.9          ,  0.6                ,  100.0
+syntax/ifdef-else-syntax/k6_frac_N10_frac_chain_mem32K_40nm                                     ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  ifdef-else-syntax.blif                                     ,  0   ,  27.5        ,  67.4         ,  3.0                ,  87.9
+syntax/ifdef-else-syntax/no_arch                                                                ,  n/a                                   ,  ifdef-else-syntax.blif                                     ,  0   ,  23.8        ,  35.0         ,  12.1               ,  73.1
+syntax/ifndef-else-syntax/k6_frac_N10_frac_chain_mem32K_40nm                                    ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  ifndef-else-syntax.blif                                    ,  0   ,  27.2        ,  49.3         ,  2.7                ,  86.7
+syntax/ifndef-else-syntax/no_arch                                                               ,  n/a                                   ,  ifndef-else-syntax.blif                                    ,  0   ,  23.7        ,  31.5         ,  12.3               ,  72.7
+syntax/include-syntax/k6_frac_N10_frac_chain_mem32K_40nm                                        ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  include-syntax.blif                                        ,  0   ,  27.6        ,  57.3         ,  3.0                ,  87.9
+syntax/include-syntax/no_arch                                                                   ,  n/a                                   ,  include-syntax.blif                                        ,  0   ,  23.5        ,  36.4         ,  13.4               ,  73.1
+syntax/inferred_DPram/k6_frac_N10_frac_chain_mem32K_40nm                                        ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  inferred_DPram.blif                                        ,  0   ,  97.6        ,  275.1        ,  187.3              ,  100.0
+syntax/inferred_DPram/no_arch                                                                   ,  n/a                                   ,  inferred_DPram.blif                                        ,  0   ,  32.8        ,  53.9         ,  20.1               ,  88.9
+syntax/inferred_ram_w_clog2/k6_frac_N10_frac_chain_mem32K_40nm                                  ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  inferred_ram_w_clog2.blif                                  ,  0   ,  275.7       ,  840.0        ,  666.2              ,  100.0
+syntax/inferred_ram_w_clog2/no_arch                                                             ,  n/a                                   ,  inferred_ram_w_clog2.blif                                  ,  0   ,  1139.0      ,  1034.9       ,  503.6              ,  96.9
+syntax/inferred_SPram/k6_frac_N10_frac_chain_mem32K_40nm                                        ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  inferred_SPram.blif                                        ,  0   ,  24.6        ,  51.0         ,  1.3                ,  100.0
+syntax/inferred_SPram/no_arch                                                                   ,  n/a                                   ,  inferred_SPram.blif                                        ,  0   ,  10.9        ,  5.4          ,  1.2                ,  100.0
+syntax/l2_and_h2_of_8_bit_for_pass_through/k6_frac_N10_frac_chain_mem32K_40nm                   ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  l2_and_h2_of_8_bit_for_pass_through.blif                   ,  0   ,  24.2        ,  53.4         ,  0.6                ,  100.0
+syntax/l2_and_h2_of_8_bit_for_pass_through/no_arch                                              ,  n/a                                   ,  l2_and_h2_of_8_bit_for_pass_through.blif                   ,  0   ,  10.8        ,  3.8          ,  0.6                ,  100.0
+syntax/macro_in_module_declaration/k6_frac_N10_frac_chain_mem32K_40nm                           ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  macro_in_module_declaration.blif                           ,  0   ,  24.7        ,  46.4         ,  1.2                ,  100.0
+syntax/macro_in_module_declaration/no_arch                                                      ,  n/a                                   ,  macro_in_module_declaration.blif                           ,  0   ,  11.2        ,  5.9          ,  1.3                ,  100.0
+syntax/memlooptesting/k6_frac_N10_frac_chain_mem32K_40nm                                        ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  memlooptesting.blif                                        ,  0   ,  90.4        ,  245.4        ,  175.2              ,  98.3
+syntax/memlooptesting/no_arch                                                                   ,  n/a                                   ,  memlooptesting.blif                                        ,  0   ,  53.8        ,  77.3         ,  31.9               ,  94.2
+syntax/multi_clock_reader_writer/k6_frac_N10_frac_chain_mem32K_40nm                             ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  multi_clock_reader_writer.blif                             ,  0   ,  25.9        ,  59.6         ,  3.0                ,  100.0
+syntax/multi_clock_reader_writer/no_arch                                                        ,  n/a                                   ,  multi_clock_reader_writer.blif                             ,  0   ,  12.7        ,  11.3         ,  3.8                ,  100.0
+syntax/multi_edge_reader_writer/k6_frac_N10_frac_chain_mem32K_40nm                              ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  multi_edge_reader_writer.blif                              ,  0   ,  33.7        ,  78.4         ,  25.7               ,  100.0
+syntax/multi_edge_reader_writer/no_arch                                                         ,  n/a                                   ,  multi_edge_reader_writer.blif                              ,  0   ,  11.0        ,  6.1          ,  1.3                ,  78.2
+syntax/multi_module_io_data_types/k6_frac_N10_frac_chain_mem32K_40nm                            ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  multi_module_io_data_types.blif                            ,  0   ,  25.5        ,  48.9         ,  1.9                ,  73.5
+syntax/multi_module_io_data_types/no_arch                                                       ,  n/a                                   ,  multi_module_io_data_types.blif                            ,  0   ,  11.8        ,  8.5          ,  2.4                ,  73.5
+syntax/multi_module/k6_frac_N10_frac_chain_mem32K_40nm                                          ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  multi_module.blif                                          ,  0   ,  24.6        ,  59.3         ,  1.9                ,  79.9
+syntax/multi_module/no_arch                                                                     ,  n/a                                   ,  multi_module.blif                                          ,  0   ,  11.0        ,  5.3          ,  1.6                ,  79.9
+syntax/nested-ifdef-syntax/k6_frac_N10_frac_chain_mem32K_40nm                                   ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  nested-ifdef-syntax.blif                                   ,  0   ,  27.6        ,  67.6         ,  3.5                ,  86.7
+syntax/nested-ifdef-syntax/no_arch                                                              ,  n/a                                   ,  nested-ifdef-syntax.blif                                   ,  0   ,  23.7        ,  42.4         ,  15.8               ,  72.7
+syntax/no_input/k6_frac_N10_frac_chain_mem32K_40nm                                              ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  no_input.blif                                              ,  134 ,  -1          ,  -1           ,  -1                 ,  -1
+syntax/no_input/no_arch                                                                         ,  n/a                                   ,  no_input.blif                                              ,  134 ,  -1          ,  -1           ,  -1                 ,  -1
+syntax/no_output/k6_frac_N10_frac_chain_mem32K_40nm                                             ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  no_output.blif                                             ,  0   ,  23.8        ,  50.3         ,  0.2                ,  100.0
+syntax/no_output/no_arch                                                                        ,  n/a                                   ,  no_output.blif                                             ,  0   ,  10.4        ,  2.8          ,  0.2                ,  100.0
+syntax/not_enough_wires/k6_frac_N10_frac_chain_mem32K_40nm                                      ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  not_enough_wires.blif                                      ,  0   ,  23.8        ,  53.6         ,  0.3                ,  100.0
+syntax/not_enough_wires/no_arch                                                                 ,  n/a                                   ,  not_enough_wires.blif                                      ,  0   ,  10.5        ,  2.9          ,  0.3                ,  100.0
+syntax/part_select/k6_frac_N10_frac_chain_mem32K_40nm                                           ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  part_select.blif                                           ,  0   ,  23.9        ,  51.4         ,  0.3                ,  100.0
+syntax/part_select/no_arch                                                                      ,  n/a                                   ,  part_select.blif                                           ,  0   ,  10.1        ,  3.2          ,  0.4                ,  100.0
+syntax/preprocessor_complex_define/k6_frac_N10_frac_chain_mem32K_40nm                           ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  preprocessor_complex_define.blif                           ,  0   ,  25.3        ,  46.9         ,  0.4                ,  87.5
+syntax/preprocessor_complex_define/no_arch                                                      ,  n/a                                   ,  preprocessor_complex_define.blif                           ,  0   ,  10.7        ,  3.1          ,  0.4                ,  88.2
+syntax/preprocessor_define/k6_frac_N10_frac_chain_mem32K_40nm                                   ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  preprocessor_define.blif                                   ,  0   ,  25.4        ,  47.4         ,  0.4                ,  94.3
+syntax/preprocessor_define/no_arch                                                              ,  n/a                                   ,  preprocessor_define.blif                                   ,  0   ,  10.7        ,  3.0          ,  0.3                ,  94.6
+syntax/preprocessor_define_with_comment/k6_frac_N10_frac_chain_mem32K_40nm                      ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  preprocessor_define_with_comment.blif                      ,  0   ,  25.5        ,  39.6         ,  0.4                ,  94.3
+syntax/preprocessor_define_with_comment/no_arch                                                 ,  n/a                                   ,  preprocessor_define_with_comment.blif                      ,  0   ,  11.0        ,  3.5          ,  0.5                ,  94.6
+syntax/rs_decoder_1/k6_frac_N10_frac_chain_mem32K_40nm                                          ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  rs_decoder_1.blif                                          ,  0   ,  163.1       ,  277.6        ,  88.0               ,  99.6
+syntax/rs_decoder_1/no_arch                                                                     ,  n/a                                   ,  rs_decoder_1.blif                                          ,  0   ,  175.6       ,  228.2        ,  106.6              ,  99.6
+syntax/rs_decoder_2/k6_frac_N10_frac_chain_mem32K_40nm                                          ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  rs_decoder_2.blif                                          ,  0   ,  716.8       ,  1188.0       ,  453.2              ,  99.7
+syntax/rs_decoder_2/no_arch                                                                     ,  n/a                                   ,  rs_decoder_2.blif                                          ,  0   ,  789.7       ,  1110.5       ,  479.8              ,  99.8
+syntax/sign_extend_nomem/k6_frac_N10_frac_chain_mem32K_40nm                                     ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  sign_extend_nomem.blif                                     ,  0   ,  25.7        ,  69.7         ,  5.7                ,  68.1
+syntax/sign_extend_nomem/no_arch                                                                ,  n/a                                   ,  sign_extend_nomem.blif                                     ,  0   ,  12.0        ,  7.7          ,  2.8                ,  68.1
+syntax/simple_function/k6_frac_N10_frac_chain_mem32K_40nm                                       ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  simple_function.blif                                       ,  0   ,  25.5        ,  57.8         ,  0.5                ,  96.8
+syntax/simple_function/no_arch                                                                  ,  n/a                                   ,  simple_function.blif                                       ,  0   ,  10.4        ,  3.9          ,  0.5                ,  96.9
+syntax/simple_module/k6_frac_N10_frac_chain_mem32K_40nm                                         ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  simple_module.blif                                         ,  0   ,  25.4        ,  60.4         ,  0.4                ,  96.8
+syntax/simple_module/no_arch                                                                    ,  n/a                                   ,  simple_module.blif                                         ,  0   ,  10.6        ,  3.9          ,  0.5                ,  96.9
+syntax/simple_task/k6_frac_N10_frac_chain_mem32K_40nm                                           ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  simple_task.blif                                           ,  0   ,  25.3        ,  62.3         ,  0.3                ,  96.8
+syntax/simple_task/no_arch                                                                      ,  n/a                                   ,  simple_task.blif                                           ,  0   ,  10.4        ,  3.6          ,  0.3                ,  96.9
+syntax/spram_big/k6_frac_N10_frac_chain_mem32K_40nm                                             ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  spram_big.blif                                             ,  0   ,  57.0        ,  185.1        ,  112.8              ,  100.0
+syntax/spram_big/no_arch                                                                        ,  n/a                                   ,  spram_big.blif                                             ,  0   ,  1112.1      ,  1275.0       ,  659.6              ,  100.0
+syntax/task_automatic/k6_frac_N10_frac_chain_mem32K_40nm                                        ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  task_automatic.blif                                        ,  0   ,  25.4        ,  54.7         ,  0.5                ,  96.8
+syntax/task_automatic/no_arch                                                                   ,  n/a                                   ,  task_automatic.blif                                        ,  0   ,  10.7        ,  7.1          ,  0.5                ,  96.9
+syntax/task_multiple_instances/k6_frac_N10_frac_chain_mem32K_40nm                               ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  task_multiple_instances.blif                               ,  0   ,  25.5        ,  63.8         ,  0.7                ,  92.6
+syntax/task_multiple_instances/no_arch                                                          ,  n/a                                   ,  task_multiple_instances.blif                               ,  0   ,  10.6        ,  4.5          ,  0.7                ,  91.1
+syntax/timescale_syntax/k6_frac_N10_frac_chain_mem32K_40nm                                      ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  timescale_syntax.blif                                      ,  0   ,  23.8        ,  57.5         ,  0.3                ,  66.7
+syntax/timescale_syntax/no_arch                                                                 ,  n/a                                   ,  timescale_syntax.blif                                      ,  0   ,  10.5        ,  2.7          ,  0.3                ,  66.7
+syntax/unconnected_input/k6_frac_N10_frac_chain_mem32K_40nm                                     ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  unconnected_input.blif                                     ,  0   ,  23.5        ,  47.1         ,  0.3                ,  87.0
+syntax/unconnected_input/no_arch                                                                ,  n/a                                   ,  unconnected_input.blif                                     ,  0   ,  10.4        ,  3.4          ,  0.4                ,  87.0
+syntax/undeclared_signal/k6_frac_N10_frac_chain_mem32K_40nm                                     ,  k6_frac_N10_frac_chain_mem32K_40nm.xml,  undeclared_signal.blif                                     ,  0   ,  23.8        ,  52.7         ,  0.2                ,  100.0
+syntax/undeclared_signal/no_arch                                                                ,  n/a                                   ,  undeclared_signal.blif                                     ,  0   ,  10.4        ,  2.5          ,  0.2                ,  100.0
