@@ -1,15 +1,15 @@
-test_name                                                               ,architecture                                            ,verilog   ,exit,max_rss(MiB),exec_time(ms),synthesis_time(ms)
-arch_sweep/both_ram/k6_frac_N10_4add_2chains_depop50_mem20K_22nm        ,k6_frac_N10_4add_2chains_depop50_mem20K_22nm.xml        ,both_ram.v,0   ,113.1       ,217.3        ,176.6
-arch_sweep/both_ram/k6_frac_N10_4add_2chains_depop50_mem20K_22nm        ,k6_frac_N10_4add_2chains_depop50_mem20K_22nm.xml        ,both_ram.v,0   ,113.1       ,217.3        ,176.6
-arch_sweep/both_ram/k6_frac_N10_4add_2chains_tie_off_depop50_mem20K_22nm,k6_frac_N10_4add_2chains_tie_off_depop50_mem20K_22nm.xml,both_ram.v,0   ,113.1       ,230.3        ,189.5
-arch_sweep/both_ram/k6_frac_N10_frac_chain_depop50_mem32K_40nm          ,k6_frac_N10_frac_chain_depop50_mem32K_40nm.xml          ,both_ram.v,0   ,29.6        ,64.0         ,15.4
-arch_sweep/both_ram/k6_frac_N10_frac_chain_mem32K_40nm                  ,k6_frac_N10_frac_chain_mem32K_40nm.xml                  ,both_ram.v,0   ,29.1        ,62.9         ,15.3
-arch_sweep/both_ram/k6_frac_N10_frac_chain_mem32K_htree0_40nm           ,k6_frac_N10_frac_chain_mem32K_htree0_40nm.xml           ,both_ram.v,0   ,29.0        ,63.2         ,15.4
-arch_sweep/both_ram/k6_frac_N10_frac_chain_mem32K_htree0_routedCLK_40nm ,k6_frac_N10_frac_chain_mem32K_htree0_routedCLK_40nm.xml ,both_ram.v,0   ,29.3        ,63.0         ,15.4
-arch_sweep/both_ram/k6_frac_N10_frac_chain_mem32K_htree0short_40nm      ,k6_frac_N10_frac_chain_mem32K_htree0short_40nm.xml      ,both_ram.v,0   ,29.2        ,62.9         ,15.3
-arch_sweep/both_ram/k6_frac_N10_mem32K_40nm_custom_pins                 ,k6_frac_N10_mem32K_40nm_custom_pins.xml                 ,both_ram.v,0   ,28.9        ,61.8         ,15.4
-arch_sweep/both_ram/k6_frac_N10_mem32K_40nm                             ,k6_frac_N10_mem32K_40nm.xml                             ,both_ram.v,0   ,28.9        ,61.3         ,15.5
-arch_sweep/both_ram/k6_N10_mem32K_40nm_fc_abs                           ,k6_N10_mem32K_40nm_fc_abs.xml                           ,both_ram.v,0   ,28.6        ,60.6         ,15.7
-arch_sweep/both_ram/k6_N10_mem32K_40nm_nonuniform                       ,k6_N10_mem32K_40nm_nonuniform.xml                       ,both_ram.v,0   ,28.7        ,60.4         ,15.6
-arch_sweep/both_ram/k6_N10_mem32K_40nm_pulse                            ,k6_N10_mem32K_40nm_pulse.xml                            ,both_ram.v,0   ,28.4        ,60.1         ,15.6
-arch_sweep/both_ram/k6_N10_mem32K_40nm                                  ,k6_N10_mem32K_40nm.xml                                  ,both_ram.v,0   ,28.3        ,52.0         ,14.0
+test_name                                                               ,  architecture                                            ,  verilog   ,  exit,  max_rss(MiB),  exec_time(ms),  synthesis_time(ms)
+arch_sweep/both_ram/k6_frac_N10_4add_2chains_depop50_mem20K_22nm        ,  k6_frac_N10_4add_2chains_depop50_mem20K_22nm.xml        ,  both_ram.v,  0   ,  13.0        ,  145.2        ,  127.7
+arch_sweep/both_ram/k6_frac_N10_4add_2chains_depop50_mem20K_22nm        ,  k6_frac_N10_4add_2chains_depop50_mem20K_22nm.xml        ,  both_ram.v,  0   ,  13.0        ,  145.2        ,  127.7
+arch_sweep/both_ram/k6_frac_N10_4add_2chains_tie_off_depop50_mem20K_22nm,  k6_frac_N10_4add_2chains_tie_off_depop50_mem20K_22nm.xml,  both_ram.v,  0   ,  13.0        ,  147.2        ,  130.1
+arch_sweep/both_ram/k6_frac_N10_frac_chain_depop50_mem32K_40nm          ,  k6_frac_N10_frac_chain_depop50_mem32K_40nm.xml          ,  both_ram.v,  0   ,  6.3         ,  33.3         ,  13.3
+arch_sweep/both_ram/k6_frac_N10_frac_chain_mem32K_40nm                  ,  k6_frac_N10_frac_chain_mem32K_40nm.xml                  ,  both_ram.v,  0   ,  6.1         ,  47.5         ,  12.0
+arch_sweep/both_ram/k6_frac_N10_frac_chain_mem32K_htree0_40nm           ,  k6_frac_N10_frac_chain_mem32K_htree0_40nm.xml           ,  both_ram.v,  0   ,  6.3         ,  44.2         ,  21.4
+arch_sweep/both_ram/k6_frac_N10_frac_chain_mem32K_htree0_routedCLK_40nm ,  k6_frac_N10_frac_chain_mem32K_htree0_routedCLK_40nm.xml ,  both_ram.v,  0   ,  6.1         ,  24.4         ,  8.3
+arch_sweep/both_ram/k6_frac_N10_frac_chain_mem32K_htree0short_40nm      ,  k6_frac_N10_frac_chain_mem32K_htree0short_40nm.xml      ,  both_ram.v,  0   ,  6.1         ,  27.1         ,  8.1
+arch_sweep/both_ram/k6_frac_N10_mem32K_40nm_custom_pins                 ,  k6_frac_N10_mem32K_40nm_custom_pins.xml                 ,  both_ram.v,  0   ,  5.9         ,  45.0         ,  9.4
+arch_sweep/both_ram/k6_frac_N10_mem32K_40nm                             ,  k6_frac_N10_mem32K_40nm.xml                             ,  both_ram.v,  0   ,  6.1         ,  22.0         ,  8.1
+arch_sweep/both_ram/k6_N10_mem32K_40nm_fc_abs                           ,  k6_N10_mem32K_40nm_fc_abs.xml                           ,  both_ram.v,  0   ,  5.8         ,  19.0         ,  7.6
+arch_sweep/both_ram/k6_N10_mem32K_40nm_nonuniform                       ,  k6_N10_mem32K_40nm_nonuniform.xml                       ,  both_ram.v,  0   ,  5.9         ,  18.2         ,  7.6
+arch_sweep/both_ram/k6_N10_mem32K_40nm_pulse                            ,  k6_N10_mem32K_40nm_pulse.xml                            ,  both_ram.v,  0   ,  5.9         ,  23.9         ,  11.1
+arch_sweep/both_ram/k6_N10_mem32K_40nm                                  ,  k6_N10_mem32K_40nm.xml                                  ,  both_ram.v,  0   ,  5.8         ,  22.4         ,  10.2
