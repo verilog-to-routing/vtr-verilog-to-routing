@@ -1229,8 +1229,7 @@ inline atok_t_connection_box_declaration lex_attr_t_connection_box_declaration(c
         default:
             break;
     }
-    (*report_error)(("Found unrecognized attribute " + std::string(in) + " of <connection_box_declaration>.").c_str());
-    throw std::runtime_error("Unreachable code!");
+    noreturn_report(report_error, ("Found unrecognized attribute " + std::string(in) + " of <connection_box_declaration>.").c_str());
 }
 
 inline gtok_t_connection_boxes lex_node_t_connection_boxes(const char* in, const std::function<void(const char*)>* report_error) {
@@ -1266,8 +1265,7 @@ inline gtok_t_connection_boxes lex_node_t_connection_boxes(const char* in, const
         default:
             break;
     }
-    (*report_error)(("Found unrecognized child " + std::string(in) + " of <connection_boxes>.").c_str());
-    throw std::runtime_error("Unreachable code!");
+    noreturn_report(report_error, ("Found unrecognized child " + std::string(in) + " of <connection_boxes>.").c_str());
 }
 inline atok_t_connection_boxes lex_attr_t_connection_boxes(const char* in, const std::function<void(const char*)>* report_error) {
     unsigned int len = strlen(in);
@@ -1314,8 +1312,7 @@ inline atok_t_connection_boxes lex_attr_t_connection_boxes(const char* in, const
         default:
             break;
     }
-    (*report_error)(("Found unrecognized attribute " + std::string(in) + " of <connection_boxes>.").c_str());
-    throw std::runtime_error("Unreachable code!");
+    noreturn_report(report_error, ("Found unrecognized attribute " + std::string(in) + " of <connection_boxes>.").c_str());
 }
 
 inline atok_t_grid_loc lex_attr_t_grid_loc(const char* in, const std::function<void(const char*)>* report_error) {
@@ -1582,8 +1579,7 @@ inline atok_t_canonical_loc lex_attr_t_canonical_loc(const char* in, const std::
         default:
             break;
     }
-    (*report_error)(("Found unrecognized attribute " + std::string(in) + " of <canonical_loc>.").c_str());
-    throw std::runtime_error("Unreachable code!");
+    noreturn_report(report_error, ("Found unrecognized attribute " + std::string(in) + " of <canonical_loc>.").c_str());
 }
 
 inline atok_t_connection_box_annotation lex_attr_t_connection_box_annotation(const char* in, const std::function<void(const char*)>* report_error) {
@@ -1646,8 +1642,7 @@ inline atok_t_connection_box_annotation lex_attr_t_connection_box_annotation(con
         default:
             break;
     }
-    (*report_error)(("Found unrecognized attribute " + std::string(in) + " of <connection_box_annotation>.").c_str());
-    throw std::runtime_error("Unreachable code!");
+    noreturn_report(report_error, ("Found unrecognized attribute " + std::string(in) + " of <connection_box_annotation>.").c_str());
 }
 
 inline gtok_t_node lex_node_t_node(const char* in, const std::function<void(const char*)>* report_error) {
@@ -2709,7 +2704,7 @@ inline void load_connection_box_declaration_required_attributes(const pugi::xml_
         if (astate[(int)in] == 0)
             astate[(int)in] = 1;
         else
-            (*report_error)(("Duplicate attribute " + std::string(attr.name()) + " in <connection_box_declaration>.").c_str());
+            noreturn_report(report_error, ("Duplicate attribute " + std::string(attr.name()) + " in <connection_box_declaration>.").c_str());
         switch (in) {
             case atok_t_connection_box_declaration::ID:
                 *id = load_unsigned_int(attr.value(), report_error);
@@ -2732,7 +2727,7 @@ inline void load_connection_boxes_required_attributes(const pugi::xml_node& root
         if (astate[(int)in] == 0)
             astate[(int)in] = 1;
         else
-            (*report_error)(("Duplicate attribute " + std::string(attr.name()) + " in <connection_boxes>.").c_str());
+            noreturn_report(report_error, ("Duplicate attribute " + std::string(attr.name()) + " in <connection_boxes>.").c_str());
         switch (in) {
             case atok_t_connection_boxes::NUM_BOXES:
                 *num_boxes = load_unsigned_int(attr.value(), report_error);
@@ -2868,7 +2863,7 @@ inline void load_canonical_loc_required_attributes(const pugi::xml_node& root, u
         if (astate[(int)in] == 0)
             astate[(int)in] = 1;
         else
-            (*report_error)(("Duplicate attribute " + std::string(attr.name()) + " in <canonical_loc>.").c_str());
+            noreturn_report(report_error, ("Duplicate attribute " + std::string(attr.name()) + " in <canonical_loc>.").c_str());
         switch (in) {
             case atok_t_canonical_loc::X:
                 *x = load_unsigned_int(attr.value(), report_error);
@@ -2891,7 +2886,7 @@ inline void load_connection_box_annotation_required_attributes(const pugi::xml_n
         if (astate[(int)in] == 0)
             astate[(int)in] = 1;
         else
-            (*report_error)(("Duplicate attribute " + std::string(attr.name()) + " in <connection_box_annotation>.").c_str());
+            noreturn_report(report_error, ("Duplicate attribute " + std::string(attr.name()) + " in <connection_box_annotation>.").c_str());
         switch (in) {
             case atok_t_connection_box_annotation::ID:
                 *id = load_unsigned_int(attr.value(), report_error);
@@ -3664,7 +3659,7 @@ inline void load_connection_box_declaration(const pugi::xml_node& root, T& out, 
     }
 
     if (root.first_child().type() == pugi::node_element)
-        (*report_error)("Unexpected child element in <connection_box_declaration>.");
+        noreturn_report(report_error, "Unexpected child element in <connection_box_declaration>.");
 }
 
 constexpr int NUM_T_CONNECTION_BOXES_STATES = 2;
@@ -3715,6 +3710,7 @@ inline void load_connection_boxes(const pugi::xml_node& root, T& out, Context& c
         switch (in) {
             case gtok_t_connection_boxes::CONNECTION_BOX: {
                 unsigned int connection_box_declaration_id;
+                memset(&connection_box_declaration_id, 0, sizeof(connection_box_declaration_id));
                 load_connection_box_declaration_required_attributes(node, &connection_box_declaration_id, report_error);
                 auto child_context = out.add_connection_boxes_connection_box(context, connection_box_declaration_id);
                 load_connection_box_declaration(node, out, child_context, report_error, offset_debug);
@@ -3973,7 +3969,7 @@ inline void load_canonical_loc(const pugi::xml_node& root, T& out, Context& cont
     *offset_debug = root.offset_debug();
 
     if (root.first_child().type() == pugi::node_element)
-        (*report_error)("Unexpected child element in <canonical_loc>.");
+        noreturn_report(report_error, "Unexpected child element in <canonical_loc>.");
 }
 
 template<class T, typename Context>
@@ -3986,7 +3982,7 @@ inline void load_connection_box_annotation(const pugi::xml_node& root, T& out, C
     *offset_debug = root.offset_debug();
 
     if (root.first_child().type() == pugi::node_element)
-        (*report_error)("Unexpected child element in <connection_box_annotation>.");
+        noreturn_report(report_error, "Unexpected child element in <connection_box_annotation>.");
 }
 
 template<class T, typename Context>
@@ -4068,7 +4064,9 @@ inline void load_node(const pugi::xml_node& root, T& out, Context& context, cons
             } break;
             case gtok_t_node::CANONICAL_LOC: {
                 unsigned int canonical_loc_x;
+                memset(&canonical_loc_x, 0, sizeof(canonical_loc_x));
                 unsigned int canonical_loc_y;
+                memset(&canonical_loc_y, 0, sizeof(canonical_loc_y));
                 load_canonical_loc_required_attributes(node, &canonical_loc_x, &canonical_loc_y, report_error);
                 auto child_context = out.init_node_canonical_loc(context, canonical_loc_x, canonical_loc_y);
                 load_canonical_loc(node, out, child_context, report_error, offset_debug);
@@ -4076,9 +4074,13 @@ inline void load_node(const pugi::xml_node& root, T& out, Context& context, cons
             } break;
             case gtok_t_node::CONNECTION_BOX: {
                 unsigned int connection_box_annotation_id;
+                memset(&connection_box_annotation_id, 0, sizeof(connection_box_annotation_id));
                 float connection_box_annotation_site_pin_delay;
+                memset(&connection_box_annotation_site_pin_delay, 0, sizeof(connection_box_annotation_site_pin_delay));
                 unsigned int connection_box_annotation_x;
+                memset(&connection_box_annotation_x, 0, sizeof(connection_box_annotation_x));
                 unsigned int connection_box_annotation_y;
+                memset(&connection_box_annotation_y, 0, sizeof(connection_box_annotation_y));
                 load_connection_box_annotation_required_attributes(node, &connection_box_annotation_id, &connection_box_annotation_site_pin_delay, &connection_box_annotation_x, &connection_box_annotation_y, report_error);
                 auto child_context = out.init_node_connection_box(context, connection_box_annotation_id, connection_box_annotation_site_pin_delay, connection_box_annotation_x, connection_box_annotation_y);
                 load_connection_box_annotation(node, out, child_context, report_error, offset_debug);
@@ -4316,8 +4318,11 @@ inline void load_rr_graph(const pugi::xml_node& root, T& out, Context& context, 
             } break;
             case gtok_t_rr_graph::CONNECTION_BOXES: {
                 unsigned int connection_boxes_num_boxes;
+                memset(&connection_boxes_num_boxes, 0, sizeof(connection_boxes_num_boxes));
                 unsigned int connection_boxes_x_dim;
+                memset(&connection_boxes_x_dim, 0, sizeof(connection_boxes_x_dim));
                 unsigned int connection_boxes_y_dim;
+                memset(&connection_boxes_y_dim, 0, sizeof(connection_boxes_y_dim));
                 load_connection_boxes_required_attributes(node, &connection_boxes_num_boxes, &connection_boxes_x_dim, &connection_boxes_y_dim, report_error);
                 auto child_context = out.init_rr_graph_connection_boxes(context, connection_boxes_num_boxes, connection_boxes_x_dim, connection_boxes_y_dim);
                 load_connection_boxes(node, out, child_context, report_error, offset_debug);

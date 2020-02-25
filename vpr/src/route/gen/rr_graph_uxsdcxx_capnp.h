@@ -15,6 +15,7 @@
 #include <tuple>
 #include <vector>
 #include <sstream>
+#include <limits>
 #include "capnp/serialize.h"
 #include "rr_graph_uxsdcxx.capnp.h"
 #include "rr_graph_uxsdcxx_interface.h"
@@ -306,9 +307,9 @@ inline ucap::LocSide conv_to_enum_loc_side(enum_loc_side e) {
 /* Load function for the root element. */
 template<class T, typename Context>
 inline void load_rr_graph_capnp(T& out, kj::ArrayPtr<const ::capnp::word> data, Context& context, const char* filename) {
-    /* Increase reader limit to 1G words. */
+    /* Remove traversal limits. */
     ::capnp::ReaderOptions opts = ::capnp::ReaderOptions();
-    opts.traversalLimitInWords = 1024 * 1024 * 1024;
+    opts.traversalLimitInWords = std::numeric_limits<uint64_t>::max();
     ::capnp::FlatArrayMessageReader reader(data, opts);
     auto root = reader.getRoot<ucap::RrGraph>();
     std::vector<std::pair<const char*, size_t>> stack;
