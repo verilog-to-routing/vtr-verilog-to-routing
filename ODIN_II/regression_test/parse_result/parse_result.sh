@@ -386,7 +386,7 @@ function do_compare() {
             for j in "${failed_hdr[@]}"
             do
                 k=$(( j - 1 ))
-                printf "%-36s" "${RULE_HEADER[$j]}"
+                printf "    - %-36s" "${RULE_HEADER[$j]}"
 
                 [ "_${COLORIZE}" == "_on" ] && printf "\033[0;31m"
                 printf "[-%s-]" "${golden_values[$k]}"
@@ -395,7 +395,7 @@ function do_compare() {
                 printf "{+%s+}" "${new_values[$k]}"
 
                 [ "_${COLORIZE}" == "_on" ] && printf "\033[0m"
-                
+                printf "\n"
             done
 
         else
