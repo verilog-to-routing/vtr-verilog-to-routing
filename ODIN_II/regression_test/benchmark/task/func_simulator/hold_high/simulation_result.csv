@@ -1,5 +1,5 @@
-test_name                                 ,architecture          ,blif              ,exit,max_rss(MiB),exec_time(ms),simulation_time(ms),test_coverage(%)
-hold_high/freq_division/k6_N10_40nm       ,k6_N10_40nm.xml       ,freq_division.blif,0   ,14.2        ,11.0         ,5.8                ,100.0
-hold_high/freq_division/k6_N10_40nm       ,k6_N10_40nm.xml       ,freq_division.blif,0   ,14.2        ,11.0         ,5.8                ,100.0
-hold_high/freq_division/k6_N10_mem32K_40nm,k6_N10_mem32K_40nm.xml,freq_division.blif,0   ,24.3        ,31.3         ,5.7                ,100.0
-hold_high/freq_division/no_arch           ,                      ,freq_division.blif,0   ,11.2        ,8.1          ,5.7                ,100.0
+test_name                                 ,  architecture          ,  blif              ,  exit,  max_rss(MiB),  exec_time(ms),  simulation_time(ms),  test_coverage(%)
+hold_high/freq_division/k6_N10_40nm       ,  k6_N10_40nm.xml       ,  freq_division.blif,  0   ,  14.4        ,  10.9         ,  5.8                ,  100.0
+hold_high/freq_division/k6_N10_40nm       ,  k6_N10_40nm.xml       ,  freq_division.blif,  0   ,  14.4        ,  10.9         ,  5.8                ,  100.0
+hold_high/freq_division/k6_N10_mem32K_40nm,  k6_N10_mem32K_40nm.xml,  freq_division.blif,  0   ,  24.4        ,  31.4         ,  5.7                ,  100.0
+hold_high/freq_division/no_arch           ,  n/a                   ,  freq_division.blif,  0   ,  11.5        ,  8.2          ,  5.7                ,  100.0

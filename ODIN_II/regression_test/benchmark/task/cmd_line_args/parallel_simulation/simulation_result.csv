@@ -1,3 +1,3 @@
-test_name                                                         ,architecture          ,blif                            ,exit,max_rss(MiB),exec_time(ms),simulation_time(ms),test_coverage(%)
-parallel_simulation/twobits_arithmetic_multiply/k6_N10_mem32K_40nm,k6_N10_mem32K_40nm.xml,twobits_arithmetic_multiply.blif,0   ,27.5        ,51.7         ,23.9               ,90.6
-parallel_simulation/twobits_arithmetic_multiply/k6_N10_mem32K_40nm,k6_N10_mem32K_40nm.xml,twobits_arithmetic_multiply.blif,0   ,27.5        ,51.7         ,23.9               ,90.6
+test_name                                                         ,  architecture          ,  blif                            ,  exit,  max_rss(MiB),  exec_time(ms),  simulation_time(ms),  test_coverage(%)
+parallel_simulation/twobits_arithmetic_multiply/k6_N10_mem32K_40nm,  k6_N10_mem32K_40nm.xml,  twobits_arithmetic_multiply.blif,  0   ,  24.1        ,  25.5         ,  -1                 ,  -1
+parallel_simulation/twobits_arithmetic_multiply/k6_N10_mem32K_40nm,  k6_N10_mem32K_40nm.xml,  twobits_arithmetic_multiply.blif,  0   ,  24.1        ,  25.5         ,  -1                 ,  -1
