@@ -12,4 +12,5 @@ void try_place(const t_placer_opts& placer_opts,
                t_direct_inf* directs,
                int num_directs);
 
+bool placer_needs_lookahead(const t_vpr_setup& vpr_setup);
 #endif

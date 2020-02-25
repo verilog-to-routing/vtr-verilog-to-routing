@@ -44,6 +44,11 @@ void check_rr_graph(const t_graph_type graph_type,
             continue;
         }
 
+        // Virtual clock network sink is special, ignore.
+        if (device_ctx.virtual_clock_network_root_idx == int(inode)) {
+            continue;
+        }
+
         t_rr_type rr_type = device_ctx.rr_nodes[inode].type();
         int num_edges = device_ctx.rr_nodes[inode].num_edges();
 
@@ -545,6 +550,7 @@ static void check_rr_edge(int from_node, int iedge, int to_node) {
 
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, msg.c_str());
             }
+            break;
         case SwitchType::TRISTATE:  //Fallthrough
         case SwitchType::MUX:       //Fallthrough
         case SwitchType::PASS_GATE: //Fallthrough

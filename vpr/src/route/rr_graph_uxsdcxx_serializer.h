@@ -37,13 +37,10 @@ void make_room_in_vector(T* vec, size_t elem_position) {
 
 class MetadataBind {
   public:
-    MetadataBind(vtr::string_internment* strings, vtr::interned_string empty)
+    MetadataBind()
         : is_node_(false)
         , is_edge_(false)
-        , ignore_(false)
-        , strings_(strings)
-        , name_(empty)
-        , value_(empty) {}
+        , ignore_(false) {}
 
     ~MetadataBind() {
         assert_clear();
@@ -53,12 +50,12 @@ class MetadataBind {
 
     void set_name(const char* name) {
         if (!ignore_) {
-            name_ = strings_->intern_string(vtr::string_view(name));
+            name_.assign(name);
         }
     }
     void set_value(const char* value) {
         if (!ignore_) {
-            value_ = strings_->intern_string(vtr::string_view(value));
+            value_.assign(value);
         }
     }
     void set_node_target(int inode) {
@@ -85,11 +82,17 @@ class MetadataBind {
 
     void bind() {
         if (is_node_) {
-            vpr::add_rr_node_metadata(inode_, name_, value_);
+            vpr::add_rr_node_metadata(inode_,
+                                      vtr::string_view(name_.data(), name_.size()),
+                                      vtr::string_view(value_.data(), value_.size()));
+            name_.clear();
+            value_.clear();
         } else if (is_edge_) {
             vpr::add_rr_edge_metadata(inode_, sink_node_, switch_id_,
-                                      name_,
-                                      value_);
+                                      vtr::string_view(name_.data(), name_.size()),
+                                      vtr::string_view(value_.data(), value_.size()));
+            name_.clear();
+            value_.clear();
         } else if (ignore_) {
             // Do nothing.
         } else {
@@ -101,6 +104,8 @@ class MetadataBind {
     }
 
     void assert_clear() {
+        VTR_ASSERT(name_.empty());
+        VTR_ASSERT(value_.empty());
     }
 
     void finish() {
@@ -116,9 +121,8 @@ class MetadataBind {
     int inode_;
     int sink_node_;
     int switch_id_;
-    vtr::string_internment* strings_;
-    vtr::interned_string name_;
-    vtr::interned_string value_;
+    std::string name_;
+    std::string value_;
 };
 
 // Context for walking metadata.
@@ -245,9 +249,6 @@ struct RrGraphContextTypes : public uxsd::DefaultRrGraphContextTypes {
     using NodeReadContext = const t_rr_node*;
     using EdgeReadContext = const EdgeWalker*;
     using RrEdgesReadContext = EdgeWalker;
-    using ConnectionBoxDeclarationReadContext = ConnectionBoxId;
-    using CanonicalLocReadContext = const std::pair<size_t, size_t>*;
-    using ConnectionBoxAnnotationReadContext = const std::tuple<ConnectionBoxId, std::pair<size_t, size_t>, float>;
     using TimingWriteContext = t_rr_switch_inf*;
     using SizingWriteContext = t_rr_switch_inf*;
     using SwitchWriteContext = t_rr_switch_inf*;
@@ -263,7 +264,6 @@ struct RrGraphContextTypes : public uxsd::DefaultRrGraphContextTypes {
     using MetadataWriteContext = MetadataBind;
     using NodeWriteContext = int;
     using EdgeWriteContext = MetadataBind;
-    using ConnectionBoxDeclarationWriteContext = ConnectionBox*;
 };
 
 class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
@@ -281,7 +281,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         std::vector<t_rr_switch_inf>* rr_switch_inf,
         std::vector<t_rr_indexed_data>* rr_indexed_data,
         t_rr_node_indices* rr_node_indices,
-        ConnectionBoxes* connection_boxes,
         const size_t num_arch_switches,
         const t_arch_switch_inf* arch_switch_inf,
         const std::vector<t_segment_inf>& segment_inf,
@@ -296,7 +295,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         , rr_switch_inf_(rr_switch_inf)
         , rr_indexed_data_(rr_indexed_data)
         , rr_node_indices_(rr_node_indices)
-        , connection_boxes_(connection_boxes)
         , read_rr_graph_filename_(read_rr_graph_filename)
         , graph_type_(graph_type)
         , base_cost_type_(base_cost_type)
@@ -311,14 +309,22 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         , rr_node_metadata_(rr_node_metadata)
         , rr_edge_metadata_(rr_edge_metadata)
         , strings_(strings)
-        , empty_(strings_->intern_string(vtr::string_view("")))
         , report_error_(nullptr) {}
 
     void start_load(const std::function<void(const char*)>* report_error_in) final {
+        // report_error_in should be invoked if RrGraphSerializer encounters
+        // an error during the read.
         report_error_ = report_error_in;
     }
     void start_write() final {}
     void finish_write() final {}
+
+    // error_encountered will be invoked by the reader implementation whenever
+    // any error is encountered.
+    //
+    // This method should **not** be invoked from within RrGraphSerializer,
+    // instead the error should be reported via report_error.  This enables
+    // the reader implementation to add context (e.g. file and line number).
     void error_encountered(const char* file, int line, const char* message) final {
         vpr_throw(VPR_ERROR_ROUTE, file, line, "%s", message);
     }
@@ -365,13 +371,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
     inline float get_timing_Tdel(const t_rr_switch_inf*& sw) final {
         return sw->Tdel;
-    }
-
-    inline void set_timing_penalty_cost(float penalty_cost, t_rr_switch_inf*& sw) final {
-        sw->penalty_cost = penalty_cost;
-    }
-    inline float get_timing_penalty_cost(const t_rr_switch_inf*& sw) final {
-        return sw->penalty_cost;
     }
 
     /** Generated for complex type "switch":
@@ -608,160 +607,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         }
     }
 
-    inline unsigned int get_connection_box_annotation_id(const std::tuple<ConnectionBoxId, std::pair<size_t, size_t>, float>& box_info) final {
-        ConnectionBoxId box_id;
-        std::pair<size_t, size_t> box_location;
-        float site_pin_delay;
-        std::tie(box_id, box_location, site_pin_delay) = box_info;
-
-        return (size_t)box_id;
-    }
-    inline float get_connection_box_annotation_site_pin_delay(const std::tuple<ConnectionBoxId, std::pair<size_t, size_t>, float>& box_info) final {
-        ConnectionBoxId box_id;
-        std::pair<size_t, size_t> box_location;
-        float site_pin_delay;
-        std::tie(box_id, box_location, site_pin_delay) = box_info;
-
-        return site_pin_delay;
-    }
-    inline unsigned int get_connection_box_annotation_x(const std::tuple<ConnectionBoxId, std::pair<size_t, size_t>, float>& box_info) final {
-        ConnectionBoxId box_id;
-        std::pair<size_t, size_t> box_location;
-        float site_pin_delay;
-        std::tie(box_id, box_location, site_pin_delay) = box_info;
-
-        return box_location.first;
-    }
-    inline unsigned int get_connection_box_annotation_y(const std::tuple<ConnectionBoxId, std::pair<size_t, size_t>, float>& box_info) final {
-        ConnectionBoxId box_id;
-        std::pair<size_t, size_t> box_location;
-        float site_pin_delay;
-        std::tie(box_id, box_location, site_pin_delay) = box_info;
-
-        return box_location.second;
-    }
-
-    inline unsigned int get_canonical_loc_x(const std::pair<size_t, size_t>*& data) final {
-        return data->first;
-    }
-    inline unsigned int get_canonical_loc_y(const std::pair<size_t, size_t>*& data) final {
-        return data->second;
-    }
-
-    inline const std::pair<size_t, size_t>* get_node_canonical_loc(const t_rr_node*& node) final {
-        return connection_boxes_->find_canonical_loc(get_node_id(node));
-    }
-    inline bool has_node_canonical_loc(const t_rr_node*& node) final {
-        return connection_boxes_->find_canonical_loc(get_node_id(node)) != nullptr;
-    }
-    inline const std::tuple<ConnectionBoxId, std::pair<size_t, size_t>, float> get_node_connection_box(const t_rr_node*& node) final {
-        ConnectionBoxId box_id;
-        std::pair<size_t, size_t> box_location;
-        float site_pin_delay;
-
-        if (!connection_boxes_->find_connection_box(get_node_id(node),
-                                                    &box_id, &box_location, &site_pin_delay)) {
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                            "No connection box for %d", node);
-        }
-        return std::make_tuple(box_id, box_location, site_pin_delay);
-    }
-    inline bool has_node_connection_box(const t_rr_node*& node) final {
-        ConnectionBoxId box_id;
-        std::pair<size_t, size_t> box_location;
-        float site_pin_delay;
-
-        return connection_boxes_->find_connection_box(get_node_id(node),
-                                                      &box_id, &box_location, &site_pin_delay);
-    }
-    inline void* init_node_canonical_loc(int& inode, unsigned int x, unsigned int y) final {
-        connection_boxes_->add_canonical_loc(inode, std::make_pair(x, y));
-        return nullptr;
-    }
-    inline void finish_node_canonical_loc(void*& /*ctx*/) final {}
-
-    inline void* init_node_connection_box(int& inode, unsigned int id, float site_pin_delay, unsigned int x, unsigned int y) final {
-        connection_boxes_->add_connection_box(inode,
-                                              ConnectionBoxId(id),
-                                              std::make_pair(x, y),
-                                              site_pin_delay);
-        return nullptr;
-    }
-    inline void finish_node_connection_box(void*& /*ctx*/) final {}
-
-    /** Generated for complex type "connection_box_declaration":
-     * <xs:complexType name="connection_box_declaration">
-     *   <xs:attribute name="id" type="xs:unsignedInt" use="required" />
-     *   <xs:attribute name="name" type="xs:string" use="required" />
-     * </xs:complexType>
-     */
-    inline void set_connection_box_declaration_name(const char* name, ConnectionBox*& box) final {
-        box->name.assign(name);
-    }
-
-    inline unsigned int get_connection_box_declaration_id(ConnectionBoxId& id) final {
-        return (size_t)id;
-    }
-    inline const char* get_connection_box_declaration_name(ConnectionBoxId& id) final {
-        return connection_boxes_->get_connection_box(id)->name.c_str();
-    }
-    inline unsigned int get_connection_boxes_num_boxes(void*& /*ctx*/) final {
-        return connection_boxes_->num_connection_box_types();
-    }
-    inline unsigned int get_connection_boxes_x_dim(void*& /*ctx*/) final {
-        return connection_boxes_->connection_box_grid_size().first;
-    }
-    inline unsigned int get_connection_boxes_y_dim(void*& /*ctx*/) final {
-        return connection_boxes_->connection_box_grid_size().second;
-    }
-    inline size_t num_connection_boxes_connection_box(void*& /*ctx*/) final {
-        return connection_boxes_->num_connection_box_types();
-    }
-    inline ConnectionBoxId get_connection_boxes_connection_box(int n, void*& /*ctx*/) final {
-        return ConnectionBoxId(n);
-    }
-
-    /** Generated for complex type "connection_boxes":
-     * <xs:complexType name="connection_boxes">
-     *   <xs:sequence>
-     *     <xs:element maxOccurs="unbounded" name="connection_box" type="connection_box_declaration" />
-     *   </xs:sequence>
-     *   <xs:attribute name="x_dim" type="xs:unsignedInt" use="required" />
-     *   <xs:attribute name="y_dim" type="xs:unsignedInt" use="required" />
-     *   <xs:attribute name="num_boxes" type="xs:unsignedInt" use="required" />
-     * </xs:complexType>
-     */
-    inline void preallocate_connection_boxes_connection_box(void*& /*ctx*/, size_t size) final {
-        if (size != boxes_.size()) {
-            report_error("Number of connection_box %zu is greater than num_boxes %zu on <connection_boxes>",
-                         size, boxes_.size());
-        }
-    }
-    inline ConnectionBox* add_connection_boxes_connection_box(void*& /*ctx*/, unsigned int id) final {
-        if (id >= boxes_.size()) {
-            report_error("ConnectionBox id %u is greater than num_boxes on <connection_boxes>",
-                         id);
-        }
-        return &boxes_[id];
-    }
-    inline void finish_connection_boxes_connection_box(ConnectionBox*& /*ctx*/) final {}
-
-  private:
-    int box_x_dim_;
-    int box_y_dim_;
-    std::vector<ConnectionBox> boxes_;
-
-  public:
-    inline void* init_rr_graph_connection_boxes(void*& /*ctx*/, unsigned int num_boxes, unsigned int x_dim, unsigned int y_dim) final {
-        box_x_dim_ = x_dim;
-        box_y_dim_ = y_dim;
-        boxes_.resize(num_boxes);
-        return nullptr;
-    }
-    inline void finish_rr_graph_connection_boxes(void*& /*ctx*/) final {
-        connection_boxes_->reset_boxes(std::make_pair(box_x_dim_, box_y_dim_), std::move(boxes_));
-    }
-
     /** Generated for complex type "node_timing":
      * <xs:complexType name="node_timing">
      *   <xs:attribute name="R" type="xs:float" use="required" />
@@ -825,7 +670,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
 
     inline MetadataBind init_node_metadata(int& inode) final {
-        MetadataBind bind(strings_, empty_);
+        MetadataBind bind;
         bind.set_node_target(inode);
         return bind;
     }
@@ -939,7 +784,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         // If make_room_in_vector was used for allocation, this ensures that
         // the final storage has no overhead.
         rr_nodes_->shrink_to_fit();
-        connection_boxes_->resize_nodes(rr_nodes_->size());
     }
 
     /** Generated for complex type "rr_edges":
@@ -961,9 +805,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      */
     inline void preallocate_rr_edges_edge(void*& /*ctx*/, size_t size) final {
         edges_.reserve(size);
-        if (read_edge_metadata_) {
-            rr_edge_metadata_->reserve(size);
-        }
     }
     inline MetadataBind add_rr_edges_edge(void*& /*ctx*/, unsigned int sink_node, unsigned int src_node, unsigned int switch_id) final {
         if (src_node >= rr_nodes_->size()) {
@@ -972,7 +813,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 src_node, rr_nodes_->size());
         }
 
-        MetadataBind bind(strings_, empty_);
+        MetadataBind bind;
         if (read_edge_metadata_) {
             bind.set_edge_target(src_node, sink_node, switch_id);
         } else {
@@ -1646,12 +1487,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline void* get_rr_graph_block_types(void*& /*ctx*/) final {
         return nullptr;
     }
-    inline void* get_rr_graph_connection_boxes(void*& /*ctx*/) final {
-        return nullptr;
-    }
-    inline bool has_rr_graph_connection_boxes(void*& /*ctx*/) final {
-        return connection_boxes_->num_connection_box_types() > 0;
-    }
     inline void* get_rr_graph_grid(void*& /*ctx*/) final {
         return nullptr;
     }
@@ -1682,8 +1517,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         for (size_t i = 0; i < seg_index_.size(); ++i) {
             (*rr_indexed_data_)[i].seg_index = seg_index_[i];
         }
-
-        connection_boxes_->create_sink_back_ref();
 
         VTR_ASSERT(read_rr_graph_filename_ != nullptr);
         VTR_ASSERT(read_rr_graph_name_ != nullptr);
@@ -1736,27 +1569,25 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             if (node.type() == SOURCE || node.type() == SINK) {
                 for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                     for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
-                        if (node.type() == SOURCE) {
-                            indices[SOURCE][ix][iy][0].push_back(inode);
-                            indices[SINK][ix][iy][0].push_back(OPEN);
-                        } else {
-                            VTR_ASSERT(node.type() == SINK);
-                            indices[SINK][ix][iy][0].push_back(inode);
-                            indices[SOURCE][ix][iy][0].push_back(OPEN);
+                        if (node.ptc_num() >= (int)indices[SOURCE][ix][iy][0].size()) {
+                            indices[SOURCE][ix][iy][0].resize(node.ptc_num() + 1, OPEN);
                         }
+                        if (node.ptc_num() >= (int)indices[SINK][ix][iy][0].size()) {
+                            indices[SINK][ix][iy][0].resize(node.ptc_num() + 1, OPEN);
+                        }
+                        indices[node.type()][ix][iy][0][node.ptc_num()] = inode;
                     }
                 }
             } else if (node.type() == IPIN || node.type() == OPIN) {
                 for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                     for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
-                        if (node.type() == OPIN) {
-                            indices[OPIN][ix][iy][node.side()].push_back(inode);
-                            indices[IPIN][ix][iy][node.side()].push_back(OPEN);
-                        } else {
-                            VTR_ASSERT(node.type() == IPIN);
-                            indices[IPIN][ix][iy][node.side()].push_back(inode);
-                            indices[OPIN][ix][iy][node.side()].push_back(OPEN);
+                        if (node.ptc_num() >= (int)indices[OPIN][ix][iy][node.side()].size()) {
+                            indices[OPIN][ix][iy][node.side()].resize(node.ptc_num() + 1, OPEN);
                         }
+                        if (node.ptc_num() >= (int)indices[IPIN][ix][iy][node.side()].size()) {
+                            indices[IPIN][ix][iy][node.side()].resize(node.ptc_num() + 1, OPEN);
+                        }
+                        indices[node.type()][ix][iy][node.side()][node.ptc_num()] = inode;
                     }
                 }
             } else if (node.type() == CHANX) {
@@ -2056,7 +1887,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     std::vector<t_rr_switch_inf>* rr_switch_inf_;
     std::vector<t_rr_indexed_data>* rr_indexed_data_;
     t_rr_node_indices* rr_node_indices_;
-    ConnectionBoxes* connection_boxes_;
     std::string* read_rr_graph_filename_;
 
     // Constant data for loads and writes.
@@ -2074,6 +1904,5 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     MetadataStorage<int>* rr_node_metadata_;
     MetadataStorage<std::tuple<int, int, short>>* rr_edge_metadata_;
     vtr::string_internment* strings_;
-    vtr::interned_string empty_;
     const std::function<void(const char*)>* report_error_;
 };

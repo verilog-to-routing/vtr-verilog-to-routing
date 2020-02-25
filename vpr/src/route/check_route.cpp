@@ -3,7 +3,6 @@
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_memory.h"
-#include "vtr_time.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -28,13 +27,12 @@ static void reset_flags(ClusterNetId inet, bool* connected_to_route);
 static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_locally,
                                          enum e_route_type route_type);
 
-static void check_all_non_configurable_edges();
 static bool check_non_configurable_edges(ClusterNetId net, const t_non_configurable_rr_sets& non_configurable_rr_sets);
 static void check_net_for_stubs(ClusterNetId net);
 
 /************************ Subroutine definitions ****************************/
 
-void check_route(enum e_route_type route_type, bool quick) {
+void check_route(enum e_route_type route_type) {
     /* This routine checks that a routing:  (1) Describes a properly         *
      * connected path for each net, (2) this path connects all the           *
      * pins spanned by that net, and (3) that no routing resources are       *
@@ -44,9 +42,7 @@ void check_route(enum e_route_type route_type, bool quick) {
     int max_pins, inode, prev_node;
     unsigned int ipin;
     bool valid, connects;
-    bool* connected_to_route; /* [0 .. device_ctx.rr_nodes.size()-1] */
     t_trace* tptr;
-    bool* pin_done;
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -70,21 +66,23 @@ void check_route(enum e_route_type route_type, bool quick) {
 
     check_locally_used_clb_opins(route_ctx.clb_opins_used_locally, route_type);
 
-    connected_to_route = (bool*)vtr::calloc(device_ctx.rr_nodes.size(), sizeof(bool));
+    auto non_configurable_rr_sets = identify_non_configurable_rr_sets();
+
+    auto connected_to_route = std::make_unique<bool[]>(device_ctx.rr_nodes.size());
+    std::fill_n(connected_to_route.get(), device_ctx.rr_nodes.size(), false);
 
     max_pins = 0;
     for (auto net_id : cluster_ctx.clb_nlist.nets())
         max_pins = std::max(max_pins, (int)cluster_ctx.clb_nlist.net_pins(net_id).size());
 
-    pin_done = (bool*)vtr::malloc(max_pins * sizeof(bool));
+    auto pin_done = std::make_unique<bool[]>(max_pins);
 
     /* Now check that all nets are indeed connected. */
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id) || cluster_ctx.clb_nlist.net_sinks(net_id).size() == 0) /* Skip ignored nets. */
             continue;
 
-        for (ipin = 0; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++)
-            pin_done[ipin] = false;
+        std::fill_n(pin_done.get(), cluster_ctx.clb_nlist.net_pins(net_id).size(), false);
 
         /* Check the SOURCE of the net. */
         tptr = route_ctx.trace[net_id].head;
@@ -132,7 +130,7 @@ void check_route(enum e_route_type route_type, bool quick) {
                 connected_to_route[inode] = true; /* Mark as in path. */
 
                 if (device_ctx.rr_nodes[inode].type() == SINK) {
-                    check_sink(inode, net_id, pin_done);
+                    check_sink(inode, net_id, pin_done.get());
                     num_sinks += 1;
                 }
 
@@ -156,18 +154,13 @@ void check_route(enum e_route_type route_type, bool quick) {
             }
         }
 
+        check_non_configurable_edges(net_id, non_configurable_rr_sets);
+
         check_net_for_stubs(net_id);
 
-        reset_flags(net_id, connected_to_route);
+        reset_flags(net_id, connected_to_route.get());
 
     } /* End for each net */
-
-    free(pin_done);
-    free(connected_to_route);
-
-    if (!quick) {
-        check_all_non_configurable_edges();
-    }
 
     VTR_LOG("Completed routing consistency check successfully.\n");
     VTR_LOG("\n");
@@ -567,6 +560,7 @@ void recompute_occupancy_from_scratch() {
             /* Will always be 0 for pads or SINK classes. */
             for (ipin = 0; ipin < num_local_opins; ipin++) {
                 inode = route_ctx.clb_opins_used_locally[blk_id][iclass][ipin];
+                VTR_ASSERT(inode >= 0 && inode < (ssize_t)device_ctx.rr_nodes.size());
                 route_ctx.rr_node_route_inf[inode].set_occ(route_ctx.rr_node_route_inf[inode].occ() + 1);
             }
         }
@@ -626,18 +620,6 @@ static void check_node_and_range(int inode, enum e_route_type route_type) {
                         "in check_node_and_range: rr_node #%d is out of legal, range (0 to %d).\n", inode, device_ctx.rr_nodes.size() - 1);
     }
     check_rr_node(inode, route_type, device_ctx);
-}
-
-//Checks that all non-configurable edges are in a legal configuration
-//This check is slow, so it has been moved out of check_route()
-static void check_all_non_configurable_edges() {
-    vtr::ScopedStartFinishTimer timer("Checking to ensure non-configurable edges are legal");
-    auto non_configurable_rr_sets = identify_non_configurable_rr_sets();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        check_non_configurable_edges(net_id, non_configurable_rr_sets);
-    }
 }
 
 //Checks that the specified routing is legal with respect to non-configurable edges

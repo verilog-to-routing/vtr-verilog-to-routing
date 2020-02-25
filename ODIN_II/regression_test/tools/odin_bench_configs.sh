@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/usr/bin/env bash
 #Generate Configuration files for the benchmarks in .../ODIN_II/REGRESSSION_TESTS/BENCHMARKS
 
 python ./odin_config_maker.py -a ../../../libvpr/arch/sample_arch.xml -i ../BENCHMARKS/MICROBENCHMARKS/ -o ../BASIC_TESTS/ --both --size 3 --split_width --debug_path ../BENCHMARKS/MICROBENCHMARKS/ ../BENCHMARKS/MICROBENCHMARKS/

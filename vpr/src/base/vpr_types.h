@@ -104,15 +104,17 @@ constexpr const char* EMPTY_BLOCK_NAME = "EMPTY";
 enum class e_router_lookahead {
     CLASSIC, //VPR's classic lookahead (assumes uniform wire types)
     MAP,     //Lookahead considering different wire types (see Oleg Petelin's MASc Thesis)
-    NO_OP,   //A no-operation lookahead which always returns zero
-    CONNECTION_BOX_MAP,
-    // Lookahead considering different wire types and IPIN
-    // connection box.
+    NO_OP    //A no-operation lookahead which always returns zero
 };
 
 enum class e_route_bb_update {
     STATIC, //Router net bounding boxes are not updated
     DYNAMIC //Rotuer net bounding boxes are updated
+};
+
+enum class e_router_initial_timing {
+    ALL_CRITICAL,
+    LOOKAHEAD
 };
 
 enum class e_const_gen_inference {
@@ -879,7 +881,6 @@ enum e_base_cost_type {
     DELAY_NORMALIZED_LENGTH,
     DELAY_NORMALIZED_FREQUENCY,
     DELAY_NORMALIZED_LENGTH_FREQUENCY,
-    DELAY_NORMALIZED_LENGTH_BOUNDED,
     DEMAND_ONLY,
     DEMAND_ONLY_NORMALIZED_LENGTH
 };
@@ -898,6 +899,7 @@ enum class e_timing_report_detail {
     NETLIST,          //Only show netlist elements
     AGGREGATED,       //Show aggregated intra-block and inter-block delays
     DETAILED_ROUTING, //Show inter-block routing resources used
+    DEBUG,            //Show additional internal debugging information
 };
 
 enum class e_incr_reroute_delay_ripup {
@@ -909,8 +911,6 @@ enum class e_incr_reroute_delay_ripup {
 constexpr int NO_FIXED_CHANNEL_WIDTH = -1;
 
 struct t_router_opts {
-    bool read_edge_metadata = false;
-    bool do_check_rr_graph = true;
     float first_iter_pres_fac;
     float initial_pres_fac;
     float pres_fac_mult;
@@ -947,16 +947,18 @@ struct t_router_opts {
     int high_fanout_threshold;
     int router_debug_net;
     int router_debug_sink_rr;
+    int router_debug_iteration;
     e_router_lookahead lookahead_type;
     int max_convergence_count;
     float reconvergence_cpd_threshold;
+    e_router_initial_timing initial_timing;
+    bool update_lower_bound_delays;
+
     std::string first_iteration_timing_report_file;
     bool strict_checks;
 
     std::string write_router_lookahead;
     std::string read_router_lookahead;
-    bool disable_check_route;
-    bool quick_check_route;
 };
 
 struct t_analysis_opts {
@@ -967,6 +969,7 @@ struct t_analysis_opts {
     int timing_report_npaths;
     e_timing_report_detail timing_report_detail;
     bool timing_report_skew;
+    std::string echo_dot_timing_graph_node;
 };
 
 /* Defines the detailed routing architecture of the FPGA.  Only important   *

@@ -245,8 +245,6 @@ struct ParseBaseCost {
             conv_value.set_value(DEMAND_ONLY_NORMALIZED_LENGTH);
         else if (str == "demand_only")
             conv_value.set_value(DEMAND_ONLY);
-        else if (str == "delay_normalized_length_bounded")
-            conv_value.set_value(DELAY_NORMALIZED_LENGTH_BOUNDED);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_router_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -267,8 +265,6 @@ struct ParseBaseCost {
             conv_value.set_value("delay_normalized_length_frequency");
         else if (val == DEMAND_ONLY_NORMALIZED_LENGTH)
             conv_value.set_value("demand_only_normalized_length");
-        else if (val == DELAY_NORMALIZED_LENGTH_BOUNDED)
-            conv_value.set_value("delay_normalized_length_bounded");
         else {
             VTR_ASSERT(val == DEMAND_ONLY);
             conv_value.set_value("demand_only");
@@ -277,7 +273,7 @@ struct ParseBaseCost {
     }
 
     std::vector<std::string> default_choices() {
-        return {"demand_only", "demand_only_normalized_length", "delay_normalized", "delay_normalized_length", "delay_normalized_length_bounded", "delay_normalized_frequency", "delay_normalized_length_frequency"};
+        return {"demand_only", "demand_only_normalized_length", "delay_normalized", "delay_normalized_length", "delay_normalized_frequency", "delay_normalized_length_frequency"};
     }
 };
 
@@ -399,6 +395,8 @@ struct ParseTimingReportDetail {
             conv_value.set_value(e_timing_report_detail::AGGREGATED);
         else if (str == "detailed")
             conv_value.set_value(e_timing_report_detail::DETAILED_ROUTING);
+        else if (str == "debug")
+            conv_value.set_value(e_timing_report_detail::DEBUG);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_timing_report_detail (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -416,12 +414,15 @@ struct ParseTimingReportDetail {
         } else if (val == e_timing_report_detail::DETAILED_ROUTING) {
             VTR_ASSERT(val == e_timing_report_detail::DETAILED_ROUTING);
             conv_value.set_value("detailed");
+        } else {
+            VTR_ASSERT(val == e_timing_report_detail::DEBUG);
+            conv_value.set_value("debug");
         }
         return conv_value;
     }
 
     std::vector<std::string> default_choices() {
-        return {"netlist", "aggregated", "detailed"};
+        return {"netlist", "aggregated", "detailed", "debug"};
     }
 };
 
@@ -656,8 +657,6 @@ struct ParseRouterLookahead {
             conv_value.set_value(e_router_lookahead::CLASSIC);
         else if (str == "map")
             conv_value.set_value(e_router_lookahead::MAP);
-        else if (str == "connection_box_map")
-            conv_value.set_value(e_router_lookahead::CONNECTION_BOX_MAP);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '"
@@ -671,22 +670,17 @@ struct ParseRouterLookahead {
 
     ConvertedValue<std::string> to_str(e_router_lookahead val) {
         ConvertedValue<std::string> conv_value;
-        if (val == e_router_lookahead::CLASSIC) {
+        if (val == e_router_lookahead::CLASSIC)
             conv_value.set_value("classic");
-        } else if (val == e_router_lookahead::MAP) {
+        else {
+            VTR_ASSERT(val == e_router_lookahead::MAP);
             conv_value.set_value("map");
-        } else if (val == e_router_lookahead::CONNECTION_BOX_MAP) {
-            conv_value.set_value("connection_box_map");
-        } else {
-            std::stringstream msg;
-            msg << "Unrecognized e_router_lookahead";
-            conv_value.set_error(msg.str());
         }
         return conv_value;
     }
 
     std::vector<std::string> default_choices() {
-        return {"classic", "map", "connection_box_map"};
+        return {"classic", "map"};
     }
 };
 
@@ -764,6 +758,37 @@ struct ParseReducer {
 
     std::vector<std::string> default_choices() {
         return {"min", "max", "median", "arithmean", "geomean"};
+    }
+};
+
+struct ParseRouterFirstIterTiming {
+    ConvertedValue<e_router_initial_timing> from_str(std::string str) {
+        ConvertedValue<e_router_initial_timing> conv_value;
+        if (str == "all_critical")
+            conv_value.set_value(e_router_initial_timing::ALL_CRITICAL);
+        else if (str == "lookahead")
+            conv_value.set_value(e_router_initial_timing::LOOKAHEAD);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_router_initial_timing (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_router_initial_timing val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_router_initial_timing::ALL_CRITICAL)
+            conv_value.set_value("all_critical");
+        else {
+            VTR_ASSERT(val == e_router_initial_timing::LOOKAHEAD);
+            conv_value.set_value("lookahead");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"all_critical", "lookahead"};
     }
 };
 
@@ -1462,13 +1487,9 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "      to magnitude of typical routing resource delay\n"
             " * delay_normalized_length: like delay_normalized but\n"
             "      scaled by routing resource length\n"
-            " * delay_normalized_length_bounded: like delay_normalized but\n"
-            "      scaled by routing resource length.  Scaling is normalized\n"
-            "      between 1 to 4, with min lengths getting scaled at 1,\n"
-            "      and max lengths getting scaled at 4.\n"
-            " * delay_normalized_frequency: like delay_normalized\n"
+            " * delay_normalized_freqeuncy: like delay_normalized\n"
             "      but scaled inversely by segment type frequency\n"
-            " * delay_normalized_length_frequency: like delay_normalized\n"
+            " * delay_normalized_length_freqeuncy: like delay_normalized\n"
             "      but scaled by routing resource length, and inversely\n"
             "      by segment type frequency\n"
             "(Default: demand_only for breadth-first router,\n"
@@ -1526,11 +1547,6 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "Controls the directedness of the the timing-driven router's exploration."
             " Values between 1 and 2 are resonable; higher values trade some quality for reduced run-time")
         .default_value("1.2")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    route_timing_grp.add_argument(args.lookahead_search_locations, "--lookahead_search_locations")
-        .help("DEPRECATED Semi-colon seperated x,y coordinates to use for lookahead search coordinates.")
-        .default_value("")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.max_criticality, "--max_criticality")
@@ -1635,34 +1651,36 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("0.99")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument<e_router_initial_timing, ParseRouterFirstIterTiming>(args.router_initial_timing, "--router_initial_timing")
+        .help(
+            "Controls how criticality is determined at the start of the first routing iteration.\n"
+            " * all_critical: All connections are considered timing\n"
+            "                 critical.\n"
+            " * lookahead   : Connection criticalities are determined\n"
+            "                 from timing analysis assuming best-case\n"
+            "                 connection delays as estimated by the\n"
+            "                 router's lookahead.\n")
+        .default_value("all_critical")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<bool, ParseOnOff>(args.router_update_lower_bound_delays, "--router_update_lower_bound_delays")
+        .help("Controls whether the router updates lower bound connection delays after the 1st routing iteration.")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_timing_grp.add_argument(args.router_first_iteration_timing_report_file, "--router_first_iter_timing_report")
         .help("Name of the post first routing iteration timing report file (not generated if unspecfied)")
         .default_value("")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    route_timing_grp.add_argument<bool, ParseOnOff>(args.disable_check_route, "--disable_check_route")
-        .help("Disables check_route once routing step has finished or when routing file is loaded")
-        .default_value("off")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    route_timing_grp.add_argument<bool, ParseOnOff>(args.quick_check_route, "--quick_check_route")
-        .help("Runs check_route, disabling slow checks, once routing step has finished or when routing file is loaded")
-        .default_value("off")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    route_timing_grp.add_argument<bool, ParseOnOff>(args.read_edge_metadata, "--read_edge_metadata")
-        .help("Read edge metadata from --read_rr_graph.  Edge metadata is not used in core VPR algorithms, and is typically not read to save runtime and memory. (Default: off).")
-        .default_value("off")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
     route_timing_grp.add_argument(args.router_debug_net, "--router_debug_net")
         .help(
-            "Controls when router debugging is enabled.\n"
+            "Controls when router debugging is enabled for nets.\n"
             " * For values >= 0, the value is taken as the net ID for\n"
             "   which to enable router debug output.\n"
             " * For value == -1, router debug output is enabled for\n"
             "   all nets.\n"
-            " * For values < -1, all net-sbased router debug output is disabled.\n"
+            " * For values < -1, all net-based router debug output is disabled.\n"
             "Note if VPR as compiled without debug logging enabled this will produce only limited output.\n")
         .default_value("-2")
         .show_in(argparse::ShowIn::HELP_ONLY);
@@ -1677,9 +1695,14 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("-2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    route_timing_grp.add_argument<bool, ParseOnOff>(args.disable_check_rr_graph, "--disable_check_rr_graph")
-        .help("Disables checking rr graph when reading from disk.")
-        .default_value("off")
+    route_timing_grp.add_argument(args.router_debug_iteration, "--router_debug_iteration")
+        .help(
+            "Controls when router debugging is enabled for the specific router iteration.\n"
+            " * For values >= 0, the value is taken as the iteration number for\n"
+            "   which to enable router debug output.\n"
+            " * For values < 0, all iteration-based router debug output is disabled.\n"
+            "Note if VPR as compiled without debug logging enabled this will produce only limited output.\n")
+        .default_value("-2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& analysis_grp = parser.add_argument_group("analysis options");
@@ -1706,13 +1729,24 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "Controls how much detail is provided in timing reports.\n"
             " * netlist: Shows only netlist pins\n"
             " * aggregated: Like 'netlist', but also shows aggregated intra-block/inter-block delays\n"
-            " * detailed: Lke 'aggregated' but shows detailed routing instead of aggregated inter-block delays\n")
+            " * detailed: Like 'aggregated' but shows detailed routing instead of aggregated inter-block delays\n"
+            " * debug: Like 'detailed' but shows additional tool internal debug information\n")
         .default_value("netlist")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     analysis_grp.add_argument<bool, ParseOnOff>(args.timing_report_skew, "--timing_report_skew")
         .help("Controls whether skew timing reports are generated\n")
         .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    analysis_grp.add_argument(args.echo_dot_timing_graph_node, "--echo_dot_timing_graph_node")
+        .help(
+            "Controls how the timing graph echo file in DOT/GraphViz format is created when\n"
+            "'--echo_file on' is set:\n"
+            " * -1: All nodes are dumped into the DOT file\n"
+            " * >= 0: Only the transitive fanin/fanout of the node is dumped (easier to view)\n"
+            " * a string: Interpretted as a VPR pin name which is converted to a node id, and dumped as above\n")
+        .default_value("-1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& power_grp = parser.add_argument_group("power analysis options");

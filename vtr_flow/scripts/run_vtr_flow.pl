@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 ###################################################################################
 # This script runs the VTR flow for a single benchmark circuit and architecture
 # file.
@@ -39,6 +39,7 @@
 use strict;
 use warnings;
 use Cwd;
+use Sys::Hostname;
 use File::Spec;
 use POSIX;
 use File::Copy;
@@ -85,8 +86,8 @@ my $stage_idx_vpr    = 5;
 
 my $circuit_file_path      = expand_user_path( shift(@ARGV) );
 my $architecture_file_path = expand_user_path( shift(@ARGV) );
-my $sdc_file_path;
-my $pad_file_path;
+my $sdc_file_path = undef;
+my $pad_file_path = undef;
 
 my $ext;
 my $starting_stage          = stage_index("odin");
@@ -118,7 +119,7 @@ my $check_route             = 0;
 my $check_place             = 0;
 my $use_old_abc_script      = 0;
 my $run_name = "";
-my $expect_fail = 0;
+my $expect_fail = undef;
 my $verbosity = 0;
 my $odin_adder_config_path = "default";
 my $odin_adder_cin_global = "";
@@ -199,10 +200,10 @@ while ( scalar(@ARGV) != 0 ) { #While non-empty
     } elsif ( $token eq "-name"){
             $run_name = shift(@ARGV);
     } elsif ( $token eq "-expect_fail"){
-            $expect_fail = 1;
+            $expect_fail = shift(@ARGV);
     }
     elsif ( $token eq "-verbose"){
-            $expect_fail = shift(@ARGV);
+            $verbosity = 1;
     }
 	elsif ( $token eq "-adder_type"){
 		$odin_adder_config_path = shift(@ARGV);
@@ -418,6 +419,12 @@ my $ace_output_act_path = "$temp_dir$ace_output_act_name";
 my $prevpr_output_file_name = "$benchmark_name" . file_ext_for_stage($stage_idx_prevpr, $circuit_suffix);
 my $prevpr_output_file_path = "$temp_dir$prevpr_output_file_name";
 
+my $prevpr_sdc_file_name = "$benchmark_name" . ".sdc";
+my $prevpr_sdc_file_path = "$temp_dir$prevpr_output_file_name";
+
+my $prevpr_pad_file_name = "$benchmark_name" . ".pad";
+my $prevpr_pad_file_path = "$temp_dir$prevpr_output_file_name";
+
 my $vpr_route_output_file_name = "$benchmark_name.route";
 my $vpr_route_output_file_path = "$temp_dir$vpr_route_output_file_name";
 my $vpr_postsynthesis_netlist = "";
@@ -427,13 +434,29 @@ my $vpr_postsynthesis_netlist = "";
 #system "cp $circuit_path $temp_dir/$benchmark_name" . file_ext_for_stage($starting_stage - 1);
 #system "cp $odin2_base_config"
 
+#Copy architecture
 my $architecture_file_path_new = "$temp_dir$architecture_file_name";
 copy( $architecture_file_path, $architecture_file_path_new );
 $architecture_file_path = $architecture_file_path_new;
 
+#Copy circuit
 my $circuit_file_path_new = "$temp_dir$benchmark_name" . file_ext_for_stage($starting_stage - 1, $circuit_suffix);
 copy( $circuit_file_path, $circuit_file_path_new );
 $circuit_file_path = $circuit_file_path_new;
+
+#Copy SDC file
+if (defined $sdc_file_path) {
+    my $sdc_file_path_new = "$temp_dir$prevpr_sdc_file_name";
+    copy($sdc_file_path, $sdc_file_path_new);
+    $sdc_file_path = $sdc_file_path_new;
+}
+
+#Copy PAD file
+if (defined $pad_file_path) {
+    my $pad_file_path_new = "$temp_dir$prevpr_pad_file_name";
+    copy($pad_file_path, $pad_file_path_new);
+    $pad_file_path = $pad_file_path_new;
+}
 
 # Call executable and time it
 my $StartTime = time;
@@ -1178,6 +1201,8 @@ open( RESULTS, "> $results_path" );
 # Output vpr status and runtime
 print RESULTS "vpr_status=$q\n";
 print RESULTS "vpr_seconds=$seconds\n";
+print RESULTS "rundir=" . getcwd() . "\n";
+print RESULTS "hostname=" . hostname() . "\n";
 
 # Parse VPR output
 if ( open( VPROUT, "< vpr.out" ) ) {
@@ -1190,19 +1215,35 @@ print RESULTS "error=$error\n";
 
 close(RESULTS);
 
-if ($expect_fail) {
+if (defined $expect_fail) {
+    my $old_error_status = $error_status;
+
+    my $failure_matched = 0;
+
     if ($error_code != 0) {
+        if ($q eq $expect_fail) {
+            $failure_matched = 1;
+        } else {
+            $failure_matched = 0;
+        }
+    } else { #Did not fail
+        $failure_matched = 0;
+    }
+
+    if ($failure_matched) {
         #Failed as expected, invert message
         $error_code = 0;
         $error_status = "OK";
         if ($verbosity > 0) {
-            $error_status .= "(as expected " . $error_status . ")";
+            $error_status .= " (as expected " . $old_error_status . ")";
         } else {
             $error_status .= "*";
         }
     } else {
         #Passed when expected failure
-        $error_status = "failed: expected to fail but was " . $error_status;
+        $error_status = "failed: expected to fail";
+        $error_status .= " with '" . $expect_fail . "'";
+        $error_status .= " but was '" . $q . "'";
     }
 }
 
@@ -1310,7 +1351,7 @@ sub system_with_timeout {
 			my $return_code = $? >> 8;
 
 			if ( $did_crash eq "true" ) {
-                if ($show_failures && !$expect_fail) {
+                if ($show_failures && not defined $expect_fail) {
                     my $abs_log_path = Cwd::abs_path($_[1]);
                     print "\n   Failed log file follows ($abs_log_path):\n";
                     cat_file($_[1], "\t> ");
@@ -1318,7 +1359,7 @@ sub system_with_timeout {
 				return "crashed";
 			}
 			elsif ( $return_code != 0 ) {
-                if ($show_failures && !$expect_fail) {
+                if ($show_failures && not defined $expect_fail) {
                     my $abs_log_path = Cwd::abs_path($_[1]);
                     print "\n   Failed log file follows ($abs_log_path):\n";
                     cat_file($_[1], "\t> ");

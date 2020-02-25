@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <regex>
 
 #include "vpr_types.h"
 #include "atom_netlist.h"
@@ -70,7 +71,7 @@ class IntraLbPbPinLookup {
   private:
     std::vector<t_logical_block_type> block_types_;
 
-    t_pb_graph_pin*** intra_lb_pb_pin_lookup_;
+    std::vector<t_pb_graph_pin**> intra_lb_pb_pin_lookup_;
 };
 
 //Find the atom pins (driver or sinks) connected to the specified top-level CLB pin
@@ -112,6 +113,12 @@ int find_pin(t_physical_tile_type_ptr type, std::string port_name, int pin_index
 //Returns the block type which is most likely the logic block
 t_logical_block_type_ptr infer_logic_block_type(const DeviceGrid& grid);
 
+//Returns true if the specified block type contains the specified blif model name
+bool block_type_contains_blif_model(t_logical_block_type_ptr type, std::string blif_model_name);
+
+//Returns true of a pb_type (or it's children) contain the specified blif model name
+bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::string& blif_model_name);
+
 int get_max_primitives_in_pb_type(t_pb_type* pb_type);
 int get_max_depth_of_pb_type(t_pb_type* pb_type);
 int get_max_nets_in_pb_type(const t_pb_type* pb_type);
@@ -119,8 +126,6 @@ bool primitive_type_feasible(AtomBlockId blk_id, const t_pb_type* cur_pb_type);
 t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* model_port, const int model_pin, const t_pb_graph_node* pb_graph_node);
 const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, const AtomPinId pin_id);
 t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int ipin);
-t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type);
-void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type);
 vtr::vector<ClusterBlockId, t_pb**> alloc_and_load_pin_id_to_pb_mapping();
 void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb**>& pin_id_to_pb_mapping);
 
@@ -158,11 +163,10 @@ t_logical_block_type_ptr pick_best_logical_type(t_physical_tile_type_ptr physica
 //the best expected physical tile the block should use (if no valid placement).
 t_physical_tile_type_ptr get_physical_tile_type(const ClusterBlockId blk);
 
+int get_logical_pin(t_physical_tile_type_ptr physical_tile,
+                    t_logical_block_type_ptr logical_block,
+                    int pin);
 int get_physical_pin(t_physical_tile_type_ptr physical_tile,
-                     int z_index,
-                     t_logical_block_type_ptr logical_block,
-                     int pin);
-int get_physical_pin(const ClusterBlockId blk,
                      t_logical_block_type_ptr logical_block,
                      int pin);
 

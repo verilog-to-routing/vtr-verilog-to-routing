@@ -59,7 +59,6 @@ e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affecte
     VTR_ASSERT_SAFE(b_from);
 
     int imacro_from;
-    ClusterBlockId curr_b_from;
     e_block_move_result outcome = e_block_move_result::VALID;
 
     auto& place_ctx = g_vpr_ctx.placement();

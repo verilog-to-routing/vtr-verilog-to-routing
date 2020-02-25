@@ -32,7 +32,6 @@
 #include "rr_graph_writer.h"
 #include "rr_graph_reader.h"
 #include "router_lookahead_map.h"
-#include "connection_box_lookahead_map.h"
 #include "rr_graph_clock.h"
 
 #include "rr_types.h"
@@ -149,32 +148,32 @@ static int get_opin_direct_connecions(int x,
                                       const int num_directs,
                                       const t_clb_to_clb_directs* clb_to_clb_directs);
 
-static void alloc_and_load_rr_graph(const int num_nodes,
-                                    std::vector<t_rr_node>& L_rr_node,
-                                    const int num_seg_types,
-                                    const t_chan_details& chan_details_x,
-                                    const t_chan_details& chan_details_y,
-                                    const t_track_to_pin_lookup& track_to_pin_lookup,
-                                    const t_pin_to_track_lookup& opin_to_track_map,
-                                    const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
-                                    t_sb_connection_map* sb_conn_map,
-                                    const DeviceGrid& grid,
-                                    const int Fs,
-                                    t_sblock_pattern& sblock_pattern,
-                                    const std::vector<vtr::Matrix<int>>& Fc_out,
-                                    vtr::NdMatrix<int, 3>& Fc_xofs,
-                                    vtr::NdMatrix<int, 3>& Fc_yofs,
-                                    const t_rr_node_indices& L_rr_node_indices,
-                                    const int max_chan_width,
-                                    const t_chan_width& chan_width,
-                                    const int wire_to_ipin_switch,
-                                    const int delayless_switch,
-                                    const enum e_directionality directionality,
-                                    bool* Fc_clipped,
-                                    const t_direct_inf* directs,
-                                    const int num_directs,
-                                    const t_clb_to_clb_directs* clb_to_clb_directs,
-                                    bool is_global_graph);
+static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(std::vector<t_rr_node>& L_rr_node,
+                                                                  const int num_seg_types,
+                                                                  const t_chan_details& chan_details_x,
+                                                                  const t_chan_details& chan_details_y,
+                                                                  const t_track_to_pin_lookup& track_to_pin_lookup,
+                                                                  const t_pin_to_track_lookup& opin_to_track_map,
+                                                                  const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
+                                                                  t_sb_connection_map* sb_conn_map,
+                                                                  const DeviceGrid& grid,
+                                                                  const int Fs,
+                                                                  t_sblock_pattern& sblock_pattern,
+                                                                  const std::vector<vtr::Matrix<int>>& Fc_out,
+                                                                  vtr::NdMatrix<int, 3>& Fc_xofs,
+                                                                  vtr::NdMatrix<int, 3>& Fc_yofs,
+                                                                  const t_rr_node_indices& L_rr_node_indices,
+                                                                  const int max_chan_width,
+                                                                  const t_chan_width& chan_width,
+                                                                  const int wire_to_ipin_switch,
+                                                                  const int delayless_switch,
+                                                                  const enum e_directionality directionality,
+                                                                  bool* Fc_clipped,
+                                                                  const t_direct_inf* directs,
+                                                                  const int num_directs,
+                                                                  const t_clb_to_clb_directs* clb_to_clb_directs,
+                                                                  bool is_global_graph,
+                                                                  const enum e_clock_modeling clock_modeling);
 
 static float pattern_fmod(float a, float b);
 static void load_uniform_connection_block_pattern(vtr::NdMatrix<int, 5>& tracks_connected_to_pin,
@@ -297,6 +296,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const float R_minW_nmos,
                            const float R_minW_pmos,
                            const enum e_base_cost_type base_cost_type,
+                           const enum e_clock_modeling clock_modeling,
                            const bool trim_empty_channels,
                            const bool trim_obs_channels,
                            const t_direct_inf* directs,
@@ -319,9 +319,7 @@ void create_rr_graph(const t_graph_type graph_type,
                      const enum e_clock_modeling clock_modeling,
                      const t_direct_inf* directs,
                      const int num_directs,
-                     int* Warnings,
-                     bool read_edge_metadata,
-                     bool do_check_rr_graph) {
+                     int* Warnings) {
     const auto& device_ctx = g_vpr_ctx.device();
 
     if (!det_routing_arch->read_rr_graph_filename.empty()) {
@@ -334,8 +332,8 @@ void create_rr_graph(const t_graph_type graph_type,
                          base_cost_type,
                          &det_routing_arch->wire_to_rr_ipin_switch,
                          det_routing_arch->read_rr_graph_filename.c_str(),
-                         read_edge_metadata,
-                         do_check_rr_graph);
+                         /*read_edge_metadata=*/true,
+                         /*do_check_rr_graph=*/true);
         }
     } else {
         if (channel_widths_unchanged(device_ctx.chan_width, nodes_per_chan) && !device_ctx.rr_nodes.empty()) {
@@ -361,19 +359,12 @@ void create_rr_graph(const t_graph_type graph_type,
                        det_routing_arch->R_minW_nmos,
                        det_routing_arch->R_minW_pmos,
                        base_cost_type,
+                       clock_modeling,
                        trim_empty_channels,
                        trim_obs_channels,
                        directs, num_directs,
                        &det_routing_arch->wire_to_rr_ipin_switch,
                        Warnings);
-
-        if (clock_modeling == DEDICATED_NETWORK) {
-            ClockRRGraphBuilder::create_and_append_clock_rr_graph(segment_inf,
-                                                                  det_routing_arch->R_minW_nmos,
-                                                                  det_routing_arch->R_minW_pmos,
-                                                                  det_routing_arch->wire_to_rr_ipin_switch,
-                                                                  base_cost_type);
-        }
     }
 
     process_non_config_sets();
@@ -427,6 +418,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            const float R_minW_nmos,
                            const float R_minW_pmos,
                            const enum e_base_cost_type base_cost_type,
+                           const enum e_clock_modeling clock_modeling,
                            const bool trim_empty_channels,
                            const bool trim_obs_channels,
                            const t_direct_inf* directs,
@@ -525,7 +517,7 @@ static void build_rr_graph(const t_graph_type graph_type,
         VTR_ASSERT(max_chan_width % 2 == 0);
         total_sets /= 2;
     }
-    int* sets_per_seg_type = get_seg_track_counts(total_sets, segment_inf, use_full_seg_groups);
+    auto sets_per_seg_type = get_seg_track_counts(total_sets, segment_inf, use_full_seg_groups);
 
     if (is_global_graph) {
         //All pins can connect during global routing
@@ -534,13 +526,13 @@ static void build_rr_graph(const t_graph_type graph_type,
         Fc_out = std::vector<vtr::Matrix<int>>(types.size(), ones);
     } else {
         bool Fc_clipped = false;
-        Fc_in = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type, max_chan_width,
+        Fc_in = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type.get(), max_chan_width,
                                          e_fc_type::IN, directionality, &Fc_clipped);
         if (Fc_clipped) {
             *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
         }
         Fc_clipped = false;
-        Fc_out = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type, max_chan_width,
+        Fc_out = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type.get(), max_chan_width,
                                           e_fc_type::OUT, directionality, &Fc_clipped);
         if (Fc_clipped) {
             *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
@@ -576,7 +568,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     }
 
     auto perturb_ipins = alloc_and_load_perturb_ipins(types.size(), segment_inf.size(),
-                                                      sets_per_seg_type, Fc_in, Fc_out, directionality);
+                                                      sets_per_seg_type.get(), Fc_in, Fc_out, directionality);
     /* END FC */
 
     /* Alloc node lookups, count nodes, alloc rr nodes */
@@ -584,6 +576,11 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     device_ctx.rr_node_indices = alloc_and_load_rr_node_indices(max_chan_width, grid,
                                                                 &num_rr_nodes, chan_details_x, chan_details_y);
+    size_t expected_node_count = num_rr_nodes;
+    if (clock_modeling == DEDICATED_NETWORK) {
+        expected_node_count += ClockRRGraphBuilder::estimate_additional_nodes(grid);
+        device_ctx.rr_nodes.reserve(expected_node_count);
+    }
     device_ctx.rr_nodes.resize(num_rr_nodes);
 
     /* These are data structures used by the the unidir opin mapping. They are used
@@ -660,7 +657,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     for (unsigned int itype = 0; itype < types.size(); ++itype) {
         ipin_to_track_map[itype] = alloc_and_load_pin_to_track_map(RECEIVER,
                                                                    Fc_in[itype], &types[itype], perturb_ipins[itype], directionality,
-                                                                   segment_inf.size(), sets_per_seg_type);
+                                                                   segment_inf.size(), sets_per_seg_type.get());
 
         track_to_pin_lookup[itype] = alloc_and_load_track_to_pin_lookup(ipin_to_track_map[itype], Fc_in[itype], types[itype].width, types[itype].height,
                                                                         types[itype].num_pins, max_chan_width, segment_inf.size());
@@ -677,29 +674,40 @@ static void build_rr_graph(const t_graph_type graph_type,
                                                               max_chan_width, segment_inf);
             opin_to_track_map[itype] = alloc_and_load_pin_to_track_map(DRIVER,
                                                                        Fc_out[itype], &types[itype], perturb_opins, directionality,
-                                                                       segment_inf.size(), sets_per_seg_type);
+                                                                       segment_inf.size(), sets_per_seg_type.get());
         }
     }
     /* END OPIN MAP */
 
     bool Fc_clipped = false;
-    alloc_and_load_rr_graph(device_ctx.rr_nodes.size(), device_ctx.rr_nodes, segment_inf.size(),
-                            chan_details_x, chan_details_y,
-                            track_to_pin_lookup, opin_to_track_map,
-                            switch_block_conn, sb_conn_map, grid, Fs, unidir_sb_pattern,
-                            Fc_out, Fc_xofs, Fc_yofs, device_ctx.rr_node_indices,
-                            max_chan_width,
-                            nodes_per_chan,
-                            wire_to_arch_ipin_switch,
-                            delayless_switch,
-                            directionality,
-                            &Fc_clipped,
-                            directs, num_directs, clb_to_clb_directs,
-                            is_global_graph);
+    auto update_chan_width = alloc_and_load_rr_graph(
+        device_ctx.rr_nodes, segment_inf.size(),
+        chan_details_x, chan_details_y,
+        track_to_pin_lookup, opin_to_track_map,
+        switch_block_conn, sb_conn_map, grid, Fs, unidir_sb_pattern,
+        Fc_out, Fc_xofs, Fc_yofs, device_ctx.rr_node_indices,
+        max_chan_width,
+        nodes_per_chan,
+        wire_to_arch_ipin_switch,
+        delayless_switch,
+        directionality,
+        &Fc_clipped,
+        directs, num_directs, clb_to_clb_directs,
+        is_global_graph,
+        clock_modeling);
+
+    // Verify no incremental node allocation.
+    if (device_ctx.rr_nodes.size() > expected_node_count) {
+        VTR_LOG_ERROR("Expected no more than %zu nodes, have %zu nodes",
+                      expected_node_count, device_ctx.rr_nodes.size());
+    }
 
     /* Update rr_nodes capacities if global routing */
     if (graph_type == GRAPH_GLOBAL) {
-        for (size_t i = 0; i < device_ctx.rr_nodes.size(); i++) {
+        // Using num_rr_nodes here over device_ctx.rr_nodes.size() because
+        // clock_modeling::DEDICATED_NETWORK will append some rr nodes after
+        // the regular graph.
+        for (int i = 0; i < num_rr_nodes; i++) {
             if (device_ctx.rr_nodes[i].type() == CHANX) {
                 int ylow = device_ctx.rr_nodes[i].ylow();
                 device_ctx.rr_nodes[i].set_capacity(nodes_per_chan.x_list[ylow]);
@@ -710,6 +718,8 @@ static void build_rr_graph(const t_graph_type graph_type,
             }
         }
     }
+
+    update_chan_width(&nodes_per_chan);
 
     /* Allocate and load routing resource switches, which are derived from the switches from the architecture file,
      * based on their fanin in the rr graph. This routine also adjusts the rr nodes to point to these new rr switches */
@@ -738,10 +748,6 @@ static void build_rr_graph(const t_graph_type graph_type,
     if (sb_conn_map) {
         free_switchblock_permutations(sb_conn_map);
         sb_conn_map = nullptr;
-    }
-    if (sets_per_seg_type) {
-        free(sets_per_seg_type);
-        sets_per_seg_type = nullptr;
     }
 
     free_type_track_to_pin_map(track_to_pin_lookup, types, max_chan_width);
@@ -901,7 +907,6 @@ void load_rr_switch_from_arch_switch(int arch_switch_idx,
     device_ctx.rr_switch_inf[rr_switch_idx].Cin = device_ctx.arch_switch_inf[arch_switch_idx].Cin;
     device_ctx.rr_switch_inf[rr_switch_idx].Cinternal = device_ctx.arch_switch_inf[arch_switch_idx].Cinternal;
     device_ctx.rr_switch_inf[rr_switch_idx].Cout = device_ctx.arch_switch_inf[arch_switch_idx].Cout;
-    device_ctx.rr_switch_inf[rr_switch_idx].penalty_cost = device_ctx.arch_switch_inf[arch_switch_idx].penalty_cost;
     device_ctx.rr_switch_inf[rr_switch_idx].Tdel = rr_switch_Tdel;
     device_ctx.rr_switch_inf[rr_switch_idx].mux_trans_size = device_ctx.arch_switch_inf[arch_switch_idx].mux_trans_size;
     if (device_ctx.arch_switch_inf[arch_switch_idx].buf_size_type == BufferSize::AUTO) {
@@ -1178,32 +1183,32 @@ static void free_type_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
 
 /* Does the actual work of allocating the rr_graph and filling all the *
  * appropriate values.  Everything up to this was just a prelude!      */
-static void alloc_and_load_rr_graph(const int num_nodes,
-                                    std::vector<t_rr_node>& L_rr_node,
-                                    const int num_seg_types,
-                                    const t_chan_details& chan_details_x,
-                                    const t_chan_details& chan_details_y,
-                                    const t_track_to_pin_lookup& track_to_pin_lookup,
-                                    const t_pin_to_track_lookup& opin_to_track_map,
-                                    const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
-                                    t_sb_connection_map* sb_conn_map,
-                                    const DeviceGrid& grid,
-                                    const int Fs,
-                                    t_sblock_pattern& sblock_pattern,
-                                    const std::vector<vtr::Matrix<int>>& Fc_out,
-                                    vtr::NdMatrix<int, 3>& Fc_xofs,
-                                    vtr::NdMatrix<int, 3>& Fc_yofs,
-                                    const t_rr_node_indices& L_rr_node_indices,
-                                    const int max_chan_width,
-                                    const t_chan_width& chan_width,
-                                    const int wire_to_ipin_switch,
-                                    const int delayless_switch,
-                                    const enum e_directionality directionality,
-                                    bool* Fc_clipped,
-                                    const t_direct_inf* directs,
-                                    const int num_directs,
-                                    const t_clb_to_clb_directs* clb_to_clb_directs,
-                                    bool is_global_graph) {
+static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(std::vector<t_rr_node>& L_rr_node,
+                                                                  const int num_seg_types,
+                                                                  const t_chan_details& chan_details_x,
+                                                                  const t_chan_details& chan_details_y,
+                                                                  const t_track_to_pin_lookup& track_to_pin_lookup,
+                                                                  const t_pin_to_track_lookup& opin_to_track_map,
+                                                                  const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
+                                                                  t_sb_connection_map* sb_conn_map,
+                                                                  const DeviceGrid& grid,
+                                                                  const int Fs,
+                                                                  t_sblock_pattern& sblock_pattern,
+                                                                  const std::vector<vtr::Matrix<int>>& Fc_out,
+                                                                  vtr::NdMatrix<int, 3>& Fc_xofs,
+                                                                  vtr::NdMatrix<int, 3>& Fc_yofs,
+                                                                  const t_rr_node_indices& L_rr_node_indices,
+                                                                  const int max_chan_width,
+                                                                  const t_chan_width& chan_width,
+                                                                  const int wire_to_ipin_switch,
+                                                                  const int delayless_switch,
+                                                                  const enum e_directionality directionality,
+                                                                  bool* Fc_clipped,
+                                                                  const t_direct_inf* directs,
+                                                                  const int num_directs,
+                                                                  const t_clb_to_clb_directs* clb_to_clb_directs,
+                                                                  bool is_global_graph,
+                                                                  const enum e_clock_modeling clock_modeling) {
     //We take special care when creating RR graph edges (there are typically many more
     //edges than nodes in an RR graph).
     //
@@ -1301,7 +1306,25 @@ static void alloc_and_load_rr_graph(const int num_nodes,
         }
     }
 
-    init_fan_in(L_rr_node, num_nodes);
+    std::function<void(t_chan_width*)> update_chan_width = [](t_chan_width*) {
+    };
+    if (clock_modeling == DEDICATED_NETWORK) {
+        ClockRRGraphBuilder builder(
+            chan_width, grid, &L_rr_node);
+        builder.create_and_append_clock_rr_graph(
+            num_seg_types,
+            &rr_edges_to_create);
+        uniquify_edges(rr_edges_to_create);
+        alloc_and_load_edges(L_rr_node, rr_edges_to_create);
+        rr_edges_to_create.clear();
+        update_chan_width = [builder](t_chan_width* c) {
+            builder.update_chan_width(c);
+        };
+    }
+
+    init_fan_in(L_rr_node, L_rr_node.size());
+
+    return update_chan_width;
 }
 
 static void build_bidir_rr_opins(const int i,

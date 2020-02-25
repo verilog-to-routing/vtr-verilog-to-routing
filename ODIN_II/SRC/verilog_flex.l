@@ -671,32 +671,35 @@ std::string get_simple_define(const char *str)
 
 std::string get_complex_define()
 {
-	if( current_args.size() != current_define->args.size())
+	if(current_define)
 	{
-		error_message(PARSE_ERROR, my_yylineno, current_parse_file, 
-			"define is being used with wrong number of arguments, Expected %ld, got %ld", 
-			current_args.size(), 
-			current_define->args.size());
-	}
-
-	for(int i=0; i<current_define->args.size(); i++)
-	{
-		std::string original_arg = current_define->args[i];
-		std::string replacement_arg = current_args[i];
-
-		size_t pos = current_define_body.find( original_arg, 0 );
-		while ( pos != std::string::npos )
+		if( current_args.size() != current_define->args.size())
 		{
-			current_define_body.erase(pos, original_arg.size());
-			current_define_body.insert( pos, replacement_arg );
-			pos += replacement_arg.size();
-			pos = current_define_body.find( replacement_arg, pos );
+			error_message(PARSE_ERROR, my_yylineno, current_parse_file, 
+				"define is being used with wrong number of arguments, Expected %ld, got %ld", 
+				current_args.size(), 
+				current_define->args.size());
 		}
-	}
 
-	if(configuration.print_parse_tokens )
-	{
-		printf("DEFINE = %s\n",  current_define_body.c_str());
+		for(int i=0; i<current_define->args.size(); i++)
+		{
+			std::string original_arg = current_define->args[i];
+			std::string replacement_arg = current_args[i];
+
+			size_t pos = current_define_body.find( original_arg, 0 );
+			while ( pos != std::string::npos )
+			{
+				current_define_body.erase(pos, original_arg.size());
+				current_define_body.insert( pos, replacement_arg );
+				pos += replacement_arg.size();
+				pos = current_define_body.find( replacement_arg, pos );
+			}
+		}
+
+		if(configuration.print_parse_tokens )
+		{
+			printf("DEFINE = %s\n",  current_define_body.c_str());
+		}
 	}
 	return current_define_body;
 }
@@ -719,25 +722,45 @@ void define_arg_push_back(char c)
 void load_define(const char *str)
 {
 	std::string tmp(str);
-	if(tmp[0] == '`')
-	{
-		tmp.erase(0,1);
-	}
 
-	if(tmp.back() == '(')
-	{
-		tmp.pop_back();
-	}
-
-	auto itter = defines_map.find(tmp);
-	if(itter == defines_map.end())
-	{
-		error_message(PARSE_ERROR, my_yylineno, current_parse_file, "%s define cannot be found", tmp.c_str());
-	}
-
-	current_define = itter->second;
-	current_define_body = current_define->body;
+	current_define = NULL;
+	current_define_body = "";
 	current_args = std::vector<std::string>();
+
+	// compiler specific macros
+	if(tmp == "`__LINE__") 
+	{
+		current_define_body = std::to_string(my_yylineno);
+	}
+	else if (tmp == "`__FILE__")
+	{
+		current_define_body = std::string(configuration.list_of_file_names[current_parse_file]);
+	}
+	else
+	{
+		if(tmp[0] == '`')
+		{
+			tmp.erase(0,1);
+		}
+
+		if(tmp.back() == '(')
+		{
+			tmp.pop_back();
+		}
+
+		auto itter = defines_map.find(tmp);
+		if(itter == defines_map.end())
+		{
+			warning_message(PARSE_ERROR, my_yylineno, current_parse_file, 
+				"%s define cannot be found, replacing with empty string and continuing synthesis", 
+				tmp.c_str());
+		}
+		else
+		{
+			current_define = itter->second;
+			current_define_body = current_define->body;
+		}
+	}
 }
 
 void append_to_define_body(char c)

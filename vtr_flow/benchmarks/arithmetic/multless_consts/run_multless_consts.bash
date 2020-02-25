@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 EXP_NAME="multless_consts"
 
 SOURCE="${BASH_SOURCE[0]}"

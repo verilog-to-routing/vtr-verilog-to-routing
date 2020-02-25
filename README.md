@@ -1,19 +1,10 @@
-
-SymbiFlow WIP changes for Verilog to Routing (VTR)
-==================================================
-
-This branch contains work in progress changes for using Verilog to Routing
-(VTR) as part of SymbiFlow.
-
----
-
 # Verilog to Routing (VTR)
-[![Build Status](https://travis-ci.com/SymbiFlow/vtr-verilog-to-routing.svg?branch=master)](https://travis-ci.com/SymbiFlow/vtr-verilog-to-routing) [![Documentation Status](https://readthedocs.org/projects/vtr/badge/?version=latest)](http://docs.verilogtorouting.org/en/latest/?badge=latest)
+[![Build Status](https://travis-ci.com/verilog-to-routing/vtr-verilog-to-routing.svg?branch=master)](https://travis-ci.org/verilog-to-routing/vtr-verilog-to-routing) [![Documentation Status](https://readthedocs.org/projects/vtr/badge/?version=latest)](http://docs.verilogtorouting.org/en/latest/?badge=latest)
 
 ## Introduction
 The Verilog-to-Routing (VTR) project is a world-wide collaborative effort to provide a open-source framework for conducting FPGA architecture and CAD research and development.
 The VTR design flow takes as input a Verilog description of a digital circuit, and a description of the target FPGA architecture.
-It then perfoms:
+It then performs:
   * Elaboration & Synthesis (ODIN II)
   * Logic Optimization & Technology Mapping (ABC)
   * Packing, Placement, Routing & Timing Analysis (VPR)
@@ -50,7 +41,7 @@ Bibtex:
 ```
 
 ## Download
-For most users of VTR (rather than active developers) you should download the [latest offical VTR release](https://verilogtorouting.org/download), which has been fully regression tested.
+For most users of VTR (rather than active developers) you should download the [latest official VTR release](https://verilogtorouting.org/download), which has been fully regression tested.
 
 ## Building
 On unix-like systems run `make` from the root VTR directory.

@@ -4,6 +4,8 @@ add_subdirectory(EXTERNAL)
 # VTR developed libraries
 #  Only add warn flags for VPR internal libraries.
 add_compile_options(${WARN_FLAGS})
+add_compile_options(${ADDITIONAL_FLAGS})
+link_libraries(${ADDITIONAL_FLAGS})
 add_subdirectory(libarchfpga)
 add_subdirectory(libvtrutil)
 add_subdirectory(liblog)

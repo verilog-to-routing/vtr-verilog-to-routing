@@ -1,0 +1,35 @@
+test_name                             ,  architecture          ,  blif                ,  exit,  max_rss(MiB),  exec_time(ms),  simulation_time(ms),  test_coverage(%)
+FIR/ex1BT16_fir_20/k6_N10_40nm        ,  k6_N10_40nm.xml       ,  ex1BT16_fir_20.blif ,  0   ,  87.3        ,  120.4        ,  -1                 ,  -1
+FIR/ex1BT16_fir_20/k6_N10_40nm        ,  k6_N10_40nm.xml       ,  ex1BT16_fir_20.blif ,  0   ,  87.3        ,  120.4        ,  -1                 ,  -1
+FIR/ex1BT16_fir_20/k6_N10_mem32K_40nm ,  k6_N10_mem32K_40nm.xml,  ex1BT16_fir_20.blif ,  0   ,  97.0        ,  149.1        ,  -1                 ,  -1
+FIR/ex1BT16_fir_20/no_arch            ,  n/a                   ,  ex1BT16_fir_20.blif ,  0   ,  85.0        ,  96.7         ,  -1                 ,  -1
+FIR/ex1EP16_fir_6/k6_N10_40nm         ,  k6_N10_40nm.xml       ,  ex1EP16_fir_6.blif  ,  0   ,  24.3        ,  35.7         ,  -1                 ,  -1
+FIR/ex1EP16_fir_6/k6_N10_mem32K_40nm  ,  k6_N10_mem32K_40nm.xml,  ex1EP16_fir_6.blif  ,  0   ,  34.2        ,  73.8         ,  -1                 ,  -1
+FIR/ex1EP16_fir_6/no_arch             ,  n/a                   ,  ex1EP16_fir_6.blif  ,  0   ,  21.5        ,  27.8         ,  -1                 ,  -1
+FIR/ex1LS16_fir_41/k6_N10_40nm        ,  k6_N10_40nm.xml       ,  ex1LS16_fir_41.blif ,  0   ,  411.1       ,  371.2        ,  -1                 ,  -1
+FIR/ex1LS16_fir_41/k6_N10_mem32K_40nm ,  k6_N10_mem32K_40nm.xml,  ex1LS16_fir_41.blif ,  0   ,  423.6       ,  388.0        ,  -1                 ,  -1
+FIR/ex1LS16_fir_41/no_arch            ,  n/a                   ,  ex1LS16_fir_41.blif ,  0   ,  412.2       ,  379.0        ,  -1                 ,  -1
+FIR/ex1PM16_fir_28/k6_N10_40nm        ,  k6_N10_40nm.xml       ,  ex1PM16_fir_28.blif ,  0   ,  176.6       ,  194.7        ,  -1                 ,  -1
+FIR/ex1PM16_fir_28/k6_N10_mem32K_40nm ,  k6_N10_mem32K_40nm.xml,  ex1PM16_fir_28.blif ,  0   ,  186.1       ,  233.1        ,  -1                 ,  -1
+FIR/ex1PM16_fir_28/no_arch            ,  n/a                   ,  ex1PM16_fir_28.blif ,  0   ,  173.8       ,  186.2        ,  -1                 ,  -1
+FIR/ex2BT16_fir_71/k6_N10_40nm        ,  k6_N10_40nm.xml       ,  ex2BT16_fir_71.blif ,  0   ,  501.7       ,  516.7        ,  -1                 ,  -1
+FIR/ex2BT16_fir_71/k6_N10_mem32K_40nm ,  k6_N10_mem32K_40nm.xml,  ex2BT16_fir_71.blif ,  0   ,  508.0       ,  519.9        ,  -1                 ,  -1
+FIR/ex2BT16_fir_71/no_arch            ,  n/a                   ,  ex2BT16_fir_71.blif ,  0   ,  497.3       ,  511.1        ,  -1                 ,  -1
+FIR/ex2EP16_fir_13/k6_N10_40nm        ,  k6_N10_40nm.xml       ,  ex2EP16_fir_13.blif ,  0   ,  31.6        ,  40.9         ,  -1                 ,  -1
+FIR/ex2EP16_fir_13/k6_N10_mem32K_40nm ,  k6_N10_mem32K_40nm.xml,  ex2EP16_fir_13.blif ,  0   ,  41.6        ,  88.8         ,  -1                 ,  -1
+FIR/ex2EP16_fir_13/no_arch            ,  n/a                   ,  ex2EP16_fir_13.blif ,  0   ,  28.8        ,  40.0         ,  -1                 ,  -1
+FIR/ex2PM16_fir_119/k6_N10_40nm       ,  k6_N10_40nm.xml       ,  ex2PM16_fir_119.blif,  0   ,  1527.4      ,  1563.4       ,  -1                 ,  -1
+FIR/ex2PM16_fir_119/k6_N10_mem32K_40nm,  k6_N10_mem32K_40nm.xml,  ex2PM16_fir_119.blif,  0   ,  1536.9      ,  1672.8       ,  -1                 ,  -1
+FIR/ex2PM16_fir_119/no_arch           ,  n/a                   ,  ex2PM16_fir_119.blif,  0   ,  1523.7      ,  1543.8       ,  -1                 ,  -1
+FIR/ex3PM16_fir_61/k6_N10_40nm        ,  k6_N10_40nm.xml       ,  ex3PM16_fir_61.blif ,  0   ,  561.5       ,  647.8        ,  -1                 ,  -1
+FIR/ex3PM16_fir_61/k6_N10_mem32K_40nm ,  k6_N10_mem32K_40nm.xml,  ex3PM16_fir_61.blif ,  0   ,  567.8       ,  726.7        ,  -1                 ,  -1
+FIR/ex3PM16_fir_61/no_arch            ,  n/a                   ,  ex3PM16_fir_61.blif ,  0   ,  556.6       ,  731.7        ,  -1                 ,  -1
+FIR/ex4EP16_fir_10/k6_N10_40nm        ,  k6_N10_40nm.xml       ,  ex4EP16_fir_10.blif ,  0   ,  42.3        ,  79.3         ,  -1                 ,  -1
+FIR/ex4EP16_fir_10/k6_N10_mem32K_40nm ,  k6_N10_mem32K_40nm.xml,  ex4EP16_fir_10.blif ,  0   ,  52.4        ,  110.2        ,  -1                 ,  -1
+FIR/ex4EP16_fir_10/no_arch            ,  n/a                   ,  ex4EP16_fir_10.blif ,  0   ,  39.5        ,  68.3         ,  -1                 ,  -1
+FIR/ex4LS16_fir/k6_N10_40nm           ,  k6_N10_40nm.xml       ,  ex4LS16_fir.blif    ,  0   ,  2237.3      ,  5097.2       ,  -1                 ,  -1
+FIR/ex4LS16_fir/k6_N10_mem32K_40nm    ,  k6_N10_mem32K_40nm.xml,  ex4LS16_fir.blif    ,  0   ,  2243.9      ,  5120.9       ,  -1                 ,  -1
+FIR/ex4LS16_fir/no_arch               ,  n/a                   ,  ex4LS16_fir.blif    ,  0   ,  2238.6      ,  4975.0       ,  -1                 ,  -1
+FIR/ex4PM16_fir_152/k6_N10_40nm       ,  k6_N10_40nm.xml       ,  ex4PM16_fir_152.blif,  0   ,  2007.1      ,  1996.2       ,  -1                 ,  -1
+FIR/ex4PM16_fir_152/k6_N10_mem32K_40nm,  k6_N10_mem32K_40nm.xml,  ex4PM16_fir_152.blif,  0   ,  2014.7      ,  2000.0       ,  -1                 ,  -1
+FIR/ex4PM16_fir_152/no_arch           ,  n/a                   ,  ex4PM16_fir_152.blif,  0   ,  2006.7      ,  1996.7       ,  -1                 ,  -1

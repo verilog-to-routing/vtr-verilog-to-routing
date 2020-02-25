@@ -1,4 +1,4 @@
-The `ISPD16 <http://www.eecg.utoronto.ca/~kmurray/titan/>` and `ISPD17 <http://www.eecg.utoronto.ca/~kmurray/titan/>` benchmarks 
+The `ISPD16 <http://www.ispd.cc/contests/16>` and `ISPD17 <http://www.ispd.cc/contests/17>` benchmarks 
 (converted to be compatible with VPR) are distributed seperately from VTR due to their large size.
 
 To integrate them into VTR run:

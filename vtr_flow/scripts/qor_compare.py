@@ -120,7 +120,13 @@ def main():
     for i, csv in enumerate(args.parse_result_files):
         #Load as CSV
         print "Loading", csv
-        df = pd.read_csv(csv, sep='\t')
+
+        base, ext = os.path.splitext(csv)
+        if ext == '.txt':
+            sep='\t'
+        else:
+            sep=','
+        df = pd.read_csv(csv, sep=sep)
 
         avail_metrics.update(df.columns) #Record available metrics
 

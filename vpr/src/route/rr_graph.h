@@ -38,9 +38,7 @@ void create_rr_graph(const t_graph_type graph_type,
                      const enum e_clock_modeling clock_modeling,
                      const t_direct_inf* directs,
                      const int num_directs,
-                     int* Warnings,
-                     bool read_edge_metadata,
-                     bool do_check_rr_graph);
+                     int* Warnings);
 
 void free_rr_graph();
 

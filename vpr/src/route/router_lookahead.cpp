@@ -1,7 +1,6 @@
 #include "router_lookahead.h"
 
 #include "router_lookahead_map.h"
-#include "connection_box_lookahead_map.h"
 #include "vpr_error.h"
 #include "globals.h"
 #include "route_timing.h"
@@ -14,8 +13,6 @@ static std::unique_ptr<RouterLookahead> make_router_lookahead_object(e_router_lo
         return std::make_unique<ClassicLookahead>();
     } else if (router_lookahead_type == e_router_lookahead::MAP) {
         return std::make_unique<MapLookahead>();
-    } else if (router_lookahead_type == e_router_lookahead::CONNECTION_BOX_MAP) {
-        return std::make_unique<ConnectionBoxMapLookahead>();
     } else if (router_lookahead_type == e_router_lookahead::NO_OP) {
         return std::make_unique<NoOpLookahead>();
     }
@@ -79,11 +76,6 @@ float ClassicLookahead::classic_wire_lookahead_cost(int inode, int target_node, 
                       + ipin_data.base_cost
                       + sink_data.base_cost;
 
-    float penalty_cost = num_segs_same_dir * same_data.penalty_cost
-                         + num_segs_ortho_dir * ortho_data.penalty_cost
-                         + ipin_data.penalty_cost
-                         + sink_data.penalty_cost;
-
     float Tdel = num_segs_same_dir * same_data.T_linear
                  + num_segs_ortho_dir * ortho_data.T_linear
                  + num_segs_same_dir * num_segs_same_dir * same_data.T_quadratic
@@ -91,26 +83,8 @@ float ClassicLookahead::classic_wire_lookahead_cost(int inode, int target_node, 
                  + R_upstream * (num_segs_same_dir * same_data.C_load + num_segs_ortho_dir * ortho_data.C_load)
                  + ipin_data.T_linear;
 
-    float expected_cost = penalty_cost + criticality * Tdel + (1. - criticality) * cong_cost;
+    float expected_cost = criticality * Tdel + (1. - criticality) * cong_cost;
     return (expected_cost);
-}
-
-float MapLookahead::get_expected_cost(int current_node, int target_node, const t_conn_cost_params& params, float /*R_upstream*/) const {
-    auto& device_ctx = g_vpr_ctx.device();
-
-    t_rr_type rr_type = device_ctx.rr_nodes[current_node].type();
-
-    if (rr_type == CHANX || rr_type == CHANY) {
-        return get_lookahead_map_cost(current_node, target_node, params.criticality);
-    } else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */
-        return (device_ctx.rr_indexed_data[SINK_COST_INDEX].base_cost);
-    } else { /* Change this if you want to investigate route-throughs */
-        return (0.);
-    }
-}
-
-void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
-    compute_router_lookahead(segment_inf.size());
 }
 
 float NoOpLookahead::get_expected_cost(int /*current_node*/, int /*target_node*/, const t_conn_cost_params& /*params*/, float /*R_upstream*/) const {

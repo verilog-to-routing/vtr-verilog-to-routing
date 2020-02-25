@@ -128,8 +128,8 @@ ezgl::color lighten_color(ezgl::color color, float amount);
 
 static void draw_block_pin_util();
 
-static float get_router_rr_cost(const t_rr_node_route_inf node_inf, e_draw_router_rr_cost draw_router_rr_cost);
-static void draw_router_rr_costs(ezgl::renderer* g);
+static float get_router_expansion_cost(const t_rr_node_route_inf node_inf, e_draw_router_expansion_cost draw_router_expansion_cost);
+static void draw_router_expansion_costs(ezgl::renderer* g);
 
 static void draw_rr_costs(ezgl::renderer* g, const std::vector<float>& rr_costs, bool lowest_cost_first = true);
 
@@ -184,6 +184,7 @@ const std::vector<ezgl::color> kelly_max_contrast_colors = {
 ezgl::application::settings settings("/ezgl/main.ui",
                                      "MainWindow",
                                      "MainCanvas",
+                                     "org.verilogtorouting.vpr.PID" + std::to_string(vtr::get_pid()),
                                      setup_default_ezgl_callbacks);
 ezgl::application application(settings);
 
@@ -256,7 +257,7 @@ void draw_main_canvas(ezgl::renderer* g) {
 
         draw_routing_costs(g);
 
-        draw_router_rr_costs(g);
+        draw_router_expansion_costs(g);
 
         draw_routing_util(g);
 
@@ -272,6 +273,15 @@ void draw_main_canvas(ezgl::renderer* g) {
     if (draw_state->color_map) {
         draw_color_map_legend(*draw_state->color_map, g);
         draw_state->color_map.reset(); //Free color map in preparation for next redraw
+    }
+
+    if (draw_state->auto_proceed) {
+        //Automatically exit the event loop, so user's don't need to manually click proceed
+
+        //Avoid trying to repeatedly exit (which would cause errors in GTK)
+        draw_state->auto_proceed = false;
+
+        application.quit(); //Ensure we leave the event loop
     }
 }
 
@@ -328,7 +338,7 @@ void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app, bool is_new_wind
     button_for_toggle_congestion_cost();
     button_for_toggle_routing_bounding_box();
     button_for_toggle_routing_util();
-    button_for_toggle_router_rr_costs();
+    button_for_toggle_router_expansion_costs();
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -341,14 +351,14 @@ void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app, bool is_new_wind
     std::string toggle_routing_congestion_cost = "toggle_routing_congestion_cost";
     std::string toggle_routing_bounding_box = "toggle_routing_bounding_box";
     std::string toggle_routing_util = "toggle_rr";
-    std::string toggle_router_rr_costs = "toggle_router_rr_costs";
+    std::string toggle_router_expansion_costs = "toggle_router_expansion_costs";
 
     delete_button(toggle_rr.c_str());
     delete_button(toggle_congestion.c_str());
     delete_button(toggle_routing_congestion_cost.c_str());
     delete_button(toggle_routing_bounding_box.c_str());
     delete_button(toggle_routing_util.c_str());
-    delete_button(toggle_router_rr_costs.c_str());
+    delete_button(toggle_router_expansion_costs.c_str());
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -384,7 +394,7 @@ void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app, bool is_new_win
     button_for_toggle_congestion_cost();
     button_for_toggle_routing_bounding_box();
     button_for_toggle_routing_util();
-    button_for_toggle_router_rr_costs();
+    button_for_toggle_router_expansion_costs();
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -410,99 +420,80 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
     else
         ezgl::set_disable_event_loop(false);
 
-    //Has the user asked us to pause at the next screen updated?
-    if (int(priority) >= draw_state->gr_automode || draw_state->forced_pause) {
+    ezgl::setup_callback_fn init_setup = nullptr;
+
+    /* If it's the type of picture displayed has changed, set up the proper  *
+     * buttons.                                                              */
+    if (draw_state->pic_on_screen != pic_on_screen_val) { //State changed
+        application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
+
+        draw_state->setup_timing_info = setup_timing_info;
+
+        if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == NO_PICTURE) {
+            if (setup_timing_info) {
+                init_setup = initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path;
+            } else {
+                init_setup = initial_setup_NO_PICTURE_to_PLACEMENT;
+            }
+            draw_state->save_graphics_file_base = "vpr_placement";
+
+        } else if (pic_on_screen_val == ROUTING && draw_state->pic_on_screen == PLACEMENT) {
+            //Routing, opening after placement
+            init_setup = initial_setup_PLACEMENT_to_ROUTING;
+            draw_state->save_graphics_file_base = "vpr_routing";
+
+        } else if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == ROUTING) {
+            init_setup = initial_setup_ROUTING_to_PLACEMENT;
+            draw_state->save_graphics_file_base = "vpr_placement";
+
+        } else if (pic_on_screen_val == ROUTING && draw_state->pic_on_screen == NO_PICTURE) {
+            //Routing opening first
+            if (setup_timing_info) {
+                init_setup = initial_setup_NO_PICTURE_to_ROUTING_with_crit_path;
+            } else {
+                init_setup = initial_setup_NO_PICTURE_to_ROUTING;
+            }
+            draw_state->save_graphics_file_base = "vpr_routing";
+        }
+
+        draw_state->pic_on_screen = pic_on_screen_val;
+
+    } else {
+        //No change (e.g. paused)
+        init_setup = nullptr;
+    }
+
+    bool state_change = (init_setup != nullptr);
+    bool should_pause = int(priority) >= draw_state->gr_automode;
+
+    //If there was a state change, we must call ezgl::application::run() to update the buttons.
+    //However, by default this causes graphics to pause for user interaction.
+    //
+    //If the priority is such that we shouldn't pause we need to continue automatically, so
+    //the user won't need to click manually.
+    draw_state->auto_proceed = (state_change && !should_pause);
+
+    if (state_change                   //Must update buttons
+        || should_pause                //The priority means graphics should pause for user interaction
+        || draw_state->forced_pause) { //The user asked to pause
+
         if (draw_state->forced_pause) {
             VTR_LOG("Pausing in interactive graphics (user pressed 'Pause')\n");
             draw_state->forced_pause = false; //Reset pause flag
         }
-        vtr::strncpy(draw_state->default_message, msg, vtr::bufsize);
 
-        /* If it's the type of picture displayed has changed, set up the proper  *
-         * buttons.                                                              */
-        if (draw_state->pic_on_screen != pic_on_screen_val) { //State changed
-
-            if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == NO_PICTURE) {
-                draw_state->pic_on_screen = pic_on_screen_val;
-                //Placement first to open
-                if (setup_timing_info) {
-                    draw_state->setup_timing_info = setup_timing_info;
-                    application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                    if (draw_state->save_graphics) {
-                        std::string extension = "pdf";
-                        std::string file_name = "vpr_placement";
-                        save_graphics(extension, file_name);
-                    }
-                    application.run(initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
-                } else {
-                    draw_state->setup_timing_info = setup_timing_info;
-                    application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                    if (draw_state->save_graphics) {
-                        std::string extension = "pdf";
-                        std::string file_name = "vpr_placement";
-                        save_graphics(extension, file_name);
-                    }
-                    application.run(initial_setup_NO_PICTURE_to_PLACEMENT, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
-                }
-            } else if (pic_on_screen_val == ROUTING && draw_state->pic_on_screen == PLACEMENT) {
-                //Routing, opening after placement
-                draw_state->setup_timing_info = setup_timing_info;
-                draw_state->pic_on_screen = pic_on_screen_val;
-
-                application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                if (draw_state->save_graphics) {
-                    std::string extension = "pdf";
-                    std::string file_name = "vpr_routing";
-                    save_graphics(extension, file_name);
-                }
-                application.run(initial_setup_PLACEMENT_to_ROUTING, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
-            } else if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == ROUTING) {
-                draw_state->setup_timing_info = setup_timing_info;
-                draw_state->pic_on_screen = pic_on_screen_val;
-
-                //Placement, opening after routing
-                application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                if (draw_state->save_graphics) {
-                    std::string extension = "pdf";
-                    std::string file_name = "vpr_placement";
-                    save_graphics(extension, file_name);
-                }
-                application.run(initial_setup_ROUTING_to_PLACEMENT, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
-            } else if (pic_on_screen_val == ROUTING
-                       && draw_state->pic_on_screen == NO_PICTURE) {
-                draw_state->pic_on_screen = pic_on_screen_val;
-
-                //Routing opening first
-                if (setup_timing_info) {
-                    draw_state->setup_timing_info = setup_timing_info;
-                    application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                    if (draw_state->save_graphics) {
-                        std::string extension = "pdf";
-                        std::string file_name = "vpr_routing";
-                        save_graphics(extension, file_name);
-                    }
-                    application.run(initial_setup_NO_PICTURE_to_ROUTING_with_crit_path, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
-                } else {
-                    draw_state->setup_timing_info = setup_timing_info;
-                    application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                    if (draw_state->save_graphics) {
-                        std::string extension = "pdf";
-                        std::string file_name = "vpr_routing";
-                        save_graphics(extension, file_name);
-                    }
-                    application.run(initial_setup_NO_PICTURE_to_ROUTING, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
-                }
-            }
-        } else {
-            //No change (e.g. paused)
-            application.run(nullptr, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
-        }
+        application.run(init_setup, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
     }
 
     if (draw_state->show_graphics) {
         application.update_message(msg);
         application.refresh_drawing();
         application.flush_drawing();
+    }
+
+    if (draw_state->save_graphics) {
+        std::string extension = "pdf";
+        save_graphics(extension, draw_state->save_graphics_file_base);
     }
 
 #else
@@ -779,28 +770,37 @@ void toggle_crit_path(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*da
     application.refresh_drawing();
 }
 
-void toggle_router_rr_costs(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
-    /* this is the callback function for runtime created toggle_router_rr_costs button 
+void toggle_router_expansion_costs(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    /* this is the callback function for runtime created toggle_router_expansion_costs button 
      * which is written in button.cpp                                         */
     t_draw_state* draw_state = get_draw_state_vars();
-    std::string button_name = "toggle_router_rr_costs";
-    auto toggle_router_rr_costs = find_button(button_name.c_str());
+    std::string button_name = "toggle_router_expansion_costs";
+    auto toggle_router_expansion_costs = find_button(button_name.c_str());
 
-    e_draw_router_rr_cost new_state;
-    gchar* combo_box_content = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(toggle_router_rr_costs));
+    e_draw_router_expansion_cost new_state;
+    gchar* combo_box_content = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(toggle_router_expansion_costs));
     if (strcmp(combo_box_content, "None") == 0) {
-        new_state = DRAW_NO_ROUTER_RR_COST;
-    } else if (strcmp(combo_box_content, "Total") == 0)
-        new_state = DRAW_ROUTER_RR_COST_TOTAL;
-    else if (strcmp(combo_box_content, "Known") == 0)
-        new_state = DRAW_ROUTER_RR_COST_KNOWN;
-    else
-        new_state = DRAW_ROUTER_RR_COST_EXPECTED;
+        new_state = DRAW_NO_ROUTER_EXPANSION_COST;
+    } else if (strcmp(combo_box_content, "Total") == 0) {
+        new_state = DRAW_ROUTER_EXPANSION_COST_TOTAL;
+    } else if (strcmp(combo_box_content, "Known") == 0) {
+        new_state = DRAW_ROUTER_EXPANSION_COST_KNOWN;
+    } else if (strcmp(combo_box_content, "Expected") == 0) {
+        new_state = DRAW_ROUTER_EXPANSION_COST_EXPECTED;
+    } else if (strcmp(combo_box_content, "Total (with edges)") == 0) {
+        new_state = DRAW_ROUTER_EXPANSION_COST_TOTAL_WITH_EDGES;
+    } else if (strcmp(combo_box_content, "Known (with edges)") == 0) {
+        new_state = DRAW_ROUTER_EXPANSION_COST_KNOWN_WITH_EDGES;
+    } else if (strcmp(combo_box_content, "Expected (with edges)") == 0) {
+        new_state = DRAW_ROUTER_EXPANSION_COST_EXPECTED_WITH_EDGES;
+    } else {
+        VPR_THROW(VPR_ERROR_DRAW, "Unrecognzied draw RR cost option");
+    }
 
     g_free(combo_box_content);
-    draw_state->show_router_rr_cost = new_state;
+    draw_state->show_router_expansion_cost = new_state;
 
-    if (draw_state->show_router_rr_cost == DRAW_NO_ROUTER_RR_COST) {
+    if (draw_state->show_router_expansion_cost == DRAW_NO_ROUTER_EXPANSION_COST) {
         application.update_message(draw_state->default_message);
     }
     application.refresh_drawing();
@@ -2545,8 +2545,6 @@ void act_on_key_press(ezgl::application* /*app*/, GdkEventKey* /*event*/, char* 
 #    endif
 
 void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x, double y) {
-    app->update_message("Mouse Clicked");
-
     //  std::cout << "User clicked the ";
 
     if (event->button == 1) {
@@ -2666,7 +2664,7 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type, ClusterBlockId b
             continue;
 
         auto physical_tile = physical_tile_type(blk_id);
-        int physical_pin = get_physical_pin(physical_tile, /*z_index=*/0, type, k);
+        int physical_pin = get_physical_pin(physical_tile, type, k);
 
         iclass = physical_tile->pin_class[physical_pin];
 
@@ -3478,21 +3476,21 @@ static void draw_routing_util(ezgl::renderer* g) {
     draw_state->color_map = std::move(cmap);
 }
 
-static float get_router_rr_cost(const t_rr_node_route_inf node_inf, e_draw_router_rr_cost draw_router_rr_cost) {
-    if (draw_router_rr_cost == DRAW_ROUTER_RR_COST_TOTAL) {
+static float get_router_expansion_cost(const t_rr_node_route_inf node_inf, e_draw_router_expansion_cost draw_router_expansion_cost) {
+    if (draw_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_TOTAL || draw_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_TOTAL_WITH_EDGES) {
         return node_inf.path_cost;
-    } else if (draw_router_rr_cost == DRAW_ROUTER_RR_COST_KNOWN) {
+    } else if (draw_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_KNOWN || draw_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_KNOWN_WITH_EDGES) {
         return node_inf.backward_path_cost;
-    } else if (draw_router_rr_cost == DRAW_ROUTER_RR_COST_EXPECTED) {
+    } else if (draw_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_EXPECTED || draw_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_EXPECTED_WITH_EDGES) {
         return node_inf.path_cost - node_inf.backward_path_cost;
     }
 
     VPR_THROW(VPR_ERROR_DRAW, "Invalid Router RR cost drawing type");
 }
 
-static void draw_router_rr_costs(ezgl::renderer* g) {
+static void draw_router_expansion_costs(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
-    if (draw_state->show_router_rr_cost == DRAW_NO_ROUTER_RR_COST) {
+    if (draw_state->show_router_expansion_cost == DRAW_NO_ROUTER_EXPANSION_COST) {
         return;
     }
 
@@ -3502,7 +3500,7 @@ static void draw_router_rr_costs(ezgl::renderer* g) {
     std::vector<float> rr_costs(device_ctx.rr_nodes.size());
 
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
-        float cost = get_router_rr_cost(routing_ctx.rr_node_route_inf[inode], draw_state->show_router_rr_cost);
+        float cost = get_router_expansion_cost(routing_ctx.rr_node_route_inf[inode], draw_state->show_router_expansion_cost);
         rr_costs[inode] = cost;
     }
 
@@ -3518,13 +3516,14 @@ static void draw_router_rr_costs(ezgl::renderer* g) {
     if (!all_nan) {
         draw_rr_costs(g, rr_costs, false);
     }
-    if (draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_TOTAL) {
+    if (draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_TOTAL || draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_TOTAL_WITH_EDGES) {
         application.update_message("Routing Expected Total Cost (known + estimate)");
-    } else if (draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_KNOWN) {
+    } else if (draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_KNOWN || draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_KNOWN_WITH_EDGES) {
         application.update_message("Routing Known Cost (from source to node)");
-    } else {
+    } else if (draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_EXPECTED || draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_EXPECTED_WITH_EDGES) {
         application.update_message("Routing Expected Cost (from node to target)");
-        VTR_ASSERT(draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_EXPECTED);
+    } else {
+        VPR_THROW(VPR_ERROR_DRAW, "Invalid Router RR cost drawing type");
     }
 }
 
@@ -3536,6 +3535,10 @@ static void draw_rr_costs(ezgl::renderer* g, const std::vector<float>& rr_costs,
     auto& device_ctx = g_vpr_ctx.device();
 
     g->set_line_width(0);
+
+    bool with_edges = (draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_TOTAL_WITH_EDGES
+                       || draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_KNOWN_WITH_EDGES
+                       || draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_EXPECTED_WITH_EDGES);
 
     VTR_ASSERT(rr_costs.size() == device_ctx.rr_nodes.size());
 
@@ -3573,7 +3576,7 @@ static void draw_rr_costs(ezgl::renderer* g, const std::vector<float>& rr_costs,
             case CHANX: //fallthrough
             case CHANY:
                 draw_rr_chan(inode, color, g);
-                draw_rr_edges(inode, g);
+                if (with_edges) draw_rr_edges(inode, g);
                 break;
 
             case IPIN: //fallthrough
@@ -3581,7 +3584,7 @@ static void draw_rr_costs(ezgl::renderer* g, const std::vector<float>& rr_costs,
                 break;
             case OPIN:
                 draw_rr_pin(inode, color, g);
-                draw_rr_edges(inode, g);
+                if (with_edges) draw_rr_edges(inode, g);
                 break;
             case SOURCE:
             case SINK:

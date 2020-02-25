@@ -101,8 +101,9 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
         VTR_ASSERT_MSG((src_node_type == tatum::NodeType::IPIN && sink_node_type == tatum::NodeType::OPIN)
                            || (src_node_type == tatum::NodeType::SOURCE && sink_node_type == tatum::NodeType::SINK)
                            || (src_node_type == tatum::NodeType::SOURCE && sink_node_type == tatum::NodeType::OPIN)
+                           || (src_node_type == tatum::NodeType::CPIN && sink_node_type == tatum::NodeType::OPIN)
                            || (src_node_type == tatum::NodeType::IPIN && sink_node_type == tatum::NodeType::SINK),
-                       "Primitive combinational delay must be between {SOURCE, IPIN} and {SINK, OPIN}");
+                       "Primitive combinational delay must be between {SOURCE, IPIN} and {SINK, OPIN}, or CPIN/OPIN");
 
         //Primitive internal combinational delay
         AtomPinId input_pin = netlist_lookup_.tnode_atom_pin(src_node);

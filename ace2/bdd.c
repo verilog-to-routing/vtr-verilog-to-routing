@@ -245,10 +245,17 @@ double calc_cube_switch_prob(DdManager * mgr, DdNode * bdd, ace_cube_t * cube,
 		Vec_Ptr_t * inputs, int phase) {
 	double sp;
 	st__table * visited;
+    st__generator * gen;
+    const char* pKey;
+    char* pValue;
 
 	visited = st__init_table(st__ptrcmp, st__ptrhash);
 
 	sp = calc_cube_switch_prob_recur(mgr, bdd, cube, inputs, visited, phase);
+
+    st__foreach_item(visited, gen, (const char **)&pKey, (char **)&pValue) {
+        free(pValue);
+    }
 
 	st__free_table(visited);
 
@@ -376,6 +383,8 @@ double ace_bdd_calc_switch_act(DdManager * mgr, Abc_Obj_t * obj,
 			* calc_switch_prob_recur(mgr, bdd, bdd, cube, fanins, 1.0, n1 > n0)
 			* (double) d;
 	//switch_act = 2.0 * calc_switch_prob_recur (mgr, bdd, bdd, cube, fanins, 1.0, 1) * (double) d;
+
+    ace_cube_free(cube);
 
 	return switch_act;
 }

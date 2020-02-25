@@ -70,7 +70,7 @@ static void do_one_route(int source_node, int sink_node,
     auto& route_ctx = g_vpr_ctx.routing();
 
     t_rt_node* rt_root = init_route_tree_to_source_no_net(source_node);
-    enable_router_debug(router_opts, ClusterNetId(), sink_node);
+    enable_router_debug(router_opts, ClusterNetId(), sink_node, 1);
 
     /* Update base costs according to fanout and criticality rules */
     update_rr_base_costs(1);
@@ -83,7 +83,7 @@ static void do_one_route(int source_node, int sink_node,
     bounding_box.ymax = device_ctx.grid.height() + 1;
 
     t_conn_cost_params cost_params;
-    cost_params.criticality = router_opts.max_criticality;
+    cost_params.criticality = 1.;
     cost_params.astar_fac = router_opts.astar_fac;
     cost_params.bend_cost = router_opts.bend_cost;
 

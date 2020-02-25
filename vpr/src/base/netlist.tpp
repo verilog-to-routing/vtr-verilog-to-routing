@@ -277,7 +277,7 @@ PinType Netlist<BlockId, PortId, PinId, NetId>::pin_type(const PinId pin_id) con
 
     PinType type = PinType::OPEN;
     switch (port_type(port_id)) {
-        case PortType::INPUT: /*fallthrough */;
+        case PortType::INPUT: /*fallthrough */
         case PortType::CLOCK:
             type = PinType::SINK;
             break;
@@ -506,6 +506,17 @@ PinId Netlist<BlockId, PortId, PinId, NetId>::find_pin(const PortId port_id, Bit
         VTR_ASSERT_SAFE(pin_port_bit(*iter) == port_bit);
         return *iter;
     }
+}
+
+template<typename BlockId, typename PortId, typename PinId, typename NetId>
+PinId Netlist<BlockId, PortId, PinId, NetId>::find_pin(const std::string name) const {
+    //We don't store a fast look-up for pin names, so do a slow linear search
+    for (PinId pin : pins()) {
+        if (pin_name(pin) == name) {
+            return pin;
+        }
+    }
+    return PinId::INVALID();
 }
 
 /*

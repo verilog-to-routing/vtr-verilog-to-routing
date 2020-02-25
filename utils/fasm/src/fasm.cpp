@@ -29,6 +29,7 @@
 namespace fasm {
 
 FasmWriterVisitor::FasmWriterVisitor(vtr::string_internment *strings, std::ostream& f) : strings_(strings), os_(f),
+    pb_graph_pin_lookup_from_index_by_type_(g_vpr_ctx.device().logical_block_types),
     fasm_lut(strings->intern_string(vtr::string_view("fasm_lut"))),
     fasm_features(strings->intern_string(vtr::string_view("fasm_features"))),
     fasm_params(strings->intern_string(vtr::string_view("fasm_params"))),
@@ -40,11 +41,6 @@ FasmWriterVisitor::FasmWriterVisitor(vtr::string_internment *strings, std::ostre
 
 void FasmWriterVisitor::visit_top_impl(const char* top_level_name) {
     (void)top_level_name;
-    auto& device_ctx = g_vpr_ctx.device();
-    pb_graph_pin_lookup_from_index_by_type_.resize(device_ctx.logical_block_types.size());
-    for(unsigned int itype = 0; itype < device_ctx.logical_block_types.size(); itype++) {
-        pb_graph_pin_lookup_from_index_by_type_.at(itype) = alloc_and_load_pb_graph_pin_lookup_from_index(&device_ctx.logical_block_types[itype]);
-    }
 }
 
 void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
@@ -132,7 +128,7 @@ void FasmWriterVisitor::check_interconnect(const t_pb_routes &pb_routes, int ino
     return;
   }
 
-  t_pb_graph_pin *prev_pin = pb_graph_pin_lookup_from_index_by_type_.at(logical_block_->index)[prev_node];
+  const t_pb_graph_pin *prev_pin = pb_graph_pin_lookup_from_index_by_type_.pb_gpin(logical_block_->index, prev_node);
 
   int prev_edge;
   for(prev_edge = 0; prev_edge < prev_pin->num_output_edges; prev_edge++) {
@@ -651,11 +647,6 @@ void FasmWriterVisitor::walk_routing() {
 
 
 void FasmWriterVisitor::finish_impl() {
-    auto& device_ctx = g_vpr_ctx.device();
-    for(unsigned int itype = 0; itype < device_ctx.logical_block_types.size(); itype++) {
-        free_pb_graph_pin_lookup_from_index (pb_graph_pin_lookup_from_index_by_type_.at(itype));
-    }
-
     walk_routing();
 }
 
@@ -679,7 +670,7 @@ void FasmWriterVisitor::find_clb_prefix(const t_pb_graph_node *node,
 
 void FasmWriterVisitor::output_fasm_mux(std::string fasm_mux_str,
                                         t_interconnect *interconnect,
-                                        t_pb_graph_pin *mux_input_pin) {
+                                        const t_pb_graph_pin *mux_input_pin) {
     auto *pb_name = mux_input_pin->parent_node->pb_type->name;
     auto pb_index = mux_input_pin->parent_node->placement_index;
     auto *port_name = mux_input_pin->port->name;

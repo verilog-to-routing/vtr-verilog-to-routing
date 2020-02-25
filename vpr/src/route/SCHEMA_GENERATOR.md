@@ -22,7 +22,6 @@ If `rr_graph.xsd` is modified, then the following files must be updated:
 ### Instructions to update generated files (manually)
 
 1. Clone https://github.com/duck2/uxsdcxx/
-1. Checkout interface-consumer branch
 2. Run `python3 -mpip install --user -r requirements.txt`
 3. Run `python3 uxsdcxx.py vpr/src/route/rr_graph.xsd`
 3. Run `python3 uxsdcap.py vpr/src/route/rr_graph.xsd`
@@ -46,7 +45,7 @@ The methods starting with `preallocate_`, `add_`, `init_`, and `finish_`
 are associated with the reader interface.  The reader interface has three additionals methods, `start_load`, `finish_load` and `error_encountered`.
 
 The methods starting with `get_`, `has_` and `size_` are associated with
-the writer interface.  The writer interface has two additionals methods, `start_load`, and `finish_load`.
+the writer interface.  The writer interface has two additionals methods, `start_write`, and `finish_write`.
 
 #### Load interface
 
@@ -55,9 +54,16 @@ the writer interface.  The writer interface has two additionals methods, `start_
 The first method called upon a read is `start_load`.  `start_load` has one parameter, a
 `std::function` called `report_error`.
 
-This function should be called if is detected in the file.  Calling this
-function will result in the reader implementation adding additional context
-(as needed), and then invoking the `error_encountered` method.
+This function should be called if an error is detected in the file.  Calling
+this function will pass control the reader implementation.  The reader
+implementation can then add context about where the error occur (e.g. file and
+line number).
+
+The `error_encountered` method is used by the reader implementation to
+declare that an error has occurred during parsing.  That error may be generated
+via the reader implementation itself, or by the load interface class by calling
+the `report_error` function.
+
 `error_encountered` is expected to throw some form of C++ exception to unwind
 the parsing stack.  If `error_encountered` does not throw an exception, the
 reader implementation will throw a `std::runtime_error` exception.

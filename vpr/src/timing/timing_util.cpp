@@ -149,6 +149,47 @@ std::vector<HistogramBucket> create_setup_slack_histogram(const tatum::SetupTimi
     return histogram;
 }
 
+std::vector<HistogramBucket> create_criticality_histogram(const SetupTimingInfo& setup_timing,
+                                                          const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                                                          size_t num_bins) {
+    std::vector<HistogramBucket> histogram;
+    float step = 1. / num_bins;
+
+    //Create the bins
+    float curr_div = 0.;
+    for (size_t i = 0; i < num_bins; ++i) {
+        float min = curr_div;
+        float max = curr_div + step;
+        histogram.emplace_back(min, max);
+
+        curr_div += step;
+    }
+
+    //To avoid round-off errors we force the max value of the last bucket equal to the max criticalty
+    histogram[histogram.size() - 1].max_value = 1.;
+
+    auto cmp = [](const HistogramBucket& bucket, float crit) {
+        return bucket.max_value < crit;
+    };
+
+    //Count the criticalities into the buckets
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        auto sinks = cluster_ctx.clb_nlist.net_sinks(net_id);
+
+        for (auto pin : sinks) {
+            float crit = calculate_clb_net_pin_criticality(setup_timing, netlist_pin_lookup, pin);
+
+            auto iter = std::lower_bound(histogram.begin(), histogram.end(), crit, cmp);
+            VTR_ASSERT(iter != histogram.end());
+
+            iter->count++;
+        }
+    }
+
+    return histogram;
+}
+
 void print_setup_timing_summary(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer) {
     auto& timing_ctx = g_vpr_ctx.timing();
 
@@ -571,10 +612,6 @@ float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_re
             max_req += shift;
         }
 
-        if (!std::isfinite(slack)) {
-            continue;
-        }
-
         float crit = std::numeric_limits<float>::quiet_NaN();
         if (max_req > 0.) {
             //Standard case
@@ -608,4 +645,75 @@ void print_tatum_cpds(std::vector<tatum::TimingPathInfo> cpds) {
     for (auto path : cpds) {
         VTR_LOG("Tatum   %zu -> %zu: least_slack=%g cpd=%g\n", size_t(path.launch_domain()), size_t(path.capture_domain()), float(path.slack()), float(path.delay()));
     }
+}
+
+tatum::NodeId id_or_pin_name_to_tnode(std::string pin_name_or_tnode) {
+    std::istringstream ss(pin_name_or_tnode);
+    int id;
+    if (ss >> id) { //Successfully converted
+
+        if (id < 0) {
+            return tatum::NodeId::INVALID();
+        } else {
+            return tatum::NodeId(id);
+        }
+    }
+
+    return pin_name_to_tnode(pin_name_or_tnode);
+}
+
+tatum::NodeId pin_name_to_tnode(std::string pin_name) {
+    auto& atom_ctx = g_vpr_ctx.atom();
+
+    AtomPinId pin = atom_ctx.nlist.find_pin(pin_name);
+
+    if (!pin) {
+        VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Failed to find pin named '%s'\n", pin_name.c_str());
+    }
+
+    tatum::NodeId tnode = atom_ctx.lookup.atom_pin_tnode(pin);
+
+    if (!tnode) {
+        VPR_THROW(VPR_ERROR_TIMING, "Failed to find tnode for pin '%s' (pin: %zu)\n", pin_name.c_str(), size_t(pin));
+    }
+
+    return tnode;
+}
+
+void write_setup_timing_graph_dot(std::string filename, SetupTimingInfo& timing_info, tatum::NodeId debug_node) {
+    auto& timing_graph = *timing_info.timing_graph();
+
+    auto dot_writer = tatum::make_graphviz_dot_writer(timing_graph, *timing_info.delay_calculator());
+
+    std::vector<tatum::NodeId> nodes;
+    if (debug_node) {
+        //Transitive fanin/fanout
+        nodes = tatum::find_transitively_connected_nodes(timing_graph, {debug_node});
+    } else {
+        //All
+        auto tg_nodes = timing_graph.nodes();
+        nodes = std::vector<tatum::NodeId>(tg_nodes.begin(), tg_nodes.end());
+    }
+    dot_writer.set_nodes_to_dump(nodes);
+
+    dot_writer.write_dot_file(filename, *timing_info.setup_analyzer());
+}
+
+void write_hold_timing_graph_dot(std::string filename, HoldTimingInfo& timing_info, tatum::NodeId debug_node) {
+    auto& timing_graph = *timing_info.timing_graph();
+
+    auto dot_writer = tatum::make_graphviz_dot_writer(timing_graph, *timing_info.delay_calculator());
+
+    std::vector<tatum::NodeId> nodes;
+    if (debug_node) {
+        //Transitive fanin/fanout
+        nodes = tatum::find_transitively_connected_nodes(timing_graph, {debug_node});
+    } else {
+        //All
+        auto tg_nodes = timing_graph.nodes();
+        nodes = std::vector<tatum::NodeId>(tg_nodes.begin(), tg_nodes.end());
+    }
+    dot_writer.set_nodes_to_dump(nodes);
+
+    dot_writer.write_dot_file(filename, *timing_info.hold_analyzer());
 }
