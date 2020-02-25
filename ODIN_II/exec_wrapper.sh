@@ -161,9 +161,9 @@ function restrict_ressource {
 	dump_log
 }
 
+EXIT_CODE=0
 function display() {
 
-	CAUGHT_EXIT_CODE="$1"
 	LEAK_MESSAGE=""
 	
 	# check for valgrind leaks
@@ -175,33 +175,21 @@ function display() {
 	esac
 
 	# check for uncaught errors
-	if [ "_${CAUGHT_EXIT_CODE}" == "_0" ]
-	then
-		ERROR_CATCH="$(cat "${LOG_FILE}" | grep 'Program Exit Code:' | awk '{print $4}' | grep -E '^\-?[0-9]+$')"
-		[ "_${ERROR_CATCH}" != "_" ] && CAUGHT_EXIT_CODE="${ERROR_CATCH}"
-	fi
 
-	# check for uncaught errors
-	if [ "_${CAUGHT_EXIT_CODE}" == "_0" ]
-	then
-		ERROR_CATCH="$(cat "${LOG_FILE}" | grep 'Command terminated by signal:' | awk '{print $5}' | grep -E '^\-?[0-9]+$')"
-		[ "_${ERROR_CATCH}" != "_" ] && CAUGHT_EXIT_CODE="${ERROR_CATCH}"
-	fi
+	ERROR_CATCH="$(cat "${LOG_FILE}" | grep 'Odin exited with code: ' | awk '{print $5}' | grep -E '^\-?[0-9]+$')"
+	[ "_${ERROR_CATCH}" != "_" ] && EXIT_CODE="${ERROR_CATCH}"
 
-	EXIT_ERROR_TYPE=$( print_exit_type "${CAUGHT_EXIT_CODE}" )
+	EXIT_ERROR_TYPE=$( print_exit_type "${EXIT_CODE}" )
 
 
-	if [ "_${CAUGHT_EXIT_CODE}" == "_0" ] && [ "_${LEAK_MESSAGE}" == "_" ]
+	if [ "_${EXIT_CODE}" == "_0" ] && [ "_${LEAK_MESSAGE}" == "_" ]
 	then
 		pretty_print_status "${COLORIZE_OUTPUT}" green "${TEST_NAME}" "Ok" 
 		touch "$(dirname ${ARG_FILE})/success"
 	else
-		pretty_print_status "${COLORIZE_OUTPUT}" yellow "${TEST_NAME}" "${LEAK_MESSAGE}${EXIT_ERROR_TYPE}($1)"  
+		pretty_print_status "${COLORIZE_OUTPUT}" yellow "${TEST_NAME}" "${LEAK_MESSAGE}${EXIT_ERROR_TYPE}($EXIT_CODE)"  
 		touch "$(dirname ${ARG_FILE})/failure"
 	fi
-
-	return "${CAUGHT_EXIT_CODE}"
-
 }
 
 #########################################################
@@ -373,8 +361,6 @@ dump_log
 pretty_print_status "${COLORIZE_OUTPUT}" white "${TEST_NAME}" 
 
 
-_ARGS=""
-EXIT_CODE=255
 if [ "_${ARG_FILE}" == "_" ] || [ ! -f "${ARG_FILE}" ]
 then
 	log_it "Must define a path to a valid argument file"
@@ -409,20 +395,18 @@ else
 		pretty_print_status "${COLORIZE_OUTPUT}" red "${TEST_NAME}" "Missing package: ${failed_requirements}" 
 
 	else
-		_ARGS="$(cat "${ARG_FILE}")"
 		if [ "${USE_LOGS}" == "on" ]
 		then
 			if [ "${VERBOSE}" == "2" ]
 			then
-				${EXEC_PREFIX} ${_ARGS} 2>&1 | tee "${LOG_FILE}"
+				${EXEC_PREFIX} ${ARG_FILE} 2>&1 | tee "${LOG_FILE}"
 			else
-				${EXEC_PREFIX} ${_ARGS} &>> "${LOG_FILE}"
+				${EXEC_PREFIX} ${ARG_FILE} &>> "${LOG_FILE}"
 			fi
 		else
-			${EXEC_PREFIX} ${_ARGS}
+			${EXEC_PREFIX} ${ARG_FILE}
 		fi
-		display $?
-		EXIT_CODE=$?
+		display
 	fi
 fi
 
