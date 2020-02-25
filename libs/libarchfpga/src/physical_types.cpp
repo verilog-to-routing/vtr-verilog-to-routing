@@ -110,7 +110,12 @@ std::vector<int> t_physical_tile_type::get_clock_pins_indices() const {
     int clock_pins_start_idx = 0;
     int clock_pins_stop_idx = 0;
 
-    for (int capacity_num = 0; capacity_num < this->capacity; capacity_num++) {
+    int num_capacity = 1;
+    if (capacity_type == e_capacity_type::DUPLICATE) {
+        num_capacity = this->capacity;
+    }
+
+    for (int capacity_num = 0; capacity_num < num_capacity; capacity_num++) {
         // Ranges are picked on the basis that pins are ordered: inputs, outputs, then clock pins
         // This is because ProcessPb_type assigns pb_type port indices in that order and
         // SetupPinLocationsAndPinClasses assigns t_logical_block_type_ptr pin indices in the order of port indices
