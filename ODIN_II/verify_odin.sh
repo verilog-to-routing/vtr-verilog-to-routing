@@ -548,9 +548,19 @@ function populate_arg_from_file() {
 
 	if [ "_${_local_synthesis_parse_file}" != "_" ] && [ ! -f "${_local_synthesis_parse_file}" ]
 	then
+		_local_synthesis_parse_file="${THIS_DIR}/${_local_synthesis_parse_file}"
+	fi
+
+	if [ "_${_local_synthesis_parse_file}" != "_" ] && [ ! -f "${_local_synthesis_parse_file}" ]
+	then
 		echo "file ${_local_synthesis_parse_file} not found, skipping"
 	else
 		_synthesis_parse_file="${_local_synthesis_parse_file}"
+	fi
+
+	if [ "_${_local_simulation_parse_file}" != "_" ] && [ ! -f "${_local_simulation_parse_file}" ]
+	then
+		_local_simulation_parse_file="${THIS_DIR}/${_local_simulation_parse_file}"
 	fi
 
 	if [ "_${_local_simulation_parse_file}" != "_" ] && [ ! -f "${_local_simulation_parse_file}" ]
