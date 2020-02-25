@@ -26,6 +26,7 @@ RULE_THRESHOLD=( "skip" )
 RULE_QUICK_COMPARE=( "" )
 RULE_FULL_REGEX=( "" )
 RULE_SORTING_KEY=( "false" )
+RULE_DEFAULT_VALUE=( "n/a" )
 
 RULE_NAME_ID=()
 RULE_SIZE=1
@@ -63,13 +64,13 @@ function parse_rule_file() {
             case "_${line}" in
                 _) # do nothing
                     ;;
-                '_#include'*)
-                    next_file="${line/\#include[[:blank:]]/}"
+                '_;include'*)
+                    next_file="${line/;include[[:blank:]]/}"
                     filename="$(readlink -f "$*")"
                     filepath="$(dirname "${filename}")"
                     parse_rule_file  "${next_file}" || parse_rule_file  "${filepath}/${next_file}" 
                     ;;
-                '_#'*)
+                '_;'*)
                     # comments
                     ;;
                 '_['*']')
@@ -87,6 +88,7 @@ function parse_rule_file() {
                     RULE_QUICK_COMPARE+=( "${RULE_QUICK_COMPARE[0]}" )
                     RULE_THRESHOLD+=( "${RULE_THRESHOLD[0]}" )
                     RULE_SORTING_KEY+=( "${RULE_SORTING_KEY[0]}" )
+                    RULE_DEFAULT_VALUE+=( "${RULE_DEFAULT_VALUE[0]}" )
 
                     ;;
                 '_'*'='*)
@@ -112,7 +114,10 @@ function parse_rule_file() {
                                 then
                                     RULE_NAME_ID+=( "${CURRENT_ID}" )
                                 fi
-                                ;;                               
+                                ;;  
+                            _default)
+                                RULE_DEFAULT_VALUE["${CURRENT_ID}"]="${v}"
+                                ;;                             
                             _) #nothing
                             ;;
                             *)
@@ -229,7 +234,7 @@ function do_parse() {
         VALUE=()
         for (( i = 1; i < ${#RULE_HEADER[@]}; i++ ));
         do
-            VALUE+=( "" )
+            VALUE+=( "${RULE_DEFAULT_VALUE[$i]}" )
         done
 
         mapfile -t input <"${file}"
@@ -246,7 +251,7 @@ function do_parse() {
                             output="$(echo "${line}" | sed -r -n -e "s/${RULE_FULL_REGEX[$i]}/\1/p" 2> /dev/null)"
                             if [ "_${output}" != "_" ]
                             then
-                                if [ "_${VALUE[$j]}" != "_" ]
+                                if [ "_${VALUE[$j]}" != "_${RULE_DEFAULT_VALUE[$i]}" ]
                                 then
                                     echo "value already set ${RULE_HEADER[$i]}=${VALUE[$j]} with ${output}"
                                 else
@@ -262,7 +267,7 @@ function do_parse() {
     done
 
     ( for i in "${V_VALUES[@]}"; do echo "$i"; done ) \
-        | column -o ',' -s ',' -t --table --table-columns "${csv_header}" \
+        | column -o ', ' -s ',' -t --table --table-columns "${csv_header}" \
             > "${OUTPUT_FILE}"
     return 0
 }
@@ -390,7 +395,7 @@ function do_compare() {
         
             for failure_message in "${buffered_writer[@]}"
             do 
-                printf "     - ${failure_message}\n"
+                echo "     - ${failure_message}\n"
             done
 
         else
@@ -450,7 +455,7 @@ function do_join() {
     done
 
     ( for i in "${V_VALUES[@]}"; do echo "$i"; done ) \
-        | column -o ',' -s ',' -t --table --table-columns "${csv_header}" \
+        | column -o ', ' -s ',' -t --table --table-columns "${csv_header}" \
         > "${OUTPUT_FILE}"
 
 }
