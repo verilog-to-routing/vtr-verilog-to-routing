@@ -88,7 +88,6 @@ class Rect {
     template<typename U = T, typename std::enable_if<std::is_integral<U>::value>::type...>
     Rect(Point<U> point);
 
-
   public: //Accessors
     //Co-ordinates
     T xmin() const;
