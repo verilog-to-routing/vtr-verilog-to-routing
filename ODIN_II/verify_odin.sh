@@ -886,9 +886,10 @@ function sim() {
 											${arch_cmd}
 											-V ${input_verilog_file}
 											-o ${input_blif_file}
-											-sim_dir ${DIR}"
+											-sim_dir ${DIR}; echo \"Odin exited with code: \$?\";"
 
 						_echo_args "${synthesis_command}" > "${DIR}/${synthesis_params_file_name}"
+						chmod +x "${DIR}/${synthesis_params_file_name}"
 
 					fi
 					###############################
@@ -920,7 +921,7 @@ function sim() {
 												${_simulation_params}
 												${arch_cmd}
 												-b ${input_blif_file}
-												-sim_dir ${DIR}"										
+												-sim_dir ${DIR} ; echo \"Odin exited with code: \$?\";"										
 
 						if [ "_${_GENERATE_BENCH}" == "_on" ] || [ "_${_generate_bench}" == "_on" ] || [ ! -f "${input_vector_file}" ]
 						then
@@ -937,6 +938,7 @@ function sim() {
 							_echo_args "${wrapper_command}" > "${DIR}/${simulation_wrapper_predefined_io_file_name}"
 
 						fi
+						chmod +x "${DIR}/${simulation_params_file_name}"
 					fi
 				fi
 			done
