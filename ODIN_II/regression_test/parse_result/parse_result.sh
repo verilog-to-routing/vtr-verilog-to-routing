@@ -352,7 +352,7 @@ function do_compare() {
         mapfile -d ',' -t new_values < <( printf "%s" "${V_VALUES[$i]}" )
         mapfile -d ',' -t golden_values < <( printf "%s" "${G_VALUES[$i]}")
 
-        buffered_writer=()
+        failed_hdr=()
         for (( j = 1; j < ${#RULE_HEADER[@]}; j++ ))
         do
             k=$(( j - 1 ))
@@ -361,17 +361,7 @@ function do_compare() {
             if [ "_${new_values[$k]}" != "_${golden_values[$k]}" ] \
             && ! compare_with_threshold "${new_values[$k]}" "${golden_values[$k]}" "${RULE_THRESHOLD[$j]}";
             then
-                error_line="$(printf "%-36s" "${RULE_HEADER[$j]}")"
-
-                [ "_${COLORIZE}" == "_on" ] && error_line="${error_line}\033[0;31m"
-                error_line="${error_line}[-${golden_values[$k]}-]"
-
-                [ "_${COLORIZE}" == "_on" ] && error_line="${error_line}\033[0;32m"
-                error_line="${error_line}{+${new_values[$k]}+}"
-
-                [ "_${COLORIZE}" == "_on" ] && error_line="${error_line}\033[0m"
-                
-                buffered_writer+=( "${error_line}" )
+                failed_hdr+=( "$j" )
             fi
         done
         
@@ -383,7 +373,7 @@ function do_compare() {
         done
         test_name="$(trim "${test_name}")"
 
-        if [ "_${buffered_writer[*]}" != "_" ]
+        if [ "_${#failed_hdr[@]}" != "_0" ]
         then
             fail_count=$(( fail_count + 1))
 
@@ -393,9 +383,19 @@ function do_compare() {
             fi
             pretty_print_status "${COLORIZE}" red "${test_name}" "Failed" 
         
-            for failure_message in "${buffered_writer[@]}"
-            do 
-                echo "     - ${failure_message}\n"
+            for j in "${failed_hdr[@]}"
+            do
+                k=$(( j - 1 ))
+                printf "%-36s" "${RULE_HEADER[$j]}"
+
+                [ "_${COLORIZE}" == "_on" ] && printf "\033[0;31m"
+                printf "[-%s-]" "${golden_values[$k]}"
+
+                [ "_${COLORIZE}" == "_on" ] && printf "\033[0;32m"
+                printf "{+%s+}" "${new_values[$k]}"
+
+                [ "_${COLORIZE}" == "_on" ] && printf "\033[0m"
+                
             done
 
         else
