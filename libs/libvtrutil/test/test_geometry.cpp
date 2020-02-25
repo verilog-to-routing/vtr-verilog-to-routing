@@ -96,6 +96,7 @@ TEST_CASE("Rect", "[vtr_geometry/Rect]") {
 
         SECTION("bounds_int") {
         }
+    }
 
     // float tests
     {
