@@ -79,7 +79,7 @@ void printClusteredNetlistStats() {
         num_blocks_type[logical_block->index]++;
         if (is_io_type(physical_tile)) {
             for (j = 0; j < logical_block->pb_type->num_pins; j++) {
-                int physical_pin = get_physical_pin(physical_tile, logical_block, j);
+                int physical_pin = get_physical_pin(physical_tile, /*z_index=*/0, logical_block, j);
                 auto pin_class = physical_tile->pin_class[physical_pin];
                 auto class_inf = physical_tile->class_inf[pin_class];
 
@@ -201,6 +201,9 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
                 break;
             case DELAY_NORMALIZED_LENGTH:
                 VTR_LOG("DELAY_NORMALIZED_LENGTH\n");
+                break;
+            case DELAY_NORMALIZED_LENGTH_BOUNDED:
+                VTR_LOG("DELAY_NORMALIZED_LENGTH_BOUNDED\n");
                 break;
             case DELAY_NORMALIZED_FREQUENCY:
                 VTR_LOG("DELAY_NORMALIZED_FREQUENCY\n");
