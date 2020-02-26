@@ -17,13 +17,18 @@ endif()
 # Create generated headers from capnp schema files
 #
 # Each schema used should appear here.
-capnp_generate_cpp(CAPNP_SRCS CAPNP_HDRS
+set(CAPNP_DEFS
     place_delay_model.capnp
     connection_map.capnp
     matrix.capnp
     gen/rr_graph_uxsdcxx.capnp
     map_lookahead.capnp
     )
+capnp_generate_cpp(CAPNP_SRCS CAPNP_HDRS
+    ${CAPNP_DEFS}
+    )
+
+install(FILES ${CAPNP_DEFS} DESTINATION capnp)
 
 add_library(libvtrcapnproto STATIC
             ${CAPNP_SRCS}
