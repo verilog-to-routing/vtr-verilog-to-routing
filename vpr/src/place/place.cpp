@@ -534,6 +534,10 @@ void try_place(const t_placer_opts& placer_opts,
 
             tatum::write_echo(getEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH),
                               *timing_ctx.graph, *timing_ctx.constraints, *placement_delay_calc, timing_info->analyzer());
+
+            tatum::NodeId debug_tnode = id_or_pin_name_to_tnode(analysis_opts.echo_dot_timing_graph_node);
+            write_setup_timing_graph_dot(getEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH) + std::string(".dot"),
+                                         *timing_info, debug_tnode);
         }
 
         /*now we can properly compute costs  */
@@ -768,6 +772,10 @@ void try_place(const t_placer_opts& placer_opts,
 
             tatum::write_echo(getEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH),
                               *timing_ctx.graph, *timing_ctx.constraints, *placement_delay_calc, timing_info->analyzer());
+
+            tatum::NodeId debug_tnode = id_or_pin_name_to_tnode(analysis_opts.echo_dot_timing_graph_node);
+            write_setup_timing_graph_dot(getEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH) + std::string(".dot"),
+                                         *timing_info, debug_tnode);
         }
 
         generate_post_place_timing_reports(placer_opts,
@@ -2600,4 +2608,8 @@ static void print_resources_utilization() {
         }
     }
     VTR_LOG("\n");
+}
+
+bool placer_needs_lookahead(const t_vpr_setup& vpr_setup) {
+    return (vpr_setup.PlacerOpts.place_algorithm == PATH_TIMING_DRIVEN_PLACE);
 }

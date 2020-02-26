@@ -152,10 +152,13 @@ struct t_options {
     argparse::ArgValue<int> router_high_fanout_threshold;
     argparse::ArgValue<int> router_debug_net;
     argparse::ArgValue<int> router_debug_sink_rr;
+    argparse::ArgValue<int> router_debug_iteration;
     argparse::ArgValue<e_router_lookahead> router_lookahead_type;
     argparse::ArgValue<int> router_max_convergence_count;
     argparse::ArgValue<float> router_reconvergence_cpd_threshold;
+    argparse::ArgValue<bool> router_update_lower_bound_delays;
     argparse::ArgValue<std::string> router_first_iteration_timing_report_file;
+    argparse::ArgValue<e_router_initial_timing> router_initial_timing;
     argparse::ArgValue<std::string> lookahead_search_locations;
 
     /* Analysis options */
@@ -164,6 +167,7 @@ struct t_options {
     argparse::ArgValue<int> timing_report_npaths;
     argparse::ArgValue<e_timing_report_detail> timing_report_detail;
     argparse::ArgValue<bool> timing_report_skew;
+    argparse::ArgValue<std::string> echo_dot_timing_graph_node;
 };
 
 argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args);

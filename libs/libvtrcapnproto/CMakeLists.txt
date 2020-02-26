@@ -22,6 +22,7 @@ capnp_generate_cpp(CAPNP_SRCS CAPNP_HDRS
     connection_map.capnp
     matrix.capnp
     gen/rr_graph_uxsdcxx.capnp
+    map_lookahead.capnp
     )
 
 add_library(libvtrcapnproto STATIC

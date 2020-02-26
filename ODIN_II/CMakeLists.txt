@@ -69,6 +69,22 @@ if(ODIN_COVERAGE)
 
 endif()
 
+if(ODIN_SANITIZE)
+
+    message("*** Compiling with Odin Coverage flags")
+
+    set(ODIN_EXTRA_FLAGS
+        "-g"
+        "-fsanitize=address"
+        ${ODIN_EXTRA_FLAGS}
+    )
+
+    set(ODIN_EXTRA_LINK_FLAGS
+        "-fsanitize=address"
+    )
+
+endif()
+
 #Flex and Bison are used to generate the parser
 find_package(BISON REQUIRED)
 find_package(FLEX REQUIRED)
@@ -164,18 +180,20 @@ if (ODIN_USES_IPO)
     set_target_properties(odin_II PROPERTIES LINK_FLAGS ${IPO_LINK_WARN_SUPRESS_FLAGS})
 endif()
 
-set(ODIN_COMPILE_OPTIONS_FLAGS
-    #GCC-like
-    "-Werror"
-    )
-
 #add strict odin compiler flags, if set
-if(VTR_COMPILE_OPTIONS STREQUAL "strict")
+if(VTR_ENABLE_STRICT_COMPILE)
     message(STATUS "ODIN_II: building with strict flags")
-    foreach(ODIN_FLAG ${ODIN_COMPILE_OPTIONS_FLAGS})
-        message(STATUS "\tAdding CXX flag: ${ODIN_FLAG}")
-        target_compile_options(libodin_ii PRIVATE ${ODIN_FLAG})
-        target_compile_options(odin_II PRIVATE ${ODIN_FLAG})
+
+    set(ODIN_STRICT_COMPILE_FLAGS_TO_CHECK
+        #GCC-like
+        "-Werror"
+        )
+
+    foreach(flag ${ODIN_STRICT_COMPILE_FLAGS_TO_CHECK})
+        message(STATUS "\tAdding CXX flag: ${flag}")
+        target_compile_options(libodin_ii PRIVATE ${flag})
+        target_compile_options(odin_II PRIVATE ${flag})
+        target_link_libraries(odin_II ${flag})
     endforeach()
 endif()
 

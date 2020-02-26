@@ -1,31 +1,31 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 #------------------------------------------------------------------------#
 #  Run a regression test on the batch system                             #
 #   - runs the regression tests given as input parameters                #
-# 	- parses and checks results upon completion							 #
-#   - tests can be found in <vtr_flow>/tasks/regression_tests/      #
+#       - parses and checks results upon completion                      #
+#   - tests can be found in <vtr_flow>/tasks/regression_tests/           #
 #                                                                        #
 #  Usage:                                                                #
 #  <While in the top-level directory>                                    #
 #  run_reg_test.pl <TEST1> <TEST2> ...                                   #
-#  									                                     #
-#  Options:								                                 #
-#	-create_golden:  Will create/overwrite the golden results with       #
-#	those of the most recent execution				                     #
-#	quick_test: Will run quick test in top-level directory before 	     #
-# 	running specified regression tests.	                                 #
-#	-display_qor: Will display quality of results of most recent         #
-# 	build of specified regression test.				                     #
-#									                                     #
-#  Notes: <TEST> argument is of the format: <project>_reg_<suite>   	 #
-#  See <vtr_flow_path>/tasks/regression_tests for more information.	     #
-#									                                     #
-#  Currently available:							                         #
-#		- vtr_reg_basic						                             #
-#		- vtr_reg_strong					                             #
-#		- vtr_reg_nightly					                             #
-#		- vtr_reg_weekly                                                 #
-#									                                     #
+#                                                                        #
+#  Options:                                                              #
+#       -create_golden:  Will create/overwrite the golden results with   #
+#       those of the most recent execution                               #
+#       quick_test: Will run quick test in top-level directory before    #
+#       running specified regression tests.                              #
+#       -display_qor: Will display quality of results of most recent     #
+#       build of specified regression test.                              #
+#                                                                        #
+#  Notes: <TEST> argument is of the format: <project>_reg_<suite>        #
+#  See <vtr_flow_path>/tasks/regression_tests for more information.      #
+#                                                                        #
+#  Currently available:                                                  #
+#               - vtr_reg_basic                                          #
+#               - vtr_reg_strong                                         #
+#               - vtr_reg_nightly                                        #
+#               - vtr_reg_weekly                                         #
+#                                                                        #
 #------------------------------------------------------------------------#
 
 use strict;
@@ -62,6 +62,7 @@ my $create_golden = 0;
 my $check_golden = 0;
 my $calc_geomean = 0;
 my $display_qor = 0;
+my $skip_qor = 0;
 my $show_failures = 0;
 my $num_cpu = 1;
 my $long_task_names = 0;
@@ -78,6 +79,8 @@ while ( $token = shift(@ARGV) ) {
 		$calc_geomean = 1;
 	} elsif ( $token eq "-display_qor" ) {
 		$display_qor = 1;
+	} elsif ( $token eq "-skip_qor" ) {
+		$skip_qor = 1;
 	} elsif ( $token eq "-show_failures" ) {
 		$show_failures = 1;
 	} elsif ( $token eq "-long_task_names" ) {
@@ -156,6 +159,8 @@ if ( $#tests > -1 ) {
             # Create/Check golden results
             if ($create_golden) {
                 parse_single_test("create", "calculate");
+            } elsif ($skip_qor) {
+                print "\nSkipping QoR checks...\n";
             } else {
                 my $qor_test_failures = parse_single_test("check", "calculate");
                 print "\nTest '$test' had $qor_test_failures qor test failures\n";
@@ -426,8 +431,6 @@ sub run_odin_test {
 		$return_status = system($odin_cmd."task/large");
 	} elsif ( $token eq "odin_reg_operators" ) {
 		$return_status = system($odin_cmd."task/operators");
-	} elsif ( $token eq "odin_reg_valgrind_operators" ) {
-		$return_status = system($odin_cmd."task/valgrind_operators");
 	} elsif ( $token eq "odin_reg_arch" ) {
 		$return_status = system($odin_cmd."task/arch");
 	} elsif ( $token eq "odin_reg_syntax" ) {

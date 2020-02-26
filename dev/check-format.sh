@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 clean=$(git status -s -uno | wc -l) #Short ignore untracked
 

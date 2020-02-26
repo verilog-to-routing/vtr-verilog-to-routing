@@ -315,10 +315,19 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         , report_error_(nullptr) {}
 
     void start_load(const std::function<void(const char*)>* report_error_in) final {
+        // report_error_in should be invoked if RrGraphSerializer encounters
+        // an error during the read.
         report_error_ = report_error_in;
     }
     void start_write() final {}
     void finish_write() final {}
+
+    // error_encountered will be invoked by the reader implementation whenever
+    // any error is encountered.
+    //
+    // This method should **not** be invoked from within RrGraphSerializer,
+    // instead the error should be reported via report_error.  This enables
+    // the reader implementation to add context (e.g. file and line number).
     void error_encountered(const char* file, int line, const char* message) final {
         vpr_throw(VPR_ERROR_ROUTE, file, line, "%s", message);
     }
@@ -1736,27 +1745,25 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             if (node.type() == SOURCE || node.type() == SINK) {
                 for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                     for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
-                        if (node.type() == SOURCE) {
-                            indices[SOURCE][ix][iy][0].push_back(inode);
-                            indices[SINK][ix][iy][0].push_back(OPEN);
-                        } else {
-                            VTR_ASSERT(node.type() == SINK);
-                            indices[SINK][ix][iy][0].push_back(inode);
-                            indices[SOURCE][ix][iy][0].push_back(OPEN);
+                        if (node.ptc_num() >= (int)indices[SOURCE][ix][iy][0].size()) {
+                            indices[SOURCE][ix][iy][0].resize(node.ptc_num() + 1, OPEN);
                         }
+                        if (node.ptc_num() >= (int)indices[SINK][ix][iy][0].size()) {
+                            indices[SINK][ix][iy][0].resize(node.ptc_num() + 1, OPEN);
+                        }
+                        indices[node.type()][ix][iy][0][node.ptc_num()] = inode;
                     }
                 }
             } else if (node.type() == IPIN || node.type() == OPIN) {
                 for (int ix = node.xlow(); ix <= node.xhigh(); ix++) {
                     for (int iy = node.ylow(); iy <= node.yhigh(); iy++) {
-                        if (node.type() == OPIN) {
-                            indices[OPIN][ix][iy][node.side()].push_back(inode);
-                            indices[IPIN][ix][iy][node.side()].push_back(OPEN);
-                        } else {
-                            VTR_ASSERT(node.type() == IPIN);
-                            indices[IPIN][ix][iy][node.side()].push_back(inode);
-                            indices[OPIN][ix][iy][node.side()].push_back(OPEN);
+                        if (node.ptc_num() >= (int)indices[OPIN][ix][iy][node.side()].size()) {
+                            indices[OPIN][ix][iy][node.side()].resize(node.ptc_num() + 1, OPEN);
                         }
+                        if (node.ptc_num() >= (int)indices[IPIN][ix][iy][node.side()].size()) {
+                            indices[IPIN][ix][iy][node.side()].resize(node.ptc_num() + 1, OPEN);
+                        }
+                        indices[node.type()][ix][iy][node.side()][node.ptc_num()] = inode;
                     }
                 }
             } else if (node.type() == CHANX) {

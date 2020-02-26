@@ -1,28 +1,28 @@
-/*
-
-Permission is hereby granted, free of charge, to any person
-obtaining a copy of this software and associated documentation
-files (the "Software"), to deal in the Software without
-restriction, including without limitation the rights to use,
-copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the
-Software is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice shall be
-included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-OTHER DEALINGS IN THE SOFTWARE.
-*/
 #ifndef ODIN_TYPES_H
 #define ODIN_TYPES_H
+/*
+ *
+ * Permission is hereby granted, free of charge, to any person
+ * obtaining a copy of this software and associated documentation
+ * files (the "Software"), to deal in the Software without
+ * restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following
+ * conditions:
+ *
+ * The above copyright notice and this permission notice shall be
+ * included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ */
 
 #include "string_cache.h"
 #include "hierarchy_util.h"
@@ -48,12 +48,12 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define ODIN_SHORT_STRING 1
 
 #ifndef DEBUG_ODIN
-	#define ODIN_STRING_TYPE ODIN_SHORT_STRING
+#    define ODIN_STRING_TYPE ODIN_SHORT_STRING
 #else
-	#define ODIN_STRING_TYPE ODIN_LONG_STRING
+#    define ODIN_STRING_TYPE ODIN_LONG_STRING
 #endif
 
-#define ODIN_STD_BITWIDTH (sizeof(long)*8)
+#define ODIN_STD_BITWIDTH (sizeof(long) * 8)
 
 /* unique numbers to mark the nodes as we DFS traverse the netlist */
 #define PARTIAL_MAP_TRAVERSE_VALUE 10
@@ -72,524 +72,506 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #define verify_i_o_availabilty(node, expected_input_size, expected_output_size) passed_verify_i_o_availabilty(node, expected_input_size, expected_output_size, __FILE__, __LINE__)
 
-
 struct ast_node_t;
 struct nnode_t;
 struct npin_t;
 struct nnet_t;
 struct netlist_t;
 
-
 /* the global arguments of the software */
-struct global_args_t
-{
-	std::string program_name;
+struct global_args_t {
+    std::string program_name;
 
     argparse::ArgValue<std::string> config_file;
-	argparse::ArgValue<std::vector<std::string>> verilog_files;
-	argparse::ArgValue<std::string> blif_file;
-	argparse::ArgValue<std::string> output_file;
-	argparse::ArgValue<std::string> arch_file; // Name of the FPGA architecture file
-	argparse::ArgValue<bool> permissive; //turn possible_errors into warnings
+    argparse::ArgValue<std::vector<std::string>> verilog_files;
+    argparse::ArgValue<std::string> blif_file;
+    argparse::ArgValue<std::string> output_file;
+    argparse::ArgValue<std::string> arch_file; // Name of the FPGA architecture file
+    argparse::ArgValue<bool> permissive;       //turn possible_errors into warnings
 
-	argparse::ArgValue<std::string> high_level_block; //Legacy option, no longer used
+    argparse::ArgValue<std::string> high_level_block; //Legacy option, no longer used
 
-	argparse::ArgValue<std::string> top_level_module_name; // force the name of the top level module desired
+    argparse::ArgValue<std::string> top_level_module_name; // force the name of the top level module desired
 
     argparse::ArgValue<bool> write_netlist_as_dot;
     argparse::ArgValue<bool> write_ast_as_dot;
     argparse::ArgValue<bool> all_warnings;
     argparse::ArgValue<bool> show_help;
 
-	argparse::ArgValue<std::string> adder_def; //DEPRECATED
+    argparse::ArgValue<std::string> adder_def; //DEPRECATED
 
     // defines if the first cin of an adder/subtractor is connected to a global gnd/vdd
     // or generated using a dummy adder with both inputs set to gnd/vdd
     argparse::ArgValue<bool> adder_cin_global;
 
-	/////////////////////
-	// For simulation.
-	/////////////////////
-	// Generate this number of random vectors.
-	argparse::ArgValue<int> sim_num_test_vectors;
-	// Input vectors to simulate instead of generating vectors.
-	argparse::ArgValue<std::string> sim_vector_input_file;
-	// Existing output vectors to verify against.
-	argparse::ArgValue<std::string> sim_vector_output_file;
-	// Simulation output Directory
-	argparse::ArgValue<std::string> sim_directory;
-	// Tells the simulator whether or not to generate random vectors which include the unknown logic value.
-	argparse::ArgValue<bool> sim_generate_three_valued_logic;
-	// Output both falling and rising edges in the output_vectors file. (DEFAULT)
-	argparse::ArgValue<bool> sim_output_both_edges;
-	// Request to read mif file input
-	argparse::ArgValue<bool> read_mif_input;
-	// Additional pins, nets, and nodes to output.
-	argparse::ArgValue<std::vector<std::string>> sim_additional_pins;
-	// Comma-separated list of primary input pins to hold high for all cycles but the first.
-	argparse::ArgValue<std::vector<std::string>> sim_hold_high;
-	// Comma-separated list of primary input pins to hold low for all cycles but the first.
-	argparse::ArgValue<std::vector<std::string>> sim_hold_low;
-	// target coverage
-	argparse::ArgValue<double> sim_min_coverage;
-	// simulate until best coverage is achieved
-	argparse::ArgValue<bool> sim_achieve_best;
+    /////////////////////
+    // For simulation.
+    /////////////////////
+    // Generate this number of random vectors.
+    argparse::ArgValue<int> sim_num_test_vectors;
+    // Input vectors to simulate instead of generating vectors.
+    argparse::ArgValue<std::string> sim_vector_input_file;
+    // Existing output vectors to verify against.
+    argparse::ArgValue<std::string> sim_vector_output_file;
+    // Simulation output Directory
+    argparse::ArgValue<std::string> sim_directory;
+    // Tells the simulator whether or not to generate random vectors which include the unknown logic value.
+    argparse::ArgValue<bool> sim_generate_three_valued_logic;
+    // Output both falling and rising edges in the output_vectors file. (DEFAULT)
+    argparse::ArgValue<bool> sim_output_both_edges;
+    // Request to read mif file input
+    argparse::ArgValue<bool> read_mif_input;
+    // Additional pins, nets, and nodes to output.
+    argparse::ArgValue<std::vector<std::string>> sim_additional_pins;
+    // Comma-separated list of primary input pins to hold high for all cycles but the first.
+    argparse::ArgValue<std::vector<std::string>> sim_hold_high;
+    // Comma-separated list of primary input pins to hold low for all cycles but the first.
+    argparse::ArgValue<std::vector<std::string>> sim_hold_low;
+    // target coverage
+    argparse::ArgValue<double> sim_min_coverage;
+    // simulate until best coverage is achieved
+    argparse::ArgValue<bool> sim_achieve_best;
 
-	argparse::ArgValue<int> parralelized_simulation;
-	argparse::ArgValue<bool> parralelized_simulation_in_batch;
-	argparse::ArgValue<int> sim_initial_value;
-	// The seed for creating random simulation vector
+    argparse::ArgValue<int> parralelized_simulation;
+    argparse::ArgValue<bool> parralelized_simulation_in_batch;
+    argparse::ArgValue<int> sim_initial_value;
+    // The seed for creating random simulation vector
     argparse::ArgValue<int> sim_random_seed;
 
-	argparse::ArgValue<bool> interactive_simulation;
-
+    argparse::ArgValue<bool> interactive_simulation;
 };
-
 
 /**
  * defined in enum_str.cpp
  */
-extern const char *file_extension_supported_STR[];
+extern const char* file_extension_supported_STR[];
 
-extern const char *ZERO_GND_ZERO;
-extern const char *ONE_VCC_CNS;
-extern const char *ZERO_PAD_ZERO;
+extern const char* ZERO_GND_ZERO;
+extern const char* ONE_VCC_CNS;
+extern const char* ZERO_PAD_ZERO;
 
-extern const char *SINGLE_PORT_RAM_string;
-extern const char *DUAL_PORT_RAM_string;
+extern const char* SINGLE_PORT_RAM_string;
+extern const char* DUAL_PORT_RAM_string;
 
-extern const char *edge_type_e_STR[];
-extern const char *operation_list_STR[][2];
-extern const char *ids_STR [];
+extern const char* edge_type_e_STR[];
+extern const char* operation_list_STR[][2];
+extern const char* ids_STR[];
 
-enum file_extension_supported
-{
-	VERILOG,
-	VERILOG_HEADER,
-	file_extension_supported_END
+enum file_extension_supported {
+    VERILOG,
+    VERILOG_HEADER,
+    file_extension_supported_END
 };
 
-enum edge_type_e
-{
-	UNDEFINED_SENSITIVITY,
-	FALLING_EDGE_SENSITIVITY,
-	RISING_EDGE_SENSITIVITY,
-	ACTIVE_HIGH_SENSITIVITY,
-	ACTIVE_LOW_SENSITIVITY,
-	ASYNCHRONOUS_SENSITIVITY,
-	edge_type_e_END
+enum edge_type_e {
+    UNDEFINED_SENSITIVITY,
+    FALLING_EDGE_SENSITIVITY,
+    RISING_EDGE_SENSITIVITY,
+    ACTIVE_HIGH_SENSITIVITY,
+    ACTIVE_LOW_SENSITIVITY,
+    ASYNCHRONOUS_SENSITIVITY,
+    edge_type_e_END
 };
 
-enum circuit_type_e
-{
-	COMBINATIONAL,
-	SEQUENTIAL,
-	circuit_type_e_END
+enum circuit_type_e {
+    COMBINATIONAL,
+    SEQUENTIAL,
+    circuit_type_e_END
 };
 
-enum operation_list
-{
-	NO_OP,
-	MULTI_PORT_MUX, // port 1 = control, port 2+ = mux options
-	FF_NODE,
-	BUF_NODE,
-	INPUT_NODE,
-	OUTPUT_NODE,
-	GND_NODE,
-	VCC_NODE,
-	CLOCK_NODE,
-	ADD, // +
-	MINUS, // -
-	BITWISE_NOT, // ~
-	BITWISE_AND, // &
-	BITWISE_OR, // |
-	BITWISE_NAND, // ~&
-	BITWISE_NOR, // ~|
-	BITWISE_XNOR, // ~^
-	BITWISE_XOR, // ^
-	LOGICAL_NOT, // !
-	LOGICAL_OR, // ||
-	LOGICAL_AND, // &&
-	LOGICAL_NAND, // No Symbol
-	LOGICAL_NOR, // No Symbol
-	LOGICAL_XNOR, // No symbol
-	LOGICAL_XOR, // No Symbol
-	MULTIPLY, // *
-	DIVIDE, // /
-	MODULO, // %
-	POWER, // **
-	LT, // <
-	GT, // >
-	LOGICAL_EQUAL, // ==
-	NOT_EQUAL, // !=
-	LTE, // <=
-	GTE, // >=
-	SR, // >>
-    ASR, // >>>
-	SL, // <<
-	CASE_EQUAL, // ===
-	CASE_NOT_EQUAL, // !==
-	ADDER_FUNC,
-	CARRY_FUNC,
-	MUX_2,
-	BLIF_FUNCTION,
-	NETLIST_FUNCTION,
-	MEMORY,
-	PAD_NODE,
-	HARD_IP,
-	GENERIC, /*added for the unknown node type */
-	FULLADDER,
-	CLOG2, // $clog2
-	UNSIGNED, // $unsigned
-	SIGNED, // $signed
-	operation_list_END
+enum operation_list {
+    NO_OP,
+    MULTI_PORT_MUX, // port 1 = control, port 2+ = mux options
+    FF_NODE,
+    BUF_NODE,
+    INPUT_NODE,
+    OUTPUT_NODE,
+    GND_NODE,
+    VCC_NODE,
+    CLOCK_NODE,
+    ADD,            // +
+    MINUS,          // -
+    BITWISE_NOT,    // ~
+    BITWISE_AND,    // &
+    BITWISE_OR,     // |
+    BITWISE_NAND,   // ~&
+    BITWISE_NOR,    // ~|
+    BITWISE_XNOR,   // ~^
+    BITWISE_XOR,    // ^
+    LOGICAL_NOT,    // !
+    LOGICAL_OR,     // ||
+    LOGICAL_AND,    // &&
+    LOGICAL_NAND,   // No Symbol
+    LOGICAL_NOR,    // No Symbol
+    LOGICAL_XNOR,   // No symbol
+    LOGICAL_XOR,    // No Symbol
+    MULTIPLY,       // *
+    DIVIDE,         // /
+    MODULO,         // %
+    POWER,          // **
+    LT,             // <
+    GT,             // >
+    LOGICAL_EQUAL,  // ==
+    NOT_EQUAL,      // !=
+    LTE,            // <=
+    GTE,            // >=
+    SR,             // >>
+    ASR,            // >>>
+    SL,             // <<
+    CASE_EQUAL,     // ===
+    CASE_NOT_EQUAL, // !==
+    ADDER_FUNC,
+    CARRY_FUNC,
+    MUX_2,
+    BLIF_FUNCTION,
+    NETLIST_FUNCTION,
+    MEMORY,
+    PAD_NODE,
+    HARD_IP,
+    GENERIC, /*added for the unknown node type */
+    FULLADDER,
+    CLOG2,    // $clog2
+    UNSIGNED, // $unsigned
+    SIGNED,   // $signed
+    operation_list_END
 };
 
-enum ids
-{
-	NO_ID,
-	/* top level things */
-	FILE_ITEMS,
-	MODULE,
-	SPECIFY,
-	/* VARIABLES */
-	INPUT,
-	OUTPUT,
-	INOUT,
-	WIRE,
-	REG,
-	INTEGER,
-	GENVAR,
-	PARAMETER,
-	LOCALPARAM,
-	INITIAL,
-	PORT,
-	/* OTHER MODULE ITEMS */
-	MODULE_ITEMS,
-	VAR_DECLARE,
-	VAR_DECLARE_LIST,
-	ASSIGN,
-   	/* OTHER MODULE AND FUNCTION ITEMS */
-	FUNCTION,
-   	/* OTHER FUNCTION ITEMS */
-  	FUNCTION_ITEMS,
-	TASK,
-	TASK_ITEMS,
-	/* primitives */
-	GATE,
-	GATE_INSTANCE,
-	ONE_GATE_INSTANCE,
-	/* Module instances */
-	MODULE_CONNECT_LIST,
-	MODULE_CONNECT,
-	MODULE_PARAMETER_LIST,
-	MODULE_PARAMETER,
-	MODULE_NAMED_INSTANCE,
-	MODULE_INSTANCE,
-	MODULE_MASTER_INSTANCE,
-	ONE_MODULE_INSTANCE,
-	/* Function instances*/
-	FUNCTION_NAMED_INSTANCE,
-	FUNCTION_INSTANCE,
+enum ids {
+    NO_ID,
+    /* top level things */
+    FILE_ITEMS,
+    MODULE,
+    SPECIFY,
+    /* VARIABLES */
+    INPUT,
+    OUTPUT,
+    INOUT,
+    WIRE,
+    REG,
+    INTEGER,
+    GENVAR,
+    PARAMETER,
+    LOCALPARAM,
+    INITIAL,
+    PORT,
+    /* OTHER MODULE ITEMS */
+    MODULE_ITEMS,
+    VAR_DECLARE,
+    VAR_DECLARE_LIST,
+    ASSIGN,
+    /* OTHER MODULE AND FUNCTION ITEMS */
+    FUNCTION,
+    /* OTHER FUNCTION ITEMS */
+    FUNCTION_ITEMS,
+    TASK,
+    TASK_ITEMS,
+    /* primitives */
+    GATE,
+    GATE_INSTANCE,
+    ONE_GATE_INSTANCE,
+    /* Module instances */
+    MODULE_CONNECT_LIST,
+    MODULE_CONNECT,
+    MODULE_PARAMETER_LIST,
+    MODULE_PARAMETER,
+    MODULE_NAMED_INSTANCE,
+    MODULE_INSTANCE,
+    MODULE_MASTER_INSTANCE,
+    ONE_MODULE_INSTANCE,
+    /* Function instances*/
+    FUNCTION_NAMED_INSTANCE,
+    FUNCTION_INSTANCE,
 
-	TASK_NAMED_INSTANCE,
-	TASK_INSTANCE,
-	/* Specify Items */
-	SPECIFY_ITEMS,
-	SPECIFY_PARAMETER,
-	SPECIFY_PAL_CONNECTION_STATEMENT,
-	SPECIFY_PAL_CONNECT_LIST,
-	/* statements */
-	STATEMENT,
-	BLOCK,
-	NON_BLOCKING_STATEMENT,
-	BLOCKING_STATEMENT,
-	ASSIGNING_LIST,
-	CASE,
-	CASE_LIST,
-	CASE_ITEM,
-	CASE_DEFAULT,
-	ALWAYS,
-	IF,
-	IF_Q,
-	FOR,
-	WHILE,
-	/* Delay Control */
-	DELAY_CONTROL,
-	POSEDGE,
-	NEGEDGE,
-	/* expressions */
-	BINARY_OPERATION,
-	UNARY_OPERATION,
-	/* basic primitives */
-	ARRAY_REF,
-	RANGE_REF,
-	CONCATENATE,
-	REPLICATE,
-	/* basic identifiers */
-	IDENTIFIERS,
-	NUMBERS,
-	/* Hard Blocks */
-	HARD_BLOCK,
-	HARD_BLOCK_NAMED_INSTANCE,
-	HARD_BLOCK_CONNECT_LIST,
-	HARD_BLOCK_CONNECT,
-	// EDDIE: new enum value for ids to replace MEMORY from operation_t
-	RAM,
-	ids_END
+    TASK_NAMED_INSTANCE,
+    TASK_INSTANCE,
+    /* Specify Items */
+    SPECIFY_ITEMS,
+    SPECIFY_PARAMETER,
+    SPECIFY_PAL_CONNECTION_STATEMENT,
+    SPECIFY_PAL_CONNECT_LIST,
+    /* statements */
+    STATEMENT,
+    BLOCK,
+    NON_BLOCKING_STATEMENT,
+    BLOCKING_STATEMENT,
+    ASSIGNING_LIST,
+    CASE,
+    CASE_LIST,
+    CASE_ITEM,
+    CASE_DEFAULT,
+    ALWAYS,
+    IF,
+    IF_Q,
+    FOR,
+    WHILE,
+    /* Delay Control */
+    DELAY_CONTROL,
+    POSEDGE,
+    NEGEDGE,
+    /* expressions */
+    BINARY_OPERATION,
+    UNARY_OPERATION,
+    /* basic primitives */
+    ARRAY_REF,
+    RANGE_REF,
+    CONCATENATE,
+    REPLICATE,
+    /* basic identifiers */
+    IDENTIFIERS,
+    NUMBERS,
+    /* Hard Blocks */
+    HARD_BLOCK,
+    HARD_BLOCK_NAMED_INSTANCE,
+    HARD_BLOCK_CONNECT_LIST,
+    HARD_BLOCK_CONNECT,
+    // EDDIE: new enum value for ids to replace MEMORY from operation_t
+    RAM,
+    ids_END
 };
 
-struct typ
-{
-	char *identifier;
-	VNumber *vnumber = nullptr;
-	sc_hierarchy *hierarchy;
-	sc_scope *scope;
-	struct
-	{
-		operation_list op;
-	} operation;
-	struct
-	{
-		short is_parameter;
-		short is_localparam;
-		short is_defparam;
-		short is_port;
-		short is_input;
-		short is_output;
-		short is_inout;
-		short is_wire;
-		short is_reg;
-		short is_integer;
-		short is_genvar;
-		short is_memory;
-		short is_signed;
-		short is_initialized; // should the variable be initialized with some value?
-		long initial_value;
-	} variable;
-	struct
-	{
-		short is_instantiated;
-		ast_node_t **module_instantiations_instance;
-		int size_module_instantiations;
-	} module;
-	struct
-	{
-		short is_instantiated;
-		ast_node_t **function_instantiations_instance;
-		int size_function_instantiations;
-	} function;
-	struct
-	{
-		short is_instantiated;
-		ast_node_t **task_instantiations_instance;
-		int size_task_instantiations;
-	} task;
-	struct
-	{
-		int num_bit_strings;
-		char **bit_strings;
-	} concat;
-
+struct typ {
+    char* identifier;
+    VNumber* vnumber = nullptr;
+    sc_hierarchy* hierarchy;
+    sc_scope* scope;
+    struct
+    {
+        operation_list op;
+    } operation;
+    struct
+    {
+        short is_parameter;
+        short is_localparam;
+        short is_defparam;
+        short is_port;
+        short is_input;
+        short is_output;
+        short is_inout;
+        short is_wire;
+        short is_reg;
+        short is_integer;
+        short is_genvar;
+        short is_memory;
+        short is_signed;
+        short is_initialized; // should the variable be initialized with some value?
+        long initial_value;
+    } variable;
+    struct
+    {
+        short is_instantiated;
+        ast_node_t** module_instantiations_instance;
+        int size_module_instantiations;
+    } module;
+    struct
+    {
+        short is_instantiated;
+        ast_node_t** function_instantiations_instance;
+        int size_function_instantiations;
+    } function;
+    struct
+    {
+        short is_instantiated;
+        ast_node_t** task_instantiations_instance;
+        int size_task_instantiations;
+    } task;
+    struct
+    {
+        int num_bit_strings;
+        char** bit_strings;
+    } concat;
 };
 
+struct ast_node_t {
+    long unique_count;
+    int far_tag;
+    int high_number;
+    ids type;
+    typ types;
 
-struct ast_node_t
-{
-	long unique_count;
-	int far_tag;
-	int high_number;
-	ids type;
-	typ types;
+    ast_node_t** children;
+    long num_children;
 
-	ast_node_t **children;
-	long num_children;
+    int line_number = -1;
+    int file_number = -1;
+    int related_module_id = -1;
 
-	int line_number = -1;
-	int file_number = -1;
-	int related_module_id = -1;
-
-	void *hb_port;
-	void *net_node;
-	long chunk_size;
-
+    void* hb_port;
+    void* net_node;
+    long chunk_size;
 };
 
 //-----------------------------------------------------------------------------------------------------
 
 /* DEFINTIONS for carry chain*/
-struct chain_information_t
-{
-	char *name;//unique name of the chain
-	int count;//the number of hard blocks in this chain
-	int num_bits;
+struct chain_information_t {
+    char* name; //unique name of the chain
+    int count;  //the number of hard blocks in this chain
+    int num_bits;
 };
 
 /* DEFINTIONS for all the different types of nodes there are.  This is also used cross-referenced in utils.c so that I can get a string version
  * of these names, so if you add new tpyes in here, be sure to add those same types in utils.c */
-struct nnode_t
-{
-	long unique_id;
-	char *name; // unique name of a node
-	operation_list type; // the type of node
-	int bit_width; // Size of the operation (e.g. for adders/subtractors)
+struct nnode_t {
+    long unique_id;
+    char* name;          // unique name of a node
+    operation_list type; // the type of node
+    int bit_width;       // Size of the operation (e.g. for adders/subtractors)
 
-	ast_node_t *related_ast_node; // the abstract syntax node that made this node
+    ast_node_t* related_ast_node; // the abstract syntax node that made this node
 
-	int line_number = -1;
-	int file_number = -1;
-	
-	short traverse_visited; // a way to mark if we've visited yet
+    int line_number = -1;
+    int file_number = -1;
 
-	npin_t **input_pins; // the input pins
-	long num_input_pins;
-	int *input_port_sizes; // info about the input ports
-	int num_input_port_sizes;
+    short traverse_visited; // a way to mark if we've visited yet
 
-	npin_t **output_pins; // the output pins
-	long num_output_pins;
-	int *output_port_sizes; // info if there is ports
-	int num_output_port_sizes;
+    npin_t** input_pins; // the input pins
+    long num_input_pins;
+    int* input_port_sizes; // info about the input ports
+    int num_input_port_sizes;
 
-	short unique_node_data_id;
-	void *node_data; // this is a point where you can add additional data for your optimization or technique
+    npin_t** output_pins; // the output pins
+    long num_output_pins;
+    int* output_port_sizes; // info if there is ports
+    int num_output_port_sizes;
 
-	int forward_level; // this is your logic level relative to PIs and FFs .. i.e farthest PI
-	int backward_level; // this is your reverse logic level relative to POs and FFs .. i.e. farthest PO
-	int sequential_level; // the associated sequential network that the node is in
-	short sequential_terminator; // if this combinational node is a terminator for the sequential level (connects to flip-flop or Output pin
+    short unique_node_data_id;
+    void* node_data; // this is a point where you can add additional data for your optimization or technique
 
-	netlist_t* internal_netlist; // this is a point of having a subgraph in a node
+    int forward_level;           // this is your logic level relative to PIs and FFs .. i.e farthest PI
+    int backward_level;          // this is your reverse logic level relative to POs and FFs .. i.e. farthest PO
+    int sequential_level;        // the associated sequential network that the node is in
+    short sequential_terminator; // if this combinational node is a terminator for the sequential level (connects to flip-flop or Output pin
 
-	std::vector<std::vector<signed char>> memory_data;
-	//(int cycle, int num_input_pins, npin_t *inputs, int num_output_pins, npin_t *outputs);
-	void (*simulate_block_cycle)(int, int, int*, int, int*);
+    netlist_t* internal_netlist; // this is a point of having a subgraph in a node
 
-	short *associated_function;
+    std::vector<std::vector<signed char>> memory_data;
+    //(int cycle, int num_input_pins, npin_t *inputs, int num_output_pins, npin_t *outputs);
+    void (*simulate_block_cycle)(int, int, int*, int, int*);
 
-	char** bit_map; /*storing the bit map */
-	int bit_map_line_count;
+    short* associated_function;
 
-	// For simulation
-	int in_queue; // Flag used by the simulator to avoid double queueing.
-	npin_t **undriven_pins; // These pins have been found by the simulator to have no driver.
-	int num_undriven_pins;
-	int ratio; //clock ratio for clock nodes
-	signed char has_initial_value; // initial value assigned?
-	signed char initial_value; // initial net value
-	bool internal_clk_warn= false;
-	edge_type_e edge_type; //
-	bool covered = false;
-	
-	//Generic gate output
-	unsigned char generic_output; //describes the output (1 or 0) of generic blocks
+    char** bit_map; /*storing the bit map */
+    int bit_map_line_count;
+
+    // For simulation
+    int in_queue;           // Flag used by the simulator to avoid double queueing.
+    npin_t** undriven_pins; // These pins have been found by the simulator to have no driver.
+    int num_undriven_pins;
+    int ratio;                     //clock ratio for clock nodes
+    signed char has_initial_value; // initial value assigned?
+    signed char initial_value;     // initial net value
+    bool internal_clk_warn = false;
+    edge_type_e edge_type; //
+    bool covered = false;
+
+    //Generic gate output
+    unsigned char generic_output; //describes the output (1 or 0) of generic blocks
 };
 
-struct npin_t
-{
-	long unique_id;
-	ids type;         // INPUT or OUTPUT
-	char *name;
-	nnet_t *net;      // related net
-	int pin_net_idx;
-	nnode_t *node;    // related node
-	int pin_node_idx; // pin on the node where we're located
-	char *mapping;    // name of mapped port from hard block
+struct npin_t {
+    long unique_id;
+    ids type; // INPUT or OUTPUT
+    char* name;
+    nnet_t* net; // related net
+    int pin_net_idx;
+    nnode_t* node;    // related node
+    int pin_node_idx; // pin on the node where we're located
+    char* mapping;    // name of mapped port from hard block
 
-	edge_type_e sensitivity;
+    edge_type_e sensitivity;
 
-	////////////////////
-	// For simulation
-	std::shared_ptr<AtomicBuffer> values;
+    ////////////////////
+    // For simulation
+    std::shared_ptr<AtomicBuffer> values;
 
-	bool delay_cycle;
-	
-	unsigned long coverage;
-	bool is_default; // The pin is feeding a mux from logic representing an else or default.
-	bool is_implied; // This signal is implied.
+    bool delay_cycle;
 
+    unsigned long coverage;
+    bool is_default; // The pin is feeding a mux from logic representing an else or default.
+    bool is_implied; // This signal is implied.
 };
 
-struct nnet_t
-{
-	long unique_id;
-	char *name; // name for the net
-	short combined;
+struct nnet_t {
+    long unique_id;
+    char* name; // name for the net
+    short combined;
 
-	npin_t *driver_pin; // the pin that drives the net
+    npin_t* driver_pin; // the pin that drives the net
 
-	npin_t **fanout_pins; // the pins pointed to by the net
-	int num_fanout_pins; // the list size of pins
+    npin_t** fanout_pins; // the pins pointed to by the net
+    int num_fanout_pins;  // the list size of pins
 
-	short unique_net_data_id;
-	void *net_data;
+    short unique_net_data_id;
+    void* net_data;
 
-	/////////////////////
-	// For simulation
-	std::shared_ptr<AtomicBuffer> values;
+    /////////////////////
+    // For simulation
+    std::shared_ptr<AtomicBuffer> values;
 
-	signed char has_initial_value; // initial value assigned?
-	signed char initial_value; // initial net value
-	//////////////////////
+    signed char has_initial_value; // initial value assigned?
+    signed char initial_value;     // initial net value
+                                   //////////////////////
 };
 
-struct signal_list_t
-{
-	npin_t **pins;
-	long count;
+struct signal_list_t {
+    npin_t** pins;
+    long count;
 
-	char is_memory;
-	char is_adder;
+    char is_memory;
+    char is_adder;
 };
 
-struct char_list_t
-{
-	char **strings;
-	int num_strings;
+struct char_list_t {
+    char** strings;
+    int num_strings;
 };
 
-struct netlist_t
-{
-	nnode_t *gnd_node;
-	nnode_t *vcc_node;
-	nnode_t *pad_node;
-	nnet_t *zero_net;
-	nnet_t *one_net;
-	nnet_t *pad_net;
-	nnode_t** top_input_nodes;
-	int num_top_input_nodes;
-	nnode_t** top_output_nodes;
-	int num_top_output_nodes;
-	nnode_t** ff_nodes;
-	int num_ff_nodes;
-	nnode_t** internal_nodes;
-	int num_internal_nodes;
-	nnode_t** clocks;
-	int num_clocks;
+struct ast_t {
+    ast_node_t** top_modules;
+    int top_modules_count;
+};
 
+struct netlist_t {
+    char* identifier;
 
-	/* netlist levelized structures */
-	nnode_t ***forward_levels;
-	int num_forward_levels;
-	int* num_at_forward_level;
-	nnode_t ***backward_levels; // NOTE backward levels isn't neccessarily perfect.  Because of multiple output pins, the node can be put closer to POs than should be.  To fix, run a rebuild of the list afterwards since the marked "node->backward_level" is correct */
-	int num_backward_levels;
-	int* num_at_backward_level;
+    nnode_t* gnd_node;
+    nnode_t* vcc_node;
+    nnode_t* pad_node;
+    nnet_t* zero_net;
+    nnet_t* one_net;
+    nnet_t* pad_net;
+    nnode_t** top_input_nodes;
+    int num_top_input_nodes;
+    nnode_t** top_output_nodes;
+    int num_top_output_nodes;
+    nnode_t** ff_nodes;
+    int num_ff_nodes;
+    nnode_t** internal_nodes;
+    int num_internal_nodes;
+    nnode_t** clocks;
+    int num_clocks;
 
-	nnode_t ***sequential_level_nodes;
-	int num_sequential_levels;
-	int* num_at_sequential_level;
-	/* these structures store the last combinational node in a level before a flip-flop or output pin */
-	nnode_t ***sequential_level_combinational_termination_node;
-	int num_sequential_level_combinational_termination_nodes;
-	int* num_at_sequential_level_combinational_termination_node;
+    /* netlist levelized structures */
+    nnode_t*** forward_levels;
+    int num_forward_levels;
+    int* num_at_forward_level;
+    nnode_t*** backward_levels; // NOTE backward levels isn't neccessarily perfect.  Because of multiple output pins, the node can be put closer to POs than should be.  To fix, run a rebuild of the list afterwards since the marked "node->backward_level" is correct */
+    int num_backward_levels;
+    int* num_at_backward_level;
 
-	STRING_CACHE *nets_sc;
-	STRING_CACHE *out_pins_sc;
-	STRING_CACHE *nodes_sc;
+    nnode_t*** sequential_level_nodes;
+    int num_sequential_levels;
+    int* num_at_sequential_level;
+    /* these structures store the last combinational node in a level before a flip-flop or output pin */
+    nnode_t*** sequential_level_combinational_termination_node;
+    int num_sequential_level_combinational_termination_nodes;
+    int* num_at_sequential_level_combinational_termination_node;
 
-	t_logical_block_type_ptr type;
+    STRING_CACHE* nets_sc;
+    STRING_CACHE* out_pins_sc;
+    STRING_CACHE* nodes_sc;
 
+    t_logical_block_type_ptr type;
 };
 
 #endif

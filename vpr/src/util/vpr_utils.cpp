@@ -72,6 +72,9 @@ static AtomPinId find_atom_pin_for_pb_route_id(ClusterBlockId clb, int pb_route_
 
 static bool block_type_contains_blif_model(t_logical_block_type_ptr type, const std::regex& blif_model_regex);
 static bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::regex& blif_model_regex);
+static t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type);
+static void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type);
+
 /******************** Subroutine definitions *********************************/
 
 const t_model* find_model(const t_model* models, const std::string& name, bool required) {
@@ -207,17 +210,14 @@ std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_
         pin_name += ".";
     }
 
-    int curr_index = 0;
     for (auto const& port : type->ports) {
-        if (curr_index + port.num_pins > pin_index) {
+        if (pin_index >= port.absolute_first_pin_index && pin_index < port.absolute_first_pin_index + port.num_pins) {
             //This port contains the desired pin index
-            int index_in_port = pin_index - curr_index;
+            int index_in_port = pin_index - port.absolute_first_pin_index;
             pin_name += port.name;
             pin_name += "[" + std::to_string(index_in_port) + "]";
             return pin_name;
         }
-
-        curr_index += port.num_pins;
     }
 
     return "<UNKOWN>";
@@ -234,7 +234,9 @@ std::vector<std::string> block_type_class_index_to_pin_names(t_physical_tile_typ
 
     std::vector<std::string> pin_names;
     for (int ipin = 0; ipin < class_inf.num_pins; ++ipin) {
-        pin_names.push_back(block_type_pin_index_to_name(type, class_inf.pinlist[ipin]));
+        int pin_index = class_inf.pinlist[ipin];
+        VTR_ASSERT(type->pin_class[pin_index] == class_index);
+        pin_names.push_back(block_type_pin_index_to_name(type, pin_index));
     }
 
     return pin_names;
@@ -276,8 +278,8 @@ std::string rr_node_arch_name(int inode) {
 }
 
 IntraLbPbPinLookup::IntraLbPbPinLookup(const std::vector<t_logical_block_type>& block_types)
-    : block_types_(block_types) {
-    intra_lb_pb_pin_lookup_ = new t_pb_graph_pin**[block_types_.size()];
+    : block_types_(block_types)
+    , intra_lb_pb_pin_lookup_(block_types.size(), nullptr) {
     for (unsigned int itype = 0; itype < block_types_.size(); ++itype) {
         intra_lb_pb_pin_lookup_[itype] = alloc_and_load_pb_graph_pin_lookup_from_index(&block_types[itype]);
     }
@@ -296,12 +298,9 @@ IntraLbPbPinLookup& IntraLbPbPinLookup::operator=(IntraLbPbPinLookup rhs) {
 }
 
 IntraLbPbPinLookup::~IntraLbPbPinLookup() {
-    auto& device_ctx = g_vpr_ctx.device();
-    for (unsigned int itype = 0; itype < device_ctx.logical_block_types.size(); itype++) {
+    for (unsigned int itype = 0; itype < intra_lb_pb_pin_lookup_.size(); ++itype) {
         free_pb_graph_pin_lookup_from_index(intra_lb_pb_pin_lookup_[itype]);
     }
-
-    delete[] intra_lb_pb_pin_lookup_;
 }
 
 const t_pb_graph_pin* IntraLbPbPinLookup::pb_gpin(unsigned int itype, int ipin) const {
@@ -1214,7 +1213,7 @@ static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin** pb_graph_pi
 }
 
 /* Create a lookup that returns a pb_graph_pin pointer given the pb_graph_pin index */
-t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type) {
+static t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type) {
     t_pb_graph_pin** pb_graph_pin_lookup_from_type = nullptr;
 
     t_pb_graph_node* pb_graph_head = type->pb_graph_head;
@@ -1242,7 +1241,7 @@ t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_t
 }
 
 /* Free pb_graph_pin lookup array */
-void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type) {
+static void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type) {
     if (pb_graph_pin_lookup_from_type == nullptr) {
         return;
     }

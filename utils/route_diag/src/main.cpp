@@ -70,7 +70,7 @@ static void do_one_route(int source_node, int sink_node,
     auto& route_ctx = g_vpr_ctx.routing();
 
     t_rt_node* rt_root = init_route_tree_to_source_no_net(source_node);
-    enable_router_debug(router_opts, ClusterNetId(), sink_node);
+    enable_router_debug(router_opts, ClusterNetId(), sink_node, 1);
 
     /* Update base costs according to fanout and criticality rules */
     update_rr_base_costs(1);

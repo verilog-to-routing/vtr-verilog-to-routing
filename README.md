@@ -13,7 +13,7 @@ This branch contains work in progress changes for using Verilog to Routing
 ## Introduction
 The Verilog-to-Routing (VTR) project is a world-wide collaborative effort to provide a open-source framework for conducting FPGA architecture and CAD research and development.
 The VTR design flow takes as input a Verilog description of a digital circuit, and a description of the target FPGA architecture.
-It then perfoms:
+It then performs:
   * Elaboration & Synthesis (ODIN II)
   * Logic Optimization & Technology Mapping (ABC)
   * Packing, Placement, Routing & Timing Analysis (VPR)
@@ -50,7 +50,7 @@ Bibtex:
 ```
 
 ## Download
-For most users of VTR (rather than active developers) you should download the [latest offical VTR release](https://verilogtorouting.org/download), which has been fully regression tested.
+For most users of VTR (rather than active developers) you should download the [latest official VTR release](https://verilogtorouting.org/download), which has been fully regression tested.
 
 ## Building
 On unix-like systems run `make` from the root VTR directory.

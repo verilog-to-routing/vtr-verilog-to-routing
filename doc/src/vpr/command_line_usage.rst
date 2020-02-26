@@ -1290,27 +1290,38 @@ Analysis Options
                There is no logical contradiction, but for clarification, it is best to see an explanation of the VPR coordinate system.
                The path can also be visualized by VPR graphics, as an illustration of this point:
 
-.. _fig_path_2:
+            .. _fig_path_2:
 
-.. figure:: path_2.*
- 
- Illustration of Path #2 with insight into the coordinate system.
+            .. figure:: path_2.*
+             
+             Illustration of Path #2 with insight into the coordinate system.
 
-:numref:`fig_path_2` shows the routing resources used in Path #2 and their locations on the FPGA.
+            :numref:`fig_path_2` shows the routing resources used in Path #2 and their locations on the FPGA.
 
-1. The signal emerges from near the top-right corner of the block to_FFC (OPIN:1479)  and joins the topmost horizontal segment of length 1 (CHANX:2073). 
+            1. The signal emerges from near the top-right corner of the block to_FFC (OPIN:1479)  and joins the topmost horizontal segment of length 1 (CHANX:2073). 
 
-2. The signal proceeds to the left, then connects to the outermost, blue vertical segment of length 0 (CHANY:2139). 
+            2. The signal proceeds to the left, then connects to the outermost, blue vertical segment of length 0 (CHANY:2139). 
 
-3. The signal continues downward and attaches to the horizontal segment of length 1 (CHANX:2040). 
+            3. The signal continues downward and attaches to the horizontal segment of length 1 (CHANX:2040). 
 
-4. Of the aforementioned horizontal segment, after travelling one linear unit to the right, the signal jumps on a vertical segment of length 0 (CHANY:2166).
+            4. Of the aforementioned horizontal segment, after travelling one linear unit to the right, the signal jumps on a vertical segment of length 0 (CHANY:2166).
 
-5. The signal travels upward and promptly connects to a horizontal segment of length 0 (CHANX:2076).
+            5. The signal travels upward and promptly connects to a horizontal segment of length 0 (CHANX:2076).
 
-6. This segment connects to the green destination io (3,4).
+            6. This segment connects to the green destination io (3,4).
+
+        * ``debug``: Like ``detailed``, but includes additional VPR internal debug information such as timing graph node IDs (``tnode``) and routing SOURCE/SINK nodes.
 
     **Default:** ``netlist``
+
+.. option:: --echo_dot_timing_graph_node { string | int }
+
+    Controls what subset of the timing graph is echoed to a GraphViz DOT file when :option:`vpr --echo_file` is enabled.
+
+    Value can be a string (corresponding to a VPR atom netlist pin name), or an integer representing a timing graph node ID.
+    Negative values mean the entire timing graph is dumped to the DOT file.
+
+    **Default:** ``-1``
 
 .. option:: --timing_report_skew { on | off }
 

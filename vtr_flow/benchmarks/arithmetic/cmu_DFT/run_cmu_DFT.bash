@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 EXP_NAME="cmu_DFT"
 
 SOURCE="${BASH_SOURCE[0]}"

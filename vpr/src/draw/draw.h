@@ -74,7 +74,7 @@ void toggle_routing_bounding_box(GtkWidget* /*widget*/, gint /*response_id*/, gp
 void toggle_routing_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
 void toggle_crit_path(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
 void toggle_block_pin_util(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-void toggle_router_rr_costs(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
+void toggle_router_expansion_costs(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
 void toggle_placement_macros(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
 
 ezgl::color get_block_type_color(t_physical_tile_type_ptr type);

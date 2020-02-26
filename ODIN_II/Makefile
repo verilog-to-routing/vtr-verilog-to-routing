@@ -18,8 +18,7 @@ endif
 #    debug
 BUILD_TYPE ?= release
 MAKEFLAGS := -s
-
-CMAKE_ARGS = -DVTR_IPO_BUILD="off"
+CMAKE_ARGS = -DVTR_IPO_BUILD=off
 
 BUILD_DIR=../build
 ODIN_BUILD_DIR=$(BUILD_DIR)/ODIN_II
@@ -60,7 +59,7 @@ _set_build: $(ODIN_BUILD_DIR)/.regular.build
 	cd $(BUILD_DIR) &&\
 	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) ..
 
-_set_debug: $(ODIN_BUILD_DIR)/.debug.build
+_set_debug: $(ODIN_BUILD_DIR)/.debug.build 
 	cd $(BUILD_DIR) &&\
 	cmake $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_DEBUG=on ..
 
@@ -76,7 +75,11 @@ _set_clang_tidy: $(ODIN_BUILD_DIR)/.tidy.build
 	cd $(BUILD_DIR) &&\
 	cmake  $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_TIDY=on ..
 
-BUILD_IT_TARGETS = build debug warn gcov clang_tidy
+_set_sanitize: $(ODIN_BUILD_DIR)/.sanitize.build
+	cd $(BUILD_DIR) &&\
+	cmake  $(CMAKE_GEN_ARGS) $(CMAKE_ARGS) -DODIN_SANITIZE=on ..
+
+BUILD_IT_TARGETS = build debug warn gcov clang_tidy sanitize
 $(foreach  t,$(BUILD_IT_TARGETS), $(eval $(call _build_it_gen,$(t))))
 
 scrub:
@@ -91,8 +94,34 @@ gcovr:
 cppcheck:
 	cppcheck . 1> /dev/null 
 
-test:
-	./verify_odin.sh -t regression_test/benchmark/suite/pre_commit -j $(NB_OF_PROCESS)
+test_coverage:
+	$(MAKE) gcov
+	./verify_odin.sh -j $(NB_OF_PROCESS) \
+		-t regression_test/benchmark/suite/light_suite
+	$(MAKE) gcovr
 
-large_test:
-	./verify_odin.sh -t regression_test/benchmark/suite/pre_merge -j $(NB_OF_PROCESS)
+test:
+# rebuild with sanitize flags on to run the same test as travis
+	$(MAKE) sanitize
+	./verify_odin.sh -j $(NB_OF_PROCESS) \
+		-t regression_test/benchmark/suite/light_suite \
+		-t vtr_reg_basic \
+		-t vtr_reg_strong
+# larger test should run with regular flags to speed up the process
+	$(MAKE) build
+	./verify_odin.sh -j $(NB_OF_PROCESS) \
+		-t regression_test/benchmark/suite/heavy_suite
+
+qor:
+# rebuild with sanitize flags on to run the same test as travis
+	$(MAKE) sanitize
+	./verify_odin.sh -j $(NB_OF_PROCESS) \
+		--regenerate_qor \
+		-t regression_test/benchmark/suite/light_suite \
+		-t vtr_reg_basic \
+		-t vtr_reg_strong
+# larger test should run with regular flags to speed up the process
+	$(MAKE) build
+	./verify_odin.sh -j $(NB_OF_PROCESS) \
+		--regenerate_qor \
+		-t regression_test/benchmark/suite/heavy_suite

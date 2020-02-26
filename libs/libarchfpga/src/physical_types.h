@@ -93,7 +93,7 @@ class t_metadata_value {
   public:
     explicit t_metadata_value(vtr::interned_string v)
         : value_(v) {}
-    explicit t_metadata_value(const t_metadata_value& o)
+    explicit t_metadata_value(const t_metadata_value& o) noexcept
         : value_(o.value_) {}
 
     // Return string value.

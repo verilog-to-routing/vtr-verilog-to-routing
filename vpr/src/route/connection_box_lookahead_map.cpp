@@ -85,6 +85,8 @@ struct SampleRegion {
 
 template<typename Entry>
 static std::pair<float, int> run_dijkstra(int start_node_ind,
+                                          std::vector<bool>* node_expanded,
+                                          std::vector<util::Search_Path>* paths,
                                           RoutingCosts* routing_costs);
 
 static std::vector<SampleRegion> find_sample_regions(int num_segments);
@@ -109,17 +111,8 @@ static vtr::Point<T> closest_point_in_rect(const vtr::Rect<T>& r, const vtr::Poi
     }
 }
 
-// resize internal data structures
-void CostMap::set_counts(size_t seg_count, size_t box_count) {
-    cost_map_.clear();
-    offset_.clear();
-    penalty_.clear();
-    cost_map_.resize({seg_count, box_count});
-    offset_.resize({seg_count, box_count});
-    penalty_.resize({seg_count, box_count});
-    seg_count_ = seg_count;
-    box_count_ = box_count;
-
+// build the segment map
+void CostMap::build_segment_map() {
     const auto& device_ctx = g_vpr_ctx.device();
     segment_map_.resize(device_ctx.rr_nodes.size());
     for (size_t i = 0; i < segment_map_.size(); ++i) {
@@ -130,6 +123,18 @@ void CostMap::set_counts(size_t seg_count, size_t box_count) {
 
         segment_map_[i] = from_seg_index;
     }
+}
+
+// resize internal data structures
+void CostMap::set_counts(size_t seg_count, size_t box_count) {
+    cost_map_.clear();
+    offset_.clear();
+    penalty_.clear();
+    cost_map_.resize({seg_count, box_count});
+    offset_.resize({seg_count, box_count});
+    penalty_.resize({seg_count, box_count});
+    seg_count_ = seg_count;
+    box_count_ = box_count;
 }
 
 // cached node -> segment map
@@ -491,7 +496,7 @@ float ConnectionBoxMapLookahead::get_map_cost(int from_node_ind,
 template<typename Entry>
 static bool add_paths(int start_node_ind,
                       Entry current,
-                      std::unordered_map<int, util::Search_Path>* paths,
+                      const std::vector<util::Search_Path>& paths,
                       RoutingCosts* routing_costs) {
     auto& device_ctx = g_vpr_ctx.device();
     ConnectionBoxId box_id;
@@ -507,7 +512,8 @@ static bool add_paths(int start_node_ind,
 
     // reconstruct the path
     std::vector<int> path;
-    for (int i = (*paths)[node_ind].parent; i != start_node_ind; i = (*paths)[i].parent) {
+    for (int i = paths[node_ind].parent; i != start_node_ind; i = paths[i].parent) {
+        VTR_ASSERT(i != -1);
         path.push_back(i);
     }
     path.push_back(start_node_ind);
@@ -534,7 +540,7 @@ static bool add_paths(int start_node_ind,
 
         if (*it != start_node_ind) {
             auto& parent_node = device_ctx.rr_nodes[parent];
-            start_to_here = Entry(*it, parent_node.edge_switch((*paths)[*it].edge), &start_to_here);
+            start_to_here = Entry(*it, parent_node.edge_switch(paths[*it].edge), &start_to_here);
             parent = *it;
         }
 
@@ -569,6 +575,8 @@ static bool add_paths(int start_node_ind,
  * the number of paths from start_node_ind stored. */
 template<typename Entry>
 static std::pair<float, int> run_dijkstra(int start_node_ind,
+                                          std::vector<bool>* node_expanded,
+                                          std::vector<util::Search_Path>* paths,
                                           RoutingCosts* routing_costs) {
     auto& device_ctx = g_vpr_ctx.device();
     int path_count = 0;
@@ -580,12 +588,12 @@ static std::pair<float, int> run_dijkstra(int start_node_ind,
 
     /* a list of boolean flags (one for each rr node) to figure out if a
      * certain node has already been expanded */
-    std::vector<bool> node_expanded(device_ctx.rr_nodes.size(), false);
+    std::fill(node_expanded->begin(), node_expanded->end(), false);
     /* For each node keep a list of the cost with which that node has been
      * visited (used to determine whether to push a candidate node onto the
      * expansion queue.
      * Also store the parent node so we can reconstruct a specific path. */
-    std::unordered_map<int, util::Search_Path> paths;
+    std::fill(paths->begin(), paths->end(), util::Search_Path{std::numeric_limits<float>::infinity(), -1, -1});
     /* a priority queue for expansion */
     std::priority_queue<Entry, std::vector<Entry>, std::greater<Entry>> pq;
 
@@ -603,7 +611,7 @@ static std::pair<float, int> run_dijkstra(int start_node_ind,
         int node_ind = current.rr_node_ind;
 
         /* check that we haven't already expanded from this node */
-        if (node_expanded[node_ind]) {
+        if ((*node_expanded)[node_ind]) {
             continue;
         }
 
@@ -613,11 +621,11 @@ static std::pair<float, int> run_dijkstra(int start_node_ind,
             max_cost = current.cost();
 
             path_count++;
-            add_paths<Entry>(start_node_ind, current, &paths, routing_costs);
+            add_paths<Entry>(start_node_ind, current, *paths, routing_costs);
         } else {
             util::expand_dijkstra_neighbours(device_ctx.rr_nodes,
-                                             current, paths, node_expanded, pq);
-            node_expanded[node_ind] = true;
+                                             current, paths, node_expanded, &pq);
+            (*node_expanded)[node_ind] = true;
         }
     }
     return std::make_pair(max_cost, path_count);
@@ -637,6 +645,7 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
     auto& device_ctx = g_vpr_ctx.device();
     cost_map_.set_counts(segment_inf.size(),
                          device_ctx.connection_boxes.num_connection_box_types());
+    cost_map_.build_segment_map();
 
     VTR_ASSERT(REPRESENTATIVE_ENTRY_METHOD == util::SMALLEST);
     RoutingCosts all_delay_costs;
@@ -653,6 +662,8 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
         RoutingCosts delay_costs;
         RoutingCosts base_costs;
         int total_path_count = 0;
+        std::vector<bool> node_expanded(device_ctx.rr_nodes.size());
+        std::vector<util::Search_Path> paths(device_ctx.rr_nodes.size());
 
         for (auto& point : region.points) {
             // statistics
@@ -662,12 +673,12 @@ void ConnectionBoxMapLookahead::compute(const std::vector<t_segment_inf>& segmen
             int path_count = 0;
             for (auto node_ind : point.nodes) {
                 {
-                    auto result = run_dijkstra<util::PQ_Entry_Delay>(node_ind, &delay_costs);
+                    auto result = run_dijkstra<util::PQ_Entry_Delay>(node_ind, &node_expanded, &paths, &delay_costs);
                     max_delay_cost = std::max(max_delay_cost, result.first);
                     path_count += result.second;
                 }
                 {
-                    auto result = run_dijkstra<util::PQ_Entry_Base_Cost>(node_ind, &base_costs);
+                    auto result = run_dijkstra<util::PQ_Entry_Base_Cost>(node_ind, &node_expanded, &paths, &base_costs);
                     max_base_cost = std::max(max_base_cost, result.first);
                     path_count += result.second;
                 }
@@ -928,6 +939,8 @@ static std::vector<SampleRegion> find_sample_regions(int num_segments) {
         for (int y = 0; y < SAMPLE_GRID_SIZE; y++) {
             for (int x = 0; x < SAMPLE_GRID_SIZE; x++) {
                 vtr::Rect<int> window = sample_window(bounding_box, x, y, SAMPLE_GRID_SIZE);
+                if (window.empty()) continue;
+
                 auto histogram = count_histogram(window, segment_counts[i]);
                 SampleRegion region = {
                     /* .segment_type = */ i,
@@ -1052,6 +1065,7 @@ static void FromFloat(VprFloatEntry::Builder* out, const float& in) {
 }
 
 void CostMap::read(const std::string& file) {
+    build_segment_map();
     MmapFile f(file);
 
     /* Increase reader limit to 1G words. */
@@ -1060,16 +1074,6 @@ void CostMap::read(const std::string& file) {
     ::capnp::FlatArrayMessageReader reader(f.getData(), opts);
 
     auto cost_map = reader.getRoot<VprCostMap>();
-
-    {
-        const auto& segment_map = cost_map.getSegmentMap();
-        segment_map_.resize(segment_map.size());
-        auto dst_iter = segment_map_.begin();
-        for (const auto& src : segment_map) {
-            *dst_iter++ = src;
-        }
-    }
-
     {
         const auto& offset = cost_map.getOffset();
         ToNdMatrix<2, VprVector2D, std::pair<int, int>>(
@@ -1093,13 +1097,6 @@ void CostMap::write(const std::string& file) const {
     ::capnp::MallocMessageBuilder builder;
 
     auto cost_map = builder.initRoot<VprCostMap>();
-
-    {
-        auto segment_map = cost_map.initSegmentMap(segment_map_.size());
-        for (size_t i = 0; i < segment_map_.size(); ++i) {
-            segment_map.set(i, segment_map_[i]);
-        }
-    }
 
     {
         auto offset = cost_map.initOffset();

@@ -367,9 +367,12 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->high_fanout_threshold = Options.router_high_fanout_threshold;
     RouterOpts->router_debug_net = Options.router_debug_net;
     RouterOpts->router_debug_sink_rr = Options.router_debug_sink_rr;
+    RouterOpts->router_debug_iteration = Options.router_debug_iteration;
     RouterOpts->lookahead_type = Options.router_lookahead_type;
     RouterOpts->max_convergence_count = Options.router_max_convergence_count;
     RouterOpts->reconvergence_cpd_threshold = Options.router_reconvergence_cpd_threshold;
+    RouterOpts->initial_timing = Options.router_initial_timing;
+    RouterOpts->update_lower_bound_delays = Options.router_update_lower_bound_delays;
     RouterOpts->first_iteration_timing_report_file = Options.router_first_iteration_timing_report_file;
     RouterOpts->strict_checks = Options.strict_checks;
 
@@ -523,6 +526,7 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
     analysis_opts.timing_report_npaths = Options.timing_report_npaths;
     analysis_opts.timing_report_detail = Options.timing_report_detail;
     analysis_opts.timing_report_skew = Options.timing_report_skew;
+    analysis_opts.echo_dot_timing_graph_node = Options.echo_dot_timing_graph_node;
 }
 
 static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch) {

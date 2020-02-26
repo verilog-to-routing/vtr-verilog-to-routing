@@ -115,6 +115,11 @@ enum class e_route_bb_update {
     DYNAMIC //Rotuer net bounding boxes are updated
 };
 
+enum class e_router_initial_timing {
+    ALL_CRITICAL,
+    LOOKAHEAD
+};
+
 enum class e_const_gen_inference {
     NONE,    //No constant generator inference
     COMB,    //Only combinational constant generator inference
@@ -898,6 +903,7 @@ enum class e_timing_report_detail {
     NETLIST,          //Only show netlist elements
     AGGREGATED,       //Show aggregated intra-block and inter-block delays
     DETAILED_ROUTING, //Show inter-block routing resources used
+    DEBUG,            //Show additional internal debugging information
 };
 
 enum class e_incr_reroute_delay_ripup {
@@ -947,9 +953,13 @@ struct t_router_opts {
     int high_fanout_threshold;
     int router_debug_net;
     int router_debug_sink_rr;
+    int router_debug_iteration;
     e_router_lookahead lookahead_type;
     int max_convergence_count;
     float reconvergence_cpd_threshold;
+    e_router_initial_timing initial_timing;
+    bool update_lower_bound_delays;
+
     std::string first_iteration_timing_report_file;
     bool strict_checks;
 
@@ -967,6 +977,7 @@ struct t_analysis_opts {
     int timing_report_npaths;
     e_timing_report_detail timing_report_detail;
     bool timing_report_skew;
+    std::string echo_dot_timing_graph_node;
 };
 
 /* Defines the detailed routing architecture of the FPGA.  Only important   *

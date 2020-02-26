@@ -2,6 +2,7 @@
 `define WIDTH 8         // Bit width 
 `define DEPTH 16         // Bit depth
 
+
 module  pram(
   clock,
   wren1,
@@ -19,7 +20,6 @@ module  pram(
 
 // SIGNAL DECLARATIONS
 input   clock;
-
 input wren1;
 input wren2;
 
