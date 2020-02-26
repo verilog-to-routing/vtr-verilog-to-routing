@@ -1007,19 +1007,7 @@ bool timing_driven_route_net(ClusterNetId net_id,
     for (int ipin : remaining_targets) {
         if (timing_info) {
             auto clb_pin = cluster_ctx.clb_nlist.net_pin(net_id, ipin);
-            if (!route_ctx.is_clock_net[net_id]) {
-                pin_criticality[ipin] = calculate_clb_net_pin_criticality(*timing_info, netlist_pin_lookup, clb_pin);
-            } else {
-                // Use max_criticality for clock nets.
-                // calculate_clb_net_pin_criticality likely doesn't generate
-                // good values for clock nets.
-                //
-                // This will cause them to use min delay paths rather than
-                // avoid congestion. As a future enchancement, the clock nets
-                // should likely route for min slew, but that is a larger
-                // change.
-                pin_criticality[ipin] = router_opts.max_criticality;
-            }
+            pin_criticality[ipin] = calculate_clb_net_pin_criticality(*timing_info, netlist_pin_lookup, clb_pin);
 
             /* Pin criticality is between 0 and 1.
              * Shift it downwards by 1 - max_criticality (max_criticality is 0.99 by default,
@@ -1097,8 +1085,6 @@ bool timing_driven_route_net(ClusterNetId net_id,
             conn_delay_budget.short_path_criticality = budgeting_inf.get_crit_short_path(net_id, target_pin);
         }
 
-        profiling::conn_start();
-
         // build a branch in the route tree to the target
         if (!timing_driven_route_sink(net_id,
                                       itarget,
@@ -1112,15 +1098,10 @@ bool timing_driven_route_net(ClusterNetId net_id,
                                       router_stats))
             return false;
 
-        profiling::conn_finish(route_ctx.net_rr_terminals[net_id][0],
-                               sink_rr,
-                               pin_criticality[target_pin]);
-
         ++router_stats.connections_routed;
     } // finished all sinks
 
     ++router_stats.nets_routed;
-    profiling::net_finish();
 
     /* For later timing analysis. */
 
@@ -1280,12 +1261,11 @@ static bool timing_driven_route_sink(ClusterNetId net_id,
     bool high_fanout = is_high_fanout(cluster_ctx.clb_nlist.net_sinks(net_id).size(), high_fanout_threshold);
     constexpr float HIGH_FANOUT_CRITICALITY_THRESHOLD = 0.9;
     bool sink_critical = (cost_params.criticality > HIGH_FANOUT_CRITICALITY_THRESHOLD);
-    bool net_is_clock = route_ctx.is_clock_net[net_id] != 0;
 
     //We normally route high fanout nets by only adding spatially close-by routing to the heap (reduces run-time).
     //However, if the current sink is 'critical' from a timing perspective, we put the entire route tree back onto
     //the heap to ensure it has more flexibility to find the best path.
-    if (high_fanout && !sink_critical && !net_is_global && !net_is_clock) {
+    if (high_fanout && !sink_critical && !net_is_global) {
         cheapest = timing_driven_route_connection_from_route_tree_high_fanout(rt_root,
                                                                               sink_node,
                                                                               cost_params,
@@ -2205,8 +2185,6 @@ static void timing_driven_add_to_heap(const t_conn_cost_params cost_params,
         //
         //Pre-heap prune to keep the heap small, by not putting paths which are known to be
         //sub-optimal (at this point in time) into the heap.
-        VTR_LOGV_DEBUG(f_router_debug, "  Adding node %8d to heap from init route tree with cost %g (%s)\n",
-                       next->index, new_total_cost, describe_rr_node(next->index).c_str());
         add_to_heap(next);
         ++router_stats.heap_pushes;
     } else {
@@ -2259,7 +2237,6 @@ static void evaluate_timing_driven_node_costs(t_heap* to,
     float switch_R = device_ctx.rr_switch_inf[iswitch].R;
     float switch_Tdel = device_ctx.rr_switch_inf[iswitch].Tdel;
     float switch_Cinternal = device_ctx.rr_switch_inf[iswitch].Cinternal;
-    float switch_penalty_cost = device_ctx.rr_switch_inf[iswitch].penalty_cost;
 
     //To node info
     float node_C = device_ctx.rr_nodes[to_node].C();
@@ -2318,7 +2295,6 @@ static void evaluate_timing_driven_node_costs(t_heap* to,
     //Update the backward cost (upstream already included)
     to->backward_path_cost += (1. - cost_params.criticality) * cong_cost; //Congestion cost
     to->backward_path_cost += cost_params.criticality * Tdel;             //Delay cost
-    to->backward_path_cost += switch_penalty_cost;                        //Penalty cost
 
     if (cost_params.bend_cost != 0.) {
         t_rr_type from_type = device_ctx.rr_nodes[from_node].type();

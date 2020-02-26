@@ -1,7 +1,6 @@
 #ifndef SERDES_UTILS_H_
 #define SERDES_UTILS_H_
 
-#include <limits>
 #include <string>
 #include "capnp/serialize.h"
 
@@ -12,8 +11,8 @@ void writeMessageToFile(const std::string& file,
 inline ::capnp::ReaderOptions default_large_capnp_opts() {
     ::capnp::ReaderOptions opts = ::capnp::ReaderOptions();
 
-    /* Remove traversal limit */
-    opts.traversalLimitInWords = std::numeric_limits<uint64_t>::max();
+    /* Increase reader limit to 1G words to allow for large files. */
+    opts.traversalLimitInWords = 1024 * 1024 * 1024;
     return opts;
 }
 

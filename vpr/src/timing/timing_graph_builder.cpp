@@ -267,7 +267,7 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
         }
     }
 
-    //Connect the combinational edges
+    //Connect the combinational edges from input pins
     for (AtomPinId src_pin : netlist_.block_input_pins(blk)) {
         //Combinational edges go between IPINs and OPINs for combinational blocks
         //and between the internal SOURCEs and SINKS for sequential blocks
@@ -324,6 +324,34 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
                         tg_->add_edge(tatum::EdgeType::PRIMITIVE_COMBINATIONAL, src_tnode, sink_tnode);
                     }
                 }
+            }
+        }
+    }
+
+    //Connect the combinational edges from clock pins
+    //
+    //These are typically used to represent clock buffers
+    for (AtomPinId src_clock_pin : netlist_.block_clock_pins(blk)) {
+        NodeId src_tnode = netlist_lookup_.atom_pin_tnode(src_clock_pin, BlockTnode::EXTERNAL);
+
+        if (!src_tnode) continue;
+
+        //Look-up the combinationally connected sink ports name on the port model
+        AtomPortId src_port = netlist_.pin_port(src_clock_pin);
+        const t_model_ports* model_port = netlist_.port_model(src_port);
+
+        for (const std::string& sink_port_name : model_port->combinational_sink_ports) {
+            AtomPortId sink_port = netlist_.find_port(blk, sink_port_name);
+            if (!sink_port) continue; //Port may not be connected
+
+            //We now need to create edges between the source pin, and all the pins in the
+            //output port
+            for (AtomPinId sink_pin : netlist_.port_pins(sink_port)) {
+                //Get the tnode of the sink
+                NodeId sink_tnode = netlist_lookup_.atom_pin_tnode(sink_pin, BlockTnode::EXTERNAL);
+
+                tg_->add_edge(tatum::EdgeType::PRIMITIVE_COMBINATIONAL, src_tnode, sink_tnode);
+                VTR_LOG("Adding edge from '%s' (%zu) -> '%s' (%zu)\n", netlist_.pin_name(src_clock_pin).c_str(), size_t(src_tnode), netlist_.pin_name(sink_pin).c_str(), size_t(sink_tnode));
             }
         }
     }
