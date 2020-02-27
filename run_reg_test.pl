@@ -432,7 +432,7 @@ sub run_odin_test {
 	} elsif ( $token eq "odin_reg_operators" ) {
 		$return_status = system($odin_cmd."task/operators");
 	} elsif ( $token eq "odin_reg_arch" ) {
-		$return_status = system($odin_cmd."task/arch");
+		$return_status = system($odin_cmd."task/arch_sweep");
 	} elsif ( $token eq "odin_reg_syntax" ) {
 		$return_status = system($odin_cmd."task/syntax");
 	} elsif ( $token eq "odin_reg_full" ) {
