@@ -1,4 +1,5 @@
 #include <fstream>
+#include <sstream>
 
 #include "vtr_log.h"
 #include "vtr_assert.h"
