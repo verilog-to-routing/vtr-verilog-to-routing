@@ -1078,7 +1078,6 @@ static bool compute_and_store_value(nnode_t* node, int cycle) {
         case GENERIC:
             compute_generic_node(node, cycle);
             break;
-        //case FULLADDER:
         case ADD:
             compute_add_node(node, cycle, 0);
             break;

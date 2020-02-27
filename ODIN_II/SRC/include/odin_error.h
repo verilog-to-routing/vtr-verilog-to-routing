@@ -31,6 +31,7 @@ extern std::vector<std::pair<std::string, int>> include_file_names;
 
 // causes an interrupt in GDB
 static inline void _verbose_assert(bool condition, const char* condition_str, const char* odin_file_name, long odin_line_number, const char* odin_function_name) {
+    fflush(stdout);
     if (!condition) {
         fprintf(stderr, "Assertion failed(%s)@[%s]%s::%ld \n", condition_str, odin_file_name, odin_function_name, odin_line_number);
         fflush(stderr);

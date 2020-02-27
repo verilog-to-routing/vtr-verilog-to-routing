@@ -6,7 +6,7 @@ THIS_DIR=$(dirname "${THIS_SCRIPT_PATH}")
 REGRESSION_DIR="${THIS_DIR}/regression_test"
 REG_LIB="${REGRESSION_DIR}/.library"
 PARSER_DIR="${REGRESSION_DIR}/parse_result"
-PARSER_EXEC="${PARSER_DIR}/parse_result.sh"
+PARSER_EXEC="${PARSER_DIR}/parse_result.py"
 
 source ${REG_LIB}/handle_exit.sh
 source  ${REG_LIB}/time_format.sh
@@ -417,7 +417,7 @@ fi
 
 if [ "_${RULE_FILE}" != "_" ] && [ -f "${RULE_FILE}" ] && [ "_${PARSE_OUTPUT_FILE}" != "_" ] && [ -f "${LOG_FILE}" ]
 then
-	"${PARSER_EXEC}" parse --rule "${RULE_FILE}" --output "${PARSE_OUTPUT_FILE}" "${LOG_FILE}"
+	"${PARSER_EXEC}" parse "${RULE_FILE}" "${LOG_FILE}" > "${PARSE_OUTPUT_FILE}"
 fi
 
 if [ ${USE_TEMP_LOG} == "on" ]
