@@ -867,12 +867,17 @@ bool remove_buffer_lut(AtomNetlist& netlist, std::set<AtomPinId> clock_drivers, 
 
     std::string new_net_name;
 
-    if (new_driver_is_clock || ((driver_is_pi || po_in_input_sinks) && !po_in_output_sinks)) {
+    if ((driver_is_pi || po_in_input_sinks) && !po_in_output_sinks) {
         //Must use the input name to perserve primary-input or primary-output name
         new_net_name = netlist.net_name(input_net);
     } else if (!(driver_is_pi || po_in_input_sinks) && po_in_output_sinks) {
         //Must use the output name to perserve primary-output name
         new_net_name = netlist.net_name(output_net);
+    } else if (new_driver_is_clock) {
+        auto input_net_name = netlist.net_name(input_net);
+        auto output_net_name = netlist.net_name(output_net);
+        new_net_name = input_net_name;
+        netlist.add_clock_net_alias(output_net_name, input_net_name);
     } else {
         //Arbitrarily merge the net names
         new_net_name = netlist.net_name(input_net) + "__" + netlist.net_name(output_net);
