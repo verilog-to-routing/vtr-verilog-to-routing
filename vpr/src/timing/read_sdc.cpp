@@ -106,12 +106,14 @@ class SdcParseCallback : public sdcparse::Callback {
                 //convert to a regex
                 auto clock_name_regex = glob_pattern_to_regex(clock_name_glob_pattern);
 
+                auto assigned_net_name = netlist_.get_assigned_net_name(clock_name_glob_pattern);
+
                 //Look for matching netlist clocks
                 for (AtomPinId clock_pin : netlist_clock_drivers_) {
                     AtomNetId clock_net = netlist_.pin_net(clock_pin);
                     const auto& clock_name = netlist_.net_name(clock_net);
 
-                    if (std::regex_match(clock_name, clock_name_regex)) {
+                    if (std::regex_match(clock_name, clock_name_regex) || !clock_name.compare(assigned_net_name)) {
                         found = true;
                         //Create netlist clock
                         tatum::DomainId netlist_clk = tc_.create_clock_domain(clock_name);

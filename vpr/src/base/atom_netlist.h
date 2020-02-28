@@ -128,6 +128,8 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
     //  port_bit   : The pin number in this port
     AtomBlockId find_atom_pin_driver(const AtomBlockId blk_id, const t_model_ports* model_port, const BitIndex port_bit) const;
 
+    std::string get_assigned_net_name(std::string alias_net_name) const;
+
   public: //Public Mutators
     /*
      * Note: all create_*() functions will silently return the appropriate ID if it has already been created
@@ -163,6 +165,8 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
     //  driver  : The net's driver pin
     //  sinks   : The net's sink pins
     AtomNetId add_net(const std::string name, AtomPinId driver, std::vector<AtomPinId> sinks);
+
+    void add_clock_net_alias(std::string alias_net_name, std::string assigned_net_name);
 
   private: //Private members
     /*
@@ -206,6 +210,9 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
 
     //Port data
     vtr::vector_map<AtomPortId, const t_model_ports*> port_models_; //Architecture port models of each port
+
+    //Clock net aliases
+    std::unordered_map<std::string, std::string> clock_net_names_map_;
 };
 
 #include "atom_lookup.h"
