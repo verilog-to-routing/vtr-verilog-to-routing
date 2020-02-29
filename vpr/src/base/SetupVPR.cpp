@@ -420,6 +420,31 @@ static void SetupAnnealSched(const t_options& Options,
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "inner_num must be greater than 0.\n");
     }
 
+    AnnealSched->alpha_min = Options.PlaceAlphaMin;
+    if (AnnealSched->alpha_min >= 1 || AnnealSched->alpha_min <= 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "alpha_min must be between 0 and 1 exclusive.\n");
+    }
+
+    AnnealSched->alpha_max = Options.PlaceAlphaMax;
+    if (AnnealSched->alpha_max >= 1 || AnnealSched->alpha_max <= AnnealSched->alpha_min) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "alpha_max must be between alpha_min and 1 exclusive.\n");
+    }
+
+    AnnealSched->alpha_decay = Options.PlaceAlphaDecay;
+    if (AnnealSched->alpha_decay >= 1 || AnnealSched->alpha_decay <= 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "alpha_decay must be between 0 and 1 exclusive.\n");
+    }
+
+    AnnealSched->restart_filter = Options.PlaceRestartFilter;
+    if (AnnealSched->restart_filter >= 1 || AnnealSched->restart_filter <= 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "restart_filter must be between 0 and 1 exclusive.\n");
+    }
+
+    AnnealSched->wait = Options.PlaceWait;
+    if (AnnealSched->wait < 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "wait must not be negative.\n");
+    }
+
     AnnealSched->type = Options.anneal_sched_type;
 }
 

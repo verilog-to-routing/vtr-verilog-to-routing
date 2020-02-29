@@ -1566,6 +1566,36 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("0.8")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument(args.PlaceAlphaMin, "--alpha_min")
+        .help(
+            "Minimum (starting) value of alpha.")
+        .default_value("0.2")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.PlaceAlphaMax, "--alpha_max")
+        .help(
+            "Maximum (stopping) value of alpha.")
+        .default_value("0.99")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.PlaceAlphaDecay, "--alpha_decay")
+        .help(
+            "The value that alpha is scaled by.")
+        .default_value("0.9")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.PlaceRestartFilter, "--anneal_restart_filter")
+        .help(
+            "Filters the selected restart temperature, ranges 0 (no update) to 1 (use last successful temperature.)")
+        .default_value("0.9")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.PlaceWait, "--anneal_wait")
+        .help(
+            "Number of unsuccessful iterations before restarting.")
+        .default_value("2")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     place_grp.add_argument(args.pad_loc_file, "--fix_pins")
         .help(
             "Fixes I/O pad locations during placement. Valid options:\n"
@@ -2193,9 +2223,15 @@ void set_conditional_defaults(t_options& args) {
     }
 
     //Are we using the automatic, or user-specified annealing schedule?
-    if (args.PlaceInitT.provenance() == Provenance::SPECIFIED
-        || args.PlaceExitT.provenance() == Provenance::SPECIFIED
-        || args.PlaceAlphaT.provenance() == Provenance::SPECIFIED) {
+    if (args.PlaceAlphaMin.provenance() == Provenance::SPECIFIED
+        || args.PlaceAlphaMax.provenance() == Provenance::SPECIFIED
+        || args.PlaceAlphaDecay.provenance() == Provenance::SPECIFIED
+        || args.PlaceRestartFilter.provenance() == Provenance::SPECIFIED
+        || args.PlaceWait.provenance() == Provenance::SPECIFIED) {
+        args.anneal_sched_type.set(DUSTY_SCHED, Provenance::INFERRED);
+    } else if (args.PlaceInitT.provenance() == Provenance::SPECIFIED
+               || args.PlaceExitT.provenance() == Provenance::SPECIFIED
+               || args.PlaceAlphaT.provenance() == Provenance::SPECIFIED) {
         args.anneal_sched_type.set(USER_SCHED, Provenance::INFERRED);
     } else {
         args.anneal_sched_type.set(AUTO_SCHED, Provenance::INFERRED);
