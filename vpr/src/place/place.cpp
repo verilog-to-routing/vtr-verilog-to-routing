@@ -103,6 +103,17 @@ struct t_placer_prev_inverse_costs {
     double timing_cost;
 };
 
+struct t_annealing_state {
+    float t;
+    float rlim;
+    float rlim_initial;
+    float alpha;
+    float restart_t;
+    float best_cost;
+    int countdown;
+    t_annealing_sched sched;
+};
+
 constexpr float INVALID_DELAY = std::numeric_limits<float>::quiet_NaN();
 
 constexpr double MAX_INV_TIMING_COST = 1.e9;
@@ -344,11 +355,9 @@ static float starting_t(t_placer_costs* costs,
                         t_pl_blocks_to_be_moved& blocks_affected,
                         const t_placer_opts& placer_opts);
 
-static void update_t(float* t, float rlim, float success_rat, t_annealing_sched annealing_sched);
+static bool update_state(t_annealing_state* state, float success_rat, const t_placer_opts& placer_opts, const t_placer_costs& costs, const t_annealing_sched& annealing_sched);
 
 static void update_rlim(float* rlim, float success_rat, const DeviceGrid& grid);
-
-static int exit_crit(float t, float cost, t_annealing_sched annealing_sched);
 
 static int count_connections();
 
@@ -465,7 +474,7 @@ static void print_place_status_header();
 static void print_place_status(const size_t num_temps,
                                const float elapsed_sec,
                                const float t,
-                               const float oldt,
+                               const float alpha,
                                const t_placer_statistics& stats,
                                const float cpd,
                                const float sTNS,
@@ -498,11 +507,14 @@ void try_place(const t_placer_opts& placer_opts,
     auto& timing_ctx = g_vpr_ctx.timing();
     auto pre_place_timing_stats = timing_ctx.stats;
 
-    int tot_iter, move_lim = 0, moves_since_cost_recompute, width_fac, num_connections,
-                  outer_crit_iter_count, inner_recompute_limit;
-    float t, success_rat, rlim,
-        oldt = 0, crit_exponent,
+    int tot_iter, move_lim, moves_since_cost_recompute, width_fac, num_connections,
+        outer_crit_iter_count, inner_recompute_limit;
+    float success_rat, crit_exponent,
         first_rlim, final_rlim, inverse_delta_rlim;
+
+    t_annealing_state state;
+    state.alpha = annealing_sched.alpha_min;
+    state.best_cost = std::numeric_limits<float>::infinity();
 
     t_placer_costs costs;
     t_placer_prev_inverse_costs prev_inverse_costs;
@@ -711,24 +723,26 @@ void try_place(const t_placer_opts& placer_opts,
         quench_recompute_limit = move_lim + 1;
     }
 
-    rlim = (float)max(device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
+    state.rlim = (float)max(device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
+    state.rlim_initial = state.rlim;
 
-    first_rlim = rlim; /*used in timing-driven placement for exponent computation */
+    first_rlim = state.rlim; /*used in timing-driven placement for exponent computation */
     final_rlim = 1;
     inverse_delta_rlim = 1 / (first_rlim - final_rlim);
 
-    t = starting_t(&costs,
-                   &prev_inverse_costs,
-                   annealing_sched,
-                   move_lim,
-                   rlim,
-                   place_delay_model.get(),
-                   placer_criticalities.get(),
-                   timing_info.get(),
-                   *move_generator,
-                   pin_timing_invalidator.get(),
-                   blocks_affected,
-                   placer_opts);
+    state.t = starting_t(&costs,
+                         &prev_inverse_costs,
+                         annealing_sched,
+                         move_lim,
+                         state.rlim,
+                         place_delay_model.get(),
+                         placer_criticalities.get(),
+                         timing_info.get(),
+                         *move_generator,
+                         pin_timing_invalidator.get(),
+                         blocks_affected,
+                         placer_opts);
+    state.restart_t = state.t;
 
     if (!placer_opts.move_stats_file.empty()) {
         f_move_stats_file = std::unique_ptr<FILE, decltype(&vtr::fclose)>(vtr::fopen(placer_opts.move_stats_file.c_str(), "w"), vtr::fclose);
@@ -743,8 +757,8 @@ void try_place(const t_placer_opts& placer_opts,
     VTR_LOG("\n");
     print_place_status_header();
 
-    /* Outer loop of the simmulated annealing begins */
-    while (exit_crit(t, costs.cost, annealing_sched) == 0) {
+    /* Outer loop of the simulated annealing begins */
+    do {
         vtr::Timer temperature_timer;
         if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
             costs.cost = 1;
@@ -759,7 +773,7 @@ void try_place(const t_placer_opts& placer_opts,
                                            pin_timing_invalidator.get(),
                                            timing_info.get());
 
-        placement_inner_loop(t, num_temps, rlim, placer_opts,
+        placement_inner_loop(state.t, num_temps, state.rlim, placer_opts,
                              move_lim, crit_exponent, inner_recompute_limit, &stats,
                              &costs,
                              &prev_inverse_costs,
@@ -775,8 +789,6 @@ void try_place(const t_placer_opts& placer_opts,
 
         calc_placer_stats(stats, success_rat, std_dev, costs, move_lim);
 
-        oldt = t; /* for finding and printing alpha. */
-        update_t(&t, rlim, success_rat, annealing_sched);
         ++num_temps;
 
         if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
@@ -787,18 +799,18 @@ void try_place(const t_placer_opts& placer_opts,
 
         print_place_status(num_temps,
                            temperature_timer.elapsed_sec(),
-                           t, oldt,
+                           state.t, state.alpha,
                            stats,
                            critical_path.delay(), sTNS, sWNS,
-                           success_rat, std_dev, rlim, crit_exponent, tot_iter);
+                           success_rat, std_dev, state.rlim, crit_exponent, tot_iter);
 
         sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
-                costs.cost, costs.bb_cost, costs.timing_cost, t);
+                costs.cost, costs.bb_cost, costs.timing_cost, state.t);
         update_screen(ScreenUpdatePriority::MINOR, msg, PLACEMENT, timing_info);
-        update_rlim(&rlim, success_rat, device_ctx.grid);
+        update_rlim(&state.rlim, success_rat, device_ctx.grid);
 
         if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-            crit_exponent = (1 - (rlim - final_rlim) * inverse_delta_rlim)
+            crit_exponent = (1 - (state.rlim - final_rlim) * inverse_delta_rlim)
                                 * (placer_opts.td_place_exp_last - placer_opts.td_place_exp_first)
                             + placer_opts.td_place_exp_first;
         }
@@ -808,7 +820,8 @@ void try_place(const t_placer_opts& placer_opts,
             print_clb_placement("first_iteration_clb_placement.echo");
         }
 #endif
-    } /* Outer loop of the simmulated annealing ends */
+    } while (update_state(&state, success_rat, placer_opts, costs, annealing_sched));
+    /* Outer loop of the simmulated annealing ends */
 
     auto pre_quench_timing_stats = timing_ctx.stats;
     { /* Quench */
@@ -824,11 +837,11 @@ void try_place(const t_placer_opts& placer_opts,
                                            pin_timing_invalidator.get(),
                                            timing_info.get());
 
-        t = 0; /* freeze out */
+        state.t = 0; /* freeze out */
 
         /* Run inner loop again with temperature = 0 so as to accept only swaps
          * which reduce the cost of the placement */
-        placement_inner_loop(t, num_temps, rlim, placer_opts,
+        placement_inner_loop(state.t, num_temps, state.rlim, placer_opts,
                              move_lim, crit_exponent, quench_recompute_limit, &stats,
                              &costs,
                              &prev_inverse_costs,
@@ -839,7 +852,6 @@ void try_place(const t_placer_opts& placer_opts,
                              *move_generator,
                              blocks_affected,
                              timing_info.get());
-        oldt = t;
 
         tot_iter += move_lim;
         ++num_temps;
@@ -855,9 +867,9 @@ void try_place(const t_placer_opts& placer_opts,
         float quench_elapsed_sec = temperature_timer.elapsed_sec();
         print_place_status(num_temps,
                            quench_elapsed_sec,
-                           t, oldt, stats,
+                           state.t, state.alpha, stats,
                            critical_path.delay(), sTNS, sWNS,
-                           success_rat, std_dev, rlim, crit_exponent, tot_iter);
+                           success_rat, std_dev, state.rlim, crit_exponent, tot_iter);
     }
     auto post_quench_timing_stats = timing_ctx.stats;
 
@@ -1201,47 +1213,51 @@ static void update_rlim(float* rlim, float success_rat, const DeviceGrid& grid) 
 }
 
 /* Update the temperature according to the annealing schedule selected. */
-static void update_t(float* t, float rlim, float success_rat, t_annealing_sched annealing_sched) {
-    /*  float fac; */
-
+static bool update_state(t_annealing_state* state, float success_rat, const t_placer_opts& placer_opts, const t_placer_costs& costs, const t_annealing_sched& annealing_sched) {
+    /* Return `false` when the exit criterion is met. */
     if (annealing_sched.type == USER_SCHED) {
-        *t = annealing_sched.alpha_t * (*t);
-    } else { /* AUTO_SCHED */
-        if (success_rat > 0.96) {
-            *t = (*t) * 0.5;
-        } else if (success_rat > 0.8) {
-            *t = (*t) * 0.9;
-        } else if (success_rat > 0.15 || rlim > 1.) {
-            *t = (*t) * 0.95;
-        } else {
-            *t = (*t) * 0.8;
-        }
-    }
-}
-
-static int exit_crit(float t, float cost, t_annealing_sched annealing_sched) {
-    /* Return 1 when the exit criterion is met.                        */
-
-    if (annealing_sched.type == USER_SCHED) {
-        if (t < annealing_sched.exit_t) {
-            return (1);
-        } else {
-            return (0);
-        }
+        state->t *= annealing_sched.alpha_t;
+        return state->t >= annealing_sched.exit_t;
     }
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     /* Automatic annealing schedule */
-    float t_exit = 0.005 * cost / cluster_ctx.clb_nlist.nets().size();
+    float t_exit = 0.005 * costs.cost / cluster_ctx.clb_nlist.nets().size();
 
-    if (t < t_exit) {
-        return (1);
-    } else if (std::isnan(t_exit)) {
-        //May get nan if there are no nets
-        return (1);
-    } else {
-        return (0);
+    bool restart = state->t < t_exit || std::isnan(t_exit); //May get nan if there are no nets
+
+    if (annealing_sched.type == DUSTY_SCHED) {
+        /* Timing driven cost is normalized */
+        float limit = placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE ? 0.9999 : state->best_cost;
+        if (restart) {
+            state->t = state->restart_t;
+            state->rlim = state->rlim_initial;
+            state->alpha = 1.0 - ((1.0 - state->alpha) * annealing_sched.alpha_decay);
+            if (state->countdown == 0 || state->alpha > annealing_sched.alpha_max) return false;
+            state->countdown--;
+        } else {
+            if (costs.cost < limit) {
+                state->restart_t = (1.0 - annealing_sched.restart_filter) * state->restart_t + annealing_sched.restart_filter * state->t;
+                state->rlim_initial = (1.0 - annealing_sched.restart_filter) * state->rlim_initial + annealing_sched.restart_filter * state->rlim;
+                state->best_cost = costs.cost;
+                state->countdown = annealing_sched.wait;
+            }
+            state->t *= state->alpha;
+        }
+        return true;
+    } else { /* annealing_sched.type == AUTO_SCHED */
+        if (success_rat > 0.96) {
+            state->alpha = 0.5;
+        } else if (success_rat > 0.8) {
+            state->alpha = 0.9;
+        } else if (success_rat > 0.15 || state->rlim > 1.) {
+            state->alpha = 0.95;
+        } else {
+            state->alpha = 0.8;
+        }
+        state->t *= state->alpha;
+        return !restart;
     }
 }
 
@@ -2889,7 +2905,7 @@ static void print_place_status_header() {
 static void print_place_status(const size_t num_temps,
                                const float elapsed_sec,
                                const float t,
-                               const float oldt,
+                               const float alpha,
                                const t_placer_statistics& stats,
                                const float cpd,
                                const float sTNS,
@@ -2908,19 +2924,13 @@ static void print_place_status(const size_t num_temps,
         "%7.3f %7.4f %6.1f %8.2f",
         num_temps,
         elapsed_sec,
-        oldt,
+        t,
         stats.av_cost, stats.av_bb_cost, stats.av_timing_cost,
         1e9 * cpd, 1e9 * sTNS, 1e9 * sWNS,
         acc_rate, std_dev, rlim, crit_exponent);
 
     pretty_print_uint(" ", tot_moves, 9, 3);
 
-    float alpha;
-    if (oldt == 0.) {
-        alpha = 0.;
-    } else {
-        alpha = t / oldt;
-    }
     VTR_LOG(" %6.3f\n", alpha);
     fflush(stdout);
 }
