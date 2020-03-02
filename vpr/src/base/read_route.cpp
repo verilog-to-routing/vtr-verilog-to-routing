@@ -40,6 +40,7 @@
 #include "echo_files.h"
 #include "route_common.h"
 #include "read_route.h"
+#include "binary_heap.h"
 
 /*************Functions local to this module*************/
 static void process_route(std::ifstream& fp, const char* filename, int& lineno);

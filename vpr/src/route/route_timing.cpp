@@ -32,6 +32,8 @@
 #include "timing_info.h"
 #include "timing_util.h"
 #include "route_budgets.h"
+#include "binary_heap.h"
+#include "bucket.h"
 
 #include "router_lookahead_map.h"
 

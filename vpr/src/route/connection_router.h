@@ -8,7 +8,7 @@
 #include "rr_rc_data.h"
 #include "router_stats.h"
 #include "spatial_route_tree_lookup.h"
-#include "binary_heap.h"
+#include "bucket.h"
 
 //Delay budget information for a specific connection
 struct t_conn_delay_budget {
@@ -67,6 +67,10 @@ class ConnectionRouter {
     // Reset modified data in rr_node_route_inf based on modified_rr_node_inf.
     void reset_path_costs() {
         ::reset_path_costs(modified_rr_node_inf_);
+    }
+
+    void empty_heap() {
+        heap_.empty_heap();
     }
 
     // Finds a path from the route tree rooted at rt_root to sink_node
@@ -249,7 +253,7 @@ class ConnectionRouter {
     t_rr_node_route_inf* rr_node_route_inf_;
     std::vector<int> modified_rr_node_inf_;
     RouterStats* router_stats_;
-    BinaryHeap heap_;
+    Bucket heap_;
     bool router_debug_;
 };
 

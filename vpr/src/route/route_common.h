@@ -87,8 +87,6 @@ t_heap* prepare_to_add_node_to_heap(
 
     hptr->index = inode;
     hptr->cost = total_cost;
-    VTR_ASSERT_SAFE(hptr->u.prev.node == NO_PREVIOUS);
-    VTR_ASSERT_SAFE(hptr->u.prev.edge == NO_PREVIOUS);
     hptr->u.prev.node = prev_node;
     hptr->u.prev.edge = prev_edge;
     hptr->backward_path_cost = backward_path_cost;
