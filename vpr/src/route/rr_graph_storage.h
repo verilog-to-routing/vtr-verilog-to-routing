@@ -306,6 +306,10 @@ class t_rr_graph_storage {
     void set_node_direction(RRNodeId, e_direction new_direction);
     void set_node_side(RRNodeId, e_side new_side);
 
+    // This prefetechs hot RR node data required for optimization.
+    //
+    // Note: This is optional, but may lower time spent on memory stalls in
+    // some circumstances.
     inline void prefetch_node(RRNodeId id) const {
         VTR_PREFETCH(&storage_[id], 0, 0);
     }
