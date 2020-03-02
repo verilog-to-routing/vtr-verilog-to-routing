@@ -2022,7 +2022,7 @@ void ConnectionRouter::timing_driven_expand_neighbours(t_heap* current,
 void ConnectionRouter::timing_driven_expand_neighbour(t_heap* current,
                                                       const int from_node,
                                                       const RREdgeId from_edge,
-                                                      const t_edge_size from_edge_int,
+                                                      const t_edge_size from_node_edge_idx,
                                                       const int to_node_int,
                                                       const t_conn_cost_params cost_params,
                                                       const t_bb bounding_box,
@@ -2042,7 +2042,7 @@ void ConnectionRouter::timing_driven_expand_neighbour(t_heap* current,
                        "      Pruned expansion of node %d edge %d -> %d"
                        " (to node location %d,%dx%d,%d outside of expanded"
                        " net bounding box %d,%dx%d,%d)\n",
-                       from_node, from_edge_int, to_node_int,
+                       from_node, from_node_edge_idx, to_node_int,
                        to_xlow, to_ylow, to_xhigh, to_yhigh,
                        bounding_box.xmin, bounding_box.ymin, bounding_box.xmax, bounding_box.ymax);
         return; /* Node is outside (expanded) bounding box. */
@@ -2065,7 +2065,7 @@ void ConnectionRouter::timing_driven_expand_neighbour(t_heap* current,
                                "      Pruned expansion of node %d edge %d -> %d"
                                " (to node is IPIN at %d,%dx%d,%d which does not"
                                " lead to target block %d,%dx%d,%d)\n",
-                               from_node, from_edge_int, to_node_int,
+                               from_node, from_node_edge_idx, to_node_int,
                                to_xlow, to_ylow, to_xhigh, to_yhigh,
                                target_bb.xmin, target_bb.ymin, target_bb.xmax, target_bb.ymax);
                 return;
@@ -2074,14 +2074,14 @@ void ConnectionRouter::timing_driven_expand_neighbour(t_heap* current,
     }
 
     VTR_LOGV_DEBUG(f_router_debug, "      Expanding node %d edge %d -> %d\n",
-                   from_node, from_edge_int, to_node_int);
+                   from_node, from_node_edge_idx, to_node_int);
 
     timing_driven_add_to_heap(cost_params,
                               current,
                               from_node,
                               to_node_int,
                               from_edge,
-                              from_edge_int,
+                              from_node_edge_idx,
                               target_node);
 }
 

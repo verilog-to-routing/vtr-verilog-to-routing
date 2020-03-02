@@ -15,7 +15,7 @@
 int get_max_pins_per_net();
 
 // This class encapsolates the timing driven connection router. This class
-// routes from some initial set of sources (via the input rt tree to a
+// routes from some initial set of sources (via the input rt tree) to a
 // particular sink.
 //
 // When the ConnectionRouter is used, it mutates the provided
@@ -90,8 +90,8 @@ class ConnectionRouter {
         RouterStats& router_stats);
 
   private:
-    // Mark that inode has been modified, and needs to be reset in
-    // reset_path_costs.
+    // Mark that data associated with rr_node "inode" has been modified, and
+    // needs to be reset in reset_path_costs.
     void add_to_mod_list(int inode) {
         if (std::isinf(rr_node_route_inf_[inode].path_cost)) {
             modified_rr_node_inf_.push_back(inode);
@@ -159,7 +159,7 @@ class ConnectionRouter {
         t_heap* current,
         const int from_node,
         const RREdgeId from_edge,
-        const t_edge_size from_edge_int,
+        const t_edge_size from_node_edge_idx,
         const int to_node,
         const t_conn_cost_params cost_params,
         const t_bb bounding_box,
