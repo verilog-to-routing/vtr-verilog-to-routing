@@ -1285,14 +1285,14 @@ t_heap* ConnectionRouter::timing_driven_route_connection_from_route_tree(
     t_bb bounding_box,
     RouterStats& router_stats) {
     router_stats_ = &router_stats;
-    t_heap* cheapest = timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, bounding_box);
+    t_heap* cheapest = timing_driven_route_connection_common_setup(rt_root, sink_node, cost_params, bounding_box);
     if (cheapest != nullptr) {
         update_cheapest(cheapest);
     }
     return cheapest;
 }
 
-t_heap* ConnectionRouter::timing_driven_route_connection_from_route_tree(
+t_heap* ConnectionRouter::timing_driven_route_connection_common_setup(
     t_rt_node* rt_root,
     int sink_node,
     const t_conn_cost_params cost_params,
@@ -1417,10 +1417,10 @@ t_heap* ConnectionRouter::timing_driven_route_connection_from_route_tree_high_fa
         reset_path_costs();
         modified_rr_node_inf_.clear();
 
-        cheapest = timing_driven_route_connection_from_route_tree(rt_root,
-                                                                  sink_node,
-                                                                  cost_params,
-                                                                  net_bounding_box);
+        cheapest = timing_driven_route_connection_common_setup(rt_root,
+                                                               sink_node,
+                                                               cost_params,
+                                                               net_bounding_box);
     }
 
     if (cheapest == nullptr) {
