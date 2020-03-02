@@ -863,6 +863,12 @@ bool remove_buffer_lut(AtomNetlist& netlist, std::set<AtomPinId> clock_drivers, 
                                               AtomBlockId blk_id = netlist.pin_block(pin_id);
                                               return netlist.block_type(blk_id) == AtomBlockType::OUTPAD;
                                           });
+
+    // We need to identify whether the buffer that is being removed is part of a clock net.
+    // In this case, to avoid the modification of the clock name due to the merge of the two
+    // clock net names, the convention on how to assign the new clock net name is as follows:
+    //   - input_net: is used as the assigned name for the resulting clock net
+    //   - output_net: is used as a possible alias to refer to the resulting clock net
     bool new_driver_is_clock = clock_drivers.find(new_driver) != clock_drivers.end();
 
     std::string new_net_name;
