@@ -106,6 +106,7 @@ class SdcParseCallback : public sdcparse::Callback {
                 //convert to a regex
                 auto clock_name_regex = glob_pattern_to_regex(clock_name_glob_pattern);
 
+                //Retrieve the assigned clock net name relative to the name used in the SDC target
                 auto assigned_net_name = netlist_.get_assigned_net_name(clock_name_glob_pattern);
 
                 //Look for matching netlist clocks
