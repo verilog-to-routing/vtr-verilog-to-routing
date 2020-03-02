@@ -23,9 +23,9 @@ vpr_status;output.txt;vpr_status=(.*)
 num_clb;vpr.out;Netlist clb blocks:\s*(\d+)
 BB estimate of WL;vpr.out;BB estimate of min-dist \(placement\) wire length:\s*(\d+)
 place_time;vpr.out;Placement took (.*) seconds
-placement CPD; vpr.out;Placement estimated critical path delay:\s*(.*) ns
+placement CPD;vpr.out;Placement estimated critical path delay:\s*(.*) ns
 place_time;vpr.out;Placement took (.*) seconds
 Total swap attempts;vpr.out;Placement total # of swap attempts:\s*(\d+)
-swaps accepted;vpr.out;    Swaps accepted:.*\((.*)\%\)
-swaps rejected;vpr.out;    Swaps rejected:.*\((.*)\%\)
-swaps aborted;vpr.out;    Swaps aborted :.*\((.*)\%\)
+swaps accepted;vpr.out;Swaps accepted:.*\((.*)\%\)
+swaps rejected;vpr.out;Swaps rejected:.*\((.*)\%\)
+swaps aborted;vpr.out;Swaps aborted :.*\((.*)\%\)
