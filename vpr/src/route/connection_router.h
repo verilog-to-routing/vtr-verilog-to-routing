@@ -8,6 +8,7 @@
 #include "rr_rc_data.h"
 #include "router_stats.h"
 #include "spatial_route_tree_lookup.h"
+#include "binary_heap.h"
 
 //Delay budget information for a specific connection
 struct t_conn_delay_budget {
@@ -41,17 +42,21 @@ struct t_conn_cost_params {
 class ConnectionRouter {
   public:
     ConnectionRouter(
+        const DeviceGrid& grid,
         const RouterLookahead& router_lookahead,
         const t_rr_graph_storage& rr_nodes,
         const std::vector<t_rr_rc_data>& rr_rc_data,
         const std::vector<t_rr_switch_inf>& rr_switch_inf,
         std::vector<t_rr_node_route_inf>& rr_node_route_inf)
-        : router_lookahead_(router_lookahead)
+        : grid_(grid)
+        , router_lookahead_(router_lookahead)
         , rr_nodes_(&rr_nodes)
         , rr_rc_data_(rr_rc_data.data())
         , rr_switch_inf_(rr_switch_inf.data())
         , rr_node_route_inf_(rr_node_route_inf.data())
-        , router_debug_(false) {}
+        , router_debug_(false) {
+        heap_.init_heap(grid);
+    }
 
     // Clear's the modified list.  Should be called after reset_path_costs
     // have been called.
@@ -71,7 +76,7 @@ class ConnectionRouter {
     //
     // Returns either the last element of the path, or nullptr if no path is
     // found
-    t_heap* timing_driven_route_connection_from_route_tree(
+    std::pair<bool, t_heap> timing_driven_route_connection_from_route_tree(
         t_rt_node* rt_root,
         int sink_node,
         const t_conn_cost_params cost_params,
@@ -83,7 +88,7 @@ class ConnectionRouter {
     //
     // Unlike timing_driven_route_connection_from_route_tree(), only part of
     // the route tree which is spatially close to the sink is added to the heap.
-    t_heap* timing_driven_route_connection_from_route_tree_high_fanout(
+    std::pair<bool, t_heap> timing_driven_route_connection_from_route_tree_high_fanout(
         t_rt_node* rt_root,
         int sink_node,
         const t_conn_cost_params cost_params,
@@ -236,6 +241,7 @@ class ConnectionRouter {
         const SpatialRouteTreeLookup& spatial_route_tree_lookup,
         t_bb net_bounding_box);
 
+    const DeviceGrid& grid_;
     const RouterLookahead& router_lookahead_;
     const t_rr_graph_storage* rr_nodes_;
     const t_rr_rc_data* rr_rc_data_;
@@ -243,6 +249,7 @@ class ConnectionRouter {
     t_rr_node_route_inf* rr_node_route_inf_;
     std::vector<int> modified_rr_node_inf_;
     RouterStats* router_stats_;
+    BinaryHeap heap_;
     bool router_debug_;
 };
 
