@@ -128,7 +128,9 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
     //  port_bit   : The pin number in this port
     AtomBlockId find_atom_pin_driver(const AtomBlockId blk_id, const t_model_ports* model_port, const BitIndex port_bit) const;
 
-    //Returns the name of the assigned clock of the specified alias
+    //Returns the assigned name of the net relative to the specified alias.
+    //If no assigned name is found, checks if the alias name corresponds to a valid net.
+    //If the alias name corresponds to an invalid net, returns an empty string.
     //  alias_net_name : The alias of a clock net that can be used instead of the assigned clock net name
     std::string get_assigned_net_name(std::string alias_net_name) const;
 
@@ -168,10 +170,10 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
     //  sinks   : The net's sink pins
     AtomNetId add_net(const std::string name, AtomPinId driver, std::vector<AtomPinId> sinks);
 
-    //Adds an entry to the clock net aliases map to be able to retrieve the assigned name of a clock net
+    //Adds an entry to the net aliases map to be able to retrieve the assigned name of a net
     //  alias_net_name    : The alias of the assigned clock net name
     //  assigned_net_name : The name chosen for a specific clock net
-    void add_clock_net_alias(std::string alias_net_name, std::string assigned_net_name);
+    void add_net_alias(std::string alias_net_name, std::string assigned_net_name);
 
   private: //Private members
     /*
@@ -217,7 +219,7 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
     vtr::vector_map<AtomPortId, const t_model_ports*> port_models_; //Architecture port models of each port
 
     //Clock net aliases
-    std::unordered_map<std::string, std::string> clock_net_names_map_;
+    std::unordered_map<std::string, std::string> net_name_aliases_map_;
 };
 
 #include "atom_lookup.h"

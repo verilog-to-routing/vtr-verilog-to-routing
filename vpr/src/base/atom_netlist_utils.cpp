@@ -38,7 +38,7 @@ bool is_removable_input(const AtomNetlist& netlist, const AtomBlockId blk, std::
 bool is_removable_output(const AtomNetlist& netlist, const AtomBlockId blk, std::string* reason = nullptr);
 
 //Attempts to remove the specified buffer LUT blk from the netlist. Returns true if successful.
-bool remove_buffer_lut(AtomNetlist& netlist, std::set<AtomPinId> clock_drivers, AtomBlockId blk, int verbosity);
+bool remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity);
 
 std::string make_unconn(size_t& unconn_count, PinType type);
 void cube_to_minterms_recurr(std::vector<vtr::LogicValue> cube, std::vector<size_t>& minterms);
@@ -691,12 +691,10 @@ void absorb_buffer_luts(AtomNetlist& netlist, int verbosity) {
 
     size_t removed_buffer_count = 0;
 
-    auto clock_drivers = find_netlist_logical_clock_drivers(netlist);
-
     //Remove the buffer luts
     for (auto blk : netlist.blocks()) {
         if (is_buffer_lut(netlist, blk)) {
-            if (remove_buffer_lut(netlist, clock_drivers, blk, verbosity)) {
+            if (remove_buffer_lut(netlist, blk, verbosity)) {
                 ++removed_buffer_count;
             }
         }
@@ -767,7 +765,7 @@ bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk) {
     return false;
 }
 
-bool remove_buffer_lut(AtomNetlist& netlist, std::set<AtomPinId> clock_drivers, AtomBlockId blk, int verbosity) {
+bool remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity) {
     //General net connectivity, numbers equal pin ids
     //
     // 1  in    2 ----- m+1  out
@@ -864,13 +862,6 @@ bool remove_buffer_lut(AtomNetlist& netlist, std::set<AtomPinId> clock_drivers, 
                                               return netlist.block_type(blk_id) == AtomBlockType::OUTPAD;
                                           });
 
-    // We need to identify whether the buffer that is being removed is part of a clock net.
-    // In this case, to avoid the modification of the clock name due to the merge of the two
-    // clock net names, the convention on how to assign the new clock net name is as follows:
-    //   - input_net: is used as the assigned name for the resulting clock net
-    //   - output_net: is used as a possible alias to refer to the resulting clock net
-    bool new_driver_is_clock = clock_drivers.find(new_driver) != clock_drivers.end();
-
     std::string new_net_name;
 
     if ((driver_is_pi || po_in_input_sinks) && !po_in_output_sinks) {
@@ -879,14 +870,12 @@ bool remove_buffer_lut(AtomNetlist& netlist, std::set<AtomPinId> clock_drivers, 
     } else if (!(driver_is_pi || po_in_input_sinks) && po_in_output_sinks) {
         //Must use the output name to perserve primary-output name
         new_net_name = netlist.net_name(output_net);
-    } else if (new_driver_is_clock) {
+    } else {
         auto input_net_name = netlist.net_name(input_net);
         auto output_net_name = netlist.net_name(output_net);
         new_net_name = input_net_name;
-        netlist.add_clock_net_alias(output_net_name, input_net_name);
-    } else {
-        //Arbitrarily merge the net names
-        new_net_name = netlist.net_name(input_net) + "__" + netlist.net_name(output_net);
+        netlist.add_net_alias(output_net_name, new_net_name);
+        netlist.add_net_alias(input_net_name, new_net_name);
     }
 
     size_t initial_input_net_pins = netlist.net_pins(input_net).size();

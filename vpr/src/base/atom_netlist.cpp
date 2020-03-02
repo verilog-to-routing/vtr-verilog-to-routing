@@ -105,10 +105,12 @@ AtomBlockId AtomNetlist::find_atom_pin_driver(const AtomBlockId blk_id, const t_
 std::string AtomNetlist::get_assigned_net_name(const std::string alias_net_name) const {
     std::string assigned_net_name;
 
-    auto result = clock_net_names_map_.find(alias_net_name);
+    auto result = net_name_aliases_map_.find(alias_net_name);
 
-    if (result != clock_net_names_map_.end()) {
+    if (result != net_name_aliases_map_.end()) {
         assigned_net_name = result->second;
+    } else if (find_net(alias_net_name) != AtomNetId::INVALID()) {
+        assigned_net_name = alias_net_name;
     }
 
     return assigned_net_name;
@@ -200,8 +202,15 @@ AtomNetId AtomNetlist::add_net(const std::string name, AtomPinId driver, std::ve
     return Netlist::add_net(name, driver, sinks);
 }
 
-void AtomNetlist::add_clock_net_alias(const std::string alias_net_name, const std::string assigned_net_name) {
-    clock_net_names_map_.insert({alias_net_name, assigned_net_name});
+void AtomNetlist::add_net_alias(const std::string alias_net_name, const std::string assigned_net_name) {
+    auto result = net_name_aliases_map_.insert({alias_net_name, assigned_net_name});
+
+    if (result.second == false) {
+        // Checking whether the assigned net name for this alias is already present
+        // and is the same as the input argument
+        auto result_content = result.first->second;
+        VTR_ASSERT(assigned_net_name.compare(result_content) == 0);
+    }
 }
 
 void AtomNetlist::remove_block_impl(const AtomBlockId /*blk_id*/) {
