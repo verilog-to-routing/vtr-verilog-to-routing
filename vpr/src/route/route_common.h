@@ -130,3 +130,5 @@ t_trace* alloc_trace_data();
 void free_trace_data(t_trace* trace);
 
 bool router_needs_lookahead(enum e_router_algorithm router_algorithm);
+
+std::string describe_unrouteable_connection(const int source_node, const int sink_node);
