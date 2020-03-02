@@ -52,7 +52,6 @@ static t_trace* trace_free_head = nullptr;
 static vtr::t_chunk trace_ch;
 
 static int num_trace_allocated = 0; /* To watch for memory leaks. */
-static int num_heap_allocated = 0;
 static int num_linked_f_pointer_allocated = 0;
 
 /*  The numbering relation between the channels and clbs is:				*
@@ -1320,8 +1319,8 @@ void print_route(const char* placement_file, const char* route_file) {
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_MEM)) {
         fp = vtr::fopen(getEchoFileName(E_ECHO_MEM), "w");
-        fprintf(fp, "\nNum_heap_allocated: %d   Num_trace_allocated: %d\n",
-                num_heap_allocated, num_trace_allocated);
+        fprintf(fp, "\nNum_trace_allocated: %d\n",
+                num_trace_allocated);
         fprintf(fp, "Num_linked_f_pointer_allocated: %d\n",
                 num_linked_f_pointer_allocated);
         fclose(fp);
@@ -1331,14 +1330,14 @@ void print_route(const char* placement_file, const char* route_file) {
     route_ctx.routing_id = vtr::secure_digest_file(route_file);
 }
 
-//To ensure the router can only swaps pin which are actually logically equivalent some block output pins must be
+//To ensure the router can only swap pins which are actually logically equivalent, some block output pins must be
 //reserved in certain cases.
 //
 // In the RR graph, output pin equivalence is modelled by a single SRC node connected to (multiple) OPINs, modelling
 // that each of the OPINs is logcially equivalent (i.e. it doesn't matter through which the router routes a signal,
 // so long as it is from the appropriate SRC).
 //
-// This correctly models 'full' equivalence (e.g. if there is a full crossbar between the outputs), but is to
+// This correctly models 'full' equivalence (e.g. if there is a full crossbar between the outputs), but is too
 // optimistic for 'instance' equivalence (which typcially models the pin equivalence possible by swapping sub-block
 // instances like BLEs). In particular, for the 'instance' equivalence case, some of the 'equivalent' block outputs
 // may be used by internal signals which are routed entirely *within* the block (i.e. the signals which never leave
@@ -1389,7 +1388,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
             VTR_ASSERT(type->class_inf[iclass].equivalence == PortEquivalence::INSTANCE);
 
             //From the SRC node we walk through it's out going edges to collect the
-            //OPIN nodes. We then push them onto a heap so the the OPINs with lower
+            //OPIN nodes. We then push them onto a heap so the OPINs with lower
             //congestion cost are popped-off/reserved first. (Intuitively, we want
             //the reserved OPINs to move out of the way of congestion, by preferring
             //to reserve OPINs with lower congestion costs).
