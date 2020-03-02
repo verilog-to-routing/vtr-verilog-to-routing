@@ -75,35 +75,6 @@ struct t_rr_node_ptc_data {
 static_assert(sizeof(t_rr_node_data) == 16, "Check t_rr_node_data size");
 static_assert(alignof(t_rr_node_data) == 16, "Check t_rr_node_data size");
 
-// aligned_allocator is a STL allocator that allocates memory in an aligned
-// fashion (if supported by the platform).
-//
-// It is worth noting the C++20 std::allocator does aligned allocations, but
-// C++20 has poor support.
-template<class T>
-struct aligned_allocator {
-    using value_type = T;
-    using pointer = T*;
-    using const_pointer = const T*;
-    using reference = T&;
-    using const_reference = const T&;
-    using size_type = std::size_t;
-    using difference_type = std::ptrdiff_t;
-
-    pointer allocate(size_type n, const void* /*hint*/ = 0) {
-        void* data;
-        int ret = vtr::memalign(&data, alignof(T), sizeof(T) * n);
-        if (ret != 0) {
-            throw std::bad_alloc();
-        }
-        return static_cast<pointer>(data);
-    }
-
-    void deallocate(T* p, size_type /*n*/) {
-        vtr::free(p);
-    }
-};
-
 // RR node and edge storage class.
 //
 // Description:
@@ -555,7 +526,7 @@ class t_rr_graph_storage {
 
     // storage_ stores the core RR node data used by the router and is **very**
     // hot.
-    vtr::vector<RRNodeId, t_rr_node_data, aligned_allocator<t_rr_node_data>> storage_;
+    vtr::vector<RRNodeId, t_rr_node_data, vtr::aligned_allocator<t_rr_node_data>> storage_;
 
     // The PTC data is cold data, and is generally not used during the inner
     // loop of either the placer or router.
