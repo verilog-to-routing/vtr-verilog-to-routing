@@ -70,7 +70,6 @@ static void do_one_route(int source_node, int sink_node,
     auto& route_ctx = g_vpr_ctx.routing();
 
     t_rt_node* rt_root = init_route_tree_to_source_no_net(source_node);
-    enable_router_debug(router_opts, ClusterNetId(), sink_node, 1);
 
     /* Update base costs according to fanout and criticality rules */
     update_rr_base_costs(1);
@@ -105,6 +104,7 @@ static void do_one_route(int source_node, int sink_node,
             device_ctx.rr_rc_data,
             device_ctx.rr_switch_inf,
             g_vpr_ctx.mutable_routing().rr_node_route_inf);
+    enable_router_debug(router_opts, ClusterNetId(), sink_node, 1, &router);
     t_heap* cheapest = router.timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, bounding_box, router_stats);
 
     bool found_path = (cheapest != nullptr);
