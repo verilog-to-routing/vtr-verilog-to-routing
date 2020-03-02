@@ -40,6 +40,8 @@ option(VTR_ENABLE_CAPNPROTO "Enable capnproto binary serialization support in VP
 option(WITH_BLIFEXPLORER "Enable build with blifexplorer" OFF)
 option(WITH_LIBRTLNUMBER "Enable build with librtlnumber" OFF)
 
+option(WITH_ABC "Enable building abc" ON)
+option(WITH_ODIN "Enable building odin" ON)
 option(ODIN_DEBUG "Enable building odin with debug flags" OFF)
 option(ODIN_WARN "Enable building odin with extra warning flags" OFF)
 option(ODIN_COVERAGE "Enable building odin with coverage flags" OFF)
@@ -341,7 +343,9 @@ endif()
 
 
 #Add the various sub-projects
-add_subdirectory(abc)
+if(${WITH_ABC})
+    add_subdirectory(abc)
+endif()
 add_subdirectory(libs) #libs/CMakeLists.txt handles adding warnings flags to non-external libraries
 
 #Add the various tools
@@ -349,10 +353,14 @@ add_compile_options(${WARN_FLAGS}) #Add warn flags for VTR tools
 add_compile_options(${ADDITIONAL_FLAGS})
 link_libraries(${ADDITIONAL_FLAGS})
 add_subdirectory(vpr)
-add_subdirectory(ODIN_II)
-add_subdirectory(ace2)
+if(${WITH_ABC} AND ${WITH_ODIN})
+    add_subdirectory(ODIN_II)
+endif()
+if(${WITH_ABC})
+    add_subdirectory(ace2)
+endif()
 add_subdirectory(utils)
-if(WITH_BLIFEXPLORER)
+if(${WITH_ODIN} AND ${WITH_BLIFEXPLORER})
     add_subdirectory(blifexplorer)
 endif()
 
@@ -360,16 +368,22 @@ endif()
 # Note that target_compile_options() *appends* to the current compilation options of
 # the specified target
 
-#Since ABC is an externally developed tool, we suppress all compiler warnings
-CHECK_CXX_COMPILER_FLAG("-w" CXX_COMPILER_SUPPORTS_-w)
-if(CXX_COMPILER_SUPPORTS_-w)
-    target_compile_options(libabc PRIVATE "-w")
-    target_compile_options(abc PRIVATE "-w")
-endif()
+if(${WITH_ABC})
+    #Since ABC is an externally developed tool, we suppress all compiler warnings
+    CHECK_CXX_COMPILER_FLAG("-w" CXX_COMPILER_SUPPORTS_-w)
+    if(CXX_COMPILER_SUPPORTS_-w)
+        target_compile_options(libabc PRIVATE "-w")
+        target_compile_options(abc PRIVATE "-w")
+    endif()
 
-#Some ABC headers generate warnings, treat them as system headers to suppress warnings
-get_property(ABC_INCLUDE_DIRS TARGET libabc PROPERTY INCLUDE_DIRECTORIES)
-target_include_directories(libabc SYSTEM INTERFACE ${ABC_INCLUDE_DIRS})
+    #Some ABC headers generate warnings, treat them as system headers to suppress warnings
+    get_property(ABC_INCLUDE_DIRS TARGET libabc PROPERTY INCLUDE_DIRECTORIES)
+    target_include_directories(libabc SYSTEM INTERFACE ${ABC_INCLUDE_DIRS})
+
+    #We don't control the ABC cmake file, so we need to manually unset the IPO flags
+    #to avoid cmake dev warnings due to it's old cmake version policy
+    set_target_properties(abc libabc libabc-pic PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
+endif()
 
 #PugiXml has some deliberate switch fallthrough cases (as indicated by comments), but they
 #are tagged as warnings with g++-7 (the comments don't match g++-7's suppression regexes).
@@ -379,10 +393,6 @@ CHECK_CXX_COMPILER_FLAG("-Wimplicit-fallthrough=0" CXX_COMPILER_SUPPORTS_-Wimpli
 if(CXX_COMPILER_SUPPORTS_-Wimplicit-fallthrough=0)
     target_compile_options(libpugixml PRIVATE "-Wimplicit-fallthrough=0")
 endif()
-
-#We don't control the ABC cmake file, so we need to manually unset the IPO flags
-#to avoid cmake dev warnings due to it's old cmake version policy
-set_target_properties(abc libabc libabc-pic PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
 
 #
 #
