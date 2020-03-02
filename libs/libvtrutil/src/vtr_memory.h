@@ -2,6 +2,7 @@
 #define VTR_MEMORY_H
 #include <cstddef>
 #include <cstdlib>
+#include <new>
 
 namespace vtr {
 struct t_linked_vptr; //Forward declaration
@@ -58,6 +59,35 @@ inline int memalign(void** ptr_out, size_t align, size_t size) {
 // This generates a prefetch instruction on all architectures that include it.
 // This is all modern x86 and ARM64 platforms.
 #define VTR_PREFETCH(addr, rw, locality) __builtin_prefetch(addr, rw, locality)
+
+// aligned_allocator is a STL allocator that allocates memory in an aligned
+// fashion (if supported by the platform).
+//
+// It is worth noting the C++20 std::allocator does aligned allocations, but
+// C++20 has poor support.
+template<class T>
+struct aligned_allocator {
+    using value_type = T;
+    using pointer = T*;
+    using const_pointer = const T*;
+    using reference = T&;
+    using const_reference = const T&;
+    using size_type = std::size_t;
+    using difference_type = std::ptrdiff_t;
+
+    pointer allocate(size_type n, const void* /*hint*/ = 0) {
+        void* data;
+        int ret = vtr::memalign(&data, alignof(T), sizeof(T) * n);
+        if (ret != 0) {
+            throw std::bad_alloc();
+        }
+        return static_cast<pointer>(data);
+    }
+
+    void deallocate(T* p, size_type /*n*/) {
+        vtr::free(p);
+    }
+};
 
 } // namespace vtr
 
