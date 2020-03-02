@@ -4,6 +4,7 @@
 #include "physical_types.h"
 #include "device_grid.h"
 #include "vtr_memory.h"
+#include "vtr_array_view.h"
 
 /* Used by the heap as its fundamental data structure.
  * Each heap element represents a partial route.

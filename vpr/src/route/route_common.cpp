@@ -36,6 +36,7 @@
 #include "RoutingDelayCalculator.h"
 #include "timing_info.h"
 #include "tatum/echo_writer.hpp"
+#include "binary_heap.h"
 
 /**************** Types local to route_common.c ******************/
 struct t_trace_branch {
@@ -475,8 +476,6 @@ void init_route_structs(int bb_factor) {
     route_ctx.trace.resize(cluster_ctx.clb_nlist.nets().size());
     route_ctx.trace_nodes.resize(cluster_ctx.clb_nlist.nets().size());
 
-    init_heap(device_ctx.grid);
-
     //Various look-ups
     route_ctx.net_rr_terminals = load_net_rr_terminals(device_ctx.rr_node_indices);
     route_ctx.is_clock_net = load_is_clock_net();
@@ -484,14 +483,6 @@ void init_route_structs(int bb_factor) {
     route_ctx.rr_blk_source = load_rr_clb_sources(device_ctx.rr_node_indices);
     route_ctx.clb_opins_used_locally = alloc_and_load_clb_opins_used_locally();
     route_ctx.net_status.resize(cluster_ctx.clb_nlist.nets().size());
-
-    /* Check that things that should have been emptied after the last routing *
-     * really were.                                                           */
-
-    if (!is_empty_heap()) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                        "in init_route_structs. Heap is not empty.\n");
-    }
 }
 
 t_trace*
@@ -915,8 +906,6 @@ void free_route_structs() {
         route_ctx.route_bb.clear();
         route_ctx.route_bb.shrink_to_fit();
     }
-
-    heap_free_all_memory();
 }
 
 /* Frees the data structures needed to save a routing.                     */
@@ -1353,7 +1342,7 @@ void print_route(const char* placement_file, const char* route_file) {
 //
 // To model this we 'reserve' these locally used outputs, ensuring that the router will not use them (as if it did
 // this would equate to duplicating a BLE into an already in-use BLE instance, which is clearly incorrect).
-void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local_opins) {
+void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins) {
     int num_local_opin, inode, from_node, iconn, num_edges, to_node;
     int iclass, ipin;
     float cost;
@@ -1383,6 +1372,9 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
         }
     }
 
+    // Make sure heap is empty before we add nodes to the heap.
+    heap->empty_heap();
+
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         type = physical_tile_type(blk_id);
         for (iclass = 0; iclass < type->num_class; iclass++) {
@@ -1406,23 +1398,24 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 
                 //Add the OPIN to the heap according to it's congestion cost
                 cost = get_rr_cong_cost(to_node);
-                node_to_heap(to_node, cost, OPEN, OPEN, 0., 0.);
+                add_node_to_heap(heap, route_ctx.rr_node_route_inf,
+                                 to_node, cost, OPEN, OPEN, 0., 0.);
             }
 
             for (ipin = 0; ipin < num_local_opin; ipin++) {
                 //Pop the nodes off the heap. We get them from the heap so we
                 //reserve those pins with lowest congestion cost first.
-                heap_head_ptr = get_heap_head();
+                heap_head_ptr = heap->get_heap_head();
                 inode = heap_head_ptr->index;
 
                 VTR_ASSERT(device_ctx.rr_nodes[inode].type() == OPIN);
 
                 adjust_one_rr_occ_and_apcost(inode, 1, pres_fac, acc_fac);
                 route_ctx.clb_opins_used_locally[blk_id][iclass][ipin] = inode;
-                free_heap_data(heap_head_ptr);
+                heap->free(heap_head_ptr);
             }
 
-            empty_heap();
+            heap->empty_heap();
         }
     }
 }
