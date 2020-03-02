@@ -1,4 +1,6 @@
 ['exit']
+    # if it is expected to fail, dont look for different failure
+    range = [ 1.0, 255.0 ]
     regex = 'Odin exited with code: (\d+)'
     default = -1
 
