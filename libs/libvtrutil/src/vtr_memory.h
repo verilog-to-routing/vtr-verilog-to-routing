@@ -58,6 +58,9 @@ inline int memalign(void** ptr_out, size_t align, size_t size) {
 //
 // This generates a prefetch instruction on all architectures that include it.
 // This is all modern x86 and ARM64 platforms.
+//
+// rw = 0, locality = 0 is the least intrusive software prefetch.  Higher
+// locality results in more CPU effort, and needs evidence for higher locality.
 #define VTR_PREFETCH(addr, rw, locality) __builtin_prefetch(addr, rw, locality)
 
 // aligned_allocator is a STL allocator that allocates memory in an aligned
