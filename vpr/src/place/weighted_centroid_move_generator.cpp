@@ -2,13 +2,12 @@
 #include "globals.h"
 #include <algorithm>
 //#include "math.h"
-const int HIGH_FANOUT = 10;
 
 bool sort_by_weights(const std::pair<int,float> &a, const std::pair<int,float> &b);
 
 
 e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim,
-    std::vector<int>& X_coord, std::vector<int>& Y_coord) {
+    std::vector<int>& X_coord, std::vector<int>& Y_coord,  std::vector<int>&, int & ,int place_high_fanout_net) {
     /* Pick a random block to be swapped with another random block.   */
     ClusterBlockId b_from = pick_from_block();
     if (!b_from) {
@@ -34,7 +33,7 @@ e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_move
     Y_coord.clear();
     ClusterNetId net_id;
     ClusterBlockId bnum;
-    int x,y,pnum;
+    int x,y;
     float acc_weight = 0;
     float acc_x = 0;
     float acc_y = 0;
@@ -48,7 +47,7 @@ e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_move
         if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::DRIVER) {
             if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
                 continue;
-            if(cluster_ctx.clb_nlist.net_pins(net_id).size() >  HIGH_FANOUT)
+            if(int(cluster_ctx.clb_nlist.net_pins(net_id).size()) >  place_high_fanout_net)
                 continue;
 
             for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
@@ -97,7 +96,7 @@ e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_move
     centroid.x = center_x;
     centroid.y = center_y;
 
-    if (!find_to_loc_centroid(cluster_from_type, rlim, from, centroid, to)) {
+    if (!find_to_loc_centroid(cluster_from_type, rlim, centroid, to)) {
         return e_create_move::ABORT;
     }
 

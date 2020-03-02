@@ -2,12 +2,11 @@
 #include "globals.h"
 #include <algorithm>
 
-const int HIGH_FANOUT = 10;
 //#include "math.h"
 static void get_bb_for_net_excluding_block(ClusterNetId net_id, t_bb* coords, ClusterBlockId block_id);
 
 e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float,
-std::vector<int>& X_coord, std::vector<int>& Y_coord) {
+std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>&, int &, int place_high_fanout_net) {
     /* Pick a random block to be swapped with another random block.   */
     ClusterBlockId b_from = pick_from_block();
     if (!b_from) {
@@ -32,7 +31,7 @@ std::vector<int>& X_coord, std::vector<int>& Y_coord) {
         ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
             continue;
-        if(cluster_ctx.clb_nlist.net_pins(net_id).size() > HIGH_FANOUT)
+        if(int(cluster_ctx.clb_nlist.net_pins(net_id).size()) > place_high_fanout_net)
             continue;
         get_bb_for_net_excluding_block(net_id, &coords, b_from);
         X_coord.push_back(coords.xmin);

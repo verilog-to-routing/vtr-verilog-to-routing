@@ -3,6 +3,7 @@
 #include <memory>
 #include <fstream>
 #include <iostream>
+#include <numeric>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -37,6 +38,7 @@
 #include "move_transactions.h"
 #include "move_utils.h"
 #include "read_place.h"
+
 
 #include "static_move_generator.h"
 
@@ -260,7 +262,11 @@ static e_move_result try_swap(const t_annealing_state* state,
                               const t_place_algorithm& place_algorithm,
                               float timing_tradeoff,
                               std::vector<int>& X_coord,
-                              std::vector<int>& Y_coord);
+                              std::vector<int>& Y_coord,
+                              std::vector<int>& num_moves,
+                              std::vector<int>& accepted_moves,
+                              std::vector<int>& aborted_moves,
+                              int high_fanout_net);
 
 static void check_place(const t_placer_costs& costs,
                         const PlaceDelayModel* delay_model,
@@ -287,7 +293,11 @@ static float starting_t(const t_annealing_state* state,
                         t_pl_blocks_to_be_moved& blocks_affected,
                         const t_placer_opts& placer_opts,
                         std::vector<int>& X_coord,
-                        std::vector<int>& Y_coord);
+                        std::vector<int>& Y_coord,
+                        std::vector<int>& num_moves,
+                        std::vector<int>& accepted_moves,
+                        std::vector<int>& aborted_moves,
+                        int high_fanout_net);
 
 static int count_connections();
 
@@ -365,8 +375,11 @@ static void placement_inner_loop(const t_annealing_state* state,
                                  t_pl_blocks_to_be_moved& blocks_affected,
                                  SetupTimingInfo* timing_info,
                                  const t_place_algorithm& place_algorithm,
-                                 std::vector<float>& X_coord,
-                                 std::vector<float>& Y_coord);
+                                 std::vector<int>& X_coord,
+                                 std::vector<int>& Y_coord,
+                                 std::vector<int>& num_moves,
+                                 std::vector<int>& accepted_moves,
+                                 std::vector<int>& aborted_moves);
 
 static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
                                          const PlaceDelayModel* delay_model,
@@ -455,6 +468,7 @@ void try_place(const t_placer_opts& placer_opts,
     }
 
     move_generator = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_move_prob);
+
 
     width_fac = placer_opts.place_chan_width;
 
@@ -632,6 +646,11 @@ void try_place(const t_placer_opts& placer_opts,
     // useful to be used in directed moves
     std::vector<float> X_coord, Y_coord;
 
+    //Define some variables for move generation statistics
+    std::vector<int> num_moves (4,0);
+    std::vector<int> accepted_moves (4,0);
+    std::vector<int> aborted_moves (4,0);
+
     /* Update the starting temperature for placement annealing to a more appropriate value */
     state.t = starting_t(&state,
                          &costs,
@@ -681,6 +700,10 @@ void try_place(const t_placer_opts& placer_opts,
                                       pin_timing_invalidator.get(),
                                       timing_info.get());
 
+        std::fill(num_moves.begin(),num_moves.end(),0);
+        std::fill(accepted_moves.begin(),accepted_moves.end(),0);
+        std::fill(aborted_moves.begin(),aborted_moves.end(),0);
+
         placement_inner_loop(&state, placer_opts,
                              inner_recompute_limit, &stats,
                              &costs,
@@ -694,7 +717,10 @@ void try_place(const t_placer_opts& placer_opts,
                              timing_info.get(),
                              placer_opts.place_algorithm,
                              X_coord,
-                             Y_coord);
+                             Y_coord,
+                             num_moves,
+                             accepted_moves,
+                             aborted_moves);
 
         tot_iter += state.move_lim;
         ++state.num_temps;
@@ -917,9 +943,11 @@ static void placement_inner_loop(const t_annealing_state* state,
                                  t_pl_blocks_to_be_moved& blocks_affected,
                                  SetupTimingInfo* timing_info,
                                  const t_place_algorithm& place_algorithm,
-                                 std::vector<float>& X_coord,
-                                 std::vector<float>& Y_coord) {
-    
+                                 std::vector<int>& X_coord,
+                                 std::vector<int>& Y_coord,
+                                 std::vector<int>& num_moves,
+                                 std::vector<int>& accepted_moves,
+                                 std::vector<int>& aborted_moves) {
     int inner_crit_iter_count, inner_iter;
 
     int inner_placement_save_count = 0; //How many times have we dumped placement to a file this temperature?
@@ -943,7 +971,11 @@ static void placement_inner_loop(const t_annealing_state* state,
                                              placer_opts.place_algorithm,
                                              placer_opts.timing_tradeoff,
                                              X_coord,
-                                             Y_coord);
+                                             Y_coord,
+                                             num_moves,
+                                             accepted_moves,
+                                             aborted_moves,
+                                             placer_opts.place_high_fanout_net);
 
         if (swap_result == ACCEPTED) {
             /* Move was accepted.  Update statistics that are useful for the annealing schedule. */
@@ -1066,7 +1098,11 @@ static float starting_t(const t_annealing_state* state,
                         t_pl_blocks_to_be_moved& blocks_affected,
                         const t_placer_opts& placer_opts,
                         std::vector<int>& X_coord,
-                        std::vector<int>& Y_coord) {
+                        std::vector<int>& Y_coord,
+                        std::vector<int>& num_moves,
+                        std::vector<int>& accepted_moves,
+                        std::vector<int>& aborted_moves,
+                        int high_fanout_net) {
     /* Finds the starting temperature (hot condition).              */
 
     int i, num_accepted, move_lim;
@@ -1102,7 +1138,11 @@ static float starting_t(const t_annealing_state* state,
                                              placer_opts.place_algorithm,
                                              placer_opts.timing_tradeoff,
                                              X_coord,
-                                             Y_coord);
+                                             Y_coord,
+                                             num_moves,
+                                             accepted_moves,
+                                             aborted_moves,
+                                             high_fanout_net);
 
         if (swap_result == ACCEPTED) {
             num_accepted++;
@@ -1193,13 +1233,19 @@ static e_move_result try_swap(const t_annealing_state* state,
                               const t_place_algorithm& place_algorithm,
                               float timing_tradeoff,
                               std::vector<int>& X_coord,
-                              std::vector<int>& Y_coord) {
+                              std::vector<int>& Y_coord,
+                              std::vector<int>& num_moves,
+                              std::vector<int>& accepted_moves,
+                              std::vector<int>& aborted_moves,
+                              int high_fanout_net) {
     /* Picks some block and moves it to another spot.  If this spot is   *
      * occupied, switch the blocks.  Assess the change in cost function. *
      * rlim is the range limiter.                                        *
      * Returns whether the swap is accepted, rejected or aborted.        *
      * Passes back the new value of the cost functions.                  */
 
+    int type; //move type number
+    
     num_ts_called++;
 
     MoveOutcomeStats move_outcome_stats;
@@ -1222,7 +1268,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 
     //Generate a new move (perturbation) used to explore the space of possible placements
     e_create_move create_move_outcome = move_generator.propose_move(blocks_affected
-      , rlim, X_coord, Y_coord);
+      , rlim, X_coord, Y_coord, num_moves, type, high_fanout_net);
 
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
 
@@ -1235,6 +1281,8 @@ static e_move_result try_swap(const t_annealing_state* state,
                                "ABORTED", "illegal move");
 
         move_outcome = ABORTED;
+
+        ++aborted_moves[type];
     } else {
         VTR_ASSERT(create_move_outcome == e_create_move::VALID);
 
@@ -1345,6 +1393,7 @@ static e_move_result try_swap(const t_annealing_state* state,
             /* Update clb data structures since we kept the move. */
             commit_move_blocks(blocks_affected);
 
+            ++accepted_moves[type];
         } else {
             VTR_ASSERT_SAFE(move_outcome == REJECTED);
 

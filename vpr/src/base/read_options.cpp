@@ -1759,9 +1759,17 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "The Probability of different move in Simulated Annealing."
             "The order of moves is: {uniformMove, MedianMove, WeightedMedianMove, WeightedCentroid}")
         .nargs('+')
-        .default_value({"70","10","10","10"})
+        .default_value({"100","0","0","0"})
 
         .show_in(argparse::ShowIn::HELP_ONLY);
+
+
+    place_grp.add_argument(args.place_high_fanout_net, "--place_high_fanout_net")
+        .help(
+            "Sets the assumed high fanout net during placement. ")
+        .default_value("10")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
 
     auto& place_timing_grp = parser.add_argument_group("timing-driven placement options");
 

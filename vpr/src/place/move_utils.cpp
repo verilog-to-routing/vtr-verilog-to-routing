@@ -804,7 +804,6 @@ bool find_to_loc_median(t_logical_block_type_ptr type,
 
 bool find_to_loc_centroid(t_logical_block_type_ptr type,
                          float rlim,
-                         const t_pl_loc from,
                          const t_pl_loc centroid,
                          t_pl_loc& to) {
     //Finds a legal swap to location for the given type, starting from 'from.x' and 'from.y'

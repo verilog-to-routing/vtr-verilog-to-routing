@@ -23,7 +23,7 @@ class MoveGenerator {
 
     //Updates affected_blocks with the proposed move, while respecting the current rlim
     virtual e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim, std::vector<int>& X_coord,
-        std::vector<int>& Y_coord) = 0;
+        std::vector<int>& Y_coord, std::vector<int>& num_moves, int& type, int place_high_fanout_net) = 0;
 
     //Recieves feedback about the outcome of the previously proposed move
     virtual void process_outcome(const MoveOutcomeStats& /*move_outcome*/) {}

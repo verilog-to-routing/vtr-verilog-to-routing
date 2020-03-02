@@ -6,7 +6,7 @@
 
 class WeightedCentroidMoveGenerator : public MoveGenerator {
     e_create_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float rlim, 
-    std::vector<int>& X_coord, std::vector<int>& Y_coord);
+    std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>&, int &,int place_high_fanout_net);
 };
 
 #endif

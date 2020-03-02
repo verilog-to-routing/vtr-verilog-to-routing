@@ -2,7 +2,7 @@
 #include "globals.h"
 
 e_create_move UniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim,
-    std::vector<int>& , std::vector<int>& ) {
+    std::vector<int>& , std::vector<int>&,  std::vector<int>&, int & , int) {
     /* Pick a random block to be swapped with another random block.   */
     ClusterBlockId b_from = pick_from_block();
     if (!b_from) {

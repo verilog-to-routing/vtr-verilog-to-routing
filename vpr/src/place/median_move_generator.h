@@ -5,7 +5,7 @@
 
 class MedianMoveGenerator : public MoveGenerator {
     e_create_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float,
-     std::vector<int>& X_coord, std::vector<int>& Y_coord);
+     std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>&, int &, int high_fanout_net);
 };
 
 #endif
