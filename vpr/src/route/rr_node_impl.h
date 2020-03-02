@@ -48,12 +48,12 @@ inline t_rr_node t_rr_graph_storage::operator[](size_t idx) {
 }
 
 inline const t_rr_node t_rr_graph_storage::at(size_t idx) const {
-    VTR_ASSERT(idx < storage_.size());
+    VTR_ASSERT(idx < node_storage_.size());
     return t_rr_node(const_cast<t_rr_graph_storage*>(this), RRNodeId(idx));
 }
 
 inline t_rr_node t_rr_graph_storage::at(size_t idx) {
-    VTR_ASSERT(idx < storage_.size());
+    VTR_ASSERT(idx < node_storage_.size());
     return t_rr_node(this, RRNodeId(idx));
 }
 
