@@ -116,7 +116,7 @@ class ConnectionRouter {
     // Common logic from timing_driven_route_connection_from_route_tree and
     // timing_driven_route_connection_from_route_tree_high_fanout for running
     // connection router.
-    t_heap* timing_driven_route_connection_from_route_tree(
+    t_heap* timing_driven_route_connection_common_setup(
         t_rt_node* rt_root,
         int sink_node,
         const t_conn_cost_params cost_params,
