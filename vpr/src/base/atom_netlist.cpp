@@ -102,18 +102,18 @@ AtomBlockId AtomNetlist::find_atom_pin_driver(const AtomBlockId blk_id, const t_
     return AtomBlockId::INVALID();
 }
 
-std::unordered_set<std::string> AtomNetlist::net_aliases(AtomNetId net_id) const {
+std::unordered_set<std::string> AtomNetlist::net_aliases(const std::string net_name) const {
+    auto net_id = find_net(net_name);
     VTR_ASSERT(net_id != AtomNetId::INVALID());
 
     std::unordered_set<std::string> aliases;
 
-    auto result = net_aliases_map_.find(net_id);
+    auto result = net_aliases_map_.find(net_name);
     if (result != net_aliases_map_.end()) {
         aliases = result->second;
     } else {
         // If not key is found, use the original net name
-        const auto& assigned_net_name = net_name(net_id);
-        aliases.insert(assigned_net_name);
+        aliases.insert(net_name);
     }
 
     return aliases;
@@ -205,10 +205,11 @@ AtomNetId AtomNetlist::add_net(const std::string name, AtomPinId driver, std::ve
     return Netlist::add_net(name, driver, sinks);
 }
 
-void AtomNetlist::add_net_alias(AtomNetId net_id, const std::string alias_net_name) {
+void AtomNetlist::add_net_alias(const std::string net_name, const std::string alias_net_name) {
+    auto net_id = find_net(net_name);
     VTR_ASSERT(net_id != AtomNetId::INVALID());
 
-    net_aliases_map_[net_id].insert(alias_net_name);
+    net_aliases_map_[net_name].insert(alias_net_name);
 }
 
 void AtomNetlist::remove_block_impl(const AtomBlockId /*blk_id*/) {

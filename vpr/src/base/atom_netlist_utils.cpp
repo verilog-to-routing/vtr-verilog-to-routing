@@ -894,8 +894,8 @@ bool remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity) {
     //Create the new merged net
     AtomNetId new_net = netlist.add_net(new_net_name, new_driver, new_sinks);
 
-    netlist.add_net_alias(new_net, input_net_name);
-    netlist.add_net_alias(new_net, output_net_name);
+    netlist.add_net_alias(new_net_name, input_net_name);
+    netlist.add_net_alias(new_net_name, output_net_name);
 
     VTR_ASSERT(netlist.net_pins(new_net).size() == initial_input_net_pins - 1 + output_sinks.size());
     return true;
