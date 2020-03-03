@@ -113,7 +113,7 @@ class SdcParseCallback : public sdcparse::Callback {
 
                     auto net_aliases = netlist_.net_aliases(clock_name);
 
-                    for(const auto& alias : net_aliases) {
+                    for (const auto& alias : net_aliases) {
                         if (std::regex_match(alias, clock_name_regex)) {
                             found = true;
                             //Create netlist clock
