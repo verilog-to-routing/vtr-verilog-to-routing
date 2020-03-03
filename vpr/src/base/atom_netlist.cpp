@@ -208,16 +208,7 @@ AtomNetId AtomNetlist::add_net(const std::string name, AtomPinId driver, std::ve
 void AtomNetlist::add_net_alias(AtomNetId net_id, const std::string alias_net_name) {
     VTR_ASSERT(net_id != AtomNetId::INVALID());
 
-    std::unordered_set<std::string> aliases;
-    auto result = net_aliases_map_.find(net_id);
-
-    if (result != net_aliases_map_.end()) {
-        aliases = result->second;
-        aliases.insert(alias_net_name);
-    } else {
-        aliases.insert(alias_net_name);
-        net_aliases_map_.insert({net_id, aliases});
-    }
+    net_aliases_map_[net_id].insert(alias_net_name);
 }
 
 void AtomNetlist::remove_block_impl(const AtomBlockId /*blk_id*/) {
