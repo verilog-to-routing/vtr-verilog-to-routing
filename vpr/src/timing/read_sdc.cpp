@@ -111,7 +111,7 @@ class SdcParseCallback : public sdcparse::Callback {
                     AtomNetId clock_net = netlist_.pin_net(clock_pin);
                     const auto& clock_name = netlist_.net_name(clock_net);
 
-                    auto net_aliases = netlist_.net_aliases(clock_name);
+                    auto net_aliases = netlist_.net_aliases(clock_net);
 
                     for (const auto& alias : net_aliases) {
                         if (std::regex_match(alias, clock_name_regex)) {
