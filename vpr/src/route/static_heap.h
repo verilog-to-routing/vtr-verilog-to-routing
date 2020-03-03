@@ -1,5 +1,8 @@
 #ifndef _STATIC_HEAP_H
 #define _STATIC_HEAP_H
+// This header and implementation file provide access to one statically
+// allocated heap object.  This file exists for backwards capability, and will
+// be removed once the heap is owned by individual pieces of code.
 
 #include "heap_type.h"
 #include "device_grid.h"

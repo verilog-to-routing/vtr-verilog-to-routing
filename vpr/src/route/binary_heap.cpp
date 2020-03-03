@@ -92,7 +92,7 @@ void BinaryHeap::empty_heap() {
 
 size_t BinaryHeap::size() const { return static_cast<size_t>(heap_tail_ - 1); } // heap[0] is not valid element
 
-// make a heap rooted at index i by **sifting down** in O(lgn) time
+// make a heap rooted at index hole by **sifting down** in O(lgn) time
 void BinaryHeap::sift_down(size_t hole) {
     t_heap* head{heap_[hole]};
     size_t child{left(hole)};
@@ -156,9 +156,14 @@ bool BinaryHeap::is_valid() const {
 }
 
 void BinaryHeap::invalidate_heap_entries(int sink_node, int ipin_node) {
-    /* marks all the heap entries consisting of sink_node, where it was reached *
-     * via ipin_node, as invalid (open).  used only by the breadth_first router *
-     * and even then only in rare circumstances.                                */
+    /* marks all the heap entries consisting of sink_node, where it was reached
+     * via ipin_node, as invalid (open).  used only by the breadth_first router
+     * and even then only in rare circumstances.
+     *
+     * This function enables forcing the breadth-first router to route to a
+     * sink more than once, using multiple ipins, which is useful in some
+     * architectures.
+     * */
 
     for (int i = 1; i < heap_tail_; i++) {
         if (heap_[i]->index == sink_node) {
