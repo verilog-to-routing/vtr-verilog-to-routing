@@ -218,7 +218,7 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
     //Port data
     vtr::vector_map<AtomPortId, const t_model_ports*> port_models_; //Architecture port models of each port
 
-    //Clock net aliases
+    //Net aliases
     std::unordered_map<AtomNetId, std::unordered_set<std::string>> net_aliases_map_;
 };
 
