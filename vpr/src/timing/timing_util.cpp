@@ -1,4 +1,5 @@
 #include <fstream>
+#include <sstream>
 
 #include "vtr_log.h"
 #include "vtr_assert.h"
@@ -610,10 +611,6 @@ float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_re
 
             slack += shift;
             max_req += shift;
-        }
-
-        if (!std::isfinite(slack)) {
-            continue;
         }
 
         float crit = std::numeric_limits<float>::quiet_NaN();

@@ -75,6 +75,8 @@ static void print_culprit_line(long column, long line_number, long file) {
 }
 
 void _log_message(odin_error error_type, long column, long line_number, long file, bool soft_error, const char* function_file_name, long function_line, const char* function_name, const char* message, ...) {
+    fflush(stdout);
+
     va_list ap;
 
     static long warning_count = 0;

@@ -228,8 +228,7 @@ enum operation_list {
     MEMORY,
     PAD_NODE,
     HARD_IP,
-    GENERIC, /*added for the unknown node type */
-    FULLADDER,
+    GENERIC,  /*added for the unknown node type */
     CLOG2,    // $clog2
     UNSIGNED, // $unsigned
     SIGNED,   // $signed
@@ -329,6 +328,18 @@ enum ids {
     ids_END
 };
 
+struct metric_t {
+    double min_depth;
+    double max_depth;
+    double avg_depth;
+    double avg_width;
+};
+
+struct stat_t {
+    metric_t upward;
+    metric_t downward;
+};
+
 struct typ {
     char* identifier;
     VNumber* vnumber = nullptr;
@@ -422,7 +433,8 @@ struct nnode_t {
     int line_number = -1;
     int file_number = -1;
 
-    short traverse_visited; // a way to mark if we've visited yet
+    uintptr_t traverse_visited; // a way to mark if we've visited yet
+    stat_t stat;
 
     npin_t** input_pins; // the input pins
     long num_input_pins;
@@ -504,9 +516,12 @@ struct nnet_t {
     short unique_net_data_id;
     void* net_data;
 
+    uintptr_t traverse_visited;
+    stat_t stat;
     /////////////////////
     // For simulation
-    std::shared_ptr<AtomicBuffer> values;
+    std::shared_ptr<AtomicBuffer>
+        values;
 
     signed char has_initial_value; // initial value assigned?
     signed char initial_value;     // initial net value
@@ -570,6 +585,11 @@ struct netlist_t {
     STRING_CACHE* nets_sc;
     STRING_CACHE* out_pins_sc;
     STRING_CACHE* nodes_sc;
+
+    long long num_of_type[operation_list_END];
+    long long num_of_node;
+    long long num_logic_element;
+    metric_t output_node_stat;
 
     t_logical_block_type_ptr type;
 };

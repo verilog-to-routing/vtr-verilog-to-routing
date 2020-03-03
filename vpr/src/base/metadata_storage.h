@@ -16,10 +16,6 @@
 template<typename LookupKey>
 class MetadataStorage {
   public:
-    void reserve(size_t s) {
-        VTR_ASSERT(map_.empty());
-        data_.reserve(s);
-    }
     void add_metadata(const LookupKey& lookup_key, vtr::interned_string meta_key, vtr::interned_string meta_value) {
         // Can only add metadata prior to building the map.
         VTR_ASSERT(map_.empty());
@@ -70,17 +66,33 @@ class MetadataStorage {
             return std::get<0>(lhs) < std::get<0>(rhs);
         });
 
-        std::vector<typename vtr::flat_map<LookupKey, t_metadata_dict>::value_type> storage;
-        storage.push_back(std::make_pair(std::get<0>(data_[0]), t_metadata_dict()));
+        LookupKey prev = std::get<0>(data_.front());
+        size_t count = 1;
         for (const auto& value : data_) {
-            if (storage.back().first != std::get<0>(value)) {
-                storage.push_back(std::make_pair(std::get<0>(value), t_metadata_dict()));
+            if (prev != std::get<0>(value)) {
+                count += 1;
+                prev = std::get<0>(value);
             }
-
-            storage.back().second.add(std::get<1>(value), std::get<2>(value));
         }
 
-        map_.assign_sorted(std::move(storage));
+        std::vector<typename vtr::flat_map<LookupKey, t_metadata_dict>::value_type> storage;
+        storage.resize(count);
+        size_t idx = 0;
+        storage[idx].first = std::get<0>(data_[0]);
+
+        for (const auto& value : data_) {
+            if (storage[idx].first != std::get<0>(value)) {
+                idx += 1;
+                VTR_ASSERT(idx < count);
+                storage[idx].first = std::get<0>(value);
+            }
+
+            storage[idx].second.add(std::get<1>(value), std::get<2>(value));
+        }
+
+        VTR_ASSERT(idx + 1 == count);
+
+        map_.assign(std::move(storage));
 
         data_.clear();
         data_.shrink_to_fit();

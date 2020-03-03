@@ -11,9 +11,14 @@ static t_rt_node* setup_routing_resources_no_net(int source_node);
 
 RouterDelayProfiler::RouterDelayProfiler(
     const RouterLookahead* lookahead)
-    : router_lookahead_(lookahead) {}
+    : router_(
+          *lookahead,
+          g_vpr_ctx.device().rr_nodes,
+          g_vpr_ctx.device().rr_rc_data,
+          g_vpr_ctx.device().rr_switch_inf,
+          g_vpr_ctx.mutable_routing().rr_node_route_inf) {}
 
-bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const t_router_opts& router_opts, float* net_delay) const {
+bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const t_router_opts& router_opts, float* net_delay) {
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
      * to route this net, even ignoring congestion, it returns false.  In this  *
@@ -22,7 +27,7 @@ bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const 
     auto& route_ctx = g_vpr_ctx.routing();
 
     t_rt_node* rt_root = setup_routing_resources_no_net(source_node);
-    enable_router_debug(router_opts, ClusterNetId(), sink_node, 0);
+    enable_router_debug(router_opts, ClusterNetId(), sink_node, 0, &router_);
 
     /* Update base costs according to fanout and criticality rules */
     update_rr_base_costs(1);
@@ -43,11 +48,14 @@ bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const 
 
     init_heap(device_ctx.grid);
 
-    std::vector<int> modified_rr_node_inf;
+    router_.clear_modified_rr_node_info();
     RouterStats router_stats;
-    t_heap* cheapest = timing_driven_route_connection_from_route_tree(rt_root,
-                                                                      sink_node, cost_params, bounding_box, *router_lookahead_,
-                                                                      modified_rr_node_inf, router_stats);
+    t_heap* cheapest = router_.timing_driven_route_connection_from_route_tree(
+        rt_root,
+        sink_node,
+        cost_params,
+        bounding_box,
+        router_stats);
 
     bool found_path = (cheapest != nullptr);
     if (found_path) {
@@ -65,7 +73,7 @@ bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const 
 
     //Reset for the next router call
     empty_heap();
-    reset_path_costs(modified_rr_node_inf);
+    router_.reset_path_costs();
 
     return found_path;
 }
@@ -73,6 +81,7 @@ bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const 
 //Returns the shortest path delay from src_node to all RR nodes in the RR graph, or NaN if no path exists
 std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const t_router_opts& router_opts) {
     auto& device_ctx = g_vpr_ctx.device();
+    auto& routing_ctx = g_vpr_ctx.mutable_routing();
 
     std::vector<float> path_delays_to(device_ctx.rr_nodes.size(), std::numeric_limits<float>::quiet_NaN());
 
@@ -89,16 +98,23 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
     cost_params.astar_fac = router_opts.astar_fac;
     cost_params.bend_cost = router_opts.bend_cost;
 
-    std::vector<int> modified_rr_node_inf;
+    auto router_lookahead = make_router_lookahead(e_router_lookahead::NO_OP,
+                                                  /*write_lookahead=*/"", /*read_lookahead=*/"",
+                                                  /*segment_inf=*/{});
+    ConnectionRouter router(
+        *router_lookahead,
+        device_ctx.rr_nodes,
+        device_ctx.rr_rc_data,
+        device_ctx.rr_switch_inf,
+        routing_ctx.rr_node_route_inf);
     RouterStats router_stats;
 
     init_heap(device_ctx.grid);
 
-    std::vector<t_heap> shortest_paths = timing_driven_find_all_shortest_paths_from_route_tree(rt_root,
-                                                                                               cost_params,
-                                                                                               bounding_box,
-                                                                                               modified_rr_node_inf,
-                                                                                               router_stats);
+    std::vector<t_heap> shortest_paths = router.timing_driven_find_all_shortest_paths_from_route_tree(rt_root,
+                                                                                                      cost_params,
+                                                                                                      bounding_box,
+                                                                                                      router_stats);
 
     free_route_tree(rt_root);
 
@@ -122,7 +138,7 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
             free_route_tree(rt_root);
         }
     }
-    reset_path_costs(modified_rr_node_inf);
+    router.reset_path_costs();
     empty_heap();
 
 #if 0
@@ -197,9 +213,7 @@ void alloc_routing_structs(t_chan_width chan_width,
                     router_opts.trim_obs_channels,
                     router_opts.clock_modeling,
                     directs, num_directs,
-                    &warnings,
-                    router_opts.read_edge_metadata,
-                    router_opts.do_check_rr_graph);
+                    &warnings);
 
     alloc_and_load_rr_node_route_structs();
 

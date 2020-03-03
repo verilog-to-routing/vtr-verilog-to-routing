@@ -105,12 +105,8 @@ static void print_dot_names_header(FILE* out, nnode_t* node) {
     fprintf(out, "\n");
 }
 
-/*---------------------------------------------------------------------------
- * (function: output_blif)
- * 	The function that prints out the details for a blif formatted file
- *-------------------------------------------------------------------------*/
-void output_blif(const char* file_name, netlist_t* netlist) {
-    FILE* out;
+FILE* create_blif(const char* file_name) {
+    FILE* out = NULL;
 
     /* open the file for output */
     if (global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED) {
@@ -124,7 +120,14 @@ void output_blif(const char* file_name, netlist_t* netlist) {
     if (out == NULL) {
         error_message(NETLIST_ERROR, -1, -1, "Could not open output file %s\n", file_name);
     }
+    return out;
+}
 
+/*---------------------------------------------------------------------------
+ * (function: output_blif)
+ * 	The function that prints out the details for a blif formatted file
+ *-------------------------------------------------------------------------*/
+void output_blif(FILE* out, netlist_t* netlist) {
     fprintf(out, ".model %s\n", netlist->identifier);
 
     /* generate all the signals */
@@ -183,7 +186,6 @@ void output_blif(const char* file_name, netlist_t* netlist) {
     add_the_blackbox_for_adds(out);
 
     output_hard_blocks(out);
-    fclose(out);
 }
 
 /*---------------------------------------------------------------------------
@@ -299,7 +301,6 @@ void output_node(nnode_t* node, short /*traverse_number*/, FILE* fp) {
             define_mult_function(node, fp);
             break;
 
-        //case FULLADDER:
         case ADD:
             oassert(hard_adders); /* should be soft logic! */
             define_add_function(node, fp);

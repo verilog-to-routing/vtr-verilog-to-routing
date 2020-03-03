@@ -8,7 +8,7 @@ VTR_DIR=$(readlink -f "${THIS_DIR}/..")
 REGRESSION_DIR="${THIS_DIR}/regression_test"
 REG_LIB="${REGRESSION_DIR}/.library"
 PARSER_DIR="${REGRESSION_DIR}/parse_result"
-PARSER_EXEC="${PARSER_DIR}/parse_result.sh"
+PARSER_EXEC="${PARSER_DIR}/parse_result.py"
 
 source "${REG_LIB}/handle_exit.sh"
 source "${REG_LIB}/helper.sh"
@@ -417,6 +417,7 @@ printf "
 			simulation_params       = [see Odin options]
 			regression_params       = 
 			{
+				--verbose                # display error logs after batch of tests
 				--concat_circuit_list    # concatenate the circuit list and pass it straight through to odin
 				--generate_bench         # generate input and output vectors from scratch
 				--generate_output        # generate output vectors only if input vectors already exist
@@ -546,28 +547,40 @@ function populate_arg_from_file() {
 		_simulation_params="${_local_simulation_params} ${_simulation_params}"
 	fi
 
-	if [ "_${_local_synthesis_parse_file}" != "_" ] && [ ! -f "${_local_synthesis_parse_file}" ]
+	if [ "_${_local_synthesis_parse_file}" != "_" ]
 	then
-		_local_synthesis_parse_file="${THIS_DIR}/${_local_synthesis_parse_file}"
+		if [ ! -f "${_local_synthesis_parse_file}" ]
+		then
+			_local_synthesis_parse_file="${THIS_DIR}/${_local_synthesis_parse_file}"
+		fi
 	fi
 
-	if [ "_${_local_synthesis_parse_file}" != "_" ] && [ ! -f "${_local_synthesis_parse_file}" ]
+	if [ "_${_local_synthesis_parse_file}" != "_" ]
 	then
-		echo "file ${_local_synthesis_parse_file} not found, skipping"
-	else
-		_synthesis_parse_file="${_local_synthesis_parse_file}"
+		if [ ! -f "${_local_synthesis_parse_file}" ]
+		then
+			echo "file ${_local_synthesis_parse_file} not found, skipping"
+		else
+			_synthesis_parse_file="${_local_synthesis_parse_file}"
+		fi
 	fi
 
-	if [ "_${_local_simulation_parse_file}" != "_" ] && [ ! -f "${_local_simulation_parse_file}" ]
+	if [ "_${_local_simulation_parse_file}" != "_" ]
 	then
-		_local_simulation_parse_file="${THIS_DIR}/${_local_simulation_parse_file}"
+		if [ ! -f "${_local_simulation_parse_file}" ]
+		then
+			_local_simulation_parse_file="${THIS_DIR}/${_local_simulation_parse_file}"
+		fi
 	fi
 
-	if [ "_${_local_simulation_parse_file}" != "_" ] && [ ! -f "${_local_simulation_parse_file}" ]
+	if [ "_${_local_simulation_parse_file}" != "_" ]
 	then
-		echo "file ${_local_simulation_parse_file} not found, skipping"
-	else
-		_simulation_parse_file="${_local_simulation_parse_file}"
+		if [ ! -f "${_local_simulation_parse_file}" ]
+		then
+			echo "file ${_local_simulation_parse_file} not found, skipping"
+		else
+			_simulation_parse_file="${_local_simulation_parse_file}"
+		fi
 	fi
 
 	
@@ -608,7 +621,7 @@ function populate_arg_from_file() {
 
 function formated_find() {
 	# sort the output alphabeticaly
-	find "$1/" -name "$2" | sed 's:\s+|\n+: :g' | sed 's:^\s*|\s*$::g' | sort
+	find "$1/" -mindepth 2 -name "$2" | sed 's:\s+|\n+: :g' | sed 's:^\s*|\s*$::g' | sort
 }
 
 function header() {
@@ -713,11 +726,13 @@ function sim() {
 		####################################
 		# parse the function commands passed
 		_threads=${_NUMBER_OF_PROCESS}
-		_generate_bench="off"
-		_generate_output="off"
+		_generate_bench="${_GENERATE_BENCH}"
+		_generate_output="${_GENERATE_OUTPUT}"
 		_concat_circuit_list="off"
 		_synthesis="on"
 		_simulation="on"
+		_verbose_failures="off"
+		_disable_color=""
 
 		##########################################
 		# populate the wrapper command using the configs
@@ -749,7 +764,14 @@ function sim() {
 						_simulation="off"
 					fi
 					;;
-		
+				--no_color)
+					_disable_color="${_regression_param}"
+					;;
+
+				--verbose)
+					_verbose_failures="on"
+					;;
+
 				--disable_parallel_jobs)
 					echo "This test will not be multithreaded"
 					_threads="1"
@@ -869,10 +891,12 @@ function sim() {
 						input_blif_file="${DIR}/${circuit_name}.blif"
 
 						wrapper_command="${WRAPPER_EXEC}
+											${_disable_color}
 											${_script_synthesis_params}
 											--log_file ${DIR}/${synthesis_log_file_name}
 											--test_name ${TEST_FULL_REF}
 											--failure_log ${synthesis_failure_log_file}"
+
 						if [ "_${_RANDOM_DRY_RUN}" == "_on" ] && [ "_0" == "_$(( RANDOM % 2 ))" ] \
 						 || [ "_${_DRY_RUN}" == "_on" ]
 						then
@@ -888,17 +912,19 @@ function sim() {
 						wrapper_command="${wrapper_command} 
 											${DIR}/${synthesis_params_file_name}"
 
-						_echo_args "${wrapper_command}"  > "${DIR}/${synthesis_wrapper_file_name}"
-
-
 						synthesis_command="${ODIN_EXEC} 
 											${_synthesis_params}
 											${arch_cmd}
 											-V ${input_verilog_file}
 											-o ${input_blif_file}
-											-sim_dir ${DIR}; echo \"Odin exited with code: \$?\";"
+											-sim_dir ${DIR}"
 
-						_echo_args "${synthesis_command}" > "${DIR}/${synthesis_params_file_name}"
+						_echo_args "${wrapper_command}"  \
+							> "${DIR}/${synthesis_wrapper_file_name}"
+
+						_echo_args "${synthesis_command}; echo \"Odin exited with code: \$?\";" \
+							> "${DIR}/${synthesis_params_file_name}"
+
 						chmod +x "${DIR}/${synthesis_params_file_name}"
 
 					fi
@@ -908,6 +934,7 @@ function sim() {
 					then
 
 						wrapper_command="${WRAPPER_EXEC}
+												${_disable_color}
 												${_script_simulation_params}
 												--log_file ${DIR}/${simulation_log_file_name}
 												--test_name ${TEST_FULL_REF}
@@ -931,23 +958,30 @@ function sim() {
 												${_simulation_params}
 												${arch_cmd}
 												-b ${input_blif_file}
-												-sim_dir ${DIR} ; echo \"Odin exited with code: \$?\";"										
+												-sim_dir ${DIR} "										
 
-						if [ "_${_GENERATE_BENCH}" == "_on" ] || [ "_${_generate_bench}" == "_on" ] || [ ! -f "${input_vector_file}" ]
+						simulation_wrapper_file_name="${simulation_wrapper_generate_io_file_name}"
+
+						if [ "_${_generate_bench}" == "_off" ] \
+						&& [ "_${_generate_output}" == "_off" ] \
+						&& [ -f "${input_vector_file}" ] \
+						&& [ -f "${output_vector_file}" ]
 						then
-							_echo_args "${simulation_command}" > "${DIR}/${simulation_params_file_name}"
-							_echo_args "${wrapper_command}" > "${DIR}/${simulation_wrapper_generate_io_file_name}"
-
-						elif [ "_${_GENERATE_OUTPUT}" == "_on" ] || [ "_${_generate_output}" == "_on" ]|| [ ! -f "${output_vector_file}" ]
+							simulation_command="${simulation_command} -t ${input_vector_file} -T ${output_vector_file}"
+							simulation_wrapper_file_name="${simulation_wrapper_predefined_io_file_name}"
+						elif [ "_${_generate_bench}" == "_off" ] \
+						&& [ -f "${input_vector_file}" ]
 						then
-							_echo_args "${simulation_command} -t ${input_vector_file}" > "${DIR}/${simulation_params_file_name}"
-							_echo_args "${wrapper_command}" > "${DIR}/${simulation_wrapper_generate_output_file_name}"
-
-						else
-							_echo_args "${simulation_command} -t ${input_vector_file} -T ${output_vector_file}" > "${DIR}/${simulation_params_file_name}"
-							_echo_args "${wrapper_command}" > "${DIR}/${simulation_wrapper_predefined_io_file_name}"
-
+							simulation_command="${simulation_command} -t ${input_vector_file}"
+							simulation_wrapper_file_name="${simulation_wrapper_generate_output_file_name}"
 						fi
+
+						_echo_args "${wrapper_command}" \
+							> "${DIR}/${simulation_wrapper_file_name}"
+
+						_echo_args "${simulation_command}; echo \"Odin exited with code: \$?\";" \
+							> "${DIR}/${simulation_params_file_name}"
+
 						chmod +x "${DIR}/${simulation_params_file_name}"
 					fi
 				fi
@@ -964,36 +998,64 @@ function sim() {
 
 			disable_failed_bm "${synthesis_failure}" "${bench_name}"
 
+			sync
 
 			if [ "_${_synthesis_parse_file}" != "_" ]
 			then
-				"${PARSER_EXEC}" join \
-					--output "${NEW_RUN_DIR}/${bench_name}/${synthesis_parse_result_file_name}" \
-					$(formated_find "${NEW_RUN_DIR}/${bench_name}" "${synthesis_parse_result_file_name}")
+				echo " -------- Parsing Result --------- "
 
+				"${PARSER_EXEC}" join "${_disable_color}" \
+					"${_synthesis_parse_file}"  \
+					$(formated_find "${NEW_RUN_DIR}/${bench_name}" "${synthesis_parse_result_file_name}") \
+					> "${NEW_RUN_DIR}/${bench_name}/${synthesis_parse_result_file_name}"
+					
 				if [ "_${_REGENERATE_QOR}" == "_on" ]
 				then
 					cat "${NEW_RUN_DIR}/${bench_name}/${synthesis_parse_result_file_name}" \
 						> "${synthesis_golden_result_file}"
 				elif [ "_${synthesis_golden_result_file}" != "_" ] && [ -f "${synthesis_golden_result_file}" ]
 				then
-					"${PARSER_EXEC}" compare \
-						--rule "${_synthesis_parse_file}" \
-						--golden "${synthesis_golden_result_file}" \
-						--failure_log "${synthesis_result_failure_log_file}" \
-						"${NEW_RUN_DIR}/${bench_name}/${synthesis_parse_result_file_name}"
+					"${PARSER_EXEC}" compare "${_disable_color}" \
+						"${_synthesis_parse_file}" \
+						"${synthesis_golden_result_file}" \
+						"${NEW_RUN_DIR}/${bench_name}/${synthesis_parse_result_file_name}" \
+							2> "${synthesis_result_failure_log_file}"
 				fi
 			fi
 
-			if [ -f "${synthesis_golden_result_file}" ]
+			error_log="${synthesis_failure_log_file}"
+			if [ "_${synthesis_golden_result_file}" != "_" ]
 			then
-				if [ -f "${synthesis_result_failure_log_file}" ]
+				error_log="${synthesis_result_failure_log_file}"
+			fi
+
+			if [ "_${error_log}" != "_" ] && [ -f "${error_log}" ]
+			then
+				cat "${error_log}" >> "${NEW_RUN_DIR}/${global_failure}"
+			fi
+
+			# display logs if verbosity is on
+			if [ "_${_verbose_failures}" == "_on" ] \
+			&& [ "_${synthesis_result_failure_log_file}" != "_" ] \
+			&& [ -f "${synthesis_failure_log_file}" ]
+			then
+				if [ "_${synthesis_failure_log_file}" != "_" ] \
+				&& [ -f "${synthesis_result_failure_log_file}" ]
 				then
-					cat "${synthesis_result_failure_log_file}" >> "${NEW_RUN_DIR}/${global_failure}"
+					for test_failed in $(sort "${synthesis_failure_log_file}" "${synthesis_result_failure_log_file}" | uniq -d)
+					do
+						printf "\n\n\n ==== LOG %s ====\n\n" "${test_failed}"
+						cat "${NEW_RUN_DIR}/${test_failed}/synthesis.log"
+					done
+					printf "\n\n"
+				else
+					for test_failed in $(sort "${synthesis_failure_log_file}" | uniq)
+					do
+						printf "\n\n\n ==== LOG %s ====\n\n" "${test_failed}"
+						cat "${NEW_RUN_DIR}/${test_failed}/synthesis.log"
+					done
+					printf "\n\n"
 				fi
-			elif [ -f "${synthesis_failure_log_file}" ]
-			then
-				cat "${synthesis_failure_log_file}" >> "${NEW_RUN_DIR}/${global_failure}"
 			fi
 		fi
 
@@ -1019,34 +1081,65 @@ function sim() {
 			move_vector "input_vectors" "${NEW_RUN_DIR}/${bench_name}" "_input"
 			move_vector "output_vectors" "${NEW_RUN_DIR}/${bench_name}" "_output"
 
+			sync
+
 			if [ "_${_simulation_parse_file}" != "_" ]
 			then
-				"${PARSER_EXEC}" join \
-					--output "${NEW_RUN_DIR}/${bench_name}/${simulation_parse_result_file_name}" \
-					$(formated_find "${NEW_RUN_DIR}/${bench_name}" "${simulation_parse_result_file_name}")
+				echo " -------- Parsing Result --------- "
+
+				"${PARSER_EXEC}" join "${_disable_color}" \
+					"${_simulation_parse_file}" \
+					$(formated_find "${NEW_RUN_DIR}/${bench_name}" "${simulation_parse_result_file_name}") \
+						> "${NEW_RUN_DIR}/${bench_name}/${simulation_parse_result_file_name}"
+
 				if [ "_${_REGENERATE_QOR}" == "_on" ]
 				then
 					cat "${NEW_RUN_DIR}/${bench_name}/${simulation_parse_result_file_name}" \
 						> "${simulation_golden_result_file}"
 				elif [ "_${simulation_golden_result_file}" != "_" ] && [ -f "${simulation_golden_result_file}" ]
 				then
-					"${PARSER_EXEC}" compare \
-						--rule "${_simulation_parse_file}" \
-						--golden "${simulation_golden_result_file}" \
-						--failure_log "${simulation_result_failure_log_file}" \
-						"${NEW_RUN_DIR}/${bench_name}/${simulation_parse_result_file_name}"
+
+					"${PARSER_EXEC}" compare "${_disable_color}" \
+						"${_simulation_parse_file}" \
+						"${simulation_golden_result_file}" \
+						"${NEW_RUN_DIR}/${bench_name}/${simulation_parse_result_file_name}" \
+							2> "${simulation_result_failure_log_file}"
 				fi
 			fi
 
-			if [ -f "${simulation_golden_result_file}" ]
+			error_log="${simulation_failure_log_file}"
+			if [ "_${synthesis_golden_result_file}" != "_" ]
 			then
-				if [ -f "${simulation_result_failure_log_file}" ]
+				error_log="${simulation_result_failure_log_file}"
+			fi
+
+			if [ "_${error_log}" != "_" ] && [ -f "${error_log}" ]
+			then
+				cat "${error_log}" >> "${NEW_RUN_DIR}/${global_failure}"
+			fi
+
+			# display logs if verbosity is on
+			if [ "_${_verbose_failures}" == "_on" ] \
+			&& [ "_${simulation_failure_log_file}" != "_" ] \
+			&& [ -f "${simulation_failure_log_file}" ]
+			then
+				if [ "_${simulation_result_failure_log_file}" != "_" ] \
+				&& [ -f "${simulation_result_failure_log_file}" ]
 				then
-					cat "${simulation_result_failure_log_file}" >> "${NEW_RUN_DIR}/${global_failure}"
+					for test_failed in $(sort "${simulation_failure_log_file}" "${simulation_result_failure_log_file}" | uniq -d)
+					do
+						printf "\n\n\n ==== LOG %s ====\n\n" "${test_failed}"
+						cat "${NEW_RUN_DIR}/${test_failed}/simulation.log"
+					done
+					printf "\n\n"
+				else
+					for test_failed in $(sort "${simulation_failure_log_file}" | uniq)
+					do
+						printf "\n\n\n ==== LOG %s ====\n\n" "${test_failed}"
+						cat "${NEW_RUN_DIR}/${test_failed}/simulation.log"
+					done
+					printf "\n\n"
 				fi
-			elif [ -f "${simulation_failure_log_file}" ]
-			then
-				cat "${simulation_failure_log_file}" >> "${NEW_RUN_DIR}/${global_failure}"
 			fi
 		fi
 	fi

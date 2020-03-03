@@ -1,0 +1,19 @@
+['generic logic size']
+    regex = 'Using Lut input width of: (\d+)'
+    default = -1
+
+['Longest Path']
+    regex = 'Longest path: (\d+)'
+    default = -1
+
+['Average Path']
+    regex = 'Average path: (\d+)'
+    default = -1
+
+['Estimated LUTs']
+    regex = 'Total estimated number of lut: (\d+)'
+    default = -1
+
+['Total Node']
+    regex = 'Total number of node: (\d+)'
+    default = -1

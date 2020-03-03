@@ -70,7 +70,6 @@ static void do_one_route(int source_node, int sink_node,
     auto& route_ctx = g_vpr_ctx.routing();
 
     t_rt_node* rt_root = init_route_tree_to_source_no_net(source_node);
-    enable_router_debug(router_opts, ClusterNetId(), sink_node, 1);
 
     /* Update base costs according to fanout and criticality rules */
     update_rr_base_costs(1);
@@ -83,7 +82,7 @@ static void do_one_route(int source_node, int sink_node,
     bounding_box.ymax = device_ctx.grid.height() + 1;
 
     t_conn_cost_params cost_params;
-    cost_params.criticality = router_opts.max_criticality;
+    cost_params.criticality = 1.;
     cost_params.astar_fac = router_opts.astar_fac;
     cost_params.bend_cost = router_opts.bend_cost;
 
@@ -91,7 +90,6 @@ static void do_one_route(int source_node, int sink_node,
 
     init_heap(device_ctx.grid);
 
-    std::vector<int> modified_rr_node_inf;
     RouterStats router_stats;
     auto router_lookahead = make_router_lookahead(
             router_opts.lookahead_type,
@@ -99,7 +97,15 @@ static void do_one_route(int source_node, int sink_node,
             router_opts.read_router_lookahead,
             segment_inf
             );
-    t_heap* cheapest = timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, bounding_box, *router_lookahead, modified_rr_node_inf, router_stats);
+
+    ConnectionRouter router(
+            *router_lookahead,
+            device_ctx.rr_nodes,
+            device_ctx.rr_rc_data,
+            device_ctx.rr_switch_inf,
+            g_vpr_ctx.mutable_routing().rr_node_route_inf);
+    enable_router_debug(router_opts, ClusterNetId(), sink_node, 1, &router);
+    t_heap* cheapest = router.timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, bounding_box, router_stats);
 
     bool found_path = (cheapest != nullptr);
     if (found_path) {
@@ -125,7 +131,7 @@ static void do_one_route(int source_node, int sink_node,
 
     //Reset for the next router call
     empty_heap();
-    reset_path_costs(modified_rr_node_inf);
+    router.reset_path_costs();
 }
 
 static void profile_source(int source_rr_node,

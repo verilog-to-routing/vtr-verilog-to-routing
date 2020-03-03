@@ -61,7 +61,7 @@ void ClockNetwork::set_num_instance(int num_inst) {
  */
 
 void ClockNetwork::create_rr_nodes_for_clock_network_wires(ClockRRGraphBuilder& clock_graph,
-                                                           std::vector<t_rr_node>* rr_nodes,
+                                                           t_rr_graph_storage* rr_nodes,
                                                            t_rr_edge_info_set* rr_edges_to_create,
                                                            int num_segments) {
     for (int inst_num = 0; inst_num < get_num_inst(); inst_num++) {
@@ -215,7 +215,7 @@ size_t ClockRib::estimate_additional_nodes(const DeviceGrid& grid) {
 }
 
 void ClockRib::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphBuilder& clock_graph,
-                                                                   std::vector<t_rr_node>* rr_nodes,
+                                                                   t_rr_graph_storage* rr_nodes,
                                                                    t_rr_edge_info_set* rr_edges_to_create,
                                                                    int num_segments) {
     // Only chany wires need to know the number of segments inorder
@@ -307,10 +307,10 @@ int ClockRib::create_chanx_wire(int x_start,
                                 int y,
                                 int ptc_num,
                                 e_direction direction,
-                                std::vector<t_rr_node>* rr_nodes) {
+                                t_rr_graph_storage* rr_nodes) {
     rr_nodes->emplace_back();
     auto node_index = rr_nodes->size() - 1;
-    auto& node = rr_nodes->back();
+    auto node = rr_nodes->back();
 
     node.set_coordinates(x_start, y, x_end, y);
     node.set_type(CHANX);
@@ -502,7 +502,7 @@ size_t ClockSpine::estimate_additional_nodes(const DeviceGrid& grid) {
 }
 
 void ClockSpine::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphBuilder& clock_graph,
-                                                                     std::vector<t_rr_node>* rr_nodes,
+                                                                     t_rr_graph_storage* rr_nodes,
                                                                      t_rr_edge_info_set* rr_edges_to_create,
                                                                      int num_segments) {
     auto& grid = clock_graph.grid();
@@ -596,11 +596,11 @@ int ClockSpine::create_chany_wire(int y_start,
                                   int x,
                                   int ptc_num,
                                   e_direction direction,
-                                  std::vector<t_rr_node>* rr_nodes,
+                                  t_rr_graph_storage* rr_nodes,
                                   int num_segments) {
     rr_nodes->emplace_back();
     auto node_index = rr_nodes->size() - 1;
-    auto& node = rr_nodes->back();
+    auto node = rr_nodes->back();
 
     node.set_coordinates(x, y_start, x, y_end);
     node.set_type(CHANY);
@@ -662,7 +662,7 @@ size_t ClockHTree::estimate_additional_nodes(const DeviceGrid& /*grid*/) {
 }
 
 void ClockHTree::create_rr_nodes_and_internal_edges_for_one_instance(ClockRRGraphBuilder& clock_graph,
-                                                                     std::vector<t_rr_node>* rr_nodes,
+                                                                     t_rr_graph_storage* rr_nodes,
                                                                      t_rr_edge_info_set* rr_edges_to_create,
                                                                      int num_segments) {
     //Remove unused parameter warning

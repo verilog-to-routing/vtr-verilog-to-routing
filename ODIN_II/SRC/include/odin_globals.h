@@ -38,6 +38,8 @@ extern char* zero_string;
 extern char* pad_string;
 
 extern t_arch Arch;
+extern short physical_lut_size;
+
 /* ACTIVATION ESTIMATION GLOBALS */
 extern netlist_t* blif_netlist;
 
