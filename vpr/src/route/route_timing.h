@@ -13,6 +13,8 @@
 #include "spatial_route_tree_lookup.h"
 #include "connection_router.h"
 
+extern bool f_router_debug;
+
 int get_max_pins_per_net();
 
 bool try_timing_driven_route(const t_router_opts& router_opts,
