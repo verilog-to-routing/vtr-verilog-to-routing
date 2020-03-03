@@ -24,5 +24,18 @@ echo $PWD
 pwd
 pwd -L
 pwd -P
+
+(
+    while :
+    do
+        date
+        uptime
+        free -h
+        sleep 300
+    done
+) &
+MONITOR=$!
+
 export VPR_NUM_WORKERS=1
 ./run_reg_test.pl $VTR_TEST -show_failures -j$NUM_CORES
+kill $MONITOR
