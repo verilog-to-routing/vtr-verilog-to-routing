@@ -80,8 +80,7 @@ const char* operation_list_STR[][2] = {
     {"MEMORY", "MEM"},
     {"PAD_NODE", "PAD"},
     {"HARD_IP", "HARD"},
-    {"GENERIC", "GEN"}, /*added for the unknown node type */
-    {"FULLADDER", "FlADD"},
+    {"GENERIC", "GEN"},   /*added for the unknown node type */
     {"CLOG2", "CL2"},     // $clog2
     {"UNSIGNED", "UNSG"}, // $unsigned
     {"SIGNED", "SG"},     // $signed

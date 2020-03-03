@@ -107,6 +107,7 @@ vDEC [Dd][_]*[[:digit:]][[:digit:]_]*
 vHEX [Hh][_]*[ZzXx[:xdigit:]][ZzXx[:xdigit:]_]*
 vINT [[:digit:]][[:digit:]_]*
 vWORD [[:alpha:]_][[:alnum:]_$]*
+defineWORD [[:alnum:]_$]+
 vSTRING ["][^"]*["]  
 vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 
@@ -116,8 +117,8 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <VAR_PARSE>{vWORD}					{ MP(); add_args_to_define(yytext); }
 <VAR_PARSE>[\,]						{  }
 <VAR_PARSE>[\)]						{ CHANGE_STATE(DEFINE_BODY); }
-<PARSE_DEFINE>{vWORD}[\(]			{ MP(); new_define_t(yytext); CHANGE_STATE(VAR_PARSE);}
-<PARSE_DEFINE>{vWORD}				{ MP(); new_define_t(yytext); CHANGE_STATE(DEFINE_BODY);}
+<PARSE_DEFINE>{defineWORD}[\(]		{ MP(); new_define_t(yytext); CHANGE_STATE(VAR_PARSE);}
+<PARSE_DEFINE>{defineWORD}			{ MP(); new_define_t(yytext); CHANGE_STATE(DEFINE_BODY);}
 <INITIAL>"`define"					{ MP(); PUSH_STATE(PARSE_DEFINE); }
 
 <DEFINE_REMOVAL>{vWORD}				{ MP(); defines_map.erase(yytext); POP_STATE();}

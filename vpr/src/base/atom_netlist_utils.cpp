@@ -839,16 +839,17 @@ bool remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity) {
                                           });
 
     std::string new_net_name;
+    auto input_net_name = netlist.net_name(input_net);
+    auto output_net_name = netlist.net_name(output_net);
 
     if ((driver_is_pi || po_in_input_sinks) && !po_in_output_sinks) {
         //Must use the input name to perserve primary-input or primary-output name
-        new_net_name = netlist.net_name(input_net);
+        new_net_name = input_net_name;
     } else if (!(driver_is_pi || po_in_input_sinks) && po_in_output_sinks) {
         //Must use the output name to perserve primary-output name
-        new_net_name = netlist.net_name(output_net);
+        new_net_name = output_net_name;
     } else {
-        //Arbitrarily merge the net names
-        new_net_name = netlist.net_name(input_net) + "__" + netlist.net_name(output_net);
+        new_net_name = input_net_name;
     }
 
     size_t initial_input_net_pins = netlist.net_pins(input_net).size();
@@ -868,6 +869,9 @@ bool remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity) {
 
     //Create the new merged net
     AtomNetId new_net = netlist.add_net(new_net_name, new_driver, new_sinks);
+
+    netlist.add_net_alias(new_net_name, input_net_name);
+    netlist.add_net_alias(new_net_name, output_net_name);
 
     VTR_ASSERT(netlist.net_pins(new_net).size() == initial_input_net_pins - 1 + output_sinks.size());
     return true;

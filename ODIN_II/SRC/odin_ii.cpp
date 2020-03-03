@@ -56,6 +56,7 @@
 
 #include "netlist_visualizer.h"
 #include "adders.h"
+#include "netlist_statistic.h"
 #include "subtractions.h"
 #include "vtr_util.h"
 #include "vtr_path.h"
@@ -68,6 +69,7 @@ t_arch Arch;
 global_args_t global_args;
 std::vector<t_physical_tile_type> physical_tile_types;
 std::vector<t_logical_block_type> logical_block_types;
+short physical_lut_size = -1;
 int block_tag = -1;
 ids default_net_type = WIRE;
 
@@ -82,11 +84,18 @@ enum ODIN_ERROR_CODE {
 
 };
 
+static void get_physical_luts(std::vector<t_pb_type*>& pb_lut_list, t_mode* mode);
+static void get_physical_luts(std::vector<t_pb_type*>& pb_lut_list, t_pb_type* pb_type);
+static void set_physical_lut_size();
+
 static ODIN_ERROR_CODE synthesize_verilog() {
     double elaboration_time = wall_time();
 
     printf("--------------------------------------------------------------------\n");
     printf("High-level synthesis Begin\n");
+
+    FILE* output_blif_file = create_blif(global_args.output_file.value().c_str());
+
     /* Perform any initialization routines here */
     find_hard_multipliers();
     find_hard_adders();
@@ -129,7 +138,7 @@ static ODIN_ERROR_CODE synthesize_verilog() {
             clean_multipliers();
         }
 
-        if (sp_memory_list || dp_memory_list) {
+        if (single_port_rams || dual_port_rams) {
             /* Perform a splitting of any hard block memories */
             iterate_memories(verilog_netlist);
             free_memory_lists();
@@ -165,8 +174,7 @@ static ODIN_ERROR_CODE synthesize_verilog() {
          */
         printf("Outputting the netlist to the specified output format\n");
 
-        output_blif(global_args.output_file.value().c_str(), verilog_netlist);
-
+        output_blif(output_blif_file, verilog_netlist);
         module_names_to_idx = sc_free_string_cache(module_names_to_idx);
 
         cleanup_parser();
@@ -175,13 +183,18 @@ static ODIN_ERROR_CODE synthesize_verilog() {
         report_mult_distribution();
         report_add_distribution();
         report_sub_distribution();
+
+        compute_statistics(verilog_netlist, true);
+
         deregister_hard_blocks();
 
         //cleanup netlist
         free_netlist(verilog_netlist);
     } else {
-        printf("No blif genereated, Empty input or no module declared\n");
+        printf("Empty blif generated, Empty input or no module declared\n");
     }
+    fclose(output_blif_file);
+
     elaboration_time = wall_time() - elaboration_time;
     printf("Elaboration Time: ");
     print_time(elaboration_time);
@@ -237,28 +250,34 @@ netlist_t* start_odin_ii(int argc, char** argv) {
 
     /* read the FPGA architecture file */
     if (global_args.arch_file.provenance() == argparse::Provenance::SPECIFIED) {
+        printf("Architecture: %s\n", basename(global_args.arch_file.value().c_str()));
+        fflush(stdout);
+
         printf("Reading FPGA Architecture file\n");
         try {
             XmlReadArch(global_args.arch_file.value().c_str(), false, &Arch, physical_tile_types, logical_block_types);
+            set_physical_lut_size();
         } catch (vtr::VtrError& vtr_error) {
             printf("Odin Failed to load architecture file: %s with exit code%d\n", vtr_error.what(), ERROR_PARSE_ARCH);
             exit(ERROR_PARSE_ARCH);
         }
-        printf("Architecture: %s\n", basename(global_args.arch_file.value().c_str()));
     }
+    printf("Using Lut input width of: %d\n", physical_lut_size);
 
     /* do High level Synthesis */
     if (!configuration.list_of_file_names.empty() && configuration.is_verilog_input) {
+        printf("Verilog: ");
+        for (std::string v_file : global_args.verilog_files.value()) {
+            printf("%s ", basename(v_file.c_str()));
+        }
+        fflush(stdout);
+
         ODIN_ERROR_CODE error_code = synthesize_verilog();
         if (error_code) {
             printf("Odin Failed to parse Verilog with exit status: %d\n", error_code);
             exit(error_code);
         }
 
-        printf("Verilog: ");
-        for (std::string v_file : global_args.verilog_files.value()) {
-            printf("%s ", basename(v_file.c_str()));
-        }
         printf("\n");
     }
 
@@ -277,6 +296,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
             current_parse_file = 0;
         } else {
             printf("Blif: %s\n", basename(global_args.blif_file.value().c_str()));
+            fflush(stdout);
         }
 
         try {
@@ -296,12 +316,16 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         simulate_netlist(odin_netlist);
     }
 
+    compute_statistics(odin_netlist, true);
+
     printf("--------------------------------------------------------------------\n");
     total_time = wall_time() - total_time;
     printf("Total time: ");
     print_time(total_time);
     printf("\n");
     printf("Odin ran with exit status: %d\n", SUCCESS);
+    fflush(stdout);
+
     return odin_netlist;
 }
 
@@ -605,4 +629,39 @@ void set_default_config() {
      */
     configuration.soft_logic_memory_width_threshold = 0;
     configuration.soft_logic_memory_depth_threshold = 0;
+}
+
+static void get_physical_luts(std::vector<t_pb_type*>& pb_lut_list, t_mode* mode) {
+    for (int i = 0; i < mode->num_pb_type_children; i++) {
+        get_physical_luts(pb_lut_list, &mode->pb_type_children[i]);
+    }
+}
+
+static void get_physical_luts(std::vector<t_pb_type*>& pb_lut_list, t_pb_type* pb_type) {
+    if (pb_type) {
+        if (pb_type->class_type == LUT_CLASS) {
+            pb_lut_list.push_back(pb_type);
+        } else {
+            for (int i = 0; i < pb_type->num_modes; i++) {
+                get_physical_luts(pb_lut_list, &pb_type->modes[i]);
+            }
+        }
+    }
+}
+
+static void set_physical_lut_size() {
+    std::vector<t_pb_type*> pb_lut_list;
+
+    for (t_logical_block_type& logical_block : logical_block_types) {
+        if (logical_block.index != EMPTY_TYPE_INDEX) {
+            get_physical_luts(pb_lut_list, logical_block.pb_type);
+        }
+    }
+    for (t_pb_type* pb_lut : pb_lut_list) {
+        if (pb_lut) {
+            if (pb_lut->num_input_pins < physical_lut_size || physical_lut_size < 1) {
+                physical_lut_size = pb_lut->num_input_pins;
+            }
+        }
+    }
 }

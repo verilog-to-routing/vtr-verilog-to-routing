@@ -70,7 +70,7 @@ static t_chan_width setup_chan_width(const t_router_opts& router_opts,
 
 #if 0
 static float route_connection_delay(
-    const RouterDelayProfiler& route_profiler,
+    RouterDelayProfiler& route_profiler,
     int source_x_loc,
     int source_y_loc,
     int sink_x_loc,
@@ -79,7 +79,7 @@ static float route_connection_delay(
     bool measure_directconnect);
 
 static void generic_compute_matrix(
-    const RouterDelayProfiler& route_profiler,
+    RouterDelayProfiler& route_profiler,
     vtr::Matrix<std::vector<float>>& matrix,
     int source_x,
     int source_y,
@@ -106,7 +106,7 @@ static void generic_compute_matrix_expand(
     const std::set<std::string>& allowed_types);
 
 static vtr::Matrix<float> compute_delta_delays(
-    const RouterDelayProfiler& route_profiler,
+    RouterDelayProfiler& route_profiler,
     const t_placer_opts& palcer_opts,
     const t_router_opts& router_opts,
     bool measure_directconnect,
@@ -115,7 +115,7 @@ static vtr::Matrix<float> compute_delta_delays(
 float delay_reduce(std::vector<float>& delays, e_reducer reducer);
 
 static vtr::Matrix<float> compute_delta_delay_model(
-    const RouterDelayProfiler& route_profiler,
+    RouterDelayProfiler& route_profiler,
     const t_placer_opts& placer_opts,
     const t_router_opts& router_opts,
     bool measure_directconnect,
@@ -129,7 +129,8 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
                                                  int to_pin,
                                                  int to_pin_class,
                                                  int* src_rr,
-                                                 int* sink_rr);
+                                                 int* sink_rr,
+                                                 std::vector<int>* scratch);
 
 static bool verify_delta_delays(const vtr::Matrix<float>& delta_delays);
 
@@ -194,7 +195,7 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
 }
 
 void DeltaDelayModel::compute(
-    const RouterDelayProfiler& route_profiler,
+    RouterDelayProfiler& route_profiler,
     const t_placer_opts& placer_opts,
     const t_router_opts& router_opts,
     int longest_length) {
@@ -205,7 +206,7 @@ void DeltaDelayModel::compute(
 }
 
 void OverrideDelayModel::compute(
-    const RouterDelayProfiler& route_profiler,
+    RouterDelayProfiler& route_profiler,
     const t_placer_opts& placer_opts,
     const t_router_opts& router_opts,
     int longest_length) {
@@ -298,7 +299,7 @@ static t_chan_width setup_chan_width(const t_router_opts& router_opts,
 
 #if 0
 static float route_connection_delay(
-    const RouterDelayProfiler& route_profiler,
+    RouterDelayProfiler& route_profiler,
     int source_x,
     int source_y,
     int sink_x,
@@ -504,7 +505,7 @@ static void generic_compute_matrix_expand(
 
 #if 0
 static void generic_compute_matrix(
-    const RouterDelayProfiler& route_profiler,
+    RouterDelayProfiler& route_profiler,
     vtr::Matrix<std::vector<float>>& matrix,
     int source_x,
     int source_y,
@@ -571,7 +572,7 @@ static void generic_compute_matrix(
 #endif
 
 static vtr::Matrix<float> compute_delta_delays(
-    const RouterDelayProfiler& route_profiler,
+    RouterDelayProfiler& route_profiler,
     const t_placer_opts& placer_opts,
     const t_router_opts& router_opts,
     bool measure_directconnect,
@@ -883,7 +884,7 @@ static void fill_impossible_coordinates(vtr::Matrix<float>& delta_delays) {
 }
 
 static vtr::Matrix<float> compute_delta_delay_model(
-    const RouterDelayProfiler& route_profiler,
+    RouterDelayProfiler& route_profiler,
     const t_placer_opts& placer_opts,
     const t_router_opts& router_opts,
     bool measure_directconnect,
@@ -912,7 +913,8 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
                                                  int to_pin,
                                                  int to_pin_class,
                                                  int* src_rr,
-                                                 int* sink_rr) {
+                                                 int* sink_rr,
+                                                 std::vector<int>* scratch) {
     VTR_ASSERT(from_type != nullptr);
     VTR_ASSERT(to_type != nullptr);
 
@@ -938,7 +940,8 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
                 int from_pin_rr = get_rr_node_index(device_ctx.rr_node_indices, from_x, from_y, OPIN, from_pin, direct->from_side);
                 from_pin_found = (from_pin_rr != OPEN);
             } else {
-                std::vector<int> from_pin_rrs = get_rr_node_indices(device_ctx.rr_node_indices, from_x, from_y, OPIN, from_pin);
+                std::vector<int>& from_pin_rrs = *scratch;
+                get_rr_node_indices(device_ctx.rr_node_indices, from_x, from_y, OPIN, from_pin, &from_pin_rrs);
                 from_pin_found = !from_pin_rrs.empty();
             }
             if (!from_pin_found) continue;
@@ -955,7 +958,8 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
                 int to_pin_rr = get_rr_node_index(device_ctx.rr_node_indices, to_x, to_y, IPIN, to_pin, direct->to_side);
                 to_pin_found = (to_pin_rr != OPEN);
             } else {
-                std::vector<int> to_pin_rrs = get_rr_node_indices(device_ctx.rr_node_indices, to_x, to_y, IPIN, to_pin);
+                std::vector<int>& to_pin_rrs = *scratch;
+                get_rr_node_indices(device_ctx.rr_node_indices, to_x, to_y, IPIN, to_pin, &to_pin_rrs);
                 to_pin_found = !to_pin_rrs.empty();
             }
             if (!to_pin_found) continue;
@@ -992,14 +996,19 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
     //Find a source/sink RR node associated with the pins of the direct
     //
 
-    auto source_rr_nodes = get_rr_node_indices(device_ctx.rr_node_indices, from_x, from_y, SOURCE, from_pin_class);
-    VTR_ASSERT(source_rr_nodes.size() > 0);
+    {
+        std::vector<int>& source_rr_nodes = *scratch;
+        get_rr_node_indices(device_ctx.rr_node_indices, from_x, from_y, SOURCE, from_pin_class, &source_rr_nodes);
+        VTR_ASSERT(source_rr_nodes.size() > 0);
+        *src_rr = source_rr_nodes[0];
+    }
 
-    auto sink_rr_nodes = get_rr_node_indices(device_ctx.rr_node_indices, to_x, to_y, SINK, to_pin_class);
-    VTR_ASSERT(sink_rr_nodes.size() > 0);
-
-    *src_rr = source_rr_nodes[0];
-    *sink_rr = sink_rr_nodes[0];
+    {
+        std::vector<int>& sink_rr_nodes = *scratch;
+        get_rr_node_indices(device_ctx.rr_node_indices, to_x, to_y, SINK, to_pin_class, &sink_rr_nodes);
+        VTR_ASSERT(sink_rr_nodes.size() > 0);
+        *sink_rr = sink_rr_nodes[0];
+    }
 
     return true;
 }
@@ -1024,13 +1033,14 @@ static bool verify_delta_delays(const vtr::Matrix<float>& delta_delays) {
 }
 
 void OverrideDelayModel::compute_override_delay_model(
-    const RouterDelayProfiler& route_profiler,
+    RouterDelayProfiler& route_profiler,
     const t_router_opts& router_opts) {
     t_router_opts router_opts2 = router_opts;
     router_opts2.astar_fac = 0.;
 
     //Look at all the direct connections that exist, and add overrides to delay model
     auto& device_ctx = g_vpr_ctx.device();
+    std::vector<int> scratch;
     for (int idirect = 0; idirect < device_ctx.arch->num_directs; ++idirect) {
         const t_direct_inf* direct = &device_ctx.arch->Directs[idirect];
 
@@ -1071,7 +1081,7 @@ void OverrideDelayModel::compute_override_delay_model(
 
             int src_rr = OPEN;
             int sink_rr = OPEN;
-            bool found_sample_points = find_direct_connect_sample_locations(direct, from_type, from_pin, from_pin_class, to_type, to_pin, to_pin_class, &src_rr, &sink_rr);
+            bool found_sample_points = find_direct_connect_sample_locations(direct, from_type, from_pin, from_pin_class, to_type, to_pin, to_pin_class, &src_rr, &sink_rr, &scratch);
 
             if (!found_sample_points) {
                 ++missing_instances;

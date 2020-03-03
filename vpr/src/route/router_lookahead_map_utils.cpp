@@ -200,7 +200,7 @@ util::Cost_Entry util::Expansion_Cost_Entry::get_median_entry() const {
 }
 
 template<typename Entry>
-void expand_dijkstra_neighbours(const std::vector<t_rr_node>& rr_nodes,
+void expand_dijkstra_neighbours(const t_rr_graph_storage& rr_nodes,
                                 const Entry& parent_entry,
                                 std::vector<util::Search_Path>* paths,
                                 std::vector<bool>* node_expanded,
@@ -234,14 +234,14 @@ void expand_dijkstra_neighbours(const std::vector<t_rr_node>& rr_nodes,
     }
 }
 
-template void expand_dijkstra_neighbours(const std::vector<t_rr_node>& rr_nodes,
+template void expand_dijkstra_neighbours(const t_rr_graph_storage& rr_nodes,
                                          const PQ_Entry_Delay& parent_entry,
                                          std::vector<Search_Path>* paths,
                                          std::vector<bool>* node_expanded,
                                          std::priority_queue<PQ_Entry_Delay,
                                                              std::vector<PQ_Entry_Delay>,
                                                              std::greater<PQ_Entry_Delay>>* pq);
-template void expand_dijkstra_neighbours(const std::vector<t_rr_node>& rr_nodes,
+template void expand_dijkstra_neighbours(const t_rr_graph_storage& rr_nodes,
                                          const PQ_Entry_Base_Cost& parent_entry,
                                          std::vector<Search_Path>* paths,
                                          std::vector<bool>* node_expanded,
