@@ -132,7 +132,7 @@ class HeapInterface {
     // multiple heap elements.
     virtual void build_heap() = 0;
 
-    // Pop the head of the pop, and return it.
+    // Pop the head (smallest element) of the heap, and return it.
     //
     // This transfers ownership of the t_heap object from HeapInterface to the
     // caller.
@@ -150,9 +150,16 @@ class HeapInterface {
     // marks all the heap entries consisting of sink_node, where it was
     // reached via ipin_node, as invalid (open).  used only by the
     // breadth_first router and even then only in rare circumstances.
+    //
+    // This function enables forcing the breadth-first router to route to a
+    // sink more than once, using multiple ipins, which is useful in some
+    // architectures.
     virtual void invalidate_heap_entries(int sink_node, int ipin_node) = 0;
 
     // Free all storage used by the heap.
+    //
+    // This returns all memory allocated by the HeapInterface instance. Only
+    // call this if the heap is no longer being used.
     //
     // Note: Only invoke this method if all objects returned from this
     // HeapInterface instace have been free'd.
