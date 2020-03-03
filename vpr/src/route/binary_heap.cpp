@@ -144,6 +144,10 @@ void BinaryHeap::push_back(t_heap* const hptr) {
 }
 
 bool BinaryHeap::is_valid() const {
+    if (heap_ == nullptr) {
+        return false;
+    }
+
     for (size_t i = 1; (int)i <= heap_tail_ >> 1; ++i) {
         if ((int)left(i) < heap_tail_ && heap_[left(i)]->cost < heap_[i]->cost) return false;
         if ((int)right(i) < heap_tail_ && heap_[right(i)]->cost < heap_[i]->cost) return false;
@@ -152,8 +156,8 @@ bool BinaryHeap::is_valid() const {
 }
 
 void BinaryHeap::invalidate_heap_entries(int sink_node, int ipin_node) {
-    /* Marks all the heap entries consisting of sink_node, where it was reached *
-     * via ipin_node, as invalid (OPEN).  Used only by the breadth_first router *
+    /* marks all the heap entries consisting of sink_node, where it was reached *
+     * via ipin_node, as invalid (open).  used only by the breadth_first router *
      * and even then only in rare circumstances.                                */
 
     for (int i = 1; i < heap_tail_; i++) {

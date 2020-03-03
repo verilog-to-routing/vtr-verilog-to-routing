@@ -1,7 +1,8 @@
 #include "heap_type.h"
 
 HeapStorage::HeapStorage()
-    : heap_free_head_(nullptr) {}
+    : heap_free_head_(nullptr)
+    , num_heap_allocated_(0) {}
 
 t_heap*
 HeapStorage::alloc() {
