@@ -639,13 +639,13 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return data->second;
     }
 
-    inline const std::pair<size_t, size_t>* get_node_canonical_loc(const t_rr_node*& node) final {
+    inline const std::pair<size_t, size_t>* get_node_canonical_loc(const t_rr_node& node) final {
         return connection_boxes_->find_canonical_loc(get_node_id(node));
     }
-    inline bool has_node_canonical_loc(const t_rr_node*& node) final {
+    inline bool has_node_canonical_loc(const t_rr_node& node) final {
         return connection_boxes_->find_canonical_loc(get_node_id(node)) != nullptr;
     }
-    inline const std::tuple<ConnectionBoxId, std::pair<size_t, size_t>, float> get_node_connection_box(const t_rr_node*& node) final {
+    inline const std::tuple<ConnectionBoxId, std::pair<size_t, size_t>, float> get_node_connection_box(const t_rr_node& node) final {
         ConnectionBoxId box_id;
         std::pair<size_t, size_t> box_location;
         float site_pin_delay;
@@ -657,7 +657,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         }
         return std::make_tuple(box_id, box_location, site_pin_delay);
     }
-    inline bool has_node_connection_box(const t_rr_node*& node) final {
+    inline bool has_node_connection_box(const t_rr_node& node) final {
         ConnectionBoxId box_id;
         std::pair<size_t, size_t> box_location;
         float site_pin_delay;
