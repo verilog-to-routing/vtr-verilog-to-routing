@@ -7,6 +7,7 @@
 #define INCLUDE_TRACK_BUFFERS false
 
 #include "device_grid.h"
+#include "vpr_types.h"
 
 enum e_graph_type {
     GRAPH_GLOBAL, /* One node per channel with wire capacity > 1 and full connectivity */
