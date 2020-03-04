@@ -817,8 +817,8 @@ struct t_annealing_sched {
     float alpha_min;
     float alpha_max;
     float alpha_decay;
-    float restart_filter;
-    int wait;
+    float success_min;
+    float success_target;
 };
 
 /* Various options for the placer.                                           *
