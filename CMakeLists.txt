@@ -38,7 +38,6 @@ set_property(CACHE VPR_USE_EZGL PROPERTY STRINGS auto off on)
 option(VTR_ENABLE_CAPNPROTO "Enable capnproto binary serialization support in VPR." ON)
 
 option(WITH_BLIFEXPLORER "Enable build with blifexplorer" OFF)
-option(WITH_LIBRTLNUMBER "Enable build with librtlnumber" OFF)
 
 option(WITH_ABC "Enable building abc" ON)
 option(WITH_ODIN "Enable building odin" ON)
@@ -353,15 +352,16 @@ add_compile_options(${WARN_FLAGS}) #Add warn flags for VTR tools
 add_compile_options(${ADDITIONAL_FLAGS})
 link_libraries(${ADDITIONAL_FLAGS})
 add_subdirectory(vpr)
-if(${WITH_ABC} AND ${WITH_ODIN})
-    add_subdirectory(ODIN_II)
-endif()
 if(${WITH_ABC})
     add_subdirectory(ace2)
 endif()
 add_subdirectory(utils)
-if(${WITH_ODIN} AND ${WITH_BLIFEXPLORER})
-    add_subdirectory(blifexplorer)
+if(${WITH_ODIN})
+    add_subdirectory(ODIN_II)
+    # blifexplorer depends on odin
+    if(${WITH_BLIFEXPLORER})
+        add_subdirectory(blifexplorer)
+    endif()
 endif()
 
 #Add extra compilation flags to suppress warnings from some libraries/tools
