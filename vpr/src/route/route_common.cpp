@@ -37,6 +37,7 @@
 #include "timing_info.h"
 #include "tatum/echo_writer.hpp"
 #include "binary_heap.h"
+#include "bucket.h"
 
 /**************** Types local to route_common.c ******************/
 struct t_trace_branch {
@@ -310,14 +311,14 @@ bool try_route(int width_fac,
         IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
         ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, intra_lb_pb_pin_lookup);
 
-        success = try_timing_driven_route(router_opts,
-                                          analysis_opts,
-                                          segment_inf,
-                                          net_delay,
-                                          netlist_pin_lookup,
-                                          timing_info,
-                                          delay_calc,
-                                          first_iteration_priority);
+        success = try_timing_driven_route<Bucket>(router_opts,
+                                                  analysis_opts,
+                                                  segment_inf,
+                                                  net_delay,
+                                                  netlist_pin_lookup,
+                                                  timing_info,
+                                                  delay_calc,
+                                                  first_iteration_priority);
 
         profiling::time_on_fanout_analysis();
     }
