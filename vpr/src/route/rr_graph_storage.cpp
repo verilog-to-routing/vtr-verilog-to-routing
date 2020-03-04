@@ -1,4 +1,7 @@
 #include "rr_graph_storage.h"
+
+#include <algorithm>
+
 #include "globals.h"
 
 void t_rr_graph_storage::reserve_edges(size_t num_edges) {
@@ -120,6 +123,7 @@ struct edge_swapper {
 
 class edge_sort_iterator {
   public:
+    edge_sort_iterator() : swapper_(nullptr, 0) {}
     edge_sort_iterator(t_rr_graph_storage* storage, size_t idx)
         : swapper_(storage, idx) {}
 
