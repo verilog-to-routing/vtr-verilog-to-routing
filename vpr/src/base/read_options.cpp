@@ -1580,20 +1580,20 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     place_grp.add_argument(args.PlaceAlphaDecay, "--alpha_decay")
         .help(
-            "The value that alpha is scaled by.")
+            "The value that alpha is scaled by when successful.")
         .default_value("0.9")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_grp.add_argument(args.PlaceRestartFilter, "--anneal_restart_filter")
+    place_grp.add_argument(args.PlaceSuccessMin, "--anneal_success_min")
         .help(
-            "Filters the selected restart temperature, ranges 0 (no update) to 1 (use last successful temperature.)")
-        .default_value("0.9")
+            "Minimum success ratio when annealing before restarting.")
+        .default_value("0.01")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_grp.add_argument(args.PlaceWait, "--anneal_wait")
+    place_grp.add_argument(args.PlaceSuccessTarget, "--anneal_success_target")
         .help(
-            "Number of unsuccessful iterations before restarting.")
-        .default_value("2")
+            "Target success ratio when annealing.")
+        .default_value("0.44")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.pad_loc_file, "--fix_pins")
@@ -2226,8 +2226,8 @@ void set_conditional_defaults(t_options& args) {
     if (args.PlaceAlphaMin.provenance() == Provenance::SPECIFIED
         || args.PlaceAlphaMax.provenance() == Provenance::SPECIFIED
         || args.PlaceAlphaDecay.provenance() == Provenance::SPECIFIED
-        || args.PlaceRestartFilter.provenance() == Provenance::SPECIFIED
-        || args.PlaceWait.provenance() == Provenance::SPECIFIED) {
+        || args.PlaceSuccessMin.provenance() == Provenance::SPECIFIED
+        || args.PlaceSuccessTarget.provenance() == Provenance::SPECIFIED) {
         args.anneal_sched_type.set(DUSTY_SCHED, Provenance::INFERRED);
     } else if (args.PlaceInitT.provenance() == Provenance::SPECIFIED
                || args.PlaceExitT.provenance() == Provenance::SPECIFIED

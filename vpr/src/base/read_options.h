@@ -100,8 +100,8 @@ struct t_options {
     argparse::ArgValue<float> PlaceAlphaMin;
     argparse::ArgValue<float> PlaceAlphaMax;
     argparse::ArgValue<float> PlaceAlphaDecay;
-    argparse::ArgValue<float> PlaceRestartFilter;
-    argparse::ArgValue<int> PlaceWait;
+    argparse::ArgValue<float> PlaceSuccessMin;
+    argparse::ArgValue<float> PlaceSuccessTarget;
     argparse::ArgValue<sched_type> anneal_sched_type;
     argparse::ArgValue<e_place_algorithm> PlaceAlgorithm;
     argparse::ArgValue<e_pad_loc_type> pad_loc_type;

@@ -435,14 +435,14 @@ static void SetupAnnealSched(const t_options& Options,
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "alpha_decay must be between 0 and 1 exclusive.\n");
     }
 
-    AnnealSched->restart_filter = Options.PlaceRestartFilter;
-    if (AnnealSched->restart_filter >= 1 || AnnealSched->restart_filter <= 0) {
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "restart_filter must be between 0 and 1 exclusive.\n");
+    AnnealSched->success_min = Options.PlaceSuccessMin;
+    if (AnnealSched->success_min >= 1 || AnnealSched->success_min <= 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "success_min must be between 0 and 1 exclusive.\n");
     }
 
-    AnnealSched->wait = Options.PlaceWait;
-    if (AnnealSched->wait < 0) {
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "wait must not be negative.\n");
+    AnnealSched->success_target = Options.PlaceSuccessTarget;
+    if (AnnealSched->success_target >= 1 || AnnealSched->success_target <= 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "success_target must be between 0 and 1 exclusive.\n");
     }
 
     AnnealSched->type = Options.anneal_sched_type;
