@@ -114,7 +114,6 @@ static int get_num_covered_nodes(stages_t* s);
 
 static int is_node_ready(nnode_t* node, int cycle);
 static int is_node_complete(nnode_t* node, int cycle);
-static void write_back_memory_nodes(nnode_t** nodes, int num_nodes);
 
 static bool compute_and_store_value(nnode_t* node, int cycle);
 static void compute_memory_node(nnode_t* node, int cycle);
@@ -142,13 +141,10 @@ static int* unary_sub_arrays(int* a, int a_length, int* c, int c_length);
 static void compute_single_port_memory(nnode_t* node, int cycle);
 static void compute_dual_port_memory(nnode_t* node, int cycle);
 
-static long compute_memory_address(signal_list_t* addr, int cycle);
-
 static void instantiate_memory(nnode_t* node, long data_width, long addr_width);
 static char* get_mif_filename(nnode_t* node);
-static FILE* preprocess_mif_file(FILE* source);
 static void assign_memory_from_mif_file(nnode_t* node, FILE* mif, char* filename, int width, long address_width);
-static int parse_mif_radix(char* radix);
+static int parse_mif_radix(std::string radix);
 
 static int count_test_vectors(FILE* in);
 static int count_empty_test_vectors(FILE* in);
@@ -186,12 +182,8 @@ static int verify_output_vectors(const char* output_vector_file, int num_test_ve
 
 static void add_additional_items_to_lines(nnode_t* node, lines_t* l);
 
-static char* vector_value_to_hex(signed char* value, int length);
-
 static void print_netlist_stats(stages_t* stages, int num_vectors);
 static void print_simulation_stats(stages_t* stages, int num_vectors, double total_time, double simulation_time);
-
-static void flag_undriven_input_pins(nnode_t* node);
 
 static void print_ancestry(nnode_t* node, int generations);
 static nnode_t* print_update_trace(nnode_t* bottom_node, int cycle);
@@ -1875,7 +1867,7 @@ static void read_write_to_memory(nnode_t* node, signal_list_t* input_address, si
     //make a single trigger out of write_enable pin and if it was a positive edge
 
     bool write = (trigger && 1 == get_pin_value(write_enabled, cycle));
-    bool address_is_valid = (address >= 0 && address < node->memory_data.size());
+    bool address_is_valid = (address >= 0 && (size_t)address < node->memory_data.size());
 
     /* init the vector with all -1 */
     std::vector<signed char> new_values(data_out->count, -1);
@@ -2797,7 +2789,8 @@ static void add_additional_items_to_lines(nnode_t* node, lines_t* l) {
     std::vector<std::string> p = global_args.sim_additional_pins.value();
     if (!p.empty()) {
         int add = false;
-        int j, k = 0;
+        long j = 0;
+        size_t k = 0;
 
         // Search the output pin names for each user-defined item.
         for (j = 0; j < node->num_output_pins; j++) {
@@ -2901,28 +2894,6 @@ static int line_has_unknown_pin(line_t* line, int cycle) {
  */
 signed char get_line_pin_value(line_t* line, int pin_num, int cycle) {
     return get_pin_value(line->pins[pin_num], cycle);
-}
-
-/*
- * Returns a value from a test_vectors struct in hex. Works
- * for the values arrays in pins as well.
- */
-static char* vector_value_to_hex(signed char* value, int length) {
-    char* tmp;
-    char* string = (char*)vtr::calloc((length + 1), sizeof(char));
-    int j;
-    for (j = 0; j < length; j++)
-        string[j] = value[j] + '0';
-
-    reverse_string(string, strlen(string));
-
-    char* hex_string = (char*)vtr::malloc(sizeof(char) * ((length / 4 + 1) + 1));
-
-    odin_sprintf(hex_string, "%X ", (unsigned int)strtol(string, &tmp, 2));
-
-    vtr::free(string);
-
-    return hex_string;
 }
 
 /*
@@ -3069,7 +3040,7 @@ static void free_test_vector(test_vector* v) {
  * Prints information about the netlist we are simulating.
  */
 static void print_netlist_stats(stages_t* stages, int /*num_vectors*/) {
-    for (long i = 0; i < configuration.list_of_file_names.size(); i++)
+    for (size_t i = 0; i < configuration.list_of_file_names.size(); i++)
         printf("%s:\n", configuration.list_of_file_names[i].c_str());
 
     printf("  Nodes:           %d\n", stages->num_nodes);

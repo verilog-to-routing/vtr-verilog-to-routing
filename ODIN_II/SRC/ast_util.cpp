@@ -300,7 +300,7 @@ void allocate_children_to_node(ast_node_t* node, std::vector<ast_node_t*> childr
     node->num_children = children_list.size();
     node->children = (ast_node_t**)vtr::malloc(sizeof(ast_node_t*) * node->num_children);
 
-    for (size_t i = 0; i < node->num_children; i++) {
+    for (long i = 0; i < node->num_children; i++) {
         node->children[i] = children_list[i];
     }
 }
