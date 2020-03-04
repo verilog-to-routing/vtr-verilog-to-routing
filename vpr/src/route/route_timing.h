@@ -15,6 +15,7 @@
 
 int get_max_pins_per_net();
 
+template<typename Heap>
 bool try_timing_driven_route(const t_router_opts& router_opts,
                              const t_analysis_opts& analysis_opts,
                              const std::vector<t_segment_inf>& segment_inf,
@@ -24,7 +25,8 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
                              std::shared_ptr<RoutingDelayCalculator> delay_calc,
                              ScreenUpdatePriority first_iteration_priority);
 
-bool try_timing_driven_route_net(ConnectionRouter& router,
+template<typename Heap>
+bool try_timing_driven_route_net(ConnectionRouter<Heap>& router,
                                  ClusterNetId net_id,
                                  int itry,
                                  float pres_fac,
@@ -39,7 +41,8 @@ bool try_timing_driven_route_net(ConnectionRouter& router,
                                  route_budgets& budgeting_inf,
                                  bool& was_rerouted);
 
-bool timing_driven_route_net(ConnectionRouter& router,
+template<typename Heap>
+bool timing_driven_route_net(ConnectionRouter<Heap>& router,
                              ClusterNetId net_id,
                              int itry,
                              float pres_fac,
@@ -58,7 +61,8 @@ void alloc_timing_driven_route_structs(float** pin_criticality_ptr,
                                        t_rt_node*** rt_node_of_sink_ptr);
 void free_timing_driven_route_structs(float* pin_criticality, int* sink_order, t_rt_node** rt_node_of_sink);
 
-void enable_router_debug(const t_router_opts& router_opts, ClusterNetId net, int sink_rr, int router_iteration, ConnectionRouter* router);
+template<typename Heap>
+void enable_router_debug(const t_router_opts& router_opts, ClusterNetId net, int sink_rr, int router_iteration, ConnectionRouter<Heap>* router);
 
 std::vector<t_heap> timing_driven_find_all_shortest_paths_from_route_tree(t_rt_node* rt_root,
                                                                           const t_conn_cost_params cost_params,

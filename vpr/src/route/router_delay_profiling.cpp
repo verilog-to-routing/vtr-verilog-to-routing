@@ -100,7 +100,7 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
     auto router_lookahead = make_router_lookahead(e_router_lookahead::NO_OP,
                                                   /*write_lookahead=*/"", /*read_lookahead=*/"",
                                                   /*segment_inf=*/{});
-    ConnectionRouter router(
+    ConnectionRouter<BinaryHeap> router(
         device_ctx.grid,
         *router_lookahead,
         device_ctx.rr_nodes,
