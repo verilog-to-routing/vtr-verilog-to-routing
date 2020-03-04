@@ -8,7 +8,6 @@
 #include "rr_rc_data.h"
 #include "router_stats.h"
 #include "spatial_route_tree_lookup.h"
-#include "bucket.h"
 
 //Delay budget information for a specific connection
 struct t_conn_delay_budget {
@@ -39,6 +38,7 @@ struct t_conn_cost_params {
 // rr_node_route_inf.  The routed path can be found by tracing from the sink
 // node (which is returned) through the rr_node_route_inf.  See
 // update_traceback as an example of this tracing.
+template<typename HeapImplementation>
 class ConnectionRouter {
   public:
     ConnectionRouter(
@@ -253,7 +253,7 @@ class ConnectionRouter {
     t_rr_node_route_inf* rr_node_route_inf_;
     std::vector<int> modified_rr_node_inf_;
     RouterStats* router_stats_;
-    Bucket heap_;
+    HeapImplementation heap_;
     bool router_debug_;
 };
 

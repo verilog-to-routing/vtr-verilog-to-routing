@@ -97,7 +97,7 @@ static void do_one_route(int source_node, int sink_node,
             segment_inf
             );
 
-    ConnectionRouter router(
+    ConnectionRouter<BinaryHeap> router(
             device_ctx.grid,
             *router_lookahead,
             device_ctx.rr_nodes,

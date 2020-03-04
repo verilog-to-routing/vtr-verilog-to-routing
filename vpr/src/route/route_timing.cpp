@@ -136,8 +136,9 @@ bool f_router_debug = false;
 
 /******************** Subroutines local to route_timing.c ********************/
 
+template<typename Heap>
 static bool timing_driven_route_sink(
-    ConnectionRouter& router,
+    ConnectionRouter<Heap>& router,
     ClusterNetId net_id,
     unsigned itarget,
     int target_pin,
@@ -149,8 +150,9 @@ static bool timing_driven_route_sink(
     SpatialRouteTreeLookup& spatial_rt_lookup,
     RouterStats& router_stats);
 
+template<typename Heap>
 static bool timing_driven_pre_route_to_clock_root(
-    ConnectionRouter& router,
+    ConnectionRouter<Heap>& router,
     ClusterNetId net_id,
     int sink_node,
     const t_conn_cost_params cost_params,
@@ -231,6 +233,7 @@ static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahea
                                           vtr::vector<ClusterNetId, float*>& net_delay);
 
 /************************ Subroutine definitions *****************************/
+template<typename Heap>
 bool try_timing_driven_route(const t_router_opts& router_opts,
                              const t_analysis_opts& analysis_opts,
                              const std::vector<t_segment_inf>& segment_inf,
@@ -327,7 +330,7 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
     std::vector<int> scratch;
 
     const auto& device_ctx = g_vpr_ctx.device();
-    ConnectionRouter router(
+    ConnectionRouter<Heap> router(
         device_ctx.grid,
         *router_lookahead,
         device_ctx.rr_nodes,
@@ -725,7 +728,8 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
     return routing_is_successful;
 }
 
-bool try_timing_driven_route_net(ConnectionRouter& router,
+template<typename Heap>
+bool try_timing_driven_route_net(ConnectionRouter<Heap>& router,
                                  ClusterNetId net_id,
                                  int itry,
                                  float pres_fac,
@@ -878,7 +882,8 @@ struct Criticality_comp {
     }
 };
 
-bool timing_driven_route_net(ConnectionRouter& router,
+template<typename Heap>
+bool timing_driven_route_net(ConnectionRouter<Heap>& router,
                              ClusterNetId net_id,
                              int itry,
                              float pres_fac,
@@ -1061,8 +1066,9 @@ bool timing_driven_route_net(ConnectionRouter& router,
     return (true);
 }
 
+template<typename Heap>
 static bool timing_driven_pre_route_to_clock_root(
-    ConnectionRouter& router,
+    ConnectionRouter<Heap>& router,
     ClusterNetId net_id,
     int sink_node,
     const t_conn_cost_params cost_params,
@@ -1150,8 +1156,9 @@ static bool timing_driven_pre_route_to_clock_root(
     return true;
 }
 
+template<typename Heap>
 static bool timing_driven_route_sink(
-    ConnectionRouter& router,
+    ConnectionRouter<Heap>& router,
     ClusterNetId net_id,
     unsigned itarget,
     int target_pin,
@@ -1844,12 +1851,13 @@ static t_bb calc_current_bb(const t_trace* head) {
     return bb;
 }
 
+template<typename Heap>
 void enable_router_debug(
     const t_router_opts& router_opts,
     ClusterNetId net,
     int sink_rr,
     int router_iteration,
-    ConnectionRouter* router) {
+    ConnectionRouter<Heap>* router) {
     bool active_net_debug = (router_opts.router_debug_net >= -1);
     bool active_sink_debug = (router_opts.router_debug_sink_rr >= 0);
     bool active_iteration_debug = (router_opts.router_debug_iteration >= 0);
@@ -2023,3 +2031,24 @@ static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahea
     }
     VTR_LOGV_WARN(missing_delays > 0, "Failed to get delay estimates for initial criticality for %zu net connections (assumed zero delay)\n", missing_delays);
 }
+
+// Expand templates for each heap implementation.
+template bool try_timing_driven_route<BinaryHeap>(const t_router_opts& router_opts,
+                                                  const t_analysis_opts& analysis_opts,
+                                                  const std::vector<t_segment_inf>& segment_inf,
+                                                  vtr::vector<ClusterNetId, float*>& net_delay,
+                                                  const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                                                  std::shared_ptr<SetupHoldTimingInfo> timing_info,
+                                                  std::shared_ptr<RoutingDelayCalculator> delay_calc,
+                                                  ScreenUpdatePriority first_iteration_priority);
+template void enable_router_debug(const t_router_opts& router_opts, ClusterNetId net, int sink_rr, int router_iteration, ConnectionRouter<BinaryHeap>* router);
+
+template bool try_timing_driven_route<Bucket>(const t_router_opts& router_opts,
+                                              const t_analysis_opts& analysis_opts,
+                                              const std::vector<t_segment_inf>& segment_inf,
+                                              vtr::vector<ClusterNetId, float*>& net_delay,
+                                              const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                                              std::shared_ptr<SetupHoldTimingInfo> timing_info,
+                                              std::shared_ptr<RoutingDelayCalculator> delay_calc,
+                                              ScreenUpdatePriority first_iteration_priority);
+template void enable_router_debug(const t_router_opts& router_opts, ClusterNetId net, int sink_rr, int router_iteration, ConnectionRouter<Bucket>* router);

@@ -3,6 +3,7 @@
 
 #include "vpr_types.h"
 #include "route_timing.h"
+#include "binary_heap.h"
 
 #include <vector>
 
@@ -13,7 +14,7 @@ class RouterDelayProfiler {
 
   private:
     RouterStats router_stats_;
-    ConnectionRouter router_;
+    ConnectionRouter<BinaryHeap> router_;
 };
 
 std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const t_router_opts& router_opts);
