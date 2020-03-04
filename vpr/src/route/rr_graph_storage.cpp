@@ -123,7 +123,8 @@ struct edge_swapper {
 
 class edge_sort_iterator {
   public:
-    edge_sort_iterator() : swapper_(nullptr, 0) {}
+    edge_sort_iterator()
+        : swapper_(nullptr, 0) {}
     edge_sort_iterator(t_rr_graph_storage* storage, size_t idx)
         : swapper_(storage, idx) {}
 
