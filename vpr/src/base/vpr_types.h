@@ -32,6 +32,7 @@
 #include "clustered_netlist_fwd.h"
 #include "constant_nets.h"
 #include "clock_modeling.h"
+#include "heap_type.h"
 
 #include "vtr_assert.h"
 #include "vtr_ndmatrix.h"
@@ -443,17 +444,6 @@ struct t_net_power {
      * For example, a clock would have density = 2
      */
     float density;
-};
-
-/* s_grid_tile is the minimum tile of the fpga
- * type:  Pointer to type descriptor, NULL for illegal
- * width_offset: Number of grid tiles reserved based on width (right) of a block
- * height_offset: Number of grid tiles reserved based on height (top) of a block */
-struct t_grid_tile {
-    t_physical_tile_type_ptr type = nullptr;
-    int width_offset = 0;
-    int height_offset = 0;
-    const t_metadata_dict* meta = nullptr;
 };
 
 /* Stores the bounding box of a net in terms of the minimum and   *
@@ -962,6 +952,8 @@ struct t_router_opts {
 
     std::string write_router_lookahead;
     std::string read_router_lookahead;
+
+    e_heap_type router_heap;
 };
 
 struct t_analysis_opts {

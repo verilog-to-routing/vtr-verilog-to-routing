@@ -1,5 +1,10 @@
 #include "heap_type.h"
 
+#include "binary_heap.h"
+#include "bucket.h"
+#include "vpr_error.h"
+#include "vpr_types.h"
+
 HeapStorage::HeapStorage()
     : heap_free_head_(nullptr)
     , num_heap_allocated_(0) {}
@@ -50,4 +55,15 @@ void HeapStorage::free_all_memory() {
 
     /*free the memory chunks that were used by heap and linked f pointer */
     free_chunk_memory(&heap_ch_);
+}
+
+std::unique_ptr<HeapInterface> make_heap(e_heap_type heap_type) {
+    switch (heap_type) {
+        case e_heap_type::BINARY_HEAP:
+            return std::make_unique<BinaryHeap>();
+        case e_heap_type::BUCKET_HEAP_APPROXIMATION:
+            return std::make_unique<Bucket>();
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unknown heap_type %d", heap_type);
+    }
 }
