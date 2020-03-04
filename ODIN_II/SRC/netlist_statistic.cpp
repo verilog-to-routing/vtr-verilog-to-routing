@@ -13,15 +13,12 @@
 #include "vtr_memory.h"
 
 #define UNUSED_NODE_TYPE -1
-static metric_t* new_metric(void);
 static void init(metric_t* m);
 static void print_stats(metric_t* m);
 static void copy(metric_t* dest, metric_t* src);
 
 static void add_to_stat(metric_t* dest, long long branching_factor);
 static void count_node_type(nnode_t* node, netlist_t* netlist);
-static void mark_traversed(nnet_t* net, netlist_t* netlist, uintptr_t traverse_mark_number);
-static void mark_traversed(nnode_t* node, netlist_t* netlist, uintptr_t traverse_mark_number);
 
 static metric_t* get_upward_stat(nnet_t* net, netlist_t* netlist, uintptr_t traverse_mark_number);
 static metric_t* get_downward_stat(nnet_t* net, netlist_t* netlist, uintptr_t traverse_mark_number);
@@ -34,12 +31,6 @@ static metric_t* get_downward_stat(metric_t* destination, nnode_t** node_list, l
 static metric_t* get_upward_stat(metric_t* destination, nnode_t** node_list, long long node_count, netlist_t* netlist, uintptr_t traverse_mark_number);
 static metric_t* get_downward_stat(metric_t* destination, nnet_t** net_list, long long net_count, netlist_t* netlist, uintptr_t traverse_mark_number);
 static metric_t* get_upward_stat(metric_t* destination, nnet_t** net_list, long long net_count, netlist_t* netlist, uintptr_t traverse_mark_number);
-
-static metric_t* new_metric(void) {
-    metric_t* m = (metric_t*)vtr::malloc(sizeof(metric_t));
-    init(m);
-    return m;
-}
 
 static void init(metric_t* m) {
     m->min_depth = 0;
@@ -85,8 +76,9 @@ static void print_stats(metric_t* m) {
            "average path", m->avg_depth,
            "overall fan-out", m->avg_width);
 }
+_static_unused(print_stats) //quiet warning
 
-static void copy(metric_t* dest, metric_t* src) {
+    static void copy(metric_t* dest, metric_t* src) {
     if (dest) {
         init(dest);
         if (src) {

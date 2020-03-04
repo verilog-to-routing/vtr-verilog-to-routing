@@ -50,7 +50,7 @@
 long shift_left_value_with_overflow_check(long input_value, long shift_by) {
     if (shift_by < 0)
         error_message(NETLIST_ERROR, -1, -1, "requesting a shift left that is negative [%ld]\n", shift_by);
-    else if (shift_by >= ODIN_STD_BITWIDTH - 1)
+    else if (shift_by >= (long)ODIN_STD_BITWIDTH - 1)
         warning_message(NETLIST_ERROR, -1, -1, "requesting a shift left that will overflow the maximum size of %ld [%ld]\n", shift_by, ODIN_STD_BITWIDTH - 1);
 
     return input_value << shift_by;
@@ -638,7 +638,7 @@ std::string make_simple_name(char* input, const char* flatten_string, char flatt
     std::string input_str = input;
     std::string flatten_str = flatten_string;
 
-    for (int i = 0; i < flatten_str.length(); i++)
+    for (size_t i = 0; i < flatten_str.length(); i++)
         std::replace(input_str.begin(), input_str.end(), flatten_str[i], flatten_char);
 
     return input_str;

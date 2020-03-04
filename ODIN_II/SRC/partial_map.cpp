@@ -43,7 +43,7 @@
 #include "vtr_util.h"
 
 void depth_first_traversal_to_partial_map(short marker_value, netlist_t* netlist);
-void depth_first_traverse_partial_map(nnode_t* node, int traverse_mark_number, netlist_t* netlist);
+void depth_first_traverse_partial_map(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist);
 
 void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist);
 
@@ -94,7 +94,7 @@ void depth_first_traversal_to_partial_map(short marker_value, netlist_t* netlist
 /*---------------------------------------------------------------------------------------------
  * (function: depth_first_traverse)
  *-------------------------------------------------------------------------------------------*/
-void depth_first_traverse_partial_map(nnode_t* node, int traverse_mark_number, netlist_t* netlist) {
+void depth_first_traverse_partial_map(nnode_t* node, uintptr_t traverse_mark_number, netlist_t* netlist) {
     int i, j;
 
     if (node->traverse_visited != traverse_mark_number) {

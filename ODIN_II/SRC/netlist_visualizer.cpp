@@ -34,16 +34,16 @@
 #include "vtr_util.h"
 #include "vtr_memory.h"
 
-void depth_first_traverse_visualize(nnode_t* node, FILE* fp, short traverse_mark_number);
-void depth_first_traversal_graph_display(FILE* out, short marker_value, netlist_t* netllist);
+void depth_first_traverse_visualize(nnode_t* node, FILE* fp, uintptr_t traverse_mark_number);
+void depth_first_traversal_graph_display(FILE* out, uintptr_t marker_value, netlist_t* netllist);
 
-void forward_traversal_net_graph_display(FILE* out, short marker_value, nnode_t* node);
-void backward_traversal_net_graph_display(FILE* out, short marker_value, nnode_t* node);
+void forward_traversal_net_graph_display(FILE* out, uintptr_t marker_value, nnode_t* node);
+void backward_traversal_net_graph_display(FILE* out, uintptr_t marker_value, nnode_t* node);
 
 /*---------------------------------------------------------------------------------------------
  * (function: graphVizOutputNetlist)
  *-------------------------------------------------------------------------------------------*/
-void graphVizOutputNetlist(std::string path, const char* name, short marker_value, netlist_t* netlist) {
+void graphVizOutputNetlist(std::string path, const char* name, uintptr_t marker_value, netlist_t* netlist) {
     char path_and_file[4096];
     FILE* fp;
 
@@ -64,7 +64,7 @@ void graphVizOutputNetlist(std::string path, const char* name, short marker_valu
 /*---------------------------------------------------------------------------------------------
  * (function: depth_first_traversal_start()
  *-------------------------------------------------------------------------------------------*/
-void depth_first_traversal_graph_display(FILE* out, short marker_value, netlist_t* netlist) {
+void depth_first_traversal_graph_display(FILE* out, uintptr_t marker_value, netlist_t* netlist) {
     int i;
 
     /* start with the primary input list */
@@ -83,7 +83,7 @@ void depth_first_traversal_graph_display(FILE* out, short marker_value, netlist_
 /*---------------------------------------------------------------------------------------------
  * (function: depth_first_traverse)
  *-------------------------------------------------------------------------------------------*/
-void depth_first_traverse_visualize(nnode_t* node, FILE* fp, short traverse_mark_number) {
+void depth_first_traverse_visualize(nnode_t* node, FILE* fp, uintptr_t traverse_mark_number) {
     int i, j;
     nnode_t* next_node;
     nnet_t* next_net;
@@ -163,7 +163,7 @@ void depth_first_traverse_visualize(nnode_t* node, FILE* fp, short traverse_mark
 /*---------------------------------------------------------------------------------------------
  * (function: graphVizOutputCobinationalNet)
  *-------------------------------------------------------------------------------------------*/
-void graphVizOutputCombinationalNet(std::string path, const char* name, short marker_value, nnode_t* current_node) {
+void graphVizOutputCombinationalNet(std::string path, const char* name, uintptr_t marker_value, nnode_t* current_node) {
     char path_and_file[4096];
     FILE* fp;
 
@@ -186,7 +186,7 @@ void graphVizOutputCombinationalNet(std::string path, const char* name, short ma
  * (function: forward_traversal_net_graph_display()
  *	TODO check if stack of node is freed
  *-------------------------------------------------------------------------------------------*/
-void forward_traversal_net_graph_display(FILE* fp, short marker_value, nnode_t* node) {
+void forward_traversal_net_graph_display(FILE* fp, uintptr_t marker_value, nnode_t* node) {
     int j, k;
     nnode_t** stack_of_nodes;
     int index_in_stack = 0;
@@ -275,7 +275,7 @@ void forward_traversal_net_graph_display(FILE* fp, short marker_value, nnode_t* 
 /*---------------------------------------------------------------------------------------------
  * (function: backward_traversal_net_graph_display()
  *-------------------------------------------------------------------------------------------*/
-void backward_traversal_net_graph_display(FILE* fp, short marker_value, nnode_t* node) {
+void backward_traversal_net_graph_display(FILE* fp, uintptr_t marker_value, nnode_t* node) {
     int j;
     char* temp_string;
     char* temp_string2;
