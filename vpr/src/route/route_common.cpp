@@ -311,14 +311,33 @@ bool try_route(int width_fac,
         IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
         ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, intra_lb_pb_pin_lookup);
 
-        success = try_timing_driven_route<Bucket>(router_opts,
-                                                  analysis_opts,
-                                                  segment_inf,
-                                                  net_delay,
-                                                  netlist_pin_lookup,
-                                                  timing_info,
-                                                  delay_calc,
-                                                  first_iteration_priority);
+        switch (router_opts.router_heap) {
+            case e_heap_type::BINARY_HEAP:
+                success = try_timing_driven_route<BinaryHeap>(
+                    router_opts,
+                    analysis_opts,
+                    segment_inf,
+                    net_delay,
+                    netlist_pin_lookup,
+                    timing_info,
+                    delay_calc,
+                    first_iteration_priority);
+                break;
+            case e_heap_type::BUCKET_HEAP_APPROXIMATION:
+                success = try_timing_driven_route<Bucket>(
+                    router_opts,
+                    analysis_opts,
+                    segment_inf,
+                    net_delay,
+                    netlist_pin_lookup,
+                    timing_info,
+                    delay_calc,
+                    first_iteration_priority);
+                break;
+            default:
+                VPR_ERROR(VPR_ERROR_ROUTE, "Unknown heap_type %d",
+                          router_opts.router_heap);
+        }
 
         profiling::time_on_fanout_analysis();
     }

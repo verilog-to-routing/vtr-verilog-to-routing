@@ -792,6 +792,37 @@ struct ParseRouterFirstIterTiming {
     }
 };
 
+struct ParseRouterHeap {
+    ConvertedValue<e_heap_type> from_str(std::string str) {
+        ConvertedValue<e_heap_type> conv_value;
+        if (str == "binary")
+            conv_value.set_value(e_heap_type::BINARY_HEAP);
+        else if (str == "bucket")
+            conv_value.set_value(e_heap_type::BUCKET_HEAP_APPROXIMATION);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_heap_type (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_heap_type val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_heap_type::BINARY_HEAP)
+            conv_value.set_value("binary");
+        else {
+            VTR_ASSERT(val == e_heap_type::BUCKET_HEAP_APPROXIMATION);
+            conv_value.set_value("bucket");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"binary", "bucket"};
+    }
+};
+
 argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args) {
     std::string description =
         "Implements the specified circuit onto the target FPGA architecture"
@@ -1661,6 +1692,17 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "                 connection delays as estimated by the\n"
             "                 router's lookahead.\n")
         .default_value("all_critical")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<e_heap_type, ParseRouterHeap>(args.router_heap, "--router_heap")
+        .help(
+            "Controls what type of heap to use for timing driven router.\n"
+            " * binary: A binary heap is used.\n"
+            " * bucket: A bucket heap approximation is used. The bucket heap\n"
+            " *         is faster because it is only a heap approximation.\n"
+            " *         Testing has shown the approximation results in\n"
+            " *         similiar QoR with less CPU work.\n")
+        .default_value("binary")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<bool, ParseOnOff>(args.router_update_lower_bound_delays, "--router_update_lower_bound_delays")
