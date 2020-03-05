@@ -1702,7 +1702,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             " *         is faster because it is only a heap approximation.\n"
             " *         Testing has shown the approximation results in\n"
             " *         similiar QoR with less CPU work.\n")
-        .default_value("binary")
+        .default_value("bucket")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<bool, ParseOnOff>(args.router_update_lower_bound_delays, "--router_update_lower_bound_delays")

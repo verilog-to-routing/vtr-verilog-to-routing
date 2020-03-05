@@ -20,6 +20,7 @@
 
 #include "atom_netlist.h"
 #include "atom_netlist_utils.h"
+#include "binary_heap.h"
 #include "rr_graph.h"
 #include "vtr_assert.h"
 #include "vtr_util.h"
@@ -40,7 +41,6 @@
 #include "echo_files.h"
 #include "route_common.h"
 #include "read_route.h"
-#include "binary_heap.h"
 
 /*************Functions local to this module*************/
 static void process_route(std::ifstream& fp, const char* filename, int& lineno);
