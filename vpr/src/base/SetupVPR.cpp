@@ -110,7 +110,6 @@ void SetupVPR(const t_options* Options,
     *user_models = Arch->models;
     *library_models = Arch->model_library;
 
-    /* TODO: this is inelegant, I should be populating this information in XmlReadArch */
     device_ctx.EMPTY_PHYSICAL_TILE_TYPE = nullptr;
     int num_inputs = 0;
     int num_outputs = 0;
