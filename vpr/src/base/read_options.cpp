@@ -1575,25 +1575,25 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     place_grp.add_argument(args.PlaceAlphaMax, "--alpha_max")
         .help(
             "Maximum (stopping) value of alpha.")
-        .default_value("0.99")
+        .default_value("0.9")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceAlphaDecay, "--alpha_decay")
         .help(
             "The value that alpha is scaled by when successful.")
-        .default_value("0.9")
+        .default_value("0.7")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceSuccessMin, "--anneal_success_min")
         .help(
             "Minimum success ratio when annealing before restarting.")
-        .default_value("0.01")
+        .default_value("0.1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceSuccessTarget, "--anneal_success_target")
         .help(
             "Target success ratio when annealing.")
-        .default_value("0.44")
+        .default_value("0.25")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.pad_loc_file, "--fix_pins")
