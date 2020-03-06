@@ -32,6 +32,8 @@
 #include "timing_info.h"
 #include "timing_util.h"
 #include "route_budgets.h"
+#include "binary_heap.h"
+#include "connection_router.h"
 
 #include "router_lookahead_map.h"
 
@@ -135,7 +137,7 @@ bool f_router_debug = false;
 /******************** Subroutines local to route_timing.c ********************/
 
 static bool timing_driven_route_sink(
-    ConnectionRouter& router,
+    ConnectionRouterInterface& router,
     ClusterNetId net_id,
     unsigned itarget,
     int target_pin,
@@ -148,7 +150,7 @@ static bool timing_driven_route_sink(
     RouterStats& router_stats);
 
 static bool timing_driven_pre_route_to_clock_root(
-    ConnectionRouter& router,
+    ConnectionRouterInterface& router,
     ClusterNetId net_id,
     int sink_node,
     const t_conn_cost_params cost_params,
@@ -325,7 +327,9 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
     std::vector<int> scratch;
 
     const auto& device_ctx = g_vpr_ctx.device();
-    ConnectionRouter router(
+    std::unique_ptr<ConnectionRouterInterface> router = make_connection_router(
+        router_opts.router_heap,
+        device_ctx.grid,
         *router_lookahead,
         device_ctx.rr_nodes,
         device_ctx.rr_rc_data,
@@ -373,6 +377,10 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
     int num_net_bounding_boxes_updated = 0;
     int itry_since_last_convergence = -1;
 
+    // This heap is used for reserve_locally_used_opins.
+    BinaryHeap small_heap;
+    small_heap.init_heap(device_ctx.grid);
+
     print_route_status_header();
     for (itry = 1; itry <= router_opts.max_router_iterations; ++itry) {
         RouterStats router_iteration_stats;
@@ -393,7 +401,7 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
          */
         for (auto net_id : sorted_nets) {
             bool was_rerouted = false;
-            bool is_routable = try_timing_driven_route_net(router,
+            bool is_routable = try_timing_driven_route_net(*router,
                                                            net_id,
                                                            itry,
                                                            pres_fac,
@@ -418,7 +426,8 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
 
         // Make sure any CLB OPINs used up by subblocks being hooked directly to them are reserved for that purpose
         bool rip_up_local_opins = (itry == 1 ? false : true);
-        reserve_locally_used_opins(pres_fac, router_opts.acc_fac, rip_up_local_opins);
+        reserve_locally_used_opins(&small_heap, pres_fac,
+                                   router_opts.acc_fac, rip_up_local_opins);
 
         /*
          * Calculate metrics for the current routing
@@ -717,7 +726,7 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
     return routing_is_successful;
 }
 
-bool try_timing_driven_route_net(ConnectionRouter& router,
+bool try_timing_driven_route_net(ConnectionRouterInterface& router,
                                  ClusterNetId net_id,
                                  int itry,
                                  float pres_fac,
@@ -870,7 +879,7 @@ struct Criticality_comp {
     }
 };
 
-bool timing_driven_route_net(ConnectionRouter& router,
+bool timing_driven_route_net(ConnectionRouterInterface& router,
                              ClusterNetId net_id,
                              int itry,
                              float pres_fac,
@@ -1061,7 +1070,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
 }
 
 static bool timing_driven_pre_route_to_clock_root(
-    ConnectionRouter& router,
+    ConnectionRouterInterface& router,
     ClusterNetId net_id,
     int sink_node,
     const t_conn_cost_params cost_params,
@@ -1082,12 +1091,13 @@ static bool timing_driven_pre_route_to_clock_root(
 
     VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
 
-    t_heap* cheapest = nullptr;
     t_bb bounding_box = route_ctx.route_bb[net_id];
 
     router.clear_modified_rr_node_info();
 
-    cheapest = router.timing_driven_route_connection_from_route_tree(
+    bool found_path;
+    t_heap cheapest;
+    std::tie(found_path, cheapest) = router.timing_driven_route_connection_from_route_tree(
         rt_root,
         sink_node,
         cost_params,
@@ -1095,7 +1105,7 @@ static bool timing_driven_pre_route_to_clock_root(
         router_stats);
 
     // TODO: Parts of the rest of this function are repetitive to code in timing_driven_route_sink. Should refactor.
-    if (cheapest == nullptr) {
+    if (!found_path) {
         ClusterBlockId src_block = cluster_ctx.clb_nlist.net_driver_block(net_id);
         VTR_LOG("Failed to route connection from '%s' to '%s' for net '%s' (#%zu)\n",
                 cluster_ctx.clb_nlist.block_name(src_block).c_str(),
@@ -1116,9 +1126,9 @@ static bool timing_driven_pre_route_to_clock_root(
      * lets me reuse all the routines written for breadth-first routing, which  *
      * all take a traceback structure as input.                                 */
 
-    t_trace* new_route_start_tptr = update_traceback(cheapest, net_id);
+    t_trace* new_route_start_tptr = update_traceback(&cheapest, net_id);
     VTR_ASSERT_DEBUG(validate_traceback(route_ctx.trace[net_id].head));
-    update_route_tree(cheapest, ((high_fanout) ? &spatial_rt_lookup : nullptr));
+    update_route_tree(&cheapest, ((high_fanout) ? &spatial_rt_lookup : nullptr));
     VTR_ASSERT_DEBUG(verify_route_tree(rt_root));
     VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
     VTR_ASSERT_DEBUG(!high_fanout || validate_route_tree_spatial_lookup(rt_root, spatial_rt_lookup));
@@ -1126,9 +1136,7 @@ static bool timing_driven_pre_route_to_clock_root(
         std::string msg = vtr::string_fmt("Routed Net %zu connection to RR node %d successfully", size_t(net_id), sink_node);
         update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), ROUTING, nullptr);
     }
-    free_heap_data(cheapest);
     pathfinder_update_path_cost(new_route_start_tptr, 1, pres_fac);
-    empty_heap();
 
     // need to guarantee ALL nodes' path costs are HUGE_POSITIVE_FLOAT at the start of routing to a sink
     // do this by resetting all the path_costs that have been touched while routing to the current sink
@@ -1151,7 +1159,7 @@ static bool timing_driven_pre_route_to_clock_root(
 }
 
 static bool timing_driven_route_sink(
-    ConnectionRouter& router,
+    ConnectionRouterInterface& router,
     ClusterNetId net_id,
     unsigned itarget,
     int target_pin,
@@ -1177,7 +1185,8 @@ static bool timing_driven_route_sink(
 
     router.clear_modified_rr_node_info();
 
-    t_heap* cheapest = nullptr;
+    bool found_path;
+    t_heap cheapest;
     t_bb bounding_box = route_ctx.route_bb[net_id];
 
     bool net_is_global = cluster_ctx.clb_nlist.net_is_global(net_id);
@@ -1190,21 +1199,21 @@ static bool timing_driven_route_sink(
     //However, if the current sink is 'critical' from a timing perspective, we put the entire route tree back onto
     //the heap to ensure it has more flexibility to find the best path.
     if (high_fanout && !sink_critical && !net_is_global && !net_is_clock) {
-        cheapest = router.timing_driven_route_connection_from_route_tree_high_fanout(rt_root,
-                                                                                     sink_node,
-                                                                                     cost_params,
-                                                                                     bounding_box,
-                                                                                     spatial_rt_lookup,
-                                                                                     router_stats);
+        std::tie(found_path, cheapest) = router.timing_driven_route_connection_from_route_tree_high_fanout(rt_root,
+                                                                                                           sink_node,
+                                                                                                           cost_params,
+                                                                                                           bounding_box,
+                                                                                                           spatial_rt_lookup,
+                                                                                                           router_stats);
     } else {
-        cheapest = router.timing_driven_route_connection_from_route_tree(rt_root,
-                                                                         sink_node,
-                                                                         cost_params,
-                                                                         bounding_box,
-                                                                         router_stats);
+        std::tie(found_path, cheapest) = router.timing_driven_route_connection_from_route_tree(rt_root,
+                                                                                               sink_node,
+                                                                                               cost_params,
+                                                                                               bounding_box,
+                                                                                               router_stats);
     }
 
-    if (cheapest == nullptr) {
+    if (!found_path) {
         ClusterBlockId src_block = cluster_ctx.clb_nlist.net_driver_block(net_id);
         ClusterBlockId sink_block = cluster_ctx.clb_nlist.pin_block(*(cluster_ctx.clb_nlist.net_pins(net_id).begin() + target_pin));
         VTR_LOG("Failed to route connection from '%s' to '%s' for net '%s' (#%zu)\n",
@@ -1226,12 +1235,12 @@ static bool timing_driven_route_sink(
      * lets me reuse all the routines written for breadth-first routing, which  *
      * all take a traceback structure as input.                                 */
 
-    int inode = cheapest->index;
+    int inode = cheapest.index;
     route_ctx.rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
-    t_trace* new_route_start_tptr = update_traceback(cheapest, net_id);
+    t_trace* new_route_start_tptr = update_traceback(&cheapest, net_id);
     VTR_ASSERT_DEBUG(validate_traceback(route_ctx.trace[net_id].head));
 
-    rt_node_of_sink[target_pin] = update_route_tree(cheapest, ((high_fanout) ? &spatial_rt_lookup : nullptr));
+    rt_node_of_sink[target_pin] = update_route_tree(&cheapest, ((high_fanout) ? &spatial_rt_lookup : nullptr));
     VTR_ASSERT_DEBUG(verify_route_tree(rt_root));
     VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
     VTR_ASSERT_DEBUG(!high_fanout || validate_route_tree_spatial_lookup(rt_root, spatial_rt_lookup));
@@ -1239,9 +1248,7 @@ static bool timing_driven_route_sink(
         std::string msg = vtr::string_fmt("Routed Net %zu connection %d to RR node %d successfully", size_t(net_id), itarget, sink_node);
         update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), ROUTING, nullptr);
     }
-    free_heap_data(cheapest);
     pathfinder_update_path_cost(new_route_start_tptr, 1, pres_fac);
-    empty_heap();
 
     // need to guarantee ALL nodes' path costs are HUGE_POSITIVE_FLOAT at the start of routing to a sink
     // do this by resetting all the path_costs that have been touched while routing to the current sink
@@ -1850,7 +1857,7 @@ void enable_router_debug(
     ClusterNetId net,
     int sink_rr,
     int router_iteration,
-    ConnectionRouter* router) {
+    ConnectionRouterInterface* router) {
     bool active_net_debug = (router_opts.router_debug_net >= -1);
     bool active_sink_debug = (router_opts.router_debug_sink_rr >= 0);
     bool active_iteration_debug = (router_opts.router_debug_iteration >= 0);

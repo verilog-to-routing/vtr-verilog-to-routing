@@ -1,8 +1,21 @@
 #ifndef DEVICE_GRID
 #define DEVICE_GRID
 
+#include <string>
+#include <vector>
 #include "vtr_ndmatrix.h"
-#include "vpr_types.h"
+#include "physical_types.h"
+
+/* s_grid_tile is the minimum tile of the fpga
+ * type:  Pointer to type descriptor, NULL for illegal
+ * width_offset: Number of grid tiles reserved based on width (right) of a block
+ * height_offset: Number of grid tiles reserved based on height (top) of a block */
+struct t_grid_tile {
+    t_physical_tile_type_ptr type = nullptr;
+    int width_offset = 0;
+    int height_offset = 0;
+    const t_metadata_dict* meta = nullptr;
+};
 
 class DeviceGrid {
   public:

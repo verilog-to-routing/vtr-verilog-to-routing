@@ -324,7 +324,7 @@ void create_rr_graph(const t_graph_type graph_type,
                      const t_direct_inf* directs,
                      const int num_directs,
                      int* Warnings,
-                     bool read_edge_metadata,
+                     bool read_rr_edge_metadata,
                      bool do_check_rr_graph) {
     const auto& device_ctx = g_vpr_ctx.device();
 
@@ -338,7 +338,7 @@ void create_rr_graph(const t_graph_type graph_type,
                          base_cost_type,
                          &det_routing_arch->wire_to_rr_ipin_switch,
                          det_routing_arch->read_rr_graph_filename.c_str(),
-                         read_edge_metadata,
+                         read_rr_edge_metadata,
                          do_check_rr_graph);
         }
     } else {

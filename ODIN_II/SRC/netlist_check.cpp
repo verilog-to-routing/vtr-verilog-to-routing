@@ -41,10 +41,10 @@ void levelize_forwards(netlist_t* netlist);
 void levelize_forwards_clean_checking_for_combo_loop_and_liveness(short ast_based, netlist_t* netlist);
 nnode_t* find_node_at_top_of_combo_loop(nnode_t* start_node);
 void depth_first_traversal_check_if_forward_leveled(short marker_value, netlist_t* netlist);
-void depth_first_traverse_check_if_forward_leveled(nnode_t* node, int traverse_mark_number);
+void depth_first_traverse_check_if_forward_leveled(nnode_t* node, uintptr_t traverse_mark_number);
 
 void sequential_levelized_dfs(short marker_value, netlist_t* netlist);
-void depth_first_traverse_until_next_ff_or_output(nnode_t* node, nnode_t* calling_node, int traverse_mark_number, int seq_level, netlist_t* netlist);
+void depth_first_traverse_until_next_ff_or_output(nnode_t* node, nnode_t* calling_node, uintptr_t traverse_mark_number, int seq_level, netlist_t* netlist);
 
 /*---------------------------------------------------------------------------------------------
  * (function: check_netlist)
@@ -152,7 +152,7 @@ void sequential_levelized_dfs(short marker_value, netlist_t* netlist) {
 /*---------------------------------------------------------------------------------------------
  * (function: depth_first_traverse_until_next_ff_or_output)
  *-------------------------------------------------------------------------------------------*/
-void depth_first_traverse_until_next_ff_or_output(nnode_t* node, nnode_t* calling_node, int traverse_mark_number, int seq_level, netlist_t* netlist) {
+void depth_first_traverse_until_next_ff_or_output(nnode_t* node, nnode_t* calling_node, uintptr_t traverse_mark_number, int seq_level, netlist_t* netlist) {
     int i, j;
     nnode_t* next_node;
     nnet_t* next_net;
@@ -237,7 +237,7 @@ void depth_first_traversal_check_if_forward_leveled(short marker_value, netlist_
 /*---------------------------------------------------------------------------------------------
  * (function: depth_first_traverse)
  *-------------------------------------------------------------------------------------------*/
-void depth_first_traverse_check_if_forward_leveled(nnode_t* node, int traverse_mark_number) {
+void depth_first_traverse_check_if_forward_leveled(nnode_t* node, uintptr_t traverse_mark_number) {
     int i, j;
     nnode_t* next_node;
     nnet_t* next_net;

@@ -110,7 +110,6 @@ void SetupVPR(const t_options* Options,
     *user_models = Arch->models;
     *library_models = Arch->model_library;
 
-    /* TODO: this is inelegant, I should be populating this information in XmlReadArch */
     device_ctx.EMPTY_PHYSICAL_TILE_TYPE = nullptr;
     int num_inputs = 0;
     int num_outputs = 0;
@@ -320,7 +319,7 @@ static void SetupRoutingArch(const t_arch& Arch,
 }
 
 static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts) {
-    RouterOpts->do_check_rr_graph = !Options.disable_check_rr_graph;
+    RouterOpts->do_check_rr_graph = Options.check_rr_graph;
     RouterOpts->astar_fac = Options.astar_fac;
     RouterOpts->bb_factor = Options.bb_factor;
     RouterOpts->criticality_exp = Options.criticality_exp;
@@ -331,6 +330,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->incr_reroute_delay_ripup = Options.incr_reroute_delay_ripup;
     RouterOpts->pres_fac_mult = Options.pres_fac_mult;
     RouterOpts->route_type = Options.RouteType;
+    RouterOpts->router_heap = Options.router_heap;
 
     RouterOpts->full_stats = Options.full_stats;
 
@@ -343,7 +343,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->router_algorithm = Options.RouterAlgorithm;
     RouterOpts->fixed_channel_width = Options.RouteChanWidth;
     RouterOpts->min_channel_width_hint = Options.min_route_chan_width_hint;
-    RouterOpts->read_edge_metadata = Options.read_edge_metadata;
+    RouterOpts->read_rr_edge_metadata = Options.read_rr_edge_metadata;
 
     //TODO document these?
     RouterOpts->trim_empty_channels = false; /* DEFAULT */

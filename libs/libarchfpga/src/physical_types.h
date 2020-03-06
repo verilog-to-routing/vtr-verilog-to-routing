@@ -627,7 +627,13 @@ struct t_physical_tile_type {
     /* Returns the indices of pins that contain a clock for this physical logic block */
     std::vector<int> get_clock_pins_indices() const;
 
+    // TODO: Remove is_input_type / is_output_type as part of
+    // https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/1193
+
+    // Does this t_physical_tile_type contain an inpad?
     bool is_input_type;
+
+    // Does this t_physical_tile_type contain an outpad?
     bool is_output_type;
 };
 
@@ -1356,11 +1362,11 @@ enum class BufferSize {
  *            we would expect an additional "internal capacitance"           *
  *            to arise when the pass transistor is enabled and the signal    *
  *            must propogate to the buffer. See diagram of one stream below: *
- *                                                                           *   
+ *                                                                           *
  *                  Pass Transistor                                          *
  *                       |                                                   *
  *                     -----                                                 *
- *                     -----      Buffer                                     *   
+ *                     -----      Buffer                                     *
  *                    |     |       |\                                       *
  *              ------       -------| \--------                              *
  *                |             |   | /    |                                 *

@@ -548,6 +548,8 @@ bool is_opin(int ipin, t_physical_tile_type_ptr type) {
         return false;
 }
 
+// TODO: Remove is_input_type / is_output_type / is_io_type as part of
+// https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/1193
 bool is_input_type(t_physical_tile_type_ptr type) {
     return type->is_input_type;
 }

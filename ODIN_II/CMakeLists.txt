@@ -135,10 +135,10 @@ target_include_directories(libodin_ii PUBLIC ${LIB_INCLUDE_DIRS})
 set_target_properties(libodin_ii PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
 target_link_libraries(libodin_ii
+                        pthread
                         libvtrutil
                         librtlnumber
                         libarchfpga
-                        libabc
                         libargparse
                         ${CMAKE_DL_LIBS})
 

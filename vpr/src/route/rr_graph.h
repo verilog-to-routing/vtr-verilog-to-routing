@@ -7,6 +7,7 @@
 #define INCLUDE_TRACK_BUFFERS false
 
 #include "device_grid.h"
+#include "vpr_types.h"
 
 enum e_graph_type {
     GRAPH_GLOBAL, /* One node per channel with wire capacity > 1 and full connectivity */
@@ -39,7 +40,7 @@ void create_rr_graph(const t_graph_type graph_type,
                      const t_direct_inf* directs,
                      const int num_directs,
                      int* Warnings,
-                     bool read_edge_metadata,
+                     bool read_rr_edge_metadata,
                      bool do_check_rr_graph);
 
 void free_rr_graph();

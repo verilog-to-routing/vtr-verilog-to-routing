@@ -36,6 +36,8 @@
 #include "RoutingDelayCalculator.h"
 #include "timing_info.h"
 #include "tatum/echo_writer.hpp"
+#include "binary_heap.h"
+#include "bucket.h"
 
 /**************** Types local to route_common.c ******************/
 struct t_trace_branch {
@@ -232,7 +234,7 @@ void try_graph(int width_fac, const t_router_opts& router_opts, t_det_routing_ar
                     router_opts.clock_modeling,
                     directs, num_directs,
                     &warning_count,
-                    router_opts.read_edge_metadata,
+                    router_opts.read_rr_edge_metadata,
                     router_opts.do_check_rr_graph);
 }
 
@@ -284,7 +286,7 @@ bool try_route(int width_fac,
                     router_opts.clock_modeling,
                     directs, num_directs,
                     &warning_count,
-                    router_opts.read_edge_metadata,
+                    router_opts.read_rr_edge_metadata,
                     router_opts.do_check_rr_graph);
 
     //Initialize drawing, now that we have an RR graph
@@ -310,14 +312,15 @@ bool try_route(int width_fac,
         IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
         ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, intra_lb_pb_pin_lookup);
 
-        success = try_timing_driven_route(router_opts,
-                                          analysis_opts,
-                                          segment_inf,
-                                          net_delay,
-                                          netlist_pin_lookup,
-                                          timing_info,
-                                          delay_calc,
-                                          first_iteration_priority);
+        success = try_timing_driven_route(
+            router_opts,
+            analysis_opts,
+            segment_inf,
+            net_delay,
+            netlist_pin_lookup,
+            timing_info,
+            delay_calc,
+            first_iteration_priority);
 
         profiling::time_on_fanout_analysis();
     }
@@ -479,8 +482,6 @@ void init_route_structs(int bb_factor) {
     route_ctx.trace.resize(cluster_ctx.clb_nlist.nets().size());
     route_ctx.trace_nodes.resize(cluster_ctx.clb_nlist.nets().size());
 
-    Bucket::init(device_ctx.grid);
-
     //Various look-ups
     route_ctx.net_rr_terminals = load_net_rr_terminals(device_ctx.rr_node_indices, &route_ctx.rr_net_map);
     route_ctx.is_clock_net = load_is_clock_net();
@@ -488,14 +489,6 @@ void init_route_structs(int bb_factor) {
     route_ctx.rr_blk_source = load_rr_clb_sources(device_ctx.rr_node_indices);
     route_ctx.clb_opins_used_locally = alloc_and_load_clb_opins_used_locally();
     route_ctx.net_status.resize(cluster_ctx.clb_nlist.nets().size());
-
-    /* Check that things that should have been emptied after the last routing *
-     * really were.                                                           */
-
-    if (!is_empty_heap()) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                        "in init_route_structs. Heap is not empty.\n");
-    }
 }
 
 t_trace*
@@ -761,31 +754,6 @@ void mark_remaining_ends(const std::vector<int>& remaining_sinks) {
         ++route_ctx.rr_node_route_inf[sink_node].target_flag;
 }
 
-void node_to_heap(int inode, float total_cost, int prev_node, int prev_edge, float backward_path_cost, float R_upstream) {
-    /* Puts an rr_node on the heap, if the new cost given is lower than the     *
-     * current path_cost to this channel segment.  The index of its predecessor *
-     * is stored to make traceback easy.  The index of the edge used to get     *
-     * from its predecessor to it is also stored to make timing analysis, etc.  *
-     * easy.  The backward_path_cost and R_upstream values are used only by the *
-     * timing-driven router -- the breadth-first router ignores them.           */
-
-    auto& route_ctx = g_vpr_ctx.routing();
-
-    if (total_cost >= route_ctx.rr_node_route_inf[inode].path_cost)
-        return;
-
-    t_heap* hptr = alloc_heap_data();
-    hptr->index = inode;
-    hptr->cost = total_cost;
-    VTR_ASSERT_SAFE(hptr->u.prev.node == NO_PREVIOUS);
-    VTR_ASSERT_SAFE(hptr->u.prev.edge == NO_PREVIOUS);
-    hptr->u.prev.node = prev_node;
-    hptr->u.prev.edge = prev_edge;
-    hptr->backward_path_cost = backward_path_cost;
-    hptr->R_upstream = R_upstream;
-    add_to_heap(hptr);
-}
-
 void drop_traceback_tail(ClusterNetId net_id) {
     /* Removes the tail node from the routing traceback and updates
      * it with the previous node from the traceback.
@@ -940,11 +908,9 @@ void free_route_structs() {
      * final routing result is not freed.                                */
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    BucketItems::free();
-    Bucket::free();
-
     if (route_ctx.route_bb.size() != 0) {
         route_ctx.route_bb.clear();
+        route_ctx.route_bb.shrink_to_fit();
     }
 }
 
@@ -1225,24 +1191,6 @@ void add_to_mod_list(int inode, std::vector<int>& modified_rr_node_inf) {
     }
 }
 
-// adds to heap and maintains heap quality
-/*WMF: peeking accessor :) */
-
-void invalidate_heap_entries(int sink_node, int ipin_node) {
-    /* Marks all the heap entries consisting of sink_node, where it was reached *
-     * via ipin_node, as invalid (OPEN).  Used only by the breadth_first router *
-     * and even then only in rare circumstances.                                */
-
-    for (auto* item : vtr::make_range(BucketItems::begin(), BucketItems::end())) {
-        if (item->index == sink_node) {
-            if (item->u.prev.node == ipin_node) {
-                item->index = OPEN; /* Invalid. */
-                break;
-            }
-        }
-    }
-}
-
 t_trace*
 alloc_trace_data() {
     t_trace* temp_ptr;
@@ -1395,8 +1343,8 @@ void print_route(const char* placement_file, const char* route_file) {
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_MEM)) {
         fp = vtr::fopen(getEchoFileName(E_ECHO_MEM), "w");
-        fprintf(fp, "\nNum_heap_allocated: %d   Num_trace_allocated: %d\n",
-                BucketItems::num_heap_allocated(), num_trace_allocated);
+        fprintf(fp, "\nNum_trace_allocated: %d\n",
+                num_trace_allocated);
         fprintf(fp, "Num_linked_f_pointer_allocated: %d\n",
                 num_linked_f_pointer_allocated);
         fclose(fp);
@@ -1421,7 +1369,7 @@ void print_route(const char* placement_file, const char* route_file) {
 //
 // To model this we 'reserve' these locally used outputs, ensuring that the router will not use them (as if it did
 // this would equate to duplicating a BLE into an already in-use BLE instance, which is clearly incorrect).
-void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local_opins) {
+void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins) {
     int num_local_opin, inode, from_node, iconn, num_edges, to_node;
     int iclass, ipin;
     float cost;
@@ -1451,6 +1399,9 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
         }
     }
 
+    // Make sure heap is empty before we add nodes to the heap.
+    heap->empty_heap();
+
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         type = physical_tile_type(blk_id);
         for (iclass = 0; iclass < type->num_class; iclass++) {
@@ -1474,23 +1425,24 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 
                 //Add the OPIN to the heap according to it's congestion cost
                 cost = get_rr_cong_cost(to_node);
-                node_to_heap(to_node, cost, OPEN, OPEN, 0., 0.);
+                add_node_to_heap(heap, route_ctx.rr_node_route_inf,
+                                 to_node, cost, OPEN, OPEN, 0., 0.);
             }
 
             for (ipin = 0; ipin < num_local_opin; ipin++) {
                 //Pop the nodes off the heap. We get them from the heap so we
                 //reserve those pins with lowest congestion cost first.
-                heap_head_ptr = get_heap_head();
+                heap_head_ptr = heap->get_heap_head();
                 inode = heap_head_ptr->index;
 
                 VTR_ASSERT(device_ctx.rr_nodes[inode].type() == OPIN);
 
                 adjust_one_rr_occ_and_apcost(inode, 1, pres_fac, acc_fac);
                 route_ctx.clb_opins_used_locally[blk_id][iclass][ipin] = inode;
-                free_heap_data(heap_head_ptr);
+                heap->free(heap_head_ptr);
             }
 
-            empty_heap();
+            heap->empty_heap();
         }
     }
 }

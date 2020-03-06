@@ -862,7 +862,7 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
                     router_opts.clock_modeling,
                     arch.Directs, arch.num_directs,
                     &warnings,
-                    router_opts.read_edge_metadata,
+                    router_opts.read_rr_edge_metadata,
                     router_opts.do_check_rr_graph);
     //Initialize drawing, now that we have an RR graph
     init_draw_coords(chan_width_fac);

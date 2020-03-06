@@ -98,6 +98,9 @@ static void ProcessTiles(pugi::xml_node Node,
                          const t_default_fc_spec& arch_def_fc,
                          t_arch& arch,
                          const pugiutil::loc_data& loc_data);
+// TODO: Remove block_type_contains_blif_model / pb_type_contains_blif_model
+// as part of
+// https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/1193
 static void MarkIoTypes(std::vector<t_physical_tile_type>& PhysicalTileTypes);
 static void ProcessTileProps(pugi::xml_node Node,
                              t_physical_tile_type* PhysicalTileType,

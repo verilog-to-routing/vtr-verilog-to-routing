@@ -803,6 +803,37 @@ struct ParseRouterFirstIterTiming {
     }
 };
 
+struct ParseRouterHeap {
+    ConvertedValue<e_heap_type> from_str(std::string str) {
+        ConvertedValue<e_heap_type> conv_value;
+        if (str == "binary")
+            conv_value.set_value(e_heap_type::BINARY_HEAP);
+        else if (str == "bucket")
+            conv_value.set_value(e_heap_type::BUCKET_HEAP_APPROXIMATION);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_heap_type (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_heap_type val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_heap_type::BINARY_HEAP)
+            conv_value.set_value("binary");
+        else {
+            VTR_ASSERT(val == e_heap_type::BUCKET_HEAP_APPROXIMATION);
+            conv_value.set_value("bucket");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"binary", "bucket"};
+    }
+};
+
 argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args) {
     std::string description =
         "Implements the specified circuit onto the target FPGA architecture"
@@ -1564,11 +1595,6 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("1.2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    route_timing_grp.add_argument(args.lookahead_search_locations, "--lookahead_search_locations")
-        .help("DEPRECATED Semi-colon seperated x,y coordinates to use for lookahead search coordinates.")
-        .default_value("")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
     route_timing_grp.add_argument(args.max_criticality, "--max_criticality")
         .help(
             "Sets the maximum fraction of routing cost derived from delay (vs routability) for any net."
@@ -1683,6 +1709,17 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("all_critical")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument<e_heap_type, ParseRouterHeap>(args.router_heap, "--router_heap")
+        .help(
+            "Controls what type of heap to use for timing driven router.\n"
+            " * binary: A binary heap is used.\n"
+            " * bucket: A bucket heap approximation is used. The bucket heap\n"
+            " *         is faster because it is only a heap approximation.\n"
+            " *         Testing has shown the approximation results in\n"
+            " *         similiar QoR with less CPU work.\n")
+        .default_value("bucket")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_timing_grp.add_argument<bool, ParseOnOff>(args.router_update_lower_bound_delays, "--router_update_lower_bound_delays")
         .help("Controls whether the router updates lower bound connection delays after the 1st routing iteration.")
         .default_value("off")
@@ -1693,6 +1730,11 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument<bool, ParseOnOff>(args.read_rr_edge_metadata, "--read_rr_edge_metadata")
+        .help("Read RR edge metadata from --read_rr_graph.  RR edge metadata is not used in core VPR algorithms, and is typically not read to save runtime and memory. (Default: off).")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_timing_grp.add_argument<bool, ParseOnOff>(args.disable_check_route, "--disable_check_route")
         .help("Disables check_route once routing step has finished or when routing file is loaded")
         .default_value("off")
@@ -1700,11 +1742,6 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     route_timing_grp.add_argument<bool, ParseOnOff>(args.quick_check_route, "--quick_check_route")
         .help("Runs check_route, disabling slow checks, once routing step has finished or when routing file is loaded")
-        .default_value("off")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    route_timing_grp.add_argument<bool, ParseOnOff>(args.read_edge_metadata, "--read_edge_metadata")
-        .help("Read edge metadata from --read_rr_graph.  Edge metadata is not used in core VPR algorithms, and is typically not read to save runtime and memory. (Default: off).")
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -1740,9 +1777,9 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("-2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    route_timing_grp.add_argument<bool, ParseOnOff>(args.disable_check_rr_graph, "--disable_check_rr_graph")
-        .help("Disables checking rr graph when reading from disk.")
-        .default_value("off")
+    route_timing_grp.add_argument<bool, ParseOnOff>(args.check_rr_graph, "--check_rr_graph")
+        .help("Controls whether to check the rr graph when reading from disk.")
+        .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& analysis_grp = parser.add_argument_group("analysis options");

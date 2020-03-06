@@ -88,7 +88,6 @@ static void do_one_route(int source_node, int sink_node,
 
     route_budgets budgeting_inf;
 
-    init_heap(device_ctx.grid);
 
     RouterStats router_stats;
     auto router_lookahead = make_router_lookahead(
@@ -98,21 +97,22 @@ static void do_one_route(int source_node, int sink_node,
             segment_inf
             );
 
-    ConnectionRouter router(
+    ConnectionRouter<BinaryHeap> router(
+            device_ctx.grid,
             *router_lookahead,
             device_ctx.rr_nodes,
             device_ctx.rr_rc_data,
             device_ctx.rr_switch_inf,
             g_vpr_ctx.mutable_routing().rr_node_route_inf);
     enable_router_debug(router_opts, ClusterNetId(), sink_node, 1, &router);
-    t_heap* cheapest = router.timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, bounding_box, router_stats);
+    bool found_path;
+    t_heap cheapest;
+    std::tie(found_path, cheapest) = router.timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, bounding_box, router_stats);
 
-    bool found_path = (cheapest != nullptr);
     if (found_path) {
-        VTR_ASSERT(cheapest->index == sink_node);
+        VTR_ASSERT(cheapest.index == sink_node);
 
-        t_rt_node* rt_node_of_sink = update_route_tree(cheapest, nullptr);
-        free_heap_data(cheapest);
+        t_rt_node* rt_node_of_sink = update_route_tree(&cheapest, nullptr);
 
         //find delay
         float net_delay = rt_node_of_sink->Tdel;
@@ -130,7 +130,6 @@ static void do_one_route(int source_node, int sink_node,
     }
 
     //Reset for the next router call
-    empty_heap();
     router.reset_path_costs();
 }
 

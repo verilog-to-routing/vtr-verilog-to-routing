@@ -32,6 +32,7 @@
 #include "clustered_netlist_fwd.h"
 #include "constant_nets.h"
 #include "clock_modeling.h"
+#include "heap_type.h"
 
 #include "vtr_assert.h"
 #include "vtr_ndmatrix.h"
@@ -446,17 +447,6 @@ struct t_net_power {
      * For example, a clock would have density = 2
      */
     float density;
-};
-
-/* s_grid_tile is the minimum tile of the fpga
- * type:  Pointer to type descriptor, NULL for illegal
- * width_offset: Number of grid tiles reserved based on width (right) of a block
- * height_offset: Number of grid tiles reserved based on height (top) of a block */
-struct t_grid_tile {
-    t_physical_tile_type_ptr type = nullptr;
-    int width_offset = 0;
-    int height_offset = 0;
-    const t_metadata_dict* meta = nullptr;
 };
 
 /* Stores the bounding box of a net in terms of the minimum and   *
@@ -916,7 +906,7 @@ enum class e_incr_reroute_delay_ripup {
 constexpr int NO_FIXED_CHANNEL_WIDTH = -1;
 
 struct t_router_opts {
-    bool read_edge_metadata = false;
+    bool read_rr_edge_metadata = false;
     bool do_check_rr_graph = true;
     float first_iter_pres_fac;
     float initial_pres_fac;
@@ -952,6 +942,8 @@ struct t_router_opts {
     enum e_clock_modeling clock_modeling; //How clock pins and nets should be handled
     bool two_stage_clock_routing;         //How clock nets on dedicated networks should be routed
     int high_fanout_threshold;
+
+    e_heap_type router_heap;
     int router_debug_net;
     int router_debug_sink_rr;
     int router_debug_iteration;

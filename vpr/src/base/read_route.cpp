@@ -20,6 +20,7 @@
 
 #include "atom_netlist.h"
 #include "atom_netlist_utils.h"
+#include "binary_heap.h"
 #include "rr_graph.h"
 #include "vtr_assert.h"
 #include "vtr_util.h"
@@ -116,14 +117,16 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     fp.close();
 
     /*Correctly set up the clb opins*/
-    reserve_locally_used_opins(router_opts.initial_pres_fac,
+    BinaryHeap small_heap;
+    small_heap.init_heap(device_ctx.grid);
+    reserve_locally_used_opins(&small_heap, router_opts.initial_pres_fac,
                                router_opts.acc_fac, false);
     recompute_occupancy_from_scratch();
 
     /* Note: This pres_fac is not necessarily correct since it isn't the first routing iteration*/
     pathfinder_update_cost(router_opts.initial_pres_fac, router_opts.acc_fac);
 
-    reserve_locally_used_opins(router_opts.initial_pres_fac,
+    reserve_locally_used_opins(&small_heap, router_opts.initial_pres_fac,
                                router_opts.acc_fac, true);
 
     /* Finished loading in the routing, now check it*/

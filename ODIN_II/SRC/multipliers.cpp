@@ -62,7 +62,7 @@ void split_soft_multiplier(nnode_t* node, netlist_t* netlist);
 // data structure representing a row of bits an adder tree
 struct AdderTreeRow {
     // the shift of this row from the least significant bit of the multiplier output
-    int shift;
+    size_t shift;
     // array representing the bits in the row, each bit is a node
     // pointer and the index of this bit in this node output array.
     std::vector<std::pair<nnode_t*, int>> bits;
@@ -1117,8 +1117,8 @@ void split_soft_multiplier(nnode_t* node, netlist_t* netlist) {
     oassert(node->num_input_port_sizes == 2);
     oassert(node->num_output_port_sizes == 1);
 
-    int multiplier_width = node->input_port_sizes[0];
-    int multiplicand_width = node->input_port_sizes[1];
+    size_t multiplier_width = static_cast<size_t>(node->input_port_sizes[0]);
+    size_t multiplicand_width = static_cast<size_t>(node->input_port_sizes[1]);
 
     // ODIN II doesn't work with multiplicand sizes of 1 since it assumes that the
     // output of the multiplier is still the sum of the operands sizes. However, it
@@ -1135,18 +1135,18 @@ void split_soft_multiplier(nnode_t* node, netlist_t* netlist) {
     // 2-D array of adders, indexed by the level of the adder in the tree and the adder id within the level
     std::vector<std::vector<nnode_t*>> adders(add_levels);
     // array holding the adder width at each level in the adder tree
-    std::vector<std::vector<int>> adder_widths(add_levels);
+    std::vector<std::vector<size_t>> adder_widths(add_levels);
 
     // 2-D array of partial products. [0..multiplicand_width][0..multiplier_width]
     std::vector<std::vector<nnode_t*>> partial_products(multiplicand_width);
 
     addition_stages[0].resize(multiplicand_width);
     // initialize all the AND gates needed for the partial products
-    for (int i = 0; i < multiplicand_width; i++) {
+    for (size_t i = 0; i < multiplicand_width; i++) {
         std::vector<std::pair<nnode_t*, int>> pp_bits(multiplier_width);
         // resize the ith row of the partial products
         partial_products[i].resize(multiplier_width);
-        for (int j = 0; j < multiplier_width; j++) {
+        for (size_t j = 0; j < multiplier_width; j++) {
             // create each one of the partial products
             partial_products[i][j] = make_1port_logic_gate(LOGICAL_AND, 2, node, node->traverse_visited);
             pp_bits[j] = {partial_products[i][j], 0};
@@ -1156,8 +1156,8 @@ void split_soft_multiplier(nnode_t* node, netlist_t* netlist) {
     }
 
     // generate the connections to the AND gates that generates the partial products of the multiplication
-    for (int i = 0; i < multiplicand_width; i++) {
-        for (int j = 0; j < multiplier_width; j++) {
+    for (size_t i = 0; i < multiplicand_width; i++) {
+        for (size_t j = 0; j < multiplier_width; j++) {
             // hookup the multiplier bits to the AND gates
             if (i == 0) {
                 // when connecting the input to an AND gate for the first time, remap the input
@@ -1189,11 +1189,11 @@ void split_soft_multiplier(nnode_t* node, netlist_t* netlist) {
         for (size_t row = 0; row < addition_stages[level].size() - 1; row += 2) {
             auto& first_row = addition_stages[level][row];
             auto& second_row = addition_stages[level][row + 1];
-            auto shift_difference = second_row.shift - first_row.shift;
+            long shift_difference = second_row.shift - first_row.shift;
             auto add_id = row / 2;
 
             // get the widths of the adder, by finding the larger operand size
-            adder_widths[level][add_id] = std::max<int>(first_row.bits.size() - shift_difference, second_row.bits.size());
+            adder_widths[level][add_id] = std::max<size_t>(first_row.bits.size() - shift_difference, second_row.bits.size());
             // first level of addition has a carry out that needs to be generated, so increase adder size by 1
             if (level == 0) adder_widths[level][add_id]++;
             // add one bit for carry out if that last bit of the addition is fed by both levels
@@ -1209,16 +1209,16 @@ void split_soft_multiplier(nnode_t* node, netlist_t* netlist) {
             addition_stages[level + 1][add_id].shift = first_row.shift;
             addition_stages[level + 1][add_id].bits.resize(shift_difference + adder_widths[level][add_id]);
             // copy the bits that weren't fed to adders in the previous stage
-            for (int i = 0; i < shift_difference; i++) {
+            for (size_t i = 0; (long)i < shift_difference; i++) {
                 addition_stages[level + 1][add_id].bits[i] = first_row.bits[i];
             }
             // copy adder output bits to their row in next stage
-            for (int i = 0; i < adder_widths[level][add_id]; i++) {
+            for (size_t i = 0; i < adder_widths[level][add_id]; i++) {
                 addition_stages[level + 1][add_id].bits[i + shift_difference] = {adders[level][add_id], i};
             }
 
             // connect the bits in the rows to the adder inputs.
-            for (int bit = 0; bit < adder_widths[level][add_id]; bit++) {
+            for (size_t bit = 0; bit < adder_widths[level][add_id]; bit++) {
                 // input port a of the adder
                 if (bit < first_row.bits.size() - shift_difference) {
                     auto bit_a = first_row.bits[bit + shift_difference];
@@ -1244,7 +1244,7 @@ void split_soft_multiplier(nnode_t* node, netlist_t* netlist) {
     }
 
     // the size of the last stage of the adder tree should match the output size of the multiplier
-    oassert(addition_stages[add_levels][0].bits.size() == node->num_output_pins);
+    oassert((long)addition_stages[add_levels][0].bits.size() == node->num_output_pins);
 
     // Remap the outputs of the multiplier
     for (size_t i = 0; i < addition_stages[add_levels][0].bits.size(); i++) {
@@ -1257,10 +1257,10 @@ void split_soft_multiplier(nnode_t* node, netlist_t* netlist) {
     // and all inputs and outputs of the AND gates and adders are not nullptrs
 
     // check that all the inputs/outputs of the multiplier are remapped
-    for (int i = 0; i < node->num_input_pins; i++) {
+    for (long i = 0; i < node->num_input_pins; i++) {
         oassert(!node->input_pins[i]);
     }
-    for (int i = 0; i < node->num_output_pins; i++) {
+    for (long i = 0; i < node->num_output_pins; i++) {
         oassert(!node->output_pins[i]);
     }
 

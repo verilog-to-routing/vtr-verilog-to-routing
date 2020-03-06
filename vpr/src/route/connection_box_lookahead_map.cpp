@@ -14,6 +14,7 @@
 #include "rr_graph.h"
 
 #include "route_timing.h"
+#include "route_common.h"
 
 #ifdef VTR_ENABLE_CAPNPROTO
 #    include "capnp/serialize.h"
@@ -1068,9 +1069,7 @@ void CostMap::read(const std::string& file) {
     build_segment_map();
     MmapFile f(file);
 
-    /* Increase reader limit to 1G words. */
-    ::capnp::ReaderOptions opts = ::capnp::ReaderOptions();
-    opts.traversalLimitInWords = 1024 * 1024 * 1024;
+    ::capnp::ReaderOptions opts = default_large_capnp_opts();
     ::capnp::FlatArrayMessageReader reader(f.getData(), opts);
 
     auto cost_map = reader.getRoot<VprCostMap>();
