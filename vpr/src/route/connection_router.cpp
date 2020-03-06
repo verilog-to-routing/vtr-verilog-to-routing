@@ -866,45 +866,33 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     return bounding_box;
 }
 
-// Expand templates for each heap implementation.
-template std::pair<bool, t_heap> ConnectionRouter<BinaryHeap>::timing_driven_route_connection_from_route_tree(
-    t_rt_node* rt_root,
-    int sink_node,
-    const t_conn_cost_params cost_params,
-    t_bb bounding_box,
-    RouterStats& router_stats);
-
-template std::pair<bool, t_heap> ConnectionRouter<BinaryHeap>::timing_driven_route_connection_from_route_tree_high_fanout(
-    t_rt_node* rt_root,
-    int sink_node,
-    const t_conn_cost_params cost_params,
-    t_bb bounding_box,
-    const SpatialRouteTreeLookup& spatial_rt_lookup,
-    RouterStats& router_stats);
-
-template std::vector<t_heap> ConnectionRouter<BinaryHeap>::timing_driven_find_all_shortest_paths_from_route_tree(
-    t_rt_node* rt_root,
-    const t_conn_cost_params cost_params,
-    t_bb bounding_box,
-    RouterStats& router_stats);
-
-template std::pair<bool, t_heap> ConnectionRouter<Bucket>::timing_driven_route_connection_from_route_tree(
-    t_rt_node* rt_root,
-    int sink_node,
-    const t_conn_cost_params cost_params,
-    t_bb bounding_box,
-    RouterStats& router_stats);
-
-template std::pair<bool, t_heap> ConnectionRouter<Bucket>::timing_driven_route_connection_from_route_tree_high_fanout(
-    t_rt_node* rt_root,
-    int sink_node,
-    const t_conn_cost_params cost_params,
-    t_bb bounding_box,
-    const SpatialRouteTreeLookup& spatial_rt_lookup,
-    RouterStats& router_stats);
-
-template std::vector<t_heap> ConnectionRouter<Bucket>::timing_driven_find_all_shortest_paths_from_route_tree(
-    t_rt_node* rt_root,
-    const t_conn_cost_params cost_params,
-    t_bb bounding_box,
-    RouterStats& router_stats);
+std::unique_ptr<ConnectionRouterInterface> make_connection_router(
+    e_heap_type heap_type,
+    const DeviceGrid& grid,
+    const RouterLookahead& router_lookahead,
+    const t_rr_graph_storage& rr_nodes,
+    const std::vector<t_rr_rc_data>& rr_rc_data,
+    const std::vector<t_rr_switch_inf>& rr_switch_inf,
+    std::vector<t_rr_node_route_inf>& rr_node_route_inf) {
+    switch (heap_type) {
+        case e_heap_type::BINARY_HEAP:
+            return std::make_unique<ConnectionRouter<BinaryHeap>>(
+                grid,
+                router_lookahead,
+                rr_nodes,
+                rr_rc_data,
+                rr_switch_inf,
+                rr_node_route_inf);
+        case e_heap_type::BUCKET_HEAP_APPROXIMATION:
+            return std::make_unique<ConnectionRouter<Bucket>>(
+                grid,
+                router_lookahead,
+                rr_nodes,
+                rr_rc_data,
+                rr_switch_inf,
+                rr_node_route_inf);
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unknown heap_type %d",
+                            heap_type);
+    }
+}
