@@ -484,7 +484,7 @@ static void print_place_status(const size_t num_temps,
                                size_t tot_moves);
 static void print_resources_utilization();
 
-static void init_annealing_state(t_annealing_state *state, const t_annealing_sched &annealing_sched, float t, float rlim, int move_lim_max);
+static void init_annealing_state(t_annealing_state* state, const t_annealing_sched& annealing_sched, float t, float rlim, int move_lim_max);
 
 /*****************************************************************************/
 void try_place(const t_placer_opts& placer_opts,
@@ -725,14 +725,14 @@ void try_place(const t_placer_opts& placer_opts,
     inverse_delta_rlim = 1 / (first_rlim - final_rlim);
 
     float first_t = starting_t(&costs, &prev_inverse_costs,
-                         annealing_sched, move_lim, first_rlim,
-                         place_delay_model.get(),
-                         placer_criticalities.get(),
-                         timing_info.get(),
-                         *move_generator,
-                         pin_timing_invalidator.get(),
-                         blocks_affected,
-                         placer_opts);
+                               annealing_sched, move_lim, first_rlim,
+                               place_delay_model.get(),
+                               placer_criticalities.get(),
+                               timing_info.get(),
+                               *move_generator,
+                               pin_timing_invalidator.get(),
+                               blocks_affected,
+                               placer_opts);
 
     t_annealing_state state;
     init_annealing_state(&state, annealing_sched, first_t, first_rlim, move_lim);
@@ -2958,7 +2958,7 @@ static void print_resources_utilization() {
     VTR_LOG("\n");
 }
 
-static void init_annealing_state(t_annealing_state *state, const t_annealing_sched &annealing_sched, float t, float rlim, int move_lim_max) {
+static void init_annealing_state(t_annealing_state* state, const t_annealing_sched& annealing_sched, float t, float rlim, int move_lim_max) {
     state->alpha = annealing_sched.alpha_min;
     state->t = t;
     state->restart_t = t;
