@@ -108,6 +108,8 @@ struct t_annealing_state {
     float rlim;
     float alpha;
     float restart_t;
+    int move_lim_max;
+    int move_lim;
 };
 
 constexpr float INVALID_DELAY = std::numeric_limits<float>::quiet_NaN();
@@ -482,7 +484,7 @@ static void print_place_status(const size_t num_temps,
                                size_t tot_moves);
 static void print_resources_utilization();
 
-static void init_annealing_state(t_annealing_state *state, const t_annealing_sched &annealing_sched, float t, float rlim);
+static void init_annealing_state(t_annealing_state *state, const t_annealing_sched &annealing_sched, float t, float rlim, int move_lim_max);
 
 /*****************************************************************************/
 void try_place(const t_placer_opts& placer_opts,
@@ -505,7 +507,7 @@ void try_place(const t_placer_opts& placer_opts,
     auto& timing_ctx = g_vpr_ctx.timing();
     auto pre_place_timing_stats = timing_ctx.stats;
 
-    int tot_iter, move_lim, moves_since_cost_recompute, width_fac, num_connections,
+    int tot_iter, moves_since_cost_recompute, width_fac, num_connections,
         outer_crit_iter_count, inner_recompute_limit;
     float success_rat, crit_exponent,
         first_rlim, final_rlim, inverse_delta_rlim;
@@ -675,6 +677,7 @@ void try_place(const t_placer_opts& placer_opts,
         print_place(nullptr, nullptr, filename.c_str());
     }
 
+    int move_lim = 1;
     if (placer_opts.effort_scaling == e_place_effort_scaling::CIRCUIT) {
         //This scales the move limit proportional to num_blocks ^ (4/3)
         move_lim = (int)(annealing_sched.inner_num * pow(cluster_ctx.clb_nlist.blocks().size(), 1.3333));
@@ -732,7 +735,7 @@ void try_place(const t_placer_opts& placer_opts,
                          placer_opts);
 
     t_annealing_state state;
-    init_annealing_state(&state, annealing_sched, first_t, first_rlim);
+    init_annealing_state(&state, annealing_sched, first_t, first_rlim, move_lim);
 
     if (!placer_opts.move_stats_file.empty()) {
         f_move_stats_file = std::unique_ptr<FILE, decltype(&vtr::fclose)>(vtr::fopen(placer_opts.move_stats_file.c_str(), "w"), vtr::fclose);
@@ -764,7 +767,7 @@ void try_place(const t_placer_opts& placer_opts,
                                            timing_info.get());
 
         placement_inner_loop(state.t, num_temps, state.rlim, placer_opts,
-                             move_lim, crit_exponent, inner_recompute_limit, &stats,
+                             state.move_lim, crit_exponent, inner_recompute_limit, &stats,
                              &costs,
                              &prev_inverse_costs,
                              &moves_since_cost_recompute,
@@ -775,9 +778,9 @@ void try_place(const t_placer_opts& placer_opts,
                              blocks_affected,
                              timing_info.get());
 
-        tot_iter += move_lim;
+        tot_iter += state.move_lim;
 
-        calc_placer_stats(stats, success_rat, std_dev, costs, move_lim);
+        calc_placer_stats(stats, success_rat, std_dev, costs, state.move_lim);
 
         ++num_temps;
 
@@ -1219,15 +1222,16 @@ static bool update_state(t_annealing_state* state, float success_rat, const t_pl
 
     if (annealing_sched.type == DUSTY_SCHED) {
         if (success_rat < annealing_sched.success_min) {
-            state->t = state->restart_t / state->alpha;
-            state->alpha = 1.0 - ((1.0 - state->alpha) * annealing_sched.alpha_decay);
             if (state->alpha > annealing_sched.alpha_max) return false;
+            state->t = state->restart_t / sqrt(state->alpha); // Take a half step from the restart temperature.
+            state->alpha = 1.0 - ((1.0 - state->alpha) * annealing_sched.alpha_decay);
         } else {
             if (success_rat > annealing_sched.success_target) {
                 state->restart_t = state->t;
             }
             state->t *= state->alpha;
         }
+        state->move_lim = std::max(1, std::min(state->move_lim_max, (int)(state->move_lim_max * (annealing_sched.success_target / success_rat))));
         return true;
     } else { /* annealing_sched.type == AUTO_SCHED */
         if (success_rat > 0.96) {
@@ -2954,11 +2958,17 @@ static void print_resources_utilization() {
     VTR_LOG("\n");
 }
 
-static void init_annealing_state(t_annealing_state *state, const t_annealing_sched &annealing_sched, float t, float rlim) {
+static void init_annealing_state(t_annealing_state *state, const t_annealing_sched &annealing_sched, float t, float rlim, int move_lim_max) {
     state->alpha = annealing_sched.alpha_min;
     state->t = t;
     state->restart_t = t;
     state->rlim = rlim;
+    state->move_lim_max = std::max(1, move_lim_max);
+    if (annealing_sched.type == DUSTY_SCHED) {
+        state->move_lim = std::max(1, (int)(state->move_lim_max * annealing_sched.success_target));
+    } else {
+        state->move_lim = state->move_lim_max;
+    }
 }
 
 bool placer_needs_lookahead(const t_vpr_setup& vpr_setup) {
