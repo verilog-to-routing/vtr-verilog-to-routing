@@ -1253,14 +1253,12 @@ class t_net_routing_status {
     }
 
   private:
-    size_t index(ClusterNetId net) const {
+    ClusterNetId index(ClusterNetId net) const {
         VTR_ASSERT_SAFE(net != ClusterNetId::INVALID());
-        size_t index = size_t(net);
-        VTR_ASSERT_SAFE(index < is_routed_.size());
-        return index;
+        return net;
     }
-    vtr::dynamic_bitset<> is_routed_; //Whether the net has been legally routed
-    vtr::dynamic_bitset<> is_fixed_;  //Whether the net is fixed (i.e. not to be re-routed)
+    vtr::dynamic_bitset<ClusterNetId> is_routed_; //Whether the net has been legally routed
+    vtr::dynamic_bitset<ClusterNetId> is_fixed_;  //Whether the net is fixed (i.e. not to be re-routed)
 };
 
 struct t_node_edge {
