@@ -353,7 +353,7 @@ static float starting_t(t_placer_costs* costs,
                         t_pl_blocks_to_be_moved& blocks_affected,
                         const t_placer_opts& placer_opts);
 
-static bool update_state(t_annealing_state* state, float success_rat, const t_placer_opts& placer_opts, const t_placer_costs& costs, const t_annealing_sched& annealing_sched);
+static bool update_state(t_annealing_state* state, float success_rat, const t_placer_costs& costs, const t_annealing_sched& annealing_sched);
 
 static void update_rlim(float* rlim, float success_rat, const DeviceGrid& grid);
 
@@ -813,7 +813,7 @@ void try_place(const t_placer_opts& placer_opts,
             print_clb_placement("first_iteration_clb_placement.echo");
         }
 #endif
-    } while (update_state(&state, success_rat, placer_opts, costs, annealing_sched));
+    } while (update_state(&state, success_rat, costs, annealing_sched));
     /* Outer loop of the simmulated annealing ends */
 
     auto pre_quench_timing_stats = timing_ctx.stats;
@@ -1206,7 +1206,7 @@ static void update_rlim(float* rlim, float success_rat, const DeviceGrid& grid) 
 }
 
 /* Update the temperature according to the annealing schedule selected. */
-static bool update_state(t_annealing_state* state, float success_rat, const t_placer_opts& placer_opts, const t_placer_costs& costs, const t_annealing_sched& annealing_sched) {
+static bool update_state(t_annealing_state* state, float success_rat, const t_placer_costs& costs, const t_annealing_sched& annealing_sched) {
     /* Return `false` when the exit criterion is met. */
     if (annealing_sched.type == USER_SCHED) {
         state->t *= annealing_sched.alpha_t;
