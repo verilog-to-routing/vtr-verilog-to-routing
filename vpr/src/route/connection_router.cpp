@@ -65,13 +65,11 @@ t_heap* ConnectionRouter::timing_driven_route_connection_common_setup(
         //found with the bounding box) remains fast and never re-tries .
         VTR_LOG_WARN("No routing path for connection to sink_rr %d, retrying with full device bounding box\n", sink_node);
 
-        auto& device_ctx = g_vpr_ctx.device();
-
         t_bb full_device_bounding_box;
         full_device_bounding_box.xmin = 0;
         full_device_bounding_box.ymin = 0;
-        full_device_bounding_box.xmax = device_ctx.grid.width() - 1;
-        full_device_bounding_box.ymax = device_ctx.grid.height() - 1;
+        full_device_bounding_box.xmax = grid_.width() - 1;
+        full_device_bounding_box.ymax = grid_.height() - 1;
 
         //
         //TODO: potential future optimization
