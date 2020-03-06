@@ -4,6 +4,7 @@
 #include "vpr_types.h"
 #include "route_timing.h"
 #include "binary_heap.h"
+#include "connection_router.h"
 
 #include <vector>
 
