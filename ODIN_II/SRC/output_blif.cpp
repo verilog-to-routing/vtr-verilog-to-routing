@@ -44,7 +44,7 @@
 bool haveOutputLatchBlackbox = false;
 
 void depth_first_traversal_to_output(short marker_value, FILE* fp, netlist_t* netlist);
-void depth_traverse_output_blif(nnode_t* node, int traverse_mark_number, FILE* fp);
+void depth_traverse_output_blif(nnode_t* node, uintptr_t traverse_mark_number, FILE* fp);
 void output_node(nnode_t* node, short traverse_number, FILE* fp);
 void define_logical_function(nnode_t* node, FILE* out);
 void define_set_input_logical_function(nnode_t* node, const char* bit_output, FILE* out);
@@ -213,7 +213,7 @@ void depth_first_traversal_to_output(short marker_value, FILE* fp, netlist_t* ne
 /*--------------------------------------------------------------------------
  * (function: depth_first_traverse)
  *------------------------------------------------------------------------*/
-void depth_traverse_output_blif(nnode_t* node, int traverse_mark_number, FILE* fp) {
+void depth_traverse_output_blif(nnode_t* node, uintptr_t traverse_mark_number, FILE* fp) {
     int i, j;
     nnode_t* next_node;
     nnet_t* next_net;

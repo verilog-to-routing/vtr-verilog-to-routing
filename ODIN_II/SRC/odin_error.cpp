@@ -30,7 +30,7 @@ void verify_delayed_error() {
 
 static std::string make_marker_from_str(std::string str, int column) {
     str.erase(column);
-    for (int i = 0; i < str.size(); i++) {
+    for (size_t i = 0; i < str.size(); i++) {
         if (str[i] != ' ' && str[i] != '\t') {
             str[i] = ' ';
         }
@@ -42,7 +42,8 @@ static std::string make_marker_from_str(std::string str, int column) {
 
 static void print_culprit_line(long column, long line_number, long file) {
     std::string culprit_line = "";
-    if (file >= 0 && file < include_file_names.size()
+
+    if (file >= 0 && (size_t)file < include_file_names.size()
         && line_number >= 0) {
         FILE* input_file = fopen(include_file_names[file].first.c_str(), "r");
         if (input_file) {
@@ -98,7 +99,7 @@ void _log_message(odin_error error_type, long column, long line_number, long fil
 
     fprintf(stderr, "%s", odin_error_STR[error_type]);
 
-    if (file >= 0 && file < include_file_names.size())
+    if (file >= 0 && (size_t)file < include_file_names.size())
         fprintf(stderr, " %s::%ld", include_file_names[file].first.c_str(), line_number + 1);
 
     if (message != NULL) {

@@ -7,13 +7,11 @@
 #include "vpr_utils.h"
 #include "timing_info_fwd.h"
 #include "route_budgets.h"
-#include "route_common.h"
 #include "router_stats.h"
 #include "router_lookahead.h"
 #include "spatial_route_tree_lookup.h"
 #include "connection_router.h"
-
-extern bool f_router_debug;
+#include "heap_type.h"
 
 int get_max_pins_per_net();
 

@@ -185,7 +185,6 @@ struct t_rr_indexed_data {
     float T_linear;
     float T_quadratic;
     float C_load;
-    float penalty_cost;
 };
 
 #include "rr_node_impl.h"

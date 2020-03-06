@@ -614,7 +614,7 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
                     int64_t value = node->children[0]->types.vnumber->get_value();
                     if (value > 0) {
                         new_node = create_node_w_type(CONCATENATE, node->line_number, node->file_number);
-                        for (size_t i = 0; i < value; i++) {
+                        for (int64_t i = 0; i < value; i++) {
                             add_child_to_node(new_node, ast_node_deep_copy(node->children[1]));
                         }
                     }
@@ -1033,8 +1033,8 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
             }
             case CONCATENATE: {
                 if (data->pass == 2 && node->num_children > 0) {
-                    size_t current = 0;
-                    size_t previous = -1;
+                    long current = 0;
+                    long previous = -1;
                     bool previous_is_constant = false;
 
                     while (current < node->num_children) {
@@ -1323,7 +1323,7 @@ ast_node_t* finalize_ast(ast_node_t* node, ast_node_t* parent, sc_hierarchy* loc
                 int64_t value = node->children[0]->types.vnumber->get_value();
                 if (value > 0) {
                     new_node = create_node_w_type(CONCATENATE, node->line_number, node->file_number);
-                    for (size_t i = 0; i < value; i++) {
+                    for (int64_t i = 0; i < value; i++) {
                         add_child_to_node(new_node, ast_node_deep_copy(node->children[1]));
                     }
                 }
@@ -1637,8 +1637,8 @@ ast_node_t* finalize_ast(ast_node_t* node, ast_node_t* parent, sc_hierarchy* loc
             }
             case CONCATENATE: {
                 if (node->num_children > 0) {
-                    size_t current = 0;
-                    size_t previous = -1;
+                    long current = 0;
+                    long previous = -1;
                     bool previous_is_constant = false;
 
                     while (current < node->num_children) {
@@ -2070,8 +2070,9 @@ ast_node_t* reduce_expressions(ast_node_t* node, sc_hierarchy* local_ref, long* 
             }
             case NUMBERS: {
                 if (max_size) {
-                    if (node->types.vnumber->size() > (*max_size)) {
-                        *max_size = node->types.vnumber->size();
+                    long current_size = static_cast<long>(node->types.vnumber->size());
+                    if (current_size > (*max_size)) {
+                        *max_size = current_size;
                     }
                 }
 
@@ -2205,17 +2206,22 @@ void update_instance_parameter_table(ast_node_t* instance, STRING_CACHE* instanc
 
                 for (int k = 0; k < j; k++) {
                     if (!strcmp(parameter_override_list->children[k]->children[0]->types.identifier, param_id)) {
-                        ast_node_t* temp = parameter_override_list->children[k];
+                        /**
+                         * TODO: is this needed?
+                         * ast_node_t* temp = parameter_override_list->children[k]; 
+                         * */
                         remove_child_from_node_at_index(parameter_override_list, k);
-                        temp = NULL;
+                        //temp = NULL;
                         j--;
                         k--;
                     }
                 }
-
-                ast_node_t* temp = parameter_override_list->children[j];
+                /**
+                 * TODO: is this needed?
+                 * ast_node_t* temp = parameter_override_list->children[j];
+                 * */
                 remove_child_from_node_at_index(parameter_override_list, j);
-                temp = NULL;
+                //temp = NULL;
             }
         }
         // check if there are still overrides in the list that haven't been deleted

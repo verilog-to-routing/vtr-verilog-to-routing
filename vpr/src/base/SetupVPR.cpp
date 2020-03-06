@@ -110,7 +110,6 @@ void SetupVPR(const t_options* Options,
     *user_models = Arch->models;
     *library_models = Arch->model_library;
 
-    /* TODO: this is inelegant, I should be populating this information in XmlReadArch */
     device_ctx.EMPTY_PHYSICAL_TILE_TYPE = nullptr;
     int num_inputs = 0;
     int num_outputs = 0;
@@ -156,7 +155,6 @@ void SetupVPR(const t_options* Options,
     }
 
     Segments = Arch->Segments;
-    device_ctx.segment_inf = Arch->Segments;
 
     SetupSwitches(*Arch, RoutingArch, Arch->Switches, Arch->num_switches);
     SetupRoutingArch(*Arch, RoutingArch);
@@ -281,7 +279,6 @@ static void SetupSwitches(const t_arch& Arch,
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].R = 0.;
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].Cin = 0.;
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].Cout = 0.;
-    device_ctx.arch_switch_inf[RoutingArch->delayless_switch].penalty_cost = 0.;
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, 0.);
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].mux_trans_size = 0.;
@@ -320,7 +317,7 @@ static void SetupRoutingArch(const t_arch& Arch,
 }
 
 static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts) {
-    RouterOpts->do_check_rr_graph = !Options.disable_check_rr_graph;
+    RouterOpts->do_check_rr_graph = Options.check_rr_graph;
     RouterOpts->astar_fac = Options.astar_fac;
     RouterOpts->bb_factor = Options.bb_factor;
     RouterOpts->criticality_exp = Options.criticality_exp;
@@ -343,7 +340,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->router_algorithm = Options.RouterAlgorithm;
     RouterOpts->fixed_channel_width = Options.RouteChanWidth;
     RouterOpts->min_channel_width_hint = Options.min_route_chan_width_hint;
-    RouterOpts->read_edge_metadata = Options.read_edge_metadata;
+    RouterOpts->read_rr_edge_metadata = Options.read_rr_edge_metadata;
 
     //TODO document these?
     RouterOpts->trim_empty_channels = false; /* DEFAULT */
@@ -374,12 +371,11 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->initial_timing = Options.router_initial_timing;
     RouterOpts->update_lower_bound_delays = Options.router_update_lower_bound_delays;
     RouterOpts->first_iteration_timing_report_file = Options.router_first_iteration_timing_report_file;
+
     RouterOpts->strict_checks = Options.strict_checks;
 
     RouterOpts->write_router_lookahead = Options.write_router_lookahead;
     RouterOpts->read_router_lookahead = Options.read_router_lookahead;
-    RouterOpts->disable_check_route = Options.disable_check_route;
-    RouterOpts->quick_check_route = Options.quick_check_route;
 }
 
 static void SetupAnnealSched(const t_options& Options,

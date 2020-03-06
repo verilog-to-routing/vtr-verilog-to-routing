@@ -1323,6 +1323,10 @@ bool is_library_model(const t_model* model) {
 }
 
 //Returns true if the specified block type contains the specified blif model name
+//
+// TODO: Remove block_type_contains_blif_model / pb_type_contains_blif_model
+// as part of
+// https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/1193
 bool block_type_contains_blif_model(t_logical_block_type_ptr type, const std::string& blif_model_name) {
     return pb_type_contains_blif_model(type->pb_type, blif_model_name);
 }

@@ -127,7 +127,7 @@ class buffered_reader_t {
                 if (!eol && !(eof))
                     c = fgetc(source);
 
-                for (int i = 1; i < this->buffer_size; i++) {
+                for (size_t i = 1; i < this->buffer_size; i++) {
                     buffer[i - 1] = buffer[i];
                 }
 
