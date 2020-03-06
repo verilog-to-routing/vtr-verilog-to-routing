@@ -6,11 +6,15 @@
 
 namespace vtr {
 
-template<typename Storage = unsigned int>
+template<typename Index = size_t, typename Storage = unsigned int>
 class dynamic_bitset {
   public:
     // Bits in underlying storage.
     static constexpr size_t kWidth = std::numeric_limits<Storage>::digits;
+    static_assert(!std::numeric_limits<Storage>::is_signed,
+                  "dynamic_bitset storage must be unsigned!");
+    static_assert(std::numeric_limits<Storage>::is_integer,
+                  "dynamic_bitset storage must be integer!");
 
     void resize(size_t size) {
         array_.resize((size + kWidth - 1) / kWidth);
@@ -33,16 +37,20 @@ class dynamic_bitset {
         }
     }
 
-    void set(size_t index, bool val) {
+    void set(Index index, bool val) {
+        size_t index_value(index);
+        VTR_ASSERT_SAFE(index_value < size());
         if (val) {
-            array_[index / kWidth] |= (1 << (index % kWidth));
+            array_[index_value / kWidth] |= (1 << (index_value % kWidth));
         } else {
-            array_[index / kWidth] &= ~(1u << (index % kWidth));
+            array_[index_value / kWidth] &= ~(1u << (index_value % kWidth));
         }
     }
 
-    bool get(size_t index) const {
-        return (array_[index / kWidth] & (1u << (index % kWidth))) != 0;
+    bool get(Index index) const {
+        size_t index_value(index);
+        VTR_ASSERT_SAFE(index_value < size());
+        return (array_[index_value / kWidth] & (1u << (index_value % kWidth))) != 0;
     }
 
   private:
