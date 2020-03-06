@@ -41,6 +41,7 @@
 
 
 #include "static_move_generator.h"
+#include "simpleRL_move_generator.h"
 
 #include "PlacementDelayCalculator.h"
 #include "VprTimingGraphResolver.h"
@@ -467,8 +468,15 @@ void try_place(const t_placer_opts& placer_opts,
         }
     }
 
-    move_generator = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_move_prob);
+    move_lim = (int)(annealing_sched.inner_num * pow(cluster_ctx.clb_nlist.blocks().size(), 1.3333));
 
+    //move_generator = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_move_prob);
+    std::unique_ptr<EpsilonGreedyAgent> karmed_bandit_agent;
+    
+    const size_t avail_moves = 4;
+    karmed_bandit_agent = std::make_unique<EpsilonGreedyAgent>(avail_moves, placer_opts.place_agent_epsilon);
+    karmed_bandit_agent->set_step(placer_opts.place_agent_gamma, move_lim);
+    move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent);
 
     width_fac = placer_opts.place_chan_width;
 
@@ -1270,6 +1278,7 @@ static e_move_result try_swap(const t_annealing_state* state,
     e_create_move create_move_outcome = move_generator.propose_move(blocks_affected
       , rlim, X_coord, Y_coord, num_moves, type, high_fanout_net);
 
+    VTR_LOG("###%d,%d,%d,%d\n",num_moves[0],num_moves[1],num_moves[2],num_moves[3]);
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
 
     e_move_result move_outcome = ABORTED;
@@ -1448,7 +1457,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 
     move_outcome_stats.outcome = move_outcome;
 
-    move_generator.process_outcome(move_outcome_stats);
+    move_generator.process_outcome(delta_c);
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #    ifndef NO_GRAPHICS

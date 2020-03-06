@@ -26,7 +26,7 @@ class MoveGenerator {
         std::vector<int>& Y_coord, std::vector<int>& num_moves, int& type, int place_high_fanout_net) = 0;
 
     //Recieves feedback about the outcome of the previously proposed move
-    virtual void process_outcome(const MoveOutcomeStats& /*move_outcome*/) {}
+    virtual void process_outcome(double) {}
 };
 
 #endif

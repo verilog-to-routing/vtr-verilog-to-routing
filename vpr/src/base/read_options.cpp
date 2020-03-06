@@ -1771,6 +1771,21 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .show_in(argparse::ShowIn::HELP_ONLY);
 
 
+    place_grp.add_argument(args.place_agent_epsilon, "--place_agent_epsilon")
+        .help(
+            "Agent epsilon (exploration fraction) for subsequent temperatures")
+        .default_value("0.5")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.place_agent_gamma, "--place_agent_gamma")
+        .help(
+            "Controls how quickly the agent's memory decays. "
+            "Values between [0., 1.] specify the fraction of weight in the exponentially weighted average applied to moves which occured greater than moves_per_temp moves ago."
+            "Values < 0 cause the unwieghted sample average to be used")
+        .default_value("0.01")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+
     auto& place_timing_grp = parser.add_argument_group("timing-driven placement options");
 
     place_timing_grp.add_argument(args.PlaceTimingTradeoff, "--timing_tradeoff")

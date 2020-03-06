@@ -116,7 +116,10 @@ struct t_options {
     argparse::ArgValue<std::vector<float>> place_static_move_prob;
     argparse::ArgValue<int> place_high_fanout_net;
 
+    argparse::ArgValue<float> place_agent_epsilon;
+    argparse::ArgValue<float> place_agent_gamma;
 
+    
     /* Timing-driven placement options only */
     argparse::ArgValue<float> PlaceTimingTradeoff;
     argparse::ArgValue<int> RecomputeCritIter;
