@@ -32,6 +32,8 @@
 #include "timing_info.h"
 #include "timing_util.h"
 #include "route_budgets.h"
+#include "binary_heap.h"
+#include "connection_router.h"
 
 #include "router_lookahead_map.h"
 
@@ -135,7 +137,7 @@ bool f_router_debug = false;
 /******************** Subroutines local to route_timing.c ********************/
 
 static bool timing_driven_route_sink(
-    ConnectionRouter& router,
+    ConnectionRouterInterface& router,
     ClusterNetId net_id,
     unsigned itarget,
     int target_pin,
@@ -148,7 +150,7 @@ static bool timing_driven_route_sink(
     RouterStats& router_stats);
 
 static bool timing_driven_pre_route_to_clock_root(
-    ConnectionRouter& router,
+    ConnectionRouterInterface& router,
     ClusterNetId net_id,
     int sink_node,
     const t_conn_cost_params cost_params,
@@ -325,7 +327,8 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
     std::vector<int> scratch;
 
     const auto& device_ctx = g_vpr_ctx.device();
-    ConnectionRouter router(
+    std::unique_ptr<ConnectionRouterInterface> router = make_connection_router(
+        router_opts.router_heap,
         device_ctx.grid,
         *router_lookahead,
         device_ctx.rr_nodes,
@@ -398,7 +401,7 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
          */
         for (auto net_id : sorted_nets) {
             bool was_rerouted = false;
-            bool is_routable = try_timing_driven_route_net(router,
+            bool is_routable = try_timing_driven_route_net(*router,
                                                            net_id,
                                                            itry,
                                                            pres_fac,
@@ -723,7 +726,7 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
     return routing_is_successful;
 }
 
-bool try_timing_driven_route_net(ConnectionRouter& router,
+bool try_timing_driven_route_net(ConnectionRouterInterface& router,
                                  ClusterNetId net_id,
                                  int itry,
                                  float pres_fac,
@@ -876,7 +879,7 @@ struct Criticality_comp {
     }
 };
 
-bool timing_driven_route_net(ConnectionRouter& router,
+bool timing_driven_route_net(ConnectionRouterInterface& router,
                              ClusterNetId net_id,
                              int itry,
                              float pres_fac,
@@ -1014,6 +1017,8 @@ bool timing_driven_route_net(ConnectionRouter& router,
             conn_delay_budget.short_path_criticality = budgeting_inf.get_crit_short_path(net_id, target_pin);
         }
 
+        profiling::conn_start();
+
         // build a branch in the route tree to the target
         if (!timing_driven_route_sink(router,
                                       net_id,
@@ -1027,10 +1032,15 @@ bool timing_driven_route_net(ConnectionRouter& router,
                                       router_stats))
             return false;
 
+        profiling::conn_finish(route_ctx.net_rr_terminals[net_id][0],
+                               sink_rr,
+                               pin_criticality[target_pin]);
+
         ++router_stats.connections_routed;
     } // finished all sinks
 
     ++router_stats.nets_routed;
+    profiling::net_finish();
 
     /* For later timing analysis. */
 
@@ -1060,7 +1070,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
 }
 
 static bool timing_driven_pre_route_to_clock_root(
-    ConnectionRouter& router,
+    ConnectionRouterInterface& router,
     ClusterNetId net_id,
     int sink_node,
     const t_conn_cost_params cost_params,
@@ -1149,7 +1159,7 @@ static bool timing_driven_pre_route_to_clock_root(
 }
 
 static bool timing_driven_route_sink(
-    ConnectionRouter& router,
+    ConnectionRouterInterface& router,
     ClusterNetId net_id,
     unsigned itarget,
     int target_pin,
@@ -1847,7 +1857,7 @@ void enable_router_debug(
     ClusterNetId net,
     int sink_rr,
     int router_iteration,
-    ConnectionRouter* router) {
+    ConnectionRouterInterface* router) {
     bool active_net_debug = (router_opts.router_debug_net >= -1);
     bool active_sink_debug = (router_opts.router_debug_sink_rr >= 0);
     bool active_iteration_debug = (router_opts.router_debug_iteration >= 0);

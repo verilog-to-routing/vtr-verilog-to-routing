@@ -167,4 +167,13 @@ class HeapInterface {
     virtual void free_all_memory() = 0;
 };
 
+enum class e_heap_type {
+    INVALID_HEAP = 0,
+    BINARY_HEAP,
+    BUCKET_HEAP_APPROXIMATION,
+};
+
+// Heap factory.
+std::unique_ptr<HeapInterface> make_heap(e_heap_type);
+
 #endif /* _HEAP_TYPE_H */

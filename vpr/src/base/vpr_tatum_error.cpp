@@ -45,26 +45,24 @@ std::string format_tatum_error(const tatum::Error& error) {
     }
 
     if (error.edge) {
-        if (timing_ctx.graph) {
-            tatum::NodeId src_node = timing_ctx.graph->edge_src_node(error.edge);
-            tatum::NodeId sink_node = timing_ctx.graph->edge_sink_node(error.edge);
+        tatum::NodeId src_node = timing_ctx.graph->edge_src_node(error.edge);
+        tatum::NodeId sink_node = timing_ctx.graph->edge_sink_node(error.edge);
 
-            AtomPinId src_pin = atom_ctx.lookup.tnode_atom_pin(src_node);
-            AtomPinId sink_pin = atom_ctx.lookup.tnode_atom_pin(sink_node);
+        AtomPinId src_pin = atom_ctx.lookup.tnode_atom_pin(src_node);
+        AtomPinId sink_pin = atom_ctx.lookup.tnode_atom_pin(sink_node);
 
-            if (src_pin && sink_pin) {
-                msg += "Between netlist pins ";
+        if (src_pin && sink_pin) {
+            msg += "Between netlist pins ";
 
-                msg += "'" + atom_ctx.nlist.pin_name(src_pin) + "' -> '" + atom_ctx.nlist.pin_name(sink_pin) + "'";
+            msg += "'" + atom_ctx.nlist.pin_name(src_pin) + "' -> '" + atom_ctx.nlist.pin_name(sink_pin) + "'";
 
-                AtomNetId src_net = atom_ctx.nlist.pin_net(src_pin);
-                AtomNetId sink_net = atom_ctx.nlist.pin_net(sink_pin);
-                if (src_net && src_net == sink_net) {
-                    msg += " via net '" + atom_ctx.nlist.net_name(src_net) + "'";
-                }
-
-                msg += ", ";
+            AtomNetId src_net = atom_ctx.nlist.pin_net(src_pin);
+            AtomNetId sink_net = atom_ctx.nlist.pin_net(sink_pin);
+            if (src_net && src_net == sink_net) {
+                msg += " via net '" + atom_ctx.nlist.net_name(src_net) + "'";
             }
+
+            msg += ", ";
         }
 
         msg += "Timing Graph Edge: " + std::to_string(size_t(error.edge));

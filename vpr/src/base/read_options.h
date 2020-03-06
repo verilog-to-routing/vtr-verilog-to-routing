@@ -135,6 +135,8 @@ struct t_options {
     argparse::ArgValue<e_router_algorithm> RouterAlgorithm;
     argparse::ArgValue<int> min_incremental_reroute_fanout;
     argparse::ArgValue<bool> read_rr_edge_metadata;
+    argparse::ArgValue<bool> disable_check_route;
+    argparse::ArgValue<bool> quick_check_route;
 
     /* Timing-driven router options only */
     argparse::ArgValue<float> astar_fac;
@@ -157,6 +159,7 @@ struct t_options {
     argparse::ArgValue<bool> router_update_lower_bound_delays;
     argparse::ArgValue<std::string> router_first_iteration_timing_report_file;
     argparse::ArgValue<e_router_initial_timing> router_initial_timing;
+    argparse::ArgValue<e_heap_type> router_heap;
 
     /* Analysis options */
     argparse::ArgValue<bool> full_stats;

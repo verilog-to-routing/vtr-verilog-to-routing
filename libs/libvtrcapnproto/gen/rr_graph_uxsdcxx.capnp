@@ -4,9 +4,9 @@
 #
 # Cmdline: uxsdcxx/uxsdcap.py rr_graph.xsd
 # Input file: rr_graph.xsd
-# md5sum of input file: 40e83d2ea6556761d4e29f21324b1871
+# md5sum of input file: d9e439fa173fdf56b51feeed0ac48272
 
-@0xc18a82ddfa10808b;
+@0xa90e1cca7f71265c;
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("ucap");
 
@@ -81,6 +81,7 @@ struct Timing {
 	cout @2 :Float32;
 	r @3 :Float32;
 	tdel @4 :Float32;
+	penaltyCost @5 :Float32;
 }
 
 struct Sizing {
@@ -137,6 +138,18 @@ struct BlockTypes {
 	blockTypes @0 :List(BlockType);
 }
 
+struct ConnectionBoxDeclaration {
+	id @0 :UInt32;
+	name @1 :Text;
+}
+
+struct ConnectionBoxes {
+	numBoxes @0 :UInt32;
+	xDim @1 :UInt32;
+	yDim @2 :UInt32;
+	connectionBoxes @3 :List(ConnectionBoxDeclaration);
+}
+
 struct GridLoc {
 	blockTypeId @0 :Int32;
 	heightOffset @1 :Int32;
@@ -176,6 +189,18 @@ struct Metadata {
 	metas @0 :List(Meta);
 }
 
+struct CanonicalLoc {
+	x @0 :UInt32;
+	y @1 :UInt32;
+}
+
+struct ConnectionBoxAnnotation {
+	id @0 :UInt32;
+	sitePinDelay @1 :Float32;
+	x @2 :UInt32;
+	y @3 :UInt32;
+}
+
 struct Node {
 	capacity @0 :UInt32;
 	direction @1 :NodeDirection;
@@ -185,6 +210,8 @@ struct Node {
 	timing @5 :NodeTiming;
 	segment @6 :NodeSegment;
 	metadata @7 :Metadata;
+	canonicalLoc @8 :CanonicalLoc;
+	connectionBox @9 :ConnectionBoxAnnotation;
 }
 
 struct RrNodes {
@@ -210,7 +237,8 @@ struct RrGraph {
 	switches @4 :Switches;
 	segments @5 :Segments;
 	blockTypes @6 :BlockTypes;
-	grid @7 :GridLocs;
-	rrNodes @8 :RrNodes;
-	rrEdges @9 :RrEdges;
+	connectionBoxes @7 :ConnectionBoxes;
+	grid @8 :GridLocs;
+	rrNodes @9 :RrNodes;
+	rrEdges @10 :RrEdges;
 }
