@@ -1221,7 +1221,7 @@ static bool update_state(t_annealing_state* state, float success_rat, const t_pl
     bool restart_temp = state->t < t_exit || std::isnan(t_exit); //May get nan if there are no nets
 
     if (annealing_sched.type == DUSTY_SCHED) {
-        if (success_rat < annealing_sched.success_min) {
+        if (success_rat < annealing_sched.success_min || restart_temp) {
             if (state->alpha > annealing_sched.alpha_max) return false;
             state->t = state->restart_t / sqrt(state->alpha); // Take a half step from the restart temperature.
             state->alpha = 1.0 - ((1.0 - state->alpha) * annealing_sched.alpha_decay);
