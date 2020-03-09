@@ -1229,6 +1229,7 @@ void get_rr_node_indices(const t_rr_node_indices& L_rr_node_indices,
                          e_side side) {
     if (rr_type == SOURCE
         || rr_type == SINK
+        || rr_type == CHANX
         || rr_type == CHANY) {
         //CHANX uses an odd swapped x/y convention...
         if (CHANX == rr_type) {

@@ -23,6 +23,9 @@ class MetadataBind {
         : is_node_(false)
         , is_edge_(false)
         , ignore_(false)
+        , inode_(OPEN)
+        , sink_node_(OPEN)
+        , switch_id_(OPEN)
         , strings_(strings)
         , name_(empty)
         , value_(empty) {}

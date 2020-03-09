@@ -29,6 +29,7 @@ void BinaryHeap::init_heap(const DeviceGrid& grid) {
     ssize_t target_heap_size = (grid.width() - 1) * (grid.height() - 1);
     if (heap_ == nullptr || heap_size_ < target_heap_size) {
         if (heap_ != nullptr) {
+            // coverity[offset_free : Intentional]
             vtr::free(heap_ + 1);
             heap_ = nullptr;
         }

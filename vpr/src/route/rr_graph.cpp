@@ -1406,6 +1406,7 @@ static void build_rr_sinks_sources(const int i,
         int inode = 0;
         if (class_inf[iclass].type == DRIVER) { /* SOURCE */
             inode = get_rr_node_index(L_rr_node_indices, i, j, SOURCE, iclass);
+            VTR_ASSERT(inode >= 0);
 
             //Retrieve all the physical OPINs associated with this source, this includes
             //those at different grid tiles of this block

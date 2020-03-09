@@ -660,7 +660,7 @@ void ConnectionRouter::evaluate_timing_driven_node_costs(t_heap* to,
                    rr_node_arch_name(to_node).c_str(), describe_rr_node(to_node).c_str(),
                    rr_node_arch_name(target_node).c_str(), describe_rr_node(target_node).c_str(),
                    expected_cost, to->R_upstream);
-    total_cost = to->backward_path_cost + cost_params.astar_fac * expected_cost;
+    total_cost += to->backward_path_cost + cost_params.astar_fac * expected_cost;
 
     to->cost = total_cost;
 }
