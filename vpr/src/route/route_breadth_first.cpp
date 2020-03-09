@@ -13,6 +13,9 @@
 
 /********************* Subroutines local to this module *********************/
 
+// Note: Breadth first router is still using only the BinaryHeap because it is
+// deprecated, and not getting further development.
+
 static bool breadth_first_route_net(BinaryHeap& heap, ClusterNetId net_id, float bend_cost);
 
 static void breadth_first_expand_trace_segment(BinaryHeap& heap, t_trace* start_ptr, int remaining_connections_to_sink, std::vector<int>& modified_rr_node_inf);
@@ -61,6 +64,10 @@ bool try_breadth_first_route(const t_router_opts& router_opts) {
      * pres_fac high even for the first iteration.                            */
 
     pres_fac = router_opts.first_iter_pres_fac;
+
+    if (router_opts.router_heap != e_heap_type::BINARY_HEAP) {
+        VTR_LOG_WARN("Breadth-first router only uses the BINARY_HEAP.");
+    }
 
     BinaryHeap heap;
     heap.init_heap(device_ctx.grid);
