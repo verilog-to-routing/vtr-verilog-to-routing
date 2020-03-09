@@ -47,10 +47,6 @@ addons:
     - qt5-default
     - clang-format-7
     # All the compilers!
-    - g++-4.9
-    - gcc-4.9
-    - g++-5
-    - gcc-5
     - g++-6
     - gcc-6
     - g++-7
@@ -61,12 +57,6 @@ addons:
     - gcc-9
     - clang-6.0
     - clang-8
-
-cache:
-  ccache: true
-  #directories:
-    #- /home/travis/vtr-build
-    #- /home/travis/vtr
 
 env:
   - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
@@ -98,7 +88,7 @@ jobs:
       name: "C++ Unit Tests"
       env:
         - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
-        - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
       script:
         - ./.github/travis/build.sh
         - ./.github/travis/unittest.sh
@@ -108,14 +98,14 @@ jobs:
           #In order to get compilation warnings produced per source file, we must do a non-IPO build
           #We also turn warnings into errors for this target by doing a strict compile
         - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_STRICT_COMPILE=on -DVTR_IPO_BUILD=off"
-        - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
       script:
         - ./.github/travis/build.sh
     - stage: Test
       name: "Basic Regression Tests"
       env:
         - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
-        - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
       script:
         - ./.github/travis/build.sh
         - ./run_reg_test.pl vtr_reg_basic -show_failures -j2
@@ -123,7 +113,7 @@ jobs:
       name: "Strong Regression Tests"
       env:
         - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
-        - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
       script:
         - ./.github/travis/build.sh
         - travis_wait 30 ./run_reg_test.pl vtr_reg_strong -show_failures -j2
@@ -131,14 +121,14 @@ jobs:
       name: "Basic Valgrind Memory Tests"
       env:
         - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
-        - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
       script:
         - ./.github/travis/build.sh
         - ./run_reg_test.pl vtr_reg_valgrind_small -show_failures -j2
       name: "Sanitized Basic Regression Tests"
       env:
         - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on"
-        - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
         - BUILD_TYPE=debug
         - LSAN_OPTIONS="exitcode=42" #Use a non-standard exit code to ensure LSAN errors are detected
       script:
@@ -161,20 +151,12 @@ jobs:
       name: "ODIN-II Micro Tests"
       env:
         - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on"
-        - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
         - BUILD_TYPE=debug
       script:
         - ./.github/travis/build.sh
         - ./run_reg_test.pl odin_reg_micro -show_failures -j2
 
-    - stage: Test
-      name: "Build Compatibility: GCC 5 (Ubuntu Xenial - 16.04)"
-      env:
-        - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
-        - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
-        - BUILD_TYPE=release_strict
-      script:
-        - ./.github/travis/build.sh
     - stage: Test
       name: "Build Compatibility: GCC 6 (Debian Stretch)"
       env:
