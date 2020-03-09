@@ -555,6 +555,8 @@ t_physical_tile_type SetupEmptyPhysicalType() {
     type.area = UNDEFINED;
     type.switchblock_locations = vtr::Matrix<e_sb_type>({{size_t(type.width), size_t(type.height)}}, e_sb_type::FULL);
     type.switchblock_switch_overrides = vtr::Matrix<int>({{size_t(type.width), size_t(type.height)}}, DEFAULT_SWITCH);
+    type.is_input_type = false;
+    type.is_output_type = false;
 
     return type;
 }

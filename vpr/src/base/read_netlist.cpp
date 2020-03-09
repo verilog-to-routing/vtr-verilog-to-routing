@@ -468,6 +468,11 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* p
             for (i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; i++) {
                 if (strcmp(pb_type->modes[pb->mode].pb_type_children[i].name, tokens[0].data) == 0) {
                     pb_index = vtr::atoi(tokens[2].data);
+                    if (pb_index < 0) {
+                        vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(child),
+                                  "Instance number %d is negative instance %s in %s.\n",
+                                  pb_index, instance_type.value(), child.name());
+                    }
                     if (pb_index >= pb_type->modes[pb->mode].pb_type_children[i].num_pb) {
                         vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(child),
                                   "Instance number exceeds # of pb available for instance %s in %s.\n",

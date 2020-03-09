@@ -54,6 +54,7 @@ class ConnectionRouter {
         , rr_rc_data_(rr_rc_data.data())
         , rr_switch_inf_(rr_switch_inf.data())
         , rr_node_route_inf_(rr_node_route_inf.data())
+        , router_stats_(nullptr)
         , router_debug_(false) {
         heap_.init_heap(grid);
     }
