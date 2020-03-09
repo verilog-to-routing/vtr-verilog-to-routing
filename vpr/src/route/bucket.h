@@ -24,7 +24,7 @@ class BucketItems {
     //
     // This operation is only safe if all outstanding references are discarded.
     // This is true when the router is starting on a new net, as all outstanding
-    // items should be in the bucket, which is cleared at the start of routing.
+    // items should in the bucket will be cleared at the start of routing.
     void clear() {
         heap_free_head_ = nullptr;
         num_heap_allocated_ = 0;
@@ -206,7 +206,7 @@ class Bucket : public HeapInterface {
 
     // Expand the number of buckets.
     //
-    // Only call if insufficient bucets exist.
+    // Only call if insufficient buckets exist.
     void expand(size_t required_number_of_buckets);
 
     BucketItems items_; /* Item storage */
