@@ -30,10 +30,10 @@ class ConnectionRouter : public ConnectionRouterInterface {
         std::vector<t_rr_node_route_inf>& rr_node_route_inf)
         : grid_(grid)
         , router_lookahead_(router_lookahead)
-        , rr_nodes_(&rr_nodes)
-        , rr_rc_data_(rr_rc_data.data())
-        , rr_switch_inf_(rr_switch_inf.data())
-        , rr_node_route_inf_(rr_node_route_inf.data())
+        , rr_nodes_(rr_nodes.view())
+        , rr_rc_data_(rr_rc_data.data(), rr_rc_data.size())
+        , rr_switch_inf_(rr_switch_inf.data(), rr_switch_inf.size())
+        , rr_node_route_inf_(rr_node_route_inf.data(), rr_node_route_inf.size())
         , router_stats_(nullptr)
         , router_debug_(false) {
         heap_.init_heap(grid);
@@ -222,10 +222,10 @@ class ConnectionRouter : public ConnectionRouterInterface {
 
     const DeviceGrid& grid_;
     const RouterLookahead& router_lookahead_;
-    const t_rr_graph_storage* rr_nodes_;
-    const t_rr_rc_data* rr_rc_data_;
-    const t_rr_switch_inf* rr_switch_inf_;
-    t_rr_node_route_inf* rr_node_route_inf_;
+    const t_rr_graph_view rr_nodes_;
+    vtr::array_view<const t_rr_rc_data> rr_rc_data_;
+    vtr::array_view<const t_rr_switch_inf> rr_switch_inf_;
+    vtr::array_view<t_rr_node_route_inf> rr_node_route_inf_;
     std::vector<int> modified_rr_node_inf_;
     RouterStats* router_stats_;
     HeapImplementation heap_;
