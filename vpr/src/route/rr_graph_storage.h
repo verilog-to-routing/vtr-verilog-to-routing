@@ -1,5 +1,5 @@
-#ifndef _RR_NODE_STORAGE_
-#define _RR_NODE_STORAGE_
+#ifndef _RR_GRAPH_STORAGE_
+#define _RR_GRAPH_STORAGE_
 
 #include <exception>
 
@@ -10,6 +10,7 @@
 #include "vtr_memory.h"
 #include "vpr_utils.h"
 #include "vtr_strong_id_range.h"
+#include "vtr_array_view.h"
 
 /* Main structure describing one routing resource node.  Everything in       *
  * this structure should describe the graph -- information needed only       *
@@ -83,6 +84,8 @@ struct t_rr_node_ptc_data {
     } ptc_;
 };
 
+class t_rr_graph_view;
+
 // RR node and edge storage class.
 //
 // Description:
@@ -132,6 +135,13 @@ class t_rr_graph_storage {
     t_rr_graph_storage() {
         clear();
     }
+
+    // Prefer to use t_rr_graph_view over directly accessing
+    // t_rr_graph_storage, unless mutating RR graph.
+    //
+    // t_rr_graph_view is a value object, and should be passed around by value
+    // and stored.
+    t_rr_graph_view view() const;
 
     /****************
      * Node methods *
@@ -187,7 +197,7 @@ class t_rr_graph_storage {
     short node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
 
     /* Retrieve fan_in for RRNodeId, init_fan_in must have been called first. */
-    t_edge_size fan_in(RRNodeId id) {
+    t_edge_size fan_in(RRNodeId id) const {
         return node_fan_in_[id];
     }
 
@@ -610,4 +620,130 @@ class t_rr_graph_storage {
     bool partitioned_;
 };
 
-#endif /* _RR_NODE_STORAGE_ */
+class t_rr_graph_view {
+  public:
+    t_rr_graph_view();
+    t_rr_graph_view(
+        const vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
+        const vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc,
+        const vtr::array_view_id<RRNodeId, const RREdgeId> node_first_edge,
+        const vtr::array_view_id<RRNodeId, const t_edge_size> node_fan_in,
+        const vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node,
+        const vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node,
+        const vtr::array_view_id<RREdgeId, const short> edge_switch)
+        : node_storage_(node_storage)
+        , node_ptc_(node_ptc)
+        , node_first_edge_(node_first_edge)
+        , node_fan_in_(node_fan_in)
+        , edge_src_node_(edge_src_node)
+        , edge_dest_node_(edge_dest_node)
+        , edge_switch_(edge_switch) {}
+
+    /****************
+     * Node methods *
+     ****************/
+
+    size_t size() const {
+        return node_storage_.size();
+    }
+
+    t_rr_type node_type(RRNodeId id) const {
+        return node_storage_[id].type_;
+    }
+    const char* node_type_string(RRNodeId id) const;
+
+    int16_t node_rc_index(RRNodeId id) const {
+        return node_storage_[id].rc_index_;
+    }
+
+    short node_xlow(RRNodeId id) const {
+        return node_storage_[id].xlow_;
+    }
+    short node_ylow(RRNodeId id) const {
+        return node_storage_[id].ylow_;
+    }
+    short node_xhigh(RRNodeId id) const {
+        return node_storage_[id].xhigh_;
+    }
+    short node_yhigh(RRNodeId id) const {
+        return node_storage_[id].yhigh_;
+    }
+
+    short node_capacity(RRNodeId id) const {
+        return node_storage_[id].capacity_;
+    }
+    short node_cost_index(RRNodeId id) const {
+        return node_storage_[id].cost_index_;
+    }
+
+    e_direction node_direction(RRNodeId id) const {
+        if (node_type(id) != CHANX && node_type(id) != CHANY) {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'direction' for non-channel type '%s'", node_type_string(id));
+        }
+        return node_storage_[id].dir_side_.direction;
+    }
+
+    e_side node_side(RRNodeId id) const {
+        if (node_type(id) != IPIN && node_type(id) != OPIN) {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'side' for non-IPIN/OPIN type '%s'", node_type_string(id));
+        }
+        return node_storage_[id].dir_side_.side;
+    }
+
+    /* PTC get methods */
+    short node_ptc_num(RRNodeId id) const;
+    short node_pin_num(RRNodeId id) const;   //Same as ptc_num() but checks that type() is consistent
+    short node_track_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
+    short node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
+
+    // This prefetechs hot RR node data required for optimization.
+    //
+    // Note: This is optional, but may lower time spent on memory stalls in
+    // some circumstances.
+    inline void prefetch_node(RRNodeId id) const {
+        VTR_PREFETCH(&node_storage_[id], 0, 0);
+    }
+
+    /* Edge accessors */
+
+    // Returns a range of RREdgeId's belonging to RRNodeId id.
+    //
+    // If this range is empty, then RRNodeId id has no edges.
+    vtr::StrongIdRange<RREdgeId> edge_range(RRNodeId id) const {
+        return vtr::StrongIdRange<RREdgeId>(first_edge(id), last_edge(id));
+    }
+
+    // Get the destination node for the specified edge.
+    RRNodeId edge_sink_node(RREdgeId edge) const {
+        return edge_dest_node_[edge];
+    }
+
+    // Get the switch used for the specified edge.
+    short edge_switch(RREdgeId edge) const {
+        return edge_switch_[edge];
+    }
+
+    /* Retrieve fan_in for RRNodeId. */
+    t_edge_size fan_in(RRNodeId id) const {
+        return node_fan_in_[id];
+    }
+
+  private:
+    RREdgeId first_edge(RRNodeId id) const {
+        return node_first_edge_[id];
+    }
+
+    RREdgeId last_edge(RRNodeId id) const {
+        return (&node_first_edge_[id])[1];
+    }
+
+    vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage_;
+    vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc_;
+    vtr::array_view_id<RRNodeId, const RREdgeId> node_first_edge_;
+    vtr::array_view_id<RRNodeId, const t_edge_size> node_fan_in_;
+    vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node_;
+    vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node_;
+    vtr::array_view_id<RREdgeId, const short> edge_switch_;
+};
+
+#endif /* _RR_GRAPH_STORAGE_ */

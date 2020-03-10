@@ -533,6 +533,9 @@ bool t_rr_graph_storage::validate() const {
 const char* t_rr_graph_storage::node_type_string(RRNodeId id) const {
     return rr_node_typename[node_type(id)];
 }
+const char* t_rr_graph_view::node_type_string(RRNodeId id) const {
+    return rr_node_typename[node_type(id)];
+}
 
 void t_rr_graph_storage::set_node_ptc_num(RRNodeId id, short new_ptc_num) {
     node_ptc_[id].ptc_.pin_num = new_ptc_num; //TODO: eventually remove
@@ -633,4 +636,53 @@ void t_rr_graph_storage::set_node_side(RRNodeId id, e_side new_side) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to set RR node 'side' for non-channel type '%s'", node_type_string(id));
     }
     node_storage_[id].dir_side_.side = new_side;
+}
+
+short t_rr_graph_view::node_ptc_num(RRNodeId id) const {
+    return node_ptc_[id].ptc_.pin_num;
+}
+short t_rr_graph_view::node_pin_num(RRNodeId id) const {
+    if (node_type(id) != IPIN && node_type(id) != OPIN) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'pin_num' for non-IPIN/OPIN type '%s'", node_type_string(id));
+    }
+    return node_ptc_[id].ptc_.pin_num;
+}
+short t_rr_graph_view::node_track_num(RRNodeId id) const {
+    if (node_type(id) != CHANX && node_type(id) != CHANY) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'track_num' for non-CHANX/CHANY type '%s'", node_type_string(id));
+    }
+    return node_ptc_[id].ptc_.track_num;
+}
+short t_rr_graph_view::node_class_num(RRNodeId id) const {
+    if (node_type(id) != SOURCE && node_type(id) != SINK) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'class_num' for non-SOURCE/SINK type '%s'", node_type_string(id));
+    }
+    return node_ptc_[id].ptc_.class_num;
+}
+
+t_rr_graph_view t_rr_graph_storage::view() const {
+    VTR_ASSERT(partitioned_);
+    VTR_ASSERT(node_storage_.size() == node_fan_in_.size());
+    return t_rr_graph_view(
+        vtr::array_view_id<RRNodeId, const t_rr_node_data>(
+            node_storage_.data(),
+            node_storage_.size()),
+        vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data>(
+            node_ptc_.data(),
+            node_ptc_.size()),
+        vtr::array_view_id<RRNodeId, const RREdgeId>(
+            node_first_edge_.data(),
+            node_first_edge_.size()),
+        vtr::array_view_id<RRNodeId, const t_edge_size>(
+            node_fan_in_.data(),
+            node_fan_in_.size()),
+        vtr::array_view_id<RREdgeId, const RRNodeId>(
+            edge_src_node_.data(),
+            edge_src_node_.size()),
+        vtr::array_view_id<RREdgeId, const RRNodeId>(
+            edge_dest_node_.data(),
+            edge_dest_node_.size()),
+        vtr::array_view_id<RREdgeId, const short>(
+            edge_switch_.data(),
+            edge_switch_.size()));
 }
