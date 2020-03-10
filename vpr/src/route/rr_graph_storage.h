@@ -3,6 +3,7 @@
 
 #include <exception>
 
+#include "rr_graph_fwd.h"
 #include "rr_node_fwd.h"
 #include "rr_graph2.h"
 #include "vtr_log.h"

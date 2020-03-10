@@ -557,7 +557,7 @@ static t_trace_branch traceback_branch(int node, std::unordered_set<int>& trace_
         //Add the current node to the head of traceback
         t_trace* prev_ptr = alloc_trace_data();
         prev_ptr->index = inode;
-        prev_ptr->iswitch = device_ctx.rr_nodes[inode].edge_switch(iedge);
+        prev_ptr->iswitch = device_ctx.rr_nodes.edge_switch(iedge);
         prev_ptr->next = branch_head;
         branch_head = prev_ptr;
 
@@ -691,7 +691,7 @@ void reset_path_costs(const std::vector<int>& visited_rr_nodes) {
         route_ctx.rr_node_route_inf[node].path_cost = std::numeric_limits<float>::infinity();
         route_ctx.rr_node_route_inf[node].backward_path_cost = std::numeric_limits<float>::infinity();
         route_ctx.rr_node_route_inf[node].prev_node = NO_PREVIOUS;
-        route_ctx.rr_node_route_inf[node].prev_edge = NO_PREVIOUS;
+        route_ctx.rr_node_route_inf[node].prev_edge = RREdgeId::INVALID();
     }
 }
 
@@ -945,7 +945,7 @@ void reset_rr_node_route_structs() {
 
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         route_ctx.rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
-        route_ctx.rr_node_route_inf[inode].prev_edge = NO_PREVIOUS;
+        route_ctx.rr_node_route_inf[inode].prev_edge = RREdgeId::INVALID();
         route_ctx.rr_node_route_inf[inode].pres_cost = 1.0;
         route_ctx.rr_node_route_inf[inode].acc_cost = 1.0;
         route_ctx.rr_node_route_inf[inode].path_cost = std::numeric_limits<float>::infinity();
@@ -1403,7 +1403,8 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
                 //Add the OPIN to the heap according to it's congestion cost
                 cost = get_rr_cong_cost(to_node);
                 add_node_to_heap(heap, route_ctx.rr_node_route_inf,
-                                 to_node, cost, OPEN, OPEN, 0., 0.);
+                                 to_node, cost, OPEN, RREdgeId::INVALID(),
+                                 0., 0.);
             }
 
             for (ipin = 0; ipin < num_local_opin; ipin++) {
@@ -1600,11 +1601,12 @@ void print_rr_node_route_inf() {
     for (size_t inode = 0; inode < route_ctx.rr_node_route_inf.size(); ++inode) {
         if (!std::isinf(route_ctx.rr_node_route_inf[inode].path_cost)) {
             int prev_node = route_ctx.rr_node_route_inf[inode].prev_node;
-            int prev_edge = route_ctx.rr_node_route_inf[inode].prev_edge;
-            VTR_LOG("rr_node: %d prev_node: %d prev_edge: %d",
-                    inode, prev_node, prev_edge);
+            RREdgeId prev_edge = route_ctx.rr_node_route_inf[inode].prev_edge;
+            auto switch_id = device_ctx.rr_nodes.edge_switch(prev_edge);
+            VTR_LOG("rr_node: %d prev_node: %d prev_edge: %zu",
+                    inode, prev_node, (size_t)prev_edge);
 
-            if (prev_node != OPEN && prev_edge != OPEN && !device_ctx.rr_nodes[prev_node].edge_is_configurable(prev_edge)) {
+            if (prev_node != OPEN && bool(prev_edge) && !device_ctx.rr_switch_inf[switch_id].configurable()) {
                 VTR_LOG("*");
             }
 
@@ -1632,11 +1634,12 @@ void print_rr_node_route_inf_dot() {
     for (size_t inode = 0; inode < route_ctx.rr_node_route_inf.size(); ++inode) {
         if (!std::isinf(route_ctx.rr_node_route_inf[inode].path_cost)) {
             int prev_node = route_ctx.rr_node_route_inf[inode].prev_node;
-            int prev_edge = route_ctx.rr_node_route_inf[inode].prev_edge;
+            RREdgeId prev_edge = route_ctx.rr_node_route_inf[inode].prev_edge;
+            auto switch_id = device_ctx.rr_nodes.edge_switch(prev_edge);
 
-            if (prev_node != OPEN && prev_edge != OPEN) {
+            if (prev_node != OPEN && bool(prev_edge)) {
                 VTR_LOG("\tnode%d -> node%zu [", prev_node, inode);
-                if (prev_node != OPEN && prev_edge != OPEN && !device_ctx.rr_nodes[prev_node].edge_is_configurable(prev_edge)) {
+                if (prev_node != OPEN && bool(prev_edge) && !device_ctx.rr_switch_inf[switch_id].configurable()) {
                     VTR_LOG("label=\"*\"");
                 }
 
