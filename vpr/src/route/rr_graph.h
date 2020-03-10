@@ -54,6 +54,4 @@ void load_rr_switch_from_arch_switch(int arch_switch_idx,
                                      const float R_minW_nmos,
                                      const float R_minW_pmos);
 
-t_non_configurable_rr_sets identify_non_configurable_rr_sets();
-
 #endif

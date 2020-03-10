@@ -50,9 +50,9 @@ void print_route_tree_inf(const t_rt_node* rt_root);
 void print_route_tree_congestion(const t_rt_node* rt_root);
 
 t_rt_node* traceback_to_route_tree(ClusterNetId inet);
-t_rt_node* traceback_to_route_tree(ClusterNetId inet, std::vector<int>* non_config_node_set_usage);
+t_rt_node* traceback_to_route_tree(ClusterNetId inet, vtr::vector<RRNonConfigurableSetId, int>* non_config_node_set_usage);
 t_rt_node* traceback_to_route_tree(t_trace* head);
-t_rt_node* traceback_to_route_tree(t_trace* head, std::vector<int>* non_config_node_set_usage);
+t_rt_node* traceback_to_route_tree(t_trace* head, vtr::vector<RRNonConfigurableSetId, int>* non_config_node_set_usage);
 t_trace* traceback_from_route_tree(ClusterNetId inet, const t_rt_node* root, int num_remaining_sinks);
 
 // Prune route tree
@@ -66,7 +66,7 @@ t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf);
 //  Note that non-configurable nodes will be pruned if
 //  non_config_node_set_usage is provided.  prune_route_tree will update
 //  non_config_node_set_usage after pruning.
-t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf, std::vector<int>* non_config_node_set_usage);
+t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf, vtr::vector<RRNonConfigurableSetId, int>* non_config_node_set_usage);
 
 void pathfinder_update_cost_from_route_tree(const t_rt_node* rt_root, int add_or_sub, float pres_fac);
 

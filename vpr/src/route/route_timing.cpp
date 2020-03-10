@@ -1954,7 +1954,7 @@ static void prune_unused_non_configurable_nets(CBRR& connections_inf) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
-    std::vector<int> non_config_node_set_usage(device_ctx.rr_non_config_node_sets.size(), 0);
+    vtr::vector<RRNonConfigurableSetId, int> non_config_node_set_usage(device_ctx.rr_nodes.number_of_non_configurable_sets(), 0);
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         connections_inf.prepare_routing_for_net(net_id);
         connections_inf.clear_force_reroute_for_net();

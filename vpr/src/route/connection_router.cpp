@@ -524,18 +524,10 @@ void ConnectionRouter::timing_driven_add_to_heap(const t_conn_cost_params cost_p
 #ifdef VTR_ASSERT_SAFE_ENABLED
 
 //Returns true if both nodes are part of the same non-configurable edge set
-static bool same_non_config_node_set(int from_node, int to_node) {
-    auto& device_ctx = g_vpr_ctx.device();
-
-    auto from_itr = device_ctx.rr_node_to_non_config_node_set.find(from_node);
-    auto to_itr = device_ctx.rr_node_to_non_config_node_set.find(to_node);
-
-    if (from_itr == device_ctx.rr_node_to_non_config_node_set.end()
-        || to_itr == device_ctx.rr_node_to_non_config_node_set.end()) {
-        return false; //Not part of a non-config node set
-    }
-
-    return from_itr->second == to_itr->second; //Check for same non-config set IDs
+static bool same_non_config_node_set(const t_rr_graph_view& rr_graph, int from_node, int to_node) {
+    auto from_set = rr_graph.non_configurable_set_id(RRNodeId(from_node));
+    auto to_set = rr_graph.non_configurable_set_id(RRNodeId(to_node));
+    return bool(from_set) && from_set == to_set;
 }
 
 #endif
@@ -609,7 +601,7 @@ void ConnectionRouter::evaluate_timing_driven_node_costs(t_heap* to,
         //Reached by a non-configurable edge.
         //Therefore the from_node and to_node are part of the same non-configurable node set.
 #ifdef VTR_ASSERT_SAFE_ENABLED
-        VTR_ASSERT_SAFE_MSG(same_non_config_node_set(from_node, to_node),
+        VTR_ASSERT_SAFE_MSG(same_non_config_node_set(rr_nodes_, from_node, to_node),
                             "Non-configurably connected edges should be part of the same node set");
 #endif
 

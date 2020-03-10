@@ -1304,12 +1304,6 @@ struct t_node_edge {
     }
 };
 
-//Non-configurably connected nodes and edges in the RR graph
-struct t_non_configurable_rr_sets {
-    std::set<std::set<int>> node_sets;
-    std::set<std::set<t_node_edge>> edge_sets;
-};
-
 #define NO_PREVIOUS -1
 
 /* Index of the SOURCE, SINK, OPIN, IPIN, etc. member of device_ctx.rr_indexed_data.    */

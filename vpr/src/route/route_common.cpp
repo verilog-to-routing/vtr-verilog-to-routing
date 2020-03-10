@@ -701,14 +701,14 @@ float get_rr_cong_cost(int inode) {
 
     float cost = get_single_rr_cong_cost(inode);
 
-    auto itr = device_ctx.rr_node_to_non_config_node_set.find(inode);
-    if (itr != device_ctx.rr_node_to_non_config_node_set.end()) {
-        for (int node : device_ctx.rr_non_config_node_sets[itr->second]) {
-            if (node == inode) {
+    auto set_id = device_ctx.rr_nodes.non_configurable_set_id(RRNodeId(inode));
+    if (bool(set_id)) {
+        for (RRNodeId node : device_ctx.rr_nodes.get_non_configurable_set(set_id)) {
+            if (node == RRNodeId(inode)) {
                 continue; //Already included above
             }
 
-            cost += get_single_rr_cong_cost(node);
+            cost += get_single_rr_cong_cost(size_t(node));
         }
     }
     return (cost);

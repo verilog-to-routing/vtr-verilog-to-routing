@@ -201,6 +201,12 @@ class t_rr_graph_storage {
         return node_fan_in_[id];
     }
 
+    size_t number_of_non_configurable_sets() const;
+    RRNonConfigurableSetId non_configurable_set_id(RRNodeId id) const;
+    vtr::array_view<const RRNodeId> get_non_configurable_set(RRNonConfigurableSetId id) const;
+    void get_non_configurable_rr_set_edges(RRNonConfigurableSetId id,
+                                           std::vector<t_node_edge>* edges) const;
+
     // This prefetechs hot RR node data required for optimization.
     //
     // Note: This is optional, but may lower time spent on memory stalls in
@@ -394,9 +400,15 @@ class t_rr_graph_storage {
         node_ptc_.clear();
         node_first_edge_.clear();
         node_fan_in_.clear();
+
         edge_src_node_.clear();
         edge_dest_node_.clear();
         edge_switch_.clear();
+
+        non_config_first_node_idx_.clear();
+        non_config_set_nodes_.clear();
+        rr_node_to_non_config_node_set_.clear();
+
         edges_read_ = false;
         partitioned_ = false;
         remapped_edges_ = false;
@@ -581,6 +593,17 @@ class t_rr_graph_storage {
     // Verify that first_edge_ array correctly partitions rr edge data.
     bool verify_first_edges() const;
 
+    void prepare_non_configurable_edges();
+
+    // Construct non-configurable edge groups
+    void create_non_configurable_edge_groups();
+
+    // Create map of RRNodeId to non-configurable edge group index
+    void create_non_configurable_mapping();
+
+    // Verify that non-configurable edge groups and mappings are valid.
+    void verify_non_configurable_groups() const;
+
     /*****************
      * Graph storage
      *
@@ -617,6 +640,14 @@ class t_rr_graph_storage {
     vtr::vector<RREdgeId, RRNodeId> edge_src_node_;
     vtr::vector<RREdgeId, RRNodeId> edge_dest_node_;
     vtr::vector<RREdgeId, short> edge_switch_;
+
+    // Sets of non-configurably connected nodes
+    vtr::vector<RRNonConfigurableSetId, size_t> non_config_first_node_idx_;
+    std::vector<RRNodeId> non_config_set_nodes_;
+
+    // Reverse look-up from RR node to non-configurably connected node set
+    // (index into rr_nonconf_node_sets)
+    std::unordered_map<RRNodeId, RRNonConfigurableSetId> rr_node_to_non_config_node_set_;
 
     /***************
      * State flags *
@@ -662,14 +693,20 @@ class t_rr_graph_view {
         const vtr::array_view_id<RRNodeId, const t_edge_size> node_fan_in,
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node,
         const vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node,
-        const vtr::array_view_id<RREdgeId, const short> edge_switch)
+        const vtr::array_view_id<RREdgeId, const short> edge_switch,
+        const vtr::array_view_id<RRNonConfigurableSetId, const size_t> non_config_first_node_idx,
+        const vtr::array_view<const RRNodeId> non_config_set_nodes,
+        const std::unordered_map<RRNodeId, RRNonConfigurableSetId>& rr_node_to_non_config_node_set)
         : node_storage_(node_storage)
         , node_ptc_(node_ptc)
         , node_first_edge_(node_first_edge)
         , node_fan_in_(node_fan_in)
         , edge_src_node_(edge_src_node)
         , edge_dest_node_(edge_dest_node)
-        , edge_switch_(edge_switch) {}
+        , edge_switch_(edge_switch)
+        , non_config_first_node_idx_(non_config_first_node_idx)
+        , non_config_set_nodes_(non_config_set_nodes)
+        , rr_node_to_non_config_node_set_(rr_node_to_non_config_node_set) {}
 
     /****************
      * Node methods *
@@ -754,6 +791,10 @@ class t_rr_graph_view {
         return edge_switch_[edge];
     }
 
+    size_t number_of_non_configurable_sets() const;
+    RRNonConfigurableSetId non_configurable_set_id(RRNodeId id) const;
+    vtr::array_view<const RRNodeId> get_non_configurable_set(RRNonConfigurableSetId id) const;
+
   private:
     RREdgeId first_edge(RRNodeId id) const {
         return node_first_edge_[id];
@@ -770,6 +811,10 @@ class t_rr_graph_view {
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_src_node_;
     vtr::array_view_id<RREdgeId, const RRNodeId> edge_dest_node_;
     vtr::array_view_id<RREdgeId, const short> edge_switch_;
+
+    vtr::array_view_id<RRNonConfigurableSetId, const size_t> non_config_first_node_idx_;
+    vtr::array_view<const RRNodeId> non_config_set_nodes_;
+    const std::unordered_map<RRNodeId, RRNonConfigurableSetId>& rr_node_to_non_config_node_set_;
 };
 
 #endif /* _RR_GRAPH_STORAGE_ */

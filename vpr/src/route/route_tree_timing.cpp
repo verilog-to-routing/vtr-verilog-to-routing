@@ -53,9 +53,9 @@ static t_rt_node* update_unbuffered_ancestors_C_downstream(t_rt_node* start_of_n
 
 bool verify_route_tree_recurr(t_rt_node* node, std::set<int>& seen_nodes);
 
-static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool congested, std::vector<int>* non_config_node_set_usage);
+static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool congested, vtr::vector<RRNonConfigurableSetId, int>* non_config_node_set_usage);
 
-static t_trace* traceback_to_route_tree_branch(t_trace* trace, std::map<int, t_rt_node*>& rr_node_to_rt, std::vector<int>* non_config_node_set_usage);
+static t_trace* traceback_to_route_tree_branch(t_trace* trace, std::map<int, t_rt_node*>& rr_node_to_rt, vtr::vector<RRNonConfigurableSetId, int>* non_config_node_set_usage);
 
 static std::pair<t_trace*, t_trace*> traceback_from_route_tree_recurr(t_trace* head, t_trace* tail, const t_rt_node* node);
 
@@ -702,7 +702,7 @@ void update_remaining_net_delays_from_route_tree(float* net_delay,
 }
 
 /***************  Conversion between traceback and route tree *******************/
-t_rt_node* traceback_to_route_tree(ClusterNetId inet, std::vector<int>* non_config_node_set_usage) {
+t_rt_node* traceback_to_route_tree(ClusterNetId inet, vtr::vector<RRNonConfigurableSetId, int>* non_config_node_set_usage) {
     auto& route_ctx = g_vpr_ctx.routing();
     return traceback_to_route_tree(route_ctx.trace[inet].head, non_config_node_set_usage);
 }
@@ -715,7 +715,7 @@ t_rt_node* traceback_to_route_tree(t_trace* head) {
     return traceback_to_route_tree(head, nullptr);
 }
 
-t_rt_node* traceback_to_route_tree(t_trace* head, std::vector<int>* non_config_node_set_usage) {
+t_rt_node* traceback_to_route_tree(t_trace* head, vtr::vector<RRNonConfigurableSetId, int>* non_config_node_set_usage) {
     /* Builds a skeleton route tree from a traceback
      * does not calculate R_upstream, C_downstream, or Tdel at all (left uninitialized)
      * returns the root of the converted route tree
@@ -750,7 +750,7 @@ t_rt_node* traceback_to_route_tree(t_trace* head, std::vector<int>* non_config_n
 //Returns the t_trace defining the start of the next branch
 static t_trace* traceback_to_route_tree_branch(t_trace* trace,
                                                std::map<int, t_rt_node*>& rr_node_to_rt,
-                                               std::vector<int>* non_config_node_set_usage) {
+                                               vtr::vector<RRNonConfigurableSetId, int>* non_config_node_set_usage) {
     t_trace* next = nullptr;
 
     if (trace) {
@@ -782,10 +782,10 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace,
             if (node_type == SINK) {
                 // A non-configurable edge to a sink is also a usage of the
                 // set.
-                auto set_itr = device_ctx.rr_node_to_non_config_node_set.find(inode);
-                if (non_config_node_set_usage != nullptr && set_itr != device_ctx.rr_node_to_non_config_node_set.end()) {
+                auto set_id = device_ctx.rr_nodes.non_configurable_set_id(RRNodeId(inode));
+                if (non_config_node_set_usage != nullptr && bool(set_id)) {
                     if (device_ctx.rr_switch_inf[iswitch].configurable()) {
-                        (*non_config_node_set_usage)[set_itr->second] += 1;
+                        (*non_config_node_set_usage)[set_id] += 1;
                     }
                 }
             }
@@ -806,10 +806,10 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace,
             // Each configurable edges from the non-configurable set is a
             // usage of the set.
             auto& device_ctx = g_vpr_ctx.device();
-            auto set_itr = device_ctx.rr_node_to_non_config_node_set.find(inode);
-            if (non_config_node_set_usage != nullptr && set_itr != device_ctx.rr_node_to_non_config_node_set.end()) {
+            auto set_id = device_ctx.rr_nodes.non_configurable_set_id(RRNodeId(inode));
+            if (non_config_node_set_usage != nullptr && bool(set_id)) {
                 if (device_ctx.rr_switch_inf[iswitch].configurable()) {
-                    (*non_config_node_set_usage)[set_itr->second] += 1;
+                    (*non_config_node_set_usage)[set_id] += 1;
                 }
             }
 
@@ -928,7 +928,7 @@ t_trace* traceback_from_route_tree(ClusterNetId inet, const t_rt_node* root, int
 //Prunes a route tree (recursively) based on congestion and the 'force_prune' argument
 //
 //Returns true if the current node was pruned
-static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool force_prune, std::vector<int>* non_config_node_set_usage) {
+static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool force_prune, vtr::vector<RRNonConfigurableSetId, int>* non_config_node_set_usage) {
     //Recursively traverse the route tree rooted at node and remove any congested
     //sub-trees
 
@@ -938,11 +938,7 @@ static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf
     auto& route_ctx = g_vpr_ctx.routing();
 
     bool congested = (route_ctx.rr_node_route_inf[node->inode].occ() > device_ctx.rr_nodes[node->inode].capacity());
-    int node_set = -1;
-    auto itr = device_ctx.rr_node_to_non_config_node_set.find(node->inode);
-    if (itr != device_ctx.rr_node_to_non_config_node_set.end()) {
-        node_set = itr->second;
-    }
+    RRNonConfigurableSetId node_set = device_ctx.rr_nodes.non_configurable_set_id(RRNodeId(node->inode));
 
     if (congested) {
         //This connection is congested -- prune it
@@ -977,7 +973,7 @@ static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf
 
             // After removing an edge, check if non_config_node_set_usage
             // needs an update.
-            if (non_config_node_set_usage != nullptr && node_set != -1 && device_ctx.rr_switch_inf[old_edge->iswitch].configurable()) {
+            if (non_config_node_set_usage != nullptr && bool(node_set) && device_ctx.rr_switch_inf[old_edge->iswitch].configurable()) {
                 (*non_config_node_set_usage)[node_set] -= 1;
                 VTR_ASSERT((*non_config_node_set_usage)[node_set] >= 0);
             }
@@ -1045,7 +1041,7 @@ static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf
 
             if (reached_non_configurably) {
                 // Check if this non-configurable node set is in use.
-                VTR_ASSERT(node_set != -1);
+                VTR_ASSERT(bool(node_set));
                 if (non_config_node_set_usage != nullptr && (*non_config_node_set_usage)[node_set] == 0) {
                     force_prune = true;
                 }
@@ -1071,7 +1067,7 @@ static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf
         //
         //  Then prune this node.
         //
-        if (non_config_node_set_usage != nullptr && node_set != -1 && device_ctx.rr_switch_inf[node->parent_switch].configurable() && (*non_config_node_set_usage)[node_set] == 0) {
+        if (non_config_node_set_usage != nullptr && bool(node_set) && device_ctx.rr_switch_inf[node->parent_switch].configurable() && (*non_config_node_set_usage)[node_set] == 0) {
             // This node should be pruned, re-prune edges once more.
             //
             // If the following is true:
@@ -1118,7 +1114,7 @@ t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf) {
     return prune_route_tree(rt_root, connections_inf, nullptr);
 }
 
-t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf, std::vector<int>* non_config_node_set_usage) {
+t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf, vtr::vector<RRNonConfigurableSetId, int>* non_config_node_set_usage) {
     /* Prune a skeleton route tree of illegal branches - when there is at least 1 congested node on the path to a sink
      * This is the top level function to be called with the SOURCE node as root.
      * Returns true if the entire tree has been pruned.

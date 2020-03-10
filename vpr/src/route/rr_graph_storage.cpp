@@ -500,6 +500,8 @@ void t_rr_graph_storage::partition_edges() {
     assign_first_edges();
 
     VTR_ASSERT_SAFE(validate());
+
+    prepare_non_configurable_edges();
 }
 
 t_edge_size t_rr_graph_storage::num_configurable_edges(const RRNodeId& id) const {
@@ -715,5 +717,385 @@ t_rr_graph_view t_rr_graph_storage::view() const {
             edge_dest_node_.size()),
         vtr::array_view_id<RREdgeId, const short>(
             edge_switch_.data(),
-            edge_switch_.size()));
+            edge_switch_.size()),
+        vtr::array_view_id<RRNonConfigurableSetId, const size_t>(
+            non_config_first_node_idx_.data(),
+            non_config_first_node_idx_.size()),
+        vtr::array_view<const RRNodeId>(
+            non_config_set_nodes_.data(),
+            non_config_set_nodes_.size()),
+        rr_node_to_non_config_node_set_);
+}
+
+void t_rr_graph_storage::create_non_configurable_edge_groups() {
+    const auto& device_ctx = g_vpr_ctx.device();
+    edges_read_ = true;
+    VTR_ASSERT(remapped_edges_);
+    VTR_ASSERT(non_config_first_node_idx_.empty());
+    VTR_ASSERT(non_config_set_nodes_.empty());
+    VTR_ASSERT(rr_node_to_non_config_node_set_.empty());
+
+    size_t num_groups = 0;
+    std::vector<std::pair<RRNonConfigurableSetId, RRNonConfigurableSetId>> merges;
+
+    vtr::vector<RRNodeId, RRNonConfigurableSetId> node_to_node_set(node_storage_.size());
+
+    // First nievely make node groups.  When an edge joins two groups,
+    // mark it for cleanup latter.
+    for (RREdgeId edge : vtr::StrongIdRange<RREdgeId>(
+             RREdgeId(0), RREdgeId(edge_src_node_.size()))) {
+        // Skip configurable edges.
+        if (device_ctx.rr_switch_inf[edge_switch_[edge]].configurable()) {
+            continue;
+        }
+
+        RRNodeId src_node = edge_src_node_[edge];
+        RRNodeId dest_node = edge_dest_node_[edge];
+
+        auto& from_set = node_to_node_set[src_node];
+        auto& to_set = node_to_node_set[dest_node];
+
+        if (!bool(from_set) && !bool(to_set)) {
+            from_set = RRNonConfigurableSetId(num_groups++);
+            to_set = from_set;
+        } else if (!bool(from_set) && bool(to_set)) {
+            from_set = to_set;
+        } else if (bool(from_set) && !bool(to_set)) {
+            to_set = from_set;
+        } else {
+            VTR_ASSERT(bool(from_set));
+            VTR_ASSERT(bool(to_set));
+
+            if (from_set != to_set) {
+                merges.push_back(std::make_pair(
+                    std::min(from_set, to_set),
+                    std::max(from_set, to_set)));
+            }
+        }
+    }
+
+    // We are going to always collapse sets to lower ids, so sort
+    // the merge list to ensure that the merge first elements are always
+    // increasing.
+    std::sort(merges.begin(), merges.end(), [](const std::pair<RRNonConfigurableSetId, RRNonConfigurableSetId>& a, const std::pair<RRNonConfigurableSetId, RRNonConfigurableSetId>& b) {
+        return a.first < b.first;
+    });
+
+    // Update final_set_map with the final merge id for the second element.
+    // The first element will either be the final value, or already have
+    // an entry in the final_set_map (because sorting), so we can depend on
+    // find_target_set(first) returning a stable value.
+    std::unordered_map<RRNonConfigurableSetId, RRNonConfigurableSetId> final_set_map;
+    auto find_target_set = [&final_set_map](RRNonConfigurableSetId set) -> RRNonConfigurableSetId {
+        RRNonConfigurableSetId target_set = set;
+        while (true) {
+            auto iter = final_set_map.find(target_set);
+            if (iter != final_set_map.end()) {
+                target_set = iter->second;
+            } else {
+                break;
+            }
+        }
+
+        return target_set;
+    };
+
+    for (const auto& merge : merges) {
+        VTR_ASSERT(merge.first < merge.second);
+        VTR_ASSERT(bool(merge.first));
+        VTR_ASSERT(bool(merge.second));
+
+        RRNonConfigurableSetId target_set = find_target_set(merge.first);
+
+        final_set_map.insert(std::make_pair(merge.second, target_set));
+    }
+
+    // Finalize merges between node set ids.
+    for (auto& set : node_to_node_set) {
+        set = find_target_set(set);
+    }
+    final_set_map.clear();
+
+    // Compact the RRNonConfigurableSetId id's
+    num_groups = 0;
+    for (RRNonConfigurableSetId set_id : node_to_node_set) {
+        if (!bool(set_id)) {
+            continue;
+        }
+
+        auto result = final_set_map.insert(std::make_pair(set_id, RRNonConfigurableSetId(num_groups)));
+        if (result.second) {
+            // We haven't seen this id before, this id is now in use.
+            num_groups += 1;
+        }
+    }
+
+    // Remap to compact id's
+    for (RRNonConfigurableSetId& set_id : node_to_node_set) {
+        if (!bool(set_id)) {
+            continue;
+        }
+
+        set_id = final_set_map.at(set_id);
+    }
+    final_set_map.clear();
+
+    // Sanity check the node sets.
+    for (RREdgeId edge : vtr::StrongIdRange<RREdgeId>(
+             RREdgeId(0), RREdgeId(edge_src_node_.size()))) {
+        // Skip configurable edges.
+        if (device_ctx.rr_switch_inf[edge_switch_[edge]].configurable()) {
+            continue;
+        }
+
+        RRNodeId src_node = edge_src_node_[edge];
+        RRNodeId dest_node = edge_dest_node_[edge];
+
+        VTR_ASSERT(bool(node_to_node_set[src_node]));
+        VTR_ASSERT(bool(node_to_node_set[dest_node]));
+        VTR_ASSERT(node_to_node_set[src_node] == node_to_node_set[dest_node]);
+        VTR_ASSERT(size_t(node_to_node_set[src_node]) < num_groups);
+
+        // Begin construction of stored sets.
+        non_config_set_nodes_.push_back(src_node);
+        non_config_set_nodes_.push_back(dest_node);
+    }
+
+    // Partition non_config_set_nodes_ into their sets by sorting first by
+    // the nodes set, then by the node id itself.
+    std::sort(
+        non_config_set_nodes_.begin(),
+        non_config_set_nodes_.end(),
+        [&](RRNodeId a_node, RRNodeId b_node) {
+            return std::make_pair(node_to_node_set[a_node], a_node) < std::make_pair(node_to_node_set[b_node], b_node);
+        });
+
+    // Remove any duplicate elements.
+    non_config_set_nodes_.erase(
+        std::unique(non_config_set_nodes_.begin(), non_config_set_nodes_.end()),
+        non_config_set_nodes_.end());
+
+    // non_config_set_nodes_ is now partitioned, and is in increasing node set
+    // order. Create non_config_first_node_idx_ by marking the index where
+    // each set starts.
+    RRNonConfigurableSetId last_set;
+    for (size_t i = 0; i < non_config_set_nodes_.size(); ++i) {
+        RRNodeId node = non_config_set_nodes_[i];
+        RRNonConfigurableSetId set = node_to_node_set[node];
+        if (set != last_set) {
+            // This is the next set, mark the index that the set starts.
+            VTR_ASSERT(non_config_first_node_idx_.size() == size_t(set));
+            non_config_first_node_idx_.push_back(i);
+            last_set = set;
+        }
+    }
+    VTR_ASSERT(size_t(last_set) + 1 == num_groups);
+
+    // Add the dummy element to non_config_first_node_idx_ to remove the
+    // exceptional case from get_non_configurable_set.
+    non_config_first_node_idx_.push_back(non_config_set_nodes_.size());
+
+    // Check that sets match node_to_node_set
+    for (RRNonConfigurableSetId set : vtr::StrongIdRange<RRNonConfigurableSetId>(
+             RRNonConfigurableSetId(0),
+             RRNonConfigurableSetId(number_of_non_configurable_sets()))) {
+        for (RRNodeId node : get_non_configurable_set(set)) {
+            VTR_ASSERT(set == node_to_node_set[node]);
+        }
+    }
+}
+
+void t_rr_graph_storage::create_non_configurable_mapping() {
+    edges_read_ = true;
+    VTR_ASSERT(remapped_edges_);
+
+    for (size_t idx = 0; idx < number_of_non_configurable_sets(); ++idx) {
+        RRNonConfigurableSetId set_id(idx);
+        for (RRNodeId id : get_non_configurable_set(set_id)) {
+            rr_node_to_non_config_node_set_[id] = set_id;
+        }
+    }
+}
+
+void t_rr_graph_storage::verify_non_configurable_groups() const {
+    const auto& device_ctx = g_vpr_ctx.device();
+    edges_read_ = true;
+    VTR_ASSERT(remapped_edges_);
+
+    // Sanity check that non-configurable node set storage is sane.
+    for (size_t idx : non_config_first_node_idx_) {
+        VTR_ASSERT(idx <= non_config_set_nodes_.size());
+    }
+    VTR_ASSERT(non_config_first_node_idx_.back() == non_config_set_nodes_.size());
+    for (RRNodeId node : non_config_set_nodes_) {
+        VTR_ASSERT(size_t(node) < this->size());
+    }
+    size_t num_sets = number_of_non_configurable_sets();
+    for (auto node_and_set : rr_node_to_non_config_node_set_) {
+        VTR_ASSERT(size_t(node_and_set.first) < this->size());
+        VTR_ASSERT(size_t(node_and_set.second) < num_sets);
+    }
+
+    // Verify mapping sanity
+    for (RRNonConfigurableSetId set : vtr::StrongIdRange<RRNonConfigurableSetId>(
+             RRNonConfigurableSetId(0),
+             RRNonConfigurableSetId(number_of_non_configurable_sets()))) {
+        auto set_of_nodes = get_non_configurable_set(set);
+        RRNodeId last_node;
+        for (RRNodeId node : set_of_nodes) {
+            VTR_ASSERT(set == non_configurable_set_id(node));
+            if (bool(last_node)) {
+                VTR_ASSERT(last_node < node);
+            }
+            last_node = node;
+        }
+    }
+
+    // Iterator over all edges
+    for (RREdgeId edge : vtr::StrongIdRange<RREdgeId>(
+             RREdgeId(0), RREdgeId(edge_src_node_.size()))) {
+        // Skip configurable edges.
+        if (device_ctx.rr_switch_inf[edge_switch_[edge]].configurable()) {
+            continue;
+        }
+
+        // This is a non-configurable node, so the following must be true:
+        //  - Both the src_node and dest_node should have a non-configurable
+        //    set index
+        //  - Both the src_node and dest_node should be part of that set.
+        RRNodeId src_node = edge_src_node_[edge];
+        RRNodeId dest_node = edge_dest_node_[edge];
+
+        RRNonConfigurableSetId src_set = non_configurable_set_id(src_node);
+        RRNonConfigurableSetId dest_set = non_configurable_set_id(dest_node);
+
+        if (!bool(src_set) || !bool(dest_set)) {
+            VPR_FATAL_ERROR(
+                VPR_ERROR_ROUTE, "edge %zu with src node %zu sink node %zu lacks a non-configurable group",
+                size_t(edge), size_t(src_node), size_t(dest_node));
+        }
+        if (src_set != dest_set) {
+            VPR_FATAL_ERROR(
+                VPR_ERROR_ROUTE, "edge %zu with src node %zu sink node %zu should have the same set id, but %zu != %zu",
+                size_t(edge), size_t(src_node), size_t(dest_node), size_t(src_set), size_t(dest_set));
+        }
+
+        auto set = get_non_configurable_set(src_set);
+        VTR_ASSERT(std::binary_search(
+            set.begin(),
+            set.end(),
+            src_node));
+        VTR_ASSERT(std::binary_search(
+            set.begin(),
+            set.end(),
+            dest_node));
+    }
+
+    // Verify that sets contain all expected nodes.
+    std::vector<RRNodeId> nodes_in_group;
+    std::vector<RRNodeId> difference;
+    for (size_t idx = 0; idx < number_of_non_configurable_sets(); ++idx) {
+        nodes_in_group.clear();
+        difference.clear();
+
+        RRNonConfigurableSetId set_id(idx);
+        auto node_set = get_non_configurable_set(set_id);
+        for (RRNodeId node : node_set) {
+            nodes_in_group.push_back(node);
+
+            for (RREdgeId edge : edge_range(node)) {
+                // Skip configurable edges.
+                if (device_ctx.rr_switch_inf[edge_switch_[edge]].configurable()) {
+                    continue;
+                }
+
+                nodes_in_group.push_back(edge_sink_node(edge));
+            }
+        }
+
+        std::sort(nodes_in_group.begin(), nodes_in_group.end());
+        nodes_in_group.erase(std::unique(nodes_in_group.begin(), nodes_in_group.end()), nodes_in_group.end());
+
+        VTR_ASSERT(nodes_in_group.size() == node_set.size());
+
+        std::set_difference(nodes_in_group.begin(), nodes_in_group.end(),
+                            node_set.begin(), node_set.end(),
+                            std::back_inserter(difference));
+
+        VTR_ASSERT(difference.size() == 0);
+    }
+}
+
+void t_rr_graph_storage::prepare_non_configurable_edges() {
+    create_non_configurable_edge_groups();
+    create_non_configurable_mapping();
+    verify_non_configurable_groups();
+}
+
+RRNonConfigurableSetId t_rr_graph_storage::non_configurable_set_id(RRNodeId id) const {
+    auto itr = rr_node_to_non_config_node_set_.find(id);
+    if (itr != rr_node_to_non_config_node_set_.end()) {
+        return itr->second;
+    } else {
+        return RRNonConfigurableSetId::INVALID();
+    }
+}
+
+vtr::array_view<const RRNodeId> t_rr_graph_storage::get_non_configurable_set(RRNonConfigurableSetId id) const {
+    size_t first_idx = non_config_first_node_idx_[id];
+    size_t last_idx = (&non_config_first_node_idx_[id])[1];
+    return vtr::array_view<const RRNodeId>(
+        non_config_set_nodes_.data() + first_idx,
+        last_idx - first_idx);
+}
+
+size_t t_rr_graph_storage::number_of_non_configurable_sets() const {
+    // non_config_first_node_idx_ has a dummy index to enable storing set
+    // ranges without a special case.  See get_non_configurable_set.
+    return non_config_first_node_idx_.size() - 1;
+}
+
+void t_rr_graph_storage::get_non_configurable_rr_set_edges(RRNonConfigurableSetId id,
+                                                           std::vector<t_node_edge>* edges) const {
+    const auto& device_ctx = g_vpr_ctx.device();
+
+    auto node_set = get_non_configurable_set(id);
+
+    // At a minimum each node in the set is connected to 1 other node in the set.
+    // The x2 comes from the fact that each edge should have a reversed pair.
+    edges->clear();
+    edges->reserve(node_set.size() * 2);
+
+    for (RRNodeId src_node : node_set) {
+        for (RREdgeId edge : edge_range(src_node)) {
+            auto switch_id = edge_switch(edge);
+            if (!device_ctx.rr_switch_inf[switch_id].configurable()) {
+                RRNodeId dest_node = edge_sink_node(edge);
+                edges->emplace_back(size_t(src_node), size_t(dest_node));
+            }
+        }
+    }
+}
+
+RRNonConfigurableSetId t_rr_graph_view::non_configurable_set_id(RRNodeId id) const {
+    auto itr = rr_node_to_non_config_node_set_.find(id);
+    if (itr != rr_node_to_non_config_node_set_.end()) {
+        return itr->second;
+    } else {
+        return RRNonConfigurableSetId::INVALID();
+    }
+}
+
+vtr::array_view<const RRNodeId> t_rr_graph_view::get_non_configurable_set(RRNonConfigurableSetId id) const {
+    size_t first_idx = non_config_first_node_idx_[id];
+    size_t last_idx = (&non_config_first_node_idx_[id])[1];
+    return vtr::array_view<const RRNodeId>(
+        non_config_set_nodes_.data() + first_idx,
+        last_idx - first_idx);
+}
+
+size_t t_rr_graph_view::number_of_non_configurable_sets() const {
+    // non_config_first_node_idx_ has a dummy index to enable storing set
+    // ranges without a special case.  See get_non_configurable_set.
+    return non_config_first_node_idx_.size() - 1;
 }

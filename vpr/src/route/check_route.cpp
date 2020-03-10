@@ -27,7 +27,7 @@ static void reset_flags(ClusterNetId inet, bool* connected_to_route);
 static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_locally,
                                          enum e_route_type route_type);
 
-static bool check_non_configurable_edges(ClusterNetId net, const t_non_configurable_rr_sets& non_configurable_rr_sets);
+static bool check_non_configurable_edges(ClusterNetId net);
 static void check_net_for_stubs(ClusterNetId net);
 
 /************************ Subroutine definitions ****************************/
@@ -65,8 +65,6 @@ void check_route(enum e_route_type route_type) {
     }
 
     check_locally_used_clb_opins(route_ctx.clb_opins_used_locally, route_type);
-
-    auto non_configurable_rr_sets = identify_non_configurable_rr_sets();
 
     auto connected_to_route = std::make_unique<bool[]>(device_ctx.rr_nodes.size());
     std::fill_n(connected_to_route.get(), device_ctx.rr_nodes.size(), false);
@@ -154,7 +152,7 @@ void check_route(enum e_route_type route_type) {
             }
         }
 
-        check_non_configurable_edges(net_id, non_configurable_rr_sets);
+        check_non_configurable_edges(net_id);
 
         check_net_for_stubs(net_id);
 
@@ -626,19 +624,21 @@ static void check_node_and_range(int inode, enum e_route_type route_type) {
 //
 //For routing to be legal if *any* non-configurable edge is used, so must *all*
 //other non-configurable edges in the same set
-static bool check_non_configurable_edges(ClusterNetId net, const t_non_configurable_rr_sets& non_configurable_rr_sets) {
+static bool check_non_configurable_edges(ClusterNetId net) {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& device_ctx = g_vpr_ctx.device();
 
     t_trace* head = route_ctx.trace[net].head;
 
     //Collect all the edges used by this net's routing
     std::set<t_node_edge> routing_edges;
-    std::set<int> routing_nodes;
+    std::set<RRNodeId> routing_nodes;
+    std::set<RRNonConfigurableSetId> non_configurable_sets;
     for (t_trace* trace = head; trace != nullptr; trace = trace->next) {
         int inode = trace->index;
 
-        routing_nodes.insert(inode);
+        routing_nodes.insert(RRNodeId(inode));
 
         if (trace->iswitch == OPEN) {
             continue; //End of branch
@@ -648,6 +648,12 @@ static bool check_non_configurable_edges(ClusterNetId net, const t_non_configura
             t_node_edge edge = {inode, inode_next};
 
             routing_edges.insert(edge);
+
+            RRNonConfigurableSetId set1 = device_ctx.rr_nodes.non_configurable_set_id(RRNodeId(inode));
+            RRNonConfigurableSetId set2 = device_ctx.rr_nodes.non_configurable_set_id(RRNodeId(inode_next));
+            if (bool(set1) && set1 == set2) {
+                non_configurable_sets.insert(set1);
+            }
         }
     }
 
@@ -663,9 +669,11 @@ static bool check_non_configurable_edges(ClusterNetId net, const t_non_configura
 
     //Check that all nodes in each non-configurable set are full included if any element
     //within a set is used by the routing
-    for (const auto& rr_nodes : non_configurable_rr_sets.node_sets) {
+    for (RRNonConfigurableSetId set_id : non_configurable_sets) {
+        auto rr_nodes = device_ctx.rr_nodes.get_non_configurable_set(set_id);
+
         //Compute the intersection of the routing and current non-configurable nodes set
-        std::vector<int> intersection;
+        std::vector<RRNodeId> intersection;
         std::set_intersection(routing_nodes.begin(), routing_nodes.end(),
                               rr_nodes.begin(), rr_nodes.end(),
                               std::back_inserter(intersection));
@@ -680,7 +688,7 @@ static bool check_non_configurable_edges(ClusterNetId net, const t_non_configura
                 //Compute the difference to identify the missing nodes
                 //for detailed error reporting -- the nodes
                 //which are in rr_nodes but not in routing_nodes.
-                std::vector<int> difference;
+                std::vector<RRNodeId> difference;
                 std::set_difference(rr_nodes.begin(), rr_nodes.end(),
                                     routing_nodes.begin(), routing_nodes.end(),
                                     std::back_inserter(difference));
@@ -691,8 +699,11 @@ static bool check_non_configurable_edges(ClusterNetId net, const t_non_configura
                     "required non-configurably connected nodes are missing:\n",
                     cluster_ctx.clb_nlist.net_name(net).c_str(), size_t(net));
 
+                for (auto inode : intersection) {
+                    msg += vtr::string_fmt("  Present %s\n", describe_rr_node(size_t(inode)).c_str());
+                }
                 for (auto inode : difference) {
-                    msg += vtr::string_fmt("  Missing %s\n", describe_rr_node(inode).c_str());
+                    msg += vtr::string_fmt("  Missing %s\n", describe_rr_node(size_t(inode)).c_str());
                 }
 
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, msg.c_str());
@@ -702,7 +713,11 @@ static bool check_non_configurable_edges(ClusterNetId net, const t_non_configura
 
     //Check that any sets of non-configurable RR graph edges are fully included
     //in the routing, if any of a set's edges are used
-    for (const auto& rr_edges : non_configurable_rr_sets.edge_sets) {
+    std::vector<t_node_edge> rr_edges;
+    for (RRNonConfigurableSetId set_id : non_configurable_sets) {
+        device_ctx.rr_nodes.get_non_configurable_rr_set_edges(set_id, &rr_edges);
+        std::sort(rr_edges.begin(), rr_edges.end());
+
         //Compute the intersection of the routing and current non-configurable edge set
         std::vector<t_node_edge> intersection;
         std::set_intersection(routing_edges.begin(), routing_edges.end(),
@@ -741,7 +756,11 @@ static bool check_non_configurable_edges(ClusterNetId net, const t_non_configura
                              t_node_edge reverse_edge = {forward_edge.to_node, forward_edge.from_node};
 
                              //Check whether the reverse edge was used
-                             if (rr_edges.count(reverse_edge) && routing_edges.count(reverse_edge)) {
+                             bool reverse_edge_present = std::binary_search(
+                                 rr_edges.begin(),
+                                 rr_edges.end(),
+                                 reverse_edge);
+                             if (reverse_edge_present && routing_edges.count(reverse_edge)) {
                                  //The reverse edge exists in the set of rr_edges, and was used
                                  //by the routing.
                                  //
