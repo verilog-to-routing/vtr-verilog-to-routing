@@ -620,6 +620,14 @@ class t_rr_graph_storage {
     bool partitioned_;
 };
 
+// t_rr_graph_view is a read-only version of t_rr_graph_storage that only
+// uses pointers and sizes to rr graph data.
+//
+// t_rr_graph_view enables efficient access to RR graph storage without owning
+// the underlying storage.
+//
+// Because t_rr_graph_view only uses pointers and sizes, it is suitable for
+// use with purely mmap'd data.
 class t_rr_graph_view {
   public:
     t_rr_graph_view();
@@ -696,6 +704,11 @@ class t_rr_graph_view {
     short node_track_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
     short node_class_num(RRNodeId id) const; //Same as ptc_num() but checks that type() is consistent
 
+    /* Retrieve fan_in for RRNodeId. */
+    t_edge_size fan_in(RRNodeId id) const {
+        return node_fan_in_[id];
+    }
+
     // This prefetechs hot RR node data required for optimization.
     //
     // Note: This is optional, but may lower time spent on memory stalls in
@@ -721,11 +734,6 @@ class t_rr_graph_view {
     // Get the switch used for the specified edge.
     short edge_switch(RREdgeId edge) const {
         return edge_switch_[edge];
-    }
-
-    /* Retrieve fan_in for RRNodeId. */
-    t_edge_size fan_in(RRNodeId id) const {
-        return node_fan_in_[id];
     }
 
   private:
