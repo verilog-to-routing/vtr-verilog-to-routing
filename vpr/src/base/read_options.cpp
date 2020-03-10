@@ -1580,13 +1580,13 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     place_grp.add_argument(args.PlaceAlphaDecay, "--alpha_decay")
         .help(
-            "The value that alpha is scaled by when successful.")
+            "The value that alpha is scaled by after reset.")
         .default_value("0.7")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceSuccessMin, "--anneal_success_min")
         .help(
-            "Minimum success ratio when annealing before restarting.")
+            "Minimum success ratio when annealing before resetting the temperature to maintain the target success ratio.")
         .default_value("0.1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
