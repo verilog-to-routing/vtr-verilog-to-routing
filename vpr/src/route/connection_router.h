@@ -134,8 +134,8 @@ class ConnectionRouter {
         //Record final link to target
         add_to_mod_list(cheapest->index);
 
-        route_inf->prev_node = cheapest->u.prev.node;
-        route_inf->prev_edge = cheapest->u.prev.edge;
+        route_inf->prev_node = cheapest->prev_node();
+        route_inf->prev_edge = cheapest->prev_edge();
         route_inf->path_cost = cheapest->cost;
         route_inf->backward_path_cost = cheapest->backward_path_cost;
     }
@@ -186,7 +186,6 @@ class ConnectionRouter {
         t_heap* current,
         const int from_node,
         const RREdgeId from_edge,
-        const t_edge_size from_node_edge_idx,
         const int to_node,
         const t_conn_cost_params cost_params,
         const t_bb bounding_box,
@@ -201,7 +200,6 @@ class ConnectionRouter {
         const int from_node,
         const int to_node,
         const RREdgeId from_edge,
-        const int iconn,
         const int target_node);
 
     // Calculates the cost of reaching to_node

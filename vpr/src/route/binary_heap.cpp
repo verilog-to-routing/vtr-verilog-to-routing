@@ -168,7 +168,7 @@ void BinaryHeap::invalidate_heap_entries(int sink_node, int ipin_node) {
 
     for (int i = 1; i < heap_tail_; i++) {
         if (heap_[i]->index == sink_node) {
-            if (heap_[i]->u.prev.node == ipin_node) {
+            if (heap_[i]->prev_node() == ipin_node) {
                 heap_[i]->index = OPEN; /* Invalid. */
                 break;
             }

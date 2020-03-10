@@ -41,6 +41,7 @@
 #include "vtr_cache.h"
 #include "vtr_string_view.h"
 #include "vtr_dynamic_bitset.h"
+#include "rr_graph_fwd.h"
 
 /*******************************************************************************
  * Global data types and constants
@@ -211,6 +212,33 @@ class t_pack_high_fanout_thresholds {
 
 /* Type used to express rr_node edge index. */
 typedef uint16_t t_edge_size;
+
+//An iterator that dereferences to an edge index
+//
+//Used inconjunction with vtr::Range to return ranges of edge indices
+class edge_idx_iterator : public std::iterator<std::bidirectional_iterator_tag, t_edge_size> {
+  public:
+    edge_idx_iterator(value_type init)
+        : value_(init) {}
+    iterator operator++() {
+        value_ += 1;
+        return *this;
+    }
+    iterator operator--() {
+        value_ -= 1;
+        return *this;
+    }
+    reference operator*() { return value_; }
+    pointer operator->() { return &value_; }
+
+    friend bool operator==(const edge_idx_iterator lhs, const edge_idx_iterator rhs) { return lhs.value_ == rhs.value_; }
+    friend bool operator!=(const edge_idx_iterator lhs, const edge_idx_iterator rhs) { return !(lhs == rhs); }
+
+  private:
+    value_type value_;
+};
+
+typedef vtr::Range<edge_idx_iterator> edge_idx_range;
 
 /* these are defined later, but need to declare here because it is used */
 class t_rr_node;
@@ -1206,7 +1234,7 @@ struct t_trace {
  * occ:        The current occupancy of the associated rr node              */
 struct t_rr_node_route_inf {
     int prev_node;
-    t_edge_size prev_edge;
+    RREdgeId prev_edge;
 
     float pres_cost;
     float acc_cost;

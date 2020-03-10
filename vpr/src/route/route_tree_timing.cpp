@@ -288,9 +288,9 @@ add_subtree_to_route_tree(t_heap* hptr, t_rt_node** sink_rt_node_ptr) {
 
     std::unordered_set<int> main_branch_visited;
     std::unordered_set<int> all_visited;
-    inode = hptr->u.prev.node;
-    t_edge_size iedge = hptr->u.prev.edge;
-    short iswitch = device_ctx.rr_nodes[inode].edge_switch(iedge);
+    inode = hptr->prev_node();
+    RREdgeId edge = hptr->prev_edge();
+    short iswitch = device_ctx.rr_nodes.edge_switch(edge);
 
     /* For all "new" nodes in the main path */
     // inode is node index of previous node
@@ -326,9 +326,9 @@ add_subtree_to_route_tree(t_heap* hptr, t_rt_node** sink_rt_node_ptr) {
         }
 
         downstream_rt_node = rt_node;
-        iedge = route_ctx.rr_node_route_inf[inode].prev_edge;
+        edge = route_ctx.rr_node_route_inf[inode].prev_edge;
         inode = route_ctx.rr_node_route_inf[inode].prev_node;
-        iswitch = device_ctx.rr_nodes[inode].edge_switch(iedge);
+        iswitch = device_ctx.rr_nodes.edge_switch(edge);
     }
 
     //Inode is now the branch point to the old routing; do not need
@@ -583,7 +583,7 @@ void load_route_tree_rr_route_inf(t_rt_node* root) {
     for (;;) {
         int inode = root->inode;
         route_ctx.rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
-        route_ctx.rr_node_route_inf[inode].prev_edge = NO_PREVIOUS;
+        route_ctx.rr_node_route_inf[inode].prev_edge = RREdgeId::INVALID();
         // path cost should be unset
         VTR_ASSERT(std::isinf(route_ctx.rr_node_route_inf[inode].path_cost));
         VTR_ASSERT(std::isinf(route_ctx.rr_node_route_inf[inode].backward_path_cost));
