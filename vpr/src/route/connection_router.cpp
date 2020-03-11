@@ -361,9 +361,7 @@ void ConnectionRouter::timing_driven_expand_neighbours(t_heap* current,
     //For each node associated with the current heap element, expand all of it's neighbors
     int from_node_int = current->index;
     RRNodeId from_node(from_node_int);
-    RREdgeId first_edge = rr_nodes_->first_edge(from_node);
-    RREdgeId last_edge = rr_nodes_->last_edge(from_node);
-    int num_edges = size_t(last_edge) - size_t(first_edge);
+    auto edges = rr_nodes_->edge_range(from_node);
 
     // This is a simple prefetch that prefetches:
     //  - RR node data reachable from this node
@@ -382,9 +380,7 @@ void ConnectionRouter::timing_driven_expand_neighbours(t_heap* current,
     //  - directrf_stratixiv_arch_timing.blif
     //  - gsm_switch_stratixiv_arch_timing.blif
     //
-    for (int iconn = 0; iconn < num_edges; iconn++) {
-        RREdgeId from_edge(size_t(first_edge) + iconn);
-
+    for (RREdgeId from_edge : edges) {
         RRNodeId to_node = rr_nodes_->edge_sink_node(from_edge);
         rr_nodes_->prefetch_node(to_node);
 
@@ -392,13 +388,13 @@ void ConnectionRouter::timing_driven_expand_neighbours(t_heap* current,
         VTR_PREFETCH(&rr_switch_inf_[switch_idx], 0, 0);
     }
 
-    for (int iconn = 0; iconn < num_edges; iconn++) {
-        RREdgeId from_edge(size_t(first_edge) + iconn);
+    int iconn = 0;
+    for (RREdgeId from_edge : edges) {
         RRNodeId to_node = rr_nodes_->edge_sink_node(from_edge);
         timing_driven_expand_neighbour(current,
                                        from_node_int,
                                        from_edge,
-                                       iconn,
+                                       iconn++,
                                        size_t(to_node),
                                        cost_params,
                                        bounding_box,
