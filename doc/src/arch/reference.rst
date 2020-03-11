@@ -631,7 +631,7 @@ The tags within the ``<switchlist>`` tag specifies the switches used to connect 
 
     .. code-block:: xml
 
-        <switch type="mux" name="my_awesome_mux" R="551" Cin=".77e-15" Cout="4e-15" Cinternal="5e-15" Tdel="58e-12" mux_trans_size="2.630740" buf_size="27.645901"/>
+        <switch type="mux" name="my_awesome_mux" R="551" Cin=".77e-15" Cout="4e-15" Cinternal="5e-15" Tdel="58e-12" penalty_cost="1e-8" mux_trans_size="2.630740" buf_size="27.645901"/>
 
 
     :req_param type:
@@ -698,6 +698,14 @@ The tags within the ``<switchlist>`` tag specifies the switches used to connect 
         .. note:: Required if no ``<Tdel>`` tags are specified
 
         .. note:: A ``<switch>``'s resistance (``R``) and output capacitance (``Cout``) have no effect on delay when used for the input connection block, since VPR does not model the resistance/capacitance of block internal wires.
+
+    :opt_param penalty_cost:
+
+        Penalty cost added to the switch.
+        This cost is not related to the physical properties of the switch. It adds an additional cost to it for the router to avoid its usage.
+        This can be useful for switches that should not be used in general, but that are necessary for certain types of designs that need to route through them.
+
+        .. note:: The addition of this attribute to the switch does not affect Timing Analysis
 
     :opt_param buf_size:
 
