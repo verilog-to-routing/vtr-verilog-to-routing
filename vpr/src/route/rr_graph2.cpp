@@ -1392,6 +1392,11 @@ void get_rr_node_indices(const t_rr_node_indices& L_rr_node_indices,
                          t_rr_type rr_type,
                          std::vector<int>* indices,
                          e_side side) {
+    //Comparison predicate
+    auto is_valid_id = [](int id) { return id != OPEN; };
+
+    indices->resize(0);
+
     if (rr_type == SOURCE
         || rr_type == SINK
         || rr_type == CHANX
@@ -1402,11 +1407,12 @@ void get_rr_node_indices(const t_rr_node_indices& L_rr_node_indices,
         }
 
         VTR_ASSERT_MSG(side == NUM_SIDES, "Non-IPINs/OPINs must not specify side");
-        indices->resize(L_rr_node_indices[rr_type][x][y][0].size());
-        std::copy(
+        indices->reserve(L_rr_node_indices[rr_type][x][y][0].size());
+        std::copy_if(
             L_rr_node_indices[rr_type][x][y][0].begin(),
             L_rr_node_indices[rr_type][x][y][0].end(),
-            indices->begin());
+            std::back_inserter(*indices),
+            is_valid_id);
     } else {
         VTR_ASSERT(rr_type == OPIN || rr_type == IPIN);
         if (side == NUM_SIDES) {
@@ -1416,21 +1422,22 @@ void get_rr_node_indices(const t_rr_node_indices& L_rr_node_indices,
                 capacity_needed += L_rr_node_indices[rr_type][x][y][tmp_side].size();
             }
 
-            indices->resize(0);
             indices->reserve(capacity_needed);
             for (e_side tmp_side : SIDES) {
-                std::copy(
+                std::copy_if(
                     L_rr_node_indices[rr_type][x][y][tmp_side].begin(),
                     L_rr_node_indices[rr_type][x][y][tmp_side].end(),
-                    std::back_inserter(*indices));
+                    std::back_inserter(*indices),
+                    is_valid_id);
             }
         } else {
             //Side specified
-            indices->resize(L_rr_node_indices[rr_type][x][y][side].size());
-            std::copy(
+            indices->reserve(L_rr_node_indices[rr_type][x][y][side].size());
+            std::copy_if(
                 L_rr_node_indices[rr_type][x][y][side].begin(),
                 L_rr_node_indices[rr_type][x][y][side].end(),
-                indices->begin());
+                std::back_inserter(*indices),
+                is_valid_id);
         }
     }
 }
