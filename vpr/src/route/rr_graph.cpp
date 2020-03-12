@@ -163,7 +163,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(t_rr_graph_sto
                                                                   const std::vector<vtr::Matrix<int>>& Fc_out,
                                                                   vtr::NdMatrix<int, 3>& Fc_xofs,
                                                                   vtr::NdMatrix<int, 3>& Fc_yofs,
-                                                                  const t_rr_node_indices& L_rr_node_indices,
+                                                                  t_rr_node_indices& L_rr_node_indices,
                                                                   const int max_chan_width,
                                                                   const t_chan_width& chan_width,
                                                                   const int wire_to_ipin_switch,
@@ -373,6 +373,8 @@ void create_rr_graph(const t_graph_type graph_type,
     }
 
     process_non_config_sets();
+
+    verify_rr_node_indices(grid, device_ctx.rr_node_indices, device_ctx.rr_nodes);
 
     print_rr_graph_stats();
 
@@ -1152,7 +1154,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(t_rr_graph_sto
                                                                   const std::vector<vtr::Matrix<int>>& Fc_out,
                                                                   vtr::NdMatrix<int, 3>& Fc_xofs,
                                                                   vtr::NdMatrix<int, 3>& Fc_yofs,
-                                                                  const t_rr_node_indices& L_rr_node_indices,
+                                                                  t_rr_node_indices& L_rr_node_indices,
                                                                   const int max_chan_width,
                                                                   const t_chan_width& chan_width,
                                                                   const int wire_to_ipin_switch,
@@ -1266,11 +1268,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(t_rr_graph_sto
     std::function<void(t_chan_width*)> update_chan_width = [](t_chan_width*) {
     };
     if (clock_modeling == DEDICATED_NETWORK) {
-        ClockRRGraphBuilder builder(
-            chan_width, grid, &L_rr_node);
-        builder.create_and_append_clock_rr_graph(
-            num_seg_types,
-            &rr_edges_to_create);
+        ClockRRGraphBuilder builder(chan_width, grid, &L_rr_node, &L_rr_node_indices);
+        builder.create_and_append_clock_rr_graph(num_seg_types, &rr_edges_to_create);
         uniquify_edges(rr_edges_to_create);
         alloc_and_load_edges(L_rr_node, rr_edges_to_create);
         rr_edges_to_create.clear();

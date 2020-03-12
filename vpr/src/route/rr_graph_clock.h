@@ -77,10 +77,12 @@ class ClockRRGraphBuilder {
     ClockRRGraphBuilder(
         const t_chan_width& chan_width,
         const DeviceGrid& grid,
-        t_rr_graph_storage* rr_nodes)
+        t_rr_graph_storage* rr_nodes,
+        t_rr_node_indices* rr_node_indices)
         : chan_width_(chan_width)
         , grid_(grid)
         , rr_nodes_(rr_nodes)
+        , rr_node_indices_(rr_node_indices)
         , chanx_ptc_idx_(0)
         , chany_ptc_idx_(0) {
     }
@@ -134,6 +136,7 @@ class ClockRRGraphBuilder {
     const t_chan_width& chan_width_;
     const DeviceGrid& grid_;
     t_rr_graph_storage* rr_nodes_;
+    t_rr_node_indices* rr_node_indices_;
 
     int chanx_ptc_idx_;
     int chany_ptc_idx_;
