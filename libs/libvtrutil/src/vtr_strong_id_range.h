@@ -37,7 +37,12 @@ class StrongIdIterator {
     using pointer = StrongId*;
     using difference_type = ssize_t;
 
-    StrongId& operator*() {
+    StrongId operator*() const {
+        VTR_ASSERT_SAFE(bool(id_));
+        return this->id_;
+    }
+
+    StrongId operator*() {
         VTR_ASSERT_SAFE(bool(id_));
         return this->id_;
     }
@@ -74,54 +79,54 @@ class StrongIdIterator {
         return StrongId(size_t(id_) + offset);
     }
 
-    template<typename IdType>
-    friend StrongIdIterator<IdType> operator+(
-        const StrongIdIterator<IdType>& lhs,
-        ssize_t n) {
-        StrongIdIterator ret = lhs;
-        ret += n;
-        return ret;
-    }
-
-    template<typename IdType>
-    friend StrongIdIterator<IdType> operator-(
-        const StrongIdIterator<IdType>& lhs,
-        ssize_t n) {
-        StrongIdIterator ret = lhs;
-        ret -= n;
-        return ret;
-    }
-
-    template<typename IdType>
-    friend ssize_t operator-(
-        const StrongIdIterator<IdType>& lhs,
-        const StrongIdIterator<IdType>& rhs) {
-        VTR_ASSERT_SAFE(bool(lhs.id_));
-        VTR_ASSERT_SAFE(bool(rhs.id_));
-
-        ssize_t ret = size_t(lhs.id_);
-        ret -= size_t(rhs.id_);
-        return ret;
-    }
-
-    template<typename IdType>
-    friend bool operator==(const StrongIdIterator<IdType>& lhs, const StrongIdIterator<IdType>& rhs) {
-        return lhs.id_ == rhs.id_;
-    }
-
-    template<typename IdType>
-    friend bool operator!=(const StrongIdIterator<IdType>& lhs, const StrongIdIterator<IdType>& rhs) {
-        return lhs.id_ != rhs.id_;
-    }
-
-    template<typename IdType>
-    friend bool operator<(const StrongIdIterator<IdType>& lhs, const StrongIdIterator<IdType>& rhs) {
-        return lhs.id_ < rhs.id_;
-    }
-
   private:
     StrongId id_;
 };
+
+template<typename IdType>
+StrongIdIterator<IdType> operator+(
+    const StrongIdIterator<IdType>& lhs,
+    ssize_t n) {
+    StrongIdIterator<IdType> ret = lhs;
+    ret += n;
+    return ret;
+}
+
+template<typename IdType>
+StrongIdIterator<IdType> operator-(
+    const StrongIdIterator<IdType>& lhs,
+    ssize_t n) {
+    StrongIdIterator<IdType> ret = lhs;
+    ret -= n;
+    return ret;
+}
+
+template<typename IdType>
+ssize_t operator-(
+    const StrongIdIterator<IdType>& lhs,
+    const StrongIdIterator<IdType>& rhs) {
+    VTR_ASSERT_SAFE(bool(*lhs));
+    VTR_ASSERT_SAFE(bool(*rhs));
+
+    ssize_t ret = size_t(*lhs);
+    ret -= size_t(*rhs);
+    return ret;
+}
+
+template<typename IdType>
+bool operator==(const StrongIdIterator<IdType>& lhs, const StrongIdIterator<IdType>& rhs) {
+    return *lhs == *rhs;
+}
+
+template<typename IdType>
+bool operator!=(const StrongIdIterator<IdType>& lhs, const StrongIdIterator<IdType>& rhs) {
+    return *lhs != *rhs;
+}
+
+template<typename IdType>
+bool operator<(const StrongIdIterator<IdType>& lhs, const StrongIdIterator<IdType>& rhs) {
+    return *lhs < *rhs;
+}
 
 template<typename StrongId>
 class StrongIdRange {
