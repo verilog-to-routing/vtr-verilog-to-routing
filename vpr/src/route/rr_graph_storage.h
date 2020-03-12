@@ -177,17 +177,17 @@ class t_rr_graph_storage {
     }
 
     e_direction node_direction(RRNodeId id) const {
-        if (node_type(id) != CHANX && node_type(id) != CHANY) {
-            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'direction' for non-channel type '%s'", node_type_string(id));
-        }
-        return node_storage_[id].dir_side_.direction;
+        return get_node_direction(
+            vtr::array_view_id<RRNodeId, const t_rr_node_data>(
+                node_storage_.data(), node_storage_.size()),
+            id);
     }
 
     e_side node_side(RRNodeId id) const {
-        if (node_type(id) != IPIN && node_type(id) != OPIN) {
-            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'side' for non-IPIN/OPIN type '%s'", node_type_string(id));
-        }
-        return node_storage_[id].dir_side_.side;
+        return get_node_side(
+            vtr::array_view_id<RRNodeId, const t_rr_node_data>(
+                node_storage_.data(), node_storage_.size()),
+            id);
     }
 
     /* PTC get methods */
@@ -544,6 +544,30 @@ class t_rr_graph_storage {
      * have a complete rr-graph and not called often.*/
     void init_fan_in();
 
+    static inline e_direction get_node_direction(
+        vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
+        RRNodeId id) {
+        auto& node_data = node_storage[id];
+        if (node_data.type_ != CHANX && node_data.type_ != CHANY) {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                            "Attempted to access RR node 'direction' for non-channel type '%s'",
+                            rr_node_typename[node_data.type_]);
+        }
+        return node_storage[id].dir_side_.direction;
+    }
+
+    static inline e_side get_node_side(
+        vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
+        RRNodeId id) {
+        auto& node_data = node_storage[id];
+        if (node_data.type_ != IPIN && node_data.type_ != OPIN) {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                            "Attempted to access RR node 'side' for non-IPIN/OPIN type '%s'",
+                            rr_node_typename[node_data.type_]);
+        }
+        return node_storage[id].dir_side_.side;
+    }
+
   private:
     friend struct edge_swapper;
     friend class edge_sort_iterator;
@@ -685,17 +709,11 @@ class t_rr_graph_view {
     }
 
     e_direction node_direction(RRNodeId id) const {
-        if (node_type(id) != CHANX && node_type(id) != CHANY) {
-            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'direction' for non-channel type '%s'", node_type_string(id));
-        }
-        return node_storage_[id].dir_side_.direction;
+        return t_rr_graph_storage::get_node_direction(node_storage_, id);
     }
 
     e_side node_side(RRNodeId id) const {
-        if (node_type(id) != IPIN && node_type(id) != OPIN) {
-            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'side' for non-IPIN/OPIN type '%s'", node_type_string(id));
-        }
-        return node_storage_[id].dir_side_.side;
+        return t_rr_graph_storage::get_node_side(node_storage_, id);
     }
 
     /* PTC get methods */

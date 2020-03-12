@@ -564,23 +564,63 @@ void t_rr_graph_storage::set_node_class_num(RRNodeId id, short new_class_num) {
 short t_rr_graph_storage::node_ptc_num(RRNodeId id) const {
     return node_ptc_[id].ptc_.pin_num;
 }
-short t_rr_graph_storage::node_pin_num(RRNodeId id) const {
-    if (node_type(id) != IPIN && node_type(id) != OPIN) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'pin_num' for non-IPIN/OPIN type '%s'", node_type_string(id));
+
+static short get_node_pin_num(
+    vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
+    vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc,
+    RRNodeId id) {
+    auto node_type = node_storage[id].type_;
+    if (node_type != IPIN && node_type != OPIN) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'pin_num' for non-IPIN/OPIN type '%s'", rr_node_typename[node_type]);
     }
-    return node_ptc_[id].ptc_.pin_num;
+    return node_ptc[id].ptc_.pin_num;
+}
+
+static short get_node_track_num(
+    vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
+    vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc,
+    RRNodeId id) {
+    auto node_type = node_storage[id].type_;
+    if (node_type != CHANX && node_type != CHANY) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'track_num' for non-CHANX/CHANY type '%s'", rr_node_typename[node_type]);
+    }
+    return node_ptc[id].ptc_.track_num;
+}
+
+static short get_node_class_num(
+    vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
+    vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc,
+    RRNodeId id) {
+    auto node_type = node_storage[id].type_;
+    if (node_type != SOURCE && node_type != SINK) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'class_num' for non-SOURCE/SINK type '%s'", rr_node_typename[node_type]);
+    }
+    return node_ptc[id].ptc_.class_num;
+}
+
+short t_rr_graph_storage::node_pin_num(RRNodeId id) const {
+    return get_node_pin_num(
+        vtr::array_view_id<RRNodeId, const t_rr_node_data>(
+            node_storage_.data(), node_storage_.size()),
+        vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data>(
+            node_ptc_.data(), node_ptc_.size()),
+        id);
 }
 short t_rr_graph_storage::node_track_num(RRNodeId id) const {
-    if (node_type(id) != CHANX && node_type(id) != CHANY) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'track_num' for non-CHANX/CHANY type '%s'", node_type_string(id));
-    }
-    return node_ptc_[id].ptc_.track_num;
+    return get_node_track_num(
+        vtr::array_view_id<RRNodeId, const t_rr_node_data>(
+            node_storage_.data(), node_storage_.size()),
+        vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data>(
+            node_ptc_.data(), node_ptc_.size()),
+        id);
 }
 short t_rr_graph_storage::node_class_num(RRNodeId id) const {
-    if (node_type(id) != SOURCE && node_type(id) != SINK) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'class_num' for non-SOURCE/SINK type '%s'", node_type_string(id));
-    }
-    return node_ptc_[id].ptc_.class_num;
+    return get_node_class_num(
+        vtr::array_view_id<RRNodeId, const t_rr_node_data>(
+            node_storage_.data(), node_storage_.size()),
+        vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data>(
+            node_ptc_.data(), node_ptc_.size()),
+        id);
 }
 
 void t_rr_graph_storage::set_node_type(RRNodeId id, t_rr_type new_type) {
@@ -642,22 +682,13 @@ short t_rr_graph_view::node_ptc_num(RRNodeId id) const {
     return node_ptc_[id].ptc_.pin_num;
 }
 short t_rr_graph_view::node_pin_num(RRNodeId id) const {
-    if (node_type(id) != IPIN && node_type(id) != OPIN) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'pin_num' for non-IPIN/OPIN type '%s'", node_type_string(id));
-    }
-    return node_ptc_[id].ptc_.pin_num;
+    return get_node_pin_num(node_storage_, node_ptc_, id);
 }
 short t_rr_graph_view::node_track_num(RRNodeId id) const {
-    if (node_type(id) != CHANX && node_type(id) != CHANY) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'track_num' for non-CHANX/CHANY type '%s'", node_type_string(id));
-    }
-    return node_ptc_[id].ptc_.track_num;
+    return get_node_track_num(node_storage_, node_ptc_, id);
 }
 short t_rr_graph_view::node_class_num(RRNodeId id) const {
-    if (node_type(id) != SOURCE && node_type(id) != SINK) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Attempted to access RR node 'class_num' for non-SOURCE/SINK type '%s'", node_type_string(id));
-    }
-    return node_ptc_[id].ptc_.class_num;
+    return get_node_class_num(node_storage_, node_ptc_, id);
 }
 
 t_rr_graph_view t_rr_graph_storage::view() const {
