@@ -521,7 +521,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
                                  &dijkstra_data);
                 }
 
-                //print_router_cost_map(routing_cost_map);
+                if (false) print_router_cost_map(routing_cost_map);
 
                 /* boil down the cost list in routing_cost_map at each coordinate to a representative cost entry and store it in the lookahead
                  * cost map */
