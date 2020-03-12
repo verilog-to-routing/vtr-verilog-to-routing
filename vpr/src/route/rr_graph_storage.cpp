@@ -215,44 +215,52 @@ class edge_compare_src_node_and_configurable_first {
 
     bool operator()(const t_rr_edge_info& lhs, const edge_swapper& rhs) {
         auto lhs_src_node = RRNodeId(lhs.from_node);
+        auto lhs_dest_node = RRNodeId(lhs.to_node);
         auto lhs_is_configurable = rr_switch_inf_[lhs.switch_type].configurable();
 
         auto rhs_edge = RREdgeId(rhs.idx_);
         auto rhs_src_node = rhs.storage_->edge_src_node_[rhs_edge];
+        auto rhs_dest_node = rhs.storage_->edge_dest_node_[rhs_edge];
         auto rhs_is_configurable = rr_switch_inf_[rhs.storage_->edge_switch_[rhs_edge]].configurable();
 
-        return std::make_pair(lhs_src_node, !lhs_is_configurable) < std::make_pair(rhs_src_node, !rhs_is_configurable);
+        return std::make_tuple(lhs_src_node, !lhs_is_configurable, lhs_dest_node, lhs.switch_type) < std::make_tuple(rhs_src_node, !rhs_is_configurable, rhs_dest_node, rhs.storage_->edge_switch_[rhs_edge]);
     }
 
     bool operator()(const t_rr_edge_info& lhs, const t_rr_edge_info& rhs) {
         auto lhs_src_node = lhs.from_node;
+        auto lhs_dest_node = lhs.to_node;
         auto lhs_is_configurable = rr_switch_inf_[lhs.switch_type].configurable();
 
         auto rhs_src_node = rhs.from_node;
+        auto rhs_dest_node = rhs.to_node;
         auto rhs_is_configurable = rr_switch_inf_[rhs.switch_type].configurable();
 
-        return std::make_pair(lhs_src_node, !lhs_is_configurable) < std::make_pair(rhs_src_node, !rhs_is_configurable);
+        return std::make_tuple(lhs_src_node, !lhs_is_configurable, lhs_dest_node, lhs.switch_type) < std::make_tuple(rhs_src_node, !rhs_is_configurable, rhs_dest_node, rhs.switch_type);
     }
     bool operator()(const edge_swapper& lhs, const t_rr_edge_info& rhs) {
         auto lhs_edge = RREdgeId(lhs.idx_);
         auto lhs_src_node = lhs.storage_->edge_src_node_[lhs_edge];
+        auto lhs_dest_node = lhs.storage_->edge_dest_node_[lhs_edge];
         auto lhs_is_configurable = rr_switch_inf_[lhs.storage_->edge_switch_[lhs_edge]].configurable();
 
         auto rhs_src_node = RRNodeId(rhs.from_node);
+        auto rhs_dest_node = RRNodeId(rhs.to_node);
         auto rhs_is_configurable = rr_switch_inf_[rhs.switch_type].configurable();
 
-        return std::make_pair(lhs_src_node, !lhs_is_configurable) < std::make_pair(rhs_src_node, !rhs_is_configurable);
+        return std::make_tuple(lhs_src_node, !lhs_is_configurable, lhs_dest_node, lhs.storage_->edge_switch_[lhs_edge]) < std::make_tuple(rhs_src_node, !rhs_is_configurable, rhs_dest_node, rhs.switch_type);
     }
     bool operator()(const edge_swapper& lhs, const edge_swapper& rhs) {
         auto lhs_edge = RREdgeId(lhs.idx_);
         auto lhs_src_node = lhs.storage_->edge_src_node_[lhs_edge];
+        auto lhs_dest_node = lhs.storage_->edge_dest_node_[lhs_edge];
         auto lhs_is_configurable = rr_switch_inf_[lhs.storage_->edge_switch_[lhs_edge]].configurable();
 
         auto rhs_edge = RREdgeId(rhs.idx_);
         auto rhs_src_node = rhs.storage_->edge_src_node_[rhs_edge];
+        auto rhs_dest_node = rhs.storage_->edge_dest_node_[rhs_edge];
         auto rhs_is_configurable = rr_switch_inf_[rhs.storage_->edge_switch_[rhs_edge]].configurable();
 
-        return std::make_pair(lhs_src_node, !lhs_is_configurable) < std::make_pair(rhs_src_node, !rhs_is_configurable);
+        return std::make_tuple(lhs_src_node, !lhs_is_configurable, lhs_dest_node, lhs.storage_->edge_switch_[lhs_edge]) < std::make_tuple(rhs_src_node, !rhs_is_configurable, rhs_dest_node, rhs.storage_->edge_switch_[rhs_edge]);
     }
 
   private:
@@ -387,7 +395,7 @@ size_t t_rr_graph_storage::count_rr_switches(
     // values.
     //
     // This sort is safe to do because partition_edges() has not been invoked yet.
-    std::stable_sort(
+    std::sort(
         edge_sort_iterator(this, 0),
         edge_sort_iterator(this, edge_dest_node_.size()),
         edge_compare_dest_node());
@@ -482,7 +490,7 @@ void t_rr_graph_storage::partition_edges() {
     //    by assign_first_edges()
     //  - Edges within a source node have the configurable edges before the
     //    non-configurable edges.
-    std::stable_sort(
+    std::sort(
         edge_sort_iterator(this, 0),
         edge_sort_iterator(this, edge_src_node_.size()),
         edge_compare_src_node_and_configurable_first(device_ctx.rr_switch_inf));
