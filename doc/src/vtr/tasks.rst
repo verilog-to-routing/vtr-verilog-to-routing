@@ -83,7 +83,7 @@ Example configuration file:
 
 .. note::
 
-    :ref:`run_vtr_task` will invoke the script (default :ref`run_vtr_flow`) for the cartesian product of circuits, architectures and script parameters specified in the config file.
+    :ref:`run_vtr_task` will invoke the script (default :ref:`run_vtr_flow`) for the cartesian product of circuits, architectures and script parameters specified in the config file.
 
 Required Fields
 ~~~~~~~~~~~~~~~
