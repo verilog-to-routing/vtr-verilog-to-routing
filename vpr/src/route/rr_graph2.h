@@ -3,11 +3,10 @@
 #include <vector>
 
 #include "build_switchblocks.h"
+#include "rr_graph_fwd.h"
 #include "rr_graph_util.h"
 #include "rr_types.h"
 #include "device_grid.h"
-
-struct t_rr_graph_storage; //Forward declaration
 
 /******************* Types shared by rr_graph2 functions *********************/
 

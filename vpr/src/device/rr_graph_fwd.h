@@ -8,6 +8,9 @@
  * please refer to rr_graph_obj.h
  ***************************************************************/
 
+//Forward declaration
+class t_rr_graph_storage;
+
 class RRGraph;
 
 struct rr_node_id_tag;
