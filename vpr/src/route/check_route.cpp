@@ -620,6 +620,28 @@ static void check_node_and_range(int inode, enum e_route_type route_type) {
     check_rr_node(inode, route_type, device_ctx);
 }
 
+static void get_non_configurable_rr_set_edges(RRNonConfigurableSetId id,
+                                              std::vector<t_node_edge>* edges) {
+    const auto& device_ctx = g_vpr_ctx.device();
+
+    auto node_set = device_ctx.rr_nodes.get_non_configurable_set(id);
+
+    // At a minimum each node in the set is connected to 1 other node in the set.
+    // The x2 comes from the fact that each edge should have a reversed pair.
+    edges->clear();
+    edges->reserve(node_set.size() * 2);
+
+    for (RRNodeId src_node : node_set) {
+        for (RREdgeId edge : device_ctx.rr_nodes.edge_range(src_node)) {
+            auto switch_id = device_ctx.rr_nodes.edge_switch(edge);
+            if (!device_ctx.rr_switch_inf[switch_id].configurable()) {
+                RRNodeId dest_node = device_ctx.rr_nodes.edge_sink_node(edge);
+                edges->emplace_back(size_t(src_node), size_t(dest_node));
+            }
+        }
+    }
+}
+
 //Checks that the specified routing is legal with respect to non-configurable edges
 //
 //For routing to be legal if *any* non-configurable edge is used, so must *all*
@@ -715,7 +737,7 @@ static bool check_non_configurable_edges(ClusterNetId net) {
     //in the routing, if any of a set's edges are used
     std::vector<t_node_edge> rr_edges;
     for (RRNonConfigurableSetId set_id : non_configurable_sets) {
-        device_ctx.rr_nodes.get_non_configurable_rr_set_edges(set_id, &rr_edges);
+        get_non_configurable_rr_set_edges(set_id, &rr_edges);
         std::sort(rr_edges.begin(), rr_edges.end());
 
         //Compute the intersection of the routing and current non-configurable edge set

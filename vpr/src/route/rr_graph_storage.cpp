@@ -1032,7 +1032,24 @@ void t_rr_graph_storage::prepare_non_configurable_edges() {
     verify_non_configurable_groups();
 }
 
+// non_config_first_node_idx_ has a dummy index to enable storing set
+// ranges without a special case.  See get_non_configurable_set.
+size_t t_rr_graph_storage::number_of_non_configurable_sets() const {
+    return non_config_first_node_idx_.size() - 1;
+}
+size_t t_rr_graph_view::number_of_non_configurable_sets() const {
+    return non_config_first_node_idx_.size() - 1;
+}
+
 RRNonConfigurableSetId t_rr_graph_storage::non_configurable_set_id(RRNodeId id) const {
+    auto itr = rr_node_to_non_config_node_set_.find(id);
+    if (itr != rr_node_to_non_config_node_set_.end()) {
+        return itr->second;
+    } else {
+        return RRNonConfigurableSetId::INVALID();
+    }
+}
+RRNonConfigurableSetId t_rr_graph_view::non_configurable_set_id(RRNodeId id) const {
     auto itr = rr_node_to_non_config_node_set_.find(id);
     if (itr != rr_node_to_non_config_node_set_.end()) {
         return itr->second;
@@ -1048,54 +1065,10 @@ vtr::array_view<const RRNodeId> t_rr_graph_storage::get_non_configurable_set(RRN
         non_config_set_nodes_.data() + first_idx,
         last_idx - first_idx);
 }
-
-size_t t_rr_graph_storage::number_of_non_configurable_sets() const {
-    // non_config_first_node_idx_ has a dummy index to enable storing set
-    // ranges without a special case.  See get_non_configurable_set.
-    return non_config_first_node_idx_.size() - 1;
-}
-
-void t_rr_graph_storage::get_non_configurable_rr_set_edges(RRNonConfigurableSetId id,
-                                                           std::vector<t_node_edge>* edges) const {
-    const auto& device_ctx = g_vpr_ctx.device();
-
-    auto node_set = get_non_configurable_set(id);
-
-    // At a minimum each node in the set is connected to 1 other node in the set.
-    // The x2 comes from the fact that each edge should have a reversed pair.
-    edges->clear();
-    edges->reserve(node_set.size() * 2);
-
-    for (RRNodeId src_node : node_set) {
-        for (RREdgeId edge : edge_range(src_node)) {
-            auto switch_id = edge_switch(edge);
-            if (!device_ctx.rr_switch_inf[switch_id].configurable()) {
-                RRNodeId dest_node = edge_sink_node(edge);
-                edges->emplace_back(size_t(src_node), size_t(dest_node));
-            }
-        }
-    }
-}
-
-RRNonConfigurableSetId t_rr_graph_view::non_configurable_set_id(RRNodeId id) const {
-    auto itr = rr_node_to_non_config_node_set_.find(id);
-    if (itr != rr_node_to_non_config_node_set_.end()) {
-        return itr->second;
-    } else {
-        return RRNonConfigurableSetId::INVALID();
-    }
-}
-
 vtr::array_view<const RRNodeId> t_rr_graph_view::get_non_configurable_set(RRNonConfigurableSetId id) const {
     size_t first_idx = non_config_first_node_idx_[id];
     size_t last_idx = (&non_config_first_node_idx_[id])[1];
     return vtr::array_view<const RRNodeId>(
         non_config_set_nodes_.data() + first_idx,
         last_idx - first_idx);
-}
-
-size_t t_rr_graph_view::number_of_non_configurable_sets() const {
-    // non_config_first_node_idx_ has a dummy index to enable storing set
-    // ranges without a special case.  See get_non_configurable_set.
-    return non_config_first_node_idx_.size() - 1;
 }

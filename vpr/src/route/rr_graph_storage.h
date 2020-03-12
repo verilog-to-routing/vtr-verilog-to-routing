@@ -88,6 +88,27 @@ class t_rr_graph_view;
 
 // RR node and edge storage class.
 //
+// Model:
+//
+// The routing resource (RR) graph is made of RR nodes and RR edges between
+// RR nodes.  Each RR node has a unique identifier, RRNodeId.  Each RR edge
+// has a unique identifier, RREdgeId.
+//
+// Each RR edge has a source RR node, a sink RR node, and switch. The
+// properties of the switch determine how the switch behaves.  In particular,
+// some switch types are "configurable", e.g. the router can choose to enable
+// or disable that particular switch to form a logical net between the nodes.
+// Some switches types are "non-configurable", and cannot be configured.
+//
+// When the router encounters a node with non-configurable edges, all nodes
+// within the "non-configurable node set" become part of the logical net.
+// Consider an electrical short between a horizontial and vertical routing
+// channel.  When a switch drives the horizontial routing channel, the
+// vertical channel is also driven.  The set of nodes that are logically
+// connected via non-configurable edges are the "non-configurable node set".
+// Each non-configurable node set has a unique identifier,
+// RRNonConfigurableSetId.
+//
 // Description:
 //
 // This class stores the detailed routing graph.  Each node within the graph is
@@ -201,11 +222,18 @@ class t_rr_graph_storage {
         return node_fan_in_[id];
     }
 
+    // How many non-configurable node sets exist in the RR graph?
     size_t number_of_non_configurable_sets() const;
+
+    // Which (if any) non-configurable node set does this id belong too?
+    //
+    // If non_configurable_set_id returns RRNonConfigurableSetId::INVALID,
+    // RRNodeId id is not a member of a non-configurable node set.
     RRNonConfigurableSetId non_configurable_set_id(RRNodeId id) const;
+
+    // Returns sorted set of nodes that belong to specified non-configurable
+    // node set.
     vtr::array_view<const RRNodeId> get_non_configurable_set(RRNonConfigurableSetId id) const;
-    void get_non_configurable_rr_set_edges(RRNonConfigurableSetId id,
-                                           std::vector<t_node_edge>* edges) const;
 
     // This prefetechs hot RR node data required for optimization.
     //
@@ -593,6 +621,8 @@ class t_rr_graph_storage {
     // Verify that first_edge_ array correctly partitions rr edge data.
     bool verify_first_edges() const;
 
+    // Prepare all non-configurable node set data structures, and verify their
+    // consistency.
     void prepare_non_configurable_edges();
 
     // Construct non-configurable edge groups
@@ -641,7 +671,22 @@ class t_rr_graph_storage {
     vtr::vector<RREdgeId, RRNodeId> edge_dest_node_;
     vtr::vector<RREdgeId, short> edge_switch_;
 
-    // Sets of non-configurably connected nodes
+    // Non-configurable node set storage.
+    //
+    // The non-configurable node sets are stored in two flat arrays.
+    //
+    // non_config_first_node_idx_ maps the RRNonConfigurableSetId to the index
+    // of the first RRNodeId in the non-configurable node set.
+    // non_config_first_node_idx_ size is one greater than the number of
+    // non-configurable node sets to enable get_non_configurable_set to handle
+    // the exceptional case in get_non_configurable_set when the
+    // non-configurable node set id is 1 less than the number of
+    // non-configurable node sets.
+    //
+    // non_config_set_nodes_ contains the actual nodes in each set.  The nodes
+    // are stored in sorted order, with lower RRNonConfigurableSetId before
+    // higher RRNonConfigurableSetId and lower RRNodeId's below higher
+    // RRNodeId's.
     vtr::vector<RRNonConfigurableSetId, size_t> non_config_first_node_idx_;
     std::vector<RRNodeId> non_config_set_nodes_;
 
