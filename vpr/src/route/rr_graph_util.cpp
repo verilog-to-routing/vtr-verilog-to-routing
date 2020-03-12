@@ -1,4 +1,9 @@
+#include <queue>
+#include <random>
+#include <algorithm>
+
 #include "vtr_memory.h"
+#include "vtr_time.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -73,5 +78,78 @@ int seg_index_of_sblock(int from_node, int to_node) {
                         "in seg_index_of_sblock: from_node %d is of type %d.\n",
                         from_node, from_rr_type);
         return OPEN; //Should not reach here once thrown
+    }
+}
+
+void reorder_rr_graph_nodes(const t_router_opts& router_opts) {
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+    auto& graph = device_ctx.rr_nodes;
+    size_t v_num = graph.size();
+
+    if (router_opts.reorder_rr_graph_nodes_threshold < 0 || v_num < (size_t)router_opts.reorder_rr_graph_nodes_threshold) return;
+
+    vtr::ScopedStartFinishTimer timer("Reordering rr_graph nodes");
+
+    vtr::vector<RRNodeId, RRNodeId> src_order(v_num); // new id -> old id
+    size_t cur_idx = 0;
+    for (RRNodeId& n : src_order) { // Initialize to [0, 1, 2 ...]
+        n = RRNodeId(cur_idx++);
+    }
+
+    if (router_opts.reorder_rr_graph_nodes_algorithm == DEGREE_BFS) {
+        vtr::vector<RRNodeId, size_t> bfs_idx(v_num);
+        vtr::vector<RRNodeId, size_t> degree(v_num);
+        std::queue<RRNodeId> que;
+
+        cur_idx = 0;
+        for (size_t i = 0; i < v_num; ++i) {
+            if (bfs_idx[RRNodeId(i)]) continue;
+            que.push(RRNodeId(i));
+            bfs_idx[RRNodeId(i)] = cur_idx++;
+            while (!que.empty()) {
+                RRNodeId u = que.front();
+                que.pop();
+                degree[u] += graph.num_edges(u);
+                for (RREdgeId edge = graph.first_edge(u); edge < graph.last_edge(u); edge = RREdgeId(size_t(edge) + 1)) {
+                    RRNodeId v = graph.edge_sink_node(edge);
+                    degree[v]++;
+                    if (bfs_idx[v]) continue;
+                    bfs_idx[v] = cur_idx++;
+                    que.push(v);
+                }
+            }
+        }
+
+        sort(src_order.begin(), src_order.end(),
+             [&](auto a, auto b) -> bool {
+                 auto deg_a = degree[a];
+                 auto deg_b = degree[b];
+                 return deg_a > deg_b || (deg_a == deg_b && bfs_idx[a] < bfs_idx[b]);
+             });
+    } else if (router_opts.reorder_rr_graph_nodes_algorithm == RANDOM_SHUFFLE) {
+        std::random_device rd;
+        std::mt19937 g(rd());
+        std::shuffle(src_order.begin(), src_order.end(), g);
+    }
+    vtr::vector<RRNodeId, RRNodeId> dest_order(v_num);
+    cur_idx = 0;
+    for (auto u : src_order)
+        dest_order[u] = RRNodeId(cur_idx++);
+
+    graph.reorder(dest_order, src_order);
+
+    // update rr_node_indices
+    for (auto& grid : device_ctx.rr_node_indices) {
+        for (size_t x = 0; x < grid.dim_size(0); x++) {
+            for (size_t y = 0; y < grid.dim_size(1); y++) {
+                for (size_t s = 0; s < grid.dim_size(2); s++) {
+                    for (auto& node : grid[x][y][s]) {
+                        if (node != OPEN) {
+                            node = size_t(dest_order[RRNodeId(node)]);
+                        }
+                    }
+                }
+            }
+        }
     }
 }

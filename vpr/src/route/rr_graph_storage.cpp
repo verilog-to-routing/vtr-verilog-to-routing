@@ -739,3 +739,68 @@ t_rr_graph_view t_rr_graph_storage::view() const {
         vtr::make_const_array_view_id(edge_dest_node_),
         vtr::make_const_array_view_id(edge_switch_));
 }
+
+void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
+                                 const vtr::vector<RRNodeId, RRNodeId>& inverse_order) {
+    {
+        auto old_node_storage = node_storage_;
+
+        // Reorder nodes
+        for (size_t i = 0; i < node_storage_.size(); i++) {
+            auto n = RRNodeId(i);
+            VTR_ASSERT(n == inverse_order[order[n]]);
+            node_storage_[order[n]] = old_node_storage[n];
+        }
+    }
+    {
+        auto old_node_first_edge = node_first_edge_;
+        auto old_edge_src_node = edge_src_node_;
+        auto old_edge_dest_node = edge_dest_node_;
+        auto old_edge_switch = edge_switch_;
+        RREdgeId cur_edge(0);
+
+        // Reorder edges by source node
+        for (size_t i = 0; i < node_storage_.size(); i++) {
+            node_first_edge_[RRNodeId(i)] = cur_edge;
+            auto n = inverse_order[RRNodeId(i)];
+            for (auto e = old_node_first_edge[n];
+                 e < old_node_first_edge[RRNodeId(size_t(n) + 1)];
+                 e = RREdgeId(size_t(e) + 1)) {
+                edge_src_node_[cur_edge] = order[old_edge_src_node[e]]; // == n?
+                edge_dest_node_[cur_edge] = order[old_edge_dest_node[e]];
+                edge_switch_[cur_edge] = old_edge_switch[e];
+                cur_edge = RREdgeId(size_t(cur_edge) + 1);
+            }
+        }
+    }
+    {
+        auto old_node_ptc = node_ptc_;
+        for (size_t i = 0; i < node_ptc_.size(); i++) {
+            node_ptc_[order[RRNodeId(i)]] = old_node_ptc[RRNodeId(i)];
+        }
+    }
+    {
+        auto old_node_fan_in = node_fan_in_;
+        for (size_t i = 0; i < node_fan_in_.size(); i++) {
+            node_fan_in_[order[RRNodeId(i)]] = old_node_fan_in[RRNodeId(i)];
+        }
+    }
+
+    // Check that edges are still partitioned
+    if (partitioned_) {
+        auto& device_ctx = g_vpr_ctx.device();
+        for (size_t i = 0; i < size(); i++) {
+            RRNodeId n(i);
+            bool configurable_partition = true;
+            for (auto e = first_edge(n);
+                 e < last_edge(n);
+                 e = RREdgeId(size_t(e) + 1)) {
+                if (device_ctx.rr_switch_inf[edge_switch(e)].configurable()) {
+                    VTR_ASSERT(configurable_partition);
+                } else {
+                    configurable_partition = false;
+                }
+            }
+        }
+    }
+}

@@ -435,6 +435,8 @@ class t_rr_graph_storage {
         node_storage_.emplace_back();
         node_ptc_.emplace_back();
     }
+    void reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
+                 const vtr::vector<RRNodeId, RRNodeId>& inverse_order);
 
     /* PTC set methods */
     void set_node_ptc_num(RRNodeId id, short);

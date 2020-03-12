@@ -317,15 +317,10 @@ void create_rr_graph(const t_graph_type graph_type,
                      const int num_arch_switches,
                      t_det_routing_arch* det_routing_arch,
                      const std::vector<t_segment_inf>& segment_inf,
-                     const enum e_base_cost_type base_cost_type,
-                     const bool trim_empty_channels,
-                     const bool trim_obs_channels,
-                     const enum e_clock_modeling clock_modeling,
+                     const t_router_opts& router_opts,
                      const t_direct_inf* directs,
                      const int num_directs,
-                     int* Warnings,
-                     bool read_rr_edge_metadata,
-                     bool do_check_rr_graph) {
+                     int* Warnings) {
     const auto& device_ctx = g_vpr_ctx.device();
 
     if (!det_routing_arch->read_rr_graph_filename.empty()) {
@@ -335,11 +330,12 @@ void create_rr_graph(const t_graph_type graph_type,
             load_rr_file(graph_type,
                          grid,
                          segment_inf,
-                         base_cost_type,
+                         router_opts.base_cost_type,
                          &det_routing_arch->wire_to_rr_ipin_switch,
                          det_routing_arch->read_rr_graph_filename.c_str(),
-                         read_rr_edge_metadata,
-                         do_check_rr_graph);
+                         router_opts.read_rr_edge_metadata,
+                         router_opts.do_check_rr_graph);
+            reorder_rr_graph_nodes(router_opts);
         }
     } else {
         if (channel_widths_unchanged(device_ctx.chan_width, nodes_per_chan) && !device_ctx.rr_nodes.empty()) {
@@ -364,13 +360,14 @@ void create_rr_graph(const t_graph_type graph_type,
                        det_routing_arch->delayless_switch,
                        det_routing_arch->R_minW_nmos,
                        det_routing_arch->R_minW_pmos,
-                       base_cost_type,
-                       clock_modeling,
-                       trim_empty_channels,
-                       trim_obs_channels,
+                       router_opts.base_cost_type,
+                       router_opts.clock_modeling,
+                       router_opts.trim_empty_channels,
+                       router_opts.trim_obs_channels,
                        directs, num_directs,
                        &det_routing_arch->wire_to_rr_ipin_switch,
                        Warnings);
+        reorder_rr_graph_nodes(router_opts);
     }
 
     process_non_config_sets();
