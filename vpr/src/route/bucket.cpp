@@ -9,7 +9,8 @@ BucketItems::BucketItems() noexcept
     , heap_free_head_(nullptr) {}
 
 Bucket::Bucket() noexcept
-    : seed_(1231)
+    : outstanding_items_(0)
+    , seed_(1231)
     , heap_(nullptr)
     , heap_size_(0)
     , heap_head_(std::numeric_limits<size_t>::max())
@@ -65,6 +66,8 @@ void Bucket::verify() {
 }
 
 void Bucket::empty_heap() {
+    VTR_ASSERT(outstanding_items_ == 0);
+
     if (heap_head_ != std::numeric_limits<size_t>::max()) {
         std::fill(heap_ + heap_head_, heap_ + heap_tail_ + 1, nullptr);
     }
@@ -130,6 +133,7 @@ void Bucket::check_scaling() {
             heap_tail_ = 0;
 
             for (BucketItem* item : reheap) {
+                outstanding_items_ += 1;
                 push_back(&item->item);
             }
         }
@@ -137,6 +141,9 @@ void Bucket::check_scaling() {
 }
 
 void Bucket::push_back(t_heap* hptr) {
+    VTR_ASSERT(outstanding_items_ > 0);
+    outstanding_items_ -= 1;
+
     float cost = hptr->cost;
     if (!std::isfinite(cost)) {
         return;
@@ -237,6 +244,7 @@ t_heap* Bucket::get_heap_head() {
         heap_head_ = heap_head;
     }
 
+    outstanding_items_ += 1;
     return &next->item;
 }
 
