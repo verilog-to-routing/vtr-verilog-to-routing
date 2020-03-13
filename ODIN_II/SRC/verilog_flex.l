@@ -216,6 +216,7 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL>"xnor"						{ MP(); return vXNOR;}
 <INITIAL>"xor"						{ MP(); return vXOR;}
 <INITIAL>"specparam"				{ MP(); return vSPECPARAM;}
+<INITIAL>"buf"				        { MP(); return vBUF;}
 
 	/* Net types */
 <INITIAL>"wire"						{ MP(); return netWIRE;}
