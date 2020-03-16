@@ -17,6 +17,8 @@ c_org='\033[33m'
 c_rst='\033[0m'
 
 COLORIZE=True
+_FILLER_LINE=". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."
+_LEN=38
 
 def colored(input_str, color):
     if COLORIZE:
@@ -29,8 +31,36 @@ def colored(input_str, color):
         
     return input_str
 
+def error_line(key):
+    output = "  Failed " + _FILLER_LINE
+    return colored(output[:_LEN], 'red') + " " + key
+
+def success_line(key):
+    output = "  Ok " + _FILLER_LINE
+    return colored(output[:_LEN], 'green') + " " + key
+
+def mismatch(header, expected, got):
+    header = '{0:<{1}}'.format("- " + header, _LEN)
+    expected = colored("[-" + str(expected) + "-]", 'red')
+    got = colored("{+" + str(got) + "+}", 'green')
+    return "    " + header + expected + got
+
+def is_json_str(value):
+    value = value.strip()
+
+    return (value.startswith("'") and value.endswith("'")) or \
+             (value.startswith('"') and value.endswith('"'))
+
 #############################################
 # for TOML
+_DFLT_HDR='default'
+_DFLT_VALUE='n/a'
+
+_K_DFLT='default'
+_K_KEY='key'
+_K_REGEX='regex'
+_K_RANGE='range'
+
 def preproc_toml(file):
     current_dir=os.getcwd()
     directory = os.path.dirname(file)
@@ -53,11 +83,12 @@ def preproc_toml(file):
 
 def strip_str(value_str):
     value_str.strip()
-    if (value_str.startswith("'") and value_str.endswith("'")) \
+    while (value_str.startswith("'") and value_str.endswith("'")) \
     or (value_str.startswith('"') and value_str.endswith('"')):
         value_str = value_str[1:-1]
+        value_str.strip()
 
-    return value_str.strip()
+    return value_str
 
 def parse_toml(toml_str):
     # raw configparse
@@ -71,7 +102,8 @@ def parse_toml(toml_str):
         empty_lines_in_values=False
     )
     parser.read_string(toml_str)
-    toml_dict = {}
+    # default is always there
+    toml_dict = { _DFLT_HDR : { _K_DFLT: _DFLT_VALUE} }
     for _header in parser.sections():
 
         header = strip_str(_header)
@@ -79,24 +111,20 @@ def parse_toml(toml_str):
             toml_dict[header] = {}
 
         for _key, _value in parser.items(_header):
-            key = _key.strip()
-            value = _value.strip()
-            v_len = len(value)
-            value = strip_str(value)
-            if len(value) == v_len:
-                # print( "Decode str :" + key + " = " + value)
-                value = json.loads(value)
-            # else:
-            #     print( "RAW str :" + key + " = " + value)
+            # drop extra whitespace
+            key = strip_str(_key)
 
-            toml_dict[header][key] = value
+            if not is_json_str(_value):
+                toml_dict[header][key] = json.loads(_value)
+            else:
+                toml_dict[header][key] = strip_str(_value)
 
     return toml_dict
 
 def compile_regex(toml_dict):
     for header in toml_dict:
-        if 'regex' in toml_dict[header]:
-            toml_dict[header]['regex'] = re.compile(toml_dict[header]['regex'])
+        if _K_REGEX in toml_dict[header]:
+            toml_dict[header][_K_REGEX] = re.compile(toml_dict[header][_K_REGEX])
 
 def load_toml(toml_file_name):
     toml_str = preproc_toml(os.path.abspath(toml_file_name))
@@ -110,21 +138,24 @@ def create_tbl(toml_dict):
     # set the defaults
     input_values = { }
     for header in toml_dict:
-        if 'default' in toml_dict[header]:
-            input_values[header] = toml_dict[header]['default']
 
-        elif 'default' in toml_dict and toml_dict['default']['default']:
-            input_values[header] = toml_dict['default']['default']
+        # initiate with fallback
+        value = _DFLT_VALUE
 
-        else:
-            input_values[header] = 'n/a'
+        if _K_DFLT in toml_dict[header]:
+            value = toml_dict[header][_K_DFLT]
+
+        elif _K_DFLT in toml_dict[_DFLT_HDR]:
+            value = toml_dict[_DFLT_HDR][_K_DFLT]
+
+        input_values[header] = value
 
     return input_values
 
 def hash_item(toml_dict, input_line):
     hashing_str = ""
     for header in toml_dict:
-        if 'key' in toml_dict[header] and toml_dict[header]['key'] == True:
+        if _K_KEY in toml_dict[header] and toml_dict[header][_K_KEY] == True:
             hashing_str += input_line[header]
 
     return " ".join(hashing_str.split())
@@ -181,22 +212,6 @@ def load_csv_into_tbl(toml_dict, csv_file_name):
                 is_header = False
 
     return file_dict
-_FILLER_LINE=". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."
-def error_line(key):
-    output = "  Failed " + _FILLER_LINE
-    return colored(output[:38], 'red') + " " + key
-
-def success_line(key):
-
-    output = "  Ok " + _FILLER_LINE
-    return colored(output[:38], 'green') + " " + key
-
-def mismatch(header, expected, got):
-    header = '{0:<{1}}'.format("- " + header, 38)
-    expected = colored("[-" + str(expected) + "-]", 'red')
-    got = colored("{+" + str(got) + "+}", 'green')
-    return "    " + header + expected + got
-
 
 def sanity_check(header, toml_dict, golden_tbl, tbl):
     if header not in golden_tbl:
@@ -211,12 +226,12 @@ def sanity_check(header, toml_dict, golden_tbl, tbl):
     return False
 
 def range(header, toml_dict, golden_tbl, tbl):
-    if len(toml_dict[header]['range']) != 2:
+    if len(toml_dict[header][_K_RANGE]) != 2:
         print("expected a min and a max for range = [ min, max ]")
     elif golden_tbl[header] != tbl[header]:
         gold_value = float(golden_tbl[header])
-        min_ratio = float(toml_dict[header]['range'][0])
-        max_ratio = float(toml_dict[header]['range'][1])
+        min_ratio = float(toml_dict[header][_K_RANGE][0])
+        max_ratio = float(toml_dict[header][_K_RANGE][1])
         value = float(tbl[header])
 
         min_range = ( min_ratio * gold_value )
@@ -234,21 +249,21 @@ def abs(header, toml_dict, golden_tbl, tbl):
 
 
 def compare_tbl(toml_dict, golden_tbl, tbl):
-    error_str=""
+    error_str = []
     for header in toml_dict:
         output_str = ""
         if sanity_check(header, toml_dict, golden_tbl, tbl):
             # register your function here for different way to compare
-            if 'range' in toml_dict[header]:
+            if _K_RANGE in toml_dict[header]:
                 output_str = range(header, toml_dict, golden_tbl, tbl)
             else: # absolute
                 output_str = abs(header, toml_dict, golden_tbl, tbl)
 
         if output_str is not None and output_str != "":
-            error_str += output_str + "\n"
+            error_str.append(output_str)
 
     # drop the last extra newline
-    return error_str[:-1]
+    return "\n".join(error_str)
 
 def _parse(toml_file_name, log_file_name):
     # load toml
@@ -266,8 +281,8 @@ def _parse(toml_file_name, log_file_name):
         for line in log:
             line = " ".join(line.split())
             for header in toml_dict:
-                if 'regex' in toml_dict[header]:
-                    entry = re.search(toml_dict[header]['regex'], line)
+                if _K_REGEX in toml_dict[header]:
+                    entry = re.search(toml_dict[header][_K_REGEX], line)
                     if entry is not None:
                         input_values[header] = str(entry.group(1)).strip()
 
@@ -288,7 +303,6 @@ def _join(toml_file_name, file_list):
 
 def _compare(toml_file_name, golden_result_file_name, result_file_name):
     # load toml
-    failure_count = 0
     failed_key = []
     toml_dict = load_toml(toml_file_name)
     
