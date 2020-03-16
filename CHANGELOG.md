@@ -42,10 +42,84 @@ _The following are changes which have been implemented in the VTR master branch 
 ### Fixed
 
 ### Deprecated
- * VPR's breadth-first router (use the timing-driven router, which provides supperiour QoR and Run-time)
 
 ### Removed
 
+## v8.0.0 - 2020-03-16
+
+### Added
+ * Support for arbitrary FPGA device grids/floorplans
+ * Support for clustered blocks with width > 1
+ * Customizable connection-block and switch-blocks patterns (controlled from FPGA architecture file)
+ * Fan-out dependent routing mux delays
+ * VPR can generate/load a routing architecture (routing resource graph) in XML format
+ * VPR can load routing from a `.route` file
+ * VPR can performing analysis (STA/Power/Area) independently from optimization (via `vpr --analysis`)
+ * VPR supports netlist primitives with multiple clocks
+ * VPR can perform hold-time (minimum delay) timing analysis
+ * Minimum delays can be annotated in the FPGA architecture file
+ * Flow supports formal verification of circuit implementation against input netlist
+ * Support for generating FASM to drive bitstream generators
+ * Routing predictor which predicts and aborts impossible routings early (saves significant run-time during minimum channel width search)
+ * Support for minimum routable channel width 'hints' (reduces minimum channel width search run-time if accurate)
+ * Improved VPR debugging/verbosity controls
+ * VPR can perform basic netlist cleaning (e.g. sweeping dangling logic)
+ * VPR graphics visualizations:
+   * Critical path during placement/routing
+   * Cluster pin utilization heatmap
+   * Routing utilization heatmap
+   * Routing resource cost heatmaps
+   * Placement macros
+ * VPR can route constant nets
+ * VPR can route clock nets
+ * VPR can load netlists in extended BLIF (eBLIF) format
+ * Support for generating post-placement timing reports
+ * Improved router 'map' lookahead which adapts to routing architecture structure
+ * Script to upgrade legacy architecture files (`vtr_flow/scripts/upgrade_arch.py`)
+ * Support for Fc overrides which depend on both pin and target wire segment type
+ * Support for non-configurable switches (shorts, inline-buffers) used to model structures like clock-trees and non-linear wires (e.g. 'L' or 'T' shapes)
+ * Various other features since VTR 7
+
+### Changed
+ * VPR will exit with code 1 on errors (something went wrong), and code 2 when unable to implement a circuit (e.g. unroutable)
+ * VPR now gives more complete help about command-line options (`vpr -h`)
+ * Improved a wide variety of error messages
+ * Improved STA timing reports (more details, clearer format)
+ * VPR now uses Tatum as its STA engine
+ * VPR now detects missmatched architecture (.xml) and implementation (.net/.place/.route) files more robustly
+ * Improved router run-time and quality through incremental re-routing and improved handling of high-fanout nets
+ * The timing edges within each netlist primitive must now be specified in the <models> section of the architecture file
+ * All interconnect tags must have unique names in the architecture file
+ * Connection block input pin switch must now be specified in <switchlist> section of the architecture file
+ * Renamed switch types buffered/pass_trans to more descriptive tristate/pass_gate in architecture file
+ * Require longline segment types to have no switchblock/connectionblock specification
+ * Improve naming (true/false -> none/full/instance) and give more control over block pin equivalnce specifications
+ * VPR will produce a .route file even if the routing is illegal (aids debugging), however analysis results will not be produced unless `vpr --analsysis` is specified
+ * VPR long arguments are now always prefixed by two dashes (e.g. `--route`) while short single-letter arguments are prefixed by a single dash (e.g. `-h`)
+ * Improved logic optimization through using a recent 2018 version of ABC and new synthesis script
+ * Significantly improved implementation quality (~14% smaller minimum routable channel widths, 32-42% reduced wirelength, 7-10% lower critical path delay)
+ * Significantly reduced run-time (~5.5-6.3x faster) and memory usage (~3.3-5x lower)
+ * Support for non-contiguous track numbers in externally loaded RR graphs
+ * Improved placer quality (reduced cost round-off)
+ * Various other changes since VTR 7
+
+### Fixed
+ * FPGA Architecture file tags can be in arbitary orders
+ * SDC command arguments can be in arbitary orders
+ * Numerous other fixes since VTR 7
+
+### Removed
+ * Classic VPR timing analyzer
+ * IO channel distribution section of architecture file
+
+### Deprecated
+ * VPR's breadth-first router (use the timing-driven router, which provides supperiour QoR and Run-time)
+
+## v8.0.0-rc2 - 2019-08-01
+
+### Changed
+ * Support for non-contiguous track numbers in externally loaded RR graphs
+ * Improved placer quality (reduced cost round-off)
 
 ## v8.0.0-rc1 - 2019-06-13
 
