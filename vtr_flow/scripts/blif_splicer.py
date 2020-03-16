@@ -91,9 +91,12 @@ for tupleIndex, nTuple in enumerate(sorted(itertools.combinations(circuits, n),
 	# The format of the output filename is 'file1+file2+...+fileN.blif'
 
 	filename = '+'.join(circuit[0] for circuit in nTuple) + '.blif'
-	with open(filename, 'wb') as outfile:			
-		outfile.write('.model top\n' + ''.join(sections) + '.end\n')
-	print 'Created ' + filename + '...'
+	with open(filename, 'wb') as outfile:
+                # Converting this script from Python 2 to Python 3
+                # required the addition of .encode() below due to
+                # TypeError in Python 3.
+		outfile.write('.model top\n'.encode() + ''.join(sections).encode() + '.end\n'.encode())
+	print('Created ' + filename + '...')
 
 	if tupleIndex == k-1: 
 		break
