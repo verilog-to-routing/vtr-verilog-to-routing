@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import argparse
 import sys
@@ -154,11 +154,7 @@ def main():
         if args.debug:
             root.write(sys.stdout, pretty_print=args.pretty)
         else:
-            # Added the "b" flag to silence the str/bytes
-            # error. Output of script is identical except for some XML
-            # fields are in a different order. This seems to be the
-            # doing of the lxml library and won't be a simple fix if
-            # it causes problems.
+            # Added the "b" flag to silence the str/bytes error
             with open(args.xml_file, "wb") as f:
                 root.write(f, pretty_print=args.pretty)
 
