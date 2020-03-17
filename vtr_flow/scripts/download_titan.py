@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import sys
 import os
 import argparse
@@ -77,8 +77,7 @@ def main():
         tar_gz_url = urllib.parse.urljoin(TITAN_URL_MIRRORS[args.mirror], tar_gz_filename)
         md5_url = urllib.parse.urljoin(TITAN_URL_MIRRORS[args.mirror], md5_filename)
 
-        # Had to tack on a .decode() here as part of Python 2 to
-        # Python 3 conversion to convert from bytes to a string
+        # Requires a .decode() here to convert from bytes to a string
         external_md5 = load_md5_from_url(md5_url).decode()
 
         file_matches = False
