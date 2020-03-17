@@ -134,7 +134,7 @@ class Expansion_Cost_Entry {
 class PQ_Entry {
   public:
     RRNodeId rr_node; //index in device_ctx.rr_nodes that this entry represents
-    float cost;      //the cost of the path to get to this node
+    float cost;       //the cost of the path to get to this node
 
     /* store backward delay, R and congestion info */
     float delay;
@@ -204,10 +204,10 @@ typedef std::vector<std::vector<std::map<int, t_reachable_wire_inf>>> t_src_opin
 
 struct t_dijkstra_data {
     /* a list of boolean flags (one for each rr node) to figure out if a certain node has already been expanded */
-    vtr::vector<RRNodeId,bool> node_expanded;
+    vtr::vector<RRNodeId, bool> node_expanded;
     /* for each node keep a list of the cost with which that node has been visited (used to determine whether to push
      * a candidate node onto the expansion queue */
-    vtr::vector<RRNodeId,float> node_visited_costs;
+    vtr::vector<RRNodeId, float> node_visited_costs;
     /* a priority queue for expansion */
     std::priority_queue<PQ_Entry> pq;
 };
@@ -235,7 +235,7 @@ static RRNodeId get_start_node(int start_x, int start_y, int target_x, int targe
  * to that pin is stored is added to an entry in the routing_cost_map */
 static void run_dijkstra(RRNodeId start_node, int start_x, int start_y, t_routing_cost_map& routing_cost_map, t_dijkstra_data* data);
 /* iterates over the children of the specified node and selectively pushes them onto the priority queue */
-static void expand_dijkstra_neighbours(PQ_Entry parent_entry, vtr::vector<RRNodeId,float>& node_visited_costs, vtr::vector<RRNodeId,bool>& node_expanded, std::priority_queue<PQ_Entry>& pq);
+static void expand_dijkstra_neighbours(PQ_Entry parent_entry, vtr::vector<RRNodeId, float>& node_visited_costs, vtr::vector<RRNodeId, bool>& node_expanded, std::priority_queue<PQ_Entry>& pq);
 /* sets the lookahead cost map entries based on representative cost entries from routing_cost_map */
 static void set_lookahead_map_costs(int segment_index, e_rr_type chan_type, t_routing_cost_map& routing_cost_map);
 /* fills in missing lookahead map entries by copying the cost of the closest valid entry */
@@ -850,7 +850,7 @@ static void run_dijkstra(RRNodeId start_node, int start_x, int start_y, t_routin
 }
 
 /* iterates over the children of the specified node and selectively pushes them onto the priority queue */
-static void expand_dijkstra_neighbours(PQ_Entry parent_entry, vtr::vector<RRNodeId,float>& node_visited_costs, vtr::vector<RRNodeId,bool>& node_expanded, std::priority_queue<PQ_Entry>& pq) {
+static void expand_dijkstra_neighbours(PQ_Entry parent_entry, vtr::vector<RRNodeId, float>& node_visited_costs, vtr::vector<RRNodeId, bool>& node_expanded, std::priority_queue<PQ_Entry>& pq) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_nodes;
 

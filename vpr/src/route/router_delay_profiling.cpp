@@ -29,15 +29,15 @@ bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const 
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
-    vtr::ScopedStartFinishTimer t(vtr::string_fmt("Profiling Delay from %s at %d,%d (%s) to %s at %d,%d (%s)",
-                                                  device_ctx.rr_nodes[source_node].type_string(),
-                                                  device_ctx.rr_nodes[source_node].xlow(),
-                                                  device_ctx.rr_nodes[source_node].ylow(),
-                                                  rr_node_arch_name(source_node).c_str(),
-                                                  device_ctx.rr_nodes[sink_node].type_string(),
-                                                  device_ctx.rr_nodes[sink_node].xlow(),
-                                                  device_ctx.rr_nodes[sink_node].ylow(),
-                                                  rr_node_arch_name(sink_node).c_str()));
+    //vtr::ScopedStartFinishTimer t(vtr::string_fmt("Profiling Delay from %s at %d,%d (%s) to %s at %d,%d (%s)",
+    //device_ctx.rr_nodes[source_node].type_string(),
+    //device_ctx.rr_nodes[source_node].xlow(),
+    //device_ctx.rr_nodes[source_node].ylow(),
+    //rr_node_arch_name(source_node).c_str(),
+    //device_ctx.rr_nodes[sink_node].type_string(),
+    //device_ctx.rr_nodes[sink_node].xlow(),
+    //device_ctx.rr_nodes[sink_node].ylow(),
+    //rr_node_arch_name(sink_node).c_str()));
 
     t_rt_node* rt_root = setup_routing_resources_no_net(source_node);
     enable_router_debug(router_opts, ClusterNetId(), sink_node, 0, &router_);
@@ -83,7 +83,7 @@ bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const 
         free_route_tree(rt_root);
     }
 
-    VTR_LOG("Explored %zu of %zu (%.2f) RR nodes: path delay %g\n", router_stats.heap_pops, device_ctx.rr_nodes.size(), float(router_stats.heap_pops) / device_ctx.rr_nodes.size(), *net_delay);
+    //VTR_LOG("Explored %zu of %zu (%.2f) RR nodes: path delay %g\n", router_stats.heap_pops, device_ctx.rr_nodes.size(), float(router_stats.heap_pops) / device_ctx.rr_nodes.size(), *net_delay);
 
     //update_screen(ScreenUpdatePriority::MAJOR, "Profiled delay", ROUTING, nullptr);
 
