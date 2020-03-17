@@ -24,19 +24,18 @@ See the [full license](LICENSE.md) for details.
 ## How to Cite
 The following paper may be used as a general citation for VTR:
 
-J. Luu, J. Goeders, M. Wainberg, A. Somerville, T. Yu, K. Nasartschuk, M. Nasr, S. Wang, T. Liu, N. Ahmed, K. B. Kent, J. Anderson, J. Rose and V. Betz "VTR 7.0: Next Generation Architecture and CAD System for FPGAs," ACM TRETS, Vol. 7, No. 2, June 2014, pp. 6:1 - 6:30.
+## How to Cite
+The following paper may be used as a general citation for VTR:
+
+K. E. Murray, O. Petelin, S. Zhong, J. M. Wang, M. ElDafrawy, J.-P. Legault, E. Sha, A. G. Graham, J. Wu, M. J. P. Walker, H. Zeng, P. Patros, J. Luu, K. B. Kent and V. Betz "VTR 8: High Performance CAD and Customizable FPGA Architecture Modelling", ACM TRETS, 2020.
 
 Bibtex:
 ```
-@article{vtr2014,
-  title={{VTR 7.0: Next Generation Architecture and CAD System for FPGAs}},
-  author={Luu, Jason and Goeders, Jeff and Wainberg, Michael and Somerville, Andrew and Yu, Thien and Nasartschuk, Konstantin and Nasr, Miad and Wang, Sen and Liu, Tim and Ahmed, Norrudin and Kent, Kenneth B. and Anderson, Jason and Rose, Jonathan and Betz, Vaughn},
-  journal = {ACM Trans. Reconfigurable Technol. Syst.},
-  month={June},
-  volume={7},
-  number={2},
-  pages={6:1--6:30},
-  year={2014}
+@article{vtr8,
+  title={VTR 8: High Performance CAD and Customizable FPGA Architecture Modelling},
+  author={Murray, Kevin E. and Petelin, Oleg and Zhong, Sheng and Wang, Jai Min and ElDafrawy, Mohamed and Legault, Jean-Philippe and Sha, Eugene and Graham, Aaron G. and Wu, Jean and Walker, Matthew J. P. and Zeng, Hanqing and Patros, Panagiotis and Luu, Jason and Kent, Kenneth B. and Betz, Vaughn},
+  journal={ACM Trans. Reconfigurable Technol. Syst.},
+  year={2020}
 }
 ```
 
