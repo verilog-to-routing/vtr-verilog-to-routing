@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import argparse
 import subprocess
 import sys
@@ -210,9 +210,9 @@ def main():
                 sys.exit(num_failed)
 
     if num_failed != 0:
-        print "Failed to build {} of {} configurations".format(num_failed, len(test_configs))
+        print("Failed to build {} of {} configurations".format(num_failed, len(test_configs)))
     else:
-        print "Successfully built {} configurations".format(len(test_configs))
+        print("Successfully built {} configurations".format(len(test_configs)))
 
     sys.exit(num_failed)
 
@@ -234,34 +234,34 @@ def build_config(args, targets, config):
         build_type = config['BUILD_TYPE']
 
     if 'CMAKE_PARAMS' in config:
-        for key, value in config['CMAKE_PARAMS'].iteritems():
+        for key, value in config['CMAKE_PARAMS'].items():
             cmake_params.append("{}={}".format(key, value))
 
     if not compiler_is_found(cc):
-        print "Failed to find C compiler {}, skipping".format(cc)
+        print("Failed to find C compiler {}, skipping".format(cc))
         return False
 
     if not compiler_is_found(cxx):
-        print "Failed to find C++ compiler {}, skipping".format(cxx)
+        print("Failed to find C++ compiler {}, skipping".format(cxx))
         return False
 
     log_file = "build.log"
 
     build_successful = True
     with open(log_file, 'w') as f:
-        print      "Building with",
-        print >>f, "Building with",
+        print("Building with", end=' ')
+        print("Building with", end=' ', file=f)
         if cc != None:
-            print      " CC={}".format(cc),
-            print >>f, " CC={}".format(cc),
+            print(" CC={}".format(cc), end=' ')
+            print(" CC={}".format(cc), end=' ', file=f)
         if cxx != None:
-            print      " CXX={}:".format(cxx),
-            print >>f, " CXX={}:".format(cxx),
+            print(" CXX={}:".format(cxx), end=' ')
+            print(" CXX={}:".format(cxx), end=' ', file=f)
         if "CMAKE_TOOLCHAIN_FILE" in config['CMAKE_PARAMS']:
-            print      " Toolchain={}".format(config['CMAKE_PARAMS']["CMAKE_TOOLCHAIN_FILE"]),
-            print >>f, " Toolchain={}".format(config['CMAKE_PARAMS']["CMAKE_TOOLCHAIN_FILE"]),
-        print      ""
-        print >>f, ""
+            print(" Toolchain={}".format(config['CMAKE_PARAMS']["CMAKE_TOOLCHAIN_FILE"]), end=' ')
+            print(" Toolchain={}".format(config['CMAKE_PARAMS']["CMAKE_TOOLCHAIN_FILE"]), end=' ', file=f)
+        print("")
+        print("", file=f)
         f.flush()
 
         build_dir = "build"
@@ -290,8 +290,8 @@ def build_config(args, targets, config):
         build_cmd += ["-j", "{}".format(args.j)]
         build_cmd += targets
 
-        print "  " + ' '.join(build_cmd)
-        print >>f, "  " + ' '.join(build_cmd)
+        print("  " + ' '.join(build_cmd))
+        print("  " + ' '.join(build_cmd), file=f)
         f.flush()
         if not args.dry_run:
             try:
@@ -304,18 +304,18 @@ def build_config(args, targets, config):
     with open(log_file) as f:
         for line in f:
             if is_valid_warning_error(line):
-                print "    " + line,
+                print("    " + line, end=' ')
                 issue_count += 1
 
     elapsed_time = time.time() - start_time
     if not build_successful:
-        print "  ERROR: failed to compile"
+        print("  ERROR: failed to compile")
     else:
-        print "  OK",
+        print("  OK", end=' ')
         if issue_count > 0:
-            print " ({} warnings)".format(issue_count),
-        print
-    print "  Took {:.2f} seconds".format(elapsed_time)
+            print(" ({} warnings)".format(issue_count), end=' ')
+        print()
+    print("  Took {:.2f} seconds".format(elapsed_time))
     return build_successful
 
 def is_valid_warning_error(line):
