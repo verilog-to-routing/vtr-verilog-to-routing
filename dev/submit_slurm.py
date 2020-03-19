@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import argparse
 import math
 import sys
@@ -136,7 +136,7 @@ def submit_sbatch(cmd, time_minutes=None, memory_mb=None, dry_run=None, num_core
     sbatch_cmd += cmd
 
     #Print-it
-    print " ".join(sbatch_cmd)
+    print(" ".join(sbatch_cmd))
 
     if not dry_run:
         #Do-it
