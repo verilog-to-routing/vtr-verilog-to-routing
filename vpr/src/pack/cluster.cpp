@@ -344,11 +344,11 @@ static enum e_block_pack_status check_chain_root_placement_feasibility(const t_p
 
 static t_pb_graph_pin* get_driver_pb_graph_pin(const t_pb* driver_pb, const AtomPinId driver_pin_id);
 
-static void update_pb_type_count(const t_pb* pb, std::unordered_map<std::string, int>& pb_type_count);
+static void update_pb_type_count(const t_pb* pb, std::map<std::string, int>& pb_type_count);
 
 static void update_le_count(const t_pb* pb, const t_logical_block_type_ptr logic_block_type, const t_pb_type* le_pb_type, std::vector<int>& le_count);
 
-static void print_pb_type_count(std::unordered_map<std::string, int>& pb_type_count);
+static void print_pb_type_count(std::map<std::string, int>& pb_type_count);
 
 static t_logical_block_type_ptr identify_logic_block_type(std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
 
@@ -417,7 +417,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
     // this data structure is used to track the total number of physical blocks
     // used for each physical block type defined in the architecture file.
-    std::unordered_map<std::string, int> pb_type_count;
+    std::map<std::string, int> pb_type_count;
 
     // this data structure tracks the number of Logic Elements (LEs) used. It is
     // populated only for architectures which has LEs. The architecture is assumed
@@ -3359,7 +3359,7 @@ static enum e_block_pack_status check_chain_root_placement_feasibility(const t_p
  * This function update the pb_type_count data structure by incrementing
  * the number of used pb_types in the given packed cluster t_pb
  */
-static void update_pb_type_count(const t_pb* pb, std::unordered_map<std::string, int>& pb_type_count) {
+static void update_pb_type_count(const t_pb* pb, std::map<std::string, int>& pb_type_count) {
     auto pb_graph_node = pb->pb_graph_node;
     auto pb_type = pb_graph_node->pb_type;
     auto mode = &pb_type->modes[pb->mode];
@@ -3386,10 +3386,15 @@ static void update_pb_type_count(const t_pb* pb, std::unordered_map<std::string,
 /**
  * Print the total number of used physical blocks for each pb type in the architecture
  */
-static void print_pb_type_count(std::unordered_map<std::string, int>& pb_type_count) {
+static void print_pb_type_count(std::map<std::string, int>& pb_type_count) {
     VTR_LOG("\nPb types usage...\n");
+
+    size_t max_pb_type_name_chars = 0;
     for (auto& pb_type : pb_type_count) {
-        VTR_LOG("  %-12s : %d\n", pb_type.first.c_str(), pb_type.second);
+        max_pb_type_name_chars = std::max(max_pb_type_name_chars, pb_type.first.length());
+    }
+    for (auto& pb_type : pb_type_count) {
+        VTR_LOG("  %-*s : %d\n", max_pb_type_name_chars, pb_type.first.c_str(), pb_type.second);
     }
     VTR_LOG("\n");
 }
