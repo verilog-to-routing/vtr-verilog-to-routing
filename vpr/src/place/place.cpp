@@ -58,6 +58,8 @@ using std::min;
  * cost computation. 0.01 means that there is a 1% error tolerance.       */
 #define ERROR_TOL .01
 
+#define FINAL_RLIM 1
+
 /* This defines the maximum number of swap attempts before invoking the   *
  * once-in-a-while placement legality check as well as floating point     *
  * variables round-offs check.                                            */
@@ -106,8 +108,10 @@ struct t_placer_prev_inverse_costs {
 struct t_annealing_state {
     float t;
     float rlim;
+    float inverse_delta_rlim;
     float alpha;
     float restart_t;
+    float crit_exponent;
     int move_lim_max;
     int move_lim;
 };
@@ -353,7 +357,11 @@ static float starting_t(t_placer_costs* costs,
                         t_pl_blocks_to_be_moved& blocks_affected,
                         const t_placer_opts& placer_opts);
 
-static bool update_state(t_annealing_state* state, float success_rat, const t_placer_costs& costs, const t_annealing_sched& annealing_sched);
+static bool update_state(t_annealing_state* state,
+                         float success_rat,
+                         const t_placer_costs& costs,
+                         const t_placer_opts& placer_opts,
+                         const t_annealing_sched& annealing_sched);
 
 static void update_rlim(float* rlim, float success_rat, const DeviceGrid& grid);
 
@@ -484,7 +492,7 @@ static void print_place_status(const size_t num_temps,
                                size_t tot_moves);
 static void print_resources_utilization();
 
-static void init_annealing_state(t_annealing_state* state, const t_annealing_sched& annealing_sched, float t, float rlim, int move_lim_max);
+static void init_annealing_state(t_annealing_state* state, const t_annealing_sched& annealing_sched, float t, float rlim, int move_lim_max, float crit_exponent);
 
 /*****************************************************************************/
 void try_place(const t_placer_opts& placer_opts,
@@ -509,8 +517,7 @@ void try_place(const t_placer_opts& placer_opts,
 
     int tot_iter, moves_since_cost_recompute, width_fac, num_connections,
         outer_crit_iter_count, inner_recompute_limit;
-    float success_rat, crit_exponent,
-        first_rlim, final_rlim, inverse_delta_rlim;
+    float success_rat, first_crit_exponent, first_rlim;
 
     t_placer_costs costs;
     t_placer_prev_inverse_costs prev_inverse_costs;
@@ -575,7 +582,7 @@ void try_place(const t_placer_opts& placer_opts,
     if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
         costs.bb_cost = comp_bb_cost(NORMAL);
 
-        crit_exponent = placer_opts.td_place_exp_first; /*this will be modified when rlim starts to change */
+        first_crit_exponent = placer_opts.td_place_exp_first; /*this will be modified when rlim starts to change */
 
         num_connections = count_connections();
         VTR_LOG("\n");
@@ -602,7 +609,7 @@ void try_place(const t_placer_opts& placer_opts,
                                                                                  atom_ctx.lookup,
                                                                                  *timing_info->timing_graph());
         //Update timing and costs
-        recompute_criticalities(crit_exponent,
+        recompute_criticalities(first_crit_exponent,
                                 place_delay_model.get(),
                                 placer_criticalities.get(),
                                 pin_timing_invalidator.get(),
@@ -635,7 +642,7 @@ void try_place(const t_placer_opts& placer_opts,
         costs.timing_cost = 0;
         outer_crit_iter_count = 0;
         num_connections = 0;
-        crit_exponent = 0;
+        first_crit_exponent = 0;
 
         prev_inverse_costs.timing_cost = 0; /*inverses not used */
         prev_inverse_costs.bb_cost = 0;
@@ -721,8 +728,6 @@ void try_place(const t_placer_opts& placer_opts,
     }
 
     first_rlim = (float)max(device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
-    final_rlim = 1;
-    inverse_delta_rlim = 1 / (first_rlim - final_rlim);
 
     float first_t = starting_t(&costs, &prev_inverse_costs,
                                annealing_sched, move_lim, first_rlim,
@@ -735,7 +740,7 @@ void try_place(const t_placer_opts& placer_opts,
                                placer_opts);
 
     t_annealing_state state;
-    init_annealing_state(&state, annealing_sched, first_t, first_rlim, move_lim);
+    init_annealing_state(&state, annealing_sched, first_t, first_rlim, move_lim, first_crit_exponent);
 
     if (!placer_opts.move_stats_file.empty()) {
         f_move_stats_file = std::unique_ptr<FILE, decltype(&vtr::fclose)>(vtr::fopen(placer_opts.move_stats_file.c_str(), "w"), vtr::fclose);
@@ -759,7 +764,7 @@ void try_place(const t_placer_opts& placer_opts,
 
         outer_loop_recompute_criticalities(placer_opts, &costs, &prev_inverse_costs,
                                            num_connections,
-                                           crit_exponent,
+                                           state.crit_exponent,
                                            &outer_crit_iter_count,
                                            place_delay_model.get(),
                                            placer_criticalities.get(),
@@ -767,7 +772,7 @@ void try_place(const t_placer_opts& placer_opts,
                                            timing_info.get());
 
         placement_inner_loop(state.t, num_temps, state.rlim, placer_opts,
-                             state.move_lim, crit_exponent, inner_recompute_limit, &stats,
+                             state.move_lim, state.crit_exponent, inner_recompute_limit, &stats,
                              &costs,
                              &prev_inverse_costs,
                              &moves_since_cost_recompute,
@@ -795,25 +800,18 @@ void try_place(const t_placer_opts& placer_opts,
                            state.t, state.alpha,
                            stats,
                            critical_path.delay(), sTNS, sWNS,
-                           success_rat, std_dev, state.rlim, crit_exponent, tot_iter);
+                           success_rat, std_dev, state.rlim, state.crit_exponent, tot_iter);
 
         sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
                 costs.cost, costs.bb_cost, costs.timing_cost, state.t);
         update_screen(ScreenUpdatePriority::MINOR, msg, PLACEMENT, timing_info);
-        update_rlim(&state.rlim, success_rat, device_ctx.grid);
-
-        if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-            crit_exponent = (1 - (state.rlim - final_rlim) * inverse_delta_rlim)
-                                * (placer_opts.td_place_exp_last - placer_opts.td_place_exp_first)
-                            + placer_opts.td_place_exp_first;
-        }
 
 #ifdef VERBOSE
         if (getEchoEnabled()) {
             print_clb_placement("first_iteration_clb_placement.echo");
         }
 #endif
-    } while (update_state(&state, success_rat, costs, annealing_sched));
+    } while (update_state(&state, success_rat, costs, placer_opts, annealing_sched));
     /* Outer loop of the simmulated annealing ends */
 
     auto pre_quench_timing_stats = timing_ctx.stats;
@@ -823,7 +821,7 @@ void try_place(const t_placer_opts& placer_opts,
         outer_loop_recompute_criticalities(placer_opts, &costs,
                                            &prev_inverse_costs,
                                            num_connections,
-                                           crit_exponent,
+                                           state.crit_exponent,
                                            &outer_crit_iter_count,
                                            place_delay_model.get(),
                                            placer_criticalities.get(),
@@ -835,7 +833,7 @@ void try_place(const t_placer_opts& placer_opts,
         /* Run inner loop again with temperature = 0 so as to accept only swaps
          * which reduce the cost of the placement */
         placement_inner_loop(state.t, num_temps, state.rlim, placer_opts,
-                             move_lim, crit_exponent, quench_recompute_limit, &stats,
+                             move_lim, state.crit_exponent, quench_recompute_limit, &stats,
                              &costs,
                              &prev_inverse_costs,
                              &moves_since_cost_recompute,
@@ -862,7 +860,7 @@ void try_place(const t_placer_opts& placer_opts,
                            quench_elapsed_sec,
                            state.t, state.alpha, stats,
                            critical_path.delay(), sTNS, sWNS,
-                           success_rat, std_dev, state.rlim, crit_exponent, tot_iter);
+                           success_rat, std_dev, state.rlim, state.crit_exponent, tot_iter);
     }
     auto post_quench_timing_stats = timing_ctx.stats;
 
@@ -893,7 +891,7 @@ void try_place(const t_placer_opts& placer_opts,
         VTR_ASSERT(timing_info);
 
         //Update timing and costs
-        recompute_criticalities(crit_exponent,
+        recompute_criticalities(state.crit_exponent,
                                 place_delay_model.get(),
                                 placer_criticalities.get(),
                                 pin_timing_invalidator.get(),
@@ -1206,21 +1204,25 @@ static void update_rlim(float* rlim, float success_rat, const DeviceGrid& grid) 
 }
 
 /* Update the temperature according to the annealing schedule selected. */
-static bool update_state(t_annealing_state* state, float success_rat, const t_placer_costs& costs, const t_annealing_sched& annealing_sched) {
+static bool update_state(t_annealing_state* state,
+                         float success_rat,
+                         const t_placer_costs& costs,
+                         const t_placer_opts& placer_opts,
+                         const t_annealing_sched& annealing_sched) {
     /* Return `false` when the exit criterion is met. */
     if (annealing_sched.type == USER_SCHED) {
         state->t *= annealing_sched.alpha_t;
         return state->t >= annealing_sched.exit_t;
     }
 
+    auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     /* Automatic annealing schedule */
     float t_exit = 0.005 * costs.cost / cluster_ctx.clb_nlist.nets().size();
 
-    bool restart_temp = state->t < t_exit || std::isnan(t_exit); //May get nan if there are no nets
-
     if (annealing_sched.type == DUSTY_SCHED) {
+        bool restart_temp = state->t < t_exit || std::isnan(t_exit); //May get nan if there are no nets
         if (success_rat < annealing_sched.success_min || restart_temp) {
             if (state->alpha > annealing_sched.alpha_max) return false;
             state->t = state->restart_t / sqrt(state->alpha); // Take a half step from the restart temperature.
@@ -1232,7 +1234,6 @@ static bool update_state(t_annealing_state* state, float success_rat, const t_pl
             state->t *= state->alpha;
         }
         state->move_lim = std::max(1, std::min(state->move_lim_max, (int)(state->move_lim_max * (annealing_sched.success_target / success_rat))));
-        return true;
     } else { /* annealing_sched.type == AUTO_SCHED */
         if (success_rat > 0.96) {
             state->alpha = 0.5;
@@ -1245,8 +1246,19 @@ static bool update_state(t_annealing_state* state, float success_rat, const t_pl
         }
         state->t *= state->alpha;
 
-        return !restart_temp;
+        // Must be duplicated to retain previous behavior
+        if (state->t < t_exit || std::isnan(t_exit)) return false;
     }
+
+    update_rlim(&state->rlim, success_rat, device_ctx.grid);
+
+    if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+        state->crit_exponent = (1 - (state->rlim - FINAL_RLIM) * state->inverse_delta_rlim)
+                                   * (placer_opts.td_place_exp_last - placer_opts.td_place_exp_first)
+                               + placer_opts.td_place_exp_first;
+    }
+
+    return true;
 }
 
 static float starting_t(t_placer_costs* costs,
@@ -2958,17 +2970,24 @@ static void print_resources_utilization() {
     VTR_LOG("\n");
 }
 
-static void init_annealing_state(t_annealing_state* state, const t_annealing_sched& annealing_sched, float t, float rlim, int move_lim_max) {
+static void init_annealing_state(t_annealing_state* state,
+                                 const t_annealing_sched& annealing_sched,
+                                 float t,
+                                 float rlim,
+                                 int move_lim_max,
+                                 float crit_exponent) {
     state->alpha = annealing_sched.alpha_min;
     state->t = t;
     state->restart_t = t;
     state->rlim = rlim;
+    state->inverse_delta_rlim = 1 / (rlim - FINAL_RLIM);
     state->move_lim_max = std::max(1, move_lim_max);
     if (annealing_sched.type == DUSTY_SCHED) {
         state->move_lim = std::max(1, (int)(state->move_lim_max * annealing_sched.success_target));
     } else {
         state->move_lim = state->move_lim_max;
     }
+    state->crit_exponent = crit_exponent;
 }
 
 bool placer_needs_lookahead(const t_vpr_setup& vpr_setup) {
