@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import argparse
 import os
@@ -57,7 +57,7 @@ def main():
     config = load_subtree_config(args.subtree_config)
 
     if args.list and len(args.components) == 0:
-        args.components = config.keys()
+        args.components = list(config.keys())
 
     for component in args.components:
         update_component(args, config[component])
@@ -78,7 +78,7 @@ def load_subtree_config(config_path):
         internal_path = None
         external_url = None
         default_external_ref = None
-        for attrib, value in child.attrib.iteritems():
+        for attrib, value in child.attrib.items():
 
             if attrib == 'name':
                 name = value
@@ -107,7 +107,7 @@ def update_component(args, subtree_info):
     if not args.external_ref:
         external_ref = subtree_info.default_external_ref
 
-    print "Component: {:<15} Path: {:<30} URL: {:<45} URL_Ref: {}".format(subtree_info.name, subtree_info.internal_path, subtree_info.external_url, external_ref)
+    print("Component: {:<15} Path: {:<30} URL: {:<45} URL_Ref: {}".format(subtree_info.name, subtree_info.internal_path, subtree_info.external_url, external_ref))
 
     if args.list:
         return #List only
@@ -147,7 +147,7 @@ def update_component(args, subtree_info):
                     message=message)
 
     if args.dry_run:
-        print cmd
+        print(cmd)
     else:
         os.system(cmd)
     
