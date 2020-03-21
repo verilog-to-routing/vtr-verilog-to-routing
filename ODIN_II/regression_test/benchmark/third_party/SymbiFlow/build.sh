@@ -35,12 +35,12 @@ script_synthesis_params=--limit_ressource --time_limit 3600s
 synthesis_params=--permissive
 
 # setup the architecture
-arch_dir=../vtr_flow/arch/timing
+archs_dir=../vtr_flow/arch/timing
 
 # one arch allows it to run faster
 arch_list_add=k6_frac_N10_frac_chain_mem32K_40nm.xml
 
-circuit_dir=${PATH_FROM_ODIN_ROOT}/${dir}
+circuits_dir=${PATH_FROM_ODIN_ROOT}/${dir}
 
 # glob all the benchmark!
 circuit_list_add=*.sv

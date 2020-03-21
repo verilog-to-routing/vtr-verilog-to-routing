@@ -405,10 +405,10 @@ printf "
 
 	the following key=value, ... are available:
 
-			circuit_dir             = < path/to/circuit/dir >
-			circuit_list_add        = < circuit file path relative to [circuit_dir] >
-			arch_dir                = < path/to/arch/dir >
-			arch_list_add           = < architecture file path relative to [arch_dir] >
+			circuits_dir             = < path/to/circuit/dir >
+			circuit_list_add        = < circuit file path relative to [circuits_dir] >
+			archs_dir                = < path/to/arch/dir >
+			arch_list_add           = < architecture file path relative to [archs_dir] >
 			synthesis_parse_file 	= < path/to/parse/file >
 			simulation_parse_file 	= < path/to/parse/file >
 			script_synthesis_params = [see exec_wrapper.sh options]
@@ -443,8 +443,8 @@ init_args_for_test() {
 
 function populate_arg_from_file() {
 
-	_circuit_dir=""
-	_arch_dir=""
+	_circuits_dir=""
+	_archs_dir=""
 	_circuit_list_add=()
 	_arch_list_add=()
 	_local_synthesis_parse_file=""
@@ -477,27 +477,27 @@ function populate_arg_from_file() {
 			then
 				case _${_key} in
 
-					_circuit_dir)
+					_circuits_dir)
 						if [ ! -d "${_value}" ]
 						then
 							_value=${THIS_DIR}/${_value}
 						fi
-						_circuit_dir="${_value}"
+						_circuits_dir="${_value}"
 
 					;;_circuit_list_add)
 						# glob the value
-						_circuit_list_add+=( "${_circuit_dir}"/${_value} )					
+						_circuit_list_add+=( "${_circuits_dir}"/${_value} )					
 
-					;;_arch_dir)
+					;;_archs_dir)
 						if [ ! -d "${_value}" ]
 						then
 							_value=${THIS_DIR}/${_value}
 						fi
-						_arch_dir="${_value}"
+						_archs_dir="${_value}"
 
 					;;_arch_list_add)
 						# glob the value
-						_arch_list_add+=( "${_arch_dir}"/${_value} )
+						_arch_list_add+=( "${_archs_dir}"/${_value} )
 
 					;;_script_synthesis_params)
 						_local_script_synthesis_params="${_local_script_synthesis_params} ${_value}"
@@ -827,7 +827,7 @@ function sim() {
 
 		for circuit in "${_circuit_list[@]}"
 		do		
-			circuit_dir=$(dirname "${circuit}")
+			circuits_dir=$(dirname "${circuit}")
 			circuit_file=$(basename "${circuit}")
 			input_verilog_file=""
 			input_blif_file=""
@@ -852,8 +852,8 @@ function sim() {
 
 
 			# lookup for input and output vector files to do comparison
-			input_vector_file="${circuit_dir}/${circuit_name}_input"
-			output_vector_file="${circuit_dir}/${circuit_name}_output"
+			input_vector_file="${circuits_dir}/${circuit_name}_input"
+			output_vector_file="${circuits_dir}/${circuit_name}_output"
 
 			for arches in "${_arch_list[@]}"
 			do

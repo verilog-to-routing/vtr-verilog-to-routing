@@ -62,14 +62,14 @@ script_synthesis_params= --verbose --time_limit 3600s
 simulation_params= -L reset rst -H we -g 2
 
 # setup the architecture
-arch_dir=../vtr_flow/arch/timing
+archs_dir=../vtr_flow/arch/timing
 
 arch_list_add=k6_N10_40nm.xml
 arch_list_add=k6_N10_mem32K_40nm.xml
 #arch_list_add=k6_frac_N10_frac_chain_mem32K_40nm.xml
 
 # setup the circuits
-circuit_dir=${realative_path_from_exec}
+circuits_dir=${realative_path_from_exec}
 
 ${circuit_list_input}"
         fi
