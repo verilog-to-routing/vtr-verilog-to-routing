@@ -113,6 +113,59 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 
 %%
 
+	/*	unsupported Keywords		*/
+<INITIAL>"casex"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"casez"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"disable"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"edge"						{ UNSUPPORTED_TOKEN;}
+<INITIAL>"scalared"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"bufif0"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"bufif1"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"cmos"						{ UNSUPPORTED_TOKEN;}
+<INITIAL>"deassign"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"endprimitive"				{ UNSUPPORTED_TOKEN;}
+<INITIAL>"endtable"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"event"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"force"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"forever"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"fork"						{ UNSUPPORTED_TOKEN;}
+<INITIAL>"highz0"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"highz1"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"join"						{ UNSUPPORTED_TOKEN;}
+<INITIAL>"large"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"medium"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"nmos"						{ UNSUPPORTED_TOKEN;}
+<INITIAL>"notif0"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"notif1"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"pmos"						{ UNSUPPORTED_TOKEN;}
+<INITIAL>"primitive"				{ UNSUPPORTED_TOKEN;}
+<INITIAL>"pull0"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"pull1"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"pulldown"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"pullup"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"rcmos"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"release"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"repeat"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"rnmos"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"rpmos"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"rtran"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"rtranif0"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"rtranif1"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"small"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"strong0"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"strong1"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"supply0"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"supply1"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"table"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"time"						{ UNSUPPORTED_TOKEN;}
+<INITIAL>"tran"						{ UNSUPPORTED_TOKEN;}
+<INITIAL>"tranif0"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"tranif1"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"vectored"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"wait"						{ UNSUPPORTED_TOKEN;}
+<INITIAL>"weak0"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"weak1"					{ UNSUPPORTED_TOKEN;}
+
 	/* preproc helpers */
 <VAR_PARSE>{vWORD}					{ MP(); add_args_to_define(yytext); }
 <VAR_PARSE>[\,]						{  }
@@ -231,61 +284,6 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL>"uwire"					{ MP(); return netUWIRE;}
 <INITIAL>"none"						{ MP(); return netNONE;}
 <INITIAL>"reg"						{ MP(); return netREG;}
-
-	/*	unsupported Keywords		*/
-<INITIAL>"buf"						{ UNSUPPORTED_TOKEN;}
-<INITIAL>"casex"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"casez"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"disable"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"edge"						{ UNSUPPORTED_TOKEN;}
-<INITIAL>"scalared"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"bufif0"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"bufif1"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"cmos"						{ UNSUPPORTED_TOKEN;}
-<INITIAL>"deassign"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"endprimitive"				{ UNSUPPORTED_TOKEN;}
-<INITIAL>"endtable"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"event"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"force"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"forever"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"fork"						{ UNSUPPORTED_TOKEN;}
-<INITIAL>"highz0"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"highz1"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"join"						{ UNSUPPORTED_TOKEN;}
-<INITIAL>"large"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"medium"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"nmos"						{ UNSUPPORTED_TOKEN;}
-<INITIAL>"notif0"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"notif1"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"pmos"						{ UNSUPPORTED_TOKEN;}
-<INITIAL>"primitive"				{ UNSUPPORTED_TOKEN;}
-<INITIAL>"pull0"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"pull1"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"pulldown"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"pullup"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"rcmos"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"release"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"repeat"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"rnmos"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"rpmos"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"rtran"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"rtranif0"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"rtranif1"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"small"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"strong0"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"strong1"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"supply0"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"supply1"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"table"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"time"						{ UNSUPPORTED_TOKEN;}
-<INITIAL>"tran"						{ UNSUPPORTED_TOKEN;}
-<INITIAL>"tranif0"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"tranif1"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"vectored"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"wait"						{ UNSUPPORTED_TOKEN;}
-<INITIAL>"weak0"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"weak1"					{ UNSUPPORTED_TOKEN;}
-
 
 	/* Operators */	
 <INITIAL>"**"						{ MP(); return voPOWER;}
