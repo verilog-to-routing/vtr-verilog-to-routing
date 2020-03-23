@@ -53,7 +53,7 @@ def is_json_str(value):
 
 #############################################
 # for TOML
-_DFLT_HDR='default'
+_DFLT_HDR='DEFAULT'
 _DFLT_VALUE='n/a'
 
 _K_DFLT='default'
@@ -123,8 +123,9 @@ def parse_toml(toml_str):
 
 def compile_regex(toml_dict):
     for header in toml_dict:
-        if _K_REGEX in toml_dict[header]:
-            toml_dict[header][_K_REGEX] = re.compile(toml_dict[header][_K_REGEX])
+        if header != _DFLT_HDR:
+            if _K_REGEX in toml_dict[header]:
+                toml_dict[header][_K_REGEX] = re.compile(toml_dict[header][_K_REGEX])
 
 def load_toml(toml_file_name):
     toml_str = preproc_toml(os.path.abspath(toml_file_name))
@@ -138,25 +139,26 @@ def create_tbl(toml_dict):
     # set the defaults
     input_values = { }
     for header in toml_dict:
+        if header != _DFLT_HDR:
+            # initiate with fallback
+            value = _DFLT_VALUE
 
-        # initiate with fallback
-        value = _DFLT_VALUE
+            if _K_DFLT in toml_dict[header]:
+                value = toml_dict[header][_K_DFLT]
 
-        if _K_DFLT in toml_dict[header]:
-            value = toml_dict[header][_K_DFLT]
+            elif _K_DFLT in toml_dict[_DFLT_HDR]:
+                value = toml_dict[_DFLT_HDR][_K_DFLT]
 
-        elif _K_DFLT in toml_dict[_DFLT_HDR]:
-            value = toml_dict[_DFLT_HDR][_K_DFLT]
-
-        input_values[header] = value
+            input_values[header] = value
 
     return input_values
 
 def hash_item(toml_dict, input_line):
     hashing_str = ""
     for header in toml_dict:
-        if _K_KEY in toml_dict[header] and toml_dict[header][_K_KEY] == True:
-            hashing_str += input_line[header]
+        if header != _DFLT_HDR:
+            if _K_KEY in toml_dict[header] and toml_dict[header][_K_KEY] == True:
+                hashing_str += input_line[header]
 
     return " ".join(hashing_str.split())
 
@@ -169,17 +171,18 @@ def print_as_csv(toml_dict, output_dict):
         result_lines.append( list() )
 
     for header in toml_dict:
-        # figure out the pad
-        pad = len(str(header))
-        for keys in output_dict:
-            if header in output_dict[keys]:
-                pad = max(pad, len(str(output_dict[keys][header])))
+        if header != _DFLT_HDR:
+            # figure out the pad
+            pad = len(str(header))
+            for keys in output_dict:
+                if header in output_dict[keys]:
+                    pad = max(pad, len(str(output_dict[keys][header])))
 
-        header_line.append('{0:<{1}}'.format(header, pad))
-        index = 0
-        for keys in output_dict:
-            result_lines[index].append('{0:<{1}}'.format(output_dict[keys][header], pad))
-            index += 1
+            header_line.append('{0:<{1}}'.format(header, pad))
+            index = 0
+            for keys in output_dict:
+                result_lines[index].append('{0:<{1}}'.format(output_dict[keys][header], pad))
+                index += 1
 
     # now write everything to the file:
     print(', '.join(header_line))
@@ -251,16 +254,18 @@ def abs(header, toml_dict, golden_tbl, tbl):
 def compare_tbl(toml_dict, golden_tbl, tbl):
     error_str = []
     for header in toml_dict:
-        output_str = ""
-        if sanity_check(header, toml_dict, golden_tbl, tbl):
-            # register your function here for different way to compare
-            if _K_RANGE in toml_dict[header]:
-                output_str = range(header, toml_dict, golden_tbl, tbl)
-            else: # absolute
-                output_str = abs(header, toml_dict, golden_tbl, tbl)
+        if header != _DFLT_HDR:
+            sanity_check
+            output_str = ""
+            if sanity_check(header, toml_dict, golden_tbl, tbl):
+                # register your function here for different way to compare
+                if _K_RANGE in toml_dict[header]:
+                    output_str = range(header, toml_dict, golden_tbl, tbl)
+                else: # absolute
+                    output_str = abs(header, toml_dict, golden_tbl, tbl)
 
-        if output_str is not None and output_str != "":
-            error_str.append(output_str)
+            if output_str is not None and output_str != "":
+                error_str.append(output_str)
 
     # drop the last extra newline
     return "\n".join(error_str)
@@ -281,10 +286,11 @@ def _parse(toml_file_name, log_file_name):
         for line in log:
             line = " ".join(line.split())
             for header in toml_dict:
-                if _K_REGEX in toml_dict[header]:
-                    entry = re.search(toml_dict[header][_K_REGEX], line)
-                    if entry is not None:
-                        input_values[header] = str(entry.group(1)).strip()
+                if header != _DFLT_HDR:
+                    if _K_REGEX in toml_dict[header]:
+                        entry = re.search(toml_dict[header][_K_REGEX], line)
+                        if entry is not None:
+                            input_values[header] = str(entry.group(1)).strip()
 
         key = hash_item(toml_dict, input_values)
         parsed_dict[key] = input_values

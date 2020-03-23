@@ -319,15 +319,10 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 
 <INITIAL>[\$]{vWORD}				{ MP(); return vCFUNC;}
 
-	/* Delay */
-<INITIAL>#{vINT}					{ MP(); yylval.num_value = vtr::strdup(yytext+1); return vDELAY_ID; }
-
 	/* Integers */
-<INITIAL>{vINT}						{ MP(); yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
-
+<INITIAL>{vINT}						{ MP(); yylval.num_value = vtr::strdup(yytext); return vINT_NUMBER; }
 	/* Strings */
 <INITIAL>{vSTRING}					{ MP(); yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
-
 	/* Numbers */
 <INITIAL>[[:digit:]]*'[sS]?{vBIN}	{ MP(); yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
 <INITIAL>[[:digit:]]*'[sS]?{vHEX}	{ MP(); yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
