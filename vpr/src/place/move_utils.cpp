@@ -705,7 +705,7 @@ bool find_to_loc_median(t_logical_block_type_ptr type,
 
     std::unordered_set<int> tried_cx_to;
     bool legal = false;
-    while (!legal && (int)tried_cx_to.size() < delta_cx) { //Until legal or all possibilities exhaused
+    while (!legal && (int)tried_cx_to.size() <= delta_cx) { //Until legal or all possibilities exhaused
         //Pick a random x-location within [min_cx, max_cx],
         //until we find a legal swap, or have exhuasted all possiblites
         cx_to = min_cx + vtr::irand(delta_cx);
@@ -737,11 +737,13 @@ bool find_to_loc_median(t_logical_block_type_ptr type,
             //No valid blocks at this x location which are within y range
             //
             //Fall back to allow the whole y range
-            y_lower_iter = compressed_block_grid.grid[cx_to].begin();
+            /*y_lower_iter = compressed_block_grid.grid[cx_to].begin();
             y_upper_iter = compressed_block_grid.grid[cx_to].end();
 
             min_cy = y_lower_iter->first;
             max_cy = (y_upper_iter - 1)->first;
+        */
+        return false;
         }
 
         int y_range = std::distance(y_lower_iter, y_upper_iter);

@@ -28,14 +28,14 @@ void EpsilonGreedyAgent::set_step(float gamma, int move_lim) {
         exp_alpha_ = -1; //Use sample average
     } else {
             //
-            // For an exponentially wieghted average the fraction of total weight applied to 
+            // For an exponentially wieghted average the fraction of total weight applied to
             // to moves which occured > K moves ago is:
             //
             //      gamma = (1 - alpha)^K
             //
             // If we treat K as the number of moves per temperature (move_lim) then gamma
             // is the fraction of weight applied to moves which occured > move_lim moves ago,
-            // and given a target gamma we can explicitly calcualte the alpha step-size 
+            // and given a target gamma we can explicitly calcualte the alpha step-size
             // required by the agent:
             //
             //     alpha = 1 - e^(log(gamma) / K)
@@ -139,7 +139,7 @@ void EpsilonGreedyAgent::set_k(size_t k) {
     q_ = std::vector<float>(k, 0.);
     n_ = std::vector<size_t>(k, 0);
 
-    cumm_epsilon_action_prob_ = std::vector<float>(k, 1. / k);
+    cumm_epsilon_action_prob_ = std::vector<float>(k, 1.0 / k);
 //#if 0
     if (f_) {
         vtr::fclose(f_);
@@ -147,7 +147,7 @@ void EpsilonGreedyAgent::set_k(size_t k) {
     }
 
 
-    f_ = vtr::fopen("egreedy.csv", "w");
+    //f_ = vtr::fopen("egreedy.csv", "w");
     fprintf(f_, "action,reward,");
     for (size_t i = 0; i < k_; ++i) {
         fprintf(f_, "q%zu,", i);
@@ -186,7 +186,7 @@ SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>
 
 	std::unique_ptr<MoveGenerator> move_generator3;
 	move_generator3 = std::make_unique<WeightedMedianMoveGenerator>();
-	avail_moves.push_back(std::move(move_generator3));	
+	avail_moves.push_back(std::move(move_generator3));
 
 	std::unique_ptr<MoveGenerator> move_generator4;
 	move_generator4 = std::make_unique<WeightedCentroidMoveGenerator>();
@@ -201,7 +201,7 @@ e_create_move SimpleRLMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
 
 	size_t move_index = karmed_bandit_agent->propose_action();
 	++num_moves[move_index];
-	VTR_LOG("####%d",move_index);
+	//VTR_LOG("####%d",move_index);
 	return avail_moves[move_index]->propose_move(blocks_affected, rlim, X_coord, Y_coord, num_moves, type, high_fanout_net);
 }
 

@@ -7,14 +7,23 @@ static void get_bb_for_net_excluding_block(ClusterNetId net_id, t_bb* coords, Cl
 
 e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float,
 std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>&, int &, int place_high_fanout_net) {
-    /* Pick a random block to be swapped with another random block.   */
-    ClusterBlockId b_from = pick_from_block();
-    if (!b_from) {
-        return e_create_move::ABORT; //No movable block found
-    }
+
 
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    /* Pick a random block to be swapped with another random block.   */
+    ClusterBlockId b_from;
+    for(int i =0; i< 10; i++){
+        b_from = pick_from_block();
+        if (!b_from) {
+            return e_create_move::ABORT; //No movable block found
+        }
+        if(cluster_ctx.clb_nlist.block_type(b_from)->index != 1){ //io
+            break;
+        }
+    }
+
 
     t_pl_loc from = place_ctx.block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
@@ -39,20 +48,23 @@ std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>&, int &, 
         Y_coord.push_back(coords.ymin);
         Y_coord.push_back(coords.ymax);
     }
-    std::sort(X_coord.begin(),X_coord.end());
-    std::sort(Y_coord.begin(),Y_coord.end());
 
     if((X_coord.size()==0) || (Y_coord.size()==0))
         return e_create_move::ABORT;
+
+    std::sort(X_coord.begin(),X_coord.end());
+    std::sort(Y_coord.begin(),Y_coord.end());
+
 
     limit_coords.xmin = X_coord[floor((X_coord.size()-1)/2)];
     limit_coords.xmax = X_coord[floor((X_coord.size()-1)/2)+1];
 
     limit_coords.ymin = Y_coord[floor((Y_coord.size()-1)/2)];
     limit_coords.ymax = Y_coord[floor((Y_coord.size()-1)/2)+1];
-    
-    
+
+
     if (!find_to_loc_median(cluster_from_type, &limit_coords, from, to)) {
+        auto grid_to_type = g_vpr_ctx.device().grid[limit_coords.xmin][limit_coords.ymin].type;
         return e_create_move::ABORT;
     }
 
