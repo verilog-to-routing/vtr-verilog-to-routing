@@ -33,9 +33,9 @@ ast_node_t* newBinaryOperation(operation_list op_id, ast_node_t* expression1, as
 ast_node_t* newExpandPower(operation_list op_id, ast_node_t* expression1, ast_node_t* expression2, int line_number);
 ast_node_t* newUnaryOperation(operation_list op_id, ast_node_t* expression, int line_number);
 
-/* EVENT LIST AND DELAY CONTROL */
-ast_node_t* newPosedgeSymbol(char* symbol, int line_number);
-ast_node_t* newNegedgeSymbol(char* symbol, int line_number);
+/* EVENT LIST AND TIMING CONTROL */
+ast_node_t* newPosedge(ast_node_t* expression, int line_number);
+ast_node_t* newNegedge(ast_node_t* expression, int line_number);
 
 /* STATEMENTS */
 ast_node_t* newCaseItem(ast_node_t* expression, ast_node_t* statement, int line_number);
