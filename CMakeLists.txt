@@ -48,9 +48,9 @@ option(ODIN_TIDY "Enable building odin with clang tidy" OFF)
 option(ODIN_SANITIZE "Enable building odin with sanitize flags" OFF)
 
 set(VTR_VERSION_MAJOR 8)
-set(VTR_VERSION_MINOR 0)
+set(VTR_VERSION_MINOR 1)
 set(VTR_VERSION_PATCH 0)
-set(VTR_VERSION_PRERELEASE "rc1")
+set(VTR_VERSION_PRERELEASE "dev")
 
 include(FilesToDirs)
 
