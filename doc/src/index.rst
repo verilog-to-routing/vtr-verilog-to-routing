@@ -29,6 +29,7 @@ For more specific documentation about VPR see :ref:`vpr`.
    :caption: Development
 
    dev/index
+   CHANGELOG
 
 .. toctree::
    :maxdepth: 2
