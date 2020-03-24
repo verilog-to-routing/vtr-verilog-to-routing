@@ -1,4 +1,4 @@
-# Verilog to Routing (VTR) Change Log
+# VTR Change Log
 <!-- 
 This file documents user-facing changes between releases of the VTR
 project. The goal is to concicely communicate to end users what is new
@@ -32,6 +32,9 @@ candidate release (e.g. v7.0.0). That is, it should be the concatenation
 of the unreleased and any previous release candidates change logs.
 -->
 
+_Note that changes from release candidates (e.g. v8.0.0-rc1, v8.0.0-rc2) are included/repeated in the final release (e.g. v8.0.0) change log._
+
+<!--
 ## Unreleased
 _The following are changes which have been implemented in the VTR master branch but have not yet been included in an official release._
 
@@ -44,8 +47,9 @@ _The following are changes which have been implemented in the VTR master branch 
 ### Deprecated
 
 ### Removed
+-->
 
-## v8.0.0 - 2020-03-16
+## v8.0.0 - 2020-03-24
 
 ### Added
  * Support for arbitrary FPGA device grids/floorplans
