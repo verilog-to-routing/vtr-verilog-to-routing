@@ -1412,7 +1412,7 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
     route_grp.add_argument<e_router_algorithm, ParseRouterAlgorithm>(args.RouterAlgorithm, "--router_algorithm")
         .help(
             "Specifies the router algorithm to use.\n"
-            " * breadth_first: focuses solely on routability\n"
+            " * breadth_first: focuses solely on routability [DEPRECATED, inferior quality & run-time]\n"
             " * timing_driven: focuses on routability and circuit speed\n")
         .default_value("timing_driven")
         .choices({"breadth_first", "timing_driven"})
@@ -1474,8 +1474,8 @@ static argparse::ArgumentParser create_arg_parser(std::string prog_name, t_optio
     route_timing_grp.add_argument<e_routing_budgets_algorithm, RouteBudgetsAlgorithm>(args.routing_budgets_algorithm, "--routing_budgets_algorithm")
         .help(
             "Controls how the routing budgets are created.\n"
-            " * slack: Sets the budgets depending on the amount slack between connections and the current delay values.\n"
-            " * criticality: Sets the minimum budgets to 0 and the maximum budgets as a function of delay and criticality (net delay/ pin criticality)\n"
+            " * slack: Sets the budgets depending on the amount slack between connections and the current delay values. [EXPERIMENTAL]\n"
+            " * criticality: Sets the minimum budgets to 0 and the maximum budgets as a function of delay and criticality (net delay/ pin criticality) [EXPERIMENTAL]\n"
             " * disable: Removes the routing budgets, use the default VPR and ignore hold time constraints\n")
         .default_value("disable")
         .choices({"minimax", "scale_delay", "disable"})
