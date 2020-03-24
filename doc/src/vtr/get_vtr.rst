@@ -6,16 +6,30 @@ Get VTR
 How to Cite
 ~~~~~~~~~~~
 
-The following paper may be used as a general citation for VTR:
+Citations are important in academia, as they ensure contributors recieve credit for their efforts.
+Therefore please use the following paper as a general citation whenever you use VTR:
 
-    J. Luu, J. Goeders, M. Wainberg, A. Somerville, T. Yu, K. Nasartschuk, M. Nasr, S. Wang, T. Liu, N. Ahmed, K. B. Kent, J. Anderson, J. Rose and V. Betz "VTR 7.0: Next Generation Architecture and CAD System for FPGAs," ACM TRETS, Vol. 7, No. 2, June 2014, pp. 6:1 - 6:30.
+    K. E. Murray, O. Petelin, S. Zhong, J. M. Wang, M. ElDafrawy, J.-P. Legault, E. Sha, A. G. Graham, J. Wu, M. J. P. Walker, H. Zeng, P. Patros, J. Luu, K. B. Kent and V. Betz "VTR 8: High Performance CAD and Customizable FPGA Architecture Modelling", ACM TRETS, 2020
+
+Bibtex:
+
+.. code-block:: none
+
+    @article{vtr8,
+      title={VTR 8: High Performance CAD and Customizable FPGA Architecture Modelling},
+      author={Murray, Kevin E. and Petelin, Oleg and Zhong, Sheng and Wang, Jai Min and ElDafrawy, Mohamed and Legault, Jean-Philippe and Sha, Eugene and Graham, Aaron G. and Wu, Jean and Walker, Matthew J. P. and Zeng, Hanqing and Patros, Panagiotis and Luu, Jason and Kent, Kenneth B. and Betz, Vaughn},
+      journal={ACM Trans. Reconfigurable Technol. Syst.},
+      year={2020}
+    }
+
+We are always interested in how VTR is being used, so feel free email the `vtr-users <https://verilogtorouting.org/contact/>`_ list with how you are using VTR.
 
 Download
 ~~~~~~~~
 
 The official VTR release is available from:
 
-    http://www.eecg.utoronto.ca/vtr/terms.html
+    https://verilogtorouting.org/download
 
 Release
 ~~~~~~~
