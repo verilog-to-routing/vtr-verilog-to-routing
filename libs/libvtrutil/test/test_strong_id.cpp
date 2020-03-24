@@ -110,6 +110,7 @@ TEST_CASE("StrongIdRange", "[StrongId/StrongIdRange]") {
 
     int count = 0;
     for (TestStrongId id : r1) {
+        (void)id;
         count += 1;
     }
     REQUIRE(count == 0);
