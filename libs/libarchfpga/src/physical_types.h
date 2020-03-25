@@ -442,7 +442,7 @@ struct t_class {
     enum e_pin_type type;
     PortEquivalence equivalence;
     int num_pins;
-    int* pinlist; /* [0..num_pins - 1] */
+    std::vector<int> pinlist; /* [0..num_pins - 1] */
 };
 
 enum e_power_wire_type {
@@ -582,21 +582,15 @@ struct t_physical_tile_type {
     int width = 0;
     int height = 0;
 
-    bool**** pinloc = nullptr; /* [0..width-1][0..height-1][0..3][0..num_pins-1] */
+    std::vector<std::vector<std::vector<std::vector<bool>>>> pinloc; /* [0..width-1][0..height-1][0..3][0..num_pins-1] */
 
-    enum e_pin_location_distr pin_location_distribution = E_SPREAD_PIN_DISTR;
-    int*** num_pin_loc_assignments = nullptr; /* [0..width-1][0..height-1][0..3] */
-    char***** pin_loc_assignments = nullptr;  /* [0..width-1][0..height-1][0..3][0..num_tokens-1][0..string_name] */
+    std::vector<t_class> class_inf; /* [0..num_class-1] */
 
-    int num_class = 0;
-    t_class* class_inf = nullptr; /* [0..num_class-1] */
-
-    std::vector<t_physical_tile_port> ports;
-    std::vector<int> pin_width_offset;  //[0..num_pins-1]
-    std::vector<int> pin_height_offset; //[0..num_pins-1]
-    int* pin_class = nullptr;           /* [0..num_pins-1] */
-    bool* is_ignored_pin = nullptr;     /* [0..num_pins-1] */
-    bool* is_pin_global = nullptr;      /* [0..num_pins -1] */
+    std::vector<int> pin_width_offset;  // [0..num_pins-1]
+    std::vector<int> pin_height_offset; // [0..num_pins-1]
+    std::vector<int> pin_class;         // [0..num_pins-1]
+    std::vector<bool> is_ignored_pin;   // [0..num_pins-1]
+    std::vector<bool> is_pin_global;    // [0..num_pins-1]
 
     std::vector<t_fc_specification> fc_specs;
 
@@ -610,6 +604,8 @@ struct t_physical_tile_type {
     int num_receivers = 0;
 
     int index = -1; /* index of type descriptor in array (allows for index referencing) */
+
+    std::vector<t_sub_tile> sub_tiles;
 
     std::vector<t_logical_block_type_ptr> equivalent_sites;
 
@@ -629,6 +625,19 @@ struct t_physical_tile_type {
     // Does this t_physical_tile_type contain an outpad?
     bool is_output_type;
 };
+
+/** Describes the possible placeable blocks within a physical tile type.
+ *  A sub tile adds flexibility in the tile composition description.
+ */
+struct t_sub_tile {
+    // Mapping between the sub tile's pins and the physical pins corresponding
+    // to the physical tile type.
+    std::vector<int> sub_tile_to_tile_pin_indices;
+
+    std::vector<t_physical_tile_port> ports;
+
+    std::vector<t_logical_block_type_ptr> equivalent_sites;
+}
 
 /** A logical pin defines the pin index of a logical block type (i.e. a top level PB type)
  *  This structure wraps the int value of the logical pin to allow its storage in the
