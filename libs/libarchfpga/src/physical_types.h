@@ -58,6 +58,7 @@ struct t_physical_tile_port;
 struct t_equivalent_site;
 struct t_physical_tile_type;
 typedef const t_physical_tile_type* t_physical_tile_type_ptr;
+struct t_sub_tile;
 struct t_logical_block_type;
 typedef const t_logical_block_type* t_logical_block_type_ptr;
 struct t_logical_pin;
@@ -630,6 +631,8 @@ struct t_physical_tile_type {
  *  A sub tile adds flexibility in the tile composition description.
  */
 struct t_sub_tile {
+    char* name = nullptr;
+
     // Mapping between the sub tile's pins and the physical pins corresponding
     // to the physical tile type.
     std::vector<int> sub_tile_to_tile_pin_indices;
@@ -638,8 +641,10 @@ struct t_sub_tile {
 
     std::vector<t_logical_block_type_ptr> equivalent_sites;
 
+    int capacity = 0;
+
     int index = -1;
-}
+};
 
 /** A logical pin defines the pin index of a logical block type (i.e. a top level PB type)
  *  This structure wraps the int value of the logical pin to allow its storage in the
@@ -647,9 +652,11 @@ struct t_sub_tile {
  */
 struct t_logical_pin {
     int pin = -1;
+    int sub_tile_index = -1;
 
-    t_logical_pin(int value) {
+    t_logical_pin(int index, int value) {
         pin = value;
+        sub_tile_index = index;
     }
 
     bool operator==(const t_logical_pin o) const {

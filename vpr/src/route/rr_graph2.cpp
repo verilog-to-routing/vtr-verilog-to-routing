@@ -1067,8 +1067,8 @@ static void load_block_rr_indices(const DeviceGrid& grid,
 
                 //Assign indices for SINKs and SOURCEs
                 // Note that SINKS/SOURCES have no side, so we always use side 0
-                for (int iclass = 0; iclass < type->num_class; ++iclass) {
-                    auto class_type = type->class_inf[iclass].type;
+                for (const auto& class_inf : type->class_inf) {
+                    auto class_type = class_inf.type;
                     if (class_type == DRIVER) {
                         indices[SOURCE][x][y][0].push_back(*index);
                         indices[SINK][x][y][0].push_back(OPEN);
@@ -1079,8 +1079,8 @@ static void load_block_rr_indices(const DeviceGrid& grid,
                     }
                     ++(*index);
                 }
-                VTR_ASSERT(indices[SOURCE][x][y][0].size() == size_t(type->num_class));
-                VTR_ASSERT(indices[SINK][x][y][0].size() == size_t(type->num_class));
+                VTR_ASSERT(indices[SOURCE][x][y][0].size() == type->class_inf.size());
+                VTR_ASSERT(indices[SINK][x][y][0].size() == type->class_inf.size());
 
                 //Assign indices for IPINs and OPINs at all offsets from root
                 for (int ipin = 0; ipin < type->num_pins; ++ipin) {
@@ -1454,7 +1454,7 @@ int get_rr_node_index(const t_rr_node_indices& L_rr_node_indices,
      * and ptc gives the number of this resource.  ptc is the class number,
      * pin number or track number, depending on what type of resource this
      * is.  All ptcs start at 0 and go up to pins_per_clb-1 or the equivalent.
-     * There are type->num_class SOURCEs + SINKs, type->num_pins IPINs + OPINs,
+     * There are (int)type->class_inf.size() SOURCEs + SINKs, type->num_pins IPINs + OPINs,
      * and max_chan_width CHANX and CHANY (each).
      *
      * Note that for segments (CHANX and CHANY) of length > 1, the segment is
@@ -1497,12 +1497,12 @@ int get_rr_node_index(const t_rr_node_indices& L_rr_node_indices,
 
     switch (rr_type) {
         case SOURCE:
-            VTR_ASSERT(ptc < type->num_class);
+            VTR_ASSERT(ptc < (int)type->class_inf.size());
             VTR_ASSERT(type->class_inf[ptc].type == DRIVER);
             break;
 
         case SINK:
-            VTR_ASSERT(ptc < type->num_class);
+            VTR_ASSERT(ptc < (int)type->class_inf.size());
             VTR_ASSERT(type->class_inf[ptc].type == RECEIVER);
             break;
 

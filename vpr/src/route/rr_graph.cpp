@@ -1396,10 +1396,10 @@ static void build_rr_sinks_sources(const int i,
         return;
 
     auto type = grid[i][j].type;
-    int num_class = type->num_class;
-    t_class* class_inf = type->class_inf;
+    int num_class = (int)type->class_inf.size();
+    std::vector<t_class> class_inf = type->class_inf;
     int num_pins = type->num_pins;
-    int* pin_class = type->pin_class;
+    std::vector<int> pin_class = type->pin_class;
 
     /* SINK and SOURCE-to-OPIN edges */
     for (int iclass = 0; iclass < num_class; ++iclass) {
@@ -2613,10 +2613,16 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
         clb_to_clb_directs[i].from_clb_type = physical_tile;
 
         bool port_found = false;
-        for (const auto& port : physical_tile->ports) {
-            if (0 == strcmp(port.name, port_name)) {
-                tile_port = port;
-                port_found = true;
+        for (const auto& sub_tile : physical_tile->sub_tiles) {
+            for (const auto& port : sub_tile.ports) {
+                if (0 == strcmp(port.name, port_name)) {
+                    tile_port = port;
+                    port_found = true;
+                    break;
+                }
+            }
+
+            if (port_found) {
                 break;
             }
         }
@@ -2655,10 +2661,16 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
         clb_to_clb_directs[i].to_clb_type = physical_tile;
 
         port_found = false;
-        for (const auto& port : physical_tile->ports) {
-            if (0 == strcmp(port.name, port_name)) {
-                tile_port = port;
-                port_found = true;
+        for (const auto& sub_tile : physical_tile->sub_tiles) {
+            for (const auto& port : sub_tile.ports) {
+                if (0 == strcmp(port.name, port_name)) {
+                    tile_port = port;
+                    port_found = true;
+                    break;
+                }
+            }
+
+            if (port_found) {
                 break;
             }
         }
