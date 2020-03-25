@@ -4,6 +4,7 @@
 #include <ctime>
 #include <algorithm>
 #include <vector>
+#include <stack>
 #include "vtr_assert.h"
 
 #include "vtr_util.h"
@@ -2958,22 +2959,13 @@ static int pick_best_direct_connect_target_rr_node(const t_rr_graph_storage& rr_
 // Class for building a group of connected edges.
 class EdgeGroups {
   public:
-    EdgeGroups()
-        : node_count_(std::numeric_limits<size_t>::max()) {}
+    EdgeGroups() {}
 
-    // set_node_count must be invoked before create_sets with the count of
-    // nodes. Assumption is that from_node/to_node arguments to
-    // add_non_config_edge are less than node_count.
-    void set_node_count(size_t node_count) {
-        node_count_ = node_count;
-    }
-
-    // Adds non-configurable edge to be group.
+    // Adds non-configurable (undirected) edge to be grouped.
     //
     // Returns true if this is a new edge.
     bool add_non_config_edge(int from_node, int to_node) {
-        auto result = node_edges_.insert(std::make_pair(from_node, to_node));
-        return result.second;
+        return graph_[from_node].edges.insert(to_node).second && graph_[to_node].edges.insert(from_node).second;
     }
 
     // After add_non_config_edge has been called for all edges, create_sets
@@ -2982,93 +2974,45 @@ class EdgeGroups {
     void create_sets() {
         rr_non_config_node_sets_map_.clear();
 
-        size_t num_groups = 0;
-        std::vector<std::pair<int, int>> merges;
-
-        VTR_ASSERT(node_count_ != std::numeric_limits<size_t>::max());
-        std::vector<int> node_to_node_set(node_count_, OPEN);
-
-        // First nievely make node groups.  When an edge joins two groups,
-        // mark it for cleanup latter.
-        for (const auto& edge : node_edges_) {
-            VTR_ASSERT(edge.first >= 0 && static_cast<size_t>(edge.first) < node_count_);
-            VTR_ASSERT(edge.second >= 0 && static_cast<size_t>(edge.second) < node_count_);
-
-            int& from_set = node_to_node_set[edge.first];
-            int& to_set = node_to_node_set[edge.second];
-
-            if (from_set == OPEN && to_set == OPEN) {
-                from_set = num_groups++;
-                to_set = from_set;
-            } else if (from_set == OPEN && to_set != OPEN) {
-                from_set = to_set;
-            } else if (from_set != OPEN && to_set == OPEN) {
-                to_set = from_set;
-            } else {
-                VTR_ASSERT(from_set != OPEN);
-                VTR_ASSERT(to_set != OPEN);
-
-                if (from_set != to_set) {
-                    merges.push_back(std::make_pair(
-                        std::min(from_set, to_set),
-                        std::max(from_set, to_set)));
-                }
+        // https://en.wikipedia.org/wiki/Component_(graph_theory)#Algorithms
+        std::vector<size_t> group_size;
+        for (auto& node : graph_) {
+            if (node.second.set == OPEN) {
+                node.second.set = group_size.size();
+                group_size.push_back(add_connected_group(node.second));
             }
         }
 
-        // We are going to always collapse sets to lower ids, so sort
-        // the merge list to ensure that the merge first elements are always
-        // increasing.
-        std::sort(merges.begin(), merges.end(), [](const std::pair<int, int>& a, const std::pair<int, int>& b) {
-            return a.first < b.first;
-        });
-
-        // Update final_set_map with the final merge id for the second element.
-        // The first element will either be the final value, or already have
-        // an entry in the final_set_map (because sorting), so we can depend on
-        // find_target_set(first) returning a stable value.
-        std::unordered_map<int, int> final_set_map;
-        for (const auto& merge : merges) {
-            VTR_ASSERT(merge.first < merge.second);
-            VTR_ASSERT(merge.first != OPEN);
-            VTR_ASSERT(merge.second != OPEN);
-
-            int target_set = find_target_set(final_set_map, merge.first);
-
-            final_set_map.insert(std::make_pair(merge.second, target_set));
-        }
-
-        // Finalize merges between node set ids.
-        for (auto& set : node_to_node_set) {
-            set = find_target_set(final_set_map, set);
-        }
-        final_set_map.clear();
-
         // Sanity check the node sets.
-        for (const auto& edge : node_edges_) {
-            VTR_ASSERT(node_to_node_set[edge.first] != OPEN);
-            VTR_ASSERT(node_to_node_set[edge.second] != OPEN);
-            VTR_ASSERT(node_to_node_set[edge.first] == node_to_node_set[edge.second]);
+        for (const auto& node : graph_) {
+            VTR_ASSERT(node.second.set != OPEN);
+            for (const auto& e : node.second.edges) {
+                int set = graph_[e].set;
+                VTR_ASSERT(set == node.second.set);
+            }
         }
 
         // Create compact set of sets.
-        for (size_t inode = 0; inode < node_to_node_set.size(); ++inode) {
-            if (node_to_node_set[inode] != OPEN) {
-                rr_non_config_node_sets_map_[node_to_node_set[inode]].push_back(inode);
-            }
+        rr_non_config_node_sets_map_.resize(group_size.size());
+        for (size_t i = 0; i < group_size.size(); i++) {
+            rr_non_config_node_sets_map_[i].reserve(group_size[i]);
+        }
+        for (const auto& node : graph_) {
+            rr_non_config_node_sets_map_[node.second.set].push_back(node.first);
         }
     }
 
     // Create t_non_configurable_rr_sets from set data.
+    // NOTE: The stored graph is undirected, so this may generate reverse edges that don't exist.
     t_non_configurable_rr_sets output_sets() {
         t_non_configurable_rr_sets sets;
-        for (auto& item : rr_non_config_node_sets_map_) {
+        for (const auto& nodes : rr_non_config_node_sets_map_) {
             std::set<t_node_edge> edge_set;
-            std::set<int> node_set(item.second.begin(), item.second.end());
+            std::set<int> node_set(nodes.begin(), nodes.end());
 
-            for (const auto& edge : node_edges_) {
-                if (node_set.find(edge.first) != node_set.end()) {
-                    edge_set.emplace(t_node_edge(edge.first, edge.second));
+            for (const auto& src : node_set) {
+                for (const auto& dest : graph_[src].edges) {
+                    edge_set.emplace(t_node_edge(src, dest));
                 }
             }
 
@@ -3082,8 +3026,8 @@ class EdgeGroups {
     // Set device context structures for non-configurable node sets.
     void set_device_context() {
         std::vector<std::vector<int>> rr_non_config_node_sets;
-        for (auto& item : rr_non_config_node_sets_map_) {
-            rr_non_config_node_sets.emplace_back(std::move(item.second));
+        for (const auto& item : rr_non_config_node_sets_map_) {
+            rr_non_config_node_sets.emplace_back(std::move(item));
         }
 
         std::unordered_map<int, int> rr_node_to_non_config_node_set;
@@ -3100,65 +3044,54 @@ class EdgeGroups {
     }
 
   private:
-    // Final target set for given set id.
-    static int find_target_set(
-        const std::unordered_map<int, int>& final_set_map,
-        int set) {
-        int target_set = set;
-        while (true) {
-            auto iter = final_set_map.find(target_set);
-            if (iter != final_set_map.end()) {
-                target_set = iter->second;
-            } else {
-                break;
+    struct node_data {
+        std::unordered_set<int> edges;
+        int set = OPEN;
+    };
+
+    // Perform a DFS traversal marking everything reachable with the same set id
+    size_t add_connected_group(const node_data& node) {
+        // stack contains nodes with edges to mark with node.set
+        // The set for each node must be set before pushing it onto the stack
+        std::stack<const node_data*> stack;
+        stack.push(&node);
+        size_t n = 1;
+        while (!stack.empty()) {
+            auto top = stack.top();
+            stack.pop();
+            for (auto e : top->edges) {
+                auto& next = graph_[e];
+                if (next.set != node.set) {
+                    VTR_ASSERT(next.set == OPEN);
+                    n++;
+                    next.set = node.set;
+                    stack.push(&next);
+                }
             }
         }
-
-        return target_set;
+        return n;
     }
 
-    // Number of nodes.  All elements of node_edges_ should be less than this
-    // value.
-    size_t node_count_;
-
     // Set of non-configurable edges.
-    std::set<std::pair<int, int>> node_edges_;
+    std::unordered_map<int, node_data> graph_;
 
     // Compact set of node sets. Map key is arbitrary.
-    std::map<int, std::vector<int>> rr_non_config_node_sets_map_;
+    std::vector<std::vector<int>> rr_non_config_node_sets_map_;
 };
-
-static void expand_non_configurable(int inode, EdgeGroups* groups);
 
 //Collects the sets of connected non-configurable edges in the RR graph
 static void create_edge_groups(EdgeGroups* groups) {
-    //Walk through the RR graph and recursively expand non-configurable edges
-    //to collect the sets of non-configurably connected nodes
     auto& device_ctx = g_vpr_ctx.device();
-    groups->set_node_count(device_ctx.rr_nodes.size());
+    auto& rr_nodes = device_ctx.rr_nodes;
 
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
-        expand_non_configurable(inode, groups);
+    for (size_t iedge = 0; iedge < rr_nodes.edges_size(); ++iedge) {
+        RREdgeId edge(iedge);
+        if (!device_ctx.rr_switch_inf[rr_nodes.edge_switch(edge)].configurable()) {
+            groups->add_non_config_edge(size_t(rr_nodes.edge_source_node(edge)), size_t(rr_nodes.edge_sink_node(edge)));
+        }
     }
 
     groups->create_sets();
-}
-
-//Builds a set of non-configurably connected RR graph edges
-static void expand_non_configurable(int inode, EdgeGroups* groups) {
-    auto& device_ctx = g_vpr_ctx.device();
-
-    for (t_edge_size iedge = 0; iedge < device_ctx.rr_nodes[inode].num_edges(); ++iedge) {
-        bool edge_non_configurable = !device_ctx.rr_nodes[inode].edge_is_configurable(iedge);
-
-        if (edge_non_configurable) {
-            int to_node = device_ctx.rr_nodes[inode].edge_sink_node(iedge);
-
-            if (groups->add_non_config_edge(inode, to_node)) {
-                expand_non_configurable(to_node, groups);
-            }
-        }
-    }
 }
 
 t_non_configurable_rr_sets identify_non_configurable_rr_sets() {
