@@ -45,4 +45,5 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 # Script Parameters
-script_params=-track_memory_usage --routing_failure_predictor off
+# Increase relaxed channel width routing iterations to avoid potential unroutes due to RR graph changes
+script_params=-track_memory_usage -crit_path_router_iterations 80 --routing_failure_predictor off

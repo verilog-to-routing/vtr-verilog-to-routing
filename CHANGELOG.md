@@ -23,7 +23,7 @@ In the case of release candidates (e.g. v8.0.0-rc1) the current
 set of unreleased changes should be moved under that heading. Any
 subsequent fixes to the release candidate would be placed under
 'Unreleased', eventually moving into the next release candidate's
-heading (e.g. v8.0.0-rc2) when created. Note thismeans the change log for
+heading (e.g. v8.0.0-rc2) when created. Note this means the change log for
 subsequent release candidates (e.g. rc2) would only contain new changes
 not included in previous release candidates (e.g. rc1).  When the final
 (non-release candidate) release is made (e.g. v8.0.0) the change log
