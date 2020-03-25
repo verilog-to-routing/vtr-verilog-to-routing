@@ -637,6 +637,8 @@ struct t_sub_tile {
     std::vector<t_physical_tile_port> ports;
 
     std::vector<t_logical_block_type_ptr> equivalent_sites;
+
+    int index = -1;
 }
 
 /** A logical pin defines the pin index of a logical block type (i.e. a top level PB type)
