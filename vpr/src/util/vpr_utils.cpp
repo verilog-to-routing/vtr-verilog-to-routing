@@ -197,20 +197,22 @@ void sync_grid_to_blocks() {
 }
 
 static t_pin_inst_port block_type_pin_index_to_pin_inst(t_physical_tile_type_ptr type, int pin_index) {
-    int pins_per_inst = type->num_pins / type->capacity;
-    int inst_num = pin_index / pins_per_inst;
-    pin_index %= pins_per_inst;
+    auto logical_pin = type->tile_block_pin_directs_map(physical_pin(pin_index));
+    sub_tile_index = logical_pin.sub_tile_index;
+    pin_index = logical_pin.pin;
 
     t_pin_inst_port pin_inst_port;
     pin_inst_port.capacity_instance = inst_num;
     pin_inst_port.port_index = OPEN;
     pin_inst_port.pin_index_in_port = OPEN;
 
-    for (auto const& port : type->ports) {
-        if (pin_index >= port.absolute_first_pin_index && pin_index < port.absolute_first_pin_index + port.num_pins) {
-            pin_inst_port.port_index = port.index;
-            pin_inst_port.pin_index_in_port = pin_index - port.absolute_first_pin_index;
-            break;
+    for (const auto& sub_tile : type->sub_tiles[sub_tile_index]) {
+        for (auto const& port : sub_tile.ports) {
+            if (pin_index >= port.absolute_first_pin_index && pin_index < port.absolute_first_pin_index + port.num_pins) {
+                pin_inst_port.port_index = port.index;
+                pin_inst_port.pin_index_in_port = pin_index - port.absolute_first_pin_index;
+                break;
+            }
         }
     }
     return pin_inst_port;
@@ -221,17 +223,18 @@ std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_
 
     std::string pin_name = type->name;
 
-    if (type->capacity > 1) {
-        int pins_per_inst = type->num_pins / type->capacity;
-        int inst_num = pin_index / pins_per_inst;
-        pin_index %= pins_per_inst;
+    int sub_tile_index = 0;
+    auto logical_pin = type->tile_block_pin_directs_map(physical_pin(pin_index));
+    sub_tile_index = logical_pin.sub_tile_index;
+    pin_index = logical_pin.pin
 
-        pin_name += "[" + std::to_string(inst_num) + "]";
+    if (type->capacity > 1) {
+        pin_name += "[" + std::to_string(sub_tile_index) + "]";
     }
 
     pin_name += ".";
 
-    for (auto const& port : type->ports) {
+    for (auto const& port : type->sub_tiles[sub_tile_index]) {
         if (pin_index >= port.absolute_first_pin_index && pin_index < port.absolute_first_pin_index + port.num_pins) {
             //This port contains the desired pin index
             int index_in_port = pin_index - port.absolute_first_pin_index;

@@ -234,7 +234,7 @@ std::vector<int> get_best_classes(enum e_pin_type pintype, t_physical_tile_type_
     }
 
     //Collect all classes of matching type which connect to general routing
-    for (int i = 0; i < type->num_class; i++) {
+    for (int i = 0; i < (int)type->class_inf.size(); i++) {
         if (type->class_inf[i].type == pintype) {
             //Check whether all pins in this class are ignored or have zero fc
             bool any_pins_connect_to_general_routing = false;
