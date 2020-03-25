@@ -83,24 +83,21 @@ struct t_pin_counts {
     }
 };
 
-struct t_pin_loc_assignments {
-    private bool pin_distribution_set = false;
+struct t_pin_loc {
+    private bool distribution_set = false;
 
-    enum e_pin_location_distr pin_location_distribution = E_SPREAD_PIN_DISTR;
+    enum e_pin_location_distr distribution = E_SPREAD_PIN_DISTR;
 
-    /* [0..width-1][0..height-1][0..3] */
-    std::vector<std::vector<std::vector<int>>> num_assignments;
+    /* [0..num_sub_tiles-1][0..width-1][0..height-1][0..3][0..num_tokens-1] */
+    std::vector<std::vector<std::vector<std::vector<std::vector<std::string>>>>> assignments;
 
-    /* [0..width-1][0..height-1][0..3][0..num_tokens-1][string_name] */
-    std::vector<std::vector<std::vector<std::vector<std::string>>>> assignments;
-
-    bool is_pin_distribution_set() {
-        return pin_distribution_set;
+    bool is_distribution_set() {
+        return distribution_set;
     }
 
-    void set_pin_distribution() {
-        VTR_ASSERT(pin_distribution_set == false);
-        pin_distribution = true;
+    void set_distribution() {
+        VTR_ASSERT(distribution_set == false);
+        distribution = true;
     }
 
 };
@@ -111,12 +108,13 @@ static const char* arch_file_name = nullptr;
 
 /* Function prototypes */
 /*   Populate data */
-static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
-                                           t_physical_tile_type* PhysicalTileType,
-                                           const pugiutil::loc_data& loc_data);
+static void SetupPinClasses(pugi::xml_node Locations,
+                            t_physical_tile_type* PhysicalTileType,
+                            const pugiutil::loc_data& loc_data);
 
 static void LoadPinLoc(pugi::xml_node Locations,
                        t_physical_tile_type* type,
+                       t_pin_loc* pin_loc,
                        const pugiutil::loc_data& loc_data);
 template<typename T>
 static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
@@ -160,7 +158,7 @@ static void ProcessEquivalentSiteCustomConnection(pugi::xml_node Parent,
 static void ProcessPinLocations(pugi::xml_node Locations,
                                 t_physical_tile_type* PhysicalTileType,
                                 t_sub_tile* SubTile,
-                                t_pin_loc_assignments* pin_loc_assignments,
+                                t_pin_loc* pin_loc,
                                 const pugiutil::loc_data& loc_data);
 static void ProcessSubTiles(pugi::xml_node Node,
                             t_physical_tile_type* PhysicalTileType
@@ -463,16 +461,14 @@ void XmlReadArch(const char* ArchFile,
  *
  */
 
-/* Sets up the pinloc map and pin classes for the type.
- * Pins and pin classes must already be setup by SetupPinClasses */
-static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
-                                           t_physical_tile_type* PhysicalTileType,
-                                           const pugiutil::loc_data& loc_data) {
+/* Sets up the pin classes for the type. */
+static void SetupPinClasses(pugi::xml_node Locations,
+                            t_physical_tile_type* PhysicalTileType,
+                            const pugiutil::loc_data& loc_data) {
     int i, k, Count;
     int capacity
     int pin_count;
     int num_class;
-    const char* Prop;
 
     pugi::xml_node Cur;
 
@@ -551,12 +547,13 @@ static void SetupPinLocationsAndPinClasses(pugi::xml_node Locations,
 
 static void LoadPinLoc(pugi::xml_node Locations,
                        t_physical_tile_type* type,
+                       t_pin_loc* pin_loc;
                        const pugiutil::loc_data& loc_data) {
     type->pin_width_offset.resize(type->num_pins, 0);
     type->pin_height_offset.resize(type->num_pins, 0);
 
     std::vector<int> physical_pin_counts(type->num_pins, 0);
-    if (type->pin_location_distribution == E_SPREAD_PIN_DISTR) {
+    if (pin_loc->distribution == E_SPREAD_PIN_DISTR) {
         /* evenly distribute pins starting at bottom left corner */
 
         int num_sides = 4 * (type->width * type->height);
@@ -581,7 +578,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
         }
         VTR_ASSERT(side_index == num_sides);
         VTR_ASSERT(count == type->num_pins);
-    } else if (type->pin_location_distribution == E_PERIMETER_PIN_DISTR) {
+    } else if (pin_loc->distribution == E_PERIMETER_PIN_DISTR) {
         //Add one pin at-a-time to perimeter sides in round-robin order
         int ipin = 0;
         while (ipin < type->num_pins) {
@@ -607,7 +604,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
         }
         VTR_ASSERT(ipin == type->num_pins);
 
-    } else if (type->pin_location_distribution == E_SPREAD_INPUTS_PERIMETER_OUTPUTS_PIN_DISTR) {
+    } else if (pin_loc->distribution == E_SPREAD_INPUTS_PERIMETER_OUTPUTS_PIN_DISTR) {
         //Collect the sets of block input/output pins
         std::vector<int> input_pins;
         std::vector<int> output_pins;
@@ -675,22 +672,28 @@ static void LoadPinLoc(pugi::xml_node Locations,
 
     } else {
         VTR_ASSERT(type->pin_location_distribution == E_CUSTOM_PIN_DISTR);
-        for (int width = 0; width < type->width; ++width) {
-            for (int height = 0; height < type->height; ++height) {
-                for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
-                    for (int pin = 0; pin < type->num_pin_loc_assignments[width][height][side]; ++pin) {
-                        auto pin_range = ProcessPinString<t_physical_tile_type_ptr>(Locations,
-                                                                                    type,
-                                                                                    type->pin_loc_assignments[width][height][side][pin],
-                                                                                    loc_data);
+        for (const auto& sub_tile : PhysicalTileType->sub_tiles) {
+            int sub_tile_index = sub_tile->index;
 
-                        for (int pin_num = pin_range.first; pin_num < pin_range.second; ++pin_num) {
-                            VTR_ASSERT(pin_num < type->num_pins / type->capacity);
-                            for (int capacity = 0; capacity < type->capacity; ++capacity) {
-                                type->pinloc[width][height][side][pin_num + capacity * type->num_pins / type->capacity] = true;
-                                type->pin_width_offset[pin_num + capacity * type->num_pins / type->capacity] += width;
-                                type->pin_height_offset[pin_num + capacity * type->num_pins / type->capacity] += height;
-                                physical_pin_counts[pin_num + capacity * type->num_pins / type->capacity] += 1;
+            for (int width = 0; width < type->width; ++width) {
+                for (int height = 0; height < type->height; ++height) {
+                    for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+                        for (auto token : pin_loc->assignments[sub_tile_index][width][height][side]) {
+                            auto pin_range = ProcessPinString<t_sub_tile>(Locations,
+                                                                          sub_tile,
+                                                                          token.c_str(),
+                                                                          loc_data);
+
+                            for (int pin_num = pin_range.first; pin_num < pin_range.second; ++pin_num) {
+                                VTR_ASSERT(pin_num < sub_tile->sub_tile_to_tile_pin_indices.size() / sub_tile->capacity);
+                                for (int capacity = 0; capacity < sub_tile->capacity; ++capacity) {
+                                    int sub_tile_pin_index = pin_num + capacity * type->num_pins / sub_tile->capacity;
+                                    int physical_pin_index = sub_tile->sub_tile_to_tile_pin_indices[sub_tile_pin_index];
+                                    type->pinloc[width][height][side][physical_pin_index] = true;
+                                    type->pin_width_offset[physical_pin_index] += width;
+                                    type->pin_height_offset[physical_pin_index] += height;
+                                    physical_pin_counts[physical_pin_index] += 1;
+                                }
                             }
                         }
                     }
@@ -3203,31 +3206,47 @@ static void ProcessEquivalentSiteCustomConnection(pugi::xml_node Parent,
 static void ProcessPinLocations(pugi::xml_node Locations,
                                 t_physical_tile_type* PhysicalTileType,
                                 t_sub_tile* SubTile,
-                                t_pin_loc_assignments* pin_loc_assignments,
+                                t_pin_loc* pin_loc,
                                 const pugiutil::loc_data& loc_data) {
-
     pugi::xml_node Cur;
+    char* Prop;
+    enum e_pin_location_distr distribution;
 
     if (Locations) {
         expect_only_attributes(Locations, {"pattern"}, loc_data);
 
         Prop = get_attribute(Locations, "pattern", loc_data).value();
         if (strcmp(Prop, "spread") == 0) {
-            PhysicalTileType->pin_location_distribution = E_SPREAD_PIN_DISTR;
+            distribution = E_SPREAD_PIN_DISTR;
         } else if (strcmp(Prop, "perimeter") == 0) {
-            PhysicalTileType->pin_location_distribution = E_PERIMETER_PIN_DISTR;
+            distribution = E_PERIMETER_PIN_DISTR;
         } else if (strcmp(Prop, "spread_inputs_perimeter_outputs") == 0) {
-            PhysicalTileType->pin_location_distribution = E_SPREAD_INPUTS_PERIMETER_OUTPUTS_PIN_DISTR;
+            distribution = E_SPREAD_INPUTS_PERIMETER_OUTPUTS_PIN_DISTR;
         } else if (strcmp(Prop, "custom") == 0) {
-            PhysicalTileType->pin_location_distribution = E_CUSTOM_PIN_DISTR;
+            distribution = E_CUSTOM_PIN_DISTR;
         } else {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                            "%s is an invalid pin location pattern.\n", Prop);
         }
+    } else {
+        distribution = E_SPREAD_PIN_DISTR;
     }
 
+    if (pin_loc->is_pin_distribution_set()) {
+        if (pin_loc->distribution != distribution) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                           "Sub Tile %s has a different pin location pattern (%s) with respect "
+                           "to the sibling sub tiles", SubTile->name, Prop);
+        }
+    } else {
+        pin_loc->distribution = distribution;
+        pin_loc->set_pin_distribution();
+    }
+
+    int sub_tile_index = SubTile->index;
+
     /* Load the pin locations */
-    if (pin_location_distribution == E_CUSTOM_PIN_DISTR) {
+    if (distribution == E_CUSTOM_PIN_DISTR) {
         expect_only_children(Locations, {"loc"}, loc_data);
         Cur = Locations.first_child();
         std::set<std::tuple<e_side, int, int>> seen_sides;
@@ -3279,12 +3298,10 @@ static void ProcessPinLocations(pugi::xml_node Locations,
             /* Go through lists of pins */
             const std::vector<std::string> Tokens = vtr::split(Cur.child_value());
             Count = Tokens.size();
-            PhysicalTileType->num_pin_loc_assignments[x_offset][y_offset][side] = Count;
             if (Count > 0) {
-                PhysicalTileType->pin_loc_assignments[x_offset][y_offset][side] = (char**)vtr::calloc(Count, sizeof(char*));
                 for (int pin = 0; pin < Count; ++pin) {
                     /* Store location assignment */
-                    PhysicalTileType->pin_loc_assignments[x_offset][y_offset][side][pin] = vtr::strdup(Tokens[pin].c_str());
+                    pin_loc->assignments[sub_tile_index][x_offset][y_offset][side].push_back(vtr::strdup(Tokens[pin]));
 
                     /* Advance through list of pins in this location */
                 }
@@ -3299,9 +3316,8 @@ static void ProcessPinLocations(pugi::xml_node Locations,
         for (int w = 0; w < PhysicalTileType->width; ++w) {
             for (int h = 0; h < PhysicalTileType->height; ++h) {
                 for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
-                    for (int itoken = 0; itoken < PhysicalTileType->num_pin_loc_assignments[w][h][side]; ++itoken) {
-                        const char* pin_spec = PhysicalTileType->pin_loc_assignments[w][h][side][itoken];
-                        InstPort inst_port(PhysicalTileType->pin_loc_assignments[w][h][side][itoken]);
+                    for (auto token : pin_loc->assignments[sub_tile_index][w][h][side]) {
+                        InstPort inst_port(token.c_str());
 
                         //A pin specification should contain only the block name, and not any instace count information
                         if (inst_port.instance_low_index() != InstPort::UNSPECIFIED || inst_port.instance_high_index() != InstPort::UNSPECIFIED) {
@@ -3325,7 +3341,7 @@ static void ProcessPinLocations(pugi::xml_node Locations,
 
                             //Find the matching pb type to get the total number of pins
                             const t_physical_tile_port* port = nullptr;
-                            for (const auto& tmp_port : PhysicalTileType->ports) {
+                            for (const auto& tmp_port : SubTile->ports) {
                                 if (tmp_port.name == inst_port.port_name()) {
                                     port = &tmp_port;
                                     break;
@@ -3338,7 +3354,7 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                             } else {
                                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                                                "Failed to find port named '%s' on block '%s'",
-                                               inst_port.port_name().c_str(), PhysicalTileType->name);
+                                               inst_port.port_name().c_str(), SubTile->name);
                             }
                         }
                         VTR_ASSERT(pin_low_idx >= 0);
@@ -3354,13 +3370,13 @@ static void ProcessPinLocations(pugi::xml_node Locations,
         }
 
         //Check for any pins missing location specs
-        for (const auto& port : PhysicalTileType->ports) {
+        for (const auto& port : SubTile->ports) {
             for (int ipin = 0; ipin < port.num_pins; ++ipin) {
                 if (!port_pins_with_specified_locations[port.name].count(ipin)) {
                     //Missing
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                                    "Pin '%s.%s[%d]' has no pin location specificed (a location is required for pattern=\"custom\")",
-                                   PhysicalTileType->name, port.name, ipin);
+                                   SubTile->name, port.name, ipin);
                 }
             }
         }
@@ -3368,7 +3384,6 @@ static void ProcessPinLocations(pugi::xml_node Locations,
         //Non-custom pin locations. There should be no child tags
         expect_child_node_count(Locations, 0, loc_data);
     }
-
 }
 
 static void ProcessSubTiles(pugi::xml_node Node,
@@ -3379,29 +3394,31 @@ static void ProcessSubTiles(pugi::xml_node Node,
                             const pugiutil::loc_data& loc_data) {
     pugi::xml_node CurSubTile;
     pugi::xml_node Cur;
+    int index = 0;
 
     int width = PhysicalTileType->width;
     int height = PhysicalTileType->height;
     int num_sides = 4;
+    int num_sub_tiles = count_children(Node, "sub_tile", loc_data);
 
     std::map<std::string, int> sub_tile_names;
 
-    t_pin_loc_assignments pin_loc_assignments;
+    t_pin_loc pin_loc;
+    pin_loc.assignments = std::vector(num_sub_tiles, std::vector(width, std::vector(height, std::vector(num_sides, 0))))
 
-    pin_loc_assignments.num_assignments = std::vector(width, std::vector(height, std::vector(num_sides, 0)))
-    pin_loc_assignments.assignments = std::vector(width, std::vector(height, std::vector(num_sides, 0)))
-
-    CurSubTile = get_single_child(Node, "sub_tile", loc_data);
-
-    if (!CurSubTile) {
+    if (num_sub_tiles == 0) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
                        "No sub tile found for the Physical Tile %s.\n"
                        "At least one sub tile is needed to correctly describe the Physical Tile.\n",
                        PhysicalTileType->name)
     }
 
+    CurSubTile = get_single_child(Node, "sub_tile", loc_data);
+
     while (CurSubTile) {
         t_sub_tile SubTile;
+
+        SubTile.index = index;
 
         expect_only_attributes(CurSubTile, {"name", "capacity"}, loc_data);
 
@@ -3444,7 +3461,7 @@ static void ProcessSubTiles(pugi::xml_node Node,
         PhysicalTileType->num_drivers += capacity * pin_counts.output;
 
         Cur = get_single_child(CurTileType, "pinlocations", loc_data, ReqOpt::OPTIONAL);
-        ProcessPinLocations(Cur, PhysicalTileType, &SubTile, &pin_loc_assignments, loc_data);
+        ProcessPinLocations(Cur, PhysicalTileType, &SubTile, &pin_loc, loc_data);
 
         /* Load Fc */
         Cur = get_single_child(CurTileType, "fc", loc_data, ReqOpt::OPTIONAL);
@@ -3456,6 +3473,8 @@ static void ProcessSubTiles(pugi::xml_node Node,
 
         PhysicalTileType->sub_tiles.push_back(SubTile);
 
+        index++;
+
         CurSubTile = CurSubTile.next_sibling(CurSubTile.name());
     }
 
@@ -3463,15 +3482,8 @@ static void ProcessSubTiles(pugi::xml_node Node,
     int num_pins = PhysicalTileType->num_pins;
     PhysicalTileType->pinloc = std::vector(width, std::vector(height, std::vector(num_sides, std::vector(num_pins, false))));
 
-    SetupPinLocationsAndPinClasses(Cur, PhysicalTileType, loc_data);
-
-    CurSubTile = get_single_child(Node, "sub_tile", loc_data);
-
-    while (CurSubTile) {
-        /* Load pin names and classes and locations */
-        Cur = get_single_child(CurTileType, "pinlocations", loc_data, ReqOpt::OPTIONAL);
-        LoadPinLoc(Cur, PhysicalTileType, loc_data);
-    }
+    SetupPinClasses(Cur, PhysicalTileType, loc_data);
+    LoadPinLoc(Cur, PhysicalTileType, &pin_loc, loc_data);
 }
 
 /* Takes in node pointing to <typelist> and loads all the
