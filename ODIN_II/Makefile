@@ -1,5 +1,5 @@
 ODIN_ROOT=$(PWD)
-NB_OF_PROCESS ?= $(shell python -c "import multiprocessing; print(multiprocessing.cpu_count())")
+NB_OF_PROCESS ?= $(shell /usr/bin/env python3 -c "import multiprocessing; print(multiprocessing.cpu_count())")
 
 ################
 # build with ninja when doable
