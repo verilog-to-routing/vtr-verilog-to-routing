@@ -24,4 +24,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                          const t_pack_high_fanout_thresholds& high_fanout_thresholds);
 
 int get_cluster_of_block(int blkidx);
+
+void print_pb_type_count(const ClusteredNetlist& clb_nlist);
+
 #endif
