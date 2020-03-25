@@ -848,7 +848,7 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
         auto type = physical_tile_type(blk_id);
 
         get_class_range_for_block(blk_id, &class_low, &class_high);
-        clb_opins_used_locally[blk_id].resize(type->num_class);
+        clb_opins_used_locally[blk_id].resize((int)type->class_inf.size());
 
         if (is_io_type(type)) continue;
 
@@ -1027,8 +1027,8 @@ static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         auto type = physical_tile_type(blk_id);
         get_class_range_for_block(blk_id, &class_low, &class_high);
-        rr_blk_source[blk_id].resize(type->num_class);
-        for (iclass = 0; iclass < type->num_class; iclass++) {
+        rr_blk_source[blk_id].resize((int)type->class_inf.size());
+        for (iclass = 0; iclass < (int)type->class_inf.size(); iclass++) {
             if (iclass >= class_low && iclass <= class_high) {
                 i = place_ctx.block_locs[blk_id].loc.x;
                 j = place_ctx.block_locs[blk_id].loc.y;
@@ -1372,7 +1372,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
     if (rip_up_local_opins) {
         for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
             type = physical_tile_type(blk_id);
-            for (iclass = 0; iclass < type->num_class; iclass++) {
+            for (iclass = 0; iclass < (int)type->class_inf.size(); iclass++) {
                 num_local_opin = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
 
                 if (num_local_opin == 0) continue;
@@ -1393,7 +1393,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         type = physical_tile_type(blk_id);
-        for (iclass = 0; iclass < type->num_class; iclass++) {
+        for (iclass = 0; iclass < (int)type->class_inf.size(); iclass++) {
             num_local_opin = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
 
             if (num_local_opin == 0) continue;

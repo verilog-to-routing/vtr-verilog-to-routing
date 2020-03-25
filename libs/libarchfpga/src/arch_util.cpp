@@ -222,38 +222,10 @@ void free_type_descriptors(std::vector<t_physical_tile_type>& type_descriptors) 
             continue;
         }
 
-        for (int width = 0; width < type.width; ++width) {
-            for (int height = 0; height < type.height; ++height) {
-                for (int side = 0; side < 4; ++side) {
-                    for (int pin = 0; pin < type.num_pin_loc_assignments[width][height][side]; ++pin) {
-                        if (type.pin_loc_assignments[width][height][side][pin])
-                            vtr::free(type.pin_loc_assignments[width][height][side][pin]);
-                    }
-                    vtr::free(type.pinloc[width][height][side]);
-                    vtr::free(type.pin_loc_assignments[width][height][side]);
-                }
-                vtr::free(type.pinloc[width][height]);
-                vtr::free(type.pin_loc_assignments[width][height]);
-                vtr::free(type.num_pin_loc_assignments[width][height]);
+        for (auto& sub_tile : type.sub_tiles) {
+            for (auto port : sub_tile.ports) {
+                vtr::free(port.name);
             }
-            vtr::free(type.pinloc[width]);
-            vtr::free(type.pin_loc_assignments[width]);
-            vtr::free(type.num_pin_loc_assignments[width]);
-        }
-        vtr::free(type.pinloc);
-        vtr::free(type.pin_loc_assignments);
-        vtr::free(type.num_pin_loc_assignments);
-
-        for (int j = 0; j < type.num_class; ++j) {
-            vtr::free(type.class_inf[j].pinlist);
-        }
-        vtr::free(type.class_inf);
-        vtr::free(type.is_ignored_pin);
-        vtr::free(type.is_pin_global);
-        vtr::free(type.pin_class);
-
-        for (auto port : type.ports) {
-            vtr::free(port.name);
         }
     }
     type_descriptors.clear();
@@ -547,11 +519,6 @@ t_physical_tile_type SetupEmptyPhysicalType() {
     type.capacity = 0;
     type.num_drivers = 0;
     type.num_receivers = 0;
-    type.pinloc = nullptr;
-    type.num_class = 0;
-    type.class_inf = nullptr;
-    type.pin_class = nullptr;
-    type.is_ignored_pin = nullptr;
     type.area = UNDEFINED;
     type.switchblock_locations = vtr::Matrix<e_sb_type>({{size_t(type.width), size_t(type.height)}}, e_sb_type::FULL);
     type.switchblock_switch_overrides = vtr::Matrix<int>({{size_t(type.width), size_t(type.height)}}, DEFAULT_SWITCH);

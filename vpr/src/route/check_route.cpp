@@ -555,7 +555,7 @@ void recompute_occupancy_from_scratch() {
      * (CLB outputs used up by being directly wired to subblocks used only      *
      * locally).                                                                */
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        for (iclass = 0; iclass < physical_tile_type(blk_id)->num_class; iclass++) {
+        for (iclass = 0; iclass < (int)physical_tile_type(blk_id)->class_inf.size(); iclass++) {
             num_local_opins = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
             /* Will always be 0 for pads or SINK classes. */
             for (ipin = 0; ipin < num_local_opins; ipin++) {
@@ -579,7 +579,7 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
     auto& device_ctx = g_vpr_ctx.device();
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        for (iclass = 0; iclass < physical_tile_type(blk_id)->num_class; iclass++) {
+        for (iclass = 0; iclass < (int)physical_tile_type(blk_id)->class_inf.size(); iclass++) {
             num_local_opins = clb_opins_used_locally[blk_id][iclass].size();
             /* Always 0 for pads and for SINK classes */
 
