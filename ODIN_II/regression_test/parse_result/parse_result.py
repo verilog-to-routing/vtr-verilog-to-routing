@@ -10,6 +10,7 @@ import configparser
 import json
 
 import csv
+import math
 
 c_red='\033[31m'
 c_grn='\033[32m'
@@ -60,6 +61,7 @@ _K_DFLT='default'
 _K_KEY='key'
 _K_REGEX='regex'
 _K_RANGE='range'
+_K_CUTOFF='cutoff'
 
 def preproc_toml(file):
     current_dir=os.getcwd()
@@ -231,12 +233,23 @@ def sanity_check(header, toml_dict, golden_tbl, tbl):
 def range(header, toml_dict, golden_tbl, tbl):
     if len(toml_dict[header][_K_RANGE]) != 2:
         print("expected a min and a max for range = [ min, max ]")
+        exit(1)
     elif golden_tbl[header] != tbl[header]:
+
+        low_cutoff = None
+        if _K_CUTOFF in toml_dict[header]:
+            low_cutoff = toml_dict[header][_K_CUTOFF]
+
+        value = float(tbl[header])
         gold_value = float(golden_tbl[header])
+        if low_cutoff is not None:
+            if value < low_cutoff:
+                value = low_cutoff
+            if gold_value < low_cutoff:
+                gold_value = low_cutoff
+
         min_ratio = float(toml_dict[header][_K_RANGE][0])
         max_ratio = float(toml_dict[header][_K_RANGE][1])
-        value = float(tbl[header])
-
         min_range = ( min_ratio * gold_value )
         max_range = ( max_ratio * gold_value )  
         if value < min_range  or value > max_range:

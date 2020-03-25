@@ -10,6 +10,8 @@
     regex = 'Simulation time: (\d+|\d+.\d+)ms'
     # timing can be very off due to how fast odin runs
     range = [ 0.0, 100.0 ]
+    # we cutoff anything bellow 1 second as it is subject to noise
+    cutoff = 1000.0
     default = -1
 
 ['test_coverage(%)']

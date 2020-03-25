@@ -7,12 +7,16 @@
 ['max_rss(MiB)']
     # Memory usage can be very off depending on the number of cores
     range = [ 0.0, 100.0 ]
+    # we cutoff anything bellow 250 MiB as it is subject to noise
+    cutoff = 250.0
     regex = 'Odin II took .* \(max_rss (\d+|\d+.\d+) MiB\)'
     default = -1
 
 ['exec_time(ms)']
     # timing can be very off due to how fast odin runs
     range = [ 0.0, 100.0 ]
+    # we cutoff anything bellow 1 second as it is subject to noise
+    cutoff = 1000.0
     regex = 'Total time: (\d+|\d+.\d+)ms'
     default = -1
 
