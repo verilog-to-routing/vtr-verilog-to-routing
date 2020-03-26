@@ -10,7 +10,9 @@ It then performs:
   * Packing, Placement, Routing & Timing Analysis (VPR)
 
 to generate FPGA speed and area results.
-VTR also includes a set of benchmark designs known to work with the design flow.
+VTR includes a set of benchmark designs known to work with the design flow.
+
+VTR can also produce [FASM](https://symbiflow.readthedocs.io/en/latest/fasm/docs/specification.html) to program some commercial FPGAs (via [Symbiflow](https://symbiflow.github.io/))
 
 ## Documentation
 VTR's [full documentation](https://docs.verilogtorouting.org) includes tutorials, descriptions of the VTR design flow, and tool options.
