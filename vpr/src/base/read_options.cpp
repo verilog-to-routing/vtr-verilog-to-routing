@@ -1377,6 +1377,14 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument(args.placement_saves_per_temperature, "--save_placement_per_temperature")
+        .help(
+            "Controls how often VPR saves the current placement to a file per temperature (may be helpful for debugging)."
+            " The value specifies how many times the placement should be saved (values less than 1 disable this feature).")
+        .default_value("0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+
     auto& place_timing_grp = parser.add_argument_group("timing-driven placement options");
 
     place_timing_grp.add_argument(args.PlaceTimingTradeoff, "--timing_tradeoff")
