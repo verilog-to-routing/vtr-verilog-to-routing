@@ -59,6 +59,7 @@ struct t_equivalent_site;
 struct t_physical_tile_type;
 typedef const t_physical_tile_type* t_physical_tile_type_ptr;
 struct t_sub_tile;
+struct t_capacity_range;
 struct t_logical_block_type;
 typedef const t_logical_block_type* t_logical_block_type_ptr;
 struct t_logical_pin;
@@ -583,7 +584,7 @@ struct t_physical_tile_type {
     int width = 0;
     int height = 0;
 
-    std::vector<std::vector<std::vector<std::vector<bool>>>> pinloc; /* [0..width-1][0..height-1][0..3][0..num_pins-1] */
+    vtr::NdMatrix<std::vector<bool>, 3> pinloc; /* [0..width-1][0..height-1][0..3][0..num_pins-1] */
 
     std::vector<t_class> class_inf; /* [0..num_class-1] */
 
@@ -627,6 +628,34 @@ struct t_physical_tile_type {
     bool is_output_type;
 };
 
+/* Holds the capacity range of a certain sub_tile block within the parent physical tile type.
+ * E.g. TILE_X has the following sub tiles:
+ *          - SUB_TILE_A: capacity_range --> 0 to 4
+ *          - SUB_TILE_B: capacity_range --> 5 to 11
+ *          - SUB_TILE_C: capacity_range --> 12 to 16
+ *
+ * Totale TILE_X capacity is 17
+ */
+struct t_capacity_range {
+  private:
+    int low = 0;
+    int high = 0;
+
+  public:
+    void set(int low_cap, int high_cap) {
+        low = low_cap;
+        high = high_cap;
+    }
+
+    bool is_in_range(int cap) const {
+        return cap >= low or cap <= high;
+    }
+
+    int total() const {
+        return high - low + 1;
+    }
+};
+
 /** Describes the possible placeable blocks within a physical tile type.
  *  A sub tile adds flexibility in the tile composition description.
  */
@@ -641,7 +670,9 @@ struct t_sub_tile {
 
     std::vector<t_logical_block_type_ptr> equivalent_sites;
 
-    int capacity = 0;
+    t_capacity_range capacity;
+
+    int num_phy_pins = 0;
 
     int index = -1;
 };
