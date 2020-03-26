@@ -56,7 +56,7 @@ void save_graphics_from_button(GtkWidget* /*widget*/, gint response_id, gpointer
     gtk_widget_destroy(dialog);
 }
 
-void save_graphics(std::string& extension, std::string& file_name) {
+void save_graphics(std::string extension, std::string file_name) {
     file_name = file_name + "." + extension;
     if (extension == "pdf") {
         application.get_canvas(application.get_main_canvas_id())->print_pdf(file_name.c_str(), initial_world.width(), initial_world.height());
