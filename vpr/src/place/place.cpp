@@ -31,6 +31,7 @@
 #include "place_delay_model.h"
 #include "move_transactions.h"
 #include "move_utils.h"
+#include "read_place.h"
 
 #include "uniform_move_generator.h"
 
@@ -377,6 +378,7 @@ static void outer_loop_recompute_criticalities(const t_placer_opts& placer_opts,
                                                SetupTimingInfo& timing_info);
 
 static void placement_inner_loop(float t,
+                                 int temp_num,
                                  float rlim,
                                  const t_placer_opts& placer_opts,
                                  int move_lim,
@@ -593,6 +595,14 @@ void try_place(const t_placer_opts& placer_opts,
             costs.cost, costs.bb_cost, costs.timing_cost, width_fac);
     //Draw the initial placement
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
+
+
+    if (placer_opts.placement_saves_per_temperature >= 1) {
+        std::string filename = vtr::string_fmt("placement_%03d_%03d.place", 0, 0);
+        VTR_LOG("Saving initial placement to file: %s\n", filename.c_str());
+        print_place(nullptr, nullptr, filename.c_str());
+    }
+
     move_lim = (int)(annealing_sched.inner_num * pow(cluster_ctx.clb_nlist.blocks().size(), 1.3333));
 
     /* Sometimes I want to run the router with a random placement.  Avoid *
@@ -645,7 +655,7 @@ void try_place(const t_placer_opts& placer_opts,
                                            place_delay_model.get(),
                                            *timing_info);
 
-        placement_inner_loop(t, rlim, placer_opts,
+        placement_inner_loop(t, num_temps, rlim, placer_opts,
                              move_lim, crit_exponent, inner_recompute_limit, &stats,
                              &costs,
                              &prev_inverse_costs,
@@ -707,7 +717,7 @@ void try_place(const t_placer_opts& placer_opts,
 
     /* Run inner loop again with temperature = 0 so as to accept only swaps
      * which reduce the cost of the placement */
-    placement_inner_loop(t, rlim, placer_opts,
+    placement_inner_loop(t, num_temps, rlim, placer_opts,
                          move_lim, crit_exponent, inner_recompute_limit, &stats,
                          &costs,
                          &prev_inverse_costs,
@@ -732,6 +742,12 @@ void try_place(const t_placer_opts& placer_opts,
     print_place_status(t, oldt, stats,
                        critical_path.delay(), sTNS, sWNS,
                        success_rat, std_dev, rlim, crit_exponent, tot_iter);
+
+    if (placer_opts.placement_saves_per_temperature >= 1) {
+        std::string filename = vtr::string_fmt("placement_%03d_%03d.place", num_temps + 1, 0);
+        VTR_LOG("Saving final placement to file: %s\n", filename.c_str());
+        print_place(nullptr, nullptr, filename.c_str());
+    }
 
     // TODO:
     // 1. add some subroutine hierarchy!  Too big!
@@ -873,6 +889,7 @@ static void outer_loop_recompute_criticalities(const t_placer_opts& placer_opts,
 
 /* Function which contains the inner loop of the simulated annealing */
 static void placement_inner_loop(float t,
+                                 int temp_num,
                                  float rlim,
                                  const t_placer_opts& placer_opts,
                                  int move_lim,
@@ -888,6 +905,8 @@ static void placement_inner_loop(float t,
                                  t_pl_blocks_to_be_moved& blocks_affected,
                                  SetupTimingInfo& timing_info) {
     int inner_crit_iter_count, inner_iter;
+
+    int inner_placement_save_count = 0; //How many times have we dumped placement to a file this temperature?
 
     stats->av_cost = 0.;
     stats->av_bb_cost = 0.;
@@ -960,6 +979,15 @@ static void placement_inner_loop(float t,
         if (*moves_since_cost_recompute > MAX_MOVES_BEFORE_RECOMPUTE) {
             recompute_costs_from_scratch(placer_opts, delay_model, costs);
             *moves_since_cost_recompute = 0;
+        }
+
+        if (placer_opts.placement_saves_per_temperature  >= 1
+            && inner_iter % (move_lim / placer_opts.placement_saves_per_temperature) == 0) {
+
+            std::string filename = vtr::string_fmt("placement_%03d_%03d.place", temp_num + 1, inner_placement_save_count);
+            VTR_LOG("Saving placement to file at temperature move %d: %s\n", inner_iter, filename.c_str());
+            print_place(nullptr, nullptr, filename.c_str());
+            ++inner_placement_save_count; 
         }
     }
     /* Inner loop ends */
