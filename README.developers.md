@@ -903,10 +903,14 @@ In preparation for a release it may make sense to produce 'release candidates' w
 The following outlines the procedure to following when making an official VTR release:
 
  * Check the code compiles on the list of supported compilers
- * Check that all regression tests pass
+ * Check that all regression tests pass functionality
  * Update regression test golden results to match the released version
- * Increment the version number (set in root CMakeLists.txt)
+ * Check that all regression tests pass QoR
  * Create a new entry in the CHANGELOG.md for the release, summarizing at a high-level user-facing changes
+ * Increment the version number (set in root CMakeLists.txt)
  * Create a git annotated tag (e.g. `v8.0.0`) and push it to github
-
+ * GitHub will automatically create a release based on the tag
+ * Add the new change log entry to the [GitHub release description](https://github.com/verilog-to-routing/vtr-verilog-to-routing/releases)
+ * Update the [ReadTheDocs configuration](https://readthedocs.org/projects/vtr/versions/) to build and serve documentation for the relevant tag (e.g. `v8.0.0`)
+ * Send a release announcement email to the [vtr-announce](vtr-announce@googlegroups.com) mailing list (make sure to thank all contributors!)
 
