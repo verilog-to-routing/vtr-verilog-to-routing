@@ -30,6 +30,9 @@ bool is_empty_type(t_logical_block_type_ptr type);
 //Returns the corresponding physical type given the logical type as parameter
 t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk);
 
+//Retyrbs the sub tile corresponding to the logical block location within a physical type
+int get_sub_tile_index(ClusterBlockId blk);
+
 int get_unique_pb_graph_node_id(const t_pb_graph_node* pb_graph_node);
 
 void get_class_range_for_block(const ClusterBlockId blk_id, int* class_low, int* class_high);
@@ -125,9 +128,6 @@ void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb**>& pin_id_to_pb
 float compute_primitive_base_cost(const t_pb_graph_node* primitive);
 int num_ext_inputs_atom_block(AtomBlockId blk_id);
 
-void get_blk_pin_from_port_pin(int blk_type_index, int port, int port_pin, int* blk_pin);
-void free_blk_pin_from_port_pin();
-
 void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs, int*** idirect_from_blk_pin, int*** direct_type_from_blk_pin);
 
 void parse_direct_pin_name(char* src_string, int line, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name);
@@ -162,12 +162,21 @@ int get_logical_pin(t_physical_tile_type_ptr physical_tile,
 int get_physical_pin(t_physical_tile_type_ptr physical_tile,
                      t_logical_block_type_ptr logical_block,
                      int pin);
+int get_physical_pin(int sub_tile_index,
+                     t_physical_tile_type_ptr physical_tile,
+                     t_logical_block_type_ptr logical_block,
+                     int pin);
 
 //Returns the physical pin of the tile, related to the given ClusterNedId, and the net pin index
 int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index);
 
 //Returns the physical pin of the tile, related to the given ClusterPinId
 int tile_pin_index(const ClusterPinId pin);
+
+// Returns one of the physical ports of a tile corresponding to the port_name.
+// Given that each sub_tile's port that has exactly the same name has to be equivalent
+// one to the other, it is indifferent which port is returned.
+t_physical_tile_port find_tile_port_by_name(t_physical_tile_type_ptr type, const char* port_name);
 
 int max_pins_per_grid_tile();
 

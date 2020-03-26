@@ -2612,24 +2612,7 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
 
         clb_to_clb_directs[i].from_clb_type = physical_tile;
 
-        bool port_found = false;
-        for (const auto& sub_tile : physical_tile->sub_tiles) {
-            for (const auto& port : sub_tile.ports) {
-                if (0 == strcmp(port.name, port_name)) {
-                    tile_port = port;
-                    port_found = true;
-                    break;
-                }
-            }
-
-            if (port_found) {
-                break;
-            }
-        }
-
-        if (!port_found) {
-            VPR_THROW(VPR_ERROR_ARCH, "Unable to find port %s (on block %s).\n", port_name, tile_name);
-        }
+        tile_port = find_tile_port_by_name(physical_tile, port_name);
 
         if (start_pin_index == OPEN) {
             VTR_ASSERT(start_pin_index == end_pin_index);
@@ -2660,24 +2643,7 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
 
         clb_to_clb_directs[i].to_clb_type = physical_tile;
 
-        port_found = false;
-        for (const auto& sub_tile : physical_tile->sub_tiles) {
-            for (const auto& port : sub_tile.ports) {
-                if (0 == strcmp(port.name, port_name)) {
-                    tile_port = port;
-                    port_found = true;
-                    break;
-                }
-            }
-
-            if (port_found) {
-                break;
-            }
-        }
-
-        if (!port_found) {
-            VPR_THROW(VPR_ERROR_ARCH, "Unable to find port %s (on block %s).\n", port_name, tile_name);
-        }
+        tile_port = find_tile_port_by_name(physical_tile, port_name);
 
         if (start_pin_index == OPEN) {
             VTR_ASSERT(start_pin_index == end_pin_index);
@@ -2705,15 +2671,8 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
         }
         free(tile_name);
         free(port_name);
-
-        //We must be careful to clean-up anything that we may have incidentally allocated.
-        //Specifically, we can be called while generating the dummy architecture
-        //for placer delay estimation.  Since the delay estimation occurs on a
-        //'different' architecture it is almost certain that the f_blk_pin_from_port_pin allocated
-        //by calling get_blk_pin_from_port_pin() will later be invalid.
-        //We therefore must free it now.
-        free_blk_pin_from_port_pin();
     }
+
     return clb_to_clb_directs;
 }
 
