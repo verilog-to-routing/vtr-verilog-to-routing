@@ -42,6 +42,7 @@ supported_upgrades = [
     "add_missing_comb_model_internal_timing_edges",
     "add_tile_tags",
     "add_site_directs",
+    "add_sub_tiles",
 ]
 
 def parse_args():
@@ -147,6 +148,11 @@ def main():
 
     if "add_site_directs" in args.features:
         result = add_site_directs(arch)
+        if result:
+            modified = True
+
+    if "add_sub_tiles" in args.features:
+        result = add_sub_tiles(arch)
         if result:
             modified = True
 
@@ -1024,6 +1030,77 @@ def add_site_directs(arch):
                 site.attrib['pin_mapping'] = "direct"
 
     return True
+
+def add_sub_tiles(arch):
+    """
+    This function adds the sub tiles tags to the input architecture.
+    Each physical tile must contain at least one sub tile.
+
+    Note: the example below is only for explanatory reasons, the port/tile names are invented.
+
+    BEFORE:
+    <tiles>
+        <tile name="BRAM_TILE" area="2" height="4" width="1" capacity="1">
+            <inputs ... />
+            <outputs ... />
+            <fc ... />
+            <pinlocations ... />
+            <switchblock_locations ... />
+            <equivalent_sites>
+                <site pb_type="BRAM" pin_mapping="direct">
+            </equivalent_sites>
+        </tile>
+    </tiles>
+
+    AFTER:
+    <tiles>
+        <tile name="BRAM_TILE" area="2" height="4" width="1">
+            <sub_tile name="BRAM_SUB_TILE_X" capacity="1">
+                <inputs ... />
+                <outputs ... />
+                <fc ... />
+                <pinlocations ... />
+                <equivalent_sites>
+                    <site pb_type="BRAM" pin_mapping="direct">
+                </equivalent_sites>
+            </sub_tile>
+            <switchblock_locations ... />
+        </tile>
+    </tiles>
+
+    """
+
+    TAGS_TO_SWAP = ['fc', 'pinlocations', 'input', 'output', 'clock', 'equivalent_sites']
+
+    def swap_tags(sub_tile, tile):
+        # Moving tags from top level pb_type to tile
+        for child in tile:
+            if child.tag in TAGS_TO_SWAP:
+                tile.remove(child)
+                sub_tile.append(child)
+
+    modified = False
+
+    for tile in arch.iter('tile'):
+        if tile.findall('./sub_tile'):
+            continue
+
+        sub_tile_name = tile.attrib['name']
+        sub_tile = ET.Element('sub_tile', name='{}'.format(sub_tile_name))
+
+        # Transfer capacity to sub tile
+        if 'capacity' in tile.attrib.keys():
+            sub_tile.attrib['capacity'] = tile.attrib['capacity']
+            del tile.attrib['capacity']
+
+        #Transfer tags to swap from tile to sub tile
+        swap_tags(sub_tile, tile)
+
+        tile.append(sub_tile)
+
+        modified = True
+
+    return modified
 
 if __name__ == "__main__":
     main()
