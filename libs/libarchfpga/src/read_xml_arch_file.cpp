@@ -2903,14 +2903,16 @@ static void MarkIoTypes(std::vector<t_physical_tile_type>& PhysicalTileTypes) {
         type.is_input_type = false;
         type.is_output_type = false;
 
-        for (const auto& equivalent_site : type.equivalent_sites) {
+        auto equivalent_sites = get_equivalent_sites_set(&type);
+
+        for (const auto& equivalent_site : equivalent_sites) {
             if (block_type_contains_blif_model(equivalent_site, MODEL_INPUT)) {
                 type.is_input_type = true;
                 break;
             }
         }
 
-        for (const auto& equivalent_site : type.equivalent_sites) {
+        for (const auto& equivalent_site : equivalent_sites) {
             if (block_type_contains_blif_model(equivalent_site, MODEL_OUTPUT)) {
                 type.is_output_type = true;
                 break;
@@ -3110,7 +3112,6 @@ static void ProcessTileEquivalentSites(pugi::xml_node Parent,
         }
 
         if (0 == strcmp(LogicalBlockType->pb_type->name, Prop.c_str())) {
-            PhysicalTileType->equivalent_sites.push_back(LogicalBlockType);
             SubTile->equivalent_sites.push_back(LogicalBlockType);
 
             check_port_direct_mappings(PhysicalTileType, LogicalBlockType);
@@ -3460,6 +3461,7 @@ static void ProcessSubTiles(pugi::xml_node Node,
         PhysicalTileType->num_output_pins += capacity * pin_counts.output;
         PhysicalTileType->num_clock_pins += capacity * pin_counts.clock;
         PhysicalTileType->num_pins += capacity * pin_counts.total();
+        PhysicalTileType->num_inst_pins += pin_counts.total();
 
         /* Assign drivers and receivers count to Physical Tile Type */
         PhysicalTileType->num_receivers += capacity * pin_counts.input;
@@ -4960,16 +4962,17 @@ static void link_physical_logical_types(std::vector<t_physical_tile_type>& Physi
     for (auto& physical_tile : PhysicalTileTypes) {
         if (physical_tile.index == EMPTY_TYPE_INDEX) continue;
 
-        auto& equivalent_sites = physical_tile.equivalent_sites;
+        auto eq_sites_set = get_equivalent_sites_set(&physical_tile);
+        auto equivalent_sites = std::vector<t_logical_block_type_ptr>(eq_sites_set.begin(), eq_sites_set.end());
 
         auto criteria = [&physical_tile](const t_logical_block_type* lhs, const t_logical_block_type* rhs) {
-            int num_physical_pins = physical_tile.num_pins / physical_tile.capacity;
+            int num_pins = physical_tile.num_inst_pins;
 
             int lhs_num_logical_pins = lhs->pb_type->num_pins;
             int rhs_num_logical_pins = rhs->pb_type->num_pins;
 
-            int lhs_diff_num_pins = num_physical_pins - lhs_num_logical_pins;
-            int rhs_diff_num_pins = num_physical_pins - rhs_num_logical_pins;
+            int lhs_diff_num_pins = num_pins - lhs_num_logical_pins;
+            int rhs_diff_num_pins = num_pins - rhs_num_logical_pins;
 
             return lhs_diff_num_pins < rhs_diff_num_pins;
         };
@@ -4980,7 +4983,6 @@ static void link_physical_logical_types(std::vector<t_physical_tile_type>& Physi
             for (auto site : equivalent_sites) {
                 if (0 == strcmp(logical_block.name, site->pb_type->name)) {
                     logical_block.equivalent_tiles.push_back(&physical_tile);
-
                     break;
                 }
             }
@@ -5003,11 +5005,11 @@ static void link_physical_logical_types(std::vector<t_physical_tile_type>& Physi
         auto criteria = [&logical_block](const t_physical_tile_type* lhs, const t_physical_tile_type* rhs) {
             int num_logical_pins = logical_block.pb_type->num_pins;
 
-            int lhs_num_physical_pins = lhs->num_pins / lhs->capacity;
-            int rhs_num_physical_pins = rhs->num_pins / rhs->capacity;
+            int lhs_num_pins = lhs->num_inst_pins;
+            int rhs_num_pins = rhs->num_inst_pins;
 
-            int lhs_diff_num_pins = lhs_num_physical_pins - num_logical_pins;
-            int rhs_diff_num_pins = rhs_num_physical_pins - num_logical_pins;
+            int lhs_diff_num_pins = lhs_num_pins - num_logical_pins;
+            int rhs_diff_num_pins = rhs_num_pins - num_logical_pins;
 
             return lhs_diff_num_pins < rhs_diff_num_pins;
         };

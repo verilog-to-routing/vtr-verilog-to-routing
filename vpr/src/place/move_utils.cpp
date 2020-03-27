@@ -632,8 +632,8 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
 
     auto to_type = grid[to.x][to.y].type;
 
-    //Each x/y location contains only a single type, so we can pick a random
-    //z (capcity) location
+    //Each x/y location possibly contains multiple sub tiles, so we need to pick
+    //a z location within a compatible sub tile.
     to.z = vtr::irand(to_type->capacity - 1);
 
     VTR_ASSERT_MSG(is_tile_compatible(to_type, type), "Type must be compatible");

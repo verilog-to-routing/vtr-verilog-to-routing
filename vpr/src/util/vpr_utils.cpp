@@ -208,7 +208,7 @@ static std::tuple<int, int, int> get_pin_index_for_inst(t_physical_tile_type_ptr
 
         if (pin_index < total_pin_counts) {
             int pins_per_inst = sub_tile.num_phy_pins / sub_tile.capacity.total();
-            int inst_num = (pin_index - pin_offset) / sub_tile.capacity.total();
+            int inst_num = (pin_index - pin_offset) / pins_per_inst;
             int inst_index = (pin_index - pin_offset) % pins_per_inst;
 
             return std::make_tuple(inst_index, inst_num, sub_tile.index);
@@ -2067,6 +2067,7 @@ void print_switch_usage() {
  * }
  */
 
+// TODO FIX THIS!
 void place_sync_external_block_connections(ClusterBlockId iblk) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& clb_nlist = cluster_ctx.clb_nlist;
@@ -2128,7 +2129,7 @@ t_physical_tile_type_ptr pick_best_physical_type(t_logical_block_type_ptr logica
 }
 
 t_logical_block_type_ptr pick_best_logical_type(t_physical_tile_type_ptr physical_tile) {
-    return physical_tile->equivalent_sites[0];
+    return physical_tile->sub_tiles[0].equivalent_sites[0];
 }
 
 t_physical_tile_type_ptr get_physical_tile_type(const ClusterBlockId blk) {

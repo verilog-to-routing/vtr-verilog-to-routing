@@ -1,9 +1,11 @@
 #include <cstring>
 #include <cstdlib>
 #include <vector>
+#include <unordered_set>
 
 #include "echo_arch.h"
 #include "arch_types.h"
+#include "arch_util.h"
 #include "vtr_list.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
@@ -103,7 +105,9 @@ void EchoArch(const char* EchoFile,
         int index = Type.index;
         fprintf(Echo, "\tindex: %d\n", index);
 
-        for (auto LogicalBlock : Type.equivalent_sites) {
+        auto equivalent_sites = get_equivalent_sites_set(&Type);
+
+        for (auto LogicalBlock : equivalent_sites) {
             fprintf(Echo, "\nEquivalent Site: %s\n", LogicalBlock->name);
         }
         fprintf(Echo, "\n");
