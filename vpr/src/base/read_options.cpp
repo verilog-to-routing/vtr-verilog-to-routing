@@ -914,6 +914,13 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .help("Save all graphical contents to PDF files")
         .default_value("off");
 
+    gfx_grp.add_argument(args.graphics_commands, "--graphics_commands")
+        .help(
+            "A set of semi-colon seperated graphics commands."
+            " Usually used in conjunction with --save_graphics."
+            " Examples: 'toggle_nets; save_graphics img1.pdf; toggle_cpd; save_graphics img2.pdf;'")
+        .default_value("");
+
     auto& gen_grp = parser.add_argument_group("general options");
 
     gen_grp.add_argument(args.show_help, "--help", "-h")

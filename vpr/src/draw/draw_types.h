@@ -184,6 +184,7 @@ struct t_draw_state {
     const t_arch* arch_info = nullptr;
     std::unique_ptr<const vtr::ColorMap> color_map = nullptr;
     bool save_graphics = false;
+    std::string graphics_commands;
     bool forced_pause = false;
 
     std::string save_graphics_file_base = "vpr";

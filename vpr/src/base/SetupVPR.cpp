@@ -65,6 +65,7 @@ void SetupVPR(const t_options* Options,
               bool* ShowGraphics,
               int* GraphPause,
               bool* SaveGraphics,
+              std::string* GraphicsCommands,
               t_power_opts* PowerOpts) {
     using argparse::Provenance;
 
@@ -234,6 +235,7 @@ void SetupVPR(const t_options* Options,
     *ShowGraphics = Options->show_graphics;
 
     *SaveGraphics = Options->save_graphics;
+    *GraphicsCommands = Options->graphics_commands;
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ARCH)) {
         EchoArch(getEchoFileName(E_ECHO_ARCH), device_ctx.physical_tile_types, device_ctx.logical_block_types, Arch);

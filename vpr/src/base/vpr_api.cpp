@@ -278,6 +278,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
              &vpr_setup->ShowGraphics,
              &vpr_setup->GraphPause,
              &vpr_setup->SaveGraphics,
+             &vpr_setup->GraphicsCommands,
              &vpr_setup->PowerOpts);
 
     /* Check inputs are reasonable */
@@ -874,7 +875,8 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
 void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     /* Startup X graphics */
     init_graphics_state(vpr_setup.ShowGraphics, vpr_setup.GraphPause,
-                        vpr_setup.RouterOpts.route_type, vpr_setup.SaveGraphics);
+                        vpr_setup.RouterOpts.route_type, vpr_setup.SaveGraphics,
+                        vpr_setup.GraphicsCommands);
     if (vpr_setup.ShowGraphics || vpr_setup.SaveGraphics)
         alloc_draw_structs(&arch);
 }
@@ -1091,6 +1093,7 @@ void vpr_setup_vpr(t_options* Options,
                    bool* ShowGraphics,
                    int* GraphPause,
                    bool* SaveGraphics,
+                   std::string* GraphicsCommands,
                    t_power_opts* PowerOpts) {
     SetupVPR(Options,
              TimingEnabled,
@@ -1112,6 +1115,7 @@ void vpr_setup_vpr(t_options* Options,
              ShowGraphics,
              GraphPause,
              SaveGraphics,
+             GraphicsCommands,
              PowerOpts);
 }
 

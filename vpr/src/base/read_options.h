@@ -44,6 +44,7 @@ struct t_options {
     argparse::ArgValue<bool> show_graphics; //Enable argparse::ArgValue<int>eractive graphics?
     argparse::ArgValue<int> GraphPause;
     argparse::ArgValue<bool> save_graphics;
+    argparse::ArgValue<std::string> graphics_commands;
 
     /* General options */
     argparse::ArgValue<bool> show_help;
