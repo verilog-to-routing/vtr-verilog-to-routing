@@ -617,6 +617,11 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
             }
         }
 
+        if (itry == 1 && router_opts.exit_after_first_routing_iteration) {
+            VTR_LOG("Exiting after first routing iteration as requested\n"); 
+            break;
+        }
+
         /*
          * Prepare for the next iteration
          */

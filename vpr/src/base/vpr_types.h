@@ -984,6 +984,7 @@ struct t_router_opts {
     std::string read_router_lookahead;
 
     e_heap_type router_heap;
+    bool exit_after_first_routing_iteration;
 };
 
 struct t_analysis_opts {
