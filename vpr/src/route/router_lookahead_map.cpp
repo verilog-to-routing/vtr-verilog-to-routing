@@ -431,8 +431,8 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
     //Sample from locations near the reference location (to capture maximum distance paths)
     //Also sample from locations at least the longest wire length away from the edge (to avoid
     //edge effects for shorter distances)
-    std::vector<int> ref_increments = {0, 1, 2,
-                                       longest_length, longest_length + 1, longest_length + 2};
+    std::vector<int> ref_increments = {0, 1,
+                                       longest_length, longest_length + 1};
 
     //Uniquify the increments (avoid sampling the same locations repeatedly if they happen to
     //overlap)
