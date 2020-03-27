@@ -24,7 +24,7 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
 //FIXME: Currently broken if no rr-graph is loaded
 void init_draw_coords(float clb_width);
 
-void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_route_type route_type, bool save_graphics);
+void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_route_type route_type, bool save_graphics, std::string graphics_commands);
 
 void alloc_draw_structs(const t_arch* arch);
 void free_draw_structs();

@@ -198,7 +198,7 @@ std::string rr_highlight_message;
 
 /********************** Subroutine definitions ******************************/
 
-void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_route_type route_type, bool save_graphics) {
+void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_route_type route_type, bool save_graphics, std::string graphics_commands) {
 #ifndef NO_GRAPHICS
     /* Call accessor functions to retrieve global variables. */
     t_draw_state* draw_state = get_draw_state_vars();
@@ -211,12 +211,15 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_rou
     draw_state->gr_automode = gr_automode_val;
     draw_state->draw_route_type = route_type;
     draw_state->save_graphics = save_graphics;
+    draw_state->graphics_commands = graphics_commands;
 
 #else
+    //Suppress unused parameter warnings
     (void)show_graphics_val;
     (void)gr_automode_val;
     (void)route_type;
     (void)save_graphics;
+    (void)graphics_commands;
 #endif // NO_GRAPHICS
 }
 
