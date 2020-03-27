@@ -918,7 +918,18 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .help(
             "A set of semi-colon seperated graphics commands."
             " Usually used in conjunction with --save_graphics."
-            " Examples: 'toggle_nets; save_graphics img1.pdf; toggle_cpd; save_graphics img2.pdf;'")
+            "   Commands:\n"
+            "      * save_graphics <file>\n"
+            "           Saves graphics to the specified file (.png/.pdf/.svg)\n"
+            "      * set_nets <int>\n"
+            "           Sets the net drawing state\n"
+            "      * set_cpd <int>\n"
+            "           Sets the criticla path delay drawing state\n"
+            "      * set_routing_util <int>\n"
+            "           Sets the routing utilization drawing state\n"
+            "      * set_congestion <int>\n"
+            "           Sets the routing congestion drawing state\n"
+            )
         .default_value("");
 
     auto& gen_grp = parser.add_argument_group("general options");
