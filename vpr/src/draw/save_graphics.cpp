@@ -57,6 +57,11 @@ void save_graphics_from_button(GtkWidget* /*widget*/, gint response_id, gpointer
 }
 
 void save_graphics(std::string extension, std::string file_name) {
+    //Trim any leading '.' from the extension
+    if (vtr::starts_with(extension, ".")) {
+        extension = std::string(extension.begin() + 1, extension.end());
+    }
+
     file_name = file_name + "." + extension;
     if (extension == "pdf") {
         application.get_canvas(application.get_main_canvas_id())->print_pdf(file_name.c_str(), initial_world.width(), initial_world.height());
