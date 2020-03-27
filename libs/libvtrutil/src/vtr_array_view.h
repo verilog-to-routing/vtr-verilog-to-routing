@@ -203,6 +203,12 @@ class array_view_id : private array_view<V> {
     key_iterator key_end() const { return key_iterator(key_type(size())); }
 };
 
+template<typename Container>
+array_view_id<typename Container::key_type, const typename Container::value_type> make_const_array_view_id(Container& container) {
+    return array_view_id<typename Container::key_type, const typename Container::value_type>(
+        container.data(), container.size());
+}
+
 } // namespace vtr
 
 #endif /* _VTR_ARRAY_VIEW_H */

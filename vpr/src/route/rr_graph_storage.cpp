@@ -600,26 +600,20 @@ static short get_node_class_num(
 
 short t_rr_graph_storage::node_pin_num(RRNodeId id) const {
     return get_node_pin_num(
-        vtr::array_view_id<RRNodeId, const t_rr_node_data>(
-            node_storage_.data(), node_storage_.size()),
-        vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data>(
-            node_ptc_.data(), node_ptc_.size()),
+        vtr::make_const_array_view_id(node_storage_),
+        vtr::make_const_array_view_id(node_ptc_),
         id);
 }
 short t_rr_graph_storage::node_track_num(RRNodeId id) const {
     return get_node_track_num(
-        vtr::array_view_id<RRNodeId, const t_rr_node_data>(
-            node_storage_.data(), node_storage_.size()),
-        vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data>(
-            node_ptc_.data(), node_ptc_.size()),
+        vtr::make_const_array_view_id(node_storage_),
+        vtr::make_const_array_view_id(node_ptc_),
         id);
 }
 short t_rr_graph_storage::node_class_num(RRNodeId id) const {
     return get_node_class_num(
-        vtr::array_view_id<RRNodeId, const t_rr_node_data>(
-            node_storage_.data(), node_storage_.size()),
-        vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data>(
-            node_ptc_.data(), node_ptc_.size()),
+        vtr::make_const_array_view_id(node_storage_),
+        vtr::make_const_array_view_id(node_ptc_),
         id);
 }
 
@@ -695,25 +689,11 @@ t_rr_graph_view t_rr_graph_storage::view() const {
     VTR_ASSERT(partitioned_);
     VTR_ASSERT(node_storage_.size() == node_fan_in_.size());
     return t_rr_graph_view(
-        vtr::array_view_id<RRNodeId, const t_rr_node_data>(
-            node_storage_.data(),
-            node_storage_.size()),
-        vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data>(
-            node_ptc_.data(),
-            node_ptc_.size()),
-        vtr::array_view_id<RRNodeId, const RREdgeId>(
-            node_first_edge_.data(),
-            node_first_edge_.size()),
-        vtr::array_view_id<RRNodeId, const t_edge_size>(
-            node_fan_in_.data(),
-            node_fan_in_.size()),
-        vtr::array_view_id<RREdgeId, const RRNodeId>(
-            edge_src_node_.data(),
-            edge_src_node_.size()),
-        vtr::array_view_id<RREdgeId, const RRNodeId>(
-            edge_dest_node_.data(),
-            edge_dest_node_.size()),
-        vtr::array_view_id<RREdgeId, const short>(
-            edge_switch_.data(),
-            edge_switch_.size()));
+        vtr::make_const_array_view_id(node_storage_),
+        vtr::make_const_array_view_id(node_ptc_),
+        vtr::make_const_array_view_id(node_first_edge_),
+        vtr::make_const_array_view_id(node_fan_in_),
+        vtr::make_const_array_view_id(edge_src_node_),
+        vtr::make_const_array_view_id(edge_dest_node_),
+        vtr::make_const_array_view_id(edge_switch_));
 }
