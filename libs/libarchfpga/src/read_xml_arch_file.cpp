@@ -480,9 +480,13 @@ static void SetupPinClasses(t_physical_tile_type* PhysicalTileType) {
 
     pin_count = 0;
 
+    t_class_range class_range;
+
     /* Equivalent pins share the same class, non-equivalent pins belong to different pin classes */
     for (auto& sub_tile : PhysicalTileType->sub_tiles) {
         int capacity = sub_tile.capacity.total();
+        class_range.low = PhysicalTileType->class_inf.size();
+        class_range.high = class_range.low - 1;
         for (i = 0; i < capacity; ++i) {
             for (const auto& port : sub_tile.ports) {
                 if (port.equivalent != PortEquivalence::NONE) {
@@ -511,12 +515,14 @@ static void SetupPinClasses(t_physical_tile_type* PhysicalTileType) {
                     }
 
                     PhysicalTileType->class_inf.push_back(class_inf);
+                    class_range.high++;
                 } else if (port.equivalent == PortEquivalence::NONE) {
                     for (k = 0; k < port.num_pins; ++k) {
                         t_class class_inf;
                         num_class = (int)PhysicalTileType->class_inf.size();
                         class_inf.num_pins = 1;
                         class_inf.pinlist.push_back(pin_count);
+                        class_inf.equivalence = port.equivalent;
 
                         if (port.type == IN_PORT) {
                             class_inf.type = RECEIVER;
@@ -535,10 +541,15 @@ static void SetupPinClasses(t_physical_tile_type* PhysicalTileType) {
                         pin_count++;
 
                         PhysicalTileType->class_inf.push_back(class_inf);
+                        class_range.high++;
                     }
                 }
             }
         }
+
+        PhysicalTileType->sub_tiles[sub_tile.index].class_range = class_range;
+
+        VTR_LOG("PHYSICAL TILE: %s\n\tCAPACITY: %d\n\tCLASS RANGE: LOW %d, HIGH %d\n\n", PhysicalTileType->name, PhysicalTileType->capacity, PhysicalTileType->sub_tiles[sub_tile.index].class_range.low, PhysicalTileType->sub_tiles[sub_tile.index].class_range.high);
     }
 
     VTR_ASSERT(pin_count == PhysicalTileType->num_pins);
@@ -1933,12 +1944,11 @@ static void Process_Fc(pugi::xml_node Node,
 
     /* Go through all the port/segment combinations and create the (potentially
      * overriden) pin/seg Fc specifications */
-    int pins_per_capacity_instance = pin_counts.total() / SubTile->capacity.total();
     for (size_t iseg = 0; iseg < segments.size(); ++iseg) {
         for (int icapacity = 0; icapacity < SubTile->capacity.total(); ++icapacity) {
             //If capacity > 0, we need t offset the block index by the number of pins per instance
             //this ensures that all pins have an Fc specification
-            int iblk_pin = icapacity * pins_per_capacity_instance;
+            int iblk_pin = icapacity * pin_counts.total();
 
             for (const auto& port : SubTile->ports) {
                 t_fc_specification fc_spec;
@@ -2004,6 +2014,7 @@ static void Process_Fc(pugi::xml_node Node,
                     //XXX: this assumes that iterating through the tile ports
                     //     in order yields the block pin order
                     int true_physical_blk_pin = SubTile->sub_tile_to_tile_pin_indices[iblk_pin];
+                    VTR_LOG("PHYSICAL PIN: %d\n", true_physical_blk_pin);
                     fc_spec.pins.push_back(true_physical_blk_pin);
                     ++iblk_pin;
                 }
@@ -3001,7 +3012,7 @@ static t_pin_counts ProcessSubTilePorts(pugi::xml_node Parent,
         if (port.type == IN_PORT && port.is_clock == false) {
             pin_counts.input += port.num_pins;
         } else if (port.type == OUT_PORT) {
-            pin_counts.output = port.num_pins;
+            pin_counts.output += port.num_pins;
         } else {
             VTR_ASSERT(port.is_clock && port.type == IN_PORT);
             pin_counts.clock += port.num_pins;
@@ -3440,7 +3451,7 @@ static void ProcessSubTiles(pugi::xml_node Node,
         SubTile.name = name;
 
         /* Load properties */
-        unsigned int capacity = get_attribute(CurSubTile, "capacity", loc_data, ReqOpt::OPTIONAL).as_uint(1);
+        int capacity = get_attribute(CurSubTile, "capacity", loc_data, ReqOpt::OPTIONAL).as_int(1);
         SubTile.capacity.set(PhysicalTileType->capacity, capacity - 1);
         PhysicalTileType->capacity += capacity;
 
@@ -3450,16 +3461,16 @@ static void ProcessSubTiles(pugi::xml_node Node,
         /* Map Sub Tile physical pins with the Physical Tile Type physical pins.
          * This takes into account the capacity of each sub tiles to add the correct offset.
          */
-        for (int ipin = 0; ipin < (int)capacity * pin_counts.total(); ipin++) {
+        for (int ipin = 0; ipin < capacity * pin_counts.total(); ipin++) {
             SubTile.sub_tile_to_tile_pin_indices.push_back(PhysicalTileType->num_pins + ipin);
         }
 
         SubTile.num_phy_pins = pin_counts.total() * capacity;
 
         /* Assign pin counts to the Physical Tile Type */
-        PhysicalTileType->num_input_pins += capacity * pin_counts.input;
-        PhysicalTileType->num_output_pins += capacity * pin_counts.output;
-        PhysicalTileType->num_clock_pins += capacity * pin_counts.clock;
+        PhysicalTileType->num_input_pins += pin_counts.input;
+        PhysicalTileType->num_output_pins += pin_counts.output;
+        PhysicalTileType->num_clock_pins += pin_counts.clock;
         PhysicalTileType->num_pins += capacity * pin_counts.total();
         PhysicalTileType->num_inst_pins += pin_counts.total();
 

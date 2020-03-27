@@ -59,7 +59,6 @@ struct t_equivalent_site;
 struct t_physical_tile_type;
 typedef const t_physical_tile_type* t_physical_tile_type_ptr;
 struct t_sub_tile;
-struct t_capacity_range;
 struct t_logical_block_type;
 typedef const t_logical_block_type* t_logical_block_type_ptr;
 struct t_logical_pin;
@@ -447,6 +446,12 @@ struct t_class {
     std::vector<int> pinlist; /* [0..num_pins - 1] */
 };
 
+/* Struct to hold the class ranges for specific sub tiles */
+struct t_class_range {
+    int low = 0;
+    int high = 0;
+};
+
 enum e_power_wire_type {
     POWER_WIRE_TYPE_UNDEFINED = 0,
     POWER_WIRE_TYPE_IGNORED,
@@ -636,11 +641,9 @@ struct t_physical_tile_type {
  * Totale TILE_X capacity is 17
  */
 struct t_capacity_range {
-  private:
     int low = 0;
     int high = 0;
 
-  public:
     void set(int low_cap, int high_cap) {
         low = low_cap;
         high = high_cap;
@@ -670,6 +673,7 @@ struct t_sub_tile {
     std::vector<t_logical_block_type_ptr> equivalent_sites;
 
     t_capacity_range capacity;
+    t_class_range class_range;
 
     int num_phy_pins = 0;
 
