@@ -25,6 +25,7 @@
 #include "vtr_memory.h"
 #include "vtr_log.h"
 #include "vtr_color_map.h"
+#include "vtr_path.h"
 
 #include "vpr_utils.h"
 #include "vpr_error.h"
@@ -143,6 +144,7 @@ void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application* app, 
 void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/);
 void setup_default_ezgl_callbacks(ezgl::application* app);
 void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
+void run_graphics_commands(std::string commands);
 
 /************************** File Scope Variables ****************************/
 
@@ -497,6 +499,10 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
     if (draw_state->save_graphics) {
         std::string extension = "pdf";
         save_graphics(extension, draw_state->save_graphics_file_base);
+    }
+
+    if (!draw_state->graphics_commands.empty()) {
+        run_graphics_commands(draw_state->graphics_commands);
     }
 
 #else
@@ -1072,7 +1078,7 @@ static void draw_congestion(ezgl::renderer* g) {
     }
     application.update_message(msg);
 
-    std::unique_ptr<vtr::ColorMap> cmap = std::make_unique<vtr::PlasmaColorMap>(min_congestion_ratio, max_congestion_ratio);
+    std::shared_ptr<vtr::ColorMap> cmap = std::make_shared<vtr::PlasmaColorMap>(min_congestion_ratio, max_congestion_ratio);
 
     //Sort the nodes in ascending order of value for drawing, this ensures high
     //valued nodes are not overdrawn by lower value ones (e.g-> when zoomed-out far)
@@ -3745,6 +3751,54 @@ void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*dat
     t_draw_state* draw_state = get_draw_state_vars();
 
     draw_state->forced_pause = true;
+}
+
+void run_graphics_commands(std::string commands) {
+    //A very simmple command interpreter for scripting graphics
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    t_draw_state backup_draw_state = *draw_state;
+
+    std::vector<std::vector<std::string>> cmds;
+    for (std::string raw_cmd : vtr::split(commands, ";")) {
+        cmds.push_back(vtr::split(raw_cmd));
+    }
+
+    for (auto& cmd : cmds) {
+        VTR_ASSERT_MSG(cmd.size() > 0, "Expect non-empty graphics commands");
+
+        for (auto& item : cmd) {
+            VTR_LOG("%s ", item.c_str());
+        }
+        VTR_LOG("\n");
+
+        if (cmd[0] == "save_graphics") {
+            VTR_ASSERT_MSG(cmd.size() == 2, "Expect filename after 'save_graphics'");
+
+            auto name_ext = vtr::split_ext(cmd[1]);
+            save_graphics(/*extension=*/name_ext[1], /*filename=*/name_ext[0]);
+        } else if (cmd[0] == "set_nets") {
+            VTR_ASSERT_MSG(cmd.size() == 2, "Expect net draw state after 'set_nets'");
+            draw_state->show_nets = (e_draw_nets) vtr::atoi(cmd[1]);
+            VTR_LOG("%d\n", (int)draw_state->show_nets);
+        } else if (cmd[0] == "set_cpd") {
+            VTR_ASSERT_MSG(cmd.size() == 2, "Expect cpd draw state after 'set_cpd'");
+            draw_state->show_crit_path = (e_draw_crit_path) vtr::atoi(cmd[1]);
+            VTR_LOG("%d\n", (int)draw_state->show_crit_path);
+        } else if (cmd[0] == "set_routing_util") {
+            VTR_ASSERT_MSG(cmd.size() == 2, "Expect routing util draw state after 'set_routing_util'");
+            draw_state->show_routing_util = (e_draw_routing_util) vtr::atoi(cmd[1]);
+            VTR_LOG("%d\n", (int)draw_state->show_routing_util);
+        } else if (cmd[0] == "set_congestion") {
+            VTR_ASSERT_MSG(cmd.size() == 2, "Expect congestion draw state after 'set_congestion'");
+            draw_state->show_congestion = (e_draw_congestion) vtr::atoi(cmd[1]);
+            VTR_LOG("%d\n", (int)draw_state->show_congestion);
+        } else {
+            VPR_ERROR(VPR_ERROR_DRAW, vtr::string_fmt("Unrecognized graphics command '%s'", cmd[0].c_str()).c_str());
+        }
+    }
+
+    *draw_state = backup_draw_state; //Restor original draw state
 }
 
 #endif /* NO_GRAPHICS */

@@ -182,7 +182,7 @@ struct t_draw_state {
     t_draw_rr_node* draw_rr_node = nullptr;
     std::shared_ptr<const SetupTimingInfo> setup_timing_info;
     const t_arch* arch_info = nullptr;
-    std::unique_ptr<const vtr::ColorMap> color_map = nullptr;
+    std::shared_ptr<const vtr::ColorMap> color_map = nullptr;
     bool save_graphics = false;
     std::string graphics_commands;
     bool forced_pause = false;
@@ -190,6 +190,8 @@ struct t_draw_state {
     std::string save_graphics_file_base = "vpr";
 
     t_draw_state() = default;
+    t_draw_state(const t_draw_state&) = default;
+    t_draw_state& operator=(const t_draw_state&) = default;
 
     void reset_nets_congestion_and_rr();
 
