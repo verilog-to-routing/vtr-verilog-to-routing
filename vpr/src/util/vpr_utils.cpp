@@ -917,7 +917,24 @@ int find_pin(t_physical_tile_type_ptr type, std::string port_name, int pin_index
     int port_base_ipin = 0;
     int num_pins = OPEN;
 
-    port_base_ipin += find_tile_port_by_name(type, port_name.c_str()).num_pins;
+    bool port_found = false;
+    for (const auto& sub_tile : type->sub_tiles) {
+        for (const auto& port : sub_tile.ports) {
+            if (0 == strcmp(port.name, port_name.c_str())) {
+                port_found = true;
+                num_pins = port.num_pins;
+                break;
+            }
+
+            port_base_ipin += port.num_pins;
+        }
+
+        if (port_found) {
+            break;
+        }
+
+        port_base_ipin = 0;
+    }
 
     if (num_pins != OPEN) {
         VTR_ASSERT(pin_index_in_port < num_pins);

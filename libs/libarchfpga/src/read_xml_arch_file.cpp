@@ -2014,7 +2014,6 @@ static void Process_Fc(pugi::xml_node Node,
                     //XXX: this assumes that iterating through the tile ports
                     //     in order yields the block pin order
                     int true_physical_blk_pin = SubTile->sub_tile_to_tile_pin_indices[iblk_pin];
-                    VTR_LOG("PHYSICAL PIN: %d\n", true_physical_blk_pin);
                     fc_spec.pins.push_back(true_physical_blk_pin);
                     ++iblk_pin;
                 }
@@ -4967,7 +4966,6 @@ e_side string_to_side(std::string side_str) {
     return side;
 }
 
-// TODO: Correctly link the sub tiles with the correct logic tiles.
 static void link_physical_logical_types(std::vector<t_physical_tile_type>& PhysicalTileTypes,
                                         std::vector<t_logical_block_type>& LogicalBlockTypes) {
     for (auto& physical_tile : PhysicalTileTypes) {
