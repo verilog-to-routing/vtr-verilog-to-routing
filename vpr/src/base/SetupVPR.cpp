@@ -378,6 +378,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->read_router_lookahead = Options.read_router_lookahead;
 
     RouterOpts->router_heap = Options.router_heap;
+    RouterOpts->exit_after_first_routing_iteration = Options.exit_after_first_routing_iteration;
 }
 
 static void SetupAnnealSched(const t_options& Options,
