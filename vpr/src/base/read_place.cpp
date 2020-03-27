@@ -250,7 +250,7 @@ void read_user_pad_loc(const char* pad_loc_file) {
 
         auto physical_tile = device_ctx.grid[i][j].type;
         auto logical_block = cluster_ctx.clb_nlist.block_type(bnum);
-        if (!is_tile_compatible(physical_tile, logical_block)) {
+        if (!is_tile_compatible(physical_tile, logical_block, place_ctx.block_locs[bnum].loc)) {
             VPR_THROW(VPR_ERROR_PLACE_F, pad_loc_file, 0,
                       "Attempt to place block %s at illegal location (%d, %d).\n", bname, i, j);
         }

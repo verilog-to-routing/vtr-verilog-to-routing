@@ -35,7 +35,9 @@ int get_sub_tile_index(ClusterBlockId blk);
 
 int get_unique_pb_graph_node_id(const t_pb_graph_node* pb_graph_node);
 
-void get_class_range_for_block(const ClusterBlockId blk_id, int* class_low, int* class_high);
+void get_class_range_for_block(const ClusterBlockId blk_id,
+                               int* class_low,
+                               int* class_high);
 
 void get_pin_range_for_block(const ClusterBlockId blk_id,
                              int* pin_low,
@@ -146,6 +148,8 @@ int get_max_num_pins(t_logical_block_type_ptr logical_block);
 
 bool is_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_block_type_ptr logical_block);
 
+bool is_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_block_type_ptr logical_block, t_pl_loc loc);
+
 //Returns the physical tile type which 'best' matches logical_block
 t_physical_tile_type_ptr pick_best_physical_type(t_logical_block_type_ptr logical_block);
 
@@ -166,6 +170,8 @@ int get_physical_pin(int sub_tile_index,
                      t_physical_tile_type_ptr physical_tile,
                      t_logical_block_type_ptr logical_block,
                      int pin);
+int get_physical_pin_offset(t_sub_tile* sub_tile,
+                            t_physical_tile_type_ptr physical_tile);
 
 //Returns the physical pin of the tile, related to the given ClusterNedId, and the net pin index
 int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index);

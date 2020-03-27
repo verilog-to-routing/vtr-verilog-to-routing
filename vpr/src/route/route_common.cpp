@@ -838,7 +838,7 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
      * specifies that this is necessary).                                       */
 
     t_clb_opins_used clb_opins_used_locally;
-    int clb_pin, iclass, class_low, class_high;
+    int clb_pin, iclass;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -846,8 +846,11 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         auto type = physical_tile_type(blk_id);
+        auto sub_tile = type->sub_tiles[get_sub_tile_index(blk_id)];
 
+        int class_low, class_high;
         get_class_range_for_block(blk_id, &class_low, &class_high);
+
         clb_opins_used_locally[blk_id].resize((int)type->class_inf.size());
 
         if (is_io_type(type)) continue;
@@ -1016,7 +1019,6 @@ static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t
     vtr::vector<ClusterBlockId, std::vector<int>> rr_blk_source;
 
     int i, j, iclass, inode;
-    int class_low, class_high;
     t_rr_type rr_type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1026,7 +1028,11 @@ static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         auto type = physical_tile_type(blk_id);
+        auto sub_tile = type->sub_tiles[get_sub_tile_index(blk_id)];
+
+        int class_low, class_high;
         get_class_range_for_block(blk_id, &class_low, &class_high);
+
         rr_blk_source[blk_id].resize((int)type->class_inf.size());
         for (iclass = 0; iclass < (int)type->class_inf.size(); iclass++) {
             if (iclass >= class_low && iclass <= class_high) {
