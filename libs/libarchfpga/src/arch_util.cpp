@@ -536,6 +536,18 @@ t_logical_block_type SetupEmptyLogicalType() {
     return type;
 }
 
+std::unordered_set<t_logical_block_type_ptr> get_equivalent_sites_set(t_physical_tile_type_ptr type) {
+    std::unordered_set<t_logical_block_type_ptr> equivalent_sites;
+
+    for (auto& sub_tile : type->sub_tiles) {
+        for (auto& logical_block : sub_tile.equivalent_sites) {
+            equivalent_sites.insert(logical_block);
+        }
+    }
+
+    return equivalent_sites;
+}
+
 void alloc_and_load_default_child_for_pb_type(t_pb_type* pb_type,
                                               char* new_name,
                                               t_pb_type* copy) {
