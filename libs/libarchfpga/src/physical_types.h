@@ -575,6 +575,7 @@ constexpr int DEFAULT_SWITCH = -2;
 struct t_physical_tile_type {
     char* name = nullptr;
     int num_pins = 0;
+    int num_inst_pins = 0;
     int num_input_pins = 0;
     int num_output_pins = 0;
     int num_clock_pins = 0;
@@ -608,8 +609,6 @@ struct t_physical_tile_type {
     int index = -1; /* index of type descriptor in array (allows for index referencing) */
 
     std::vector<t_sub_tile> sub_tiles;
-
-    std::vector<t_logical_block_type_ptr> equivalent_sites;
 
     /* Unordered map indexed by the logical block index.
      * tile_block_pin_directs_map[logical block index][logical block pin] -> physical tile pin */

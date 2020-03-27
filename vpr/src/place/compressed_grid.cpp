@@ -1,4 +1,5 @@
 #include "compressed_grid.h"
+#include "arch_util.h"
 #include "globals.h"
 
 std::vector<t_compressed_block_grid> create_compressed_block_grids() {
@@ -11,7 +12,9 @@ std::vector<t_compressed_block_grid> create_compressed_block_grids() {
         for (size_t y = 0; y < grid.height(); ++y) {
             const t_grid_tile& tile = grid[x][y];
             if (tile.width_offset == 0 && tile.height_offset == 0) {
-                for (auto& block : tile.type->equivalent_sites) {
+                auto equivalent_sites = get_equivalent_sites_set(tile.type);
+
+                for (auto& block : equivalent_sites) {
                     //Only record at block root location
                     block_locations[block->index].emplace_back(x, y);
                 }

@@ -1,6 +1,7 @@
 #include "clock_connection_builders.h"
 
 #include "globals.h"
+#include "arch_util.h"
 #include "rr_graph2.h"
 
 #include "vtr_assert.h"
@@ -264,7 +265,8 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
 
             // Ignore grid locations that do not have blocks
             bool has_pb_type = false;
-            for (auto logical_block : type->equivalent_sites) {
+            auto equivalent_sites = get_equivalent_sites_set(type);
+            for (auto logical_block : equivalent_sites) {
                 if (logical_block->pb_type) {
                     has_pb_type = true;
                     break;
