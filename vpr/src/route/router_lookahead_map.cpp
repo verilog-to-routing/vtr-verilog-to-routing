@@ -260,6 +260,10 @@ void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
 
 void MapLookahead::read(const std::string& file) {
     read_router_lookahead(file);
+
+    //Next, compute which wire types are accessible (and the cost to reach them)
+    //from the different physical tile type's SOURCEs & OPINs
+    compute_router_src_opin_lookahead();
 }
 
 void MapLookahead::write(const std::string& file) const {
@@ -991,6 +995,7 @@ static void FromCostEntry(VprMapCostEntry::Builder* out, const Cost_Entry& in) {
 }
 
 void read_router_lookahead(const std::string& file) {
+    vtr::ScopedStartFinishTimer timer("Loading router wire lookahead map");
     MmapFile f(file);
 
     /* Increase reader limit to 1G words to allow for large files. */
