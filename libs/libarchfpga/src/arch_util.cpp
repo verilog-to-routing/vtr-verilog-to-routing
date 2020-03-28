@@ -223,6 +223,8 @@ void free_type_descriptors(std::vector<t_physical_tile_type>& type_descriptors) 
         }
 
         for (auto& sub_tile : type.sub_tiles) {
+            vtr::free(sub_tile.name);
+
             for (auto port : sub_tile.ports) {
                 vtr::free(port.name);
             }
