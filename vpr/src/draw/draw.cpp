@@ -3777,6 +3777,10 @@ void run_graphics_commands(std::string commands) {
 
             auto name_ext = vtr::split_ext(cmd[1]);
             save_graphics(/*extension=*/name_ext[1], /*filename=*/name_ext[0]);
+        } else if (cmd[0] == "set_macros") {
+            VTR_ASSERT_MSG(cmd.size() == 2, "Expect net draw state after 'set_macro'");
+            draw_state->show_placement_macros = (e_draw_placement_macros) vtr::atoi(cmd[1]);
+            VTR_LOG("%d\n", (int)draw_state->show_placement_macros);
         } else if (cmd[0] == "set_nets") {
             VTR_ASSERT_MSG(cmd.size() == 2, "Expect net draw state after 'set_nets'");
             draw_state->show_nets = (e_draw_nets) vtr::atoi(cmd[1]);
@@ -3793,6 +3797,9 @@ void run_graphics_commands(std::string commands) {
             VTR_ASSERT_MSG(cmd.size() == 2, "Expect congestion draw state after 'set_congestion'");
             draw_state->show_congestion = (e_draw_congestion) vtr::atoi(cmd[1]);
             VTR_LOG("%d\n", (int)draw_state->show_congestion);
+        } else if (cmd[0] == "exit") {
+            VTR_ASSERT_MSG(cmd.size() == 2, "Expect exit code after 'exit'");
+            exit(vtr::atoi(cmd[1]));
         } else {
             VPR_ERROR(VPR_ERROR_DRAW, vtr::string_fmt("Unrecognized graphics command '%s'", cmd[0].c_str()).c_str());
         }

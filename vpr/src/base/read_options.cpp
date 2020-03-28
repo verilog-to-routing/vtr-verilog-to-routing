@@ -921,6 +921,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "   Commands:\n"
             "      * save_graphics <file>\n"
             "           Saves graphics to the specified file (.png/.pdf/.svg)\n"
+            "      * set_macros <int>\n"
+            "           Sets the placement macro drawing state\n"
             "      * set_nets <int>\n"
             "           Sets the net drawing state\n"
             "      * set_cpd <int>\n"
@@ -929,6 +931,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "           Sets the routing utilization drawing state\n"
             "      * set_congestion <int>\n"
             "           Sets the routing congestion drawing state\n"
+            "      * exit <int>\n"
+            "           Exits with specified exit code\n"
             )
         .default_value("");
 
