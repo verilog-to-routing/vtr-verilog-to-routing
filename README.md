@@ -26,9 +26,6 @@ See the [full license](LICENSE.md) for details.
 ## How to Cite
 The following paper may be used as a general citation for VTR:
 
-## How to Cite
-The following paper may be used as a general citation for VTR:
-
 K. E. Murray, O. Petelin, S. Zhong, J. M. Wang, M. ElDafrawy, J.-P. Legault, E. Sha, A. G. Graham, J. Wu, M. J. P. Walker, H. Zeng, P. Patros, J. Luu, K. B. Kent and V. Betz "VTR 8: High Performance CAD and Customizable FPGA Architecture Modelling", ACM TRETS, 2020.
 
 Bibtex:
