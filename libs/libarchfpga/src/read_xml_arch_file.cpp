@@ -548,8 +548,6 @@ static void SetupPinClasses(t_physical_tile_type* PhysicalTileType) {
         }
 
         PhysicalTileType->sub_tiles[sub_tile.index].class_range = class_range;
-
-        VTR_LOG("PHYSICAL TILE: %s\n\tCAPACITY: %d\n\tCLASS RANGE: LOW %d, HIGH %d\n\n", PhysicalTileType->name, PhysicalTileType->capacity, PhysicalTileType->sub_tiles[sub_tile.index].class_range.low, PhysicalTileType->sub_tiles[sub_tile.index].class_range.high);
     }
 
     VTR_ASSERT(pin_count == PhysicalTileType->num_pins);
