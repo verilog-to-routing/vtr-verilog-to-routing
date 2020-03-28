@@ -19,6 +19,8 @@ c_org='\033[33m'
 c_rst='\033[0m'
 
 COLORIZE=True
+SUBSET=False
+
 _FILLER_LINE=". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."
 _LEN=38
 
@@ -41,7 +43,7 @@ def success_line(key):
     output = "  Ok " + _FILLER_LINE
     return colored(output[:_LEN], 'green') + " " + key
 
-def mismatch(header, expected, got):
+def mismatch_str(header, expected, got):
     header = '{0:<{1}}'.format("- " + header, _LEN)
     expected = colored("[-" + str(expected) + "-]", 'red')
     got = colored("{+" + str(got) + "+}", 'green')
@@ -167,7 +169,7 @@ def hash_item(toml_dict, input_line):
     return " ".join(hashing_str.split())
 
 
-def print_as_csv(toml_dict, output_dict):
+def print_as_csv(toml_dict, output_dict, file=sys.stdout):
     # dump csv to stdout
     header_line = []
     result_lines = []
@@ -177,21 +179,22 @@ def print_as_csv(toml_dict, output_dict):
     for header in toml_dict:
         if header != _DFLT_HDR:
             # figure out the pad
-            pad = len(str(header))
+            pad = len(str(header).strip())
             for keys in output_dict:
                 if header in output_dict[keys]:
-                    pad = max(pad, len(str(output_dict[keys][header])))
+                    pad = max(pad, len(str(output_dict[keys][header]).strip()))
 
             header_line.append('{0:<{1}}'.format(header, pad))
             index = 0
             for keys in output_dict:
-                result_lines[index].append('{0:<{1}}'.format(output_dict[keys][header], pad))
-                index += 1
+                if header in output_dict[keys]:
+                    result_lines[index].append('{0:<{1}}'.format(output_dict[keys][header], pad))
+                    index += 1
 
     # now write everything to the file:
-    print(', '.join(header_line))
+    print(', '.join(header_line), file=file)
     for row in result_lines:
-        print(', '.join(row))
+        print(', '.join(row), file=file)
 
 def load_csv_into_tbl(toml_dict, csv_file_name):
     header = OrderedDict()
@@ -233,6 +236,7 @@ def sanity_check(header, toml_dict, golden_tbl, tbl):
     return False
 
 def range(header, toml_dict, golden_tbl, tbl):
+    mismatch = False
     if len(toml_dict[header][_K_RANGE]) != 2:
         print("expected a min and a max for range = [ min, max ]")
         exit(1)
@@ -255,35 +259,12 @@ def range(header, toml_dict, golden_tbl, tbl):
         min_range = ( min_ratio * gold_value )
         max_range = ( max_ratio * gold_value )  
         if value < min_range  or value > max_range:
-            return mismatch(header, gold_value, value)
+            mismatch = True
 
-    return ''
+    return mismatch
 
 def abs(header, toml_dict, golden_tbl, tbl):
-    if golden_tbl[header] != tbl[header]:
-        return mismatch(header, golden_tbl[header], tbl[header])
-    
-    return ''
-
-
-def compare_tbl(toml_dict, golden_tbl, tbl):
-    error_str = []
-    for header in toml_dict:
-        if header != _DFLT_HDR:
-            sanity_check
-            output_str = ""
-            if sanity_check(header, toml_dict, golden_tbl, tbl):
-                # register your function here for different way to compare
-                if _K_RANGE in toml_dict[header]:
-                    output_str = range(header, toml_dict, golden_tbl, tbl)
-                else: # absolute
-                    output_str = abs(header, toml_dict, golden_tbl, tbl)
-
-            if output_str is not None and output_str != "":
-                error_str.append(output_str)
-
-    # drop the last extra newline
-    return "\n".join(error_str)
+    return golden_tbl[header] != tbl[header];
 
 def _parse(toml_file_name, log_file_name):
     # load toml
@@ -294,7 +275,6 @@ def _parse(toml_file_name, log_file_name):
 
     #load log file and parse
     with open(log_file_name) as log:
-
         # set the defaults
         input_values = create_tbl(toml_dict)
 
@@ -322,34 +302,61 @@ def _join(toml_file_name, file_list):
 
     print_as_csv(toml_dict, parsed_files)
 
-def _compare(toml_file_name, golden_result_file_name, result_file_name):
+def _compare(toml_file_name, golden_result_file_name, result_file_name, diff_file_name):
     # load toml
     failed_key = []
     toml_dict = load_toml(toml_file_name)
-    
-    golden_parsed_file = load_csv_into_tbl(toml_dict, golden_result_file_name)
-    parsed_file = load_csv_into_tbl(toml_dict, result_file_name)
+    golden_tbl = load_csv_into_tbl(toml_dict, golden_result_file_name)
+    tbl = load_csv_into_tbl(toml_dict, result_file_name)
+    diff = OrderedDict()
 
-    for key in golden_parsed_file:
-        error_str = ""
-        if key in parsed_file:
-            error_str = compare_tbl(toml_dict, golden_parsed_file[key], parsed_file[key])
+    for key in golden_tbl:
+        diff[key] = OrderedDict()
 
-        if error_str != "":
-            print(error_line(key))
-            print(error_str)
-            # print to std error
-            print(key,file=sys.stderr)
+        error_str = []
+        if key not in tbl:
+            if SUBSET:
+                for header in toml_dict:
+                    if header != _DFLT_HDR:
+                        diff[key][header] = golden_tbl[key][header]
+            else:
+                print(error_line(key))
+                print(key,file=sys.stderr)
         else:
-            print(success_line(key))
+            for header in toml_dict:
+                if header != _DFLT_HDR:
+                    mismatch = True
+                    if sanity_check(header, toml_dict, golden_tbl[key], tbl[key]):
+                        # register your function here for different way to compare
+                        if _K_RANGE in toml_dict[header]:
+                            mismatch = range(header, toml_dict, golden_tbl[key], tbl[key])
+                        else: # absolute
+                            mismatch = abs(header, toml_dict, golden_tbl[key], tbl[key])
+
+                    if mismatch:
+                        error_str.append(mismatch_str(header, golden_tbl[key][header], tbl[key][header]))
+                        diff[key][header] = tbl[key][header]
+                    else:
+                        diff[key][header] = golden_tbl[key][header]
+
+            if len(error_str):
+                print(error_line(key))
+                print("\n".join(error_str))
+                # print to std error
+                print(key,file=sys.stderr)
+            else:
+                print(success_line(key))
     
+    with open(diff_file_name, 'w+') as diff_file:
+        print_as_csv(toml_dict, diff, file=diff_file)
+
     return len(failed_key)
 
 def parse(arg):
     if len(arg) == 2:
         _parse(arg[0], arg[1])
     else:
-        print("Expected 2 arguments",file=sys.stderr)
+        print("Expected 2 arguments <conf> <file to parse>",file=sys.stderr)
         print(arg,file=sys.stderr)
         return -1
 
@@ -357,47 +364,51 @@ def join(arg):
     if len(arg) >= 2:
         return _join(arg[0], arg[1:])
     else:
-        print("Expected at least 2 files to join",file=sys.stderr)
+        print("Expected at least 2 files to join <conf> <files ...>",file=sys.stderr)
         print(arg,file=sys.stderr)
         return -1
 
 def compare(arg):
-    if len(arg) == 3:
-        return _compare(arg[0], arg[1], arg[2])
+    if len(arg) == 4:
+        return _compare(arg[0], arg[1], arg[2], arg[3])
     else:
-        print("Expected 3 files to do the comparison",file=sys.stderr)
+        print("Expected 4 files to do the comparison <conf> <golden> <result> <diff>",file=sys.stderr)
         print(arg,file=sys.stderr)
         return -1
 
 def parse_shared_args(args):
     #pars eout shared arguments
-    index = 0
+    clean_args = []
     for arg in args:
-        arg = arg.strip()
-        args[index] = arg
-        if arg is None or arg == "":
-            del args[index]
-        elif arg == '--no_color':
-            global COLORIZE
-            COLORIZE=False
-            del args[index]
+        if arg is not None and arg != "":
+            arg = arg.strip()
+            if arg == '--no_color':
+                global COLORIZE
+                COLORIZE=False
+            elif arg == '--subset':
+                global SUBSET
+                SUBSET=True
+            else:
+                clean_args.append(arg)
 
-        index += 1
-
-    return args
+    return clean_args
 
 def main():
 
     this_exec = sys.argv[0]
-    command = sys.argv[1]
-    arguments = parse_shared_args(sys.argv[2:])
+    if len(sys.argv) < 2:
+        print("expected: parse, join or compare")
+        exit(255)
+    else:
+        command = sys.argv[1]
+        arguments = parse_shared_args(sys.argv[2:])
 
-    exit({
-        "parse":    parse,
-        "join":     join,
-        "compare":  compare,
-    }.get(command, lambda: "Invalid Command")\
-    (arguments))
+        exit({
+            "parse":    parse,
+            "join":     join,
+            "compare":  compare,
+        }.get(command, lambda: "Invalid Command")\
+        (arguments))
 
 if __name__ == "__main__":
     main()
