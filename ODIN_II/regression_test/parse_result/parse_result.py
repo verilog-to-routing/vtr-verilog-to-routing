@@ -2,6 +2,7 @@
 
 import os
 import sys
+from collections import OrderedDict 
 # we use regex to parse
 import re
 
@@ -64,7 +65,7 @@ _K_RANGE='range'
 _K_CUTOFF='cutoff'
 
 def preproc_toml(file):
-    current_dir=os.getcwd()
+    current_dir = os.getcwd()
     directory = os.path.dirname(file)
     if directory != '':
         os.chdir(directory)
@@ -96,7 +97,7 @@ def parse_toml(toml_str):
     # raw configparse
     parser = configparser.RawConfigParser(
         defaults=None,
-        dict_type=dict,
+        dict_type=OrderedDict,
         allow_no_value=False,
         delimiters=('='),
         comment_prefixes=('#'),
@@ -105,12 +106,13 @@ def parse_toml(toml_str):
     )
     parser.read_string(toml_str)
     # default is always there
-    toml_dict = { _DFLT_HDR : { _K_DFLT: _DFLT_VALUE} }
+    toml_dict = OrderedDict()
+    toml_dict[_DFLT_HDR] = { _K_DFLT: _DFLT_VALUE}
     for _header in parser.sections():
 
         header = strip_str(_header)
         if header not in toml_dict:
-            toml_dict[header] = {}
+            toml_dict[header] = OrderedDict()
 
         for _key, _value in parser.items(_header):
             # drop extra whitespace
@@ -139,7 +141,7 @@ def load_toml(toml_file_name):
 # build initial table from toml
 def create_tbl(toml_dict):
     # set the defaults
-    input_values = { }
+    input_values = OrderedDict()
     for header in toml_dict:
         if header != _DFLT_HDR:
             # initiate with fallback
@@ -192,8 +194,8 @@ def print_as_csv(toml_dict, output_dict):
         print(', '.join(row))
 
 def load_csv_into_tbl(toml_dict, csv_file_name):
-    header = {}
-    file_dict = {}
+    header = OrderedDict()
+    file_dict = OrderedDict()
     with open(csv_file_name, newline='') as csvfile:
         is_header = True
         csv_reader = csv.reader(csvfile)
@@ -288,7 +290,7 @@ def _parse(toml_file_name, log_file_name):
     toml_dict = load_toml(toml_file_name)
 
     # setup our output dict, print as csv expects a hashed table
-    parsed_dict = {}
+    parsed_dict = OrderedDict()
 
     #load log file and parse
     with open(log_file_name) as log:
@@ -313,7 +315,7 @@ def _parse(toml_file_name, log_file_name):
 def _join(toml_file_name, file_list):
     # load toml
     toml_dict = load_toml(toml_file_name)
-    parsed_files = {}
+    parsed_files = OrderedDict()
 
     for files in file_list:
         parsed_files.update(load_csv_into_tbl(toml_dict, files))
