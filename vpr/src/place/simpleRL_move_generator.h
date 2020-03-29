@@ -21,7 +21,7 @@ class EpsilonGreedyAgent : public KArmedBanditAgent {
     ~EpsilonGreedyAgent();
 
     void process_outcome(double reward) override; //Updates the agent based on the reward of the last proposed action
-    size_t propose_action() override;            //Returns the next action the agent wants to 
+    size_t propose_action() override;            //Returns the next action the agent wants to
 
 
   public:
@@ -55,8 +55,8 @@ private:
     std::unique_ptr<EpsilonGreedyAgent> karmed_bandit_agent;
 public:
 	SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& agent);
-    e_create_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float rlim, 
-        std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>& num_moves, 
+    e_create_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float rlim,
+        std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>& num_moves,
         int& type, int high_fanout_net);
     void process_outcome(double reward);
 };

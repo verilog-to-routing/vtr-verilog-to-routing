@@ -468,17 +468,25 @@ void try_place(const t_placer_opts& placer_opts,
         }
     }
 
+    const size_t avail_moves = 4;
     move_lim = (int)(annealing_sched.inner_num * pow(cluster_ctx.clb_nlist.blocks().size(), 1.3333));
 
-    move_generator = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_move_prob);
-    /*
-    std::unique_ptr<EpsilonGreedyAgent> karmed_bandit_agent;
+    if(!placer_opts.simpleRL_agent_placement){
+        VTR_LOG("Using static probabilities for choosing move types\n");
+        VTR_LOG("Uniform move : %f \n",placer_opts.place_static_move_prob[0]);
+        VTR_LOG("Median move : %f \n",placer_opts.place_static_move_prob[1]);
+        VTR_LOG("Weighted Median move : %f \n",placer_opts.place_static_move_prob[2]);
+        VTR_LOG("Weighted Centroid move : %f \n",placer_opts.place_static_move_prob[3]);
+        move_generator = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_move_prob);
+    }
+    else{
+        VTR_LOG("Using simple RL 'Epsilon Greedy agent' for choosing move types\n");
+        std::unique_ptr<EpsilonGreedyAgent> karmed_bandit_agent;
 
-    const size_t avail_moves = 4;
-    karmed_bandit_agent = std::make_unique<EpsilonGreedyAgent>(avail_moves, placer_opts.place_agent_epsilon);
-    karmed_bandit_agent->set_step(placer_opts.place_agent_gamma, move_lim);
-    move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent);
-    */
+        karmed_bandit_agent = std::make_unique<EpsilonGreedyAgent>(avail_moves, placer_opts.place_agent_epsilon);
+        karmed_bandit_agent->set_step(placer_opts.place_agent_gamma, move_lim);
+        move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent);
+    }
     width_fac = placer_opts.place_chan_width;
 
     init_chan(width_fac, chan_width_dist);
@@ -1458,7 +1466,10 @@ static e_move_result try_swap(const t_annealing_state* state,
 
     move_outcome_stats.outcome = move_outcome;
 
-    move_generator.process_outcome(delta_c);
+    if (move_outcome == ACCEPTED)
+        move_generator.process_outcome(delta_c*-1);
+    else
+        move_generator.process_outcome(0);
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #    ifndef NO_GRAPHICS

@@ -1770,6 +1770,11 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("10")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument<bool, ParseOnOff>(args.simpleRL_agent_placement, "--simpleRL_agent_placement")
+        .help(
+            "Uses a simple RL agent in choosing the appropiate move type in placement. ")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_agent_epsilon, "--place_agent_epsilon")
         .help(

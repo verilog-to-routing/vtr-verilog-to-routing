@@ -7,11 +7,12 @@
 
 //EpsilonGreedyAgent member functions
 EpsilonGreedyAgent::EpsilonGreedyAgent(size_t k, float epsilon) {
+
+    //f_ = vtr::fopen("agent_info.txt", "w");
     set_epsilon(epsilon);
     set_k(k);
     set_epsilon_action_prob();
 
-    f_ = vtr::fopen("agent_info.txt", "w");
     //string log_file = "agent_info.txt";
     //mode = "w";
     //f_ = fopen(log_file, mode);
@@ -140,12 +141,13 @@ void EpsilonGreedyAgent::set_k(size_t k) {
     n_ = std::vector<size_t>(k, 0);
 
     cumm_epsilon_action_prob_ = std::vector<float>(k, 1.0 / k);
-//#if 0
+#if 0
+/*
     if (f_) {
         vtr::fclose(f_);
         f_ = nullptr;
     }
-
+*/
 
     //f_ = vtr::fopen("egreedy.csv", "w");
     fprintf(f_, "action,reward,");
@@ -156,7 +158,7 @@ void EpsilonGreedyAgent::set_k(size_t k) {
         fprintf(f_, "n%zu,", i);
     }
     fprintf(f_, "\n");
-//#endif
+#endif
 }
 
 

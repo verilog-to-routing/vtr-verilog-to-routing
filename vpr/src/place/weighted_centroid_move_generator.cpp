@@ -33,7 +33,7 @@ e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_move
     Y_coord.clear();
     ClusterNetId net_id;
     ClusterBlockId bnum;
-    int x,y;
+    int x,y,ipin,pnum;
     float acc_weight = 0;
     float acc_x = 0;
     float acc_y = 0;
@@ -47,18 +47,20 @@ e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_move
         if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::DRIVER) {
             if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
                 continue;
-            if(int(cluster_ctx.clb_nlist.net_pins(net_id).size()) >  place_high_fanout_net)
-                continue;
 
-            for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
-                weight = get_timing_place_crit(net_id, ipin); //*comp_td_point_to_point_delay(delay_model, net_id, ipin) 
+            //for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
+            for(auto sink_pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
+                if(pin_id == sink_pin_id)
+                    continue;
+                ipin = cluster_ctx.clb_nlist.pin_net_index(sink_pin_id);
+                pnum = tile_pin_index(sink_pin_id);
+                weight = get_timing_place_crit(net_id, ipin); //*comp_td_point_to_point_delay(delay_model, net_id, ipin)
                 acc_weight += weight;
 
-                ClusterPinId sink_pin = cluster_ctx.clb_nlist.net_pin(net_id, ipin);
-                ClusterBlockId sink_block = cluster_ctx.clb_nlist.pin_block(sink_pin);
+                ClusterBlockId sink_block = cluster_ctx.clb_nlist.pin_block(sink_pin_id);
 
-                x = place_ctx.block_locs[sink_block].loc.x + physical_tile_type(sink_block)->pin_width_offset[ipin];
-                y = place_ctx.block_locs[sink_block].loc.y + physical_tile_type(sink_block)->pin_height_offset[ipin];
+                x = place_ctx.block_locs[sink_block].loc.x + physical_tile_type(sink_block)->pin_width_offset[pnum];
+                y = place_ctx.block_locs[sink_block].loc.y + physical_tile_type(sink_block)->pin_height_offset[pnum];
 
                 x = std::max(std::min(x, (int)grid.width() - 2), 1);  //-2 for no perim channels
                 y = std::max(std::min(y, (int)grid.height() - 2), 1); //-2 for no perim channels
@@ -70,15 +72,16 @@ e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_move
 
         //else the pin is sink --> only care about its driver
         else  {
-            int net_pin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
-            weight = get_timing_place_crit(net_id, net_pin);
+            ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
+            weight = get_timing_place_crit(net_id, ipin);
             acc_weight += weight;
 
             ClusterPinId source_pin = cluster_ctx.clb_nlist.net_driver(net_id);
             ClusterBlockId source_block = cluster_ctx.clb_nlist.pin_block(source_pin);
+            pnum = tile_pin_index(source_pin);
 
-            x = place_ctx.block_locs[source_block].loc.x ;
-            y = place_ctx.block_locs[source_block].loc.y ;
+            x = place_ctx.block_locs[source_block].loc.x + physical_tile_type(source_block)->pin_width_offset[pnum];
+            y = place_ctx.block_locs[source_block].loc.y + physical_tile_type(source_block)->pin_width_offset[pnum];
 
             x = std::max(std::min(x, (int)grid.width() - 2), 1);  //-2 for no perim channels
             y = std::max(std::min(y, (int)grid.height() - 2), 1); //-2 for no perim channels
@@ -87,7 +90,7 @@ e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_move
             acc_y += y*weight;
         }
     }
-    
+
     //Calculate the centroid location
     center_x = acc_x/acc_weight;
     center_y = acc_y/acc_weight;

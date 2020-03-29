@@ -64,7 +64,6 @@ std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>&, int &, 
 
 
     if (!find_to_loc_median(cluster_from_type, &limit_coords, from, to)) {
-        auto grid_to_type = g_vpr_ctx.device().grid[limit_coords.xmin][limit_coords.ymin].type;
         return e_create_move::ABORT;
     }
 

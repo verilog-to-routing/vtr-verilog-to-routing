@@ -1041,6 +1041,7 @@ struct t_placer_opts {
     std::string write_placement_delay_lookup;
     std::string read_placement_delay_lookup;
     std::vector<float> place_static_move_prob;
+    bool simpleRL_agent_placement;
     int place_high_fanout_net;
     float place_agent_epsilon;
     float place_agent_gamma;
