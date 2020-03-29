@@ -5,7 +5,7 @@
 //#include "math.h"
 static void get_bb_for_net_excluding_block(ClusterNetId net_id, t_bb* coords, ClusterBlockId block_id);
 
-e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float,
+e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim,
 std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>&, int &, int place_high_fanout_net) {
 
 
@@ -14,7 +14,7 @@ std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>&, int &, 
 
     /* Pick a random block to be swapped with another random block.   */
     ClusterBlockId b_from;
-    for(int i =0; i< 10; i++){
+    /*for(int i =0; i< 10; i++){
         b_from = pick_from_block();
         if (!b_from) {
             return e_create_move::ABORT; //No movable block found
@@ -22,8 +22,9 @@ std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>&, int &, 
         if(cluster_ctx.clb_nlist.block_type(b_from)->index != 1){ //io
             break;
         }
-    }
+    }*/
 
+    b_from = pick_from_block();
 
     t_pl_loc from = place_ctx.block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
@@ -62,9 +63,17 @@ std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>&, int &, 
     limit_coords.ymin = Y_coord[floor((Y_coord.size()-1)/2)];
     limit_coords.ymax = Y_coord[floor((Y_coord.size()-1)/2)+1];
 
+    t_pl_loc median_point;
 
     if (!find_to_loc_median(cluster_from_type, &limit_coords, from, to)) {
-        return e_create_move::ABORT;
+        if(X_coord.size() == 1 && Y_coord.size() == 1 && limit_coords.xmin == from.x && limit_coords.ymin == from.y)
+            return e_create_move::ABORT;
+        else {
+            median_point.x = (limit_coords.xmin + limit_coords.xmax) /2 ;
+            median_point.y = (limit_coords.ymin + limit_coords.ymax) /2 ;
+            if(!find_to_loc_centroid(cluster_from_type, rlim, median_point, to))
+                return e_create_move::ABORT;
+        }
     }
 
     return ::create_move(blocks_affected, b_from, to);
