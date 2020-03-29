@@ -436,16 +436,18 @@ bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
-    auto physical_tile = device_ctx.grid[to.x][to.y].type;
-    auto logical_block = cluster_ctx.clb_nlist.block_type(blk);
-
     if (to.x < 0 || to.x >= int(device_ctx.grid.width())
-        || to.y < 0 || to.y >= int(device_ctx.grid.height())
-        || to.z < 0 || to.z >= physical_tile->capacity
-        || !is_tile_compatible(physical_tile, logical_block, to)) {
+        || to.y < 0 || to.y >= int(device_ctx.grid.height())) {
         return false;
     }
 
+    auto physical_tile = device_ctx.grid[to.x][to.y].type;
+    auto logical_block = cluster_ctx.clb_nlist.block_type(blk);
+
+    if (to.z < 0 || to.z >= physical_tile->capacity
+        || !is_tile_compatible(physical_tile, logical_block, to)) {
+        return false;
+    }
     // If the destination block is user constrained, abort this swap
     auto b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.z];
     if (b_to != INVALID_BLOCK_ID && b_to != EMPTY_BLOCK_ID) {
