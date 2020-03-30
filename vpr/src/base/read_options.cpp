@@ -937,6 +937,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "           Sets whether blocks have label text drawn on them\n"
             "      * set_draw_block_internals <int>\n"
             "           Sets the level to which block  internals are drawn\n"
+            "      * set_draw_net_max_fanout <int>\n"
+            "           Sets the maximum fanout for nets to be drawn (if fanout is beyond this value it will not be drawn)\n"
             "      * set_congestion <int>\n"
             "           Sets the routing congestion drawing state\n"
             "      * exit <int>\n"
