@@ -265,7 +265,7 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
     }
 
     //Calculate the intra-domain (i.e. same launch and capture domain) non-virtual geomean, and fanout-weighted periods
-    if (crit_paths.size() > 1) {
+    if (crit_paths.size() >= 1) {
         std::vector<double> intra_domain_cpds;
         std::vector<double> fanout_weighted_intra_domain_cpds;
         double total_intra_domain_fanout = 0.;
