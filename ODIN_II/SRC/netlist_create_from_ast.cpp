@@ -129,6 +129,7 @@ signal_list_t* create_soft_single_port_ram_block(ast_node_t* block, char* instan
 signal_list_t* create_soft_dual_port_ram_block(ast_node_t* block, char* instance_name_prefix, sc_hierarchy* local_ref);
 
 void look_for_clocks(netlist_t* netlist);
+void reorder_connections_from_name(ast_node_t* instance_node, ast_node_t* instanciated_instance, ids type);
 
 /*---------------------------------------------------------------------------------------------
  * (function: create_netlist)
@@ -1745,6 +1746,11 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
                       module_instance->children[0]->types.identifier);
     }
 
+    //reordering if the variable is instantiated by name
+    if (module_instance_list->num_children > 0 && module_instance_list->children[0]->children[0] != NULL) {
+        reorder_connections_from_name(module_list, module_instance_list, MODULE_ITEMS);
+    }
+
     for (i = 0; i < module_list->num_children; i++) {
         int port_size = 0;
         // VAR_DECLARE_LIST(child[i])->VAR_DECLARE_PORT(child[0])->VAR_DECLARE_input-or-output(child[0])
@@ -2006,6 +2012,11 @@ signal_list_t* connect_function_instantiation_and_alias(short PASS, ast_node_t* 
         error_message(NETLIST_ERROR, module_instance->line_number, module_instance->file_number,
                       "Function instantiation (%s) and definition don't match in terms of ports\n",
                       module_instance->children[0]->types.identifier);
+    }
+
+    //reordering if the variable is instantiated by name
+    if (module_instance_list->num_children > 0 && module_instance_list->children[1]->children[0] != NULL) {
+        reorder_connections_from_name(module_list, module_instance_list, FUNCTION);
     }
 
     for (i = 0; i < module_list->num_children; i++) {
@@ -2308,6 +2319,11 @@ signal_list_t* connect_task_instantiation_and_alias(short PASS, ast_node_t* task
         error_message(NETLIST_ERROR, task_instance->line_number, task_instance->file_number,
                       "Task instantiation (%s) and definition don't match in terms of ports\n",
                       task_instance->children[0]->types.identifier);
+    }
+
+    //reordering if the variable is instantiated by name
+    if (task_instance_list->num_children > 0 && task_instance_list->children[0]->children[0] != NULL) {
+        reorder_connections_from_name(task_list, task_instance_list, TASK);
     }
 
     for (i = 0; i < task_list->num_children; i++) {
@@ -5146,4 +5162,44 @@ signal_list_t* create_hard_block(ast_node_t* block, char* instance_name_prefix, 
         add_list = insert_in_vptr_list(add_list, block_node);
 
     return return_list;
+}
+
+void reorder_connections_from_name(ast_node_t* instance_node_list, ast_node_t* instantiated_instance_list, ids type) {
+    int i, j;
+    bool has_matched;
+    int* arr_index = new int[instantiated_instance_list->num_children];
+    int start_index = type == FUNCTION ? 1 : 0;
+
+    for (i = start_index; i < instantiated_instance_list->num_children; i++) {
+        has_matched = false;
+        arr_index[i] = -1;
+        for (j = start_index; j < instance_node_list->num_children; j++) {
+            if (strcmp(instance_node_list->children[j]->children[0]->types.identifier,
+                       instantiated_instance_list->children[i]->children[0]->types.identifier)
+                == 0) {
+                if (i != j) {
+                    arr_index[i] = j;
+                }
+
+                has_matched = true;
+            }
+        }
+        if (!has_matched) {
+            error_message(NETLIST_ERROR, instantiated_instance_list->children[i]->line_number,
+                          instantiated_instance_list->children[i]->file_number,
+                          "Module entry %s does not exist\n",
+                          instantiated_instance_list->children[i]->children[0]->types.identifier);
+        }
+    }
+
+    for (i = start_index; i < instantiated_instance_list->num_children; i++) {
+        if (arr_index[i] != -1) {
+            ast_node_t* temp = instantiated_instance_list->children[arr_index[i]];
+            instantiated_instance_list->children[arr_index[i]] = instantiated_instance_list->children[i];
+            instantiated_instance_list->children[i] = temp;
+            arr_index[arr_index[i]] = -1;
+        }
+    }
+
+    delete[] arr_index;
 }
