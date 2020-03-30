@@ -174,6 +174,7 @@ struct t_draw_state {
     bool clip_routing_util = false;
     bool draw_block_outlines = true;
     bool draw_block_text = true;
+    int draw_net_max_fanout = std::numeric_limits<int>::max();
     int max_sub_blk_lvl = 0;
     int show_blk_internal = 0;
     bool show_graphics = false;
