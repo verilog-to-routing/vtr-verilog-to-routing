@@ -3829,6 +3829,10 @@ void run_graphics_commands(std::string commands) {
             VTR_ASSERT_MSG(cmd.size() == 2, "Expect draw block text state after 'set_draw_block_text'");
             draw_state->draw_block_text = vtr::atoi(cmd[1]);
             VTR_LOG("%d\n", (int)draw_state->draw_block_text);
+        } else if (cmd[0] == "set_draw_block_internals") {
+            VTR_ASSERT_MSG(cmd.size() == 2, "Expect draw state after 'set_draw_block_internals'");
+            draw_state->show_blk_internal = vtr::atoi(cmd[1]);
+            VTR_LOG("%d\n", (int)draw_state->show_blk_internal);
         } else if (cmd[0] == "exit") {
             VTR_ASSERT_MSG(cmd.size() == 2, "Expect exit code after 'exit'");
             exit(vtr::atoi(cmd[1]));
