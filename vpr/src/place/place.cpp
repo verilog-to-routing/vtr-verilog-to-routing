@@ -982,10 +982,11 @@ static void placement_inner_loop(float t,
         }
 
         if (placer_opts.placement_saves_per_temperature  >= 1
+            && inner_iter > 0
             && inner_iter % (move_lim / placer_opts.placement_saves_per_temperature) == 0) {
 
             std::string filename = vtr::string_fmt("placement_%03d_%03d.place", temp_num + 1, inner_placement_save_count);
-            VTR_LOG("Saving placement to file at temperature move %d: %s\n", inner_iter, filename.c_str());
+            VTR_LOG("Saving placement to file at temperature move %d / %d: %s\n", inner_iter, move_lim, filename.c_str());
             print_place(nullptr, nullptr, filename.c_str());
             ++inner_placement_save_count; 
         }
