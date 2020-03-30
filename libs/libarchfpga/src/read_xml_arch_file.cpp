@@ -3036,7 +3036,6 @@ static t_pin_counts ProcessSubTilePorts(pugi::xml_node Parent,
         } else {
             VTR_ASSERT(port.is_clock && port.type == IN_PORT);
             pin_counts.clock += port.num_pins;
-
         }
     }
 
