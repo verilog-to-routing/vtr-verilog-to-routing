@@ -992,20 +992,25 @@ static void drawplace(ezgl::renderer* g) {
                 g->set_color(ezgl::BLACK);
 
                 g->set_line_dash((EMPTY_BLOCK_ID == bnum) ? ezgl::line_dash::asymmetric_5_3 : ezgl::line_dash::none);
-                g->draw_rectangle(abs_clb_bbox);
-                /* Draw text if the space has parts of the netlist */
-                if (bnum != EMPTY_BLOCK_ID && bnum != INVALID_BLOCK_ID) {
-                    std::string name = cluster_ctx.clb_nlist.block_name(bnum) + vtr::string_fmt(" (#%zu)", size_t(bnum));
-
-                    g->draw_text(center, name.c_str(), abs_clb_bbox.width(), abs_clb_bbox.height());
+                if (draw_state->draw_block_outlines) {
+                    g->draw_rectangle(abs_clb_bbox);
                 }
-                /* Draw text for block type so that user knows what block */
-                if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
-                    std::string block_type_loc = device_ctx.grid[i][j].type->name;
-                    block_type_loc += vtr::string_fmt(" (%d,%d)", i, j);
 
-                    g->draw_text(center - ezgl::point2d(0, abs_clb_bbox.height() / 4),
-                                 block_type_loc.c_str(), abs_clb_bbox.width(), abs_clb_bbox.height());
+                if (draw_state->draw_block_text) {
+                    /* Draw text if the space has parts of the netlist */
+                    if (bnum != EMPTY_BLOCK_ID && bnum != INVALID_BLOCK_ID) {
+                        std::string name = cluster_ctx.clb_nlist.block_name(bnum) + vtr::string_fmt(" (#%zu)", size_t(bnum));
+
+                        g->draw_text(center, name.c_str(), abs_clb_bbox.width(), abs_clb_bbox.height());
+                    }
+                    /* Draw text for block type so that user knows what block */
+                    if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
+                        std::string block_type_loc = device_ctx.grid[i][j].type->name;
+                        block_type_loc += vtr::string_fmt(" (%d,%d)", i, j);
+
+                        g->draw_text(center - ezgl::point2d(0, abs_clb_bbox.height() / 4),
+                                     block_type_loc.c_str(), abs_clb_bbox.width(), abs_clb_bbox.height());
+                    }
                 }
             }
         }
@@ -3816,6 +3821,14 @@ void run_graphics_commands(std::string commands) {
             VTR_ASSERT_MSG(cmd.size() == 2, "Expect congestion draw state after 'set_congestion'");
             draw_state->show_congestion = (e_draw_congestion) vtr::atoi(cmd[1]);
             VTR_LOG("%d\n", (int)draw_state->show_congestion);
+        } else if (cmd[0] == "set_draw_block_outlines") {
+            VTR_ASSERT_MSG(cmd.size() == 2, "Expect draw block outlines state after 'set_draw_block_outlines'");
+            draw_state->draw_block_outlines = vtr::atoi(cmd[1]);
+            VTR_LOG("%d\n", (int)draw_state->draw_block_outlines);
+        } else if (cmd[0] == "set_draw_block_text") {
+            VTR_ASSERT_MSG(cmd.size() == 2, "Expect draw block text state after 'set_draw_block_text'");
+            draw_state->draw_block_text = vtr::atoi(cmd[1]);
+            VTR_LOG("%d\n", (int)draw_state->draw_block_text);
         } else if (cmd[0] == "exit") {
             VTR_ASSERT_MSG(cmd.size() == 2, "Expect exit code after 'exit'");
             exit(vtr::atoi(cmd[1]));
