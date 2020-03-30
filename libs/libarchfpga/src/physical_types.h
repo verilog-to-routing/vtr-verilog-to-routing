@@ -585,6 +585,8 @@ struct t_physical_tile_type {
     int num_output_pins = 0;
     int num_clock_pins = 0;
 
+    std::vector<int> clock_pin_indices;
+
     int capacity = 0;
 
     int width = 0;
@@ -650,7 +652,7 @@ struct t_capacity_range {
     }
 
     bool is_in_range(int cap) const {
-        return cap >= low or cap <= high;
+        return cap >= low and cap <= high;
     }
 
     int total() const {
