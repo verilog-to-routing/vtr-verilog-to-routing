@@ -364,7 +364,10 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
     }
     g->fill_rectangle(abs_bbox);
     g->set_color(ezgl::BLACK);
-    g->draw_rectangle(abs_bbox);
+
+    if (draw_state->draw_block_outlines) {
+        g->draw_rectangle(abs_bbox);
+    }
 
     /// then draw text ///
 
@@ -381,30 +384,36 @@ static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezg
 
             sprintf(blk_tag, "%s (%s)", pb_type->name, pb->name);
 
-            g->draw_text(
-                abs_bbox.center(),
-                blk_tag,
-                abs_bbox.width(),
-                abs_bbox.height());
+            if (draw_state->draw_block_text) {
+                g->draw_text(
+                    abs_bbox.center(),
+                    blk_tag,
+                    abs_bbox.width(),
+                    abs_bbox.height());
+            }
 
             free(blk_tag);
         } else {
             // else (ie. has chilren, and isn't at the lowest displayed level)
             // just label its type, and put it up at the top so we can see it
+            if (draw_state->draw_block_text) {
+                g->draw_text(
+                    ezgl::point2d(abs_bbox.center_x(),
+                                  abs_bbox.top() - (abs_bbox.height()) / 15.0),
+                    pb_type->name,
+                    abs_bbox.width(),
+                    abs_bbox.height());
+            }
+        }
+    } else {
+        // If child block is not used, label it only by its type
+        if (draw_state->draw_block_text) {
             g->draw_text(
-                ezgl::point2d(abs_bbox.center_x(),
-                              abs_bbox.top() - (abs_bbox.height()) / 15.0),
+                abs_bbox.center(),
                 pb_type->name,
                 abs_bbox.width(),
                 abs_bbox.height());
         }
-    } else {
-        // If child block is not used, label it only by its type
-        g->draw_text(
-            abs_bbox.center(),
-            pb_type->name,
-            abs_bbox.width(),
-            abs_bbox.height());
     }
 
     /// now recurse on the child pbs. ///
