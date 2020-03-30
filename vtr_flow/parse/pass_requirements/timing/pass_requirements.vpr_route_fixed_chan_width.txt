@@ -3,6 +3,7 @@
 
 #Timing metrics
 critical_path_delay;Range(0.80,1.40)
+geomean_nonvirtual_intradomain_critical_path_delay;Range(0.80,1.40)
 setup_TNS;Range(0.80,1.40)
 setup_WNS;Range(0.80,1.40)
 #hold_TNS;Range(0.05,20.00)
