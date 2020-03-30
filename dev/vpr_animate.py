@@ -28,6 +28,7 @@ def main():
         cmd = vpr_base_cmd + " --place_file " + placement + " --route" + " --exit_after_first_routing_iteration on"
         cmd += " --graphics_commands '{}'".format(args.graphics_commands.format(i=i))
         cmd += " >& vpr_img_{}.log".format(i)
+        cmd += " && echo 'Finished {}' || echo 'Failed {}'".format(i, i)
         print(cmd)
         i += 1
 
@@ -35,6 +36,7 @@ def main():
         cmd = vpr_base_cmd + " --place_file " + args.placements[-1] + " --route_file " + routing + " --analysis"
         cmd += " --graphics_commands '{}'".format(args.graphics_commands.format(i=i))
         cmd += " >& vpr_img_{}.log".format(i)
+        cmd += " && echo 'Finished {}' || echo 'Failed {}'".format(i, i)
         print(cmd)
         i += 1
 
