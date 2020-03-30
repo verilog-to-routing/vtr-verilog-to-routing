@@ -5,6 +5,7 @@ crit_path_route_success_iteration;vpr.out;Successfully routed after (\d+) routin
 
 #VPR Analysis (final implementation) Timing Metrics
 critical_path_delay;vpr.out;Final critical path: (.*) ns
+geomean_nonvirtual_intradomain_critical_path_delay;vpr.out;Geometric mean non-virtual intra-domain period: (.*) ns
 setup_TNS;vpr.out;Setup Total Negative Slack \(sTNS\): (.*) ns
 setup_WNS;vpr.out;Setup Worst Negative Slack \(sWNS\): (.*) ns
 hold_TNS;vpr.out;Hold Total Negative Slack \(hTNS\): (.*) ns
