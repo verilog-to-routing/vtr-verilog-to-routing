@@ -171,6 +171,7 @@ struct t_draw_state {
     int show_routing_bb = OPEN;
     e_draw_routing_util show_routing_util = DRAW_NO_ROUTING_UTIL;
     e_draw_rr_toggle draw_rr_toggle = DRAW_NO_RR;
+    bool clip_routing_util = false;
     int max_sub_blk_lvl = 0;
     int show_blk_internal = 0;
     bool show_graphics = false;

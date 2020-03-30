@@ -3394,7 +3394,13 @@ static void draw_routing_util(ezgl::renderer* g) {
     }
     max_util = std::max(max_util, 1.f);
 
-    std::unique_ptr<vtr::ColorMap> cmap = std::make_unique<vtr::PlasmaColorMap>(min_util, max_util);
+    std::unique_ptr<vtr::ColorMap> cmap;
+    
+    if (draw_state->clip_routing_util) {
+        cmap = std::make_unique<vtr::PlasmaColorMap>(0., 1.);
+    } else {
+        cmap = std::make_unique<vtr::PlasmaColorMap>(min_util, max_util);
+    }
 
     float tile_width = draw_coords->get_tile_width();
     float tile_height = draw_coords->get_tile_height();
@@ -3412,6 +3418,9 @@ static void draw_routing_util(ezgl::renderer* g) {
             int chan_count = 0;
             if (x > 0) {
                 chanx_util = routing_util(chanx_usage[x][y], chanx_avail[x][y]);
+                if (draw_state->clip_routing_util) {
+                    chanx_util = std::min(chanx_util, 1.f);
+                }
                 ezgl::color chanx_color = to_ezgl_color(cmap->color(chanx_util));
                 chanx_color.alpha *= ALPHA;
                 g->set_color(chanx_color);
@@ -3432,6 +3441,9 @@ static void draw_routing_util(ezgl::renderer* g) {
 
             if (y > 0) {
                 chany_util = routing_util(chany_usage[x][y], chany_avail[x][y]);
+                if (draw_state->clip_routing_util) {
+                    chany_util = std::min(chany_util, 1.f);
+                }
                 ezgl::color chany_color = to_ezgl_color(cmap->color(chany_util));
                 chany_color.alpha *= ALPHA;
                 g->set_color(chany_color);
@@ -3459,6 +3471,9 @@ static void draw_routing_util(ezgl::renderer* g) {
 
             VTR_ASSERT(chan_count > 0);
             sb_util /= chan_count;
+            if (draw_state->clip_routing_util) {
+                sb_util = std::min(sb_util, 1.f);
+            }
             ezgl::color sb_color = to_ezgl_color(cmap->color(sb_util));
             sb_color.alpha *= ALPHA;
             g->set_color(sb_color);
@@ -3793,6 +3808,10 @@ void run_graphics_commands(std::string commands) {
             VTR_ASSERT_MSG(cmd.size() == 2, "Expect routing util draw state after 'set_routing_util'");
             draw_state->show_routing_util = (e_draw_routing_util) vtr::atoi(cmd[1]);
             VTR_LOG("%d\n", (int)draw_state->show_routing_util);
+        } else if (cmd[0] == "set_clip_routing_util") {
+            VTR_ASSERT_MSG(cmd.size() == 2, "Expect routing util draw state after 'set_routing_util'");
+            draw_state->clip_routing_util = (bool) vtr::atoi(cmd[1]);
+            VTR_LOG("%d\n", (int)draw_state->clip_routing_util);
         } else if (cmd[0] == "set_congestion") {
             VTR_ASSERT_MSG(cmd.size() == 2, "Expect congestion draw state after 'set_congestion'");
             draw_state->show_congestion = (e_draw_congestion) vtr::atoi(cmd[1]);
