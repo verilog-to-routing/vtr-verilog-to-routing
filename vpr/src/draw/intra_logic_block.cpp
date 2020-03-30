@@ -547,7 +547,7 @@ void draw_logical_connections(ezgl::renderer* g) {
 
     g->set_line_dash(ezgl::line_dash::none);
 
-    constexpr float NET_ALPHA = 1.;
+    constexpr float NET_ALPHA = 0.0275;
 
     // iterate over all the atom nets
     for (auto net_id : atom_ctx.nlist.nets()) {
@@ -570,11 +570,11 @@ void draw_logical_connections(ezgl::renderer* g) {
             ClusterBlockId sink_clb = atom_ctx.lookup.atom_clb(sink_blk_id);
 
             if (src_is_selected && sel_subblk_info.is_sink_of_selected(sink_pb_gnode, sink_clb)) {
-                g->set_color(DRIVES_IT_COLOR, NET_ALPHA);
+                g->set_color(DRIVES_IT_COLOR, DRIVES_IT_COLOR.alpha * NET_ALPHA);
             } else if (src_is_src_of_selected && sel_subblk_info.is_in_selected_subtree(sink_pb_gnode, sink_clb)) {
-                g->set_color(DRIVEN_BY_IT_COLOR, NET_ALPHA);
+                g->set_color(DRIVEN_BY_IT_COLOR, DRIVEN_BY_IT_COLOR.alpha * NET_ALPHA);
             } else if (draw_state->show_nets == DRAW_LOGICAL_CONNECTIONS && (draw_state->showing_sub_blocks() || src_clb != sink_clb)) {
-                g->set_color(ezgl::BLACK, NET_ALPHA); // if showing all, draw the other ones in black
+                g->set_color(ezgl::BLACK, ezgl::BLACK.alpha * NET_ALPHA); // if showing all, draw the other ones in black
             } else {
                 continue; // not showing all, and not the sperified block, so skip
             }
