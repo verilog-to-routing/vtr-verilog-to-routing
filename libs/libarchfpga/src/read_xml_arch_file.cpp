@@ -512,6 +512,11 @@ static void SetupPinClasses(t_physical_tile_type* PhysicalTileType) {
                         PhysicalTileType->is_ignored_pin[pin_count] = port.is_clock || port.is_non_clock_global;
                         // clock pins and other specified global ports are flaged as global
                         PhysicalTileType->is_pin_global[pin_count] = port.is_clock || port.is_non_clock_global;
+
+                        if (port.is_clock) {
+                            PhysicalTileType->clock_pin_indices.push_back(pin_count);
+                        }
+
                         pin_count++;
                     }
 
@@ -539,6 +544,11 @@ static void SetupPinClasses(t_physical_tile_type* PhysicalTileType) {
                         PhysicalTileType->is_ignored_pin[pin_count] = port.is_clock || port.is_non_clock_global;
                         // clock pins and other specified global ports are flaged as global
                         PhysicalTileType->is_pin_global[pin_count] = port.is_clock || port.is_non_clock_global;
+
+                        if (port.is_clock) {
+                            PhysicalTileType->clock_pin_indices.push_back(pin_count);
+                        }
+
                         pin_count++;
 
                         PhysicalTileType->class_inf.push_back(class_inf);
@@ -3026,6 +3036,7 @@ static t_pin_counts ProcessSubTilePorts(pugi::xml_node Parent,
         } else {
             VTR_ASSERT(port.is_clock && port.type == IN_PORT);
             pin_counts.clock += port.num_pins;
+
         }
     }
 
@@ -3353,10 +3364,10 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                         }
 
                         //Check that the block name matches
-                        if (inst_port.instance_name() != PhysicalTileType->name) {
+                        if (inst_port.instance_name() != SubTile->name) {
                             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
-                                           "Mismatched block name in pin location specification (expected '%s' was '%s')",
-                                           PhysicalTileType->name, inst_port.instance_name().c_str());
+                                           "Mismatched sub tile name in pin location specification (expected '%s' was '%s')",
+                                           SubTile->name, inst_port.instance_name().c_str());
                         }
 
                         int pin_low_idx = inst_port.port_low_index();
@@ -3439,7 +3450,7 @@ static void ProcessSubTiles(pugi::xml_node Node,
                        PhysicalTileType->name);
     }
 
-    CurSubTile = get_single_child(Node, "sub_tile", loc_data);
+    CurSubTile = get_first_child(Node, "sub_tile", loc_data);
 
     while (CurSubTile) {
         t_sub_tile SubTile;
@@ -3463,7 +3474,7 @@ static void ProcessSubTiles(pugi::xml_node Node,
 
         /* Load properties */
         int capacity = get_attribute(CurSubTile, "capacity", loc_data, ReqOpt::OPTIONAL).as_int(1);
-        SubTile.capacity.set(PhysicalTileType->capacity, capacity - 1);
+        SubTile.capacity.set(PhysicalTileType->capacity, PhysicalTileType->capacity + capacity - 1);
         PhysicalTileType->capacity += capacity;
 
         /* Process sub tile port definitions */
