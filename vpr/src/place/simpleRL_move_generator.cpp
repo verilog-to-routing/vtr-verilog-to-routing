@@ -8,7 +8,7 @@
 //EpsilonGreedyAgent member functions
 EpsilonGreedyAgent::EpsilonGreedyAgent(size_t k, float epsilon) {
 
-    //f_ = vtr::fopen("agent_info.txt", "w");
+    f_ = vtr::fopen("agent_info.txt", "w");
     set_epsilon(epsilon);
     set_k(k);
     set_epsilon_action_prob();
@@ -149,6 +149,7 @@ void EpsilonGreedyAgent::set_k(size_t k) {
     }
 */
 
+#endif
     //f_ = vtr::fopen("egreedy.csv", "w");
     fprintf(f_, "action,reward,");
     for (size_t i = 0; i < k_; ++i) {
@@ -158,7 +159,6 @@ void EpsilonGreedyAgent::set_k(size_t k) {
         fprintf(f_, "n%zu,", i);
     }
     fprintf(f_, "\n");
-#endif
 }
 
 
@@ -201,10 +201,11 @@ SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>
 e_create_move SimpleRLMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim
 	, std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>& num_moves, int& type, int high_fanout_net) {
 
-	size_t move_index = karmed_bandit_agent->propose_action();
-	++num_moves[move_index];
+	type = karmed_bandit_agent->propose_action();
+	++num_moves[type];
+    //type = move_index;
 	//VTR_LOG("####%d",move_index);
-	return avail_moves[move_index]->propose_move(blocks_affected, rlim, X_coord, Y_coord, num_moves, type, high_fanout_net);
+	return avail_moves[type]->propose_move(blocks_affected, rlim, X_coord, Y_coord, num_moves, type, high_fanout_net);
 }
 
 void SimpleRLMoveGenerator::process_outcome(double reward){
