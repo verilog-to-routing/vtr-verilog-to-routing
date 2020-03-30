@@ -39,6 +39,16 @@ def error_line(key):
     output = "  Failed " + _FILLER_LINE
     return colored(output[:_LEN], 'red') + " " + key
 
+def new_entry_line(key):
+    output = "  Added  " + _FILLER_LINE
+    return colored(output[:_LEN], 'red') + " " + key
+
+def new_entry_str(header, got):
+    header = '{0:<{1}}'.format("- " + header, _LEN)
+    got = colored("{+" + str(got) + "+}", 'green')
+    return "    " + header + got
+
+
 def success_line(key):
     output = "  Ok " + _FILLER_LINE
     return colored(output[:_LEN], 'green') + " " + key
@@ -346,7 +356,22 @@ def _compare(toml_file_name, golden_result_file_name, result_file_name, diff_fil
                 print(key,file=sys.stderr)
             else:
                 print(success_line(key))
-    
+
+    # add the new entries
+    for key in tbl:
+        if key not in golden_tbl:
+
+            diff[key] = OrderedDict()
+            error_str = []
+            for header in toml_dict:
+                if header != _DFLT_HDR:
+                    error_str.append(new_entry_str(header, tbl[key][header]))
+                    diff[key][header] = tbl[key][header]
+
+            if len(error_str):
+                print(new_entry_line(key))
+                print("\n".join(error_str))
+
     with open(diff_file_name, 'w+') as diff_file:
         print_as_csv(toml_dict, diff, file=diff_file)
 
