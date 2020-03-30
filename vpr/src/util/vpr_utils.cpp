@@ -2116,14 +2116,15 @@ void place_sync_external_block_connections(ClusterBlockId iblk) {
     VTR_ASSERT(sub_tile.num_phy_pins % sub_tile.capacity.total() == 0);
 
     int max_num_block_pins = sub_tile.num_phy_pins / sub_tile.capacity.total();
-    int physical_pin_offset = get_physical_pin_offset(&sub_tile, physical_tile);
     /* Logical location and physical location is offset by z * max_num_block_pins */
+
+    int rel_capacity = place_ctx.block_locs[iblk].loc.z - sub_tile.capacity.low;
 
     for (auto pin : clb_nlist.block_pins(iblk)) {
         int logical_pin_index = clb_nlist.pin_logical_index(pin);
         int physical_pin_index = get_physical_pin(sub_tile_index, physical_tile, logical_block, logical_pin_index);
 
-        int new_physical_pin_index = physical_pin_offset + physical_pin_index + place_ctx.block_locs[iblk].loc.z * max_num_block_pins;
+        int new_physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[physical_pin_index + rel_capacity * max_num_block_pins];
 
         auto result = place_ctx.physical_pins.find(pin);
         if (result != place_ctx.physical_pins.end()) {
