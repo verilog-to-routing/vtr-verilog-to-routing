@@ -1323,7 +1323,7 @@ ast_node_t* newGateInstance(char* gate_instance_name, ast_node_t* expression1, a
         symbol_node = newSymbolNode(gate_instance_name, line_number);
     }
 
-    char* newChar = vtr::strdup(expression1->types.identifier);
+    char* newChar = vtr::strdup(get_identifier(expression1));
     ast_node_t* newVar = newVarDeclare(newChar, NULL, NULL, NULL, NULL, NULL, line_number);
     ast_node_t* newVarList = newList(VAR_DECLARE_LIST, newVar, line_number);
     ast_node_t* newVarMaked = markAndProcessSymbolListWith(MODULE, WIRE, newVarList, false);
@@ -1355,7 +1355,7 @@ ast_node_t* newMultipleInputsGateInstance(char* gate_instance_name, ast_node_t* 
         symbol_node = newSymbolNode(gate_instance_name, line_number);
     }
 
-    char* newChar = vtr::strdup(expression1->types.identifier);
+    char* newChar = vtr::strdup(get_identifier(expression1));
 
     ast_node_t* newVar = newVarDeclare(newChar, NULL, NULL, NULL, NULL, NULL, line_number);
 

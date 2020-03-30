@@ -510,6 +510,19 @@ char* get_name_of_var_declare_at_bit(ast_node_t* var_declare, int bit) {
 }
 
 /*---------------------------------------------------------------------------------------------
+ * (function: get_identifier)
+ * 	Assume node is one of: Array entry, Array range reference, Identifier
+ *-------------------------------------------------------------------------------------------*/
+char* get_identifier(ast_node_t* node) {
+    if (node->type == ARRAY_REF || node->type == RANGE_REF) {
+        return node->children[0]->types.identifier;
+    } else {
+        oassert(node->type == IDENTIFIERS);
+        return node->types.identifier;
+    }
+}
+
+/*---------------------------------------------------------------------------------------------
  * (function: get_name of_port_at_bit)
  * 	Assume module connections can be one of: Array entry, Concat, Signal, Array range reference
  *-------------------------------------------------------------------------------------------*/
