@@ -488,6 +488,10 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
         }
 
         application.run(init_setup, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
+
+        if (!draw_state->graphics_commands.empty()) {
+            run_graphics_commands(draw_state->graphics_commands);
+        }
     }
 
     if (draw_state->show_graphics) {
@@ -499,10 +503,6 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
     if (draw_state->save_graphics) {
         std::string extension = "pdf";
         save_graphics(extension, draw_state->save_graphics_file_base);
-    }
-
-    if (!draw_state->graphics_commands.empty()) {
-        run_graphics_commands(draw_state->graphics_commands);
     }
 
 #else
@@ -3796,7 +3796,13 @@ void run_graphics_commands(std::string commands) {
             VTR_ASSERT_MSG(cmd.size() == 2, "Expect filename after 'save_graphics'");
 
             auto name_ext = vtr::split_ext(cmd[1]);
-            save_graphics(/*extension=*/name_ext[1], /*filename=*/name_ext[0]);
+
+            //Replace {i}  with the sequence number
+            std::string name = vtr::replace_all(name_ext[0], "{i}", std::to_string(draw_state->sequence_number));
+
+            save_graphics(/*extension=*/name_ext[1], /*filename=*/name);
+            VTR_LOG("Saving to %s\n", std::string(name + name_ext[1]).c_str());
+
         } else if (cmd[0] == "set_macros") {
             VTR_ASSERT_MSG(cmd.size() == 2, "Expect net draw state after 'set_macro'");
             draw_state->show_placement_macros = (e_draw_placement_macros) vtr::atoi(cmd[1]);
@@ -3846,6 +3852,9 @@ void run_graphics_commands(std::string commands) {
     }
 
     *draw_state = backup_draw_state; //Restor original draw state
+
+    //Advance the sequence number
+    ++draw_state->sequence_number;
 }
 
 #endif /* NO_GRAPHICS */
