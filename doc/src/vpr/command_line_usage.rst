@@ -94,6 +94,57 @@ Graphics Options
 
     **Default:** ``off``
 
+.. option:: --graphics_commands <string>
+
+    A set of semi-colon seperated graphics commands.
+
+    * save_graphics <file>
+         Saves graphics to the specified file (.png/.pdf/
+         .svg). If <file> contains ``{i}``, it will be
+         replaced with an integer which increments
+         each time graphics is invoked.
+    * set_macros <int>
+         Sets the placement macro drawing state
+    * set_nets <int>
+         Sets the net drawing state
+    * set_cpd <int>
+         Sets the criticla path delay drawing state
+    * set_routing_util <int>
+         Sets the routing utilization drawing state
+    * set_clip_routing_util <int>
+         Sets whether routing utilization values are clipped to [0., 1.]. Useful when a consistent scale is needed across images
+    * set_draw_block_outlines <int>
+         Sets whether blocks have an outline drawn around them
+    * set_draw_block_text <int>
+         Sets whether blocks have label text drawn on them
+    * set_draw_block_internals <int>
+         Sets the level to which block internals are drawn
+    * set_draw_net_max_fanout <int>
+         Sets the maximum fanout for nets to be drawn (if fanout is beyond this value the net will not be drawn)
+    * set_congestion <int>
+         Sets the routing congestion drawing state
+    * exit <int>
+         Exits VPR with specified exit code
+    
+    Example:
+
+    .. code-block:: none
+
+        save_graphics place.png; \
+        set_nets 1; save_graphics nets1.png;\
+        set_nets 2; save_graphics nets2.png; set_nets 0;\
+        set_cpd 1; save_graphics cpd1.png; \
+        set_cpd 3; save_graphics cpd3.png; set_cpd 0; \
+        set_routing_util 5; save_graphics routing_util5.png; \
+        set_routing_util 0; \
+        set_congestion 1; save_graphics congestion1.png;
+
+    The above toggles various graphics settings (e.g. drawing nets, drawing critical path) and then saves the results to .png files.
+    
+    Note that drawing state is reset to its previous state after these commands are invoked.
+
+    Like the interactive graphics :option`<--disp>` option, the :option:`--auto` option controls how often the commands specified with this option are invoked.
+
 .. _general_options:
 
 General Options
