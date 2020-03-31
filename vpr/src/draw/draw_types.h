@@ -190,6 +190,7 @@ struct t_draw_state {
     bool save_graphics = false;
     std::string graphics_commands;
     bool forced_pause = false;
+    int sequence_number = 0;
 
     std::string save_graphics_file_base = "vpr";
 
