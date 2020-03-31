@@ -31,5 +31,5 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements_clock_modeling.txt
 
 # Script parameters
-script_params_list_add= --clock_modeling ideal
-script_params_list_add= --clock_modeling route
+script_params_list_add= --clock_modeling ideal --route_chan_width 60
+script_params_list_add= --clock_modeling route --route_chan_width 60
