@@ -707,7 +707,7 @@ static void LoadPinLoc(pugi::xml_node Locations,
                             for (int pin_num = pin_range.first; pin_num < pin_range.second; ++pin_num) {
                                 VTR_ASSERT(pin_num < (int)sub_tile.sub_tile_to_tile_pin_indices.size() / sub_tile_capacity);
                                 for (int capacity = 0; capacity < sub_tile_capacity; ++capacity) {
-                                    int sub_tile_pin_index = pin_num + capacity * type->num_pins / sub_tile_capacity;
+                                    int sub_tile_pin_index = pin_num + capacity * sub_tile.num_phy_pins / sub_tile_capacity;
                                     int physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index];
                                     type->pinloc[width][height][side][physical_pin_index] = true;
                                     type->pin_width_offset[physical_pin_index] += width;
