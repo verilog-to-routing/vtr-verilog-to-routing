@@ -58,6 +58,7 @@ struct t_physical_tile_port;
 struct t_equivalent_site;
 struct t_physical_tile_type;
 typedef const t_physical_tile_type* t_physical_tile_type_ptr;
+struct t_sub_tile;
 struct t_logical_block_type;
 typedef const t_logical_block_type* t_logical_block_type_ptr;
 struct t_logical_pin;
@@ -442,7 +443,13 @@ struct t_class {
     enum e_pin_type type;
     PortEquivalence equivalence;
     int num_pins;
-    int* pinlist; /* [0..num_pins - 1] */
+    std::vector<int> pinlist; /* [0..num_pins - 1] */
+};
+
+/* Struct to hold the class ranges for specific sub tiles */
+struct t_class_range {
+    int low = 0;
+    int high = 0;
 };
 
 enum e_power_wire_type {
@@ -573,30 +580,27 @@ constexpr int DEFAULT_SWITCH = -2;
 struct t_physical_tile_type {
     char* name = nullptr;
     int num_pins = 0;
+    int num_inst_pins = 0;
     int num_input_pins = 0;
     int num_output_pins = 0;
     int num_clock_pins = 0;
+
+    std::vector<int> clock_pin_indices;
 
     int capacity = 0;
 
     int width = 0;
     int height = 0;
 
-    bool**** pinloc = nullptr; /* [0..width-1][0..height-1][0..3][0..num_pins-1] */
+    vtr::NdMatrix<std::vector<bool>, 3> pinloc; /* [0..width-1][0..height-1][0..3][0..num_pins-1] */
 
-    enum e_pin_location_distr pin_location_distribution = E_SPREAD_PIN_DISTR;
-    int*** num_pin_loc_assignments = nullptr; /* [0..width-1][0..height-1][0..3] */
-    char***** pin_loc_assignments = nullptr;  /* [0..width-1][0..height-1][0..3][0..num_tokens-1][0..string_name] */
+    std::vector<t_class> class_inf; /* [0..num_class-1] */
 
-    int num_class = 0;
-    t_class* class_inf = nullptr; /* [0..num_class-1] */
-
-    std::vector<t_physical_tile_port> ports;
-    std::vector<int> pin_width_offset;  //[0..num_pins-1]
-    std::vector<int> pin_height_offset; //[0..num_pins-1]
-    int* pin_class = nullptr;           /* [0..num_pins-1] */
-    bool* is_ignored_pin = nullptr;     /* [0..num_pins-1] */
-    bool* is_pin_global = nullptr;      /* [0..num_pins -1] */
+    std::vector<int> pin_width_offset;  // [0..num_pins-1]
+    std::vector<int> pin_height_offset; // [0..num_pins-1]
+    std::vector<int> pin_class;         // [0..num_pins-1]
+    std::vector<bool> is_ignored_pin;   // [0..num_pins-1]
+    std::vector<bool> is_pin_global;    // [0..num_pins-1]
 
     std::vector<t_fc_specification> fc_specs;
 
@@ -611,7 +615,7 @@ struct t_physical_tile_type {
 
     int index = -1; /* index of type descriptor in array (allows for index referencing) */
 
-    std::vector<t_logical_block_type_ptr> equivalent_sites;
+    std::vector<t_sub_tile> sub_tiles;
 
     /* Unordered map indexed by the logical block index.
      * tile_block_pin_directs_map[logical block index][logical block pin] -> physical tile pin */
@@ -619,6 +623,8 @@ struct t_physical_tile_type {
 
     /* Returns the indices of pins that contain a clock for this physical logic block */
     std::vector<int> get_clock_pins_indices() const;
+
+    int get_sub_tile_loc_from_pin(int pin_num) const;
 
     // TODO: Remove is_input_type / is_output_type as part of
     // https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/1193
@@ -630,15 +636,65 @@ struct t_physical_tile_type {
     bool is_output_type;
 };
 
+/* Holds the capacity range of a certain sub_tile block within the parent physical tile type.
+ * E.g. TILE_X has the following sub tiles:
+ *          - SUB_TILE_A: capacity_range --> 0 to 4
+ *          - SUB_TILE_B: capacity_range --> 5 to 11
+ *          - SUB_TILE_C: capacity_range --> 12 to 16
+ *
+ * Totale TILE_X capacity is 17
+ */
+struct t_capacity_range {
+    int low = 0;
+    int high = 0;
+
+    void set(int low_cap, int high_cap) {
+        low = low_cap;
+        high = high_cap;
+    }
+
+    bool is_in_range(int cap) const {
+        return cap >= low and cap <= high;
+    }
+
+    int total() const {
+        return high - low + 1;
+    }
+};
+
+/** Describes the possible placeable blocks within a physical tile type.
+ *  A sub tile adds flexibility in the tile composition description.
+ */
+struct t_sub_tile {
+    char* name = nullptr;
+
+    // Mapping between the sub tile's pins and the physical pins corresponding
+    // to the physical tile type.
+    std::vector<int> sub_tile_to_tile_pin_indices;
+
+    std::vector<t_physical_tile_port> ports;
+
+    std::vector<t_logical_block_type_ptr> equivalent_sites;
+
+    t_capacity_range capacity;
+    t_class_range class_range;
+
+    int num_phy_pins = 0;
+
+    int index = -1;
+};
+
 /** A logical pin defines the pin index of a logical block type (i.e. a top level PB type)
  *  This structure wraps the int value of the logical pin to allow its storage in the
  *  vtr::bimap container.
  */
 struct t_logical_pin {
     int pin = -1;
+    int sub_tile_index = -1;
 
-    t_logical_pin(int value) {
+    t_logical_pin(int index, int value) {
         pin = value;
+        sub_tile_index = index;
     }
 
     bool operator==(const t_logical_pin o) const {
@@ -1384,6 +1440,7 @@ struct t_arch_switch_inf {
     float Cin = 0.;
     float Cout = 0.;
     float Cinternal = 0.;
+    float penalty_cost = 0.;
     float mux_trans_size = 1.;
     BufferSize buf_size_type = BufferSize::AUTO;
     float buf_size = 0.;
@@ -1448,6 +1505,7 @@ struct t_rr_switch_inf {
     float Cout = 0.;
     float Cinternal = 0.;
     float Tdel = 0.;
+    float penalty_cost = 0.;
     float mux_trans_size = 0.;
     float buf_size = 0.;
     const char* name = nullptr;
@@ -1493,7 +1551,7 @@ struct t_direct_inf {
     char* to_pin;
     int x_offset;
     int y_offset;
-    int z_offset;
+    int sub_tile_offset;
     int switch_type;
     e_side from_side;
     e_side to_side;

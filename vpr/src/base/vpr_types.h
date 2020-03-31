@@ -108,7 +108,10 @@ constexpr const char* EMPTY_BLOCK_NAME = "EMPTY";
 enum class e_router_lookahead {
     CLASSIC, //VPR's classic lookahead (assumes uniform wire types)
     MAP,     //Lookahead considering different wire types (see Oleg Petelin's MASc Thesis)
-    NO_OP    //A no-operation lookahead which always returns zero
+    NO_OP,   //A no-operation lookahead which always returns zero
+    CONNECTION_BOX_MAP,
+    // Lookahead considering different wire types and IPIN
+    // connection box.
 };
 
 enum class e_route_bb_update {
@@ -493,26 +496,26 @@ struct t_bb {
 // z: z-offset
 struct t_pl_offset {
     t_pl_offset() = default;
-    t_pl_offset(int xoffset, int yoffset, int zoffset)
+    t_pl_offset(int xoffset, int yoffset, int sub_tile_offset)
         : x(xoffset)
         , y(yoffset)
-        , z(zoffset) {}
+        , sub_tile(sub_tile_offset) {}
 
     int x = 0;
     int y = 0;
-    int z = 0;
+    int sub_tile = 0;
 
     t_pl_offset& operator+=(const t_pl_offset& rhs) {
         x += rhs.x;
         y += rhs.y;
-        z += rhs.z;
+        sub_tile += rhs.sub_tile;
         return *this;
     }
 
     t_pl_offset& operator-=(const t_pl_offset& rhs) {
         x -= rhs.x;
         y -= rhs.y;
-        z -= rhs.z;
+        sub_tile -= rhs.sub_tile;
         return *this;
     }
 
@@ -527,18 +530,18 @@ struct t_pl_offset {
     }
 
     friend t_pl_offset operator-(const t_pl_offset& other) {
-        return t_pl_offset(-other.x, -other.y, -other.z);
+        return t_pl_offset(-other.x, -other.y, -other.sub_tile);
     }
     friend t_pl_offset operator+(const t_pl_offset& other) {
-        return t_pl_offset(+other.x, +other.y, +other.z);
+        return t_pl_offset(+other.x, +other.y, +other.sub_tile);
     }
 
     friend bool operator<(const t_pl_offset& lhs, const t_pl_offset& rhs) {
-        return std::tie(lhs.x, lhs.y, lhs.z) < std::tie(rhs.x, rhs.y, rhs.z);
+        return std::tie(lhs.x, lhs.y, lhs.sub_tile) < std::tie(rhs.x, rhs.y, rhs.sub_tile);
     }
 
     friend bool operator==(const t_pl_offset& lhs, const t_pl_offset& rhs) {
-        return std::tie(lhs.x, lhs.y, lhs.z) == std::tie(rhs.x, rhs.y, rhs.z);
+        return std::tie(lhs.x, lhs.y, lhs.sub_tile) == std::tie(rhs.x, rhs.y, rhs.sub_tile);
     }
 
     friend bool operator!=(const t_pl_offset& lhs, const t_pl_offset& rhs) {
@@ -552,7 +555,7 @@ struct hash<t_pl_offset> {
     std::size_t operator()(const t_pl_offset& v) const noexcept {
         std::size_t seed = std::hash<int>{}(v.x);
         vtr::hash_combine(seed, v.y);
-        vtr::hash_combine(seed, v.z);
+        vtr::hash_combine(seed, v.sub_tile);
         return seed;
     }
 };
@@ -568,26 +571,26 @@ struct hash<t_pl_offset> {
 //offset between t_pl_loc.
 struct t_pl_loc {
     t_pl_loc() = default;
-    t_pl_loc(int xloc, int yloc, int zloc)
+    t_pl_loc(int xloc, int yloc, int sub_tile_loc)
         : x(xloc)
         , y(yloc)
-        , z(zloc) {}
+        , sub_tile(sub_tile_loc) {}
 
     int x = OPEN;
     int y = OPEN;
-    int z = OPEN;
+    int sub_tile = OPEN;
 
     t_pl_loc& operator+=(const t_pl_offset& rhs) {
         x += rhs.x;
         y += rhs.y;
-        z += rhs.z;
+        sub_tile += rhs.sub_tile;
         return *this;
     }
 
     t_pl_loc& operator-=(const t_pl_offset& rhs) {
         x -= rhs.x;
         y -= rhs.y;
-        z -= rhs.z;
+        sub_tile -= rhs.sub_tile;
         return *this;
     }
 
@@ -608,15 +611,15 @@ struct t_pl_loc {
     }
 
     friend t_pl_offset operator-(const t_pl_loc& lhs, const t_pl_loc& rhs) {
-        return t_pl_offset(lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z);
+        return t_pl_offset(lhs.x - rhs.x, lhs.y - rhs.y, lhs.sub_tile - rhs.sub_tile);
     }
 
     friend bool operator<(const t_pl_loc& lhs, const t_pl_loc& rhs) {
-        return std::tie(lhs.x, lhs.y, lhs.z) < std::tie(rhs.x, rhs.y, rhs.z);
+        return std::tie(lhs.x, lhs.y, lhs.sub_tile) < std::tie(rhs.x, rhs.y, rhs.sub_tile);
     }
 
     friend bool operator==(const t_pl_loc& lhs, const t_pl_loc& rhs) {
-        return std::tie(lhs.x, lhs.y, lhs.z) == std::tie(rhs.x, rhs.y, rhs.z);
+        return std::tie(lhs.x, lhs.y, lhs.sub_tile) == std::tie(rhs.x, rhs.y, rhs.sub_tile);
     }
 
     friend bool operator!=(const t_pl_loc& lhs, const t_pl_loc& rhs) {
@@ -630,7 +633,7 @@ struct hash<t_pl_loc> {
     std::size_t operator()(const t_pl_loc& v) const noexcept {
         std::size_t seed = std::hash<int>{}(v.x);
         vtr::hash_combine(seed, v.y);
-        vtr::hash_combine(seed, v.z);
+        vtr::hash_combine(seed, v.sub_tile);
         return seed;
     }
 };
@@ -901,6 +904,7 @@ enum e_base_cost_type {
     DELAY_NORMALIZED_LENGTH,
     DELAY_NORMALIZED_FREQUENCY,
     DELAY_NORMALIZED_LENGTH_FREQUENCY,
+    DELAY_NORMALIZED_LENGTH_BOUNDED,
     DEMAND_ONLY,
     DEMAND_ONLY_NORMALIZED_LENGTH
 };
@@ -983,6 +987,8 @@ struct t_router_opts {
     std::string read_router_lookahead;
 
     e_heap_type router_heap;
+    bool disable_check_route;
+    bool quick_check_route;
 };
 
 struct t_analysis_opts {

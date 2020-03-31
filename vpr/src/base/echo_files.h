@@ -46,6 +46,7 @@ enum e_echo_files {
     E_ECHO_CHAN_DETAILS,
     E_ECHO_SBLOCK_PATTERN,
     E_ECHO_ENDPOINT_TIMING,
+    E_ECHO_LOOKAHEAD_MAP,
 
     //Timing Graphs
     E_ECHO_PRE_PACKING_TIMING_GRAPH,

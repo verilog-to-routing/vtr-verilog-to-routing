@@ -809,20 +809,6 @@ Tile
 
         The name must be unique with respect to any other sibling ``<tile>`` tag.
 
-    :opt_param capacity: The number of instances of this block type at each grid location.
-
-        **Default:** ``1``
-
-        For example:
-
-        .. code-block:: xml
-
-            <pb_type name="IO" capacity="2"/>
-                ...
-            </pb_type>
-
-        specifies there are two instances of the block type ``IO`` at each of its grid locations.
-
     :opt_param width: The width of the block type in grid tiles
 
         **Default:** ``1``
@@ -837,230 +823,300 @@ Tile
 
 The following tags are common to all ``<tile>`` tags:
 
-.. arch:tag:: <input name="string" num_pins="int" equivalent="{none|full}" is_non_clock_global="{true|false}"/>
 
-    Defines an input port.
-    Multple input ports are described using multiple ``<input>`` tags.
+.. arch:tag:: <sub_tile name"string" capacity="{int}">
 
-    :req_param name: Name of the input port.
-    :req_param num_pins: Number of pins the input port has.
+    Describes one or many sub tiles corresponding to the physical tile.
+    Each sub tile is identifies a set of one or more stack location on a specific x, y grid location.
 
-    :opt_param equivalent:
+    **Attributes:**
 
-        Describes if the pins of the port are logically equivalent.
-        Input logical equivalence means that the pin order can be swapped without changing functionality.
-        For example, an AND gate has logically equivalent inputs because you can swap the order of the inputs and it’s still correct; an adder, on the otherhand, is not logically equivalent because if you swap the MSB with the LSB, the results are completely wrong.
-        LUTs are also considered logically equivalent since the logic function (LUT mask) can be rotated to account for pin swapping.
+    :req_param name: The name of this tile.
 
-        * ``none``: No input pins are logically equivalent.
+        The name must be unique with respect to any other sibling ``<tile>`` tag.
 
-            Input pins can not be swapped by the router. (Generates a unique SINK rr-node for each block input port pin.)
+    :opt_param capacity: The number of instances of this block type at each grid location.
 
-        * ``full``: All input pins are considered logically equivalent (e.g. due to logical equivalance or a full-crossbar within the cluster).
+        **Default:** ``1``
 
-            All input pins can be swapped without limitation by the router. (Generates a single SINK rr-node shared by each input port pin.)
+        For example:
 
-        **default:** ``none``
+        .. code-block:: xml
 
-    :opt_param is_non_clock_global:
+            <sub_tile name="IO" capacity="2"/>
+                ...
+            </sub_tile>
 
-        .. note:: Applies only to top-level pb_type.
+        specifies there are two instances of the block type ``IO`` at each of its grid locations.
 
-        Describes if this input pin is a global signal that is not a clock.
-        Very useful for signals such as FPGA-wide asynchronous resets.
-        These signals have their own dedicated routing channels and so should not use the general interconnect fabric on the FPGA.
+    .. note:: It is mandatory to have at least one sub tile definition for each physical tile.
 
+    .. arch:tag:: <input name="string" num_pins="int" equivalent="{none|full}" is_non_clock_global="{true|false}"/>
 
-.. arch:tag:: <output name="string" num_pins="int" equivalent="{none|full|instance}"/>
+        Defines an input port.
+        Multple input ports are described using multiple ``<input>`` tags.
 
-    Defines an output port.
-    Multple output ports are described using multiple ``<output>`` tags
+        :req_param name: Name of the input port.
+        :req_param num_pins: Number of pins the input port has.
 
-    :req_param name: Name of the output port.
-    :req_param num_pins: Number of pins the output port has.
+        :opt_param equivalent:
 
-    :opt_param equivalent:
+            Describes if the pins of the port are logically equivalent.
+            Input logical equivalence means that the pin order can be swapped without changing functionality.
+            For example, an AND gate has logically equivalent inputs because you can swap the order of the inputs and it’s still correct; an adder, on the otherhand, is not logically equivalent because if you swap the MSB with the LSB, the results are completely wrong.
+            LUTs are also considered logically equivalent since the logic function (LUT mask) can be rotated to account for pin swapping.
 
-        Describes if the pins of the output port are logically equivalent:
+            * ``none``: No input pins are logically equivalent.
 
-        * ``none``: No output pins are logically equivalent.
+                Input pins can not be swapped by the router. (Generates a unique SINK rr-node for each block input port pin.)
 
-            Output pins can not be swapped by the router. (Generates a unique SRC rr-node for each block output port pin.)
+            * ``full``: All input pins are considered logically equivalent (e.g. due to logical equivalance or a full-crossbar within the cluster).
 
-        * ``full``: All output pins are considered logically equivalent.
+                All input pins can be swapped without limitation by the router. (Generates a single SINK rr-node shared by each input port pin.)
 
-            All output pins can be swapped without limitation by the router. For example, this option would be appropriate to model an output port which has a full crossbar between it and the logic within the block that drives it. (Generates a single SRC rr-node shared by each output port pin.)
+            **default:** ``none``
 
-        * ``instance``: Models that sub-instances within a block (e.g. LUTs/BLEs) can be swapped to achieve a limited form of output pin logical equivalence.
+        :opt_param is_non_clock_global:
 
-            Like ``full``, this generates a single SRC rr-node shared by each output port pin. However, each net originating from this source can use only one output pin from the equivalence group. This can be useful in modeling more complex forms of equivalence in which you can swap which BLE implements which function to gain access to different inputs.
+            .. note:: Applies only to top-level pb_type.
 
-            .. warning:: When using ``instance`` equivalence you must be careful to ensure output swapping would not make the cluster internal routing (previously computed by the clusterer) illegal; the tool does not update the cluster internal routing due to output pin swapping.
-
-        **Default:** ``none``
-
-
-.. arch:tag:: <clock name="string" num_pins="int" equivalent="{none|full}"/>
-
-    Describes a clock port.
-    Multple clock ports are described using multiple ``<clock>`` tags.
-    *See above descriptions on inputs*
-
-.. _arch_fc:
-
-.. arch:tag:: <fc in_type="{frac|abs}" in_val="{int|float}" out_type="{frac|abs}" out_val="{int|float}">
-
-    :req_param in_type:
-        Indicates how the :math:`F_c` values for input pins should be interpreted.
-
-        ``frac``: The fraction of tracks of each wire/segment type.
-
-        ``abs``: The absolute number of tracks of each wire/segment type.
-
-    :req_param in_val:
-        Fraction or absolute number of tracks to which each input pin is connected.
-
-    :req_param out_type:
-        Indicates how the :math:`F_c` values for output pins should be interpreted.
-
-        ``frac``: The fraction of tracks of each wire/segment type.
-
-        ``abs``: The absolute number of tracks of each wire/segment type.
-
-    :req_param out_val:
-        Fraction or absolute number of wires/segments to which each output pin connects.
+            Describes if this input pin is a global signal that is not a clock.
+            Very useful for signals such as FPGA-wide asynchronous resets.
+            These signals have their own dedicated routing channels and so should not use the general interconnect fabric on the FPGA.
 
 
-    Sets the number of tracks/wires to which each logic block pin connects in each channel bordering the pin.
+    .. arch:tag:: <output name="string" num_pins="int" equivalent="{none|full|instance}"/>
 
-    The :math:`F_c` value :cite:`brown_fpgas` is interpreted as applying to each wire/segment type *individually* (see example).
+        Defines an output port.
+        Multple output ports are described using multiple ``<output>`` tags
 
-    When generating the FPGA routing architecture VPR will try to make 'good' choices about how pins and wires interconnect; for more details on the criteria and methods used see :cite:`betz_automatic_generation_of_fpga_routing`.
+        :req_param name: Name of the output port.
+        :req_param num_pins: Number of pins the output port has.
+
+        :opt_param equivalent:
+
+            Describes if the pins of the output port are logically equivalent:
+
+            * ``none``: No output pins are logically equivalent.
+
+                Output pins can not be swapped by the router. (Generates a unique SRC rr-node for each block output port pin.)
+
+            * ``full``: All output pins are considered logically equivalent.
+
+                All output pins can be swapped without limitation by the router. For example, this option would be appropriate to model an output port which has a full crossbar between it and the logic within the block that drives it. (Generates a single SRC rr-node shared by each output port pin.)
+
+            * ``instance``: Models that sub-instances within a block (e.g. LUTs/BLEs) can be swapped to achieve a limited form of output pin logical equivalence.
+
+                Like ``full``, this generates a single SRC rr-node shared by each output port pin. However, each net originating from this source can use only one output pin from the equivalence group. This can be useful in modeling more complex forms of equivalence in which you can swap which BLE implements which function to gain access to different inputs.
+
+                .. warning:: When using ``instance`` equivalence you must be careful to ensure output swapping would not make the cluster internal routing (previously computed by the clusterer) illegal; the tool does not update the cluster internal routing due to output pin swapping.
+
+            **Default:** ``none``
 
 
-    .. note:: If ``<fc>`` is not specified for a complex block, the architecture's ``<default_fc>`` is used.
+    .. arch:tag:: <clock name="string" num_pins="int" equivalent="{none|full}"/>
 
-    .. note:: For unidirection routing architectures absolute :math:`F_c` values must be a multiple of 2.
+        Describes a clock port.
+        Multple clock ports are described using multiple ``<clock>`` tags.
+        *See above descriptions on inputs*
 
-    **Example:**
+    .. arch:tag:: <equivalent_sites>
 
-    Consider a routing architecture with 200 length 4 (L4) wires and 50 length 16 (L16) wires per channel, and the following Fc specification:
+        .. seealso:: For a step-by-step walkthrough on describing equivalent sites see :ref:`equivalent_sites_tutorial`.
 
-    .. code-block:: xml
+        Describes the Complex Blocks that can be placed within a tile.
+        Each physical tile can comprehend a number from 1 to N of possible Complex Blocks, or ``sites``.
+        A ``site`` corresponds to a top-level Complex Block that must be placeable in at least 1 physical tile locations.
 
-        <fc in_type="frac" in_val="0.1" out_type="abs" out_val="25">
+        .. arch:tag:: <site pb_type="string" pin_mapping="string"/>
 
-    The above specifies that each:
+        :req_param pb_type: Name of the corresponding pb_type.
 
-    * input pin connects to 20 L4 tracks (10% of the 200 L4s) and 5 L16 tracks (10% of the 50 L16s), and
+        :opt_param pin_mapping: Specifies whether the pin mapping between physical tile and logical pb_type:
 
-    * output pin connects to 25 L4 tracks and 25 L16 tracks.
+                * ``direct``: the pin mapping does not need to be specified as the tile pin definition is equal to the corresponding pb_type one;
+                * ``custom``: the pin mapping is user-defined.
 
 
+                **Default:** ``direct``
 
-    **Overriding Values:**
+            **Example: Equivalent Sites**
 
-    .. arch:tag:: <fc_override fc_type="{frac|abs}" fc_val="{int|float}", port_name="{string}" segment_name="{string}">
+            .. code-block:: xml
 
-        Allows :math:`F_c` values to be overriden on a port or wire/segment type basis.
+                <equivalent_sites>
+                    <site pb_type="MLAB_SITE" pin_mapping="direct"/>
+                </equivalent_sites>
 
-        :req_param fc_type:
-            Indicates how the override :math:`F_c` value should be interpreted.
+            .. arch:tag:: <direct from="string" to="string">
+
+                Desctibes the mapping of a physical tile's port on the logical block's (pb_type) port.
+                ``direct`` is an option sub-tag of ``site``.
+
+                .. note:: This tag is need only if the pin_mapping of the ``site`` is defined as ``custom``
+
+                Attributes:
+                    - ``from`` is relative to the physical tile pins
+                    - ``to`` is relative to the logical block pins
+
+                    .. code-block:: xml
+
+                        <direct from="MLAB_TILE.CX" to="MLAB_SITE.BX"/>
+
+
+    .. arch:tag:: <fc in_type="{frac|abs}" in_val="{int|float}" out_type="{frac|abs}" out_val="{int|float}">
+
+        :req_param in_type:
+            Indicates how the :math:`F_c` values for input pins should be interpreted.
 
             ``frac``: The fraction of tracks of each wire/segment type.
 
             ``abs``: The absolute number of tracks of each wire/segment type.
 
-        :req_param fc_val:
-            Fraction or absolute number of tracks in a channel.
+        :req_param in_val:
+            Fraction or absolute number of tracks to which each input pin is connected.
 
-        :opt_param port_name:
-            The name of the port to which this override applies.
-            If left unspecified this override applies to all ports.
+        :req_param out_type:
+            Indicates how the :math:`F_c` values for output pins should be interpreted.
 
-        :opt_param segment_name:
-            The name of the segment (defined under ``<segmentlist>``) to which this override applies.
-            If left unspecified this override applies to all segments.
+            ``frac``: The fraction of tracks of each wire/segment type.
 
-        .. note:: At least one of ``port_name`` or ``segment_name`` must be specified.
+            ``abs``: The absolute number of tracks of each wire/segment type.
 
-
-        **Port Override Example: Carry Chains**
-
-        If you have complex block pins that do not connect to general interconnect (eg. carry chains), you would use the ``<fc_override>`` tag, within the ``<fc>`` tag, to specify them:
-
-        .. code-block:: xml
-
-            <fc_override fc_type="frac" fc_val="0" port_name="cin"/>
-            <fc_override fc_type="frac" fc_val="0" port_name="cout"/>
-
-        Where the attribute ``port_name`` is the name of the pin (``cin`` and ``cout`` in this example).
+        :req_param out_val:
+            Fraction or absolute number of wires/segments to which each output pin connects.
 
 
-        **Segment Override Example:**
+        Sets the number of tracks/wires to which each logic block pin connects in each channel bordering the pin.
 
-        It is also possible to specify per ``<segment>`` (i.e. routing wire) overrides:
+        The :math:`F_c` value :cite:`brown_fpgas` is interpreted as applying to each wire/segment type *individually* (see example).
 
-        .. code-block:: xml
+        When generating the FPGA routing architecture VPR will try to make 'good' choices about how pins and wires interconnect; for more details on the criteria and methods used see :cite:`betz_automatic_generation_of_fpga_routing`.
 
-            <fc_override fc_type="frac" fc_val="0.1" segment_name="L4"/>
 
-        Where the above would cause all pins (both inputs and outputs) to use a fractional :math:`F_c` of ``0.1`` when connecting to segments of type ``L4``.
+        .. note:: If ``<fc>`` is not specified for a complex block, the architecture's ``<default_fc>`` is used.
 
-        **Combined Port and Segment Override Example:**
+        .. note:: For unidirection routing architectures absolute :math:`F_c` values must be a multiple of 2.
 
-        The ``port_name`` and ``segment_name`` attributes can be used together.
-        For example:
+        **Example:**
+
+        Consider a routing architecture with 200 length 4 (L4) wires and 50 length 16 (L16) wires per channel, and the following Fc specification:
 
         .. code-block:: xml
 
-            <fc_override fc_type="frac" fc_val="0.1" port_name="my_input" segment_name="L4"/>
-            <fc_override fc_type="frac" fc_val="0.2" port_name="my_output" segment_name="L4"/>
+            <fc in_type="frac" in_val="0.1" out_type="abs" out_val="25">
 
-        specifies that port ``my_input`` use a fractional :math:`F_c` of ``0.1`` when connecting to segments of type ``L4``, while the port ``my_output`` uses a fractional :math:`F_c` of ``0.2`` when connecting to segments of type ``L4``.
-        All other port/segment combinations would use the default :math:`F_c` values.
+        The above specifies that each:
 
-.. arch:tag:: <pinlocations pattern="{spread|perimeter|custom}">
+        * input pin connects to 20 L4 tracks (10% of the 200 L4s) and 5 L16 tracks (10% of the 50 L16s), and
 
-    :req_param pattern:
-        * ``spread`` denotes that the pins are to be spread evenly on all sides of the complex block.
+        * output pin connects to 25 L4 tracks and 25 L16 tracks.
 
-            .. note:: *Includes* internal sides of blocks with width > 1 and/or height > 1.
 
-        * ``perimeter`` denotes that the pins are to be spread evenly on perimeter sides of the complex block.
 
-            .. note:: *Excludes* the internal sides of blocks with width > 1 and/or height > 1.
+        **Overriding Values:**
 
-        * ``spread_inputs_perimeter_outputs`` denotes that inputs pins are to be spread on all sides of the complex block, but output pins are to be spread only on perimeter sides of the block.
+        .. arch:tag:: <fc_override fc_type="{frac|abs}" fc_val="{int|float}", port_name="{string}" segment_name="{string}">
 
-            .. note:: This is useful for ensuring outputs do not connect to wires which fly-over a width > 1 and height > 1 block (e.g. if using ``short`` or ``buffer`` connections instead of a fully configurable switch block within the block).
+            Allows :math:`F_c` values to be overriden on a port or wire/segment type basis.
 
-        * ``custom`` allows the architect to specify specifically where the pins are to be placed using ``<loc>`` tags.
+            :req_param fc_type:
+                Indicates how the override :math:`F_c` value should be interpreted.
 
-    Describes the locations where the input, output, and clock pins are distributed in a complex logic block.
+                ``frac``: The fraction of tracks of each wire/segment type.
 
-    .. arch:tag:: <loc side="{left|right|bottom|top}" xoffset="int" yoffset="int">name_of_complex_logic_block.port_name[int:int] ... </loc>
+                ``abs``: The absolute number of tracks of each wire/segment type.
 
-        .. note:: ``...`` represents repeat as needed. Do not put ``...`` in the architecture file.
+            :req_param fc_val:
+                Fraction or absolute number of tracks in a channel.
 
-        :req_param side: Specifies which of the four sides of a grid location the pins in the contents are located.
+            :opt_param port_name:
+                The name of the port to which this override applies.
+                If left unspecified this override applies to all ports.
 
-        :opt_param xoffset:
-            Specifies the horizontal offset (in grid units) from block origin (bottom left corner).
-            The offset value must be less than the width of the block.
+            :opt_param segment_name:
+                The name of the segment (defined under ``<segmentlist>``) to which this override applies.
+                If left unspecified this override applies to all segments.
 
-            **Default:** ``0``
+            .. note:: At least one of ``port_name`` or ``segment_name`` must be specified.
 
-        :opt_param yoffset:
-            Specifies the vertical offset (in grid units) from block origin (bottom left corner).
-            The offset value must be less than the height of the block.
 
-            **Default:** ``0``
+            **Port Override Example: Carry Chains**
 
-    Physical equivalence for a pin is specified by listing a pin more than once for different locations.
-    For example, a LUT whose output can exit from the top and bottom of a block will have its output pin specified twice: once for the top and once for the bottom.
+            If you have complex block pins that do not connect to general interconnect (eg. carry chains), you would use the ``<fc_override>`` tag, within the ``<fc>`` tag, to specify them:
 
-    .. note:: If the ``<pinlocations>`` tag is missing, a ``spread`` pattern is assumed.
+            .. code-block:: xml
+
+                <fc_override fc_type="frac" fc_val="0" port_name="cin"/>
+                <fc_override fc_type="frac" fc_val="0" port_name="cout"/>
+
+            Where the attribute ``port_name`` is the name of the pin (``cin`` and ``cout`` in this example).
+
+
+            **Segment Override Example:**
+
+            It is also possible to specify per ``<segment>`` (i.e. routing wire) overrides:
+
+            .. code-block:: xml
+
+                <fc_override fc_type="frac" fc_val="0.1" segment_name="L4"/>
+
+            Where the above would cause all pins (both inputs and outputs) to use a fractional :math:`F_c` of ``0.1`` when connecting to segments of type ``L4``.
+
+            **Combined Port and Segment Override Example:**
+
+            The ``port_name`` and ``segment_name`` attributes can be used together.
+            For example:
+
+            .. code-block:: xml
+
+                <fc_override fc_type="frac" fc_val="0.1" port_name="my_input" segment_name="L4"/>
+                <fc_override fc_type="frac" fc_val="0.2" port_name="my_output" segment_name="L4"/>
+
+            specifies that port ``my_input`` use a fractional :math:`F_c` of ``0.1`` when connecting to segments of type ``L4``, while the port ``my_output`` uses a fractional :math:`F_c` of ``0.2`` when connecting to segments of type ``L4``.
+            All other port/segment combinations would use the default :math:`F_c` values.
+
+    .. arch:tag:: <pinlocations pattern="{spread|perimeter|custom}">
+
+        :req_param pattern:
+            * ``spread`` denotes that the pins are to be spread evenly on all sides of the complex block.
+
+                .. note:: *Includes* internal sides of blocks with width > 1 and/or height > 1.
+
+            * ``perimeter`` denotes that the pins are to be spread evenly on perimeter sides of the complex block.
+
+                .. note:: *Excludes* the internal sides of blocks with width > 1 and/or height > 1.
+
+            * ``spread_inputs_perimeter_outputs`` denotes that inputs pins are to be spread on all sides of the complex block, but output pins are to be spread only on perimeter sides of the block.
+
+                .. note:: This is useful for ensuring outputs do not connect to wires which fly-over a width > 1 and height > 1 block (e.g. if using ``short`` or ``buffer`` connections instead of a fully configurable switch block within the block).
+
+            * ``custom`` allows the architect to specify specifically where the pins are to be placed using ``<loc>`` tags.
+
+        Describes the locations where the input, output, and clock pins are distributed in a complex logic block.
+
+        .. arch:tag:: <loc side="{left|right|bottom|top}" xoffset="int" yoffset="int">name_of_complex_logic_block.port_name[int:int] ... </loc>
+
+            .. note:: ``...`` represents repeat as needed. Do not put ``...`` in the architecture file.
+
+            :req_param side: Specifies which of the four sides of a grid location the pins in the contents are located.
+
+            :opt_param xoffset:
+                Specifies the horizontal offset (in grid units) from block origin (bottom left corner).
+                The offset value must be less than the width of the block.
+
+                **Default:** ``0``
+
+            :opt_param yoffset:
+                Specifies the vertical offset (in grid units) from block origin (bottom left corner).
+                The offset value must be less than the height of the block.
+
+                **Default:** ``0``
+
+        Physical equivalence for a pin is specified by listing a pin more than once for different locations.
+        For example, a LUT whose output can exit from the top and bottom of a block will have its output pin specified twice: once for the top and once for the bottom.
+
+        .. note:: If the ``<pinlocations>`` tag is missing, a ``spread`` pattern is assumed.
 
 .. arch:tag:: <switchblock_locations pattern="{external_full_internal_straight|all|external|internal|none|custom}" internal_switch="string">
 
@@ -1176,49 +1232,6 @@ The following tags are common to all ``<tile>`` tags:
                 <sb_loc type="full" xoffset="1" yoffset="1"> <!-- Right edge -->
                 <sb_loc type="full" xoffset="1" yoffset="2"> <!-- Top Right -->
             <switchblock_locations/>
-
-.. arch:tag:: <equivalent_sites>
-
-    .. seealso:: For a step-by-step walkthrough on describing equivalent sites see :ref:`equivalent_sites_tutorial`.
-
-    Describes the Complex Blocks that can be placed within a tile.
-    Each physical tile can comprehend a number from 1 to N of possible Complex Blocks, or ``sites``.
-    A ``site`` corresponds to a top-level Complex Block that must be placeable in at least 1 physical tile locations.
-
-    .. arch:tag:: <site pb_type="string" pin_mapping="string"/>
-
-    :req_param pb_type: Name of the corresponding pb_type.
-
-    :opt_param pin_mapping: Specifies whether the pin mapping between physical tile and logical pb_type:
-
-            * ``direct``: the pin mapping does not need to be specified as the tile pin definition is equal to the corresponding pb_type one;
-            * ``custom``: the pin mapping is user-defined.
-
-
-            **Default:** ``direct``
-
-        **Example: Equivalent Sites**
-
-        .. code-block:: xml
-
-            <equivalent_sites>
-                <site pb_type="MLAB_SITE" pin_mapping="direct"/>
-            </equivalent_sites>
-
-        .. arch:tag:: <direct from="string" to="string">
-
-            Desctibes the mapping of a physical tile's port on the logical block's (pb_type) port.
-            ``direct`` is an option sub-tag of ``site``.
-
-            .. note:: This tag is need only if the pin_mapping of the ``site`` is defined as ``custom``
-
-            Attributes:
-                - ``from`` is relative to the physical tile pins
-                - ``to`` is relative to the logical block pins
-
-                .. code-block:: xml
-
-                    <direct from="MLAB_TILE.CX" to="MLAB_SITE.BX"/>
 
 .. _arch_complex_blocks:
 

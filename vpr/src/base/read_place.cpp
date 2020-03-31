@@ -114,7 +114,7 @@ void read_place(const char* net_file,
             std::string block_name = tokens[0];
             int block_x = vtr::atoi(tokens[1]);
             int block_y = vtr::atoi(tokens[2]);
-            int block_z = vtr::atoi(tokens[3]);
+            int sub_tile_index = vtr::atoi(tokens[3]);
 
             ClusterBlockId blk_id = cluster_ctx.clb_nlist.find_block(block_name);
 
@@ -126,7 +126,7 @@ void read_place(const char* net_file,
             //Set the location
             place_ctx.block_locs[blk_id].loc.x = block_x;
             place_ctx.block_locs[blk_id].loc.y = block_y;
-            place_ctx.block_locs[blk_id].loc.z = block_z;
+            place_ctx.block_locs[blk_id].loc.sub_tile = sub_tile_index;
 
         } else {
             //Unrecognized
@@ -245,12 +245,12 @@ void read_user_pad_loc(const char* pad_loc_file) {
 
         place_ctx.block_locs[bnum].loc.x = i; /* Will be reloaded by initial_placement anyway. */
         place_ctx.block_locs[bnum].loc.y = j; /* We need to set .x only as a done flag.         */
-        place_ctx.block_locs[bnum].loc.z = k;
+        place_ctx.block_locs[bnum].loc.sub_tile = k;
         place_ctx.block_locs[bnum].is_fixed = true;
 
         auto physical_tile = device_ctx.grid[i][j].type;
         auto logical_block = cluster_ctx.clb_nlist.block_type(bnum);
-        if (!is_tile_compatible(physical_tile, logical_block)) {
+        if (!is_tile_compatible(physical_tile, logical_block, place_ctx.block_locs[bnum].loc)) {
             VPR_THROW(VPR_ERROR_PLACE_F, pad_loc_file, 0,
                       "Attempt to place block %s at illegal location (%d, %d).\n", bname, i, j);
         }
@@ -313,7 +313,7 @@ void print_place(const char* net_file,
             if (strlen(cluster_ctx.clb_nlist.block_name(blk_id).c_str()) < 8)
                 fprintf(fp, "\t");
 
-            fprintf(fp, "%d\t%d\t%d", place_ctx.block_locs[blk_id].loc.x, place_ctx.block_locs[blk_id].loc.y, place_ctx.block_locs[blk_id].loc.z);
+            fprintf(fp, "%d\t%d\t%d", place_ctx.block_locs[blk_id].loc.x, place_ctx.block_locs[blk_id].loc.y, place_ctx.block_locs[blk_id].loc.sub_tile);
             fprintf(fp, "\t#%zu\n", size_t(blk_id));
         }
     }

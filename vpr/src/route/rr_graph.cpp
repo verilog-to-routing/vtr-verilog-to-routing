@@ -32,6 +32,7 @@
 #include "rr_graph_writer.h"
 #include "rr_graph_reader.h"
 #include "router_lookahead_map.h"
+#include "connection_box_lookahead_map.h"
 #include "rr_graph_clock.h"
 
 #include "rr_types.h"
@@ -884,6 +885,7 @@ void load_rr_switch_from_arch_switch(int arch_switch_idx,
     device_ctx.rr_switch_inf[rr_switch_idx].Cin = device_ctx.arch_switch_inf[arch_switch_idx].Cin;
     device_ctx.rr_switch_inf[rr_switch_idx].Cinternal = device_ctx.arch_switch_inf[arch_switch_idx].Cinternal;
     device_ctx.rr_switch_inf[rr_switch_idx].Cout = device_ctx.arch_switch_inf[arch_switch_idx].Cout;
+    device_ctx.rr_switch_inf[rr_switch_idx].penalty_cost = device_ctx.arch_switch_inf[arch_switch_idx].penalty_cost;
     device_ctx.rr_switch_inf[rr_switch_idx].Tdel = rr_switch_Tdel;
     device_ctx.rr_switch_inf[rr_switch_idx].mux_trans_size = device_ctx.arch_switch_inf[arch_switch_idx].mux_trans_size;
     if (device_ctx.arch_switch_inf[arch_switch_idx].buf_size_type == BufferSize::AUTO) {
@@ -1396,10 +1398,10 @@ static void build_rr_sinks_sources(const int i,
         return;
 
     auto type = grid[i][j].type;
-    int num_class = type->num_class;
-    t_class* class_inf = type->class_inf;
+    int num_class = (int)type->class_inf.size();
+    std::vector<t_class> class_inf = type->class_inf;
     int num_pins = type->num_pins;
-    int* pin_class = type->pin_class;
+    std::vector<int> pin_class = type->pin_class;
 
     /* SINK and SOURCE-to-OPIN edges */
     for (int iclass = 0; iclass < num_class; ++iclass) {
@@ -2612,18 +2614,7 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
 
         clb_to_clb_directs[i].from_clb_type = physical_tile;
 
-        bool port_found = false;
-        for (const auto& port : physical_tile->ports) {
-            if (0 == strcmp(port.name, port_name)) {
-                tile_port = port;
-                port_found = true;
-                break;
-            }
-        }
-
-        if (!port_found) {
-            VPR_THROW(VPR_ERROR_ARCH, "Unable to find port %s (on block %s).\n", port_name, tile_name);
-        }
+        tile_port = find_tile_port_by_name(physical_tile, port_name);
 
         if (start_pin_index == OPEN) {
             VTR_ASSERT(start_pin_index == end_pin_index);
@@ -2654,18 +2645,7 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
 
         clb_to_clb_directs[i].to_clb_type = physical_tile;
 
-        port_found = false;
-        for (const auto& port : physical_tile->ports) {
-            if (0 == strcmp(port.name, port_name)) {
-                tile_port = port;
-                port_found = true;
-                break;
-            }
-        }
-
-        if (!port_found) {
-            VPR_THROW(VPR_ERROR_ARCH, "Unable to find port %s (on block %s).\n", port_name, tile_name);
-        }
+        tile_port = find_tile_port_by_name(physical_tile, port_name);
 
         if (start_pin_index == OPEN) {
             VTR_ASSERT(start_pin_index == end_pin_index);
@@ -2693,15 +2673,8 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_in
         }
         free(tile_name);
         free(port_name);
-
-        //We must be careful to clean-up anything that we may have incidentally allocated.
-        //Specifically, we can be called while generating the dummy architecture
-        //for placer delay estimation.  Since the delay estimation occurs on a
-        //'different' architecture it is almost certain that the f_blk_pin_from_port_pin allocated
-        //by calling get_blk_pin_from_port_pin() will later be invalid.
-        //We therefore must free it now.
-        free_blk_pin_from_port_pin();
     }
+
     return clb_to_clb_directs;
 }
 
@@ -2752,8 +2725,8 @@ static int get_opin_direct_connecions(int x,
                 //Only add connections if the target clb type matches the type in the direct specification
                 t_physical_tile_type_ptr target_type = device_ctx.grid[x + directs[i].x_offset][y + directs[i].y_offset].type;
                 if (clb_to_clb_directs[i].to_clb_type == target_type
-                    && z + directs[i].z_offset < int(target_type->capacity)
-                    && z + directs[i].z_offset >= 0) {
+                    && z + directs[i].sub_tile_offset < int(target_type->capacity)
+                    && z + directs[i].sub_tile_offset >= 0) {
                     /* Compute index of opin with regards to given pins */
                     int max_index = OPEN, min_index = OPEN;
                     bool swap = false;
@@ -2790,7 +2763,7 @@ static int get_opin_direct_connecions(int x,
 
                         //If this block has capacity > 1 then the pins of z position > 0 are offset
                         //by the number of pins per capacity instance
-                        int ipin = logical_ipin + (target_type->num_pins / target_type->capacity) * (z + directs[i].z_offset);
+                        int ipin = logical_ipin + (target_type->num_pins / target_type->capacity) * (z + directs[i].sub_tile_offset);
 
                         //if (ipin > target_type->num_pins) continue; //Invalid z-offset
 

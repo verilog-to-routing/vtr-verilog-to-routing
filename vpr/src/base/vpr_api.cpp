@@ -443,7 +443,10 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
         if (device_ctx.grid.num_instances(&type) != 0) {
             float util = 0.;
             VTR_LOG("\tPhysical Tile %s:\n", type.name);
-            for (auto logical_block : type.equivalent_sites) {
+
+            auto equivalent_sites = get_equivalent_sites_set(&type);
+
+            for (auto logical_block : equivalent_sites) {
                 util = float(num_type_instances[logical_block]) / device_ctx.grid.num_instances(&type);
                 VTR_LOG("\tBlock Utilization: %.2f Logical Block: %s\n", util, logical_block->name);
             }
@@ -703,7 +706,9 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         std::string graphics_msg;
         if (route_status.success()) {
             //Sanity check the routing
-            check_route(router_opts.route_type);
+            if (!router_opts.disable_check_route) {
+                check_route(router_opts.route_type, router_opts.quick_check_route);
+            }
             get_serial_num();
 
             //Update status

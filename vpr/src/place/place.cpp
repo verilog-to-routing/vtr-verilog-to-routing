@@ -206,7 +206,7 @@ std::unique_ptr<FILE, decltype(&vtr::fclose)> f_move_stats_file(nullptr, vtr::fc
                 ClusterBlockId b_from = affected_blocks.moved_blocks[0].block_num;             \
                                                                                                \
                 t_pl_loc to = affected_blocks.moved_blocks[0].new_loc;                         \
-                ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.z];          \
+                ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile];   \
                                                                                                \
                 t_logical_block_type_ptr from_type = cluster_ctx.clb_nlist.block_type(b_from); \
                 t_logical_block_type_ptr to_type = nullptr;                                    \
@@ -1706,9 +1706,6 @@ static void free_placement_structs(const t_placer_opts& placer_opts) {
     }
 
     free_placement_macros_structs();
-
-    /* Frees up all the data structure used in vpr_utils. */
-    free_blk_pin_from_port_pin();
 }
 
 /* Allocates the major structures needed only by the placer, primarily for *
@@ -2419,7 +2416,7 @@ static int check_block_placement_consistency() {
                 }
                 if ((place_ctx.block_locs[bnum].loc.x != int(i)) || (place_ctx.block_locs[bnum].loc.y != int(j))) {
                     VTR_LOG_ERROR("Block %zu's location is (%d,%d,%d) but found in grid at (%zu,%zu,%d).\n",
-                                  size_t(bnum), place_ctx.block_locs[bnum].loc.x, place_ctx.block_locs[bnum].loc.y, place_ctx.block_locs[bnum].loc.z,
+                                  size_t(bnum), place_ctx.block_locs[bnum].loc.x, place_ctx.block_locs[bnum].loc.y, place_ctx.block_locs[bnum].loc.sub_tile,
                                   i, j, k);
                     error++;
                 }
@@ -2468,7 +2465,7 @@ int check_macro_placement_consistency() {
             }
 
             // Then check the place_ctx.grid data structure
-            if (place_ctx.grid_blocks[member_pos.x][member_pos.y].blocks[member_pos.z] != member_iblk) {
+            if (place_ctx.grid_blocks[member_pos.x][member_pos.y].blocks[member_pos.sub_tile] != member_iblk) {
                 VTR_LOG_ERROR("Block %zu in pl_macro #%zu is not placed in the proper orientation.\n",
                               size_t(member_iblk), imacro);
                 error++;
@@ -2490,7 +2487,7 @@ static void print_clb_placement(const char* fname) {
 
     fprintf(fp, "Block #\tName\t(X, Y, Z).\n");
     for (auto i : cluster_ctx.clb_nlist.blocks()) {
-        fprintf(fp, "#%d\t%s\t(%d, %d, %d).\n", i, cluster_ctx.clb_nlist.block_name(i), place_ctx.block_locs[i].x, place_ctx.block_locs[i].y, place_ctx.block_locs[i].z);
+        fprintf(fp, "#%d\t%s\t(%d, %d, %d).\n", i, cluster_ctx.clb_nlist.block_name(i), place_ctx.block_locs[i].x, place_ctx.block_locs[i].y, place_ctx.block_locs[i].sub_tile);
     }
 
     fclose(fp);

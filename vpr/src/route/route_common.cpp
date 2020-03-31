@@ -838,7 +838,7 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
      * specifies that this is necessary).                                       */
 
     t_clb_opins_used clb_opins_used_locally;
-    int clb_pin, iclass, class_low, class_high;
+    int clb_pin, iclass;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -846,9 +846,12 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         auto type = physical_tile_type(blk_id);
+        auto sub_tile = type->sub_tiles[get_sub_tile_index(blk_id)];
 
+        int class_low, class_high;
         get_class_range_for_block(blk_id, &class_low, &class_high);
-        clb_opins_used_locally[blk_id].resize(type->num_class);
+
+        clb_opins_used_locally[blk_id].resize((int)type->class_inf.size());
 
         if (is_io_type(type)) continue;
 
@@ -1016,7 +1019,6 @@ static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t
     vtr::vector<ClusterBlockId, std::vector<int>> rr_blk_source;
 
     int i, j, iclass, inode;
-    int class_low, class_high;
     t_rr_type rr_type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1026,9 +1028,13 @@ static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         auto type = physical_tile_type(blk_id);
+        auto sub_tile = type->sub_tiles[get_sub_tile_index(blk_id)];
+
+        int class_low, class_high;
         get_class_range_for_block(blk_id, &class_low, &class_high);
-        rr_blk_source[blk_id].resize(type->num_class);
-        for (iclass = 0; iclass < type->num_class; iclass++) {
+
+        rr_blk_source[blk_id].resize((int)type->class_inf.size());
+        for (iclass = 0; iclass < (int)type->class_inf.size(); iclass++) {
             if (iclass >= class_low && iclass <= class_high) {
                 i = place_ctx.block_locs[blk_id].loc.x;
                 j = place_ctx.block_locs[blk_id].loc.y;
@@ -1272,11 +1278,14 @@ void print_route(FILE* fp, const vtr::vector<ClusterNetId, t_traceback>& traceba
 
                     fprintf(fp, "%d  ", device_ctx.rr_nodes[inode].ptc_num());
 
-                    if (!is_io_type(device_ctx.grid[ilow][jlow].type) && (rr_type == IPIN || rr_type == OPIN)) {
+                    auto physical_tile = device_ctx.grid[ilow][jlow].type;
+                    if (!is_io_type(physical_tile) && (rr_type == IPIN || rr_type == OPIN)) {
                         int pin_num = device_ctx.rr_nodes[inode].ptc_num();
                         int xoffset = device_ctx.grid[ilow][jlow].width_offset;
                         int yoffset = device_ctx.grid[ilow][jlow].height_offset;
-                        ClusterBlockId iblock = place_ctx.grid_blocks[ilow - xoffset][jlow - yoffset].blocks[0];
+                        int sub_tile_offset = physical_tile->get_sub_tile_loc_from_pin(pin_num);
+
+                        ClusterBlockId iblock = place_ctx.grid_blocks[ilow - xoffset][jlow - yoffset].blocks[sub_tile_offset];
                         VTR_ASSERT(iblock);
                         t_pb_graph_pin* pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
                         t_pb_type* pb_type = pb_pin->parent_node->pb_type;
@@ -1372,7 +1381,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
     if (rip_up_local_opins) {
         for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
             type = physical_tile_type(blk_id);
-            for (iclass = 0; iclass < type->num_class; iclass++) {
+            for (iclass = 0; iclass < (int)type->class_inf.size(); iclass++) {
                 num_local_opin = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
 
                 if (num_local_opin == 0) continue;
@@ -1393,7 +1402,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         type = physical_tile_type(blk_id);
-        for (iclass = 0; iclass < type->num_class; iclass++) {
+        for (iclass = 0; iclass < (int)type->class_inf.size(); iclass++) {
             num_local_opin = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
 
             if (num_local_opin == 0) continue;
