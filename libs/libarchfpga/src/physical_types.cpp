@@ -111,6 +111,24 @@ std::vector<int> t_physical_tile_type::get_clock_pins_indices() const {
     return this->clock_pin_indices;
 }
 
+int t_physical_tile_type::get_sub_tile_loc_from_pin(int pin_num) const {
+    VTR_ASSERT(pin_num < this->num_pins);
+
+    for (auto sub_tile : this->sub_tiles) {
+        auto max_inst_pins = sub_tile.num_phy_pins / sub_tile.capacity.total();
+
+        for (int pin = 0; pin < sub_tile.num_phy_pins; pin++) {
+            if (sub_tile.sub_tile_to_tile_pin_indices[pin] == pin_num) {
+                //If the physical tile pin matches pin_num, return the
+                //corresponding absolute capacity location of the sub_tile
+                return pin / max_inst_pins + sub_tile.capacity.low;
+            }
+        }
+    }
+
+    return OPEN;
+}
+
 /**
  * t_pb_graph_node
  */

@@ -30,7 +30,7 @@ bool is_empty_type(t_logical_block_type_ptr type);
 //Returns the corresponding physical type given the logical type as parameter
 t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk);
 
-//Retyrbs the sub tile corresponding to the logical block location within a physical type
+//Returns the sub tile corresponding to the logical block location within a physical type
 int get_sub_tile_index(ClusterBlockId blk);
 
 int get_unique_pb_graph_node_id(const t_pb_graph_node* pb_graph_node);
