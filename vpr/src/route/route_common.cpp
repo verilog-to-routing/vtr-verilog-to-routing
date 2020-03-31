@@ -1278,11 +1278,14 @@ void print_route(FILE* fp, const vtr::vector<ClusterNetId, t_traceback>& traceba
 
                     fprintf(fp, "%d  ", device_ctx.rr_nodes[inode].ptc_num());
 
-                    if (!is_io_type(device_ctx.grid[ilow][jlow].type) && (rr_type == IPIN || rr_type == OPIN)) {
+                    auto physical_tile = device_ctx.grid[ilow][jlow].type;
+                    if (!is_io_type(physical_tile) && (rr_type == IPIN || rr_type == OPIN)) {
                         int pin_num = device_ctx.rr_nodes[inode].ptc_num();
                         int xoffset = device_ctx.grid[ilow][jlow].width_offset;
                         int yoffset = device_ctx.grid[ilow][jlow].height_offset;
-                        ClusterBlockId iblock = place_ctx.grid_blocks[ilow - xoffset][jlow - yoffset].blocks[0];
+                        int sub_tile_offset = physical_tile->get_sub_tile_loc_from_pin(pin_num);
+
+                        ClusterBlockId iblock = place_ctx.grid_blocks[ilow - xoffset][jlow - yoffset].blocks[sub_tile_offset];
                         VTR_ASSERT(iblock);
                         t_pb_graph_pin* pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
                         t_pb_type* pb_type = pb_pin->parent_node->pb_type;

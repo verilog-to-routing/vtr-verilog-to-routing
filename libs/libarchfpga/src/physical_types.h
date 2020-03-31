@@ -624,6 +624,8 @@ struct t_physical_tile_type {
     /* Returns the indices of pins that contain a clock for this physical logic block */
     std::vector<int> get_clock_pins_indices() const;
 
+    int get_sub_tile_loc_from_pin(int pin_num) const;
+
     // TODO: Remove is_input_type / is_output_type as part of
     // https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/1193
 
