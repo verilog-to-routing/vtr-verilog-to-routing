@@ -91,7 +91,6 @@
         <port name="out"/>
       </output_ports>
     </model>
-
     <model name="clkbuf">
       <input_ports>
         <port name="in" combinational_sink_ports="out" is_clock="1"/>
@@ -100,7 +99,6 @@
         <port name="out"/>
       </output_ports>
     </model>
-
     <model name="clkbufce">
       <input_ports>
         <port name="in" combinational_sink_ports="out" is_clock="1"/>
@@ -110,7 +108,6 @@
         <port name="out"/>
       </output_ports>
     </model>
-
     <model name="single_port_ram">
       <input_ports>
         <port name="we" clock="clk"/>
@@ -153,63 +150,73 @@
     </model>
   </models>
   <tiles>
-    <tile name="io" capacity="8" area="0">
-      <equivalent_sites>
-        <site pb_type="io"/>
-      </equivalent_sites>
-      <input name="outpad" num_pins="1"/>
-      <output name="inpad" num_pins="1"/>
-      <clock name="clock" num_pins="1"/>
-      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
-      <pinlocations pattern="custom">
-        <loc side="left">io.outpad io.inpad io.clock</loc>
-        <loc side="top">io.outpad io.inpad io.clock</loc>
-        <loc side="right">io.outpad io.inpad io.clock</loc>
-        <loc side="bottom">io.outpad io.inpad io.clock</loc>
-      </pinlocations>
+    <tile name="io" area="0">
+      <sub_tile name="io" capacity="8">
+        <equivalent_sites>
+          <site pb_type="io"/>
+        </equivalent_sites>
+        <input name="outpad" num_pins="1"/>
+        <output name="inpad" num_pins="1"/>
+        <clock name="clock" num_pins="1"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+        <pinlocations pattern="custom">
+          <loc side="left">io.outpad io.inpad io.clock</loc>
+          <loc side="top">io.outpad io.inpad io.clock</loc>
+          <loc side="right">io.outpad io.inpad io.clock</loc>
+          <loc side="bottom">io.outpad io.inpad io.clock</loc>
+        </pinlocations>
+      </sub_tile>
     </tile>
     <tile name="clk_control" area="0">
-      <equivalent_sites>
-        <site pb_type="clk_control"/>
-      </equivalent_sites>
-      <input name="in" num_pins="2"/>
-      <output name="out" num_pins="1"/>
-      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
-      <pinlocations pattern="spread"/>
+      <sub_tile name="clk_control">
+        <equivalent_sites>
+          <site pb_type="clk_control"/>
+        </equivalent_sites>
+        <input name="in" num_pins="2"/>
+        <output name="out" num_pins="1"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+        <pinlocations pattern="spread"/>
+      </sub_tile>
     </tile>
     <tile name="clb" area="53894">
-      <equivalent_sites>
-        <site pb_type="clb"/>
-      </equivalent_sites>
-      <input name="I" num_pins="40" equivalent="full"/>
-      <output name="O" num_pins="20" equivalent="none"/>
-      <clock name="clk" num_pins="1"/>
-      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
-      <pinlocations pattern="spread"/>
+      <sub_tile name="clb">
+        <equivalent_sites>
+          <site pb_type="clb"/>
+        </equivalent_sites>
+        <input name="I" num_pins="40" equivalent="full"/>
+        <output name="O" num_pins="20" equivalent="none"/>
+        <clock name="clk" num_pins="1"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+        <pinlocations pattern="spread"/>
+      </sub_tile>
     </tile>
     <tile name="mult_36" height="4" area="396000">
-      <equivalent_sites>
-        <site pb_type="mult_36"/>
-      </equivalent_sites>
-      <input name="a" num_pins="36"/>
-      <input name="b" num_pins="36"/>
-      <output name="out" num_pins="72"/>
-      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
-      <pinlocations pattern="spread"/>
+      <sub_tile name="mult_36">
+        <equivalent_sites>
+          <site pb_type="mult_36"/>
+        </equivalent_sites>
+        <input name="a" num_pins="36"/>
+        <input name="b" num_pins="36"/>
+        <output name="out" num_pins="72"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+        <pinlocations pattern="spread"/>
+      </sub_tile>
     </tile>
     <tile name="memory" height="6" area="548000">
-      <equivalent_sites>
-        <site pb_type="memory"/>
-      </equivalent_sites>
-      <input name="addr1" num_pins="15"/>
-      <input name="addr2" num_pins="15"/>
-      <input name="data" num_pins="64"/>
-      <input name="we1" num_pins="1"/>
-      <input name="we2" num_pins="1"/>
-      <output name="out" num_pins="64"/>
-      <clock name="clk" num_pins="1"/>
-      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
-      <pinlocations pattern="spread"/>
+      <sub_tile name="memory">
+        <equivalent_sites>
+          <site pb_type="memory"/>
+        </equivalent_sites>
+        <input name="addr1" num_pins="15"/>
+        <input name="addr2" num_pins="15"/>
+        <input name="data" num_pins="64"/>
+        <input name="we1" num_pins="1"/>
+        <input name="we2" num_pins="1"/>
+        <output name="out" num_pins="64"/>
+        <clock name="clk" num_pins="1"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+        <pinlocations pattern="spread"/>
+      </sub_tile>
     </tile>
   </tiles>
   <!-- ODIN II specific config ends -->
@@ -328,7 +335,6 @@
       <power method="ignore"/>
     </pb_type>
     <!-- Define I/O pads ends -->
-
     <pb_type name="clk_control">
       <input name="in" num_pins="2"/>
       <output name="out" num_pins="1"/>

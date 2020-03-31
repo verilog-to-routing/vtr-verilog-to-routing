@@ -95,10 +95,10 @@
     </model>
     <model name="CARRY8">
       <input_ports>
-        <port name="CI" combinational_sink_ports="CO O"/>
-        <port name="CI_TOP" combinational_sink_ports="CO O"/>
-        <port name="DI" combinational_sink_ports="CO O"/>
-        <port name="S" combinational_sink_ports="CO O"/>
+        <port name="CI" combinational_sink_ports="O CO"/>
+        <port name="CI_TOP" combinational_sink_ports="O CO"/>
+        <port name="DI" combinational_sink_ports="O CO"/>
+        <port name="S" combinational_sink_ports="O CO"/>
       </input_ports>
       <output_ports>
         <port name="CO"/>
@@ -109,21 +109,21 @@
       <!-- For simplicity, we assume the DSP is operating with registered inputs/outputs 
                  On real UltraScale devices the level of pipelining is configurable -->
       <input_ports>
-        <port name="A" clock="CLK" combinational_sink_ports="CARRYCASCOUT PATTERNDETECT XOROUT PCOUT CARRYOUT UNDERFLOW P PATTERNBDETECT MULTSIGNOUT ACOUT OVERFLOW"/>
-        <port name="B" clock="CLK" combinational_sink_ports="CARRYCASCOUT PATTERNDETECT XOROUT CARRYOUT BCOUT UNDERFLOW P PATTERNBDETECT MULTSIGNOUT PCOUT OVERFLOW"/>
-        <port name="C" clock="CLK" combinational_sink_ports="CARRYCASCOUT PATTERNDETECT XOROUT CARRYOUT UNDERFLOW P PATTERNBDETECT MULTSIGNOUT PCOUT OVERFLOW"/>
-        <port name="D" clock="CLK" combinational_sink_ports="CARRYCASCOUT PATTERNDETECT XOROUT CARRYOUT UNDERFLOW P PATTERNBDETECT MULTSIGNOUT PCOUT OVERFLOW"/>
-        <port name="INMODE" clock="CLK" combinational_sink_ports="CARRYCASCOUT PATTERNDETECT XOROUT PCOUT CARRYOUT BCOUT UNDERFLOW P PATTERNBDETECT MULTSIGNOUT ACOUT OVERFLOW"/>
-        <port name="CARRYIN" clock="CLK" combinational_sink_ports="CARRYCASCOUT PATTERNDETECT XOROUT CARRYOUT UNDERFLOW P PATTERNBDETECT MULTSIGNOUT PCOUT OVERFLOW"/>
-        <port name="OPMODE" clock="CLK" combinational_sink_ports="CARRYCASCOUT PATTERNDETECT XOROUT CARRYOUT UNDERFLOW P PATTERNBDETECT MULTSIGNOUT PCOUT OVERFLOW"/>
-        <port name="CARRYINSEL" clock="CLK" combinational_sink_ports="CARRYCASCOUT PATTERNDETECT XOROUT CARRYOUT UNDERFLOW P PATTERNBDETECT MULTSIGNOUT PCOUT OVERFLOW"/>
+        <port name="A" clock="CLK" combinational_sink_ports="PATTERNBDETECT P CARRYCASCOUT PCOUT MULTSIGNOUT OVERFLOW PATTERNDETECT XOROUT UNDERFLOW CARRYOUT ACOUT"/>
+        <port name="B" clock="CLK" combinational_sink_ports="PATTERNBDETECT P BCOUT CARRYCASCOUT PCOUT MULTSIGNOUT OVERFLOW PATTERNDETECT XOROUT UNDERFLOW CARRYOUT"/>
+        <port name="C" clock="CLK" combinational_sink_ports="PATTERNBDETECT P CARRYCASCOUT PCOUT MULTSIGNOUT OVERFLOW PATTERNDETECT XOROUT UNDERFLOW CARRYOUT"/>
+        <port name="D" clock="CLK" combinational_sink_ports="PATTERNBDETECT P CARRYCASCOUT PCOUT MULTSIGNOUT OVERFLOW PATTERNDETECT XOROUT UNDERFLOW CARRYOUT"/>
+        <port name="INMODE" clock="CLK" combinational_sink_ports="PATTERNBDETECT P BCOUT CARRYCASCOUT PCOUT MULTSIGNOUT OVERFLOW PATTERNDETECT XOROUT UNDERFLOW CARRYOUT ACOUT"/>
+        <port name="CARRYIN" clock="CLK" combinational_sink_ports="PATTERNBDETECT P CARRYCASCOUT PCOUT MULTSIGNOUT OVERFLOW PATTERNDETECT XOROUT UNDERFLOW CARRYOUT"/>
+        <port name="OPMODE" clock="CLK" combinational_sink_ports="PATTERNBDETECT P CARRYCASCOUT PCOUT MULTSIGNOUT OVERFLOW PATTERNDETECT XOROUT UNDERFLOW CARRYOUT"/>
+        <port name="CARRYINSEL" clock="CLK" combinational_sink_ports="PATTERNBDETECT P CARRYCASCOUT PCOUT MULTSIGNOUT OVERFLOW PATTERNDETECT XOROUT UNDERFLOW CARRYOUT"/>
         <port name="CLK" is_clock="1"/>
-        <port name="ACIN" clock="CLK" combinational_sink_ports="CARRYCASCOUT PATTERNDETECT XOROUT PCOUT CARRYOUT UNDERFLOW P PATTERNBDETECT MULTSIGNOUT ACOUT OVERFLOW"/>
-        <port name="BCIN" clock="CLK" combinational_sink_ports="CARRYCASCOUT PATTERNDETECT XOROUT CARRYOUT BCOUT UNDERFLOW P PATTERNBDETECT MULTSIGNOUT PCOUT OVERFLOW"/>
-        <port name="MULTSIGNIN" clock="CLK" combinational_sink_ports="CARRYCASCOUT PATTERNDETECT XOROUT CARRYOUT UNDERFLOW P PATTERNBDETECT MULTSIGNOUT PCOUT OVERFLOW"/>
-        <port name="CARRYCASCIN" clock="CLK" combinational_sink_ports="CARRYCASCOUT PATTERNDETECT XOROUT CARRYOUT UNDERFLOW P PATTERNBDETECT MULTSIGNOUT PCOUT OVERFLOW"/>
-        <port name="PCIN" clock="CLK" combinational_sink_ports="CARRYCASCOUT PATTERNDETECT XOROUT CARRYOUT UNDERFLOW P PATTERNBDETECT MULTSIGNOUT PCOUT OVERFLOW"/>
-        <port name="ALUMODE" clock="CLK" combinational_sink_ports="CARRYCASCOUT PATTERNDETECT XOROUT CARRYOUT UNDERFLOW P PATTERNBDETECT MULTSIGNOUT PCOUT OVERFLOW"/>
+        <port name="ACIN" clock="CLK" combinational_sink_ports="PATTERNBDETECT P CARRYCASCOUT PCOUT MULTSIGNOUT OVERFLOW PATTERNDETECT XOROUT UNDERFLOW CARRYOUT ACOUT"/>
+        <port name="BCIN" clock="CLK" combinational_sink_ports="PATTERNBDETECT P BCOUT CARRYCASCOUT PCOUT MULTSIGNOUT OVERFLOW PATTERNDETECT XOROUT UNDERFLOW CARRYOUT"/>
+        <port name="MULTSIGNIN" clock="CLK" combinational_sink_ports="PATTERNBDETECT P CARRYCASCOUT PCOUT MULTSIGNOUT OVERFLOW PATTERNDETECT XOROUT UNDERFLOW CARRYOUT"/>
+        <port name="CARRYCASCIN" clock="CLK" combinational_sink_ports="PATTERNBDETECT P CARRYCASCOUT PCOUT MULTSIGNOUT OVERFLOW PATTERNDETECT XOROUT UNDERFLOW CARRYOUT"/>
+        <port name="PCIN" clock="CLK" combinational_sink_ports="PATTERNBDETECT P CARRYCASCOUT PCOUT MULTSIGNOUT OVERFLOW PATTERNDETECT XOROUT UNDERFLOW CARRYOUT"/>
+        <port name="ALUMODE" clock="CLK" combinational_sink_ports="PATTERNBDETECT P CARRYCASCOUT PCOUT MULTSIGNOUT OVERFLOW PATTERNDETECT XOROUT UNDERFLOW CARRYOUT"/>
         <port name="CEA1" clock="CLK"/>
         <port name="CEA2" clock="CLK"/>
         <port name="CEAD" clock="CLK"/>
@@ -253,59 +253,67 @@
   </models>
   <tiles>
     <tile name="CLB">
-      <equivalent_sites>
-        <site pb_type="CLB"/>
-      </equivalent_sites>
-      <input name="LUTA" num_pins="6"/>
-      <input name="LUTB" num_pins="6"/>
-      <input name="LUTC" num_pins="6"/>
-      <input name="LUTD" num_pins="6"/>
-      <input name="LUTE" num_pins="6"/>
-      <input name="LUTF" num_pins="6"/>
-      <input name="LUTG" num_pins="6"/>
-      <input name="LUTH" num_pins="6"/>
-      <input name="I" num_pins="8"/>
-      <input name="X" num_pins="8"/>
-      <input name="CIN" num_pins="1"/>
-      <clock name="CLK" num_pins="2"/>
-      <input name="CE" num_pins="4"/>
-      <input name="SR" num_pins="2"/>
-      <output name="O" num_pins="8"/>
-      <output name="MUX" num_pins="8"/>
-      <output name="Q1" num_pins="8"/>
-      <output name="Q2" num_pins="8"/>
-      <output name="COUT" num_pins="1"/>
-      <pinlocations pattern="spread"/>
-      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+      <sub_tile name="CLB">
+        <equivalent_sites>
+          <site pb_type="CLB" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="LUTA" num_pins="6"/>
+        <input name="LUTB" num_pins="6"/>
+        <input name="LUTC" num_pins="6"/>
+        <input name="LUTD" num_pins="6"/>
+        <input name="LUTE" num_pins="6"/>
+        <input name="LUTF" num_pins="6"/>
+        <input name="LUTG" num_pins="6"/>
+        <input name="LUTH" num_pins="6"/>
+        <input name="I" num_pins="8"/>
+        <input name="X" num_pins="8"/>
+        <input name="CIN" num_pins="1"/>
+        <clock name="CLK" num_pins="2"/>
+        <input name="CE" num_pins="4"/>
+        <input name="SR" num_pins="2"/>
+        <output name="O" num_pins="8"/>
+        <output name="MUX" num_pins="8"/>
+        <output name="Q1" num_pins="8"/>
+        <output name="Q2" num_pins="8"/>
+        <output name="COUT" num_pins="1"/>
+        <pinlocations pattern="spread"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+      </sub_tile>
     </tile>
     <tile name="DSP" height="2">
-      <equivalent_sites>
-        <site pb_type="DSP"/>
-      </equivalent_sites>
-      <input name="inputs" num_pins="266"/>
-      <clock name="clock" num_pins="1"/>
-      <output name="outputs" num_pins="162"/>
-      <pinlocations pattern="spread"/>
-      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+      <sub_tile name="DSP">
+        <equivalent_sites>
+          <site pb_type="DSP" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="inputs" num_pins="266"/>
+        <clock name="clock" num_pins="1"/>
+        <output name="outputs" num_pins="162"/>
+        <pinlocations pattern="spread"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+      </sub_tile>
     </tile>
     <tile name="BRAM" height="5">
-      <equivalent_sites>
-        <site pb_type="BRAM"/>
-      </equivalent_sites>
-      <input name="inputs" num_pins="211"/>
-      <clock name="clocks" num_pins="2"/>
-      <output name="outputs" num_pins="165"/>
-      <pinlocations pattern="spread"/>
-      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+      <sub_tile name="BRAM">
+        <equivalent_sites>
+          <site pb_type="BRAM" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="inputs" num_pins="211"/>
+        <clock name="clocks" num_pins="2"/>
+        <output name="outputs" num_pins="165"/>
+        <pinlocations pattern="spread"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+      </sub_tile>
     </tile>
-    <tile name="IO" capacity="64">
-      <equivalent_sites>
-        <site pb_type="IO"/>
-      </equivalent_sites>
-      <input name="in" num_pins="2"/>
-      <output name="out" num_pins="1"/>
-      <pinlocations pattern="spread"/>
-      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+    <tile name="IO">
+      <sub_tile name="IO" capacity="64">
+        <equivalent_sites>
+          <site pb_type="IO" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="in" num_pins="2"/>
+        <output name="out" num_pins="1"/>
+        <pinlocations pattern="spread"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+      </sub_tile>
     </tile>
   </tiles>
   <device>

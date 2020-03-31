@@ -4,8 +4,8 @@
     <model name="fpu_mul">
       <input_ports>
         <port name="clk" is_clock="1"/>
-        <port name="opa" clock="clk" combinational_sink_ports="control out"/>
-        <port name="opb" clock="clk" combinational_sink_ports="control out"/>
+        <port name="opa" clock="clk" combinational_sink_ports="out control"/>
+        <port name="opb" clock="clk" combinational_sink_ports="out control"/>
       </input_ports>
       <output_ports>
         <port name="out" clock="clk"/>
@@ -15,8 +15,8 @@
     <model name="fpu_add">
       <input_ports>
         <port name="clk" is_clock="1"/>
-        <port name="opa" clock="clk" combinational_sink_ports="control out"/>
-        <port name="opb" clock="clk" combinational_sink_ports="control out"/>
+        <port name="opa" clock="clk" combinational_sink_ports="out control"/>
+        <port name="opb" clock="clk" combinational_sink_ports="out control"/>
       </input_ports>
       <output_ports>
         <port name="out" clock="clk"/>
@@ -25,46 +25,52 @@
     </model>
   </models>
   <tiles>
-    <tile name="io" capacity="3">
-      <equivalent_sites>
-        <site pb_type="io"/>
-      </equivalent_sites>
-      <input name="outpad" num_pins="1"/>
-      <output name="inpad" num_pins="1"/>
-      <clock name="clock" num_pins="1"/>
-      <fc in_type="frac" in_val="1.00" out_type="frac" out_val="0.25"/>
-      <pinlocations pattern="custom">
-        <loc side="left">io.outpad io.inpad io.clock</loc>
-        <loc side="top">io.outpad io.inpad io.clock</loc>
-        <loc side="right">io.outpad io.inpad io.clock</loc>
-        <loc side="bottom">io.outpad io.inpad io.clock</loc>
-      </pinlocations>
+    <tile name="io">
+      <sub_tile name="io" capacity="3">
+        <equivalent_sites>
+          <site pb_type="io" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="outpad" num_pins="1"/>
+        <output name="inpad" num_pins="1"/>
+        <clock name="clock" num_pins="1"/>
+        <fc in_type="frac" in_val="1.00" out_type="frac" out_val="0.25"/>
+        <pinlocations pattern="custom">
+          <loc side="left">io.outpad io.inpad io.clock</loc>
+          <loc side="top">io.outpad io.inpad io.clock</loc>
+          <loc side="right">io.outpad io.inpad io.clock</loc>
+          <loc side="bottom">io.outpad io.inpad io.clock</loc>
+        </pinlocations>
+      </sub_tile>
     </tile>
     <tile name="clb">
-      <equivalent_sites>
-        <site pb_type="clb"/>
-      </equivalent_sites>
-      <input name="I" num_pins="10" equivalent="full"/>
-      <output name="O" num_pins="4" equivalent="instance"/>
-      <clock name="clk" num_pins="1"/>
-      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.25"/>
-      <pinlocations pattern="spread"/>
+      <sub_tile name="clb">
+        <equivalent_sites>
+          <site pb_type="clb" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="I" num_pins="10" equivalent="full"/>
+        <output name="O" num_pins="4" equivalent="instance"/>
+        <clock name="clk" num_pins="1"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.25"/>
+        <pinlocations pattern="spread"/>
+      </sub_tile>
     </tile>
     <tile name="block_FPU" height="15">
-      <equivalent_sites>
-        <site pb_type="block_FPU"/>
-      </equivalent_sites>
-      <input name="in1" num_pins="32"/>
-      <input name="in2" num_pins="32"/>
-      <input name="in3" num_pins="32"/>
-      <input name="in4" num_pins="32"/>
-      <output name="out1" num_pins="32"/>
-      <output name="out2" num_pins="32"/>
-      <output name="out3" num_pins="32"/>
-      <output name="control" num_pins="32"/>
-      <clock name="clk" num_pins="1"/>
-      <fc in_type="frac" in_val="0.25" out_type="frac" out_val="0.15"/>
-      <pinlocations pattern="spread"/>
+      <sub_tile name="block_FPU">
+        <equivalent_sites>
+          <site pb_type="block_FPU" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="in1" num_pins="32"/>
+        <input name="in2" num_pins="32"/>
+        <input name="in3" num_pins="32"/>
+        <input name="in4" num_pins="32"/>
+        <output name="out1" num_pins="32"/>
+        <output name="out2" num_pins="32"/>
+        <output name="out3" num_pins="32"/>
+        <output name="control" num_pins="32"/>
+        <clock name="clk" num_pins="1"/>
+        <fc in_type="frac" in_val="0.25" out_type="frac" out_val="0.15"/>
+        <pinlocations pattern="spread"/>
+      </sub_tile>
     </tile>
   </tiles>
   <!-- ODIN II specific config ends -->

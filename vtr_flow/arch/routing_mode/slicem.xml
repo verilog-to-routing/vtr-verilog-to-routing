@@ -62,74 +62,78 @@
   </models>
   <tiles>
     <tile name="io_tile">
-      <equivalent_sites>
-        <site pb_type="io_tile"/>
-      </equivalent_sites>
-      <input name="in" num_pins="1"/>
-      <output name="out" num_pins="1"/>
-      <pinlocations pattern="custom">
-        <loc side="top" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
-        <loc side="left" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
-        <loc side="bottom" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
-        <loc side="right" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
-      </pinlocations>
-      <fc in_type="frac" in_val="1.0" out_type="frac" out_val="1.0"/>
+      <sub_tile name="io_tile">
+        <equivalent_sites>
+          <site pb_type="io_tile" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="in" num_pins="1"/>
+        <output name="out" num_pins="1"/>
+        <pinlocations pattern="custom">
+          <loc side="top" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
+          <loc side="left" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
+          <loc side="bottom" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
+          <loc side="right" xoffset="0" yoffset="0">io_tile.in io_tile.out</loc>
+        </pinlocations>
+        <fc in_type="frac" in_val="1.0" out_type="frac" out_val="1.0"/>
+      </sub_tile>
     </tile>
     <tile name="BLK_IG-SLICEM">
-      <equivalent_sites>
-        <site pb_type="BLK_IG-SLICEM"/>
-      </equivalent_sites>
-      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
-      <input name="DI" num_pins="1"/>
-      <input name="DX" num_pins="1"/>
-      <input name="D1" num_pins="1"/>
-      <input name="D2" num_pins="1"/>
-      <input name="D3" num_pins="1"/>
-      <input name="D4" num_pins="1"/>
-      <input name="D5" num_pins="1"/>
-      <input name="D6" num_pins="1"/>
-      <input name="CI" num_pins="1"/>
-      <input name="CX" num_pins="1"/>
-      <input name="C1" num_pins="1"/>
-      <input name="C2" num_pins="1"/>
-      <input name="C3" num_pins="1"/>
-      <input name="C4" num_pins="1"/>
-      <input name="C5" num_pins="1"/>
-      <input name="C6" num_pins="1"/>
-      <input name="BI" num_pins="1"/>
-      <input name="BX" num_pins="1"/>
-      <input name="B1" num_pins="1"/>
-      <input name="B2" num_pins="1"/>
-      <input name="B3" num_pins="1"/>
-      <input name="B4" num_pins="1"/>
-      <input name="B5" num_pins="1"/>
-      <input name="B6" num_pins="1"/>
-      <input name="AI" num_pins="1"/>
-      <input name="AX" num_pins="1"/>
-      <input name="A1" num_pins="1"/>
-      <input name="A2" num_pins="1"/>
-      <input name="A3" num_pins="1"/>
-      <input name="A4" num_pins="1"/>
-      <input name="A5" num_pins="1"/>
-      <input name="A6" num_pins="1"/>
-      <input name="SR" num_pins="1"/>
-      <input name="CE" num_pins="1"/>
-      <input name="WE" num_pins="1"/>
-      <clock name="CLK" num_pins="1"/>
-      <input name="CIN" num_pins="1"/>
-      <output name="COUT" num_pins="1"/>
-      <output name="DMUX" num_pins="1"/>
-      <output name="D" num_pins="1"/>
-      <output name="DQ" num_pins="1"/>
-      <output name="CMUX" num_pins="1"/>
-      <output name="C" num_pins="1"/>
-      <output name="CQ" num_pins="1"/>
-      <output name="BMUX" num_pins="1"/>
-      <output name="B" num_pins="1"/>
-      <output name="BQ" num_pins="1"/>
-      <output name="AMUX" num_pins="1"/>
-      <output name="A" num_pins="1"/>
-      <output name="AQ" num_pins="1"/>
+      <sub_tile name="BLK_IG-SLICEM">
+        <equivalent_sites>
+          <site pb_type="BLK_IG-SLICEM" pin_mapping="direct"/>
+        </equivalent_sites>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+        <input name="DI" num_pins="1"/>
+        <input name="DX" num_pins="1"/>
+        <input name="D1" num_pins="1"/>
+        <input name="D2" num_pins="1"/>
+        <input name="D3" num_pins="1"/>
+        <input name="D4" num_pins="1"/>
+        <input name="D5" num_pins="1"/>
+        <input name="D6" num_pins="1"/>
+        <input name="CI" num_pins="1"/>
+        <input name="CX" num_pins="1"/>
+        <input name="C1" num_pins="1"/>
+        <input name="C2" num_pins="1"/>
+        <input name="C3" num_pins="1"/>
+        <input name="C4" num_pins="1"/>
+        <input name="C5" num_pins="1"/>
+        <input name="C6" num_pins="1"/>
+        <input name="BI" num_pins="1"/>
+        <input name="BX" num_pins="1"/>
+        <input name="B1" num_pins="1"/>
+        <input name="B2" num_pins="1"/>
+        <input name="B3" num_pins="1"/>
+        <input name="B4" num_pins="1"/>
+        <input name="B5" num_pins="1"/>
+        <input name="B6" num_pins="1"/>
+        <input name="AI" num_pins="1"/>
+        <input name="AX" num_pins="1"/>
+        <input name="A1" num_pins="1"/>
+        <input name="A2" num_pins="1"/>
+        <input name="A3" num_pins="1"/>
+        <input name="A4" num_pins="1"/>
+        <input name="A5" num_pins="1"/>
+        <input name="A6" num_pins="1"/>
+        <input name="SR" num_pins="1"/>
+        <input name="CE" num_pins="1"/>
+        <input name="WE" num_pins="1"/>
+        <clock name="CLK" num_pins="1"/>
+        <input name="CIN" num_pins="1"/>
+        <output name="COUT" num_pins="1"/>
+        <output name="DMUX" num_pins="1"/>
+        <output name="D" num_pins="1"/>
+        <output name="DQ" num_pins="1"/>
+        <output name="CMUX" num_pins="1"/>
+        <output name="C" num_pins="1"/>
+        <output name="CQ" num_pins="1"/>
+        <output name="BMUX" num_pins="1"/>
+        <output name="B" num_pins="1"/>
+        <output name="BQ" num_pins="1"/>
+        <output name="AMUX" num_pins="1"/>
+        <output name="A" num_pins="1"/>
+        <output name="AQ" num_pins="1"/>
+      </sub_tile>
     </tile>
   </tiles>
   <complexblocklist>

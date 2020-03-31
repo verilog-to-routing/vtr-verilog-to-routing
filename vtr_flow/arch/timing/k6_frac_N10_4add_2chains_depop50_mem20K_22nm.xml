@@ -96,61 +96,69 @@
     </model>
   </models>
   <tiles>
-    <tile name="io" capacity="8" area="0">
-      <equivalent_sites>
-        <site pb_type="io"/>
-      </equivalent_sites>
-      <input name="outpad" num_pins="1"/>
-      <output name="inpad" num_pins="1"/>
-      <clock name="clock" num_pins="1"/>
-      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
-      <pinlocations pattern="custom">
-        <loc side="left">io.outpad io.inpad io.clock</loc>
-        <loc side="top">io.outpad io.inpad io.clock</loc>
-        <loc side="right">io.outpad io.inpad io.clock</loc>
-        <loc side="bottom">io.outpad io.inpad io.clock</loc>
-      </pinlocations>
+    <tile name="io" area="0">
+      <sub_tile name="io" capacity="8">
+        <equivalent_sites>
+          <site pb_type="io" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="outpad" num_pins="1"/>
+        <output name="inpad" num_pins="1"/>
+        <clock name="clock" num_pins="1"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+        <pinlocations pattern="custom">
+          <loc side="left">io.outpad io.inpad io.clock</loc>
+          <loc side="top">io.outpad io.inpad io.clock</loc>
+          <loc side="right">io.outpad io.inpad io.clock</loc>
+          <loc side="bottom">io.outpad io.inpad io.clock</loc>
+        </pinlocations>
+      </sub_tile>
     </tile>
     <tile name="clb">
-      <equivalent_sites>
-        <site pb_type="clb"/>
-      </equivalent_sites>
-      <input name="I1" num_pins="15" equivalent="full"/>
-      <input name="I2" num_pins="15" equivalent="full"/>
-      <input name="I3" num_pins="15" equivalent="full"/>
-      <input name="I4" num_pins="15" equivalent="full"/>
-      <input name="cin" num_pins="2"/>
-      <output name="O" num_pins="40" equivalent="none"/>
-      <output name="cout" num_pins="2"/>
-      <clock name="clk" num_pins="1"/>
-      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10">
-        <fc_override port_name="cin" fc_type="frac" fc_val="0"/>
-        <fc_override port_name="cout" fc_type="frac" fc_val="0"/>
-      </fc>
-      <pinlocations pattern="spread"/>
+      <sub_tile name="clb">
+        <equivalent_sites>
+          <site pb_type="clb" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="I1" num_pins="15" equivalent="full"/>
+        <input name="I2" num_pins="15" equivalent="full"/>
+        <input name="I3" num_pins="15" equivalent="full"/>
+        <input name="I4" num_pins="15" equivalent="full"/>
+        <input name="cin" num_pins="2"/>
+        <output name="O" num_pins="40" equivalent="none"/>
+        <output name="cout" num_pins="2"/>
+        <clock name="clk" num_pins="1"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10">
+          <fc_override port_name="cin" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="cout" fc_type="frac" fc_val="0"/>
+        </fc>
+        <pinlocations pattern="spread"/>
+      </sub_tile>
     </tile>
     <tile name="mult_27" height="2">
-      <equivalent_sites>
-        <site pb_type="mult_27"/>
-      </equivalent_sites>
-      <input name="datain" num_pins="74"/>
-      <output name="dataout" num_pins="74"/>
-      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
-      <pinlocations pattern="spread"/>
+      <sub_tile name="mult_27">
+        <equivalent_sites>
+          <site pb_type="mult_27" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="datain" num_pins="74"/>
+        <output name="dataout" num_pins="74"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+        <pinlocations pattern="spread"/>
+      </sub_tile>
     </tile>
     <tile name="memory" height="4">
-      <equivalent_sites>
-        <site pb_type="memory"/>
-      </equivalent_sites>
-      <input name="addr1" num_pins="11"/>
-      <input name="addr2" num_pins="11"/>
-      <input name="data" num_pins="40"/>
-      <input name="we1" num_pins="1"/>
-      <input name="we2" num_pins="1"/>
-      <output name="out" num_pins="40"/>
-      <clock name="clk" num_pins="1"/>
-      <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
-      <pinlocations pattern="spread"/>
+      <sub_tile name="memory">
+        <equivalent_sites>
+          <site pb_type="memory" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="addr1" num_pins="11"/>
+        <input name="addr2" num_pins="11"/>
+        <input name="data" num_pins="40"/>
+        <input name="we1" num_pins="1"/>
+        <input name="we2" num_pins="1"/>
+        <output name="out" num_pins="40"/>
+        <clock name="clk" num_pins="1"/>
+        <fc in_type="frac" in_val="0.15" out_type="frac" out_val="0.10"/>
+        <pinlocations pattern="spread"/>
+      </sub_tile>
     </tile>
   </tiles>
   <!-- ODIN II specific config ends -->
