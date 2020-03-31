@@ -639,7 +639,16 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
 
     //Each x/y location possibly contains multiple sub tiles, so we need to pick
     //a z location within a compatible sub tile.
-    to.sub_tile = vtr::irand(to_type->capacity - 1);
+    std::vector<int> compatible_sub_tiles;
+    for (int capacity = 0; capacity < to_type->capacity; capacity++) {
+        t_pl_loc loc(to.x, to.y, capacity);
+
+        if (is_tile_compatible(to_type, type, loc)) {
+            compatible_sub_tiles.push_back(capacity);
+        }
+
+    }
+    to.sub_tile = compatible_sub_tiles[vtr::irand((int)compatible_sub_tiles.size() - 1)];
 
     VTR_ASSERT_MSG(is_tile_compatible(to_type, type), "Type must be compatible");
     VTR_ASSERT_MSG(grid[to.x][to.y].width_offset == 0, "Should be at block base location");
