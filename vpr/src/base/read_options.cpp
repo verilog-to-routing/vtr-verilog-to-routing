@@ -970,8 +970,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "\n"
             "   Like the interactive graphics --disp option, the --auto\n"
             "   option controls how often the commands specified with\n"
-            "   this option are invoked.\n"
-            )
+            "   this option are invoked.\n")
         .default_value("");
 
     auto& gen_grp = parser.add_argument_group("general options");
@@ -1443,7 +1442,6 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             " The value specifies how many times the placement should be saved (values less than 1 disable this feature).")
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
-
 
     auto& place_timing_grp = parser.add_argument_group("timing-driven placement options");
 

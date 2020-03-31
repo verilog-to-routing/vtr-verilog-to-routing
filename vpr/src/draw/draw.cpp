@@ -3400,7 +3400,7 @@ static void draw_routing_util(ezgl::renderer* g) {
     max_util = std::max(max_util, 1.f);
 
     std::unique_ptr<vtr::ColorMap> cmap;
-    
+
     if (draw_state->clip_routing_util) {
         cmap = std::make_unique<vtr::PlasmaColorMap>(0., 1.);
     } else {
@@ -3805,27 +3805,27 @@ void run_graphics_commands(std::string commands) {
 
         } else if (cmd[0] == "set_macros") {
             VTR_ASSERT_MSG(cmd.size() == 2, "Expect net draw state after 'set_macro'");
-            draw_state->show_placement_macros = (e_draw_placement_macros) vtr::atoi(cmd[1]);
+            draw_state->show_placement_macros = (e_draw_placement_macros)vtr::atoi(cmd[1]);
             VTR_LOG("%d\n", (int)draw_state->show_placement_macros);
         } else if (cmd[0] == "set_nets") {
             VTR_ASSERT_MSG(cmd.size() == 2, "Expect net draw state after 'set_nets'");
-            draw_state->show_nets = (e_draw_nets) vtr::atoi(cmd[1]);
+            draw_state->show_nets = (e_draw_nets)vtr::atoi(cmd[1]);
             VTR_LOG("%d\n", (int)draw_state->show_nets);
         } else if (cmd[0] == "set_cpd") {
             VTR_ASSERT_MSG(cmd.size() == 2, "Expect cpd draw state after 'set_cpd'");
-            draw_state->show_crit_path = (e_draw_crit_path) vtr::atoi(cmd[1]);
+            draw_state->show_crit_path = (e_draw_crit_path)vtr::atoi(cmd[1]);
             VTR_LOG("%d\n", (int)draw_state->show_crit_path);
         } else if (cmd[0] == "set_routing_util") {
             VTR_ASSERT_MSG(cmd.size() == 2, "Expect routing util draw state after 'set_routing_util'");
-            draw_state->show_routing_util = (e_draw_routing_util) vtr::atoi(cmd[1]);
+            draw_state->show_routing_util = (e_draw_routing_util)vtr::atoi(cmd[1]);
             VTR_LOG("%d\n", (int)draw_state->show_routing_util);
         } else if (cmd[0] == "set_clip_routing_util") {
             VTR_ASSERT_MSG(cmd.size() == 2, "Expect routing util draw state after 'set_routing_util'");
-            draw_state->clip_routing_util = (bool) vtr::atoi(cmd[1]);
+            draw_state->clip_routing_util = (bool)vtr::atoi(cmd[1]);
             VTR_LOG("%d\n", (int)draw_state->clip_routing_util);
         } else if (cmd[0] == "set_congestion") {
             VTR_ASSERT_MSG(cmd.size() == 2, "Expect congestion draw state after 'set_congestion'");
-            draw_state->show_congestion = (e_draw_congestion) vtr::atoi(cmd[1]);
+            draw_state->show_congestion = (e_draw_congestion)vtr::atoi(cmd[1]);
             VTR_LOG("%d\n", (int)draw_state->show_congestion);
         } else if (cmd[0] == "set_draw_block_outlines") {
             VTR_ASSERT_MSG(cmd.size() == 2, "Expect draw block outlines state after 'set_draw_block_outlines'");
@@ -3842,7 +3842,7 @@ void run_graphics_commands(std::string commands) {
         } else if (cmd[0] == "set_draw_net_max_fanout") {
             VTR_ASSERT_MSG(cmd.size() == 2, "Expect maximum fanout after 'set_draw_net_max_fanout'");
             draw_state->draw_net_max_fanout = vtr::atoi(cmd[1]);
-            VTR_LOG("%d\n", (int)draw_state->draw_net_max_fanout );
+            VTR_LOG("%d\n", (int)draw_state->draw_net_max_fanout);
         } else if (cmd[0] == "exit") {
             VTR_ASSERT_MSG(cmd.size() == 2, "Expect exit code after 'exit'");
             exit(vtr::atoi(cmd[1]));
