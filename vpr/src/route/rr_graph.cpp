@@ -2723,8 +2723,8 @@ static int get_opin_direct_connecions(int x,
                 //Only add connections if the target clb type matches the type in the direct specification
                 t_physical_tile_type_ptr target_type = device_ctx.grid[x + directs[i].x_offset][y + directs[i].y_offset].type;
                 if (clb_to_clb_directs[i].to_clb_type == target_type
-                    && z + directs[i].z_offset < int(target_type->capacity)
-                    && z + directs[i].z_offset >= 0) {
+                    && z + directs[i].sub_tile_offset < int(target_type->capacity)
+                    && z + directs[i].sub_tile_offset >= 0) {
                     /* Compute index of opin with regards to given pins */
                     int max_index = OPEN, min_index = OPEN;
                     bool swap = false;
@@ -2761,7 +2761,7 @@ static int get_opin_direct_connecions(int x,
 
                         //If this block has capacity > 1 then the pins of z position > 0 are offset
                         //by the number of pins per capacity instance
-                        int ipin = logical_ipin + (target_type->num_pins / target_type->capacity) * (z + directs[i].z_offset);
+                        int ipin = logical_ipin + (target_type->num_pins / target_type->capacity) * (z + directs[i].sub_tile_offset);
 
                         //if (ipin > target_type->num_pins) continue; //Invalid z-offset
 

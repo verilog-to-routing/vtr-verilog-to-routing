@@ -27,7 +27,7 @@ e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlock
         //Try inverting the swap direction
 
         auto& place_ctx = g_vpr_ctx.placement();
-        ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.z];
+        ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile];
 
         if (!b_to) {
             log_move_abort("inverted move no to block");
@@ -80,7 +80,7 @@ e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affecte
         VTR_ASSERT_SAFE(outcome != e_block_move_result::VALID || imember_from == int(pl_macros[imacro_from].members.size()));
 
     } else {
-        ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.z];
+        ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile];
         int imacro_to = -1;
         get_imacro_from_iblk(&imacro_to, b_to, pl_macros);
 
@@ -108,9 +108,9 @@ e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_aff
 
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-    VTR_ASSERT_SAFE(to.z < int(place_ctx.grid_blocks[to.x][to.y].blocks.size()));
+    VTR_ASSERT_SAFE(to.sub_tile < int(place_ctx.grid_blocks[to.x][to.y].blocks.size()));
 
-    ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.z];
+    ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile];
 
     t_pl_loc curr_from = place_ctx.block_locs[b_from].loc;
 
@@ -173,7 +173,7 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
             log_move_abort("macro_from swap to location illegal");
             outcome = e_block_move_result::ABORT;
         } else {
-            ClusterBlockId b_to = place_ctx.grid_blocks[curr_to.x][curr_to.y].blocks[curr_to.z];
+            ClusterBlockId b_to = place_ctx.grid_blocks[curr_to.x][curr_to.y].blocks[curr_to.sub_tile];
             int imacro_to = -1;
             get_imacro_from_iblk(&imacro_to, b_to, pl_macros);
 
@@ -317,7 +317,7 @@ e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
             return e_block_move_result::ABORT;
         }
 
-        ClusterBlockId blk_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.z];
+        ClusterBlockId blk_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile];
 
         record_block_move(blocks_affected, member.blk_index, to);
 
@@ -348,7 +348,7 @@ e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& m
             return e_block_move_result::ABORT;
         }
 
-        ClusterBlockId blk_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.z];
+        ClusterBlockId blk_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile];
 
         int imacro_to = -1;
         get_imacro_from_iblk(&imacro_to, blk_to, place_ctx.pl_macros);
@@ -444,12 +444,12 @@ bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to) {
     auto physical_tile = device_ctx.grid[to.x][to.y].type;
     auto logical_block = cluster_ctx.clb_nlist.block_type(blk);
 
-    if (to.z < 0 || to.z >= physical_tile->capacity
+    if (to.sub_tile < 0 || to.sub_tile >= physical_tile->capacity
         || !is_tile_compatible(physical_tile, logical_block, to)) {
         return false;
     }
     // If the destination block is user constrained, abort this swap
-    auto b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.z];
+    auto b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile];
     if (b_to != INVALID_BLOCK_ID && b_to != EMPTY_BLOCK_ID) {
         if (place_ctx.block_locs[b_to].is_fixed) {
             return false;
@@ -639,7 +639,7 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
 
     //Each x/y location possibly contains multiple sub tiles, so we need to pick
     //a z location within a compatible sub tile.
-    to.z = vtr::irand(to_type->capacity - 1);
+    to.sub_tile = vtr::irand(to_type->capacity - 1);
 
     VTR_ASSERT_MSG(is_tile_compatible(to_type, type), "Type must be compatible");
     VTR_ASSERT_MSG(grid[to.x][to.y].width_offset == 0, "Should be at block base location");
