@@ -206,7 +206,7 @@ std::unique_ptr<FILE, decltype(&vtr::fclose)> f_move_stats_file(nullptr, vtr::fc
                 ClusterBlockId b_from = affected_blocks.moved_blocks[0].block_num;             \
                                                                                                \
                 t_pl_loc to = affected_blocks.moved_blocks[0].new_loc;                         \
-                ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile];          \
+                ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile];   \
                                                                                                \
                 t_logical_block_type_ptr from_type = cluster_ctx.clb_nlist.block_type(b_from); \
                 t_logical_block_type_ptr to_type = nullptr;                                    \

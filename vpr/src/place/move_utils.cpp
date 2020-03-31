@@ -646,7 +646,6 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
         if (is_tile_compatible(to_type, type, loc)) {
             compatible_sub_tiles.push_back(capacity);
         }
-
     }
     to.sub_tile = compatible_sub_tiles[vtr::irand((int)compatible_sub_tiles.size() - 1)];
 
