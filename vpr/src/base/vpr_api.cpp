@@ -877,7 +877,7 @@ void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     init_graphics_state(vpr_setup.ShowGraphics, vpr_setup.GraphPause,
                         vpr_setup.RouterOpts.route_type, vpr_setup.SaveGraphics,
                         vpr_setup.GraphicsCommands);
-    if (vpr_setup.ShowGraphics || vpr_setup.SaveGraphics)
+    if (vpr_setup.ShowGraphics || vpr_setup.SaveGraphics || !vpr_setup.GraphicsCommands.empty())
         alloc_draw_structs(&arch);
 }
 
