@@ -266,9 +266,8 @@ netlist_t* start_odin_ii(int argc, char** argv) {
 
     /* do High level Synthesis */
     if (!configuration.list_of_file_names.empty() && configuration.is_verilog_input) {
-        printf("Verilog: ");
         for (std::string v_file : global_args.verilog_files.value()) {
-            printf("%s ", basename(v_file.c_str()));
+            printf("Verilog: %s\n", basename(v_file.c_str()));
         }
         fflush(stdout);
 

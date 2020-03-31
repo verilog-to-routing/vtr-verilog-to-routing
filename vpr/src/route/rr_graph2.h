@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "build_switchblocks.h"
+#include "rr_graph_fwd.h"
 #include "rr_graph_util.h"
 #include "rr_types.h"
 #include "device_grid.h"
@@ -48,6 +49,8 @@ t_rr_node_indices alloc_and_load_rr_node_indices(const int max_chan_width,
                                                  int* index,
                                                  const t_chan_details& chan_details_x,
                                                  const t_chan_details& chan_details_y);
+
+bool verify_rr_node_indices(const DeviceGrid& grid, const t_rr_node_indices& rr_node_indices, const t_rr_graph_storage& rr_nodes);
 
 int get_rr_node_index(int x,
                       int y,
@@ -249,4 +252,6 @@ void dump_sblock_pattern(const t_sblock_pattern& sblock_pattern,
                          const DeviceGrid& grid,
                          const char* fname);
 
+void add_to_rr_node_indices(t_rr_node_indices& rr_node_indices, const t_rr_graph_storage& rr_nodes, int inode);
+void insert_at_ptc_index(std::vector<int>& rr_indices, int ptc, int inode);
 #endif

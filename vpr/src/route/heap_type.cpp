@@ -17,23 +17,23 @@ HeapStorage::alloc() {
 
     //Extract the head
     t_heap* temp_ptr = heap_free_head_;
-    heap_free_head_ = heap_free_head_->u.next;
+    heap_free_head_ = heap_free_head_->next_heap_item();
 
     num_heap_allocated_++;
 
     //Reset
-    temp_ptr->u.next = nullptr;
+    temp_ptr->set_next_heap_item(nullptr);
     temp_ptr->cost = 0.;
     temp_ptr->backward_path_cost = 0.;
     temp_ptr->R_upstream = 0.;
     temp_ptr->index = OPEN;
-    temp_ptr->u.prev.node = NO_PREVIOUS;
-    temp_ptr->u.prev.edge = NO_PREVIOUS;
+    temp_ptr->set_prev_node(NO_PREVIOUS);
+    temp_ptr->set_prev_edge(RREdgeId::INVALID());
     return (temp_ptr);
 }
 
 void HeapStorage::free(t_heap* hptr) {
-    hptr->u.next = heap_free_head_;
+    hptr->set_next_heap_item(heap_free_head_);
     heap_free_head_ = hptr;
     num_heap_allocated_--;
 }
@@ -45,7 +45,7 @@ void HeapStorage::free_all_memory() {
         t_heap* curr = heap_free_head_;
         while (curr) {
             t_heap* tmp = curr;
-            curr = curr->u.next;
+            curr = curr->next_heap_item();
 
             vtr::chunk_delete(tmp, &heap_ch_);
         }

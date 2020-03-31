@@ -245,8 +245,6 @@ struct ParseBaseCost {
             conv_value.set_value(DEMAND_ONLY_NORMALIZED_LENGTH);
         else if (str == "demand_only")
             conv_value.set_value(DEMAND_ONLY);
-        else if (str == "delay_normalized_length_bounded")
-            conv_value.set_value(DELAY_NORMALIZED_LENGTH_BOUNDED);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_router_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -267,8 +265,6 @@ struct ParseBaseCost {
             conv_value.set_value("delay_normalized_length_frequency");
         else if (val == DEMAND_ONLY_NORMALIZED_LENGTH)
             conv_value.set_value("demand_only_normalized_length");
-        else if (val == DELAY_NORMALIZED_LENGTH_BOUNDED)
-            conv_value.set_value("delay_normalized_length_bounded");
         else {
             VTR_ASSERT(val == DEMAND_ONLY);
             conv_value.set_value("demand_only");
@@ -277,7 +273,7 @@ struct ParseBaseCost {
     }
 
     std::vector<std::string> default_choices() {
-        return {"demand_only", "demand_only_normalized_length", "delay_normalized", "delay_normalized_length", "delay_normalized_length_bounded", "delay_normalized_frequency", "delay_normalized_length_frequency"};
+        return {"demand_only", "demand_only_normalized_length", "delay_normalized", "delay_normalized_length", "delay_normalized_frequency", "delay_normalized_length_frequency"};
     }
 };
 
@@ -661,8 +657,6 @@ struct ParseRouterLookahead {
             conv_value.set_value(e_router_lookahead::CLASSIC);
         else if (str == "map")
             conv_value.set_value(e_router_lookahead::MAP);
-        else if (str == "connection_box_map")
-            conv_value.set_value(e_router_lookahead::CONNECTION_BOX_MAP);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '"
@@ -676,22 +670,17 @@ struct ParseRouterLookahead {
 
     ConvertedValue<std::string> to_str(e_router_lookahead val) {
         ConvertedValue<std::string> conv_value;
-        if (val == e_router_lookahead::CLASSIC) {
+        if (val == e_router_lookahead::CLASSIC)
             conv_value.set_value("classic");
-        } else if (val == e_router_lookahead::MAP) {
+        else {
+            VTR_ASSERT(val == e_router_lookahead::MAP);
             conv_value.set_value("map");
-        } else if (val == e_router_lookahead::CONNECTION_BOX_MAP) {
-            conv_value.set_value("connection_box_map");
-        } else {
-            std::stringstream msg;
-            msg << "Unrecognized e_router_lookahead";
-            conv_value.set_error(msg.str());
         }
         return conv_value;
     }
 
     std::vector<std::string> default_choices() {
-        return {"classic", "map", "connection_box_map"};
+        return {"classic", "map"};
     }
 };
 
@@ -1529,13 +1518,9 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "      to magnitude of typical routing resource delay\n"
             " * delay_normalized_length: like delay_normalized but\n"
             "      scaled by routing resource length\n"
-            " * delay_normalized_length_bounded: like delay_normalized but\n"
-            "      scaled by routing resource length.  Scaling is normalized\n"
-            "      between 1 to 4, with min lengths getting scaled at 1,\n"
-            "      and max lengths getting scaled at 4.\n"
-            " * delay_normalized_frequency: like delay_normalized\n"
+            " * delay_normalized_freqeuncy: like delay_normalized\n"
             "      but scaled inversely by segment type frequency\n"
-            " * delay_normalized_length_frequency: like delay_normalized\n"
+            " * delay_normalized_length_freqeuncy: like delay_normalized\n"
             "      but scaled by routing resource length, and inversely\n"
             "      by segment type frequency\n"
             "(Default: demand_only for breadth-first router,\n"
@@ -1575,7 +1560,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     route_grp.add_argument<e_router_algorithm, ParseRouterAlgorithm>(args.RouterAlgorithm, "--router_algorithm")
         .help(
             "Specifies the router algorithm to use.\n"
-            " * breadth_first: focuses solely on routability\n"
+            " * breadth_first: focuses solely on routability [DEPRECATED, inferior quality & run-time]\n"
             " * timing_driven: focuses on routability and circuit speed\n")
         .default_value("timing_driven")
         .choices({"breadth_first", "timing_driven"})
@@ -1637,8 +1622,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     route_timing_grp.add_argument<e_routing_budgets_algorithm, RouteBudgetsAlgorithm>(args.routing_budgets_algorithm, "--routing_budgets_algorithm")
         .help(
             "Controls how the routing budgets are created.\n"
-            " * slack: Sets the budgets depending on the amount slack between connections and the current delay values.\n"
-            " * criticality: Sets the minimum budgets to 0 and the maximum budgets as a function of delay and criticality (net delay/ pin criticality)\n"
+            " * slack: Sets the budgets depending on the amount slack between connections and the current delay values. [EXPERIMENTAL]\n"
+            " * criticality: Sets the minimum budgets to 0 and the maximum budgets as a function of delay and criticality (net delay/ pin criticality) [EXPERIMENTAL]\n"
             " * disable: Removes the routing budgets, use the default VPR and ignore hold time constraints\n")
         .default_value("disable")
         .choices({"minimax", "scale_delay", "disable"})
@@ -1717,7 +1702,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             " *         is faster because it is only a heap approximation.\n"
             " *         Testing has shown the approximation results in\n"
             " *         similiar QoR with less CPU work.\n")
-        .default_value("bucket")
+        .default_value("binary")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<bool, ParseOnOff>(args.router_update_lower_bound_delays, "--router_update_lower_bound_delays")
@@ -1732,16 +1717,6 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     route_timing_grp.add_argument<bool, ParseOnOff>(args.read_rr_edge_metadata, "--read_rr_edge_metadata")
         .help("Read RR edge metadata from --read_rr_graph.  RR edge metadata is not used in core VPR algorithms, and is typically not read to save runtime and memory. (Default: off).")
-        .default_value("off")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    route_timing_grp.add_argument<bool, ParseOnOff>(args.disable_check_route, "--disable_check_route")
-        .help("Disables check_route once routing step has finished or when routing file is loaded")
-        .default_value("off")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    route_timing_grp.add_argument<bool, ParseOnOff>(args.quick_check_route, "--quick_check_route")
-        .help("Runs check_route, disabling slow checks, once routing step has finished or when routing file is loaded")
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 

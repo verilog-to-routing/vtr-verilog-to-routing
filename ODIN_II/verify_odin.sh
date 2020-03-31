@@ -165,6 +165,18 @@ function print_time_since() {
 	echo "ran test in: $Hour:$Min:$Sec.$Mili"
 }
 
+TMP_BENCH_FIND_ARRAY=()
+function find_in_bench() {
+	# sort the output alphabeticaly
+	mapfile -t TMP_BENCH_FIND_ARRAY < <(echo "$1"/*/*/"$2" | tr -s '[:space:]' '\n' | sort)
+	if [ "_${TMP_BENCH_FIND_ARRAY[*]}" == "_" ] \
+	|| [ "_${TMP_BENCH_FIND_ARRAY[0]}" == "_" ]\
+	|| [ ! -f "${TMP_BENCH_FIND_ARRAY[0]}" ]
+	then
+		TMP_BENCH_FIND_ARRAY=()
+	fi
+}
+
 ################################################
 # Init Directories and cleanup
 function init_temp() {
@@ -228,7 +240,8 @@ function disable_failed_bm() {
 	if [ "_${failed_dir}" != "_" ] && [ "_${bench_name}" != "_" ]
 	then
 
-		for failed_benchmark in $(find "${NEW_RUN_DIR}/${bench_name}" -name failure)
+		find_in_bench "${NEW_RUN_DIR}/${bench_name}" "failure"
+		for failed_benchmark in "${TMP_BENCH_FIND_ARRAY[@]}"
 		do
 			failed_benchmark="$(dirname "${failed_benchmark}")"
 			for cmd_params in "${failed_benchmark}"/*_wrapper_*
@@ -405,10 +418,10 @@ printf "
 
 	the following key=value, ... are available:
 
-			circuit_dir             = < path/to/circuit/dir >
-			circuit_list_add        = < circuit file path relative to [circuit_dir] >
-			arch_dir                = < path/to/arch/dir >
-			arch_list_add           = < architecture file path relative to [arch_dir] >
+			circuits_dir             = < path/to/circuit/dir >
+			circuit_list_add        = < circuit file path relative to [circuits_dir] >
+			archs_dir                = < path/to/arch/dir >
+			arch_list_add           = < architecture file path relative to [archs_dir] >
 			synthesis_parse_file 	= < path/to/parse/file >
 			simulation_parse_file 	= < path/to/parse/file >
 			script_synthesis_params = [see exec_wrapper.sh options]
@@ -443,8 +456,8 @@ init_args_for_test() {
 
 function populate_arg_from_file() {
 
-	_circuit_dir=""
-	_arch_dir=""
+	_circuits_dir=""
+	_archs_dir=""
 	_circuit_list_add=()
 	_arch_list_add=()
 	_local_synthesis_parse_file=""
@@ -477,27 +490,27 @@ function populate_arg_from_file() {
 			then
 				case _${_key} in
 
-					_circuit_dir)
+					_circuits_dir)
 						if [ ! -d "${_value}" ]
 						then
 							_value=${THIS_DIR}/${_value}
 						fi
-						_circuit_dir="${_value}"
+						_circuits_dir="${_value}"
 
 					;;_circuit_list_add)
 						# glob the value
-						_circuit_list_add+=( "${_circuit_dir}"/${_value} )					
+						_circuit_list_add+=( "${_circuits_dir}"/${_value} )					
 
-					;;_arch_dir)
+					;;_archs_dir)
 						if [ ! -d "${_value}" ]
 						then
 							_value=${THIS_DIR}/${_value}
 						fi
-						_arch_dir="${_value}"
+						_archs_dir="${_value}"
 
 					;;_arch_list_add)
 						# glob the value
-						_arch_list_add+=( "${_arch_dir}"/${_value} )
+						_arch_list_add+=( "${_archs_dir}"/${_value} )
 
 					;;_script_synthesis_params)
 						_local_script_synthesis_params="${_local_script_synthesis_params} ${_value}"
@@ -619,11 +632,6 @@ function populate_arg_from_file() {
 
 }
 
-function formated_find() {
-	# sort the output alphabeticaly
-	find "$1/" -mindepth 2 -name "$2" | sed 's:\s+|\n+: :g' | sed 's:^\s*|\s*$::g' | sort
-}
-
 function header() {
 	echo " ========= $*"
 }
@@ -631,37 +639,33 @@ function header() {
 function run_cmd_file_in_parallel() {
 	hdr="$1"
 	thread_count="$2"
-	_LIST=( "${@:3}" )
+	cmd_list=( "${@:3}" )
 
-	if [[ "_${_LIST[*]}" != "_" ]]
+	if (( ${#cmd_list[@]} > 0 ))
 	then
 		header "${hdr}"
 		#run the simulation in parallel
-		echo "${_LIST[@]}" | xargs -n1 -P"${thread_count}" -I cmd_file "${SHELL}" -c '$(cat cmd_file)'
+		echo "${cmd_list[@]}" | xargs -n1 | sort | xargs -P"${thread_count}" -I{} "${SHELL}" -c '$(cat {})'
 	fi
 }
 
 function move_vector() {
-	file_name="$1"
-	file_dir="$2"
+	file_dir="$1"
+	file_name="$2"
 	replacement_suffix="$3"
 
-	VECTOR_LIST=$(find "${file_dir}/" -name "${file_name}")
-	if [ "_${VECTOR_LIST[*]}" != "_" ]
-	then
-		mkdir -p "${file_dir}/vectors"
+	find_in_bench  "${file_dir}" "${file_name}" 
+	# move the output vectors
+	for sim_vectors in "${TMP_BENCH_FIND_ARRAY[@]}"
+	do
+		[ -d "${file_dir}/vectors" ] || mkdir -p "${file_dir}/vectors"
+		BM_DIR=$(dirname "${sim_vectors}")
+		BM_NAME="$(basename "$(readlink -f "${BM_DIR}/..")")${replacement_suffix}"
 
-		# move the output vectors
-		for sim_vectors in ${VECTOR_LIST}
-		do
-			BM_DIR=$(dirname "${sim_vectors}")
-			BM_NAME="$(basename "$(readlink -f "${BM_DIR}/..")")_${replacement_suffix}"
+		cp "${sim_vectors}" "${file_dir}/vectors/${BM_NAME}"
+		mv "${sim_vectors}" "${BM_DIR}/${BM_NAME}"
 
-			cp "${sim_vectors}" "${file_dir}/vectors/${BM_NAME}"
-			mv "${sim_vectors}" "${BM_DIR}/${BM_NAME}"
-
-		done
-	fi
+	done
 }
 
 function sim() {
@@ -685,10 +689,12 @@ function sim() {
 	##########################################
 	# check if we only run some subtask
 	run_benchmark="off"
+	run_subtest_only=""
 	if [ "_${_SUBTEST_LIST[*]}" == "_" ];
 	then
 		run_benchmark="on"
 	else
+		run_subtest_only="--subset"
 		for subtest in "${_SUBTEST_LIST[@]}";
 		do
 			if [ "_${subtest%%/*}" == "_${bench_name}" ]
@@ -826,8 +832,8 @@ function sim() {
 		fi
 
 		for circuit in "${_circuit_list[@]}"
-		do		
-			circuit_dir=$(dirname "${circuit}")
+		do	
+			circuits_dir=$(dirname "${circuit}")
 			circuit_file=$(basename "${circuit}")
 			input_verilog_file=""
 			input_blif_file=""
@@ -852,8 +858,8 @@ function sim() {
 
 
 			# lookup for input and output vector files to do comparison
-			input_vector_file="${circuit_dir}/${circuit_name}_input"
-			output_vector_file="${circuit_dir}/${circuit_name}_output"
+			input_vector_file="${circuits_dir}/${circuit_name}_input"
+			output_vector_file="${circuits_dir}/${circuit_name}_output"
 
 			for arches in "${_arch_list[@]}"
 			do
@@ -869,8 +875,12 @@ function sim() {
 
 				run_this_test="on"
 
-				if 	echo " ${_SUBTEST_LIST[*]}" | grep "${TEST_FULL_REF}" &> /dev/null ||
-					[ -d "${NEW_RUN_DIR}/${TEST_FULL_REF}" ]
+				if [ "_${_SUBTEST_LIST[*]}" != "_" ] \
+				&& ! echo "${_SUBTEST_LIST[@]}" | grep "${TEST_FULL_REF}" &> /dev/null;
+				then
+					# skip duplicate tests
+					run_this_test="off"
+				elif [ -d "${NEW_RUN_DIR}/${TEST_FULL_REF}" ]
 				then
 					# skip duplicate tests
 					run_this_test="off"
@@ -989,12 +999,16 @@ function sim() {
 		done	
 
 		#synthesize the circuits
-		if [ "${_synthesis}" == "on" ]
+		
+		
+		find_in_bench "${NEW_RUN_DIR}/${bench_name}" "${synthesis_wrapper_file_name}"
+		if [ "${_synthesis}" == "on" ]\
+		&& (( ${#TMP_BENCH_FIND_ARRAY[@]} > 0 ))
 		then
 			run_cmd_file_in_parallel \
 				"Synthesis Test" \
 				"${_threads}" \
-				"$(formated_find "${NEW_RUN_DIR}/${bench_name}" "${synthesis_wrapper_file_name}")"
+				"${TMP_BENCH_FIND_ARRAY[@]}"
 
 			disable_failed_bm "${synthesis_failure}" "${bench_name}"
 
@@ -1002,24 +1016,35 @@ function sim() {
 
 			if [ "_${_synthesis_parse_file}" != "_" ]
 			then
-				echo " -------- Parsing Result --------- "
-
+				echo " -------- Parsing Synthesis Result --------- "
+				find_in_bench "${NEW_RUN_DIR}/${bench_name}" "${synthesis_parse_result_file_name}"
 				"${PARSER_EXEC}" join "${_disable_color}" \
-					"${_synthesis_parse_file}"  \
-					$(formated_find "${NEW_RUN_DIR}/${bench_name}" "${synthesis_parse_result_file_name}") \
+					"${_synthesis_parse_file}" \
+					"${TMP_BENCH_FIND_ARRAY[@]}" \
 					> "${NEW_RUN_DIR}/${bench_name}/${synthesis_parse_result_file_name}"
-					
-				if [ "_${_REGENERATE_QOR}" == "_on" ]
+				
+				if [ "_${synthesis_golden_result_file}" != "_" ] \
+				&& [ -f "${synthesis_golden_result_file}" ]
 				then
-					cat "${NEW_RUN_DIR}/${bench_name}/${synthesis_parse_result_file_name}" \
-						> "${synthesis_golden_result_file}"
-				elif [ "_${synthesis_golden_result_file}" != "_" ] && [ -f "${synthesis_golden_result_file}" ]
-				then
-					"${PARSER_EXEC}" compare "${_disable_color}" \
+					"${PARSER_EXEC}" compare "${run_subtest_only}" "${_disable_color}" \
 						"${_synthesis_parse_file}" \
 						"${synthesis_golden_result_file}" \
 						"${NEW_RUN_DIR}/${bench_name}/${synthesis_parse_result_file_name}" \
+						"${NEW_RUN_DIR}/${bench_name}/${synthesis_parse_result_file_name}.diff" \
 							2> "${synthesis_result_failure_log_file}"
+				fi
+
+				if [ "_${_REGENERATE_QOR}" == "_on" ]
+				then
+					if [ -f "${NEW_RUN_DIR}/${bench_name}/${synthesis_parse_result_file_name}.diff" ];
+					then
+						cat "${NEW_RUN_DIR}/${bench_name}/${synthesis_parse_result_file_name}.diff" \
+							> "${synthesis_golden_result_file}"
+					elif [ -f "${NEW_RUN_DIR}/${bench_name}/${synthesis_parse_result_file_name}" ];
+					then
+						cat "${NEW_RUN_DIR}/${bench_name}/${synthesis_parse_result_file_name}" \
+							> "${synthesis_golden_result_file}"
+					fi
 				fi
 			fi
 
@@ -1035,11 +1060,9 @@ function sim() {
 			fi
 
 			# display logs if verbosity is on
-			if [ "_${_verbose_failures}" == "_on" ] \
-			&& [ "_${synthesis_result_failure_log_file}" != "_" ] \
-			&& [ -f "${synthesis_failure_log_file}" ]
+			if [ "_${_verbose_failures}" == "_on" ]
 			then
-				if [ "_${synthesis_failure_log_file}" != "_" ] \
+				if [ "_${synthesis_result_failure_log_file}" != "_" ] \
 				&& [ -f "${synthesis_result_failure_log_file}" ]
 				then
 					for test_failed in $(sort "${synthesis_failure_log_file}" "${synthesis_result_failure_log_file}" | uniq -d)
@@ -1048,7 +1071,9 @@ function sim() {
 						cat "${NEW_RUN_DIR}/${test_failed}/synthesis.log"
 					done
 					printf "\n\n"
-				else
+				elif [ "_${synthesis_failure_log_file}" != "_" ] \
+				&& [ -f "${synthesis_failure_log_file}" ]
+				then
 					for test_failed in $(sort "${synthesis_failure_log_file}" | uniq)
 					do
 						printf "\n\n\n ==== LOG %s ====\n\n" "${test_failed}"
@@ -1059,51 +1084,72 @@ function sim() {
 			fi
 		fi
 
-		if [ "${_simulation}" == "on" ]
+		find_in_bench "${NEW_RUN_DIR}/${bench_name}" "${simulation_wrapper_generate_io_file_name}"
+		simulation_gio_bench_list=( "${TMP_BENCH_FIND_ARRAY[@]}" )
+
+		find_in_bench "${NEW_RUN_DIR}/${bench_name}" "${simulation_wrapper_generate_output_file_name}"
+		simulation_go_bench_list=( "${TMP_BENCH_FIND_ARRAY[@]}" )
+
+		find_in_bench "${NEW_RUN_DIR}/${bench_name}" "${simulation_wrapper_predefined_io_file_name}"
+		simulation_bench_list=( "${TMP_BENCH_FIND_ARRAY[@]}" )
+
+		sim_total="$(( ${#simulation_gio_bench_list[@]} + ${#simulation_go_bench_list[@]} + ${#simulation_bench_list[@]} ))"
+		if (( ${sim_total} > 0 )) \
+		&& [ "${_simulation}" == "on" ]
 		then
-			
 			run_cmd_file_in_parallel \
 				"Generate_IO_Simulation Test" \
 				"${_threads}" \
-				"$(formated_find "${NEW_RUN_DIR}/${bench_name}" "${simulation_wrapper_generate_io_file_name}")"
-		
+				"${simulation_gio_bench_list[@]}"
+
 			run_cmd_file_in_parallel \
 				"Generate_Output_Simulation Test" \
 				"${_threads}" \
-				"$(formated_find "${NEW_RUN_DIR}/${bench_name}" "${simulation_wrapper_generate_output_file_name}")"
+				"${simulation_go_bench_list[@]}"
 
 			run_cmd_file_in_parallel \
 				"Predefined_IO_Simulation Test" \
 				"${_threads}" \
-				"$(formated_find "${NEW_RUN_DIR}/${bench_name}" "${simulation_wrapper_predefined_io_file_name}")"
+				"${simulation_bench_list[@]}"
 
 			disable_failed_bm "${simulation_failure}" "${bench_name}"
-			move_vector "input_vectors" "${NEW_RUN_DIR}/${bench_name}" "_input"
-			move_vector "output_vectors" "${NEW_RUN_DIR}/${bench_name}" "_output"
+			move_vector "${NEW_RUN_DIR}/${bench_name}" "input_vectors" "_input"
+			move_vector "${NEW_RUN_DIR}/${bench_name}" "output_vectors" "_output"
 
 			sync
 
 			if [ "_${_simulation_parse_file}" != "_" ]
 			then
-				echo " -------- Parsing Result --------- "
-
+				echo " -------- Parsing Simulation Result --------- "
+				find_in_bench "${NEW_RUN_DIR}/${bench_name}" "${simulation_parse_result_file_name}"
 				"${PARSER_EXEC}" join "${_disable_color}" \
 					"${_simulation_parse_file}" \
-					$(formated_find "${NEW_RUN_DIR}/${bench_name}" "${simulation_parse_result_file_name}") \
+					"${TMP_BENCH_FIND_ARRAY[@]}" \
 						> "${NEW_RUN_DIR}/${bench_name}/${simulation_parse_result_file_name}"
 
-				if [ "_${_REGENERATE_QOR}" == "_on" ]
-				then
-					cat "${NEW_RUN_DIR}/${bench_name}/${simulation_parse_result_file_name}" \
-						> "${simulation_golden_result_file}"
-				elif [ "_${simulation_golden_result_file}" != "_" ] && [ -f "${simulation_golden_result_file}" ]
-				then
 
-					"${PARSER_EXEC}" compare "${_disable_color}" \
+				if [ "_${simulation_golden_result_file}" != "_" ] \
+				&& [ -f "${simulation_golden_result_file}" ]
+				then
+					"${PARSER_EXEC}" compare "${run_subtest_only}" "${_disable_color}" \
 						"${_simulation_parse_file}" \
 						"${simulation_golden_result_file}" \
 						"${NEW_RUN_DIR}/${bench_name}/${simulation_parse_result_file_name}" \
+						"${NEW_RUN_DIR}/${bench_name}/diff_${simulation_parse_result_file_name}" \
 							2> "${simulation_result_failure_log_file}"
+				fi
+
+				if [ "_${_REGENERATE_QOR}" == "_on" ]
+				then
+					if [ -f "${NEW_RUN_DIR}/${bench_name}/diff_${simulation_parse_result_file_name}" ];
+					then
+						cat "${NEW_RUN_DIR}/${bench_name}/diff_${simulation_parse_result_file_name}" \
+							> "${simulation_golden_result_file}"
+					elif [ -f "${NEW_RUN_DIR}/${bench_name}/${simulation_parse_result_file_name}" ];
+					then
+						cat "${NEW_RUN_DIR}/${bench_name}/${simulation_parse_result_file_name}" \
+							> "${simulation_golden_result_file}"
+					fi
 				fi
 			fi
 
@@ -1119,20 +1165,20 @@ function sim() {
 			fi
 
 			# display logs if verbosity is on
-			if [ "_${_verbose_failures}" == "_on" ] \
-			&& [ "_${simulation_failure_log_file}" != "_" ] \
-			&& [ -f "${simulation_failure_log_file}" ]
+			if [ "_${_verbose_failures}" == "_on" ]
 			then
 				if [ "_${simulation_result_failure_log_file}" != "_" ] \
 				&& [ -f "${simulation_result_failure_log_file}" ]
 				then
-					for test_failed in $(sort "${simulation_failure_log_file}" "${simulation_result_failure_log_file}" | uniq -d)
+					for test_failed in $(sort "${simulation_result_failure_log_file}" | uniq)
 					do
 						printf "\n\n\n ==== LOG %s ====\n\n" "${test_failed}"
 						cat "${NEW_RUN_DIR}/${test_failed}/simulation.log"
 					done
 					printf "\n\n"
-				else
+				elif [ "_${simulation_failure_log_file}" != "_" ] \
+				&& [ -f "${simulation_failure_log_file}" ]
+				then
 					for test_failed in $(sort "${simulation_failure_log_file}" | uniq)
 					do
 						printf "\n\n\n ==== LOG %s ====\n\n" "${test_failed}"

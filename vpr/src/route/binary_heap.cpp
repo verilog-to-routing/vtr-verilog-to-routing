@@ -29,6 +29,7 @@ void BinaryHeap::init_heap(const DeviceGrid& grid) {
     ssize_t target_heap_size = (grid.width() - 1) * (grid.height() - 1);
     if (heap_ == nullptr || heap_size_ < target_heap_size) {
         if (heap_ != nullptr) {
+            // coverity[offset_free : Intentional]
             vtr::free(heap_ + 1);
             heap_ = nullptr;
         }
@@ -167,7 +168,7 @@ void BinaryHeap::invalidate_heap_entries(int sink_node, int ipin_node) {
 
     for (int i = 1; i < heap_tail_; i++) {
         if (heap_[i]->index == sink_node) {
-            if (heap_[i]->u.prev.node == ipin_node) {
+            if (heap_[i]->prev_node() == ipin_node) {
                 heap_[i]->index = OPEN; /* Invalid. */
                 break;
             }

@@ -89,8 +89,7 @@ static t_trace_branch traceback_branch(int node, std::unordered_set<int>& main_b
 static std::pair<t_trace*, t_trace*> add_trace_non_configurable(t_trace* head, t_trace* tail, int node, std::unordered_set<int>& visited);
 static std::pair<t_trace*, t_trace*> add_trace_non_configurable_recurr(int node, std::unordered_set<int>& visited, int depth = 0);
 
-static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices,
-                                                                         std::unordered_map<int, ClusterBlockId>* rr_net_map);
+static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices);
 static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t_rr_node_indices& L_rr_node_indices);
 
 static t_clb_opins_used alloc_and_load_clb_opins_used_locally();
@@ -483,7 +482,7 @@ void init_route_structs(int bb_factor) {
     route_ctx.trace_nodes.resize(cluster_ctx.clb_nlist.nets().size());
 
     //Various look-ups
-    route_ctx.net_rr_terminals = load_net_rr_terminals(device_ctx.rr_node_indices, &route_ctx.rr_net_map);
+    route_ctx.net_rr_terminals = load_net_rr_terminals(device_ctx.rr_node_indices);
     route_ctx.is_clock_net = load_is_clock_net();
     route_ctx.route_bb = load_route_bb(bb_factor);
     route_ctx.rr_blk_source = load_rr_clb_sources(device_ctx.rr_node_indices);
@@ -559,7 +558,7 @@ static t_trace_branch traceback_branch(int node, std::unordered_set<int>& trace_
         //Add the current node to the head of traceback
         t_trace* prev_ptr = alloc_trace_data();
         prev_ptr->index = inode;
-        prev_ptr->iswitch = device_ctx.rr_nodes[inode].edge_switch(iedge);
+        prev_ptr->iswitch = device_ctx.rr_nodes.edge_switch(iedge);
         prev_ptr->next = branch_head;
         branch_head = prev_ptr;
 
@@ -693,24 +692,28 @@ void reset_path_costs(const std::vector<int>& visited_rr_nodes) {
         route_ctx.rr_node_route_inf[node].path_cost = std::numeric_limits<float>::infinity();
         route_ctx.rr_node_route_inf[node].backward_path_cost = std::numeric_limits<float>::infinity();
         route_ctx.rr_node_route_inf[node].prev_node = NO_PREVIOUS;
-        route_ctx.rr_node_route_inf[node].prev_edge = NO_PREVIOUS;
+        route_ctx.rr_node_route_inf[node].prev_edge = RREdgeId::INVALID();
     }
 }
 
 /* Returns the *congestion* cost of using this rr_node. */
 float get_rr_cong_cost(int inode) {
     auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
 
     float cost = get_single_rr_cong_cost(inode);
 
-    auto itr = device_ctx.rr_node_to_non_config_node_set.find(inode);
-    if (itr != device_ctx.rr_node_to_non_config_node_set.end()) {
-        for (int node : device_ctx.rr_non_config_node_sets[itr->second]) {
-            if (node == inode) {
-                continue; //Already included above
-            }
+    if (route_ctx.non_configurable_bitset.get(inode)) {
+        // Access unordered_map only when the node is part of a non-configurable set
+        auto itr = device_ctx.rr_node_to_non_config_node_set.find(inode);
+        if (itr != device_ctx.rr_node_to_non_config_node_set.end()) {
+            for (int node : device_ctx.rr_non_config_node_sets[itr->second]) {
+                if (node == inode) {
+                    continue; //Already included above
+                }
 
-            cost += get_single_rr_cong_cost(node);
+                cost += get_single_rr_cong_cost(node);
+            }
         }
     }
     return (cost);
@@ -933,7 +936,14 @@ void alloc_and_load_rr_node_route_structs() {
     auto& device_ctx = g_vpr_ctx.device();
 
     route_ctx.rr_node_route_inf.resize(device_ctx.rr_nodes.size());
+    route_ctx.non_configurable_bitset.resize(device_ctx.rr_nodes.size());
+    route_ctx.non_configurable_bitset.fill(false);
+
     reset_rr_node_route_structs();
+
+    for (auto i : device_ctx.rr_node_to_non_config_node_set) {
+        route_ctx.non_configurable_bitset.set(i.first, true);
+    }
 }
 
 void reset_rr_node_route_structs() {
@@ -947,7 +957,7 @@ void reset_rr_node_route_structs() {
 
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         route_ctx.rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
-        route_ctx.rr_node_route_inf[inode].prev_edge = NO_PREVIOUS;
+        route_ctx.rr_node_route_inf[inode].prev_edge = RREdgeId::INVALID();
         route_ctx.rr_node_route_inf[inode].pres_cost = 1.0;
         route_ctx.rr_node_route_inf[inode].acc_cost = 1.0;
         route_ctx.rr_node_route_inf[inode].path_cost = std::numeric_limits<float>::infinity();
@@ -960,11 +970,7 @@ void reset_rr_node_route_structs() {
 /* Allocates and loads the route_ctx.net_rr_terminals data structure. For each net it stores the rr_node   *
  * index of the SOURCE of the net and all the SINKs of the net [clb_nlist.nets()][clb_nlist.net_pins()].    *
  * Entry [inet][pnum] stores the rr index corresponding to the SOURCE (opin) or SINK (ipin) of the pin.     */
-static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(
-    const t_rr_node_indices& L_rr_node_indices,
-    std::unordered_map<int, ClusterBlockId>* rr_net_map) {
-    VTR_ASSERT(rr_net_map != nullptr);
-    rr_net_map->clear();
+static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices) {
     vtr::vector<ClusterNetId, std::vector<int>> net_rr_terminals;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -994,16 +1000,6 @@ static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(
             int inode = get_rr_node_index(L_rr_node_indices, i, j, (pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
                                           iclass);
             net_rr_terminals[net_id][pin_count] = inode;
-
-            auto result = rr_net_map->insert(std::make_pair(inode, block_id));
-            // If the map already contains an entry for inode, make sure it
-            // is consistent with the existing entry.
-            if (!result.second && block_id != result.first->second) {
-                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                "Clustered netlist has inconsistent rr node mapping, class rr node %d has two block ids %zu and %zu?",
-                                inode, (size_t)block_id, (size_t)result.first->second);
-            }
-
             pin_count++;
         }
     }
@@ -1277,18 +1273,11 @@ void print_route(FILE* fp, const vtr::vector<ClusterNetId, t_traceback>& traceba
                     fprintf(fp, "%d  ", device_ctx.rr_nodes[inode].ptc_num());
 
                     if (!is_io_type(device_ctx.grid[ilow][jlow].type) && (rr_type == IPIN || rr_type == OPIN)) {
-                        // Go from IPIN/OPIN to SOURCE/SINK
-                        auto* type = device_ctx.grid[ilow][jlow].type;
                         int pin_num = device_ctx.rr_nodes[inode].ptc_num();
-                        int iclass = type->pin_class[pin_num];
-                        int class_inode = get_rr_node_index(device_ctx.rr_node_indices,
-                                                            ilow, jlow, (rr_type == OPIN ? SOURCE : SINK), iclass);
-
-                        // Use the rr_net_map to go from class inode back to ClusterBlockId.
-                        auto itr = route_ctx.rr_net_map.find(class_inode);
-                        VTR_ASSERT(itr != route_ctx.rr_net_map.end());
-                        ClusterBlockId iblock = itr->second;
-
+                        int xoffset = device_ctx.grid[ilow][jlow].width_offset;
+                        int yoffset = device_ctx.grid[ilow][jlow].height_offset;
+                        ClusterBlockId iblock = place_ctx.grid_blocks[ilow - xoffset][jlow - yoffset].blocks[0];
+                        VTR_ASSERT(iblock);
                         t_pb_graph_pin* pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
                         t_pb_type* pb_type = pb_pin->parent_node->pb_type;
                         fprintf(fp, " %s.%s[%d] ", pb_type->name, pb_pin->port->name, pb_pin->pin_number);
@@ -1426,7 +1415,8 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
                 //Add the OPIN to the heap according to it's congestion cost
                 cost = get_rr_cong_cost(to_node);
                 add_node_to_heap(heap, route_ctx.rr_node_route_inf,
-                                 to_node, cost, OPEN, OPEN, 0., 0.);
+                                 to_node, cost, OPEN, RREdgeId::INVALID(),
+                                 0., 0.);
             }
 
             for (ipin = 0; ipin < num_local_opin; ipin++) {
@@ -1623,11 +1613,12 @@ void print_rr_node_route_inf() {
     for (size_t inode = 0; inode < route_ctx.rr_node_route_inf.size(); ++inode) {
         if (!std::isinf(route_ctx.rr_node_route_inf[inode].path_cost)) {
             int prev_node = route_ctx.rr_node_route_inf[inode].prev_node;
-            int prev_edge = route_ctx.rr_node_route_inf[inode].prev_edge;
-            VTR_LOG("rr_node: %d prev_node: %d prev_edge: %d",
-                    inode, prev_node, prev_edge);
+            RREdgeId prev_edge = route_ctx.rr_node_route_inf[inode].prev_edge;
+            auto switch_id = device_ctx.rr_nodes.edge_switch(prev_edge);
+            VTR_LOG("rr_node: %d prev_node: %d prev_edge: %zu",
+                    inode, prev_node, (size_t)prev_edge);
 
-            if (prev_node != OPEN && prev_edge != OPEN && !device_ctx.rr_nodes[prev_node].edge_is_configurable(prev_edge)) {
+            if (prev_node != OPEN && bool(prev_edge) && !device_ctx.rr_switch_inf[switch_id].configurable()) {
                 VTR_LOG("*");
             }
 
@@ -1655,11 +1646,12 @@ void print_rr_node_route_inf_dot() {
     for (size_t inode = 0; inode < route_ctx.rr_node_route_inf.size(); ++inode) {
         if (!std::isinf(route_ctx.rr_node_route_inf[inode].path_cost)) {
             int prev_node = route_ctx.rr_node_route_inf[inode].prev_node;
-            int prev_edge = route_ctx.rr_node_route_inf[inode].prev_edge;
+            RREdgeId prev_edge = route_ctx.rr_node_route_inf[inode].prev_edge;
+            auto switch_id = device_ctx.rr_nodes.edge_switch(prev_edge);
 
-            if (prev_node != OPEN && prev_edge != OPEN) {
+            if (prev_node != OPEN && bool(prev_edge)) {
                 VTR_LOG("\tnode%d -> node%zu [", prev_node, inode);
-                if (prev_node != OPEN && prev_edge != OPEN && !device_ctx.rr_nodes[prev_node].edge_is_configurable(prev_edge)) {
+                if (prev_node != OPEN && bool(prev_edge) && !device_ctx.rr_switch_inf[switch_id].configurable()) {
                     VTR_LOG("label=\"*\"");
                 }
 

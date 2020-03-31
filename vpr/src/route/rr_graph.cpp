@@ -32,7 +32,6 @@
 #include "rr_graph_writer.h"
 #include "rr_graph_reader.h"
 #include "router_lookahead_map.h"
-#include "connection_box_lookahead_map.h"
 #include "rr_graph_clock.h"
 
 #include "rr_types.h"
@@ -164,7 +163,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(t_rr_graph_sto
                                                                   const std::vector<vtr::Matrix<int>>& Fc_out,
                                                                   vtr::NdMatrix<int, 3>& Fc_xofs,
                                                                   vtr::NdMatrix<int, 3>& Fc_yofs,
-                                                                  const t_rr_node_indices& L_rr_node_indices,
+                                                                  t_rr_node_indices& L_rr_node_indices,
                                                                   const int max_chan_width,
                                                                   const t_chan_width& chan_width,
                                                                   const int wire_to_ipin_switch,
@@ -316,7 +315,7 @@ void create_rr_graph(const t_graph_type graph_type,
                      const t_chan_width nodes_per_chan,
                      const int num_arch_switches,
                      t_det_routing_arch* det_routing_arch,
-                     std::vector<t_segment_inf>& segment_inf,
+                     const std::vector<t_segment_inf>& segment_inf,
                      const enum e_base_cost_type base_cost_type,
                      const bool trim_empty_channels,
                      const bool trim_obs_channels,
@@ -375,11 +374,13 @@ void create_rr_graph(const t_graph_type graph_type,
 
     process_non_config_sets();
 
+    verify_rr_node_indices(grid, device_ctx.rr_node_indices, device_ctx.rr_nodes);
+
     print_rr_graph_stats();
 
     //Write out rr graph file if needed
     if (!det_routing_arch->write_rr_graph_filename.empty()) {
-        write_rr_graph(det_routing_arch->write_rr_graph_filename.c_str(), segment_inf);
+        write_rr_graph(det_routing_arch->write_rr_graph_filename.c_str());
     }
 }
 
@@ -456,6 +457,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     }
 
     /* START SEG_DETAILS */
+    device_ctx.rr_segments = segment_inf;
     int num_seg_details = 0;
     t_seg_details* seg_details = nullptr;
 
@@ -706,7 +708,7 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     // Verify no incremental node allocation.
     if (device_ctx.rr_nodes.size() > expected_node_count) {
-        VTR_LOG_ERROR("Expected no more than %zu nodes, have %zu nodes",
+        VTR_LOG_ERROR("Expected no more than %zu nodes, have %zu nodes\n",
                       expected_node_count, device_ctx.rr_nodes.size());
     }
 
@@ -882,7 +884,6 @@ void load_rr_switch_from_arch_switch(int arch_switch_idx,
     device_ctx.rr_switch_inf[rr_switch_idx].Cin = device_ctx.arch_switch_inf[arch_switch_idx].Cin;
     device_ctx.rr_switch_inf[rr_switch_idx].Cinternal = device_ctx.arch_switch_inf[arch_switch_idx].Cinternal;
     device_ctx.rr_switch_inf[rr_switch_idx].Cout = device_ctx.arch_switch_inf[arch_switch_idx].Cout;
-    device_ctx.rr_switch_inf[rr_switch_idx].penalty_cost = device_ctx.arch_switch_inf[arch_switch_idx].penalty_cost;
     device_ctx.rr_switch_inf[rr_switch_idx].Tdel = rr_switch_Tdel;
     device_ctx.rr_switch_inf[rr_switch_idx].mux_trans_size = device_ctx.arch_switch_inf[arch_switch_idx].mux_trans_size;
     if (device_ctx.arch_switch_inf[arch_switch_idx].buf_size_type == BufferSize::AUTO) {
@@ -1153,7 +1154,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(t_rr_graph_sto
                                                                   const std::vector<vtr::Matrix<int>>& Fc_out,
                                                                   vtr::NdMatrix<int, 3>& Fc_xofs,
                                                                   vtr::NdMatrix<int, 3>& Fc_yofs,
-                                                                  const t_rr_node_indices& L_rr_node_indices,
+                                                                  t_rr_node_indices& L_rr_node_indices,
                                                                   const int max_chan_width,
                                                                   const t_chan_width& chan_width,
                                                                   const int wire_to_ipin_switch,
@@ -1267,11 +1268,8 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(t_rr_graph_sto
     std::function<void(t_chan_width*)> update_chan_width = [](t_chan_width*) {
     };
     if (clock_modeling == DEDICATED_NETWORK) {
-        ClockRRGraphBuilder builder(
-            chan_width, grid, &L_rr_node);
-        builder.create_and_append_clock_rr_graph(
-            num_seg_types,
-            &rr_edges_to_create);
+        ClockRRGraphBuilder builder(chan_width, grid, &L_rr_node, &L_rr_node_indices);
+        builder.create_and_append_clock_rr_graph(num_seg_types, &rr_edges_to_create);
         uniquify_edges(rr_edges_to_create);
         alloc_and_load_edges(L_rr_node, rr_edges_to_create);
         rr_edges_to_create.clear();
@@ -1408,6 +1406,7 @@ static void build_rr_sinks_sources(const int i,
         int inode = 0;
         if (class_inf[iclass].type == DRIVER) { /* SOURCE */
             inode = get_rr_node_index(L_rr_node_indices, i, j, SOURCE, iclass);
+            VTR_ASSERT(inode >= 0);
 
             //Retrieve all the physical OPINs associated with this source, this includes
             //those at different grid tiles of this block
@@ -2451,12 +2450,12 @@ std::string describe_rr_node(int inode) {
 
         int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
 
-        if (seg_index < (int)device_ctx.arch->Segments.size()) {
+        if (seg_index < (int)device_ctx.rr_segments.size()) {
             msg += vtr::string_fmt(" track: %d len: %d longline: %d seg_type: %s dir: %s",
                                    rr_node.track_num(),
                                    rr_node.length(),
-                                   device_ctx.arch->Segments[seg_index].longline,
-                                   device_ctx.arch->Segments[seg_index].name.c_str(),
+                                   device_ctx.rr_segments[seg_index].longline,
+                                   device_ctx.rr_segments[seg_index].name.c_str(),
                                    rr_node.direction_string());
         } else {
             msg += vtr::string_fmt(" track: %d len: %d seg_type: ILLEGAL_SEG_INDEX %d dir: %s",

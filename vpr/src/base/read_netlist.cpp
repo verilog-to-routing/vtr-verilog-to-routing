@@ -468,6 +468,11 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* p
             for (i = 0; i < pb_type->modes[pb->mode].num_pb_type_children; i++) {
                 if (strcmp(pb_type->modes[pb->mode].pb_type_children[i].name, tokens[0].data) == 0) {
                     pb_index = vtr::atoi(tokens[2].data);
+                    if (pb_index < 0) {
+                        vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(child),
+                                  "Instance number %d is negative instance %s in %s.\n",
+                                  pb_index, instance_type.value(), child.name());
+                    }
                     if (pb_index >= pb_type->modes[pb->mode].pb_type_children[i].num_pb) {
                         vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(child),
                                   "Instance number exceeds # of pb available for instance %s in %s.\n",
@@ -951,7 +956,7 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
         block_type = clb_nlist.block_type(blk_id);
         auto tile_type = pick_best_physical_type(block_type);
         for (j = 0; j < block_type->pb_type->num_pins; j++) {
-            int physical_pin = get_physical_pin(tile_type, /*z_index=*/0, block_type, j);
+            int physical_pin = get_physical_pin(tile_type, block_type, j);
 
             //Iterate through each pin of the block, and see if there is a net allocated/used for it
             clb_net_id = clb_nlist.block_net(blk_id, j);
@@ -1001,7 +1006,7 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
             block_type = clb_nlist.block_type(clb_nlist.pin_block(pin_id));
             auto tile_type = pick_best_physical_type(block_type);
             int logical_pin = clb_nlist.pin_logical_index(pin_id);
-            int physical_pin = get_physical_pin(tile_type, /*z_index=*/0, block_type, logical_pin);
+            int physical_pin = get_physical_pin(tile_type, block_type, logical_pin);
 
             if (tile_type->is_ignored_pin[physical_pin] != is_ignored_net) {
                 VTR_LOG_WARN(

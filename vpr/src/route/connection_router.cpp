@@ -70,13 +70,11 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_common_setup(
         //found with the bounding box) remains fast and never re-tries .
         VTR_LOG_WARN("No routing path for connection to sink_rr %d, retrying with full device bounding box\n", sink_node);
 
-        auto& device_ctx = g_vpr_ctx.device();
-
         t_bb full_device_bounding_box;
         full_device_bounding_box.xmin = 0;
         full_device_bounding_box.ymin = 0;
-        full_device_bounding_box.xmax = device_ctx.grid.width() - 1;
-        full_device_bounding_box.ymax = device_ctx.grid.height() - 1;
+        full_device_bounding_box.xmax = grid_.width() - 1;
+        full_device_bounding_box.ymax = grid_.height() - 1;
 
         //
         //TODO: potential future optimization
@@ -338,7 +336,10 @@ void ConnectionRouter<Heap>::timing_driven_expand_cheapest(t_heap* cheapest,
         VTR_LOGV_DEBUG(router_debug_, "    Better cost to %d\n", inode);
         VTR_LOGV_DEBUG(router_debug_, "    New total cost: %g\n", new_total_cost);
         VTR_LOGV_DEBUG(router_debug_, "    New back cost: %g\n", new_back_cost);
-        VTR_LOGV_DEBUG(router_debug_, "      Setting path costs for associated node %d (from %d edge %d)\n", cheapest->index, cheapest->u.prev.node, cheapest->u.prev.edge);
+        VTR_LOGV_DEBUG(router_debug_, "      Setting path costs for associated node %d (from %d edge %zu)\n",
+                       cheapest->index,
+                       cheapest->prev_node(),
+                       size_t(cheapest->prev_edge()));
 
         update_cheapest(cheapest, route_inf);
 
@@ -374,9 +375,7 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbours(t_heap* current,
     //For each node associated with the current heap element, expand all of it's neighbors
     int from_node_int = current->index;
     RRNodeId from_node(from_node_int);
-    RREdgeId first_edge = rr_nodes_->first_edge(from_node);
-    RREdgeId last_edge = rr_nodes_->last_edge(from_node);
-    int num_edges = size_t(last_edge) - size_t(first_edge);
+    auto edges = rr_nodes_->edge_range(from_node);
 
     // This is a simple prefetch that prefetches:
     //  - RR node data reachable from this node
@@ -395,9 +394,7 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbours(t_heap* current,
     //  - directrf_stratixiv_arch_timing.blif
     //  - gsm_switch_stratixiv_arch_timing.blif
     //
-    for (int iconn = 0; iconn < num_edges; iconn++) {
-        RREdgeId from_edge(size_t(first_edge) + iconn);
-
+    for (RREdgeId from_edge : edges) {
         RRNodeId to_node = rr_nodes_->edge_sink_node(from_edge);
         rr_nodes_->prefetch_node(to_node);
 
@@ -405,13 +402,11 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbours(t_heap* current,
         VTR_PREFETCH(&rr_switch_inf_[switch_idx], 0, 0);
     }
 
-    for (int iconn = 0; iconn < num_edges; iconn++) {
-        RREdgeId from_edge(size_t(first_edge) + iconn);
+    for (RREdgeId from_edge : edges) {
         RRNodeId to_node = rr_nodes_->edge_sink_node(from_edge);
         timing_driven_expand_neighbour(current,
                                        from_node_int,
                                        from_edge,
-                                       iconn,
                                        size_t(to_node),
                                        cost_params,
                                        bounding_box,
@@ -427,7 +422,6 @@ template<typename Heap>
 void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
                                                             const int from_node,
                                                             const RREdgeId from_edge,
-                                                            const t_edge_size from_node_edge_idx,
                                                             const int to_node_int,
                                                             const t_conn_cost_params cost_params,
                                                             const t_bb bounding_box,
@@ -444,10 +438,10 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
         || to_yhigh < bounding_box.ymin   //Strictly below BB bottom-edge
         || to_ylow > bounding_box.ymax) { //Strictly above BB top-edge
         VTR_LOGV_DEBUG(router_debug_,
-                       "      Pruned expansion of node %d edge %d -> %d"
+                       "      Pruned expansion of node %d edge %zu -> %d"
                        " (to node location %d,%dx%d,%d outside of expanded"
                        " net bounding box %d,%dx%d,%d)\n",
-                       from_node, from_node_edge_idx, to_node_int,
+                       from_node, size_t(from_edge), to_node_int,
                        to_xlow, to_ylow, to_xhigh, to_yhigh,
                        bounding_box.xmin, bounding_box.ymin, bounding_box.xmax, bounding_box.ymax);
         return; /* Node is outside (expanded) bounding box. */
@@ -467,10 +461,10 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
                 || to_xhigh > target_bb.xmax
                 || to_yhigh > target_bb.ymax) {
                 VTR_LOGV_DEBUG(router_debug_,
-                               "      Pruned expansion of node %d edge %d -> %d"
+                               "      Pruned expansion of node %d edge %zu -> %d"
                                " (to node is IPIN at %d,%dx%d,%d which does not"
                                " lead to target block %d,%dx%d,%d)\n",
-                               from_node, from_node_edge_idx, to_node_int,
+                               from_node, size_t(from_edge), to_node_int,
                                to_xlow, to_ylow, to_xhigh, to_yhigh,
                                target_bb.xmin, target_bb.ymin, target_bb.xmax, target_bb.ymax);
                 return;
@@ -478,15 +472,14 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
         }
     }
 
-    VTR_LOGV_DEBUG(router_debug_, "      Expanding node %d edge %d -> %d\n",
-                   from_node, from_node_edge_idx, to_node_int);
+    VTR_LOGV_DEBUG(router_debug_, "      Expanding node %d edge %zu -> %d\n",
+                   from_node, size_t(from_edge), to_node_int);
 
     timing_driven_add_to_heap(cost_params,
                               current,
                               from_node,
                               to_node_int,
                               from_edge,
-                              from_node_edge_idx,
                               target_node);
 }
 
@@ -497,7 +490,6 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
                                                        const int from_node,
                                                        const int to_node,
                                                        const RREdgeId from_edge,
-                                                       const int iconn,
                                                        const int target_node) {
     t_heap next;
 
@@ -534,8 +526,8 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
         next_ptr->R_upstream = next.R_upstream;
         next_ptr->backward_path_cost = next.backward_path_cost;
         next_ptr->index = to_node;
-        next_ptr->u.prev.edge = iconn;
-        next_ptr->u.prev.node = from_node;
+        next_ptr->set_prev_edge(from_edge);
+        next_ptr->set_prev_node(from_node);
 
         heap_.add_to_heap(next_ptr);
         ++router_stats_->heap_pushes;
@@ -674,7 +666,7 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
                    rr_node_arch_name(to_node).c_str(), describe_rr_node(to_node).c_str(),
                    rr_node_arch_name(target_node).c_str(), describe_rr_node(target_node).c_str(),
                    expected_cost, to->R_upstream);
-    total_cost = to->backward_path_cost + cost_params.astar_fac * expected_cost;
+    total_cost += to->backward_path_cost + cost_params.astar_fac * expected_cost;
 
     to->cost = total_cost;
 }
@@ -762,7 +754,7 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
     VTR_LOGV_DEBUG(router_debug_, "  Adding node %8d to heap from init route tree with cost %g (%s)\n", inode, tot_cost, describe_rr_node(inode).c_str());
 
     push_back_node(&heap_, rr_node_route_inf_,
-                   inode, tot_cost, NO_PREVIOUS, NO_PREVIOUS,
+                   inode, tot_cost, NO_PREVIOUS, RREdgeId::INVALID(),
                    backward_path_cost, R_upstream);
 
     ++router_stats_->heap_pushes;

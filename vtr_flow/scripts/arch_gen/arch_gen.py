@@ -1,6 +1,15 @@
+#!/usr/bin/env python3
+
 import sys
 import re
 import os
+import argparse
+
+# Grab the desired output directory from the arguments; default to the
+# working directory
+parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument("--output_dir", default=".", help="Directory to place arch xml files")
+args = parser.parse_args()
 
 openlist = []
 
@@ -108,10 +117,10 @@ def xport(type, name, p, e="", c=""):
     xbegin(type)
     xprop("name", name)
     xprop("num_pins", p)
-    if (e <> ""):
+    if (e != ""):
         xprop("equivalent", e)
         
-    if (c <> ""):
+    if (c != ""):
         xprop("port_class", c)
     xcloseend()
     
@@ -229,7 +238,7 @@ def xCLB(k_LUT, N_BLE, I_CLB, I_BLE, fracture_level, num_FF, crossbar_str):
                         if fracture_level == 0:
                             input_str = "ble[" + str(input_idx - I_CLB) + "].out"
                         elif fracture_level == 1:
-                            input_str = "ble[" + str((input_idx - I_CLB) / 2) + "].out[" + str(input_idx % 2) + "]"
+                            input_str = "ble[" + str((input_idx - I_CLB) // 2) + "].out[" + str(input_idx % 2) + "]"
                         else:
                             assert(0)                    
                     inputs.append(input_str)
@@ -311,7 +320,7 @@ def xCLB(k_LUT, N_BLE, I_CLB, I_BLE, fracture_level, num_FF, crossbar_str):
         frac_stages = fracture_level + 1
     
     # Connections from Soft Logic to FFs
-    soft_per_ff = O_soft / num_FF
+    soft_per_ff = O_soft // num_FF
     for j in range(num_FF):
         xbegin("mux")
         xprop("name", "mux" + str(i))
@@ -354,7 +363,7 @@ def xCLB(k_LUT, N_BLE, I_CLB, I_BLE, fracture_level, num_FF, crossbar_str):
     # Connections from Soft/FF to BLE output    
     for j in range(O_ble):
         soft_logic_out = "soft_logic.out[" + str(j) + ":" + str(j) + "]"
-        FF_out = "ff[" + str(j / soft_per_ff) + ":" + str(j / soft_per_ff) + "].Q"
+        FF_out = "ff[" + str(j // soft_per_ff) + ":" + str(j // soft_per_ff) + "].Q"
         BLE_out = "ble.out[" + str(j) + ":" + str(j) + "]"
         
         xbegin("mux")
@@ -393,7 +402,7 @@ def xCLB(k_LUT, N_BLE, I_CLB, I_BLE, fracture_level, num_FF, crossbar_str):
     
 
         
-    for frac_stage in reversed(range(frac_stages)):
+    for frac_stage in reversed(list(range(frac_stages))):
         if (frac_stage == 3):
             # This is a special configuration with 1x(k-1) and 2x(k-2) LUTs
             special_stage = True
@@ -429,9 +438,9 @@ def xCLB(k_LUT, N_BLE, I_CLB, I_BLE, fracture_level, num_FF, crossbar_str):
             if (num_LUT == 1):
                 shift = 0;
             elif (special_stage):
-                shift = int(float(j) / (num_LUT * 2 - 1) * max_shift)
+                shift = int(float(j) // (num_LUT * 2 - 1) * max_shift)
             else:
-                shift = int(float(j) / (num_LUT - 1) * max_shift)
+                shift = int(float(j) // (num_LUT - 1) * max_shift)
                 
             soft_idx = I_soft - 1 - shift;
             
@@ -748,7 +757,7 @@ arches = []
 sweep = 0
 
 if (sweep):
-    dir = "C:/Users/Jeff/Dropbox/linux_home/vtr/vtr_flow/arch/power/sweep"
+    dir = args.output_dir
     a_k = [4, 6]
     a_N = [6, 8, 10]
     a_seg = [1, 2, 3, 4]
@@ -825,8 +834,8 @@ else:
     arches_c.append([6, 10, 40, 6, 0, 1, 4, 45, "45"])
     arches_c.append([6, 10, 40, 6, 0, 1, 4, 45, "50"])
     
-    
-    dir = "C:/Users/Jeff/Dropbox/linux_home/vtr/vtr_flow/arch/power/"
+
+    dir = args.output_dir
     
     os.path.join(dir, "I")
     
@@ -845,6 +854,6 @@ for arch in arches_fi:
 for arch in arches_c:
     gen_arch(dir, *arch)
     
-print "Done\n"
+print("Done\n")
 
 

@@ -4,21 +4,42 @@
 #include <vector>
 
 #include "heap_type.h"
+#include "vtr_log.h"
 
 struct BucketItem {
     t_heap item;
     BucketItem* next_bucket;
 };
 
-static_assert(offsetof(BucketItem, item) == 0,
-              "BucketItem::item must have an offset of 0");
-
 // Allocator for t_heap items.
 //
-// Supports fast clearing of the items, under the assumption that when clear
-// is invoked, all outstanding references can be dropped.  This should be true
-// between net routing, and avoids the need to rebuild the free list between
-// nets.
+// This allocator supports fast clearing by maintaining an explicit object
+// pool and a free list.
+//
+// The object pool maintained in heap_items_.  Whenever a new object is
+// created from the chunk allocator heap_ch_ it is added to heap_items_.
+//
+// When a client of BucketItems requests an objet, BucketItems first checks
+// if there are any objects in the object pool that have not been allocated
+// to the client (alloced_items_ < heap_items_.size()).  If there are objects
+// in the object pool that have not been alloced, these are use first.
+//
+// Once all objects from the object pool have been released, future allocations
+// come from the free list (maintained in heap_free_head_).  When the free list
+// is empty, only then is a new item allocated from the chunk allocator.
+//
+// BucketItems::clear provides a fast way to reset the object pool under the
+// assumption that no live references exists.  It does this by mark the free
+// list as empty and the object pool as being fully returned to BucketItems.
+// This operation is extremely fast compared with putting all elements back
+// onto the free list, as it only involves setting 3 values.
+//
+// This faster clear **requires** that all previous references to t_heap objects
+// are dropped prior to calling clear, otherwise a silent use-after-free issue
+// may occur. However because BucketItems is used in conjunction with Bucket,
+// and the typical use case is for the heap to be fully emptied between
+// routing, this optimization is safe.
+//
 class BucketItems {
   public:
     BucketItems() noexcept;
@@ -27,7 +48,7 @@ class BucketItems {
     //
     // This operation is only safe if all outstanding references are discarded.
     // This is true when the router is starting on a new net, as all outstanding
-    // items should be in the bucket, which is cleared at the start of routing.
+    // items should in the bucket will be cleared at the start of routing.
     void clear() {
         heap_free_head_ = nullptr;
         num_heap_allocated_ = 0;
@@ -61,10 +82,12 @@ class BucketItems {
     BucketItem* alloc_item() {
         BucketItem* temp_ptr;
         if (alloced_items_ < heap_items_.size()) {
+            // Return an unused object from the object pool.
             temp_ptr = heap_items_[alloced_items_++];
         } else {
             if (heap_free_head_ == nullptr) { /* No elements on the free list */
                 heap_free_head_ = vtr::chunk_new<BucketItem>(&heap_ch_);
+                heap_free_head_->next_bucket = nullptr;
                 heap_items_.push_back(heap_free_head_);
                 alloced_items_ += 1;
             }
@@ -110,15 +133,20 @@ class BucketItems {
 
 // Prority queue approximation using cost buckets and randomization.
 //
-// The Bucket contains linked lists for costs at kConvFactor intervals.  Given
-// that cost is approximately delay, each bucket contains ~1 picosecond (1e12)
-// worth items.
+// The cost buckets are each a linked lists for costs at kDefaultConvFactor
+// intervals. Given that cost is approximately delay, each bucket contains ~1
+// picosecond (1e12) worth of items.
 //
 // Items are pushed into the linked list that matches their cost [0, 1)
 // picosecond.  When popping the Bucket, a random item in the cheapest bucket
 // with items is returned.  This randomization exists to prevent the router
 // from following identical paths when operating with identical costs.
 // Consider two parallel paths to a node.
+//
+// To ensure that number of buckets do not get too large, whenever is element
+// is added to the heap, the number of buckets required is checked.  If more
+// than 100k buckets are required, then the width of the buckets (conv_factor_)
+// are rescaled such that ~50k buckets are required.
 //
 // Important node: This approximation makes some assumptions about the
 // structure of costs.
@@ -135,11 +163,14 @@ class Bucket : public HeapInterface {
     ~Bucket();
 
     t_heap* alloc() final {
-        return &items_.alloc_item()->item;
+        outstanding_items_ += 1;
+        t_heap* hptr = &items_.alloc_item()->item;
+        return hptr;
     }
     void free(t_heap* hptr) final {
         // Static assert ensures that BucketItem::item is at offset 0,
         // so this cast is safe.
+        outstanding_items_ -= 1;
         items_.free_item(reinterpret_cast<BucketItem*>(hptr));
     }
 
@@ -209,10 +240,14 @@ class Bucket : public HeapInterface {
 
     // Expand the number of buckets.
     //
-    // Only call if insufficient bucets exist.
+    // Only call if insufficient buckets exist.
     void expand(size_t required_number_of_buckets);
 
     BucketItems items_; /* Item storage */
+
+    /* Number of t_heap objects alloc'd but not returned to Bucket.
+     * Used to verify that clearing is safe. */
+    ssize_t outstanding_items_;
 
     size_t seed_; /* Seed for fast_rand, should be non-zero */
 

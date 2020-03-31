@@ -186,9 +186,9 @@ VTR also has a limited set of unit tests, which can be run with:
 $ make && make test
 ```
 
-### Running tests on presubmits via Kokoro
+## Running tests on Pull Requests (PRs) via Kokoro
 
-Because of the long runtime for nightly and weekly tests, a kokoro job can be
+Because of the long runtime for nightly and weekly tests, a Kokoro job can be
 used to run these tests once a Pull Request (PR) has been made at
 https://github.com/verilog-to-routing/vtr-verilog-to-routing.
 
@@ -199,45 +199,50 @@ Non-contributors can request a contributor on the project add a label
 and then and issue jobs for that PR.  If the tag remains after being added,
 there may not be an available Kokoro runner, so wait.
 
-#### Re-running tests on Kokoro
+### Re-running tests on Kokoro
 
 If a job fails due to an intermittent failure or a re-run is desired, a
 contributor can add the label "kokoro:force-run" to re-issue jobs for that PR.
 
-#### Checking results from Kokoro tests
+### Checking results from Kokoro tests
 
 Currently there is not a way for an in-flight job to be monitored.
 
-Once a job has been completed, the stdout and the output files (e.g.
-parse\_results.txt) are available by following the "Details" link that appears
-on the PR.
+Once a job has been completed, you can follow the "Details" link that appears on the PR status. 
+The Kokoro page will show the job's stdout in the 'Target Log' tab (once the job has completed).
+The full log can be downloading by clicking the 'Download Full Log' button, or from the 'Artifacts' tab.
 
-The stdout from run is available on the "Invocation Log" tab.  The log should
-be displayed, and can be downloaded via the "Download Full Log" button on the
-same tab.
+### Downloading logs from Google Cloud Storage (GCS)
 
-Output files (e.g. parse\_results.txt) can be found by following the "GCS"
-link on the "Invocation Details" tab.  Individual files can be downloaded by
-using the GCS browser.  If many files are desired, use "gsutil" to download
-the logs from GCS.
+After a Kokoro run is complete a number of useful log files (e.g. for each VPR invocation) are stored to Google Cloud Storage (GCS).
 
-#### Example of downloading logs from GCS
+The top level directory containing all VTR Kokoro runs is:
 
-An GCS example link from the "Invocation Details" tab:
+    https://console.cloud.google.com/storage/browser/vtr-verilog-to-routing/artifacts/prod/foss-fpga-tools/verilog-to-routing/upstream/
+
+PR jobs are under the `presubmit` directory, and continuous jobs (which run on the master branch) are under the `continuous` directory.
+
+Each Kokoro run has a unique build number, which can be found in the log file (available via the Kokoro run webpage).
+For example, if the log file contains:
+```
+export KOKORO_BUILD_NUMBER="450"
+```
+then the Kokoro build number is `450`.
+
+If build 450 corresponded to a PR (`presubmit`) build of the `nightly` regression tests, the resulting output files would be available at:
+
+    https://console.cloud.google.com/storage/browser/vtr-verilog-to-routing/artifacts/prod/foss-fpga-tools/verilog-to-routing/upstream/presubmit/nightly/450/
+
+where `presubmit/nightly/450/` (the type, test name and build number) have been appended to the base URL.
+Navigating to that URL will allow you to browse and download the collected log files.
+
+To download all the files from that Kokoro run, replace `https://console.cloud.google.com/storage/browser/` in the URL with `gs://` and invoke the [gsutil](https://cloud.google.com/storage/docs/gsutil) command (and it's `cp -R` sub-command), like so:
 
 ```
-https://console.cloud.google.com/storage/browser/vtr-verilog-to-routing/artifacts/prod/foss-fpga-tools/verilog-to-routing/upstream/presubmit/nightly/75/20200129-124904
+gsutil -m cp -R gs://vtr-verilog-to-routing/artifacts/prod/foss-fpga-tools/verilog-to-routing/upstream/presubmit/nightly/450 .
 ```
 
-To download all the files from that run, remove
-`https://console.cloud.google.com/storage/browser/` from the beginning of the
-URL, and invoke gsutil with the remainder, like so:
-
-```
-gsutil -m cp -R gs://vtr-verilog-to-routing/artifacts/prod/foss-fpga-tools/verilog-to-routing/upstream/presubmit/nightly/52/20200123-165906 .
-```
-
-This will download all of the logs to the current working directory.
+This will download all of the logs to the current directory for inspection.
 
 #### Kokoro runner details
 
@@ -246,18 +251,18 @@ Kokoro runners are a standard
 VM with a 4 TB `pd-standard` disk used to perform the build of VPR and run the
 tests.
 
-#### What to do if kokoro jobs are not starting?
+#### What to do if Kokoro jobs are not starting?
 
-There are several reasons kokoro jobs might not be starting.
+There are several reasons Kokoro jobs might not be starting.
 Try adding the "kokoro:force-run" label if it is not already added, or remove
 and add it if it already was added.
 
 If adding the label has no affect, check GCS status, as a GCS disruption will
-also disrupt kokoro.
+also disrupt Kokoro.
 
 Another reason jobs may not start is if there is a large backlog of jobs
 running, there may be no runners left to start.  In this case, someone with
-kokoro management rights may need to terminate stale jobs, or wait for job
+Kokoro management rights may need to terminate stale jobs, or wait for job
 timeouts.
 
 # Debugging Failed Tests
@@ -898,10 +903,14 @@ In preparation for a release it may make sense to produce 'release candidates' w
 The following outlines the procedure to following when making an official VTR release:
 
  * Check the code compiles on the list of supported compilers
- * Check that all regression tests pass
+ * Check that all regression tests pass functionality
  * Update regression test golden results to match the released version
- * Increment the version number (set in root CMakeLists.txt)
+ * Check that all regression tests pass QoR
  * Create a new entry in the CHANGELOG.md for the release, summarizing at a high-level user-facing changes
+ * Increment the version number (set in root CMakeLists.txt)
  * Create a git annotated tag (e.g. `v8.0.0`) and push it to github
-
+ * GitHub will automatically create a release based on the tag
+ * Add the new change log entry to the [GitHub release description](https://github.com/verilog-to-routing/vtr-verilog-to-routing/releases)
+ * Update the [ReadTheDocs configuration](https://readthedocs.org/projects/vtr/versions/) to build and serve documentation for the relevant tag (e.g. `v8.0.0`)
+ * Send a release announcement email to the [vtr-announce](vtr-announce@googlegroups.com) mailing list (make sure to thank all contributors!)
 

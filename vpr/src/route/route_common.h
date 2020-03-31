@@ -4,6 +4,7 @@
 #include "clustered_netlist.h"
 #include "vtr_vector.h"
 #include "heap_type.h"
+#include "rr_node_fwd.h"
 
 /******* Subroutines in route_common used only by other router modules ******/
 
@@ -77,7 +78,7 @@ t_heap* prepare_to_add_node_to_heap(
     int inode,
     float total_cost,
     int prev_node,
-    int prev_edge,
+    RREdgeId prev_edge,
     float backward_path_cost,
     float R_upstream) {
     if (total_cost >= rr_node_route_inf[inode].path_cost)
@@ -87,8 +88,8 @@ t_heap* prepare_to_add_node_to_heap(
 
     hptr->index = inode;
     hptr->cost = total_cost;
-    hptr->u.prev.node = prev_node;
-    hptr->u.prev.edge = prev_edge;
+    hptr->set_prev_node(prev_node);
+    hptr->set_prev_edge(prev_edge);
     hptr->backward_path_cost = backward_path_cost;
     hptr->R_upstream = R_upstream;
     return hptr;
@@ -102,7 +103,7 @@ void add_node_to_heap(
     int inode,
     float total_cost,
     int prev_node,
-    int prev_edge,
+    RREdgeId prev_edge,
     float backward_path_cost,
     float R_upstream) {
     t_heap* hptr = prepare_to_add_node_to_heap(
@@ -124,7 +125,7 @@ void push_back_node(
     int inode,
     float total_cost,
     int prev_node,
-    int prev_edge,
+    RREdgeId prev_edge,
     float backward_path_cost,
     float R_upstream) {
     t_heap* hptr = prepare_to_add_node_to_heap(

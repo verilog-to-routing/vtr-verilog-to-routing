@@ -65,7 +65,7 @@ class string_view {
     }
 
     constexpr bool empty() const noexcept {
-        return size_ != 0;
+        return size_ == 0;
     }
 
     constexpr const char* begin() const noexcept {
@@ -107,7 +107,7 @@ class string_view {
 
 inline bool operator==(string_view lhs,
                        string_view rhs) noexcept {
-    return lhs.size() == rhs.size() && strncmp(lhs.data(), rhs.data(), std::min(lhs.size(), rhs.size())) == 0;
+    return lhs.size() == rhs.size() && (lhs.empty() || rhs.empty() || (strncmp(lhs.data(), rhs.data(), std::min(lhs.size(), rhs.size())) == 0));
 }
 inline bool operator!=(string_view lhs,
                        string_view rhs) noexcept {

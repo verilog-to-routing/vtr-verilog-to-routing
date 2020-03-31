@@ -46,6 +46,9 @@ void load_rr_file(const t_graph_type graph_type,
     vtr::ScopedStartFinishTimer timer("Loading routing resource graph");
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
+
+    device_ctx.rr_segments = segment_inf;
+
     RrGraphSerializer reader(
         graph_type,
         base_cost_type,
@@ -59,10 +62,9 @@ void load_rr_file(const t_graph_type graph_type,
         &device_ctx.rr_switch_inf,
         &device_ctx.rr_indexed_data,
         &device_ctx.rr_node_indices,
-        &device_ctx.connection_boxes,
         device_ctx.num_arch_switches,
         device_ctx.arch_switch_inf,
-        segment_inf,
+        device_ctx.rr_segments,
         device_ctx.physical_tile_types,
         grid,
         &device_ctx.rr_node_metadata,

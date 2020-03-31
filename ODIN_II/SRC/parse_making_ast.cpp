@@ -895,13 +895,11 @@ ast_node_t* newUnaryOperation(operation_list op_id, ast_node_t* expression, int 
 /*---------------------------------------------------------------------------------------------
  * (function: newNegedgeSymbol)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t* newNegedgeSymbol(char* symbol, int line_number) {
-    /* get the symbol node */
-    ast_node_t* symbol_node = newSymbolNode(symbol, line_number);
+ast_node_t* newNegedge(ast_node_t* expression, int line_number) {
     /* create a node for this array reference */
     ast_node_t* new_node = create_node_w_type(NEGEDGE, line_number, current_parse_file);
     /* allocate child nodes to this node */
-    allocate_children_to_node(new_node, {symbol_node});
+    allocate_children_to_node(new_node, {expression});
 
     return new_node;
 }
@@ -909,13 +907,11 @@ ast_node_t* newNegedgeSymbol(char* symbol, int line_number) {
 /*---------------------------------------------------------------------------------------------
  * (function: newPosedgeSymbol)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t* newPosedgeSymbol(char* symbol, int line_number) {
-    /* get the symbol node */
-    ast_node_t* symbol_node = newSymbolNode(symbol, line_number);
+ast_node_t* newPosedge(ast_node_t* expression, int line_number) {
     /* create a node for this array reference */
     ast_node_t* new_node = create_node_w_type(POSEDGE, line_number, current_parse_file);
     /* allocate child nodes to this node */
-    allocate_children_to_node(new_node, {symbol_node});
+    allocate_children_to_node(new_node, {expression});
 
     return new_node;
 }
@@ -1327,7 +1323,7 @@ ast_node_t* newGateInstance(char* gate_instance_name, ast_node_t* expression1, a
         symbol_node = newSymbolNode(gate_instance_name, line_number);
     }
 
-    char* newChar = vtr::strdup(expression1->types.identifier);
+    char* newChar = vtr::strdup(get_identifier(expression1));
     ast_node_t* newVar = newVarDeclare(newChar, NULL, NULL, NULL, NULL, NULL, line_number);
     ast_node_t* newVarList = newList(VAR_DECLARE_LIST, newVar, line_number);
     ast_node_t* newVarMaked = markAndProcessSymbolListWith(MODULE, WIRE, newVarList, false);
@@ -1359,7 +1355,7 @@ ast_node_t* newMultipleInputsGateInstance(char* gate_instance_name, ast_node_t* 
         symbol_node = newSymbolNode(gate_instance_name, line_number);
     }
 
-    char* newChar = vtr::strdup(expression1->types.identifier);
+    char* newChar = vtr::strdup(get_identifier(expression1));
 
     ast_node_t* newVar = newVarDeclare(newChar, NULL, NULL, NULL, NULL, NULL, line_number);
 
@@ -1476,10 +1472,16 @@ ast_node_t* newModule(char* module_name, ast_node_t* list_of_parameters, ast_nod
                || !strcmp(module_name, DUAL_PORT_RAM_string)) {
         error_message(PARSE_ERROR, line_number, current_parse_file,
                       "Module name collides with hard block of the same name (%s)\n", module_name);
-    } else if (list_of_ports == NULL) {
+    } else if (list_of_ports == NULL
+               || list_of_ports->num_children == 0) {
+        // this may change with hierarchy but for now we simply delete it
         warning_message(PARSE_ERROR, line_number, current_parse_file,
-                        "there are no ports for the module (%s), all logic will be dropped since it is not driving an output\n",
+                        "there are no ports for the module (%s)\n\tall logic will be dropped since it is not driving an output\n",
                         module_name);
+        vtr::free(module_name);
+        free_whole_tree(list_of_parameters);
+        free_whole_tree(list_of_ports);
+        free_whole_tree(list_of_module_items);
     } else {
         /* create a node for this array reference */
         new_node = create_node_w_type(MODULE, line_number, current_parse_file);

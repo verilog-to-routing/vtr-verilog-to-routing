@@ -5,6 +5,7 @@
 #include "device_grid.h"
 #include "vtr_memory.h"
 #include "vtr_array_view.h"
+#include "rr_graph_fwd.h"
 
 /* Used by the heap as its fundamental data structure.
  * Each heap element represents a partial route.
@@ -43,11 +44,36 @@ struct t_heap {
 
     struct t_prev {
         int node;
-        int edge;
+        unsigned int edge;
     };
 
+    t_heap* next_heap_item() const {
+        return u.next;
+    }
+
+    void set_next_heap_item(t_heap* next) {
+        u.next = next;
+    }
+
+    int prev_node() const {
+        return u.prev.node;
+    }
+
+    void set_prev_node(int prev_node) {
+        u.prev.node = prev_node;
+    }
+
+    RREdgeId prev_edge() const {
+        return RREdgeId(u.prev.edge);
+    }
+
+    void set_prev_edge(RREdgeId edge) {
+        u.prev.edge = (size_t)edge;
+    }
+
+  private:
     union {
-        t_heap* next;
+        t_heap* next = nullptr;
         t_prev prev;
     } u;
 };

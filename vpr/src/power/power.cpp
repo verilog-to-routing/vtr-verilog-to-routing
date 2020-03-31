@@ -67,8 +67,7 @@ static t_rr_node_power* rr_node_power;
 /************************* Function Declarations ********************/
 /* Routing */
 static void power_usage_routing(t_power_usage* power_usage,
-                                const t_det_routing_arch* routing_arch,
-                                const std::vector<t_segment_inf>& segment_inf);
+                                const t_det_routing_arch* routing_arch);
 
 /* Tiles */
 static void power_usage_blocks(t_power_usage* power_usage);
@@ -778,8 +777,7 @@ static void dealloc_mux_graph_rec(t_mux_node* node) {
  * Calculates the power of the entire routing fabric (not local routing
  */
 static void power_usage_routing(t_power_usage* power_usage,
-                                const t_det_routing_arch* routing_arch,
-                                const std::vector<t_segment_inf>& segment_inf) {
+                                const t_det_routing_arch* routing_arch) {
     auto& power_ctx = g_vpr_ctx.power();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
@@ -894,7 +892,7 @@ static void power_usage_routing(t_power_usage* power_usage,
                 }
                 break;
             case CHANX:
-            case CHANY:
+            case CHANY: {
                 /* This is a wire driven by a switchbox, which includes:
                  * 	- The Multiplexor at the beginning of the wire
                  * 	- A buffer, after the mux to drive the wire
@@ -909,8 +907,8 @@ static void power_usage_routing(t_power_usage* power_usage,
                 } else if (node.type() == CHANY) {
                     wire_length = node.yhigh() - node.ylow() + 1;
                 }
-                C_wire = wire_length
-                         * segment_inf[device_ctx.rr_indexed_data[node.cost_index()].seg_index].Cmetal;
+                int seg_index = device_ctx.rr_indexed_data[node.cost_index()].seg_index;
+                C_wire = wire_length * device_ctx.rr_segments[seg_index].Cmetal;
                 //(double)power_ctx.commonly_used->tile_length);
                 VTR_ASSERT(node_power->selected_input < node.fan_in());
 
@@ -1017,6 +1015,7 @@ static void power_usage_routing(t_power_usage* power_usage,
                     power_ctx.commonly_used->total_cb_buffer_size += buffer_size;
                 }
                 break;
+            }
             default:
                 power_log_msg(POWER_LOG_WARNING,
                               "The global routing-resource graph contains an unknown node type.");
@@ -1338,7 +1337,7 @@ bool power_init(const char* power_out_filepath,
     power_pb_pins_init();
 
     /* Size all components */
-    power_sizing_init(arch);
+    power_sizing_init();
 
     //power_print_spice_comparison();
     //	power_print_callibration();
@@ -1729,7 +1728,7 @@ e_power_ret_code power_total(float* run_time_s, const t_vpr_setup& vpr_setup, co
 
     /* Calculate Power */
     /* Routing */
-    power_usage_routing(&sub_power_usage, routing_arch, arch->Segments);
+    power_usage_routing(&sub_power_usage, routing_arch);
     power_add_usage(&total_power, &sub_power_usage);
     power_component_add_usage(&sub_power_usage, POWER_COMPONENT_ROUTING);
 

@@ -308,9 +308,11 @@ void VprTimingGraphResolver::get_detailed_interconnect_components_helper(std::ve
                 end_y = "";
                 arrow = "";
             }
-            if (device_ctx.rr_nodes[node->inode].type() == CHANX || device_ctx.rr_nodes[node->inode].type() == CHANY) {                                         //for channels, we would like to describe the component with segment specific information
-                net_component.type_name += device_ctx.arch->Segments[device_ctx.rr_indexed_data[device_ctx.rr_nodes[node->inode].cost_index()].seg_index].name; //Write the segment name
-                net_component.type_name += " length:" + std::to_string(device_ctx.rr_nodes[node->inode].length());                                              //add the length of the segment
+            if (device_ctx.rr_nodes[node->inode].type() == CHANX || device_ctx.rr_nodes[node->inode].type() == CHANY) { //for channels, we would like to describe the component with segment specific information
+                int cost_index = device_ctx.rr_nodes[node->inode].cost_index();
+                int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
+                net_component.type_name += device_ctx.rr_segments[seg_index].name;                                 //Write the segment name
+                net_component.type_name += " length:" + std::to_string(device_ctx.rr_nodes[node->inode].length()); //add the length of the segment
                 //Figure out the starting and ending coordinate of the segment depending on the direction
 
                 arrow = "->"; //we will point the coordinates from start to finish, left to right

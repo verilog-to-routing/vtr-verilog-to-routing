@@ -30,7 +30,7 @@ void ClockRRGraphBuilder::create_clock_networks_wires(const std::vector<std::uni
                                                       t_rr_edge_info_set* rr_edges_to_create) {
     // Add rr_nodes for each clock network wire
     for (auto& clock_network : clock_networks) {
-        clock_network->create_rr_nodes_for_clock_network_wires(*this, rr_nodes_, rr_edges_to_create, num_segments);
+        clock_network->create_rr_nodes_for_clock_network_wires(*this, rr_nodes_, rr_node_indices_, rr_edges_to_create, num_segments);
     }
 
     // Reduce the capacity of rr_nodes for performance

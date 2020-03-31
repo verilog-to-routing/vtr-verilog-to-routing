@@ -198,7 +198,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
             }
         }
 
-        write_rr_graph(kRrGraphFile, vpr_setup.Segments);
+        write_rr_graph(kRrGraphFile);
         vpr_free_all(arch, vpr_setup);
     }
 

@@ -13,8 +13,6 @@
 #include "connection_router_interface.h"
 #include "heap_type.h"
 
-extern bool f_router_debug;
-
 int get_max_pins_per_net();
 
 bool try_timing_driven_route(const t_router_opts& router_opts,
@@ -26,7 +24,8 @@ bool try_timing_driven_route(const t_router_opts& router_opts,
                              std::shared_ptr<RoutingDelayCalculator> delay_calc,
                              ScreenUpdatePriority first_iteration_priority);
 
-bool try_timing_driven_route_net(ConnectionRouterInterface& router,
+template<typename ConnectionRouter>
+bool try_timing_driven_route_net(ConnectionRouter& router,
                                  ClusterNetId net_id,
                                  int itry,
                                  float pres_fac,
@@ -41,7 +40,8 @@ bool try_timing_driven_route_net(ConnectionRouterInterface& router,
                                  route_budgets& budgeting_inf,
                                  bool& was_rerouted);
 
-bool timing_driven_route_net(ConnectionRouterInterface& router,
+template<typename ConnectionRouter>
+bool timing_driven_route_net(ConnectionRouter& router,
                              ClusterNetId net_id,
                              int itry,
                              float pres_fac,

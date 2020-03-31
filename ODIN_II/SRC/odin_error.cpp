@@ -68,8 +68,7 @@ static void print_culprit_line(long column, long line_number, long file) {
             fclose(input_file);
         }
         fprintf(stderr, "%s\n", culprit_line.c_str());
-        if (column > 0) {
-            delayed_errors++;
+        if (column >= 0) {
             fprintf(stderr, "%s\n", make_marker_from_str(culprit_line, column).c_str());
         }
     }

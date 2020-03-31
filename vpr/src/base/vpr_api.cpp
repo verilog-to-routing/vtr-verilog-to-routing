@@ -62,6 +62,7 @@
 #include "check_route.h"
 #include "constant_nets.h"
 #include "atom_netlist_utils.h"
+#include "cluster.h"
 
 #include "pack_report.h"
 
@@ -495,6 +496,10 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
         /* Output the netlist stats to console. */
         printClusteredNetlistStats();
+
+        // print the total number of used physical blocks for each
+        // physical block type after finishing the packing stage
+        print_pb_type_count(g_vpr_ctx.clustering().clb_nlist);
     }
 
     return status;
@@ -698,9 +703,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         std::string graphics_msg;
         if (route_status.success()) {
             //Sanity check the routing
-            if (!router_opts.disable_check_route) {
-                check_route(router_opts.route_type, router_opts.quick_check_route);
-            }
+            check_route(router_opts.route_type);
             get_serial_num();
 
             //Update status

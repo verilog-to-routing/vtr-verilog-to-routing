@@ -9,7 +9,8 @@ BucketItems::BucketItems() noexcept
     , heap_free_head_(nullptr) {}
 
 Bucket::Bucket() noexcept
-    : seed_(1231)
+    : outstanding_items_(0)
+    , seed_(1231)
     , heap_(nullptr)
     , heap_size_(0)
     , heap_head_(std::numeric_limits<size_t>::max())
@@ -65,6 +66,8 @@ void Bucket::verify() {
 }
 
 void Bucket::empty_heap() {
+    VTR_ASSERT(outstanding_items_ == 0);
+
     if (heap_head_ != std::numeric_limits<size_t>::max()) {
         std::fill(heap_ + heap_head_, heap_ + heap_tail_ + 1, nullptr);
     }
@@ -75,6 +78,14 @@ void Bucket::empty_heap() {
     items_.clear();
 }
 
+// Checks if the scaling factor for cost results in a reasonable
+// number of buckets based on the maximum cost value seen.
+//
+// Target number of buckets is between 50k and 100k buckets.
+// Default scaling is each bucket is around ~1 ps wide.
+//
+// Designs with scaled costs less than 100000 (e.g. 100 ns) shouldn't require
+// a bucket resize.
 void Bucket::check_scaling() {
     float min_cost = min_cost_;
     float max_cost = max_cost_;
@@ -85,12 +96,23 @@ void Bucket::check_scaling() {
     auto min_bucket = cost_to_int(min_cost);
     auto max_bucket = cost_to_int(max_cost);
 
+    // If scaling is invalid or more than 100k buckets are needed, rescale.
     if (min_bucket < 0 || max_bucket < 0 || max_bucket > 1000000) {
+        // Choose a scaling factor that accomidates 50k buckets between
+        // min_cost_ and max_cost_.
+        //
         // If min and max are close to each other, assume 3 orders of
-        // magnitude between min and max.
+        // magnitude between min and max.  The goal is to rescale less often
+        // when the larger costs haven't been seen yet.
         //
         // If min and max are at least 3 orders of magnitude apart, scale
-        // soley based on max cost.
+        // soley based on max cost.  The goal at this point is to keep the
+        // number of buckets between 50k and 100k.
+        //
+        // NOTE:  The precision loss of the bucket approximation grows as the
+        // maximum cost increases.  The underlying assumption of this scaling
+        // algorithm is that the maximum cost will not result in a poor
+        // scaling factor such that all precision is lost.
         conv_factor_ = 50000.f / max_cost_ / std::max(1.f, 1000.f / (max_cost_ / min_cost_));
 
         VTR_ASSERT(cost_to_int(min_cost_) >= 0);
@@ -111,6 +133,7 @@ void Bucket::check_scaling() {
             heap_tail_ = 0;
 
             for (BucketItem* item : reheap) {
+                outstanding_items_ += 1;
                 push_back(&item->item);
             }
         }
@@ -118,12 +141,17 @@ void Bucket::check_scaling() {
 }
 
 void Bucket::push_back(t_heap* hptr) {
+    VTR_ASSERT(outstanding_items_ > 0);
+    outstanding_items_ -= 1;
+
     float cost = hptr->cost;
     if (!std::isfinite(cost)) {
         return;
     }
 
+    // Check to see if the range of costs observed by the heap has changed.
     bool check_scale = false;
+
     // Exclude 0 cost from min_cost to provide useful scaling factor.
     if (cost < min_cost_ && cost > 0) {
         min_cost_ = cost;
@@ -134,6 +162,8 @@ void Bucket::push_back(t_heap* hptr) {
         check_scale = true;
     }
 
+    // Rescale the number and size of buckets if needed based on the new
+    // cost range.
     if (check_scale) {
         check_scaling();
     }
@@ -214,6 +244,7 @@ t_heap* Bucket::get_heap_head() {
         heap_head_ = heap_head;
     }
 
+    outstanding_items_ += 1;
     return &next->item;
 }
 

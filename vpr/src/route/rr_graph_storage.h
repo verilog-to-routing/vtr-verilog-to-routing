@@ -3,11 +3,13 @@
 
 #include <exception>
 
+#include "rr_graph_fwd.h"
 #include "rr_node_fwd.h"
 #include "rr_graph2.h"
 #include "vtr_log.h"
 #include "vtr_memory.h"
 #include "vpr_utils.h"
+#include "vtr_strong_id_range.h"
 
 /* Main structure describing one routing resource node.  Everything in       *
  * this structure should describe the graph -- information needed only       *
@@ -45,7 +47,7 @@
  *       This field is valid only for IPINs and OPINs and should be ignored  *
  *       otherwise.                                                          */
 struct alignas(16) t_rr_node_data {
-    int16_t cost_index_ = -1;
+    int8_t cost_index_ = -1;
     int16_t rc_index_ = -1;
 
     int16_t xlow_ = -1;
@@ -202,6 +204,7 @@ class t_rr_graph_storage {
      * Preferred access methods:
      * - first_edge(RRNodeId)
      * - last_edge(RRNodeId)
+     * - edge_range(RRNodeId)
      * - edge_sink_node(RREdgeId)
      * - edge_switch(RREdgeId)
      *
@@ -251,6 +254,13 @@ class t_rr_graph_storage {
     // been sorted by rr_node, which is true after partition_edges().
     RREdgeId last_edge(const RRNodeId& id) const {
         return (&node_first_edge_[id])[1];
+    }
+
+    // Returns a range of RREdgeId's belonging to RRNodeId id.
+    //
+    // If this range is empty, then RRNodeId id has no edges.
+    vtr::StrongIdRange<RREdgeId> edge_range(const RRNodeId id) const {
+        return vtr::StrongIdRange<RREdgeId>(first_edge(id), last_edge(id));
     }
 
     // Retrieve the RREdgeId for iedge'th edge in RRNodeId.

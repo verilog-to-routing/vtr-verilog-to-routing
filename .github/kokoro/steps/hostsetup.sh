@@ -54,8 +54,9 @@ sudo apt-get install -y \
         python3-virtualenv \
         python3-yaml \
         qt5-default \
-        libtbb-dev \
         virtualenv \
+        #Don't include libtbb-dev since it may increase memory usage
+        #libtbb-dev \
 
 if [ -z "${BUILD_TOOL}" ]; then
     export BUILD_TOOL=make

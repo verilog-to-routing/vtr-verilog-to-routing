@@ -24,7 +24,7 @@
 /************************ Subroutine definitions ****************************/
 
 /* This function is used to write the rr_graph into xml format into a a file with name: file_name */
-void write_rr_graph(const char* file_name, const std::vector<t_segment_inf>& segment_inf) {
+void write_rr_graph(const char* file_name) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     RrGraphSerializer reader(
@@ -40,10 +40,9 @@ void write_rr_graph(const char* file_name, const std::vector<t_segment_inf>& seg
         &device_ctx.rr_switch_inf,
         &device_ctx.rr_indexed_data,
         &device_ctx.rr_node_indices,
-        &device_ctx.connection_boxes,
         device_ctx.num_arch_switches,
         device_ctx.arch_switch_inf,
-        segment_inf,
+        device_ctx.rr_segments,
         device_ctx.physical_tile_types,
         device_ctx.grid,
         &device_ctx.rr_node_metadata,
