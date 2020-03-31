@@ -78,7 +78,7 @@ float t_draw_coords::get_tile_height() {
 ezgl::rectangle t_draw_coords::get_pb_bbox(ClusterBlockId clb_index, const t_pb_graph_node& pb_gnode) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    return get_pb_bbox(place_ctx.block_locs[clb_index].loc.x, place_ctx.block_locs[clb_index].loc.y, place_ctx.block_locs[clb_index].loc.z, cluster_ctx.clb_nlist.block_type(clb_index), pb_gnode);
+    return get_pb_bbox(place_ctx.block_locs[clb_index].loc.x, place_ctx.block_locs[clb_index].loc.y, place_ctx.block_locs[clb_index].loc.sub_tile, cluster_ctx.clb_nlist.block_type(clb_index), pb_gnode);
 }
 
 ezgl::rectangle t_draw_coords::get_pb_bbox(int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr logical_block_type, const t_pb_graph_node& pb_gnode) {
@@ -136,7 +136,7 @@ ezgl::rectangle t_draw_coords::get_absolute_clb_bbox(const ClusterBlockId clb_in
     auto& place_ctx = g_vpr_ctx.placement();
 
     t_pl_loc loc = place_ctx.block_locs[clb_index].loc;
-    return get_pb_bbox(loc.x, loc.y, loc.z, block_type);
+    return get_pb_bbox(loc.x, loc.y, loc.sub_tile, block_type);
 }
 
 ezgl::rectangle t_draw_coords::get_absolute_clb_bbox(int grid_x, int grid_y, int sub_block_index) {

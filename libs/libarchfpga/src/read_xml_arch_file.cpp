@@ -4146,7 +4146,7 @@ static void ProcessDirects(pugi::xml_node Parent, t_direct_inf** Directs, int* N
 
         (*Directs)[i].x_offset = get_attribute(Node, "x_offset", loc_data).as_int(0);
         (*Directs)[i].y_offset = get_attribute(Node, "y_offset", loc_data).as_int(0);
-        (*Directs)[i].z_offset = get_attribute(Node, "z_offset", loc_data).as_int(0);
+        (*Directs)[i].sub_tile_offset = get_attribute(Node, "z_offset", loc_data).as_int(0);
 
         std::string from_side_str = get_attribute(Node, "from_side", loc_data, ReqOpt::OPTIONAL).value();
         (*Directs)[i].from_side = string_to_side(from_side_str);

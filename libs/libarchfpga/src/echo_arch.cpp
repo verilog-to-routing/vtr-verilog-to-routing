@@ -318,7 +318,7 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
                 arch->Directs[i].to_pin);
         fprintf(Echo, "\t\t\t\t x_offset %d y_offset %d z_offset %d\n",
                 arch->Directs[i].x_offset, arch->Directs[i].y_offset,
-                arch->Directs[i].z_offset);
+                arch->Directs[i].sub_tile_offset);
     }
     fprintf(Echo, "*************************************************\n\n");
 

@@ -1547,7 +1547,7 @@ struct t_direct_inf {
     char* to_pin;
     int x_offset;
     int y_offset;
-    int z_offset;
+    int sub_tile_offset;
     int switch_type;
     e_side from_side;
     e_side to_side;

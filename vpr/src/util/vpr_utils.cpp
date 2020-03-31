@@ -153,7 +153,7 @@ void sync_grid_to_blocks() {
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         int blk_x = place_ctx.block_locs[blk_id].loc.x;
         int blk_y = place_ctx.block_locs[blk_id].loc.y;
-        int blk_z = place_ctx.block_locs[blk_id].loc.z;
+        int blk_z = place_ctx.block_locs[blk_id].loc.sub_tile;
 
         auto type = physical_tile_type(blk_id);
 
@@ -684,7 +684,7 @@ int get_sub_tile_index(ClusterBlockId blk) {
 
     auto block_loc = place_ctx.block_locs[blk];
     auto loc = block_loc.loc;
-    int sub_tile_coordinate = loc.z;
+    int sub_tile_coordinate = loc.sub_tile;
 
     auto type = device_ctx.grid[loc.x][loc.y].type;
 
@@ -739,7 +739,7 @@ void get_class_range_for_block(const ClusterBlockId blk_id,
     int class_range_total = class_range.high - class_range.low + 1;
 
     VTR_ASSERT((class_range_total) % sub_tile_capacity == 0);
-    int rel_capacity = place_ctx.block_locs[blk_id].loc.z - sub_tile.capacity.low;
+    int rel_capacity = place_ctx.block_locs[blk_id].loc.sub_tile - sub_tile.capacity.low;
 
     *class_low = rel_capacity * (class_range_total / sub_tile_capacity) + class_range.low;
     *class_high = (rel_capacity + 1) * (class_range_total / sub_tile_capacity) - 1 + class_range.low;
@@ -756,7 +756,7 @@ void get_pin_range_for_block(const ClusterBlockId blk_id,
     int sub_tile_capacity = sub_tile.capacity.total();
 
     VTR_ASSERT(sub_tile.num_phy_pins % sub_tile_capacity == 0);
-    int rel_capacity = place_ctx.block_locs[blk_id].loc.z - sub_tile.capacity.low;
+    int rel_capacity = place_ctx.block_locs[blk_id].loc.sub_tile - sub_tile.capacity.low;
     int rel_pin_low = rel_capacity * (sub_tile.num_phy_pins / sub_tile_capacity);
     int rel_pin_high = (rel_capacity + 1) * (sub_tile.num_phy_pins / sub_tile_capacity) - 1;
 
@@ -2118,7 +2118,7 @@ void place_sync_external_block_connections(ClusterBlockId iblk) {
     int max_num_block_pins = sub_tile.num_phy_pins / sub_tile.capacity.total();
     /* Logical location and physical location is offset by z * max_num_block_pins */
 
-    int rel_capacity = place_ctx.block_locs[iblk].loc.z - sub_tile.capacity.low;
+    int rel_capacity = place_ctx.block_locs[iblk].loc.sub_tile - sub_tile.capacity.low;
 
     for (auto pin : clb_nlist.block_pins(iblk)) {
         int logical_pin_index = clb_nlist.pin_logical_index(pin);
@@ -2164,7 +2164,7 @@ bool is_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_block_
 bool is_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_block_type_ptr logical_block, t_pl_loc loc) {
     bool capacity_compatible = false;
     for (auto& sub_tile : physical_tile->sub_tiles) {
-        if (sub_tile.capacity.is_in_range(loc.z)) {
+        if (sub_tile.capacity.is_in_range(loc.sub_tile)) {
             capacity_compatible = true;
             break;
         }
