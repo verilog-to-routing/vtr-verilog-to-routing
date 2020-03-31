@@ -74,7 +74,7 @@ static void load_legal_placement_locations() {
                     int itype = device_ctx.grid[i][j].type->index;
                     legal_pos[itype][index[itype]].x = i;
                     legal_pos[itype][index[itype]].y = j;
-                    legal_pos[itype][index[itype]].z = k;
+                    legal_pos[itype][index[itype]].sub_tile = k;
                     index[itype]++;
                 }
             }
@@ -110,7 +110,7 @@ static int check_macro_can_be_placed(t_pl_macro pl_macro, int itype, t_pl_loc he
         // still within the chip's dimemsion and the member_z is allowed at that location on the grid
         if (member_pos.x < int(device_ctx.grid.width()) && member_pos.y < int(device_ctx.grid.height())
             && device_ctx.grid[member_pos.x][member_pos.y].type->index == itype
-            && place_ctx.grid_blocks[member_pos.x][member_pos.y].blocks[member_pos.z] == EMPTY_BLOCK_ID) {
+            && place_ctx.grid_blocks[member_pos.x][member_pos.y].blocks[member_pos.sub_tile] == EMPTY_BLOCK_ID) {
             // Can still accommodate blocks here, check the next position
             continue;
         } else {
@@ -132,7 +132,7 @@ static int try_place_macro(int itype, int ipos, t_pl_macro pl_macro) {
     t_pl_loc head_pos = legal_pos[itype][ipos];
 
     // If that location is occupied, do nothing.
-    if (place_ctx.grid_blocks[head_pos.x][head_pos.y].blocks[head_pos.z] != EMPTY_BLOCK_ID) {
+    if (place_ctx.grid_blocks[head_pos.x][head_pos.y].blocks[head_pos.sub_tile] != EMPTY_BLOCK_ID) {
         return (macro_placed);
     }
 
@@ -147,7 +147,7 @@ static int try_place_macro(int itype, int ipos, t_pl_macro pl_macro) {
             ClusterBlockId iblk = pl_macro.members[imember].blk_index;
             place_ctx.block_locs[iblk].loc = member_pos;
 
-            place_ctx.grid_blocks[member_pos.x][member_pos.y].blocks[member_pos.z] = pl_macro.members[imember].blk_index;
+            place_ctx.grid_blocks[member_pos.x][member_pos.y].blocks[member_pos.sub_tile] = pl_macro.members[imember].blk_index;
             place_ctx.grid_blocks[member_pos.x][member_pos.y].usage++;
 
             // Could not ensure that the randomiser would not pick this location again
@@ -304,9 +304,9 @@ static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pa
         initial_placement_location(free_locations, ipos, itype, to);
 
         // Make sure that the position is EMPTY_BLOCK before placing the block down
-        VTR_ASSERT(place_ctx.grid_blocks[to.x][to.y].blocks[to.z] == EMPTY_BLOCK_ID);
+        VTR_ASSERT(place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] == EMPTY_BLOCK_ID);
 
-        place_ctx.grid_blocks[to.x][to.y].blocks[to.z] = blk_id;
+        place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] = blk_id;
         place_ctx.grid_blocks[to.x][to.y].usage++;
 
         place_ctx.block_locs[blk_id].loc = to;
@@ -405,7 +405,7 @@ void initial_placement(enum e_pad_loc_type pad_loc_type,
             t_pl_loc pos = legal_pos[itype][ipos];
 
             // Check if that location is occupied.  If it is, remove from legal_pos
-            if (place_ctx.grid_blocks[pos.x][pos.y].blocks[pos.z] != EMPTY_BLOCK_ID && place_ctx.grid_blocks[pos.x][pos.y].blocks[pos.z] != INVALID_BLOCK_ID) {
+            if (place_ctx.grid_blocks[pos.x][pos.y].blocks[pos.sub_tile] != EMPTY_BLOCK_ID && place_ctx.grid_blocks[pos.x][pos.y].blocks[pos.sub_tile] != INVALID_BLOCK_ID) {
                 legal_pos[itype][ipos] = legal_pos[itype][free_locations[itype] - 1];
                 free_locations[itype]--;
 

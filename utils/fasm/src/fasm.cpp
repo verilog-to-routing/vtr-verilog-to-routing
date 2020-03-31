@@ -57,7 +57,7 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
 
     int x = place_ctx.block_locs[blk_id].loc.x;
     int y = place_ctx.block_locs[blk_id].loc.y;
-    int z = place_ctx.block_locs[blk_id].loc.z;
+    int sub_tile = place_ctx.block_locs[blk_id].loc.sub_tile;
     auto &grid_loc = device_ctx.grid[x][y];
     physical_tile_ = grid_loc.type;
     logical_block_ = cluster_ctx.clb_nlist.block_type(blk_id);
@@ -106,7 +106,7 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
                   "number of fasm_prefix (%s) options (%d) for block (%s) must match capacity(%d)",
                   prefix_unsplit.c_str(), fasm_prefixes.size(), physical_tile_->name, physical_tile_->capacity);
       }
-      grid_prefix = fasm_prefixes[z];
+      grid_prefix = fasm_prefixes[sub_tile];
       blk_prefix_ = grid_prefix + ".";
     }
     else {

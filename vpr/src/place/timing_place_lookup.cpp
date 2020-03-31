@@ -770,8 +770,8 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
 
     //Search the grid for an instance of from/to blocks which satisfy this direct connect offsets,
     //and which has the appropriate pins
-    int from_x = 0, from_y = 0, from_z = 0;
-    int to_x = 0, to_y = 0, to_z = 0;
+    int from_x = 0, from_y = 0, from_sub_tile = 0;
+    int to_x = 0, to_y = 0, to_sub_tile = 0;
     bool found = false;
     for (from_x = 0; from_x < (int)grid.width(); ++from_x) {
         to_x = from_x + direct->x_offset;
@@ -811,10 +811,10 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
             }
             if (!to_pin_found) continue;
 
-            for (from_z = 0; from_z < from_type->capacity; ++from_z) {
-                to_z = from_z + direct->z_offset;
+            for (from_sub_tile = 0; from_sub_tile < from_type->capacity; ++from_sub_tile) {
+                to_sub_tile = from_sub_tile + direct->sub_tile_offset;
 
-                if (to_z < 0 || to_z >= to_type->capacity) continue;
+                if (to_sub_tile < 0 || to_sub_tile >= to_type->capacity) continue;
 
                 found = true;
                 break;
@@ -830,14 +830,14 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
 
     //Now have a legal instance of this direct connect
     VTR_ASSERT(grid[from_x][from_y].type == from_type);
-    VTR_ASSERT(from_z < from_type->capacity);
+    VTR_ASSERT(from_sub_tile < from_type->capacity);
 
     VTR_ASSERT(grid[to_x][to_y].type == to_type);
-    VTR_ASSERT(to_z < to_type->capacity);
+    VTR_ASSERT(to_sub_tile < to_type->capacity);
 
     VTR_ASSERT(from_x + direct->x_offset == to_x);
     VTR_ASSERT(from_y + direct->y_offset == to_y);
-    VTR_ASSERT(from_z + direct->z_offset == to_z);
+    VTR_ASSERT(from_sub_tile + direct->sub_tile_offset == to_sub_tile);
 
     //
     //Find a source/sink RR node associated with the pins of the direct
