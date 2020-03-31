@@ -885,7 +885,7 @@ void init_draw_coords(float width_val) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
 
-    if (!draw_state->show_graphics && !draw_state->save_graphics)
+    if (!draw_state->show_graphics && !draw_state->save_graphics && draw_state->graphics_commands.empty())
         return; //do not initialize only if --disp off and --save_graphics off
     /* Each time routing is on screen, need to reallocate the color of each *
      * rr_node, as the number of rr_nodes may change.						*/
