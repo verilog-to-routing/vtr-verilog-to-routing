@@ -596,7 +596,6 @@ void try_place(const t_placer_opts& placer_opts,
     //Draw the initial placement
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
 
-
     if (placer_opts.placement_saves_per_temperature >= 1) {
         std::string filename = vtr::string_fmt("placement_%03d_%03d.place", 0, 0);
         VTR_LOG("Saving initial placement to file: %s\n", filename.c_str());
@@ -981,14 +980,13 @@ static void placement_inner_loop(float t,
             *moves_since_cost_recompute = 0;
         }
 
-        if (placer_opts.placement_saves_per_temperature  >= 1
+        if (placer_opts.placement_saves_per_temperature >= 1
             && inner_iter > 0
             && (inner_iter + 1) % (move_lim / placer_opts.placement_saves_per_temperature) == 0) {
-
             std::string filename = vtr::string_fmt("placement_%03d_%03d.place", temp_num + 1, inner_placement_save_count);
             VTR_LOG("Saving placement to file at temperature move %d / %d: %s\n", inner_iter, move_lim, filename.c_str());
             print_place(nullptr, nullptr, filename.c_str());
-            ++inner_placement_save_count; 
+            ++inner_placement_save_count;
         }
     }
     /* Inner loop ends */
