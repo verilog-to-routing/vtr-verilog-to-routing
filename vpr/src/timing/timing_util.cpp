@@ -601,6 +601,9 @@ float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_re
         VTR_ASSERT_MSG(iter != domains_worst_slack.end(), "Require the worst slack for clock domain pair");
         float worst_slack = iter->second;
 
+        VTR_ASSERT_SAFE_MSG(!std::isnan(worst_slack), "Worst slack should not be nan");
+        VTR_ASSERT_SAFE_MSG(std::isfinite(worst_slack), "Worst slack should not be infinite");
+
         if (worst_slack < 0.) {
             //We shift slacks and required time by the most negative slack
             //**in the domain**, to ensure criticality is bounded within [0., 1.]
@@ -612,6 +615,10 @@ float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_re
             slack += shift;
             max_req += shift;
         }
+        VTR_ASSERT_SAFE_MSG(!std::isnan(slack), "Slack should not be nan");
+        VTR_ASSERT_SAFE_MSG(!std::isnan(max_req), "Max required time should not be nan");
+        VTR_ASSERT_SAFE_MSG(std::isfinite(slack), "Slack should not be infinite");
+        VTR_ASSERT_SAFE_MSG(std::isfinite(max_req), "Max required time should not be infinite");
 
         float crit = std::numeric_limits<float>::quiet_NaN();
         if (max_req > 0.) {
@@ -627,6 +634,8 @@ float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_re
         }
 
         //Soft check for reasonable criticality values
+        VTR_ASSERT_SAFE_MSG(!std::isnan(crit), "Criticality not be nan");
+        VTR_ASSERT_SAFE_MSG(std::isfinite(crit), "Criticality should not be infinite");
         VTR_ASSERT_MSG(crit >= 0. - CRITICALITY_ROUND_OFF_TOLERANCE, "Criticality should never be negative");
         VTR_ASSERT_MSG(crit <= 1. + CRITICALITY_ROUND_OFF_TOLERANCE, "Criticality should never be greather than one");
 
