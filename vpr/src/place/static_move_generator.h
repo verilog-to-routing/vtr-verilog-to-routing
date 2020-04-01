@@ -11,10 +11,10 @@ class StaticMoveGenerator : public MoveGenerator {
 private:
 	std::vector<std::unique_ptr<MoveGenerator>> avail_moves;
 	std::vector<float> moves_prob ;
-    std::vector<std::vector<ClusterBlockId>> dummy;
+	//= {0.1,0.9};
+
 public:
 	StaticMoveGenerator(const std::vector<float> & prob);
-    e_create_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float rlim, std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>& num_moves, int& type, int high_fanout_net, const std::vector<std::vector<ClusterBlockId>>& );
-
+    e_create_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float rlim, std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>& num_moves, int& type, int high_fanout_net);
 };
 #endif

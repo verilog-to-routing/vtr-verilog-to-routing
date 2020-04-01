@@ -178,22 +178,10 @@ void EpsilonGreedyAgent::set_epsilon_action_prob() {
 
 //SimpleRL class member functions
 SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& agent){
-	std::unique_ptr<MoveGenerator> move_generator_clb;
-	move_generator_clb = std::make_unique<UniformMoveGenerator>();
-	avail_moves.push_back(std::move(move_generator_clb));
+	std::unique_ptr<MoveGenerator> move_generator;
+	move_generator = std::make_unique<UniformMoveGenerator>();
+	avail_moves.push_back(std::move(move_generator));
 
-/*
-	std::unique_ptr<MoveGenerator> move_generator_dsp;
-	move_generator_dsp = std::make_unique<UniformMoveGenerator>();
-	avail_moves.push_back(std::move(move_generator_dsp));
-
-	std::unique_ptr<MoveGenerator> move_generator_io;
-	move_generator_io = std::make_unique<UniformMoveGenerator>();
-	avail_moves.push_back(std::move(move_generator_io));
-	std::unique_ptr<MoveGenerator> move_generator_bram;
-	move_generator_bram = std::make_unique<UniformMoveGenerator>();
-	avail_moves.push_back(std::move(move_generator_bram));
-*/
 	std::unique_ptr<MoveGenerator> move_generator2;
 	move_generator2 = std::make_unique<MedianMoveGenerator>();
 	avail_moves.push_back(std::move(move_generator2));
@@ -207,41 +195,17 @@ SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>
 	avail_moves.push_back(std::move(move_generator4));
 
 	karmed_bandit_agent = std::move(agent);
-
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    blocks_by_type_.resize(device_ctx.physical_tile_types.size());
-
-    for (auto blk : cluster_ctx.clb_nlist.blocks()) {
-        auto blk_type = cluster_ctx.clb_nlist.block_type(blk);
-        blocks_by_type_[blk_type->index-1].push_back(blk);
-    }
-    for (auto itr = blocks_by_type_.begin(); itr != blocks_by_type_.end();) {
-            if (itr->size() == 0) {
-                itr = blocks_by_type_.erase(itr);
-            } else {
-                ++itr;
-            }
-    }
-
 }
 
 
 e_create_move SimpleRLMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim
-	, std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>& num_moves, int& type, int high_fanout_net, const std::vector<std::vector<ClusterBlockId>>& ) {
+	, std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>& num_moves, int& type, int high_fanout_net) {
 
 	type = karmed_bandit_agent->propose_action();
 	++num_moves[type];
-    int move_type,block_type;
-    if(type<3){
-        move_type = 0;
-        block_type = type;
-    }
-    else{
-        move_type = type-2;
-        block_type=0;
-    }
-	return avail_moves[move_type]->propose_move(blocks_affected, rlim, X_coord, Y_coord, num_moves, block_type, high_fanout_net, blocks_by_type_);
+    //type = move_index;
+	//VTR_LOG("####%d",move_index);
+	return avail_moves[type]->propose_move(blocks_affected, rlim, X_coord, Y_coord, num_moves, type, high_fanout_net);
 }
 
 void SimpleRLMoveGenerator::process_outcome(double reward){

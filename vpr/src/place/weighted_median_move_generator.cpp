@@ -8,7 +8,7 @@ static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* 
 
 
 e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim ,
-    std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>&, int &,int place_high_fanout_net, const std::vector<std::vector<ClusterBlockId>>& ) {
+    std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>&, int &,int place_high_fanout_net) {
 
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -48,8 +48,6 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
             continue;
 
         get_bb_cost_for_net_excluding_block(net_id, &coords, b_from, pin_id);
-        X_coord.reserve(X_coord.size() + ceil(coords.xmax.second*10) + ceil(coords.xmin.second*10));
-        Y_coord.reserve(Y_coord.size() + ceil(coords.ymax.second*10) + ceil(coords.ymin.second*10));
         for(int i =0; i < ceil(coords.xmin.second*10); i++){
             X_coord.push_back(coords.xmin.first);
         }

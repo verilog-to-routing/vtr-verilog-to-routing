@@ -3,13 +3,8 @@
 #include "move_generator.h"
 
 class UniformMoveGenerator : public MoveGenerator {
-public:
     e_create_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float rlim,
-    	std::vector<int>& , std::vector<int>& ,  std::vector<int>&, int & itype, int, const std::vector<std::vector<ClusterBlockId>>& );
-    /*UniformMoveGenerator();
-  private:
-      std::vector<std::vector<ClusterBlockId>> blocks_by_type_;
-      */
+    	std::vector<int>& , std::vector<int>& ,  std::vector<int>&, int & , int);
 };
 
 #endif
