@@ -751,6 +751,72 @@ $ make
 ```
 this turns on more extensive assertion checking and re-builds VTR.
 
+## GDB Pretty Printers
+To make it easier to debug some of VTR's data structures with [GDB](www.gnu.org/gdb).
+
+### STL Pretty Printers
+
+It is helpful to enable [STL pretty printers](https://sourceware.org/gdb/wiki/STLSupport), which make it much easier to debug data structures using STL.
+
+For example printing a `std::vector<int>` by default prints:
+
+    (gdb) p/r x_locs
+    $2 = {<std::_Vector_base<int, std::allocator<int> >> = {
+        _M_impl = {<std::allocator<int>> = {<__gnu_cxx::new_allocator<int>> = {<No data fields>}, <No data fields>}, _M_start = 0x555556f063b0, 
+          _M_finish = 0x555556f063dc, _M_end_of_storage = 0x555556f064b0}}, <No data fields>}
+
+which is not very helpful.
+
+But with STL pretty printers it prints:
+
+    (gdb) p x_locs
+    $2 = std::vector of length 11, capacity 64 = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+
+which is much more helpful for debugging!
+
+If STL pretty printers aren't already enabled on your system, add the following to your [.gdbinit file](https://sourceware.org/gdb/current/onlinedocs/gdb/gdbinit-man.html):
+
+    python
+    import sys
+    sys.path.insert(0, '$STL_PRINTER_ROOT')
+    from libstdcxx.v6.printers import register_libstdcxx_printers
+    register_libstdcxx_printers(None)
+
+    end
+
+where `$STL_PRINTER_ROOT` should be replaced with the appropriate path to the STL pretty printers.
+For example recent versions of GCC include these under `/usr/share/gcc-*/python` (e.g. `/usr/share/gcc-9/python`)
+
+
+### VTR Pretty Printers
+
+VTR includes some pretty printers for some VPR/VTR specific types.
+
+For example, without the pretty printers you would see the following when printing a VPR `AtomBlockId`:
+
+    (gdb) p blk_id
+    $1 = {
+      id_ = 71
+    }
+
+But with the VTR pretty printers enabled you would see:
+
+    (gdb) p blk_id
+    $1 = AtomBlockId(71)
+
+To enable the VTR pretty printers add the following to your [.gdbinit file](https://sourceware.org/gdb/current/onlinedocs/gdb/gdbinit-man.html):
+
+    python
+    import sys
+
+    sys.path.insert(0, "$VTR_ROOT/dev")
+    import vtr_pretty_printers
+    gdb.pretty_printers.append(vtr_pretty_printers.vtr_type_lookup)
+
+    end
+
+where ``$VTR_ROOT`` should be replaced with the root of the VTR source tree on your system.
+
 # External Subtrees
 VTR includes some code which is developed in external repositories, and is integrated into the VTR source tree using [git subtrees](https://www.atlassian.com/blog/git/alternatives-to-git-submodule-git-subtree).
 
