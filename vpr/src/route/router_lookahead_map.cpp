@@ -324,10 +324,14 @@ float get_lookahead_map_cost(RRNodeId from_node, RRNodeId to_node, float critica
             //Such RR graphs are of course unroutable, but that should be determined by the
             //router. So just return an arbitrary value here rather than error.
 
-            //We choose to return the largest (non-infinite) value possible.
-            //This should ensure that the router de-prioritizes exploring it,
-            //but does not forbid the router from trying.
-            expected_cost = std::numeric_limits<float>::max();
+            //We choose to return the largest (non-infinite) value possible, but scaled
+            //down by a large factor to maintain some dynaimc range in case this value ends
+            //up being processed (e.g. by the timing analyzer).
+            //
+            //The cost estimate should still be *extremely* large compared to a typical delay, and
+            //so should ensure that the router de-prioritizes exploring this path, but does not
+            //forbid the router from trying.
+            expected_cost = std::numeric_limits<float>::max() / 1e12;
         } else {
             //From the current SOURCE/OPIN we look-up the wiretypes which are reachable
             //and then add the estimates from those wire types for the distance of interest.
@@ -576,7 +580,6 @@ static void compute_router_src_opin_lookahead() {
                 ptcs_with_no_reachable_wires = false;
 
                 sample_loc = pick_sample_tile(&device_ctx.physical_tile_types[itile], sample_loc);
-
 
                 if (sample_loc.x() == -1 && sample_loc.y() == -1) {
                     //No untried instances of the current tile type left
