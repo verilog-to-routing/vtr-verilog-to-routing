@@ -24,5 +24,6 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 # Script parameters
+script_params_common = -crit_path_router_iterations 150
 script_params_list_add = --verify_binary_search off
 script_params_list_add = --verify_binary_search on
