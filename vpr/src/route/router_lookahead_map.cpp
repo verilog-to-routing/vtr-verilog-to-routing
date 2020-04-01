@@ -396,6 +396,9 @@ Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int delta_x, in
         chan_index = 1;
     }
 
+    VTR_ASSERT_SAFE(delta_x < (int)f_wire_cost_map.dim_size(2));
+    VTR_ASSERT_SAFE(delta_y < (int)f_wire_cost_map.dim_size(3));
+
     return f_wire_cost_map[chan_index][seg_index][delta_x][delta_y];
 }
 
@@ -1066,8 +1069,14 @@ Cost_Entry Expansion_Cost_Entry::get_median_entry() {
 
 /* returns the absolute delta_x and delta_y offset required to reach to_node from from_node */
 static void get_xy_deltas(const RRNodeId from_node, const RRNodeId to_node, int* delta_x, int* delta_y) {
-    if (false) {
-        //Alternate formulation which performs worse wrt run-time, so disabled
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& rr_graph = device_ctx.rr_nodes;
+
+    e_rr_type from_type = rr_graph.node_type(from_node);
+    e_rr_type to_type = rr_graph.node_type(to_node);
+
+    if (!is_chan(from_type) && !is_chan(to_type)) {
+        //Alternate formulation for non-channel types
         int from_x = 0;
         int from_y = 0;
         adjust_rr_position(from_node, from_x, from_y);
@@ -1081,24 +1090,25 @@ static void get_xy_deltas(const RRNodeId from_node, const RRNodeId to_node, int*
     } else {
         //Traditional formulation
 
-        auto& device_ctx = g_vpr_ctx.device();
-
-        auto& from = device_ctx.rr_nodes[size_t(from_node)];
-        auto& to = device_ctx.rr_nodes[size_t(to_node)];
-
         /* get chan/seg coordinates of the from/to nodes. seg coordinate is along the wire,
          * chan coordinate is orthogonal to the wire */
-        int from_seg_low = from.xlow();
-        int from_seg_high = from.xhigh();
-        int from_chan = from.ylow();
-        int to_seg = to.xlow();
-        int to_chan = to.ylow();
-        if (from.type() == CHANY) {
-            from_seg_low = from.ylow();
-            from_seg_high = from.yhigh();
-            from_chan = from.xlow();
-            to_seg = to.ylow();
-            to_chan = to.xlow();
+        int from_seg_low;
+        int from_seg_high;
+        int from_chan;
+        int to_seg;
+        int to_chan;
+        if (from_type == CHANY) {
+            from_seg_low = rr_graph.node_ylow(from_node);
+            from_seg_high = rr_graph.node_yhigh(from_node);
+            from_chan = rr_graph.node_xlow(from_node);
+            to_seg = rr_graph.node_ylow(to_node);
+            to_chan = rr_graph.node_xlow(to_node);
+        } else {
+            from_seg_low = rr_graph.node_xlow(from_node);
+            from_seg_high = rr_graph.node_xhigh(from_node);
+            from_chan = rr_graph.node_ylow(from_node);
+            to_seg = rr_graph.node_xlow(to_node);
+            to_chan = rr_graph.node_ylow(to_node);
         }
 
         /* now we want to count the minimum number of *channel segments* between the from and to nodes */
@@ -1134,18 +1144,23 @@ static void get_xy_deltas(const RRNodeId from_node, const RRNodeId to_node, int*
 
         /* account for wire direction. lookahead map was computed by looking up and to the right starting at INC wires. for targets
          * that are opposite of the wire direction, let's add 1 to delta_seg */
-        if ((from.type() == CHANX || from.type() == CHANY)
-            && ((to_seg < from_seg_low && from.direction() == INC_DIRECTION) || (to_seg > from_seg_high && from.direction() == DEC_DIRECTION))) {
+        e_direction from_dir = rr_graph.node_direction(from_node);
+        if (is_chan(from_type)
+            && ((to_seg < from_seg_low && from_dir == INC_DIRECTION) || (to_seg > from_seg_high && from_dir == DEC_DIRECTION))) {
             delta_seg++;
         }
 
-        *delta_x = delta_seg;
-        *delta_y = delta_chan;
-        if (from.type() == CHANY) {
+        if (from_type == CHANY) {
             *delta_x = delta_chan;
             *delta_y = delta_seg;
+        } else {
+            *delta_x = delta_seg;
+            *delta_y = delta_chan;
         }
     }
+
+    VTR_ASSERT_SAFE(std::abs(*delta_x) < (int)device_ctx.grid.width());
+    VTR_ASSERT_SAFE(std::abs(*delta_y) < (int)device_ctx.grid.height());
 }
 
 static void adjust_rr_position(const RRNodeId rr, int& x, int& y) {
