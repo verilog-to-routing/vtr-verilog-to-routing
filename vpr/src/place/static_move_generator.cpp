@@ -25,21 +25,22 @@ StaticMoveGenerator::StaticMoveGenerator(const std::vector<float> & prob){
 	for(size_t i =1; i < prob.size(); i++){
 		moves_prob.push_back(prob[i]+moves_prob[i-1]);
 	}
+
 }
 
 
 e_create_move StaticMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim
-	, std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>& num_moves, int& type, int high_fanout_net) {
+	, std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>& num_moves, int& type, int high_fanout_net, const std::vector<std::vector<ClusterBlockId>>& ) {
 
 	float rand_num = vtr::irand(100);
 	for(size_t i =0; i < moves_prob.size(); i++){
 		if(rand_num <= moves_prob[i]){
 			++num_moves[i];
 			type =i;
-			return avail_moves[i]->propose_move(blocks_affected, rlim, X_coord, Y_coord, num_moves , type, high_fanout_net);
+			return avail_moves[i]->propose_move(blocks_affected, rlim, X_coord, Y_coord, num_moves , type, high_fanout_net, dummy);
 		}
 	}
 	++num_moves[avail_moves.size()-1];
 	type = avail_moves.size()-1;
-	return avail_moves[avail_moves.size()-1]->propose_move(blocks_affected, rlim, X_coord, Y_coord, num_moves, type, high_fanout_net);
+	return avail_moves[avail_moves.size()-1]->propose_move(blocks_affected, rlim, X_coord, Y_coord, num_moves, type, high_fanout_net, dummy);
 }

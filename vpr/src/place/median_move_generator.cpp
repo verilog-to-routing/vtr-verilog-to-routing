@@ -6,7 +6,7 @@
 static void get_bb_for_net_excluding_block(ClusterNetId net_id, t_bb* coords, ClusterBlockId block_id);
 
 e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim,
-std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>&, int &, int place_high_fanout_net) {
+std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>&, int &, int place_high_fanout_net, const std::vector<std::vector<ClusterBlockId>>& ) {
 
 
     auto& place_ctx = g_vpr_ctx.placement();

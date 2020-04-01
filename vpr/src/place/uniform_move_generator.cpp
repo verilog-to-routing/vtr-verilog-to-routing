@@ -2,9 +2,22 @@
 #include "globals.h"
 
 e_create_move UniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim,
-    std::vector<int>& , std::vector<int>&,  std::vector<int>&, int & , int) {
+    std::vector<int>& , std::vector<int>&,  std::vector<int>&, int & itype, int, const std::vector<std::vector<ClusterBlockId>>& blocks_by_type_ ) {
+
+
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+
     /* Pick a random block to be swapped with another random block.   */
-    ClusterBlockId b_from = pick_from_block();
+    ClusterBlockId b_from
+    if(itype == -1){
+        b_from = pick_from_block();
+    }
+    else{
+        int iblk = vtr::irand(blocks_by_type_[itype].size() - 1);
+        b_from = blocks_by_type_[itype][iblk];
+    }
     if (!b_from) {
         return e_create_move::ABORT; //No movable block found
     }

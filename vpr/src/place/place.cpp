@@ -468,7 +468,7 @@ void try_place(const t_placer_opts& placer_opts,
         }
     }
 
-    const size_t avail_moves = 4;
+    const size_t avail_moves = 6;
     move_lim = (int)(annealing_sched.inner_num * pow(cluster_ctx.clb_nlist.blocks().size(), 1.3333));
 
     if(!placer_opts.simpleRL_agent_placement){
@@ -1283,9 +1283,10 @@ static e_move_result try_swap(const t_annealing_state* state,
         rlim = state->rlim;
     }
 
+    std::vector<std::vector<ClusterBlockId>> dummy;
     //Generate a new move (perturbation) used to explore the space of possible placements
     e_create_move create_move_outcome = move_generator.propose_move(blocks_affected
-      , rlim, X_coord, Y_coord, num_moves, type, high_fanout_net);
+      , rlim, X_coord, Y_coord, num_moves, type, high_fanout_net, dummy);
 
     //VTR_LOG("###%d,%d,%d,%d\n",num_moves[0],num_moves[1],num_moves[2],num_moves[3]);
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
