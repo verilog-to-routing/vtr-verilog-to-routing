@@ -2066,7 +2066,6 @@ static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahea
     t_conn_cost_params cost_params;
     cost_params.criticality = 1.; //Ensures lookahead returns delay value
 
-    size_t missing_delays = 0;
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) continue;
 
@@ -2076,17 +2075,9 @@ static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahea
             int sink_rr = route_ctx.net_rr_terminals[net_id][ipin];
 
             float est_delay = router_lookahead.get_expected_cost(source_rr, sink_rr, cost_params, /*R_upstream=*/0.);
-            if (std::isinf(est_delay)) { //Found no wires to estimate delay from...
-                //VTR_LOG_WARN("Failed to get delay estimate for initial criticality from %s to %s (assuming 0 delay)\n",
-                //rr_node_arch_name(source_rr).c_str(),
-                //rr_node_arch_name(sink_rr).c_str());
-
-                est_delay = 0.; //Usually these indicate special direct-connects which are fast
-                ++missing_delays;
-            }
+            VTR_ASSERT(std::isfinite(est_delay) && est_delay < std::numeric_limits<float>::max());
 
             net_delay[net_id][ipin] = est_delay;
         }
     }
-    VTR_LOGV_WARN(missing_delays > 0, "Failed to get delay estimates for initial criticality for %zu net connections (assumed zero delay)\n", missing_delays);
 }
