@@ -125,7 +125,12 @@ my $odin_adder_config_path = "default";
 my $odin_adder_cin_global = "";
 my $use_odin_xml_config = 1;
 my $relax_W_factor = 1.3;
-my $crit_path_router_iterations = undef;
+my $crit_path_router_iterations = 150; #We set a higher routing iterations (vs 50 default)
+                                       #to avoid spurious routing failures at relaxed W 
+                                       #caused by small perturbations in pattern or 
+                                       #placement. Usually these failures show up on small 
+                                       #circuits (with low W). Setting a higher value here 
+                                       #will help avoids them.
 my $show_failures = 0;
 
 
