@@ -89,6 +89,10 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
             auto domain_pair = DomainPair(tag.launch_clock_domain(), tag.capture_clock_domain());
 
             float slack = tag.time().value();
+
+            VTR_ASSERT_SAFE_MSG(!std::isnan(slack), "Slack should not be nan");
+            VTR_ASSERT_SAFE_MSG(std::isfinite(slack), "Slack should not be infinite");
+
             if (!worst_slack.count(domain_pair) || slack < worst_slack[domain_pair]) {
                 worst_slack[domain_pair] = slack;
             }
