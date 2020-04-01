@@ -1447,3 +1447,15 @@ The following options are used to enable power estimation in VPR.
 
     Instructions on generating this file are provided in :ref:`power_estimation`.
 
+Command-line Auto Completion
+----------------------------
+
+To simplify using VPR on the command-line you can use the ``dev/vpr_bash_completion.sh`` script, which will enable TAB completion for VPR commandline arguments (based on the output of `vpr -h`).
+
+Simply add:
+
+.. code-block:: bash
+
+    source $VTR_ROOT/dev/vpr_bash_completion.sh
+
+to your ``.bashrc``. ``$VTR_ROOT`` refers to the root of the VTR source tree on your system.
