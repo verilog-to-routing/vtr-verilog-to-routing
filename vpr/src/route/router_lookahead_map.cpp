@@ -577,6 +577,7 @@ static void compute_router_src_opin_lookahead() {
 
                 sample_loc = pick_sample_tile(&device_ctx.physical_tile_types[itile], sample_loc);
 
+
                 if (sample_loc.x() == -1 && sample_loc.y() == -1) {
                     //No untried instances of the current tile type left
                     VTR_LOG_WARN("Found no %ssample locations for %s in %s\n",
@@ -585,6 +586,8 @@ static void compute_router_src_opin_lookahead() {
                                  device_ctx.physical_tile_types[itile].name);
                     break;
                 }
+
+                //VTR_LOG("Sampling %s at (%d,%d)\n", device_ctx.physical_tile_types[itile].name, sample_loc.x(), sample_loc.y());
 
                 rr_nodes_at_loc.clear();
 
@@ -628,20 +631,36 @@ static vtr::Point<int> pick_sample_tile(t_physical_tile_type_ptr tile_type, vtr:
     //Very simple for now, just pick the fist matching tile found
     vtr::Point<int> loc(OPEN, OPEN);
 
+    //VTR_LOG("Prev: %d,%d\n", prev.x(), prev.y());
+
     auto& device_ctx = g_vpr_ctx.device();
     auto& grid = device_ctx.grid;
+
+    int y_init = prev.y() + 1; //Start searching next element above prev
+
     for (int x = prev.x(); x < int(grid.width()); ++x) {
         if (x < 0) continue;
 
-        for (int y = prev.y() + 1; y < int(grid.height()); ++y) {
+        //VTR_LOG("  x: %d\n", x);
+
+        for (int y = y_init; y < int(grid.height()); ++y) {
             if (y < 0) continue;
 
+            //VTR_LOG("   y: %d\n", y);
             if (grid[x][y].type == tile_type) {
                 loc.set_x(x);
                 loc.set_y(y);
+                break;
             }
         }
+
+        if (loc.x() != OPEN && loc.y() != OPEN) {
+            break;
+        } else {
+            y_init = 0; //Prepare to search next column
+        }
     }
+    //VTR_LOG("Next: %d,%d\n", loc.x(), loc.y());
 
     return loc;
 }
