@@ -1762,8 +1762,15 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             " * lookahead   : Connection criticalities are determined\n"
             "                 from timing analysis assuming best-case\n"
             "                 connection delays as estimated by the\n"
-            "                 router's lookahead.\n")
+            "                 router's lookahead.\n"
+            "(Default: 'lookahead' if a non-classic router lookahead is\n"
+            "           used, otherwise 'all_critical')\n")
         .default_value("lookahead")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<bool, ParseOnOff>(args.router_update_lower_bound_delays, "--router_update_lower_bound_delays")
+        .help("Controls whether the router updates lower bound connection delays after the 1st routing iteration.")
+        .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<e_heap_type, ParseRouterHeap>(args.router_heap, "--router_heap")
@@ -1775,11 +1782,6 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             " *         Testing has shown the approximation results in\n"
             " *         similiar QoR with less CPU work.\n")
         .default_value("binary")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    route_timing_grp.add_argument<bool, ParseOnOff>(args.router_update_lower_bound_delays, "--router_update_lower_bound_delays")
-        .help("Controls whether the router updates lower bound connection delays after the 1st routing iteration.")
-        .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.router_first_iteration_timing_report_file, "--router_first_iter_timing_report")
@@ -2055,6 +2057,15 @@ void set_conditional_defaults(t_options& args) {
             args.bend_cost.set(0., Provenance::INFERRED);
         }
     }
+
+    //Initial timing estimate
+    if (args.router_initial_timing.provenance() != Provenance::SPECIFIED) {
+        if (args.router_lookahead_type != e_router_lookahead::CLASSIC) {
+            args.router_initial_timing.set(e_router_initial_timing::LOOKAHEAD, Provenance::INFERRED);
+        } else {
+            args.router_initial_timing.set(e_router_initial_timing::ALL_CRITICAL, Provenance::INFERRED);
+        }
+    }
 }
 
 bool verify_args(const t_options& args) {
@@ -2073,6 +2084,13 @@ bool verify_args(const t_options& args) {
                         "%s option must be enabled for %s to have any effect\n",
                         args.enable_clustering_pin_feasibility_filter.argument_name().c_str(),
                         args.target_external_pin_util.argument_name().c_str());
+    }
+
+    if (args.router_initial_timing == e_router_initial_timing::LOOKAHEAD && args.router_lookahead_type == e_router_lookahead::CLASSIC) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "%s option value 'lookahead' is not compatible with %s 'classic'\n",
+                        args.router_initial_timing.argument_name().c_str(),
+                        args.router_lookahead_type.argument_name().c_str());
     }
 
     return true;
