@@ -817,6 +817,11 @@ To enable the VTR pretty printers add the following to your [.gdbinit file](http
 
 where ``$VTR_ROOT`` should be replaced with the root of the VTR source tree on your system.
 
+## RR (Record Replay) Debugger
+
+[RR](https://rr-project.org/) extends GDB with the ability to to record a run of a tool and then re-run it to reproduce any observed issues.
+RR also enables efficient reverse execution (!) which can be *extremely helpful* when tracking down the source of a bug.
+
 # External Subtrees
 VTR includes some code which is developed in external repositories, and is integrated into the VTR source tree using [git subtrees](https://www.atlassian.com/blog/git/alternatives-to-git-submodule-git-subtree).
 
