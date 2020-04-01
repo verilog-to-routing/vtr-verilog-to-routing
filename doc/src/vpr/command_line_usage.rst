@@ -1057,6 +1057,21 @@ The following options are only valid when the router is in timing-driven mode (t
     
      **Default:** ``0.99``
 
+.. option:: --router_initial_timing {all_critical | lookahead}
+
+    Controls how criticality is determined at the start of the first routing iteration.
+
+     * ``all_critical``: All connections are considered timing critical.
+     * ``lookahead``: Connection criticalities are determined from timing analysis assuming (best-case) connection delays as estimated by the router's lookahead.
+
+     **Default:** ``all_critical`` for the classic :option:`--router_lookahead`, otherwise ``lookahead``
+
+.. option:: --router_update_lower_bound_delays {on | off}
+
+    Controls whether the router updates lower bound connection delays after the 1st routing iteration.
+
+    **Default:** ``on``
+
 .. option:: --router_first_iter_timing_report <file>
 
     Name of the timing report file to generate after the first routing iteration completes (not generated if unspecfied).
