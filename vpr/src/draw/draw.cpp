@@ -430,7 +430,11 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
     /* If it's the type of picture displayed has changed, set up the proper  *
      * buttons.                                                              */
     if (draw_state->pic_on_screen != pic_on_screen_val) { //State changed
-        application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
+
+        if (draw_state->pic_on_screen == NO_PICTURE) {
+            //Only add the canvas the first time we open graphics
+            application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
+        }
 
         draw_state->setup_timing_info = setup_timing_info;
 
