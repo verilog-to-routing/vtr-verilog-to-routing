@@ -4435,21 +4435,32 @@ bool check_model_combinational_sinks(pugi::xml_node model_tag, const pugiutil::l
     }
 
     //Record the output ports
-    std::set<std::string> output_ports;
+    std::map<std::string, t_model_ports*> output_ports;
     for (t_model_ports* port = model->outputs; port != nullptr; port = port->next) {
-        output_ports.insert(port->name);
+        output_ports.insert({port->name, port});
     }
 
-    //Check that the input port combinational sinks are all outputs
     for (t_model_ports* port = model->inputs; port != nullptr; port = port->next) {
         for (const std::string& sink_port_name : port->combinational_sink_ports) {
+            //Check that the input port combinational sinks are all outputs
             if (!output_ports.count(sink_port_name)) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(model_tag),
                                "Model '%s' input port '%s' can not be combinationally connected to '%s' (not an output port of the model)",
                                model->name, port->name, sink_port_name.c_str());
             }
+
+            //Check that any output combinational sinks are not clocks
+            t_model_ports* sink_port = output_ports[sink_port_name];
+            VTR_ASSERT(sink_port);
+            if (sink_port->is_clock) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(model_tag),
+                               "Model '%s' output port '%s' can not be both: a clock source (is_clock=\"%d\"),"
+                               " and combinationally connected to input port '%s' (acting as a clock buffer).",
+                               model->name, sink_port->name, sink_port->is_clock, port->name);
+            }
         }
     }
+
     return true;
 }
 
