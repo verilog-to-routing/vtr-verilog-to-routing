@@ -400,7 +400,8 @@ On the ``pb_type`` the input and output register timing is defined similarly to 
 Clock Generators
 ~~~~~~~~~~~~~~~~
 Some blocks (such as PLLs) generate clocks on-chip.
-To ensure that these generated clocks are identified as clocks, the associated model output port should be marked with ``is_clock="1"``.
+To ensure that these generated clocks are identified as clock sources, the associated model output port should be marked with ``is_clock="1"``.
+
 
 As an example consider the following simple PLL model:
 
@@ -418,6 +419,37 @@ As an example consider the following simple PLL model:
 The port named ``in_clock`` is specified as a clock sink, since it is an input port with ``is_clock="1"``  set.
 
 The port named ``out_clock`` is specified as a clock generator, since it is an *output* port with ``is_clock="1"`` set.
+
+.. note:: Clock generators should not be the combinational sinks of primitive input ports.
+
+Consider the following example netlist:
+
+.. code-block:: none
+
+    .subckt simple_pll \
+        in_clock=clk \
+        out_clock=clk_pll
+
+Since we have specified that ``simple_pll.out_clock`` is a clock generator (see above), the user must specify what the clock relationship is between the input and output clocks.
+This information must be either specified in the SDC file (if no SDC file is specified :ref:`VPR's default timing constraints <default_timing_constraints>` will be used instead).
+
+.. note:: VPR has no way of determining what the relationship is between the clocks of a black-box primitive.
+
+Consider the case where the ``simple_pll`` above creates an output clock which is 2 times the frequency of the input clock.
+If the input clock period was 10ns then the SDC file would look like:
+
+.. code-block:: tcl
+
+    create_clock clk -period 10
+    create_clock clk_pll -period 5                      #Twice the frequency of clk
+
+It is also possible to specify in SDC that there is a phase shift between the two clocks:
+
+.. code-block:: tcl
+
+    create_clock clk -waveform {0 5} -period 10         #Equivalent to 'create_clock clk -period 10'
+    create_clock clk_pll -waveform {0.2 2.7} -period 5  #Twice the frequency of clk with a 0.2ns phase shift
+
 
 .. _clock_buffers_timing_modeling:
 
