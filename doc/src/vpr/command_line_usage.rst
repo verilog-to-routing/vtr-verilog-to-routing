@@ -2,6 +2,28 @@ Command-line Options
 ====================
 .. program:: vpr
 
+.. |des90_place| image:: https://www.verilogtorouting.org/img/des90_placement_macros.gif
+    :width: 200px
+    :alt: Placement 
+
+.. |des90_cpd| image:: https://www.verilogtorouting.org/img/des90_cpd.gif
+    :width: 200px 
+    :alt: Critical Path 
+
+.. |des90_nets| image:: https://www.verilogtorouting.org/img/des90_nets.gif
+    :width: 200px
+    :alt: Wiring
+
+.. |des90_routing| image:: https://www.verilogtorouting.org/img/des90_routing_util.gif
+    :width: 200px 
+    :alt: Routing Usage
+
++---------------------------------------+---------------------------------------+---------------------------------------+---------------------------------------+
+| |des90_place|                         + |des90_cpd|                           | |des90_nets|                          + |des90_routing|                       +
+|                                       +                                       |                                       +                                       +
+| Placement                             + Critical Path                         | Logical Connections                   + Routing Utilization                   +
++---------------------------------------+---------------------------------------+---------------------------------------+---------------------------------------+
+
 Basic Usage
 -----------
 

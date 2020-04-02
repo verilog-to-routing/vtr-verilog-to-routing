@@ -3,6 +3,22 @@
 VTR
 ===
 
+.. image:: https://www.verilogtorouting.org/img/neuron_placement_macros.gif
+    :width: 24%
+    :alt: Placement 
+
+.. image:: https://www.verilogtorouting.org/img/neuron_cpd.gif
+    :width: 24% 
+    :alt: Critical Path 
+
+.. image:: https://www.verilogtorouting.org/img/neuron_nets.gif
+    :width: 24%
+    :alt: Wiring
+
+.. image:: https://www.verilogtorouting.org/img/neuron_routing_util.gif
+    :width: 24% 
+    :alt: Routing Usage
+
 The Verilog-to-Routing (VTR) project :cite:`luu_vtr,luu_vtr_7` is a world-wide collaborative effort to provide a open-source framework for conducting FPGA architecture and CAD research and development.
 The VTR design flow takes as input a Verilog description of a digital circuit, and a description of the target FPGA architecture.
 
@@ -15,6 +31,7 @@ It then perfoms:
 Generating FPGA speed and area results.
 
 VTR also includes a set of benchmark designs known to work with the design flow.
+
 
 .. toctree::
    :maxdepth: 2
