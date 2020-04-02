@@ -32,6 +32,8 @@ struct t_compressed_block_grid {
     //stored sparsely, since we may not have full columns of blocks.
     //This makes it easy to check whether there exist
     std::vector<vtr::flat_map2<int, t_type_loc>> grid;
+
+    std::unordered_map<int, std::vector<int>> compatible_sub_tiles_map;
 };
 
 //Compressed grid space for each block type

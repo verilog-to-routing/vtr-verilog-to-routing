@@ -1397,9 +1397,9 @@ static void build_rr_sinks_sources(const int i,
 
     auto type = grid[i][j].type;
     int num_class = (int)type->class_inf.size();
-    std::vector<t_class> class_inf = type->class_inf;
+    const std::vector<t_class>& class_inf = type->class_inf;
     int num_pins = type->num_pins;
-    std::vector<int> pin_class = type->pin_class;
+    const std::vector<int>& pin_class = type->pin_class;
 
     /* SINK and SOURCE-to-OPIN edges */
     for (int iclass = 0; iclass < num_class; ++iclass) {

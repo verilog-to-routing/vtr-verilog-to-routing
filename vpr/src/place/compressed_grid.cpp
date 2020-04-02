@@ -23,8 +23,22 @@ std::vector<t_compressed_block_grid> create_compressed_block_grids() {
     }
 
     std::vector<t_compressed_block_grid> compressed_type_grids(device_ctx.logical_block_types.size());
-    for (const auto& type : device_ctx.logical_block_types) {
-        compressed_type_grids[type.index] = create_compressed_block_grid(block_locations[type.index]);
+    for (const auto& logical_block : device_ctx.logical_block_types) {
+        auto compressed_block_grid = create_compressed_block_grid(block_locations[logical_block.index]);
+
+        for (const auto& physical_tile : logical_block.equivalent_tiles) {
+            std::vector<int> compatible_sub_tiles;
+
+            for (int capacity = 0; capacity < physical_tile->capacity; capacity++) {
+                if (is_tile_compatible(physical_tile, &logical_block, capacity)) {
+                    compatible_sub_tiles.push_back(capacity);
+                }
+            }
+
+            compressed_block_grid.compatible_sub_tiles_map.insert({physical_tile->index, compatible_sub_tiles});
+        }
+
+        compressed_type_grids[logical_block.index] = compressed_block_grid;
     }
 
     return compressed_type_grids;

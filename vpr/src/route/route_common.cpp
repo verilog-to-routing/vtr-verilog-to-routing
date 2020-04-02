@@ -848,8 +848,7 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
         auto type = physical_tile_type(blk_id);
         auto sub_tile = type->sub_tiles[get_sub_tile_index(blk_id)];
 
-        int class_low, class_high;
-        get_class_range_for_block(blk_id, &class_low, &class_high);
+        auto class_range = get_class_range_for_block(blk_id);
 
         clb_opins_used_locally[blk_id].resize((int)type->class_inf.size());
 
@@ -873,7 +872,7 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
                     VTR_ASSERT(type->class_inf[iclass].type == DRIVER);
 
                     /* Check to make sure class is in same range as that assigned to block */
-                    VTR_ASSERT(iclass >= class_low && iclass <= class_high);
+                    VTR_ASSERT(iclass >= class_range.low && iclass <= class_range.high);
 
                     //We push back OPEN to reserve space to store the exact pin which
                     //will be reserved (determined later)
@@ -1030,12 +1029,11 @@ static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t
         auto type = physical_tile_type(blk_id);
         auto sub_tile = type->sub_tiles[get_sub_tile_index(blk_id)];
 
-        int class_low, class_high;
-        get_class_range_for_block(blk_id, &class_low, &class_high);
+        auto class_range = get_class_range_for_block(blk_id);
 
         rr_blk_source[blk_id].resize((int)type->class_inf.size());
         for (iclass = 0; iclass < (int)type->class_inf.size(); iclass++) {
-            if (iclass >= class_low && iclass <= class_high) {
+            if (iclass >= class_range.low && iclass <= class_range.high) {
                 i = place_ctx.block_locs[blk_id].loc.x;
                 j = place_ctx.block_locs[blk_id].loc.y;
 

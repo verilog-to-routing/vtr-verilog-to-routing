@@ -1454,7 +1454,7 @@ int get_rr_node_index(const t_rr_node_indices& L_rr_node_indices,
      * and ptc gives the number of this resource.  ptc is the class number,
      * pin number or track number, depending on what type of resource this
      * is.  All ptcs start at 0 and go up to pins_per_clb-1 or the equivalent.
-     * There are (int)type->class_inf.size() SOURCEs + SINKs, type->num_pins IPINs + OPINs,
+     * There are class_inf size SOURCEs + SINKs, type->num_pins IPINs + OPINs,
      * and max_chan_width CHANX and CHANY (each).
      *
      * Note that for segments (CHANX and CHANY) of length > 1, the segment is
