@@ -804,14 +804,14 @@ But with the VTR pretty printers enabled you would see:
     (gdb) p blk_id
     $1 = AtomBlockId(71)
 
-To enable the VTR pretty printers add the following to your [.gdbinit file](https://sourceware.org/gdb/current/onlinedocs/gdb/gdbinit-man.html):
+To enable the VTR pretty printers in GDB add the following to your [.gdbinit file](https://sourceware.org/gdb/current/onlinedocs/gdb/gdbinit-man.html):
 
     python
     import sys
 
     sys.path.insert(0, "$VTR_ROOT/dev")
-    import vtr_pretty_printers
-    gdb.pretty_printers.append(vtr_pretty_printers.vtr_type_lookup)
+    import vtr_gdb_pretty_printers
+    gdb.pretty_printers.append(vtr_gdb_pretty_printers.vtr_type_lookup)
 
     end
 
