@@ -71,6 +71,10 @@ std::vector<t_lb_type_rr_node>* alloc_and_load_all_lb_type_rr_graph() {
 
 /* Free routing resource graph for all logic block types */
 void free_all_lb_type_rr_graph(std::vector<t_lb_type_rr_node>* lb_type_rr_graphs) {
+    if (lb_type_rr_graphs == nullptr) {
+        return;
+    }
+
     auto& device_ctx = g_vpr_ctx.device();
 
     for (const auto& type : device_ctx.logical_block_types) {
