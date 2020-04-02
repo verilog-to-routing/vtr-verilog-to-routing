@@ -1368,6 +1368,8 @@ std::set<AtomNetId> find_netlist_physical_clock_nets(const AtomNetlist& netlist)
             for (const t_model_ports* model_port : clock_gen_ports[model]) {
                 AtomPortId clk_gen_port = netlist.find_atom_port(blk_id, model_port);
 
+                if (!clk_gen_port) continue; //Port not connected on this block
+
                 for (AtomPinId pin_id : netlist.port_pins(clk_gen_port)) {
                     if (!pin_id) continue;
 
