@@ -1,3 +1,12 @@
+"""
+This file defines various GDB printers for some useful VTR/VPR
+data structures. It makes them print nicely when you try to display
+such data structures when debugging within GDB.
+
+For more details on how to use this see:
+
+    https://docs.verilogtorouting.org/en/latest/dev/developing#vtr-pretty-printers
+"""
 import re
 
 #VTR related
