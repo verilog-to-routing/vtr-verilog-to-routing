@@ -266,12 +266,21 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
 
     //Calculate the intra-domain (i.e. same launch and capture domain) non-virtual geomean, and fanout-weighted periods
     if (crit_paths.size() >= 1) {
+        VTR_LOG("\n");
         std::vector<double> intra_domain_cpds;
         std::vector<double> fanout_weighted_intra_domain_cpds;
         double total_intra_domain_fanout = 0.;
         auto clock_fanouts = count_clock_fanouts(*timing_ctx.graph, setup_analyzer);
         for (const auto& path : crit_paths) {
             if (path.launch_domain() == path.capture_domain() && !constraints.is_virtual_clock(path.launch_domain())) {
+                if (path.delay() == 0.) {
+                    VTR_LOG_WARN("%s to %s CPD is %g, skipping in geomean and fanout-weighted CPDs\n",
+                                 constraints.clock_domain_name(path.launch_domain()).c_str(),
+                                 constraints.clock_domain_name(path.capture_domain()).c_str(),
+                                 sec_to_nanosec(path.delay()));
+                    continue;
+                }
+
                 intra_domain_cpds.push_back(path.delay());
 
                 auto iter = clock_fanouts.find(path.launch_domain());
@@ -285,7 +294,7 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
 
         //Print multi-clock geomeans
         if (intra_domain_cpds.size() > 0) {
-            VTR_LOG("\n");
+
             double geomean_intra_domain_cpd = vtr::geomean(intra_domain_cpds.begin(), intra_domain_cpds.end());
             VTR_LOG("Geometric mean non-virtual intra-domain period: %g ns (%g MHz)\n",
                     sec_to_nanosec(geomean_intra_domain_cpd),
