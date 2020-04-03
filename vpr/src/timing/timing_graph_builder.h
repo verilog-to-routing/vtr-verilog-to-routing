@@ -5,6 +5,17 @@
 #include "atom_netlist_fwd.h"
 #include "atom_lookup.h"
 
+/*
+ * Class for constructing a Timing Graph (a tatum::TimingGraph, for use with the Tatum 
+ * STA engine) from the provided AtomNetlist. It also updates the provided AtomLookup 
+ * with the mapping from netlist elements to timing graph nodes.
+ *
+ * To construct a timing graph initialize this class with the netlist and lookup 
+ * (via constructor), and call the timing_graph() method.
+ *
+ * For details on how the timing graph is constructed from the netlist, see the comments 
+ * in the associated .cpp implementation file.
+ */
 class TimingGraphBuilder {
   public:
     TimingGraphBuilder(const AtomNetlist& netlist,
