@@ -351,7 +351,7 @@ void TimingGraphBuilder::add_io_to_timing_graph(const AtomBlockId blk) {
 
     NodeId tnode = tg_->add_node(node_type);
 
-    netlist_lookup_.set_atom_pin_tnode(pin, tnode);
+    netlist_lookup_.set_atom_pin_tnode(pin, tnode, BlockTnode::EXTERNAL);
 }
 
 //Creates the timing graph nodes and internal edges for a netlist block
@@ -427,7 +427,7 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
                                                         model_port->combinational_sink_ports.end());
 
         //Save the pin to external tnode mapping
-        netlist_lookup_.set_atom_pin_tnode(input_pin, tnode);
+        netlist_lookup_.set_atom_pin_tnode(input_pin, tnode, BlockTnode::EXTERNAL);
     }
 
     //Create the clock pins
@@ -442,7 +442,7 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
 
         NodeId tnode = tg_->add_node(NodeType::CPIN);
 
-        netlist_lookup_.set_atom_pin_tnode(clock_pin, tnode);
+        netlist_lookup_.set_atom_pin_tnode(clock_pin, tnode, BlockTnode::EXTERNAL);
     }
 
     //Create the output pins
@@ -498,7 +498,7 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
         }
 
         //Record as external tnode
-        netlist_lookup_.set_atom_pin_tnode(output_pin, tnode);
+        netlist_lookup_.set_atom_pin_tnode(output_pin, tnode, BlockTnode::EXTERNAL);
     }
 
     //Connect the clock pins to the sources and sinks
@@ -724,7 +724,7 @@ void TimingGraphBuilder::remap_ids(const tatum::GraphIdMaps& id_mapping) {
     for (auto kv : new_tnode_atom_pin) {
         tatum::NodeId tnode = kv.first;
         AtomPinId pin = kv.second;
-        netlist_lookup_.set_atom_pin_tnode(pin, tnode);
+        netlist_lookup_.set_atom_pin_tnode(pin, tnode, BlockTnode::EXTERNAL);
     }
 }
 
