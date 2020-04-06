@@ -30,7 +30,7 @@ std::vector<t_compressed_block_grid> create_compressed_block_grids() {
             std::vector<int> compatible_sub_tiles;
 
             for (int capacity = 0; capacity < physical_tile->capacity; capacity++) {
-                if (is_tile_compatible(physical_tile, &logical_block, capacity)) {
+                if (is_sub_tile_compatible(physical_tile, &logical_block, capacity)) {
                     compatible_sub_tiles.push_back(capacity);
                 }
             }

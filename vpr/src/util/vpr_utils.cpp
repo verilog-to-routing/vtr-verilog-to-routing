@@ -2123,7 +2123,7 @@ void place_sync_external_block_connections(ClusterBlockId iblk) {
 
     for (auto pin : clb_nlist.block_pins(iblk)) {
         int logical_pin_index = clb_nlist.pin_logical_index(pin);
-        int physical_pin_index = get_physical_pin(sub_tile_index, physical_tile, logical_block, logical_pin_index);
+        int physical_pin_index = get_sub_tile_physical_pin(sub_tile_index, physical_tile, logical_block, logical_pin_index);
 
         int new_physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[physical_pin_index + rel_capacity * max_num_block_pins];
 
@@ -2162,7 +2162,7 @@ bool is_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_block_
     return std::find(equivalent_tiles.begin(), equivalent_tiles.end(), physical_tile) != equivalent_tiles.end();
 }
 
-bool is_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_block_type_ptr logical_block, int sub_tile_loc) {
+bool is_sub_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_block_type_ptr logical_block, int sub_tile_loc) {
     bool capacity_compatible = false;
     for (auto& sub_tile : physical_tile->sub_tiles) {
         if (sub_tile.capacity.is_in_range(sub_tile_loc)) {
@@ -2218,7 +2218,7 @@ int get_logical_pin(t_physical_tile_type_ptr physical_tile,
     return result->second.pin;
 }
 
-int get_physical_pin(int sub_tile_index,
+int get_sub_tile_physical_pin(int sub_tile_index,
                      t_physical_tile_type_ptr physical_tile,
                      t_logical_block_type_ptr logical_block,
                      int pin) {
@@ -2252,7 +2252,7 @@ int get_physical_pin(t_physical_tile_type_ptr physical_tile,
 
     VTR_ASSERT(sub_tile_index != OPEN);
 
-    return get_physical_pin(sub_tile_index, physical_tile, logical_block, pin);
+    return get_sub_tile_physical_pin(sub_tile_index, physical_tile, logical_block, pin);
 }
 
 int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index) {
