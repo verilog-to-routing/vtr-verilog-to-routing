@@ -302,7 +302,7 @@ void TimingGraphBuilder::build(bool allow_dangling_combinational_nodes) {
     //Break any combinational loops (i.e. if the graph is not a DAG)
     fix_comb_loops();
 
-    //Levelize the graph (i.e. determine its topological ordering and record 
+    //Levelize the graph (i.e. determine its topological ordering and record
     //the level of each node) for the timing analyzer
     tg_->levelize();
 }
@@ -388,6 +388,16 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
      * bad practise, but it happens). We detect such cases and also create a
      * SOURCE (and leave any combinational inputs to that node disconnected).
      */
+
+    auto clock_generator_tnodes = create_block_timing_nodes(blk);
+    create_block_internal_data_timing_edges(blk, clock_generator_tnodes);
+    create_block_internal_clock_timing_edges(blk, clock_generator_tnodes);
+}
+
+//Constructs the timing graph nodes for the specified block
+//
+//Returns the set of created tnodese which are clock generators
+std::set<tatum::NodeId> TimingGraphBuilder::create_block_timing_nodes(const AtomBlockId blk) {
     std::set<std::string> output_ports_used_as_combinational_sinks;
 
     //Create the tnodes corresponding to input pins
@@ -501,6 +511,10 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
         netlist_lookup_.set_atom_pin_tnode(output_pin, tnode, BlockTnode::EXTERNAL);
     }
 
+    return clock_generator_tnodes;
+}
+
+void TimingGraphBuilder::create_block_internal_clock_timing_edges(const AtomBlockId blk, const std::set<tatum::NodeId>& clock_generator_tnodes) {
     //Connect the clock pins to the sources and sinks
     for (AtomPinId pin : netlist_.block_pins(blk)) {
         for (auto blk_tnode_type : {BlockTnode::EXTERNAL, BlockTnode::INTERNAL}) {
@@ -511,46 +525,78 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
 
             auto node_type = tg_->node_type(tnode);
 
-            if (node_type == NodeType::SOURCE || node_type == NodeType::SINK) {
-                //Look-up the clock name on the port model
-                AtomPortId port = netlist_.pin_port(pin);
-                const t_model_ports* model_port = netlist_.port_model(port);
+            if (node_type != NodeType::SOURCE && node_type != NodeType::SINK) continue;
 
-                VTR_ASSERT_MSG(!model_port->clock.empty(), "Sequential pins must have a clock");
+            VTR_ASSERT_SAFE(node_type == NodeType::SOURCE || node_type == NodeType::SINK);
 
-                //Find the clock pin in the netlist
-                AtomPortId clk_port = netlist_.find_port(blk, model_port->clock);
-                VTR_ASSERT(clk_port);
-                VTR_ASSERT_MSG(netlist_.port_width(clk_port) == 1, "Primitive clock ports can only contain one pin");
+            //Look-up the clock name on the port model
+            AtomPortId port = netlist_.pin_port(pin);
+            const t_model_ports* model_port = netlist_.port_model(port);
 
-                AtomPinId clk_pin = netlist_.port_pin(clk_port, 0);
-                VTR_ASSERT(clk_pin);
+            VTR_ASSERT_MSG(!model_port->clock.empty(), "Sequential pins must have a clock");
 
-                //Convert the pin to it's tnode
-                NodeId clk_tnode = netlist_lookup_.atom_pin_tnode(clk_pin);
-                VTR_ASSERT(clk_tnode);
+            //Find the clock pin in the netlist
+            AtomPortId clk_port = netlist_.find_port(blk, model_port->clock);
+            VTR_ASSERT(clk_port);
+            VTR_ASSERT_MSG(netlist_.port_width(clk_port) == 1, "Primitive clock ports can only contain one pin");
 
-                //Determine the type of edge to create
-                //This corresponds to how the clock (clk_tnode) relates
-                //to the data (tnode). So a SOURCE data tnode should be
-                //a PRIMTIVE_CLOCK_LAUNCH (clock launches data), while
-                //a SINK data tnode should be a PRIMITIVE_CLOCK_CAPTURE
-                //(clock captures data).
-                tatum::EdgeType type;
-                if (node_type == NodeType::SOURCE) {
-                    type = tatum::EdgeType::PRIMITIVE_CLOCK_LAUNCH;
-                } else {
-                    VTR_ASSERT(node_type == NodeType::SINK);
-                    type = tatum::EdgeType::PRIMITIVE_CLOCK_CAPTURE;
-                }
+            AtomPinId clk_pin = netlist_.port_pin(clk_port, 0);
+            VTR_ASSERT(clk_pin);
 
-                //Add the edge from the clock to the source/sink
-                tg_->add_edge(type, clk_tnode, tnode);
+            //Convert the pin to it's tnode
+            NodeId clk_tnode = netlist_lookup_.atom_pin_tnode(clk_pin);
+            VTR_ASSERT(clk_tnode);
+
+            //Determine the type of edge to create
+            //This corresponds to how the clock (clk_tnode) relates
+            //to the data (tnode). So a SOURCE data tnode should be
+            //a PRIMTIVE_CLOCK_LAUNCH (clock launches data), while
+            //a SINK data tnode should be a PRIMITIVE_CLOCK_CAPTURE
+            //(clock captures data).
+            tatum::EdgeType type;
+            if (node_type == NodeType::SOURCE) {
+                type = tatum::EdgeType::PRIMITIVE_CLOCK_LAUNCH;
+            } else {
+                VTR_ASSERT(node_type == NodeType::SINK);
+                type = tatum::EdgeType::PRIMITIVE_CLOCK_CAPTURE;
             }
+
+            //Add the edge from the clock to the source/sink
+            tg_->add_edge(type, clk_tnode, tnode);
         }
     }
 
-    //Connect the combinational edges from input pins
+    //Connect the combinational edges from clock input pins
+    //
+    //These are typically used to represent clock buffers
+    for (AtomPinId src_clock_pin : netlist_.block_clock_pins(blk)) {
+        NodeId src_tnode = netlist_lookup_.atom_pin_tnode(src_clock_pin, BlockTnode::EXTERNAL);
+
+        if (!src_tnode) continue;
+
+        //Look-up the combinationally connected sink ports name on the port model
+        AtomPortId src_port = netlist_.pin_port(src_clock_pin);
+        const t_model_ports* model_port = netlist_.port_model(src_port);
+
+        for (const std::string& sink_port_name : model_port->combinational_sink_ports) {
+            AtomPortId sink_port = netlist_.find_port(blk, sink_port_name);
+            if (!sink_port) continue; //Port may not be connected
+
+            //We now need to create edges between the source pin, and all the pins in the
+            //output port
+            for (AtomPinId sink_pin : netlist_.port_pins(sink_port)) {
+                //Get the tnode of the sink
+                NodeId sink_tnode = netlist_lookup_.atom_pin_tnode(sink_pin, BlockTnode::EXTERNAL);
+
+                tg_->add_edge(tatum::EdgeType::PRIMITIVE_COMBINATIONAL, src_tnode, sink_tnode);
+                VTR_LOG("Adding edge from '%s' (tnode: %zu) -> '%s' (tnode: %zu) to allow clocks to propagate\n", netlist_.pin_name(src_clock_pin).c_str(), size_t(src_tnode), netlist_.pin_name(sink_pin).c_str(), size_t(sink_tnode));
+            }
+        }
+    }
+}
+
+void TimingGraphBuilder::create_block_internal_data_timing_edges(const AtomBlockId blk, const std::set<tatum::NodeId>& clock_generator_tnodes) {
+    //Connect the combinational edges from data input pins
     //
     //These edges may represent an intermediate (combinational) sub-path of a
     //timing path (i.e. between IPINs and OPINs), the start of a timing path (i.e. SOURCE
@@ -560,7 +606,7 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
     //Note that the creation of these edges is driven by the 'combinationl_sink_ports' specified
     //in the architecture primitive model
     for (AtomPinId src_pin : netlist_.block_input_pins(blk)) {
-        //Note that we have already created all the relevant nodes, and appropriately labelled them as 
+        //Note that we have already created all the relevant nodes, and appropriately labelled them as
         //internal/external. As a result, we only need to consider the 'internal' tnodes when creating
         //the edges within the current block.
         NodeId src_tnode = netlist_lookup_.atom_pin_tnode(src_pin, BlockTnode::INTERNAL);
@@ -614,34 +660,6 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
                     //Add the edge between the pins
                     tg_->add_edge(tatum::EdgeType::PRIMITIVE_COMBINATIONAL, src_tnode, sink_tnode);
                 }
-            }
-        }
-    }
-
-    //Connect the combinational edges from clock pins
-    //
-    //These are typically used to represent clock buffers
-    for (AtomPinId src_clock_pin : netlist_.block_clock_pins(blk)) {
-        NodeId src_tnode = netlist_lookup_.atom_pin_tnode(src_clock_pin, BlockTnode::EXTERNAL);
-
-        if (!src_tnode) continue;
-
-        //Look-up the combinationally connected sink ports name on the port model
-        AtomPortId src_port = netlist_.pin_port(src_clock_pin);
-        const t_model_ports* model_port = netlist_.port_model(src_port);
-
-        for (const std::string& sink_port_name : model_port->combinational_sink_ports) {
-            AtomPortId sink_port = netlist_.find_port(blk, sink_port_name);
-            if (!sink_port) continue; //Port may not be connected
-
-            //We now need to create edges between the source pin, and all the pins in the
-            //output port
-            for (AtomPinId sink_pin : netlist_.port_pins(sink_port)) {
-                //Get the tnode of the sink
-                NodeId sink_tnode = netlist_lookup_.atom_pin_tnode(sink_pin, BlockTnode::EXTERNAL);
-
-                tg_->add_edge(tatum::EdgeType::PRIMITIVE_COMBINATIONAL, src_tnode, sink_tnode);
-                VTR_LOG("Adding edge from '%s' (tnode: %zu) -> '%s' (tnode: %zu) to allow clocks to propagate\n", netlist_.pin_name(src_clock_pin).c_str(), size_t(src_tnode), netlist_.pin_name(sink_pin).c_str(), size_t(sink_tnode));
             }
         }
     }

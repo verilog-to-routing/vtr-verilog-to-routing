@@ -31,6 +31,11 @@ class TimingGraphBuilder {
     void add_block_to_timing_graph(const AtomBlockId blk);
     void add_net_to_timing_graph(const AtomNetId net);
 
+    //Helper functions for add_block_to_timing_graph()
+    std::set<tatum::NodeId> create_block_timing_nodes(const AtomBlockId blk);
+    void create_block_internal_data_timing_edges(const AtomBlockId blk, const std::set<tatum::NodeId>& clock_generator_tnodes);
+    void create_block_internal_clock_timing_edges(const AtomBlockId blk, const std::set<tatum::NodeId>& clock_generator_tnodes);
+
     void fix_comb_loops();
     tatum::EdgeId find_scc_edge_to_break(std::vector<tatum::NodeId> scc);
 
