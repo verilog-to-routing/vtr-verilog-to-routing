@@ -826,6 +826,8 @@ The following tags are common to all ``<tile>`` tags:
 
 .. arch:tag:: <sub_tile name"string" capacity="{int}">
 
+    .. seealso:: For a tutorial on describing the usage of sub tiles for ``heterogeneous tiles`` definition see :ref:`heterogeneous_tiles_tutorial`.
+
     Describes one or many sub tiles corresponding to the physical tile.
     Each sub tile is identifies a set of one or more stack location on a specific x, y grid location.
 
