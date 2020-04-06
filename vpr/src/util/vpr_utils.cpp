@@ -2219,9 +2219,9 @@ int get_logical_pin(t_physical_tile_type_ptr physical_tile,
 }
 
 int get_sub_tile_physical_pin(int sub_tile_index,
-                     t_physical_tile_type_ptr physical_tile,
-                     t_logical_block_type_ptr logical_block,
-                     int pin) {
+                              t_physical_tile_type_ptr physical_tile,
+                              t_logical_block_type_ptr logical_block,
+                              int pin) {
     t_logical_pin logical_pin(sub_tile_index, pin);
 
     const auto& direct_map = physical_tile->tile_block_pin_directs_map.at(logical_block->index);
