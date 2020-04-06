@@ -445,7 +445,7 @@ bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to) {
     auto logical_block = cluster_ctx.clb_nlist.block_type(blk);
 
     if (to.sub_tile < 0 || to.sub_tile >= physical_tile->capacity
-        || !is_tile_compatible(physical_tile, logical_block, to.sub_tile)) {
+        || !is_sub_tile_compatible(physical_tile, logical_block, to.sub_tile)) {
         return false;
     }
     // If the destination block is user constrained, abort this swap

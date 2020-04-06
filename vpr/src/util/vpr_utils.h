@@ -35,8 +35,12 @@ int get_sub_tile_index(ClusterBlockId blk);
 
 int get_unique_pb_graph_node_id(const t_pb_graph_node* pb_graph_node);
 
+//Returns the physical class range relative to a block id. This must be called after placement
+//as the block id is used to retrieve the information of the used physical tile.
 t_class_range get_class_range_for_block(const ClusterBlockId blk_id);
 
+//Returns the physical pin range relative to a block id. This must be called after placement
+//as the block id is used to retrieve the information of the used physical tile.
 void get_pin_range_for_block(const ClusterBlockId blk_id,
                              int* pin_low,
                              int* pin_high);
@@ -144,9 +148,11 @@ AtomBlockId find_memory_sibling(const t_pb* pb);
 void place_sync_external_block_connections(ClusterBlockId iblk);
 int get_max_num_pins(t_logical_block_type_ptr logical_block);
 
+//Verifies whether a given logical block is compatible with a given physical tile
 bool is_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_block_type_ptr logical_block);
 
-bool is_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_block_type_ptr logical_block, int sub_tile_loc);
+//Verifies whether a logical block and a relative placement location is compatible with a given physical tile
+bool is_sub_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_block_type_ptr logical_block, int sub_tile_loc);
 
 //Returns the physical tile type which 'best' matches logical_block
 t_physical_tile_type_ptr pick_best_physical_type(t_logical_block_type_ptr logical_block);
@@ -164,10 +170,10 @@ int get_logical_pin(t_physical_tile_type_ptr physical_tile,
 int get_physical_pin(t_physical_tile_type_ptr physical_tile,
                      t_logical_block_type_ptr logical_block,
                      int pin);
-int get_physical_pin(int sub_tile_index,
-                     t_physical_tile_type_ptr physical_tile,
-                     t_logical_block_type_ptr logical_block,
-                     int pin);
+int get_sub_tile_physical_pin(int sub_tile_index,
+                              t_physical_tile_type_ptr physical_tile,
+                              t_logical_block_type_ptr logical_block,
+                              int pin);
 
 //Returns the physical pin of the tile, related to the given ClusterNedId, and the net pin index
 int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index);
