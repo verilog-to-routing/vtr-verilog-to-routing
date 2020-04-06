@@ -48,3 +48,6 @@ doc/**                  linguist-documentation
 *.txt                   linguist-documentation
 *.md                    linguist-documentation
 *.rst                   linguist-documentation
+
+# Generated files
+vpr/src/route/gen/**    linguist-generated
