@@ -277,6 +277,37 @@ struct ParseBaseCost {
     }
 };
 
+struct ParsePlaceDeltaDelayAlgorithm {
+    ConvertedValue<e_place_delta_delay_algorithm> from_str(std::string str) {
+        ConvertedValue<e_place_delta_delay_algorithm> conv_value;
+        if (str == "astar")
+            conv_value.set_value(e_place_delta_delay_algorithm::ASTAR_ROUTE);
+        else if (str == "dijkstra")
+            conv_value.set_value(e_place_delta_delay_algorithm::DIJKSTRA_EXPANSION);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_place_delta_delay_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_place_delta_delay_algorithm val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_place_delta_delay_algorithm::ASTAR_ROUTE)
+            conv_value.set_value("astar");
+        else {
+            VTR_ASSERT(val == e_place_delta_delay_algorithm::DIJKSTRA_EXPANSION);
+            conv_value.set_value("dijkstra");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"astar", "dijkstra"};
+    }
+};
+
 struct ParsePlaceAlgorithm {
     ConvertedValue<e_place_algorithm> from_str(std::string str) {
         ConvertedValue<e_place_algorithm> conv_value;
@@ -1409,8 +1440,17 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .help("Displays delay statistics even if placement is not timing driven")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_grp.add_argument<bool, ParseOnOff>(args.use_expansion_for_delay_matrix, "--use_expansion_for_delay_matrix")
-        .help("Use Dijkstra's shortest path algorithm for computing the place delay matrix instead of the router.")
+    place_grp.add_argument<e_place_delta_delay_algorithm, ParsePlaceDeltaDelayAlgorithm>(
+                 args.place_delta_delay_matrix_calculation_method,
+                 "--place_delta_delay_matrix_calculation_method")
+        .help(
+            "What algorithm should be used to compute the place delta matrix.\n"
+            "\n"
+            " * astar : Find delta delays between OPIN's and IPIN's using\n"
+            "           the router with the current --astar_fac.\n"
+            " * dijkstra : Use Dijkstra's algorithm to find all shortest paths \n"
+            "              from sampled OPIN's to all IPIN's.\n")
+        .default_value("astar")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceInnerNum, "--inner_num")

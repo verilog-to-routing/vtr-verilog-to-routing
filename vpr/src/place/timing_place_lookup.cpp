@@ -682,10 +682,15 @@ static vtr::Matrix<float> compute_delta_delays(
         bool,
         const std::set<std::string>&)>
         generic_compute_matrix;
-    if (placer_opts.use_expansion_for_delay_matrix) {
-        generic_compute_matrix = generic_compute_matrix_with_expansion;
-    } else {
-        generic_compute_matrix = generic_compute_matrix_with_router;
+    switch (placer_opts.place_delta_delay_matrix_calculation_method) {
+        case e_place_delta_delay_algorithm::ASTAR_ROUTE:
+            generic_compute_matrix = generic_compute_matrix_with_router;
+            break;
+        case e_place_delta_delay_algorithm::DIJKSTRA_EXPANSION:
+            generic_compute_matrix = generic_compute_matrix_with_expansion;
+            break;
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Unknown place_delta_delay_matrix_calculation_method %d", placer_opts.place_delta_delay_matrix_calculation_method);
     }
 
 #ifdef VERBOSE
