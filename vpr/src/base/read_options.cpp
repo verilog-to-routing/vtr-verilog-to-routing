@@ -823,6 +823,37 @@ struct ParseRouterHeap {
     }
 };
 
+struct ParsePlaceEfforScaling {
+    ConvertedValue<e_place_effort_scaling> from_str(std::string str) {
+        ConvertedValue<e_place_effort_scaling> conv_value;
+        if (str == "circuit")
+            conv_value.set_value(e_place_effort_scaling::CIRCUIT);
+        else if (str == "device_circuit")
+            conv_value.set_value(e_place_effort_scaling::DEVICE_CIRCUIT);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_place_effort_scaling (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_place_effort_scaling val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_place_effort_scaling::CIRCUIT)
+            conv_value.set_value("circuit");
+        else {
+            VTR_ASSERT(val == e_place_effort_scaling::DEVICE_CIRCUIT);
+            conv_value.set_value("device_circuit");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"circuit", "device_circuit"};
+    }
+};
+
 argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args) {
     std::string description =
         "Implements the specified circuit onto the target FPGA architecture"
@@ -1381,6 +1412,16 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     place_grp.add_argument(args.PlaceInnerNum, "--inner_num")
         .help("Controls number of moves per temperature: inner_num * num_blocks ^ (4/3)")
         .default_value("1.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument<e_place_effort_scaling, ParsePlaceEfforScaling>(args.place_effort_scaling, "--place_effort_scaling")
+        .help(
+            "Controls how the number of placer moves level scales with circuit\n"
+            " and device size:\n"
+            "  * circuit: proportional to circuit size (num_blocks ^ 4/3)\n"
+            "  * device_circuit: proportional to device and circuit size\n"
+            "                    (grid_size ^ 2/3 * num_blocks ^ 2/3)\n")
+        .default_value("circuit")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceInitT, "--init_t")

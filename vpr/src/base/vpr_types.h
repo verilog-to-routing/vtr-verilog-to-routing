@@ -778,6 +778,11 @@ enum e_place_algorithm {
     PATH_TIMING_DRIVEN_PLACE
 };
 
+enum e_place_effort_scaling {
+    CIRCUIT,       //Effort scales based on circuit size only
+    DEVICE_CIRCUIT //Effort scales based on both circuit and device size
+};
+
 enum class PlaceDelayModelType {
     DELTA,          //Delta x/y based delay model
     DELTA_OVERRIDE, //Delta x/y based delay model with special case delay overrides
@@ -816,6 +821,7 @@ struct t_placer_opts {
     float rlim_escape_fraction;
     std::string move_stats_file;
     int placement_saves_per_temperature;
+    e_place_effort_scaling effort_scaling;
 
     PlaceDelayModelType delay_model_type;
     e_reducer delay_model_reducer;

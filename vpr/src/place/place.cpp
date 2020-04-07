@@ -432,8 +432,8 @@ void try_place(const t_placer_opts& placer_opts,
      * width should be taken to when calculating costs.  This allows a       *
      * greater bias for anisotropic architectures.                           */
 
-    int tot_iter, move_lim, moves_since_cost_recompute, width_fac, num_connections,
-        outer_crit_iter_count, inner_recompute_limit;
+    int tot_iter, move_lim = 0, moves_since_cost_recompute, width_fac, num_connections,
+                  outer_crit_iter_count, inner_recompute_limit;
     float t, success_rat, rlim,
         oldt = 0, crit_exponent,
         first_rlim, final_rlim, inverse_delta_rlim;
@@ -588,9 +588,6 @@ void try_place(const t_placer_opts& placer_opts,
     VTR_LOG("Placement contains %zu placement macros involving %zu blocks (average macro size %f)\n", g_vpr_ctx.placement().pl_macros.size(), num_macro_members, float(num_macro_members) / g_vpr_ctx.placement().pl_macros.size());
     VTR_LOG("\n");
 
-    //Table header
-    print_place_status_header();
-
     sprintf(msg, "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g \t Channel Factor: %d",
             costs.cost, costs.bb_cost, costs.timing_cost, width_fac);
     //Draw the initial placement
@@ -602,7 +599,25 @@ void try_place(const t_placer_opts& placer_opts,
         print_place(nullptr, nullptr, filename.c_str());
     }
 
-    move_lim = (int)(annealing_sched.inner_num * pow(cluster_ctx.clb_nlist.blocks().size(), 1.3333));
+    if (placer_opts.effort_scaling == e_place_effort_scaling::CIRCUIT) {
+        //This scales the move limit proportional to num_blocks ^ (4/3)
+        move_lim = (int)(annealing_sched.inner_num * pow(cluster_ctx.clb_nlist.blocks().size(), 1.3333));
+    } else if (placer_opts.effort_scaling == e_place_effort_scaling::DEVICE_CIRCUIT) {
+        //This scales the move limit proportional to device_size ^ (2/3) * num_blocks ^ (2/3)
+        //
+        //For highly utilized devices (device_size ~ num_blocks) this is the same as
+        //num_blocks ^ (4/3).
+        //
+        //For low utilization devices (device_size >> num_blocks) this performs more
+        //moves (device_size ^ (2/3)) to ensure better optimization. In this case,
+        //more moves than num_blocks ^ (4/3) may be required, since the search space
+        //is larger.
+        float device_size = device_ctx.grid.width() * device_ctx.grid.height();
+        move_lim = (int)(annealing_sched.inner_num * pow(device_size, 2. / 3.) * pow(cluster_ctx.clb_nlist.blocks().size(), 2. / 3.));
+    } else {
+        VPR_ERROR(VPR_ERROR_PLACE, "Unrecognized placer effort scaling");
+    }
+    VTR_LOG("Moves per temperature: %d\n", move_lim);
 
     /* Sometimes I want to run the router with a random placement.  Avoid *
      * using 0 moves to stop division by 0 and 0 length vector problems,  *
@@ -639,6 +654,10 @@ void try_place(const t_placer_opts& placer_opts,
     tot_iter = 0;
     moves_since_cost_recompute = 0;
     int num_temps = 0;
+
+    //Table header
+    VTR_LOG("\n");
+    print_place_status_header();
 
     /* Outer loop of the simmulated annealing begins */
     while (exit_crit(t, costs.cost, annealing_sched) == 0) {
