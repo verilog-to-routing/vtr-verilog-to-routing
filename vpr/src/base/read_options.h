@@ -104,6 +104,7 @@ struct t_options {
     argparse::ArgValue<std::string> place_move_stats_file;
     argparse::ArgValue<int> placement_saves_per_temperature;
     argparse::ArgValue<e_place_effort_scaling> place_effort_scaling;
+    argparse::ArgValue<bool> use_expansion_for_delay_matrix;
 
     /* Timing-driven placement options only */
     argparse::ArgValue<float> PlaceTimingTradeoff;
