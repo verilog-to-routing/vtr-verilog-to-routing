@@ -103,6 +103,7 @@ struct t_options {
     argparse::ArgValue<float> place_rlim_escape_fraction;
     argparse::ArgValue<std::string> place_move_stats_file;
     argparse::ArgValue<int> placement_saves_per_temperature;
+    argparse::ArgValue<e_place_effort_scaling> place_effort_scaling;
 
     /* Timing-driven placement options only */
     argparse::ArgValue<float> PlaceTimingTradeoff;
