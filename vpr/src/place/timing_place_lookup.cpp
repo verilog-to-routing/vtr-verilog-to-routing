@@ -77,7 +77,7 @@ static float route_connection_delay(
     const t_router_opts& router_opts,
     bool measure_directconnect);
 
-static void generic_compute_matrix_with_router(
+static void generic_compute_matrix_iterative_astar(
     RouterDelayProfiler& route_profiler,
     vtr::Matrix<std::vector<float>>& matrix,
     int source_x,
@@ -90,7 +90,7 @@ static void generic_compute_matrix_with_router(
     bool measure_directconnect,
     const std::set<std::string>& allowed_types);
 
-static void generic_compute_matrix_with_expansion(
+static void generic_compute_matrix_dijkstra_expansion(
     RouterDelayProfiler& route_profiler,
     vtr::Matrix<std::vector<float>>& matrix,
     int source_x,
@@ -385,7 +385,7 @@ static void add_delay_to_matrix(
     }
 }
 
-static void generic_compute_matrix_with_expansion(
+static void generic_compute_matrix_dijkstra_expansion(
     RouterDelayProfiler& /*route_profiler*/,
     vtr::Matrix<std::vector<float>>& matrix,
     int source_x,
@@ -516,7 +516,7 @@ static void generic_compute_matrix_with_expansion(
     }
 }
 
-static void generic_compute_matrix_with_router(
+static void generic_compute_matrix_iterative_astar(
     RouterDelayProfiler& route_profiler,
     vtr::Matrix<std::vector<float>>& matrix,
     int source_x,
@@ -684,10 +684,10 @@ static vtr::Matrix<float> compute_delta_delays(
         generic_compute_matrix;
     switch (placer_opts.place_delta_delay_matrix_calculation_method) {
         case e_place_delta_delay_algorithm::ASTAR_ROUTE:
-            generic_compute_matrix = generic_compute_matrix_with_router;
+            generic_compute_matrix = generic_compute_matrix_iterative_astar;
             break;
         case e_place_delta_delay_algorithm::DIJKSTRA_EXPANSION:
-            generic_compute_matrix = generic_compute_matrix_with_expansion;
+            generic_compute_matrix = generic_compute_matrix_dijkstra_expansion;
             break;
         default:
             VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Unknown place_delta_delay_matrix_calculation_method %d", placer_opts.place_delta_delay_matrix_calculation_method);
