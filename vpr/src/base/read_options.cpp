@@ -1409,6 +1409,10 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .help("Displays delay statistics even if placement is not timing driven")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument<bool, ParseOnOff>(args.use_expansion_for_delay_matrix, "--use_expansion_for_delay_matrix")
+        .help("Use Dijkstra's shortest path algorithm for computing the place delay matrix instead of the router.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     place_grp.add_argument(args.PlaceInnerNum, "--inner_num")
         .help("Controls number of moves per temperature: inner_num * num_blocks ^ (4/3)")
         .default_value("1.0")
