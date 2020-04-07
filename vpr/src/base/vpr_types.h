@@ -803,6 +803,11 @@ enum class e_file_type {
     NONE
 };
 
+enum class e_place_delta_delay_algorithm {
+    ASTAR_ROUTE,
+    DIJKSTRA_EXPANSION,
+};
+
 struct t_placer_opts {
     enum e_place_algorithm place_algorithm;
     float timing_tradeoff;
@@ -845,7 +850,7 @@ struct t_placer_opts {
     // clock tree elements like PLL's, global/local clock buffers, etc.
     std::string allowed_tiles_for_delay_model;
 
-    bool use_expansion_for_delay_matrix;
+    e_place_delta_delay_algorithm place_delta_delay_matrix_calculation_method;
 };
 
 /* All the parameters controlling the router's operation are in this        *
