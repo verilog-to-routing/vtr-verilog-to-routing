@@ -639,7 +639,7 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
 
     //Each x/y location possibly contains multiple sub tiles, so we need to pick
     //a z location within a compatible sub tile.
-    auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_map.at(to_type->index);
+    auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile_map.at(to_type->index);
     to.sub_tile = compatible_sub_tiles[vtr::irand((int)compatible_sub_tiles.size() - 1)];
 
     VTR_ASSERT_MSG(is_tile_compatible(to_type, type), "Type must be compatible");
