@@ -33,7 +33,11 @@ struct t_compressed_block_grid {
     //This makes it easy to check whether there exist
     std::vector<vtr::flat_map2<int, t_type_loc>> grid;
 
-    std::unordered_map<int, std::vector<int>> compatible_sub_tiles_map;
+    //The sub type compatibility for a given physical tile and a compressed block grid
+    //corresponding to the possible placement location for a given logical block
+    //  - key: physical tile index
+    //  - value: vector of compatible sub tiles for the physical tile/logical block pair
+    std::unordered_map<int, std::vector<int>> compatible_sub_tiles_for_tile_map;
 };
 
 //Compressed grid space for each block type
