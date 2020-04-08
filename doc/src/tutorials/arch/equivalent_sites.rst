@@ -34,8 +34,8 @@ Below the user can find the implementation of this situation starting from an ex
                 <site pb_type="SLICEL_SITE" pin_mapping="direct"/>
             </equivalent_sites>
 
-            <fc ...>
-            <pinlocations ...>
+            <fc />
+            <pinlocations />
         </tile>
         <tile name="SLICEM_TILE">
             <input name="IN_A" num_pins="6"/>
@@ -54,8 +54,8 @@ Below the user can find the implementation of this situation starting from an ex
                 <site pb_type="SLICEM_SITE" pin_mapping="direct"/>
             </equivalent_sites>
 
-            <fc ...>
-            <pinlocations ...>
+            <fc />
+            <pinlocations />
         </tile>
     </tiles>
 
@@ -71,8 +71,8 @@ Below the user can find the implementation of this situation starting from an ex
             <output name="A" num_pins="1"/>
             <output name="AMUX" num_pins="1"/>
             <output name="AQ" num_pins="1"/>
-            <mode ...>
-            ...
+            <mode />
+            /
         </pb_type>
         <pb_type name="SLICEM_SITE"/>
             <input name="IN_A" num_pins="6"/>
@@ -85,8 +85,8 @@ Below the user can find the implementation of this situation starting from an ex
             <output name="A" num_pins="1"/>
             <output name="AMUX" num_pins="1"/>
             <output name="AQ" num_pins="1"/>
-            <mode ...>
-            ...
+            <mode />
+            /
         </pb_type>
     </complexblocklist>
 
@@ -123,8 +123,8 @@ To have the possibility to make VPR choose a ``SLICEM`` location when placing a 
             </site>
         </equivalent_sites>
 
-        <fc ...>
-        <pinlocations ...>
+        <fc />
+        <pinlocations />
     </tile>
 
 With the above description of the ``SLICEM`` tile, the user can now have the ``SLICEL`` sites to be placed in ``SLICEM`` physical locations.
@@ -147,7 +147,7 @@ Below the user can find the implementation of this situation starting from an ex
                 <site pb_type="LEFT_IOPAD_SITE" pin_mapping="direct"/>
             </equivalent_sites>
 
-            <fc ...>
+            <fc />
             <pinlocations pattern="custom">
                 <loc side="left">LEFT_IOPAD_TILE.INPUT</loc>
                 <loc side="right">LEFT_IOPAD_TILE.OUTPUT</loc>
@@ -161,7 +161,7 @@ Below the user can find the implementation of this situation starting from an ex
                 <site pb_type="RIGHT_IOPAD_SITE" pin_mapping="direct"/>
             </equivalent_sites>
 
-            <fc ...>
+            <fc />
             <pinlocations pattern="custom">
                 <loc side="right">RIGHT_IOPAD_TILE.INPUT</loc>
                 <loc side="left">RIGHT_IOPAD_TILE.OUTPUT</loc>
@@ -173,14 +173,14 @@ Below the user can find the implementation of this situation starting from an ex
         <pb_type name="LEFT_IOPAD_SITE">
             <input name="INPUT" num_pins="1"/>
             <output name="OUTPUT" num_pins="1"/>
-            <mode ...>
-            ...
+            <mode />
+            /
         </pb_type>
         <pb_type name="RIGHT_IOPAD_SITE">
             <input name="INPUT" num_pins="1"/>
             <output name="OUTPUT" num_pins="1"/>
-            <mode ...>
-            ...
+            <mode />
+            /
         </pb_type>
     </complexblocklist>
 
@@ -197,7 +197,7 @@ To avoid duplicating the complex logic blocks in ``LEFT`` and ``RIGHT IOPADS``, 
                 <site pb_type="IOPAD_SITE" pin_mapping="direct"/>
             </equivalent_sites>
 
-            <fc ...>
+            <fc />
             <pinlocations pattern="custom">
                 <loc side="left">LEFT_IOPAD_TILE.INPUT</loc>
                 <loc side="right">LEFT_IOPAD_TILE.OUTPUT</loc>
@@ -211,7 +211,7 @@ To avoid duplicating the complex logic blocks in ``LEFT`` and ``RIGHT IOPADS``, 
                 <site pb_type="IOPAD_SITE" pin_mapping="direct"/>
             </equivalent_sites>
 
-            <fc ...>
+            <fc />
             <pinlocations pattern="custom">
                 <loc side="right">RIGHT_IOPAD_TILE.INPUT</loc>
                 <loc side="left">RIGHT_IOPAD_TILE.OUTPUT</loc>
@@ -223,8 +223,9 @@ To avoid duplicating the complex logic blocks in ``LEFT`` and ``RIGHT IOPADS``, 
         <pb_type name="IOPAD_SITE">
             <input name="INPUT" num_pins="1"/>
             <output name="OUTPUT" num_pins="1"/>
-            <mode ...>
-            ...
+            <mode>
+                ...
+            </mode>
         </pb_type>
     </complexblocklist>
 
