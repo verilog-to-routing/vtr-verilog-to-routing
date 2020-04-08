@@ -2455,14 +2455,19 @@ static int check_block_placement_consistency() {
                 if (EMPTY_BLOCK_ID == bnum || INVALID_BLOCK_ID == bnum)
                     continue;
 
-                if (physical_tile_type(bnum) != device_ctx.grid[i][j].type) {
+                auto logical_block = cluster_ctx.clb_nlist.block_type(bnum);
+                auto physical_tile = device_ctx.grid[i][j].type;
+
+                if (physical_tile_type(bnum) != physical_tile) {
                     VTR_LOG_ERROR("Block %zu type (%s) does not match grid location (%zu,%zu) type (%s).\n",
-                                  size_t(bnum), cluster_ctx.clb_nlist.block_type(bnum)->name, i, j, device_ctx.grid[i][j].type->name);
+                                  size_t(bnum), logical_block->name, i, j, physical_tile->name);
                     error++;
                 }
-                if ((place_ctx.block_locs[bnum].loc.x != int(i)) || (place_ctx.block_locs[bnum].loc.y != int(j))) {
+
+                auto& loc = place_ctx.block_locs[bnum].loc;
+                if (loc.x != int(i) || loc.y != int(j) || !is_sub_tile_compatible(physical_tile, logical_block, loc.sub_tile)) {
                     VTR_LOG_ERROR("Block %zu's location is (%d,%d,%d) but found in grid at (%zu,%zu,%d).\n",
-                                  size_t(bnum), place_ctx.block_locs[bnum].loc.x, place_ctx.block_locs[bnum].loc.y, place_ctx.block_locs[bnum].loc.sub_tile,
+                                  size_t(bnum), loc.x, loc.y, loc.sub_tile,
                                   i, j, k);
                     error++;
                 }
