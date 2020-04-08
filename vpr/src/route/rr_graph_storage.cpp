@@ -200,6 +200,14 @@ class edge_sort_iterator {
         return lhs.swapper_.idx_ < rhs.swapper_.idx_;
     }
 
+    friend bool operator>(const edge_sort_iterator& lhs, const edge_sort_iterator& rhs) {
+        return lhs.swapper_.idx_ > rhs.swapper_.idx_;
+    }
+
+    friend bool operator>=(const edge_sort_iterator& lhs, const edge_sort_iterator& rhs) {
+        return lhs.swapper_.idx_ >= rhs.swapper_.idx_;
+    }
+
     RREdgeId edge() const {
         return RREdgeId(swapper_.idx_);
     }
