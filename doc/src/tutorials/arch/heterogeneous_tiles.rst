@@ -7,27 +7,27 @@ This tutorial aims at providing information to the user on how to model sub tile
 
 An *heterogeneous tile* is a tile that includes two or more site types that may differ in the following aspects:
 
+- *Block types* (pb_type)
 - *Fc* definition
 - *Pin locations* definition
 - *IO ports* definition
 
-As a result, an *heterogeneous tile* has the possibility of having multiple block types at the same *x* and *y* location in the grid.
-This comes with the introduction of a third spatial coordinate that identifies the placement of the block type within the x and y grid coordinate.
+As a result, an *heterogeneous tile* has the possibility of having multiple block types at the same (*x*, *y*) location in the grid.
+This comes with the introduction of a third spatial coordinate (sub-block) that identifies the placement of the block type within the x and y grid coordinate.
 
 Moreover, the placer can choose and assign different locations for each block type within the same coordinates as well.
 
 .. figure:: sub_tiles_grid.png
 
-    Device grid, with x, y and sub block coordinates. Each block can be moved by the placer in all the three spatial dimensions.
+    Device grid, with (x, y, sub-block) coordinates. Each block can be moved by the placer in all the three spatial dimensions.
 
 To correctly model an architecture, each :ref:`arch_tiles` requires at least one sub tile definition. This represents a default
-homogeneous architecture, composed of one or many capacity instances of the sub tile within the physical tile.
+homogeneous architecture, composed of one or many instances of the sub tile within the physical tile (the number of such sub-tiles is referred to as the *capacity*).
 
 To enhance the expressivity of VPR architecture, additional sub tiles can be inserted alongside with the default sub tile.
 This enables the definition of the *heterogeneous tiles*.
 
-With this new capability, the device grid of a given architecture does include a new ``depth`` coordinate that identifies
-the type of sub tile used and its actual location, in case the capacity is greater than 1.
+With this new capability, the device grid of a given architecture does include a new sub-block coordinate that identifies the type of sub tile used and its actual location, in case the capacity is greater than 1.
 
 Heterogeneous tiles examples
 ----------------------------
@@ -84,8 +84,8 @@ Heterogeneous tiles come in hand to model this kind of tiles and an example is t
                 <output name="O" num_pins="1"/>
                 <fc in_type="abs" in_val="2" out_type="abs" out_val="2"/>
                 <pinlocations pattern="custom">
-                    <loc side="top">BUFG_SUB_TILE_1.S1 BUFG_SUB_TILE_1.CLK_BUFG_I0 BUFG_SUB_TILE_1.CE1 BUFG_SUB_TILE_1.CLK_BUFG_I1 BUFG_SUB_TILE_1.IGNORE1 BUFG_SUB_TILE_1.IGNORE0 BUFG_SUB_TILE_1.CE0 BUFG_SUB_TILE_1.S0</loc>
-                    <loc side="right">BUFG_SUB_TILE_1.CLK_BUFG_I0 BUFG_SUB_TILE_1.CLK_BUFG_I1 BUFG_SUB_TILE_1.CLK_BUFG_O</loc>
+                    <loc side="top">BUFG_SUB_TILE_1.S1 BUFG_SUB_TILE_1.I0 BUFG_SUB_TILE_1.CE1 BUFG_SUB_TILE_1.I1 BUFG_SUB_TILE_1.IGNORE1 BUFG_SUB_TILE_1.IGNORE0 BUFG_SUB_TILE_1.CE0 BUFG_SUB_TILE_1.S0</loc>
+                    <loc side="right">BUFG_SUB_TILE_1.I0 BUFG_SUB_TILE_1.I1 BUFG_SUB_TILE_1.O</loc>
                 </pinlocations>
                 <equivalent_sites>
                   <site pb_type="BUFGCTRL" pin_mapping="direct"/>
@@ -103,8 +103,8 @@ Heterogeneous tiles come in hand to model this kind of tiles and an example is t
                 <output name="O" num_pins="1"/>
                 <fc in_type="abs" in_val="2" out_type="abs" out_val="2"/>
                 <pinlocations pattern="custom">
-                    <loc side="right">BUFGCTRL_1.S1 BUFGCTRL_1.CLK_BUFG_I0 BUFGCTRL_1.CE1 BUFGCTRL_1.CLK_BUFG_I1 BUFGCTRL_1.IGNORE1 BUFGCTRL_1.IGNORE0 BUFGCTRL_1.CE0 BUFGCTRL_1.S0</loc>
-                    <loc side="left">BUFGCTRL_1.CLK_BUFG_I0 BUFGCTRL_1.CLK_BUFG_I1 BUFGCTRL_1.CLK_BUFG_O</loc>
+                    <loc side="right">BUFG_SUB_TILE_2.S1 BUFG_SUB_TILE_2.I0 BUFG_SUB_TILE_2.CE1 BUFG_SUB_TILE_2.I1 BUFG_SUB_TILE_2.IGNORE1 BUFG_SUB_TILE_2.IGNORE0 BUFG_SUB_TILE_2.CE0 BUFG_SUB_TILE_2.S0</loc>
+                    <loc side="left">BUFG_SUB_TILE_2.I0 BUFG_SUB_TILE_2.I1 BUFG_SUB_TILE_2.O</loc>
                 </pinlocations>
                 <equivalent_sites>
                   <site pb_type="BUFGCTRL" pin_mapping="direct"/>
@@ -132,7 +132,7 @@ The above ``BUFG_TILE`` contains three types of sub-tiles (``BUFG_SUB_TILE_0``, 
 While each sub-tile type contains the same pb_type (equivalent_sites of ``BUFGCTRL``), they differ in two ways:
 
 1. Each sub-tile has different pin locations. For example ``BUFG_SUB_TILE_0`` has the ``I1`` pins on the top side of the tile, while ``BUFG_SUB_TILE_1`` and ``BUFG_SUB_TILE_2`` have them on the right and left sides respectively.
-2. Each sub-tile has a different 'capacity' (i.e. a different number of sites). ``BUFG_SUB_TILE_1`` and ``BUFG_SUB_TILE_2`` have capacity 1, while ``BUFG_SUB_TILE_1`` has capacity 14. As a result the ``BUFG_TILE`` can implement a total of 16 ``BUFG_SUB_TILE`` blocks.
+2. Each sub-tile has a different 'capacity' (i.e. a different number of sites). ``BUFG_SUB_TILE_1`` and ``BUFG_SUB_TILE_2`` have capacity 1, while ``BUFG_SUB_TILE_1`` has capacity 14. As a result the ``BUFG_TILE`` can implement a total of 16 ``BUFGCTRL`` blocks.
 
 Sub-tiles containing different block types
 ##########################################
