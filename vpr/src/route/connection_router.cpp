@@ -91,10 +91,12 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_common_setup(
         //make it back into the heap.
         reset_path_costs();
         modified_rr_node_inf_.clear();
+        heap_.empty_heap();
 
         //Re-initialize the heap since it was emptied by the previous call to
         //timing_driven_route_connection_from_heap()
         add_route_tree_to_heap(rt_root, sink_node, cost_params);
+        heap_.build_heap(); // via sifting down everything
 
         //Try finding the path again with the relaxed bounding box
         cheapest = timing_driven_route_connection_from_heap(sink_node,
