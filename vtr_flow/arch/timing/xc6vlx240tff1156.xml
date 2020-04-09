@@ -77,192 +77,202 @@
     </model>
   </models>
   <tiles>
-    <tile name="IOB" capacity="2">
-      <equivalent_sites>
-        <site pb_type="IOB"/>
-      </equivalent_sites>
-      <input name="O" num_pins="1"/>
-      <output name="I" num_pins="1"/>
-      <output name="GND_WIRE" num_pins="1"/>
-      <output name="VCC_WIRE" num_pins="1"/>
-      <fc in_type="abs" in_val="1" out_type="abs" out_val="1"/>
-      <pinlocations pattern="spread"/>
+    <tile name="IOB">
+      <sub_tile name="IOB" capacity="2">
+        <equivalent_sites>
+          <site pb_type="IOB" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="O" num_pins="1"/>
+        <output name="I" num_pins="1"/>
+        <output name="GND_WIRE" num_pins="1"/>
+        <output name="VCC_WIRE" num_pins="1"/>
+        <fc in_type="abs" in_val="1" out_type="abs" out_val="1"/>
+        <pinlocations pattern="spread"/>
+      </sub_tile>
     </tile>
-    <tile name="SLICEL" capacity="2">
-      <equivalent_sites>
-        <site pb_type="SLICEL"/>
-      </equivalent_sites>
-      <input name="A6-1" num_pins="6" equivalent="full"/>
-      <input name="A6_VCCONLY" num_pins="1" equivalent="none"/>
-      <input name="AX" num_pins="1" equivalent="none"/>
-      <input name="B6-1" num_pins="6" equivalent="full"/>
-      <input name="B6_VCCONLY" num_pins="1" equivalent="none"/>
-      <input name="BX" num_pins="1" equivalent="none"/>
-      <input name="C6-1" num_pins="6" equivalent="full"/>
-      <input name="C6_VCCONLY" num_pins="1" equivalent="none"/>
-      <input name="CX" num_pins="1" equivalent="none"/>
-      <input name="D6-1" num_pins="6" equivalent="full"/>
-      <input name="D6_VCCONLY" num_pins="1" equivalent="none"/>
-      <input name="DX" num_pins="1" equivalent="none"/>
-      <input name="CIN" num_pins="1" equivalent="none"/>
-      <output name="A" num_pins="1" equivalent="none"/>
-      <output name="AQ" num_pins="1" equivalent="none"/>
-      <output name="AMUX" num_pins="1" equivalent="none"/>
-      <output name="B" num_pins="1" equivalent="none"/>
-      <output name="BQ" num_pins="1" equivalent="none"/>
-      <output name="BMUX" num_pins="1" equivalent="none"/>
-      <output name="C" num_pins="1" equivalent="none"/>
-      <output name="CQ" num_pins="1" equivalent="none"/>
-      <output name="CMUX" num_pins="1" equivalent="none"/>
-      <output name="D" num_pins="1" equivalent="none"/>
-      <output name="DQ" num_pins="1" equivalent="none"/>
-      <output name="DMUX" num_pins="1" equivalent="none"/>
-      <output name="COUT" num_pins="1" equivalent="none"/>
-      <output name="GND_WIRE" num_pins="1"/>
-      <output name="VCC_WIRE" num_pins="1"/>
-      <clock name="CLK" num_pins="1"/>
-      <fc in_type="abs" in_val="1" out_type="abs" out_val="1">
-        <!-- Carry chain pins have no access to general routing -->
-        <fc_override port_name="CIN" fc_type="frac" fc_val="0"/>
-        <fc_override port_name="COUT" fc_type="frac" fc_val="0"/>
-      </fc>
-      <pinlocations pattern="spread"/>
+    <tile name="SLICEL">
+      <sub_tile name="SLICEL" capacity="2">
+        <equivalent_sites>
+          <site pb_type="SLICEL" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="A6-1" num_pins="6" equivalent="full"/>
+        <input name="A6_VCCONLY" num_pins="1" equivalent="none"/>
+        <input name="AX" num_pins="1" equivalent="none"/>
+        <input name="B6-1" num_pins="6" equivalent="full"/>
+        <input name="B6_VCCONLY" num_pins="1" equivalent="none"/>
+        <input name="BX" num_pins="1" equivalent="none"/>
+        <input name="C6-1" num_pins="6" equivalent="full"/>
+        <input name="C6_VCCONLY" num_pins="1" equivalent="none"/>
+        <input name="CX" num_pins="1" equivalent="none"/>
+        <input name="D6-1" num_pins="6" equivalent="full"/>
+        <input name="D6_VCCONLY" num_pins="1" equivalent="none"/>
+        <input name="DX" num_pins="1" equivalent="none"/>
+        <input name="CIN" num_pins="1" equivalent="none"/>
+        <output name="A" num_pins="1" equivalent="none"/>
+        <output name="AQ" num_pins="1" equivalent="none"/>
+        <output name="AMUX" num_pins="1" equivalent="none"/>
+        <output name="B" num_pins="1" equivalent="none"/>
+        <output name="BQ" num_pins="1" equivalent="none"/>
+        <output name="BMUX" num_pins="1" equivalent="none"/>
+        <output name="C" num_pins="1" equivalent="none"/>
+        <output name="CQ" num_pins="1" equivalent="none"/>
+        <output name="CMUX" num_pins="1" equivalent="none"/>
+        <output name="D" num_pins="1" equivalent="none"/>
+        <output name="DQ" num_pins="1" equivalent="none"/>
+        <output name="DMUX" num_pins="1" equivalent="none"/>
+        <output name="COUT" num_pins="1" equivalent="none"/>
+        <output name="GND_WIRE" num_pins="1"/>
+        <output name="VCC_WIRE" num_pins="1"/>
+        <clock name="CLK" num_pins="1"/>
+        <fc in_type="abs" in_val="1" out_type="abs" out_val="1">
+          <!-- Carry chain pins have no access to general routing -->
+          <fc_override port_name="CIN" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="COUT" fc_type="frac" fc_val="0"/>
+        </fc>
+        <pinlocations pattern="spread"/>
+      </sub_tile>
     </tile>
-    <tile name="DSP48E1" height="5" capacity="2">
-      <equivalent_sites>
-        <site pb_type="DSP48E1"/>
-      </equivalent_sites>
-      <input name="A" num_pins="30"/>
-      <input name="B" num_pins="18"/>
-      <input name="CEA1" num_pins="1"/>
-      <input name="CEA2" num_pins="1"/>
-      <input name="CEB1" num_pins="1"/>
-      <input name="CEB2" num_pins="1"/>
-      <input name="CEM" num_pins="1"/>
-      <input name="CEP" num_pins="1"/>
-      <input name="INMODE" num_pins="5"/>
-      <input name="OPMODE" num_pins="7"/>
-      <output name="P" num_pins="48"/>
-      <output name="GND_WIRE" num_pins="1"/>
-      <output name="VCC_WIRE" num_pins="1"/>
-      <clock name="CLK" num_pins="1"/>
-      <fc in_type="abs" in_val="1" out_type="abs" out_val="1"/>
-      <pinlocations pattern="spread"/>
+    <tile name="DSP48E1" height="5">
+      <sub_tile name="DSP48E1" capacity="2">
+        <equivalent_sites>
+          <site pb_type="DSP48E1" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="A" num_pins="30"/>
+        <input name="B" num_pins="18"/>
+        <input name="CEA1" num_pins="1"/>
+        <input name="CEA2" num_pins="1"/>
+        <input name="CEB1" num_pins="1"/>
+        <input name="CEB2" num_pins="1"/>
+        <input name="CEM" num_pins="1"/>
+        <input name="CEP" num_pins="1"/>
+        <input name="INMODE" num_pins="5"/>
+        <input name="OPMODE" num_pins="7"/>
+        <output name="P" num_pins="48"/>
+        <output name="GND_WIRE" num_pins="1"/>
+        <output name="VCC_WIRE" num_pins="1"/>
+        <clock name="CLK" num_pins="1"/>
+        <fc in_type="abs" in_val="1" out_type="abs" out_val="1"/>
+        <pinlocations pattern="spread"/>
+      </sub_tile>
     </tile>
     <tile name="RAMB36E1" height="5">
-      <equivalent_sites>
-        <site pb_type="RAMB36E1"/>
-      </equivalent_sites>
-      <input name="ADDRARDADDRL" num_pins="16"/>
-      <input name="ADDRARDADDRU" num_pins="15"/>
-      <input name="ADDRBWRADDRL" num_pins="16"/>
-      <input name="ADDRBWRADDRU" num_pins="15"/>
-      <input name="DIADI" num_pins="32"/>
-      <input name="DIPADIP" num_pins="4"/>
-      <input name="WEAL" num_pins="4"/>
-      <input name="WEAU" num_pins="4"/>
-      <input name="DIBDI" num_pins="32"/>
-      <input name="DIPBDIP" num_pins="4"/>
-      <input name="WEBWEL" num_pins="8"/>
-      <input name="WEBWEU" num_pins="8"/>
-      <input name="ENARDENL" num_pins="1"/>
-      <input name="ENARDENU" num_pins="1"/>
-      <input name="ENBWRENL" num_pins="1"/>
-      <input name="ENBWRENU" num_pins="1"/>
-      <input name="REGCEAREGCEL" num_pins="1"/>
-      <input name="REGCEAREGCEU" num_pins="1"/>
-      <input name="REGCEBL" num_pins="1"/>
-      <input name="REGCEBU" num_pins="1"/>
-      <input name="RSTRAMARSTRAMLRST" num_pins="1"/>
-      <input name="RSTRAMARSTRAMU" num_pins="1"/>
-      <input name="RSTRAMBL" num_pins="1"/>
-      <input name="RSTRAMBU" num_pins="1"/>
-      <input name="RSTREGARSTREGL" num_pins="1"/>
-      <input name="RSTREGARSTREGU" num_pins="1"/>
-      <input name="RSTREGBL" num_pins="1"/>
-      <input name="RSTREGBU" num_pins="1"/>
-      <input name="s0_ADDRARDADDR" num_pins="14"/>
-      <input name="s0_ADDRBWRADDR" num_pins="14"/>
-      <input name="s0_DIADI" num_pins="16"/>
-      <input name="s0_DIPADIP" num_pins="2"/>
-      <input name="s0_WEA" num_pins="4"/>
-      <input name="s0_DIBDI" num_pins="16"/>
-      <input name="s0_DIPBDIP" num_pins="2"/>
-      <input name="s0_WEBWE" num_pins="8"/>
-      <input name="s0_ENARDEN" num_pins="1"/>
-      <input name="s0_ENBWREN" num_pins="1"/>
-      <input name="s0_ADDRATIEHIGH" num_pins="2"/>
-      <input name="s0_ADDRBTIEHIGH" num_pins="2"/>
-      <input name="s0_REGCEAREGCE" num_pins="1"/>
-      <input name="s0_REGCEB" num_pins="1"/>
-      <input name="s0_RSTRAMARSTRAM" num_pins="1"/>
-      <input name="s0_RSTRAMB" num_pins="1"/>
-      <input name="s0_RSTREGARSTREG" num_pins="1"/>
-      <input name="s0_RSTREGB" num_pins="1"/>
-      <input name="s1_ADDRARDADDR" num_pins="14"/>
-      <input name="s1_ADDRBWRADDR" num_pins="14"/>
-      <input name="s1_DIADI" num_pins="16"/>
-      <input name="s1_DIPADIP" num_pins="2"/>
-      <input name="s1_WEA" num_pins="4"/>
-      <input name="s1_DIBDI" num_pins="16"/>
-      <input name="s1_DIPBDIP" num_pins="2"/>
-      <input name="s1_WEBWE" num_pins="8"/>
-      <input name="s1_ENARDEN" num_pins="1"/>
-      <input name="s1_ENBWREN" num_pins="1"/>
-      <input name="s1_ADDRATIEHIGH" num_pins="2"/>
-      <input name="s1_ADDRBTIEHIGH" num_pins="2"/>
-      <input name="s1_REGCEAREGCE" num_pins="1"/>
-      <input name="s1_REGCEB" num_pins="1"/>
-      <input name="s1_RSTRAMARSTRAM" num_pins="1"/>
-      <input name="s1_RSTRAMB" num_pins="1"/>
-      <input name="s1_RSTREGARSTREG" num_pins="1"/>
-      <input name="s1_RSTREGB" num_pins="1"/>
-      <output name="DOADO" num_pins="32"/>
-      <output name="DOPADOP" num_pins="4"/>
-      <output name="DOBDO" num_pins="32"/>
-      <output name="DOPBDOP" num_pins="4"/>
-      <output name="s0_DOADO" num_pins="16"/>
-      <output name="s0_DOPADOP" num_pins="2"/>
-      <output name="s0_DOBDO" num_pins="16"/>
-      <output name="s0_DOPBDOP" num_pins="2"/>
-      <output name="s1_DOADO" num_pins="16"/>
-      <output name="s1_DOPADOP" num_pins="2"/>
-      <output name="s1_DOBDO" num_pins="16"/>
-      <output name="s1_DOPBDOP" num_pins="2"/>
-      <output name="GND_WIRE" num_pins="1"/>
-      <output name="VCC_WIRE" num_pins="1"/>
-      <clock name="CLKARDCLKL" num_pins="1"/>
-      <clock name="CLKARDCLKU" num_pins="1"/>
-      <clock name="CLKBWRCLKL" num_pins="1"/>
-      <clock name="CLKBWRCLKU" num_pins="1"/>
-      <clock name="s0_CLKARDCLK" num_pins="1"/>
-      <clock name="s0_CLKBWRCLK" num_pins="1"/>
-      <clock name="s1_CLKARDCLK" num_pins="1"/>
-      <clock name="s1_CLKBWRCLK" num_pins="1"/>
-      <clock name="REGCLKARDRCLKL" num_pins="1"/>
-      <clock name="REGCLKARDRCLKU" num_pins="1"/>
-      <clock name="REGCLKBL" num_pins="1"/>
-      <clock name="REGCLKBU" num_pins="1"/>
-      <clock name="s0_REGCLKARDRCLK" num_pins="1"/>
-      <clock name="s0_REGCLKB" num_pins="1"/>
-      <clock name="s1_REGCLKARDRCLK" num_pins="1"/>
-      <clock name="s1_REGCLKB" num_pins="1"/>
-      <fc in_type="abs" in_val="1" out_type="abs" out_val="1"/>
-      <pinlocations pattern="spread"/>
+      <sub_tile name="RAMB36E1">
+        <equivalent_sites>
+          <site pb_type="RAMB36E1" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="ADDRARDADDRL" num_pins="16"/>
+        <input name="ADDRARDADDRU" num_pins="15"/>
+        <input name="ADDRBWRADDRL" num_pins="16"/>
+        <input name="ADDRBWRADDRU" num_pins="15"/>
+        <input name="DIADI" num_pins="32"/>
+        <input name="DIPADIP" num_pins="4"/>
+        <input name="WEAL" num_pins="4"/>
+        <input name="WEAU" num_pins="4"/>
+        <input name="DIBDI" num_pins="32"/>
+        <input name="DIPBDIP" num_pins="4"/>
+        <input name="WEBWEL" num_pins="8"/>
+        <input name="WEBWEU" num_pins="8"/>
+        <input name="ENARDENL" num_pins="1"/>
+        <input name="ENARDENU" num_pins="1"/>
+        <input name="ENBWRENL" num_pins="1"/>
+        <input name="ENBWRENU" num_pins="1"/>
+        <input name="REGCEAREGCEL" num_pins="1"/>
+        <input name="REGCEAREGCEU" num_pins="1"/>
+        <input name="REGCEBL" num_pins="1"/>
+        <input name="REGCEBU" num_pins="1"/>
+        <input name="RSTRAMARSTRAMLRST" num_pins="1"/>
+        <input name="RSTRAMARSTRAMU" num_pins="1"/>
+        <input name="RSTRAMBL" num_pins="1"/>
+        <input name="RSTRAMBU" num_pins="1"/>
+        <input name="RSTREGARSTREGL" num_pins="1"/>
+        <input name="RSTREGARSTREGU" num_pins="1"/>
+        <input name="RSTREGBL" num_pins="1"/>
+        <input name="RSTREGBU" num_pins="1"/>
+        <input name="s0_ADDRARDADDR" num_pins="14"/>
+        <input name="s0_ADDRBWRADDR" num_pins="14"/>
+        <input name="s0_DIADI" num_pins="16"/>
+        <input name="s0_DIPADIP" num_pins="2"/>
+        <input name="s0_WEA" num_pins="4"/>
+        <input name="s0_DIBDI" num_pins="16"/>
+        <input name="s0_DIPBDIP" num_pins="2"/>
+        <input name="s0_WEBWE" num_pins="8"/>
+        <input name="s0_ENARDEN" num_pins="1"/>
+        <input name="s0_ENBWREN" num_pins="1"/>
+        <input name="s0_ADDRATIEHIGH" num_pins="2"/>
+        <input name="s0_ADDRBTIEHIGH" num_pins="2"/>
+        <input name="s0_REGCEAREGCE" num_pins="1"/>
+        <input name="s0_REGCEB" num_pins="1"/>
+        <input name="s0_RSTRAMARSTRAM" num_pins="1"/>
+        <input name="s0_RSTRAMB" num_pins="1"/>
+        <input name="s0_RSTREGARSTREG" num_pins="1"/>
+        <input name="s0_RSTREGB" num_pins="1"/>
+        <input name="s1_ADDRARDADDR" num_pins="14"/>
+        <input name="s1_ADDRBWRADDR" num_pins="14"/>
+        <input name="s1_DIADI" num_pins="16"/>
+        <input name="s1_DIPADIP" num_pins="2"/>
+        <input name="s1_WEA" num_pins="4"/>
+        <input name="s1_DIBDI" num_pins="16"/>
+        <input name="s1_DIPBDIP" num_pins="2"/>
+        <input name="s1_WEBWE" num_pins="8"/>
+        <input name="s1_ENARDEN" num_pins="1"/>
+        <input name="s1_ENBWREN" num_pins="1"/>
+        <input name="s1_ADDRATIEHIGH" num_pins="2"/>
+        <input name="s1_ADDRBTIEHIGH" num_pins="2"/>
+        <input name="s1_REGCEAREGCE" num_pins="1"/>
+        <input name="s1_REGCEB" num_pins="1"/>
+        <input name="s1_RSTRAMARSTRAM" num_pins="1"/>
+        <input name="s1_RSTRAMB" num_pins="1"/>
+        <input name="s1_RSTREGARSTREG" num_pins="1"/>
+        <input name="s1_RSTREGB" num_pins="1"/>
+        <output name="DOADO" num_pins="32"/>
+        <output name="DOPADOP" num_pins="4"/>
+        <output name="DOBDO" num_pins="32"/>
+        <output name="DOPBDOP" num_pins="4"/>
+        <output name="s0_DOADO" num_pins="16"/>
+        <output name="s0_DOPADOP" num_pins="2"/>
+        <output name="s0_DOBDO" num_pins="16"/>
+        <output name="s0_DOPBDOP" num_pins="2"/>
+        <output name="s1_DOADO" num_pins="16"/>
+        <output name="s1_DOPADOP" num_pins="2"/>
+        <output name="s1_DOBDO" num_pins="16"/>
+        <output name="s1_DOPBDOP" num_pins="2"/>
+        <output name="GND_WIRE" num_pins="1"/>
+        <output name="VCC_WIRE" num_pins="1"/>
+        <clock name="CLKARDCLKL" num_pins="1"/>
+        <clock name="CLKARDCLKU" num_pins="1"/>
+        <clock name="CLKBWRCLKL" num_pins="1"/>
+        <clock name="CLKBWRCLKU" num_pins="1"/>
+        <clock name="s0_CLKARDCLK" num_pins="1"/>
+        <clock name="s0_CLKBWRCLK" num_pins="1"/>
+        <clock name="s1_CLKARDCLK" num_pins="1"/>
+        <clock name="s1_CLKBWRCLK" num_pins="1"/>
+        <clock name="REGCLKARDRCLKL" num_pins="1"/>
+        <clock name="REGCLKARDRCLKU" num_pins="1"/>
+        <clock name="REGCLKBL" num_pins="1"/>
+        <clock name="REGCLKBU" num_pins="1"/>
+        <clock name="s0_REGCLKARDRCLK" num_pins="1"/>
+        <clock name="s0_REGCLKB" num_pins="1"/>
+        <clock name="s1_REGCLKARDRCLK" num_pins="1"/>
+        <clock name="s1_REGCLKB" num_pins="1"/>
+        <fc in_type="abs" in_val="1" out_type="abs" out_val="1"/>
+        <pinlocations pattern="spread"/>
+      </sub_tile>
     </tile>
-    <tile name="BUFG" height="2" capacity="16">
-      <equivalent_sites>
-        <site pb_type="BUFG"/>
-      </equivalent_sites>
-      <input name="I" num_pins="2"/>
-      <input name="S" num_pins="2"/>
-      <input name="CE" num_pins="2"/>
-      <input name="IGNORE" num_pins="2"/>
-      <output name="O" num_pins="1"/>
-      <output name="GND_WIRE" num_pins="1"/>
-      <output name="VCC_WIRE" num_pins="1"/>
-      <fc in_type="abs" in_val="1" out_type="abs" out_val="1"/>
-      <pinlocations pattern="spread"/>
+    <tile name="BUFG" height="2">
+      <sub_tile name="BUFG" capacity="16">
+        <equivalent_sites>
+          <site pb_type="BUFG" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="I" num_pins="2"/>
+        <input name="S" num_pins="2"/>
+        <input name="CE" num_pins="2"/>
+        <input name="IGNORE" num_pins="2"/>
+        <output name="O" num_pins="1"/>
+        <output name="GND_WIRE" num_pins="1"/>
+        <output name="VCC_WIRE" num_pins="1"/>
+        <fc in_type="abs" in_val="1" out_type="abs" out_val="1"/>
+        <pinlocations pattern="spread"/>
+      </sub_tile>
     </tile>
   </tiles>
   <!-- ODIN II specific config ends -->
