@@ -37,7 +37,7 @@ struct t_compressed_block_grid {
     //corresponding to the possible placement location for a given logical block
     //  - key: physical tile index
     //  - value: vector of compatible sub tiles for the physical tile/logical block pair
-    std::unordered_map<int, std::vector<int>> compatible_sub_tiles_for_tile_map;
+    std::unordered_map<int, std::vector<int>> compatible_sub_tiles_for_tile;
 };
 
 //Compressed grid space for each block type
