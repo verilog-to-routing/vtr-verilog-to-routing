@@ -250,7 +250,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
 
     /* read the FPGA architecture file */
     if (global_args.arch_file.provenance() == argparse::Provenance::SPECIFIED) {
-        printf("Architecture: %s\n", basename(global_args.arch_file.value().c_str()));
+        printf("Architecture: %s\n", vtr::basename(global_args.arch_file.value()).c_str());
         fflush(stdout);
 
         printf("Reading FPGA Architecture file\n");
@@ -267,7 +267,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
     /* do High level Synthesis */
     if (!configuration.list_of_file_names.empty() && configuration.is_verilog_input) {
         for (std::string v_file : global_args.verilog_files.value()) {
-            printf("Verilog: %s\n", basename(v_file.c_str()));
+            printf("Verilog: %s\n", vtr::basename(v_file).c_str());
         }
         fflush(stdout);
 
@@ -294,7 +294,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
             configuration.list_of_file_names = {global_args.output_file};
             current_parse_file = 0;
         } else {
-            printf("Blif: %s\n", basename(global_args.blif_file.value().c_str()));
+            printf("Blif: %s\n", vtr::basename(global_args.blif_file.value()).c_str());
             fflush(stdout);
         }
 
