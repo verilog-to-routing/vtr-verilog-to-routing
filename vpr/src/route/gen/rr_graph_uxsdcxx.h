@@ -20,7 +20,6 @@
 #include <string>
 #include <vector>
 
-#include <error.h>
 #include <stddef.h>
 #include <stdint.h>
 #include "pugixml.hpp"

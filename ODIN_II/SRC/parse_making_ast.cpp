@@ -38,6 +38,7 @@
 #include "hard_blocks.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
+#include "vtr_path.h"
 
 #include "scope_util.h"
 
