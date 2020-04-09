@@ -294,7 +294,6 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
 
         //Print multi-clock geomeans
         if (intra_domain_cpds.size() > 0) {
-
             double geomean_intra_domain_cpd = vtr::geomean(intra_domain_cpds.begin(), intra_domain_cpds.end());
             VTR_LOG("Geometric mean non-virtual intra-domain period: %g ns (%g MHz)\n",
                     sec_to_nanosec(geomean_intra_domain_cpd),
