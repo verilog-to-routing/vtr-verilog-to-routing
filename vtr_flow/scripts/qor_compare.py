@@ -35,7 +35,7 @@ DEFAULT_METRICS = [
     'routed_wirelength', #VTR (minW), Titan
     'crit_path_routed_wirelength', #VTR
     'critical_path_delay', #VTR/Titan
-    'geomean_nonvirtual_critical_path_delay', #VTR/Titan
+    'geomean_nonvirtual_intradomain_critical_path_delay', #VTR/Titan
 
     #Run-time Metrics
     'odin_synth_time',
