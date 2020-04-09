@@ -67,88 +67,96 @@
     </model>
   </models>
   <tiles>
-    <tile name="io" capacity="8">
-      <equivalent_sites>
-        <site pb_type="io"/>
-      </equivalent_sites>
-      <input name="outpad" num_pins="1"/>
-      <output name="inpad" num_pins="1"/>
-      <clock name="clock" num_pins="1"/>
-      <fc in_type="frac" in_val="0.200000" out_type="frac" out_val="0.200000">
-        <fc_override port_name="outpad" segment_name="l4g" fc_type="frac" fc_val="0"/>
-        <fc_override port_name="inpad" segment_name="l4g" fc_type="frac" fc_val="0.200000"/>
-        <fc_override port_name="clock" segment_name="l4g" fc_type="frac" fc_val="0"/>
-      </fc>
-      <pinlocations pattern="custom">
-        <loc side="left">io.outpad io.inpad io.clock</loc>
-        <loc side="top">io.outpad io.inpad io.clock</loc>
-        <loc side="right">io.outpad io.inpad io.clock</loc>
-        <loc side="bottom">io.outpad io.inpad io.clock</loc>
-      </pinlocations>
+    <tile name="io">
+      <sub_tile name="io" capacity="8">
+        <equivalent_sites>
+          <site pb_type="io" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="outpad" num_pins="1"/>
+        <output name="inpad" num_pins="1"/>
+        <clock name="clock" num_pins="1"/>
+        <fc in_type="frac" in_val="0.200000" out_type="frac" out_val="0.200000">
+          <fc_override port_name="outpad" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="inpad" segment_name="l4g" fc_type="frac" fc_val="0.200000"/>
+          <fc_override port_name="clock" segment_name="l4g" fc_type="frac" fc_val="0"/>
+        </fc>
+        <pinlocations pattern="custom">
+          <loc side="left">io.outpad io.inpad io.clock</loc>
+          <loc side="top">io.outpad io.inpad io.clock</loc>
+          <loc side="right">io.outpad io.inpad io.clock</loc>
+          <loc side="bottom">io.outpad io.inpad io.clock</loc>
+        </pinlocations>
+      </sub_tile>
     </tile>
     <tile name="clb" area="3900">
-      <equivalent_sites>
-        <site pb_type="clb"/>
-      </equivalent_sites>
-      <input name="I0" num_pins="4" equivalent="full"/>
-      <input name="I1" num_pins="4" equivalent="full"/>
-      <input name="I2" num_pins="4" equivalent="full"/>
-      <input name="I3" num_pins="4" equivalent="full"/>
-      <input name="I4" num_pins="4" equivalent="full"/>
-      <input name="I5" num_pins="4" equivalent="full"/>
-      <input name="I6" num_pins="4" equivalent="full"/>
-      <input name="I7" num_pins="4" equivalent="full"/>
-      <output name="O" num_pins="8" equivalent="none"/>
-      <clock name="clk" num_pins="1"/>
-      <fc in_type="frac" in_val="0.200000" out_type="frac" out_val="0.200000">
-        <fc_override port_name="I0" segment_name="l4g" fc_type="frac" fc_val="0"/>
-        <fc_override port_name="I1" segment_name="l4g" fc_type="frac" fc_val="0"/>
-        <fc_override port_name="I2" segment_name="l4g" fc_type="frac" fc_val="0"/>
-        <fc_override port_name="I3" segment_name="l4g" fc_type="frac" fc_val="0"/>
-        <fc_override port_name="I4" segment_name="l4g" fc_type="frac" fc_val="0"/>
-        <fc_override port_name="I5" segment_name="l4g" fc_type="frac" fc_val="0"/>
-        <fc_override port_name="I6" segment_name="l4g" fc_type="frac" fc_val="0"/>
-        <fc_override port_name="I7" segment_name="l4g" fc_type="frac" fc_val="0"/>
-        <fc_override port_name="clk" segment_name="l4g" fc_type="frac" fc_val="0"/>
-        <fc_override port_name="O" segment_name="l4g" fc_type="frac" fc_val="0.200000"/>
-      </fc>
-      <pinlocations pattern="spread"/>
+      <sub_tile name="clb">
+        <equivalent_sites>
+          <site pb_type="clb" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="I0" num_pins="4" equivalent="full"/>
+        <input name="I1" num_pins="4" equivalent="full"/>
+        <input name="I2" num_pins="4" equivalent="full"/>
+        <input name="I3" num_pins="4" equivalent="full"/>
+        <input name="I4" num_pins="4" equivalent="full"/>
+        <input name="I5" num_pins="4" equivalent="full"/>
+        <input name="I6" num_pins="4" equivalent="full"/>
+        <input name="I7" num_pins="4" equivalent="full"/>
+        <output name="O" num_pins="8" equivalent="none"/>
+        <clock name="clk" num_pins="1"/>
+        <fc in_type="frac" in_val="0.200000" out_type="frac" out_val="0.200000">
+          <fc_override port_name="I0" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="I1" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="I2" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="I3" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="I4" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="I5" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="I6" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="I7" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="clk" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="O" segment_name="l4g" fc_type="frac" fc_val="0.200000"/>
+        </fc>
+        <pinlocations pattern="spread"/>
+      </sub_tile>
     </tile>
     <tile name="mult_36" height="4" area="118800">
-      <equivalent_sites>
-        <site pb_type="mult_36"/>
-      </equivalent_sites>
-      <input name="a" num_pins="36"/>
-      <input name="b" num_pins="36"/>
-      <output name="out" num_pins="72"/>
-      <fc in_type="frac" in_val="0.200000" out_type="frac" out_val="0.200000">
-        <fc_override port_name="a" segment_name="l4g" fc_type="frac" fc_val="0"/>
-        <fc_override port_name="b" segment_name="l4g" fc_type="frac" fc_val="0"/>
-        <fc_override port_name="out" segment_name="l4g" fc_type="frac" fc_val="0.200000"/>
-      </fc>
-      <pinlocations pattern="spread"/>
+      <sub_tile name="mult_36">
+        <equivalent_sites>
+          <site pb_type="mult_36" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="a" num_pins="36"/>
+        <input name="b" num_pins="36"/>
+        <output name="out" num_pins="72"/>
+        <fc in_type="frac" in_val="0.200000" out_type="frac" out_val="0.200000">
+          <fc_override port_name="a" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="b" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="out" segment_name="l4g" fc_type="frac" fc_val="0.200000"/>
+        </fc>
+        <pinlocations pattern="spread"/>
+      </sub_tile>
     </tile>
     <tile name="memory" height="4" area="82748">
-      <equivalent_sites>
-        <site pb_type="memory"/>
-      </equivalent_sites>
-      <input name="addr1" num_pins="14"/>
-      <input name="addr2" num_pins="14"/>
-      <input name="data" num_pins="36"/>
-      <input name="we1" num_pins="1"/>
-      <input name="we2" num_pins="1"/>
-      <output name="out" num_pins="36"/>
-      <clock name="clk" num_pins="1"/>
-      <fc in_type="frac" in_val="0.200000" out_type="frac" out_val="0.200000">
-        <fc_override port_name="addr1" segment_name="l4g" fc_type="frac" fc_val="0"/>
-        <fc_override port_name="addr2" segment_name="l4g" fc_type="frac" fc_val="0"/>
-        <fc_override port_name="data" segment_name="l4g" fc_type="frac" fc_val="0"/>
-        <fc_override port_name="we1" segment_name="l4g" fc_type="frac" fc_val="0"/>
-        <fc_override port_name="we2" segment_name="l4g" fc_type="frac" fc_val="0"/>
-        <fc_override port_name="clk" segment_name="l4g" fc_type="frac" fc_val="0"/>
-        <fc_override port_name="out" segment_name="l4g" fc_type="frac" fc_val="0.200000"/>
-      </fc>
-      <pinlocations pattern="spread"/>
+      <sub_tile name="memory">
+        <equivalent_sites>
+          <site pb_type="memory" pin_mapping="direct"/>
+        </equivalent_sites>
+        <input name="addr1" num_pins="14"/>
+        <input name="addr2" num_pins="14"/>
+        <input name="data" num_pins="36"/>
+        <input name="we1" num_pins="1"/>
+        <input name="we2" num_pins="1"/>
+        <output name="out" num_pins="36"/>
+        <clock name="clk" num_pins="1"/>
+        <fc in_type="frac" in_val="0.200000" out_type="frac" out_val="0.200000">
+          <fc_override port_name="addr1" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="addr2" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="data" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="we1" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="we2" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="clk" segment_name="l4g" fc_type="frac" fc_val="0"/>
+          <fc_override port_name="out" segment_name="l4g" fc_type="frac" fc_val="0.200000"/>
+        </fc>
+        <pinlocations pattern="spread"/>
+      </sub_tile>
     </tile>
   </tiles>
   <!-- ODIN II specific config ends -->
