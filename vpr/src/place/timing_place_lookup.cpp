@@ -77,6 +77,21 @@ static float route_connection_delay(
     const t_router_opts& router_opts,
     bool measure_directconnect);
 
+// Prototype for computing delta delay matrix.
+typedef std::function<void(
+    RouterDelayProfiler&,
+    vtr::Matrix<std::vector<float>>&,
+    int,
+    int,
+    int,
+    int,
+    int,
+    int,
+    const t_router_opts&,
+    bool,
+    const std::set<std::string>&)>
+    t_compute_delta_delay_matrix;
+
 static void generic_compute_matrix_iterative_astar(
     RouterDelayProfiler& route_profiler,
     vtr::Matrix<std::vector<float>>& matrix,
@@ -669,19 +684,7 @@ static vtr::Matrix<float> compute_delta_delays(
     }
     VTR_ASSERT(src_type != nullptr);
 
-    std::function<void(
-        RouterDelayProfiler&,
-        vtr::Matrix<std::vector<float>>&,
-        int,
-        int,
-        int,
-        int,
-        int,
-        int,
-        const t_router_opts&,
-        bool,
-        const std::set<std::string>&)>
-        generic_compute_matrix;
+    t_compute_delta_delay_matrix generic_compute_matrix;
     switch (placer_opts.place_delta_delay_matrix_calculation_method) {
         case e_place_delta_delay_algorithm::ASTAR_ROUTE:
             generic_compute_matrix = generic_compute_matrix_iterative_astar;
