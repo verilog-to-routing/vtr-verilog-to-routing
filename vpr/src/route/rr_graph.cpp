@@ -1433,6 +1433,8 @@ static void build_rr_sinks_sources(const int i,
             VTR_ASSERT(class_inf[iclass].type == RECEIVER);
             inode = get_rr_node_index(L_rr_node_indices, i, j, SINK, iclass);
 
+            VTR_ASSERT(inode >= 0);
+
             /* NOTE:  To allow route throughs through clbs, change the lines below to  *
              * make an edge from the input SINK to the output SOURCE.  Do for just the *
              * special case of INPUTS = class 0 and OUTPUTS = class 1 and see what it  *
