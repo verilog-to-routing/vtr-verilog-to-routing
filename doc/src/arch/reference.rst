@@ -171,6 +171,8 @@ Empty grid locations can be specified using the special block type ``EMPTY``.
 
 .. note:: All grid locations default to ``EMPTY`` unless otherwise specified.
 
+.. _grid_expressions:
+
 Grid Location Expressions
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 Some grid location tags have attributes (e.g. ``startx``) which take an *expression* as their argument.
@@ -1888,9 +1890,15 @@ The ``<segment>`` tag and its contents are described below.
 Clocks
 ------
 
-There are two options for describing clocks. One method allows you to specify clocking purely for power estimation. The other method allows you to specify a clock architecture that is used as part of the routing resources.
+There are two options for describing clocks.
+One method allows you to specify clocking purely for power estimation, see :ref:`clock_power_format`.
+The other method allows you to specify a clock architecture that is used as part of the routing resources, see :ref:`clock_architecture_format`.
+Both methods should not be used in tandem.
 
-**Specifing Clocking Purely for Power Estimation**
+.. _clock_power_format:
+
+Specifing Clocking Purely for Power Estimation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The clocking configuration is specified with ``<clock>`` tags within the ``<clocks>`` section.
 
@@ -1904,11 +1912,19 @@ The clocking configuration is specified with ``<clock>`` tags within the ``<cloc
     :opt_param C_wire_per_m: The wire capacitance, in Farads per Meter.
     :opt_param buffer_size: The size of each clock buffer.
 
-**Specifing a Clock Architecture**
+.. _clock_architecture_format:
 
-The element ``<clocknetworks>`` contains three sub-elements that collectively describe the clock architecture: the wiring parameters ``<metal_layers>``, the clock distribution ``<clock_network>``, and the clock connectivity ``<clock_routing>``. An example is shown below:
+Specifing a Clock Architecture
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+The element ``<clocknetworks>`` contains three sub-elements that collectively describe the clock architecture: the wiring parameters ``<metal_layers>``, the clock distribution ``<clock_network>``, and the clock connectivity ``<clock_routing>``.
+
+
+    Example:
+
+.. _clock_code_example:
     .. code-block:: xml
+
     <clocknetworks>
         <metal_layers >
             <metal_layer name="global_spine" Rmetal="50.42" Cmetal="20.7e-15"/>
@@ -1917,7 +1933,7 @@ The element ``<clocknetworks>`` contains three sub-elements that collectively de
 
         <!-- Full Device: Center Spine -->
         <clock_network  name="spine1" num_inst="2">
-            <spine metal_layer="global_spine"12 x="W/2" starty="0" endy="H">
+            <spine metal_layer="global_spine" x="W/2" starty="0" endy="H">
                 <switch_point type="drive" name="drive" yoffset="H/2" buffer="drive_buff"/>
                 <switch_point type="tap" name="tap" yoffset="0" yincr="1"/>
             </spine>
@@ -1940,7 +1956,20 @@ The element ``<clocknetworks>`` contains three sub-elements that collectively de
         </clock_routing >
     </clocknetworks >
 
-The ``<metal_layers>`` element describes the per unit length electrical parameters used to implement the clock distribution  wires. There can be one or more wiring implementation options (metal layer, width and spacing) that are used by the later  clock network specification and each is described in a separate ``<metal_layer>`` sub-element. The syntax of the wiring electrical information is:
+.. _rib_visual:
+    .. figure:: horizontal_distribution.*
+
+        ``<rib> "global_rib"`` horizontal clock wire distribution example
+
+.. _spine_visual:
+    .. figure:: vertical_distribution.*
+
+        ``<spine> "global_rib"`` vertical clock wire distribution example
+
+The ``<metal_layers>`` element describes the per unit length electrical parameters, resistance (``Rmetal``) and capacitance (``Cmetel``), used to implement the clock distribution wires.
+Wires are modeled soley based on ``Rmetal`` and ``Cmetal`` parameters which are derived from the physical implementation of the metal layer width and spacing.
+There can be one or more wiring implementation options (metal layer, width and spacing) that are used by the later clock network specification and each is described in a separate ``<metal_layer>`` sub-element.
+The syntax of the wiring electrical information is:
 
 .. arch:tag:: <metal_layer name="string" Rmetal="float" Cmetal="float"/>
 
@@ -1948,36 +1977,50 @@ The ``<metal_layers>`` element describes the per unit length electrical paramete
     :req_param Rmetal: The resistance in Ohms of the wire per unit block in the FPGA architecture; a unit block usually corresponds to a logic cluster.
     :req_pram Cmetal: The capacitance in Farads of the wire per unit block.
 
-The ``<clock_network>`` element contains sub-elements that describe the clock distribution wires for the clock architecture.  There could be more than one ``<clock_network>`` element to describe separate types of distribution wires. The high-level start tag for a clock network is as follows:
+The ``<clock_network>`` element contains sub-elements that describe the clock distribution wires for the clock architecture.
+There could be more than one ``<clock_network>`` element to describe separate types of distribution wires.
+The high-level start tag for a clock network is as follows:
 
 .. arch:tag:: <clock_network name="string" num_inst="integer">
 
     :req_param name: A unique string for reference.
     :req_param num_inst: which describes the number of parallel instances of the clock distribution types described in the ``<clock_network>`` sub-elements.
 
-The supported clock distribution types are ``<spine>`` and ``<rib>``. ``Spine`` is used to describe vertical clock distribution wires. Whereas, ``Rib`` is used to describe a horizontal clock distribution wire.
+    .. note::
+        Many paramters used in the following clock architecture tags take an espression (``expr``) as an argument simular to :ref:`grid_expressions`.
+        However, only a subset of special variables are suported: ``W`` (device width) and ``H`` (device height).
 
-.. arch:tag:: <spine metal_layer="string" x="integer" starty="integer" endy="integer" repeatx="integer" repeaty="integer"/>
+The supported clock distribution types are ``<spine>`` and ``<rib>``.
+``Spine`` is used to describe vertical clock distribution wires.
+Whereas, ``Rib`` is used to describe a horizontal clock distribution wire.
+See :ref:`clock_code_example` and accompanying figures :ref:`spine_visual` and :ref:`rib_visual` for example use of ``<spine>`` and ``<rib>`` parameters.
+
+.. arch:tag:: <spine metal_layer="string" x="expr" starty="expr" endy="expr" repeatx="expr" repeaty="expr"/>
     :req_param metal_layer: A referenced metal layer that sets the unit resistance and capacitance of the distribution wire over the length of the wire.
-    :req_param starty: The start y grid location, of the wire which runs parallel to the y-axis from starty and ends at endy, inclusive. Value can be relative to the device size.
+    :req_param starty:
+    The start y grid location, of the wire which runs parallel to the y-axis from starty and ends at endy, inclusive.
+    Value can be relative to the device size.
     :req_param endy: The end of y grid location of the wire. Value can be relative to the device size.
     :req_param x: The location of the spine with respect to the x-axis. Value can be relative to the device size.
     :opt_param repeatx: The horizontal repeat factor of the spine along the device. Value can be relative to the device size.
     :opt_param repeaty: The vertical repeat factor of the spine along the device. Value can be relative to the device size.
 
-The provided example clock network defines two spines, and neither repeats as each spans the entire height of the device and is locally at the horizontal midpoint of the device.
+The provided example clock network (:ref:`clock_code_example`) defines two spines, and neither repeats as each spans the entire height of the device and is locally at the horizontal midpoint of the device.
 
-.. arch:tag:: <rib metal_layer="string" y="integer" startx="integer" endx="integer" repeatx="integer" repeaty="integer"/>
+.. arch:tag:: <rib metal_layer="string" y="expr" startx="expr" endx="expr" repeatx="expr" repeaty="expr"/>
     :req_param metal_layer: A referenced metal layer that sets the unit resistance and capacitance of the distribution wire over the length of the wire.
-    :req_param startx: The start x grid location, of the wire which runs parallel to the x-axis from startx and ends at endx, inclusive. Value can be relative to the device size.
+    :req_param startx:
+    The start x grid location, of the wire which runs parallel to the x-axis from startx and ends at endx, inclusive.
+    Value can be relative to the device size.
     :req_param endx: The end of x grid location of the wire. Value can be relative to the device size.
     :req_param y: The location of the rib with respect to the y-axis. Value can be relative to the device size.
     :opt_param repeatx: The horizontal repeat factor of the rib along the device. Value can be relative to the device size.
     :opt_param repeaty: The vertical repeat factor of the rib along the device. Value can be relative to the device size.
 
-Along each spine and rib is a group of switch points. Switch points are used to describe drive or tap locations along the clock distribution wire:
+Along each spine and rib is a group of switch points.
+Switch points are used to describe drive or tap locations along the clock distribution wire:
 
-.. arch:tag:: <switch_point type="{drive | tap}" name="string" yoffset="integer" xoffset="integer" xinc="integer" yinc="integer" buffer="string">
+.. arch:tag:: <switch_point type="{drive | tap}" name="string" yoffset="expr" xoffset="expr" xinc="expr" yinc="expr" buffer="string">
     :req_param type:
         * ``drive`` -- Drive points are where the clock distribution wire can be driven by a routing switch or buffer.
         * ``tap`` --  Tap points are where it can drive a routing switch or buffer to send a signal to a different ``clock_network`` or logicblock.
@@ -1985,17 +2028,41 @@ Along each spine and rib is a group of switch points. Switch points are used to 
     :opt_param yoffset: (Only for ``spine`` network) Offset from the ``starty`` of a spine network.
     :opt_param xinc: (Only for rib ``tap`` points) Descibes the repeat factor of a series of evenly spaced tap points.
     :opt_param yinc: (Only for spine ``tap`` points) Descibes the repeat factor of a series of evenly spaced tap points.
-    :req_param buffer: (Required only for ``drive`` points) A reference to a pre-defined routing switch. This switch will be used at the drive point. The clock generator uses two buffers to drive the two portions of this ``clock_network`` wire when it is split at the drive point.
+    :req_param buffer:
+    (Required only for ``drive`` points) A reference to a pre-defined routing switch; specfied by ``<switch>`` tag, see Section :ref:`arch_switches`.
+    This switch will be used at the drive point.
+    The clock generator uses two buffers to drive the two portions of this ``clock_network`` wire when it is split at the drive point, see Figures :ref:`rib_visual` and :ref:`spine_visual`.
 
-Lastly the ``<clock_routing>`` element consists of a group of ``tap`` elements that each separately describe the connectivity from one routing resource (pin or wire) to another. The tap element and its attribute sare as follows:
+Lastly the ``<clock_routing>`` element consists of a group of ``tap`` elements that each separately describe the connectivity from one routing resource (pin or wire) to another.
+The tap element and its attribute sare as follows:
 
-.. arch:tag:: <tap from="string" to="string" locationx="integer" locationy="integer" switch="string" fc_val="float">
-    :req_param from: The routing resource to make a connection from. The referecing schema can be seen in the clock network exambple where the unique clock network name is forllowe by a period and then the switch name. In addition a special literal ``"ROUTING"`` can be used to reference a connection from the general inter-block routing.
-    :req_param to: The routing resource to make a connection to. A special literal ``"CLOCK"`` describes connections from clock network tap points that supply the clock to clock pins on blocks at the tap locations; these clock inputs are already  specified on blocks in the VTR architecture file.
-    :req_param locationx: (Only when using the special literal "ROUTING") The x grid location of inter-block routing.
-    :req_param locationy: (Only when using the special literal "ROUTING") The y grid location of inter-block routing.
+.. arch:tag:: <tap from="string" to="string" locationx="expr" locationy="expr" switch="string" fc_val="float">
+    :req_param from:
+    The routing resource to make a connection from.
+    Can be a unique name or special literal: 
+        * ``clock_name.switch_name``: clock network name followed by the switch name and delineated by a period.
+        Examples can be see in code Example :ref:`clock_code_example`.
+        * `"ROUTING"``: a special literal which references a connection from general inter-block routing.
+    :req_param to:
+    The routing resource to make a connection to.
+    Can be a unique name or special literal:
+        * ``clock_name.switch_name``: clock network name followed by the switch name and delineated by a period.
+        Examples can be see in code Example :ref:`clock_code_example`.
+        * `"CLOCK"``: a special literal which describes connections from clock network tap points that supply the clock to clock pins on blocks at the tap locations; these clock inputs are already specified on blocks in the VTR architecture file.
+    :req_param locationx:
+    (Only when using the special literal ``"ROUTING"``)
+    The x grid location of inter-block routing.
+    :req_param locationy:
+    (Only when using the special literal ``"ROUTING"``)
+    The y grid location of inter-block routing.
     :req_param switch: References the name of the routing switch used for this connection.
-    :req_param fc_val: A decimal value between 0 and 1 representing the connection block flexibility between the connecting routing resources; a value of 0.5 for example means that only 50% of the switches necessary to connect all the matching tap and drive points would be implemented.
+    :req_param fc_val:
+    A decimal value between 0 and 1 representing the connection block flexibility between the connecting routing resources; a value of 0.5 for example means that only 50% of the switches necessary to connect all the matching tap and drive points would be implemented.
+
+    .. note::
+    ``locaitonx`` and ``locationy`` describe an (x,y) grid loction where all the wires passing this location source the source the clock network connection depending on the ``fc_val``
+
+For more information you may wish to consult :cite:`mustafa_masc` which introduces the clock modeling language.
 
 Power
 -----
