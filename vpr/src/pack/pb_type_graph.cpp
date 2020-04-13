@@ -378,7 +378,7 @@ static void alloc_and_load_interconnect_pins(t_interconnect_pins* interc_pins,
     interc_pins->interconnect = interconnect;
 
     switch (interconnect->type) {
-        case DIRECT_INTERC:
+        case DIRECT_INTERC: /* intentionally fallthrough */
             VTR_ASSERT(num_output_sets == 1);
             /* intentionally fallthrough */
         case MUX_INTERC:
