@@ -87,7 +87,7 @@ void check_route(enum e_route_type route_type) {
         /* Check the SOURCE of the net. */
         tptr = route_ctx.trace[net_id].head;
         if (tptr == nullptr) {
-            VPR_ERROR(VPR_ERROR_ROUTE,
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                       "in check_route: net %d has no routing.\n", size_t(net_id));
         }
 
