@@ -417,6 +417,7 @@ std::vector<AtomPinId> find_clb_pin_connected_atom_pins(ClusterBlockId clb, int 
     auto physical_tile = pick_best_physical_type(logical_block);
 
     int physical_pin = get_physical_pin(physical_tile, logical_block, logical_pin);
+    VTR_ASSERT(physical_pin >= 0);
 
     if (is_opin(physical_pin, physical_tile)) {
         //output
