@@ -442,13 +442,16 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
         }
 
         if (device_ctx.grid.num_instances(&type) != 0) {
-            float util = 0.;
             VTR_LOG("\tPhysical Tile %s:\n", type.name);
 
             auto equivalent_sites = get_equivalent_sites_set(&type);
 
             for (auto logical_block : equivalent_sites) {
-                util = float(num_type_instances[logical_block]) / device_ctx.grid.num_instances(&type);
+                float util = 0.;
+                size_t num_inst = device_ctx.grid.num_instances(&type);
+                if (num_inst != 0) {
+                    util = float(num_type_instances[logical_block]) / num_inst;
+                }
                 VTR_LOG("\tBlock Utilization: %.2f Logical Block: %s\n", util, logical_block->name);
             }
         }
