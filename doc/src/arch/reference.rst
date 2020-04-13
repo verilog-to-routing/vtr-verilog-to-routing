@@ -1878,14 +1878,16 @@ The ``<segment>`` tag and its contents are described below.
     Tag must be included and ``name`` must be the same as the name you give in ``<switch type="tristate|pass_gate" name="...`` for the switch which represents the output pin switch in your architecture.
 
     .. note::
+
         In unidirectional segment mode, there is only a single buffer on the segment.
         Its type is specified by assigning the same switch index to both wire_switch and opin_switch.
         VPR will error out if these two are not the same.
 
     .. note::
+
         The switch used in unidirectional segment mode must be buffered.
 
-.. _clock_architecture_format:
+.. _clock_architecture:
 
 Clocks
 ------
@@ -1920,10 +1922,14 @@ Specifing a Clock Architecture
 The element ``<clocknetworks>`` contains three sub-elements that collectively describe the clock architecture: the wiring parameters ``<metal_layers>``, the clock distribution ``<clock_network>``, and the clock connectivity ``<clock_routing>``.
 
 
-    Example:
+.. _clock_arch_example:
 
-.. _clock_code_example:
-    .. code-block:: xml
+Clock Architecture Example
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The following example shows how a rib-spine (row/column) style clock architecture can be defined.
+
+.. code-block:: xml
 
     <clocknetworks>
         <metal_layers >
@@ -1934,37 +1940,52 @@ The element ``<clocknetworks>`` contains three sub-elements that collectively de
         <!-- Full Device: Center Spine -->
         <clock_network  name="spine1" num_inst="2">
             <spine metal_layer="global_spine" x="W/2" starty="0" endy="H">
-                <switch_point type="drive" name="drive" yoffset="H/2" buffer="drive_buff"/>
-                <switch_point type="tap" name="tap" yoffset="0" yincr="1"/>
+                <switch_point type="drive" name="drive_point" yoffset="H/2" buffer="drive_buff"/>
+                <switch_point type="tap" name="taps" yoffset="0" yincr="1"/>
             </spine>
         </clock_network>
+
         <!-- Full Device: Each Grid Row -->
         <clock_network  name="rib1" num_inst="2">
             <rib metal_layer="global_rib" y="0" startx="0" endx="W" repeatx="W" repeaty="1">
-                <switch_point type="drive" name="drive" xoffset="W/2" buffer="drive_buff"/>
-                <switch_point type="tap" name="tap" xoffset="0" xincr="1"/>
+                <switch_point type="drive" name="drive_point" xoffset="W/2" buffer="drive_buff"/>
+                <switch_point type="tap" name="taps" xoffset="0" xincr="1"/>
             </rib>
         </clock_network>
 
         <clock_routing>
             <!-- connections from inter-block routing to central spine -->
-            <tap from="ROUTING" to="spine1.drive" locationx="W/2" locationy="H/2" switch="general_routing_switch" fc_val="1.0"/>
+            <tap from="ROUTING" to="spine1.drive_point" locationx="W/2" locationy="H/2" switch="general_routing_switch" fc_val="1.0"/>
+
             <!-- connections from spine to rib -->
-            <tap from="spine1.tap" to="rib1.drive" switch="general_routing_switch" fc_val="0.5"/>
+            <tap from="spine1.taps" to="rib1.drive_point" switch="general_routing_switch" fc_val="0.5"/>
+
             <!-- connections from rib to clock pins -->
-            <tap from="rib1.tap" to="CLOCK" switch="ipin_cblock" fc_val="1.0"/>
+            <tap from="rib1.taps" to="CLOCK" switch="ipin_cblock" fc_val="1.0"/>
         </clock_routing >
     </clocknetworks >
 
-.. _rib_visual:
-    .. figure:: horizontal_distribution.*
-
-        ``<rib> "global_rib"`` horizontal clock wire distribution example
-
 .. _spine_visual:
-    .. figure:: vertical_distribution.*
 
-        ``<spine> "global_rib"`` vertical clock wire distribution example
+.. figure:: vertical_distribution.*
+
+    ``<spine>`` "spine1" vertical clock wire example.
+    The two spines (``num_inst="2"``) are located horizontally at ``W/2`` (in the middle of the device), and spans the entire height of the device (0..H).
+    The drive points are located at ``H/2``, with tap points located at unit increments along their length.
+    Buffers of  ``drive_buff`` type (would be defined in ``<switches>``) are used to drive the two halves of the spines.
+
+.. _rib_visual:
+
+.. figure:: horizontal_distribution.*
+
+    ``<rib>`` "rib1" horizontal clock wire example.
+    Each rib spans the full width of the device (0..W), with the drive points located at the mid-point (``W/2``), and tap points in unit increments along each rib.
+    There are two ribs at each vertical location (``num_inst="2"``), and pairs of ribs are stamped out at each row of the device (``repeaty="1"``).
+
+.. _clock_architecture_tags:
+
+Clock Architecture Tags
+^^^^^^^^^^^^^^^^^^^^^^^
 
 The ``<metal_layers>`` element describes the per unit length electrical parameters, resistance (``Rmetal``) and capacitance (``Cmetel``), used to implement the clock distribution wires.
 Wires are modeled soley based on ``Rmetal`` and ``Cmetal`` parameters which are derived from the physical implementation of the metal layer width and spacing.
@@ -1990,77 +2011,91 @@ The high-level start tag for a clock network is as follows:
         Many paramters used in the following clock architecture tags take an espression (``expr``) as an argument simular to :ref:`grid_expressions`.
         However, only a subset of special variables are suported: ``W`` (device width) and ``H`` (device height).
 
-The supported clock distribution types are ``<spine>`` and ``<rib>``.
-``Spine`` is used to describe vertical clock distribution wires.
-Whereas, ``Rib`` is used to describe a horizontal clock distribution wire.
-See :ref:`clock_code_example` and accompanying figures :ref:`spine_visual` and :ref:`rib_visual` for example use of ``<spine>`` and ``<rib>`` parameters.
+    The supported clock distribution types are ``<spine>`` and ``<rib>``.
+    *Spines* are used to describe vertical clock distribution wires.
+    Whereas, *Ribs* is used to describe a horizontal clock distribution wire.
+    See :ref:`clock_arch_example` and accompanying figures :numref:`spine_visual` and :numref:`rib_visual` for example use of ``<spine>`` and ``<rib>`` parameters.
 
-.. arch:tag:: <spine metal_layer="string" x="expr" starty="expr" endy="expr" repeatx="expr" repeaty="expr"/>
-    :req_param metal_layer: A referenced metal layer that sets the unit resistance and capacitance of the distribution wire over the length of the wire.
-    :req_param starty:
-    The start y grid location, of the wire which runs parallel to the y-axis from starty and ends at endy, inclusive.
-    Value can be relative to the device size.
-    :req_param endy: The end of y grid location of the wire. Value can be relative to the device size.
-    :req_param x: The location of the spine with respect to the x-axis. Value can be relative to the device size.
-    :opt_param repeatx: The horizontal repeat factor of the spine along the device. Value can be relative to the device size.
-    :opt_param repeaty: The vertical repeat factor of the spine along the device. Value can be relative to the device size.
+    .. arch:tag:: <spine metal_layer="string" x="expr" starty="expr" endy="expr" repeatx="expr" repeaty="expr"/>
 
-The provided example clock network (:ref:`clock_code_example`) defines two spines, and neither repeats as each spans the entire height of the device and is locally at the horizontal midpoint of the device.
+        :req_param metal_layer: A referenced metal layer that sets the unit resistance and capacitance of the distribution wire over the length of the wire.
+        :req_param starty: 
+            The start y grid location, of the wire which runs parallel to the y-axis from starty and ends at endy, inclusive.
+            Value can be relative to the device size.
+        :req_param endy: The end of y grid location of the wire. Value can be relative to the device size.
+        :req_param x: The location of the spine with respect to the x-axis. Value can be relative to the device size.
+        :opt_param repeatx: The horizontal repeat factor of the spine along the device. Value can be relative to the device size.
+        :opt_param repeaty: The vertical repeat factor of the spine along the device. Value can be relative to the device size.
 
-.. arch:tag:: <rib metal_layer="string" y="expr" startx="expr" endx="expr" repeatx="expr" repeaty="expr"/>
-    :req_param metal_layer: A referenced metal layer that sets the unit resistance and capacitance of the distribution wire over the length of the wire.
-    :req_param startx:
-    The start x grid location, of the wire which runs parallel to the x-axis from startx and ends at endx, inclusive.
-    Value can be relative to the device size.
-    :req_param endx: The end of x grid location of the wire. Value can be relative to the device size.
-    :req_param y: The location of the rib with respect to the y-axis. Value can be relative to the device size.
-    :opt_param repeatx: The horizontal repeat factor of the rib along the device. Value can be relative to the device size.
-    :opt_param repeaty: The vertical repeat factor of the rib along the device. Value can be relative to the device size.
+    The provided example clock network (:ref:`clock_arch_example`) defines two spines, and neither repeats as each spans the entire height of the device and is locally at the horizontal midpoint of the device.
 
-Along each spine and rib is a group of switch points.
-Switch points are used to describe drive or tap locations along the clock distribution wire:
+    .. arch:tag:: <rib metal_layer="string" y="expr" startx="expr" endx="expr" repeatx="expr" repeaty="expr"/>
 
-.. arch:tag:: <switch_point type="{drive | tap}" name="string" yoffset="expr" xoffset="expr" xinc="expr" yinc="expr" buffer="string">
-    :req_param type:
-        * ``drive`` -- Drive points are where the clock distribution wire can be driven by a routing switch or buffer.
-        * ``tap`` --  Tap points are where it can drive a routing switch or buffer to send a signal to a different ``clock_network`` or logicblock.
-    :opt_param xoffset: (Only for ``rib`` network) Offset from the ``startx`` of a rib network.
-    :opt_param yoffset: (Only for ``spine`` network) Offset from the ``starty`` of a spine network.
-    :opt_param xinc: (Only for rib ``tap`` points) Descibes the repeat factor of a series of evenly spaced tap points.
-    :opt_param yinc: (Only for spine ``tap`` points) Descibes the repeat factor of a series of evenly spaced tap points.
-    :req_param buffer:
-    (Required only for ``drive`` points) A reference to a pre-defined routing switch; specfied by ``<switch>`` tag, see Section :ref:`arch_switches`.
-    This switch will be used at the drive point.
-    The clock generator uses two buffers to drive the two portions of this ``clock_network`` wire when it is split at the drive point, see Figures :ref:`rib_visual` and :ref:`spine_visual`.
+        :req_param metal_layer: A referenced metal layer that sets the unit resistance and capacitance of the distribution wire over the length of the wire.
+        :req_param startx:
+            The start x grid location, of the wire which runs parallel to the x-axis from startx and ends at endx, inclusive.
+            Value can be relative to the device size.
+        :req_param endx: The end of x grid location of the wire. Value can be relative to the device size.
+        :req_param y: The location of the rib with respect to the y-axis. Value can be relative to the device size.
+        :opt_param repeatx: The horizontal repeat factor of the rib along the device. Value can be relative to the device size.
+        :opt_param repeaty: The vertical repeat factor of the rib along the device. Value can be relative to the device size.
 
-Lastly the ``<clock_routing>`` element consists of a group of ``tap`` elements that each separately describe the connectivity from one routing resource (pin or wire) to another.
+    Along each spine and rib is a group of switch points.
+    Switch points are used to describe drive or tap locations along the clock distribution wire, and are enclosed in the relevant ``<rib>`` or ``<spine>`` tags:
+
+    .. arch:tag:: <switch_point type="{drive | tap}" name="string" yoffset="expr" xoffset="expr" xinc="expr" yinc="expr" buffer="string">
+
+        :req_param type:
+            * ``drive`` -- Drive points are where the clock distribution wire can be driven by a routing switch or buffer.
+            * ``tap`` --  Tap points are where it can drive a routing switch or buffer to send a signal to a different ``clock_network`` or logicblock.
+        :opt_param xoffset: (Only for ``rib`` network) Offset from the ``startx`` of a rib network.
+        :opt_param yoffset: (Only for ``spine`` network) Offset from the ``starty`` of a spine network.
+        :opt_param xinc: (Only for rib ``tap`` points) Descibes the repeat factor of a series of evenly spaced tap points.
+        :opt_param yinc: (Only for spine ``tap`` points) Descibes the repeat factor of a series of evenly spaced tap points.
+        :req_param buffer:
+            (Required only for ``drive`` points) A reference to a pre-defined routing switch; specfied by ``<switch>`` tag, see Section :ref:`arch_switches`.
+            This switch will be used at the drive point.
+            The clock architecture generator uses two of these buffers to drive the two portions of this ``clock_network`` wire when it is split at the drive point, see Figures :numref:`rib_visual` and :numref:`spine_visual`.
+
+        .. note::
+
+            A single ``<switch_point>`` specification may define a *set* of tap points (``type="tap"``, with either ``xincr`` or ``yincr``), or a single drive point (``type="drive"``)
+
+Lastly the ``<clock_routing>`` element consists of a group of ``tap`` statements which separately describe the connectivity between clock-related routing resources (pin or wire).
 The tap element and its attribute sare as follows:
 
 .. arch:tag:: <tap from="string" to="string" locationx="expr" locationy="expr" switch="string" fc_val="float">
+
     :req_param from:
-    The routing resource to make a connection from.
-    Can be a unique name or special literal: 
-        * ``clock_name.switch_name``: clock network name followed by the switch name and delineated by a period.
-        Examples can be see in code Example :ref:`clock_code_example`.
-        * `"ROUTING"``: a special literal which references a connection from general inter-block routing.
+        The set of routing resources to make connections *from*.
+        This can be either:
+            * ``clock_name.tap_points_name``: A set of clock network ``tap``-type switchpoints. The format is clock network name, followed by the tap points name and delineated by a period (e.g. ``spine1.taps``), or
+            * ``ROUTING``: a special literal which references a connection from general inter-block routing (at a location specified by ``locationx`` and ``locationy`` parameters).
+        Examples can be see in :ref:`clock_arch_example`.
     :req_param to:
-    The routing resource to make a connection to.
-    Can be a unique name or special literal:
-        * ``clock_name.switch_name``: clock network name followed by the switch name and delineated by a period.
-        Examples can be see in code Example :ref:`clock_code_example`.
-        * `"CLOCK"``: a special literal which describes connections from clock network tap points that supply the clock to clock pins on blocks at the tap locations; these clock inputs are already specified on blocks in the VTR architecture file.
-    :req_param locationx:
-    (Only when using the special literal ``"ROUTING"``)
-    The x grid location of inter-block routing.
-    :req_param locationy:
-    (Only when using the special literal ``"ROUTING"``)
-    The y grid location of inter-block routing.
-    :req_param switch: References the name of the routing switch used for this connection.
+        The set of routing resources to make connections *to*.
+        Can be a unique name or special literal:
+            * ``clock_name.drive_point_name``: A clock network ``drive``-type switchpoint. The format is clock network name, followed by the drive point name and delineated by a period (e.g. ``rib1.drive_point``).
+            * ``CLOCK``: a special literal which describes connections from clock network tap points that supply the clock to clock pins on blocks at the tap locations; these are clock inputs are already specified on blocks (top-level ``<pb_type>``/``<tile>``) in the VTR architecture file.
+        Examples can be see in :ref:`clock_arch_example`.
+    :req_param switch: The routing switch (defined in ``<switches>``) used for this connection.
     :req_param fc_val:
-    A decimal value between 0 and 1 representing the connection block flexibility between the connecting routing resources; a value of 0.5 for example means that only 50% of the switches necessary to connect all the matching tap and drive points would be implemented.
+        A decimal value between 0 and 1 representing the connection block flexibility between the connecting routing resources; a value of 0.5 for example means that only 50% of the switches necessary to connect all the matching tap and drive points would be implemented.
+    :opt_param locationx:
+        (Required when using the special literal ``"ROUTING"``)
+        The x grid location of inter-block routing.
+    :opt_param locationy:
+        (Required when using the special literal ``"ROUTING"``)
+        The y grid location of inter-block routing.
+
+    .. note:: 
+    
+        A single ``<tap>`` statement may create multiple connections if either the of the ``from`` or ``to`` correspond to multiple routing resources.
+        In such cases the ``fc_val`` can control how many connections are created.
 
     .. note::
-    ``locaitonx`` and ``locationy`` describe an (x,y) grid loction where all the wires passing this location source the source the clock network connection depending on the ``fc_val``
+
+        ``locationx`` and ``locationy`` describe an (x,y) grid loction where all the wires passing this location source the source the clock network connection depending on the ``fc_val``
 
 For more information you may wish to consult :cite:`mustafa_masc` which introduces the clock modeling language.
 
