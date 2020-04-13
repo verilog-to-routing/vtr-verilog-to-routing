@@ -264,6 +264,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
                 VTR_ASSERT(driver_block_id == clb_src_block);
 
                 src_block_pin_index = cluster_ctx.clb_nlist.net_pin_logical_index(net_id, 0);
+                VTR_ASSERT(src_block_pin_index >= 0);
 
                 tatum::Time driver_clb_delay = tatum::Time(clb_delay_calc_.internal_src_to_clb_output_delay(driver_block_id,
                                                                                                             src_block_pin_index,
