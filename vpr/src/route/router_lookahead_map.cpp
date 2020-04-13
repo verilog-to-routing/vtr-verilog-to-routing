@@ -679,7 +679,7 @@ void dijkstra_flood_to_wires(int itile, RRNodeId node, t_src_opin_reachable_wire
 
         bool operator<(const t_pq_entry& rhs) const {
             return this->delay < rhs.delay;
-        };
+        }
     };
 
     std::priority_queue<t_pq_entry> pq;
