@@ -8,7 +8,7 @@
 //EpsilonGreedyAgent member functions
 EpsilonGreedyAgent::EpsilonGreedyAgent(size_t k, float epsilon) {
 
-    f_ = vtr::fopen("agent_info.txt", "w");
+    //f_ = vtr::fopen("agent_info.txt", "w");
     set_epsilon(epsilon);
     set_k(k);
     set_epsilon_action_prob();
@@ -49,7 +49,7 @@ void EpsilonGreedyAgent::set_step(float gamma, int move_lim) {
 
 void EpsilonGreedyAgent::process_outcome(double reward) {
     ++n_[last_action_];
-
+    reward = reward / time_elapsed[last_action_];
     //Determine step size
     float step = 0.;
     if (exp_alpha_ < 0.) {
@@ -151,14 +151,16 @@ void EpsilonGreedyAgent::set_k(size_t k) {
 
 #endif
     //f_ = vtr::fopen("egreedy.csv", "w");
-    fprintf(f_, "action,reward,");
-    for (size_t i = 0; i < k_; ++i) {
-        fprintf(f_, "q%zu,", i);
+    if(f_){
+        fprintf(f_, "action,reward,");
+        for (size_t i = 0; i < k_; ++i) {
+            fprintf(f_, "q%zu,", i);
+        }
+        for (size_t i = 0; i < k_; ++i) {
+            fprintf(f_, "n%zu,", i);
+        }
+        fprintf(f_, "\n");
     }
-    for (size_t i = 0; i < k_; ++i) {
-        fprintf(f_, "n%zu,", i);
-    }
-    fprintf(f_, "\n");
 }
 
 
@@ -211,3 +213,13 @@ e_create_move SimpleRLMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
 void SimpleRLMoveGenerator::process_outcome(double reward){
 	karmed_bandit_agent->process_outcome(reward);
 }
+#if 0
+int SimpleRLMoveGenerator::get_last(){
+    return karmed_bandit_agent->get_last();
+}
+
+int EpsilonGreedyAgent::get_last() {
+    return last_action_;
+}
+#endif
+
