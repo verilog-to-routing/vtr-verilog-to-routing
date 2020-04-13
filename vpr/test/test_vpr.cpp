@@ -141,7 +141,7 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
             }
         }
 
-        REQUIRE(src_inode != -1);
+        REQUIRE(src_inode >= 0);
         sink_inode = device_ctx.rr_nodes[src_inode].edge_sink_node(0);
         switch_id = device_ctx.rr_nodes[src_inode].edge_switch(0);
 
