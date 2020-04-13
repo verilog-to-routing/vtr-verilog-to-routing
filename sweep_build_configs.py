@@ -31,6 +31,9 @@ ERROR_WARNING_REGEXES = [
 SUPPRESSION_ERROR_WARNING_REGEXES = [
         #We compile some .c files as C++, so we don't worry about these warnings from clang
         re.compile(r".*clang:.*warning:.*treating.*c.*as.*c\+\+.*"),
+
+        #Don't worry about unused include directories
+        re.compile(r".*clang:.*warning:.*argument.*unused.*during.*compilation:.*'(-I|-isystem)"),
     ]
 
 def parse_args():
