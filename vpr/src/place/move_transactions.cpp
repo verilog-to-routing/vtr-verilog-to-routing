@@ -89,7 +89,7 @@ void revert_move_blocks(t_pl_blocks_to_be_moved& blocks_affected) {
 
         place_ctx.block_locs[blk].loc = old;
 
-        VTR_ASSERT_SAFE_MSG(place_ctx.grid_blocks[old.x][old.y].blocks[old.sub_tile] = blk, "Grid blocks should only have been updated if swap commited (not reverted)");
+        VTR_ASSERT_SAFE_MSG(place_ctx.grid_blocks[old.x][old.y].blocks[old.sub_tile] == blk, "Grid blocks should only have been updated if swap commited (not reverted)");
     }
 }
 
