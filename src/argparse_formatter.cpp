@@ -18,6 +18,7 @@ namespace argparse {
     DefaultFormatter::DefaultFormatter(size_t option_name_width, size_t total_width)
         : option_name_width_(option_name_width)
         , total_width_(total_width)
+        , parser_(nullptr)
         {}
 
     void DefaultFormatter::set_parser(ArgumentParser* parser) {
@@ -216,7 +217,7 @@ namespace argparse {
             std::stringstream choices_ss;
             choices_ss << "{";
             bool first = true;
-            for(auto choice : arg.choices()) {
+            for(const auto& choice : arg.choices()) {
                 if (!first) {
                     choices_ss << ", ";
                 }

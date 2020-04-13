@@ -211,7 +211,7 @@ namespace argparse {
                     }
                     assert (nargs_read <= max_values_to_read);
 
-                    for (auto val : values) {
+                    for (const auto& val : values) {
                         if (!is_valid_choice(val, arg->choices())) {
                             std::stringstream msg;
                             msg << "Unexpected option value '" << values[0] << "' (expected one of: " << join(arg->choices(), ", ");
@@ -243,7 +243,7 @@ namespace argparse {
                             assert(values.size() >= 1);
                         }
 
-                        for (auto value : values) {
+                        for (const auto& value : values) {
                             try {
                                 arg->add_value_to_dest(value); 
                             } catch (const ArgParseConversionError& e) {
@@ -375,7 +375,7 @@ namespace argparse {
     ArgumentParser::ShortArgInfo ArgumentParser::no_space_short_arg(std::string str, const std::map<std::string, std::shared_ptr<Argument>>& str_to_option_arg) const {
 
         ShortArgInfo short_arg_info;
-        for(auto kv : str_to_option_arg) {
+        for(const auto& kv : str_to_option_arg) {
             if (kv.first.size() == 2) {
                 //Is a short arg
                 
