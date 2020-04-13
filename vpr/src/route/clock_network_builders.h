@@ -21,50 +21,50 @@ enum class ClockType {
 };
 
 struct MetalLayer {
-    float r_metal;
-    float c_metal;
+    float r_metal = std::numeric_limits<float>::quiet_NaN();
+    float c_metal = std::numeric_limits<float>::quiet_NaN();
 };
 
 struct Wire {
     MetalLayer layer;
-    int start;
-    int length;
-    int position;
+    int start = OPEN;
+    int length = OPEN;
+    int position = OPEN;
 };
 
 struct WireRepeat {
-    int x;
-    int y;
+    int x = OPEN;
+    int y = OPEN;
 };
 
 struct RibDrive {
     std::string name;
-    int offset;
-    int switch_idx;
+    int offset = OPEN;
+    int switch_idx = OPEN;
 };
 
 struct RibTaps {
     std::string name;
-    int offset;
-    int increment;
+    int offset = OPEN;
+    int increment = OPEN;
 };
 
 struct SpineDrive {
     std::string name;
-    int offset;
-    int switch_idx;
+    int offset = OPEN;
+    int switch_idx = OPEN;
 };
 
 struct SpineTaps {
     std::string name;
-    int offset;
-    int increment;
+    int offset = OPEN;
+    int increment = OPEN;
 };
 
 struct HtreeDrive {
     std::string name;
     Coordinates offset;
-    int switch_idx;
+    int switch_idx = OPEN;
 };
 
 struct HtreeTaps {
@@ -76,7 +76,7 @@ struct HtreeTaps {
 class ClockNetwork {
   protected:
     std::string clock_name_;
-    int num_inst_;
+    int num_inst_ = OPEN;
 
   public:
     /*
@@ -130,9 +130,9 @@ class ClockRib : public ClockNetwork {
     RibTaps tap;
 
     // segment indices
-    int right_seg_idx = -1;
-    int left_seg_idx = -1;
-    int drive_seg_idx = -1;
+    int right_seg_idx = OPEN;
+    int left_seg_idx = OPEN;
+    int drive_seg_idx = OPEN;
 
   public:
     /** Constructor**/
@@ -198,9 +198,9 @@ class ClockSpine : public ClockNetwork {
     SpineTaps tap;
 
     // segment indices
-    int right_seg_idx = -1;
-    int left_seg_idx = -1;
-    int drive_seg_idx = -1;
+    int right_seg_idx = OPEN;
+    int left_seg_idx = OPEN;
+    int drive_seg_idx = OPEN;
 
   public:
     /*
