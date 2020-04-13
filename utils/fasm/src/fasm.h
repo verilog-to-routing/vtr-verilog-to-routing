@@ -88,10 +88,10 @@ class FasmWriterVisitor : public NetlistVisitor {
       vtr::string_internment *strings_;
       std::ostream& os_;
 
-      t_pb_graph_node *root_clb_;
-      bool current_blk_has_prefix_;
-      t_physical_tile_type_ptr physical_tile_;
-      t_logical_block_type_ptr logical_block_;
+      t_pb_graph_node *root_clb_ = nullptr;
+      bool current_blk_has_prefix_ = false;
+      t_physical_tile_type_ptr physical_tile_ = nullptr;
+      t_logical_block_type_ptr logical_block_ = nullptr;
       std::string blk_prefix_;
       std::string clb_prefix_;
       std::map<const t_pb_graph_node *, std::string> clb_prefix_map_;
