@@ -1,6 +1,9 @@
 #General
-vpr_revision;vpr.out;Revision:\s(.*);unknown
 vpr_status;output.txt;vpr_status=(.*)
+vpr_revision;vpr.out;Revision:\s+(.*);unknown
+vpr_build_info;vpr.out;Build Info:\s+(.*);unknown
+vpr_compiler;vpr.out;Compiler:\s+(.*);unknown
+vpr_compiled;vpr.out;Compiled:\s+(.*);unknown
 hostname;output.txt;hostname=(.*)
 rundir;output.txt;rundir=(.*)
 
