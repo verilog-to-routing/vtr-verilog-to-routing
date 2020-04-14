@@ -52,8 +52,6 @@ addons:
     - qt5-default
     - clang-format-7
     # All the compilers!
-    - g++-4.9
-    - gcc-4.9
     - g++-5
     - gcc-5
     - g++-6
