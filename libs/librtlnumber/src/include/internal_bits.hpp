@@ -706,7 +706,7 @@ class VNumber {
         }
 
         integer_t result = 0;
-        BitSpace::bit_value_t pad = this->get_padding_bit(); // = this->is_negative();
+        BitSpace::bit_value_t pad = this->get_padding_bit();
 
         for (size_t bit_index = 0; bit_index < end; bit_index++) {
             integer_t current_bit = static_cast<integer_t>(pad);
@@ -846,6 +846,7 @@ class VNumber {
      * bit twiddling functions
      */
     BitSpace::bit_value_t get_bit_from_msb(size_t index) {
+        assert_Werr(index <= msb_index(), "Index out of range");
         return this->bitstring.get_bit(msb_index() - index);
     }
 
@@ -872,7 +873,7 @@ class VNumber {
     }
 
     BitSpace::bit_value_t get_padding_bit() {
-        return this->is_negative() ? BitSpace::_1 : BitSpace::_0;
+        return (this->is_signed()) ? get_bit_from_msb(0) : BitSpace::_0;
     }
 
     bool is_signed() const {

@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.9)
 
 project("librtlnumber")
 
+option(RTL_ALLOW_UNKNOWN_COMPARE "Skips initial check for unknowns in comparison and compares MSB-to-LSB" OFF)
+
+if(RTL_ALLOW_UNKNOWN_COMPARE)
+    add_definitions(-DRTL_ALLOW_UNKNOWN_COMPARE)
+endif()
+
 file(GLOB_RECURSE EXEC_SOURCES main.cpp)
 file(GLOB_RECURSE LIB_SOURCES src/*.cpp)
 file(GLOB_RECURSE LIB_HEADERS src/include/*.hpp)

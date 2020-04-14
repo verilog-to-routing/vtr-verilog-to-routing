@@ -12,6 +12,8 @@
 #include "rtl_int.hpp"
 #include "rtl_utils.hpp"
 
+#define AMBIGUOUS_VALUE VNumber("'bx")
+
 using namespace BitSpace;
 
 class compare_bit {
@@ -43,6 +45,11 @@ static compare_bit eval_op(VNumber& a_in, VNumber& b_in) {
 
     assert_Werr(b_in.size(),
                 "empty 2nd bit string");
+
+#ifndef RTL_ALLOW_UNKNOWN_COMPARE
+    if (a_in.is_dont_care_string() || b_in.is_dont_care_string())
+        return UNK_EVAL;
+#endif
 
     bool neg_a = (a_in.is_negative());
     bool neg_b = (b_in.is_negative());
@@ -223,6 +230,9 @@ VNumber V_BITWISE_NOT(VNumber& a) {
 }
 
 VNumber V_LOGICAL_NOT(VNumber& a) {
+    if (a.is_dont_care_string())
+        return AMBIGUOUS_VALUE;
+
     VNumber ored = a.bitwise_reduce(l_or);
     VNumber noted = ored.invert();
     return noted;
@@ -261,17 +271,17 @@ VNumber V_BITWISE_XOR(VNumber& a) {
 }
 
 VNumber V_BITWISE_NAND(VNumber& a) {
-    VNumber to_return = a.bitwise_reduce(l_nand);
+    VNumber to_return = a.bitwise_reduce(l_and).invert();
     return to_return;
 }
 
 VNumber V_BITWISE_NOR(VNumber& a) {
-    VNumber to_return = a.bitwise_reduce(l_nor);
+    VNumber to_return = a.bitwise_reduce(l_or).invert();
     return to_return;
 }
 
 VNumber V_BITWISE_XNOR(VNumber& a) {
-    VNumber to_return = a.bitwise_reduce(l_xnor);
+    VNumber to_return = a.bitwise_reduce(l_xor).invert();
     return to_return;
 }
 
@@ -341,6 +351,8 @@ VNumber V_CASE_NOT_EQUAL(VNumber& a, VNumber& b) {
 }
 
 VNumber V_LOGICAL_AND(VNumber& a, VNumber& b) {
+    if (a.is_dont_care_string() || b.is_dont_care_string())
+        return AMBIGUOUS_VALUE;
     VNumber reduxA = a.bitwise_reduce(l_or);
     VNumber reduxB = b.bitwise_reduce(l_or);
 
@@ -350,6 +362,8 @@ VNumber V_LOGICAL_AND(VNumber& a, VNumber& b) {
 }
 
 VNumber V_LOGICAL_OR(VNumber& a, VNumber& b) {
+    if (a.is_dont_care_string() || b.is_dont_care_string())
+        return AMBIGUOUS_VALUE;
     VNumber reduxA = a.bitwise_reduce(l_or);
     VNumber reduxB = b.bitwise_reduce(l_or);
 
@@ -402,28 +416,28 @@ VNumber V_NOT_EQUAL(VNumber& a, VNumber& b) {
 
 VNumber V_SIGNED_SHIFT_LEFT(VNumber& a, VNumber& b) {
     if (b.is_dont_care_string())
-        return VNumber("2'sbxx");
+        return AMBIGUOUS_VALUE;
 
     return shift_op(a, b.get_value(), a.is_signed());
 }
 
 VNumber V_SHIFT_LEFT(VNumber& a, VNumber& b) {
     if (b.is_dont_care_string())
-        return VNumber("2'sbxx");
+        return AMBIGUOUS_VALUE;
 
     return shift_op(a, b.get_value(), false);
 }
 
 VNumber V_SIGNED_SHIFT_RIGHT(VNumber& a, VNumber& b) {
     if (b.is_dont_care_string())
-        return VNumber("2'sbxx");
+        return AMBIGUOUS_VALUE;
 
     return shift_op(a, -1 * b.get_value(), a.is_signed());
 }
 
 VNumber V_SHIFT_RIGHT(VNumber& a, VNumber& b) {
     if (b.is_dont_care_string())
-        return VNumber("2'sbxx");
+        return AMBIGUOUS_VALUE;
 
     return shift_op(a, -1 * b.get_value(), false);
 }
@@ -449,7 +463,7 @@ VNumber V_MINUS(VNumber& a, VNumber& b) {
 
 VNumber V_MULTIPLY(VNumber& a_in, VNumber& b_in) {
     if (a_in.is_dont_care_string() || b_in.is_dont_care_string()) {
-        return VNumber("2'sbxx");
+        return AMBIGUOUS_VALUE;
     }
 
     VNumber a;
@@ -533,7 +547,7 @@ VNumber V_MULTIPLY(VNumber& a_in, VNumber& b_in) {
  */
 VNumber V_POWER(VNumber& a, VNumber& b) {
     if (a.is_dont_care_string() || b.is_dont_care_string()) {
-        return VNumber("2'sbxx");
+        return AMBIGUOUS_VALUE;
     }
 
     compare_bit res_a = eval_op(a, 0);
@@ -566,7 +580,7 @@ VNumber V_POWER(VNumber& a, VNumber& b) {
     } else if (val_b == 0 || val_a == 1) {
         return VNumber("2'sb01");
     } else if (val_b == -1 && val_a == 0) {
-        return VNumber("2'sbxx");
+        return AMBIGUOUS_VALUE;
     } else if (val_a == -1) {
         // Even:
         if (BitSpace::_0 == b.get_bit_from_lsb(0)) {
@@ -584,7 +598,7 @@ VNumber V_POWER(VNumber& a, VNumber& b) {
 /////////////////////////////
 VNumber V_DIV(VNumber& a_in, VNumber& b_in) {
     if (a_in.is_dont_care_string() || b_in.is_dont_care_string() || eval_op(b_in, 0).is_eq())
-        return VNumber("2'sbxx");
+        return AMBIGUOUS_VALUE;
 
     VNumber result("0");
 
@@ -630,7 +644,7 @@ VNumber V_DIV(VNumber& a_in, VNumber& b_in) {
 
 VNumber V_MOD(VNumber& a_in, VNumber& b_in) {
     if (a_in.is_dont_care_string() || b_in.is_dont_care_string() || eval_op(b_in, 0).is_eq())
-        return VNumber("2'sbxx");
+        return AMBIGUOUS_VALUE;
 
     bool neg_a = a_in.is_negative();
     bool neg_b = b_in.is_negative();

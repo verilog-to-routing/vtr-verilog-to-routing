@@ -98,7 +98,7 @@ for INPUT in ${0%/*}/regression_tests/*.csv; do
 		then
 			echo "--- PASSED == $TEST_LABEL ( ${OUTPUT_AND_RESULT} ) "
 
-		elif [ "pass" == "$(${0%/*}/rtl_number is_true $(${0%/*}/rtl_number ${OUTPUT_AND_RESULT} == ${EXPECTED_RESULT}))" ]
+		elif [ "1'b1" == "$(${0%/*}/rtl_number ${OUTPUT_AND_RESULT} === ${EXPECTED_RESULT})" ]
 		then
 			echo "--- PASSED == $TEST_LABEL ( ${OUTPUT_AND_RESULT} )"
 
