@@ -61,7 +61,6 @@ class vector : private std::vector<V, Allocator> {
     using storage::size;
 
     using storage::back;
-    using storage::data;
     using storage::front;
 
     using storage::assign;
@@ -74,6 +73,14 @@ class vector : private std::vector<V, Allocator> {
     using storage::pop_back;
     using storage::push_back;
     using storage::swap;
+
+    //We can't using-forward storage::data, as it might not exist
+    //in the particular specialization (typically: vector<bool>)
+    //causing compiler complains.
+    //Instead, implement it as inline forwarding method whose
+    //compilation is deferred to when it is actually requested.
+    inline V* data() { return storage::data(); }
+    inline const V* data() const { return storage::data(); }
 
     //Don't include operator[] and at() from std::vector,
     //since we redine them to take key_type instead of size_t
