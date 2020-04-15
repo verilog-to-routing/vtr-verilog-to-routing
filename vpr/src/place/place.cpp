@@ -42,6 +42,16 @@
 #include "tatum/echo_writer.hpp"
 #include "tatum/TimingReporter.hpp"
 
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+#include "draw_types.h"
+#include "draw_global.h"
+#include "draw_color.h"
+//map of the available move types and their corresponding type number
+std::map<int,std::string> available_move_types = {
+                                {0,"Uniform"}
+};
+#endif
+
 using std::max;
 using std::min;
 
@@ -186,8 +196,7 @@ static const float cross_count[50] = {/* [0..49] */ 1.0, 1.0, 1.0, 1.0828, 1.153
 
 std::unique_ptr<FILE, decltype(&vtr::fclose)> f_move_stats_file(nullptr, vtr::fclose);
 
-#ifdef VTR_ENABLE_DEBUG_LOGGING
-
+#ifdef VTR_ENABLE_DEBUG_LOGGIING
 #    define LOG_MOVE_STATS_HEADER()                               \
         do {                                                      \
             if (f_move_stats_file) {                              \
@@ -1350,6 +1359,32 @@ static e_move_result try_swap(float t,
 
     move_generator.process_outcome(move_outcome_stats);
 
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+    
+    t_draw_state* draw_state = get_draw_state_vars();
+    if(f_placer_debug && draw_state->show_graphics){
+        std::string msg = available_move_types[0];
+        if(move_outcome == 0)
+            msg += vtr::string_fmt(", Rejected");
+        else if(move_outcome == 1)
+            msg += vtr::string_fmt(", Accepted");
+        else
+            msg += vtr::string_fmt(", Aborted");
+
+        msg += vtr::string_fmt(", Delta_cost: %1.6f (bb_delta_cost= %1.5f , timing_delta_c= %6.1e)", delta_c, bb_delta_c, timing_delta_c);
+        
+        auto& cluster_ctx = g_vpr_ctx.clustering();
+        
+        deselect_all();
+        draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(blocks_affected.moved_blocks[0].block_num), blocks_affected.moved_blocks[0].block_num); 
+        draw_state->colored_blocks.clear();
+        
+        draw_state->colored_blocks.push_back(std::make_pair(blocks_affected.moved_blocks[0].old_loc, blk_GOLD));
+        draw_state->colored_blocks.push_back(std::make_pair(blocks_affected.moved_blocks[0].new_loc, blk_GREEN));
+
+        update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), PLACEMENT, nullptr);
+    }
+#endif
     clear_move_blocks(blocks_affected);
 
     //VTR_ASSERT(check_macro_placement_consistency() == 0);

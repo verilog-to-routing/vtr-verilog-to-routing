@@ -5,6 +5,12 @@
 
 #include "vtr_random.h"
 
+
+//Run-time flag to control when placer debug information is printed
+//Note : only enables debug output if compiled with VTR_ENABLE_DEBUG_LOGGING is defined
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+bool f_placer_debug = true;
+#endif
 //Records counts of reasons for aborted moves
 static std::map<std::string, size_t> f_move_abort_reasons;
 
