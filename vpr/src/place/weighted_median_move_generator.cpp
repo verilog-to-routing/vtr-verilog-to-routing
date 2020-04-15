@@ -41,8 +41,8 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
 
     /* Calculate the median region */
     t_pl_loc to;
-    float temp_cost;
-    int ipin;
+    //float temp_cost;
+    //int ipin;
 
     t_bb_cost coords;
     t_bb temp_coords,limit_coords;
