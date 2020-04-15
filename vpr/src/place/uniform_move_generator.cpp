@@ -8,7 +8,6 @@ e_create_move UniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks
     if (!b_from) {
         return e_create_move::ABORT; //No movable block found
     }
-
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 

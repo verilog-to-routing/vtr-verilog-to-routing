@@ -29,6 +29,9 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     }
 */
 
+    if (!b_from) {
+        return e_create_move::ABORT; //No movable block found
+    }
     t_pl_loc from = place_ctx.block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
     auto grid_from_type = g_vpr_ctx.device().grid[from.x][from.y].type;
@@ -109,16 +112,17 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
 
     t_pl_loc median_point;
     if (!find_to_loc_median(cluster_from_type, &limit_coords, from, to)) {
-        if(X_coord.size() == 1 && Y_coord.size() == 1 && limit_coords.xmin == from.x && limit_coords.ymin == from.y)
+        if(X_coord.size() == 1 && Y_coord.size() == 1 && limit_coords.xmin == from.x && limit_coords.ymin == from.y){
             return e_create_move::ABORT;
+        }
         else {
             median_point.x = (limit_coords.xmin + limit_coords.xmax) /2 ;
             median_point.y = (limit_coords.ymin + limit_coords.ymax) /2 ;
-            if(!find_to_loc_centroid(cluster_from_type, rlim, median_point, to))
+            if(!find_to_loc_centroid(cluster_from_type, rlim, median_point, to)){
                 return e_create_move::ABORT;
+            }
         }
     }
-
     return ::create_move(blocks_affected, b_from, to);
 }
 
@@ -127,7 +131,7 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
 /* This routine finds the bounding box of a net from scratch excluding   *
  * a specific block. This is very useful in some directed moves.         *
  * It updates coordinates of the bb                                      */
-static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* coords, ClusterBlockId block_id, ClusterPinId moving_pin_id) {
+static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* coords, ClusterBlockId , ClusterPinId moving_pin_id) {
     int pnum, x, y, xmin, xmax, ymin, ymax;
     float xmin_cost,xmax_cost,ymin_cost,ymax_cost, cost;
     xmin=0;

@@ -25,7 +25,10 @@ std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>&, int &, 
     }*/
 
     b_from = pick_from_block();
-
+    
+    if (!b_from) {
+        return e_create_move::ABORT; //No movable block found
+    }
     t_pl_loc from = place_ctx.block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
     auto grid_from_type = g_vpr_ctx.device().grid[from.x][from.y].type;

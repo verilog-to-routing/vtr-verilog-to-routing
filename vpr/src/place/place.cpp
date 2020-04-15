@@ -60,6 +60,12 @@ std::vector<double> num_of_moves (4,0);
 std::vector<double> time_of_moves (4,0);
 #endif
 
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+#include "draw_types.h"
+#include "draw_global.h"
+#include "draw_color.h"
+#endif
+
 using std::max;
 using std::min;
 
@@ -979,7 +985,7 @@ static void placement_inner_loop(const t_annealing_state* state,
                                  std::vector<int>& Y_coord,
                                  std::vector<int>& num_moves,
                                  std::vector<int>& accepted_moves,
-                                 std::vector<int>& aborted_moves) {
+                                 std::vector<int>& aborted_moves){
     int inner_crit_iter_count, inner_iter;
 
     int inner_placement_save_count = 0; //How many times have we dumped placement to a file this temperature?
@@ -1310,7 +1316,6 @@ static e_move_result try_swap(const t_annealing_state* state,
     num_of_moves[move_generator.get_last()]++;
     time_of_moves[move_generator.get_last()] += duration.count();
 
-    //VTR_LOG("###%d,%d,%d,%d\n",num_moves[0],num_moves[1],num_moves[2],num_moves[3]);
 #endif
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
 

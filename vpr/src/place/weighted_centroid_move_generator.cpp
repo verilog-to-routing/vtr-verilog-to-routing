@@ -7,13 +7,12 @@ bool sort_by_weights(const std::pair<int,float> &a, const std::pair<int,float> &
 
 
 e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim,
-    std::vector<int>& X_coord, std::vector<int>& Y_coord,  std::vector<int>&, int & ,int place_high_fanout_net) {
+    std::vector<int>& X_coord, std::vector<int>& Y_coord,  std::vector<int>&, int & ,int ) {
     /* Pick a random block to be swapped with another random block.   */
     ClusterBlockId b_from = pick_from_block();
     if (!b_from) {
         return e_create_move::ABORT; //No movable block found
     }
-
     auto& device_ctx = g_vpr_ctx.device();
     auto& grid = device_ctx.grid;
 
