@@ -7,7 +7,9 @@
 static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* coords, ClusterBlockId block_id, ClusterPinId moving_pin_id);
 
 
-static void get_bb_for_net_excluding_block(ClusterNetId net_id, t_bb* coords, ClusterBlockId block_id);
+//static void get_bb_for_net_excluding_block(ClusterNetId net_id, t_bb* coords, ClusterBlockId block_id);
+
+//static void get_bb_cost_sink_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* coords, ClusterBlockId block_id, ClusterPinId moving_pin_id);
 
 e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim ,
     std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>&, int &,int place_high_fanout_net) {
@@ -46,14 +48,14 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     t_bb temp_coords,limit_coords;
     X_coord.clear();
     Y_coord.clear();
-    //std::vector<std::pair<int,float>> X,Y;
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(b_from)) {
         ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
             continue;
         if(int(cluster_ctx.clb_nlist.net_pins(net_id).size()) >  place_high_fanout_net)
             continue;
-
+/*
+        //if the moving block is a sink, weight all the terminals of the input net by the criticality of the moving block net pin
         if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::DRIVER)
             get_bb_cost_for_net_excluding_block(net_id, &coords, b_from, pin_id);
 
@@ -67,6 +69,17 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
             coords.ymax = std::make_pair(temp_coords.ymax,temp_cost);
 
         }
+*/
+/*
+        //if the moving block is a sink, weight the driver of the net by the criticality of the moving block net pin, all the other terminals of the nets are weighted by 0.1
+
+        if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::DRIVER)
+            get_bb_cost_for_net_excluding_block(net_id, &coords, b_from, pin_id);
+        else
+            get_bb_cost_sink_for_net_excluding_block(net_id, &coords, b_from, pin_id);
+*/
+        //all net pins are weighted with their own crititcalities
+        get_bb_cost_for_net_excluding_block(net_id, &coords, b_from, pin_id);
 
         for(int i =0; i < ceil(coords.xmin.second*10); i++){
             X_coord.push_back(coords.xmin.first);
@@ -213,7 +226,7 @@ static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* 
     coords->ymax = std::make_pair(ymax,ymax_cost);
 }
 
-
+/*
 static void get_bb_for_net_excluding_block(ClusterNetId net_id, t_bb* coords, ClusterBlockId block_id) {
     int pnum, x, y, xmin, xmax, ymin, ymax;
     xmin=0;
@@ -263,10 +276,97 @@ static void get_bb_for_net_excluding_block(ClusterNetId net_id, t_bb* coords, Cl
         }
     }
 
-    /* Copy the coordinates and number on edges information into the proper   *
-     * structures.                                                            */
     coords->xmin = xmin;
     coords->xmax = xmax;
     coords->ymin = ymin;
     coords->ymax = ymax;
 }
+
+
+
+
+static void get_bb_cost_sink_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* coords, ClusterBlockId , ClusterPinId moving_pin_id) {
+    int pnum, x, y, xmin, xmax, ymin, ymax;
+    float xmin_cost,xmax_cost,ymin_cost,ymax_cost, cost;
+    xmin=0;
+    xmax=0;
+    ymin=0;
+    ymax=0;
+    cost = 0.0;
+    xmin_cost=0.0;
+    xmax_cost=0.0;
+    ymin_cost=0.0;
+    ymax_cost=0.0;
+
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& grid = device_ctx.grid;
+
+
+
+
+    ClusterBlockId bnum;
+    bool first_block_excluding = true;
+    int ipin ;
+
+    for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
+        bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
+
+        //if(bnum != block_id)
+        if(pin_id != moving_pin_id)
+        {
+            pnum = tile_pin_index(pin_id);
+            if(cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::DRIVER){
+                ipin = cluster_ctx.clb_nlist.pin_net_index(moving_pin_id);
+                cost = get_timing_place_crit(net_id, ipin);
+            }
+            else{
+                ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
+                cost = 0.1;
+            }
+
+            VTR_ASSERT(pnum >= 0);
+            x = place_ctx.block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
+            y = place_ctx.block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
+
+            x = std::max(std::min(x, (int)grid.width() - 2), 1);  //-2 for no perim channels
+            y = std::max(std::min(y, (int)grid.height() - 2), 1); //-2 for no perim channels
+
+            if(first_block_excluding){
+                xmin = x;
+                xmin_cost = cost;
+                ymin = y;
+                ymin_cost = cost;
+                xmax = x;
+                xmax_cost = cost;
+                ymax = y;
+                ymax_cost = cost;
+                first_block_excluding = false;
+            }
+            else {
+                if (x < xmin) {
+                    xmin = x;
+                    xmin_cost = cost;
+                } else if (x > xmax) {
+                    xmax = x;
+                    xmax_cost = cost;
+                }
+
+                if (y < ymin) {
+                    ymin = y;
+                    ymin_cost = cost;
+                } else if (y > ymax) {
+                    ymax = y;
+                    ymax_cost = cost;
+                }
+            }
+        }
+    }
+
+    coords->xmin = std::make_pair(xmin,xmin_cost);
+    coords->xmax = std::make_pair(xmax,xmax_cost);
+    coords->ymin = std::make_pair(ymin,ymin_cost);
+    coords->ymax = std::make_pair(ymax,ymax_cost);
+}
+*/

@@ -1506,7 +1506,7 @@ static e_move_result try_swap(const t_annealing_state* state,
     if(delta_c < 0)
         move_generator.process_outcome(-1*delta_c);
     else
-        move_generator.process_outcome(-0.1*delta_c);
+        move_generator.process_outcome(0);
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #    ifndef NO_GRAPHICS
