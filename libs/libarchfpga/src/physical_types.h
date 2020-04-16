@@ -630,10 +630,10 @@ struct t_physical_tile_type {
     // https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/1193
 
     // Does this t_physical_tile_type contain an inpad?
-    bool is_input_type;
+    bool is_input_type = false;
 
     // Does this t_physical_tile_type contain an outpad?
-    bool is_output_type;
+    bool is_output_type = false;
 };
 
 /* Holds the capacity range of a certain sub_tile block within the parent physical tile type.
