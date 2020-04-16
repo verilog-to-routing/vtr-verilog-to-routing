@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ -z $VTR_CMAKE_PARAMS ]; then
+if [ -z ${VTR_CMAKE_PARAMS+x} ]; then
 	echo "Missing $$VTR_CMAKE_PARAMS value"
 	exit 1
 fi
