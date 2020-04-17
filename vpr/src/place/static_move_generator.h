@@ -4,6 +4,7 @@
 #include "median_move_generator.h"
 #include "weighted_median_move_generator.h"
 #include "weighted_centroid_move_generator.h"
+#include "feasible_region_move_generator.h"
 #include "uniform_move_generator.h"
 
 
@@ -11,7 +12,6 @@ class StaticMoveGenerator : public MoveGenerator {
 private:
 	std::vector<std::unique_ptr<MoveGenerator>> avail_moves;
 	std::vector<float> moves_prob ;
-	//= {0.1,0.9};
 
 public:
 	StaticMoveGenerator(const std::vector<float> & prob);

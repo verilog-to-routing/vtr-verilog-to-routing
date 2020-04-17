@@ -21,7 +21,11 @@ StaticMoveGenerator::StaticMoveGenerator(const std::vector<float> & prob){
 	move_generator4 = std::make_unique<WeightedCentroidMoveGenerator>();
 	avail_moves.push_back(std::move(move_generator4));
 
-	moves_prob.push_back(prob[0]);
+	std::unique_ptr<MoveGenerator> move_generator5;
+	move_generator5 = std::make_unique<FeasibleRegionMoveGenerator>();
+	avail_moves.push_back(std::move(move_generator5));
+	
+    moves_prob.push_back(prob[0]);
 	for(size_t i =1; i < prob.size(); i++){
 		moves_prob.push_back(prob[i]+moves_prob[i-1]);
 	}

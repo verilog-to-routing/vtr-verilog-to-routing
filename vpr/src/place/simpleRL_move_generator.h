@@ -3,6 +3,7 @@
 #include "move_generator.h"
 #include "median_move_generator.h"
 #include "weighted_median_move_generator.h"
+#include "feasible_region_move_generator.h"
 #include "weighted_centroid_move_generator.h"
 #include "uniform_move_generator.h"
 

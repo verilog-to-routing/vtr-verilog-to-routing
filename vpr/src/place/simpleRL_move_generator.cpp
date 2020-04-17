@@ -196,7 +196,11 @@ SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>
 	move_generator4 = std::make_unique<WeightedCentroidMoveGenerator>();
 	avail_moves.push_back(std::move(move_generator4));
 
-	karmed_bandit_agent = std::move(agent);
+	std::unique_ptr<MoveGenerator> move_generator5;
+	move_generator5 = std::make_unique<FeasibleRegionMoveGenerator>();
+	avail_moves.push_back(std::move(move_generator5));
+	
+    karmed_bandit_agent = std::move(agent);
 }
 
 
@@ -205,8 +209,6 @@ e_create_move SimpleRLMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
 
 	type = karmed_bandit_agent->propose_action();
 	++num_moves[type];
-    //type = move_index;
-	//VTR_LOG("####%d",move_index);
 	return avail_moves[type]->propose_move(blocks_affected, rlim, X_coord, Y_coord, num_moves, type, high_fanout_net);
 }
 
