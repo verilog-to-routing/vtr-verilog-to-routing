@@ -5,11 +5,6 @@ if [ -z ${VTR_TEST+x} ]; then
 	exit 1
 fi
 
-if [ -z $MAX_CORES ]; then
-	echo "Missing $$MAX_CORES value"
-	exit 1
-fi
-
 if [ -z ${VTR_TEST_OPTIONS+x} ]; then
 	echo "Missing $$VTR_TEST_OPTIONS value"
 	exit 1
@@ -41,6 +36,14 @@ pwd -P
 ) &
 MONITOR=$!
 
+echo "========================================"
+echo "VPR Build Info"
+echo "========================================"
+./vpr/vpr --version
+
+echo "========================================"
+echo "Running Tests"
+echo "========================================"
 export VPR_NUM_WORKERS=1
 ./run_reg_test.pl $VTR_TEST $VTR_TEST_OPTIONS -j$NUM_CORES
 kill $MONITOR
