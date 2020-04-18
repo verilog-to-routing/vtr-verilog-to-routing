@@ -27,9 +27,6 @@ class MoveGenerator {
 
     //Recieves feedback about the outcome of the previously proposed move
     virtual void process_outcome(double) {}
-#if 0
-    virtual int get_last(){return -1;}
-#endif
 };
 
 #endif

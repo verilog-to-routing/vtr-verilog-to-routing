@@ -215,13 +215,3 @@ e_create_move SimpleRLMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
 void SimpleRLMoveGenerator::process_outcome(double reward){
 	karmed_bandit_agent->process_outcome(reward);
 }
-#if 0
-int SimpleRLMoveGenerator::get_last(){
-    return karmed_bandit_agent->get_last();
-}
-
-int EpsilonGreedyAgent::get_last() {
-    return last_action_;
-}
-#endif
-

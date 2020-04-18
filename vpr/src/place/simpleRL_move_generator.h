@@ -14,7 +14,6 @@ class KArmedBanditAgent {
     virtual void process_outcome(double ) = 0;
     virtual size_t propose_action() = 0;
 #if 0
-    virtual int get_last() = 0;
     virtual void debug() = 0;
 #endif
 };
@@ -47,13 +46,10 @@ class EpsilonGreedyAgent : public KArmedBanditAgent {
 
     std::vector<float> cumm_epsilon_action_prob_;
     size_t last_action_ = 0; //The last action proposed
-    std::vector<double> time_elapsed {1.0,4.3,5.7,3.3};
+    //std::vector<double> time_elapsed {1.0,4.3,5.7,3.3};
+    std::vector<double> time_elapsed {1.0,3.87,6.4,2.8,2.29};
     //std::vector<int> time_elapsed {7,30,40,23};
     FILE* f_ = nullptr;
-#if 0
-public:
-    int get_last() override;
-#endif
 };
 
 
@@ -67,8 +63,5 @@ public:
         std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>& num_moves,
         int& type, int high_fanout_net);
     void process_outcome(double reward);
-#if 0
-    int get_last();
-#endif
 };
 #endif
