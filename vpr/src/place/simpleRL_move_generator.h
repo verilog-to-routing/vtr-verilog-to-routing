@@ -47,7 +47,8 @@ class EpsilonGreedyAgent : public KArmedBanditAgent {
     std::vector<float> cumm_epsilon_action_prob_;
     size_t last_action_ = 0; //The last action proposed
     //std::vector<double> time_elapsed {1.0,4.3,5.7,3.3};
-    std::vector<double> time_elapsed {1.0,3.87,6.4,2.8,2.29};
+    //std::vector<double> time_elapsed {1.0,3.87,6.4,2.8,2.29};
+    std::vector<double> time_elapsed {1.0,3.6,5.4,2.5,2.1};
     //std::vector<int> time_elapsed {7,30,40,23};
     FILE* f_ = nullptr;
 };
