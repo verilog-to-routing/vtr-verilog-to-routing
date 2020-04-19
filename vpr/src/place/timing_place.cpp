@@ -65,10 +65,18 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
 
         float clb_pin_crit = calculate_clb_net_pin_criticality(*timing_info, pin_lookup_, clb_pin);
 
+        float new_crit = pow(clb_pin_crit, crit_exponent);
+        if(new_crit > HIGH_CRIT && timing_place_crit_[clb_net][pin_index_in_net] < HIGH_CRIT){
+            highly_crit_pins.push_back(std::make_pair(clb_net,pin_index_in_net));
+        }
+        else if (new_crit < HIGH_CRIT && timing_place_crit_[clb_net][pin_index_in_net] > HIGH_CRIT){
+            highly_crit_pins.erase(std::remove(highly_crit_pins.begin(), highly_crit_pins.end(), std::make_pair(clb_net,pin_index_in_net)), highly_crit_pins.end());
+        }
         /* The placer likes a great deal of contrast between criticalities.
          * Since path criticality varies much more than timing, we "sharpen" timing
          * criticality by taking it to some power, crit_exponent (between 1 and 8 by default). */
-        timing_place_crit_[clb_net][pin_index_in_net] = pow(clb_pin_crit, crit_exponent);
+        timing_place_crit_[clb_net][pin_index_in_net] = new_crit;
+
     }
 
     /* Criticalities updated. In sync with timing info.   */

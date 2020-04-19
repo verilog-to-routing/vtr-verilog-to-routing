@@ -9,11 +9,13 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
 
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device(); 
+    auto& device_ctx = g_vpr_ctx.device();
     auto& grid = device_ctx.grid;
 
     /* Pick a random block to be swapped with another random block.   */
-    ClusterBlockId b_from = pick_from_block();
+    //ClusterBlockId b_from = pick_from_block();
+    std::pair<ClusterNetId, int> crit_pin = highly_crit_pins[vtr::irand(highly_crit_pins.size())];
+    ClusterBlockId b_from = cluster_ctx.clb_nlist.net_pin_block(crit_pin.first, crit_pin.second);
 
     if (!b_from) {
         return e_create_move::ABORT; //No movable block found
@@ -60,15 +62,15 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         max_y = from.y;
         min_y = from.y;
     }
-    
+
 
     //Get the most critical output of the node
     int xt,yt,pnum;
-    float crit,highest_crit = 0; 
+    float crit,highest_crit = 0;
     for(ClusterPinId driver_pin_id : cluster_ctx.clb_nlist.block_output_pins(b_from)){
         ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(driver_pin_id);
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
-            continue;        
+            continue;
 
         for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
             ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);

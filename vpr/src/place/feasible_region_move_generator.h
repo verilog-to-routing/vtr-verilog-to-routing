@@ -3,7 +3,7 @@
 #include "move_generator.h"
 #include "timing_place.h"
 
-const float CRIT_LIMIT = 0.8;
+const float CRIT_LIMIT = 0.9;
 
 class FeasibleRegionMoveGenerator : public MoveGenerator {
     e_create_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float,

@@ -41,6 +41,7 @@
 #include "place_delay_model.h"
 #include "vpr_net_pins_matrix.h"
 
+extern std::vector<std::pair<ClusterNetId, int>> highly_crit_pins;
 /**
  * @brief PlacerCriticalities returns the clustered netlist connection criticalities
  *        used by the placer ('sharpened' by a criticality exponent).
