@@ -1485,7 +1485,7 @@ static void build_rr_sinks_sources(const int i,
                             inode = get_rr_node_index(L_rr_node_indices, i + width_offset, j + height_offset, OPIN, ipin, side);
 
                             //Initially left unconnected
-
+                            VTR_ASSERT(inode >= 0);
                             L_rr_node[inode].set_cost_index(OPIN_COST_INDEX);
                             L_rr_node[inode].set_type(OPIN);
                         }
