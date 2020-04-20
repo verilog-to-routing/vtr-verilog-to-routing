@@ -52,6 +52,9 @@ int main(int argc, char** argv) {
     } catch (vtr::VtrError& vtr_error) {
         printf("Failed to process architecture %s: %s\n", argv[1], vtr_error.what());
         return 1;
+    } catch (std::exception& error) {
+        printf("Failed to process architecture %s: %s\n", argv[1], error.what());
+        return 1;
     }
 
     printf("Done\n");
