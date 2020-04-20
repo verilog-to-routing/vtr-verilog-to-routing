@@ -2229,11 +2229,10 @@ int get_sub_tile_physical_pin(int sub_tile_index,
     auto result = direct_map.find(logical_pin);
 
     if (result == direct_map.end()) {
-        VTR_LOG_WARN(
-            "Couldn't find the corresponding physical pin of the logical pin %d."
-            "Physical Tile: %s, Logical Block: %s.\n",
-            pin, physical_tile->name, logical_block->name);
-        return OPEN;
+        VPR_ERROR(VPR_ERROR_OTHER,
+                  "Couldn't find the corresponding physical tile pin of the logical block pin %d."
+                  "Physical Tile Type: %s, Logical Block Type: %s.\n",
+                  pin, physical_tile->name, logical_block->name);
     }
 
     return result->second.pin;
@@ -2251,7 +2250,12 @@ int get_physical_pin(t_physical_tile_type_ptr physical_tile,
         }
     }
 
-    VTR_ASSERT(sub_tile_index != OPEN);
+    if (sub_tile_index == OPEN) {
+        VPR_ERROR(VPR_ERROR_OTHER,
+                  "Found no instances of logical block type '%s' within physical tile type '%s'. "
+                  "Couldn't find the corresponding physical tile type pin of the logical block type pin %d.",
+                  logical_block->name, physical_tile->name, pin);
+    }
 
     return get_sub_tile_physical_pin(sub_tile_index, physical_tile, logical_block, pin);
 }

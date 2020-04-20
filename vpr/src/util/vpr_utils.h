@@ -167,9 +167,19 @@ t_physical_tile_type_ptr get_physical_tile_type(const ClusterBlockId blk);
 int get_logical_pin(t_physical_tile_type_ptr physical_tile,
                     t_logical_block_type_ptr logical_block,
                     int pin);
+
+//Returns the physical pin index (within 'physical_tile') corresponding to the
+//logical index ('pin' of the first instance of 'logical_block' within the physcial tile.
+//
+//Throws an exception if the corresponding physical pin can't be found.
 int get_physical_pin(t_physical_tile_type_ptr physical_tile,
                      t_logical_block_type_ptr logical_block,
                      int pin);
+
+//Returns the physical pin index (within 'physical_tile') corresponding to the
+//logical index ('pin') of the 'logical_block' at sub-tile location 'sub_tile_index'.
+//
+//Throws an exception if the corresponding physical pin can't be found.
 int get_sub_tile_physical_pin(int sub_tile_index,
                               t_physical_tile_type_ptr physical_tile,
                               t_logical_block_type_ptr logical_block,
