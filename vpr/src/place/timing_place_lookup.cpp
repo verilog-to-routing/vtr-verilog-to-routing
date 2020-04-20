@@ -445,6 +445,8 @@ static void generic_compute_matrix_dijkstra_expansion(
     for (int driver_ptc : best_driver_ptcs) {
         VTR_ASSERT(driver_ptc != OPEN);
         int source_rr_node = get_rr_node_index(device_ctx.rr_node_indices, source_x, source_y, SOURCE, driver_ptc);
+
+        VTR_ASSERT(source_rr_node != OPEN);
         auto delays = calculate_all_path_delays_from_rr_node(source_rr_node, router_opts);
 
         bool path_to_all_sinks = true;
