@@ -2,11 +2,11 @@
 # https://github.com/duck2/uxsdcxx
 # Modify only if your build process doesn't involve regenerating this file.
 #
-# Cmdline: uxsdcxx/uxsdcap.py rr_graph.xsd
-# Input file: rr_graph.xsd
+# Cmdline: uxsdcxx/uxsdcap.py /home/kmurray/trees/vtr/vpr/src/route/rr_graph.xsd
+# Input file: /home/kmurray/trees/vtr/vpr/src/route/rr_graph.xsd
 # md5sum of input file: 40e83d2ea6556761d4e29f21324b1871
 
-@0xc18a82ddfa10808b;
+@0xb803100e76d3342d;
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("ucap");
 
