@@ -4,8 +4,8 @@
  * https://github.com/duck2/uxsdcxx
  * Modify only if your build process doesn't involve regenerating this file.
  *
- * Cmdline: uxsdcxx/uxsdcxx.py rr_graph.xsd
- * Input file: rr_graph.xsd
+ * Cmdline: uxsdcxx/uxsdcxx.py /home/kmurray/trees/vtr/vpr/src/route/rr_graph.xsd
+ * Input file: /home/kmurray/trees/vtr/vpr/src/route/rr_graph.xsd
  * md5sum of input file: 40e83d2ea6556761d4e29f21324b1871
  */
 
@@ -4198,9 +4198,9 @@ inline void attr_error(std::bitset<N> astate, const char* const* lookup, const s
 }
 
 inline void get_line_number(const char* filename, std::ptrdiff_t target_offset, int* line, int* col) {
-    FILE* f = fopen(filename, "rb");
+    std::unique_ptr<FILE, decltype(&fclose)> f(fopen(filename, "rb"), fclose);
 
-    if (f == nullptr) {
+    if (!f) {
         throw std::runtime_error(std::string("Failed to open file") + filename);
     }
 
@@ -4212,7 +4212,7 @@ inline void get_line_number(const char* filename, std::ptrdiff_t target_offset, 
     char buffer[1024];
     std::size_t size;
 
-    while ((size = fread(buffer, 1, sizeof(buffer), f)) > 0) {
+    while ((size = fread(buffer, 1, sizeof(buffer), f.get())) > 0) {
         for (std::size_t i = 0; i < size; ++i) {
             if (buffer[i] == '\n') {
                 current_line += 1;
@@ -4236,7 +4236,6 @@ inline void get_line_number(const char* filename, std::ptrdiff_t target_offset, 
 
     *line = current_line;
     *col = target_offset - current_line_offset;
-    fclose(f);
 }
 
 } /* namespace uxsd */
