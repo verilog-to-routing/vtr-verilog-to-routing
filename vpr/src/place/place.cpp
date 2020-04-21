@@ -2348,6 +2348,11 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
 
     for (size_t high = 0; high < device_ctx.grid.height(); high++)
         for (size_t low = 0; low <= high; low++) {
+            /* Since we will divide the wiring cost by the average channel *
+             * capacity between high and low, having only 0 width channels *
+             * will result in infinite wiring capacity normalization       *
+             * factor, and extremely bad placer behaviour. Hence we change *
+             * this to a small (1 track) channel capacity instead.         */
             if (chanx_place_cost_fac[high][low] == 0.0f) {
                 VTR_LOG_WARN("CHANX place cost fac is 0 at %d %d\n", high, low);
                 chanx_place_cost_fac[high][low] = 1.0f;
@@ -2375,6 +2380,11 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
 
     for (size_t high = 0; high < device_ctx.grid.width(); high++)
         for (size_t low = 0; low <= high; low++) {
+            /* Since we will divide the wiring cost by the average channel *
+             * capacity between high and low, having only 0 width channels *
+             * will result in infinite wiring capacity normalization       *
+             * factor, and extremely bad placer behaviour. Hence we change *
+             * this to a small (1 track) channel capacity instead.         */
             if (chany_place_cost_fac[high][low] == 0.0f) {
                 VTR_LOG_WARN("CHANY place cost fac is 0 at %d %d\n", high, low);
                 chany_place_cost_fac[high][low] = 1.0f;
