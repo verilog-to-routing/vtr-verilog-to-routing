@@ -795,7 +795,8 @@ bool find_to_loc_median(t_logical_block_type_ptr type,
 
     //Each x/y location contains only a single type, so we can pick a random
     //z (capcity) location
-    to.z = vtr::irand(to_type->capacity - 1);
+    auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(to_type->index);
+    to.sub_tile = compatible_sub_tiles[vtr::irand((int)compatible_sub_tiles.size() - 1)];
 
     VTR_ASSERT_MSG(is_tile_compatible(to_type, type), "Type must be compatible");
     VTR_ASSERT_MSG(grid[to.x][to.y].width_offset == 0, "Should be at block base location");
@@ -929,7 +930,8 @@ bool find_to_loc_centroid(t_logical_block_type_ptr type,
 
     //Each x/y location contains only a single type, so we can pick a random
     //z (capcity) location
-    to.z = vtr::irand(to_type->capacity - 1);
+    auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(to_type->index);
+    to.sub_tile = compatible_sub_tiles[vtr::irand((int)compatible_sub_tiles.size() - 1)];
 
     VTR_ASSERT_MSG(is_tile_compatible(to_type, type), "Type must be compatible");
     VTR_ASSERT_MSG(grid[to.x][to.y].width_offset == 0, "Should be at block base location");
