@@ -64,6 +64,14 @@ std::vector<double> time_of_moves (5,0);
 #include "draw_types.h"
 #include "draw_global.h"
 #include "draw_color.h"
+//map of the available move types and their corresponding type number
+std::map<int,std::string> available_move_types = {
+                                {0,"Uniform"},
+                                {1,"Median"},
+                                {2,"Weighted Median"},
+                                {3,"Weighted Centroid"},
+                                {4,"Feasible Region"}                                
+};
 #endif
 
 using std::max;
