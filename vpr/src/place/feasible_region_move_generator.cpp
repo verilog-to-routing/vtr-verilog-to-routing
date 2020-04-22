@@ -3,8 +3,7 @@
 #include <algorithm>
 #include "math.h"
 
-
-e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float ,
+e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim,
     std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>&, int &,int ) {
 
     auto& place_ctx = g_vpr_ctx.placement();
@@ -85,11 +84,12 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
 
                 xt = std::max(std::min(xt, (int)grid.width() - 2), 1);  //-2 for no perim channels
                 yt = std::max(std::min(yt, (int)grid.height() - 2), 1); //-2 for no perim channels
+                highest_crit = crit;
                 if(crit == 1 )
                     break;
             }
         }
-        if(crit == 1 )
+        if(highest_crit == 1 )
             break;
     }
 
@@ -107,7 +107,7 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         FR_coords.xmin = std::min(from.x, max_x);
         FR_coords.xmax = std::max(from.x, xt);
     }
-
+    VTR_ASSERT(FR_coords.xmin <= FR_coords.xmax);
 
     if(yt < min_y){
         FR_coords.ymin = std::min(from.y, yt);
@@ -121,9 +121,15 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         FR_coords.ymin = std::min(from.y, max_y);
         FR_coords.ymax = std::max(from.y, yt);
     }
+    VTR_ASSERT(FR_coords.ymin <= FR_coords.ymax);
 
     if (!find_to_loc_median(cluster_from_type, &FR_coords, from, to)) {
-        return e_create_move::ABORT;
+        t_pl_loc center;
+        center.x = (FR_coords.xmin + FR_coords.xmax)/2;
+        center.y = (FR_coords.ymin + FR_coords.ymax)/2;
+        if (!find_to_loc_centroid(cluster_from_type, rlim, center, to))
+            return e_create_move::ABORT;
     }
+
     return ::create_move(blocks_affected, b_from, to);
 }
