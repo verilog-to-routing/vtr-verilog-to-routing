@@ -282,6 +282,8 @@ static e_move_result try_swap(float t,
                               t_placer_prev_inverse_costs* prev_inverse_costs,
                               float rlim,
                               MoveGenerator& move_generator,
+                              TimingInfo& timing_info,
+                              const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                               t_pl_blocks_to_be_moved& blocks_affected,
                               const PlaceDelayModel* delay_model,
                               float rlim_escape_fraction,
@@ -306,6 +308,8 @@ static float starting_t(t_placer_costs* costs,
                         float rlim,
                         const PlaceDelayModel* delay_model,
                         MoveGenerator& move_generator,
+                        TimingInfo& timing_info,
+                        const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                         t_pl_blocks_to_be_moved& blocks_affected,
                         const t_placer_opts& placer_opts);
 
@@ -340,6 +344,8 @@ static void update_bb(ClusterNetId net_id, t_bb* bb_coord_new, t_bb* bb_edge_new
 static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm,
                                                const t_pl_blocks_to_be_moved& blocks_affected,
                                                const PlaceDelayModel* delay_model,
+                                               const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                                               TimingInfo& timing_info,
                                                double& bb_delta_c,
                                                double& timing_delta_c);
 
@@ -350,7 +356,13 @@ static void update_net_bb(const ClusterNetId net,
                           int iblk,
                           const ClusterBlockId blk,
                           const ClusterPinId blk_pin);
-static void update_td_delta_costs(const PlaceDelayModel* delay_model, const t_pl_blocks_to_be_moved& blocks_affected, const ClusterNetId net, const ClusterPinId pin, double& delta_timing_cost);
+static void update_td_delta_costs(const PlaceDelayModel* delay_model,
+                                 const t_pl_blocks_to_be_moved& blocks_affected,
+                                 const ClusterNetId net,
+                                 const ClusterPinId pin,
+                                 const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                                 TimingInfo& timing_info,
+                                 double& delta_timing_cost);
 
 static double get_net_cost(ClusterNetId net_id, t_bb* bb_ptr);
 
@@ -632,10 +644,15 @@ void try_place(const t_placer_opts& placer_opts,
     final_rlim = 1;
     inverse_delta_rlim = 1 / (first_rlim - final_rlim);
 
-    t = starting_t(&costs, &prev_inverse_costs,
-                   annealing_sched, move_lim, rlim,
+    t = starting_t(&costs,
+                   &prev_inverse_costs,
+                   annealing_sched,
+                   move_lim,
+                   rlim,
                    place_delay_model.get(),
                    *move_generator,
+                   *timing_info,
+                   netlist_pin_lookup,
                    blocks_affected,
                    placer_opts);
 
@@ -931,6 +948,8 @@ static void placement_inner_loop(float t,
     for (inner_iter = 0; inner_iter < move_lim; inner_iter++) {
         e_move_result swap_result = try_swap(t, costs, prev_inverse_costs, rlim,
                                              move_generator,
+                                             timing_info,
+                                             netlist_pin_lookup,
                                              blocks_affected,
                                              delay_model,
                                              placer_opts.rlim_escape_fraction,
@@ -1129,6 +1148,8 @@ static float starting_t(t_placer_costs* costs,
                         float rlim,
                         const PlaceDelayModel* delay_model,
                         MoveGenerator& move_generator,
+                        TimingInfo& timing_info,
+                        const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                         t_pl_blocks_to_be_moved& blocks_affected,
                         const t_placer_opts& placer_opts) {
     /* Finds the starting temperature (hot condition).              */
@@ -1152,6 +1173,8 @@ static float starting_t(t_placer_costs* costs,
     for (i = 0; i < move_lim; i++) {
         e_move_result swap_result = try_swap(HUGE_POSITIVE_FLOAT, costs, prev_inverse_costs, rlim,
                                              move_generator,
+                                             timing_info,
+                                             netlist_pin_lookup,
                                              blocks_affected,
                                              delay_model,
                                              placer_opts.rlim_escape_fraction,
@@ -1222,6 +1245,8 @@ static e_move_result try_swap(float t,
                               t_placer_prev_inverse_costs* prev_inverse_costs,
                               float rlim,
                               MoveGenerator& move_generator,
+                              TimingInfo& timing_info,
+                              const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                               t_pl_blocks_to_be_moved& blocks_affected,
                               const PlaceDelayModel* delay_model,
                               float rlim_escape_fraction,
@@ -1287,7 +1312,13 @@ static e_move_result try_swap(float t,
         apply_move_blocks(blocks_affected);
 
         // Find all the nets affected by this swap and update their costs
-        int num_nets_affected = find_affected_nets_and_update_costs(place_algorithm, blocks_affected, delay_model, bb_delta_c, timing_delta_c);
+        int num_nets_affected = find_affected_nets_and_update_costs(place_algorithm,
+                                                                    blocks_affected,
+                                                                    delay_model,
+                                                                    netlist_pin_lookup,
+                                                                    timing_info,
+                                                                    bb_delta_c,
+                                                                    timing_delta_c);
         if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
             /*in this case we redefine delta_c as a combination of timing and bb.  *
              *additionally, we normalize all values, therefore delta_c is in       *
@@ -1361,6 +1392,8 @@ static e_move_result try_swap(float t,
 static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm,
                                                const t_pl_blocks_to_be_moved& blocks_affected,
                                                const PlaceDelayModel* delay_model,
+                                               const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                                               TimingInfo& timing_info,
                                                double& bb_delta_c,
                                                double& timing_delta_c) {
     VTR_ASSERT_SAFE(bb_delta_c == 0.);
@@ -1392,7 +1425,7 @@ static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm
 
             if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
                 //Determine the change in timing costs if required
-                update_td_delta_costs(delay_model, blocks_affected, net_id, blk_pin, timing_delta_c);
+                update_td_delta_costs(delay_model, blocks_affected, net_id, blk_pin, netlist_pin_lookup, timing_info, timing_delta_c);
             }
         }
     }
@@ -1453,7 +1486,13 @@ static void update_net_bb(const ClusterNetId net,
     }
 }
 
-static void update_td_delta_costs(const PlaceDelayModel* delay_model, const t_pl_blocks_to_be_moved& blocks_affected, const ClusterNetId net, const ClusterPinId pin, double& delta_timing_cost) {
+static void update_td_delta_costs(const PlaceDelayModel* delay_model,
+                                  const t_pl_blocks_to_be_moved& blocks_affected,
+                                  const ClusterNetId net,
+                                  const ClusterPinId pin,
+                                  const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                                  TimingInfo& timing_info,
+                                  double& delta_timing_cost) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     if (cluster_ctx.clb_nlist.pin_type(pin) == PinType::DRIVER) {
@@ -1465,6 +1504,11 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model, const t_pl
 
             temp_point_to_point_timing_cost[net][ipin] = get_timing_place_crit(net, ipin) * temp_delay;
             delta_timing_cost += temp_point_to_point_timing_cost[net][ipin] - point_to_point_timing_cost[net][ipin];
+
+            //Note that we invalidate the delay of the corresponding edge(s) in the timing graph here (and below).
+            //This is somewhat pessimistic (the move might be rejected and this change will be undone),
+            //however this is gaurenteed to be robust, even if we do per-move STA updates.
+            invalidate_delays(net, ipin, netlist_pin_lookup, timing_info);
         }
     } else {
         //This pin is a net sink on a moved block
@@ -1484,6 +1528,8 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model, const t_pl
 
             temp_point_to_point_timing_cost[net][net_pin] = get_timing_place_crit(net, net_pin) * temp_delay;
             delta_timing_cost += temp_point_to_point_timing_cost[net][net_pin] - point_to_point_timing_cost[net][net_pin];
+
+            invalidate_delays(pin, netlist_pin_lookup, timing_info);
         }
     }
 }
