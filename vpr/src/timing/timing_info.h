@@ -38,6 +38,9 @@ class TimingInfo {
   public:
     //Mutators
 
+    //Invalidate a timing edgge (i.e. due to delay change)
+    virtual void invalidate_delay(const tatum::EdgeId edge) = 0;
+
     //Update all timing information
     virtual void update() = 0;
 

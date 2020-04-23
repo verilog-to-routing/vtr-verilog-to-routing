@@ -8,6 +8,7 @@
 #include "histogram.h"
 #include "timing_info_fwd.h"
 #include "DomainPair.h"
+#include "globals.h"
 
 #include "vpr_utils.h"
 #include "clustered_netlist_utils.h"
@@ -76,6 +77,36 @@ tatum::NodeId find_origin_node_for_hold_slack(const tatum::TimingTags::tag_range
 
 //Returns the a map of domain's and their clock fanout (i.e. logical outputs at which the clock captures)
 std::map<tatum::DomainId, size_t> count_clock_fanouts(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& setup_analyzer);
+
+//Invalidates all timing graph edge delays related to the specified clustered netlist pin
+template<class TimingInfo>
+void invalidate_delays(const ClusterPinId clb_pin, const ClusteredPinAtomPinsLookup& clb_atom_pin_lookup, TimingInfo& timing_info) {
+    auto& atom_ctx = g_vpr_ctx.atom();
+    auto& atom_lookup = atom_ctx.lookup;
+    const auto& tg = timing_info.timing_graph();
+
+    for (const AtomPinId atom_pin : clb_atom_pin_lookup.connected_atom_pins(clb_pin)) {
+        tatum::NodeId node = atom_lookup.atom_pin_tnode(atom_pin);
+
+        VTR_ASSERT_SAFE(node);
+        VTR_ASSERT_SAFE_MSG(tg->node_in_edges(node).size() == 1, "Expect delay invalidation on on net sinks");
+
+        tatum::EdgeId edge = *(tg->node_in_edges(node).begin());
+
+        timing_info.invalidate_delay(edge);
+    }
+}
+
+//Invalidates all timing graph edge delays related to the 'ipin'th pin of 'net'
+template<class TimingInfo>
+void invalidate_delays(const ClusterNetId net, int ipin, const ClusteredPinAtomPinsLookup& clb_atom_pin_lookup, TimingInfo& timing_info) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& clb_nlist = cluster_ctx.clb_nlist;
+
+    ClusterPinId pin = clb_nlist.net_pin(net, ipin);
+
+    invalidate_delays(pin, clb_atom_pin_lookup, timing_info);
+}
 
 /*
  * Slack and criticality calculation utilities
