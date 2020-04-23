@@ -85,6 +85,11 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
 
   public:
     //Mutators
+
+    void invalidate_delay(const tatum::EdgeId /*edge*/) override {
+        //Unimplemented for now
+    }
+
     void update() override {
         update_setup();
 
@@ -200,6 +205,10 @@ class ConcreteHoldTimingInfo : public HoldTimingInfo {
 
   public:
     //Mutators
+    void invalidate_delay(const tatum::EdgeId /*edge*/) override {
+        //Unimplemented for now
+    }
+
     void update() override {
         update_hold();
 
@@ -305,6 +314,10 @@ class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
 
   public:
     //Mutators
+    void invalidate_delay(const tatum::EdgeId /*edge*/) override {
+        //Unimplemented for now
+    }
+
 
     //Update both setup and hold simultaneously
     //  This is more efficient than calling update_hold() and update_setup() separately, since
@@ -410,6 +423,8 @@ class ConstantTimingInfo : public SetupHoldTimingInfo {
     void set_warn_unconstrained(bool /*val*/) override {}
 
   public: //Mutators
+    void invalidate_delay(const tatum::EdgeId /*edge*/) override {}
+
     void update() override {}
     void update_hold() override {}
     void update_setup() override {}
