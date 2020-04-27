@@ -86,8 +86,8 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
   public:
     //Mutators
 
-    void invalidate_delay(const tatum::EdgeId /*edge*/) override {
-        //Unimplemented for now
+    void invalidate_delay(const tatum::EdgeId edge) override {
+        setup_analyzer_->invalidate_edge(edge);
     }
 
     void update() override {
@@ -205,8 +205,8 @@ class ConcreteHoldTimingInfo : public HoldTimingInfo {
 
   public:
     //Mutators
-    void invalidate_delay(const tatum::EdgeId /*edge*/) override {
-        //Unimplemented for now
+    void invalidate_delay(const tatum::EdgeId edge) override {
+        hold_analyzer_->invalidate_edge(edge);
     }
 
     void update() override {
@@ -314,8 +314,8 @@ class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
 
   public:
     //Mutators
-    void invalidate_delay(const tatum::EdgeId /*edge*/) override {
-        //Unimplemented for now
+    void invalidate_delay(const tatum::EdgeId edge) override {
+        setup_hold_analyzer_->invalidate_edge(edge);
     }
 
 
