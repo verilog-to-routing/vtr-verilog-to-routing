@@ -140,8 +140,7 @@ struct t_options {
     argparse::ArgValue<int> min_incremental_reroute_fanout;
     argparse::ArgValue<bool> read_rr_edge_metadata;
     argparse::ArgValue<bool> exit_after_first_routing_iteration;
-    argparse::ArgValue<bool> disable_check_route;
-    argparse::ArgValue<bool> quick_check_route;
+    argparse::ArgValue<e_check_route_option> check_route;
 
     /* Timing-driven router options only */
     argparse::ArgValue<float> astar_fac;

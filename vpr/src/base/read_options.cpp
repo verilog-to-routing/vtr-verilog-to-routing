@@ -858,6 +858,41 @@ struct ParseRouterHeap {
     }
 };
 
+struct ParseCheckRoute {
+    ConvertedValue<e_check_route_option> from_str(std::string str) {
+        ConvertedValue<e_check_route_option> conv_value;
+        if (str == "off")
+            conv_value.set_value(e_check_route_option::OFF);
+        else if (str == "quick")
+            conv_value.set_value(e_check_route_option::QUICK);
+        else if (str == "full")
+            conv_value.set_value(e_check_route_option::FULL);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_check_route_option (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_check_route_option val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_check_route_option::OFF)
+            conv_value.set_value("off");
+        else if (val == e_check_route_option::QUICK)
+            conv_value.set_value("quick");
+        else {
+            VTR_ASSERT(val == e_check_route_option::FULL);
+            conv_value.set_value("full");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"off", "quick", "full"};
+    }
+};
+
 struct ParsePlaceEfforScaling {
     ConvertedValue<e_place_effort_scaling> from_str(std::string str) {
         ConvertedValue<e_place_effort_scaling> conv_value;
@@ -1887,14 +1922,13 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    route_timing_grp.add_argument<bool, ParseOnOff>(args.disable_check_route, "--disable_check_route")
-        .help("Disables check_route once routing step has finished or when routing file is loaded")
-        .default_value("off")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    route_timing_grp.add_argument<bool, ParseOnOff>(args.quick_check_route, "--quick_check_route")
-        .help("Runs check_route, disabling slow checks, once routing step has finished or when routing file is loaded")
-        .default_value("off")
+    route_timing_grp.add_argument<e_check_route_option, ParseCheckRoute>(args.check_route, "--check_route")
+        .help(
+            "Options to run check route in three different modes.\n"
+            " * off    : check route is completely disabled.\n"
+            " * quick  : runs check route with slow checks disabled.\n"
+            " * full   : runs the full check route step.\n")
+        .default_value("quick")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.router_debug_net, "--router_debug_net")
