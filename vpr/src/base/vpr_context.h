@@ -77,10 +77,6 @@ struct TimingContext : public Context {
             return sta_wallclock_time + slack_wallclock_time;
         }
 
-        double old_timing_analysis_wallclock_time() const {
-            return old_sta_wallclock_time + old_delay_annotation_wallclock_time;
-        }
-
         size_t num_full_updates() const {
             return num_full_setup_updates + num_full_hold_updates + num_full_setup_hold_updates;
         }
@@ -90,10 +86,6 @@ struct TimingContext : public Context {
         size_t num_full_setup_updates = 0;
         size_t num_full_hold_updates = 0;
         size_t num_full_setup_hold_updates = 0;
-
-        double old_sta_wallclock_time = 0.;
-        double old_delay_annotation_wallclock_time = 0.;
-        size_t num_old_sta_full_updates = 0;
     };
     timing_analysis_profile_info stats;
 };
