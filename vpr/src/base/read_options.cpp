@@ -1757,9 +1757,9 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     place_grp.add_argument(args.place_static_move_prob, "--place_static_move_prob")
         .help(
             "The Probability of different move in Simulated Annealing."
-            "The order of moves is: {uniformMove, MedianMove, WeightedMedianMove, WeightedCentroid, Timing feasible Region(TFR)}")
+            "The order of moves is: {uniformMove, MedianMove, WeightedMedianMove, WeightedCentroid, Timing feasible Region(TFR), Critical UniformMove}")
         .nargs('+')
-        .default_value({"100","0","0","0","0"})
+        .default_value({"100","0","0","0","0","0"})
 
         .show_in(argparse::ShowIn::HELP_ONLY);
 

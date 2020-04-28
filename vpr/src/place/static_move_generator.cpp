@@ -24,6 +24,11 @@ StaticMoveGenerator::StaticMoveGenerator(const std::vector<float> & prob){
 	std::unique_ptr<MoveGenerator> move_generator5;
 	move_generator5 = std::make_unique<FeasibleRegionMoveGenerator>();
 	avail_moves.push_back(std::move(move_generator5));
+
+	std::unique_ptr<MoveGenerator> move_generator6;
+	move_generator6 = std::make_unique<CriticalUniformMoveGenerator>();
+	avail_moves.push_back(std::move(move_generator6));
+
 	
     moves_prob.push_back(prob[0]);
 	for(size_t i =1; i < prob.size(); i++){
@@ -35,7 +40,7 @@ StaticMoveGenerator::StaticMoveGenerator(const std::vector<float> & prob){
 e_create_move StaticMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim
 	, std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>& num_moves, int& type, int high_fanout_net) {
 
-	float rand_num = vtr::irand(100);
+	float rand_num = vtr::irand(std::accumulate(moves_prob.begin(),moves_prob.end(), 0.0));
 	for(size_t i =0; i < moves_prob.size(); i++){
 		if(rand_num <= moves_prob[i]){
 			++num_moves[i];

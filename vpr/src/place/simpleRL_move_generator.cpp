@@ -200,6 +200,10 @@ SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>
 	move_generator5 = std::make_unique<FeasibleRegionMoveGenerator>();
 	avail_moves.push_back(std::move(move_generator5));
 	
+	std::unique_ptr<MoveGenerator> move_generator6;
+	move_generator6 = std::make_unique<CriticalUniformMoveGenerator>();
+	avail_moves.push_back(std::move(move_generator6));
+
     karmed_bandit_agent = std::move(agent);
 }
 

@@ -56,8 +56,8 @@
 #if 0
 #include <chrono>
 using namespace std::chrono;
-std::vector<double> num_of_moves (5,0);
-std::vector<double> time_of_moves (5,0);
+std::vector<double> num_of_moves (6,0);
+std::vector<double> time_of_moves (6,0);
 #endif
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
@@ -70,7 +70,8 @@ std::map<int,std::string> available_move_types = {
                                 {1,"Median"},
                                 {2,"Weighted Median"},
                                 {3,"Weighted Centroid"},
-                                {4,"Feasible Region"}                                
+                                {4,"Feasible Region"},
+                                {5,"Critical Uniform"} 
 };
 #endif
 
@@ -504,6 +505,7 @@ void try_place(const t_placer_opts& placer_opts,
         VTR_LOG("Weighted Median move : %f \n",placer_opts.place_static_move_prob[2]);
         VTR_LOG("Weighted Centroid move : %f \n",placer_opts.place_static_move_prob[3]);
         VTR_LOG("Timing Feasible Region move : %f \n",placer_opts.place_static_move_prob[4]);
+        VTR_LOG("Critical Uniform move : %f \n",placer_opts.place_static_move_prob[5]);
         move_generator = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_move_prob);
     }
     else{
@@ -939,6 +941,7 @@ quench:
     VTR_LOG("time of W median move = %f \n", time_of_moves[2]/num_of_moves[2]);
     VTR_LOG("time of W centroid move = %f \n", time_of_moves[3]/num_of_moves[3]);
     VTR_LOG("time of feasible region move = %f \n", time_of_moves[4]/num_of_moves[4]);
+    VTR_LOG("time of critical uniform move = %f \n", time_of_moves[5]/num_of_moves[5]);
 #endif
 }
 
@@ -2880,7 +2883,7 @@ bool placer_needs_lookahead(const t_vpr_setup& vpr_setup) {
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 void print_place_statisitics(const float &t, const std::vector<int> & num_moves, const std::vector<int> & , const std::vector<int> &){
     FILE* f_ = vtr::fopen("moves_info.txt","a");
-    fprintf(f_, "%7.1e", t);
+    fprintf(f_, "%1.9f", t);
     for(size_t i =0; i < num_moves.size(); i++){
         fprintf(f_,", %d",num_moves[i]);
     }
