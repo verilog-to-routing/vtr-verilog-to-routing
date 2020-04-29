@@ -64,3 +64,4 @@ regression_tests/vtr_reg_strong/strong_graphics_commands
 regression_tests/vtr_reg_strong/strong_clock_pll
 regression_tests/vtr_reg_strong/strong_place_effort_scaling
 regression_tests/vtr_reg_strong/strong_sub_tiles
+regression_tests/vtr_reg_strong/strong_check_route_options
