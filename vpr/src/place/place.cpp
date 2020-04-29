@@ -8,6 +8,7 @@
 #include "vtr_util.h"
 #include "vtr_random.h"
 #include "vtr_geometry.h"
+#include "vtr_time.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -409,7 +410,9 @@ static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
                                                const PlacementDelayCalculator& delay_calc);
 
 static void print_place_status_header();
-static void print_place_status(const float t,
+static void print_place_status(const size_t num_temps,
+                               const float elapsed_sec,
+                               const float t,
                                const float oldt,
                                const t_placer_statistics& stats,
                                const float cpd,
@@ -671,6 +674,7 @@ void try_place(const t_placer_opts& placer_opts,
 
     /* Outer loop of the simmulated annealing begins */
     while (exit_crit(t, costs.cost, annealing_sched) == 0) {
+        vtr::Timer temperature_timer;
         if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
             costs.cost = 1;
         }
@@ -708,7 +712,9 @@ void try_place(const t_placer_opts& placer_opts,
             sWNS = timing_info->setup_worst_negative_slack();
         }
 
-        print_place_status(t, oldt,
+        print_place_status(num_temps, 
+                           temperature_timer.elapsed_sec(),
+                           t, oldt,
                            stats,
                            critical_path.delay(), sTNS, sWNS,
                            success_rat, std_dev, rlim, crit_exponent, tot_iter);
@@ -729,47 +735,51 @@ void try_place(const t_placer_opts& placer_opts,
             print_clb_placement("first_iteration_clb_placement.echo");
         }
 #endif
+    } /* Outer loop of the simmulated annealing ends */
+
+    { /* Quench */
+        vtr::Timer temperature_timer;
+        outer_loop_recompute_criticalities(placer_opts, &costs,
+                                           &prev_inverse_costs,
+                                           num_connections,
+                                           crit_exponent,
+                                           &outer_crit_iter_count,
+                                           netlist_pin_lookup,
+                                           place_delay_model.get(),
+                                           *timing_info);
+
+        t = 0; /* freeze out */
+
+        /* Run inner loop again with temperature = 0 so as to accept only swaps
+         * which reduce the cost of the placement */
+        placement_inner_loop(t, num_temps, rlim, placer_opts,
+                             move_lim, crit_exponent, inner_recompute_limit, &stats,
+                             &costs,
+                             &prev_inverse_costs,
+                             &moves_since_cost_recompute,
+                             netlist_pin_lookup,
+                             place_delay_model.get(),
+                             *move_generator,
+                             blocks_affected,
+                             *timing_info);
+
+        tot_iter += move_lim;
+        ++num_temps;
+
+        calc_placer_stats(stats, success_rat, std_dev, costs, move_lim);
+
+        if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+            critical_path = timing_info->least_slack_critical_path();
+            sTNS = timing_info->setup_total_negative_slack();
+            sWNS = timing_info->setup_worst_negative_slack();
+        }
+
+        print_place_status(num_temps,
+                           temperature_timer.elapsed_sec(),
+                           t, oldt, stats,
+                           critical_path.delay(), sTNS, sWNS,
+                           success_rat, std_dev, rlim, crit_exponent, tot_iter);
     }
-    /* Outer loop of the simmulated annealing ends */
-
-    outer_loop_recompute_criticalities(placer_opts, &costs,
-                                       &prev_inverse_costs,
-                                       num_connections,
-                                       crit_exponent,
-                                       &outer_crit_iter_count,
-                                       netlist_pin_lookup,
-                                       place_delay_model.get(),
-                                       *timing_info);
-
-    t = 0; /* freeze out */
-
-    /* Run inner loop again with temperature = 0 so as to accept only swaps
-     * which reduce the cost of the placement */
-    placement_inner_loop(t, num_temps, rlim, placer_opts,
-                         move_lim, crit_exponent, inner_recompute_limit, &stats,
-                         &costs,
-                         &prev_inverse_costs,
-                         &moves_since_cost_recompute,
-                         netlist_pin_lookup,
-                         place_delay_model.get(),
-                         *move_generator,
-                         blocks_affected,
-                         *timing_info);
-
-    tot_iter += move_lim;
-    ++num_temps;
-
-    calc_placer_stats(stats, success_rat, std_dev, costs, move_lim);
-
-    if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-        critical_path = timing_info->least_slack_critical_path();
-        sTNS = timing_info->setup_total_negative_slack();
-        sWNS = timing_info->setup_worst_negative_slack();
-    }
-
-    print_place_status(t, oldt, stats,
-                       critical_path.delay(), sTNS, sWNS,
-                       success_rat, std_dev, rlim, crit_exponent, tot_iter);
 
     if (placer_opts.placement_saves_per_temperature >= 1) {
         std::string filename = vtr::string_fmt("placement_%03d_%03d.place", num_temps + 1, 0);
@@ -2579,12 +2589,15 @@ static void update_screen_debug() {
 #endif
 
 static void print_place_status_header() {
-    VTR_LOG("------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------\n");
-    VTR_LOG("      T Av Cost Av BB Cost Av TD Cost     CPD       sTNS     sWNS Ac Rate Std Dev  R lim Crit Exp Tot Moves  Alpha\n");
-    VTR_LOG("------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------\n");
+    VTR_LOG("---- ------ ------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------\n");
+    VTR_LOG("Tnum   Time       T Av Cost Av BB Cost Av TD Cost     CPD       sTNS     sWNS Ac Rate Std Dev  R lim Crit Exp Tot Moves  Alpha\n");
+    VTR_LOG("      (sec)                                          (ns)       (ns)     (ns)                                                 \n");
+    VTR_LOG("---- ------ ------- ------- ---------- ---------- ------- ---------- -------- ------- ------- ------ -------- --------- ------\n");
 }
 
-static void print_place_status(const float t,
+static void print_place_status(const size_t num_temps,
+                               const float elapsed_sec,
+                               const float t,
                                const float oldt,
                                const t_placer_statistics& stats,
                                const float cpd,
@@ -2596,16 +2609,20 @@ static void print_place_status(const float t,
                                const float crit_exponent,
                                size_t tot_moves) {
     VTR_LOG(
+        "%4zu "
+        "%6.1f "
         "%7.1e "
         "%7.3f %10.2f %-10.5g "
         "%7.3f % 10.3g % 8.3f "
         "%7.3f %7.4f %6.1f %8.2f",
+        num_temps,
+        elapsed_sec,
         oldt,
         stats.av_cost, stats.av_bb_cost, stats.av_timing_cost,
         1e9 * cpd, 1e9 * sTNS, 1e9 * sWNS,
         acc_rate, std_dev, rlim, crit_exponent);
 
-    pretty_print_uint(" ", tot_moves, 10, 3);
+    pretty_print_uint(" ", tot_moves, 9, 3);
 
     VTR_LOG(" %6.3f\n", t / oldt);
     fflush(stdout);
