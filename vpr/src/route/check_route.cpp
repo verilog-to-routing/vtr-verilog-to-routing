@@ -34,12 +34,17 @@ static void check_net_for_stubs(ClusterNetId net);
 
 /************************ Subroutine definitions ****************************/
 
-void check_route(enum e_route_type route_type, bool quick) {
+void check_route(enum e_route_type route_type, e_check_route_option check_route_option) {
     /* This routine checks that a routing:  (1) Describes a properly         *
      * connected path for each net, (2) this path connects all the           *
      * pins spanned by that net, and (3) that no routing resources are       *
      * oversubscribed (the occupancy of everything is recomputed from        *
      * scratch).                                                             */
+
+    if (check_route_option == e_check_route_option::OFF) {
+        VTR_LOG_WARN("The user disabled the check route step.");
+        return;
+    }
 
     int max_pins, inode, prev_node;
     unsigned int ipin;
@@ -160,8 +165,10 @@ void check_route(enum e_route_type route_type, bool quick) {
 
     } /* End for each net */
 
-    if (!quick) {
+    if (check_route_option == e_check_route_option::FULL) {
         check_all_non_configurable_edges();
+    } else {
+        VTR_ASSERT(check_route_option == e_check_route_option::QUICK);
     }
 
     VTR_LOG("Completed routing consistency check successfully.\n");

@@ -710,13 +710,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         std::string graphics_msg;
         if (route_status.success()) {
             //Sanity check the routing
-            if (router_opts.check_route == e_check_route_option::QUICK) {
-                check_route(router_opts.route_type, /*quick=*/true);
-            } else if (router_opts.check_route == e_check_route_option::FULL) {
-                check_route(router_opts.route_type, /*quick=*/false);
-            } else {
-                VTR_LOG_WARN("The user disabled the check route step.");
-            }
+            check_route(router_opts.route_type, router_opts.check_route);
             get_serial_num();
 
             //Update status
