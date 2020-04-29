@@ -25,14 +25,21 @@ class SetupSlackCrit {
   private: //Implementation
     void update_slacks(const tatum::SetupTimingAnalyzer& analyzer);
 
-    void update_pin_slack(const AtomPinId pin, const tatum::SetupTimingAnalyzer& analyzer);
+    void update_pin_slack(const tatum::NodeId node, const tatum::SetupTimingAnalyzer& analyzer);
 
     void update_criticalities(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer);
 
+#if 1
+    float calc_pin_criticality(const tatum::NodeId node,
+                               const tatum::SetupTimingAnalyzer& analyzer,
+                               const std::map<DomainPair, float>& max_req,
+                               const std::map<DomainPair, float>& worst_slack);
+#else
     float calc_pin_criticality(AtomPinId pin,
                                const tatum::SetupTimingAnalyzer& analyzer,
                                const std::map<DomainPair, float>& max_req,
                                const std::map<DomainPair, float>& worst_slack);
+#endif
 
   private: //Data
     const AtomNetlist& netlist_;
@@ -40,6 +47,9 @@ class SetupSlackCrit {
 
     vtr::vector<AtomPinId, float> pin_slacks_;
     vtr::vector<AtomPinId, float> pin_criticalities_;
+
+    std::map<DomainPair, float> prev_max_req_;
+    std::map<DomainPair, float> prev_worst_slack_;
 };
 
 //TODO: implement a HoldSlackCrit class for hold analysis

@@ -43,22 +43,23 @@ void SetupSlackCrit::update_slacks_and_criticalities(const tatum::TimingGraph& t
 }
 
 void SetupSlackCrit::update_slacks(const tatum::SetupTimingAnalyzer& analyzer) {
-    auto pins = netlist_.pins();
+    //Note that this is done lazily only on the nodes modified by the analyzer
+    auto nodes = analyzer.modified_nodes();
 #if defined(VPR_USE_TBB)
-    tbb::parallel_for_each(pins.begin(), pins.end(), [&, this](auto pin) {
-        this->update_pin_slack(pin, analyzer);
+    tbb::parallel_for_each(nodes.begin(), nodes.end(), [&, this](tatum::NodeId node) {
+        this->update_pin_slack(node, analyzer);
     });
 #else
-    for (auto pin : pins) {
-        update_pin_slack(pin, analyzer);
+    for (tatum::NodeId node : nodes) {
+        update_pin_slack(node, analyzer);
     }
 #endif
 }
 
-void SetupSlackCrit::update_pin_slack(const AtomPinId pin, const tatum::SetupTimingAnalyzer& analyzer) {
+void SetupSlackCrit::update_pin_slack(const tatum::NodeId node, const tatum::SetupTimingAnalyzer& analyzer) {
     //Find the timing node associated with the pin
-    tatum::NodeId node = netlist_lookup_.atom_pin_tnode(pin);
-    VTR_ASSERT(node);
+    AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
+    VTR_ASSERT_SAFE(pin);
 
     //Find the worst (least) slack at this node
     auto tags = analyzer.setup_slacks(node);
@@ -99,30 +100,56 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
         }
     }
 
-    //Update the criticalities of each pin
-    auto pins = netlist_.pins();
+    if (max_req == prev_max_req_ && worst_slack == prev_worst_slack_) {
+        //Max required times and worst slacks unchanged, incrementally update
+        //the criticalities of each pin
+        //
+        // Note that this is done lazily only on the nodes modified by the analyzer
+        auto nodes = analyzer.modified_nodes();
 #if defined(VPR_USE_TBB)
-    tbb::parallel_for_each(pins.begin(), pins.end(), [&, this](auto pin) {
-        this->pin_criticalities_[pin] = this->calc_pin_criticality(pin, analyzer, max_req, worst_slack);
-    });
+        tbb::parallel_for_each(nodes.begin(), nodes.end(), [&, this](tatum::NodeId node) {
+            AtomPinId pin = netlist_lookup_.tnode_atom_pin(node)
+            VTR_ASSERT_SAFE(pin);
+            this->pin_criticalities_[pin] = this->calc_pin_criticality(node, analyzer, max_req, worst_slack);
+        });
 #else
-    for (auto pin : pins) {
-        pin_criticalities_[pin] = calc_pin_criticality(pin, analyzer, max_req, worst_slack);
-    }
+        for (tatum::NodeId node : nodes) {
+            AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
+            VTR_ASSERT_SAFE(pin);
+            pin_criticalities_[pin] = calc_pin_criticality(node, analyzer, max_req, worst_slack);
+        }
 #endif
+    } else {
+        //Max required and/or worst slacks changed, fully recalculate criticalities
+        //
+        //  TODO: consider if incremental criticality update is feasible based only 
+        //        on changed domain pairs....
+        auto nodes = timing_graph.nodes();
+#if defined(VPR_USE_TBB)
+        tbb::parallel_for_each(nodes.begin(), nodes.end(), [&, this](tatum::NodeId node) {
+            AtomPinId pin = netlist_lookup_.tnode_atom_pin(node)
+            VTR_ASSERT_SAFE(pin);
+            this->pin_criticalities_[pin] = this->calc_pin_criticality(node, analyzer, max_req, worst_slack);
+        });
+#else
+        for (tatum::NodeId node : nodes) {
+            AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
+            VTR_ASSERT_SAFE(pin);
+            pin_criticalities_[pin] = calc_pin_criticality(node, analyzer, max_req, worst_slack);
+        }
+#endif
+    }
+    prev_max_req_ = max_req;
+    prev_worst_slack_ = worst_slack;
 }
 
-float SetupSlackCrit::calc_pin_criticality(AtomPinId pin,
+float SetupSlackCrit::calc_pin_criticality(const tatum::NodeId node,
                                            const tatum::SetupTimingAnalyzer& analyzer,
                                            const std::map<DomainPair, float>& max_req,
                                            const std::map<DomainPair, float>& worst_slack) {
-    tatum::NodeId node = netlist_lookup_.atom_pin_tnode(pin);
-    VTR_ASSERT(node);
-
     //Calculate maximum criticality over all domains
     return calc_relaxed_criticality(max_req, worst_slack, analyzer.setup_slacks(node));
 }
-
 /*
  * HoldSlackCrit
  */
