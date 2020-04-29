@@ -82,18 +82,34 @@ std::map<tatum::DomainId, size_t> count_clock_fanouts(const tatum::TimingGraph& 
 template<class TimingInfo>
 void invalidate_delays(const ClusterPinId clb_pin, const ClusteredPinAtomPinsLookup& clb_atom_pin_lookup, TimingInfo& timing_info) {
     auto& atom_ctx = g_vpr_ctx.atom();
+    auto& atom_nlist = atom_ctx.nlist;
     auto& atom_lookup = atom_ctx.lookup;
     const auto& tg = timing_info.timing_graph();
 
     for (const AtomPinId atom_pin : clb_atom_pin_lookup.connected_atom_pins(clb_pin)) {
-        tatum::NodeId node = atom_lookup.atom_pin_tnode(atom_pin);
+        tatum::NodeId pin_tnode = atom_lookup.atom_pin_tnode(atom_pin);
+        VTR_ASSERT_SAFE(pin_tnode);
 
-        VTR_ASSERT_SAFE(node);
-        VTR_ASSERT_SAFE_MSG(tg->node_in_edges(node).size() == 1, "Expect delay invalidation on on net sinks");
+        AtomNetId atom_net = atom_nlist.pin_net(atom_pin);
+        VTR_ASSERT_SAFE(atom_net);
 
-        tatum::EdgeId edge = *(tg->node_in_edges(node).begin());
+        AtomPinId atom_net_driver = atom_nlist.net_driver(atom_net);
+        VTR_ASSERT_SAFE(atom_net_driver);
 
-        timing_info.invalidate_delay(edge);
+        tatum::NodeId driver_tnode = atom_lookup.atom_pin_tnode(atom_net_driver);
+        VTR_ASSERT_SAFE(driver_tnode);
+
+        //Find and invalidate the incoming timing edge corresponding
+        //to the connection between the net driver and sink pin
+        bool found = false;
+        for (tatum::EdgeId edge : tg->node_in_edges(pin_tnode)) {
+            if (tg->edge_src_node(edge) == driver_tnode) {
+                timing_info.invalidate_delay(edge);
+                found = true;
+                break;
+            }
+        }
+        VTR_ASSERT_SAFE(found);
     }
 }
 
