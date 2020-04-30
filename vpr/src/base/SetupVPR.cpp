@@ -472,6 +472,7 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     }
 
     PlacerOpts->inner_loop_recompute_divider = Options.inner_loop_recompute_divider;
+    PlacerOpts->quench_recompute_divider = Options.quench_recompute_divider;
 
     //TODO: document?
     PlacerOpts->place_cost_exp = 1;
