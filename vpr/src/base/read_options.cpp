@@ -1928,7 +1928,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             " * off    : check route is completely disabled.\n"
             " * quick  : runs check route with slow checks disabled.\n"
             " * full   : runs the full check route step.\n")
-        .default_value("quick")
+        .default_value("full")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.router_debug_net, "--router_debug_net")
