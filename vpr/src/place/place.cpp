@@ -746,10 +746,9 @@ void try_place(const t_placer_opts& placer_opts,
 #endif
     } /* Outer loop of the simmulated annealing ends */
 
+    auto pre_quench_timing_stats = timing_ctx.stats;
     { /* Quench */
         vtr::Timer temperature_timer;
-
-        auto pre_quench_timing_stats = timing_ctx.stats;
 
         outer_loop_recompute_criticalities(placer_opts, &costs,
                                            &prev_inverse_costs,
@@ -791,8 +790,6 @@ void try_place(const t_placer_opts& placer_opts,
                            t, oldt, stats,
                            critical_path.delay(), sTNS, sWNS,
                            success_rat, std_dev, rlim, crit_exponent, tot_iter);
-
-        print_timing_stats("Quench", timing_ctx.stats, pre_quench_timing_stats);
     }
 
     if (placer_opts.placement_saves_per_temperature >= 1) {
@@ -897,7 +894,8 @@ void try_place(const t_placer_opts& placer_opts,
 
     free_try_swap_arrays();
 
-    print_timing_stats("Placement", timing_ctx.stats, pre_place_timing_stats);
+    print_timing_stats("Placement Quench", timing_ctx.stats, pre_quench_timing_stats);
+    print_timing_stats("Placement Total ", timing_ctx.stats, pre_place_timing_stats);
 }
 
 /* Function to recompute the criticalities before the inner loop of the annealing */
