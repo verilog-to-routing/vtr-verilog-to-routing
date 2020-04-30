@@ -10,6 +10,11 @@ class SetupSlackCrit {
   public: //Constructors
     SetupSlackCrit(const AtomNetlist& netlist, const AtomLookup& netlist_lookup);
 
+  public: //Types
+    typedef std::vector<AtomPinId>::const_iterator modified_pin_iterator;
+
+    typedef vtr::Range<modified_pin_iterator> modified_pin_range;
+
   public: //Accessors
     //Returns the worst (least) slack of connections through the specified pin
     float setup_pin_slack(AtomPinId pin) const;
@@ -18,6 +23,9 @@ class SetupSlackCrit {
     //  Criticality (in [0., 1.]) represents how timing-critical something is,
     //  0. is non-critical and 1. is most-critical.
     float setup_pin_criticality(AtomPinId pin) const;
+
+    modified_pin_range pins_with_modified_slack() const;
+    modified_pin_range pins_with_modified_criticality() const;
 
   public: //Mutators
     void update_slacks_and_criticalities(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer);
@@ -47,6 +55,9 @@ class SetupSlackCrit {
 
     vtr::vector<AtomPinId, float> pin_slacks_;
     vtr::vector<AtomPinId, float> pin_criticalities_;
+
+    std::vector<AtomPinId> pins_with_modified_slacks_;
+    std::vector<AtomPinId> pins_with_modified_criticalities_;
 
     std::map<DomainPair, float> prev_max_req_;
     std::map<DomainPair, float> prev_worst_slack_;

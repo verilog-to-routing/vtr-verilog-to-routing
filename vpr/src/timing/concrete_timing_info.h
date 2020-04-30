@@ -73,6 +73,14 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
         return slack_crit_.setup_pin_criticality(pin);
     }
 
+    pin_range pins_with_modified_setup_slack() const override {
+        return slack_crit_.pins_with_modified_slack();
+    }
+
+    pin_range pins_with_modified_setup_criticality() const override {
+        return slack_crit_.pins_with_modified_criticality();
+    }
+
     std::shared_ptr<const tatum::TimingAnalyzer> analyzer() const override { return setup_analyzer(); }
 
     std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer() const override { return setup_analyzer_; }
@@ -292,6 +300,9 @@ class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
     float setup_pin_slack(AtomPinId pin) const override { return setup_timing_.setup_pin_slack(pin); }
     float setup_pin_criticality(AtomPinId pin) const override { return setup_timing_.setup_pin_criticality(pin); }
 
+    pin_range pins_with_modified_setup_slack() const override { return setup_timing_.pins_with_modified_setup_slack(); }
+    pin_range pins_with_modified_setup_criticality() const override { return setup_timing_.pins_with_modified_setup_slack(); }
+
     std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer() const override { return setup_timing_.setup_analyzer(); }
 
     //Hold related
@@ -400,6 +411,9 @@ class ConstantTimingInfo : public SetupHoldTimingInfo {
         return criticality_;
     }
 
+    pin_range pins_with_modified_setup_slack() const override { return vtr::make_range(modified_pins_); }
+    pin_range pins_with_modified_setup_criticality() const override { return vtr::make_range(modified_pins_); }
+
     std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer() const override { return nullptr; }
 
     //Hold related
@@ -431,6 +445,7 @@ class ConstantTimingInfo : public SetupHoldTimingInfo {
 
   private:
     float criticality_;
+    std::vector<AtomPinId> modified_pins_; //Always kept empty
 
     typedef std::chrono::duration<double> dsec;
     typedef std::chrono::high_resolution_clock Clock;
