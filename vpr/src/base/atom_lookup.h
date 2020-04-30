@@ -18,9 +18,9 @@
  */
 class AtomLookup {
   public:
-    typedef vtr::linear_map<tatum::NodeId, AtomPinId>::const_iterator tnode_pin_iterator;
+    typedef vtr::linear_map<AtomPinId, tatum::NodeId>::const_iterator pin_tnode_iterator;
 
-    typedef vtr::Range<tnode_pin_iterator> tnode_pin_range;
+    typedef vtr::Range<pin_tnode_iterator> pin_tnode_range;
 
   public:
     /*
@@ -83,8 +83,8 @@ class AtomLookup {
     //Returns the atom netlist pin associated with the specified timing graph node
     AtomPinId tnode_atom_pin(const tatum::NodeId tnode) const;
 
-    //Returns a range of all tnode to pin mappings
-    tnode_pin_range tnode_atom_pins() const;
+    //Returns a range of all pin to tnode mappingsg of the specified type 
+    AtomLookup::pin_tnode_range atom_pin_tnodes(BlockTnode block_tnode_type) const;
 
     //Sets the bi-directional mapping between an atom netlist pin and timing graph node
     void set_atom_pin_tnode(const AtomPinId pin, const tatum::NodeId node, BlockTnode block_tnode_type);
