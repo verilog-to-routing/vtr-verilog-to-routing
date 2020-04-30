@@ -108,7 +108,7 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
         auto nodes = analyzer.modified_nodes();
 #if defined(VPR_USE_TBB)
         tbb::parallel_for_each(nodes.begin(), nodes.end(), [&, this](tatum::NodeId node) {
-            AtomPinId pin = netlist_lookup_.tnode_atom_pin(node)
+            AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
             VTR_ASSERT_SAFE(pin);
             this->pin_criticalities_[pin] = this->calc_pin_criticality(node, analyzer, max_req, worst_slack);
         });
@@ -127,7 +127,7 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
         auto nodes = timing_graph.nodes();
 #if defined(VPR_USE_TBB)
         tbb::parallel_for_each(nodes.begin(), nodes.end(), [&, this](tatum::NodeId node) {
-            AtomPinId pin = netlist_lookup_.tnode_atom_pin(node)
+            AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
             VTR_ASSERT_SAFE(pin);
             this->pin_criticalities_[pin] = this->calc_pin_criticality(node, analyzer, max_req, worst_slack);
         });
