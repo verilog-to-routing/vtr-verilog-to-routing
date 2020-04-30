@@ -437,6 +437,8 @@ void try_place(const t_placer_opts& placer_opts,
      * width of the widest channel.  Place_cost_exp says what exponent the   *
      * width should be taken to when calculating costs.  This allows a       *
      * greater bias for anisotropic architectures.                           */
+    auto& timing_ctx = g_vpr_ctx.timing();
+    auto pre_place_timing_stats = timing_ctx.stats;
 
     int tot_iter, move_lim = 0, moves_since_cost_recompute, width_fac, num_connections,
                   outer_crit_iter_count, inner_recompute_limit;
@@ -538,7 +540,6 @@ void try_place(const t_placer_opts& placer_opts,
 
         //Write out the initial timing echo file
         if (isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH)) {
-            auto& timing_ctx = g_vpr_ctx.timing();
 
             tatum::write_echo(getEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH),
                               *timing_ctx.graph, *timing_ctx.constraints, *placement_delay_calc, timing_info->analyzer());
@@ -747,6 +748,9 @@ void try_place(const t_placer_opts& placer_opts,
 
     { /* Quench */
         vtr::Timer temperature_timer;
+
+        auto pre_quench_timing_stats = timing_ctx.stats;
+
         outer_loop_recompute_criticalities(placer_opts, &costs,
                                            &prev_inverse_costs,
                                            num_connections,
@@ -787,6 +791,8 @@ void try_place(const t_placer_opts& placer_opts,
                            t, oldt, stats,
                            critical_path.delay(), sTNS, sWNS,
                            success_rat, std_dev, rlim, crit_exponent, tot_iter);
+
+        print_timing_stats("Quench", timing_ctx.stats, pre_quench_timing_stats);
     }
 
     if (placer_opts.placement_saves_per_temperature >= 1) {
@@ -830,7 +836,6 @@ void try_place(const t_placer_opts& placer_opts,
         critical_path = timing_info->least_slack_critical_path();
 
         if (isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH)) {
-            auto& timing_ctx = g_vpr_ctx.timing();
 
             tatum::write_echo(getEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH),
                               *timing_ctx.graph, *timing_ctx.constraints, *placement_delay_calc, timing_info->analyzer());
@@ -891,6 +896,8 @@ void try_place(const t_placer_opts& placer_opts,
     }
 
     free_try_swap_arrays();
+
+    print_timing_stats("Placement", timing_ctx.stats, pre_place_timing_stats);
 }
 
 /* Function to recompute the criticalities before the inner loop of the annealing */
