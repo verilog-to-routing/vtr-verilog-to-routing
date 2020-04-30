@@ -825,6 +825,7 @@ struct t_placer_opts {
     int recompute_crit_iter;
     bool enable_timing_computations;
     int inner_loop_recompute_divider;
+    int quench_recompute_divider;
     float td_place_exp_first;
     int seed;
     float td_place_exp_last;

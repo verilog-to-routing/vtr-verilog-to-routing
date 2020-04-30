@@ -1586,6 +1586,12 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_timing_grp.add_argument(args.quench_recompute_divider, "--quench_recompute_divider")
+        .help("Controls how many timing analysies are perform during the final placement quench (t=0)."
+              " If unspecified, uses the value from --inner_loop_recompute_divider")
+        .default_value("0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     place_timing_grp.add_argument(args.place_exp_first, "--td_place_exp_first")
         .help(
             "Controls how critical a connection is as a function of slack at the start of placement."
@@ -2136,6 +2142,11 @@ void set_conditional_defaults(t_options& args) {
     //Do we calculate timing info during placement?
     if (args.ShowPlaceTiming.provenance() != Provenance::SPECIFIED) {
         args.ShowPlaceTiming.set(args.timing_analysis, Provenance::INFERRED);
+    }
+
+    //Slave quench recompute divider of inner loop recompute divider unless specified
+    if (args.quench_recompute_divider.provenance() != Provenance::SPECIFIED) {
+        args.quench_recompute_divider.set(args.inner_loop_recompute_divider, Provenance::INFERRED);
     }
 
     //Are we using the automatic, or user-specified annealing schedule?
