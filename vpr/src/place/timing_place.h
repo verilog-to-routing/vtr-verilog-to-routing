@@ -15,7 +15,7 @@ std::unique_ptr<PlaceDelayModel> alloc_lookups_and_criticalities(t_chan_width_di
 
 void free_lookups_and_criticalities();
 
-void load_criticalities(SetupTimingInfo& timing_info, float crit_exponent, const ClusteredPinAtomPinsLookup& pin_lookup);
+void load_criticalities(const SetupTimingInfo& timing_info, float crit_exponent, const ClusteredPinAtomPinsLookup& pin_lookup);
 
 float get_timing_place_crit(ClusterNetId net_id, int ipin);
 void set_timing_place_crit(ClusterNetId net_id, int ipin, float val);
