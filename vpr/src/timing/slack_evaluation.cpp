@@ -10,6 +10,16 @@
 #    include <tbb/task_group.h>
 #    include <tbb/parallel_for_each.h>
 #endif
+
+template<typename T>
+void nodes_to_pins(T nodes, const AtomLookup& atom_lookup, std::vector<AtomPinId>& pins) {
+    pins.reserve(nodes.size());
+    for (tatum::NodeId node : nodes) {
+        AtomPinId pin = atom_lookup.tnode_atom_pin(node);
+        pins.push_back(pin);
+    }
+}
+
 /*
  * SetupSlackCrit
  */
@@ -30,6 +40,14 @@ float SetupSlackCrit::setup_pin_slack(AtomPinId pin) const { return pin_slacks_[
 //  0. is non-critical and 1. is most-critical.
 float SetupSlackCrit::setup_pin_criticality(AtomPinId pin) const { return pin_criticalities_[pin]; }
 
+SetupSlackCrit::modified_pin_range SetupSlackCrit::pins_with_modified_slack() const {
+    return vtr::make_range(pins_with_modified_slacks_);
+}
+
+SetupSlackCrit::modified_pin_range SetupSlackCrit::pins_with_modified_criticality() const {
+    return vtr::make_range(pins_with_modified_criticalities_);
+}
+
 void SetupSlackCrit::update_slacks_and_criticalities(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer) {
 #if defined(VPR_USE_TBB)
     tbb::task_group g;
@@ -45,6 +63,7 @@ void SetupSlackCrit::update_slacks_and_criticalities(const tatum::TimingGraph& t
 void SetupSlackCrit::update_slacks(const tatum::SetupTimingAnalyzer& analyzer) {
     //Note that this is done lazily only on the nodes modified by the analyzer
     auto nodes = analyzer.modified_nodes();
+
 #if defined(VPR_USE_TBB)
     tbb::parallel_for_each(nodes.begin(), nodes.end(), [&, this](tatum::NodeId node) {
         this->update_pin_slack(node, analyzer);
@@ -54,6 +73,10 @@ void SetupSlackCrit::update_slacks(const tatum::SetupTimingAnalyzer& analyzer) {
         update_pin_slack(node, analyzer);
     }
 #endif
+
+    //Record pins with modified slacks
+    pins_with_modified_slacks_.clear();
+    nodes_to_pins(nodes, netlist_lookup_, pins_with_modified_slacks_);
 }
 
 void SetupSlackCrit::update_pin_slack(const tatum::NodeId node, const tatum::SetupTimingAnalyzer& analyzer) {
@@ -106,6 +129,7 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
         //
         // Note that this is done lazily only on the nodes modified by the analyzer
         auto nodes = analyzer.modified_nodes();
+
 #if defined(VPR_USE_TBB)
         tbb::parallel_for_each(nodes.begin(), nodes.end(), [&, this](tatum::NodeId node) {
             AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
@@ -119,12 +143,17 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
             pin_criticalities_[pin] = calc_pin_criticality(node, analyzer, max_req, worst_slack);
         }
 #endif
+
+        //Record pins with modified criticalities
+        pins_with_modified_criticalities_.clear();
+        nodes_to_pins(nodes, netlist_lookup_, pins_with_modified_criticalities_);
     } else {
         //Max required and/or worst slacks changed, fully recalculate criticalities
         //
         //  TODO: consider if incremental criticality update is feasible based only 
         //        on changed domain pairs....
         auto nodes = timing_graph.nodes();
+
 #if defined(VPR_USE_TBB)
         tbb::parallel_for_each(nodes.begin(), nodes.end(), [&, this](tatum::NodeId node) {
             AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
@@ -138,6 +167,10 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
             pin_criticalities_[pin] = calc_pin_criticality(node, analyzer, max_req, worst_slack);
         }
 #endif
+
+        //Record pins with modified criticalities
+        pins_with_modified_criticalities_.clear();
+        nodes_to_pins(nodes, netlist_lookup_, pins_with_modified_criticalities_);
     }
     prev_max_req_ = max_req;
     prev_worst_slack_ = worst_slack;

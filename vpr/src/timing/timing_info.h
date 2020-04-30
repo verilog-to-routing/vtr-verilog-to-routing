@@ -66,6 +66,11 @@ class TimingInfo {
 //information (e.g. to optimize critical path delay)
 class SetupTimingInfo : public virtual TimingInfo {
   public:
+    //Types
+    typedef std::vector<AtomPinId>::const_iterator pin_iterator;
+    typedef vtr::Range<pin_iterator> pin_range;
+
+  public:
     //Accessors
 
     //Returns the underlying setup timing analyzer
@@ -91,6 +96,12 @@ class SetupTimingInfo : public virtual TimingInfo {
 
     //Return the setup criticality of the worst connection passing through pin
     virtual float setup_pin_criticality(AtomPinId pin) const = 0;
+
+    //Return the range of pins with modified setup slack
+    virtual pin_range pins_with_modified_setup_slack() const = 0;
+    //
+    //Return the range of pins with modified setup criticality
+    virtual pin_range pins_with_modified_setup_criticality() const = 0;
 
   public:
     //Mutators
