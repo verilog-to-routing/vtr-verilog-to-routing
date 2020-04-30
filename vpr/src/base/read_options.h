@@ -110,6 +110,7 @@ struct t_options {
     argparse::ArgValue<float> PlaceTimingTradeoff;
     argparse::ArgValue<int> RecomputeCritIter;
     argparse::ArgValue<int> inner_loop_recompute_divider;
+    argparse::ArgValue<int> quench_recompute_divider;
     argparse::ArgValue<float> place_exp_first;
     argparse::ArgValue<float> place_exp_last;
     argparse::ArgValue<float> place_delay_offset;

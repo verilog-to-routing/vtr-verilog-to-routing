@@ -639,6 +639,14 @@ void try_place(const t_placer_opts& placer_opts,
         inner_recompute_limit = move_lim + 1;
     }
 
+    int quench_recompute_limit;
+    if (placer_opts.quench_recompute_divider != 0) {
+        quench_recompute_limit = (int)(0.5 + (float)move_lim / (float)placer_opts.quench_recompute_divider);
+    } else {
+        /*don't do an quench recompute */
+        quench_recompute_limit = move_lim + 1;
+    }
+
     rlim = (float)max(device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
 
     first_rlim = rlim; /*used in timing-driven placement for exponent computation */
@@ -669,6 +677,8 @@ void try_place(const t_placer_opts& placer_opts,
     //Table header
     VTR_LOG("\n");
     print_place_status_header();
+
+
 
     /* Outer loop of the simmulated annealing begins */
     while (exit_crit(t, costs.cost, annealing_sched) == 0) {
@@ -751,7 +761,7 @@ void try_place(const t_placer_opts& placer_opts,
         /* Run inner loop again with temperature = 0 so as to accept only swaps
          * which reduce the cost of the placement */
         placement_inner_loop(t, num_temps, rlim, placer_opts,
-                             move_lim, crit_exponent, inner_recompute_limit, &stats,
+                             move_lim, crit_exponent, quench_recompute_limit, &stats,
                              &costs,
                              &prev_inverse_costs,
                              &moves_since_cost_recompute,
