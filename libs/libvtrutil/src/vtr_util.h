@@ -1,6 +1,7 @@
 #ifndef VTR_UTIL_H
 #define VTR_UTIL_H
 
+#include <algorithm>
 #include <vector>
 #include <string>
 #include <cstdarg>
@@ -40,6 +41,9 @@ std::string join(Container container, std::string delim);
 
 template<typename T>
 std::string join(std::initializer_list<T> list, std::string delim);
+
+template<typename Container>
+void uniquify(Container container);
 
 /*
  * Legacy c-style function replacements, typically these add extra error checking
@@ -96,6 +100,13 @@ std::string join(Container container, std::string delim) {
 template<typename T>
 std::string join(std::initializer_list<T> list, std::string delim) {
     return join(list.begin(), list.end(), delim);
+}
+
+template<typename Container>
+void uniquify(Container container) {
+    std::sort(container.begin(), container.end());
+    container.erase(std::unique(container.begin(), container.end()),
+                    container.end());
 }
 
 int get_pid();
