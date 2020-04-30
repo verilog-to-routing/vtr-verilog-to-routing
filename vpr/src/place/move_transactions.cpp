@@ -48,7 +48,9 @@ void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
 
 //Commits the blocks in blocks_affected to their new locations (updates inverse
 //lookups via place_ctx.grid_blocks)
-void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
+void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
+                        const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                        TimingInfo& timing_info) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     /* Swap physical location */
@@ -75,6 +77,11 @@ void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
         place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] = blk;
 
     } // Finish updating clb for all blocks
+
+    //Inalidate timing graph edges affected by the move
+    for (ClusterPinId pin : blocks_affected.affected_pins) {
+        invalidate_delays(pin, netlist_pin_lookup, timing_info);
+    }
 }
 
 //Moves the blocks in blocks_affected to their old locations
@@ -102,4 +109,6 @@ void clear_move_blocks(t_pl_blocks_to_be_moved& blocks_affected) {
     //For run-time we just reset num_moved_blocks to zero, but do not free the blocks_affected
     //array to avoid memory allocation
     blocks_affected.num_moved_blocks = 0;
+
+    blocks_affected.affected_pins.clear();
 }
