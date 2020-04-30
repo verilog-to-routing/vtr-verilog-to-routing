@@ -48,6 +48,8 @@ class TimingGraphBuilder {
 
     bool is_netlist_clock_source(const AtomPinId pin) const;
 
+    bool validate_netlist_timing_graph_consistency() const;
+
   private:
     std::unique_ptr<tatum::TimingGraph> tg_;
 
