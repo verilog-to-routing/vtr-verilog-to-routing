@@ -18,8 +18,9 @@
 
 /* Allocates space for the timing_place_crit_ data structure *
  * I chunk the data to save space on large problems.           */
-PlacerCriticalities::PlacerCriticalities(const ClusteredNetlist& clb_nlist)
-    : clb_nlist_(clb_nlist) {
+PlacerCriticalities::PlacerCriticalities(const ClusteredNetlist& clb_nlist, const ClusteredPinAtomPinsLookup& netlist_pin_lookup)
+    : clb_nlist_(clb_nlist)
+    , pin_lookup_(netlist_pin_lookup) {
     timing_place_crit_.resize(clb_nlist_.nets().size());
 
     for (auto net_id : clb_nlist_.nets()) {
@@ -34,7 +35,7 @@ PlacerCriticalities::~PlacerCriticalities() {
 }
 
 /**************************************/
-void PlacerCriticalities::update_criticalities(const SetupTimingInfo& timing_info, float crit_exponent, const ClusteredPinAtomPinsLookup& pin_lookup) {
+void PlacerCriticalities::update_criticalities(const SetupTimingInfo& timing_info, float crit_exponent) {
     /* Performs a 1-to-1 mapping from criticality to timing_place_crit_.
      * For every pin on every net (or, equivalently, for every tedge ending
      * in that pin), timing_place_crit_ = criticality^(criticality exponent) */
@@ -64,7 +65,7 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo& timing_inf
         //when updating the atom pin criticalities.
 
         for (AtomPinId atom_pin : timing_info.pins_with_modified_setup_criticality()) {
-            ClusterPinId clb_pin = pin_lookup.connected_clb_pin(atom_pin);
+            ClusterPinId clb_pin = pin_lookup_.connected_clb_pin(atom_pin);
 
             //Some atom pins correspond to connections which are completely
             //contained within a cluster, and hence have no corresponding
@@ -83,7 +84,7 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo& timing_inf
         ClusterNetId clb_net = clb_nlist_.pin_net(clb_pin);
         int pin_index_in_net = clb_nlist_.pin_net_index(clb_pin);
 
-        float clb_pin_crit = calculate_clb_net_pin_criticality(timing_info, pin_lookup, clb_pin);
+        float clb_pin_crit = calculate_clb_net_pin_criticality(timing_info, pin_lookup_, clb_pin);
 
         /* The placer likes a great deal of contrast between criticalities.
          * Since path criticality varies much more than timing, we "sharpen" timing
