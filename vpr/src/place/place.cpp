@@ -110,7 +110,7 @@ constexpr double MAX_INV_TIMING_COST = 1.e9;
 /********************** Variables local to place.c ***************************/
 
 /* Cost of a net, and a temporary cost of a net used during move assessment. */
-static vtr::vector<ClusterNetId, double> net_cost, temp_net_cost;
+static vtr::vector<ClusterNetId, double> net_cost, proposed_net_cost;
 
 /* [0...cluster_ctx.clb_nlist.nets().size()-1]                                               *
  * A flag array to indicate whether the specific bounding box has been updated   *
@@ -131,20 +131,20 @@ static vtr::vector<ClusterNetId, char> bb_updated_before;
  * Index ranges: [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]
  *
  * connection_delay: Delays based on commited block positions
- * temp_connection_delay: Delays of a proposed move (only for net connections effected by move)
+ * proposed_connection_delay: Delays of a proposed move (only for net connections effected by move)
  */
-static ClbNetPinsMatrix<float> connection_delay;      //Delays based on commited block positions
-static ClbNetPinsMatrix<float> temp_connection_delay; //Delays for a proposed move (only for connections effected by move, otherwise INVALID_DELAY)
+static ClbNetPinsMatrix<float> connection_delay;          //Delays based on commited block positions
+static ClbNetPinsMatrix<float> proposed_connection_delay; //Delays for a proposed move (only for connections effected by move, otherwise INVALID_DELAY)
 
 /*
  * Timing cost of various connections (criticality * delay).
  * Index ranges: [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]
  *
  * connection_delay: Delays based on commited block positions
- * temp_connection_delay: Delays of a proposed move (only for net connections effected by move)
+ * proposed_connection_delay: Delays of a proposed move (only for net connections effected by move)
  */
-static ClbNetPinsMatrix<double> connection_timing_cost;       //Cost of commited block positions
-static ClbNetPinsMatrix<double> temp_connection_timing_cost;  //Costs for a proposed (only for connectsion effected by move, otherwise INVALID_DELAY)
+static ClbNetPinsMatrix<double> connection_timing_cost;          //Cost of commited block positions
+static ClbNetPinsMatrix<double> proposed_connection_timing_cost; //Costs for a proposed (only for connectsion effected by move, otherwise INVALID_DELAY)
 
 /* [0..cluster_ctx.clb_nlist.nets().size()-1].  Store the bounding box coordinates and the number of    *
  * blocks on each of a net's bounding box (to allow efficient updates),      *
@@ -1278,10 +1278,10 @@ static void update_move_nets(int num_nets_affected) {
         if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET)
             bb_num_on_edges[net_id] = ts_bb_edge_new[net_id];
 
-        net_cost[net_id] = temp_net_cost[net_id];
+        net_cost[net_id] = proposed_net_cost[net_id];
 
-        /* negative temp_net_cost value is acting as a flag. */
-        temp_net_cost[net_id] = -1;
+        /* negative proposed_net_cost value is acting as a flag. */
+        proposed_net_cost[net_id] = -1;
         bb_updated_before[net_id] = NOT_UPDATED_YET;
     }
 }
@@ -1290,7 +1290,7 @@ static void reset_move_nets(int num_nets_affected) {
     /* Reset the net cost function flags first. */
     for (int inet_affected = 0; inet_affected < num_nets_affected; inet_affected++) {
         ClusterNetId net_id = ts_nets_to_update[inet_affected];
-        temp_net_cost[net_id] = -1;
+        proposed_net_cost[net_id] = -1;
         bb_updated_before[net_id] = NOT_UPDATED_YET;
     }
 }
@@ -1318,7 +1318,7 @@ static e_move_result try_swap(float t,
 
     MoveOutcomeStats move_outcome_stats;
 
-    /* I'm using negative values of temp_net_cost as a flag, so DO NOT   *
+    /* I'm using negative values of proposed_net_cost as a flag, so DO NOT   *
      * use cost functions that can go negative.                          */
 
     double delta_c = 0; /* Change in cost due to this swap. */
@@ -1494,8 +1494,8 @@ static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm
     for (int inet_affected = 0; inet_affected < num_affected_nets; inet_affected++) {
         ClusterNetId net_id = ts_nets_to_update[inet_affected];
 
-        temp_net_cost[net_id] = get_net_cost(net_id, &ts_bb_coord_new[net_id]);
-        bb_delta_c += temp_net_cost[net_id] - net_cost[net_id];
+        proposed_net_cost[net_id] = get_net_cost(net_id, &ts_bb_coord_new[net_id]);
+        bb_delta_c += proposed_net_cost[net_id] - net_cost[net_id];
     }
 
     return num_affected_nets;
@@ -1503,13 +1503,13 @@ static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm
 
 static void record_affected_net(const ClusterNetId net, int& num_affected_nets) {
     //Record effected nets
-    if (temp_net_cost[net] < 0.) {
+    if (proposed_net_cost[net] < 0.) {
         //Net not marked yet.
         ts_nets_to_update[num_affected_nets] = net;
         num_affected_nets++;
 
         //Flag to say we've marked this net.
-        temp_net_cost[net] = 1.;
+        proposed_net_cost[net] = 1.;
     }
 }
 
@@ -1557,10 +1557,10 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
         //Re-compute all point to point connections for this net.
         for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net).size(); ipin++) {
             float temp_delay = comp_td_connection_delay(delay_model, net, ipin);
-            temp_connection_delay[net][ipin] = temp_delay;
+            proposed_connection_delay[net][ipin] = temp_delay;
 
-            temp_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * temp_delay;
-            delta_timing_cost += temp_connection_timing_cost[net][ipin] - connection_timing_cost[net][ipin];
+            proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * temp_delay;
+            delta_timing_cost += proposed_connection_timing_cost[net][ipin] - connection_timing_cost[net][ipin];
 
             ClusterPinId sink_pin = cluster_ctx.clb_nlist.net_pin(net, ipin);
             blocks_affected.affected_pins.push_back(sink_pin);
@@ -1579,10 +1579,10 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
             int net_pin = cluster_ctx.clb_nlist.pin_net_index(pin);
 
             float temp_delay = comp_td_connection_delay(delay_model, net, net_pin);
-            temp_connection_delay[net][net_pin] = temp_delay;
+            proposed_connection_delay[net][net_pin] = temp_delay;
 
-            temp_connection_timing_cost[net][net_pin] = criticalities.criticality(net, net_pin) * temp_delay;
-            delta_timing_cost += temp_connection_timing_cost[net][net_pin] - connection_timing_cost[net][net_pin];
+            proposed_connection_timing_cost[net][net_pin] = criticalities.criticality(net, net_pin) * temp_delay;
+            delta_timing_cost += proposed_connection_timing_cost[net][net_pin] - connection_timing_cost[net][net_pin];
 
             blocks_affected.affected_pins.push_back(pin);
         }
@@ -1708,10 +1708,10 @@ static void commit_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
                 //This net is being driven by a moved block, recompute
                 //all point to point connections on this net.
                 for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
-                    connection_delay[net_id][ipin] = temp_connection_delay[net_id][ipin];
-                    temp_connection_delay[net_id][ipin] = INVALID_DELAY;
-                    connection_timing_cost[net_id][ipin] = temp_connection_timing_cost[net_id][ipin];
-                    temp_connection_timing_cost[net_id][ipin] = INVALID_DELAY;
+                    connection_delay[net_id][ipin] = proposed_connection_delay[net_id][ipin];
+                    proposed_connection_delay[net_id][ipin] = INVALID_DELAY;
+                    connection_timing_cost[net_id][ipin] = proposed_connection_timing_cost[net_id][ipin];
+                    proposed_connection_timing_cost[net_id][ipin] = INVALID_DELAY;
                 }
             } else {
                 //This pin is a net sink on a moved block
@@ -1721,10 +1721,10 @@ static void commit_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
                 if (!driven_by_moved_block(net_id, blocks_affected)) {
                     int net_pin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
 
-                    connection_delay[net_id][net_pin] = temp_connection_delay[net_id][net_pin];
-                    temp_connection_delay[net_id][net_pin] = INVALID_DELAY;
-                    connection_timing_cost[net_id][net_pin] = temp_connection_timing_cost[net_id][net_pin];
-                    temp_connection_timing_cost[net_id][net_pin] = INVALID_DELAY;
+                    connection_delay[net_id][net_pin] = proposed_connection_delay[net_id][net_pin];
+                    proposed_connection_delay[net_id][net_pin] = INVALID_DELAY;
+                    connection_timing_cost[net_id][net_pin] = proposed_connection_timing_cost[net_id][net_pin];
+                    proposed_connection_timing_cost[net_id][net_pin] = INVALID_DELAY;
                 }
             }
         } /* Finished going through all the pins in the moved block */
@@ -1743,8 +1743,8 @@ static void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
     for (ClusterPinId pin : blocks_affected.affected_pins) {
         ClusterNetId net = clb_nlist.pin_net(pin);
         int ipin = clb_nlist.pin_net_index(pin);
-        temp_connection_delay[net][ipin] = INVALID_DELAY;
-        temp_connection_timing_cost[net][ipin] = INVALID_DELAY;
+        proposed_connection_delay[net][ipin] = INVALID_DELAY;
+        proposed_connection_timing_cost[net][ipin] = INVALID_DELAY;
     }
 #endif
 }
@@ -1781,10 +1781,10 @@ static void comp_td_costs(const PlaceDelayModel* delay_model, const PlacerCritic
             float conn_timing_cost = conn_delay * place_crit.criticality(net_id, ipin);
 
             connection_delay[net_id][ipin] = conn_delay;
-            temp_connection_delay[net_id][ipin] = INVALID_DELAY;
+            proposed_connection_delay[net_id][ipin] = INVALID_DELAY;
 
             connection_timing_cost[net_id][ipin] = conn_timing_cost;
-            temp_connection_timing_cost[net_id][ipin] = INVALID_DELAY;
+            proposed_connection_timing_cost[net_id][ipin] = INVALID_DELAY;
             new_timing_cost += conn_timing_cost;
         }
     }
@@ -1840,8 +1840,8 @@ static void free_placement_structs(const t_placer_opts& placer_opts) {
         || placer_opts.enable_timing_computations) {
         vtr::release_memory(connection_timing_cost);
         vtr::release_memory(connection_delay);
-        vtr::release_memory(temp_connection_timing_cost);
-        vtr::release_memory(temp_connection_delay);
+        vtr::release_memory(proposed_connection_timing_cost);
+        vtr::release_memory(proposed_connection_delay);
     }
 
     free_placement_macros_structs();
@@ -1874,29 +1874,29 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
         /* Allocate structures associated with timing driven placement */
         /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]  */
         connection_delay = make_net_pins_matrix<float>(cluster_ctx.clb_nlist, 0.f);
-        temp_connection_delay = make_net_pins_matrix<float>(cluster_ctx.clb_nlist, 0.f);
+        proposed_connection_delay = make_net_pins_matrix<float>(cluster_ctx.clb_nlist, 0.f);
 
         connection_timing_cost = make_net_pins_matrix<double>(cluster_ctx.clb_nlist, 0.);
-        temp_connection_timing_cost = make_net_pins_matrix<double>(cluster_ctx.clb_nlist, 0.);
+        proposed_connection_timing_cost = make_net_pins_matrix<double>(cluster_ctx.clb_nlist, 0.);
 
         for (auto net_id : cluster_ctx.clb_nlist.nets()) {
             for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
                 connection_delay[net_id][ipin] = 0;
-                temp_connection_delay[net_id][ipin] = INVALID_DELAY;
+                proposed_connection_delay[net_id][ipin] = INVALID_DELAY;
 
                 connection_timing_cost[net_id][ipin] = INVALID_DELAY;
-                temp_connection_timing_cost[net_id][ipin] = INVALID_DELAY;
+                proposed_connection_timing_cost[net_id][ipin] = INVALID_DELAY;
             }
         }
     }
 
     net_cost.resize(num_nets, -1.);
-    temp_net_cost.resize(num_nets, -1.);
+    proposed_net_cost.resize(num_nets, -1.);
     bb_coords.resize(num_nets, t_bb());
     bb_num_on_edges.resize(num_nets, t_bb());
 
     /* Used to store costs for moves not yet made and to indicate when a net's   *
-     * cost has been recomputed. temp_net_cost[inet] < 0 means net's cost hasn't *
+     * cost has been recomputed. proposed_net_cost[inet] < 0 means net's cost hasn't *
      * been recomputed.                                                          */
     bb_updated_before.resize(num_nets, NOT_UPDATED_YET);
 
