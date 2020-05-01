@@ -801,6 +801,7 @@ void try_place(const t_placer_opts& placer_opts,
                              *move_generator,
                              blocks_affected,
                              *timing_info);
+        oldt = t;
 
         tot_iter += move_lim;
         ++num_temps;
@@ -819,6 +820,7 @@ void try_place(const t_placer_opts& placer_opts,
                            critical_path.delay(), sTNS, sWNS,
                            success_rat, std_dev, rlim, crit_exponent, tot_iter);
     }
+    auto post_quench_timing_stats = timing_ctx.stats;
 
     if (placer_opts.placement_saves_per_temperature >= 1) {
         std::string filename = vtr::string_fmt("placement_%03d_%03d.place", num_temps + 1, 0);
@@ -917,7 +919,7 @@ void try_place(const t_placer_opts& placer_opts,
     free_placement_structs(placer_opts);
     free_try_swap_arrays();
 
-    print_timing_stats("Placement Quench", timing_ctx.stats, pre_quench_timing_stats);
+    print_timing_stats("Placement Quench", post_quench_timing_stats, pre_quench_timing_stats);
     print_timing_stats("Placement Total ", timing_ctx.stats, pre_place_timing_stats);
 }
 
@@ -2709,7 +2711,13 @@ static void print_place_status(const size_t num_temps,
 
     pretty_print_uint(" ", tot_moves, 9, 3);
 
-    VTR_LOG(" %6.3f\n", t / oldt);
+    float alpha;
+    if (oldt == 0.) {
+        alpha = 0.;
+    } else {
+        alpha = t / oldt;
+    }
+    VTR_LOG(" %6.3f\n", alpha);
     fflush(stdout);
 }
 
