@@ -46,6 +46,9 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo& timing_inf
         auto pins = clb_nlist_.pins();
         cluster_pins_with_modified_criticality_.insert(pins.begin(), pins.end());
 
+        auto nets = clb_nlist_.nets();
+        cluster_nets_with_modified_criticality_.insert(nets.begin(), nets.end());
+
         //Record new criticality exponent
         last_crit_exponent_ = crit_exponent;
     } else {
@@ -69,6 +72,9 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo& timing_inf
             if (!clb_pin) continue;
 
             cluster_pins_with_modified_criticality_.insert(clb_pin);
+
+            ClusterNetId clb_net = clb_nlist_.pin_net(clb_pin);
+            cluster_nets_with_modified_criticality_.insert(clb_net);
         }
     }
 
@@ -96,6 +102,10 @@ void PlacerCriticalities::set_criticality(ClusterNetId net_id, int ipin, float v
 
 PlacerCriticalities::pin_range PlacerCriticalities::pins_with_modified_criticality() const {
     return vtr::make_range(cluster_pins_with_modified_criticality_);
+}
+
+PlacerCriticalities::net_range PlacerCriticalities::nets_with_modified_criticality() const {
+    return vtr::make_range(cluster_nets_with_modified_criticality_);
 }
 
 std::unique_ptr<PlaceDelayModel> alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
