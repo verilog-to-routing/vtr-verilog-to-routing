@@ -17,7 +17,10 @@ std::unique_ptr<PlaceDelayModel> alloc_lookups_and_criticalities(t_chan_width_di
 class PlacerCriticalities {
     public: //Types
         typedef vtr::vec_id_set<ClusterPinId>::iterator pin_iterator;
+        typedef vtr::vec_id_set<ClusterNetId>::iterator net_iterator;
+
         typedef vtr::Range<pin_iterator> pin_range;
+        typedef vtr::Range<net_iterator> net_range;
 
     public: //Lifetime
         PlacerCriticalities(const ClusteredNetlist& clb_nlist);
@@ -28,6 +31,7 @@ class PlacerCriticalities {
     public: //Accessors
         float criticality(ClusterNetId net, int ipin) const;
         pin_range pins_with_modified_criticality() const;
+        net_range nets_with_modified_criticality() const;
 
     public: //Modifiers
         void update_criticalities(const SetupTimingInfo& timing_info, float crit_exponent, const ClusteredPinAtomPinsLookup& pin_lookup);
@@ -44,6 +48,7 @@ class PlacerCriticalities {
 
         //Set of pins with criticaltites modified by last call to update_criticalities()
         vtr::vec_id_set<ClusterPinId> cluster_pins_with_modified_criticality_;
+        vtr::vec_id_set<ClusterNetId> cluster_nets_with_modified_criticality_;
 };
 
 #endif
