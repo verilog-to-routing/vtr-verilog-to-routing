@@ -1,6 +1,7 @@
 #include "simpleRL_move_generator.h"
 #include "globals.h"
 #include <algorithm>
+#include <numeric>
 
 #include "vtr_random.h"
 
@@ -179,7 +180,8 @@ void EpsilonGreedyAgent::set_epsilon_action_prob() {
 
 
 //SimpleRL class member functions
-SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& agent){
+//SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& agent){
+SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent){
 	std::unique_ptr<MoveGenerator> move_generator;
 	move_generator = std::make_unique<UniformMoveGenerator>();
 	avail_moves.push_back(std::move(move_generator));
@@ -219,3 +221,139 @@ e_create_move SimpleRLMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
 void SimpleRLMoveGenerator::process_outcome(double reward){
 	karmed_bandit_agent->process_outcome(reward);
 }
+/*                                  *
+ *                                  *
+ *  Softmax agent implementation    *
+ *                                  *
+ *                                  */
+
+SoftmaxAgent::SoftmaxAgent(size_t k){
+    set_k(k);
+    set_action_prob();
+}
+
+
+SoftmaxAgent::~SoftmaxAgent() {
+    if (f_) vtr::fclose(f_);
+}
+
+void SoftmaxAgent::process_outcome(double reward){
+    ++n_[last_action_];
+    reward = reward / time_elapsed[last_action_];
+    //Determine step size
+    float step = 0.;
+    if (exp_alpha_ < 0.) {
+        step = 1. / n_[last_action_]; //Incremental average
+    } else if (exp_alpha_ <= 1) {
+        step = exp_alpha_; //Exponentially wieghted average
+    } else {
+        VTR_ASSERT_MSG(false, "Invalid step size");
+    }
+
+    //Based on the outcome how much should our estimate of q change?
+    float delta_q = step * (reward - q_[last_action_]);
+
+    //Update the estimated value of the last action
+    q_[last_action_] += delta_q;
+
+#if 0
+    //Update the cummulative q array
+    for (size_t i = last_action_; i < k_; ++i) {
+        cumm_q_[i] += delta_q;
+    }
+#endif
+
+    if (f_) {
+        fprintf(f_, "%zu,", last_action_);
+        fprintf(f_, "%g,", reward);
+
+        for (size_t i = 0; i < k_; ++i) {
+            fprintf(f_, "%g,", q_[i]);
+        }
+
+        for (size_t i = 0; i < k_; ++i) {
+            fprintf(f_, "%zu", n_[i]);
+            if (i != k_ - 1) {
+                fprintf(f_, ",");
+            }
+        }
+        fprintf(f_, "\n");
+    }
+}
+
+size_t SoftmaxAgent::propose_action(){
+    size_t action = 0;
+    float p = vtr::frand();
+    auto itr = std::lower_bound(cumm_action_prob_.begin(), cumm_action_prob_.end(), p);
+    action = itr - cumm_action_prob_.begin();
+    VTR_ASSERT(action < k_);
+
+    last_action_ = action;
+    return action;
+}
+
+void SoftmaxAgent::set_k(size_t k) {
+    k_ = k;
+    q_ = std::vector<float>(k, 0.);
+    n_ = std::vector<size_t>(k, 0);
+
+    cumm_action_prob_ = std::vector<float>(k, 1.0 / k);
+    if(f_){
+        fprintf(f_, "action,reward,");
+        for (size_t i = 0; i < k_; ++i) {
+            fprintf(f_, "q%zu,", i);
+        }
+        for (size_t i = 0; i < k_; ++i) {
+            fprintf(f_, "n%zu,", i);
+        }
+        fprintf(f_, "\n");
+    }
+}
+
+void SoftmaxAgent::set_action_prob() {
+    std::vector<float> epsilon_prob(k_);
+    float sum_q = accumulate(q_.begin(),q_.end(),0.0);
+    if(sum_q == 0.0){
+        std::fill(epsilon_prob.begin(),epsilon_prob.end(),1.0/k_);        
+    }
+    else{
+        for(size_t i=0; i<k_; ++i){
+            epsilon_prob[i] = std::max(std::min(q_[i]/sum_q, float(0.9)),float(0.02));
+        }
+    }
+
+    float sum_prob = std::accumulate(epsilon_prob.begin(), epsilon_prob.end(),0.0);
+    std::transform(epsilon_prob.begin(), epsilon_prob.end(), epsilon_prob.begin(),
+          bind2nd(std::plus<float>(),(1.0-sum_prob)/k_ ));  
+    float accum = 0;
+    for (size_t i = 0; i < k_; ++i) {
+        accum += epsilon_prob[i];
+        cumm_action_prob_[i] = accum;
+    }
+}
+
+void SoftmaxAgent::set_step(float gamma, int move_lim){
+	VTR_LOG("Setting softmax step: %g\n", exp_alpha_);
+	if (gamma < 0) {
+        exp_alpha_ = -1; //Use sample average
+    } else {
+            //
+            // For an exponentially wieghted average the fraction of total weight applied to
+            // to moves which occured > K moves ago is:
+            //
+            //      gamma = (1 - alpha)^K
+            //
+            // If we treat K as the number of moves per temperature (move_lim) then gamma
+            // is the fraction of weight applied to moves which occured > move_lim moves ago,
+            // and given a target gamma we can explicitly calcualte the alpha step-size
+            // required by the agent:
+            //
+            //     alpha = 1 - e^(log(gamma) / K)
+            //
+            float alpha = 1 - std::exp(std::log(gamma) / move_lim);
+            VTR_LOG("K-armed bandit alpha: %g\n", alpha);
+            exp_alpha_ = alpha;
+        }
+}
+
+
