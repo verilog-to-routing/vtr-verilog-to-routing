@@ -274,6 +274,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
                                              int num_directs);
 
 static void alloc_and_load_try_swap_structs();
+static void free_try_swap_structs();
 
 static void free_placement_structs(const t_placer_opts& placer_opts);
 
@@ -1829,22 +1830,6 @@ static double comp_bb_cost(e_cost_methods method) {
     return cost;
 }
 
-/* Frees the major structures needed by the placer (and not needed       *
- * elsewhere).   */
-static void free_placement_structs(const t_placer_opts& placer_opts) {
-    free_fast_cost_update();
-
-    if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
-        || placer_opts.enable_timing_computations) {
-        vtr::release_memory(connection_timing_cost);
-        vtr::release_memory(connection_delay);
-        vtr::release_memory(proposed_connection_timing_cost);
-        vtr::release_memory(proposed_connection_delay);
-    }
-
-    free_placement_macros_structs();
-}
-
 /* Allocates the major structures needed only by the placer, primarily for *
  * computing costs quickly and such.                                       */
 static void alloc_and_load_placement_structs(float place_cost_exp,
@@ -1905,6 +1890,31 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
     place_ctx.pl_macros = alloc_and_load_placement_macros(directs, num_directs);
 }
 
+/* Frees the major structures needed by the placer (and not needed       *
+ * elsewhere).   */
+static void free_placement_structs(const t_placer_opts& placer_opts) {
+    if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
+        || placer_opts.enable_timing_computations) {
+        vtr::release_memory(connection_timing_cost);
+        vtr::release_memory(connection_delay);
+        vtr::release_memory(proposed_connection_timing_cost);
+        vtr::release_memory(proposed_connection_delay);
+    }
+
+    free_placement_macros_structs();
+
+    vtr::release_memory(net_cost);
+    vtr::release_memory(proposed_net_cost);
+    vtr::release_memory(bb_coords);
+    vtr::release_memory(bb_num_on_edges);
+
+    vtr::release_memory(bb_updated_before);
+
+    free_fast_cost_update();
+
+    free_try_swap_structs();
+}
+
 static void alloc_and_load_try_swap_structs() {
     /* Allocate the local bb_coordinate storage, etc. only once. */
     /* Allocate with size cluster_ctx.clb_nlist.nets().size() for any number of nets affected. */
@@ -1918,6 +1928,15 @@ static void alloc_and_load_try_swap_structs() {
 
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     place_ctx.compressed_block_grids = create_compressed_block_grids();
+}
+
+static void free_try_swap_structs() {
+    vtr::release_memory(ts_bb_coord_new);
+    vtr::release_memory(ts_bb_edge_new);
+    vtr::release_memory(ts_nets_to_update);
+
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+    vtr::release_memory(place_ctx.compressed_block_grids);
 }
 
 /* This routine finds the bounding box of each net from scratch (i.e.   *
