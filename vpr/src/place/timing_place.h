@@ -23,7 +23,7 @@ class PlacerCriticalities {
         typedef vtr::Range<net_iterator> net_range;
 
     public: //Lifetime
-        PlacerCriticalities(const ClusteredNetlist& clb_nlist);
+        PlacerCriticalities(const ClusteredNetlist& clb_nlist, const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
         ~PlacerCriticalities();
         PlacerCriticalities(const PlacerCriticalities& clb_nlist) = delete;
         PlacerCriticalities& operator=(const PlacerCriticalities& clb_nlist) = delete;
@@ -34,11 +34,12 @@ class PlacerCriticalities {
         net_range nets_with_modified_criticality() const;
 
     public: //Modifiers
-        void update_criticalities(const SetupTimingInfo& timing_info, float crit_exponent, const ClusteredPinAtomPinsLookup& pin_lookup);
+        void update_criticalities(const SetupTimingInfo& timing_info, float crit_exponent_lookup);
         void set_criticality(ClusterNetId net, int ipin, float val);
 
     private: //Data
         const ClusteredNetlist& clb_nlist_;
+        const ClusteredPinAtomPinsLookup& pin_lookup_;
         
         vtr::t_chunk timing_place_crit_ch_;
         vtr::vector<ClusterNetId, float*> timing_place_crit_; /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1] */
