@@ -6,6 +6,11 @@
 #include "tatum/timing_analyzers.hpp"
 #include "vtr_vector.h"
 
+//Incrementally update slack and criticality?
+#define INCR_UPDATE_SLACK
+#define INCR_UPDATE_CRIT
+
+
 class SetupSlackCrit {
   public: //Constructors
     SetupSlackCrit(const AtomNetlist& netlist, const AtomLookup& netlist_lookup);
@@ -37,17 +42,10 @@ class SetupSlackCrit {
 
     void update_criticalities(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer);
 
-#if 1
     float calc_pin_criticality(const tatum::NodeId node,
                                const tatum::SetupTimingAnalyzer& analyzer,
                                const std::map<DomainPair, float>& max_req,
                                const std::map<DomainPair, float>& worst_slack);
-#else
-    float calc_pin_criticality(AtomPinId pin,
-                               const tatum::SetupTimingAnalyzer& analyzer,
-                               const std::map<DomainPair, float>& max_req,
-                               const std::map<DomainPair, float>& worst_slack);
-#endif
 
   private: //Data
     const AtomNetlist& netlist_;
@@ -61,6 +59,10 @@ class SetupSlackCrit {
 
     std::map<DomainPair, float> prev_max_req_;
     std::map<DomainPair, float> prev_worst_slack_;
+
+#if !defined(INCR_SLACK_UPDATE) || !defined(INCR_UPDATE_CRIT)
+    std::vector<tatum::NodeId> all_nodes_;
+#endif
 };
 
 //TODO: implement a HoldSlackCrit class for hold analysis

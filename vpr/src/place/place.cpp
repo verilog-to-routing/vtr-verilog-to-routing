@@ -69,6 +69,10 @@ using std::min;
 #define UPDATED_ONCE 'U'
 #define GOT_FROM_SCRATCH 'S'
 
+//Use an incremental approach to updating timing costs after re-computing
+//criticalities (i.e. after a timing update)
+#define INCR_COMP_TD_COSTS
+
 /* For comp_cost.  NORMAL means use the method that generates updateable  *
  * bounding boxes for speed.  CHECK means compute all bounding boxes from *
  * scratch using a very simple routine to allow checks of the other       *
@@ -1003,7 +1007,11 @@ static void recompute_criticalities(float crit_exponent,
     criticalities->update_criticalities(timing_info, crit_exponent);
 
     //Update connection, net and total timing costs based on new criticalities
+#ifdef INCR_COMP_TD_COSTS
     update_td_costs(delay_model, *criticalities, &costs->timing_cost);
+#else
+    comp_td_costs(delay_model, *criticalities, &costs->timing_cost);
+#endif
 }
 
 

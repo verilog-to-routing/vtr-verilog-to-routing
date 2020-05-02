@@ -14,6 +14,9 @@
 
 #include "timing_info.h"
 
+//Use an incremental approach to updaing criticalities?
+#define INCR_UPDATE_CRITICALITIES
+
 /**************************************/
 
 /* Allocates space for the timing_place_crit_ data structure *
@@ -41,6 +44,7 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo& timing_inf
      * in that pin), timing_place_crit_ = criticality^(criticality exponent) */
 
     //Determine what pins need updating
+#ifdef INCR_UPDATE_CRITICALITIES
     cluster_pins_with_modified_criticality_.clear();
     if (crit_exponent != last_crit_exponent_) {
         //Criticality exponent changed, must re-calculate *all* criticalties
@@ -78,6 +82,14 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo& timing_inf
             cluster_nets_with_modified_criticality_.insert(clb_net);
         }
     }
+#else
+    //Non-incremental: all pins and nets need updating
+    auto pins = clb_nlist_.pins();
+    cluster_pins_with_modified_criticality_.insert(pins.begin(), pins.end());
+
+    auto nets = clb_nlist_.nets();
+    cluster_nets_with_modified_criticality_.insert(nets.begin(), nets.end());
+#endif
 
     //Update the effected pins
     for (ClusterPinId clb_pin : cluster_pins_with_modified_criticality_) {
