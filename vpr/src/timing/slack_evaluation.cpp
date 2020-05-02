@@ -29,7 +29,17 @@ SetupSlackCrit::SetupSlackCrit(const AtomNetlist& netlist, const AtomLookup& net
     , netlist_lookup_(netlist_lookup)
     , pin_slacks_(netlist_.pins().size(), NAN)
     , pin_criticalities_(netlist_.pins().size(), NAN) {
-    //pass
+
+#if !defined(INCR_SLACK_UPDATE) || !defined(INCR_UPDATE_CRIT)
+    all_nodes_.reserve(netlist.pins().size());
+    for (AtomPinId pin : netlist.pins()) {
+        tatum::NodeId node = netlist_lookup_.atom_pin_tnode(pin);
+
+        if (node) {
+            all_nodes_.push_back(node);
+        }
+    }
+#endif
 }
 
 //Returns the worst (least) slack of connections through the specified pin
@@ -61,8 +71,13 @@ void SetupSlackCrit::update_slacks_and_criticalities(const tatum::TimingGraph& t
 }
 
 void SetupSlackCrit::update_slacks(const tatum::SetupTimingAnalyzer& analyzer) {
+
+#ifdef INCR_UPDATE_SLACK
     //Note that this is done lazily only on the nodes modified by the analyzer
     auto nodes = analyzer.modified_nodes();
+#else
+    const auto& nodes = all_nodes_;
+#endif
 
 #if defined(VPR_USE_TBB)
     tbb::parallel_for_each(nodes.begin(), nodes.end(), [&, this](tatum::NodeId node) {
@@ -128,7 +143,11 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
         //the criticalities of each pin
         //
         // Note that this is done lazily only on the nodes modified by the analyzer
+#ifdef INCR_UPDATE_CRIT
         auto nodes = analyzer.modified_nodes();
+#else
+        auto& nodes = all_nodes_;
+#endif
 
 #if defined(VPR_USE_TBB)
         tbb::parallel_for_each(nodes.begin(), nodes.end(), [&, this](tatum::NodeId node) {
