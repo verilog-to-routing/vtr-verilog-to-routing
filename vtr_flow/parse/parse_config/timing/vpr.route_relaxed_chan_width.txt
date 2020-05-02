@@ -21,3 +21,5 @@ crit_path_routing_area_per_tile;vpr.crit_path.out;Total routing area: .*, per lo
 
 #Run-time Metrics
 crit_path_route_time;vpr.crit_path.out;^#*\s*Routing took (.*) seconds
+crit_path_total_timing_analysis_time;vpr.crit_path.out;Flow timing analysis took (.*) seconds
+crit_path_total_sta_time;vpr.crit_path.out;Flow timing analysis took .* seconds \((.*) STA
