@@ -4,3 +4,9 @@
 placed_CPD_est;vpr.out;Placement estimated critical path delay: (.*) ns
 placed_setup_TNS_est;vpr.out;Placement estimated setup Total Negative Slack \(sTNS\): (.*) ns
 placed_setup_WNS_est;vpr.out;Placement estimated setup Worst Negative Slack \(sWNS\): (.*) ns
+
+#VPR Place Timing Analysis Run-time Metrics
+place_quench_timing_analysis_time;vpr.out;Placement Quench timing analysis took (.*) seconds
+place_quench_sta_time;vpr.out;Placement Quench timing analysis took .* seconds \((.*) STA
+place_timing_analysis_time;vpr.out;Placement timing analysis took (.*) seconds
+place_sta_time;vpr.out;Placement Quench timing analysis took .* seconds \((.*) STA
