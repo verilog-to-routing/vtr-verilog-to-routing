@@ -8,5 +8,5 @@ placed_setup_WNS_est;vpr.out;Placement estimated setup Worst Negative Slack \(sW
 #VPR Place Timing Analysis Run-time Metrics
 place_quench_timing_analysis_time;vpr.out;Placement Quench timing analysis took (.*) seconds
 place_quench_sta_time;vpr.out;Placement Quench timing analysis took .* seconds \((.*) STA
-place_timing_analysis_time;vpr.out;Placement timing analysis took (.*) seconds
-place_sta_time;vpr.out;Placement Quench timing analysis took .* seconds \((.*) STA
+place_total_timing_analysis_time;vpr.out;Placement Total\s+timing analysis took (.*) seconds
+place_total_sta_time;vpr.out;Placement Total\s+timing analysis took .* seconds \((.*) STA
