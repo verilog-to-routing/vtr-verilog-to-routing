@@ -799,7 +799,7 @@ void try_place(const t_placer_opts& placer_opts,
 
     auto pre_quench_timing_stats = timing_ctx.stats;
     { /* Quench */
-        vtr::Timer temperature_timer;
+        vtr::ScopedFinishTimer temperature_timer("Placement Quench");
 
         outer_loop_recompute_criticalities(placer_opts, &costs,
                                            &prev_inverse_costs,
@@ -838,8 +838,9 @@ void try_place(const t_placer_opts& placer_opts,
             sWNS = timing_info->setup_worst_negative_slack();
         }
 
+        float quench_elapsed_sec = temperature_timer.elapsed_sec();
         print_place_status(num_temps,
-                           temperature_timer.elapsed_sec(),
+                           quench_elapsed_sec,
                            t, oldt, stats,
                            critical_path.delay(), sTNS, sWNS,
                            success_rat, std_dev, rlim, crit_exponent, tot_iter);
