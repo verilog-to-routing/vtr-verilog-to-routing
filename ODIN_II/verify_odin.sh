@@ -799,7 +799,7 @@ function sim() {
 			
 		# synthesis
 		synthesis_failure_name="synthesis_failures"
-		synthesis_parse_result_file_name="synthesis_result.csv"
+		synthesis_parse_result_file_name="synthesis_result.json"
 		synthesis_params_file_name="synthesis_params"
 		synthesis_wrapper_file_name="synthesis_wrapper_params"
 		synthesis_log_file_name="synthesis.log"
@@ -811,7 +811,7 @@ function sim() {
 
 		# simulation
 		simulation_failure_name="simulation_failures"
-		simulation_parse_result_file_name="simulation_result.csv"
+		simulation_parse_result_file_name="simulation_result.json"
 		simulation_params_file_name="simulation_params"
 		simulation_wrapper_generate_io_file_name="simulation_wrapper_generate_io_params"
 		simulation_wrapper_generate_output_file_name="simulation_wrapper_generate_output_params"
