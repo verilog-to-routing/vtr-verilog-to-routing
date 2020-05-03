@@ -236,7 +236,7 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t** current_module, c
             long sc_spot;
             /* lookup the name of the module associated with this instantiated point */
             if ((sc_spot = sc_lookup_string(module_names_to_idx, temp_instance_name)) == -1) {
-                error_message(NETLIST_ERROR, (*current_module)->line_number, (*current_module)->file_number,
+                error_message(NETLIST, (*current_module)->line_number, (*current_module)->file_number,
                               "Can't find instance name %s\n", temp_instance_name);
             }
 
@@ -266,7 +266,7 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t** current_module, c
             long sc_spot;
             /* lookup the name of the module associated with this instantiated point */
             if ((sc_spot = sc_lookup_string(module_names_to_idx, temp_instance_name)) == -1) {
-                error_message(NETLIST_ERROR, (*current_module)->line_number, (*current_module)->file_number,
+                error_message(NETLIST, (*current_module)->line_number, (*current_module)->file_number,
                               "Can't find instance name %s\n", temp_instance_name);
             }
 
@@ -294,7 +294,7 @@ void convert_ast_to_netlist_recursing_via_modules(ast_node_t** current_module, c
             long sc_spot;
             /* lookup the name of the module associated with this instantiated point */
             if ((sc_spot = sc_lookup_string(module_names_to_idx, temp_instance_name)) == -1) {
-                error_message(NETLIST_ERROR, (*current_module)->line_number, (*current_module)->file_number,
+                error_message(NETLIST, (*current_module)->line_number, (*current_module)->file_number,
                               "Can't find instance name %s\n", temp_instance_name);
             }
 
@@ -562,7 +562,7 @@ signal_list_t* netlist_expand_ast_of_module(ast_node_t** node_ref, char* instanc
         /* POST AMBLE - process the children */
         switch (node->type) {
             case FILE_ITEMS:
-                error_message(NETLIST_ERROR, node->line_number, node->file_number, "%s",
+                error_message(NETLIST, node->line_number, node->file_number, "%s",
                               "FILE_ITEMS are not supported by Odin.\n");
                 break;
             case CONCATENATE:
@@ -769,7 +769,7 @@ void create_top_driver_nets(ast_node_t* module, char* instance_name_prefix, sc_h
             }
         }
     } else {
-        error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "%s", "Module is empty\n");
+        error_message(NETLIST, module_items->line_number, module_items->file_number, "%s", "Module is empty\n");
     }
 
     /* create the constant nets */
@@ -807,7 +807,7 @@ void create_top_driver_nets(ast_node_t* module, char* instance_name_prefix, sc_h
 
     sc_spot = sc_add_string(output_nets_sc, zero_string);
     if (output_nets_sc->data[sc_spot] != NULL) {
-        error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "%s", "Error in Odin\n");
+        error_message(NETLIST, module_items->line_number, module_items->file_number, "%s", "Error in Odin\n");
     }
     /* store the data which is an idx here */
     output_nets_sc->data[sc_spot] = (void*)verilog_netlist->zero_net;
@@ -820,7 +820,7 @@ void create_top_driver_nets(ast_node_t* module, char* instance_name_prefix, sc_h
 
     sc_spot = sc_add_string(output_nets_sc, one_string);
     if (output_nets_sc->data[sc_spot] != NULL) {
-        error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "%s", "Error in Odin\n");
+        error_message(NETLIST, module_items->line_number, module_items->file_number, "%s", "Error in Odin\n");
     }
     /* store the data which is an idx here */
     output_nets_sc->data[sc_spot] = (void*)verilog_netlist->one_net;
@@ -833,7 +833,7 @@ void create_top_driver_nets(ast_node_t* module, char* instance_name_prefix, sc_h
 
     sc_spot = sc_add_string(output_nets_sc, pad_string);
     if (output_nets_sc->data[sc_spot] != NULL) {
-        error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "%s", "Error in Odin\n");
+        error_message(NETLIST, module_items->line_number, module_items->file_number, "%s", "Error in Odin\n");
     }
     /* store the data which is an idx here */
     output_nets_sc->data[sc_spot] = (void*)verilog_netlist->pad_net;
@@ -874,7 +874,7 @@ void create_top_output_nodes(ast_node_t* module, char* instance_name_prefix, sc_
 
                     /* check if the instantiation pin exists. */
                     if ((sc_spot = sc_lookup_string(output_nets_sc, full_name)) == -1) {
-                        error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
+                        error_message(NETLIST, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
                                       "Output pin (%s) is not hooked up!!!\n", full_name);
                     }
 
@@ -907,12 +907,12 @@ void create_top_output_nodes(ast_node_t* module, char* instance_name_prefix, sc_
                     long min_value = node_min->types.vnumber->get_value();
 
                     if (min_value > max_value) {
-                        error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+                        error_message(NETLIST, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
                                       "Odin doesn't support arrays declared [m:n] where m is less than n.");
                     }
                     //ODIN doesn't support negative number in index now.
                     if (min_value < 0 || max_value < 0) {
-                        warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+                        warning_message(NETLIST, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
                                         "Odin doesn't support negative number in index.");
                     }
 
@@ -923,7 +923,7 @@ void create_top_output_nodes(ast_node_t* module, char* instance_name_prefix, sc_
 
                         /* check if the instantiation pin exists. */
                         if ((sc_spot = sc_lookup_string(output_nets_sc, full_name)) == -1) {
-                            error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
+                            error_message(NETLIST, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
                                           "Output pin (%s) is not hooked up!!!\n", full_name);
                         }
                         new_pin = allocate_npin();
@@ -949,14 +949,14 @@ void create_top_output_nodes(ast_node_t* module, char* instance_name_prefix, sc_
                     }
                 } else {
                     /* Implicit memory */
-                    error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+                    error_message(NETLIST, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
                                   "Memory not handled ... yet in create_top_output_nodes!\n");
                 }
             }
         }
 
     } else {
-        error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "%s", "Empty module\n");
+        error_message(NETLIST, module_items->line_number, module_items->file_number, "%s", "Empty module\n");
     }
 }
 
@@ -982,7 +982,7 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char* instance_name_pre
         /* look for that element */
         sc_spot = sc_add_string(output_nets_sc, temp_string);
         if (output_nets_sc->data[sc_spot] != NULL) {
-            error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
+            error_message(NETLIST, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
                           "Net (%s) with the same name already created\n", temp_string);
         }
         /* store the data which is an idx here */
@@ -1005,12 +1005,12 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char* instance_name_pre
         long max_value = node_max->types.vnumber->get_value();
 
         if (min_value > max_value) {
-            error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+            error_message(NETLIST, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
                           "Odin doesn't support arrays declared [m:n] where m is less than n.");
         }
         //ODIN doesn't support negative number in index now.
         if (min_value < 0 || max_value < 0) {
-            warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+            warning_message(NETLIST, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
                             "Odin doesn't support negative number in index.");
         }
 
@@ -1031,7 +1031,7 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char* instance_name_pre
 
             sc_spot = sc_add_string(output_nets_sc, temp_string);
             if (output_nets_sc->data[sc_spot] != NULL) {
-                error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
+                error_message(NETLIST, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
                               "Net (%s) with the same name already created\n", temp_string);
             }
             /* store the data which is an idx here */
@@ -1058,12 +1058,12 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char* instance_name_pre
         long data_max = node_max1->types.vnumber->get_value();
 
         if (data_min > data_max) {
-            error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+            error_message(NETLIST, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
                           "Odin doesn't support arrays declared [m:n] where m is less than n.");
         }
         //ODIN doesn't support negative number in index now.
         if (data_min < 0 || data_max < 0) {
-            warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+            warning_message(NETLIST, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
                             "Odin doesn't support negative number in index.");
         }
 
@@ -1075,25 +1075,25 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char* instance_name_pre
         long addr_max = node_max2->types.vnumber->get_value();
 
         if (addr_min > addr_max) {
-            error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+            error_message(NETLIST, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
                           "Odin doesn't support arrays declared [m:n] where m is less than n.");
         }
         //ODIN doesn't support negative number in index now.
         if (addr_min < 0 || addr_max < 0) {
-            warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+            warning_message(NETLIST, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
                             "Odin doesn't support negative number in index.");
         }
 
         char* name = var_declare->children[0]->types.identifier;
 
         if (data_min != 0)
-            error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
+            error_message(NETLIST, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
                           "%s: right memory index must be zero\n", name);
 
         oassert(data_min <= data_max);
 
         if (addr_min != 0)
-            error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
+            error_message(NETLIST, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
                           "%s: right memory address index must be zero\n", name);
 
         oassert(addr_min <= addr_max);
@@ -1130,7 +1130,7 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char* instanc
 
         sc_spot = sc_add_string(output_nets_sc, temp_string);
         if (output_nets_sc->data[sc_spot] != NULL) {
-            error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
+            error_message(NETLIST, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
                           "Net (%s) with the same name already created\n", temp_string);
         }
         /* store the data which is an idx here */
@@ -1166,12 +1166,12 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char* instanc
         long max_value = node_max->types.vnumber->get_value();
 
         if (min_value > max_value) {
-            error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+            error_message(NETLIST, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
                           "Odin doesn't support arrays declared [m:n] where m is less than n.");
         }
         //ODIN doesn't support negative number in index now.
         if (min_value < 0 || max_value < 0) {
-            warning_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
+            warning_message(NETLIST, var_declare->children[0]->line_number, var_declare->children[0]->file_number, "%s",
                             "Odin doesn't support negative number in index.");
         }
 
@@ -1185,7 +1185,7 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char* instanc
 
             sc_spot = sc_add_string(output_nets_sc, temp_string);
             if (output_nets_sc->data[sc_spot] != NULL) {
-                error_message(NETLIST_ERROR, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
+                error_message(NETLIST, var_declare->children[0]->line_number, var_declare->children[0]->file_number,
                               "Net (%s) with the same name already created\n", temp_string);
             }
             /* store the data which is an idx here */
@@ -1214,7 +1214,7 @@ nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char* instanc
         }
     } else if (var_declare->types.variable.is_memory) {
         /* Implicit memory */
-        error_message(NETLIST_ERROR, var_declare->children[3]->line_number, var_declare->children[3]->file_number, "%s\n", "Unhandled implicit memory in define_nodes_and_nets_with_driver");
+        error_message(NETLIST, var_declare->children[3]->line_number, var_declare->children[3]->file_number, "%s\n", "Unhandled implicit memory in define_nodes_and_nets_with_driver");
     }
 
     return new_net;
@@ -1259,7 +1259,7 @@ void create_symbol_table_for_scope(ast_node_t* module_items, sc_hierarchy* local
 
                     if (var_declare->types.variable.is_input
                         && var_declare->types.variable.is_reg) {
-                        error_message(NETLIST_ERROR, var_declare->line_number, var_declare->file_number, "%s",
+                        error_message(NETLIST, var_declare->line_number, var_declare->file_number, "%s",
                                       "Input cannot be defined as a reg\n");
                     }
 
@@ -1275,7 +1275,7 @@ void create_symbol_table_for_scope(ast_node_t* module_items, sc_hierarchy* local
                          * Then update the stored string cache entry with information */
                         if (var_declare->types.variable.is_input
                             && ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_reg) {
-                            error_message(NETLIST_ERROR, var_declare->line_number, var_declare->file_number, "%s",
+                            error_message(NETLIST, var_declare->line_number, var_declare->file_number, "%s",
                                           "Input cannot be defined as a reg\n");
                         }
                         /* MORE ERRORS ... could check for same declaration name ... */
@@ -1393,7 +1393,7 @@ void create_symbol_table_for_scope(ast_node_t* module_items, sc_hierarchy* local
         local_ref->local_symbol_table = local_symbol_table;
         local_ref->num_local_symbol_table = num_local_symbol_table;
     } else {
-        error_message(NETLIST_ERROR, module_items->line_number, module_items->file_number, "%s", "Empty module\n");
+        error_message(NETLIST, module_items->line_number, module_items->file_number, "%s", "Empty module\n");
     }
 }
 
@@ -1413,7 +1413,7 @@ int check_for_initial_reg_value(ast_node_t* var_declare, long* value) {
             *value = var_declare->children[5]->types.vnumber->get_value();
             return true;
         } else {
-            warning_message(NETLIST_ERROR, var_declare->line_number, var_declare->file_number,
+            warning_message(NETLIST, var_declare->line_number, var_declare->file_number,
                             "%s", "Could not resolve initial assignment to a constant value, skipping\n");
         }
     }
@@ -1579,7 +1579,7 @@ void connect_hard_block_and_alias(ast_node_t* hb_instance, char* instance_name_p
     char* identifier = hb_instance->children[0]->types.identifier;
     hb_model = find_hard_block(identifier);
     if (!hb_model) {
-        error_message(NETLIST_ERROR, hb_instance->line_number, hb_instance->file_number, "Found Hard Block \"%s\": Not supported by FPGA Architecture\n", identifier);
+        error_message(NETLIST, hb_instance->line_number, hb_instance->file_number, "Found Hard Block \"%s\": Not supported by FPGA Architecture\n", identifier);
     }
 
     /* Note: Hard Block port matching is checked in earlier node processing */
@@ -1731,7 +1731,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 
     /* lookup the node of the module associated with this instantiated module */
     if ((sc_spot = sc_lookup_string(module_names_to_idx, module_instance_name)) == -1) {
-        error_message(NETLIST_ERROR, module_instance->line_number, module_instance->file_number,
+        error_message(NETLIST, module_instance->line_number, module_instance->file_number,
                       "Can't find module %s\n", module_instance_name);
     }
 
@@ -1741,7 +1741,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
     module_list = module_node->children[1]; // MODULE->VAR_DECLARE_LIST(child[1])
 
     if (module_list->num_children != module_instance_list->num_children) {
-        error_message(NETLIST_ERROR, module_instance->line_number, module_instance->file_number,
+        error_message(NETLIST, module_instance->line_number, module_instance->file_number,
                       "Module instantiation (%s) and definition don't match in terms of ports\n",
                       module_instance->children[0]->types.identifier);
     }
@@ -1790,7 +1790,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
             //---------------------------------------------------------------------------
             else if (module_var_node->children[5] != NULL) {
                 /* Implicit memory */
-                error_message(NETLIST_ERROR, module_var_node->children[5]->line_number, module_var_node->children[5]->file_number, "%s\n", "Unhandled implicit memory in connect_module_instantiation_and_alias");
+                error_message(NETLIST, module_var_node->children[5]->line_number, module_var_node->children[5]->file_number, "%s\n", "Unhandled implicit memory in connect_module_instantiation_and_alias");
             }
             for (j = 0; j < port_size; j++) {
                 if (module_var_node->types.variable.is_input) {
@@ -1837,7 +1837,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
                     /* search for the old_input name */
                     if ((sc_spot_input_old = sc_lookup_string(input_nets_sc, alias_name)) == -1) {
                         /* doesn it have to exist since might only be used in module */
-                        error_message(NETLIST_ERROR, module_instance->line_number, module_instance->file_number,
+                        error_message(NETLIST, module_instance->line_number, module_instance->file_number,
                                       "This module port %s is unused in module %s", alias_name, module_node->children[0]->types.identifier);
                     }
 
@@ -1890,7 +1890,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
                         if (strcmp(module_instance_list->children[i]->children[0]->types.identifier,
                                    module_var_node->children[0]->types.identifier)
                             != 0) {
-                            error_message(NETLIST_ERROR, module_var_node->line_number, module_var_node->file_number,
+                            error_message(NETLIST, module_var_node->line_number, module_var_node->file_number,
                                           "This module entry does not match up correctly (%s != %s).  Odin expects the order of ports to be the same\n",
                                           module_instance_list->children[i]->children[0]->types.identifier,
                                           module_var_node->children[0]->types.identifier);
@@ -1935,7 +1935,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 
                     /* check if the instantiation pin exists. */
                     if ((sc_spot_output = sc_lookup_string(output_nets_sc, alias_name)) == -1) {
-                        error_message(NETLIST_ERROR, module_var_node->line_number, module_var_node->file_number,
+                        error_message(NETLIST, module_var_node->line_number, module_var_node->file_number,
                                       "This output (%s) must exist...must be an error\n", alias_name);
                     }
 
@@ -1965,7 +1965,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
                     /* IF the designer users port names then make sure they line up */
                     if (module_instance_list->children[i]->children[0] != NULL) {
                         if (strcmp(module_instance_list->children[i]->children[0]->types.identifier, module_var_node->children[0]->types.identifier) != 0) {
-                            error_message(NETLIST_ERROR, module_var_node->line_number, module_var_node->file_number,
+                            error_message(NETLIST, module_var_node->line_number, module_var_node->file_number,
                                           "This module entry does not match up correctly (%s != %s).  Odin expects the order of ports to be the same\n",
                                           module_instance_list->children[i]->children[0]->types.identifier,
                                           module_var_node->children[0]->types.identifier);
@@ -1998,7 +1998,7 @@ signal_list_t* connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 
     /* lookup the node of the module associated with this instantiated module */
     if ((sc_spot = sc_lookup_string(module_names_to_idx, module_instance_name)) == -1) {
-        error_message(NETLIST_ERROR, module_instance->line_number, module_instance->file_number,
+        error_message(NETLIST, module_instance->line_number, module_instance->file_number,
                       "Can't find function %s\n", module_instance_name);
     }
 
@@ -2009,7 +2009,7 @@ signal_list_t* connect_function_instantiation_and_alias(short PASS, ast_node_t* 
     module_list = module_node->children[1]; // MODULE->VAR_DECLARE_LIST(child[1])
 
     if (module_list->num_children != module_instance_list->num_children) {
-        error_message(NETLIST_ERROR, module_instance->line_number, module_instance->file_number,
+        error_message(NETLIST, module_instance->line_number, module_instance->file_number,
                       "Function instantiation (%s) and definition don't match in terms of ports\n",
                       module_instance->children[0]->types.identifier);
     }
@@ -2040,7 +2040,7 @@ signal_list_t* connect_function_instantiation_and_alias(short PASS, ast_node_t* 
         if (i > 0 && module_instance_list->children[i]->children[0] != NULL) {
             if (strcmp(module_instance_list->children[i]->children[0]->types.identifier, module_var_node->children[0]->types.identifier) != 0) {
                 // TODO: This error message may not be correct. If assigning by name, the order should not matter
-                error_message(NETLIST_ERROR, module_var_node->line_number, module_var_node->file_number,
+                error_message(NETLIST, module_var_node->line_number, module_var_node->file_number,
                               "This function entry does not match up correctly (%s != %s).  Odin expects the order of ports to be the same\n",
                               module_instance_list->children[i]->children[0]->types.identifier,
                               module_var_node->children[0]->types.identifier);
@@ -2090,7 +2090,7 @@ signal_list_t* connect_function_instantiation_and_alias(short PASS, ast_node_t* 
         //-----------------------------------------------------------------------------------
         else if (module_var_node->children[5] != NULL) {
             /* Implicit memory */
-            error_message(NETLIST_ERROR, module_var_node->children[5]->line_number, module_var_node->children[5]->file_number, "%s\n", "Unhandled implicit memory in connect_module_instantiation_and_alias");
+            error_message(NETLIST, module_var_node->children[5]->line_number, module_var_node->children[5]->file_number, "%s\n", "Unhandled implicit memory in connect_module_instantiation_and_alias");
         }
         for (j = 0; j < port_size; j++) {
             if (i > 0 && module_var_node->types.variable.is_input) {
@@ -2138,12 +2138,12 @@ signal_list_t* connect_function_instantiation_and_alias(short PASS, ast_node_t* 
                 /* search for the old_input name */
                 if ((sc_spot_input_old = sc_lookup_string(input_nets_sc, alias_name)) == -1) {
                     /* doesn it have to exist since might only be used in module */
-                    /*error_message(NETLIST_ERROR, module_instance->line_number, module_instance->file_number,
+                    /*error_message(NETLIST, module_instance->line_number, module_instance->file_number,
                      * "This module port %s is unused in module %s", alias_name, module_node->children[0]->types.identifier);*/
                     if (port_size > 1)
-                        warning_message(NETLIST_ERROR, -1, -1, "This function port %s[%d] is unused in module %s\n", module_instance_var_node->types.identifier, j, module_node->children[0]->types.identifier);
+                        warning_message(NETLIST, -1, -1, "This function port %s[%d] is unused in module %s\n", module_instance_var_node->types.identifier, j, module_node->children[0]->types.identifier);
                     else
-                        warning_message(NETLIST_ERROR, -1, -1, "This function port %s is unused in module %s\n", module_instance_var_node->types.identifier, module_node->children[0]->types.identifier);
+                        warning_message(NETLIST, -1, -1, "This function port %s is unused in module %s\n", module_instance_var_node->types.identifier, module_node->children[0]->types.identifier);
 
                 } else {
                     /* CMM - Check if this pin should be driven by the top level VCC or GND drivers	*/
@@ -2240,7 +2240,7 @@ signal_list_t* connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 
                 /* check if the instantiation pin exists. */
                 if ((sc_spot_output = sc_lookup_string(output_nets_sc, alias_name)) == -1) {
-                    error_message(NETLIST_ERROR, module_var_node->line_number, module_var_node->file_number,
+                    error_message(NETLIST, module_var_node->line_number, module_var_node->file_number,
                                   "This output (%s) must exist...must be an error\n", alias_name);
                 }
 
@@ -2305,7 +2305,7 @@ signal_list_t* connect_task_instantiation_and_alias(short PASS, ast_node_t* task
 
     /* lookup the node of the task associated with this instantiated task */
     if ((sc_spot = sc_lookup_string(module_names_to_idx, task_instance_name)) == -1) {
-        error_message(NETLIST_ERROR, task_instance->line_number, task_instance->file_number,
+        error_message(NETLIST, task_instance->line_number, task_instance->file_number,
                       "Can't find task %s\n", task_instance_name);
     }
 
@@ -2316,7 +2316,7 @@ signal_list_t* connect_task_instantiation_and_alias(short PASS, ast_node_t* task
     task_list = task_node->children[1]; // TASK->VAR_DECLARE_LIST(child[1])
 
     if (task_list->num_children != task_instance_list->num_children) {
-        error_message(NETLIST_ERROR, task_instance->line_number, task_instance->file_number,
+        error_message(NETLIST, task_instance->line_number, task_instance->file_number,
                       "Task instantiation (%s) and definition don't match in terms of ports\n",
                       task_instance->children[0]->types.identifier);
     }
@@ -2345,7 +2345,7 @@ signal_list_t* connect_task_instantiation_and_alias(short PASS, ast_node_t* task
         if (i > 0 && task_instance_list->children[i]->children[0] != NULL) {
             if (strcmp(task_instance_list->children[i]->children[0]->types.identifier, task_var_node->children[0]->types.identifier) != 0) {
                 // TODO: This error message may not be correct. If assigning by name, the order should not matter
-                error_message(NETLIST_ERROR, task_var_node->line_number, task_var_node->file_number,
+                error_message(NETLIST, task_var_node->line_number, task_var_node->file_number,
                               "This task entry does not match up correctly (%s != %s).  Odin expects the order of ports to be the same\n",
                               task_instance_list->children[i]->children[0]->types.identifier,
                               task_var_node->children[0]->types.identifier);
@@ -2395,7 +2395,7 @@ signal_list_t* connect_task_instantiation_and_alias(short PASS, ast_node_t* task
         //-----------------------------------------------------------------------------------
         else if (task_var_node->children[5] != NULL) {
             /* Implicit memory */
-            error_message(NETLIST_ERROR, task_var_node->children[5]->line_number, task_var_node->children[5]->file_number, "%s\n", "Unhandled implicit memory in connect_task_instantiation_and_alias");
+            error_message(NETLIST, task_var_node->children[5]->line_number, task_var_node->children[5]->file_number, "%s\n", "Unhandled implicit memory in connect_task_instantiation_and_alias");
         }
         if (task_var_node->types.variable.is_input) {
             for (j = 0; j < port_size; j++) {
@@ -2443,12 +2443,12 @@ signal_list_t* connect_task_instantiation_and_alias(short PASS, ast_node_t* task
                 /* search for the old_input name */
                 if ((sc_spot_input_old = sc_lookup_string(input_nets_sc, alias_name)) == -1) {
                     /* doesn it have to exist since might only be used in task */
-                    /*error_message(NETLIST_ERROR, task_instance->line_number, task_instance->file_number,
+                    /*error_message(NETLIST, task_instance->line_number, task_instance->file_number,
                      * "This task port %s is unused in task %s", alias_name, task_node->children[0]->types.identifier);*/
                     if (port_size > 1)
-                        warning_message(NETLIST_ERROR, -1, -1, "This task port %s[%d] is unused in module %s\n", task_instance_var_node->types.identifier, j, task_node->children[0]->types.identifier);
+                        warning_message(NETLIST, -1, -1, "This task port %s[%d] is unused in module %s\n", task_instance_var_node->types.identifier, j, task_node->children[0]->types.identifier);
                     else
-                        warning_message(NETLIST_ERROR, -1, -1, "This task port %s is unused in module %s\n", task_instance_var_node->types.identifier, task_node->children[0]->types.identifier);
+                        warning_message(NETLIST, -1, -1, "This task port %s is unused in module %s\n", task_instance_var_node->types.identifier, task_node->children[0]->types.identifier);
 
                 } else {
                     /* CMM - Check if this pin should be driven by the top level VCC or GND drivers	*/
@@ -2537,7 +2537,7 @@ signal_list_t* connect_task_instantiation_and_alias(short PASS, ast_node_t* task
 
                 /* check if the instantiation pin exists. */
                 if ((sc_spot_output = sc_lookup_string(output_nets_sc, alias_name)) == -1) {
-                    error_message(NETLIST_ERROR, task_var_node->line_number, task_var_node->file_number,
+                    error_message(NETLIST, task_var_node->line_number, task_var_node->file_number,
                                   "This output (%s) must exist...must be an error\n", alias_name);
                 }
 
@@ -2695,14 +2695,14 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
     /* process the signal for the input gate */
     if (right_memory) {
         if (!is_valid_implicit_memory_reference_ast(instance_name_prefix, right))
-            error_message(NETLIST_ERROR, assignment->line_number, assignment->file_number,
+            error_message(NETLIST, assignment->line_number, assignment->file_number,
                           "Invalid addressing mode for implicit memory %s.\n", right_memory->name);
 
         signal_list_t* address = netlist_expand_ast_of_module(&(right->children[1]), instance_name_prefix, local_ref);
         // Pad/shrink the address to the depth of the memory.
 
         if (address->count == 0) {
-            warning_message(NETLIST_ERROR, assignment->line_number, assignment->file_number,
+            warning_message(NETLIST, assignment->line_number, assignment->file_number,
                             "indexing into memory with %s has address of length 0, skipping memory read", instance_name_prefix);
         } else {
             if (address->count != right_memory->addr_width) {
@@ -2712,10 +2712,10 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
                         if (address->pins && address->pins[i] && address->pins[i]->name)
                             unused_pins_name = unused_pins_name + " " + address->pins[i]->name;
                     }
-                    warning_message(NETLIST_ERROR, assignment->line_number, assignment->file_number,
+                    warning_message(NETLIST, assignment->line_number, assignment->file_number,
                                     "indexing into memory with %s has larger input than memory. Unused pins: %s", instance_name_prefix, unused_pins_name.c_str());
                 } else {
-                    warning_message(NETLIST_ERROR, assignment->line_number, assignment->file_number,
+                    warning_message(NETLIST, assignment->line_number, assignment->file_number,
                                     "indexing into memory with %s has smaller input than memory. Padding with GND", instance_name_prefix);
                 }
 
@@ -2767,13 +2767,13 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
 
     if (left_memory) {
         if (!is_valid_implicit_memory_reference_ast(instance_name_prefix, left))
-            error_message(NETLIST_ERROR, assignment->line_number, assignment->file_number,
+            error_message(NETLIST, assignment->line_number, assignment->file_number,
                           "Invalid addressing mode for implicit memory %s.\n", left_memory->name);
 
         // A memory can only be written from a clocked rising edge block.
         if (type_of_circuit != SEQUENTIAL) {
             out_list = NULL;
-            error_message(NETLIST_ERROR, assignment->line_number, assignment->file_number, "%s",
+            error_message(NETLIST, assignment->line_number, assignment->file_number, "%s",
                           "Assignment to implicit memories is only supported within sequential circuits.\n");
         } else {
             // Make sure the memory is addressed.
@@ -2781,7 +2781,7 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
 
             // Pad/shrink the address to the depth of the memory.
             if (address->count == 0) {
-                warning_message(NETLIST_ERROR, assignment->line_number, assignment->file_number,
+                warning_message(NETLIST, assignment->line_number, assignment->file_number,
                                 "indexing into memory with %s has address of length 0, skipping memory write", instance_name_prefix);
             } else {
                 if (address->count != left_memory->addr_width) {
@@ -2791,10 +2791,10 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
                             if (address->pins && address->pins[i] && address->pins[i]->name)
                                 unused_pins_name = unused_pins_name + " " + address->pins[i]->name;
                         }
-                        warning_message(NETLIST_ERROR, assignment->line_number, assignment->file_number,
+                        warning_message(NETLIST, assignment->line_number, assignment->file_number,
                                         "indexing into memory with %s has larger input than memory. Unused pins: %s", instance_name_prefix, unused_pins_name.c_str());
                     } else {
-                        warning_message(NETLIST_ERROR, assignment->line_number, assignment->file_number,
+                        warning_message(NETLIST, assignment->line_number, assignment->file_number,
                                         "indexing into memory with %s has smaller input than memory. Padding with GND", instance_name_prefix);
                     }
 
@@ -2973,7 +2973,7 @@ void define_latchs_initial_value_inside_initial_statement(ast_node_t* initial_no
                 /*if the identifier we found in the table matches the identifier of our blocking statement*/
                 sc_spot = sc_lookup_string(local_symbol_table_sc, initial_node->children[i]->children[0]->types.identifier);
                 if (sc_spot == -1) {
-                    warning_message(NETLIST_ERROR, initial_node->children[i]->children[0]->line_number, initial_node->children[i]->children[0]->file_number, "Register [%s] used in initial block is not declared.\n", initial_node->children[i]->children[0]->types.identifier);
+                    warning_message(NETLIST, initial_node->children[i]->children[0]->line_number, initial_node->children[i]->children[0]->file_number, "Register [%s] used in initial block is not declared.\n", initial_node->children[i]->children[0]->types.identifier);
                 } else {
                     local_symbol_table[sc_spot]->types.variable.is_initialized = 1;
                     local_symbol_table[sc_spot]->types.variable.initial_value = number;
@@ -3001,7 +3001,7 @@ void terminate_registered_assignment(ast_node_t* always_node, signal_list_t* ass
             if (sc_spot == -1) {
                 sc_spot = sc_lookup_string(input_nets_sc, potential_clocks->pins[i]->name);
                 if (sc_spot == -1) {
-                    error_message(NETLIST_ERROR, always_node->line_number, always_node->file_number,
+                    error_message(NETLIST, always_node->line_number, always_node->file_number,
                                   "Sensitivity list element (%s) is not a driver or net ... must be\n", potential_clocks->pins[i]->name);
                 }
                 temp_net = (nnet_t*)input_nets_sc->data[sc_spot];
@@ -3011,7 +3011,7 @@ void terminate_registered_assignment(ast_node_t* always_node, signal_list_t* ass
 
             if ((((temp_net->num_fanout_pins == 1) && (temp_net->fanout_pins[0]->node == NULL)) || (temp_net->num_fanout_pins == 0))
                 && (local_clock_found == true)) {
-                error_message(NETLIST_ERROR, always_node->line_number, always_node->file_number,
+                error_message(NETLIST, always_node->line_number, always_node->file_number,
                               "Suspected second clock (%s).  In a sequential sensitivity list, Odin expects the "
                               "clock not to drive anything and any other signals in this list to drive stuff.  "
                               "For example, a reset in the sensitivy list has to be hooked up to something in the always block.\n",
@@ -3042,7 +3042,7 @@ void terminate_registered_assignment(ast_node_t* always_node, signal_list_t* ass
             /* look up the net */
             int sc_spot = sc_lookup_string(output_nets_sc, pin->name);
             if (sc_spot == -1) {
-                error_message(NETLIST_ERROR, always_node->line_number, always_node->file_number,
+                error_message(NETLIST, always_node->line_number, always_node->file_number,
                               "Assignment is missing driver (%s)\n", pin->name);
             }
             nnet_t* net = (nnet_t*)output_nets_sc->data[sc_spot];
@@ -3108,7 +3108,7 @@ void terminate_registered_assignment(ast_node_t* always_node, signal_list_t* ass
             add_output_pin_to_node(ff_node, ff_output_pin, 0);
 
             if (net->driver_pin) {
-                error_message(NETLIST_ERROR, always_node->line_number, always_node->file_number,
+                error_message(NETLIST, always_node->line_number, always_node->file_number,
                               "You've defined the driver \"%s\" twice\n", get_pin_name(pin->name));
             }
             add_driver_pin_to_net(net, ff_output_pin);
@@ -3189,7 +3189,7 @@ void terminate_continuous_assignment(ast_node_t* node, signal_list_t* assignment
             /* look up the net */
             long sc_spot = sc_lookup_string(output_nets_sc, pin->name);
             if (sc_spot == -1) {
-                error_message(NETLIST_ERROR, node->line_number, node->file_number,
+                error_message(NETLIST, node->line_number, node->file_number,
                               "Assignment (%s) is missing driver\n", pin->name);
             }
 
@@ -3218,7 +3218,7 @@ void terminate_continuous_assignment(ast_node_t* node, signal_list_t* assignment
             add_output_pin_to_node(buf_node, buf_output_pin, 0);
 
             if (net->driver_pin != NULL) {
-                error_message(NETLIST_ERROR, node->line_number, node->file_number,
+                error_message(NETLIST, node->line_number, node->file_number,
                               "You've defined this driver %s twice. \n "
                               "\tNote that Odin II does not currently support combinational a = ? overiding for if and case blocks.\n",
                               pin->name);
@@ -3259,7 +3259,7 @@ int alias_output_assign_pins_to_inputs(char_list_t* output_list, signal_list_t* 
     for (int i = 0; i < output_list->num_strings; i++) {
         if (i >= input_list->count) {
             if (global_args.all_warnings)
-                warning_message(NETLIST_ERROR, node->line_number, node->file_number,
+                warning_message(NETLIST, node->line_number, node->file_number,
                                 "More nets to drive than drivers, padding with ZEROs for driver %s\n", output_list->strings[i]);
 
             add_pin_to_signal_list(input_list, get_zero_pin(verilog_netlist));
@@ -3275,7 +3275,7 @@ int alias_output_assign_pins_to_inputs(char_list_t* output_list, signal_list_t* 
     }
 
     if (global_args.all_warnings && output_list->num_strings < input_list->count)
-        warning_message(NETLIST_ERROR, node->line_number, node->file_number, "%s",
+        warning_message(NETLIST, node->line_number, node->file_number, "%s",
                         "Alias: More driver pins than nets to drive: sometimes using decimal numbers causes this problem\n");
 
     return output_list->num_strings;
@@ -3514,13 +3514,13 @@ signal_list_t* create_operation_node(ast_node_t* op, signal_list_t** input_lists
             break;
         }
         case DIVIDE: // /
-            error_message(NETLIST_ERROR, op->line_number, op->file_number, "%s", "Divide operation not supported by Odin\n");
+            error_message(NETLIST, op->line_number, op->file_number, "%s", "Divide operation not supported by Odin\n");
             break;
         case MODULO: // %
-            error_message(NETLIST_ERROR, op->line_number, op->file_number, "%s", "Modulo operation not supported by Odin\n");
+            error_message(NETLIST, op->line_number, op->file_number, "%s", "Modulo operation not supported by Odin\n");
             break;
         default:
-            error_message(NETLIST_ERROR, op->line_number, op->file_number, "%s", "Operation not supported by Odin\n");
+            error_message(NETLIST, op->line_number, op->file_number, "%s", "Operation not supported by Odin\n");
             break;
     }
 
@@ -3532,7 +3532,7 @@ signal_list_t* create_operation_node(ast_node_t* op, signal_list_t** input_lists
             /* Need to check that 2nd operand is constant */
             ast_node_t* second = op->children[1];
             if (second->type != NUMBERS)
-                error_message(NETLIST_ERROR, op->line_number, op->file_number, "%s", "Odin only supports constant shifts at present\n");
+                error_message(NETLIST, op->line_number, op->file_number, "%s", "Odin only supports constant shifts at present\n");
             oassert(second->type == NUMBERS);
 
             /* for shift left or right, it's actually a one port operation. The 2nd port is constant */
@@ -3632,7 +3632,7 @@ signal_list_t* evaluate_sensitivity_list(ast_node_t* delay_control, char* instan
 
             if (circuit_edge != child_sensitivity) {
                 if (circuit_edge == ASYNCHRONOUS_SENSITIVITY || child_sensitivity == ASYNCHRONOUS_SENSITIVITY) {
-                    error_message(NETLIST_ERROR, delay_control->line_number, delay_control->file_number, "%s",
+                    error_message(NETLIST, delay_control->line_number, delay_control->file_number, "%s",
                                   "Sensitivity list switches between edge sensitive to asynchronous.  You can't define something like always @(posedge clock or a).\n");
                 }
             }
@@ -3656,7 +3656,7 @@ signal_list_t* evaluate_sensitivity_list(ast_node_t* delay_control, char* instan
     /* update the analysis type of this block of statements */
     if (circuit_edge == UNDEFINED_SENSITIVITY) {
         // TODO: empty always block will probably appear here
-        error_message(NETLIST_ERROR, delay_control->line_number, delay_control->file_number, "%s", "Sensitivity list error...looks empty?\n");
+        error_message(NETLIST, delay_control->line_number, delay_control->file_number, "%s", "Sensitivity list error...looks empty?\n");
     } else if (circuit_edge == ASYNCHRONOUS_SENSITIVITY) {
         /* @(*) or @* is here */
         free_signal_list(return_sig_list);
@@ -3709,7 +3709,7 @@ signal_list_t* create_if_question_mux_expressions(ast_node_t* if_ast, nnode_t* i
             /* IF - this is a normal case item, then process the case match and the details of the statement */
             if_expressions[i] = netlist_expand_ast_of_module(&(if_ast->children[i + 1]), instance_name_prefix, local_ref);
         } else {
-            error_message(NETLIST_ERROR, if_ast->line_number, if_ast->file_number, "%s", "No such thing as a a = b ? z;\n");
+            error_message(NETLIST, if_ast->line_number, if_ast->file_number, "%s", "No such thing as a a = b ? z;\n");
         }
     }
 
@@ -4182,7 +4182,7 @@ int find_smallest_non_numerical(ast_node_t* node, signal_list_t** input_list, in
         }
 
         if (smallest_idx == -1) {
-            error_message(NETLIST_ERROR, node->line_number, node->file_number, "%s", "all numbers in padding non numericals\n");
+            error_message(NETLIST, node->line_number, node->file_number, "%s", "all numbers in padding non numericals\n");
         } else {
             /* mark that we're evaluating this input */
             tested[smallest_idx] = true;
@@ -4214,13 +4214,13 @@ void pad_with_zeros(ast_node_t* node, signal_list_t* list, int pad_size, char* /
     if (pad_size > list->count) {
         for (i = list->count; i < pad_size; i++) {
             if (global_args.all_warnings)
-                warning_message(NETLIST_ERROR, node->line_number, node->file_number, "%s",
+                warning_message(NETLIST, node->line_number, node->file_number, "%s",
                                 "Padding an input port with 0 for operation (likely compare)\n");
             add_pin_to_signal_list(list, get_zero_pin(verilog_netlist));
         }
     } else if (pad_size < list->count) {
         if (global_args.all_warnings)
-            warning_message(NETLIST_ERROR, node->line_number, node->file_number, "%s",
+            warning_message(NETLIST, node->line_number, node->file_number, "%s",
                             "More driver pins than nets to drive.  This means that for this operation you are losing some of the most significant bits\n");
     }
 }
@@ -4232,7 +4232,7 @@ void pad_with_zeros(ast_node_t* node, signal_list_t* list, int pad_size, char* /
  *------------------------------------------------------------------------*/
 signal_list_t* create_dual_port_ram_block(ast_node_t* block, char* instance_name_prefix, t_model* hb_model, sc_hierarchy* local_ref) {
     if (!hb_model || !is_ast_dp_ram(block))
-        error_message(NETLIST_ERROR, block->line_number, block->file_number, "%s", "Error in creating dual port ram\n");
+        error_message(NETLIST, block->line_number, block->file_number, "%s", "Error in creating dual port ram\n");
 
     block->type = RAM;
 
@@ -4268,7 +4268,7 @@ signal_list_t* create_dual_port_ram_block(ast_node_t* block, char* instance_name
         }
 
         if (!hb_ports)
-            error_message(NETLIST_ERROR, block->line_number, block->file_number, "Non-existant port %s in hard block %s\n", ip_name, block->children[0]->types.identifier);
+            error_message(NETLIST, block->line_number, block->file_number, "Non-existant port %s in hard block %s\n", ip_name, block->children[0]->types.identifier);
 
         /* Link the signal to the port definition */
         block_connect->children[1]->hb_port = (void*)hb_ports;
@@ -4398,7 +4398,7 @@ signal_list_t* create_dual_port_ram_block(ast_node_t* block, char* instance_name
  *------------------------------------------------------------------------*/
 signal_list_t* create_single_port_ram_block(ast_node_t* block, char* instance_name_prefix, t_model* hb_model, sc_hierarchy* local_ref) {
     if (!hb_model || !is_ast_sp_ram(block))
-        error_message(NETLIST_ERROR, block->line_number, block->file_number, "%s", "Error in creating single port ram\n");
+        error_message(NETLIST, block->line_number, block->file_number, "%s", "Error in creating single port ram\n");
 
     // EDDIE: Uses new enum in ids: RAM (opposed to MEMORY from operation_t previously)
     block->type = RAM;
@@ -4440,7 +4440,7 @@ signal_list_t* create_single_port_ram_block(ast_node_t* block, char* instance_na
         }
 
         if (!hb_ports)
-            error_message(NETLIST_ERROR, block->line_number, block->file_number, "Non-existant port %s in hard block %s\n", ip_name, block->children[0]->types.identifier);
+            error_message(NETLIST, block->line_number, block->file_number, "Non-existant port %s in hard block %s\n", ip_name, block->children[0]->types.identifier);
 
         /* Link the signal to the port definition */
         block_connect->children[1]->hb_port = (void*)hb_ports;
@@ -4461,7 +4461,7 @@ signal_list_t* create_single_port_ram_block(ast_node_t* block, char* instance_na
     }
 
     if (i != block_list->num_children)
-        error_message(NETLIST_ERROR, block->line_number, block->file_number, "Not all ports defined in hard block %s\n", ip_name);
+        error_message(NETLIST, block->line_number, block->file_number, "Not all ports defined in hard block %s\n", ip_name);
 
     signal_list_t** in_list = (signal_list_t**)vtr::malloc(sizeof(signal_list_t*) * block_list->num_children);
     int out_port_size = 0;
@@ -4576,7 +4576,7 @@ signal_list_t* create_soft_single_port_ram_block(ast_node_t* block, char* instan
     char* identifier = block->children[0]->types.identifier;
 
     if (!is_ast_sp_ram(block))
-        error_message(NETLIST_ERROR, block->line_number, block->file_number, "%s", "Error in creating soft single port ram\n");
+        error_message(NETLIST, block->line_number, block->file_number, "%s", "Error in creating soft single port ram\n");
 
     block->type = RAM;
 
@@ -4714,7 +4714,7 @@ signal_list_t* create_soft_dual_port_ram_block(ast_node_t* block, char* instance
     char* instance_name = block->children[1]->children[0]->types.identifier;
 
     if (!is_ast_dp_ram(block))
-        error_message(NETLIST_ERROR, block->line_number, block->file_number, "%s", "Error in creating soft dual port ram\n");
+        error_message(NETLIST, block->line_number, block->file_number, "%s", "Error in creating soft dual port ram\n");
 
     block->type = RAM;
 
@@ -4897,7 +4897,7 @@ signal_list_t* create_hard_block(ast_node_t* block, char* instance_name_prefix, 
     /* TODO: create_soft_adder_block()/create_soft_multiplier_block()??? */
 
     if (!hb_model) {
-        error_message(NETLIST_ERROR, block->line_number, block->file_number,
+        error_message(NETLIST, block->line_number, block->file_number,
                       "Found Hard Block \"%s\": Not supported by FPGA Architecture\n", identifier);
     }
 
@@ -4940,7 +4940,7 @@ signal_list_t* create_hard_block(ast_node_t* block, char* instance_name_prefix, 
         }
 
         if (hb_ports == NULL) {
-            error_message(NETLIST_ERROR, block->children[0]->line_number, block->children[0]->file_number, "Non-existant port %s in hard block %s\n", ip_name, block->children[0]->types.identifier);
+            error_message(NETLIST, block->children[0]->line_number, block->children[0]->file_number, "Non-existant port %s in hard block %s\n", ip_name, block->children[0]->types.identifier);
         }
 
         /* Link the signal to the port definition */
@@ -5185,7 +5185,7 @@ void reorder_connections_from_name(ast_node_t* instance_node_list, ast_node_t* i
             }
         }
         if (!has_matched) {
-            error_message(NETLIST_ERROR, instantiated_instance_list->children[i]->line_number,
+            error_message(NETLIST, instantiated_instance_list->children[i]->line_number,
                           instantiated_instance_list->children[i]->file_number,
                           "Module entry %s does not exist\n",
                           instantiated_instance_list->children[i]->children[0]->types.identifier);

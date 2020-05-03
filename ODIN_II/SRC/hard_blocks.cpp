@@ -148,7 +148,7 @@ void define_hard_block(nnode_t* node, FILE* out) {
             && node->input_pins[i]->net != verilog_netlist->zero_net
             && node->input_pins[i]->net != verilog_netlist->one_net
             && node->input_pins[i]->net != verilog_netlist->pad_net) {
-            warning_message(NETLIST_ERROR, -1, -1, "Signal %s is not driven. padding with ground\n", node->input_pins[i]->name);
+            warning_message(NETLIST, -1, -1, "Signal %s is not driven. padding with ground\n", node->input_pins[i]->name);
             add_fanout_pin_to_net(verilog_netlist->zero_net, node->input_pins[i]);
         }
 

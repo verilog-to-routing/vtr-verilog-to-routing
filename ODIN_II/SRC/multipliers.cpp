@@ -196,7 +196,7 @@ void instantiate_simple_soft_multiplier(nnode_t* node, short mark, netlist_t* ne
     for (i = 0; i < width; i++) {
         if (multiplicand_width == 1) {
             // this is undealt with
-            error_message(PARSE_ERROR, -1, -1, "%s", "Cannot create soft multiplier with multiplicand width of 1.\n");
+            error_message(AST, -1, -1, "%s", "Cannot create soft multiplier with multiplicand width of 1.\n");
         } else if (i == 0) {
             /* IF - this is the LSbit, then we use a pass through from the partial product */
             remap_pin_to_new_node(node->output_pins[i], partial_products[0][0], 0);
@@ -310,7 +310,7 @@ void declare_hard_multiplier(nnode_t* node) {
 
     /* See if this size instance of multiplier exists? */
     if (hard_multipliers == NULL)
-        warning_message(NETLIST_ERROR, node->related_ast_node->line_number, node->related_ast_node->file_number, "%s\n", "Instantiating Mulitpliers where hard multipliers do not exist");
+        warning_message(NETLIST, node->related_ast_node->line_number, node->related_ast_node->file_number, "%s\n", "Instantiating Mulitpliers where hard multipliers do not exist");
 
     tmp = (t_multiplier*)hard_multipliers->instances;
     width_a = node->input_port_sizes[0];

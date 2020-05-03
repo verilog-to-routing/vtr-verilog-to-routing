@@ -220,7 +220,7 @@ void simulate_netlist(netlist_t* netlist) {
         if (verify_output_vectors(global_args.sim_vector_output_file.value().c_str(), sim_data->num_vectors))
             printf("Vector file \"%s\" matches output\n", global_args.sim_vector_output_file.value().c_str());
         else
-            error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Vector files differ.");
+            error_message(SIMULATION, 0, -1, "%s\n", "Vector files differ.");
         printf("\n");
     }
 
@@ -236,7 +236,7 @@ void simulate_netlist(netlist_t* netlist) {
 sim_data_t* init_simulation(netlist_t* netlist) {
     number_of_workers = global_args.parralelized_simulation.value();
     if (number_of_workers > 1)
-        warning_message(SIMULATION_ERROR, -1, -1, "Executing simulation with maximum of %d threads", number_of_workers);
+        printf("Executing simulation with maximum of %d threads\n", number_of_workers);
 
     num_of_clock = 0;
 
@@ -251,37 +251,37 @@ sim_data_t* init_simulation(netlist_t* netlist) {
     odin_sprintf(out_vec_file, "%s/%s", global_args.sim_directory.value().c_str(), OUTPUT_VECTOR_FILE_NAME);
     sim_data->out = fopen(out_vec_file, "w");
     if (!sim_data->out)
-        error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Could not create output vector file.");
+        error_message(SIMULATION, 0, -1, "%s\n", "Could not create output vector file.");
 
     // Open the input vector file.
     char in_vec_file[BUFFER_MAX_SIZE] = {0};
     odin_sprintf(in_vec_file, "%s/%s", global_args.sim_directory.value().c_str(), INPUT_VECTOR_FILE_NAME);
     sim_data->in_out = fopen(in_vec_file, "w+");
     if (!sim_data->in_out)
-        error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Could not create input vector file.");
+        error_message(SIMULATION, 0, -1, "%s\n", "Could not create input vector file.");
 
     // Open the activity output file.
     char act_file[BUFFER_MAX_SIZE] = {0};
     odin_sprintf(act_file, "%s/%s", global_args.sim_directory.value().c_str(), OUTPUT_ACTIVITY_FILE_NAME);
     sim_data->act_out = fopen(act_file, "w");
     if (!sim_data->act_out)
-        error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Could not create activity output file.");
+        error_message(SIMULATION, 0, -1, "%s\n", "Could not create activity output file.");
 
     // Open the modelsim vector file.
     char test_file[BUFFER_MAX_SIZE] = {0};
     odin_sprintf(test_file, "%s/%s", global_args.sim_directory.value().c_str(), MODEL_SIM_FILE_NAME);
     sim_data->modelsim_out = fopen(test_file, "w");
     if (!sim_data->modelsim_out)
-        error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Could not create modelsim output file.");
+        error_message(SIMULATION, 0, -1, "%s\n", "Could not create modelsim output file.");
 
     // Create and verify the lines.
     sim_data->input_lines = create_lines(netlist, INPUT);
     if (!verify_lines(sim_data->input_lines))
-        error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Input lines could not be assigned.");
+        error_message(SIMULATION, 0, -1, "%s\n", "Input lines could not be assigned.");
 
     sim_data->output_lines = create_lines(netlist, OUTPUT);
     if (!verify_lines(sim_data->output_lines))
-        error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Output lines could not be assigned.");
+        error_message(SIMULATION, 0, -1, "%s\n", "Output lines could not be assigned.");
 
     sim_data->in = NULL;
 
@@ -291,7 +291,7 @@ sim_data_t* init_simulation(netlist_t* netlist) {
     if (global_args.sim_vector_input_file.provenance() == argparse::Provenance::SPECIFIED) {
         sim_data->in = fopen(global_args.sim_vector_input_file.value().c_str(), "r");
         if (!sim_data->in)
-            error_message(SIMULATION_ERROR, 0, -1, "Could not open vector input file: %s", global_args.sim_vector_input_file.value().c_str());
+            error_message(SIMULATION, 0, -1, "Could not open vector input file: %s", global_args.sim_vector_input_file.value().c_str());
     }
 
     if (sim_data->in && sim_data->input_lines->count != 0) {
@@ -299,7 +299,7 @@ sim_data_t* init_simulation(netlist_t* netlist) {
 
         // Read the vector headers and check to make sure they match the lines.
         if (!verify_test_vector_headers(sim_data->in, sim_data->input_lines))
-            error_message(SIMULATION_ERROR, 0, -1, "Invalid vector header format in %s.", global_args.sim_vector_input_file.value().c_str());
+            error_message(SIMULATION, 0, -1, "Invalid vector header format in %s.", global_args.sim_vector_input_file.value().c_str());
 
         printf("Simulating %ld existing vectors from \"%s\".\n", sim_data->num_vectors, global_args.sim_vector_input_file.value().c_str());
         fflush(stdout);
@@ -325,7 +325,7 @@ sim_data_t* init_simulation(netlist_t* netlist) {
 
     if (!sim_data->num_vectors) {
         terminate_simulation(sim_data);
-        error_message(SIMULATION_ERROR, 0, -1, "%s", "No vectors to simulate.");
+        error_message(SIMULATION, 0, -1, "%s", "No vectors to simulate.");
     }
 
     return sim_data;
@@ -423,7 +423,7 @@ int single_step(sim_data_t* sim_data, int cycle) {
         char buffer[BUFFER_MAX_SIZE];
 
         if (!get_next_vector(sim_data->in, buffer))
-            error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Could not read next vector.");
+            error_message(SIMULATION, 0, -1, "%s\n", "Could not read next vector.");
 
         v = parse_test_vector(buffer);
     } else {
@@ -442,7 +442,7 @@ int single_step(sim_data_t* sim_data, int cycle) {
 
         // Make sure the output lines are still OK after adding custom lines.
         if (!verify_lines(sim_data->output_lines))
-            error_message(SIMULATION_ERROR, 0, -1, "%s\n",
+            error_message(SIMULATION, 0, -1, "%s\n",
                           "Problem detected with the output lines after the first cycle.");
     } else {
         simulate_cycle(cycle, sim_data->stages);
@@ -525,7 +525,7 @@ static void update_undriven_input_pins(nnode_t* node, int cycle) {
                 // Print the trace.
                 nnode_t* root = print_update_trace(node, cycle);
                 // Throw an error.
-                error_message(SIMULATION_ERROR, 0, -1,
+                error_message(SIMULATION, 0, -1,
                               "Odin has detected that an input pin attached to %s isn't being updated.\n"
                               "\tPin name: %s\n"
                               "\tRoot node: %s\n"
@@ -561,7 +561,7 @@ static int is_node_ready(nnode_t* node, int cycle) {
                     node->undriven_pins = (npin_t**)vtr::realloc(node->undriven_pins, sizeof(npin_t*) * (node->num_undriven_pins + 1));
                     node->undriven_pins[node->num_undriven_pins++] = pin;
 
-                    warning_message(SIMULATION_ERROR, 0, -1, "A node (%s) has an undriven input pin.", node->name);
+                    warning_message(SIMULATION, 0, -1, "A node (%s) has an undriven input pin.", node->name);
                 }
             }
         }
@@ -1011,7 +1011,7 @@ static bool compute_and_store_value(nnode_t* node, int cycle) {
                 if (pin_cycle != cycle) {
                     if (!node->internal_clk_warn) {
                         node->internal_clk_warn = true;
-                        warning_message(SIMULATION_ERROR, -1, -1, "clock(%s) is internally driven, verify your circuit", node->name);
+                        warning_message(SIMULATION, -1, -1, "clock(%s) is internally driven, verify your circuit", node->name);
                     }
                     //toggle according to ratio
                     signed char prev_value = !CLOCK_INITIAL_VALUE;
@@ -1023,7 +1023,7 @@ static bool compute_and_store_value(nnode_t* node, int cycle) {
 
                     int clk_ratio = get_clock_ratio(node);
                     if (clk_ratio == 0) {
-                        error_message(SIMULATION_ERROR, -1, -1, "clock(%s) as a 0 valued ratio", node->name);
+                        error_message(SIMULATION, -1, -1, "clock(%s) as a 0 valued ratio", node->name);
                     }
 
                     signed char cur_value = (cycle % clk_ratio) ? prev_value : !prev_value;
@@ -1039,7 +1039,7 @@ static bool compute_and_store_value(nnode_t* node, int cycle) {
                 } else {
                     if (!node->internal_clk_warn) {
                         node->internal_clk_warn = true;
-                        warning_message(SIMULATION_ERROR, -1, -1, "node used as clock (%s) is itself driven by a clock, verify your circuit", node->name);
+                        warning_message(SIMULATION, -1, -1, "node used as clock (%s) is itself driven by a clock, verify your circuit", node->name);
                     }
                     update_pin_value(node->output_pins[0], get_pin_value(node->input_pins[0], cycle - 1), cycle);
                 }
@@ -1099,7 +1099,7 @@ static bool compute_and_store_value(nnode_t* node, int cycle) {
         //case ADD:
         //case MINUS:
         default:
-            error_message(SIMULATION_ERROR, 0, -1, "Node should have been converted to softer version: %s", node->name);
+            error_message(SIMULATION, 0, -1, "Node should have been converted to softer version: %s", node->name);
             break;
     }
 
@@ -1197,7 +1197,7 @@ nnode_t** get_children_of(nnode_t* node, int* num_children) {
                 char* node_name = get_pin_name(node->name);
                 char* net_name = get_pin_name(net->name);
 
-                warning_message(SIMULATION_ERROR, -1, -1,
+                warning_message(SIMULATION, -1, -1,
                                 "Found output pin \"%s\" (%ld) on node \"%s\" (%ld)\n"
                                 "             which is mapped to a net \"%s\" (%ld) whose driver pin is \"%s\" (%ld) \n",
                                 pin_name,
@@ -1223,15 +1223,15 @@ nnode_t** get_children_of(nnode_t* node, int* num_children) {
                     // Check linkage for inconsistencies.
                     if (fanout_pin->net != net) {
                         print_ancestry(child_node, 0);
-                        error_message(SIMULATION_ERROR, -1, -1, "Found mismapped node %s", node->name);
+                        error_message(SIMULATION, -1, -1, "Found mismapped node %s", node->name);
                     } else if (fanout_pin->net->driver_pin->net != net) {
                         print_ancestry(child_node, 0);
-                        error_message(SIMULATION_ERROR, -1, -1, "Found mismapped node %s", node->name);
+                        error_message(SIMULATION, -1, -1, "Found mismapped node %s", node->name);
                     }
 
                     else if (fanout_pin->net->driver_pin->node != node) {
                         print_ancestry(child_node, 0);
-                        error_message(SIMULATION_ERROR, -1, -1, "Found mismapped node %s", node->name);
+                        error_message(SIMULATION, -1, -1, "Found mismapped node %s", node->name);
                     } else {
                         // Add child.
                         children = (nnode_t**)vtr::realloc(children, sizeof(nnode_t*) * (count + 1));
@@ -1255,7 +1255,7 @@ nnode_t** get_children_of_nodepin(nnode_t* node, int* num_children, int output_p
     int count = 0;
     int output_pin_number = node->num_output_pins;
     if (output_pin < 0 || output_pin > output_pin_number) {
-        error_message(SIMULATION_ERROR, -1, -1, "%s", "Requested pin not available");
+        error_message(SIMULATION, -1, -1, "%s", "Requested pin not available");
         return children;
     }
 
@@ -1271,7 +1271,7 @@ nnode_t** get_children_of_nodepin(nnode_t* node, int* num_children, int output_p
             char* node_name = get_pin_name(node->name);
             char* net_name = get_pin_name(net->name);
 
-            warning_message(SIMULATION_ERROR, -1, -1,
+            warning_message(SIMULATION, -1, -1,
                             "Found output pin \"%s\" (%ld) on node \"%s\" (%ld)\n"
                             "             which is mapped to a net \"%s\" (%ld) whose driver pin is \"%s\" (%ld) \n",
                             pin_name,
@@ -1297,15 +1297,15 @@ nnode_t** get_children_of_nodepin(nnode_t* node, int* num_children, int output_p
                 // Check linkage for inconsistencies.
                 if (fanout_pin->net != net) {
                     print_ancestry(child_node, 0);
-                    error_message(SIMULATION_ERROR, -1, -1, "Found mismapped node %s", node->name);
+                    error_message(SIMULATION, -1, -1, "Found mismapped node %s", node->name);
                 } else if (fanout_pin->net->driver_pin->net != net) {
                     print_ancestry(child_node, 0);
-                    error_message(SIMULATION_ERROR, -1, -1, "Found mismapped node %s", node->name);
+                    error_message(SIMULATION, -1, -1, "Found mismapped node %s", node->name);
                 }
 
                 else if (fanout_pin->net->driver_pin->node != node) {
                     print_ancestry(child_node, 0);
-                    error_message(SIMULATION_ERROR, -1, -1, "Found mismapped node %s", node->name);
+                    error_message(SIMULATION, -1, -1, "Found mismapped node %s", node->name);
                 } else {
                     // Add child.
                     children = (nnode_t**)vtr::realloc(children, sizeof(nnode_t*) * (count + 1));
@@ -1488,7 +1488,7 @@ static void compute_hard_ip_node(nnode_t* node, int cycle) {
         char* filename = (char*)vtr::malloc(sizeof(char) * strlen(node->name));
 
         if (!strchr(node->name, '.'))
-            error_message(SIMULATION_ERROR, 0, -1, "%s\n",
+            error_message(SIMULATION, 0, -1, "%s\n",
                           "Couldn't extract the name of a shared library for hard-block simulation");
 
         snprintf(filename, sizeof(char) * strlen(node->name), "%s.so", strchr(node->name, '.') + 1);
@@ -1496,7 +1496,7 @@ static void compute_hard_ip_node(nnode_t* node, int cycle) {
         void* handle = dlopen(filename, RTLD_LAZY);
 
         if (!handle)
-            error_message(SIMULATION_ERROR, 0, -1,
+            error_message(SIMULATION, 0, -1,
                           "Couldn't open a shared library for hard-block simulation: %s", dlerror());
 
         dlerror();
@@ -1505,7 +1505,7 @@ static void compute_hard_ip_node(nnode_t* node, int cycle) {
 
         char* error = dlerror();
         if (error)
-            error_message(SIMULATION_ERROR, 0, -1,
+            error_message(SIMULATION, 0, -1,
                           "Couldn't load a shared library method for hard-block simulation: %s", error);
 
         node->simulate_block_cycle = func_pointer;
@@ -1841,7 +1841,7 @@ static void compute_memory_node(nnode_t* node, int cycle) {
     else if (is_dp_ram(node))
         compute_dual_port_memory(node, cycle);
     else
-        error_message(SIMULATION_ERROR, 0, -1,
+        error_message(SIMULATION, 0, -1,
                       "Could not resolve memory hard block %s to a valid type.", node->name);
 }
 
@@ -1991,22 +1991,22 @@ static void assign_memory_from_mif_file(nnode_t* node, FILE* mif, char* filename
                     if (token) {
                         // Make sure the address and value are valid strings of the specified radix.
                         if (!is_string_of_radix(address_string, addr_radix))
-                            error_message(SIMULATION_ERROR, line_number, -1, "%s: address %s is not a base %d string.", filename, address_string, addr_radix);
+                            error_message(SIMULATION, line_number, -1, "%s: address %s is not a base %d string.", filename, address_string, addr_radix);
 
                         if (!is_string_of_radix(data_string, data_radix))
-                            error_message(SIMULATION_ERROR, line_number, -1, "%s: data string %s is not a base %d string.", filename, data_string, data_radix);
+                            error_message(SIMULATION, line_number, -1, "%s: data string %s is not a base %d string.", filename, data_string, data_radix);
 
                         char* binary_data = convert_string_of_radix_to_bit_string(data_string, data_radix, width);
                         long address = convert_string_of_radix_to_long(address_string, addr_radix);
 
                         if (address > address_width)
-                            error_message(SIMULATION_ERROR, line_number, -1, "%s: address %s is out of range.", filename, address_string);
+                            error_message(SIMULATION, line_number, -1, "%s: address %s is out of range.", filename, address_string);
 
                         // Write the parsed value string to the memory location.
                         for (int i = 0; i < width; i++)
                             node->memory_data[address][i] = binary_data[i] - '0';
                     } else {
-                        error_message(SIMULATION_ERROR, line_number, -1,
+                        error_message(SIMULATION, line_number, -1,
                                       "%s: MIF syntax error.", filename);
                     }
                 }
@@ -2034,47 +2034,47 @@ static void assign_memory_from_mif_file(nnode_t* node, FILE* mif, char* filename
                         // Verify the width parameter.
                         item_in = symbols.find("WIDTH");
                         if (item_in == symbols.end())
-                            error_message(SIMULATION_ERROR, -1, -1, "%s: MIF WIDTH parameter unspecified.", filename);
+                            error_message(SIMULATION, -1, -1, "%s: MIF WIDTH parameter unspecified.", filename);
 
                         long mif_width = std::strtol(item_in->second.c_str(), NULL, 10);
                         if (mif_width != width)
-                            error_message(SIMULATION_ERROR, -1, -1, "%s: MIF width mismatch: must be %d but %ld was given", filename, width, mif_width);
+                            error_message(SIMULATION, -1, -1, "%s: MIF width mismatch: must be %d but %ld was given", filename, width, mif_width);
 
                         // Verify the depth parameter.
                         item_in = symbols.find("DEPTH");
                         if (item_in == symbols.end())
-                            error_message(SIMULATION_ERROR, -1, -1, "%s: MIF DEPTH parameter unspecified.", filename);
+                            error_message(SIMULATION, -1, -1, "%s: MIF DEPTH parameter unspecified.", filename);
 
                         long mif_depth = std::strtol(item_in->second.c_str(), NULL, 10);
                         long expected_depth = shift_left_value_with_overflow_check(0x1, address_width);
                         if (mif_depth != expected_depth)
-                            error_message(SIMULATION_ERROR, -1, -1,
+                            error_message(SIMULATION, -1, -1,
                                           "%s: MIF depth mismatch: must be %ld but %ld was given", filename, expected_depth, mif_depth);
 
                         // Parse the radix specifications and make sure they're OK.
                         item_in = symbols.find("ADDRESS_RADIX");
                         if (item_in == symbols.end())
-                            error_message(SIMULATION_ERROR, -1, -1, "%s: ADDRESS_RADIX parameter unspecified.", filename);
+                            error_message(SIMULATION, -1, -1, "%s: ADDRESS_RADIX parameter unspecified.", filename);
                         addr_radix = parse_mif_radix(item_in->second);
                         if (!addr_radix)
-                            error_message(SIMULATION_ERROR, -1, -1,
+                            error_message(SIMULATION, -1, -1,
                                           "%s: invalid or missing ADDRESS_RADIX: must specify DEC, HEX, OCT, or BIN", filename);
 
                         item_in = symbols.find("DATA_RADIX");
                         if (item_in == symbols.end())
-                            error_message(SIMULATION_ERROR, -1, -1, "%s: DATA_RADIX parameter unspecified.", filename);
+                            error_message(SIMULATION, -1, -1, "%s: DATA_RADIX parameter unspecified.", filename);
                         data_radix = parse_mif_radix(item_in->second);
                         if (!data_radix)
-                            error_message(SIMULATION_ERROR, -1, -1,
+                            error_message(SIMULATION, -1, -1,
                                           "%s: invalid or missing DATA_RADIX: must specify DEC, HEX, OCT, or BIN", filename);
 
                         // If everything checks out, start reading the values.
                         in_content = true;
                     } else {
-                        error_message(SIMULATION_ERROR, line_number, -1, "%s: MIF syntax error: %s", filename, buffer_in);
+                        error_message(SIMULATION, line_number, -1, "%s: MIF syntax error: %s", filename, buffer_in);
                     }
                 } else {
-                    error_message(SIMULATION_ERROR, line_number, -1, "%s: MIF syntax error: %s", filename, buffer_in);
+                    error_message(SIMULATION, line_number, -1, "%s: MIF syntax error: %s", filename, buffer_in);
                 }
             }
 
@@ -2112,7 +2112,7 @@ static void assign_node_to_line(nnode_t* node, lines_t* l, int type, int single_
 
     if (single_pin) {
         if (j == -1) {
-            warning_message(SIMULATION_ERROR, 0, -1,
+            warning_message(SIMULATION, 0, -1,
                             "Could not map single-bit node '%s' line", node->name);
         } else {
             pin_number = (pin_number == -1) ? 0 : pin_number;
@@ -2122,7 +2122,7 @@ static void assign_node_to_line(nnode_t* node, lines_t* l, int type, int single_
         }
     } else {
         if (j == -1)
-            warning_message(SIMULATION_ERROR, 0, -1,
+            warning_message(SIMULATION, 0, -1,
                             "Could not map multi-bit node '%s' to line", node->name);
         else
             insert_pin_into_line(node->output_pins[0], pin_number, l->lines[j], type);
@@ -2219,7 +2219,7 @@ static int verify_test_vector_headers(FILE* in, lines_t* l) {
     char read_buffer[BUFFER_MAX_SIZE];
     rewind(in);
     if (!get_next_vector(in, read_buffer))
-        error_message(SIMULATION_ERROR, 0, -1, "%s\n", "Failed to read vector headers.");
+        error_message(SIMULATION, 0, -1, "%s\n", "Failed to read vector headers.");
 
     // Parse the header, checking each entity against the corresponding line.
     char buffer[BUFFER_MAX_SIZE];
@@ -2229,13 +2229,13 @@ static int verify_test_vector_headers(FILE* in, lines_t* l) {
         char next = read_buffer[i];
 
         if (next == EOF) {
-            warning_message(SIMULATION_ERROR, 0, -1, "%s", "Hit end of file.");
+            warning_message(SIMULATION, 0, -1, "%s", "Hit end of file.");
             return false;
         } else if (next == ' ' || next == '\t' || next == '\n') {
             if (buffer_length) {
                 if (strcmp(l->lines[current_line]->name, buffer)) {
                     char* expected_header = generate_vector_header(l);
-                    warning_message(SIMULATION_ERROR, 0, -1,
+                    warning_message(SIMULATION, 0, -1,
                                     "Vector header mismatch: \n "
                                     "  Found:    %s "
                                     "  Expected: %s",
@@ -2267,7 +2267,7 @@ static int verify_lines(lines_t* l) {
         int j;
         for (j = 0; j < l->lines[i]->number_of_pins; j++) {
             if (!l->lines[i]->pins[j]) {
-                warning_message(SIMULATION_ERROR, 0, -1, "A line %d:(%s) has a NULL pin. ", j, l->lines[i]->name);
+                warning_message(SIMULATION, 0, -1, "A line %d:(%s) has a NULL pin. ", j, l->lines[i]->name);
                 return false;
             }
         }
@@ -2315,7 +2315,7 @@ static char* generate_vector_header(lines_t* l) {
         for (j = 0; j < l->count; j++) {
             // "+ 2" for null and newline/space.
             if ((strlen(header) + strlen(l->lines[j]->name) + 2) > BUFFER_MAX_SIZE)
-                error_message(SIMULATION_ERROR, 0, -1, "%s", "Buffer overflow anticipated while generating vector header.");
+                error_message(SIMULATION, 0, -1, "%s", "Buffer overflow anticipated while generating vector header.");
 
             strcat(header, l->lines[j]->name);
             strcat(header, " ");
@@ -2334,16 +2334,16 @@ static char* generate_vector_header(lines_t* l) {
  */
 static void add_test_vector_to_lines(test_vector* v, lines_t* l, int cycle) {
     if (l->count < v->count)
-        error_message(SIMULATION_ERROR, 0, -1, "Fewer lines (%d) than values (%d).", l->count, v->count);
+        error_message(SIMULATION, 0, -1, "Fewer lines (%d) than values (%d).", l->count, v->count);
     if (l->count > v->count)
-        error_message(SIMULATION_ERROR, 0, -1, "More lines (%d) than values (%d).", l->count, v->count);
+        error_message(SIMULATION, 0, -1, "More lines (%d) than values (%d).", l->count, v->count);
 
     int i;
     for (i = 0; i < v->count; i++) {
         line_t* line = l->lines[i];
 
         if (line->number_of_pins < 1)
-            error_message(SIMULATION_ERROR, 0, -1, "Found a line '%s' with no pins.", line->name);
+            error_message(SIMULATION, 0, -1, "Found a line '%s' with no pins.", line->name);
 
         int j;
         for (j = 0; j < line->number_of_pins; j++) {
@@ -2362,7 +2362,7 @@ static void add_test_vector_to_lines(test_vector* v, lines_t* l, int cycle) {
 static int compare_test_vectors(test_vector* v1, test_vector* v2) {
     int equivalent = true;
     if (v1->count != v2->count) {
-        warning_message(SIMULATION_ERROR, 0, -1, "%s", "Vector lengths differ.");
+        warning_message(SIMULATION, 0, -1, "%s", "Vector lengths differ.");
         return false;
     }
 
@@ -2695,7 +2695,7 @@ static int verify_output_vectors(const char* output_vector_file, int num_vectors
     // The filename cannot be the same as our default output file.
     if (!strcmp(output_vector_file, OUTPUT_VECTOR_FILE_NAME)) {
         error = true;
-        warning_message(SIMULATION_ERROR, 0, -1,
+        warning_message(SIMULATION, 0, -1,
                         "Vector file \"%s\" given for verification "
                         "is the same as the default output file \"%s\". "
                         "Ignoring.",
@@ -2703,14 +2703,14 @@ static int verify_output_vectors(const char* output_vector_file, int num_vectors
     } else {
         // The file being verified against.
         FILE* existing_out = fopen(output_vector_file, "r");
-        if (!existing_out) error_message(SIMULATION_ERROR, 0, -1, "Could not open vector output file: %s", output_vector_file);
+        if (!existing_out) error_message(SIMULATION, 0, -1, "Could not open vector output file: %s", output_vector_file);
 
         // Our current output vectors. (Just produced.)
         char out_vec_file[BUFFER_MAX_SIZE] = {0};
         odin_sprintf(out_vec_file, "%s/%s", global_args.sim_directory.value().c_str(), OUTPUT_VECTOR_FILE_NAME);
         FILE* current_out = fopen(out_vec_file, "r");
         if (!current_out)
-            error_message(SIMULATION_ERROR, 0, -1, "Could not open output vector file: %s", out_vec_file);
+            error_message(SIMULATION, 0, -1, "Could not open output vector file: %s", out_vec_file);
 
         int cycle;
         char buffer1[BUFFER_MAX_SIZE];
@@ -2719,17 +2719,17 @@ static int verify_output_vectors(const char* output_vector_file, int num_vectors
         for (cycle = -1; cycle < num_vectors; cycle++) {
             if (!get_next_vector(existing_out, buffer1)) {
                 error = true;
-                warning_message(SIMULATION_ERROR, 0, -1, "Too few vectors in %s \n", output_vector_file);
+                warning_message(SIMULATION, 0, -1, "Too few vectors in %s \n", output_vector_file);
                 break;
             } else if (!get_next_vector(current_out, buffer2)) {
                 error = true;
-                warning_message(SIMULATION_ERROR, 0, -1, "Simulation produced fewer than %d vectors. \n", num_vectors);
+                warning_message(SIMULATION, 0, -1, "Simulation produced fewer than %d vectors. \n", num_vectors);
                 break;
             }
             // The headers differ.
             else if ((cycle == -1) && strcmp(buffer1, buffer2)) {
                 error = true;
-                warning_message(SIMULATION_ERROR, 0, -1,
+                warning_message(SIMULATION, 0, -1,
                                 "Vector headers do not match: \n"
                                 "\t%s"
                                 "in %s does not match\n"
@@ -2749,7 +2749,7 @@ static int verify_output_vectors(const char* output_vector_file, int num_vectors
                     trim_string(buffer1, "\n\t");
                     trim_string(buffer2, "\n\t");
                     error = true;
-                    warning_message(SIMULATION_ERROR, 0, -1,
+                    warning_message(SIMULATION, 0, -1,
                                     "Vector %d mismatch:\n"
                                     "\t%s in %s\n"
                                     "\t%s in %s\n",
@@ -2757,7 +2757,7 @@ static int verify_output_vectors(const char* output_vector_file, int num_vectors
                 } else if (equivalent == -1) {
                     trim_string(buffer1, "\n\t");
                     trim_string(buffer2, "\n\t");
-                    warning_message(SIMULATION_ERROR, 0, -1,
+                    warning_message(SIMULATION, 0, -1,
                                     "Vector %d equivalent but output vector has bits set when expecting don't care :\n"
                                     "\t%s in %s\n"
                                     "\t%s in %s\n",
@@ -2772,7 +2772,7 @@ static int verify_output_vectors(const char* output_vector_file, int num_vectors
         // If the file we're checking against is longer than the current output, print an appropriate warning.
         if (!error && get_next_vector(existing_out, buffer1)) {
             error = true;
-            warning_message(SIMULATION_ERROR, 0, -1, "%s contains more than %d vectors.\n", output_vector_file, num_vectors);
+            warning_message(SIMULATION, 0, -1, "%s contains more than %d vectors.\n", output_vector_file, num_vectors);
         }
 
         fclose(existing_out);

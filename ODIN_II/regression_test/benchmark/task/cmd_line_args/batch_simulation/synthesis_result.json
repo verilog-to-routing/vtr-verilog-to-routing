@@ -1,0 +1,27 @@
+{
+    "batch_simulation/twobits_arithmetic_multiply/k6_N10_mem32K_40nm": {
+        "test_name": "batch_simulation/twobits_arithmetic_multiply/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "twobits_arithmetic_multiply.v",
+        "exit": 0,
+        "errors": [],
+        "warnings": [],
+        "max_rss(MiB)": 24.4,
+        "exec_time(ms)": 26.1,
+        "synthesis_time(ms)": 1,
+        "Latch Drivers": 1,
+        "Pi": 5,
+        "Po": 5,
+        "logic element": 7,
+        "latch": 4,
+        "Adder": -1,
+        "Multiplier": 1,
+        "Memory": 0,
+        "Hard Ip": -1,
+        "generic logic size": 6,
+        "Longest Path": 7,
+        "Average Path": 4,
+        "Estimated LUTs": 7,
+        "Total Node": 13
+    }
+}

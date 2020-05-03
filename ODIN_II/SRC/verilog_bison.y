@@ -36,7 +36,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 extern int my_yylineno;
 
-void yyerror(const char *str){	delayed_error_message(PARSE_ERROR, -1 , my_yylineno, current_parse_file,"error in parsing: (%s)\n",str);}
+void yyerror(const char *str){	delayed_error_message(PARSER, -1 , my_yylineno, current_parse_file,"error in parsing: (%s)\n",str);}
 int yywrap(){	return 1;}
 int yylex(void);
 

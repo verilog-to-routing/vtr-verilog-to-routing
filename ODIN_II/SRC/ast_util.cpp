@@ -396,7 +396,7 @@ void make_concat_into_list_of_strings(ast_node_t* concat_top, char* instance_nam
             char* temp_string = make_full_ref_name(NULL, NULL, NULL, concat_top->children[i]->types.identifier, -1);
             ast_node_t* var_declare = resolve_hierarchical_name_reference(local_ref, temp_string);
             if (var_declare == NULL) {
-                error_message(NETLIST_ERROR, concat_top->line_number, concat_top->file_number, "Missing declaration of this symbol %s\n", temp_string);
+                error_message(AST, concat_top->line_number, concat_top->file_number, "Missing declaration of this symbol %s\n", temp_string);
             } else {
                 if (var_declare->children[1] == NULL) {
                     concat_top->types.concat.num_bit_strings++;
@@ -445,7 +445,7 @@ void make_concat_into_list_of_strings(ast_node_t* concat_top, char* instance_nam
                     concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings - 1] = get_name_of_pin_at_bit(concat_top->children[i], j, instance_name_prefix, local_ref);
                 }
             } else {
-                error_message(NETLIST_ERROR, concat_top->line_number, concat_top->file_number, "%s", "Unsized constants cannot be concatenated.\n");
+                error_message(AST, concat_top->line_number, concat_top->file_number, "%s", "Unsized constants cannot be concatenated.\n");
             }
         } else if (concat_top->children[i]->type == CONCATENATE) {
             /* forward through list since we build concatenate list in idx order of MSB at index 0 and LSB at index list_size */
@@ -455,7 +455,7 @@ void make_concat_into_list_of_strings(ast_node_t* concat_top, char* instance_nam
                 concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings - 1] = get_name_of_pin_at_bit(concat_top->children[i], j, instance_name_prefix, local_ref);
             }
         } else {
-            error_message(NETLIST_ERROR, concat_top->line_number, concat_top->file_number, "%s", "Unsupported operation within a concatenation.\n");
+            error_message(AST, concat_top->line_number, concat_top->file_number, "%s", "Unsupported operation within a concatenation.\n");
         }
     }
 }
@@ -555,7 +555,7 @@ char* get_name_of_pin_at_bit(ast_node_t* var_node, int bit, char* instance_name_
         int pin_index = 0;
 
         if ((symbol_node = resolve_hierarchical_name_reference(local_ref, var_node->types.identifier)) == NULL) {
-            error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Missing declaration of this symbol %s\n", var_node->types.identifier);
+            error_message(AST, var_node->line_number, var_node->file_number, "Missing declaration of this symbol %s\n", var_node->types.identifier);
         }
 
         if (symbol_node->children[1] == NULL) {
@@ -590,7 +590,7 @@ char* get_name_of_pin_at_bit(ast_node_t* var_node, int bit, char* instance_name_
     } else {
         return_string = NULL;
 
-        error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Unsupported variable type. var_node->type = %s\n", ast_node_name_based_on_ids(var_node));
+        error_message(AST, var_node->line_number, var_node->file_number, "Unsupported variable type. var_node->type = %s\n", ast_node_name_based_on_ids(var_node));
     }
 
     return return_string;
@@ -630,7 +630,7 @@ char* get_name_of_pin_number(ast_node_t* var_node, int bit) {
             return_string = vtr::strdup(ZERO_PAD_ZERO);
             break;
         default:
-            error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Unrecognised character %c in binary string \"%s\"!\n", c, var_node->types.vnumber->to_bit_string().c_str());
+            error_message(AST, var_node->line_number, var_node->file_number, "Unrecognised character %c in binary string \"%s\"!\n", c, var_node->types.vnumber->to_bit_string().c_str());
             break;
     }
 
@@ -680,7 +680,7 @@ char_list_t* get_name_of_pins(ast_node_t* var_node, char* instance_name_prefix, 
         ast_node_t* sym_node = resolve_hierarchical_name_reference(local_ref, temp_string);
 
         if (sym_node == NULL) {
-            error_message(NETLIST_ERROR, var_node->line_number, var_node->file_number, "Missing declaration of this symbol %s\n", temp_string);
+            error_message(AST, var_node->line_number, var_node->file_number, "Missing declaration of this symbol %s\n", temp_string);
         }
 
         vtr::free(temp_string);
@@ -780,7 +780,7 @@ long get_size_of_variable(ast_node_t* node, sc_hierarchy* local_ref) {
                 if (node_is_constant(var_declare)) {
                     assignment_size = var_declare->types.vnumber->size();
                 } else {
-                    error_message(NETLIST_ERROR, node->line_number, node->file_number, "Parameter %s is not a constant expression\n", node->types.identifier);
+                    error_message(AST, node->line_number, node->file_number, "Parameter %s is not a constant expression\n", node->types.identifier);
                 }
 
                 free_whole_tree(var_declare);
@@ -793,7 +793,7 @@ long get_size_of_variable(ast_node_t* node, sc_hierarchy* local_ref) {
                 break;
             }
 
-            error_message(NETLIST_ERROR, node->line_number, node->file_number, "Missing declaration of this symbol %s\n", node->types.identifier);
+            error_message(AST, node->line_number, node->file_number, "Missing declaration of this symbol %s\n", node->types.identifier);
         } break;
 
         case ARRAY_REF: {
@@ -803,7 +803,7 @@ long get_size_of_variable(ast_node_t* node, sc_hierarchy* local_ref) {
                 break;
             }
 
-            error_message(NETLIST_ERROR, node->children[0]->line_number, node->children[0]->file_number, "Missing declaration of this symbol %s\n", node->children[0]->types.identifier);
+            error_message(AST, node->children[0]->line_number, node->children[0]->file_number, "Missing declaration of this symbol %s\n", node->children[0]->types.identifier);
         } break;
 
         case RANGE_REF: {
@@ -982,13 +982,13 @@ static void check_binary_operation(ast_node_t** node) {
                 break;
             case DIVIDE:
                 if (!node_is_constant((*node)->children[1]))
-                    error_message(NETLIST_ERROR, (*node)->line_number, (*node)->file_number, "%s", "Odin only supports constant expressions as divisors\n");
+                    error_message(AST, (*node)->line_number, (*node)->file_number, "%s", "Odin only supports constant expressions as divisors\n");
                 if ((*node)->children[0]->type == IDENTIFIERS && (*node)->children[1]->type == NUMBERS)
                     check_node_number((*node), (*node)->children[1], 3); // 3 means divide
                 break;
             case POWER:
                 if (!node_is_constant((*node)->children[1]))
-                    error_message(NETLIST_ERROR, (*node)->line_number, (*node)->file_number, "%s", "Odin only supports constant expressions as exponents\n");
+                    error_message(AST, (*node)->line_number, (*node)->file_number, "%s", "Odin only supports constant expressions as exponents\n");
                 expand_power(node);
                 break;
             default:
@@ -1068,7 +1068,7 @@ ast_node_t* fold_unary(ast_node_t** node) {
 
             case CLOG2:
                 if (voperand_0.size() > ODIN_STD_BITWIDTH)
-                    warning_message(PARSE_ERROR, (*node)->line_number, (*node)->file_number, "argument is %ld-bits but ODIN limit is %lu-bits \n", voperand_0.size(), ODIN_STD_BITWIDTH);
+                    warning_message(AST, (*node)->line_number, (*node)->file_number, "argument is %ld-bits but ODIN limit is %lu-bits \n", voperand_0.size(), ODIN_STD_BITWIDTH);
 
                 vresult = VNumber(clog2(voperand_0.get_value(), voperand_0.size()));
                 success = true;
@@ -1094,7 +1094,7 @@ ast_node_t* fold_unary(ast_node_t** node) {
         }
     } else if (op_id == CLOG2) {
         /* $clog2() argument must be a constant expression */
-        error_message(PARSE_ERROR, (*node)->line_number, current_parse_file, "%s", "Argument must be constant\n");
+        error_message(AST, (*node)->line_number, current_parse_file, "%s", "Argument must be constant\n");
     }
 
     return NULL;
@@ -1350,13 +1350,13 @@ long resolve_concat_sizes(ast_node_t* node_top, sc_hierarchy* local_ref) {
             case NUMBERS: {
                 /* verify that the number that this represents is sized */
                 if (!(node_top->types.vnumber->is_defined_size())) {
-                    error_message(NETLIST_ERROR, node_top->line_number, node_top->file_number, "%s", "Unsized constants cannot be concatenated.\n");
+                    error_message(AST, node_top->line_number, node_top->file_number, "%s", "Unsized constants cannot be concatenated.\n");
                 }
                 concatenation_size += node_top->types.vnumber->size();
             } break;
 
             default: {
-                error_message(NETLIST_ERROR, node_top->line_number, node_top->file_number, "%s", "Unsupported operation within a concatenation.\n");
+                error_message(AST, node_top->line_number, node_top->file_number, "%s", "Unsupported operation within a concatenation.\n");
             }
         }
     }

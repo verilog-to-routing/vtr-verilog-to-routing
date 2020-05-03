@@ -108,7 +108,7 @@ void parse_to_ast() {
     yyparse();
 
     /* verify that the parser did not trigger delayed errors */
-    verify_delayed_error();
+    verify_delayed_error(PARSER);
 
     /* for error messages - this is in case we use any of the parser functions after parsing (i.e. create_case_control_signals()) */
     current_parse_file = -1;
@@ -278,7 +278,7 @@ static ast_node_t* resolve_symbol_node(ast_node_t* symbol_node) {
             if (newNode && newNode->types.variable.is_parameter == true) {
                 to_return = symbol_node;
             } else {
-                error_message(PARSE_ERROR, symbol_node->line_number, current_parse_file,
+                error_message(AST, symbol_node->line_number, current_parse_file,
                               "no match for parameter %s\n", symbol_node->types.identifier);
             }
             break;
@@ -361,7 +361,7 @@ ast_node_t* resolve_ports(ids top_type, ast_node_t* symbol_list) {
                         symbol_list->children[i] = (ast_node_t*)modules_outputs_sc->data[sc_spot];
                         oassert(symbol_list->children[i]->types.variable.is_output);
                     } else {
-                        error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, "No matching declaration for port %s\n", symbol_list->children[i]->children[0]->types.identifier);
+                        error_message(AST, symbol_list->children[i]->line_number, current_parse_file, "No matching declaration for port %s\n", symbol_list->children[i]->children[0]->types.identifier);
                     }
                 } else if (top_type == FUNCTION) {
                     /* find the related INPUT or OUTPUT definition and store that instead */
@@ -376,7 +376,7 @@ ast_node_t* resolve_ports(ids top_type, ast_node_t* symbol_list) {
                         symbol_list->children[i] = (ast_node_t*)functions_outputs_sc->data[sc_spot];
                         oassert(symbol_list->children[i]->types.variable.is_output);
                     } else {
-                        error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, "No matching declaration for port %s\n", symbol_list->children[i]->children[0]->types.identifier);
+                        error_message(AST, symbol_list->children[i]->line_number, current_parse_file, "No matching declaration for port %s\n", symbol_list->children[i]->children[0]->types.identifier);
                     }
                 } else if (top_type == TASK) {
                     /* find the related INPUT or OUTPUT definition and store that instead */
@@ -391,7 +391,7 @@ ast_node_t* resolve_ports(ids top_type, ast_node_t* symbol_list) {
                         symbol_list->children[i] = (ast_node_t*)tasks_outputs_sc->data[sc_spot];
                         oassert(symbol_list->children[i]->types.variable.is_output);
                     } else {
-                        error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file, "No matching declaration for port %s\n", symbol_list->children[i]->children[0]->types.identifier);
+                        error_message(AST, symbol_list->children[i]->line_number, current_parse_file, "No matching declaration for port %s\n", symbol_list->children[i]->children[0]->types.identifier);
                     }
                 }
             }
@@ -440,25 +440,25 @@ ast_node_t* markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
     /* look for processed inputs with this name */
     sc_spot = sc_lookup_string(this_inputs_sc, port->children[0]->types.identifier);
     if (sc_spot > -1 && ((ast_node_t*)this_inputs_sc->data[sc_spot])->types.variable.is_port) {
-        error_message(PARSE_ERROR, port->line_number, current_parse_file, "%s already has input with this name %s\n",
+        error_message(AST, port->line_number, current_parse_file, "%s already has input with this name %s\n",
                       top_type_name, ((ast_node_t*)this_inputs_sc->data[sc_spot])->children[0]->types.identifier);
     }
 
     /* look for processed outputs with this name */
     sc_spot = sc_lookup_string(this_outputs_sc, port->children[0]->types.identifier);
     if (sc_spot > -1 && ((ast_node_t*)this_outputs_sc->data[sc_spot])->types.variable.is_port) {
-        error_message(PARSE_ERROR, port->line_number, current_parse_file, "%s already has output with this name %s\n",
+        error_message(AST, port->line_number, current_parse_file, "%s already has output with this name %s\n",
                       top_type_name, ((ast_node_t*)this_outputs_sc->data[sc_spot])->children[0]->types.identifier);
     }
 
     switch (net_id) {
         case REG:
             if (port_id == INPUT) {
-                error_message(NETLIST_ERROR, port->line_number, port->file_number, "%s",
+                error_message(AST, port->line_number, port->file_number, "%s",
                               "Input cannot be defined as a reg\n");
             }
             if (port_id == INOUT) {
-                error_message(NETLIST_ERROR, port->line_number, port->file_number, "%s",
+                error_message(AST, port->line_number, port->file_number, "%s",
                               "Inout cannot be defined as a reg\n");
             }
             port->types.variable.is_reg = true;
@@ -468,14 +468,14 @@ ast_node_t* markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
 
         case INTEGER:
             if (port_id == INPUT) {
-                error_message(NETLIST_ERROR, port->line_number, port->file_number, "%s",
+                error_message(AST, port->line_number, port->file_number, "%s",
                               "Input cannot be defined as an integer\n");
             } else if (port_id == INOUT) {
-                error_message(NETLIST_ERROR, port->line_number, port->file_number, "%s",
+                error_message(AST, port->line_number, port->file_number, "%s",
                               "Inout cannot be defined as an integer\n");
             } else if (port_id == OUTPUT) {
                 /* cannot support signed ports right now (integers are signed) */
-                error_message(PARSE_ERROR, port->line_number, current_parse_file,
+                error_message(AST, port->line_number, current_parse_file,
                               "Odin does not handle signed ports (%s)\n", port->children[0]->types.identifier);
             }
             port->types.variable.is_integer = true;
@@ -486,7 +486,7 @@ ast_node_t* markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
         case WIRE:
             if ((port->num_children == 6 && port->children[5] != NULL)
                 || (port->num_children == 8 && port->children[7] != NULL)) {
-                error_message(NETLIST_ERROR, port->line_number, port->file_number, "%s",
+                error_message(AST, port->line_number, port->file_number, "%s",
                               "Ports of type net cannot be initialized\n");
             }
             port->types.variable.is_wire = true;
@@ -497,7 +497,7 @@ ast_node_t* markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
         default:
             if ((port->num_children == 6 && port->children[5] != NULL)
                 || (port->num_children == 8 && port->children[7] != NULL)) {
-                error_message(NETLIST_ERROR, port->line_number, port->file_number, "%s",
+                error_message(AST, port->line_number, port->file_number, "%s",
                               "Ports with undefined type cannot be initialized\n");
             }
 
@@ -557,7 +557,7 @@ ast_node_t* markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
             port->types.variable.is_inout = true;
             port->types.variable.is_input = false;
             port->types.variable.is_output = false;
-            error_message(PARSE_ERROR, port->line_number, current_parse_file, "Odin does not handle inouts (%s)\n", port->children[0]->types.identifier);
+            error_message(AST, port->line_number, current_parse_file, "Odin does not handle inouts (%s)\n", port->children[0]->types.identifier);
             break;
 
         default:
@@ -572,7 +572,7 @@ ast_node_t* markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
             } else if (port->types.variable.is_inout
                        && !(port->types.variable.is_input)
                        && !(port->types.variable.is_output)) {
-                error_message(PARSE_ERROR, port->line_number, current_parse_file, "Odin does not handle inouts (%s)\n", port->children[0]->types.identifier);
+                error_message(AST, port->line_number, current_parse_file, "Odin does not handle inouts (%s)\n", port->children[0]->types.identifier);
                 port = markAndProcessPortWith(top_type, INOUT, net_id, port, is_signed);
             } else {
                 // shouldn't ever get here...
@@ -586,7 +586,7 @@ ast_node_t* markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
 
     if (is_signed) {
         /* cannot support signed ports right now */
-        error_message(PARSE_ERROR, port->line_number, current_parse_file,
+        error_message(AST, port->line_number, current_parse_file,
                       "Odin does not handle signed ports (%s)\n", port->children[0]->types.identifier);
     }
 
@@ -607,7 +607,7 @@ ast_node_t* markAndProcessParameterWith(ids id, ast_node_t* parameter, bool is_s
 
     if (is_signed) {
         /* cannot support signed parameters right now */
-        error_message(PARSE_ERROR, parameter->line_number, current_parse_file,
+        error_message(AST, parameter->line_number, current_parse_file,
                       "Odin does not handle signed parameters (%s)\n", parameter->children[0]->types.identifier);
     }
 
@@ -620,7 +620,7 @@ ast_node_t* markAndProcessParameterWith(ids id, ast_node_t* parameter, bool is_s
 
     /* create an entry in the symbol table for this parameter */
     if ((sc_spot = sc_lookup_string(current_scope->param_sc, parameter->children[0]->types.identifier)) > -1) {
-        error_message(PARSE_ERROR, parameter->children[5]->line_number, current_parse_file,
+        error_message(AST, parameter->children[5]->line_number, current_parse_file,
                       "Module already has parameter with this name (%s)\n", parameter->children[0]->types.identifier);
     }
     sc_spot = sc_add_string(current_scope->param_sc, parameter->children[0]->types.identifier);
@@ -662,7 +662,7 @@ ast_node_t* markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t* symbo
                     case WIRE:
                         if (is_signed) {
                             /* cannot support signed nets right now */
-                            error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file,
+                            error_message(AST, symbol_list->children[i]->line_number, current_parse_file,
                                           "Odin does not handle signed nets (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
                         }
                         symbol_list->children[i]->types.variable.is_wire = true;
@@ -670,7 +670,7 @@ ast_node_t* markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t* symbo
                     case REG:
                         if (is_signed) {
                             /* cannot support signed regs right now */
-                            error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file,
+                            error_message(AST, symbol_list->children[i]->line_number, current_parse_file,
                                           "Odin does not handle signed regs (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
                         }
                         symbol_list->children[i]->types.variable.is_reg = true;
@@ -703,12 +703,12 @@ ast_node_t* markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t* symbo
                     case WIRE:
                         if ((symbol_list->children[i]->num_children == 6 && symbol_list->children[i]->children[5] != NULL)
                             || (symbol_list->children[i]->num_children == 8 && symbol_list->children[i]->children[7] != NULL)) {
-                            error_message(NETLIST_ERROR, symbol_list->children[i]->line_number, symbol_list->children[i]->file_number, "%s",
+                            error_message(AST, symbol_list->children[i]->line_number, symbol_list->children[i]->file_number, "%s",
                                           "Nets cannot be initialized\n");
                         }
                         if (is_signed) {
                             /* cannot support signed nets right now */
-                            error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file,
+                            error_message(AST, symbol_list->children[i]->line_number, current_parse_file,
                                           "Odin does not handle signed nets (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
                         }
                         symbol_list->children[i]->types.variable.is_wire = true;
@@ -716,7 +716,7 @@ ast_node_t* markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t* symbo
                     case REG:
                         if (is_signed) {
                             /* cannot support signed regs right now */
-                            error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file,
+                            error_message(AST, symbol_list->children[i]->line_number, current_parse_file,
                                           "Odin does not handle signed regs (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
                         }
                         symbol_list->children[i]->types.variable.is_reg = true;
@@ -738,7 +738,7 @@ ast_node_t* markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t* symbo
                     case WIRE:
                         if (is_signed) {
                             /* cannot support signed nets right now */
-                            error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file,
+                            error_message(AST, symbol_list->children[i]->line_number, current_parse_file,
                                           "Odin does not handle signed nets (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
                         }
                         symbol_list->children[i]->types.variable.is_wire = true;
@@ -746,7 +746,7 @@ ast_node_t* markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t* symbo
                     case REG:
                         if (is_signed) {
                             /* cannot support signed regs right now */
-                            error_message(PARSE_ERROR, symbol_list->children[i]->line_number, current_parse_file,
+                            error_message(AST, symbol_list->children[i]->line_number, current_parse_file,
                                           "Odin does not handle signed regs (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
                         }
                         symbol_list->children[i]->types.variable.is_reg = true;
@@ -818,10 +818,10 @@ ast_node_t* newMinusColonRangeRef(char* id, ast_node_t* expression1, ast_node_t*
     ast_node_t* lsb = NULL;
 
     if (expression1 == NULL) {
-        error_message(PARSE_ERROR, line_number, current_parse_file,
+        error_message(AST, line_number, current_parse_file,
                       "first expression for range ref is NULL %s", id);
     } else if (expression2 == NULL) {
-        error_message(PARSE_ERROR, line_number, current_parse_file,
+        error_message(AST, line_number, current_parse_file,
                       "first expression for range ref is NULL  %s", id);
     }
 
@@ -846,10 +846,10 @@ ast_node_t* newPlusColonRangeRef(char* id, ast_node_t* expression1, ast_node_t* 
     ast_node_t* lsb = NULL;
 
     if (expression1 == NULL) {
-        error_message(PARSE_ERROR, line_number, current_parse_file,
+        error_message(AST, line_number, current_parse_file,
                       "first expression for range ref is NULL %s", id);
     } else if (expression2 == NULL) {
-        error_message(PARSE_ERROR, line_number, current_parse_file,
+        error_message(AST, line_number, current_parse_file,
                       "first expression for range ref is NULL  %s", id);
     }
 
@@ -1026,7 +1026,7 @@ ast_node_t* newWhile(ast_node_t* compare_expression, ast_node_t* statement, int 
     allocate_children_to_node(new_node, {compare_expression, statement});
 
     /* This needs to be removed once support is added */
-    error_message(PARSE_ERROR, line_number, current_parse_file, "%s", "While statements are NOT supported");
+    error_message(AST, line_number, current_parse_file, "%s", "While statements are NOT supported");
     return new_node;
 }
 
@@ -1095,7 +1095,7 @@ ast_node_t* newModuleConnection(char* id, ast_node_t* expression, int line_numbe
     ast_node_t* new_node = create_node_w_type(MODULE_CONNECT, line_number, current_parse_file);
     if (id) {
         if (!is_valid_identifier(id)) {
-            error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", id);
+            error_message(AST, line_number, current_parse_file, "Invalid character in identifier (%s)\n", id);
         }
         symbol_node = newSymbolNode(id, line_number);
     }
@@ -1120,7 +1120,7 @@ ast_node_t* newModuleParameter(char* id, ast_node_t* expression, int line_number
     ast_node_t* new_node = create_node_w_type(MODULE_PARAMETER, line_number, current_parse_file);
     if (id != NULL) {
         if (!is_valid_identifier(id)) {
-            error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", id);
+            error_message(AST, line_number, current_parse_file, "Invalid character in identifier (%s)\n", id);
         }
         symbol_node = newSymbolNode(id, line_number);
     }
@@ -1141,7 +1141,7 @@ ast_node_t* newModuleParameter(char* id, ast_node_t* expression, int line_number
  *-------------------------------------------------------------------------------------------*/
 ast_node_t* newModuleNamedInstance(char* unique_name, ast_node_t* module_connect_list, ast_node_t* module_parameter_list, int line_number) {
     if (!is_valid_identifier(unique_name)) {
-        error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", unique_name);
+        error_message(AST, line_number, current_parse_file, "Invalid character in identifier (%s)\n", unique_name);
     }
 
     ast_node_t* symbol_node = newSymbolNode(unique_name, line_number);
@@ -1217,7 +1217,7 @@ ast_node_t* newTaskInstance(char* task_name, ast_node_t* task_named_instace, ast
  *-----------------------------------------------------------------------*/
 ast_node_t* newHardBlockInstance(char* module_ref_name, ast_node_t* module_named_instance, int line_number) {
     if (!is_valid_identifier(module_ref_name)) {
-        error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", module_ref_name);
+        error_message(AST, line_number, current_parse_file, "Invalid character in identifier (%s)\n", module_ref_name);
     }
 
     ast_node_t* symbol_node = newSymbolNode(module_ref_name, line_number);
@@ -1245,7 +1245,7 @@ ast_node_t* newHardBlockInstance(char* module_ref_name, ast_node_t* module_named
  *-----------------------------------------------------------------------*/
 ast_node_t* newModuleInstance(char* module_ref_name, ast_node_t* module_named_instance, int line_number) {
     if (!is_valid_identifier(module_ref_name)) {
-        error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", module_ref_name);
+        error_message(AST, line_number, current_parse_file, "Invalid character in identifier (%s)\n", module_ref_name);
     }
 
     long i;
@@ -1255,7 +1255,7 @@ ast_node_t* newModuleInstance(char* module_ref_name, ast_node_t* module_named_in
         /* check if this name was already used */
         long sc_spot = sc_add_string(module_instances_sc, module_named_instance->children[i]->children[0]->types.identifier);
         if (module_instances_sc->data[sc_spot] != NULL) {
-            error_message(PARSE_ERROR, line_number, current_parse_file,
+            error_message(AST, line_number, current_parse_file,
                           "Module already has an instance with this name (%s)\n",
                           module_named_instance->children[i]->children[0]->types.identifier);
         }
@@ -1312,7 +1312,7 @@ ast_node_t* newFunctionInstance(char* function_ref_name, ast_node_t* function_na
  *-------------------------------------------------------------------------------------------*/
 ast_node_t* newGateInstance(char* gate_instance_name, ast_node_t* expression1, ast_node_t* expression2, ast_node_t* expression3, int line_number) {
     if (!is_valid_identifier(gate_instance_name)) {
-        error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", gate_instance_name);
+        error_message(AST, line_number, current_parse_file, "Invalid character in identifier (%s)\n", gate_instance_name);
     }
 
     /* create a node for this array reference */
@@ -1342,7 +1342,7 @@ ast_node_t* newGateInstance(char* gate_instance_name, ast_node_t* expression1, a
 
 ast_node_t* newMultipleInputsGateInstance(char* gate_instance_name, ast_node_t* expression1, ast_node_t* expression2, ast_node_t* expression3, int line_number) {
     if (!is_valid_identifier(gate_instance_name)) {
-        error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", gate_instance_name);
+        error_message(AST, line_number, current_parse_file, "Invalid character in identifier (%s)\n", gate_instance_name);
     }
 
     long i;
@@ -1418,7 +1418,7 @@ ast_node_t* newDefparamVarDeclare(char* symbol, ast_node_t* expression1, ast_nod
  *-------------------------------------------------------------------------------------------*/
 ast_node_t* newVarDeclare(char* symbol, ast_node_t* expression1, ast_node_t* expression2, ast_node_t* expression3, ast_node_t* expression4, ast_node_t* value, int line_number) {
     if (!is_valid_identifier(symbol)) {
-        error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", symbol);
+        error_message(AST, line_number, current_parse_file, "Invalid character in identifier (%s)\n", symbol);
     }
 
     ast_node_t* symbol_node = newSymbolNode(symbol, line_number);
@@ -1438,7 +1438,7 @@ ast_node_t* newVarDeclare(char* symbol, ast_node_t* expression1, ast_node_t* exp
 
 ast_node_t* newIntegerTypeVarDeclare(char* symbol, ast_node_t* /*expression1*/, ast_node_t* /*expression2*/, ast_node_t* expression3, ast_node_t* expression4, ast_node_t* value, int line_number) {
     if (!is_valid_identifier(symbol)) {
-        error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", symbol);
+        error_message(AST, line_number, current_parse_file, "Invalid character in identifier (%s)\n", symbol);
     }
 
     ast_node_t* symbol_node = newSymbolNode(symbol, line_number);
@@ -1464,18 +1464,18 @@ ast_node_t* newModule(char* module_name, ast_node_t* list_of_parameters, ast_nod
     long sc_spot = sc_lookup_string(hard_block_names, module_name);
 
     if (!is_valid_identifier(module_name)) {
-        error_message(PARSE_ERROR, line_number, current_parse_file,
+        error_message(AST, line_number, current_parse_file,
                       "Invalid character in identifier (%s)\n",
                       module_name);
     } else if (sc_spot != -1
                || !strcmp(module_name, SINGLE_PORT_RAM_string)
                || !strcmp(module_name, DUAL_PORT_RAM_string)) {
-        error_message(PARSE_ERROR, line_number, current_parse_file,
+        error_message(AST, line_number, current_parse_file,
                       "Module name collides with hard block of the same name (%s)\n", module_name);
     } else if (list_of_ports == NULL
                || list_of_ports->num_children == 0) {
         // this may change with hierarchy but for now we simply delete it
-        warning_message(PARSE_ERROR, line_number, current_parse_file,
+        warning_message(AST, line_number, current_parse_file,
                         "there are no ports for the module (%s)\n\tall logic will be dropped since it is not driving an output\n",
                         module_name);
         vtr::free(module_name);
@@ -1541,7 +1541,7 @@ ast_node_t* newModule(char* module_name, ast_node_t* list_of_parameters, ast_nod
         vtr::free(module_variables_not_defined);
         sc_spot = sc_add_string(module_names_to_idx, module_name);
         if (module_names_to_idx->data[sc_spot] != NULL) {
-            error_message(PARSE_ERROR, line_number, current_parse_file, "module names with the same name -> %s\n", module_name);
+            error_message(AST, line_number, current_parse_file, "module names with the same name -> %s\n", module_name);
         }
         /* store the data which is an idx here */
         module_names_to_idx->data[sc_spot] = (void*)new_node;
@@ -1565,11 +1565,11 @@ ast_node_t* newFunction(ast_node_t* function_return, ast_node_t* list_of_ports, 
     ast_node_t* symbol_node = NULL;
 
     if (automatic) {
-        warning_message(PARSE_ERROR, line_number, current_parse_file, "%s", "ODIN II does not (yet) differentiate between automatic and static tasks & functions.IGNORING ");
+        warning_message(AST, line_number, current_parse_file, "%s", "ODIN II does not (yet) differentiate between automatic and static tasks & functions.IGNORING ");
     }
 
     if (function_return->children[0]->types.variable.is_integer) {
-        warning_message(PARSE_ERROR, line_number, current_parse_file, "%s", "ODIN_II does not fully support input/output integers in functions");
+        warning_message(AST, line_number, current_parse_file, "%s", "ODIN_II does not fully support input/output integers in functions");
     }
 
     if (list_of_ports == NULL) {
@@ -1585,7 +1585,7 @@ ast_node_t* newFunction(ast_node_t* function_return, ast_node_t* list_of_ports, 
     char* function_name = vtr::strdup(function_return->children[0]->children[0]->types.identifier);
 
     if (!is_valid_identifier(function_name)) {
-        error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", function_name);
+        error_message(AST, line_number, current_parse_file, "Invalid character in identifier (%s)\n", function_name);
     }
 
     add_child_to_node_at_index(list_of_module_items, function_return, 0);
@@ -1627,7 +1627,7 @@ ast_node_t* newFunction(ast_node_t* function_return, ast_node_t* list_of_ports, 
     ast_functions[num_functions] = new_node;
     sc_spot = sc_add_string(module_names_to_idx, function_name);
     if (module_names_to_idx->data[sc_spot] != NULL) {
-        error_message(PARSE_ERROR, line_number, current_parse_file, "module names with the same name -> %s\n", function_name);
+        error_message(AST, line_number, current_parse_file, "module names with the same name -> %s\n", function_name);
     }
     /* store the data which is an idx here */
     module_names_to_idx->data[sc_spot] = (void*)new_node;
@@ -1645,7 +1645,7 @@ ast_node_t* newTask(char* task_name, ast_node_t* list_of_ports, ast_node_t* list
     char* label = NULL;
 
     if (automatic) {
-        warning_message(PARSE_ERROR, line_number, 0, "%s", "ODIN II does not (yet) differentiate between automatic and static tasks & functions. IGNORING");
+        warning_message(AST, line_number, 0, "%s", "ODIN II does not (yet) differentiate between automatic and static tasks & functions. IGNORING");
     }
 
     /* create a node for this array reference */
@@ -1711,7 +1711,7 @@ ast_node_t* newTask(char* task_name, ast_node_t* list_of_ports, ast_node_t* list
 
     sc_spot = sc_add_string(module_names_to_idx, task_name);
     if (module_names_to_idx->data[sc_spot] != NULL) {
-        error_message(PARSE_ERROR, line_number, current_parse_file, "task names with the same name -> %s\n", task_name);
+        error_message(AST, line_number, current_parse_file, "task names with the same name -> %s\n", task_name);
     }
 
     /* store the data which is an idx here */
@@ -1898,7 +1898,7 @@ void graphVizOutputAst_traverse_node(FILE* fp, ast_node_t* node, ast_node_t* fro
  *-------------------------------------------------------------------------------------------*/
 ast_node_t* newVarDeclare2D(char* symbol, ast_node_t* expression1, ast_node_t* expression2, ast_node_t* expression3, ast_node_t* expression4, ast_node_t* expression5, ast_node_t* expression6, ast_node_t* value, int line_number) {
     if (!is_valid_identifier(symbol)) {
-        error_message(PARSE_ERROR, line_number, current_parse_file, "Invalid character in identifier (%s)\n", symbol);
+        error_message(AST, line_number, current_parse_file, "Invalid character in identifier (%s)\n", symbol);
     }
     ast_node_t* symbol_node = newSymbolNode(symbol, line_number);
 
