@@ -13,6 +13,9 @@ import json
 import csv
 import math
 
+# hash the json keys
+import hashlib
+
 c_red='\033[31m'
 c_grn='\033[32m'
 c_org='\033[33m'
@@ -20,6 +23,7 @@ c_rst='\033[0m'
 
 COLORIZE=True
 SUBSET=False
+OUTPUT_CSV=False
 
 _FILLER_LINE=". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."
 _LEN=38
@@ -48,7 +52,6 @@ def new_entry_str(header, got):
     got = colored("{+" + str(got) + "+}", 'green')
     return "    " + header + got
 
-
 def success_line(key):
     output = "  Ok " + _FILLER_LINE
     return colored(output[:_LEN], 'green') + " " + key
@@ -75,6 +78,7 @@ _K_KEY='key'
 _K_REGEX='regex'
 _K_RANGE='range'
 _K_CUTOFF='cutoff'
+_K_LISTING='listing'
 
 def preproc_toml(file):
     current_dir = os.getcwd()
@@ -91,7 +95,6 @@ def preproc_toml(file):
                 current_file_as_str += preproc_toml(next_file)
             else:
                 current_file_as_str += line
-
 
     os.chdir(current_dir)
     return current_file_as_str
@@ -170,13 +173,15 @@ def create_tbl(toml_dict):
     return input_values
 
 def hash_item(toml_dict, input_line):
-    hashing_str = ""
+    keyed = []
     for header in toml_dict:
-        if header != _DFLT_HDR:
-            if _K_KEY in toml_dict[header] and toml_dict[header][_K_KEY] == True:
-                hashing_str += input_line[header]
+        if header != _DFLT_HDR and _K_KEY in toml_dict[header] and toml_dict[header][_K_KEY] == True and header in input_line:
+            if _K_LISTING in toml_dict[header] and toml_dict[header][_K_LISTING]:
+                keyed += input_line[header]
+            else:
+                keyed.append(input_line[header])
 
-    return " ".join(hashing_str.split())
+    return " ".join(keyed)
 
 
 def print_as_csv(toml_dict, output_dict, file=sys.stdout):
@@ -188,23 +193,31 @@ def print_as_csv(toml_dict, output_dict, file=sys.stdout):
 
     for header in toml_dict:
         if header != _DFLT_HDR:
-            # figure out the pad
-            pad = len(str(header).strip())
-            for keys in output_dict:
-                if header in output_dict[keys]:
-                    pad = max(pad, len(str(output_dict[keys][header]).strip()))
+            # skip listings
+            if _K_LISTING not in toml_dict[header] or not toml_dict[header][_K_LISTING]:
+                # figure out the pad
+                pad = len(str(header).strip())
+                for keys in output_dict:
+                    if header in output_dict[keys]:
+                        pad = max(pad, len(str(output_dict[keys][header]).strip()))
 
-            header_line.append('{0:<{1}}'.format(header, pad))
-            index = 0
-            for keys in output_dict:
-                if header in output_dict[keys]:
-                    result_lines[index].append('{0:<{1}}'.format(output_dict[keys][header], pad))
-                    index += 1
+                header_line.append('{0:<{1}}'.format(header, pad))
+                index = 0
+                for keys in output_dict:
+                    if header in output_dict[keys]:
+                        result_lines[index].append('{0:<{1}}'.format(output_dict[keys][header], pad))
+                        index += 1
 
     # now write everything to the file:
     print(', '.join(header_line), file=file)
     for row in result_lines:
         print(', '.join(row), file=file)
+
+def pretty_print_tbl(toml_dict, output_dict, file=sys.stdout):
+    if OUTPUT_CSV:
+        print_as_csv(toml_dict, output_dict, file=file)
+    else:
+        print(json.dumps(output_dict, indent = 4, sort_keys=True), file=file)
 
 def load_csv_into_tbl(toml_dict, csv_file_name):
     header = OrderedDict()
@@ -233,48 +246,97 @@ def load_csv_into_tbl(toml_dict, csv_file_name):
 
     return file_dict
 
+def load_json_into_tbl(toml_dict, file_name):
+    file_dict = None
+    with open(file_name, newline='') as json_file:
+        file_dict = json.load(json_file,object_pairs_hook=OrderedDict)
+    return file_dict
+
+def load_into_tbl(toml_dict, file_name):
+    if file_name.endswith('.csv'):
+        return load_csv_into_tbl(toml_dict, file_name)
+    elif file_name.endswith('.json'):
+        return load_json_into_tbl(toml_dict, file_name)
+    else:
+        print(
+            "Unsupported file extension for file " + file_name + "\n" +
+            "please use .csv or .json"
+        )
+        return None
+
 def sanity_check(header, toml_dict, golden_tbl, tbl):
     if header not in golden_tbl:
         print("Golden result is missing " + header)
     elif header not in tbl:
         print("Result is missing " + header)  
     elif header not in toml_dict:
-        print("Toml is missing " + header)  
+        print("Toml is missing " + header) 
     else:
         return True
 
     return False
 
+def _range(value, golden_value, min_ratio, max_ratio, low_cutoff = None, high_cutoff = None):
+    _value = float(value)
+    _gold_value = float(golden_value)
+    # need to do error checking here it should throw error when unable to convert to float
+
+    if low_cutoff is not None:
+        _value = max(low_cutoff, _value)
+        _gold_value = max(low_cutoff, _gold_value)
+
+    if high_cutoff is not None:
+        _value = min(high_cutoff, _value)
+        _gold_value = min(high_cutoff, _gold_value)
+
+    min_range = ( min_ratio * _gold_value )
+    max_range = ( max_ratio * _gold_value ) 
+
+    return ( _value < min_range  or _value > max_range )
+
 def range(header, toml_dict, golden_tbl, tbl):
-    mismatch = False
+    mismatch = True
+
     if len(toml_dict[header][_K_RANGE]) != 2:
         print("expected a min and a max for range = [ min, max ]")
-        exit(1)
-    elif golden_tbl[header] != tbl[header]:
+
+    elif type(tbl[header]) != type(golden_tbl[header]):
+        print("Value type mismatch, cannot compare them")
+
+    else:
 
         low_cutoff = None
+        min_ratio = float(toml_dict[header][_K_RANGE][0])
+        max_ratio = float(toml_dict[header][_K_RANGE][1])
+        # need to do error checking here it should throw error when unable to convert to float
+
         if _K_CUTOFF in toml_dict[header]:
             low_cutoff = toml_dict[header][_K_CUTOFF]
 
-        value = float(tbl[header])
-        gold_value = float(golden_tbl[header])
-        if low_cutoff is not None:
-            if value < low_cutoff:
-                value = low_cutoff
-            if gold_value < low_cutoff:
-                gold_value = low_cutoff
-
-        min_ratio = float(toml_dict[header][_K_RANGE][0])
-        max_ratio = float(toml_dict[header][_K_RANGE][1])
-        min_range = ( min_ratio * gold_value )
-        max_range = ( max_ratio * gold_value )  
-        if value < min_range  or value > max_range:
-            mismatch = True
+        if _K_LISTING in toml_dict[header] and toml_dict[header][_K_LISTING]:
+            for (value, golden_value) in zip(tbl[header], golden_tbl[header]):
+                mismatch = _range(value, golden_value, min_ratio, max_ratio, low_cutoff=low_cutoff)
+                if mismatch:
+                    break
+        else:
+            mismatch = _range(tbl[header],  golden_tbl[header], min_ratio, max_ratio, low_cutoff=low_cutoff)
 
     return mismatch
 
+def _abs(value, golden_value):
+    return str(value) != str(golden_value)
+
 def abs(header, toml_dict, golden_tbl, tbl):
-    return golden_tbl[header] != tbl[header];
+    mismatch = True
+    if _K_LISTING in toml_dict[header] and toml_dict[header][_K_LISTING]:
+        for (value, golden_value) in zip(tbl[header], golden_tbl[header]):
+            mismatch = _abs(value, golden_value)
+            if mismatch:
+                break
+    else:
+        mismatch = _abs(tbl[header],  golden_tbl[header])
+
+    return mismatch
 
 def _parse(toml_file_name, log_file_name):
     # load toml
@@ -293,14 +355,22 @@ def _parse(toml_file_name, log_file_name):
             for header in toml_dict:
                 if header != _DFLT_HDR:
                     if _K_REGEX in toml_dict[header]:
-                        entry = re.search(toml_dict[header][_K_REGEX], line)
+                        if _K_LISTING in toml_dict[header] and toml_dict[header][_K_LISTING]:
+                            if input_values[header] is None:
+                                input_values[header] = []
+
+                        entry = re.match(toml_dict[header][_K_REGEX], line)
                         if entry is not None:
-                            input_values[header] = str(entry.group(1)).strip()
+                            if _K_LISTING in toml_dict[header] and toml_dict[header][_K_LISTING]:
+                                input_values[header].append(str(entry.group(1)).strip())
+                            else:
+                                input_values[header] = str(entry.group(1)).strip()
+
 
         key = hash_item(toml_dict, input_values)
         parsed_dict[key] = input_values
 
-    print_as_csv(toml_dict, parsed_dict)
+    pretty_print_tbl(toml_dict, parsed_dict)
 
 def _join(toml_file_name, file_list):
     # load toml
@@ -308,16 +378,16 @@ def _join(toml_file_name, file_list):
     parsed_files = OrderedDict()
 
     for files in file_list:
-        parsed_files.update(load_csv_into_tbl(toml_dict, files))
+        parsed_files.update(load_into_tbl(toml_dict, files))
 
-    print_as_csv(toml_dict, parsed_files)
+    pretty_print_tbl(toml_dict, parsed_files)
 
 def _compare(toml_file_name, golden_result_file_name, result_file_name, diff_file_name):
     # load toml
     failed_key = []
     toml_dict = load_toml(toml_file_name)
-    golden_tbl = load_csv_into_tbl(toml_dict, golden_result_file_name)
-    tbl = load_csv_into_tbl(toml_dict, result_file_name)
+    golden_tbl = load_into_tbl(toml_dict, golden_result_file_name)
+    tbl = load_into_tbl(toml_dict, result_file_name)
     diff = OrderedDict()
 
     for key in golden_tbl:
@@ -373,13 +443,20 @@ def _compare(toml_file_name, golden_result_file_name, result_file_name, diff_fil
                 print("\n".join(error_str))
 
     with open(diff_file_name, 'w+') as diff_file:
-        print_as_csv(toml_dict, diff, file=diff_file)
-
+        pretty_print_tbl(toml_dict, diff, file=diff_file)
     return len(failed_key)
+
+def display(arg):
+    if len(arg) == 2:
+        return _join(arg[0], arg[1:])
+    else:
+        print("Expected 2 arguments <conf> <file to display>",file=sys.stderr)
+        print(arg,file=sys.stderr)
+        return -1
 
 def parse(arg):
     if len(arg) == 2:
-        _parse(arg[0], arg[1])
+        return _parse(arg[0], arg[1])
     else:
         print("Expected 2 arguments <conf> <file to parse>",file=sys.stderr)
         print(arg,file=sys.stderr)
@@ -413,6 +490,9 @@ def parse_shared_args(args):
             elif arg == '--subset':
                 global SUBSET
                 SUBSET=True
+            elif arg == '--csv':
+                global OUTPUT_CSV
+                OUTPUT_CSV=True
             else:
                 clean_args.append(arg)
 
@@ -422,13 +502,14 @@ def main():
 
     this_exec = sys.argv[0]
     if len(sys.argv) < 2:
-        print("expected: parse, join or compare")
+        print("expected: display, parse, join or compare")
         exit(255)
     else:
         command = sys.argv[1]
         arguments = parse_shared_args(sys.argv[2:])
 
         exit({
+            "display":  display,
             "parse":    parse,
             "join":     join,
             "compare":  compare,

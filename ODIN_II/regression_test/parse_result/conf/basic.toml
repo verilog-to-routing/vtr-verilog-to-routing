@@ -4,6 +4,14 @@
     regex = 'Odin exited with code: (\d+)'
     default = -1
 
+['warnings']
+    regex = '(WARNING \([\d]+\)::[a-zA-Z]+ .*)'
+    listing = true
+
+['errors']
+    regex = '(ERROR \([\d]+\)::[a-zA-Z]+ .*)'
+    listing = true
+
 ['max_rss(MiB)']
     # Memory usage can be very off depending on the number of cores
     range = [ 0.0, 100.0 ]
