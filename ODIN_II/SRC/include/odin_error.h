@@ -8,22 +8,20 @@
 
 enum odin_error {
     NO_ERROR,
-    /* for error during odin bootup */
-    ARG_ERROR,
-    /* for parsing and AST creation errors */
-    PARSE_ERROR,
-    /* for netlist creation oerrors */
-    NETLIST_ERROR,
-    /* for blif read errors */
-    BLIF_ERROR,
-    /* for errors in netlist (clustered after tvpack) errors */
-    NETLIST_FILE_ERROR,
-    /* for errors in activation estimateion creation */
-    ACTIVATION_ERROR,
+    /* for error in utility functions*/
+    UTIL,
+    /* for error during initialization */
+    PARSE_ARGS,
+    /* for parser errors */
+    PARSER,
+    /* for AST related errors */
+    AST,
+    /* for Netlist related errors */
+    NETLIST,
+    /* for blif parser errors */
+    PARSE_BLIF,
     /* for errors in the netlist simulation */
-    SIMULATION_ERROR,
-    /* for error in ACE */
-    ACE,
+    SIMULATION,
 };
 
 extern const char* odin_error_STR[];
@@ -44,20 +42,20 @@ static inline void _verbose_assert(bool condition, const char* condition_str, co
 void _log_message(odin_error error_type, long column, long line_number, long file, bool soft_error, const char* function_file_name, long function_line, const char* function_name, const char* message, ...);
 
 #define error_message(error_type, line_number, file, message, ...) \
-    _log_message(error_type, -1, line_number, file, false, __FILE__, __LINE__, __func__, message, __VA_ARGS__)
-
-#define warning_message(error_type, line_number, file, message, ...) \
     _log_message(error_type, -1, line_number, file, true, __FILE__, __LINE__, __func__, message, __VA_ARGS__)
 
-#define possible_error_message(error_type, line_number, file, message, ...) \
-    _log_message(error_type, -1, line_number, file, global_args.permissive.value(), __FILE__, __LINE__, __func__, message, __VA_ARGS__)
+#define warning_message(error_type, line_number, file, message, ...) \
+    _log_message(error_type, -1, line_number, file, false, __FILE__, __LINE__, __func__, message, __VA_ARGS__)
 
-#define delayed_error_message(error_type, column, line_number, file, message, ...)                                     \
-    {                                                                                                                  \
-        _log_message(error_type, column, line_number, file, true, __FILE__, __LINE__, __func__, message, __VA_ARGS__); \
-        delayed_errors += 1;                                                                                           \
+#define possible_error_message(error_type, line_number, file, message, ...) \
+    _log_message(error_type, -1, line_number, file, !global_args.permissive.value(), __FILE__, __LINE__, __func__, message, __VA_ARGS__)
+
+#define delayed_error_message(error_type, column, line_number, file, message, ...)                                      \
+    {                                                                                                                   \
+        _log_message(error_type, column, line_number, file, false, __FILE__, __LINE__, __func__, message, __VA_ARGS__); \
+        delayed_errors += 1;                                                                                            \
     }
 
-void verify_delayed_error();
+void verify_delayed_error(odin_error error_type);
 
 #endif

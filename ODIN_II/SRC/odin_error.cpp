@@ -11,20 +11,20 @@ std::vector<std::pair<std::string, int>> include_file_names;
 int delayed_errors = 0;
 
 const char* odin_error_STR[] = {
-    "NO_ERROR",
-    "ARG_ERROR",
-    "PARSE_ERROR",
-    "NETLIST_ERROR",
-    "BLIF_ERROR",
-    "NETLIST_FILE_ERROR",
-    "ACTIVATION_ERROR",
-    "SIMULATION_ERROR",
-    "ACE",
+    "",
+    "UTIL",
+    "PARSE_ARGS",
+    "PARSE_TO_AST",
+    "AST",
+    "NETLIST",
+    "PARSE_BLIF",
+    "OUTPUT_BLIF",
+    "SIMULATION",
 };
 
-void verify_delayed_error() {
+void verify_delayed_error(odin_error error_type) {
     if (delayed_errors) {
-        error_message(PARSE_ERROR, -1, -1, "Parser found (%d) errors in your syntax, exiting", delayed_errors);
+        error_message(error_type, -1, -1, "Parser found (%d) errors in your syntax, exiting", delayed_errors);
     }
 }
 
@@ -74,32 +74,28 @@ static void print_culprit_line(long column, long line_number, long file) {
     }
 }
 
-void _log_message(odin_error error_type, long column, long line_number, long file, bool soft_error, const char* function_file_name, long function_line, const char* function_name, const char* message, ...) {
+void _log_message(odin_error error_type, long column, long line_number, long file, bool fatal_error, const char* function_file_name, long function_line, const char* function_name, const char* message, ...) {
     fflush(stdout);
 
     va_list ap;
 
-    static long warning_count = 0;
-
-    if (!warning_count) {
-        fprintf(stderr, "--------------\nOdin has decided you ");
-        if (soft_error)
-            fprintf(stderr, "MAY fail ... :\n\n");
-        else
-            fprintf(stderr, "have failed ;)\n\n");
+    if (!fatal_error) {
+        fprintf(stderr, "Warning::%s", odin_error_STR[error_type]);
+    } else {
+        fprintf(stderr, "Error::%s", odin_error_STR[error_type]);
     }
-    warning_count++;
 
-    if (soft_error) {
-        if (column == -1)
-            fprintf(stderr, "WARNING (%ld)::", warning_count);
-    } else
-        fprintf(stderr, "ERROR (%ld)::", warning_count);
+    if (file >= 0 && (size_t)file < include_file_names.size()) {
+        std::string file_name = include_file_names[file].first;
 
-    fprintf(stderr, "%s", odin_error_STR[error_type]);
+        // print filename only
+        auto slash_location = file_name.find_last_of('/');
+        if (slash_location != std::string::npos) {
+            file_name = file_name.substr(slash_location + 1);
+        }
 
-    if (file >= 0 && (size_t)file < include_file_names.size())
-        fprintf(stderr, " %s::%ld", include_file_names[file].first.c_str(), line_number + 1);
+        fprintf(stderr, " %s::%ld", file_name.c_str(), line_number + 1);
+    }
 
     if (message != NULL) {
         fprintf(stderr, " ");
@@ -114,5 +110,5 @@ void _log_message(odin_error error_type, long column, long line_number, long fil
     print_culprit_line(column, line_number, file);
 
     fflush(stderr);
-    _verbose_assert(soft_error, "", function_file_name, function_line, function_name);
+    _verbose_assert(!fatal_error, "", function_file_name, function_line, function_name);
 }

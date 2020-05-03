@@ -41,7 +41,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define YY_USER_ACTION {my_yycolumn = current_yycolumn; current_yycolumn = yyleng;}
 
 /* the define below helps with watching the parser go token by token */
-#define UNSUPPORTED_TOKEN 	{ delayed_error_message(PARSE_ERROR, my_yycolumn, my_yylineno, current_parse_file, "%s", "Unsuported token"); }
+#define UNSUPPORTED_TOKEN 	{ delayed_error_message(PARSER, my_yycolumn, my_yylineno, current_parse_file, "%s", "Unsuported token"); }
 
 #define _STATE_TOP(str)		{ BEGIN(_state_top(str)); }
 #define POP_STATE()			{ _pop_state(); _STATE_TOP("Popped to "); }
@@ -489,13 +489,13 @@ void lex_string(const char * str)
 	/* check current depth, prevent too much macro recursion */
 	if(current_include_stack.size() > RECURSIVE_LIMIT)
 	{
-		error_message(PARSE_ERROR, include_file_names[current_parse_file].second, current_parse_file, 
+		error_message(PARSER, include_file_names[current_parse_file].second, current_parse_file, 
 			"Reached upper macro recursion limit of %d", 
 			RECURSIVE_LIMIT);
 	}
 	else if(current_include_stack.size() > (RECURSIVE_LIMIT/2))
 	{
-		warning_message(PARSE_ERROR, include_file_names[current_parse_file].second, current_parse_file, 
+		warning_message(PARSER, include_file_names[current_parse_file].second, current_parse_file, 
 			"Reached halfway to upper macro recursion limit of %d", 
 			RECURSIVE_LIMIT);
 	}
@@ -642,7 +642,7 @@ void new_define_t(const char* id)
 	
 	if(defines_map.find(tmp) != defines_map.end())
 	{
-		warning_message(PARSE_ERROR, my_yylineno, current_parse_file, "%s is redefined, overwritting its value", id);
+		warning_message(PARSER, my_yylineno, current_parse_file, "%s is redefined, overwritting its value", id);
 		delete defines_map[tmp];	
 	}
 
@@ -670,7 +670,7 @@ std::string get_complex_define()
 	{
 		if( current_args.size() != current_define->args.size())
 		{
-			error_message(PARSE_ERROR, my_yylineno, current_parse_file, 
+			error_message(PARSER, my_yylineno, current_parse_file, 
 				"define is being used with wrong number of arguments, Expected %ld, got %ld", 
 				current_args.size(), 
 				current_define->args.size());
@@ -746,7 +746,7 @@ void load_define(const char *str)
 		auto itter = defines_map.find(tmp);
 		if(itter == defines_map.end())
 		{
-			warning_message(PARSE_ERROR, my_yylineno, current_parse_file, 
+			warning_message(PARSER, my_yylineno, current_parse_file, 
 				"%s define cannot be found, replacing with empty string and continuing synthesis", 
 				tmp.c_str());
 		}
@@ -770,7 +770,7 @@ void add_args_to_define(const char* str)
 	{
 		if(tmp == current_define->args[i])
 		{
-			error_message(PARSE_ERROR, my_yylineno, current_parse_file, 
+			error_message(PARSER, my_yylineno, current_parse_file, 
 				"%s","define has two argument with same name");
 		}
 	}

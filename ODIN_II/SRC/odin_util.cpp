@@ -49,9 +49,9 @@
 
 long shift_left_value_with_overflow_check(long input_value, long shift_by) {
     if (shift_by < 0)
-        error_message(NETLIST_ERROR, -1, -1, "requesting a shift left that is negative [%ld]\n", shift_by);
+        error_message(NETLIST, -1, -1, "requesting a shift left that is negative [%ld]\n", shift_by);
     else if (shift_by >= (long)ODIN_STD_BITWIDTH - 1)
-        warning_message(NETLIST_ERROR, -1, -1, "requesting a shift left that will overflow the maximum size of %ld [%ld]\n", shift_by, ODIN_STD_BITWIDTH - 1);
+        warning_message(NETLIST, -1, -1, "requesting a shift left that will overflow the maximum size of %ld [%ld]\n", shift_by, ODIN_STD_BITWIDTH - 1);
 
     return input_value << shift_by;
 }
@@ -75,7 +75,7 @@ void create_directory(std::string path) {
 #endif
 
     if (error_code && errno != EEXIST) {
-        error_message(PARSE_ERROR, -1, -1, "Odin Failed to create directory :%s with exit code%d\n", path.c_str(), errno);
+        error_message(AST, -1, -1, "Odin Failed to create directory :%s with exit code%d\n", path.c_str(), errno);
     }
 }
 
@@ -93,7 +93,7 @@ void assert_supported_file_extension(std::string input_file, int line_number, in
             supported_extension_list += file_extension_supported_STR[i];
         }
 
-        possible_error_message(ARG_ERROR, line_number, file_number,
+        possible_error_message(UTIL, line_number, file_number,
                                "File (%s) has an unsupported extension (%s), Odin only supports { %s }",
                                input_file.c_str(),
                                extension.c_str(),
@@ -104,7 +104,7 @@ void assert_supported_file_extension(std::string input_file, int line_number, in
 FILE* open_file(const char* file_name, const char* open_type) {
     FILE* opened_file = fopen(file_name, open_type);
     if (opened_file == NULL) {
-        error_message(ARG_ERROR, -1, -1, "cannot open file: %s\n", file_name);
+        error_message(UTIL, -1, -1, "cannot open file: %s\n", file_name);
     }
     return opened_file;
 }
@@ -282,23 +282,23 @@ char* convert_long_to_bit_string(long orig_long, int num_bits) {
  */
 long convert_dec_string_of_size_to_long(char* orig_string, int /*size*/) {
     if (!is_decimal_string(orig_string))
-        error_message(PARSE_ERROR, -1, -1, "Invalid decimal number: %s.\n", orig_string);
+        error_message(UTIL, -1, -1, "Invalid decimal number: %s.\n", orig_string);
 
     errno = 0;
     long number = strtoll(orig_string, NULL, 10);
     if (errno == ERANGE)
-        error_message(PARSE_ERROR, -1, -1, "This suspected decimal number (%s) is too long for Odin\n", orig_string);
+        error_message(UTIL, -1, -1, "This suspected decimal number (%s) is too long for Odin\n", orig_string);
 
     return number;
 }
 
 long convert_string_of_radix_to_long(char* orig_string, int radix) {
     if (!is_string_of_radix(orig_string, radix))
-        error_message(PARSE_ERROR, -1, -1, "Invalid base %d number: %s.\n", radix, orig_string);
+        error_message(UTIL, -1, -1, "Invalid base %d number: %s.\n", radix, orig_string);
 
     long number = strtoll(orig_string, NULL, radix);
     if (number == LLONG_MAX || number == LLONG_MIN)
-        error_message(PARSE_ERROR, -1, -1, "This base %d number (%s) is too long for Odin\n", radix, orig_string);
+        error_message(UTIL, -1, -1, "This base %d number (%s) is too long for Odin\n", radix, orig_string);
 
     return number;
 }
@@ -324,7 +324,7 @@ char* convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char* 
     char* return_string = NULL;
     if (is_dont_care_number == 0) {
         if (!is_hex_string(orig_string))
-            error_message(PARSE_ERROR, -1, -1, "Invalid hex number: %s.\n", orig_string);
+            error_message(UTIL, -1, -1, "Invalid hex number: %s.\n", orig_string);
 
         char* bit_string = (char*)vtr::calloc(1, sizeof(char));
         char* string = vtr::strdup(orig_string);
@@ -417,7 +417,7 @@ char* convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char* 
  */
 char* convert_oct_string_of_size_to_bit_string(char* orig_string, int binary_size) {
     if (!is_octal_string(orig_string))
-        error_message(PARSE_ERROR, -1, -1, "Invalid octal number: %s.\n", orig_string);
+        error_message(UTIL, -1, -1, "Invalid octal number: %s.\n", orig_string);
 
     char* bit_string = (char*)vtr::calloc(1, sizeof(char));
     char* string = vtr::strdup(orig_string);
@@ -466,7 +466,7 @@ char* convert_oct_string_of_size_to_bit_string(char* orig_string, int binary_siz
  */
 char* convert_binary_string_of_size_to_bit_string(short is_dont_care_number, char* orig_string, int binary_size) {
     if (!is_binary_string(orig_string) && !is_dont_care_number)
-        error_message(PARSE_ERROR, -1, -1, "Invalid binary number: %s.\n", orig_string);
+        error_message(UTIL, -1, -1, "Invalid binary number: %s.\n", orig_string);
 
     int count = strlen(orig_string);
     char* bit_string = (char*)vtr::calloc(count + 1, sizeof(char));
@@ -759,7 +759,7 @@ short get_bit(short in) {
 
 void passed_verify_i_o_availabilty(nnode_t* node, int expected_input_size, int expected_output_size, const char* current_src, int line_src) {
     if (!node)
-        error_message(SIMULATION_ERROR, -1, -1, "node unavailable @%s::%d", current_src, line_src);
+        error_message(UTIL, -1, -1, "node unavailable @%s::%d", current_src, line_src);
 
     std::stringstream err_message;
     int error = 0;
@@ -783,7 +783,7 @@ void passed_verify_i_o_availabilty(nnode_t* node, int expected_input_size, int e
     }
 
     if (error)
-        error_message(SIMULATION_ERROR, -1, -1, "failed for %s:%s %s\n", node_name_based_on_op(node), node->name, err_message.str().c_str());
+        error_message(UTIL, -1, -1, "failed for %s:%s %s\n", node_name_based_on_op(node), node->name, err_message.str().c_str());
 }
 
 /*

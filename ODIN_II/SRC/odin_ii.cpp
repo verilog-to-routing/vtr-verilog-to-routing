@@ -553,7 +553,7 @@ void get_options(int argc, char** argv) {
             global_args.verilog_files.value().size() > 0                             //have a verilog input list
         })) {
         parser.print_usage();
-        error_message(ARG_ERROR, 0, -1, "%s", "Must include only one of either:\n\ta config file(-c)\n\ta blif file(-b)\n\ta verilog file(-V)\n");
+        error_message(PARSE_ARGS, 0, -1, "%s", "Must include only one of either:\n\ta config file(-c)\n\ta blif file(-b)\n\ta verilog file(-V)\n");
     }
 
     //adjust thread count
@@ -597,7 +597,7 @@ void get_options(int argc, char** argv) {
     }
 
     if (global_args.permissive.value()) {
-        warning_message(ARG_ERROR, -1, -1, "%s", "Permissive flag is ON. Undefined behaviour may occur\n");
+        warning_message(PARSE_ARGS, -1, -1, "%s", "Permissive flag is ON. Undefined behaviour may occur\n");
     }
 }
 

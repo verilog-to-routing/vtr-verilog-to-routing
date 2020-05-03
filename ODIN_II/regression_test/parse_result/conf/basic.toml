@@ -4,12 +4,12 @@
     regex = 'Odin exited with code: (\d+)'
     default = -1
 
-['warnings']
-    regex = '(WARNING \([\d]+\)::[a-zA-Z]+ .*)'
+['errors']
+    regex = 'Error::([A-Z_]+ .*)'
     listing = true
 
-['errors']
-    regex = '(ERROR \([\d]+\)::[a-zA-Z]+ .*)'
+['warnings']
+    regex = 'Warning::([A-Z_]+ .*)'
     listing = true
 
 ['max_rss(MiB)']
@@ -27,4 +27,3 @@
     cutoff = 1000.0
     regex = 'Total time: (\d+|\d+.\d+)ms'
     default = -1
-
