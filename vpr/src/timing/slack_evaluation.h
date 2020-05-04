@@ -62,7 +62,6 @@ class SetupSlackCrit {
     std::vector<AtomPinId> pins_with_modified_slacks_;
     std::vector<AtomPinId> pins_with_modified_criticalities_;
 
-
     std::map<DomainPair, float> prev_max_req_;
     std::map<DomainPair, float> prev_worst_slack_;
 
