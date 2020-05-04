@@ -68,6 +68,8 @@ SetupSlackCrit::modified_pin_range SetupSlackCrit::pins_with_modified_criticalit
 }
 
 void SetupSlackCrit::update_slacks_and_criticalities(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer) {
+    record_modified_nodes(timing_graph, analyzer);
+
 #if defined(VPR_USE_TBB)
     tbb::task_group g;
     g.run([&] { update_slacks(analyzer); });
@@ -84,7 +86,7 @@ void SetupSlackCrit::update_slacks(const tatum::SetupTimingAnalyzer& analyzer) {
 
 #ifdef INCR_UPDATE_SLACK
     //Note that this is done lazily only on the nodes modified by the analyzer
-    auto nodes = analyzer.modified_nodes();
+    const auto& nodes = modified_nodes_;
 #else
     const auto& nodes = all_nodes_;
 #endif
@@ -135,9 +137,9 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
         // Note that this is done lazily only on the nodes modified by the analyzer
         vtr::Timer timer;
 #ifdef INCR_UPDATE_CRIT
-        auto nodes = analyzer.modified_nodes();
+        const auto& nodes = modified_nodes_;
 #else
-        auto& nodes = all_nodes_;
+        const auto& nodes = all_nodes_;
 #endif
 
 #if defined(VPR_USE_TBB)
@@ -177,7 +179,7 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
         tbb::parallel_for_each(nodes.begin(), nodes.end(), [&, this](tatum::NodeId node) {
             AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
             VTR_ASSERT_SAFE(pin);
-            this->pin_criticalities_[pin] = this->calc_pin_criticality(node, analyzer_req_, worst_slack_);
+            this->pin_criticalities_[pin] = this->calc_pin_criticality(node, analyzer);
         });
 
         //TODO: parallelize
@@ -202,17 +204,115 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
 }
 
 void SetupSlackCrit::update_max_req_and_worst_slack(const tatum::TimingGraph& timing_graph,
-                                    const tatum::SetupTimingAnalyzer& analyzer) {
+                                                    const tatum::SetupTimingAnalyzer& analyzer) {
+#ifdef INCR_UPDATE_MAX_REQ_WORST_SLACK
+    //Try to incrementally update
+    bool incr_update_successful = incr_update_max_req_and_worst_slack(timing_graph, analyzer);
+#else
+    bool incr_update_successful = false;
+#endif
+
+    if (!incr_update_successful) {
+        //Recompute  from scratch if incremental update wasn't successful
+        recompute_max_req_and_worst_slack(timing_graph, analyzer);
+    }
+
+}
+
+bool SetupSlackCrit::incr_update_max_req_and_worst_slack(const tatum::TimingGraph& timing_graph,
+                                                         const tatum::SetupTimingAnalyzer& analyzer) {
+    vtr::Timer timer;
+
+    if (max_req_node_.empty() || worst_slack_node_.empty()) {
+        //Must have been previously updated
+        return false;
+    }
+    
+    for (tatum::NodeId node : modified_sink_nodes_) {
+        for (auto& tag : analyzer.setup_tags(node, tatum::TagType::DATA_REQUIRED)) {
+            auto domain_pair = DomainPair(tag.launch_clock_domain(), tag.capture_clock_domain());
+
+            float req = tag.time().value();
+
+            VTR_ASSERT_SAFE(max_req_.count(domain_pair));
+            float prev_req = max_req_[domain_pair];
+
+            VTR_ASSERT_SAFE(max_req_node_.count(domain_pair));
+            tatum::NodeId prev_node = max_req_node_[domain_pair];
+
+            if (prev_node == node && prev_req > req) {
+                //This node was the dominant node, but is no longer dominant we
+                //must re-evaluate all other nodes to figure out which is now dominant
+                //so abort incremental update
+                return false; //Unsuccessful incremental update
+            }
+
+            if (max_req_[domain_pair] < req) {
+                max_req_[domain_pair] = req;
+                max_req_node_[domain_pair] = node;
+            }
+        }
+
+        for (auto& tag : analyzer.setup_slacks(node)) {
+            auto domain_pair = DomainPair(tag.launch_clock_domain(), tag.capture_clock_domain());
+
+            float slack = tag.time().value();
+
+            VTR_ASSERT_SAFE_MSG(!std::isnan(slack), "Slack should not be nan");
+            VTR_ASSERT_SAFE_MSG(std::isfinite(slack), "Slack should not be infinite");
+
+            VTR_ASSERT_SAFE(worst_slack_.count(domain_pair));
+            float prev_slack = worst_slack_[domain_pair];
+
+            VTR_ASSERT_SAFE(worst_slack_node_.count(domain_pair));
+            tatum::NodeId prev_node = worst_slack_node_[domain_pair];
+
+            if (prev_node == node && slack > prev_slack) {
+                //This node was the dominant node, but is no longer dominant we
+                //must re-evaluate all other nodes to figure out which is now dominant
+                //so abort incremental update
+                return false; //Unsuccessful incremental update
+            }
+
+            if (slack < worst_slack_[domain_pair]) {
+                worst_slack_[domain_pair] = slack;
+                worst_slack_node_[domain_pair] = node;
+            }
+        }
+    }
+
+#ifdef VTR_ASSERT_DEBUG_ENABLED
+    auto incr_max_req = max_req_;
+    auto incr_max_req_node = max_req_node_;
+
+    auto incr_worst_slack = worst_slack_;
+    auto incr_worst_slack_node = worst_slack_node_;
 
     recompute_max_req_and_worst_slack(timing_graph, analyzer);
 
+    VTR_ASSERT_DEBUG(incr_max_req == max_req_);
+    VTR_ASSERT_DEBUG(incr_max_req_node == max_req_node_);
+    VTR_ASSERT_DEBUG(incr_worst_slack == worst_slack_);
+    VTR_ASSERT_DEBUG(incr_worst_slack_node == worst_slack_node_);
+#else
+    static_cast<void>(timing_graph);
+#endif
+
+    ++incr_max_req_worst_slack_updates_;
+    incr_max_req_worst_slack_update_time_sec_ += timer.elapsed_sec();
+
+    return true; //Successfully incrementally updated
 }
+
 void SetupSlackCrit::recompute_max_req_and_worst_slack(const tatum::TimingGraph& timing_graph,
                                                        const tatum::SetupTimingAnalyzer& analyzer) {
     vtr::Timer timer;
 
     max_req_.clear();
+    max_req_node_.clear();
+
     worst_slack_.clear();
+    worst_slack_node_.clear();
 
     for (tatum::NodeId node : timing_graph.logical_outputs()) {
         for (auto& tag : analyzer.setup_tags(node, tatum::TagType::DATA_REQUIRED)) {
@@ -221,6 +321,7 @@ void SetupSlackCrit::recompute_max_req_and_worst_slack(const tatum::TimingGraph&
             float req = tag.time().value();
             if (!max_req_.count(domain_pair) || max_req_[domain_pair] < req) {
                 max_req_[domain_pair] = req;
+                max_req_node_[domain_pair] = node;
             }
         }
 
@@ -234,6 +335,7 @@ void SetupSlackCrit::recompute_max_req_and_worst_slack(const tatum::TimingGraph&
 
             if (!worst_slack_.count(domain_pair) || slack < worst_slack_[domain_pair]) {
                 worst_slack_[domain_pair] = slack;
+                worst_slack_node_[domain_pair] = node;
             }
         }
     }
@@ -247,6 +349,24 @@ float SetupSlackCrit::calc_pin_criticality(const tatum::NodeId node,
     //Calculate maximum criticality over all domains
     return calc_relaxed_criticality(max_req_, worst_slack_, analyzer.setup_slacks(node));
 }
+
+void SetupSlackCrit::record_modified_nodes(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer) {
+    const auto& nodes = analyzer.modified_nodes();
+
+    modified_nodes_.clear();
+    modified_sink_nodes_.clear();
+
+    modified_nodes_.reserve(nodes.size());
+
+    for (tatum::NodeId node : nodes) {
+        modified_nodes_.push_back(node);
+
+        if (timing_graph.node_type(node) == tatum::NodeType::SINK) {
+            modified_sink_nodes_.push_back(node);
+        }
+    }
+}
+
 /*
  * HoldSlackCrit
  */
