@@ -125,29 +125,7 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
     //Record the maximum required time, and wost slack per domain pair
     std::map<DomainPair, float> max_req;
     std::map<DomainPair, float> worst_slack;
-    for (tatum::NodeId node : timing_graph.logical_outputs()) {
-        for (auto& tag : analyzer.setup_tags(node, tatum::TagType::DATA_REQUIRED)) {
-            auto domain_pair = DomainPair(tag.launch_clock_domain(), tag.capture_clock_domain());
-
-            float req = tag.time().value();
-            if (!max_req.count(domain_pair) || max_req[domain_pair] < req) {
-                max_req[domain_pair] = req;
-            }
-        }
-
-        for (auto& tag : analyzer.setup_slacks(node)) {
-            auto domain_pair = DomainPair(tag.launch_clock_domain(), tag.capture_clock_domain());
-
-            float slack = tag.time().value();
-
-            VTR_ASSERT_SAFE_MSG(!std::isnan(slack), "Slack should not be nan");
-            VTR_ASSERT_SAFE_MSG(std::isfinite(slack), "Slack should not be infinite");
-
-            if (!worst_slack.count(domain_pair) || slack < worst_slack[domain_pair]) {
-                worst_slack[domain_pair] = slack;
-            }
-        }
-    }
+    update_max_req_and_worst_slack(timing_graph, analyzer, max_req, worst_slack);
 
     if (max_req == prev_max_req_ && worst_slack == prev_worst_slack_) {
         //Max required times and worst slacks unchanged, incrementally update
@@ -213,6 +191,36 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
     }
     prev_max_req_ = max_req;
     prev_worst_slack_ = worst_slack;
+}
+
+void SetupSlackCrit::update_max_req_and_worst_slack(const tatum::TimingGraph& timing_graph,
+                                    const tatum::SetupTimingAnalyzer& analyzer,
+                                    std::map<DomainPair, float>& max_req,
+                                    std::map<DomainPair, float>& worst_slack) {
+
+    for (tatum::NodeId node : timing_graph.logical_outputs()) {
+        for (auto& tag : analyzer.setup_tags(node, tatum::TagType::DATA_REQUIRED)) {
+            auto domain_pair = DomainPair(tag.launch_clock_domain(), tag.capture_clock_domain());
+
+            float req = tag.time().value();
+            if (!max_req.count(domain_pair) || max_req[domain_pair] < req) {
+                max_req[domain_pair] = req;
+            }
+        }
+
+        for (auto& tag : analyzer.setup_slacks(node)) {
+            auto domain_pair = DomainPair(tag.launch_clock_domain(), tag.capture_clock_domain());
+
+            float slack = tag.time().value();
+
+            VTR_ASSERT_SAFE_MSG(!std::isnan(slack), "Slack should not be nan");
+            VTR_ASSERT_SAFE_MSG(std::isfinite(slack), "Slack should not be infinite");
+
+            if (!worst_slack.count(domain_pair) || slack < worst_slack[domain_pair]) {
+                worst_slack[domain_pair] = slack;
+            }
+        }
+    }
 }
 
 float SetupSlackCrit::calc_pin_criticality(const tatum::NodeId node,
