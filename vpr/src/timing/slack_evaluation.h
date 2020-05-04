@@ -43,14 +43,13 @@ class SetupSlackCrit {
     void update_criticalities(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer);
 
     void update_max_req_and_worst_slack(const tatum::TimingGraph& timing_graph,
-                                        const tatum::SetupTimingAnalyzer& analyzer,
-                                        std::map<DomainPair, float>& max_req,
-                                        std::map<DomainPair, float>& worst_slack);
+                                        const tatum::SetupTimingAnalyzer& analyzer);
+
+    void recompute_max_req_and_worst_slack(const tatum::TimingGraph& timing_graph,
+                                           const tatum::SetupTimingAnalyzer& analyzer);
 
     float calc_pin_criticality(const tatum::NodeId node,
-                               const tatum::SetupTimingAnalyzer& analyzer,
-                               const std::map<DomainPair, float>& max_req,
-                               const std::map<DomainPair, float>& worst_slack);
+                               const tatum::SetupTimingAnalyzer& analyzer);
 
   private: //Data
     const AtomNetlist& netlist_;
@@ -62,6 +61,9 @@ class SetupSlackCrit {
     std::vector<AtomPinId> pins_with_modified_slacks_;
     std::vector<AtomPinId> pins_with_modified_criticalities_;
 
+    std::map<DomainPair, float> max_req_;
+    std::map<DomainPair, float> worst_slack_;
+
     std::map<DomainPair, float> prev_max_req_;
     std::map<DomainPair, float> prev_worst_slack_;
 
@@ -72,8 +74,11 @@ class SetupSlackCrit {
     size_t incr_slack_updates_ = 0;
     float incr_slack_update_time_sec_ = 0.;
 
-    size_t max_req_worst_slack_updates_ = 0;
-    float max_req_worst_slack_update_time_sec_ = 0.;
+    size_t full_max_req_worst_slack_updates_ = 0;
+    float full_max_req_worst_slack_update_time_sec_ = 0.;
+
+    size_t incr_max_req_worst_slack_updates_ = 0;
+    float incr_max_req_worst_slack_update_time_sec_ = 0.;
 
     size_t incr_criticality_updates_ = 0;
     float incr_criticality_update_time_sec_ = 0.;
