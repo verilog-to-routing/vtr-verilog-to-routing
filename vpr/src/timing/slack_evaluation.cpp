@@ -128,6 +128,7 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
     std::map<DomainPair, float> worst_slack;
     update_max_req_and_worst_slack(timing_graph, analyzer, max_req, worst_slack);
 
+    pins_with_modified_criticalities_.clear();
     if (max_req == prev_max_req_ && worst_slack == prev_worst_slack_) {
         //Max required times and worst slacks unchanged, incrementally update
         //the criticalities of each pin
@@ -146,17 +147,21 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
             VTR_ASSERT_SAFE(pin);
             this->pin_criticalities_[pin] = this->calc_pin_criticality(node, analyzer, max_req, worst_slack);
         });
+
+        //TODO: parallelize
+        nodes_to_pins(nodes, netlist_lookup_, pins_with_modified_criticalities_);
 #else
         for (tatum::NodeId node : nodes) {
             AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
             VTR_ASSERT_SAFE(pin);
-            pin_criticalities_[pin] = calc_pin_criticality(node, analyzer, max_req, worst_slack);
+            float new_crit = calc_pin_criticality(node, analyzer, max_req, worst_slack);
+            if (new_crit != pin_criticalities_[pin]) {
+                pin_criticalities_[pin] = new_crit;
+                pins_with_modified_criticalities_.push_back(pin);
+            }
         }
 #endif
 
-        //Record pins with modified criticalities
-        pins_with_modified_criticalities_.clear();
-        nodes_to_pins(nodes, netlist_lookup_, pins_with_modified_criticalities_);
 
         ++incr_criticality_updates_;
         incr_criticality_update_time_sec_ += timer.elapsed_sec();
@@ -175,17 +180,20 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
             VTR_ASSERT_SAFE(pin);
             this->pin_criticalities_[pin] = this->calc_pin_criticality(node, analyzer, max_req, worst_slack);
         });
+
+        //TODO: parallelize
+        nodes_to_pins(nodes, netlist_lookup_, pins_with_modified_criticalities_);
 #else
         for (tatum::NodeId node : nodes) {
             AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
             VTR_ASSERT_SAFE(pin);
-            pin_criticalities_[pin] = calc_pin_criticality(node, analyzer, max_req, worst_slack);
+            float new_crit = calc_pin_criticality(node, analyzer, max_req, worst_slack);
+            if (new_crit != pin_criticalities_[pin]) {
+                pin_criticalities_[pin] = new_crit;
+                pins_with_modified_criticalities_.push_back(pin);
+            }
         }
 #endif
-
-        //Record pins with modified criticalities
-        pins_with_modified_criticalities_.clear();
-        nodes_to_pins(nodes, netlist_lookup_, pins_with_modified_criticalities_);
 
         ++full_criticality_updates_;
         full_criticality_update_time_sec_ += timer.elapsed_sec();
