@@ -14,7 +14,7 @@
 class SetupSlackCrit {
   public: //Constructors
     SetupSlackCrit(const AtomNetlist& netlist, const AtomLookup& netlist_lookup);
-
+    ~SetupSlackCrit();
   public: //Types
     typedef std::vector<AtomPinId>::const_iterator modified_pin_iterator;
 
@@ -63,6 +63,15 @@ class SetupSlackCrit {
 #if !defined(INCR_SLACK_UPDATE) || !defined(INCR_UPDATE_CRIT)
     std::vector<tatum::NodeId> all_nodes_;
 #endif
+
+    size_t incr_slack_updates_ = 0;
+    float incr_slack_update_time_sec_ = 0.;
+
+    size_t incr_criticality_updates_ = 0;
+    float incr_criticality_update_time_sec_ = 0.;
+
+    size_t full_criticality_updates_ = 0;
+    float full_criticality_update_time_sec_ = 0.;
 };
 
 //TODO: implement a HoldSlackCrit class for hold analysis
