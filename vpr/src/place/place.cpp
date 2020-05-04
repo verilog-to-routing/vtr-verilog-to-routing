@@ -200,6 +200,11 @@ static const float cross_count[50] = {/* [0..49] */ 1.0, 1.0, 1.0, 1.0828, 1.153
                                       2.5064, 2.5356, 2.5610, 2.5864, 2.6117, 2.6371, 2.6625, 2.6887, 2.7148,
                                       2.7410, 2.7671, 2.7933};
 
+static float f_update_td_costs_connections_elapsed_sec = 0.;
+static float f_update_td_costs_nets_elapsed_sec = 0.;
+static float f_update_td_costs_sum_nets_elapsed_sec = 0.;
+static float f_update_td_costs_total_elapsed_sec = 0.;
+
 static std::set<ClusterPinId> f_cluster_pins_to_invalidate_timing;
 
 std::unique_ptr<FILE, decltype(&vtr::fclose)> f_move_stats_file(nullptr, vtr::fclose);
@@ -952,6 +957,8 @@ void try_place(const t_placer_opts& placer_opts,
 
     print_timing_stats("Placement Quench", post_quench_timing_stats, pre_quench_timing_stats);
     print_timing_stats("Placement Total ", timing_ctx.stats, pre_place_timing_stats);
+
+    VTR_LOG("update_td_costs: connections %g nets %g sum_nets %g total %g\n", f_update_td_costs_connections_elapsed_sec, f_update_td_costs_nets_elapsed_sec, f_update_td_costs_sum_nets_elapsed_sec, f_update_td_costs_total_elapsed_sec);
 }
 
 /* Function to recompute the criticalities before the inner loop of the annealing */
@@ -1855,39 +1862,54 @@ static void update_td_costs(const PlaceDelayModel* delay_model, const PlacerCrit
      *            results to avoid re-calculating them if they haven't
      *            changed...
      */
+    vtr::Timer t;
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& clb_nlist = cluster_ctx.clb_nlist;
 
     //Update the modified pin timing costs
-    auto clb_pins_modified = place_crit.pins_with_modified_criticality();
-    for (ClusterPinId clb_pin : clb_pins_modified) {
+    {
+        vtr::Timer timer;
+        auto clb_pins_modified = place_crit.pins_with_modified_criticality();
+        for (ClusterPinId clb_pin : clb_pins_modified) {
 
-        if (clb_nlist.pin_type(clb_pin) == PinType::DRIVER) continue;
+            if (clb_nlist.pin_type(clb_pin) == PinType::DRIVER) continue;
 
-        ClusterNetId clb_net = clb_nlist.pin_net(clb_pin);
-        VTR_ASSERT_SAFE(clb_net);
+            ClusterNetId clb_net = clb_nlist.pin_net(clb_pin);
+            VTR_ASSERT_SAFE(clb_net);
 
-        if (cluster_ctx.clb_nlist.net_is_ignored(clb_net)) continue;
+            if (cluster_ctx.clb_nlist.net_is_ignored(clb_net)) continue;
 
-        int ipin = clb_nlist.pin_net_index(clb_pin);
-        VTR_ASSERT_SAFE(ipin >= 0 && ipin < int(clb_nlist.net_pins(clb_net).size()));
+            int ipin = clb_nlist.pin_net_index(clb_pin);
+            VTR_ASSERT_SAFE(ipin >= 0 && ipin < int(clb_nlist.net_pins(clb_net).size()));
 
-        double new_timing_cost = comp_td_connection_cost(delay_model, place_crit, clb_net, ipin);
+            double new_timing_cost = comp_td_connection_cost(delay_model, place_crit, clb_net, ipin);
 
-        //Record new value 
-        connection_timing_cost[clb_net][ipin] = new_timing_cost;
+            //Record new value 
+            connection_timing_cost[clb_net][ipin] = new_timing_cost;
+        }
+
+        f_update_td_costs_connections_elapsed_sec += timer.elapsed_sec();
     }
 
     //Update the modified net timing costs
-    auto clb_nets_modified = place_crit.nets_with_modified_criticality();
-    for (ClusterNetId clb_net : clb_nets_modified) {
-        if (cluster_ctx.clb_nlist.net_is_ignored(clb_net)) continue;
+    {
+        vtr::Timer timer;
+        auto clb_nets_modified = place_crit.nets_with_modified_criticality();
+        for (ClusterNetId clb_net : clb_nets_modified) {
+            if (cluster_ctx.clb_nlist.net_is_ignored(clb_net)) continue;
 
-        net_timing_cost[clb_net] = sum_td_net_cost(clb_net);
+            net_timing_cost[clb_net] = sum_td_net_cost(clb_net);
+        }
+
+        f_update_td_costs_nets_elapsed_sec += timer.elapsed_sec();
     }
 
     //Re-total timing costs of all nets
-    *timing_cost = sum_td_costs();
+    {
+        vtr::Timer timer;
+        *timing_cost = sum_td_costs();
+        f_update_td_costs_sum_nets_elapsed_sec += timer.elapsed_sec();
+    }
 
 #ifdef VTR_ASSERT_DEBUG_ENABLED
     double check_timing_cost = 0.;
@@ -1896,6 +1918,7 @@ static void update_td_costs(const PlaceDelayModel* delay_model, const PlacerCrit
                          "Total timing cost calculated incrementally in update_td_costs() is "
                          "not consistent with value calculated from scratch in comp_td_costs()")
 #endif
+    f_update_td_costs_total_elapsed_sec += t.elapsed_sec();
 }
 
 //Recomputes timing cost from scratch based on the current delays and criticality estimates
