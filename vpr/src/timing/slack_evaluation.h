@@ -73,6 +73,9 @@ class SetupSlackCrit {
     size_t incr_slack_updates_ = 0;
     float incr_slack_update_time_sec_ = 0.;
 
+    size_t max_req_worst_slack_updates_ = 0;
+    float max_req_worst_slack_update_time_sec_ = 0.;
+
     size_t incr_criticality_updates_ = 0;
     float incr_criticality_update_time_sec_ = 0.;
 
