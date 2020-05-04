@@ -5,6 +5,7 @@
 #include "vpr_error.h"
 #include "atom_netlist.h"
 #include "vtr_log.h"
+#include "vtr_time.h"
 
 #if defined(VPR_USE_TBB)
 #    include <tbb/task_group.h>
@@ -42,6 +43,12 @@ SetupSlackCrit::SetupSlackCrit(const AtomNetlist& netlist, const AtomLookup& net
 #endif
 }
 
+SetupSlackCrit::~SetupSlackCrit() {
+    VTR_LOG("Incr Slack updates %zu in %g sec\n", incr_slack_updates_, incr_slack_update_time_sec_);
+    VTR_LOG("Incr Criticality updates %zu in %g sec\n", incr_criticality_updates_, incr_criticality_update_time_sec_);
+    VTR_LOG("Full Criticality updates %zu in %g sec\n", full_criticality_updates_, full_criticality_update_time_sec_);
+}
+
 //Returns the worst (least) slack of connections through the specified pin
 float SetupSlackCrit::setup_pin_slack(AtomPinId pin) const { return pin_slacks_[pin]; }
 
@@ -71,6 +78,7 @@ void SetupSlackCrit::update_slacks_and_criticalities(const tatum::TimingGraph& t
 }
 
 void SetupSlackCrit::update_slacks(const tatum::SetupTimingAnalyzer& analyzer) {
+    vtr::Timer timer;
 
 #ifdef INCR_UPDATE_SLACK
     //Note that this is done lazily only on the nodes modified by the analyzer
@@ -92,6 +100,9 @@ void SetupSlackCrit::update_slacks(const tatum::SetupTimingAnalyzer& analyzer) {
     //Record pins with modified slacks
     pins_with_modified_slacks_.clear();
     nodes_to_pins(nodes, netlist_lookup_, pins_with_modified_slacks_);
+
+    ++incr_slack_updates_;
+    incr_slack_update_time_sec_ += timer.elapsed_sec();
 }
 
 void SetupSlackCrit::update_pin_slack(const tatum::NodeId node, const tatum::SetupTimingAnalyzer& analyzer) {
@@ -143,6 +154,7 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
         //the criticalities of each pin
         //
         // Note that this is done lazily only on the nodes modified by the analyzer
+        vtr::Timer timer;
 #ifdef INCR_UPDATE_CRIT
         auto nodes = analyzer.modified_nodes();
 #else
@@ -166,11 +178,16 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
         //Record pins with modified criticalities
         pins_with_modified_criticalities_.clear();
         nodes_to_pins(nodes, netlist_lookup_, pins_with_modified_criticalities_);
+
+        ++incr_criticality_updates_;
+        incr_criticality_update_time_sec_ += timer.elapsed_sec();
     } else {
         //Max required and/or worst slacks changed, fully recalculate criticalities
         //
         //  TODO: consider if incremental criticality update is feasible based only 
         //        on changed domain pairs....
+        vtr::Timer timer;
+
         auto nodes = timing_graph.nodes();
 
 #if defined(VPR_USE_TBB)
@@ -190,6 +207,9 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
         //Record pins with modified criticalities
         pins_with_modified_criticalities_.clear();
         nodes_to_pins(nodes, netlist_lookup_, pins_with_modified_criticalities_);
+
+        ++full_criticality_updates_;
+        full_criticality_update_time_sec_ += timer.elapsed_sec();
     }
     prev_max_req_ = max_req;
     prev_worst_slack_ = worst_slack;
