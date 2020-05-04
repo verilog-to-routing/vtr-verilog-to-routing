@@ -45,6 +45,7 @@ SetupSlackCrit::SetupSlackCrit(const AtomNetlist& netlist, const AtomLookup& net
 
 SetupSlackCrit::~SetupSlackCrit() {
     VTR_LOG("Incr Slack updates %zu in %g sec\n", incr_slack_updates_, incr_slack_update_time_sec_);
+    VTR_LOG("Max Req/Worst Slack updates %zu in %g sec\n", max_req_worst_slack_updates_, max_req_worst_slack_update_time_sec_);
     VTR_LOG("Incr Criticality updates %zu in %g sec\n", incr_criticality_updates_, incr_criticality_update_time_sec_);
     VTR_LOG("Full Criticality updates %zu in %g sec\n", full_criticality_updates_, full_criticality_update_time_sec_);
 }
@@ -197,6 +198,7 @@ void SetupSlackCrit::update_max_req_and_worst_slack(const tatum::TimingGraph& ti
                                     const tatum::SetupTimingAnalyzer& analyzer,
                                     std::map<DomainPair, float>& max_req,
                                     std::map<DomainPair, float>& worst_slack) {
+    vtr::Timer timer;
 
     for (tatum::NodeId node : timing_graph.logical_outputs()) {
         for (auto& tag : analyzer.setup_tags(node, tatum::TagType::DATA_REQUIRED)) {
@@ -221,6 +223,9 @@ void SetupSlackCrit::update_max_req_and_worst_slack(const tatum::TimingGraph& ti
             }
         }
     }
+
+    ++max_req_worst_slack_updates_;
+    max_req_worst_slack_update_time_sec_ += timer.elapsed_sec();
 }
 
 float SetupSlackCrit::calc_pin_criticality(const tatum::NodeId node,
