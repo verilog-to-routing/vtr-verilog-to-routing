@@ -111,6 +111,50 @@ constexpr double MAX_INV_TIMING_COST = 1.e9;
  * The exact value of this cost has relatively little impact, but should not be
  * large enough to be on the order of timing costs for normal constraints. */
 
+class PlacerTimingCosts {
+    public:
+        PlacerTimingCosts() = default;
+
+        PlacerTimingCosts(const ClusteredNetlist& nlist) {
+            auto nets = nlist.nets();
+
+            net_start_indicies_.resize(nets.size());
+
+            size_t iconn = 0;
+            for (ClusterNetId net : nets) {
+                if (nlist.net_is_ignored(net)) continue;
+
+                net_start_indicies_[net] = iconn;
+
+                //There is no cost associated with the driver, so only include net sinks
+                iconn += nlist.net_sinks(net).size();
+            }
+            connection_costs_.resize(iconn, std::numeric_limits<double>::quiet_NaN());
+        }
+     
+        double* operator[](ClusterNetId net_id) {
+            double* net_connection_costs = &connection_costs_[net_start_indicies_[net_id]];
+            return net_connection_costs - 1; //Minus one offset so indexing at [1] (i.e. first
+                                            //sink maps to the first element at 
+                                            //connection_costs_[net_start_indicies_[net_id]]
+        }
+
+        void clear() {
+            connection_costs_.clear();
+            net_start_indicies_.clear();
+        }
+
+        void swap(PlacerTimingCosts& other) {
+            std::swap(connection_costs_, other.connection_costs_);
+            std::swap(net_start_indicies_, other.net_start_indicies_);
+        }
+
+    private:
+        std::vector<double> connection_costs_;
+        vtr::vector<ClusterNetId,int> net_start_indicies_;
+
+};
+
 /********************** Variables local to place.c ***************************/
 
 /* Cost of a net, and a temporary cost of a net used during move assessment. */
@@ -143,7 +187,7 @@ static ClbNetPinsMatrix<float> proposed_connection_delay; //Delays for proposed 
  * Timing cost of connections (i.e. criticality * delay).
  * Index ranges: [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]
  */
-static ClbNetPinsMatrix<double> connection_timing_cost;          //Costs of commited block positions
+static PlacerTimingCosts connection_timing_cost;                 //Costs of commited block positions
 static ClbNetPinsMatrix<double> proposed_connection_timing_cost; //Costs for proposed block positions
                                                                  // (only for connectsion effected by 
                                                                  // move, otherwise INVALID_DELAY)
@@ -2069,7 +2113,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
         connection_delay = make_net_pins_matrix<float>(cluster_ctx.clb_nlist, 0.f);
         proposed_connection_delay = make_net_pins_matrix<float>(cluster_ctx.clb_nlist, 0.f);
 
-        connection_timing_cost = make_net_pins_matrix<double>(cluster_ctx.clb_nlist, 0.);
+        connection_timing_cost = PlacerTimingCosts(cluster_ctx.clb_nlist);
         proposed_connection_timing_cost = make_net_pins_matrix<double>(cluster_ctx.clb_nlist, 0.);
         net_timing_cost.resize(num_nets, 0.);
 
