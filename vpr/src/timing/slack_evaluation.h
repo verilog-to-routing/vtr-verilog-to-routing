@@ -8,6 +8,7 @@
 
 //Incrementally update slack and criticality?
 #define INCR_UPDATE_SLACK
+#define INCR_UPDATE_MAX_REQ_WORST_SLACK
 #define INCR_UPDATE_CRIT
 
 
@@ -45,11 +46,16 @@ class SetupSlackCrit {
     void update_max_req_and_worst_slack(const tatum::TimingGraph& timing_graph,
                                         const tatum::SetupTimingAnalyzer& analyzer);
 
+    bool incr_update_max_req_and_worst_slack(const tatum::TimingGraph& timing_graph,
+                                             const tatum::SetupTimingAnalyzer& analyzer);
+
     void recompute_max_req_and_worst_slack(const tatum::TimingGraph& timing_graph,
                                            const tatum::SetupTimingAnalyzer& analyzer);
 
     float calc_pin_criticality(const tatum::NodeId node,
                                const tatum::SetupTimingAnalyzer& analyzer);
+
+    void record_modified_nodes(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer);
 
   private: //Data
     const AtomNetlist& netlist_;
@@ -63,6 +69,8 @@ class SetupSlackCrit {
 
     std::map<DomainPair, float> max_req_;
     std::map<DomainPair, float> worst_slack_;
+    std::map<DomainPair, tatum::NodeId> max_req_node_;
+    std::map<DomainPair, tatum::NodeId> worst_slack_node_;
 
     std::map<DomainPair, float> prev_max_req_;
     std::map<DomainPair, float> prev_worst_slack_;
@@ -70,6 +78,8 @@ class SetupSlackCrit {
 #if !defined(INCR_SLACK_UPDATE) || !defined(INCR_UPDATE_CRIT)
     std::vector<tatum::NodeId> all_nodes_;
 #endif
+    std::vector<tatum::NodeId> modified_nodes_;
+    std::vector<tatum::NodeId> modified_sink_nodes_;
 
     size_t incr_slack_updates_ = 0;
     float incr_slack_update_time_sec_ = 0.;
