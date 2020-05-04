@@ -42,6 +42,11 @@ class SetupSlackCrit {
 
     void update_criticalities(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer);
 
+    void update_max_req_and_worst_slack(const tatum::TimingGraph& timing_graph,
+                                        const tatum::SetupTimingAnalyzer& analyzer,
+                                        std::map<DomainPair, float>& max_req,
+                                        std::map<DomainPair, float>& worst_slack);
+
     float calc_pin_criticality(const tatum::NodeId node,
                                const tatum::SetupTimingAnalyzer& analyzer,
                                const std::map<DomainPair, float>& max_req,
@@ -56,6 +61,7 @@ class SetupSlackCrit {
 
     std::vector<AtomPinId> pins_with_modified_slacks_;
     std::vector<AtomPinId> pins_with_modified_criticalities_;
+
 
     std::map<DomainPair, float> prev_max_req_;
     std::map<DomainPair, float> prev_worst_slack_;
