@@ -132,9 +132,22 @@ class PlacerTimingCosts {
             connection_costs_.resize(iconn, std::numeric_limits<double>::quiet_NaN());
         }
      
-        double* operator[](ClusterNetId net_id) {
+        class NetProxy {
+            public:
+                NetProxy(double* net_sink_costs)
+                    : net_sink_costs_(net_sink_costs) {}
+
+                double& operator[](size_t ipin) {
+                    return net_sink_costs_[ipin];
+                }
+
+            private:
+                double* net_sink_costs_;
+        };
+
+        NetProxy operator[](ClusterNetId net_id) {
             double* net_connection_costs = &connection_costs_[net_start_indicies_[net_id]];
-            return net_connection_costs - 1; //Minus one offset so indexing at [1] (i.e. first
+            return NetProxy(net_connection_costs - 1); //Minus one offset so indexing at [1] (i.e. first
                                             //sink maps to the first element at 
                                             //connection_costs_[net_start_indicies_[net_id]]
         }
