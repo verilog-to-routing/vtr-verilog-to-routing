@@ -111,63 +111,6 @@ constexpr double MAX_INV_TIMING_COST = 1.e9;
  * The exact value of this cost has relatively little impact, but should not be
  * large enough to be on the order of timing costs for normal constraints. */
 
-class PlacerTimingCosts {
-    public:
-        PlacerTimingCosts() = default;
-
-        PlacerTimingCosts(const ClusteredNetlist& nlist) {
-            auto nets = nlist.nets();
-
-            net_start_indicies_.resize(nets.size());
-
-            size_t iconn = 0;
-            for (ClusterNetId net : nets) {
-                if (nlist.net_is_ignored(net)) continue;
-
-                net_start_indicies_[net] = iconn;
-
-                //There is no cost associated with the driver, so only include net sinks
-                iconn += nlist.net_sinks(net).size();
-            }
-            connection_costs_.resize(iconn, std::numeric_limits<double>::quiet_NaN());
-        }
-     
-        class NetProxy {
-            public:
-                NetProxy(double* net_sink_costs)
-                    : net_sink_costs_(net_sink_costs) {}
-
-                double& operator[](size_t ipin) {
-                    return net_sink_costs_[ipin];
-                }
-
-            private:
-                double* net_sink_costs_;
-        };
-
-        NetProxy operator[](ClusterNetId net_id) {
-            double* net_connection_costs = &connection_costs_[net_start_indicies_[net_id]];
-            return NetProxy(net_connection_costs - 1); //Minus one offset so indexing at [1] (i.e. first
-                                            //sink maps to the first element at 
-                                            //connection_costs_[net_start_indicies_[net_id]]
-        }
-
-        void clear() {
-            connection_costs_.clear();
-            net_start_indicies_.clear();
-        }
-
-        void swap(PlacerTimingCosts& other) {
-            std::swap(connection_costs_, other.connection_costs_);
-            std::swap(net_start_indicies_, other.net_start_indicies_);
-        }
-
-    private:
-        std::vector<double> connection_costs_;
-        vtr::vector<ClusterNetId,int> net_start_indicies_;
-
-};
-
 /********************** Variables local to place.c ***************************/
 
 /* Cost of a net, and a temporary cost of a net used during move assessment. */
@@ -1948,23 +1891,10 @@ static void update_td_costs(const PlaceDelayModel* delay_model, const PlacerCrit
         f_update_td_costs_connections_elapsed_sec += timer.elapsed_sec();
     }
 
-    //Update the modified net timing costs
-    {
-        vtr::Timer timer;
-        auto clb_nets_modified = place_crit.nets_with_modified_criticality();
-        for (ClusterNetId clb_net : clb_nets_modified) {
-            if (cluster_ctx.clb_nlist.net_is_ignored(clb_net)) continue;
-
-            net_timing_cost[clb_net] = sum_td_net_cost(clb_net);
-        }
-
-        f_update_td_costs_nets_elapsed_sec += timer.elapsed_sec();
-    }
-
     //Re-total timing costs of all nets
     {
         vtr::Timer timer;
-        *timing_cost = sum_td_costs();
+        *timing_cost = connection_timing_cost.total_cost();
         f_update_td_costs_sum_nets_elapsed_sec += timer.elapsed_sec();
     }
 
@@ -1973,7 +1903,7 @@ static void update_td_costs(const PlaceDelayModel* delay_model, const PlacerCrit
     comp_td_costs(delay_model, place_crit, &check_timing_cost);
     VTR_ASSERT_DEBUG_MSG(check_timing_cost == *timing_cost,
                          "Total timing cost calculated incrementally in update_td_costs() is "
-                         "not consistent with value calculated from scratch in comp_td_costs()")
+                         "not consistent with value calculated from scratch in comp_td_costs()");
 #endif
     f_update_td_costs_total_elapsed_sec += t.elapsed_sec();
 }
@@ -2135,8 +2065,11 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
                 connection_delay[net_id][ipin] = 0;
                 proposed_connection_delay[net_id][ipin] = INVALID_DELAY;
 
-                connection_timing_cost[net_id][ipin] = INVALID_DELAY;
                 proposed_connection_timing_cost[net_id][ipin] = INVALID_DELAY;
+
+                if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) continue;
+
+                connection_timing_cost[net_id][ipin] = INVALID_DELAY;
             }
         }
     }
