@@ -239,7 +239,7 @@ def run_odin(architecture_file, circuit_file,
     mkdir_p(work_dir)
 
     if odin_exec == None:
-        odin_exec = find_vtr_file('odin_II', is_executabe=True)
+        odin_exec = find_vtr_file('odin_II', is_executable=True)
 
     if odin_config == None:
         odin_base_config = find_vtr_file('basic_odin_config_split.xml')
@@ -267,7 +267,7 @@ def run_abc(architecture_file, circuit_file, output_netlist, command_runner, wor
     mkdir_p(work_dir)
 
     if abc_exec == None:
-        abc_exec = find_vtr_file('abc', is_executabe=True)
+        abc_exec = find_vtr_file('abc', is_executable=True)
 
     if abc_rc == None:
         abc_dir = os.path.dirname(abc_exec)
@@ -296,7 +296,7 @@ def run_abc(architecture_file, circuit_file, output_netlist, command_runner, wor
 def run_ace(circuit_file, output_netlist, output_activity_file, command_runner, work_dir=".", log_filename="ace.out", ace_exec=None):
 
     if ace_exec is None:
-        ace_exec = find_vtr_file('ace', is_executabe=True)
+        ace_exec = find_vtr_file('ace', is_executable=True)
 
     cmd = [ace_exec,
            "-b", circuit_file,
@@ -371,7 +371,7 @@ def run_vpr(architecture, circuit, command_runner, work_dir, output_netlist=None
     mkdir_p(work_dir)
 
     if vpr_exec == None:
-        vpr_exec = find_vtr_file('vpr', is_executabe=True)
+        vpr_exec = find_vtr_file('vpr', is_executable=True)
 
     cmd = [vpr_exec, architecture, circuit]
 
@@ -397,7 +397,7 @@ def run_abc_lec(reference_netlist, implementation_netlist, command_runner, work_
     mkdir_p(work_dir)
 
     if abc_exec == None:
-        abc_exec = find_vtr_file('abc', is_executabe=True)
+        abc_exec = find_vtr_file('abc', is_executable=True)
 
         abc_script = ['cec {ref} {imp}'.format(ref=reference_netlist, imp=implementation_netlist),
                       'sec {ref} {imp}'.format(ref=reference_netlist, imp=implementation_netlist),
