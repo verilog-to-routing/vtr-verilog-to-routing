@@ -56,7 +56,7 @@ void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected);
 
 void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
                         const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                        TimingInfo& timing_info);
+                        TimingInfo* timing_info);
 
 void revert_move_blocks(t_pl_blocks_to_be_moved& blocks_affected);
 
