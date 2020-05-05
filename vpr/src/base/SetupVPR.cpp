@@ -382,6 +382,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->exit_after_first_routing_iteration = Options.exit_after_first_routing_iteration;
 
     RouterOpts->check_route = Options.check_route;
+    RouterOpts->timing_update_type = Options.timing_update_type;
 }
 
 static void SetupAnnealSched(const t_options& Options,
@@ -452,6 +453,8 @@ void SetupPackerOpts(const t_options& Options,
     PackerOpts->packer_algorithm = PACK_GREEDY; /* DEFAULT */
 
     PackerOpts->device_layout = Options.device_layout;
+
+    PackerOpts->timing_update_type = Options.timing_update_type;
 }
 
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts) {
@@ -519,6 +522,7 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->allowed_tiles_for_delay_model = Options.allowed_tiles_for_delay_model;
 
     PlacerOpts->effort_scaling = Options.place_effort_scaling;
+    PlacerOpts->timing_update_type = Options.timing_update_type;
 }
 
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {
@@ -532,6 +536,8 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
     analysis_opts.timing_report_detail = Options.timing_report_detail;
     analysis_opts.timing_report_skew = Options.timing_report_skew;
     analysis_opts.echo_dot_timing_graph_node = Options.echo_dot_timing_graph_node;
+
+    analysis_opts.timing_update_type = Options.timing_update_type;
 }
 
 static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch) {

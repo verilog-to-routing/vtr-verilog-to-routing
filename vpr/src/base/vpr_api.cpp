@@ -684,7 +684,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
             routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay);
 
-            timing_info = make_setup_hold_timing_info(routing_delay_calc);
+            timing_info = make_setup_hold_timing_info(routing_delay_calc, router_opts.timing_update_type);
         }
 
         if (router_opts.doRouting == STAGE_DO) {
@@ -1196,7 +1196,7 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
 
         //Do final timing analysis
         auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay);
-        auto timing_info = make_setup_hold_timing_info(analysis_delay_calc);
+        auto timing_info = make_setup_hold_timing_info(analysis_delay_calc, vpr_setup.AnalysisOpts.timing_update_type);
         timing_info->update();
 
         if (isEchoFileEnabled(E_ECHO_ANALYSIS_TIMING_GRAPH)) {
