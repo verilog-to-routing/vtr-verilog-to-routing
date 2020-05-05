@@ -158,32 +158,48 @@ class SetupHoldTimingInfo : public SetupTimingInfo, public HoldTimingInfo {
 
 #include "concrete_timing_info.h"
 
-//#define VPR_TATUM_WALKER tatum::ParallelWalker
-#define VPR_TATUM_WALKER tatum::SerialIncrWalker
-
 template<class DelayCalc>
-std::unique_ptr<SetupTimingInfo> make_setup_timing_info(std::shared_ptr<DelayCalc> delay_calculator) {
+std::unique_ptr<SetupTimingInfo> make_setup_timing_info(std::shared_ptr<DelayCalc> delay_calculator, e_timing_update_type update_type) {
     auto& timing_ctx = g_vpr_ctx.timing();
 
-    std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis, VPR_TATUM_WALKER>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
+    std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer;
+    
+    if (update_type == e_timing_update_type::FULL || update_type == e_timing_update_type::AUTO) {
+        analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis, tatum::ParallelWalker>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
+    } else {
+        VTR_ASSERT(update_type == e_timing_update_type::INCREMENTAL);
+        analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis, tatum::SerialIncrWalker>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
+    }
 
     return std::make_unique<ConcreteSetupTimingInfo<DelayCalc>>(timing_ctx.graph, timing_ctx.constraints, delay_calculator, analyzer);
 }
 
 template<class DelayCalc>
-std::unique_ptr<HoldTimingInfo> make_hold_timing_info(std::shared_ptr<DelayCalc> delay_calculator) {
+std::unique_ptr<HoldTimingInfo> make_hold_timing_info(std::shared_ptr<DelayCalc> delay_calculator, e_timing_update_type update_type) {
     auto& timing_ctx = g_vpr_ctx.timing();
 
-    std::shared_ptr<tatum::HoldTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::HoldAnalysis, VPR_TATUM_WALKER>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
+    std::shared_ptr<tatum::HoldTimingAnalyzer> analyzer;
+    if (update_type == e_timing_update_type::FULL || update_type == e_timing_update_type::AUTO) {
+        analyzer = tatum::AnalyzerFactory<tatum::HoldAnalysis, tatum::ParallelWalker>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
+    } else {
+        VTR_ASSERT(update_type == e_timing_update_type::INCREMENTAL);
+        analyzer = tatum::AnalyzerFactory<tatum::HoldAnalysis, tatum::SerialIncrWalker>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
+    }
 
     return std::make_unique<ConcreteHoldTimingInfo<DelayCalc>>(timing_ctx.graph, timing_ctx.constraints, delay_calculator, analyzer);
 }
 
 template<class DelayCalc>
-std::unique_ptr<SetupHoldTimingInfo> make_setup_hold_timing_info(std::shared_ptr<DelayCalc> delay_calculator) {
+std::unique_ptr<SetupHoldTimingInfo> make_setup_hold_timing_info(std::shared_ptr<DelayCalc> delay_calculator, e_timing_update_type update_type) {
     auto& timing_ctx = g_vpr_ctx.timing();
 
-    std::shared_ptr<tatum::SetupHoldTimingAnalyzer> analyzer = tatum::AnalyzerFactory<tatum::SetupHoldAnalysis, VPR_TATUM_WALKER>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
+    std::shared_ptr<tatum::SetupHoldTimingAnalyzer> analyzer;
+    if (update_type == e_timing_update_type::FULL || update_type == e_timing_update_type::AUTO) {
+        analyzer = tatum::AnalyzerFactory<tatum::SetupHoldAnalysis, tatum::ParallelWalker>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
+    } else {
+        VTR_ASSERT(update_type == e_timing_update_type::INCREMENTAL);
+        analyzer = tatum::AnalyzerFactory<tatum::SetupHoldAnalysis, tatum::SerialIncrWalker>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
+    }
 
     return std::make_unique<ConcreteSetupHoldTimingInfo<DelayCalc>>(timing_ctx.graph, timing_ctx.constraints, delay_calculator, analyzer);
 }
