@@ -722,6 +722,8 @@ void try_place(const t_placer_opts& placer_opts,
                          X_coord,
                          Y_coord);
 
+    float starting_temp = t;
+
     if (!placer_opts.move_stats_file.empty()) {
         f_move_stats_file = std::unique_ptr<FILE, decltype(&vtr::fclose)>(vtr::fopen(placer_opts.move_stats_file.c_str(), "w"), vtr::fclose);
         LOG_MOVE_STATS_HEADER();
@@ -737,7 +739,7 @@ void try_place(const t_placer_opts& placer_opts,
         goto quench;
 #endif /* ENABLE_ANALYTIC_PLACE */
 
-    float timing_bb_factor;
+    float timing_bb_factor = HI_LIMIT;
     //Table header
     VTR_LOG("\n");
     print_place_status_header();
@@ -761,7 +763,6 @@ void try_place(const t_placer_opts& placer_opts,
         std::fill(accepted_moves.begin(),accepted_moves.end(),0);
         std::fill(aborted_moves.begin(),aborted_moves.end(),0);
 
-        timing_bb_factor = LOW_LIMIT;    
         placement_inner_loop(&state, placer_opts,
                              inner_recompute_limit, &stats,
                              &costs,
@@ -955,6 +956,7 @@ quench:
     VTR_LOG("time of W centroid move = %f \n", time_of_moves[3]/num_of_moves[3]);
     VTR_LOG("time of feasible region move = %f \n", time_of_moves[4]/num_of_moves[4]);
     VTR_LOG("time of critical uniform move = %f \n", time_of_moves[5]/num_of_moves[5]);
+    VTR_LOG("time of centroid move = %f \n", time_of_moves[6]/num_of_moves[6]);
 #endif
 }
 
@@ -1343,12 +1345,12 @@ static e_move_result try_swap(const t_annealing_state* state,
     }
 
     //Generate a new move (perturbation) used to explore the space of possible placements
-#if 0
+#if 1 
     auto start = std::chrono::high_resolution_clock::now();
 #endif
     e_create_move create_move_outcome = move_generator.propose_move(blocks_affected
       , rlim, X_coord, Y_coord, num_moves, type, high_fanout_net);
-#if 0
+#if 1
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start);
 
