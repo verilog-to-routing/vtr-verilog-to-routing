@@ -82,8 +82,7 @@ std::map<int,std::string> available_move_types = {
 using std::max;
 using std::min;
 
-//#ifdef VTR_ENABLE_DEBUG_LOGGING
-#if 1
+#ifdef VTR_ENABLE_DEBUG_LOGGING
 void print_place_statisitics(const float &, const std::vector<int> &, const std::vector<int> &, const std::vector<int> &);
 #endif
 
