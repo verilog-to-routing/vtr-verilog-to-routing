@@ -145,12 +145,12 @@ class PlacerTimingCosts {
                 iconn += nlist.net_sinks(net).size();
             }
 
-            size_t num_conn = iconn + 1;
+            size_t num_connections = iconn;
 
             //Determine how many binary tree levels we need to have a leaf
             //for each connection cost
             size_t ilevel = 0;
-            while (num_nodes_in_level(ilevel) < num_conn) {
+            while (num_nodes_in_level(ilevel) < num_connections) {
                 ++ilevel;
             }
             num_levels_ = ilevel + 1;
@@ -158,12 +158,12 @@ class PlacerTimingCosts {
             size_t num_leaves = num_nodes_in_level(ilevel);
             size_t num_level_before_leaves = num_nodes_in_level(ilevel - 1);
 
-            VTR_ASSERT_MSG(num_leaves >= num_conn, "Need at least as many leaves as connections");
-            VTR_ASSERT_MSG(num_level_before_leaves < num_conn, "Level before should have fewer nodes than connections (to ensure using the smallest binary tree)");
+            VTR_ASSERT_MSG(num_leaves >= num_connections, "Need at least as many leaves as connections");
+            VTR_ASSERT_MSG(num_connections == 0 || num_level_before_leaves < num_connections, "Level before should have fewer nodes than connections (to ensure using the smallest binary tree)");
 
             //We don't need to store all possible leaves if we have fewer connections
             //(i.e. bottom-right of tree is empty)
-            size_t last_level_unused_nodes = num_nodes_in_level(ilevel) - num_conn;
+            size_t last_level_unused_nodes = num_nodes_in_level(ilevel) - num_connections;
             size_t num_nodes = num_nodes_up_to_level(ilevel) - last_level_unused_nodes;
 
             //Reserve space for connection costs and intermediate node values
