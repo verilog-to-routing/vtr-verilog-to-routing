@@ -769,9 +769,6 @@ struct t_annealing_sched {
  *              channel width in the binary search.                          *
  * recompute_crit_iter: how many temperature stages pass before we recompute *
  *               criticalities based on average point to point delay         *
- * enable_timing_computations: in bounding_box mode, normally, timing        *
- *               information is not produced, this causes the information    *
- *               to be computed. in *_TIMING_DRIVEN modes, this has no effect*
  * inner_loop_crit_divider: (move_lim/inner_loop_crit_divider) determines how*
  *               many inner_loop iterations pass before a recompute of       *
  *               criticalities is done.                                      *
@@ -823,7 +820,6 @@ struct t_placer_opts {
     std::string pad_loc_file;
     enum pfreq place_freq;
     int recompute_crit_iter;
-    bool enable_timing_computations;
     int inner_loop_recompute_divider;
     int quench_recompute_divider;
     float td_place_exp_first;
