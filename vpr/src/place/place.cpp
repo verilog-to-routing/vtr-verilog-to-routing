@@ -1837,30 +1837,12 @@ static void update_td_costs(const PlaceDelayModel* delay_model, const PlacerCrit
      *      floating point math operations are order dependant and we
      *      would get a different result.
      *
-     *      To get around this, we calculate the timing costs hierarchically,
-     *      first for each connection, then for each net, and finally total
-     *      over all nets. This ensures we calculate the sum with the same
-     *      order of operations as comp_td_costs().
+     *      To get around this, we calculate the timing costs hierarchically
+     *      to ensures we calculate the sum with the same order of operations 
+     *      as comp_td_costs().
      *
-     *      To do this incrementally, we do the following:
-     *        - update timing cost of connections who's criticality changed
-     *        - update timing cost of effected nets (i.e. those containing
-     *          connections which changed criticality)
-     *        - sum all the net timing costs
-     *
-     *      For instance, if a singe connection's criticality changes we 
-     *      would re-calculate it's timing cost, re-sum the timing cost of
-     *      it's net, and then sum all net timing costs (thereby avoiding
-     *      re-calculating all other connection criticalities, and re-summing
-     *      every other net).
-     *
-     *      TODO: Consider whether it would be worthwhile adding additional
-     *            levels of hierarchy (e.g. groups of nets) to reduce the 
-     *            work in the final sum (e.g. if many nets are unchanged).
-     *            Essentially, we are doing an incremental tree-reduction 
-     *            in a deterministic order and saving some intermediate 
-     *            results to avoid re-calculating them if they haven't
-     *            changed...
+     *      See PlacerTimingCosts object used to represent connection_timing_costs
+     *      for details.
      */
     vtr::Timer t;
     auto& cluster_ctx = g_vpr_ctx.clustering();
