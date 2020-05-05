@@ -33,7 +33,7 @@ class PlacerCriticalities {
         pin_range pins_with_modified_criticality() const;
 
     public: //Modifiers
-        void update_criticalities(const SetupTimingInfo& timing_info, float crit_exponent_lookup);
+        void update_criticalities(const SetupTimingInfo* timing_info, float crit_exponent_lookup);
         void set_criticality(ClusterNetId net, int ipin, float val);
 
     private: //Data
