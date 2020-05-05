@@ -31,7 +31,6 @@ class PlacerCriticalities {
     public: //Accessors
         float criticality(ClusterNetId net, int ipin) const;
         pin_range pins_with_modified_criticality() const;
-        net_range nets_with_modified_criticality() const;
 
     public: //Modifiers
         void update_criticalities(const SetupTimingInfo& timing_info, float crit_exponent_lookup);
@@ -49,7 +48,6 @@ class PlacerCriticalities {
 
         //Set of pins with criticaltites modified by last call to update_criticalities()
         vtr::vec_id_set<ClusterPinId> cluster_pins_with_modified_criticality_;
-        vtr::vec_id_set<ClusterNetId> cluster_nets_with_modified_criticality_;
 };
 
 /* Usage
