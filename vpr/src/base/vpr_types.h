@@ -438,6 +438,12 @@ struct t_timing_inf {
     std::string SDCFile;
 };
 
+enum class e_timing_update_type {
+    FULL,
+    INCREMENTAL,
+    AUTO
+};
+
 /***************************************************************************
  * Placement and routing data types
  ****************************************************************************/
@@ -740,6 +746,7 @@ struct t_packer_opts {
     e_stage_action doPacking;
     enum e_packer_algorithm packer_algorithm;
     std::string device_layout;
+    e_timing_update_type timing_update_type;
 };
 
 /* Annealing schedule information for the placer.  The schedule type      *
@@ -830,6 +837,7 @@ struct t_placer_opts {
     std::string move_stats_file;
     int placement_saves_per_temperature;
     e_place_effort_scaling effort_scaling;
+    e_timing_update_type timing_update_type;
 
     PlaceDelayModelType delay_model_type;
     e_reducer delay_model_reducer;
@@ -1020,6 +1028,7 @@ struct t_router_opts {
     bool exit_after_first_routing_iteration;
 
     e_check_route_option check_route;
+    e_timing_update_type timing_update_type;
 };
 
 struct t_analysis_opts {
@@ -1031,6 +1040,8 @@ struct t_analysis_opts {
     e_timing_report_detail timing_report_detail;
     bool timing_report_skew;
     std::string echo_dot_timing_graph_node;
+
+    e_timing_update_type timing_update_type;
 };
 
 /* Defines the detailed routing architecture of the FPGA.  Only important   *

@@ -494,7 +494,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
          * Initialize the timing analyzer
          */
         clustering_delay_calc = std::make_shared<PreClusterDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, packer_opts.inter_cluster_net_delay, expected_lowest_cost_pb_gnode);
-        timing_info = make_setup_timing_info(clustering_delay_calc);
+        timing_info = make_setup_timing_info(clustering_delay_calc, packer_opts.timing_update_type);
 
         //Calculate the initial timing
         timing_info->update();

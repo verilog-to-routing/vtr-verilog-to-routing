@@ -579,7 +579,7 @@ void try_place(const t_placer_opts& placer_opts,
         placement_delay_calc->set_tsu_margin_relative(placer_opts.tsu_rel_margin);
         placement_delay_calc->set_tsu_margin_absolute(placer_opts.tsu_abs_margin);
 
-        timing_info = make_setup_timing_info(placement_delay_calc);
+        timing_info = make_setup_timing_info(placement_delay_calc, placer_opts.timing_update_type);
 
         placer_criticalities = std::make_unique<PlacerCriticalities>(cluster_ctx.clb_nlist, netlist_pin_lookup);
 
