@@ -50,7 +50,7 @@ void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
 //lookups via place_ctx.grid_blocks)
 void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
                         const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                        TimingInfo& timing_info) {
+                        TimingInfo* timing_info) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     /* Swap physical location */

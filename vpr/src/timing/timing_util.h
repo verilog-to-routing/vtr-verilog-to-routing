@@ -80,11 +80,15 @@ std::map<tatum::DomainId, size_t> count_clock_fanouts(const tatum::TimingGraph& 
 
 //Invalidates all timing graph edge delays related to the specified clustered netlist pin
 template<class TimingInfo>
-void invalidate_delays(const ClusterPinId clb_pin, const ClusteredPinAtomPinsLookup& clb_atom_pin_lookup, TimingInfo& timing_info) {
+void invalidate_delays(const ClusterPinId clb_pin, const ClusteredPinAtomPinsLookup& clb_atom_pin_lookup, TimingInfo* timing_info) {
+    if (!timing_info) {
+        return;
+    }
+
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& atom_nlist = atom_ctx.nlist;
     auto& atom_lookup = atom_ctx.lookup;
-    const auto& tg = timing_info.timing_graph();
+    const auto& tg = timing_info->timing_graph();
 
     for (const AtomPinId atom_pin : clb_atom_pin_lookup.connected_atom_pins(clb_pin)) {
         tatum::NodeId pin_tnode = atom_lookup.atom_pin_tnode(atom_pin);
@@ -104,7 +108,7 @@ void invalidate_delays(const ClusterPinId clb_pin, const ClusteredPinAtomPinsLoo
         bool found = false;
         for (tatum::EdgeId edge : tg->node_in_edges(pin_tnode)) {
             if (tg->edge_src_node(edge) == driver_tnode) {
-                timing_info.invalidate_delay(edge);
+                timing_info->invalidate_delay(edge);
                 found = true;
                 break;
             }
@@ -115,7 +119,7 @@ void invalidate_delays(const ClusterPinId clb_pin, const ClusteredPinAtomPinsLoo
 
 //Invalidates all timing graph edge delays related to the 'ipin'th pin of 'net'
 template<class TimingInfo>
-void invalidate_delays(const ClusterNetId net, int ipin, const ClusteredPinAtomPinsLookup& clb_atom_pin_lookup, TimingInfo& timing_info) {
+void invalidate_delays(const ClusterNetId net, int ipin, const ClusteredPinAtomPinsLookup& clb_atom_pin_lookup, TimingInfo* timing_info) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& clb_nlist = cluster_ctx.clb_nlist;
 
