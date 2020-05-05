@@ -29,6 +29,9 @@ StaticMoveGenerator::StaticMoveGenerator(const std::vector<float> & prob){
 	move_generator6 = std::make_unique<CriticalUniformMoveGenerator>();
 	avail_moves.push_back(std::move(move_generator6));
 
+	std::unique_ptr<MoveGenerator> move_generator7;
+	move_generator7 = std::make_unique<CentroidMoveGenerator>();
+	avail_moves.push_back(std::move(move_generator7));
 	
     moves_prob.push_back(prob[0]);
 	for(size_t i =1; i < prob.size(); i++){

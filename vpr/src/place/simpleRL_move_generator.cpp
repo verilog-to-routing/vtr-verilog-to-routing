@@ -206,6 +206,10 @@ SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agen
 	move_generator6 = std::make_unique<CriticalUniformMoveGenerator>();
 	avail_moves.push_back(std::move(move_generator6));
 
+	std::unique_ptr<MoveGenerator> move_generator7;
+	move_generator7 = std::make_unique<CentroidMoveGenerator>();
+	avail_moves.push_back(std::move(move_generator7));
+    
     karmed_bandit_agent = std::move(agent);
 }
 

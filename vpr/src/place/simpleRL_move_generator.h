@@ -7,6 +7,7 @@
 #include "weighted_centroid_move_generator.h"
 #include "uniform_move_generator.h"
 #include "critical_uniform_move_generator.h"
+#include "centroid_move_generator.h"
 
 class KArmedBanditAgent {
   public:
