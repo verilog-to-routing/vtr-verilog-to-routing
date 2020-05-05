@@ -36,11 +36,12 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
     float acc_weight = 0;
     float acc_x = 0;
     float acc_y = 0;
-    float center_x,center_y;
-
+    float fanout, center_x,center_y;
+  
     //iterate over the from block pins
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(b_from)) {
         net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
+        fanout = cluster_ctx.clb_nlist.block_pins(b_from).size();
 
         //if the pin is driver iterate over all the sinks
         if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::DRIVER) {
@@ -54,7 +55,7 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
                 //ipin = cluster_ctx.clb_nlist.pin_net_index(sink_pin_id);
                 pnum = tile_pin_index(sink_pin_id);
                 //weight = get_timing_place_crit(net_id, ipin); //*comp_td_point_to_point_delay(delay_model, net_id, ipin)
-                acc_weight++;
+                acc_weight += 1.0/fanout;
 
                 ClusterBlockId sink_block = cluster_ctx.clb_nlist.pin_block(sink_pin_id);
 
@@ -64,8 +65,8 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
                 x = std::max(std::min(x, (int)grid.width() - 2), 1);  //-2 for no perim channels
                 y = std::max(std::min(y, (int)grid.height() - 2), 1); //-2 for no perim channels
 
-                acc_x += x;
-                acc_y += y;
+                acc_x += x/fanout;
+                acc_y += y/fanout;
             }
         }
 
@@ -73,7 +74,7 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
         else  {
             //ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
             //weight = get_timing_place_crit(net_id, ipin);
-            acc_weight++;
+            acc_weight+=fanout;
 
             ClusterPinId source_pin = cluster_ctx.clb_nlist.net_driver(net_id);
             ClusterBlockId source_block = cluster_ctx.clb_nlist.pin_block(source_pin);
@@ -85,8 +86,8 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
             x = std::max(std::min(x, (int)grid.width() - 2), 1);  //-2 for no perim channels
             y = std::max(std::min(y, (int)grid.height() - 2), 1); //-2 for no perim channels
 
-            acc_x += x;
-            acc_y += y;
+            acc_x += x/fanout;
+            acc_y += y/fanout;
         }
     }
 
