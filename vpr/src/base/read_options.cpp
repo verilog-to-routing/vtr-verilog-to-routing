@@ -1475,10 +1475,6 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_grp.add_argument<bool, ParseOnOff>(args.ShowPlaceTiming, "--enable_timing_computations")
-        .help("Displays delay statistics even if placement is not timing driven")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
     place_grp.add_argument<e_place_delta_delay_algorithm, ParsePlaceDeltaDelayAlgorithm>(
                  args.place_delta_delay_matrix_calculation_method,
                  "--place_delta_delay_matrix_calculation_method")

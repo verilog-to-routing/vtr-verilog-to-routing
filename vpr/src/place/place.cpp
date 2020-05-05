@@ -528,8 +528,7 @@ void try_place(const t_placer_opts& placer_opts,
     num_swap_aborted = 0;
     num_ts_called = 0;
 
-    if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
-        || placer_opts.enable_timing_computations) {
+    if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
         /*do this before the initial placement to avoid messing up the initial placement */
         place_delay_model = alloc_lookups_and_criticalities(chan_width_dist, placer_opts, router_opts, det_routing_arch, segment_inf, directs, num_directs);
 
@@ -560,7 +559,7 @@ void try_place(const t_placer_opts& placer_opts,
 
     /* Gets initial cost and loads bounding boxes. */
 
-    if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE || placer_opts.enable_timing_computations) {
+    if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
         costs.bb_cost = comp_bb_cost(NORMAL);
 
         crit_exponent = placer_opts.td_place_exp_first; /*this will be modified when rlim starts to change */
@@ -873,19 +872,7 @@ void try_place(const t_placer_opts& placer_opts,
     VTR_LOG("\n");
     VTR_LOG("Swaps called: %d\n", num_ts_called);
 
-    if (placer_opts.enable_timing_computations
-        && placer_opts.place_algorithm == BOUNDING_BOX_PLACE) {
-        /*need this done since the timing data has not been kept up to date*
-         *in bounding_box mode */
-        for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-            for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++)
-                placer_criticalities->set_criticality(net_id, ipin, 0); /*dummy crit values */
-        }
-        comp_td_costs(place_delay_model.get(), *placer_criticalities, &costs.timing_cost);
-    }
-
-    if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
-        || placer_opts.enable_timing_computations) {
+    if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
         //Final timing estimate
         VTR_ASSERT(timing_info);
 
@@ -1473,7 +1460,7 @@ static e_move_result try_swap(float t,
             /* Restore the place_ctx.block_locs data structures to their state before the move. */
             revert_move_blocks(blocks_affected);
 
-            if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+            if (place_algorithm == PATH_TIMING_DRIVEN_PLACE || true) {
                 revert_td_cost(blocks_affected);
             }
         }
@@ -2031,8 +2018,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
         max_pins_per_clb = max(max_pins_per_clb, type.num_pins);
     }
 
-    if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
-        || placer_opts.enable_timing_computations) {
+    if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
         /* Allocate structures associated with timing driven placement */
         /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]  */
         connection_delay = make_net_pins_matrix<float>(cluster_ctx.clb_nlist, 0.f);
@@ -2076,8 +2062,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
 /* Frees the major structures needed by the placer (and not needed       *
  * elsewhere).   */
 static void free_placement_structs(const t_placer_opts& placer_opts) {
-    if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
-        || placer_opts.enable_timing_computations) {
+    if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
         vtr::release_memory(connection_timing_cost);
         vtr::release_memory(connection_delay);
         vtr::release_memory(proposed_connection_timing_cost);
