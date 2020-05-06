@@ -117,17 +117,6 @@ void invalidate_delays(const ClusterPinId clb_pin, const ClusteredPinAtomPinsLoo
     }
 }
 
-//Invalidates all timing graph edge delays related to the 'ipin'th pin of 'net'
-template<class TimingInfo>
-void invalidate_delays(const ClusterNetId net, int ipin, const ClusteredPinAtomPinsLookup& clb_atom_pin_lookup, TimingInfo* timing_info) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& clb_nlist = cluster_ctx.clb_nlist;
-
-    ClusterPinId pin = clb_nlist.net_pin(net, ipin);
-
-    invalidate_delays(pin, clb_atom_pin_lookup, timing_info);
-}
-
 /*
  * Slack and criticality calculation utilities
  */
