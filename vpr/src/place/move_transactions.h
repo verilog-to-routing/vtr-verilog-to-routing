@@ -55,7 +55,7 @@ e_block_move_result record_block_move(t_pl_blocks_to_be_moved& blocks_affected, 
 void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected);
 
 void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
-                        const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                        const ClusteredPinTimingEdges* pin_to_tedges,
                         TimingInfo* timing_info);
 
 void revert_move_blocks(t_pl_blocks_to_be_moved& blocks_affected);
