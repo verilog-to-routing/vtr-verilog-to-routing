@@ -49,7 +49,7 @@ void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
 //Commits the blocks in blocks_affected to their new locations (updates inverse
 //lookups via place_ctx.grid_blocks)
 void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
-                        const ClusteredPinTimingEdges* pin_to_tedges,
+                        ClusteredPinTimingInvalidator* pin_tedges_invalidator,
                         TimingInfo* timing_info) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
@@ -79,16 +79,16 @@ void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
     } // Finish updating clb for all blocks
 
     if (!timing_info) {
-        VTR_ASSERT_SAFE(!pin_to_tedges);
+        VTR_ASSERT_SAFE(!pin_tedges_invalidator);
         return;
     }
 
     VTR_ASSERT_SAFE(timing_info);
-    VTR_ASSERT_SAFE(pin_to_tedges);
+    VTR_ASSERT_SAFE(pin_tedges_invalidator);
 
     //Inalidate timing graph edges affected by the move
     for (ClusterPinId pin : blocks_affected.affected_pins) {
-        invalidate_delays(pin, pin_to_tedges, timing_info);
+        pin_tedges_invalidator->invalidate_connection(pin, timing_info);
     }
 }
 

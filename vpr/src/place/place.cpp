@@ -312,7 +312,7 @@ static e_move_result try_swap(float t,
                               float rlim,
                               MoveGenerator& move_generator,
                               TimingInfo* timing_info,
-                              const ClusteredPinTimingEdges* pin_to_tedges,
+                              ClusteredPinTimingInvalidator* pin_timing_invalidator,
                               t_pl_blocks_to_be_moved& blocks_affected,
                               const PlaceDelayModel* delay_model,
                               const PlacerCriticalities* criticalities,
@@ -342,7 +342,7 @@ static float starting_t(t_placer_costs* costs,
                         const PlacerCriticalities* criticalities,
                         TimingInfo* timing_info,
                         MoveGenerator& move_generator,
-                        const ClusteredPinTimingEdges* pin_to_tedges,
+                        ClusteredPinTimingInvalidator* pin_timing_invalidator,
                         t_pl_blocks_to_be_moved& blocks_affected,
                         const t_placer_opts& placer_opts);
 
@@ -419,11 +419,13 @@ static void outer_loop_recompute_criticalities(const t_placer_opts& placer_opts,
                                                int* outer_crit_iter_count,
                                                const PlaceDelayModel* delay_model,
                                                PlacerCriticalities* criticalities, 
+                                               ClusteredPinTimingInvalidator* pin_timing_invalidator,
                                                SetupTimingInfo* timing_info);
 
 static void recompute_criticalities(float crit_exponent,
                                     const PlaceDelayModel* delay_model,
                                     PlacerCriticalities* criticalities,
+                                    ClusteredPinTimingInvalidator* pin_timing_invalidator,
                                     SetupTimingInfo* timing_info,
                                     t_placer_costs* costs);
 
@@ -438,7 +440,7 @@ static void placement_inner_loop(float t,
                                  t_placer_costs* costs,
                                  t_placer_prev_inverse_costs* prev_inverse_costs,
                                  int* moves_since_cost_recompute,
-                                 const ClusteredPinTimingEdges* pin_to_tedges,
+                                 ClusteredPinTimingInvalidator* pin_timing_invalidator,
                                  const PlaceDelayModel* delay_model,
                                  PlacerCriticalities* criticalities,
                                  MoveGenerator& move_generator,
@@ -516,7 +518,7 @@ void try_place(const t_placer_opts& placer_opts,
     std::unique_ptr<PlaceDelayModel> place_delay_model;
     std::unique_ptr<MoveGenerator> move_generator;
     std::unique_ptr<PlacerCriticalities> placer_criticalities;
-    std::unique_ptr<ClusteredPinTimingEdges> pin_to_tedges;
+    std::unique_ptr<ClusteredPinTimingInvalidator> pin_timing_invalidator;
 
     t_pl_blocks_to_be_moved blocks_affected(cluster_ctx.clb_nlist.blocks().size());
 
@@ -584,7 +586,7 @@ void try_place(const t_placer_opts& placer_opts,
 
         placer_criticalities = std::make_unique<PlacerCriticalities>(cluster_ctx.clb_nlist, netlist_pin_lookup);
 
-        pin_to_tedges = std::make_unique<ClusteredPinTimingEdges>(cluster_ctx.clb_nlist,
+        pin_timing_invalidator = std::make_unique<ClusteredPinTimingInvalidator>(cluster_ctx.clb_nlist,
                                                                   netlist_pin_lookup,
                                                                   atom_ctx.nlist,
                                                                   atom_ctx.lookup,
@@ -593,6 +595,7 @@ void try_place(const t_placer_opts& placer_opts,
         recompute_criticalities(crit_exponent,
                                 place_delay_model.get(),
                                 placer_criticalities.get(),
+                                pin_timing_invalidator.get(),
                                 timing_info.get(),
                                 &costs);
 
@@ -722,7 +725,7 @@ void try_place(const t_placer_opts& placer_opts,
                    placer_criticalities.get(),
                    timing_info.get(),
                    *move_generator,
-                   pin_to_tedges.get(),
+                   pin_timing_invalidator.get(),
                    blocks_affected,
                    placer_opts);
 
@@ -754,6 +757,7 @@ void try_place(const t_placer_opts& placer_opts,
                                            &outer_crit_iter_count,
                                            place_delay_model.get(),
                                            placer_criticalities.get(),
+                                           pin_timing_invalidator.get(),
                                            timing_info.get());
 
         placement_inner_loop(t, num_temps, rlim, placer_opts,
@@ -761,7 +765,7 @@ void try_place(const t_placer_opts& placer_opts,
                              &costs,
                              &prev_inverse_costs,
                              &moves_since_cost_recompute,
-                             pin_to_tedges.get(),
+                             pin_timing_invalidator.get(),
                              place_delay_model.get(),
                              placer_criticalities.get(),
                              *move_generator,
@@ -818,6 +822,7 @@ void try_place(const t_placer_opts& placer_opts,
                                            &outer_crit_iter_count,
                                            place_delay_model.get(),
                                            placer_criticalities.get(),
+                                           pin_timing_invalidator.get(),
                                            timing_info.get());
 
         t = 0; /* freeze out */
@@ -829,7 +834,7 @@ void try_place(const t_placer_opts& placer_opts,
                              &costs,
                              &prev_inverse_costs,
                              &moves_since_cost_recompute,
-                             pin_to_tedges.get(),
+                             pin_timing_invalidator.get(),
                              place_delay_model.get(),
                              placer_criticalities.get(),
                              *move_generator,
@@ -886,6 +891,7 @@ void try_place(const t_placer_opts& placer_opts,
         recompute_criticalities(crit_exponent,
                                 place_delay_model.get(),
                                 placer_criticalities.get(),
+                                pin_timing_invalidator.get(),
                                 timing_info.get(),
                                 &costs);
 
@@ -963,6 +969,7 @@ static void outer_loop_recompute_criticalities(const t_placer_opts& placer_opts,
                                                int* outer_crit_iter_count,
                                                const PlaceDelayModel* delay_model,
                                                PlacerCriticalities* criticalities,
+                                               ClusteredPinTimingInvalidator* pin_timing_invalidator,
                                                SetupTimingInfo* timing_info) {
     if (placer_opts.place_algorithm != PATH_TIMING_DRIVEN_PLACE)
         return;
@@ -981,6 +988,7 @@ static void outer_loop_recompute_criticalities(const t_placer_opts& placer_opts,
         recompute_criticalities(crit_exponent,
                                 delay_model,
                                 criticalities,
+                                pin_timing_invalidator,
                                 timing_info,
                                 costs);
         *outer_crit_iter_count = 0;
@@ -999,6 +1007,7 @@ static void outer_loop_recompute_criticalities(const t_placer_opts& placer_opts,
 static void recompute_criticalities(float crit_exponent,
                                     const PlaceDelayModel* delay_model,
                                     PlacerCriticalities* criticalities,
+                                    ClusteredPinTimingInvalidator* pin_timing_invalidator,
                                     SetupTimingInfo* timing_info,
                                     t_placer_costs* costs) {
     //Run STA to update slacks and adjusted/relaxed criticalities
@@ -1013,6 +1022,9 @@ static void recompute_criticalities(float crit_exponent,
 #else
     comp_td_costs(delay_model, *criticalities, &costs->timing_cost);
 #endif
+
+    //Clear invalidation state
+    pin_timing_invalidator->reset();
 }
 
 
@@ -1028,7 +1040,7 @@ static void placement_inner_loop(float t,
                                  t_placer_costs* costs,
                                  t_placer_prev_inverse_costs* prev_inverse_costs,
                                  int* moves_since_cost_recompute,
-                                 const ClusteredPinTimingEdges* pin_to_tedges,
+                                 ClusteredPinTimingInvalidator* pin_timing_invalidator,
                                  const PlaceDelayModel* delay_model,
                                  PlacerCriticalities* criticalities, 
                                  MoveGenerator& move_generator,
@@ -1051,7 +1063,7 @@ static void placement_inner_loop(float t,
         e_move_result swap_result = try_swap(t, costs, prev_inverse_costs, rlim,
                                              move_generator,
                                              timing_info,
-                                             pin_to_tedges,
+                                             pin_timing_invalidator,
                                              blocks_affected,
                                              delay_model,
                                              criticalities,
@@ -1090,6 +1102,7 @@ static void placement_inner_loop(float t,
                 recompute_criticalities(crit_exponent,
                                         delay_model,
                                         criticalities,
+                                        pin_timing_invalidator,
                                         timing_info,
                                         costs);
             }
@@ -1256,7 +1269,7 @@ static float starting_t(t_placer_costs* costs,
                         const PlacerCriticalities* criticalities,
                         TimingInfo* timing_info,
                         MoveGenerator& move_generator,
-                        const ClusteredPinTimingEdges* pin_to_tedges,
+                        ClusteredPinTimingInvalidator* pin_timing_invalidator,
                         t_pl_blocks_to_be_moved& blocks_affected,
                         const t_placer_opts& placer_opts) {
     /* Finds the starting temperature (hot condition).              */
@@ -1281,7 +1294,7 @@ static float starting_t(t_placer_costs* costs,
         e_move_result swap_result = try_swap(HUGE_POSITIVE_FLOAT, costs, prev_inverse_costs, rlim,
                                              move_generator,
                                              timing_info,
-                                             pin_to_tedges,
+                                             pin_timing_invalidator,
                                              blocks_affected,
                                              delay_model,
                                              criticalities,
@@ -1354,7 +1367,7 @@ static e_move_result try_swap(float t,
                               float rlim,
                               MoveGenerator& move_generator,
                               TimingInfo* timing_info,
-                              const ClusteredPinTimingEdges* pin_to_tedges,
+                              ClusteredPinTimingInvalidator* pin_timing_invalidator,
                               t_pl_blocks_to_be_moved& blocks_affected,
                               const PlaceDelayModel* delay_model,
                               const PlacerCriticalities* criticalities,
@@ -1457,7 +1470,7 @@ static e_move_result try_swap(float t,
             update_move_nets(num_nets_affected);
 
             /* Update clb data structures since we kept the move. */
-            commit_move_blocks(blocks_affected, pin_to_tedges, timing_info);
+            commit_move_blocks(blocks_affected, pin_timing_invalidator, timing_info);
 
         } else { /* Move was rejected.  */
                  /* Reset the net cost function flags first. */

@@ -5,6 +5,9 @@
 #include "tatum/timing_analyzers.hpp"
 #include "tatum/TimingConstraints.hpp"
 #include "tatum/timing_paths.hpp"
+
+#include "vtr_vec_id_set.h"
+
 #include "histogram.h"
 #include "timing_info_fwd.h"
 #include "DomainPair.h"
@@ -78,15 +81,15 @@ tatum::NodeId find_origin_node_for_hold_slack(const tatum::TimingTags::tag_range
 //Returns the a map of domain's and their clock fanout (i.e. logical outputs at which the clock captures)
 std::map<tatum::DomainId, size_t> count_clock_fanouts(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& setup_analyzer);
 
-class ClusteredPinTimingEdges {
+class ClusteredPinTimingInvalidator {
     public:
         typedef vtr::Range<const tatum::EdgeId*> tedge_range;
     public:
-        ClusteredPinTimingEdges(const ClusteredNetlist& clb_nlist, 
-                                const ClusteredPinAtomPinsLookup& clb_atom_pin_lookup,
-                                const AtomNetlist& atom_nlist,
-                                const AtomLookup& atom_lookup,
-                                const tatum::TimingGraph& timing_graph) {
+        ClusteredPinTimingInvalidator(const ClusteredNetlist& clb_nlist, 
+                                          const ClusteredPinAtomPinsLookup& clb_atom_pin_lookup,
+                                          const AtomNetlist& atom_nlist,
+                                          const AtomLookup& atom_lookup,
+                                          const tatum::TimingGraph& timing_graph) {
 
             pin_first_edge_.reserve(clb_nlist.pins().size() + 1); //Exact
             timing_edges_.reserve(clb_nlist.pins().size() + 1); //Lower bound
@@ -133,23 +136,26 @@ class ClusteredPinTimingEdges {
 
         }
 
+        template<class TimingInfo>
+        void invalidate_connection(ClusterPinId pin, TimingInfo* timing_info) {
+            if (invalidated_pins_.count(pin)) return;
+
+            for (tatum::EdgeId edge: pin_timing_edges(pin)) {
+                timing_info->invalidate_delay(edge);
+            }
+
+            invalidated_pins_.insert(pin);
+        }
+
+        void reset() {
+            invalidated_pins_.clear();
+        }
+
     private:
         std::vector<int> pin_first_edge_; //Indicies into timing_edges corresponding
         std::vector<tatum::EdgeId> timing_edges_;
+        vtr::vec_id_set<ClusterPinId> invalidated_pins_;
 };
-
-
-//Invalidates all timing graph edge delays related to the specified clustered netlist pin
-template<class TimingInfo>
-void invalidate_delays(const ClusterPinId clb_pin, const ClusteredPinTimingEdges* pin_to_tedges, TimingInfo* timing_info) {
-    VTR_ASSERT_SAFE(timing_info);
-    VTR_ASSERT_SAFE(pin_to_tedges);
-
-    for (tatum::EdgeId edge : pin_to_tedges->pin_timing_edges(clb_pin)) {
-        timing_info->invalidate_delay(edge);
-    }
-}
-
 
 /*
  * Slack and criticality calculation utilities
