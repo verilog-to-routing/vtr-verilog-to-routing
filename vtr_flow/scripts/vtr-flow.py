@@ -78,7 +78,7 @@ def vtr_command_argparser(prog=None):
 
                     Run in the directory 'test' (rather than in a temporary directory):
 
-                        %(prog)s arch.xml circuit.v --work_dir test
+                        %(prog)s arch.xml circuit.v -temp_dir test
 
 
                     Enable power analysis:
@@ -152,7 +152,7 @@ def vtr_command_argparser(prog=None):
     #
     house_keeping = parser.add_argument_group("House Keeping", description="Configuration related to how files/time/memory are used by the script.")
 
-    house_keeping.add_argument("--work_dir",
+    house_keeping.add_argument("-temp_dir",
                                default=".",
                                help="Directory to run the flow in (will be created if non-existant).")
 
@@ -189,7 +189,10 @@ def vtr_command_main(arg_list, prog=None):
 
     abs_path_arch_file = os.path.abspath(args.architecture_file)
     abs_path_circuit_file = os.path.abspath(args.circuit_file)
-    abs_work_dir = os.path.abspath(args.work_dir)
+    if (args.temp_dir == "."):
+        temp_dir="./temp"
+    else:
+        temp_dir=args.temp_dir
 
 
     #Specify how command should be run
@@ -209,7 +212,7 @@ def vtr_command_main(arg_list, prog=None):
                 run_vtr_flow(abs_path_arch_file, 
                              abs_path_circuit_file, 
                              power_tech_file=args.power_tech,
-                             work_dir=abs_work_dir,
+                             temp_dir=temp_dir,
                              start_stage=args.start, 
                              end_stage=args.end,
                              command_runner=command_runner,
@@ -240,7 +243,7 @@ def vtr_command_main(arg_list, prog=None):
 
         #Parse the flow results
         try:
-            parse_vtr_flow(abs_work_dir, args.parse_config_file, verbosity=args.verbosity)
+            parse_vtr_flow(temp_dir, args.parse_config_file, verbosity=args.verbosity)
         except InspectError as e:
             print "Error: {msg}".format(msg=e.msg)
             print "\tfile        : ", e.filename

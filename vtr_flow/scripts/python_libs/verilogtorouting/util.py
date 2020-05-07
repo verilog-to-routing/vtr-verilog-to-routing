@@ -43,7 +43,7 @@ class CommandRunner(object):
         self._echo_cmd = echo_cmd
         self._indent = indent
 
-    def run_system_command(self, cmd, work_dir, log_filename=None, expected_return_code=0, indent_depth=0):
+    def run_system_command(self, cmd, temp_dir, log_filename=None, expected_return_code=0, indent_depth=0):
         """
         Runs the specified command in the system shell.
 
@@ -55,7 +55,7 @@ class CommandRunner(object):
         =========
             cmd: list of tokens that form the command to be run
             log_filename: name of the log file for the command's output. Default: derived from command
-            work_dir: The directory to run the command in. Default: None (uses object default).
+            temp_dir: The directory to run the command in. Default: None (uses object default).
             expected_return_code: The expected return code from the command. If the actula return code does not match, will generate an exception. Default: 0
             indent_depth: How deep to indent the tool output in verbose mode. Default 0
         """
@@ -98,7 +98,7 @@ class CommandRunner(object):
                                     stdout=subprocess.PIPE, #We grab stdout
                                     stderr=subprocess.STDOUT, #stderr redirected to stderr
                                     universal_newlines=True, #Lines always end in \n
-                                    cwd=work_dir, #Where to run the command
+                                    cwd=temp_dir, #Where to run the command
                                     )
 
             # Read the output line-by-line and log it
@@ -106,7 +106,7 @@ class CommandRunner(object):
             #
             # We do this rather than use proc.communicate() 
             # to get interactive output
-            with open(os.path.join(work_dir, log_filename), 'w') as log_f:
+            with open(os.path.join(temp_dir, log_filename), 'w') as log_f:
                 #Print the command at the top of the log
                 print >> log_f, " ".join(cmd)
 
@@ -148,7 +148,7 @@ class CommandRunner(object):
         if cmd_errored:
             raise CommandError(msg="Executable {exec_name} failed".format(exec_name=os.path.basename(orig_cmd[0])), 
                                cmd=cmd,
-                               log=os.path.join(work_dir, log_filename),
+                               log=os.path.join(temp_dir, log_filename),
                                returncode=cmd_returncode)
 
         return cmd_output, cmd_returncode
