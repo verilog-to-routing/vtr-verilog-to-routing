@@ -5063,6 +5063,11 @@ static void link_physical_logical_types(std::vector<t_physical_tile_type>& Physi
             for (auto& tile : logical_block.equivalent_tiles) {
                 auto direct_map = tile->tile_block_pin_directs_map.at(logical_block.index);
                 for (auto& sub_tile : tile->sub_tiles) {
+                    auto equiv_sites = sub_tile.equivalent_sites;
+                    if(std::find(equiv_sites.begin(), equiv_sites.end(), &logical_block) == equiv_sites.end()) {
+                        continue;
+                    }
+
                     auto result = direct_map.find(t_logical_pin(sub_tile.index, pin));
                     if (result == direct_map.end()) {
                         archfpga_throw(__FILE__, __LINE__,
@@ -5070,7 +5075,8 @@ static void link_physical_logical_types(std::vector<t_physical_tile_type>& Physi
                                        pin, tile->name, logical_block.name);
                     }
 
-                    int phy_index = result->second.pin;
+                    int sub_tile_index = result->second.pin;
+                    int phy_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_index];
 
                     bool is_ignored = tile->is_ignored_pin[phy_index];
                     bool is_global = tile->is_pin_global[phy_index];
@@ -5079,8 +5085,8 @@ static void link_physical_logical_types(std::vector<t_physical_tile_type>& Physi
                     if (!ignored_result.second && ignored_result.first->second != is_ignored) {
                         archfpga_throw(__FILE__, __LINE__,
                                        "Physical Tile %s has a different value for the ignored pin (physical pin: %d, logical pin: %d) "
-                                       "different from the corresponding pins of the other equivalent sites\n.",
-                                       tile->name, phy_index, pin);
+                                       "different from the corresponding pins of the other equivalent site %s\n.",
+                                       tile->name, phy_index, pin, logical_block.name);
                     }
 
                     auto global_result = global_pins_check_map.insert(std::pair<int, bool>(pin, is_global));
@@ -5117,6 +5123,11 @@ static void check_port_direct_mappings(t_physical_tile_type_ptr physical_tile, t
         auto block_port = get_port_by_pin(logical_block, pin_map.first.pin);
 
         for (auto& sub_tile : physical_tile->sub_tiles) {
+            auto equivalent_sites = sub_tile.equivalent_sites;
+            if(std::find(equivalent_sites.begin(), equivalent_sites.end(), logical_block) == equivalent_sites.end()) {
+                continue;
+            }
+
             auto sub_tile_port = get_port_by_pin(&sub_tile, pin_map.second.pin);
 
             VTR_ASSERT(block_port != nullptr);
