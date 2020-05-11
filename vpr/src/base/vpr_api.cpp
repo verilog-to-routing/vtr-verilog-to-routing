@@ -672,10 +672,11 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
     } else { //Do or load
         int chan_width = router_opts.fixed_channel_width;
 
-        //Initialize the delay calculator
-        vtr::t_chunk net_delay_ch;
-        vtr::vector<ClusterNetId, float*> net_delay = alloc_net_delay(&net_delay_ch);
+        auto& cluster_ctx = g_vpr_ctx.clustering();
 
+        ClbNetPinsMatrix<float> net_delay = make_net_pins_matrix<float>(cluster_ctx.clb_nlist);
+
+        //Initialize the delay calculator
         std::shared_ptr<SetupHoldTimingInfo> timing_info = nullptr;
         std::shared_ptr<RoutingDelayCalculator> routing_delay_calc = nullptr;
         if (vpr_setup.Timing.timing_analysis_enabled) {
@@ -741,7 +742,6 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
         //Update interactive graphics
         update_screen(ScreenUpdatePriority::MAJOR, graphics_msg.c_str(), ROUTING, timing_info);
-        free_net_delay(net_delay, &net_delay_ch);
     }
 
     return route_status;
@@ -752,7 +752,7 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
                               int fixed_channel_width,
                               std::shared_ptr<SetupHoldTimingInfo> timing_info,
                               std::shared_ptr<RoutingDelayCalculator> delay_calc,
-                              vtr::vector<ClusterNetId, float*>& net_delay) {
+                              ClbNetPinsMatrix<float>& net_delay) {
     if (router_needs_lookahead(vpr_setup.RouterOpts.router_algorithm)) {
         // Prime lookahead cache to avoid adding lookahead computation cost to
         // the routing timer.
@@ -788,7 +788,7 @@ RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup,
                             const t_arch& arch,
                             std::shared_ptr<SetupHoldTimingInfo> timing_info,
                             std::shared_ptr<RoutingDelayCalculator> delay_calc,
-                            vtr::vector<ClusterNetId, float*>& net_delay) {
+                            ClbNetPinsMatrix<float>& net_delay) {
     // Note that lookahead cache is not primed here because
     // binary_search_place_and_route will change the channel width, and result
     // in the lookahead cache being recomputed.
@@ -817,7 +817,7 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
                              const t_arch& /*arch*/,
                              int fixed_channel_width,
                              std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                             vtr::vector<ClusterNetId, float*>& net_delay) {
+                             ClbNetPinsMatrix<float>& net_delay) {
     vtr::ScopedStartFinishTimer timer("Load Routing");
     if (NO_FIXED_CHANNEL_WIDTH == fixed_channel_width) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Fixed channel width must be specified when loading routing (was %d)", fixed_channel_width);
@@ -1188,11 +1188,10 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
                   vpr_setup.RoutingArch.wire_to_rr_ipin_switch);
 
     if (vpr_setup.TimingEnabled) {
-        vtr::vector<ClusterNetId, float*> net_delay;
-        vtr::t_chunk net_delay_ch;
-
         //Load the net delays
-        net_delay = alloc_net_delay(&net_delay_ch);
+        auto& cluster_ctx = g_vpr_ctx.clustering();
+
+        ClbNetPinsMatrix<float> net_delay = make_net_pins_matrix<float>(cluster_ctx.clb_nlist);
         load_net_delay_from_routing(net_delay);
 
         //Do final timing analysis
@@ -1222,9 +1221,6 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
         if (vpr_setup.PowerOpts.do_power) {
             vpr_power_estimation(vpr_setup, Arch, *timing_info, route_status);
         }
-
-        //Clean-up the net delays
-        free_net_delay(net_delay, &net_delay_ch);
     }
 }
 

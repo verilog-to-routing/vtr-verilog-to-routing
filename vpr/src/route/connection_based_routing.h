@@ -4,6 +4,7 @@
 #include "route_tree_type.h"
 #include "vpr_types.h"
 #include "timing_info.h"
+#include "vpr_net_pins_matrix.h"
 
 /***************** Connection based rerouting **********************/
 // encompasses both incremental rerouting through route tree pruning
@@ -85,7 +86,7 @@ class Connection_based_routing_resources {
 
   public:
     // after timing analysis of 1st iteration, can set a lower bound on connection delay
-    void set_lower_bound_connection_delays(vtr::vector<ClusterNetId, float*>& net_delay);
+    void set_lower_bound_connection_delays(ClbNetPinsMatrix<float>& net_delay);
 
     //Updates the connection delay lower bound (if less than current best found)
     void update_lower_bound_connection_delay(ClusterNetId net, int ipin, float delay);
@@ -126,7 +127,7 @@ class Connection_based_routing_resources {
     bool forcibly_reroute_connections(float max_criticality,
                                       std::shared_ptr<const SetupTimingInfo> timing_info,
                                       const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                                      vtr::vector<ClusterNetId, float*>& net_delay);
+                                      ClbNetPinsMatrix<float>& net_delay);
 };
 
 using CBRR = Connection_based_routing_resources; // shorthand
