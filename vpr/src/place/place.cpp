@@ -12,6 +12,7 @@
 #include "vpr_types.h"
 #include "vpr_error.h"
 #include "vpr_utils.h"
+#include "vpr_net_pins_matrix.h"
 
 #include "globals.h"
 #include "place.h"
@@ -128,13 +129,13 @@ static vtr::vector<ClusterNetId, char> bb_updated_before;
 /* driven portion of the cost function. These arrays will be set to  */
 /* (criticality * delay) for each point to point connection. */
 
-static vtr::vector<ClusterNetId, double*> point_to_point_timing_cost;
-static vtr::vector<ClusterNetId, double*> temp_point_to_point_timing_cost;
+static ClbNetPinsMatrix<double> point_to_point_timing_cost;
+static ClbNetPinsMatrix<double> temp_point_to_point_timing_cost;
 
 /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]. What is the value of the delay */
 /* for each connection in the circuit */
-static vtr::vector<ClusterNetId, float*> point_to_point_delay;
-static vtr::vector<ClusterNetId, float*> temp_point_to_point_delay;
+static ClbNetPinsMatrix<float> point_to_point_delay;
+static ClbNetPinsMatrix<float> temp_point_to_point_delay;
 
 /* [0..cluster_ctx.clb_nlist.blocks().size()-1][0..pins_per_clb-1]. Indicates which pin on the net */
 /* this block corresponds to, this is only required during timing-driven */
@@ -1722,27 +1723,10 @@ static double comp_bb_cost(e_cost_methods method) {
 /* Frees the major structures needed by the placer (and not needed       *
  * elsewhere).   */
 static void free_placement_structs(const t_placer_opts& placer_opts) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
     free_fast_cost_update();
 
     if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
         || placer_opts.enable_timing_computations) {
-        for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-            /*add one to the address since it is indexed from 1 not 0 */
-            point_to_point_timing_cost[net_id]++;
-            free(point_to_point_timing_cost[net_id]);
-
-            temp_point_to_point_timing_cost[net_id]++;
-            free(temp_point_to_point_timing_cost[net_id]);
-
-            point_to_point_delay[net_id]++;
-            free(point_to_point_delay[net_id]);
-
-            temp_point_to_point_delay[net_id]++;
-            free(temp_point_to_point_delay[net_id]);
-        }
-
         point_to_point_timing_cost.clear();
         point_to_point_delay.clear();
         temp_point_to_point_timing_cost.clear();
@@ -1780,28 +1764,12 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
         || placer_opts.enable_timing_computations) {
         /* Allocate structures associated with timing driven placement */
         /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]  */
-        point_to_point_delay.resize(num_nets);
-        temp_point_to_point_delay.resize(num_nets);
+        point_to_point_delay = make_net_pins_matrix<float>(cluster_ctx.clb_nlist, 0.f);
+        temp_point_to_point_delay = make_net_pins_matrix<float>(cluster_ctx.clb_nlist, 0.f);
 
-        point_to_point_timing_cost.resize(num_nets);
-        temp_point_to_point_timing_cost.resize(num_nets);
+        point_to_point_timing_cost = make_net_pins_matrix<double>(cluster_ctx.clb_nlist, 0.);
+        temp_point_to_point_timing_cost = make_net_pins_matrix<double>(cluster_ctx.clb_nlist, 0.);
 
-        for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-            size_t num_sinks = cluster_ctx.clb_nlist.net_sinks(net_id).size();
-            /* In the following, subract one so index starts at *
-             * 1 instead of 0 */
-            point_to_point_delay[net_id] = (float*)vtr::malloc(num_sinks * sizeof(float));
-            point_to_point_delay[net_id]--;
-
-            temp_point_to_point_delay[net_id] = (float*)vtr::malloc(num_sinks * sizeof(float));
-            temp_point_to_point_delay[net_id]--;
-
-            point_to_point_timing_cost[net_id] = (double*)vtr::malloc(num_sinks * sizeof(double));
-            point_to_point_timing_cost[net_id]--;
-
-            temp_point_to_point_timing_cost[net_id] = (double*)vtr::malloc(num_sinks * sizeof(double));
-            temp_point_to_point_timing_cost[net_id]--;
-        }
         for (auto net_id : cluster_ctx.clb_nlist.nets()) {
             for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
                 point_to_point_delay[net_id][ipin] = 0;

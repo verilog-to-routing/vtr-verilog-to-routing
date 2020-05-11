@@ -173,7 +173,7 @@ static t_rt_node* setup_routing_resources(int itry,
                                           CBRR& incremental_rerouting_res,
                                           t_rt_node** rt_node_of_sink);
 
-static bool timing_driven_check_net_delays(vtr::vector<ClusterNetId, float*>& net_delay);
+static bool timing_driven_check_net_delays(ClbNetPinsMatrix<float>& net_delay);
 
 void reduce_budgets_if_congested(route_budgets& budgeting_inf,
                                  CBRR& connections_inf,
@@ -231,7 +231,7 @@ static void generate_route_timing_reports(const t_router_opts& router_opts,
 static void prune_unused_non_configurable_nets(CBRR& connections_inf);
 
 static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
-                                          vtr::vector<ClusterNetId, float*>& net_delay);
+                                          ClbNetPinsMatrix<float>& net_delay);
 
 // The reason that try_timing_driven_route_tmpl (and descendents) are being
 // templated over is because using a virtual interface instead fully templating
@@ -243,7 +243,7 @@ template<typename ConnectionRouter>
 static bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
                                          const t_analysis_opts& analysis_opts,
                                          const std::vector<t_segment_inf>& segment_inf,
-                                         vtr::vector<ClusterNetId, float*>& net_delay,
+                                         ClbNetPinsMatrix<float>& net_delay,
                                          const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                          std::shared_ptr<SetupHoldTimingInfo> timing_info,
                                          std::shared_ptr<RoutingDelayCalculator> delay_calc,
@@ -253,7 +253,7 @@ static bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
 bool try_timing_driven_route(const t_router_opts& router_opts,
                              const t_analysis_opts& analysis_opts,
                              const std::vector<t_segment_inf>& segment_inf,
-                             vtr::vector<ClusterNetId, float*>& net_delay,
+                             ClbNetPinsMatrix<float>& net_delay,
                              const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                              std::shared_ptr<SetupHoldTimingInfo> timing_info,
                              std::shared_ptr<RoutingDelayCalculator> delay_calc,
@@ -289,7 +289,7 @@ template<typename ConnectionRouter>
 bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
                                   const t_analysis_opts& analysis_opts,
                                   const std::vector<t_segment_inf>& segment_inf,
-                                  vtr::vector<ClusterNetId, float*>& net_delay,
+                                  ClbNetPinsMatrix<float>& net_delay,
                                   const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                   std::shared_ptr<SetupHoldTimingInfo> timing_info,
                                   std::shared_ptr<RoutingDelayCalculator> delay_calc,
@@ -798,7 +798,7 @@ bool try_timing_driven_route_net(ConnectionRouter& router,
                                  RouterStats& router_stats,
                                  float* pin_criticality,
                                  t_rt_node** rt_node_of_sink,
-                                 vtr::vector<ClusterNetId, float*>& net_delay,
+                                 ClbNetPinsMatrix<float>& net_delay,
                                  const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                  std::shared_ptr<SetupTimingInfo> timing_info,
                                  route_budgets& budgeting_inf,
@@ -829,7 +829,7 @@ bool try_timing_driven_route_net(ConnectionRouter& router,
                                             router_stats,
                                             pin_criticality,
                                             rt_node_of_sink,
-                                            net_delay[net_id],
+                                            net_delay[net_id].data(),
                                             netlist_pin_lookup,
                                             timing_info,
                                             budgeting_inf);
@@ -1495,7 +1495,7 @@ void update_rr_base_costs(int fanout) {
     }
 }
 
-static bool timing_driven_check_net_delays(vtr::vector<ClusterNetId, float*>& net_delay) {
+static bool timing_driven_check_net_delays(ClbNetPinsMatrix<float>& net_delay) {
     constexpr float ERROR_TOL = 0.0001;
 
     /* Checks that the net delays computed incrementally during timing driven    *
@@ -1503,11 +1503,8 @@ static bool timing_driven_check_net_delays(vtr::vector<ClusterNetId, float*>& ne
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     unsigned int ipin;
-    vtr::vector<ClusterNetId, float*> net_delay_check;
+    ClbNetPinsMatrix<float> net_delay_check = make_net_pins_matrix<float>(cluster_ctx.clb_nlist);
 
-    vtr::t_chunk list_head_net_delay_check_ch;
-
-    net_delay_check = alloc_net_delay(&list_head_net_delay_check_ch);
     load_net_delay_from_routing(net_delay_check);
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
@@ -1531,7 +1528,6 @@ static bool timing_driven_check_net_delays(vtr::vector<ClusterNetId, float*>& ne
         }
     }
 
-    free_net_delay(net_delay_check, &list_head_net_delay_check_ch);
     return true;
 }
 
@@ -2059,7 +2055,7 @@ static void prune_unused_non_configurable_nets(CBRR& connections_inf) {
 
 //Initializes net_delay based on best-case delay estimates from the router lookahead
 static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
-                                          vtr::vector<ClusterNetId, float*>& net_delay) {
+                                          ClbNetPinsMatrix<float>& net_delay) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
