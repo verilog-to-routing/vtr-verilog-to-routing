@@ -72,7 +72,6 @@ class vector : private std::vector<V, Allocator> {
     using storage::insert;
     using storage::pop_back;
     using storage::push_back;
-    using storage::swap;
 
     //We can't using-forward storage::data, as it might not exist
     //in the particular specialization (typically: vector<bool>)
@@ -99,6 +98,12 @@ class vector : private std::vector<V, Allocator> {
     const_reference at(const key_type id) const {
         auto i = size_t(id);
         return storage::at(i);
+    }
+
+    //We must re-define swap to avoid inaccessible base class
+    //errors
+    void swap(vector<K, V, Allocator>& other) {
+        std::swap(*this, other);
     }
 
     //Returns a range containing the keys
