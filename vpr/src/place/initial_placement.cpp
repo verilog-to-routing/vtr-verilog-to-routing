@@ -18,13 +18,13 @@ static void load_legal_placement_locations();
 
 static int check_macro_can_be_placed(t_pl_macro pl_macro, int itype, t_pl_loc head_pos);
 static int try_place_macro(int itype, int ipos, int isub_tile, t_pl_macro pl_macro);
-static void initial_placement_pl_macros(int macros_max_num_tries, std::vector<std::vector<int>> free_locations);
+static void initial_placement_pl_macros(int macros_max_num_tries, std::vector<std::vector<int>>& free_locations);
 
-static void initial_placement_blocks(std::vector<std::vector<int>> free_locations, enum e_pad_loc_type pad_loc_type);
+static void initial_placement_blocks(std::vector<std::vector<int>>& free_locations, enum e_pad_loc_type pad_loc_type);
 
 static t_physical_tile_type_ptr pick_placement_type(t_logical_block_type_ptr logical_block,
                                                     int num_needed_types,
-                                                    std::vector<std::vector<int>> free_locations);
+                                                    std::vector<std::vector<int>>& free_locations);
 
 static void alloc_legal_placement_locations() {
     auto& device_ctx = g_vpr_ctx.device();
@@ -189,7 +189,7 @@ static int try_place_macro(int itype, int ipos, int isub_tile, t_pl_macro pl_mac
     return (macro_placed);
 }
 
-static void initial_placement_pl_macros(int macros_max_num_tries, std::vector<std::vector<int>> free_locations) {
+static void initial_placement_pl_macros(int macros_max_num_tries, std::vector<std::vector<int>>& free_locations) {
     int macro_placed;
     int itype, itry, ipos, isub_tile;
     ClusterBlockId blk_id;
@@ -283,7 +283,7 @@ static void initial_placement_pl_macros(int macros_max_num_tries, std::vector<st
 
 /* Place blocks that are NOT a part of any macro.
  * We'll randomly place each block in the clustered netlist, one by one. */
-static void initial_placement_blocks(std::vector<std::vector<int>> free_locations, enum e_pad_loc_type pad_loc_type) {
+static void initial_placement_blocks(std::vector<std::vector<int>>& free_locations, enum e_pad_loc_type pad_loc_type) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
@@ -376,7 +376,7 @@ static void initial_placement_blocks(std::vector<std::vector<int>> free_location
 
 static t_physical_tile_type_ptr pick_placement_type(t_logical_block_type_ptr logical_block,
                                                     int num_needed_types,
-                                                    std::vector<std::vector<int>> free_locations) {
+                                                    std::vector<std::vector<int>>& free_locations) {
     // Loop through the ordered map to get tiles in a decreasing priority order
     for (auto& tile : logical_block->equivalent_tiles) {
         for (auto sub_tile : tile->sub_tiles) {
