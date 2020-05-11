@@ -11,7 +11,7 @@
 #define MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY 4
 
 static std::vector<std::vector<std::vector<t_pl_loc>>> legal_pos; /* [0..device_ctx.num_block_types-1][0..type_tsize - 1][0..num_sub_tiles - 1] */
-static std::vector<std::vector<int>> num_legal_pos;   /* [0..num_sub_tiles - 1][0..num_legal_pos-1] */
+static std::vector<std::vector<int>> num_legal_pos;               /* [0..num_sub_tiles - 1][0..num_legal_pos-1] */
 
 static void alloc_legal_placement_locations();
 static void load_legal_placement_locations();
@@ -46,7 +46,7 @@ static void alloc_legal_placement_locations() {
 
             auto tile = device_ctx.grid[i][j].type;
 
-            for (auto sub_tile: tile->sub_tiles) {
+            for (auto sub_tile : tile->sub_tiles) {
                 auto capacity = sub_tile.capacity;
 
                 for (int k = 0; k < capacity.total(); k++) {
@@ -85,7 +85,7 @@ static void load_legal_placement_locations() {
         for (size_t j = 0; j < device_ctx.grid.height(); j++) {
             auto tile = device_ctx.grid[i][j].type;
 
-            for (auto sub_tile: tile->sub_tiles) {
+            for (auto sub_tile : tile->sub_tiles) {
                 auto capacity = sub_tile.capacity;
 
                 for (int k = 0; k < capacity.total(); k++) {
@@ -253,7 +253,6 @@ static void initial_placement_pl_macros(int macros_max_num_tries, std::vector<st
                     for (ipos = 0; ipos < free_locations[itype][isub_tile] && macro_placed == false; ipos++) {
                         // Try to place the macro
                         macro_placed = try_place_macro(itype, ipos, isub_tile, pl_macro);
-
                     }
                 } // Exhausted all the legal placement position for this macro
 
@@ -377,7 +376,6 @@ static t_physical_tile_type_ptr pick_placement_type(t_logical_block_type_ptr log
                                                     std::vector<std::vector<int>> free_locations) {
     // Loop through the ordered map to get tiles in a decreasing priority order
     for (auto& tile : logical_block->equivalent_tiles) {
-
         for (auto sub_tile : tile->sub_tiles) {
             if (free_locations[tile->index][sub_tile.index] >= num_needed_types) {
                 return tile;
