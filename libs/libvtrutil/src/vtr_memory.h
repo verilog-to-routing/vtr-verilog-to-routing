@@ -5,6 +5,20 @@
 #include <new>
 
 namespace vtr {
+
+//For efficiency, STL containers usually don't
+//release their actual heap-allocated memory until
+//destruction (even if Container::clear() is called).
+//
+//This function will force the container to be cleared
+//and release it's held memory.
+template<typename Container>
+void release_memory(Container& container) {
+    //Force a re-allocation to happen by
+    //swapping in a new (empty) container.
+    Container().swap(container);
+}
+
 struct t_linked_vptr; //Forward declaration
 
 /* This structure is to keep track of chunks of memory that is being	*
