@@ -336,12 +336,15 @@ static void initial_placement_blocks(std::vector<std::vector<int>> free_location
         auto possible_sub_tiles = get_possible_sub_tile_indices(type, logical_block);
 
         int isub_tile = OPEN;
-        while (isub_tile == OPEN) {
-            isub_tile = possible_sub_tiles[vtr::irand(possible_sub_tiles.size() - 1)];
-            if (free_locations[itype][isub_tile] == 0) {
-                std::remove(possible_sub_tiles.begin(), possible_sub_tiles.end(), isub_tile);
-                isub_tile = OPEN;
+        for (int sub_tile : possible_sub_tiles) {
+            if (free_locations[itype][sub_tile] > 0) {
+                isub_tile = sub_tile;
+                break;
             }
+        }
+
+        if (isub_tile == OPEN) {
+            VPR_THROW(VPR_ERROR_PLACE, "No more sub tiles available for initial placement.");
         }
 
         t_pl_loc to;
@@ -349,6 +352,12 @@ static void initial_placement_blocks(std::vector<std::vector<int>> free_location
 
         to = legal_pos[itype][isub_tile][ipos];
 
+        if (to.sub_tile > 10000) {
+            VTR_LOG("OUT OF BOUNDS");
+        }
+
+        VTR_LOG("TYPE: %s, SUBTILE: %d\n", type->name, isub_tile);
+        VTR_LOG("%d, %d, %d\n", to.x, to.y, to.sub_tile);
         // Make sure that the position is EMPTY_BLOCK before placing the block down
         VTR_ASSERT(place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] == EMPTY_BLOCK_ID);
 
