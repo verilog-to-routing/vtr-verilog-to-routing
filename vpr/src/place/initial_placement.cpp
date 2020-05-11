@@ -16,6 +16,8 @@ static std::vector<std::vector<int>> num_legal_pos;               /* [0..num_sub
 static void alloc_legal_placement_locations();
 static void load_legal_placement_locations();
 
+static int get_free_sub_tile(std::vector<std::vector<int>>& free_locations, int itype, std::vector<int> possible_sub_tiles);
+
 static int check_macro_can_be_placed(t_pl_macro pl_macro, int itype, t_pl_loc head_pos);
 static int try_place_macro(int itype, int ipos, int isub_tile, t_pl_macro pl_macro);
 static void initial_placement_pl_macros(int macros_max_num_tries, std::vector<std::vector<int>>& free_locations);
@@ -106,6 +108,17 @@ static void load_legal_placement_locations() {
         }
     }
 }
+
+static int get_free_sub_tile(std::vector<std::vector<int>>& free_locations, int itype, std::vector<int> possible_sub_tiles) {
+    for (int sub_tile : possible_sub_tiles) {
+        if (free_locations[itype][sub_tile] > 0) {
+            return sub_tile;
+        }
+    }
+
+    VPR_THROW(VPR_ERROR_PLACE, "No more sub tiles available for initial placement.");
+}
+
 
 static std::vector<int> get_possible_sub_tile_indices(t_physical_tile_type_ptr physical_tile, t_logical_block_type_ptr logical_block) {
     std::vector<int> sub_tile_indices;
@@ -230,8 +243,8 @@ static void initial_placement_pl_macros(int macros_max_num_tries, std::vector<st
 
             // Try to place the macro first, if can be placed - place them, otherwise try again
             for (itry = 0; itry < macros_max_num_tries && macro_placed == false; itry++) {
-                // Choose a random sub tile for the head
-                isub_tile = possible_sub_tiles[vtr::irand(possible_sub_tiles.size() - 1)];
+                // Choose a free sub tile for the head
+                isub_tile = get_free_sub_tile(free_locations, itype, possible_sub_tiles);
 
                 // Choose a random position for the head
                 ipos = vtr::irand(free_locations[itype][isub_tile] - 1);
@@ -335,17 +348,7 @@ static void initial_placement_blocks(std::vector<std::vector<int>>& free_locatio
 
         auto possible_sub_tiles = get_possible_sub_tile_indices(type, logical_block);
 
-        int isub_tile = OPEN;
-        for (int sub_tile : possible_sub_tiles) {
-            if (free_locations[itype][sub_tile] > 0) {
-                isub_tile = sub_tile;
-                break;
-            }
-        }
-
-        if (isub_tile == OPEN) {
-            VPR_THROW(VPR_ERROR_PLACE, "No more sub tiles available for initial placement.");
-        }
+        int isub_tile = get_free_sub_tile(free_locations, itype, possible_sub_tiles);
 
         t_pl_loc to;
         int ipos = vtr::irand(free_locations[itype][isub_tile] - 1);
