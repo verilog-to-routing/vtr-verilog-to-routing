@@ -686,8 +686,8 @@ int get_physical_pin_from_capacity_location(t_physical_tile_type_ptr physical_ti
         int rel_capacity = capacity_location - capacity.low;
         int num_inst_pins = sub_tile.num_phy_pins / capacity.total();
 
-        if (capacity.is_in_range(rel_capacity)) {
-            return pins_to_add + num_inst_pins * rel_capacity;
+        if (capacity.is_in_range(capacity_location)) {
+            return pins_to_add + num_inst_pins * rel_capacity + relative_pin;
         }
 
         pins_to_add += sub_tile.num_phy_pins;
