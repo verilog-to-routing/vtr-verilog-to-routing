@@ -89,7 +89,7 @@
       </sub_tile>
     </tile>
     <tile name="pass_through_tile">
-      <sub_tile name="pass_through_tile_0" capacity="2">
+      <sub_tile name="pass_through_tile_0" capacity="10">
         <input name="in" num_pins="1"/>
         <output name="out" num_pins="1"/>
         <equivalent_sites>
