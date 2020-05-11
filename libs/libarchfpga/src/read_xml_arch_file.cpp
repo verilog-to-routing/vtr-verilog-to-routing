@@ -5064,7 +5064,7 @@ static void link_physical_logical_types(std::vector<t_physical_tile_type>& Physi
                 auto direct_map = tile->tile_block_pin_directs_map.at(logical_block.index);
                 for (auto& sub_tile : tile->sub_tiles) {
                     auto equiv_sites = sub_tile.equivalent_sites;
-                    if(std::find(equiv_sites.begin(), equiv_sites.end(), &logical_block) == equiv_sites.end()) {
+                    if (std::find(equiv_sites.begin(), equiv_sites.end(), &logical_block) == equiv_sites.end()) {
                         continue;
                     }
 
@@ -5124,7 +5124,7 @@ static void check_port_direct_mappings(t_physical_tile_type_ptr physical_tile, t
 
         for (auto& sub_tile : physical_tile->sub_tiles) {
             auto equivalent_sites = sub_tile.equivalent_sites;
-            if(std::find(equivalent_sites.begin(), equivalent_sites.end(), logical_block) == equivalent_sites.end()) {
+            if (std::find(equivalent_sites.begin(), equivalent_sites.end(), logical_block) == equivalent_sites.end()) {
                 continue;
             }
 
