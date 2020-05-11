@@ -291,9 +291,17 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
                 /*This is an opin or ipin, process its pin nums*/
                 if (!is_io_type(device_ctx.grid[x][y].type) && (tokens[2] == "IPIN" || tokens[2] == "OPIN")) {
                     int pin_num = device_ctx.rr_nodes[inode].ptc_num();
+
+                    auto type = device_ctx.grid[x][y].type;
                     int height_offset = device_ctx.grid[x][y].height_offset;
-                    ClusterBlockId iblock = place_ctx.grid_blocks[x][y - height_offset].blocks[0];
-                    t_pb_graph_pin* pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
+
+                    int capacity, relative_pin;
+                    std::tie(capacity, relative_pin) = get_capacity_location_from_physical_pin(type, pin_num);
+
+                    ClusterBlockId iblock = place_ctx.grid_blocks[x][y - height_offset].blocks[capacity];
+                    t_pb_graph_pin* pb_pin;
+
+                    pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
                     t_pb_type* pb_type = pb_pin->parent_node->pb_type;
 
                     std::string pb_name, port_name;
