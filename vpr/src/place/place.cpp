@@ -1727,12 +1727,12 @@ static void free_placement_structs(const t_placer_opts& placer_opts) {
 
     if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE
         || placer_opts.enable_timing_computations) {
-        point_to_point_timing_cost.clear();
-        point_to_point_delay.clear();
-        temp_point_to_point_timing_cost.clear();
-        temp_point_to_point_delay.clear();
+        vtr::release_memory(point_to_point_timing_cost);
+        vtr::release_memory(point_to_point_delay);
+        vtr::release_memory(temp_point_to_point_timing_cost);
+        vtr::release_memory(temp_point_to_point_delay);
 
-        net_pin_indices.clear();
+        vtr::release_memory(net_pin_indices);
     }
 
     free_placement_macros_structs();
