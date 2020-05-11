@@ -2707,7 +2707,8 @@ static int get_opin_direct_connecions(int x,
     }
 
     //Capacity location determined by pin number relative to pins per capacity instance
-    int z = opin / (curr_type->num_pins / curr_type->capacity);
+    int z, relative_opin;
+    std::tie(z, relative_opin) = get_capacity_location_from_physical_pin(curr_type, opin);
     VTR_ASSERT(z >= 0 && z < curr_type->capacity);
 
     /* Iterate through all direct connections */
@@ -2739,31 +2740,28 @@ static int get_opin_direct_connecions(int x,
                         min_index = clb_to_clb_directs[i].from_clb_pin_start_index;
                         max_index = clb_to_clb_directs[i].from_clb_pin_end_index;
                     }
-                    int logical_opin = opin % (curr_type->num_pins / curr_type->capacity);
 
-                    if (max_index >= logical_opin && min_index <= logical_opin) {
-                        int offset = logical_opin - min_index;
+                    if (max_index >= relative_opin && min_index <= relative_opin) {
+                        int offset = relative_opin - min_index;
                         /* This opin is specified to connect directly to an ipin, now compute which ipin to connect to */
-                        int logical_ipin = OPEN;
+                        int relative_ipin = OPEN;
                         if (clb_to_clb_directs[i].to_clb_pin_start_index > clb_to_clb_directs[i].to_clb_pin_end_index) {
                             if (swap) {
-                                logical_ipin = clb_to_clb_directs[i].to_clb_pin_end_index + offset;
+                                relative_ipin = clb_to_clb_directs[i].to_clb_pin_end_index + offset;
                             } else {
-                                logical_ipin = clb_to_clb_directs[i].to_clb_pin_start_index - offset;
+                                relative_ipin = clb_to_clb_directs[i].to_clb_pin_start_index - offset;
                             }
                         } else {
                             if (swap) {
-                                logical_ipin = clb_to_clb_directs[i].to_clb_pin_end_index - offset;
+                                relative_ipin = clb_to_clb_directs[i].to_clb_pin_end_index - offset;
                             } else {
-                                logical_ipin = clb_to_clb_directs[i].to_clb_pin_start_index + offset;
+                                relative_ipin = clb_to_clb_directs[i].to_clb_pin_start_index + offset;
                             }
                         }
 
-                        VTR_ASSERT(logical_ipin < (target_type->num_pins / target_type->capacity));
-
                         //If this block has capacity > 1 then the pins of z position > 0 are offset
                         //by the number of pins per capacity instance
-                        int ipin = logical_ipin + (target_type->num_pins / target_type->capacity) * (z + directs[i].sub_tile_offset);
+                        int ipin = get_physical_pin_from_capacity_location(target_type, relative_ipin, z + directs[i].sub_tile_offset);
 
                         //if (ipin > target_type->num_pins) continue; //Invalid z-offset
 

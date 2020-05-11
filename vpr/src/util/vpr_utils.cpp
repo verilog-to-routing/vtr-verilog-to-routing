@@ -679,6 +679,45 @@ t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk) {
     return device_ctx.grid[loc.x][loc.y].type;
 }
 
+int get_physical_pin_from_capacity_location(t_physical_tile_type_ptr physical_tile, int relative_pin, int capacity_location) {
+    int pins_to_add = 0;
+    for (auto sub_tile : physical_tile->sub_tiles) {
+        auto capacity = sub_tile.capacity;
+        int rel_capacity = capacity_location - capacity.low;
+        int num_inst_pins = sub_tile.num_phy_pins / capacity.total();
+
+        if (capacity.is_in_range(rel_capacity)) {
+            return pins_to_add + num_inst_pins * rel_capacity;
+        }
+
+        pins_to_add += sub_tile.num_phy_pins;
+    }
+
+    VPR_THROW(VPR_ERROR_OTHER, "Couldn't find sub tile that contains the relative pin %d at the capacity location %d in physical tile %s.\n",
+              relative_pin, capacity_location, physical_tile->name);
+}
+
+std::pair<int, int> get_capacity_location_from_physical_pin(t_physical_tile_type_ptr physical_tile, int pin) {
+    int pins_to_remove = 0;
+    for (auto sub_tile : physical_tile->sub_tiles) {
+        auto capacity = sub_tile.capacity;
+        int sub_tile_num_pins = sub_tile.num_phy_pins;
+        int sub_tile_pin = pin - pins_to_remove;
+
+        if (sub_tile_pin < sub_tile_num_pins) {
+            int rel_capacity = sub_tile_pin / (sub_tile_num_pins / capacity.total());
+            int rel_pin = sub_tile_pin % (sub_tile_num_pins / capacity.total());
+
+            return std::pair<int, int>(rel_capacity + capacity.low, rel_pin);
+        }
+
+        pins_to_remove += sub_tile_num_pins;
+    }
+
+    VPR_THROW(VPR_ERROR_OTHER, "Couldn't find sub tile that contains the pin %d in physical tile %s.\n",
+              pin, physical_tile->name);
+}
+
 int get_sub_tile_index(ClusterBlockId blk) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
@@ -2131,9 +2170,9 @@ void place_sync_external_block_connections(ClusterBlockId iblk) {
 
     for (auto pin : clb_nlist.block_pins(iblk)) {
         int logical_pin_index = clb_nlist.pin_logical_index(pin);
-        int physical_pin_index = get_sub_tile_physical_pin(sub_tile_index, physical_tile, logical_block, logical_pin_index);
+        int sub_tile_pin_index = get_sub_tile_physical_pin(sub_tile_index, physical_tile, logical_block, logical_pin_index);
 
-        int new_physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[physical_pin_index + rel_capacity * max_num_block_pins];
+        int new_physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index + rel_capacity * max_num_block_pins];
 
         auto result = place_ctx.physical_pins.find(pin);
         if (result != place_ctx.physical_pins.end()) {
@@ -2266,7 +2305,8 @@ int get_physical_pin(t_physical_tile_type_ptr physical_tile,
                   logical_block->name, physical_tile->name, pin);
     }
 
-    return get_sub_tile_physical_pin(sub_tile_index, physical_tile, logical_block, pin);
+    int sub_tile_physical_pin = get_sub_tile_physical_pin(sub_tile_index, physical_tile, logical_block, pin);
+    return physical_tile->sub_tiles[sub_tile_index].sub_tile_to_tile_pin_indices[sub_tile_physical_pin];
 }
 
 int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index) {
