@@ -352,12 +352,6 @@ static void initial_placement_blocks(std::vector<std::vector<int>> free_location
 
         to = legal_pos[itype][isub_tile][ipos];
 
-        if (to.sub_tile > 10000) {
-            VTR_LOG("OUT OF BOUNDS");
-        }
-
-        VTR_LOG("TYPE: %s, SUBTILE: %d\n", type->name, isub_tile);
-        VTR_LOG("%d, %d, %d\n", to.x, to.y, to.sub_tile);
         // Make sure that the position is EMPTY_BLOCK before placing the block down
         VTR_ASSERT(place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] == EMPTY_BLOCK_ID);
 
