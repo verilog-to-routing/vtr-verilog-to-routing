@@ -1,10 +1,10 @@
 .model top
-.inputs in_0 in_1 in_2 in_3 in_4 in_5 in_6
+.inputs in_0 in_1 in_2 in_3 in_4 in_5 in_6 in_7
 .outputs out_0 out_1 out_2 out_3 out_4 out_5 out_6
 .names $false
 .names $true
 1
-.subckt IO_0 in=in_0 out=wire_0
+.subckt IO_0 in=in_0 enable=in_7 out=wire_0
 .subckt IO_1 in=wire_1 out=out_0
 
 .subckt IO_0 in=in_1 out=wire_1
