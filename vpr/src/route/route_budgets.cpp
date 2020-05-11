@@ -66,12 +66,12 @@ void route_budgets::free_budgets() {
     /*Free associated budget memory if set
      * if not set, only free the chunk memory that wasn't used*/
     if (set) {
-        delay_min_budget.clear();
-        delay_max_budget.clear();
-        delay_target.clear();
-        delay_lower_bound.clear();
-        delay_upper_bound.clear();
-        num_times_congested.clear();
+        vtr::release_memory(delay_min_budget);
+        vtr::release_memory(delay_max_budget);
+        vtr::release_memory(delay_target);
+        vtr::release_memory(delay_lower_bound);
+        vtr::release_memory(delay_upper_bound);
+        vtr::release_memory(num_times_congested);
     }
     set = false;
 }
