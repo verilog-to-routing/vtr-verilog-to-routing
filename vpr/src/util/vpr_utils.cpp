@@ -682,7 +682,9 @@ t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk) {
 int get_sub_tile_index(ClusterBlockId blk) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
 
+    auto logical_block = cluster_ctx.clb_nlist.block_type(blk);
     auto block_loc = place_ctx.block_locs[blk];
     auto loc = block_loc.loc;
     int sub_tile_coordinate = loc.sub_tile;
@@ -691,6 +693,11 @@ int get_sub_tile_index(ClusterBlockId blk) {
 
     for (const auto& sub_tile : type->sub_tiles) {
         if (sub_tile.capacity.is_in_range(sub_tile_coordinate)) {
+            auto result = std::find(sub_tile.equivalent_sites.begin(), sub_tile.equivalent_sites.end(), logical_block);
+            if (result == sub_tile.equivalent_sites.end()) {
+                VPR_THROW(VPR_ERROR_PLACE, "The Block Id %d has been placed in an incompatible sub tile location.\n", blk);
+            }
+
             return sub_tile.index;
         }
     }
@@ -2166,7 +2173,9 @@ bool is_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_block_
 bool is_sub_tile_compatible(t_physical_tile_type_ptr physical_tile, t_logical_block_type_ptr logical_block, int sub_tile_loc) {
     bool capacity_compatible = false;
     for (auto& sub_tile : physical_tile->sub_tiles) {
-        if (sub_tile.capacity.is_in_range(sub_tile_loc)) {
+        auto result = std::find(sub_tile.equivalent_sites.begin(), sub_tile.equivalent_sites.end(), logical_block);
+
+        if (sub_tile.capacity.is_in_range(sub_tile_loc) && result != sub_tile.equivalent_sites.end()) {
             capacity_compatible = true;
             break;
         }
