@@ -1479,7 +1479,7 @@ static e_move_result try_swap(float t,
             /* Restore the place_ctx.block_locs data structures to their state before the move. */
             revert_move_blocks(blocks_affected);
 
-            if (place_algorithm == PATH_TIMING_DRIVEN_PLACE || true) {
+            if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
                 revert_td_cost(blocks_affected);
             }
         }
