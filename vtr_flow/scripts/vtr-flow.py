@@ -173,7 +173,30 @@ def vtr_command_argparser(prog=None):
                                type=float,
                                metavar="TIMEOUT_SECONDS",
                                help="Maximum time in seconds to spend on a single stage.")
-
+    #
+    # Iterative black-boxing flow arguments
+    #
+    iterative = parser.add_argument_group("Iterative", description="Iterative black-boxing flow for multi-clock circuits options")
+    iterative.add_argument("-iterative_bb",
+                            default=False,
+                            action="store_true",
+                            dest="iterative_bb",
+                            help="Use iterative black-boxing flow for multi-clock circuits")
+    iterative.add_argument("-once_bb",
+                            default=False,
+                            action="store_true",
+                            dest="once_bb",
+                            help="Use the black-boxing flow a single time")
+    iterative.add_argument("-blanket_bb",
+                            default=False,
+                            action="store_true",
+                            dest="blanket_bb",
+                            help="Use iterative black-boxing flow with out clocks") #not sure if this is a correct statement. 
+    iterative.add_argument("-use_new_latches_restoration_script",
+                            default=False,
+                            action="store_true",
+                            dest="use_new_latches_restoration_script",
+                            help="Use the new latches restoration script")
     return parser
 
 def main():
@@ -203,6 +226,23 @@ def vtr_command_main(arg_list, prog=None):
                                    verbose=True if args.verbosity > 2 else False,
                                    echo_cmd=True if args.verbosity >= 4 else False)
     exit_status = 0
+    flow_type = 2 #Use iterative black-boxing flow for multi-clock circuits
+    use_new_latches_restoration_script = 1 
+
+    if(args.iterative_bb):
+        flow_type =2
+        use_new_latches_restoration_script = 1
+
+    if(args.once_bb):
+        flow_type = 1
+        use_new_latches_restoration_script = 1
+
+    if(args.blanket_bb):
+        flow_type = 3
+        use_new_latches_restoration_script = 1
+
+    if(args.use_new_latches_restoration_script):
+        use_new_latches_restoration_script = 1
     try:
         if not args.parse_only:
             try:
@@ -217,7 +257,9 @@ def vtr_command_main(arg_list, prog=None):
                              end_stage=args.end,
                              command_runner=command_runner,
                              verbosity=args.verbosity,
-                             vpr_args=vpr_args
+                             vpr_args=vpr_args,
+                             flow_type=flow_type,
+                             use_new_latches_restoration_script=use_new_latches_restoration_script
                              )
             except CommandError as e:
                 #An external command failed

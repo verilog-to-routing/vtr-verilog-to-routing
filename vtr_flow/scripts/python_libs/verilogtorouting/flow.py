@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import time
 import glob
+import pathlib  #replace os from above
 from collections import OrderedDict
 
 from util import make_enum, print_verbose, mkdir_p, find_vtr_file, file_replace, relax_W, CommandRunner, write_tab_delimitted_csv
@@ -20,7 +21,9 @@ def run_vtr_flow(architecture_file, circuit_file,
                  parse_config_file=None,
                  temp_dir="./temp", 
                  verbosity=0,
-                 vpr_args=None):
+                 vpr_args=None,
+                 flow_type=2,
+                 use_new_latches_restoration_script=1):
     """
     Runs the VTR CAD flow to map the specificied circuit_file onto the target architecture_file
 
@@ -99,11 +102,12 @@ def run_vtr_flow(architecture_file, circuit_file,
     #
     if should_run_stage(VTR_STAGE.abc, start_stage, end_stage):
         print_verbose(1, verbosity, "Running ABC")
-
         run_abc(architecture_file_basename, next_stage_netlist, 
                 output_netlist=post_abc_netlist, 
                 command_runner=command_runner, 
-                temp_dir=temp_dir)
+                temp_dir=temp_dir,
+                flow_type=flow_type,
+                use_new_latches_restoration_script=use_new_latches_restoration_script)
 
         next_stage_netlist = post_abc_netlist
 
@@ -263,57 +267,106 @@ def run_odin(architecture_file, circuit_file,
 
     command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename=log_filename, indent_depth=1)
 
-def run_abc(architecture_file, circuit_file, output_netlist, command_runner, temp_dir=".", log_filename="abc.opt_techmap.out", abc_exec=None, abc_script=None, abc_rc=None,use_old_abc_script = False):
+def populate_clock_list(circuit_file,blackbox_latches_script,clk_list,command_runner,temp_dir,log_filename):
+    clk_list_filename = "report_clk.out"
+    cmd = [blackbox_latches_script, "--input", circuit_file,"--output_list", clk_list_filename]
+    command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename=log_filename, indent_depth=1)
+    clk_list_path=pathlib.Path(temp_dir) / clk_list_filename
+    i=0
+    with clk_list_path.open('r') as f:
+         clk_list.append(f.readline().strip('\n'))
+         i=i+1
+
+def run_abc(architecture_file, circuit_file, output_netlist, command_runner, temp_dir=".", log_filename="abc.opt_techmap.out", abc_exec=None, abc_script=None, abc_rc=None,use_old_abc_script = False,flow_type=2,use_new_latches_restoration_script=1):
     mkdir_p(temp_dir)
+    blackbox_latches_script = find_vtr_file("blackbox_latches.pl")
+    clk_list = []
+    clk_log_file = "report_clk_out.out"
+    if(flow_type):
+        populate_clock_list(circuit_file,blackbox_latches_script,clk_list,command_runner,temp_dir,log_filename)
 
     if abc_exec == None:
         abc_exec = find_vtr_file('abc', is_executable=True)
-
+    
     if abc_rc == None:
         abc_dir = os.path.dirname(abc_exec)
         abc_rc = os.path.join(abc_dir, 'abc.rc')
 
     shutil.copyfile(abc_rc, os.path.join(temp_dir, 'abc.rc'))
-
     lut_size = determine_lut_size(os.path.join(temp_dir, architecture_file))
+    iterations=len(clk_list)
+    
+    if(iterations==0 or flow_type != 2):
+        iterations=1
 
-    if abc_script == None:
-        abc_script = ['read {input_netlist}'.format(input_netlist=circuit_file),
-                      'time',
-                      'print_stats',
-                      'print_latch',
-                      'time',
-                      'print_lut',
-                      'time',
-                      'strash',
-                      'ifraig -v',
-                      'scorr -v',
-                      'dc2 -v',
-                      'dch -f',
-                      'if -K {lut_size} -v'.format(lut_size=lut_size),
-                      'mfs2 -v',
-                      'print_stats',
-                      'time',
-                      'write_hie {input_netlist} {output_netlist}'.format(input_netlist=circuit_file, output_netlist=output_netlist),
-                      'time;']
+    for i in range(0, iterations):
+        pre_abc_blif= str(i)+"_" + circuit_file
+        post_abc_blif = str(i)+"_"+output_netlist
+        post_abc_raw_blif = str(i)+"_raw_"+output_netlist
+        if(flow_type==3):
+            cmd = [blackbox_latches_script, "--input", circuit_file,"--output",pre_abc_blif]
+            command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename=str(i)+"_blackboxing_latch.out", indent_depth=1)
+        
+        elif(len(clk_list)>i):
+            cmd = [blackbox_latches_script,"--clk_list", clk_list[i], "--input", circuit_file,"--output",pre_abc_blif]
+            command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename=str(i)+"_blackboxing_latch.out", indent_depth=1)
+        else:
+            pre_abc_blif = circuit_file
+        
+        if abc_script == None:
+           
+            abc_script = ['read {pre_abc_blif}'.format(pre_abc_blif=pre_abc_blif),
+                        'time',
+                        'print_stats',
+                        'print_latch',
+                        'time',
+                        'print_lut',
+                        'time',
+                        'strash',
+                        'ifraig -v',
+                        'scorr -v',
+                        'dc2 -v',
+                        'dch -f',
+                        'if -K {lut_size} -v'.format(lut_size=lut_size),
+                        'mfs2 -v',
+                        'print_stats',
+                        'time',
+                        'write_hie {pre_abc_blif} {post_abc_raw_blif}'.format(pre_abc_blif=pre_abc_blif, post_abc_raw_blif=post_abc_raw_blif),
+                        'time;']
 
-        if(use_old_abc_script):
-            abc_script = ['read {input_netlist}'.format(input_netlist=circuit_file),
-                      'time',
-                      'resyn', 
-                      'resyn2', 
-                      'if -K {lut_size}'.format(lut_size=lut_size),
-                      'time',
-                      'scleanup',
-                      'write_hie {input_netlist} {output_netlist}'.format(input_netlist=circuit_file, output_netlist=output_netlist),
-                      'print_stats']
+            if(use_old_abc_script):
+                abc_script = ['read {pre_abc_blif}'.format(pre_abc_blif=pre_abc_blif),
+                        'time',
+                        'resyn', 
+                        'resyn2', 
+                        'if -K {lut_size}'.format(lut_size=lut_size),
+                        'time',
+                        'scleanup',
+                        'write_hie {pre_abc_blif} {post_abc_raw_blif}'.format(pre_abc_blif=pre_abc_blif, post_abc_raw_blif=post_abc_raw_blif),
+                        'print_stats']
 
-        abc_script = "; ".join(abc_script)
+            abc_script = "; ".join(abc_script)
 
-    cmd = [abc_exec, '-c', abc_script]
+        cmd = [abc_exec, '-c', abc_script]
 
-    command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename=log_filename, indent_depth=1)
-
+        command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename=log_filename, indent_depth=1)
+        
+        if(flow_type != 3 and len(clk_list)>i):
+            cmd = [blackbox_latches_script,"--restore", clk_list[i], "--input", post_abc_raw_blif,"--output",post_abc_blif]
+            command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename="restore_latch"+str(i)+".out", indent_depth=1)
+        else:
+            if(use_new_latches_restoration_script):
+                restore_multiclock_info_script = find_vtr_file("restore_multiclock_latch.pl")
+            else:
+                restore_multiclock_info_script = find_vtr_file("restore_multiclock_latch_information.pl")
+            cmd = [restore_multiclock_info_script, pre_abc_blif, post_abc_raw_blif ,post_abc_blif]
+            command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename="restore_latch"+str(i)+".out", indent_depth=1)
+        if(flow_type != 2):
+            break
+    
+    cmd = [blackbox_latches_script, "--input", post_abc_blif,"--output",output_netlist,"--vanilla"]
+    command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename="restore_latch"+str(i)+".out", indent_depth=1)
+    
 def run_ace(circuit_file, output_netlist, output_activity_file, command_runner, temp_dir=".", log_filename="ace.out", ace_exec=None):
 
     if ace_exec is None:
@@ -394,7 +447,7 @@ def run_vpr(architecture, circuit_name, circuit, command_runner, temp_dir, outpu
     if vpr_exec == None:
         vpr_exec = find_vtr_file('vpr', is_executable=True)
 
-    cmd = [vpr_exec, architecture, circuit_name, "--circuit_file", circuit, "--route", "--route_chan_width", "76", "--max_router_iterations", "150"] #this needs updated with actual width and iteration numbers
+    cmd = [vpr_exec, architecture, circuit_name, "--circuit_file", circuit]
 
     #Enable netlist generation
     #if output_netlist:
