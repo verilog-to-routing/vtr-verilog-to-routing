@@ -137,12 +137,6 @@ static ClbNetPinsMatrix<double> temp_point_to_point_timing_cost;
 static ClbNetPinsMatrix<float> point_to_point_delay;
 static ClbNetPinsMatrix<float> temp_point_to_point_delay;
 
-/* [0..cluster_ctx.clb_nlist.blocks().size()-1][0..pins_per_clb-1]. Indicates which pin on the net */
-/* this block corresponds to, this is only required during timing-driven */
-/* placement. It is used to allow us to update individual connections on */
-/* each net */
-static vtr::vector<ClusterBlockId, std::vector<int>> net_pin_indices;
-
 /* [0..cluster_ctx.clb_nlist.nets().size()-1].  Store the bounding box coordinates and the number of    *
  * blocks on each of a net's bounding box (to allow efficient updates),      *
  * respectively.                                                             */
@@ -269,8 +263,6 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
                                              const t_placer_opts& placer_opts,
                                              t_direct_inf* directs,
                                              int num_directs);
-
-static void alloc_and_load_net_pin_indices();
 
 static void alloc_and_load_try_swap_structs();
 
@@ -1731,8 +1723,6 @@ static void free_placement_structs(const t_placer_opts& placer_opts) {
         vtr::release_memory(point_to_point_delay);
         vtr::release_memory(temp_point_to_point_timing_cost);
         vtr::release_memory(temp_point_to_point_delay);
-
-        vtr::release_memory(net_pin_indices);
     }
 
     free_placement_macros_structs();
@@ -1790,45 +1780,9 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
 
     alloc_and_load_for_fast_cost_update(place_cost_exp);
 
-    alloc_and_load_net_pin_indices();
-
     alloc_and_load_try_swap_structs();
 
     place_ctx.pl_macros = alloc_and_load_placement_macros(directs, num_directs);
-}
-
-/* Allocates and loads net_pin_indices array, this array allows us to quickly   *
- * find what pin on the net a block pin corresponds to. Returns the pointer   *
- * to the 2D net_pin_indices array.                                             */
-static void alloc_and_load_net_pin_indices() {
-    unsigned int netpin;
-    int max_pins_per_clb = 0;
-
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    /* Compute required size. */
-    for (const auto& type : device_ctx.physical_tile_types)
-        max_pins_per_clb = max(max_pins_per_clb, type.num_pins);
-
-    /* Allocate for maximum size. */
-    net_pin_indices.resize(cluster_ctx.clb_nlist.blocks().size());
-
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks())
-        net_pin_indices[blk_id].resize(max_pins_per_clb);
-
-    /* Load the values */
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
-            continue;
-        netpin = 0;
-        for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
-            int pin_index = cluster_ctx.clb_nlist.pin_logical_index(pin_id);
-            ClusterBlockId block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
-            net_pin_indices[block_id][pin_index] = netpin;
-            netpin++;
-        }
-    }
 }
 
 static void alloc_and_load_try_swap_structs() {
