@@ -23,18 +23,8 @@
  * I chunk the data to save space on large problems.           */
 PlacerCriticalities::PlacerCriticalities(const ClusteredNetlist& clb_nlist, const ClusteredPinAtomPinsLookup& netlist_pin_lookup)
     : clb_nlist_(clb_nlist)
-    , pin_lookup_(netlist_pin_lookup) {
-    timing_place_crit_.resize(clb_nlist_.nets().size());
-
-    for (auto net_id : clb_nlist_.nets()) {
-        float* tmp_ptr = (float*)vtr::chunk_malloc((clb_nlist_.net_pins(net_id).size()) * sizeof(float), &timing_place_crit_ch_);
-        timing_place_crit_[net_id] = tmp_ptr;
-    }
-}
-
-/**************************************/
-PlacerCriticalities::~PlacerCriticalities() {
-    vtr::free_chunk_memory(&timing_place_crit_ch_);
+    , pin_lookup_(netlist_pin_lookup)
+    , timing_place_crit_(make_net_pins_matrix(clb_nlist_, std::numeric_limits<float>::quiet_NaN())) {
 }
 
 /**************************************/
@@ -94,10 +84,6 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
          * criticality by taking it to some power, crit_exponent (between 1 and 8 by default). */
         timing_place_crit_[clb_net][pin_index_in_net] = pow(clb_pin_crit, crit_exponent);
     }
-}
-
-float PlacerCriticalities::criticality(ClusterNetId net_id, int ipin) const {
-    return timing_place_crit_[net_id][ipin];
 }
 
 void PlacerCriticalities::set_criticality(ClusterNetId net_id, int ipin, float val) {
