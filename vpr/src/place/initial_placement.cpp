@@ -119,7 +119,6 @@ static int get_free_sub_tile(std::vector<std::vector<int>>& free_locations, int 
     VPR_THROW(VPR_ERROR_PLACE, "No more sub tiles available for initial placement.");
 }
 
-
 static std::vector<int> get_possible_sub_tile_indices(t_physical_tile_type_ptr physical_tile, t_logical_block_type_ptr logical_block) {
     std::vector<int> sub_tile_indices;
 
