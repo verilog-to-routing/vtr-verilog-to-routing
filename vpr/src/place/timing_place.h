@@ -5,6 +5,7 @@
 #include "timing_info_fwd.h"
 #include "clustered_netlist_utils.h"
 #include "place_delay_model.h"
+#include "vpr_net_pins_matrix.h"
 
 std::unique_ptr<PlaceDelayModel> alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
                                                                  const t_placer_opts& place_opts,
@@ -24,12 +25,11 @@ class PlacerCriticalities {
 
     public: //Lifetime
         PlacerCriticalities(const ClusteredNetlist& clb_nlist, const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
-        ~PlacerCriticalities();
         PlacerCriticalities(const PlacerCriticalities& clb_nlist) = delete;
         PlacerCriticalities& operator=(const PlacerCriticalities& clb_nlist) = delete;
 
     public: //Accessors
-        float criticality(ClusterNetId net, int ipin) const;
+        float criticality(ClusterNetId net, int ipin) const { return timing_place_crit_[net][ipin]; }
         pin_range pins_with_modified_criticality() const;
 
     public: //Modifiers
@@ -40,8 +40,7 @@ class PlacerCriticalities {
         const ClusteredNetlist& clb_nlist_;
         const ClusteredPinAtomPinsLookup& pin_lookup_;
         
-        vtr::t_chunk timing_place_crit_ch_;
-        vtr::vector<ClusterNetId, float*> timing_place_crit_; /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1] */
+        ClbNetPinsMatrix<float> timing_place_crit_; /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1] */
 
         //The criticality exponent when update_criticalites() was last called (used to detect if incremental update can be used)
         float last_crit_exponent_ = std::numeric_limits<float>::quiet_NaN();
