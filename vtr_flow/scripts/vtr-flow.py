@@ -83,12 +83,12 @@ def vtr_command_argparser(prog=None):
 
                     Enable power analysis:
 
-                        %(prog)s arch.xml circuit.v --power_tech power_tech.xml
+                        %(prog)s arch.xml circuit.v -power_tech power_tech.xml
 
 
                     Only run a specific stage (assumes required results have already been generated):
 
-                        %(prog)s arch.xml circuit.blif --start vpr --end vpr
+                        %(prog)s arch.xml circuit.blif -start vpr -end vpr
 
                 """
              )
@@ -108,19 +108,19 @@ def vtr_command_argparser(prog=None):
                         help="The circuit to map to the target architecture.")
     parser.add_argument('architecture_file',
                         help="The FPGA architecture to target.")
-    parser.add_argument("--start", "--starting_stage",
+    parser.add_argument("-start", "-starting_stage",
                         choices=VTR_STAGE.reverse_mapping.values(),
                         default=VTR_STAGE.odin,
                         action=VtrStageArgparseAction,
                         help="Starting stage of the VTR flow.")
 
-    parser.add_argument("--end", "--ending_stage",
+    parser.add_argument("-end", "-ending_stage",
                         choices=VTR_STAGE.reverse_mapping.values(),
                         default=VTR_STAGE.vpr,
                         action=VtrStageArgparseAction,
                         help="Ending stage of the VTR flow.")
 
-    parser.add_argument("-v", "--verbosity",
+    parser.add_argument("-v", "-verbose",
                         choices=VERBOSITY_CHOICES,
                         default=2,
                         type=int,
@@ -141,7 +141,7 @@ def vtr_command_argparser(prog=None):
     # Power arguments
     #
     power = parser.add_argument_group("Power", description="Power Analysis Related Options")
-    power.add_argument("--power",
+    power.add_argument("-power",
                        default=None,
                        dest="power_tech",
                        metavar="POWER_TECH_FILE",
@@ -156,19 +156,19 @@ def vtr_command_argparser(prog=None):
                                default=".",
                                help="Directory to run the flow in (will be created if non-existant).")
 
-    house_keeping.add_argument("--track_memory_usage",
+    house_keeping.add_argument("-track_memory_usage",
                                choices=on_off_choices,
                                default="on",
                                action=OnOffArgparseAction,
                                help="Track the memory usage for each stage. Requires /usr/bin/time -v, disabled if not available.")
 
-    house_keeping.add_argument("--memory_limit",
+    house_keeping.add_argument("-limit_memory_usage",
                                default=None,
                                metavar="MAX_MEMORY_MB",
                                help="Specifies the maximum memory usable by any stage. "
                                     "Not supported on some platforms (requires ulimit).")
 
-    house_keeping.add_argument("--timeout",
+    house_keeping.add_argument("-timeout",
                                default=14*24*60*60, #14 days
                                type=float,
                                metavar="TIMEOUT_SECONDS",
@@ -220,7 +220,7 @@ def vtr_command_main(arg_list, prog=None):
 
     #Specify how command should be run
     command_runner = CommandRunner(track_memory=args.track_memory_usage, 
-                                   max_memory_mb=args.memory_limit, 
+                                   max_memory_mb=args.limit_memory_usage, 
                                    timeout_sec=args.timeout,
                                    verbose_error=True if args.verbosity == 2 else False,
                                    verbose=True if args.verbosity > 2 else False,
