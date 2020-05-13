@@ -192,10 +192,10 @@ def vtr_command_argparser(prog=None):
                             action="store_true",
                             dest="blanket_bb",
                             help="Use iterative black-boxing flow with out clocks") #not sure if this is a correct statement. 
-    iterative.add_argument("-use_new_latches_restoration_script",
+    iterative.add_argument("-use_old_latches_restoration_script",
                             default=False,
                             action="store_true",
-                            dest="use_new_latches_restoration_script",
+                            dest="use_old_latches_restoration_script",
                             help="Use the new latches restoration script")
     return parser
 
@@ -227,22 +227,19 @@ def vtr_command_main(arg_list, prog=None):
                                    echo_cmd=True if args.verbosity >= 4 else False)
     exit_status = 0
     flow_type = 2 #Use iterative black-boxing flow for multi-clock circuits
-    use_new_latches_restoration_script = 1 
+    use_old_latches_restoration_script = 0 
 
     if(args.iterative_bb):
         flow_type =2
-        use_new_latches_restoration_script = 1
 
     if(args.once_bb):
         flow_type = 1
-        use_new_latches_restoration_script = 1
 
     if(args.blanket_bb):
         flow_type = 3
-        use_new_latches_restoration_script = 1
 
-    if(args.use_new_latches_restoration_script):
-        use_new_latches_restoration_script = 1
+    if(args.use_old_latches_restoration_script):
+        use_old_latches_restoration_script = 1
     try:
         if not args.parse_only:
             try:
@@ -259,7 +256,7 @@ def vtr_command_main(arg_list, prog=None):
                              verbosity=args.verbosity,
                              vpr_args=vpr_args,
                              flow_type=flow_type,
-                             use_new_latches_restoration_script=use_new_latches_restoration_script
+                             use_old_latches_restoration_script=use_old_latches_restoration_script
                              )
             except CommandError as e:
                 #An external command failed
