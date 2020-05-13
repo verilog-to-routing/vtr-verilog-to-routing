@@ -2248,32 +2248,13 @@ t_physical_tile_type_ptr get_physical_tile_type(const ClusterBlockId blk) {
     }
 }
 
-int get_logical_pin(t_physical_tile_type_ptr physical_tile,
-                    t_logical_block_type_ptr logical_block,
-                    int pin) {
-    t_physical_pin physical_pin(pin);
-
-    auto direct_map = physical_tile->tile_block_pin_directs_map.at(logical_block->index);
-    auto result = direct_map.find(physical_pin);
-
-    if (result == direct_map.inverse_end()) {
-        VTR_LOG_WARN(
-            "Couldn't find the corresponding logical pin of the physical pin %d."
-            "Physical Tile: %s, Logical Block: %s.\n",
-            pin, physical_tile->name, logical_block->name);
-        return OPEN;
-    }
-
-    return result->second.pin;
-}
-
 int get_sub_tile_physical_pin(int sub_tile_index,
                               t_physical_tile_type_ptr physical_tile,
                               t_logical_block_type_ptr logical_block,
                               int pin) {
-    t_logical_pin logical_pin(sub_tile_index, pin);
+    t_logical_pin logical_pin(pin);
 
-    const auto& direct_map = physical_tile->tile_block_pin_directs_map.at(logical_block->index);
+    const auto& direct_map = physical_tile->tile_block_pin_directs_map.at(logical_block->index).at(sub_tile_index);
     auto result = direct_map.find(logical_pin);
 
     if (result == direct_map.end()) {
