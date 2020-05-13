@@ -274,7 +274,7 @@ e_side string_to_side(std::string side_str);
 static void link_physical_logical_types(std::vector<t_physical_tile_type>& PhysicalTileTypes,
                                         std::vector<t_logical_block_type>& LogicalBlockTypes);
 
-static void check_port_direct_mappings(t_physical_tile_type_ptr physical_tile, t_logical_block_type_ptr logical_block);
+static void check_port_direct_mappings(t_physical_tile_type_ptr physical_tile, t_sub_tile* sub_tile, t_logical_block_type_ptr logical_block);
 
 static const t_physical_tile_port* get_port_by_name(t_sub_tile* sub_tile, const char* port_name);
 static const t_port* get_port_by_name(t_logical_block_type_ptr type, const char* port_name);
@@ -3145,7 +3145,7 @@ static void ProcessTileEquivalentSites(pugi::xml_node Parent,
         if (0 == strcmp(LogicalBlockType->pb_type->name, Prop.c_str())) {
             SubTile->equivalent_sites.push_back(LogicalBlockType);
 
-            check_port_direct_mappings(PhysicalTileType, LogicalBlockType);
+            check_port_direct_mappings(PhysicalTileType, SubTile, LogicalBlockType);
         }
 
         CurSite = CurSite.next_sibling(CurSite.name());
@@ -3168,12 +3168,12 @@ static void ProcessEquivalentSiteDirectConnection(pugi::xml_node Parent,
 
     for (int npin = 0; npin < num_pins; npin++) {
         t_physical_pin physical_pin(npin);
-        t_logical_pin logical_pin(SubTile->index, npin);
+        t_logical_pin logical_pin(npin);
 
         directs_map.insert(logical_pin, physical_pin);
     }
 
-    PhysicalTileType->tile_block_pin_directs_map[LogicalBlockType->index] = directs_map;
+    PhysicalTileType->tile_block_pin_directs_map[LogicalBlockType->index][SubTile->index] = directs_map;
 }
 
 static void ProcessEquivalentSiteCustomConnection(pugi::xml_node Parent,
@@ -3194,6 +3194,7 @@ static void ProcessEquivalentSiteCustomConnection(pugi::xml_node Parent,
     vtr::bimap<t_logical_pin, t_physical_pin> directs_map;
 
     CurDirect = Parent.first_child();
+
     while (CurDirect) {
         check_node(CurDirect, "direct", loc_data);
 
@@ -3220,7 +3221,7 @@ static void ProcessEquivalentSiteCustomConnection(pugi::xml_node Parent,
         int num_pins = from_pins.second - from_pins.first;
         for (int i = 0; i < num_pins; i++) {
             t_physical_pin physical_pin(from_pins.first + i);
-            t_logical_pin logical_pin(SubTile->index, to_pins.first + i);
+            t_logical_pin logical_pin(to_pins.first + i);
 
             auto result = directs_map.insert(logical_pin, physical_pin);
             if (!result.second) {
@@ -3234,7 +3235,7 @@ static void ProcessEquivalentSiteCustomConnection(pugi::xml_node Parent,
         CurDirect = CurDirect.next_sibling(CurDirect.name());
     }
 
-    PhysicalTileType->tile_block_pin_directs_map[LogicalBlockType->index] = directs_map;
+    PhysicalTileType->tile_block_pin_directs_map[LogicalBlockType->index][SubTile->index] = directs_map;
 }
 
 static void ProcessPinLocations(pugi::xml_node Locations,
@@ -5060,23 +5061,26 @@ static void link_physical_logical_types(std::vector<t_physical_tile_type>& Physi
         std::sort(equivalent_tiles.begin(), equivalent_tiles.end(), criteria);
 
         for (int pin = 0; pin < logical_block.pb_type->num_pins; pin++) {
-            for (auto& tile : logical_block.equivalent_tiles) {
-                auto direct_map = tile->tile_block_pin_directs_map.at(logical_block.index);
+            for (auto& tile : equivalent_tiles) {
+                auto direct_maps = tile->tile_block_pin_directs_map.at(logical_block.index);
+
                 for (auto& sub_tile : tile->sub_tiles) {
                     auto equiv_sites = sub_tile.equivalent_sites;
                     if (std::find(equiv_sites.begin(), equiv_sites.end(), &logical_block) == equiv_sites.end()) {
                         continue;
                     }
 
-                    auto result = direct_map.find(t_logical_pin(sub_tile.index, pin));
+                    auto direct_map = direct_maps.at(sub_tile.index);
+
+                    auto result = direct_map.find(t_logical_pin(pin));
                     if (result == direct_map.end()) {
                         archfpga_throw(__FILE__, __LINE__,
                                        "Logical pin %d not present in pin mapping between Tile %s and Block %s.\n",
                                        pin, tile->name, logical_block.name);
                     }
 
-                    int sub_tile_index = result->second.pin;
-                    int phy_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_index];
+                    int sub_tile_pin_index = result->second.pin;
+                    int phy_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index];
 
                     bool is_ignored = tile->is_ignored_pin[phy_index];
                     bool is_global = tile->is_pin_global[phy_index];
@@ -5102,44 +5106,38 @@ static void link_physical_logical_types(std::vector<t_physical_tile_type>& Physi
     }
 }
 
-static void check_port_direct_mappings(t_physical_tile_type_ptr physical_tile, t_logical_block_type_ptr logical_block) {
+static void check_port_direct_mappings(t_physical_tile_type_ptr physical_tile, t_sub_tile* sub_tile, t_logical_block_type_ptr logical_block) {
     auto pb_type = logical_block->pb_type;
 
-    if (pb_type->num_pins > physical_tile->num_pins) {
+    if (pb_type->num_pins > (sub_tile->num_phy_pins / sub_tile->capacity.total())) {
         archfpga_throw(__FILE__, __LINE__,
-                       "Logical Block (%s) has more pins than the Physical Tile (%s).\n",
+                       "Logical Block (%s) has more pins than the Sub Tile (%s).\n",
+                       logical_block->name, sub_tile->name);
+    }
+
+    auto& pin_direct_maps = physical_tile->tile_block_pin_directs_map.at(logical_block->index);
+    auto pin_direct_map = pin_direct_maps.at(sub_tile->index);
+
+    if (pb_type->num_pins != (int)pin_direct_map.size()) {
+        archfpga_throw(__FILE__, __LINE__,
+                       "Logical block (%s) and Sub tile (%s) have a different number of ports.\n",
                        logical_block->name, physical_tile->name);
     }
 
-    auto& pin_direct_mapping = physical_tile->tile_block_pin_directs_map.at(logical_block->index);
-
-    if (pb_type->num_pins != (int)pin_direct_mapping.size()) {
-        archfpga_throw(__FILE__, __LINE__,
-                       "Logical block (%s) and Physical tile (%s) have a different number of ports.\n",
-                       logical_block->name, physical_tile->name);
-    }
-
-    for (auto pin_map : pin_direct_mapping) {
+    for (auto pin_map : pin_direct_map) {
         auto block_port = get_port_by_pin(logical_block, pin_map.first.pin);
 
-        for (auto& sub_tile : physical_tile->sub_tiles) {
-            auto equivalent_sites = sub_tile.equivalent_sites;
-            if (std::find(equivalent_sites.begin(), equivalent_sites.end(), logical_block) == equivalent_sites.end()) {
-                continue;
-            }
+        auto sub_tile_port = get_port_by_pin(sub_tile, pin_map.second.pin);
 
-            auto sub_tile_port = get_port_by_pin(&sub_tile, pin_map.second.pin);
+        VTR_ASSERT(block_port != nullptr);
+        VTR_ASSERT(sub_tile_port != nullptr);
 
-            VTR_ASSERT(block_port != nullptr);
-            VTR_ASSERT(sub_tile_port != nullptr);
-
-            if (sub_tile_port->type != block_port->type
-                || sub_tile_port->num_pins != block_port->num_pins
-                || sub_tile_port->equivalent != block_port->equivalent) {
-                archfpga_throw(__FILE__, __LINE__,
-                               "Logical block (%s) and Physical tile (%s) do not have equivalent port specifications.\n",
-                               logical_block->name, sub_tile.name);
-            }
+        if (sub_tile_port->type != block_port->type
+            || sub_tile_port->num_pins != block_port->num_pins
+            || sub_tile_port->equivalent != block_port->equivalent) {
+            archfpga_throw(__FILE__, __LINE__,
+                           "Logical block (%s) and Physical tile (%s) do not have equivalent port specifications. Sub tile port %s, logical block port %s\n",
+                           logical_block->name, sub_tile->name, sub_tile_port->name, block_port->name);
         }
     }
 }
