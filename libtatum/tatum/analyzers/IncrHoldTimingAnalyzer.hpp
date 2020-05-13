@@ -9,14 +9,14 @@ namespace tatum { namespace detail {
 /**
  * A concrete implementation of a HoldTimingAnalyzer.
  *
- * This is a full (i.e. non-incremental) analyzer, which fully
- * re-analyzes the timing graph whenever update_timing_impl() is 
- * called.
+ * This is an incremental analyzer, which will incrementally
+ * update the timing graph based on edges which have been marked
+ * as invalidated.
  */
-template<class GraphWalker=SerialWalker>
-class FullHoldTimingAnalyzer : public HoldTimingAnalyzer {
+template<class GraphWalker=SerialIncrWalker>
+class IncrHoldTimingAnalyzer : public HoldTimingAnalyzer {
     public:
-        FullHoldTimingAnalyzer(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints, const DelayCalculator& delay_calculator)
+        IncrHoldTimingAnalyzer(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints, const DelayCalculator& delay_calculator)
             : HoldTimingAnalyzer()
             , timing_graph_(timing_graph)
             , timing_constraints_(timing_constraints)
@@ -28,33 +28,49 @@ class FullHoldTimingAnalyzer : public HoldTimingAnalyzer {
             graph_walker_.set_profiling_data("total_analysis_sec", 0.);
             graph_walker_.set_profiling_data("analysis_sec", 0.);
             graph_walker_.set_profiling_data("num_full_updates", 0.);
+            graph_walker_.set_profiling_data("num_incr_updates", 0.);
         }
 
     protected:
         virtual void update_timing_impl() override {
-            update_hold_timing();
+            update_hold_timing_impl();
         }
 
         virtual void update_hold_timing_impl() override {
             auto start_time = Clock::now();
 
-            graph_walker_.do_reset(timing_graph_, hold_visitor_);
+            if (never_updated_) {
+                //Invalidate all edges
+                for (EdgeId edge : timing_graph_.edges()) {
+                    graph_walker_.invalidate_edge(edge);
+                }
 
-            graph_walker_.do_arrival_pre_traversal(timing_graph_, timing_constraints_, hold_visitor_);            
+                //Only need to pre-traverse the first update
+                graph_walker_.do_arrival_pre_traversal(timing_graph_, timing_constraints_, hold_visitor_);            
+            }
+
             graph_walker_.do_arrival_traversal(timing_graph_, timing_constraints_, delay_calculator_, hold_visitor_);            
 
-            graph_walker_.do_required_pre_traversal(timing_graph_, timing_constraints_, hold_visitor_);            
+            if (never_updated_) {
+                //Only need to pre-traverse the first update
+                graph_walker_.do_required_pre_traversal(timing_graph_, timing_constraints_, hold_visitor_);            
+            }
+
             graph_walker_.do_required_traversal(timing_graph_, timing_constraints_, delay_calculator_, hold_visitor_);            
 
             graph_walker_.do_update_slack(timing_graph_, delay_calculator_, hold_visitor_);
 
             double analysis_sec = std::chrono::duration_cast<dsec>(Clock::now() - start_time).count();
 
+            graph_walker_.clear_invalidated_edges();
+
             //Record profiling data
             double total_analysis_sec = analysis_sec + graph_walker_.get_profiling_data("total_analysis_sec");
             graph_walker_.set_profiling_data("total_analysis_sec", total_analysis_sec);
             graph_walker_.set_profiling_data("analysis_sec", analysis_sec);
-            graph_walker_.set_profiling_data("num_full_updates", graph_walker_.get_profiling_data("num_full_updates") + 1);
+            graph_walker_.set_profiling_data("num_incr_updates", graph_walker_.get_profiling_data("num_incr_updates") + 1);
+
+            never_updated_ = false;
         }
 
         virtual void invalidate_edge_impl(const EdgeId edge) override {
@@ -82,6 +98,8 @@ class FullHoldTimingAnalyzer : public HoldTimingAnalyzer {
         const DelayCalculator& delay_calculator_;
         HoldAnalysis hold_visitor_;
         GraphWalker graph_walker_;
+
+        bool never_updated_ = true;
 
         typedef std::chrono::duration<double> dsec;
         typedef std::chrono::high_resolution_clock Clock;
