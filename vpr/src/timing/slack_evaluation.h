@@ -52,6 +52,9 @@ class SetupSlackCrit {
     void recompute_max_req_and_worst_slack(const tatum::TimingGraph& timing_graph,
                                            const tatum::SetupTimingAnalyzer& analyzer);
 
+    template<typename NodeRange>
+    void update_pin_criticalities_from_nodes(const NodeRange& nodes, const tatum::SetupTimingAnalyzer& analyzer);
+
     float calc_pin_criticality(const tatum::NodeId node,
                                const tatum::SetupTimingAnalyzer& analyzer);
 
