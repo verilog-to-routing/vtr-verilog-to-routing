@@ -142,44 +142,7 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
         const auto& nodes = all_nodes_;
 #endif
 
-#if defined(VPR_USE_TBB)
-        tbb::parallel_for_each(nodes.begin(), nodes.end(), [&, this](tatum::NodeId node) {
-            AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
-            VTR_ASSERT_SAFE(pin);
-
-            //Multiple timing graph nodes may map to the same sequential primitive pin.
-            //When determining the criticality to use for such pins we always choose the
-            //external facing node. This ensures the pin criticality reflects the criticality
-            //of the external timing path connected to this pin.
-            if (netlist_lookup_.atom_pin_tnode(pin, BlockTnode::EXTERNAL) != node) {
-                return;
-            }
-
-            this->pin_criticalities_[pin] = this->calc_pin_criticality(node, analyzer);
-        });
-
-        //TODO: parallelize
-        nodes_to_pins(nodes, netlist_lookup_, pins_with_modified_criticalities_);
-#else
-        for (tatum::NodeId node : nodes) {
-            AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
-            VTR_ASSERT_SAFE(pin);
-
-            //Multiple timing graph nodes may map to the same sequential primitive pin.
-            //When determining the criticality to use for such pins we always choose the
-            //external facing node. This ensures the pin criticality reflects the criticality
-            //of the external timing path connected to this pin.
-            if (netlist_lookup_.atom_pin_tnode(pin, BlockTnode::EXTERNAL) != node) {
-                continue;
-            }
-
-            float new_crit = calc_pin_criticality(node, analyzer);
-            if (new_crit != pin_criticalities_[pin]) {
-                pin_criticalities_[pin] = new_crit;
-                pins_with_modified_criticalities_.push_back(pin);
-            }
-        }
-#endif
+        update_pin_criticalities_from_nodes(nodes, analyzer);
 
 #if 0
         //Sanity check
@@ -218,44 +181,7 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
 
         auto nodes = timing_graph.nodes();
 
-#if defined(VPR_USE_TBB)
-        tbb::parallel_for_each(nodes.begin(), nodes.end(), [&, this](tatum::NodeId node) {
-            AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
-            VTR_ASSERT_SAFE(pin);
-
-            //Multiple timing graph nodes may map to the same sequential primitive pin.
-            //When determining the criticality to use for such pins we always choose the
-            //external facing node. This ensures the pin criticality reflects the criticality
-            //of the external timing path connected to this pin.
-            if (netlist_lookup_.atom_pin_tnode(pin, BlockTnode::EXTERNAL) != node) {
-                return;
-            }
-
-            this->pin_criticalities_[pin] = this->calc_pin_criticality(node, analyzer);
-        });
-
-        //TODO: parallelize
-        nodes_to_pins(nodes, netlist_lookup_, pins_with_modified_criticalities_);
-#else
-        for (tatum::NodeId node : nodes) {
-            AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
-            VTR_ASSERT_SAFE(pin);
-
-            //Multiple timing graph nodes may map to the same sequential primitive pin.
-            //When determining the criticality to use for such pins we always choose the
-            //external facing node. This ensures the pin criticality reflects the criticality
-            //of the external timing path connected to this pin.
-            if (netlist_lookup_.atom_pin_tnode(pin, BlockTnode::EXTERNAL) != node) {
-                continue;
-            }
-
-            float new_crit = calc_pin_criticality(node, analyzer);
-            if (new_crit != pin_criticalities_[pin]) {
-                pin_criticalities_[pin] = new_crit;
-                pins_with_modified_criticalities_.push_back(pin);
-            }
-        }
-#endif
+        update_pin_criticalities_from_nodes(nodes, analyzer);
 
         ++full_criticality_updates_;
         full_criticality_update_time_sec_ += timer.elapsed_sec();
@@ -403,6 +329,50 @@ void SetupSlackCrit::recompute_max_req_and_worst_slack(const tatum::TimingGraph&
 
     ++full_max_req_worst_slack_updates_;
     full_max_req_worst_slack_update_time_sec_ += timer.elapsed_sec();
+}
+
+template<typename NodeRange>
+void SetupSlackCrit::update_pin_criticalities_from_nodes(const NodeRange& nodes, const tatum::SetupTimingAnalyzer& analyzer) {
+
+#if defined(VPR_USE_TBB)
+        tbb::parallel_for_each(nodes.begin(), nodes.end(), [&, this](tatum::NodeId node) {
+            AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
+            VTR_ASSERT_SAFE(pin);
+
+            //Multiple timing graph nodes may map to the same sequential primitive pin.
+            //When determining the criticality to use for such pins we always choose the
+            //external facing node. This ensures the pin criticality reflects the criticality
+            //of the external timing path connected to this pin.
+            if (netlist_lookup_.atom_pin_tnode(pin, BlockTnode::EXTERNAL) != node) {
+                return;
+            }
+
+            this->pin_criticalities_[pin] = this->calc_pin_criticality(node, analyzer);
+        });
+
+        //TODO: parallelize (note currently the set of pins modified is pessimistic since not all
+        //modified nodes will yeild criticality changes)
+        nodes_to_pins(nodes, netlist_lookup_, pins_with_modified_criticalities_);
+#else
+        for (tatum::NodeId node : nodes) {
+            AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
+            VTR_ASSERT_SAFE(pin);
+
+            //Multiple timing graph nodes may map to the same sequential primitive pin.
+            //When determining the criticality to use for such pins we always choose the
+            //external facing node. This ensures the pin criticality reflects the criticality
+            //of the external timing path connected to this pin.
+            if (netlist_lookup_.atom_pin_tnode(pin, BlockTnode::EXTERNAL) != node) {
+                continue;
+            }
+
+            float new_crit = calc_pin_criticality(node, analyzer);
+            if (new_crit != pin_criticalities_[pin]) {
+                pin_criticalities_[pin] = new_crit;
+                pins_with_modified_criticalities_.push_back(pin);
+            }
+        }
+#endif
 }
 
 float SetupSlackCrit::calc_pin_criticality(const tatum::NodeId node,
