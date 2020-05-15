@@ -178,7 +178,7 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
 
         update_pin_criticalities_from_nodes(nodes, analyzer);
 
-#if 0
+#ifdef VTR_ASSERT_DEBUG_ENABLED
         //Sanity check
         auto check_nodes = timing_graph.nodes();
         for (tatum::NodeId node : check_nodes) {
@@ -190,9 +190,11 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
             //When determining the criticality to use for such pins we always choose the
             //external facing node. This ensures the pin criticality reflects the criticality
             //of the external timing path connected to this pin.
-            if (netlist_lookup_.atom_pin_tnode(pin, BlockTnode::EXTERNAL) != node) {
+            if (is_internal_tnode(pin, node)) {
                 continue;
             }
+
+            VTR_ASSERT_SAFE(is_external_tnode(pin, node));
 
             if (new_crit != pin_criticalities_[pin]) {
                 auto itr = std::find(nodes.begin(), nodes.end(), node);
