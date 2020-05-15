@@ -751,9 +751,7 @@ bool TimingGraphBuilder::is_netlist_clock_source(const AtomPinId pin) const {
 }
 
 bool TimingGraphBuilder::validate_netlist_timing_graph_consistency() const {
-
     for (AtomPinId pin : netlist_.pins()) {
-
         tatum::NodeId ext_tnode = netlist_lookup_.atom_pin_tnode(pin, BlockTnode::EXTERNAL);
         if (!ext_tnode) VPR_ERROR(VPR_ERROR_TIMING, "Found no external tnode for atom pin '%zu'", size_t(pin));
 
@@ -765,16 +763,15 @@ bool TimingGraphBuilder::validate_netlist_timing_graph_consistency() const {
         AtomPinId ext_tnode_pin = netlist_lookup_.tnode_atom_pin(ext_tnode);
         if (ext_tnode_pin != pin) {
             VPR_ERROR(VPR_ERROR_TIMING, "Inconsistent external tnode -> atom pin lookup: atom pin %zu -> tnode %zu, but tnode %zu -> atom pin %zu",
-                                        size_t(pin), size_t(ext_tnode), size_t(ext_tnode), size_t(ext_tnode_pin));
+                      size_t(pin), size_t(ext_tnode), size_t(ext_tnode), size_t(ext_tnode_pin));
         }
         if (int_tnode) {
             AtomPinId int_tnode_pin = netlist_lookup_.tnode_atom_pin(int_tnode);
             if (int_tnode_pin != pin) {
                 VPR_ERROR(VPR_ERROR_TIMING, "Inconsistent internal tnode -> atom pin lookup: atom pin %zu -> tnode %zu, but tnode %zu -> atom pin %zu",
-                                            size_t(pin), size_t(int_tnode), size_t(int_tnode), size_t(int_tnode_pin));
+                          size_t(pin), size_t(int_tnode), size_t(int_tnode), size_t(int_tnode_pin));
             }
         }
-
 
         /*
          * Sanity check internal/external tnode types
@@ -783,27 +780,24 @@ bool TimingGraphBuilder::validate_netlist_timing_graph_consistency() const {
         if (ext_tnode_type == tatum::NodeType::IPIN || ext_tnode_type == tatum::NodeType::OPIN) {
             if (!int_tnode) VPR_ERROR(VPR_ERROR_TIMING, "Missing expected internal tnode for combinational atom pin %zu", size_t(pin));
             if (int_tnode != ext_tnode) VPR_ERROR(VPR_ERROR_TIMING, "Mismatch  external/internal tnodes (%zu vs %zu) for combinational atom pin %zu",
-                                                                  size_t(ext_tnode), size_t(int_tnode), size_t(pin));
+                                                  size_t(ext_tnode), size_t(int_tnode), size_t(pin));
         } else if (ext_tnode_type == tatum::NodeType::CPIN) {
-            if (int_tnode) VPR_ERROR(VPR_ERROR_TIMING, "Unexpected internal tnode (%zu) for clock pin: atom pin %zu ,external tnode %zu", 
-                                                      size_t(int_tnode), size_t(pin), size_t(ext_tnode));
+            if (int_tnode) VPR_ERROR(VPR_ERROR_TIMING, "Unexpected internal tnode (%zu) for clock pin: atom pin %zu ,external tnode %zu",
+                                     size_t(int_tnode), size_t(pin), size_t(ext_tnode));
         } else if (ext_tnode_type == tatum::NodeType::SOURCE) {
             if (int_tnode && tg_->node_type(int_tnode) != tatum::NodeType::SINK) {
                 VPR_ERROR(VPR_ERROR_TIMING, "Found internal tnode (%zu) associated with atom pin %zu, but it is not a SINK (external tnode %zu was a SOURCE)",
-                                            size_t(int_tnode), size_t(pin), size_t(ext_tnode));
+                          size_t(int_tnode), size_t(pin), size_t(ext_tnode));
             }
-            
+
         } else if (ext_tnode_type == tatum::NodeType::SINK) {
             if (int_tnode && tg_->node_type(int_tnode) != tatum::NodeType::SOURCE) {
                 VPR_ERROR(VPR_ERROR_TIMING, "Found internal tnode (%zu) associated with atom pin %zu, but it is not a SOURCE (external tnode %zu was a SINK)",
-                                            size_t(int_tnode), size_t(pin), size_t(ext_tnode));
+                          size_t(int_tnode), size_t(pin), size_t(ext_tnode));
             }
         } else {
             VPR_ERROR(VPR_ERROR_TIMING, "Unexpected timing node type for atom pin %zu", size_t(pin));
         }
-
-
-
     }
 
     return true; //success

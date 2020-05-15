@@ -329,7 +329,6 @@ class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
         setup_hold_analyzer_->invalidate_edge(edge);
     }
 
-
     //Update both setup and hold simultaneously
     //  This is more efficient than calling update_hold() and update_setup() separately, since
     //  it performs a single combined STA to update both setup and hold (instead of calling it

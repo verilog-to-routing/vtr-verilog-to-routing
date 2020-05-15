@@ -924,7 +924,7 @@ struct ParsePlaceEfforScaling {
     }
 };
 
-struct ParseTimingUpdateType{
+struct ParseTimingUpdateType {
     ConvertedValue<e_timing_update_type> from_str(std::string str) {
         ConvertedValue<e_timing_update_type> conv_value;
         if (str == "auto")
@@ -1629,8 +1629,9 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument(args.quench_recompute_divider, "--quench_recompute_divider")
-        .help("Controls how many timing analysies are perform during the final placement quench (t=0)."
-              " If unspecified, uses the value from --inner_loop_recompute_divider")
+        .help(
+            "Controls how many timing analysies are perform during the final placement quench (t=0)."
+            " If unspecified, uses the value from --inner_loop_recompute_divider")
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 

@@ -136,7 +136,7 @@ static vtr::vector<ClusterNetId, char> bb_updated_before;
  */
 static ClbNetPinsMatrix<float> connection_delay;          //Delays based on commited block positions
 static ClbNetPinsMatrix<float> proposed_connection_delay; //Delays for proposed block positions (only
-                                                          // for connections effected by move, otherwise 
+                                                          // for connections effected by move, otherwise
                                                           // INVALID_DELAY)
 
 /*
@@ -145,18 +145,18 @@ static ClbNetPinsMatrix<float> proposed_connection_delay; //Delays for proposed 
  */
 static PlacerTimingCosts connection_timing_cost;                 //Costs of commited block positions
 static ClbNetPinsMatrix<double> proposed_connection_timing_cost; //Costs for proposed block positions
-                                                                 // (only for connectsion effected by 
+                                                                 // (only for connectsion effected by
                                                                  // move, otherwise INVALID_DELAY)
 
 /*
  * Timing cost of nets (i.e. sum of criticality * delay for each net sink/connection).
  * Index ranges: [0..cluster_ctx.clb_nlist.nets().size()-1]
  */
-static vtr::vector<ClusterNetId, double> net_timing_cost;                   //Like connection_timing_cost, but summed 
-                                                                            // accross net pins. Used to allow more
-                                                                            // efficient recalculation of timing cost
-                                                                            // if only a sub-set of nets are changed
-                                                                            // while maintaining numeric stability.
+static vtr::vector<ClusterNetId, double> net_timing_cost; //Like connection_timing_cost, but summed
+                                                          // accross net pins. Used to allow more
+                                                          // efficient recalculation of timing cost
+                                                          // if only a sub-set of nets are changed
+                                                          // while maintaining numeric stability.
 
 /* [0..cluster_ctx.clb_nlist.nets().size()-1].  Store the bounding box coordinates and the number of    *
  * blocks on each of a net's bounding box (to allow efficient updates),      *
@@ -416,7 +416,7 @@ static void outer_loop_recompute_criticalities(const t_placer_opts& placer_opts,
                                                float crit_exponent,
                                                int* outer_crit_iter_count,
                                                const PlaceDelayModel* delay_model,
-                                               PlacerCriticalities* criticalities, 
+                                               PlacerCriticalities* criticalities,
                                                ClusteredPinTimingInvalidator* pin_timing_invalidator,
                                                SetupTimingInfo* timing_info);
 
@@ -585,10 +585,10 @@ void try_place(const t_placer_opts& placer_opts,
         placer_criticalities = std::make_unique<PlacerCriticalities>(cluster_ctx.clb_nlist, netlist_pin_lookup);
 
         pin_timing_invalidator = std::make_unique<ClusteredPinTimingInvalidator>(cluster_ctx.clb_nlist,
-                                                                  netlist_pin_lookup,
-                                                                  atom_ctx.nlist,
-                                                                  atom_ctx.lookup,
-                                                                  *timing_info->timing_graph());
+                                                                                 netlist_pin_lookup,
+                                                                                 atom_ctx.nlist,
+                                                                                 atom_ctx.lookup,
+                                                                                 *timing_info->timing_graph());
         //Update timing and costs
         recompute_criticalities(crit_exponent,
                                 place_delay_model.get(),
@@ -603,7 +603,6 @@ void try_place(const t_placer_opts& placer_opts,
 
         //Write out the initial timing echo file
         if (isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH)) {
-
             tatum::write_echo(getEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH),
                               *timing_ctx.graph, *timing_ctx.constraints, *placement_delay_calc, timing_info->analyzer());
 
@@ -740,8 +739,6 @@ void try_place(const t_placer_opts& placer_opts,
     VTR_LOG("\n");
     print_place_status_header();
 
-
-
     /* Outer loop of the simmulated annealing begins */
     while (exit_crit(t, costs.cost, annealing_sched) == 0) {
         vtr::Timer temperature_timer;
@@ -784,7 +781,7 @@ void try_place(const t_placer_opts& placer_opts,
             sWNS = timing_info->setup_worst_negative_slack();
         }
 
-        print_place_status(num_temps, 
+        print_place_status(num_temps,
                            temperature_timer.elapsed_sec(),
                            t, oldt,
                            stats,
@@ -875,7 +872,7 @@ void try_place(const t_placer_opts& placer_opts,
     }
 #endif
 
-    check_place(costs, place_delay_model.get(), placer_criticalities.get(),  placer_opts.place_algorithm);
+    check_place(costs, place_delay_model.get(), placer_criticalities.get(), placer_opts.place_algorithm);
 
     //Some stats
     VTR_LOG("\n");
@@ -896,7 +893,6 @@ void try_place(const t_placer_opts& placer_opts,
         critical_path = timing_info->least_slack_critical_path();
 
         if (isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH)) {
-
             tatum::write_echo(getEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH),
                               *timing_ctx.graph, *timing_ctx.constraints, *placement_delay_calc, timing_info->analyzer());
 
@@ -1025,7 +1021,6 @@ static void recompute_criticalities(float crit_exponent,
     pin_timing_invalidator->reset();
 }
 
-
 /* Function which contains the inner loop of the simulated annealing */
 static void placement_inner_loop(float t,
                                  int temp_num,
@@ -1040,7 +1035,7 @@ static void placement_inner_loop(float t,
                                  int* moves_since_cost_recompute,
                                  ClusteredPinTimingInvalidator* pin_timing_invalidator,
                                  const PlaceDelayModel* delay_model,
-                                 PlacerCriticalities* criticalities, 
+                                 PlacerCriticalities* criticalities,
                                  MoveGenerator& move_generator,
                                  t_pl_blocks_to_be_moved& blocks_affected,
                                  SetupTimingInfo* timing_info) {
@@ -1860,7 +1855,6 @@ static void update_td_costs(const PlaceDelayModel* delay_model, const PlacerCrit
         vtr::Timer timer;
         auto clb_pins_modified = place_crit.pins_with_modified_criticality();
         for (ClusterPinId clb_pin : clb_pins_modified) {
-
             if (clb_nlist.pin_type(clb_pin) == PinType::DRIVER) continue;
 
             ClusterNetId clb_net = clb_nlist.pin_net(clb_pin);
@@ -1873,7 +1867,7 @@ static void update_td_costs(const PlaceDelayModel* delay_model, const PlacerCrit
 
             double new_timing_cost = comp_td_connection_cost(delay_model, place_crit, clb_net, ipin);
 
-            //Record new value 
+            //Record new value
             connection_timing_cost[clb_net][ipin] = new_timing_cost;
         }
 
@@ -1919,7 +1913,7 @@ static void comp_td_costs(const PlaceDelayModel* delay_model, const PlacerCritic
         for (unsigned ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
             float conn_timing_cost = comp_td_connection_cost(delay_model, place_crit, net_id, ipin);
 
-            //Record new value 
+            //Record new value
             connection_timing_cost[net_id][ipin] = conn_timing_cost;
         }
 

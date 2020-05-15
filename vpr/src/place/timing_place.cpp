@@ -51,8 +51,8 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
         //
         //Note we use the set of pins reported by the *timing_info* as having modified
         //criticality, rather than those marked as modified by the timing analyzer.
-        //Since timing_info uses shifted/relaxed criticality (which depends on max 
-        //required time and worst case slacks), additional nodes may be modified 
+        //Since timing_info uses shifted/relaxed criticality (which depends on max
+        //required time and worst case slacks), additional nodes may be modified
         //when updating the atom pin criticalities.
 
         for (AtomPinId atom_pin : timing_info->pins_with_modified_setup_criticality()) {

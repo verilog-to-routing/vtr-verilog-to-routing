@@ -24,6 +24,7 @@ class SetupSlackCrit {
   public: //Constructors
     SetupSlackCrit(const AtomNetlist& netlist, const AtomLookup& netlist_lookup);
     ~SetupSlackCrit();
+
   public: //Types
     typedef std::vector<AtomPinId>::const_iterator modified_pin_iterator;
 
@@ -94,25 +95,25 @@ class SetupSlackCrit {
     const AtomNetlist& netlist_;
     const AtomLookup& netlist_lookup_;
 
-    vtr::vector<AtomPinId, float> pin_slacks_;          //Calculated adjusted slacks of all pins
-    vtr::vector<AtomPinId, float> pin_criticalities_;   //Calculated criticality of all pins
+    vtr::vector<AtomPinId, float> pin_slacks_;        //Calculated adjusted slacks of all pins
+    vtr::vector<AtomPinId, float> pin_criticalities_; //Calculated criticality of all pins
 
-    std::vector<AtomPinId> pins_with_modified_slacks_;          //Set of pins with modified slacks
-    std::vector<AtomPinId> pins_with_modified_criticalities_;   //Set of pins with modified criticalities
+    std::vector<AtomPinId> pins_with_modified_slacks_;        //Set of pins with modified slacks
+    std::vector<AtomPinId> pins_with_modified_criticalities_; //Set of pins with modified criticalities
 
-    std::map<DomainPair, float> max_req_;                   //Maximum required times for all clock domains
-    std::map<DomainPair, float> worst_slack_;               //Worst slacks for all clock domains
-    std::map<DomainPair, tatum::NodeId> max_req_node_;      //Timing graph nodes with maximum required times (for all clock domains)
-    std::map<DomainPair, tatum::NodeId> worst_slack_node_;  //Timing graph nodes with worst slacks (for all clock domains)
+    std::map<DomainPair, float> max_req_;                  //Maximum required times for all clock domains
+    std::map<DomainPair, float> worst_slack_;              //Worst slacks for all clock domains
+    std::map<DomainPair, tatum::NodeId> max_req_node_;     //Timing graph nodes with maximum required times (for all clock domains)
+    std::map<DomainPair, tatum::NodeId> worst_slack_node_; //Timing graph nodes with worst slacks (for all clock domains)
 
-    std::map<DomainPair, float> prev_max_req_;      //Maximum required times from previous call to update_max_req_worst_slack()
-    std::map<DomainPair, float> prev_worst_slack_;  //Worst slacks from previous call to update_max_req_worst_slack()
+    std::map<DomainPair, float> prev_max_req_;     //Maximum required times from previous call to update_max_req_worst_slack()
+    std::map<DomainPair, float> prev_worst_slack_; //Worst slacks from previous call to update_max_req_worst_slack()
 
 #if !defined(INCR_SLACK_UPDATE) || !defined(INCR_UPDATE_CRIT)
-    std::vector<tatum::NodeId> all_nodes_;              //Set of all timing graph nodes
+    std::vector<tatum::NodeId> all_nodes_; //Set of all timing graph nodes
 #endif
-    std::vector<tatum::NodeId> modified_nodes_;         //Modified timing graph nodes
-    std::vector<tatum::NodeId> modified_sink_nodes_;    //Modified timing graph nodes of tatum::NodeType::SINK type
+    std::vector<tatum::NodeId> modified_nodes_;      //Modified timing graph nodes
+    std::vector<tatum::NodeId> modified_sink_nodes_; //Modified timing graph nodes of tatum::NodeType::SINK type
 
     //Run-time metrics
     size_t incr_slack_updates_ = 0;
