@@ -47,8 +47,7 @@ bool try_pack(t_packer_opts* packer_opts,
     std::unordered_map<AtomBlockId, t_pb_graph_node*> expected_lowest_cost_pb_gnode; //The molecules associated with each atom block
     const t_model* cur_model;
     int num_models;
-    t_pack_patterns* list_of_packing_patterns;
-    int num_packing_patterns;
+    std::vector<t_pack_patterns> list_of_packing_patterns;
     std::unique_ptr<t_pack_molecule, decltype(&free_pack_molecules)> list_of_pack_molecules(nullptr, free_pack_molecules);
     VTR_LOG("Begin packing '%s'.\n", packer_opts->blif_file_name.c_str());
 
@@ -86,12 +85,12 @@ bool try_pack(t_packer_opts* packer_opts,
             atom_ctx.nlist.blocks().size(), atom_ctx.nlist.nets().size(), num_p_inputs, num_p_outputs);
 
     VTR_LOG("Begin prepacking.\n");
-    list_of_packing_patterns = alloc_and_load_pack_patterns(&num_packing_patterns);
+    list_of_packing_patterns = alloc_and_load_pack_patterns();
 
-    list_of_pack_molecules.reset(alloc_and_load_pack_molecules(list_of_packing_patterns,
+    list_of_pack_molecules.reset(alloc_and_load_pack_molecules(list_of_packing_patterns.data(),
                                                                atom_molecules,
                                                                expected_lowest_cost_pb_gnode,
-                                                               num_packing_patterns));
+                                                               list_of_packing_patterns.size()));
     VTR_LOG("Finish prepacking.\n");
 
     if (packer_opts->auto_compute_inter_cluster_net_delay) {
@@ -195,7 +194,7 @@ bool try_pack(t_packer_opts* packer_opts,
     }
 
     /*free list_of_pack_molecules*/
-    free_list_of_pack_patterns(list_of_packing_patterns, num_packing_patterns);
+    free_list_of_pack_patterns(list_of_packing_patterns);
 
     VTR_LOG("\n");
     VTR_LOG("Netlist conversion complete.\n");
