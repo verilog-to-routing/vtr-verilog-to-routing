@@ -87,8 +87,8 @@ class SetupSlackCrit {
     //Updates modified_nodes_ and modified_sink_nodes
     void record_modified_nodes(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer);
 
-    bool is_internal_tnode(tatum::NodeId node) const;
-    bool is_external_tnode(tatum::NodeId node) const;
+    bool is_internal_tnode(const AtomPinId pin, const tatum::NodeId node) const;
+    bool is_external_tnode(const AtomPinId pin, const tatum::NodeId node) const;
 
   private: //Data
     const AtomNetlist& netlist_;
