@@ -5,6 +5,22 @@
 
 namespace vtr {
 
+/*
+ * Implements a set-like interface which supports:
+ *  - insertion
+ *  - iteration
+ *  - membership test
+ * all in constant time.
+ *
+ * It assumes the element type (T) is convertable to size_t.
+ * Usually, elements are vtr::StrongIds.
+ *
+ * Iteration through the elements is not strictly ordered, usually
+ * insertion order, unless sort() has been previously called.
+ *
+ * The underlying implementation uses a vector for element
+ * storage (for iteration), and a bit-set for membership tests.
+ */
 template<typename T>
 class vec_id_set {
     public:
@@ -18,15 +34,20 @@ class vec_id_set {
         auto cend() const { return vec_.cend(); }
 
         bool insert(T val) {
-            if (count(val)) {
+            if (count(val)) { //Already inserted
                 return false;
             }
 
             vec_.push_back(val);
+
+            //Mark this value as being contained
             if (size_t(val) >= contained_.size()) {
+                //We dynamically grow contained_ based on the maximum
+                //value contained. This allows us to avoid expensive
                 contained_.resize(size_t(val)+1, false);
             }
             contained_[size_t(val)] = true;
+
             return true;
         }
 
@@ -44,6 +65,8 @@ class vec_id_set {
 
         size_t count(T val) const {
             if (size_t(val) < contained_.size()) {
+                //Value is with-in range of previously inserted
+                //elements, so look-up its membership
                 return contained_[size_t(val)];
             }
             return 0;
@@ -63,8 +86,8 @@ class vec_id_set {
         }
 
     private:
-        std::vector<T> vec_;
-        std::vector<bool> contained_;
+        std::vector<T> vec_; //Elements contained
+        std::vector<bool> contained_; //Bit-set for constant-time membership test
 };
 
 } //namespace
