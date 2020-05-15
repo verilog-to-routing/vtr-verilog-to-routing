@@ -2346,14 +2346,13 @@ void pretty_print_float(const char* prefix, double value, int num_digits, int sc
 void print_timing_stats(std::string name,
                         const t_timing_analysis_profile_info& current,
                         const t_timing_analysis_profile_info& past) {
-        VTR_LOG("%s timing analysis took %g seconds (%g STA, %g slack) (%zu full updates: %zu setup, %zu hold, %zu combined).\n",
-                name.c_str(),
-                current.timing_analysis_wallclock_time() - past.timing_analysis_wallclock_time(),
-                current.sta_wallclock_time - past.sta_wallclock_time,
-                current.slack_wallclock_time - past.slack_wallclock_time,
-                current.num_full_updates() - past.num_full_updates(),
-                current.num_full_setup_updates - past.num_full_setup_updates,
-                current.num_full_hold_updates - past.num_full_hold_updates,
-                current.num_full_setup_hold_updates - past.num_full_setup_hold_updates);
+    VTR_LOG("%s timing analysis took %g seconds (%g STA, %g slack) (%zu full updates: %zu setup, %zu hold, %zu combined).\n",
+            name.c_str(),
+            current.timing_analysis_wallclock_time() - past.timing_analysis_wallclock_time(),
+            current.sta_wallclock_time - past.sta_wallclock_time,
+            current.slack_wallclock_time - past.slack_wallclock_time,
+            current.num_full_updates() - past.num_full_updates(),
+            current.num_full_setup_updates - past.num_full_setup_updates,
+            current.num_full_hold_updates - past.num_full_hold_updates,
+            current.num_full_setup_hold_updates - past.num_full_setup_hold_updates);
 }
-
