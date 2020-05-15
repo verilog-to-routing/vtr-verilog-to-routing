@@ -87,6 +87,15 @@ bool try_pack(t_packer_opts* packer_opts,
     VTR_LOG("Begin prepacking.\n");
     list_of_packing_patterns = alloc_and_load_pack_patterns();
 
+    //To ensure the list of packing patterns gets freed in case of an error, we create
+    //a unique_ptr with custom deleter which will free the list at the end of the current
+    //scope.
+    auto list_of_packing_patterns_deleter = [](std::vector<t_pack_patterns>* ptr) {
+        free_list_of_pack_patterns(*ptr);
+    };
+    std::unique_ptr<std::vector<t_pack_patterns>, decltype(list_of_packing_patterns_deleter)> list_of_packing_patterns_cleanup_guard(&list_of_packing_patterns,
+                                                                                                                                     list_of_packing_patterns_deleter);
+
     list_of_pack_molecules.reset(alloc_and_load_pack_molecules(list_of_packing_patterns.data(),
                                                                atom_molecules,
                                                                expected_lowest_cost_pb_gnode,
@@ -192,9 +201,6 @@ bool try_pack(t_packer_opts* packer_opts,
 
         ++pack_iteration;
     }
-
-    /*free list_of_pack_molecules*/
-    free_list_of_pack_patterns(list_of_packing_patterns);
 
     VTR_LOG("\n");
     VTR_LOG("Netlist conversion complete.\n");
