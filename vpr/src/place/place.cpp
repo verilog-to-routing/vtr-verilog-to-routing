@@ -205,8 +205,6 @@ static float f_update_td_costs_nets_elapsed_sec = 0.;
 static float f_update_td_costs_sum_nets_elapsed_sec = 0.;
 static float f_update_td_costs_total_elapsed_sec = 0.;
 
-static std::set<ClusterPinId> f_cluster_pins_to_invalidate_timing;
-
 std::unique_ptr<FILE, decltype(&vtr::fclose)> f_move_stats_file(nullptr, vtr::fclose);
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
