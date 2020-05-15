@@ -1644,7 +1644,7 @@ sub run_vpr {
     }
 
     #Add the LeakSanitizer (LSAN) suppression file
-    local $ENV{"LSAN_OPTIONS"} = "suppressions=$vtr_flow_path/../vpr/lsan.supp";
+    local $ENV{"LSAN_OPTIONS"} = "suppressions=$vtr_flow_path/../vpr/lsan.supp exitcode=23";
 
     #Run the command
     $q = &system_with_timeout(
