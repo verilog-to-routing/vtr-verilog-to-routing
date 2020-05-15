@@ -343,7 +343,7 @@ void SetupSlackCrit::update_pin_criticalities_from_nodes(const NodeRange& nodes,
             //When determining the criticality to use for such pins we always choose the
             //external facing node. This ensures the pin criticality reflects the criticality
             //of the external timing path connected to this pin.
-            if (netlist_lookup_.atom_pin_tnode(pin, BlockTnode::EXTERNAL) != node) {
+            if (is_internal_tnode(node)) {
                 return;
             }
 
@@ -362,7 +362,7 @@ void SetupSlackCrit::update_pin_criticalities_from_nodes(const NodeRange& nodes,
             //When determining the criticality to use for such pins we always choose the
             //external facing node. This ensures the pin criticality reflects the criticality
             //of the external timing path connected to this pin.
-            if (netlist_lookup_.atom_pin_tnode(pin, BlockTnode::EXTERNAL) != node) {
+            if (is_internal_tnode(node)) {
                 continue;
             }
 
@@ -396,6 +396,17 @@ void SetupSlackCrit::record_modified_nodes(const tatum::TimingGraph& timing_grap
             modified_sink_nodes_.push_back(node);
         }
     }
+}
+
+bool SetupSlackCrit::is_internal_tnode(const tatum::NodeId node) const {
+    return !is_external_tnode(node);
+}
+
+bool SetupSlackCrit::is_external_tnode(const tatum::NodeId node) const {
+    AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
+    VTR_ASSERT_SAFE(pin);
+
+    return netlist_lookup_.atom_pin_tnode(pin, BlockTnode::EXTERNAL) == node;
 }
 
 /*
