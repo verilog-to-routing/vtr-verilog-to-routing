@@ -49,7 +49,7 @@ bool try_pack(t_packer_opts* packer_opts,
     int num_models;
     t_pack_patterns* list_of_packing_patterns;
     int num_packing_patterns;
-    t_pack_molecule* list_of_pack_molecules;
+    std::unique_ptr<t_pack_molecule, decltype(&free_pack_molecules)> list_of_pack_molecules(nullptr, free_pack_molecules);
     VTR_LOG("Begin packing '%s'.\n", packer_opts->blif_file_name.c_str());
 
     /* determine number of models in the architecture */
@@ -87,10 +87,11 @@ bool try_pack(t_packer_opts* packer_opts,
 
     VTR_LOG("Begin prepacking.\n");
     list_of_packing_patterns = alloc_and_load_pack_patterns(&num_packing_patterns);
-    list_of_pack_molecules = alloc_and_load_pack_molecules(list_of_packing_patterns,
-                                                           atom_molecules,
-                                                           expected_lowest_cost_pb_gnode,
-                                                           num_packing_patterns);
+
+    list_of_pack_molecules.reset(alloc_and_load_pack_molecules(list_of_packing_patterns,
+                                                               atom_molecules,
+                                                               expected_lowest_cost_pb_gnode,
+                                                               num_packing_patterns));
     VTR_LOG("Finish prepacking.\n");
 
     if (packer_opts->auto_compute_inter_cluster_net_delay) {
@@ -125,7 +126,7 @@ bool try_pack(t_packer_opts* packer_opts,
         auto num_type_instances = do_clustering(
             *packer_opts,
             *analysis_opts,
-            arch, list_of_pack_molecules, num_models,
+            arch, list_of_pack_molecules.get(), num_models,
             is_clock,
             atom_molecules,
             expected_lowest_cost_pb_gnode,
@@ -195,8 +196,6 @@ bool try_pack(t_packer_opts* packer_opts,
 
     /*free list_of_pack_molecules*/
     free_list_of_pack_patterns(list_of_packing_patterns, num_packing_patterns);
-
-    free_pack_molecules(list_of_pack_molecules);
 
     VTR_LOG("\n");
     VTR_LOG("Netlist conversion complete.\n");
