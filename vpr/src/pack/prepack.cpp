@@ -345,15 +345,19 @@ static std::vector<t_pack_patterns> alloc_and_init_pattern_list_from_hash(std::u
 }
 
 void free_list_of_pack_patterns(std::vector<t_pack_patterns>& list_of_pack_patterns) {
-    int j, num_pack_pattern_blocks;
-    t_pack_pattern_block** pattern_block_list;
     for (size_t i = 0; i < list_of_pack_patterns.size(); i++) {
-        num_pack_pattern_blocks = list_of_pack_patterns[i].num_blocks;
-        pattern_block_list = (t_pack_pattern_block**)vtr::calloc(num_pack_pattern_blocks, sizeof(t_pack_pattern_block*));
-        free(list_of_pack_patterns[i].name);
-        free(list_of_pack_patterns[i].is_block_optional);
-        free_pack_pattern_block(list_of_pack_patterns[i].root_block, pattern_block_list);
-        for (j = 0; j < num_pack_pattern_blocks; j++) {
+        free_pack_pattern(&list_of_pack_patterns[i]);
+    }
+}
+
+void free_pack_pattern(t_pack_patterns* pack_pattern) {
+    if (pack_pattern) {
+        int num_pack_pattern_blocks = pack_pattern->num_blocks;
+        t_pack_pattern_block** pattern_block_list = (t_pack_pattern_block**)vtr::calloc(num_pack_pattern_blocks, sizeof(t_pack_pattern_block*));
+        free(pack_pattern->name);
+        free(pack_pattern->is_block_optional);
+        free_pack_pattern_block(pack_pattern->root_block, pattern_block_list);
+        for (int j = 0; j < num_pack_pattern_blocks; j++) {
             free(pattern_block_list[j]);
         }
         free(pattern_block_list);
