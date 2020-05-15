@@ -1296,59 +1296,59 @@ void vpr_power_estimation(const t_vpr_setup& vpr_setup,
 
 void vpr_print_error(const VprError& vpr_error) {
     /* Determine the type of VPR error, To-do: can use some enum-to-string mechanism */
-    char* error_type = nullptr;
+    const char* error_type = nullptr;
     try {
         switch (vpr_error.type()) {
             case VPR_ERROR_UNKNOWN:
-                error_type = vtr::strdup("Unknown");
+                error_type = "Unknown";
                 break;
             case VPR_ERROR_ARCH:
-                error_type = vtr::strdup("Architecture file");
+                error_type = "Architecture file";
                 break;
             case VPR_ERROR_PACK:
-                error_type = vtr::strdup("Packing");
+                error_type = "Packing";
                 break;
             case VPR_ERROR_PLACE:
-                error_type = vtr::strdup("Placement");
+                error_type = "Placement";
                 break;
             case VPR_ERROR_ROUTE:
-                error_type = vtr::strdup("Routing");
+                error_type = "Routing";
                 break;
             case VPR_ERROR_TIMING:
-                error_type = vtr::strdup("Timing");
+                error_type = "Timing";
                 break;
             case VPR_ERROR_SDC:
-                error_type = vtr::strdup("SDC file");
+                error_type = "SDC file";
                 break;
             case VPR_ERROR_NET_F:
-                error_type = vtr::strdup("Netlist file");
+                error_type = "Netlist file";
                 break;
             case VPR_ERROR_BLIF_F:
-                error_type = vtr::strdup("Blif file");
+                error_type = "Blif file";
                 break;
             case VPR_ERROR_PLACE_F:
-                error_type = vtr::strdup("Placement file");
+                error_type = "Placement file";
                 break;
             case VPR_ERROR_IMPL_NETLIST_WRITER:
-                error_type = vtr::strdup("Implementation Netlist Writer");
+                error_type = "Implementation Netlist Writer";
                 break;
             case VPR_ERROR_ATOM_NETLIST:
-                error_type = vtr::strdup("Atom Netlist");
+                error_type = "Atom Netlist";
                 break;
             case VPR_ERROR_POWER:
-                error_type = vtr::strdup("Power");
+                error_type = "Power";
                 break;
             case VPR_ERROR_ANALYSIS:
-                error_type = vtr::strdup("Analysis");
+                error_type = "Analysis";
                 break;
             case VPR_ERROR_OTHER:
-                error_type = vtr::strdup("Other");
+                error_type = "Other";
                 break;
             case VPR_ERROR_INTERRUPTED:
-                error_type = vtr::strdup("Interrupted");
+                error_type = "Interrupted";
                 break;
             default:
-                error_type = vtr::strdup("Unrecognized Error");
+                error_type = "Unrecognized Error";
                 break;
         }
     } catch (const vtr::VtrError& e) {
