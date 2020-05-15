@@ -91,25 +91,32 @@ void SetupSlackCrit::update_slacks(const tatum::SetupTimingAnalyzer& analyzer) {
     const auto& nodes = all_nodes_;
 #endif
 
+    pins_with_modified_slacks_.clear();
+
 #if defined(VPR_USE_TBB)
     tbb::parallel_for_each(nodes.begin(), nodes.end(), [&, this](tatum::NodeId node) {
         this->update_pin_slack(node, analyzer);
     });
+
+    //TODO: this is pessimistically assuming all nodes are modified (i.e. ignoring 
+    //      return value of update_pin_slack()
+    //TODO: parallelize
+    nodes_to_pins(nodes, netlist_lookup_, pins_with_modified_slacks_);
 #else
     for (tatum::NodeId node : nodes) {
-        update_pin_slack(node, analyzer);
+        AtomPinId modified_pin = update_pin_slack(node, analyzer);
+        if (modified_pin) {
+            pins_with_modified_slacks_.push_back(modified_pin);
+        }
     }
 #endif
 
-    //Record pins with modified slacks
-    pins_with_modified_slacks_.clear();
-    nodes_to_pins(nodes, netlist_lookup_, pins_with_modified_slacks_);
 
     ++incr_slack_updates_;
     incr_slack_update_time_sec_ += timer.elapsed_sec();
 }
 
-void SetupSlackCrit::update_pin_slack(const tatum::NodeId node, const tatum::SetupTimingAnalyzer& analyzer) {
+AtomPinId SetupSlackCrit::update_pin_slack(const tatum::NodeId node, const tatum::SetupTimingAnalyzer& analyzer) {
     //Find the timing node associated with the pin
     AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
     VTR_ASSERT_SAFE(pin);
@@ -117,19 +124,26 @@ void SetupSlackCrit::update_pin_slack(const tatum::NodeId node, const tatum::Set
     //Find the worst (least) slack at this node
     auto tags = analyzer.setup_slacks(node);
     auto min_tag_iter = find_minimum_tag(tags);
+
+    float new_slack = std::numeric_limits<float>::quiet_NaN();
     if (min_tag_iter != tags.end()) {
-        pin_slacks_[pin] = min_tag_iter->time().value();
+        new_slack = min_tag_iter->time().value();
     } else {
         //No tags (e.g. driven by constant generator)
-        pin_slacks_[pin] = std::numeric_limits<float>::infinity();
+        new_slack = std::numeric_limits<float>::infinity();
     }
+
+    if (pin_slacks_[pin] != new_slack) {
+        pin_slacks_[pin] = new_slack;
+        return pin; //Modified
+    }
+    return AtomPinId::INVALID(); //Unchanged
 }
 
 void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer) {
     //Record the maximum required time, and wost slack per domain pair
     update_max_req_and_worst_slack(timing_graph, analyzer);
 
-    pins_with_modified_criticalities_.clear();
     if (max_req_ == prev_max_req_ && worst_slack_ == prev_worst_slack_) {
         //Max required times and worst slacks unchanged, incrementally update
         //the criticalities of each pin
@@ -334,51 +348,46 @@ void SetupSlackCrit::recompute_max_req_and_worst_slack(const tatum::TimingGraph&
 template<typename NodeRange>
 void SetupSlackCrit::update_pin_criticalities_from_nodes(const NodeRange& nodes, const tatum::SetupTimingAnalyzer& analyzer) {
 
+        pins_with_modified_criticalities_.clear();
 #if defined(VPR_USE_TBB)
         tbb::parallel_for_each(nodes.begin(), nodes.end(), [&, this](tatum::NodeId node) {
-            AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
-            VTR_ASSERT_SAFE(pin);
-
-            //Multiple timing graph nodes may map to the same sequential primitive pin.
-            //When determining the criticality to use for such pins we always choose the
-            //external facing node. This ensures the pin criticality reflects the criticality
-            //of the external timing path connected to this pin.
-            if (is_internal_tnode(node)) {
-                return;
-            }
-
-            this->pin_criticalities_[pin] = this->calc_pin_criticality(node, analyzer);
+            update_pin_criticality(node, analyzer);
         });
 
-        //TODO: parallelize (note currently the set of pins modified is pessimistic since not all
-        //modified nodes will yeild criticality changes)
+        //TODO: this is pessimistically assuming all nodes are modified (i.e. ignoring 
+        //      return value of update_pin_slack()
+        //TODO: parallelize
         nodes_to_pins(nodes, netlist_lookup_, pins_with_modified_criticalities_);
 #else
         for (tatum::NodeId node : nodes) {
-            AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
-            VTR_ASSERT_SAFE(pin);
-
-            //Multiple timing graph nodes may map to the same sequential primitive pin.
-            //When determining the criticality to use for such pins we always choose the
-            //external facing node. This ensures the pin criticality reflects the criticality
-            //of the external timing path connected to this pin.
-            if (is_internal_tnode(node)) {
-                continue;
-            }
-
-            float new_crit = calc_pin_criticality(node, analyzer);
-            if (new_crit != pin_criticalities_[pin]) {
-                pin_criticalities_[pin] = new_crit;
-                pins_with_modified_criticalities_.push_back(pin);
+            AtomPinId modified_pin = update_pin_criticality(node, analyzer);
+            if (modified_pin) {
+                pins_with_modified_criticalities_.push_back(modified_pin);
             }
         }
 #endif
 }
 
-float SetupSlackCrit::calc_pin_criticality(const tatum::NodeId node,
-                                           const tatum::SetupTimingAnalyzer& analyzer) {
-    //Calculate maximum criticality over all domains
-    return calc_relaxed_criticality(max_req_, worst_slack_, analyzer.setup_slacks(node));
+AtomPinId SetupSlackCrit::update_pin_criticality(const tatum::NodeId node,
+                                const tatum::SetupTimingAnalyzer& analyzer) {
+    AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
+    VTR_ASSERT_SAFE(pin);
+
+    //Multiple timing graph nodes may map to the same sequential primitive pin.
+    //When determining the criticality to use for such pins we always choose the
+    //external facing node. This ensures the pin criticality reflects the criticality
+    //of the external timing path connected to this pin.
+    if (is_internal_tnode(node)) {
+        return AtomPinId::INVALID();
+    }
+
+    float new_crit = calc_relaxed_criticality(max_req_, worst_slack_, analyzer.setup_slacks(node));
+
+    if (pin_criticalities_[pin] != new_crit) {
+        pin_criticalities_[pin] = new_crit;
+        return pin; //Modified
+    }
+    return AtomPinId::INVALID(); //Unmodified
 }
 
 void SetupSlackCrit::record_modified_nodes(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer) {

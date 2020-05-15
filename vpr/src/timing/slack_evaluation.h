@@ -53,7 +53,8 @@ class SetupSlackCrit {
     void update_slacks(const tatum::SetupTimingAnalyzer& analyzer);
 
     //Updates slacks of the pin associated with 'node' based on the last timing analysis
-    void update_pin_slack(const tatum::NodeId node, const tatum::SetupTimingAnalyzer& analyzer);
+    //Returns the pin if it's slack was modified, or AtomPinId::INVALID() if unchanged
+    AtomPinId update_pin_slack(const tatum::NodeId node, const tatum::SetupTimingAnalyzer& analyzer);
 
     //Updates the criticalities of all pins based on the last timing analysis
     void update_criticalities(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer);
@@ -77,9 +78,10 @@ class SetupSlackCrit {
     template<typename NodeRange>
     void update_pin_criticalities_from_nodes(const NodeRange& nodes, const tatum::SetupTimingAnalyzer& analyzer);
 
-    //Calculates the criticality of the specified timing graph node
-    float calc_pin_criticality(const tatum::NodeId node,
-                               const tatum::SetupTimingAnalyzer& analyzer);
+    //Updates the criticality of the pin associated with 'node' based on the last timing analysis
+    //Returns the pin if it's criticality was modified, or AtomPinId::INVALID() if unchanged
+    AtomPinId update_pin_criticality(const tatum::NodeId node,
+                                     const tatum::SetupTimingAnalyzer& analyzer);
 
     //Records the timing graph nodes modified during the last timing analysis.
     //Updates modified_nodes_ and modified_sink_nodes
