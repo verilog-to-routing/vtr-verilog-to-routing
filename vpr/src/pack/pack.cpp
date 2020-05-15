@@ -49,7 +49,7 @@ bool try_pack(t_packer_opts* packer_opts,
     int num_models;
     t_pack_patterns* list_of_packing_patterns;
     int num_packing_patterns;
-    t_pack_molecule *list_of_pack_molecules, *cur_pack_molecule;
+    t_pack_molecule* list_of_pack_molecules;
     VTR_LOG("Begin packing '%s'.\n", packer_opts->blif_file_name.c_str());
 
     /* determine number of models in the architecture */
@@ -196,12 +196,7 @@ bool try_pack(t_packer_opts* packer_opts,
     /*free list_of_pack_molecules*/
     free_list_of_pack_patterns(list_of_packing_patterns, num_packing_patterns);
 
-    cur_pack_molecule = list_of_pack_molecules;
-    while (cur_pack_molecule != nullptr) {
-        cur_pack_molecule = list_of_pack_molecules->next;
-        delete list_of_pack_molecules;
-        list_of_pack_molecules = cur_pack_molecule;
-    }
+    free_pack_molecules(list_of_pack_molecules);
 
     VTR_LOG("\n");
     VTR_LOG("Netlist conversion complete.\n");
