@@ -14,7 +14,33 @@ std::unique_ptr<PlaceDelayModel> alloc_lookups_and_criticalities(t_chan_width_di
                                                                  std::vector<t_segment_inf>& segment_inf,
                                                                  const t_direct_inf* directs,
                                                                  const int num_directs);
-
+/* Usage
+ * =====
+ * PlacerCriticalities returns the clustered netlist connection criticalities used by 
+ * the placer ('sharpened' by a criticality exponent). This also serves to map atom 
+ * netlist level criticalites (i.e. on AtomPinIds) to the clustered netlist (i.e. 
+ * ClusterPinIds) used during placement.
+ *
+ * Criticalities are calculated by calling update_criticalities(), which will 
+ * update criticalities based on the atom netlist connection criticalities provided by
+ * the passed in SetupTimingInfo. This is done incrementally, based on the modified
+ * connections/AtomPinIds returned by SetupTimingInfo.
+ *
+ * The criticalities of individual connections can then be queried by calling the 
+ * criticality() member function.
+ *
+ * It also supports iterating via pins_with_modified_criticalities() through the 
+ * clustered netlist pins/connections which have had their criticality modified by 
+ * the last call to update_criticalities(), which is useful for incrementally 
+ * re-calculating timing costs.
+ *
+ * Implementation
+ * ==============
+ * To support incremental re-calculation the class saves the last criticality exponent
+ * passed to update_criticalites(). If the next update uses the same exponent criticalities
+ * can be incrementally updated. Otherwise they must be re-calculated from scratch, since
+ * a change in exponent changes *all* criticalities.
+ */
 class PlacerCriticalities {
     public: //Types
         typedef vtr::vec_id_set<ClusterPinId>::iterator pin_iterator;
@@ -29,11 +55,19 @@ class PlacerCriticalities {
         PlacerCriticalities& operator=(const PlacerCriticalities& clb_nlist) = delete;
 
     public: //Accessors
+        //Returns the criticality of the specified connection
         float criticality(ClusterNetId net, int ipin) const { return timing_place_crit_[net][ipin]; }
+
+        //Returns the range of clustered netlist pins (i.e. ClusterPinIds) which were modified
+        //by the last call to update_criticalities()
         pin_range pins_with_modified_criticality() const;
 
     public: //Modifiers
-        void update_criticalities(const SetupTimingInfo* timing_info, float crit_exponent_lookup);
+        //Incrementally updates criticalities based on the atom netlist criticalitites provied by
+        //timing_info and the provided criticality_exponent.
+        void update_criticalities(const SetupTimingInfo* timing_info, float criticality_exponent);
+
+        //Override the criticality of a particular connection
         void set_criticality(ClusterNetId net, int ipin, float val);
 
     private: //Data
@@ -65,7 +99,8 @@ class PlacerCriticalities {
  *
  *      //Potentially other modifications...
  *
- *      //Calculate the updated cost incrementally based on modifications
+ *      //Calculate the updated timing cost, of all connections, incrementally based 
+ *      //on modifications
  *      float total_timing_cost = connection_timing_costs.total_cost();
  *      
  * However behind the scenes PlacerTimingCosts tracks when connection costs are modified,
@@ -104,10 +139,10 @@ class PlacerCriticalities {
  *
  * Proxy Classes
  * -------------
- * NetProxy is returned by PlacerTimingCost's opartor[], and stores a pointer to the start of
+ * NetProxy is returned by PlacerTimingCost's operator[], and stores a pointer to the start of
  * internal storage of that net's connection costs.
  *
- * ConnectionProxy is returnd by NetProxy's opartor[], and holds a reference to a particular 
+ * ConnectionProxy is returnd by NetProxy's operator[], and holds a reference to a particular 
  * element of the internal storage pertaining to a specific connection's cost. ConnectionProxy 
  * supports assignment, allowing clients to modify the connection cost. It also detects if the 
  * assigned value differs from the previous value and if so, calls PlacerTimingCosts's 
@@ -316,7 +351,7 @@ class PlacerTimingCosts {
                 if (iparent == 0) {
                     break; //At root
                 } else {
-                    //Nest parent
+                    //Next parent
                     iparent = parent(iparent);
                 }
             }
