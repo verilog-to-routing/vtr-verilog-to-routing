@@ -131,6 +131,16 @@ AtomPinId SetupSlackCrit::update_pin_slack(const tatum::NodeId node, const tatum
     AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
     VTR_ASSERT_SAFE(pin);
 
+    //Multiple timing graph nodes may map to the same sequential primitive pin.
+    //When determining the criticality to use for such pins we always choose the
+    //external facing node. This ensures the pin criticality reflects the criticality
+    //of the external timing path connected to this pin.
+    if (is_internal_tnode(pin, node)) {
+        return AtomPinId::INVALID();
+    }
+
+    VTR_ASSERT_SAFE(is_external_tnode(pin, node));
+
     //Find the worst (least) slack at this node
     auto tags = analyzer.setup_slacks(node);
     auto min_tag_iter = find_minimum_tag(tags);
@@ -397,9 +407,11 @@ AtomPinId SetupSlackCrit::update_pin_criticality(const tatum::NodeId node,
     //When determining the criticality to use for such pins we always choose the
     //external facing node. This ensures the pin criticality reflects the criticality
     //of the external timing path connected to this pin.
-    if (is_internal_tnode(node)) {
+    if (is_internal_tnode(pin, node)) {
         return AtomPinId::INVALID();
     }
+
+    VTR_ASSERT_SAFE(is_external_tnode(pin, node));
 
     float new_crit = calc_relaxed_criticality(max_req_, worst_slack_, analyzer.setup_slacks(node));
 
@@ -427,14 +439,11 @@ void SetupSlackCrit::record_modified_nodes(const tatum::TimingGraph& timing_grap
     }
 }
 
-bool SetupSlackCrit::is_internal_tnode(const tatum::NodeId node) const {
-    return !is_external_tnode(node);
+bool SetupSlackCrit::is_internal_tnode(const AtomPinId pin, const tatum::NodeId node) const {
+    return !is_external_tnode(pin, node);
 }
 
-bool SetupSlackCrit::is_external_tnode(const tatum::NodeId node) const {
-    AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
-    VTR_ASSERT_SAFE(pin);
-
+bool SetupSlackCrit::is_external_tnode(const AtomPinId pin, const tatum::NodeId node) const {
     return netlist_lookup_.atom_pin_tnode(pin, BlockTnode::EXTERNAL) == node;
 }
 
