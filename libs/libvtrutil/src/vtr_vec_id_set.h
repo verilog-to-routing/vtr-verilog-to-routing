@@ -23,73 +23,72 @@ namespace vtr {
  */
 template<typename T>
 class vec_id_set {
-    public:
-        typedef typename std::vector<T>::const_iterator const_iterator;
-        typedef const_iterator iterator;
+  public:
+    typedef typename std::vector<T>::const_iterator const_iterator;
+    typedef const_iterator iterator;
 
-        auto begin() const { return vec_.begin(); }
-        auto end() const { return vec_.end(); }
+    auto begin() const { return vec_.begin(); }
+    auto end() const { return vec_.end(); }
 
-        auto cbegin() const { return vec_.cbegin(); }
-        auto cend() const { return vec_.cend(); }
+    auto cbegin() const { return vec_.cbegin(); }
+    auto cend() const { return vec_.cend(); }
 
-        bool insert(T val) {
-            if (count(val)) { //Already inserted
-                return false;
-            }
-
-            vec_.push_back(val);
-
-            //Mark this value as being contained
-            if (size_t(val) >= contained_.size()) {
-                //We dynamically grow contained_ based on the maximum
-                //value contained. This allows us to avoid expensive
-                contained_.resize(size_t(val)+1, false);
-            }
-            contained_[size_t(val)] = true;
-
-            return true;
+    bool insert(T val) {
+        if (count(val)) { //Already inserted
+            return false;
         }
 
-        template<typename Iter>
-        void insert(Iter first, Iter last) {
-            size_t nelem = std::distance(first, last);
-            vec_.reserve(size() + nelem);
-            contained_.reserve(size() + nelem);
+        vec_.push_back(val);
 
-            for (Iter itr = first; itr != last; ++itr) {
-                insert(*itr);
-            }
+        //Mark this value as being contained
+        if (size_t(val) >= contained_.size()) {
+            //We dynamically grow contained_ based on the maximum
+            //value contained. This allows us to avoid expensive
+            contained_.resize(size_t(val) + 1, false);
         }
+        contained_[size_t(val)] = true;
 
+        return true;
+    }
 
-        size_t count(T val) const {
-            if (size_t(val) < contained_.size()) {
-                //Value is with-in range of previously inserted
-                //elements, so look-up its membership
-                return contained_[size_t(val)];
-            }
-            return 0;
+    template<typename Iter>
+    void insert(Iter first, Iter last) {
+        size_t nelem = std::distance(first, last);
+        vec_.reserve(size() + nelem);
+        contained_.reserve(size() + nelem);
+
+        for (Iter itr = first; itr != last; ++itr) {
+            insert(*itr);
         }
+    }
 
-        size_t size() const {
-            return vec_.size();
+    size_t count(T val) const {
+        if (size_t(val) < contained_.size()) {
+            //Value is with-in range of previously inserted
+            //elements, so look-up its membership
+            return contained_[size_t(val)];
         }
+        return 0;
+    }
 
-        void sort() {
-            std::sort(vec_.begin(), vec_.end());
-        }
+    size_t size() const {
+        return vec_.size();
+    }
 
-        void clear() {
-            vec_.clear();
-            contained_.clear();
-        }
+    void sort() {
+        std::sort(vec_.begin(), vec_.end());
+    }
 
-    private:
-        std::vector<T> vec_; //Elements contained
-        std::vector<bool> contained_; //Bit-set for constant-time membership test
+    void clear() {
+        vec_.clear();
+        contained_.clear();
+    }
+
+  private:
+    std::vector<T> vec_;          //Elements contained
+    std::vector<bool> contained_; //Bit-set for constant-time membership test
 };
 
-} //namespace
+} // namespace vtr
 
 #endif
