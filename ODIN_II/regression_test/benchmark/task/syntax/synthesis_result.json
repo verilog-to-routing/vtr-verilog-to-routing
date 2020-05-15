@@ -255,7 +255,7 @@
         "verilog": "bm_dag5_mod.v",
         "exit": 134,
         "errors": [
-            "AST bm_dag5_mod.v::33 Cannot mix port connections by name and port connections by ordered list"
+            "AST bm_dag5_mod.v:33 Cannot mix port connections by name and port connections by ordered list"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -282,7 +282,7 @@
         "verilog": "bm_dag5_mod.v",
         "exit": 134,
         "errors": [
-            "AST bm_dag5_mod.v::33 Cannot mix port connections by name and port connections by ordered list"
+            "AST bm_dag5_mod.v:33 Cannot mix port connections by name and port connections by ordered list"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -309,7 +309,7 @@
         "verilog": "bm_dag6_mod_log.v",
         "exit": 134,
         "errors": [
-            "AST bm_dag6_mod_log.v::33 Cannot mix port connections by name and port connections by ordered list"
+            "AST bm_dag6_mod_log.v:33 Cannot mix port connections by name and port connections by ordered list"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -336,7 +336,7 @@
         "verilog": "bm_dag6_mod_log.v",
         "exit": 134,
         "errors": [
-            "AST bm_dag6_mod_log.v::33 Cannot mix port connections by name and port connections by ordered list"
+            "AST bm_dag6_mod_log.v:33 Cannot mix port connections by name and port connections by ordered list"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -613,7 +613,7 @@
         "verilog": "bm_function_1.v",
         "exit": 134,
         "errors": [
-            "AST bm_function_1.v::40 Missing declaration of this symbol simple_func"
+            "AST bm_function_1.v:40 Missing declaration of this symbol simple_func"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -640,7 +640,7 @@
         "verilog": "bm_function_1.v",
         "exit": 134,
         "errors": [
-            "AST bm_function_1.v::40 Missing declaration of this symbol simple_func"
+            "AST bm_function_1.v:40 Missing declaration of this symbol simple_func"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -667,7 +667,7 @@
         "verilog": "bm_function_2.v",
         "exit": 134,
         "errors": [
-            "AST bm_function_2.v::50 Missing declaration of this symbol simple_func"
+            "AST bm_function_2.v:50 Missing declaration of this symbol simple_func"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -694,7 +694,7 @@
         "verilog": "bm_function_2.v",
         "exit": 134,
         "errors": [
-            "AST bm_function_2.v::50 Missing declaration of this symbol simple_func"
+            "AST bm_function_2.v:50 Missing declaration of this symbol simple_func"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -822,8 +822,8 @@
         "exit": 0,
         "errors": [],
         "warnings": [
-            "NETLIST bm_simple_memory.v::24 indexing into memory with bm_simple_memory has larger input than memory. Unused pins: bm_simple_memory^address_in~3",
-            "NETLIST bm_simple_memory.v::27 indexing into memory with bm_simple_memory has larger input than memory. Unused pins: bm_simple_memory^address_out~3"
+            "NETLIST bm_simple_memory.v:24 indexing into memory with bm_simple_memory has larger input than memory. Unused pins: bm_simple_memory^address_in~3",
+            "NETLIST bm_simple_memory.v:27 indexing into memory with bm_simple_memory has larger input than memory. Unused pins: bm_simple_memory^address_out~3"
         ],
         "max_rss(MiB)": 25.8,
         "exec_time(ms)": 46.6,
@@ -850,8 +850,8 @@
         "exit": 0,
         "errors": [],
         "warnings": [
-            "NETLIST bm_simple_memory.v::24 indexing into memory with bm_simple_memory has larger input than memory. Unused pins: bm_simple_memory^address_in~3",
-            "NETLIST bm_simple_memory.v::27 indexing into memory with bm_simple_memory has larger input than memory. Unused pins: bm_simple_memory^address_out~3"
+            "NETLIST bm_simple_memory.v:24 indexing into memory with bm_simple_memory has larger input than memory. Unused pins: bm_simple_memory^address_in~3",
+            "NETLIST bm_simple_memory.v:27 indexing into memory with bm_simple_memory has larger input than memory. Unused pins: bm_simple_memory^address_out~3"
         ],
         "max_rss(MiB)": 12.8,
         "exec_time(ms)": 5.6,
@@ -1082,8 +1082,8 @@
             "PARSE_TO_AST Parser found (2) errors in your syntax, exiting"
         ],
         "warnings": [
-            "PARSE_TO_AST deassign.v::21 Unsuported token",
-            "PARSE_TO_AST deassign.v::21 error in parsing: (syntax error, unexpected ';', expecting voLTE or '=')"
+            "PARSE_TO_AST deassign.v:21 Unsuported token",
+            "PARSE_TO_AST deassign.v:21 error in parsing: (syntax error, unexpected ';', expecting voLTE or '=')"
         ],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
@@ -1112,8 +1112,8 @@
             "PARSE_TO_AST Parser found (2) errors in your syntax, exiting"
         ],
         "warnings": [
-            "PARSE_TO_AST deassign.v::21 Unsuported token",
-            "PARSE_TO_AST deassign.v::21 error in parsing: (syntax error, unexpected ';', expecting voLTE or '=')"
+            "PARSE_TO_AST deassign.v:21 Unsuported token",
+            "PARSE_TO_AST deassign.v:21 error in parsing: (syntax error, unexpected ';', expecting voLTE or '=')"
         ],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
@@ -1292,8 +1292,8 @@
             "PARSE_TO_AST Parser found (2) errors in your syntax, exiting"
         ],
         "warnings": [
-            "PARSE_TO_AST fir_scu_rtl_restructured_for_cmm_exp.v::94 error in parsing: (syntax error, unexpected vSYMBOL_ID, expecting voLTE or '=')",
-            "PARSE_TO_AST fir_scu_rtl_restructured_for_cmm_exp.v::109 error in parsing: (syntax error, unexpected voLTE, expecting vSYMBOL_ID or '#')"
+            "PARSE_TO_AST fir_scu_rtl_restructured_for_cmm_exp.v:94 error in parsing: (syntax error, unexpected vSYMBOL_ID, expecting voLTE or '=')",
+            "PARSE_TO_AST fir_scu_rtl_restructured_for_cmm_exp.v:109 error in parsing: (syntax error, unexpected voLTE, expecting vSYMBOL_ID or '#')"
         ],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
@@ -1322,8 +1322,8 @@
             "PARSE_TO_AST Parser found (2) errors in your syntax, exiting"
         ],
         "warnings": [
-            "PARSE_TO_AST fir_scu_rtl_restructured_for_cmm_exp.v::94 error in parsing: (syntax error, unexpected vSYMBOL_ID, expecting voLTE or '=')",
-            "PARSE_TO_AST fir_scu_rtl_restructured_for_cmm_exp.v::109 error in parsing: (syntax error, unexpected voLTE, expecting vSYMBOL_ID or '#')"
+            "PARSE_TO_AST fir_scu_rtl_restructured_for_cmm_exp.v:94 error in parsing: (syntax error, unexpected vSYMBOL_ID, expecting voLTE or '=')",
+            "PARSE_TO_AST fir_scu_rtl_restructured_for_cmm_exp.v:109 error in parsing: (syntax error, unexpected voLTE, expecting vSYMBOL_ID or '#')"
         ],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
@@ -1350,7 +1350,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [
-            "NETLIST flip_flop_enable.v::7 This output is undriven (edge_testing^q0) and will be removed",
+            "NETLIST flip_flop_enable.v:7 This output is undriven (edge_testing^q0) and will be removed",
             "NETLIST Net edge_testing^q0 driving node edge_testing^q0 is itself undriven."
         ],
         "max_rss(MiB)": 25.4,
@@ -1378,7 +1378,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [
-            "NETLIST flip_flop_enable.v::7 This output is undriven (edge_testing^q0) and will be removed",
+            "NETLIST flip_flop_enable.v:7 This output is undriven (edge_testing^q0) and will be removed",
             "NETLIST Net edge_testing^q0 driving node edge_testing^q0 is itself undriven."
         ],
         "max_rss(MiB)": 12.7,
@@ -1406,7 +1406,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [
-            "NETLIST flip_flop_enable_w_begin_label.v::7 This output is undriven (edge_testing^q0) and will be removed",
+            "NETLIST flip_flop_enable_w_begin_label.v:7 This output is undriven (edge_testing^q0) and will be removed",
             "NETLIST Net edge_testing^q0 driving node edge_testing^q0 is itself undriven."
         ],
         "max_rss(MiB)": 25.5,
@@ -1434,7 +1434,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [
-            "NETLIST flip_flop_enable_w_begin_label.v::7 This output is undriven (edge_testing^q0) and will be removed",
+            "NETLIST flip_flop_enable_w_begin_label.v:7 This output is undriven (edge_testing^q0) and will be removed",
             "NETLIST Net edge_testing^q0 driving node edge_testing^q0 is itself undriven."
         ],
         "max_rss(MiB)": 12.4,
@@ -1612,7 +1612,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [
-            "AST function_automatic.v::33 ODIN II does not (yet) differentiate between automatic and static tasks & functions.IGNORING"
+            "AST function_automatic.v:33 ODIN II does not (yet) differentiate between automatic and static tasks & functions.IGNORING"
         ],
         "max_rss(MiB)": 25.6,
         "exec_time(ms)": 33.7,
@@ -1639,7 +1639,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [
-            "AST function_automatic.v::33 ODIN II does not (yet) differentiate between automatic and static tasks & functions.IGNORING"
+            "AST function_automatic.v:33 ODIN II does not (yet) differentiate between automatic and static tasks & functions.IGNORING"
         ],
         "max_rss(MiB)": 12.4,
         "exec_time(ms)": 4.1,
@@ -1668,8 +1668,8 @@
             "PARSE_TO_AST Parser found (1) errors in your syntax, exiting"
         ],
         "warnings": [
-            "PARSE_TO_AST function_hdr.v::14 error in parsing: (syntax error, unexpected vINT_NUMBER, expecting vSYMBOL_ID or '{')",
-            "AST function_hdr.vh::13 ODIN_II does not fully support input/output integers in functions"
+            "PARSE_TO_AST function_hdr.v:14 error in parsing: (syntax error, unexpected vINT_NUMBER, expecting vSYMBOL_ID or '{')",
+            "AST function_hdr.vh:13 ODIN_II does not fully support input/output integers in functions"
         ],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
@@ -1698,8 +1698,8 @@
             "PARSE_TO_AST Parser found (1) errors in your syntax, exiting"
         ],
         "warnings": [
-            "PARSE_TO_AST function_hdr.v::14 error in parsing: (syntax error, unexpected vINT_NUMBER, expecting vSYMBOL_ID or '{')",
-            "AST function_hdr.vh::13 ODIN_II does not fully support input/output integers in functions"
+            "PARSE_TO_AST function_hdr.v:14 error in parsing: (syntax error, unexpected vINT_NUMBER, expecting vSYMBOL_ID or '{')",
+            "AST function_hdr.vh:13 ODIN_II does not fully support input/output integers in functions"
         ],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
@@ -2125,7 +2125,7 @@
         "verilog": "instantiated_by_name_function_invalid_1.v",
         "exit": 134,
         "errors": [
-            "NETLIST instantiated_by_name_function_invalid_1.v::21 Function instantiation (func_out) and definition don't match in terms of ports"
+            "NETLIST instantiated_by_name_function_invalid_1.v:21 Function instantiation (func_out) and definition don't match in terms of ports"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -2152,7 +2152,7 @@
         "verilog": "instantiated_by_name_function_invalid_1.v",
         "exit": 134,
         "errors": [
-            "NETLIST instantiated_by_name_function_invalid_1.v::21 Function instantiation (func_out) and definition don't match in terms of ports"
+            "NETLIST instantiated_by_name_function_invalid_1.v:21 Function instantiation (func_out) and definition don't match in terms of ports"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -2179,7 +2179,7 @@
         "verilog": "instantiated_by_name_function_invalid.v",
         "exit": 134,
         "errors": [
-            "NETLIST instantiated_by_name_function_invalid.v::21 Module entry y1 does not exist"
+            "NETLIST instantiated_by_name_function_invalid.v:21 Module entry y1 does not exist"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -2206,7 +2206,7 @@
         "verilog": "instantiated_by_name_function_invalid.v",
         "exit": 134,
         "errors": [
-            "NETLIST instantiated_by_name_function_invalid.v::21 Module entry y1 does not exist"
+            "NETLIST instantiated_by_name_function_invalid.v:21 Module entry y1 does not exist"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -2283,7 +2283,7 @@
         "verilog": "instantiated_by_name_task_invalid_1.v",
         "exit": 134,
         "errors": [
-            "NETLIST instantiated_by_name_task_invalid_1.v::21 Task instantiation (my_task) and definition don't match in terms of ports"
+            "NETLIST instantiated_by_name_task_invalid_1.v:21 Task instantiation (my_task) and definition don't match in terms of ports"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -2310,7 +2310,7 @@
         "verilog": "instantiated_by_name_task_invalid_1.v",
         "exit": 134,
         "errors": [
-            "NETLIST instantiated_by_name_task_invalid_1.v::21 Task instantiation (my_task) and definition don't match in terms of ports"
+            "NETLIST instantiated_by_name_task_invalid_1.v:21 Task instantiation (my_task) and definition don't match in terms of ports"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -2337,7 +2337,7 @@
         "verilog": "instantiated_by_name_task_invalid.v",
         "exit": 134,
         "errors": [
-            "NETLIST instantiated_by_name_task_invalid.v::21 Module entry y1 does not exist"
+            "NETLIST instantiated_by_name_task_invalid.v:21 Module entry y1 does not exist"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -2364,7 +2364,7 @@
         "verilog": "instantiated_by_name_task_invalid.v",
         "exit": 134,
         "errors": [
-            "NETLIST instantiated_by_name_task_invalid.v::21 Module entry y1 does not exist"
+            "NETLIST instantiated_by_name_task_invalid.v:21 Module entry y1 does not exist"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -2441,7 +2441,7 @@
         "verilog": "instantiating_by_name_invalid_1.v",
         "exit": 134,
         "errors": [
-            "NETLIST instantiating_by_name_invalid_1.v::13 Module instantiation (and2) and definition don't match in terms of ports"
+            "NETLIST instantiating_by_name_invalid_1.v:13 Module instantiation (and2) and definition don't match in terms of ports"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -2468,7 +2468,7 @@
         "verilog": "instantiating_by_name_invalid_1.v",
         "exit": 134,
         "errors": [
-            "NETLIST instantiating_by_name_invalid_1.v::13 Module instantiation (and2) and definition don't match in terms of ports"
+            "NETLIST instantiating_by_name_invalid_1.v:13 Module instantiation (and2) and definition don't match in terms of ports"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -2495,7 +2495,7 @@
         "verilog": "instantiating_by_name_invalid.v",
         "exit": 134,
         "errors": [
-            "NETLIST instantiating_by_name_invalid.v::13 Module entry in3 does not exist"
+            "NETLIST instantiating_by_name_invalid.v:13 Module entry in3 does not exist"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -2522,7 +2522,7 @@
         "verilog": "instantiating_by_name_invalid_mix_ports.v",
         "exit": 134,
         "errors": [
-            "AST instantiating_by_name_invalid_mix_ports.v::13 Cannot mix port connections by name and port connections by ordered list"
+            "AST instantiating_by_name_invalid_mix_ports.v:13 Cannot mix port connections by name and port connections by ordered list"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -2549,7 +2549,7 @@
         "verilog": "instantiating_by_name_invalid_mix_ports.v",
         "exit": 134,
         "errors": [
-            "AST instantiating_by_name_invalid_mix_ports.v::13 Cannot mix port connections by name and port connections by ordered list"
+            "AST instantiating_by_name_invalid_mix_ports.v:13 Cannot mix port connections by name and port connections by ordered list"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -2576,7 +2576,7 @@
         "verilog": "instantiating_by_name_invalid.v",
         "exit": 134,
         "errors": [
-            "NETLIST instantiating_by_name_invalid.v::13 Module entry in3 does not exist"
+            "NETLIST instantiating_by_name_invalid.v:13 Module entry in3 does not exist"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -2754,8 +2754,8 @@
         "exit": 134,
         "errors": [],
         "warnings": [
-            "NETLIST matrix_multiplication.v::120 indexing into memory with matrix_multiplication has larger input than memory. Unused pins:",
-            "NETLIST matrix_multiplication.v::121 indexing into memory with matrix_multiplication has larger input than memory. Unused pins:"
+            "NETLIST matrix_multiplication.v:120 indexing into memory with matrix_multiplication has larger input than memory. Unused pins:",
+            "NETLIST matrix_multiplication.v:121 indexing into memory with matrix_multiplication has larger input than memory. Unused pins:"
         ],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
@@ -2782,8 +2782,8 @@
         "exit": 134,
         "errors": [],
         "warnings": [
-            "NETLIST matrix_multiplication.v::120 indexing into memory with matrix_multiplication has larger input than memory. Unused pins:",
-            "NETLIST matrix_multiplication.v::121 indexing into memory with matrix_multiplication has larger input than memory. Unused pins:"
+            "NETLIST matrix_multiplication.v:120 indexing into memory with matrix_multiplication has larger input than memory. Unused pins:",
+            "NETLIST matrix_multiplication.v:121 indexing into memory with matrix_multiplication has larger input than memory. Unused pins:"
         ],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
@@ -2960,8 +2960,8 @@
         "exit": 0,
         "errors": [],
         "warnings": [
-            "NETLIST multi_edge_reader_writer.v::32 indexing into memory with multiclock_reader_writer has larger input than memory. Unused pins: multiclock_reader_writer^addr_read~2",
-            "NETLIST multi_edge_reader_writer.v::36 indexing into memory with multiclock_reader_writer has larger input than memory. Unused pins: multiclock_reader_writer^addr_write~2"
+            "NETLIST multi_edge_reader_writer.v:32 indexing into memory with multiclock_reader_writer has larger input than memory. Unused pins: multiclock_reader_writer^addr_read~2",
+            "NETLIST multi_edge_reader_writer.v:36 indexing into memory with multiclock_reader_writer has larger input than memory. Unused pins: multiclock_reader_writer^addr_write~2"
         ],
         "max_rss(MiB)": 26.8,
         "exec_time(ms)": 50.6,
@@ -2988,8 +2988,8 @@
         "exit": 0,
         "errors": [],
         "warnings": [
-            "NETLIST multi_edge_reader_writer.v::32 indexing into memory with multiclock_reader_writer has larger input than memory. Unused pins: multiclock_reader_writer^addr_read~2",
-            "NETLIST multi_edge_reader_writer.v::36 indexing into memory with multiclock_reader_writer has larger input than memory. Unused pins: multiclock_reader_writer^addr_write~2"
+            "NETLIST multi_edge_reader_writer.v:32 indexing into memory with multiclock_reader_writer has larger input than memory. Unused pins: multiclock_reader_writer^addr_read~2",
+            "NETLIST multi_edge_reader_writer.v:36 indexing into memory with multiclock_reader_writer has larger input than memory. Unused pins: multiclock_reader_writer^addr_write~2"
         ],
         "max_rss(MiB)": 14.6,
         "exec_time(ms)": 7.4,
@@ -3266,7 +3266,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [
-            "AST no_port.v::11 there are no ports for the module (and_primitive)"
+            "AST no_port.v:11 there are no ports for the module (and_primitive)"
         ],
         "max_rss(MiB)": 24,
         "exec_time(ms)": 38,
@@ -3293,7 +3293,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [
-            "AST no_port.v::11 there are no ports for the module (and_primitive)"
+            "AST no_port.v:11 there are no ports for the module (and_primitive)"
         ],
         "max_rss(MiB)": 10.4,
         "exec_time(ms)": 1.8,
@@ -3320,7 +3320,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [
-            "NETLIST not_enough_wires.v::7 This output is undriven (bar^d) and will be removed",
+            "NETLIST not_enough_wires.v:7 This output is undriven (bar^d) and will be removed",
             "NETLIST Net bar^d driving node bar^d is itself undriven."
         ],
         "max_rss(MiB)": 26.3,
@@ -3348,7 +3348,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [
-            "NETLIST not_enough_wires.v::7 This output is undriven (bar^d) and will be removed",
+            "NETLIST not_enough_wires.v:7 This output is undriven (bar^d) and will be removed",
             "NETLIST Net bar^d driving node bar^d is itself undriven."
         ],
         "max_rss(MiB)": 13,
@@ -3932,7 +3932,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [
-            "AST task_automatic.v::35 ODIN II does not (yet) differentiate between automatic and static tasks & functions. IGNORING"
+            "AST task_automatic.v:35 ODIN II does not (yet) differentiate between automatic and static tasks & functions. IGNORING"
         ],
         "max_rss(MiB)": 25.4,
         "exec_time(ms)": 48.8,
@@ -3959,7 +3959,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [
-            "AST task_automatic.v::35 ODIN II does not (yet) differentiate between automatic and static tasks & functions. IGNORING"
+            "AST task_automatic.v:35 ODIN II does not (yet) differentiate between automatic and static tasks & functions. IGNORING"
         ],
         "max_rss(MiB)": 12.1,
         "exec_time(ms)": 4.4,
@@ -4085,7 +4085,7 @@
         "verilog": "top_and.v",
         "exit": 134,
         "errors": [
-            "AST top_and.v::19 Can't find module name and_primitive"
+            "AST top_and.v:19 Can't find module name and_primitive"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -4112,7 +4112,7 @@
         "verilog": "top_and.v",
         "exit": 134,
         "errors": [
-            "AST top_and.v::19 Can't find module name and_primitive"
+            "AST top_and.v:19 Can't find module name and_primitive"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
