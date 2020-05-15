@@ -244,6 +244,26 @@ void SetupSlackCrit::update_max_req_and_worst_slack(const tatum::TimingGraph& ti
 
 bool SetupSlackCrit::incr_update_max_req_and_worst_slack(const tatum::TimingGraph& timing_graph,
                                                          const tatum::SetupTimingAnalyzer& analyzer) {
+    /*
+     * This function attempts to incrementally update the maximum required times and worst slacks
+     * for all clock domain pairs.
+     *
+     * This is accomplished by iterating through the all *modified* SINK timing nodes (i.e. nodes
+     * which correspond to primary outputs and FF inputs) and comparing their values with those
+     * previously calculated. Since the number of *modified* SINKs can be much less than the total
+     * number the incremental update can be more efficient.
+     *
+     * This is essentially the same calculation as recompute_max_req_and_worst_slack() (which iterates
+     * over *all* primary). By interating only over the modified nodes, this will produce the correct 
+     * result *except* when the previous max-required/worst-slack have changed.
+     *
+     * In such as case, if the previously dominant node has had it's required time decreased (or worst 
+     * slack increased) it may no longer be dominant, and we abort the incremental update (a full update
+     * must be performed).
+     *
+     * Generally, the max required time and worst slack change relatively infrequently, so this speculative
+     * update approach tends to be much more efficient.
+     */
     vtr::Timer timer;
 
     if (max_req_node_.empty() || worst_slack_node_.empty()) {
@@ -329,8 +349,10 @@ bool SetupSlackCrit::incr_update_max_req_and_worst_slack(const tatum::TimingGrap
 
 void SetupSlackCrit::recompute_max_req_and_worst_slack(const tatum::TimingGraph& timing_graph,
                                                        const tatum::SetupTimingAnalyzer& analyzer) {
+    //Recomputes from scratch, the maximum required time and worst slack per clock domain pair 
     vtr::Timer timer;
 
+    //Clear any previous values
     max_req_.clear();
     max_req_node_.clear();
 
@@ -344,7 +366,7 @@ void SetupSlackCrit::recompute_max_req_and_worst_slack(const tatum::TimingGraph&
             float req = tag.time().value();
             if (!max_req_.count(domain_pair) || max_req_[domain_pair] < req) {
                 max_req_[domain_pair] = req;
-                max_req_node_[domain_pair] = node;
+                max_req_node_[domain_pair] = node; //Record dominant node to help later  incremental updates
             }
         }
 
@@ -358,7 +380,7 @@ void SetupSlackCrit::recompute_max_req_and_worst_slack(const tatum::TimingGraph&
 
             if (!worst_slack_.count(domain_pair) || slack < worst_slack_[domain_pair]) {
                 worst_slack_[domain_pair] = slack;
-                worst_slack_node_[domain_pair] = node;
+                worst_slack_node_[domain_pair] = node; //Record dominant node to help later  incremental updates
             }
         }
     }
