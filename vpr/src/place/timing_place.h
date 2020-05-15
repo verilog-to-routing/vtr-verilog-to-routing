@@ -42,45 +42,45 @@ std::unique_ptr<PlaceDelayModel> alloc_lookups_and_criticalities(t_chan_width_di
  * a change in exponent changes *all* criticalities.
  */
 class PlacerCriticalities {
-    public: //Types
-        typedef vtr::vec_id_set<ClusterPinId>::iterator pin_iterator;
-        typedef vtr::vec_id_set<ClusterNetId>::iterator net_iterator;
+  public: //Types
+    typedef vtr::vec_id_set<ClusterPinId>::iterator pin_iterator;
+    typedef vtr::vec_id_set<ClusterNetId>::iterator net_iterator;
 
-        typedef vtr::Range<pin_iterator> pin_range;
-        typedef vtr::Range<net_iterator> net_range;
+    typedef vtr::Range<pin_iterator> pin_range;
+    typedef vtr::Range<net_iterator> net_range;
 
-    public: //Lifetime
-        PlacerCriticalities(const ClusteredNetlist& clb_nlist, const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
-        PlacerCriticalities(const PlacerCriticalities& clb_nlist) = delete;
-        PlacerCriticalities& operator=(const PlacerCriticalities& clb_nlist) = delete;
+  public: //Lifetime
+    PlacerCriticalities(const ClusteredNetlist& clb_nlist, const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
+    PlacerCriticalities(const PlacerCriticalities& clb_nlist) = delete;
+    PlacerCriticalities& operator=(const PlacerCriticalities& clb_nlist) = delete;
 
-    public: //Accessors
-        //Returns the criticality of the specified connection
-        float criticality(ClusterNetId net, int ipin) const { return timing_place_crit_[net][ipin]; }
+  public: //Accessors
+    //Returns the criticality of the specified connection
+    float criticality(ClusterNetId net, int ipin) const { return timing_place_crit_[net][ipin]; }
 
-        //Returns the range of clustered netlist pins (i.e. ClusterPinIds) which were modified
-        //by the last call to update_criticalities()
-        pin_range pins_with_modified_criticality() const;
+    //Returns the range of clustered netlist pins (i.e. ClusterPinIds) which were modified
+    //by the last call to update_criticalities()
+    pin_range pins_with_modified_criticality() const;
 
-    public: //Modifiers
-        //Incrementally updates criticalities based on the atom netlist criticalitites provied by
-        //timing_info and the provided criticality_exponent.
-        void update_criticalities(const SetupTimingInfo* timing_info, float criticality_exponent);
+  public: //Modifiers
+    //Incrementally updates criticalities based on the atom netlist criticalitites provied by
+    //timing_info and the provided criticality_exponent.
+    void update_criticalities(const SetupTimingInfo* timing_info, float criticality_exponent);
 
-        //Override the criticality of a particular connection
-        void set_criticality(ClusterNetId net, int ipin, float val);
+    //Override the criticality of a particular connection
+    void set_criticality(ClusterNetId net, int ipin, float val);
 
-    private: //Data
-        const ClusteredNetlist& clb_nlist_;
-        const ClusteredPinAtomPinsLookup& pin_lookup_;
-        
-        ClbNetPinsMatrix<float> timing_place_crit_; /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1] */
+  private: //Data
+    const ClusteredNetlist& clb_nlist_;
+    const ClusteredPinAtomPinsLookup& pin_lookup_;
 
-        //The criticality exponent when update_criticalites() was last called (used to detect if incremental update can be used)
-        float last_crit_exponent_ = std::numeric_limits<float>::quiet_NaN();
+    ClbNetPinsMatrix<float> timing_place_crit_; /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1] */
 
-        //Set of pins with criticaltites modified by last call to update_criticalities()
-        vtr::vec_id_set<ClusterPinId> cluster_pins_with_modified_criticality_;
+    //The criticality exponent when update_criticalites() was last called (used to detect if incremental update can be used)
+    float last_crit_exponent_ = std::numeric_limits<float>::quiet_NaN();
+
+    //Set of pins with criticaltites modified by last call to update_criticalities()
+    vtr::vec_id_set<ClusterPinId> cluster_pins_with_modified_criticality_;
 };
 
 /* Usage
@@ -152,252 +152,251 @@ class PlacerCriticalities {
  * so they will be re-calculated by PlacerTimingCosts' total_cost() method.
  */
 class PlacerTimingCosts {
-    public:
-        PlacerTimingCosts() = default;
+  public:
+    PlacerTimingCosts() = default;
 
-        PlacerTimingCosts(const ClusteredNetlist& nlist) {
-            auto nets = nlist.nets();
+    PlacerTimingCosts(const ClusteredNetlist& nlist) {
+        auto nets = nlist.nets();
 
-            net_start_indicies_.resize(nets.size());
+        net_start_indicies_.resize(nets.size());
 
-            //Walk through the netlist to determine how many connections there are.
-            size_t iconn = 0;
-            for (ClusterNetId net : nets) {
-                //The placer always skips 'ignored' nets so they don't effect timing
-                //costs, so we also skip them here
-                if (nlist.net_is_ignored(net)) {
-                    net_start_indicies_[net] = OPEN;                    
-                    continue;
-                }
-
-                //Save the startind index of the current net's connections.
-                // We use a -1 offset, since sinks indexed from [1..num_net_pins-1]
-                // (there is no timing cost associated with net drivers)
-                net_start_indicies_[net] = iconn - 1; 
-
-                //Reserve space for all this net's connections
-                iconn += nlist.net_sinks(net).size();
+        //Walk through the netlist to determine how many connections there are.
+        size_t iconn = 0;
+        for (ClusterNetId net : nets) {
+            //The placer always skips 'ignored' nets so they don't effect timing
+            //costs, so we also skip them here
+            if (nlist.net_is_ignored(net)) {
+                net_start_indicies_[net] = OPEN;
+                continue;
             }
 
-            size_t num_connections = iconn;
+            //Save the startind index of the current net's connections.
+            // We use a -1 offset, since sinks indexed from [1..num_net_pins-1]
+            // (there is no timing cost associated with net drivers)
+            net_start_indicies_[net] = iconn - 1;
 
-            //Determine how many binary tree levels we need to have a leaf
-            //for each connection cost
-            size_t ilevel = 0;
-            while (num_nodes_in_level(ilevel) < num_connections) {
-                ++ilevel;
+            //Reserve space for all this net's connections
+            iconn += nlist.net_sinks(net).size();
+        }
+
+        size_t num_connections = iconn;
+
+        //Determine how many binary tree levels we need to have a leaf
+        //for each connection cost
+        size_t ilevel = 0;
+        while (num_nodes_in_level(ilevel) < num_connections) {
+            ++ilevel;
+        }
+        num_levels_ = ilevel + 1;
+
+        size_t num_leaves = num_nodes_in_level(ilevel);
+        size_t num_level_before_leaves = num_nodes_in_level(ilevel - 1);
+
+        VTR_ASSERT_MSG(num_leaves >= num_connections, "Need at least as many leaves as connections");
+        VTR_ASSERT_MSG(num_connections == 0 || num_level_before_leaves < num_connections, "Level before should have fewer nodes than connections (to ensure using the smallest binary tree)");
+
+        //We don't need to store all possible leaves if we have fewer connections
+        //(i.e. bottom-right of tree is empty)
+        size_t last_level_unused_nodes = num_nodes_in_level(ilevel) - num_connections;
+        size_t num_nodes = num_nodes_up_to_level(ilevel) - last_level_unused_nodes;
+
+        //Reserve space for connection costs and intermediate node values
+        connection_costs_ = std::vector<double>(num_nodes, std::numeric_limits<double>::quiet_NaN());
+
+        //The net start indicies we calculated earlier didn't account for intermediate binary tree nodes
+        //Shift the start indicies after the intermediate nodes
+        size_t num_intermediate_nodes = num_nodes_up_to_level(ilevel - 1);
+        for (ClusterNetId net : nets) {
+            if (nlist.net_is_ignored(net)) continue;
+
+            net_start_indicies_[net] = net_start_indicies_[net] + num_intermediate_nodes;
+        }
+    }
+
+    //Proxy class representing a connection cost
+    // Supports modification of connection cost while detecting changes and
+    // reporting them up to PlacerTimingCosts
+    class ConnectionProxy {
+      public:
+        ConnectionProxy(PlacerTimingCosts* timing_costs, double& connection_cost)
+            : timing_costs_(timing_costs)
+            , connection_cost_(connection_cost) {}
+
+        //Allow clients to modify the connection cost via assignment
+        ConnectionProxy& operator=(double new_cost) {
+            if (new_cost != connection_cost_) {
+                //If connection cost changed, update it, and mark it
+                //as invalidated
+                connection_cost_ = new_cost;
+                timing_costs_->invalidate(&connection_cost_);
             }
-            num_levels_ = ilevel + 1;
+            return *this;
+        }
 
-            size_t num_leaves = num_nodes_in_level(ilevel);
-            size_t num_level_before_leaves = num_nodes_in_level(ilevel - 1);
+        //Support getting the current connection cost as a double
+        // Useful for client code operating on the cost values (e.g.
+        // difference between costs)
+        operator double() {
+            return connection_cost_;
+        }
 
-            VTR_ASSERT_MSG(num_leaves >= num_connections, "Need at least as many leaves as connections");
-            VTR_ASSERT_MSG(num_connections == 0 || num_level_before_leaves < num_connections, "Level before should have fewer nodes than connections (to ensure using the smallest binary tree)");
+      private:
+        PlacerTimingCosts* timing_costs_;
+        double& connection_cost_;
+    };
 
-            //We don't need to store all possible leaves if we have fewer connections
-            //(i.e. bottom-right of tree is empty)
-            size_t last_level_unused_nodes = num_nodes_in_level(ilevel) - num_connections;
-            size_t num_nodes = num_nodes_up_to_level(ilevel) - last_level_unused_nodes;
+    //Proxy class representing the connection costs of a net
+    // Supports indexing by pin index to retrieve the ConnectionProxy for that pin/connection
+    class NetProxy {
+      public:
+        NetProxy(PlacerTimingCosts* timing_costs, double* net_sink_costs)
+            : timing_costs_(timing_costs)
+            , net_sink_costs_(net_sink_costs) {}
 
-            //Reserve space for connection costs and intermediate node values
-            connection_costs_ = std::vector<double>(num_nodes, std::numeric_limits<double>::quiet_NaN());
+        //Indexes into the specific net pin/connection
+        ConnectionProxy operator[](size_t ipin) {
+            return ConnectionProxy(timing_costs_, net_sink_costs_[ipin]);
+        }
 
-            //The net start indicies we calculated earlier didn't account for intermediate binary tree nodes
-            //Shift the start indicies after the intermediate nodes
-            size_t num_intermediate_nodes = num_nodes_up_to_level(ilevel - 1);
-            for (ClusterNetId net : nets) {
-                if (nlist.net_is_ignored(net)) continue;
+      private:
+        PlacerTimingCosts* timing_costs_;
+        double* net_sink_costs_;
+    };
 
-                net_start_indicies_[net] = net_start_indicies_[net] + num_intermediate_nodes;
+    //Indexes into the specific net
+    NetProxy operator[](ClusterNetId net_id) {
+        VTR_ASSERT_SAFE(net_start_indicies_[net_id] >= 0);
+
+        double* net_connection_costs = &connection_costs_[net_start_indicies_[net_id]];
+        return NetProxy(this, net_connection_costs);
+    }
+
+    void clear() {
+        connection_costs_.clear();
+        net_start_indicies_.clear();
+    }
+
+    void swap(PlacerTimingCosts& other) {
+        std::swap(connection_costs_, other.connection_costs_);
+        std::swap(net_start_indicies_, other.net_start_indicies_);
+        std::swap(num_levels_, other.num_levels_);
+    }
+
+    //Calculates the total cost of all connections efficiently
+    //in the face of modified connection costs
+    double total_cost() {
+        float cost = total_cost_recurr(0); //Root
+
+        VTR_ASSERT_DEBUG_MSG(cost == total_cost_from_scratch(0),
+                             "Expected incremental and from-scratch costs to be consistent");
+
+        return cost;
+    }
+
+  private:
+    //Recursively calculate and update the timing cost rooted at inode
+    double total_cost_recurr(size_t inode) {
+        //Prune out-of-tree
+        if (inode > connection_costs_.size() - 1) {
+            return 0.;
+        }
+
+        //Valid pre-calculated intermediate result or valid leaf
+        if (!std::isnan(connection_costs_[inode])) {
+            return connection_costs_[inode];
+        }
+
+        //Recompute recursively
+        double node_cost = total_cost_recurr(left_child(inode))
+                           + total_cost_recurr(right_child(inode));
+
+        //Save intermedate cost at this node
+        connection_costs_[inode] = node_cost;
+
+        return node_cost;
+    }
+
+    double total_cost_from_scratch(size_t inode) const {
+        //Prune out-of-tree
+        if (inode > connection_costs_.size() - 1) {
+            return 0.;
+        }
+
+        //Recompute recursively
+        double node_cost = total_cost_from_scratch(left_child(inode))
+                           + total_cost_from_scratch(right_child(inode));
+
+        return node_cost;
+    }
+
+    friend ConnectionProxy; //So it can call invalidate()
+
+    void invalidate(double* invalidated_cost) {
+        //Check pointer within range of internal storage
+        VTR_ASSERT_SAFE_MSG(invalidated_cost >= &connection_costs_[0], "Connection cost pointer should be after start of internal storage");
+        VTR_ASSERT_SAFE_MSG(invalidated_cost <= &connection_costs_[connection_costs_.size() - 1], "Connection cost pointer should be before end of internal storage");
+
+        size_t icost = invalidated_cost - &connection_costs_[0];
+
+        VTR_ASSERT_SAFE(icost >= num_nodes_up_to_level(num_levels_ - 2));
+
+        //Invalidate parent intermediate costs up to root or first
+        //already-invalidated parent
+        size_t iparent = parent(icost);
+        ;
+        while (!std::isnan(connection_costs_[iparent])) {
+            //Invalidate
+            connection_costs_[iparent] = std::numeric_limits<double>::quiet_NaN();
+
+            if (iparent == 0) {
+                break; //At root
+            } else {
+                //Next parent
+                iparent = parent(iparent);
             }
         }
-     
-        //Proxy class representing a connection cost
-        // Supports modification of connection cost while detecting changes and
-        // reporting them up to PlacerTimingCosts
-        class ConnectionProxy {
-            public:
-                ConnectionProxy(PlacerTimingCosts* timing_costs, double& connection_cost)
-                    : timing_costs_(timing_costs)
-                    , connection_cost_(connection_cost) {}
 
-                //Allow clients to modify the connection cost via assignment
-                ConnectionProxy& operator=(double new_cost) {
-                    if (new_cost != connection_cost_) {
-                        //If connection cost changed, update it, and mark it
-                        //as invalidated
-                        connection_cost_ = new_cost;
-                        timing_costs_->invalidate(&connection_cost_);
-                    }
-                    return *this;
-                }
+        VTR_ASSERT_SAFE_MSG(std::isnan(connection_costs_[0]), "Invalidating any connection should have invalidated the root");
+    }
 
-                //Support getting the current connection cost as a double
-                // Useful for client code operating on the cost values (e.g.
-                // difference between costs)
-                operator double() {
-                    return connection_cost_;
-                }
-            private:
-                PlacerTimingCosts* timing_costs_;
-                double& connection_cost_;
-        };
+    size_t left_child(size_t i) const {
+        return 2 * i + 1;
+    }
 
-        //Proxy class representing the connection costs of a net
-        // Supports indexing by pin index to retrieve the ConnectionProxy for that pin/connection
-        class NetProxy {
-            public:
-                NetProxy(PlacerTimingCosts* timing_costs, double* net_sink_costs)
-                    : timing_costs_(timing_costs)
-                    , net_sink_costs_(net_sink_costs) {}
+    size_t right_child(size_t i) const {
+        return 2 * i + 2;
+    }
 
-                //Indexes into the specific net pin/connection
-                ConnectionProxy operator[](size_t ipin) {
-                    return ConnectionProxy(timing_costs_, net_sink_costs_[ipin]);
-                }
+    size_t parent(size_t i) const {
+        return (i - 1) / 2;
+    }
 
-            private:
-                PlacerTimingCosts* timing_costs_;
-                double* net_sink_costs_;
-        };
+    //Returns the number of nodes in ilevel'th level
+    size_t num_nodes_in_level(int ilevel) const {
+        return (2 << (ilevel));
+    }
 
-        //Indexes into the specific net
-        NetProxy operator[](ClusterNetId net_id) {
-            VTR_ASSERT_SAFE(net_start_indicies_[net_id] >= 0);
+    //Returns the total number of nodes in levels [0..ilevel] (inclusive)
+    size_t num_nodes_up_to_level(int ilevel) const {
+        return (2 << (ilevel + 1)) - 1;
+    }
 
-            double* net_connection_costs = &connection_costs_[net_start_indicies_[net_id]];
-            return NetProxy(this, net_connection_costs);
-        }
+  private:
+    //Vector storing the implicit binary tree of connection costs
+    // The actual connections are stored at the end of the vector
+    // (last level of the binary tree). The earlier portions of
+    // the tree are the intermediate nodes.
+    //
+    // The methods left_child()/right_child()/parent() can be used
+    // to traverse the tree by indicies into this vector
+    std::vector<double> connection_costs_;
 
-        void clear() {
-            connection_costs_.clear();
-            net_start_indicies_.clear();
-        }
+    //Vector storing the indicies of the first connection for
+    //each net in the netlist, used for indexing by net.
+    vtr::vector<ClusterNetId, int> net_start_indicies_;
 
-        void swap(PlacerTimingCosts& other) {
-            std::swap(connection_costs_, other.connection_costs_);
-            std::swap(net_start_indicies_, other.net_start_indicies_);
-            std::swap(num_levels_, other.num_levels_);
-        }
-
-        //Calculates the total cost of all connections efficiently
-        //in the face of modified connection costs
-        double total_cost() {
-            float cost = total_cost_recurr(0); //Root
-
-            VTR_ASSERT_DEBUG_MSG(cost == total_cost_from_scratch(0),
-                                 "Expected incremental and from-scratch costs to be consistent");
-
-            return cost;
-        }
-
-    private:
-
-        //Recursively calculate and update the timing cost rooted at inode
-        double total_cost_recurr(size_t inode) {
-            //Prune out-of-tree
-            if (inode > connection_costs_.size() - 1) {
-                return 0.;
-            }
-
-            //Valid pre-calculated intermediate result or valid leaf
-            if (!std::isnan(connection_costs_[inode])) {
-                return connection_costs_[inode];
-            }
-
-            //Recompute recursively
-            double node_cost = total_cost_recurr(left_child(inode))
-                               + total_cost_recurr(right_child(inode));
-
-            //Save intermedate cost at this node
-            connection_costs_[inode] = node_cost;
-
-            return node_cost;
-        }
-
-        double total_cost_from_scratch(size_t inode) const {
-            //Prune out-of-tree
-            if (inode > connection_costs_.size() - 1) {
-                return 0.;
-            }
-
-            //Recompute recursively
-            double node_cost = total_cost_from_scratch(left_child(inode))
-                               + total_cost_from_scratch(right_child(inode));
-
-            return node_cost;
-        }
-
-        friend ConnectionProxy; //So it can call invalidate()
-
-        void invalidate(double* invalidated_cost) {
-            //Check pointer within range of internal storage
-            VTR_ASSERT_SAFE_MSG(invalidated_cost >= &connection_costs_[0], "Connection cost pointer should be after start of internal storage");
-            VTR_ASSERT_SAFE_MSG(invalidated_cost <= &connection_costs_[connection_costs_.size() - 1], "Connection cost pointer should be before end of internal storage");
-
-            size_t icost = invalidated_cost - &connection_costs_[0];
-
-            VTR_ASSERT_SAFE(icost >= num_nodes_up_to_level(num_levels_ - 2));
-
-            //Invalidate parent intermediate costs up to root or first 
-            //already-invalidated parent
-            size_t iparent = parent(icost);;
-            while (!std::isnan(connection_costs_[iparent])) {
-
-                //Invalidate
-                connection_costs_[iparent] = std::numeric_limits<double>::quiet_NaN();
-
-                if (iparent == 0) {
-                    break; //At root
-                } else {
-                    //Next parent
-                    iparent = parent(iparent);
-                }
-            }
-
-            VTR_ASSERT_SAFE_MSG(std::isnan(connection_costs_[0]), "Invalidating any connection should have invalidated the root");
-        }
-
-        size_t left_child(size_t i) const {
-            return 2*i + 1;
-        }
-
-        size_t right_child(size_t i) const {
-            return 2*i + 2;
-        }
-
-        size_t parent(size_t i) const {
-            return (i - 1) / 2;
-        }
-
-        //Returns the number of nodes in ilevel'th level
-        size_t num_nodes_in_level(int ilevel) const {
-            return (2 << (ilevel));
-        }
-
-        //Returns the total number of nodes in levels [0..ilevel] (inclusive)
-        size_t num_nodes_up_to_level(int ilevel) const {
-            return (2 << (ilevel+1)) - 1;
-        }
-
-    private:
-        //Vector storing the implicit binary tree of connection costs
-        // The actual connections are stored at the end of the vector 
-        // (last level of the binary tree). The earlier portions of 
-        // the tree are the intermediate nodes.
-        //
-        // The methods left_child()/right_child()/parent() can be used
-        // to traverse the tree by indicies into this vector
-        std::vector<double> connection_costs_;
-
-        //Vector storing the indicies of the first connection for
-        //each net in the netlist, used for indexing by net.
-        vtr::vector<ClusterNetId,int> net_start_indicies_;
-
-        //Number of levels in the binary tree
-        size_t num_levels_;
+    //Number of levels in the binary tree
+    size_t num_levels_;
 };
-
 
 #endif

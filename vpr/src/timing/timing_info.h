@@ -163,7 +163,7 @@ std::unique_ptr<SetupTimingInfo> make_setup_timing_info(std::shared_ptr<DelayCal
     auto& timing_ctx = g_vpr_ctx.timing();
 
     std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer;
-    
+
     if (update_type == e_timing_update_type::FULL || update_type == e_timing_update_type::AUTO) {
         analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis, tatum::ParallelWalker>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
     } else {
