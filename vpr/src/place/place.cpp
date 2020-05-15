@@ -1795,6 +1795,8 @@ static void commit_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
     }     /* Finished going through all the blocks moved */
 }
 
+//Reverts modifications to proposed_connection_delay and proposed_connection_timing_cost based on
+//the move proposed in blocks_affected
 static void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
 #ifndef VTR_ASSERT_SAFE_ENABLED
     static_cast<void>(blocks_affected);
@@ -1813,6 +1815,7 @@ static void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
 #endif
 }
 
+//Returns true if 'net' is driven by one of the blocks in 'blocks_affected'
 static bool driven_by_moved_block(const ClusterNetId net, const t_pl_blocks_to_be_moved& blocks_affected) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
