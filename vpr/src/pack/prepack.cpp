@@ -873,6 +873,15 @@ t_pack_molecule* alloc_and_load_pack_molecules(t_pack_patterns* list_of_pack_pat
     return list_of_molecules_head;
 }
 
+void free_pack_molecules(t_pack_molecule* list_of_pack_molecules) {
+    t_pack_molecule* cur_pack_molecule = list_of_pack_molecules;
+    while (cur_pack_molecule != nullptr) {
+        cur_pack_molecule = list_of_pack_molecules->next;
+        delete list_of_pack_molecules;
+        list_of_pack_molecules = cur_pack_molecule;
+    }
+}
+
 static void free_pack_pattern(t_pack_pattern_block* pattern_block, t_pack_pattern_block** pattern_block_list) {
     t_pack_pattern_connections *connection, *next;
     if (pattern_block == nullptr || pattern_block->block_id == OPEN) {
