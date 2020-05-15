@@ -10,6 +10,7 @@
 #if defined(VPR_USE_TBB)
 #    include <tbb/task_group.h>
 #    include <tbb/parallel_for_each.h>
+#    include <tbb/combinable.h>
 #endif
 
 template<typename T>
@@ -94,14 +95,23 @@ void SetupSlackCrit::update_slacks(const tatum::SetupTimingAnalyzer& analyzer) {
     pins_with_modified_slacks_.clear();
 
 #if defined(VPR_USE_TBB)
+    tbb::combinable<std::vector<AtomPinId>> modified_pins; //Per-thread vectors
+
     tbb::parallel_for_each(nodes.begin(), nodes.end(), [&, this](tatum::NodeId node) {
-        this->update_pin_slack(node, analyzer);
+
+        AtomPinId modified_pin = this->update_pin_slack(node, analyzer);
+
+        if (modified_pin) {
+            modified_pins.local().push_back(modified_pin); //Insert into per-thread vector
+        }
     });
 
-    //TODO: this is pessimistically assuming all nodes are modified (i.e. ignoring 
-    //      return value of update_pin_slack()
-    //TODO: parallelize
-    nodes_to_pins(nodes, netlist_lookup_, pins_with_modified_slacks_);
+    //Merge per-thread modified pins vectors
+    modified_pins.combine_each([&](const std::vector<AtomPinId>& pins) {
+        pins_with_modified_slacks_.insert(pins_with_modified_slacks_.end(),
+                                          pins.begin(), pins.end());
+    });
+
 #else
     for (tatum::NodeId node : nodes) {
         AtomPinId modified_pin = update_pin_slack(node, analyzer);
@@ -348,23 +358,33 @@ void SetupSlackCrit::recompute_max_req_and_worst_slack(const tatum::TimingGraph&
 template<typename NodeRange>
 void SetupSlackCrit::update_pin_criticalities_from_nodes(const NodeRange& nodes, const tatum::SetupTimingAnalyzer& analyzer) {
 
-        pins_with_modified_criticalities_.clear();
-#if defined(VPR_USE_TBB)
-        tbb::parallel_for_each(nodes.begin(), nodes.end(), [&, this](tatum::NodeId node) {
-            update_pin_criticality(node, analyzer);
-        });
+    pins_with_modified_criticalities_.clear();
 
-        //TODO: this is pessimistically assuming all nodes are modified (i.e. ignoring 
-        //      return value of update_pin_slack()
-        //TODO: parallelize
-        nodes_to_pins(nodes, netlist_lookup_, pins_with_modified_criticalities_);
-#else
-        for (tatum::NodeId node : nodes) {
-            AtomPinId modified_pin = update_pin_criticality(node, analyzer);
-            if (modified_pin) {
-                pins_with_modified_criticalities_.push_back(modified_pin);
-            }
+#if defined(VPR_USE_TBB)
+    tbb::combinable<std::vector<AtomPinId>> modified_pins; //Per-thread vectors
+
+    tbb::parallel_for_each(nodes.begin(), nodes.end(), [&, this](tatum::NodeId node) {
+
+        AtomPinId modified_pin = update_pin_criticality(node, analyzer);
+
+        if (modified_pin) {
+            modified_pins.local().push_back(modified_pin); //Insert into per-thread vector
         }
+    });
+
+    //Merge per-thread modified pins vectors
+    modified_pins.combine_each([&](const std::vector<AtomPinId>& pins) {
+        pins_with_modified_criticalities_.insert(pins_with_modified_criticalities_.end(),
+                                                 pins.begin(), pins.end());
+    });
+
+#else
+    for (tatum::NodeId node : nodes) {
+        AtomPinId modified_pin = update_pin_criticality(node, analyzer);
+        if (modified_pin) {
+            pins_with_modified_criticalities_.push_back(modified_pin);
+        }
+    }
 #endif
 }
 
