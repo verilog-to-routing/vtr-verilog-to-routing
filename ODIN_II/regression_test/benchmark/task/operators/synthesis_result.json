@@ -905,7 +905,7 @@
         "verilog": "binary_equal.v",
         "exit": 134,
         "errors": [
-            "NETLIST binary_equal.v::21 Operation not supported by Odin"
+            "NETLIST binary_equal.v:21 Operation not supported by Odin"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -932,7 +932,7 @@
         "verilog": "binary_equal.v",
         "exit": 134,
         "errors": [
-            "NETLIST binary_equal.v::21 Operation not supported by Odin"
+            "NETLIST binary_equal.v:21 Operation not supported by Odin"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -959,7 +959,7 @@
         "verilog": "binary_equal.v",
         "exit": 134,
         "errors": [
-            "NETLIST binary_equal.v::21 Operation not supported by Odin"
+            "NETLIST binary_equal.v:21 Operation not supported by Odin"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -986,7 +986,7 @@
         "verilog": "binary_equal.v",
         "exit": 134,
         "errors": [
-            "NETLIST binary_equal.v::21 Operation not supported by Odin"
+            "NETLIST binary_equal.v:21 Operation not supported by Odin"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -2013,7 +2013,7 @@
         "verilog": "binary_not_equal.v",
         "exit": 134,
         "errors": [
-            "NETLIST binary_not_equal.v::21 Operation not supported by Odin"
+            "NETLIST binary_not_equal.v:21 Operation not supported by Odin"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -2040,7 +2040,7 @@
         "verilog": "binary_not_equal.v",
         "exit": 134,
         "errors": [
-            "NETLIST binary_not_equal.v::21 Operation not supported by Odin"
+            "NETLIST binary_not_equal.v:21 Operation not supported by Odin"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -2067,7 +2067,7 @@
         "verilog": "binary_not_equal.v",
         "exit": 134,
         "errors": [
-            "NETLIST binary_not_equal.v::21 Operation not supported by Odin"
+            "NETLIST binary_not_equal.v:21 Operation not supported by Odin"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -2094,7 +2094,7 @@
         "verilog": "binary_not_equal.v",
         "exit": 134,
         "errors": [
-            "NETLIST binary_not_equal.v::21 Operation not supported by Odin"
+            "NETLIST binary_not_equal.v:21 Operation not supported by Odin"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -4121,7 +4121,7 @@
         "verilog": "twobits_arithmetic_div.v",
         "exit": 134,
         "errors": [
-            "AST twobits_arithmetic_div.v::22 Odin only supports constant expressions as divisors"
+            "AST twobits_arithmetic_div.v:22 Odin only supports constant expressions as divisors"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -4148,7 +4148,7 @@
         "verilog": "twobits_arithmetic_div.v",
         "exit": 134,
         "errors": [
-            "AST twobits_arithmetic_div.v::22 Odin only supports constant expressions as divisors"
+            "AST twobits_arithmetic_div.v:22 Odin only supports constant expressions as divisors"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -4175,7 +4175,7 @@
         "verilog": "twobits_arithmetic_div.v",
         "exit": 134,
         "errors": [
-            "AST twobits_arithmetic_div.v::22 Odin only supports constant expressions as divisors"
+            "AST twobits_arithmetic_div.v:22 Odin only supports constant expressions as divisors"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -4202,7 +4202,7 @@
         "verilog": "twobits_arithmetic_div.v",
         "exit": 134,
         "errors": [
-            "AST twobits_arithmetic_div.v::22 Odin only supports constant expressions as divisors"
+            "AST twobits_arithmetic_div.v:22 Odin only supports constant expressions as divisors"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -4329,7 +4329,7 @@
         "verilog": "twobits_arithmetic_mod.v",
         "exit": 134,
         "errors": [
-            "NETLIST twobits_arithmetic_mod.v::22 Modulo operation not supported by Odin"
+            "NETLIST twobits_arithmetic_mod.v:22 Modulo operation not supported by Odin"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -4356,7 +4356,7 @@
         "verilog": "twobits_arithmetic_mod.v",
         "exit": 134,
         "errors": [
-            "NETLIST twobits_arithmetic_mod.v::22 Modulo operation not supported by Odin"
+            "NETLIST twobits_arithmetic_mod.v:22 Modulo operation not supported by Odin"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -4383,7 +4383,7 @@
         "verilog": "twobits_arithmetic_mod.v",
         "exit": 134,
         "errors": [
-            "NETLIST twobits_arithmetic_mod.v::22 Modulo operation not supported by Odin"
+            "NETLIST twobits_arithmetic_mod.v:22 Modulo operation not supported by Odin"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -4410,7 +4410,7 @@
         "verilog": "twobits_arithmetic_mod.v",
         "exit": 134,
         "errors": [
-            "NETLIST twobits_arithmetic_mod.v::22 Modulo operation not supported by Odin"
+            "NETLIST twobits_arithmetic_mod.v:22 Modulo operation not supported by Odin"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -4637,7 +4637,7 @@
         "verilog": "twobits_arithmetic_power.v",
         "exit": 134,
         "errors": [
-            "AST twobits_arithmetic_power.v::22 Odin only supports constant expressions as exponents"
+            "AST twobits_arithmetic_power.v:22 Odin only supports constant expressions as exponents"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -4664,7 +4664,7 @@
         "verilog": "twobits_arithmetic_power.v",
         "exit": 134,
         "errors": [
-            "AST twobits_arithmetic_power.v::22 Odin only supports constant expressions as exponents"
+            "AST twobits_arithmetic_power.v:22 Odin only supports constant expressions as exponents"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -4691,7 +4691,7 @@
         "verilog": "twobits_arithmetic_power.v",
         "exit": 134,
         "errors": [
-            "AST twobits_arithmetic_power.v::22 Odin only supports constant expressions as exponents"
+            "AST twobits_arithmetic_power.v:22 Odin only supports constant expressions as exponents"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -4718,7 +4718,7 @@
         "verilog": "twobits_arithmetic_power.v",
         "exit": 134,
         "errors": [
-            "AST twobits_arithmetic_power.v::22 Odin only supports constant expressions as exponents"
+            "AST twobits_arithmetic_power.v:22 Odin only supports constant expressions as exponents"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
