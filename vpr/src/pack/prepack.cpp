@@ -60,7 +60,7 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
 
 static int compare_pack_pattern(const t_pack_patterns* pattern_a, const t_pack_patterns* pattern_b);
 
-static void free_pack_pattern(t_pack_pattern_block* pattern_block, t_pack_pattern_block** pattern_block_list);
+static void free_pack_pattern_block(t_pack_pattern_block* pattern_block, t_pack_pattern_block** pattern_block_list);
 
 static t_pack_molecule* try_create_molecule(t_pack_patterns* list_of_pack_patterns,
                                             std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
@@ -352,7 +352,7 @@ void free_list_of_pack_patterns(std::vector<t_pack_patterns>& list_of_pack_patte
         pattern_block_list = (t_pack_pattern_block**)vtr::calloc(num_pack_pattern_blocks, sizeof(t_pack_pattern_block*));
         free(list_of_pack_patterns[i].name);
         free(list_of_pack_patterns[i].is_block_optional);
-        free_pack_pattern(list_of_pack_patterns[i].root_block, pattern_block_list);
+        free_pack_pattern_block(list_of_pack_patterns[i].root_block, pattern_block_list);
         for (j = 0; j < num_pack_pattern_blocks; j++) {
             free(pattern_block_list[j]);
         }
@@ -877,7 +877,7 @@ void free_pack_molecules(t_pack_molecule* list_of_pack_molecules) {
     }
 }
 
-static void free_pack_pattern(t_pack_pattern_block* pattern_block, t_pack_pattern_block** pattern_block_list) {
+static void free_pack_pattern_block(t_pack_pattern_block* pattern_block, t_pack_pattern_block** pattern_block_list) {
     t_pack_pattern_connections *connection, *next;
     if (pattern_block == nullptr || pattern_block->block_id == OPEN) {
         /* already traversed, return */
@@ -887,8 +887,8 @@ static void free_pack_pattern(t_pack_pattern_block* pattern_block, t_pack_patter
     pattern_block->block_id = OPEN;
     connection = pattern_block->connections;
     while (connection) {
-        free_pack_pattern(connection->from_block, pattern_block_list);
-        free_pack_pattern(connection->to_block, pattern_block_list);
+        free_pack_pattern_block(connection->from_block, pattern_block_list);
+        free_pack_pattern_block(connection->to_block, pattern_block_list);
         next = connection->next;
         free(connection);
         connection = next;
