@@ -142,33 +142,7 @@ void free_arch(t_arch* arch) {
     arch->Switches = nullptr;
     t_model* model = arch->models;
     while (model) {
-        t_model_ports* input_port = model->inputs;
-        while (input_port) {
-            t_model_ports* prev_port = input_port;
-            input_port = input_port->next;
-            vtr::free(prev_port->name);
-            delete prev_port;
-        }
-        t_model_ports* output_port = model->outputs;
-        while (output_port) {
-            t_model_ports* prev_port = output_port;
-            output_port = output_port->next;
-            vtr::free(prev_port->name);
-            delete prev_port;
-        }
-        vtr::t_linked_vptr* vptr = model->pb_types;
-        while (vptr) {
-            vtr::t_linked_vptr* vptr_prev = vptr;
-            vptr = vptr->next;
-            vtr::free(vptr_prev);
-        }
-        t_model* prev_model = model;
-
-        model = model->next;
-        if (prev_model->instances)
-            vtr::free(prev_model->instances);
-        vtr::free(prev_model->name);
-        delete prev_model;
+        model = free_arch_model(model);
     }
 
     for (int i = 0; i < arch->num_directs; ++i) {
@@ -213,6 +187,40 @@ void free_arch(t_arch* arch) {
     if (arch->clocks) {
         vtr::free(arch->clocks->clock_inf);
     }
+}
+
+//Frees the specified model, and returns the next model (if any) in the linked list
+t_model* free_arch_model(t_model* model) {
+    if (!model) return nullptr;
+
+    t_model_ports* input_port = model->inputs;
+    while (input_port) {
+        t_model_ports* prev_port = input_port;
+        input_port = input_port->next;
+        vtr::free(prev_port->name);
+        delete prev_port;
+    }
+    t_model_ports* output_port = model->outputs;
+    while (output_port) {
+        t_model_ports* prev_port = output_port;
+        output_port = output_port->next;
+        vtr::free(prev_port->name);
+        delete prev_port;
+    }
+    vtr::t_linked_vptr* vptr = model->pb_types;
+    while (vptr) {
+        vtr::t_linked_vptr* vptr_prev = vptr;
+        vptr = vptr->next;
+        vtr::free(vptr_prev);
+    }
+    t_model* next_model = model->next;
+
+    if (model->instances)
+        vtr::free(model->instances);
+    vtr::free(model->name);
+    delete model;
+
+    return next_model;
 }
 
 void free_type_descriptors(std::vector<t_physical_tile_type>& type_descriptors) {

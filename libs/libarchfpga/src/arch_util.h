@@ -40,6 +40,7 @@ class InstPort {
 };
 
 void free_arch(t_arch* arch);
+t_model* free_arch_model(t_model* model);
 
 void free_type_descriptors(std::vector<t_logical_block_type>& type_descriptors);
 void free_type_descriptors(std::vector<t_physical_tile_type>& type_descriptors);
