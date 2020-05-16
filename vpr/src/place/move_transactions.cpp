@@ -34,6 +34,7 @@ e_block_move_result record_block_move(t_pl_blocks_to_be_moved& blocks_affected, 
 }
 
 //Moves the blocks in blocks_affected to their new locations
+// by updating placer_ctx.block_locks
 void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
