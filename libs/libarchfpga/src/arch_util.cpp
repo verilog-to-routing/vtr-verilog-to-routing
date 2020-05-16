@@ -193,14 +193,9 @@ void free_arch(t_arch* arch) {
 t_model* free_arch_model(t_model* model) {
     if (!model) return nullptr;
 
-    t_model_ports* input_port = model->inputs;
-    while (input_port) {
-        input_port = free_arch_model_port(input_port);
-    }
-    t_model_ports* output_port = model->outputs;
-    while (output_port) {
-        output_port = free_arch_model_port(output_port);
-    }
+    free_arch_model_ports(model->inputs);
+    free_arch_model_ports(model->outputs);
+
     vtr::t_linked_vptr* vptr = model->pb_types;
     while (vptr) {
         vtr::t_linked_vptr* vptr_prev = vptr;
@@ -215,6 +210,13 @@ t_model* free_arch_model(t_model* model) {
     delete model;
 
     return next_model;
+}
+
+void free_arch_model_ports(t_model_ports* model_ports) {
+    t_model_ports* model_port = model_ports;
+    while (model_port) {
+        model_port = free_arch_model_port(model_port);
+    }
 }
 
 t_model_ports* free_arch_model_port(t_model_ports* model_port) {
