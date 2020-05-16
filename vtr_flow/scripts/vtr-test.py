@@ -11,11 +11,8 @@ from multiprocessing import Pool
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'python_libs'))
 
-import verilogtorouting as vtr
-from verilogtorouting.error import *
-from verilogtorouting.util import load_list_file, find_vtr_file, mkdir_p, print_verbose, find_vtr_root, CommandRunner, format_elapsed_time, RawDefaultHelpFormatter, VERBOSITY_CHOICES
-from verilogtorouting.task import load_task_config, TaskConfig, find_task_config_file
-from verilogtorouting.flow import CommandRunner
+import vtr
+from vtr import error, load_list_file, find_vtr_file, mkdir_p, print_verbose, find_vtr_root, CommandRunner, format_elapsed_time, RawDefaultHelpFormatter, VERBOSITY_CHOICES, load_task_config, TaskConfig, find_task_config_file, CommandRunner
 
 BASIC_VERBOSITY=1
 

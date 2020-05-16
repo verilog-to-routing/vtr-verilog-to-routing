@@ -1,7 +1,6 @@
 import os
 
-from verilogtorouting.error import *
-from util import find_vtr_root, find_vtr_file, load_list_file
+from vtr import error, find_vtr_root, load_list_file
 
 class TaskConfig:
     """

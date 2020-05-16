@@ -12,12 +12,7 @@ from multiprocessing import Pool
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'python_libs'))
 
-import verilogtorouting as vtr
-from verilogtorouting.error import *
-from verilogtorouting.util import load_list_file, find_vtr_file, mkdir_p, print_verbose, find_vtr_root, CommandRunner, format_elapsed_time, RawDefaultHelpFormatter, VERBOSITY_CHOICES, argparse_str2bool, get_next_run_dir, get_latest_run_dir
-from verilogtorouting.task import load_task_config, TaskConfig, find_task_config_file
-from verilogtorouting.flow import CommandRunner
-from verilogtorouting.inspect import load_pass_requirements, load_parse_results
+from vtr import VtrError, InspectError, CommandError, load_list_file, find_vtr_file, mkdir_p, print_verbose, find_vtr_root, CommandRunner, format_elapsed_time, RawDefaultHelpFormatter, VERBOSITY_CHOICES, argparse_str2bool, get_next_run_dir, get_latest_run_dir, load_task_config, TaskConfig, find_task_config_file, CommandRunner, load_pass_requirements, load_parse_results
 
 BASIC_VERBOSITY = 1
 FAILED_LOG_VERBOSITY = 2
@@ -436,7 +431,7 @@ def create_jobs(args, configs):
                 executable = [config.script_path]
             else:
                 #Default flow script
-                executable = [find_vtr_file('vtr', is_executabe=True), 'flow']
+                executable = [find_vtr_file('vtr-flow.py', is_executable=True)]
 
             #Collect any extra script params from the config file
             script_params = [abs_arch_filepath, abs_circuit_filepath]

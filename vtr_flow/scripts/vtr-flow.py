@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 import sys
-import os
+from pathlib import Path
 import errno
 import argparse
 import subprocess
@@ -12,27 +12,23 @@ from datetime import datetime
 
 from collections import OrderedDict
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'python_libs'))
-
-from verilogtorouting.flow import run_vtr_flow, parse_vtr_flow, VTR_STAGE, vtr_stages, CommandRunner
-from verilogtorouting.error import *
-from verilogtorouting.util import print_verbose, RawDefaultHelpFormatter, VERBOSITY_CHOICES, find_vtr_file, format_elapsed_time
+sys.path.insert(0, str(Path(__file__).resolve().parent / 'python_libs'))
+import vtr
 
 
 BASIC_VERBOSITY = 1
 
 
-
 class VtrStageArgparseAction(argparse.Action):
     def __call__(self, parser, namespace, value, option_string=None):
         if value == "odin":
-            setattr(namespace, self.dest, VTR_STAGE.odin)
+            setattr(namespace, self.dest, vtr.VTR_STAGE.odin)
         elif value == "abc":
-            setattr(namespace, self.dest, VTR_STAGE.abc)
+            setattr(namespace, self.dest, vtr.VTR_STAGE.abc)
         elif value == "vpr":
-            setattr(namespace, self.dest, VTR_STAGE.vpr)
+            setattr(namespace, self.dest, vtr.VTR_STAGE.vpr)
         elif value == "lec":
-            setattr(namespace, self.dest, VTR_STAGE.lec)
+            setattr(namespace, self.dest, vtr.VTR_STAGE.lec)
         else:
             raise argparse.ArgumentError(self, "Invalid VTR stage '" + value + "'")
 
@@ -98,7 +94,7 @@ def vtr_command_argparser(prog=None):
                 usage=usage,
                 description=description,
                 epilog=epilog,
-                formatter_class=RawDefaultHelpFormatter,
+                formatter_class=vtr.RawDefaultHelpFormatter,
              )
 
     #
@@ -109,19 +105,19 @@ def vtr_command_argparser(prog=None):
     parser.add_argument('architecture_file',
                         help="The FPGA architecture to target.")
     parser.add_argument("-start", "-starting_stage",
-                        choices=VTR_STAGE.reverse_mapping.values(),
-                        default=VTR_STAGE.odin,
+                        choices=vtr.VTR_STAGE.reverse_mapping.values(),
+                        default=vtr.VTR_STAGE.odin,
                         action=VtrStageArgparseAction,
                         help="Starting stage of the VTR flow.")
 
     parser.add_argument("-end", "-ending_stage",
-                        choices=VTR_STAGE.reverse_mapping.values(),
-                        default=VTR_STAGE.vpr,
+                        choices=vtr.VTR_STAGE.reverse_mapping.values(),
+                        default=vtr.VTR_STAGE.vpr,
                         action=VtrStageArgparseAction,
                         help="Ending stage of the VTR flow.")
 
-    parser.add_argument("-v", "-verbose",
-                        choices=VERBOSITY_CHOICES,
+    parser.add_argument("-verbose", "-v",
+                        choices=vtr.VERBOSITY_CHOICES,
                         default=2,
                         type=int,
                         help="Verbosity of the script. Higher values produce more output.")
@@ -208,10 +204,10 @@ def vtr_command_main(arg_list, prog=None):
     #Load the arguments
     args, unkown_args = vtr_command_argparser(prog).parse_known_args(arg_list)
 
-    print_verbose(BASIC_VERBOSITY, args.verbosity, "# {} {}\n".format(prog, ' '.join(arg_list)))
+    vtr.print_verbose(BASIC_VERBOSITY, args.verbose, "# {} {}\n".format(prog, ' '.join(arg_list)))
 
-    abs_path_arch_file = os.path.abspath(args.architecture_file)
-    abs_path_circuit_file = os.path.abspath(args.circuit_file)
+    abs_path_arch_file = str(Path(args.architecture_file))
+    abs_path_circuit_file = str(Path(args.circuit_file))
     if (args.temp_dir == "."):
         temp_dir="./temp"
     else:
@@ -219,24 +215,24 @@ def vtr_command_main(arg_list, prog=None):
 
 
     #Specify how command should be run
-    command_runner = CommandRunner(track_memory=args.track_memory_usage, 
+    command_runner = vtr.CommandRunner(track_memory=args.track_memory_usage, 
                                    max_memory_mb=args.limit_memory_usage, 
                                    timeout_sec=args.timeout,
-                                   verbose_error=True if args.verbosity == 2 else False,
-                                   verbose=True if args.verbosity > 2 else False,
-                                   echo_cmd=True if args.verbosity >= 4 else False)
+                                   verbose_error=True if args.verbose == 2 else False,
+                                   verbose=True if args.verbose > 2 else False,
+                                   echo_cmd=True if args.verbose >= 4 else False)
     exit_status = 0
-    flow_type = 2 #Use iterative black-boxing flow for multi-clock circuits
+    abc_flow_type = 2 #Use iterative black-boxing flow for multi-clock circuits
     use_old_latches_restoration_script = 0 
 
     if(args.iterative_bb):
-        flow_type =2
+        abc_flow_type =2
 
     if(args.once_bb):
-        flow_type = 1
+        abc_flow_type = 1
 
     if(args.blanket_bb):
-        flow_type = 3
+        abc_flow_type = 3
 
     if(args.use_old_latches_restoration_script):
         use_old_latches_restoration_script = 1
@@ -246,32 +242,32 @@ def vtr_command_main(arg_list, prog=None):
                 vpr_args = process_unkown_args(unkown_args)
 
                 #Run the flow
-                run_vtr_flow(abs_path_arch_file, 
+                vtr.run(abs_path_arch_file, 
                              abs_path_circuit_file, 
                              power_tech_file=args.power_tech,
                              temp_dir=temp_dir,
                              start_stage=args.start, 
                              end_stage=args.end,
                              command_runner=command_runner,
-                             verbosity=args.verbosity,
+                             verbosity=args.verbose,
                              vpr_args=vpr_args,
-                             flow_type=flow_type,
+                             abc_flow_type=abc_flow_type,
                              use_old_latches_restoration_script=use_old_latches_restoration_script
                              )
-            except CommandError as e:
+            except vtr.CommandError as e:
                 #An external command failed
                 print "Error: {msg}".format(msg=e.msg)
                 print "\tfull command: ", ' '.join(e.cmd)
                 print "\treturncode  : ", e.returncode
                 print "\tlog file    : ", e.log
                 exit_status = 1
-            except InspectError as e:
+            except vtr.InspectError as e:
                 #Something went wrong gathering information
                 print "Error: {msg}".format(msg=e.msg)
                 print "\tfile        : ", e.filename
                 exit_status = 2
 
-            except VtrError as e:
+            except vtr.VtrError as e:
                 #Generic VTR errors
                 print "Error: ", e.msg
                 exit_status = 3
@@ -282,14 +278,14 @@ def vtr_command_main(arg_list, prog=None):
 
         #Parse the flow results
         try:
-            parse_vtr_flow(temp_dir, args.parse_config_file, verbosity=args.verbosity)
-        except InspectError as e:
+            vtr.parse_vtr_flow(temp_dir, args.parse_config_file, verbosity=args.verbose)
+        except vtr.InspectError as e:
             print "Error: {msg}".format(msg=e.msg)
             print "\tfile        : ", e.filename
             exit_status = 2
 
     finally:
-        print_verbose(BASIC_VERBOSITY, args.verbosity, "\n# {} took {} (exiting {})".format(prog, format_elapsed_time(datetime.now() - start), exit_status))
+        vtr.print_verbose(BASIC_VERBOSITY, args.verbose, "\n# {} took {} (exiting {})".format(prog, vtr.format_elapsed_time(datetime.now() - start), exit_status))
     sys.exit(exit_status)
 
 def process_unkown_args(unkown_args):
@@ -304,7 +300,7 @@ def process_unkown_args(unkown_args):
             continue
 
         if not arg.startswith('-'):
-            raise VtrError("Extra argument '{}' intended for VPR does not start with '-'".format(arg))
+            raise vtr.VtrError("Extra argument '{}' intended for VPR does not start with '-'".format(arg))
 
         #To make it a valid kwargs dictionary we trim the initial '-' or '--' from the
         #argument name

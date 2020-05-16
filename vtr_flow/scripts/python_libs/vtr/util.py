@@ -9,7 +9,7 @@ import argparse
 import csv
 from collections import OrderedDict
 
-from verilogtorouting.error import *
+from vtr import error
 
 VERBOSITY_CHOICES = range(5)
 
@@ -182,7 +182,7 @@ def write_tab_delimitted_csv(filepath, rows):
                 columns[key] = max(columns[key], len(str(value)))
 
     #Write the elements
-    with open(filepath, 'w') as f:
+    with open(filepath, 'w+') as f:
         writer = csv.writer(f, delimiter='\t')
 
         #Write out the header
