@@ -2269,7 +2269,7 @@ static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations,
  * child type objects.  */
 static void ProcessModels(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data) {
     pugi::xml_node p;
-    t_model* temp;
+    t_model* temp = nullptr;
     int L_index;
     /* std::maps for checking duplicates */
     std::map<std::string, int> model_name_map;
@@ -2284,51 +2284,56 @@ static void ProcessModels(pugi::xml_node Node, t_arch* arch, const pugiutil::loc
             bad_tag(model, loc_data, Node, {"model"});
         }
 
-        temp = new t_model;
-        temp->index = L_index;
-        L_index++;
+        try {
+            temp = new t_model;
+            temp->index = L_index;
+            L_index++;
 
-        //Process the <model> tag attributes
-        for (pugi::xml_attribute attr : model.attributes()) {
-            if (attr.name() != std::string("name")) {
-                bad_attribute(attr, model, loc_data);
-            } else {
-                VTR_ASSERT(attr.name() == std::string("name"));
-
-                if (!temp->name) {
-                    //First name attr. seen
-                    temp->name = vtr::strdup(attr.value());
+            //Process the <model> tag attributes
+            for (pugi::xml_attribute attr : model.attributes()) {
+                if (attr.name() != std::string("name")) {
+                    bad_attribute(attr, model, loc_data);
                 } else {
-                    //Duplicate name
-                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(model),
-                                   "Duplicate 'name' attribute on <model> tag.");
+                    VTR_ASSERT(attr.name() == std::string("name"));
+
+                    if (!temp->name) {
+                        //First name attr. seen
+                        temp->name = vtr::strdup(attr.value());
+                    } else {
+                        //Duplicate name
+                        archfpga_throw(loc_data.filename_c_str(), loc_data.line(model),
+                                       "Duplicate 'name' attribute on <model> tag.");
+                    }
                 }
             }
-        }
 
-        /* Try insert new model, check if already exist at the same time */
-        ret_map_name = model_name_map.insert(std::pair<std::string, int>(temp->name, 0));
-        if (!ret_map_name.second) {
-            archfpga_throw(loc_data.filename_c_str(), loc_data.line(model),
-                           "Duplicate model name: '%s'.\n", temp->name);
-        }
-
-        //Process the ports
-        std::set<std::string> port_names;
-        for (pugi::xml_node port_group : model.children()) {
-            if (port_group.name() == std::string("input_ports")) {
-                ProcessModelPorts(port_group, temp, port_names, loc_data);
-            } else if (port_group.name() == std::string("output_ports")) {
-                ProcessModelPorts(port_group, temp, port_names, loc_data);
-            } else {
-                bad_tag(port_group, loc_data, model, {"input_ports", "output_ports"});
+            /* Try insert new model, check if already exist at the same time */
+            ret_map_name = model_name_map.insert(std::pair<std::string, int>(temp->name, 0));
+            if (!ret_map_name.second) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(model),
+                               "Duplicate model name: '%s'.\n", temp->name);
             }
-        }
 
-        //Sanity check the model
-        check_model_clocks(model, loc_data, temp);
-        check_model_combinational_sinks(model, loc_data, temp);
-        warn_model_missing_timing(model, loc_data, temp);
+            //Process the ports
+            std::set<std::string> port_names;
+            for (pugi::xml_node port_group : model.children()) {
+                if (port_group.name() == std::string("input_ports")) {
+                    ProcessModelPorts(port_group, temp, port_names, loc_data);
+                } else if (port_group.name() == std::string("output_ports")) {
+                    ProcessModelPorts(port_group, temp, port_names, loc_data);
+                } else {
+                    bad_tag(port_group, loc_data, model, {"input_ports", "output_ports"});
+                }
+            }
+
+            //Sanity check the model
+            check_model_clocks(model, loc_data, temp);
+            check_model_combinational_sinks(model, loc_data, temp);
+            warn_model_missing_timing(model, loc_data, temp);
+        } catch (ArchFpgaError& e) {
+            free_arch_model(temp);
+            throw;
+        }
 
         //Add the model
         temp->next = arch->models;
