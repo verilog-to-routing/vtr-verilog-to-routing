@@ -195,17 +195,11 @@ t_model* free_arch_model(t_model* model) {
 
     t_model_ports* input_port = model->inputs;
     while (input_port) {
-        t_model_ports* prev_port = input_port;
-        input_port = input_port->next;
-        vtr::free(prev_port->name);
-        delete prev_port;
+        input_port = free_arch_model_port(input_port);
     }
     t_model_ports* output_port = model->outputs;
     while (output_port) {
-        t_model_ports* prev_port = output_port;
-        output_port = output_port->next;
-        vtr::free(prev_port->name);
-        delete prev_port;
+        output_port = free_arch_model_port(output_port);
     }
     vtr::t_linked_vptr* vptr = model->pb_types;
     while (vptr) {
@@ -221,6 +215,17 @@ t_model* free_arch_model(t_model* model) {
     delete model;
 
     return next_model;
+}
+
+t_model_ports* free_arch_model_port(t_model_ports* model_port) {
+    if (!model_port) return nullptr;
+
+    t_model_ports* next_port = model_port->next;
+
+    vtr::free(model_port->name);
+    delete model_port;
+
+    return next_port;
 }
 
 void free_type_descriptors(std::vector<t_physical_tile_type>& type_descriptors) {
