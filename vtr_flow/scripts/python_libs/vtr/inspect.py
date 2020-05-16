@@ -8,7 +8,8 @@ except ImportError:
     #Fall back on python implementation
     import xml.etree.ElementTree as ET
 
-from vtr import load_config_lines, InspectError
+from vtr import load_config_lines
+from vtr.error import InspectError
 
 class ParsePattern:
     def __init__(self, name, filename, regex_str, default_value=None):

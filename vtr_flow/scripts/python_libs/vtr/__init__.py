@@ -4,6 +4,6 @@ from .abc import run, run_lec
 from .vpr import run,run_relax_W
 from .odin import run
 from .ace import run
-from .error import * 
+from .error import InspectError, VtrError, CommandError 
 from .flow import run, VTR_STAGE, parse_vtr_flow
 from .task import load_task_config, TaskConfig, find_task_config_file
