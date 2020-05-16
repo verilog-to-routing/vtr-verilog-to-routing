@@ -140,10 +140,8 @@ void free_arch(t_arch* arch) {
     }
     delete[] arch->Switches;
     arch->Switches = nullptr;
-    t_model* model = arch->models;
-    while (model) {
-        model = free_arch_model(model);
-    }
+
+    free_arch_models(arch->models);
 
     for (int i = 0; i < arch->num_directs; ++i) {
         vtr::free(arch->Directs[i].name);
@@ -189,9 +187,19 @@ void free_arch(t_arch* arch) {
     }
 }
 
+//Frees all models in the linked list
+void free_arch_models(t_model* models) {
+    t_model* model = models;
+    while (model) {
+        model = free_arch_model(model);
+    }
+}
+
 //Frees the specified model, and returns the next model (if any) in the linked list
 t_model* free_arch_model(t_model* model) {
     if (!model) return nullptr;
+
+    t_model* next_model = model->next;
 
     free_arch_model_ports(model->inputs);
     free_arch_model_ports(model->outputs);
@@ -202,7 +210,6 @@ t_model* free_arch_model(t_model* model) {
         vptr = vptr->next;
         vtr::free(vptr_prev);
     }
-    t_model* next_model = model->next;
 
     if (model->instances)
         vtr::free(model->instances);
@@ -212,6 +219,7 @@ t_model* free_arch_model(t_model* model) {
     return next_model;
 }
 
+//Frees all the model portss in a linked list
 void free_arch_model_ports(t_model_ports* model_ports) {
     t_model_ports* model_port = model_ports;
     while (model_port) {
@@ -219,6 +227,7 @@ void free_arch_model_ports(t_model_ports* model_ports) {
     }
 }
 
+//Frees the specified model_port, and returns the next model_port (if any) in the linked list
 t_model_ports* free_arch_model_port(t_model_ports* model_port) {
     if (!model_port) return nullptr;
 
