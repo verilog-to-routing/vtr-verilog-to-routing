@@ -54,12 +54,15 @@ e_block_move_result record_block_move(t_pl_blocks_to_be_moved& blocks_affected, 
 
 void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected);
 
-void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
-                        ClusteredPinTimingInvalidator* pin_tedges_invalidator,
-                        TimingInfo* timing_info);
+void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected);
 
 void revert_move_blocks(t_pl_blocks_to_be_moved& blocks_affected);
 
 void clear_move_blocks(t_pl_blocks_to_be_moved& blocks_affected);
+
+void invalidate_move_timing(const t_pl_blocks_to_be_moved& blocks_affected,
+                            ClusteredPinTimingInvalidator* pin_tedges_invalidator,
+                            TimingInfo* timing_info);
+
 
 #endif

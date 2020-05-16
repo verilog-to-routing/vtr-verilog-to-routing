@@ -1463,7 +1463,12 @@ static e_move_result try_swap(float t,
             update_move_nets(num_nets_affected);
 
             /* Update clb data structures since we kept the move. */
-            commit_move_blocks(blocks_affected, pin_timing_invalidator, timing_info);
+            commit_move_blocks(blocks_affected);
+
+            if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+                //Invalid timing of all connections effected by this move
+                invalidate_move_timing(blocks_affected, pin_timing_invalidator, timing_info);
+            }
 
         } else { /* Move was rejected.  */
                  /* Reset the net cost function flags first. */
