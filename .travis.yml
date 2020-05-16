@@ -142,7 +142,7 @@ jobs:
       script:
         - ./.github/travis/build.sh
         #We skip QoR since we are only checking for errors in sanitizer runs
-        - travis_wait 30 ./run_reg_test.pl vtr_reg_basic -show_failures -skip_qor -j2
+        - travis_wait 50 ./run_reg_test.pl vtr_reg_basic -show_failures -skip_qor -j2
     #Currently strong regression with sanitizers is disabled as it exceeds the maximum travis job run-time
     #- stage: Test
       #name: "Sanitized Strong Regression Tests"
