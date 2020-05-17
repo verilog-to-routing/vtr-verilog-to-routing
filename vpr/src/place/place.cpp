@@ -309,14 +309,16 @@ static e_move_result try_swap(float t,
                               t_placer_prev_inverse_costs* prev_inverse_costs,
                               float rlim,
                               MoveGenerator& move_generator,
-                              TimingInfo* timing_info,
+                              SetupTimingInfo* timing_info,
                               ClusteredPinTimingInvalidator* pin_timing_invalidator,
                               t_pl_blocks_to_be_moved& blocks_affected,
                               const PlaceDelayModel* delay_model,
-                              const PlacerCriticalities* criticalities,
+                              PlacerCriticalities* criticalities,
                               float rlim_escape_fraction,
                               enum e_place_algorithm place_algorithm,
-                              float timing_tradeoff);
+                              float timing_tradeoff,
+                              float crit_exponent,
+                              bool pre_evaluate_update_timing);
 
 static void check_place(const t_placer_costs& costs,
                         const PlaceDelayModel* delay_model,
@@ -336,9 +338,11 @@ static float starting_t(t_placer_costs* costs,
                         t_annealing_sched annealing_sched,
                         int max_moves,
                         float rlim,
+                        float crit_exponent,
+                        bool pre_evaluate_update_timing,
                         const PlaceDelayModel* delay_model,
-                        const PlacerCriticalities* criticalities,
-                        TimingInfo* timing_info,
+                        PlacerCriticalities* criticalities,
+                        SetupTimingInfo* timing_info,
                         MoveGenerator& move_generator,
                         ClusteredPinTimingInvalidator* pin_timing_invalidator,
                         t_pl_blocks_to_be_moved& blocks_affected,
@@ -692,19 +696,23 @@ void try_place(const t_placer_opts& placer_opts,
     if (move_lim <= 0)
         move_lim = 1;
 
-    if (placer_opts.inner_loop_recompute_divider != 0) {
-        inner_recompute_limit = (int)(0.5 + (float)move_lim / (float)placer_opts.inner_loop_recompute_divider);
-    } else {
+    if (placer_opts.inner_loop_recompute_divider == 0) {
         /*don't do an inner recompute */
         inner_recompute_limit = move_lim + 1;
+    } else if (placer_opts.inner_loop_recompute_divider < 0) {
+        inner_recompute_limit = -1; //Pre-move evaluation timing update
+    } else {
+        inner_recompute_limit = (int)(0.5 + (float)move_lim / (float)placer_opts.inner_loop_recompute_divider);
     }
 
     int quench_recompute_limit;
-    if (placer_opts.quench_recompute_divider != 0) {
-        quench_recompute_limit = (int)(0.5 + (float)move_lim / (float)placer_opts.quench_recompute_divider);
-    } else {
+    if (placer_opts.quench_recompute_divider == 0) {
         /*don't do an quench recompute */
         quench_recompute_limit = move_lim + 1;
+    } else if (placer_opts.quench_recompute_divider < 0) {
+        quench_recompute_limit = -1; //Pre-move evaluation timing update
+    } else {
+        quench_recompute_limit = (int)(0.5 + (float)move_lim / (float)placer_opts.quench_recompute_divider);
     }
 
     rlim = (float)max(device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
@@ -718,6 +726,8 @@ void try_place(const t_placer_opts& placer_opts,
                    annealing_sched,
                    move_lim,
                    rlim,
+                   crit_exponent,
+                   /*pre_evaluate_update_timing=*/(inner_recompute_limit == -1),
                    place_delay_model.get(),
                    placer_criticalities.get(),
                    timing_info.get(),
@@ -756,7 +766,8 @@ void try_place(const t_placer_opts& placer_opts,
                                            timing_info.get());
 
         placement_inner_loop(t, num_temps, rlim, placer_opts,
-                             move_lim, crit_exponent, inner_recompute_limit, &stats,
+                             move_lim, crit_exponent, inner_recompute_limit,
+                             &stats,
                              &costs,
                              &prev_inverse_costs,
                              &moves_since_cost_recompute,
@@ -825,7 +836,9 @@ void try_place(const t_placer_opts& placer_opts,
         /* Run inner loop again with temperature = 0 so as to accept only swaps
          * which reduce the cost of the placement */
         placement_inner_loop(t, num_temps, rlim, placer_opts,
-                             move_lim, crit_exponent, quench_recompute_limit, &stats,
+                             move_lim, crit_exponent,
+                             quench_recompute_limit, 
+                             &stats,
                              &costs,
                              &prev_inverse_costs,
                              &moves_since_cost_recompute,
@@ -1010,12 +1023,14 @@ static void recompute_criticalities(float crit_exponent,
     //Update placer'criticalities (e.g. sharpen with crit_exponent)
     criticalities->update_criticalities(timing_info, crit_exponent);
 
-    //Update connection, net and total timing costs based on new criticalities
+    if (costs) {
+        //Update connection, net and total timing costs based on new criticalities
 #ifdef INCR_COMP_TD_COSTS
-    update_td_costs(delay_model, *criticalities, &costs->timing_cost);
+        update_td_costs(delay_model, *criticalities, &costs->timing_cost);
 #else
-    comp_td_costs(delay_model, *criticalities, &costs->timing_cost);
+        comp_td_costs(delay_model, *criticalities, &costs->timing_cost);
 #endif
+    }
 
     //Clear invalidation state
     pin_timing_invalidator->reset();
@@ -1051,6 +1066,8 @@ static void placement_inner_loop(float t,
 
     inner_crit_iter_count = 1;
 
+    bool pre_evaluate_update_timing = (inner_recompute_limit < 0);
+
     /* Inner loop begins */
     for (inner_iter = 0; inner_iter < move_lim; inner_iter++) {
         e_move_result swap_result = try_swap(t, costs, prev_inverse_costs, rlim,
@@ -1062,7 +1079,9 @@ static void placement_inner_loop(float t,
                                              criticalities,
                                              placer_opts.rlim_escape_fraction,
                                              placer_opts.place_algorithm,
-                                             placer_opts.timing_tradeoff);
+                                             placer_opts.timing_tradeoff,
+                                             crit_exponent,
+                                             pre_evaluate_update_timing);
 
         if (swap_result == ACCEPTED) {
             /* Move was accepted.  Update statistics that are useful for the annealing schedule. */
@@ -1258,9 +1277,11 @@ static float starting_t(t_placer_costs* costs,
                         t_annealing_sched annealing_sched,
                         int max_moves,
                         float rlim,
+                        float crit_exponent,
+                        bool pre_evaluate_update_timing,
                         const PlaceDelayModel* delay_model,
-                        const PlacerCriticalities* criticalities,
-                        TimingInfo* timing_info,
+                        PlacerCriticalities* criticalities,
+                        SetupTimingInfo* timing_info,
                         MoveGenerator& move_generator,
                         ClusteredPinTimingInvalidator* pin_timing_invalidator,
                         t_pl_blocks_to_be_moved& blocks_affected,
@@ -1293,7 +1314,9 @@ static float starting_t(t_placer_costs* costs,
                                              criticalities,
                                              placer_opts.rlim_escape_fraction,
                                              placer_opts.place_algorithm,
-                                             placer_opts.timing_tradeoff);
+                                             placer_opts.timing_tradeoff,
+                                             crit_exponent,
+                                             pre_evaluate_update_timing);
 
         if (swap_result == ACCEPTED) {
             num_accepted++;
@@ -1359,14 +1382,16 @@ static e_move_result try_swap(float t,
                               t_placer_prev_inverse_costs* prev_inverse_costs,
                               float rlim,
                               MoveGenerator& move_generator,
-                              TimingInfo* timing_info,
+                              SetupTimingInfo* timing_info,
                               ClusteredPinTimingInvalidator* pin_timing_invalidator,
                               t_pl_blocks_to_be_moved& blocks_affected,
                               const PlaceDelayModel* delay_model,
-                              const PlacerCriticalities* criticalities,
+                              PlacerCriticalities* criticalities,
                               float rlim_escape_fraction,
                               enum e_place_algorithm place_algorithm,
-                              float timing_tradeoff) {
+                              float timing_tradeoff,
+                              float crit_exponent,
+                              bool pre_evaluate_update_timing) {
     /* Picks some block and moves it to another spot.  If this spot is   *
      * occupied, switch the blocks.  Assess the change in cost function. *
      * rlim is the range limiter.                                        *
@@ -1426,6 +1451,21 @@ static e_move_result try_swap(float t,
         //Update the block positions
         apply_move_blocks(blocks_affected);
 
+        if (place_algorithm == PATH_TIMING_DRIVEN_PLACE && pre_evaluate_update_timing) {
+            //Update timing information based on the proposed move
+
+            //Invalidate timing of all connections effected by move
+            invalidate_move_timing(blocks_affected, pin_timing_invalidator, timing_info);
+
+            //Update timing information based on move
+            recompute_criticalities(crit_exponent,
+                                    delay_model,
+                                    criticalities,
+                                    pin_timing_invalidator,
+                                    timing_info,
+                                    nullptr);
+        }
+
         // Find all the nets affected by this swap and update their costs
         int num_nets_affected = find_affected_nets_and_update_costs(place_algorithm,
                                                                     delay_model,
@@ -1465,8 +1505,10 @@ static e_move_result try_swap(float t,
             /* Update clb data structures since we kept the move. */
             commit_move_blocks(blocks_affected);
 
-            if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-                //Invalid timing of all connections effected by this move
+            if (place_algorithm == PATH_TIMING_DRIVEN_PLACE && !pre_evaluate_update_timing) {
+                //Move was accepted, but we are deffering update timing information.
+                //Invalid timing of all connections effected by this move so they will be later
+                //updated.
                 invalidate_move_timing(blocks_affected, pin_timing_invalidator, timing_info);
             }
 
@@ -1479,6 +1521,13 @@ static e_move_result try_swap(float t,
 
             if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
                 revert_td_cost(blocks_affected);
+
+                if (pre_evaluate_update_timing) {
+                    //Move was rejected, but we've already re-calculated criticalities based on it.
+                    //To ensure the proposed move's timing changes are reverted, we re-invalidate
+                    //the timing of all connections effected by this move.
+                    invalidate_move_timing(blocks_affected, pin_timing_invalidator, timing_info);
+                }
             }
         }
 
