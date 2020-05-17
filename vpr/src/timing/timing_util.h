@@ -107,11 +107,13 @@ class ClusteredPinTimingInvalidator {
                 tatum::EdgeId tedge = atom_pin_to_timing_edge(timing_graph, atom_nlist, atom_lookup, atom_pin);
 
                 if (!tedge) {
-                    VTR_LOG_WARN("Found no timing edge corresponding to atom pin '%s' (%zu), connected to cluster pin '%s' (%zu)\n",
-                                 atom_nlist.pin_name(atom_pin).c_str(),
-                                 size_t(atom_pin),
-                                 clb_nlist.pin_name(clb_pin).c_str(),
-                                 size_t(clb_pin));
+                    /*
+                     *VTR_LOG_WARN("Found no timing edge corresponding to atom pin '%s' (%zu), connected to cluster pin '%s' (%zu)\n",
+                     *             atom_nlist.pin_name(atom_pin).c_str(),
+                     *             size_t(atom_pin),
+                     *             clb_nlist.pin_name(clb_pin).c_str(),
+                     *             size_t(clb_pin));
+                     */
                     continue;
                 }
 
