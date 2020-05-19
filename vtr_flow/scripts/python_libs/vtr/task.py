@@ -1,6 +1,7 @@
-import os
+from pathlib import Path
+from pathlib import PurePath
 
-from vtr import error, find_vtr_root, load_list_file
+from vtr import VtrError, find_vtr_root, load_list_file
 
 class TaskConfig:
     """
@@ -97,9 +98,9 @@ def load_task_config(config_file):
             raise VtrError("Missing required key '{key}' in config file {file}".format(key=required_key, file=config_file))
 
     #Useful meta-data about the config
-    config_dir = os.path.dirname(config_file)
+    config_dir = str(Path(config_file).parent)
     key_values['config_dir'] = config_dir
-    key_values['task_name'] = os.path.basename(os.path.dirname(config_dir))
+    key_values['task_name'] = Path(config_dir).parent.name
 
     #Create the task config object
     return TaskConfig(**key_values)
@@ -112,7 +113,7 @@ def find_task_config_file(task_name):
     #
 
     base_dirs = []
-    if os.path.isabs(task_name):
+    if PurePath(task_name).is_absolute:
         #Only check the root path since the path is aboslute
         base_dirs.append('/')
     else:
@@ -120,7 +121,7 @@ def find_task_config_file(task_name):
         base_dirs.append('.')
 
         vtr_root = find_vtr_root()
-        vtr_flow_tasks_dir = os.path.join(vtr_root, "vtr_flow", "tasks")
+        vtr_flow_tasks_dir = str(PurePath(vtr_root) / "vtr_flow" / "tasks")
 
         #Then the VTR tasks directory
         base_dirs.append(vtr_flow_tasks_dir)
@@ -129,25 +130,26 @@ def find_task_config_file(task_name):
     potential_config_file_paths = []
     for base_dir in base_dirs:
         #Assume points directly to a config.txt
-        assume_config_path = os.path.join(base_dir, task_name)
+        assume_config_path = str(PurePath(base_dir) / task_name)
         potential_config_file_paths.append(assume_config_path)
 
         #Assume points to a config dir (containing config.txt)
-        assume_config_dir_path = os.path.join(base_dir, task_name, "config.txt")
+        assume_config_dir_path = str(PurePath(base_dir) / task_name / "config.txt")
         potential_config_file_paths.append(assume_config_dir_path)
 
         #Assume points to a task dir (containing config/config.txt)
-        assume_task_dir_path = os.path.join(base_dir, task_name, "config", "config.txt")
+        assume_task_dir_path = str(PurePath(base_dir) / task_name / "config" / "config.txt")
         potential_config_file_paths.append(assume_task_dir_path)
 
     #Find the first potential file that is valid
     for config_file in potential_config_file_paths:
-        is_file = os.path.isfile(config_file)
-        is_named_config = os.path.basename(config_file) == "config.txt"
-        is_in_config_dir = os.path.basename(os.path.dirname(config_file)) == "config"
+        config_path = Path(config_file)
+        is_file = config_path.is_file()
+        is_named_config = config_path.name == "config.txt"
+        is_in_config_dir = config_path.parent.name == "config"
 
         if is_file and is_named_config and is_in_config_dir:
-            return os.path.abspath(config_file)
+            return config_path.resolve()
 
     raise VtrError("Could not find config/config.txt for task {name}".format(name=task_name))
 

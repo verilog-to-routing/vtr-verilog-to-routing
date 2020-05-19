@@ -1,4 +1,6 @@
 import os
+from pathlib import PurePath
+from pathlib import Path
 import sys
 import re
 import time
@@ -64,7 +66,7 @@ class CommandRunner(object):
 
         #If no log file is specified the name is based on the executed command
         if log_filename == None:
-            log_filename = os.path.basename(orig_cmd[0]) + '.out'
+            log_filename = PurePath(orig_cmd[0]).name + '.out'
 
 
         #Limit memory usage?
@@ -106,15 +108,15 @@ class CommandRunner(object):
             #
             # We do this rather than use proc.communicate() 
             # to get interactive output
-            with open(os.path.join(temp_dir, log_filename), 'w') as log_f:
+            with (Path(temp_dir) / log_filename).open('w') as log_f:
                 #Print the command at the top of the log
-                print >> log_f, " ".join(cmd)
+                log_f.write(" ".join(cmd).decode('utf-8'))
 
                 #Read from subprocess output
                 for line in proc.stdout:
 
                     #Send to log file
-                    print >> log_f, line,
+                    log_f.write(line.decode('unicode_escape') )
 
                     #Save the output
                     cmd_output.append(line)
@@ -146,9 +148,9 @@ class CommandRunner(object):
 
 
         if cmd_errored:
-            raise CommandError(msg="Executable {exec_name} failed".format(exec_name=os.path.basename(orig_cmd[0])), 
+            raise CommandError(msg="Executable {exec_name} failed".format(exec_name=PurePath(orig_cmd[0]).name), 
                                cmd=cmd,
-                               log=os.path.join(temp_dir, log_filename),
+                               log=str(PurePath(temp_dir).joinpath(log_filename)),
                                returncode=cmd_returncode)
 
         return cmd_output, cmd_returncode
@@ -233,10 +235,11 @@ def mkdir_p(path):
     """
     Makes a directory (including parents) at the specified path
     """
+    make_path = Path(path)
     try:
-        os.makedirs(path)
+        make_path.mkdir()
     except OSError as exc:  # Python >2.5
-        if exc.errno == errno.EEXIST and os.path.isdir(path):
+        if exc.errno == errno.EEXIST and make_path.is_dir():
             pass
         else:
             raise
@@ -262,9 +265,9 @@ def find_vtr_file(filename, is_executable=False):
     """
     #We assume exectuables are specified in the unix style (no .exe),
     # if it was specified with .exe, strip it off
-    filebase, ext = os.path.splitext(filename)
-    if ext == ".exe":
-        filename = filebase
+    file_path = PurePath(filename)
+    if file_path.suffix == ".exe":
+        filename = file_path.name
 
     #
     #Check if it is on the path (provided it is executable)
@@ -300,20 +303,17 @@ def find_file_from_vtr_root(filename, vtr_root, is_executable=False):
     Given a vtr_root and a filename searches for the file recursively under some common VTR directories
     """
     for subdir in ['vpr', 'abc', 'abc_with_bb_support', 'ODIN_II', 'vtr_flow', 'ace2']:
-
-        for root, dirs, files in os.walk(os.path.join(vtr_root, subdir)):
-            for file in files:
-                if file == filename:
-                    full_file_path = os.path.join(root, file)
-
-                    if os.path.isfile(full_file_path):
-                        if is_executable:
-                            #Found an executable file as required
-                            if os.access(full_file_path, os.X_OK):
-                                return full_file_path
-                        else:
-                            #Found a file as required
-                            return full_file_path
+        directory_path = (Path(vtr_root) / subdir)
+        for file_path in directory_path.glob('**/*'):
+            if file_path.name == filename:
+                if file_path.is_file:
+                    if is_executable:
+                        #Found an executable file as required
+                        if os.access(str(file_path), os.X_OK):
+                            return str(file_path)
+                    else:
+                        #Found a file as required
+                        return str(file_path)
     return None
 
 def find_vtr_root():
@@ -321,13 +321,11 @@ def find_vtr_root():
         if env_var in os.environ:
             return os.environ[env_var]
 
-    inferred_script_dir = os.path.dirname(os.path.abspath(__file__))
-
     #We assume that this file is in <vtr_root>/vtr_flow/python_libs/verilogtorouting
-    inferred_vtr_root = os.path.abspath(os.path.join(inferred_script_dir, '../../../..'))
+    inferred_vtr_root = Path(__file__).parent / '../../../..'
 
-    if os.path.isdir(inferred_vtr_root):
-        return inferred_vtr_root
+    if inferred_vtr_root.is_dir:
+        return str(inferred_vtr_root)
     else:
         raise VtrError("Could not find VTR root directory. Try setting VTR_ROOT environment variable.")
 
@@ -403,7 +401,7 @@ def load_config_lines(filepath, allow_includes=True):
                         assert len(components) == 2
 
                         include_file = components[1].strip('"') #Strip quotes
-                        include_file_abs = os.path.join(os.path.dirname(filepath), include_file)
+                        include_file_abs = str(Path(filepath).paren / include_file)
 
                         #Recursively load the config
                         config_lines += load_config_lines(include_file_abs, allow_includes=allow_includes) 
@@ -439,7 +437,7 @@ def get_next_run_dir(base_dir):
 
     Does not create the directory
     """
-    return os.path.join(base_dir, run_dir_name(get_next_run_number(base_dir)))
+    return str(PurePath(base_dir) / run_dir_name(get_next_run_number(base_dir)))
 
 def get_latest_run_dir(base_dir):
     """
@@ -450,7 +448,7 @@ def get_latest_run_dir(base_dir):
     if latest_run_number == None:
         return None
 
-    return os.path.join(base_dir, run_dir_name(latest_run_number))
+    return str(PurePath(base_dir) / run_dir_name(latest_run_number))
 
 def get_next_run_number(base_dir):
     """
@@ -470,15 +468,15 @@ def get_latest_run_number(base_dir):
     Returns the highest run number of all run directories with in base_dir
     """
     run_number = 0
-    run_dir = os.path.join(base_dir, run_dir_name(run_number))
+    run_dir = Path(base_dir) / run_dir_name(run_number)
 
-    if not os.path.exists(run_dir):
+    if not run_dir.exists:
         #No existing run directories
         return None
 
-    while os.path.exists(run_dir):
+    while run_dir.exists:
         run_number += 1
-        run_dir = os.path.join(base_dir, run_dir_name(run_number))
+        run_dir = Path(base_dir) / run_dir_name(run_number)
 
     #Currently one-past the last existing run dir,
     #to get latest existing, subtract one

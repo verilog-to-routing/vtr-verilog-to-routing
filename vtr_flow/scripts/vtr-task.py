@@ -1,5 +1,6 @@
 #!/usr/bin/env python2
-import os
+from pathlib import Path
+from pathlib import PurePath
 import sys
 import argparse
 import itertools
@@ -10,7 +11,7 @@ import shutil
 from datetime import datetime
 from multiprocessing import Pool
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'python_libs'))
+sys.path.insert(0, str(Path(__file__).resolve().parent / 'python_libs'))
 
 from vtr import VtrError, InspectError, CommandError, load_list_file, find_vtr_file, mkdir_p, print_verbose, find_vtr_root, CommandRunner, format_elapsed_time, RawDefaultHelpFormatter, VERBOSITY_CHOICES, argparse_str2bool, get_next_run_dir, get_latest_run_dir, load_task_config, TaskConfig, find_task_config_file, CommandRunner, load_pass_requirements, load_parse_results
 
@@ -37,13 +38,13 @@ class Job:
         return self._circuit
 
     def job_name(self):
-        return os.path.join(self.arch(), self.circuit())
+        return str(PurePath(self.arch()).joinpath(self.circuit()))
 
     def command(self):
         return self._command
 
     def work_dir(self, run_dir):
-        return os.path.join(run_dir, self._work_dir)
+        return str(PurePath(run_dir).joinpath(self._work_dir))
 
 def vtr_command_argparser(prog=None):
     description = textwrap.dedent(
@@ -257,7 +258,7 @@ def parse_task(args, config, config_jobs, task_metrics_filepath=None, flow_metri
         subprocess.check_call(cmd, cwd=job.work_dir(run_dir))
 
     if task_metrics_filepath is None:
-        task_metrics_filepath = task_parse_results_filepath = os.path.join(run_dir, "parse_results.txt")
+        task_metrics_filepath = task_parse_results_filepath = str(PurePath(run_dir).joinpath("parse_results.txt"))
 
     #Record max widths for pretty printing
     max_arch_len = len("architecture")
@@ -277,9 +278,9 @@ def parse_task(args, config, config_jobs, task_metrics_filepath=None, flow_metri
             #
             #The job results file is basically the same format, but excludes the architecture and circuit fields,
             #which we prefix to each line of the task result file
-            job_parse_results_filepath = os.path.join(run_dir, job.arch(), job.circuit(), flow_metrics_basename)
-            if os.path.isfile(job_parse_results_filepath):
-                with open(job_parse_results_filepath) as in_f:
+            job_parse_results_filepath = Path(run_dir) / job.arch / job.circuit / flow_metrics_basename
+            if job_parse_results_filepath.exists:
+                with job_parse_results_filepath.open() as in_f:
                     lines = in_f.readlines()
 
                     assert len(lines) == 2
@@ -292,7 +293,7 @@ def parse_task(args, config, config_jobs, task_metrics_filepath=None, flow_metri
                     #Second line is the data
                     print >>out_f, "{:<{arch_width}}\t{:<{circuit_width}}\t{}".format(job.arch(), job.circuit(), lines[1], arch_width=max_arch_len, circuit_width=max_circuit_len),
             else:
-                print_verbose(BASIC_VERBOSITY, args.verbosity, "Warning: Flow result file not found (task QoR will be incomplete): {} ".format(job_parse_results_filepath))
+                print_verbose(BASIC_VERBOSITY, args.verbosity, "Warning: Flow result file not found (task QoR will be incomplete): {} ".format(str(job_parse_results_filepath)))
 
 def create_golden_results_for_tasks(args, configs):
     for config in configs:
@@ -304,8 +305,8 @@ def create_golden_results_for_task(args, config):
     """
     run_dir = find_latest_run_dir(args, config)
 
-    task_results = os.path.join(run_dir, "parse_results.txt")
-    golden_results_filepath = os.path.join(config.config_dir, "golden_results.txt")
+    task_results = str(PurePath(run_dir).joinpath("parse_results.txt"))
+    golden_results_filepath = str(PurePath(config.config_dir).joinpath("golden_results.txt"))
 
     print_verbose(BASIC_VERBOSITY, args.verbosity, "Creating golden task results from {} -> {}".format(run_dir, golden_results_filepath))
 
@@ -333,15 +334,15 @@ def check_golden_results_for_task(args, config):
     else:
 
         #Load the pass requirements file
-        pass_req_filepath = os.path.join(find_vtr_root(), 'vtr_flow', 'parse', 'pass_requirements', config.pass_requirements_file)
+        pass_req_filepath = str(PurePath(find_vtr_root).joinpath('vtr_flow').joinpath('parse').joinpath('pass_requirements').joinpath(config.pass_requirements_file))
         pass_requirements = load_pass_requirements(pass_req_filepath)
 
         #Load the task's parse results
-        task_results_filepath = os.path.join(run_dir, "parse_results.txt")
+        task_results_filepath = str(PurePath(run_dir).joinpath("parse_results.txt"))
         task_results = load_parse_results(task_results_filepath)
          
         #Load the golden reference
-        golden_results_filepath = os.path.join(config.config_dir, "golden_results.txt")
+        golden_results_filepath = str(PurePath(config.config_dir).joinpath("golden_results.txt"))
         golden_results = load_parse_results(golden_results_filepath)
 
         #Verify that the architecture and circuit are specified
@@ -409,12 +410,12 @@ def check_golden_results_for_task(args, config):
                     reason = e.msg
 
                 if not metric_passed:
-                    print_verbose(BASIC_VERBOSITY, args.verbosity, "    FAILED {} {} {}/{}: {} {}".format(os.path.basename(run_dir), config.task_name, arch, circuit, metric, reason))
+                    print_verbose(BASIC_VERBOSITY, args.verbosity, "    FAILED {} {} {}/{}: {} {}".format(PurePath(run_dir).name, config.task_name, arch, circuit, metric, reason))
                     num_qor_failures += 1
 
     if num_qor_failures == 0:
         print_verbose(BASIC_VERBOSITY, args.verbosity, 
-                      "    PASSED {} {}".format(os.path.basename(run_dir), config.task_name))
+                      "    PASSED {} {}".format(PurePath(run_dir).name, config.task_name))
 
     return num_qor_failures
 
@@ -445,7 +446,7 @@ def create_jobs(args, configs):
                 script_params += ["--fix_pins", resolve_vtr_source_file(config, config.pad_file)]
 
             if config.parse_file:
-                script_params += ["--parse_config_file", resolve_vtr_source_file(config, config.parse_file, os.path.join("parse", "parse_config"))]
+                script_params += ["--parse_config_file", resolve_vtr_source_file(config, config.parse_file, str(PurePath("parse").joinpath("parse_config")))]
 
             #We specify less verbosity to the sub-script
             # This keeps the amount of output reasonable
@@ -453,7 +454,7 @@ def create_jobs(args, configs):
 
             cmd = executable + script_params
 
-            work_dir = os.path.join(arch, circuit)
+            work_dir = str(PurePath(arch).joinpath(circuit))
 
             jobs.append(Job(config.task_name, arch, circuit, work_dir, cmd))
 
@@ -467,21 +468,21 @@ def find_latest_run_dir(args, config):
     if not run_dir:
         raise InspectError("Failed to find run directory for task '{}' in '{}'".format(config.task_name, task_dir))
 
-    assert os.path.isdir(run_dir)
+    assert Path(run_dir).is_dir()
 
     return run_dir
 
 def find_task_dir(args, config):
     task_dir = None
     if args.work_dir:
-        task_dir = os.path.join(args.work_dir, config.task_name)
+        task_dir = str(PurePath(args.work_dir).joinpath(config.task_name))
 
     else:
         #Task dir is just above the config directory
-        task_dir = os.path.dirname(config.config_dir)
-        assert os.path.isdir(task_dir)
+        task_dir = Path(config.config_dir).parent
+        assert task_dir.is_dir
 
-    return task_dir
+    return str(task_dir)
 
 def run_parallel(args, configs, queued_jobs):
     """
@@ -520,7 +521,7 @@ def run_parallel(args, configs, queued_jobs):
                 work_dir = job.work_dir(run_dirs[job.task_name()])
                 mkdir_p(work_dir)
 
-                log_filepath = os.path.join(work_dir, "vtr_flow.log")
+                log_filepath = str(PurePath(work_dir).joinpath("vtr_flow.log"))
 
                 log_file = open(log_filepath, 'w+')
 
@@ -621,26 +622,28 @@ def resolve_vtr_source_file(config, filename, base_dir=""):
     """
     
     #Absolute path
-    if os.path.isabs(filename):
+    if PurePath(filename).is_absolute():
         return filename
 
     #Under config
-    assert os.path.isabs(config.config_dir)
-    joined_path = os.path.join(config.config_dir, filename)
-    if os.path.exists(joined_path):
-        return joined_path
+    config_path = Path(config.config_dir)
+    assert config_path.is_absolute()
+    joined_path = config_path / filename
+    if joined_path.exists():
+        return str(joined_path)
 
     #Under base dir
-    if os.path.isabs(base_dir):
+    base_path = Path(base_dir)
+    if base_path.is_absolute():
         #Absolute base
-        joined_path = os.path.join(base_dir, filename)
-        if os.path.exists(joined_path):
-            return joined_path
+        joined_path = base_path / filename
+        if joined_path.exists():
+            return str(joined_path)
     else:
         #Relative base under the VTR flow directory
-        joined_path = os.path.join(find_vtr_root(), 'vtr_flow', base_dir, filename)
-        if os.path.exists(joined_path):
-            return joined_path
+        joined_path = Path(find_vtr_root()) / 'vtr_flow' / base_dir / filename
+        if joined_path.exists():
+            return str(joined_path)
 
     #Not found
     raise InspectError("Failed to resolve VTR source file {}".format(filename))

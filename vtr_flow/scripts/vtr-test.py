@@ -1,5 +1,5 @@
 #!/usr/bin/env python2
-import os
+from pathlib import Path
 import sys
 import argparse
 import itertools
@@ -9,7 +9,7 @@ import time
 from datetime import datetime
 from multiprocessing import Pool
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'python_libs'))
+sys.path.insert(0, str(Path(__file__).resolve().parent / 'python_libs'))
 
 import vtr
 from vtr import error, load_list_file, find_vtr_file, mkdir_p, print_verbose, find_vtr_root, CommandRunner, format_elapsed_time, RawDefaultHelpFormatter, VERBOSITY_CHOICES, load_task_config, TaskConfig, find_task_config_file, CommandRunner
@@ -116,9 +116,7 @@ def vtr_command_main(arg_list, prog=None):
                 if reg_test.startswith("vtr"):
 
                     base_testname = reg_test.split('_')[-1]
-                    task_list_filepath = os.path.join(find_vtr_root(), 
-                                                      'vtr_flow', 'tasks', 'regression_tests', 
-                                                      'vtr_reg_' + base_testname, 'task_list.txt')
+                    task_list_filepath = str(Path(find_vtr_root()) / 'vtr_flow' / 'tasks' / 'regression_tests' / ('vtr_reg_' + base_testname) / 'task_list.txt')
                     vtr_task_list_files.append(task_list_filepath)
 
             #Run the actual tasks, recording functionality failures
@@ -151,7 +149,7 @@ def run_odin_test(args, test_name):
 
     assert odin_reg_script
 
-    odin_root = os.path.dirname(odin_reg_script)
+    odin_root = str(Path(odin_reg_script).resolve().parent)
 
     result = subprocess.call(odin_reg_script, cwd=odin_root)
 
