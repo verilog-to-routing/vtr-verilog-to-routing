@@ -7,7 +7,7 @@ Developer Guide
     :glob:
 
     building
-    contributing
+    contributing/index
     developing
     tutorials/index
     support
