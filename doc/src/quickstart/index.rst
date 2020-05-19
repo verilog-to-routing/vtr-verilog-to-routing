@@ -261,7 +261,7 @@ However, since our BLIF file doesn't match the design name we explicitly specify
 
  * ``blink`` as the circuit name, and
 
- * the input circuit file with :option:``--circuit_file <vpr --circuit_file>``.
+ * the input circuit file with :option:`--circuit_file <vpr --circuit_file>`.
 
 to ensure the resulting ``.net``, ``.place`` and ``.route`` files will have the correct names.
 
