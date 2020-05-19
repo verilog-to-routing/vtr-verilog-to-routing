@@ -357,4 +357,4 @@ Here are some possible next steps for people wishing to modify and improve VTR:
 
  * Look for :ref:`open issues to which you can contribute <contribution_guidelines>`.
 
- * Begin exploring the source code for the main tools in VTR (e.g. VPR).
+ * Begin exploring the source code for the main tools in VTR (e.g. VPR in ``$VTR_ROOT/vpr/src``).
