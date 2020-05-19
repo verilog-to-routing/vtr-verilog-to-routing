@@ -680,46 +680,6 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
     **Default:** ``0.8``
 
-.. option:: --alpha_min <float>
-
-    The minimum (starting) update factor (alpha) used.
-    Ranges between 0 and alpha_max.
-    Setting this flag selects Dusty's annealing schedule.
-
-    **Default:** ``0.2``
-
-.. option:: --alpha_max <float>
-
-    The maximum (stopping) update factor (alpha) used after which simulated annealing will complete.
-    Ranges between alpha_min and 1.
-    Setting this flag selects Dusty's annealing schedule.
-
-    **Default:** ``0.9``
-
-.. option:: --alpha_decay <float>
-
-    The rate at which alpha will approach 1: alpha(n) = 1 - (1 - alpha(n-1)) * alpha_decay
-    Ranges between 0 and 1.
-    Setting this flag selects Dusty's annealing schedule.
-
-    **Default:** ``0.7``
-
-.. option:: --anneal_success_min <float>
-
-   The minimum success ratio after which the temperature will reset to maintain the target success ratio.
-   Ranges between 0 and anneal_success_target.
-   Setting this flag selects Dusty's annealing schedule.
-
-    **Default:** ``0.1``
-
-.. option:: --anneal_success_target <float>
-
-   The temperature after each reset is selected to keep this target success ratio.
-   Ranges between anneal_success_target and 1.
-   Setting this flag selects Dusty's annealing schedule.
-
-    **Default:** ``0.25``
-
 .. option:: --fix_pins {free | random | <file.pads>}
 
     Controls how the placer handles I/O pads during placement.
@@ -756,6 +716,44 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
     For example, a value of 0.1 means 10% of moves are allowed to ignore the region limit.
 
     **Default:** ``0.0``
+
+.. _dusty_sa_options:
+Setting any of the following options selects `Dusty's annealing schedule <dusty_sa.rst>`_.
+
+.. option:: --alpha_min <float>
+
+    The minimum (starting) update factor (alpha) used.
+    Ranges between 0 and alpha_max.
+
+    **Default:** ``0.2``
+
+.. option:: --alpha_max <float>
+
+    The maximum (stopping) update factor (alpha) used after which simulated annealing will complete.
+    Ranges between alpha_min and 1.
+
+    **Default:** ``0.9``
+
+.. option:: --alpha_decay <float>
+
+    The rate at which alpha will approach 1: alpha(n) = 1 - (1 - alpha(n-1)) * alpha_decay
+    Ranges between 0 and 1.
+
+    **Default:** ``0.7``
+
+.. option:: --anneal_success_min <float>
+
+   The minimum success ratio after which the temperature will reset to maintain the target success ratio.
+   Ranges between 0 and anneal_success_target.
+
+    **Default:** ``0.1``
+
+.. option:: --anneal_success_target <float>
+
+   The temperature after each reset is selected to keep this target success ratio.
+   Ranges between anneal_success_target and 1.
+
+    **Default:** ``0.25``
 
 .. _timing_driven_placer_options:
 

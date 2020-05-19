@@ -2222,19 +2222,19 @@ void set_conditional_defaults(t_options& args) {
         args.quench_recompute_divider.set(args.inner_loop_recompute_divider, Provenance::INFERRED);
     }
 
-    //Are we using the automatic, or user-specified annealing schedule?
-    if (args.PlaceAlphaMin.provenance() == Provenance::SPECIFIED
+    //Which schedule?
+    if (args.PlaceAlphaMin.provenance() == Provenance::SPECIFIED // Any of these flags select Dusty's schedule
         || args.PlaceAlphaMax.provenance() == Provenance::SPECIFIED
         || args.PlaceAlphaDecay.provenance() == Provenance::SPECIFIED
         || args.PlaceSuccessMin.provenance() == Provenance::SPECIFIED
         || args.PlaceSuccessTarget.provenance() == Provenance::SPECIFIED) {
         args.anneal_sched_type.set(DUSTY_SCHED, Provenance::INFERRED);
-    } else if (args.PlaceInitT.provenance() == Provenance::SPECIFIED
+    } else if (args.PlaceInitT.provenance() == Provenance::SPECIFIED // Any of these flags select a manual schedule
                || args.PlaceExitT.provenance() == Provenance::SPECIFIED
                || args.PlaceAlphaT.provenance() == Provenance::SPECIFIED) {
         args.anneal_sched_type.set(USER_SCHED, Provenance::INFERRED);
     } else {
-        args.anneal_sched_type.set(AUTO_SCHED, Provenance::INFERRED);
+        args.anneal_sched_type.set(AUTO_SCHED, Provenance::INFERRED); // Otherwise use the automatic schedule
     }
 
     //Are the pad locations specified?
