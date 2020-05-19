@@ -58,6 +58,8 @@ using std::min;
  * cost computation. 0.01 means that there is a 1% error tolerance.       */
 #define ERROR_TOL .01
 
+/* The final rlim (range limit) is 1, which is the smallest value that can *
+ * still make progress, since an rlim of 0 wouldn't allow any swaps.       */
 #define FINAL_RLIM 1
 
 /* This defines the maximum number of swap attempts before invoking the   *
@@ -105,15 +107,16 @@ struct t_placer_prev_inverse_costs {
     double timing_cost;
 };
 
+// Used by update_state()
 struct t_annealing_state {
-    float t;
-    float rlim;
-    float inverse_delta_rlim;
-    float alpha;
-    float restart_t;
-    float crit_exponent;
-    int move_lim_max;
-    int move_lim;
+    float t;                  // Temperature
+    float rlim;               // Range limit for swaps
+    float inverse_delta_rlim; // used to calculate crit_exponent
+    float alpha;              // Temperature decays by this factor each outer iteration
+    float restart_t;          // Temperature used after restart due to minimum success ratio
+    float crit_exponent;      // Used by timing-driven placement to "sharpen" timing criticality
+    int move_lim_max;         // Maximum move limit
+    int move_lim;             // Current move limit
 };
 
 constexpr float INVALID_DELAY = std::numeric_limits<float>::quiet_NaN();
