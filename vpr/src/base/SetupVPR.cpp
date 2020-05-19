@@ -277,7 +277,7 @@ static void SetupSwitches(const t_arch& Arch,
 
     /* Delayless switch for connecting sinks and sources with their pins. */
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].set_type(SwitchType::MUX);
-    device_ctx.arch_switch_inf[RoutingArch->delayless_switch].name = vtr::strdup("__vpr_delayless_switch__");
+    device_ctx.arch_switch_inf[RoutingArch->delayless_switch].name = vtr::strdup(VPR_DELAYLESS_SWITCH_NAME);
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].R = 0.;
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].Cin = 0.;
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].Cout = 0.;

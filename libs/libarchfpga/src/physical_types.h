@@ -1390,6 +1390,17 @@ enum class SwitchType {
 };
 constexpr std::array<const char*, size_t(SwitchType::NUM_SWITCH_TYPES)> SWITCH_TYPE_STRINGS = {{"MUX", "TRISTATE", "PASS_GATE", "SHORT", "BUFFER", "INVALID"}};
 
+/* Constant/Reserved names for switches in architecture XML
+ * Delayless switch:
+ *   The zero-delay switch created by VPR internally 
+ *   This is a special switch just to ease CAD algorithms
+ *   It is mainly used in
+ *     - the edges between SOURCE and SINK nodes in routing resource graphs  
+ *     - the edges in CLB-to-CLB connections (defined by <directlist> in arch XML)
+ *   
+ */
+constexpr const char* VPR_DELAYLESS_SWITCH_NAME = "__vpr_delayless_switch__";
+
 enum class BufferSize {
     AUTO,
     ABSOLUTE

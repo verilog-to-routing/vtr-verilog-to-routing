@@ -3931,6 +3931,14 @@ static void ProcessSwitches(pugi::xml_node Parent,
         t_arch_switch_inf& arch_switch = (*Switches)[i];
 
         switch_name = get_attribute(Node, "name", loc_data).value();
+
+        /* Check if the switch has conflicts with any reserved names */
+        if (0 == strcmp(switch_name, VPR_DELAYLESS_SWITCH_NAME)) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                           "Switch name '%s' is a reserved name for VPR internal usage! Please use another  name.\n",
+                           switch_name);
+        }
+
         type_name = get_attribute(Node, "type", loc_data).value();
 
         /* Check for switch name collisions */
