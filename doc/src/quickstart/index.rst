@@ -29,7 +29,7 @@ from the VTR root directory (here after referred to as :term:`$VTR_ROOT`) to bui
 
 .. note:: If VTR fails to build you may need to install the :ref:`required dependencies <building_vtr>`.
 
-For more details on building VTR for various platforms see :ref:`building_vtr`.
+For more details on building VTR on various operating systems/platforms see :ref:`Building VTR<building_vtr>`.
 
 
 Running VPR
@@ -393,7 +393,7 @@ Here are some possible next steps for people wishing to use VTR:
 
  * Read more about the :ref:`VTR CAD Flow <vtr_cad_flow>` and :ref:`Task <vtr_tasks>` automation framework.
 
- * :ref:`Suggest or make enhancements VTR's documentation <enhancing_documentation>`
+ * :ref:`Suggest or make enhancements VTR's documentation <contribution_guidelines>`
 
 Here are some possible next steps for people wishing to modify and improve VTR:
 
