@@ -32,6 +32,7 @@ For more specific documentation about VPR see :ref:`vpr`.
    :maxdepth: 2
    :caption: Usage
 
+   building/index
    vtr/index
    arch/index
    vpr/index
