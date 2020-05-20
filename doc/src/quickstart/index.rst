@@ -168,7 +168,7 @@ We will use the following simple example circuit, which causes it's output to to
     :language: verilog
     :linenos:
     :emphasize-lines: 10,15,26
-    :caption: blink.v
+    :caption: blink.v (``$VTR_ROOT/doc/src/quickstart/blink.v``)
 
 This Verilog creates a sequential 5-bit register (``r_counter``) which increments every clock cycle.
 If the count is below ``16`` it drives the output (``o_led``) high, otherwise it drives it low.
@@ -184,9 +184,9 @@ Lets start by making a fresh directory for us to work in:
 
 Next we need to run the three main sets of tools:
 
-* :ref:`odin_II` performs 'synthesis' which converts our behavioural Verilog into a circuit netlist (``.blif`` file) consisting of logic equations and FPGA architecture primitives (Flip-Flops, adders etc.),
-* :ref:`ABC` performs 'logic optimization' which simplifies the circuit logic, and 'technology mapping' which converts logic equations to Look-Up-Tables (LUTs), and
-* :ref:`VPR` which performs packing, placement and routing of the circuit onto the targetted FPGA architecture.
+* :ref:`odin_II` performs 'synthesis' which converts our behavioural Verilog (``.v`` file) into a circuit netlist (``.blif`` file) consisting of logic equations and FPGA architecture primitives (Flip-Flops, adders etc.),
+* :ref:`ABC` performs 'logic optimization' which simplifies the circuit logic, and 'technology mapping' which converts logic equations into the Look-Up-Tables (LUTs) available on an FPGA, and
+* :ref:`VPR` which performs packing, placement and routing of the circuit to implement it on the targetted FPGA architecture.
 
 Synthesizing with ODIN II
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -220,15 +220,15 @@ Some interesting highlights are shown below:
 
 .. literalinclude:: blink.odin.blif
     :lines: 14,40
-    :caption: Instantiations of rising-edge triggered Latches (i.e. Flip-Flops) in ``blink.odin.blif`` which implement (``r_counter`` in blink.v)
+    :caption: Instantiations of rising-edge triggered Latches (i.e. Flip-Flops) in ``blink.odin.blif`` (implements part of ``r_counter`` in blink.v)
 
 .. literalinclude:: blink.odin.blif
     :lines: 17-19,21-22
-    :caption: Adder primitive instantiations in ``blink.odin.blif``, used to perform addition (``+`` operator in blink.v)
+    :caption: Adder primitive instantiations in ``blink.odin.blif``, used to perform addition (implements part of the ``+`` operator in blink.v)
 
 .. literalinclude:: blink.odin.blif
     :lines: 45-50
-    :caption: Logic equation (.names truth-table) in ``blink.odin.blif``, implementing logical OR
+    :caption: Logic equation (.names truth-table) in ``blink.odin.blif``, implementing logical OR (implements part of the ``<`` operator in blink.v)
 
 .. seealso:: For more information on the BLIF file format see :ref:`blif_format`.
 
@@ -242,7 +242,7 @@ Next, we'll optimize and technology map our circuit using ABC, providing the opt
 We'll use the following, simple ABC commands::
 
     read blink.odin.blif;                               #Read the circuit synthesized by ODIN
-    if -K 6;                                            #Technology map to 6-LUTs
+    if -K 6;                                            #Technology map to 6 input LUTs (6-LUTs)
     write_hie blink.odin.blif blink.abc_no_clock.blif   #Write new circuit to blink.abc_no_clock.blif
 
 .. note:: Usually you should use a more complicated script (such as that used by :ref:`run_vtr_flow`) to ensure ABC optitmizes your circuit well.
@@ -271,11 +271,12 @@ If we now inspect the produced BLIF file (``blink.abc_no_clock.blif``) we see th
 
 ABC has kept the ``.latch`` and ``.subckt adder`` primitives, but has significantly simplified the other logic (``.names``).
 
+
+However, there is an issue with the above BLIF produced by ABC: the latches (rising edge Flip-Flops) do not have any clocks specified, which is information required by VPR.
+
 Re-inserting clocks
 ^^^^^^^^^^^^^^^^^^^
-There is an issue with the above BLIF produced by ABC.
-The latches (rising edge Flip-Flops) do not have any clocks specified, which is information required by VPR.
-We will restore this information by running a script which will transfer that information from the original ODIN BLIF file:
+We will restore the clock information by running a script which will transfer that information from the original ODIN BLIF file (writing it to the new file ``blink.pre-vpr.blif``):
 
 .. code-block:: bash
 
@@ -299,7 +300,7 @@ If we inspect ``blink.pre-vpr.blif`` we now see that the clock (``blink^clk``) h
 
 Implementing the circuit with VPR
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Now that we have the optimized and technology mapped netlist (``blink.pre-vpr.blif``), we can invoke VPR to implement it onto the ``EArch`` FPGA architecture, in the same way we did with the ``tseng`` design.
+Now that we have the optimized and technology mapped netlist (``blink.pre-vpr.blif``), we can invoke VPR to implement it onto the ``EArch`` FPGA architecture (in the same way we did with the ``tseng`` design earlier).
 However, since our BLIF file doesn't match the design name we explicitly specify:
 
  * ``blink`` as the circuit name, and
@@ -340,14 +341,14 @@ We can then view the implementation as usual by appending ``--analysis --disp on
 
 Automatically Running the VTR Flow
 ----------------------------------
-Running each stage of the flow manually is time consuming.
+Running each stage of the flow manually is time consuming (and potentially error prone).
 For convenience, VTR provides a script (:ref:`run_vtr_flow`) which automates this process.
 
 Lets make a new directory to work in named ``blink_run_flow``:
 
 .. code-block:: bash
 
-    > mkdir -p ~/vtr_work/quickstart/blink_manual
+    > mkdir -p ~/vtr_work/quickstart/blink_run_flow
     > cd ~/vtr_work/quickstart/blink_run_flow
 
 Now lets run the script (``$VTR_ROOT/vtr_flow/scripts/run_vtr_flow.pl``) passing in:
@@ -371,7 +372,7 @@ The resulting command is:
         -temp_dir . \
         --route_chan_width 100
 
-.. note:: Options unrecognized by run_vtr_flow (like --route_chan_width) are passed on to VPR.
+.. note:: Options unrecognized by run_vtr_flow (like ``--route_chan_width``) are passed on to VPR.
 
 which should produce output similar to::
 
@@ -395,7 +396,7 @@ You will also see there are several BLIF files produced:
     0_blink.abc.blif   0_blink.raw.abc.blif  blink.odin.blif
     0_blink.odin.blif  blink.abc.blif        blink.pre-vpr.blif
 
-With the main files of intereset being ``blink.odin.blif`` (netlist produced by ODIN), ``blink.abc.blif`` (final netlist produced by ABC after clock restoration), ``blink.pre-vpr.blif`` netlist used by VPR (identical to ``blink.abc.blif``).
+With the main files of interest being ``blink.odin.blif`` (netlist produced by ODIN), ``blink.abc.blif`` (final netlist produced by ABC after clock restoration), ``blink.pre-vpr.blif`` netlist used by VPR (usually identical to ``blink.abc.blif``).
 
 Like before, we can also see the implementation files generated by VPR:
 
@@ -421,9 +422,9 @@ Now that you've finished the VTR quickstart, you're ready to start experimenting
 
 Here are some possible next steps for users wishing to use VTR:
 
- * Try modifying the verilog file (e.g. ``blink.v``) or make your own circuit and try running it through the flow.
+ * Try modifying the Verilog file (e.g. ``blink.v``) or make your own circuit and try running it through the flow.
 
- * Learn about FPGA architecture modelling (:ref:`Tutorials <arch_tutorial>`, :ref:`Reference <fpga_architecture_description>`), and try modifying a copy of ``EArch`` to see how it changes the implementation of ``blinky.v``.
+ * Learn about FPGA architecture modelling (:ref:`Tutorials <arch_tutorial>`, :ref:`Reference <fpga_architecture_description>`), and try modifying a copy of ``EArch`` to see how it changes the implementation of ``blink.v``.
 
  * Read more about the :ref:`VTR CAD Flow <vtr_cad_flow>`, and :ref:`Task <vtr_tasks>` automation framework.
 
