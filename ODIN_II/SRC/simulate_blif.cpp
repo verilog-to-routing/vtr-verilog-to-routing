@@ -2225,36 +2225,37 @@ static int verify_test_vector_headers(FILE* in, lines_t* l) {
     char buffer[BUFFER_MAX_SIZE];
     buffer[0] = '\0';
     unsigned int i;
-    for (i = 0; i < strlen(read_buffer) && i < BUFFER_MAX_SIZE; i++) {
-        char next = read_buffer[i];
+    for (i = 0; i < strlen(read_buffer) && i < BUFFER_MAX_SIZE; i++) ]
+    {
+            char next = read_buffer[i];
 
-        if (next == EOF) {
-            warning_message(SIMULATION, 0, -1, "%s", "Hit end of file.");
-            return false;
-        } else if (next == ' ' || next == '\t' || next == '\n') {
-            if (buffer_length) {
-                if (strcmp(l->lines[current_line]->name, buffer)) {
-                    char* expected_header = generate_vector_header(l);
-                    warning_message(SIMULATION, 0, -1,
-                                    "Vector header mismatch: \n "
-                                    "  Found:    %s "
-                                    "  Expected: %s",
-                                    read_buffer, expected_header);
-                    vtr::free(expected_header);
-                    return false;
-                } else {
-                    buffer_length = 0;
-                    current_line++;
+            if (next == EOF) {
+                warning_message(SIMULATION, 0, -1, "%s", "Hit end of file.");
+                return false;
+            } else if (next == ' ' || next == '\t' || next == '\n') {
+                if (buffer_length) {
+                    if (strcmp(l->lines[current_line]->name, buffer)) {
+                        char* expected_header = generate_vector_header(l);
+                        warning_message(SIMULATION, 0, -1,
+                                        "Vector header mismatch: \n "
+                                        "  Found:    %s "
+                                        "  Expected: %s",
+                                        read_buffer, expected_header);
+                        vtr::free(expected_header);
+                        return false;
+                    } else {
+                        buffer_length = 0;
+                        current_line++;
+                    }
                 }
-            }
 
-            if (next == '\n')
-                break;
-        } else {
-            buffer[buffer_length++] = next;
-            buffer[buffer_length] = '\0';
+                if (next == '\n')
+                    break;
+            } else {
+                buffer[buffer_length++] = next;
+                buffer[buffer_length] = '\0';
+            }
         }
-    }
     return true;
 }
 
@@ -2727,7 +2728,7 @@ static int verify_output_vectors(const char* output_vector_file, int num_vectors
                 break;
             }
             // The headers differ.
-            else if ((cycle == -1) && strcmp(buffer1, buffer2)) {
+            else if ((cycle == -1) && !output_vector_headers_equal(buffer1, buffer2)) {
                 error = true;
                 warning_message(SIMULATION, 0, -1,
                                 "Vector headers do not match: \n"
