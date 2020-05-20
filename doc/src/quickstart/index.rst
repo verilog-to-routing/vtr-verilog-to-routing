@@ -2,7 +2,7 @@
 VTR Quick Start
 ###############
 
-This is a quick introduction to VTR which covers how run VTR and some if its associated tools (:ref:`VPR`, :ref:`odin_II`, :ref:`ABC`).
+This is a quick introduction to VTR which covers how to run VTR and some if its associated tools (:ref:`VPR`, :ref:`odin_II`, :ref:`ABC`).
 
 Setting Up VTR
 ==============
@@ -12,7 +12,7 @@ Download VTR
 
 The first step is to `download VTR <https://verilogtorouting.org/download/>`_ and extract VTR on your local machine.
 
-.. note:: Developers planning to modify VTR should instead checkout the `VTR git repository <https://github.com/verilog-to-routing/vtr-verilog-to-routing/>`_.
+.. note:: Developers planning to modify VTR should checkout the `VTR git repository <https://github.com/verilog-to-routing/vtr-verilog-to-routing/>`_.
 
 Build VTR
 ---------
@@ -25,7 +25,10 @@ On most unix-like systems you can run:
 
 from the VTR root directory (here after referred to as :term:`$VTR_ROOT`) to build VTR.
 
-.. note:: In the VTR documentation lines starting with ``>`` (like ``> make`` above), indicate a command to run from your terminal.
+.. note:: 
+
+    In the VTR documentation lines starting with ``>`` (like ``> make`` above), indicate a command (i.e. ``make``) to run from your terminal.
+    When the ``\`` symbol appears at the end of a line, it indicates line continuation.
 
 .. note:: If VTR fails to build you may need to install the :ref:`required dependencies <building_vtr>`.
 
@@ -35,7 +38,7 @@ For more details on building VTR on various operating systems/platforms see :ref
 Running VPR
 ===========
 
-Lets now try running a simple pre-synthesized circuit (consisting of LUTs and Flip-Flops) and use the VPR tool to implement it on a specific FPGA architecture.
+Lets now try taking a simple pre-synthesized circuit (consisting of LUTs and Flip-Flops) and use the VPR tool to implement it on a specific FPGA architecture.
 
 Running VPR on a Pre-Synthesized Circuit
 ----------------------------------------
@@ -53,17 +56,19 @@ First, lets make a directory in our home directory where we can work:
     #Move into the working directory
     > cd ~/vtr_work/quickstart/vpr_tseng
 
-Now, lets invoke the VPR tool to implement
+Now, lets invoke the VPR tool to implement:
 
-* the ``tseng`` circuit (`$VTR_ROOT/vtr_flow/benchmarks/blif/tseng.blif`), on 
-
-* the ``EArch`` FPGA architecture (`$VTR_ROOT/vtr_flow/arch/timing/EArch.xml`).
+* the ``tseng`` circuit (``$VTR_ROOT/vtr_flow/benchmarks/blif/tseng.blif``), on 
+* the ``EArch`` FPGA architecture (``$VTR_ROOT/vtr_flow/arch/timing/EArch.xml``).
 
 We do this by passing these files to the VPR tool, and also specifying that we want to route the circuit on a version of ``EArch`` with a routing architecture :option:`channel width <vpr --route_chan_width>` of ``100`` (``--route_chan_wdith 100``):
 
 .. code-block:: bash
 
-    > $VTR_ROOT/vpr/vpr $VTR_ROOT/vtr_flow/arch/timing/EArch.xml $VTR_ROOT/vtr_flow/benchmarks/blif/tseng.blif --route_chan_width 100
+    > $VTR_ROOT/vpr/vpr \
+        $VTR_ROOT/vtr_flow/arch/timing/EArch.xml \
+        $VTR_ROOT/vtr_flow/benchmarks/blif/tseng.blif \
+        --route_chan_width 100
 
 This will produce a large amount of output as VPR implements the circuit, but at the end you should see something similar to::
 
@@ -106,22 +111,26 @@ Visualizaing Circuit Implementation
 
 .. note:: This section requires that VPR was compiled with graphic support. See :ref:`VPR Graphics <vpr_graphics>` for details.
 
-The `.net`, `.place` and `.route` files (along with the input `.blif` and architecture `.xml` files) fully defined the circuit implementation.
+The ``.net``, ``.place`` and ``.route`` files (along with the input ``.blif`` and architecture ``.xml`` files) fully defined the circuit implementation.
 We can visualize the circuit implementation by:
 
 * Re-running VPR's analysis stage (:option:`--analysis <vpr --analysis>`), and
-
 * enabling VPR's graphical user interface (:option:`--disp <vpr --disp>` ``on``).
    
 This is done by running the following:
 
 .. code-block:: bash
 
-    > $VTR_ROOT/vpr/vpr $VTR_ROOT/vtr_flow/arch/timing/EArch.xml $VTR_ROOT/vtr_flow/benchmarks/blif/tseng.blif --route_chan_width 100 --analysis --disp on
+    > $VTR_ROOT/vpr/vpr \
+        $VTR_ROOT/vtr_flow/arch/timing/EArch.xml \
+        $VTR_ROOT/vtr_flow/benchmarks/blif/tseng.blif \
+        --route_chan_width 100 \
+        --analysis --disp on
 
 which should open the VPR graphics and allow you to explore the circuit implementation.
 
 As an exercise try the following:
+
 * View the connectivity of a block (connections which drive it, and those which it drives)
 * View the internals of a logic block (e.g. try to find the LUTs/``.names`` and Flip-Flops/``.latch``)
 * Visualize all the routed circuit connections
@@ -134,21 +143,22 @@ As an exercise try the following:
 
 .. figure:: tseng_blk1.png
 
-    Input/output nets of block ``n_n3199``
+    Input (blue)/output (red) nets of block ``n_n3199`` (highlighted green).
 
 .. note:: 
     If you do not provide :option:`--analysis <vpr --analysis>`, VPR will re-implement the circuit from scratch.
     If you also specify :option:`--disp <vpr --disp>` ``on``, you can see how VPR modifies the implementation as it runs.
     By default ``--disp on`` it stops at key stages to allow you to view and explore the implementation.
-    You will need to press the ``Proceed`` button to allow VPR to continue to the next stage.
+    You will need to press the ``Proceed`` button in the GUI to allow VPR to continue to the next stage.
 
 Running the VTR Flow
 ====================
 In the previous section we have implement a pre-synthesized circuit onto a pre-existing FPGA architecture using VPR, and visualized the result.
 We now turn to how we can implement *our own circuit* on a pre-existing FPGA architecture.
 
-To do this we begin by describing a circuit using the Verilog Hardware Description Language (HDL), which will allow us to quickly and consisely define our circuit's behaviour.
-We will then use the VTR Flow to synthesize it into a circuit, and implement it onto an FPGA.
+To do this we begin by describing a circuit behaviourly using the Verilog Hardware Description Language (HDL).
+This allows us to quickly and consisely define the circuit's behaviour.
+We will then use the VTR Flow to synthesize the behavioural Verilog description it into a circuit netlist, and implement it onto an FPGA.
 
 Example Circuit
 ---------------
@@ -175,27 +185,26 @@ Lets start by making a fresh directory for us to work in:
 Next we need to run the three main sets of tools:
 
 * :ref:`odin_II` performs 'synthesis' which converts our behavioural Verilog into a circuit netlist (``.blif`` file) consisting of logic equations and FPGA architecture primitives (Flip-Flops, adders etc.),
-
 * :ref:`ABC` performs 'logic optimization' which simplifies the circuit logic, and 'technology mapping' which converts logic equations to Look-Up-Tables (LUTs), and
-
-* :ref:`VPR` performs packing, placement and routing of the circuit onto the targetted FPGA architecture.
+* :ref:`VPR` which performs packing, placement and routing of the circuit onto the targetted FPGA architecture.
 
 Synthesizing with ODIN II
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 First we'll run ODIN II on our Verilog file to synthesize it into a circuit netlist, providing the options:
 
- * ``-a $VTR_ROOT/vtr_flow/arch/timing/EArch.xml`` which specified what FPGA architecture we are targetting,
-
- * ``-V $VTR_ROOT/doc/src/quickstart/blink.v`` which specified the verilog file we want to synthesize, and
-
+ * ``-a $VTR_ROOT/vtr_flow/arch/timing/EArch.xml`` which specifies what FPGA architecture we are targetting,
+ * ``-V $VTR_ROOT/doc/src/quickstart/blink.v`` which specifies the verilog file we want to synthesize, and
  * ``-o blink.odin.blif`` which specifies the name of the generated ``.blif`` circuit netlist.
 
 The resulting command is:
 
 .. code-block:: bash
 
-    > $VTR_ROOT/ODIN_II/odin_II -a $VTR_ROOT/vtr_flow/arch/timing/EArch.xml -V $VTR_ROOT/doc/src/quickstart/blink.v -o blink.odin.blif
+    > $VTR_ROOT/ODIN_II/odin_II \
+        -a $VTR_ROOT/vtr_flow/arch/timing/EArch.xml \
+        -V $VTR_ROOT/doc/src/quickstart/blink.v \
+        -o blink.odin.blif
 
 which when run should end with something like::
 
@@ -207,7 +216,7 @@ where ``Odin ran with exit status: 0`` indicates Odin successfully synthesized o
 
 We can now take a look at the circuit which ODIN produced (``blink.odin.blif``).
 The file is long and likely harder to follow than our code in ``blink.v``, however it implements the same functionality.
-Some interesting highlights are:
+Some interesting highlights are shown below:
 
 .. literalinclude:: blink.odin.blif
     :lines: 14,40
@@ -242,9 +251,10 @@ The corresponding command to run is:
 
 .. code-block:: bash
 
-    > $VTR_ROOT/abc/abc -c 'read blink.odin.blif; if -K 6; write_hie blink.odin.blif blink.abc_no_clock.blif'
+    > $VTR_ROOT/abc/abc \
+        -c 'read blink.odin.blif; if -K 6; write_hie blink.odin.blif blink.abc_no_clock.blif'
 
-When run, the end of ABC's output should look similar to::
+When run, ABC's output should look similar to::
 
     ABC command line: "read blink.odin.blif; if -K 6; write_hie blink.odin.blif blink.abc_no_clock.blif".
 
@@ -269,9 +279,12 @@ We will restore this information by running a script which will transfer that in
 
 .. code-block:: bash
 
-    > $VTR_ROOT/vtr_flow/scripts/restore_multiclock_latch.pl blink.odin.blif blink.abc_no_clock.blif blink.pre-vpr.blif
+    > $VTR_ROOT/vtr_flow/scripts/restore_multiclock_latch.pl \
+        blink.odin.blif \
+        blink.abc_no_clock.blif \
+        blink.pre-vpr.blif
 
-If we inspect ``blink.pre-vpr.blif`` we now see that the clock (`blink^clk`) has been restored:
+If we inspect ``blink.pre-vpr.blif`` we now see that the clock (``blink^clk``) has been restored to the Flip-Flops:
 
 .. code-block:: bash
 
@@ -286,11 +299,10 @@ If we inspect ``blink.pre-vpr.blif`` we now see that the clock (`blink^clk`) has
 
 Implementing the circuit with VPR
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Now that we have the optimized and technology mapped netlist (``blink.pre-vpr.blif``), we can invoke VPR to implement it onto the ``EArch`` FPGA architecture in the same way we did with the ``tseng`` design.
+Now that we have the optimized and technology mapped netlist (``blink.pre-vpr.blif``), we can invoke VPR to implement it onto the ``EArch`` FPGA architecture, in the same way we did with the ``tseng`` design.
 However, since our BLIF file doesn't match the design name we explicitly specify:
 
  * ``blink`` as the circuit name, and
-
  * the input circuit file with :option:`--circuit_file <vpr --circuit_file>`.
 
 to ensure the resulting ``.net``, ``.place`` and ``.route`` files will have the correct names.
@@ -299,7 +311,10 @@ The resulting command is:
 
 .. code-block:: bash
 
-    > $VTR_ROOT/vpr/vpr $VTR_ROOT/vtr_flow/arch/timing/EArch.xml blink --circuit_file blink.pre-vpr.blif --route_chan_width 100
+    > $VTR_ROOT/vpr/vpr \
+        $VTR_ROOT/vtr_flow/arch/timing/EArch.xml \
+        blink --circuit_file blink.pre-vpr.blif \
+        --route_chan_width 100
 
 and after VPR finishes we should see the resulting implementation files:
 
@@ -313,7 +328,11 @@ We can then view the implementation as usual by appending ``--analysis --disp on
 
 .. code-block:: bash
 
-    > $VTR_ROOT/vpr/vpr $VTR_ROOT/vtr_flow/arch/timing/EArch.xml blink --circuit_file blink.pre-vpr.blif --route_chan_width 100 --analysis --disp on
+    > $VTR_ROOT/vpr/vpr \
+        $VTR_ROOT/vtr_flow/arch/timing/EArch.xml \
+        blink --circuit_file blink.pre-vpr.blif \
+        --route_chan_width 100 \
+        --analysis --disp on
 
 .. figure:: blink_implementation.png
 
@@ -324,7 +343,7 @@ Automatically Running the VTR Flow
 Running each stage of the flow manually is time consuming.
 For convenience, VTR provides a script (:ref:`run_vtr_flow`) which automates this process.
 
-Lets make a new directory and run the flow using the script:
+Lets make a new directory to work in named ``blink_run_flow``:
 
 .. code-block:: bash
 
@@ -332,20 +351,31 @@ Lets make a new directory and run the flow using the script:
     > cd ~/vtr_work/quickstart/blink_run_flow
 
 Now lets run the script (``$VTR_ROOT/vtr_flow/scripts/run_vtr_flow.pl``) passing in:
-* The FPGA architecture file (``$VTR_ROOT/vtr_flow/arch/timing/EArch.xml``)
+
 * The circuit verilog file (``$VTR_ROOT/doc/src/quickstart/blink.v``)
+* The FPGA architecture file (``$VTR_ROOT/vtr_flow/arch/timing/EArch.xml``)
+
 and also specifying the options:
+
 * ``-temp_dir .`` to run in the current directory (``.`` on unix-like systems)
-* ``--route_chan_width 50`` a fixed FPGA routing architecture channel width.
+* ``--route_chan_width 100`` a fixed FPGA routing architecture channel width.
+
+
 The resulting command is:
 
 .. code-block:: bash
 
-    > $VTR_ROOT/vtr_flow/scripts/run_vtr_flow.pl $VTR_ROOT/doc/src/quickstart/blink.v $VTR_ROOT/vtr_flow/arch/timing/EArch.xml -temp_dir . --route_chan_width 50
+    > $VTR_ROOT/vtr_flow/scripts/run_vtr_flow.pl \
+        $VTR_ROOT/doc/src/quickstart/blink.v \
+        $VTR_ROOT/vtr_flow/arch/timing/EArch.xml \
+        -temp_dir . \
+        --route_chan_width 100
+
+.. note:: Options unrecognized by run_vtr_flow (like --route_chan_width) are passed on to VPR.
 
 which should produce output similar to::
 
-    EArch/blink     OK     (took 0.26 seconds)
+    EArch/blink             OK     (took 0.26 seconds)
 
 There are also multiple log files (including for ABC, ODIN and VPR), which by convention the script names with the ``.out`` suffix:
 
@@ -365,7 +395,7 @@ You will also see there are several BLIF files produced:
     0_blink.abc.blif   0_blink.raw.abc.blif  blink.odin.blif
     0_blink.odin.blif  blink.abc.blif        blink.pre-vpr.blif
 
-With the main files of intereset being ``blink.odin.blif`` (netlist produced by ODIN), ``blink.abc.blif`` (final netlist produced by ABC), ``blink.pre-vpr.blif`` netlist used by VPR (identical to ``blink.abc.blif``).
+With the main files of intereset being ``blink.odin.blif`` (netlist produced by ODIN), ``blink.abc.blif`` (final netlist produced by ABC after clock restoration), ``blink.pre-vpr.blif`` netlist used by VPR (identical to ``blink.abc.blif``).
 
 Like before, we can also see the implementation files generated by VPR:
 
@@ -379,23 +409,31 @@ which we can visualize with:
 
 .. code-block:: bash
 
-    > vpr $VTR_ROOT/vtr_flow/arch/timing/EArch.xml blink.pre-vpr.blif --route_chan_width 50 --analysis --disp on
+    > $VTR_ROOT/vpr/vpr \
+        $VTR_ROOT/vtr_flow/arch/timing/EArch.xml \
+        blink --circuit_file blink.pre-vpr.blif \
+        --route_chan_width 100 \
+        --analysis --disp on
 
 Next Steps
 ==========
 Now that you've finished the VTR quickstart, you're ready to start experimenting and using VTR.
 
-Here are some possible next steps for people wishing to use VTR:
+Here are some possible next steps for users wishing to use VTR:
 
  * Try modifying the verilog file (e.g. ``blink.v``) or make your own circuit and try running it through the flow.
 
- * Learn about FPGA architecture modelling (:ref:`Tutorials <arch_tutorial>`, :ref:`Reference <fpga_architecture_description>`) and try modifying a copy of ``EArch`` and see how it changes the implementation of ``blinky.v``.
+ * Learn about FPGA architecture modelling (:ref:`Tutorials <arch_tutorial>`, :ref:`Reference <fpga_architecture_description>`), and try modifying a copy of ``EArch`` to see how it changes the implementation of ``blinky.v``.
 
- * Read more about the :ref:`VTR CAD Flow <vtr_cad_flow>` and :ref:`Task <vtr_tasks>` automation framework.
+ * Read more about the :ref:`VTR CAD Flow <vtr_cad_flow>`, and :ref:`Task <vtr_tasks>` automation framework.
 
- * :ref:`Suggest or make enhancements VTR's documentation <contribution_guidelines>`
+ * Find out more about using other benchmark sets, like how to run the :ref:`Titan Benchmark Suite <titan_benchmarks_tutorial>`.
 
-Here are some possible next steps for people wishing to modify and improve VTR:
+ * Discover how to :ref:`generate FASM <genfasm>` for bitstream creation.
+
+ * :ref:`Suggest or make enhancements to VTR's documentation <contribution_guidelines>`.
+
+Here are some possible next steps for developers wishing to modify and improve VTR:
 
  * Try the next steps listed for users above to learn how VTR is used.
 
