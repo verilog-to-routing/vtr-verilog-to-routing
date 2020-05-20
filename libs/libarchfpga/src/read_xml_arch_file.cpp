@@ -1842,6 +1842,20 @@ static void ProcessMode(vtr::string_internment* strings, pugi::xml_node Parent, 
         mode->name = vtr::strdup(Prop);
     }
 
+    /* Parse XML about if this mode is packable or not, deposit a packable switch by default */
+    mode->packable = true;
+    /* If the parent mode is not packable, all the child mode should be unpackable as well */
+    if (nullptr != mode->parent_pb_type->parent_mode) {
+        mode->packable = mode->parent_pb_type->parent_mode->packable;
+    }
+    /* Override if user specify */
+    mode->packable = get_attribute(Parent, "packable", loc_data, ReqOpt::OPTIONAL).as_bool(mode->packable);
+    if (false == mode->packable) {
+        VTR_LOG("mode '%s[%s]' is defined by user to be not packable\n",
+                 mode->parent_pb_type->name,
+                 mode->name);
+    }
+
     mode->num_pb_type_children = count_children(Parent, "pb_type", loc_data, ReqOpt::OPTIONAL);
     if (mode->num_pb_type_children > 0) {
         mode->pb_type_children = new t_pb_type[mode->num_pb_type_children];

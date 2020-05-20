@@ -871,6 +871,8 @@ struct t_pb_type {
  *      num_interconnect: Total number of interconnect tags specified by user
  *      parent_pb_type: Which parent contains this mode
  *      index: Index of mode in array with other modes
+ *      packable: Specify if the mode is packable (visible to VPR packer).
+ *                By default, every mode is packable. Users can define unpackable mode through arch XML
  *      t_mode_power: ???
  *      meta: Table storing extra arbitrary metadata attributes.
  */
@@ -882,6 +884,9 @@ struct t_mode {
     int num_interconnect = 0;
     t_pb_type* parent_pb_type = nullptr;
     int index = 0;
+
+    /* Packer-related switches */
+    bool packable = true;
 
     /* Power related members */
     t_mode_power* mode_power = nullptr;

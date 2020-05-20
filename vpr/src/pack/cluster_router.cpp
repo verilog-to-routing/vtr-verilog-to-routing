@@ -1174,6 +1174,11 @@ static void expand_node_all_modes(t_lb_router_data* router_data, t_expansion_nod
             continue;
         }
 
+        /*  Do NOT expand edge searching to unpackable modes */
+        if (false == pin->parent_node->pb_type->parent_mode->packable) {
+            continue;
+        }
+
         /* Check whether a mode is illegal. If it is then the node will not be expanded */
         bool is_illegal = false;
         if (pin != nullptr) {
