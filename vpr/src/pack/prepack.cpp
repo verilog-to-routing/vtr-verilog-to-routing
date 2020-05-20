@@ -793,8 +793,8 @@ t_pack_molecule* alloc_and_load_pack_molecules(t_pack_patterns* list_of_pack_pat
         /* Skip pack patterns that belong to unpackable modes,
          * Ensure no resources in unpackable modes will be mapped during pre-packing stage 
          */
-        if ( (nullptr != list_of_pack_patterns[i].root_block->pb_type->parent_mode)
-          && (false == list_of_pack_patterns[i].root_block->pb_type->parent_mode->packable) ) {
+        if ((nullptr != list_of_pack_patterns[i].root_block->pb_type->parent_mode)
+            && (false == list_of_pack_patterns[i].root_block->pb_type->parent_mode->packable)) {
             continue;
         }
 
@@ -1567,8 +1567,8 @@ static t_pb_graph_pin* get_connected_primitive_pin(const t_pb_graph_pin* cluster
  */
 static void get_all_connected_primitive_pins(const t_pb_graph_pin* cluster_input_pin, std::vector<t_pb_graph_pin*>& connected_primitive_pins) {
     /* Skip pins belong to unpackable modes */
-    if ( (nullptr != cluster_input_pin->parent_node->pb_type->parent_mode)
-       && (false == cluster_input_pin->parent_node->pb_type->parent_mode->packable) ) {
+    if ((nullptr != cluster_input_pin->parent_node->pb_type->parent_mode)
+        && (false == cluster_input_pin->parent_node->pb_type->parent_mode->packable)) {
         return;
     }
 

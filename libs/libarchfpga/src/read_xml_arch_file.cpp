@@ -1852,8 +1852,8 @@ static void ProcessMode(vtr::string_internment* strings, pugi::xml_node Parent, 
     mode->packable = get_attribute(Parent, "packable", loc_data, ReqOpt::OPTIONAL).as_bool(mode->packable);
     if (false == mode->packable) {
         VTR_LOG("mode '%s[%s]' is defined by user to be not packable\n",
-                 mode->parent_pb_type->name,
-                 mode->name);
+                mode->parent_pb_type->name,
+                mode->name);
     }
 
     mode->num_pb_type_children = count_children(Parent, "pb_type", loc_data, ReqOpt::OPTIONAL);
