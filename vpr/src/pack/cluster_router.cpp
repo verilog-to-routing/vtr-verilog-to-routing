@@ -208,6 +208,15 @@ static bool check_edge_for_route_conflicts(std::unordered_map<const t_pb_graph_n
     auto* mode = &pb_graph_node->pb_type->modes[mode_of_edge];
 
     auto result = mode_map->insert(std::make_pair(pb_graph_node, mode));
+
+    /* Insert unpackable mode to the illegal mode list */
+    if (false == mode->packable) {
+        if (std::find(pb_graph_node->illegal_modes.begin(), pb_graph_node->illegal_modes.end(), mode->index) == pb_graph_node->illegal_modes.end()) {
+            pb_graph_node->illegal_modes.push_back(mode->index);
+        }
+        return true;
+    }
+
     if (!result.second) {
         if (result.first->second != mode) {
             std::cout << vtr::string_fmt("Differing modes for block.  Got %s mode, while previously was %s for interconnect %s.",
@@ -1171,11 +1180,6 @@ static void expand_node_all_modes(t_lb_router_data* router_data, t_expansion_nod
     for (int mode = 0; mode < lb_type_graph[cur_inode].num_modes; mode++) {
         /* If a mode has been forced, only add edges from that mode, otherwise add edges from all modes. */
         if (cur_mode != -1 && mode != cur_mode) {
-            continue;
-        }
-
-        /*  Do NOT expand edge searching to unpackable modes */
-        if (false == pin->parent_node->pb_type->parent_mode->packable) {
             continue;
         }
 
