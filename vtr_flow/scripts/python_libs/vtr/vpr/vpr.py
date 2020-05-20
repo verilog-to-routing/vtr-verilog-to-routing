@@ -77,7 +77,7 @@ def run(architecture, circuit_name, circuit, command_runner, temp_dir, output_ne
         #vpr_args['gen_postsynthesis_netlist'] = output_netlist
 
     #Translate arbitrary keyword arguments into options for VPR
-    for arg, value in vpr_args.iteritems():
+    for arg, value in vpr_args.items():
         if value == True:
             cmd += ["--" + arg]
         elif value == False:

@@ -1,5 +1,6 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 from pathlib import Path
+from itertools import chain
 import sys
 import argparse
 import itertools
@@ -68,7 +69,7 @@ def vtr_command_argparser(prog=None):
                         help="How many processors to use for execution.")
 
     parser.add_argument("-v", "--verbosity",
-                        choices=VERBOSITY_CHOICES + [5],
+                        choices=list(chain(VERBOSITY_CHOICES, [5])),
                         default=2,
                         type=int,
                         help="Sets the verbosity of the script. Higher values produce more output.")

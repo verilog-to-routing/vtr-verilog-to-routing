@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 import sys
 from pathlib import Path
 import errno
@@ -256,32 +256,32 @@ def vtr_command_main(arg_list, prog=None):
                              )
             except vtr.CommandError as e:
                 #An external command failed
-                print "Error: {msg}".format(msg=e.msg)
-                print "\tfull command: ", ' '.join(e.cmd)
-                print "\treturncode  : ", e.returncode
-                print "\tlog file    : ", e.log
+                print ("Error: {msg}".format(msg=e.msg))
+                print ("\tfull command: ", ' '.join(e.cmd))
+                print ("\treturncode  : ", e.returncode)
+                print ("\tlog file    : ", e.log)
                 exit_status = 1
             except vtr.InspectError as e:
                 #Something went wrong gathering information
-                print "Error: {msg}".format(msg=e.msg)
-                print "\tfile        : ", e.filename
+                print ("Error: {msg}".format(msg=e.msg))
+                print ("\tfile        : ", e.filename)
                 exit_status = 2
 
             except vtr.VtrError as e:
                 #Generic VTR errors
-                print "Error: ", e.msg
+                print ("Error: ", e.msg)
                 exit_status = 3
 
             except KeyboardInterrupt as e:
-                print "{} recieved keyboard interrupt".format(prog)
+                print ("{} recieved keyboard interrupt".format(prog))
                 exit_status = 4
 
         #Parse the flow results
         try:
             vtr.parse_vtr_flow(temp_dir, args.parse_config_file, verbosity=args.verbose)
         except vtr.InspectError as e:
-            print "Error: {msg}".format(msg=e.msg)
-            print "\tfile        : ", e.filename
+            print ("Error: {msg}".format(msg=e.msg))
+            print ("\tfile        : ", e.filename)
             exit_status = 2
 
     finally:

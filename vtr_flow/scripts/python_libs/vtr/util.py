@@ -86,7 +86,7 @@ class CommandRunner(object):
         #Echo the command?
         if self._echo_cmd:
             #print ' '.join(cmd)
-            print cmd
+            print(cmd)
 
         #Begin timing
         start_time = time.time()
@@ -110,13 +110,13 @@ class CommandRunner(object):
             # to get interactive output
             with (Path(temp_dir) / log_filename).open('w') as log_f:
                 #Print the command at the top of the log
-                log_f.write(" ".join(cmd).decode('utf-8'))
+                log_f.write(" ".join(cmd))
 
                 #Read from subprocess output
                 for line in proc.stdout:
 
                     #Send to log file
-                    log_f.write(line.decode('unicode_escape') )
+                    log_f.write(line)
 
                     #Save the output
                     cmd_output.append(line)
@@ -144,10 +144,10 @@ class CommandRunner(object):
         #Send to stdout
         if self._verbose or (cmd_errored and self._verbose_error):
             for line in cmd_output:
-                print indent_depth*self._indent + line,
+                print (indent_depth*self._indent + line,)
 
 
-        if cmd_errored:
+        if (cmd_errored):
             raise CommandError(msg="Executable {exec_name} failed".format(exec_name=PurePath(orig_cmd[0]).name), 
                                cmd=cmd,
                                log=str(PurePath(temp_dir).joinpath(log_filename)),
@@ -176,7 +176,7 @@ def write_tab_delimitted_csv(filepath, rows):
     #Calculate the max width of each column
     columns = OrderedDict()
     for row in rows:
-        for key, value in row.iteritems():
+        for key, value in row.items():
 
             if key not in columns:
                 columns[key] = max(len(key), len(str(value)))
@@ -189,14 +189,14 @@ def write_tab_delimitted_csv(filepath, rows):
 
         #Write out the header
         header = []
-        for col_name, col_width in columns.iteritems():
+        for col_name, col_width in columns.items():
             header.append("{:{width}}".format(col_name, width=col_width))
         writer.writerow(header)
 
         #Write rows
         for row in rows:
             values = []
-            for col_name, col_width in columns.iteritems():
+            for col_name, col_width in columns.items():
                 values.append("{:{width}}".format(row[col_name], width=col_width))
             writer.writerow(values)
 
@@ -227,7 +227,7 @@ def make_enum(*sequential, **named):
     >> MY_ENUM = enum(ONE, TWO, THREE)
     """
     enums = dict(zip(sequential, range(len(sequential))), **named)
-    reverse = dict((value, key) for key, value in enums.iteritems())
+    reverse = dict((value, key) for key, value in enums.items())
     enums['reverse_mapping'] = reverse
     return type('Enum', (), enums)
 
@@ -250,9 +250,9 @@ def print_verbose(min_verbosity, curr_verbosity, string, endl=True):
     """
     if curr_verbosity >= min_verbosity:
         if endl:
-            print string
+            print(string)
         else:
-            print string,
+            print (string,)
 
 def find_vtr_file(filename, is_executable=False):
     """
@@ -336,9 +336,9 @@ def file_replace(filename, search_replace_dict):
 
     with open(filename, 'w') as f:
         for line in lines:
-            for search, replace in search_replace_dict.iteritems():
+            for search, replace in search_replace_dict.items():
                 line = line.replace(search, str(replace))
-            print >>f, line,
+            print (line,file=f)
 
 def relax_W(min_W, relax_factor, base=2):
     """

@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 from pathlib import Path
 from pathlib import PurePath
 import sys
@@ -166,7 +166,7 @@ def vtr_command_main(arg_list, prog=None):
         args.parse = True
 
     if args.print_metadata:
-        print "# {} {}\n".format(prog, ' '.join(arg_list))
+        print ("# {} {}\n".format(prog, ' '.join(arg_list)))
 
     num_failed = -1
     try:
@@ -182,19 +182,19 @@ def vtr_command_main(arg_list, prog=None):
         num_failed = run_tasks(args, configs)
 
     except CommandError as e:
-        print "Error: {msg}".format(msg=e.msg)
-        print "\tfull command: ", e.cmd
-        print "\treturncode  : ", e.returncode
-        print "\tlog file    : ", e.log
+        print ("Error: {msg}".format(msg=e.msg))
+        print ("\tfull command: ", e.cmd)
+        print ("\treturncode  : ", e.returncode)
+        print ("\tlog file    : ", e.log)
     except InspectError as e:
-        print "Error: {msg}".format(msg=e.msg)
+        print ("Error: {msg}".format(msg=e.msg))
         if e.filename:
-            print "\tfile: ", e.filename
+            print ("\tfile: ", e.filename)
     except VtrError as e:
-        print "Error:", e.msg
+        print ("Error:", e.msg)
     finally:
         if args.print_metadata:
-            print "\n# {} took {} (exiting {})".format(prog, format_elapsed_time(datetime.now() - start), num_failed)
+            print ("\n# {} took {} (exiting {})".format(prog, format_elapsed_time(datetime.now() - start), num_failed))
     sys.exit(num_failed)
 
 def run_tasks(args, configs):
@@ -577,7 +577,7 @@ def run_parallel(args, configs, queued_jobs):
                 time.sleep(0.1)
 
     except KeyboardInterrupt as e:
-        print "Recieved KeyboardInterrupt -- halting workers"
+        print ("Recieved KeyboardInterrupt -- halting workers")
         for proc, job, log_file in running_procs:
             proc.terminate()
             log_file.close()
@@ -587,7 +587,7 @@ def run_parallel(args, configs, queued_jobs):
 
     finally:
         if len(running_procs) > 0:
-            print "Killing {} worker processes".format(len(running_procs))
+            print ("Killing {} worker processes".format(len(running_procs)))
             for proc, job, log_file in running_procs:
                 proc.kill()
                 log_file.close()
@@ -603,8 +603,8 @@ def print_log(log_file, indent="    "):
     #Print log
     for line in log_file:
         line = line.rstrip()
-        print indent + line
-    print ""
+        print (indent + line)
+    print ("")
 
     #Return to original position
     log_file.seek(curr_pos)
