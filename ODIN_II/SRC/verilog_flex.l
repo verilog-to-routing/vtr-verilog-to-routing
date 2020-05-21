@@ -785,9 +785,17 @@ void load_define(const char *str)
 		auto itter = defines_map.find(tmp);
 		if(itter == defines_map.end())
 		{
-			warning_message(PARSER, my_yylineno, current_parse_file, 
-				"%s define cannot be found, replacing with empty string and continuing synthesis", 
-				tmp.c_str());
+			if(tmp == "elif")
+			{
+				warning_message(PARSER, my_yylineno, current_parse_file, 
+					"%s", "using `elif, when you probably meant `elsif");
+			}
+			else
+			{
+				warning_message(PARSER, my_yylineno, current_parse_file, 
+					"%s define cannot be found, replacing with empty string and continuing synthesis", 
+					tmp.c_str());
+			}
 		}
 		else
 		{

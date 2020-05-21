@@ -409,6 +409,12 @@ void get_options(int argc, char** argv) {
         .help("VTR FPGA architecture description file (XML)")
         .metavar("ARCHITECTURE_FILE");
 
+    other_grp.add_argument(global_args.print_parse_tokens, "--debug_parser")
+        .help("print the parser tokens as they are parsed")
+        .default_value("false")
+        .action(argparse::Action::STORE_TRUE)
+        .metavar("PRINT_PARSE_TOKEN");
+
     other_grp.add_argument(global_args.permissive, "--permissive")
         .help("Turn possible_error_messages into warning_messages ... unexpected behaviour may occur")
         .default_value("false")
@@ -586,6 +592,10 @@ void get_options(int argc, char** argv) {
 
     if (global_args.adder_cin_global.provenance() == argparse::Provenance::SPECIFIED) {
         configuration.adder_cin_global = global_args.adder_cin_global;
+    }
+
+    if (global_args.print_parse_tokens.provenance() == argparse::Provenance::SPECIFIED) {
+        configuration.print_parse_tokens = global_args.print_parse_tokens;
     }
 
     if (global_args.sim_directory.value() == DEFAULT_OUTPUT) {
