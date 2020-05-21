@@ -12,7 +12,9 @@ vtr_flow_path = scripts_path.parent
 temp_dir = pathlib.Path.cwd() / "temp"
 
 # run_vtr_flow.pl will be compared against vtr-flow.py using the following test cases as arguments:
-arg_list = ["benchmarks/verilog/ch_intrinsics.v arch/timing/k6_N10_mem32K_40nm.xml -track_memory_usage --router_heap binary --min_route_chan_width_hint 38"]
+arg_list = ["benchmarks/verilog/ch_intrinsics.v arch/timing/k6_N10_mem32K_40nm.xml -track_memory_usage --router_heap binary --min_route_chan_width_hint 38",
+            "benchmarks/verilog/diffeq1.v arch/timing/k6_N10_mem32K_40nm.xml -track_memory_usage --router_heap bucket --min_route_chan_width_hint 46"
+            ]
 
 # The following output files will be compared to ensure they are identical (only one file must match each entry)
 # The first list item is the glob pattern, the second is the number of lines to ignore at the beginning of the file
@@ -34,8 +36,9 @@ def find_file_matching(path, pattern):
     return matches[0]
 
 # Run 
-def run_vtr_flow(script_name, run_name, temp_dir_run):
-    cmd = [scripts_path / script_name, *(arg_list[0].split()), "-temp_dir",  temp_dir_run]
+def run_vtr_flow(script_name, run_name, temp_dir_run, args):
+    arg_list = args.split()
+    cmd = [scripts_path / script_name,] + arg_list + ["-temp_dir",  temp_dir_run]
     print("  Running", run_name,"flow:", cmd)
     p = subprocess.run(cmd, cwd = vtr_flow_path, stdout = subprocess.PIPE, stderr=subprocess.STDOUT)
     if (p.returncode):
@@ -62,8 +65,8 @@ def main():
         temp_dir_py = temp_dir / "py"
         
         # Run with old and new flows
-        run_vtr_flow("run_vtr_flow.pl", "old pl", temp_dir_pl)
-        run_vtr_flow("run_vtr_flow.pl", "new py", temp_dir_py)
+        run_vtr_flow("run_vtr_flow.pl", "old pl", temp_dir_pl, test_str)
+        run_vtr_flow("vtr-flow.py", "new py", temp_dir_py, test_str)
        
         # Check that output files match
         for (pattern, skip_lines) in files_to_validate:
