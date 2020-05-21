@@ -1438,6 +1438,8 @@ The following tags are common to all <pb_type> tags:
 
     .. note:: When a mode is specified to be disabled for packing, its child ``<pb_type>`` and the ``<mode>`` of child ``<pb_type>`` will be considered as disabled for packing automatically. There is no need to specify ``disable_packing`` for every ``<mode>`` in the tree of ``<pb_type>``.
 
+    .. warning:: This is a power-user debugging option. See :ref:`multi_mode_logic_block_tutorial` for a detailed how-to-use.
+
     For example:
 
     .. code-block:: xml
