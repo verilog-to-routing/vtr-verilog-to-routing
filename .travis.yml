@@ -15,6 +15,7 @@ addons:
     - sourceline: 'deb http://apt.llvm.org/trusty llvm-toolchain-trusty-8 main'
       key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
     - sourceline: 'ppa:ubuntu-toolchain-r/test'
+    - sourceline: 'ppa:deadsnakes/ppa' # For python3.6
     packages:
     - autoconf
     - automake
