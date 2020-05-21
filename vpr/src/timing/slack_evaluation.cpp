@@ -26,12 +26,19 @@ void nodes_to_pins(T nodes, const AtomLookup& atom_lookup, std::vector<AtomPinId
  * SetupSlackCrit
  */
 
+//Incrementally update slack and criticality?
+constexpr bool INCR_UPDATE_ATOM_SLACK = true;
+constexpr bool INCR_UPDATE_ATOM_MAX_REQ_WORST_SLACK = true;
+constexpr bool INCR_UPDATE_ATOM_CRIT = true;
+
 SetupSlackCrit::SetupSlackCrit(const AtomNetlist& netlist, const AtomLookup& netlist_lookup)
     : netlist_(netlist)
     , netlist_lookup_(netlist_lookup)
     , pin_slacks_(netlist_.pins().size(), NAN)
     , pin_criticalities_(netlist_.pins().size(), NAN) {
-#if !defined(INCR_SLACK_UPDATE) || !defined(INCR_UPDATE_CRIT)
+
+    //We are doing some kind of full (i.e. non-incremental updates), record
+    //all the relevant timing graph nodes
     all_nodes_.reserve(netlist.pins().size());
     for (AtomPinId pin : netlist.pins()) {
         tatum::NodeId node = netlist_lookup_.atom_pin_tnode(pin);
@@ -40,7 +47,6 @@ SetupSlackCrit::SetupSlackCrit(const AtomNetlist& netlist, const AtomLookup& net
             all_nodes_.push_back(node);
         }
     }
-#endif
 }
 
 SetupSlackCrit::~SetupSlackCrit() {
@@ -84,12 +90,7 @@ void SetupSlackCrit::update_slacks_and_criticalities(const tatum::TimingGraph& t
 void SetupSlackCrit::update_slacks(const tatum::SetupTimingAnalyzer& analyzer) {
     vtr::Timer timer;
 
-#ifdef INCR_UPDATE_SLACK
-    //Note that this is done lazily only on the nodes modified by the analyzer
-    const auto& nodes = modified_nodes_;
-#else
-    const auto& nodes = all_nodes_;
-#endif
+    auto nodes = nodes_to_update(INCR_UPDATE_ATOM_SLACK);
 
     pins_with_modified_slacks_.clear();
 
@@ -161,17 +162,31 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
     //Record the maximum required time, and wost slack per domain pair
     update_max_req_and_worst_slack(timing_graph, analyzer);
 
-    if (max_req_ == prev_max_req_ && worst_slack_ == prev_worst_slack_) {
-        //Max required times and worst slacks unchanged, incrementally update
-        //the criticalities of each pin
-        //
-        // Note that this is done lazily only on the nodes modified by the analyzer
+    {
         vtr::Timer timer;
-#ifdef INCR_UPDATE_CRIT
-        const auto& nodes = modified_nodes_;
-#else
-        const auto& nodes = all_nodes_;
-#endif
+
+        bool previously_updated = (!prev_max_req_.empty() && !prev_worst_slack_.empty());
+
+        bool max_req_unchanged = (max_req_ == prev_max_req_);
+        bool worst_slack_unchanged = (worst_slack_ == prev_worst_slack_);
+
+        //If max required times and worst slacks are unchanged, we could incrementally 
+        //update the criticalities of each pin. (An incremental update is done lazily,
+        //only on the nodes modified by the analyzer.)
+        //
+        //Otherwise (if the max required and/or worst slacks changed), we fully 
+        //recalculate all criticalities.
+        //
+        //  TODO: consider if incremental criticality update is feasible based only
+        //        on changed domain pairs....
+        bool could_do_incremental_update = (previously_updated 
+                                            && max_req_unchanged 
+                                            && worst_slack_unchanged);
+
+        //For debugability, only do incremental updates if INCR_UPDATE_ATOM_CRIT is true
+        bool do_incremental_update = (INCR_UPDATE_ATOM_CRIT && could_do_incremental_update);
+
+        const auto& nodes = nodes_to_update(do_incremental_update);
 
         update_pin_criticalities_from_nodes(nodes, analyzer);
 
@@ -181,7 +196,6 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
         for (tatum::NodeId node : check_nodes) {
             AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
             VTR_ASSERT_SAFE(pin);
-            float new_crit = calc_pin_criticality(node, analyzer);
 
             //Multiple timing graph nodes may map to the same sequential primitive pin.
             //When determining the criticality to use for such pins we always choose the
@@ -193,6 +207,7 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
 
             VTR_ASSERT_SAFE(is_external_tnode(pin, node));
 
+            float new_crit = calc_pin_criticality(node, analyzer);
             if (new_crit != pin_criticalities_[pin]) {
                 auto itr = std::find(nodes.begin(), nodes.end(), node);
 
@@ -202,34 +217,28 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
         }
 #endif
 
-        ++incr_criticality_updates_;
-        incr_criticality_update_time_sec_ += timer.elapsed_sec();
-    } else {
-        //Max required and/or worst slacks changed, fully recalculate criticalities
-        //
-        //  TODO: consider if incremental criticality update is feasible based only
-        //        on changed domain pairs....
-        vtr::Timer timer;
-
-        auto nodes = timing_graph.nodes();
-
-        update_pin_criticalities_from_nodes(nodes, analyzer);
-
-        ++full_criticality_updates_;
-        full_criticality_update_time_sec_ += timer.elapsed_sec();
+        if (do_incremental_update) {
+            ++incr_criticality_updates_;
+            incr_criticality_update_time_sec_ += timer.elapsed_sec();
+        } else {
+            ++full_criticality_updates_;
+            full_criticality_update_time_sec_ += timer.elapsed_sec();
+        }
     }
+
+    //Save the max required times and worst slacks so we can determine when next
+    //updated whether the update can be done incrementally
     prev_max_req_ = max_req_;
     prev_worst_slack_ = worst_slack_;
 }
 
 void SetupSlackCrit::update_max_req_and_worst_slack(const tatum::TimingGraph& timing_graph,
                                                     const tatum::SetupTimingAnalyzer& analyzer) {
-#ifdef INCR_UPDATE_MAX_REQ_WORST_SLACK
-    //Try to incrementally update
-    bool incr_update_successful = incr_update_max_req_and_worst_slack(timing_graph, analyzer);
-#else
     bool incr_update_successful = false;
-#endif
+    if (INCR_UPDATE_ATOM_MAX_REQ_WORST_SLACK) {
+        //Try to incrementally update
+        incr_update_successful = incr_update_max_req_and_worst_slack(timing_graph, analyzer);
+    }
 
     if (!incr_update_successful) {
         //Recompute  from scratch if incremental update wasn't successful

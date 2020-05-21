@@ -15,7 +15,7 @@
 #include "timing_info.h"
 
 //Use an incremental approach to updaing criticalities?
-#define INCR_UPDATE_CRITICALITIES
+constexpr bool INCR_UPDATE_CRITICALITIES = true;
 
 /**************************************/
 
@@ -34,43 +34,43 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
      * in that pin), timing_place_crit_ = criticality^(criticality exponent) */
 
     //Determine what pins need updating
-#ifdef INCR_UPDATE_CRITICALITIES
-    cluster_pins_with_modified_criticality_.clear();
-    if (crit_exponent != last_crit_exponent_) {
-        //Criticality exponent changed, must re-calculate *all* criticalties
+    if (INCR_UPDATE_CRITICALITIES) {
+        cluster_pins_with_modified_criticality_.clear();
+        if (crit_exponent != last_crit_exponent_) {
+            //Criticality exponent changed, must re-calculate *all* criticalties
+            auto pins = clb_nlist_.pins();
+            cluster_pins_with_modified_criticality_.insert(pins.begin(), pins.end());
+
+            //Record new criticality exponent
+            last_crit_exponent_ = crit_exponent;
+        } else {
+            //Criticality exponent unchanged
+            //
+            //Collect the cluster pins which need to be updated based on the latest timing
+            //analysis
+            //
+            //Note we use the set of pins reported by the *timing_info* as having modified
+            //criticality, rather than those marked as modified by the timing analyzer.
+            //Since timing_info uses shifted/relaxed criticality (which depends on max
+            //required time and worst case slacks), additional nodes may be modified
+            //when updating the atom pin criticalities.
+
+            for (AtomPinId atom_pin : timing_info->pins_with_modified_setup_criticality()) {
+                ClusterPinId clb_pin = pin_lookup_.connected_clb_pin(atom_pin);
+
+                //Some atom pins correspond to connections which are completely
+                //contained within a cluster, and hence have no corresponding
+                //clustered pin.
+                if (!clb_pin) continue;
+
+                cluster_pins_with_modified_criticality_.insert(clb_pin);
+            }
+        }
+    } else {
+        //Non-incremental: all pins and nets need updating
         auto pins = clb_nlist_.pins();
         cluster_pins_with_modified_criticality_.insert(pins.begin(), pins.end());
-
-        //Record new criticality exponent
-        last_crit_exponent_ = crit_exponent;
-    } else {
-        //Criticality exponent unchanged
-        //
-        //Collect the cluster pins which need to be updated based on the latest timing
-        //analysis
-        //
-        //Note we use the set of pins reported by the *timing_info* as having modified
-        //criticality, rather than those marked as modified by the timing analyzer.
-        //Since timing_info uses shifted/relaxed criticality (which depends on max
-        //required time and worst case slacks), additional nodes may be modified
-        //when updating the atom pin criticalities.
-
-        for (AtomPinId atom_pin : timing_info->pins_with_modified_setup_criticality()) {
-            ClusterPinId clb_pin = pin_lookup_.connected_clb_pin(atom_pin);
-
-            //Some atom pins correspond to connections which are completely
-            //contained within a cluster, and hence have no corresponding
-            //clustered pin.
-            if (!clb_pin) continue;
-
-            cluster_pins_with_modified_criticality_.insert(clb_pin);
-        }
     }
-#else
-    //Non-incremental: all pins and nets need updating
-    auto pins = clb_nlist_.pins();
-    cluster_pins_with_modified_criticality_.insert(pins.begin(), pins.end());
-#endif
 
     //Update the effected pins
     for (ClusterPinId clb_pin : cluster_pins_with_modified_criticality_) {
