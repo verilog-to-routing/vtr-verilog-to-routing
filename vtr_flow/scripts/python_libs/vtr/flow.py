@@ -18,8 +18,7 @@ def run(architecture_file, circuit_file,
                  temp_dir="./temp", 
                  verbosity=0,
                  vpr_args=None,
-                 abc_flow_type=2,
-                 use_old_latches_restoration_script=1):
+                 abc_args=""):
     """
     Runs the VTR CAD flow to map the specificied circuit_file onto the target architecture_file
 
@@ -56,7 +55,7 @@ def run(architecture_file, circuit_file,
     architecture_ext = architecture_path.suffixes
 
     vtr.mkdir_p(temp_dir)
-
+    
     #Define useful filenames
     post_odin_netlist = Path(temp_dir)  / (circuit_name + '.odin.blif')
     post_abc_netlist =Path(temp_dir)  / (circuit_name + '.abc.blif')
@@ -109,7 +108,7 @@ def run(architecture_file, circuit_file,
                 output_netlist=post_abc_netlist, 
                 command_runner=command_runner, 
                 temp_dir=temp_dir,
-                abc_flow_type=abc_flow_type)
+                abc_args=abc_args)
 
         next_stage_netlist = post_abc_netlist
 

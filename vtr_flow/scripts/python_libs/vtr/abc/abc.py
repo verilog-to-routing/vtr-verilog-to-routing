@@ -1,12 +1,31 @@
 import shutil
 from pathlib import Path
-from vtr import  mkdir_p, find_vtr_file, determine_lut_size, error
+from vtr import  mkdir_p, find_vtr_file, determine_lut_size
+from vtr.error import VtrError, InspectError, CommandError
 
-def run(architecture_file, circuit_file, output_netlist, command_runner, temp_dir=".", log_filename="abc.opt_techmap.out", abc_exec=None, abc_script=None, abc_rc=None,use_old_abc_script = False,abc_flow_type=2,use_old_latches_restoration_script=1):
+def run(architecture_file, circuit_file, output_netlist, command_runner, temp_dir=".", log_filename="abc.opt_techmap.out", abc_exec=None, abc_script=None, abc_rc=None, use_old_abc_script = False, abc_args = ""):
     mkdir_p(temp_dir)
     blackbox_latches_script = find_vtr_file("blackbox_latches.pl")
     clk_list = []
     clk_log_file = "report_clk_out.out"
+    #
+    # Parse arguments
+    #
+    abc_flow_type = 2
+    abc_run_args = ""
+    use_old_latches_restoration_script = 0
+    for  i in abc_args:
+        if(i=="iterative_bb"):
+            abc_flow_type=2
+        elif(i=="blanket_bb"):
+            abc_flow_type=3
+        elif(i=="once_bb"):
+            abc_flow_type=1
+        elif(i=="use_old_latches_restoration_script"):
+            use_old_latches_restoration_script = 1
+        else:
+            abc_run_args += i
+
     if(abc_flow_type):
         populate_clock_list(circuit_file,blackbox_latches_script,clk_list,command_runner,temp_dir,log_filename)
 
@@ -72,6 +91,9 @@ def run(architecture_file, circuit_file, output_netlist, command_runner, temp_di
             abc_script = "; ".join(abc_script)
 
         cmd = [abc_exec, '-c', abc_script]
+        
+        if(abc_run_args !=""):
+            cmd.append(abc_run_args)
 
         command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename=log_filename, indent_depth=1)
         

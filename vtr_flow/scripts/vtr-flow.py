@@ -222,20 +222,19 @@ def vtr_command_main(arg_list, prog=None):
                                    verbose=True if args.verbose > 2 else False,
                                    echo_cmd=True if args.verbose >= 4 else False)
     exit_status = 0
-    abc_flow_type = 2 #Use iterative black-boxing flow for multi-clock circuits
-    use_old_latches_restoration_script = 0 
+    abc_args = []
 
     if(args.iterative_bb):
-        abc_flow_type =2
+        abc_args.append("iterative_bb")
 
     if(args.once_bb):
-        abc_flow_type = 1
+        abc_args.append("once_bb")
 
     if(args.blanket_bb):
-        abc_flow_type = 3
+        abc_args.append("blanket_bb")
 
     if(args.use_old_latches_restoration_script):
-        use_old_latches_restoration_script = 1
+        abc_args.append("use_old_latches_restoration_script")
     try:
         if not args.parse_only:
             try:
@@ -251,8 +250,7 @@ def vtr_command_main(arg_list, prog=None):
                              command_runner=command_runner,
                              verbosity=args.verbose,
                              vpr_args=vpr_args,
-                             abc_flow_type=abc_flow_type,
-                             use_old_latches_restoration_script=use_old_latches_restoration_script
+                             abc_args=abc_args
                              )
             except vtr.CommandError as e:
                 #An external command failed

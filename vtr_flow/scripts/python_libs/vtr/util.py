@@ -11,7 +11,7 @@ import argparse
 import csv
 from collections import OrderedDict
 
-from vtr import error
+from vtr.error import VtrError, InspectError, CommandError
 
 VERBOSITY_CHOICES = range(5)
 
