@@ -37,8 +37,7 @@ def find_file_matching(path, pattern):
 
 # Run 
 def run_vtr_flow(script_name, run_name, temp_dir_run, args):
-    arg_list = args.split()
-    cmd = [scripts_path / script_name,] + arg_list + ["-temp_dir",  temp_dir_run]
+    cmd = [scripts_path / script_name, *(args.split()), "-temp_dir",  temp_dir_run]
     print("  Running", run_name,"flow:", cmd)
     p = subprocess.run(cmd, cwd = vtr_flow_path, stdout = subprocess.PIPE, stderr=subprocess.STDOUT)
     if (p.returncode):
