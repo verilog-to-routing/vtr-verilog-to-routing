@@ -30,6 +30,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "odin_globals.h"
 #include "odin_error.h"
 #include "ast_util.h"
+#include "odin_util.h"
 #include "parse_making_ast.h"
 #include "vtr_memory.h"
 #include "scope_util.h"
@@ -102,6 +103,7 @@ int yylex(void);
 %nonassoc vELSE
 
 %type <id>	 wire_types reg_types net_types net_direction
+%type <str_value> stringify
 %type <node> source_text item items module list_of_module_items list_of_task_items list_of_function_items module_item function_item task_item module_parameters module_ports
 %type <node> list_of_parameter_declaration parameter_declaration task_parameter_declaration specparam_declaration list_of_port_declaration port_declaration
 %type <node> defparam_declaration defparam_variable_list defparam_variable function_declaration function_port_list list_of_function_inputs function_input_declaration 
@@ -733,10 +735,15 @@ event_expression:
 	| vNEGEDGE primary		{$$ = newNegedge($2, my_yylineno);}
 	;
 
+stringify:
+	stringify vSTRING								{$$ = str_collate($1, $2);}
+	| vSTRING										{$$ = $1;}
+	;
+
 expression:
 	vINT_NUMBER										{$$ = newNumberNode($1, my_yylineno);}
 	| vNUMBER										{$$ = newNumberNode($1, my_yylineno);}
-	| vSTRING										{$$ = newStringNode($1, my_yylineno);}
+	| stringify										{$$ = newStringNode($1, my_yylineno);}
 	| primary										{$$ = $1;}
 	| '+' expression %prec UADD						{$$ = newUnaryOperation(ADD, $2, my_yylineno);}
 	| '-' expression %prec UMINUS					{$$ = newUnaryOperation(MINUS, $2, my_yylineno);}

@@ -951,3 +951,34 @@ int odin_sprintf(char* s, const char* format, ...) {
         return -1;
     }
 }
+
+/**
+ * This collate two strings together and destroys the original ones
+ */
+char* str_collate(char* str1, char* str2) {
+    char* buffer = NULL;
+    if (str1 && !str2) {
+        buffer = str1;
+    } else if (!str1 && str2) {
+        buffer = str2;
+    } else if (str1 && str2) {
+        std::string _s1(str1);
+        std::string _s2(str2);
+
+        size_t pos = _s1.find_last_of('"');
+        if (pos != std::string::npos) {
+            _s1 = _s1.substr(0, pos);
+        }
+
+        pos = _s2.find_first_of('"');
+        if (pos != std::string::npos) {
+            _s2 = _s2.substr(pos + 1);
+        }
+
+        std::string result = _s1 + _s2;
+        buffer = vtr::strdup(result.c_str());
+        vtr::free(str1);
+        vtr::free(str2);
+    }
+    return buffer;
+}
