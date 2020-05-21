@@ -100,6 +100,10 @@ class SetupSlackCrit {
     //Sanity check that calculated pin criticalites match those calculated from scratch
     bool verify_pin_criticalities(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer) const;
 
+    //Sanity check that calculated max required and worst slacks match those calculated from scratch
+    //Note modifies max_req_* and worst_slack_* to from-scratch values
+    bool verify_max_req_worst_slack(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer);
+
   private: //Data
     const AtomNetlist& netlist_;
     const AtomLookup& netlist_lookup_;
