@@ -88,6 +88,10 @@ jobs:
         #- ./.github/travis/build.sh
 
     - stage: Test
+      name: "PY scripts"
+      script:
+        - ./vtr_flow/scripts/unittests/check_py_vtr_flow.py
+    - stage: Test
       name: "Code Formatting"
       script:
         - ./dev/check-format.sh
