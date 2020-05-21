@@ -12,7 +12,7 @@ Download VTR
 
 The first step is to `download VTR <https://verilogtorouting.org/download/>`_ and extract VTR on your local machine.
 
-.. note:: Developers planning to modify VTR should checkout the `VTR git repository <https://github.com/verilog-to-routing/vtr-verilog-to-routing/>`_.
+.. note:: Developers planning to modify VTR should clone the `VTR git repository <https://github.com/verilog-to-routing/vtr-verilog-to-routing/>`_.
 
 Build VTR
 ---------
@@ -23,12 +23,20 @@ On most unix-like systems you can run:
 
     > make
 
-from the VTR root directory (here after referred to as :term:`$VTR_ROOT`) to build VTR.
+from the VTR root directory (hereafter referred to as :term:`$VTR_ROOT`) to build VTR.
 
 .. note:: 
 
     In the VTR documentation lines starting with ``>`` (like ``> make`` above), indicate a command (i.e. ``make``) to run from your terminal.
     When the ``\`` symbol appears at the end of a line, it indicates line continuation.
+
+.. note::
+
+    :term:`$VTR_ROOT` refers to the root directory of the VTR project source tree.
+    To run the examples in this guide on your machine, either:
+
+    * define VTR_ROOT as a variable in your shell (e.g. if ``~/trees/vtr`` is the path to the VTR source tree on your machine, run the equivalent of ``VTR_ROOT=~/trees/vtr`` in BASH) which will allow you to run the commands as written in this guide, or
+    * manually replace `$VTR_ROOT` in the example commandss below with your path to the VTR source tree.
 
 .. note:: If VTR fails to build you may need to install the :ref:`required dependencies <building_vtr>`.
 
@@ -70,7 +78,23 @@ We do this by passing these files to the VPR tool, and also specifying that we w
         $VTR_ROOT/vtr_flow/benchmarks/blif/tseng.blif \
         --route_chan_width 100
 
-This will produce a large amount of output as VPR implements the circuit, but at the end you should see something similar to::
+This will produce a large amount of output as VPR implements the circuit, but you should see something similar to::
+
+    VPR FPGA Placement and Routing.
+    Version: 8.1.0-dev+2b5807ecf
+    Revision: v8.0.0-1821-g2b5807ecf
+    Compiled: 2020-05-21T16:39:33
+    Compiler: GNU 7.3.0 on Linux-4.15.0-20-generic x86_64
+    Build Info: release VTR_ASSERT_LEVEL=2
+
+    University of Toronto
+    verilogtorouting.org
+    vtr-users@googlegroups.com
+    This is free open source code under MIT license.
+
+    #
+    #Lots of output trimmed for brevity....
+    #
 
     Geometric mean non-virtual intra-domain period: 6.22409 ns (160.666 MHz)
     Fanout-weighted geomean non-virtual intra-domain period: 6.22409 ns (160.666 MHz)
@@ -148,12 +172,12 @@ As an exercise try the following:
 .. note:: 
     If you do not provide :option:`--analysis <vpr --analysis>`, VPR will re-implement the circuit from scratch.
     If you also specify :option:`--disp <vpr --disp>` ``on``, you can see how VPR modifies the implementation as it runs.
-    By default ``--disp on`` it stops at key stages to allow you to view and explore the implementation.
+    By default ``--disp on`` stops at key stages to allow you to view and explore the implementation.
     You will need to press the ``Proceed`` button in the GUI to allow VPR to continue to the next stage.
 
 Running the VTR Flow
 ====================
-In the previous section we have implement a pre-synthesized circuit onto a pre-existing FPGA architecture using VPR, and visualized the result.
+In the previous section we have implemented a pre-synthesized circuit onto a pre-existing FPGA architecture using VPR, and visualized the result.
 We now turn to how we can implement *our own circuit* on a pre-existing FPGA architecture.
 
 To do this we begin by describing a circuit behaviourly using the Verilog Hardware Description Language (HDL).
@@ -215,7 +239,7 @@ which when run should end with something like::
 where ``Odin ran with exit status: 0`` indicates Odin successfully synthesized our verilog.
 
 We can now take a look at the circuit which ODIN produced (``blink.odin.blif``).
-The file is long and likely harder to follow than our code in ``blink.v``, however it implements the same functionality.
+The file is long and likely harder to follow than our code in ``blink.v``; however it implements the same functionality.
 Some interesting highlights are shown below:
 
 .. literalinclude:: blink.odin.blif
@@ -272,7 +296,7 @@ If we now inspect the produced BLIF file (``blink.abc_no_clock.blif``) we see th
 ABC has kept the ``.latch`` and ``.subckt adder`` primitives, but has significantly simplified the other logic (``.names``).
 
 
-However, there is an issue with the above BLIF produced by ABC: the latches (rising edge Flip-Flops) do not have any clocks specified, which is information required by VPR.
+However, there is an issue with the above BLIF produced by ABC: the latches (rising edge Flip-Flops) do not have any clocks or edge sensitivity specified, which is information required by VPR.
 
 Re-inserting clocks
 ^^^^^^^^^^^^^^^^^^^
@@ -386,6 +410,13 @@ There are also multiple log files (including for ABC, ODIN and VPR), which by co
 
     0_blackboxing_latch.out  odin.out        report_clocks.abc.out  vanilla_restore_clocks.out
     abc0.out                 report_clk.out  restore_latch0.out     vpr.out
+
+With the main log files of interest including the ODIN log file (``odin.out``), log files produced by ABC (e.g. ``abc0.out``), and the VPR log file (``vpr.out``).
+
+.. note::
+
+    ABC may be invoked multiple times if a circuit has multiple clock domains, producing multiple log files (``abc0.out``, ``abc1.out``, ...)
+    
 
 You will also see there are several BLIF files produced:
 
