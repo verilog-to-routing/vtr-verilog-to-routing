@@ -210,7 +210,7 @@ static bool check_edge_for_route_conflicts(std::unordered_map<const t_pb_graph_n
     auto result = mode_map->insert(std::make_pair(pb_graph_node, mode));
 
     /* Insert unpackable mode to the illegal mode list */
-    if (false == mode->packable) {
+    if (true == mode->disable_packing) {
         if (std::find(pb_graph_node->illegal_modes.begin(), pb_graph_node->illegal_modes.end(), mode->index) == pb_graph_node->illegal_modes.end()) {
             pb_graph_node->illegal_modes.push_back(mode->index);
         }

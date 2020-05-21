@@ -1416,7 +1416,7 @@ The following tags are common to all <pb_type> tags:
     Multple clock ports are described using multiple ``<clock>`` tags.
     *See above descriptions on inputs*
 
-.. arch:tag:: <mode name="string" packable="bool">
+.. arch:tag:: <mode name="string" disable_packing="bool">
 
     :req_param name:
         Name for this mode.
@@ -1430,13 +1430,13 @@ The following tags are common to all <pb_type> tags:
 
     .. note:: If a ``<pb_type>`` has only one mode of operation the mode tag can be omitted.
 
-    :opt_param packable:
-        Specify if a mode is packable (visible to VPR packer).
-        When a mode is defined to be unpackable (``packable="false"``), packer will not map any logics to the mode.
+    :opt_param disable_packing:
+        Specify if a mode is disabled or not for VPR packer.
+        When a mode is defined to be disabled for packing (``disable_packing="true"``), packer will not map any logics to the mode.
         This optional syntax aims to help debugging of multi-mode ``<pb_type>`` so that users can spot bugs in their XML definition quickly. 
-        By default, it is set to ``true``.
+        By default, it is set to ``false``.
 
-    .. note:: When a mode is specified to be unpackable, its child ``<pb_type>`` and the ``<mode>`` of child ``<pb_type>`` will be considered as unpackable automatically. There is no need to specify ``packable`` for every ``<mode>`` in the tree of ``<pb_type>``.
+    .. note:: When a mode is specified to be disabled for packing, its child ``<pb_type>`` and the ``<mode>`` of child ``<pb_type>`` will be considered as disabled for packing automatically. There is no need to specify ``disable_packing`` for every ``<mode>`` in the tree of ``<pb_type>``.
 
     For example:
 
@@ -1453,7 +1453,7 @@ The following tags are common to all <pb_type> tags:
                 ...
             </mode>
             ...
-            <mode name="lut5x2" packable="false">
+            <mode name="lut5x2">
                 <!--Or as two 5-LUTs-->
                 <pb_type name="lut5" num_pb="2">
                     ...
@@ -1462,7 +1462,7 @@ The following tags are common to all <pb_type> tags:
             </mode>
         </pb_type>
 
-    specifies the ``lut`` pb_type can be used as either a single 6-input LUT, or as two 5-input LUTs (but not both). Mode ``lut5x2`` is set to be unpackable, and therefore will not be considered for mapping resources during VPR packing stage. Mode ``lut6`` is by default set to be packable, where VPR packer will try to map resources.
+    specifies the ``lut`` pb_type can be used as either a single 6-input LUT, or as two 5-input LUTs (but not both).
 
 Interconnect
 ~~~~~~~~~~~~

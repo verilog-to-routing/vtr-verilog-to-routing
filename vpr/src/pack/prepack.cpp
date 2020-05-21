@@ -790,11 +790,11 @@ t_pack_molecule* alloc_and_load_pack_molecules(t_pack_patterns* list_of_pack_pat
      * TODO: Need to investigate better mapping strategies than first-fit
      */
     for (i = 0; i < num_packing_patterns; i++) {
-        /* Skip pack patterns that belong to unpackable modes,
+        /* Skip pack patterns for modes that are disabled for packing,
          * Ensure no resources in unpackable modes will be mapped during pre-packing stage 
          */
         if ((nullptr != list_of_pack_patterns[i].root_block->pb_type->parent_mode)
-            && (false == list_of_pack_patterns[i].root_block->pb_type->parent_mode->packable)) {
+            && (true == list_of_pack_patterns[i].root_block->pb_type->parent_mode->disable_packing)) {
             continue;
         }
 
@@ -1229,8 +1229,8 @@ static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block_in_pb_
         }
     } else {
         for (i = 0; i < curr_pb_graph_node->pb_type->num_modes; i++) {
-            /* Early fail if this primitive belongs to an unpackable mode */
-            if (false == curr_pb_graph_node->pb_type->modes[i].packable) {
+            /* Early fail if this primitive for a mode that is disabled for packing */
+            if (true == curr_pb_graph_node->pb_type->modes[i].disable_packing) {
                 continue;
             }
 
@@ -1566,9 +1566,9 @@ static t_pb_graph_pin* get_connected_primitive_pin(const t_pb_graph_pin* cluster
  *  will be only one pin connected to the very first adder in the cluster.
  */
 static void get_all_connected_primitive_pins(const t_pb_graph_pin* cluster_input_pin, std::vector<t_pb_graph_pin*>& connected_primitive_pins) {
-    /* Skip pins belong to unpackable modes */
+    /* Skip pins for modes that are disabled for packing*/
     if ((nullptr != cluster_input_pin->parent_node->pb_type->parent_mode)
-        && (false == cluster_input_pin->parent_node->pb_type->parent_mode->packable)) {
+        && (true == cluster_input_pin->parent_node->pb_type->parent_mode->disable_packing)) {
         return;
     }
 

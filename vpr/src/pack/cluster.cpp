@@ -1452,10 +1452,10 @@ static enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* 
     }
     pb_type = pb_graph_node->pb_type;
 
-    /* Any pb_type under an unpackable modes should not be considerd for mapping 
+    /* Any pb_type under an mode, which is disabled for packing, should not be considerd for mapping 
      * Early exit to flag failure
      */
-    if (false == pb_type->parent_mode->packable) {
+    if (true == pb_type->parent_mode->disable_packing) {
         return BLK_FAILED_FEASIBLE;
     }
 
