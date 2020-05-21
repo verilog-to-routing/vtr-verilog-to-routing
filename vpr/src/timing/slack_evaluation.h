@@ -6,11 +6,6 @@
 #include "tatum/timing_analyzers.hpp"
 #include "vtr_vector.h"
 
-//Incrementally update slack and criticality?
-#define INCR_UPDATE_SLACK
-#define INCR_UPDATE_MAX_REQ_WORST_SLACK
-#define INCR_UPDATE_CRIT
-
 /*
  * SetupSlackCrit converts raw timing analysis results (i.e. timing tags associated with
  * tatum::NodeIds calculated by the timign analyzer), to the shifted slacks and relaxed
@@ -91,6 +86,17 @@ class SetupSlackCrit {
     bool is_internal_tnode(const AtomPinId pin, const tatum::NodeId node) const;
     bool is_external_tnode(const AtomPinId pin, const tatum::NodeId node) const;
 
+    //Returns the timing graph nodes which need to be updated depending on whether an
+    //incremental or non-incremental update is requested.
+    auto nodes_to_update(bool incremental) {
+        if (incremental) {
+            //Note that this is done lazily only on the nodes modified by the analyzer
+            return vtr::make_range(modified_nodes_.begin(), modified_nodes_.end());
+        } else {
+            return vtr::make_range(all_nodes_.begin(), all_nodes_.end());
+        }
+    }
+
   private: //Data
     const AtomNetlist& netlist_;
     const AtomLookup& netlist_lookup_;
@@ -109,9 +115,8 @@ class SetupSlackCrit {
     std::map<DomainPair, float> prev_max_req_;     //Maximum required times from previous call to update_max_req_worst_slack()
     std::map<DomainPair, float> prev_worst_slack_; //Worst slacks from previous call to update_max_req_worst_slack()
 
-#if !defined(INCR_SLACK_UPDATE) || !defined(INCR_UPDATE_CRIT)
-    std::vector<tatum::NodeId> all_nodes_; //Set of all timing graph nodes
-#endif
+    std::vector<tatum::NodeId> all_nodes_; //Set of all timing graph nodes (used only for non-incremental updates)
+
     std::vector<tatum::NodeId> modified_nodes_;      //Modified timing graph nodes
     std::vector<tatum::NodeId> modified_sink_nodes_; //Modified timing graph nodes of tatum::NodeType::SINK type
 
