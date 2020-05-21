@@ -303,22 +303,7 @@ bool SetupSlackCrit::incr_update_max_req_and_worst_slack(const tatum::TimingGrap
         }
     }
 
-#ifdef VTR_ASSERT_DEBUG_ENABLED
-    auto incr_max_req = max_req_;
-    auto incr_max_req_node = max_req_node_;
-
-    auto incr_worst_slack = worst_slack_;
-    auto incr_worst_slack_node = worst_slack_node_;
-
-    recompute_max_req_and_worst_slack(timing_graph, analyzer);
-
-    VTR_ASSERT_DEBUG(incr_max_req == max_req_);
-    VTR_ASSERT_DEBUG(incr_max_req_node == max_req_node_);
-    VTR_ASSERT_DEBUG(incr_worst_slack == worst_slack_);
-    VTR_ASSERT_DEBUG(incr_worst_slack_node == worst_slack_node_);
-#else
-    static_cast<void>(timing_graph);
-#endif
+    VTR_ASSERT_DEBUG_MSG(verify_max_req_worst_slack(timing_graph, analyzer), "Calculated max required times and worst slacks should match those computed from scratch");
 
     ++incr_max_req_worst_slack_updates_;
     incr_max_req_worst_slack_update_time_sec_ += timer.elapsed_sec();
@@ -481,6 +466,40 @@ bool SetupSlackCrit::verify_pin_criticalities(const tatum::TimingGraph& timing_g
                       size_t(node));
             return false;
         }
+    }
+
+    return true;
+}
+
+bool SetupSlackCrit::verify_max_req_worst_slack(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer) {
+    auto calc_max_req = max_req_;
+    auto calc_max_req_node = max_req_node_;
+
+    auto calc_worst_slack = worst_slack_;
+    auto calc_worst_slack_node = worst_slack_node_;
+
+    recompute_max_req_and_worst_slack(timing_graph, analyzer);
+
+
+    if (calc_max_req != max_req_) {
+        VPR_ERROR(VPR_ERROR_TIMING,
+                  "Calculated max required times does not match value calculated from scratch");
+        return false;
+    }
+    if (calc_max_req_node != max_req_node_) {
+        VPR_ERROR(VPR_ERROR_TIMING,
+                  "Calculated max required nodes does not match value calculated from scratch");
+        return false;
+    }
+    if (calc_worst_slack != worst_slack_) {
+        VPR_ERROR(VPR_ERROR_TIMING,
+                  "Calculated worst slack does not match value calculated from scratch");
+        return false;
+    }
+    if (calc_worst_slack_node != worst_slack_node_) {
+        VPR_ERROR(VPR_ERROR_TIMING,
+                  "Calculated worst slack nodes does not match value calculated from scratch");
+        return false;
     }
 
     return true;
