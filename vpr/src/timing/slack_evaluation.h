@@ -88,7 +88,7 @@ class SetupSlackCrit {
 
     //Returns the timing graph nodes which need to be updated depending on whether an
     //incremental or non-incremental update is requested.
-    auto nodes_to_update(bool incremental) {
+    auto nodes_to_update(bool incremental) const {
         if (incremental) {
             //Note that this is done lazily only on the nodes modified by the analyzer
             return vtr::make_range(modified_nodes_.begin(), modified_nodes_.end());
@@ -96,6 +96,9 @@ class SetupSlackCrit {
             return vtr::make_range(all_nodes_.begin(), all_nodes_.end());
         }
     }
+
+    //Sanity check that calculated pin criticalites match those calculated from scratch
+    bool verify_pin_criticalities(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer) const;
 
   private: //Data
     const AtomNetlist& netlist_;

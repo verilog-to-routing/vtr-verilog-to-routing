@@ -190,32 +190,12 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
 
         update_pin_criticalities_from_nodes(nodes, analyzer);
 
-#ifdef VTR_ASSERT_DEBUG_ENABLED
-        //Sanity check
-        auto check_nodes = timing_graph.nodes();
-        for (tatum::NodeId node : check_nodes) {
-            AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
-            VTR_ASSERT_SAFE(pin);
+        VTR_ASSERT_DEBUG_MSG(verify_pin_criticalities(timing_graph, analyzer), "Updated pin criticalities should match those computed from scratch");
 
-            //Multiple timing graph nodes may map to the same sequential primitive pin.
-            //When determining the criticality to use for such pins we always choose the
-            //external facing node. This ensures the pin criticality reflects the criticality
-            //of the external timing path connected to this pin.
-            if (is_internal_tnode(pin, node)) {
-                continue;
-            }
-
-            VTR_ASSERT_SAFE(is_external_tnode(pin, node));
-
-            float new_crit = calc_pin_criticality(node, analyzer);
-            if (new_crit != pin_criticalities_[pin]) {
-                auto itr = std::find(nodes.begin(), nodes.end(), node);
-
-                VPR_ERROR(VPR_ERROR_TIMING,
-                          "Mismatched pin criticality was %g, but expected %g %g, in modified %d: pin '%s' (%zu) tnode %zu\n", pin_criticalities_[pin], new_crit, calc_pin_criticality(node, analyzer), itr != nodes.end(), netlist_.pin_name(pin).c_str(), size_t(pin), size_t(node));
-            }
-        }
-#endif
+        //Save the max required times and worst slacks so we can determine when next
+        //updated whether the update can be done incrementally
+        prev_max_req_ = max_req_;
+        prev_worst_slack_ = worst_slack_;
 
         if (do_incremental_update) {
             ++incr_criticality_updates_;
@@ -225,11 +205,6 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
             full_criticality_update_time_sec_ += timer.elapsed_sec();
         }
     }
-
-    //Save the max required times and worst slacks so we can determine when next
-    //updated whether the update can be done incrementally
-    prev_max_req_ = max_req_;
-    prev_worst_slack_ = worst_slack_;
 }
 
 void SetupSlackCrit::update_max_req_and_worst_slack(const tatum::TimingGraph& timing_graph,
@@ -471,6 +446,44 @@ bool SetupSlackCrit::is_internal_tnode(const AtomPinId pin, const tatum::NodeId 
 
 bool SetupSlackCrit::is_external_tnode(const AtomPinId pin, const tatum::NodeId node) const {
     return netlist_lookup_.atom_pin_tnode(pin, BlockTnode::EXTERNAL) == node;
+}
+
+bool SetupSlackCrit::verify_pin_criticalities(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer) const {
+    auto modified_nodes = nodes_to_update(/*incremental=*/true);
+    auto check_nodes = timing_graph.nodes();
+    for (tatum::NodeId node : check_nodes) {
+        AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
+        VTR_ASSERT_SAFE(pin);
+
+        //Multiple timing graph nodes may map to the same sequential primitive pin.
+        //When determining the criticality to use for such pins we always choose the
+        //external facing node. This ensures the pin criticality reflects the criticality
+        //of the external timing path connected to this pin.
+        if (is_internal_tnode(pin, node)) {
+            continue;
+        }
+
+        VTR_ASSERT_SAFE(is_external_tnode(pin, node));
+
+        float new_crit = calc_relaxed_criticality(max_req_, worst_slack_, analyzer.setup_slacks(node));
+        if (new_crit != pin_criticalities_[pin]) {
+            auto itr = std::find(modified_nodes.begin(), modified_nodes.end(), node);
+
+            bool in_modified = (itr != modified_nodes.end());
+
+            VPR_ERROR(VPR_ERROR_TIMING,
+                      "Mismatched pin criticality was %g, but expected %g, in modified %d: pin '%s' (%zu) tnode %zu\n",
+                      pin_criticalities_[pin],
+                      new_crit,
+                      in_modified, 
+                      netlist_.pin_name(pin).c_str(),
+                      size_t(pin),
+                      size_t(node));
+            return false;
+        }
+    }
+
+    return true;
 }
 
 /*
