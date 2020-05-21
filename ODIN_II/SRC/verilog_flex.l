@@ -50,6 +50,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 struct defines_t 
 {
+	std::string name;
 	std::vector<std::string> args;
 	std::string body;
 };
@@ -108,7 +109,7 @@ vHEX [Hh][_]*[ZzXx[:xdigit:]][ZzXx[:xdigit:]_]*
 vINT [[:digit:]][[:digit:]_]*
 vWORD [[:alpha:]_][[:alnum:]_$]*
 defineWORD [[:alnum:]_$]+
-vSTRING ["][^"]*["]  
+vSTR ["][^"]*["]  
 vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 
 %%
@@ -196,7 +197,7 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL,SKIP>"`endif"				{ MP(); POP_STATE();}
 
 <INITIAL>"`include"             	{ MP(); PUSH_STATE(INCLUDE); }
-<INCLUDE>{vSTRING}      			{ MP(); push_include(yytext); POP_STATE(); }
+<INCLUDE>{vSTR}      				{ MP(); push_include(yytext); POP_STATE(); }
 
 <INITIAL>"`default_nettype"			{ MP(); return preDEFAULT_NETTYPE;}
 <INITIAL>"`resetall"				{ MP(); initialize_defaults();}
@@ -314,13 +315,15 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL>"$clog2"					{ MP(); return vCLOG2;}
 <INITIAL>"$unsigned"				{ MP(); return voUNSIGNED;}
 <INITIAL>"$signed"					{ MP(); return voSIGNED;}
-
+<INITIAL>"$finish"					{ MP(); return voFINISH;}
+<INITIAL>"$display"					{ MP(); return voDISPLAY;}
+	/* catch all C functions */
 <INITIAL>[\$]{vWORD}				{ MP(); return vCFUNC;}
 
 	/* Integers */
 <INITIAL>{vINT}						{ MP(); yylval.num_value = vtr::strdup(yytext); return vINT_NUMBER; }
 	/* Strings */
-<INITIAL>{vSTRING}					{ MP(); yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
+<INITIAL>{vSTR}						{ MP(); yylval.num_value = vtr::strdup(yytext); return vSTRING; }
 	/* Numbers */
 <INITIAL>[[:digit:]]*'[sS]?{vBIN}	{ MP(); yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
 <INITIAL>[[:digit:]]*'[sS]?{vHEX}	{ MP(); yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
@@ -637,6 +640,7 @@ void new_define_t(const char* id)
 	}
 
 	defines_t *new_define = new defines_t();
+	new_define->name = tmp;
 	new_define->args = std::vector<std::string>();
 	new_define->body = "";
 	
@@ -671,9 +675,8 @@ std::string get_complex_define()
 		if( current_args.size() != current_define->args.size())
 		{
 			error_message(PARSER, my_yylineno, current_parse_file, 
-				"define is being used with wrong number of arguments, Expected %ld, got %ld", 
-				current_args.size(), 
-				current_define->args.size());
+				"define `%s is being used with wrong number of arguments, Expected %ld, got %ld", 
+					current_define->name.c_str(), current_define->args.size(),current_args.size());
 		}
 
 		for(int i=0; i<current_define->args.size(); i++)
@@ -687,7 +690,7 @@ std::string get_complex_define()
 				current_define_body.erase(pos, original_arg.size());
 				current_define_body.insert( pos, replacement_arg );
 				pos += replacement_arg.size();
-				pos = current_define_body.find( replacement_arg, pos );
+				pos = current_define_body.find( original_arg, pos );
 			}
 		}
 
@@ -725,11 +728,11 @@ void load_define(const char *str)
 	// compiler specific macros
 	if(tmp == "`__LINE__") 
 	{
-		current_define_body = std::to_string(my_yylineno);
+		current_define_body = "\"" + std::to_string(my_yylineno) + "\"";
 	}
 	else if (tmp == "`__FILE__")
 	{
-		current_define_body = std::string(configuration.list_of_file_names[current_parse_file]);
+		current_define_body = "\"" + std::string(configuration.list_of_file_names[current_parse_file]) + "\"";
 	}
 	else
 	{

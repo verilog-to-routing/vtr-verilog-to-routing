@@ -1455,7 +1455,7 @@ static void compute_mux_2_node(nnode_t* node, int cycle) {
          *  Conform to ModelSim's behaviour where in-line ifs are concerned. If the
          *  condition is unknown, the inline if's output is unknown.
          */
-        if (ast_node && ast_node->type == IF_Q)
+        if (ast_node && ast_node->type == TERNARY_OPERATION)
             update_pin_value(output_pin, -1, cycle);
         else
             update_pin_value(output_pin, get_pin_value(output_pin, cycle - 1), cycle);
