@@ -86,8 +86,9 @@ struct global_args_t {
     argparse::ArgValue<std::vector<std::string>> verilog_files;
     argparse::ArgValue<std::string> blif_file;
     argparse::ArgValue<std::string> output_file;
-    argparse::ArgValue<std::string> arch_file; // Name of the FPGA architecture file
-    argparse::ArgValue<bool> permissive;       //turn possible_errors into warnings
+    argparse::ArgValue<std::string> arch_file;   // Name of the FPGA architecture file
+    argparse::ArgValue<bool> permissive;         //turn possible_errors into warnings
+    argparse::ArgValue<bool> print_parse_tokens; // print the tokens as they are parsed byt the parser
 
     argparse::ArgValue<std::string> high_level_block; //Legacy option, no longer used
 
