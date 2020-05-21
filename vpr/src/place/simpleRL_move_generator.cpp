@@ -25,7 +25,7 @@ EpsilonGreedyAgent::~EpsilonGreedyAgent() {
 
 
 void EpsilonGreedyAgent::set_step(float gamma, int move_lim) {
-	VTR_LOG("Setting egreedy step: %g\n", exp_alpha_);
+	//VTR_LOG("Setting egreedy step: %g\n", exp_alpha_);
 	if (gamma < 0) {
         exp_alpha_ = -1; //Use sample average
     } else {
@@ -43,7 +43,7 @@ void EpsilonGreedyAgent::set_step(float gamma, int move_lim) {
             //     alpha = 1 - e^(log(gamma) / K)
             //
             float alpha = 1 - std::exp(std::log(gamma) / move_lim);
-            VTR_LOG("K-armed bandit alpha: %g\n", alpha);
+            //VTR_LOG("K-armed bandit alpha: %g\n", alpha);
             exp_alpha_ = alpha;
         }
 }
@@ -132,7 +132,7 @@ size_t EpsilonGreedyAgent::propose_action() {
 }
 
 void EpsilonGreedyAgent::set_epsilon(float epsilon) {
-    VTR_LOG("Setting egreedy epsilon: %g\n", epsilon);
+    //VTR_LOG("Setting egreedy epsilon: %g\n", epsilon);
     epsilon_ = epsilon;
 }
 
@@ -234,6 +234,8 @@ void SimpleRLMoveGenerator::process_outcome(double reward){
 SoftmaxAgent::SoftmaxAgent(size_t k){
     set_k(k);
     set_action_prob();
+
+    //f_ = vtr::fopen("agent_info.txt", "w");
 }
 
 
@@ -242,6 +244,7 @@ SoftmaxAgent::~SoftmaxAgent() {
 }
 
 void SoftmaxAgent::process_outcome(double reward){
+    
     ++n_[last_action_];
     reward = reward / time_elapsed[last_action_];
     //Determine step size
@@ -286,8 +289,11 @@ void SoftmaxAgent::process_outcome(double reward){
 }
 
 size_t SoftmaxAgent::propose_action(){
+    set_action_prob();
     size_t action = 0;
     float p = vtr::frand();
+    //VTR_LOG("#####%f,%f,%f,%f,%f,%f,%f\n",action_prob_[0],action_prob_[1],action_prob_[2],action_prob_[3],action_prob_[4],action_prob_[5],action_prob_[6]);
+    //VTR_LOG("@@@@@%f,%f,%f,%f,%f,%f,%f\n",cumm_action_prob_[0],cumm_action_prob_[1],cumm_action_prob_[2],cumm_action_prob_[3],cumm_action_prob_[4],cumm_action_prob_[5],cumm_action_prob_[6]);
     auto itr = std::lower_bound(cumm_action_prob_.begin(), cumm_action_prob_.end(), p);
     action = itr - cumm_action_prob_.begin();
     VTR_ASSERT(action < k_);
@@ -300,8 +306,9 @@ void SoftmaxAgent::set_k(size_t k) {
     k_ = k;
     q_ = std::vector<float>(k, 0.);
     n_ = std::vector<size_t>(k, 0);
+    action_prob_ = std::vector<float>(k,0.);
 
-    cumm_action_prob_ = std::vector<float>(k, 1.0 / k);
+    cumm_action_prob_ = std::vector<float>(k);
     if(f_){
         fprintf(f_, "action,reward,");
         for (size_t i = 0; i < k_; ++i) {
@@ -315,29 +322,28 @@ void SoftmaxAgent::set_k(size_t k) {
 }
 
 void SoftmaxAgent::set_action_prob() {
-    std::vector<float> epsilon_prob(k_);
     float sum_q = accumulate(q_.begin(),q_.end(),0.0);
     if(sum_q == 0.0){
-        std::fill(epsilon_prob.begin(),epsilon_prob.end(),1.0/k_);        
+        std::fill(action_prob_.begin(),action_prob_.end(),1.0/k_);        
     }
     else{
         for(size_t i=0; i<k_; ++i){
-            epsilon_prob[i] = std::max(std::min(q_[i]/sum_q, float(0.9)),float(0.02));
+            action_prob_[i] = std::max(std::min(q_[i]/sum_q, float(0.9)),float(0.02));
         }
     }
 
-    float sum_prob = std::accumulate(epsilon_prob.begin(), epsilon_prob.end(),0.0);
-    std::transform(epsilon_prob.begin(), epsilon_prob.end(), epsilon_prob.begin(),
+    float sum_prob = std::accumulate(action_prob_.begin(), action_prob_.end(),0.0);
+    std::transform(action_prob_.begin(), action_prob_.end(), action_prob_.begin(),
           bind2nd(std::plus<float>(),(1.0-sum_prob)/k_ ));  
     float accum = 0;
     for (size_t i = 0; i < k_; ++i) {
-        accum += epsilon_prob[i];
+        accum += action_prob_[i];
         cumm_action_prob_[i] = accum;
     }
 }
 
 void SoftmaxAgent::set_step(float gamma, int move_lim){
-	VTR_LOG("Setting softmax step: %g\n", exp_alpha_);
+	//VTR_LOG("Setting softmax step: %g\n", exp_alpha_);
 	if (gamma < 0) {
         exp_alpha_ = -1; //Use sample average
     } else {
@@ -355,7 +361,7 @@ void SoftmaxAgent::set_step(float gamma, int move_lim){
             //     alpha = 1 - e^(log(gamma) / K)
             //
             float alpha = 1 - std::exp(std::log(gamma) / move_lim);
-            VTR_LOG("K-armed bandit alpha: %g\n", alpha);
+            //VTR_LOG("K-armed bandit alpha: %g\n", alpha);
             exp_alpha_ = alpha;
         }
 }
