@@ -374,7 +374,7 @@ signal_list_t* netlist_expand_ast_of_module(ast_node_t** node_ref, char* instanc
 
                 /* check for initial register values set in initial block.*/
                 for (i = 0; i < node->num_children; i++) {
-                    if (node->children[i]->type == INITIAL) {
+                    if (node->children[i] && node->children[i]->type == INITIAL) {
                         define_latchs_initial_value_inside_initial_statement(node->children[i]->children[0], local_ref);
                     }
                 }
@@ -386,10 +386,11 @@ signal_list_t* netlist_expand_ast_of_module(ast_node_t** node_ref, char* instanc
                 if (node->num_children > 0) {
                     oassert(child_skip_list);
                     for (i = 0; i < node->num_children; i++) {
-                        if (node->children[i]->type == VAR_DECLARE_LIST) {
+                        if (!node->children[i]) {
                             child_skip_list[i] = true;
-                        }
-                        if (node->children[i]->type == MODULE_INSTANCE) {
+                        } else if (node->children[i]->type == VAR_DECLARE_LIST) {
+                            child_skip_list[i] = true;
+                        } else if (node->children[i]->type == MODULE_INSTANCE) {
                             /* ELSE IF - we deal with instantiations of modules twice to alias input and output nets.  In this
                              * pass we are looking for any drivers emerging from a module */
                             long j;
@@ -523,11 +524,19 @@ signal_list_t* netlist_expand_ast_of_module(ast_node_t** node_ref, char* instanc
                 return_sig_list = create_case(node, instance_name_prefix, local_ref);
                 skip_children = true;
                 break;
+            case DISPLAY:
+                c_display(node);
+                skip_children = true;
+                break;
+            case FINISH:
+                c_finish(node);
+                skip_children = true;
+                break;
             case IF:
                 return_sig_list = create_if(node, instance_name_prefix, local_ref);
                 skip_children = true;
                 break;
-            case IF_Q:
+            case TERNARY_OPERATION:
                 return_sig_list = create_if_for_question(node, instance_name_prefix, local_ref);
                 skip_children = true;
                 break;
@@ -571,7 +580,7 @@ signal_list_t* netlist_expand_ast_of_module(ast_node_t** node_ref, char* instanc
             case MODULE_ITEMS: {
                 if (node->num_children > 0) {
                     for (i = 0; i < node->num_children; i++) {
-                        if (node->children[i]->type == MODULE_INSTANCE) {
+                        if (node->children[i] && node->children[i]->type == MODULE_INSTANCE) {
                             long j;
                             for (j = 0; j < node->children[i]->num_children; j++) {
                                 /* make the aliases for all the drivers as they're passed through modules */

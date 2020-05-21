@@ -280,7 +280,6 @@ enum ids {
     /* Function instances*/
     FUNCTION_NAMED_INSTANCE,
     FUNCTION_INSTANCE,
-
     TASK_NAMED_INSTANCE,
     TASK_INSTANCE,
     /* Specify Items */
@@ -300,7 +299,6 @@ enum ids {
     CASE_DEFAULT,
     ALWAYS,
     IF,
-    IF_Q,
     FOR,
     WHILE,
     /* Delay Control */
@@ -308,6 +306,7 @@ enum ids {
     POSEDGE,
     NEGEDGE,
     /* expressions */
+    TERNARY_OPERATION,
     BINARY_OPERATION,
     UNARY_OPERATION,
     /* basic primitives */
@@ -318,6 +317,10 @@ enum ids {
     /* basic identifiers */
     IDENTIFIERS,
     NUMBERS,
+    /* C functions */
+    C_ARG_LIST,
+    DISPLAY,
+    FINISH,
     /* Hard Blocks */
     HARD_BLOCK,
     HARD_BLOCK_NAMED_INSTANCE,
@@ -352,6 +355,7 @@ struct typ {
     struct
     {
         short is_parameter;
+        short is_string;
         short is_localparam;
         short is_defparam;
         short is_port;
@@ -364,7 +368,7 @@ struct typ {
         short is_genvar;
         short is_memory;
         short is_signed;
-        short is_initialized; // should the variable be initialized with some value?
+        short is_initialized;
         long initial_value;
     } variable;
     struct
