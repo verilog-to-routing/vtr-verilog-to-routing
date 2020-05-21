@@ -36,7 +36,6 @@ SetupSlackCrit::SetupSlackCrit(const AtomNetlist& netlist, const AtomLookup& net
     , netlist_lookup_(netlist_lookup)
     , pin_slacks_(netlist_.pins().size(), NAN)
     , pin_criticalities_(netlist_.pins().size(), NAN) {
-
     //We are doing some kind of full (i.e. non-incremental updates), record
     //all the relevant timing graph nodes
     all_nodes_.reserve(netlist.pins().size());
@@ -170,17 +169,17 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
         bool max_req_unchanged = (max_req_ == prev_max_req_);
         bool worst_slack_unchanged = (worst_slack_ == prev_worst_slack_);
 
-        //If max required times and worst slacks are unchanged, we could incrementally 
+        //If max required times and worst slacks are unchanged, we could incrementally
         //update the criticalities of each pin. (An incremental update is done lazily,
         //only on the nodes modified by the analyzer.)
         //
-        //Otherwise (if the max required and/or worst slacks changed), we fully 
+        //Otherwise (if the max required and/or worst slacks changed), we fully
         //recalculate all criticalities.
         //
         //  TODO: consider if incremental criticality update is feasible based only
         //        on changed domain pairs....
-        bool could_do_incremental_update = (previously_updated 
-                                            && max_req_unchanged 
+        bool could_do_incremental_update = (previously_updated
+                                            && max_req_unchanged
                                             && worst_slack_unchanged);
 
         //For debugability, only do incremental updates if INCR_UPDATE_ATOM_CRIT is true
@@ -460,7 +459,7 @@ bool SetupSlackCrit::verify_pin_criticalities(const tatum::TimingGraph& timing_g
                       "Mismatched pin criticality was %g, but expected %g, in modified %d: pin '%s' (%zu) tnode %zu\n",
                       pin_criticalities_[pin],
                       new_crit,
-                      in_modified, 
+                      in_modified,
                       netlist_.pin_name(pin).c_str(),
                       size_t(pin),
                       size_t(node));
@@ -479,7 +478,6 @@ bool SetupSlackCrit::verify_max_req_worst_slack(const tatum::TimingGraph& timing
     auto calc_worst_slack_node = worst_slack_node_;
 
     recompute_max_req_and_worst_slack(timing_graph, analyzer);
-
 
     if (calc_max_req != max_req_) {
         VPR_ERROR(VPR_ERROR_TIMING,
