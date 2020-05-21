@@ -180,8 +180,8 @@ void EpsilonGreedyAgent::set_epsilon_action_prob() {
 
 
 //SimpleRL class member functions
-//SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& agent){
-SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent){
+SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& agent){
+//SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent){
 	std::unique_ptr<MoveGenerator> move_generator;
 	move_generator = std::make_unique<UniformMoveGenerator>();
 	avail_moves.push_back(std::move(move_generator));

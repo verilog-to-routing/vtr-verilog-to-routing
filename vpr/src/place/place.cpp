@@ -518,13 +518,13 @@ void try_place(const t_placer_opts& placer_opts,
         move_generator = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_move_prob);
     }
     else{
-        //VTR_LOG("Using simple RL 'Epsilon Greedy agent' for choosing move types\n");
-        //std::unique_ptr<EpsilonGreedyAgent> karmed_bandit_agent;
-        VTR_LOG("Using simple RL 'Softmax agent' for choosing move types\n");
-        std::unique_ptr<SoftmaxAgent> karmed_bandit_agent;
+        VTR_LOG("Using simple RL 'Epsilon Greedy agent' for choosing move types\n");
+        std::unique_ptr<EpsilonGreedyAgent> karmed_bandit_agent;
+        //VTR_LOG("Using simple RL 'Softmax agent' for choosing move types\n");
+        //std::unique_ptr<SoftmaxAgent> karmed_bandit_agent;
 
-        //karmed_bandit_agent = std::make_unique<EpsilonGreedyAgent>(placer_opts.place_static_move_prob.size(), placer_opts.place_agent_epsilon);
-        karmed_bandit_agent = std::make_unique<SoftmaxAgent>(placer_opts.place_static_move_prob.size());
+        karmed_bandit_agent = std::make_unique<EpsilonGreedyAgent>(placer_opts.place_static_move_prob.size(), placer_opts.place_agent_epsilon);
+        //karmed_bandit_agent = std::make_unique<SoftmaxAgent>(placer_opts.place_static_move_prob.size());
         karmed_bandit_agent->set_step(placer_opts.place_agent_gamma, move_lim);
         move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent);
     }
