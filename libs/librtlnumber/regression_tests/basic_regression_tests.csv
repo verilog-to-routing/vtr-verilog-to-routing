@@ -12,18 +12,24 @@ simple_true,        is_true, 1'b1, pass
 simple_fail,        is_true, 1'b0, fail
 decimal_true,       is_true, 1, pass
 decimal_fail,       is_true, 0, fail
-complex_true,       is_true, 2'b1x, pass
-complex_fail,       is_true, 2'b0x, fail
+complex_true,       is_true, 3'b1xz, pass
+complex_fail,       is_true, 3'b0xz, fail
 unknown_x,          is_true, 1'bx, fail
+unknown_z,          is_true, 1'bz, fail
 large_number_pass,  is_true, 128'h8000_0000_0000_0000, pass
 
 # type test
-simple_x_pass,      is_x,   1'bx,   pass
-simple_x_fail,      is_x,   1'b1,   fail
-simple_z_pass,      is_z,   1'bz,   pass
-simple_z_fail,      is_z,   1'b1,   fail
-simple_unk_pass,    is_unk, 2'b1x,  pass
-simple_unk_fail,    is_unk, 2'b11,  fail
+simple_x_pass,      is_x,   1'bx,    pass
+simple_x_fail,      is_x,   1'b1,    fail
+complex_x_pass,     is_x,   4'bxxxx, pass
+complex_x_fail,     is_x,   4'bzxxx, fail
+simple_z_pass,      is_z,   1'bz,    pass
+simple_z_fail,      is_z,   1'b1,    fail
+complex_z_pass,     is_z,   4'bzzzz, pass
+complex_z_fail,     is_z,   4'bxzzz, fail
+simple_unk_x_pass,  is_unk, 2'bx1,   pass
+simple_unk_z_pass,  is_unk, 2'bz1,   pass
+simple_unk_fail,    is_unk, 2'b10,   fail
 
 # sign test
 simple_is_unsigned_pass,     is_unsigned,    2'b11,  pass
@@ -77,8 +83,16 @@ Reduction-and,			&,  4'b1010,	1'b0
 Reduction-or,			|,  4'b1010,	1'b1
 Reduction-xor,			^,  4'b1010,	1'b0
 Reduction-nand,			~&,	4'b1010,	1'b1
-Reduction-nor,			~|,	4'b1010,	1'b1
+Reduction-nor,			~|,	4'b1010,	1'b0
 Reduction-xnor,			~^,	4'b1010,	1'b1
+
+# Reduction unknowns
+Reduction-and-XZ,		&,  4'b10xz,	1'b0
+Reduction-or-XZ,		|,  4'b10xz,	1'b1
+Reduction-xor-XZ,		^,  4'b10xz,	1'bx
+Reduction-nand-XZ,		~&,	4'b10xz,	1'b1
+Reduction-nor-XZ,		~|,	4'b10xz,	1'b0
+Reduction-xnor-XZ,		~^,	4'b10xz,	1'bx
 
 # bitwise
 Bitwise-Not,	            ~,  4'b1010,	'b0101
@@ -89,64 +103,95 @@ Bitwise-Nand,   5'b1010,	~&, 5'b1000,	5'b10111
 Bitwise-Xnor,   5'b1010,	~^, 5'b1000,	5'b11101
 Bitwise-Xor,	5'b1010,	^,  5'b1000,	2'b10
 
+# bitwise unknowns
+Bitwise-Not-XZ,	                    ~,  4'b10xz,        4'b01xx
+Bitwise-And-XZ,	    8'bxxxxzzzz,    &,  8'b10xz10xz,    8'bx0xxx0xx
+Bitwise-Or-XZ,	    8'bxxxxzzzz,    |,  8'b10xz10xz,    8'b1xxx1xxx
+Bitwise-Nor-XZ,	    8'bxxxxzzzz,    ~|, 8'b10xz10xz,    8'b0xxx0xxx
+Bitwise-Nand-XZ,    8'bxxxxzzzz,    ~&, 8'b10xz10xz,    8'bx1xxx1xx
+Bitwise-Xnor-XZ,    8'bxxxxzzzz,    ~^, 8'b10xz10xz,    8'bxxxxxxxx
+Bitwise-Xor-XZ,	    8'bxxxxzzzz,    ^,  8'b10xz10xz,    8'bxxxxxxxx
+
 # case equivalence
-Case-eq,		4'b1x10,	===,  4'b1x10,	1'b1
-Case-ne,		4'b1x11,	!==,  4'b1x10,	1'b1
-Case-ne,		4'b1x10,	!==,  4'b1x10,	1'b0
-Case-eq,		4'b1x11,	===,  4'b1x10,	1'b0
+Case-eq,		5'b1xz10,	===,  5'b1xz10,	1'b1
+Case-ne,		5'b1xz11,	!==,  5'b1xz10,	1'b1
+Case-ne-XZ,		5'b1xz10,	!==,  5'b1zx10,	1'b1
+Case-ne,		5'b1xz10,	!==,  5'b1xz10,	1'b0
+Case-eq,		5'b1xz11,	===,  5'b1xz10,	1'b0
+Case-eq-XZ,		5'b1xz10,	===,  5'b1zx10,	1'b0
 
 # logical operation
 Logical-Not,	                    !,  4'b1010,	1'b0
+Logical-Not-XZ,	                    !,  4'b1x1z,	1'bx
 Logical-And,			4'b1010,	&&, 4'b1000,	1'b1
+Logical-And-XZ,			4'b1x1z,	&&, 4'b1000,	1'bx
 Logical-Or,				4'b1010,	||, 4'b1000,	1'b1
 Logical-Or,				4'b0000,	||, 4'b1000,	1'b1
 Logical-Or,				4'b0000,	||, 4'b0000,	1'b0
+Logical-Or,				4'b0zx0,	||, 4'b0000,	1'bx
 Logical-less,           4'b0000,    <,  4'b0000,    1'b0	
 Logical-less-1,			4'b0000,	<,	4'b0001,	1'b1
 Logical-less-2,         4'b0001,    <,  4'b0000,    1'b0
 Logical-less-3,         4'bxxxx,    <,  4'b0001,    1'bx
 Logical-less-4,         4'b0001,    <,  4'bxxxx,    1'bx
-Logical-less-5,         4'b0xxx,    <,  4'b1001,    1'b1
-Logical-less-6,         4'b1001,    <,  4'b0xxx,    1'b0
-Logical-less-7,         4'sb1001,   <,  4'sb0xxx,   1'b1
-Logical-less-8,         4'sb0xxx,   <,  4'sb1001,   1'b0
+Logical-less-5,         4'b0xxx,    <,  4'b1001,    1'bx
+Logical-less-6,         4'b1001,    <,  4'b0xxx,    1'bx
+Logical-less-7,         4'sb1001,   <,  4'sb0xxx,   1'bx
+Logical-less-8,         4'sb0xxx,   <,  4'sb1001,   1'bx
+Logical-less-9,         4'b0zzz,    <,  4'b1001,    1'bx
+Logical-less-10,         4'sb0zzz,   <,  4'sb1001,   1'bx
 Logical-greater,        4'b0000,    >,  4'b0000,    1'b0
 Logical-greater-1,		4'b0000,	>,	4'b0001,	1'b0
 Logical-greater-2,      4'b0001,    >,  4'b0000,    1'b1
 Logical-greater-3,      4'bxxxx,    >,  4'b0001,    1'bx
 Logical-greater-4,      4'b0001,    >,  4'bxxxx,    1'bx
-Logical-greater-5,      4'b0xxx,    >,  4'b1001,    1'b0
-Logical-greater-6,      4'b1001,    >,  4'b0xxx,    1'b1
-Logical-greater-7,      4'sb1001,   >,  4'sb0xxx,   1'b0
-Logical-greater-8,      4'sb0xxx,   >,  4'sb1001,   1'b1
+Logical-greater-5,      4'b0xxx,    >,  4'b1001,    1'bx
+Logical-greater-6,      4'b1001,    >,  4'b0xxx,    1'bx
+Logical-greater-7,      4'sb1001,   >,  4'sb0xxx,   1'bx
+Logical-greater-8,      4'sb0xxx,   >,  4'sb1001,   1'bx
 Logical-gr-equal,	    4'b0000,	>=, 4'b0000,	1'b1
 Logical-gr-equal-1,		4'b0000,	>=,	4'b0001,	1'b0
 Logical-gr-equal-2,     4'b0001,    >=, 4'b0000,    1'b1
 Logical-gr-equal-3,     4'bxxxx,    >=, 4'b0001,    1'bx
 Logical-gr-equal-4,     4'b0001,    >=, 4'bxxxx,    1'bx
+Logical-gr-equal-5,     4'b0001,    >=, 4'bzzzz,    1'bx
 Logical-less-equal,		4'b0000,	<=, 4'b0000,	1'b1
 Logical-less-equal-1,	4'b0000,	<=,	4'b0001,	1'b1
 Logical-less-equal-2,   4'b0001,    <=, 4'b0000,    1'b0
 Logical-less-equal-3,   4'bxxxx,    <=, 4'b0001,    1'bx
 Logical-less-equal-4,   4'b0001,    <=, 4'bxxxx,    1'bx	
+Logical-less-equal-5,   4'b0001,    <=, 4'bzzzz,    1'bx	
 Logical-equal,			4'b0000,	==, 4'b0000,	1'b1
 Logical-equal-1,		4'b0000,	==,	4'b0001,	1'b0
 Logical-equal-2,        4'b0001,    ==, 4'b0000,    1'b0
 Logical-equal-3,        4'bxxxx,    ==, 4'b0001,    1'bx
 Logical-equal-4,        4'b0001,    ==, 4'bxxxx,    1'bx
+Logical-equal-5,        4'b0001,    ==, 4'bzzzz,    1'bx
 Logical-bits,			'b1110,	    ==, 4'b1110,	1'b1	
 Logical-not-equal,		4'b0000,	!=,	4'b0000,	1'b0
 Logical-not-equal-1,	4'b0000,	!=,	4'b0001,	1'b1
 Logical-not-equal-2,    4'b0001,    !=, 4'b0000,    1'b1
 Logical-not-equal-3,    4'bxxxx,    !=, 4'b0001,    1'bx
 Logical-not-equal-4,    4'b0001,    !=, 4'bxxxx,    1'bx
+Logical-not-equal-5,    4'b0001,    !=, 4'bzzzz,    1'bx
+
+# Tests for correct sign extension
+Sign-Extend,                    4'b0001,    ===,    1'b1,   1'b1
+Sign-Extend-Unknown,            4'b00xz,    ===,    2'bxz,  1'b1
+Sign-Extend-Sign,               4'sb1111,   ===,    1'sb1,  1'b1
+Sign-Extend-Sign-Unknown,       4'sbxxxz,   ===,    2'sbxz,  1'b1
 
 # shift operation
-Shift-left,				5'b00100,	<<,	    2'b10,	5'b10000
-Shift-right, 			5'b00100,	>>,		2'b10,	1'b1
-Signed-shift-left,		5'b00100,	<<<,	2'b10,	5'b10000
-Unsigned-Signed-shift-right,		5'b10100,	>>>,	2'b10,	5'b00101
-Signed-shift-right,		5'sb10100,	>>>,	2'b10,	5'sb11101
+Shift-left,				        6'b0001zx,	<<,	    2'b10,	6'b01zx00
+Shift-right, 			        6'b0zx100,	>>,		2'b10,	3'bzx1
+Signed-shift-left,		        5'b001zx,	<<<,	2'b10,	5'b1zx00
+Unsigned-Signed-shift-right,	6'b1z1x00,	>>>,	2'b10,	6'b001z1x
+Unsigned-arithmetic-shift-right,6'b1z1x00,	>>>,	2'b10,	6'b001z1x
+Signed-arithmetic-shift-right,  6'sb1z1x00,	>>>,	2'b10,	6'sb111z1x
+Shift-left-X,                   6'b1010,	<<,	1'bx,	'bx
+Shift-left-Z,                   6'b1010,	<<,	1'bz,	'bx
+Shift-right-X,                  6'b1010,	>>,	1'bx,	'bx
+Shift-right-Z,                  6'b1010,	>>,	1'bz,	'bx
 
 # arithmetic
 Addition,			        4'b0110,    +,  4'b0011,    'b1001
@@ -168,7 +213,7 @@ Power,                      2'b10,      **, 2'b10,      4'b0100
 Power-Base-10,              2,          **, 3,          8
 Power-Zero,                 4'b0010,    **, 4'b0000,    'b1
 Power-Zero-Base-10,         3,          **, 0,          1
-Power-Unknown,              4'b0000,    **, 4'sb1110,   2'sbxx
+Power-Unknown,              4'b0000,    **, 4'sb1110,   'bx
 Power-Neg-Even,             4'sb1111,   **, 2'b10,      'b1
 Power-Neg-Odd,              4'sb1111,   **, 3'b011,     2'sb11
 
@@ -188,7 +233,7 @@ V2005-8,                    2,          **, 3,       8          # 2 * 2 * 2
 V2005-9,                    2,          **, 0,       1          # Anything to the zero exponent is 1.
 V2005-10,                   0,          **, 0,       1          # Zero to the zero exponent is also 1.
 V2005-11,                   2,          **, 3'sb111, 0          # 2 ** -1 = 1/2. Integer division truncates to zero.
-V2005-12,                   0,          **, 2'sb11,  2'sbxx     # 0 ** -1 = 1/0. Integer division by zero is 'bx.
+V2005-12,                   0,          **, 2'sb11,  'bx     # 0 ** -1 = 1/0. Integer division by zero is 'bx.
 
 #2.0 ** -3'sb1 0.5 2.0 is real, giving real reciprocal.
 #9 ** 0.5 3.0 Real square root.

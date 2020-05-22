@@ -3,12 +3,8 @@
 
 #include "vtr_memory.h"
 #include "vtr_vector.h"
+#include "vpr_net_pins_matrix.h"
 
-vtr::vector<ClusterNetId, float*> alloc_net_delay(vtr::t_chunk* chunk_list_ptr);
-
-void free_net_delay(vtr::vector<ClusterNetId, float*>& net_delay,
-                    vtr::t_chunk* chunk_list_ptr);
-
-void load_net_delay_from_routing(vtr::vector<ClusterNetId, float*>& net_delay);
+void load_net_delay_from_routing(ClbNetPinsMatrix<float>& net_delay);
 
 #endif

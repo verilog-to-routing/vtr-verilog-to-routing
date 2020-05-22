@@ -5,6 +5,17 @@
 #include "atom_netlist_fwd.h"
 #include "atom_lookup.h"
 
+/*
+ * Class for constructing a Timing Graph (a tatum::TimingGraph, for use with the Tatum 
+ * STA engine) from the provided AtomNetlist. It also updates the provided AtomLookup 
+ * with the mapping from netlist elements to timing graph nodes.
+ *
+ * To construct a timing graph initialize this class with the netlist and lookup 
+ * (via constructor), and call the timing_graph() method.
+ *
+ * For details on how the timing graph is constructed from the netlist, see the comments 
+ * in the associated .cpp implementation file.
+ */
 class TimingGraphBuilder {
   public:
     TimingGraphBuilder(const AtomNetlist& netlist,
@@ -19,6 +30,11 @@ class TimingGraphBuilder {
     void add_io_to_timing_graph(const AtomBlockId blk);
     void add_block_to_timing_graph(const AtomBlockId blk);
     void add_net_to_timing_graph(const AtomNetId net);
+
+    //Helper functions for add_block_to_timing_graph()
+    std::set<tatum::NodeId> create_block_timing_nodes(const AtomBlockId blk);
+    void create_block_internal_data_timing_edges(const AtomBlockId blk, const std::set<tatum::NodeId>& clock_generator_tnodes);
+    void create_block_internal_clock_timing_edges(const AtomBlockId blk, const std::set<tatum::NodeId>& clock_generator_tnodes);
 
     void fix_comb_loops();
     tatum::EdgeId find_scc_edge_to_break(std::vector<tatum::NodeId> scc);

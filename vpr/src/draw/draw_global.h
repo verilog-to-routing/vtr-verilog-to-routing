@@ -15,8 +15,6 @@
 
 #    include "draw_types.h"
 
-#    define MAX_BLOCK_COLOURS 5
-
 constexpr float DEFAULT_ARROW_SIZE = 0.3;
 
 // a very small area, in (screen pixels)^2

@@ -1,4 +1,5 @@
 #include <fstream>
+#include <sstream>
 
 #include "vtr_log.h"
 #include "vtr_assert.h"
@@ -149,6 +150,47 @@ std::vector<HistogramBucket> create_setup_slack_histogram(const tatum::SetupTimi
     return histogram;
 }
 
+std::vector<HistogramBucket> create_criticality_histogram(const SetupTimingInfo& setup_timing,
+                                                          const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                                                          size_t num_bins) {
+    std::vector<HistogramBucket> histogram;
+    float step = 1. / num_bins;
+
+    //Create the bins
+    float curr_div = 0.;
+    for (size_t i = 0; i < num_bins; ++i) {
+        float min = curr_div;
+        float max = curr_div + step;
+        histogram.emplace_back(min, max);
+
+        curr_div += step;
+    }
+
+    //To avoid round-off errors we force the max value of the last bucket equal to the max criticalty
+    histogram[histogram.size() - 1].max_value = 1.;
+
+    auto cmp = [](const HistogramBucket& bucket, float crit) {
+        return bucket.max_value < crit;
+    };
+
+    //Count the criticalities into the buckets
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+        auto sinks = cluster_ctx.clb_nlist.net_sinks(net_id);
+
+        for (auto pin : sinks) {
+            float crit = calculate_clb_net_pin_criticality(setup_timing, netlist_pin_lookup, pin);
+
+            auto iter = std::lower_bound(histogram.begin(), histogram.end(), crit, cmp);
+            VTR_ASSERT(iter != histogram.end());
+
+            iter->count++;
+        }
+    }
+
+    return histogram;
+}
+
 void print_setup_timing_summary(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer) {
     auto& timing_ctx = g_vpr_ctx.timing();
 
@@ -223,13 +265,22 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
     }
 
     //Calculate the intra-domain (i.e. same launch and capture domain) non-virtual geomean, and fanout-weighted periods
-    if (crit_paths.size() > 1) {
+    if (crit_paths.size() >= 1) {
+        VTR_LOG("\n");
         std::vector<double> intra_domain_cpds;
         std::vector<double> fanout_weighted_intra_domain_cpds;
         double total_intra_domain_fanout = 0.;
         auto clock_fanouts = count_clock_fanouts(*timing_ctx.graph, setup_analyzer);
         for (const auto& path : crit_paths) {
             if (path.launch_domain() == path.capture_domain() && !constraints.is_virtual_clock(path.launch_domain())) {
+                if (path.delay() == 0.) {
+                    VTR_LOG_WARN("%s to %s CPD is %g, skipping in geomean and fanout-weighted CPDs\n",
+                                 constraints.clock_domain_name(path.launch_domain()).c_str(),
+                                 constraints.clock_domain_name(path.capture_domain()).c_str(),
+                                 sec_to_nanosec(path.delay()));
+                    continue;
+                }
+
                 intra_domain_cpds.push_back(path.delay());
 
                 auto iter = clock_fanouts.find(path.launch_domain());
@@ -243,7 +294,6 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
 
         //Print multi-clock geomeans
         if (intra_domain_cpds.size() > 0) {
-            VTR_LOG("\n");
             double geomean_intra_domain_cpd = vtr::geomean(intra_domain_cpds.begin(), intra_domain_cpds.end());
             VTR_LOG("Geometric mean non-virtual intra-domain period: %g ns (%g MHz)\n",
                     sec_to_nanosec(geomean_intra_domain_cpd),
@@ -559,6 +609,9 @@ float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_re
         VTR_ASSERT_MSG(iter != domains_worst_slack.end(), "Require the worst slack for clock domain pair");
         float worst_slack = iter->second;
 
+        VTR_ASSERT_SAFE_MSG(!std::isnan(worst_slack), "Worst slack should not be nan");
+        VTR_ASSERT_SAFE_MSG(std::isfinite(worst_slack), "Worst slack should not be infinite");
+
         if (worst_slack < 0.) {
             //We shift slacks and required time by the most negative slack
             //**in the domain**, to ensure criticality is bounded within [0., 1.]
@@ -570,6 +623,10 @@ float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_re
             slack += shift;
             max_req += shift;
         }
+        VTR_ASSERT_SAFE_MSG(!std::isnan(slack), "Slack should not be nan");
+        VTR_ASSERT_SAFE_MSG(!std::isnan(max_req), "Max required time should not be nan");
+        VTR_ASSERT_SAFE_MSG(std::isfinite(slack), "Slack should not be infinite");
+        VTR_ASSERT_SAFE_MSG(std::isfinite(max_req), "Max required time should not be infinite");
 
         float crit = std::numeric_limits<float>::quiet_NaN();
         if (max_req > 0.) {
@@ -585,6 +642,8 @@ float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_re
         }
 
         //Soft check for reasonable criticality values
+        VTR_ASSERT_SAFE_MSG(!std::isnan(crit), "Criticality not be nan");
+        VTR_ASSERT_SAFE_MSG(std::isfinite(crit), "Criticality should not be infinite");
         VTR_ASSERT_MSG(crit >= 0. - CRITICALITY_ROUND_OFF_TOLERANCE, "Criticality should never be negative");
         VTR_ASSERT_MSG(crit <= 1. + CRITICALITY_ROUND_OFF_TOLERANCE, "Criticality should never be greather than one");
 
@@ -604,4 +663,75 @@ void print_tatum_cpds(std::vector<tatum::TimingPathInfo> cpds) {
     for (auto path : cpds) {
         VTR_LOG("Tatum   %zu -> %zu: least_slack=%g cpd=%g\n", size_t(path.launch_domain()), size_t(path.capture_domain()), float(path.slack()), float(path.delay()));
     }
+}
+
+tatum::NodeId id_or_pin_name_to_tnode(std::string pin_name_or_tnode) {
+    std::istringstream ss(pin_name_or_tnode);
+    int id;
+    if (ss >> id) { //Successfully converted
+
+        if (id < 0) {
+            return tatum::NodeId::INVALID();
+        } else {
+            return tatum::NodeId(id);
+        }
+    }
+
+    return pin_name_to_tnode(pin_name_or_tnode);
+}
+
+tatum::NodeId pin_name_to_tnode(std::string pin_name) {
+    auto& atom_ctx = g_vpr_ctx.atom();
+
+    AtomPinId pin = atom_ctx.nlist.find_pin(pin_name);
+
+    if (!pin) {
+        VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Failed to find pin named '%s'\n", pin_name.c_str());
+    }
+
+    tatum::NodeId tnode = atom_ctx.lookup.atom_pin_tnode(pin);
+
+    if (!tnode) {
+        VPR_THROW(VPR_ERROR_TIMING, "Failed to find tnode for pin '%s' (pin: %zu)\n", pin_name.c_str(), size_t(pin));
+    }
+
+    return tnode;
+}
+
+void write_setup_timing_graph_dot(std::string filename, SetupTimingInfo& timing_info, tatum::NodeId debug_node) {
+    auto& timing_graph = *timing_info.timing_graph();
+
+    auto dot_writer = tatum::make_graphviz_dot_writer(timing_graph, *timing_info.delay_calculator());
+
+    std::vector<tatum::NodeId> nodes;
+    if (debug_node) {
+        //Transitive fanin/fanout
+        nodes = tatum::find_transitively_connected_nodes(timing_graph, {debug_node});
+    } else {
+        //All
+        auto tg_nodes = timing_graph.nodes();
+        nodes = std::vector<tatum::NodeId>(tg_nodes.begin(), tg_nodes.end());
+    }
+    dot_writer.set_nodes_to_dump(nodes);
+
+    dot_writer.write_dot_file(filename, *timing_info.setup_analyzer());
+}
+
+void write_hold_timing_graph_dot(std::string filename, HoldTimingInfo& timing_info, tatum::NodeId debug_node) {
+    auto& timing_graph = *timing_info.timing_graph();
+
+    auto dot_writer = tatum::make_graphviz_dot_writer(timing_graph, *timing_info.delay_calculator());
+
+    std::vector<tatum::NodeId> nodes;
+    if (debug_node) {
+        //Transitive fanin/fanout
+        nodes = tatum::find_transitively_connected_nodes(timing_graph, {debug_node});
+    } else {
+        //All
+        auto tg_nodes = timing_graph.nodes();
+        nodes = std::vector<tatum::NodeId>(tg_nodes.begin(), tg_nodes.end());
+    }
+    dot_writer.set_nodes_to_dump(nodes);
+
+    dot_writer.write_dot_file(filename, *timing_info.hold_analyzer());
 }

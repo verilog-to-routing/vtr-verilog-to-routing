@@ -160,6 +160,6 @@ void AtomLookup::set_atom_pin_tnode(const AtomPinId pin, const tatum::NodeId nod
         atom_pin_tnode_internal_[pin] = node;
     }
 
-    //Each tnode maps to precisely one pin
+    //Each tnode maps to precisely one pin at any point in time
     tnode_atom_pin_[node] = pin;
 }

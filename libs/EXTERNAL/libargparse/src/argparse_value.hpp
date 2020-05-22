@@ -19,7 +19,7 @@ namespace argparse {
             operator bool() { return valid(); }
             bool valid() const { return !errored_; }
         private:
-            T value_;
+            T value_ = T();
             std::string error_msg_;
             bool errored_ = true;
     };

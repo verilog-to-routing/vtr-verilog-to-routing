@@ -104,33 +104,29 @@ static e_directionality switch_type_directionaity(SwitchType type) {
  * t_physical_tile_type
  */
 std::vector<int> t_physical_tile_type::get_clock_pins_indices() const {
-    std::vector<int> indices; // function return vector
+    for (auto pin_index : this->clock_pin_indices) {
+        VTR_ASSERT(pin_index < this->num_pins);
+    }
 
-    // Temporary variables
-    int clock_pins_start_idx = 0;
-    int clock_pins_stop_idx = 0;
+    return this->clock_pin_indices;
+}
 
-    for (int capacity_num = 0; capacity_num < this->capacity; capacity_num++) {
-        // Ranges are picked on the basis that pins are ordered: inputs, outputs, then clock pins
-        // This is because ProcessPb_type assigns pb_type port indices in that order and
-        // SetupPinLocationsAndPinClasses assigns t_logical_block_type_ptr pin indices in the order of port indices
-        // TODO: This pin ordering assumption is also used functions such as load_external_nets_and_cb
-        //       either remove this assumption all togther and create a better mapping or make use of
-        //       the same functions throughout the code that return the pin ranges.
-        clock_pins_start_idx = this->num_input_pins + this->num_output_pins + clock_pins_stop_idx;
-        clock_pins_stop_idx = clock_pins_start_idx + this->num_clock_pins;
+int t_physical_tile_type::get_sub_tile_loc_from_pin(int pin_num) const {
+    VTR_ASSERT(pin_num < this->num_pins);
 
-        for (int pin_idx = clock_pins_start_idx; pin_idx < clock_pins_stop_idx; pin_idx++) {
-            indices.push_back(pin_idx);
+    for (auto sub_tile : this->sub_tiles) {
+        auto max_inst_pins = sub_tile.num_phy_pins / sub_tile.capacity.total();
+
+        for (int pin = 0; pin < sub_tile.num_phy_pins; pin++) {
+            if (sub_tile.sub_tile_to_tile_pin_indices[pin] == pin_num) {
+                //If the physical tile pin matches pin_num, return the
+                //corresponding absolute capacity location of the sub_tile
+                return pin / max_inst_pins + sub_tile.capacity.low;
+            }
         }
     }
 
-    // assert that indices are not out of bounds by checking the last index inserted
-    if (!indices.empty()) {
-        VTR_ASSERT(indices.back() < this->num_pins);
-    }
-
-    return indices;
+    return OPEN;
 }
 
 /**

@@ -1,0 +1,28 @@
+.model top
+.inputs in_0 in_1 in_2 in_3 in_4 in_5 in_6 in_7
+.outputs out_0 out_1 out_2 out_3 out_4 out_5 out_6
+.names $false
+.names $true
+1
+.subckt IO_0 in=in_0 enable=in_7 out=wire_0
+.subckt IO_1 in=wire_1 out=out_0
+
+.subckt IO_0 in=in_1 out=wire_1
+.subckt IO_1 in=wire_1 out=out_1
+
+.subckt IO_1 in=in_2 out=wire_2
+.subckt IO_3 in=wire_2 out=out_2
+
+.subckt IO_1 in=in_3 out=wire_3
+.subckt IO_2 in=wire_3 out=out_3
+
+.subckt IO_0 in=in_4 out=wire_4
+.subckt IO_3 in=wire_4 out=out_4
+
+.subckt IO_3 in=in_5 out=wire_5
+.subckt IO_2 in=wire_5 out=out_5
+
+.subckt IO_1 in=in_6 out=wire_6
+.subckt IO_1 in=wire_6 out=out_6
+
+.end

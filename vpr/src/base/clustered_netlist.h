@@ -68,12 +68,12 @@
  * Pins
  * ----
  * The only piece of unique pin information is:
- *       physical_pin_index_
+ *       logical_pin_index_
  *
- * Example of physical_pin_index_
+ * Example of logical_pin_index_
  * ---------------------
- * Given a ClusterPinId, physical_pin_index_ will return the index of the pin within its block
- * relative to the t_logical_block_type (physical description of the block).
+ * Given a ClusterPinId, logical_pin_index_ will return the index of the pin within its block
+ * relative to the t_logical_block_type (logical description of the block).
  *
  *           +-----------+
  *       0-->|O         X|-->3
@@ -83,7 +83,7 @@
  *
  * The index skips over unused pins, e.g. CLB has 6 pins (3 in, 3 out, numbered [0...5]), where
  * the first two ins, and last two outs are used. Indices [0,1] represent the ins, and [4,5]
- * represent the outs. Indices [2,3] are unused. Therefore, physical_pin_index_[92] = 5.
+ * represent the outs. Indices [2,3] are unused. Therefore, logical_pin_index_[92] = 5.
  *
  * Nets
  * ----
@@ -134,8 +134,8 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     //Returns the count on the net of the block attached
     int block_pin_net_index(const ClusterBlockId blk_id, const int pin_index) const;
 
-    //Returns the logical pin Id associated with the specified block and physical pin index
-    ClusterPinId block_pin(const ClusterBlockId blk, const int phys_pin_index) const;
+    //Returns the logical pin Id associated with the specified block and logical pin index
+    ClusterPinId block_pin(const ClusterBlockId blk, const int logical_pin_index) const;
 
     //Returns true if the specified block contains a primary input (e.g. BLIF .input primitive)
     bool block_contains_primary_input(const ClusterBlockId blk) const;
@@ -147,16 +147,16 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
      * Pins
      */
 
-    //Returns the physical pin index (i.e. pin index on the
-    //t_logical_block_type) of the specified logical pin
-    int pin_physical_index(const ClusterPinId id) const;
+    //Returns the logical pin index (i.e. pin index on the
+    //t_logical_block_type) of the cluster pin
+    int pin_logical_index(const ClusterPinId pin_id) const;
 
     //Finds the net_index'th net pin (e.g. the 6th pin of the net) and
-    //returns the physical pin index (i.e. pin index on the t_logical_block_type)
+    //returns the logical pin index (i.e. pin index on the t_logical_block_type)
     //of the block to which the pin belongs
     //  net_id        : The net
     //  net_pin_index : The index of the pin in the net
-    int net_pin_physical_index(const ClusterNetId net_id, int net_pin_index) const;
+    int net_pin_logical_index(const ClusterNetId net_id, int net_pin_index) const;
 
     /*
      * Nets
@@ -189,11 +189,6 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     //  pin_index  : The index of the pin relative to its block, excluding OPEN pins)
     //  is_const   : Indicates whether the pin holds a constant value (e. g. vcc/gnd)
     ClusterPinId create_pin(const ClusterPortId port_id, BitIndex port_bit, const ClusterNetId net_id, const PinType pin_type, int pin_index, bool is_const = false);
-
-    //Sets the mapping of a ClusterPinId to the block's type descriptor's pin index
-    //  pin_id   : The pin to be set
-    //  index    : The new index to set the pin to
-    void set_pin_physical_index(const ClusterPinId pin_id, const int index);
 
     //Create an empty, or return an existing net in the netlist
     //  name     : The unique name of the net
@@ -245,12 +240,13 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
   private: //Private Data
     //Blocks
     vtr::vector_map<ClusterBlockId, t_pb*> block_pbs_;                              //Physical block representing the clustering & internal hierarchy of each CLB
-    vtr::vector_map<ClusterBlockId, t_logical_block_type_ptr> block_types_;         //The type of physical block this user circuit block is mapped to
-    vtr::vector_map<ClusterBlockId, std::vector<ClusterPinId>> block_logical_pins_; //The logical pin associated with each physical block pin
+    vtr::vector_map<ClusterBlockId, t_logical_block_type_ptr> block_types_;         //The type of logical block this user circuit block is mapped to
+    vtr::vector_map<ClusterBlockId, std::vector<ClusterPinId>> block_logical_pins_; //The logical pin associated with each physical tile pin
 
     //Pins
-    vtr::vector_map<ClusterPinId, int> pin_physical_index_; //The physical pin index (i.e. pin index
-                                                            //in t_logical_block_type) of logical pins
+    vtr::vector_map<ClusterPinId, int> pin_logical_index_; //The logical pin index of this block (i.e. pin index
+                                                           //in t_logical_block_type) corresponding
+                                                           //to the clustered pin
 
     //Nets
     vtr::vector_map<ClusterNetId, bool> net_is_ignored_; //Boolean mapping indicating if the net is ignored

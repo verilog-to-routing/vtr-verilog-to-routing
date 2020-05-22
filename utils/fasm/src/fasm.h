@@ -53,7 +53,7 @@ namespace fasm {
 class FasmWriterVisitor : public NetlistVisitor {
 
   public:
-      FasmWriterVisitor(std::ostream& f);
+      FasmWriterVisitor(vtr::string_internment *strings, std::ostream& f);
 
   private:
       void visit_top_impl(const char* top_level_name) override;
@@ -66,12 +66,12 @@ class FasmWriterVisitor : public NetlistVisitor {
       void finish_impl() override;
 
   private:
-      void output_fasm_features(std::string features) const;
-      void output_fasm_features(bool have_clb_prefix, std::string clb_prefix, std::string features) const;
+      void output_fasm_features(const std::string features) const;
+      void output_fasm_features(const std::string features, const std::string clb_prefix, const std::string blk_prefix) const;
       void check_features(const t_metadata_dict *meta) const;
       void check_interconnect(const t_pb_routes &pb_route, int inode);
       void check_for_lut(const t_pb* atom);
-      void output_fasm_mux(std::string fasm_mux, t_interconnect *interconnect, t_pb_graph_pin *mux_input_pin);
+      void output_fasm_mux(std::string fasm_mux, t_interconnect *interconnect, const t_pb_graph_pin *mux_input_pin);
       void walk_routing();
       void walk_route_tree(const t_rt_node *root);
       std::string build_clb_prefix(const t_pb *pb, const t_pb_graph_node* pb_graph_node, bool* is_parent_pb_null) const;
@@ -81,19 +81,34 @@ class FasmWriterVisitor : public NetlistVisitor {
       // Walk from node to parents and search for a CLB prefix.
       void find_clb_prefix(const t_pb_graph_node *node,
         bool *have_prefix, std::string *clb_prefix) const;
+      std::string handle_fasm_prefix(const t_metadata_dict *meta,
+        const t_pb_graph_node *pb_graph_node, const t_pb_type *pb_type) const;
+      const t_metadata_dict *get_fasm_type(const t_pb_graph_node* pb_graph_node, std::string target_type) const;
 
+      vtr::string_internment *strings_;
       std::ostream& os_;
 
-      t_pb_graph_node *root_clb_;
-      bool current_blk_has_prefix_;
-      t_physical_tile_type_ptr blk_type_;
+      t_pb_graph_node *root_clb_ = nullptr;
+      bool current_blk_has_prefix_ = false;
+      t_physical_tile_type_ptr physical_tile_ = nullptr;
+      t_logical_block_type_ptr logical_block_ = nullptr;
       std::string blk_prefix_;
       std::string clb_prefix_;
       std::map<const t_pb_graph_node *, std::string> clb_prefix_map_;
       ClusterBlockId current_blk_id_;
-      std::vector<t_pb_graph_pin**> pb_graph_pin_lookup_from_index_by_type_;
+      IntraLbPbPinLookup pb_graph_pin_lookup_from_index_by_type_;
       std::map<const t_pb_type*, std::vector<std::pair<std::string, LutOutputDefinition>>> lut_definitions_;
       std::map<const t_pb_type*, Parameters> parameters_;
+
+      std::map<const std::string, std::string> tags_;
+
+      vtr::interned_string fasm_lut;
+      vtr::interned_string fasm_features;
+      vtr::interned_string fasm_params;
+      vtr::interned_string fasm_prefix;
+      vtr::interned_string fasm_placeholders;
+      vtr::interned_string fasm_type;
+      vtr::interned_string fasm_mux;
 };
 
 } // namespace fasm

@@ -1,0 +1,24 @@
+language: cpp
+dist: trusty #Ubuntu 14.04 by default
+sudo: false #Use container based infrastructure
+
+matrix:
+    include:
+        #Extensive testing for base compiler
+        - env: MATRIX_EVAL="CC=gcc-5 CXX=g++-5"
+          addons: { apt: { packages: ["cmake", "g++-5"], sources: ["ubuntu-toolchain-r-test"] } }
+before_install:
+    - eval "${MATRIX_EVAL}" #Set compiler versions
+    - echo $CC
+    - echo $CXX
+
+script:
+    #Build
+    - mkdir -p build
+    - pushd build 
+    - cmake .. 
+    - make -j2
+
+    #Test
+    - ./argparse_example -h
+    - ./argparse_test

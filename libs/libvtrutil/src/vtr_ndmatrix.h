@@ -33,8 +33,9 @@ class NdMatrixProxy {
         , dim_strides_(dim_strides)
         , start_(start) {}
 
+    NdMatrixProxy<T, N>& operator=(const NdMatrixProxy<T, N>& other) = delete;
+
     const NdMatrixProxy<T, N - 1> operator[](size_t index) const {
-        VTR_ASSERT_SAFE_MSG(index >= 0, "Index out of range (below dimension minimum)");
         VTR_ASSERT_SAFE_MSG(index < dim_sizes_[0], "Index out of range (above dimension maximum)");
         VTR_ASSERT_SAFE_MSG(dim_sizes_[1] > 0, "Can not index into zero-sized dimension");
 
@@ -65,9 +66,10 @@ class NdMatrixProxy<T, 1> {
         , dim_strides_(dim_stride)
         , start_(start) {}
 
+    NdMatrixProxy<T, 1>& operator=(const NdMatrixProxy<T, 1>& other) = delete;
+
     const T& operator[](size_t index) const {
         VTR_ASSERT_SAFE_MSG(dim_strides_[0] == 1, "Final dimension must have stride 1");
-        VTR_ASSERT_SAFE_MSG(index >= 0, "Index out of range (below dimension minimum)");
         VTR_ASSERT_SAFE_MSG(index < dim_sizes_[0], "Index out of range (above dimension maximum)");
 
         //Base case
@@ -315,7 +317,6 @@ class NdMatrix : public NdMatrixBase<T, N> {
     const NdMatrixProxy<T, N - 1> operator[](size_t index) const {
         VTR_ASSERT_SAFE_MSG(this->dim_size(0) > 0, "Can not index into size zero dimension");
         VTR_ASSERT_SAFE_MSG(this->dim_size(1) > 0, "Can not index into size zero dimension");
-        VTR_ASSERT_SAFE_MSG(index >= 0, "Index out of range (below dimension minimum)");
         VTR_ASSERT_SAFE_MSG(index < this->dim_sizes_[0], "Index out of range (above dimension maximum)");
 
         //Peel off the first dimension

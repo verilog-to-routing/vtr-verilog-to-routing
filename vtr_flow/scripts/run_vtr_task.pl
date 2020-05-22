@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 ###################################################################################
 # This script executes one or more VTR tasks
 #
@@ -209,6 +209,7 @@ exit $num_total_failures;
 sub generate_single_task_actions {
 	my $circuits_dir;
 	my $archs_dir;
+	my $sdc_dir = undef;
 	my $script_default = "run_vtr_flow.pl";
 	my $script         = $script_default;
 	my $script_path;
@@ -254,6 +255,8 @@ sub generate_single_task_actions {
 			$circuits_dir = $value;
 		} elsif ( $key eq "archs_dir" ) {
 			$archs_dir = $value;
+		} elsif ( $key eq "sdc_dir" ) {
+			$sdc_dir = $value;
 		} elsif ( $key eq "circuit_list_add" ) {
 			push( @circuits_list, $value );
 		} elsif ( $key eq "arch_list_add" ) {
@@ -314,6 +317,19 @@ sub generate_single_task_actions {
 	else {
 		die "Archs directory not found ($archs_dir)";
 	}
+
+
+    if (defined $sdc_dir) {
+        $sdc_dir    = expand_user_path($sdc_dir);
+        if ( -d "$vtr_flow_path/$sdc_dir" ) {
+            $sdc_dir = "$vtr_flow_path/$sdc_dir";
+        }
+        elsif ( -d $sdc_dir ) {
+        }
+        else {
+            die "SDC directory not found ($sdc_dir)";
+        }
+    }
 
 	(@circuits_list) or die "No circuits specified for task $task";
 	(@archs_list)    or die "No architectures specified for task $task";
@@ -440,7 +456,7 @@ sub generate_single_task_actions {
                 my $expect_fail = "";
                 my $expected_vpr_status = ret_expected_vpr_status($circuit, $arch, $full_params_dirname, $golden_results_file);
                 if ($expected_vpr_status ne "success" and $expected_vpr_status ne "Unkown") {
-                    $expect_fail = "-expect_fail";
+                    $expect_fail = "-expect_fail '$expected_vpr_status'";
                 }
 
                 my $show_failure_args = "";
@@ -448,8 +464,14 @@ sub generate_single_task_actions {
                     $show_failure_args = "-show_failures";
                 }
 
+                my $sdc_arg = "";
+                if ($sdc_dir) {
+                    (my $name, my $dir, my $ext) = fileparse($circuit, "\.[^.]*");
+                    $sdc_arg = "-sdc_file $sdc_dir/$name.sdc"
+                }
+
                 #Build the command to run
-                my $command = "$script_path $circuits_dir/$circuit $archs_dir/$arch $expect_fail -name $name $show_failure_args $full_params";
+                my $command = "$script_path $circuits_dir/$circuit $archs_dir/$arch $sdc_arg $expect_fail -name $name $show_failure_args $full_params";
 
                 #Add a hint about the minimum channel width (potentially saves run-time)
                 my $expected_min_W = ret_expected_min_W($circuit, $arch, $full_params_dirname, $golden_results_file);
@@ -613,7 +635,7 @@ sub create_run_script {
 
     open(my $fh, '>', $run_script_file);
 
-    print $fh "#!/bin/bash\n";
+    print $fh "#!/usr/bin/env bash\n";
     print $fh "\n";
     print $fh "VTR_RUNTIME_ESTIMATE_SECONDS=$runtime_est\n";
     print $fh "VTR_MEMORY_ESTIMATE_BYTES=$memory_est\n";

@@ -60,9 +60,11 @@ double geomean(InputIterator first, InputIterator last, double init = 1.) {
         n += 1;
     }
 
-    VTR_ASSERT(n > 0.);
-
-    return std::exp((1. / n) * log_sum);
+    if (n == 0) {
+        return init;
+    } else {
+        return std::exp((1. / n) * log_sum);
+    }
 }
 
 template<typename Container>
@@ -79,8 +81,11 @@ double arithmean(InputIterator first, InputIterator last, double init = 0.) {
         n += 1;
     }
 
-    VTR_ASSERT(n > 0.);
-    return sum / n;
+    if (n == 0) {
+        return init;
+    } else {
+        return sum / n;
+    }
 }
 
 template<typename Container>

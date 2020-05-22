@@ -9,6 +9,7 @@
 #include "atom_netlist.h"
 #include "clustered_netlist.h"
 #include "vpr_utils.h"
+#include "vpr_net_pins_matrix.h"
 
 #include "atom_delay_calc.h"
 #include "clb_delay_calc.h"
@@ -17,7 +18,7 @@ class VprTimingGraphResolver; //Forward declaration
 
 class PostClusterDelayCalculator : public tatum::DelayCalculator {
   public:
-    PostClusterDelayCalculator(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, vtr::vector<ClusterNetId, float*>& net_delay);
+    PostClusterDelayCalculator(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, const ClbNetPinsMatrix<float>& net_delay);
 
     tatum::Time max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override;
     tatum::Time setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override;
@@ -66,7 +67,7 @@ class PostClusterDelayCalculator : public tatum::DelayCalculator {
   private:
     const AtomNetlist& netlist_;
     const AtomLookup& netlist_lookup_;
-    vtr::vector<ClusterNetId, float*> net_delay_;
+    const ClbNetPinsMatrix<float>& net_delay_;
 
     ClbDelayCalc clb_delay_calc_;
     AtomDelayCalc atom_delay_calc_;

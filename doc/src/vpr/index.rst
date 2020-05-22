@@ -10,6 +10,32 @@ VPR takes, as input, a description of an FPGA architecture along with a technolo
 It then performs packing, placement, and routing to map the circuit onto the FPGA.
 The output of VPR includes the FPGA configuration needed to implement the circuit and statistics about the final mapped design (eg. critical path delay, area, etc).
 
+.. |bitcoin_place| image:: https://www.verilogtorouting.org/img/bitcoin_placement_macros.gif
+    :width: 300px
+    :alt: Placement 
+
+.. |bitcoin_cpd| image:: https://www.verilogtorouting.org/img/bitcoin_cpd.gif
+    :width: 300px 
+    :alt: Critical Path 
+
+.. |bitcoin_nets| image:: https://www.verilogtorouting.org/img/bitcoin_nets.gif
+    :width: 300px
+    :alt: Wiring
+
+.. |bitcoin_routing| image:: https://www.verilogtorouting.org/img/bitcoin_routing_util.gif
+    :width: 300px 
+    :alt: Routing Usage
+
++---------------------------------------+---------------------------------------+
+| |bitcoin_place|                       + |bitcoin_cpd|                         +
+|                                       +                                       +
+| Placement (carry chains highlighted)  + Critical Path                         +
++---------------------------------------+---------------------------------------+
+| |bitcoin_nets|                        + |bitcoin_routing|                     +
+|                                       +                                       +
+| Logical Connections                   + Routing Utilization                   +
++---------------------------------------+---------------------------------------+
+
 **Motivation**
 
 The study of FPGA CAD and architecture can be a challenging process partly because of the difficulty in conducting high quality experiments.

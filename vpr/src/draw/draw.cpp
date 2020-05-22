@@ -25,6 +25,7 @@
 #include "vtr_memory.h"
 #include "vtr_log.h"
 #include "vtr_color_map.h"
+#include "vtr_path.h"
 
 #include "vpr_utils.h"
 #include "vpr_error.h"
@@ -124,13 +125,12 @@ static t_edge_size find_edge(int prev_inode, int inode);
 
 static void draw_color_map_legend(const vtr::ColorMap& cmap, ezgl::renderer* g);
 
-ezgl::color get_block_type_color(t_physical_tile_type_ptr type);
 ezgl::color lighten_color(ezgl::color color, float amount);
 
 static void draw_block_pin_util();
 
-static float get_router_rr_cost(const t_rr_node_route_inf node_inf, e_draw_router_rr_cost draw_router_rr_cost);
-static void draw_router_rr_costs(ezgl::renderer* g);
+static float get_router_expansion_cost(const t_rr_node_route_inf node_inf, e_draw_router_expansion_cost draw_router_expansion_cost);
+static void draw_router_expansion_costs(ezgl::renderer* g);
 
 static void draw_rr_costs(ezgl::renderer* g, const std::vector<float>& rr_costs, bool lowest_cost_first = true);
 
@@ -144,13 +144,14 @@ void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application* app, 
 void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/);
 void setup_default_ezgl_callbacks(ezgl::application* app);
 void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
+void run_graphics_commands(std::string commands);
 
 /************************** File Scope Variables ****************************/
 
 //The arrow head position for turning/straight-thru connections in a switch box
 constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
 constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
-constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.10;
+constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
 
 //Kelly's maximum contrast colors are selected to be easily distinguishable as described in:
 //  Kenneth Kelly, "Twenty-Two Colors of Maximum Contrast", Color Eng. 3(6), 1943
@@ -185,6 +186,7 @@ const std::vector<ezgl::color> kelly_max_contrast_colors = {
 ezgl::application::settings settings("/ezgl/main.ui",
                                      "MainWindow",
                                      "MainCanvas",
+                                     "org.verilogtorouting.vpr.PID" + std::to_string(vtr::get_pid()),
                                      setup_default_ezgl_callbacks);
 ezgl::application application(settings);
 
@@ -198,7 +200,7 @@ std::string rr_highlight_message;
 
 /********************** Subroutine definitions ******************************/
 
-void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_route_type route_type, bool save_graphics) {
+void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_route_type route_type, bool save_graphics, std::string graphics_commands) {
 #ifndef NO_GRAPHICS
     /* Call accessor functions to retrieve global variables. */
     t_draw_state* draw_state = get_draw_state_vars();
@@ -211,12 +213,15 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_rou
     draw_state->gr_automode = gr_automode_val;
     draw_state->draw_route_type = route_type;
     draw_state->save_graphics = save_graphics;
+    draw_state->graphics_commands = graphics_commands;
 
 #else
+    //Suppress unused parameter warnings
     (void)show_graphics_val;
     (void)gr_automode_val;
     (void)route_type;
     (void)save_graphics;
+    (void)graphics_commands;
 #endif // NO_GRAPHICS
 }
 
@@ -257,7 +262,7 @@ void draw_main_canvas(ezgl::renderer* g) {
 
         draw_routing_costs(g);
 
-        draw_router_rr_costs(g);
+        draw_router_expansion_costs(g);
 
         draw_routing_util(g);
 
@@ -273,6 +278,15 @@ void draw_main_canvas(ezgl::renderer* g) {
     if (draw_state->color_map) {
         draw_color_map_legend(*draw_state->color_map, g);
         draw_state->color_map.reset(); //Free color map in preparation for next redraw
+    }
+
+    if (draw_state->auto_proceed) {
+        //Automatically exit the event loop, so user's don't need to manually click proceed
+
+        //Avoid trying to repeatedly exit (which would cause errors in GTK)
+        draw_state->auto_proceed = false;
+
+        application.quit(); //Ensure we leave the event loop
     }
 }
 
@@ -329,7 +343,7 @@ void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app, bool is_new_wind
     button_for_toggle_congestion_cost();
     button_for_toggle_routing_bounding_box();
     button_for_toggle_routing_util();
-    button_for_toggle_router_rr_costs();
+    button_for_toggle_router_expansion_costs();
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -342,14 +356,14 @@ void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app, bool is_new_wind
     std::string toggle_routing_congestion_cost = "toggle_routing_congestion_cost";
     std::string toggle_routing_bounding_box = "toggle_routing_bounding_box";
     std::string toggle_routing_util = "toggle_rr";
-    std::string toggle_router_rr_costs = "toggle_router_rr_costs";
+    std::string toggle_router_expansion_costs = "toggle_router_expansion_costs";
 
     delete_button(toggle_rr.c_str());
     delete_button(toggle_congestion.c_str());
     delete_button(toggle_routing_congestion_cost.c_str());
     delete_button(toggle_routing_bounding_box.c_str());
     delete_button(toggle_routing_util.c_str());
-    delete_button(toggle_router_rr_costs.c_str());
+    delete_button(toggle_router_expansion_costs.c_str());
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -385,7 +399,7 @@ void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app, bool is_new_win
     button_for_toggle_congestion_cost();
     button_for_toggle_routing_bounding_box();
     button_for_toggle_routing_util();
-    button_for_toggle_router_rr_costs();
+    button_for_toggle_router_expansion_costs();
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -411,92 +425,76 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
     else
         ezgl::set_disable_event_loop(false);
 
-    //Has the user asked us to pause at the next screen updated?
-    if (int(priority) >= draw_state->gr_automode || draw_state->forced_pause) {
+    ezgl::setup_callback_fn init_setup = nullptr;
+
+    /* If it's the type of picture displayed has changed, set up the proper  *
+     * buttons.                                                              */
+    if (draw_state->pic_on_screen != pic_on_screen_val) { //State changed
+
+        if (draw_state->pic_on_screen == NO_PICTURE) {
+            //Only add the canvas the first time we open graphics
+            application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
+        }
+
+        draw_state->setup_timing_info = setup_timing_info;
+
+        if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == NO_PICTURE) {
+            if (setup_timing_info) {
+                init_setup = initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path;
+            } else {
+                init_setup = initial_setup_NO_PICTURE_to_PLACEMENT;
+            }
+            draw_state->save_graphics_file_base = "vpr_placement";
+
+        } else if (pic_on_screen_val == ROUTING && draw_state->pic_on_screen == PLACEMENT) {
+            //Routing, opening after placement
+            init_setup = initial_setup_PLACEMENT_to_ROUTING;
+            draw_state->save_graphics_file_base = "vpr_routing";
+
+        } else if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == ROUTING) {
+            init_setup = initial_setup_ROUTING_to_PLACEMENT;
+            draw_state->save_graphics_file_base = "vpr_placement";
+
+        } else if (pic_on_screen_val == ROUTING && draw_state->pic_on_screen == NO_PICTURE) {
+            //Routing opening first
+            if (setup_timing_info) {
+                init_setup = initial_setup_NO_PICTURE_to_ROUTING_with_crit_path;
+            } else {
+                init_setup = initial_setup_NO_PICTURE_to_ROUTING;
+            }
+            draw_state->save_graphics_file_base = "vpr_routing";
+        }
+
+        draw_state->pic_on_screen = pic_on_screen_val;
+
+    } else {
+        //No change (e.g. paused)
+        init_setup = nullptr;
+    }
+
+    bool state_change = (init_setup != nullptr);
+    bool should_pause = int(priority) >= draw_state->gr_automode;
+
+    //If there was a state change, we must call ezgl::application::run() to update the buttons.
+    //However, by default this causes graphics to pause for user interaction.
+    //
+    //If the priority is such that we shouldn't pause we need to continue automatically, so
+    //the user won't need to click manually.
+    draw_state->auto_proceed = (state_change && !should_pause);
+
+    if (state_change                   //Must update buttons
+        || should_pause                //The priority means graphics should pause for user interaction
+        || draw_state->forced_pause) { //The user asked to pause
+
         if (draw_state->forced_pause) {
             VTR_LOG("Pausing in interactive graphics (user pressed 'Pause')\n");
             draw_state->forced_pause = false; //Reset pause flag
         }
-        vtr::strncpy(draw_state->default_message, msg, vtr::bufsize);
 
-        /* If it's the type of picture displayed has changed, set up the proper  *
-         * buttons.                                                              */
-        if (draw_state->pic_on_screen != pic_on_screen_val) { //State changed
+        application.run(init_setup, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
 
-            if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == NO_PICTURE) {
-                draw_state->pic_on_screen = pic_on_screen_val;
-                //Placement first to open
-                if (setup_timing_info) {
-                    draw_state->setup_timing_info = setup_timing_info;
-                    application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                    if (draw_state->save_graphics) {
-                        std::string extension = "pdf";
-                        std::string file_name = "vpr_placement";
-                        save_graphics(extension, file_name);
-                    }
-                    application.run(initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
-                } else {
-                    draw_state->setup_timing_info = setup_timing_info;
-                    application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                    if (draw_state->save_graphics) {
-                        std::string extension = "pdf";
-                        std::string file_name = "vpr_placement";
-                        save_graphics(extension, file_name);
-                    }
-                    application.run(initial_setup_NO_PICTURE_to_PLACEMENT, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
-                }
-            } else if (pic_on_screen_val == ROUTING && draw_state->pic_on_screen == PLACEMENT) {
-                //Routing, opening after placement
-                draw_state->setup_timing_info = setup_timing_info;
-                draw_state->pic_on_screen = pic_on_screen_val;
-
-                application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                if (draw_state->save_graphics) {
-                    std::string extension = "pdf";
-                    std::string file_name = "vpr_routing";
-                    save_graphics(extension, file_name);
-                }
-                application.run(initial_setup_PLACEMENT_to_ROUTING, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
-            } else if (pic_on_screen_val == PLACEMENT && draw_state->pic_on_screen == ROUTING) {
-                draw_state->setup_timing_info = setup_timing_info;
-                draw_state->pic_on_screen = pic_on_screen_val;
-
-                //Placement, opening after routing
-                application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                if (draw_state->save_graphics) {
-                    std::string extension = "pdf";
-                    std::string file_name = "vpr_placement";
-                    save_graphics(extension, file_name);
-                }
-                application.run(initial_setup_ROUTING_to_PLACEMENT, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
-            } else if (pic_on_screen_val == ROUTING
-                       && draw_state->pic_on_screen == NO_PICTURE) {
-                draw_state->pic_on_screen = pic_on_screen_val;
-
-                //Routing opening first
-                if (setup_timing_info) {
-                    draw_state->setup_timing_info = setup_timing_info;
-                    application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                    if (draw_state->save_graphics) {
-                        std::string extension = "pdf";
-                        std::string file_name = "vpr_routing";
-                        save_graphics(extension, file_name);
-                    }
-                    application.run(initial_setup_NO_PICTURE_to_ROUTING_with_crit_path, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
-                } else {
-                    draw_state->setup_timing_info = setup_timing_info;
-                    application.add_canvas("MainCanvas", draw_main_canvas, initial_world);
-                    if (draw_state->save_graphics) {
-                        std::string extension = "pdf";
-                        std::string file_name = "vpr_routing";
-                        save_graphics(extension, file_name);
-                    }
-                    application.run(initial_setup_NO_PICTURE_to_ROUTING, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
-                }
-            }
-        } else {
-            //No change (e.g. paused)
-            application.run(nullptr, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
+        if (!draw_state->graphics_commands.empty()) {
+            run_graphics_commands(draw_state->graphics_commands);
         }
     }
 
@@ -504,6 +502,11 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
         application.update_message(msg);
         application.refresh_drawing();
         application.flush_drawing();
+    }
+
+    if (draw_state->save_graphics) {
+        std::string extension = "pdf";
+        save_graphics(extension, draw_state->save_graphics_file_base);
     }
 
 #else
@@ -780,28 +783,37 @@ void toggle_crit_path(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*da
     application.refresh_drawing();
 }
 
-void toggle_router_rr_costs(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
-    /* this is the callback function for runtime created toggle_router_rr_costs button 
+void toggle_router_expansion_costs(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    /* this is the callback function for runtime created toggle_router_expansion_costs button 
      * which is written in button.cpp                                         */
     t_draw_state* draw_state = get_draw_state_vars();
-    std::string button_name = "toggle_router_rr_costs";
-    auto toggle_router_rr_costs = find_button(button_name.c_str());
+    std::string button_name = "toggle_router_expansion_costs";
+    auto toggle_router_expansion_costs = find_button(button_name.c_str());
 
-    e_draw_router_rr_cost new_state;
-    gchar* combo_box_content = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(toggle_router_rr_costs));
+    e_draw_router_expansion_cost new_state;
+    gchar* combo_box_content = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(toggle_router_expansion_costs));
     if (strcmp(combo_box_content, "None") == 0) {
-        new_state = DRAW_NO_ROUTER_RR_COST;
-    } else if (strcmp(combo_box_content, "Total") == 0)
-        new_state = DRAW_ROUTER_RR_COST_TOTAL;
-    else if (strcmp(combo_box_content, "Known") == 0)
-        new_state = DRAW_ROUTER_RR_COST_KNOWN;
-    else
-        new_state = DRAW_ROUTER_RR_COST_EXPECTED;
+        new_state = DRAW_NO_ROUTER_EXPANSION_COST;
+    } else if (strcmp(combo_box_content, "Total") == 0) {
+        new_state = DRAW_ROUTER_EXPANSION_COST_TOTAL;
+    } else if (strcmp(combo_box_content, "Known") == 0) {
+        new_state = DRAW_ROUTER_EXPANSION_COST_KNOWN;
+    } else if (strcmp(combo_box_content, "Expected") == 0) {
+        new_state = DRAW_ROUTER_EXPANSION_COST_EXPECTED;
+    } else if (strcmp(combo_box_content, "Total (with edges)") == 0) {
+        new_state = DRAW_ROUTER_EXPANSION_COST_TOTAL_WITH_EDGES;
+    } else if (strcmp(combo_box_content, "Known (with edges)") == 0) {
+        new_state = DRAW_ROUTER_EXPANSION_COST_KNOWN_WITH_EDGES;
+    } else if (strcmp(combo_box_content, "Expected (with edges)") == 0) {
+        new_state = DRAW_ROUTER_EXPANSION_COST_EXPECTED_WITH_EDGES;
+    } else {
+        VPR_THROW(VPR_ERROR_DRAW, "Unrecognzied draw RR cost option");
+    }
 
     g_free(combo_box_content);
-    draw_state->show_router_rr_cost = new_state;
+    draw_state->show_router_expansion_cost = new_state;
 
-    if (draw_state->show_router_rr_cost == DRAW_NO_ROUTER_RR_COST) {
+    if (draw_state->show_router_expansion_cost == DRAW_NO_ROUTER_EXPANSION_COST) {
         application.update_message(draw_state->default_message);
     }
     application.refresh_drawing();
@@ -826,7 +838,8 @@ void alloc_draw_structs(const t_arch* arch) {
     draw_internal_alloc_blk();
 
     draw_state->net_color.resize(cluster_ctx.clb_nlist.nets().size());
-    draw_state->block_color.resize(cluster_ctx.clb_nlist.blocks().size());
+    draw_state->block_color_.resize(cluster_ctx.clb_nlist.blocks().size());
+    draw_state->use_default_block_color_.resize(cluster_ctx.clb_nlist.blocks().size());
 
     /* Space is allocated for draw_rr_node but not initialized because we do *
      * not yet know information about the routing resources.				  */
@@ -876,7 +889,7 @@ void init_draw_coords(float width_val) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
 
-    if (!draw_state->show_graphics && !draw_state->save_graphics)
+    if (!draw_state->show_graphics && !draw_state->save_graphics && draw_state->graphics_commands.empty())
         return; //do not initialize only if --disp off and --save_graphics off
     /* Each time routing is on screen, need to reallocate the color of each *
      * rr_node, as the number of rr_nodes may change.						*/
@@ -934,6 +947,7 @@ static void drawplace(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
     ClusterBlockId bnum;
@@ -961,15 +975,20 @@ static void drawplace(ezgl::renderer* g) {
                 if (bnum == INVALID_BLOCK_ID) continue;
                 //Determine the block color
                 ezgl::color block_color;
+                t_logical_block_type_ptr logical_block_type = nullptr;
                 if (bnum != EMPTY_BLOCK_ID) {
-                    block_color = draw_state->block_color[bnum];
+                    block_color = draw_state->block_color(bnum);
+                    logical_block_type = cluster_ctx.clb_nlist.block_type(bnum);
                 } else {
                     block_color = get_block_type_color(device_ctx.grid[i][j].type);
                     block_color = lighten_color(block_color, EMPTY_BLOCK_LIGHTEN_FACTOR);
+
+                    auto tile_type = device_ctx.grid[i][j].type;
+                    logical_block_type = pick_best_logical_type(tile_type);
                 }
                 g->set_color(block_color);
                 /* Get coords of current sub_tile */
-                ezgl::rectangle abs_clb_bbox = draw_coords->get_absolute_clb_bbox(i, j, k);
+                ezgl::rectangle abs_clb_bbox = draw_coords->get_absolute_clb_bbox(i, j, k, logical_block_type);
                 ezgl::point2d center = abs_clb_bbox.center();
 
                 g->fill_rectangle(abs_clb_bbox);
@@ -977,21 +996,25 @@ static void drawplace(ezgl::renderer* g) {
                 g->set_color(ezgl::BLACK);
 
                 g->set_line_dash((EMPTY_BLOCK_ID == bnum) ? ezgl::line_dash::asymmetric_5_3 : ezgl::line_dash::none);
-                g->draw_rectangle(abs_clb_bbox);
-                /* Draw text if the space has parts of the netlist */
-                if (bnum != EMPTY_BLOCK_ID && bnum != INVALID_BLOCK_ID) {
-                    auto& cluster_ctx = g_vpr_ctx.clustering();
-                    std::string name = cluster_ctx.clb_nlist.block_name(bnum) + vtr::string_fmt(" (#%zu)", size_t(bnum));
-
-                    g->draw_text(center, name.c_str(), abs_clb_bbox.width(), abs_clb_bbox.height());
+                if (draw_state->draw_block_outlines) {
+                    g->draw_rectangle(abs_clb_bbox);
                 }
-                /* Draw text for block type so that user knows what block */
-                if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
-                    std::string block_type_loc = device_ctx.grid[i][j].type->name;
-                    block_type_loc += vtr::string_fmt(" (%d,%d)", i, j);
 
-                    g->draw_text(center - ezgl::point2d(0, abs_clb_bbox.height() / 4),
-                                 block_type_loc.c_str(), abs_clb_bbox.width(), abs_clb_bbox.height());
+                if (draw_state->draw_block_text) {
+                    /* Draw text if the space has parts of the netlist */
+                    if (bnum != EMPTY_BLOCK_ID && bnum != INVALID_BLOCK_ID) {
+                        std::string name = cluster_ctx.clb_nlist.block_name(bnum) + vtr::string_fmt(" (#%zu)", size_t(bnum));
+
+                        g->draw_text(center, name.c_str(), abs_clb_bbox.width(), abs_clb_bbox.height());
+                    }
+                    /* Draw text for block type so that user knows what block */
+                    if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
+                        std::string block_type_loc = device_ctx.grid[i][j].type->name;
+                        block_type_loc += vtr::string_fmt(" (%d,%d)", i, j);
+
+                        g->draw_text(center - ezgl::point2d(0, abs_clb_bbox.height() / 4),
+                                     block_type_loc.c_str(), abs_clb_bbox.width(), abs_clb_bbox.height());
+                    }
                 }
             }
         }
@@ -1064,7 +1087,7 @@ static void draw_congestion(ezgl::renderer* g) {
     }
     application.update_message(msg);
 
-    std::unique_ptr<vtr::ColorMap> cmap = std::make_unique<vtr::PlasmaColorMap>(min_congestion_ratio, max_congestion_ratio);
+    std::shared_ptr<vtr::ColorMap> cmap = std::make_shared<vtr::PlasmaColorMap>(min_congestion_ratio, max_congestion_ratio);
 
     //Sort the nodes in ascending order of value for drawing, this ensures high
     //valued nodes are not overdrawn by lower value ones (e.g-> when zoomed-out far)
@@ -2037,10 +2060,10 @@ static void draw_rr_pin(int inode, const ezgl::color& color, ezgl::renderer* g) 
  * the physical pin is on.                                                  */
 void draw_get_rr_pin_coords(int inode, float* xcen, float* ycen) {
     auto& device_ctx = g_vpr_ctx.device();
-    draw_get_rr_pin_coords(&device_ctx.rr_nodes[inode], xcen, ycen);
+    draw_get_rr_pin_coords(device_ctx.rr_nodes[inode], xcen, ycen);
 }
 
-void draw_get_rr_pin_coords(const t_rr_node* node, float* xcen, float* ycen) {
+void draw_get_rr_pin_coords(const t_rr_node node, float* xcen, float* ycen) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
     int i, j, k, ipin, pins_per_sub_tile;
@@ -2048,13 +2071,13 @@ void draw_get_rr_pin_coords(const t_rr_node* node, float* xcen, float* ycen) {
     t_physical_tile_type_ptr type;
     auto& device_ctx = g_vpr_ctx.device();
 
-    i = node->xlow();
-    j = node->ylow();
+    i = node.xlow();
+    j = node.ylow();
 
     xc = draw_coords->tile_x[i];
     yc = draw_coords->tile_y[j];
 
-    ipin = node->ptc_num();
+    ipin = node.ptc_num();
     type = device_ctx.grid[i][j].type;
     pins_per_sub_tile = type->num_pins / type->capacity;
     k = ipin / pins_per_sub_tile;
@@ -2066,7 +2089,7 @@ void draw_get_rr_pin_coords(const t_rr_node* node, float* xcen, float* ycen) {
     step = (float)(draw_coords->get_tile_width()) / (float)(type->num_pins + type->capacity);
     offset = (ipin + k + 1) * step;
 
-    switch (node->side()) {
+    switch (node.side()) {
         case LEFT:
             yc += offset;
             break;
@@ -2087,7 +2110,7 @@ void draw_get_rr_pin_coords(const t_rr_node* node, float* xcen, float* ycen) {
 
         default:
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                      "in draw_get_rr_pin_coords: Unexpected side %s.\n", node->side_string());
+                      "in draw_get_rr_pin_coords: Unexpected side %s.\n", node.side_string());
             break;
     }
 
@@ -2540,8 +2563,6 @@ void act_on_key_press(ezgl::application* /*app*/, GdkEventKey* /*event*/, char* 
 #    endif
 
 void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x, double y) {
-    app->update_message("Mouse Clicked");
-
     //  std::cout << "User clicked the ";
 
     if (event->button == 1) {
@@ -2654,16 +2675,19 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type, ClusterBlockId b
     t_draw_state* draw_state = get_draw_state_vars();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    for (k = 0; k < physical_tile_type(type)->num_pins; k++) { /* Each pin on a CLB */
+    for (k = 0; k < type->pb_type->num_pins; k++) { /* Each pin on a CLB */
         ClusterNetId net_id = cluster_ctx.clb_nlist.block_net(blk_id, k);
 
         if (net_id == ClusterNetId::INVALID())
             continue;
 
-        iclass = physical_tile_type(type)->pin_class[k];
+        auto physical_tile = physical_tile_type(blk_id);
+        int physical_pin = get_physical_pin(physical_tile, type, k);
 
-        if (physical_tile_type(type)->class_inf[iclass].type == DRIVER) { /* Fanout */
-            if (draw_state->block_color[blk_id] == SELECTED_COLOR) {
+        iclass = physical_tile->pin_class[physical_pin];
+
+        if (physical_tile->class_inf[iclass].type == DRIVER) { /* Fanout */
+            if (draw_state->block_color(blk_id) == SELECTED_COLOR) {
                 /* If block already highlighted, de-highlight the fanout. (the deselect case)*/
                 draw_state->net_color[net_id] = ezgl::BLACK;
                 for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
@@ -2675,11 +2699,11 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type, ClusterBlockId b
                 draw_state->net_color[net_id] = DRIVES_IT_COLOR;
                 for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
                     fanblk = cluster_ctx.clb_nlist.pin_block(pin_id);
-                    draw_state->block_color[fanblk] = DRIVES_IT_COLOR;
+                    draw_state->set_block_color(fanblk, DRIVES_IT_COLOR);
                 }
             }
         } else { /* This net is fanin to the block. */
-            if (draw_state->block_color[blk_id] == SELECTED_COLOR) {
+            if (draw_state->block_color(blk_id) == SELECTED_COLOR) {
                 /* If block already highlighted, de-highlight the fanin. (the deselect case)*/
                 draw_state->net_color[net_id] = ezgl::BLACK;
                 fanblk = cluster_ctx.clb_nlist.net_driver_block(net_id); /* DRIVER to net */
@@ -2688,17 +2712,17 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type, ClusterBlockId b
                 /* Highlight the fanin */
                 draw_state->net_color[net_id] = DRIVEN_BY_IT_COLOR;
                 fanblk = cluster_ctx.clb_nlist.net_driver_block(net_id); /* DRIVER to net */
-                draw_state->block_color[fanblk] = DRIVEN_BY_IT_COLOR;
+                draw_state->set_block_color(fanblk, DRIVEN_BY_IT_COLOR);
             }
         }
     }
 
-    if (draw_state->block_color[blk_id] == SELECTED_COLOR) {
+    if (draw_state->block_color(blk_id) == SELECTED_COLOR) {
         /* If block already highlighted, de-highlight the selected block. */
         draw_reset_blk_color(blk_id);
     } else {
         /* Highlight the selected block. */
-        draw_state->block_color[blk_id] = SELECTED_COLOR;
+        draw_state->set_block_color(blk_id, SELECTED_COLOR);
     }
 }
 
@@ -2712,7 +2736,8 @@ void deselect_all() {
 
     /* Create some colour highlighting */
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        draw_reset_blk_color(blk_id);
+        if (blk_id != ClusterBlockId::INVALID())
+            draw_reset_blk_color(blk_id);
     }
 
     for (auto net_id : cluster_ctx.clb_nlist.nets())
@@ -2727,8 +2752,7 @@ void deselect_all() {
 
 static void draw_reset_blk_color(ClusterBlockId blk_id) {
     t_draw_state* draw_state = get_draw_state_vars();
-
-    draw_state->block_color[blk_id] = get_block_type_color(physical_tile_type(blk_id));
+    draw_state->reset_block_color(blk_id);
 }
 
 /**
@@ -3305,10 +3329,8 @@ static void draw_block_pin_util() {
             continue;
         }
 
-        t_pb_type* pb_type = logical_block_type(&type)->pb_type;
-
-        total_input_pins[&type] = pb_type->num_input_pins + pb_type->num_clock_pins;
-        total_output_pins[&type] = pb_type->num_output_pins;
+        total_input_pins[&type] = type.num_input_pins + type.num_clock_pins;
+        total_output_pins[&type] = type.num_output_pins;
     }
 
     auto blks = cluster_ctx.clb_nlist.blocks();
@@ -3331,7 +3353,7 @@ static void draw_block_pin_util() {
 
     for (auto blk : blks) {
         ezgl::color color = to_ezgl_color(cmap->color(pin_util[blk]));
-        draw_state->block_color[blk] = color;
+        draw_state->set_block_color(blk, color);
     }
 
     draw_state->color_map = std::move(cmap);
@@ -3381,7 +3403,13 @@ static void draw_routing_util(ezgl::renderer* g) {
     }
     max_util = std::max(max_util, 1.f);
 
-    std::unique_ptr<vtr::ColorMap> cmap = std::make_unique<vtr::PlasmaColorMap>(min_util, max_util);
+    std::unique_ptr<vtr::ColorMap> cmap;
+
+    if (draw_state->clip_routing_util) {
+        cmap = std::make_unique<vtr::PlasmaColorMap>(0., 1.);
+    } else {
+        cmap = std::make_unique<vtr::PlasmaColorMap>(min_util, max_util);
+    }
 
     float tile_width = draw_coords->get_tile_width();
     float tile_height = draw_coords->get_tile_height();
@@ -3399,6 +3427,9 @@ static void draw_routing_util(ezgl::renderer* g) {
             int chan_count = 0;
             if (x > 0) {
                 chanx_util = routing_util(chanx_usage[x][y], chanx_avail[x][y]);
+                if (draw_state->clip_routing_util) {
+                    chanx_util = std::min(chanx_util, 1.f);
+                }
                 ezgl::color chanx_color = to_ezgl_color(cmap->color(chanx_util));
                 chanx_color.alpha *= ALPHA;
                 g->set_color(chanx_color);
@@ -3419,6 +3450,9 @@ static void draw_routing_util(ezgl::renderer* g) {
 
             if (y > 0) {
                 chany_util = routing_util(chany_usage[x][y], chany_avail[x][y]);
+                if (draw_state->clip_routing_util) {
+                    chany_util = std::min(chany_util, 1.f);
+                }
                 ezgl::color chany_color = to_ezgl_color(cmap->color(chany_util));
                 chany_color.alpha *= ALPHA;
                 g->set_color(chany_color);
@@ -3446,6 +3480,9 @@ static void draw_routing_util(ezgl::renderer* g) {
 
             VTR_ASSERT(chan_count > 0);
             sb_util /= chan_count;
+            if (draw_state->clip_routing_util) {
+                sb_util = std::min(sb_util, 1.f);
+            }
             ezgl::color sb_color = to_ezgl_color(cmap->color(sb_util));
             sb_color.alpha *= ALPHA;
             g->set_color(sb_color);
@@ -3472,21 +3509,21 @@ static void draw_routing_util(ezgl::renderer* g) {
     draw_state->color_map = std::move(cmap);
 }
 
-static float get_router_rr_cost(const t_rr_node_route_inf node_inf, e_draw_router_rr_cost draw_router_rr_cost) {
-    if (draw_router_rr_cost == DRAW_ROUTER_RR_COST_TOTAL) {
+static float get_router_expansion_cost(const t_rr_node_route_inf node_inf, e_draw_router_expansion_cost draw_router_expansion_cost) {
+    if (draw_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_TOTAL || draw_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_TOTAL_WITH_EDGES) {
         return node_inf.path_cost;
-    } else if (draw_router_rr_cost == DRAW_ROUTER_RR_COST_KNOWN) {
+    } else if (draw_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_KNOWN || draw_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_KNOWN_WITH_EDGES) {
         return node_inf.backward_path_cost;
-    } else if (draw_router_rr_cost == DRAW_ROUTER_RR_COST_EXPECTED) {
+    } else if (draw_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_EXPECTED || draw_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_EXPECTED_WITH_EDGES) {
         return node_inf.path_cost - node_inf.backward_path_cost;
     }
 
     VPR_THROW(VPR_ERROR_DRAW, "Invalid Router RR cost drawing type");
 }
 
-static void draw_router_rr_costs(ezgl::renderer* g) {
+static void draw_router_expansion_costs(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
-    if (draw_state->show_router_rr_cost == DRAW_NO_ROUTER_RR_COST) {
+    if (draw_state->show_router_expansion_cost == DRAW_NO_ROUTER_EXPANSION_COST) {
         return;
     }
 
@@ -3496,7 +3533,7 @@ static void draw_router_rr_costs(ezgl::renderer* g) {
     std::vector<float> rr_costs(device_ctx.rr_nodes.size());
 
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); ++inode) {
-        float cost = get_router_rr_cost(routing_ctx.rr_node_route_inf[inode], draw_state->show_router_rr_cost);
+        float cost = get_router_expansion_cost(routing_ctx.rr_node_route_inf[inode], draw_state->show_router_expansion_cost);
         rr_costs[inode] = cost;
     }
 
@@ -3512,13 +3549,14 @@ static void draw_router_rr_costs(ezgl::renderer* g) {
     if (!all_nan) {
         draw_rr_costs(g, rr_costs, false);
     }
-    if (draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_TOTAL) {
+    if (draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_TOTAL || draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_TOTAL_WITH_EDGES) {
         application.update_message("Routing Expected Total Cost (known + estimate)");
-    } else if (draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_KNOWN) {
+    } else if (draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_KNOWN || draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_KNOWN_WITH_EDGES) {
         application.update_message("Routing Known Cost (from source to node)");
-    } else {
+    } else if (draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_EXPECTED || draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_EXPECTED_WITH_EDGES) {
         application.update_message("Routing Expected Cost (from node to target)");
-        VTR_ASSERT(draw_state->show_router_rr_cost == DRAW_ROUTER_RR_COST_EXPECTED);
+    } else {
+        VPR_THROW(VPR_ERROR_DRAW, "Invalid Router RR cost drawing type");
     }
 }
 
@@ -3530,6 +3568,10 @@ static void draw_rr_costs(ezgl::renderer* g, const std::vector<float>& rr_costs,
     auto& device_ctx = g_vpr_ctx.device();
 
     g->set_line_width(0);
+
+    bool with_edges = (draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_TOTAL_WITH_EDGES
+                       || draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_KNOWN_WITH_EDGES
+                       || draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_EXPECTED_WITH_EDGES);
 
     VTR_ASSERT(rr_costs.size() == device_ctx.rr_nodes.size());
 
@@ -3567,7 +3609,7 @@ static void draw_rr_costs(ezgl::renderer* g, const std::vector<float>& rr_costs,
             case CHANX: //fallthrough
             case CHANY:
                 draw_rr_chan(inode, color, g);
-                draw_rr_edges(inode, g);
+                if (with_edges) draw_rr_edges(inode, g);
                 break;
 
             case IPIN: //fallthrough
@@ -3575,7 +3617,7 @@ static void draw_rr_costs(ezgl::renderer* g, const std::vector<float>& rr_costs,
                 break;
             case OPIN:
                 draw_rr_pin(inode, color, g);
-                draw_rr_edges(inode, g);
+                if (with_edges) draw_rr_edges(inode, g);
                 break;
             case SOURCE:
             case SINK:
@@ -3688,7 +3730,7 @@ static void highlight_blocks(double x, double y) {
         }
     }
 
-    if (clb_index == EMPTY_BLOCK_ID) {
+    if (clb_index == EMPTY_BLOCK_ID || clb_index == ClusterBlockId::INVALID()) {
         //Nothing found
         return;
     }
@@ -3733,6 +3775,90 @@ void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*dat
     t_draw_state* draw_state = get_draw_state_vars();
 
     draw_state->forced_pause = true;
+}
+
+void run_graphics_commands(std::string commands) {
+    //A very simmple command interpreter for scripting graphics
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    t_draw_state backup_draw_state = *draw_state;
+
+    std::vector<std::vector<std::string>> cmds;
+    for (std::string raw_cmd : vtr::split(commands, ";")) {
+        cmds.push_back(vtr::split(raw_cmd));
+    }
+
+    for (auto& cmd : cmds) {
+        VTR_ASSERT_MSG(cmd.size() > 0, "Expect non-empty graphics commands");
+
+        for (auto& item : cmd) {
+            VTR_LOG("%s ", item.c_str());
+        }
+        VTR_LOG("\n");
+
+        if (cmd[0] == "save_graphics") {
+            VTR_ASSERT_MSG(cmd.size() == 2, "Expect filename after 'save_graphics'");
+
+            auto name_ext = vtr::split_ext(cmd[1]);
+
+            //Replace {i}  with the sequence number
+            std::string name = vtr::replace_all(name_ext[0], "{i}", std::to_string(draw_state->sequence_number));
+
+            save_graphics(/*extension=*/name_ext[1], /*filename=*/name);
+            VTR_LOG("Saving to %s\n", std::string(name + name_ext[1]).c_str());
+
+        } else if (cmd[0] == "set_macros") {
+            VTR_ASSERT_MSG(cmd.size() == 2, "Expect net draw state after 'set_macro'");
+            draw_state->show_placement_macros = (e_draw_placement_macros)vtr::atoi(cmd[1]);
+            VTR_LOG("%d\n", (int)draw_state->show_placement_macros);
+        } else if (cmd[0] == "set_nets") {
+            VTR_ASSERT_MSG(cmd.size() == 2, "Expect net draw state after 'set_nets'");
+            draw_state->show_nets = (e_draw_nets)vtr::atoi(cmd[1]);
+            VTR_LOG("%d\n", (int)draw_state->show_nets);
+        } else if (cmd[0] == "set_cpd") {
+            VTR_ASSERT_MSG(cmd.size() == 2, "Expect cpd draw state after 'set_cpd'");
+            draw_state->show_crit_path = (e_draw_crit_path)vtr::atoi(cmd[1]);
+            VTR_LOG("%d\n", (int)draw_state->show_crit_path);
+        } else if (cmd[0] == "set_routing_util") {
+            VTR_ASSERT_MSG(cmd.size() == 2, "Expect routing util draw state after 'set_routing_util'");
+            draw_state->show_routing_util = (e_draw_routing_util)vtr::atoi(cmd[1]);
+            VTR_LOG("%d\n", (int)draw_state->show_routing_util);
+        } else if (cmd[0] == "set_clip_routing_util") {
+            VTR_ASSERT_MSG(cmd.size() == 2, "Expect routing util draw state after 'set_routing_util'");
+            draw_state->clip_routing_util = (bool)vtr::atoi(cmd[1]);
+            VTR_LOG("%d\n", (int)draw_state->clip_routing_util);
+        } else if (cmd[0] == "set_congestion") {
+            VTR_ASSERT_MSG(cmd.size() == 2, "Expect congestion draw state after 'set_congestion'");
+            draw_state->show_congestion = (e_draw_congestion)vtr::atoi(cmd[1]);
+            VTR_LOG("%d\n", (int)draw_state->show_congestion);
+        } else if (cmd[0] == "set_draw_block_outlines") {
+            VTR_ASSERT_MSG(cmd.size() == 2, "Expect draw block outlines state after 'set_draw_block_outlines'");
+            draw_state->draw_block_outlines = vtr::atoi(cmd[1]);
+            VTR_LOG("%d\n", (int)draw_state->draw_block_outlines);
+        } else if (cmd[0] == "set_draw_block_text") {
+            VTR_ASSERT_MSG(cmd.size() == 2, "Expect draw block text state after 'set_draw_block_text'");
+            draw_state->draw_block_text = vtr::atoi(cmd[1]);
+            VTR_LOG("%d\n", (int)draw_state->draw_block_text);
+        } else if (cmd[0] == "set_draw_block_internals") {
+            VTR_ASSERT_MSG(cmd.size() == 2, "Expect draw state after 'set_draw_block_internals'");
+            draw_state->show_blk_internal = vtr::atoi(cmd[1]);
+            VTR_LOG("%d\n", (int)draw_state->show_blk_internal);
+        } else if (cmd[0] == "set_draw_net_max_fanout") {
+            VTR_ASSERT_MSG(cmd.size() == 2, "Expect maximum fanout after 'set_draw_net_max_fanout'");
+            draw_state->draw_net_max_fanout = vtr::atoi(cmd[1]);
+            VTR_LOG("%d\n", (int)draw_state->draw_net_max_fanout);
+        } else if (cmd[0] == "exit") {
+            VTR_ASSERT_MSG(cmd.size() == 2, "Expect exit code after 'exit'");
+            exit(vtr::atoi(cmd[1]));
+        } else {
+            VPR_ERROR(VPR_ERROR_DRAW, vtr::string_fmt("Unrecognized graphics command '%s'", cmd[0].c_str()).c_str());
+        }
+    }
+
+    *draw_state = backup_draw_state; //Restor original draw state
+
+    //Advance the sequence number
+    ++draw_state->sequence_number;
 }
 
 #endif /* NO_GRAPHICS */

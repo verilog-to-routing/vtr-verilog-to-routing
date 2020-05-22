@@ -87,7 +87,7 @@ class AtomLookup {
     tnode_pin_range tnode_atom_pins() const;
 
     //Sets the bi-directional mapping between an atom netlist pin and timing graph node
-    void set_atom_pin_tnode(const AtomPinId pin, const tatum::NodeId node, BlockTnode block_tnode_type = BlockTnode::EXTERNAL);
+    void set_atom_pin_tnode(const AtomPinId pin, const tatum::NodeId node, BlockTnode block_tnode_type);
 
   private: //Types
   private:

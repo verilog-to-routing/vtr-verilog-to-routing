@@ -41,6 +41,10 @@ file(GLOB_RECURSE LIB_SOURCES src/*/*.cpp)
 file(GLOB_RECURSE LIB_HEADERS src/*/*.h)
 files_to_dirs(LIB_HEADERS LIB_INCLUDE_DIRS)
 
+if(${VTR_ENABLE_CAPNPROTO})
+    add_definitions("-DVTR_ENABLE_CAPNPROTO")
+endif()
+
 #Create the library
 add_library(libvpr STATIC
              ${LIB_HEADERS}
@@ -98,6 +102,10 @@ endif()
 
 target_compile_definitions(libvpr PUBLIC ${GRAPHICS_DEFINES})
 
+if(${VTR_ENABLE_CAPNPROTO})
+    target_link_libraries(libvpr libvtrcapnproto)
+endif()
+
 add_executable(vpr ${EXEC_SOURCES})
 
 target_link_libraries(vpr libvpr)
@@ -110,14 +118,6 @@ if (VPR_USES_IPO)
 endif()
 
 
-
-#
-# VPR compiler options
-#
-set(VPR_COMPILE_OPTIONS_FLAGS
-    #GCC-like
-    "-Werror"
-    )
 
 #
 # Profile Guilded Optimization Configuration
@@ -158,17 +158,21 @@ else()
     message(ERROR "Unsupported VPR_PGO_CONFIG '${VPR_PGO_CONFIG}'")
 endif()
 
-if (VTR_COMPILE_OPTIONS STREQUAL "strict")
+if (VTR_ENABLE_STRICT_COMPILE)
     message(STATUS "VPR: building with strict flags")
-    foreach(flag ${VPR_COMPILE_OPTIONS_FLAGS})
+
+    set(VPR_STRICT_COMPILE_FLAGS_TO_CHECK
+        #GCC-like
+        "-Werror"
+        )
+
+    foreach(flag ${VPR_STRICT_COMPILE_FLAGS_TO_CHECK})
         message(STATUS "\tAdding CXX flag: ${flag}")
         target_compile_options(libvpr PRIVATE ${flag})
         target_compile_options(vpr PRIVATE ${flag})
         target_link_libraries(vpr ${flag})
     endforeach()
 endif()
-
-    find_package(TBB)
 
 #
 # Execution Engine Configuration
@@ -240,3 +244,25 @@ add_test(NAME test_vpr
     COMMAND test_vpr --use-colour=yes
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/test
     )
+
+add_custom_target(
+    generate_rr_graph_serializers
+    COMMAND ${CMAKE_COMMAND} -E remove_directory rr_graph_generate
+    COMMAND ${CMAKE_COMMAND} -E make_directory rr_graph_generate
+    COMMAND ${CMAKE_COMMAND} -E chdir rr_graph_generate git clone https://github.com/duck2/uxsdcxx
+    COMMAND python3 -mpip install --user -r rr_graph_generate/uxsdcxx/requirements.txt
+    COMMAND ${CMAKE_COMMAND} -E chdir rr_graph_generate python3 uxsdcxx/uxsdcxx.py ${CMAKE_CURRENT_SOURCE_DIR}/src/route/rr_graph.xsd
+    COMMAND ${CMAKE_COMMAND} -E chdir rr_graph_generate python3 uxsdcxx/uxsdcap.py ${CMAKE_CURRENT_SOURCE_DIR}/src/route/rr_graph.xsd
+    COMMAND ${CMAKE_COMMAND} -E copy
+        rr_graph_generate/rr_graph_uxsdcxx.h
+        rr_graph_generate/rr_graph_uxsdcxx_capnp.h
+        rr_graph_generate/rr_graph_uxsdcxx_interface.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/route/gen
+    COMMAND ${CMAKE_COMMAND} -E copy
+        rr_graph_generate/rr_graph_uxsdcxx.capnp
+        ${CMAKE_CURRENT_SOURCE_DIR}/../libs/libvtrcapnproto/gen
+    DEPENDS
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/route/rr_graph.xsd
+    WORKING_DIRECTORY
+        ${CMAKE_CURRENT_BINARY_DIR}
+        )

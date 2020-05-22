@@ -1,10 +1,12 @@
-#!/bin/bash
-SHELL=/bin/bash
+#!/usr/bin/env bash
+SHELL=$(type -P bash)
 
-THIS_SCRIPT_PATH=$(readlink -f $0)
-THIS_DIR=$(dirname ${THIS_SCRIPT_PATH})
+THIS_SCRIPT_PATH=$(readlink -f "$0")
+THIS_DIR=$(dirname "${THIS_SCRIPT_PATH}")
 REGRESSION_DIR="${THIS_DIR}/regression_test"
 REG_LIB="${REGRESSION_DIR}/.library"
+PARSER_DIR="${REGRESSION_DIR}/parse_result"
+PARSER_EXEC="${PARSER_DIR}/parse_result.py"
 
 source ${REG_LIB}/handle_exit.sh
 source  ${REG_LIB}/time_format.sh
@@ -14,7 +16,10 @@ export EXIT_NAME="$0"
 
 ##############################################
 # grab the input args
-INPUT=$@
+INPUT=( "$@" )
+
+RULE_FILE=""
+PARSE_OUTPUT_FILE=""
 
 TIMEOUT_EXEC="timeout"
 TIME_EXEC=$($SHELL -c "which time") 
@@ -22,6 +27,8 @@ VALGRIND_EXEC="valgrind --leak-check=full --max-stackframe=128000000 --error-exi
 PERF_EXEC="perf stat record -a -d -d -d -o"
 GDB_EXEC="gdb --args"
 EXEC_PREFIX=""
+
+TOOL_LIST=""
 
 TEST_NAME="N/A"
 LOG=""
@@ -37,6 +44,9 @@ USE_TIME="on"
 USE_LOGS="on"
 COLORIZE_OUTPUT="off"
 VERBOSE="0"
+DRY_RUN=""
+
+ARG_FILE=""
 
 function print_exit_type() {
 	CODE="$1"
@@ -88,7 +98,7 @@ function print_exit_type() {
 
 function help() {
 printf "
-Called program with $[INPUT]
+Called program with ${INPUT[*]}
 
 Usage: ./exec_wrapper.sh [options] <path/to/arguments.file>
 			--tool [ gdb, valgrind, perf ]              * run with one of the specified tool and only one
@@ -98,12 +108,20 @@ Usage: ./exec_wrapper.sh [options] <path/to/arguments.file>
 			--time_limit                                * stops Odin after X seconds
 			--limit_ressource				            * limit ressource usage using ulimit -m (25% of hrdw memory) and nice value of 19
 			--verbosity [0, 1, 2]						* [0] no output, [1] output on error, [2] output the log to stdout
+			--no_color                                  * force no color on output
+			--dry_run  [exit_code]                      * performs a dry run, without actually run the tool and return the defined exit_code
+			--parse path/to/rule path/to/output         * parse using rule the result and output
 "
 }
 
+function dry_runner() {
+	# this simply prints the argument and return passed
+	echo "$*"
+	return $(( DRY_RUN + 0 ))
+}
+
 function log_it {
-	INPUT="$@"
-	LOG="${LOG}${INPUT}"
+	LOG="${LOG}$*"
 }
 
 function dump_log {
@@ -132,7 +150,7 @@ function restrict_ressource {
 	NICE_VALUE=19
 
 	MEMORY_SIZE=$(grep MemTotal /proc/meminfo |awk '{print $2}')
-	MEMORY_SIZE=$(( $(( $(( ${MEMORY_SIZE} )) * ${PERCENT_LIMIT_FOR_LOW_RESSOURCE} )) / 100 ))
+	MEMORY_SIZE=$(( ( MEMORY_SIZE * PERCENT_LIMIT_FOR_LOW_RESSOURCE )  / 100 ))
 
 	ulimit -m ${MEMORY_SIZE}
 	renice -n ${NICE_VALUE}  -p $$ &> /dev/null
@@ -143,65 +161,35 @@ function restrict_ressource {
 	dump_log
 }
 
-function pretty_print_status() {
-
-	RESULT=$1
-	line=$(printf '\040%.0s\056%.0s' {1..36})
-	empty_line=$(printf '\040%.0s\040%.0s' {1..36})
-
-	if [ "_$RESULT" == "_" ]
-	then
-		printf "  ${empty_line} ${TEST_NAME}\n"
-	elif [ "_${COLORIZE_OUTPUT}" == "_off" ]
-	then
-		printf "  ${RESULT}${line:${#RESULT}} ${TEST_NAME}\n"
-	else
-		if [ "_$RESULT" == "_Ok" ]
-		then
-			printf "  \033[0;32m${RESULT}${line:${#RESULT}}\033[0m ${TEST_NAME}\n"
-		else
-			printf "  \033[0;31m${RESULT}${line:${#RESULT}}\033[0m ${TEST_NAME}\n"
-		fi
-	fi
-}
+EXIT_CODE=0
 function display() {
 
-	CAUGHT_EXIT_CODE="$1"
 	LEAK_MESSAGE=""
 	
 	# check for valgrind leaks
 	LEAK_COUNT="$(cat ${LOG_FILE} | grep 'ERROR SUMMARY:' | awk '{print $4}' | grep -E '^\-?[0-9]+$')"
 	case "_${LEAK_COUNT}" in
 		_|_0)	LEAK_MESSAGE=""
-		;;_1)	LEAK_MESSAGE="[${LEAK_COUNT}]Leak"
-		;;*)	LEAK_MESSAGE="[${LEAK_COUNT}]Leaks"
+		;;_1)	LEAK_MESSAGE="[${LEAK_COUNT}]Leak "
+		;;*)	LEAK_MESSAGE="[${LEAK_COUNT}]Leaks "
 	esac
 
 	# check for uncaught errors
-	if [ "_${CAUGHT_EXIT_CODE}" == "_0" ]
+
+	ERROR_CATCH="$(cat "${LOG_FILE}" | grep 'Odin exited with code: ' | awk '{print $5}' | grep -E '^\-?[0-9]+$')"
+	[ "_${ERROR_CATCH}" != "_" ] && EXIT_CODE="${ERROR_CATCH}"
+
+	EXIT_ERROR_TYPE=$( print_exit_type "${EXIT_CODE}" )
+
+
+	if [ "_${EXIT_CODE}" == "_0" ] && [ "_${LEAK_MESSAGE}" == "_" ]
 	then
-		ERROR_CATCH="$(cat ${LOG_FILE} | grep 'Program Exit Code:' | awk '{print $4}' | grep -E '^\-?[0-9]+$')"
-		[ "_${ERROR_CATCH}" != "_" ] && CAUGHT_EXIT_CODE="${ERROR_CATCH}"
-	fi
-
-	# check for uncaught errors
-	if [ "_${CAUGHT_EXIT_CODE}" == "_0" ]
-	then
-		ERROR_CATCH="$(cat ${LOG_FILE} | grep 'Command terminated by signal:' | awk '{print $5}' | grep -E '^\-?[0-9]+$')"
-		[ "_${ERROR_CATCH}" != "_" ] && CAUGHT_EXIT_CODE="${ERROR_CATCH}"
-	fi
-
-	EXIT_ERROR_TYPE=$( print_exit_type "${CAUGHT_EXIT_CODE}" )
-
-
-	if [ "_${CAUGHT_EXIT_CODE}" == "_0" ] && [ "_${LEAK_MESSAGE}" == "_" ]
-	then
-		pretty_print_status "Ok"
+		pretty_print_status "${COLORIZE_OUTPUT}" green "${TEST_NAME}" "Ok" 
+		touch "$(dirname ${ARG_FILE})/success"
 	else
-		pretty_print_status "Failed ${LEAK_MESSAGE} exit:$1 \"${EXIT_ERROR_TYPE}\""
-		[ "_${FAILURE_FILE}" != "_" ] && echo "${TEST_NAME}" >> ${FAILURE_FILE}
+		pretty_print_status "${COLORIZE_OUTPUT}" yellow "${TEST_NAME}" "${LEAK_MESSAGE}${EXIT_ERROR_TYPE}($EXIT_CODE)"  
+		touch "$(dirname ${ARG_FILE})/failure"
 	fi
-
 }
 
 #########################################################
@@ -213,7 +201,13 @@ then
 	_exit_with_code "-1"
 fi
 
-while [[ "$#" > 0 ]]
+if [[ -t 1 ]] && [[ -t 2 ]] && [[ ! -p /dev/stdout ]] && [[ ! -p /dev/stderr ]]
+then
+	COLORIZE_OUTPUT="on"
+	log_it "Using colorized output\n"
+fi
+
+while [[ "_$1" != "_" ]]
 do 
 	case $1 in
 
@@ -224,7 +218,6 @@ do
 
 		--test_name)
 			TEST_NAME=$2
-			export EXIT_NAME="${TEST_NAME}"
 			shift
 			;;
 
@@ -242,6 +235,10 @@ do
 			RESTRICT_RESSOURCE="on" 
 			;;
 
+		--no_color)
+			COLORIZE_OUTPUT="off"
+			;;
+			
 		--verbosity)
 			case "_$2" in
 				_0)	VERBOSE="0";;
@@ -267,16 +264,18 @@ do
 			else
 				case $2 in
 					valgrind)
+						TOOL_LIST="valgrind ${TOOL_LIST}"
 						EXEC_PREFIX="${VALGRIND_EXEC} ${EXEC_PREFIX}"
 						;;
 					gdb)
+						TOOL_LIST="gdb ${TOOL_LIST}"
 						USE_TIMEOUT="off"
 						USE_LOGS="off"
 						EXEC_PREFIX="${GDB_EXEC} ${EXEC_PREFIX}"
 						;;
 					perf)
+						TOOL_LIST="perf ${TOOL_LIST}"
 						EXEC_PREFIX="${PERF_EXEC} ${EXEC_PREFIX}"
-						shift
 						;;
 					*)
 						echo "Invalid tool $2 passed in"
@@ -288,6 +287,17 @@ do
 				shift
 			fi
 			;;
+		--dry_run)
+			DRY_RUN="$2"
+			shift
+			;;
+
+		--parse)
+			RULE_FILE="$2"
+			shift
+			PARSE_OUTPUT_FILE="$2"
+			shift
+			;;
 		*) 
 			break
 			;;
@@ -297,16 +307,11 @@ done
 
 ARG_FILE=$1
 	
+export EXIT_NAME="${EXIT_NAME} ${TEST_NAME}"
+
 if [ "${RESTRICT_RESSOURCE}" == "on" ]
 then
 	restrict_ressource
-fi
-
-
-if [[ -t 1 ]] && [[ -t 2 ]] && [[ ! -p /dev/stdout ]] && [[ ! -p /dev/stderr ]]
-then
-	COLORIZE_OUTPUT="on"
-	log_it "Using colorized output\n"
 fi
 
 if [ "${USE_LOGS}" == "on" ]
@@ -316,74 +321,114 @@ then
 		LOG_FILE=$(mktemp)
 		USE_TEMP_LOG="on"
 		log_it "using temporary logs\n"
-	elif [ -f ${LOG_FILE} ]
+	elif [ -f "${LOG_FILE}" ]
 	then
-		rm -f ${LOG_FILE}
+		rm -f "${LOG_FILE}"
 		log_it "removing old log file\n"
 	fi
 
-	if [ ! -f ${LOG_FILE} ]
+	if [ ! -f "${LOG_FILE}" ]
 	then
-		touch ${LOG_FILE}
+		touch "${LOG_FILE}"
 		log_it "creating new log file\n"
 	fi
 fi
 
 if [ "${USE_TIME}" == "on" ]
 then
+	TOOL_LIST="${TIME_EXEC} ${TOOL_LIST}"
 	EXEC_PREFIX="${TIME_EXEC} --output=${LOG_FILE} --append ${EXEC_PREFIX}"
-	log_it "running with /bin/time\n"
+	log_it "running with ${TIME_EXEC}\n"
 fi
 
 if [ "${USE_TIMEOUT}" == "on" ]
 then
-	EXEC_PREFIX="timeout ${TIME_LIMIT} ${EXEC_PREFIX}"
-	log_it "running with timeout ${TIME_LIMIT}\n"
+	TOOL_LIST="${TIMEOUT_EXEC} ${TOOL_LIST}"
+	EXEC_PREFIX="${TIMEOUT_EXEC} ${TIME_LIMIT} ${EXEC_PREFIX}"
+	log_it "running with ${TIMEOUT_EXEC} ${TIME_LIMIT}\n"
 fi
+
+if [ "_${DRY_RUN}" != "_" ]
+then
+	EXEC_PREFIX="dry_runner ${EXEC_PREFIX}"
+	log_it "running a dry run with exit code ${DRY_RUN}\n"
+fi
+
+log_it "Ref Name: ${TEST_NAME}\n"
+
 dump_log
 
-pretty_print_status ""
+pretty_print_status "${COLORIZE_OUTPUT}" white "${TEST_NAME}" 
 
 
-_ARGS=""
-EXIT_CODE="-1"
 if [ "_${ARG_FILE}" == "_" ] || [ ! -f "${ARG_FILE}" ]
 then
 	log_it "Must define a path to a valid argument file"
 	dump_log
 else
-	_ARGS=$(cat ${ARG_FILE})
-	if [ "${USE_LOGS}" == "on" ]
-	then
-		if [ "${VERBOSE}" == "2" ]
+	failed_requirements=""
+	# test all necessary tool
+	for tool_used in ${TOOL_LIST}
+	do
+		
+		if ! command -v "${tool_used}" &> /dev/null
 		then
-			${EXEC_PREFIX} ${_ARGS} 2>&1 | tee ${LOG_FILE}
-		else
-			${EXEC_PREFIX} ${_ARGS} &>> ${LOG_FILE}
+			failed_requirements="${tool_used} ${failed_requirements}"
 		fi
+	done
+
+	if [ "_${failed_requirements}" != "_" ];
+	then
+		if [ "${USE_LOGS}" == "on" ]
+		then
+			if [ "${VERBOSE}" == "2" ]
+			then
+				echo "missing \"${failed_requirements}\"" | tee "${LOG_FILE}"
+			else
+				echo "missing \"${failed_requirements}\"" &>> "${LOG_FILE}"
+			fi	
+		else
+			echo "missing \"${failed_requirements}\""
+		fi
+
+		EXIT_CODE=255
+		pretty_print_status "${COLORIZE_OUTPUT}" red "${TEST_NAME}" "Missing package: ${failed_requirements}" 
+
 	else
-		${EXEC_PREFIX} ${_ARGS}
+		if [ "${USE_LOGS}" == "on" ]
+		then
+			if [ "${VERBOSE}" == "2" ]
+			then
+				${EXEC_PREFIX} ${ARG_FILE} 2>&1 | tee "${LOG_FILE}"
+			else
+				${EXEC_PREFIX} ${ARG_FILE} &>> "${LOG_FILE}"
+			fi
+		else
+			${EXEC_PREFIX} ${ARG_FILE}
+		fi
+		display
 	fi
-	EXIT_CODE=$?
 fi
 
-display "${EXIT_CODE}"
-
-EXIT_STATUS=0
-if [ "${EXIT_CODE}" != "0" ]
+if [ "${EXIT_CODE}" != "0" ] && [ "${USE_LOGS}" == "on" ] && [ "${VERBOSE}" == "1" ]
 then
-	EXIT_STATUS=1
+	cat "${LOG_FILE}"
 fi
 
-if [ "${EXIT_STATUS}" != "0" ] && [ "${USE_LOGS}" == "on" ] && [ "${VERBOSE}" == "1" ]
+if [ "_${RULE_FILE}" != "_" ] && [ -f "${RULE_FILE}" ] && [ "_${PARSE_OUTPUT_FILE}" != "_" ] && [ -f "${LOG_FILE}" ]
 then
-	cat ${LOG_FILE}
+	"${PARSER_EXEC}" parse "${RULE_FILE}" "${LOG_FILE}" > "${PARSE_OUTPUT_FILE}"
 fi
 
 if [ ${USE_TEMP_LOG} == "on" ]
 then
-	rm -f ${LOG_FILE}
+	rm -f "${LOG_FILE}"
 fi
 
-exit ${EXIT_STATUS}
+if [ "${EXIT_CODE}" != "0" ] && [ "_${FAILURE_FILE}" != "_" ]
+then
+	echo "${TEST_NAME}" >> "${FAILURE_FILE}"
+fi
+
+exit ${EXIT_CODE}
 ### end here

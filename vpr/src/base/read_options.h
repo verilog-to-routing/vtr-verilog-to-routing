@@ -44,6 +44,7 @@ struct t_options {
     argparse::ArgValue<bool> show_graphics; //Enable argparse::ArgValue<int>eractive graphics?
     argparse::ArgValue<int> GraphPause;
     argparse::ArgValue<bool> save_graphics;
+    argparse::ArgValue<std::string> graphics_commands;
 
     /* General options */
     argparse::ArgValue<bool> show_help;
@@ -56,6 +57,7 @@ struct t_options {
     argparse::ArgValue<float> target_device_utilization;
     argparse::ArgValue<e_constant_net_method> constant_net_method;
     argparse::ArgValue<e_clock_modeling> clock_modeling;
+    argparse::ArgValue<bool> two_stage_clock_routing;
     argparse::ArgValue<bool> exit_before_pack;
     argparse::ArgValue<bool> strict_checks;
     argparse::ArgValue<std::string> disable_errors;
@@ -100,6 +102,9 @@ struct t_options {
     argparse::ArgValue<int> PlaceChanWidth;
     argparse::ArgValue<float> place_rlim_escape_fraction;
     argparse::ArgValue<std::string> place_move_stats_file;
+    argparse::ArgValue<int> placement_saves_per_temperature;
+    argparse::ArgValue<e_place_effort_scaling> place_effort_scaling;
+    argparse::ArgValue<e_place_delta_delay_algorithm> place_delta_delay_matrix_calculation_method;
 
     /* Timing-driven placement options only */
     argparse::ArgValue<float> PlaceTimingTradeoff;
@@ -118,6 +123,7 @@ struct t_options {
     argparse::ArgValue<std::string> allowed_tiles_for_delay_model;
 
     /* Router Options */
+    argparse::ArgValue<bool> check_rr_graph;
     argparse::ArgValue<int> max_router_iterations;
     argparse::ArgValue<float> first_iter_pres_fac;
     argparse::ArgValue<float> initial_pres_fac;
@@ -132,6 +138,9 @@ struct t_options {
     argparse::ArgValue<bool> verify_binary_search;
     argparse::ArgValue<e_router_algorithm> RouterAlgorithm;
     argparse::ArgValue<int> min_incremental_reroute_fanout;
+    argparse::ArgValue<bool> read_rr_edge_metadata;
+    argparse::ArgValue<bool> exit_after_first_routing_iteration;
+    argparse::ArgValue<e_check_route_option> check_route;
 
     /* Timing-driven router options only */
     argparse::ArgValue<float> astar_fac;
@@ -147,10 +156,14 @@ struct t_options {
     argparse::ArgValue<int> router_high_fanout_threshold;
     argparse::ArgValue<int> router_debug_net;
     argparse::ArgValue<int> router_debug_sink_rr;
+    argparse::ArgValue<int> router_debug_iteration;
     argparse::ArgValue<e_router_lookahead> router_lookahead_type;
     argparse::ArgValue<int> router_max_convergence_count;
     argparse::ArgValue<float> router_reconvergence_cpd_threshold;
+    argparse::ArgValue<bool> router_update_lower_bound_delays;
     argparse::ArgValue<std::string> router_first_iteration_timing_report_file;
+    argparse::ArgValue<e_router_initial_timing> router_initial_timing;
+    argparse::ArgValue<e_heap_type> router_heap;
 
     /* Analysis options */
     argparse::ArgValue<bool> full_stats;
@@ -158,6 +171,7 @@ struct t_options {
     argparse::ArgValue<int> timing_report_npaths;
     argparse::ArgValue<e_timing_report_detail> timing_report_detail;
     argparse::ArgValue<bool> timing_report_skew;
+    argparse::ArgValue<std::string> echo_dot_timing_graph_node;
 };
 
 argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args);

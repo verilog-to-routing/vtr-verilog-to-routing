@@ -1,6 +1,8 @@
 #ifndef ARCH_UTIL_H
 #define ARCH_UTIL_H
 
+#include <regex>
+#include <unordered_set>
 #include "physical_types.h"
 
 class InstPort {
@@ -31,13 +33,17 @@ class InstPort {
         int high_idx = UNSPECIFIED;
     };
 
-    name_index parse_name_index(std::string str);
+    name_index parse_name_index(const std::string& str);
 
     name_index instance_;
     name_index port_;
 };
 
 void free_arch(t_arch* arch);
+void free_arch_models(t_model* models);
+t_model* free_arch_model(t_model* model);
+void free_arch_model_ports(t_model_ports* model_ports);
+t_model_ports* free_arch_model_port(t_model_ports* model_port);
 
 void free_type_descriptors(std::vector<t_logical_block_type>& type_descriptors);
 void free_type_descriptors(std::vector<t_physical_tile_type>& type_descriptors);
@@ -46,6 +52,8 @@ t_port* findPortByName(const char* name, t_pb_type* pb_type, int* high_index, in
 
 t_physical_tile_type SetupEmptyPhysicalType();
 t_logical_block_type SetupEmptyLogicalType();
+
+std::unordered_set<t_logical_block_type_ptr> get_equivalent_sites_set(t_physical_tile_type_ptr type);
 
 void alloc_and_load_default_child_for_pb_type(t_pb_type* pb_type,
                                               char* new_name,
@@ -74,4 +82,11 @@ bool segment_exists(const t_arch* arch, std::string name);
 const t_segment_inf* find_segment(const t_arch* arch, std::string name);
 bool is_library_model(const char* model_name);
 bool is_library_model(const t_model* model);
+
+//Returns true if the specified block type contains the specified blif model name
+bool block_type_contains_blif_model(t_logical_block_type_ptr type, const std::string& blif_model_name);
+
+//Returns true of a pb_type (or it's children) contain the specified blif model name
+bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::string& blif_model_name);
+
 #endif

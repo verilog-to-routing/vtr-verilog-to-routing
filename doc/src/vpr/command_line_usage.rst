@@ -2,6 +2,28 @@ Command-line Options
 ====================
 .. program:: vpr
 
+.. |des90_place| image:: https://www.verilogtorouting.org/img/des90_placement_macros.gif
+    :width: 200px
+    :alt: Placement 
+
+.. |des90_cpd| image:: https://www.verilogtorouting.org/img/des90_cpd.gif
+    :width: 200px 
+    :alt: Critical Path 
+
+.. |des90_nets| image:: https://www.verilogtorouting.org/img/des90_nets.gif
+    :width: 200px
+    :alt: Wiring
+
+.. |des90_routing| image:: https://www.verilogtorouting.org/img/des90_routing_util.gif
+    :width: 200px 
+    :alt: Routing Usage
+
++---------------------------------------+---------------------------------------+---------------------------------------+---------------------------------------+
+| |des90_place|                         + |des90_cpd|                           | |des90_nets|                          + |des90_routing|                       +
+|                                       +                                       |                                       +                                       +
+| Placement                             + Critical Path                         | Logical Connections                   + Routing Utilization                   +
++---------------------------------------+---------------------------------------+---------------------------------------+---------------------------------------+
+
 Basic Usage
 -----------
 
@@ -11,8 +33,13 @@ At a minimum VPR requires two command-line arguments::
 
 where:
 
-  * ``architecture`` is an :ref:`FPGA architecture description file <fpga_architecture_description>`
-  * ``circuit`` is the technology mapped netlist in :ref:`BLIF format <vpr_blif_file>` to be implemented
+.. option:: architecture
+
+    is an :ref:`FPGA architecture description file <fpga_architecture_description>`
+
+.. option:: circuit
+
+    is the technology mapped netlist in :ref:`BLIF format <vpr_blif_file>` to be implemented
 
 VPR will then pack, place, and route the circuit onto the specified architecture.
 
@@ -82,6 +109,63 @@ Graphics Options
     The higher the number, the more infrequently the program will pause.
 
     **Default:** ``1``
+    
+.. option:: --save_graphics {on | off}
+
+    If set to on, this option will save an image of the final placement and the final routing created by vpr to pdf files on disk, with no need for any user interaction. The files are named vpr_placement.pdf and vpr_routing.pdf.
+
+    **Default:** ``off``
+
+.. option:: --graphics_commands <string>
+
+    A set of semi-colon seperated graphics commands.
+
+    * save_graphics <file>
+         Saves graphics to the specified file (.png/.pdf/
+         .svg). If <file> contains ``{i}``, it will be
+         replaced with an integer which increments
+         each time graphics is invoked.
+    * set_macros <int>
+         Sets the placement macro drawing state
+    * set_nets <int>
+         Sets the net drawing state
+    * set_cpd <int>
+         Sets the criticla path delay drawing state
+    * set_routing_util <int>
+         Sets the routing utilization drawing state
+    * set_clip_routing_util <int>
+         Sets whether routing utilization values are clipped to [0., 1.]. Useful when a consistent scale is needed across images
+    * set_draw_block_outlines <int>
+         Sets whether blocks have an outline drawn around them
+    * set_draw_block_text <int>
+         Sets whether blocks have label text drawn on them
+    * set_draw_block_internals <int>
+         Sets the level to which block internals are drawn
+    * set_draw_net_max_fanout <int>
+         Sets the maximum fanout for nets to be drawn (if fanout is beyond this value the net will not be drawn)
+    * set_congestion <int>
+         Sets the routing congestion drawing state
+    * exit <int>
+         Exits VPR with specified exit code
+    
+    Example:
+
+    .. code-block:: none
+
+        save_graphics place.png; \
+        set_nets 1; save_graphics nets1.png;\
+        set_nets 2; save_graphics nets2.png; set_nets 0;\
+        set_cpd 1; save_graphics cpd1.png; \
+        set_cpd 3; save_graphics cpd3.png; set_cpd 0; \
+        set_routing_util 5; save_graphics routing_util5.png; \
+        set_routing_util 0; \
+        set_congestion 1; save_graphics congestion1.png;
+
+    The above toggles various graphics settings (e.g. drawing nets, drawing critical path) and then saves the results to .png files.
+    
+    Note that drawing state is reset to its previous state after these commands are invoked.
+
+    Like the interactive graphics :option`<--disp>` option, the :option:`--auto` option controls how often the commands specified with this option are invoked.
 
 .. _general_options:
 
@@ -171,6 +255,17 @@ General Options
 
      **Default:** ``ideal``
 
+.. option:: --two_stage_clock_routing {on | off}
+
+    Routes clock nets in two stages using a dedicated clock network.
+
+     * First stage: From the net source (e.g. an I/O pin) to a dedicated clock network root (e.g. center of chip)
+     * Second stage: From the clock network root to net sinks.
+
+    Note this option only works when specifying a clock architecture, see :ref:`Clock Architecture Format <clock_architecture_format>`; it does not work when reading a routing resource graph (i.e. :option:`--read_rr_graph`).
+
+     **Default:** ``off``
+
 .. option:: --exit_before_pack {on | off}
 
     Causes VPR to exit before packing starts (useful for statistics collection).
@@ -197,9 +292,9 @@ Use the options below to override this default naming behaviour.
 
 .. option:: --circuit_file <file>
 
-    Path to technology mapped user circuit in blif format.
+    Path to technology mapped user circuit in :ref:`BLIF format <vpr_blif_file>`.
 
-    .. note:: If specified the ``circuit`` positional argument is treated as the circuit name.
+    .. note:: If specified the :option:`circuit` positional argument is treated as the circuit name.
 
     .. seealso:: :option:`--circuit_format`
 
@@ -215,29 +310,39 @@ Use the options below to override this default naming behaviour.
 
 .. option:: --net_file <file>
 
-    Path to packed user circuit in net format
+    Path to packed user circuit in :ref:`net format <vpr_net_file>`.
+
+    **Default:** :option:`circuit <circuit>`.net
 
 .. option:: --place_file <file>
 
-    Path to final placement file
+    Path to final :ref:`placement file <vpr_place_file>`.
+
+    **Default:** :option:`circuit <circuit>`.place
 
 .. option:: --route_file <file>
 
-    Path to final routing file
+    Path to final :ref:`routing file <vpr_route_file>`.
+
+    **Default:** :option:`circuit <circuit>`.route
 
 .. option:: --sdc_file <file>
 
-    Path to SDC timing constraints file
+    Path to SDC timing constraints file.
+
+    If no SDC file is found :ref:`default timing constraints <default_timing_constraints>` will be used.
+
+    **Default:** :option:`circuit <circuit>`.sdc
 
 .. option:: --write_rr_graph <file>
 
-    Writes out the routing resource graph generated at the last stage of VPR into XML format
+    Writes out the routing resource graph generated at the last stage of VPR into :ref:`RR Graph XML format <vpr_route_resource_file>`
 
     <file> describes the filename for the generated routing resource graph. The output can be read into VPR using :option:`--read_rr_graph`
 
 .. option:: --read_rr_graph <file>
 
-    Reads in the routing resource graph named <file> in the VTR root directory and loads it into the placement and routing stage of VPR.
+    Reads in the routing resource graph named <file> loads it for use during the placement and routing stages.
 
     The routing resource graph overthrows all the architecture definitions regarding switches, nodes, and edges. Other information such as grid information, block types, and segment information are matched with the architecture file to ensure accuracy.
 
@@ -397,6 +502,7 @@ For people not working on CAD, you can probably leave all the options to their d
 .. option:: --balance_block_type_utilization {on, off, auto}
 
     Controls how the packer selects the block type to which a primitive will be mapped if it can potentially map to multiple block types.
+
      * ``on``  : Try to balance block type utilization by picking the block type with the (currenty) lowest utilization.
      * ``off`` : Do not try to balance block type utilization
      * ``auto``: Dynamically enabled/disabled (based on density)
@@ -984,6 +1090,21 @@ The following options are only valid when the router is in timing-driven mode (t
     
      **Default:** ``0.99``
 
+.. option:: --router_initial_timing {all_critical | lookahead}
+
+    Controls how criticality is determined at the start of the first routing iteration.
+
+     * ``all_critical``: All connections are considered timing critical.
+     * ``lookahead``: Connection criticalities are determined from timing analysis assuming (best-case) connection delays as estimated by the router's lookahead.
+
+     **Default:** ``all_critical`` for the classic :option:`--router_lookahead`, otherwise ``lookahead``
+
+.. option:: --router_update_lower_bound_delays {on | off}
+
+    Controls whether the router updates lower bound connection delays after the 1st routing iteration.
+
+    **Default:** ``on``
+
 .. option:: --router_first_iter_timing_report <file>
 
     Name of the timing report file to generate after the first routing iteration completes (not generated if unspecfied).
@@ -1268,27 +1389,38 @@ Analysis Options
                There is no logical contradiction, but for clarification, it is best to see an explanation of the VPR coordinate system.
                The path can also be visualized by VPR graphics, as an illustration of this point:
 
-.. _fig_path_2:
+            .. _fig_path_2:
 
-.. figure:: path_2.*
- 
- Illustration of Path #2 with insight into the coordinate system.
+            .. figure:: path_2.*
+             
+             Illustration of Path #2 with insight into the coordinate system.
 
-:numref:`fig_path_2` shows the routing resources used in Path #2 and their locations on the FPGA.
+            :numref:`fig_path_2` shows the routing resources used in Path #2 and their locations on the FPGA.
 
-1. The signal emerges from near the top-right corner of the block to_FFC (OPIN:1479)  and joins the topmost horizontal segment of length 1 (CHANX:2073). 
+            1. The signal emerges from near the top-right corner of the block to_FFC (OPIN:1479)  and joins the topmost horizontal segment of length 1 (CHANX:2073). 
 
-2. The signal proceeds to the left, then connects to the outermost, blue vertical segment of length 0 (CHANY:2139). 
+            2. The signal proceeds to the left, then connects to the outermost, blue vertical segment of length 0 (CHANY:2139). 
 
-3. The signal continues downward and attaches to the horizontal segment of length 1 (CHANX:2040). 
+            3. The signal continues downward and attaches to the horizontal segment of length 1 (CHANX:2040). 
 
-4. Of the aforementioned horizontal segment, after travelling one linear unit to the right, the signal jumps on a vertical segment of length 0 (CHANY:2166).
+            4. Of the aforementioned horizontal segment, after travelling one linear unit to the right, the signal jumps on a vertical segment of length 0 (CHANY:2166).
 
-5. The signal travels upward and promptly connects to a horizontal segment of length 0 (CHANX:2076).
+            5. The signal travels upward and promptly connects to a horizontal segment of length 0 (CHANX:2076).
 
-6. This segment connects to the green destination io (3,4).
+            6. This segment connects to the green destination io (3,4).
+
+        * ``debug``: Like ``detailed``, but includes additional VPR internal debug information such as timing graph node IDs (``tnode``) and routing SOURCE/SINK nodes.
 
     **Default:** ``netlist``
+
+.. option:: --echo_dot_timing_graph_node { string | int }
+
+    Controls what subset of the timing graph is echoed to a GraphViz DOT file when :option:`vpr --echo_file` is enabled.
+
+    Value can be a string (corresponding to a VPR atom netlist pin name), or an integer representing a timing graph node ID.
+    Negative values mean the entire timing graph is dumped to the DOT file.
+
+    **Default:** ``-1``
 
 .. option:: --timing_report_skew { on | off }
 
@@ -1326,3 +1458,15 @@ The following options are used to enable power estimation in VPR.
 
     Instructions on generating this file are provided in :ref:`power_estimation`.
 
+Command-line Auto Completion
+----------------------------
+
+To simplify using VPR on the command-line you can use the ``dev/vpr_bash_completion.sh`` script, which will enable TAB completion for VPR commandline arguments (based on the output of `vpr -h`).
+
+Simply add:
+
+.. code-block:: bash
+
+    source $VTR_ROOT/dev/vpr_bash_completion.sh
+
+to your ``.bashrc``. ``$VTR_ROOT`` refers to the root of the VTR source tree on your system.

@@ -15,6 +15,7 @@
 
 class ClockNetwork;
 class ClockConnection;
+class t_rr_graph_storage;
 
 class SwitchPoint {
     /* A switch point object: keeps information on the location and and rr_node indices
@@ -68,10 +69,27 @@ class ClockRRGraphBuilder {
     int get_and_increment_chanx_ptc_num();
     int get_and_increment_chany_ptc_num();
 
-  public:
     /* Reverse lookup for to find the clock source and tap locations for each clock_network
      * The map key is the the clock network name and value are all the switch points*/
     std::unordered_map<std::string, SwitchPoints> clock_name_to_switch_points;
+
+  public:
+    ClockRRGraphBuilder(
+        const t_chan_width& chan_width,
+        const DeviceGrid& grid,
+        t_rr_graph_storage* rr_nodes,
+        t_rr_node_indices* rr_node_indices)
+        : chan_width_(chan_width)
+        , grid_(grid)
+        , rr_nodes_(rr_nodes)
+        , rr_node_indices_(rr_node_indices)
+        , chanx_ptc_idx_(0)
+        , chany_ptc_idx_(0) {
+    }
+
+    const DeviceGrid& grid() const {
+        return grid_;
+    }
 
     /* Saves a map from switch rr_node idx -> {x, y} location */
     void add_switch_location(std::string clock_name,
@@ -90,41 +108,38 @@ class ClockRRGraphBuilder {
     std::set<std::pair<int, int>> get_switch_locations(std::string clock_name,
                                                        std::string switch_point_name) const;
 
+    void update_chan_width(t_chan_width* chan_width) const;
+
+    static size_t estimate_additional_nodes(const DeviceGrid& grid);
+
+    void add_edge(t_rr_edge_info_set* rr_edges_to_create,
+                  int src_node,
+                  int sink_node,
+                  int arch_switch_idx) const;
+
   public:
     /* Creates the routing resourse (rr) graph of the clock network and appends it to the
      * existing rr graph created in build_rr_graph for inter-block and intra-block routing. */
-    static void create_and_append_clock_rr_graph(std::vector<t_segment_inf>& segment_inf,
-                                                 const float R_minW_nmos,
-                                                 const float R_minW_pmos,
-                                                 int wire_to_rr_ipin_switch,
-                                                 const enum e_base_cost_type base_cost_type);
+    void create_and_append_clock_rr_graph(int num_seg_types,
+                                          t_rr_edge_info_set* rr_edges_to_create);
 
   private:
     /* loop over all of the clock networks and create their wires */
-    void create_clock_networks_wires(std::vector<std::unique_ptr<ClockNetwork>>& clock_networks,
-                                     int num_segments);
+    void create_clock_networks_wires(const std::vector<std::unique_ptr<ClockNetwork>>& clock_networks,
+                                     int num_segments,
+                                     t_rr_edge_info_set* rr_edges_to_create);
 
     /* loop over all clock routing connections and create the switches and connections */
-    void create_clock_networks_switches(std::vector<std::unique_ptr<ClockConnection>>& clock_connections);
+    void create_clock_networks_switches(const std::vector<std::unique_ptr<ClockConnection>>& clock_connections,
+                                        t_rr_edge_info_set* rr_edges_to_create);
 
-    /* Adds the architecture switches that the clock rr_nodes use to the rr switches and
-     * maps the newly added rr_switches to the nodes.
-     * The input nodes_start_idx ~ corresponds to the rr_node index of the first node
-     * used to create the clock network. Every node from node_start_idx..rr_nodes.size-1
-     * is a node in the clock network.*/
-    // TODO: Change to account for swtich fanin. Note: this function is simular to
-    //       remap_rr_node_switch_indices but does not take into account node fanin.
-    void add_rr_switches_and_map_to_nodes(size_t nodes_start_idx,
-                                          const float R_minW_nmos,
-                                          const float R_minW_pmos);
+    const t_chan_width& chan_width_;
+    const DeviceGrid& grid_;
+    t_rr_graph_storage* rr_nodes_;
+    t_rr_node_indices* rr_node_indices_;
 
-    /* Returns the index of the newly added rr_switch. The rr_switch information is coppied
-     * in from the arch_switch information */
-    // TODO: Does not account for fanin information when copping Tdel. Note: this function
-    //       is simular to load_rr_switch_inf but does not take into account node fanin.
-    int add_rr_switch_from_arch_switch_inf(int arch_switch_idx,
-                                           const float R_minW_nmos,
-                                           const float R_minW_pmos);
+    int chanx_ptc_idx_;
+    int chany_ptc_idx_;
 };
 
 #endif

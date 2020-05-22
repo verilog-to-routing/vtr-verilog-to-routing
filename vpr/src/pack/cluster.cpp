@@ -344,11 +344,11 @@ static enum e_block_pack_status check_chain_root_placement_feasibility(const t_p
 
 static t_pb_graph_pin* get_driver_pb_graph_pin(const t_pb* driver_pb, const AtomPinId driver_pin_id);
 
-static void update_pb_type_count(const t_pb* pb, std::unordered_map<std::string, int>& pb_type_count);
+static size_t update_pb_type_count(const t_pb* pb, std::map<t_pb_type*, int>& pb_type_count, size_t depth);
 
 static void update_le_count(const t_pb* pb, const t_logical_block_type_ptr logic_block_type, const t_pb_type* le_pb_type, std::vector<int>& le_count);
 
-static void print_pb_type_count(std::unordered_map<std::string, int>& pb_type_count);
+static void print_pb_type_count_recurr(t_pb_type* type, size_t max_name_chars, size_t curr_depth, std::map<t_pb_type*, int>& pb_type_count);
 
 static t_logical_block_type_ptr identify_logic_block_type(std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
 
@@ -415,10 +415,6 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     std::shared_ptr<PreClusterDelayCalculator> clustering_delay_calc;
     std::shared_ptr<SetupTimingInfo> timing_info;
 
-    // this data structure is used to track the total number of physical blocks
-    // used for each physical block type defined in the architecture file.
-    std::unordered_map<std::string, int> pb_type_count;
-
     // this data structure tracks the number of Logic Elements (LEs) used. It is
     // populated only for architectures which has LEs. The architecture is assumed
     // to have LEs only iff it has a logic block that contains LUT primitives and is
@@ -451,7 +447,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     num_molecules = count_molecules(molecule_head);
 
     for (const auto& type : device_ctx.logical_block_types) {
-        if (device_ctx.EMPTY_TYPE == physical_tile_type(&type))
+        if (is_empty_type(&type))
             continue;
 
         cur_cluster_size = get_max_primitives_in_pb_type(type.pb_type);
@@ -507,6 +503,10 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
             auto& timing_ctx = g_vpr_ctx.timing();
             tatum::write_echo(getEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH),
                               *timing_ctx.graph, *timing_ctx.constraints, *clustering_delay_calc, timing_info->analyzer());
+
+            tatum::NodeId debug_tnode = id_or_pin_name_to_tnode(analysis_opts.echo_dot_timing_graph_node);
+            write_setup_timing_graph_dot(getEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH) + std::string(".dot"),
+                                         *timing_info, debug_tnode);
         }
 
         {
@@ -734,8 +734,6 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                     }
                 }
                 auto cur_pb = cluster_ctx.clb_nlist.block_pb(clb_index);
-                // update the pb type count by counting the used pb types in this packed cluster
-                update_pb_type_count(cur_pb, pb_type_count);
                 // update the data structure holding the LE counts
                 update_le_count(cur_pb, logic_block_type, le_pb_type, le_count);
                 free_pb_stats_recursive(cur_pb);
@@ -752,10 +750,6 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
             router_data = nullptr;
         }
     }
-
-    // print the total number of used physical blocks for each
-    // physical block type after finishing the packing stage
-    print_pb_type_count(pb_type_count);
 
     // if this architecture has LE physical block, report its usage
     if (le_pb_type) {
@@ -1963,8 +1957,16 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
         //support the same primitive(s).
         std::stable_sort(candidate_types.begin(), candidate_types.end(),
                          [&](t_logical_block_type_ptr lhs, t_logical_block_type_ptr rhs) {
-                             float lhs_util = vtr::safe_ratio<float>(num_used_type_instances[lhs], device_ctx.grid.num_instances(physical_tile_type(lhs)));
-                             float rhs_util = vtr::safe_ratio<float>(num_used_type_instances[rhs], device_ctx.grid.num_instances(physical_tile_type(rhs)));
+                             int lhs_num_instances = 0;
+                             int rhs_num_instances = 0;
+                             // Count number of instances for each type
+                             for (auto type : lhs->equivalent_tiles)
+                                 lhs_num_instances += device_ctx.grid.num_instances(type);
+                             for (auto type : rhs->equivalent_tiles)
+                                 rhs_num_instances += device_ctx.grid.num_instances(type);
+
+                             float lhs_util = vtr::safe_ratio<float>(num_used_type_instances[lhs], lhs_num_instances);
+                             float rhs_util = vtr::safe_ratio<float>(num_used_type_instances[rhs], rhs_num_instances);
                              //Lower util first
                              return lhs_util < rhs_util;
                          });
@@ -2053,10 +2055,17 @@ static void start_new_cluster(t_cluster_placement_stats* cluster_placement_stats
     VTR_ASSERT(success);
 
     //Successfully create cluster
-    num_used_type_instances[clb_nlist->block_type(clb_index)]++;
+    auto block_type = clb_nlist->block_type(clb_index);
+    num_used_type_instances[block_type]++;
 
     /* Expand FPGA size if needed */
-    if (num_used_type_instances[clb_nlist->block_type(clb_index)] > device_ctx.grid.num_instances(physical_tile_type(clb_index))) {
+    // Check used type instances against the possible equivalent physical locations
+    unsigned int num_instances = 0;
+    for (auto equivalent_tile : block_type->equivalent_tiles) {
+        num_instances += device_ctx.grid.num_instances(equivalent_tile);
+    }
+
+    if (num_used_type_instances[block_type] > num_instances) {
         device_ctx.grid = create_device_grid(device_layout_name, arch->grid_layouts, num_used_type_instances, target_device_utilization);
         VTR_LOGV(verbosity > 0, "Not enough resources expand FPGA size to (%d x %d)\n",
                  device_ctx.grid.width(), device_ctx.grid.height());
@@ -3340,39 +3349,76 @@ static enum e_block_pack_status check_chain_root_placement_feasibility(const t_p
  * This function update the pb_type_count data structure by incrementing
  * the number of used pb_types in the given packed cluster t_pb
  */
-static void update_pb_type_count(const t_pb* pb, std::unordered_map<std::string, int>& pb_type_count) {
-    auto pb_graph_node = pb->pb_graph_node;
-    auto pb_type = pb_graph_node->pb_type;
-    auto mode = &pb_type->modes[pb->mode];
+static size_t update_pb_type_count(const t_pb* pb, std::map<t_pb_type*, int>& pb_type_count, size_t depth) {
+    size_t max_depth = depth;
+
+    t_pb_graph_node* pb_graph_node = pb->pb_graph_node;
+    t_pb_type* pb_type = pb_graph_node->pb_type;
+    t_mode* mode = &pb_type->modes[pb->mode];
     std::string pb_type_name(pb_type->name);
 
-    auto it = pb_type_count.find(pb_type_name);
-    // if this pb type is in the list increment its
-    // count by 1 otherwise initialize the count to 1
-    if (it == pb_type_count.end())
-        pb_type_count[pb_type_name] = 1;
-    else
-        pb_type_count[pb_type_name]++;
+    pb_type_count[pb_type]++;
 
     if (pb_type->num_modes > 0) {
         for (int i = 0; i < mode->num_pb_type_children; i++) {
             for (int j = 0; j < mode->pb_type_children[i].num_pb; j++) {
-                if (pb->child_pbs[i] && pb->child_pbs[i][j].name)
-                    update_pb_type_count(&pb->child_pbs[i][j], pb_type_count);
+                if (pb->child_pbs[i] && pb->child_pbs[i][j].name) {
+                    size_t child_depth = update_pb_type_count(&pb->child_pbs[i][j], pb_type_count, depth + 1);
+
+                    max_depth = std::max(max_depth, child_depth);
+                }
             }
         }
     }
+    return max_depth;
 }
 
 /**
  * Print the total number of used physical blocks for each pb type in the architecture
  */
-static void print_pb_type_count(std::unordered_map<std::string, int>& pb_type_count) {
-    VTR_LOG("\nPb types usage...\n");
+void print_pb_type_count(const ClusteredNetlist& clb_nlist) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    std::map<t_pb_type*, int> pb_type_count;
+
+    size_t max_depth = 0;
+    for (ClusterBlockId blk : clb_nlist.blocks()) {
+        size_t pb_max_depth = update_pb_type_count(clb_nlist.block_pb(blk), pb_type_count, 0);
+
+        max_depth = std::max(max_depth, pb_max_depth);
+    }
+
+    size_t max_pb_type_name_chars = 0;
     for (auto& pb_type : pb_type_count) {
-        VTR_LOG("  %-12s : %d\n", pb_type.first.c_str(), pb_type.second);
+        max_pb_type_name_chars = std::max(max_pb_type_name_chars, strlen(pb_type.first->name));
+    }
+
+    VTR_LOG("\nPb types usage...\n");
+    for (const auto& logical_block_type : device_ctx.logical_block_types) {
+        if (!logical_block_type.pb_type) continue;
+
+        print_pb_type_count_recurr(logical_block_type.pb_type, max_pb_type_name_chars + max_depth, 0, pb_type_count);
     }
     VTR_LOG("\n");
+}
+
+static void print_pb_type_count_recurr(t_pb_type* pb_type, size_t max_name_chars, size_t curr_depth, std::map<t_pb_type*, int>& pb_type_count) {
+    std::string display_name(curr_depth, ' '); //Indent by depth
+    display_name += pb_type->name;
+
+    if (pb_type_count.count(pb_type)) {
+        VTR_LOG("  %-*s : %d\n", max_name_chars, display_name.c_str(), pb_type_count[pb_type]);
+    }
+
+    //Recurse
+    for (int imode = 0; imode < pb_type->num_modes; ++imode) {
+        t_mode* mode = &pb_type->modes[imode];
+        for (int ichild = 0; ichild < mode->num_pb_type_children; ++ichild) {
+            t_pb_type* child_pb_type = &mode->pb_type_children[ichild];
+
+            print_pb_type_count_recurr(child_pb_type, max_name_chars, curr_depth + 1, pb_type_count);
+        }
+    }
 }
 
 /**

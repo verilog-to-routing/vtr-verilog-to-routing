@@ -33,7 +33,18 @@ quick_test/*
 titan_release*.tar.gz
 vtr_flow/arch/titan/*.xml
 vtr_flow/benchmarks/titan_blif/*.blif
+vtr_flow/benchmarks/titan_blif/*.sdc
 vtr_flow/benchmarks/titan_other_blif/*.blif
+vtr_flow/benchmarks/titan_other_blif/*.sdc
+
+
+#
+# ISPD benchmarks
+#
+#   We ignore the ISPD netlists because of thier large size.
+#
+ispd_benchmarks_vtr*.tar.gz
+vtr_flow/benchmarks/ispd_blif/*.blif
 
 #
 # Cloud9 Directory

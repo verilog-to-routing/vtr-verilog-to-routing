@@ -56,20 +56,30 @@ void save_graphics_from_button(GtkWidget* /*widget*/, gint response_id, gpointer
     gtk_widget_destroy(dialog);
 }
 
-void save_graphics(std::string& extension, std::string& file_name) {
+void save_graphics(std::string extension, std::string file_name) {
+    //Trim any leading '.' from the extension
+    if (vtr::starts_with(extension, ".")) {
+        extension = std::string(extension.begin() + 1, extension.end());
+    }
+
+    auto canvas = application.get_canvas(application.get_main_canvas_id());
+
+    bool result = true;
+
     file_name = file_name + "." + extension;
     if (extension == "pdf") {
-        application.get_canvas(application.get_main_canvas_id())->print_pdf(file_name.c_str(), initial_world.width(), initial_world.height());
-        return;
+        result = canvas->print_pdf(file_name.c_str(), initial_world.width(), initial_world.height());
     } else if (extension == "png") {
-        application.get_canvas(application.get_main_canvas_id())->print_png(file_name.c_str(), initial_world.width(), initial_world.height());
-        return;
+        constexpr int IMAGE_WIDTH_PIXELS = 2048;
+        int image_height_pixels = IMAGE_WIDTH_PIXELS * float(initial_world.height()) / initial_world.width();
+        result = canvas->print_png(file_name.c_str(), IMAGE_WIDTH_PIXELS, image_height_pixels);
     } else if (extension == "svg") {
-        application.get_canvas(application.get_main_canvas_id())->print_svg(file_name.c_str(), initial_world.width(), initial_world.height());
-        return;
+        result = canvas->print_svg(file_name.c_str(), initial_world.width(), initial_world.height());
     } else {
         warning_dialog_box("Invalid file type");
     }
+
+    VTR_ASSERT_MSG(result == true, "Failed to save graphics");
 }
 
 void save_graphics_dialog_box(GtkWidget* /*widget*/, ezgl::application* /*app*/) {

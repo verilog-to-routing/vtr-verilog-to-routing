@@ -6,6 +6,7 @@ VPR's default timing constraints are explained in :ref:`default_timing_constrain
 The subset of SDC supported by VPR is described in :ref:`sdc_commands`.
 Additional SDC examples are shown in :ref:`sdc_examples`.
 
+.. seealso:: The :ref:`Primitive Timing Modelling Tutorial <arch_model_timing_tutorial>` which covers how to describe the timing characteristics of architecture primitives.
 
 .. _default_timing_constraints:
 

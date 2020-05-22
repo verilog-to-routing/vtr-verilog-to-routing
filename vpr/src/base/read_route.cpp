@@ -40,6 +40,7 @@
 #include "echo_files.h"
 #include "route_common.h"
 #include "read_route.h"
+#include "binary_heap.h"
 
 /*************Functions local to this module*************/
 static void process_route(std::ifstream& fp, const char* filename, int& lineno);
@@ -109,12 +110,16 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     fp.close();
 
     /*Correctly set up the clb opins*/
+    BinaryHeap small_heap;
+    small_heap.init_heap(device_ctx.grid);
+    reserve_locally_used_opins(&small_heap, router_opts.initial_pres_fac,
+                               router_opts.acc_fac, false);
     recompute_occupancy_from_scratch();
 
     /* Note: This pres_fac is not necessarily correct since it isn't the first routing iteration*/
     pathfinder_update_cost(router_opts.initial_pres_fac, router_opts.acc_fac);
 
-    reserve_locally_used_opins(router_opts.initial_pres_fac,
+    reserve_locally_used_opins(&small_heap, router_opts.initial_pres_fac,
                                router_opts.acc_fac, true);
 
     /* Finished loading in the routing, now check it*/
@@ -231,7 +236,7 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
         } else if (tokens[0] == "Node:") {
             /*An actual line, go through each node and add it to the route tree*/
             inode = atoi(tokens[1].c_str());
-            auto& node = device_ctx.rr_nodes[inode];
+            auto node = device_ctx.rr_nodes[inode];
 
             /*First node needs to be source. It is isolated to correctly set heap head.*/
             if (node_count == 0 && tokens[2] != "SOURCE") {
@@ -286,9 +291,17 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
                 /*This is an opin or ipin, process its pin nums*/
                 if (!is_io_type(device_ctx.grid[x][y].type) && (tokens[2] == "IPIN" || tokens[2] == "OPIN")) {
                     int pin_num = device_ctx.rr_nodes[inode].ptc_num();
+
+                    auto type = device_ctx.grid[x][y].type;
                     int height_offset = device_ctx.grid[x][y].height_offset;
-                    ClusterBlockId iblock = place_ctx.grid_blocks[x][y - height_offset].blocks[0];
-                    t_pb_graph_pin* pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
+
+                    int capacity, relative_pin;
+                    std::tie(capacity, relative_pin) = get_capacity_location_from_physical_pin(type, pin_num);
+
+                    ClusterBlockId iblock = place_ctx.grid_blocks[x][y - height_offset].blocks[capacity];
+                    t_pb_graph_pin* pb_pin;
+
+                    pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
                     t_pb_type* pb_type = pb_pin->parent_node->pb_type;
 
                     std::string pb_name, port_name;
@@ -378,7 +391,7 @@ static void process_global_blocks(std::ifstream& fp, ClusterNetId inet, const ch
                           x, y, place_ctx.block_locs[bnum].loc.x, place_ctx.block_locs[bnum].loc.y);
             }
 
-            int pin_index = cluster_ctx.clb_nlist.net_pin_physical_index(inet, pin_counter);
+            int pin_index = net_pin_to_tile_pin_index(inet, pin_counter);
             if (physical_tile_type(bnum)->pin_class[pin_index] != atoi(tokens[7].c_str())) {
                 vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                           "The pin class %d of %lu net does not match given ",

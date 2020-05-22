@@ -27,7 +27,7 @@ e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected, ClusterBlock
         //Try inverting the swap direction
 
         auto& place_ctx = g_vpr_ctx.placement();
-        ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.z];
+        ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile];
 
         if (!b_to) {
             log_move_abort("inverted move no to block");
@@ -59,7 +59,6 @@ e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affecte
     VTR_ASSERT_SAFE(b_from);
 
     int imacro_from;
-    ClusterBlockId curr_b_from;
     e_block_move_result outcome = e_block_move_result::VALID;
 
     auto& place_ctx = g_vpr_ctx.placement();
@@ -81,7 +80,7 @@ e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affecte
         VTR_ASSERT_SAFE(outcome != e_block_move_result::VALID || imember_from == int(pl_macros[imacro_from].members.size()));
 
     } else {
-        ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.z];
+        ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile];
         int imacro_to = -1;
         get_imacro_from_iblk(&imacro_to, b_to, pl_macros);
 
@@ -109,9 +108,11 @@ e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_aff
 
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-    VTR_ASSERT_SAFE(to.z < int(place_ctx.grid_blocks[to.x][to.y].blocks.size()));
+    VTR_ASSERT_SAFE(to.sub_tile < int(place_ctx.grid_blocks[to.x][to.y].blocks.size()));
 
-    ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.z];
+    ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile];
+
+    t_pl_loc curr_from = place_ctx.block_locs[b_from].loc;
 
     e_block_move_result outcome = e_block_move_result::VALID;
 
@@ -121,6 +122,13 @@ e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_aff
         outcome = record_block_move(blocks_affected, b_from, to);
 
     } else if (b_to != INVALID_BLOCK_ID) {
+        // Check whether block to is compatible with from location
+        if (b_to != EMPTY_BLOCK_ID && b_to != INVALID_BLOCK_ID) {
+            if (!(is_legal_swap_to_location(b_to, curr_from)) || place_ctx.block_locs[b_to].is_fixed) {
+                return e_block_move_result::ABORT;
+            }
+        }
+
         // Sets up the blocks moved
         outcome = record_block_move(blocks_affected, b_from, to);
 
@@ -165,7 +173,7 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
             log_move_abort("macro_from swap to location illegal");
             outcome = e_block_move_result::ABORT;
         } else {
-            ClusterBlockId b_to = place_ctx.grid_blocks[curr_to.x][curr_to.y].blocks[curr_to.z];
+            ClusterBlockId b_to = place_ctx.grid_blocks[curr_to.x][curr_to.y].blocks[curr_to.sub_tile];
             int imacro_to = -1;
             get_imacro_from_iblk(&imacro_to, b_to, pl_macros);
 
@@ -208,8 +216,8 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
     //At the moment, we only support blk_to being the first element of the 'to' macro.
     //
     //For instance, this means that we can swap two carry chains so long as one starts
-    //below the other (not a big limitation since swapping in the oppostie direction would
-    //allow these blocks to swap)
+    //below the other (not a big limitation since swapping in the opposite direction
+    //allows these blocks to swap)
     if (place_ctx.pl_macros[imacro_to].members[0].blk_index != blk_to) {
         int imember_to = 0;
         auto outcome = record_macro_swaps(blocks_affected, imacro_to, imember_to, -swap_offset);
@@ -253,9 +261,17 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
         ClusterBlockId b_from = place_ctx.pl_macros[imacro_from].members[imember_from].blk_index;
 
         t_pl_loc curr_to = place_ctx.block_locs[b_from].loc + swap_offset;
+        t_pl_loc curr_from = place_ctx.block_locs[b_from].loc;
 
         ClusterBlockId b_to = place_ctx.pl_macros[imacro_to].members[imember_to].blk_index;
         VTR_ASSERT_SAFE(curr_to == place_ctx.block_locs[b_to].loc);
+
+        // Check whether block to is compatible with from location
+        if (b_to != EMPTY_BLOCK_ID && b_to != INVALID_BLOCK_ID) {
+            if (!(is_legal_swap_to_location(b_to, curr_from))) {
+                return e_block_move_result::ABORT;
+            }
+        }
 
         if (!is_legal_swap_to_location(b_from, curr_to)) {
             log_move_abort("macro_from swap to location illegal");
@@ -301,7 +317,7 @@ e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
             return e_block_move_result::ABORT;
         }
 
-        ClusterBlockId blk_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.z];
+        ClusterBlockId blk_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile];
 
         record_block_move(blocks_affected, member.blk_index, to);
 
@@ -332,7 +348,7 @@ e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& m
             return e_block_move_result::ABORT;
         }
 
-        ClusterBlockId blk_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.z];
+        ClusterBlockId blk_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile];
 
         int imacro_to = -1;
         get_imacro_from_iblk(&imacro_to, blk_to, place_ctx.pl_macros);
@@ -417,13 +433,29 @@ bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to) {
     //(neccessarily) translationally invariant for an arbitrary macro
 
     auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
 
     if (to.x < 0 || to.x >= int(device_ctx.grid.width())
-        || to.y < 0 || to.y >= int(device_ctx.grid.height())
-        || to.z < 0 || to.z >= device_ctx.grid[to.x][to.y].type->capacity
-        || (device_ctx.grid[to.x][to.y].type != physical_tile_type(blk))) {
+        || to.y < 0 || to.y >= int(device_ctx.grid.height())) {
         return false;
     }
+
+    auto physical_tile = device_ctx.grid[to.x][to.y].type;
+    auto logical_block = cluster_ctx.clb_nlist.block_type(blk);
+
+    if (to.sub_tile < 0 || to.sub_tile >= physical_tile->capacity
+        || !is_sub_tile_compatible(physical_tile, logical_block, to.sub_tile)) {
+        return false;
+    }
+    // If the destination block is user constrained, abort this swap
+    auto b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile];
+    if (b_to != INVALID_BLOCK_ID && b_to != EMPTY_BLOCK_ID) {
+        if (place_ctx.block_locs[b_to].is_fixed) {
+            return false;
+        }
+    }
+
     return true;
 }
 
@@ -482,7 +514,7 @@ ClusterBlockId pick_from_block() {
     return ClusterBlockId::INVALID();
 }
 
-bool find_to_loc_uniform(t_physical_tile_type_ptr type,
+bool find_to_loc_uniform(t_logical_block_type_ptr type,
                          float rlim,
                          const t_pl_loc from,
                          t_pl_loc& to) {
@@ -495,10 +527,6 @@ bool find_to_loc_uniform(t_physical_tile_type_ptr type,
     //
     //This ensures that such blocks don't get locked down too early during placement (as would be the
     //case with a physical distance rlim)
-    auto& grid = g_vpr_ctx.device().grid;
-
-    auto grid_type = grid[from.x][from.y].type;
-    VTR_ASSERT(type == grid_type);
 
     //Retrieve the compressed block grid for this block type
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
@@ -511,7 +539,7 @@ bool find_to_loc_uniform(t_physical_tile_type_ptr type,
     int cx_from = grid_to_compressed(compressed_block_grid.compressed_to_grid_x, from.x);
     int cy_from = grid_to_compressed(compressed_block_grid.compressed_to_grid_y, from.y);
 
-    //Determin the valid compressed grid location ranges
+    //Determine the valid compressed grid location ranges
     int min_cx = std::max(0, cx_from - rlim_x);
     int max_cx = std::min<int>(compressed_block_grid.compressed_to_grid_x.size() - 1, cx_from + rlim_x);
     int delta_cx = max_cx - min_cx;
@@ -605,14 +633,18 @@ bool find_to_loc_uniform(t_physical_tile_type_ptr type,
     to.x = compressed_block_grid.compressed_to_grid_x[cx_to];
     to.y = compressed_block_grid.compressed_to_grid_y[cy_to];
 
-    //Each x/y location contains only a single type, so we can pick a random
-    //z (capcity) location
-    to.z = vtr::irand(type->capacity - 1);
+    auto& grid = g_vpr_ctx.device().grid;
 
-    auto& device_ctx = g_vpr_ctx.device();
-    VTR_ASSERT_MSG(device_ctx.grid[to.x][to.y].type == type, "Type must match");
-    VTR_ASSERT_MSG(device_ctx.grid[to.x][to.y].width_offset == 0, "Should be at block base location");
-    VTR_ASSERT_MSG(device_ctx.grid[to.x][to.y].height_offset == 0, "Should be at block base location");
+    auto to_type = grid[to.x][to.y].type;
+
+    //Each x/y location possibly contains multiple sub tiles, so we need to pick
+    //a z location within a compatible sub tile.
+    auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(to_type->index);
+    to.sub_tile = compatible_sub_tiles[vtr::irand((int)compatible_sub_tiles.size() - 1)];
+
+    VTR_ASSERT_MSG(is_tile_compatible(to_type, type), "Type must be compatible");
+    VTR_ASSERT_MSG(grid[to.x][to.y].width_offset == 0, "Should be at block base location");
+    VTR_ASSERT_MSG(grid[to.x][to.y].height_offset == 0, "Should be at block base location");
 
     return true;
 }

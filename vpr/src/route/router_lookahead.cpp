@@ -87,24 +87,6 @@ float ClassicLookahead::classic_wire_lookahead_cost(int inode, int target_node, 
     return (expected_cost);
 }
 
-float MapLookahead::get_expected_cost(int current_node, int target_node, const t_conn_cost_params& params, float /*R_upstream*/) const {
-    auto& device_ctx = g_vpr_ctx.device();
-
-    t_rr_type rr_type = device_ctx.rr_nodes[current_node].type();
-
-    if (rr_type == CHANX || rr_type == CHANY) {
-        return get_lookahead_map_cost(current_node, target_node, params.criticality);
-    } else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */
-        return (device_ctx.rr_indexed_data[SINK_COST_INDEX].base_cost);
-    } else { /* Change this if you want to investigate route-throughs */
-        return (0.);
-    }
-}
-
-void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {
-    compute_router_lookahead(segment_inf.size());
-}
-
 float NoOpLookahead::get_expected_cost(int /*current_node*/, int /*target_node*/, const t_conn_cost_params& /*params*/, float /*R_upstream*/) const {
     return 0.;
 }

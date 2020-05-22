@@ -65,6 +65,7 @@ void SetupVPR(const t_options* Options,
               bool* ShowGraphics,
               int* GraphPause,
               bool* SaveGraphics,
+              std::string* GraphicsCommands,
               t_power_opts* PowerOpts) {
     using argparse::Provenance;
 
@@ -110,30 +111,46 @@ void SetupVPR(const t_options* Options,
     *user_models = Arch->models;
     *library_models = Arch->model_library;
 
-    /* TODO: this is inelegant, I should be populating this information in XmlReadArch */
-    device_ctx.EMPTY_TYPE = nullptr;
-    for (const auto& type : device_ctx.physical_tile_types) {
+    device_ctx.EMPTY_PHYSICAL_TILE_TYPE = nullptr;
+    int num_inputs = 0;
+    int num_outputs = 0;
+    for (auto& type : device_ctx.physical_tile_types) {
         if (strcmp(type.name, EMPTY_BLOCK_NAME) == 0) {
-            VTR_ASSERT(device_ctx.EMPTY_TYPE == nullptr);
-            device_ctx.EMPTY_TYPE = &type;
-        } else {
-            if (block_type_contains_blif_model(logical_block_type(&type), MODEL_INPUT)) {
-                device_ctx.input_types.insert(&type);
-            }
-            if (block_type_contains_blif_model(logical_block_type(&type), MODEL_OUTPUT)) {
-                device_ctx.output_types.insert(&type);
-            }
+            VTR_ASSERT(device_ctx.EMPTY_PHYSICAL_TILE_TYPE == nullptr);
+            device_ctx.EMPTY_PHYSICAL_TILE_TYPE = &type;
+        }
+
+        if (type.is_input_type) {
+            num_inputs += 1;
+        }
+
+        if (type.is_output_type) {
+            num_outputs += 1;
         }
     }
 
-    VTR_ASSERT(device_ctx.EMPTY_TYPE != nullptr);
+    device_ctx.EMPTY_LOGICAL_BLOCK_TYPE = nullptr;
+    int max_equivalent_tiles = 0;
+    for (const auto& type : device_ctx.logical_block_types) {
+        if (0 == strcmp(type.name, EMPTY_BLOCK_NAME)) {
+            device_ctx.EMPTY_LOGICAL_BLOCK_TYPE = &type;
+        }
 
-    if (device_ctx.input_types.empty()) {
+        max_equivalent_tiles = std::max(max_equivalent_tiles, (int)type.equivalent_tiles.size());
+    }
+
+    VTR_ASSERT(max_equivalent_tiles > 0);
+    device_ctx.has_multiple_equivalent_tiles = max_equivalent_tiles > 1;
+
+    VTR_ASSERT(device_ctx.EMPTY_PHYSICAL_TILE_TYPE != nullptr);
+    VTR_ASSERT(device_ctx.EMPTY_LOGICAL_BLOCK_TYPE != nullptr);
+
+    if (num_inputs == 0) {
         VPR_ERROR(VPR_ERROR_ARCH,
                   "Architecture contains no top-level block type containing '.input' models");
     }
 
-    if (device_ctx.output_types.empty()) {
+    if (num_outputs == 0) {
         VPR_ERROR(VPR_ERROR_ARCH,
                   "Architecture contains no top-level block type containing '.output' models");
     }
@@ -218,6 +235,7 @@ void SetupVPR(const t_options* Options,
     *ShowGraphics = Options->show_graphics;
 
     *SaveGraphics = Options->save_graphics;
+    *GraphicsCommands = Options->graphics_commands;
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_ARCH)) {
         EchoArch(getEchoFileName(E_ECHO_ARCH), device_ctx.physical_tile_types, device_ctx.logical_block_types, Arch);
@@ -259,7 +277,7 @@ static void SetupSwitches(const t_arch& Arch,
 
     /* Delayless switch for connecting sinks and sources with their pins. */
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].set_type(SwitchType::MUX);
-    device_ctx.arch_switch_inf[RoutingArch->delayless_switch].name = vtr::strdup("__vpr_delayless_switch__");
+    device_ctx.arch_switch_inf[RoutingArch->delayless_switch].name = vtr::strdup(VPR_DELAYLESS_SWITCH_NAME);
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].R = 0.;
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].Cin = 0.;
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].Cout = 0.;
@@ -301,6 +319,7 @@ static void SetupRoutingArch(const t_arch& Arch,
 }
 
 static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts) {
+    RouterOpts->do_check_rr_graph = Options.check_rr_graph;
     RouterOpts->astar_fac = Options.astar_fac;
     RouterOpts->bb_factor = Options.bb_factor;
     RouterOpts->criticality_exp = Options.criticality_exp;
@@ -323,6 +342,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->router_algorithm = Options.RouterAlgorithm;
     RouterOpts->fixed_channel_width = Options.RouteChanWidth;
     RouterOpts->min_channel_width_hint = Options.min_route_chan_width_hint;
+    RouterOpts->read_rr_edge_metadata = Options.read_rr_edge_metadata;
 
     //TODO document these?
     RouterOpts->trim_empty_channels = false; /* DEFAULT */
@@ -342,18 +362,26 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->congested_routing_iteration_threshold_frac = Options.congested_routing_iteration_threshold_frac;
     RouterOpts->route_bb_update = Options.route_bb_update;
     RouterOpts->clock_modeling = Options.clock_modeling;
+    RouterOpts->two_stage_clock_routing = Options.two_stage_clock_routing;
     RouterOpts->high_fanout_threshold = Options.router_high_fanout_threshold;
     RouterOpts->router_debug_net = Options.router_debug_net;
     RouterOpts->router_debug_sink_rr = Options.router_debug_sink_rr;
+    RouterOpts->router_debug_iteration = Options.router_debug_iteration;
     RouterOpts->lookahead_type = Options.router_lookahead_type;
     RouterOpts->max_convergence_count = Options.router_max_convergence_count;
     RouterOpts->reconvergence_cpd_threshold = Options.router_reconvergence_cpd_threshold;
+    RouterOpts->initial_timing = Options.router_initial_timing;
+    RouterOpts->update_lower_bound_delays = Options.router_update_lower_bound_delays;
     RouterOpts->first_iteration_timing_report_file = Options.router_first_iteration_timing_report_file;
-
     RouterOpts->strict_checks = Options.strict_checks;
 
     RouterOpts->write_router_lookahead = Options.write_router_lookahead;
     RouterOpts->read_router_lookahead = Options.read_router_lookahead;
+
+    RouterOpts->router_heap = Options.router_heap;
+    RouterOpts->exit_after_first_routing_iteration = Options.exit_after_first_routing_iteration;
+
+    RouterOpts->check_route = Options.check_route;
 }
 
 static void SetupAnnealSched(const t_options& Options,
@@ -481,6 +509,8 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
 
     PlacerOpts->rlim_escape_fraction = Options.place_rlim_escape_fraction;
     PlacerOpts->move_stats_file = Options.place_move_stats_file;
+    PlacerOpts->placement_saves_per_temperature = Options.placement_saves_per_temperature;
+    PlacerOpts->place_delta_delay_matrix_calculation_method = Options.place_delta_delay_matrix_calculation_method;
 
     PlacerOpts->strict_checks = Options.strict_checks;
 
@@ -488,6 +518,8 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->read_placement_delay_lookup = Options.read_placement_delay_lookup;
 
     PlacerOpts->allowed_tiles_for_delay_model = Options.allowed_tiles_for_delay_model;
+
+    PlacerOpts->effort_scaling = Options.place_effort_scaling;
 }
 
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {
@@ -500,6 +532,7 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
     analysis_opts.timing_report_npaths = Options.timing_report_npaths;
     analysis_opts.timing_report_detail = Options.timing_report_detail;
     analysis_opts.timing_report_skew = Options.timing_report_skew;
+    analysis_opts.echo_dot_timing_graph_node = Options.echo_dot_timing_graph_node;
 }
 
 static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch) {

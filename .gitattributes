@@ -20,3 +20,34 @@
 abc/**                  -text
 abc_with_bb_support/**  -text
 libs/EXTERNAL/**        -text
+
+# Settings to improve linguist data reporting (used by GitHub)
+#-------------------------------------------------------------------------
+*.v                     linguist-language=Verilog
+*.vh                    linguist-language=Verilog
+*.pv                    linguist-language=Verilog
+*.pl                    linguist-language=Perl
+*.sp                    linguist-language=Spice
+*.pm                    linguist-language=Spice
+
+# External ABC
+abc/**                  linguist-vendored
+abc_with_bb_support/**  linguist-vendored
+# External libraries
+libs/EXTERNAL/**        linguist-vendored
+# External benchmarks imported into vtr_flow benchmark suite.
+vtr_flow/benchmarks/**  linguist-vendored
+vtr_flow/scripts/perl_libs/** linguist-vendored
+# External benchmarks imported into ODIN_II benchmark suite.
+ODIN_II/regression_test/benchmark/verilog/large/** linguist-vendored
+ODIN_II/regression_test/benchmark/verilog/full/** linguist-vendored
+ODIN_II/regression_test/benchmark/verilog/FIR/** linguist-vendored
+
+# Documentation
+doc/**                  linguist-documentation
+*.txt                   linguist-documentation
+*.md                    linguist-documentation
+*.rst                   linguist-documentation
+
+# Generated files
+vpr/src/route/gen/**    linguist-generated

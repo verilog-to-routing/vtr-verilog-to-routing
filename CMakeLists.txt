@@ -8,10 +8,6 @@ project("VTR")
 #
 # VTR Build Options
 #
-set(VTR_COMPILE_OPTIONS "none" CACHE STRING "Specify whether vpr uses strict compiling options, e.g. -Werror")
-set(CACHE VTR_COMPILE_OPTIONS PROPERTY STRING strict none)
-
-
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
     message("CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
     message("CMAKE_BINARY_DIR: ${CMAKE_BINARY_DIR}")
@@ -30,6 +26,7 @@ set_property(CACHE VTR_IPO_BUILD PROPERTY STRINGS auto on off)
 set(VTR_ASSERT_LEVEL "2" CACHE STRING "VTR assertion checking level. 0: no assertions, 1: fast assertions, 2: regular assertions, 3: additional assertions with noticable run-time overhead, 4: all assertions (including those with significant run-time cost)")
 set_property(CACHE VTR_ASSERT_LEVEL PROPERTY STRINGS 0 1 2 3 4)
 
+option(VTR_ENABLE_STRICT_COMPILE "Specifies whether compiler warnings should be treated as errors (e.g. -Werror)" OFF)
 option(VTR_ENABLE_SANITIZE "Enable address/leak/undefined-behaviour sanitizers (i.e. run-time error checking)" OFF)
 option(VTR_ENABLE_PROFILING "Enable performance profiler (gprof)" OFF)
 option(VTR_ENABLE_COVERAGE "Enable code coverage tracking (gcov)" OFF)
@@ -38,19 +35,22 @@ option(VTR_ENABLE_DEBUG_LOGGING "Enable debug logging" OFF)
 #Allow the user to decide weather to compile the graphics library
 set(VPR_USE_EZGL "auto" CACHE STRING "Specify whether vpr uses the graphics library")
 set_property(CACHE VPR_USE_EZGL PROPERTY STRINGS auto off on)
+option(VTR_ENABLE_CAPNPROTO "Enable capnproto binary serialization support in VPR." ON)
 
 option(WITH_BLIFEXPLORER "Enable build with blifexplorer" OFF)
-option(WITH_LIBRTLNUMBER "Enable build with librtlnumber" OFF)
 
+option(WITH_ABC "Enable building abc" ON)
+option(WITH_ODIN "Enable building odin" ON)
 option(ODIN_DEBUG "Enable building odin with debug flags" OFF)
 option(ODIN_WARN "Enable building odin with extra warning flags" OFF)
 option(ODIN_COVERAGE "Enable building odin with coverage flags" OFF)
 option(ODIN_TIDY "Enable building odin with clang tidy" OFF)
+option(ODIN_SANITIZE "Enable building odin with sanitize flags" OFF)
 
 set(VTR_VERSION_MAJOR 8)
-set(VTR_VERSION_MINOR 0)
+set(VTR_VERSION_MINOR 1)
 set(VTR_VERSION_PATCH 0)
-set(VTR_VERSION_PRERELEASE "rc1")
+set(VTR_VERSION_PRERELEASE "dev")
 
 include(FilesToDirs)
 
@@ -276,8 +276,12 @@ endif()
 #
 # Set final flags
 #
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${WARN_FLAGS} ${SANITIZE_FLAGS} ${PROFILING_FLAGS} ${COVERAGE_FLAGS} ${LOGGING_FLAGS} ${COLORED_COMPILE}")
-message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
+separate_arguments(
+    ADDITIONAL_FLAGS UNIX_COMMAND "${SANITIZE_FLAGS} ${PROFILING_FLAGS} ${COVERAGE_FLAGS} ${LOGGING_FLAGS} ${COLORED_COMPILE}"
+    )
+separate_arguments(
+    WARN_FLAGS UNIX_COMMAND "${WARN_FLAGS}"
+    )
 
 
 #
@@ -287,6 +291,14 @@ add_custom_target(get_titan_benchmarks
     COMMAND ./vtr_flow/scripts/download_titan.py --vtr_flow_dir ./vtr_flow
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Downloading (~1GB) and extracting Titan benchmarks (~10GB) into VTR source tree.")
+
+#
+# ISPD Benchmarks
+#
+add_custom_target(get_ispd_benchmarks
+    COMMAND ./vtr_flow/scripts/download_ispd.py --vtr_flow_dir ./vtr_flow
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Downloading (~50MB) and extracting Titan benchmarks (~0.5GB) into VTR source tree.")
 
 #
 # Unit Testing
@@ -321,37 +333,57 @@ if (VPR_USE_EZGL STREQUAL "auto")
 
     if(GTK3_FOUND AND X11_FOUND)
         set(VPR_USE_EZGL "on")
+        message(STATUS "VPR Graphics: Enabled")
     else()
         set(VPR_USE_EZGL "off")
+        message(STATUS "VPR Graphics: Disabled (required libraries missing, on debia/ubuntu try: sudo apt install libgtk-3 libx11-dev")
     endif()
 endif()
 
 
 #Add the various sub-projects
-add_subdirectory(libs)
+if(${WITH_ABC})
+    add_subdirectory(abc)
+endif()
+add_subdirectory(libs) #libs/CMakeLists.txt handles adding warnings flags to non-external libraries
+
+#Add the various tools
+add_compile_options(${WARN_FLAGS}) #Add warn flags for VTR tools
+add_compile_options(${ADDITIONAL_FLAGS})
+link_libraries(${ADDITIONAL_FLAGS})
 add_subdirectory(vpr)
-add_subdirectory(abc)
-add_subdirectory(ODIN_II)
-add_subdirectory(ace2)
+if(${WITH_ABC})
+    add_subdirectory(ace2)
+endif()
 add_subdirectory(utils)
-if(WITH_BLIFEXPLORER)
-    add_subdirectory(blifexplorer)
+if(${WITH_ODIN})
+    add_subdirectory(ODIN_II)
+    # blifexplorer depends on odin
+    if(${WITH_BLIFEXPLORER})
+        add_subdirectory(blifexplorer)
+    endif()
 endif()
 
 #Add extra compilation flags to suppress warnings from some libraries/tools
 # Note that target_compile_options() *appends* to the current compilation options of
 # the specified target
 
-#Since ABC is an externally developed tool, we suppress all compiler warnings
-CHECK_CXX_COMPILER_FLAG("-w" CXX_COMPILER_SUPPORTS_-w)
-if(CXX_COMPILER_SUPPORTS_-w)
-    target_compile_options(libabc PRIVATE "-w")
-    target_compile_options(abc PRIVATE "-w")
-endif()
+if(${WITH_ABC})
+    #Since ABC is an externally developed tool, we suppress all compiler warnings
+    CHECK_CXX_COMPILER_FLAG("-w" CXX_COMPILER_SUPPORTS_-w)
+    if(CXX_COMPILER_SUPPORTS_-w)
+        target_compile_options(libabc PRIVATE "-w")
+        target_compile_options(abc PRIVATE "-w")
+    endif()
 
-#Some ABC headers generate warnings, treat them as system headers to suppress warnings
-get_property(ABC_INCLUDE_DIRS TARGET libabc PROPERTY INCLUDE_DIRECTORIES)
-target_include_directories(libabc SYSTEM INTERFACE ${ABC_INCLUDE_DIRS})
+    #Some ABC headers generate warnings, treat them as system headers to suppress warnings
+    get_property(ABC_INCLUDE_DIRS TARGET libabc PROPERTY INCLUDE_DIRECTORIES)
+    target_include_directories(libabc SYSTEM INTERFACE ${ABC_INCLUDE_DIRS})
+
+    #We don't control the ABC cmake file, so we need to manually unset the IPO flags
+    #to avoid cmake dev warnings due to it's old cmake version policy
+    set_target_properties(abc libabc libabc-pic PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
+endif()
 
 #PugiXml has some deliberate switch fallthrough cases (as indicated by comments), but they
 #are tagged as warnings with g++-7 (the comments don't match g++-7's suppression regexes).
@@ -361,10 +393,6 @@ CHECK_CXX_COMPILER_FLAG("-Wimplicit-fallthrough=0" CXX_COMPILER_SUPPORTS_-Wimpli
 if(CXX_COMPILER_SUPPORTS_-Wimplicit-fallthrough=0)
     target_compile_options(libpugixml PRIVATE "-Wimplicit-fallthrough=0")
 endif()
-
-#We don't control the ABC cmake file, so we need to manually unset the IPO flags
-#to avoid cmake dev warnings due to it's old cmake version policy
-set_target_properties(abc libabc libabc-pic PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
 
 #
 #
@@ -376,4 +404,8 @@ list(APPEND DIRS_TO_FORMAT_CPP "${CMAKE_CURRENT_SOURCE_DIR}/libs/libarchfpga")
 list(APPEND DIRS_TO_FORMAT_CPP "${CMAKE_CURRENT_SOURCE_DIR}/libs/libvtrutil")
 list(APPEND DIRS_TO_FORMAT_CPP "${CMAKE_CURRENT_SOURCE_DIR}/libs/libpugiutil")
 list(APPEND DIRS_TO_FORMAT_CPP "${CMAKE_CURRENT_SOURCE_DIR}/libs/liblog")
+list(APPEND DIRS_TO_FORMAT_CPP "${CMAKE_CURRENT_SOURCE_DIR}/libs/librtlnumber")
+list(APPEND DIRS_TO_FORMAT_CPP "${CMAKE_CURRENT_SOURCE_DIR}/ODIN_II")
+
+
 include(AutoClangFormat)

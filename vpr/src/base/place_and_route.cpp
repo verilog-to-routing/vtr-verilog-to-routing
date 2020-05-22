@@ -43,7 +43,7 @@ static float comp_width(t_chan* chan, float x, float separation);
 
 /************************* Subroutine Definitions ****************************/
 
-int binary_search_place_and_route(t_placer_opts placer_opts,
+int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                                   const t_annealing_sched& annealing_sched,
                                   const t_router_opts& router_opts,
                                   const t_analysis_opts& analysis_opts,
@@ -53,7 +53,7 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
                                   int min_chan_width_hint,
                                   t_det_routing_arch* det_routing_arch,
                                   std::vector<t_segment_inf>& segment_inf,
-                                  vtr::vector<ClusterNetId, float*>& net_delay,
+                                  ClbNetPinsMatrix<float>& net_delay,
                                   std::shared_ptr<SetupHoldTimingInfo> timing_info,
                                   std::shared_ptr<RoutingDelayCalculator> delay_calc) {
     /* This routine performs a binary search to find the minimum number of      *
@@ -75,6 +75,12 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
     int warnings;
 
     t_graph_type graph_type;
+
+    /* We have chosen to pass placer_opts_ref by reference because of its large size. *      
+     * However, since the value is mutated later in the function, we declare a        *
+     * mutable variable called placer_opts equal to placer_opts_ref.                  */
+
+    t_placer_opts placer_opts = placer_opts_ref;
 
     /* Allocate the major routing structures. */
 
@@ -351,7 +357,9 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
                     router_opts.trim_obs_channels,
                     router_opts.clock_modeling,
                     arch->Directs, arch->num_directs,
-                    &warnings);
+                    &warnings,
+                    router_opts.read_rr_edge_metadata,
+                    router_opts.do_check_rr_graph);
 
     init_draw_coords(final);
     restore_routing(best_routing, route_ctx.clb_opins_used_locally, saved_clb_opins_used_locally);

@@ -6,6 +6,9 @@
 # Path to directory of circuits to use
 circuits_dir=benchmarks/titan_other_blif
 
+# Path to directory of SDC files
+sdc_dir=benchmarks/titan_other_blif
+
 # Path to directory of architectures to use
 archs_dir=arch/titan
 
@@ -31,6 +34,8 @@ circuit_list_add=SURF_desc_stratixiv_arch_timing.blif
 circuit_list_add=ucsb_152_tap_fir_stratixiv_arch_timing.blif
 circuit_list_add=uoft_raytracer_stratixiv_arch_timing.blif
 circuit_list_add=wb_conmax_stratixiv_arch_timing.blif
+circuit_list_add=picosoc_stratixiv_arch_timing.blif
+circuit_list_add=murax_stratixiv_arch_timing.blif
 
 # Add architectures to list to sweep
 arch_list_add=stratixiv_arch.timing.xml

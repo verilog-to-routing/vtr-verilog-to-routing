@@ -27,7 +27,7 @@ We have some guidelines in place to help catch most of these problems:
     ```
     since it performs much more thorough testing.
 
-    It is typically a good idea to run tests regularily as you make changes.
+    It is typically a good idea to run tests regularly as you make changes.
     If you have failures see [how to debugging failed tests](#debugging-failed-tests).
 
 2.  The automated [BuildBot](http://builds.verilogtorouting.org:8080/waterfall) will perform more extensive regressions tests and mark which revisions are stable.
@@ -45,7 +45,7 @@ We have some guidelines in place to help catch most of these problems:
 5.  Keep in sync with the master branch as regularly as you can (i.e. `git pull` or `git pull --rebase`).
     The longer code deviates from the trunk, the more painful it is to integrate back into the trunk.
 
-Whatever system that we come up with will not be foolproof so be conscientious about how your changes will effect other developers.
+Whatever system that we come up with will not be foolproof so be conscientious about how your changes will affect other developers.
 
 # Code Formatting
 
@@ -80,12 +80,12 @@ There are 4 main regression tests:
     This regression test is *not* suitable for evaluating QoR or performance.
     It's primary purpose is to make sure the various tools do not crash/fail in the basic VTR flow.
 
-    QoR checks in this regression test are primarily 'canary' checks to catch gross degredations in QoR.
-    Ocassionally, code changes can cause QoR failures (e.g. due to CAD noise -- particularly on small benchmarks); usually such failures are not a concern if the QoR differences are small.
+    QoR checks in this regression test are primarily 'canary' checks to catch gross degradations in QoR.
+    Occasionally, code changes can cause QoR failures (e.g. due to CAD noise -- particularly on small benchmarks); usually such failures are not a concern if the QoR differences are small.
 
 * `vtr_reg_strong`: ~20 minutes serial, ~15 minutes with `-j4`
 
-    **Goal:** Broad functionaly check
+    **Goal:** Broad functionality check
 
     **Feature Coverage:** High
 
@@ -96,8 +96,8 @@ There are 4 main regression tests:
     This regression test is *not* suitable for evaluating QoR or performance.
     It's primary purpose is try and achieve high functionality coverage.
 
-    QoR checks in this regression test are primarily 'canary' checks to catch gross degredations in QoR.
-    Ocassionally, changes can cause QoR failures (e.g. due to CAD noise -- particularly on small benchmarks); usually such failures are not a concern if the QoR differences are small.
+    QoR checks in this regression test are primarily 'canary' checks to catch gross degradations in QoR.
+    Occasionally, changes can cause QoR failures (e.g. due to CAD noise -- particularly on small benchmarks); usually such failures are not a concern if the QoR differences are small.
 
 * `vtr_reg_nightly`: ~6 hours with `-j3`
 
@@ -139,9 +139,11 @@ $ ./run_reg_test.pl vtr_reg_basic
 $ ./run_reg_test.pl vtr_reg_strong
 ```
 
-The *nightly* and *weekly* regressions require the Titan benchmarks which can be integrated into your VTR tree with:
+The *nightly* and *weekly* regressions require the Titan and ISPD benchmarks
+which can be integrated into your VTR tree with:
 ```shell
 make get_titan_benchmarks
+make get_ispd_benchmarks
 ```
 They can then be run using `run_reg_test.pl`:
 ```shell
@@ -174,7 +176,7 @@ These can be run with:
 $ ./run_reg_test.pl odin_reg_micro
 $ ./run_reg_test.pl odin_reg_full
 ```
-and should be used when makeing changes to Odin.
+and should be used when making changes to Odin.
 
 ## Unit Tests
 
@@ -183,6 +185,85 @@ VTR also has a limited set of unit tests, which can be run with:
 #From the VTR root directory
 $ make && make test
 ```
+
+## Running tests on Pull Requests (PRs) via Kokoro
+
+Because of the long runtime for nightly and weekly tests, a Kokoro job can be
+used to run these tests once a Pull Request (PR) has been made at
+https://github.com/verilog-to-routing/vtr-verilog-to-routing.
+
+Any pull request made by a contributor of the verilog-to-routing GitHub project
+on https://github.com/verilog-to-routing/ will get a set of jobs immediately.
+Non-contributors can request a contributor on the project add a label
+"kokoro:force-run" to the PR. Kokoro will then detect the tag, remove the tag,
+and then and issue jobs for that PR.  If the tag remains after being added,
+there may not be an available Kokoro runner, so wait.
+
+### Re-running tests on Kokoro
+
+If a job fails due to an intermittent failure or a re-run is desired, a
+contributor can add the label "kokoro:force-run" to re-issue jobs for that PR.
+
+### Checking results from Kokoro tests
+
+Currently there is not a way for an in-flight job to be monitored.
+
+Once a job has been completed, you can follow the "Details" link that appears on the PR status. 
+The Kokoro page will show the job's stdout in the 'Target Log' tab (once the job has completed).
+The full log can be downloading by clicking the 'Download Full Log' button, or from the 'Artifacts' tab.
+
+### Downloading logs from Google Cloud Storage (GCS)
+
+After a Kokoro run is complete a number of useful log files (e.g. for each VPR invocation) are stored to Google Cloud Storage (GCS).
+
+The top level directory containing all VTR Kokoro runs is:
+
+    https://console.cloud.google.com/storage/browser/vtr-verilog-to-routing/artifacts/prod/foss-fpga-tools/verilog-to-routing/upstream/
+
+PR jobs are under the `presubmit` directory, and continuous jobs (which run on the master branch) are under the `continuous` directory.
+
+Each Kokoro run has a unique build number, which can be found in the log file (available via the Kokoro run webpage).
+For example, if the log file contains:
+```
+export KOKORO_BUILD_NUMBER="450"
+```
+then the Kokoro build number is `450`.
+
+If build 450 corresponded to a PR (`presubmit`) build of the `nightly` regression tests, the resulting output files would be available at:
+
+    https://console.cloud.google.com/storage/browser/vtr-verilog-to-routing/artifacts/prod/foss-fpga-tools/verilog-to-routing/upstream/presubmit/nightly/450/
+
+where `presubmit/nightly/450/` (the type, test name and build number) have been appended to the base URL.
+Navigating to that URL will allow you to browse and download the collected log files.
+
+To download all the files from that Kokoro run, replace `https://console.cloud.google.com/storage/browser/` in the URL with `gs://` and invoke the [gsutil](https://cloud.google.com/storage/docs/gsutil) command (and it's `cp -R` sub-command), like so:
+
+```
+gsutil -m cp -R gs://vtr-verilog-to-routing/artifacts/prod/foss-fpga-tools/verilog-to-routing/upstream/presubmit/nightly/450 .
+```
+
+This will download all of the logs to the current directory for inspection.
+
+#### Kokoro runner details
+
+Kokoro runners are a standard
+[`n1-highmem-16`](https://cloud.google.com/compute/docs/machine-types#n1_high-memory_machine_types)
+VM with a 4 TB `pd-standard` disk used to perform the build of VPR and run the
+tests.
+
+#### What to do if Kokoro jobs are not starting?
+
+There are several reasons Kokoro jobs might not be starting.
+Try adding the "kokoro:force-run" label if it is not already added, or remove
+and add it if it already was added.
+
+If adding the label has no affect, check GCS status, as a GCS disruption will
+also disrupt Kokoro.
+
+Another reason jobs may not start is if there is a large backlog of jobs
+running, there may be no runners left to start.  In this case, someone with
+Kokoro management rights may need to terminate stale jobs, or wait for job
+timeouts.
 
 # Debugging Failed Tests
 
@@ -241,12 +322,12 @@ We could also manually re-run the tools (e.g. with a debugger) using files in th
 # Evaluating Quality of Result (QoR) Changes
 VTR uses highly tuned and optimized algorithms and data structures.
 Changes which effect these can have significant impacts on the quality of VTR's design implementations (timing, area etc.) and VTR's run-time/memory usage.
-Such changes need to be evaluated carefully before they are pushed/merged to ensure no quality degredation occurs.
+Such changes need to be evaluated carefully before they are pushed/merged to ensure no quality degradation occurs.
 
-If you are unsure of what level of QoR evaluation is neccessary for your changes, please ask a VTR developer for guidance.
+If you are unsure of what level of QoR evaluation is necessary for your changes, please ask a VTR developer for guidance.
 
 ## General QoR Evaluation Principles
-The goal of performing a QoR evaluation is to measure precisely the impact of a set of code/architecture/benchmark changes on both the quality of VTR's design implemenation (i.e. the result of VTR's optimizations), and on tool run-time and memory usage.
+The goal of performing a QoR evaluation is to measure precisely the impact of a set of code/architecture/benchmark changes on both the quality of VTR's design implementation (i.e. the result of VTR's optimizations), and on tool run-time and memory usage.
 
 This process is made more challenging by the fact that many of VTR's optimization algorithms are based on heuristics (some of which depend on randomization).
 This means that VTR's implementation results are dependent upon:
@@ -258,14 +339,14 @@ This effect can be viewed as an intrinsic 'noise' or 'variance' to any QoR measu
 
 There are typically two key methods used to measure the 'true' QoR:
 
-1. Averaging metrics accross multiple architectures and benchmark circuits.
+1. Averaging metrics across multiple architectures and benchmark circuits.
 
 2. Averaging metrics multiple runs of the same architecture and benchmark, but using different random number generator seeds
 
     This is a further variance reduction technique, although it can be very CPU-time intensive.
-    A typical example would be to sweep an entire benchmark set accross 3 or 5 different seeds.
+    A typical example would be to sweep an entire benchmark set across 3 or 5 different seeds.
 
-In practise any algorithm changes will likely cause improvements on some architecture/benchmark combinations, and degredations on others.
+In practice any algorithm changes will likely cause improvements on some architecture/benchmark combinations, and degradations on others.
 As a result we primarily focus on the *average* behaviour of a change to evaluate its impact.
 However extreme outlier behaviour on particular circuits is also important, since it may indicate bugs or other unexpected behaviour.
 
@@ -288,18 +369,18 @@ Implementation Quality Metrics:
 
 Run-time/Memory Usage Metrics:
 
-| Metric                      | Meaning                                                                   | Sensitivity |
-|-----------------------------|---------------------------------------------------------------------------|-------------|
-| vtr_flow_elapsed_time       | Wall-clock time to complete the VTR flow                                  | Low         |
-| pack_time                   | Wall-clock time VPR spent during packing                                  | Low         |
-| place_time                  | Wall-clock time VPR spent during placement                                | Low         |
-| min_chan_width_route_time   | Wall-clock time VPR spent during routing at the relaxed channel width     | High\*      |
-| crit_path_route_time        | Wall-clock time VPR spent during routing at the relaxed channel width     | Low         |
-| max_vpr_mem                 | Maximum memory used by VPR (in kilobytes)                                 | Low         |
+| Metric                      | Meaning                                                                        | Sensitivity |
+|-----------------------------|--------------------------------------------------------------------------------|-------------|
+| vtr_flow_elapsed_time       | Wall-clock time to complete the VTR flow                                       | Low         |
+| pack_time                   | Wall-clock time VPR spent during packing                                       | Low         |
+| place_time                  | Wall-clock time VPR spent during placement                                     | Low         |
+| min_chan_width_route_time   | Wall-clock time VPR spent during routing at the minimum routable channel width | High\*      |
+| crit_path_route_time        | Wall-clock time VPR spent during routing at the relaxed channel width          | Low         |
+| max_vpr_mem                 | Maximum memory used by VPR (in kilobytes)                                      | Low         |
 
 \*  Note that the minimum channel width route time is chaotic and can be highly variable (e.g. 10x variation is not unusual). Minimum channel width routing performs a binary search to find the minimum channel width. Since route time is highly dependent on congestion, run-time is highly dependent on the precise channel widths searched (which may change due to perturbations).
 
-In practise you will likely want to consider additional and more detailed metrics, particularly those directly related to the changes you are making.
+In practice you will likely want to consider additional and more detailed metrics, particularly those directly related to the changes you are making.
 For example, if your change related to hold-time optimization you would want to include hold-time related metrics such as `hold_TNS` (hold total negative slack) and `hold_WNS` (hold worst negative slack).
 If your change related to packing, you would want to report additional packing-related metrics, such as the number of clusters formed by each block type (e.g. numbers of CLBs, RAMs, DSPs, IOs).
 
@@ -316,11 +397,11 @@ In order to draw reasonably general conclusions about the impact of a change we 
 
     This ensures we can optimize and scale to large problem spaces.
 
-In practise (for various reasons) satisfying both of these goals simultaneously is challenging.
+In practice (for various reasons) satisfying both of these goals simultaneously is challenging.
 The key goal here is to ensure the benchmark set is not unreasonably biased in some manner (e.g. benchmarks which are too small, benchmarks too skewed to a particular application domain).
 
 ### Fairly measuring tool run-time
-Accurately and fairly measuring the run-time of computer programs is challenging in practise.
+Accurately and fairly measuring the run-time of computer programs is challenging in practice.
 A variety of factors effect run-time including:
 
 * Operating System
@@ -382,8 +463,8 @@ k6_frac_N10_frac_chain_mem32K_40nm.xml	ch_intrinsics.v   	common       	9f591f6-
 
 The Titan benchmarks are a group of large benchmark circuits from a wide range of applications, which are compatible with the VTR project.
 The are typically used as post-technology mapped netlists which have been pre-synthesized with Quartus.
-They are substantially larger and more realistic than the VTR benchmarks, but can only target specificly compatible architectures.
-They are used primarily to evaluate the optimization quality and scalability of VTR's CAD algorithms while targetting a fixed architecture (e.g. at a fixed channel width).
+They are substantially larger and more realistic than the VTR benchmarks, but can only target specifically compatible architectures.
+They are used primarily to evaluate the optimization quality and scalability of VTR's CAD algorithms while targeting a fixed architecture (e.g. at a fixed channel width).
 
 A typical approach to evaluating an algorithm change would be to run `vtr_reg_titan` task from the weekly regression test:
 
@@ -420,7 +501,7 @@ A general method is as follows:
 1. Normalize all metrics to the values in the baseline measurements (this makes the relative changes easy to evaluate)
 2. Produce tables for each set of QoR measurements showing the per-benchmark relative values for each metric
 3. Calculate the GEOMEAN over all benchmarks for each normalized metric
-4. Produce a summary table showing the Metric Geomeans for each set of QoR measurments
+4. Produce a summary table showing the Metric Geomeans for each set of QoR measurements
 
 ### QoR Comparison Gotchas
 There are a variety of 'gotchas' you need to avoid to ensure fair comparisons:
@@ -527,10 +608,10 @@ Based on these metrics we then calculate the following ratios and summary.
 | crit_path_route_time        | 1.00     | 0.96     |
 | max_vpr_mem                 | 1.00     | 0.89     |
 
-From the results we can see that our change, on average, achieved a small reduction in the number of logic blocks (0.95) in return for a 2% increase in minimum channel width and 1% increase in routed wirelength. From a run-time persepective the packer is substantially faster (0.42).
+From the results we can see that our change, on average, achieved a small reduction in the number of logic blocks (0.95) in return for a 2% increase in minimum channel width and 1% increase in routed wirelength. From a run-time perspective the packer is substantially faster (0.42).
 
 ### Automated QoR Comparison Script
-To automate some of the QoR comparison VTR includes a script to compare pares_resutls.txt files and generate a spreadsheet including the ratio and summary tables.
+To automate some of the QoR comparison VTR includes a script to compare `parse_results.txt` files and generate a spreadsheet including the ratio and summary tables.
 
 For example:
 ```shell
@@ -541,7 +622,7 @@ will produce ratio tables and a summary table for the files parse_results1.txt, 
 
 # Adding Tests
 
-Any time you add a feature to VTR you **must** add a test which exercies the feature.
+Any time you add a feature to VTR you **must** add a test which exercises the feature.
 This ensures that regression tests will detect if the feature breaks in the future.
 
 Consider which regression test suite your test should be added to (see [Running Tests](#running-tests) descriptions).
@@ -670,6 +751,77 @@ $ make
 ```
 this turns on more extensive assertion checking and re-builds VTR.
 
+## GDB Pretty Printers
+To make it easier to debug some of VTR's data structures with [GDB](www.gnu.org/gdb).
+
+### STL Pretty Printers
+
+It is helpful to enable [STL pretty printers](https://sourceware.org/gdb/wiki/STLSupport), which make it much easier to debug data structures using STL.
+
+For example printing a `std::vector<int>` by default prints:
+
+    (gdb) p/r x_locs
+    $2 = {<std::_Vector_base<int, std::allocator<int> >> = {
+        _M_impl = {<std::allocator<int>> = {<__gnu_cxx::new_allocator<int>> = {<No data fields>}, <No data fields>}, _M_start = 0x555556f063b0, 
+          _M_finish = 0x555556f063dc, _M_end_of_storage = 0x555556f064b0}}, <No data fields>}
+
+which is not very helpful.
+
+But with STL pretty printers it prints:
+
+    (gdb) p x_locs
+    $2 = std::vector of length 11, capacity 64 = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+
+which is much more helpful for debugging!
+
+If STL pretty printers aren't already enabled on your system, add the following to your [.gdbinit file](https://sourceware.org/gdb/current/onlinedocs/gdb/gdbinit-man.html):
+
+    python
+    import sys
+    sys.path.insert(0, '$STL_PRINTER_ROOT')
+    from libstdcxx.v6.printers import register_libstdcxx_printers
+    register_libstdcxx_printers(None)
+
+    end
+
+where `$STL_PRINTER_ROOT` should be replaced with the appropriate path to the STL pretty printers.
+For example recent versions of GCC include these under `/usr/share/gcc-*/python` (e.g. `/usr/share/gcc-9/python`)
+
+
+### VTR Pretty Printers
+
+VTR includes some pretty printers for some VPR/VTR specific types.
+
+For example, without the pretty printers you would see the following when printing a VPR `AtomBlockId`:
+
+    (gdb) p blk_id
+    $1 = {
+      id_ = 71
+    }
+
+But with the VTR pretty printers enabled you would see:
+
+    (gdb) p blk_id
+    $1 = AtomBlockId(71)
+
+To enable the VTR pretty printers in GDB add the following to your [.gdbinit file](https://sourceware.org/gdb/current/onlinedocs/gdb/gdbinit-man.html):
+
+    python
+    import sys
+
+    sys.path.insert(0, "$VTR_ROOT/dev")
+    import vtr_gdb_pretty_printers
+    gdb.pretty_printers.append(vtr_gdb_pretty_printers.vtr_type_lookup)
+
+    end
+
+where ``$VTR_ROOT`` should be replaced with the root of the VTR source tree on your system.
+
+## RR (Record Replay) Debugger
+
+[RR](https://rr-project.org/) extends GDB with the ability to to record a run of a tool and then re-run it to reproduce any observed issues.
+RR also enables efficient reverse execution (!) which can be *extremely helpful* when tracking down the source of a bug.
+
 # External Subtrees
 VTR includes some code which is developed in external repositories, and is integrated into the VTR source tree using [git subtrees](https://www.atlassian.com/blog/git/alternatives-to-git-submodule-git-subtree).
 
@@ -764,7 +916,7 @@ To submit a build to coverity do the following:
 
 1. [Download](https://scan.coverity.com/download) the coverity build tool
 
-2. Configure VTR to perform a *debug* build. This ensures that all assertions are enabled, without assertions coverity may report bugs that are gaurded against by assertions. We also set VTR asserts to the highest level.
+2. Configure VTR to perform a *debug* build. This ensures that all assertions are enabled, without assertions coverity may report bugs that are guarded against by assertions. We also set VTR asserts to the highest level.
 
     ```shell
     #From the VTR root
@@ -790,7 +942,7 @@ Note that we explicitly asked for gcc and g++, the coverity build tool defaults 
 
 5. Submit the archive through the coverity web interface
 
-Once the build has been analyzed you can browse the latest results throught the coverity web interface
+Once the build has been analyzed you can browse the latest results through the coverity web interface
 
 ### No files emitted
 If you get the following warning from cov-build:
@@ -822,10 +974,14 @@ In preparation for a release it may make sense to produce 'release candidates' w
 The following outlines the procedure to following when making an official VTR release:
 
  * Check the code compiles on the list of supported compilers
- * Check that all regression tests pass
+ * Check that all regression tests pass functionality
  * Update regression test golden results to match the released version
- * Increment the version number (set in root CMakeLists.txt)
+ * Check that all regression tests pass QoR
  * Create a new entry in the CHANGELOG.md for the release, summarizing at a high-level user-facing changes
+ * Increment the version number (set in root CMakeLists.txt)
  * Create a git annotated tag (e.g. `v8.0.0`) and push it to github
-
+ * GitHub will automatically create a release based on the tag
+ * Add the new change log entry to the [GitHub release description](https://github.com/verilog-to-routing/vtr-verilog-to-routing/releases)
+ * Update the [ReadTheDocs configuration](https://readthedocs.org/projects/vtr/versions/) to build and serve documentation for the relevant tag (e.g. `v8.0.0`)
+ * Send a release announcement email to the [vtr-announce](vtr-announce@googlegroups.com) mailing list (make sure to thank all contributors!)
 

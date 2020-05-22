@@ -10,13 +10,11 @@ inline ClbDelayCalc::ClbDelayCalc()
     : intra_lb_pb_pin_lookup_(g_vpr_ctx.device().logical_block_types) {}
 
 inline float ClbDelayCalc::clb_input_to_internal_sink_delay(const ClusterBlockId block_id, const int pin_index, int internal_sink_pin, DelayType delay_type) const {
-    int pb_ipin = find_clb_pb_pin(block_id, pin_index);
-    return trace_delay(block_id, pb_ipin, internal_sink_pin, delay_type);
+    return trace_delay(block_id, pin_index, internal_sink_pin, delay_type);
 }
 
 inline float ClbDelayCalc::internal_src_to_clb_output_delay(const ClusterBlockId block_id, const int pin_index, int internal_src_pin, DelayType delay_type) const {
-    int pb_opin = find_clb_pb_pin(block_id, pin_index);
-    return trace_delay(block_id, internal_src_pin, pb_opin, delay_type);
+    return trace_delay(block_id, internal_src_pin, pin_index, delay_type);
 }
 
 inline float ClbDelayCalc::internal_src_to_internal_sink_delay(const ClusterBlockId clb, int internal_src_pin, int internal_sink_pin, DelayType delay_type) const {

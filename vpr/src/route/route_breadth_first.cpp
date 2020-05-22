@@ -13,19 +13,20 @@
 
 /********************* Subroutines local to this module *********************/
 
-static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost);
+// Note: Breadth first router is still using only the BinaryHeap because it is
+// deprecated, and not getting further development.
 
-static void breadth_first_expand_trace_segment(t_trace* start_ptr,
-                                               int remaining_connections_to_sink,
-                                               std::vector<int>& modified_rr_node_inf);
+static bool breadth_first_route_net(BinaryHeap& heap, ClusterNetId net_id, float bend_cost);
 
-static void breadth_first_expand_neighbours(int inode, float pcost, ClusterNetId net_id, float bend_cost);
+static void breadth_first_expand_trace_segment(BinaryHeap& heap, t_trace* start_ptr, int remaining_connections_to_sink, std::vector<int>& modified_rr_node_inf);
 
-static void breadth_first_add_to_heap(const float path_cost, const float bend_cost, const int from_node, const int to_node, const int iconn);
+static void breadth_first_expand_neighbours(BinaryHeap& heap, int inode, float pcost, ClusterNetId net_id, float bend_cost);
+
+static void breadth_first_add_to_heap(BinaryHeap& heap, const float path_cost, const float bend_cost, const int from_node, const RRNodeId to_node, const RREdgeId from_edge);
 
 static float evaluate_node_cost(const float prev_path_cost, const float bend_cost, const int from_node, const int to_node);
 
-static void breadth_first_add_source_to_heap(ClusterNetId net_id);
+static void breadth_first_add_source_to_heap(BinaryHeap& heap, ClusterNetId net_id);
 
 /************************ Subroutine definitions ****************************/
 
@@ -42,8 +43,9 @@ bool try_breadth_first_route(const t_router_opts& router_opts) {
         "*        is inferrior and may be removed in a future release.        *\n"
         "*                                                                    *\n"
         "*     Use the 'Timing-Driven' router instead, which requires much    *\n"
-        "*         less run-time and produces higher quality results          *\n"
-        "*         (even with it no timing information is available).         *\n"
+        "*      less run-time (> 300x faster) and produces higher quality     *\n"
+        "*          results (less wirelength, lower delay), even when         *\n"
+        "*           architecture timing information is unavailable.          *\n"
         "*                                                                    *\n"
         "*                         !!! WARNING !!!                            *\n"
         "**********************************************************************\n"
@@ -53,6 +55,7 @@ bool try_breadth_first_route(const t_router_opts& router_opts) {
     bool success, is_routable, rip_up_local_opins;
     int itry;
 
+    auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
@@ -62,17 +65,24 @@ bool try_breadth_first_route(const t_router_opts& router_opts) {
 
     pres_fac = router_opts.first_iter_pres_fac;
 
+    if (router_opts.router_heap != e_heap_type::BINARY_HEAP) {
+        VTR_LOG_WARN("Breadth-first router only uses the BINARY_HEAP.");
+    }
+
+    BinaryHeap heap;
+    heap.init_heap(device_ctx.grid);
+
     for (itry = 1; itry <= router_opts.max_router_iterations; itry++) {
         VTR_LOG("Routing Iteration %d\n", itry);
 
         /* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
         for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-            route_ctx.net_status[net_id].is_routed = false;
-            route_ctx.net_status[net_id].is_fixed = false;
+            route_ctx.net_status.set_is_routed(net_id, false);
+            route_ctx.net_status.set_is_fixed(net_id, false);
         }
 
         for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-            is_routable = try_breadth_first_route_net(net_id, pres_fac, router_opts);
+            is_routable = try_breadth_first_route_net(heap, net_id, pres_fac, router_opts);
             if (!is_routable) {
                 return (false);
             }
@@ -86,7 +96,7 @@ bool try_breadth_first_route(const t_router_opts& router_opts) {
         else
             rip_up_local_opins = true;
 
-        reserve_locally_used_opins(pres_fac, router_opts.acc_fac, rip_up_local_opins);
+        reserve_locally_used_opins(&heap, pres_fac, router_opts.acc_fac, rip_up_local_opins);
 
         success = feasible_routing();
         if (success) {
@@ -113,13 +123,13 @@ bool try_breadth_first_route(const t_router_opts& router_opts) {
     return (false);
 }
 
-bool try_breadth_first_route_net(ClusterNetId net_id, float pres_fac, const t_router_opts& router_opts) {
+bool try_breadth_first_route_net(BinaryHeap& heap, ClusterNetId net_id, float pres_fac, const t_router_opts& router_opts) {
     bool is_routed = false;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    if (route_ctx.net_status[net_id].is_fixed) { /* Skip pre-routed nets. */
+    if (route_ctx.net_status.is_fixed(net_id)) { /* Skip pre-routed nets. */
         is_routed = true;
 
     } else if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Skip ignored nets. */
@@ -127,11 +137,11 @@ bool try_breadth_first_route_net(ClusterNetId net_id, float pres_fac, const t_ro
 
     } else {
         pathfinder_update_path_cost(route_ctx.trace[net_id].head, -1, pres_fac);
-        is_routed = breadth_first_route_net(net_id, router_opts.bend_cost);
+        is_routed = breadth_first_route_net(heap, net_id, router_opts.bend_cost);
 
         /* Impossible to route? (disconnected rr_graph) */
         if (is_routed) {
-            route_ctx.net_status[net_id].is_routed = false;
+            route_ctx.net_status.set_is_routed(net_id, false);
         } else {
             VTR_LOG("Routing failed.\n");
         }
@@ -141,7 +151,7 @@ bool try_breadth_first_route_net(ClusterNetId net_id, float pres_fac, const t_ro
     return (is_routed);
 }
 
-static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
+static bool breadth_first_route_net(BinaryHeap& heap, ClusterNetId net_id, float bend_cost) {
     /* Uses a maze routing (Dijkstra's) algorithm to route a net.  The net       *
      * begins at the net output, and expands outward until it hits a target      *
      * pin.  The algorithm is then restarted with the entire first wire segment  *
@@ -169,7 +179,7 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
 
     free_traceback(net_id);
 
-    breadth_first_add_source_to_heap(net_id);
+    breadth_first_add_source_to_heap(heap, net_id);
     mark_ends(net_id);
 
     tptr = nullptr;
@@ -181,8 +191,8 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
 
     for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) { /* Need n-1 wires to connect n pins */
 
-        breadth_first_expand_trace_segment(tptr, remaining_connections_to_sink, modified_rr_node_inf);
-        current = get_heap_head();
+        breadth_first_expand_trace_segment(heap, tptr, remaining_connections_to_sink, modified_rr_node_inf);
+        current = heap.get_heap_head();
 
         if (current == nullptr) { /* Infeasible routing.  No possible path for net. */
             VTR_LOG("Cannot route net #%zu (%s) from (%s) to sink pin (%s) -- no possible path.\n",
@@ -213,17 +223,17 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
                 add_to_mod_list(current->index, modified_rr_node_inf);
 
                 route_ctx.rr_node_route_inf[current->index].path_cost = new_pcost;
-                route_ctx.rr_node_route_inf[current->index].prev_node = current->u.prev.node;
-                route_ctx.rr_node_route_inf[current->index].prev_edge = current->u.prev.edge;
+                route_ctx.rr_node_route_inf[current->index].prev_node = current->prev_node();
+                route_ctx.rr_node_route_inf[current->index].prev_edge = current->prev_edge();
 
 #ifdef ROUTER_DEBUG
                 VTR_LOG("    Expanding node %d neighbours\n", inode);
 #endif
-                breadth_first_expand_neighbours(inode, new_pcost, net_id, bend_cost);
+                breadth_first_expand_neighbours(heap, inode, new_pcost, net_id, bend_cost);
             }
 
-            free_heap_data(current);
-            current = get_heap_head();
+            heap.free(current);
+            current = heap.get_heap_head();
 
             if (current == nullptr) { /* Impossible routing. No path for net. */
                 VTR_LOG("Cannot route net #%zu (%s) from (%s) to sink pin (%s) -- no possible path.\n",
@@ -247,28 +257,26 @@ static bool breadth_first_route_net(ClusterNetId net_id, float bend_cost) {
             add_to_mod_list(current->index, modified_rr_node_inf);
 
             route_ctx.rr_node_route_inf[current->index].path_cost = current->cost;
-            route_ctx.rr_node_route_inf[current->index].prev_node = current->u.prev.node;
-            route_ctx.rr_node_route_inf[current->index].prev_edge = current->u.prev.edge;
+            route_ctx.rr_node_route_inf[current->index].prev_node = current->prev_node();
+            route_ctx.rr_node_route_inf[current->index].prev_edge = current->prev_edge();
         }
 
         route_ctx.rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
         remaining_connections_to_sink = route_ctx.rr_node_route_inf[inode].target_flag;
         tptr = update_traceback(current, net_id);
-        free_heap_data(current);
+        heap.free(current);
     }
 
 #ifdef ROUTER_DEBUG
     VTR_LOG("Routed Net %zu\n", size_t(net_id));
 #endif
 
-    empty_heap();
+    heap.empty_heap();
     reset_path_costs(modified_rr_node_inf);
     return (true);
 }
 
-static void breadth_first_expand_trace_segment(t_trace* start_ptr,
-                                               int remaining_connections_to_sink,
-                                               std::vector<int>& modified_rr_node_inf) {
+static void breadth_first_expand_trace_segment(BinaryHeap& heap, t_trace* start_ptr, int remaining_connections_to_sink, std::vector<int>& modified_rr_node_inf) {
     /* Adds all the rr_nodes in the traceback segment starting at tptr (and     *
      * continuing to the end of the traceback) to the heap with a cost of zero. *
      * This allows expansion to begin from the existing wiring.  The            *
@@ -302,7 +310,9 @@ static void breadth_first_expand_trace_segment(t_trace* start_ptr,
 #ifdef ROUTER_DEBUG
             VTR_LOG("  Adding previous routing node %d to heap\n", tptr->index);
 #endif
-            node_to_heap(tptr->index, 0., NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
+            add_node_to_heap(&heap, route_ctx.rr_node_route_inf,
+                             tptr->index, 0.,
+                             NO_PREVIOUS, RREdgeId::INVALID(), OPEN, OPEN);
             tptr = tptr->next;
         }
     } else { /* This case never executes for most logic blocks. */
@@ -328,7 +338,9 @@ static void breadth_first_expand_trace_segment(t_trace* start_ptr,
 #ifdef ROUTER_DEBUG
             VTR_LOG("  Adding previous routing node %d to heap*\n", tptr->index);
 #endif
-            node_to_heap(inode, 0., NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
+            add_node_to_heap(&heap, route_ctx.rr_node_route_inf,
+                             inode, 0., NO_PREVIOUS, RREdgeId::INVALID(),
+                             OPEN, OPEN);
 
             if (device_ctx.rr_nodes[inode].type() == IPIN)
                 last_ipin_node = inode;
@@ -358,58 +370,55 @@ static void breadth_first_expand_trace_segment(t_trace* start_ptr,
          * IPIN I just used (since they would result in congestion).  Scan through   *
          * the heap to do this.                                                      */
 
-        invalidate_heap_entries(sink_node, last_ipin_node);
+        heap.invalidate_heap_entries(sink_node, last_ipin_node);
     }
 }
 
-static void breadth_first_expand_neighbours(int inode, float pcost, ClusterNetId net_id, float bend_cost) {
+static void breadth_first_expand_neighbours(BinaryHeap& heap, int inode, float pcost, ClusterNetId net_id, float bend_cost) {
     /* Puts all the rr_nodes adjacent to inode on the heap.  rr_nodes outside   *
      * the expanded bounding box specified in route_bb are not added to the     *
      * heap.  pcost is the path_cost to get to inode.                           */
 
-    int iconn, to_node, num_edges;
-
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
-    num_edges = device_ctx.rr_nodes[inode].num_edges();
-    for (iconn = 0; iconn < num_edges; iconn++) {
-        to_node = device_ctx.rr_nodes[inode].edge_sink_node(iconn);
+    for (RREdgeId from_edge : device_ctx.rr_nodes.edge_range(RRNodeId(inode))) {
+        RRNodeId to_node = device_ctx.rr_nodes.edge_sink_node(from_edge);
 
-        if (device_ctx.rr_nodes[to_node].xhigh() < route_ctx.route_bb[net_id].xmin
-            || device_ctx.rr_nodes[to_node].xlow() > route_ctx.route_bb[net_id].xmax
-            || device_ctx.rr_nodes[to_node].yhigh() < route_ctx.route_bb[net_id].ymin
-            || device_ctx.rr_nodes[to_node].ylow() > route_ctx.route_bb[net_id].ymax)
+        if (device_ctx.rr_nodes.node_xhigh(to_node) < route_ctx.route_bb[net_id].xmin
+            || device_ctx.rr_nodes.node_xlow(to_node) > route_ctx.route_bb[net_id].xmax
+            || device_ctx.rr_nodes.node_yhigh(to_node) < route_ctx.route_bb[net_id].ymin
+            || device_ctx.rr_nodes.node_ylow(to_node) > route_ctx.route_bb[net_id].ymax)
             continue; /* Node is outside (expanded) bounding box. */
 
-        breadth_first_add_to_heap(pcost, bend_cost, inode, to_node, iconn);
+        breadth_first_add_to_heap(heap, pcost, bend_cost, inode, to_node, from_edge);
     }
 }
 
 //Add to_node to the heap, and also add any nodes which are connected by non-configurable edges
-static void breadth_first_add_to_heap(const float path_cost, const float bend_cost, const int from_node, const int to_node, const int iconn) {
+static void breadth_first_add_to_heap(BinaryHeap& heap, const float path_cost, const float bend_cost, const int from_node, const RRNodeId to_node, const RREdgeId from_edge) {
 #ifdef ROUTER_DEBUG
     VTR_LOG("      Expanding node %d\n", to_node);
 #endif
 
     //Create a heap element to represent this node (and any non-configurably connected nodes)
-    t_heap* next = alloc_heap_data();
-    next->index = to_node;
+    t_heap* next = heap.alloc();
+    next->index = size_t(to_node);
     next->backward_path_cost = OPEN;
     next->R_upstream = OPEN;
     next->cost = std::numeric_limits<float>::infinity();
 
     //Path cost to 'to_node'
-    float new_path_cost = evaluate_node_cost(path_cost, bend_cost, from_node, to_node);
+    float new_path_cost = evaluate_node_cost(path_cost, bend_cost, from_node, size_t(to_node));
 
     next->cost = new_path_cost;
 
     //Record how we reached this node
-    next->index = to_node;
-    next->u.prev.edge = iconn;
-    next->u.prev.node = from_node;
+    next->index = size_t(to_node);
+    next->set_prev_edge(from_edge);
+    next->set_prev_node(from_node);
 
-    add_to_heap(next);
+    heap.add_to_heap(next);
 }
 
 static float evaluate_node_cost(const float prev_path_cost, const float bend_cost, const int from_node, const int to_node) {
@@ -428,7 +437,7 @@ static float evaluate_node_cost(const float prev_path_cost, const float bend_cos
     return tot_cost;
 }
 
-static void breadth_first_add_source_to_heap(ClusterNetId net_id) {
+static void breadth_first_add_source_to_heap(BinaryHeap& heap, ClusterNetId net_id) {
     /* Adds the SOURCE of this net to the heap.  Used to start a net's routing. */
 
     int inode;
@@ -443,5 +452,6 @@ static void breadth_first_add_source_to_heap(ClusterNetId net_id) {
     VTR_LOG("  Adding Source node %d to heap\n", inode);
 #endif
 
-    node_to_heap(inode, cost, NO_PREVIOUS, NO_PREVIOUS, OPEN, OPEN);
+    add_node_to_heap(&heap, route_ctx.rr_node_route_inf, inode, cost,
+                     NO_PREVIOUS, RREdgeId::INVALID(), OPEN, OPEN);
 }

@@ -1,15 +1,20 @@
+version: ~> 1.0
 language: cpp
 
 dist: trusty
 addons:
   apt:
     sources:
-    - george-edison55-precise-backports # For cmake
-    - llvm-toolchain-precise-3.6
-    - llvm-toolchain-trusty-6.0
-    - llvm-toolchain-trusty-7 # For clang-format-7
-    - llvm-toolchain-trusty-8
-    - ubuntu-toolchain-r-test
+    - sourceline: 'ppa:george-edison55/precise-backports' # For cmake
+    - sourceline: 'deb http://apt.llvm.org/precise llvm-toolchain-precise-3.6 main'
+      key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+    - sourceline: 'deb http://apt.llvm.org/trusty llvm-toolchain-trusty-6.0 main'
+      key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+    - sourceline: 'deb http://apt.llvm.org/trusty llvm-toolchain-trusty-7 main' # For clang-format-7
+      key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+    - sourceline: 'deb http://apt.llvm.org/trusty llvm-toolchain-trusty-8 main'
+      key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
+    - sourceline: 'ppa:ubuntu-toolchain-r/test'
     packages:
     - autoconf
     - automake
@@ -47,8 +52,6 @@ addons:
     - qt5-default
     - clang-format-7
     # All the compilers!
-    - g++-4.9
-    - gcc-4.9
     - g++-5
     - gcc-5
     - g++-6
@@ -61,12 +64,6 @@ addons:
     - gcc-9
     - clang-6.0
     - clang-8
-
-cache:
-  ccache: true
-  #directories:
-    #- /home/travis/vtr-build
-    #- /home/travis/vtr
 
 env:
   - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
@@ -96,26 +93,74 @@ jobs:
         - ./dev/check-format.sh
     - stage: Test
       name: "C++ Unit Tests"
+      env:
+        - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
+        - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
       script:
         - ./.github/travis/build.sh
         - ./.github/travis/unittest.sh
     - stage: Test
-      name: "Basic Regression Tests"
+      name: "Check Compilation Warnings"
+      env:
+          #In order to get compilation warnings produced per source file, we must do a non-IPO build
+          #We also turn warnings into errors for this target by doing a strict compile
+        - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_STRICT_COMPILE=on -DVTR_IPO_BUILD=off"
+        - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
       script:
         - ./.github/travis/build.sh
-        - ./run_reg_test.pl vtr_reg_basic -show_failures -j2
+    - stage: Test
+      name: "Basic Regression Tests"
+      env:
+        - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
+        - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+      script:
+        - ./.github/travis/build.sh
+        - travis_wait 30 ./run_reg_test.pl vtr_reg_basic -show_failures -j2
     - stage: Test
       name: "Strong Regression Tests"
+      env:
+        - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
+        - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
       script:
         - ./.github/travis/build.sh
         - travis_wait 30 ./run_reg_test.pl vtr_reg_strong -show_failures -j2
     - stage: Test
       name: "Basic Valgrind Memory Tests"
+      env:
+        - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
+        - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
       script:
         - ./.github/travis/build.sh
-        - ./run_reg_test.pl vtr_reg_valgrind_small -show_failures -j2
+        - travis_wait 30 ./run_reg_test.pl vtr_reg_valgrind_small -show_failures -j2
+    - stage: Test
+      name: "Sanitized Basic Regression Tests"
+      env:
+        - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on"
+        - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+        - BUILD_TYPE=debug
+        - LSAN_OPTIONS="exitcode=42" #Use a non-standard exit code to ensure LSAN errors are detected
+      script:
+        - ./.github/travis/build.sh
+        #We skip QoR since we are only checking for errors in sanitizer runs
+        - travis_wait 50 ./run_reg_test.pl vtr_reg_basic -show_failures -skip_qor -j2
+    #Currently strong regression with sanitizers is disabled as it exceeds the maximum travis job run-time
+    #- stage: Test
+      #name: "Sanitized Strong Regression Tests"
+      #env:
+        #- CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on"
+        #- MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+        #- BUILD_TYPE=debug
+        #- LSAN_OPTIONS="exitcode=42" #Use a non-standard exit code to ensure LSAN errors are detected
+      #script:
+        #- ./.github/travis/build.sh
+        ##We skip QoR since we are only checking for errors in sanitizer runs
+        #- travis_wait 60 ./run_reg_test.pl vtr_reg_strong -show_failures -skip_qor -j2
     - stage: Test
       name: "ODIN-II Micro Tests"
+      env:
+        - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DVTR_ENABLE_SANITIZE=on -DVTR_IPO_BUILD=off -DWITH_BLIFEXPLORER=on"
+        - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+        - BUILD_TYPE=debug
       script:
         - ./.github/travis/build.sh
         - ./run_reg_test.pl odin_reg_micro -show_failures -j2
@@ -123,6 +168,7 @@ jobs:
     - stage: Test
       name: "Build Compatibility: GCC 5 (Ubuntu Xenial - 16.04)"
       env:
+        - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
         - BUILD_TYPE=release_strict
       script:
@@ -130,6 +176,7 @@ jobs:
     - stage: Test
       name: "Build Compatibility: GCC 6 (Debian Stretch)"
       env:
+        - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
         - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
         - BUILD_TYPE=release_strict
       script:
@@ -137,30 +184,35 @@ jobs:
     - stage: Test
       name: "Build Compatibility: GCC 7 (Ubuntu Bionic - 18.04)"
       env:
+        - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
          - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
       script:
         - ./.github/travis/build.sh
     - stage: Test
       name: "Build Compatibility: GCC 8 (Ubuntu Latest)"
       env:
+        - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
          - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
       script:
         - ./.github/travis/build.sh
     - stage: Test
       name: "Build Compatibility: GCC 9 (Latest Release)"
       env:
+        - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
          - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
       script:
         - ./.github/travis/build.sh
     - stage: Test
       name: "Build Compatibility: Clang 6 (Debian + Ubuntu common)"
       env:
+        - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
          - MATRIX_EVAL="CC=clang-6.0 && CXX=clang++-6.0"
       script:
         - ./.github/travis/build.sh
     - stage: Test
       name: "Build Compatibility: Clang 8 (Latest Release)"
       env:
+        - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
          - MATRIX_EVAL="CC=clang-8 && CXX=clang++-8"
       script:
         - ./.github/travis/build.sh
@@ -168,6 +220,7 @@ jobs:
     - stage: Build Coverity
       name: "Coverity Scan"
       env:
+        - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
         - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
         - _COVERITY_URL="https://scan.coverity.com/download/linux64"
         - _COVERITY_MD5="d0d7d7df9d6609e578f85096a755fb8f"

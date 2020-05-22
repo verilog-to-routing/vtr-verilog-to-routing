@@ -28,6 +28,7 @@
 #include "read_xml_arch_file.h"
 #include "draw.h"
 #include "echo_files.h"
+#include "atom_netlist_utils.h"
 
 #include "route_profiling.h"
 
@@ -35,6 +36,8 @@
 #include "RoutingDelayCalculator.h"
 #include "timing_info.h"
 #include "tatum/echo_writer.hpp"
+#include "binary_heap.h"
+#include "bucket.h"
 
 /**************** Types local to route_common.c ******************/
 struct t_trace_branch {
@@ -44,22 +47,12 @@ struct t_trace_branch {
 
 /**************** Static variables local to route_common.c ******************/
 
-static t_heap** heap; /* Indexed from [1..heap_size] */
-static int heap_size; /* Number of slots in the heap array */
-static int heap_tail; /* Index of first unused slot in the heap array */
-
-/* For managing my own list of currently free heap data structures.     */
-static t_heap* heap_free_head = nullptr;
-/* For keeping track of the sudo malloc memory for the heap*/
-static vtr::t_chunk heap_ch;
-
 /* For managing my own list of currently free trace data structures.    */
 static t_trace* trace_free_head = nullptr;
 /* For keeping track of the sudo malloc memory for the trace*/
 static vtr::t_chunk trace_ch;
 
 static int num_trace_allocated = 0; /* To watch for memory leaks. */
-static int num_heap_allocated = 0;
 static int num_linked_f_pointer_allocated = 0;
 
 /*  The numbering relation between the channels and clbs is:				*
@@ -105,6 +98,7 @@ static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub, float pres_f
 bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes);
 static bool validate_trace_nodes(t_trace* head, const std::unordered_set<int>& trace_nodes);
 static float get_single_rr_cong_cost(int inode);
+static vtr::vector<ClusterNetId, uint8_t> load_is_clock_net();
 
 /************************** Subroutine definitions ***************************/
 
@@ -162,10 +156,12 @@ void restore_routing(vtr::vector<ClusterNetId, t_trace*>& best_routing,
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         /* Free any current routing. */
+        pathfinder_update_path_cost(route_ctx.trace[net_id].head, -1, 0.f);
         free_traceback(net_id);
 
         /* Set the current routing to the saved one. */
         route_ctx.trace[net_id].head = best_routing[net_id];
+        pathfinder_update_path_cost(route_ctx.trace[net_id].head, 1, 0.f);
         best_routing[net_id] = nullptr; /* No stored routing. */
     }
 
@@ -236,7 +232,9 @@ void try_graph(int width_fac, const t_router_opts& router_opts, t_det_routing_ar
                     router_opts.trim_obs_channels,
                     router_opts.clock_modeling,
                     directs, num_directs,
-                    &warning_count);
+                    &warning_count,
+                    router_opts.read_rr_edge_metadata,
+                    router_opts.do_check_rr_graph);
 }
 
 bool try_route(int width_fac,
@@ -244,7 +242,7 @@ bool try_route(int width_fac,
                const t_analysis_opts& analysis_opts,
                t_det_routing_arch* det_routing_arch,
                std::vector<t_segment_inf>& segment_inf,
-               vtr::vector<ClusterNetId, float*>& net_delay,
+               ClbNetPinsMatrix<float>& net_delay,
                std::shared_ptr<SetupHoldTimingInfo> timing_info,
                std::shared_ptr<RoutingDelayCalculator> delay_calc,
                t_chan_width_dist chan_width_dist,
@@ -286,7 +284,9 @@ bool try_route(int width_fac,
                     router_opts.trim_obs_channels,
                     router_opts.clock_modeling,
                     directs, num_directs,
-                    &warning_count);
+                    &warning_count,
+                    router_opts.read_rr_edge_metadata,
+                    router_opts.do_check_rr_graph);
 
     //Initialize drawing, now that we have an RR graph
     init_draw_coords(width_fac);
@@ -311,14 +311,15 @@ bool try_route(int width_fac,
         IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
         ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, intra_lb_pb_pin_lookup);
 
-        success = try_timing_driven_route(router_opts,
-                                          analysis_opts,
-                                          segment_inf,
-                                          net_delay,
-                                          netlist_pin_lookup,
-                                          timing_info,
-                                          delay_calc,
-                                          first_iteration_priority);
+        success = try_timing_driven_route(
+            router_opts,
+            analysis_opts,
+            segment_inf,
+            net_delay,
+            netlist_pin_lookup,
+            timing_info,
+            delay_calc,
+            first_iteration_priority);
 
         profiling::time_on_fanout_analysis();
     }
@@ -465,17 +466,6 @@ void pathfinder_update_cost(float pres_fac, float acc_fac) {
     }
 }
 
-void init_heap(const DeviceGrid& grid) {
-    if (heap != nullptr) {
-        vtr::free(heap + 1);
-        heap = nullptr;
-    }
-    heap_size = (grid.width() - 1) * (grid.height() - 1);
-    heap = (t_heap**)vtr::malloc(heap_size * sizeof(t_heap*));
-    heap--; /* heap stores from [1..heap_size] */
-    heap_tail = 1;
-}
-
 /* Call this before you route any nets.  It frees any old traceback and   *
  * sets the list of rr_nodes touched to empty.                            */
 void init_route_structs(int bb_factor) {
@@ -491,22 +481,13 @@ void init_route_structs(int bb_factor) {
     route_ctx.trace.resize(cluster_ctx.clb_nlist.nets().size());
     route_ctx.trace_nodes.resize(cluster_ctx.clb_nlist.nets().size());
 
-    init_heap(device_ctx.grid);
-
     //Various look-ups
     route_ctx.net_rr_terminals = load_net_rr_terminals(device_ctx.rr_node_indices);
+    route_ctx.is_clock_net = load_is_clock_net();
     route_ctx.route_bb = load_route_bb(bb_factor);
     route_ctx.rr_blk_source = load_rr_clb_sources(device_ctx.rr_node_indices);
     route_ctx.clb_opins_used_locally = alloc_and_load_clb_opins_used_locally();
     route_ctx.net_status.resize(cluster_ctx.clb_nlist.nets().size());
-
-    /* Check that things that should have been emptied after the last routing *
-     * really were.                                                           */
-
-    if (heap_tail != 1) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                        "in init_route_structs. Heap is not empty.\n");
-    }
 }
 
 t_trace*
@@ -577,7 +558,7 @@ static t_trace_branch traceback_branch(int node, std::unordered_set<int>& trace_
         //Add the current node to the head of traceback
         t_trace* prev_ptr = alloc_trace_data();
         prev_ptr->index = inode;
-        prev_ptr->iswitch = device_ctx.rr_nodes[inode].edge_switch(iedge);
+        prev_ptr->iswitch = device_ctx.rr_nodes.edge_switch(iedge);
         prev_ptr->next = branch_head;
         branch_head = prev_ptr;
 
@@ -711,24 +692,28 @@ void reset_path_costs(const std::vector<int>& visited_rr_nodes) {
         route_ctx.rr_node_route_inf[node].path_cost = std::numeric_limits<float>::infinity();
         route_ctx.rr_node_route_inf[node].backward_path_cost = std::numeric_limits<float>::infinity();
         route_ctx.rr_node_route_inf[node].prev_node = NO_PREVIOUS;
-        route_ctx.rr_node_route_inf[node].prev_edge = NO_PREVIOUS;
+        route_ctx.rr_node_route_inf[node].prev_edge = RREdgeId::INVALID();
     }
 }
 
 /* Returns the *congestion* cost of using this rr_node. */
 float get_rr_cong_cost(int inode) {
     auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
 
     float cost = get_single_rr_cong_cost(inode);
 
-    auto itr = device_ctx.rr_node_to_non_config_node_set.find(inode);
-    if (itr != device_ctx.rr_node_to_non_config_node_set.end()) {
-        for (int node : device_ctx.rr_non_config_node_sets[itr->second]) {
-            if (node != inode) {
-                continue; //Already included above
-            }
+    if (route_ctx.non_configurable_bitset.get(inode)) {
+        // Access unordered_map only when the node is part of a non-configurable set
+        auto itr = device_ctx.rr_node_to_non_config_node_set.find(inode);
+        if (itr != device_ctx.rr_node_to_non_config_node_set.end()) {
+            for (int node : device_ctx.rr_non_config_node_sets[itr->second]) {
+                if (node == inode) {
+                    continue; //Already included above
+                }
 
-            cost += get_single_rr_cong_cost(node);
+                cost += get_single_rr_cong_cost(node);
+            }
         }
     }
     return (cost);
@@ -772,29 +757,29 @@ void mark_remaining_ends(const std::vector<int>& remaining_sinks) {
         ++route_ctx.rr_node_route_inf[sink_node].target_flag;
 }
 
-void node_to_heap(int inode, float total_cost, int prev_node, int prev_edge, float backward_path_cost, float R_upstream) {
-    /* Puts an rr_node on the heap, if the new cost given is lower than the     *
-     * current path_cost to this channel segment.  The index of its predecessor *
-     * is stored to make traceback easy.  The index of the edge used to get     *
-     * from its predecessor to it is also stored to make timing analysis, etc.  *
-     * easy.  The backward_path_cost and R_upstream values are used only by the *
-     * timing-driven router -- the breadth-first router ignores them.           */
+void drop_traceback_tail(ClusterNetId net_id) {
+    /* Removes the tail node from the routing traceback and updates
+     * it with the previous node from the traceback.
+     * This funtion is primarily called to remove the virtual clock
+     * sink from the routing traceback and replace it with the clock
+     * network root. */
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    auto& route_ctx = g_vpr_ctx.routing();
-
-    if (total_cost >= route_ctx.rr_node_route_inf[inode].path_cost)
-        return;
-
-    t_heap* hptr = alloc_heap_data();
-    hptr->index = inode;
-    hptr->cost = total_cost;
-    VTR_ASSERT_SAFE(hptr->u.prev.node == NO_PREVIOUS);
-    VTR_ASSERT_SAFE(hptr->u.prev.edge == NO_PREVIOUS);
-    hptr->u.prev.node = prev_node;
-    hptr->u.prev.edge = prev_edge;
-    hptr->backward_path_cost = backward_path_cost;
-    hptr->R_upstream = R_upstream;
-    add_to_heap(hptr);
+    auto* tail_ptr = route_ctx.trace[net_id].tail;
+    auto node = tail_ptr->index;
+    route_ctx.trace_nodes[net_id].erase(node);
+    auto* trace_ptr = route_ctx.trace[net_id].head;
+    while (trace_ptr != nullptr) {
+        t_trace* next_ptr = trace_ptr->next;
+        if (next_ptr == tail_ptr) {
+            trace_ptr->iswitch = tail_ptr->iswitch;
+            trace_ptr->next = nullptr;
+            route_ctx.trace[net_id].tail = trace_ptr;
+            break;
+        }
+        trace_ptr = next_ptr;
+    }
+    free_trace_data(tail_ptr);
 }
 
 void free_traceback(ClusterNetId net_id) {
@@ -853,7 +838,7 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
      * specifies that this is necessary).                                       */
 
     t_clb_opins_used clb_opins_used_locally;
-    int clb_pin, iclass, class_low, class_high;
+    int clb_pin, iclass;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -861,9 +846,11 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         auto type = physical_tile_type(blk_id);
+        auto sub_tile = type->sub_tiles[get_sub_tile_index(blk_id)];
 
-        get_class_range_for_block(blk_id, &class_low, &class_high);
-        clb_opins_used_locally[blk_id].resize(type->num_class);
+        auto class_range = get_class_range_for_block(blk_id);
+
+        clb_opins_used_locally[blk_id].resize((int)type->class_inf.size());
 
         if (is_io_type(type)) continue;
 
@@ -885,7 +872,7 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
                     VTR_ASSERT(type->class_inf[iclass].type == DRIVER);
 
                     /* Check to make sure class is in same range as that assigned to block */
-                    VTR_ASSERT(iclass >= class_low && iclass <= class_high);
+                    VTR_ASSERT(iclass >= class_range.low && iclass <= class_range.high);
 
                     //We push back OPEN to reserve space to store the exact pin which
                     //will be reserved (determined later)
@@ -926,36 +913,10 @@ void free_route_structs() {
      * final routing result is not freed.                                */
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    if (heap != nullptr) {
-        //Free the individiaul heap elements (calls destructors)
-        for (int i = 1; i < num_heap_allocated; i++) {
-            VTR_LOG("Freeing %p\n", heap[i]);
-            vtr::chunk_delete(heap[i], &heap_ch);
-        }
-
-        // coverity[offset_free : Intentional]
-        free(heap + 1);
-
-        heap = nullptr; /* Defensive coding:  crash hard if I use these. */
-    }
-
-    if (heap_free_head != nullptr) {
-        t_heap* curr = heap_free_head;
-        while (curr) {
-            t_heap* tmp = curr;
-            curr = curr->u.next;
-
-            vtr::chunk_delete(tmp, &heap_ch);
-        }
-
-        heap_free_head = nullptr;
-    }
     if (route_ctx.route_bb.size() != 0) {
         route_ctx.route_bb.clear();
+        route_ctx.route_bb.shrink_to_fit();
     }
-
-    /*free the memory chunks that were used by heap and linked f pointer */
-    free_chunk_memory(&heap_ch);
 }
 
 /* Frees the data structures needed to save a routing.                     */
@@ -977,7 +938,14 @@ void alloc_and_load_rr_node_route_structs() {
     auto& device_ctx = g_vpr_ctx.device();
 
     route_ctx.rr_node_route_inf.resize(device_ctx.rr_nodes.size());
+    route_ctx.non_configurable_bitset.resize(device_ctx.rr_nodes.size());
+    route_ctx.non_configurable_bitset.fill(false);
+
     reset_rr_node_route_structs();
+
+    for (auto i : device_ctx.rr_node_to_non_config_node_set) {
+        route_ctx.non_configurable_bitset.set(i.first, true);
+    }
 }
 
 void reset_rr_node_route_structs() {
@@ -991,7 +959,7 @@ void reset_rr_node_route_structs() {
 
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         route_ctx.rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
-        route_ctx.rr_node_route_inf[inode].prev_edge = NO_PREVIOUS;
+        route_ctx.rr_node_route_inf[inode].prev_edge = RREdgeId::INVALID();
         route_ctx.rr_node_route_inf[inode].pres_cost = 1.0;
         route_ctx.rr_node_route_inf[inode].acc_cost = 1.0;
         route_ctx.rr_node_route_inf[inode].path_cost = std::numeric_limits<float>::infinity();
@@ -1007,8 +975,6 @@ void reset_rr_node_route_structs() {
 static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t_rr_node_indices& L_rr_node_indices) {
     vtr::vector<ClusterNetId, std::vector<int>> net_rr_terminals;
 
-    int inode, i, j, node_block_pin, iclass;
-
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
 
@@ -1022,19 +988,19 @@ static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t
         int pin_count = 0;
         for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
             auto block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
-            i = place_ctx.block_locs[block_id].loc.x;
-            j = place_ctx.block_locs[block_id].loc.y;
+            int i = place_ctx.block_locs[block_id].loc.x;
+            int j = place_ctx.block_locs[block_id].loc.y;
             auto type = physical_tile_type(block_id);
 
             /* In the routing graph, each (x, y) location has unique pins on it
              * so when there is capacity, blocks are packed and their pin numbers
              * are offset to get their actual rr_node */
-            node_block_pin = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
+            int phys_pin = tile_pin_index(pin_id);
 
-            iclass = type->pin_class[node_block_pin];
+            int iclass = type->pin_class[phys_pin];
 
-            inode = get_rr_node_index(L_rr_node_indices, i, j, (pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
-                                      iclass);
+            int inode = get_rr_node_index(L_rr_node_indices, i, j, (pin_count == 0 ? SOURCE : SINK), /* First pin is driver */
+                                          iclass);
             net_rr_terminals[net_id][pin_count] = inode;
             pin_count++;
         }
@@ -1052,7 +1018,6 @@ static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t
     vtr::vector<ClusterBlockId, std::vector<int>> rr_blk_source;
 
     int i, j, iclass, inode;
-    int class_low, class_high;
     t_rr_type rr_type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1062,10 +1027,13 @@ static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         auto type = physical_tile_type(blk_id);
-        get_class_range_for_block(blk_id, &class_low, &class_high);
-        rr_blk_source[blk_id].resize(type->num_class);
-        for (iclass = 0; iclass < type->num_class; iclass++) {
-            if (iclass >= class_low && iclass <= class_high) {
+        auto sub_tile = type->sub_tiles[get_sub_tile_index(blk_id)];
+
+        auto class_range = get_class_range_for_block(blk_id);
+
+        rr_blk_source[blk_id].resize((int)type->class_inf.size());
+        for (iclass = 0; iclass < (int)type->class_inf.size(); iclass++) {
+            if (iclass >= class_range.low && iclass <= class_range.high) {
                 i = place_ctx.block_locs[blk_id].loc.x;
                 j = place_ctx.block_locs[blk_id].loc.y;
 
@@ -1085,15 +1053,63 @@ static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t
     return rr_blk_source;
 }
 
+static vtr::vector<ClusterNetId, uint8_t> load_is_clock_net() {
+    vtr::vector<ClusterNetId, uint8_t> is_clock_net;
+
+    auto& atom_ctx = g_vpr_ctx.atom();
+    std::set<AtomNetId> clock_nets = find_netlist_physical_clock_nets(atom_ctx.nlist);
+
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto nets = cluster_ctx.clb_nlist.nets();
+
+    is_clock_net.resize(nets.size());
+    for (auto net_id : nets) {
+        is_clock_net[net_id] = clock_nets.find(atom_ctx.lookup.atom_net(net_id)) != clock_nets.end();
+    }
+
+    return is_clock_net;
+}
+
 vtr::vector<ClusterNetId, t_bb> load_route_bb(int bb_factor) {
     vtr::vector<ClusterNetId, t_bb> route_bb;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& route_ctx = g_vpr_ctx.routing();
+
+    t_bb full_device_bounding_box;
+    {
+        auto& device_ctx = g_vpr_ctx.device();
+        full_device_bounding_box.xmin = 0;
+        full_device_bounding_box.ymin = 0;
+        full_device_bounding_box.xmax = device_ctx.grid.width() - 1;
+        full_device_bounding_box.ymax = device_ctx.grid.height() - 1;
+    }
 
     auto nets = cluster_ctx.clb_nlist.nets();
     route_bb.resize(nets.size());
     for (auto net_id : nets) {
-        route_bb[net_id] = load_net_route_bb(net_id, bb_factor);
+        if (!route_ctx.is_clock_net[net_id]) {
+            route_bb[net_id] = load_net_route_bb(net_id, bb_factor);
+        } else {
+            // Clocks should use a bounding box that includes the entire
+            // fabric. This is because when a clock spine extends from a global
+            // buffer point to the net target, the default bounding box
+            // behavior may prevent the router from finding a path using the
+            // clock network. This is not catastrophic if the only path to the
+            // clock sink is via the clock network, because eventually the
+            // heap will empty and the router will use the full part bounding
+            // box anyways.
+            //
+            // However if there exists path that goes from the clock network
+            // to the general interconnect and back, without leaving the
+            // bounding box, the router will find it.  This could be a very
+            // suboptimal route.
+            //
+            // It is safe to use the full device bounding box on clock nets
+            // because clock networks tend to be specialized and have low
+            // density.
+            route_bb[net_id] = full_device_bounding_box;
+        }
     }
     return route_bb;
 }
@@ -1172,233 +1188,6 @@ void add_to_mod_list(int inode, std::vector<int>& modified_rr_node_inf) {
 
     if (std::isinf(route_ctx.rr_node_route_inf[inode].path_cost)) {
         modified_rr_node_inf.push_back(inode);
-    }
-}
-
-namespace heap_ {
-size_t parent(size_t i);
-size_t left(size_t i);
-size_t right(size_t i);
-size_t size();
-void expand_heap_if_full();
-
-size_t parent(size_t i) { return i >> 1; }
-// child indices of a heap
-size_t left(size_t i) { return i << 1; }
-size_t right(size_t i) { return (i << 1) + 1; }
-size_t size() { return static_cast<size_t>(heap_tail - 1); } // heap[0] is not valid element
-
-// make a heap rooted at index i by **sifting down** in O(lgn) time
-void sift_down(size_t hole) {
-    t_heap* head{heap[hole]};
-    size_t child{left(hole)};
-    while ((int)child < heap_tail) {
-        if ((int)child + 1 < heap_tail && heap[child + 1]->cost < heap[child]->cost)
-            ++child;
-        if (heap[child]->cost < head->cost) {
-            heap[hole] = heap[child];
-            hole = child;
-            child = left(child);
-        } else
-            break;
-    }
-    heap[hole] = head;
-}
-
-// runs in O(n) time by sifting down; the least work is done on the most elements: 1 swap for bottom layer, 2 swap for 2nd, ... lgn swap for top
-// 1*(n/2) + 2*(n/4) + 3*(n/8) + ... + lgn*1 = 2n (sum of i/2^i)
-void build_heap() {
-    // second half of heap are leaves
-    for (size_t i = heap_tail >> 1; i != 0; --i)
-        sift_down(i);
-}
-
-// O(lgn) sifting up to maintain heap property after insertion (should sift down when building heap)
-void sift_up(size_t leaf, t_heap* const node) {
-    while ((leaf > 1) && (node->cost < heap[parent(leaf)]->cost)) {
-        // sift hole up
-        heap[leaf] = heap[parent(leaf)];
-        leaf = parent(leaf);
-    }
-    heap[leaf] = node;
-}
-
-void expand_heap_if_full() {
-    if (heap_tail > heap_size) { /* Heap is full */
-        heap_size *= 2;
-        heap = (t_heap**)vtr::realloc((void*)(heap + 1),
-                                      heap_size * sizeof(t_heap*));
-        heap--; /* heap goes from [1..heap_size] */
-    }
-}
-
-// adds an element to the back of heap and expand if necessary, but does not maintain heap property
-void push_back(t_heap* const hptr) {
-    expand_heap_if_full();
-    heap[heap_tail] = hptr;
-    ++heap_tail;
-}
-
-void push_back_node(int inode, float total_cost, int prev_node, int prev_edge, float backward_path_cost, float R_upstream) {
-    /* Puts an rr_node on the heap with the same condition as node_to_heap,
-     * but do not fix heap property yet as that is more efficiently done from
-     * bottom up with build_heap    */
-
-    auto& route_ctx = g_vpr_ctx.routing();
-    if (total_cost >= route_ctx.rr_node_route_inf[inode].path_cost)
-        return;
-
-    t_heap* hptr = alloc_heap_data();
-    hptr->index = inode;
-    hptr->cost = total_cost;
-    hptr->u.prev.node = prev_node;
-    hptr->u.prev.edge = prev_edge;
-    hptr->backward_path_cost = backward_path_cost;
-    hptr->R_upstream = R_upstream;
-    push_back(hptr);
-}
-
-bool is_valid() {
-    for (size_t i = 1; (int)i <= heap_tail >> 1; ++i) {
-        if ((int)left(i) < heap_tail && heap[left(i)]->cost < heap[i]->cost) return false;
-        if ((int)right(i) < heap_tail && heap[right(i)]->cost < heap[i]->cost) return false;
-    }
-    return true;
-}
-// extract every element and print it
-void pop_heap() {
-    while (!is_empty_heap())
-        VTR_LOG("%e ", get_heap_head()->cost);
-    VTR_LOG("\n");
-}
-// print every element; not necessarily in order for minheap
-void print_heap() {
-    for (int i = 1; i<heap_tail>> 1; ++i)
-        VTR_LOG("(%e %e %e) ", heap[i]->cost, heap[left(i)]->cost, heap[right(i)]->cost);
-    VTR_LOG("\n");
-}
-// verify correctness of extract top by making a copy, sorting it, and iterating it at the same time as extraction
-void verify_extract_top() {
-    constexpr float float_epsilon = 1e-20;
-    std::cout << "copying heap\n";
-    std::vector<t_heap*> heap_copy{heap + 1, heap + heap_tail};
-    // sort based on cost with cheapest first
-    VTR_ASSERT(heap_copy.size() == size());
-    std::sort(begin(heap_copy), end(heap_copy),
-              [](const t_heap* a, const t_heap* b) {
-                  return a->cost < b->cost;
-              });
-    std::cout << "starting to compare top elements\n";
-    size_t i = 0;
-    while (!is_empty_heap()) {
-        while (heap_copy[i]->index == OPEN)
-            ++i; // skip the ones that won't be extracted
-        auto top = get_heap_head();
-        if (abs(top->cost - heap_copy[i]->cost) > float_epsilon)
-            std::cout << "mismatch with sorted " << top << '(' << top->cost << ") " << heap_copy[i] << '(' << heap_copy[i]->cost << ")\n";
-        ++i;
-    }
-    if (i != heap_copy.size())
-        std::cout << "did not finish extracting: " << i << " vs " << heap_copy.size() << std::endl;
-    else
-        std::cout << "extract top working as intended\n";
-}
-} // namespace heap_
-// adds to heap and maintains heap quality
-void add_to_heap(t_heap* hptr) {
-    heap_::expand_heap_if_full();
-    // start with undefined hole
-    ++heap_tail;
-    heap_::sift_up(heap_tail - 1, hptr);
-}
-
-/*WMF: peeking accessor :) */
-bool is_empty_heap() {
-    return (bool)(heap_tail == 1);
-}
-
-t_heap*
-get_heap_head() {
-    /* Returns a pointer to the smallest element on the heap, or NULL if the     *
-     * heap is empty.  Invalid (index == OPEN) entries on the heap are never     *
-     * returned -- they are just skipped over.                                   */
-
-    t_heap* cheapest;
-    size_t hole, child;
-
-    do {
-        if (heap_tail == 1) { /* Empty heap. */
-            VTR_LOG_WARN("Empty heap occurred in get_heap_head.\n");
-            return (nullptr);
-        }
-
-        cheapest = heap[1];
-
-        hole = 1;
-        child = 2;
-        --heap_tail;
-        while ((int)child < heap_tail) {
-            if (heap[child + 1]->cost < heap[child]->cost)
-                ++child; // become right child
-            heap[hole] = heap[child];
-            hole = child;
-            child = heap_::left(child);
-        }
-        heap_::sift_up(hole, heap[heap_tail]);
-
-    } while (cheapest->index == OPEN); /* Get another one if invalid entry. */
-
-    return (cheapest);
-}
-
-void empty_heap() {
-    for (int i = 1; i < heap_tail; i++)
-        free_heap_data(heap[i]);
-
-    heap_tail = 1;
-}
-
-t_heap*
-alloc_heap_data() {
-    if (heap_free_head == nullptr) { /* No elements on the free list */
-        heap_free_head = vtr::chunk_new<t_heap>(&heap_ch);
-    }
-
-    //Extract the head
-    t_heap* temp_ptr = heap_free_head;
-    heap_free_head = heap_free_head->u.next;
-
-    num_heap_allocated++;
-
-    //Reset
-    temp_ptr->u.next = nullptr;
-    temp_ptr->cost = 0.;
-    temp_ptr->backward_path_cost = 0.;
-    temp_ptr->R_upstream = 0.;
-    temp_ptr->index = OPEN;
-    temp_ptr->u.prev.node = NO_PREVIOUS;
-    temp_ptr->u.prev.edge = NO_PREVIOUS;
-    return (temp_ptr);
-}
-
-void free_heap_data(t_heap* hptr) {
-    hptr->u.next = heap_free_head;
-    heap_free_head = hptr;
-    num_heap_allocated--;
-}
-
-void invalidate_heap_entries(int sink_node, int ipin_node) {
-    /* Marks all the heap entries consisting of sink_node, where it was reached *
-     * via ipin_node, as invalid (OPEN).  Used only by the breadth_first router *
-     * and even then only in rare circumstances.                                */
-
-    for (int i = 1; i < heap_tail; i++) {
-        if (heap[i]->index == sink_node) {
-            if (heap[i]->u.prev.node == ipin_node) {
-                heap[i]->index = OPEN; /* Invalid. */
-                break;
-            }
-        }
     }
 }
 
@@ -1487,11 +1276,14 @@ void print_route(FILE* fp, const vtr::vector<ClusterNetId, t_traceback>& traceba
 
                     fprintf(fp, "%d  ", device_ctx.rr_nodes[inode].ptc_num());
 
-                    if (!is_io_type(device_ctx.grid[ilow][jlow].type) && (rr_type == IPIN || rr_type == OPIN)) {
+                    auto physical_tile = device_ctx.grid[ilow][jlow].type;
+                    if (!is_io_type(physical_tile) && (rr_type == IPIN || rr_type == OPIN)) {
                         int pin_num = device_ctx.rr_nodes[inode].ptc_num();
                         int xoffset = device_ctx.grid[ilow][jlow].width_offset;
                         int yoffset = device_ctx.grid[ilow][jlow].height_offset;
-                        ClusterBlockId iblock = place_ctx.grid_blocks[ilow - xoffset][jlow - yoffset].blocks[0];
+                        int sub_tile_offset = physical_tile->get_sub_tile_loc_from_pin(pin_num);
+
+                        ClusterBlockId iblock = place_ctx.grid_blocks[ilow - xoffset][jlow - yoffset].blocks[sub_tile_offset];
                         VTR_ASSERT(iblock);
                         t_pb_graph_pin* pb_pin = get_pb_graph_node_pin_from_block_pin(iblock, pin_num);
                         t_pb_type* pb_type = pb_pin->parent_node->pb_type;
@@ -1513,7 +1305,7 @@ void print_route(FILE* fp, const vtr::vector<ClusterNetId, t_traceback>& traceba
 
             for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
                 ClusterBlockId block_id = cluster_ctx.clb_nlist.pin_block(pin_id);
-                int pin_index = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
+                int pin_index = tile_pin_index(pin_id);
                 int iclass = physical_tile_type(block_id)->pin_class[pin_index];
 
                 fprintf(fp, "Block %s (#%zu) at (%d,%d), Pin class %d.\n",
@@ -1547,8 +1339,8 @@ void print_route(const char* placement_file, const char* route_file) {
 
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_MEM)) {
         fp = vtr::fopen(getEchoFileName(E_ECHO_MEM), "w");
-        fprintf(fp, "\nNum_heap_allocated: %d   Num_trace_allocated: %d\n",
-                num_heap_allocated, num_trace_allocated);
+        fprintf(fp, "\nNum_trace_allocated: %d\n",
+                num_trace_allocated);
         fprintf(fp, "Num_linked_f_pointer_allocated: %d\n",
                 num_linked_f_pointer_allocated);
         fclose(fp);
@@ -1558,14 +1350,14 @@ void print_route(const char* placement_file, const char* route_file) {
     route_ctx.routing_id = vtr::secure_digest_file(route_file);
 }
 
-//To ensure the router can only swaps pin which are actually logically equivalent some block output pins must be
+//To ensure the router can only swap pins which are actually logically equivalent, some block output pins must be
 //reserved in certain cases.
 //
 // In the RR graph, output pin equivalence is modelled by a single SRC node connected to (multiple) OPINs, modelling
 // that each of the OPINs is logcially equivalent (i.e. it doesn't matter through which the router routes a signal,
 // so long as it is from the appropriate SRC).
 //
-// This correctly models 'full' equivalence (e.g. if there is a full crossbar between the outputs), but is to
+// This correctly models 'full' equivalence (e.g. if there is a full crossbar between the outputs), but is too
 // optimistic for 'instance' equivalence (which typcially models the pin equivalence possible by swapping sub-block
 // instances like BLEs). In particular, for the 'instance' equivalence case, some of the 'equivalent' block outputs
 // may be used by internal signals which are routed entirely *within* the block (i.e. the signals which never leave
@@ -1573,7 +1365,7 @@ void print_route(const char* placement_file, const char* route_file) {
 //
 // To model this we 'reserve' these locally used outputs, ensuring that the router will not use them (as if it did
 // this would equate to duplicating a BLE into an already in-use BLE instance, which is clearly incorrect).
-void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local_opins) {
+void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins) {
     int num_local_opin, inode, from_node, iconn, num_edges, to_node;
     int iclass, ipin;
     float cost;
@@ -1587,7 +1379,7 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
     if (rip_up_local_opins) {
         for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
             type = physical_tile_type(blk_id);
-            for (iclass = 0; iclass < type->num_class; iclass++) {
+            for (iclass = 0; iclass < (int)type->class_inf.size(); iclass++) {
                 num_local_opin = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
 
                 if (num_local_opin == 0) continue;
@@ -1596,15 +1388,19 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
                 /* Always 0 for pads and for RECEIVER (IPIN) classes */
                 for (ipin = 0; ipin < num_local_opin; ipin++) {
                     inode = route_ctx.clb_opins_used_locally[blk_id][iclass][ipin];
+                    VTR_ASSERT(inode >= 0 && inode < (ssize_t)device_ctx.rr_nodes.size());
                     adjust_one_rr_occ_and_apcost(inode, -1, pres_fac, acc_fac);
                 }
             }
         }
     }
 
+    // Make sure heap is empty before we add nodes to the heap.
+    heap->empty_heap();
+
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         type = physical_tile_type(blk_id);
-        for (iclass = 0; iclass < type->num_class; iclass++) {
+        for (iclass = 0; iclass < (int)type->class_inf.size(); iclass++) {
             num_local_opin = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
 
             if (num_local_opin == 0) continue;
@@ -1612,7 +1408,7 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
             VTR_ASSERT(type->class_inf[iclass].equivalence == PortEquivalence::INSTANCE);
 
             //From the SRC node we walk through it's out going edges to collect the
-            //OPIN nodes. We then push them onto a heap so the the OPINs with lower
+            //OPIN nodes. We then push them onto a heap so the OPINs with lower
             //congestion cost are popped-off/reserved first. (Intuitively, we want
             //the reserved OPINs to move out of the way of congestion, by preferring
             //to reserve OPINs with lower congestion costs).
@@ -1625,23 +1421,25 @@ void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local
 
                 //Add the OPIN to the heap according to it's congestion cost
                 cost = get_rr_cong_cost(to_node);
-                node_to_heap(to_node, cost, OPEN, OPEN, 0., 0.);
+                add_node_to_heap(heap, route_ctx.rr_node_route_inf,
+                                 to_node, cost, OPEN, RREdgeId::INVALID(),
+                                 0., 0.);
             }
 
             for (ipin = 0; ipin < num_local_opin; ipin++) {
                 //Pop the nodes off the heap. We get them from the heap so we
                 //reserve those pins with lowest congestion cost first.
-                heap_head_ptr = get_heap_head();
+                heap_head_ptr = heap->get_heap_head();
                 inode = heap_head_ptr->index;
 
                 VTR_ASSERT(device_ctx.rr_nodes[inode].type() == OPIN);
 
                 adjust_one_rr_occ_and_apcost(inode, 1, pres_fac, acc_fac);
                 route_ctx.clb_opins_used_locally[blk_id][iclass][ipin] = inode;
-                free_heap_data(heap_head_ptr);
+                heap->free(heap_head_ptr);
             }
 
-            empty_heap();
+            heap->empty_heap();
         }
     }
 }
@@ -1822,11 +1620,12 @@ void print_rr_node_route_inf() {
     for (size_t inode = 0; inode < route_ctx.rr_node_route_inf.size(); ++inode) {
         if (!std::isinf(route_ctx.rr_node_route_inf[inode].path_cost)) {
             int prev_node = route_ctx.rr_node_route_inf[inode].prev_node;
-            int prev_edge = route_ctx.rr_node_route_inf[inode].prev_edge;
-            VTR_LOG("rr_node: %d prev_node: %d prev_edge: %d",
-                    inode, prev_node, prev_edge);
+            RREdgeId prev_edge = route_ctx.rr_node_route_inf[inode].prev_edge;
+            auto switch_id = device_ctx.rr_nodes.edge_switch(prev_edge);
+            VTR_LOG("rr_node: %d prev_node: %d prev_edge: %zu",
+                    inode, prev_node, (size_t)prev_edge);
 
-            if (prev_node != OPEN && prev_edge != OPEN && !device_ctx.rr_nodes[prev_node].edge_is_configurable(prev_edge)) {
+            if (prev_node != OPEN && bool(prev_edge) && !device_ctx.rr_switch_inf[switch_id].configurable()) {
                 VTR_LOG("*");
             }
 
@@ -1854,11 +1653,12 @@ void print_rr_node_route_inf_dot() {
     for (size_t inode = 0; inode < route_ctx.rr_node_route_inf.size(); ++inode) {
         if (!std::isinf(route_ctx.rr_node_route_inf[inode].path_cost)) {
             int prev_node = route_ctx.rr_node_route_inf[inode].prev_node;
-            int prev_edge = route_ctx.rr_node_route_inf[inode].prev_edge;
+            RREdgeId prev_edge = route_ctx.rr_node_route_inf[inode].prev_edge;
+            auto switch_id = device_ctx.rr_nodes.edge_switch(prev_edge);
 
-            if (prev_node != OPEN && prev_edge != OPEN) {
+            if (prev_node != OPEN && bool(prev_edge)) {
                 VTR_LOG("\tnode%d -> node%zu [", prev_node, inode);
-                if (prev_node != OPEN && prev_edge != OPEN && !device_ctx.rr_nodes[prev_node].edge_is_configurable(prev_edge)) {
+                if (prev_node != OPEN && bool(prev_edge) && !device_ctx.rr_switch_inf[switch_id].configurable()) {
                     VTR_LOG("label=\"*\"");
                 }
 
@@ -1905,7 +1705,6 @@ static bool validate_trace_nodes(t_trace* head, const std::unordered_set<int>& t
 bool router_needs_lookahead(enum e_router_algorithm router_algorithm) {
     switch (router_algorithm) {
         case BREADTH_FIRST:
-        case NO_TIMING:
             return false;
         case TIMING_DRIVEN:
             return true;
@@ -1913,4 +1712,14 @@ bool router_needs_lookahead(enum e_router_algorithm router_algorithm) {
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unknown routing algorithm %d",
                             router_algorithm);
     }
+}
+
+std::string describe_unrouteable_connection(const int source_node, const int sink_node) {
+    std::string msg = vtr::string_fmt(
+        "Cannot route from %s (%s) to "
+        "%s (%s) -- no possible path",
+        rr_node_arch_name(source_node).c_str(), describe_rr_node(source_node).c_str(),
+        rr_node_arch_name(sink_node).c_str(), describe_rr_node(sink_node).c_str());
+
+    return msg;
 }

@@ -26,7 +26,7 @@ static int check_for_duplicated_names();
 
 static int check_clb_conn(ClusterBlockId iblk, int num_conn);
 
-static int check_clb_internal_nets(ClusterBlockId iblk);
+static int check_clb_internal_nets(ClusterBlockId iblk, const IntraLbPbPinLookup& intra_lb_pb_pini_lookup);
 
 /*********************** Subroutine definitions *****************************/
 
@@ -57,11 +57,14 @@ void check_netlist(int verbosity) {
     free_hash_table(net_hash_table);
     VTR_LOG_WARN("Netlist contains %d global net to non-global architecture pin connections\n", global_to_non_global_connection_count);
 
+    auto& device_ctx = g_vpr_ctx.device();
+    IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
+
     /* Check that each block makes sense. */
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         num_conn = (int)cluster_ctx.clb_nlist.block_pins(blk_id).size();
         error += check_clb_conn(blk_id, num_conn);
-        error += check_clb_internal_nets(blk_id);
+        error += check_clb_internal_nets(blk_id, intra_lb_pb_pin_lookup);
         if (error >= ERROR_THRESHOLD) {
             VPR_ERROR(VPR_ERROR_OTHER,
                       "Too many errors in netlist, exiting.\n");
@@ -91,14 +94,18 @@ static int check_connections_to_global_clb_pins(ClusterNetId net_id, int verbosi
     int global_to_non_global_connection_count = 0;
     for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
         ClusterBlockId blk_id = cluster_ctx.clb_nlist.pin_block(pin_id);
-        int pin_index = cluster_ctx.clb_nlist.pin_physical_index(pin_id);
+        auto logical_type = cluster_ctx.clb_nlist.block_type(blk_id);
+        auto physical_type = pick_best_physical_type(logical_type);
 
-        if (physical_tile_type(blk_id)->is_ignored_pin[pin_index] != net_is_ignored
-            && !is_io_type(physical_tile_type(blk_id))) {
+        int log_index = cluster_ctx.clb_nlist.pin_logical_index(pin_id);
+        int pin_index = get_physical_pin(physical_type, logical_type, log_index);
+
+        if (physical_type->is_ignored_pin[pin_index] != net_is_ignored
+            && !is_io_type(physical_type)) {
             VTR_LOGV_WARN(verbosity > 2,
                           "Global net '%s' connects to non-global architecture pin '%s' (netlist pin '%s')\n",
                           cluster_ctx.clb_nlist.net_name(net_id).c_str(),
-                          block_type_pin_index_to_name(physical_tile_type(blk_id), pin_index).c_str(),
+                          block_type_pin_index_to_name(physical_type, pin_index).c_str(),
                           cluster_ctx.clb_nlist.pin_name(pin_id).c_str());
 
             ++global_to_non_global_connection_count;
@@ -144,7 +151,7 @@ static int check_clb_conn(ClusterBlockId iblk, int num_conn) {
     /* This case should already have been flagged as an error -- this is *
      * just a redundant double check.                                    */
 
-    if (num_conn > physical_tile_type(type)->num_pins) {
+    if (num_conn > type->pb_type->num_pins) {
         VTR_LOG_ERROR("logic block #%d with output %s has %d pins.\n",
                       iblk, cluster_ctx.clb_nlist.block_name(iblk).c_str(), num_conn);
         error++;
@@ -154,14 +161,14 @@ static int check_clb_conn(ClusterBlockId iblk, int num_conn) {
 }
 
 /* Check that internal-to-logic-block connectivity is continuous and logically consistent */
-static int check_clb_internal_nets(ClusterBlockId iblk) {
+static int check_clb_internal_nets(ClusterBlockId iblk, const IntraLbPbPinLookup& pb_graph_pin_lookup) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     int error = 0;
     const auto& pb_route = cluster_ctx.clb_nlist.block_pb(iblk)->pb_route;
     int num_pins_in_block = cluster_ctx.clb_nlist.block_pb(iblk)->pb_graph_node->total_pb_pins;
 
-    t_pb_graph_pin** pb_graph_pin_lookup = alloc_and_load_pb_graph_pin_lookup_from_index(cluster_ctx.clb_nlist.block_type(iblk));
+    t_logical_block_type_ptr type = cluster_ctx.clb_nlist.block_type(iblk);
 
     for (int i = 0; i < num_pins_in_block; i++) {
         if (!pb_route.count(i)) continue;
@@ -169,8 +176,9 @@ static int check_clb_internal_nets(ClusterBlockId iblk) {
         VTR_ASSERT(pb_route.count(i));
 
         if (pb_route[i].atom_net_id || pb_route[i].driver_pb_pin_id != OPEN) {
-            if ((pb_graph_pin_lookup[i]->port->type == IN_PORT && pb_graph_pin_lookup[i]->is_root_block_pin())
-                || (pb_graph_pin_lookup[i]->port->type == OUT_PORT && pb_graph_pin_lookup[i]->parent_node->is_primitive())) {
+            const t_pb_graph_pin* pb_gpin = pb_graph_pin_lookup.pb_gpin(type->index, i);
+            if ((pb_gpin->port->type == IN_PORT && pb_gpin->is_root_block_pin())
+                || (pb_gpin->port->type == OUT_PORT && pb_gpin->parent_node->is_primitive())) {
                 if (pb_route[i].driver_pb_pin_id != OPEN) {
                     VTR_LOG_ERROR(
                         "Internal connectivity error in logic block #%d with output %s."
@@ -198,8 +206,6 @@ static int check_clb_internal_nets(ClusterBlockId iblk) {
             }
         }
     }
-
-    free_pb_graph_pin_lookup_from_index(pb_graph_pin_lookup);
     return error;
 }
 

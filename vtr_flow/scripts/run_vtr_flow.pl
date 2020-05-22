@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 ###################################################################################
 # This script runs the VTR flow for a single benchmark circuit and architecture
 # file.
@@ -39,6 +39,7 @@
 use strict;
 use warnings;
 use Cwd;
+use Sys::Hostname;
 use File::Spec;
 use POSIX;
 use File::Copy;
@@ -85,8 +86,8 @@ my $stage_idx_vpr    = 5;
 
 my $circuit_file_path      = expand_user_path( shift(@ARGV) );
 my $architecture_file_path = expand_user_path( shift(@ARGV) );
-my $sdc_file_path;
-my $pad_file_path;
+my $sdc_file_path = undef;
+my $pad_file_path = undef;
 
 my $ext;
 my $starting_stage          = stage_index("odin");
@@ -109,21 +110,27 @@ my @memory_tracker_args     = ("time", "-v");
 my $limit_memory_usage      = -1;
 my $timeout                 = 14 * 24 * 60 * 60;         # 14 day execution timeout
 my $valgrind 		        = 0;
-my @valgrind_args	        = ("--leak-check=full", "--errors-for-leak-kinds=none", "--error-exitcode=1", "--track-origins=yes");
+my @valgrind_args	        = ("--leak-check=full", "--suppressions=$vtr_flow_path/../vpr/valgrind.supp", "--error-exitcode=1", "--errors-for-leak-kinds=none", "--track-origins=yes", "--log-file=valgrind.log","--error-limit=no");
 my $abc_quote_addition      = 0;
 my @forwarded_vpr_args;   # VPR arguments that pass through the script
 my $verify_rr_graph         = 0;
+my $rr_graph_ext            = ".xml";
 my $check_route             = 0;
 my $check_place             = 0;
 my $use_old_abc_script      = 0;
 my $run_name = "";
-my $expect_fail = 0;
+my $expect_fail = undef;
 my $verbosity = 0;
 my $odin_adder_config_path = "default";
 my $odin_adder_cin_global = "";
 my $use_odin_xml_config = 1;
 my $relax_W_factor = 1.3;
-my $crit_path_router_iterations = undef;
+my $crit_path_router_iterations = 150; #We set a higher routing iterations (vs 50 default)
+                                       #to avoid spurious routing failures at relaxed W 
+                                       #caused by small perturbations in pattern or 
+                                       #placement. Usually these failures show up on small 
+                                       #circuits (with low W). Setting a higher value here 
+                                       #will help avoids them.
 my $show_failures = 0;
 
 
@@ -186,7 +193,9 @@ while ( scalar(@ARGV) != 0 ) { #While non-empty
 	} elsif ( $token eq "-min_hard_adder_size" ) {
 		$min_hard_adder_size = shift(@ARGV);
 	} elsif ( $token eq "-verify_rr_graph" ){
-            $verify_rr_graph = 1;
+		$verify_rr_graph = 1;
+	} elsif ( $token eq "-rr_graph_ext" ){
+		$rr_graph_ext = shift(@ARGV);
     } elsif ( $token eq "-check_route" ){
             $check_route = 1;
     } elsif ( $token eq "-check_place" ){
@@ -196,10 +205,10 @@ while ( scalar(@ARGV) != 0 ) { #While non-empty
     } elsif ( $token eq "-name"){
             $run_name = shift(@ARGV);
     } elsif ( $token eq "-expect_fail"){
-            $expect_fail = 1;
+            $expect_fail = shift(@ARGV);
     }
     elsif ( $token eq "-verbose"){
-            $expect_fail = shift(@ARGV);
+            $verbosity = 1;
     }
 	elsif ( $token eq "-adder_type"){
 		$odin_adder_config_path = shift(@ARGV);
@@ -383,15 +392,6 @@ my $in_mode;
 my $tpp      = XML::TreePP->new();
 my $xml_tree = $tpp->parsefile($architecture_file_path);
 
-# Get lut size if undefined
-if (!defined $lut_size) {
-    $lut_size = xml_find_LUT_Kvalue($xml_tree);
-}
-if ( $lut_size < 1 ) {
-    $error_status = "failed: cannot determine arch LUT k-value";
-    $error_code = 1;
-}
-
 # Get memory size
 $mem_size = xml_find_mem_size($xml_tree);
 
@@ -424,6 +424,12 @@ my $ace_output_act_path = "$temp_dir$ace_output_act_name";
 my $prevpr_output_file_name = "$benchmark_name" . file_ext_for_stage($stage_idx_prevpr, $circuit_suffix);
 my $prevpr_output_file_path = "$temp_dir$prevpr_output_file_name";
 
+my $prevpr_sdc_file_name = "$benchmark_name" . ".sdc";
+my $prevpr_sdc_file_path = "$temp_dir$prevpr_output_file_name";
+
+my $prevpr_pad_file_name = "$benchmark_name" . ".pad";
+my $prevpr_pad_file_path = "$temp_dir$prevpr_output_file_name";
+
 my $vpr_route_output_file_name = "$benchmark_name.route";
 my $vpr_route_output_file_path = "$temp_dir$vpr_route_output_file_name";
 my $vpr_postsynthesis_netlist = "";
@@ -433,13 +439,29 @@ my $vpr_postsynthesis_netlist = "";
 #system "cp $circuit_path $temp_dir/$benchmark_name" . file_ext_for_stage($starting_stage - 1);
 #system "cp $odin2_base_config"
 
+#Copy architecture
 my $architecture_file_path_new = "$temp_dir$architecture_file_name";
 copy( $architecture_file_path, $architecture_file_path_new );
 $architecture_file_path = $architecture_file_path_new;
 
+#Copy circuit
 my $circuit_file_path_new = "$temp_dir$benchmark_name" . file_ext_for_stage($starting_stage - 1, $circuit_suffix);
 copy( $circuit_file_path, $circuit_file_path_new );
 $circuit_file_path = $circuit_file_path_new;
+
+#Copy SDC file
+if (defined $sdc_file_path) {
+    my $sdc_file_path_new = "$temp_dir$prevpr_sdc_file_name";
+    copy($sdc_file_path, $sdc_file_path_new);
+    $sdc_file_path = $sdc_file_path_new;
+}
+
+#Copy PAD file
+if (defined $pad_file_path) {
+    my $pad_file_path_new = "$temp_dir$prevpr_pad_file_name";
+    copy($pad_file_path, $pad_file_path_new);
+    $pad_file_path = $pad_file_path_new;
+}
 
 # Call executable and time it
 my $StartTime = time;
@@ -528,6 +550,16 @@ if (    $starting_stage <= $stage_idx_abc
 	#added so that valgrind will not run on abc and perl because of existing memory errors
 	my $skip_valgrind = $valgrind;
 	$valgrind = 0;
+
+
+    # Get lut size if undefined
+    if (!defined $lut_size) {
+        $lut_size = xml_find_LUT_Kvalue($xml_tree);
+    }
+    if ( $lut_size < 1 ) {
+        $error_status = "failed: cannot determine arch LUT k-value";
+        $error_code = 1;
+    }
 
 	my @clock_list;
 
@@ -988,7 +1020,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 	} else { # specified channel width
         my $fixed_W_log_file = "vpr.out";
 
-        my $rr_graph_out_file = "rr_graph.xml";
+        my $rr_graph_out_file = "rr_graph" . $rr_graph_ext;
 
         my @fixed_W_extra_vpr_args = @forwarded_vpr_args;
 
@@ -1019,7 +1051,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
         if ($do_second_vpr_run) {
             my @second_run_extra_vpr_args = @forwarded_vpr_args;
 
-            my $rr_graph_out_file2 = "rr_graph2.xml";
+            my $rr_graph_out_file2 = "rr_graph2" . $rr_graph_ext;
             if ($verify_rr_graph){
                 push( @second_run_extra_vpr_args, ("--read_rr_graph", $rr_graph_out_file));
                 push( @second_run_extra_vpr_args, ("--write_rr_graph", $rr_graph_out_file2));
@@ -1174,6 +1206,8 @@ open( RESULTS, "> $results_path" );
 # Output vpr status and runtime
 print RESULTS "vpr_status=$q\n";
 print RESULTS "vpr_seconds=$seconds\n";
+print RESULTS "rundir=" . getcwd() . "\n";
+print RESULTS "hostname=" . hostname() . "\n";
 
 # Parse VPR output
 if ( open( VPROUT, "< vpr.out" ) ) {
@@ -1186,19 +1220,35 @@ print RESULTS "error=$error\n";
 
 close(RESULTS);
 
-if ($expect_fail) {
+if (defined $expect_fail) {
+    my $old_error_status = $error_status;
+
+    my $failure_matched = 0;
+
     if ($error_code != 0) {
+        if ($q eq $expect_fail) {
+            $failure_matched = 1;
+        } else {
+            $failure_matched = 0;
+        }
+    } else { #Did not fail
+        $failure_matched = 0;
+    }
+
+    if ($failure_matched) {
         #Failed as expected, invert message
         $error_code = 0;
         $error_status = "OK";
         if ($verbosity > 0) {
-            $error_status .= "(as expected " . $error_status . ")";
+            $error_status .= " (as expected " . $old_error_status . ")";
         } else {
             $error_status .= "*";
         }
     } else {
         #Passed when expected failure
-        $error_status = "failed: expected to fail but was " . $error_status;
+        $error_status = "failed: expected to fail";
+        $error_status .= " with '" . $expect_fail . "'";
+        $error_status .= " but was '" . $q . "'";
     }
 }
 
@@ -1306,7 +1356,7 @@ sub system_with_timeout {
 			my $return_code = $? >> 8;
 
 			if ( $did_crash eq "true" ) {
-                if ($show_failures && !$expect_fail) {
+                if ($show_failures && not defined $expect_fail) {
                     my $abs_log_path = Cwd::abs_path($_[1]);
                     print "\n   Failed log file follows ($abs_log_path):\n";
                     cat_file($_[1], "\t> ");
@@ -1314,7 +1364,7 @@ sub system_with_timeout {
 				return "crashed";
 			}
 			elsif ( $return_code != 0 ) {
-                if ($show_failures && !$expect_fail) {
+                if ($show_failures && not defined $expect_fail) {
                     my $abs_log_path = Cwd::abs_path($_[1]);
                     print "\n   Failed log file follows ($abs_log_path):\n";
                     cat_file($_[1], "\t> ");
@@ -1592,6 +1642,13 @@ sub run_vpr {
     if (defined $args->{extra_vpr_args} && scalar(@extra_vpr_args) > 0) {
         push(@vpr_args, @extra_vpr_args);
     }
+
+    #Extra options to fine-tune LeakSanitizer (LSAN) behaviour.
+    #Note that if VPR was compiled without LSAN these have no effect
+    # 'suppressions=...' Add the LeakSanitizer (LSAN) suppression file
+    # 'exitcode=12' Use a consistent exitcode (on some systems LSAN don't use the default exit code of 23)
+    # 'fast_unwind_on_malloc=0' Provide more accurate leak stack traces
+    local $ENV{"LSAN_OPTIONS"} = "suppressions=$vtr_flow_path/../vpr/lsan.supp exitcode=23 fast_unwind_on_malloc=0";
 
     #Run the command
     $q = &system_with_timeout(

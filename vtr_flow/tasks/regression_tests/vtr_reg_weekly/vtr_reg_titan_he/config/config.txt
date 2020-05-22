@@ -1,0 +1,66 @@
+############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/titan_blif
+
+# Path to directory of SDCs to use
+sdc_dir=benchmarks/titan_blif
+
+# Path to directory of architectures to use
+archs_dir=arch/titan
+
+# Add circuits to list to sweep
+# Note that the circuits are roughly sorted so that some small
+# circuits run first (to detect early failures), followed by larger
+# circuits (so they do not start last)
+
+#Largest benchmarks, which have potential to unroute or time-out
+circuit_list_add=gaussianblur_stratixiv_arch_timing.blif 
+
+#Large benchmarks
+circuit_list_add=directrf_stratixiv_arch_timing.blif
+circuit_list_add=bitcoin_miner_stratixiv_arch_timing.blif
+circuit_list_add=LU230_stratixiv_arch_timing.blif
+circuit_list_add=sparcT1_chip2_stratixiv_arch_timing.blif
+circuit_list_add=LU_Network_stratixiv_arch_timing.blif
+
+#Small benchmarks
+circuit_list_add=neuron_stratixiv_arch_timing.blif
+circuit_list_add=sparcT1_core_stratixiv_arch_timing.blif
+circuit_list_add=stereo_vision_stratixiv_arch_timing.blif
+circuit_list_add=cholesky_mc_stratixiv_arch_timing.blif
+
+#Mixed order of large and small
+circuit_list_add=gsm_switch_stratixiv_arch_timing.blif
+circuit_list_add=mes_noc_stratixiv_arch_timing.blif
+circuit_list_add=dart_stratixiv_arch_timing.blif
+circuit_list_add=denoise_stratixiv_arch_timing.blif
+circuit_list_add=sparcT2_core_stratixiv_arch_timing.blif
+circuit_list_add=cholesky_bdti_stratixiv_arch_timing.blif
+circuit_list_add=minres_stratixiv_arch_timing.blif
+circuit_list_add=stap_qrd_stratixiv_arch_timing.blif
+circuit_list_add=openCV_stratixiv_arch_timing.blif
+circuit_list_add=bitonic_mesh_stratixiv_arch_timing.blif
+circuit_list_add=segmentation_stratixiv_arch_timing.blif
+circuit_list_add=SLAM_spheric_stratixiv_arch_timing.blif
+circuit_list_add=des90_stratixiv_arch_timing.blif
+
+# Add architectures to list to sweep
+arch_list_add=stratixiv_arch.timing.xml
+
+# Parse info and how to parse
+parse_file=vpr_titan.txt
+
+# How to parse QoR info
+qor_parse_file=qor_vpr_titan.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_vpr_titan.txt
+
+#The Titan benchmarks are run at a fixed channel width of 300 to simulate a Stratix IV-like routing architecture
+#A large number of routing iterations is set to ensure the router doesn't give up to easily on the larger benchmarks
+#To be more run-time comparable to commercial tools like Quartus, we run with higher placer effort (inner_num=2) and lower astar_fac (1.0)
+#Set a 48hr timeout so they don't run forever
+script_params=-starting_stage vpr --route_chan_width 300 --max_router_iterations 400 --router_lookahead map --inner_num 2 --astar_fac 1.0 -timeout 172800

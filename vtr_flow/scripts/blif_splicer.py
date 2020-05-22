@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 ############################### blif_splicer.py ################################
 #
@@ -91,9 +91,11 @@ for tupleIndex, nTuple in enumerate(sorted(itertools.combinations(circuits, n),
 	# The format of the output filename is 'file1+file2+...+fileN.blif'
 
 	filename = '+'.join(circuit[0] for circuit in nTuple) + '.blif'
-	with open(filename, 'wb') as outfile:			
-		outfile.write('.model top\n' + ''.join(sections) + '.end\n')
-	print 'Created ' + filename + '...'
+	with open(filename, 'wb') as outfile:
+                # Requires the addition of .encode() below to convert
+                # string to bytes (avoids TypeError)
+		outfile.write('.model top\n'.encode() + ''.join(sections).encode() + '.end\n'.encode())
+	print('Created ' + filename + '...')
 
 	if tupleIndex == k-1: 
 		break

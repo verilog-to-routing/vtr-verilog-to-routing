@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 ################################################################################
 # Developed by Jean-Philippe Legault (jeanlego@github) and
 #  Dr. Kenneth B. Kent (ken@unb.ca) for ODIN II at the

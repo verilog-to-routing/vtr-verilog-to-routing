@@ -2,8 +2,8 @@
 #define CLOCK_FWD
 
 struct Coordinates {
-    int x;
-    int y;
+    int x = -1;
+    int y = -1;
 };
 
 #endif

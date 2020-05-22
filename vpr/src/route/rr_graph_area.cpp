@@ -428,6 +428,9 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
                             }
                             break;
 
+                        case SINK:
+                            break; //ignore virtual sinks
+
                         default:
                             VPR_ERROR(VPR_ERROR_ROUTE,
                                       "in count_routing_transistors:\n"

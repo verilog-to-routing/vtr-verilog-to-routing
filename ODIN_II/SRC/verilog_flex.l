@@ -41,7 +41,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #define YY_USER_ACTION {my_yycolumn = current_yycolumn; current_yycolumn = yyleng;}
 
 /* the define below helps with watching the parser go token by token */
-#define UNSUPPORTED_TOKEN 	{ delayed_error_message(PARSE_ERROR, my_yycolumn, my_yylineno, current_parse_file, "%s", "Unsuported token"); }
+#define UNSUPPORTED_TOKEN 	{ delayed_error_message(PARSER, my_yycolumn, my_yylineno, current_parse_file, "%s", "Unsuported token"); }
 
 #define _STATE_TOP(str)		{ BEGIN(_state_top(str)); }
 #define POP_STATE()			{ _pop_state(); _STATE_TOP("Popped to "); }
@@ -50,6 +50,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 struct defines_t 
 {
+	std::string name;
+	bool use_va_args;
 	std::vector<std::string> args;
 	std::string body;
 };
@@ -107,17 +109,72 @@ vDEC [Dd][_]*[[:digit:]][[:digit:]_]*
 vHEX [Hh][_]*[ZzXx[:xdigit:]][ZzXx[:xdigit:]_]*
 vINT [[:digit:]][[:digit:]_]*
 vWORD [[:alpha:]_][[:alnum:]_$]*
-vSTRING ["][^"]*["]  
+defineWORD [[:alnum:]_$]+
+vSTR ["]([^\\\"]|\\.)*["]  
 vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 
 %%
 
+	/*	unsupported Keywords		*/
+<INITIAL>"casex"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"casez"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"disable"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"edge"						{ UNSUPPORTED_TOKEN;}
+<INITIAL>"scalared"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"bufif0"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"bufif1"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"cmos"						{ UNSUPPORTED_TOKEN;}
+<INITIAL>"deassign"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"endprimitive"				{ UNSUPPORTED_TOKEN;}
+<INITIAL>"endtable"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"event"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"force"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"forever"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"fork"						{ UNSUPPORTED_TOKEN;}
+<INITIAL>"highz0"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"highz1"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"join"						{ UNSUPPORTED_TOKEN;}
+<INITIAL>"large"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"medium"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"nmos"						{ UNSUPPORTED_TOKEN;}
+<INITIAL>"notif0"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"notif1"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"pmos"						{ UNSUPPORTED_TOKEN;}
+<INITIAL>"primitive"				{ UNSUPPORTED_TOKEN;}
+<INITIAL>"pull0"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"pull1"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"pulldown"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"pullup"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"rcmos"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"release"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"repeat"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"rnmos"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"rpmos"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"rtran"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"rtranif0"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"rtranif1"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"small"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"strong0"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"strong1"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"supply0"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"supply1"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"table"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"time"						{ UNSUPPORTED_TOKEN;}
+<INITIAL>"tran"						{ UNSUPPORTED_TOKEN;}
+<INITIAL>"tranif0"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"tranif1"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"vectored"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"wait"						{ UNSUPPORTED_TOKEN;}
+<INITIAL>"weak0"					{ UNSUPPORTED_TOKEN;}
+<INITIAL>"weak1"					{ UNSUPPORTED_TOKEN;}
+
 	/* preproc helpers */
 <VAR_PARSE>{vWORD}					{ MP(); add_args_to_define(yytext); }
+<VAR_PARSE>"..."					{ MP(); add_args_to_define(yytext); }
 <VAR_PARSE>[\,]						{  }
 <VAR_PARSE>[\)]						{ CHANGE_STATE(DEFINE_BODY); }
-<PARSE_DEFINE>{vWORD}[\(]			{ MP(); new_define_t(yytext); CHANGE_STATE(VAR_PARSE);}
-<PARSE_DEFINE>{vWORD}				{ MP(); new_define_t(yytext); CHANGE_STATE(DEFINE_BODY);}
+<PARSE_DEFINE>{defineWORD}[\(]		{ MP(); new_define_t(yytext); CHANGE_STATE(VAR_PARSE);}
+<PARSE_DEFINE>{defineWORD}			{ MP(); new_define_t(yytext); CHANGE_STATE(DEFINE_BODY);}
 <INITIAL>"`define"					{ MP(); PUSH_STATE(PARSE_DEFINE); }
 
 <DEFINE_REMOVAL>{vWORD}				{ MP(); defines_map.erase(yytext); POP_STATE();}
@@ -142,7 +199,7 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL,SKIP>"`endif"				{ MP(); POP_STATE();}
 
 <INITIAL>"`include"             	{ MP(); PUSH_STATE(INCLUDE); }
-<INCLUDE>{vSTRING}      			{ MP(); push_include(yytext); POP_STATE(); }
+<INCLUDE>{vSTR}      				{ MP(); push_include(yytext); POP_STATE(); }
 
 <INITIAL>"`default_nettype"			{ MP(); return preDEFAULT_NETTYPE;}
 <INITIAL>"`resetall"				{ MP(); initialize_defaults();}
@@ -215,6 +272,7 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL>"xnor"						{ MP(); return vXNOR;}
 <INITIAL>"xor"						{ MP(); return vXOR;}
 <INITIAL>"specparam"				{ MP(); return vSPECPARAM;}
+<INITIAL>"buf"				        { MP(); return vBUF;}
 
 	/* Net types */
 <INITIAL>"wire"						{ MP(); return netWIRE;}
@@ -229,61 +287,6 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL>"uwire"					{ MP(); return netUWIRE;}
 <INITIAL>"none"						{ MP(); return netNONE;}
 <INITIAL>"reg"						{ MP(); return netREG;}
-
-	/*	unsupported Keywords		*/
-<INITIAL>"buf"						{ UNSUPPORTED_TOKEN;}
-<INITIAL>"casex"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"casez"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"disable"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"edge"						{ UNSUPPORTED_TOKEN;}
-<INITIAL>"scalared"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"bufif0"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"bufif1"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"cmos"						{ UNSUPPORTED_TOKEN;}
-<INITIAL>"deassign"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"endprimitive"				{ UNSUPPORTED_TOKEN;}
-<INITIAL>"endtable"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"event"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"force"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"forever"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"fork"						{ UNSUPPORTED_TOKEN;}
-<INITIAL>"highz0"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"highz1"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"join"						{ UNSUPPORTED_TOKEN;}
-<INITIAL>"large"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"medium"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"nmos"						{ UNSUPPORTED_TOKEN;}
-<INITIAL>"notif0"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"notif1"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"pmos"						{ UNSUPPORTED_TOKEN;}
-<INITIAL>"primitive"				{ UNSUPPORTED_TOKEN;}
-<INITIAL>"pull0"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"pull1"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"pulldown"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"pullup"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"rcmos"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"release"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"repeat"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"rnmos"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"rpmos"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"rtran"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"rtranif0"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"rtranif1"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"small"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"strong0"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"strong1"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"supply0"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"supply1"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"table"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"time"						{ UNSUPPORTED_TOKEN;}
-<INITIAL>"tran"						{ UNSUPPORTED_TOKEN;}
-<INITIAL>"tranif0"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"tranif1"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"vectored"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"wait"						{ UNSUPPORTED_TOKEN;}
-<INITIAL>"weak0"					{ UNSUPPORTED_TOKEN;}
-<INITIAL>"weak1"					{ UNSUPPORTED_TOKEN;}
-
 
 	/* Operators */	
 <INITIAL>"**"						{ MP(); return voPOWER;}
@@ -314,18 +317,15 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL>"$clog2"					{ MP(); return vCLOG2;}
 <INITIAL>"$unsigned"				{ MP(); return voUNSIGNED;}
 <INITIAL>"$signed"					{ MP(); return voSIGNED;}
-
+<INITIAL>"$finish"					{ MP(); return voFINISH;}
+<INITIAL>"$display"					{ MP(); return voDISPLAY;}
+	/* catch all C functions */
 <INITIAL>[\$]{vWORD}				{ MP(); return vCFUNC;}
 
-	/* Delay */
-<INITIAL>#{vINT}					{ MP(); yylval.num_value = vtr::strdup(yytext+1); return vDELAY_ID; }
-
 	/* Integers */
-<INITIAL>{vINT}						{ MP(); yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
-
+<INITIAL>{vINT}						{ MP(); yylval.num_value = vtr::strdup(yytext); return vINT_NUMBER; }
 	/* Strings */
-<INITIAL>{vSTRING}					{ MP(); yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
-
+<INITIAL>{vSTR}						{ MP(); yylval.num_value = vtr::strdup(yytext); return vSTRING; }
 	/* Numbers */
 <INITIAL>[[:digit:]]*'[sS]?{vBIN}	{ MP(); yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
 <INITIAL>[[:digit:]]*'[sS]?{vHEX}	{ MP(); yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
@@ -376,6 +376,11 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 										{
 											append_to_define_body(' ');
 										}
+										else if(state == DEFINE_ARGS
+										|| 		state == BRACKET_MATCH)
+										{
+											define_arg_push_back(yytext[0]);
+										} 
 									}
 
 <*><<EOF>>							{ if ( ! pop_include() ){ free_define_map(); yyterminate(); } }
@@ -494,13 +499,13 @@ void lex_string(const char * str)
 	/* check current depth, prevent too much macro recursion */
 	if(current_include_stack.size() > RECURSIVE_LIMIT)
 	{
-		error_message(PARSE_ERROR, include_file_names[current_parse_file].second, current_parse_file, 
+		error_message(PARSER, include_file_names[current_parse_file].second, current_parse_file, 
 			"Reached upper macro recursion limit of %d", 
 			RECURSIVE_LIMIT);
 	}
 	else if(current_include_stack.size() > (RECURSIVE_LIMIT/2))
 	{
-		warning_message(PARSE_ERROR, include_file_names[current_parse_file].second, current_parse_file, 
+		warning_message(PARSER, include_file_names[current_parse_file].second, current_parse_file, 
 			"Reached halfway to upper macro recursion limit of %d", 
 			RECURSIVE_LIMIT);
 	}
@@ -642,12 +647,14 @@ void new_define_t(const char* id)
 	}
 
 	defines_t *new_define = new defines_t();
+	new_define->name = tmp;
+	new_define->use_va_args = false;
 	new_define->args = std::vector<std::string>();
 	new_define->body = "";
 	
 	if(defines_map.find(tmp) != defines_map.end())
 	{
-		warning_message(PARSE_ERROR, my_yylineno, current_parse_file, "%s is redefined, overwritting its value", id);
+		warning_message(PARSER, my_yylineno, current_parse_file, "%s is redefined, overwritting its value", id);
 		delete defines_map[tmp];	
 	}
 
@@ -671,32 +678,62 @@ std::string get_simple_define(const char *str)
 
 std::string get_complex_define()
 {
-	if( current_args.size() != current_define->args.size())
+	if(current_define)
 	{
-		error_message(PARSE_ERROR, my_yylineno, current_parse_file, 
-			"define is being used with wrong number of arguments, Expected %ld, got %ld", 
-			current_args.size(), 
-			current_define->args.size());
-	}
+		std::string va_args_replacement = "";
 
-	for(int i=0; i<current_define->args.size(); i++)
-	{
-		std::string original_arg = current_define->args[i];
-		std::string replacement_arg = current_args[i];
-
-		size_t pos = current_define_body.find( original_arg, 0 );
-		while ( pos != std::string::npos )
+		if( current_args.size() < current_define->args.size())
 		{
-			current_define_body.erase(pos, original_arg.size());
-			current_define_body.insert( pos, replacement_arg );
-			pos += replacement_arg.size();
-			pos = current_define_body.find( replacement_arg, pos );
+			error_message(PARSER, my_yylineno, current_parse_file, 
+				"define `%s is being used with too few arguments, Expected %ld, got %ld", 
+					current_define->name.c_str(), current_define->args.size(),current_args.size());
 		}
-	}
+		else if( current_args.size() > current_define->args.size())
+		{
+			if(! current_define->use_va_args) {
+				error_message(PARSER, my_yylineno, current_parse_file, 
+					"define `%s is being used with too many arguments, Expected %ld, got %ld", 
+						current_define->name.c_str(), current_define->args.size(),current_args.size());
+			} else {
+				while(current_define->args.size() != current_args.size())
+				{
+					if(va_args_replacement != "")
+					{
+						va_args_replacement = ", " + va_args_replacement;
+					}
+					va_args_replacement = current_args.back() + va_args_replacement;
+					current_args.pop_back();
+				}
 
-	if(configuration.print_parse_tokens )
-	{
-		printf("DEFINE = %s\n",  current_define_body.c_str());
+			}
+		}
+
+		if (current_define->use_va_args)
+		{
+			current_define->args.push_back("__VA_ARGS__");
+			current_args.push_back(va_args_replacement);
+		}
+
+
+		for(int i=0; i<current_define->args.size(); i++)
+		{
+			std::string original_arg = current_define->args[i];
+			std::string replacement_arg = current_args[i];
+
+			size_t pos = current_define_body.find( original_arg, 0 );
+			while ( pos != std::string::npos )
+			{
+				current_define_body.erase(pos, original_arg.size());
+				current_define_body.insert( pos, replacement_arg );
+				pos += replacement_arg.size();
+				pos = current_define_body.find( original_arg, pos );
+			}
+		}
+
+		if(configuration.print_parse_tokens )
+		{
+			printf("DEFINE = %s\n",  current_define_body.c_str());
+		}
 	}
 	return current_define_body;
 }
@@ -719,25 +756,53 @@ void define_arg_push_back(char c)
 void load_define(const char *str)
 {
 	std::string tmp(str);
-	if(tmp[0] == '`')
-	{
-		tmp.erase(0,1);
-	}
 
-	if(tmp.back() == '(')
-	{
-		tmp.pop_back();
-	}
-
-	auto itter = defines_map.find(tmp);
-	if(itter == defines_map.end())
-	{
-		error_message(PARSE_ERROR, my_yylineno, current_parse_file, "%s define cannot be found", tmp.c_str());
-	}
-
-	current_define = itter->second;
-	current_define_body = current_define->body;
+	current_define = NULL;
+	current_define_body = "";
 	current_args = std::vector<std::string>();
+
+	// compiler specific macros
+	if(tmp == "`__LINE__") 
+	{
+		current_define_body = std::to_string(my_yylineno + 1 /* 0 indexed */);
+	}
+	else if (tmp == "`__FILE__")
+	{
+		current_define_body = "\"" + std::string(configuration.list_of_file_names[current_parse_file]) + "\"";
+	}
+	else
+	{
+		if(tmp[0] == '`')
+		{
+			tmp.erase(0,1);
+		}
+
+		if(tmp.back() == '(')
+		{
+			tmp.pop_back();
+		}
+
+		auto itter = defines_map.find(tmp);
+		if(itter == defines_map.end())
+		{
+			if(tmp == "elif")
+			{
+				warning_message(PARSER, my_yylineno, current_parse_file, 
+					"%s", "using `elif, when you probably meant `elsif");
+			}
+			else
+			{
+				warning_message(PARSER, my_yylineno, current_parse_file, 
+					"%s define cannot be found, replacing with empty string and continuing synthesis", 
+					tmp.c_str());
+			}
+		}
+		else
+		{
+			current_define = itter->second;
+			current_define_body = current_define->body;
+		}
+	}
 }
 
 void append_to_define_body(char c)
@@ -748,16 +813,28 @@ void append_to_define_body(char c)
 void add_args_to_define(const char* str)
 {
 	std::string tmp(str);
-	for(int i=0; i < current_define->args.size(); i++)
+	if(current_define->use_va_args)
 	{
-		if(tmp == current_define->args[i])
-		{
-			error_message(PARSE_ERROR, my_yylineno, current_parse_file, 
-				"%s","define has two argument with same name");
-		}
+		error_message(PARSER, my_yylineno, current_parse_file, 
+				"%s","... must be used as the last argument of a `define");
 	}
+	else if(tmp == "...")
+	{
+		current_define->use_va_args = true;
+	}
+	else
+	{
+		for(int i=0; i < current_define->args.size(); i++)
+		{
+			if(tmp == current_define->args[i])
+			{
+				error_message(PARSER, my_yylineno, current_parse_file, 
+					"%s","define has two argument with same name");
+			}
+		}
 
-	current_define->args.push_back(std::string(str));
+		current_define->args.push_back(std::string(str));
+	}
 }
 
 void finalize_define()

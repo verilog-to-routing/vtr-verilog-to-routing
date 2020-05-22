@@ -1,0 +1,257 @@
+<!-- This architecture definition represents a simplified version of a SLICEM site -->
+<architecture xmlns:xi="http://www.w3.org/2001/XInclude">
+  <models>
+    <model name="IO_0">
+      <input_ports>
+        <port name="in" combinational_sink_ports="out"/>
+        <port name="enable" combinational_sink_ports="out"/>
+      </input_ports>
+      <output_ports>
+        <port name="out"/>
+      </output_ports>
+    </model>
+    <model name="IO_1">
+      <input_ports>
+        <port name="in" combinational_sink_ports="out"/>
+        <port name="enable" combinational_sink_ports="out"/>
+      </input_ports>
+      <output_ports>
+        <port name="out"/>
+      </output_ports>
+    </model>
+    <model name="IO_2">
+      <input_ports>
+        <port name="in" combinational_sink_ports="out"/>
+      </input_ports>
+      <output_ports>
+        <port name="out"/>
+      </output_ports>
+    </model>
+    <model name="IO_3">
+      <input_ports>
+        <port name="in" combinational_sink_ports="out"/>
+      </input_ports>
+      <output_ports>
+        <port name="out"/>
+      </output_ports>
+    </model>
+  </models>
+  <tiles>
+    <tile name="io_tile">
+      <sub_tile name="io_tile_0">
+        <input name="in" num_pins="1"/>
+        <output name="out" num_pins="1"/>
+        <equivalent_sites>
+          <site pb_type="io_block" pin_mapping="custom">
+            <direct from="io_tile_0.in" to="io_block.in"/>
+            <direct from="io_tile_0.out" to="io_block.out"/>
+          </site>
+        </equivalent_sites>
+        <pinlocations pattern="custom">
+          <loc side="top" xoffset="0" yoffset="0">io_tile_0.in io_tile_0.out</loc>
+          <loc side="left" xoffset="0" yoffset="0">io_tile_0.in io_tile_0.out</loc>
+          <loc side="bottom" xoffset="0" yoffset="0">io_tile_0.in io_tile_0.out</loc>
+          <loc side="right" xoffset="0" yoffset="0">io_tile_0.in io_tile_0.out</loc>
+        </pinlocations>
+        <fc in_type="frac" in_val="1.0" out_type="frac" out_val="1.0"/>
+      </sub_tile>
+      <sub_tile name="io_tile_1" capacity="10">
+        <input name="in" num_pins="1"/>
+        <output name="out" num_pins="1"/>
+        <equivalent_sites>
+          <site pb_type="io_block" pin_mapping="custom">
+            <direct from="io_tile_1.in" to="io_block.in"/>
+            <direct from="io_tile_1.out" to="io_block.out"/>
+          </site>
+        </equivalent_sites>
+        <pinlocations pattern="custom">
+          <loc side="top" xoffset="0" yoffset="0">io_tile_1.in io_tile_1.out</loc>
+          <loc side="left" xoffset="0" yoffset="0">io_tile_1.in io_tile_1.out</loc>
+          <loc side="bottom" xoffset="0" yoffset="0">io_tile_1.in io_tile_1.out</loc>
+          <loc side="right" xoffset="0" yoffset="0">io_tile_1.in io_tile_1.out</loc>
+        </pinlocations>
+        <fc in_type="frac" in_val="1.0" out_type="frac" out_val="1.0"/>
+      </sub_tile>
+      <sub_tile name="io_tile_2" capacity="54">
+        <input name="in" num_pins="1"/>
+        <output name="out" num_pins="1"/>
+        <equivalent_sites>
+          <site pb_type="io_block" pin_mapping="custom">
+            <direct from="io_tile_2.in" to="io_block.in"/>
+            <direct from="io_tile_2.out" to="io_block.out"/>
+          </site>
+        </equivalent_sites>
+        <pinlocations pattern="custom">
+          <loc side="top" xoffset="0" yoffset="0">io_tile_2.in io_tile_2.out</loc>
+          <loc side="left" xoffset="0" yoffset="0">io_tile_2.in io_tile_2.out</loc>
+          <loc side="bottom" xoffset="0" yoffset="0">io_tile_2.in io_tile_2.out</loc>
+          <loc side="right" xoffset="0" yoffset="0">io_tile_2.in io_tile_2.out</loc>
+        </pinlocations>
+        <fc in_type="frac" in_val="1.0" out_type="frac" out_val="1.0"/>
+      </sub_tile>
+    </tile>
+    <tile name="pass_through_tile">
+      <sub_tile name="pass_through_tile_0" capacity="10">
+        <input name="in" num_pins="1"/>
+        <output name="out" num_pins="1"/>
+        <equivalent_sites>
+          <site pb_type="io_site_2" pin_mapping="custom">
+            <direct from="pass_through_tile_0.in" to="io_site_2.in"/>
+            <direct from="pass_through_tile_0.out" to="io_site_2.out"/>
+          </site>
+          <site pb_type="io_site_3" pin_mapping="custom">
+            <direct from="pass_through_tile_0.in" to="io_site_3.in"/>
+            <direct from="pass_through_tile_0.out" to="io_site_3.out"/>
+          </site>
+        </equivalent_sites>
+        <pinlocations pattern="custom">
+          <loc side="top" xoffset="0" yoffset="0">pass_through_tile_0.in pass_through_tile_0.out</loc>
+          <loc side="left" xoffset="0" yoffset="0">pass_through_tile_0.in pass_through_tile_0.out</loc>
+          <loc side="bottom" xoffset="0" yoffset="0">pass_through_tile_0.in pass_through_tile_0.out</loc>
+          <loc side="right" xoffset="0" yoffset="0">pass_through_tile_0.in pass_through_tile_0.out</loc>
+        </pinlocations>
+        <fc in_type="frac" in_val="1.0" out_type="frac" out_val="1.0"/>
+      </sub_tile>
+      <sub_tile name="pass_through_tile_1" capacity="43">
+        <input name="in" num_pins="1"/>
+        <input name="enable" num_pins="1"/>
+        <output name="out" num_pins="1"/>
+        <equivalent_sites>
+          <site pb_type="io_site_0" pin_mapping="custom">
+            <direct from="pass_through_tile_1.in" to="io_site_0.in"/>
+            <direct from="pass_through_tile_1.enable" to="io_site_0.enable"/>
+            <direct from="pass_through_tile_1.out" to="io_site_0.out"/>
+          </site>
+          <site pb_type="io_site_1" pin_mapping="custom">
+            <direct from="pass_through_tile_1.in" to="io_site_1.in"/>
+            <direct from="pass_through_tile_1.enable" to="io_site_1.enable"/>
+            <direct from="pass_through_tile_1.out" to="io_site_1.out"/>
+          </site>
+        </equivalent_sites>
+        <pinlocations pattern="custom">
+          <loc side="top" xoffset="0" yoffset="0">pass_through_tile_1.in pass_through_tile_1.enable pass_through_tile_1.out</loc>
+          <loc side="left" xoffset="0" yoffset="0">pass_through_tile_1.in pass_through_tile_1.enable pass_through_tile_1.out</loc>
+          <loc side="bottom" xoffset="0" yoffset="0">pass_through_tile_1.in pass_through_tile_1.enable pass_through_tile_1.out</loc>
+          <loc side="right" xoffset="0" yoffset="0">pass_through_tile_1.in pass_through_tile_1.enable pass_through_tile_1.out</loc>
+        </pinlocations>
+        <fc in_type="frac" in_val="1.0" out_type="frac" out_val="1.0"/>
+      </sub_tile>
+    </tile>
+  </tiles>
+  <complexblocklist>
+    <pb_type name="io_block">
+      <input name="in" num_pins="1"/>
+      <output name="out" num_pins="1"/>
+      <mode name="IN">
+        <pb_type blif_model=".input" name="input_0" num_pb="1">
+          <output name="inpad" num_pins="1"/>
+        </pb_type>
+        <interconnect>
+          <direct input="input_0.inpad" name="i_0" output="io_block.out"/>
+        </interconnect>
+      </mode>
+      <mode name="OUT">
+        <pb_type blif_model=".output" name="output_0" num_pb="1">
+          <input name="outpad" num_pins="1"/>
+        </pb_type>
+        <interconnect>
+          <direct input="io_block.in" name="o_0" output="output_0.outpad"/>
+        </interconnect>
+      </mode>
+    </pb_type>
+    <pb_type name="io_site_0">
+      <input name="in" num_pins="1"/>
+      <input name="enable" num_pins="1"/>
+      <output name="out" num_pins="1"/>
+      <mode name="INOUT">
+        <pb_type blif_model=".subckt IO_0" name="io_0" num_pb="1">
+          <input name="in" num_pins="1"/>
+          <input name="enable" num_pins="1"/>
+          <output name="out" num_pins="1"/>
+          <delay_constant max="1.667e-9" in_port="io_0.in" out_port="io_0.out"/>
+          <delay_constant max="1.667e-9" in_port="io_0.enable" out_port="io_0.out"/>
+        </pb_type>
+        <interconnect>
+          <mux input="io_site_0.in io_site_0.enable" name="i_0" output="io_0.in"/>
+          <direct input="io_0.out" name="o_0" output="io_site_0.out"/>
+        </interconnect>
+      </mode>
+    </pb_type>
+    <pb_type name="io_site_1">
+      <input name="in" num_pins="1"/>
+      <input name="enable" num_pins="1"/>
+      <output name="out" num_pins="1"/>
+      <mode name="INOUT">
+        <pb_type blif_model=".subckt IO_1" name="io_1" num_pb="1">
+          <input name="in" num_pins="1"/>
+          <input name="enable" num_pins="1"/>
+          <output name="out" num_pins="1"/>
+          <delay_constant max="1.667e-9" in_port="io_1.in" out_port="io_1.out"/>
+          <delay_constant max="1.667e-9" in_port="io_1.enable" out_port="io_1.out"/>
+        </pb_type>
+        <interconnect>
+          <mux input="io_site_1.in io_site_1.enable" name="i_1" output="io_1.in"/>
+          <direct input="io_1.out" name="o_1" output="io_site_1.out"/>
+        </interconnect>
+      </mode>
+    </pb_type>
+    <pb_type name="io_site_2">
+      <input name="in" num_pins="1"/>
+      <output name="out" num_pins="1"/>
+      <mode name="INOUT">
+        <pb_type blif_model=".subckt IO_2" name="io_2" num_pb="1">
+          <input name="in" num_pins="1"/>
+          <output name="out" num_pins="1"/>
+          <delay_constant max="1.667e-9" in_port="io_2.in" out_port="io_2.out"/>
+        </pb_type>
+        <interconnect>
+          <direct input="io_site_2.in" name="i_2" output="io_2.in"/>
+          <direct input="io_2.out" name="o_2" output="io_site_2.out"/>
+        </interconnect>
+      </mode>
+    </pb_type>
+    <pb_type name="io_site_3">
+      <input name="in" num_pins="1"/>
+      <output name="out" num_pins="1"/>
+      <mode name="INOUT">
+        <pb_type blif_model=".subckt IO_3" name="io_3" num_pb="1">
+          <input name="in" num_pins="1"/>
+          <output name="out" num_pins="1"/>
+          <delay_constant max="1.667e-9" in_port="io_3.in" out_port="io_3.out"/>
+        </pb_type>
+        <interconnect>
+          <direct input="io_site_3.in" name="i_3" output="io_3.in"/>
+          <direct input="io_3.out" name="o_3" output="io_site_3.out"/>
+        </interconnect>
+      </mode>
+    </pb_type>
+  </complexblocklist>
+  <layout>
+    <auto_layout>
+      <fill type="pass_through_tile" priority="1"/>
+      <perimeter type="io_tile" priority="2"/>
+      <corners type="EMPTY" priority="3"/>
+    </auto_layout>
+  </layout>
+  <device>
+    <sizing R_minW_nmos="6065.520020" R_minW_pmos="18138.500000"/>
+    <area grid_logic_tile_area="14813.392"/>
+    <connection_block input_switch_name="sw"/>
+    <switch_block fs="3" type="universal"/>
+    <chan_width_distr>
+      <x distr="uniform" peak="1.0"/>
+      <y distr="uniform" peak="1.0"/>
+    </chan_width_distr>
+  </device>
+  <switchlist>
+    <switch Cin=".77e-15" Cout="4e-15" R="1" Tdel="58e-12" buf_size="27.645901" mux_trans_size="2.630740" name="sw" type="mux"/>
+  </switchlist>
+  <segmentlist>
+    <segment Cmetal="22.5e-15" Rmetal="101" freq="1.0" name="wire" type="bidir" length="1">
+      <wire_switch name="sw"/>
+      <opin_switch name="sw"/>
+      <sb type="pattern">1 1</sb>
+      <cb type="pattern">1</cb>
+    </segment>
+  </segmentlist>
+</architecture>

@@ -3,7 +3,7 @@ regression_tests/vtr_reg_nightly/vtr_reg_qor_chain
 regression_tests/vtr_reg_nightly/vtr_reg_qor_chain_depop
 regression_tests/vtr_reg_nightly/vtr_reg_netlist_writer
 regression_tests/vtr_reg_nightly/vtr_func_formal
-regression_tests/vtr_reg_nightly/titan_small
+regression_tests/vtr_reg_nightly/titan_quick_qor
 regression_tests/vtr_reg_nightly/titan_other
 regression_tests/vtr_reg_nightly/vtr_bidir
 regression_tests/vtr_reg_nightly/complex_switch

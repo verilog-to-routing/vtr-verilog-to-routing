@@ -1,0 +1,5 @@
+#Titan benchmark packed metrics
+num_IO;vpr.out;Netlist IO blocks:\s*(\d+)
+num_CLB;vpr.out;Netlist CLB blocks:\s*(\d+)
+num_DSP;vpr.out;Netlist DSP blocks:\s*(\d+)
+num_BRAM;vpr.out;Netlist BRAM blocks:\s*(\d+)

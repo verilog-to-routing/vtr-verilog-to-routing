@@ -3,52 +3,8 @@
 #include <vector>
 #include "clustered_netlist.h"
 #include "vtr_vector.h"
-
-/* Used by the heap as its fundamental data structure.
- * Each heap element represents a partial route.
- *
- * cost:    The cost used to sort heap.
- *          For the timing-driven router this is the backward_path_cost +
- *          expected cost to the target.
- *          For the breadth-first router it is the node cost to reach this
- *          point.
- *
- * backward_path_cost:  Used only by the timing-driven router.  The "known"
- *                      cost of the path up to and including this node.
- *                      In this case, the .cost member contains not only
- *                      the known backward cost but also an expected cost
- *                      to the target.
- *
- * R_upstream: Used only by the timing-driven router.  Stores the upstream 
- *             resistance to ground from this node, including the
- *             resistance of the node itself (device_ctx.rr_nodes[index].R).
- *
- * index: The RR node index associated with the costs/R_upstream values
- *
- * u.prev.node: The previous node used to reach the current 'index' node
- * u.prev.next: The edge from u.prev.node used to reach the current 'index' node
- *
- * u.next:  pointer to the next s_heap structure in the free
- *          linked list.  Not used when on the heap.
- *
- */
-struct t_heap {
-    float cost = 0.;
-    float backward_path_cost = 0.;
-    float R_upstream = 0.;
-
-    int index = OPEN;
-
-    struct t_prev {
-        int node;
-        int edge;
-    };
-
-    union {
-        t_heap* next;
-        t_prev prev;
-    } u;
-};
+#include "heap_type.h"
+#include "rr_node_fwd.h"
 
 /******* Subroutines in route_common used only by other router modules ******/
 
@@ -72,36 +28,11 @@ float get_rr_cong_cost(int inode);
 void mark_ends(ClusterNetId net_id);
 void mark_remaining_ends(const std::vector<int>& remaining_sinks);
 
-void add_to_heap(t_heap* hptr);
-t_heap* alloc_heap_data();
-void node_to_heap(int inode, float cost, int prev_node, int prev_edge, float backward_path_cost, float R_upstream);
-
-bool is_empty_heap();
-
 void free_traceback(ClusterNetId net_id);
+void drop_traceback_tail(ClusterNetId net_id);
 void free_traceback(t_trace* tptr);
 
 void add_to_mod_list(int inode, std::vector<int>& modified_rr_node_inf);
-
-namespace heap_ {
-void build_heap();
-void sift_down(size_t hole);
-void sift_up(size_t tail, t_heap* const hptr);
-void push_back(t_heap* const hptr);
-void push_back_node(int inode, float total_cost, int prev_node, int prev_edge, float backward_path_cost, float R_upstream);
-bool is_valid();
-void pop_heap();
-void print_heap();
-void verify_extract_top();
-} // namespace heap_
-
-t_heap* get_heap_head();
-
-void empty_heap();
-
-void free_heap_data(t_heap* hptr);
-
-void invalidate_heap_entries(int sink_node, int ipin_node);
 
 void init_route_structs(int bb_factor);
 
@@ -111,8 +42,7 @@ void reset_rr_node_route_structs();
 
 void free_trace_structs();
 
-void init_heap(const DeviceGrid& grid);
-void reserve_locally_used_opins(float pres_fac, float acc_fac, bool rip_up_local_opins);
+void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins);
 
 void free_chunk_memory_trace();
 
@@ -128,3 +58,81 @@ t_trace* alloc_trace_data();
 void free_trace_data(t_trace* trace);
 
 bool router_needs_lookahead(enum e_router_algorithm router_algorithm);
+
+std::string describe_unrouteable_connection(const int source_node, const int sink_node);
+
+/* Creates a new t_heap object to be placed on the heap, if the new cost    *
+ * given is lower than the current path_cost to this channel segment.  The  *
+ * index of its predecessor is stored to make traceback easy.  The index of *
+ * the edge used to get from its predecessor to it is also stored to make   *
+ * timing analysis, etc.  The backward_path_cost and R_upstream values are  *
+ * used only by the timing-driven router -- the breadth-first router        *
+ * ignores them.                                                            *
+ *                                                                          *
+ * Returns t_heap suitable for adding to heap or nullptr if node is more    *
+ * expensive than previously explored path.                                 */
+template<typename T, typename RouteInf>
+t_heap* prepare_to_add_node_to_heap(
+    T* heap,
+    const RouteInf& rr_node_route_inf,
+    int inode,
+    float total_cost,
+    int prev_node,
+    RREdgeId prev_edge,
+    float backward_path_cost,
+    float R_upstream) {
+    if (total_cost >= rr_node_route_inf[inode].path_cost)
+        return nullptr;
+
+    t_heap* hptr = heap->alloc();
+
+    hptr->index = inode;
+    hptr->cost = total_cost;
+    hptr->set_prev_node(prev_node);
+    hptr->set_prev_edge(prev_edge);
+    hptr->backward_path_cost = backward_path_cost;
+    hptr->R_upstream = R_upstream;
+    return hptr;
+}
+
+/* Puts an rr_node on the heap if it is the cheapest path.    */
+template<typename T, typename RouteInf>
+void add_node_to_heap(
+    T* heap,
+    const RouteInf& rr_node_route_inf,
+    int inode,
+    float total_cost,
+    int prev_node,
+    RREdgeId prev_edge,
+    float backward_path_cost,
+    float R_upstream) {
+    t_heap* hptr = prepare_to_add_node_to_heap(
+        heap,
+        rr_node_route_inf, inode, total_cost, prev_node,
+        prev_edge, backward_path_cost, R_upstream);
+    if (hptr) {
+        heap->add_to_heap(hptr);
+    }
+}
+
+/* Puts an rr_node on the heap with the same condition as add_node_to_heap,
+ * but do not fix heap property yet as that is more efficiently done from
+ * bottom up with build_heap    */
+template<typename T, typename RouteInf>
+void push_back_node(
+    T* heap,
+    const RouteInf& rr_node_route_inf,
+    int inode,
+    float total_cost,
+    int prev_node,
+    RREdgeId prev_edge,
+    float backward_path_cost,
+    float R_upstream) {
+    t_heap* hptr = prepare_to_add_node_to_heap(
+        heap,
+        rr_node_route_inf, inode, total_cost, prev_node, prev_edge,
+        backward_path_cost, R_upstream);
+    if (hptr) {
+        heap->push_back(hptr);
+    }
+}

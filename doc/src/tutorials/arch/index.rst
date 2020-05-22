@@ -30,6 +30,8 @@ Multiple examples of how this language can be used to describe different types o
    fracturable_multiplier
    configurable_memory
    xilinx_virtex_6_like
+   equivalent_sites
+   heterogeneous_tiles
 
 **Modeling Guides:**
 

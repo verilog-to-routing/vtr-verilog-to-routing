@@ -61,7 +61,7 @@ void routing_stats(bool full_stats, enum e_route_type route_type, std::vector<t_
             if (device_ctx.grid[i][j].width_offset == 0
                 && device_ctx.grid[i][j].height_offset == 0
                 && !is_io_type(type)
-                && type != device_ctx.EMPTY_TYPE) {
+                && type != device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
                 if (type->area == UNDEFINED) {
                     area += grid_logic_tile_area * type->width * type->height;
                 } else {

@@ -1,4 +1,6 @@
+regression_tests/vtr_reg_weekly/vtr_reg_titan_he
 regression_tests/vtr_reg_weekly/vtr_reg_titan
 regression_tests/vtr_reg_weekly/vtr_reg_qor_chain_predictor_off
 regression_tests/vtr_reg_weekly/vtr_reg_fpu_hard_block_arch
 regression_tests/vtr_reg_weekly/vtr_reg_fpu_soft_logic_arch
+regression_tests/vtr_reg_weekly/vpr_ispd

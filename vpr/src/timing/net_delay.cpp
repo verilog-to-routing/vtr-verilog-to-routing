@@ -33,45 +33,15 @@ static std::unordered_map<int, float> inode_to_Tdel_map;
 
 /*********************** Subroutines local to this module ********************/
 
-static void load_one_net_delay(vtr::vector<ClusterNetId, float*>& net_delay, ClusterNetId net_id);
+static void load_one_net_delay(ClbNetPinsMatrix<float>& net_delay, ClusterNetId net_id);
 
 static void load_one_net_delay_recurr(t_rt_node* node, ClusterNetId net_id);
 
-static void load_one_constant_net_delay(vtr::vector<ClusterNetId, float*>& net_delay, ClusterNetId net_id, float delay_value);
+static void load_one_constant_net_delay(ClbNetPinsMatrix<float>& net_delay, ClusterNetId net_id, float delay_value);
 
 /*************************** Subroutine definitions **************************/
 
-/* Allocates space for the net_delay data structure   *
- * [0..nets.size()-1][1..num_pins-1]. I chunk the data *
- * to save space on large problems.                    */
-vtr::vector<ClusterNetId, float*> alloc_net_delay(vtr::t_chunk* chunk_list_ptr) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    vtr::vector<ClusterNetId, float*> net_delay; /* [0..nets.size()-1][1..num_pins-1] */
-
-    auto nets = cluster_ctx.clb_nlist.nets();
-    net_delay.resize(nets.size());
-
-    for (auto net_id : nets) {
-        float* tmp_ptr = (float*)vtr::chunk_malloc(cluster_ctx.clb_nlist.net_sinks(net_id).size() * sizeof(float), chunk_list_ptr);
-
-        net_delay[net_id] = tmp_ptr - 1; /* [1..num_pins-1] */
-
-        //Ensure the net delays are initialized with non-garbage values
-        for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ++ipin) {
-            net_delay[net_id][ipin] = std::numeric_limits<float>::quiet_NaN();
-        }
-    }
-
-    return (net_delay);
-}
-
-void free_net_delay(vtr::vector<ClusterNetId, float*>& net_delay,
-                    vtr::t_chunk* chunk_list_ptr) {
-    net_delay.clear();
-    vtr::free_chunk_memory(chunk_list_ptr);
-}
-
-void load_net_delay_from_routing(vtr::vector<ClusterNetId, float*>& net_delay) {
+void load_net_delay_from_routing(ClbNetPinsMatrix<float>& net_delay) {
     /* This routine loads net_delay[0..nets.size()-1][1..num_pins-1].  Each entry   *
      * is the Elmore delay from the net source to the appropriate sink. Both       *
      * the rr_graph and the routing traceback must be completely constructed        *
@@ -88,7 +58,7 @@ void load_net_delay_from_routing(vtr::vector<ClusterNetId, float*>& net_delay) {
     }
 }
 
-static void load_one_net_delay(vtr::vector<ClusterNetId, float*>& net_delay, ClusterNetId net_id) {
+static void load_one_net_delay(ClbNetPinsMatrix<float>& net_delay, ClusterNetId net_id) {
     /* This routine loads delay values for one net in                            *
      * net_delay[net_id][1..num_pins-1]. First, from the traceback, it           *
      * constructs the route tree and computes its values for R, C, and Tdel.     *
@@ -136,7 +106,7 @@ static void load_one_net_delay_recurr(t_rt_node* node, ClusterNetId net_id) {
     }
 }
 
-static void load_one_constant_net_delay(vtr::vector<ClusterNetId, float*>& net_delay, ClusterNetId net_id, float delay_value) {
+static void load_one_constant_net_delay(ClbNetPinsMatrix<float>& net_delay, ClusterNetId net_id, float delay_value) {
     /* Sets each entry of the net_delay array for net inet to delay_value.     */
     auto& cluster_ctx = g_vpr_ctx.clustering();
 

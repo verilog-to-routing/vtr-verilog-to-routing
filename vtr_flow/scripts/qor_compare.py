@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 import argparse
 from collections import OrderedDict
 
@@ -35,6 +35,7 @@ DEFAULT_METRICS = [
     'routed_wirelength', #VTR (minW), Titan
     'crit_path_routed_wirelength', #VTR
     'critical_path_delay', #VTR/Titan
+    'geomean_nonvirtual_intradomain_critical_path_delay', #VTR/Titan
 
     #Run-time Metrics
     'odin_synth_time',
@@ -119,8 +120,14 @@ def main():
     raw_sheets = OrderedDict()
     for i, csv in enumerate(args.parse_result_files):
         #Load as CSV
-        print "Loading", csv
-        df = pd.read_csv(csv, sep='\t')
+        print("Loading", csv)
+
+        base, ext = os.path.splitext(csv)
+        if ext == '.txt':
+            sep='\t'
+        else:
+            sep=','
+        df = pd.read_csv(csv, sep=sep)
 
         avail_metrics.update(df.columns) #Record available metrics
 
@@ -133,7 +140,7 @@ def main():
     qor_metrics = []
     for metric in args.qor_metrics:
         if metric not in avail_metrics:
-            print "Warning: Metric", metric, "not found in parse results (may be for a different benchmark set)"
+            print("Warning: Metric", metric, "not found in parse results (may be for a different benchmark set)")
         else:
             qor_metrics.append(metric)
 
@@ -152,8 +159,8 @@ def main():
 
 def make_transpose(dest_sheet, ref_sheet):
 
-    for ref_row in xrange(ref_sheet.min_row, ref_sheet.max_row + 1):
-        for ref_col in xrange(ref_sheet.min_column, ref_sheet.max_column + 1):
+    for ref_row in range(ref_sheet.min_row, ref_sheet.max_row + 1):
+        for ref_col in range(ref_sheet.min_column, ref_sheet.max_column + 1):
             ref_cell = ref_sheet.cell(row=ref_row, column=ref_col)
 
             dest_cell = dest_sheet.cell(row=ref_col, column=ref_row)
@@ -161,7 +168,7 @@ def make_transpose(dest_sheet, ref_sheet):
 
 def make_summary(summary_sheet, ratio_sheet, ratio_ranges, keys):
     dest_row = 1
-    for i, (ratio_name, cell_range) in enumerate(ratio_ranges.iteritems()):
+    for i, (ratio_name, cell_range) in enumerate(ratio_ranges.items()):
 
         dest_col = 1
 
@@ -169,7 +176,7 @@ def make_summary(summary_sheet, ratio_sheet, ratio_ranges, keys):
 
             dest_col += 1
             ratio_row = cell_range.min_row
-            for j, ratio_col in enumerate(xrange(cell_range.min_col, cell_range.max_col + 1)):
+            for j, ratio_col in enumerate(range(cell_range.min_col, cell_range.max_col + 1)):
                 ratio_cell = ratio_sheet.cell(row=ratio_row, column=ratio_col)
 
                 if j < len(keys):
@@ -193,7 +200,7 @@ def make_summary(summary_sheet, ratio_sheet, ratio_ranges, keys):
 
         #Ratio values
         ratio_row = cell_range.max_row #Geomean is in last row
-        for ratio_col in xrange(cell_range.min_col + len(keys), cell_range.max_col + 1):
+        for ratio_col in range(cell_range.min_col + len(keys), cell_range.max_col + 1):
             ratio_cell = ratio_sheet.cell(row=ratio_row, column=ratio_col)
 
             dest_cell = summary_sheet.cell(row=dest_row, column=dest_col)
@@ -205,14 +212,14 @@ def make_summary(summary_sheet, ratio_sheet, ratio_ranges, keys):
 
 def make_ratios(ratio_sheet, raw_sheets, keys, metrics):
 
-    ref_sheet_title = raw_sheets.keys()[0]
+    ref_sheet_title = list(raw_sheets.keys())[0]
 
     ref_sheet = raw_sheets[ref_sheet_title] #Get the first raw sheet
 
     cell_ranges = OrderedDict()
 
     row = 1
-    for raw_sheet_title, raw_sheet in raw_sheets.iteritems():
+    for raw_sheet_title, raw_sheet in raw_sheets.items():
         ratio_subtitle = ratio_sheet.cell(row=row, column=1)
         ratio_subtitle.value = raw_sheet_title
         row += 1
@@ -238,7 +245,7 @@ def fill_ratio(ws, raw_sheet, ref_sheet, dest_row, dest_col, keys, metrics):
     dest_row += 1
 
     col_offset = 0
-    for ref_col in xrange(1, ref_sheet.max_column + 1):
+    for ref_col in range(1, ref_sheet.max_column + 1):
         ref_header = ref_sheet.cell(row=1, column=ref_col)
         raw_header = raw_sheet.cell(row=1, column=ref_col)
 
@@ -250,7 +257,7 @@ def fill_ratio(ws, raw_sheet, ref_sheet, dest_row, dest_col, keys, metrics):
             continue
 
         row_offset = 0
-        for ref_row in xrange(2, ref_sheet.max_row + 1):
+        for ref_row in range(2, ref_sheet.max_row + 1):
 
             ref_cell = ref_sheet.cell(row=ref_row, column=ref_col)
             raw_cell = raw_sheet.cell(row=ref_row, column=ref_col)
@@ -300,7 +307,7 @@ def safe_ratio_ref(num_cell, denom_cell):
 def link_sheet_header(dest_sheet, ref_sheet, row, values=None):
     #Copy header
     dest_col = 1
-    for col in xrange(1, ref_sheet.max_column + 1):
+    for col in range(1, ref_sheet.max_column + 1):
 
         ref_cell = ref_sheet.cell(row=1, column=col)
 

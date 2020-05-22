@@ -111,25 +111,32 @@ class SdcParseCallback : public sdcparse::Callback {
                     AtomNetId clock_net = netlist_.pin_net(clock_pin);
                     const auto& clock_name = netlist_.net_name(clock_net);
 
-                    if (std::regex_match(clock_name, clock_name_regex)) {
-                        found = true;
-                        //Create netlist clock
-                        tatum::DomainId netlist_clk = tc_.create_clock_domain(clock_name);
+                    auto net_aliases = netlist_.net_aliases(clock_name);
 
-                        if (sdc_clocks_.count(netlist_clk)) {
-                            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
-                                      "Found duplicate netlist clock definition for clock '%s' matching target pattern '%s'",
-                                      clock_name.c_str(), clock_name_glob_pattern.c_str());
+                    for (const auto& alias : net_aliases) {
+                        if (std::regex_match(alias, clock_name_regex)) {
+                            found = true;
+                            //Create netlist clock
+                            tatum::DomainId netlist_clk = tc_.create_clock_domain(clock_name);
+
+                            if (sdc_clocks_.count(netlist_clk)) {
+                                vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
+                                          "Found duplicate netlist clock definition for clock '%s' matching target pattern '%s'",
+                                          clock_name.c_str(), clock_name_glob_pattern.c_str());
+                            }
+
+                            //Set the clock source
+                            AtomPinId clock_driver = netlist_.net_driver(clock_net);
+                            tatum::NodeId clock_source = lookup_.atom_pin_tnode(clock_driver);
+                            VTR_ASSERT(clock_source);
+                            tc_.set_clock_domain_source(clock_source, netlist_clk);
+
+                            //Save the mapping to the clock info
+                            sdc_clocks_[netlist_clk] = cmd;
+
+                            // Exit the inner loop as the net is already being constrained
+                            break;
                         }
-
-                        //Set the clock source
-                        AtomPinId clock_driver = netlist_.net_driver(clock_net);
-                        tatum::NodeId clock_source = lookup_.atom_pin_tnode(clock_driver);
-                        VTR_ASSERT(clock_source);
-                        tc_.set_clock_domain_source(clock_source, netlist_clk);
-
-                        //Save the mapping to the clock info
-                        sdc_clocks_[netlist_clk] = cmd;
                     }
                 }
 

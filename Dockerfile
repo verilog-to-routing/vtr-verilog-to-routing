@@ -1,35 +1,87 @@
-FROM fedora:latest
-# ------------------------------------------------------------------------------
-# Install base
-RUN dnf -y update '*' --refresh && \
-dnf install -y glibc-static tmux python libevent-devel ncurses-devel clang perl-List-MoreUtils \
-time @development-tools zip clang curl git libxml++-devel libX11-devel libXft-devel fontconfig \
-cairo-devel automake cmake flex bison ctags gdb perl valgrind
+FROM ubuntu:trusty as builder
 
-RUN ln -s /lib64 /usr/lib/x86_64-linux-gnu
+RUN apt-get update 
+RUN apt-get install -y \
+    software-properties-common
 
-# Install Node.js
-RUN curl -L https://raw.githubusercontent.com/c9/install/master/install.sh | bash
-RUN dnf install -y nodejs
+# add auto gpg key other lauchpad ppa
+RUN add-apt-repository ppa:nilarimogard/webupd8
+RUN apt-get update && apt-get install -y \
+    launchpad-getkeys
 
-# Install Cloud9
-RUN git clone https://github.com/c9/core.git /cloud9
-RUN /cloud9/scripts/install-sdk.sh
-RUN sed -i -e 's_127.0.0.1_0.0.0.0_g' /cloud9/configs/standalone.js
+# add llvm PPA
+RUN printf "\n\
+deb http://ppa.launchpad.net/george-edison55/precise-backports/ubuntu precise main \n\
+deb http://ppa.launchpad.net/ubuntu-toolchain-r/test/ubuntu trusty main \n\
+deb https://apt.llvm.org/precise llvm-toolchain-precise-3.6 main \n\
+deb https://apt.llvm.org/trusty llvm-toolchain-trusty-6.0 main \n\
+deb https://apt.llvm.org/trusty llvm-toolchain-trusty-7 main \n\
+deb https://apt.llvm.org/trusty llvm-toolchain-trusty-8 main \n\
+" >> /etc/apt/sources.list
 
-#cleanup
-RUN dnf clean all
+# grab llvm keys
+RUN launchpad-getkeys
 
-# boot script
-RUN echo "#!/bin/sh" >> /startup.sh
-RUN echo "export CC=clang" >> /startup.sh
-RUN echo "export CXX=clang++" >> /startup.sh
-RUN echo "node /cloud9/server.js --listen 0.0.0.0 --port 8080 -w /workspace --collab -a root:letmein" >> /startup.sh
-RUN chmod +x /startup.sh
+RUN apt-get update
+RUN apt-get install -y \
+    ninja \
+    libssl-dev \
+    autoconf \
+    automake \
+    bash \
+    bison \
+    binutils \
+    binutils-gold \
+    build-essential \
+    ctags \
+    curl \
+    doxygen \
+    flex \
+    fontconfig \
+    gdb \
+    git \
+    gperf \
+    libcairo2-dev \
+    libgtk-3-dev \
+    libevent-dev \
+    libfontconfig1-dev \
+    liblist-moreutils-perl \
+    libncurses5-dev \
+    libx11-dev \
+    libxft-dev \
+    libxml++2.6-dev \
+    perl \
+    python \
+    python-lxml \
+    texinfo \
+    time \
+    valgrind \
+    zip \
+    qt5-default \
+    clang-format-7 \
+    g++-5 \
+    gcc-5 \
+    g++-6 \
+    gcc-6 \
+    g++-7 \
+    gcc-7 \
+    g++-8 \
+    gcc-8 \
+    g++-9 \
+    gcc-9 \
+    clang-6.0 \
+    clang-8
 
-# expose port and directory
-RUN mkdir /workspace
-VOLUME /workspace
-EXPOSE 8080
+# install CMake
+WORKDIR /tmp
+ENV CMAKE=cmake-3.17.0
+RUN curl -s https://cmake.org/files/v3.17/${CMAKE}.tar.gz | tar xvzf -
+RUN cd ${CMAKE} && ./configure && make && make install
 
-ENTRYPOINT ["/bin/sh","/startup.sh"]
+# set out workspace
+ENV WORKSPACE=/workspace
+RUN mkdir -p ${WORKSPACE}
+VOLUME ${WORKSPACE}
+WORKDIR ${WORKSPACE}
+
+CMD [ "/bin/bash" ]

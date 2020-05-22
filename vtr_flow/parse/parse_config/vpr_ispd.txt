@@ -1,0 +1,10 @@
+#Metrics for the Titan benchmarks at fixed channel width
+
+%include "common/vtr_flow.txt"
+
+%include "common/ispd_benchmarks.txt"
+
+%include "common/vpr.common.txt"
+%include "timing/vpr.pack.txt"
+%include "timing/vpr.place.txt"
+%include "timing/vpr.route_fixed_chan_width.txt"

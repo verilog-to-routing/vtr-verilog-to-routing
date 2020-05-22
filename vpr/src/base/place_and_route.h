@@ -21,7 +21,7 @@ struct t_fmap_cell {
     t_fmap_cell* next;
 };
 
-int binary_search_place_and_route(t_placer_opts placer_opts,
+int binary_search_place_and_route(const t_placer_opts& placer_opts_ref,
                                   const t_annealing_sched& annealing_sched,
                                   const t_router_opts& router_opts,
                                   const t_analysis_opts& analysis_opts,
@@ -31,7 +31,7 @@ int binary_search_place_and_route(t_placer_opts placer_opts,
                                   int min_chan_width_hint,
                                   t_det_routing_arch* det_routing_arch,
                                   std::vector<t_segment_inf>& segment_inf,
-                                  vtr::vector<ClusterNetId, float*>& net_delay,
+                                  ClbNetPinsMatrix<float>& net_delay,
                                   std::shared_ptr<SetupHoldTimingInfo> timing_info,
                                   std::shared_ptr<RoutingDelayCalculator> delay_calc);
 

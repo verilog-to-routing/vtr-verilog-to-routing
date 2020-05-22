@@ -40,7 +40,7 @@ static void forward_infer_pattern(t_pb_graph_pin* pb_graph_pin);
 
 static void backward_infer_pattern(t_pb_graph_pin* pb_graph_pin);
 
-static t_pack_patterns* alloc_and_init_pattern_list_from_hash(std::unordered_map<std::string, int> pattern_names);
+static std::vector<t_pack_patterns> alloc_and_init_pattern_list_from_hash(std::unordered_map<std::string, int> pattern_names);
 
 static t_pb_graph_edge* find_expansion_edge_of_pattern(const int pattern_index,
                                                        const t_pb_graph_node* pb_graph_node);
@@ -60,7 +60,7 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
 
 static int compare_pack_pattern(const t_pack_patterns* pattern_a, const t_pack_patterns* pattern_b);
 
-static void free_pack_pattern(t_pack_pattern_block* pattern_block, t_pack_pattern_block** pattern_block_list);
+static void free_pack_pattern_block(t_pack_pattern_block* pattern_block, t_pack_pattern_block** pattern_block_list);
 
 static t_pack_molecule* try_create_molecule(t_pack_patterns* list_of_pack_patterns,
                                             std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
@@ -117,9 +117,9 @@ static void print_chain_starting_points(t_pack_patterns* chain_pattern);
  * (general packing) or upstream (in tech mapping).
  * If this limitation is too constraining, code is designed so that this limitation can be removed.
  */
-t_pack_patterns* alloc_and_load_pack_patterns(int* num_packing_patterns) {
+std::vector<t_pack_patterns> alloc_and_load_pack_patterns() {
     int L_num_blocks;
-    t_pack_patterns* list_of_packing_patterns;
+    std::vector<t_pack_patterns> list_of_packing_patterns;
     t_pb_graph_edge* expansion_edge;
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -144,7 +144,7 @@ t_pack_patterns* alloc_and_load_pack_patterns(int* num_packing_patterns) {
             list_of_packing_patterns[i].base_cost = 0;
             // use the found expansion edge to build the pack pattern
             backward_expand_pack_pattern_from_edge(expansion_edge,
-                                                   list_of_packing_patterns, i, nullptr, nullptr, &L_num_blocks);
+                                                   list_of_packing_patterns.data(), i, nullptr, nullptr, &L_num_blocks);
             list_of_packing_patterns[i].num_blocks = L_num_blocks;
 
             /* Default settings: A section of a netlist must match all blocks in a pack
@@ -178,8 +178,6 @@ t_pack_patterns* alloc_and_load_pack_patterns(int* num_packing_patterns) {
             VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find root block for pack pattern %s", list_of_packing_patterns[i].name);
         }
     }
-
-    *num_packing_patterns = pattern_names.size();
 
     return list_of_packing_patterns;
 }
@@ -332,8 +330,8 @@ static void backward_infer_pattern(t_pb_graph_pin* pb_graph_pin) {
  * Allocates memory for models and loads the name of the packing pattern
  * so that it can be identified and loaded with more complete information later
  */
-static t_pack_patterns* alloc_and_init_pattern_list_from_hash(std::unordered_map<std::string, int> pattern_names) {
-    t_pack_patterns* nlist = new t_pack_patterns[pattern_names.size()];
+static std::vector<t_pack_patterns> alloc_and_init_pattern_list_from_hash(std::unordered_map<std::string, int> pattern_names) {
+    std::vector<t_pack_patterns> nlist(pattern_names.size());
 
     for (const auto& curr_pattern : pattern_names) {
         VTR_ASSERT(nlist[curr_pattern.second].name == nullptr);
@@ -346,22 +344,23 @@ static t_pack_patterns* alloc_and_init_pattern_list_from_hash(std::unordered_map
     return nlist;
 }
 
-void free_list_of_pack_patterns(t_pack_patterns* list_of_pack_patterns, const int num_packing_patterns) {
-    int i, j, num_pack_pattern_blocks;
-    t_pack_pattern_block** pattern_block_list;
-    if (list_of_pack_patterns != nullptr) {
-        for (i = 0; i < num_packing_patterns; i++) {
-            num_pack_pattern_blocks = list_of_pack_patterns[i].num_blocks;
-            pattern_block_list = (t_pack_pattern_block**)vtr::calloc(num_pack_pattern_blocks, sizeof(t_pack_pattern_block*));
-            free(list_of_pack_patterns[i].name);
-            free(list_of_pack_patterns[i].is_block_optional);
-            free_pack_pattern(list_of_pack_patterns[i].root_block, pattern_block_list);
-            for (j = 0; j < num_pack_pattern_blocks; j++) {
-                free(pattern_block_list[j]);
-            }
-            free(pattern_block_list);
+void free_list_of_pack_patterns(std::vector<t_pack_patterns>& list_of_pack_patterns) {
+    for (size_t i = 0; i < list_of_pack_patterns.size(); i++) {
+        free_pack_pattern(&list_of_pack_patterns[i]);
+    }
+}
+
+void free_pack_pattern(t_pack_patterns* pack_pattern) {
+    if (pack_pattern) {
+        int num_pack_pattern_blocks = pack_pattern->num_blocks;
+        t_pack_pattern_block** pattern_block_list = (t_pack_pattern_block**)vtr::calloc(num_pack_pattern_blocks, sizeof(t_pack_pattern_block*));
+        free(pack_pattern->name);
+        free(pack_pattern->is_block_optional);
+        free_pack_pattern_block(pack_pattern->root_block, pattern_block_list);
+        for (int j = 0; j < num_pack_pattern_blocks; j++) {
+            free(pattern_block_list[j]);
         }
-        delete[] list_of_pack_patterns;
+        free(pattern_block_list);
     }
 }
 
@@ -873,7 +872,16 @@ t_pack_molecule* alloc_and_load_pack_molecules(t_pack_patterns* list_of_pack_pat
     return list_of_molecules_head;
 }
 
-static void free_pack_pattern(t_pack_pattern_block* pattern_block, t_pack_pattern_block** pattern_block_list) {
+void free_pack_molecules(t_pack_molecule* list_of_pack_molecules) {
+    t_pack_molecule* cur_pack_molecule = list_of_pack_molecules;
+    while (cur_pack_molecule != nullptr) {
+        cur_pack_molecule = list_of_pack_molecules->next;
+        delete list_of_pack_molecules;
+        list_of_pack_molecules = cur_pack_molecule;
+    }
+}
+
+static void free_pack_pattern_block(t_pack_pattern_block* pattern_block, t_pack_pattern_block** pattern_block_list) {
     t_pack_pattern_connections *connection, *next;
     if (pattern_block == nullptr || pattern_block->block_id == OPEN) {
         /* already traversed, return */
@@ -883,8 +891,8 @@ static void free_pack_pattern(t_pack_pattern_block* pattern_block, t_pack_patter
     pattern_block->block_id = OPEN;
     connection = pattern_block->connections;
     while (connection) {
-        free_pack_pattern(connection->from_block, pattern_block_list);
-        free_pack_pattern(connection->to_block, pattern_block_list);
+        free_pack_pattern_block(connection->from_block, pattern_block_list);
+        free_pack_pattern_block(connection->to_block, pattern_block_list);
         next = connection->next;
         free(connection);
         connection = next;

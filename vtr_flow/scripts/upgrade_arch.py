@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import argparse
 import sys
@@ -41,6 +41,8 @@ supported_upgrades = [
     "upgrade_complex_sb_num_conns",
     "add_missing_comb_model_internal_timing_edges",
     "add_tile_tags",
+    "add_site_directs",
+    "add_sub_tiles",
 ]
 
 def parse_args():
@@ -53,14 +55,14 @@ def parse_args():
                         choices=supported_upgrades,
                         default=supported_upgrades)
     parser.add_argument("--debug", default=False, action="store_true", help="Print to stdout instead of modifying file inplace")
-    parser.add_argument("--pretty", default=False, action="store_true", help="Pretty print the output?")
+    parser.add_argument("--pretty", default=True, help="Pretty print the output? (default: %(default)s)")
 
     return parser.parse_args()
 
 def main():
     args = parse_args()
 
-    print args.xml_file
+    print(args.xml_file)
     parser = ET.XMLParser(remove_blank_text=True)
     root = ET.parse(args.xml_file, parser)
 
@@ -69,7 +71,7 @@ def main():
     arch = root_tags[0]
 
     if arch.tag != "architecture":
-        print "Warning! Not an architecture file, exiting..."
+        print("Warning! Not an architecture file, exiting...")
         sys.exit(0)
 
     modified = False
@@ -144,11 +146,22 @@ def main():
         if result:
             modified = True
 
+    if "add_site_directs" in args.features:
+        result = add_site_directs(arch)
+        if result:
+            modified = True
+
+    if "add_sub_tiles" in args.features:
+        result = add_sub_tiles(arch)
+        if result:
+            modified = True
+
     if modified:
         if args.debug:
             root.write(sys.stdout, pretty_print=args.pretty)
         else:
-            with open(args.xml_file, "w") as f:
+            # Added the "b" flag to silence the str/bytes error
+            with open(args.xml_file, "wb") as f:
                 root.write(f, pretty_print=args.pretty)
 
 def add_model_timing(arch):
@@ -203,7 +216,7 @@ def add_model_timing(arch):
     changed = False
     for model in models:
         if model.attrib['name'] not in primitive_timing_specs:
-            print "Warning: no timing specifications found for {}".format(mode.attrib['name'])
+            print("Warning: no timing specifications found for {}".format(mode.attrib['name']))
             continue
 
         model_timing = primitive_timing_specs[model.attrib['name']]
@@ -215,7 +228,7 @@ def add_model_timing(arch):
             changed = True
 
         #Mark combinational edges from sources to sink ports
-        for src_port, sink_ports in model_timing.comb_edges.iteritems():
+        for src_port, sink_ports in model_timing.comb_edges.items():
             xpath_pattern = "./input_ports/port[@name='{}']".format(src_port)
             port = model.find(xpath_pattern)
             port.attrib['combinational_sink_ports'] = ' '.join(sink_ports)
@@ -359,14 +372,14 @@ def upgrade_device_layout(arch):
         assert False, "Unrecognized <layout> specification"
 
     if 0:
-        for type, locs in type_to_grid_specs.iteritems():
-            print "Type:", type
+        for type, locs in type_to_grid_specs.items():
+            print("Type:", type)
             for loc in locs:
-                print "\t", loc.tag, loc.attrib
+                print("\t", loc.tag, loc.attrib)
 
     have_perimeter = False
 
-    for type_name, locs in type_to_grid_specs.iteritems():
+    for type_name, locs in type_to_grid_specs.items():
         for loc in locs:
             if loc.attrib['type'] == "perimeter":
                 have_perimeter = True
@@ -378,7 +391,7 @@ def upgrade_device_layout(arch):
         device_auto.tail = "\n"
 
 
-    for type_name, locs in type_to_grid_specs.iteritems():
+    for type_name, locs in type_to_grid_specs.items():
         for loc in locs:
             assert loc.tag == "loc"
 
@@ -439,7 +452,7 @@ def upgrade_device_layout(arch):
                 startx = "(W - 1) / {}".format(div_factor)
 
                 if float(int_div_factor) != div_factor:
-                    print "Warning: Relative position factor conversion is not exact. Original pos factor: {}. New startx expression: {}".format(pos, startx)
+                    print("Warning: Relative position factor conversion is not exact. Original pos factor: {}. New startx expression: {}".format(pos, startx))
 
                 comment_str = "Column of '{}' with 'EMPTY' blocks wherever a '{}' does not fit.".format(type_name, type_name)
 
@@ -516,7 +529,7 @@ def remove_io_chan_distr(arch):
         width = float(io.attrib['width'])
 
         if width != 1.:
-            print "Found non-unity io width {}. This is no longer supported by VPR and must be manually correct. Exiting...".format(width)
+            print("Found non-unity io width {}. This is no longer supported by VPR and must be manually correct. Exiting...".format(width))
             sys.exit(1)
         else:
             assert width == 1.
@@ -733,7 +746,7 @@ def remove_longline_sb_cb(arch):
 
         for cb_sb_tag in child_sb_tags + child_cb_tags:
             assert cb_sb_tag.tag == 'cb' or cb_sb_tag.tag == 'sb'
-            print >>sys.stderr, "Warning: Removing invalid {} tag for longline segment".format(cb_sb_tag.tag)
+            print("Warning: Removing invalid {} tag for longline segment".format(cb_sb_tag.tag), file=sys.stderr)
             longline_segment_tag.remove(cb_sb_tag)
             changed = True
 
@@ -774,7 +787,7 @@ def upgrade_port_equivalence(arch):
         #For outputs, 'true' is upgraded to full, and 'false' to 'none'
         if output_equivalent_tag.attrib['equivalent'] == "true":
             parent_tag = output_equivalent_tag.find("..[@name]")
-            print >>sys.stderr, "Warning: Conservatively upgrading output port equivalence from 'true' to 'instance' on {}. The user should manually check whether this can be upgraded to 'full'".format(parent_tag.attrib['name'])
+            print("Warning: Conservatively upgrading output port equivalence from 'true' to 'instance' on {}. The user should manually check whether this can be upgraded to 'full'".format(parent_tag.attrib['name']), file=sys.stderr)
             output_equivalent_tag.attrib['equivalent'] = "instance" #Conservative
             changed = True
         elif output_equivalent_tag.attrib['equivalent'] == "false":
@@ -868,7 +881,7 @@ def add_missing_comb_model_internal_timing_edges(arch):
 
             input_port_tag.attrib['combinational_sink_ports'] = " ".join(output_port_names)
 
-            print >>sys.stderr, "Warning: Conservatively upgrading combinational sink dependencies for input port '{}' of model '{}' to '{}'. The user should manually check whether a reduced set of sink dependencies can be safely specified.".format(input_port_tag.attrib['name'], model_tag.attrib['name'], input_port_tag.attrib['combinational_sink_ports'])
+            print("Warning: Conservatively upgrading combinational sink dependencies for input port '{}' of model '{}' to '{}'. The user should manually check whether a reduced set of sink dependencies can be safely specified.".format(input_port_tag.attrib['name'], model_tag.attrib['name'], input_port_tag.attrib['combinational_sink_ports']), file=sys.stderr)
 
             changed = True
 
@@ -932,7 +945,7 @@ def add_tile_tags(arch):
 
 
     if arch.findall('./tiles'):
-        return False
+            return False
 
     models = arch.find('./models')
 
@@ -966,6 +979,128 @@ def add_tile_tags(arch):
 
     return True
 
+def add_site_directs(arch):
+    """
+    This function adds the direct pin mappings between a physical
+    tile and a corresponding logical block.
+
+    Note: the example below is only for explanatory reasons, the signal names are invented
+
+    BEFORE:
+    <tiles>
+        <tile name="BRAM_TILE" area="2" height="4" width="1" capacity="1">
+            <inputs ... />
+            <outputs ... />
+            <fc ... />
+            <pinlocations ... />
+            <switchblock_locations ... />
+            <equivalent_sites>
+                <site pb_type="BRAM_SITE"/>
+            </equivalent_sites>
+        </tile>
+    </tiles>
+
+    AFTER:
+    <tiles>
+        <tile name="BRAM_TILE" area="2" height="4" width="1" capacity="1">
+            <inputs ... />
+            <outputs ... />
+            <fc ... />
+            <pinlocations ... />
+            <switchblock_locations ... />
+            <equivalent_sites>
+                <site pb_type="BRAM" pin_mapping="direct">
+            </equivalent_sites>
+        </tile>
+    </tiles>
+    """
+
+    top_pb_types = []
+    for pb_type in arch.iter('pb_type'):
+        if pb_type.getparent().tag == 'complexblocklist':
+            top_pb_types.append(pb_type)
+
+    sites = []
+    for pb_type in arch.iter('site'):
+        sites.append(pb_type)
+
+    for pb_type in top_pb_types:
+        for site in sites:
+            if 'pin_mapping' not in site.attrib:
+                site.attrib['pin_mapping'] = "direct"
+
+    return True
+
+def add_sub_tiles(arch):
+    """
+    This function adds the sub tiles tags to the input architecture.
+    Each physical tile must contain at least one sub tile.
+
+    Note: the example below is only for explanatory reasons, the port/tile names are invented.
+
+    BEFORE:
+    <tiles>
+        <tile name="BRAM_TILE" area="2" height="4" width="1" capacity="1">
+            <inputs ... />
+            <outputs ... />
+            <fc ... />
+            <pinlocations ... />
+            <switchblock_locations ... />
+            <equivalent_sites>
+                <site pb_type="BRAM" pin_mapping="direct">
+            </equivalent_sites>
+        </tile>
+    </tiles>
+
+    AFTER:
+    <tiles>
+        <tile name="BRAM_TILE" area="2" height="4" width="1">
+            <sub_tile name="BRAM_SUB_TILE_X" capacity="1">
+                <inputs ... />
+                <outputs ... />
+                <fc ... />
+                <pinlocations ... />
+                <equivalent_sites>
+                    <site pb_type="BRAM" pin_mapping="direct">
+                </equivalent_sites>
+            </sub_tile>
+            <switchblock_locations ... />
+        </tile>
+    </tiles>
+
+    """
+
+    TAGS_TO_SWAP = ['fc', 'pinlocations', 'input', 'output', 'clock', 'equivalent_sites']
+
+    def swap_tags(sub_tile, tile):
+        # Moving tags from top level pb_type to tile
+        for child in tile:
+            if child.tag in TAGS_TO_SWAP:
+                tile.remove(child)
+                sub_tile.append(child)
+
+    modified = False
+
+    for tile in arch.iter('tile'):
+        if tile.findall('./sub_tile'):
+            continue
+
+        sub_tile_name = tile.attrib['name']
+        sub_tile = ET.Element('sub_tile', name='{}'.format(sub_tile_name))
+
+        # Transfer capacity to sub tile
+        if 'capacity' in tile.attrib.keys():
+            sub_tile.attrib['capacity'] = tile.attrib['capacity']
+            del tile.attrib['capacity']
+
+        #Transfer tags to swap from tile to sub tile
+        swap_tags(sub_tile, tile)
+
+        tile.append(sub_tile)
+
+        modified = True
+
+    return modified
 
 if __name__ == "__main__":
     main()

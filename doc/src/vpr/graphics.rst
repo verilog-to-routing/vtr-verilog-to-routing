@@ -4,6 +4,9 @@ Graphics
 ========
 VPR includes easy-to-use graphics for visualizing both the targetted FPGA architecture, and the circuit VPR has implementation on the architecture.
 
+.. image:: https://www.verilogtorouting.org/img/des90_routing_util.gif
+    :align: center
+
 Enabling Graphics
 -----------------
 
@@ -49,6 +52,17 @@ Click on **Save** to save the image on screen to PDF, PNG, or SVG file.
 
 .. note:: Menu buttons will be greyed out when they are not selectable (e.g. VPR is working).
 
+Visualizing Placement
+--------------------------------
+By default VPR's graphics displays the FPGA floorplan (block grid) and current placement.
+
+.. figure:: https://www.verilogtorouting.org/img/neuron_placement_macros.gif
+    :align: center
+
+    Placement with macros (carry chains) highlighted
+
+If the **Placement Macros** drop down is set, any placement macros (e.g. carry chains, which require specific relative placements between some blocks) will be highlighted.
+
 Visualizing Netlist Connectivity
 --------------------------------
 The **Toggle Nets** drop-down list toggles the nets in the circuit visible/invisible.
@@ -57,12 +71,35 @@ When a placement is being displayed, routing information is not yet known so net
 Click on any clb in the display, and it will be highlighted in green, while its fanin and fanout are highlighted in blue and red, respectively.
 Once a circuit has been routed the true path of each net will be shown.
 
+.. figure:: https://www.verilogtorouting.org/img/des90_nets.gif
+    :align: center
+
+    Logical net connectivity during placement
+
 If the nets routing are shown, click on a clb or pad to highlight its fanins and fanouts, or click on a pin or channel wire to highlight a whole net in magenta.
 Multiple nets can be highlighted by pressing ctrl + mouse click.
+
+Visualizing the Critical Path
+-----------------------------
+During placement and routing you can click on the **Crit. Path** drop-down menu to visualize the critical path.
+Each stage between primitive pins is shown in a different colour.
+Cliking the **Crit. Path** button again will toggle through the various visualizations:
+* During placement the critical path is shown only as flylines.
+* During routing the critical path can be shown as both flylines and routed net connections.
+
+.. figure:: https://www.verilogtorouting.org/img/des90_cpd.gif
+    :align: center
+
+    Critical Path flylines during placement and routing
 
 Visualizing Routing Architecture
 --------------------------------
 When a routing is on-screen, clicking on **Toggle RR** lets you to choose between various views of the routing resources available in the FPGA.
+
+.. figure:: https://github.com/verilog-to-routing/verilog-to-routing.github.io/raw/master/img/routing_arch.gif
+    :align: center
+
+    Routing Architecture Views
 
 The routing resource view can be very useful in ensuring that you have correctly described your FPGA in the architecture description file -- if you see switches where they shouldn’t be or pins on the wrong side of a clb, your architecture description needs to be revised.
 
@@ -82,13 +119,20 @@ When a routing is shown on-screen, clicking on the **Congestion** drop-down menu
 Lighter colours (e.g. yellow) correspond to highly overused resources, while darker colours (e.g. blue) correspond to lower overuse.
 The overuse range shown at the bottom of the window.
 
-Visualizing the Critical Path
------------------------------
-During placement and routing you can click on the **Crit. Path** drop-down menu to visualize the critical path.
-Each stage between primitive pins is shown in a different colour.
-Cliking the **Crit. Path** button again will toggle through the various visualizations:
-* During placement the critical path is shown only as flylines.
-* During routing the critical path can be shown as both flylines and routed net connections.
+.. figure:: https://www.verilogtorouting.org/img/bitcoin_congestion.gif
+    :align: center
+
+    Routing Congestion during placement and routing
+
+Visualizing Routing Utilization
+-------------------------------
+When a routing is shown on-screen, clicking on the **Routing Util** drop-down menu will show a heat map of routing wire utilization (i.e. fraction of wires used in each channel).
+Lighter colours (e.g. yellow) correspond to highly utilized channels, while darker colours (e.g. blue) correspond to lower utilization.
+
+.. figure:: https://www.verilogtorouting.org/img/bitcoin_routing_util.gif
+    :align: center
+
+    Routing Utilization during placement and routing
 
 Button Description Table
 ------------------------
@@ -126,7 +170,7 @@ Button Description Table
 |                   |                   |                              |                              |
 |                   |                   |                              |                              |
 +-------------------+-------------------+------------------------------+------------------------------+
-| Route BB          | Routing    	| Visualizes net bounding      | Click multiple times to      |
+| Route BB          | Routing           | Visualizes net bounding      | Click multiple times to      |
 |                   |                   | boxes one by one             | sequence through the net     |
 |                   |                   |                              | being shown                  |
 |                   |                   |                              |                              |

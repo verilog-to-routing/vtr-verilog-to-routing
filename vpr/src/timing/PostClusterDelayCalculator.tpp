@@ -12,10 +12,10 @@
 
 inline PostClusterDelayCalculator::PostClusterDelayCalculator(const AtomNetlist& netlist,
                                                               const AtomLookup& netlist_lookup,
-                                                              vtr::vector<ClusterNetId, float*>& net_delay)
+                                                              const ClbNetPinsMatrix<float>& net_delay)
     : netlist_(netlist)
     , netlist_lookup_(netlist_lookup)
-    , net_delay_()
+    , net_delay_(net_delay)
     , atom_delay_calc_(netlist, netlist_lookup)
     , edge_min_delay_cache_(g_vpr_ctx.timing().graph->edges().size(), tatum::Time(NAN))
     , edge_max_delay_cache_(g_vpr_ctx.timing().graph->edges().size(), tatum::Time(NAN))
@@ -25,7 +25,6 @@ inline PostClusterDelayCalculator::PostClusterDelayCalculator(const AtomNetlist&
     , sink_clb_max_delay_cache_(g_vpr_ctx.timing().graph->edges().size(), tatum::Time(NAN))
     , pin_cache_min_(g_vpr_ctx.timing().graph->edges().size(), std::pair<ClusterPinId, ClusterPinId>(ClusterPinId::INVALID(), ClusterPinId::INVALID()))
     , pin_cache_max_(g_vpr_ctx.timing().graph->edges().size(), std::pair<ClusterPinId, ClusterPinId>(ClusterPinId::INVALID(), ClusterPinId::INVALID())) {
-    net_delay_ = net_delay;
 }
 
 inline void PostClusterDelayCalculator::clear_cache() {
@@ -263,7 +262,8 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
                 ClusterBlockId driver_block_id = cluster_ctx.clb_nlist.net_driver_block(net_id);
                 VTR_ASSERT(driver_block_id == clb_src_block);
 
-                src_block_pin_index = cluster_ctx.clb_nlist.net_pin_physical_index(net_id, 0);
+                src_block_pin_index = cluster_ctx.clb_nlist.net_pin_logical_index(net_id, 0);
+                VTR_ASSERT(src_block_pin_index >= 0);
 
                 tatum::Time driver_clb_delay = tatum::Time(clb_delay_calc_.internal_src_to_clb_output_delay(driver_block_id,
                                                                                                             src_block_pin_index,

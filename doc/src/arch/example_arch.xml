@@ -80,7 +80,7 @@
   <tiles>
     <tile name="io" capacity="8">
       <equivalent_sites>
-        <site pb_type="io"/>
+        <site pb_type="io" pin_mapping="direct"/>
       </equivalent_sites>
       <input name="outpad" num_pins="1"/>
       <output name="inpad" num_pins="1"/>
@@ -95,7 +95,7 @@
     </tile>
     <tile name="clb">
       <equivalent_sites>
-        <site pb_type="clb"/>
+        <site pb_type="clb" pin_mapping="direct"/>
       </equivalent_sites>
       <input name="I" num_pins="33" equivalent="full"/>
       <output name="O" num_pins="10" equivalent="instance"/>
@@ -105,7 +105,7 @@
     </tile>
     <tile name="mult_36" height="4">
       <equivalent_sites>
-        <site pb_type="mult_36"/>
+        <site pb_type="mult_36" pin_mapping="direct"/>
       </equivalent_sites>
       <input name="a" num_pins="36"/>
       <input name="b" num_pins="36"/>
@@ -114,7 +114,7 @@
     </tile>
     <tile name="memory" height="6">
       <equivalent_sites>
-        <site pb_type="memory"/>
+        <site pb_type="memory" pin_mapping="direct"/>
       </equivalent_sites>
       <input name="addr1" num_pins="17"/>
       <input name="addr2" num_pins="17"/>

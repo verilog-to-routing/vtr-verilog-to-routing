@@ -66,6 +66,7 @@ apt-get install \
 	libfontconfig1-dev \
 	libx11-dev \
 	libxft-dev \
+	libgtk-3-dev \
 	perl \
 	liblist-moreutils-perl \
 	python \
@@ -91,6 +92,24 @@ apt-get install \
 	valgrind \
 	gdb \
 	ctags
+```
+
+#### Using Nix ####
+
+Although the recommended platform is Debian or Ubuntu, Nix can be used to build VTR on other platforms, such as MacOS.
+
+If you don't have [Nix](https://nixos.org/nix/), you can [get it](https://nixos.org/nix/download.html) with:
+
+```shell
+$ curl -L https://nixos.org/nix/install | sh
+```
+
+These commands will set up dependencies for Linux and MacOS and build VTR:
+
+```shell
+#In the VTR root
+$ nix-shell dev/nix/shell.nix
+$ make
 ```
 
 ### Building using the Makefile wrapper ###
