@@ -927,6 +927,11 @@ enum e_pad_loc_type {
     RANDOM
 };
 
+enum e_agent_algorithm{
+    E_GREEDY,
+    SOFTMAX
+};
+
 ///@brief Used to calculate the inner placer loop's block swapping limit move_lim.
 enum e_place_effort_scaling {
     CIRCUIT,       ///<Effort scales based on circuit size only

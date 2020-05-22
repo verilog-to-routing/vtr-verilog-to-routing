@@ -178,6 +178,37 @@ void EpsilonGreedyAgent::set_epsilon_action_prob() {
     }
 }
 
+SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent){
+	std::unique_ptr<MoveGenerator> move_generator;
+	move_generator = std::make_unique<UniformMoveGenerator>();
+	avail_moves.push_back(std::move(move_generator));
+
+	std::unique_ptr<MoveGenerator> move_generator2;
+	move_generator2 = std::make_unique<MedianMoveGenerator>();
+	avail_moves.push_back(std::move(move_generator2));
+
+	std::unique_ptr<MoveGenerator> move_generator3;
+	move_generator3 = std::make_unique<WeightedMedianMoveGenerator>();
+	avail_moves.push_back(std::move(move_generator3));
+
+	std::unique_ptr<MoveGenerator> move_generator4;
+	move_generator4 = std::make_unique<WeightedCentroidMoveGenerator>();
+	avail_moves.push_back(std::move(move_generator4));
+
+	std::unique_ptr<MoveGenerator> move_generator5;
+	move_generator5 = std::make_unique<FeasibleRegionMoveGenerator>();
+	avail_moves.push_back(std::move(move_generator5));
+	
+	std::unique_ptr<MoveGenerator> move_generator6;
+	move_generator6 = std::make_unique<CriticalUniformMoveGenerator>();
+	avail_moves.push_back(std::move(move_generator6));
+
+	std::unique_ptr<MoveGenerator> move_generator7;
+	move_generator7 = std::make_unique<CentroidMoveGenerator>();
+	avail_moves.push_back(std::move(move_generator7));
+    
+    karmed_bandit_agent = std::move(agent);
+}
 
 
 //SimpleRL class member functions

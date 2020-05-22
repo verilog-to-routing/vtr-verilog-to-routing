@@ -393,6 +393,37 @@ struct ParsePlaceAlgorithm {
     }
 };
 
+struct ParsePlaceAgentAlgorithm {
+    ConvertedValue<e_agent_algorithm> from_str(std::string str) {
+        ConvertedValue<e_agent_algorithm> conv_value;
+        if (str == "e_greedy")
+            conv_value.set_value(E_GREEDY);
+        else if (str == "softmax")
+            conv_value.set_value(SOFTMAX);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_agent_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_agent_algorithm val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == E_GREEDY)
+            conv_value.set_value("e_greedy");
+        else {
+            VTR_ASSERT(val == SOFTMAX);
+            conv_value.set_value("softmax");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"e_greedy", "softmax"};
+    }
+};
+
 struct ParseFixPins {
     ConvertedValue<e_pad_loc_type> from_str(std::string str) {
         ConvertedValue<e_pad_loc_type> conv_value;
@@ -423,6 +454,8 @@ struct ParseFixPins {
         return {"free", "random"};
     }
 };
+
+
 
 struct ParseClusterSeed {
     ConvertedValue<e_cluster_seed> from_str(std::string str) {
@@ -1797,6 +1830,13 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "Values < 0 cause the unwieghted sample average to be used")
         .default_value("2")
         .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument<e_agent_algorithm, ParsePlaceAgentAlgorithm>(args.place_agent_algorithm, "--place_agent_algorithm")
+        .help("Controls which placement RL agent is used")
+        .default_value("e_greedy")
+        .choices({"e_greedy", "softmax"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
 
     auto& place_timing_grp = parser.add_argument_group("timing-driven placement options");
 
