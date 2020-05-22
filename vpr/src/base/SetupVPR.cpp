@@ -43,8 +43,12 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
 static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch);
 static int find_ipin_cblock_switch_index(const t_arch& Arch);
 
-/* Sets VPR parameters and defaults. Does not do any error checking
- * as this should have been done by the various input checkers */
+/**
+ * @brief Sets VPR parameters and defaults.
+ *
+ * Does not do any error checking as this should have been done by
+ * the various input checkers
+ */
 void SetupVPR(const t_options* Options,
               const bool TimingEnabled,
               const bool readArchFile,
@@ -253,8 +257,10 @@ static void SetupTiming(const t_options& Options, const bool TimingEnabled, t_ti
     Timing->SDCFile = Options.SDCFile;
 }
 
-/* This loads up VPR's arch_switch_inf data by combining the switches from
- * the arch file with the special switches that VPR needs. */
+/**
+ * @brief This loads up VPR's arch_switch_inf data by combining the switches
+ *        from the arch file with the special switches that VPR needs.
+ */
 static void SetupSwitches(const t_arch& Arch,
                           t_det_routing_arch* RoutingArch,
                           const t_arch_switch_inf* ArchSwitches,
@@ -301,8 +307,11 @@ static void SetupSwitches(const t_arch& Arch,
     }
 }
 
-/* Sets up routing structures. Since checks are already done, this
- * just copies values across */
+/**
+ * @brief Sets up routing structures.
+ *
+ * Since checks are already done, this just copies values across
+ */
 static void SetupRoutingArch(const t_arch& Arch,
                              t_det_routing_arch* RoutingArch) {
     RoutingArch->switch_block_type = Arch.SBType;
@@ -414,8 +423,12 @@ static void SetupAnnealSched(const t_options& Options,
     AnnealSched->type = Options.anneal_sched_type;
 }
 
-/* Sets up the s_packer_opts structure baesd on users inputs and on the architecture specified.
- * Error checking, such as checking for conflicting params is assumed to be done beforehand
+/**
+ * @brief Sets up the s_packer_opts structure baesd on users inputs and
+ *        on the architecture specified.
+ *
+ * Error checking, such as checking for conflicting params is assumed
+ * to be done beforehand
  */
 void SetupPackerOpts(const t_options& Options,
                      t_packer_opts* PackerOpts) {
@@ -467,8 +480,12 @@ static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOp
     NetlistOpts.netlist_verbosity = Options.netlist_verbosity;
 }
 
-/* Sets up the s_placer_opts structure based on users input. Error checking,
- * such as checking for conflicting params is assumed to be done beforehand */
+/**
+ * @brief Sets up the s_placer_opts structure based on users input.
+ *
+ * Error checking, such as checking for conflicting params
+ * is assumed to be done beforehand
+ */
 static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts) {
     if (Options.do_placement) {
         PlacerOpts->doPlacement = STAGE_DO;

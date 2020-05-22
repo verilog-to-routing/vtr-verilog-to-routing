@@ -13,7 +13,7 @@
 using argparse::ConvertedValue;
 using argparse::Provenance;
 
-//Read and process VPR's command-line aruments
+///@brief Read and process VPR's command-line aruments
 t_options read_options(int argc, const char** argv) {
     t_options args = t_options(); //Explicitly initialize for zero initialization
 

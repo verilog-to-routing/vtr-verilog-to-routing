@@ -1,8 +1,9 @@
 /**
- * Author: Jason Luu
- * Date: May 2009
+ * @file
+ * @author  Jason Luu
+ * @date    May 2009
  *
- * Read a circuit netlist in XML format and populate the netlist data structures for VPR
+ * @brief Read a circuit netlist in XML format and populate the netlist data structures for VPR
  */
 
 #include <cstdio>
@@ -62,8 +63,9 @@ static void load_atom_pin_mapping(const ClusteredNetlist& clb_nlist);
 static void set_atom_pin_mapping(const ClusteredNetlist& clb_nlist, const AtomBlockId atom_blk, const AtomPortId atom_port, const t_pb_graph_pin* gpin);
 
 /**
- * Initializes the clb_nlist with info from a netlist
- * net_file - Name of the netlist file to read
+ * @brief Initializes the clb_nlist with info from a netlist
+ *
+ *   @param net_file   Name of the netlist file to read
  */
 ClusteredNetlist read_netlist(const char* net_file,
                               const t_arch* arch,
@@ -255,11 +257,11 @@ ClusteredNetlist read_netlist(const char* net_file,
 }
 
 /**
- * XML parser to populate CLB info and to update nets with the nets of this CLB
- * Parent - XML tag for this CLB
- * clb - Array of CLBs in the netlist
- * index - index of the CLB to allocate and load information into
- * loc_data - xml location info for error reporting
+ * @brief  XML parser to populate CLB info and to update nets with the nets of this CLB
+ *
+ *   @param clb_nlist  Array of CLBs in the netlist
+ *   @param index      index of the CLB to allocate and load information into
+ *   @param loc_data   xml location info for error reporting
  */
 static void processComplexBlock(pugi::xml_node clb_block,
                                 const ClusterBlockId index,
@@ -333,8 +335,10 @@ static void processComplexBlock(pugi::xml_node clb_block,
 }
 
 /**
- * This processes a set of key-value pairs in the XML e.g. block attributes or parameters,
- * which must be of the form <attributes><attribute name="attrName">attrValue</attribute> ... </attributes>
+ * @brief This processes a set of key-value pairs in the XML
+ *
+ * e.g. block attributes or parameters, which must be of the form
+ * `<attributes><attribute name="attrName">attrValue</attribute> ... </attributes>`
  */
 template<typename T>
 void processAttrsParams(pugi::xml_node Parent, const char* child_name, T& atom_net_range, const pugiutil::loc_data& loc_data) {
@@ -374,10 +378,11 @@ void processAttrsParams(pugi::xml_node Parent, const char* child_name, T& atom_n
 }
 
 /**
- * XML parser to populate pb info and to update internal nets of the parent CLB
- * Parent - XML tag for this pb_type
- * pb - physical block to use
- * loc_data - xml location info for error reporting
+ * @brief XML parser to populate pb info and to update internal nets of the parent CLB
+ *
+ *   @param Parent     XML tag for this pb_type
+ *   @param pb         physical block to use
+ *   @param loc_data   xml location info for error reporting
  */
 static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* pb, t_pb_routes& pb_route, int* num_primitives, const pugiutil::loc_data& loc_data, ClusteredNetlist* clb_nlist) {
     int i, j, pb_index;
@@ -551,7 +556,9 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* p
 }
 
 /**
- * Adds net to hashtable of nets.  If the net is "open", then this is a keyword so do not add it.
+ * @brief Adds net to hashtable of nets.
+ *
+ * If the net is "open", then this is a keyword so do not add it.
  * If the net already exists, increase the count on that net
  */
 static int add_net_to_hash(t_hash** nhash, const char* net_name, int* ncount) {
@@ -852,7 +859,8 @@ static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route, 
 }
 
 /**
- * This function updates the nets list and the connections between that list and the complex block
+ * @brief This function updates the nets list and the connections between
+ *        that list and the complex block
  */
 static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
     int j, k, ipin;
@@ -1126,8 +1134,10 @@ static void load_atom_index_for_pb_pin(t_pb_routes& pb_route, int ipin) {
     pb_route[driver].sink_pb_pin_ids.push_back(ipin);
 }
 
-//Walk through the atom netlist looking up and storing the t_pb_graph_pin associated with
-//each connected AtomPinId
+/**
+ * @brief Walk through the atom netlist looking up and storing the t_pb_graph_pin
+ *        associated with each connected AtomPinId
+ */
 static void load_atom_pin_mapping(const ClusteredNetlist& clb_nlist) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
