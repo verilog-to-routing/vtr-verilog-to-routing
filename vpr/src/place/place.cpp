@@ -70,13 +70,13 @@ std::vector<double> time_of_moves (7,0);
 #include "draw_color.h"
 //map of the available move types and their corresponding type number
 std::map<int,std::string> available_move_types = {
-                                {0,"Uniform"},
-                                {1,"Median"},
-                                {2,"Weighted Median"},
-                                {3,"Weighted Centroid"},
-                                {4,"Feasible Region"},
-                                {5,"Critical Uniform"},
-                                {6,"Centroid"}
+        {0,"Uniform"},
+        {1,"Median"},
+        {2,"Weighted Median"},
+        {3,"Weighted Centroid"},
+        {4,"Feasible Region"},
+        {5,"Critical Uniform"},
+        {6,"Centroid"}
 };
 #endif
 
@@ -117,8 +117,8 @@ void print_place_statisitics(const float &, const std::vector<int> &, const std:
  */
 
 enum e_cost_methods {
-    NORMAL,
-    CHECK
+        NORMAL,
+        CHECK
 };
 
 constexpr float INVALID_DELAY = std::numeric_limits<float>::quiet_NaN();
@@ -179,73 +179,73 @@ static int num_ts_called = 0;
  * for higher fanout nets. Each entry is the correction factor for the *
  * fanout index-1                                                      */
 static const float cross_count[50] = {/* [0..49] */ 1.0, 1.0, 1.0, 1.0828, 1.1536, 1.2206, 1.2823, 1.3385, 1.3991, 1.4493, 1.4974,
-                                      1.5455, 1.5937, 1.6418, 1.6899, 1.7304, 1.7709, 1.8114, 1.8519, 1.8924,
-                                      1.9288, 1.9652, 2.0015, 2.0379, 2.0743, 2.1061, 2.1379, 2.1698, 2.2016,
-                                      2.2334, 2.2646, 2.2958, 2.3271, 2.3583, 2.3895, 2.4187, 2.4479, 2.4772,
-                                      2.5064, 2.5356, 2.5610, 2.5864, 2.6117, 2.6371, 2.6625, 2.6887, 2.7148,
-                                      2.7410, 2.7671, 2.7933};
+        1.5455, 1.5937, 1.6418, 1.6899, 1.7304, 1.7709, 1.8114, 1.8519, 1.8924,
+        1.9288, 1.9652, 2.0015, 2.0379, 2.0743, 2.1061, 2.1379, 2.1698, 2.2016,
+        2.2334, 2.2646, 2.2958, 2.3271, 2.3583, 2.3895, 2.4187, 2.4479, 2.4772,
+        2.5064, 2.5356, 2.5610, 2.5864, 2.6117, 2.6371, 2.6625, 2.6887, 2.7148,
+        2.7410, 2.7671, 2.7933};
 
 std::unique_ptr<FILE, decltype(&vtr::fclose)> f_move_stats_file(nullptr, vtr::fclose);
 
 #ifdef VTR_ENABLE_DEBUG_LOGGIING
 #    define LOG_MOVE_STATS_HEADER()                               \
         do {                                                      \
-            if (f_move_stats_file) {                              \
-                fprintf(f_move_stats_file.get(),                  \
-                        "temp,from_blk,to_blk,from_type,to_type," \
-                        "blk_count,"                              \
-                        "delta_cost,delta_bb_cost,delta_td_cost," \
-                        "outcome,reason\n");                      \
-            }                                                     \
+                if (f_move_stats_file) {                              \
+                        fprintf(f_move_stats_file.get(),                  \
+                                        "temp,from_blk,to_blk,from_type,to_type," \
+                                        "blk_count,"                              \
+                                        "delta_cost,delta_bb_cost,delta_td_cost," \
+                                        "outcome,reason\n");                      \
+                }                                                     \
         } while (false)
 
 #    define LOG_MOVE_STATS_PROPOSED(t, affected_blocks)                                        \
         do {                                                                                   \
-            if (f_move_stats_file) {                                                           \
-                auto& place_ctx = g_vpr_ctx.placement();                                       \
-                auto& cluster_ctx = g_vpr_ctx.clustering();                                    \
-                ClusterBlockId b_from = affected_blocks.moved_blocks[0].block_num;             \
-                                                                                               \
-                t_pl_loc to = affected_blocks.moved_blocks[0].new_loc;                         \
-                ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile];   \
-                                                                                               \
-                t_logical_block_type_ptr from_type = cluster_ctx.clb_nlist.block_type(b_from); \
-                t_logical_block_type_ptr to_type = nullptr;                                    \
-                if (b_to) {                                                                    \
-                    to_type = cluster_ctx.clb_nlist.block_type(b_to);                          \
-                }                                                                              \
-                                                                                               \
-                fprintf(f_move_stats_file.get(),                                               \
-                        "%g,"                                                                  \
-                        "%d,%d,"                                                               \
-                        "%s,%s,"                                                               \
-                        "%d,",                                                                 \
-                        t,                                                                     \
-                        int(size_t(b_from)), int(size_t(b_to)),                                \
-                        from_type->name, (to_type ? to_type->name : "EMPTY"),                  \
-                        affected_blocks.num_moved_blocks);                                     \
-            }                                                                                  \
+                if (f_move_stats_file) {                                                           \
+                        auto& place_ctx = g_vpr_ctx.placement();                                       \
+                        auto& cluster_ctx = g_vpr_ctx.clustering();                                    \
+                        ClusterBlockId b_from = affected_blocks.moved_blocks[0].block_num;             \
+                        \
+                        t_pl_loc to = affected_blocks.moved_blocks[0].new_loc;                         \
+                        ClusterBlockId b_to = place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile];   \
+                        \
+                        t_logical_block_type_ptr from_type = cluster_ctx.clb_nlist.block_type(b_from); \
+                        t_logical_block_type_ptr to_type = nullptr;                                    \
+                        if (b_to) {                                                                    \
+                                to_type = cluster_ctx.clb_nlist.block_type(b_to);                          \
+                        }                                                                              \
+                        \
+                        fprintf(f_move_stats_file.get(),                                               \
+                                        "%g,"                                                                  \
+                                        "%d,%d,"                                                               \
+                                        "%s,%s,"                                                               \
+                                        "%d,",                                                                 \
+                                        t,                                                                     \
+                                        int(size_t(b_from)), int(size_t(b_to)),                                \
+                                        from_type->name, (to_type ? to_type->name : "EMPTY"),                  \
+                                        affected_blocks.num_moved_blocks);                                     \
+                }                                                                                  \
         } while (false)
 
 #    define LOG_MOVE_STATS_OUTCOME(delta_cost, delta_bb_cost, delta_td_cost, \
-                                   outcome, reason)                          \
-        do {                                                                 \
-            if (f_move_stats_file) {                                         \
+                outcome, reason)                          \
+do {                                                                 \
+        if (f_move_stats_file) {                                         \
                 fprintf(f_move_stats_file.get(),                             \
-                        "%g,%g,%g,"                                          \
-                        "%s,%s\n",                                           \
-                        delta_cost, delta_bb_cost, delta_td_cost,            \
-                        outcome, reason);                                    \
-            }                                                                \
-        } while (false)
+                                "%g,%g,%g,"                                          \
+                                "%s,%s\n",                                           \
+                                delta_cost, delta_bb_cost, delta_td_cost,            \
+                                outcome, reason);                                    \
+        }                                                                \
+} while (false)
 
 #else
 
 #    define LOG_MOVE_STATS_HEADER()                      \
         do {                                             \
-            fprintf(f_move_stats_file.get(),             \
-                    "VTR_ENABLE_DEBUG_LOGGING disabled " \
-                    "-- No move stats recorded\n");      \
+                fprintf(f_move_stats_file.get(),             \
+                                "VTR_ENABLE_DEBUG_LOGGING disabled " \
+                                "-- No move stats recorded\n");      \
         } while (false)
 
 #    define LOG_MOVE_STATS_PROPOSED(t, blocks_affected) \
@@ -253,9 +253,9 @@ std::unique_ptr<FILE, decltype(&vtr::fclose)> f_move_stats_file(nullptr, vtr::fc
         } while (false)
 
 #    define LOG_MOVE_STATS_OUTCOME(delta_cost, delta_bb_cost, delta_td_cost, \
-                                   outcome, reason)                          \
-        do {                                                                 \
-        } while (false)
+                outcome, reason)                          \
+do {                                                                 \
+} while (false)
 
 #endif
 
@@ -265,9 +265,9 @@ static void print_clb_placement(const char* fname);
 #endif
 
 static void alloc_and_load_placement_structs(float place_cost_exp,
-                                             const t_placer_opts& placer_opts,
-                                             t_direct_inf* directs,
-                                             int num_directs);
+                const t_placer_opts& placer_opts,
+                t_direct_inf* directs,
+                int num_directs);
 
 static void alloc_and_load_try_swap_structs();
 static void free_try_swap_structs();
@@ -312,6 +312,7 @@ static int check_placement_costs(const t_placer_costs& costs,
                                  const PlaceDelayModel* delay_model,
                                  const PlacerCriticalities* criticalities,
                                  const t_place_algorithm& place_algorithm);
+
 static int check_placement_consistency();
 static int check_block_placement_consistency();
 static int check_macro_placement_consistency();
@@ -366,16 +367,16 @@ static int find_affected_nets_and_update_costs(const t_place_algorithm& place_al
 static void record_affected_net(const ClusterNetId net, int& num_affected_nets);
 
 static void update_net_bb(const ClusterNetId net,
-                          const t_pl_blocks_to_be_moved& blocks_affected,
-                          int iblk,
-                          const ClusterBlockId blk,
-                          const ClusterPinId blk_pin);
+                const t_pl_blocks_to_be_moved& blocks_affected,
+                int iblk,
+                const ClusterBlockId blk,
+                const ClusterPinId blk_pin);
 static void update_td_delta_costs(const PlaceDelayModel* delay_model,
-                                  const PlacerCriticalities& criticalities,
-                                  const ClusterNetId net,
-                                  const ClusterPinId pin,
-                                  t_pl_blocks_to_be_moved& blocks_affected,
-                                  double& delta_timing_cost);
+                const PlacerCriticalities& criticalities,
+                const ClusterNetId net,
+                const ClusterPinId pin,
+                t_pl_blocks_to_be_moved& blocks_affected,
+                double& delta_timing_cost);
 
 static double get_net_cost(ClusterNetId net_id, t_bb* bb_ptr);
 
@@ -418,14 +419,14 @@ static void placement_inner_loop(const t_annealing_state* state,
                                  float timing_bb_factor);
 
 static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
-                                         const PlaceDelayModel* delay_model,
-                                         const PlacerCriticalities* criticalities,
-                                         t_placer_costs* costs);
+                const PlaceDelayModel* delay_model,
+                const PlacerCriticalities* criticalities,
+                t_placer_costs* costs);
 
 static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
-                                               const t_analysis_opts& analysis_opts,
-                                               const SetupTimingInfo& timing_info,
-                                               const PlacementDelayCalculator& delay_calc);
+                const t_analysis_opts& analysis_opts,
+                const SetupTimingInfo& timing_info,
+                const PlacementDelayCalculator& delay_calc);
 
 static void print_place_status_header();
 static void print_place_status(const t_annealing_state& state,
@@ -435,31 +436,34 @@ static void print_place_status(const t_annealing_state& state,
                                float sTNS,
                                float sWNS,
                                size_t tot_moves);
+
 static void print_resources_utilization();
 
 /*****************************************************************************/
 void try_place(const t_placer_opts& placer_opts,
-               t_annealing_sched annealing_sched,
-               const t_router_opts& router_opts,
-               const t_analysis_opts& analysis_opts,
-               t_chan_width_dist chan_width_dist,
-               t_det_routing_arch* det_routing_arch,
-               std::vector<t_segment_inf>& segment_inf,
-               t_direct_inf* directs,
-               int num_directs) {
-    /* Does almost all the work of placing a circuit.  Width_fac gives the   *
-     * width of the widest channel.  Place_cost_exp says what exponent the   *
-     * width should be taken to when calculating costs.  This allows a       *
-     * greater bias for anisotropic architectures.                           */
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& atom_ctx = g_vpr_ctx.atom();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+                t_annealing_sched annealing_sched,
+                const t_router_opts& router_opts,
+                const t_analysis_opts& analysis_opts,
+                t_chan_width_dist chan_width_dist,
+                t_det_routing_arch* det_routing_arch,
+                std::vector<t_segment_inf>& segment_inf,
+                t_direct_inf* directs,
+                int num_directs) {
+        /* Does almost all the work of placing a circuit.  Width_fac gives the   *
+         * width of the widest channel.  Place_cost_exp says what exponent the   *
+         * width should be taken to when calculating costs.  This allows a       *
+         * greater bias for anisotropic architectures.                           */
+        auto& device_ctx = g_vpr_ctx.device();
+        auto& atom_ctx = g_vpr_ctx.atom();
+        auto& cluster_ctx = g_vpr_ctx.clustering();
 
     const auto& p_timing_ctx = g_placer_ctx.timing();
     const auto& p_runtime_ctx = g_placer_ctx.runtime();
 
     auto& timing_ctx = g_vpr_ctx.timing();
     auto pre_place_timing_stats = timing_ctx.stats;
+    
+    dm_rlim = placer_opts.place_dm_rlim;
 
     int tot_iter, moves_since_cost_recompute, width_fac, num_connections,
         outer_crit_iter_count, inner_recompute_limit;

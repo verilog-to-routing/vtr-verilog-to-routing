@@ -9,7 +9,8 @@
 //EpsilonGreedyAgent member functions
 EpsilonGreedyAgent::EpsilonGreedyAgent(size_t k, float epsilon) {
 
-    //f_ = vtr::fopen("agent_info.txt", "w");
+    f_ = vtr::fopen("agent_info.txt", "w");
+    VTR_LOG("!!!!%f\n",epsilon);
     set_epsilon(epsilon);
     set_k(k);
     set_epsilon_action_prob();

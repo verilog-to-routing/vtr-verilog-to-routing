@@ -823,8 +823,8 @@ bool find_to_loc_centroid(t_logical_block_type_ptr type,
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
 
     //Determine the rlim in each dimension
-    int rlim_x = std::min<int>(compressed_block_grid.compressed_to_grid_x.size(), rlim);
-    int rlim_y = std::min<int>(compressed_block_grid.compressed_to_grid_y.size(), rlim); /* for aspect_ratio != 1 case. */
+    int rlim_x = std::min<int>(compressed_block_grid.compressed_to_grid_x.size(), std::min<int>(rlim,dm_rlim));
+    int rlim_y = std::min<int>(compressed_block_grid.compressed_to_grid_y.size(), std::min<int>(rlim,dm_rlim)); /* for aspect_ratio != 1 case. */
 
     //Determine the coordinates in the compressed grid space of the current block
     int cx_from = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, centroid.x);
