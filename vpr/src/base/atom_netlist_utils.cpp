@@ -12,24 +12,26 @@
 #include "vpr_error.h"
 #include "vpr_utils.h"
 
-//Marks primitive output pins constant if all inputs to the block are constant
-//
-//Since marking one block constant may cause a downstream block to also be constant,
-//marking is repated until there is no further change
+/**
+ * @brief Marks primitive output pins constant if all inputs to the block are constant
+ *
+ * Since marking one block constant may cause a downstream block to also be constant,
+ * marking is repated until there is no further change
+ */
 int infer_and_mark_constant_pins(AtomNetlist& netlist, e_const_gen_inference const_gen_inference_method, int verbosity);
 
-//Marks all primtiive output pins which have no combinationally connected inputs as constant pins
+///@brief Marks all primtive output pins which have no combinationally connected inputs as constant pins
 int mark_undriven_primitive_outputs_as_constant(AtomNetlist& netlist, int verbosity);
 
-//Marks all primtiive output pins of blk which have only constant inputs as constant pins
+///@brief Marks all primtive output pins of blk which have only constant inputs as constant pins
 int infer_and_mark_block_pins_constant(AtomNetlist& netlist, AtomBlockId blk, e_const_gen_inference const_gen_inference_method, int verbosity);
 int infer_and_mark_block_combinational_outputs_constant(AtomNetlist& netlist, AtomBlockId blk, e_const_gen_inference const_gen_inference_method, int verbosity);
 int infer_and_mark_block_sequential_outputs_constant(AtomNetlist& netlist, AtomBlockId blk, e_const_gen_inference const_gen_inference_method, int verbosity);
 
-//Returns the set of input ports which are combinationally connected to output_port
+///@brief Returns the set of input ports which are combinationally connected to output_port
 std::vector<AtomPortId> find_combinationally_connected_input_ports(const AtomNetlist& netlist, AtomPortId output_port);
 
-//Returns the set of clock ports which are combinationally connected to output_port
+///@brief Returns the set of clock ports which are combinationally connected to output_port
 std::vector<AtomPortId> find_combinationally_connected_clock_ports(const AtomNetlist& netlist, AtomPortId output_port);
 
 bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk);
@@ -37,7 +39,10 @@ bool is_removable_block(const AtomNetlist& netlist, const AtomBlockId blk, std::
 bool is_removable_input(const AtomNetlist& netlist, const AtomBlockId blk, std::string* reason = nullptr);
 bool is_removable_output(const AtomNetlist& netlist, const AtomBlockId blk, std::string* reason = nullptr);
 
-//Attempts to remove the specified buffer LUT blk from the netlist. Returns true if successful.
+/**
+ * @brief   Attempts to remove the specified buffer LUT blk from the netlist.
+ * @return  true if successful
+ */
 bool remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity);
 
 std::string make_unconn(size_t& unconn_count, PinType type);
@@ -1317,7 +1322,7 @@ void cube_to_minterms_recurr(std::vector<vtr::LogicValue> cube, std::vector<size
     }
 }
 
-//Find all the nets connected to clock pins in the netlist
+///@brief Find all the nets connected to clock pins in the netlist
 std::set<AtomNetId> find_netlist_physical_clock_nets(const AtomNetlist& netlist) {
     std::set<AtomNetId> clock_nets; //The clock nets
 
@@ -1385,7 +1390,7 @@ std::set<AtomNetId> find_netlist_physical_clock_nets(const AtomNetlist& netlist)
     return clock_nets;
 }
 
-//Finds all logical clock drivers in the netlist (by back-tracing through logic)
+///@brief Finds all logical clock drivers in the netlist (by back-tracing through logic)
 std::set<AtomPinId> find_netlist_logical_clock_drivers(const AtomNetlist& netlist) {
     auto clock_nets = find_netlist_physical_clock_nets(netlist);
 
@@ -1466,7 +1471,7 @@ std::set<AtomPinId> find_netlist_logical_clock_drivers(const AtomNetlist& netlis
     return clock_drivers;
 }
 
-//Print information about clocks
+///@brief Print information about clocks
 void print_netlist_clock_info(const AtomNetlist& netlist) {
     std::set<AtomPinId> netlist_clock_drivers = find_netlist_logical_clock_drivers(netlist);
     VTR_LOG("Netlist contains %zu clocks\n", netlist_clock_drivers.size());

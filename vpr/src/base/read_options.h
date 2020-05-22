@@ -41,7 +41,7 @@ struct t_options {
     argparse::ArgValue<bool> do_power;
 
     /* Graphics Options */
-    argparse::ArgValue<bool> show_graphics; //Enable argparse::ArgValue<int>eractive graphics?
+    argparse::ArgValue<bool> show_graphics; ///<Enable argparse::ArgValue<int>eractive graphics?
     argparse::ArgValue<int> GraphPause;
     argparse::ArgValue<bool> save_graphics;
     argparse::ArgValue<std::string> graphics_commands;
@@ -136,7 +136,7 @@ struct t_options {
     argparse::ArgValue<float> bend_cost;
     argparse::ArgValue<e_route_type> RouteType;
     argparse::ArgValue<int> RouteChanWidth;
-    argparse::ArgValue<int> min_route_chan_width_hint; //Hint to binary search router about what the min chan width is
+    argparse::ArgValue<int> min_route_chan_width_hint; ///<Hint to binary search router about what the min chan width is
     argparse::ArgValue<bool> verify_binary_search;
     argparse::ArgValue<e_router_algorithm> RouterAlgorithm;
     argparse::ArgValue<int> min_incremental_reroute_fanout;

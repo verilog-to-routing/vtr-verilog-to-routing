@@ -5,9 +5,9 @@
 #include "vpr_types.h"
 
 enum class e_circuit_format {
-    AUTO, //Infer from file extension
-    BLIF, //Strict structural BLIF
-    EBLIF //Structural blif with extensions
+    AUTO, ///<Infer from file extension
+    BLIF, ///<Strict structural BLIF
+    EBLIF ///<Structural blif with extensions
 };
 
 AtomNetlist read_and_process_circuit(const e_circuit_format circuit_format,

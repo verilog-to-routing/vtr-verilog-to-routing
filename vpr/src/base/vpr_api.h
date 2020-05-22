@@ -1,5 +1,9 @@
 /**
- * General API for VPR
+ * @file
+ * @author Jason Luu
+ * @date June 21, 2012
+ *
+ * @brief  General API for VPR
  *
  * VPR is a CAD tool used to conduct FPGA architecture exploration.  It takes, as input, a technology-mapped netlist and a description of the FPGA architecture being investigated.
  * VPR then generates a packed, placed, and routed FPGA (in .net, .place, and .route files respectively) that implements the input netlist
@@ -18,9 +22,6 @@
  * 1.  libarchfpga/physical_types.h - Data structures that define the properties of the FPGA architecture
  * 2.  vpr_types.h - Very major file that defines the core data structures used in VPR.  This includes detailed architecture information, user netlist data structures, and data structures that describe the mapping between those two.
  * 3.  globals.h - Defines the global variables used by VPR.
- *
- * Author: Jason Luu
- * June 21, 2012
  */
 
 #ifndef VPR_API_H
@@ -40,8 +41,8 @@
 
 #include "vpr_error.h"
 
-/* 
- * Main VPR Operations 
+/*
+ * Main VPR Operations
  */
 void vpr_init(const int argc, const char** argv, t_options* options, t_vpr_setup* vpr_setup, t_arch* arch);
 void vpr_initialize_logging();
@@ -52,38 +53,74 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch); //Run the VPR CAD flow
 /*
  * Stage operations
  */
-bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch);    //Perform, load or skip the packing stage
-bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch);         //Perform packing
-void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch); //Loads a previous packing
 
-bool vpr_place_flow(t_vpr_setup& vpr_setup, const t_arch& arch);     //Perform, load or skip the placement stage
-void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch);          //Perform placement
-void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch); //Loads a previous placement
+/* Packing */
 
-RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch); //Perform, load or skip the routing stage
+///@brief Perform, load or skip the packing stage
+bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch);
+
+///@brief Perform packing
+bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch);
+
+///@brief Loads a previous packing
+void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch);
+
+/* Placement */
+
+///@brief Perform, load or skip the placement stage
+bool vpr_place_flow(t_vpr_setup& vpr_setup, const t_arch& arch);
+
+///@brief Perform placement
+void vpr_place(t_vpr_setup& vpr_setup, const t_arch& arch);
+
+///@brief Loads a previous placement
+void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch);
+
+/* Routing */
+
+///@brief Perform, load or skip the routing stage
+RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch);
+
+///@brief Perform routing at a fixed channel width)
 RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
                               const t_arch& arch,
                               int fixed_channel_width,
                               std::shared_ptr<SetupHoldTimingInfo> timing_info,
                               std::shared_ptr<RoutingDelayCalculator> delay_calc,
-                              ClbNetPinsMatrix<float>& net_delay); //Perform routing at a fixed channel width)
+                              ClbNetPinsMatrix<float>& net_delay);
+
+///@brief Perform routing to find the minimum channel width
 RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup,
                             const t_arch& arch,
                             std::shared_ptr<SetupHoldTimingInfo> timing_info,
                             std::shared_ptr<RoutingDelayCalculator> delay_calc,
-                            ClbNetPinsMatrix<float>& net_delay); //Perform routing to find the minimum channel width
+                            ClbNetPinsMatrix<float>& net_delay);
+
+///@brief Loads a previous routing
 RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
                              const t_arch& arch,
                              int fixed_channel_width,
                              std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                             ClbNetPinsMatrix<float>& net_delay); //Loads a previous routing
+                             ClbNetPinsMatrix<float>& net_delay);
 
-bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status); //Perform or skips the analysis stage
-void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status);      //Perform post-implementation analysis
+/* Analysis */
 
-void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& Arch);                   //Create the device (grid + rr graph)
-void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch);        //Create the device grid
-void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_width); //Create routing graph at specified channel width
+///@brief Perform or skips the analysis stage
+bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status);
+
+///@brief Perform post-implementation analysis
+void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status);
+
+/* Device creating */
+
+///@brief Create the device (grid + rr graph)
+void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& Arch);
+
+///@brief Create the device grid
+void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch);
+
+///@brief Create routing graph at specified channel width
+void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_width);
 
 void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch);
 void vpr_close_graphics(const t_vpr_setup& vpr_setup);
@@ -100,9 +137,11 @@ void vpr_print_args(int argc, const char** argv);
  * Advanced functions
  *  Used when you need fine-grained control over VPR that the main VPR operations do not enable
  ****************************************************************************************************/
-/* Read in user options */
+
+///@brief Read in user options
 void vpr_read_options(const int argc, const char** argv, t_options* options);
-/* Read in arch and circuit */
+
+///@brief Read in arch and circuit
 void vpr_setup_vpr(t_options* Options,
                    const bool TimingEnabled,
                    const bool readArchFile,
@@ -126,9 +165,10 @@ void vpr_setup_vpr(t_options* Options,
                    std::string* GraphicsCommands,
                    t_power_opts* PowerOpts);
 
-/* Check inputs are reasonable */
+///@brief Check inputs are reasonable
 void vpr_check_arch(const t_arch& Arch);
-/* Verify settings don't conflict or otherwise not make sense */
+
+///@brief Verify settings don't conflict or otherwise not make sense
 void vpr_check_setup(const t_packer_opts& PackerOpts,
                      const t_placer_opts& PlacerOpts,
                      const t_router_opts& RouterOpts,
@@ -136,19 +176,20 @@ void vpr_check_setup(const t_packer_opts& PackerOpts,
                      const std::vector<t_segment_inf>& Segments,
                      const t_timing_inf& Timing,
                      const t_chan_width_dist& Chans);
-/* Show current setup */
+
+///@brief Show current setup
 void vpr_show_setup(const t_vpr_setup& vpr_setup);
 void vpr_power_estimation(const t_vpr_setup& vpr_setup,
                           const t_arch& Arch,
                           const SetupTimingInfo& timing_info,
                           const RouteStatus& route_status);
 
-/* Output file names management */
+///@brief Output file names management
 void vpr_alloc_and_load_output_file_names(const char* default_name);
 void vpr_set_output_file_name(enum e_output_files ename, const char* name, const char* default_name);
 char* vpr_get_output_file_name(enum e_output_files ename);
 
-/* Prints user file or internal errors for VPR */
+///@brief Prints user file or internal errors for VPR
 void vpr_print_error(const VprError& vpr_error);
 
 #endif
