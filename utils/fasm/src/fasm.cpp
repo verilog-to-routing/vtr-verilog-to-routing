@@ -679,7 +679,13 @@ void FasmWriterVisitor::output_fasm_mux(std::string fasm_mux_str,
 
     bool have_prefix = false;
     std::string clb_prefix;
-    find_clb_prefix(mux_input_pin->parent_node, &have_prefix, &clb_prefix);
+
+    if (mux_input_pin->port->type == IN_PORT) {
+        find_clb_prefix(mux_input_pin->parent_node, &have_prefix, &clb_prefix);
+    } else {
+        VTR_ASSERT(mux_input_pin->port->type == OUT_PORT);
+        find_clb_prefix(mux_input_pin->parent_node->parent_pb_graph_node, &have_prefix, &clb_prefix);
+    }
 
     for(const auto &mux_input : mux_inputs) {
       auto mux_parts = split_fasm_entry(mux_input, "=:", "\t ");
