@@ -10,31 +10,35 @@
  * legal position and place it during initial placement.                  */
 #define MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY 4
 
-static t_pl_loc** legal_pos = nullptr; /* [0..device_ctx.num_block_types-1][0..type_tsize - 1] */
-static int* num_legal_pos = nullptr;   /* [0..num_legal_pos-1] */
+static std::vector<std::vector<std::vector<t_pl_loc>>> legal_pos; /* [0..device_ctx.num_block_types-1][0..type_tsize - 1][0..num_sub_tiles - 1] */
+static std::vector<std::vector<int>> num_legal_pos;               /* [0..num_sub_tiles - 1][0..num_legal_pos-1] */
 
 static void alloc_legal_placement_locations();
 static void load_legal_placement_locations();
 
-static void free_legal_placement_locations();
+static int get_free_sub_tile(std::vector<std::vector<int>>& free_locations, int itype, std::vector<int> possible_sub_tiles);
 
 static int check_macro_can_be_placed(t_pl_macro pl_macro, int itype, t_pl_loc head_pos);
-static int try_place_macro(int itype, int ipos, t_pl_macro pl_macro);
-static void initial_placement_pl_macros(int macros_max_num_tries, int* free_locations);
+static int try_place_macro(int itype, int ipos, int isub_tile, t_pl_macro pl_macro);
+static void initial_placement_pl_macros(int macros_max_num_tries, std::vector<std::vector<int>>& free_locations);
 
-static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pad_loc_type);
-static void initial_placement_location(const int* free_locations, int& pipos, int itype, t_pl_loc& to);
+static void initial_placement_blocks(std::vector<std::vector<int>>& free_locations, enum e_pad_loc_type pad_loc_type);
 
 static t_physical_tile_type_ptr pick_placement_type(t_logical_block_type_ptr logical_block,
                                                     int num_needed_types,
-                                                    int* free_locations);
+                                                    std::vector<std::vector<int>>& free_locations);
 
 static void alloc_legal_placement_locations() {
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-    legal_pos = new t_pl_loc*[device_ctx.physical_tile_types.size()];
-    num_legal_pos = (int*)vtr::calloc(device_ctx.physical_tile_types.size(), sizeof(int));
+    int num_tile_types = device_ctx.physical_tile_types.size();
+    legal_pos.resize(num_tile_types);
+    num_legal_pos.resize(num_tile_types);
+
+    for (const auto& tile : device_ctx.physical_tile_types) {
+        num_legal_pos[tile.index].resize(tile.sub_tiles.size());
+    }
 
     /* Initialize all occupancy to zero. */
 
@@ -42,11 +46,17 @@ static void alloc_legal_placement_locations() {
         for (size_t j = 0; j < device_ctx.grid.height(); j++) {
             place_ctx.grid_blocks[i][j].usage = 0;
 
-            for (int k = 0; k < device_ctx.grid[i][j].type->capacity; k++) {
-                if (place_ctx.grid_blocks[i][j].blocks[k] != INVALID_BLOCK_ID) {
-                    place_ctx.grid_blocks[i][j].blocks[k] = EMPTY_BLOCK_ID;
-                    if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
-                        num_legal_pos[device_ctx.grid[i][j].type->index]++;
+            auto tile = device_ctx.grid[i][j].type;
+
+            for (auto sub_tile : tile->sub_tiles) {
+                auto capacity = sub_tile.capacity;
+
+                for (int k = 0; k < capacity.total(); k++) {
+                    if (place_ctx.grid_blocks[i][j].blocks[k + capacity.low] != INVALID_BLOCK_ID) {
+                        place_ctx.grid_blocks[i][j].blocks[k + capacity.low] = EMPTY_BLOCK_ID;
+                        if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
+                            num_legal_pos[tile->index][sub_tile.index]++;
+                        }
                     }
                 }
             }
@@ -54,7 +64,11 @@ static void alloc_legal_placement_locations() {
     }
 
     for (const auto& type : device_ctx.physical_tile_types) {
-        legal_pos[type.index] = new t_pl_loc[num_legal_pos[type.index]];
+        legal_pos[type.index].resize(type.sub_tiles.size());
+
+        for (auto sub_tile : type.sub_tiles) {
+            legal_pos[type.index][sub_tile.index].resize(num_legal_pos[type.index][sub_tile.index]);
+        }
     }
 }
 
@@ -62,35 +76,61 @@ static void load_legal_placement_locations() {
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.placement();
 
-    int* index = (int*)vtr::calloc(device_ctx.physical_tile_types.size(), sizeof(int));
+    std::vector<std::vector<int>> index;
+
+    index.resize(device_ctx.physical_tile_types.size());
+    for (const auto& tile : device_ctx.physical_tile_types) {
+        index[tile.index].resize(tile.sub_tiles.size());
+    }
 
     for (size_t i = 0; i < device_ctx.grid.width(); i++) {
         for (size_t j = 0; j < device_ctx.grid.height(); j++) {
-            for (int k = 0; k < device_ctx.grid[i][j].type->capacity; k++) {
-                if (place_ctx.grid_blocks[i][j].blocks[k] == INVALID_BLOCK_ID) {
-                    continue;
-                }
-                if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
-                    int itype = device_ctx.grid[i][j].type->index;
-                    legal_pos[itype][index[itype]].x = i;
-                    legal_pos[itype][index[itype]].y = j;
-                    legal_pos[itype][index[itype]].sub_tile = k;
-                    index[itype]++;
+            auto tile = device_ctx.grid[i][j].type;
+
+            for (auto sub_tile : tile->sub_tiles) {
+                auto capacity = sub_tile.capacity;
+
+                for (int k = 0; k < capacity.total(); k++) {
+                    if (place_ctx.grid_blocks[i][j].blocks[k + capacity.low] == INVALID_BLOCK_ID) {
+                        continue;
+                    }
+
+                    if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
+                        int itype = tile->index;
+                        int isub_tile = sub_tile.index;
+                        legal_pos[itype][isub_tile][index[itype][isub_tile]].x = i;
+                        legal_pos[itype][isub_tile][index[itype][isub_tile]].y = j;
+                        legal_pos[itype][isub_tile][index[itype][isub_tile]].sub_tile = k + capacity.low;
+                        index[itype][isub_tile]++;
+                    }
                 }
             }
         }
     }
-    free(index);
 }
 
-static void free_legal_placement_locations() {
-    auto& device_ctx = g_vpr_ctx.device();
-
-    for (unsigned int i = 0; i < device_ctx.physical_tile_types.size(); i++) {
-        delete[] legal_pos[i];
+static int get_free_sub_tile(std::vector<std::vector<int>>& free_locations, int itype, std::vector<int> possible_sub_tiles) {
+    for (int sub_tile : possible_sub_tiles) {
+        if (free_locations[itype][sub_tile] > 0) {
+            return sub_tile;
+        }
     }
-    delete[] legal_pos; /* Free the mapping list */
-    free(num_legal_pos);
+
+    VPR_THROW(VPR_ERROR_PLACE, "No more sub tiles available for initial placement.");
+}
+
+static std::vector<int> get_possible_sub_tile_indices(t_physical_tile_type_ptr physical_tile, t_logical_block_type_ptr logical_block) {
+    std::vector<int> sub_tile_indices;
+
+    for (auto sub_tile : physical_tile->sub_tiles) {
+        auto result = std::find(sub_tile.equivalent_sites.begin(), sub_tile.equivalent_sites.end(), logical_block);
+        if (result != sub_tile.equivalent_sites.end()) {
+            sub_tile_indices.push_back(sub_tile.index);
+        }
+    }
+
+    VTR_ASSERT(sub_tile_indices.size() > 0);
+    return sub_tile_indices;
 }
 
 static int check_macro_can_be_placed(t_pl_macro pl_macro, int itype, t_pl_loc head_pos) {
@@ -123,13 +163,13 @@ static int check_macro_can_be_placed(t_pl_macro pl_macro, int itype, t_pl_loc he
     return (macro_can_be_placed);
 }
 
-static int try_place_macro(int itype, int ipos, t_pl_macro pl_macro) {
+static int try_place_macro(int itype, int ipos, int isub_tile, t_pl_macro pl_macro) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     int macro_placed = false;
 
     // Choose a random position for the head
-    t_pl_loc head_pos = legal_pos[itype][ipos];
+    t_pl_loc head_pos = legal_pos[itype][isub_tile][ipos];
 
     // If that location is occupied, do nothing.
     if (place_ctx.grid_blocks[head_pos.x][head_pos.y].blocks[head_pos.sub_tile] != EMPTY_BLOCK_ID) {
@@ -161,9 +201,9 @@ static int try_place_macro(int itype, int ipos, t_pl_macro pl_macro) {
     return (macro_placed);
 }
 
-static void initial_placement_pl_macros(int macros_max_num_tries, int* free_locations) {
+static void initial_placement_pl_macros(int macros_max_num_tries, std::vector<std::vector<int>>& free_locations) {
     int macro_placed;
-    int itype, itry, ipos;
+    int itype, itry, ipos, isub_tile;
     ClusterBlockId blk_id;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -198,13 +238,18 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int* free_loca
         for (auto tile_type : block_type->equivalent_tiles) { //Try each possible tile type
             itype = tile_type->index;
 
+            auto possible_sub_tiles = get_possible_sub_tile_indices(tile_type, block_type);
+
             // Try to place the macro first, if can be placed - place them, otherwise try again
             for (itry = 0; itry < macros_max_num_tries && macro_placed == false; itry++) {
+                // Choose a free sub tile for the head
+                isub_tile = get_free_sub_tile(free_locations, itype, possible_sub_tiles);
+
                 // Choose a random position for the head
-                ipos = vtr::irand(free_locations[itype] - 1);
+                ipos = vtr::irand(free_locations[itype][isub_tile] - 1);
 
                 // Try to place the macro
-                macro_placed = try_place_macro(itype, ipos, pl_macro);
+                macro_placed = try_place_macro(itype, ipos, isub_tile, pl_macro);
 
             } // Finished all tries
 
@@ -216,10 +261,11 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int* free_loca
                 // if there are no legal positions, error out
 
                 // Exhaustive placement of carry macros
-                for (ipos = 0; ipos < free_locations[itype] && macro_placed == false; ipos++) {
-                    // Try to place the macro
-                    macro_placed = try_place_macro(itype, ipos, pl_macro);
-
+                for (isub_tile = 0; tile_type->sub_tiles.size() && macro_placed == false; isub_tile++) {
+                    for (ipos = 0; ipos < free_locations[itype][isub_tile] && macro_placed == false; ipos++) {
+                        // Try to place the macro
+                        macro_placed = try_place_macro(itype, ipos, isub_tile, pl_macro);
+                    }
                 } // Exhausted all the legal placement position for this macro
 
                 // If macro could not be placed after exhaustive placement, error out
@@ -249,8 +295,7 @@ static void initial_placement_pl_macros(int macros_max_num_tries, int* free_loca
 
 /* Place blocks that are NOT a part of any macro.
  * We'll randomly place each block in the clustered netlist, one by one. */
-static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pad_loc_type) {
-    int itype, ipos;
+static void initial_placement_blocks(std::vector<std::vector<int>>& free_locations, enum e_pad_loc_type pad_loc_type) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
@@ -298,10 +343,16 @@ static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pa
                             cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id), logical_block->name, logical_block->index);
         }
 
-        itype = type->index;
+        int itype = type->index;
+
+        auto possible_sub_tiles = get_possible_sub_tile_indices(type, logical_block);
+
+        int isub_tile = get_free_sub_tile(free_locations, itype, possible_sub_tiles);
 
         t_pl_loc to;
-        initial_placement_location(free_locations, ipos, itype, to);
+        int ipos = vtr::irand(free_locations[itype][isub_tile] - 1);
+
+        to = legal_pos[itype][isub_tile][ipos];
 
         // Make sure that the position is EMPTY_BLOCK before placing the block down
         VTR_ASSERT(place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] == EMPTY_BLOCK_ID);
@@ -320,23 +371,20 @@ static void initial_placement_blocks(int* free_locations, enum e_pad_loc_type pa
          * legal positions in legal_pos to remove the entry (choice) we just used, but faster to
          * just move the last entry in legal_pos to the spot we just used and decrement the
          * count of free_locations. */
-        legal_pos[itype][ipos] = legal_pos[itype][free_locations[itype] - 1]; /* overwrite used block position */
-        free_locations[itype]--;
+        legal_pos[itype][isub_tile][ipos] = legal_pos[itype][isub_tile][free_locations[itype][isub_tile] - 1]; /* overwrite used block position */
+        free_locations[itype][isub_tile]--;
     }
-}
-
-static void initial_placement_location(const int* free_locations, int& ipos, int itype, t_pl_loc& to) {
-    ipos = vtr::irand(free_locations[itype] - 1);
-    to = legal_pos[itype][ipos];
 }
 
 static t_physical_tile_type_ptr pick_placement_type(t_logical_block_type_ptr logical_block,
                                                     int num_needed_types,
-                                                    int* free_locations) {
+                                                    std::vector<std::vector<int>>& free_locations) {
     // Loop through the ordered map to get tiles in a decreasing priority order
     for (auto& tile : logical_block->equivalent_tiles) {
-        if (free_locations[tile->index] >= num_needed_types) {
-            return tile;
+        for (auto sub_tile : tile->sub_tiles) {
+            if (free_locations[tile->index][sub_tile.index] >= num_needed_types) {
+                return tile;
+            }
         }
     }
 
@@ -356,19 +404,23 @@ void initial_placement(enum e_pad_loc_type pad_loc_type,
     load_legal_placement_locations();
 
     int itype, ipos;
-    int* free_locations; /* [0..device_ctx.num_block_types-1].
-                          * Stores how many locations there are for this type that *might* still be free.
-                          * That is, this stores the number of entries in legal_pos[itype] that are worth considering
-                          * as you look for a free location.
-                          */
+    std::vector<std::vector<int>> free_locations; /* [0..device_ctx.num_block_types-1].
+                                                   * Stores how many locations there are for this type that *might* still be free.
+                                                   * That is, this stores the number of entries in legal_pos[itype] that are worth considering
+                                                   * as you look for a free location.
+                                                   */
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
-    free_locations = (int*)vtr::malloc(device_ctx.physical_tile_types.size() * sizeof(int));
+    free_locations.resize(device_ctx.physical_tile_types.size());
     for (const auto& type : device_ctx.physical_tile_types) {
         itype = type.index;
-        free_locations[itype] = num_legal_pos[itype];
+        free_locations[itype].resize(type.sub_tiles.size());
+
+        for (auto sub_tile : type.sub_tiles) {
+            free_locations[itype][sub_tile.index] = num_legal_pos[itype][sub_tile.index];
+        }
     }
 
     /* We'll use the grid to record where everything goes. Initialize to the grid has no
@@ -400,18 +452,23 @@ void initial_placement(enum e_pad_loc_type pad_loc_type,
     // All the macros are placed, update the legal_pos[][] array
     for (const auto& type : device_ctx.physical_tile_types) {
         itype = type.index;
-        VTR_ASSERT(free_locations[itype] >= 0);
-        for (ipos = 0; ipos < free_locations[itype]; ipos++) {
-            t_pl_loc pos = legal_pos[itype][ipos];
 
-            // Check if that location is occupied.  If it is, remove from legal_pos
-            if (place_ctx.grid_blocks[pos.x][pos.y].blocks[pos.sub_tile] != EMPTY_BLOCK_ID && place_ctx.grid_blocks[pos.x][pos.y].blocks[pos.sub_tile] != INVALID_BLOCK_ID) {
-                legal_pos[itype][ipos] = legal_pos[itype][free_locations[itype] - 1];
-                free_locations[itype]--;
+        for (auto sub_tile : type.sub_tiles) {
+            int isub_tile = sub_tile.index;
 
-                // After the move, I need to check this particular entry again
-                ipos--;
-                continue;
+            VTR_ASSERT(free_locations[itype][isub_tile] >= 0);
+            for (ipos = 0; ipos < free_locations[itype][isub_tile]; ipos++) {
+                t_pl_loc pos = legal_pos[itype][isub_tile][ipos];
+
+                // Check if that location is occupied.  If it is, remove from legal_pos
+                if (place_ctx.grid_blocks[pos.x][pos.y].blocks[pos.sub_tile] != EMPTY_BLOCK_ID && place_ctx.grid_blocks[pos.x][pos.y].blocks[pos.sub_tile] != INVALID_BLOCK_ID) {
+                    legal_pos[itype][isub_tile][ipos] = legal_pos[itype][isub_tile][free_locations[itype][isub_tile] - 1];
+                    free_locations[itype][isub_tile]--;
+
+                    // After the move, I need to check this particular entry again
+                    ipos--;
+                    continue;
+                }
             }
         }
     } // Finish updating the legal_pos[][] and free_locations[] array
@@ -427,6 +484,4 @@ void initial_placement(enum e_pad_loc_type pad_loc_type,
         print_clb_placement(getEchoFileName(E_ECHO_INITIAL_CLB_PLACEMENT));
     }
 #endif
-    free(free_locations);
-    free_legal_placement_locations();
 }

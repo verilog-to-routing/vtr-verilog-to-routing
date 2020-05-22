@@ -30,6 +30,16 @@ bool is_empty_type(t_logical_block_type_ptr type);
 //Returns the corresponding physical type given the logical type as parameter
 t_physical_tile_type_ptr physical_tile_type(ClusterBlockId blk);
 
+//Returns the corresponding physical pin based on the input parameters:
+// - physical_tile
+// - relative_pin: this is the pin relative to a specific sub tile
+// - capacity location: absolute sub tile location
+int get_physical_pin_from_capacity_location(t_physical_tile_type_ptr physical_tile, int relative_pin, int capacity_location);
+
+//Returns a pair consisting of the absolute capacity location relative to the pin parameter
+//and the relative pin within the sub tile
+std::pair<int, int> get_capacity_location_from_physical_pin(t_physical_tile_type_ptr physical_tile, int pin);
+
 //Returns the sub tile corresponding to the logical block location within a physical type
 int get_sub_tile_index(ClusterBlockId blk);
 
@@ -163,10 +173,6 @@ t_logical_block_type_ptr pick_best_logical_type(t_physical_tile_type_ptr physica
 //Returns the current tile implemnting blk (if placement is valid), or
 //the best expected physical tile the block should use (if no valid placement).
 t_physical_tile_type_ptr get_physical_tile_type(const ClusterBlockId blk);
-
-int get_logical_pin(t_physical_tile_type_ptr physical_tile,
-                    t_logical_block_type_ptr logical_block,
-                    int pin);
 
 //Returns the physical pin index (within 'physical_tile') corresponding to the
 //logical index ('pin' of the first instance of 'logical_block' within the physcial tile.

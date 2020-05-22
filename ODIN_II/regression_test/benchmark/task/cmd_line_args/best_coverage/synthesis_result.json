@@ -1,0 +1,27 @@
+{
+    "best_coverage/multi_clock_reader_writer/k6_N10_mem32K_40nm": {
+        "test_name": "best_coverage/multi_clock_reader_writer/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "multi_clock_reader_writer.v",
+        "exit": 0,
+        "errors": [],
+        "warnings": [],
+        "max_rss(MiB)": 34.4,
+        "exec_time(ms)": 41.4,
+        "synthesis_time(ms)": 14.7,
+        "Latch Drivers": 2,
+        "Pi": 4,
+        "Po": 4,
+        "logic element": 140,
+        "latch": 34,
+        "Adder": -1,
+        "Multiplier": 0,
+        "Memory": 0,
+        "Hard Ip": -1,
+        "generic logic size": 6,
+        "Longest Path": 26,
+        "Average Path": 4,
+        "Estimated LUTs": 246,
+        "Total Node": 176
+    }
+}

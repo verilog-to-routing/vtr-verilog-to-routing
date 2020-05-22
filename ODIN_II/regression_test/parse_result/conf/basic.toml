@@ -4,6 +4,14 @@
     regex = 'Odin exited with code: (\d+)'
     default = -1
 
+['errors']
+    regex = 'Error::([A-Z_]+ .*)'
+    listing = true
+
+['warnings']
+    regex = 'Warning::([A-Z_]+ .*)'
+    listing = true
+
 ['max_rss(MiB)']
     # Memory usage can be very off depending on the number of cores
     range = [ 0.0, 100.0 ]
@@ -19,4 +27,3 @@
     cutoff = 1000.0
     regex = 'Total time: (\d+|\d+.\d+)ms'
     default = -1
-

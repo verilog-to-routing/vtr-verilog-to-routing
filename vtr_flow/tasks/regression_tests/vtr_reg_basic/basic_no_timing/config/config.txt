@@ -26,5 +26,3 @@ pass_requirements_file=pass_requirements_no_timing.txt
 
 # Script parameters
 script_params_common=-track_memory_usage --timing_analysis off
-script_params_list_add =--router_heap binary
-script_params_list_add =--router_heap bucket

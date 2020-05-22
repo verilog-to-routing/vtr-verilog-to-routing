@@ -86,8 +86,9 @@ struct global_args_t {
     argparse::ArgValue<std::vector<std::string>> verilog_files;
     argparse::ArgValue<std::string> blif_file;
     argparse::ArgValue<std::string> output_file;
-    argparse::ArgValue<std::string> arch_file; // Name of the FPGA architecture file
-    argparse::ArgValue<bool> permissive;       //turn possible_errors into warnings
+    argparse::ArgValue<std::string> arch_file;   // Name of the FPGA architecture file
+    argparse::ArgValue<bool> permissive;         //turn possible_errors into warnings
+    argparse::ArgValue<bool> print_parse_tokens; // print the tokens as they are parsed byt the parser
 
     argparse::ArgValue<std::string> high_level_block; //Legacy option, no longer used
 
@@ -280,7 +281,6 @@ enum ids {
     /* Function instances*/
     FUNCTION_NAMED_INSTANCE,
     FUNCTION_INSTANCE,
-
     TASK_NAMED_INSTANCE,
     TASK_INSTANCE,
     /* Specify Items */
@@ -300,7 +300,6 @@ enum ids {
     CASE_DEFAULT,
     ALWAYS,
     IF,
-    IF_Q,
     FOR,
     WHILE,
     /* Delay Control */
@@ -308,6 +307,7 @@ enum ids {
     POSEDGE,
     NEGEDGE,
     /* expressions */
+    TERNARY_OPERATION,
     BINARY_OPERATION,
     UNARY_OPERATION,
     /* basic primitives */
@@ -318,6 +318,10 @@ enum ids {
     /* basic identifiers */
     IDENTIFIERS,
     NUMBERS,
+    /* C functions */
+    C_ARG_LIST,
+    DISPLAY,
+    FINISH,
     /* Hard Blocks */
     HARD_BLOCK,
     HARD_BLOCK_NAMED_INSTANCE,
@@ -352,6 +356,7 @@ struct typ {
     struct
     {
         short is_parameter;
+        short is_string;
         short is_localparam;
         short is_defparam;
         short is_port;
@@ -364,7 +369,7 @@ struct typ {
         short is_genvar;
         short is_memory;
         short is_signed;
-        short is_initialized; // should the variable be initialized with some value?
+        short is_initialized;
         long initial_value;
     } variable;
     struct

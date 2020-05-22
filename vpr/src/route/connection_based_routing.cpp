@@ -114,7 +114,7 @@ bool Connection_based_routing_resources::sanity_check_lookup() const {
     return true;
 }
 
-void Connection_based_routing_resources::set_lower_bound_connection_delays(vtr::vector<ClusterNetId, float*>& net_delay) {
+void Connection_based_routing_resources::set_lower_bound_connection_delays(ClbNetPinsMatrix<float>& net_delay) {
     /* Set the lower bound connection delays after first iteration, which only optimizes for timing delay.
      * This will be used later to judge the optimality of a connection, with suboptimal ones being candidates
      * for forced reroute */
@@ -144,7 +144,7 @@ void Connection_based_routing_resources::update_lower_bound_connection_delay(Clu
 bool Connection_based_routing_resources::forcibly_reroute_connections(float max_criticality,
                                                                       std::shared_ptr<const SetupTimingInfo> timing_info,
                                                                       const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                                                                      vtr::vector<ClusterNetId, float*>& net_delay) {
+                                                                      ClbNetPinsMatrix<float>& net_delay) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 

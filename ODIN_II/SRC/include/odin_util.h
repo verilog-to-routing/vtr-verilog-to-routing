@@ -67,6 +67,7 @@ int print_progress_bar(double completion, int position, int length, double time)
 void trim_string(char* string, const char* chars);
 bool only_one_is_true(std::vector<bool> tested);
 int odin_sprintf(char* s, const char* format, ...);
+char* str_collate(char* str1, char* str2);
 
 void passed_verify_i_o_availabilty(nnode_t* node, int expected_input_size, int expected_output_size, const char* current_src, int line_src);
 

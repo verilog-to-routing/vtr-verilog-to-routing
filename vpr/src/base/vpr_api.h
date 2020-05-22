@@ -66,17 +66,17 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
                               int fixed_channel_width,
                               std::shared_ptr<SetupHoldTimingInfo> timing_info,
                               std::shared_ptr<RoutingDelayCalculator> delay_calc,
-                              vtr::vector<ClusterNetId, float*>& net_delay); //Perform routing at a fixed channel width)
+                              ClbNetPinsMatrix<float>& net_delay); //Perform routing at a fixed channel width)
 RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup,
                             const t_arch& arch,
                             std::shared_ptr<SetupHoldTimingInfo> timing_info,
                             std::shared_ptr<RoutingDelayCalculator> delay_calc,
-                            vtr::vector<ClusterNetId, float*>& net_delay); //Perform routing to find the minimum channel width
+                            ClbNetPinsMatrix<float>& net_delay); //Perform routing to find the minimum channel width
 RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
                              const t_arch& arch,
                              int fixed_channel_width,
                              std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                             vtr::vector<ClusterNetId, float*>& net_delay); //Loads a previous routing
+                             ClbNetPinsMatrix<float>& net_delay); //Loads a previous routing
 
 bool vpr_analysis_flow(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status); //Perform or skips the analysis stage
 void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus& route_status);      //Perform post-implementation analysis

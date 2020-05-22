@@ -619,7 +619,7 @@ struct t_physical_tile_type {
 
     /* Unordered map indexed by the logical block index.
      * tile_block_pin_directs_map[logical block index][logical block pin] -> physical tile pin */
-    std::unordered_map<int, vtr::bimap<t_logical_pin, t_physical_pin>> tile_block_pin_directs_map;
+    std::unordered_map<int, std::unordered_map<int, vtr::bimap<t_logical_pin, t_physical_pin>>> tile_block_pin_directs_map;
 
     /* Returns the indices of pins that contain a clock for this physical logic block */
     std::vector<int> get_clock_pins_indices() const;
@@ -690,11 +690,9 @@ struct t_sub_tile {
  */
 struct t_logical_pin {
     int pin = -1;
-    int sub_tile_index = -1;
 
-    t_logical_pin(int index, int value) {
+    t_logical_pin(int value) {
         pin = value;
-        sub_tile_index = index;
     }
 
     bool operator==(const t_logical_pin o) const {
@@ -1391,6 +1389,17 @@ enum class SwitchType {
     NUM_SWITCH_TYPES
 };
 constexpr std::array<const char*, size_t(SwitchType::NUM_SWITCH_TYPES)> SWITCH_TYPE_STRINGS = {{"MUX", "TRISTATE", "PASS_GATE", "SHORT", "BUFFER", "INVALID"}};
+
+/* Constant/Reserved names for switches in architecture XML
+ * Delayless switch:
+ *   The zero-delay switch created by VPR internally 
+ *   This is a special switch just to ease CAD algorithms
+ *   It is mainly used in
+ *     - the edges between SOURCE and SINK nodes in routing resource graphs  
+ *     - the edges in CLB-to-CLB connections (defined by <directlist> in arch XML)
+ *   
+ */
+constexpr const char* VPR_DELAYLESS_SWITCH_NAME = "__vpr_delayless_switch__";
 
 enum class BufferSize {
     AUTO,

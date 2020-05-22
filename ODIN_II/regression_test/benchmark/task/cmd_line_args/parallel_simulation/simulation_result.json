@@ -1,0 +1,28 @@
+{
+    "parallel_simulation/twobits_arithmetic_multiply/k6_N10_mem32K_40nm": {
+        "test_name": "parallel_simulation/twobits_arithmetic_multiply/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "blif": "twobits_arithmetic_multiply.blif",
+        "exit": 0,
+        "errors": [],
+        "warnings": [],
+        "max_rss(MiB)": 32.9,
+        "exec_time(ms)": 96.5,
+        "simulation_time(ms)": 69.4,
+        "test_coverage(%)": 90.6,
+        "Latch Drivers": 1,
+        "Pi": 5,
+        "Po": 5,
+        "logic element": 12,
+        "latch": 4,
+        "Adder": -1,
+        "Multiplier": 1,
+        "Memory": -1,
+        "Hard Ip": -1,
+        "generic logic size": 6,
+        "Longest Path": 8,
+        "Average Path": 5,
+        "Estimated LUTs": 12,
+        "Total Node": 18
+    }
+}

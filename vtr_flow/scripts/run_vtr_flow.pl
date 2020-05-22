@@ -1643,8 +1643,12 @@ sub run_vpr {
         push(@vpr_args, @extra_vpr_args);
     }
 
-    #Add the LeakSanitizer (LSAN) suppression file
-    local $ENV{"LSAN_OPTIONS"} = "suppressions=$vtr_flow_path/../vpr/lsan.supp";
+    #Extra options to fine-tune LeakSanitizer (LSAN) behaviour.
+    #Note that if VPR was compiled without LSAN these have no effect
+    # 'suppressions=...' Add the LeakSanitizer (LSAN) suppression file
+    # 'exitcode=12' Use a consistent exitcode (on some systems LSAN don't use the default exit code of 23)
+    # 'fast_unwind_on_malloc=0' Provide more accurate leak stack traces
+    local $ENV{"LSAN_OPTIONS"} = "suppressions=$vtr_flow_path/../vpr/lsan.supp exitcode=23 fast_unwind_on_malloc=0";
 
     #Run the command
     $q = &system_with_timeout(

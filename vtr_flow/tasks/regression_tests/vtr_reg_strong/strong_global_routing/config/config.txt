@@ -27,5 +27,3 @@ pass_requirements_file=pass_requirements.txt
 
 # Script parameters
 script_params_common = --route_type global
-script_params_list_add =--router_heap binary
-script_params_list_add =--router_heap bucket
