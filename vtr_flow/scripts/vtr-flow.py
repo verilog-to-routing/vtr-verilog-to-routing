@@ -153,9 +153,9 @@ def vtr_command_argparser(prog=None):
                                help="Directory to run the flow in (will be created if non-existant).")
 
     house_keeping.add_argument("-track_memory_usage",
-                               choices=on_off_choices,
-                               default="on",
-                               action=OnOffArgparseAction,
+                               default=False,
+                               action="store_true",
+                               dest="track_memory_usage",
                                help="Track the memory usage for each stage. Requires /usr/bin/time -v, disabled if not available.")
 
     house_keeping.add_argument("-limit_memory_usage",
