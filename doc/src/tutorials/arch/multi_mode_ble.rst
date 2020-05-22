@@ -264,3 +264,40 @@ We can enable both operating modes by changing to
    <mode name="n1_lut6">
 
 Now, VPR packer will consider best-fit operating mode to mapping logics.
+
+Tips for Debugging
+------------------
+When packing fails on a multi-mode logic block, the following procedures are recommended to quickly spot the bugs.
+
+- Apply ``disable_packing`` to all the modes, except the one you suspect to be problematic.
+  In the example of this tutorial, you may disable the packing for mode ``n2_lut5`` and focus on debugging mode ``n1_lut6``.
+
+  .. code-block:: xml
+
+   <mode name="n2_lut5" disable_packing="true">
+   <mode name="n1_lut6" disable_packing="false">
+
+
+- Turn on verbose output of packer ``--pack_verbosity`` (see details in :ref:`packing_options`. Recommend to use a higher verbosity number than the default value, e.g., 5.
+  Consider the example blif and architecture in this tutorial, you may execute ``vpr`` with 
+   
+  .. code-block:: shell
+
+     vpr k6_frac_N10_40nm.xml mult_2x2.blif --pack_verbosity 5  
+  
+- Packer will show detailed information about why it fails.
+  For example:
+  
+  .. code-block:: shell
+
+      FAILED Detailed Routing Legality
+      Placed atom 'p3' (.names) at clb[0][default]/fle[4][n1_lut6]/ble6[0][default]/lut6[0][lut6]/lut[0]
+      (921:cluster-external source (LB_SOURCE)-->1:'clb[0].I[1]') (1:'clb[0].I[1]'-->62:'fle[0].in[1]') (62:'fle[0].in[1]'-->123:'ble6[0].in[1]') (123:'ble6[0].in[1]'-->131:'lut6[0].in[1]') (131:'lut6[0].in[1]'-->138:'lut[0].in[1]') (138:'lut[0].in[1]'-->930:cluster-internal sink (LB_SINK accessible via architecture pins: clb[0]/fle[0]/ble6[0]/lut6[0]/lut[0].in[0], clb[0]/fle[0]/ble6[0]/lut6[0]/lut[0].in[1], clb[0]/fle[0]/ble6[0]/lut6[0]/lut[0].in[2], clb[0]/fle[0]/ble6[0]/lut6[0]/lut[0].in[3], clb[0]/fle[0]/ble6[0]/lut6[0]/lut[0].in[4], clb[0]/fle[0]/ble6[0]/lut6[0]/lut[0].in[5]))
+
+  Which indicates that input ports of ``<pb_type name=lut6>`` in the mode ``n1_lut6`` may be dangling, and thus leads to failures in routing stage of packing. 
+
+- You may modify the architecture description and re-run vpr until packing succeeds.
+
+- Move on to the next mode you would to debug and repeat from the first step.
+
+The debugging tips is not only applicable to the example showed in this tutorial but rather general to any multi-mode logic block architecture. 
