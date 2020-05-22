@@ -11,7 +11,7 @@ Definition
 Modern FPGA logic blocks are designed to operate in various modes, so as to provide best performance for different applications.
 VPR offers enriched syntax to support highly flexible multi-mode logic block architecture.
 
-:numref:`fig_frac_lut_le` shows the physical implemenation of a Fracturable Logic Element (FLE), which conssists of a fracturable 6-input Look-Up Table (LUT), two Flip-flops (FFs) and routing multiplexers to select between combinational and sequential outputs.
+:numref:`fig_frac_lut_le` shows the physical implemenation of a Fracturable Logic Element (FLE), which consists of a fracturable 6-input Look-Up Table (LUT), two Flip-flops (FFs) and routing multiplexers to select between combinational and sequential outputs.
 
 .. _fig_frac_lut_le:
 
@@ -43,7 +43,7 @@ To accurately model the operating modes of the FLE, we will use the syntax ``<pb
 
 .. code-block:: xml
 
-   <!-- Multi-mode Fracturable Eogic Element definition begin -->
+   <!-- Multi-mode Fracturable Logic Element definition begin -->
    <pb_type name="fle" num_pb="10">
      <input name="in" num_pins="6"/>
      <output name="out" num_pins="2"/>
@@ -76,6 +76,7 @@ Under the dual 5-input LUT mode, we can define ``<pb_type>`` and ``<interconnect
        <input name="in" num_pins="5"/>
        <output name="out" num_pins="2"/>
        <clock name="clk" num_pins="1"/>
+       <!-- Define two LUT5 + FF pairs (num_pb=2) corresponding to :numref:`fig_frac_lut_le_dual_lut5_mode` -->
        <pb_type name="ble5" num_pb="2">
          <input name="in" num_pins="5"/>
          <output name="out" num_pins="1"/>
@@ -144,7 +145,7 @@ Under the 6-input LUT mode, we can define ``<pb_type>`` and ``<interconnect>`` t
 
    <!-- 6-LUT mode definition begin -->
    <mode name="n1_lut6" disable_packing="false">
-     <!-- Define 6-LUT mode -->
+     <!-- Define 6-LUT mode, consisting of a LUT6 + FF pair (num_pb=1) corresponding to :numref:`fig_frac_lut_le_lut6_mode`-->
      <pb_type name="ble6" num_pb="1">
        <input name="in" num_pins="6"/>
        <output name="out" num_pins="1"/>
@@ -207,13 +208,13 @@ Full example can be found at `link
 
 Validation in packer
 --------------------
-After finishing the architecture description, the next step is to validate that VPR can map logics to each operating modes.
-Since VPR packer will exhaustively try each operating mode and finally map logics to one of it.
+After finishing the architecture description, the next step is to validate that VPR can map logic to each operating mode.
+Since VPR packer will exhaustively try each operating mode and finally map logic to one of it.
 As long as there is an operating mode that is feasible for mapping, VPR will complete packing without errors.
 However, this may shadow the problems for other operating modes.
 It is entirely possible that an operating mode is not defined correctly and is always dropped by VPR during packing.
 Therefore, it is necessary to validate the correctness of each operating mode.
-Here, we will use the syntax ``disable_packing`` which can efficiently reach the goal.
+To efficiently reach the goal, we will temporarily apply the syntax ``disable_packing`` to specific modes, so as to narrow down the search space. 
 
 First, we can disable the dual 5-input LUT mode for packer, by changing 
 
@@ -227,11 +228,11 @@ to
 
    <mode name="n2_lut5" disable_packing="true">
 
-As a result, VPR packer will consider the 6-input LUT mode during packing.
+As a result, VPR packer will only consider the 6-input LUT mode during packing.
 We can try a benchmark `mult_2x2.blif
 <https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/vtr_flow/benchmarks/microbenchmarks/mult_2x2.blif>`_
 by following the design flow tutorial :ref:`basic_design_flow_tutorial`.
-If the flow-run succeed, it means that the 6-input LUT mode is functional correct.
+If the flow-run succeed, it means that the 6-input LUT mode is being successfully used by the packer.
 
 Then, we can enable the dual 5-input LUT mode for packer, and disable the 6-input LUT mode, by changing
 
@@ -253,17 +254,16 @@ In this case, VPR packer will consider the dual 5-input LUT mode during packing.
 We can again try the same benchmark `mult_2x2.blif
 <https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/vtr_flow/benchmarks/microbenchmarks/mult_2x2.blif>`_
 by following the design flow tutorial :ref:`basic_design_flow_tutorial`.
-If the flow-run succeed, it means that the dual 5-input LUT mode is functional correct.
+If the flow-run succeed, it means that the dual 5-input LUT mode is being successfully used by the packer.
 
-Finally, we validated that both operating modes are functional correct.
-We can enable both operating modes by changing to 
+Finally, after having validated that both operating modes are being successfully used by the packer, we can re-enable both operating modes by changing to 
 
 .. code-block:: xml
 
    <mode name="n2_lut5">
    <mode name="n1_lut6">
 
-Now, VPR packer will consider best-fit operating mode to mapping logics.
+Now, VPR packer will try to choose the best operating mode to use.
 
 Tips for Debugging
 ------------------
@@ -298,6 +298,6 @@ When packing fails on a multi-mode logic block, the following procedures are rec
 
 - You may modify the architecture description and re-run vpr until packing succeeds.
 
-- Move on to the next mode you would to debug and repeat from the first step.
+- Move on to the next mode you will debug and repeat from the first step.
 
-The debugging tips is not only applicable to the example showed in this tutorial but rather general to any multi-mode logic block architecture. 
+The debugging tips are not only applicable to the example showed in this tutorial but rather general to any multi-mode logic block architecture. 

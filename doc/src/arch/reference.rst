@@ -1432,7 +1432,7 @@ The following tags are common to all <pb_type> tags:
 
     :opt_param disable_packing:
         Specify if a mode is disabled or not for VPR packer.
-        When a mode is defined to be disabled for packing (``disable_packing="true"``), packer will not map any logics to the mode.
+        When a mode is defined to be disabled for packing (``disable_packing="true"``), packer will not map any logic to the mode.
         This optional syntax aims to help debugging of multi-mode ``<pb_type>`` so that users can spot bugs in their XML definition quickly. 
         By default, it is set to ``false``.
 
