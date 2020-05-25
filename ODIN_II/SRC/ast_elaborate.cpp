@@ -1106,10 +1106,10 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
                 break;
             }
         }
+    }
 
-        if (child_skip_list) {
-            child_skip_list = (short*)vtr::free(child_skip_list);
-        }
+    if (child_skip_list) {
+        child_skip_list = (short*)vtr::free(child_skip_list);
     }
 
     return node;
