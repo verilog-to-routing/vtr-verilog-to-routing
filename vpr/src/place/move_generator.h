@@ -5,6 +5,8 @@
 
 #include <limits>
 
+extern int reward_num;
+
 struct MoveOutcomeStats {
     float delta_cost_norm = std::numeric_limits<float>::quiet_NaN();
     float delta_bb_cost_norm = std::numeric_limits<float>::quiet_NaN();

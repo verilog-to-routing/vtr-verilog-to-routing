@@ -1831,6 +1831,14 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument(args.place_reward_num, "--place_reward_num")
+        .help(
+            "Number of reward function")
+        .default_value("0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+
+
     place_grp.add_argument<e_agent_algorithm, ParsePlaceAgentAlgorithm>(args.place_agent_algorithm, "--place_agent_algorithm")
         .help("Controls which placement RL agent is used")
         .default_value("e_greedy")
