@@ -1322,12 +1322,12 @@ void assert_constant_positionnal_args(ast_node_t* node, long arg_count) {
                       "%s node expects arguments\n", ast_node_name_based_on_ids(node));
     } else if (node->num_children < arg_count) {
         error_message(AST, node->line_number, node->file_number,
-                      "%s node expects %d positional arguments\n", ast_node_name_based_on_ids(node), arg_count);
+                      "%s node expects %ld positional arguments\n", ast_node_name_based_on_ids(node), arg_count);
     } else {
         for (long i = 0; i < arg_count; i += 1) {
             if (!node_is_constant(node->children[i])) {
                 error_message(AST, node->line_number, node->file_number,
-                              "%s node expects a constant at positional arguments [%d]\n", ast_node_name_based_on_ids(node), i);
+                              "%s node expects a constant at positional arguments [%ld]\n", ast_node_name_based_on_ids(node), i);
             }
         }
     }
@@ -1401,7 +1401,7 @@ void c_display(ast_node_t* node) {
                 printf("%%");
             } else if (!argv_nodes || argc_node >= argv_nodes->num_children || argv_nodes->children[argc_node] == NULL) {
                 error_message(AST, node->children[0]->line_number, node->children[0]->file_number,
-                              "specifier character [%d] has no argument associated with it", argc_node);
+                              "specifier character [%ld] has no argument associated with it", argc_node);
             } else {
                 ast_node_t* argv = argv_nodes->children[argc_node];
                 switch (tolower(format_input[1])) {
@@ -1414,7 +1414,7 @@ void c_display(ast_node_t* node) {
                     case 'b': {
                         if (!node_is_constant(argv)) {
                             error_message(AST, argv->line_number, argv->file_number,
-                                          "specifier character [%d] is not associated with a constant, node is %s",
+                                          "specifier character [%ld] is not associated with a constant, node is %s",
                                           argc_node, ast_node_name_based_on_ids(argv));
                         }
                         printf("%s", argv->types.vnumber->to_vstring(format_input[1]).c_str());
@@ -1440,7 +1440,7 @@ void c_display(ast_node_t* node) {
                     case 't': {
                         if (!node_is_constant(argv)) {
                             error_message(AST, argv->line_number, argv->file_number,
-                                          "specifier character [%d] is not associated with a constant, node is %s",
+                                          "specifier character [%ld] is not associated with a constant, node is %s",
                                           argc_node, ast_node_name_based_on_ids(argv));
                         }
                         // TODO: for now we just print as is
