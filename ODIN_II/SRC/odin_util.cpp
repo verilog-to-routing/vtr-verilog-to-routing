@@ -913,7 +913,7 @@ void trim_string(char* string, const char* chars) {
  * Tokenizes a string and returns an array where each element is a 
  * token and a pointer (that needs to be passed through) with the 
  * size of the array
-*/
+ */
 static char** string_to_token_array(char* string, int* size) {
     char** arr = NULL;
 
