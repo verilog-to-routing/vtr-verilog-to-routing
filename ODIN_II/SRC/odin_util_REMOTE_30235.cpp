@@ -955,8 +955,8 @@ bool output_vector_headers_equal(char* buffer1, char* buffer2) {
 
     vtr::free(header1);
     vtr::free(header2);
-    vtr::free(buffer1_copy);
-    vtr::free(buffer2_copy);
+    free(buffer1_copy);
+    free(buffer2_copy);
     return (header_matches);
 }
 
