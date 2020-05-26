@@ -1,51 +1,92 @@
 # Commit Procedures
 
-## For external developers
-See [Submitting Code to VTR](CONTRIBUTING.md#submitting-code-to-vtr).
+For general guidance on contributing to VTR see [Submitting Code to VTR](CONTRIBUTING.md#submitting-code-to-vtr).
 
-## For developers with commit rights
-The guiding principle in internal development is to submit your work into the repository without breaking other people's work.
-When you commit, make sure that the repository compiles, that the flow runs, and that you did not clobber someone else's work.
-In the event that you are responsible for "breaking the build", fix the build at top priority.
+The actual machanics of submitting code are outlined below.
 
-We have some guidelines in place to help catch most of these problems:
+However they differ slightly depending on whether you are:
+ * an **internal developer** (i.e. you have commit access to the main VTR repository at `github.com/verilog-to-routing/vtr-verilog-to-routing`) or, 
+ * an (**external developer**) (i.e. no commit access).
 
-1.  Before you push code to the central repository, your code MUST pass the check-in regression test.
-    The check-in regression test is a quick way to test if any part of the VTR flow is broken.
+The overall approach is similar, but we call out the differences below.
 
-    At a minimum you must run:
-    ```shell
-    #From the VTR root directory
-    $ ./run_reg_test.pl vtr_reg_basic
+1. Setup a local repository on your development machine.
+
+    a. **External Developers**
+
+    * Create a 'fork' of the VTR repository.
+
+        Usually this is done on GitHub, giving you a copy of the VTR repository (i.e. `github.com/<username>/vtr-verilog-to-routing`, where `<username>` is your GitHub username) to which you have commit rights.
+        See [About forks](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/about-forks) in the GitHub documentation.
+
+    * Clone your 'fork' onto your local machine.
+    
+        For example, `git clone git@github.com:<username>/vtr-verilog-to-routing.git`, where `<username>` is your GitHub username.
+
+    b. **Internal Developers**
+
+    * Clone the main VTR repository onto your local machine.
+    
+        For example, `git clone git@github.com:verilog-to-routing/vtr-verilog-to-routing.git`.
+
+2. Move into the cloned repository.
+
+    For example, `cd vtr-verilog-to-routing`.
+
+3. Create a *branch*, based off of `master` to work on.
+
+    For example, `git checkout -b my_awesome_branch master`, where `my_awesome_branch` is some helpful (and descriptive) name you give you're branch.
+    *Please try to pick descriptive branch names!*
+
+4. Make your changes to the VTR code base.
+
+5. Test your changes to ensure they work as intended and have not broken other features.
+
+    At the bare minimum it is recommended to run:
     ```
-    You may push if all the tests return `All tests passed`.
-
-    However you are strongly encouraged to run both the *basic* and *strong* regression tests:
-    ```shell
-    #From the VTR root directory
-    $ ./run_reg_test.pl vtr_reg_basic vtr_reg_strong
+    make                                                #Rebuild the code
+    ./run_reg_test.pl vtr_reg_basic vtr_reg_strong      #Run tests
     ```
-    since it performs much more thorough testing.
 
-    It is typically a good idea to run tests regularly as you make changes.
-    If you have failures see [how to debugging failed tests](#debugging-failed-tests).
+    See [Running Tests](#running-tests) for more details.
 
-2.  The automated [BuildBot](http://builds.verilogtorouting.org:8080/waterfall) will perform more extensive regressions tests and mark which revisions are stable.
+    Also note that additional [code formatting](#code-formatting) checks, and tests will be run when you open a Pull Request.
 
-3.  Everyone who is doing development must write regression tests for major feature they create.
-    This ensures regression testing will detect if a feature is broken by someone (or yourself).
-    See [Adding Tests](#adding-tests) for details.
+6. Commit your changes (i.e. `git add` followed by `git commit`).
 
-4.  In the event a regression test is broken, the one responsible for having the test pass is in charge of determining:
-    * If there is a bug in the source code, in which case the source code needs to be updated to fix the bug, or
-    * If there is a problem with the test (perhaps the quality of the tool did in fact get better or perhaps there is a bug with the test itself), in which case the test needs to be updated to reflect the new changes.
+    *Please try to use good commit messages!*
 
-    If the golden results need to be updated and you are sure that the new golden results are better, use the command `../scripts/parse_vtr_task.pl -create_golden your_regression_test_name_here`
+    See [Commit Messages and Structure](#commit-messages-and-structure) for details.
 
-5.  Keep in sync with the master branch as regularly as you can (i.e. `git pull` or `git pull --rebase`).
-    The longer code deviates from the trunk, the more painful it is to integrate back into the trunk.
+7. Push the changes to GitHub.
 
-Whatever system that we come up with will not be foolproof so be conscientious about how your changes will affect other developers.
+    For example, `git push origin my_awesome_branch`.
+
+    a. **External Developers**
+
+    Your code changes will now exist in your branch (e.g. `my_awesome_branch`) within your fork (e.g. `github.com/<username>/vtr-verilog-to-routing/tree/my_awesome_branch`, where `<username>` is your GitHub username)
+
+    b. **Internal Developers**
+
+    Your code changes will now exist in your branch (e.g. `my_awesome_branch`) within the main VTR repository (i.e. `github.com/verilog-to-routing/vtr-verilog-to-routing/tree/my_awesome_branch`)
+
+8. Create a Pull Request (PR) to request your changes be merged into VTR.
+
+    * Navitage to your branch on GitHub
+
+        a. **External Developers**
+
+        Navigate to your branch within your fork on GitHub (e.g. `https://github.com/<username/vtr-verilog-to-routing/tree/my_awesome_branch`, where `<username>` is your GitHub username, and `my_awesome_branch` is your branch name).
+
+        b. **Internal Developers**
+
+        Navigate to your branch on GitHub (e.g. `https://github.com/verilog-to-routing/vtr-verilog-to-routing/tree/my_awesome_branch`, where `my_awesome_branch` is your branch name).
+
+    * Select the `New pull request` button.
+
+        a. **External Developers**
+
+        If prompted, select `verilog-to-routing/vtr-verilog-to-routing` as the base repository.
 
 # Code Formatting
 
