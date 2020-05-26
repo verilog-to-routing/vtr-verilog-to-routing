@@ -88,6 +88,73 @@ The overall approach is similar, but we call out the differences below.
 
         If prompted, select `verilog-to-routing/vtr-verilog-to-routing` as the base repository.
 
+# Commit Messages and Structure
+
+## Commit Messages
+
+Commit messagaes are an important part of understanding the code base and it's history.
+It is therefore *extremely* important to provide the following information in the commit message:
+
+* What is being changed?
+* Why is this change occurring?
+
+The diff of changes included with the commit provides the details of what is actually changed, so only a high-level description of what is being done is needed.
+However a code diff provides *no* insight into **why** the change is being made, so this extremely helpful context can only be encoded in the commit message.
+
+The preferred convention in VTR is to structure commit messages as follows:
+```
+Header line: explain the commit in one line (use the imperative)
+
+More detailed explanatory text. Explain the problem that this commit
+is solving. Focus on why you are making this change as opposed to how
+(the code explains that). Are there side effects or other unintuitive
+consequences of this change? Here's the place to explain them.
+
+If necessary. Wrap lines at some reasonable point (e.g. 74 characters,
+or so) In some contexts, the header line is treated as the subject
+of the commit and the rest of the text as the body. The blank line
+separating the summary from the body is critical (unless you omit
+the body entirely); various tools like `log`, `shortlog` and `rebase`
+can get confused if you run the two together.
+
+Further paragraphs come after blank lines.
+
+ - Bullet points are okay, too
+
+ - Typically a hyphen or asterisk is used for the bullet, preceded
+   by a single space, with blank lines in between, but conventions
+   vary here
+
+You can also put issue tracker references at the bottom like this:
+
+Fixes: #123
+See also: #456, #789
+```
+(based off of [here](https://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html), and [here](https://github.com/torvalds/subsurface-for-dirk/blob/master/README.md#contributing)).
+
+Commit messages do not always need to be long, so use your judgement.
+More complex or involved changes with wider ranging implications likely deserve longer commit messages than fixing a simple typo.
+
+It is often helpful to phrase the first line of a commit as an imperative/command written as if to tell the repository what to do (e.g. `Update netlist data structure comments`, `Add tests for feature XYZ`, `Fix bug which ...`).
+
+To provide quick context, some VTR developers also tag the first line with the main part of the code base effected, some common ones include:
+* `vpr:` for the VPR place and route tool (`vpr/`)
+* `flow:` VTR flow architectures, scripts, tests, ... (`vtr_flow/`)
+* `archfpga:` for FPGA architecture library (`libs/libarchfpga`)
+* `vtrutil:` for common VTR utilities (`libs/libvtrutil`)
+* `doc:` Documentation (`doc/`, `*.md`, ...)
+* `infra:` Infrastructure (CI, `.github/`, ...)
+
+
+## Commit Structure
+Generally, you should strive to keep commits atomic (i.e. they do one logical change to the code).
+This often means keeping commits small and focused in what they change.
+Of course, a large number of miniscule commits is also unhelpful (overwhelming and difficult to see the structure), and sometimes things can only be done in large changes -- so use your judgement.
+A reasonable rule of thumb is to try and ensure VTR will still compile after each commit.
+
+For those familiar with history re-writing features in git (e.g. rebase) you can sometimes use these to clean-up your commit history after the fact.
+However these should only be done on private branches, and never directly on `master`.
+
 # Code Formatting
 
 Some parts of the VTR code base (e.g. VPR, libarchfpga, libvtrutil) have code formatting requirements which are checked automatically by regression tests.
