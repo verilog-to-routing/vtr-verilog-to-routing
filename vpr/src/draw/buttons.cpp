@@ -14,6 +14,7 @@
 #    include "draw.h"
 #    include "buttons.h"
 #    include "intra_logic_block.h"
+#    include "clustered_netlist.h"
 
 #    include "ezgl/point.hpp"
 #    include "ezgl/application.hpp"
@@ -25,6 +26,45 @@ gint box_height = 1;
 gint label_left_start_col = 0;
 gint box_left_start_col = 0;
 gint button_row = 2; // 2 is the row num of the window button in main.ui, add buttons starting from this row
+
+void button_for_net_alpha(){
+    GObject* main_window = application.get_object(application.get_main_window_id().c_str());
+    GObject* main_window_grid = application.get_object("InnerGrid");
+    //grid
+    GtkWidget* grid = gtk_grid_new();
+    gtk_grid_insert_row((GtkGrid*)grid,0);
+    gtk_grid_insert_column((GtkGrid*)grid,0);
+
+    //button
+    GtkWidget* button = gtk_button_new_with_label("set");   
+
+    //text entry for apha value
+    GtkWidget* entry = gtk_entry_new();
+    std::string initialValue = std::to_string(get_net_alpha());
+    //char initVal[initialValue.size()+1];
+    //strcpy(initVal,)
+    gtk_entry_set_text((GtkEntry*)entry,initialValue.c_str());
+    gtk_entry_set_input_purpose((GtkEntry*)entry,GTK_INPUT_PURPOSE_NUMBER);
+    gtk_widget_set_name(entry, "alphaValue");
+
+    //label
+    GtkWidget* alpha_label = gtk_label_new("Set alpha value (<1)");
+
+    //attach to the grid
+    gtk_grid_attach((GtkGrid*)grid,entry,0,0,box_width, box_height);
+    gtk_grid_attach((GtkGrid*)grid,button,1,0,box_width, box_height);
+    gtk_grid_attach((GtkGrid*)main_window_grid, alpha_label, label_left_start_col, button_row++, box_width, box_height);
+    gtk_grid_attach((GtkGrid*)main_window_grid, grid, box_left_start_col, button_row++, box_width, box_height);
+
+    //show newly added contents
+    gtk_widget_show_all((GtkWidget*)main_window);
+
+    //connect signals
+    g_signal_connect_swapped(GTK_BUTTON(button),
+                             "clicked",
+                             G_CALLBACK(set_net_alpha_value),
+                             entry);
+}
 
 void button_for_toggle_nets() {
     GObject* main_window = application.get_object(application.get_main_window_id().c_str());
@@ -51,6 +91,36 @@ void button_for_toggle_nets() {
                              "changed",
                              G_CALLBACK(toggle_nets),
                              toggle_nets_widget);
+}
+
+void button_for_net_max_fanout() {
+    GObject* main_window = application.get_object(application.get_main_window_id().c_str());
+    GObject* main_window_grid = application.get_object("InnerGrid");
+
+    //find maximum fanout
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& clb_nlist = cluster_ctx.clb_nlist;
+    size_t max_fanout=0;
+    for(ClusterNetId net_id:clb_nlist.nets())
+        max_fanout = std::max(max_fanout,clb_nlist.net_sinks(net_id).size());
+
+    //spin box for net_max_fanout, set the range and increment step
+    GtkWidget* net_max_fanout_widget = gtk_spin_button_new_with_range(0, std::numeric_limits<int>::max(),1.);
+    GtkWidget* max_fanout_label = gtk_label_new("Net Max Fanout:");
+    gtk_widget_set_name(net_max_fanout_widget, "netMaxFanout");
+
+    //attach to the grid
+    gtk_grid_attach((GtkGrid*)main_window_grid, max_fanout_label, label_left_start_col, button_row++, box_width, box_height);
+    gtk_grid_attach((GtkGrid*)main_window_grid, net_max_fanout_widget, box_left_start_col, button_row++, box_width, box_height);
+
+    //show newly added contents
+    gtk_widget_show_all((GtkWidget*)main_window);
+
+    //connect signals
+    g_signal_connect_swapped((GtkSpinButton*)net_max_fanout_widget,
+                             "value_changed",
+                             G_CALLBACK(net_max_fanout),
+                             net_max_fanout_widget);
 }
 
 void button_for_toggle_blk_internal() {
