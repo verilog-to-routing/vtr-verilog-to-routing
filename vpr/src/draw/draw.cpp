@@ -144,6 +144,9 @@ void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application* app, 
 void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/);
 void setup_default_ezgl_callbacks(ezgl::application* app);
 void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
+void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
+void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
+void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 void run_graphics_commands(std::string commands);
 
 /************************** File Scope Variables ****************************/
@@ -152,6 +155,7 @@ void run_graphics_commands(std::string commands);
 constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
 constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
 constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
+float net_alpha = 0.0275;
 
 //Kelly's maximum contrast colors are selected to be easily distinguishable as described in:
 //  Kenneth Kelly, "Twenty-Two Colors of Maximum Contrast", Color Eng. 3(6), 1943
@@ -320,9 +324,11 @@ void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app, bool is_new_w
     gtk_combo_box_set_active((GtkComboBox*)search_type, 0);                        // default set to Block ID which has an index 0
 
     button_for_toggle_nets();
+    button_for_net_max_fanout();
     button_for_toggle_blk_internal();
     button_for_toggle_block_pin_util();
     button_for_toggle_placement_macros();
+    button_for_net_alpha();
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -344,6 +350,7 @@ void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app, bool is_new_wind
     button_for_toggle_routing_bounding_box();
     button_for_toggle_routing_util();
     button_for_toggle_router_expansion_costs();
+    button_for_net_alpha();
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -391,6 +398,7 @@ void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app, bool is_new_win
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(search_type), "RR Node ID");
 
     button_for_toggle_nets();
+    button_for_net_max_fanout();
     button_for_toggle_blk_internal();
     button_for_toggle_block_pin_util();
     button_for_toggle_placement_macros();
@@ -400,6 +408,7 @@ void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app, bool is_new_win
     button_for_toggle_routing_bounding_box();
     button_for_toggle_routing_util();
     button_for_toggle_router_expansion_costs();
+    button_for_net_alpha();
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -3756,6 +3765,15 @@ static void highlight_blocks(double x, double y) {
 
     application.refresh_drawing();
 }
+void set_net_alpha_value(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/){
+    std::string fa(gtk_entry_get_text((GtkEntry*)widget));
+    net_alpha = std::stof(fa);
+    application.refresh_drawing();
+}
+
+float get_net_alpha(){
+    return net_alpha;
+}
 
 void setup_default_ezgl_callbacks(ezgl::application* app) {
     // Connect press_proceed function to the Proceed button
@@ -3769,6 +3787,80 @@ void setup_default_ezgl_callbacks(ezgl::application* app) {
     // Connect Pause button
     GObject* pause_button = app->get_object("PauseButton");
     g_signal_connect(pause_button, "clicked", G_CALLBACK(set_force_pause), app);
+
+    // Connect Block Outline checkbox
+    GObject* block_outline = app->get_object("blockOutline");
+    g_signal_connect(block_outline, "toggled", G_CALLBACK(set_block_outline), app);
+
+    // Connect Block Text checkbox
+    GObject* block_text = app->get_object("blockText");
+    g_signal_connect(block_text, "toggled", G_CALLBACK(set_block_text), app);
+
+    // Connect Clip Routing Util checkbox
+    GObject* clip_routing = app->get_object("clipRoutingUtil");
+    g_signal_connect(clip_routing, "toggled", G_CALLBACK(clip_routing_util), app);
+
+}
+
+// Callback function for Block Outline checkbox
+void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+    
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    // assign corresponding bool value to draw_state->draw_block_outlines
+    if(gtk_toggle_button_get_active ((GtkToggleButton *)widget))
+        draw_state->draw_block_outlines = true;
+    else
+        draw_state->draw_block_outlines = false;
+    //redraw
+    application.update_message(draw_state->default_message);
+    application.refresh_drawing();
+}
+
+// Callback function for Block Text checkbox
+void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    // assign corresponding bool value to draw_state->draw_block_text
+    if(gtk_toggle_button_get_active ((GtkToggleButton *)widget))
+        draw_state->draw_block_text = true;
+    else
+        draw_state->draw_block_text = false;
+
+    //redraw
+    application.update_message(draw_state->default_message);
+    application.refresh_drawing();
+}
+
+// Callback function for Clip Routing Util checkbox
+void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+     t_draw_state* draw_state = get_draw_state_vars();
+
+    // assign corresponding bool value to draw_state->clip_routing_util
+    if(gtk_toggle_button_get_active ((GtkToggleButton *)widget))
+        draw_state->clip_routing_util = true;
+    else
+        draw_state->clip_routing_util = false;
+
+    //redraw
+    application.update_message(draw_state->default_message);
+    application.refresh_drawing();
+}
+
+// Callback function for NetMax Fanout checkbox
+void net_max_fanout(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+    /* this is the callback function for runtime created net_max_fanout widget 
+     * which is written in button.cpp                                         */
+    std::string button_name = "netMaxFanout";
+    auto max_fanout = find_button(button_name.c_str());
+    t_draw_state* draw_state = get_draw_state_vars();
+
+    //set draw_state->draw_net_max_fanout to its corresponding value in the ui
+    int new_value = gtk_spin_button_get_value_as_int((GtkSpinButton*)max_fanout);
+    draw_state->draw_net_max_fanout = new_value;
+
+    //redraw
+    application.refresh_drawing();
 }
 
 void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
