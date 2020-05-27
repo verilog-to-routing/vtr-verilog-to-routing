@@ -2727,7 +2727,7 @@ static int verify_output_vectors(const char* output_vector_file, int num_vectors
                 break;
             }
             // The headers differ.
-            else if ((cycle == -1) && strcmp(buffer1, buffer2)) {
+            else if ((cycle == -1) && !output_vector_headers_equal(buffer1, buffer2)) {
                 error = true;
                 warning_message(SIMULATION, 0, -1,
                                 "Vector headers do not match: \n"
