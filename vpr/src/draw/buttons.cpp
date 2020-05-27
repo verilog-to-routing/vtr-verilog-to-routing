@@ -49,8 +49,8 @@ void button_for_net_alpha() {
     GtkWidget* alpha_label = gtk_label_new("Set alpha value (<1)");
 
     //attach to the grid
-    gtk_grid_attach((GtkGrid*)grid,entry, 0, 0, box_width, box_height);
-    gtk_grid_attach((GtkGrid*)grid,button, 1, 0, box_width, box_height);
+    gtk_grid_attach((GtkGrid*)grid, entry, 0, 0, box_width, box_height);
+    gtk_grid_attach((GtkGrid*)grid, button, 1, 0, box_width, box_height);
     gtk_grid_attach((GtkGrid*)main_window_grid, alpha_label, label_left_start_col, button_row++, box_width, box_height);
     gtk_grid_attach((GtkGrid*)main_window_grid, grid, box_left_start_col, button_row++, box_width, box_height);
 
@@ -99,7 +99,7 @@ void button_for_net_max_fanout() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& clb_nlist = cluster_ctx.clb_nlist;
     size_t max_fanout = 0;
-    for(ClusterNetId net_id : clb_nlist.nets())
+    for (ClusterNetId net_id : clb_nlist.nets())
         max_fanout = std::max(max_fanout, clb_nlist.net_sinks(net_id).size());
 
     //spin box for net_max_fanout, set the range and increment step
