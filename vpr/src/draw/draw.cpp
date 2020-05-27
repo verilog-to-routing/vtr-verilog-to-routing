@@ -3765,13 +3765,13 @@ static void highlight_blocks(double x, double y) {
 
     application.refresh_drawing();
 }
-void set_net_alpha_value(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/){
+void set_net_alpha_value(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
     std::string fa(gtk_entry_get_text((GtkEntry*)widget));
     net_alpha = std::stof(fa);
     application.refresh_drawing();
 }
 
-float get_net_alpha(){
+float get_net_alpha() {
     return net_alpha;
 }
 
@@ -3799,16 +3799,14 @@ void setup_default_ezgl_callbacks(ezgl::application* app) {
     // Connect Clip Routing Util checkbox
     GObject* clip_routing = app->get_object("clipRoutingUtil");
     g_signal_connect(clip_routing, "toggled", G_CALLBACK(clip_routing_util), app);
-
 }
 
 // Callback function for Block Outline checkbox
 void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
-    
     t_draw_state* draw_state = get_draw_state_vars();
 
     // assign corresponding bool value to draw_state->draw_block_outlines
-    if(gtk_toggle_button_get_active ((GtkToggleButton *)widget))
+    if(gtk_toggle_button_get_active ((GtkToggleButton*)widget))
         draw_state->draw_block_outlines = true;
     else
         draw_state->draw_block_outlines = false;
@@ -3822,7 +3820,7 @@ void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) 
     t_draw_state* draw_state = get_draw_state_vars();
 
     // assign corresponding bool value to draw_state->draw_block_text
-    if(gtk_toggle_button_get_active ((GtkToggleButton *)widget))
+    if(gtk_toggle_button_get_active ((GtkToggleButton*)widget))
         draw_state->draw_block_text = true;
     else
         draw_state->draw_block_text = false;
@@ -3834,10 +3832,10 @@ void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) 
 
 // Callback function for Clip Routing Util checkbox
 void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
-     t_draw_state* draw_state = get_draw_state_vars();
+    t_draw_state* draw_state = get_draw_state_vars();
 
     // assign corresponding bool value to draw_state->clip_routing_util
-    if(gtk_toggle_button_get_active ((GtkToggleButton *)widget))
+    if(gtk_toggle_button_get_active ((GtkToggleButton*)widget))
         draw_state->clip_routing_util = true;
     else
         draw_state->clip_routing_util = false;
