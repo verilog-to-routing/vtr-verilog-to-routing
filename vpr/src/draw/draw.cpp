@@ -3806,7 +3806,7 @@ void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer /*data*
     t_draw_state* draw_state = get_draw_state_vars();
 
     // assign corresponding bool value to draw_state->draw_block_outlines
-    if (gtk_toggle_button_get_active ((GtkToggleButton*)widget))
+    if (gtk_toggle_button_get_active((GtkToggleButton*)widget))
         draw_state->draw_block_outlines = true;
     else
         draw_state->draw_block_outlines = false;
@@ -3820,7 +3820,7 @@ void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) 
     t_draw_state* draw_state = get_draw_state_vars();
 
     // assign corresponding bool value to draw_state->draw_block_text
-    if (gtk_toggle_button_get_active ((GtkToggleButton*)widget))
+    if (gtk_toggle_button_get_active((GtkToggleButton*)widget))
         draw_state->draw_block_text = true;
     else
         draw_state->draw_block_text = false;
@@ -3835,7 +3835,7 @@ void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer /*data*
     t_draw_state* draw_state = get_draw_state_vars();
 
     // assign corresponding bool value to draw_state->clip_routing_util
-    if (gtk_toggle_button_get_active ((GtkToggleButton*)widget))
+    if (gtk_toggle_button_get_active((GtkToggleButton*)widget))
         draw_state->clip_routing_util = true;
     else
         draw_state->clip_routing_util = false;
