@@ -33,7 +33,7 @@ void button_for_net_alpha() {
     //grid
     GtkWidget* grid = gtk_grid_new();
     gtk_grid_insert_row((GtkGrid*)grid, 0);
-    gtk_grid_insert_column((GtkGrid*)grid, 0);   
+    gtk_grid_insert_column((GtkGrid*)grid, 0);
 
     //text entry for apha value
     GtkWidget* entry = gtk_entry_new();
@@ -44,7 +44,7 @@ void button_for_net_alpha() {
 
     //label
     GtkWidget* alpha_label = gtk_label_new("Set alpha value (<1)");
-    
+
     //button
     GtkWidget* button = gtk_button_new_with_label("set");
 
