@@ -18,7 +18,9 @@ def run(architecture_file, circuit_file,
                  temp_dir="./temp", 
                  verbosity=0,
                  vpr_args=None,
-                 abc_args=""):
+                 abc_args=None,
+                 keep_intermediate_files=True,
+                 keep_result_files=True):
     """
     Runs the VTR CAD flow to map the specificied circuit_file onto the target architecture_file
 
@@ -61,7 +63,7 @@ def run(architecture_file, circuit_file,
     post_abc_netlist =Path(temp_dir)  / (circuit_name + '.abc.blif')
     post_ace_netlist =Path(temp_dir)  / (circuit_name + ".ace.blif")
     post_ace_activity_file = Path(temp_dir)  / (circuit_name + ".act")
-    pre_vpr_netlist = Path(temp_dir)  / (circuit_name + ".pre_vpr.blif")
+    pre_vpr_netlist = Path(temp_dir)  / (circuit_name + ".pre-vpr.blif")
     post_vpr_netlist = Path(temp_dir)  / "top_post_synthesis.blif" #circuit_name + ".vpr.blif"
     lec_base_netlist = None #Reference netlist for LEC
 
@@ -108,7 +110,8 @@ def run(architecture_file, circuit_file,
                 output_netlist=post_abc_netlist, 
                 command_runner=command_runner, 
                 temp_dir=temp_dir,
-                abc_args=abc_args)
+                abc_args=abc_args,
+                keep_intermediate_files=keep_intermediate_files)
 
         next_stage_netlist = post_abc_netlist
 
@@ -125,21 +128,25 @@ def run(architecture_file, circuit_file,
         if should_run_stage(VTR_STAGE.ace, start_stage, end_stage):
             vtr.print_verbose(1, verbosity, "Running ACE")
 
-            vtr.ace.run(next_stage_netlist, output_netlist=post_ace_netlist, 
+            vtr.ace_flow.run(next_stage_netlist, old_netlist = post_odin_netlist, output_netlist=post_ace_netlist, 
                     output_activity_file=post_ace_activity_file, 
                     command_runner=command_runner, 
                     temp_dir=temp_dir)
 
-        #Use ACE's output netlist
+        if not keep_intermediate_files:
+            next_stage_netlist.unlink()
+            post_odin_netlist.unlink()
+
+        #Use ACE's output netlistf
         next_stage_netlist = post_ace_netlist
 
         if not lec_base_netlist:
             lec_base_netlist = post_ace_netlist
-
+        
         #Enable power analysis in VPR
         vpr_args["power"] = True
-        vpr_args["activity_file"] = post_ace_activity_file.name
-        vpr_args["tech_properties"] = power_tech_file
+        #vpr_args["activity_file"] = post_ace_activity_file.name
+        vpr_args["tech_properties"] = str(Path(power_tech_file).resolve())
 
     #
     # Pack/Place/Route
@@ -179,6 +186,19 @@ def run(architecture_file, circuit_file,
     if should_run_stage(VTR_STAGE.lec, start_stage, end_stage):
         vtr.print_verbose(1, verbosity, "Running ABC Logical Equivalence Check")
         vtr.abc.run_lec(lec_base_netlist, post_vpr_netlist, command_runner=command_runner, log_filename="abc.lec.out")
+    if(not keep_intermediate_files):
+        next_stage_netlist.unlink()
+        exts = ('.xml','.sdf','.v')
+        if not keep_result_files:
+            exts += ('.net', '.place', '.route')
+        files = []
+        for file in Path(temp_dir).iterdir():
+            if file.suffix in exts:
+                files.append(file)
+        for p in files:
+            p.unlink()
+        if power_tech_file:
+            post_ace_activity_file.unlink()
 
 def parse_vtr_flow(temp_dir, parse_config_file=None, metrics_filepath=None, verbosity=1):
     vtr.print_verbose(1, verbosity, "Parsing results")

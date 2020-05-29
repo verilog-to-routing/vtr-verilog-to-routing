@@ -109,7 +109,16 @@ def vtr_command_argparser(prog=None):
                         default=vtr.VTR_STAGE.odin,
                         action=VtrStageArgparseAction,
                         help="Starting stage of the VTR flow.")
-
+    parser.add_argument("-delete_intermediate_files",
+                               default=True,
+                               action="store_false",
+                               dest="keep_intermediate_files",
+                               help="Determines if intermediate files are deleted.")
+    parser.add_argument("-delete_result_files",
+                               default=True,
+                               action="store_false",
+                               dest="keep_result_files",
+                               help="Determines if result files are deleted.")
     parser.add_argument("-end", "-ending_stage",
                         choices=vtr.VTR_STAGE.reverse_mapping.values(),
                         default=vtr.VTR_STAGE.vpr,
@@ -138,6 +147,11 @@ def vtr_command_argparser(prog=None):
     #
     power = parser.add_argument_group("Power", description="Power Analysis Related Options")
     power.add_argument("-power",
+                        default=False,
+                        action="store_true",
+                        dest="do_power",
+                        help="Track the memory usage for each stage. Requires /usr/bin/time -v, disabled if not available.")
+    power.add_argument("-cmos_tech",
                        default=None,
                        dest="power_tech",
                        metavar="POWER_TECH_FILE",
@@ -250,7 +264,9 @@ def vtr_command_main(arg_list, prog=None):
                              command_runner=command_runner,
                              verbosity=args.verbose,
                              vpr_args=vpr_args,
-                             abc_args=abc_args
+                             abc_args=abc_args,
+                             keep_intermediate_files=args.keep_intermediate_files,
+                             keep_result_files=args.keep_result_files
                              )
             except vtr.CommandError as e:
                 #An external command failed

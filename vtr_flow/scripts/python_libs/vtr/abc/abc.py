@@ -3,7 +3,12 @@ from pathlib import Path
 from vtr import  mkdir_p, find_vtr_file, determine_lut_size
 from vtr.error import VtrError, InspectError, CommandError
 
-def run(architecture_file, circuit_file, output_netlist, command_runner, temp_dir=".", log_filename="abc.opt_techmap.out", abc_exec=None, abc_script=None, abc_rc=None, use_old_abc_script = False, abc_args = ""):
+def run(architecture_file, circuit_file,
+        output_netlist, command_runner,
+        temp_dir=".", log_filename="abc.out",
+        abc_exec=None, abc_script=None, abc_rc=None,
+        use_old_abc_script = False, abc_args = None,keep_intermediate_files=1):
+
     mkdir_p(temp_dir)
     blackbox_latches_script = find_vtr_file("blackbox_latches.pl")
     clk_list = []
@@ -45,7 +50,7 @@ def run(architecture_file, circuit_file, output_netlist, command_runner, temp_di
     for i in range(0, iterations):
         pre_abc_blif= Path(temp_dir) / (str(i)+"_" + circuit_file.name)
         post_abc_blif = Path(temp_dir) / (str(i)+"_"+output_netlist.name)
-        post_abc_raw_blif = Path(temp_dir) / (str(i)+"_raw_"+output_netlist.name)
+        post_abc_raw_blif = Path(temp_dir) / (str(i)+"_"+output_netlist.with_suffix('').stem+".raw.abc.blif")
         if(abc_flow_type==3):
             cmd = [blackbox_latches_script, "--input", circuit_file.name,"--output",pre_abc_blif.name]
             command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename=str(i)+"_blackboxing_latch.out", indent_depth=1)
@@ -92,10 +97,10 @@ def run(architecture_file, circuit_file, output_netlist, command_runner, temp_di
 
         cmd = [abc_exec, '-c', abc_script]
         
-        if(abc_run_args !=""):
+        if(abc_run_args):
             cmd.append(abc_run_args)
 
-        command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename=log_filename, indent_depth=1)
+        command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename=str(i)+"_"+log_filename, indent_depth=1)
         
         if(abc_flow_type != 3 and len(clk_list)>i):
             cmd = [blackbox_latches_script,"--restore", clk_list[i], "--input", post_abc_raw_blif.name,"--output",post_abc_blif.name]
@@ -113,6 +118,14 @@ def run(architecture_file, circuit_file, output_netlist, command_runner, temp_di
     
     cmd = [blackbox_latches_script, "--input", post_abc_blif.name,"--output",output_netlist.name,"--vanilla"]
     command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename="restore_latch" + str(i) + ".out", indent_depth=1)
+    if(not keep_intermediate_files):
+        files = []
+        for file in Path(temp_dir).iterdir():
+            if file.suffix in ('.dot','.v','.rc'):
+                files.append(file)
+        for p in files:
+            p.unlink()
+
 
 def populate_clock_list(circuit_file,blackbox_latches_script,clk_list,command_runner,temp_dir,log_filename):
     clk_list_path = Path(temp_dir) / "report_clk.out"
