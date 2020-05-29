@@ -45,16 +45,13 @@ def run(architecture_file, circuit_file,
     #
     #Initial setup
     #
+    architecture_file_basename =architecture_file.name
+    circuit_file_basename = circuit_file.name
 
-    circuit_path = Path(circuit_file)
-    architecture_path = Path(architecture_file)
-    architecture_file_basename =architecture_path.name
-    circuit_file_basename = circuit_path.name
-
-    circuit_name = circuit_path.stem
-    circuit_ext = circuit_path.suffixes
-    architecture_name = architecture_path.stem
-    architecture_ext = architecture_path.suffixes
+    circuit_name = circuit_file.stem
+    circuit_ext = circuit_file.suffixes
+    architecture_name = architecture_file.stem
+    architecture_ext = architecture_file.suffixes
 
     vtr.mkdir_p(temp_dir)
     
@@ -73,8 +70,8 @@ def run(architecture_file, circuit_file,
         lec_base_netlist = circuit_file_basename
 
     #Copy the circuit and architecture
-    circuit_copy = Path(temp_dir)  / circuit_path.name
-    architecture_copy = Path(temp_dir)  / architecture_path.name
+    circuit_copy = Path(temp_dir)  / circuit_file.name
+    architecture_copy = Path(temp_dir)  / architecture_file.name
     shutil.copy(circuit_file, str(circuit_copy))
     shutil.copy(architecture_file, str(architecture_copy))
 

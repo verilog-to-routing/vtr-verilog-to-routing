@@ -165,12 +165,22 @@ def vtr_command_argparser(prog=None):
     house_keeping.add_argument("-temp_dir",
                                default=".",
                                help="Directory to run the flow in (will be created if non-existant).")
+    
+    house_keeping.add_argument("-name",
+                               default=None,
+                               help="Directory to run the flow in (will be created if non-existant).")
 
     house_keeping.add_argument("-track_memory_usage",
                                default=False,
                                action="store_true",
                                dest="track_memory_usage",
                                help="Track the memory usage for each stage. Requires /usr/bin/time -v, disabled if not available.")
+
+    house_keeping.add_argument("-show_failures",
+                               default=False,
+                               action="store_true",
+                               dest="show_failures",
+                               help="Show failures")#needs updating
 
     house_keeping.add_argument("-limit_memory_usage",
                                default=None,
@@ -220,8 +230,8 @@ def vtr_command_main(arg_list, prog=None):
 
     vtr.print_verbose(BASIC_VERBOSITY, args.verbose, "# {} {}\n".format(prog, ' '.join(arg_list)))
 
-    abs_path_arch_file = str(Path(args.architecture_file))
-    abs_path_circuit_file = str(Path(args.circuit_file))
+    path_arch_file = Path(args.architecture_file)
+    path_circuit_file = Path(args.circuit_file)
     if (args.temp_dir == "."):
         temp_dir="./temp"
     else:
@@ -237,7 +247,6 @@ def vtr_command_main(arg_list, prog=None):
                                    echo_cmd=True if args.verbose >= 4 else False)
     exit_status = 0
     abc_args = []
-
     if(args.iterative_bb):
         abc_args.append("iterative_bb")
 
@@ -253,10 +262,15 @@ def vtr_command_main(arg_list, prog=None):
         if not args.parse_only:
             try:
                 vpr_args = process_unkown_args(unkown_args)
-
+                name = ""
+                if(args.name):
+                    name=args.name
+                else:
+                    name=path_arch_file.name+"/"+path_circuit_file.name
+                print(name)
                 #Run the flow
-                vtr.run(abs_path_arch_file, 
-                             abs_path_circuit_file, 
+                vtr.run(path_arch_file, 
+                             path_circuit_file, 
                              power_tech_file=args.power_tech,
                              temp_dir=temp_dir,
                              start_stage=args.start, 
