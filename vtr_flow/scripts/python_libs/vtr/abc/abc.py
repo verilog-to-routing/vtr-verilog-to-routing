@@ -10,6 +10,16 @@ def run(architecture_file, circuit_file,
         use_old_abc_script = False, abc_args = None,keep_intermediate_files=1):
 
     mkdir_p(temp_dir)
+
+    if(not isinstance(architecture_file,Path)):
+        architecture_file = Path(architecture_file)
+
+    if(not isinstance(circuit_file,Path)):
+        circuit_file = Path(circuit_file)
+
+    if(not isinstance(output_netlist,Path)):
+        output_netlist = Path(output_netlist)
+        
     blackbox_latches_script = find_vtr_file("blackbox_latches.pl")
     clk_list = []
     clk_log_file = "report_clk_out.out"

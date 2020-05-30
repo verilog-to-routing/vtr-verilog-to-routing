@@ -45,6 +45,12 @@ def run(architecture_file, circuit_file,
     #
     #Initial setup
     #
+    if(not isinstance(architecture_file,Path)):
+        architecture_file = Path(architecture_file)
+
+    if(not isinstance(circuit_file,Path)):
+        circuit_file = Path(circuit_file)
+        
     architecture_file_basename =architecture_file.name
     circuit_file_basename = circuit_file.name
 
@@ -121,6 +127,8 @@ def run(architecture_file, circuit_file,
     #
     if power_tech_file:
         #The user provided a tech file, so do power analysis
+        if(not isinstance(power_tech_file,Path)):
+            power_tech_file=Path(power_tech_file)
 
         if should_run_stage(VTR_STAGE.ace, start_stage, end_stage):
             vtr.print_verbose(1, verbosity, "Running ACE")
@@ -143,7 +151,7 @@ def run(architecture_file, circuit_file,
         #Enable power analysis in VPR
         vpr_args["power"] = True
         #vpr_args["activity_file"] = post_ace_activity_file.name
-        vpr_args["tech_properties"] = str(Path(power_tech_file).resolve())
+        vpr_args["tech_properties"] = str(power_tech_file.resolve())
 
     #
     # Pack/Place/Route

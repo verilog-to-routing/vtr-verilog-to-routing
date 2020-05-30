@@ -13,6 +13,15 @@ def run(architecture_file, circuit_file,
              min_hard_adder_size=1):
     mkdir_p(temp_dir)
 
+    if(not isinstance(architecture_file,Path)):
+        architecture_file = Path(architecture_file)
+
+    if(not isinstance(circuit_file,Path)):
+        circuit_file = Path(circuit_file)
+
+    if(not isinstance(output_netlist,Path)):
+        output_netlist = Path(output_netlist)
+
     if odin_exec == None:
         odin_exec = find_vtr_file('odin_II', is_executable=True)
 

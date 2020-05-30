@@ -70,6 +70,15 @@ def run(architecture, circuit_name, circuit, command_runner, temp_dir, output_ne
     if vpr_exec == None:
         vpr_exec = find_vtr_file('vpr', is_executable=True)
 
+    if(not isinstance(architecture,Path)):
+        architecture = Path(architecture)
+
+    if(not isinstance(circuit_name,Path)):
+        circuit_name = Path(circuit_name)
+
+    if(not isinstance(circuit,Path)):
+        circuit = Path(circuit)
+
     cmd = [vpr_exec, architecture.name, circuit_name.stem, "--circuit_file", circuit.name]
 
     #Enable netlist generation
