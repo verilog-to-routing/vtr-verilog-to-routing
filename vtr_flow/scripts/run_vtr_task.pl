@@ -68,6 +68,7 @@ my $processors             = 1;
 my $run_prefix             = "run";
 my $show_runtime_estimates = 1;
 my $system_type            = "local";
+my $script                 = "run_vtr_flow.pl";
 my $shared_script_params   = "";
 my $verbosity              = 0;
 my $short_task_names = 0;
@@ -96,6 +97,10 @@ while ( $token = shift(@ARGV) ) {
 		$verbosity = int( shift(@ARGV) );
 	}
 
+    elsif ( $token eq "-script") {
+		$script = shift(@ARGV);
+	}
+
     # Treat the remainder of the command line options as script parameters shared by all tasks
     elsif ( $token eq "-s" ) {
         $shared_script_params = join(' ', @ARGV);
@@ -104,6 +109,7 @@ while ( $token = shift(@ARGV) ) {
         }
         print "shared script params: $shared_script_params\n"
     }
+
 
 	elsif ( $token eq "-system" ) {
 		$system_type = shift(@ARGV);
@@ -191,7 +197,7 @@ if ($short_task_names) {
 my @all_task_actions;
 foreach my $task (@tasks) {
 	chomp($task);
-	my $task_actions = generate_single_task_actions($task, $common_task_prefix);
+	my $task_actions = generate_single_task_actions($task, $common_task_prefix, $script);
     push(@all_task_actions, @$task_actions);
 }
 
@@ -211,7 +217,6 @@ sub generate_single_task_actions {
 	my $archs_dir;
 	my $sdc_dir = undef;
 	my $script_default = "run_vtr_flow.pl";
-	my $script         = $script_default;
 	my $script_path;
 	my $script_params_common = $shared_script_params;  # start with the shared ones then build unique ones
 	my @circuits_list;
@@ -219,7 +224,7 @@ sub generate_single_task_actions {
 	my @script_params_list;
 	my $cmos_tech_path = "";
 
-	my ($task, $common_prefix) = @_;
+	my ($task, $common_prefix,$script) = @_;
 	(my $task_dir = "$vtr_flow_path/tasks/$task") =~ s/\s+$//; # trim right white spaces for chdir to work on Windows
 	chdir($task_dir) or die "Task directory does not exist ($task_dir): $!\n";
 
