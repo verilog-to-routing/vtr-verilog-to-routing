@@ -72,8 +72,8 @@ def run(architecture_file, circuit_file,
     #Copy the circuit and architecture
     circuit_copy = Path(temp_dir)  / circuit_file.name
     architecture_copy = Path(temp_dir)  / architecture_file.name
-    shutil.copy(circuit_file, str(circuit_copy))
-    shutil.copy(architecture_file, str(architecture_copy))
+    shutil.copy(str(circuit_file), str(circuit_copy))
+    shutil.copy(str(architecture_file), str(architecture_copy))
 
 
     #There are multiple potential paths for the netlist to reach a tool
