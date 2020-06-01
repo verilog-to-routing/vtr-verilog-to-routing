@@ -364,6 +364,10 @@ static void commit_td_cost(const t_pl_blocks_to_be_moved& blocks_affected);
 
 static void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected);
 
+static void invalidate_affected_connection_delays(const t_pl_blocks_to_be_moved& blocks_affected,
+                                                  ClusteredPinTimingInvalidator* pin_tedges_invalidator,
+                                                  TimingInfo* timing_info);
+
 static bool driven_by_moved_block(const ClusterNetId net, const t_pl_blocks_to_be_moved& blocks_affected);
 
 static void update_td_costs(const PlaceDelayModel* delay_model, const PlacerCriticalities& place_crit, double* timing_cost);
@@ -1452,10 +1456,17 @@ static e_move_result try_swap(float t,
             costs->bb_cost += bb_delta_c;
 
             if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-                /*update the connection_timing_cost and connection_delay
-                 * values from the temporary values */
                 costs->timing_cost += timing_delta_c;
 
+                //Invalidates timing of modified connections for incremental timing updates
+                //Must be called before commit_td_cost since it relies on comparing
+                //proposed_connection_delay and connection_delay
+                invalidate_affected_connection_delays(blocks_affected,
+                                                      pin_timing_invalidator,
+                                                      timing_info);
+
+                /*update the connection_timing_cost and connection_delay
+                 * values from the temporary values */
                 commit_td_cost(blocks_affected);
             }
 
@@ -1463,7 +1474,7 @@ static e_move_result try_swap(float t,
             update_move_nets(num_nets_affected);
 
             /* Update clb data structures since we kept the move. */
-            commit_move_blocks(blocks_affected, pin_timing_invalidator, timing_info);
+            commit_move_blocks(blocks_affected);
 
         } else { /* Move was rejected.  */
                  /* Reset the net cost function flags first. */
@@ -1808,6 +1819,38 @@ static void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
         proposed_connection_timing_cost[net][ipin] = INVALID_DELAY;
     }
 #endif
+}
+
+//Invalidates the delays of connections effected by the specified move
+//
+//Relies on proposed_connection_delay and connection_delay to detect
+//which connections have actually had their delay changed.
+static void invalidate_affected_connection_delays(const t_pl_blocks_to_be_moved& blocks_affected,
+                                                  ClusteredPinTimingInvalidator* pin_tedges_invalidator,
+                                                  TimingInfo* timing_info) {
+    VTR_ASSERT_SAFE(timing_info);
+    VTR_ASSERT_SAFE(pin_tedges_invalidator);
+
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& clb_nlist = cluster_ctx.clb_nlist;
+
+    //Inalidate timing graph edges affected by the move
+    for (ClusterPinId pin : blocks_affected.affected_pins) {
+        //It is possible that some connections may not have changed delay.(e.g.
+        //For instance, if using a dx/dy delay model, this could occur if a sink
+        //moved to a new position with the same dx/dy from it's driver.
+        //
+        //To minimze work during the incremental STA update we do not invalidate
+        //such unchanged connections.
+
+        ClusterNetId net = clb_nlist.pin_net(pin);
+        int ipin = clb_nlist.pin_net_index(pin);
+
+        if (proposed_connection_delay[net][ipin] != connection_delay[net][ipin]) {
+            //Delay changed, must invalidate
+            pin_tedges_invalidator->invalidate_connection(pin, timing_info);
+        }
+    }
 }
 
 //Returns true if 'net' is driven by one of the blocks in 'blocks_affected'
