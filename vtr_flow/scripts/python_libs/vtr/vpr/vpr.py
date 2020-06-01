@@ -1,6 +1,6 @@
 import shutil
 from pathlib import Path
-from vtr import  mkdir_p, find_vtr_file, CommandRunner, print_verbose, relax_W, determine_lut_size, determine_min_W
+from vtr import  mkdir_p, find_vtr_file, CommandRunner, print_verbose, relax_W, determine_lut_size, determine_min_W, verify_file
 
 def run_relax_W(architecture, circuit_name, circuit, command_runner=CommandRunner(), temp_dir=".", 
                     relax_W_factor=1.3, vpr_exec=None, verbosity=1, logfile_base="vpr",
@@ -28,6 +28,10 @@ def run_relax_W(architecture, circuit_name, circuit, command_runner=CommandRunne
         vpr_args = OrderedDict()
 
     mkdir_p(temp_dir)
+
+    verify_file(architecture, "Architecture")
+    verify_file(circuit_name, "Circuit")
+    verify_file(circuit, "Circuit")
 
     vpr_min_W_log = '.'.join([logfile_base, "min_W", "out"])
     vpr_relaxed_W_log = '.'.join([logfile_base, "relaxed_W", "out"])
@@ -62,6 +66,7 @@ def run(architecture, circuit_name, circuit, command_runner, temp_dir, output_ne
     """
     Runs VPR with the specified configuration
     """
+    
     if vpr_args is None:
         vpr_args = OrderedDict()
 
@@ -69,6 +74,10 @@ def run(architecture, circuit_name, circuit, command_runner, temp_dir, output_ne
 
     if vpr_exec == None:
         vpr_exec = find_vtr_file('vpr', is_executable=True)
+
+    verify_file(architecture, "Architecture")
+    verify_file(circuit_name, "Circuit")
+    verify_file(circuit, "Circuit")
 
     cmd = [vpr_exec, architecture.name, circuit_name.stem, "--circuit_file", circuit.name]
 

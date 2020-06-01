@@ -23,7 +23,7 @@ class RawDefaultHelpFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.R
 
 class CommandRunner(object):
 
-    def __init__(self, timeout_sec=None, max_memory_mb=None, track_memory=True, verbose_error=False, verbose=False, echo_cmd=False, indent="\t"):
+    def __init__(self, timeout_sec=None, max_memory_mb=None, track_memory=True, verbose_error=False, verbose=False, echo_cmd=False, indent="\t", show_failures=False):
         """
         An object for running system commands with timeouts, memory limits and varying verbose-ness 
 
@@ -44,6 +44,7 @@ class CommandRunner(object):
         self._verbose = verbose
         self._echo_cmd = echo_cmd
         self._indent = indent
+        self._show_failures = show_failures
 
     def run_system_command(self, cmd, temp_dir, log_filename=None, expected_return_code=0, indent_depth=0):
         """
@@ -142,12 +143,12 @@ class CommandRunner(object):
         cmd_errored = (cmd_returncode != expected_return_code)
 
         #Send to stdout
-        if self._verbose or (cmd_errored and self._verbose_error):
+        if self._show_failures and (self._verbose or (cmd_errored and self._verbose_error)):
             for line in cmd_output:
                 print (indent_depth*self._indent + line,)
 
 
-        if (cmd_errored):
+        if (self._show_failures and cmd_errored):
             raise CommandError(msg="Executable {exec_name} failed".format(exec_name=PurePath(orig_cmd[0]).name), 
                                cmd=cmd,
                                log=str(PurePath(temp_dir).joinpath(log_filename)),
@@ -414,6 +415,13 @@ def load_config_lines(filepath, allow_includes=True):
 
     return config_lines            
 
+def verify_file(file, file_type):
+    if(not isinstance(file,Path)):
+        file = Path(file)
+
+    if(not file.is_file()):
+        raise Exception("{file_type} file does not exist: {file} ".format(file_type = file_type, file=file))
+    
 def format_elapsed_time(time_delta):
     total_sec = int(round(time_delta.total_seconds()))
     m, s = divmod(total_sec, 60)

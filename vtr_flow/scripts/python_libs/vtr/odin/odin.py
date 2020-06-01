@@ -1,6 +1,6 @@
 import shutil
 from pathlib import Path
-from vtr import  mkdir_p, find_vtr_file, file_replace, determine_memory_addr_width
+from vtr import  mkdir_p, find_vtr_file, file_replace, determine_memory_addr_width, verify_file
 
 def run(architecture_file, circuit_file, 
              output_netlist, 
@@ -12,6 +12,10 @@ def run(architecture_file, circuit_file,
              min_hard_mult_size=3, 
              min_hard_adder_size=1):
     mkdir_p(temp_dir)
+
+    verify_file(architecture_file, "Architecture")
+    verify_file(circuit_file, "Circuit")
+    verify_file(output_netlist, "Output netlist")
 
     if odin_exec == None:
         odin_exec = find_vtr_file('odin_II', is_executable=True)

@@ -244,7 +244,8 @@ def vtr_command_main(arg_list, prog=None):
                                    timeout_sec=args.timeout,
                                    verbose_error=True if args.verbose == 2 else False,
                                    verbose=True if args.verbose > 2 else False,
-                                   echo_cmd=True if args.verbose >= 4 else False)
+                                   echo_cmd=True if args.verbose >= 4 else False,
+                                   show_failures = args.show_failures)
     exit_status = 0
     abc_args = []
     if(args.iterative_bb):
