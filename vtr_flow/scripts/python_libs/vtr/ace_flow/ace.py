@@ -1,17 +1,10 @@
-from vtr import find_vtr_file
+from vtr import find_vtr_file, verify_file
 from pathlib import Path
 def run(circuit_file, old_netlist, output_netlist, output_activity_file, command_runner, temp_dir=".", log_filename="ace.out", ace_exec=None, ace_seed = 1):
-    if(not isinstance(circuit_file,Path)):
-        circuit_file = Path(circuit_file)
-        
-    if(not isinstance(old_netlist,Path)):
-        old_netlist = Path(old_netlist)
-
-    if(not isinstance(output_netlist,Path)):
-        output_netlist = Path(output_netlist)
-
-    if(not isinstance(output_activity_file,Path)):
-        output_activity_file = Path(output_activity_file)
+    verify_file(circuit_file, "Circuit")
+    verify_file(old_netlist, "Previous netlist")
+    verify_file(output_netlist, "Output netlist")
+    verify_file(output_activity_file, "Output activity")
 
     ace_clk_file = Path(temp_dir) / "ace_clk.txt"
     ace_raw = Path(temp_dir) / (circuit_file.with_suffix('').stem + ".raw.ace.blif")

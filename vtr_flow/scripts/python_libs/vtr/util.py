@@ -415,6 +415,13 @@ def load_config_lines(filepath, allow_includes=True):
 
     return config_lines            
 
+def verify_file(file, file_type):
+    if(not isinstance(file,Path)):
+        file = Path(file)
+
+    if(not file.is_file()):
+        raise Exception("{file_type} file does not exist: {file} ".format(file_type = file_type, file=file))
+    
 def format_elapsed_time(time_delta):
     total_sec = int(round(time_delta.total_seconds()))
     m, s = divmod(total_sec, 60)

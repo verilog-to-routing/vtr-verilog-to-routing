@@ -1,6 +1,6 @@
 import shutil
 from pathlib import Path
-from vtr import  mkdir_p, find_vtr_file, determine_lut_size
+from vtr import  mkdir_p, find_vtr_file, determine_lut_size, verify_file
 from vtr.error import VtrError, InspectError, CommandError
 
 def run(architecture_file, circuit_file,
@@ -11,14 +11,9 @@ def run(architecture_file, circuit_file,
 
     mkdir_p(temp_dir)
 
-    if(not isinstance(architecture_file,Path)):
-        architecture_file = Path(architecture_file)
-
-    if(not isinstance(circuit_file,Path)):
-        circuit_file = Path(circuit_file)
-
-    if(not isinstance(output_netlist,Path)):
-        output_netlist = Path(output_netlist)
+    verify_file(architecture_file, "Architecture")
+    verify_file(circuit_file, "Circuit")
+    verify_file(output_netlist, "Output netlist")
         
     blackbox_latches_script = find_vtr_file("blackbox_latches.pl")
     clk_list = []

@@ -6,6 +6,7 @@ import glob
 import vtr
 from pathlib import Path
 from collections import OrderedDict
+from vtr import CommandError
 
 VTR_STAGE = vtr.make_enum("odin", "abc", 'ace', "vpr", "lec")
 vtr_stages = VTR_STAGE.reverse_mapping.values()
@@ -45,12 +46,10 @@ def run(architecture_file, circuit_file,
     #
     #Initial setup
     #
-    if(not isinstance(architecture_file,Path)):
-        architecture_file = Path(architecture_file)
-
-    if(not isinstance(circuit_file,Path)):
-        circuit_file = Path(circuit_file)
-        
+    vtr.util.verify_file(architecture_file, "Architecture")
+    vtr.util.verify_file(circuit_file, "Circuit")
+    if(power_tech_file):
+        vtr.util.verify_file(power_tech_file, "Power tech")
     architecture_file_basename =architecture_file.name
     circuit_file_basename = circuit_file.name
 
