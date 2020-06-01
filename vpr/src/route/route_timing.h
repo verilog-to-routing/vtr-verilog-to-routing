@@ -37,6 +37,7 @@ bool try_timing_driven_route_net(ConnectionRouter& router,
                                  ClbNetPinsMatrix<float>& net_delay,
                                  const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                  std::shared_ptr<SetupTimingInfo> timing_info,
+                                 ClusteredPinTimingInvalidator* pin_timing_invalidator,
                                  route_budgets& budgeting_inf,
                                  bool& was_rerouted);
 
@@ -52,7 +53,8 @@ bool timing_driven_route_net(ConnectionRouter& router,
                              t_rt_node** rt_node_of_sink,
                              float* net_delay,
                              const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                             std::shared_ptr<const SetupTimingInfo> timing_info,
+                             std::shared_ptr<SetupTimingInfo> timing_info,
+                             ClusteredPinTimingInvalidator* pin_timing_invalidator,
                              route_budgets& budgeting_inf);
 
 void alloc_timing_driven_route_structs(float** pin_criticality_ptr,
