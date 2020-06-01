@@ -9,14 +9,14 @@ namespace tatum { namespace detail {
 /**
  * A concrete implementation of a SetupHoldTimingAnalyzer.
  *
- * This is a full (i.e. non-incremental) analyzer, which fully
- * re-analyzes the timing graph whenever update_timing_impl() is 
- * called.
+ * This is an incremental analyzer, which will incrementally
+ * update the timing graph based on edges which have been marked
+ * as invalidated.
  */
-template<class GraphWalker=SerialWalker>
-class FullSetupHoldTimingAnalyzer : public SetupHoldTimingAnalyzer {
+template<class GraphWalker=SerialIncrWalker>
+class IncrSetupHoldTimingAnalyzer : public SetupHoldTimingAnalyzer {
     public:
-        FullSetupHoldTimingAnalyzer(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints, const DelayCalculator& delay_calculator)
+        IncrSetupHoldTimingAnalyzer(const TimingGraph& timing_graph, const TimingConstraints& timing_constraints, const DelayCalculator& delay_calculator)
             : SetupHoldTimingAnalyzer()
             , timing_graph_(timing_graph)
             , timing_constraints_(timing_constraints)
@@ -28,6 +28,7 @@ class FullSetupHoldTimingAnalyzer : public SetupHoldTimingAnalyzer {
             graph_walker_.set_profiling_data("total_analysis_sec", 0.);
             graph_walker_.set_profiling_data("analysis_sec", 0.);
             graph_walker_.set_profiling_data("num_full_updates", 0.);
+            graph_walker_.set_profiling_data("num_incr_updates", 0.);
         }
 
     protected:
@@ -35,34 +36,49 @@ class FullSetupHoldTimingAnalyzer : public SetupHoldTimingAnalyzer {
         virtual void update_timing_impl() override {
             auto start_time = Clock::now();
 
-            graph_walker_.do_reset(timing_graph_, setup_hold_visitor_);
+            if (never_updated_) {
+                //Invalidate all edges
+                for (EdgeId edge : timing_graph_.edges()) {
+                    graph_walker_.invalidate_edge(edge);
+                }
 
-            graph_walker_.do_arrival_pre_traversal(timing_graph_, timing_constraints_, setup_hold_visitor_);            
+                //Only need to pre-traverse the first update
+                graph_walker_.do_arrival_pre_traversal(timing_graph_, timing_constraints_, setup_hold_visitor_);            
+            }
+
             graph_walker_.do_arrival_traversal(timing_graph_, timing_constraints_, delay_calculator_, setup_hold_visitor_);            
 
-            graph_walker_.do_required_pre_traversal(timing_graph_, timing_constraints_, setup_hold_visitor_);            
+            if (never_updated_) {
+                //Only need to pre-traverse the first update
+                graph_walker_.do_required_pre_traversal(timing_graph_, timing_constraints_, setup_hold_visitor_);            
+            }
+
             graph_walker_.do_required_traversal(timing_graph_, timing_constraints_, delay_calculator_, setup_hold_visitor_);            
 
             graph_walker_.do_update_slack(timing_graph_, delay_calculator_, setup_hold_visitor_);
 
             double analysis_sec = std::chrono::duration_cast<dsec>(Clock::now() - start_time).count();
 
+            graph_walker_.clear_invalidated_edges();
+
             //Record profiling data
             double total_analysis_sec = analysis_sec + graph_walker_.get_profiling_data("total_analysis_sec");
             graph_walker_.set_profiling_data("total_analysis_sec", total_analysis_sec);
             graph_walker_.set_profiling_data("analysis_sec", analysis_sec);
-            graph_walker_.set_profiling_data("num_full_updates", graph_walker_.get_profiling_data("num_full_updates") + 1);
+            graph_walker_.set_profiling_data("num_incr_updates", graph_walker_.get_profiling_data("num_incr_updates") + 1);
+
+            never_updated_ = false;
         }
 
         //Update only setup timing
         virtual void update_setup_timing_impl() override {
+            TATUM_ASSERT(!never_updated_);
             auto& setup_visitor = setup_hold_visitor_.setup_visitor();
-            graph_walker_.do_reset(timing_graph_, setup_visitor);
 
-            graph_walker_.do_arrival_pre_traversal(timing_graph_, timing_constraints_, setup_visitor);            
+            //graph_walker_.do_arrival_pre_traversal(timing_graph_, timing_constraints_, setup_visitor);            
             graph_walker_.do_arrival_traversal(timing_graph_, timing_constraints_, delay_calculator_, setup_visitor);            
 
-            graph_walker_.do_required_pre_traversal(timing_graph_, timing_constraints_, setup_visitor);            
+            //graph_walker_.do_required_pre_traversal(timing_graph_, timing_constraints_, setup_visitor);            
             graph_walker_.do_required_traversal(timing_graph_, timing_constraints_, delay_calculator_, setup_visitor);            
 
             graph_walker_.do_update_slack(timing_graph_, delay_calculator_, setup_visitor);
@@ -70,13 +86,13 @@ class FullSetupHoldTimingAnalyzer : public SetupHoldTimingAnalyzer {
 
         //Update only hold timing
         virtual void update_hold_timing_impl() override {
+            TATUM_ASSERT(!never_updated_);
             auto& hold_visitor = setup_hold_visitor_.hold_visitor();
-            graph_walker_.do_reset(timing_graph_, hold_visitor);
 
-            graph_walker_.do_arrival_pre_traversal(timing_graph_, timing_constraints_, hold_visitor);            
+            //graph_walker_.do_arrival_pre_traversal(timing_graph_, timing_constraints_, hold_visitor);            
             graph_walker_.do_arrival_traversal(timing_graph_, timing_constraints_, delay_calculator_, hold_visitor);            
 
-            graph_walker_.do_required_pre_traversal(timing_graph_, timing_constraints_, hold_visitor);            
+            //graph_walker_.do_required_pre_traversal(timing_graph_, timing_constraints_, hold_visitor);            
             graph_walker_.do_required_traversal(timing_graph_, timing_constraints_, delay_calculator_, hold_visitor);            
 
             graph_walker_.do_update_slack(timing_graph_, delay_calculator_, hold_visitor);
@@ -114,6 +130,8 @@ class FullSetupHoldTimingAnalyzer : public SetupHoldTimingAnalyzer {
         const DelayCalculator& delay_calculator_;
         SetupHoldAnalysis setup_hold_visitor_;
         GraphWalker graph_walker_;
+
+        bool never_updated_ = true;
 
         typedef std::chrono::duration<double> dsec;
         typedef std::chrono::high_resolution_clock Clock;

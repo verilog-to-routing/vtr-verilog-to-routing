@@ -49,6 +49,12 @@ class FixedDelayCalculator : public DelayCalculator {
         Time setup_time(const TimingGraph& /*tg*/, EdgeId edge_id) const override { return setup_times_[edge_id]; }
 
         Time hold_time(const TimingGraph& /*tg*/, EdgeId edge_id) const override { return hold_times_[edge_id]; }
+
+        //Mutators
+        void set_max_edge_delay(const TimingGraph& /*tg*/, EdgeId edge_id, Time delay) { max_edge_delays_[edge_id] = delay; } 
+        void set_min_edge_delay(const TimingGraph& /*tg*/, EdgeId edge_id, Time delay) { min_edge_delays_[edge_id] = delay; } 
+        void set_setup_time(const TimingGraph& /*tg*/, EdgeId edge_id, Time delay) { setup_times_[edge_id] = delay; } 
+        void set_hold_time(const TimingGraph& /*tg*/, EdgeId edge_id, Time delay) { hold_times_[edge_id] = delay; } 
  
     private:
         tatum::util::linear_map<EdgeId,Time> max_edge_delays_;
