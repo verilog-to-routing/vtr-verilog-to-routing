@@ -691,16 +691,6 @@ void update_net_delays_from_route_tree(float* net_delay,
     }
 }
 
-void update_remaining_net_delays_from_route_tree(float* net_delay,
-                                                 const t_rt_node* const* rt_node_of_sink,
-                                                 const std::vector<int>& remaining_sinks) {
-    /* Like update_net_delays_from_route_tree, but only updates the sinks that were not already routed
-     * this function doesn't actually need to know about the net, just what sink pins need their net delays updated */
-
-    for (int sink_pin : remaining_sinks)
-        net_delay[sink_pin] = rt_node_of_sink[sink_pin]->Tdel;
-}
-
 /***************  Conversion between traceback and route tree *******************/
 t_rt_node* traceback_to_route_tree(ClusterNetId inet, std::vector<int>* non_config_node_set_usage) {
     auto& route_ctx = g_vpr_ctx.routing();
