@@ -10,6 +10,7 @@
 #include "tatum/graph_walkers.hpp"
 #include "tatum/timing_analyzers.hpp"
 #include "tatum/analyzers/full_timing_analyzers.hpp"
+#include "tatum/analyzers/incr_timing_analyzers.hpp"
 
 namespace tatum {
 
@@ -125,6 +126,52 @@ struct AnalyzerFactory<SetupHoldAnalysis,GraphWalker> {
                 new detail::FullSetupHoldTimingAnalyzer<GraphWalker>(timing_graph, 
                                                                      timing_constraints, 
                                                                      delay_calc)
+                );
+    }
+};
+
+
+//Specialize for incremental setup
+template<>
+struct AnalyzerFactory<SetupAnalysis,SerialIncrWalker> {
+
+    static std::unique_ptr<SetupTimingAnalyzer> make(const TimingGraph& timing_graph,
+                                                         const TimingConstraints& timing_constraints,
+                                                         const DelayCalculator& delay_calc) {
+        return std::unique_ptr<SetupTimingAnalyzer>(
+                new detail::IncrSetupTimingAnalyzer<SerialIncrWalker>(timing_graph, 
+                                                                      timing_constraints, 
+                                                                      delay_calc)
+                );
+    }
+};
+
+//Specialize for incremental hold
+template<>
+struct AnalyzerFactory<HoldAnalysis,SerialIncrWalker> {
+
+    static std::unique_ptr<HoldTimingAnalyzer> make(const TimingGraph& timing_graph,
+                                                         const TimingConstraints& timing_constraints,
+                                                         const DelayCalculator& delay_calc) {
+        return std::unique_ptr<HoldTimingAnalyzer>(
+                new detail::IncrHoldTimingAnalyzer<SerialIncrWalker>(timing_graph, 
+                                                                     timing_constraints, 
+                                                                     delay_calc)
+                );
+    }
+};
+
+//Specialize for combined incremental setup and hold
+template<>
+struct AnalyzerFactory<SetupHoldAnalysis,SerialIncrWalker> {
+
+    static std::unique_ptr<SetupHoldTimingAnalyzer> make(const TimingGraph& timing_graph,
+                                                         const TimingConstraints& timing_constraints,
+                                                         const DelayCalculator& delay_calc) {
+        return std::unique_ptr<SetupHoldTimingAnalyzer>(
+                new detail::IncrSetupHoldTimingAnalyzer<SerialIncrWalker>(timing_graph, 
+                                                                          timing_constraints, 
+                                                                          delay_calc)
                 );
     }
 };
