@@ -2,7 +2,6 @@
 #define VPR_MOVE_TRANSACTIONS_H
 #include "vpr_types.h"
 #include "clustered_netlist_utils.h"
-#include "timing_info.h"
 
 /* Stores the information of the move for a block that is       *
  * moved during placement                                       *
@@ -54,9 +53,7 @@ e_block_move_result record_block_move(t_pl_blocks_to_be_moved& blocks_affected, 
 
 void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected);
 
-void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
-                        ClusteredPinTimingInvalidator* pin_tedges_invalidator,
-                        TimingInfo* timing_info);
+void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected);
 
 void revert_move_blocks(t_pl_blocks_to_be_moved& blocks_affected);
 
