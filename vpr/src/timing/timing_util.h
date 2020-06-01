@@ -84,7 +84,7 @@ std::map<tatum::DomainId, size_t> count_clock_fanouts(const tatum::TimingGraph& 
 //Helper class for iterating through the timing edges associated with a particular
 //clustered netlist pin, and invalidating them.
 //
-//For efficiency, it stores pre-calculates and stores the mapping from ClusterPinId -> tatum::EdgeIds,
+//For efficiency, it pre-calculates and stores the mapping from ClusterPinId -> tatum::EdgeIds,
 //and tracks whether a particular ClusterPinId has been already invalidated (to avoid the expense
 //of invalidating it multiple times)
 class ClusteredPinTimingInvalidator {
@@ -107,13 +107,6 @@ class ClusteredPinTimingInvalidator {
                 tatum::EdgeId tedge = atom_pin_to_timing_edge(timing_graph, atom_nlist, atom_lookup, atom_pin);
 
                 if (!tedge) {
-                    /*
-                     *VTR_LOG_WARN("Found no timing edge corresponding to atom pin '%s' (%zu), connected to cluster pin '%s' (%zu)\n",
-                     *             atom_nlist.pin_name(atom_pin).c_str(),
-                     *             size_t(atom_pin),
-                     *             clb_nlist.pin_name(clb_pin).c_str(),
-                     *             size_t(clb_pin));
-                     */
                     continue;
                 }
 
