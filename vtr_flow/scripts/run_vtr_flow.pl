@@ -250,7 +250,7 @@ while ( scalar(@ARGV) != 0 ) { #While non-empty
 	elsif ( $token eq "-crit_path_router_iterations" ){
 		$crit_path_router_iterations = shift(@ARGV);
 	}
-	elsif ( $toekn eq "-check_incremental" ){
+	elsif ( $token eq "-check_incremental" ){
 		$check_incremental = 1;
 	}
     # else forward the argument
