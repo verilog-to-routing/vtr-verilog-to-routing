@@ -415,11 +415,11 @@ def load_config_lines(filepath, allow_includes=True):
 
     return config_lines            
 
-def verify_file(file, file_type):
+def verify_file(file, file_type,check_is_file=True):
     if(not isinstance(file,Path)):
         file = Path(file)
 
-    if(not file.is_file()):
+    if(check_is_file and not file.is_file()):
         raise Exception("{file_type} file does not exist: {file} ".format(file_type = file_type, file=file))
     
 def format_elapsed_time(time_delta):

@@ -13,7 +13,7 @@ def run(architecture_file, circuit_file,
 
     verify_file(architecture_file, "Architecture")
     verify_file(circuit_file, "Circuit")
-    verify_file(output_netlist, "Output netlist")
+    verify_file(output_netlist, "Output netlist", False)
         
     blackbox_latches_script = find_vtr_file("blackbox_latches.pl")
     clk_list = []

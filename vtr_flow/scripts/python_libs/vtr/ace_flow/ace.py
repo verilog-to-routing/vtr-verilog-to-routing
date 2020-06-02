@@ -3,8 +3,8 @@ from pathlib import Path
 def run(circuit_file, old_netlist, output_netlist, output_activity_file, command_runner, temp_dir=".", log_filename="ace.out", ace_exec=None, ace_seed = 1):
     verify_file(circuit_file, "Circuit")
     verify_file(old_netlist, "Previous netlist")
-    verify_file(output_netlist, "Output netlist")
-    verify_file(output_activity_file, "Output activity")
+    verify_file(output_netlist, "Output netlist", False)
+    verify_file(output_activity_file, "Output activity", False)
 
     ace_clk_file = Path(temp_dir) / "ace_clk.txt"
     ace_raw = Path(temp_dir) / (circuit_file.with_suffix('').stem + ".raw.ace.blif")
