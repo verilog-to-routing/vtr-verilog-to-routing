@@ -91,8 +91,6 @@ def run(architecture_file, circuit_file,
     #
     if should_run_stage(VTR_STAGE.odin, start_stage, end_stage):
         if circuit_ext != ".blif":
-            vtr.print_verbose(1, verbosity, "Running Odin II")
-
             vtr.odin.run(architecture_copy, next_stage_netlist, 
                      output_netlist=post_odin_netlist, 
                      command_runner=command_runner, 
@@ -107,7 +105,6 @@ def run(architecture_file, circuit_file,
     # Logic Optimization & Technology Mapping
     #
     if should_run_stage(VTR_STAGE.abc, start_stage, end_stage):
-        vtr.print_verbose(1, verbosity, "Running ABC")
         vtr.abc.run(architecture_copy, next_stage_netlist, 
                 output_netlist=post_abc_netlist, 
                 command_runner=command_runner, 
@@ -130,8 +127,6 @@ def run(architecture_file, circuit_file,
             power_tech_file=Path(power_tech_file)
 
         if should_run_stage(VTR_STAGE.ace, start_stage, end_stage):
-            vtr.print_verbose(1, verbosity, "Running ACE")
-
             vtr.ace_flow.run(next_stage_netlist, old_netlist = post_odin_netlist, output_netlist=post_ace_netlist, 
                     output_activity_file=post_ace_activity_file, 
                     command_runner=command_runner, 
@@ -166,7 +161,6 @@ def run(architecture_file, circuit_file,
 
         if "route_chan_width" in vpr_args:
             #The User specified a fixed channel width
-            vtr.print_verbose(1, verbosity, "Running VPR (at fixed channel width)")
             vtr.vpr.run(architecture_copy, circuit_copy, pre_vpr_netlist, 
                     output_netlist=post_vpr_netlist,
                     command_runner=command_runner, 
@@ -188,7 +182,6 @@ def run(architecture_file, circuit_file,
     # Logical Equivalence Checks (LEC)
     #
     if should_run_stage(VTR_STAGE.lec, start_stage, end_stage):
-        vtr.print_verbose(1, verbosity, "Running ABC Logical Equivalence Check")
         vtr.abc.run_lec(lec_base_netlist, post_vpr_netlist, command_runner=command_runner, log_filename="abc.lec.out")
     if(not keep_intermediate_files):
         next_stage_netlist.unlink()
@@ -205,7 +198,6 @@ def run(architecture_file, circuit_file,
             post_ace_activity_file.unlink()
 
 def parse_vtr_flow(temp_dir, parse_config_file=None, metrics_filepath=None, verbosity=1):
-    vtr.print_verbose(1, verbosity, "Parsing results")
     vtr.mkdir_p(temp_dir)
     if parse_config_file is None:
         parse_config_file = vtr.find_vtr_file("vtr_benchmarks.txt")

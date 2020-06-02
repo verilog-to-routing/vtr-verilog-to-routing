@@ -314,7 +314,7 @@ def vtr_command_main(arg_list, prog=None):
             exit_status = 2
 
     finally:
-        vtr.print_verbose(BASIC_VERBOSITY, args.verbose, "\n# {} took {} (exiting {})".format(prog, vtr.format_elapsed_time(datetime.now() - start), exit_status))
+        vtr.print_verbose(BASIC_VERBOSITY, args.verbose, "OK (took {})".format(vtr.format_elapsed_time(datetime.now() - start)))
     sys.exit(exit_status)
 
 def process_unkown_args(unkown_args):

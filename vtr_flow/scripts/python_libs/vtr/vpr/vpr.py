@@ -36,8 +36,6 @@ def run_relax_W(architecture, circuit_name, circuit, command_runner=CommandRunne
     vpr_min_W_log = '.'.join([logfile_base, "min_W", "out"])
     vpr_relaxed_W_log = '.'.join([logfile_base, "relaxed_W", "out"])
 
-    print_verbose(1, verbosity, "Running VPR (determining minimum channel width)" )
-
     run(architecture, circuit_name, circuit, command_runner, temp_dir, log_filename=vpr_min_W_log, vpr_exec=vpr_exec, vpr_args=vpr_args)
 
     if ('pack' in vpr_args or 'place' in vpr_args) and 'route' not in vpr_args:
@@ -48,8 +46,6 @@ def run_relax_W(architecture, circuit_name, circuit, command_runner=CommandRunne
     min_W = determine_min_W(str(Path(temp_dir)  / vpr_min_W_log))
 
     relaxed_W = relax_W(min_W, relax_W_factor)
-
-    print_verbose(1, verbosity, "Running VPR (at {fac}x relaxed minimum channel width)".format(fac=relax_W_factor))
 
     vpr_args['route'] = True #Re-route only
     vpr_args['route_chan_width'] = relaxed_W #At a fixed channel width
