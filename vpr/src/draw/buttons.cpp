@@ -101,8 +101,6 @@ void button_for_net_max_fanout() {
     GObject* main_window_grid = application.get_object("InnerGrid");
 
     //find maximum fanout
-    size_t max;
-
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& clb_nlist = cluster_ctx.clb_nlist;
     size_t max_fanout = 0;
@@ -115,7 +113,7 @@ void button_for_net_max_fanout() {
     for (AtomNetId net_id : atom_nlist.nets())
         max_fanout2 = std::max(max_fanout2, atom_nlist.net_sinks(net_id).size());
 
-    max_fanout2 > max_fanout ? max = max_fanout2 : max = max_fanout;
+    size_t max = std::max(max_fanout2,max_fanout);
 
     //spin box for net_max_fanout, set the range and increment step
     GtkWidget* net_max_fanout_widget = gtk_spin_button_new_with_range(0, (int)max, 1.);
