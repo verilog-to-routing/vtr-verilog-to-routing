@@ -15,6 +15,9 @@ void log_move_abort(std::string reason) {
 void report_aborted_moves() {
     VTR_LOG("\n");
     VTR_LOG("Aborted Move Reasons:\n");
+    if (f_move_abort_reasons.empty()) {
+        VTR_LOG("  No moves aborted\n");
+    }
     for (auto kv : f_move_abort_reasons) {
         VTR_LOG("  %s: %zu\n", kv.first.c_str(), kv.second);
     }
