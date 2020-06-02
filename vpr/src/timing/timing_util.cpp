@@ -491,14 +491,14 @@ std::vector<HistogramBucket> create_hold_slack_histogram(const tatum::HoldTiming
     return histogram;
 }
 
-void print_hold_timing_summary(const tatum::TimingConstraints& constraints, const tatum::HoldTimingAnalyzer& hold_analyzer) {
-    VTR_LOG("Hold Worst Negative Slack (hWNS): %g ns\n", sec_to_nanosec(find_hold_worst_negative_slack(hold_analyzer)));
-    VTR_LOG("Hold Total Negative Slack (hTNS): %g ns\n", sec_to_nanosec(find_hold_total_negative_slack(hold_analyzer)));
+void print_hold_timing_summary(const tatum::TimingConstraints& constraints, const tatum::HoldTimingAnalyzer& hold_analyzer, std::string prefix) {
+    VTR_LOG("%shold Worst Negative Slack (hWNS): %g ns\n", prefix.c_str(), sec_to_nanosec(find_hold_worst_negative_slack(hold_analyzer)));
+    VTR_LOG("%shold Total Negative Slack (hTNS): %g ns\n", prefix.c_str(), sec_to_nanosec(find_hold_total_negative_slack(hold_analyzer)));
     /*For testing*/
     //VTR_LOG("Hold Total Negative Slack within clbs: %g ns\n", sec_to_nanosec(find_total_negative_slack_within_clb_blocks(hold_analyzer)));
     VTR_LOG("\n");
 
-    VTR_LOG("Hold slack histogram:\n");
+    VTR_LOG("%shold slack histogram:\n", prefix.c_str());
     print_histogram(create_hold_slack_histogram(hold_analyzer));
 
     if (constraints.clock_domains().size() > 1) {
@@ -506,7 +506,7 @@ void print_hold_timing_summary(const tatum::TimingConstraints& constraints, cons
         VTR_LOG("\n");
 
         //Slack per constraint
-        VTR_LOG("Intra-domain worst hold slacks per constraint:\n");
+        VTR_LOG("%sintra-domain worst hold slacks per constraint:\n", prefix.c_str());
         for (const auto& domain : constraints.clock_domains()) {
             float worst_slack = find_hold_worst_slack(hold_analyzer, domain, domain);
 
@@ -519,7 +519,7 @@ void print_hold_timing_summary(const tatum::TimingConstraints& constraints, cons
         }
         VTR_LOG("\n");
 
-        VTR_LOG("Inter-domain worst hold slacks per constraint:\n");
+        VTR_LOG("%sinter-domain worst hold slacks per constraint:\n", prefix.c_str());
         for (const auto& launch_domain : constraints.clock_domains()) {
             for (const auto& capture_domain : constraints.clock_domains()) {
                 if (launch_domain != capture_domain) {
