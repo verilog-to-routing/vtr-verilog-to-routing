@@ -881,6 +881,8 @@ void try_place(const t_placer_opts& placer_opts,
     //Some stats
     VTR_LOG("\n");
     VTR_LOG("Swaps called: %d\n", num_ts_called);
+    report_aborted_moves();
+
 
     if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
         //Final timing estimate
@@ -946,8 +948,6 @@ void try_place(const t_placer_opts& placer_opts,
     VTR_LOG("\tSwaps accepted: %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_accepted, 100 * accept_rate);
     VTR_LOG("\tSwaps rejected: %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_rejected, 100 * reject_rate);
     VTR_LOG("\tSwaps aborted : %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_aborted, 100 * abort_rate);
-
-    report_aborted_moves();
 
     free_placement_structs(placer_opts);
     free_try_swap_arrays();
