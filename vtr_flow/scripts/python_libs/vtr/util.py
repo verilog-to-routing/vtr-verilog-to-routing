@@ -423,11 +423,8 @@ def verify_file(file, file_type,check_is_file=True):
         raise Exception("{file_type} file does not exist: {file} ".format(file_type = file_type, file=file))
     
 def format_elapsed_time(time_delta):
-    total_sec = int(round(time_delta.total_seconds()))
-    m, s = divmod(total_sec, 60)
-    h, m = divmod(m, 60)
-
-    return "{:02}:{:02}:{:02}".format(h, m, s)
+    return "%.2f seconds" % time_delta.total_seconds()
+        
 
 def argparse_str2bool(str_val):
     str_val = str_val.lower()
