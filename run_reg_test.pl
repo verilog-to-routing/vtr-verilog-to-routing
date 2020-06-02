@@ -343,7 +343,7 @@ sub run_single_test {
 	print "scripts/run_vtr_task.pl $run_params -script $script \n";
 	print "\n";
 	chdir("$vtr_flow_path");
-	my $test_status = system("scripts/run_vtr_task.pl $run_params \n");
+	my $test_status = system("scripts/run_vtr_task.pl $run_params -script $script \n");
 	chdir("..");
 
     #Perl is obtuse, and requires you to manually shift the return value by 8 bits
