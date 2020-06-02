@@ -228,8 +228,6 @@ def vtr_command_main(arg_list, prog=None):
     #Load the arguments
     args, unkown_args = vtr_command_argparser(prog).parse_known_args(arg_list)
 
-    vtr.print_verbose(BASIC_VERBOSITY, args.verbose, "# {} {}\n".format(prog, ' '.join(arg_list)))
-
     path_arch_file = Path(args.architecture_file)
     path_circuit_file = Path(args.circuit_file)
     if (args.temp_dir == "."):
