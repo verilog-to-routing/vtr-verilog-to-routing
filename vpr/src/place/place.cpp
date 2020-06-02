@@ -883,7 +883,6 @@ void try_place(const t_placer_opts& placer_opts,
     VTR_LOG("Swaps called: %d\n", num_ts_called);
     report_aborted_moves();
 
-
     if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
         //Final timing estimate
         VTR_ASSERT(timing_info);
@@ -912,20 +911,9 @@ void try_place(const t_placer_opts& placer_opts,
                                            *timing_info,
                                            *placement_delay_calc);
 
-        /* Print critical path delay. */
+        /* Print critical path delay metrics */
         VTR_LOG("\n");
-        VTR_LOG("Placement estimated critical path delay: %g ns",
-                1e9 * critical_path.delay());
-        VTR_LOG("\n");
-        VTR_LOG("Placement estimated setup Total Negative Slack (sTNS): %g ns\n",
-                1e9 * timing_info->setup_total_negative_slack());
-        VTR_LOG("Placement estimated setup Worst Negative Slack (sWNS): %g ns\n",
-                1e9 * timing_info->setup_worst_negative_slack());
-        VTR_LOG("\n");
-
-        VTR_LOG("Placement estimated setup slack histogram:\n");
-        print_histogram(create_setup_slack_histogram(*timing_info->setup_analyzer()));
-        VTR_LOG("\n");
+        print_setup_timing_summary(*timing_ctx.constraints, *timing_info->setup_analyzer(), "Placement estimated ");
     }
 
     sprintf(msg, "Placement. Cost: %g  bb_cost: %g td_cost: %g Channel Factor: %d",
