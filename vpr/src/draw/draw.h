@@ -78,6 +78,7 @@ void toggle_router_expansion_costs(GtkWidget* /*widget*/, gint /*response_id*/, 
 void toggle_placement_macros(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
 void net_max_fanout(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
 void set_net_alpha_value(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
+void set_net_alpha_value_with_enter(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 float get_net_alpha();
 
 ezgl::color get_block_type_color(t_physical_tile_type_ptr type);

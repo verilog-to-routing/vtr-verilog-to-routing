@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <sstream>
 #include <array>
+#include <iostream>
 
 #include "vtr_assert.h"
 #include "vtr_ndoffsetmatrix.h"
@@ -155,7 +156,7 @@ void run_graphics_commands(std::string commands);
 constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
 constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
 constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
-float net_alpha = 0.0275;
+//float net_alpha = 0.1;
 
 //Kelly's maximum contrast colors are selected to be easily distinguishable as described in:
 //  Kenneth Kelly, "Twenty-Two Colors of Maximum Contrast", Color Eng. 3(6), 1943
@@ -325,10 +326,10 @@ void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app, bool is_new_w
 
     button_for_toggle_nets();
     button_for_net_max_fanout();
+    button_for_net_alpha();
     button_for_toggle_blk_internal();
     button_for_toggle_block_pin_util();
     button_for_toggle_placement_macros();
-    button_for_net_alpha();
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -350,7 +351,6 @@ void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app, bool is_new_wind
     button_for_toggle_routing_bounding_box();
     button_for_toggle_routing_util();
     button_for_toggle_router_expansion_costs();
-    button_for_net_alpha();
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -399,6 +399,7 @@ void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app, bool is_new_win
 
     button_for_toggle_nets();
     button_for_net_max_fanout();
+    button_for_net_alpha();
     button_for_toggle_blk_internal();
     button_for_toggle_block_pin_util();
     button_for_toggle_placement_macros();
@@ -408,7 +409,6 @@ void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app, bool is_new_win
     button_for_toggle_routing_bounding_box();
     button_for_toggle_routing_util();
     button_for_toggle_router_expansion_costs();
-    button_for_net_alpha();
 }
 
 /* function below intializes the interface window with a set of buttons and links 
@@ -1040,6 +1040,8 @@ static void drawnets(ezgl::renderer* g) {
     ClusterBlockId b1, b2;
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
+    float NET_ALPHA = draw_state->net_alpha;
+
     g->set_line_dash(ezgl::line_dash::none);
     g->set_line_width(0);
 
@@ -1050,7 +1052,7 @@ static void drawnets(ezgl::renderer* g) {
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
             continue; /* Don't draw */
 
-        g->set_color(draw_state->net_color[net_id]);
+        g->set_color(draw_state->net_color[net_id], draw_state->net_color[net_id].alpha * NET_ALPHA);
         b1 = cluster_ctx.clb_nlist.net_driver_block(net_id);
         ezgl::point2d driver_center = draw_coords->get_absolute_clb_bbox(b1, cluster_ctx.clb_nlist.block_type(b1)).center();
         for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
@@ -2154,7 +2156,10 @@ static void drawroute(enum e_draw_net_type draw_net_type, ezgl::renderer* g) {
 
     t_draw_state* draw_state = get_draw_state_vars();
 
+    float NET_ALPHA = draw_state->net_alpha;
+
     g->set_line_dash(ezgl::line_dash::none);
+    g->set_color(ezgl::BLACK, ezgl::BLACK.alpha * NET_ALPHA);
 
     /* Now draw each net, one by one.      */
 
@@ -3767,12 +3772,21 @@ static void highlight_blocks(double x, double y) {
 }
 void set_net_alpha_value(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
     std::string fa(gtk_entry_get_text((GtkEntry*)widget));
-    net_alpha = std::stof(fa);
+    t_draw_state* draw_state = get_draw_state_vars();
+    draw_state->net_alpha = std::stof(fa);
+    application.refresh_drawing();
+}
+
+void set_net_alpha_value_with_enter(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+    std::string fa(gtk_entry_get_text((GtkEntry*)widget));
+    t_draw_state* draw_state = get_draw_state_vars();
+    draw_state->net_alpha = std::stof(fa);
     application.refresh_drawing();
 }
 
 float get_net_alpha() {
-    return net_alpha;
+    t_draw_state* draw_state = get_draw_state_vars();
+    return draw_state->net_alpha;
 }
 
 void setup_default_ezgl_callbacks(ezgl::application* app) {
