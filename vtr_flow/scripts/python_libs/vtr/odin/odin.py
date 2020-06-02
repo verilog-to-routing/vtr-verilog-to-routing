@@ -15,7 +15,7 @@ def run(architecture_file, circuit_file,
 
     verify_file(architecture_file, "Architecture")
     verify_file(circuit_file, "Circuit")
-    verify_file(output_netlist, "Output netlist")
+    verify_file(output_netlist, "Output netlist", False)
 
     if odin_exec == None:
         odin_exec = find_vtr_file('odin_II', is_executable=True)
