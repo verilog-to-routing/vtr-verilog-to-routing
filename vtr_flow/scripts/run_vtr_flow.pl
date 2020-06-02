@@ -118,6 +118,7 @@ my $rr_graph_ext            = ".xml";
 my $check_route             = 0;
 my $check_place             = 0;
 my $use_old_abc_script      = 0;
+my $check_incremental       = 0;
 my $run_name = "";
 my $expect_fail = undef;
 my $verbosity = 0;
@@ -248,6 +249,9 @@ while ( scalar(@ARGV) != 0 ) { #While non-empty
 	}
 	elsif ( $token eq "-crit_path_router_iterations" ){
 		$crit_path_router_iterations = shift(@ARGV);
+	}
+	elsif ( $toekn eq "-check_incremental" ){
+		$check_incremental = 1;
 	}
     # else forward the argument
 	else {
@@ -957,6 +961,19 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
     my $explicit_route_vpr_stage = (grep(/^--route$/, @forwarded_vpr_args));
     my $explicit_analysis_vpr_stage = (grep(/^--analysis$/, @forwarded_vpr_args));
 
+    #If incremental, add --pack and --place
+    if ($check_incremental) {
+    	if (!$explicit_pack_vpr_stage) {
+    		push(@forwarded_vpr_args, "--pack");
+    		$explicit_pack_vpr_stage = 1;
+    	}
+
+    	if (!$explicit_place_vpr_stage) {
+    		push(@forwarded_vpr_args, "--place");
+    		$explicit_place_vpr_stage = 1;
+    	}
+    }
+
     #If no VPR stages are explicitly specified, then all stages run by default
     my $implicit_all_vpr_stage = !($explicit_pack_vpr_stage
                                    or $explicit_place_vpr_stage
@@ -1017,6 +1034,104 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                 }
             }
         }
+	} elsif ($check_incremental) { # specified channel width && check incremental
+
+		# full analysis
+		my $full_fixed_W_log_file = "vpr_full.out";
+		my $full_net_file = "full.net";
+		my $full_place_file = "full.place";
+		my $full_post_place_timing_file = "full_report_timing.setup.post_place.rpt";
+
+		my @fixed_full_vpr_args = @forwarded_vpr_args;
+		push( @fixed_full_vpr_args, ("--timing_update_type", "full"));
+		push( @fixed_full_vpr_args, ("--net_file", $full_net_file));
+		push( @fixed_full_vpr_args, ("--place_file", $full_place_file));
+		push( @fixed_full_vpr_args, ("--post_place_timing_report", $full_post_place_timing_file));
+		
+		# incremental analysis
+		my $incr_fixed_W_log_file = "vpr_incr.out";
+		my $incr_net_file = "incr.net";
+		my $incr_place_file = "incr.place";
+		my $incr_post_place_timing_file = "incr_report_timing.setup.post_place.rpt";
+
+		my @fixed_incr_vpr_args = @forwarded_vpr_args;
+		push( @fixed_incr_vpr_args, ("--timing_update_type", "incremental"));
+		push( @fixed_incr_vpr_args, ("--net_file", $incr_net_file));
+		push( @fixed_incr_vpr_args, ("--place_file", $incr_place_file));
+		push( @fixed_incr_vpr_args, ("--post_place_timing_report", $incr_post_place_timing_file));
+
+		# Run two flows with different STA methods
+		$q = run_vpr({
+                arch_name => $architecture_file_name,
+                circuit_name => $benchmark_name,
+                circuit_file => $prevpr_output_file_name,
+                sdc_file => $sdc_file_path,
+                pad_file => $pad_file_path,
+                extra_vpr_args => \@fixed_full_vpr_args,
+                log_file => $full_fixed_W_log_file,
+            });
+
+		$q = run_vpr({
+                arch_name => $architecture_file_name,
+                circuit_name => $benchmark_name,
+                circuit_file => $prevpr_output_file_name,
+                sdc_file => $sdc_file_path,
+                pad_file => $pad_file_path,
+                extra_vpr_args => \@fixed_incr_vpr_args,
+                log_file => $incr_fixed_W_log_file,
+            });
+
+		#Sanity check that full STA and the incremental STA
+		#produce the saming packing and placement files 
+		#as well as identical post-place timing report files
+
+		#TODO: add post-route file checks after incremental STA
+		#has been integrated into the VTR routing workflow
+
+		# Check *.net
+        my @diff_pack_args;
+        push(@diff_pack_args, $full_net_file);
+        push(@diff_pack_args, $incr_net_file);
+
+        my $diff_pack_result = &system_with_timeout(
+    			$diff_exec, "diff.net.out",
+        		$timeout,  $temp_dir,
+        		@diff_pack_args
+			);
+
+        # Check *.place
+        my @diff_place_args;
+        push(@diff_place_args, $full_place_file);
+        push(@diff_place_args, $incr_place_file);
+
+        my $diff_place_result = &system_with_timeout(
+        		$diff_exec, "diff.place.out",
+        		$timeout,  $temp_dir,
+        		@diff_place_args
+			);
+
+        # Check report_timing.setup.post_place.rpt
+        my @diff_post_place_args;
+        push(@diff_post_place_args, $full_post_place_timing_file);
+        push(@diff_post_place_args, $incr_post_place_timing_file);
+
+        my $diff_post_place_result = &system_with_timeout(
+        		$diff_exec, "diff.post_timing.out",
+        		$timeout,  $temp_dir,
+        		@diff_post_place_args
+			);
+
+        if ($diff_post_place_result ne "success") {
+            $error_status = "failed: vpr full or incremental timing analysis do not produce the same results";
+            $error_code = 1;
+        }
+=pod
+        # SHA256 hash differences between *.net and *place
+        if ($diff_pack_result ne "success" or $diff_place_result ne "success" or $diff_post_place_result ne "success") {
+            $error_status = "failed: vpr full or incremental timing analysis do not produce the same results";
+            $error_code = 1;
+        }
+=cut
 	} else { # specified channel width
         my $fixed_W_log_file = "vpr.out";
 
