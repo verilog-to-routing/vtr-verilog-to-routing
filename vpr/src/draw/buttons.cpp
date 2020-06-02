@@ -41,9 +41,10 @@ void button_for_net_alpha() {
     gtk_entry_set_text((GtkEntry*)entry, initialValue.c_str());
     gtk_entry_set_input_purpose((GtkEntry*)entry, GTK_INPUT_PURPOSE_NUMBER);
     gtk_widget_set_name(entry, "alphaValue");
+    gtk_entry_set_activates_default((GtkEntry*)entry, TRUE);
 
     //label
-    GtkWidget* alpha_label = gtk_label_new("Set alpha value (<1)");
+    GtkWidget* alpha_label = gtk_label_new("Set net transparency [0., 1.]");
 
     //button
     GtkWidget* button = gtk_button_new_with_label("set");
@@ -61,6 +62,10 @@ void button_for_net_alpha() {
     g_signal_connect_swapped(GTK_BUTTON(button),
                              "clicked",
                              G_CALLBACK(set_net_alpha_value),
+                             entry);
+    g_signal_connect_swapped(GTK_ENTRY(entry),
+                             "activate",
+                             G_CALLBACK(set_net_alpha_value_with_enter),
                              entry);
 }
 
@@ -96,14 +101,24 @@ void button_for_net_max_fanout() {
     GObject* main_window_grid = application.get_object("InnerGrid");
 
     //find maximum fanout
+    size_t max;
+
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& clb_nlist = cluster_ctx.clb_nlist;
     size_t max_fanout = 0;
     for (ClusterNetId net_id : clb_nlist.nets())
         max_fanout = std::max(max_fanout, clb_nlist.net_sinks(net_id).size());
 
+    auto& atom_ctx = g_vpr_ctx.atom();
+    auto& atom_nlist = atom_ctx.nlist;
+    size_t max_fanout2 = 0;
+    for (AtomNetId net_id : atom_nlist.nets())
+        max_fanout2 = std::max(max_fanout2, atom_nlist.net_sinks(net_id).size());
+
+    max_fanout2 > max_fanout ? max = max_fanout2 : max = max_fanout;
+
     //spin box for net_max_fanout, set the range and increment step
-    GtkWidget* net_max_fanout_widget = gtk_spin_button_new_with_range(0, std::numeric_limits<int>::max(), 1.);
+    GtkWidget* net_max_fanout_widget = gtk_spin_button_new_with_range(0, (int)max, 1.);
     GtkWidget* max_fanout_label = gtk_label_new("Net Max Fanout:");
     gtk_widget_set_name(net_max_fanout_widget, "netMaxFanout");
 
