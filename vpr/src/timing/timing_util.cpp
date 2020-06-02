@@ -191,13 +191,13 @@ std::vector<HistogramBucket> create_criticality_histogram(const SetupTimingInfo&
     return histogram;
 }
 
-void print_setup_timing_summary(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer) {
+void print_setup_timing_summary(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer, std::string prefix) {
     auto& timing_ctx = g_vpr_ctx.timing();
 
     auto crit_paths = tatum::find_critical_paths(*timing_ctx.graph, constraints, setup_analyzer);
 
     auto least_slack_cpd = find_least_slack_critical_path_delay(constraints, setup_analyzer);
-    VTR_LOG("Final critical path: %g ns", sec_to_nanosec(least_slack_cpd.delay()));
+    VTR_LOG("%scritical path delay (least slack): %g ns", prefix.c_str(), sec_to_nanosec(least_slack_cpd.delay()));
 
     if (crit_paths.size() == 1) {
         //Fmax is only meaningful for a single-clock circuit
@@ -205,11 +205,11 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
     }
     VTR_LOG("\n");
 
-    VTR_LOG("Setup Worst Negative Slack (sWNS): %g ns\n", sec_to_nanosec(find_setup_worst_negative_slack(setup_analyzer)));
-    VTR_LOG("Setup Total Negative Slack (sTNS): %g ns\n", sec_to_nanosec(find_setup_total_negative_slack(setup_analyzer)));
+    VTR_LOG("%ssetup Worst Negative Slack (sWNS): %g ns\n", prefix.c_str(), sec_to_nanosec(find_setup_worst_negative_slack(setup_analyzer)));
+    VTR_LOG("%ssetup Total Negative Slack (sTNS): %g ns\n", prefix.c_str(), sec_to_nanosec(find_setup_total_negative_slack(setup_analyzer)));
     VTR_LOG("\n");
 
-    VTR_LOG("Setup slack histogram:\n");
+    VTR_LOG("%ssetup slack histogram:\n", prefix.c_str());
     print_histogram(create_setup_slack_histogram(setup_analyzer));
 
     if (crit_paths.size() > 1) {
@@ -217,7 +217,7 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
         VTR_LOG("\n");
 
         //Periods per constraint
-        VTR_LOG("Intra-domain critical path delays (CPDs):\n");
+        VTR_LOG("%sintra-domain critical path delays (CPDs):\n", prefix.c_str());
         for (const auto& path : crit_paths) {
             if (path.launch_domain() == path.capture_domain()) {
                 VTR_LOG("  %s to %s CPD: %g ns (%g MHz)\n",
@@ -229,7 +229,7 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
         }
         VTR_LOG("\n");
 
-        VTR_LOG("Inter-domain critical path delays (CPDs):\n");
+        VTR_LOG("%sinter-domain critical path delays (CPDs):\n", prefix.c_str());
         for (const auto& path : crit_paths) {
             if (path.launch_domain() != path.capture_domain()) {
                 VTR_LOG("  %s to %s CPD: %g ns (%g MHz)\n",
@@ -242,7 +242,7 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
         VTR_LOG("\n");
 
         //Slack per constraint
-        VTR_LOG("Intra-domain worst setup slacks per constraint:\n");
+        VTR_LOG("%sintra-domain worst setup slacks per constraint:\n", prefix.c_str());
         for (const auto& path : crit_paths) {
             if (path.launch_domain() == path.capture_domain()) {
                 VTR_LOG("  %s to %s worst setup slack: %g ns\n",
@@ -253,7 +253,7 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
         }
         VTR_LOG("\n");
 
-        VTR_LOG("Inter-domain worst setup slacks per constraint:\n");
+        VTR_LOG("%sinter-domain worst setup slacks per constraint:\n", prefix.c_str());
         for (const auto& path : crit_paths) {
             if (path.launch_domain() != path.capture_domain()) {
                 VTR_LOG("  %s to %s worst setup slack: %g ns\n",
@@ -274,7 +274,8 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
         for (const auto& path : crit_paths) {
             if (path.launch_domain() == path.capture_domain() && !constraints.is_virtual_clock(path.launch_domain())) {
                 if (path.delay() == 0.) {
-                    VTR_LOG_WARN("%s to %s CPD is %g, skipping in geomean and fanout-weighted CPDs\n",
+                    VTR_LOG_WARN("%s%s to %s CPD is %g, skipping in geomean and fanout-weighted CPDs\n",
+                                 prefix.c_str(),
                                  constraints.clock_domain_name(path.launch_domain()).c_str(),
                                  constraints.clock_domain_name(path.capture_domain()).c_str(),
                                  sec_to_nanosec(path.delay()));
@@ -295,7 +296,8 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
         //Print multi-clock geomeans
         if (intra_domain_cpds.size() > 0) {
             double geomean_intra_domain_cpd = vtr::geomean(intra_domain_cpds.begin(), intra_domain_cpds.end());
-            VTR_LOG("Geometric mean non-virtual intra-domain period: %g ns (%g MHz)\n",
+            VTR_LOG("%sgeomean non-virtual intra-domain period: %g ns (%g MHz)\n",
+                    prefix.c_str(),
                     sec_to_nanosec(geomean_intra_domain_cpd),
                     sec_to_mhz(geomean_intra_domain_cpd));
 
@@ -305,7 +307,8 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints, con
             }
             double fanout_weighted_geomean_intra_domain_cpd = vtr::geomean(fanout_weighted_intra_domain_cpds.begin(),
                                                                            fanout_weighted_intra_domain_cpds.end());
-            VTR_LOG("Fanout-weighted geomean non-virtual intra-domain period: %g ns (%g MHz)\n",
+            VTR_LOG("%sfanout-weighted geomean non-virtual intra-domain period: %g ns (%g MHz)\n",
+                    prefix.c_str(),
                     sec_to_nanosec(fanout_weighted_geomean_intra_domain_cpd),
                     sec_to_mhz(fanout_weighted_geomean_intra_domain_cpd));
         }
