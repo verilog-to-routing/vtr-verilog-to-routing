@@ -816,7 +816,7 @@ void subckt_prep(t_model* cur_model){
 	}
 	
 //TASK 3: Initialize the unconn and open_port structures.
-	unconn.name = (char*)"unconn";
+	unconn.name = strdup("unconn");
 	unconn.indexed = T_FALSE;
 	unconn.type = PIN_WIRE;
 	unconn.left = unconn.right = 0;
@@ -981,7 +981,7 @@ void push_node_1_to_1 (t_node* vqm_node, t_model* arch_models, scktvec* blif_sub
 //============================================================================================
 //============================================================================================
 
-void push_node_atomize (t_node* vqm_node, t_model* arch_models, scktvec* blif_subckts /*, FILE* dict*/){
+void push_node_atomize (t_node* /*vqm_node*/, t_model* /*arch_models*/, scktvec* /*blif_subckts*/ /*, FILE* dict*/){
 /*  Interprets each VQM block and its parameter set, then expands that block into its smaller 
  *  atomic constituents based on a "Dictionary" document.
  *
@@ -1126,7 +1126,7 @@ void push_lut (t_node* vqm_node, lutvec* blif_luts){
  *	A vector from a BLIF model containing instances of BLIF-compatible LUTs.
  */
 
-	char* lutmask;
+	char* lutmask = nullptr;
 	signed int which_port;
 	string portName;
 
@@ -1192,7 +1192,7 @@ void push_lut (t_node* vqm_node, lutvec* blif_luts){
 //============================================================================================
 //============================================================================================
 
-void dump_blif (char* blif_file, t_blif_model* main_model, t_arch* arch, t_boolean print_unused_subckt_pins){
+void dump_blif (char* blif_file, t_blif_model* main_model, t_arch* arch, t_boolean print_unused_subckt_pins_local){
 /*  Uses a populated model structure to construct a .blif netlist.
  *
  *	ARGUMENTS
@@ -1216,7 +1216,7 @@ void dump_blif (char* blif_file, t_blif_model* main_model, t_arch* arch, t_boole
 	blif_out << "\n#MAIN MODEL\n" ;
 	
 	//completely dump the top-level model
-	dump_main_model(main_model, blif_out, print_unused_subckt_pins, eblif_format, T_FALSE);
+	dump_main_model(main_model, blif_out, print_unused_subckt_pins_local, eblif_format, T_FALSE);
 	
 	//now dump the subckt models from the architecture
 	//that were used in the vqm
@@ -1232,7 +1232,7 @@ void dump_blif (char* blif_file, t_blif_model* main_model, t_arch* arch, t_boole
 //============================================================================================
 //============================================================================================
 
-void dump_main_model(t_blif_model* model, ofstream& outfile, t_boolean print_unused_subckt_pins, t_boolean eblif_format, t_boolean debug){
+void dump_main_model(t_blif_model* model, ofstream& outfile, t_boolean print_unused_subckt_pins_local, t_boolean eblif_format_local, t_boolean debug){
 /*  Dumps information stored in a model structure in proper BLIF syntax.
  *
  *	ARGUMENTS
@@ -1272,23 +1272,23 @@ void dump_main_model(t_blif_model* model, ofstream& outfile, t_boolean print_unu
     outfile << "\n";
 	
 	//ABC needs a dummy net called "unconn"; VPR ignores this.
-    if (print_unused_subckt_pins) {
+    if (print_unused_subckt_pins_local) {
         outfile << "\n.names unconn\n\n";
     }
 	
 	//Print Assignment Variable information
 	if (model->num_assignments > 0){
-		dump_assignments(outfile, model, eblif_format, debug);
+		dump_assignments(outfile, model, eblif_format_local, debug);
 	}
 
 	//Print LUT information
 	if (model->luts.size() > 0){
-		dump_luts (outfile, &(model->luts), eblif_format, debug);
+		dump_luts (outfile, &(model->luts), eblif_format_local, debug);
 	}
 	
 	//Print Subcircuit Variable information
 	if (model->subckts.size() > 0){
-		dump_subckts(outfile, &(model->subckts), print_unused_subckt_pins, eblif_format, debug);
+		dump_subckts(outfile, &(model->subckts), print_unused_subckt_pins_local, eblif_format_local, debug);
 	}
 	
 	//Printing the model data is complete.
@@ -1298,7 +1298,7 @@ void dump_main_model(t_blif_model* model, ofstream& outfile, t_boolean print_unu
 //============================================================================================
 //============================================================================================
 
-void dump_portlist (ofstream& outfile, pinvec ports, t_boolean debug){
+void dump_portlist (ofstream& outfile, pinvec ports, t_boolean /*debug*/){
 /*  Prints all the port names of a model, flattening any bussed ports into indexed notation.
  *  Debug format has each port on its own line, BLIF lists them on a single line.
  *
@@ -1352,7 +1352,7 @@ void dump_portlist (ofstream& outfile, pinvec ports, t_boolean debug){
 //============================================================================================
 //============================================================================================
 
-void dump_assignments(ofstream& outfile, t_blif_model* model, t_boolean eblif_format, t_boolean debug){
+void dump_assignments(ofstream& outfile, t_blif_model* model, t_boolean eblif_format_local, t_boolean debug){
 /*  Prints all assignment information from model's array_of_assignments
  *  in BLIF or DEBUG syntax.
  *
@@ -1415,7 +1415,7 @@ void dump_assignments(ofstream& outfile, t_blif_model* model, t_boolean eblif_fo
 				target_name = get_wire_name(temp_assign->target, temp_assign->target_index);
 
 				dump_wire_assign (outfile, target_name, T_TRUE, target_name, temp_assign->value, 
-							eblif_format, debug, temp_assign->inversion);
+							eblif_format_local, debug, temp_assign->inversion);
 #ifdef VQM_BUSES
 			}
 #endif
@@ -1456,7 +1456,7 @@ void dump_assignments(ofstream& outfile, t_blif_model* model, t_boolean eblif_fo
 							T_FALSE,
 							source_name,
 							0,
-							eblif_format, debug, temp_assign->inversion);
+							eblif_format_local, debug, temp_assign->inversion);
 #ifdef VQM_BUSES
 			}
 #endif
@@ -1525,7 +1525,7 @@ void dump_bus_assign(ofstream& outfile, string target_name, int target_left, int
 
 void dump_wire_assign(ofstream& outfile, string target_name, 
 				t_boolean is_constant, string source_name, int value, 
-				t_boolean eblif_format, t_boolean debug, t_boolean inversion){
+				t_boolean eblif_format_local, t_boolean /*debug*/, t_boolean inversion){
 /*  Outputs a 1-bit wide assignment to a file in either DEBUG or BLIF format.
  *
  *	ARGUMENTS
@@ -1552,7 +1552,7 @@ void dump_wire_assign(ofstream& outfile, string target_name,
             outfile << ".names " << source_name << " " << target_name << endl;
             outfile << "0 1\n" ;
         } else {
-            if (eblif_format) {
+            if (eblif_format_local) {
                 outfile << ".conn " << source_name << " " << target_name << endl;
             } else {
                 outfile << ".names " << source_name << " " << target_name << endl;
@@ -1566,7 +1566,7 @@ void dump_wire_assign(ofstream& outfile, string target_name,
 //============================================================================================
 //============================================================================================
 
-void dump_luts (ofstream& outfile, lutvec* blif_luts, t_boolean eblif_format, t_boolean debug){
+void dump_luts (ofstream& outfile, lutvec* blif_luts, t_boolean eblif_format_local, t_boolean debug){
 /*  Prints the data for all BLIF-format LUTs (.names) in the model.
  *  Calls the print member of a BlifLut class. See "lutmask.h" for algorithm.
  *
@@ -1591,14 +1591,14 @@ void dump_luts (ofstream& outfile, lutvec* blif_luts, t_boolean eblif_format, t_
 	cout << "\t>> Introduced " << blif_luts->size() << " BLIF-LUTs (.names)\n" ; 
 	for (lut = blif_luts->begin(); lut != blif_luts->end(); lut++){
 		//traverse entire luts vector, printing them all.
-		lut->print( printMode, outfile, eblif_format );
+		lut->print( printMode, outfile, eblif_format_local );
 	}
 }
 
 //============================================================================================
 //============================================================================================
 
-void dump_subckts(ofstream& outfile, scktvec* subckts, t_boolean print_unused_pins, t_boolean eblif_format, t_boolean debug){
+void dump_subckts(ofstream& outfile, scktvec* subckts, t_boolean print_unused_pins, t_boolean eblif_format_local, t_boolean debug){
 /*  Traverse the subcircuit vector, printing the names and connections
  *  of each instantiated subcircuit in the main model.
  *
@@ -1623,7 +1623,7 @@ void dump_subckts(ofstream& outfile, scktvec* subckts, t_boolean print_unused_pi
 			outfile << "Instance Name: " << temp_subckt->inst_name << endl;
 			outfile << "Type: " << temp_subckt->model_type->name << endl ;
 		} else {
-            if (!eblif_format) {
+            if (!eblif_format_local) {
                 outfile << "\n# Subckt " << i << ": " << temp_subckt->inst_name << " \n";
             }
             outfile << ".subckt " << temp_subckt->model_type->name << " \\\n" ;
@@ -1661,7 +1661,7 @@ void dump_subckts(ofstream& outfile, scktvec* subckts, t_boolean print_unused_pi
                     print_unused_pins,
 					debug,
                     last);
-		if (!debug && eblif_format) {
+		if (!debug && eblif_format_local) {
 			outfile << ".cname " << temp_subckt->inst_name << "\n" ;
             for (auto& param : temp_subckt->params) {
                 outfile << ".param " << param.name << " " << param.value << "\n";

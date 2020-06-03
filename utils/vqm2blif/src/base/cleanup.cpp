@@ -18,7 +18,6 @@ void print_to_module ( t_module* module, busvec* buses, struct s_hash** hash_tab
 
 netvec* get_bus_from_hash (struct s_hash** hash_table, char* temp_name, busvec* buses);
 
-void verify_module (t_module* module);
 void verify_netlist ( t_node** nodes, int num_nodes, busvec* buses, struct s_hash** hash_table);
 void print_all_nets ( busvec* buses, const char* filename );
 

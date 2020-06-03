@@ -73,7 +73,6 @@ t_array_ref *pin_list = NULL;
 t_hash_table *pin_hash = NULL;
 t_node	*most_recently_used_node = NULL;
 
-int calculate_array_size_using_bounds(int element_count);
 /*  //Moved to vqm_common.h
  *void free_module(void *pointer);
  *void free_pin_def(void *pointer);
@@ -90,6 +89,7 @@ size_t hash_func(char* key, t_hash_table* hash_table);
 t_hash_elem* get_hash_entry(char* key, t_hash_table* hash_table);
 void insert_hash(char* key, size_t value, t_hash_table* hash_table);
 t_index_pass find_position_for_net_in_array_by_hash(char* name, t_array_ref *net_list); 
+t_node_port_association *create_node_port_association(char *port_name, int port_index, t_pin_def *pin, int wire_index);
 /*******************************************************************************************/
 /****************************          IMPLEMENTATION            ***************************/
 /*******************************************************************************************/
@@ -471,7 +471,8 @@ void add_assignment(t_pin_def *source, int source_index, t_pin_def *target, int 
 	{
 		/* Now, if this is a bus assignment then break it up into wire-to-wire
 		 * assignments for easier processing later on. */
-		int wire_index, source_index = -1;
+		int wire_index;
+        source_index = -1;
 
 		if (source != NULL)
 		{
@@ -756,7 +757,7 @@ void print_hash_stats(t_hash_table* hash_table)
     printf("\tLongest Entry Linked List: %zu\n", maximum_list_length);
 }
 
-t_index_pass find_position_for_net_in_array_by_hash(char* name, t_array_ref *net_list) 
+t_index_pass find_position_for_net_in_array_by_hash(char* name, t_array_ref* /*net_list*/) 
 /* Given a net name use a simple hash function to return the index into the
  * has table.  Retrieve the hash table element, which should contain the
  * index into the netlist for the named net.

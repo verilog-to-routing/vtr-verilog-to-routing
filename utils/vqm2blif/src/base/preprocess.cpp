@@ -99,6 +99,11 @@ t_pin_def* add_pin(t_module* module);
 t_node* add_buffer(t_module* module, t_buffer_type buffer_type, int num_buffers_inserted);
 
 void print_map(t_global_ports global_ports);
+
+int find_vqm_port_index(const t_node* node, std::string name);
+void add_port(int idx, t_node* node, const t_node_port_association* base_port, const std::string new_name);
+int get_next_port_idx(const t_node* node, std::set<int>& existing_idxs);
+
 //============================================================================================
 //============================================================================================
 void preprocess_netlist(t_module* module, t_arch* arch, t_logical_block_type* arch_types, int num_types, 
@@ -1433,7 +1438,7 @@ t_pin_def* find_associated_clock_net(t_node* node, t_pin_def* clock_net, t_globa
 
 //============================================================================================
 //============================================================================================
-void decompose_multiclock_blocks(t_module* module, t_arch* arch, t_logical_block_type* arch_types, int num_types) {
+void decompose_multiclock_blocks(t_module* module, t_arch* /*arch*/, t_logical_block_type* /*arch_types*/, int /*num_types*/) {
     //Identify netlist multi-clock primitives
     vector<t_node*> multiclock_blocks;
     for(int i = 0; i < module->number_of_nodes; ++i) {
@@ -2001,7 +2006,7 @@ void add_global_to_nonglobal_buffers(t_module* module, t_arch* arch, t_logical_b
 }
 
 
-t_global_ports identify_primitive_global_pins(t_arch* arch, t_logical_block_type* arch_types, int num_types, bool clock_only){
+t_global_ports identify_primitive_global_pins(t_arch* /*arch*/, t_logical_block_type* arch_types, int num_types, bool clock_only){
     t_global_ports global_ports; 
 
     if(verbose_mode) {
@@ -2434,7 +2439,7 @@ bool is_net_global(t_pin_def* net, t_global_nets global_nets) {
     return net_is_global;
 }
 
-t_node_port_vec_pair identify_global_local_pins(t_module* module, t_arch* arch, t_global_ports global_ports,
+t_node_port_vec_pair identify_global_local_pins(t_module* module, t_arch* /*arch*/, t_global_ports global_ports,
                                                 t_global_nets global_nets, t_net_driver_map net_driver_map){
     t_node_port_vec_pair global_local_pins;
 

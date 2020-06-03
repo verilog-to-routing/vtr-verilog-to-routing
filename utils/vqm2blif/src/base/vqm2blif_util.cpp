@@ -189,7 +189,7 @@ string generate_opname_stratixiv (t_node* vqm_node, t_model* arch_models){
     return mode_hash;
 }
 
-void generate_opname_stratixiv_dsp_mult (t_node* vqm_node, t_model* arch_models, string& mode_hash) {
+void generate_opname_stratixiv_dsp_mult (t_node* vqm_node, t_model* /*arch_models*/, string& mode_hash) {
     //We check for all mac_mult's input ports to see if any use a clock
     // if so, we set ALL input ports to be registered.  While this is an approximation,
     // it would be very unusually to have only some of the ports registered.
@@ -299,7 +299,7 @@ void generate_opname_stratixiv_dsp_mult (t_node* vqm_node, t_model* arch_models,
     }
 }
 
-void generate_opname_stratixiv_dsp_out (t_node* vqm_node, t_model* arch_models, string& mode_hash) {
+void generate_opname_stratixiv_dsp_out (t_node* vqm_node, t_model* /*arch_models*/, string& mode_hash) {
     //It is not practical to model all of the internal registers of the mac_out block, as this
     // would significantly increase the size of the architecture description.  As a result, we
     // only identify whether the input or output registers are used.
