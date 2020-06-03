@@ -50,6 +50,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 struct defines_t 
 {
+	std::string name;
+	bool use_va_args;
 	std::vector<std::string> args;
 	std::string body;
 };
@@ -108,7 +110,7 @@ vHEX [Hh][_]*[ZzXx[:xdigit:]][ZzXx[:xdigit:]_]*
 vINT [[:digit:]][[:digit:]_]*
 vWORD [[:alpha:]_][[:alnum:]_$]*
 defineWORD [[:alnum:]_$]+
-vSTRING ["][^"]*["]  
+vSTR ["]([^\\\"]|\\.)*["]  
 vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 
 %%
@@ -168,6 +170,7 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 
 	/* preproc helpers */
 <VAR_PARSE>{vWORD}					{ MP(); add_args_to_define(yytext); }
+<VAR_PARSE>"..."					{ MP(); add_args_to_define(yytext); }
 <VAR_PARSE>[\,]						{  }
 <VAR_PARSE>[\)]						{ CHANGE_STATE(DEFINE_BODY); }
 <PARSE_DEFINE>{defineWORD}[\(]		{ MP(); new_define_t(yytext); CHANGE_STATE(VAR_PARSE);}
@@ -196,7 +199,7 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL,SKIP>"`endif"				{ MP(); POP_STATE();}
 
 <INITIAL>"`include"             	{ MP(); PUSH_STATE(INCLUDE); }
-<INCLUDE>{vSTRING}      			{ MP(); push_include(yytext); POP_STATE(); }
+<INCLUDE>{vSTR}      				{ MP(); push_include(yytext); POP_STATE(); }
 
 <INITIAL>"`default_nettype"			{ MP(); return preDEFAULT_NETTYPE;}
 <INITIAL>"`resetall"				{ MP(); initialize_defaults();}
@@ -314,13 +317,15 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL>"$clog2"					{ MP(); return vCLOG2;}
 <INITIAL>"$unsigned"				{ MP(); return voUNSIGNED;}
 <INITIAL>"$signed"					{ MP(); return voSIGNED;}
-
+<INITIAL>"$finish"					{ MP(); return voFINISH;}
+<INITIAL>"$display"					{ MP(); return voDISPLAY;}
+	/* catch all C functions */
 <INITIAL>[\$]{vWORD}				{ MP(); return vCFUNC;}
 
 	/* Integers */
 <INITIAL>{vINT}						{ MP(); yylval.num_value = vtr::strdup(yytext); return vINT_NUMBER; }
 	/* Strings */
-<INITIAL>{vSTRING}					{ MP(); yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
+<INITIAL>{vSTR}						{ MP(); yylval.num_value = vtr::strdup(yytext); return vSTRING; }
 	/* Numbers */
 <INITIAL>[[:digit:]]*'[sS]?{vBIN}	{ MP(); yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
 <INITIAL>[[:digit:]]*'[sS]?{vHEX}	{ MP(); yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
@@ -371,6 +376,11 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 										{
 											append_to_define_body(' ');
 										}
+										else if(state == DEFINE_ARGS
+										|| 		state == BRACKET_MATCH)
+										{
+											define_arg_push_back(yytext[0]);
+										} 
 									}
 
 <*><<EOF>>							{ if ( ! pop_include() ){ free_define_map(); yyterminate(); } }
@@ -637,6 +647,8 @@ void new_define_t(const char* id)
 	}
 
 	defines_t *new_define = new defines_t();
+	new_define->name = tmp;
+	new_define->use_va_args = false;
 	new_define->args = std::vector<std::string>();
 	new_define->body = "";
 	
@@ -668,13 +680,40 @@ std::string get_complex_define()
 {
 	if(current_define)
 	{
-		if( current_args.size() != current_define->args.size())
+		std::string va_args_replacement = "";
+
+		if( current_args.size() < current_define->args.size())
 		{
 			error_message(PARSER, my_yylineno, current_parse_file, 
-				"define is being used with wrong number of arguments, Expected %ld, got %ld", 
-				current_args.size(), 
-				current_define->args.size());
+				"define `%s is being used with too few arguments, Expected %ld, got %ld", 
+					current_define->name.c_str(), current_define->args.size(),current_args.size());
 		}
+		else if( current_args.size() > current_define->args.size())
+		{
+			if(! current_define->use_va_args) {
+				error_message(PARSER, my_yylineno, current_parse_file, 
+					"define `%s is being used with too many arguments, Expected %ld, got %ld", 
+						current_define->name.c_str(), current_define->args.size(),current_args.size());
+			} else {
+				while(current_define->args.size() != current_args.size())
+				{
+					if(va_args_replacement != "")
+					{
+						va_args_replacement = ", " + va_args_replacement;
+					}
+					va_args_replacement = current_args.back() + va_args_replacement;
+					current_args.pop_back();
+				}
+
+			}
+		}
+
+		if (current_define->use_va_args)
+		{
+			current_define->args.push_back("__VA_ARGS__");
+			current_args.push_back(va_args_replacement);
+		}
+
 
 		for(int i=0; i<current_define->args.size(); i++)
 		{
@@ -687,7 +726,7 @@ std::string get_complex_define()
 				current_define_body.erase(pos, original_arg.size());
 				current_define_body.insert( pos, replacement_arg );
 				pos += replacement_arg.size();
-				pos = current_define_body.find( replacement_arg, pos );
+				pos = current_define_body.find( original_arg, pos );
 			}
 		}
 
@@ -725,11 +764,11 @@ void load_define(const char *str)
 	// compiler specific macros
 	if(tmp == "`__LINE__") 
 	{
-		current_define_body = std::to_string(my_yylineno);
+		current_define_body = std::to_string(my_yylineno + 1 /* 0 indexed */);
 	}
 	else if (tmp == "`__FILE__")
 	{
-		current_define_body = std::string(configuration.list_of_file_names[current_parse_file]);
+		current_define_body = "\"" + std::string(configuration.list_of_file_names[current_parse_file]) + "\"";
 	}
 	else
 	{
@@ -746,9 +785,17 @@ void load_define(const char *str)
 		auto itter = defines_map.find(tmp);
 		if(itter == defines_map.end())
 		{
-			warning_message(PARSER, my_yylineno, current_parse_file, 
-				"%s define cannot be found, replacing with empty string and continuing synthesis", 
-				tmp.c_str());
+			if(tmp == "elif")
+			{
+				warning_message(PARSER, my_yylineno, current_parse_file, 
+					"%s", "using `elif, when you probably meant `elsif");
+			}
+			else
+			{
+				warning_message(PARSER, my_yylineno, current_parse_file, 
+					"%s define cannot be found, replacing with empty string and continuing synthesis", 
+					tmp.c_str());
+			}
 		}
 		else
 		{
@@ -766,16 +813,28 @@ void append_to_define_body(char c)
 void add_args_to_define(const char* str)
 {
 	std::string tmp(str);
-	for(int i=0; i < current_define->args.size(); i++)
+	if(current_define->use_va_args)
 	{
-		if(tmp == current_define->args[i])
-		{
-			error_message(PARSER, my_yylineno, current_parse_file, 
-				"%s","define has two argument with same name");
-		}
+		error_message(PARSER, my_yylineno, current_parse_file, 
+				"%s","... must be used as the last argument of a `define");
 	}
+	else if(tmp == "...")
+	{
+		current_define->use_va_args = true;
+	}
+	else
+	{
+		for(int i=0; i < current_define->args.size(); i++)
+		{
+			if(tmp == current_define->args[i])
+			{
+				error_message(PARSER, my_yylineno, current_parse_file, 
+					"%s","define has two argument with same name");
+			}
+		}
 
-	current_define->args.push_back(std::string(str));
+		current_define->args.push_back(std::string(str));
+	}
 }
 
 void finalize_define()

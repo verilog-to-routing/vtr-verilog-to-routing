@@ -6,7 +6,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [
-            "AST adder_hard_block.v::11 Attempting to convert this instance to a hard block (adder) - unnamed port connections will be matched according to hard block specification and may produce unexpected results"
+            "AST adder_hard_block.v:11 Attempting to convert this instance to a hard block (adder) - unnamed port connections will be matched according to hard block specification and may produce unexpected results"
         ],
         "max_rss(MiB)": 25.4,
         "exec_time(ms)": 51.4,
@@ -32,7 +32,7 @@
         "verilog": "adder_hard_block.v",
         "exit": 134,
         "errors": [
-            "AST adder_hard_block.v::10 Can't find module name adder"
+            "AST adder_hard_block.v:10 Can't find module name adder"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -59,7 +59,7 @@
         "verilog": "adder_hard_block.v",
         "exit": 134,
         "errors": [
-            "AST adder_hard_block.v::10 Can't find module name adder"
+            "AST adder_hard_block.v:10 Can't find module name adder"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -86,7 +86,7 @@
         "verilog": "adder_hard_block.v",
         "exit": 134,
         "errors": [
-            "AST adder_hard_block.v::10 Can't find module name adder"
+            "AST adder_hard_block.v:10 Can't find module name adder"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -6314,7 +6314,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [
-            "AST multiply_hard_block.v::9 Attempting to convert this instance to a hard block (multiply) - unnamed port connections will be matched according to hard block specification and may produce unexpected results"
+            "AST multiply_hard_block.v:9 Attempting to convert this instance to a hard block (multiply) - unnamed port connections will be matched according to hard block specification and may produce unexpected results"
         ],
         "max_rss(MiB)": 25.3,
         "exec_time(ms)": 43.8,
@@ -6340,7 +6340,7 @@
         "verilog": "multiply_hard_block.v",
         "exit": 134,
         "errors": [
-            "AST multiply_hard_block.v::8 Can't find module name multiply"
+            "AST multiply_hard_block.v:8 Can't find module name multiply"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,
@@ -6368,7 +6368,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [
-            "AST multiply_hard_block.v::9 Attempting to convert this instance to a hard block (multiply) - unnamed port connections will be matched according to hard block specification and may produce unexpected results"
+            "AST multiply_hard_block.v:9 Attempting to convert this instance to a hard block (multiply) - unnamed port connections will be matched according to hard block specification and may produce unexpected results"
         ],
         "max_rss(MiB)": 24.4,
         "exec_time(ms)": 37,
@@ -6394,7 +6394,7 @@
         "verilog": "multiply_hard_block.v",
         "exit": 134,
         "errors": [
-            "AST multiply_hard_block.v::8 Can't find module name multiply"
+            "AST multiply_hard_block.v:8 Can't find module name multiply"
         ],
         "warnings": [],
         "max_rss(MiB)": -1,

@@ -95,6 +95,9 @@ class TimingTag {
 
         TagType type() const { return type_; }
 
+    public: //Utility
+        friend bool operator==(const TimingTag& lhs, const TimingTag& rhs);
+        friend bool operator!=(const TimingTag& lhs, const TimingTag& rhs);
     public: //Mutators
         ///\param new_time The new value set as the tag's time
         void set_time(const Time& new_time) { time_ = new_time; }
@@ -121,16 +124,18 @@ class TimingTag {
         ///If the arrival time is updated, meta-data is also updated from base_tag
         ///\param new_arr_time The arrival time to compare against
         ///\param base_tag The tag from which meta-data is copied
-        void max(const Time& new_time, const NodeId origin, const TimingTag& base_tag);
+        ///\returns true if the tag is modified, false otherwise
+        bool max(const Time& new_time, const NodeId origin, const TimingTag& base_tag);
 
         ///Updates the tag's arrival time if new_arr_time is smaller than the current arrival time.
         ///If the arrival time is updated, meta-data is also updated from base_tag
         ///\param new_arr_time The arrival time to compare against
         ///\param base_tag The tag from which meta-data is copied
-        void min(const Time& new_time, const NodeId origin, const TimingTag& base_tag);
+        ///\returns true if the tag is modified, false otherwise
+        bool min(const Time& new_time, const NodeId origin, const TimingTag& base_tag);
 
     private:
-        void update(const Time& new_time, const NodeId origin, const TimingTag& base_tag);
+        bool update(const Time& new_time, const NodeId origin, const TimingTag& base_tag);
 
         /*
          * Data

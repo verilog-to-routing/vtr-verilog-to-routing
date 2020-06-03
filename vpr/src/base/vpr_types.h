@@ -438,6 +438,12 @@ struct t_timing_inf {
     std::string SDCFile;
 };
 
+enum class e_timing_update_type {
+    FULL,
+    INCREMENTAL,
+    AUTO
+};
+
 /***************************************************************************
  * Placement and routing data types
  ****************************************************************************/
@@ -740,6 +746,7 @@ struct t_packer_opts {
     e_stage_action doPacking;
     enum e_packer_algorithm packer_algorithm;
     std::string device_layout;
+    e_timing_update_type timing_update_type;
 };
 
 /* Annealing schedule information for the placer.  The schedule type      *
@@ -769,9 +776,6 @@ struct t_annealing_sched {
  *              channel width in the binary search.                          *
  * recompute_crit_iter: how many temperature stages pass before we recompute *
  *               criticalities based on average point to point delay         *
- * enable_timing_computations: in bounding_box mode, normally, timing        *
- *               information is not produced, this causes the information    *
- *               to be computed. in *_TIMING_DRIVEN modes, this has no effect*
  * inner_loop_crit_divider: (move_lim/inner_loop_crit_divider) determines how*
  *               many inner_loop iterations pass before a recompute of       *
  *               criticalities is done.                                      *
@@ -823,8 +827,8 @@ struct t_placer_opts {
     std::string pad_loc_file;
     enum pfreq place_freq;
     int recompute_crit_iter;
-    bool enable_timing_computations;
     int inner_loop_recompute_divider;
+    int quench_recompute_divider;
     float td_place_exp_first;
     int seed;
     float td_place_exp_last;
@@ -833,6 +837,7 @@ struct t_placer_opts {
     std::string move_stats_file;
     int placement_saves_per_temperature;
     e_place_effort_scaling effort_scaling;
+    e_timing_update_type timing_update_type;
 
     PlaceDelayModelType delay_model_type;
     e_reducer delay_model_reducer;
@@ -943,6 +948,22 @@ enum class e_timing_report_detail {
     DEBUG,            //Show additional internal debugging information
 };
 
+struct t_timing_analysis_profile_info {
+    double timing_analysis_wallclock_time() const {
+        return sta_wallclock_time + slack_wallclock_time;
+    }
+
+    size_t num_full_updates() const {
+        return num_full_setup_updates + num_full_hold_updates + num_full_setup_hold_updates;
+    }
+
+    double sta_wallclock_time = 0.;
+    double slack_wallclock_time = 0.;
+    size_t num_full_setup_updates = 0;
+    size_t num_full_hold_updates = 0;
+    size_t num_full_setup_hold_updates = 0;
+};
+
 enum class e_incr_reroute_delay_ripup {
     ON,
     OFF,
@@ -1007,6 +1028,7 @@ struct t_router_opts {
     bool exit_after_first_routing_iteration;
 
     e_check_route_option check_route;
+    e_timing_update_type timing_update_type;
 };
 
 struct t_analysis_opts {
@@ -1018,6 +1040,8 @@ struct t_analysis_opts {
     e_timing_report_detail timing_report_detail;
     bool timing_report_skew;
     std::string echo_dot_timing_graph_node;
+
+    e_timing_update_type timing_update_type;
 };
 
 /* Defines the detailed routing architecture of the FPGA.  Only important   *

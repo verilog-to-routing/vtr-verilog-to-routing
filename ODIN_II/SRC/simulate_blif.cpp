@@ -1455,7 +1455,7 @@ static void compute_mux_2_node(nnode_t* node, int cycle) {
          *  Conform to ModelSim's behaviour where in-line ifs are concerned. If the
          *  condition is unknown, the inline if's output is unknown.
          */
-        if (ast_node && ast_node->type == IF_Q)
+        if (ast_node && ast_node->type == TERNARY_OPERATION)
             update_pin_value(output_pin, -1, cycle);
         else
             update_pin_value(output_pin, get_pin_value(output_pin, cycle - 1), cycle);
@@ -2727,7 +2727,7 @@ static int verify_output_vectors(const char* output_vector_file, int num_vectors
                 break;
             }
             // The headers differ.
-            else if ((cycle == -1) && strcmp(buffer1, buffer2)) {
+            else if ((cycle == -1) && !output_vector_headers_equal(buffer1, buffer2)) {
                 error = true;
                 warning_message(SIMULATION, 0, -1,
                                 "Vector headers do not match: \n"

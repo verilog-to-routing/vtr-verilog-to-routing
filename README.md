@@ -106,7 +106,7 @@ Graduate Students: Kevin Murray, Jason Luu, Oleg Petelin, Mohamed Eldafrawy, Jef
 
 Summer Students: Opal Densmore, Ted Campbell, Cong Wang, Peter Milankov, Scott Whitty, Michael Wainberg, Suya Liu, Miad Nasr, Nooruddin Ahmed, Thien Yu, Long Yu Wang, Matthew J.P. Walker, Amer Hesson, Sheng Zhong, Hanqing Zeng, Vidya Sankaranarayanan, Jia Min Wang, Eugene Sha, Jean-Philippe Legault, Richard Ren, Dingyu Yang, Alexandrea Demmings, Hillary Soontiens, Julie Brown
 
-Companies: Intel, Huawei, Lattice, Altera Corporation, Texas Instruments, Google
+Companies: Intel, Huawei, Lattice, Altera Corporation, Texas Instruments, Google, Antmicro
 
 Funding Agencies: NSERC, Semiconductor Research Corporation
 

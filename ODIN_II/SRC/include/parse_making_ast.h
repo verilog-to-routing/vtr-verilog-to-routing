@@ -14,6 +14,8 @@ void cleanup_hard_blocks();
 /* GENERAL PARSER NODES */
 ast_node_t* newSymbolNode(char* id, int line_number);
 ast_node_t* newNumberNode(char* num, int line_number);
+ast_node_t* newStringNode(char* num, int line_number);
+
 ast_node_t* newList(ids type_id, ast_node_t* expression, int line_number);
 ast_node_t* newList_entry(ast_node_t* concat_node, ast_node_t* expression);
 ast_node_t* newListReplicate(ast_node_t* exp, ast_node_t* child, int line_number);
@@ -77,6 +79,11 @@ ast_node_t* newVarDeclare(char* symbol, ast_node_t* expression1, ast_node_t* exp
 ast_node_t* newDefparamVarDeclare(char* symbol, ast_node_t* expression1, ast_node_t* expression2, ast_node_t* expression3, ast_node_t* expression4, ast_node_t* value, int line_number);
 ast_node_t* newVarDeclare2D(char* symbol, ast_node_t* expression1, ast_node_t* expression2, ast_node_t* expression3, ast_node_t* expression4, ast_node_t* expression5, ast_node_t* expression6, ast_node_t* value, int line_number);
 ast_node_t* newIntegerTypeVarDeclare(char* symbol, ast_node_t* expression1, ast_node_t* expression2, ast_node_t* expression3, ast_node_t* expression4, ast_node_t* value, int line_number);
+
+/* CFunction */
+ast_node_t* newCFunction(ids type_id, ast_node_t* arg1, ast_node_t* va_args_child, int line_number);
+ast_node_t* newCFunction(ids type_id, ast_node_t* arg1, ast_node_t* arg2, ast_node_t* va_args_child, int line_number);
+ast_node_t* newCFunction(ids type_id, ast_node_t* arg1, ast_node_t* arg2, ast_node_t* arg3, ast_node_t* va_args_child, int line_number);
 
 /* HIGH LEVEL ITEMS */
 ast_node_t* newModule(char* module_name, ast_node_t* list_of_parameters, ast_node_t* list_of_ports, ast_node_t* list_of_module_items, int line_number);

@@ -27,6 +27,10 @@ def parse_args():
                         default=None,
                         help="Specifies the external reference (revision/branch). If unspecified uses the subtree default (usually master).")
 
+    parser.add_argument("-m", "--message",
+                        help="Commit comment when updating a component")
+
+
     exclusive_group = parser.add_mutually_exclusive_group()
     exclusive_group.add_argument("--list",
                         action="store_true",
@@ -114,6 +118,8 @@ def update_component(args, subtree_info):
     else:
         assert args.update
 
+    assert args.message, "Must provide a commit message (-m/--message) describing why component is being updated" 
+
     assert external_ref != None
 
     action = None
@@ -121,19 +127,21 @@ def update_component(args, subtree_info):
     if not os.path.exists(subtree_info.internal_path):
         #Create
         action = 'add'
-        message = "{name}: Adding '{path}/' as an external git subtree from {url} {rev}".format(
+        message = "{msg}\n\n{name}: Adding '{path}/' as an external git subtree from {url} {rev}".format(
                                                                       name=subtree_info.name,
                                                                       path=subtree_info.internal_path,
                                                                       url=subtree_info.external_url,
-                                                                      rev=external_ref)
+                                                                      rev=external_ref,
+                                                                      msg=args.message)
     else:
         #Pull
         action = 'pull'
-        message = "{name}: Updating '{path}/' (external git subtree from {url} {rev})".format(
+        message = "{msg}\n\n{name}: Updating '{path}/' (external git subtree from {url} {rev})".format(
                                                                       name=subtree_info.name,
                                                                       path=subtree_info.internal_path,
                                                                       url=subtree_info.external_url,
-                                                                      rev=external_ref)
+                                                                      rev=external_ref,
+                                                                      msg=args.message)
     assert action != None
     assert message != None
 

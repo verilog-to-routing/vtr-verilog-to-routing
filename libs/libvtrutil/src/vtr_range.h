@@ -45,6 +45,8 @@ class Range {
         , end_(e) {}
     T begin() { return begin_; }
     T end() { return end_; }
+    const T begin() const { return begin_; }
+    const T end() const { return end_; }
     bool empty() { return begin_ == end_; }
     size_t size() { return std::distance(begin_, end_); }
 

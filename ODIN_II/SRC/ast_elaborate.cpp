@@ -405,7 +405,6 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
                 }
                 break;
             }
-            case IF_Q:
             case IF: {
                 if (data->pass == 1 && is_generate_region) {
                     // parameters haven't been resolved yet; don't elaborate until the second pass
@@ -442,12 +441,14 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
                     } else if (V_FALSE(condition)) {
                         to_return = node->children[2];
                         node->children[2] = NULL;
-                    } else if (node->type == IF && is_generate_region) {
+                    } else if (is_generate_region) {
                         error_message(AST, node->line_number, node->file_number,
                                       "%s", "Could not resolve conditional generate construct");
                     }
+                    free_whole_tree(node);
+                    node = to_return;
                     // otherwise we keep it as is to build the circuitry
-                } else if (node->type == IF && is_generate_region) {
+                } else if (is_generate_region) {
                     error_message(AST, node->line_number, node->file_number,
                                   "%s", "Could not resolve conditional generate construct");
                 }
@@ -483,16 +484,8 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
                         create_param_table_for_scope(to_return, new_hierarchy);
                         create_symbol_table_for_scope(to_return, new_hierarchy);
                     }
-
-                    oassert(node->children[1] == NULL || node->children[2] == NULL);
-                    free_whole_tree(node);
-                    node = to_return;
-                    oassert(node->type != IF && node->type != IF_Q);
                 }
 
-                if (node->type == IF || node->type == IF_Q) {
-                    oassert(node->num_children > 0);
-                }
                 break;
             }
             case CASE: {
@@ -679,7 +672,8 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
                 break;
             }
         }
-
+    }
+    if (node) {
         if (child_skip_list && node->num_children > 0 && skip_children == false) {
             /* use while loop and boolean to prevent optimizations
              * since number of children may change during recursion */
@@ -727,7 +721,8 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
                 }
             }
         }
-
+    }
+    if (node) {
         /* post-amble */
         switch (node->type) {
             case MODULE: {
@@ -973,6 +968,28 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
                 }
                 break;
             }
+            case TERNARY_OPERATION: {
+                if (node->children[0] == NULL) {
+                    /* resulting from replication of zero */
+                    error_message(AST, node->line_number, node->file_number,
+                                  "%s", "Cannot perform operation with nonexistent value");
+                }
+                ast_node_t* child_condition = node->children[0];
+                if (node_is_constant(child_condition)) {
+                    VNumber condition = *(child_condition->types.vnumber);
+                    ast_node_t* tmp = NULL;
+                    if (V_TRUE(condition)) {
+                        tmp = node->children[1];
+                        node->children[1] = NULL;
+                    } else {
+                        tmp = node->children[2];
+                        node->children[2] = NULL;
+                    }
+                    free_whole_tree(node);
+                    node = tmp;
+                }
+                break;
+            }
             case BINARY_OPERATION: {
                 if (node->children[0] == NULL || node->children[1] == NULL) {
                     /* resulting from replication of zero */
@@ -1089,10 +1106,10 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
                 break;
             }
         }
+    }
 
-        if (child_skip_list) {
-            child_skip_list = (short*)vtr::free(child_skip_list);
-        }
+    if (child_skip_list) {
+        child_skip_list = (short*)vtr::free(child_skip_list);
     }
 
     return node;
