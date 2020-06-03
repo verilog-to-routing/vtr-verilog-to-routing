@@ -1,7 +1,0 @@
-add_subdirectory(libarchfpga)
-add_subdirectory(libpugixml)
-add_subdirectory(libpugiutil)
-add_subdirectory(libvtrutil)
-add_subdirectory(liblog)
-add_subdirectory(libvqm)
-add_subdirectory(libcatch)
