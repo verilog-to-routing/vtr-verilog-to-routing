@@ -2,6 +2,7 @@
 # used by Read The Docs to install python required
 # modules with pip.
 
+Sphinx==3.0
 sphinx_rtd_theme
 
 # Support custom domains
@@ -28,3 +29,6 @@ docutils>=0.14
 
 #Generates a project specific 404 (page not found) page
 sphinx-notfound-page
+
+#API Documentation
+breathe
