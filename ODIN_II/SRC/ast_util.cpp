@@ -1338,39 +1338,52 @@ void assert_constant_positionnal_args(ast_node_t* node, long arg_count) {
  * a simple printf would not be able to do this since escaped characters are compile time
  */
 void c_simple_print(std::string str) {
+    size_t str_size = str.size();
     size_t start = 0;
     while (start != std::string::npos) {
         size_t format_char_index = str.find_first_of('\\', start);
         size_t next_char = format_char_index;
-        printf("%s", str.substr(start, format_char_index).c_str());
+        if (start != format_char_index) {
+            printf("%s", str.substr(start, format_char_index).c_str());
+        }
         // print the string
         if (format_char_index != std::string::npos) {
-            // try and see if its an octal number
-            char buffer[4] = {
-                str[format_char_index + 1],
-                str[format_char_index + 2],
-                str[format_char_index + 3],
-                0};
-            next_char = format_char_index + 4;
-            char* endptr = NULL;
-            char octal_value = (char)strtoul(buffer, &endptr, 8);
-            if (endptr == &buffer[3]) {
-                // if it is an octal number print the octal char
-                printf("%c", octal_value);
-            } else {
-                next_char = format_char_index + 2;
-                switch (str[format_char_index + 1]) {
-                    case 'n':
-                        printf("\n");
-                        break;
-                    case 't':
-                        printf("\t");
-                        break;
-                    default:
+            next_char = format_char_index + 2;
+            switch (str[format_char_index + 1]) {
+                case 'n':
+                    printf("\n");
+                    break;
+                case 't':
+                    printf("\t");
+                    break;
+                default:
+                    // can only be octal if there is 3+ chars following
+                    if ((str_size - 3) >= format_char_index) {
+                        // try and see if its an octal number
+                        char buffer[4] = {
+                            str[format_char_index + 1],
+                            str[format_char_index + 2],
+                            str[format_char_index + 3],
+                            0};
+                        next_char = format_char_index + 4;
+                        char* endptr = NULL;
+                        char octal_value = (char)strtoul(buffer, &endptr, 8);
+                        if (endptr == &buffer[3]) {
+                            // if it is an octal number print the octal char
+                            printf("%c", octal_value);
+                        } else {
+                            // otherwise just print the character
+                            next_char = format_char_index + 2;
+                            printf("%c", str[format_char_index + 1]);
+                            break;
+                        }
+
+                    } else {
                         // otherwise just print the character
+                        next_char = format_char_index + 2;
                         printf("%c", str[format_char_index + 1]);
                         break;
-                }
+                    }
             }
         }
         start = next_char;
