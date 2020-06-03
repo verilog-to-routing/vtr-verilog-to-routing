@@ -331,12 +331,13 @@ void reassign_net_source (t_net* net){
 		net_source = (t_net*)net->source;
 		reassign_net_source(net_source);
 		switch (net_source->driver){
-			case INVERT:
+			case INVERT: 
 				if (net->driver == INVERT){
 					net->driver = BUFFER;
 				} else {
 					net->driver = INVERT;
 				}
+                //fallthrough
 			case BUFFER:
 				net->source = net_source->source;
 				net_source->num_children--;
