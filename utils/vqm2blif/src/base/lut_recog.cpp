@@ -158,19 +158,19 @@ bool stratixiv_lut_CP (t_node* vqm_node){
 
 	for (int i = 0; i < vqm_node->number_of_params; i++){
 		if (strcmp(vqm_node->array_of_params[i]->name, "shared_arith") == 0){
-			assert (vqm_node->array_of_params[i]->type == NODE_PARAMETER_STRING);
+			VTR_ASSERT(vqm_node->array_of_params[i]->type == NODE_PARAMETER_STRING);
 			if (strcmp(vqm_node->array_of_params[i]->value.string_value, "off") != 0){
 				isLut = false;
 				break;
 			}
 		} else if (strcmp(vqm_node->array_of_params[i]->name, "extended_lut") == 0){
-			assert (vqm_node->array_of_params[i]->type == NODE_PARAMETER_STRING);
+			VTR_ASSERT(vqm_node->array_of_params[i]->type == NODE_PARAMETER_STRING);
 			if (strcmp(vqm_node->array_of_params[i]->value.string_value, "off") != 0){
 				isLut = false;
 				break;
 			}
 		} else if (strcmp(vqm_node->array_of_params[i]->name, "lut_mask") == 0){
-			assert (vqm_node->array_of_params[i]->type == NODE_PARAMETER_STRING);
+			VTR_ASSERT(vqm_node->array_of_params[i]->type == NODE_PARAMETER_STRING);
 			if (strlen(vqm_node->array_of_params[i]->value.string_value) != 16){
 				isLut = false;
 				break;

@@ -396,7 +396,7 @@ t_model* find_model_in_architecture(t_model* arch_models, t_node* node) {
         cout << "Error: could not find model in architecture file for '" << node->type << "'\n";
         exit(1);
     }
-    assert(arch_model != NULL);
+    VTR_ASSERT(arch_model != NULL);
 
     return arch_model;
 }
@@ -438,7 +438,7 @@ t_model_ports* find_port_in_architecture_model(t_model* arch_model, t_node_port_
     //Until NULL or a matching port name
     while ((arch_model_port) && (strcmp(arch_model_port->name, node_port->port_name) != 0)) {
         //Must be an input if in the inputs linked list
-        assert(arch_model_port->dir == IN_PORT); 
+        VTR_ASSERT(arch_model_port->dir == IN_PORT); 
 
         //Move to the next arch_model_port
         arch_model_port = arch_model_port->next;
@@ -454,7 +454,7 @@ t_model_ports* find_port_in_architecture_model(t_model* arch_model, t_node_port_
         //Until NULL or a matching port name
         while ((arch_model_port) && (strcmp(arch_model_port->name, node_port->port_name) != 0)) {
             //Must be an output if in the output linked list
-            assert(arch_model_port->dir == OUT_PORT); 
+            VTR_ASSERT(arch_model_port->dir == OUT_PORT); 
 
             //Move to the next arch_model_port
             arch_model_port = arch_model_port->next;
@@ -468,7 +468,7 @@ t_model_ports* find_port_in_architecture_model(t_model* arch_model, t_node_port_
         }
     }
 
-    assert(arch_model_port != NULL);
+    VTR_ASSERT(arch_model_port != NULL);
 
     return arch_model_port;
 }
@@ -841,7 +841,7 @@ void decompose_carry_chains(t_module* module) {
         std::pair<bool, bool> lut_info = is_carry_chain_lut(node);
 
         if(lut_info.first) {
-            assert(strcmp(node->type, "stratixiv_lcell_comb") == 0);
+            VTR_ASSERT(strcmp(node->type, "stratixiv_lcell_comb") == 0);
 
             carry_lcells.push_back(node);
         }
@@ -1300,7 +1300,7 @@ void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* ar
             t_assign* assign = module->array_of_assignments[i];
 
             if(assign->inversion == T_TRUE && false_clock_nets.count(assign->source) > 0) {
-                assert(clock_nets.count(assign->target) > 0); //Target should have been identified as a clock
+                VTR_ASSERT(clock_nets.count(assign->target) > 0); //Target should have been identified as a clock
 
                 if(verbose_mode) {
                     cout << "\t\tIdentified inverted false clock net " << assign->target->name << " driven by assignment from " << assign->source->name << endl;
@@ -1313,7 +1313,7 @@ void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* ar
         //Identify a valid clock to replace false clock connections with
         //We must do this, since VPR does not allow primitives with clock ports
         //to not have any clock connections
-        assert(false_clock_nets.size() <= clock_nets.size());
+        VTR_ASSERT(false_clock_nets.size() <= clock_nets.size());
 
         t_pin_def* valid_clock_net = NULL;
         for(t_global_nets::iterator clock_net_iter = clock_nets.begin(); clock_net_iter != clock_nets.end(); clock_net_iter++) {
@@ -1325,7 +1325,7 @@ void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* ar
                 break;
             }
         }
-        assert(valid_clock_net != NULL);
+        VTR_ASSERT(valid_clock_net != NULL);
         
         //Remove clock port connections to all false clock nets
         for(int i = 0; i < module->number_of_nodes; ++i) {
@@ -1348,7 +1348,7 @@ void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* ar
                             if(associated_clock.count(false_clock_net) > 0 && false_clock_nets.count(associated_clock[false_clock_net]) == 0) {
                                 associated_clock_net = associated_clock[false_clock_net];
                             }
-                            assert(associated_clock_net != NULL);
+                            VTR_ASSERT(associated_clock_net != NULL);
 
 
                             if(verbose_mode) {
@@ -1601,7 +1601,7 @@ void duplicate_and_split_multiclock_blocks(t_module* module, vector<t_node*>& mu
         for(int i = 0; i < split_node_a->number_of_ports; i++) {
             t_node_port_association* node_port = split_node_a->array_of_ports[i];
 
-            assert(node_a_port_to_node_map.count(node_port));
+            VTR_ASSERT(node_a_port_to_node_map.count(node_port));
 
             if(node_a_port_to_node_map[node_port] != split_node_a) {
                 //Disconnect this port
@@ -1618,7 +1618,7 @@ void duplicate_and_split_multiclock_blocks(t_module* module, vector<t_node*>& mu
             t_node_port_association* node_port = split_node_a->array_of_ports[i];
 
             if(node_port != NULL) {
-                assert(index < split_node_a->number_of_ports - num_ports_removed);
+                VTR_ASSERT(index < split_node_a->number_of_ports - num_ports_removed);
                 new_port_array[index] = node_port;
                 index++;
             }
@@ -1637,7 +1637,7 @@ void duplicate_and_split_multiclock_blocks(t_module* module, vector<t_node*>& mu
         for(int i = 0; i < split_node_b->number_of_ports; i++) {
             t_node_port_association* node_port = split_node_b->array_of_ports[i];
             
-            assert(node_b_port_to_node_map.count(node_port));
+            VTR_ASSERT(node_b_port_to_node_map.count(node_port));
 
             if(node_b_port_to_node_map[node_port] != split_node_b) {
                 //Disconnect this port
@@ -1653,7 +1653,7 @@ void duplicate_and_split_multiclock_blocks(t_module* module, vector<t_node*>& mu
             t_node_port_association* node_port = split_node_b->array_of_ports[i];
 
             if(node_port != NULL) {
-                assert(index < split_node_b->number_of_ports - num_ports_removed);
+                VTR_ASSERT(index < split_node_b->number_of_ports - num_ports_removed);
                 new_port_array[index] = node_port;
                 index++;
             }
@@ -1826,7 +1826,7 @@ map<t_node_port_association*, t_node*> map_ports_to_split_blocks(t_node* orig_no
                 port_to_node_map[node_port] = split_node_a;
                 
             } else {
-                assert(node_param->type == NODE_PARAMETER_STRING);
+                VTR_ASSERT(node_param->type == NODE_PARAMETER_STRING);
 
                 if(strcmp(node_param->value.string_value, "clock0") == 0) {
                     port_to_node_map[node_port] = split_node_a;
@@ -1841,13 +1841,13 @@ map<t_node_port_association*, t_node*> map_ports_to_split_blocks(t_node* orig_no
         } else if (strcmp(node_port->port_name, "portbdataout") == 0) {
             //Check the port_b_data_out_clock parameter
             t_node_parameter* node_param = find_node_param(orig_node, "port_b_data_out_clock");
-            assert(node_param != NULL);
+            VTR_ASSERT(node_param != NULL);
             if(node_param == NULL) {
                 //Unspecified, assume none and map to node b
                 port_to_node_map[node_port] = split_node_b;
                 
             } else {
-                assert(node_param->type == NODE_PARAMETER_STRING);
+                VTR_ASSERT(node_param->type == NODE_PARAMETER_STRING);
 
                 if(strcmp(node_param->value.string_value, "clock0") == 0) {
                     port_to_node_map[node_port] = split_node_a;
@@ -1868,37 +1868,37 @@ map<t_node_port_association*, t_node*> map_ports_to_split_blocks(t_node* orig_no
             //Check the port_b_address_clock parameter, must be defined if port b is used.
             // Port B must be used since this block has multiple clocks
             t_node_parameter* node_param = find_node_param(orig_node, "port_b_address_clock");
-            assert(node_param != NULL);
-            assert(node_param->type == NODE_PARAMETER_STRING);
+            VTR_ASSERT(node_param != NULL);
+            VTR_ASSERT(node_param->type == NODE_PARAMETER_STRING);
 
             if(strcmp(node_param->value.string_value, "clock0") == 0) {
                 port_to_node_map[node_port] = split_node_a;
             } else if (strcmp(node_param->value.string_value, "clock1") == 0) {
                 port_to_node_map[node_port] = split_node_b;
             } else {
-                assert(0);
+                VTR_ASSERT(0);
             }
             
         
         } else if (strcmp(node_port->port_name, "eccstatus") == 0) {
             //Check the eccstatus_clock parameters
             t_node_parameter* node_param = find_node_param(orig_node, "eccstatus_clock");
-            assert(node_param != NULL);
-            assert(node_param->type == NODE_PARAMETER_STRING);
+            VTR_ASSERT(node_param != NULL);
+            VTR_ASSERT(node_param->type == NODE_PARAMETER_STRING);
 
             if(strcmp(node_param->value.string_value, "clock0") == 0) {
                 port_to_node_map[node_port] = split_node_a;
             } else if (strcmp(node_param->value.string_value, "clock1") == 0) {
                 port_to_node_map[node_port] = split_node_b;
             } else {
-                assert(0);
+                VTR_ASSERT(0);
             }
            
         } else if (strstr(node_port->port_name, "clr0") != NULL) {
             //Check the port_a_data_out_clear, port_b_data_out_clear, and eccstatus_clear parameters
             t_node_parameter* node_param = find_node_param(orig_node, "port_a_data_out_clear");
             if(node_param != NULL) {
-                assert(node_param->type == NODE_PARAMETER_STRING);
+                VTR_ASSERT(node_param->type == NODE_PARAMETER_STRING);
                 if(strcmp(node_param->value.string_value, "clear0") == 0) {
                     port_to_node_map[node_port] = split_node_a;
                     continue;
@@ -1906,7 +1906,7 @@ map<t_node_port_association*, t_node*> map_ports_to_split_blocks(t_node* orig_no
             }
             node_param = find_node_param(orig_node, "port_b_data_out_clear");
             if(node_param != NULL) {
-                assert(node_param->type == NODE_PARAMETER_STRING);
+                VTR_ASSERT(node_param->type == NODE_PARAMETER_STRING);
                 if(strcmp(node_param->value.string_value, "clear0") == 0) {
                     port_to_node_map[node_port] = split_node_b;
                     continue;
@@ -1914,28 +1914,28 @@ map<t_node_port_association*, t_node*> map_ports_to_split_blocks(t_node* orig_no
             }
             node_param = find_node_param(orig_node, "eccstatus_clear");
             if(node_param != NULL) {
-                assert(node_param->type == NODE_PARAMETER_STRING);
+                VTR_ASSERT(node_param->type == NODE_PARAMETER_STRING);
                 if(strcmp(node_param->value.string_value, "clear0") == 0) {
                     t_node_parameter* node_param_clock = find_node_param(orig_node, "eccstatus_clock");
-                    assert(node_param_clock != NULL);
-                    assert(node_param_clock->type == NODE_PARAMETER_STRING);
+                    VTR_ASSERT(node_param_clock != NULL);
+                    VTR_ASSERT(node_param_clock->type == NODE_PARAMETER_STRING);
 
                     if(strcmp(node_param_clock->value.string_value, "clock0") == 0) {
                         port_to_node_map[node_port] = split_node_a;
                     } else if (strcmp(node_param_clock->value.string_value, "clock1") == 0) {
                         port_to_node_map[node_port] = split_node_b;
                     } else {
-                        assert(0);
+                        VTR_ASSERT(0);
                     }
                     continue;
                 }
             }
-            assert(0);
+            VTR_ASSERT(0);
         } else if (strstr(node_port->port_name, "clr0") != NULL) {
             //Check the port_a_data_out_clear, port_b_data_out_clear, and eccstatus_clear parameters
             t_node_parameter* node_param = find_node_param(orig_node, "port_a_data_out_clear");
             if(node_param != NULL) {
-                assert(node_param->type == NODE_PARAMETER_STRING);
+                VTR_ASSERT(node_param->type == NODE_PARAMETER_STRING);
                 if(strcmp(node_param->value.string_value, "clear1") == 0) {
                     port_to_node_map[node_port] = split_node_a;
                     continue;
@@ -1943,7 +1943,7 @@ map<t_node_port_association*, t_node*> map_ports_to_split_blocks(t_node* orig_no
             }
             node_param = find_node_param(orig_node, "port_b_data_out_clear");
             if(node_param != NULL) {
-                assert(node_param->type == NODE_PARAMETER_STRING);
+                VTR_ASSERT(node_param->type == NODE_PARAMETER_STRING);
                 if(strcmp(node_param->value.string_value, "clear1") == 0) {
                     port_to_node_map[node_port] = split_node_b;
                     continue;
@@ -1951,27 +1951,27 @@ map<t_node_port_association*, t_node*> map_ports_to_split_blocks(t_node* orig_no
             }
             node_param = find_node_param(orig_node, "eccstatus_clear");
             if(node_param != NULL) {
-                assert(node_param->type == NODE_PARAMETER_STRING);
+                VTR_ASSERT(node_param->type == NODE_PARAMETER_STRING);
                 if(strcmp(node_param->value.string_value, "clear1") == 0) {
                     t_node_parameter* node_param_clock = find_node_param(orig_node, "eccstatus_clock");
-                    assert(node_param_clock != NULL);
-                    assert(node_param_clock->type == NODE_PARAMETER_STRING);
+                    VTR_ASSERT(node_param_clock != NULL);
+                    VTR_ASSERT(node_param_clock->type == NODE_PARAMETER_STRING);
 
                     if(strcmp(node_param_clock->value.string_value, "clock0") == 0) {
                         port_to_node_map[node_port] = split_node_a;
                     } else if (strcmp(node_param_clock->value.string_value, "clock1") == 0) {
                         port_to_node_map[node_port] = split_node_b;
                     } else {
-                        assert(0);
+                        VTR_ASSERT(0);
                     }
                     continue;
                 }
             }
-            assert(0); //Should never get here
+            VTR_ASSERT(0); //Should never get here
 
 
         } else {
-            assert(0);
+            VTR_ASSERT(0);
         }
     }
 
@@ -2095,7 +2095,7 @@ t_global_ports identify_primitive_global_pins(t_arch* /*arch*/, t_logical_block_
 
 char* extract_primitive_name(char* pb_type_blif_model) {
     //Primitive blif_model must start with .subckt
-    assert(strncmp(BLIF_NAME_PREFIX, pb_type_blif_model, strlen(BLIF_NAME_PREFIX)) == 0);
+    VTR_ASSERT(strncmp(BLIF_NAME_PREFIX, pb_type_blif_model, strlen(BLIF_NAME_PREFIX)) == 0);
 
     //Calculate the new size of the string excluding the prefix and any opmode data after the primitive name
 
@@ -2112,7 +2112,7 @@ char* extract_primitive_name(char* pb_type_blif_model) {
     }
     //Two dots, in '.subckt stratixiv_ram_block.opmode{dual_port}'
     // or one dot in '.subckt stratixiv_lcell_comb'
-    assert(num_dots_seen <= 2); 
+    VTR_ASSERT(num_dots_seen <= 2); 
 
     int new_str_len = string_index; //Including the .subckt prefix and NO \0 at end
     if(num_dots_seen == 2) new_str_len -= 1; //Drop the ending '.' before opmode
@@ -2316,7 +2316,7 @@ t_net_driver_map identify_net_drivers(t_module* module, t_arch* arch, t_global_p
         if(verbose_mode) {
             printf("\t\t\t\t%d driver(s), %d global_sink(s), %d local_sink(s), %d assign_sink(s)\n", num_sources, num_global_sinks, num_local_sinks, num_assign_sinks);
         }
-        assert(num_sources == 1);
+        VTR_ASSERT(num_sources == 1);
 
 
         /*
@@ -2487,7 +2487,7 @@ t_node_port_vec_pair identify_global_local_pins(t_module* module, t_arch* /*arch
                 } else {
                     //3a) net_driver is global
                     if(net_driver.is_global) {
-                        assert(node_port_is_global == T_FALSE);
+                        VTR_ASSERT(node_port_is_global == T_FALSE);
 
                         //Add the the appropriate list, so that a g2l buffer is added before node_port
                         global_local_pins.global_to_local.push_back(node_port);
@@ -2499,7 +2499,7 @@ t_node_port_vec_pair identify_global_local_pins(t_module* module, t_arch* /*arch
 
                     //3b) net_driver is not global
                     } else {
-                        assert(node_port_is_global == true);
+                        VTR_ASSERT(node_port_is_global == true);
 
                         //Add the the appropriate list, so that a l2g buffer is added before node_port
                         global_local_pins.local_to_global.push_back(node_port);
@@ -2578,7 +2578,7 @@ int insert_fake_global_buffer_cells(t_module* module, t_assign_vec_pair global_l
         t_node* new_buffer = add_buffer(module, L2G_BUFFER, num_buffers_inserted);
 
         //Connect the buffer input/output
-        assert(new_buffer->number_of_ports == 2);
+        VTR_ASSERT(new_buffer->number_of_ports == 2);
         new_buffer->array_of_ports[0]->associated_net = preglobal_net;
         new_buffer->array_of_ports[1]->associated_net = global_net;
 
@@ -2693,12 +2693,12 @@ t_node* add_buffer(t_module* module, t_buffer_type buffer_type, int num_buffers_
 
     //Allocate a new buffer node
     t_node* new_buffer = (t_node*) malloc(sizeof(t_node));
-    assert(new_buffer != NULL);
+    VTR_ASSERT(new_buffer != NULL);
 
     //Reallocate space in the array for the new node
     module->number_of_nodes++;
     module->array_of_nodes = (t_node**) realloc(module->array_of_nodes, sizeof(t_node*)*module->number_of_nodes);
-    assert(module->array_of_nodes != NULL);
+    VTR_ASSERT(module->array_of_nodes != NULL);
 
     //Insert the new buffer into the array
     module->array_of_nodes[module->number_of_nodes-1] = new_buffer;

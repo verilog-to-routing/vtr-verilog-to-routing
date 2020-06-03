@@ -134,7 +134,7 @@ void BlifLut::set_lutmask ( const char* lmask ){
  *	A 16-character string of hexidecimal numbers detailing the truth table of a LUT.
  */
 
-	assert (strlen(lmask) == 16);	//Currently, only 6-input LUTs are supported.
+	VTR_ASSERT(strlen(lmask) == 16);	//Currently, only 6-input LUTs are supported.
 	//6-input LUT => 64 rows in the truth table (2^6) => 16 hex chars in the lutmask (64/4)
 
 	lutmask = lmask;
@@ -176,7 +176,7 @@ void BlifLut::set_lutmask ( const char* lmask ){
 
 void BlifLut::set_col_mask ( const char* cmask ){
 
-	assert (strlen(cmask) == 6);	//Currently, only 6-input LUTs are supported.
+	VTR_ASSERT(strlen(cmask) == 6);	//Currently, only 6-input LUTs are supported.
 	for (int i = 0; i < 6; i++){
 		if (cmask[i] == '1'){
 			col_mask[ 5-i ] = 1;
@@ -196,8 +196,8 @@ void BlifLut::set_col_mask ( const char* cmask ){
 void BlifLut::set_inport (int index, const char* name){
 
 	//NOTE: Ports are printed as ".names [5] [4] [3] [2] [1] [0] out"
-	assert ((index >= 0)&&(index <= 5));
-	assert (strlen(name) > 0);
+	VTR_ASSERT((index >= 0)&&(index <= 5));
+	VTR_ASSERT(strlen(name) > 0);
 	inports[index] = name;	//assign the name of the port
 	col_mask.set(index);	//indicate in the column mask that it's been used
 
@@ -209,7 +209,7 @@ void BlifLut::set_inport (int index, const char* name){
 void BlifLut::set_outport (const char* name){
 
 	//NOTE: Ports are printed as ".names [5] [4] [3] [2] [1] [0] out"
-	assert (strlen(name) > 0);
+	VTR_ASSERT(strlen(name) > 0);
 	outport = name;
 
 }
@@ -249,11 +249,11 @@ void BlifLut::print (lp_mode print_mode, ostream& out_file, t_boolean eblif_form
     // Print LUT to a pre-opened file indicated by out_file.
 
 	//assert the LUT has inputs, a lutmask, and a truth table established
-	assert (col_mask.any());
-	assert (!lutmask.empty());
-	assert (!truth_table.empty());
+	VTR_ASSERT(col_mask.any());
+	VTR_ASSERT(!lutmask.empty());
+	VTR_ASSERT(!truth_table.empty());
 
-	assert ((print_mode == VERBOSE_PRINT)||(print_mode == BLIF_PRINT));
+	VTR_ASSERT((print_mode == VERBOSE_PRINT)||(print_mode == BLIF_PRINT));
 
     if (print_mode == VERBOSE_PRINT){
         //Print verbose introduction
@@ -285,7 +285,7 @@ void BlifLut::print (lp_mode print_mode, ostream& out_file, t_boolean eblif_form
     }
 
     //Every LUT must have an output!
-    assert (!outport.empty());
+    VTR_ASSERT(!outport.empty());
     out_file << outport << endl;
 
     //Print the truth table

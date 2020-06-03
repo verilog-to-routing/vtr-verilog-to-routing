@@ -143,12 +143,12 @@ void set_net_assigns (t_assign** assignments, int num_assigns, busvec* buses, st
 		temp_bus = get_bus_from_hash (hash_table, temp_assign->target->name, buses);
 
 		if ((temp_assign->target_index >= 0)&&(temp_assign->target->indexed)){
-			assert (temp_bus->size() > (unsigned int)temp_assign->target_index);
+			VTR_ASSERT(temp_bus->size() > (unsigned int)temp_assign->target_index);
 			temp_net = &(temp_bus->at(temp_assign->target_index));
 		} else {
 
 #ifndef VQM_BUSES
-			assert (temp_bus->size() == 1);	//VQM Bus assignments don't appear; must be 1-bit wide
+			VTR_ASSERT(temp_bus->size() == 1);	//VQM Bus assignments don't appear; must be 1-bit wide
 #endif
 			temp_net = &(temp_bus->at(0));
 		}
@@ -161,10 +161,10 @@ void set_net_assigns (t_assign** assignments, int num_assigns, busvec* buses, st
 			temp_bus = get_bus_from_hash(hash_table, temp_assign->source->name, buses);
 
 			if ((temp_assign->source_index >= 0)&&(temp_assign->source->indexed)){
-				assert (temp_bus->size() > (unsigned int)temp_assign->source_index);
+				VTR_ASSERT(temp_bus->size() > (unsigned int)temp_assign->source_index);
 				temp_net->source = &(temp_bus->at(temp_assign->source_index));
 			} else {
-				assert (temp_bus->size() == 1);
+				VTR_ASSERT(temp_bus->size() == 1);
 				temp_net->source = &(temp_bus->at(0));
 			}
 
@@ -202,8 +202,8 @@ void add_subckts (t_node** nodes, int num_nodes, busvec* buses, struct s_hash** 
 
 			temp_bus = get_bus_from_hash (hash_table, temp_port->associated_net->name, buses);
 
-			assert ( !temp_bus->empty() );
-			assert ( temp_port->wire_index >= 0 );
+			VTR_ASSERT( !temp_bus->empty() );
+			VTR_ASSERT( temp_port->wire_index >= 0 );
 
 			temp_net = &(temp_bus->at(temp_port->wire_index));
 
@@ -243,7 +243,7 @@ void clean_netlist ( busvec* buses, struct s_hash** hash_table, t_node** nodes, 
 		//Step 1: Reassign output pin sinks 
 		for (int i = 0; (unsigned int)i < buses->size(); i++){
 			temp_bus = &(buses->at(i));
-			assert (temp_bus->size() > 0);
+			VTR_ASSERT(temp_bus->size() > 0);
 
 			ref_pin = temp_bus->at(0).pin;
 
@@ -275,7 +275,7 @@ void clean_netlist ( busvec* buses, struct s_hash** hash_table, t_node** nodes, 
 		for (int j = 0; j < temp_node->number_of_ports; j++){
 			temp_port = temp_node->array_of_ports[j];
 			temp_bus = get_bus_from_hash (hash_table, temp_port->associated_net->name, buses);
-			assert ((unsigned int)temp_port->wire_index < temp_bus->size());
+			VTR_ASSERT((unsigned int)temp_port->wire_index < temp_bus->size());
 			temp_net = &(temp_bus->at(temp_port->wire_index));
 
 			if (temp_port != (t_node_port_association*)temp_net->source){
@@ -381,7 +381,7 @@ void print_to_module ( t_module* module, busvec* buses, struct s_hash** hash_tab
 	t_net* source_net;
 	netvec* temp_bus;
 
-	assert (buses->size() == (unsigned int)module->number_of_pins);
+	VTR_ASSERT(buses->size() == (unsigned int)module->number_of_pins);
 
 	t_assign* temp_assign;
 	//Adjust assignments, freeing ones that target dead nets
@@ -390,15 +390,15 @@ void print_to_module ( t_module* module, busvec* buses, struct s_hash** hash_tab
 		temp_bus = get_bus_from_hash (hash_table, temp_assign->target->name, buses);
 
 		if (temp_assign->target_index >= 0){
-			assert (temp_bus->size() > (unsigned int)temp_assign->target_index);
+			VTR_ASSERT(temp_bus->size() > (unsigned int)temp_assign->target_index);
 			target_net = &(temp_bus->at(temp_assign->target_index));
 		} else {
-			assert (temp_bus->size() == 1);
+			VTR_ASSERT(temp_bus->size() == 1);
 			target_net = &(temp_bus->at(0));
 		}
 
 		if (temp_assign->source == NULL){
-			assert (target_net->driver == CONST);
+			VTR_ASSERT(target_net->driver == CONST);
 			continue;
 		}
 
@@ -408,10 +408,10 @@ void print_to_module ( t_module* module, busvec* buses, struct s_hash** hash_tab
 			//target is not a dead net
 			temp_bus = get_bus_from_hash (hash_table, temp_assign->source->name, buses);
 			if (temp_assign->source_index >= 0){
-				assert (temp_bus->size() > (unsigned int)temp_assign->source_index);
+				VTR_ASSERT(temp_bus->size() > (unsigned int)temp_assign->source_index);
 				source_net = &(temp_bus->at(temp_assign->source_index));
 			} else {
-				assert (temp_bus->size() == 1);
+				VTR_ASSERT(temp_bus->size() == 1);
 				source_net = &(temp_bus->at(0));
 			}
 			if (source_net != (t_net*)target_net->source){
@@ -422,7 +422,7 @@ void print_to_module ( t_module* module, busvec* buses, struct s_hash** hash_tab
 				if (temp_assign->source->indexed){
 					temp_assign->source_index = source_net->wire_index;
 				} else {
-					assert (temp_assign->source->left == temp_assign->source->right);
+					VTR_ASSERT(temp_assign->source->left == temp_assign->source->right);
 					temp_assign->source_index = -1;
 				}
 
@@ -462,8 +462,8 @@ netvec* get_bus_from_hash (struct s_hash** hash_table, char* bus_name, busvec* b
 	s_hash* hash_entry;
 
 	hash_entry = get_hash_entry (hash_table, bus_name);
-	assert (hash_entry != NULL);
-	assert ((unsigned int)hash_entry->index < buses->size());
+	VTR_ASSERT(hash_entry != NULL);
+	VTR_ASSERT((unsigned int)hash_entry->index < buses->size());
 
 	return &(buses->at(hash_entry->index));
 }
@@ -499,40 +499,40 @@ void verify_netlist ( t_node** nodes, int num_nodes, busvec* buses, struct s_has
 	//Step 1: Verify each source is valid.
 	for (int i = 0; (unsigned int)i < buses->size(); i++){
 		temp_bus = &(buses->at(i));
-		assert (temp_bus->size() > 0);
+		VTR_ASSERT(temp_bus->size() > 0);
 
 		ref_pin = temp_bus->at(0).pin;
 
 		hash_entry = get_hash_entry (hash_table, ref_pin->name);
-		assert (hash_entry != NULL);
-		assert (hash_entry->index == i);
+		VTR_ASSERT(hash_entry != NULL);
+		VTR_ASSERT(hash_entry->index == i);
 		
 		for (int j = 0; (unsigned int)j < temp_bus->size(); j++){
 			temp_net = &(temp_bus->at(j));
 
-			assert ((temp_net->bus_index == i)&&(temp_net->wire_index == j));	//indeces must line up
-			assert (ref_pin == temp_net->pin);	//all nets in a common bus share a pin
+			VTR_ASSERT((temp_net->bus_index == i)&&(temp_net->wire_index == j));	//indeces must line up
+			VTR_ASSERT(ref_pin == temp_net->pin);	//all nets in a common bus share a pin
 
 			if (temp_net->driver == CONST){
 				continue; //no way to discern incorrect connectivity from a constant net
 			} else if (temp_net->source == NULL){
-				assert ((temp_net->num_children == 0)&&(temp_net->driver == NODRIVE));
+				VTR_ASSERT((temp_net->num_children == 0)&&(temp_net->driver == NODRIVE));
 				//NOTE: These nets will be removed later for having no children.
 			} else if (temp_net->driver != BLACKBOX){
 				//being driven by a BUFFER or INVERT. (Both t_net* structs.)
 				net_source = (t_net*)temp_net->source;
 
                 //PIN_INOUT should have been removed earlier
-				assert ((net_source->pin->type == PIN_INPUT)||(net_source->pin->type == PIN_WIRE));
+				VTR_ASSERT((net_source->pin->type == PIN_INPUT)||(net_source->pin->type == PIN_WIRE));
 
-				assert ((unsigned int)net_source->bus_index < child_count.size());
-				assert ((unsigned int)net_source->wire_index < child_count[net_source->bus_index].size());
+				VTR_ASSERT((unsigned int)net_source->bus_index < child_count.size());
+				VTR_ASSERT((unsigned int)net_source->wire_index < child_count[net_source->bus_index].size());
 				child_count[net_source->bus_index][net_source->wire_index]++;
 			} else {
 				port_source = (t_node_port_association*)temp_net->source;
-				assert (temp_net->block_src != NULL);
-				assert (port_source->associated_net == ref_pin);
-				assert (port_source->wire_index == temp_net->wire_index);
+				VTR_ASSERT(temp_net->block_src != NULL);
+				VTR_ASSERT(port_source->associated_net == ref_pin);
+				VTR_ASSERT(port_source->wire_index == temp_net->wire_index);
 			}
 		}
 	}
@@ -543,23 +543,23 @@ void verify_netlist ( t_node** nodes, int num_nodes, busvec* buses, struct s_has
 		for (int j = 0; j < temp_node->number_of_ports; j++){
 			port_source = temp_node->array_of_ports[j];
 
-			assert (port_source != NULL);
-			assert (port_source->associated_net != NULL);
+			VTR_ASSERT(port_source != NULL);
+			VTR_ASSERT(port_source->associated_net != NULL);
 	
 			//Find the net connected to the port
 			temp_bus = get_bus_from_hash(hash_table, port_source->associated_net->name, buses);
 
 			if (port_source->wire_index >= 0){
-				assert ((unsigned int)port_source->wire_index < temp_bus->size());
+				VTR_ASSERT((unsigned int)port_source->wire_index < temp_bus->size());
 				temp_net = &(temp_bus->at(port_source->wire_index));
 			} else {
-				assert (temp_bus->size() == 1);
+				VTR_ASSERT(temp_bus->size() == 1);
 				temp_net = &(temp_bus->at(0));
 			}			
 
 			if ((t_node_port_association*)temp_net->source == port_source){
 				//if the port is the source, make sure the block_src is correct
-				assert (temp_net->block_src == temp_node);
+				VTR_ASSERT(temp_net->block_src == temp_node);
 			} else {
 				//if this isn't the source, it must be a sink, so increase its child_count
 				child_count[temp_net->bus_index][temp_net->wire_index]++;
@@ -570,11 +570,11 @@ void verify_netlist ( t_node** nodes, int num_nodes, busvec* buses, struct s_has
 	//Step 3: Verify child_counts across all nets
 	for (int i = 0; (unsigned int)i < buses->size(); i++){
 		temp_bus = &(buses->at(i));
-		assert (temp_bus->size() > 0);
+		VTR_ASSERT(temp_bus->size() > 0);
 		for (int j = 0; (unsigned int)j < temp_bus->size(); j++){
 			temp_net = &(temp_bus->at(j));
-			assert ((temp_net->bus_index == i)&&(temp_net->wire_index == j));	//indeces must line up
-			assert (child_count[i][j] == temp_net->num_children);
+			VTR_ASSERT((temp_net->bus_index == i)&&(temp_net->wire_index == j));	//indeces must line up
+			VTR_ASSERT(child_count[i][j] == temp_net->num_children);
 		}
 	}
 }
@@ -592,7 +592,7 @@ void print_all_nets ( busvec* buses, const char* filename ){
 
 	ofstream outfile ( filename );
 
-	assert ( outfile.is_open() );
+	VTR_ASSERT( outfile.is_open() );
 
 	outfile << "Number of buses: " << buses->size() << "\n\n" ;
 
@@ -616,7 +616,7 @@ void print_all_nets ( busvec* buses, const char* filename ){
 				outfile << "Net (" << temp_net->driver << "): " << net_source->pin->name << "[" << net_source->wire_index << "]\n" ;
 				outfile << "\t\t\tInverted: " << (temp_net->driver == INVERT) << endl;
 			} else {
-				assert ((temp_net->driver == BLACKBOX)&&(temp_net->block_src != NULL));
+				VTR_ASSERT((temp_net->driver == BLACKBOX)&&(temp_net->block_src != NULL));
 				port_source = (t_node_port_association*)temp_net->source;
 				outfile << "Block\t" << temp_net->block_src->name << endl;
 				outfile << "\t\t\tType: " << temp_net->block_src->type << " Port: " << port_source->port_name << "[" << port_source->port_index << "]\n" ;

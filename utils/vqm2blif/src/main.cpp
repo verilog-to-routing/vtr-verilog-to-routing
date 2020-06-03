@@ -285,7 +285,7 @@ int main(int argc, char* argv[])
 	unsigned long flowStart = clock();
 	unsigned long processStart = clock();
 
-	assert (source_file.length() < MAX_LEN );
+	VTR_ASSERT(source_file.length() < MAX_LEN );
 	strcpy ( temp_name, source_file.c_str() );
 
     //VQM Parser Call, requires char* filename
@@ -318,11 +318,11 @@ int main(int argc, char* argv[])
     }
 
     //Really should update all code to use these... but this works for now
-    types= logical_block_types.data();
+    types = logical_block_types.data();
     numTypes = logical_block_types.size();
 
-	assert ((types > 0) && (numTypes > 0));
-	assert (arch.models != NULL);
+	VTR_ASSERT((types) && (numTypes > 0));
+	VTR_ASSERT(arch.models != NULL);
 			
     //Pre-process the netlist
     //  Currently this just 'cleans up' bi-directional inout pins
@@ -667,11 +667,11 @@ void init_blif_models(t_blif_model* my_model, t_module* my_module, t_arch* arch)
 	}
 
 	my_model->name = (string)my_module->name;
-	assert (!my_model->name.empty());
+	VTR_ASSERT(!my_model->name.empty());
 	
 	//Initialize input and output pinvecs of the blif_model
 	//NOTE: All circuits must have inputs and outputs.
-	assert ( my_module->number_of_pins >  0 );
+	VTR_ASSERT( my_module->number_of_pins >  0 );
 	if(verbose_mode){
 		cout << "\t>> Assigning .inputs and .outputs\n" ;
 	}
@@ -701,7 +701,7 @@ void init_blif_models(t_blif_model* my_model, t_module* my_module, t_arch* arch)
 	}
 	
 	//Verify that both inputs and outputs exist.
-	assert((my_model->input_ports.size() > 0) && (my_model->output_ports.size() > 0));
+	VTR_ASSERT((my_model->input_ports.size() > 0) && (my_model->output_ports.size() > 0));
 
 	//Initialize the blif_model's assignment array
 	//Possible to have a circuit without any assign statements.
@@ -712,7 +712,7 @@ void init_blif_models(t_blif_model* my_model, t_module* my_module, t_arch* arch)
 		
 		my_model->num_assignments = my_module->number_of_assignments;
 		my_model->array_of_assignments = my_module->array_of_assignments;
-		assert ((my_model->num_assignments > 0) && (my_model->array_of_assignments != NULL));
+		VTR_ASSERT((my_model->num_assignments > 0) && (my_model->array_of_assignments != NULL));
 		//data from my_module is already organized nicely, so piggyback onto its allocation
 	}
 	
@@ -756,18 +756,18 @@ void 	init_blif_subckts (	t_node **vqm_nodes,
 	t_node* temp_node;		//from vqm_dll.h
 
 	//Preparations before the subcircuits can be assigned.
-	assert (arch_models != NULL);
+	VTR_ASSERT(arch_models != NULL);
 	subckt_prep(arch_models);
 
-	assert ((vqm_nodes != NULL)&&(vqm_nodes[0] != NULL)&&(number_of_vqm_nodes >= 0));
+	VTR_ASSERT((vqm_nodes != NULL)&&(vqm_nodes[0] != NULL)&&(number_of_vqm_nodes >= 0));
 
 	for (int i = 0; i < number_of_vqm_nodes; i++){
 		//Each "node" from the VQM is a subcircuit instantiation
 		temp_node = vqm_nodes[i];
-		assert (temp_node != NULL);
+		VTR_ASSERT(temp_node != NULL);
 
 		if(verbose_mode){
-			assert(temp_node->name != NULL);
+			VTR_ASSERT(temp_node->name != NULL);
 			cout << "\n\t\tProcessing VQM Node " << temp_node->name  << endl;
 		}
 
@@ -855,14 +855,14 @@ void push_node_1_to_1 (t_node* vqm_node, t_model* arch_models, scktvec* blif_sub
 	string search;		//temporary variable to construct a desired block name within.
 
 	cur_model = arch_models; //search for the corresponding model in the list from the architecture.
-	assert (cur_model != NULL);
+	VTR_ASSERT(cur_model != NULL);
 
 	temp_subckt.inst_name = (string)vqm_node->name;	//copy the instance name
-	assert ( !temp_subckt.inst_name.empty() );
+	VTR_ASSERT( !temp_subckt.inst_name.empty() );
 	
 	if (elab_mode == NONE){
 		//search for an Architecture model solely based on block name
-		assert (vqm_node->type != NULL);
+		VTR_ASSERT(vqm_node->type != NULL);
 		search = vqm_node->type;	
 
 	} else if (elab_mode == MODES || elab_mode == MODES_TIMING){
@@ -913,7 +913,7 @@ void push_node_1_to_1 (t_node* vqm_node, t_model* arch_models, scktvec* blif_sub
 					vqm_node, &vqm_ports_found);	
 		//vqm_ports_found entries are set as ports are mapped
 
-		assert (!temp_subckt.input_cnxns.empty());	//all blocks must have an input
+		VTR_ASSERT(!temp_subckt.input_cnxns.empty());	//all blocks must have an input
 
 		//now map the output ports
 		init_subckt_map(	&(temp_subckt.output_cnxns), 
@@ -921,7 +921,7 @@ void push_node_1_to_1 (t_node* vqm_node, t_model* arch_models, scktvec* blif_sub
 					vqm_node, &vqm_ports_found);
 		//vqm_ports_found entries are set as ports are mapped
 
-		assert (!temp_subckt.output_cnxns.empty());	//all blocks must have an output
+		VTR_ASSERT(!temp_subckt.output_cnxns.empty());	//all blocks must have an output
 
         //Pass through parameters
         for (int iparam = 0; iparam < vqm_node->number_of_params; ++iparam) {
@@ -932,7 +932,7 @@ void push_node_1_to_1 (t_node* vqm_node, t_model* arch_models, scktvec* blif_sub
             if (vqm_param->type == NODE_PARAMETER_STRING) {
                 param.value = vqm_param->value.string_value;
             } else {
-                assert (vqm_param->type == NODE_PARAMETER_INTEGER);
+                VTR_ASSERT(vqm_param->type == NODE_PARAMETER_INTEGER);
                 param.value = std::to_string(vqm_param->value.integer_value);
             }
             temp_subckt.params.push_back(param);
@@ -1075,7 +1075,7 @@ void find_and_map (portmap* map, t_model_ports* to_be_mapped, t_node* node,
 
 	string temp_name;
 	temp_name = (string)to_be_mapped->name;	//copy the name of the subcircuit port
-	assert (!temp_name.empty());
+	VTR_ASSERT(!temp_name.empty());
 
 	if (is_bus){
 		//append the index to the string if it's a bus; "name[index]"
@@ -1134,7 +1134,7 @@ void push_lut (t_node* vqm_node, lutvec* blif_luts){
 
 	for (int i = 0; i < vqm_node->number_of_params; i++ ){
 		if (strcmp(vqm_node->array_of_params[i]->name, "lut_mask") == 0){
-			assert (vqm_node->array_of_params[i]->type == NODE_PARAMETER_STRING);
+			VTR_ASSERT(vqm_node->array_of_params[i]->type == NODE_PARAMETER_STRING);
 			lutmask = vqm_node->array_of_params[i]->value.string_value;
 			break;
 		}
@@ -1409,7 +1409,7 @@ void dump_assignments(ofstream& outfile, t_blif_model* model, t_boolean eblif_fo
 				//of the target and whether the right or left index is larger. 
 			} else {
 #else
-				assert ((!(temp_assign->target->indexed))||(temp_assign->target_index != -1));
+				VTR_ASSERT((!(temp_assign->target->indexed))||(temp_assign->target_index != -1));
 #endif
 				//a specific wire is being assigned, so append the index to the bus name.
 				target_name = get_wire_name(temp_assign->target, temp_assign->target_index);
@@ -1428,7 +1428,7 @@ void dump_assignments(ofstream& outfile, t_blif_model* model, t_boolean eblif_fo
 				//Bus-to-bus assignment
 
 				//Buses must be of the same width
-				assert (abs(temp_assign->target->left - temp_assign->target->right) 
+				VTR_ASSERT(abs(temp_assign->target->left - temp_assign->target->right) 
 						== abs(temp_assign->source->left - temp_assign->source->right));
 				
 				dump_bus_assign(outfile, 
@@ -1445,7 +1445,7 @@ void dump_assignments(ofstream& outfile, t_blif_model* model, t_boolean eblif_fo
 							debug, temp_assign->inversion);
 			} else {
 #else
-			assert((temp_assign->target_index != -1) || (temp_assign->target->indexed != T_TRUE)
+			VTR_ASSERT((temp_assign->target_index != -1) || (temp_assign->target->indexed != T_TRUE)
 				|| (temp_assign->source_index != -1) || (temp_assign->source->indexed != T_TRUE));
 #endif
 				target_name = get_wire_name(temp_assign->target, temp_assign->target_index);
@@ -1728,7 +1728,7 @@ void dump_subckt_map (ofstream& outfile, portmap* map, t_model_ports* temp_port,
 				outfile << "\t" ;
 
             bool is_input = (std::string(maptype) == "input");
-            assert(is_input || std::string(maptype) == "output");
+            VTR_ASSERT(is_input || std::string(maptype) == "output");
 
 
             bool pin_used = (pin_name != "unconn");
@@ -1785,7 +1785,7 @@ size_t count_print_pins(t_model_ports* temp_port, portmap* map, t_boolean print_
 			t_node_port_association* temp_cnxn = map->find(port_name)->second;	
 			//"second" is a member of portpair,
 			//corresponds to the connection the port is mapped to
-			assert(temp_cnxn != NULL);
+			VTR_ASSERT(temp_cnxn != NULL);
 
 			string pin_name = (string)temp_cnxn->associated_net->name;
 
@@ -2195,13 +2195,13 @@ string file_replace(string file, string strip, string replace){
 		cout << "\t>> Opening file " << file << endl ;
 	}
 	ifstream in_genome (file.c_str());
-	assert (in_genome.is_open());
+	VTR_ASSERT(in_genome.is_open());
 	
 	cptr = file.find_last_of(".");
 	file.replace(cptr, 1, "_no_" + strip + ".");  //append "_no_<strip>" to the filename.
 
   	ofstream out_genome (file.c_str());
-	assert (out_genome.is_open());
+	VTR_ASSERT(out_genome.is_open());
 
 	if(verbose_mode){
 			cout << "\n\tReplacing instances of " << strip << " with " << replace << "...\n" ;

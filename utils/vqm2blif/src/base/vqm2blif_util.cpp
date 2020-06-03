@@ -95,7 +95,7 @@ string get_wire_name(t_pin_def* net, int index){
 		return (string)net->name;
 	} else if (index == -1) {
 		//a wire must only be 1-bit wide!! Check right and left indeces.
-		assert (net->left == net->right);
+		VTR_ASSERT(net->left == net->right);
 		return append_index_to_str((string)net->name, net->left);
 	} else {
 		return append_index_to_str((string)net->name, index);
@@ -142,7 +142,7 @@ string generate_opname_stratixiv (t_node* vqm_node, t_model* arch_models){
 
         //Save the operation mode parameter
 		if (strcmp (temp_param->name, "operation_mode") == 0){
-			assert( temp_param->type == NODE_PARAMETER_STRING );
+			VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
             operation_mode = temp_param;
             break;
 		} 
@@ -212,7 +212,7 @@ void generate_opname_stratixiv_dsp_mult (t_node* vqm_node, t_model* /*arch_model
     //
     // See QUIP stratixiii_dsp_wys.pdf for details on the mac_mult block and meaning of parameters
     
-    assert(strcmp(vqm_node->type, "stratixiv_mac_mult") == 0);
+    VTR_ASSERT(strcmp(vqm_node->type, "stratixiv_mac_mult") == 0);
 
     if(elab_mode == MODES_TIMING) {
         //Only elaborate registered/combinational behaviour if in timing accurate
@@ -231,7 +231,7 @@ void generate_opname_stratixiv_dsp_mult (t_node* vqm_node, t_model* /*arch_model
 
             //Check the clocking related parameters
             if (strcmp (temp_param->name, "dataa_clock") == 0){
-                assert( temp_param->type == NODE_PARAMETER_STRING );
+                VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
                 if(strcmp(temp_param->value.string_value, "none") == 0) {
                     dataa_input_reg = false;
                 }
@@ -239,28 +239,28 @@ void generate_opname_stratixiv_dsp_mult (t_node* vqm_node, t_model* /*arch_model
             }
 
             if (strcmp (temp_param->name, "datab_clock") == 0){
-                assert( temp_param->type == NODE_PARAMETER_STRING );
+                VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
                 if(strcmp(temp_param->value.string_value, "none") == 0) {
                     datab_input_reg = false;
                 }
                 continue;
             }
             if (strcmp (temp_param->name, "signa_clock") == 0){
-                assert( temp_param->type == NODE_PARAMETER_STRING );
+                VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
                 if(strcmp(temp_param->value.string_value, "none") == 0) {
                     signa_input_reg = false;
                 }
                 continue;
             }
             if (strcmp (temp_param->name, "signb_clock") == 0){
-                assert( temp_param->type == NODE_PARAMETER_STRING );
+                VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
                 if(strcmp(temp_param->value.string_value, "none") == 0) {
                     signb_input_reg = false;
                 }
                 continue;
             }
             if (strcmp (temp_param->name, "scanouta_clock") == 0){
-                assert( temp_param->type == NODE_PARAMETER_STRING );
+                VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
                 if(strcmp(temp_param->value.string_value, "none") == 0) {
                     scanouta_output_reg = false;
                 }
@@ -318,7 +318,7 @@ void generate_opname_stratixiv_dsp_out (t_node* vqm_node, t_model* /*arch_models
     //
     // See QUIP stratixiii_dsp_wys.pdf for DSP output architecture details and port/parameter
     // meanings.
-    assert(strcmp(vqm_node->type, "stratixiv_mac_out") == 0);
+    VTR_ASSERT(strcmp(vqm_node->type, "stratixiv_mac_out") == 0);
     if(elab_mode == MODES_TIMING) {
         //Only elaborate registered/combinational behaviour if in timing accurate
         // mode elaboration
@@ -338,28 +338,28 @@ void generate_opname_stratixiv_dsp_out (t_node* vqm_node, t_model* /*arch_models
 
             //Check the clocking related parameters
             if (strcmp (temp_param->name, "first_adder0_clock") == 0){
-                assert( temp_param->type == NODE_PARAMETER_STRING );
+                VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
                 if(strcmp(temp_param->value.string_value, "none") == 0) {
                     first_adder0_reg = false;
                 }
                 continue;
             }
             if (strcmp (temp_param->name, "first_adder1_clock") == 0){
-                assert( temp_param->type == NODE_PARAMETER_STRING );
+                VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
                 if(strcmp(temp_param->value.string_value, "none") == 0) {
                     first_adder1_reg = false;
                 }
                 continue;
             }
             if (strcmp (temp_param->name, "second_adder_clock") == 0){
-                assert( temp_param->type == NODE_PARAMETER_STRING );
+                VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
                 if(strcmp(temp_param->value.string_value, "none") == 0) {
                     second_adder_reg = false;
                 }
                 continue;
             }
             if (strcmp (temp_param->name, "output_clock") == 0){
-                assert( temp_param->type == NODE_PARAMETER_STRING );
+                VTR_ASSERT( temp_param->type == NODE_PARAMETER_STRING );
                 if(strcmp(temp_param->value.string_value, "none") == 0) {
                     output_reg = false;
                 }
@@ -592,7 +592,7 @@ void verify_module (t_module* module){
 		exit(1);
 	}
 
-	assert ((module->name != NULL)&&(strlen(module->name) > 0));
+	VTR_ASSERT((module->name != NULL)&&(strlen(module->name) > 0));
 
 	t_pin_def* temp_pin;
 	t_assign* temp_assign;
@@ -601,40 +601,40 @@ void verify_module (t_module* module){
 
 	for (int i = 0; i < module->number_of_pins; i++){
 		temp_pin = module->array_of_pins[i];
-		assert (temp_pin != NULL);
-		assert ((temp_pin->name != NULL)&&(strlen(temp_pin->name) > 0));
+		VTR_ASSERT(temp_pin != NULL);
+		VTR_ASSERT((temp_pin->name != NULL)&&(strlen(temp_pin->name) > 0));
 	}
 
 	for (int i = 0; i < module->number_of_assignments; i++){
 
 		temp_assign = module->array_of_assignments[i];
-		assert (temp_assign != NULL);
+		VTR_ASSERT(temp_assign != NULL);
 
 		temp_pin = temp_assign->target;
-		assert (temp_pin != NULL);
+		VTR_ASSERT(temp_pin != NULL);
 		if (temp_assign->target_index >= 0){
-			assert ((temp_assign->target_index <= max(temp_pin->left, temp_pin->right))&&
+			VTR_ASSERT((temp_assign->target_index <= max(temp_pin->left, temp_pin->right))&&
 					(temp_assign->target_index >= min(temp_pin->left, temp_pin->right)));
 		} else {
-			assert (temp_pin->left == temp_pin->right);
+			VTR_ASSERT(temp_pin->left == temp_pin->right);
 		}
 	}
 
 	for (int i = 0; i < module->number_of_nodes; i++){
 		temp_node = module->array_of_nodes[i];
-		assert (temp_node != NULL);
+		VTR_ASSERT(temp_node != NULL);
 		for (int j = 0; j < temp_node->number_of_ports; j++){
 			temp_port = temp_node->array_of_ports[j];
-			assert (temp_port != NULL);
+			VTR_ASSERT(temp_port != NULL);
 
 			temp_pin = temp_port->associated_net;
-			assert (temp_pin != NULL);
+			VTR_ASSERT(temp_pin != NULL);
 			
 			if (temp_port->wire_index >= 0){
-				assert ((temp_port->wire_index <= max(temp_pin->left, temp_pin->right))&&
+				VTR_ASSERT((temp_port->wire_index <= max(temp_pin->left, temp_pin->right))&&
 						(temp_port->wire_index >= min(temp_pin->left, temp_pin->right))); 
 			} else {
-				assert (temp_pin->left == temp_pin->right);
+				VTR_ASSERT(temp_pin->left == temp_pin->right);
 			}
 		}
 	}

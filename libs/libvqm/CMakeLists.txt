@@ -45,3 +45,6 @@ add_library(libvqm STATIC
              ${BISON_VqmParser_OUTPUT_SOURCE})
 target_include_directories(libvqm PUBLIC ${LIB_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR})
 set_target_properties(libvqm PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
+
+target_link_libraries(libvqm
+                        libvtrutil)

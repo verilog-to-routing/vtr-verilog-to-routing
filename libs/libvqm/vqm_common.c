@@ -39,6 +39,7 @@
 #include <string.h>
 #include "vqm_dll.h"
 #include "vqm_common.h"
+#include "vtr_assert.h"
 
 
 /*******************************************************************************************/
@@ -262,7 +263,7 @@ void add_module(char *name, t_array_ref **pins, t_array_ref **assignments, t_arr
 
 	new_module = (t_module *) malloc(sizeof(t_module));
 
-	assert(new_module != NULL);
+	VTR_ASSERT(new_module != NULL);
 
 	new_module->name = name;
 
@@ -294,7 +295,7 @@ void add_module(char *name, t_array_ref **pins, t_array_ref **assignments, t_arr
 	if (module_list == NULL)
 	{
 		module_list = (t_array_ref *) malloc(sizeof(t_array_ref));
-		assert(module_list != NULL);
+		VTR_ASSERT(module_list != NULL);
         //Allocate the size of the module list array based on the result
         //of the counting pass
 		module_list->pointer = (void**) malloc(parse_info->number_of_modules*ELEMENT_SIZE);
@@ -325,7 +326,7 @@ t_pin_def *add_pin(char *name, int left, int right, t_pin_def_type type, t_parse
 	/* Create new pin */
 	pin = (t_pin_def *) malloc(sizeof(t_pin_def));
 
-	assert(pin != NULL);
+	VTR_ASSERT(pin != NULL);
 
 	/* Fill in pin data */
 	pin->name = name;
@@ -339,7 +340,7 @@ t_pin_def *add_pin(char *name, int left, int right, t_pin_def_type type, t_parse
 	{
 		pin_list = (t_array_ref *) malloc(sizeof(t_array_ref));
 
-		assert(pin_list != NULL);
+		VTR_ASSERT(pin_list != NULL);
 
 		pin_list->array_size = 0;
 		pin_list->allocated_size = parse_info->number_of_pins;
@@ -379,8 +380,8 @@ void add_assignment(t_pin_def *source, int source_index, t_pin_def *target, int 
 	t_assign *assignment = NULL;
 
 	/* Check for validity of assignments */
-	assert(target != NULL);
-	assert((tri_control != NULL) || (tristated == T_FALSE));
+	VTR_ASSERT(target != NULL);
+	VTR_ASSERT((tri_control != NULL) || (tristated == T_FALSE));
 
 	if (source != NULL)
 	{
@@ -399,7 +400,7 @@ void add_assignment(t_pin_def *source, int source_index, t_pin_def *target, int 
 			/* In case of a single wire source, assign the entire wire. */
 			source_index = source_min-1;
 		}
-		assert((source_index >= (source_min-1) && source_index <= source_max)); 
+		VTR_ASSERT((source_index >= (source_min-1) && source_index <= source_max)); 
 	}
 
 	target_max = target->left;
@@ -413,7 +414,7 @@ void add_assignment(t_pin_def *source, int source_index, t_pin_def *target, int 
 		target_min = target->right;
 	}
 
-	assert((target_index >= (target_min-1) && target_index <= target_max)); 
+	VTR_ASSERT((target_index >= (target_min-1) && target_index <= target_max)); 
 
 	/* Check for the tristate buffer */
 	if (tristated == T_TRUE)
@@ -429,7 +430,7 @@ void add_assignment(t_pin_def *source, int source_index, t_pin_def *target, int 
 			tri_min = tri_control->right;
 		}
 
-		assert((tri_control_index >= (tri_min-1) && tri_control_index <= tri_max));
+		VTR_ASSERT((tri_control_index >= (tri_min-1) && tri_control_index <= tri_max));
 	}
 
 	if (target->left - target->right == 0)
@@ -443,7 +444,7 @@ void add_assignment(t_pin_def *source, int source_index, t_pin_def *target, int 
 	{
 		assignment_list = (t_array_ref *) malloc(sizeof(t_array_ref));
 
-		assert(assignment_list != NULL);
+		VTR_ASSERT(assignment_list != NULL);
 		assignment_list->array_size = 0;
 		assignment_list->allocated_size = parse_info->number_of_assignments;
 		assignment_list->pointer = (void**) malloc(parse_info->number_of_assignments*ELEMENT_SIZE);
@@ -453,7 +454,7 @@ void add_assignment(t_pin_def *source, int source_index, t_pin_def *target, int 
 		/* Create an assignment statement */
 		assignment = (t_assign *) malloc(sizeof(t_assign));
 
-		assert(assignment != NULL);
+		VTR_ASSERT(assignment != NULL);
 		assignment->source = source;
 		assignment->source_index = source_index;
 		assignment->target = target;
@@ -485,7 +486,7 @@ void add_assignment(t_pin_def *source, int source_index, t_pin_def *target, int 
 			/* Create an assignment statement */
 			assignment = (t_assign *) malloc(sizeof(t_assign));
 
-			assert(assignment != NULL);
+			VTR_ASSERT(assignment != NULL);
 			assignment->source = source;
 			assignment->source_index = 0;
 			if (source != NULL)
@@ -514,12 +515,12 @@ void add_node(char* type, char *name, t_array_ref **ports, t_parse_info* parse_i
 	t_array_ref *m_ports = *ports;
 	t_node		*my_node;
 	size_t		index;
-	assert(m_ports != NULL);
+	VTR_ASSERT(m_ports != NULL);
 
 	/* Create new node */
 	my_node = (t_node *) malloc(sizeof(t_node));
 
-	assert(my_node != NULL);
+	VTR_ASSERT(my_node != NULL);
 
 	my_node->type = type;
 	my_node->name = name; /* Memory already allocated */
@@ -572,7 +573,7 @@ void add_node(char* type, char *name, t_array_ref **ports, t_parse_info* parse_i
 	{
 		node_list = (t_array_ref *)malloc(sizeof(t_array_ref));
 
-		assert(node_list != NULL);
+		VTR_ASSERT(node_list != NULL);
 
 		node_list->array_size = 0;
 		node_list->allocated_size = parse_info->number_of_nodes;
@@ -599,7 +600,7 @@ t_identifier_pass *allocate_identifier(char *name, t_boolean indexed, int index)
 
 	item = (t_identifier_pass *) malloc(sizeof(t_identifier_pass));
 
-	assert(item != NULL);
+	VTR_ASSERT(item != NULL);
 
 	item->name = name;
 	item->indexed = indexed;
@@ -615,7 +616,7 @@ t_pin_def *locate_net_by_name(char *name)
 {
 	t_pin_def *result = NULL;
 	
-	assert(pin_list != NULL);
+	VTR_ASSERT(pin_list != NULL);
 
 	/*index = find_position_for_net_in_array(name, pin_list);*/
     t_index_pass index_pass = find_position_for_net_in_array_by_hash(name, pin_list);
@@ -700,7 +701,7 @@ void insert_hash(char* key, size_t value, t_hash_table* hash_table)
         } else {
             //If we didn't match key, we should already be at the end of the linked list
             // from get_hash_entry
-            assert(entry->next == NULL);
+            VTR_ASSERT(entry->next == NULL);
 
             //Allocate a new entry
             t_hash_elem* new_entry = (t_hash_elem*) malloc(sizeof(t_hash_elem));
@@ -798,7 +799,7 @@ int find_position_for_net_in_array(char *name, t_array_ref *net_list)
 	size_t			position = 0;
 	t_pin_def		*net;
 
-	assert(net_list != NULL);
+	VTR_ASSERT(net_list != NULL);
 	right = net_list->array_size - 1;
 	/* First check trivial cases */
 	if (right < 0)
@@ -873,15 +874,15 @@ t_node_port_association *create_node_port_association(char *port_name, int port_
 	t_node_port_association *result = NULL;
 
 	/* Validate pin assignment */
-	assert(port_name != NULL);
-	assert(pin != NULL);
-	assert(((wire_index >= pin->left) && (wire_index <= pin->right)) ||
+	VTR_ASSERT(port_name != NULL);
+	VTR_ASSERT(pin != NULL);
+	VTR_ASSERT(((wire_index >= pin->left) && (wire_index <= pin->right)) ||
 		   ((wire_index >= pin->right) && (wire_index <= pin->left)));
 
 	/* Create association */
 	result = (t_node_port_association *) malloc(sizeof(t_node_port_association));
 
-	assert(result != NULL);
+	VTR_ASSERT(result != NULL);
 
 	result->port_name = port_name;
 	result->port_index = port_index;
@@ -907,10 +908,10 @@ t_array_ref *associate_identifier_with_port_name(t_identifier_pass *identifier, 
 		return NULL;
 	}
 
-	assert(pin != NULL);
+	VTR_ASSERT(pin != NULL);
 
 	result = (t_array_ref *) malloc(sizeof(t_array_ref));
-	assert(result != NULL);
+	VTR_ASSERT(result != NULL);
 	result->array_size = 0;
 	result->allocated_size = 0;
 	result->pointer = NULL;
@@ -960,7 +961,7 @@ t_node *locate_node_by_name(char *name)
 	size_t index;
 	t_node *result = NULL;
 
-	assert(name != NULL);
+	VTR_ASSERT(name != NULL);
 
 	/* Perform a linear search */
 	for(index = 0; index < node_list->array_size; index++)
@@ -1019,7 +1020,7 @@ t_array_ref *create_array_of_net_to_port_assignments(t_array_ref *con_array)
 
 	/* Create an array of identifiers to return to the caller */
 	array_of_identifiers = (t_array_ref *) malloc(sizeof(t_array_ref));
-	assert(array_of_identifiers != NULL);
+	VTR_ASSERT(array_of_identifiers != NULL);
 	array_of_identifiers->array_size = 0;
 	array_of_identifiers->allocated_size = 0;
 	array_of_identifiers->pointer = NULL;
@@ -1080,7 +1081,7 @@ t_array_ref *create_array_of_net_to_port_assignments(t_array_ref *con_array)
 		}
 	}
 	
-	assert(array_of_identifiers != NULL);
+	VTR_ASSERT(array_of_identifiers != NULL);
 	return array_of_identifiers;
 }
 
@@ -1095,7 +1096,7 @@ t_array_ref *create_wire_port_connections(t_array_ref *concat_array, char *port_
 	
 	connections = (t_array_ref *) malloc(sizeof(t_array_ref));
 	
-	assert(connections != NULL);
+	VTR_ASSERT(connections != NULL);
 	connections->pointer = NULL;
 	connections->array_size = 0;
 	connections->allocated_size = 0;
@@ -1170,7 +1171,7 @@ void add_concatenation_assignments(t_array_ref *con_array, t_pin_def *target_pin
     int wire_index, target_wire_index;
 	t_pin_def *pin;
 
-	assert(target_pin != NULL);
+	VTR_ASSERT(target_pin != NULL);
 
 	target_wire_index = target_pin->left;
 	/* Now, for each wire of the net create an assignment statement. 
@@ -1246,13 +1247,13 @@ void define_instance_parameter(t_identifier_pass *identifier, char *parameter_na
 		index[0] = 0;
 	}
 	name = (char *) malloc(strlen(identifier->name)+strlen(index)+1);
-	assert(name != NULL);
+	VTR_ASSERT(name != NULL);
 	sprintf(name,"%s%s", identifier->name, index);
 	
 	/* Create a parameter for the node specified by the identifier */
 	/* First check if the node is the same one as most recently used one. */
 
-	assert(most_recently_used_node != NULL);
+	VTR_ASSERT(most_recently_used_node != NULL);
 
 	/* Check if the node name is the same as the name of the most recently used/created node.
 	 * This is most often the case as the parameter definitions come after the module declaration. */
@@ -1267,12 +1268,12 @@ void define_instance_parameter(t_identifier_pass *identifier, char *parameter_na
 		most_recently_used_node = local_node;
 	}
 
-	assert(local_node != NULL);
+	VTR_ASSERT(local_node != NULL);
 
 	/* Add parameter for the specified node */
 	param = (t_node_parameter *) malloc(sizeof(t_node_parameter));
 
-	assert(param != NULL);
+	VTR_ASSERT(param != NULL);
 
 	param->name = parameter_name;
 	if (string_value == NULL)
@@ -1313,7 +1314,7 @@ uintptr_t *allocate_array(int element_count)
 	array_size = calculate_array_size_using_bounds(element_count);
 	array = (uintptr_t *) malloc(array_size * ELEMENT_SIZE);
 
-	assert(array != NULL);
+	VTR_ASSERT(array != NULL);
 
 	return array;
 }
@@ -1352,7 +1353,7 @@ void **reallocate_array(t_array_ref* array_ref, int new_element_count)
 
 	new_array = (void**) realloc(array_ref->pointer, new_element_count * sizeof(long));
 
-	assert(new_array != NULL);
+	VTR_ASSERT(new_array != NULL);
 
 	return new_array;
 }
@@ -1386,8 +1387,7 @@ size_t append_array_element(long element, t_array_ref *array_ref)
 	size_t new_allocated_size;
     size_t element_index;
 
-	assert(array_ref != NULL);
-	assert(array_ref->allocated_size >= 0);
+	VTR_ASSERT(array_ref != NULL);
 
 	/* Check array element size */
     new_allocated_size = calculate_array_size_using_bounds(array_ref->array_size + 1);
@@ -1412,8 +1412,8 @@ int remove_element_by_index(int element_index, int *array, int element_count, t_
  * element is covered, if such a gap was created.
  */
 {
-	assert(array != NULL);
-	assert(element_count > 0);
+	VTR_ASSERT(array != NULL);
+	VTR_ASSERT(element_count > 0);
 
 	if (preserve_order == T_TRUE)
 	{
@@ -1450,8 +1450,8 @@ int get_element_index(int element, int *array, int element_count)
 {
 	int index;
 
-	assert(array != NULL);
-	assert(element_count > 0);
+	VTR_ASSERT(array != NULL);
+	VTR_ASSERT(element_count > 0);
 
 	/* Search for element */
 	for(index = 0; index < element_count; index++)
@@ -1528,8 +1528,8 @@ int insert_element_at_index(long element, t_array_ref* array_ref, int insert_ind
 	int new_element_count = 0;
     int old_element_count = array_ref->array_size;
 
-	/*assert(array_ref->pointer != NULL);*/
-	assert(insert_index >= 0 && insert_index <= old_element_count);
+	/*VTR_ASSERT(array_ref->pointer != NULL);*/
+	VTR_ASSERT(insert_index >= 0 && insert_index <= old_element_count);
 
 	new_element_count = append_array_element(element, array_ref);
 
@@ -1559,7 +1559,7 @@ int calculate_array_size_using_bounds(int element_count)
 	int power_count = 0;
 	int array_size = element_count;
 
-	assert(array_size >= 0);
+	VTR_ASSERT(array_size >= 0);
 
     //Find the smallest power of 2 which will contain element_count elements
     while(array_size > 0)

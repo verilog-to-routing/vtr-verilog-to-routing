@@ -6,6 +6,7 @@
 #include <math.h>
 
 #include "lut_stats.h"
+#include "vtr_assert.h"
 
 using std::cout;
 using std::endl;
@@ -138,7 +139,7 @@ pair<bool,bool> is_carry_chain_lut(t_node* node) {
 
     //Must be a chain lut if we are the chain start
     if(is_carry_chain_start) 
-        assert(is_carry_chain_lut);
+        VTR_ASSERT(is_carry_chain_lut);
 
     return pair<bool,bool>(is_carry_chain_lut, is_carry_chain_start);
 }
@@ -194,7 +195,7 @@ size_t chain_length(t_node* node, map<t_pin_def*,t_node*>& net_to_node_map) {
             t_pin_def* associated_net = node_port->associated_net;
 
             //ensure the net is in the look-up
-            assert(net_to_node_map.count(associated_net));
+            VTR_ASSERT(net_to_node_map.count(associated_net));
 
             //Fast reverse lookup
             next_node = net_to_node_map[associated_net];
