@@ -1416,7 +1416,7 @@ The following tags are common to all <pb_type> tags:
     Multple clock ports are described using multiple ``<clock>`` tags.
     *See above descriptions on inputs*
 
-.. arch:tag:: <mode name="string">
+.. arch:tag:: <mode name="string" disable_packing="bool">
 
     :req_param name:
         Name for this mode.
@@ -1429,6 +1429,16 @@ The following tags are common to all <pb_type> tags:
     .. note:: Modes within the same parent ``<pb_type>`` are mutually exclusive.
 
     .. note:: If a ``<pb_type>`` has only one mode of operation the mode tag can be omitted.
+
+    :opt_param disable_packing:
+        Specify if a mode is disabled or not for VPR packer.
+        When a mode is defined to be disabled for packing (``disable_packing="true"``), packer will not map any logic to the mode.
+        This optional syntax aims to help debugging of multi-mode ``<pb_type>`` so that users can spot bugs in their XML definition quickly. 
+        By default, it is set to ``false``.
+
+    .. note:: When a mode is specified to be disabled for packing, its child ``<pb_type>`` and the ``<mode>`` of child ``<pb_type>`` will be considered as disabled for packing automatically. There is no need to specify ``disable_packing`` for every ``<mode>`` in the tree of ``<pb_type>``.
+
+    .. warning:: This is a power-user debugging option. See :ref:`multi_mode_logic_block_tutorial` for a detailed how-to-use.
 
     For example:
 
