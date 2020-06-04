@@ -97,6 +97,7 @@ static void draw_rr_pin(int inode, const ezgl::color& color, ezgl::renderer* g);
 static void draw_rr_chan(int inode, const ezgl::color color, ezgl::renderer* g);
 static void draw_rr_src_sink(int inode, ezgl::color color, ezgl::renderer* g);
 static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g);
+static void draw_get_rr_src_sink_coords(const t_rr_node& node, float* xcen, float* ycen);
 static void draw_x(float x, float y, float size, ezgl::renderer* g);
 static void draw_pin_to_pin(int opin, int ipin, ezgl::renderer* g);
 static void draw_rr_switch(float from_x, float from_y, float to_x, float to_y, bool buffered, bool switch_configurable, ezgl::renderer* g);
@@ -1335,6 +1336,12 @@ void draw_rr(ezgl::renderer* g) {
                 case IPIN:
                     draw_state->draw_rr_node[inode].color = blk_LIGHTSKYBLUE;
                     break;
+                case SOURCE:
+                    draw_state->draw_rr_node[inode].color = ezgl::PLUM;
+                    break;
+                case SINK:
+                    draw_state->draw_rr_node[inode].color = ezgl::DARK_SLATE_BLUE;
+                    break;
                 default:
                     break;
             }
@@ -1344,7 +1351,8 @@ void draw_rr(ezgl::renderer* g) {
         switch (device_ctx.rr_nodes[inode].type()) {
             case SOURCE:
             case SINK:
-                break; /* Don't draw. */
+                draw_rr_src_sink(inode, draw_state->draw_rr_node[inode].color, g);
+                break;
 
             case CHANX:
                 draw_rr_chan(inode, draw_state->draw_rr_node[inode].color, g);
@@ -2133,15 +2141,36 @@ static void draw_rr_src_sink(int inode, ezgl::color color, ezgl::renderer* g) {
 
     auto& device_ctx = g_vpr_ctx.device();
 
-    int xlow = device_ctx.rr_nodes[inode].xlow();
-    int ylow = device_ctx.rr_nodes[inode].ylow();
-    int xhigh = device_ctx.rr_nodes[inode].xhigh();
-    int yhigh = device_ctx.rr_nodes[inode].yhigh();
+    float xcen, ycen;
+    draw_get_rr_src_sink_coords(device_ctx.rr_nodes[inode], &xcen, &ycen);
 
     g->set_color(color);
 
-    g->fill_rectangle({draw_coords->get_tile_width() * xlow, draw_coords->get_tile_height() * ylow},
-                      {draw_coords->get_tile_width() * xhigh, draw_coords->get_tile_height() * yhigh});
+    g->fill_rectangle({xcen - draw_coords->pin_size, ycen - draw_coords->pin_size},
+                      {xcen + draw_coords->pin_size, ycen + draw_coords->pin_size});
+
+    std::string str = vtr::string_fmt("%d", device_ctx.rr_nodes[inode].ptc_num());
+    g->set_color(ezgl::BLACK);
+    g->draw_text({xcen, ycen}, str.c_str(), 2 * draw_coords->pin_size, 2 * draw_coords->pin_size);
+    g->set_color(color);
+}
+
+static void draw_get_rr_src_sink_coords(const t_rr_node& node, float* xcen, float* ycen) {
+    t_draw_coords* draw_coords = get_draw_coords_vars();
+
+
+    float xc = draw_coords->tile_x[node.xlow()];
+    float yc = draw_coords->tile_y[node.ylow()];
+
+    auto& device_ctx = g_vpr_ctx.device();
+    t_physical_tile_type_ptr tile_type = device_ctx.grid[node.xlow()][node.ylow()].type;
+
+    float num_class = tile_type->class_inf.size();
+
+    *xcen = xc + 0.5 * draw_coords->get_tile_width();
+
+    float ypos = ((node.class_num() + 1) / (num_class + 2));
+    *ycen = yc + ypos * draw_coords->get_tile_height();
 }
 
 /* Draws the nets in the positions fixed by the router.  If draw_net_type is *
