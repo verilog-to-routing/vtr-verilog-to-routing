@@ -112,7 +112,8 @@ static void do_one_route(int source_node, int sink_node,
     if (found_path) {
         VTR_ASSERT(cheapest.index == sink_node);
 
-        t_rt_node* rt_node_of_sink = update_route_tree(&cheapest, nullptr);
+        std::set<int> empty_set;
+        t_rt_node* rt_node_of_sink = update_route_tree(&cheapest, nullptr, empty_set);
 
         //find delay
         float net_delay = rt_node_of_sink->Tdel;

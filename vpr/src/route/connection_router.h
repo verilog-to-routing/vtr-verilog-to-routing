@@ -202,7 +202,8 @@ class ConnectionRouter : public ConnectionRouterInterface {
     //used as branch-points for further routing.
     void add_route_tree_to_heap(t_rt_node* rt_node,
                                 int target_node,
-                                const t_conn_cost_params cost_params);
+                                const t_conn_cost_params cost_params,
+                                std::set<int> net);
 
     //Unconditionally adds rt_node to the heap
     //
@@ -211,7 +212,8 @@ class ConnectionRouter : public ConnectionRouterInterface {
     void add_route_tree_node_to_heap(
         t_rt_node* rt_node,
         int target_node,
-        const t_conn_cost_params cost_params);
+        const t_conn_cost_params cost_params,
+        std::set<int> net);
 
     t_bb add_high_fanout_route_tree_to_heap(
         t_rt_node* rt_root,

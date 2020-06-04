@@ -25,8 +25,14 @@ HeapStorage::alloc() {
     temp_ptr->set_next_heap_item(nullptr);
     temp_ptr->cost = 0.;
     temp_ptr->backward_path_cost = 0.;
+    temp_ptr->backward_delay = 0.;
+    temp_ptr->backward_cong = 0.;
     temp_ptr->R_upstream = 0.;
     temp_ptr->index = OPEN;
+    temp_ptr->path_rr.clear();
+    temp_ptr->edge.clear();
+    temp_ptr->net_rr.clear();
+    temp_ptr->partial_path_nodes.clear();
     temp_ptr->set_prev_node(NO_PREVIOUS);
     temp_ptr->set_prev_edge(RREdgeId::INVALID());
     return (temp_ptr);

@@ -6,6 +6,7 @@
 #include "vtr_memory.h"
 #include "vtr_array_view.h"
 #include "rr_graph_fwd.h"
+#include <set>
 
 /* Used by the heap as its fundamental data structure.
  * Each heap element represents a partial route.
@@ -34,6 +35,17 @@
  * u.next:  pointer to the next s_heap structure in the free
  *          linked list.  Not used when on the heap.
  *
+ * * path_rr: The entire partial path up until the route tree
+ * 
+ * edge: A list of edges from each node in the partial path to reach the next node
+ * 
+ * net_rr: The entire route tree
+ *
+ * partial_path_nodes: The entire partial path up until the route tree, stored as a set. 
+ * 
+ * backward_delay: The delay of the partial path plus the path from route tree to source
+ * 
+ * backward_cong: The congestion estimate of the partial path plus the path from route tree to source
  */
 struct t_heap {
     float cost = 0.;
@@ -41,6 +53,12 @@ struct t_heap {
     float R_upstream = 0.;
 
     int index = OPEN;
+    std::vector<int> path_rr;
+    std::vector<int> edge;
+    std::set<int> net_rr;
+    std::set<int> partial_path_nodes;
+    float backward_delay = 0.;
+    float backward_cong = 0.;
 
     struct t_prev {
         int node;
@@ -67,8 +85,8 @@ struct t_heap {
         return RREdgeId(u.prev.edge);
     }
 
-    void set_prev_edge(RREdgeId edge) {
-        u.prev.edge = (size_t)edge;
+    void set_prev_edge(RREdgeId edges) {
+        u.prev.edge = (size_t)edges;
     }
 
   private:

@@ -136,3 +136,31 @@ void push_back_node(
         heap->push_back(hptr);
     }
 }
+
+/* Puts an rr_node on the heap with the same condition as node_to_heap,
+     * but do not fix heap property yet as that is more efficiently done from
+     * bottom up with build_heap. Certain information is also added     */
+template<typename T>
+void push_back_node_with_info(
+    T* heap,
+    int inode, 
+    float total_cost, 
+    int prev_node, 
+    int prev_edge, 
+    float backward_path_cost, 
+    float R_upstream, 
+    float backward_path_delay, 
+    std::set<int> net_rr) {
+
+    t_heap* hptr = heap->alloc();
+    hptr->index = inode;
+    hptr->cost = total_cost;
+    hptr->backward_path_cost = backward_path_cost;
+    hptr->R_upstream = R_upstream;
+    hptr->path_rr.clear();
+    hptr->edge.clear();
+    hptr->net_rr = net_rr;
+    hptr->backward_delay = backward_path_delay;
+    hptr->backward_cong = 0;
+    heap->push_back(hptr);
+}
