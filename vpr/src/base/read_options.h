@@ -19,6 +19,7 @@ struct t_options {
     argparse::ArgValue<std::string> PowerFile;
     argparse::ArgValue<std::string> CmosTechFile;
     argparse::ArgValue<std::string> SDCFile;
+    argparse::ArgValue<std::string> TimingReportPrefix;
 
     argparse::ArgValue<e_circuit_format> circuit_format;
 
@@ -51,6 +52,7 @@ struct t_options {
     argparse::ArgValue<bool> show_version;
     argparse::ArgValue<size_t> num_workers;
     argparse::ArgValue<bool> timing_analysis;
+    argparse::ArgValue<e_timing_update_type> timing_update_type;
     argparse::ArgValue<bool> CreateEchoFile;
     argparse::ArgValue<bool> verify_file_digests;
     argparse::ArgValue<std::string> device_layout;
@@ -110,6 +112,7 @@ struct t_options {
     argparse::ArgValue<float> PlaceTimingTradeoff;
     argparse::ArgValue<int> RecomputeCritIter;
     argparse::ArgValue<int> inner_loop_recompute_divider;
+    argparse::ArgValue<int> quench_recompute_divider;
     argparse::ArgValue<float> place_exp_first;
     argparse::ArgValue<float> place_exp_last;
     argparse::ArgValue<float> place_delay_offset;

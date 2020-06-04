@@ -219,6 +219,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     vpr_setup->clock_modeling = options->clock_modeling;
     vpr_setup->two_stage_clock_routing = options->two_stage_clock_routing;
     vpr_setup->exit_before_pack = options->exit_before_pack;
+    vpr_setup->AnalysisOpts.timing_report_prefix = options->TimingReportPrefix;
 
     VTR_LOG("\n");
     VTR_LOG("Architecture file: %s\n", options->ArchFile.value().c_str());
@@ -684,7 +685,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
             routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay);
 
-            timing_info = make_setup_hold_timing_info(routing_delay_calc);
+            timing_info = make_setup_hold_timing_info(routing_delay_calc, router_opts.timing_update_type);
         }
 
         if (router_opts.doRouting == STAGE_DO) {
@@ -1196,7 +1197,7 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
 
         //Do final timing analysis
         auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay);
-        auto timing_info = make_setup_hold_timing_info(analysis_delay_calc);
+        auto timing_info = make_setup_hold_timing_info(analysis_delay_calc, vpr_setup.AnalysisOpts.timing_update_type);
         timing_info->update();
 
         if (isEchoFileEnabled(E_ECHO_ANALYSIS_TIMING_GRAPH)) {
@@ -1207,9 +1208,9 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
 
         //Timing stats
         VTR_LOG("\n");
-        generate_hold_timing_stats(/*prefix=*/"", *timing_info,
+        generate_hold_timing_stats(/*prefix=*/vpr_setup.AnalysisOpts.timing_report_prefix, *timing_info,
                                    *analysis_delay_calc, vpr_setup.AnalysisOpts);
-        generate_setup_timing_stats(/*prefix=*/"", *timing_info,
+        generate_setup_timing_stats(/*prefix=*/vpr_setup.AnalysisOpts.timing_report_prefix, *timing_info,
                                     *analysis_delay_calc, vpr_setup.AnalysisOpts);
 
         //Write the post-syntesis netlist
@@ -1296,59 +1297,59 @@ void vpr_power_estimation(const t_vpr_setup& vpr_setup,
 
 void vpr_print_error(const VprError& vpr_error) {
     /* Determine the type of VPR error, To-do: can use some enum-to-string mechanism */
-    char* error_type = nullptr;
+    const char* error_type = nullptr;
     try {
         switch (vpr_error.type()) {
             case VPR_ERROR_UNKNOWN:
-                error_type = vtr::strdup("Unknown");
+                error_type = "Unknown";
                 break;
             case VPR_ERROR_ARCH:
-                error_type = vtr::strdup("Architecture file");
+                error_type = "Architecture file";
                 break;
             case VPR_ERROR_PACK:
-                error_type = vtr::strdup("Packing");
+                error_type = "Packing";
                 break;
             case VPR_ERROR_PLACE:
-                error_type = vtr::strdup("Placement");
+                error_type = "Placement";
                 break;
             case VPR_ERROR_ROUTE:
-                error_type = vtr::strdup("Routing");
+                error_type = "Routing";
                 break;
             case VPR_ERROR_TIMING:
-                error_type = vtr::strdup("Timing");
+                error_type = "Timing";
                 break;
             case VPR_ERROR_SDC:
-                error_type = vtr::strdup("SDC file");
+                error_type = "SDC file";
                 break;
             case VPR_ERROR_NET_F:
-                error_type = vtr::strdup("Netlist file");
+                error_type = "Netlist file";
                 break;
             case VPR_ERROR_BLIF_F:
-                error_type = vtr::strdup("Blif file");
+                error_type = "Blif file";
                 break;
             case VPR_ERROR_PLACE_F:
-                error_type = vtr::strdup("Placement file");
+                error_type = "Placement file";
                 break;
             case VPR_ERROR_IMPL_NETLIST_WRITER:
-                error_type = vtr::strdup("Implementation Netlist Writer");
+                error_type = "Implementation Netlist Writer";
                 break;
             case VPR_ERROR_ATOM_NETLIST:
-                error_type = vtr::strdup("Atom Netlist");
+                error_type = "Atom Netlist";
                 break;
             case VPR_ERROR_POWER:
-                error_type = vtr::strdup("Power");
+                error_type = "Power";
                 break;
             case VPR_ERROR_ANALYSIS:
-                error_type = vtr::strdup("Analysis");
+                error_type = "Analysis";
                 break;
             case VPR_ERROR_OTHER:
-                error_type = vtr::strdup("Other");
+                error_type = "Other";
                 break;
             case VPR_ERROR_INTERRUPTED:
-                error_type = vtr::strdup("Interrupted");
+                error_type = "Interrupted";
                 break;
             default:
-                error_type = vtr::strdup("Unrecognized Error");
+                error_type = "Unrecognized Error";
                 break;
         }
     } catch (const vtr::VtrError& e) {
