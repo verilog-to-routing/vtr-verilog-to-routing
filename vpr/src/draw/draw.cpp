@@ -2205,7 +2205,7 @@ static void draw_get_rr_src_sink_coords(const t_rr_node& node, float* xcen, floa
 
     *xcen = xc + 0.5 * draw_coords->get_tile_width();
 
-    float ypos = ((node.class_num() + 1) / (num_class + 2));
+    float ypos = ((node.class_num() + 1) / (num_class + 1));
     *ycen = yc + ypos * draw_coords->get_tile_height();
 }
 
