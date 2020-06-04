@@ -2582,6 +2582,18 @@ static int draw_check_rr_node_hit(float click_x, float click_y) {
                 }
                 break;
             }
+            case SOURCE:
+            case SINK: {
+                float xcen, ycen;
+                draw_get_rr_src_sink_coords(device_ctx.rr_nodes[inode], &xcen, &ycen);
+
+                // Now check if we clicked on this pin
+                if (click_x >= xcen - draw_coords->pin_size && click_x <= xcen + draw_coords->pin_size && click_y >= ycen - draw_coords->pin_size && click_y <= ycen + draw_coords->pin_size) {
+                    hit_node = inode;
+                    return hit_node;
+                }
+                break;
+            }
             case CHANX:
             case CHANY: {
                 bound_box = draw_get_rr_chan_bbox(inode);
