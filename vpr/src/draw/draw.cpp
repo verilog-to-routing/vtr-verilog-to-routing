@@ -580,8 +580,10 @@ void toggle_rr(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
         new_state = DRAW_NODES_RR;
     else if (strcmp(combo_box_content, "Nodes SBox") == 0)
         new_state = DRAW_NODES_SBOX_RR;
-    else if (strcmp(combo_box_content, "All but Buffers") == 0)
-        new_state = DRAW_ALL_BUT_BUFFERS_RR;
+    else if (strcmp(combo_box_content, "Nodes SBox CBox") == 0)
+        new_state = DRAW_NODES_SBOX_CBOX_RR;
+    else if (strcmp(combo_box_content, "Nodes SBox CBox Internal") == 0)
+        new_state = DRAW_NODES_SBOX_CBOX_INTERNAL_RR;
     else // all rr
         new_state = DRAW_ALL_RR;
 
@@ -1542,7 +1544,8 @@ static void draw_rr_edges(int inode, ezgl::renderer* g) {
     from_type = device_ctx.rr_nodes[inode].type();
 
     if ((draw_state->draw_rr_toggle == DRAW_NODES_RR)
-        || (draw_state->draw_rr_toggle == DRAW_NODES_SBOX_RR && from_type == OPIN)) {
+        || (draw_state->draw_rr_toggle == DRAW_NODES_SBOX_RR && (from_type == OPIN || from_type == SOURCE || from_type == IPIN))
+        || (draw_state->draw_rr_toggle == DRAW_NODES_SBOX_CBOX_RR && (from_type == SOURCE || from_type == IPIN))) {
         return; /* Nothing to draw. */
     }
 
