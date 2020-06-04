@@ -104,6 +104,7 @@ When a routing is on-screen, clicking on **Toggle RR** lets you to choose betwee
 The routing resource view can be very useful in ensuring that you have correctly described your FPGA in the architecture description file -- if you see switches where they shouldn’t be or pins on the wrong side of a clb, your architecture description needs to be revised.
 
 Wiring segments are drawn in black, input pins are drawn in sky blue, and output pins are drawn in pink.
+Sinks are drawn in dark slate blue, and sources in plum.
 Direct connections between output and input pins are shown in medium purple.
 Connections from wiring segments to input pins are shown in sky blue, connections from output pins to wiring segments are shown in pink, and connections between wiring segments are shown in green.
 The points at which wiring segments connect to clb pins (connection box switches) are marked with an ``x``.
