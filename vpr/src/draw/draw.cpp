@@ -2194,18 +2194,31 @@ static void draw_rr_src_sink(int inode, ezgl::color color, ezgl::renderer* g) {
 static void draw_get_rr_src_sink_coords(const t_rr_node& node, float* xcen, float* ycen) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
-
-    float xc = draw_coords->tile_x[node.xlow()];
-    float yc = draw_coords->tile_y[node.ylow()];
-
     auto& device_ctx = g_vpr_ctx.device();
     t_physical_tile_type_ptr tile_type = device_ctx.grid[node.xlow()][node.ylow()].type;
 
+    //Number of classes (i.e. src/sinks) we need to draw
     float num_class = tile_type->class_inf.size();
+
+    int height = tile_type->height; //Height in blocks
+
+    //How many classes to draw per unit block height
+    int class_per_height = num_class;
+    if (height > 1) {
+        class_per_height = num_class / (height - 1);
+    }
+
+    int class_height_offset = node.class_num() / class_per_height; //Offset wrt block height
+    int class_height_shift = node.class_num() % class_per_height;  //Offset within unit block
+
+    float xc = draw_coords->tile_x[node.xlow()];
+    float yc = draw_coords->tile_y[node.ylow() + class_height_offset];
 
     *xcen = xc + 0.5 * draw_coords->get_tile_width();
 
-    float ypos = ((node.class_num() + 1) / (num_class + 1));
+    float class_section_height = class_per_height + 1;
+
+    float ypos = (class_height_shift + 1) / class_section_height;
     *ycen = yc + ypos * draw_coords->get_tile_height();
 }
 
