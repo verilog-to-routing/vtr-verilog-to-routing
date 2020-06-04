@@ -930,6 +930,69 @@ where ``$VTR_ROOT`` should be replaced with the root of the VTR source tree on y
 [RR](https://rr-project.org/) extends GDB with the ability to to record a run of a tool and then re-run it to reproduce any observed issues.
 RR also enables efficient reverse execution (!) which can be *extremely helpful* when tracking down the source of a bug.
 
+# Speeding up the edit-compile-test cycle
+Rapid iteration through the edit-compile-test/debug cycle is very helpful when making code changes to VTR.
+
+The following is some guidance on techniques to reduce the time required.
+
+# Speeding Compilation
+
+1. Parallel compilation
+
+    For instance when [building VTR](BUILDING.md) using make, you can specify the `-j N` option to compile the code base with N parallel jobs:
+    ```
+    $ make -j N
+    ```
+
+    A reasonable value for `N` is equal to the number of threads you system can run. For instance, if your system has 4 cores with HyperThreading (i.e. 2-way SMT) you could run:
+    ```
+    $ make -j8
+    ```
+
+2. Building only a subset of VTR
+
+    If you know your changes only effect a specific tool in VTR, you can request that only that tool is rebuilt.
+    For instance, if you only wanted to re-compile VPR you could run:
+    ```
+    $ make vpr
+    ```
+    which would avoid re-building other tools (e.g. ODIN, ABC).
+
+3. Use ccache
+
+    [ccache](https://ccache.dev/) is a program which caches previous compilation results.
+    This can save significant time, for instance, when switching back and forth between release and debug builds.
+
+    VTR's cmake configuration should automatically detect and make use of ccache once it is installed.
+
+    For instance on Ubuntu/Debian systems you can install ccache with:
+    ```
+    $ sudo apt install ccache
+    ```
+    This only needs to be done once on your development system.
+
+4. Disable Interprocedural Optimizatiaons (IPO)
+
+    IPO re-optimizes an entire executable at link time, and is automatically enabled by VTR if a supporting compiler is found.
+    This can notably improve performance (e.g. ~10-20% faster), but can significantly increase compilation time (e.g. >2x in some cases).
+    When frequently re-compiling and debugging the extra execution speed may not be worth the longer compilation times.
+    In such cases you can manually disable IPO by setting the cmake parameter `VTR_IPO_BUILD=off`.
+
+    For instance using the wrapper Makefile:
+    ```
+    $ make CMAKE_PARAMS="-DVTR_IPO_BUILD=off"
+    ```
+    Note that this option is sticky, so subsequent calls to make don't need to keep specifying VTR_IPO_BUILD, until you want to re-enable it.
+
+    This setting can also be changed with the ccmake tool (i.e. `ccmake build`).
+
+All of these option can be used in combination.
+For example, the following will re-build only VPR using 8 parallel jobs with IPO disabled:
+```
+make CMAKE_PARAMS="-DVTR_IPO_BUILD=off" -j8 vpr
+```
+
+
 # External Subtrees
 VTR includes some code which is developed in external repositories, and is integrated into the VTR source tree using [git subtrees](https://www.atlassian.com/blog/git/alternatives-to-git-submodule-git-subtree).
 
