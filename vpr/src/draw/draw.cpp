@@ -100,6 +100,8 @@ static void draw_pin_to_chan_edge(int pin_node, int chan_node, ezgl::renderer* g
 static void draw_get_rr_src_sink_coords(const t_rr_node& node, float* xcen, float* ycen);
 static void draw_x(float x, float y, float size, ezgl::renderer* g);
 static void draw_pin_to_pin(int opin, int ipin, ezgl::renderer* g);
+static void draw_pin_to_sink(int ipin_node, int sink_node, ezgl::renderer* g);
+static void draw_source_to_pin(int source_node, int opin_node, ezgl::renderer* g);
 static void draw_rr_switch(float from_x, float from_y, float to_x, float to_y, bool buffered, bool switch_configurable, ezgl::renderer* g);
 static void draw_chany_to_chany_edge(int from_node, int to_node, int to_track, short switch_type, ezgl::renderer* g);
 static void draw_chanx_to_chanx_edge(int from_node, int to_node, int to_track, short switch_type, ezgl::renderer* g);
@@ -1349,8 +1351,11 @@ void draw_rr(ezgl::renderer* g) {
 
         /* Now call drawing routines to draw the node. */
         switch (device_ctx.rr_nodes[inode].type()) {
-            case SOURCE:
             case SINK:
+                draw_rr_src_sink(inode, draw_state->draw_rr_node[inode].color, g);
+                break;
+            case SOURCE:
+                draw_rr_edges(inode, g);
                 draw_rr_src_sink(inode, draw_state->draw_rr_node[inode].color, g);
                 break;
 
@@ -1366,6 +1371,7 @@ void draw_rr(ezgl::renderer* g) {
 
             case IPIN:
                 draw_rr_pin(inode, draw_state->draw_rr_node[inode].color, g);
+                draw_rr_edges(inode, g);
                 break;
 
             case OPIN:
@@ -1726,7 +1732,34 @@ static void draw_rr_edges(int inode, ezgl::renderer* g) {
                         break;
                 }
                 break;
+            case IPIN: // from_type
+                switch (to_type) {
+                    case SINK:
+                        g->set_color(ezgl::DARK_SLATE_BLUE);
+                        draw_pin_to_sink(inode, to_node, g);
+                        break;
 
+                    default:
+                        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+                                  "in draw_rr_edges: node %d (type: %d) connects to node %d (type: %d).\n",
+                                  inode, from_type, to_node, to_type);
+                        break;
+                }
+                break;
+            case SOURCE: // from_type
+                switch (to_type) {
+                    case OPIN:
+                        g->set_color(ezgl::PLUM);
+                        draw_source_to_pin(inode, to_node, g);
+                        break;
+
+                    default:
+                        vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
+                                  "in draw_rr_edges: node %d (type: %d) connects to node %d (type: %d).\n",
+                                  inode, from_type, to_node, to_type);
+                        break;
+                }
+                break;
             default: /* from_type */
                 vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
                           "draw_rr_edges called with node %d of type %d.\n",
@@ -2953,6 +2986,38 @@ static void draw_pin_to_pin(int opin_node, int ipin_node, ezgl::renderer* g) {
     draw_triangle_along_line(g, xend, yend, x1, x2, y1, y2);
 }
 
+static void draw_pin_to_sink(int ipin_node, int sink_node, ezgl::renderer* g) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    float x1 = 0, y1 = 0;
+    draw_get_rr_pin_coords(ipin_node, &x1, &y1);
+
+    float x2 = 0, y2 = 0;
+    draw_get_rr_src_sink_coords(device_ctx.rr_nodes[sink_node], &x2, &y2);
+
+    g->draw_line({x1, y1}, {x2, y2});
+
+    float xend = x2 + (x1 - x2) / 10.;
+    float yend = y2 + (y1 - y2) / 10.;
+    draw_triangle_along_line(g, xend, yend, x1, x2, y1, y2);
+}
+
+static void draw_source_to_pin(int source_node, int opin_node, ezgl::renderer* g) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    float x1 = 0, y1 = 0;
+    draw_get_rr_src_sink_coords(device_ctx.rr_nodes[source_node], &x1, &y1);
+
+    float x2 = 0, y2 = 0;
+    draw_get_rr_pin_coords(opin_node, &x2, &y2);
+
+    g->draw_line({x1, y1}, {x2, y2});
+
+    float xend = x2 + (x1 - x2) / 10.;
+    float yend = y2 + (y1 - y2) / 10.;
+    draw_triangle_along_line(g, xend, yend, x1, x2, y1, y2);
+}
+
 static inline void draw_mux_with_size(ezgl::point2d origin, e_side orientation, float height, int size, ezgl::renderer* g) {
     g->set_color(ezgl::YELLOW);
     auto bounds = draw_mux(origin, orientation, height, g);
@@ -3656,6 +3721,7 @@ static void draw_rr_costs(ezgl::renderer* g, const std::vector<float>& rr_costs,
 
             case IPIN: //fallthrough
                 draw_rr_pin(inode, color, g);
+                if (with_edges) draw_rr_edges(inode, g);
                 break;
             case OPIN:
                 draw_rr_pin(inode, color, g);
@@ -3665,6 +3731,7 @@ static void draw_rr_costs(ezgl::renderer* g, const std::vector<float>& rr_costs,
             case SINK:
                 color.alpha *= 0.8;
                 draw_rr_src_sink(inode, color, g);
+                if (with_edges) draw_rr_edges(inode, g);
                 break;
             default:
                 break;
