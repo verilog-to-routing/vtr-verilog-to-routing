@@ -576,11 +576,11 @@ void toggle_rr(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
     gchar* combo_box_content = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(toggle_rr));
     if (strcmp(combo_box_content, "None") == 0)
         new_state = DRAW_NO_RR;
-    else if (strcmp(combo_box_content, "Nodes RR") == 0)
+    else if (strcmp(combo_box_content, "Nodes") == 0)
         new_state = DRAW_NODES_RR;
-    else if (strcmp(combo_box_content, "Nodes SBox RR") == 0)
+    else if (strcmp(combo_box_content, "Nodes SBox") == 0)
         new_state = DRAW_NODES_SBOX_RR;
-    else if (strcmp(combo_box_content, "All but Buffers RR") == 0)
+    else if (strcmp(combo_box_content, "All but Buffers") == 0)
         new_state = DRAW_ALL_BUT_BUFFERS_RR;
     else // all rr
         new_state = DRAW_ALL_RR;
