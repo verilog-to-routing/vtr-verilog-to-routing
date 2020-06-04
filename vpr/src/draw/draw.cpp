@@ -578,8 +578,8 @@ void toggle_rr(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
         new_state = DRAW_NO_RR;
     else if (strcmp(combo_box_content, "Nodes RR") == 0)
         new_state = DRAW_NODES_RR;
-    else if (strcmp(combo_box_content, "Nodes and SBox RR") == 0)
-        new_state = DRAW_NODES_AND_SBOX_RR;
+    else if (strcmp(combo_box_content, "Nodes SBox RR") == 0)
+        new_state = DRAW_NODES_SBOX_RR;
     else if (strcmp(combo_box_content, "All but Buffers RR") == 0)
         new_state = DRAW_ALL_BUT_BUFFERS_RR;
     else // all rr
@@ -1542,7 +1542,7 @@ static void draw_rr_edges(int inode, ezgl::renderer* g) {
     from_type = device_ctx.rr_nodes[inode].type();
 
     if ((draw_state->draw_rr_toggle == DRAW_NODES_RR)
-        || (draw_state->draw_rr_toggle == DRAW_NODES_AND_SBOX_RR && from_type == OPIN)) {
+        || (draw_state->draw_rr_toggle == DRAW_NODES_SBOX_RR && from_type == OPIN)) {
         return; /* Nothing to draw. */
     }
 
@@ -1595,7 +1595,7 @@ static void draw_rr_edges(int inode, ezgl::renderer* g) {
             case CHANX: /* from_type */
                 switch (to_type) {
                     case IPIN:
-                        if (draw_state->draw_rr_toggle == DRAW_NODES_AND_SBOX_RR) {
+                        if (draw_state->draw_rr_toggle == DRAW_NODES_SBOX_RR) {
                             break;
                         }
 
@@ -1665,7 +1665,7 @@ static void draw_rr_edges(int inode, ezgl::renderer* g) {
             case CHANY: /* from_type */
                 switch (to_type) {
                     case IPIN:
-                        if (draw_state->draw_rr_toggle == DRAW_NODES_AND_SBOX_RR) {
+                        if (draw_state->draw_rr_toggle == DRAW_NODES_SBOX_RR) {
                             break;
                         }
 

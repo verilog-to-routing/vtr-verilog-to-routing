@@ -252,7 +252,7 @@ void button_for_toggle_rr() {
     GtkWidget* toggle_rr_label = gtk_label_new("Toggle RR:");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_rr_widget), "None");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_rr_widget), "Nodes RR");
-    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_rr_widget), "Nodes and SBox RR");
+    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_rr_widget), "Nodes SBox RR");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_rr_widget), "All but Buffers RR");
     gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(toggle_rr_widget), "All RR");
     gtk_combo_box_set_active((GtkComboBox*)toggle_rr_widget, 0); // default set to None which has an index 0
