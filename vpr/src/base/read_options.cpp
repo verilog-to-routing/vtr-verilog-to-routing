@@ -1297,8 +1297,9 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.TimingReportPrefix, "--timing_report_prefix")
-            .help("Prefix for timing report files")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Prefix for timing report files")
+        .default_value("")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.read_router_lookahead, "--read_router_lookahead")
         .help(
@@ -2135,11 +2136,6 @@ void set_conditional_defaults(t_options& args) {
         std::string route_file = args.out_file_prefix;
         route_file += default_output_name + ".route";
         args.RouteFile.set(route_file, Provenance::INFERRED);
-    }
-
-    if (args.TimingReportPrefix.provenance() != Provenance::SPECIFIED) {
-        std::string timing_report_prefix = "";
-        args.TimingReportPrefix.set(timing_report_prefix, Provenance::INFERRED);
     }
 
     if (args.ActFile.provenance() != Provenance::SPECIFIED) {
