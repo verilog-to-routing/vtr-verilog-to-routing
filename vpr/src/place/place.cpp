@@ -84,7 +84,7 @@ using std::max;
 using std::min;
 
 //#ifdef VTR_ENABLE_DEBUG_LOGGING
-#if 1
+#if 0
 void print_place_statisitics(const float &, const std::vector<int> &, const std::vector<int> &, const std::vector<int> &);
 #endif
 
@@ -429,6 +429,7 @@ static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
                 const PlacementDelayCalculator& delay_calc);
 
 static void print_place_status_header();
+
 static void print_place_status(const t_annealing_state& state,
                                const t_placer_statistics& stats,
                                float elapsed_sec,
@@ -949,7 +950,6 @@ quench:
 
     free_placement_structs(placer_opts);
     free_try_swap_arrays();
-<<<<<<< HEAD
 
     print_timing_stats("Placement Quench", post_quench_timing_stats, pre_quench_timing_stats);
     print_timing_stats("Placement Total ", timing_ctx.stats, pre_place_timing_stats);
