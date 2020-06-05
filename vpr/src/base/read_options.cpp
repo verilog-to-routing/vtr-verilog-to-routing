@@ -1297,8 +1297,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.TimingReportPrefix, "--timing_report_prefix")
-            .help("Prefix for timing report files")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help("Prefix for timing report files")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.read_router_lookahead, "--read_router_lookahead")
         .help(
