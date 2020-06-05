@@ -1024,8 +1024,13 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
             }
         }
 	} elsif ($check_incremental) { # specified channel width && check incremental
+        # files with SHA256 hashes
+        my $net_file = "n.net";
+        my $place_file = "p.place";
+        my $route_file = "r.route";
+        my $move_result;
 
-		# full analysis
+		# full STA analysis
 		my $full_fixed_W_log_file = "full_vpr.out";
 		my $full_net_file = "full.net";
 		my $full_place_file = "full.place";
@@ -1037,9 +1042,9 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 
 		my @fixed_full_vpr_args = @forwarded_vpr_args;
 		push(@fixed_full_vpr_args, ("--timing_update_type", "full"));
-		push(@fixed_full_vpr_args, ("--net_file", $full_net_file));
-		push(@fixed_full_vpr_args, ("--place_file", $full_place_file));
-		push(@fixed_full_vpr_args, ("--route_file", $full_route_file));
+		push(@fixed_full_vpr_args, ("--net_file", $net_file));
+		push(@fixed_full_vpr_args, ("--place_file", $place_file));
+		push(@fixed_full_vpr_args, ("--route_file", $route_file));
 		push(@fixed_full_vpr_args, ("--timing_report_prefix", "full_"));
 
 		# run full STA flow
@@ -1052,8 +1057,27 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                 extra_vpr_args => \@fixed_full_vpr_args,
                 log_file => $full_fixed_W_log_file,
             });
+
+        # rename files with SHA256 hash
+        $move_result = &system_with_timeout(
+                $move_exec, "move.out",
+                $timeout, $temp_dir,
+                $net_file, $full_net_file
+            );
+
+        $move_result = &system_with_timeout(
+                $move_exec, "move.out",
+                $timeout, $temp_dir,
+                $place_file, $full_place_file
+            );
+
+        $move_result = &system_with_timeout(
+                $move_exec, "move.out",
+                $timeout, $temp_dir,
+                $route_file, $full_route_file
+            );
 		
-		# incremental analysis
+		# incremental STA analysis
 		my $incr_fixed_W_log_file = "incr_vpr.out";
 		my $incr_net_file = "incr.net";
 		my $incr_place_file = "incr.place";
@@ -1065,9 +1089,9 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 
 		my @fixed_incr_vpr_args = @forwarded_vpr_args;
 		push(@fixed_incr_vpr_args, ("--timing_update_type", "incremental"));
-		push(@fixed_incr_vpr_args, ("--net_file", $incr_net_file));
-		push(@fixed_incr_vpr_args, ("--place_file", $incr_place_file));
-		push(@fixed_incr_vpr_args, ("--route_file", $incr_route_file));
+		push(@fixed_incr_vpr_args, ("--net_file", $net_file));
+		push(@fixed_incr_vpr_args, ("--place_file", $place_file));
+		push(@fixed_incr_vpr_args, ("--route_file", $route_file));
 		push(@fixed_incr_vpr_args, ("--timing_report_prefix", "incr_"));
 
 		# run incremental STA flow
@@ -1080,6 +1104,25 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                 extra_vpr_args => \@fixed_incr_vpr_args,
                 log_file => $incr_fixed_W_log_file,
             });
+
+        # rename files with SHA256 hash
+        $move_result = &system_with_timeout(
+                $move_exec, "move.out",
+                $timeout, $temp_dir,
+                $net_file, $incr_net_file
+            );
+
+        $move_result = &system_with_timeout(
+                $move_exec, "move.out",
+                $timeout, $temp_dir,
+                $place_file, $incr_place_file
+            );
+
+        $move_result = &system_with_timeout(
+                $move_exec, "move.out",
+                $timeout, $temp_dir,
+                $route_file, $incr_route_file
+            );
 
 		#Sanity check that full STA and the incremental STA
 		#produce the same *.net, *.place, *.route files
@@ -1112,12 +1155,10 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 		if (($diff_setup_time_report ne "success") or ($diff_hold_time_report ne "success") or 
 			($diff_unconstrained_setup_time_report ne "success") or ($diff_unconstrained_hold_time_report ne "success"))
 		{
-			$error_status = "failed: vpr full or incremental timing analysis do not produce the same results";
+			$error_status = "failed: vpr full or incremental timing analysis do not produce the same timing reports";
             $error_code = 1;
 		}
 
-=pod
-# SHA256 hash differences
 		# Check *.net
         my $diff_net_result = &system_with_timeout(
     			$diff_exec, "diff.out",
@@ -1140,10 +1181,9 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 			);
 
         if (($diff_net_result ne "success") or ($diff_place_result ne "success") or ($diff_route_result ne "success")) {
-            $error_status = "failed: vpr full or incremental timing analysis do not produce the same results";
+            $error_status = "failed: vpr full or incremental timing analysis do not produce the same vpr files (SHA256)";
             $error_code = 1;
         }
-=cut
 
 	} else { # specified channel width
         my $fixed_W_log_file = "vpr.out";
