@@ -20,14 +20,6 @@ stratixiv_arch.timing.no_directlink.xml:
 
 stratixiv_arch.timing.no_pack_patterns.xml:
     Like stratixiv_arch.timing.xml, but with DSP pack patterns disabled.
-
-scripts:
-    Scripts used to generate portions of the architecture files, primarily the 
-    RAM blocks.
-
-testcases:
-    Small synthetic benchmarks to exercise the various complex DSP and RAM block
-    modes.
     
     
 Modifying Architecture Files
