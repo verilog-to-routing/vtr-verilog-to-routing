@@ -490,7 +490,7 @@ static bool check_rr_graph_connectivity(RRNodeId prev_node, RRNodeId node) {
 
         // If there are any non-configurable branches return true
         short edge_switch = rr_graph.edge_switch(edge);
-        if (!(switch_info[edge_switch].configurable())) return true; 
+        if (!(switch_info[edge_switch].configurable())) return true;
     }
 
     // If it's part of a non configurable node list, return true
