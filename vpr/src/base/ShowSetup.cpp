@@ -241,7 +241,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
                 break;
             default:
                 VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown check_route value\n");
-        }   
+        }
 
         VTR_LOG("RouterOpts.trim_empty_chan: %s\n", (RouterOpts.trim_empty_channels ? "true" : "false"));
         VTR_LOG("RouterOpts.trim_obs_chan: %s\n", (RouterOpts.trim_obs_channels ? "true" : "false"));
@@ -533,12 +533,12 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
             VTR_LOG("PlacerOpts.allowed_tiles_for_delay_model: %s\n", PlacerOpts.allowed_tiles_for_delay_model.c_str());
 
             std::string e_reducer_strings[5] = {"MIN", "MAX", "MEDIAN", "ARITHMEAN", "GEOMEAN"};
-            if ((size_t)PlacerOpts.delay_model_reducer < 0 || (size_t)PlacerOpts.delay_model_reducer > 4) 
+            if ((size_t)PlacerOpts.delay_model_reducer < 0 || (size_t)PlacerOpts.delay_model_reducer > 4)
                 VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown delay_model_reducer\n");
             VTR_LOG("PlacerOpts.delay_model_reducer: %s\n", e_reducer_strings[(size_t)PlacerOpts.delay_model_reducer].c_str());
 
             std::string place_delay_model_strings[2] = {"DELTA", "DELTA_OVERRIDE"};
-            if ((size_t)PlacerOpts.delay_model_type < 0 || (size_t)PlacerOpts.delay_model_type > 1) 
+            if ((size_t)PlacerOpts.delay_model_type < 0 || (size_t)PlacerOpts.delay_model_type > 1)
                 VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown delay_model_type\n");
             VTR_LOG("PlacerOpts.delay_model_type: %s\n", place_delay_model_strings[(size_t)PlacerOpts.delay_model_type].c_str());
         }
@@ -546,7 +546,7 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
         VTR_LOG("PlacerOpts.rlim_escape_fraction: %f\n", PlacerOpts.rlim_escape_fraction);
         VTR_LOG("PlacerOpts.move_stats_file: %s\n", PlacerOpts.move_stats_file.c_str());
         VTR_LOG("PlacerOpts.placement_saves_per_temperature: %d\n", PlacerOpts.placement_saves_per_temperature);
-        
+
         VTR_LOG("PlacerOpts.effort_scaling: ");
         switch (PlacerOpts.effort_scaling) {
             case CIRCUIT:
@@ -585,9 +585,9 @@ static void ShowNetlistOpts(const t_netlist_opts& NetlistOpts) {
     VTR_LOG("NetlistOpts.sweep_dangling_blocks         : %s\n", (NetlistOpts.sweep_dangling_blocks) ? "true" : "false");
     VTR_LOG("NetlistOpts.sweep_constant_primary_outputs: %s\n", (NetlistOpts.sweep_constant_primary_outputs) ? "true" : "false");
     VTR_LOG("NetlistOpts.netlist_verbosity             : %d\n", NetlistOpts.netlist_verbosity);
-    
+
     std::string const_gen_inference_strings[3] = {"NONE", "COMB", "COMB_SEQ"};
-    if ((size_t)NetlistOpts.const_gen_inference < 0 || (size_t)NetlistOpts.const_gen_inference > 4) 
+    if ((size_t)NetlistOpts.const_gen_inference < 0 || (size_t)NetlistOpts.const_gen_inference > 4)
         VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown delay_model_reducer\n");
     VTR_LOG("NetlistOpts.const_gen_inference           : %s\n", const_gen_inference_strings[(size_t)NetlistOpts.const_gen_inference].c_str());
 
