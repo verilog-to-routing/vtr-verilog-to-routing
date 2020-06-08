@@ -98,7 +98,7 @@ public:
 	SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>& agent);
 	SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agent);
     e_create_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float rlim,
-        std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>& num_moves,
+        std::vector<int>& X_coord, std::vector<int>& Y_coord,
         int& type, int high_fanout_net);
     void process_outcome(double reward);
 };

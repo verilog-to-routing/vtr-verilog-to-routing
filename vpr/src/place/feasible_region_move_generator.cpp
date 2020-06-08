@@ -4,7 +4,7 @@
 #include "math.h"
 
 e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim,
-    std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>&, int &,int ) {
+    std::vector<int>& X_coord, std::vector<int>& Y_coord, int &,int ) {
 
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();

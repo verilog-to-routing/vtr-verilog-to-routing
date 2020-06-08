@@ -6,7 +6,7 @@
 
 class CriticalUniformMoveGenerator : public MoveGenerator {
     e_create_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float rlim,
-    	std::vector<int>& , std::vector<int>& ,  std::vector<int>&, int & , int);
+    	std::vector<int>& , std::vector<int>&, int & , int);
 };
 
 #endif

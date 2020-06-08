@@ -12,7 +12,7 @@ static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* 
 //static void get_bb_cost_sink_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* coords, ClusterBlockId block_id, ClusterPinId moving_pin_id);
 
 e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim ,
-    std::vector<int>& X_coord, std::vector<int>& Y_coord, std::vector<int>&, int &,int place_high_fanout_net) {
+    std::vector<int>& X_coord, std::vector<int>& Y_coord, int &,int place_high_fanout_net) {
 
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -81,21 +81,10 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         //all net pins are weighted with their own crititcalities
         get_bb_cost_for_net_excluding_block(net_id, &coords, b_from, pin_id);
 
-        for(int i =0; i < ceil(coords.xmin.second*10); i++){
-            X_coord.push_back(coords.xmin.first);
-        }
-
-        for(int i =0; i < ceil(coords.xmax.second*10); i++){
-            X_coord.push_back(coords.xmax.first);
-        }
-
-        for(int i =0; i < ceil(coords.ymin.second*10); i++){
-            Y_coord.push_back(coords.ymin.first);
-        }
-
-        for(int i =0; i < ceil(coords.ymax.second*10); i++){
-            Y_coord.push_back(coords.ymax.first);
-        }
+        X_coord.insert(X_coord.end(),ceil(coords.xmin.second*10), coords.xmin.first);
+        X_coord.insert(X_coord.end(),ceil(coords.xmax.second*10), coords.xmax.first);
+        Y_coord.insert(Y_coord.end(),ceil(coords.ymin.second*10), coords.ymin.first);
+        Y_coord.insert(Y_coord.end(),ceil(coords.ymax.second*10), coords.ymax.first);
     }
 
 
@@ -124,17 +113,10 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     }
 
     t_pl_loc median_point;
-    if (!find_to_loc_median(cluster_from_type, &limit_coords, from, to)) {
-        if(X_coord.size() == 1 && Y_coord.size() == 1 && limit_coords.xmin == from.x && limit_coords.ymin == from.y){
-            return e_create_move::ABORT;
-        }
-        else {
-            median_point.x = (limit_coords.xmin + limit_coords.xmax) /2 ;
-            median_point.y = (limit_coords.ymin + limit_coords.ymax) /2 ;
-            if(!find_to_loc_centroid(cluster_from_type, rlim, median_point, to)){
-                return e_create_move::ABORT;
-            }
-        }
+    median_point.x = (limit_coords.xmin + limit_coords.xmax)/2;
+    median_point.y = (limit_coords.ymin + limit_coords.ymax)/2;
+    if(!find_to_loc_centroid(cluster_from_type, rlim, median_point, to)){
+        return e_create_move::ABORT;
     }
     return ::create_move(blocks_affected, b_from, to);
 }
@@ -163,7 +145,7 @@ static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* 
     auto& grid = device_ctx.grid;
 
     ClusterBlockId bnum;
-    bool first_block_excluding = true;
+    bool is_first_block = true;
     int ipin ;
     for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
@@ -187,7 +169,7 @@ static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* 
             y = std::max(std::min(y, (int)grid.height() - 2), 1); //-2 for no perim channels
 
             cost = get_timing_place_crit(net_id, ipin);
-            if(first_block_excluding){
+            if(is_first_block){
                 xmin = x;
                 xmin_cost = cost;
                 ymin = y;
@@ -196,7 +178,7 @@ static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* 
                 xmax_cost = cost;
                 ymax = y;
                 ymax_cost = cost;
-                first_block_excluding = false;
+                is_first_block = false;
             }
             else {
                 if (x < xmin) {
@@ -240,7 +222,7 @@ static void get_bb_for_net_excluding_block(ClusterNetId net_id, t_bb* coords, Cl
     auto& grid = device_ctx.grid;
 
     ClusterBlockId bnum;
-    bool first_block_excluding = true;
+    bool is_first_block = true;
     for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
         if(bnum != block_id)
@@ -253,12 +235,12 @@ static void get_bb_for_net_excluding_block(ClusterNetId net_id, t_bb* coords, Cl
             x = std::max(std::min(x, (int)grid.width() - 2), 1);  //-2 for no perim channels
             y = std::max(std::min(y, (int)grid.height() - 2), 1); //-2 for no perim channels
 
-            if(first_block_excluding){
+            if(is_first_block){
                 xmin = x;
                 ymin = y;
                 xmax = x;
                 ymax = y;
-                first_block_excluding = false;
+                is_first_block = false;
             }
             else {
                 if (x < xmin) {
@@ -307,7 +289,7 @@ static void get_bb_cost_sink_for_net_excluding_block(ClusterNetId net_id, t_bb_c
 
 
     ClusterBlockId bnum;
-    bool first_block_excluding = true;
+    bool is_first_block = true;
     int ipin ;
 
     for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
@@ -333,7 +315,7 @@ static void get_bb_cost_sink_for_net_excluding_block(ClusterNetId net_id, t_bb_c
             x = std::max(std::min(x, (int)grid.width() - 2), 1);  //-2 for no perim channels
             y = std::max(std::min(y, (int)grid.height() - 2), 1); //-2 for no perim channels
 
-            if(first_block_excluding){
+            if(is_first_block){
                 xmin = x;
                 xmin_cost = cost;
                 ymin = y;
@@ -342,7 +324,7 @@ static void get_bb_cost_sink_for_net_excluding_block(ClusterNetId net_id, t_bb_c
                 xmax_cost = cost;
                 ymax = y;
                 ymax_cost = cost;
-                first_block_excluding = false;
+                is_first_block = false;
             }
             else {
                 if (x < xmin) {
