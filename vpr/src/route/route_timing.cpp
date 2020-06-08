@@ -1095,6 +1095,8 @@ bool timing_driven_route_net(ConnectionRouter& router,
             conn_delay_budget.routing_budgets_algorithm = router_opts.routing_budgets_algorithm;
         }
 
+        VTR_LOG_DEBUG("Routing Net %zu (%zu sinks) with delay budgets: <%f, %f, %f> crit: %f\n", size_t(net_id), num_sinks, conn_delay_budget.min_delay, conn_delay_budget.target_delay, conn_delay_budget.max_delay, conn_delay_budget.short_path_criticality);
+
         // build a branch in the route tree to the target
         if (!timing_driven_route_sink(router,
                                       net_id,

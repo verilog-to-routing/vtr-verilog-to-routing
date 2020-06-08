@@ -504,7 +504,7 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
 //Add to_node to the heap, and also add any nodes which are connected by non-configurable edges
 template<typename Heap>
 void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params cost_params,
-                                                       const t_heap* current,
+                                                       t_heap* current,
                                                        const int from_node,
                                                        const int to_node,
                                                        const RREdgeId from_edge,
@@ -543,15 +543,20 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
         next_ptr->cost = next.cost;
         next_ptr->R_upstream = next.R_upstream;
         next_ptr->backward_path_cost = next.backward_path_cost;
-        next_ptr->backward_delay = next.backward_delay;
-        next_ptr->backward_cong = next.backward_cong;
-        next_ptr->path_rr = next.path_rr;
-        next_ptr->net_rr = next.net_rr;
-        next_ptr->partial_path_nodes = next.partial_path_nodes;
-        next_ptr->edge = next.edge;
+        next_ptr->backward_delay = current->backward_delay;
+        next_ptr->backward_cong = current->backward_cong;
+        next_ptr->path_rr = current->path_rr;
+        next_ptr->net_rr = current->net_rr;
+        next_ptr->partial_path_nodes = current->partial_path_nodes;
+        next_ptr->edge = current->edge;
         next_ptr->index = to_node;
         next_ptr->set_prev_edge(from_edge);
         next_ptr->set_prev_node(from_node);
+
+        next_ptr->path_rr.emplace_back(from_node);
+        next_ptr->net_rr.emplace(from_node);
+        next_ptr->partial_path_nodes.emplace(from_node);
+        next_ptr->edge.emplace_back((size_t) from_edge);
 
         heap_.add_to_heap(next_ptr);
         ++router_stats_->heap_pushes;
