@@ -547,7 +547,8 @@ void draw_logical_connections(ezgl::renderer* g) {
 
     g->set_line_dash(ezgl::line_dash::none);
 
-    constexpr float NET_ALPHA = 0.0275;
+    //constexpr float NET_ALPHA = 0.0275;
+    float NET_ALPHA = draw_state->net_alpha;
 
     // iterate over all the atom nets
     for (auto net_id : atom_ctx.nlist.nets()) {

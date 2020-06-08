@@ -47,3 +47,8 @@ callgrind*
 # Python temp files
 #
 *.pyc
+
+#Generated Tatum files
+*.rpt
+*.dot
+*.echo

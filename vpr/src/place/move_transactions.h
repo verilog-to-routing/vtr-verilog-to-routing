@@ -1,6 +1,7 @@
 #ifndef VPR_MOVE_TRANSACTIONS_H
 #define VPR_MOVE_TRANSACTIONS_H
 #include "vpr_types.h"
+#include "clustered_netlist_utils.h"
 
 /* Stores the information of the move for a block that is       *
  * moved during placement                                       *
@@ -25,7 +26,10 @@ struct t_pl_moved_block {
  *                   swapping two blocks.                       *
  * moved blocks: a list of moved blocks data structure with     *
  *               information on the move.                       *
- *               [0...num_moved_blocks-1]                       */
+ *               [0...num_moved_blocks-1]                       *
+ * affected_pins: pins affected by this move (used to           *
+ *                incrementally invalidate parts of the timing  *
+ *                graph.                                        */
 struct t_pl_blocks_to_be_moved {
     t_pl_blocks_to_be_moved(size_t max_blocks)
         : moved_blocks(max_blocks) {}
@@ -34,6 +38,8 @@ struct t_pl_blocks_to_be_moved {
     std::vector<t_pl_moved_block> moved_blocks;
     std::unordered_set<t_pl_loc> moved_from;
     std::unordered_set<t_pl_loc> moved_to;
+
+    std::vector<ClusterPinId> affected_pins;
 };
 
 enum class e_block_move_result {

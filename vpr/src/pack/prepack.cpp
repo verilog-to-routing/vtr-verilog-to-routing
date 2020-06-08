@@ -790,6 +790,14 @@ t_pack_molecule* alloc_and_load_pack_molecules(t_pack_patterns* list_of_pack_pat
      * TODO: Need to investigate better mapping strategies than first-fit
      */
     for (i = 0; i < num_packing_patterns; i++) {
+        /* Skip pack patterns for modes that are disabled for packing,
+         * Ensure no resources in unpackable modes will be mapped during pre-packing stage 
+         */
+        if ((nullptr != list_of_pack_patterns[i].root_block->pb_type->parent_mode)
+            && (true == list_of_pack_patterns[i].root_block->pb_type->parent_mode->disable_packing)) {
+            continue;
+        }
+
         best_pattern = 0;
         for (j = 1; j < num_packing_patterns; j++) {
             if (is_used[best_pattern]) {
@@ -1221,6 +1229,11 @@ static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block_in_pb_
         }
     } else {
         for (i = 0; i < curr_pb_graph_node->pb_type->num_modes; i++) {
+            /* Early fail if this primitive for a mode that is disabled for packing */
+            if (true == curr_pb_graph_node->pb_type->modes[i].disable_packing) {
+                continue;
+            }
+
             for (j = 0; j < curr_pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
                 *cost = UNDEFINED;
                 cur = get_expected_lowest_cost_primitive_for_atom_block_in_pb_graph_node(blk_id, &curr_pb_graph_node->child_pb_graph_nodes[i][j][0], cost);
@@ -1553,6 +1566,12 @@ static t_pb_graph_pin* get_connected_primitive_pin(const t_pb_graph_pin* cluster
  *  will be only one pin connected to the very first adder in the cluster.
  */
 static void get_all_connected_primitive_pins(const t_pb_graph_pin* cluster_input_pin, std::vector<t_pb_graph_pin*>& connected_primitive_pins) {
+    /* Skip pins for modes that are disabled for packing*/
+    if ((nullptr != cluster_input_pin->parent_node->pb_type->parent_mode)
+        && (true == cluster_input_pin->parent_node->pb_type->parent_mode->disable_packing)) {
+        return;
+    }
+
     for (int iedge = 0; iedge < cluster_input_pin->num_output_edges; iedge++) {
         const auto& output_edge = cluster_input_pin->output_edges[iedge];
         for (int ipin = 0; ipin < output_edge->num_output_pins; ipin++) {
