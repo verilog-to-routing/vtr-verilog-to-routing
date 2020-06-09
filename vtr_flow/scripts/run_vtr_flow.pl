@@ -120,7 +120,7 @@ my $rr_graph_ext            = ".xml";
 my $check_route             = 0;
 my $check_place             = 0;
 my $use_old_abc_script      = 0;
-my $check_incr_no_diff      = 0;
+my $check_incremental_sta_consistency = 0;
 my $run_name = "";
 my $expect_fail = undef;
 my $verbosity = 0;
@@ -252,8 +252,8 @@ while ( scalar(@ARGV) != 0 ) { #While non-empty
 	elsif ( $token eq "-crit_path_router_iterations" ){
 		$crit_path_router_iterations = shift(@ARGV);
 	}
-	elsif ( $token eq "-check_incremental_no_diff" ){
-		$check_incr_no_diff = 1;
+	elsif ( $token eq "-check_incremental_sta_consistency" ){
+		$check_incremental_sta_consistency = 1;
 	}
     # else forward the argument
 	else {
@@ -972,7 +972,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
     #If needs to check whether incremental STA produces the same result
     #then we need to specify the packing, placement, and routing file names
     #Also the VPR should run all stages by default
-    if ($check_incr_no_diff) {
+    if ($check_incremental_sta_consistency) {
         my $implicit_all_vpr_stage = 1;
         push(@forwarded_vpr_args, ("--net_file", "n.net"));
         push(@forwarded_vpr_args, ("--place_file", "p.place"));
@@ -1190,7 +1190,7 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
         }
 
         # Do a second-run of the incremental analysis to compare the result files
-        if ($check_incr_no_diff) {
+        if ($check_incremental_sta_consistency) {
             if (&cmp_full_vs_incr_STA ne "success") {
                 $error_status = "failed: vpr full or incremental timing analysis do not produce the same output files";
                 $error_code = 1;
@@ -1713,169 +1713,76 @@ sub calculate_relaxed_W {
 }
 
 sub cmp_full_vs_incr_STA {
-    # output files
-    my $net_file = "n.net";
-    my $place_file = "p.place";
-    my $route_file = "r.route";
-    my $setup_time_report = "report_timing.setup.rpt";
-    my $hold_time_report = "report_timing.hold.rpt";
-    my $unconstrained_setup_time_report = "report_unconstrained_timing.setup.rpt";
-    my $unconstrained_hold_time_report = "report_unconstrained_timing.hold.rpt";
+	# loop indices
+	my @indices = (0..6);
 
-    my $move_result;
+	# default output names
+	my @default_output = (
+			"n.net", "p.place", "r.route", "report_timing.setup.rpt", "report_timing.hold.rpt"
+			"report_unconstrained_timing.setup.rpt", "report_unconstrained_timing.hold.rpt"
+		);
 
-    # full STA analysis
-    my $full_fixed_W_log_file = "full_vpr.out";
-    my $full_net_file = "full.net";
-    my $full_place_file = "full.place";
-    my $full_route_file = "full.route";
-    my $full_setup_time_report = "full_report_timing.setup.rpt";
-    my $full_hold_time_report = "full_report_timing.hold.rpt";
-    my $full_unconstrained_setup_time_report = "full_report_unconstrained_timing.setup.rpt";
-    my $full_unconstrained_hold_time_report = "full_report_unconstrained_timing.hold.rpt";
+    # full STA output names
+    my @full_sta_output = (
+    		"full.net", "full.place", "full.route", 
+    		"full_report_timing.setup.rpt", "full_report_timing.hold.rpt",
+    		"full_report_unconstrained_timing.setup.rpt", "full_report_unconstrained_timing.hold.rpt"
+    	);
 
-    my @fixed_full_vpr_args = @forwarded_vpr_args;
-    push(@fixed_full_vpr_args, ("--timing_update_type", "full"));
-    push(@fixed_full_vpr_args, ("--net_file", $net_file));
-    push(@fixed_full_vpr_args, ("--place_file", $place_file));
-    push(@fixed_full_vpr_args, ("--route_file", $route_file));
+    # incremental STA output names
+	my @incr_sta_output = (
+    		"incr.net", "incr.place", "incr.route", 
+    		"incr_report_timing.setup.rpt", "incr_report_timing.hold.rpt",
+    		"incr_report_unconstrained_timing.setup.rpt", "incr_report_unconstrained_timing.hold.rpt"
+    	);
 
-    # run full STA flow
-    $q = run_vpr({
-            arch_name => $architecture_file_name,
-            circuit_name => $benchmark_name,
-            circuit_file => $prevpr_output_file_name,
-            sdc_file => $sdc_file_path,
-            pad_file => $pad_file_path,
-            extra_vpr_args => \@fixed_full_vpr_args,
-            log_file => $full_fixed_W_log_file,
-        });
-
-    # rename output files
-    $move_result = &system_with_timeout(
+	# The full STA flow should have already been run
+    # directly rename the output files
+    foreach my $index (@indices) {
+    	system_with_timeout(
             $move_exec, "move.out",
             $timeout, $temp_dir,
-            $net_file, $full_net_file
+            $default_output[$index], $full_sta_output[$index]
         );
+    }
 
-    $move_result = &system_with_timeout(
-            $move_exec, "move.out",
-            $timeout, $temp_dir,
-            $place_file, $full_place_file
-        );
-
-    $move_result = &system_with_timeout(
-            $move_exec, "move.out",
-            $timeout, $temp_dir,
-            $route_file, $full_route_file
-        );
-
-    $move_result = $system_with_timeout(
-            $move_exec
-    )
-
-    # incremental STA analysis
-    my $incr_fixed_W_log_file = "incr_vpr.out";
-    my $incr_net_file = "incr.net";
-    my $incr_place_file = "incr.place";
-    my $incr_route_file = "incr.route";
-    my $incr_setup_time_report = "incr_report_timing.setup.rpt";
-    my $incr_hold_time_report = "incr_report_timing.hold.rpt";
-    my $incr_unconstrained_setup_time_report = "incr_report_unconstrained_timing.setup.rpt";
-    my $incr_unconstrained_hold_time_report = "incr_report_unconstrained_timing.hold.rpt";
-
-    my @fixed_incr_vpr_args = @forwarded_vpr_args;
-    push(@fixed_incr_vpr_args, ("--timing_update_type", "incremental"));
-    push(@fixed_incr_vpr_args, ("--net_file", $net_file));
-    push(@fixed_incr_vpr_args, ("--place_file", $place_file));
-    push(@fixed_incr_vpr_args, ("--route_file", $route_file));
+    my @incremental_vpr_args = @forwarded_vpr_args;
+    push(@incremental_vpr_args, ("--timing_update_type", "incremental"));
 
     # run incremental STA flow
+    my $fixed_W_log_file;
     $q = run_vpr({
             arch_name => $architecture_file_name,
             circuit_name => $benchmark_name,
             circuit_file => $prevpr_output_file_name,
             sdc_file => $sdc_file_path,
             pad_file => $pad_file_path,
-            extra_vpr_args => \@fixed_incr_vpr_args,
-            log_file => $incr_fixed_W_log_file,
+            extra_vpr_args => \@incremental_vpr_args,
+            log_file => $fixed_W_log_file,
         });
 
-    # rename files with SHA256 hash
-    $move_result = &system_with_timeout(
+    # Rename the incremental STA output files
+    foreach my $index (@indices) {
+    	system_with_timeout(
             $move_exec, "move.out",
             $timeout, $temp_dir,
-            $net_file, $incr_net_file
+            $default_output[$index], $incr_sta_output[$index]
         );
-
-    $move_result = &system_with_timeout(
-            $move_exec, "move.out",
-            $timeout, $temp_dir,
-            $place_file, $incr_place_file
-        );
-
-    $move_result = &system_with_timeout(
-            $move_exec, "move.out",
-            $timeout, $temp_dir,
-            $route_file, $incr_route_file
-        );
+    }
 
     #Sanity check that full STA and the incremental STA
     #produce the same *.net, *.place, *.route files
     #as well as identical timing report files
-
-    my $diff_setup_time_report = &system_with_timeout(
-            $diff_exec, "diff.out",
+    foreach my $index (@indices) {
+    	my $diff_result = &system_with_timeout(
+            $move_exec, "move.out",
             $timeout, $temp_dir,
-            $full_setup_time_report, $incr_setup_time_report
+            $default_output[$index], $incr_sta_output[$index]
         );
-
-    my $diff_hold_time_report = &system_with_timeout(
-            $diff_exec, "diff.out",
-            $timeout, $temp_dir,
-            $full_hold_time_report, $incr_hold_time_report
-        );
-
-    my $diff_unconstrained_setup_time_report = &system_with_timeout(
-            $diff_exec, "diff.out",
-            $timeout, $temp_dir,
-            $full_unconstrained_setup_time_report, $incr_unconstrained_setup_time_report
-        );
-
-    my $diff_unconstrained_hold_time_report = &system_with_timeout(
-            $diff_exec, "diff.out",
-            $timeout, $temp_dir,
-            $full_unconstrained_hold_time_report, $incr_unconstrained_hold_time_report
-        );
-
-    # Check *.net
-    my $diff_net_result = &system_with_timeout(
-            $diff_exec, "diff.out",
-            $timeout, $temp_dir,
-            $full_net_file, $incr_net_file
-        );
-
-    # Check *.place
-    my $diff_place_result = &system_with_timeout(
-            $diff_exec, "diff.out",
-            $timeout, $temp_dir,
-            $full_place_file, $incr_place_file
-        );
-
-    # Check *.route
-    my $diff_route_result = &system_with_timeout(
-            $diff_exec, "diff.out",
-            $timeout, $temp_dir,
-            $full_route_file, $incr_route_file
-        );
-
-    if (($diff_setup_time_report ne "success") or ($diff_hold_time_report ne "success") or
-        ($diff_unconstrained_setup_time_report ne "success") or ($diff_unconstrained_hold_time_report ne "success") or
-        ($diff_net_result ne "success") or ($diff_place_result ne "success") or ($diff_route_result ne "success"))
-    {
-        return "fail";
+        if ($diff_result ne "success") {
+        	return "fail";
+        }
     }
-    else {
-        return "success";
-    }
+
+    return "success";
 }
