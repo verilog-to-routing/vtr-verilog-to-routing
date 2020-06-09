@@ -255,7 +255,6 @@ void route_budgets::process_negative_slack_using_minimax(ClbNetPinsMatrix<float>
             max_budget_change = minimax_PERT(original_timing_info, original_timing_info, delay_max_budget, net_delay, netlist_pin_lookup, HOLD, true, NEGATIVE);
             timing_info = perform_sta(delay_max_budget);
         } else {
-            VTR_LOG_DEBUG("Performing negative slack processing, iteration %d; max_budget_change: %f\n", iteration, max_budget_change);
             second_max_budget_change = minimax_PERT(original_timing_info, timing_info, delay_max_budget, net_delay, netlist_pin_lookup, HOLD, true, NEGATIVE);
             max_budget_change = std::max(max_budget_change, second_max_budget_change);
             timing_info = perform_sta(delay_max_budget);

@@ -531,7 +531,7 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
     float new_total_cost = next.cost;
     float new_back_cost = next.backward_path_cost;
 
-    if (new_total_cost < best_total_cost && new_back_cost < best_back_cost) {
+    if (new_total_cost < best_total_cost && ((new_back_cost < best_back_cost) || (cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm == YOYO))) {
         //Add node to the heap only if the cost via the current partial path is less than the
         //best known cost, since there is no reason for the router to expand more expensive paths.
         //
@@ -701,21 +701,26 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
         expected_total_delay_cost += std::pow(std::max(0.f, delay_budget->min_delay - expected_total_delay), 2) / 100e-12;
         expected_total_cong_cost = (1. - cost_params.criticality) * expected_total_cong;
         total_cost = expected_total_delay_cost + expected_total_cong;
+    } else if(delay_budget && delay_budget->routing_budgets_algorithm == MINIMAX) {
+        //Update total cost
+        float expected_cost = router_lookahead_.get_expected_cost(to_node, target_node, cost_params, to->R_upstream);
+        VTR_LOGV_DEBUG(router_debug_ && !std::isfinite(expected_cost),
+                    "        Lookahead from %s (%s) to %s (%s) is non-finite, expected_cost = %f, to->R_upstream = %f\n",
+                    rr_node_arch_name(to_node).c_str(), describe_rr_node(to_node).c_str(),
+                    rr_node_arch_name(target_node).c_str(), describe_rr_node(target_node).c_str(),
+                    expected_cost, to->R_upstream);
+        
+        total_cost += to->backward_path_cost + cost_params.astar_fac * expected_cost;
     } else {
         //Update total cost
         float expected_cost = router_lookahead_.get_expected_cost(to_node, target_node, cost_params, to->R_upstream);
-        total_cost = to->backward_path_cost + cost_params.astar_fac * expected_cost;
+        VTR_LOGV_DEBUG(router_debug_ && !std::isfinite(expected_cost),
+                    "        Lookahead from %s (%s) to %s (%s) is non-finite, expected_cost = %f, to->R_upstream = %f\n",
+                    rr_node_arch_name(to_node).c_str(), describe_rr_node(to_node).c_str(),
+                    rr_node_arch_name(target_node).c_str(), describe_rr_node(target_node).c_str(),
+                    expected_cost, to->R_upstream);
+        total_cost += to->backward_path_cost + cost_params.astar_fac * expected_cost;
     }
-
-    //Update total cost
-    float expected_cost = router_lookahead_.get_expected_cost(to_node, target_node, cost_params, to->R_upstream);
-    VTR_LOGV_DEBUG(router_debug_ && !std::isfinite(expected_cost),
-                   "        Lookahead from %s (%s) to %s (%s) is non-finite, expected_cost = %f, to->R_upstream = %f\n",
-                   rr_node_arch_name(to_node).c_str(), describe_rr_node(to_node).c_str(),
-                   rr_node_arch_name(target_node).c_str(), describe_rr_node(target_node).c_str(),
-                   expected_cost, to->R_upstream);
-    total_cost += to->backward_path_cost + cost_params.astar_fac * expected_cost;
-
     to->cost = total_cost;
 }
 

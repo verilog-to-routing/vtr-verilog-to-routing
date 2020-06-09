@@ -212,6 +212,7 @@ static void print_route_status(int itry,
 
 static void print_router_criticality_histogram(const SetupTimingInfo& timing_info,
                                                const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
+static void print_delay_budget_info(ClusterNetId net_id, route_budgets& budgeting_info);
 
 static bool is_high_fanout(int fanout, int fanout_threshold);
 
@@ -489,6 +490,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
                                                            budgeting_inf,
                                                            was_rerouted);
             if (!is_routable) {
+                print_delay_budget_info(net_id, budgeting_inf);
                 return (false); //Impossible to route
             }
 
@@ -717,9 +719,9 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
                 //load budgets using information from uncongested delay information
                 budgeting_inf.load_route_budgets(net_delay, timing_info, netlist_pin_lookup, router_opts);
                 /*for debugging purposes*/
-                //                if (budgeting_inf.if_set()) {
-                //                    budgeting_inf.print_route_budget();
-                //                }
+                //    if (budgeting_inf.if_set()) {
+                //        budgeting_inf.print_route_budget();
+                //    }
 
             } else {
                 bool stable_routing_configuration = true;
@@ -859,7 +861,7 @@ bool try_timing_driven_route_net(ConnectionRouter& router,
         if (is_routed) {
             route_ctx.net_status.set_is_routed(net_id, true);
         } else {
-            VTR_LOG("Routing failed.\n");
+            VTR_LOG("Routing failed for net %d\n", net_id);
         }
 
         was_rerouted = true; //Flag to record whether routing was actually changed
@@ -973,7 +975,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
                              t_rt_node** rt_node_of_sink,
                              float* net_delay,
                              const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                             std::shared_ptr<const SetupHoldTimingInfo> timing_info,
+                             std::shared_ptr<SetupHoldTimingInfo> timing_info,
                              ClusteredPinTimingInvalidator* pin_timing_invalidator,
                              route_budgets& budgeting_inf) {
     /* Returns true as long as found some way to hook up this net, even if that *
@@ -1110,7 +1112,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
             conn_delay_budget.routing_budgets_algorithm = router_opts.routing_budgets_algorithm;
         }
 
-        VTR_LOG_DEBUG("Routing Net %zu (%zu sinks) with delay budgets: <%f, %f, %f> crit: %f\n", size_t(net_id), num_sinks, conn_delay_budget.min_delay, conn_delay_budget.target_delay, conn_delay_budget.max_delay, conn_delay_budget.short_path_criticality);
+        VTR_LOG_DEBUG("Routing Net %zu (%zu sinks) with delay budgets (%s): <%f, %f, %f> crit: %f\n", size_t(net_id), num_sinks, budgeting_inf.if_set() ? "true" : "false", conn_delay_budget.min_delay, conn_delay_budget.target_delay, conn_delay_budget.max_delay, conn_delay_budget.short_path_criticality);
 
         // build a branch in the route tree to the target
         if (!timing_driven_route_sink(router,
@@ -2153,5 +2155,15 @@ static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahea
 
             net_delay[net_id][ipin] = est_delay;
         }
+    }
+}
+
+static void print_delay_budget_info(ClusterNetId net_id, route_budgets& budgeting_info) {
+    auto& route_ctx = g_vpr_ctx.routing();
+
+    VTR_LOG("Printing delay budget info for net %d\n", net_id);
+    
+    for(auto& pin : route_ctx.net_rr_terminals[net_id]) {
+        VTR_LOG("IPIN %d: <%f, %f, %f>\n", pin, budgeting_info.get_min_delay_budget(net_id, pin), budgeting_info.get_delay_target(net_id, pin), budgeting_info.get_max_delay_budget(net_id, pin));
     }
 }
