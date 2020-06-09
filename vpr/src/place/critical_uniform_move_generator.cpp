@@ -10,7 +10,8 @@ e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved
     /* Pick a random block to be swapped with another random block.   */
     //ClusterBlockId b_from = pick_from_block();
     std::pair<ClusterNetId, int> crit_pin = highly_crit_pins[vtr::irand(highly_crit_pins.size()-1)];
-    ClusterBlockId b_from = cluster_ctx.clb_nlist.net_pin_block(crit_pin.first, crit_pin.second);
+//    ClusterBlockId b_from = cluster_ctx.clb_nlist.net_pin_block(crit_pin.first, crit_pin.second);
+    ClusterBlockId b_from = cluster_ctx.clb_nlist.net_driver_block(crit_pin.first);
 
     if (!b_from) {
         return e_create_move::ABORT; //No movable block found

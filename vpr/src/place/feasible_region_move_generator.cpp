@@ -8,13 +8,14 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
 
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& grid = device_ctx.grid;
+    //auto& device_ctx = g_vpr_ctx.device();
+    //auto& grid = device_ctx.grid;
 
     /* Pick a random block to be swapped with another random block.   */
-    //ClusterBlockId b_from = pick_from_block();
+    //ClusterBlockId b_from = pick_from_block()
     std::pair<ClusterNetId, int> crit_pin = highly_crit_pins[vtr::irand(highly_crit_pins.size()-1)];
-    ClusterBlockId b_from = cluster_ctx.clb_nlist.net_pin_block(crit_pin.first, crit_pin.second);
+    //ClusterBlockId b_from = cluster_ctx.clb_nlist.net_pin_block(crit_pin.first, crit_pin.second);
+    ClusterBlockId b_from = cluster_ctx.clb_nlist.net_driver_block(crit_pin.first);
 
     if (!b_from) {
         return e_create_move::ABORT; //No movable block found
@@ -64,8 +65,12 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
 
 
     //Get the most critical output of the node
-    int xt,yt,pnum;
-    float crit,highest_crit = 0;
+    int xt,yt;
+    //int pnum;
+    xt=0;
+    yt=0;
+    //float crit,highest_crit = 0;
+    /*
     for(ClusterPinId driver_pin_id : cluster_ctx.clb_nlist.block_output_pins(b_from)){
         ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(driver_pin_id);
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
@@ -92,6 +97,11 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         if(highest_crit == 1 )
             break;
     }
+    */
+    ClusterBlockId b_output = cluster_ctx.clb_nlist.net_pin_block(crit_pin.first, crit_pin.second);
+    t_pl_loc output_loc = place_ctx.block_locs[b_output].loc;
+    xt = output_loc.x;
+    yt = output_loc.y;
 
     //determine the feasible region
     t_bb FR_coords;
@@ -122,6 +132,16 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         FR_coords.ymax = std::max(from.y, yt);
     }
     VTR_ASSERT(FR_coords.ymin <= FR_coords.ymax);
+
+    //VTR_LOG("(%d,%d),(%d,%d)\n",from.x,from.y, xt,yt);
+    //VTR_LOG("#%d,%d,%d,%d\n",FR_coords.xmin, FR_coords.xmax, FR_coords.ymin, FR_coords.ymax);
+    /*
+    t_pl_loc center;
+    center.x = (FR_coords.xmin + FR_coords.xmax)/2;
+    center.y = (FR_coords.ymin + FR_coords.ymax)/2;
+    if (!find_to_loc_centroid(cluster_from_type, rlim, center, to))
+        return e_create_move::ABORT;
+    */
 
     if (!find_to_loc_median(cluster_from_type, &FR_coords, from, to)) {
         t_pl_loc center;
