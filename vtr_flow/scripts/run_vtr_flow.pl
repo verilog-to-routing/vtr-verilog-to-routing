@@ -62,7 +62,7 @@ if ( $number_arguments < 2 ) {
 	exit(-1);
 }
 
-# Get Absolute Path of 'vtr_flow
+# Get Absolute Path of vtr_flow
 Cwd::abs_path($0) =~ m/(.*\/vtr_flow)\//;
 my $vtr_flow_path = $1;
 # my $vtr_flow_path = "./vtr_flow";
@@ -120,7 +120,7 @@ my $rr_graph_ext            = ".xml";
 my $check_route             = 0;
 my $check_place             = 0;
 my $use_old_abc_script      = 0;
-my $check_incremental       = 0;
+my $check_incr_no_diff      = 0;
 my $run_name = "";
 my $expect_fail = undef;
 my $verbosity = 0;
@@ -129,10 +129,10 @@ my $odin_adder_cin_global = "";
 my $use_odin_xml_config = 1;
 my $relax_W_factor = 1.3;
 my $crit_path_router_iterations = 150; #We set a higher routing iterations (vs 50 default)
-                                       #to avoid spurious routing failures at relaxed W 
-                                       #caused by small perturbations in pattern or 
-                                       #placement. Usually these failures show up on small 
-                                       #circuits (with low W). Setting a higher value here 
+                                       #to avoid spurious routing failures at relaxed W
+                                       #caused by small perturbations in pattern or
+                                       #placement. Usually these failures show up on small
+                                       #circuits (with low W). Setting a higher value here
                                        #will help avoids them.
 my $show_failures = 0;
 
@@ -146,23 +146,23 @@ my $odin_run_simulation = 0;
 while ( scalar(@ARGV) != 0 ) { #While non-empty
     my $token = shift(@ARGV);
 	if ( $token eq "-sdc_file" ) {
-            $sdc_file_path = shift(@ARGV);#let us take the user input as an absolute path 
+            $sdc_file_path = shift(@ARGV);#let us take the user input as an absolute path
         if ( !-e $sdc_file_path) { #check if absolute path exists
             $sdc_file_path = "${vtr_flow_path}/${sdc_file_path}"; #assume this is a relative path
-        } 
+        }
         if ( !-e $sdc_file_path) { #check if relative path exists
-            die 
+            die
 		        "Error: Invalid SDC file specified";
-        } 
+        }
 	} elsif ( $token eq "-fix_pins" and $ARGV[0] ne "random") {
             $pad_file_path = shift(@ARGV);
         if ( !-e $pad_file_path) { #check if absolute path exists
             $pad_file_path = "${vtr_flow_path}/${pad_file_path}"; #assume this is a relative path
-        } 
+        }
         if ( !-e $pad_file_path) { #check if relative path exists
-            die 
+            die
 		        "Error: Invalid pad file specified";
-        } 
+        }
 	} elsif ( $token eq "-starting_stage" ) {
 		$starting_stage = stage_index( shift(@ARGV) );
 	} elsif ( $token eq "-ending_stage" ) {
@@ -252,8 +252,8 @@ while ( scalar(@ARGV) != 0 ) { #While non-empty
 	elsif ( $token eq "-crit_path_router_iterations" ){
 		$crit_path_router_iterations = shift(@ARGV);
 	}
-	elsif ( $token eq "-check_incremental" ){
-		$check_incremental = 1;
+	elsif ( $token eq "-check_incremental_no_diff" ){
+		$check_incr_no_diff = 1;
 	}
     # else forward the argument
 	else {
@@ -625,13 +625,13 @@ if (    $starting_stage <= $stage_idx_abc
 		{
 			# black box latches
 			$q = &system_with_timeout($blackbox_latches_script, $domain_itter."_blackboxing_latch.out", $timeout, $temp_dir,
-					"--input", $input_blif, "--output", $pre_abc_blif);	
+					"--input", $input_blif, "--output", $pre_abc_blif);
 
 			if ($q ne "success") {
 				$error_status = "failed: to black box the clocks for file_in: ".$input_blif." file_out: ".$pre_abc_blif;
 				$error_code = 1;
 				last ABC_OPTIMIZATION;
-			}	
+			}
 		}
 		elsif ( exists  $clock_list[$domain_itter] )
 		{
@@ -717,13 +717,13 @@ if (    $starting_stage <= $stage_idx_abc
 		if ($use_old_abc_script) {
 			#Legacy ABC script adapted for new ABC by moving scleanup before if
 			$abc_commands="
-			read $pre_abc_blif; 
-			time; 
-			resyn; 
-			resyn2; 
-			time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; 
-			if -K $lut_size; 
-			write_hie ${pre_abc_blif} ${post_abc_raw_blif}; 
+			read $pre_abc_blif;
+			time;
+			resyn;
+			resyn2;
+			time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time;
+			if -K $lut_size;
+			write_hie ${pre_abc_blif} ${post_abc_raw_blif};
 			print_stats;
 			";
         }
@@ -969,6 +969,16 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                                    or $explicit_route_vpr_stage
                                    or $explicit_analysis_vpr_stage);
 
+    #If needs to check whether incremental STA produces the same result
+    #then we need to specify the packing, placement, and routing file names
+    #Also the VPR should run all stages by default
+    if ($check_incr_no_diff) {
+        my $implicit_all_vpr_stage = 1;
+        push(@forwarded_vpr_args, ("--net_file", "n.net"));
+        push(@forwarded_vpr_args, ("--place_file", "p.place"));
+        push(@forwarded_vpr_args, ("--route_file", "r.route"));
+    }
+
     if (!$route_fixed_W) {
         #Determine the mimimum channel width
 
@@ -1023,168 +1033,6 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                 }
             }
         }
-	} elsif ($check_incremental) { # specified channel width && check incremental
-        # files with SHA256 hashes
-        my $net_file = "n.net";
-        my $place_file = "p.place";
-        my $route_file = "r.route";
-        my $move_result;
-
-		# full STA analysis
-		my $full_fixed_W_log_file = "full_vpr.out";
-		my $full_net_file = "full.net";
-		my $full_place_file = "full.place";
-		my $full_route_file = "full.route";
-		my $full_setup_time_report = "full_report_timing.setup.rpt";
-		my $full_hold_time_report = "full_report_timing.hold.rpt";
-		my $full_unconstrained_setup_time_report = "full_report_unconstrained_timing.setup.rpt";
-		my $full_unconstrained_hold_time_report = "full_report_unconstrained_timing.hold.rpt";
-
-		my @fixed_full_vpr_args = @forwarded_vpr_args;
-		push(@fixed_full_vpr_args, ("--timing_update_type", "full"));
-		push(@fixed_full_vpr_args, ("--net_file", $net_file));
-		push(@fixed_full_vpr_args, ("--place_file", $place_file));
-		push(@fixed_full_vpr_args, ("--route_file", $route_file));
-		push(@fixed_full_vpr_args, ("--timing_report_prefix", "full_"));
-
-		# run full STA flow
-		$q = run_vpr({
-                arch_name => $architecture_file_name,
-                circuit_name => $benchmark_name,
-                circuit_file => $prevpr_output_file_name,
-                sdc_file => $sdc_file_path,
-                pad_file => $pad_file_path,
-                extra_vpr_args => \@fixed_full_vpr_args,
-                log_file => $full_fixed_W_log_file,
-            });
-
-        # rename files with SHA256 hash
-        $move_result = &system_with_timeout(
-                $move_exec, "move.out",
-                $timeout, $temp_dir,
-                $net_file, $full_net_file
-            );
-
-        $move_result = &system_with_timeout(
-                $move_exec, "move.out",
-                $timeout, $temp_dir,
-                $place_file, $full_place_file
-            );
-
-        $move_result = &system_with_timeout(
-                $move_exec, "move.out",
-                $timeout, $temp_dir,
-                $route_file, $full_route_file
-            );
-		
-		# incremental STA analysis
-		my $incr_fixed_W_log_file = "incr_vpr.out";
-		my $incr_net_file = "incr.net";
-		my $incr_place_file = "incr.place";
-		my $incr_route_file = "incr.route";
-		my $incr_setup_time_report = "incr_report_timing.setup.rpt";
-		my $incr_hold_time_report = "incr_report_timing.hold.rpt";
-		my $incr_unconstrained_setup_time_report = "incr_report_unconstrained_timing.setup.rpt";
-		my $incr_unconstrained_hold_time_report = "incr_report_unconstrained_timing.hold.rpt";
-
-		my @fixed_incr_vpr_args = @forwarded_vpr_args;
-		push(@fixed_incr_vpr_args, ("--timing_update_type", "incremental"));
-		push(@fixed_incr_vpr_args, ("--net_file", $net_file));
-		push(@fixed_incr_vpr_args, ("--place_file", $place_file));
-		push(@fixed_incr_vpr_args, ("--route_file", $route_file));
-		push(@fixed_incr_vpr_args, ("--timing_report_prefix", "incr_"));
-
-		# run incremental STA flow
-		$q = run_vpr({
-                arch_name => $architecture_file_name,
-                circuit_name => $benchmark_name,
-                circuit_file => $prevpr_output_file_name,
-                sdc_file => $sdc_file_path,
-                pad_file => $pad_file_path,
-                extra_vpr_args => \@fixed_incr_vpr_args,
-                log_file => $incr_fixed_W_log_file,
-            });
-
-        # rename files with SHA256 hash
-        $move_result = &system_with_timeout(
-                $move_exec, "move.out",
-                $timeout, $temp_dir,
-                $net_file, $incr_net_file
-            );
-
-        $move_result = &system_with_timeout(
-                $move_exec, "move.out",
-                $timeout, $temp_dir,
-                $place_file, $incr_place_file
-            );
-
-        $move_result = &system_with_timeout(
-                $move_exec, "move.out",
-                $timeout, $temp_dir,
-                $route_file, $incr_route_file
-            );
-
-		#Sanity check that full STA and the incremental STA
-		#produce the same *.net, *.place, *.route files
-		#as well as identical timing report files
-
-		my $diff_setup_time_report = &system_with_timeout(
-    			$diff_exec, "diff.out",
-        		$timeout, $temp_dir,
-        		$full_setup_time_report, $incr_setup_time_report
-			);
-
-		my $diff_hold_time_report = &system_with_timeout(
-    			$diff_exec, "diff.out",
-        		$timeout, $temp_dir,
-        		$full_hold_time_report, $incr_hold_time_report
-			);
-
-		my $diff_unconstrained_setup_time_report = &system_with_timeout(
-    			$diff_exec, "diff.out",
-        		$timeout, $temp_dir,
-        		$full_unconstrained_setup_time_report, $incr_unconstrained_setup_time_report
-			);
-
-		my $diff_unconstrained_hold_time_report = &system_with_timeout(
-    			$diff_exec, "diff.out",
-        		$timeout, $temp_dir,
-        		$full_unconstrained_hold_time_report, $incr_unconstrained_hold_time_report
-			);
-
-		if (($diff_setup_time_report ne "success") or ($diff_hold_time_report ne "success") or 
-			($diff_unconstrained_setup_time_report ne "success") or ($diff_unconstrained_hold_time_report ne "success"))
-		{
-			$error_status = "failed: vpr full or incremental timing analysis do not produce the same timing reports";
-            $error_code = 1;
-		}
-
-		# Check *.net
-        my $diff_net_result = &system_with_timeout(
-    			$diff_exec, "diff.out",
-        		$timeout, $temp_dir,
-        		$full_net_file, $incr_net_file
-			);
-
-        # Check *.place
-        my $diff_place_result = &system_with_timeout(
-        		$diff_exec, "diff.out",
-        		$timeout, $temp_dir,
-        		$full_place_file, $incr_place_file
-			);
-
-        # Check *.route
-        my $diff_route_result = &system_with_timeout(
-        		$diff_exec, "diff.out",
-        		$timeout, $temp_dir,
-        		$full_route_file, $incr_route_file
-			);
-
-        if (($diff_net_result ne "success") or ($diff_place_result ne "success") or ($diff_route_result ne "success")) {
-            $error_status = "failed: vpr full or incremental timing analysis do not produce the same vpr files (SHA256)";
-            $error_code = 1;
-        }
-
 	} else { # specified channel width
         my $fixed_W_log_file = "vpr.out";
 
@@ -1337,6 +1185,14 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                 }
             } else {
                 $error_status = "failed: no DSEC output";
+                $error_code = 1;
+            }
+        }
+
+        # Do a second-run of the incremental analysis to compare the result files
+        if ($check_incr_no_diff) {
+            if (&cmp_full_vs_incr_STA ne "success") {
+                $error_status = "failed: vpr full or incremental timing analysis do not produce the same output files";
                 $error_code = 1;
             }
         }
@@ -1856,3 +1712,170 @@ sub calculate_relaxed_W {
     return $relaxed_W;
 }
 
+sub cmp_full_vs_incr_STA {
+    # output files
+    my $net_file = "n.net";
+    my $place_file = "p.place";
+    my $route_file = "r.route";
+    my $setup_time_report = "report_timing.setup.rpt";
+    my $hold_time_report = "report_timing.hold.rpt";
+    my $unconstrained_setup_time_report = "report_unconstrained_timing.setup.rpt";
+    my $unconstrained_hold_time_report = "report_unconstrained_timing.hold.rpt";
+
+    my $move_result;
+
+    # full STA analysis
+    my $full_fixed_W_log_file = "full_vpr.out";
+    my $full_net_file = "full.net";
+    my $full_place_file = "full.place";
+    my $full_route_file = "full.route";
+    my $full_setup_time_report = "full_report_timing.setup.rpt";
+    my $full_hold_time_report = "full_report_timing.hold.rpt";
+    my $full_unconstrained_setup_time_report = "full_report_unconstrained_timing.setup.rpt";
+    my $full_unconstrained_hold_time_report = "full_report_unconstrained_timing.hold.rpt";
+
+    my @fixed_full_vpr_args = @forwarded_vpr_args;
+    push(@fixed_full_vpr_args, ("--timing_update_type", "full"));
+    push(@fixed_full_vpr_args, ("--net_file", $net_file));
+    push(@fixed_full_vpr_args, ("--place_file", $place_file));
+    push(@fixed_full_vpr_args, ("--route_file", $route_file));
+
+    # run full STA flow
+    $q = run_vpr({
+            arch_name => $architecture_file_name,
+            circuit_name => $benchmark_name,
+            circuit_file => $prevpr_output_file_name,
+            sdc_file => $sdc_file_path,
+            pad_file => $pad_file_path,
+            extra_vpr_args => \@fixed_full_vpr_args,
+            log_file => $full_fixed_W_log_file,
+        });
+
+    # rename output files
+    $move_result = &system_with_timeout(
+            $move_exec, "move.out",
+            $timeout, $temp_dir,
+            $net_file, $full_net_file
+        );
+
+    $move_result = &system_with_timeout(
+            $move_exec, "move.out",
+            $timeout, $temp_dir,
+            $place_file, $full_place_file
+        );
+
+    $move_result = &system_with_timeout(
+            $move_exec, "move.out",
+            $timeout, $temp_dir,
+            $route_file, $full_route_file
+        );
+
+    $move_result = $system_with_timeout(
+            $move_exec
+    )
+
+    # incremental STA analysis
+    my $incr_fixed_W_log_file = "incr_vpr.out";
+    my $incr_net_file = "incr.net";
+    my $incr_place_file = "incr.place";
+    my $incr_route_file = "incr.route";
+    my $incr_setup_time_report = "incr_report_timing.setup.rpt";
+    my $incr_hold_time_report = "incr_report_timing.hold.rpt";
+    my $incr_unconstrained_setup_time_report = "incr_report_unconstrained_timing.setup.rpt";
+    my $incr_unconstrained_hold_time_report = "incr_report_unconstrained_timing.hold.rpt";
+
+    my @fixed_incr_vpr_args = @forwarded_vpr_args;
+    push(@fixed_incr_vpr_args, ("--timing_update_type", "incremental"));
+    push(@fixed_incr_vpr_args, ("--net_file", $net_file));
+    push(@fixed_incr_vpr_args, ("--place_file", $place_file));
+    push(@fixed_incr_vpr_args, ("--route_file", $route_file));
+
+    # run incremental STA flow
+    $q = run_vpr({
+            arch_name => $architecture_file_name,
+            circuit_name => $benchmark_name,
+            circuit_file => $prevpr_output_file_name,
+            sdc_file => $sdc_file_path,
+            pad_file => $pad_file_path,
+            extra_vpr_args => \@fixed_incr_vpr_args,
+            log_file => $incr_fixed_W_log_file,
+        });
+
+    # rename files with SHA256 hash
+    $move_result = &system_with_timeout(
+            $move_exec, "move.out",
+            $timeout, $temp_dir,
+            $net_file, $incr_net_file
+        );
+
+    $move_result = &system_with_timeout(
+            $move_exec, "move.out",
+            $timeout, $temp_dir,
+            $place_file, $incr_place_file
+        );
+
+    $move_result = &system_with_timeout(
+            $move_exec, "move.out",
+            $timeout, $temp_dir,
+            $route_file, $incr_route_file
+        );
+
+    #Sanity check that full STA and the incremental STA
+    #produce the same *.net, *.place, *.route files
+    #as well as identical timing report files
+
+    my $diff_setup_time_report = &system_with_timeout(
+            $diff_exec, "diff.out",
+            $timeout, $temp_dir,
+            $full_setup_time_report, $incr_setup_time_report
+        );
+
+    my $diff_hold_time_report = &system_with_timeout(
+            $diff_exec, "diff.out",
+            $timeout, $temp_dir,
+            $full_hold_time_report, $incr_hold_time_report
+        );
+
+    my $diff_unconstrained_setup_time_report = &system_with_timeout(
+            $diff_exec, "diff.out",
+            $timeout, $temp_dir,
+            $full_unconstrained_setup_time_report, $incr_unconstrained_setup_time_report
+        );
+
+    my $diff_unconstrained_hold_time_report = &system_with_timeout(
+            $diff_exec, "diff.out",
+            $timeout, $temp_dir,
+            $full_unconstrained_hold_time_report, $incr_unconstrained_hold_time_report
+        );
+
+    # Check *.net
+    my $diff_net_result = &system_with_timeout(
+            $diff_exec, "diff.out",
+            $timeout, $temp_dir,
+            $full_net_file, $incr_net_file
+        );
+
+    # Check *.place
+    my $diff_place_result = &system_with_timeout(
+            $diff_exec, "diff.out",
+            $timeout, $temp_dir,
+            $full_place_file, $incr_place_file
+        );
+
+    # Check *.route
+    my $diff_route_result = &system_with_timeout(
+            $diff_exec, "diff.out",
+            $timeout, $temp_dir,
+            $full_route_file, $incr_route_file
+        );
+
+    if (($diff_setup_time_report ne "success") or ($diff_hold_time_report ne "success") or
+        ($diff_unconstrained_setup_time_report ne "success") or ($diff_unconstrained_hold_time_report ne "success") or
+        ($diff_net_result ne "success") or ($diff_place_result ne "success") or ($diff_route_result ne "success"))
+    {
+        return "fail";
+    }
+    else {
+        return "success";
+    }
+}

@@ -19,7 +19,6 @@ struct t_options {
     argparse::ArgValue<std::string> PowerFile;
     argparse::ArgValue<std::string> CmosTechFile;
     argparse::ArgValue<std::string> SDCFile;
-    argparse::ArgValue<std::string> TimingReportPrefix;
 
     argparse::ArgValue<e_circuit_format> circuit_format;
 

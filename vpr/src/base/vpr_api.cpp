@@ -219,7 +219,6 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     vpr_setup->clock_modeling = options->clock_modeling;
     vpr_setup->two_stage_clock_routing = options->two_stage_clock_routing;
     vpr_setup->exit_before_pack = options->exit_before_pack;
-    vpr_setup->AnalysisOpts.timing_report_prefix = options->TimingReportPrefix;
 
     VTR_LOG("\n");
     VTR_LOG("Architecture file: %s\n", options->ArchFile.value().c_str());
@@ -1208,9 +1207,9 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
 
         //Timing stats
         VTR_LOG("\n");
-        generate_hold_timing_stats(/*prefix=*/vpr_setup.AnalysisOpts.timing_report_prefix, *timing_info,
+        generate_hold_timing_stats(/*prefix=*/"", *timing_info,
                                    *analysis_delay_calc, vpr_setup.AnalysisOpts);
-        generate_setup_timing_stats(/*prefix=*/vpr_setup.AnalysisOpts.timing_report_prefix, *timing_info,
+        generate_setup_timing_stats(/*prefix=*/"", *timing_info,
                                     *analysis_delay_calc, vpr_setup.AnalysisOpts);
 
         //Write the post-syntesis netlist

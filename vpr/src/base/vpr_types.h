@@ -1042,8 +1042,6 @@ struct t_analysis_opts {
     std::string echo_dot_timing_graph_node;
 
     e_timing_update_type timing_update_type;
-
-    std::string timing_report_prefix;
 };
 
 /* Defines the detailed routing architecture of the FPGA.  Only important   *
