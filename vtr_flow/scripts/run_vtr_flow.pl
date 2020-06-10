@@ -473,6 +473,16 @@ if (defined $pad_file_path) {
 my $StartTime = time;
 my $q         = "not_run";
 
+# Default output file names
+my $packing_file = "$benchmark_name" . ".net";
+my $placement_file = "$benchmark_name" . ".place";
+my $routing_file = "$benchmark_name" . ".route";
+my $setup_timing_report = "report_timing.setup.rpt";
+my $hold_timing_report = "report_timing.hold.rpt";
+my $unconstrained_setup_timing_report = "report_unconstrained_timing.setup.rpt";
+my $unconstrained_hold_timing_report = "report_unconstrained_timing.hold.rpt";
+
+
 #################################################################################
 ################################## ODIN #########################################
 #################################################################################
@@ -968,16 +978,6 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
                                    or $explicit_place_vpr_stage
                                    or $explicit_route_vpr_stage
                                    or $explicit_analysis_vpr_stage);
-
-    #If needs to check whether incremental STA produces the same result
-    #then we need to specify the packing, placement, and routing file names
-    #Also the VPR should run all stages by default
-    if ($check_incremental_sta_consistency) {
-        my $implicit_all_vpr_stage = 1;
-        push(@forwarded_vpr_args, ("--net_file", "n.net"));
-        push(@forwarded_vpr_args, ("--place_file", "p.place"));
-        push(@forwarded_vpr_args, ("--route_file", "r.route"));
-    }
 
     if (!$route_fixed_W) {
         #Determine the mimimum channel width
@@ -1716,25 +1716,16 @@ sub cmp_full_vs_incr_STA {
 	# loop indices
 	my @indices = (0..6);
 
-	# default output names
-	my @default_output = (
-			"n.net", "p.place", "r.route", "report_timing.setup.rpt", "report_timing.hold.rpt"
-			"report_unconstrained_timing.setup.rpt", "report_unconstrained_timing.hold.rpt"
+	# default output file names
+	my @default_output_names = (
+			$packing_file,
+			$placement_file,
+			$routing_file,
+			$setup_timing_report,
+			$hold_timing_report,
+			$unconstrained_setup_timing_report,
+			$unconstrained_hold_timing_report
 		);
-
-    # full STA output names
-    my @full_sta_output = (
-    		"full.net", "full.place", "full.route", 
-    		"full_report_timing.setup.rpt", "full_report_timing.hold.rpt",
-    		"full_report_unconstrained_timing.setup.rpt", "full_report_unconstrained_timing.hold.rpt"
-    	);
-
-    # incremental STA output names
-	my @incr_sta_output = (
-    		"incr.net", "incr.place", "incr.route", 
-    		"incr_report_timing.setup.rpt", "incr_report_timing.hold.rpt",
-    		"incr_report_unconstrained_timing.setup.rpt", "incr_report_unconstrained_timing.hold.rpt"
-    	);
 
 	# The full STA flow should have already been run
     # directly rename the output files
@@ -1742,7 +1733,8 @@ sub cmp_full_vs_incr_STA {
     	system_with_timeout(
             $move_exec, "move.out",
             $timeout, $temp_dir,
-            $default_output[$index], $full_sta_output[$index]
+            $default_output_names[$index], 
+            "full_" . $default_output_names[$index]
         );
     }
 
@@ -1750,7 +1742,7 @@ sub cmp_full_vs_incr_STA {
     push(@incremental_vpr_args, ("--timing_update_type", "incremental"));
 
     # run incremental STA flow
-    my $fixed_W_log_file;
+    my $fixed_W_log_file = "vpr.out";
     $q = run_vpr({
             arch_name => $architecture_file_name,
             circuit_name => $benchmark_name,
@@ -1766,7 +1758,8 @@ sub cmp_full_vs_incr_STA {
     	system_with_timeout(
             $move_exec, "move.out",
             $timeout, $temp_dir,
-            $default_output[$index], $incr_sta_output[$index]
+            $default_output_names[$index], 
+            "incremental_" . $default_output_names[$index]
         );
     }
 
@@ -1775,14 +1768,17 @@ sub cmp_full_vs_incr_STA {
     #as well as identical timing report files
     foreach my $index (@indices) {
     	my $diff_result = &system_with_timeout(
-            $move_exec, "move.out",
+            $diff_exec, "diff.out",
             $timeout, $temp_dir,
-            $default_output[$index], $incr_sta_output[$index]
+            "full_" . $default_output_names[$index],
+            "incremental_" . $default_output_names[$index]
         );
         if ($diff_result ne "success") {
+        	print $index;
         	return "fail";
         }
     }
 
     return "success";
 }
+
