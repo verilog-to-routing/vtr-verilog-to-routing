@@ -2267,9 +2267,8 @@ int get_sub_tile_physical_pin(int sub_tile_index,
     return result->second.pin;
 }
 
-int get_physical_pin(t_physical_tile_type_ptr physical_tile,
-                     t_logical_block_type_ptr logical_block,
-                     int pin) {
+int get_logical_block_physical_sub_tile_index(t_physical_tile_type_ptr physical_tile,
+                                              t_logical_block_type_ptr logical_block) {
     int sub_tile_index = OPEN;
     for (const auto& sub_tile : physical_tile->sub_tiles) {
         auto eq_sites = sub_tile.equivalent_sites;
@@ -2281,13 +2280,66 @@ int get_physical_pin(t_physical_tile_type_ptr physical_tile,
 
     if (sub_tile_index == OPEN) {
         VPR_ERROR(VPR_ERROR_OTHER,
-                  "Found no instances of logical block type '%s' within physical tile type '%s'. "
+                  "Found no instances of logical block type '%s' within physical tile type '%s'. ",
+                  logical_block->name, physical_tile->name);
+    }
+
+    return sub_tile_index;
+}
+
+int get_physical_pin(t_physical_tile_type_ptr physical_tile,
+                     t_logical_block_type_ptr logical_block,
+                     int pin) {
+    int sub_tile_index = get_logical_block_physical_sub_tile_index(physical_tile, logical_block);
+
+    if (sub_tile_index == OPEN) {
+        VPR_ERROR(VPR_ERROR_OTHER,
                   "Couldn't find the corresponding physical tile type pin of the logical block type pin %d.",
-                  logical_block->name, physical_tile->name, pin);
+                  pin);
     }
 
     int sub_tile_physical_pin = get_sub_tile_physical_pin(sub_tile_index, physical_tile, logical_block, pin);
     return physical_tile->sub_tiles[sub_tile_index].sub_tile_to_tile_pin_indices[sub_tile_physical_pin];
+}
+
+int get_logical_block_physical_sub_tile_index(t_physical_tile_type_ptr physical_tile,
+                                              t_logical_block_type_ptr logical_block,
+                                              int sub_tile_capacity) {
+    int sub_tile_index = OPEN;
+    for (const auto& sub_tile : physical_tile->sub_tiles) {
+        auto eq_sites = sub_tile.equivalent_sites;
+        auto it = std::find(eq_sites.begin(), eq_sites.end(), logical_block);
+        if (it != eq_sites.end()
+            && (true == sub_tile.capacity.is_in_range(sub_tile_capacity))) {
+            sub_tile_index = sub_tile.index;
+            break;
+        }
+    }
+
+    if (sub_tile_index == OPEN) {
+        VPR_ERROR(VPR_ERROR_OTHER,
+                  "Found no instances of logical block type '%s' within physical tile type '%s'. ",
+                  logical_block->name, physical_tile->name);
+    }
+
+    return sub_tile_index;
+}
+
+int get_physical_pin(t_physical_tile_type_ptr physical_tile,
+                     t_logical_block_type_ptr logical_block,
+                     int sub_tile_capacity,
+                     int pin) {
+    int sub_tile_index = get_logical_block_physical_sub_tile_index(physical_tile, logical_block, sub_tile_capacity);
+
+    if (sub_tile_index == OPEN) {
+        VPR_ERROR(VPR_ERROR_OTHER,
+                  "Couldn't find the corresponding physical tile type pin of the logical block type pin %d.",
+                  pin);
+    }
+
+    int sub_tile_physical_pin = get_sub_tile_physical_pin(sub_tile_index, physical_tile, logical_block, pin);
+    return (sub_tile_capacity - physical_tile->sub_tiles[sub_tile_index].capacity.low) * logical_block->pb_type->num_pins
+           + physical_tile->sub_tiles[sub_tile_index].sub_tile_to_tile_pin_indices[sub_tile_physical_pin];
 }
 
 int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index) {

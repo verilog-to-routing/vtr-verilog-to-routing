@@ -174,12 +174,33 @@ t_logical_block_type_ptr pick_best_logical_type(t_physical_tile_type_ptr physica
 //the best expected physical tile the block should use (if no valid placement).
 t_physical_tile_type_ptr get_physical_tile_type(const ClusterBlockId blk);
 
+//Returns the sub tile index (within 'physical_tile') corresponding to the 
+//'logical block'
+int get_logical_block_physical_sub_tile_index(t_physical_tile_type_ptr physical_tile,
+                                              t_logical_block_type_ptr logical_block);
+
 //Returns the physical pin index (within 'physical_tile') corresponding to the
 //logical index ('pin' of the first instance of 'logical_block' within the physcial tile.
 //
 //Throws an exception if the corresponding physical pin can't be found.
 int get_physical_pin(t_physical_tile_type_ptr physical_tile,
                      t_logical_block_type_ptr logical_block,
+                     int pin);
+
+//Returns the sub tile index (within 'physical_tile') corresponding to the 
+//'logical block' by considering if a given offset is in the range of sub tile capacity
+int get_logical_block_physical_sub_tile_index(t_physical_tile_type_ptr physical_tile,
+                                              t_logical_block_type_ptr logical_block,
+                                              int sub_tile_capacity);
+
+//Returns the physical pin index (within 'physical_tile') corresponding to the
+//logical index ('pin' of the first instance of 'logical_block' within the physcial tile.
+//This function considers if a given offset is in the range of sub tile capacity
+//
+//Throws an exception if the corresponding physical pin can't be found.
+int get_physical_pin(t_physical_tile_type_ptr physical_tile,
+                     t_logical_block_type_ptr logical_block,
+                     int sub_tile_capacity,
                      int pin);
 
 //Returns the physical pin index (within 'physical_tile') corresponding to the

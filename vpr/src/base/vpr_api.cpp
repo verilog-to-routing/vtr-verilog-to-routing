@@ -76,6 +76,9 @@
 
 #include "arch_util.h"
 
+#include "annotate_routing.h"
+#include "post_routing_pb_pin_fixup.h"
+
 #include "log.h"
 #include "iostream"
 
@@ -721,6 +724,24 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
             //Update status
             VTR_LOG("Circuit is unroutable with a channel width factor of %d.\n", route_status.chan_width());
             graphics_msg = vtr::string_fmt("Routing failed with a channel width factor of %d. ILLEGAL routing shown.", route_status.chan_width());
+        }
+
+
+        /* If routing is successful, apply post-routing annotations
+         * - annotate routing nets to each routing resource node
+         * - apply logic block pin fix-up
+         */
+        if (route_status.success()) {
+            annotate_rr_node_nets(g_vpr_ctx.device(),
+                                  g_vpr_ctx.clustering(),
+                                  g_vpr_ctx.mutable_routing(),
+                                  false);
+    
+            update_pb_pin_with_post_routing_results(g_vpr_ctx.device(),
+                                                    g_vpr_ctx.mutable_clustering(),
+                                                    g_vpr_ctx.placement(),
+                                                    g_vpr_ctx.routing(),
+                                                    false);
         }
 
         //Echo files
