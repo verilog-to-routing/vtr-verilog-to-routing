@@ -726,7 +726,6 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
             graphics_msg = vtr::string_fmt("Routing failed with a channel width factor of %d. ILLEGAL routing shown.", route_status.chan_width());
         }
 
-
         /* If routing is successful, apply post-routing annotations
          * - annotate routing nets to each routing resource node
          * - apply logic block pin fix-up
@@ -736,7 +735,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
                                   g_vpr_ctx.clustering(),
                                   g_vpr_ctx.mutable_routing(),
                                   false);
-    
+
             update_pb_pin_with_post_routing_results(g_vpr_ctx.device(),
                                                     g_vpr_ctx.mutable_clustering(),
                                                     g_vpr_ctx.placement(),
