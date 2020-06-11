@@ -14,6 +14,8 @@ void button_for_toggle_blk_internal();
 void button_for_toggle_block_pin_util();
 void button_for_toggle_placement_macros();
 void button_for_toggle_crit_path();
+void button_for_net_max_fanout();
+void button_for_net_alpha();
 
 void button_for_toggle_rr();
 void button_for_toggle_congestion();

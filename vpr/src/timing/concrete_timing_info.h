@@ -73,6 +73,14 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
         return slack_crit_.setup_pin_criticality(pin);
     }
 
+    pin_range pins_with_modified_setup_slack() const override {
+        return slack_crit_.pins_with_modified_slack();
+    }
+
+    pin_range pins_with_modified_setup_criticality() const override {
+        return slack_crit_.pins_with_modified_criticality();
+    }
+
     std::shared_ptr<const tatum::TimingAnalyzer> analyzer() const override { return setup_analyzer(); }
 
     std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer() const override { return setup_analyzer_; }
@@ -85,6 +93,11 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
 
   public:
     //Mutators
+
+    void invalidate_delay(const tatum::EdgeId edge) override {
+        setup_analyzer_->invalidate_edge(edge);
+    }
+
     void update() override {
         update_setup();
 
@@ -200,6 +213,10 @@ class ConcreteHoldTimingInfo : public HoldTimingInfo {
 
   public:
     //Mutators
+    void invalidate_delay(const tatum::EdgeId edge) override {
+        hold_analyzer_->invalidate_edge(edge);
+    }
+
     void update() override {
         update_hold();
 
@@ -283,6 +300,9 @@ class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
     float setup_pin_slack(AtomPinId pin) const override { return setup_timing_.setup_pin_slack(pin); }
     float setup_pin_criticality(AtomPinId pin) const override { return setup_timing_.setup_pin_criticality(pin); }
 
+    pin_range pins_with_modified_setup_slack() const override { return setup_timing_.pins_with_modified_setup_slack(); }
+    pin_range pins_with_modified_setup_criticality() const override { return setup_timing_.pins_with_modified_setup_slack(); }
+
     std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer() const override { return setup_timing_.setup_analyzer(); }
 
     //Hold related
@@ -305,6 +325,9 @@ class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
 
   public:
     //Mutators
+    void invalidate_delay(const tatum::EdgeId edge) override {
+        setup_hold_analyzer_->invalidate_edge(edge);
+    }
 
     //Update both setup and hold simultaneously
     //  This is more efficient than calling update_hold() and update_setup() separately, since
@@ -387,6 +410,9 @@ class ConstantTimingInfo : public SetupHoldTimingInfo {
         return criticality_;
     }
 
+    pin_range pins_with_modified_setup_slack() const override { return vtr::make_range(modified_pins_); }
+    pin_range pins_with_modified_setup_criticality() const override { return vtr::make_range(modified_pins_); }
+
     std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer() const override { return nullptr; }
 
     //Hold related
@@ -410,12 +436,15 @@ class ConstantTimingInfo : public SetupHoldTimingInfo {
     void set_warn_unconstrained(bool /*val*/) override {}
 
   public: //Mutators
+    void invalidate_delay(const tatum::EdgeId /*edge*/) override {}
+
     void update() override {}
     void update_hold() override {}
     void update_setup() override {}
 
   private:
     float criticality_;
+    std::vector<AtomPinId> modified_pins_; //Always kept empty
 
     typedef std::chrono::duration<double> dsec;
     typedef std::chrono::high_resolution_clock Clock;

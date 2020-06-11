@@ -208,6 +208,15 @@ static bool check_edge_for_route_conflicts(std::unordered_map<const t_pb_graph_n
     auto* mode = &pb_graph_node->pb_type->modes[mode_of_edge];
 
     auto result = mode_map->insert(std::make_pair(pb_graph_node, mode));
+
+    /* Insert unpackable mode to the illegal mode list */
+    if (true == mode->disable_packing) {
+        if (std::find(pb_graph_node->illegal_modes.begin(), pb_graph_node->illegal_modes.end(), mode->index) == pb_graph_node->illegal_modes.end()) {
+            pb_graph_node->illegal_modes.push_back(mode->index);
+        }
+        return true;
+    }
+
     if (!result.second) {
         if (result.first->second != mode) {
             std::cout << vtr::string_fmt("Differing modes for block.  Got %s mode, while previously was %s for interconnect %s.",

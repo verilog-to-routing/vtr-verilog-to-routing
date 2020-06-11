@@ -298,6 +298,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
      * must have already been allocated, and net_delay must have been allocated. *
      * Returns true if the routing succeeds, false otherwise.                    */
 
+    auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
@@ -427,6 +428,15 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
         print_router_criticality_histogram(*route_timing_info, netlist_pin_lookup);
     }
 
+    std::unique_ptr<ClusteredPinTimingInvalidator> pin_timing_invalidator;
+    if (timing_info) {
+        pin_timing_invalidator = std::make_unique<ClusteredPinTimingInvalidator>(cluster_ctx.clb_nlist,
+                                                                                 netlist_pin_lookup,
+                                                                                 atom_ctx.nlist,
+                                                                                 atom_ctx.lookup,
+                                                                                 *timing_info->timing_graph());
+    }
+
     RouterStats router_stats;
     timing_driven_route_structs route_structs;
     float prev_iter_cumm_time = 0;
@@ -470,6 +480,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
                                                            net_delay,
                                                            netlist_pin_lookup,
                                                            route_timing_info,
+                                                           pin_timing_invalidator.get(),
                                                            budgeting_inf,
                                                            was_rerouted);
             if (!is_routable) {
@@ -501,6 +512,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
             //Note that the net delays have already been updated by timing_driven_route_net
             timing_info->update();
             timing_info->set_warn_unconstrained(false); //Don't warn again about unconstrained nodes again during routing
+            pin_timing_invalidator->reset();
 
             //Use the real timing analysis criticalities for subsequent routing iterations
             //  'route_timing_info' is what is actually passed into the net/connection routers,
@@ -801,6 +813,7 @@ bool try_timing_driven_route_net(ConnectionRouter& router,
                                  ClbNetPinsMatrix<float>& net_delay,
                                  const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                  std::shared_ptr<SetupTimingInfo> timing_info,
+                                 ClusteredPinTimingInvalidator* pin_timing_invalidator,
                                  route_budgets& budgeting_inf,
                                  bool& was_rerouted) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -832,6 +845,7 @@ bool try_timing_driven_route_net(ConnectionRouter& router,
                                             net_delay[net_id].data(),
                                             netlist_pin_lookup,
                                             timing_info,
+                                            pin_timing_invalidator,
                                             budgeting_inf);
 
         profiling::net_fanout_end(cluster_ctx.clb_nlist.net_sinks(net_id).size());
@@ -954,7 +968,8 @@ bool timing_driven_route_net(ConnectionRouter& router,
                              t_rt_node** rt_node_of_sink,
                              float* net_delay,
                              const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                             std::shared_ptr<const SetupTimingInfo> timing_info,
+                             std::shared_ptr<SetupTimingInfo> timing_info,
+                             ClusteredPinTimingInvalidator* pin_timing_invalidator,
                              route_budgets& budgeting_inf) {
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
@@ -1102,7 +1117,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
     /* For later timing analysis. */
 
     // may have to update timing delay of the previously legally reached sinks since downstream capacitance could be changed
-    update_net_delays_from_route_tree(net_delay, rt_node_of_sink, net_id);
+    update_net_delays_from_route_tree(net_delay, rt_node_of_sink, net_id, timing_info.get(), pin_timing_invalidator);
 
     if (router_opts.update_lower_bound_delays) {
         for (int ipin : remaining_targets) {

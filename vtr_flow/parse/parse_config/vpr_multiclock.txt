@@ -1,4 +1,4 @@
-crit_path_delay_mcw;vpr.out;^\s*Final critical path: (.*) ns
+crit_path_delay_mcw;vpr.out;^\s*Final critical path delay \(least slack\): (.*) ns
 
 #Setup CPD
 clk_to_clk_cpd;vpr.out;^\s*clk to clk CPD: (.*) ns

@@ -52,8 +52,9 @@ enum e_draw_nets {
 enum e_draw_rr_toggle {
     DRAW_NO_RR = 0,
     DRAW_NODES_RR,
-    DRAW_NODES_AND_SBOX_RR,
-    DRAW_ALL_BUT_BUFFERS_RR,
+    DRAW_NODES_SBOX_RR,
+    DRAW_NODES_SBOX_CBOX_RR,
+    DRAW_NODES_SBOX_CBOX_INTERNAL_RR,
     DRAW_ALL_RR,
 };
 
@@ -191,6 +192,7 @@ struct t_draw_state {
     std::string graphics_commands;
     bool forced_pause = false;
     int sequence_number = 0;
+    float net_alpha = 0.1;
 
     std::string save_graphics_file_base = "vpr";
 
