@@ -64,6 +64,7 @@ extensions = [
     'sdcdomain',
     'archdomain',
     'rrgraphdomain',
+    'recommonmark'
 ]
 
 if have_sphinxcontrib_bibtex:
