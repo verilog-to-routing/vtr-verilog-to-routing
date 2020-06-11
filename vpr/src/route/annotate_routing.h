@@ -10,9 +10,9 @@
  * Function declaration
  *******************************************************************/
 
-void annotate_rr_node_nets(const DeviceContext& device_ctx,
-                           const ClusteringContext& clustering_ctx,
-                           RoutingContext& routing_ctx,
-                           const bool& verbose);
+vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const DeviceContext& device_ctx,
+                                                          const ClusteringContext& clustering_ctx,
+                                                          const RoutingContext& routing_ctx,
+                                                          const bool& verbose);
 
 #endif

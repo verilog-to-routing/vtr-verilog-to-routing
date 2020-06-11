@@ -12,17 +12,19 @@
 /********************************************************************
  * Create a mapping between each rr_node and its mapped nets 
  * based on VPR routing results
+ * - Store the net ids mapped to each routing resource nodes
+ * - Mapped nodes should have valid net ids (except SOURCE and SINK nodes)
  * - Unmapped rr_node will use invalid ids 
  *******************************************************************/
-void annotate_rr_node_nets(const DeviceContext& device_ctx,
-                           const ClusteringContext& clustering_ctx,
-                           RoutingContext& routing_ctx,
-                           const bool& verbose) {
+vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const DeviceContext& device_ctx,
+                                                          const ClusteringContext& clustering_ctx,
+                                                          const RoutingContext& routing_ctx,
+                                                          const bool& verbose) {
     size_t counter = 0;
     vtr::ScopedStartFinishTimer timer("Annotating rr_node with routed nets");
 
-    /* Initialize routing nets annotation in RoutingContext */
-    routing_ctx.rr_node_nets.resize(device_ctx.rr_nodes.size());
+    vtr::vector<RRNodeId, ClusterNetId> rr_node_nets;
+    rr_node_nets.resize(device_ctx.rr_nodes.size());
 
     for (auto net_id : clustering_ctx.clb_nlist.nets()) {
         /* Ignore nets that are not routed */
@@ -39,7 +41,7 @@ void annotate_rr_node_nets(const DeviceContext& device_ctx,
             /* Ignore source and sink nodes, they are the common node multiple starting and ending points */
             if ((SOURCE != device_ctx.rr_nodes.node_type(rr_node))
                 && (SINK != device_ctx.rr_nodes.node_type(rr_node))) {
-                routing_ctx.rr_node_nets[rr_node] = net_id;
+                rr_node_nets[rr_node] = net_id;
                 counter++;
             }
             tptr = tptr->next;
@@ -47,4 +49,6 @@ void annotate_rr_node_nets(const DeviceContext& device_ctx,
     }
 
     VTR_LOGV(verbose, "Done with %d nodes mapping\n", counter);
+
+    return rr_node_nets;
 }

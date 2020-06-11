@@ -268,12 +268,6 @@ struct RoutingContext : public Context {
 
     std::vector<t_rr_node_route_inf> rr_node_route_inf; /* [0..device_ctx.num_rr_nodes-1] */
 
-    /* Store the net ids mapped to each routing resource nodes
-     * Mapped nodes should have valid net ids (except SOURCE and SINK nodes)
-     * Unmapped nodes should have invalid net ids 
-     */
-    vtr::vector<RRNodeId, ClusterNetId> rr_node_nets;
-
     //Information about whether a node is part of a non-configurable set
     //(i.e. connected to others with non-configurable edges like metal shorts that can't be disabled)
     //Stored in a single bit per rr_node for efficiency
