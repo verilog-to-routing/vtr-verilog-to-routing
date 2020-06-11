@@ -205,8 +205,8 @@ void sync_netlists_to_routing(const DeviceContext& device_ctx,
                                                                              verbose);
 
     /* Update the core logic (center blocks of the FPGA) */
-    for (size_t x = 0; x < device_ctx.grid.width() - 1; ++x) {
-        for (size_t y = 0; y < device_ctx.grid.height() - 1; ++y) {
+    for (size_t x = 1; x < device_ctx.grid.width() - 1; ++x) {
+        for (size_t y = 1; y < device_ctx.grid.height() - 1; ++y) {
             /* Bypass the EMPTY tiles */
             if (true == is_empty_type(device_ctx.grid[x][y].type)) {
                 continue;
