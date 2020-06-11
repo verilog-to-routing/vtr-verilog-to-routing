@@ -278,7 +278,6 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             std::string incr_delay_ripup_opts[3] = {"ON", "OFF", "AUTO"};
             VTR_LOG("RouterOpts.incr_reroute_delay_ripup: %s\n", incr_delay_ripup_opts[(size_t)RouterOpts.incr_reroute_delay_ripup].c_str());
 
-
             VTR_LOG("RouterOpts.route_bb_update: ");
             switch (RouterOpts.route_bb_update) {
                 case e_route_bb_update::STATIC:
