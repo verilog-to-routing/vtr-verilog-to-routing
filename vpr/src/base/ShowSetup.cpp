@@ -264,7 +264,6 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             VTR_LOG("RouterOpts.criticality_exp: %f\n", RouterOpts.criticality_exp);
             VTR_LOG("RouterOpts.max_criticality: %f\n", RouterOpts.max_criticality);
             VTR_LOG("RouterOpts.init_wirelength_abort_threshold: %f\n", RouterOpts.init_wirelength_abort_threshold);
-            VTR_LOG("RouterOpts.incr_reroute_delay_ripup: %f\n", RouterOpts.incr_reroute_delay_ripup);
             VTR_LOG("RouterOpts.save_routing_per_iteration: %s\n", RouterOpts.save_routing_per_iteration ? "true" : "false");
             VTR_LOG("RouterOpts.congested_routing_iteration_threshold_frac: %f\n", RouterOpts.congested_routing_iteration_threshold_frac);
             VTR_LOG("RouterOpts.high_fanout_threshold: %d\n", RouterOpts.high_fanout_threshold);
@@ -275,6 +274,10 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             VTR_LOG("RouterOpts.reconvergence_cpd_threshold: %f\n", RouterOpts.reconvergence_cpd_threshold);
             VTR_LOG("RouterOpts.update_lower_bound_delays: %s\n", RouterOpts.update_lower_bound_delays ? "true" : "false");
             VTR_LOG("RouterOpts.first_iteration_timing_report_file: %s\n", RouterOpts.first_iteration_timing_report_file.c_str());
+
+            std::string incr_delay_ripup_opts[3] = {"ON", "OFF", "AUTO"};
+            VTR_LOG("RouterOpts.incr_reroute_delay_ripup: %s\n", incr_delay_ripup_opts[(size_t)RouterOpts.incr_reroute_delay_ripup].c_str());
+
 
             VTR_LOG("RouterOpts.route_bb_update: ");
             switch (RouterOpts.route_bb_update) {
