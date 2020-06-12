@@ -1003,40 +1003,33 @@ make CMAKE_PARAMS="-DVTR_IPO_BUILD=off" -j8 vpr
 
     Contact your administrator if you do not have the `sudo` rights.
 
-2. Enable profiling option when building vpr.
-    
-    You can enable profiling by editing the file `CMAKEList.txt` under `$VTR_ROOT`. Compile vpr after adding these two lines:
-    ```
-    set(PROFILING_FLAGS "-g -pg")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
-    ```
-    
-    However, you can also compile directly without editing any makefile settings.
+2. Use the CMake option below to enable VPR profiler build.
     ```
     make CMAKE_PARAMS="-DVTR_ENABLE_PROFILING=ON" vpr
     ```
 
-3. Now, whenever you run the VTR flow script, it will produce an extra file `gmon.out` that contains the raw profile information. First, run `gprof` to parse the info. You will need to specify the path to the `vpr` executable.
+3. With the profiler build, each time you run the VTR flow script, it will produce an extra file `gmon.out` that contains the raw profile information. 
+    Run `gprof` to parse this file. You will need to specify the path to the VPR executable.
     ```
     gprof $VTR_ROOT/vpr/vpr gmon.out > gprof.txt
     ```
 
-4. Next, use `gprof2dot` to transform the results to a `.dot` or `.gv` file, which describes how your final profile results will look like. If you find the function names really long, specify the `-s` option for a clearer graph.
+4. Next, use `gprof2dot` to transform the parsed results to a `.dot` file, which describes the graph of your final profile results. If you encounter long function names, specify the `-s` option for a cleaner graph.
     ```
     gprof2dot -s gprof.txt > vpr.dot
     ```
 
-5. You can chain the above commands to directly produce the final dot file:
+5. You can chain the above commands to directly produce the `.dot` file:
     ```
     gprof $VTR_ROOT/vpr/vpr gmon.out | gprof2dot -s > vpr.dot
     ```
 
-6. To view your results, simply use xdot:
+6. Use `xdot` to view your results:
     ```
     xdot vpr.dot
     ```
 
-7. To save your results as a `png` file, use:
+7. To save your results as a `png` file:
     ```
     dot -Tpng -Gdpi=300 vpr.dot > vpr.png
     ```
