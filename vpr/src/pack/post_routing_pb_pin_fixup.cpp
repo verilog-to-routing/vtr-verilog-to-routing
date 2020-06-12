@@ -152,12 +152,12 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
             clustering_ctx.post_routing_clb_pin_nets[blk_id][j] = routing_net_id;
 
             std::string routing_net_name("unmapped");
-            if (false == clustering_ctx.clb_nlist.valid_net_id(routing_net_id)) {
+            if (true == clustering_ctx.clb_nlist.valid_net_id(routing_net_id)) {
                 routing_net_name = clustering_ctx.clb_nlist.net_name(routing_net_id);
             }
 
             std::string cluster_net_name("unmapped");
-            if (false == clustering_ctx.clb_nlist.valid_net_id(cluster_net_id)) {
+            if (true == clustering_ctx.clb_nlist.valid_net_id(cluster_net_id)) {
                 cluster_net_name = clustering_ctx.clb_nlist.net_name(cluster_net_id);
             }
 
