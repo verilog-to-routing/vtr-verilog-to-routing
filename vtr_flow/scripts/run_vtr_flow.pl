@@ -473,16 +473,6 @@ if (defined $pad_file_path) {
 my $StartTime = time;
 my $q         = "not_run";
 
-# Default output file names
-my $packing_file = "$benchmark_name" . ".net";
-my $placement_file = "$benchmark_name" . ".place";
-my $routing_file = "$benchmark_name" . ".route";
-my $setup_timing_report = "report_timing.setup.rpt";
-my $hold_timing_report = "report_timing.hold.rpt";
-my $unconstrained_setup_timing_report = "report_unconstrained_timing.setup.rpt";
-my $unconstrained_hold_timing_report = "report_unconstrained_timing.hold.rpt";
-
-
 #################################################################################
 ################################## ODIN #########################################
 #################################################################################
@@ -1191,8 +1181,10 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
 
         # Do a second-run of the incremental analysis to compare the result files
         if ($check_incremental_sta_consistency) {
-            if (&cmp_full_vs_incr_STA ne "success") {
-                $error_status = "failed: vpr full or incremental timing analysis do not produce the same output files";
+            my $cmp_result = &cmp_full_vs_incr_STA;
+
+            if ($cmp_result ne "success") {
+                $error_status = $cmp_result;
                 $error_code = 1;
             }
         }
@@ -1713,36 +1705,35 @@ sub calculate_relaxed_W {
 }
 
 sub cmp_full_vs_incr_STA {
-	# loop indices
-	my @indices = (0..6);
+	#Sanity check that full STA and the incremental STA
+    #produce the same *.net, *.place, *.route files
+    #as well as identical timing report files
 
-	# default output file names
-	my @default_output_names = (
-			$packing_file,
-			$placement_file,
-			$routing_file,
-			$setup_timing_report,
-			$hold_timing_report,
-			$unconstrained_setup_timing_report,
-			$unconstrained_hold_timing_report
+	my @default_output_filenames = (
+			"$benchmark_name" . ".net",
+			"$benchmark_name" . ".place",
+			"$benchmark_name" . ".route",
+			"report_timing.setup.rpt",
+			"report_timing.hold.rpt",
+			"report_unconstrained_timing.setup.rpt",
+			"report_unconstrained_timing.hold.rpt"
 		);
 
 	# The full STA flow should have already been run
     # directly rename the output files
-    foreach my $index (@indices) {
+    foreach my $filename (@default_output_filenames) {
     	system_with_timeout(
             $move_exec, "move.out",
             $timeout, $temp_dir,
-            $default_output_names[$index], 
-            "full_" . $default_output_names[$index]
+            $filename, "full_sta_" . $filename
         );
     }
 
+    # run incremental STA flow
     my @incremental_vpr_args = @forwarded_vpr_args;
     push(@incremental_vpr_args, ("--timing_update_type", "incremental"));
+    my $fixed_W_log_file = "vpr.incr_sta.out";
 
-    # run incremental STA flow
-    my $fixed_W_log_file = "vpr.out";
     $q = run_vpr({
             arch_name => $architecture_file_name,
             circuit_name => $benchmark_name,
@@ -1754,31 +1745,32 @@ sub cmp_full_vs_incr_STA {
         });
 
     # Rename the incremental STA output files
-    foreach my $index (@indices) {
-    	system_with_timeout(
+    foreach my $filename (@default_output_filenames) {
+        system_with_timeout(
             $move_exec, "move.out",
             $timeout, $temp_dir,
-            $default_output_names[$index], 
-            "incremental_" . $default_output_names[$index]
+            $filename, "incremental_sta_" . $filename
         );
     }
 
-    #Sanity check that full STA and the incremental STA
-    #produce the same *.net, *.place, *.route files
-    #as well as identical timing report files
-    foreach my $index (@indices) {
-    	my $diff_result = &system_with_timeout(
+    # Run diff command on the two sets of outputs
+    my $failed_msg = "Failed with these files (not identical):";
+    my $identical = 1;
+
+    foreach my $filename (@default_output_filenames) {
+        my $diff_result = &system_with_timeout(
             $diff_exec, "diff.out",
             $timeout, $temp_dir,
-            "full_" . $default_output_names[$index],
-            "incremental_" . $default_output_names[$index]
+            "full_sta_" . $filename, "incremental_sta_" . $filename
         );
+
+        # If different, set the flag and append filename to the error message
         if ($diff_result ne "success") {
-        	print $index;
-        	return "fail";
+            $identical = 0;
+        	$failed_msg = $failed_msg . " " . $filename;
         }
     }
 
-    return "success";
+    return $identical ? "success" : $failed_msg;
 }
 
