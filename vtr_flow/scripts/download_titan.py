@@ -178,8 +178,7 @@ def extract_to_vtr_flow_dir(args, tar_gz_filename):
 
     #Note that in previous VTR releases, arch files also need to be extracted from the titan release
     #into its corresponding VTR directory. This is no longer needed as VTR is now packed with the
-    #newest Titan arch files. However, the arch file exctraction process is kept in this script, only
-    #now the extracted files no longer replace the existing arch files that comes with VTR
+    #newest Titan arch files.
 
     #Reference directories
     arch_dir = os.path.join(args.vtr_flow_dir, "arch")
@@ -232,15 +231,6 @@ def extract_to_vtr_flow_dir(args, tar_gz_filename):
                     dst_file_path = os.path.join(titan_benchmarks_extract_dir, filename)
                 elif fnmatch.fnmatch(src_file_path, "*/titan_release*/benchmarks/other_benchmarks/*/*/*.blif"):
                     dst_file_path = os.path.join(titan_other_benchmarks_extract_dir, filename)
-                #ignore the replacement of arch files
-                #elif filename.endswith(".xml"):
-
-                #    if args.upgrade_archs:
-                #        #Apply the Architecture XML upgrade script
-                #        print("Upgrading architecture file:")
-                #        os.system("{} {}".format(arch_upgrade_script, src_file_path))
-                #    
-                #    dst_file_path = os.path.join(titan_arch_extract_dir, filename)
 
                 if dst_file_path:
                     shutil.move(src_file_path, dst_file_path)
