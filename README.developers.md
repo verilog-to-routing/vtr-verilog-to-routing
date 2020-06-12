@@ -994,7 +994,7 @@ make CMAKE_PARAMS="-DVTR_IPO_BUILD=off" -j8 vpr
 
 # Profiling VTR
 
-1. Install `gprof`, `gprof2dot`, and `xdot`. Specifically, the previous two packages requires python3, and you should install the last one with `sudo apt install` for all the dependencies you will need for visualizing your profile results.
+1. Install `gprof`, `gprof2dot`, and `xdot`. Specifically, the previous two packages require python3, and you should install the last one with `sudo apt install` for all the dependencies you will need for visualizing your profile results.
     ```
     pip3 install gprof
     pip3 install gprof2dot
@@ -1011,7 +1011,7 @@ make CMAKE_PARAMS="-DVTR_IPO_BUILD=off" -j8 vpr
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
     ```
     
-    However, you can also compile directly withoout editing any makefile settings.
+    However, you can also compile directly without editing any makefile settings.
     ```
     make CMAKE_PARAMS="-DVTR_ENABLE_PROFILING=ON" vpr
     ```
@@ -1021,7 +1021,7 @@ make CMAKE_PARAMS="-DVTR_IPO_BUILD=off" -j8 vpr
     gprof $VTR_ROOT/vpr/vpr gmon.out > gprof.txt
     ```
 
-4. Next, use `gprof2dot` to transform the results to a `.dot` or `.gv` file, which describes how your final profile results will look like. For the `VTR` project, the function names are really long. Therefore, specify `-s` option for a clearer graph.
+4. Next, use `gprof2dot` to transform the results to a `.dot` or `.gv` file, which describes how your final profile results will look like. If you find the function names really long, specify the `-s` option for a clearer graph.
     ```
     gprof2dot -s gprof.txt > vpr.dot
     ```
@@ -1036,10 +1036,11 @@ make CMAKE_PARAMS="-DVTR_IPO_BUILD=off" -j8 vpr
     xdot vpr.dot
     ```
 
-7. To save your results as a `png` file, type:
+7. To save your results as a `png` file, use:
     ```
     dot -Tpng -Gdpi=300 vpr.dot > vpr.png
     ```
+    
     Note that you can use the `-Gdpi` option to make your picture clearer if you find the default dpi settings not clear enough.
 
 # External Subtrees
