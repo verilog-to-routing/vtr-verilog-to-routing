@@ -992,6 +992,55 @@ For example, the following will re-build only VPR using 8 parallel jobs with IPO
 make CMAKE_PARAMS="-DVTR_IPO_BUILD=off" -j8 vpr
 ```
 
+# Profiling VTR
+
+1. Install `gprof`, `gprof2dot`, and `xdot`. Specifically, the previous two packages requires python3, and you should install the last one with `sudo apt install` for all the dependencies you will need for visualizing your profile results.
+    ```
+    pip3 install gprof
+    pip3 install gprof2dot
+    sudo apt install xdot
+    ```
+
+    Contact your administrator if you do not have the `sudo` rights.
+
+2. Enable profiling option when building vpr.
+    
+    You can enable profiling by editing the file `CMAKEList.txt` under `$VTR_ROOT`. Compile vpr after adding these two lines:
+    ```
+    set(PROFILING_FLAGS "-g -pg")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -pg")
+    ```
+    
+    However, you can also compile directly withoout editing any makefile settings.
+    ```
+    make CMAKE_PARAMS="-DVTR_ENABLE_PROFILING=ON" vpr
+    ```
+
+3. Now, whenever you run the VTR flow script, it will produce an extra file `gmon.out` that contains the raw profile information. First, run `gprof` to parse the info. You will need to specify the path to the `vpr` executable.
+    ```
+    gprof $VTR_ROOT/vpr/vpr gmon.out > gprof.txt
+    ```
+
+4. Next, use `gprof2dot` to transform the results to a `.dot` or `.gv` file, which describes how your final profile results will look like. For the `VTR` project, the function names are really long. Therefore, specify `-s` option for a clearer graph.
+    ```
+    gprof2dot -s gprof.txt > vpr.dot
+    ```
+
+5. You can chain the above commands to directly produce the final dot file:
+    ```
+    gprof $VTR_ROOT/vpr/vpr gmon.out | gprof2dot -s > vpr.dot
+    ```
+
+6. To view your results, simply use xdot:
+    ```
+    xdot vpr.dot
+    ```
+
+7. To save your results as a `png` file, type:
+    ```
+    dot -Tpng -Gdpi=300 vpr.dot > vpr.png
+    ```
+    Note that you can use the `-Gdpi` option to make your picture clearer if you find the default dpi settings not clear enough.
 
 # External Subtrees
 VTR includes some code which is developed in external repositories, and is integrated into the VTR source tree using [git subtrees](https://www.atlassian.com/blog/git/alternatives-to-git-submodule-git-subtree).
