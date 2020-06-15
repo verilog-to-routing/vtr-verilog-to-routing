@@ -201,7 +201,7 @@ void expand_dijkstra_neighbours(const t_rr_graph_storage& rr_nodes,
                                 std::priority_queue<Entry,
                                                     std::vector<Entry>,
                                                     std::greater<Entry>>* pq) {
-    int parent_ind = parent_entry.rr_node_ind;
+    int parent_ind = size_t(parent_entry.rr_node_ind);
 
     auto& parent_node = rr_nodes[parent_ind];
 
