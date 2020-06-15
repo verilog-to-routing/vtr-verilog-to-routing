@@ -21,13 +21,13 @@ static int manhattan_distance(const vtr::Point<int>& a, const vtr::Point<int>& b
 }
 
 // the smallest bounding box containing a node
-static vtr::Rect<int> bounding_box_for_node(const ConnectionBoxes& connection_boxes, int node_ind) {
-    const std::pair<size_t, size_t>* loc = connection_boxes.find_canonical_loc(node_ind);
-    if (loc == nullptr) {
-        return vtr::Rect<int>();
-    } else {
-        return vtr::Rect<int>(vtr::Point<int>(loc->first, loc->second));
-    }
+static vtr::Rect<int> bounding_box_for_node(int node_ind) {
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& rr_graph = device_ctx.rr_nodes;
+    int x = rr_graph.node_xlow(RRNodeId(node_ind));
+    int y = rr_graph.node_ylow(RRNodeId(node_ind));
+
+    return vtr::Rect<int>(vtr::Point<int>(loc->first, loc->second));
 }
 
 static vtr::Rect<int> sample_window(const vtr::Rect<int>& bounding_box, int sx, int sy, int n) {
@@ -131,7 +131,7 @@ std::vector<SampleRegion> find_sample_regions(int num_segments) {
         VTR_ASSERT(seg_index != OPEN);
         VTR_ASSERT(seg_index < num_segments);
 
-        bounding_box_for_segment[seg_index].expand_bounding_box(bounding_box_for_node(device_ctx.connection_boxes, i));
+        bounding_box_for_segment[seg_index].expand_bounding_box(bounding_box_for_node(i));
     }
 
     // initialize counts

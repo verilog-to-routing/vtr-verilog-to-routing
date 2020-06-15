@@ -32,7 +32,6 @@
 #include "rr_graph_writer.h"
 #include "rr_graph_reader.h"
 #include "router_lookahead_map.h"
-#include "connection_box_lookahead_map.h"
 #include "rr_graph_clock.h"
 
 #include "rr_types.h"

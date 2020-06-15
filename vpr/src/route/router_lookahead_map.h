@@ -1,48 +1,84 @@
-#pragma once
+#ifndef CONNECTION_BOX_LOOKAHEAD_H_
+#define CONNECTION_BOX_LOOKAHEAD_H_
 
-#include <string>
-#include <limits>
-#include "vtr_ndmatrix.h"
+#include <vector>
+#include "physical_types.h"
 #include "router_lookahead.h"
+#include "router_lookahead_map_utils.h"
+#include "vtr_geometry.h"
 
+// Keys in the RoutingCosts map
+struct RoutingCostKey {
+    // index of the channel (CHANX or CHANY)
+    int chan_index;
+
+    // segment type index
+    int seg_index;
+
+    // offset of the destination connection box from the starting segment
+    vtr::Point<int> delta;
+
+    RoutingCostKey()
+        : seg_index(-1)
+        , delta(0, 0) {}
+    RoutingCostKey(int chan_index_arg, int seg_index_arg, vtr::Point<int> delta_arg)
+        : chan_index(chan_index_arg)
+        , seg_index(seg_index_arg)
+        , delta(delta_arg) {}
+
+    bool operator==(const RoutingCostKey& other) const {
+        return seg_index == other.seg_index && chan_index == other.chan_index && delta == other.delta;
+    }
+};
+
+// hash implementation for RoutingCostKey
+struct HashRoutingCostKey {
+    std::size_t operator()(RoutingCostKey const& key) const noexcept {
+        std::size_t hash = std::hash<int>{}(key.chan_index);
+        vtr::hash_combine(hash, key.seg_index);
+        vtr::hash_combine(hash, key.delta.x());
+        vtr::hash_combine(hash, key.delta.y());
+        return hash;
+    }
+};
+
+// Map used to store intermediate routing costs
+typedef std::unordered_map<RoutingCostKey, float, HashRoutingCostKey> RoutingCosts;
+
+// Dense cost maps per source segment and destination connection box types
+class CostMap {
+  public:
+    void set_counts(size_t seg_count);
+    void build_segment_map();
+    int node_to_segment(int from_node_ind) const;
+    util::Cost_Entry find_cost(int from_seg_index, e_rr_type rr_type, int delta_x, int delta_y) const;
+    void set_cost_map(const RoutingCosts& delay_costs, const RoutingCosts& base_costs);
+    std::pair<util::Cost_Entry, int> get_nearby_cost_entry(const vtr::NdMatrix<util::Cost_Entry, 2>& matrix, int cx, int cy, const vtr::Rect<int>& bounds);
+    void read(const std::string& file);
+    void write(const std::string& file) const;
+    void print(int iseg) const;
+    std::vector<std::pair<int, int>> list_empty() const;
+
+  private:
+    vtr::Matrix<vtr::Matrix<util::Cost_Entry>> cost_map_;
+    vtr::Matrix<std::pair<int, int>> offset_;
+    vtr::Matrix<float> penalty_;
+    std::vector<int> segment_map_;
+    size_t seg_count_;
+};
+
+// Implementation of RouterLookahead based on source segment and destination connection box types
 class MapLookahead : public RouterLookahead {
-  protected:
+  public:
+    std::pair<float, float> get_src_opin_delays(RRNodeId from_node, int delta_x, int delta_y, float criticality_fac) const;
     float get_expected_cost(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
+    float get_map_cost(int from_node_ind, int to_node_ind, float criticality_fac) const;
     void compute(const std::vector<t_segment_inf>& segment_inf) override;
+
     void read(const std::string& file) override;
     void write(const std::string& file) const override;
+
+    CostMap cost_map_;
 };
 
-/* f_cost_map is an array of these cost entries that specifies delay/congestion estimates
- * to travel relative x/y distances */
-class Cost_Entry {
-  public:
-    float delay;
-    float congestion;
-
-    Cost_Entry()
-        : Cost_Entry(std::numeric_limits<float>::quiet_NaN(),
-                     std::numeric_limits<float>::quiet_NaN()) {
-    }
-
-    Cost_Entry(float set_delay, float set_congestion) {
-        delay = set_delay;
-        congestion = set_congestion;
-    }
-};
-
-/* provides delay/congestion estimates to travel specified distances
- * in the x/y direction */
-typedef vtr::NdMatrix<Cost_Entry, 4> t_wire_cost_map; //[0..1][[0..num_seg_types-1]0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
-                                                      //[0..1] entry distinguish between CHANX/CHANY start nodes respectively
-
-void read_router_lookahead(const std::string& file);
-void write_router_lookahead(const std::string& file);
-
-/* Computes the lookahead map to be used by the router. If a map was computed prior to this, a new one will not be computed again.
- * The rr graph must have been built before calling this function. */
-void compute_router_lookahead(const std::vector<t_segment_inf>& segment_inf);
-
-/* queries the lookahead_map (should have been computed prior to routing) to get the expected cost
- * from the specified source to the specified target */
-float get_lookahead_map_cost(RRNodeId from_node, RRNodeId to_node, float criticality_fac);
+#endif
