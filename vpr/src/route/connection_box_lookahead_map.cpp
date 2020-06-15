@@ -101,18 +101,18 @@ struct t_reachable_wire_inf {
 };
 
 typedef std::vector<std::vector<std::map<int, t_reachable_wire_inf>>> t_src_opin_delays; //[0..device_ctx.physical_tile_types.size()-1][0..max_ptc-1][wire_seg_index]
-                                                                                                  // ^                                           ^             ^
-                                                                                                  // |                                           |             |
-                                                                                                  // physical block type index                   |             Reachable wire info
-                                                                                                  //                                             |
-                                                                                                  //                                             SOURCE/OPIN ptc
+                                                                                         // ^                                           ^             ^
+                                                                                         // |                                           |             |
+                                                                                         // physical block type index                   |             Reachable wire info
+                                                                                         //                                             |
+                                                                                         //                                             SOURCE/OPIN ptc
 
 typedef std::vector<std::vector<std::map<int, t_reachable_wire_inf>>> t_chan_ipins_delays; //[0..device_ctx.physical_tile_types.size()-1][0..max_ptc-1][wire_seg_index]
-                                                                                              // ^                                           ^             ^
-                                                                                              // |                                           |             |
-                                                                                              // physical block type index                   |             Wire to IPIN segment info
-                                                                                              //                                             |
-                                                                                              //                                             SINK/IPIN ptc
+                                                                                           // ^                                           ^             ^
+                                                                                           // |                                           |             |
+                                                                                           // physical block type index                   |             Wire to IPIN segment info
+                                                                                           //                                             |
+                                                                                           //                                             SINK/IPIN ptc
 
 //Look-up table from SOURCE/OPIN to CHANX/CHANY of various types
 t_src_opin_delays f_src_opin_delays;
@@ -421,7 +421,6 @@ std::pair<util::Cost_Entry, int> CostMap::get_nearby_cost_entry(const vtr::NdMat
     return std::make_pair(fill, n);
 }
 
-
 std::pair<float, float> ConnectionBoxMapLookahead::get_src_opin_delays(RRNodeId from_node, int delta_x, int delta_y, float criticality_fac) const {
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_nodes;
@@ -492,7 +491,6 @@ std::pair<float, float> ConnectionBoxMapLookahead::get_src_opin_delays(RRNodeId 
                                             rr_node_arch_name(size_t(from_node)).c_str(),
                                             describe_rr_node(size_t(from_node)).c_str())
                                 .c_str());
-
     }
 
     return std::pair<float, float>(0.f, 0.f);
@@ -611,7 +609,6 @@ static bool add_paths(int start_node_ind,
         path.push_back(i);
     }
     path.push_back(start_node_ind);
-
 
     current.adjust_Tsw(-site_pin_delay);
 
@@ -1433,7 +1430,6 @@ static void dijkstra_flood_to_ipins(RRNodeId node, t_chan_ipins_delays& chan_ipi
         }
     }
 }
-
 
 // get an expected minimum cost for routing from the current node to the target node
 float ConnectionBoxMapLookahead::get_expected_cost(
