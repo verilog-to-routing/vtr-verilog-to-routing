@@ -40,7 +40,6 @@ void write_rr_graph(const char* file_name) {
         &device_ctx.rr_switch_inf,
         &device_ctx.rr_indexed_data,
         &device_ctx.rr_node_indices,
-        &device_ctx.connection_boxes,
         device_ctx.num_arch_switches,
         device_ctx.arch_switch_inf,
         device_ctx.rr_segments,
