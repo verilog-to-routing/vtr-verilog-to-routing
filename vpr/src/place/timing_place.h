@@ -396,7 +396,7 @@ class PlacerTimingCosts {
     vtr::vector<ClusterNetId, int> net_start_indicies_;
 
     //Number of levels in the binary tree
-    size_t num_levels_;
+    size_t num_levels_ = 0;
 };
 
 #endif
