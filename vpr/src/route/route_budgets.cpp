@@ -182,17 +182,27 @@ void route_budgets::allocate_slack_using_weights(ClbNetPinsMatrix<float>& net_de
     max_budget_change = 900e-12;
 
     original_timing_info = perform_sta(net_delay);
-    timing_info = perform_sta(delay_max_budget);
+    // timing_info = perform_sta(delay_max_budget);
 
     /*This allocates long path slack and increases the budgets*/
     while ((iteration > 3 && max_budget_change > 5e-12) || iteration <= 3) {
-        max_budget_change = minimax_PERT(original_timing_info, timing_info, delay_max_budget, net_delay, netlist_pin_lookup, SETUP, true, POSITIVE);
         timing_info = perform_sta(delay_max_budget);
+
+        max_budget_change = minimax_PERT(original_timing_info, timing_info, delay_max_budget, net_delay, netlist_pin_lookup, SETUP, true, BOTH);
 
         iteration++;
         if (iteration > 20)
             break;
     }
+
+    // auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    //     for(auto& net_id : cluster_ctx.clb_nlist.nets()) {
+    //         for(auto& pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+    //             auto ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
+    //             VTR_LOG("MINIMAX DEBUG Delay max budget %e / %e\n", delay_max_budget[net_id][ipin], delay_upper_bound[net_id][ipin]);
+    //         }
+    //     }
 
     /*Set the minimum budgets equal to the maximum budgets*/
     set_min_max_budgets_equal();
@@ -205,8 +215,8 @@ void route_budgets::allocate_slack_using_weights(ClbNetPinsMatrix<float>& net_de
 
     /*Allocate the short path slack to decrease the budgets accordingly*/
     while ((iteration > 3 && max_budget_change > 5e-12) || iteration <= 3) {
-        max_budget_change = minimax_PERT(original_timing_info, timing_info_min, delay_min_budget, net_delay, netlist_pin_lookup, HOLD, true, POSITIVE);
         timing_info_min = perform_sta(delay_min_budget);
+        max_budget_change = minimax_PERT(original_timing_info, timing_info_min, delay_min_budget, net_delay, netlist_pin_lookup, HOLD, true, POSITIVE);
         iteration++;
 
         if (iteration > 20)
@@ -232,6 +242,8 @@ void route_budgets::allocate_slack_using_weights(ClbNetPinsMatrix<float>& net_de
     }
     /*budgets may go below minimum delay bound to optimize for setup time*/
     keep_budget_above_value(delay_min_budget, bottom_range);
+
+    print_route_budget();
 }
 
 void route_budgets::process_negative_slack_using_minimax(ClbNetPinsMatrix<float>& net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup) {
@@ -410,9 +422,7 @@ float route_budgets::calculate_clb_pin_slack(ClusterNetId net_id, int ipin, std:
             continue;
         } else if (timing_info->hold_pin_slack(pin) == std::numeric_limits<float>::infinity() && type == HOLD) {
             if (clb_min_slack == delay_upper_bound[net_id][ipin]) {
-                if (clb_min_slack == delay_upper_bound[net_id][ipin]) {
-                    atom_pin = pin;
-                }
+                atom_pin = pin;
             }
             continue;
         } else {

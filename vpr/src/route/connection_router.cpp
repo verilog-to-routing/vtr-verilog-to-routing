@@ -700,7 +700,7 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
         expected_total_delay_cost += std::pow(std::max(0.f, expected_total_delay - delay_budget->max_delay), 2) / 100e-12;
         expected_total_delay_cost += std::pow(std::max(0.f, delay_budget->min_delay - expected_total_delay), 2) / 100e-12;
         expected_total_cong_cost = (1. - cost_params.criticality) * expected_total_cong;
-        total_cost = expected_total_delay_cost + expected_total_cong;
+        total_cost = expected_total_delay_cost + expected_total_cong_cost;
     } else if(delay_budget && delay_budget->routing_budgets_algorithm == MINIMAX) {
         //Update total cost
         float expected_cost = router_lookahead_.get_expected_cost(to_node, target_node, cost_params, to->R_upstream);
@@ -709,7 +709,9 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
                     rr_node_arch_name(to_node).c_str(), describe_rr_node(to_node).c_str(),
                     rr_node_arch_name(target_node).c_str(), describe_rr_node(target_node).c_str(),
                     expected_cost, to->R_upstream);
+        float expected_total_delay = cost_params.astar_fac * expected_delay + to->backward_delay;
         
+        total_cost += std::pow(std::max(0.f, expected_total_delay - delay_budget->max_delay), 2) / 100e-12;
         total_cost += to->backward_path_cost + cost_params.astar_fac * expected_cost;
     } else {
         //Update total cost
