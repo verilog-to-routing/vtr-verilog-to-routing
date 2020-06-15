@@ -165,6 +165,9 @@ class PlacerCriticalities {
      * if this method wasn't called updated after the previous timing info update.
      */
     bool recompute_required = true;
+    
+    //if this is first time to call update_criticality
+    bool first_time_update_criticality = true;
 };
 
 /**

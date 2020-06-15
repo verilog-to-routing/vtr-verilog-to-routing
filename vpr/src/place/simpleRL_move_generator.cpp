@@ -249,10 +249,10 @@ SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>
 
 
 e_create_move SimpleRLMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim
-	, std::vector<int>& X_coord, std::vector<int>& Y_coord, int& type, int high_fanout_net) {
+	, std::vector<int>& X_coord, std::vector<int>& Y_coord, int& type, int high_fanout_net, const PlacerCriticalities* criticalities) {
 
 	type = karmed_bandit_agent->propose_action();
-	return avail_moves[type]->propose_move(blocks_affected, rlim, X_coord, Y_coord, type, high_fanout_net);
+	return avail_moves[type]->propose_move(blocks_affected, rlim, X_coord, Y_coord, type, high_fanout_net, criticalities);
 }
 
 void SimpleRLMoveGenerator::process_outcome(double reward){

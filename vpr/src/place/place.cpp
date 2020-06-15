@@ -859,7 +859,19 @@ quench:
                              *move_generator,
                              blocks_affected,
                              timing_info.get(),
-                             placer_opts.place_quench_algorithm);
+                             placer_opts.place_quench_algorithm,
+                             X_coord,
+                             Y_coord,
+                             num_moves,
+                             accepted_moves,
+                             aborted_moves,
+                             timing_bb_factor);
+
+        oldt = state.t;
+
+        tot_iter += move_lim;
+        ++num_temps;
+>>>>>>> Fixing the issues of merging incremental STA into directed moves
 
         tot_iter += state.move_lim;
         ++state.num_temps;
@@ -1383,7 +1395,7 @@ static e_move_result try_swap(const t_annealing_state* state,
     auto start = std::chrono::high_resolution_clock::now();
 #endif
     e_create_move create_move_outcome = move_generator.propose_move(blocks_affected
-      , rlim, X_coord, Y_coord, type, high_fanout_net);
+      , rlim, X_coord, Y_coord, type, high_fanout_net, criticalities);
 
     ++num_moves[type];
 #if 0

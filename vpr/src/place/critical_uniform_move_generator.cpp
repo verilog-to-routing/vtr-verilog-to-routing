@@ -2,7 +2,7 @@
 #include "globals.h"
 
 e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim,
-    std::vector<int>&, std::vector<int>&, int & , int) {
+    std::vector<int>&, std::vector<int>&, int & , int, const PlacerCriticalities* /*criticalities*/) {
 
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();

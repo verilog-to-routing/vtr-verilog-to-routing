@@ -4,7 +4,7 @@
 #include "math.h"
 
 e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim,
-    std::vector<int>& X_coord, std::vector<int>& Y_coord, int &,int ) {
+    std::vector<int>& X_coord, std::vector<int>& Y_coord, int &, int, const PlacerCriticalities* criticalities ) {
 
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -44,7 +44,7 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
             continue;
 
         ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
-        if(get_timing_place_crit(net_id, ipin) > CRIT_LIMIT){
+        if(criticalities->criticality(net_id, ipin) > CRIT_LIMIT){
             bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
             X_coord.push_back(place_ctx.block_locs[bnum].loc.x);
             Y_coord.push_back(place_ctx.block_locs[bnum].loc.y);

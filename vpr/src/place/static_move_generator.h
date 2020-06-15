@@ -18,6 +18,6 @@ private:
 
 public:
 	StaticMoveGenerator(const std::vector<float> & prob);
-    e_create_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float rlim, std::vector<int>& X_coord, std::vector<int>& Y_coord, int& type, int high_fanout_net);
+    e_create_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float rlim, std::vector<int>& X_coord, std::vector<int>& Y_coord, int& type, int high_fanout_net, const PlacerCriticalities* /*criticalities*/);
 };
 #endif

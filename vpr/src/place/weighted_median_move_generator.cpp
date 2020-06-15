@@ -4,7 +4,7 @@
 #include "math.h"
 
 
-static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* coords, ClusterBlockId block_id, ClusterPinId moving_pin_id);
+static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* coords, ClusterBlockId block_id, ClusterPinId moving_pin_id, const PlacerCriticalities* criticalities);
 
 
 //static void get_bb_for_net_excluding_block(ClusterNetId net_id, t_bb* coords, ClusterBlockId block_id);
@@ -12,7 +12,7 @@ static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* 
 //static void get_bb_cost_sink_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* coords, ClusterBlockId block_id, ClusterPinId moving_pin_id);
 
 e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim ,
-    std::vector<int>& X_coord, std::vector<int>& Y_coord, int &,int place_high_fanout_net) {
+    std::vector<int>& X_coord, std::vector<int>& Y_coord, int &,int place_high_fanout_net, const PlacerCriticalities* criticalities) {
 
     auto& place_ctx = g_vpr_ctx.placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -79,7 +79,7 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
             get_bb_cost_sink_for_net_excluding_block(net_id, &coords, b_from, pin_id);
 */
         //all net pins are weighted with their own crititcalities
-        get_bb_cost_for_net_excluding_block(net_id, &coords, b_from, pin_id);
+        get_bb_cost_for_net_excluding_block(net_id, &coords, b_from, pin_id, criticalities);
 
         X_coord.insert(X_coord.end(),ceil(coords.xmin.second*10), coords.xmin.first);
         X_coord.insert(X_coord.end(),ceil(coords.xmax.second*10), coords.xmax.first);
@@ -126,7 +126,7 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
 /* This routine finds the bounding box of a net from scratch excluding   *
  * a specific block. This is very useful in some directed moves.         *
  * It updates coordinates of the bb                                      */
-static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* coords, ClusterBlockId , ClusterPinId moving_pin_id) {
+static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* coords, ClusterBlockId , ClusterPinId moving_pin_id, const PlacerCriticalities* criticalities) {
     int pnum, x, y, xmin, xmax, ymin, ymax;
     float xmin_cost,xmax_cost,ymin_cost,ymax_cost, cost;
     xmin=0;
@@ -168,7 +168,7 @@ static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* 
             x = std::max(std::min(x, (int)grid.width() - 2), 1);  //-2 for no perim channels
             y = std::max(std::min(y, (int)grid.height() - 2), 1); //-2 for no perim channels
 
-            cost = get_timing_place_crit(net_id, ipin);
+            cost = criticalities->criticality(net_id, ipin);
             if(is_first_block){
                 xmin = x;
                 xmin_cost = cost;

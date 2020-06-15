@@ -7,7 +7,7 @@ bool sort_by_weights(const std::pair<int,float> &a, const std::pair<int,float> &
 
 
 e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim,
-    std::vector<int>& X_coord, std::vector<int>& Y_coord, int & ,int ) {
+    std::vector<int>& X_coord, std::vector<int>& Y_coord, int &, int ,const PlacerCriticalities* criticalities ) {
     /* Pick a random block to be swapped with another random block.   */
     ClusterBlockId b_from = pick_from_block();
     if (!b_from) {
@@ -53,7 +53,7 @@ e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_move
                     continue;
                 ipin = cluster_ctx.clb_nlist.pin_net_index(sink_pin_id);
                 pnum = tile_pin_index(sink_pin_id);
-                weight = get_timing_place_crit(net_id, ipin); //*comp_td_point_to_point_delay(delay_model, net_id, ipin)
+                weight = criticalities->criticality(net_id, ipin); //*comp_td_point_to_point_delay(delay_model, net_id, ipin)
                 acc_weight += weight;
 
                 ClusterBlockId sink_block = cluster_ctx.clb_nlist.pin_block(sink_pin_id);
@@ -72,7 +72,7 @@ e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_move
         //else the pin is sink --> only care about its driver
         else  {
             ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
-            weight = get_timing_place_crit(net_id, ipin);
+            weight = criticalities->criticality(net_id, ipin);
             acc_weight += weight;
 
             ClusterPinId source_pin = cluster_ctx.clb_nlist.net_driver(net_id);
