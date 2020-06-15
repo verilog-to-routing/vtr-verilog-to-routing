@@ -27,7 +27,7 @@ static vtr::Rect<int> bounding_box_for_node(int node_ind) {
     int x = rr_graph.node_xlow(RRNodeId(node_ind));
     int y = rr_graph.node_ylow(RRNodeId(node_ind));
 
-    return vtr::Rect<int>(vtr::Point<int>(loc->first, loc->second));
+    return vtr::Rect<int>(vtr::Point<int>(x, y));
 }
 
 static vtr::Rect<int> sample_window(const vtr::Rect<int>& bounding_box, int sx, int sy, int n) {
@@ -145,11 +145,11 @@ std::vector<SampleRegion> find_sample_regions(int num_segments) {
         auto& node = rr_nodes[i];
         if (node.type() != CHANX && node.type() != CHANY) continue;
         if (node.capacity() == 0 || node.num_edges() == 0) continue;
-        const std::pair<size_t, size_t>* loc = device_ctx.connection_boxes.find_canonical_loc(i);
-        if (loc == nullptr) continue;
+        int x = rr_nodes.node_xlow(RRNodeId(i));
+        int y = rr_nodes.node_ylow(RRNodeId(i));
 
         int seg_index = device_ctx.rr_indexed_data[node.cost_index()].seg_index;
-        segment_counts[seg_index][loc->first][loc->second] += 1;
+        segment_counts[seg_index][x][y] += 1;
 
         VTR_ASSERT(seg_index != OPEN);
         VTR_ASSERT(seg_index < num_segments);
@@ -210,15 +210,16 @@ std::vector<SampleRegion> find_sample_regions(int num_segments) {
         auto& node = rr_nodes[i];
         if (node.type() != CHANX && node.type() != CHANY) continue;
         if (node.capacity() == 0 || node.num_edges() == 0) continue;
-        const std::pair<size_t, size_t>* loc = device_ctx.connection_boxes.find_canonical_loc(i);
-        if (loc == nullptr) continue;
+
+        int x = rr_nodes.node_xlow(RRNodeId(i));
+        int y = rr_nodes.node_ylow(RRNodeId(i));
 
         int seg_index = device_ctx.rr_indexed_data[node.cost_index()].seg_index;
 
         VTR_ASSERT(seg_index != OPEN);
         VTR_ASSERT(seg_index < num_segments);
 
-        auto point = sample_point_index.find(std::make_tuple(seg_index, loc->first, loc->second));
+        auto point = sample_point_index.find(std::make_tuple(seg_index, x, y));
         if (point != sample_point_index.end()) {
             point->second->nodes.push_back(i);
         }

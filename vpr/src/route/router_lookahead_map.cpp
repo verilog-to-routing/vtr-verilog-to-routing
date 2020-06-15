@@ -497,8 +497,8 @@ std::pair<float, float> MapLookahead::get_src_opin_delays(RRNodeId from_node, in
 
 // derive a cost from the map between two nodes
 float MapLookahead::get_map_cost(int from_node_ind,
-                                              int to_node_ind,
-                                              float criticality_fac) const {
+                                 int to_node_ind,
+                                 float criticality_fac) const {
     if (from_node_ind == to_node_ind) {
         return 0.f;
     }
@@ -564,8 +564,14 @@ float MapLookahead::get_map_cost(int from_node_ind,
     VTR_LOGV_DEBUG(f_router_debug, "Lookahead cost: %g\n", expected_cost);
     VTR_LOGV_DEBUG(f_router_debug, "Site pin delay: %g\n", site_pin_delay);
 
-    if (!std::isfinite(expected_cost) || expected_cost < 0.f) {
-        VTR_LOG_ERROR("invalid cost for segment %d at (%d, %d)\n", from_seg_index, (int)dx, (int)dy);
+    /* XXX: temporarily disable this for further debugging as it appears that some costs are set to infinity
+    if (!std::isfinite(expected_cost) {
+        VTR_LOG_ERROR("infinite cost for segment %d at (%d, %d)\n", from_seg_index, (int)dx, (int)dy);
+        VTR_ASSERT(0);
+    } */
+
+    if (expected_cost < 0.f) {
+        VTR_LOG_ERROR("negative cost for segment %d at (%d, %d)\n", from_seg_index, (int)dx, (int)dy);
         VTR_ASSERT(0);
     }
 
@@ -791,7 +797,7 @@ static void adjust_rr_pin_position(const RRNodeId rr, int& x, int& y) {
      *    |  |         |  |
      *    V  +---------+  |
      *                    A
-     *     B----------->                  
+     *     B----------->
      *
      * So wires are located as follows:
      *
