@@ -2261,6 +2261,7 @@ static double get_net_wirelength_estimate(ClusterNetId net_id, t_bb* bbptr) {
 
     crossing = wirelength_crossing_count(cluster_ctx.clb_nlist.net_pins(net_id).size());
 
+
     /* Could insert a check for xmin == xmax.  In that case, assume  *
      * connection will be made with no bends and hence no x-cost.    *
      * Same thing for y-cost.                                        */
