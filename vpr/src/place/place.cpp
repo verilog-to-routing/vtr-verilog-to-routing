@@ -2251,13 +2251,8 @@ static double get_net_wirelength_estimate(ClusterNetId net_id, t_bb* bbptr) {
     /* Get the expected "crossing count" of a net, based on its number *
      * of pins.  Extrapolate for very large nets.                      */
 
-    if (((cluster_ctx.clb_nlist.net_pins(net_id).size()) > 50)
-        && ((cluster_ctx.clb_nlist.net_pins(net_id).size()) < 85)) {
+    if ((cluster_ctx.clb_nlist.net_pins(net_id).size()) > 50) {
         crossing = 2.7933 + 0.02616 * ((cluster_ctx.clb_nlist.net_pins(net_id).size()) - 50);
-    } else if ((cluster_ctx.clb_nlist.net_pins(net_id).size()) >= 85) {
-        crossing = 2.7933 + 0.011 * (cluster_ctx.clb_nlist.net_pins(net_id).size())
-                   - 0.0000018 * (cluster_ctx.clb_nlist.net_pins(net_id).size())
-                         * (cluster_ctx.clb_nlist.net_pins(net_id).size());
     } else {
         crossing = cross_count[cluster_ctx.clb_nlist.net_pins(net_id).size() - 1];
     }
