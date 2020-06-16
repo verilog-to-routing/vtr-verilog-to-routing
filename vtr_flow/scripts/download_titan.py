@@ -48,8 +48,7 @@ def parse_args():
                         required=True,
                         help="The 'vtr_flow' directory under the VTR tree. "
                              "If specified this will extract the titan release, "
-                             "placing benchmarks under vtr_flow/benchmarks/titan, "
-                             "and architectures under vtr_flow/arch/titan ")
+                             "placing benchmarks under vtr_flow/benchmarks/titan ")
     parser.add_argument("--force",
                         default=False,
                         action="store_true",
@@ -173,9 +172,13 @@ def download_progress_callback(block_num, block_size, expected_size):
 
 def extract_to_vtr_flow_dir(args, tar_gz_filename):
     """
-    Extracts the 'arch' and 'benchmarks' directories of the titan release
-    into their corresponding vtr directories
+    Extracts the 'benchmarks' directory of the titan release
+    into its corresponding vtr directory
     """
+
+    #Note that in previous VTR releases, arch files also need to be extracted from the titan release
+    #into its corresponding VTR directory. This is no longer needed as VTR is now packed with the
+    #newest Titan arch files.
 
     #Reference directories
     arch_dir = os.path.join(args.vtr_flow_dir, "arch")
@@ -228,14 +231,6 @@ def extract_to_vtr_flow_dir(args, tar_gz_filename):
                     dst_file_path = os.path.join(titan_benchmarks_extract_dir, filename)
                 elif fnmatch.fnmatch(src_file_path, "*/titan_release*/benchmarks/other_benchmarks/*/*/*.blif"):
                     dst_file_path = os.path.join(titan_other_benchmarks_extract_dir, filename)
-                elif filename.endswith(".xml"):
-
-                    if args.upgrade_archs:
-                        #Apply the Architecture XML upgrade script
-                        print("Upgrading architecture file:")
-                        os.system("{} {}".format(arch_upgrade_script, src_file_path))
-                    
-                    dst_file_path = os.path.join(titan_arch_extract_dir, filename)
 
                 if dst_file_path:
                     shutil.move(src_file_path, dst_file_path)
