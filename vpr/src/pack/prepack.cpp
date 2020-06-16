@@ -849,7 +849,23 @@ t_pack_molecule* alloc_and_load_pack_molecules(t_pack_patterns* list_of_pack_pat
      * more difficult because now it needs to consider splitting molecules.
      */
     for (auto blk_id : atom_ctx.nlist.blocks()) {
-        expected_lowest_cost_pb_gnode[blk_id] = get_expected_lowest_cost_primitive_for_atom_block(blk_id);
+        t_pb_graph_node* best = get_expected_lowest_cost_primitive_for_atom_block(blk_id);
+        if (!best) {
+            /* Free the molecules in the linked list to avoid memory leakage */
+            cur_molecule = list_of_molecules_head;
+            while (cur_molecule) {
+                t_pack_molecule* molecule_to_free = cur_molecule;
+                cur_molecule = cur_molecule->next;
+                delete molecule_to_free;
+            }
+
+            VPR_FATAL_ERROR(VPR_ERROR_PACK, "Failed to find any location to pack primitive of type '%s' in architecture",
+                            atom_ctx.nlist.block_model(blk_id)->name);
+        }
+
+        VTR_ASSERT_SAFE(nullptr != best);
+
+        expected_lowest_cost_pb_gnode[blk_id] = best;
 
         auto rng = atom_molecules.equal_range(blk_id);
         bool rng_empty = (rng.first == rng.second);
@@ -1197,12 +1213,6 @@ static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const 
                 best = current;
             }
         }
-    }
-
-    if (!best) {
-        auto& atom_ctx = g_vpr_ctx.atom();
-        VPR_FATAL_ERROR(VPR_ERROR_PACK, "Failed to find any location to pack primitive of type '%s' in architecture",
-                        atom_ctx.nlist.block_model(blk_id)->name);
     }
 
     return best;

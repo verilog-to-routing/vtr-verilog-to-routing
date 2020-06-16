@@ -877,9 +877,9 @@ struct t_placer_opts {
  * bend_cost:  Cost of a bend (usually non-zero only for global routing).   *
  * max_router_iterations:  Maximum number of iterations before giving       *
  *                up.                                                       *
- * min_incremental_reroute_fanout: Minimum fanout a net needs to have 		*
- *				for incremental reroute to be applied to it through route 	*
- *				tree pruning. Larger circuits should get larger thresholds	*
+ * min_incremental_reroute_fanout: Minimum fanout a net needs to have       *
+ *              for incremental reroute to be applied to it through route   *
+ *              tree pruning. Larger circuits should get larger thresholds  *
  * bb_factor:  Linear distance a route can go outside the net bounding      *
  *             box.                                                         *
  * route_type:  GLOBAL or DETAILED.                                         *
@@ -905,10 +905,10 @@ struct t_placer_opts {
  *                  will ever have (i.e. clip criticality to this number).  *
  * criticality_exp: Set criticality to (path_length(sink) / longest_path) ^ *
  *                  criticality_exp (then clip to max_criticality).         *
- * doRouting: true if routing is supposed to be done, false otherwise	    *
- * routing_failure_predictor: sets the configuration to be used by the	    *
+ * doRouting: true if routing is supposed to be done, false otherwise       *
+ * routing_failure_predictor: sets the configuration to be used by the      *
  * routing failure predictor, how aggressive the threshold used to judge    *
- * and abort routings deemed unroutable							            *
+ * and abort routings deemed unroutable                                     *
  * write_rr_graph_name: stores the file name of the output rr graph         *
  * read_rr_graph_name:  stores the file name of the rr graph to be read by vpr */
 enum e_route_type {

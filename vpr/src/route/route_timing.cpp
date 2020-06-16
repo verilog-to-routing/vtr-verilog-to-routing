@@ -1111,8 +1111,9 @@ bool timing_driven_route_net(ConnectionRouter& router,
             conn_delay_budget.short_path_criticality = budgeting_inf.get_crit_short_path(net_id, target_pin);
             conn_delay_budget.routing_budgets_algorithm = router_opts.routing_budgets_algorithm;
         }
-
+        
         // VTR_LOG_DEBUG("Routing Net %zu (%zu sinks) with delay budgets (%s): <%e, %e, %e> crit: %f\n", size_t(net_id), num_sinks, budgeting_inf.if_set() ? "true" : "false", conn_delay_budget.min_delay, conn_delay_budget.target_delay, conn_delay_budget.max_delay, conn_delay_budget.short_path_criticality);
+        profiling::conn_start();
 
         // build a branch in the route tree to the target
         if (!timing_driven_route_sink(router,
@@ -1129,10 +1130,15 @@ bool timing_driven_route_net(ConnectionRouter& router,
                                       route_tree_nodes))
             return false;
 
+        profiling::conn_finish(route_ctx.net_rr_terminals[net_id][0],
+                               sink_rr,
+                               pin_criticality[target_pin]);
+
         ++router_stats.connections_routed;
     } // finished all sinks
 
     ++router_stats.nets_routed;
+    profiling::net_finish();
 
     /* For later timing analysis. */
 
