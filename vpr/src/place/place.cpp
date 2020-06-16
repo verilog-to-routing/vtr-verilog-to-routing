@@ -2242,14 +2242,14 @@ static void get_bb_from_scratch(ClusterNetId net_id, t_bb* coords, t_bb* num_on_
 }
 
 static double wirelength_crossing_count(size_t fanout) {
-	/* Get the expected "crossing count" of a net, based on its number *
+    /* Get the expected "crossing count" of a net, based on its number *
      * of pins.  Extrapolate for very large nets.                      */
 
-	if (fanout > 50) {
-		return 2.7933 + 0.02616 * (fanout - 50);
-	} else {
-		return cross_count[fanout - 1];
-	}
+    if (fanout > 50) {
+        return 2.7933 + 0.02616 * (fanout - 50);
+    } else {
+        return cross_count[fanout - 1];
+    }
 }
 
 static double get_net_wirelength_estimate(ClusterNetId net_id, t_bb* bbptr) {
@@ -2260,7 +2260,6 @@ static double get_net_wirelength_estimate(ClusterNetId net_id, t_bb* bbptr) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     crossing = wirelength_crossing_count(cluster_ctx.clb_nlist.net_pins(net_id).size());
-
 
     /* Could insert a check for xmin == xmax.  In that case, assume  *
      * connection will be made with no bends and hence no x-cost.    *
