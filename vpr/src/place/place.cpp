@@ -2307,7 +2307,18 @@ static double get_net_wirelength_estimate(ClusterNetId net_id, t_bb* bbptr) {
     double ncost, crossing;
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
+<<<<<<< HEAD
     crossing = wirelength_crossing_count(cluster_ctx.clb_nlist.net_pins(net_id).size());
+=======
+    /* Get the expected "crossing count" of a net, based on its number *
+     * of pins.  Extrapolate for very large nets.                      */
+
+    if ((cluster_ctx.clb_nlist.net_pins(net_id).size()) > 50) {
+        crossing = 2.7933 + 0.02616 * ((cluster_ctx.clb_nlist.net_pins(net_id).size()) - 50);
+    } else {
+        crossing = cross_count[cluster_ctx.clb_nlist.net_pins(net_id).size() - 1];
+    }
+>>>>>>> Change VPR place WL estimate fun to linear
 
     /* Could insert a check for xmin == xmax.  In that case, assume  *
      * connection will be made with no bends and hence no x-cost.    *
