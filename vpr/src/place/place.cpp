@@ -74,6 +74,9 @@ std::vector<double> time_of_moves (7,0);
 using std::max;
 using std::min;
 
+FILE* f_ = nullptr;
+int total_pins = 0; 
+
 //map of the available move types and their corresponding type number
 std::map<int,std::string> available_move_types = {
         {0,"Uniform"},
@@ -148,7 +151,7 @@ static vtr::vector<ClusterNetId, char> bb_updated_before;
  * blocks on each of a net's bounding box (to allow efficient updates),      *
  * respectively.                                                             */
 
-static vtr::vector<ClusterNetId, t_bb> bb_coords, bb_num_on_edges;
+vtr::vector<ClusterNetId, t_bb> bb_coords, bb_num_on_edges;
 
 /* The arrays below are used to precompute the inverse of the average   *
  * number of tracks per channel between [subhigh] and [sublow].  Access *
@@ -482,6 +485,14 @@ void try_place(const t_placer_opts& placer_opts,
 
     char msg[vtr::bufsize];
     t_placer_statistics stats;
+
+    for (auto net_id : cluster_ctx.clb_nlist.nets()) { 
+         if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
+            continue;
+
+        total_pins += cluster_ctx.clb_nlist.net_sinks(net_id).size();
+    }
+    f_ = vtr::fopen("high_crit.txt", "w");
 
     std::shared_ptr<SetupTimingInfo> timing_info;
     std::shared_ptr<PlacementDelayCalculator> placement_delay_calc;
