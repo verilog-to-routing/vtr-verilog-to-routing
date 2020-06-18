@@ -736,14 +736,7 @@ bool find_to_loc_median(t_logical_block_type_ptr type,
         if (y_lower_iter->first > min_cy) {
             //No valid blocks at this x location which are within y range
             //
-            //Fall back to allow the whole y range
-            /*y_lower_iter = compressed_block_grid.grid[cx_to].begin();
-            y_upper_iter = compressed_block_grid.grid[cx_to].end();
-
-            min_cy = y_lower_iter->first;
-            max_cy = (y_upper_iter - 1)->first;
-        */
-        return false;
+            continue;
         }
 
         int y_range = std::distance(y_lower_iter, y_upper_iter);
@@ -873,12 +866,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr type,
         if (y_lower_iter->first > min_cy) {
             //No valid blocks at this x location which are within rlim_y
             //
-            //Fall back to allow the whole y range
-            y_lower_iter = compressed_block_grid.grid[cx_to].begin();
-            y_upper_iter = compressed_block_grid.grid[cx_to].end();
-
-            min_cy = y_lower_iter->first;
-            max_cy = (y_upper_iter - 1)->first;
+            continue;
         }
 
         int y_range = std::distance(y_lower_iter, y_upper_iter);
