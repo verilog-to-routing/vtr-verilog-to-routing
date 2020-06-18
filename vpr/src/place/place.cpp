@@ -2,6 +2,7 @@
 #include <cmath>
 #include <memory>
 #include <fstream>
+#include <iostream>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -80,7 +81,11 @@ using std::min;
 /* For comp_cost.  NORMAL means use the method that generates updateable  *
  * bounding boxes for speed.  CHECK means compute all bounding boxes from *
  * scratch using a very simple routine to allow checks of the other       *
- * costs.                                                                 */
+ * costs.                                   
+                              */
+    int moveCounter = 0;
+    int tempCounter = 0;
+
 enum e_cost_methods {
     NORMAL,
     CHECK
@@ -700,6 +705,20 @@ void try_place(const t_placer_opts& placer_opts,
         oldt = t; /* for finding and printing alpha. */
         update_t(&t, rlim, success_rat, annealing_sched);
         ++num_temps;
+        
+        t_draw_state* draw_state = get_draw_state_vars();
+
+        if(draw_state->bp_tempsToProceed>=1){
+            if(tempCounter==draw_state->bp_tempsToProceed){
+                f_placer_debug = true;
+                tempCounter=0;
+            }
+            else if(tempCounter<draw_state->bp_tempsToProceed){
+                f_placer_debug = false;
+                tempCounter++;
+                std::cout<<"tempcount: "<<tempCounter<<"\n";
+            }
+        }
 
         if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
             critical_path = timing_info->least_slack_critical_path();
@@ -1362,6 +1381,27 @@ static e_move_result try_swap(float t,
 #ifdef VTR_ENABLE_DEBUG_LOGGING
     
     t_draw_state* draw_state = get_draw_state_vars();
+
+    //check for block breakpoint
+    ClusterBlockId bId(draw_state-> bp_blockId);
+    if(bId==blocks_affected.moved_blocks[0].block_num)
+        f_placer_debug = true;
+    else 
+        f_placer_debug = false;
+
+    //check for move breakpoint
+    if(draw_state->bp_numToProceed>=1){
+        if(moveCounter==draw_state->bp_numToProceed){
+            f_placer_debug = true;
+            moveCounter=0;
+        }
+        else if(moveCounter<draw_state->bp_numToProceed){
+            f_placer_debug = false;
+            moveCounter++;
+            std::cout<<moveCounter<<"\n";
+        }
+    }
+    
     if(f_placer_debug && draw_state->show_graphics){
         std::string msg = available_move_types[0];
         if(move_outcome == 0)
