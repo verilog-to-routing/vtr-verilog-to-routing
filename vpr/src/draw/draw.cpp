@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <sstream>
 #include <array>
+#include <iostream>
 
 #include "vtr_assert.h"
 #include "vtr_ndoffsetmatrix.h"
@@ -44,6 +45,7 @@
 #include "save_graphics.h"
 #include "timing_info.h"
 #include "physical_types.h"
+#include "breakpoint.h"
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 #include "move_utils.h"
@@ -148,7 +150,18 @@ void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application* app, 
 void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/);
 void setup_default_ezgl_callbacks(ezgl::application* app);
 void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
+void set_number_of_moves(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
+void set_moves_button_callback(GtkWidget* /*widget*/, GtkWidget* grid);
+void set_temp_button_callback(GtkWidget* /*widget*/, GtkWidget* grid);
+void set_block_button_callback(GtkWidget* /*widget*/, GtkWidget* grid);
+void checkbox_callback(GtkWidget* grid, gint /*response_id*/, gpointer /*data*/);
+void delete_bp_callback(GtkWidget* grid, gint /*response_id*/, gpointer /*data*/);
+void apply_button_callback(GtkWidget* grid, gint /*response_id*/, gpointer /*data*/);
+void advanced_button_callback(GtkWidget* grid, gint /*response_id*/, gpointer /*data*/);
 void run_graphics_commands(std::string commands);
+void ok_close_window(GtkWidget* /*widget*/,GtkWidget* window);
+void invalid_entry_window(GtkWidget* widget);
+void draw_debug_window();
 
 /************************** File Scope Variables ****************************/
 
@@ -199,6 +212,7 @@ bool window_point_1_collected = false;
 ezgl::point2d point_1(0, 0);
 ezgl::rectangle initial_world;
 std::string rr_highlight_message;
+int bpList_row = -1;
 
 #endif // NO_GRAPHICS
 
@@ -3801,10 +3815,96 @@ static void highlight_blocks(double x, double y) {
     application.refresh_drawing();
 }
 
+void draw_debug_window() {
+    
+    // window settings
+    GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_title((GtkWindow*)window, "Debugger");
+    gtk_window_set_position((GtkWindow*) window, GTK_WIN_POS_CENTER);
+    
+    //main grid settings
+    GtkWidget* mainGrid = gtk_grid_new();
+    for(int i = 0; i<8; i++)
+        gtk_grid_insert_row((GtkGrid*)mainGrid,0);
+    for(int i = 0; i<3; i++)
+        gtk_grid_insert_column((GtkGrid*)mainGrid,0);
+    gtk_widget_set_margin_top(mainGrid, 30);
+    gtk_widget_set_margin_bottom(mainGrid, 30);
+    gtk_widget_set_margin_left(mainGrid, 30);
+    gtk_widget_set_margin_right(mainGrid, 30);
+
+    //create all labels
+    GtkWidget* placerOpts = gtk_label_new("Placer Options");
+    gtk_widget_set_margin_bottom(placerOpts, 10);
+    GtkWidget* routerOpts = gtk_label_new("Router Options");
+    gtk_widget_set_margin_bottom(routerOpts, 10);
+    gtk_widget_set_margin_top(routerOpts, 30);
+    GtkWidget* bplist = gtk_label_new("List of Breakpoints");
+    gtk_widget_set_margin_bottom(bplist, 10);
+    gtk_widget_set_margin_top(bplist, 30);
+    GtkWidget* movesLabel = gtk_label_new("Number of moves to proceed");
+    GtkWidget* tempsLabel = gtk_label_new("Temeratures to proceed");
+    GtkWidget* blockLabel = gtk_label_new("Stop at block ID/Name");
+
+    //create all buttons
+    GtkWidget* setM = gtk_button_new_with_label("Set");
+    GtkWidget* setT = gtk_button_new_with_label("Set");
+    GtkWidget* setB = gtk_button_new_with_label("Set");
+    GtkWidget* apply = gtk_button_new_with_label("Apply");
+    GtkWidget* advanced = gtk_button_new_with_label("Advanced");
+    gtk_widget_set_margin_left(advanced, 60);
+    gtk_widget_set_margin_right(advanced, 10);
+
+    //create all entries
+    GtkWidget* movesEntry = gtk_entry_new();
+    gtk_entry_set_text((GtkEntry*)movesEntry, "ex. 100");
+    GtkWidget* tempsEntry = gtk_entry_new();
+    gtk_entry_set_text((GtkEntry*)tempsEntry, "ex. 5");
+    GtkWidget* blockEntry = gtk_entry_new();
+    gtk_entry_set_text((GtkEntry*)blockEntry, "ex. #3 or n504");
+
+    //create scroller
+    GtkWidget* scroller = gtk_scrollbar_new(GTK_ORIENTATION_VERTICAL, NULL);
+
+    //bpList grid
+    GtkWidget* bpGrid = gtk_grid_new();
+    for(int i = 0; i<5; i++)
+        gtk_grid_insert_row((GtkGrid*)bpGrid,0);
+    for(int i = 0; i<4; i++)
+        gtk_grid_insert_column((GtkGrid*)bpGrid,0);
+    gtk_grid_attach((GtkGrid*)bpGrid, scroller, 3, 0, 1, 5);
+    gtk_widget_set_margin_bottom(bpGrid, 20);
+
+    //attach everything to the grid
+    gtk_grid_attach((GtkGrid*)mainGrid, placerOpts, 0, 0, 3, 1);
+    gtk_grid_attach((GtkGrid*)mainGrid, movesLabel, 0, 1, 1, 1);
+    gtk_grid_attach((GtkGrid*)mainGrid, movesEntry, 1, 1, 1, 1);
+    gtk_grid_attach((GtkGrid*)mainGrid, setM, 2, 1, 1, 1);
+    gtk_grid_attach((GtkGrid*)mainGrid, tempsLabel, 0, 2, 1, 1);
+    gtk_grid_attach((GtkGrid*)mainGrid, tempsEntry, 1, 2, 1, 1);
+    gtk_grid_attach((GtkGrid*)mainGrid, setT, 2, 2, 1, 1);
+    gtk_grid_attach((GtkGrid*)mainGrid, routerOpts, 0, 3, 3, 1);
+    gtk_grid_attach((GtkGrid*)mainGrid, blockLabel, 0, 4, 1, 1);
+    gtk_grid_attach((GtkGrid*)mainGrid, blockEntry, 1, 4, 1, 1);
+    gtk_grid_attach((GtkGrid*)mainGrid, setB, 2, 4, 1, 1);
+    gtk_grid_attach((GtkGrid*)mainGrid, bplist, 0, 5, 3, 1);
+    gtk_grid_attach((GtkGrid*)mainGrid, bpGrid,0, 6, 3, 1);
+    gtk_grid_attach((GtkGrid*)mainGrid, apply, 2, 7, 1, 1);
+    gtk_grid_attach((GtkGrid*)mainGrid, advanced, 1, 7, 1, 1);
+
+    //connect all signals
+    g_signal_connect(setM, "clicked", G_CALLBACK(set_moves_button_callback), mainGrid);
+    g_signal_connect(setT, "clicked", G_CALLBACK(set_temp_button_callback), mainGrid);
+    g_signal_connect(setB, "clicked", G_CALLBACK(set_block_button_callback), mainGrid);
+    g_signal_connect(apply, "clicked", G_CALLBACK(apply_button_callback), mainGrid);
+    g_signal_connect(advanced, "clicked", G_CALLBACK(advanced_button_callback), mainGrid);
+
+    //show window
+    gtk_container_add(GTK_CONTAINER(window), mainGrid);
+    gtk_widget_show_all(window);
+}
+
 void setup_default_ezgl_callbacks(ezgl::application* app) {
-    // Connect press_proceed function to the Proceed button
-    GObject* proceed_button = app->get_object("ProceedButton");
-    g_signal_connect(proceed_button, "clicked", G_CALLBACK(ezgl::press_proceed), app);
 
     // Connect press_zoom_fit function to the Zoom-fit button
     GObject* zoom_fit_button = app->get_object("ZoomFitButton");
@@ -3813,6 +3913,175 @@ void setup_default_ezgl_callbacks(ezgl::application* app) {
     // Connect Pause button
     GObject* pause_button = app->get_object("PauseButton");
     g_signal_connect(pause_button, "clicked", G_CALLBACK(set_force_pause), app);
+
+    // Connect Debug Button
+    GObject* debugger = app->get_object("debugButton");
+    g_signal_connect(debugger, "clicked", G_CALLBACK(draw_debug_window), NULL);
+
+    // Connect press_proceed function to the Proceed button
+    GObject* proceed_button = app->get_object("ProceedButton");
+    g_signal_connect(proceed_button, "clicked", G_CALLBACK(ezgl::press_proceed), app);
+}
+
+void set_moves_button_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    GtkWidget* entry = gtk_grid_get_child_at(GTK_GRID(grid), 1, 1);
+
+    //check for input validity
+    int moves  = atoi(gtk_entry_get_text((GtkEntry*)entry));
+    if(moves>=1 && strchr(gtk_entry_get_text((GtkEntry*)entry),'.')==NULL) {
+        draw_state->bp_numToProceed = moves;
+        get_list_of_breakpoints().push_back(breakpoint("moves", moves));
+        std::cout<<"\n"<<draw_state->bp_numToProceed<<"\n";
+
+        //add to breakpoints list
+        GtkWidget* bpGrid = gtk_grid_get_child_at((GtkGrid*) grid, 0, 6);
+        std::string bpDescription = "Breakpoint after "+std::to_string(moves)+" moves";
+        GtkWidget* label = gtk_label_new(bpDescription.c_str());
+        gtk_grid_attach((GtkGrid*) bpGrid, label, 0, ++bpList_row, 1, 1);
+        GtkWidget* checkbox = gtk_check_button_new();
+        gtk_grid_attach((GtkGrid*) bpGrid, checkbox, 1, bpList_row, 1, 1);
+        GtkWidget* deleteButton = gtk_button_new_with_label("Delete");
+        gtk_grid_attach((GtkGrid*) bpGrid, deleteButton, 2, bpList_row, 1, 1);
+        gtk_widget_set_margin_left(checkbox, 150);
+        gtk_widget_show_all(bpGrid);
+    }
+    else
+       invalid_entry_window(grid);
+}
+
+void set_temp_button_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    GtkWidget* entry = gtk_grid_get_child_at((GtkGrid*) grid, 1, 2);
+
+    //input validity
+    int temps = atoi(gtk_entry_get_text((GtkEntry*)entry));
+    if(temps>=1 && strchr(gtk_entry_get_text((GtkEntry*)entry),'.')==NULL) {
+        draw_state->bp_tempsToProceed = temps;
+        //breakpoint::list_of_breakpoints.push_back(breakpoint("temps", temps));
+        std::cout<<"\n"<<draw_state->bp_tempsToProceed<<"\n";
+
+        //add to breakpoints list
+        GtkWidget* bpGrid = gtk_grid_get_child_at((GtkGrid*) grid, 0, 6);
+        std::string bpDescription = "Breakpoint after "+std::to_string(temps)+" degrees";
+        GtkWidget* label = gtk_label_new(bpDescription.c_str());
+        gtk_grid_attach((GtkGrid*) bpGrid, label, 0, ++bpList_row, 1, 1);
+        GtkWidget* checkbox = gtk_check_button_new();
+        gtk_grid_attach((GtkGrid*) bpGrid, checkbox, 1, bpList_row, 1, 1);
+        GtkWidget* deleteButton = gtk_button_new_with_label("Delete");
+        gtk_grid_attach((GtkGrid*) bpGrid, deleteButton, 2, bpList_row, 1, 1);
+        gtk_widget_set_margin_left(checkbox, 80);
+        gtk_widget_show_all(bpGrid);
+    }
+    else
+        invalid_entry_window(grid);
+}
+
+void set_block_button_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    GtkWidget* entry = gtk_grid_get_child_at((GtkGrid*) grid, 1, 4);
+
+    draw_state->bp_blockId = atoi(gtk_entry_get_text((GtkEntry*)entry));
+    //breakpoint::list_of_breakpoints.push_back(breakpoint("id", atoi(gtk_entry_get_text((GtkEntry*)entry))));
+
+    //add to breakpoints list
+    GtkWidget* bpGrid = gtk_grid_get_child_at((GtkGrid*) grid, 0, 6);
+    std::string s(gtk_entry_get_text((GtkEntry*)entry));
+    std::string bpDescription = "Breakpoint at block "+s;
+    GtkWidget* label = gtk_label_new(bpDescription.c_str());
+    gtk_grid_attach((GtkGrid*) bpGrid, label, 0, ++bpList_row, 1, 1);
+    GtkWidget* checkbox = gtk_check_button_new();
+    gtk_grid_attach((GtkGrid*) bpGrid, checkbox, 1, bpList_row, 1, 1);
+    GtkWidget* deleteButton = gtk_button_new_with_label("Delete");
+    gtk_grid_attach((GtkGrid*) bpGrid, deleteButton, 2, bpList_row, 1, 1);
+    gtk_widget_set_margin_left(checkbox, 80);
+    gtk_widget_show_all(bpGrid);
+}
+
+void ok_close_window(GtkWidget* /*widget*/,GtkWidget* window) {
+    gtk_window_close((GtkWindow*) window);
+}
+
+void invalid_entry_window(GtkWidget* widget) {
+    
+    //window settings
+    GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_position((GtkWindow*) window,GTK_WIN_POS_CENTER);
+    gtk_window_set_title((GtkWindow*)window, "ERROR");
+
+    //grid settings
+    GtkWidget* grid = gtk_grid_new();
+    gtk_grid_insert_row((GtkGrid*) grid,0);
+    
+    //label settings
+    GtkWidget* label = gtk_label_new("Invalid Entry!");
+    gtk_widget_set_margin_left(label, 30);
+    gtk_widget_set_margin_right(label, 30);
+    gtk_widget_set_margin_top(label, 30);
+    gtk_widget_set_margin_bottom(label, 30);
+
+    //button settings
+    GtkWidget* button = gtk_button_new_with_label("OK");
+    gtk_widget_set_margin_bottom(button, 30);
+    gtk_widget_set_margin_right(button, 30);
+    gtk_widget_set_margin_left(button, 30);
+    gtk_grid_attach((GtkGrid*) grid, label, 0,0, 1, 1);
+    gtk_grid_attach((GtkGrid*) grid, button, 0,1, 1, 1);
+    g_signal_connect(button, "clicked", G_CALLBACK(ok_close_window), window);
+
+    gtk_container_add(GTK_CONTAINER(window), grid);
+    gtk_widget_show_all(window);
+}
+
+void checkbox_callback(GtkWidget* grid, gint /*response_id*/, gpointer /*data*/) {
+    
+}
+
+void delete_bp_callback(GtkWidget* grid, gint /*response_id*/, gpointer /*data*/) {
+    
+}
+
+void apply_button_callback(GtkWidget* grid, gint /*response_id*/, gpointer /*data*/) {
+    //set_temp_button_callback(grid);
+    //set_moves_button_callback(grid);
+}
+
+void advanced_button_callback(GtkWidget* grid, gint /*response_id*/, gpointer /*data*/) {
+    // window settings
+    GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_position((GtkWindow*) window,GTK_WIN_POS_CENTER);
+    gtk_window_set_title((GtkWindow*)window, "Advanced Debugger Options");
+    
+    //create all widgets
+    GtkWidget* set = gtk_button_new_with_label("set");
+    GtkWidget* entry = gtk_entry_new();
+    GtkWidget* instructions = gtk_label_new("You can use + - > < && || etc. operands with temperature, moves and block id to set your desired breakpoint");
+    gtk_label_set_line_wrap((GtkLabel*)instructions, TRUE);
+    gtk_label_set_max_width_chars((GtkLabel*)instructions, 40);
+    GtkWidget* expression = gtk_label_new("Write expression below:");
+
+    //set margins
+    gtk_widget_set_margin_left(instructions, 30);
+    gtk_widget_set_margin_right(instructions, 30);
+    gtk_widget_set_margin_top(instructions, 30);
+    gtk_widget_set_margin_bottom(instructions, 20);
+    gtk_widget_set_margin_bottom(expression, 10);
+    gtk_widget_set_margin_left(entry, 30);
+    gtk_widget_set_margin_right(set, 30);
+    gtk_widget_set_margin_left(set, 40);
+
+    //grid settings
+    GtkWidget* advancedGrid = gtk_grid_new();
+    gtk_grid_attach((GtkGrid*)advancedGrid, instructions, 0, 0, 2, 1);
+    gtk_grid_attach ((GtkGrid*)advancedGrid, expression, 0, 1, 1, 1);
+    gtk_grid_attach((GtkGrid*)advancedGrid, entry, 0, 2, 1, 1);
+    gtk_grid_attach((GtkGrid*)advancedGrid, set, 1, 2, 1, 1);
+
+    //connect signals
+    //g_signal_conect(apply, "clicked", G_CALLBACK(advanced_apply_button_callback), grid);
+
+    gtk_container_add(GTK_CONTAINER(window), advancedGrid);
+    gtk_widget_show_all(window);
 }
 
 void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {

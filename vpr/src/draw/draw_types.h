@@ -26,6 +26,7 @@
 #    include "vpr_types.h"
 #    include "vtr_color_map.h"
 #    include "vtr_vector.h"
+#    include "breakpoint.h"
 
 #    include "ezgl/point.hpp"
 #    include "ezgl/rectangle.hpp"
@@ -191,6 +192,10 @@ struct t_draw_state {
     std::string graphics_commands;
     bool forced_pause = false;
     int sequence_number = 0;
+
+    int bp_numToProceed = 0;
+    int bp_tempsToProceed = 0;
+    int bp_blockId;
 
     std::string save_graphics_file_base = "vpr";
 
