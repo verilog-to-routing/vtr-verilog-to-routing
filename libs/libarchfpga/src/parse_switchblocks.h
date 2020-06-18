@@ -4,7 +4,7 @@
 #include <vector>
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
-#include "expr_eval.h"
+#include "vtr_expr_eval.h"
 
 /**** Function Declarations ****/
 /* Loads permutation funcs specified under Node into t_switchblock_inf */
