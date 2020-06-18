@@ -730,10 +730,11 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
          */
         if (route_status.success()) {
             sync_netlists_to_routing(g_vpr_ctx.device(),
+                                     g_vpr_ctx.mutable_atom(),
                                      g_vpr_ctx.mutable_clustering(),
                                      g_vpr_ctx.placement(),
                                      g_vpr_ctx.routing(),
-                                     false);
+                                     true);
         }
 
         //Echo files
