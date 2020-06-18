@@ -1603,14 +1603,16 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 const t_port* port = pin->port;
 
                 int cluster_pin_idx = pin->pin_count_in_cluster;
-                auto atom_net_id = top_pb_route[cluster_pin_idx].atom_net_id;
 
                 std::string net;
-                if (!atom_net_id) {
+                if (!top_pb_route.count(cluster_pin_idx)) {
                     //Disconnected
 
                 } else {
                     //Connected
+                    auto atom_net_id = top_pb_route[cluster_pin_idx].atom_net_id;
+                    VTR_ASSERT(atom_net_id);
+
                     auto src_tnode = find_tnode(atom, cluster_pin_idx);
                     net = make_inst_wire(atom_net_id, src_tnode, inst_name, PortType::INPUT, iport, ipin);
                 }
@@ -1626,14 +1628,16 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 const t_port* port = pin->port;
 
                 int cluster_pin_idx = pin->pin_count_in_cluster;
-                auto atom_net_id = top_pb_route[cluster_pin_idx].atom_net_id;
 
                 std::string net;
-                if (!atom_net_id) {
+                if (!top_pb_route.count(cluster_pin_idx)) {
                     //Disconnected
                     net = "";
                 } else {
                     //Connected
+                    auto atom_net_id = top_pb_route[cluster_pin_idx].atom_net_id;
+                    VTR_ASSERT(atom_net_id);
+
                     auto inode = find_tnode(atom, cluster_pin_idx);
                     net = make_inst_wire(atom_net_id, inode, inst_name, PortType::OUTPUT, iport, ipin);
                 }
@@ -1649,16 +1653,16 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 const t_port* port = pin->port;
 
                 int cluster_pin_idx = pin->pin_count_in_cluster;
-                auto atom_net_id = top_pb_route[cluster_pin_idx].atom_net_id;
-
-                VTR_ASSERT(atom_net_id); //Must have a clock
 
                 std::string net;
-                if (!atom_net_id) {
+                if (!top_pb_route.count(cluster_pin_idx)) {
                     //Disconnected
                     net = "";
                 } else {
                     //Connected
+                    auto atom_net_id = top_pb_route[cluster_pin_idx].atom_net_id;
+                    VTR_ASSERT(atom_net_id); //Must have a clock
+
                     auto src_tnode = find_tnode(atom, cluster_pin_idx);
                     net = make_inst_wire(atom_net_id, src_tnode, inst_name, PortType::CLOCK, iport, ipin);
                 }

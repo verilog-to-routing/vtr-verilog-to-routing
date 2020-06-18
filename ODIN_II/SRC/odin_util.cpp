@@ -909,6 +909,57 @@ void trim_string(char* string, const char* chars) {
     }
 }
 
+/*
+ * Tokenizes a string and returns an array where each element is a 
+ * token and a pointer (that needs to be passed through) with the 
+ * size of the array
+ */
+static char** string_to_token_array(char* string, int* size) {
+    char** arr = NULL;
+
+    char* token = strtok(string, " \n\t");
+    int i = 0;
+
+    while (token != NULL) {
+        arr = (char**)vtr::realloc(arr, sizeof(char*) * (i + 1));
+        arr[i] = token;
+        token = strtok(NULL, " \n\t");
+        i++;
+    }
+    *size = (i);
+    return arr;
+}
+
+/*
+ * Will seperate the headers from the inputs and compare them
+ * Will return value of 1 if they match and 0 if
+ * they don't match. Possible error if the vector headers match
+ * but are in different order
+ */
+bool output_vector_headers_equal(char* buffer1, char* buffer2) {
+    int size1 = 0;
+    int size2 = 0;
+    char* buffer1_copy = strdup(buffer1);
+    char* buffer2_copy = strdup(buffer2);
+
+    char** header1 = string_to_token_array(buffer1_copy, &size1);
+    char** header2 = string_to_token_array(buffer2_copy, &size2);
+
+    int i = 0;
+    bool header_matches;
+
+    header_matches = (size1 == size2);
+    for (i = 0; header_matches && i < (size1 - 1); i++) {
+        header_matches = (0 == strcmp(header1[i], header2[i]));
+    }
+
+    vtr::free(header1);
+    vtr::free(header2);
+    vtr::free(buffer1_copy);
+    vtr::free(buffer2_copy);
+    return (header_matches);
+}
+
 /**
  * verifies only one condition evaluates to true
  */
@@ -950,4 +1001,35 @@ int odin_sprintf(char* s, const char* format, ...) {
         va_end(args);
         return -1;
     }
+}
+
+/**
+ * This collate two strings together and destroys the original ones
+ */
+char* str_collate(char* str1, char* str2) {
+    char* buffer = NULL;
+    if (str1 && !str2) {
+        buffer = str1;
+    } else if (!str1 && str2) {
+        buffer = str2;
+    } else if (str1 && str2) {
+        std::string _s1(str1);
+        std::string _s2(str2);
+
+        size_t pos = _s1.find_last_of('"');
+        if (pos != std::string::npos) {
+            _s1 = _s1.substr(0, pos);
+        }
+
+        pos = _s2.find_first_of('"');
+        if (pos != std::string::npos) {
+            _s2 = _s2.substr(pos + 1);
+        }
+
+        std::string result = _s1 + _s2;
+        buffer = vtr::strdup(result.c_str());
+        vtr::free(str1);
+        vtr::free(str2);
+    }
+    return buffer;
 }

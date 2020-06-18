@@ -41,6 +41,8 @@ char** get_name_of_pins_number(ast_node_t* var_node, int start, int width);
 char* get_name_of_pin_number(ast_node_t* var_node, int bit);
 void update_tree_tag(ast_node_t* node, int cases, int tagged);
 STRING_CACHE* copy_param_table_sc(STRING_CACHE* to_copy);
+void assert_constant_positionnal_args(ast_node_t* node, long arg_count);
+void c_simple_print(std::string str);
 
 // HIGH LEVEL AST TAG
 static int high_level_id;
@@ -259,6 +261,16 @@ ast_node_t* create_tree_node_id(char* string, int line_number, int /*file_number
     ast_node_t* new_node = create_node_w_type(IDENTIFIERS, line_number, current_parse_file);
     new_node->types.identifier = string;
 
+    return new_node;
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: create_tree_node_number)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t* create_tree_node_string(char* input_number, int line_number, int /* file_number */) {
+    ast_node_t* new_node = create_node_w_type(NUMBERS, line_number, current_parse_file);
+    new_node->types.vnumber = new VNumber(input_number);
+    new_node->types.variable.is_string = true;
     return new_node;
 }
 
@@ -630,7 +642,7 @@ char* get_name_of_pin_number(ast_node_t* var_node, int bit) {
             return_string = vtr::strdup(ZERO_PAD_ZERO);
             break;
         default:
-            error_message(AST, var_node->line_number, var_node->file_number, "Unrecognised character %c in binary string \"%s\"!\n", c, var_node->types.vnumber->to_bit_string().c_str());
+            error_message(AST, var_node->line_number, var_node->file_number, "Unrecognised character %c in binary string \"%s\"!\n", c, var_node->types.vnumber->to_vstring('B').c_str());
             break;
     }
 
@@ -1286,6 +1298,170 @@ void initial_node(ast_node_t* new_node, ids id, int line_number, int file_number
     new_node->types.identifier = NULL;
     new_node->types.hierarchy = NULL;
     new_node->chunk_size = 1;
+    /* reset flags */
+    new_node->types.variable.is_parameter = false;
+    new_node->types.variable.is_string = false;
+    new_node->types.variable.is_localparam = false;
+    new_node->types.variable.is_defparam = false;
+    new_node->types.variable.is_port = false;
+    new_node->types.variable.is_input = false;
+    new_node->types.variable.is_output = false;
+    new_node->types.variable.is_inout = false;
+    new_node->types.variable.is_wire = false;
+    new_node->types.variable.is_reg = false;
+    new_node->types.variable.is_integer = false;
+    new_node->types.variable.is_genvar = false;
+    new_node->types.variable.is_memory = false;
+    new_node->types.variable.is_signed = false;
+    new_node->types.variable.is_initialized = false;
+}
+
+void assert_constant_positionnal_args(ast_node_t* node, long arg_count) {
+    if (!node->children) {
+        error_message(AST, node->line_number, node->file_number,
+                      "%s node expects arguments\n", ast_node_name_based_on_ids(node));
+    } else if (node->num_children < arg_count) {
+        error_message(AST, node->line_number, node->file_number,
+                      "%s node expects %ld positional arguments\n", ast_node_name_based_on_ids(node), arg_count);
+    } else {
+        for (long i = 0; i < arg_count; i += 1) {
+            if (!node_is_constant(node->children[i])) {
+                error_message(AST, node->line_number, node->file_number,
+                              "%s node expects a constant at positional arguments [%ld]\n", ast_node_name_based_on_ids(node), i);
+            }
+        }
+    }
+}
+
+/**
+ * this function resolves escaped verilog characters at runtime
+ * a simple printf would not be able to do this since escaped characters are compile time
+ */
+void c_simple_print(std::string str) {
+    size_t start = 0;
+    while (start != std::string::npos) {
+        size_t format_char_index = str.find_first_of('\\', start);
+        size_t next_char = format_char_index;
+        printf("%s", str.substr(start, format_char_index).c_str());
+        // print the string
+        if (format_char_index != std::string::npos) {
+            // try and see if its an octal number
+            char buffer[4] = {
+                str[format_char_index + 1],
+                str[format_char_index + 2],
+                str[format_char_index + 3],
+                0};
+            next_char = format_char_index + 4;
+            char* endptr = NULL;
+            char octal_value = (char)strtoul(buffer, &endptr, 8);
+            if (endptr == &buffer[3]) {
+                // if it is an octal number print the octal char
+                printf("%c", octal_value);
+            } else {
+                next_char = format_char_index + 2;
+                switch (str[format_char_index + 1]) {
+                    case 'n':
+                        printf("\n");
+                        break;
+                    case 't':
+                        printf("\t");
+                        break;
+                    default:
+                        // otherwise just print the character
+                        printf("%c", str[format_char_index + 1]);
+                        break;
+                }
+            }
+        }
+        start = next_char;
+    }
+}
+
+void c_display(ast_node_t* node) {
+    assert_constant_positionnal_args(node, 1);
+    /**
+     * we should probably make sure the first str is a string, 
+     * but we will just assume, the programmer should know to use a string
+     * and internally both are just numbers
+     */
+    std::string format_str = node->children[0]->types.vnumber->to_printable();
+    ast_node_t* argv_nodes = node->children[1];
+    long argc_node = 0;
+    while (!format_str.empty()) {
+        size_t format_char_index = format_str.find_first_of("%");
+        c_simple_print(format_str.substr(0, format_char_index));
+        if (format_char_index == std::string::npos) {
+            format_str = "";
+        } else {
+            /* truncate the string */
+            std::string format_input = format_str.substr(format_char_index, 2);
+            format_str = format_str.substr(format_char_index + 2);
+            /* check if its an escaped % sign */
+            if (format_input == "%%") {
+                printf("%%");
+            } else if (!argv_nodes || argc_node >= argv_nodes->num_children || argv_nodes->children[argc_node] == NULL) {
+                error_message(AST, node->children[0]->line_number, node->children[0]->file_number,
+                              "specifier character [%ld] has no argument associated with it", argc_node);
+            } else {
+                ast_node_t* argv = argv_nodes->children[argc_node];
+                switch (tolower(format_input[1])) {
+                    /* number format */
+                    case 'd': // fallthrough
+                    case 'o': // fallthrough
+                    case 'h': // fallthrough
+                    case 's': // fallthrough
+                    case 'c': // fallthrough
+                    case 'b': {
+                        if (!node_is_constant(argv)) {
+                            error_message(AST, argv->line_number, argv->file_number,
+                                          "specifier character [%ld] is not associated with a constant, node is %s",
+                                          argc_node, ast_node_name_based_on_ids(argv));
+                        }
+                        printf("%s", argv->types.vnumber->to_vstring(format_input[1]).c_str());
+                        break;
+                    }
+                    case 'v': {
+                        warning_message(AST, argv->line_number, argv->file_number,
+                                        "%s", "Odin does not use signal strength since it is unsynthesizable, printing max strenght");
+                        printf("7");
+
+                        break;
+                    }
+                    case 'm': {
+                        /**
+                         * we can only print short for, name for now
+                         * TODO: finish hierarchy and make available here 
+                         **/
+                        if (argv->types.identifier) {
+                            printf("%s", argv->types.identifier);
+                        }
+                        break;
+                    }
+                    case 't': {
+                        if (!node_is_constant(argv)) {
+                            error_message(AST, argv->line_number, argv->file_number,
+                                          "specifier character [%ld] is not associated with a constant, node is %s",
+                                          argc_node, ast_node_name_based_on_ids(argv));
+                        }
+                        // TODO: for now we just print as is
+                        printf("%ld", argv->types.vnumber->get_value());
+                        break;
+                    }
+                    default:
+                        error_message(AST, argv->line_number, argv->file_number,
+                                      "%s\n", "invalid specifier characer, one of: d, b, h, o, c, v[broken], m, s ,t[broken]");
+                        break;
+                }
+                argc_node += 1;
+            }
+        }
+    }
+}
+
+void c_finish(ast_node_t* node) {
+    assert_constant_positionnal_args(node, 1);
+    // this is not a clean exit, but works for now
+    exit((int)node->children[0]->types.vnumber->get_value());
 }
 
 /*---------------------------------------------------------------------------
@@ -1340,7 +1516,7 @@ long resolve_concat_sizes(ast_node_t* node_top, sc_hierarchy* local_ref) {
                 concatenation_size += max_size;
             } break;
 
-            case IF_Q: {
+            case TERNARY_OPERATION: {
                 /* check true/false expressions */
                 long true_length = resolve_concat_sizes(node_top->children[1], local_ref);
                 long false_length = resolve_concat_sizes(node_top->children[2], local_ref);

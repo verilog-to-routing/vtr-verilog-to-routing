@@ -57,6 +57,14 @@ class FullSetupTimingAnalyzer : public SetupTimingAnalyzer {
             graph_walker_.set_profiling_data("num_full_updates", graph_walker_.get_profiling_data("num_full_updates") + 1);
         }
 
+        virtual void invalidate_edge_impl(const EdgeId edge) override {
+            graph_walker_.invalidate_edge(edge);
+        }
+
+        virtual node_range modified_nodes_impl() const override {
+            return graph_walker_.modified_nodes();
+        }
+
         //TimingAnalyzer
         double get_profiling_data_impl(std::string key) const override { return graph_walker_.get_profiling_data(key); }
         size_t num_unconstrained_startpoints_impl() const override { return graph_walker_.num_unconstrained_startpoints(); }
@@ -65,7 +73,9 @@ class FullSetupTimingAnalyzer : public SetupTimingAnalyzer {
         //SetupTimingAnalyzer
         TimingTags::tag_range setup_tags_impl(NodeId node_id) const override { return setup_visitor_.setup_tags(node_id); }
         TimingTags::tag_range setup_tags_impl(NodeId node_id, TagType type) const override { return setup_visitor_.setup_tags(node_id, type); }
+#ifdef TATUM_CALCULATE_EDGE_SLACKS
         TimingTags::tag_range setup_edge_slacks_impl(EdgeId edge_id) const override { return setup_visitor_.setup_edge_slacks(edge_id); }
+#endif
         TimingTags::tag_range setup_node_slacks_impl(NodeId node_id) const override { return setup_visitor_.setup_node_slacks(node_id); }
 
 

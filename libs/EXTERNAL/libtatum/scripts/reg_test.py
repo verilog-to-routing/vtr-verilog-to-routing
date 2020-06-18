@@ -53,6 +53,11 @@ def parse_args():
                         type=int,
                         default=3)
 
+    parser.add_argument("--tatum_nserial_incr",
+                        help="How serial incremental runs tatum should perform per test. (Default: %(default)s)",
+                        type=int,
+                        default=3)
+
     parser.add_argument("--tatum_nparallel",
                         help="How parallel runs tatum should perform per test. (Default: %(default)s)",
                         type=int,
@@ -112,6 +117,7 @@ def run_single_test(args, work_dir, test_file):
     cmd += ['--verify', "1"]
 
     cmd += ['--num_serial', str(args.tatum_nserial)]
+    cmd += ['--num_serial_incr', str(args.tatum_nserial_incr)]
     cmd += ['--num_parallel', str(args.tatum_nparallel)]
 
     if args.tatum_nworkers:

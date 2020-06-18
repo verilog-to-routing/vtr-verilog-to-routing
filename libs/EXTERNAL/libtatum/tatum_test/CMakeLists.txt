@@ -53,7 +53,7 @@ target_link_libraries(tatum_test libtatum libtatumparse)
 if(TATUM_TEST_ENABLE_VTUNE_PROFILE)
     target_include_directories(tatum_test PRIVATE /opt/intel/vtune_amplifier_xe/include)
     target_link_libraries(tatum_test /opt/intel/vtune_amplifier_xe/lib64/libittnotify.a ${CMAKE_DL_LIBS})
-    target_compile_definitions(tatum_test PRIVATE TATUM_TEST_PROFILE_VTUNE=1)
+    target_compile_definitions(tatum_test PRIVATE TATUM_TEST_PROFILE_VTUNE)
     target_compile_options(tatum_test PUBLIC -g)
 endif()
 
@@ -62,6 +62,6 @@ if(TATUM_TEST_ENABLE_CALLGRIND_PROFILE)
     #To selectively profile using callgrind:
     #  valgrind --tool=callgrind --collect-atstart=no --instr-atstart=no --cache-sim=yes --cacheuse=yes ./command
 
-    target_compile_definitions(tatum_test PRIVATE TATUM_TEST_PROFILE_CALLGRIND=1)
+    target_compile_definitions(tatum_test PRIVATE TATUM_TEST_PROFILE_CALLGRIND)
     target_compile_options(tatum_test PUBLIC -g)
 endif()

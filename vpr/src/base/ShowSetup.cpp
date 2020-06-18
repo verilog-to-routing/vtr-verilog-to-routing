@@ -228,6 +228,21 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             VTR_LOG("%d\n", RouterOpts.fixed_channel_width);
         }
 
+        VTR_LOG("RouterOpts.check_route: ");
+        switch (RouterOpts.check_route) {
+            case e_check_route_option::OFF:
+                VTR_LOG("OFF\n");
+                break;
+            case e_check_route_option::QUICK:
+                VTR_LOG("QUICK\n");
+                break;
+            case e_check_route_option::FULL:
+                VTR_LOG("FULL\n");
+                break;
+            default:
+                VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown check_route value\n");
+        }
+
         VTR_LOG("RouterOpts.trim_empty_chan: %s\n", (RouterOpts.trim_empty_channels ? "true" : "false"));
         VTR_LOG("RouterOpts.trim_obs_chan: %s\n", (RouterOpts.trim_obs_channels ? "true" : "false"));
         VTR_LOG("RouterOpts.acc_fac: %f\n", RouterOpts.acc_fac);
@@ -238,11 +253,84 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
         VTR_LOG("RouterOpts.pres_fac_mult: %f\n", RouterOpts.pres_fac_mult);
         VTR_LOG("RouterOpts.max_router_iterations: %d\n", RouterOpts.max_router_iterations);
         VTR_LOG("RouterOpts.min_incremental_reroute_fanout: %d\n", RouterOpts.min_incremental_reroute_fanout);
+        VTR_LOG("RouterOpts.do_check_rr_graph: %s\n", RouterOpts.do_check_rr_graph ? "true" : "false");
+        VTR_LOG("RouterOpts.verify_binary_search: %s\n", RouterOpts.verify_binary_search ? "true" : "false");
+        VTR_LOG("RouterOpts.min_channel_width_hint: %d\n", RouterOpts.min_channel_width_hint);
+        VTR_LOG("RouterOpts.read_rr_edge_metadata: %s\n", RouterOpts.read_rr_edge_metadata ? "true" : "false");
+        VTR_LOG("RouterOpts.exit_after_first_routing_iteration: %s\n", RouterOpts.exit_after_first_routing_iteration ? "true" : "false");
 
         if (TIMING_DRIVEN == RouterOpts.router_algorithm) {
             VTR_LOG("RouterOpts.astar_fac: %f\n", RouterOpts.astar_fac);
             VTR_LOG("RouterOpts.criticality_exp: %f\n", RouterOpts.criticality_exp);
             VTR_LOG("RouterOpts.max_criticality: %f\n", RouterOpts.max_criticality);
+            VTR_LOG("RouterOpts.init_wirelength_abort_threshold: %f\n", RouterOpts.init_wirelength_abort_threshold);
+            VTR_LOG("RouterOpts.save_routing_per_iteration: %s\n", RouterOpts.save_routing_per_iteration ? "true" : "false");
+            VTR_LOG("RouterOpts.congested_routing_iteration_threshold_frac: %f\n", RouterOpts.congested_routing_iteration_threshold_frac);
+            VTR_LOG("RouterOpts.high_fanout_threshold: %d\n", RouterOpts.high_fanout_threshold);
+            VTR_LOG("RouterOpts.router_debug_net: %d\n", RouterOpts.router_debug_net);
+            VTR_LOG("RouterOpts.router_debug_sink_rr: %d\n", RouterOpts.router_debug_sink_rr);
+            VTR_LOG("RouterOpts.router_debug_iteration: %d\n", RouterOpts.router_debug_iteration);
+            VTR_LOG("RouterOpts.max_convergence_count: %d\n", RouterOpts.max_convergence_count);
+            VTR_LOG("RouterOpts.reconvergence_cpd_threshold: %f\n", RouterOpts.reconvergence_cpd_threshold);
+            VTR_LOG("RouterOpts.update_lower_bound_delays: %s\n", RouterOpts.update_lower_bound_delays ? "true" : "false");
+            VTR_LOG("RouterOpts.first_iteration_timing_report_file: %s\n", RouterOpts.first_iteration_timing_report_file.c_str());
+
+            std::string incr_delay_ripup_opts[3] = {"ON", "OFF", "AUTO"};
+            VTR_LOG("RouterOpts.incr_reroute_delay_ripup: %s\n", incr_delay_ripup_opts[(size_t)RouterOpts.incr_reroute_delay_ripup].c_str());
+
+            VTR_LOG("RouterOpts.route_bb_update: ");
+            switch (RouterOpts.route_bb_update) {
+                case e_route_bb_update::STATIC:
+                    VTR_LOG("STATIC\n");
+                    break;
+                case e_route_bb_update::DYNAMIC:
+                    VTR_LOG("DYNAMIC\n");
+                    break;
+                default:
+                    VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown route_bb_update\n");
+            }
+
+            VTR_LOG("RouterOpts.lookahead_type: ");
+            switch (RouterOpts.lookahead_type) {
+                case e_router_lookahead::CLASSIC:
+                    VTR_LOG("CLASSIC\n");
+                    break;
+                case e_router_lookahead::MAP:
+                    VTR_LOG("MAP\n");
+                    break;
+                case e_router_lookahead::NO_OP:
+                    VTR_LOG("NO_OP\n");
+                    break;
+                default:
+                    VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown lookahead_type\n");
+            }
+
+            VTR_LOG("RouterOpts.initial_timing: ");
+            switch (RouterOpts.initial_timing) {
+                case e_router_initial_timing::ALL_CRITICAL:
+                    VTR_LOG("ALL_CRITICAL\n");
+                    break;
+                case e_router_initial_timing::LOOKAHEAD:
+                    VTR_LOG("LOOKAHEAD\n");
+                    break;
+                default:
+                    VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown initial_timing\n");
+            }
+
+            VTR_LOG("RouterOpts.router_heap: ");
+            switch (RouterOpts.router_heap) {
+                case e_heap_type::INVALID_HEAP:
+                    VTR_LOG("INVALID_HEAP\n");
+                    break;
+                case e_heap_type::BINARY_HEAP:
+                    VTR_LOG("BINARY_HEAP\n");
+                    break;
+                case e_heap_type::BUCKET_HEAP_APPROXIMATION:
+                    VTR_LOG("BUCKET_HEAP_APPROXIMATION\n");
+                    break;
+                default:
+                    VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown router_heap\n");
+            }
         }
         if (RouterOpts.routing_failure_predictor == SAFE)
             VTR_LOG("RouterOpts.routing_failure_predictor = SAFE\n");
@@ -303,10 +391,81 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
         VTR_LOG("RouterOpts.pres_fac_mult: %f\n", RouterOpts.pres_fac_mult);
         VTR_LOG("RouterOpts.max_router_iterations: %d\n", RouterOpts.max_router_iterations);
         VTR_LOG("RouterOpts.min_incremental_reroute_fanout: %d\n", RouterOpts.min_incremental_reroute_fanout);
+        VTR_LOG("RouterOpts.do_check_rr_graph: %s\n", RouterOpts.do_check_rr_graph ? "true" : "false");
+        VTR_LOG("RouterOpts.verify_binary_search: %s\n", RouterOpts.verify_binary_search ? "true" : "false");
+        VTR_LOG("RouterOpts.min_channel_width_hint: %d\n", RouterOpts.min_channel_width_hint);
+        VTR_LOG("RouterOpts.read_rr_edge_metadata: %s\n", RouterOpts.read_rr_edge_metadata ? "true" : "false");
+        VTR_LOG("RouterOpts.exit_after_first_routing_iteration: %s\n", RouterOpts.exit_after_first_routing_iteration ? "true" : "false");
         if (TIMING_DRIVEN == RouterOpts.router_algorithm) {
             VTR_LOG("RouterOpts.astar_fac: %f\n", RouterOpts.astar_fac);
             VTR_LOG("RouterOpts.criticality_exp: %f\n", RouterOpts.criticality_exp);
             VTR_LOG("RouterOpts.max_criticality: %f\n", RouterOpts.max_criticality);
+            VTR_LOG("RouterOpts.init_wirelength_abort_threshold: %f\n", RouterOpts.init_wirelength_abort_threshold);
+            VTR_LOG("RouterOpts.incr_reroute_delay_ripup: %f\n", RouterOpts.incr_reroute_delay_ripup);
+            VTR_LOG("RouterOpts.save_routing_per_iteration: %s\n", RouterOpts.save_routing_per_iteration ? "true" : "false");
+            VTR_LOG("RouterOpts.congested_routing_iteration_threshold_frac: %f\n", RouterOpts.congested_routing_iteration_threshold_frac);
+            VTR_LOG("RouterOpts.high_fanout_threshold: %d\n", RouterOpts.high_fanout_threshold);
+            VTR_LOG("RouterOpts.router_debug_net: %d\n", RouterOpts.router_debug_net);
+            VTR_LOG("RouterOpts.router_debug_sink_rr: %d\n", RouterOpts.router_debug_sink_rr);
+            VTR_LOG("RouterOpts.router_debug_iteration: %d\n", RouterOpts.router_debug_iteration);
+            VTR_LOG("RouterOpts.max_convergence_count: %d\n", RouterOpts.max_convergence_count);
+            VTR_LOG("RouterOpts.reconvergence_cpd_threshold: %f\n", RouterOpts.reconvergence_cpd_threshold);
+            VTR_LOG("RouterOpts.update_lower_bound_delays: %s\n", RouterOpts.update_lower_bound_delays ? "true" : "false");
+            VTR_LOG("RouterOpts.first_iteration_timing_report_file: %s\n", RouterOpts.first_iteration_timing_report_file.c_str());
+
+            VTR_LOG("RouterOpts.route_bb_update: ");
+            switch (RouterOpts.route_bb_update) {
+                case e_route_bb_update::STATIC:
+                    VTR_LOG("STATIC\n");
+                    break;
+                case e_route_bb_update::DYNAMIC:
+                    VTR_LOG("DYNAMIC\n");
+                    break;
+                default:
+                    VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown route_bb_update\n");
+            }
+
+            VTR_LOG("RouterOpts.lookahead_type: ");
+            switch (RouterOpts.lookahead_type) {
+                case e_router_lookahead::CLASSIC:
+                    VTR_LOG("CLASSIC\n");
+                    break;
+                case e_router_lookahead::MAP:
+                    VTR_LOG("MAP\n");
+                    break;
+                case e_router_lookahead::NO_OP:
+                    VTR_LOG("NO_OP\n");
+                    break;
+                default:
+                    VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown lookahead_type\n");
+            }
+
+            VTR_LOG("RouterOpts.initial_timing: ");
+            switch (RouterOpts.initial_timing) {
+                case e_router_initial_timing::ALL_CRITICAL:
+                    VTR_LOG("ALL_CRITICAL\n");
+                    break;
+                case e_router_initial_timing::LOOKAHEAD:
+                    VTR_LOG("LOOKAHEAD\n");
+                    break;
+                default:
+                    VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown initial_timing\n");
+            }
+
+            VTR_LOG("RouterOpts.router_heap: ");
+            switch (RouterOpts.router_heap) {
+                case e_heap_type::INVALID_HEAP:
+                    VTR_LOG("INVALID_HEAP\n");
+                    break;
+                case e_heap_type::BINARY_HEAP:
+                    VTR_LOG("BINARY_HEAP\n");
+                    break;
+                case e_heap_type::BUCKET_HEAP_APPROXIMATION:
+                    VTR_LOG("BUCKET_HEAP_APPROXIMATION\n");
+                    break;
+                default:
+                    VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown router_heap\n");
+            }
         }
     }
     VTR_LOG("\n");
@@ -367,6 +526,51 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
             VTR_LOG("PlacerOpts.timing_tradeoff: %f\n", PlacerOpts.timing_tradeoff);
             VTR_LOG("PlacerOpts.td_place_exp_first: %f\n", PlacerOpts.td_place_exp_first);
             VTR_LOG("PlacerOpts.td_place_exp_last: %f\n", PlacerOpts.td_place_exp_last);
+            VTR_LOG("PlacerOpts.delay_offset: %f\n", PlacerOpts.delay_offset);
+            VTR_LOG("PlacerOpts.delay_ramp_delta_threshold: %d\n", PlacerOpts.delay_ramp_delta_threshold);
+            VTR_LOG("PlacerOpts.delay_ramp_slope: %d\n", PlacerOpts.delay_ramp_slope);
+            VTR_LOG("PlacerOpts.tsu_rel_margin: %f\n", PlacerOpts.tsu_rel_margin);
+            VTR_LOG("PlacerOpts.tsu_abs_margin: %f\n", PlacerOpts.tsu_abs_margin);
+            VTR_LOG("PlacerOpts.post_place_timing_report_file: %s\n", PlacerOpts.post_place_timing_report_file.c_str());
+            VTR_LOG("PlacerOpts.allowed_tiles_for_delay_model: %s\n", PlacerOpts.allowed_tiles_for_delay_model.c_str());
+
+            std::string e_reducer_strings[5] = {"MIN", "MAX", "MEDIAN", "ARITHMEAN", "GEOMEAN"};
+            if ((size_t)PlacerOpts.delay_model_reducer > 4)
+                VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown delay_model_reducer\n");
+            VTR_LOG("PlacerOpts.delay_model_reducer: %s\n", e_reducer_strings[(size_t)PlacerOpts.delay_model_reducer].c_str());
+
+            std::string place_delay_model_strings[2] = {"DELTA", "DELTA_OVERRIDE"};
+            if ((size_t)PlacerOpts.delay_model_type > 1)
+                VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown delay_model_type\n");
+            VTR_LOG("PlacerOpts.delay_model_type: %s\n", place_delay_model_strings[(size_t)PlacerOpts.delay_model_type].c_str());
+        }
+
+        VTR_LOG("PlacerOpts.rlim_escape_fraction: %f\n", PlacerOpts.rlim_escape_fraction);
+        VTR_LOG("PlacerOpts.move_stats_file: %s\n", PlacerOpts.move_stats_file.c_str());
+        VTR_LOG("PlacerOpts.placement_saves_per_temperature: %d\n", PlacerOpts.placement_saves_per_temperature);
+
+        VTR_LOG("PlacerOpts.effort_scaling: ");
+        switch (PlacerOpts.effort_scaling) {
+            case CIRCUIT:
+                VTR_LOG("CIRCUIT\n");
+                break;
+            case DEVICE_CIRCUIT:
+                VTR_LOG("DEVICE_CIRCUIT\n");
+                break;
+            default:
+                VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown effort_scaling\n");
+        }
+
+        VTR_LOG("PlacerOpts.place_delta_delay_matrix_calculation_method: ");
+        switch (PlacerOpts.place_delta_delay_matrix_calculation_method) {
+            case e_place_delta_delay_algorithm::ASTAR_ROUTE:
+                VTR_LOG("ASTAR_ROUTE\n");
+                break;
+            case e_place_delta_delay_algorithm::DIJKSTRA_EXPANSION:
+                VTR_LOG("DIJKSTRA_EXPANSION\n");
+                break;
+            default:
+                VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown delta_delay_matrix_calculation_method\n");
         }
 
         VTR_LOG("PlaceOpts.seed: %d\n", PlacerOpts.seed);
@@ -382,11 +586,39 @@ static void ShowNetlistOpts(const t_netlist_opts& NetlistOpts) {
     VTR_LOG("NetlistOpts.sweep_dangling_nets           : %s\n", (NetlistOpts.sweep_dangling_nets) ? "true" : "false");
     VTR_LOG("NetlistOpts.sweep_dangling_blocks         : %s\n", (NetlistOpts.sweep_dangling_blocks) ? "true" : "false");
     VTR_LOG("NetlistOpts.sweep_constant_primary_outputs: %s\n", (NetlistOpts.sweep_constant_primary_outputs) ? "true" : "false");
+    VTR_LOG("NetlistOpts.netlist_verbosity             : %d\n", NetlistOpts.netlist_verbosity);
+
+    std::string const_gen_inference_strings[3] = {"NONE", "COMB", "COMB_SEQ"};
+    if ((size_t)NetlistOpts.const_gen_inference > 3)
+        VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown delay_model_reducer\n");
+    VTR_LOG("NetlistOpts.const_gen_inference           : %s\n", const_gen_inference_strings[(size_t)NetlistOpts.const_gen_inference].c_str());
+
     VTR_LOG("\n");
 }
 
 static void ShowAnalysisOpts(const t_analysis_opts& AnalysisOpts) {
     VTR_LOG("AnalysisOpts.gen_post_synthesis_netlist: %s\n", (AnalysisOpts.gen_post_synthesis_netlist) ? "true" : "false");
+    VTR_LOG("AnalysisOpts.timing_report_npaths: %d\n", AnalysisOpts.timing_report_npaths);
+    VTR_LOG("AnalysisOpts.timing_report_skew: %s\n", AnalysisOpts.timing_report_skew ? "true" : "false");
+    VTR_LOG("AnalysisOpts.echo_dot_timing_graph_node: %s\n", AnalysisOpts.echo_dot_timing_graph_node.c_str());
+
+    VTR_LOG("AnalysisOpts.timing_report_detail: ");
+    switch (AnalysisOpts.timing_report_detail) {
+        case e_timing_report_detail::NETLIST:
+            VTR_LOG("NETLIST\n");
+            break;
+        case e_timing_report_detail::AGGREGATED:
+            VTR_LOG("AGGREGATED\n");
+            break;
+        case e_timing_report_detail::DETAILED_ROUTING:
+            VTR_LOG("DETAILED_ROUTING\n");
+            break;
+        case e_timing_report_detail::DEBUG:
+            VTR_LOG("DEBUG\n");
+            break;
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown timing_report_detail\n");
+    }
     VTR_LOG("\n");
 }
 

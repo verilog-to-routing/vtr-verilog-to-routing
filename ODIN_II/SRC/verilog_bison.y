@@ -30,6 +30,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "odin_globals.h"
 #include "odin_error.h"
 #include "ast_util.h"
+#include "odin_util.h"
 #include "parse_making_ast.h"
 #include "vtr_memory.h"
 #include "scope_util.h"
@@ -47,18 +48,25 @@ int yylex(void);
 %union{
 	char *id_name;
 	char *num_value;
+	char *str_value;
 	ast_node_t *node;
 	ids id;
 }
 %token <id_name> vSYMBOL_ID
 %token <num_value> vNUMBER vINT_NUMBER
+%token <str_value> vSTRING
 %token vALWAYS vAUTOMATIC vINITIAL vSPECIFY vAND vASSIGN vBEGIN vCASE vDEFAULT vELSE vEND vENDCASE
 %token vENDMODULE vENDSPECIFY vENDGENERATE vENDFUNCTION vENDTASK vIF vINOUT vINPUT vMODULE vGENERATE vFUNCTION vTASK
 %token vOUTPUT vPARAMETER vLOCALPARAM vPOSEDGE vXNOR vXOR vDEFPARAM voANDAND vNAND vNEGEDGE vNOR vNOT vOR vFOR vBUF
 %token voOROR voLTE voGTE voPAL voSLEFT voSRIGHT voASRIGHT voEQUAL voNOTEQUAL voCASEEQUAL
-%token voCASENOTEQUAL voXNOR voNAND voNOR vWHILE vINTEGER vCLOG2 vGENVAR
-%token vPLUS_COLON vMINUS_COLON vSPECPARAM voUNSIGNED voSIGNED vSIGNED vCFUNC
+%token voCASENOTEQUAL voXNOR voNAND voNOR vWHILE vINTEGER vGENVAR
+%token vPLUS_COLON vMINUS_COLON vSPECPARAM voUNSIGNED voSIGNED vSIGNED 
+
+/* catch special characters */
 %token '?' ':' '|' '^' '&' '<' '>' '+' '-' '*' '/' '%' '(' ')' '{' '}' '[' ']' '~' '!' ';' '#' ',' '.' '@' '='
+
+/* C functions */
+%token voFINISH voDISPLAY vCFUNC vCLOG2
 
 	/* preprocessor directives */
 %token preDEFAULT_NETTYPE
@@ -95,6 +103,7 @@ int yylex(void);
 %nonassoc vELSE
 
 %type <id>	 wire_types reg_types net_types net_direction
+%type <str_value> stringify
 %type <node> source_text item items module list_of_module_items list_of_task_items list_of_function_items module_item function_item task_item module_parameters module_ports
 %type <node> list_of_parameter_declaration parameter_declaration task_parameter_declaration specparam_declaration list_of_port_declaration port_declaration
 %type <node> defparam_declaration defparam_variable_list defparam_variable function_declaration function_port_list list_of_function_inputs function_input_declaration 
@@ -726,9 +735,15 @@ event_expression:
 	| vNEGEDGE primary		{$$ = newNegedge($2, my_yylineno);}
 	;
 
+stringify:
+	stringify vSTRING								{$$ = str_collate($1, $2);}
+	| vSTRING										{$$ = $1;}
+	;
+
 expression:
 	vINT_NUMBER										{$$ = newNumberNode($1, my_yylineno);}
 	| vNUMBER										{$$ = newNumberNode($1, my_yylineno);}
+	| stringify										{$$ = newStringNode($1, my_yylineno);}
 	| primary										{$$ = $1;}
 	| '+' expression %prec UADD						{$$ = newUnaryOperation(ADD, $2, my_yylineno);}
 	| '-' expression %prec UMINUS					{$$ = newUnaryOperation(MINUS, $2, my_yylineno);}
@@ -772,7 +787,6 @@ expression:
 	| function_instantiation						{$$ = $1;}
 	| '(' expression ')'							{$$ = $2;}
 	| '{' expression '{' expression_list '}' '}'	{$$ = newListReplicate( $2, $4, my_yylineno); }
-	| c_function									{$$ = $1;}
 	;
 
 primary:
@@ -785,20 +799,24 @@ primary:
 	| vSYMBOL_ID '[' expression ':' expression ']' '[' expression ':' expression ']'	{$$ = newRangeRef2D($1, $3, $5, $8, $10, my_yylineno);}
 	| '{' expression_list '}'								{$$ = $2; ($2)->types.concat.num_bit_strings = -1;}
 	;
+
 expression_list:
-	expression_list ',' expression	{$$ = newList_entry($1, $3); /* note this will be in order lsb = greatest to msb = 0 in the node child list */}
+	expression_list ',' expression	{$$ = newList_entry($1, $3); /* order is left to right as is given */ }
 	| expression					{$$ = newList(CONCATENATE, $1, my_yylineno);}
 	;
 
 c_function:
-	vCFUNC '(' c_function_expression_list ')'	{$$ = NULL;}
-	| vCFUNC '(' ')'							{$$ = NULL;}
-	| vCFUNC									{$$ = NULL;}
+	voFINISH '(' expression ')'									{$$ = newCFunction(FINISH, $3, NULL, my_yylineno);}
+	| voDISPLAY '(' expression ')'									{$$ = newCFunction(DISPLAY, $3, NULL, my_yylineno);}
+	| voDISPLAY '(' expression ',' c_function_expression_list ')'	{$$ = newCFunction(DISPLAY, $3, $5, my_yylineno); /* this fails for now */}
+	| vCFUNC '(' c_function_expression_list ')'					{$$ = free_whole_tree($3);}
+	| vCFUNC '(' ')'											{$$ = NULL;}
+	| vCFUNC													{$$ = NULL;}
 	;
 
 c_function_expression_list:
-	expression ',' c_function_expression_list	{$$ = free_whole_tree($1);}
-	| expression								{$$ = free_whole_tree($1);}
+	c_function_expression_list ',' expression	{$$ = newList_entry($1, $3);}
+	| expression								{$$ = newList(C_ARG_LIST, $1, my_yylineno);}
 	;
 
 wire_types: 

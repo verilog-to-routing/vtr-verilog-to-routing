@@ -21,10 +21,18 @@ For documentation and tutorials on the FPGA architecture description langauge se
 
 For more specific documentation about VPR see :ref:`vpr`.
 
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Quick Start
+
+   quickstart/index
+
 .. toctree::
    :maxdepth: 2
    :caption: Usage
 
+   building/index
    vtr/index
    arch/index
    vpr/index

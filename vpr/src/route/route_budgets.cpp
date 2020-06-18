@@ -531,7 +531,10 @@ std::shared_ptr<SetupHoldTimingInfo> route_budgets::perform_sta(ClbNetPinsMatrix
     /*Perform static timing analysis to get the delay and path weights for slack allocation*/
     std::shared_ptr<RoutingDelayCalculator> routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, temp_budgets);
 
-    std::shared_ptr<SetupHoldTimingInfo> timing_info = make_setup_hold_timing_info(routing_delay_calc);
+    //TODO: now that we support incremental timing updates, we should avoid re-building the timing analyzer from scratch and try
+    //      to calculate this incrementally
+    std::shared_ptr<SetupHoldTimingInfo> timing_info = make_setup_hold_timing_info(routing_delay_calc, e_timing_update_type::AUTO);
+
     /*Unconstrained nodes should be warned in the main routing function, do not report it here*/
     timing_info->set_warn_unconstrained(false);
     timing_info->update();

@@ -38,6 +38,7 @@
 #include "hard_blocks.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
+#include "vtr_path.h"
 
 #include "scope_util.h"
 
@@ -191,6 +192,15 @@ void next_parsed_verilog_file(ast_node_t* file_items_list) {
  *-------------------------------------------------------------------------------------------*/
 ast_node_t* newSymbolNode(char* id, int line_number) {
     return create_tree_node_id(id, line_number, current_parse_file);
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: newNumberNode)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t* newStringNode(char* num, int line_number) {
+    ast_node_t* current_node = create_tree_node_string(num, line_number, current_parse_file);
+    vtr::free(num);
+    return current_node;
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -1047,7 +1057,7 @@ ast_node_t* newIf(ast_node_t* compare_expression, ast_node_t* true_expression, a
  *-------------------------------------------------------------------------------------------*/
 ast_node_t* newIfQuestion(ast_node_t* compare_expression, ast_node_t* true_expression, ast_node_t* false_expression, int line_number) {
     /* create a node for this array reference */
-    ast_node_t* new_node = create_node_w_type(IF_Q, line_number, current_parse_file);
+    ast_node_t* new_node = create_node_w_type(TERNARY_OPERATION, line_number, current_parse_file);
     /* allocate child nodes to this node */
     allocate_children_to_node(new_node, {compare_expression, true_expression, false_expression});
 
@@ -1082,6 +1092,36 @@ ast_node_t* newStatement(ast_node_t* statement, int line_number) {
     ast_node_t* new_node = create_node_w_type(STATEMENT, line_number, current_parse_file);
     /* allocate child nodes to this node */
     allocate_children_to_node(new_node, {statement});
+
+    return new_node;
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: newCFunction)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t* newCFunction(ids node_type, ast_node_t* arg1, ast_node_t* va_args_child, int line_number) {
+    ast_node_t* new_node = create_node_w_type(node_type, line_number, current_parse_file);
+    allocate_children_to_node(new_node, {arg1, va_args_child});
+
+    return new_node;
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: newCFunction)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t* newCFunction(ids node_type, ast_node_t* arg1, ast_node_t* arg2, ast_node_t* va_args_child, int line_number) {
+    ast_node_t* new_node = create_node_w_type(node_type, line_number, current_parse_file);
+    allocate_children_to_node(new_node, {arg1, arg2, va_args_child});
+
+    return new_node;
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: newCFunction)
+ *-------------------------------------------------------------------------------------------*/
+ast_node_t* newCFunction(ids node_type, ast_node_t* arg1, ast_node_t* arg2, ast_node_t* arg3, ast_node_t* va_args_child, int line_number) {
+    ast_node_t* new_node = create_node_w_type(node_type, line_number, current_parse_file);
+    allocate_children_to_node(new_node, {arg1, arg2, arg3, va_args_child});
 
     return new_node;
 }
@@ -1867,8 +1907,8 @@ void graphVizOutputAst_traverse_node(FILE* fp, ast_node_t* node, ast_node_t* fro
         }
         case NUMBERS:
             fprintf(fp, ": %s (%s)",
-                    node->types.vnumber->to_bit_string().c_str(),
-                    node->types.vnumber->to_printable().c_str());
+                    node->types.vnumber->to_vstring('h').c_str(),
+                    node->types.vnumber->to_vstring('s').c_str());
             break;
 
         case UNARY_OPERATION: //fallthrough

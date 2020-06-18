@@ -15,6 +15,8 @@
 import sys
 import os
 import shlex
+import shutil
+import subprocess
 
 # Markdown support
 import recommonmark
@@ -47,7 +49,7 @@ from vtr_version import get_vtr_version, get_vtr_release
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-#needs_sphinx = '1.0'
+needs_sphinx = '3.0'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -55,17 +57,20 @@ from vtr_version import get_vtr_version, get_vtr_release
 extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',
+    'sphinx.ext.imgmath',
+    'breathe',
     'notfound.extension',
     'sphinx_markdown_tables',
     'sdcdomain',
     'archdomain',
     'rrgraphdomain',
+    'recommonmark'
 ]
 
 if have_sphinxcontrib_bibtex:
     extensions.append('sphinxcontrib.bibtex')
 else:
-    print "Warning: Could not find sphinxcontrib.bibtex for managing citations, attempting to build anyway..."
+    print("Warning: Could not find sphinxcontrib.bibtex for managing citations, attempting to build anyway...")
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = []
@@ -86,9 +91,9 @@ source_suffix = ['.rst', '.md']
 master_doc = 'index'
 
 # General information about the project.
-project = u'Verilog-to-Routing'
-copyright = u'2016, VTR Developers'
-author = u'VTR Developers'
+project = 'Verilog-to-Routing'
+copyright = '2016, VTR Developers'
+author = 'VTR Developers'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -268,8 +273,8 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  (master_doc, 'Verilog-to-Routing.tex', u'Verilog-to-Routing Documentation',
-   u'VTR Developers', 'manual'),
+  (master_doc, 'Verilog-to-Routing.tex', 'Verilog-to-Routing Documentation',
+   'VTR Developers', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -292,19 +297,17 @@ latex_logo = '_static/vtr_logo.pdf'
 # If false, no module index is generated.
 #latex_domain_indices = True
 
-
 # -- Options for manual page output ---------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'verilog-to-routing', u'Verilog-to-Routing Documentation',
+    (master_doc, 'verilog-to-routing', 'Verilog-to-Routing Documentation',
      [author], 1)
 ]
 
 # If true, show URL addresses after external links.
 #man_show_urls = False
-
 
 # -- Options for Texinfo output -------------------------------------------
 
@@ -312,7 +315,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  (master_doc, 'Verilog-to-Routing', u'Verilog-to-Routing Documentation',
+  (master_doc, 'Verilog-to-Routing', 'Verilog-to-Routing Documentation',
    author, 'Verilog-to-Routing', 'One line description of project.',
    'Miscellaneous'),
 ]
@@ -341,6 +344,26 @@ notfound_context = {
 <p>Try using the search box or go to the homepage.</p>
 ''',
 }
+
+if shutil.which("doxygen"):
+    breathe_projects = {
+        "vpr"          : "../_build/doxygen/vpr/xml",
+        "abc"          : "../_build/doxygen/abc/xml",
+        "ace2"         : "../_build/doxygen/ace2/xml",
+        "ODIN_II"      : "../_build/doxygen/ODIN_II/xml",
+        "blifexplorer" : "../_build/doxygen/blifexplorer/xml",
+    }
+    breathe_default_project = "vpr"
+
+    if not os.environ.get('SKIP_DOXYGEN', None) == 'True':
+        for prjname, prjdir in breathe_projects.items():
+            print("Generating doxygen files for {}...".format(prjname))
+            os.makedirs(prjdir, exist_ok=True)
+            cmd = "cd ../_doxygen && doxygen {}.dox".format(prjname)
+            subprocess.call(cmd, shell=True)
+    else:
+        for prjname, prjdir in breathe_projects.items():
+            assert os.path.exists(prjdir) == True, "Regenerate doxygen XML for {}".format(prjname)
 
 def setup(app):
     github_code_repo = 'https://github.com/verilog-to-routing/vtr-verilog-to-routing/'

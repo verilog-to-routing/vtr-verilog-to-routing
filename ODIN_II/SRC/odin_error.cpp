@@ -28,7 +28,7 @@ void verify_delayed_error(odin_error error_type) {
     }
 }
 
-static std::string make_marker_from_str(std::string str, int column) {
+static std::string make_marker_from_str(std::string str, unsigned long column) {
     str.erase(column);
     for (size_t i = 0; i < str.size(); i++) {
         if (str[i] != ' ' && str[i] != '\t') {
@@ -40,36 +40,54 @@ static std::string make_marker_from_str(std::string str, int column) {
     return str;
 }
 
-static void print_culprit_line(long column, long line_number, long file) {
+static std::string get_culprit_line(long line_number, const char* file) {
     std::string culprit_line = "";
+    FILE* input_file = fopen(file, "r");
+    if (input_file) {
+        bool copy_characters = false;
+        int current_line_number = 0;
 
-    if (file >= 0 && (size_t)file < include_file_names.size()
-        && line_number >= 0) {
-        FILE* input_file = fopen(include_file_names[file].first.c_str(), "r");
-        if (input_file) {
-            bool copy_characters = false;
-            int current_line_number = 0;
-
-            for (;;) {
-                int c = fgetc(input_file);
-                if (EOF == c) {
-                    break;
-                } else if ('\n' == c) {
-                    ++current_line_number;
-                    if (line_number == current_line_number) {
-                        copy_characters = true;
-                    } else if (copy_characters) {
-                        break;
-                    }
+        for (;;) {
+            int c = fgetc(input_file);
+            if (EOF == c) {
+                break;
+            } else if ('\n' == c) {
+                ++current_line_number;
+                if (line_number == current_line_number) {
+                    copy_characters = true;
                 } else if (copy_characters) {
-                    culprit_line.push_back(c);
+                    break;
                 }
+            } else if (copy_characters) {
+                culprit_line.push_back(c);
             }
-            fclose(input_file);
         }
-        fprintf(stderr, "%s\n", culprit_line.c_str());
+        fclose(input_file);
+    }
+    return culprit_line;
+}
+
+static void print_culprit_line(long column, long line_number, const char* file) {
+    std::string culprit_line = get_culprit_line(line_number, file);
+    if (!culprit_line.empty()) {
+        int num_printed;
+        fprintf(stderr, "%ld: %n%s\n", line_number + 1, &num_printed, culprit_line.c_str());
         if (column >= 0) {
-            fprintf(stderr, "%s\n", make_marker_from_str(culprit_line, column).c_str());
+            fprintf(stderr, "%s\n", make_marker_from_str(culprit_line, num_printed + column).c_str());
+        }
+    }
+}
+
+static void print_culprit_line_with_context(long target_line, const char* file, long num_context_lines) {
+    for (long curr_line = std::max(target_line - num_context_lines, 0l); curr_line <= target_line + num_context_lines; curr_line++) {
+        std::string culprit_line = get_culprit_line(curr_line, file);
+        if (!culprit_line.empty()) {
+            int num_printed;
+            fprintf(stderr, "%ld: %n%s\n", curr_line + 1, &num_printed, culprit_line.c_str());
+            if (curr_line == target_line) {
+                const unsigned long first_char_pos = culprit_line.find_first_not_of(" \t");
+                fprintf(stderr, "%s\n", make_marker_from_str(culprit_line, num_printed + first_char_pos).c_str());
+            }
         }
     }
 }
@@ -94,7 +112,7 @@ void _log_message(odin_error error_type, long column, long line_number, long fil
             file_name = file_name.substr(slash_location + 1);
         }
 
-        fprintf(stderr, " %s::%ld", file_name.c_str(), line_number + 1);
+        fprintf(stderr, " %s:%ld", file_name.c_str(), line_number + 1);
     }
 
     if (message != NULL) {
@@ -107,8 +125,29 @@ void _log_message(odin_error error_type, long column, long line_number, long fil
             fprintf(stderr, "\n");
     }
 
-    print_culprit_line(column, line_number, file);
+    if (file >= 0 && (size_t)file < include_file_names.size()
+        && line_number >= 0) {
+        print_culprit_line(column, line_number, include_file_names[file].first.c_str());
+    }
 
     fflush(stderr);
-    _verbose_assert(!fatal_error, "", function_file_name, function_line, function_name);
+    _verbose_assert(!fatal_error, NULL, function_file_name, function_line, function_name);
+}
+
+void _verbose_assert(bool condition, const char* condition_str, const char* odin_file_name, long odin_line_number, const char* odin_function_name) {
+    fflush(stdout);
+    if (!condition) {
+        fprintf(stderr, "%s:%ld: %s: ", odin_file_name, odin_line_number, odin_function_name);
+        if (condition_str) {
+            // We are an assertion, print the condition that failed and which line it occurred on
+            fprintf(stderr, "Assertion %s failed\n", condition_str);
+            // odin_line_number-1 since __LINE__ starts from 1
+            print_culprit_line_with_context(odin_line_number - 1, odin_file_name, 2);
+        } else {
+            // We are a parsing error, dont print the culprit line
+            fprintf(stderr, "Fatal error\n");
+        }
+        fflush(stderr);
+        std::abort();
+    }
 }

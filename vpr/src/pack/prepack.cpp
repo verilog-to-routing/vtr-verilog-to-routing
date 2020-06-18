@@ -790,6 +790,14 @@ t_pack_molecule* alloc_and_load_pack_molecules(t_pack_patterns* list_of_pack_pat
      * TODO: Need to investigate better mapping strategies than first-fit
      */
     for (i = 0; i < num_packing_patterns; i++) {
+        /* Skip pack patterns for modes that are disabled for packing,
+         * Ensure no resources in unpackable modes will be mapped during pre-packing stage 
+         */
+        if ((nullptr != list_of_pack_patterns[i].root_block->pb_type->parent_mode)
+            && (true == list_of_pack_patterns[i].root_block->pb_type->parent_mode->disable_packing)) {
+            continue;
+        }
+
         best_pattern = 0;
         for (j = 1; j < num_packing_patterns; j++) {
             if (is_used[best_pattern]) {
@@ -841,7 +849,23 @@ t_pack_molecule* alloc_and_load_pack_molecules(t_pack_patterns* list_of_pack_pat
      * more difficult because now it needs to consider splitting molecules.
      */
     for (auto blk_id : atom_ctx.nlist.blocks()) {
-        expected_lowest_cost_pb_gnode[blk_id] = get_expected_lowest_cost_primitive_for_atom_block(blk_id);
+        t_pb_graph_node* best = get_expected_lowest_cost_primitive_for_atom_block(blk_id);
+        if (!best) {
+            /* Free the molecules in the linked list to avoid memory leakage */
+            cur_molecule = list_of_molecules_head;
+            while (cur_molecule) {
+                t_pack_molecule* molecule_to_free = cur_molecule;
+                cur_molecule = cur_molecule->next;
+                delete molecule_to_free;
+            }
+
+            VPR_FATAL_ERROR(VPR_ERROR_PACK, "Failed to find any location to pack primitive of type '%s' in architecture",
+                            atom_ctx.nlist.block_model(blk_id)->name);
+        }
+
+        VTR_ASSERT_SAFE(nullptr != best);
+
+        expected_lowest_cost_pb_gnode[blk_id] = best;
 
         auto rng = atom_molecules.equal_range(blk_id);
         bool rng_empty = (rng.first == rng.second);
@@ -1191,12 +1215,6 @@ static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block(const 
         }
     }
 
-    if (!best) {
-        auto& atom_ctx = g_vpr_ctx.atom();
-        VPR_FATAL_ERROR(VPR_ERROR_PACK, "Failed to find any location to pack primitive of type '%s' in architecture",
-                        atom_ctx.nlist.block_model(blk_id)->name);
-    }
-
     return best;
 }
 
@@ -1221,6 +1239,11 @@ static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block_in_pb_
         }
     } else {
         for (i = 0; i < curr_pb_graph_node->pb_type->num_modes; i++) {
+            /* Early fail if this primitive for a mode that is disabled for packing */
+            if (true == curr_pb_graph_node->pb_type->modes[i].disable_packing) {
+                continue;
+            }
+
             for (j = 0; j < curr_pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
                 *cost = UNDEFINED;
                 cur = get_expected_lowest_cost_primitive_for_atom_block_in_pb_graph_node(blk_id, &curr_pb_graph_node->child_pb_graph_nodes[i][j][0], cost);
@@ -1553,6 +1576,12 @@ static t_pb_graph_pin* get_connected_primitive_pin(const t_pb_graph_pin* cluster
  *  will be only one pin connected to the very first adder in the cluster.
  */
 static void get_all_connected_primitive_pins(const t_pb_graph_pin* cluster_input_pin, std::vector<t_pb_graph_pin*>& connected_primitive_pins) {
+    /* Skip pins for modes that are disabled for packing*/
+    if ((nullptr != cluster_input_pin->parent_node->pb_type->parent_mode)
+        && (true == cluster_input_pin->parent_node->pb_type->parent_mode->disable_packing)) {
+        return;
+    }
+
     for (int iedge = 0; iedge < cluster_input_pin->num_output_edges; iedge++) {
         const auto& output_edge = cluster_input_pin->output_edges[iedge];
         for (int ipin = 0; ipin < output_edge->num_output_pins; ipin++) {

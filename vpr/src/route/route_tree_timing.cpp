@@ -681,24 +681,27 @@ void print_route_tree(const t_rt_node* rt_node, int depth) {
 
 void update_net_delays_from_route_tree(float* net_delay,
                                        const t_rt_node* const* rt_node_of_sink,
-                                       ClusterNetId inet) {
+                                       ClusterNetId inet,
+                                       TimingInfo* timing_info,
+                                       ClusteredPinTimingInvalidator* pin_timing_invalidator) {
     /* Goes through all the sinks of this net and copies their delay values from
      * the route_tree to the net_delay array.                                    */
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& clb_nlist = cluster_ctx.clb_nlist;
+
     for (unsigned int isink = 1; isink < cluster_ctx.clb_nlist.net_pins(inet).size(); isink++) {
-        net_delay[isink] = rt_node_of_sink[isink]->Tdel;
+        float new_delay = rt_node_of_sink[isink]->Tdel;
+
+        if (pin_timing_invalidator && new_delay != net_delay[isink]) {
+            //Delay changed, invalidate for incremental timing update
+            VTR_ASSERT_SAFE(timing_info);
+            ClusterPinId pin = clb_nlist.net_pin(inet, isink);
+            pin_timing_invalidator->invalidate_connection(pin, timing_info);
+        }
+
+        net_delay[isink] = new_delay;
     }
-}
-
-void update_remaining_net_delays_from_route_tree(float* net_delay,
-                                                 const t_rt_node* const* rt_node_of_sink,
-                                                 const std::vector<int>& remaining_sinks) {
-    /* Like update_net_delays_from_route_tree, but only updates the sinks that were not already routed
-     * this function doesn't actually need to know about the net, just what sink pins need their net delays updated */
-
-    for (int sink_pin : remaining_sinks)
-        net_delay[sink_pin] = rt_node_of_sink[sink_pin]->Tdel;
 }
 
 /***************  Conversion between traceback and route tree *******************/

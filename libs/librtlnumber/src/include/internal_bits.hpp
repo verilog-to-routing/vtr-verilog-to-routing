@@ -17,13 +17,9 @@
 #include "rtl_utils.hpp"
 
 typedef uint16_t veri_internal_bits_t;
-// typedef VNumber<64> veri_64_t;
-// typedef VNumber<32> veri_32_t;
 
-template<typename T>
-uint8_t get_veri_integer_limit() {
-    return (sizeof(T) * 8);
-}
+using integer_t = int64_t;
+constexpr short integer_t_size = (sizeof(integer_t) * 8);
 
 #define _static_unused(x)    \
     namespace {              \
@@ -287,17 +283,70 @@ _static_unused(l_half_carry)
     = unroll_2d(l_sum[_0]);
 _static_unused(l_half_sum)
 
-    static char bit_to_c(bit_value_t bit) {
+    static char bit_to_c(bit_value_t bit, bool uppercase) {
     switch (bit) {
         case _0:
             return '0';
         case _1:
             return '1';
         case _z:
-            return 'z';
+            return (uppercase) ? 'Z' : 'z';
         default:
-            return 'x';
+            return (uppercase) ? 'X' : 'x';
     }
+}
+
+static char bit_to_u(bit_value_t bit) {
+    switch (bit) {
+        case _1:
+            return '1';
+        default:
+            return '0';
+    }
+}
+
+static char bits_to_hex_c(short digit, bool uppercase) {
+    switch (digit) {
+        case 0:
+            return '0';
+        case 1:
+            return '1';
+        case 2:
+            return '2';
+        case 3:
+            return '3';
+        case 4:
+            return '4';
+        case 5:
+            return '5';
+        case 6:
+            return '6';
+        case 7:
+            return '7';
+        case 8:
+            return '8';
+        case 9:
+            return '9';
+        case 10:
+            return (uppercase) ? 'A' : 'a';
+        case 11:
+            return (uppercase) ? 'B' : 'b';
+        case 12:
+            return (uppercase) ? 'C' : 'c';
+        case 13:
+            return (uppercase) ? 'D' : 'd';
+        case 14:
+            return (uppercase) ? 'E' : 'e';
+        case 15:
+            return (uppercase) ? 'F' : 'f';
+        default:
+            assert_Werr(0,
+                        "Invalid bits input" + std::to_string(digit));
+
+            break;
+    }
+
+    std::abort();
 }
 
 static bit_value_t c_to_bit(char c) {
@@ -453,15 +502,49 @@ class VerilogBits {
         (this->get_bitfield(to_index(address))->set_bit(address, value));
     }
 
-    std::string to_string(bool big_endian) {
+    std::string to_string(bool big_endian, bool uppercase) {
         // make a big endian string
         std::string to_return = "";
         for (size_t address = 0x0; address < this->size(); address++) {
-            char value = BitSpace::bit_to_c(this->get_bit(address));
+            char value = BitSpace::bit_to_c(this->get_bit(address), uppercase);
             if (big_endian) {
                 to_return.push_back(value);
             } else {
                 to_return.insert(0, 1, value);
+            }
+        }
+
+        return to_return;
+    }
+
+    std::string to_Ustring(bool big_endian) {
+        // make a big endian string
+        std::string to_return = "";
+        for (size_t address = 0x0; address < this->size(); address++) {
+            char value = BitSpace::bit_to_u(this->get_bit(address));
+            if (big_endian) {
+                to_return.push_back(value);
+            } else {
+                to_return.insert(0, 1, value);
+            }
+        }
+
+        return to_return;
+    }
+
+    std::string to_log2radix(short bit_count, bool uppercase) {
+        std::string to_return = "";
+        int temp = 0;
+        int i = 0;
+        for (size_t address = 0x0; address < this->size(); address++) {
+            temp &= this->get_bit(address) << i;
+            i += 1;
+            // 3 bit for octal value
+            if (i == bit_count) {
+                // share the same digits so we use hex
+                char value = bits_to_hex_c(temp, uppercase);
+                to_return.insert(0, 1, value);
+                i = 0;
             }
         }
 
@@ -693,14 +776,13 @@ class VNumber {
      * getters to 64 bit int
      */
     int64_t get_value() {
-        using integer_t = int64_t;
         size_t bit_size = 8 * sizeof(integer_t);
 
         assert_Werr((!this->bitstring.has_unknowns()),
-                    "Invalid Number contains dont care values. number: " + this->bitstring.to_string(false));
+                    "Invalid Number contains dont care values. number: " + this->to_vstring('B'));
 
         size_t end = this->size();
-        if (end > bit_size) {
+        if (end > integer_t_size) {
             printf(" === Warning: Returning a 64 bit integer from a larger bitstring (%zu). The bitstring will be truncated\n", bit_size);
             end = bit_size;
         }
@@ -721,15 +803,57 @@ class VNumber {
 
     // convert lsb_msb bitstring to verilog
     std::string to_full_string() {
-        std::string out = this->to_bit_string();
+        std::string out = this->to_vstring('b');
         size_t len = this->bitstring.size();
 
         return std::to_string(len) + ((this->is_signed()) ? "\'sb" : "\'b") + out;
     }
 
-    std::string to_bit_string() {
-        std::string out = this->bitstring.to_string(false);
-        return out;
+    std::string to_vstring(char base) {
+        std::string out = "";
+        if (this->bitstring.has_unknowns() && (tolower(base) == 'o' || tolower(base) == 'h' || tolower(base) == 'd')) {
+            // hot swap to binary since that is all we can print
+            base = 'b';
+        } else if (base == 'd' && this->bitstring.size() > integer_t_size) {
+            // hot swap to hex since we bust the max int value
+            base = 'h';
+        }
+
+        switch (base) {
+            case 'b':
+                return this->bitstring.to_string(false, false);
+            case 'B':
+                return this->bitstring.to_string(false, true);
+            case 'z':
+                return this->bitstring.to_string(true, false);
+            case 'Z':
+                return this->bitstring.to_string(true, true);
+            case 'u': // fallthrough
+            case 'U':
+                return this->bitstring.to_Ustring(true);
+            case 'o': // fallthrough
+            case 'O':
+                return this->bitstring.to_log2radix(3, true);
+            case 'd':
+            case 'D': // fallthrough
+                return std::to_string(this->get_value());
+            case 'h':
+                return this->bitstring.to_log2radix(4, false);
+            case 'H':
+                return this->bitstring.to_log2radix(4, true);
+            case 's':
+            case 'S':
+                return this->bitstring.to_printable();
+            case 'c': // fallthrough
+            case 'C':
+                // forcefully truncate to a char
+                return std::string(1, (char)this->get_value());
+            default:
+                assert_Werr(0,
+                            "Invalid base for conversion");
+                break;
+        }
+        std::abort();
     }
 
     std::string to_printable() {

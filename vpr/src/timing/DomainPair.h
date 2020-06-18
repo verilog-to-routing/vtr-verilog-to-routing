@@ -15,6 +15,10 @@ struct DomainPair {
     friend bool operator<(const DomainPair& lhs, const DomainPair& rhs) {
         return std::tie(lhs.launch, lhs.capture) < std::tie(rhs.launch, rhs.capture);
     }
+
+    friend bool operator==(const DomainPair& lhs, const DomainPair& rhs) {
+        return std::tie(lhs.launch, lhs.capture) == std::tie(rhs.launch, rhs.capture);
+    }
 };
 
 #endif
