@@ -1,5 +1,5 @@
-#include "expr_eval.h"
-#include "arch_error.h"
+#include "vtr_expr_eval.h"
+#include "vtr_error.h"
 #include "vtr_util.h"
 #include "vtr_math.h"
 #include <string>
@@ -101,7 +101,7 @@ int FormulaParser::parse_piecewise_formula(const char* formula, const t_formula_
     str_size = pw_formula.size();
 
     if (pw_formula[str_ind] != '{') {
-        archfpga_throw(__FILE__, __LINE__, "parse_piecewise_formula: the first character in piece-wise formula should always be '{'\n");
+        throw vtr::VtrError(vtr::string_fmt("parse_piecewise_formula: the first character in piece-wise formula should always be '{'\n"), __FILE__, __LINE__);
     }
 
     /* find the range to which t corresponds */
@@ -119,7 +119,7 @@ int FormulaParser::parse_piecewise_formula(const char* formula, const t_formula_
         tmp_ind_start = str_ind + 1;
         char_found = goto_next_char(&str_ind, pw_formula, ':');
         if (!char_found) {
-            archfpga_throw(__FILE__, __LINE__, "parse_piecewise_formula: could not find char %c\n", ':');
+            throw vtr::VtrError(vtr::string_fmt("parse_piecewise_formula: could not find char %c\n", ':'), __FILE__, __LINE__);
         }
         tmp_ind_count = str_ind - tmp_ind_start; /* range start is between { and : */
         substr = pw_formula.substr(tmp_ind_start, tmp_ind_count);
@@ -129,14 +129,14 @@ int FormulaParser::parse_piecewise_formula(const char* formula, const t_formula_
         tmp_ind_start = str_ind + 1;
         char_found = goto_next_char(&str_ind, pw_formula, '}');
         if (!char_found) {
-            archfpga_throw(__FILE__, __LINE__, "parse_piecewise_formula: could not find char %c\n", '}');
+            throw vtr::VtrError(vtr::string_fmt("parse_piecewise_formula: could not find char %c\n", '}'), __FILE__, __LINE__);
         }
         tmp_ind_count = str_ind - tmp_ind_start; /* range end is between : and } */
         substr = pw_formula.substr(tmp_ind_start, tmp_ind_count);
         range_end = parse_formula(substr.c_str(), mydata);
 
         if (range_start > range_end) {
-            archfpga_throw(__FILE__, __LINE__, "parse_piecewise_formula: range_start, %d, is bigger than range end, %d\n", range_start, range_end);
+            throw vtr::VtrError(vtr::string_fmt("parse_piecewise_formula: range_start, %d, is bigger than range end, %d\n", range_start, range_end), __FILE__, __LINE__);
         }
 
         /* is the incoming wire within this range? (inclusive) */
@@ -152,13 +152,13 @@ int FormulaParser::parse_piecewise_formula(const char* formula, const t_formula_
         }
         char_found = goto_next_char(&str_ind, pw_formula, '{');
         if (!char_found) {
-            archfpga_throw(__FILE__, __LINE__, "parse_piecewise_formula: could not find char %c\n", '{');
+            throw vtr::VtrError(vtr::string_fmt("parse_piecewise_formula: could not find char %c\n", '{'), __FILE__, __LINE__);
         }
     }
     /* the string index should never actually get to the end of the string because we should have found the range to which the
      * current wire number corresponds */
     if (str_ind == str_size - 1) {
-        archfpga_throw(__FILE__, __LINE__, "parse_piecewise_formula: could not find a closing '}'?\n");
+        throw vtr::VtrError(vtr::string_fmt("parse_piecewise_formula: could not find a closing '}'?\n"), __FILE__, __LINE__);
     }
 
     /* at this point str_ind should point to '}' right before the formula we're interested in starts */
@@ -179,7 +179,7 @@ static bool goto_next_char(int* str_ind, const string& pw_formula, char ch) {
     bool result = true;
     int str_size = pw_formula.size();
     if ((*str_ind) == str_size - 1) {
-        archfpga_throw(__FILE__, __LINE__, "goto_next_char: passed-in str_ind is already at the end of string\n");
+        throw vtr::VtrError(vtr::string_fmt("goto_next_char: passed-in str_ind is already at the end of string\n"), __FILE__, __LINE__);
     }
 
     do {
@@ -237,7 +237,7 @@ static void formula_to_rpn(const char* formula, const t_formula_data& mydata, ve
                     handle_comma(fobj, rpn_output, op_stack);
                     break;
                 default:
-                    archfpga_throw(__FILE__, __LINE__, "in formula_to_rpn: unknown formula object type: %d\n", fobj.type);
+                    throw vtr::VtrError(vtr::string_fmt("in formula_to_rpn: unknown formula object type: %d\n", fobj.type), __FILE__, __LINE__);
                     break;
             }
         }
@@ -250,7 +250,7 @@ static void formula_to_rpn(const char* formula, const t_formula_data& mydata, ve
         fobj_dummy = op_stack.top();
 
         if (E_FML_BRACKET == fobj_dummy.type) {
-            archfpga_throw(__FILE__, __LINE__, "in formula_to_rpn: Mismatched brackets in user-provided formula\n");
+            throw vtr::VtrError(vtr::string_fmt("in formula_to_rpn: Mismatched brackets in user-provided formula\n"), __FILE__, __LINE__);
         }
 
         rpn_output.push_back(fobj_dummy);
@@ -285,7 +285,7 @@ static void get_formula_object(const char* ch, int& ichar, const t_formula_data&
             else if (var_name == "lcm")
                 fobj->data.op = E_OP_LCM;
             else {
-                archfpga_throw(__FILE__, __LINE__, "in get_formula_object: recognized function: %s\n", var_name.c_str());
+                throw vtr::VtrError(vtr::string_fmt("in get_formula_object: recognized function: %s\n", var_name.c_str()), __FILE__, __LINE__);
             }
 
         } else {
@@ -340,7 +340,7 @@ static void get_formula_object(const char* ch, int& ichar, const t_formula_data&
                 fobj->type = E_FML_COMMA;
                 break;
             default:
-                archfpga_throw(__FILE__, __LINE__, "in get_formula_object: unsupported character: %c\n", *ch);
+                throw vtr::VtrError(vtr::string_fmt("in get_formula_object: unsupported character: %c\n", *ch), __FILE__, __LINE__);
                 break;
         }
     }
@@ -373,11 +373,11 @@ static int get_fobj_precedence(const Formula_Object& fobj) {
                 precedence = 4;
                 break;
             default:
-                archfpga_throw(__FILE__, __LINE__, "in get_fobj_precedence: unrecognized operator: %d\n", op);
+                throw vtr::VtrError(vtr::string_fmt("in get_fobj_precedence: unrecognized operator: %d\n", op), __FILE__, __LINE__);
                 break;
         }
     } else {
-        archfpga_throw(__FILE__, __LINE__, "in get_fobj_precedence: no precedence possible for formula object type %d\n", fobj.type);
+        throw vtr::VtrError(vtr::string_fmt("in get_fobj_precedence: no precedence possible for formula object type %d\n", fobj.type), __FILE__, __LINE__);
     }
 
     return precedence;
@@ -397,7 +397,7 @@ static bool op_associativity_is_left(const t_operator& /*op*/) {
 /* used by the shunting-yard formula parser to deal with operators such as add and subtract */
 static void handle_operator(const Formula_Object& fobj, vector<Formula_Object>& rpn_output, stack<Formula_Object>& op_stack) {
     if (E_FML_OPERATOR != fobj.type) {
-        archfpga_throw(__FILE__, __LINE__, "in handle_operator: passed in formula object not of type operator\n");
+        throw vtr::VtrError(vtr::string_fmt("in handle_operator: passed in formula object not of type operator\n"), __FILE__, __LINE__);
     }
 
     int op_pr = get_fobj_precedence(fobj);
@@ -439,7 +439,7 @@ static void handle_operator(const Formula_Object& fobj, vector<Formula_Object>& 
 /* used by the shunting-yard formula parser to deal with brackets, ie '(' and ')' */
 static void handle_bracket(const Formula_Object& fobj, vector<Formula_Object>& rpn_output, stack<Formula_Object>& op_stack) {
     if (E_FML_BRACKET != fobj.type) {
-        archfpga_throw(__FILE__, __LINE__, "in handle_bracket: passed-in formula object not of type bracket\n");
+        throw vtr::VtrError(vtr::string_fmt("in handle_bracket: passed-in formula object not of type bracket\n"), __FILE__, __LINE__);
     }
 
     /* check if left or right bracket */
@@ -454,7 +454,7 @@ static void handle_bracket(const Formula_Object& fobj, vector<Formula_Object>& r
 
             if (op_stack.empty()) {
                 /* didn't find an opening bracket - mismatched brackets */
-                archfpga_throw(__FILE__, __LINE__, "Ran out of stack while parsing brackets -- bracket mismatch in user-specified formula\n");
+                throw vtr::VtrError(vtr::string_fmt("Ran out of stack while parsing brackets -- bracket mismatch in user-specified formula\n"), __FILE__, __LINE__);
                 keep_going = false;
             }
 
@@ -466,7 +466,7 @@ static void handle_bracket(const Formula_Object& fobj, vector<Formula_Object>& r
                     keep_going = false;
                 } else {
                     /* should not find two right brackets without a left bracket in-between */
-                    archfpga_throw(__FILE__, __LINE__, "Mismatched brackets encountered in user-specified formula\n");
+                    throw vtr::VtrError(vtr::string_fmt("Mismatched brackets encountered in user-specified formula\n"), __FILE__, __LINE__);
                     keep_going = false;
                 }
             } else if (E_FML_OPERATOR == next_fobj.type) {
@@ -476,7 +476,7 @@ static void handle_bracket(const Formula_Object& fobj, vector<Formula_Object>& r
                 op_stack.pop();
                 keep_going = true;
             } else {
-                archfpga_throw(__FILE__, __LINE__, "Found unexpected formula object on operator stack: %d\n", next_fobj.type);
+                throw vtr::VtrError(vtr::string_fmt("Found unexpected formula object on operator stack: %d\n", next_fobj.type), __FILE__, __LINE__);
                 keep_going = false;
             }
         } while (keep_going);
@@ -487,7 +487,7 @@ static void handle_bracket(const Formula_Object& fobj, vector<Formula_Object>& r
 /* used by the shunting-yard formula parser to deal with commas, ie ','. These occur in function calls*/
 static void handle_comma(const Formula_Object& fobj, vector<Formula_Object>& rpn_output, stack<Formula_Object>& op_stack) {
     if (E_FML_COMMA != fobj.type) {
-        archfpga_throw(__FILE__, __LINE__, "in handle_comm: passed-in formula object not of type comma\n");
+        throw vtr::VtrError(vtr::string_fmt("in handle_comm: passed-in formula object not of type comma\n"), __FILE__, __LINE__);
     }
 
     //Commas are treated as right (closing) bracket since it completes a
@@ -501,7 +501,7 @@ static void handle_comma(const Formula_Object& fobj, vector<Formula_Object>& rpn
 
         if (op_stack.empty()) {
             /* didn't find an opening bracket - mismatched brackets */
-            archfpga_throw(__FILE__, __LINE__, "Ran out of stack while parsing comma -- bracket mismatch in user-specified formula\n");
+            throw vtr::VtrError(vtr::string_fmt("Ran out of stack while parsing comma -- bracket mismatch in user-specified formula\n"), __FILE__, __LINE__);
             keep_going = false;
         }
 
@@ -512,7 +512,7 @@ static void handle_comma(const Formula_Object& fobj, vector<Formula_Object>& rpn
                 keep_going = false;
             } else {
                 /* should not find two right brackets without a left bracket in-between */
-                archfpga_throw(__FILE__, __LINE__, "Mismatched brackets encountered in user-specified formula\n");
+                throw vtr::VtrError(vtr::string_fmt("Mismatched brackets encountered in user-specified formula\n"), __FILE__, __LINE__);
                 keep_going = false;
             }
         } else if (E_FML_OPERATOR == next_fobj.type) {
@@ -522,7 +522,7 @@ static void handle_comma(const Formula_Object& fobj, vector<Formula_Object>& rpn
             op_stack.pop();
             keep_going = true;
         } else {
-            archfpga_throw(__FILE__, __LINE__, "Found unexpected formula object on operator stack: %d\n", next_fobj.type);
+            throw vtr::VtrError(vtr::string_fmt("Found unexpected formula object on operator stack: %d\n", next_fobj.type), __FILE__, __LINE__);
             keep_going = false;
         }
 
@@ -536,7 +536,7 @@ static int parse_rpn_vector(vector<Formula_Object>& rpn_vec) {
 
     /* first entry should always be a number */
     if (E_FML_NUMBER != rpn_vec[0].type) {
-        archfpga_throw(__FILE__, __LINE__, "parse_rpn_vector: first entry is not a number (was %s)\n", rpn_vec[0].to_string().c_str());
+        throw vtr::VtrError(vtr::string_fmt("parse_rpn_vector: first entry is not a number (was %s)\n", rpn_vec[0].to_string().c_str()), __FILE__, __LINE__);
     }
 
     if (rpn_vec.size() == 1) {
@@ -552,7 +552,7 @@ static int parse_rpn_vector(vector<Formula_Object>& rpn_vec) {
             do {
                 ivec++; /* first item should never be operator anyway */
                 if (ivec == (int)rpn_vec.size()) {
-                    archfpga_throw(__FILE__, __LINE__, "parse_rpn_vector(): found multiple numbers in formula, but no operator\n");
+                    throw vtr::VtrError(vtr::string_fmt("parse_rpn_vector(): found multiple numbers in formula, but no operator\n"), __FILE__, __LINE__);
                 }
             } while (E_FML_OPERATOR != rpn_vec[ivec].type);
 
@@ -582,12 +582,12 @@ static int apply_rpn_op(const Formula_Object& arg1, const Formula_Object& arg2, 
 
     /* arguments must be numbers */
     if (E_FML_NUMBER != arg1.type || E_FML_NUMBER != arg2.type) {
-        archfpga_throw(__FILE__, __LINE__, "in apply_rpn_op: one of the arguments is not a number (was '%s %s %s')\n", arg1.to_string().c_str(), op.to_string().c_str(), arg2.to_string().c_str());
+        throw vtr::VtrError(vtr::string_fmt("in apply_rpn_op: one of the arguments is not a number (was '%s %s %s')\n", arg1.to_string().c_str(), op.to_string().c_str(), arg2.to_string().c_str()), __FILE__, __LINE__);
     }
 
     /* check that op is actually an operation */
     if (E_FML_OPERATOR != op.type) {
-        archfpga_throw(__FILE__, __LINE__, "in apply_rpn_op: the object specified as the operation is not of operation type\n");
+        throw vtr::VtrError(vtr::string_fmt("in apply_rpn_op: the object specified as the operation is not of operation type\n"), __FILE__, __LINE__);
     }
 
     /* apply operation to arguments */
@@ -617,7 +617,7 @@ static int apply_rpn_op(const Formula_Object& arg1, const Formula_Object& arg2, 
             result = vtr::lcm(arg1.data.num, arg2.data.num);
             break;
         default:
-            archfpga_throw(__FILE__, __LINE__, "in apply_rpn_op: invalid operation: %d\n", op.data.op);
+            throw vtr::VtrError(vtr::string_fmt("in apply_rpn_op: invalid operation: %d\n", op.data.op), __FILE__, __LINE__);
             break;
     }
 

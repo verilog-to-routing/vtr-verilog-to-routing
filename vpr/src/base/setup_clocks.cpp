@@ -1,7 +1,7 @@
 #include "setup_clocks.h"
 
 #include "globals.h"
-#include "expr_eval.h"
+#include "vtr_expr_eval.h"
 
 #include "vtr_assert.h"
 #include "vpr_error.h"

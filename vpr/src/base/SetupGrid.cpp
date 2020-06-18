@@ -22,7 +22,7 @@
 
 #include "globals.h"
 #include "SetupGrid.h"
-#include "expr_eval.h"
+#include "vtr_expr_eval.h"
 
 static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def>& grid_layouts, const std::map<t_logical_block_type_ptr, size_t>& minimum_instance_counts, float maximum_device_utilization);
 static std::vector<t_logical_block_type_ptr> grid_overused_resources(const DeviceGrid& grid, std::map<t_logical_block_type_ptr, size_t> instance_counts);

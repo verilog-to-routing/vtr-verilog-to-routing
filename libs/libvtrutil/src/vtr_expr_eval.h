@@ -4,9 +4,10 @@
 #include <string>
 #include <vector>
 #include <stack>
-#include "arch_error.h"
 #include <cstring>
 
+#include "vtr_util.h"
+#include "vtr_error.h"
 #include "vtr_string_view.h"
 #include "vtr_flat_map.h"
 
@@ -29,8 +30,7 @@ class t_formula_data {
         auto iter = vars_.find(var);
         if (iter == vars_.end()) {
             std::string copy(var.data(), var.size());
-            archfpga_throw(__FILE__, __LINE__,
-                           "No value found for variable '%s' from expression\n", copy.c_str());
+            throw vtr::VtrError(vtr::string_fmt("No value found for variable '%s' from expression\n", copy.c_str()), __FILE__, __LINE__);
         }
 
         return iter->second;
