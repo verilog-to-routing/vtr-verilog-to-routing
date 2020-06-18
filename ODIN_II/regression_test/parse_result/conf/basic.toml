@@ -5,11 +5,11 @@
     default = -1
 
 ['errors']
-    regex = 'Error::([A-Z_]+ .*)'
+    regex = 'Error::(.*)'
     listing = true
 
 ['warnings']
-    regex = 'Warning::([A-Z_]+ .*)'
+    regex = 'Warning::(.*)'
     listing = true
 
 ['max_rss(MiB)']
