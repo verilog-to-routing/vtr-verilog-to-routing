@@ -11,6 +11,8 @@
 #include "vtr_string_view.h"
 #include "vtr_flat_map.h"
 
+namespace vtr {
+
 /**** Structs ****/
 
 class t_formula_data {
@@ -143,4 +145,5 @@ class FormulaParser {
     std::stack<Formula_Object> op_stack_; /* stack for handling operators and brackets in formula */
 };
 
+} //namespace vtr
 #endif

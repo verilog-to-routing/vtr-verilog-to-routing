@@ -5,6 +5,8 @@
 #include <string>
 #include <sstream>
 
+namespace vtr {
+
 using std::stack;
 using std::string;
 using std::stringstream;
@@ -696,3 +698,5 @@ bool FormulaParser::is_piecewise_formula(const char* formula) {
     }
     return result;
 }
+
+} //namespace vtr

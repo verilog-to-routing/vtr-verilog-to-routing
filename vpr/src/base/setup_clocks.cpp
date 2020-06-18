@@ -12,6 +12,9 @@
 #include <iostream>
 #include <sstream>
 
+using vtr::FormulaParser;
+using vtr::t_formula_data;
+
 static MetalLayer get_metal_layer_from_name(
     std::string metal_layer_name,
     std::unordered_map<std::string, t_metal_layer> clock_metal_layers,

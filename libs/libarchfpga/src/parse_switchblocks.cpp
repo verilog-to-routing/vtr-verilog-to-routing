@@ -34,6 +34,9 @@
 
 using pugiutil::ReqOpt;
 
+using vtr::FormulaParser;
+using vtr::t_formula_data;
+
 /**** Function Declarations ****/
 /*---- Functions for Parsing Switchblocks from Architecture ----*/
 
