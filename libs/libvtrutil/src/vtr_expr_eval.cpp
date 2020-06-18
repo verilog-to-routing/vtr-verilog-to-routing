@@ -322,13 +322,17 @@ static void get_formula_object(const char* ch, int& ichar, const t_formula_data&
                 fobj->type = E_FML_OPERATOR;
                 fobj->data.op = E_OP_SUB;
                 break;
+            case '*':
+                fobj->type = E_FML_OPERATOR;
+                fobj->data.op = E_OP_MULT;
+                break;
             case '/':
                 fobj->type = E_FML_OPERATOR;
                 fobj->data.op = E_OP_DIV;
                 break;
-            case '*':
+            case '%':
                 fobj->type = E_FML_OPERATOR;
-                fobj->data.op = E_OP_MULT;
+                fobj->data.op = E_OP_MOD;
                 break;
             case '(':
                 fobj->type = E_FML_BRACKET;
@@ -365,13 +369,14 @@ static int get_fobj_precedence(const Formula_Object& fobj) {
                 precedence = 2;
                 break;
             case E_OP_MULT: //fallthrough
-            case E_OP_DIV:
+            case E_OP_DIV: //fallthrough
+            case E_OP_MOD:
                 precedence = 3;
                 break;
             case E_OP_MIN: //fallthrough
             case E_OP_MAX: //fallthrough
             case E_OP_LCM: //fallthrough
-            case E_OP_GCD: //fallthrough
+            case E_OP_GCD:
                 precedence = 4;
                 break;
             default:
@@ -606,6 +611,9 @@ static int apply_rpn_op(const Formula_Object& arg1, const Formula_Object& arg2, 
         case E_OP_DIV:
             result = arg1.data.num / arg2.data.num;
             break;
+        case E_OP_MOD:
+            result = arg1.data.num % arg2.data.num;
+            break;
         case E_OP_MAX:
             result = std::max(arg1.data.num, arg2.data.num);
             break;
@@ -643,8 +651,9 @@ static bool is_operator(const char ch) {
     switch (ch) {
         case '+': //fallthrough
         case '-': //fallthrough
-        case '/': //fallthrough
         case '*': //fallthrough
+        case '/': //fallthrough
+        case '%': //fallthrough
         case ')': //fallthrough
         case '(': //fallthrough
         case ',':
