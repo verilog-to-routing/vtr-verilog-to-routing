@@ -142,6 +142,9 @@
 #include "parse_switchblocks.h"
 #include "vtr_expr_eval.h"
 
+using vtr::FormulaParser;
+using vtr::t_formula_data;
+
 /************ Defines ************/
 /* if defined, switch block patterns are loaded by first computing a row of switch blocks and then
  * stamping out the row throughout the FPGA */
