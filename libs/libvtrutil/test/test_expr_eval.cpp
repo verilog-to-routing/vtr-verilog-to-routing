@@ -16,8 +16,6 @@ TEST_CASE("Simple Expressions", "[vtr_expr_eval]") {
     REQUIRE(parser.parse_formula("5 - 2", vars) == 3);
     REQUIRE(parser.parse_formula("5 - 10", vars) == -5);
 
-
-
     REQUIRE(parser.parse_formula("5 * 5", vars) == 25);
     REQUIRE(parser.parse_formula("5 / 5", vars) == 1);
 
@@ -27,6 +25,12 @@ TEST_CASE("Simple Expressions", "[vtr_expr_eval]") {
 
     REQUIRE(parser.parse_formula("5 % 10", vars) == 5);
     REQUIRE(parser.parse_formula("10 % 9", vars) == 1);
+
+    REQUIRE(parser.parse_formula("5 < 10", vars) == 1);
+    REQUIRE(parser.parse_formula("20 < 10", vars) == 0);
+
+    REQUIRE(parser.parse_formula("5 > 10", vars) == 0);
+    REQUIRE(parser.parse_formula("20 > 10", vars) == 1);
 }
 
 TEST_CASE("Negative Literals", "[vtr_expr_eval]") {

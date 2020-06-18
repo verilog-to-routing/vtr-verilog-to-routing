@@ -334,6 +334,14 @@ static void get_formula_object(const char* ch, int& ichar, const t_formula_data&
                 fobj->type = E_FML_OPERATOR;
                 fobj->data.op = E_OP_MOD;
                 break;
+            case '>':
+                fobj->type = E_FML_OPERATOR;
+                fobj->data.op = E_OP_GT;
+                break;
+            case '<':
+                fobj->type = E_FML_OPERATOR;
+                fobj->data.op = E_OP_LT;
+                break;
             case '(':
                 fobj->type = E_FML_BRACKET;
                 fobj->data.left_bracket = true;
@@ -364,12 +372,16 @@ static int get_fobj_precedence(const Formula_Object& fobj) {
     } else if (E_FML_OPERATOR == fobj.type) {
         t_operator op = fobj.data.op;
         switch (op) {
+            case E_OP_GT: //fallthrough
+            case E_OP_LT:
+                precedence = 1;
+                break;
             case E_OP_ADD: //fallthrough
             case E_OP_SUB:
                 precedence = 2;
                 break;
             case E_OP_MULT: //fallthrough
-            case E_OP_DIV: //fallthrough
+            case E_OP_DIV:  //fallthrough
             case E_OP_MOD:
                 precedence = 3;
                 break;
@@ -614,6 +626,12 @@ static int apply_rpn_op(const Formula_Object& arg1, const Formula_Object& arg2, 
         case E_OP_MOD:
             result = arg1.data.num % arg2.data.num;
             break;
+        case E_OP_GT:
+            result = arg1.data.num > arg2.data.num;
+            break;
+        case E_OP_LT:
+            result = arg1.data.num < arg2.data.num;
+            break;
         case E_OP_MAX:
             result = std::max(arg1.data.num, arg2.data.num);
             break;
@@ -656,6 +674,8 @@ static bool is_operator(const char ch) {
         case '%': //fallthrough
         case ')': //fallthrough
         case '(': //fallthrough
+        case '<': //fallthrough
+        case '>': //fallthrough
         case ',':
             return true;
         default:

@@ -61,6 +61,8 @@ typedef enum e_operator {
     E_OP_MULT,
     E_OP_DIV,
     E_OP_MOD,
+    E_OP_GT,
+    E_OP_LT,
     E_OP_MIN,
     E_OP_MAX,
     E_OP_GCD,
@@ -111,6 +113,10 @@ class Formula_Object {
                 return "/";
             } else if (data.op == E_OP_MOD) {
                 return "%";
+            } else if (data.op == E_OP_GT) {
+                return ">";
+            } else if (data.op == E_OP_LT) {
+                return "<";
             } else if (data.op == E_OP_MIN) {
                 return "min";
             } else if (data.op == E_OP_MAX) {
