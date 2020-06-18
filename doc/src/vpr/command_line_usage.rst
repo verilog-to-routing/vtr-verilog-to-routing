@@ -689,6 +689,7 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
     * ``<file.pads>``: A path to a file listing the desired location of each I/O block in the netlist.
 
     This pad location file is in the same format as a :ref:`normal placement file <vpr_place_file>`, but only specifies the locations of I/O pads, rather than the locations of all blocks.
+    Work in progress is updating it to allow the placement of any clustered block to be constrained.
 
     **Default:** ``free``.
 
