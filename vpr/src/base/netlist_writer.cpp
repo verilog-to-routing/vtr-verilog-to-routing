@@ -554,6 +554,7 @@ class BlackBoxInst : public Instance {
                  std::map<std::string, std::vector<std::string>> output_port_conns, ///<Port connections: Dictionary of <port,nets>
                  std::vector<Arc> timing_arcs,                                      ///<Combinational timing arcs
                  std::map<std::string, double> ports_tsu,                           ///<Port setup checks
+                 std::map<std::string, double> ports_thld,                          ///<Port hold checks
                  std::map<std::string, double> ports_tcq)                           ///<Port clock-to-q delays
         : type_name_(type_name)
         , inst_name_(inst_name)
@@ -563,6 +564,7 @@ class BlackBoxInst : public Instance {
         , output_port_conns_(output_port_conns)
         , timing_arcs_(timing_arcs)
         , ports_tsu_(ports_tsu)
+        , ports_thld_(ports_thld)
         , ports_tcq_(ports_tcq) {}
 
     void print_blif(std::ostream& os, size_t& unconn_count, int depth = 0) override {
@@ -648,75 +650,80 @@ class BlackBoxInst : public Instance {
     }
 
     void print_sdf(std::ostream& os, int depth = 0) override {
-        os << indent(depth) << "(CELL\n";
-        os << indent(depth + 1) << "(CELLTYPE \"" << type_name_ << "\")\n";
-        os << indent(depth + 1) << "(INSTANCE " << escape_sdf_identifier(inst_name_) << ")\n";
-        os << indent(depth + 1) << "(DELAY\n";
 
-        if (!timing_arcs_.empty() || !ports_tcq_.empty()) {
-            os << indent(depth + 2) << "(ABSOLUTE\n";
+	
+        if (!timing_arcs_.empty() || !ports_tcq_.empty() || !ports_tsu_.empty() || !ports_thld_.empty()) {
+        	os << indent(depth) << "(CELL\n";
+        	os << indent(depth + 1) << "(CELLTYPE \"" << type_name_ << "\")\n";
+        	os << indent(depth + 1) << "(INSTANCE " << escape_sdf_identifier(inst_name_) << ")\n";
+        	os << indent(depth + 1) << "(DELAY\n";
+	
 
-            //Combinational paths
-            for (const auto& arc : timing_arcs_) {
-                double delay_ps = get_delay_ps(arc.delay());
+		if (!timing_arcs_.empty() || !ports_tcq_.empty()) {
+		    os << indent(depth + 2) << "(ABSOLUTE\n";
 
-                std::stringstream delay_triple;
-                delay_triple << "(" << delay_ps << ":" << delay_ps << ":" << delay_ps << ")";
+		    //Combinational paths
+		    for (const auto& arc : timing_arcs_) {
+			double delay_ps = get_delay_ps(arc.delay());
 
-                //Note that we explicitly do not escape the last array indexing so an SDF
-                //reader will treat the ports as multi-bit
-                //
-                //We also only put the last index in if the port has multiple bits
-                os << indent(depth + 3) << "(IOPATH ";
-                os << escape_sdf_identifier(arc.source_name());
-                if (find_port_size(arc.source_name()) > 1) {
-                    os << "[" << arc.source_ipin() << "]";
-                }
-                os << " ";
-                os << escape_sdf_identifier(arc.sink_name());
-                if (find_port_size(arc.sink_name()) > 1) {
-                    os << "[" << arc.sink_ipin() << "]";
-                }
-                os << " ";
-                os << delay_triple.str();
-                os << ")\n";
-            }
+			std::stringstream delay_triple;
+			delay_triple << "(" << delay_ps << ":" << delay_ps << ":" << delay_ps << ")";
 
-            //Clock-to-Q delays
-            for (auto kv : ports_tcq_) {
-                double clock_to_q_ps = get_delay_ps(kv.second);
+			//Note that we explicitly do not escape the last array indexing so an SDF
+			//reader will treat the ports as multi-bit
+			//
+			//We also only put the last index in if the port has multiple bits
+			os << indent(depth + 3) << "(IOPATH ";
+			os << escape_sdf_identifier(arc.source_name());
+			if (find_port_size(arc.source_name()) > 1) {
+			    os << "[" << arc.source_ipin() << "]";
+			}
+			os << " ";
+			os << escape_sdf_identifier(arc.sink_name());
+			if (find_port_size(arc.sink_name()) > 1) {
+			    os << "[" << arc.sink_ipin() << "]";
+			}
+			os << " ";
+			os << delay_triple.str();
+			os << ")\n";
+		    }
 
-                std::stringstream delay_triple;
-                delay_triple << "(" << clock_to_q_ps << ":" << clock_to_q_ps << ":" << clock_to_q_ps << ")";
+			    //Clock-to-Q delays
+		    for (auto kv : ports_tcq_) {
+			double clock_to_q_ps = get_delay_ps(kv.second);
 
-                os << indent(depth + 3) << "(IOPATH (posedge clock) " << escape_sdf_identifier(kv.first) << " " << delay_triple.str() << " " << delay_triple.str() << ")\n";
-            }
-            os << indent(depth + 2) << ")\n"; //ABSOLUTE
-        }
-        os << indent(depth + 1) << ")\n"; //DELAY
+			std::stringstream delay_triple;
+			delay_triple << "(" << clock_to_q_ps << ":" << clock_to_q_ps << ":" << clock_to_q_ps << ")";
 
-        if (!ports_tsu_.empty() || !ports_thld_.empty()) {
-            //Setup checks
-            os << indent(depth + 1) << "(TIMINGCHECK\n";
-            for (auto kv : ports_tsu_) {
-                double setup_ps = get_delay_ps(kv.second);
+			os << indent(depth + 3) << "(IOPATH (posedge clock) " << escape_sdf_identifier(kv.first) << " " << delay_triple.str() << " " << delay_triple.str() << ")\n";
+		    }
+		    os << indent(depth + 2) << ")\n"; //ABSOLUTE
+		}
+		os << indent(depth + 1) << ")\n"; //DELAY
 
-                std::stringstream delay_triple;
-                delay_triple << "(" << setup_ps << ":" << setup_ps << ":" << setup_ps << ")";
+		if (!ports_tsu_.empty() || !ports_thld_.empty()) {
+		    //Setup checks
+		    os << indent(depth + 1) << "(TIMINGCHECK\n";
+		    for (auto kv : ports_tsu_) {
+			double setup_ps = get_delay_ps(kv.second);
 
-                os << indent(depth + 2) << "(SETUP " << escape_sdf_identifier(kv.first) << " (posedge clock) " << delay_triple.str() << ")\n";
-            }
-            for (auto kv : ports_thld_) {
-                double hold_ps = get_delay_ps(kv.second);
+			std::stringstream delay_triple;
+			delay_triple << "(" << setup_ps << ":" << setup_ps << ":" << setup_ps << ")";
 
-                std::stringstream delay_triple;
-                delay_triple << "(" << hold_ps << ":" << hold_ps << ":" << hold_ps << ")";
+			os << indent(depth + 2) << "(SETUP " << escape_sdf_identifier(kv.first) << " (posedge clock) " << delay_triple.str() << ")\n";
+		    }
+		    for (auto kv : ports_thld_) {
+			double hold_ps = get_delay_ps(kv.second);
 
-                os << indent(depth + 2) << "(HOLD " << escape_sdf_identifier(kv.first) << " (posedge clock) " << delay_triple.str() << ")\n";
-            }
-            os << indent(depth + 1) << ")\n"; //TIMINGCHECK
-        }
-        os << indent(depth) << ")\n"; //CELL
+			std::stringstream delay_triple;
+			delay_triple << "(" << hold_ps << ":" << hold_ps << ":" << hold_ps << ")";
+
+			os << indent(depth + 2) << "(HOLD " << escape_sdf_identifier(kv.first) << " (posedge clock) " << delay_triple.str() << ")\n";
+		    }
+		    os << indent(depth + 1) << ")\n"; //TIMINGCHECK
+		}
+		os << indent(depth) << ")\n"; //CELL
+	}
     }
 
     size_t find_port_size(std::string port_name) {
@@ -1278,6 +1285,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::map<std::string, std::vector<std::string>> output_port_conns;
         std::vector<Arc> timing_arcs;
         std::map<std::string, double> ports_tsu;
+        std::map<std::string, double> ports_thld;
         std::map<std::string, double> ports_tcq;
 
         params["ADDR_WIDTH"] = "0";
@@ -1401,7 +1409,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             }
         }
 
-        return std::make_shared<BlackBoxInst>(type, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_tcq);
+        return std::make_shared<BlackBoxInst>(type, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_thld, ports_tcq);
     }
 
     ///@brief Returns an Instance object representing a Multiplier
@@ -1420,6 +1428,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::map<std::string, std::vector<std::string>> output_port_conns;
         std::vector<Arc> timing_arcs;
         std::map<std::string, double> ports_tsu;
+        std::map<std::string, double> ports_thld;
         std::map<std::string, double> ports_tcq;
 
         params["WIDTH"] = "0";
@@ -1496,7 +1505,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
         VTR_ASSERT(pb_graph_node->num_clock_ports == 0); //No clocks
 
-        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_tcq);
+        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_thld, ports_tcq);
     }
 
     ///@brief Returns an Instance object representing an Adder
@@ -1515,6 +1524,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::map<std::string, std::vector<std::string>> output_port_conns;
         std::vector<Arc> timing_arcs;
         std::map<std::string, double> ports_tsu;
+        std::map<std::string, double> ports_thld;
         std::map<std::string, double> ports_tcq;
 
         params["WIDTH"] = "0";
@@ -1595,7 +1605,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             }
         }
 
-        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_tcq);
+        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_thld, ports_tcq);
     }
 
     std::shared_ptr<Instance> make_blackbox_instance(const t_pb* atom) {
@@ -1603,6 +1613,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
         const t_pb_type* pb_type = pb_graph_node->pb_type;
 
+        auto& timing_ctx = g_vpr_ctx.timing();
         std::string type_name = pb_type->model->name;
         std::string inst_name = join_identifier(type_name, atom->name);
         std::map<std::string, std::string> params;
@@ -1611,6 +1622,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::map<std::string, std::vector<std::string>> output_port_conns;
         std::vector<Arc> timing_arcs;
         std::map<std::string, double> ports_tsu;
+        std::map<std::string, double> ports_thld;
         std::map<std::string, double> ports_tcq;
 
         //Delay matrix[sink_tnode] -> tuple of source_port_name, pin index, delay
@@ -1627,6 +1639,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 std::string net;
                 if (!top_pb_route.count(cluster_pin_idx)) {
                     //Disconnected
+                    net = "";
 
                 } else {
                     //Connected
@@ -1635,13 +1648,27 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                     auto src_tnode = find_tnode(atom, cluster_pin_idx);
                     net = make_inst_wire(atom_net_id, src_tnode, inst_name, PortType::INPUT, iport, ipin);
+                    //Delays
+                    //
+                    //We record the souce sink tnodes and thier delays here
+                    for (tatum::EdgeId edge : timing_ctx.graph->node_out_edges(src_tnode)) {
+                        double delay = delay_calc_->max_edge_delay(*timing_ctx.graph, edge);
+
+                        auto sink_tnode = timing_ctx.graph->edge_sink_node(edge);
+                        tnode_delay_matrix[sink_tnode].emplace_back(port->name, ipin, delay);
+                    }
                 }
 
-                input_port_conns[port->name].push_back(net);
-            }
-        }
 
-        //Process the output ports
+		input_port_conns[port->name].push_back(net);
+		if (pin->type == PB_PIN_SEQUENTIAL) {
+			if (!std::isnan(pin->tsu)) ports_tsu[port->name] = pin->tsu;
+			if (!std::isnan(pin->thld)) ports_thld[port->name] = pin->thld;
+		}
+	    }		
+	}
+
+	//Process the output ports
         for (int iport = 0; iport < pb_graph_node->num_output_ports; ++iport) {
             for (int ipin = 0; ipin < pb_graph_node->num_output_pins[iport]; ++ipin) {
                 const t_pb_graph_pin* pin = &pb_graph_node->output_pins[iport][ipin];
@@ -1651,7 +1678,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                 std::string net;
                 if (!top_pb_route.count(cluster_pin_idx)) {
-                    //Disconnected
+                     //Disconnected
                     net = "";
                 } else {
                     //Connected
@@ -1660,9 +1687,18 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                     auto inode = find_tnode(atom, cluster_pin_idx);
                     net = make_inst_wire(atom_net_id, inode, inst_name, PortType::OUTPUT, iport, ipin);
+                    //Record the timing arcs
+                    for (auto& data_tuple : tnode_delay_matrix[inode]) {
+                        auto src_name = std::get<0>(data_tuple);
+                        auto src_ipin = std::get<1>(data_tuple);
+                        auto delay = std::get<2>(data_tuple);
+                        timing_arcs.emplace_back(src_name, src_ipin, port->name, ipin, delay);
+                    }
                 }
 
+
                 output_port_conns[port->name].push_back(net);
+                if (pin->type == PB_PIN_SEQUENTIAL && !std::isnan(pin->tco_max)) ports_tcq[port->name] = pin->tco_max;
             }
         }
 
@@ -1701,7 +1737,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
             attrs[attr.first] = attr.second;
         }
 
-        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_tcq);
+        return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_thld, ports_tcq);
     }
 
     ///@brief Returns the top level pb_route associated with the given pb
