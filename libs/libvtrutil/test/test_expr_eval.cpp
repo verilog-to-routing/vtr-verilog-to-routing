@@ -87,5 +87,4 @@ TEST_CASE("Function Expressions", "[vtr_expr_eval]") {
 
     REQUIRE(parser.parse_formula("gcd(20, 25)", vars) == 5);
     REQUIRE(parser.parse_formula("lcm(20, 25)", vars) == 100);
-
 }
