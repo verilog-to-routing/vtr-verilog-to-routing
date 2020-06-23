@@ -152,14 +152,14 @@ void push_back_node_with_info(
     float backward_path_delay, 
     std::set<int> net_rr) {
 
-    t_heap* hptr = heap->alloc();
+    t_heap* hptr = heap->alloc(true);
     hptr->index = inode;
     hptr->cost = total_cost;
     hptr->backward_path_cost = backward_path_cost;
     hptr->R_upstream = R_upstream;
     hptr->path_rr.clear();
     hptr->edge.clear();
-    hptr->net_rr = net_rr;
+    // hptr->net_rr = net_rr;
     hptr->backward_delay = backward_path_delay;
     hptr->backward_cong = 0;
     heap->push_back(hptr);

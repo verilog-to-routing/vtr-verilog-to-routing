@@ -272,10 +272,14 @@ float MapLookahead::get_expected_cost(int current_node, int target_node, const t
 }
 
 float MapLookahead::get_expected_delay(int inode, int target_node, const t_conn_cost_params& params, float R_upstream) const {
+    // TODO: This should return an actualy delay
+    
     return 0.;
 }
 
 float MapLookahead::get_expected_cong(int inode, int target_node, const t_conn_cost_params& params, float R_upstream) const {
+    // TODO: Should return actual collected expected cong
+
     return 0.;
 }
 

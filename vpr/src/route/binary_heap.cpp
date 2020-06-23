@@ -18,6 +18,11 @@ BinaryHeap::~BinaryHeap() {
 t_heap* BinaryHeap::alloc() {
     return storage_.alloc();
 }
+
+t_heap* BinaryHeap::alloc(bool init_data_structs) {
+    return storage_.alloc(init_data_structs);
+}
+
 void BinaryHeap::free(t_heap* hptr) {
     storage_.free(hptr);
 }

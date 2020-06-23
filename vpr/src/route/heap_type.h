@@ -55,8 +55,8 @@ struct t_heap {
     int index = OPEN;
     std::vector<int> path_rr;
     std::vector<int> edge;
-    std::set<int> net_rr;
-    std::set<int> partial_path_nodes;
+    // std::set<int> net_rr; // Getting refactored out of this data structure
+    // std::set<int> partial_path_nodes; // Not sure why this is needed so it's gettin yeeted
     float backward_delay = 0.;
     float backward_cong = 0.;
 
@@ -105,6 +105,9 @@ class HeapStorage {
     // Allocate a heap item.
     t_heap* alloc();
 
+    // Allocate a heap item clearing data structures
+    t_heap* alloc(bool init_data_structs);
+
     // Free a heap item.
     void free(t_heap* hptr);
     void free_all_memory();
@@ -136,6 +139,8 @@ class HeapInterface {
     // This transfers ownership of the t_heap object from HeapInterface to the
     // caller.
     virtual t_heap* alloc() = 0;
+
+    virtual t_heap* alloc(bool init_data_structs) = 0;
 
     // Free a heap item.
     //

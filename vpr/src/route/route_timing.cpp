@@ -1002,7 +1002,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
     bool high_fanout = is_high_fanout(num_sinks, router_opts.high_fanout_threshold);
 
     std::set<int> route_tree_nodes;
-
+    
     SpatialRouteTreeLookup spatial_route_tree_lookup;
     if (high_fanout) {
         spatial_route_tree_lookup = build_route_tree_spatial_lookup(net_id, rt_root);

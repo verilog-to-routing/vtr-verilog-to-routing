@@ -9,6 +9,7 @@ class BinaryHeap : public HeapInterface {
     ~BinaryHeap();
 
     t_heap* alloc() final;
+    t_heap* alloc(bool init_data_structs);
     void free(t_heap* hptr) final;
 
     void init_heap(const DeviceGrid& grid) final;

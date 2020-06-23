@@ -29,10 +29,39 @@ HeapStorage::alloc() {
     temp_ptr->backward_cong = 0.;
     temp_ptr->R_upstream = 0.;
     temp_ptr->index = OPEN;
-    temp_ptr->path_rr.clear();
-    temp_ptr->edge.clear();
-    temp_ptr->net_rr.clear();
-    temp_ptr->partial_path_nodes.clear();
+    temp_ptr->set_prev_node(NO_PREVIOUS);
+    temp_ptr->set_prev_edge(RREdgeId::INVALID());
+    return (temp_ptr);
+}
+
+t_heap*
+HeapStorage::alloc(bool init_data_structs) {
+    if (heap_free_head_ == nullptr) { /* No elements on the free list */
+        heap_free_head_ = vtr::chunk_new<t_heap>(&heap_ch_);
+    }
+
+    //Extract the head
+    t_heap* temp_ptr = heap_free_head_;
+    heap_free_head_ = heap_free_head_->next_heap_item();
+
+    num_heap_allocated_++;
+
+    //Reset
+    temp_ptr->set_next_heap_item(nullptr);
+    temp_ptr->cost = 0.;
+    temp_ptr->backward_path_cost = 0.;
+    temp_ptr->backward_delay = 0.;
+    temp_ptr->backward_cong = 0.;
+    temp_ptr->R_upstream = 0.;
+    temp_ptr->index = OPEN;
+
+    if(init_data_structs) {
+        temp_ptr->path_rr.clear();
+        temp_ptr->edge.clear();
+        // temp_ptr->net_rr.clear();
+        // temp_ptr->partial_path_nodes.clear();
+    }
+    
     temp_ptr->set_prev_node(NO_PREVIOUS);
     temp_ptr->set_prev_edge(RREdgeId::INVALID());
     return (temp_ptr);
