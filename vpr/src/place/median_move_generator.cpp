@@ -95,7 +95,7 @@ std::vector<int>& X_coord, std::vector<int>& Y_coord, int &, int place_high_fano
     t_pl_loc median_point;
     median_point.x = (limit_coords.xmin + limit_coords.xmax) /2 ;
     median_point.y = (limit_coords.ymin + limit_coords.ymax) /2 ;
-    if(!find_to_loc_centroid(cluster_from_type, rlim, median_point, to))
+    if(!find_to_loc_centroid(cluster_from_type, rlim, from, median_point, to))
         return e_create_move::ABORT;
     
     

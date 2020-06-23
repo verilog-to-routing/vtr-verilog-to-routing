@@ -127,7 +127,7 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
     centroid.x = center_x;
     centroid.y = center_y;
 
-    if (!find_to_loc_centroid(cluster_from_type, rlim, centroid, to)) {
+    if (!find_to_loc_centroid(cluster_from_type, rlim, from, centroid, to)) {
         return e_create_move::ABORT;
     }
 

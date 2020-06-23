@@ -736,7 +736,16 @@ bool find_to_loc_median(t_logical_block_type_ptr type,
         if (y_lower_iter->first > min_cy) {
             //No valid blocks at this x location which are within y range
             //
-            continue;
+            if(type->index != 1)
+                continue;
+            else{
+                //Fall back to allow the whole y range if the block is io
+                y_lower_iter = compressed_block_grid.grid[cx_to].begin();
+                 y_upper_iter = compressed_block_grid.grid[cx_to].end();
+ 
+                 min_cy = y_lower_iter->first;
+                 max_cy = (y_upper_iter - 1)->first;
+            }
         }
 
         int y_range = std::distance(y_lower_iter, y_upper_iter);
@@ -800,6 +809,7 @@ bool find_to_loc_median(t_logical_block_type_ptr type,
 
 bool find_to_loc_centroid(t_logical_block_type_ptr type,
                          float rlim,
+                         const t_pl_loc from,
                          const t_pl_loc centroid,
                          t_pl_loc& to) {
     //Finds a legal swap to location for the given type, starting from 'from.x' and 'from.y'
@@ -815,21 +825,25 @@ bool find_to_loc_centroid(t_logical_block_type_ptr type,
     //Retrieve the compressed block grid for this block type
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
 
+    //Determine the coordinates in the compressed grid space of the current block
+    int cx_from = grid_to_compressed(compressed_block_grid.compressed_to_grid_x, from.x);
+    int cy_from = grid_to_compressed(compressed_block_grid.compressed_to_grid_y, from.y);
+
     //Determine the rlim in each dimension
     int rlim_x = std::min<int>(compressed_block_grid.compressed_to_grid_x.size(), std::min<int>(rlim,dm_rlim));
     int rlim_y = std::min<int>(compressed_block_grid.compressed_to_grid_y.size(), std::min<int>(rlim,dm_rlim)); /* for aspect_ratio != 1 case. */
 
     //Determine the coordinates in the compressed grid space of the current block
-    int cx_from = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, centroid.x);
-    int cy_from = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_y, centroid.y);
+    int cx_centroid = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_x, centroid.x);
+    int cy_centroid = grid_to_compressed_approx(compressed_block_grid.compressed_to_grid_y, centroid.y);
 
     //Determine the valid compressed grid location ranges
-    int min_cx = std::max(0, cx_from - rlim_x);
-    int max_cx = std::min<int>(compressed_block_grid.compressed_to_grid_x.size() - 1, cx_from + rlim_x);
+    int min_cx = std::max(0, cx_centroid - rlim_x);
+    int max_cx = std::min<int>(compressed_block_grid.compressed_to_grid_x.size() - 1, cx_centroid + rlim_x);
     int delta_cx = max_cx - min_cx;
 
-    int min_cy = std::max(0, cy_from - rlim_y);
-    int max_cy = std::min<int>(compressed_block_grid.compressed_to_grid_y.size() - 1, cy_from + rlim_y);
+    int min_cy = std::max(0, cy_centroid - rlim_y);
+    int max_cy = std::min<int>(compressed_block_grid.compressed_to_grid_y.size() - 1, cy_centroid + rlim_y);
 
     int cx_to = OPEN;
     int cy_to = OPEN;
@@ -866,7 +880,16 @@ bool find_to_loc_centroid(t_logical_block_type_ptr type,
         if (y_lower_iter->first > min_cy) {
             //No valid blocks at this x location which are within rlim_y
             //
-            continue;
+            if(type->index != 1)
+                continue;
+            else{
+                //Fall back to allow the whole y range if the block is io
+                y_lower_iter = compressed_block_grid.grid[cx_to].begin();
+                 y_upper_iter = compressed_block_grid.grid[cx_to].end();
+ 
+                 min_cy = y_lower_iter->first;
+                 max_cy = (y_upper_iter - 1)->first;
+            }
         }
 
         int y_range = std::distance(y_lower_iter, y_upper_iter);

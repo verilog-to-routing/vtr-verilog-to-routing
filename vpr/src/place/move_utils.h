@@ -66,6 +66,7 @@ bool find_to_loc_median(t_logical_block_type_ptr type, const t_bb* limit_coords,
 
 bool find_to_loc_centroid(t_logical_block_type_ptr type,
                          float rlim,
+                         const t_pl_loc from,
                          const t_pl_loc centeroid,
                          t_pl_loc& to);
 

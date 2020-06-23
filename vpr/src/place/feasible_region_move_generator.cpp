@@ -147,7 +147,7 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         t_pl_loc center;
         center.x = (FR_coords.xmin + FR_coords.xmax)/2;
         center.y = (FR_coords.ymin + FR_coords.ymax)/2;
-        if (!find_to_loc_centroid(cluster_from_type, rlim, center, to))
+        if (!find_to_loc_centroid(cluster_from_type, rlim, from, center, to))
             return e_create_move::ABORT;
     }
 

@@ -1828,7 +1828,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "Controls how quickly the agent's memory decays. "
             "Values between [0., 1.] specify the fraction of weight in the exponentially weighted average applied to moves which occured greater than moves_per_temp moves ago."
             "Values < 0 cause the unwieghted sample average to be used")
-        .default_value("2")
+        .default_value("3")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_reward_num, "--place_reward_num")
