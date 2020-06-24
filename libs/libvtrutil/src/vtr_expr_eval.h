@@ -4,11 +4,14 @@
 #include <string>
 #include <vector>
 #include <stack>
-#include "arch_error.h"
 #include <cstring>
 
+#include "vtr_util.h"
+#include "vtr_error.h"
 #include "vtr_string_view.h"
 #include "vtr_flat_map.h"
+
+namespace vtr {
 
 /**** Structs ****/
 
@@ -29,8 +32,7 @@ class t_formula_data {
         auto iter = vars_.find(var);
         if (iter == vars_.end()) {
             std::string copy(var.data(), var.size());
-            archfpga_throw(__FILE__, __LINE__,
-                           "No value found for variable '%s' from expression\n", copy.c_str());
+            throw vtr::VtrError(vtr::string_fmt("No value found for variable '%s' from expression\n", copy.c_str()), __FILE__, __LINE__);
         }
 
         return iter->second;
@@ -58,6 +60,9 @@ typedef enum e_operator {
     E_OP_SUB,
     E_OP_MULT,
     E_OP_DIV,
+    E_OP_MOD,
+    E_OP_GT,
+    E_OP_LT,
     E_OP_MIN,
     E_OP_MAX,
     E_OP_GCD,
@@ -106,6 +111,12 @@ class Formula_Object {
                 return "*";
             } else if (data.op == E_OP_DIV) {
                 return "/";
+            } else if (data.op == E_OP_MOD) {
+                return "%";
+            } else if (data.op == E_OP_GT) {
+                return ">";
+            } else if (data.op == E_OP_LT) {
+                return "<";
             } else if (data.op == E_OP_MIN) {
                 return "min";
             } else if (data.op == E_OP_MAX) {
@@ -143,4 +154,5 @@ class FormulaParser {
     std::stack<Formula_Object> op_stack_; /* stack for handling operators and brackets in formula */
 };
 
+} //namespace vtr
 #endif

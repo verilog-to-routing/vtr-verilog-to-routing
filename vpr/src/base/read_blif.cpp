@@ -1,6 +1,6 @@
-/*
- * BLIF Netlist Loader
- * ===================
+/**
+ * @file
+ * @brief BLIF Netlist Loader
  *
  * This loader handles loading a post-technology mapping fully flattened (i.e not
  * hierarchical) netlist in Berkely Logic Interchange Format (BLIF) file, and
@@ -13,7 +13,6 @@
  * blifparse callback interface.  The callback methods are then called when basic blif
  * primitives are encountered by the parser.  The callback methods then create the associated
  * netlist data structures.
- *
  */
 #include <cstdio>
 #include <cstring>
@@ -500,10 +499,11 @@ struct BlifAllocCallback : public blifparse::Callback {
         return nullptr;
     }
 
-    //Splits the index off a signal name and returns the base signal name (excluding
-    //the index) and the index as an integer. For example
-    //
-    //  "my_signal_name[2]"   -> "my_signal_name", 2
+    /** @brief Splits the index off a signal name and returns the base signal name
+     *         (excluding the index) and the index as an integer. For example
+     *
+     * "my_signal_name[2]"   -> "my_signal_name", 2
+     */
     std::pair<std::string, int> split_index(const std::string& signal_name) {
         int bit_index = 0;
 
@@ -536,7 +536,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         return std::make_pair(trimmed_signal_name, bit_index);
     }
 
-    //Retieves a reference to the currently active .model
+    ///@brief Retieves a reference to the currently active .model
     AtomNetlist& curr_model() {
         if (blif_models_.empty() || ended_) {
             vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Expected .model");
@@ -584,27 +584,31 @@ struct BlifAllocCallback : public blifparse::Callback {
         return true;
     }
 
-    //Returns a different unique subck name each time it is called
+    ///@brief Returns a different unique subck name each time it is called
     std::string unique_subckt_name() {
         return "unnamed_subckt" + std::to_string(unique_subckt_name_counter_++);
     }
 
-    //Sets the current block which is being processed
-    // Used to determine which block a .cname, .param, .attr apply to
+    /** @brief Sets the current block which is being processed
+     *
+     * Used to determine which block a .cname, .param, .attr apply to
+     */
     void set_curr_block(AtomBlockId blk) {
         curr_block_ = blk;
     }
 
-    //Gets the current block which is being processed
+    ///@brief Gets the current block which is being processed
     AtomBlockId curr_block() const {
         return curr_block_;
     }
 
-    //Merges all the recorded net pairs which need to be merged
-    //
-    //This should only be called at the end of a .model to ensure that
-    //all the associated driver/sink pins have been delcared and connected
-    //to their nets
+    /**
+     * @brief Merges all the recorded net pairs which need to be merged
+     *
+     * This should only be called at the end of a .model to ensure that
+     * all the associated driver/sink pins have been delcared and connected
+     * to their nets
+     */
     void merge_conn_nets() {
         for (auto net_pair : curr_nets_to_merge_) {
             curr_model().merge_nets(net_pair.first, net_pair.second);
@@ -621,8 +625,8 @@ struct BlifAllocCallback : public blifparse::Callback {
     std::vector<AtomNetlist> blif_models_;
     std::vector<bool> blif_models_black_box_;
 
-    AtomNetlist& main_netlist_;    //User object we fill
-    const std::string netlist_id_; //Unique identifier based on the contents of the blif file
+    AtomNetlist& main_netlist_;    ///<User object we fill
+    const std::string netlist_id_; ///<Unique identifier based on the contents of the blif file
     const t_model* user_arch_models_ = nullptr;
     const t_model* library_arch_models_ = nullptr;
 

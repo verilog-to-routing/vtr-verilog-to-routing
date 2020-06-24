@@ -3,13 +3,11 @@
 #include "vtr_assert.h"
 #include "vpr_error.h"
 
-/*
- *
- *
- * ClusteredNetlist Class Implementation
- *
- *
+/**
+ * @file
+ * @brief ClusteredNetlist Class Implementation
  */
+
 ClusteredNetlist::ClusteredNetlist(std::string name, std::string id)
     : Netlist<ClusterBlockId, ClusterPortId, ClusterPinId, ClusterNetId>(name, id) {}
 
@@ -63,7 +61,7 @@ bool ClusteredNetlist::block_contains_primary_input(const ClusterBlockId blk) co
     return primary_input_pb != nullptr;
 }
 
-//Returns true if the specified block contains a primary output (e.g. BLIF .output primitive)
+///@brief Returns true if the specified block contains a primary output (e.g. BLIF .output primitive)
 bool ClusteredNetlist::block_contains_primary_output(const ClusterBlockId blk) const {
     const t_pb* pb = block_pb(blk);
     const t_pb* primary_output_pb = pb->find_pb_for_model(".output");
