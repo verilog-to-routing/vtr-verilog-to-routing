@@ -33,8 +33,8 @@ def run_relax_W(architecture, circuit_name, circuit, command_runner=CommandRunne
     verify_file(circuit_name, "Circuit")
     verify_file(circuit, "Circuit")
 
-    vpr_min_W_log = '.'.join([logfile_base, "min_W", "out"])
-    vpr_relaxed_W_log = '.'.join([logfile_base, "relaxed_W", "out"])
+    vpr_min_W_log = '.'.join([logfile_base, "out"])
+    vpr_relaxed_W_log = '.'.join([logfile_base, "crit_path", "out"])
 
     run(architecture, circuit_name, circuit, command_runner, temp_dir, log_filename=vpr_min_W_log, vpr_exec=vpr_exec, vpr_args=vpr_args)
 

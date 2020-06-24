@@ -119,8 +119,8 @@ def run(architecture_file, circuit_file,
         
         if(abc_run_args):
             cmd.append(abc_run_args)
-
-        command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename=str(i)+"_"+log_filename, indent_depth=1)
+        log_file = Path(log_filename)
+        command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename=log_file.stem+str(i)+log_file.suffix, indent_depth=1)
         
         if(abc_flow_type != 3 and len(clk_list)>i):
             cmd = [blackbox_latches_script,"--restore", clk_list[i], "--input", post_abc_raw_blif.name,"--output",post_abc_blif.name]

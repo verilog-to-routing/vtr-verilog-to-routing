@@ -65,7 +65,7 @@ my $display_qor = 0;
 my $skip_qor = 0;
 my $show_failures = 0;
 my $num_cpu = 1;
-my $script = "run_vtr_flow.pl";
+my $script = "vtr-flow.py";
 my $long_task_names = 0;
 
 # Parse Input Arguments

@@ -8,6 +8,7 @@ import time
 import shutil
 import re
 import textwrap
+import socket
 from datetime import datetime
 
 from collections import OrderedDict
@@ -163,7 +164,7 @@ def vtr_command_argparser(prog=None):
     house_keeping = parser.add_argument_group("House Keeping", description="Configuration related to how files/time/memory are used by the script.")
 
     house_keeping.add_argument("-temp_dir",
-                               default=".",
+                               default=None,
                                help="Directory to run the flow in (will be created if non-existant).")
     
     house_keeping.add_argument("-name",
@@ -230,7 +231,7 @@ def vtr_command_main(arg_list, prog=None):
 
     path_arch_file = Path(args.architecture_file)
     path_circuit_file = Path(args.circuit_file)
-    if (args.temp_dir == "."):
+    if (args.temp_dir == None):
         temp_dir="./temp"
     else:
         temp_dir=args.temp_dir
@@ -266,7 +267,7 @@ def vtr_command_main(arg_list, prog=None):
                     name=args.name
                 else:
                     name=path_arch_file.name+"/"+path_circuit_file.name
-                print(name)
+                print(name, end ="\t\t")
                 #Run the flow
                 vtr.run(path_arch_file, 
                              path_circuit_file, 
@@ -312,7 +313,21 @@ def vtr_command_main(arg_list, prog=None):
             exit_status = 2
 
     finally:
-        vtr.print_verbose(BASIC_VERBOSITY, args.verbose, "OK (took {})".format(vtr.format_elapsed_time(datetime.now() - start)))
+        seconds = datetime.now() - start
+        vtr.print_verbose(BASIC_VERBOSITY, args.verbose, "OK (took {})".format(vtr.format_elapsed_time(seconds)+"seconds"))
+        out = Path(temp_dir) / "output.txt"
+        out.touch()
+        with out.open('w') as f:
+            f.write("vpr_status=")
+            if(exit_status==0):
+                f.write("success\n")
+            else:
+                f.write("failure\n")
+            f.write("vpr_seconds=%d\nrundir=%s\nhostname=%s\nerror=" % (seconds.total_seconds(), str(Path.cwd()), socket.gethostname()))
+            if(exit_status!=0):
+                f.write(exit_status)
+            f.write("\n")
+        
     sys.exit(exit_status)
 
 def process_unkown_args(unkown_args):

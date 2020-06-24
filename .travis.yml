@@ -101,7 +101,7 @@ jobs:
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
       script:
         - ./.github/travis/build.sh
-        - travis_wait 30 ./run_reg_test.pl vtr_reg_basic -show_failures -j2 -script vtr-flow.py
+        - travis_wait 30 ./run_reg_test.pl vtr_reg_basic -show_failures -j2 
     - stage: Test
       name: "Strong Regression Tests Python"
       env:
@@ -109,7 +109,7 @@ jobs:
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
       script:
         - ./.github/travis/build.sh
-        - travis_wait 30 ./run_reg_test.pl vtr_reg_strong -show_failures -j2 -script vtr-flow.py
+        - travis_wait 30 ./run_reg_test.pl vtr_reg_strong -show_failures -j2 
     - stage: Test
       name: "Basic Valgrind Memory Tests Python"
       env:
@@ -117,7 +117,7 @@ jobs:
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
       script:
         - ./.github/travis/build.sh
-        - travis_wait 30 ./run_reg_test.pl vtr_reg_valgrind_small -show_failures -j2 -script vtr-flow.py
+        - travis_wait 30 ./run_reg_test.pl vtr_reg_valgrind_small -show_failures -j2 
     - stage: Test
       name: "Sanitized Basic Regression Tests Python"
       env:
@@ -128,7 +128,7 @@ jobs:
       script:
         - ./.github/travis/build.sh
         #We skip QoR since we are only checking for errors in sanitizer runs
-        - travis_wait 30 ./run_reg_test.pl vtr_reg_basic -show_failures -skip_qor -j2 -script vtr-flow.py
+        - travis_wait 30 ./run_reg_test.pl vtr_reg_basic -show_failures -skip_qor -j2 
     - stage: Test
       name: "Code Formatting"
       script:
@@ -157,7 +157,7 @@ jobs:
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
       script:
         - ./.github/travis/build.sh
-        - travis_wait 30 ./run_reg_test.pl vtr_reg_basic -show_failures -j2
+        - travis_wait 30 ./run_reg_test.pl vtr_reg_basic -show_failures -j2 -script run_vtr_flow.pl
     - stage: Test
       name: "Strong Regression Tests"
       env:
@@ -165,7 +165,7 @@ jobs:
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
       script:
         - ./.github/travis/build.sh
-        - travis_wait 30 ./run_reg_test.pl vtr_reg_strong -show_failures -j2
+        - travis_wait 30 ./run_reg_test.pl vtr_reg_strong -show_failures -j2 -script run_vtr_flow.pl
     - stage: Test
       name: "Basic Valgrind Memory Tests"
       env:
@@ -173,7 +173,7 @@ jobs:
         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
       script:
         - ./.github/travis/build.sh
-        - travis_wait 30 ./run_reg_test.pl vtr_reg_valgrind_small -show_failures -j2
+        - travis_wait 30 ./run_reg_test.pl vtr_reg_valgrind_small -show_failures -j2 -script run_vtr_flow.pl
     - stage: Test
       name: "Sanitized Basic Regression Tests"
       env:
@@ -184,7 +184,7 @@ jobs:
       script:
         - ./.github/travis/build.sh
         #We skip QoR since we are only checking for errors in sanitizer runs
-        - travis_wait 30 ./run_reg_test.pl vtr_reg_basic -show_failures -skip_qor -j2
+        - travis_wait 30 ./run_reg_test.pl vtr_reg_basic -show_failures -skip_qor -j2 -script run_vtr_flow.pl
     #Currently strong regression with sanitizers is disabled as it exceeds the maximum travis job run-time
     #- stage: Test
       #name: "Sanitized Strong Regression Tests"

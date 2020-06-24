@@ -68,7 +68,7 @@ my $processors             = 1;
 my $run_prefix             = "run";
 my $show_runtime_estimates = 1;
 my $system_type            = "local";
-my $script                 = "run_vtr_flow.pl";
+my $script                 = "vtr-flow.py";
 my $shared_script_params   = "";
 my $verbosity              = 0;
 my $short_task_names = 0;
@@ -216,7 +216,7 @@ sub generate_single_task_actions {
 	my $circuits_dir;
 	my $archs_dir;
 	my $sdc_dir = undef;
-	my $script_default = "run_vtr_flow.pl";
+	my $script_default = "vtr-flow.py run_vtr_flow.pl";
 	my $script_path;
 	my $script_params_common = $shared_script_params;  # start with the shared ones then build unique ones
 	my @circuits_list;
@@ -288,7 +288,7 @@ sub generate_single_task_actions {
     close(CONFIG_FH);
 
 	# Using default script
-	if ( $script eq $script_default ) {
+	if (index($script_default, $script) != -1  ) {
 
 		# This is hack to automatically add the option '-temp_dir .' if using the run_vtr_flow.pl script
 		# This ensures that a 'temp' folder is not created in each circuit directory
