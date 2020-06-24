@@ -33,5 +33,9 @@
         name="capnproto" 
         internal_path="libs/EXTERNAL/capnproto" 
         external_url="https://github.com/capnproto/capnproto.git" 
-        default_external_ref="v0.7.0"/>
+        default_external_ref="v0.7.0"/><subtree name="libeigen"
+    	internal_path="libs/EXTERNAL/libeigen"
+    	external_url="https://gitlab.com/libeigen/eigen.git"
+    	default_external_ref="master">
+</subtree>
 </subtrees>
