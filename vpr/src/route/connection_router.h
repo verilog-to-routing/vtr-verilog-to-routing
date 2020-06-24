@@ -62,7 +62,8 @@ class ConnectionRouter : public ConnectionRouterInterface {
         int sink_node,
         const t_conn_cost_params cost_params,
         t_bb bounding_box,
-        RouterStats& router_stats) final;
+        RouterStats& router_stats,
+        std::set<int>& route_tree_nodes) final;
 
     // Finds a path from the route tree rooted at rt_root to sink_node for a
     // high fanout net.
@@ -75,7 +76,8 @@ class ConnectionRouter : public ConnectionRouterInterface {
         const t_conn_cost_params cost_params,
         t_bb bounding_box,
         const SpatialRouteTreeLookup& spatial_rt_lookup,
-        RouterStats& router_stats) final;
+        RouterStats& router_stats,
+        std::set<int>& route_tree_nodes) final;
 
     // Finds a path from the route tree rooted at rt_root to all sinks
     // available.
@@ -127,7 +129,8 @@ class ConnectionRouter : public ConnectionRouterInterface {
         t_rt_node* rt_root,
         int sink_node,
         const t_conn_cost_params cost_params,
-        t_bb bounding_box);
+        t_bb bounding_box,
+        std::set<int>& route_tree_nodes);
 
     // Finds a path to sink_node, starting from the elements currently in the
     // heap.
@@ -141,21 +144,24 @@ class ConnectionRouter : public ConnectionRouterInterface {
     t_heap* timing_driven_route_connection_from_heap(
         int sink_node,
         const t_conn_cost_params cost_params,
-        t_bb bounding_box);
+        t_bb bounding_box,
+        std::set<int>& route_tree_nodes);
 
     // Expand this current node if it is a cheaper path.
     void timing_driven_expand_cheapest(
         t_heap* cheapest,
         int target_node,
         const t_conn_cost_params cost_params,
-        t_bb bounding_box);
+        t_bb bounding_box,
+        std::set<int>& route_tree_nodes);
 
     // Expand each neighbor of the current node.
     void timing_driven_expand_neighbours(
         t_heap* current,
         const t_conn_cost_params cost_params,
         t_bb bounding_box,
-        int target_node);
+        int target_node,
+        std::set<int>& route_tree_nodes);
 
     // Conditionally adds to_node to the router heap (via path from from_node
     // via from_edge).
@@ -170,7 +176,17 @@ class ConnectionRouter : public ConnectionRouterInterface {
         const t_conn_cost_params cost_params,
         const t_bb bounding_box,
         int target_node,
-        const t_bb target_bb);
+        const t_bb target_bb,
+        std::set<int>& route_tree_nodes);
+
+    // Checks if the target node exists in the route tree, or current path variable
+    // This is needed for RCV as the non minimum distance pathfinding can lead to illegal loops
+    // By keeping a set of the current route tree for a net, as well as checking the current path we can prevent this
+    bool node_exists_in_route_tree(
+        t_heap* current,
+        RRNodeId& to_node,
+        const t_conn_cost_params& cost_params,
+        std::set<int>& route_tree_nodes);
 
     // Add to_node to the heap, and also add any nodes which are connected by
     // non-configurable edges
@@ -202,8 +218,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
     //used as branch-points for further routing.
     void add_route_tree_to_heap(t_rt_node* rt_node,
                                 int target_node,
-                                const t_conn_cost_params cost_params,
-                                std::set<int> net);
+                                const t_conn_cost_params cost_params);
 
     //Unconditionally adds rt_node to the heap
     //
@@ -212,8 +227,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
     void add_route_tree_node_to_heap(
         t_rt_node* rt_node,
         int target_node,
-        const t_conn_cost_params cost_params,
-        std::set<int> net);
+        const t_conn_cost_params cost_params);
 
     t_bb add_high_fanout_route_tree_to_heap(
         t_rt_node* rt_root,

@@ -144,13 +144,10 @@ template<typename T>
 void push_back_node_with_info(
     T* heap,
     int inode, 
-    float total_cost, 
-    int prev_node, 
-    int prev_edge, 
+    float total_cost,
     float backward_path_cost, 
     float R_upstream, 
-    float backward_path_delay, 
-    std::set<int> net_rr) {
+    float backward_path_delay) {
 
     t_heap* hptr = heap->alloc(true);
     hptr->index = inode;

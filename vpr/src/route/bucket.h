@@ -169,6 +169,8 @@ class Bucket : public HeapInterface {
     }
 
     t_heap* alloc(bool init_data_structs) {
+        // Supress unused warning
+        (void)init_data_structs;
         return alloc();
     }
 

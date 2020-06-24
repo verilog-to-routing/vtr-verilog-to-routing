@@ -17,9 +17,10 @@ std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_f
     int sink_node,
     const t_conn_cost_params cost_params,
     t_bb bounding_box,
-    RouterStats& router_stats) {
+    RouterStats& router_stats,
+    std::set<int>& route_tree_nodes) {
     router_stats_ = &router_stats;
-    t_heap* cheapest = timing_driven_route_connection_common_setup(rt_root, sink_node, cost_params, bounding_box);
+    t_heap* cheapest = timing_driven_route_connection_common_setup(rt_root, sink_node, cost_params, bounding_box, route_tree_nodes);
 
     if (cheapest != nullptr) {
         update_cheapest(cheapest);
@@ -38,10 +39,11 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_common_setup(
     t_rt_node* rt_root,
     int sink_node,
     const t_conn_cost_params cost_params,
-    t_bb bounding_box) {
+    t_bb bounding_box,
+    std::set<int>& route_tree_nodes) {
     //Re-add route nodes from the existing route tree to the heap.
     //They need to be repushed onto the heap since each node's cost is target specific.
-    add_route_tree_to_heap(rt_root, sink_node, cost_params, std::set<int>());
+    add_route_tree_to_heap(rt_root, sink_node, cost_params);
     heap_.build_heap(); // via sifting down everything
 
     int source_node = rt_root->inode;
@@ -59,7 +61,8 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_common_setup(
 
     t_heap* cheapest = timing_driven_route_connection_from_heap(sink_node,
                                                                 cost_params,
-                                                                bounding_box);
+                                                                bounding_box,
+                                                                route_tree_nodes);
 
     if (cheapest == nullptr) {
         //Found no path found within the current bounding box.
@@ -95,13 +98,14 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_common_setup(
 
         //Re-initialize the heap since it was emptied by the previous call to
         //timing_driven_route_connection_from_heap()
-        add_route_tree_to_heap(rt_root, sink_node, cost_params, std::set<int>());
+        add_route_tree_to_heap(rt_root, sink_node, cost_params);
         heap_.build_heap(); // via sifting down everything
 
         //Try finding the path again with the relaxed bounding box
         cheapest = timing_driven_route_connection_from_heap(sink_node,
                                                             cost_params,
-                                                            full_device_bounding_box);
+                                                            full_device_bounding_box,
+                                                            route_tree_nodes);
     }
 
     if (cheapest == nullptr) {
@@ -125,7 +129,8 @@ std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_f
     const t_conn_cost_params cost_params,
     t_bb net_bounding_box,
     const SpatialRouteTreeLookup& spatial_rt_lookup,
-    RouterStats& router_stats) {
+    RouterStats& router_stats,
+    std::set<int>& route_tree_nodes) {
     router_stats_ = &router_stats;
 
     // re-explore route tree from root to add any new nodes (buildheap afterwards)
@@ -148,7 +153,8 @@ std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_f
 
     t_heap* cheapest = timing_driven_route_connection_from_heap(sink_node,
                                                                 cost_params,
-                                                                high_fanout_bb);
+                                                                high_fanout_bb,
+                                                                route_tree_nodes);
 
     if (cheapest == nullptr) {
         //Found no path, that may be due to an unlucky choice of existing route tree sub-set,
@@ -163,7 +169,8 @@ std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_f
         cheapest = timing_driven_route_connection_common_setup(rt_root,
                                                                sink_node,
                                                                cost_params,
-                                                               net_bounding_box);
+                                                               net_bounding_box,
+                                                               route_tree_nodes);
     }
 
     if (cheapest == nullptr) {
@@ -191,7 +198,8 @@ std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_f
 template<typename Heap>
 t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(int sink_node,
                                                                          const t_conn_cost_params cost_params,
-                                                                         t_bb bounding_box) {
+                                                                         t_bb bounding_box,
+                                                                         std::set<int>& route_tree_nodes) {
     
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     VTR_ASSERT_SAFE(heap_.is_valid());
@@ -231,7 +239,8 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(int sin
         timing_driven_expand_cheapest(cheapest,
                                       sink_node,
                                       cost_params,
-                                      bounding_box);
+                                      bounding_box,
+                                      route_tree_nodes);
 
         heap_.free(cheapest);
         cheapest = nullptr;
@@ -261,7 +270,7 @@ std::vector<t_heap> ConnectionRouter<Heap>::timing_driven_find_all_shortest_path
 
     //Add the route tree to the heap with no specific target node
     int target_node = OPEN;
-    add_route_tree_to_heap(rt_root, target_node, cost_params, std::set<int>());
+    add_route_tree_to_heap(rt_root, target_node, cost_params);
     heap_.build_heap(); // via sifting down everything
 
     auto res = timing_driven_find_all_shortest_paths_from_heap(cost_params, bounding_box);
@@ -305,10 +314,13 @@ std::vector<t_heap> ConnectionRouter<Heap>::timing_driven_find_all_shortest_path
         //lookahead we can re-use the node exploration code from the regular router
         int target_node = OPEN;
 
+        std::set<int> empty_set;
+
         timing_driven_expand_cheapest(cheapest,
                                       target_node,
                                       cost_params,
-                                      bounding_box);
+                                      bounding_box,
+                                      empty_set);
 
         if (cheapest_paths[inode].index == OPEN || cheapest_paths[inode].cost >= cheapest->cost) {
             VTR_LOGV_DEBUG(router_debug_, "  Better cost to node %d: %g (was %g)\n", inode, cheapest->cost, cheapest_paths[inode].cost);
@@ -327,7 +339,8 @@ template<typename Heap>
 void ConnectionRouter<Heap>::timing_driven_expand_cheapest(t_heap* cheapest,
                                                            int target_node,
                                                            const t_conn_cost_params cost_params,
-                                                           t_bb bounding_box) {
+                                                           t_bb bounding_box,
+                                                           std::set<int>& route_tree_nodes) {
     int inode = cheapest->index;
 
     t_rr_node_route_inf* route_inf = &rr_node_route_inf_[inode];
@@ -359,7 +372,7 @@ void ConnectionRouter<Heap>::timing_driven_expand_cheapest(t_heap* cheapest,
         update_cheapest(cheapest, route_inf);
 
         timing_driven_expand_neighbours(cheapest, cost_params, bounding_box,
-                                        target_node);
+                                        target_node, route_tree_nodes);
     } else {
         //Post-heap prune, do not re-explore from the current/new partial path as it
         //has worse cost than the best partial path to this node found so far
@@ -375,7 +388,8 @@ template<typename Heap>
 void ConnectionRouter<Heap>::timing_driven_expand_neighbours(t_heap* current,
                                                              const t_conn_cost_params cost_params,
                                                              t_bb bounding_box,
-                                                             int target_node) {
+                                                             int target_node,
+                                                             std::set<int>& route_tree_nodes) {
     /* Puts all the rr_nodes adjacent to current on the heap.
      */
 
@@ -426,9 +440,38 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbours(t_heap* current,
                                        cost_params,
                                        bounding_box,
                                        target_node,
-                                       target_bb);
+                                       target_bb,
+                                       route_tree_nodes);
     }
 }
+
+template<typename Heap>
+bool ConnectionRouter<Heap>::node_exists_in_route_tree(t_heap* current,
+                                                        RRNodeId& to_node,
+                                                        const t_conn_cost_params& cost_params,
+                                                        std::set<int>& route_tree_nodes) {
+    if (cost_params.delay_budget || (cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm == YOYO)) {
+        // First check the smaller current path, the ordering of these checks might effect runtime slightly
+        for (auto& node : current->path_rr) {
+            if ((size_t)node == (size_t)to_node) {
+                return true;
+            }
+        }
+
+        // Search through route tree set for nodes existance
+        auto node_exists_in_route_tree = route_tree_nodes.find((size_t) to_node);
+        
+        if (node_exists_in_route_tree == route_tree_nodes.end()) {
+            return true;
+        }
+    } else {
+        // If we're not running RCV code there is no point in checking this
+        return false;
+    }
+
+    return false;
+}
+
 
 //Conditionally adds to_node to the router heap (via path from from_node via from_edge).
 //RR nodes outside the expanded bounding box specified in bounding_box are not added
@@ -441,7 +484,8 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
                                                             const t_conn_cost_params cost_params,
                                                             const t_bb bounding_box,
                                                             int target_node,
-                                                            const t_bb target_bb) {
+                                                            const t_bb target_bb,
+                                                            std::set<int>& route_tree_nodes) {
     RRNodeId to_node(to_node_int);
     int to_xlow = rr_nodes_.node_xlow(to_node);
     int to_ylow = rr_nodes_.node_ylow(to_node);
@@ -491,15 +535,14 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
     VTR_LOGV_DEBUG(router_debug_, "      Expanding node %d edge %zu -> %d\n",
                    from_node, size_t(from_edge), to_node_int);
 
+    // Check if the node exists in the route tree, needed for RCV code
+
     bool node_exists = false;
-    if (cost_params.delay_budget || (cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm == YOYO)) {
-        // auto node_exists_in_set = current->net_rr.find((size_t)to_node);
-        for (auto& node : current->path_rr) {
-            if (node == (size_t)to_node) {
-                node_exists = true;
-                break;
-            }
-        }
+    if (cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm == YOYO) {
+        node_exists = node_exists_in_route_tree(current,
+                                                to_node,
+                                                cost_params,
+                                                route_tree_nodes);
     }
 
     if (!cost_params.delay_budget || (cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm != YOYO) || !node_exists) {
@@ -773,8 +816,7 @@ template<typename Heap>
 void ConnectionRouter<Heap>::add_route_tree_to_heap(
     t_rt_node* rt_node,
     int target_node,
-    const t_conn_cost_params cost_params,
-    std::set<int> net) {
+    const t_conn_cost_params cost_params) {
     /* Puts the entire partial routing below and including rt_node onto the heap *
      * (except for those parts marked as not to be expanded) by calling itself   *
      * recursively.                                                              */
@@ -787,18 +829,15 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
     if (rt_node->re_expand) {
         add_route_tree_node_to_heap(rt_node,
                                     target_node,
-                                    cost_params,
-                                    net);
+                                    cost_params);
     }
 
-    net.insert(rt_node->inode);
     linked_rt_edge = rt_node->u.child_list;
 
     while (linked_rt_edge != nullptr) {
         child_node = linked_rt_edge->child;
         add_route_tree_to_heap(child_node, target_node,
-                               cost_params,
-                               net);
+                               cost_params);
         linked_rt_edge = linked_rt_edge->next;
     }
 }
@@ -811,8 +850,7 @@ template<typename Heap>
 void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
     t_rt_node* rt_node,
     int target_node,
-    const t_conn_cost_params cost_params,
-    std::set<int> net) {
+    const t_conn_cost_params cost_params) {
     int inode = rt_node->inode;
     float backward_path_cost = cost_params.criticality * rt_node->Tdel;
 
@@ -841,8 +879,8 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
         expected_total_delay_cost += pow(std::max(0.f, delay_budget->min_delay - expected_total_delay), 2) / 100e-12;
         expected_total_cost = expected_total_delay_cost + expected_cong;
 
-        push_back_node_with_info(&heap_, inode, expected_total_cost, NO_PREVIOUS, NO_PREVIOUS,
-                                        backward_path_cost, R_upstream, rt_node->Tdel, net);
+        push_back_node_with_info(&heap_, inode, expected_total_cost,
+                                        backward_path_cost, R_upstream, rt_node->Tdel);
     } else if (delay_budget && delay_budget->routing_budgets_algorithm == MINIMAX) {
         float tot_cost = backward_path_cost
                     + cost_params.astar_fac
@@ -861,7 +899,7 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
                     * router_lookahead_.get_expected_cost(inode, target_node, cost_params, R_upstream);
         VTR_LOGV_DEBUG(router_debug_, "  Adding node %8d to heap from init route tree with cost %g (%s)\n", inode, tot_cost, describe_rr_node(inode).c_str());
 
-        push_back_node(&heap_, rr_node_route_inf_, inode, tot_cost, NO_PREVIOUS, RREdgeId::INVALID(),
+        push_back_node(&heap_, rr_node_route_inf_, inode, tot_cost, NO_PREVIOUS, RREdgeId::INVALID(), 
                               backward_path_cost, R_upstream);
     }
 
@@ -914,7 +952,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     //Add existing routing starting from the target bin.
     //If the target's bin has insufficient existing routing add from the surrounding bins
     bool done = false;
-    std::set<int> trace_path;
+    // std::set<int> trace_path;
     for (int dx : {0, -1, +1}) {
         size_t bin_x = target_bin_x + dx;
 
@@ -929,17 +967,17 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                 if (!rt_node->re_expand) continue; //Some nodes (like IPINs) shouldn't be re-expanded
 
                 if (cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm == YOYO) {
-                    trace_path.clear();
-                    trace_path.insert(rt_node->inode);
+                    // trace_path.clear();
+                    // trace_path.insert(rt_node->inode);
                     t_rt_node* parent = rt_node->parent_node;
                     while (parent != nullptr) {
-                        trace_path.insert(parent->inode);
+                        // trace_path.insert(parent->inode);
                         parent = parent->parent_node;
                     }
                 }
 
                 //Put the node onto the heap
-                add_route_tree_node_to_heap(rt_node, target_node, cost_params, trace_path);
+                add_route_tree_node_to_heap(rt_node, target_node, cost_params);
 
                 //Update Bounding Box
                 RRNodeId node(rt_node->inode);
@@ -968,7 +1006,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
 
     t_bb bounding_box = net_bounding_box;
     if (nodes_added == 0) { //If the target bin and it's surrounding bins were empty, just add the full route tree
-        add_route_tree_to_heap(rt_root, target_node, cost_params, std::set<int>());
+        add_route_tree_to_heap(rt_root, target_node, cost_params);
     } else {
         //We found nearby routing, replace original bounding box to be localized around that routing
         bounding_box = adjust_highfanout_bounding_box(highfanout_bb);

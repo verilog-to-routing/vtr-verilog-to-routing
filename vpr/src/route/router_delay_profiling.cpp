@@ -66,12 +66,15 @@ bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const 
 
     bool found_path;
     t_heap cheapest;
+    std::set<int> empty_set;
+
     std::tie(found_path, cheapest) = router_.timing_driven_route_connection_from_route_tree(
         rt_root,
         sink_node,
         cost_params,
         bounding_box,
-        router_stats);
+        router_stats,
+        empty_set);
 
     if (found_path) {
         VTR_ASSERT(cheapest.index == sink_node);
