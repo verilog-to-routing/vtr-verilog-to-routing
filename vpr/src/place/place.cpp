@@ -71,6 +71,8 @@ std::vector<double> time_of_moves (7,0);
 #include "draw_color.h"
 #endif
 
+int timing_cost_func;
+
 using std::max;
 using std::min;
 
@@ -468,6 +470,7 @@ void try_place(const t_placer_opts& placer_opts,
     auto& timing_ctx = g_vpr_ctx.timing();
     auto pre_place_timing_stats = timing_ctx.stats;
     
+    timing_cost_func = placer_opts.place_timing_cost_func;
     dm_rlim = placer_opts.place_dm_rlim;
     reward_num = placer_opts.place_reward_num;
     agent_algorithm = placer_opts.place_agent_algorithm;
@@ -1818,7 +1821,12 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
             /* Calculate proposed delay and cost values */
             proposed_connection_delay[net][ipin] = temp_delay;
             proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * temp_delay;
-            float delay_budget = temp_delay/(criticalities.normalized_criticality(net, ipin) + 0.4);
+            float delay_budget;
+            if(timing_cost_func == 0) 
+                delay_budget = temp_delay/(criticalities.normalized_criticality(net, ipin) + 0.4);
+            else
+                delay_budget = 0.7 * temp_delay/(criticalities.normalized_criticality(net, ipin));
+
             proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * max(float(0), temp_delay - delay_budget);
             delta_timing_cost += proposed_connection_timing_cost[net][ipin] - connection_timing_cost[net][ipin];
 
@@ -1843,7 +1851,12 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
 
             /* Calculate proposed delay and cost values */
             proposed_connection_delay[net][ipin] = temp_delay;
-            float delay_budget = temp_delay/(criticalities.normalized_criticality(net, net_pin) + 0.4);
+            float delay_budget;
+            if(timing_cost_func == 0)
+                delay_budget = temp_delay/(criticalities.normalized_criticality(net, net_pin) + 0.4);
+            else
+                delay_budget = 0.7 * temp_delay/(criticalities.normalized_criticality(net, net_pin));
+
             proposed_connection_timing_cost[net][net_pin] = criticalities.criticality(net, net_pin) * max(float(0), temp_delay - delay_budget);
             delta_timing_cost += proposed_connection_timing_cost[net][ipin] - connection_timing_cost[net][ipin];
 

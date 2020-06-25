@@ -122,6 +122,7 @@ struct t_options {
     argparse::ArgValue<int> place_dm_rlim;
     argparse::ArgValue<e_agent_algorithm> place_agent_algorithm;
     argparse::ArgValue<int> place_reward_num;
+    argparse::ArgValue<int> place_timing_cost_func;
 
     /* Timing-driven placement options only */
     argparse::ArgValue<float> PlaceTimingTradeoff;
