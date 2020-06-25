@@ -127,10 +127,10 @@ def vtr_command_argparser(prog=None):
                         help="Ending stage of the VTR flow.")
 
     parser.add_argument("-verbose", "-v",
-                        choices=vtr.VERBOSITY_CHOICES,
-                        default=2,
-                        type=int,
-                        help="Verbosity of the script. Higher values produce more output.")
+                        default=False,
+                        action="store_true",
+                        dest="verbose",
+                        help="Verbosity of the script.")
 
     parser.add_argument("--parse_config_file",
                         default=None,
@@ -218,6 +218,33 @@ def vtr_command_argparser(prog=None):
                             action="store_true",
                             dest="use_old_latches_restoration_script",
                             help="Use the new latches restoration script")
+    #
+    # ODIN II arguments
+    #
+    odin = parser.add_argument_group("Odin", description="Arguments to be passed to ODIN II")
+    odin.add_argument("-adder_type",
+                            default="default",
+                            help="Odin adder type")
+    odin.add_argument("-adder_cin_global",
+                            default=False,
+                            action="store_true",
+                            dest="adder_cin_global",
+                            help="Tells ODIN II to connect the first cin in an adder/subtractor chain to a global gnd/vdd net.")
+    odin.add_argument("-disable_odin_xml",
+                            default=False,
+                            action="store_true",
+                            dest="disable_odin_xml",
+                            help="Disables the ODIN xml")
+    odin.add_argument("-use_odin_simulation",
+                            default=False,
+                            action="store_true",
+                            dest="use_odin_simulation",
+                            help="Tells ODIN II to connect the first cin in an adder/subtractor chain to a global gnd/vdd net.")
+    odin.add_argument("-min_hard_mult_size",
+                               default=3,
+                               type=int,
+                               metavar="min_hard_mult_size",
+                               help="Tells ODIN II the minimum multiplier size that should be implemented using hard multiplier (if available).")
     return parser
 
 def main():
@@ -258,6 +285,17 @@ def vtr_command_main(arg_list, prog=None):
 
     if(args.use_old_latches_restoration_script):
         abc_args.append("use_old_latches_restoration_script")
+    odin_args= []
+    odin_args.append("--adder_type")
+    odin_args.append(args.adder_type)
+    if(args.adder_cin_global):
+        odin_args.append("--adder_cin_global")
+    if(args.disable_odin_xml):
+        odin_args.append("disable_odin_xml")
+    if(args.use_odin_simulation):
+        odin_args.append("use_odin_simulation")
+    
+
     try:
         if not args.parse_only:
             try:
@@ -279,8 +317,10 @@ def vtr_command_main(arg_list, prog=None):
                              verbosity=args.verbose,
                              vpr_args=vpr_args,
                              abc_args=abc_args,
+                             odin_args=odin_args,
                              keep_intermediate_files=args.keep_intermediate_files,
-                             keep_result_files=args.keep_result_files
+                             keep_result_files=args.keep_result_files,
+                             min_hard_mult_size=args.min_hard_mult_size
                              )
             except vtr.CommandError as e:
                 #An external command failed
@@ -314,7 +354,7 @@ def vtr_command_main(arg_list, prog=None):
 
     finally:
         seconds = datetime.now() - start
-        vtr.print_verbose(BASIC_VERBOSITY, args.verbose, "OK (took {})".format(vtr.format_elapsed_time(seconds)+"seconds"))
+        print("OK (took {})".format(vtr.format_elapsed_time(seconds)))
         out = Path(temp_dir) / "output.txt"
         out.touch()
         with out.open('w') as f:
@@ -325,7 +365,7 @@ def vtr_command_main(arg_list, prog=None):
                 f.write("failure\n")
             f.write("vpr_seconds=%d\nrundir=%s\nhostname=%s\nerror=" % (seconds.total_seconds(), str(Path.cwd()), socket.gethostname()))
             if(exit_status!=0):
-                f.write(exit_status)
+                f.write(str(exit_status))
             f.write("\n")
         
     sys.exit(exit_status)

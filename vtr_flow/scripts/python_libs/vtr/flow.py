@@ -18,10 +18,12 @@ def run(architecture_file, circuit_file,
                  parse_config_file=None,
                  temp_dir="./temp", 
                  verbosity=0,
-                 vpr_args=None,
+                 odin_args=None,
                  abc_args=None,
+                 vpr_args=None,
                  keep_intermediate_files=True,
-                 keep_result_files=True):
+                 keep_result_files=True,
+                 min_hard_mult_size=3):
     """
     Runs the VTR CAD flow to map the specificied circuit_file onto the target architecture_file
 
@@ -94,7 +96,9 @@ def run(architecture_file, circuit_file,
             vtr.odin.run(architecture_copy, next_stage_netlist, 
                      output_netlist=post_odin_netlist, 
                      command_runner=command_runner, 
-                     temp_dir=temp_dir)
+                     temp_dir=temp_dir,
+                     odin_args=odin_args,
+                     min_hard_mult_size=min_hard_mult_size)
 
             next_stage_netlist = post_odin_netlist
 

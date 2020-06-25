@@ -6,6 +6,7 @@ def run(architecture_file, circuit_file,
              output_netlist, 
              command_runner, 
              temp_dir=".", 
+             odin_args="--adder_type default",
              log_filename="odin.out", 
              odin_exec=None, 
              odin_config=None, 
@@ -37,7 +38,25 @@ def run(architecture_file, circuit_file,
                                             "MMM": min_hard_mult_size,
                                             "AAA": min_hard_adder_size,
                                         })
-
-    cmd = [odin_exec, "-c", odin_config, "--adder_type", "default", "-U0"]
+    disable_odin_xml = False
+    if("disable_odin_xml" in odin_args):
+        disable_odin_xml=True
+        odin_args.remove("disable_odin_xml")
+    use_odin_simulation = False
+    if("use_odin_simulation" in odin_args):
+        use_odin_simulation=True
+        odin_args.remove("use_odin_simulation")
+        
+    cmd = [odin_exec, "-c", odin_config]
+    cmd.extend(odin_args)
+    cmd.extend(["-U0"])
+    if(disable_odin_xml):
+        cmd.extend(["-a",architecture_file.name, "-V", circuit_file.name, "-o",output_netlist.name])
 
     command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename=log_filename, indent_depth=1)
+
+    if(use_odin_simulation):
+        sim_dir = Path(temp_dir) / "simulation_init"
+        sim_dir.mkdir()
+        cmd = [odin_exec, "-b", output_netlist.name, -a, architecture_file.name, "-sim_dir", str(sim_dir),"-g", "100", "--best_coverage", "-U0"]
+        command_runner.run_system_command(cmd,temp_dir=temp_dir, log_filename="sim_produce_vector.out",indent_depth=1)
