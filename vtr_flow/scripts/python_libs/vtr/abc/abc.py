@@ -24,17 +24,23 @@ def run(architecture_file, circuit_file,
     abc_flow_type = 2
     abc_run_args = ""
     use_old_latches_restoration_script = 0
-    for  i in abc_args:
-        if(i=="iterative_bb"):
+    lut_size = None
+    for  key, value in abc_args.items():
+        if(key=="iterative_bb"):
             abc_flow_type=2
-        elif(i=="blanket_bb"):
+        elif(key=="blanket_bb"):
             abc_flow_type=3
-        elif(i=="once_bb"):
+        elif(key=="once_bb"):
             abc_flow_type=1
-        elif(i=="use_old_latches_restoration_script"):
+        elif(key=="use_old_latches_restoration_script"):
             use_old_latches_restoration_script = 1
+        elif(key=="lut_size"):
+            lut_size=value
         else:
             abc_run_args += i
+            
+    if(lut_size == None):
+        lut_size = determine_lut_size(str(architecture_file))
 
     if(abc_flow_type):
         populate_clock_list(circuit_file,blackbox_latches_script,clk_list,command_runner,temp_dir,log_filename)
@@ -46,7 +52,9 @@ def run(architecture_file, circuit_file,
         abc_rc = Path(abc_exec).parent / 'abc.rc'
 
     shutil.copyfile(str(abc_rc), str(Path(temp_dir) / 'abc.rc'))
-    lut_size = determine_lut_size(str(architecture_file))
+
+    
+
     iterations=len(clk_list)
     
     if(iterations==0 or abc_flow_type != 2):

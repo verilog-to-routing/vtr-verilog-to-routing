@@ -195,29 +195,32 @@ def vtr_command_argparser(prog=None):
                                metavar="TIMEOUT_SECONDS",
                                help="Maximum time in seconds to spend on a single stage.")
     #
-    # Iterative black-boxing flow arguments
+    # ABC arguments
     #
-    iterative = parser.add_argument_group("Iterative", description="Iterative black-boxing flow for multi-clock circuits options")
-    iterative.add_argument("-iterative_bb",
+    abc = parser.add_argument_group("abc", description="Iterative black-boxing flow for multi-clock circuits options")
+    abc.add_argument("-iterative_bb",
                             default=False,
                             action="store_true",
                             dest="iterative_bb",
                             help="Use iterative black-boxing flow for multi-clock circuits")
-    iterative.add_argument("-once_bb",
+    abc.add_argument("-once_bb",
                             default=False,
                             action="store_true",
                             dest="once_bb",
                             help="Use the black-boxing flow a single time")
-    iterative.add_argument("-blanket_bb",
+    abc.add_argument("-blanket_bb",
                             default=False,
                             action="store_true",
                             dest="blanket_bb",
                             help="Use iterative black-boxing flow with out clocks") #not sure if this is a correct statement. 
-    iterative.add_argument("-use_old_latches_restoration_script",
+    abc.add_argument("-use_old_latches_restoration_script",
                             default=False,
                             action="store_true",
                             dest="use_old_latches_restoration_script",
                             help="Use the new latches restoration script")
+    abc.add_argument("-lut_size",
+                               type=int,
+                               help="Tells ABC the LUT size of the FPGA architecture")
     #
     # ODIN II arguments
     #
@@ -281,27 +284,33 @@ def vtr_command_main(arg_list, prog=None):
                                    echo_cmd=True if args.verbose >= 4 else False,
                                    show_failures = args.show_failures)
     exit_status = 0
-    abc_args = []
+    abc_args = OrderedDict()
     if(args.iterative_bb):
-        abc_args.append("iterative_bb")
+        abc_args["iterative_bb"] = True
 
     if(args.once_bb):
-        abc_args.append("once_bb")
+        abc_args["once_bb"] = True
 
     if(args.blanket_bb):
-        abc_args.append("blanket_bb")
+        abc_args["blanket_bb"] = True
 
     if(args.use_old_latches_restoration_script):
-        abc_args.append("use_old_latches_restoration_script")
-    odin_args= []
-    odin_args.append("--adder_type")
-    odin_args.append(args.adder_type)
+        abc_args["use_old_latches_restoration_script"] = True
+
+    if(args.lut_size):
+        abc_args["lut_size"] = args.lut_size
+
+    odin_args = OrderedDict()
+    odin_args["--adder_type"] = args.adder_type 
+
     if(args.adder_cin_global):
-        odin_args.append("--adder_cin_global")
+        odin_args["--adder_cin_global"] = True
+
     if(args.disable_odin_xml):
-        odin_args.append("disable_odin_xml")
+        odin_args["disable_odin_xml"] = True
+
     if(args.use_odin_simulation):
-        odin_args.append("use_odin_simulation")
+        odin_args["use_odin_simulation"] = True
     
 
     try:

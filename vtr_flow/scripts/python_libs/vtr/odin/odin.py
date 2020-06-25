@@ -41,11 +41,11 @@ def run(architecture_file, circuit_file,
     disable_odin_xml = False
     if("disable_odin_xml" in odin_args):
         disable_odin_xml=True
-        odin_args.remove("disable_odin_xml")
+        del odin_args["disable_odin_xml"]
     use_odin_simulation = False
     if("use_odin_simulation" in odin_args):
         use_odin_simulation=True
-        odin_args.remove("use_odin_simulation")
+        del odin_args["use_odin_simulation"]
         
     cmd = [odin_exec, "-c", odin_config]
     cmd.extend(odin_args)
