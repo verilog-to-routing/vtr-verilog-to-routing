@@ -258,7 +258,6 @@ def vtr_command_argparser(prog=None):
     #
     vpr  = parser.add_argument_group("Vpr", description="Arguments to be parsed and then passed to VPR")
     vpr.add_argument("-crit_path_router_iterations",
-                               default=150,
                                type=int,
                                help="Tells ODIN II the minimum multiplier size that should be implemented using hard multiplier (if available).")
     return parser
@@ -322,7 +321,8 @@ def vtr_command_main(arg_list, prog=None):
         if not args.parse_only:
             try:
                 vpr_args = process_unkown_args(unkown_args)
-                vpr_args["max_router_iterations"] = args.crit_path_router_iterations
+                if(args.crit_path_router_iterations):
+                    vpr_args["max_router_iterations"] = args.crit_path_router_iterations
                 name = ""
                 if(args.name):
                     name=args.name
