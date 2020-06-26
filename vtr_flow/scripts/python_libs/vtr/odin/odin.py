@@ -48,7 +48,13 @@ def run(architecture_file, circuit_file,
         del odin_args["use_odin_simulation"]
         
     cmd = [odin_exec, "-c", odin_config]
-    cmd.extend(odin_args)
+    for arg, value in odin_args.items():
+        if value == True:
+            cmd += ["--" + arg]
+        elif value == False:
+            pass
+        else:
+            cmd += ["--" + arg, str(value)]
     cmd.extend(["-U0"])
     if(disable_odin_xml):
         cmd.extend(["-a",architecture_file.name, "-V", circuit_file.name, "-o",output_netlist.name])

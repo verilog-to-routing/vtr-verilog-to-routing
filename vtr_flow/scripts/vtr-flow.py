@@ -15,6 +15,7 @@ from collections import OrderedDict
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / 'python_libs'))
 import vtr
+from vtr import mkdir_p
 
 
 BASIC_VERBOSITY = 1
@@ -218,6 +219,10 @@ def vtr_command_argparser(prog=None):
                             action="store_true",
                             dest="use_old_latches_restoration_script",
                             help="Use the new latches restoration script")
+    abc.add_argument("-check_equivalent",
+                            default=False,
+                            action="store_true",
+                            help="Enables Logical Equivalence Checks")
     abc.add_argument("-lut_size",
                                type=int,
                                help="Tells ABC the LUT size of the FPGA architecture")
@@ -301,10 +306,10 @@ def vtr_command_main(arg_list, prog=None):
         abc_args["lut_size"] = args.lut_size
 
     odin_args = OrderedDict()
-    odin_args["--adder_type"] = args.adder_type 
+    odin_args["adder_type"] = args.adder_type 
 
     if(args.adder_cin_global):
-        odin_args["--adder_cin_global"] = True
+        odin_args["adder_cin_global"] = True
 
     if(args.disable_odin_xml):
         odin_args["disable_odin_xml"] = True
@@ -338,7 +343,8 @@ def vtr_command_main(arg_list, prog=None):
                              odin_args=odin_args,
                              keep_intermediate_files=args.keep_intermediate_files,
                              keep_result_files=args.keep_result_files,
-                             min_hard_mult_size=args.min_hard_mult_size
+                             min_hard_mult_size=args.min_hard_mult_size,
+                             check_equivalent = args.check_equivalent
                              )
             except vtr.CommandError as e:
                 #An external command failed
@@ -373,6 +379,7 @@ def vtr_command_main(arg_list, prog=None):
     finally:
         seconds = datetime.now() - start
         print("OK (took {})".format(vtr.format_elapsed_time(seconds)))
+        mkdir_p(temp_dir)
         out = Path(temp_dir) / "output.txt"
         out.touch()
         with out.open('w') as f:

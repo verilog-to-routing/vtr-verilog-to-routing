@@ -7,7 +7,7 @@ def run(architecture_file, circuit_file,
         output_netlist, command_runner,
         temp_dir=".", log_filename="abc.out",
         abc_exec=None, abc_script=None, abc_rc=None,
-        use_old_abc_script = False, abc_args = None,keep_intermediate_files=1):
+        use_old_abc_script = False, abc_args = None, keep_intermediate_files=1):
 
     mkdir_p(temp_dir)
 
@@ -37,7 +37,12 @@ def run(architecture_file, circuit_file,
         elif(key=="lut_size"):
             lut_size=value
         else:
-            abc_run_args += i
+            if value == True:
+                abc_run_args += ["--" + arg]
+            elif value == False:
+                pass
+            else:
+                abc_run_args += ["--" + arg, str(value)]
             
     if(lut_size == None):
         lut_size = determine_lut_size(str(architecture_file))
@@ -162,7 +167,7 @@ def populate_clock_list(circuit_file,blackbox_latches_script,clk_list,command_ru
     with clk_list_path.open('r') as f:
          clk_list.append(f.readline().strip('\n'))
 
-def run_lec(reference_netlist, implementation_netlist, command_runner, temp_dir=".", log_filename="abc.lec.out", abc_exec=None):
+def run_lec(reference_netlist, implementation_netlist, command_runner, temp_dir=".", log_filename="abc.dec.out", abc_exec=None):
     """
     Run Logical Equivalence Checking (LEC) between two netlists using ABC
     """
@@ -171,9 +176,7 @@ def run_lec(reference_netlist, implementation_netlist, command_runner, temp_dir=
     if abc_exec == None:
         abc_exec = find_vtr_file('abc', is_executable=True)
 
-        abc_script = ['cec {ref} {imp}'.format(ref=reference_netlist, imp=implementation_netlist),
-                      'sec {ref} {imp}'.format(ref=reference_netlist, imp=implementation_netlist),
-                      ]
+        abc_script = 'dsec {ref} {imp}'.format(ref=reference_netlist, imp=implementation_netlist),
         abc_script = "; ".join(abc_script)
 
     cmd = [abc_exec, '-c', abc_script]
@@ -181,8 +184,13 @@ def run_lec(reference_netlist, implementation_netlist, command_runner, temp_dir=
     output, returncode = command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename=log_filename, indent_depth=1)
 
     #Check if ABC's LEC engine passed
-    lec_passed = check_abc_lec_status(output)
-    
+    lec_passed, errored = check_abc_lec_status(output)
+    if errored:
+        abc_script = 'cec {ref} {imp}'.format(ref=reference_netlist, imp=implementation_netlist),
+        abc_script = "; ".join(abc_script)
+        cmd = [abc_exec, '-c', abc_script]
+        output, returncode = command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename="abc.cec.out", indent_depth=1)    
+        lec_passed, errored = check_abc_lec_status(output)
     if lec_passed is None:
         raise InspectError("Could not determine Logical Equivalence Check status between {input} <-> {output}".format(input=reference_netlist, output=implementation_netlist), filename=log_filename)
     elif lec_passed is False:
@@ -192,12 +200,15 @@ def run_lec(reference_netlist, implementation_netlist, command_runner, temp_dir=
 
 def check_abc_lec_status(output):
     equivalent = None
+    errored = False
     for line in output:
+        if "Error: The network has no latches." in line:
+            errored = True
         if line.startswith("Networks are NOT EQUIVALENT"):
             equivalent = False
         elif line.startswith("Networks are equivalent"):
             equivalent = True
 
     #Returns None if could not determine LEC status
-    return equivalent
+    return equivalent, errored
 

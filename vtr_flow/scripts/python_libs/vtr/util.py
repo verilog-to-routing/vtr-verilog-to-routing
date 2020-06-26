@@ -238,7 +238,7 @@ def mkdir_p(path):
     """
     make_path = Path(path)
     try:
-        make_path.mkdir()
+        make_path.mkdir(parents=True)
     except OSError as exc:  # Python >2.5
         if exc.errno == errno.EEXIST and make_path.is_dir():
             pass

@@ -23,7 +23,8 @@ def run(architecture_file, circuit_file,
                  vpr_args=None,
                  keep_intermediate_files=True,
                  keep_result_files=True,
-                 min_hard_mult_size=3):
+                 min_hard_mult_size=3,
+                 check_equivalent=False):
     """
     Runs the VTR CAD flow to map the specificied circuit_file onto the target architecture_file
 
@@ -68,8 +69,9 @@ def run(architecture_file, circuit_file,
     post_ace_netlist =Path(temp_dir)  / (circuit_name + ".ace.blif")
     post_ace_activity_file = Path(temp_dir)  / (circuit_name + ".act")
     pre_vpr_netlist = Path(temp_dir)  / (circuit_name + ".pre-vpr.blif")
-    post_vpr_netlist = Path(temp_dir)  / "top_post_synthesis.blif" #circuit_name + ".vpr.blif"
+    post_vpr_netlist = Path(temp_dir)  / "vpr.out" #circuit_name + ".vpr.blif"
     lec_base_netlist = None #Reference netlist for LEC
+    gen_postsynthesis_netlist = Path(temp_dir) / (circuit_name + "_post_synthesis.blif")
 
     if circuit_ext == ".blif":
         #If the user provided a .blif netlist, we use that as the baseline for LEC
@@ -158,11 +160,6 @@ def run(architecture_file, circuit_file,
         #Copy the input netlist for input to vpr
         shutil.copyfile(str(next_stage_netlist), str(pre_vpr_netlist))
 
-        #Do we need to generate the post-synthesis netlist? (e.g. for LEC)
-        if should_run_stage(VTR_STAGE.lec, start_stage, end_stage):
-            if "gen_postsynthesis_netlist" not in vpr_args:
-                vpr_args["gen_postsynthesis_netlist"] = "on"
-
         if "route_chan_width" in vpr_args:
             #The User specified a fixed channel width
             vtr.vpr.run(architecture_copy, circuit_copy, pre_vpr_netlist, 
@@ -185,8 +182,12 @@ def run(architecture_file, circuit_file,
     #
     # Logical Equivalence Checks (LEC)
     #
-    if should_run_stage(VTR_STAGE.lec, start_stage, end_stage):
-        vtr.abc.run_lec(lec_base_netlist, post_vpr_netlist, command_runner=command_runner, log_filename="abc.lec.out")
+    if check_equivalent:
+        for file in Path(temp_dir).iterdir():
+            if "post_synthesis.blif" in str(file) :
+                gen_postsynthesis_netlist = file.name
+                break
+        vtr.abc.run_lec(lec_base_netlist, gen_postsynthesis_netlist, command_runner=command_runner, temp_dir=temp_dir)
     if(not keep_intermediate_files):
         next_stage_netlist.unlink()
         exts = ('.xml','.sdf','.v')
