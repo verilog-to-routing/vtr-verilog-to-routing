@@ -127,7 +127,7 @@ def vtr_command_argparser(prog=None):
                         action=VtrStageArgparseAction,
                         help="Ending stage of the VTR flow.")
 
-    parser.add_argument("-verbose", "-v",
+    parser.add_argument("-verbose",
                         default=False,
                         action="store_true",
                         dest="verbose",

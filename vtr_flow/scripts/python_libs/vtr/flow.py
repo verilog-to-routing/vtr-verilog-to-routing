@@ -62,18 +62,20 @@ def run(architecture_file, circuit_file,
     architecture_ext = architecture_file.suffixes
 
     vtr.mkdir_p(temp_dir)
-    
+    netlist_ext = ".blif"
+    if ".eblif" in circuit_ext:
+        netlist_ext = ".eblif"
     #Define useful filenames
-    post_odin_netlist = Path(temp_dir)  / (circuit_name + '.odin.blif')
-    post_abc_netlist =Path(temp_dir)  / (circuit_name + '.abc.blif')
-    post_ace_netlist =Path(temp_dir)  / (circuit_name + ".ace.blif")
+    post_odin_netlist = Path(temp_dir)  / (circuit_name + '.odin' + netlist_ext)
+    post_abc_netlist =Path(temp_dir)  / (circuit_name + '.abc' + netlist_ext)
+    post_ace_netlist =Path(temp_dir)  / (circuit_name + ".ace" + netlist_ext)
     post_ace_activity_file = Path(temp_dir)  / (circuit_name + ".act")
-    pre_vpr_netlist = Path(temp_dir)  / (circuit_name + ".pre-vpr.blif")
+    pre_vpr_netlist = Path(temp_dir)  / (circuit_name + ".pre-vpr" + netlist_ext)
     post_vpr_netlist = Path(temp_dir)  / "vpr.out" #circuit_name + ".vpr.blif"
     lec_base_netlist = None #Reference netlist for LEC
-    gen_postsynthesis_netlist = Path(temp_dir) / (circuit_name + "_post_synthesis.blif")
+    gen_postsynthesis_netlist = Path(temp_dir) / (circuit_name + "_post_synthesis." + netlist_ext)
 
-    if circuit_ext == ".blif":
+    if "blif" in circuit_ext:
         #If the user provided a .blif netlist, we use that as the baseline for LEC
         #(ABC can't LEC behavioural verilog)
         lec_base_netlist = circuit_file_basename
