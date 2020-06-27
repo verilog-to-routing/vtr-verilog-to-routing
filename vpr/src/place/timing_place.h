@@ -373,12 +373,12 @@ class PlacerTimingCosts {
 
     //Returns the number of nodes in ilevel'th level
     size_t num_nodes_in_level(int ilevel) const {
-        return (1 << (ilevel));
+        return ilevel < 0 ? 0 : (1 << (ilevel));
     }
 
     //Returns the total number of nodes in levels [0..ilevel] (inclusive)
     size_t num_nodes_up_to_level(int ilevel) const {
-        return (2 << (ilevel + 1)) - 1;
+        return ilevel < 0 ? 0 : (1 << (ilevel + 1)) - 1;
     }
 
   private:
