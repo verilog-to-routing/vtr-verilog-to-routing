@@ -372,13 +372,15 @@ class PlacerTimingCosts {
     }
 
     //Returns the number of nodes in ilevel'th level
+    //If ilevel is negative, return 0, since the root shouldn't be counted
+    //as a leaf node candidate
     size_t num_nodes_in_level(int ilevel) const {
-        return ilevel < 0 ? 0 : (1 << (ilevel));
+        return ilevel < 0 ? 0 : (2 << (ilevel));
     }
 
     //Returns the total number of nodes in levels [0..ilevel] (inclusive)
     size_t num_nodes_up_to_level(int ilevel) const {
-        return ilevel < 0 ? 0 : (1 << (ilevel + 1)) - 1;
+        return (2 << (ilevel + 1)) - 1;
     }
 
   private:
