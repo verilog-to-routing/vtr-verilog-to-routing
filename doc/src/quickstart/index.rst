@@ -130,7 +130,7 @@ and various report files describing the characteristics of the implementation:
     pre_pack.report_timing.setup.rpt  report_timing.setup.rpt  report_unconstrained_timing.setup.rpt
 
 
-Visualizaing Circuit Implementation
+Visualizing Circuit Implementation
 -----------------------------------
 
 .. note:: This section requires that VPR was compiled with graphic support. See :ref:`VPR Graphics <vpr_graphics>` for details.
