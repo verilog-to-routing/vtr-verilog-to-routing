@@ -221,10 +221,10 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(int sin
         //Have we found the target?
         if (inode == sink_node) {
             if (cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm == YOYO) {
-                for (unsigned i = 1; i < cheapest->edge.size() - 1; i++) {
-                    int node_2 = cheapest->path_rr[i];
-                    int edge = cheapest->edge[i - 1];
-                    route_ctx.rr_node_route_inf[node_2].prev_node = cheapest->path_rr[i - 1];
+                for (unsigned i = 1; i < cheapest->path_data->edge.size() - 1; i++) {
+                    int node_2 = cheapest->path_data->path_rr[i];
+                    int edge = cheapest->path_data->edge[i - 1];
+                    route_ctx.rr_node_route_inf[node_2].prev_node = cheapest->path_data->path_rr[i - 1];
                     route_ctx.rr_node_route_inf[node_2].prev_edge = RREdgeId(edge);
                     route_ctx.rr_node_route_inf[node_2].path_cost = cheapest->cost;
                     route_ctx.rr_node_route_inf[node_2].backward_path_cost = cheapest->backward_path_cost;
@@ -452,7 +452,7 @@ bool ConnectionRouter<Heap>::node_exists_in_route_tree(t_heap* current,
                                                         std::set<int>& route_tree_nodes) {
     if (cost_params.delay_budget || (cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm == YOYO)) {
         // First check the smaller current path, the ordering of these checks might effect runtime slightly
-        for (auto& node : current->path_rr) {
+        for (auto& node : current->path_data->path_rr) {
             if ((size_t)node == (size_t)to_node) {
                 return true;
             }
@@ -606,17 +606,9 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
         next_ptr->set_prev_node(from_node);
 
         if (cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm == YOYO) {
-
-            next_ptr->backward_delay = current->backward_delay;
-            next_ptr->backward_cong = current->backward_cong;
-            // next_ptr->partial_path_nodes = current->partial_path_nodes;
-            next_ptr->edge = current->edge;
-            next_ptr->path_rr = current->path_rr;
-            // next_ptr->net_rr = current->net_rr;
-            next_ptr->path_rr.emplace_back(from_node);
-            // next_ptr->net_rr.emplace(from_node);
-            // next_ptr->partial_path_nodes.emplace(from_node);
-            next_ptr->edge.emplace_back((size_t) from_edge);
+            next_ptr->path_data = current->path_data;
+            next_ptr->path_data->path_rr.emplace_back(from_node);
+            next_ptr->path_data->edge.emplace_back((size_t) from_edge);
         }
 
         heap_.add_to_heap(next_ptr);
@@ -742,13 +734,13 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
         float expected_delay = router_lookahead_.get_expected_delay(to_node, target_node, cost_params, to->R_upstream);
         float expected_cong = router_lookahead_.get_expected_cong(to_node, target_node, cost_params, to->R_upstream);
 
-        to->backward_delay += Tdel;
-        to->backward_cong += get_rr_cong_cost(to_node);
+        to->path_data->backward_delay += Tdel;
+        to->path_data->backward_cong += get_rr_cong_cost(to_node);
         float expected_total_delay_cost; // = new_costs.backward_cost + cost_params.astar_fac * expected_cost;
         float expected_total_cong_cost;
 
-        float expected_total_cong = expected_cong + to->backward_cong;
-        float expected_total_delay = cost_params.astar_fac * expected_delay + to->backward_delay;
+        float expected_total_cong = expected_cong + to->path_data->backward_cong;
+        float expected_total_delay = cost_params.astar_fac * expected_delay + to->path_data->backward_delay;
         //If budgets specified calculate cost as described by RCV paper:
         //    R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While
         //     Repairing Short-Path Violations," in IEEE Transactions on Computer-Aided Design of
@@ -766,15 +758,15 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
         float expected_delay = router_lookahead_.get_expected_delay(to_node, target_node, cost_params, to->R_upstream);
 
         //Update total cost
-        to->backward_delay += Tdel;
-        to->backward_cong += get_rr_cong_cost(to_node);
+        to->path_data->backward_delay += Tdel;
+        to->path_data->backward_cong += get_rr_cong_cost(to_node);
         float expected_cost = router_lookahead_.get_expected_cost(to_node, target_node, cost_params, to->R_upstream);
         VTR_LOGV_DEBUG(router_debug_ && !std::isfinite(expected_cost),
                     "        Lookahead from %s (%s) to %s (%s) is non-finite, expected_cost = %f, to->R_upstream = %f\n",
                     rr_node_arch_name(to_node).c_str(), describe_rr_node(to_node).c_str(),
                     rr_node_arch_name(target_node).c_str(), describe_rr_node(target_node).c_str(),
                     expected_cost, to->R_upstream);
-        float expected_total_delay = cost_params.astar_fac * expected_delay + to->backward_delay;
+        float expected_total_delay = cost_params.astar_fac * expected_delay + to->path_data->backward_delay;
         
         total_cost += std::pow(std::max(0.f, expected_total_delay - delay_budget->max_delay), 2) / 100e-12;
         total_cost += to->backward_path_cost + cost_params.astar_fac * expected_cost;

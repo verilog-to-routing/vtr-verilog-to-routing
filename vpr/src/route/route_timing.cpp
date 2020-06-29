@@ -490,7 +490,6 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
                                                            budgeting_inf,
                                                            was_rerouted);
             if (!is_routable) {
-                print_delay_budget_info(net_id, budgeting_inf);
                 return (false); //Impossible to route
             }
 
@@ -990,14 +989,26 @@ bool timing_driven_route_net(ConnectionRouter& router,
 
     VTR_LOGV_DEBUG(f_router_debug, "Routing Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
 
-    t_rt_node* rt_root = setup_routing_resources(itry,
-                                                 net_id,
-                                                 num_sinks,
-                                                 pres_fac,
-                                                 router_opts.min_incremental_reroute_fanout,
-                                                 connections_inf,
-                                                 rt_node_of_sink,
-                                                 check_hold(router_opts, timing_info));
+    t_rt_node* rt_root;
+    if(router_opts.routing_budgets_algorithm == YOYO) {
+        rt_root = setup_routing_resources(itry,
+                                            net_id,
+                                            num_sinks,
+                                            pres_fac,
+                                            router_opts.min_incremental_reroute_fanout,
+                                            connections_inf,
+                                            rt_node_of_sink,
+                                            check_hold(router_opts, timing_info));
+    } else {
+        rt_root = setup_routing_resources(itry,
+                                        net_id,
+                                        num_sinks,
+                                        pres_fac,
+                                        router_opts.min_incremental_reroute_fanout,
+                                        connections_inf,
+                                        rt_node_of_sink,
+                                        false);
+    }
 
     bool high_fanout = is_high_fanout(num_sinks, router_opts.high_fanout_threshold);
 
@@ -1357,7 +1368,7 @@ static bool timing_driven_route_sink(
         update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), ROUTING, nullptr);
     }
 
-    if (budgeting_inf.if_set() && cheapest.backward_delay < cost_params.delay_budget->min_delay) {
+    if (budgeting_inf.if_set() && cheapest.path_data->backward_delay < cost_params.delay_budget->min_delay) {
         budgeting_inf.set_should_reroute(net_id, true);
     }
 

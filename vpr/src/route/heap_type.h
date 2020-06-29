@@ -8,6 +8,15 @@
 #include "rr_graph_fwd.h"
 #include <set>
 
+/* Extra path data needed by RCV, seperated from t_heap struct for performance reasons
+ * Can be accessed by a pointer, won't be initialized unless needed */
+struct t_heap_path {
+    std::vector<int> path_rr;
+    std::vector<int> edge;
+    float backward_delay = 0.;
+    float backward_cong = 0.;
+};
+
 /* Used by the heap as its fundamental data structure.
  * Each heap element represents a partial route.
  *
@@ -53,12 +62,9 @@ struct t_heap {
     float R_upstream = 0.;
 
     int index = OPEN;
-    std::vector<int> path_rr;
-    std::vector<int> edge;
     // std::set<int> net_rr; // Getting refactored out of this data structure
     // std::set<int> partial_path_nodes; // Not sure why this is needed so it's gettin yeeted
-    float backward_delay = 0.;
-    float backward_cong = 0.;
+    t_heap_path* path_data;
 
     struct t_prev {
         int node;
@@ -115,6 +121,10 @@ class HeapStorage {
   private:
     /* For keeping track of the sudo malloc memory for the heap*/
     vtr::t_chunk heap_ch_;
+
+    // For the smaller path struct
+    vtr::t_chunk heap_ch_path_;
+    t_heap_path* heap_path_free_head_;
 
     t_heap* heap_free_head_;
     size_t num_heap_allocated_;

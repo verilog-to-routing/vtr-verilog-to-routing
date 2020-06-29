@@ -66,15 +66,13 @@ bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const 
 
     bool found_path;
     t_heap cheapest;
-    std::set<int> empty_set;
-
     std::tie(found_path, cheapest) = router_.timing_driven_route_connection_from_route_tree(
         rt_root,
         sink_node,
         cost_params,
         bounding_box,
         router_stats,
-        empty_set);
+        dummy_route_tree_nodes);
 
     if (found_path) {
         VTR_ASSERT(cheapest.index == sink_node);
@@ -100,6 +98,7 @@ bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const 
 
 //Returns the shortest path delay from src_node to all RR nodes in the RR graph, or NaN if no path exists
 std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const t_router_opts& router_opts) {
+
     auto& device_ctx = g_vpr_ctx.device();
     auto& routing_ctx = g_vpr_ctx.mutable_routing();
 

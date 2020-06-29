@@ -6,6 +6,7 @@
 #include "vtr_log.h"
 #include "vtr_memory.h"
 #include "vtr_math.h"
+#include "vtr_time.h"
 
 #include "vpr_types.h"
 #include "vpr_utils.h"
@@ -300,7 +301,7 @@ add_subtree_to_route_tree(t_heap* hptr, t_rt_node** sink_rt_node_ptr, std::set<i
     while (rr_node_to_rt_node[inode] == nullptr) { //Not connected to existing routing
         main_branch_visited.insert(inode);
         all_visited.insert(inode);
-        route_tree_nodes.insert(inode);
+        // route_tree_nodes.insert(inode);
 
         linked_rt_edge = alloc_linked_rt_edge();
         linked_rt_edge->child = downstream_rt_node;
@@ -362,7 +363,7 @@ static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bo
 
     if (!visited.count(rr_node) || !reached_by_non_configurable_edge) {
         visited.insert(rr_node);
-        route_tree_nodes.insert(rr_node);
+        // route_tree_nodes.insert(rr_node);
 
         auto& device_ctx = g_vpr_ctx.device();
 

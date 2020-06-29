@@ -154,10 +154,10 @@ void push_back_node_with_info(
     hptr->cost = total_cost;
     hptr->backward_path_cost = backward_path_cost;
     hptr->R_upstream = R_upstream;
-    hptr->path_rr.clear();
-    hptr->edge.clear();
+    hptr->path_data->path_rr.clear();
+    hptr->path_data->edge.clear();
     // hptr->net_rr = net_rr;
-    hptr->backward_delay = backward_path_delay;
-    hptr->backward_cong = 0;
+    hptr->path_data->backward_delay = backward_path_delay;
+    hptr->path_data->backward_cong = 0;
     heap->push_back(hptr);
 }

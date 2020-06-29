@@ -6,7 +6,8 @@
 #include "vpr_types.h"
 
 HeapStorage::HeapStorage()
-    : heap_free_head_(nullptr)
+    : heap_path_free_head_(nullptr)
+    , heap_free_head_(nullptr)
     , num_heap_allocated_(0) {}
 
 t_heap*
@@ -25,10 +26,9 @@ HeapStorage::alloc() {
     temp_ptr->set_next_heap_item(nullptr);
     temp_ptr->cost = 0.;
     temp_ptr->backward_path_cost = 0.;
-    temp_ptr->backward_delay = 0.;
-    temp_ptr->backward_cong = 0.;
     temp_ptr->R_upstream = 0.;
     temp_ptr->index = OPEN;
+    temp_ptr->path_data = nullptr;
     temp_ptr->set_prev_node(NO_PREVIOUS);
     temp_ptr->set_prev_edge(RREdgeId::INVALID());
     return (temp_ptr);
@@ -50,16 +50,24 @@ HeapStorage::alloc(bool init_data_structs) {
     temp_ptr->set_next_heap_item(nullptr);
     temp_ptr->cost = 0.;
     temp_ptr->backward_path_cost = 0.;
-    temp_ptr->backward_delay = 0.;
-    temp_ptr->backward_cong = 0.;
     temp_ptr->R_upstream = 0.;
     temp_ptr->index = OPEN;
 
-    if(init_data_structs) {
-        temp_ptr->path_rr.clear();
-        temp_ptr->edge.clear();
+    if (init_data_structs) {
+        if (heap_path_free_head_ == nullptr) {
+            heap_path_free_head_ = vtr::chunk_new<t_heap_path>(&heap_ch_path_);
+        }
+        temp_ptr->path_data = heap_path_free_head_;
+        heap_path_free_head_ = temp_ptr->next_heap_item()->path_data;
+
+        temp_ptr->path_data->path_rr.clear();
+        temp_ptr->path_data->edge.clear();
+        temp_ptr->path_data->backward_delay = 0.;
+        temp_ptr->path_data->backward_cong = 0.;
         // temp_ptr->net_rr.clear();
         // temp_ptr->partial_path_nodes.clear();
+    } else {
+        temp_ptr->path_data = nullptr;
     }
     
     temp_ptr->set_prev_node(NO_PREVIOUS);
@@ -76,11 +84,18 @@ void HeapStorage::free(t_heap* hptr) {
 void HeapStorage::free_all_memory() {
     VTR_ASSERT(num_heap_allocated_ == 0);
 
+    bool free_path_heap = false;
+
     if (heap_free_head_ != nullptr) {
         t_heap* curr = heap_free_head_;
         while (curr) {
             t_heap* tmp = curr;
             curr = curr->next_heap_item();
+
+            if (tmp->path_data != nullptr) {
+                vtr::chunk_delete(tmp->path_data, &heap_ch_path_);
+                free_path_heap = true;
+            }
 
             vtr::chunk_delete(tmp, &heap_ch_);
         }
@@ -89,6 +104,7 @@ void HeapStorage::free_all_memory() {
     }
 
     /*free the memory chunks that were used by heap and linked f pointer */
+    free_chunk_memory(&heap_ch_path_);
     free_chunk_memory(&heap_ch_);
 }
 
