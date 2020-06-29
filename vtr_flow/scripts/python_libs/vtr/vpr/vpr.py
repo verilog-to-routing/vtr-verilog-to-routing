@@ -1,6 +1,7 @@
 import shutil
 from pathlib import Path
 from vtr import  mkdir_p, find_vtr_file, CommandRunner, print_verbose, relax_W, determine_lut_size, determine_min_W, verify_file
+from vtr.error import InspectError
 
 def run_relax_W(architecture, circuit_name, circuit, command_runner=CommandRunner(), temp_dir=".", 
                     relax_W_factor=1.3, vpr_exec=None, verbosity=1, logfile_base="vpr",
@@ -35,13 +36,28 @@ def run_relax_W(architecture, circuit_name, circuit, command_runner=CommandRunne
 
     vpr_min_W_log = '.'.join([logfile_base, "out"])
     vpr_relaxed_W_log = '.'.join([logfile_base, "crit_path", "out"])
+    max_router_iterations = None
+
+    if "max_router_iterations" in vpr_args:
+        max_router_iterations = vpr_args["max_router_iterations"]
+        del vpr_args["max_router_iterations"]
+
+    if "write_rr_graph" in vpr_args:
+        del vpr_args["write_rr_graph"]
+
+    if "analysis" in vpr_args:
+        del vpr_args["analysis"]
+
+    if "route" in vpr_args:
+        del vpr_args["route"]
 
     run(architecture, circuit_name, circuit, command_runner, temp_dir, log_filename=vpr_min_W_log, vpr_exec=vpr_exec, vpr_args=vpr_args)
 
     if ('pack' in vpr_args or 'place' in vpr_args) and 'route' not in vpr_args:
         #Don't look for min W if routing was not run
         return
-
+    if max_router_iterations:
+        vpr_args["max_router_iterations"]=max_router_iterations
 
     min_W = determine_min_W(str(Path(temp_dir)  / vpr_min_W_log))
 
@@ -52,8 +68,6 @@ def run_relax_W(architecture, circuit_name, circuit, command_runner=CommandRunne
 
     #VPR does not support performing routing when fixed pins 
     # are specified, and placement is not run; so remove the option
-    if 'fix_pins' in vpr_args:
-        del vpr_args['fix_pins']
 
     run(architecture, circuit_name, circuit, command_runner, temp_dir, log_filename=vpr_relaxed_W_log, vpr_exec=vpr_exec, vpr_args=vpr_args)
     
@@ -82,12 +96,64 @@ def run(architecture, circuit_name, circuit, command_runner, temp_dir, output_ne
         #vpr_args['gen_postsynthesis_netlist'] = output_netlist
 
     #Translate arbitrary keyword arguments into options for VPR
+    do_second_run = False
+    second_run_args = vpr_args
+
+    if "write_rr_graph" in vpr_args:
+        do_second_run = True
+
+    if "analysis" in vpr_args:
+        do_second_run = True
+        del vpr_args["analysis"]
+
+    if "route" in vpr_args:
+        dp_second_run = True
+        del vpr_args["route"]
+
     for arg, value in vpr_args.items():
         if value == True:
             cmd += ["--" + arg]
         elif value == False:
             pass
         else:
-            cmd += ["--" + arg, str(value)]
+            if isinstance(value,list):
+                cmd += ["--" + arg]
+                for i in range(len(value)):
+                    cmd += [str(value[i])]
+            else:
+                cmd += ["--" + arg, str(value)]
 
     command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename=log_filename, indent_depth=1)
+
+    if(do_second_run):
+        rr_graph_ext=".xml"
+        rr_graph_out_file = ""
+        if "write_rr_graph" in second_run_args:
+            rr_graph_out_file = second_run_args["write_rr_graph"]
+            rr_graph_ext = Path(rr_graph_out_file).suffix
+
+        rr_graph_out_file2 = "rr_graph2" + rr_graph_ext
+        if "write_rr_graph" in second_run_args:
+            second_run_args["read_rr_graph"] = rr_graph_out_file
+            second_run_args["write_rr_graph"] = rr_graph_out_file2
+
+        second_run_log_file = "vpr_second_run.out"
+        cmd = [vpr_exec, architecture.name, circuit_name.stem, "--circuit_file", circuit.name]
+
+        for arg, value in vpr_args.items():
+            if value == True:
+                cmd += ["--" + arg]
+            elif value == False:
+                pass
+            else:
+                cmd += ["--" + arg, str(value)]
+
+        command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename=second_run_log_file, indent_depth=1)
+
+        if "write_rr_graph" in second_run_args:
+            cmd = ["diff", rr_graph_out_file, rr_graph_out_file2]
+            output, diff_result = command_runner.run_system_command(cmd,temp_dir,log_filename="diff.rr_graph.out", indent_depth=1)
+            if diff_result:
+                raise InspectError("failed: vpr (RR Graph XML output not consistent when reloaded)")
+
+

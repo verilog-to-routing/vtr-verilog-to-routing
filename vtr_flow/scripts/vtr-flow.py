@@ -195,6 +195,10 @@ def vtr_command_argparser(prog=None):
                                type=float,
                                metavar="TIMEOUT_SECONDS",
                                help="Maximum time in seconds to spend on a single stage.")
+    house_keeping.add_argument("-expect_fail",
+                               default=None,
+                               type=str,
+                               help="Informs VTR that this run is expected to fail with this message.")
     #
     # ABC arguments
     #
@@ -259,25 +263,44 @@ def vtr_command_argparser(prog=None):
     vpr  = parser.add_argument_group("Vpr", description="Arguments to be parsed and then passed to VPR")
     vpr.add_argument("-crit_path_router_iterations",
                                type=int,
-                               help="Tells ODIN II the minimum multiplier size that should be implemented using hard multiplier (if available).")
+                               default=150,
+                               help="")
+    vpr.add_argument("-fix_pins",
+                               type=str,
+                               help="")
+    vpr.add_argument("-verify_rr_graph",
+                            default=False,
+                            action="store_true",
+                            help="Tells VPR to verify the routing resource graph.")
+    vpr.add_argument("-rr_graph_ext",
+                               default=".xml",
+                               type=str,
+                               help="")
+    vpr.add_argument("-check_route",
+                            default=False,
+                            action="store_true",
+                            help="")
+    vpr.add_argument("-check_place",
+                            default=False,
+                            action="store_true",
+                            help="")
+                               
     return parser
 
 def main():
-    vtr_command_main(sys.argv[1:])
+    vtr_command_main(sys.argv[1:],prog = sys.argv[0])
 
 def vtr_command_main(arg_list, prog=None):
     start = datetime.now()
-
     #Load the arguments
-    args, unkown_args = vtr_command_argparser(prog).parse_known_args(arg_list)
-
+    args, unknown_args = vtr_command_argparser(prog).parse_known_args(arg_list)
     path_arch_file = Path(args.architecture_file)
     path_circuit_file = Path(args.circuit_file)
+    error_status = "OK"
     if (args.temp_dir == None):
         temp_dir="./temp"
     else:
         temp_dir=args.temp_dir
-
 
     #Specify how command should be run
     command_runner = vtr.CommandRunner(track_memory=args.track_memory_usage, 
@@ -288,6 +311,7 @@ def vtr_command_main(arg_list, prog=None):
                                    echo_cmd=True if args.verbose >= 4 else False,
                                    show_failures = args.show_failures)
     exit_status = 0
+    return_status = 0
     abc_args = OrderedDict()
     if(args.iterative_bb):
         abc_args["iterative_bb"] = True
@@ -320,9 +344,21 @@ def vtr_command_main(arg_list, prog=None):
     try:
         if not args.parse_only:
             try:
-                vpr_args = process_unkown_args(unkown_args)
+                vpr_args = process_unknown_args(unknown_args)
                 if(args.crit_path_router_iterations):
                     vpr_args["max_router_iterations"] = args.crit_path_router_iterations
+                if(args.fix_pins):
+                    new_file = str(Path(temp_dir) / Path(args.fix_pins).name)
+                    shutil.copyfile(str((Path(prog).parent.parent / args.fix_pins)), new_file)
+                    vpr_args["fix_pins"] = new_file
+                if args.verify_rr_graph:
+                    rr_graph_out_file = "rr_graph" + args.rr_graph_ext
+                    vpr_args["write_rr_graph"] = rr_graph_out_file
+                if args.check_place:
+                    vpr_args["route"] = True
+                if args.check_route:
+                    vpr_args["analysis"] = True
+
                 name = ""
                 if(args.name):
                     name=args.name
@@ -348,25 +384,47 @@ def vtr_command_main(arg_list, prog=None):
                              )
             except vtr.CommandError as e:
                 #An external command failed
-                print ("Error: {msg}".format(msg=e.msg))
-                print ("\tfull command: ", ' '.join(e.cmd))
-                print ("\treturncode  : ", e.returncode)
-                print ("\tlog file    : ", e.log)
+                return_status = 1
+                if args.expect_fail:
+                    expect_string = args.expect_fail
+                    actual_error = None
+                    if "exited with return code" in expect_string:
+                        actual_error = "exited with return code {}".format(e.returncode)
+                    else:
+                        actual_error = e.msg
+                    if expect_string != actual_error:
+                        error_status = "failed: expected to fail with '{expected}' but was '{actual}'".format(expected=expect_string,actual = actual_error)
+                        exit_status = 1
+                    else:
+                        error_status = "OK"
+                        return_status = 0
+                        if args.verbose:
+                            error_status += " (as expected {})".format(expect_string)
+                        else:
+                            error_status += "*"
+                if not args.expect_fail or exit_status:
+                    print ("Error: {msg}".format(msg=e.msg))
+                    print ("\tfull command: ", ' '.join(e.cmd))
+                    print ("\treturncode  : ", e.returncode)
+                    print ("\tlog file    : ", e.log)
                 exit_status = 1
             except vtr.InspectError as e:
                 #Something went wrong gathering information
                 print ("Error: {msg}".format(msg=e.msg))
                 print ("\tfile        : ", e.filename)
                 exit_status = 2
+                return_status = exit_status
 
             except vtr.VtrError as e:
                 #Generic VTR errors
                 print ("Error: ", e.msg)
                 exit_status = 3
+                return_status = exit_status
 
             except KeyboardInterrupt as e:
                 print ("{} recieved keyboard interrupt".format(prog))
                 exit_status = 4
+                return_status = exit_status
 
         #Parse the flow results
         try:
@@ -378,7 +436,7 @@ def vtr_command_main(arg_list, prog=None):
 
     finally:
         seconds = datetime.now() - start
-        print("OK (took {})".format(vtr.format_elapsed_time(seconds)))
+        print("{status} (took {time})".format(status = error_status, time=vtr.format_elapsed_time(seconds)))
         mkdir_p(temp_dir)
         out = Path(temp_dir) / "output.txt"
         out.touch()
@@ -387,21 +445,19 @@ def vtr_command_main(arg_list, prog=None):
             if(exit_status==0):
                 f.write("success\n")
             else:
-                f.write("failure\n")
+                f.write("exited with return code {}\n".format(exit_status))
             f.write("vpr_seconds=%d\nrundir=%s\nhostname=%s\nerror=" % (seconds.total_seconds(), str(Path.cwd()), socket.gethostname()))
-            if(exit_status!=0):
-                f.write(str(exit_status))
             f.write("\n")
         
-    sys.exit(exit_status)
+    sys.exit(return_status)
 
-def process_unkown_args(unkown_args):
-    #We convert the unkown_args into a dictionary, which is eventually 
+def process_unknown_args(unknown_args):
+    #We convert the unknown_args into a dictionary, which is eventually 
     #used to generate arguments for VPR
     vpr_args = OrderedDict()
-    while len(unkown_args) > 0:
+    while len(unknown_args) > 0:
         #Get the first argument
-        arg = unkown_args.pop(0)
+        arg = unknown_args.pop(0)
 
         if arg == '':
             continue
@@ -421,13 +477,19 @@ def process_unkown_args(unkown_args):
 
 
         #Determine if there is a value associated with this argument
-        if len(unkown_args) == 0 or unkown_args[0].startswith('-'):
+        if len(unknown_args) == 0 or (unknown_args[0].startswith('-') and arg != "target_ext_pin_util"):
             #Single value argument, we place these with value 'True'
             #in vpr_args
             vpr_args[arg] = True
         else:
             #Multivalue argument
-            val = unkown_args.pop(0)
+            val = unknown_args.pop(0)
+            if len(unknown_args) != 0 and not unknown_args[0].startswith('-'):
+                temp = val
+                val =[]
+                val.append(temp)
+            while len(unknown_args) != 0 and not unknown_args[0].startswith('-'):    
+                val.append(unknown_args.pop(0))
             vpr_args[arg] = val
 
     return vpr_args
