@@ -11,6 +11,8 @@ archs_dir=arch/timing
 # Add circuits to list to sweep
 circuit_list_add=ch_intrinsics.v
 circuit_list_add=diffeq1.v
+circuit_list_add=single_wire.v
+circuit_list_add=single_ff.v
 
 # Add architectures to list to sweep
 arch_list_add=k6_N10_mem32K_40nm.xml
