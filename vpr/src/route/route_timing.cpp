@@ -192,7 +192,7 @@ struct more_sinks_than {
 
 static size_t calculate_wirelength_available();
 static WirelengthInfo calculate_wirelength_info(size_t available_wirelength);
-static OveruseInfo calculate_overuse_info(std::vector<ClusterNetId>& rerouted_nets);
+static OveruseInfo calculate_overuse_info(const std::vector<ClusterNetId>& rerouted_nets);
 
 static void print_route_status_header();
 static void print_route_status(int itry,
@@ -1608,9 +1608,8 @@ static bool early_exit_heuristic(const t_router_opts& router_opts, const Wirelen
     return false;
 }
 
-static OveruseInfo calculate_overuse_info(std::vector<ClusterNetId>& rerouted_nets) {
+static OveruseInfo calculate_overuse_info(const std::vector<ClusterNetId>& rerouted_nets) {
     auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
     std::unordered_set<int> checked_nodes;
