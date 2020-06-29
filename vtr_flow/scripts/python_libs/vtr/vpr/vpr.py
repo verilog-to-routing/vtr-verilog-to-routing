@@ -69,10 +69,10 @@ def run_relax_W(architecture, circuit_name, circuit, command_runner=CommandRunne
     #VPR does not support performing routing when fixed pins 
     # are specified, and placement is not run; so remove the option
 
-    run(architecture, circuit_name, circuit, command_runner, temp_dir, log_filename=vpr_relaxed_W_log, vpr_exec=vpr_exec, vpr_args=vpr_args)
+    run(architecture, circuit_name, circuit, command_runner, temp_dir, log_filename=vpr_relaxed_W_log, vpr_exec=vpr_exec, vpr_args=vpr_args, check_for_second_run=False)
     
 
-def run(architecture, circuit_name, circuit, command_runner, temp_dir, output_netlist=None, log_filename="vpr.out", vpr_exec=None, vpr_args=None):
+def run(architecture, circuit_name, circuit, command_runner, temp_dir, output_netlist=None, log_filename="vpr.out", vpr_exec=None, vpr_args=None,check_for_second_run=True):
     """
     Runs VPR with the specified configuration
     """
@@ -99,15 +99,15 @@ def run(architecture, circuit_name, circuit, command_runner, temp_dir, output_ne
     do_second_run = False
     second_run_args = vpr_args
 
-    if "write_rr_graph" in vpr_args:
+    if check_for_second_run and  "write_rr_graph" in vpr_args:
         do_second_run = True
 
-    if "analysis" in vpr_args:
+    if check_for_second_run and "analysis" in vpr_args:
         do_second_run = True
         del vpr_args["analysis"]
 
-    if "route" in vpr_args:
-        dp_second_run = True
+    if check_for_second_run and "route" in vpr_args:
+        do_second_run = True
         del vpr_args["route"]
 
     for arg, value in vpr_args.items():
