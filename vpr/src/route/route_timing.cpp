@@ -192,7 +192,7 @@ struct more_sinks_than {
 
 static size_t calculate_wirelength_available();
 static WirelengthInfo calculate_wirelength_info(size_t available_wirelength);
-static OveruseInfo calculate_overuse_info();
+static OveruseInfo calculate_overuse_info(const std::vector<ClusterNetId>& rerouted_nets);
 
 static void print_route_status_header();
 static void print_route_status(int itry,
@@ -503,7 +503,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
         bool routing_is_feasible = feasible_routing();
         float est_success_iteration = routing_predictor.estimate_success_iteration();
 
-        overuse_info = calculate_overuse_info();
+        overuse_info = calculate_overuse_info(rerouted_nets);
         wirelength_info = calculate_wirelength_info(available_wirelength);
         routing_predictor.add_iteration_overuse(itry, overuse_info.overused_nodes());
 
@@ -1608,9 +1608,8 @@ static bool early_exit_heuristic(const t_router_opts& router_opts, const Wirelen
     return false;
 }
 
-static OveruseInfo calculate_overuse_info() {
+static OveruseInfo calculate_overuse_info(const std::vector<ClusterNetId>& rerouted_nets) {
     auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();
 
     std::unordered_set<int> checked_nodes;
@@ -1627,7 +1626,10 @@ static OveruseInfo calculate_overuse_info() {
     //Note that we walk through the entire routing and *not* the RR graph, which
     //should be more efficient (since usually only a portion of the RR graph is
     //used by routing, particularly on large devices).
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+    //
+    //We skip the nets that have not been rerouted, since if a net should
+    //be rerouted if it already has overused nodes (congestion problem).
+    for (auto net_id : rerouted_nets) {
         for (t_trace* tptr = route_ctx.trace[net_id].head; tptr != nullptr; tptr = tptr->next) {
             int inode = tptr->index;
 
