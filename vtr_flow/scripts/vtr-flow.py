@@ -284,6 +284,10 @@ def vtr_command_argparser(prog=None):
                             default=False,
                             action="store_true",
                             help="")
+    vpr.add_argument("-sdc_file",
+                               default=None,
+                               type=str,
+                               help="")
                                
     return parser
 
@@ -301,9 +305,8 @@ def vtr_command_main(arg_list, prog=None):
         temp_dir="./temp"
     else:
         temp_dir=args.temp_dir
-
     #Specify how command should be run
-    command_runner = vtr.CommandRunner(track_memory=args.track_memory_usage, 
+    command_runner = vtr.CommandRunner(track_memory=True, 
                                    max_memory_mb=args.limit_memory_usage, 
                                    timeout_sec=args.timeout,
                                    verbose_error=True if args.verbose == 2 else False,
@@ -358,6 +361,14 @@ def vtr_command_main(arg_list, prog=None):
                     vpr_args["route"] = True
                 if args.check_route:
                     vpr_args["analysis"] = True
+                if args.sdc_file:
+                    if not Path(args.sdc_file).exists():
+                        sdc_file = Path(str(Path(prog).parent.parent) + args.sdc_file)
+                        if sdc_file.exists():
+                            args.sdc_file = str(sdc_file)
+                        else:
+                            raise vtr.InspectError("Sdc file {} was not found.".format(args.sdc_file))
+                    vpr_args["sdc_file"] = args.sdc_file
 
                 name = ""
                 if(args.name):
