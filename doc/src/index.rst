@@ -56,6 +56,12 @@ For more specific documentation about VPR see :ref:`vpr`.
    glossary
    zreferences
 
+.. toctree::
+   :maxdepth: 2
+   :caption: API Reference
+
+   api/vpr/index
+
 Indices and tables
 ==================
 
