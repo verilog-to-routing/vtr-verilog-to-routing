@@ -39,7 +39,6 @@ def run_relax_W(architecture, circuit_name, circuit, command_runner=CommandRunne
     max_router_iterations = None
 
     if "max_router_iterations" in vpr_args:
-        max_router_iterations = vpr_args["max_router_iterations"]
         del vpr_args["max_router_iterations"]
 
     if "write_rr_graph" in vpr_args:
@@ -56,8 +55,6 @@ def run_relax_W(architecture, circuit_name, circuit, command_runner=CommandRunne
     if ('pack' in vpr_args or 'place' in vpr_args) and 'route' not in vpr_args:
         #Don't look for min W if routing was not run
         return
-    if max_router_iterations:
-        vpr_args["max_router_iterations"]=max_router_iterations
 
     min_W = determine_min_W(str(Path(temp_dir)  / vpr_min_W_log))
 
@@ -69,10 +66,10 @@ def run_relax_W(architecture, circuit_name, circuit, command_runner=CommandRunne
     #VPR does not support performing routing when fixed pins 
     # are specified, and placement is not run; so remove the option
 
-    run(architecture, circuit_name, circuit, command_runner, temp_dir, log_filename=vpr_relaxed_W_log, vpr_exec=vpr_exec, vpr_args=vpr_args, check_for_second_run=False)
+    run(architecture, circuit_name, circuit, command_runner, temp_dir, log_filename=vpr_relaxed_W_log, vpr_exec=vpr_exec, vpr_args=vpr_args, specified_channel_width=False)
     
 
-def run(architecture, circuit_name, circuit, command_runner, temp_dir, output_netlist=None, log_filename="vpr.out", vpr_exec=None, vpr_args=None,check_for_second_run=True):
+def run(architecture, circuit_name, circuit, command_runner, temp_dir, output_netlist=None, log_filename="vpr.out", vpr_exec=None, vpr_args=None,specified_channel_width=True):
     """
     Runs VPR with the specified configuration
     """
@@ -99,14 +96,14 @@ def run(architecture, circuit_name, circuit, command_runner, temp_dir, output_ne
     do_second_run = False
     second_run_args = vpr_args
 
-    if check_for_second_run and  "write_rr_graph" in vpr_args:
+    if specified_channel_width and  "write_rr_graph" in vpr_args:
         do_second_run = True
 
-    if check_for_second_run and "analysis" in vpr_args:
+    if specified_channel_width and "analysis" in vpr_args:
         do_second_run = True
         del vpr_args["analysis"]
 
-    if check_for_second_run and "route" in vpr_args:
+    if specified_channel_width and "route" in vpr_args:
         do_second_run = True
         del vpr_args["route"]
 
