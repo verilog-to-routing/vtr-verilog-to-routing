@@ -363,11 +363,16 @@ def vtr_command_main(arg_list, prog=None):
                     vpr_args["analysis"] = True
                 if args.sdc_file:
                     if not Path(args.sdc_file).exists():
-                        sdc_file = Path(str(Path(prog).parent.parent) + args.sdc_file)
+                        sdc_file = None
+                        if args.sdc_file.startswith("/"):
+                            sdc_file = Path(str(Path(prog).parent.parent) + args.sdc_file)
+                        else:
+                            sdc_file = Path(prog).parent.parent / args.sdc_file
+
                         if sdc_file.exists():
                             args.sdc_file = str(sdc_file)
                         else:
-                            raise vtr.InspectError("Sdc file {} was not found.".format(args.sdc_file))
+                            raise vtr.InspectError("Sdc file {arg},{sdc} was not found.".format(arg=args.sdc_file,sdc=str(sdc_file)))
                     vpr_args["sdc_file"] = args.sdc_file
 
                 name = ""
@@ -413,6 +418,8 @@ def vtr_command_main(arg_list, prog=None):
                             error_status += " (as expected {})".format(expect_string)
                         else:
                             error_status += "*"
+                else:
+                    error_status = "failed: {}".format(e.msg)
                 if not args.expect_fail or exit_status:
                     print ("Error: {msg}".format(msg=e.msg))
                     print ("\tfull command: ", ' '.join(e.cmd))
@@ -425,12 +432,14 @@ def vtr_command_main(arg_list, prog=None):
                 print ("\tfile        : ", e.filename)
                 exit_status = 2
                 return_status = exit_status
+                error_status = "failed: {}".format(e.msg)
 
             except vtr.VtrError as e:
                 #Generic VTR errors
                 print ("Error: ", e.msg)
                 exit_status = 3
                 return_status = exit_status
+                error_status = "failed: {}".format(e.msg)
 
             except KeyboardInterrupt as e:
                 print ("{} recieved keyboard interrupt".format(prog))
