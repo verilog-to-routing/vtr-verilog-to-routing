@@ -155,6 +155,9 @@ static void ShowAnnealSched(const t_annealing_sched& AnnealSched) {
         case USER_SCHED:
             VTR_LOG("USER_SCHED\n");
             break;
+        case DUSTY_SCHED:
+            VTR_LOG("DUSTY_SCHED\n");
+            break;
         default:
             VTR_LOG_ERROR("Unknown annealing schedule\n");
     }
@@ -165,6 +168,12 @@ static void ShowAnnealSched(const t_annealing_sched& AnnealSched) {
         VTR_LOG("AnnealSched.init_t: %f\n", AnnealSched.init_t);
         VTR_LOG("AnnealSched.alpha_t: %f\n", AnnealSched.alpha_t);
         VTR_LOG("AnnealSched.exit_t: %f\n", AnnealSched.exit_t);
+    } else if (DUSTY_SCHED == AnnealSched.type) {
+        VTR_LOG("AnnealSched.alpha_min: %f\n", AnnealSched.alpha_min);
+        VTR_LOG("AnnealSched.alpha_max: %f\n", AnnealSched.alpha_max);
+        VTR_LOG("AnnealSched.alpha_decay: %f\n", AnnealSched.alpha_decay);
+        VTR_LOG("AnnealSched.success_min: %f\n", AnnealSched.success_min);
+        VTR_LOG("AnnealSched.success_target: %f\n", AnnealSched.success_target);
     }
 }
 
