@@ -83,10 +83,10 @@ int total_pins = 0;
 std::map<int,std::string> available_move_types = {
         {0,"Uniform"},
         {1,"Median"},
-        {2,"Weighted Median"},
-        {3,"Weighted Centroid"},
-        {4,"Feasible Region"},
-        {5,"Critical Uniform"},
+        {2,"Weighted_median"},
+        {3,"Weighted_centroid"},
+        {4,"Feasible_region"},
+        {5,"Critical_uniform"},
         {6,"Centroid"}
 };
 //#ifdef VTR_ENABLE_DEBUG_LOGGING
@@ -530,13 +530,13 @@ void try_place(const t_placer_opts& placer_opts,
 
     if(!placer_opts.simpleRL_agent_placement){
         VTR_LOG("Using static probabilities for choosing move types\n");
-        VTR_LOG("Uniform move : %f \n",placer_opts.place_static_move_prob[0]);
-        VTR_LOG("Median move : %f \n",placer_opts.place_static_move_prob[1]);
-        VTR_LOG("Weighted Median move : %f \n",placer_opts.place_static_move_prob[2]);
-        VTR_LOG("Weighted Centroid move : %f \n",placer_opts.place_static_move_prob[3]);
-        VTR_LOG("Timing Feasible Region move : %f \n",placer_opts.place_static_move_prob[4]);
-        VTR_LOG("Critical Uniform move : %f \n",placer_opts.place_static_move_prob[5]);
-        VTR_LOG("Centroid move : %f \n",placer_opts.place_static_move_prob[6]);
+        VTR_LOG("Uniform_move : %f \n",placer_opts.place_static_move_prob[0]);
+        VTR_LOG("Median_move : %f \n",placer_opts.place_static_move_prob[1]);
+        VTR_LOG("Weighted_median_move : %f \n",placer_opts.place_static_move_prob[2]);
+        VTR_LOG("Weighted_centroid_move : %f \n",placer_opts.place_static_move_prob[3]);
+        VTR_LOG("Timing_feasible_region_move : %f \n",placer_opts.place_static_move_prob[4]);
+        VTR_LOG("Critical_uniform_move : %f \n",placer_opts.place_static_move_prob[5]);
+        VTR_LOG("Centroid_move : %f \n",placer_opts.place_static_move_prob[6]);
         move_generator = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_move_prob);
     }
     else{
@@ -554,6 +554,7 @@ void try_place(const t_placer_opts& placer_opts,
             karmed_bandit_agent->set_step(placer_opts.place_agent_gamma, move_lim);
             move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent);
         }
+        VTR_LOG("The reward function used is reward num: %d \n", reward_num);
     }
     width_fac = placer_opts.place_chan_width;
 
