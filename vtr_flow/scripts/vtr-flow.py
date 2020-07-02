@@ -199,6 +199,10 @@ def vtr_command_argparser(prog=None):
                                default=None,
                                type=str,
                                help="Informs VTR that this run is expected to fail with this message.")
+    house_keeping.add_argument("-valgrind",
+                                default=False,
+                                action="store_true",
+                                help="Runs the flow with valgrind with the following options (--leak-check=full, --errors-for-leak-kinds=none, --error-exitcode=1, --track-origins=yes)")
     #
     # ABC arguments
     #
@@ -312,7 +316,8 @@ def vtr_command_main(arg_list, prog=None):
                                    verbose_error=True if args.verbose == 2 else False,
                                    verbose=True if args.verbose > 2 else False,
                                    echo_cmd=True if args.verbose >= 4 else False,
-                                   show_failures = args.show_failures)
+                                   show_failures = args.show_failures,
+                                   valgrind = args.valgrind)
     exit_status = 0
     return_status = 0
     abc_args = OrderedDict()

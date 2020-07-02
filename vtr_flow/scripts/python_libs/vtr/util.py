@@ -23,7 +23,7 @@ class RawDefaultHelpFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.R
 
 class CommandRunner(object):
 
-    def __init__(self, timeout_sec=None, max_memory_mb=None, track_memory=True, verbose_error=False, verbose=False, echo_cmd=False, indent="\t", show_failures=False):
+    def __init__(self, timeout_sec=None, max_memory_mb=None, track_memory=True, verbose_error=False, verbose=False, echo_cmd=False, indent="\t", show_failures=False,valgrind=False):
         """
         An object for running system commands with timeouts, memory limits and varying verbose-ness 
 
@@ -36,6 +36,7 @@ class CommandRunner(object):
             verbose: Produce more verbose output. Default: False
             echo_cmd: Echo the command before running. Default: False
             indent: The string specifying a single indent (used in verbose mode)
+            valgrind: Indicates if commands should be run with valgrind
         """
         self._timeout_sec = timeout_sec
         self._max_memory_mb = max_memory_mb
@@ -45,6 +46,7 @@ class CommandRunner(object):
         self._echo_cmd = echo_cmd
         self._indent = indent
         self._show_failures = show_failures
+        self._valgrind = valgrind
 
     def run_system_command(self, cmd, temp_dir, log_filename=None, expected_return_code=0, indent_depth=0):
         """
@@ -78,7 +80,11 @@ class CommandRunner(object):
         #Enable memory tracking?
         memory_tracking = ["/usr/bin/env", "time", "-v"]
         if self._track_memory and self.check_command(memory_tracking[0]):
-            cmd = memory_tracking + cmd
+            if self._valgrind:
+                valgrind_args = ["valgrind", "--leak-check=full", "--suppressions=$vtr_flow_path/../vpr/valgrind.supp", "--error-exitcode=1", "--errors-for-leak-kinds=none", "--track-origins=yes", "--log-file=valgrind.log","--error-limit=no"]
+                cmd = memory_tracking + valgrind_args + cmd
+            else:
+                cmd = memory_tracking + cmd
 
         #Flush before calling subprocess to ensure output is ordered
         #correctly if stdout is buffered
@@ -97,9 +103,12 @@ class CommandRunner(object):
         proc = None
         try:
             #Call the command
+            stderr = subprocess.STDOUT
+            if self._valgrind:
+                stderr = None
             proc = subprocess.Popen(cmd,
                                     stdout=subprocess.PIPE, #We grab stdout
-                                    stderr=subprocess.STDOUT, #stderr redirected to stderr
+                                    stderr=stderr, #stderr redirected to stderr
                                     universal_newlines=True, #Lines always end in \n
                                     cwd=temp_dir, #Where to run the command
                                     )
