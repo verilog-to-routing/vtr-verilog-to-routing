@@ -47,9 +47,9 @@ static void free_linked_rt_edge(t_linked_rt_edge* rt_edge);
 
 static t_rt_node* add_subtree_to_route_tree(t_heap* hptr,
                                             t_rt_node** sink_rt_node_ptr,
-                                            std::set<int>& route_tree_nodes);
+                                            std::set<int>* route_tree_nodes = nullptr);
 
-static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bool reached_by_non_configurable_edge, std::unordered_set<int>& visited, std::set<int>& route_tree_nodes);
+static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bool reached_by_non_configurable_edge, std::unordered_set<int>& visited, std::set<int>* route_tree_nodes = nullptr);
 
 static t_rt_node* update_unbuffered_ancestors_C_downstream(t_rt_node* start_of_new_subtree_rt_node);
 
@@ -201,7 +201,7 @@ t_rt_node* init_route_tree_to_source(ClusterNetId inet) {
  * updates the Tdel, etc. numbers for the rest of the routing tree.  hptr
  * is the heap pointer of the SINK that was reached.  This routine returns
  * a pointer to the rt_node of the SINK that it adds to the routing.        */
-t_rt_node* update_route_tree(t_heap* hptr, SpatialRouteTreeLookup* spatial_rt_lookup, std::set<int>& route_tree_nodes) {
+t_rt_node* update_route_tree(t_heap* hptr, SpatialRouteTreeLookup* spatial_rt_lookup, std::set<int>* route_tree_nodes) {
     t_rt_node *start_of_new_subtree_rt_node, *sink_rt_node;
     t_rt_node *unbuffered_subtree_rt_root, *subtree_parent_rt_node;
     float Tdel_start;
@@ -254,7 +254,7 @@ void add_route_tree_to_rr_node_lookup(t_rt_node* node) {
 }
 
 static t_rt_node*
-add_subtree_to_route_tree(t_heap* hptr, t_rt_node** sink_rt_node_ptr, std::set<int>& route_tree_nodes) {
+add_subtree_to_route_tree(t_heap* hptr, t_rt_node** sink_rt_node_ptr, std::set<int>* route_tree_nodes) {
     /* Adds the most recent wire segment, ending at the SINK indicated by hptr,
      * to the routing tree.  It returns the first (most upstream) new rt_node,
      * and (via a pointer) the rt_node of the new SINK. Traverses up from SINK  */
@@ -358,7 +358,7 @@ add_subtree_to_route_tree(t_heap* hptr, t_rt_node** sink_rt_node_ptr, std::set<i
     return (downstream_rt_node);
 }
 
-static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bool reached_by_non_configurable_edge, std::unordered_set<int>& visited, std::set<int>& route_tree_nodes) {
+static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bool reached_by_non_configurable_edge, std::unordered_set<int>& visited, std::set<int>* route_tree_nodes) {
     t_rt_node* rt_node = nullptr;
 
     if (!visited.count(rr_node) || !reached_by_non_configurable_edge) {

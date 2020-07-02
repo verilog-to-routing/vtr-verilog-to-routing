@@ -1126,6 +1126,10 @@ bool timing_driven_route_net(ConnectionRouter& router,
         // VTR_LOG_DEBUG("Routing Net %zu (%zu sinks) with delay budgets (%s): <%e, %e, %e> crit: %f\n", size_t(net_id), num_sinks, budgeting_inf.if_set() ? "true" : "false", conn_delay_budget.min_delay, conn_delay_budget.target_delay, conn_delay_budget.max_delay, conn_delay_budget.short_path_criticality);
         profiling::conn_start();
 
+        // Only use the route_tree_nodes set if the RCV algorithm is enabled
+        std::set<int>* route_tree_nodes_pointer = nullptr;
+        if (cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm == YOYO) route_tree_nodes_pointer = &route_tree_nodes;
+
         // build a branch in the route tree to the target
         if (!timing_driven_route_sink(router,
                                       net_id,
@@ -1138,7 +1142,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
                                       spatial_route_tree_lookup,
                                       router_stats,
                                       budgeting_inf,
-                                      route_tree_nodes))
+                                      route_tree_nodes_pointer))
             return false;
 
         profiling::conn_finish(route_ctx.net_rr_terminals[net_id][0],
@@ -1208,15 +1212,12 @@ static bool timing_driven_pre_route_to_clock_root(
     bool found_path;
     t_heap cheapest;
 
-    std::set<int> empty_set;
-
     std::tie(found_path, cheapest) = router.timing_driven_route_connection_from_route_tree(
         rt_root,
         sink_node,
         cost_params,
         bounding_box,
-        router_stats,
-        empty_set);
+        router_stats);
 
     // TODO: Parts of the rest of this function are repetitive to code in timing_driven_route_sink. Should refactor.
     if (!found_path) {
@@ -1242,7 +1243,7 @@ static bool timing_driven_pre_route_to_clock_root(
 
     t_trace* new_route_start_tptr = update_traceback(&cheapest, net_id);
     VTR_ASSERT_DEBUG(validate_traceback(route_ctx.trace[net_id].head));
-    update_route_tree(&cheapest, ((high_fanout) ? &spatial_rt_lookup : nullptr), std::set<int>());
+    update_route_tree(&cheapest, ((high_fanout) ? &spatial_rt_lookup : nullptr));
     VTR_ASSERT_DEBUG(verify_route_tree(rt_root));
     VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
     VTR_ASSERT_DEBUG(!high_fanout || validate_route_tree_spatial_lookup(rt_root, spatial_rt_lookup));
@@ -1286,7 +1287,7 @@ static bool timing_driven_route_sink(
     SpatialRouteTreeLookup& spatial_rt_lookup,
     RouterStats& router_stats,
     route_budgets& budgeting_inf,
-    std::set<int>& net) {
+    std::set<int>* route_tree_nodes = nullptr) {
     /* Build a path from the existing route tree rooted at rt_root to the target_node
      * add this branch to the existing route tree and update pathfinder costs and rr_node_route_inf to reflect this */
     auto& route_ctx = g_vpr_ctx.mutable_routing();
@@ -1322,14 +1323,14 @@ static bool timing_driven_route_sink(
                                                                                                            bounding_box,
                                                                                                            spatial_rt_lookup,
                                                                                                            router_stats,
-                                                                                                           net);
+                                                                                                           route_tree_nodes);
     } else {
         std::tie(found_path, cheapest) = router.timing_driven_route_connection_from_route_tree(rt_root,
                                                                                                sink_node,
                                                                                                cost_params,
                                                                                                bounding_box,
                                                                                                router_stats,
-                                                                                               net);
+                                                                                               route_tree_nodes);
     }
 
     if (!found_path) {
@@ -1359,7 +1360,7 @@ static bool timing_driven_route_sink(
     t_trace* new_route_start_tptr = update_traceback(&cheapest, net_id);
     VTR_ASSERT_DEBUG(validate_traceback(route_ctx.trace[net_id].head));
 
-    rt_node_of_sink[target_pin] = update_route_tree(&cheapest, ((high_fanout) ? &spatial_rt_lookup : nullptr), net);
+    rt_node_of_sink[target_pin] = update_route_tree(&cheapest, ((high_fanout) ? &spatial_rt_lookup : nullptr), route_tree_nodes);
     VTR_ASSERT_DEBUG(verify_route_tree(rt_root));
     VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
     VTR_ASSERT_DEBUG(!high_fanout || validate_route_tree_spatial_lookup(rt_root, spatial_rt_lookup));

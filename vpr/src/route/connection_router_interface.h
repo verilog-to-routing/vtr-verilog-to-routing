@@ -55,7 +55,7 @@ class ConnectionRouterInterface {
         const t_conn_cost_params cost_params,
         t_bb bounding_box,
         RouterStats& router_stats,
-        std::set<int>& route_tree_nodes)
+        std::set<int>* route_tree_nodes = nullptr)
         = 0;
 
     // Finds a path from the route tree rooted at rt_root to sink_node for a
@@ -70,7 +70,7 @@ class ConnectionRouterInterface {
         t_bb bounding_box,
         const SpatialRouteTreeLookup& spatial_rt_lookup,
         RouterStats& router_stats,
-        std::set<int>& route_tree_nodes)
+        std::set<int>* route_tree_nodes = nullptr)
         = 0;
 
     // Finds a path from the route tree rooted at rt_root to all sinks
