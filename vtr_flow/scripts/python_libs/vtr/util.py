@@ -81,7 +81,7 @@ class CommandRunner(object):
         memory_tracking = ["/usr/bin/env", "time", "-v"]
         if self._track_memory and self.check_command(memory_tracking[0]):
             if self._valgrind:
-                valgrind_args = ["valgrind", "--leak-check=full", "--suppressions=$vtr_flow_path/../vpr/valgrind.supp", "--error-exitcode=1", "--errors-for-leak-kinds=none", "--track-origins=yes", "--log-file=valgrind.log","--error-limit=no"]
+                valgrind_args = ["valgrind", "--leak-check=full", "--suppressions={}".format(find_vtr_file("valgrind.supp")), "--error-exitcode=1", "--errors-for-leak-kinds=none", "--track-origins=yes", "--log-file=valgrind.log","--error-limit=no"]
                 cmd = memory_tracking + valgrind_args + cmd
             else:
                 cmd = memory_tracking + cmd
