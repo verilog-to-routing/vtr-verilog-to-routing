@@ -381,5 +381,6 @@ def setup(app):
             'github_code_repo': github_code_repo,
             'enable_math': True,
             'enable_inline_math': True,
+            'enable_eval_rst': True,
         }, True)
     app.add_stylesheet('css/vtr.css')
