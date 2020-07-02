@@ -48,7 +48,7 @@ def run(architecture_file, circuit_file,
         lut_size = determine_lut_size(str(architecture_file))
 
     if(abc_flow_type):
-        populate_clock_list(circuit_file,blackbox_latches_script,clk_list,command_runner,temp_dir,log_filename)
+        populate_clock_list(circuit_file,blackbox_latches_script,clk_list,command_runner,temp_dir,"report_clocks.abc.out")
 
     if abc_exec == None:
         abc_exec = find_vtr_file('abc', is_executable=True)
@@ -66,20 +66,20 @@ def run(architecture_file, circuit_file,
         iterations=1
 
     original_script = abc_script
-    
+    input_file = circuit_file.name
     for i in range(0, iterations):
         pre_abc_blif= Path(temp_dir) / (str(i)+"_" + circuit_file.name)
         post_abc_blif = Path(temp_dir) / (str(i)+"_"+output_netlist.name)
         post_abc_raw_blif = Path(temp_dir) / (str(i)+"_"+output_netlist.with_suffix('').stem+".raw.abc.blif")
         if(abc_flow_type==3):
-            cmd = [blackbox_latches_script, "--input", circuit_file.name,"--output",pre_abc_blif.name]
+            cmd = [blackbox_latches_script, "--input", input_file,"--output",pre_abc_blif.name]
             command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename=str(i)+"_blackboxing_latch.out", indent_depth=1)
         
         elif(len(clk_list)>i):
-            cmd = [blackbox_latches_script,"--clk_list", clk_list[i], "--input", circuit_file.name,"--output",pre_abc_blif.name]
+            cmd = [blackbox_latches_script,"--clk_list", clk_list[i], "--input", input_file,"--output",pre_abc_blif.name]
             command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename=str(i)+"_blackboxing_latch.out", indent_depth=1)
         else:
-            pre_abc_blif = circuit_file
+            pre_abc_blif = input_file
         
         if abc_script == None:
            
@@ -152,6 +152,8 @@ def run(architecture_file, circuit_file,
             break
         
         abc_script = original_script
+        input_file = post_abc_blif.name
+
     
     cmd = [blackbox_latches_script, "--input", post_abc_blif.name,"--output",output_netlist.name,"--vanilla"]
     command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename="restore_latch" + str(i) + ".out", indent_depth=1)
