@@ -65,6 +65,8 @@ def run(architecture_file, circuit_file,
     if(iterations==0 or abc_flow_type != 2):
         iterations=1
 
+    original_script = abc_script
+    
     for i in range(0, iterations):
         pre_abc_blif= Path(temp_dir) / (str(i)+"_" + circuit_file.name)
         post_abc_blif = Path(temp_dir) / (str(i)+"_"+output_netlist.name)
@@ -148,6 +150,8 @@ def run(architecture_file, circuit_file,
             command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename="restore_latch" + str(i) + ".out", indent_depth=1)
         if(abc_flow_type != 2):
             break
+        
+        abc_script = original_script
     
     cmd = [blackbox_latches_script, "--input", post_abc_blif.name,"--output",output_netlist.name,"--vanilla"]
     command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename="restore_latch" + str(i) + ".out", indent_depth=1)
@@ -165,7 +169,8 @@ def populate_clock_list(circuit_file,blackbox_latches_script,clk_list,command_ru
     cmd = [blackbox_latches_script, "--input", circuit_file.name,"--output_list", clk_list_path.name]
     command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename=log_filename, indent_depth=1)
     with clk_list_path.open('r') as f:
-         clk_list.append(f.readline().strip('\n'))
+        for line in f.readlines():
+            clk_list.append(line.strip('\n'))
 
 def run_lec(reference_netlist, implementation_netlist, command_runner, temp_dir=".", log_filename="abc.dec.out", abc_exec=None):
     """

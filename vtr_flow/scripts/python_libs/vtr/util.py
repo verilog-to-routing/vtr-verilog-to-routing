@@ -76,7 +76,7 @@ class CommandRunner(object):
             cmd = memory_limit + cmd
 
         #Enable memory tracking?
-        memory_tracking = ["/usr/bin/time", "-v"]
+        memory_tracking = ["/usr/bin/env", "time", "-v"]
         if self._track_memory and self.check_command(memory_tracking[0]):
             cmd = memory_tracking + cmd
 
@@ -112,6 +112,7 @@ class CommandRunner(object):
             with (Path(temp_dir) / log_filename).open('w') as log_f:
                 #Print the command at the top of the log
                 log_f.write(" ".join(cmd))
+                log_f.write("\n")
 
                 #Read from subprocess output
                 for line in proc.stdout:

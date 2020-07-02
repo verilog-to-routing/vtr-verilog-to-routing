@@ -161,8 +161,12 @@ def run(architecture_file, circuit_file,
     if should_run_stage(VTR_STAGE.vpr, start_stage, end_stage):
         #Copy the input netlist for input to vpr
         shutil.copyfile(str(next_stage_netlist), str(pre_vpr_netlist))
-
-        if "route_chan_width" in vpr_args:
+        route_fixed_W = "route_chan_width" in vpr_args
+        if ("route" in vpr_args or "place" in vpr_args) and not route_fixed_W:
+            vpr_args["route_chan_width"] = 300
+            route_fixed_W = True
+            
+        if route_fixed_W:
             #The User specified a fixed channel width
             vtr.vpr.run(architecture_copy, circuit_copy, pre_vpr_netlist, 
                     output_netlist=post_vpr_netlist,
