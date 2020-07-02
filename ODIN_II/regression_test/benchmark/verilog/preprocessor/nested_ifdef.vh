@@ -1,7 +1,9 @@
 
 module simple_op(out);
     output [2:0] out;
-$display("Expect::NESTED_IFDEF this test is expected to pass, if it fails the `ifdefs are not functioning properly.\n");
+
+    $display("Expect::NESTED_IFDEF this test is expected to pass, if it fails the `ifdefs are not functioning properly.\n");
+
 `ifdef nest_one
     `ifdef nest_two
         `ifdef nest_three
