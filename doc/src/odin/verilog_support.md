@@ -38,10 +38,9 @@
 |-------------------|------------------|
 | @()               |   repeat         |
 |@\*                |   deassign       |
-|\`define           |   disable        |
 |always             |   edge           |  
 |and                |   forever        |  
-|assign             |                  |
+|assign             |   disable        |
 |case               |                  |  
 |defparam           |                  |  
 |end                |                  |
