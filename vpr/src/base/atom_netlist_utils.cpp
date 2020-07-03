@@ -713,7 +713,24 @@ bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk) {
     if (netlist.block_type(blk) == AtomBlockType::BLOCK) {
         const t_model* blk_model = netlist.block_model(blk);
 
-        if (blk_model->name != std::string(MODEL_NAMES)) return false;
+        //.names models (MODEL_NAMES) and stratixiv_lcell_comb models are booth LUT models
+	bool is_lcell;
+	std::string block_name = netlist.block_name(blk);
+	std::string block_name_ending;
+	if (block_name.length() >= 6)
+	    block_name_ending = block_name.substr(block_name.length()-6);
+	else
+	    block_name_ending = block_name;
+        if (blk_model->name == std::string(MODEL_NAMES)) {
+	    is_lcell = false; //It's a .name model
+	}
+	else if (blk_model->name == std::string("stratixiv_lcell_comb") && block_name_ending == std::string("feeder")) {
+	    //Only stratixiv_lcell_comb blocks that end in "feeder" can be buffer LUTs
+	    is_lcell = true; //It's a lcell model that ends in "feeder"
+	}
+	else {
+	    return false;
+	}
 
         auto input_ports = netlist.block_input_ports(blk);
         auto output_ports = netlist.block_output_ports(blk);
@@ -739,31 +756,36 @@ bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk) {
             //Both ports must be single bit
             if (connected_input_pins == 1 && connected_output_pins == 1) {
                 //It is a single-input single-output LUT, we now
-                //inspect it's truth table
                 //
-                const auto& truth_table = netlist.block_truth_table(blk);
+		if (is_lcell){
+		    return true; //No need to check truth table for lcell
+		}
+		else {
+                    //inspect it's truth table
+                    const auto& truth_table = netlist.block_truth_table(blk);
 
-                VTR_ASSERT_MSG(truth_table.size() == 1, "One truth-table row");
-                VTR_ASSERT_MSG(truth_table[0].size() == 2, "Two truth-table row entries");
+                    VTR_ASSERT_MSG(truth_table.size() == 1, "One truth-table row");
+                    VTR_ASSERT_MSG(truth_table[0].size() == 2, "Two truth-table row entries");
 
-                //Check for valid buffer logic functions
-                // A LUT is a buffer provided it has the identity logic
-                // function and a single input. For example:
-                //
-                // .names in_buf out_buf
-                // 1 1
-                //
-                // and
-                //
-                // .names int_buf out_buf
-                // 0 0
-                //
-                // both implement logical identity.
-                if ((truth_table[0][0] == vtr::LogicValue::TRUE && truth_table[0][1] == vtr::LogicValue::TRUE)
-                    || (truth_table[0][0] == vtr::LogicValue::FALSE && truth_table[0][1] == vtr::LogicValue::FALSE)) {
-                    //It is a buffer LUT
-                    return true;
-                }
+                    //Check for valid buffer logic functions
+                    // A LUT is a buffer provided it has the identity logic
+                    // function and a single input. For example:
+                    //
+                    // .names in_buf out_buf
+                    // 1 1
+                    //
+                    // and
+                    //
+                    // .names int_buf out_buf
+                    // 0 0
+                    //
+                    // both implement logical identity.
+                    if ((truth_table[0][0] == vtr::LogicValue::TRUE && truth_table[0][1] == vtr::LogicValue::TRUE)
+                        || (truth_table[0][0] == vtr::LogicValue::FALSE && truth_table[0][1] == vtr::LogicValue::FALSE)) {
+                        //It is a buffer LUT
+                        return true;
+                    }
+		}
             }
         }
     }
