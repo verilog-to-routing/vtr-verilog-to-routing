@@ -144,7 +144,6 @@ static bool timing_driven_route_sink(
     unsigned itarget,
     int target_pin,
     const t_conn_cost_params cost_params,
-    float pres_fac,
     int high_fanout_threshold,
     t_rt_node* rt_root,
     t_rt_node** rt_node_of_sink,
@@ -157,7 +156,6 @@ static bool timing_driven_pre_route_to_clock_root(
     ClusterNetId net_id,
     int sink_node,
     const t_conn_cost_params cost_params,
-    float pres_fac,
     int high_fanout_threshold,
     t_rt_node* rt_root,
     SpatialRouteTreeLookup& spatial_rt_lookup,
@@ -168,7 +166,6 @@ void disable_expansion_and_remove_sink_from_route_tree_nodes(t_rt_node* node);
 static t_rt_node* setup_routing_resources(int itry,
                                           ClusterNetId net_id,
                                           unsigned num_sinks,
-                                          float pres_fac,
                                           int min_incremental_reroute_fanout,
                                           CBRR& incremental_rerouting_res,
                                           t_rt_node** rt_node_of_sink);
@@ -494,7 +491,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
 
         // Make sure any CLB OPINs used up by subblocks being hooked directly to them are reserved for that purpose
         bool rip_up_local_opins = (itry == 1 ? false : true);
-        reserve_locally_used_opins_pres_fac(&small_heap, pres_fac,
+        reserve_locally_used_opins(&small_heap, pres_fac,
                                    router_opts.acc_fac, rip_up_local_opins);
 
         /*
@@ -652,14 +649,14 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
         //Update pres_fac and resource costs
         if (itry == 1) {
             pres_fac = router_opts.initial_pres_fac;
-            pathfinder_update_cost(pres_fac, 0.); /* Acc_fac=0 for first iter. */
+            pathfinder_update_acc_cost(0.); /* Acc_fac=0 for first iter. */
         } else {
             pres_fac *= router_opts.pres_fac_mult;
 
             /* Avoid overflow for high iteration counts, even if acc_cost is big */
             pres_fac = std::min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5));
 
-            pathfinder_update_cost(pres_fac, router_opts.acc_fac);
+            pathfinder_update_acc_cost(router_opts.acc_fac);
         }
 
         if (router_congestion_mode == RouterCongestionMode::CONFLICTED) {
@@ -771,8 +768,8 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
 
         /* Restore congestion from best route */
         for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-            pathfinder_update_path_cost(route_ctx.trace[net_id].head, -1, pres_fac);
-            pathfinder_update_path_cost(best_routing[net_id].head, 1, pres_fac);
+            pathfinder_update_path_occupancy(route_ctx.trace[net_id].head, -1);
+            pathfinder_update_path_occupancy(best_routing[net_id].head, 1);
         }
         router_ctx.trace = best_routing;
         router_ctx.clb_opins_used_locally = best_clb_opins_used_locally;
@@ -986,7 +983,6 @@ bool timing_driven_route_net(ConnectionRouter& router,
     t_rt_node* rt_root = setup_routing_resources(itry,
                                                  net_id,
                                                  num_sinks,
-                                                 pres_fac,
                                                  router_opts.min_incremental_reroute_fanout,
                                                  connections_inf,
                                                  rt_node_of_sink);
@@ -1070,7 +1066,6 @@ bool timing_driven_route_net(ConnectionRouter& router,
                 net_id,
                 sink_node,
                 cost_params,
-                pres_fac,
                 router_opts.high_fanout_threshold,
                 rt_root,
                 spatial_route_tree_lookup,
@@ -1105,7 +1100,6 @@ bool timing_driven_route_net(ConnectionRouter& router,
                                       itarget,
                                       target_pin,
                                       cost_params,
-                                      pres_fac,
                                       router_opts.high_fanout_threshold,
                                       rt_root, rt_node_of_sink,
                                       spatial_route_tree_lookup,
@@ -1155,7 +1149,6 @@ static bool timing_driven_pre_route_to_clock_root(
     ClusterNetId net_id,
     int sink_node,
     const t_conn_cost_params cost_params,
-    float pres_fac,
     int high_fanout_threshold,
     t_rt_node* rt_root,
     SpatialRouteTreeLookup& spatial_rt_lookup,
@@ -1217,7 +1210,7 @@ static bool timing_driven_pre_route_to_clock_root(
         std::string msg = vtr::string_fmt("Routed Net %zu connection to RR node %d successfully", size_t(net_id), sink_node);
         update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), ROUTING, nullptr);
     }
-    pathfinder_update_path_cost(new_route_start_tptr, 1, pres_fac);
+    pathfinder_update_path_occupancy(new_route_start_tptr, 1);
 
     // need to guarantee ALL nodes' path costs are HUGE_POSITIVE_FLOAT at the start of routing to a sink
     // do this by resetting all the path_costs that have been touched while routing to the current sink
@@ -1246,7 +1239,6 @@ static bool timing_driven_route_sink(
     unsigned itarget,
     int target_pin,
     const t_conn_cost_params cost_params,
-    float pres_fac,
     int high_fanout_threshold,
     t_rt_node* rt_root,
     t_rt_node** rt_node_of_sink,
@@ -1330,7 +1322,7 @@ static bool timing_driven_route_sink(
         std::string msg = vtr::string_fmt("Routed Net %zu connection %d to RR node %d successfully", size_t(net_id), itarget, sink_node);
         update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), ROUTING, nullptr);
     }
-    pathfinder_update_path_cost(new_route_start_tptr, 1, pres_fac);
+    pathfinder_update_path_occupancy(new_route_start_tptr, 1);
 
     // need to guarantee ALL nodes' path costs are HUGE_POSITIVE_FLOAT at the start of routing to a sink
     // do this by resetting all the path_costs that have been touched while routing to the current sink
@@ -1343,7 +1335,6 @@ static bool timing_driven_route_sink(
 static t_rt_node* setup_routing_resources(int itry,
                                           ClusterNetId net_id,
                                           unsigned num_sinks,
-                                          float pres_fac,
                                           int min_incremental_reroute_fanout,
                                           CBRR& connections_inf,
                                           t_rt_node** rt_node_of_sink) {
@@ -1366,7 +1357,7 @@ static t_rt_node* setup_routing_resources(int itry,
         profiling::net_rerouted();
 
         // rip up the whole net
-        pathfinder_update_path_cost(route_ctx.trace[net_id].head, -1, pres_fac);
+        pathfinder_update_path_occupancy(route_ctx.trace[net_id].head, -1);
         free_traceback(net_id);
 
         rt_root = init_route_tree_to_source(net_id);
@@ -1401,7 +1392,7 @@ static t_rt_node* setup_routing_resources(int itry,
         //Now that the tree has been pruned, we can free the old traceback
         // NOTE: this must happen *after* pruning since it changes the
         //       recorded congestion
-        pathfinder_update_path_cost(route_ctx.trace[net_id].head, -1, pres_fac);
+        pathfinder_update_path_occupancy(route_ctx.trace[net_id].head, -1);
         free_traceback(net_id);
 
         if (rt_root) { //Partially pruned
@@ -1417,8 +1408,8 @@ static t_rt_node* setup_routing_resources(int itry,
             //Sanity check that route tree and traceback are equivalent after pruning
             VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
 
-            // put the updated costs of the route tree nodes back into pathfinder
-            pathfinder_update_path_cost(route_ctx.trace[net_id].head, 1, pres_fac);
+            // put the updated occupancies of the route tree nodes back into pathfinder
+            pathfinder_update_path_occupancy(route_ctx.trace[net_id].head, 1);
 
         } else { //Fully destroyed
             profiling::route_tree_pruned();

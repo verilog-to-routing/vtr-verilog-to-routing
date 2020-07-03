@@ -68,7 +68,7 @@ t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf);
 //  non_config_node_set_usage after pruning.
 t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf, std::vector<int>* non_config_node_set_usage);
 
-void pathfinder_update_cost_from_route_tree(const t_rt_node* rt_root, int add_or_sub, float pres_fac);
+void pathfinder_update_cost_from_route_tree(const t_rt_node* rt_root, int add_or_sub);
 
 bool is_equivalent_route_tree(const t_rt_node* rt_root, const t_rt_node* cloned_rt_root);
 bool is_valid_skeleton_tree(const t_rt_node* rt_root);

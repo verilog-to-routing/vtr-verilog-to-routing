@@ -93,7 +93,7 @@ static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t
 static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t_rr_node_indices& L_rr_node_indices);
 
 static t_clb_opins_used alloc_and_load_clb_opins_used_locally();
-static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub, float pres_fac, float acc_fac);
+static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub, float acc_fac);
 
 bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes);
 static bool validate_trace_nodes(t_trace* head, const std::unordered_set<int>& trace_nodes);
@@ -155,12 +155,12 @@ void restore_routing(vtr::vector<ClusterNetId, t_trace*>& best_routing,
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         /* Free any current routing. */
-        pathfinder_update_path_cost(route_ctx.trace[net_id].head, -1, 0.f);
+        pathfinder_update_path_occupancy(route_ctx.trace[net_id].head, -1);
         free_traceback(net_id);
 
         /* Set the current routing to the saved one. */
         route_ctx.trace[net_id].head = best_routing[net_id];
-        pathfinder_update_path_cost(route_ctx.trace[net_id].head, 1, 0.f);
+        pathfinder_update_path_occupancy(route_ctx.trace[net_id].head, 1);
         best_routing[net_id] = nullptr; /* No stored routing. */
     }
 
@@ -382,16 +382,14 @@ std::vector<std::set<ClusterNetId>> collect_rr_node_nets() {
     return rr_node_nets;
 }
 
-void pathfinder_update_path_cost(t_trace* route_segment_start,
-                                 int add_or_sub,
-                                 float pres_fac) {
-    /* This routine updates the occupancy and pres_cost of the rr_nodes that are *
-     * affected by the portion of the routing of one net that starts at          *
-     * route_segment_start.  If route_segment_start is route_ctx.trace[net_id].head, the     *
-     * cost of all the nodes in the routing of net net_id are updated.  If         *
-     * add_or_sub is -1 the net (or net portion) is ripped up, if it is 1 the    *
-     * net is added to the routing.  The size of pres_fac determines how severly *
-     * oversubscribed rr_nodes are penalized.                                    */
+void pathfinder_update_path_occupancy(t_trace* route_segment_start, int add_or_sub) {
+    /* This routine updates the occupancy of the rr_nodes that are affected by
+     * the portion of the routing of one net that starts at route_segment_start.
+     * If route_segment_start is route_ctx.trace[net_id].head, the
+     * occupancy of all the nodes in the routing of net net_id are updated.
+     * If add_or_sub is -1 the net (or net portion) is ripped up,
+     * if it is 1, the net is added to the routing.
+     */
 
     t_trace* tptr;
 
@@ -400,7 +398,7 @@ void pathfinder_update_path_cost(t_trace* route_segment_start,
         return;
 
     for (;;) {
-        pathfinder_update_single_node_cost(tptr->index, add_or_sub, pres_fac);
+        pathfinder_update_single_node_occupancy(tptr->index, add_or_sub);
 
         if (tptr->iswitch == OPEN) { //End of branch
             tptr = tptr->next;       /* Skip next segment. */
@@ -413,36 +411,24 @@ void pathfinder_update_path_cost(t_trace* route_segment_start,
     } /* End while loop -- did an entire traceback. */
 }
 
-void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fac) {
-    /* Updates pathfinder's congestion cost by either adding or removing the
-     * usage of a resource node. pres_cost is Pn in the Pathfinder paper.
-     * pres_cost is set according to the overuse that would result from having
-     * ONE MORE net use this routing node.     */
+void pathfinder_update_single_node_occupancy(int inode, int add_or_sub) {
+    /* Updates pathfinder's occupancy by either adding or removing the
+     * usage of a resource node. */
 
     auto& route_ctx = g_vpr_ctx.mutable_routing();
-    auto& device_ctx = g_vpr_ctx.device();
 
     int occ = route_ctx.rr_node_route_inf[inode].occ() + add_or_sub;
     route_ctx.rr_node_route_inf[inode].set_occ(occ);
     // can't have negative occupancy
     VTR_ASSERT(occ >= 0);
-
-//    int capacity = device_ctx.rr_nodes[inode].capacity();
-//    if (occ < capacity) {
-//        route_ctx.rr_node_route_inf[inode].pres_cost = 1.0;
-//    } else {
-//        route_ctx.rr_node_route_inf[inode].pres_cost = 1.0 + (occ + 1 - capacity) * pres_fac;
-//    }
 }
 
-void pathfinder_update_cost(float pres_fac, float acc_fac) {
-    /* This routine recomputes the pres_cost and acc_cost of each routing        *
-     * resource for the pathfinder algorithm after all nets have been routed.    *
-     * It updates the accumulated cost to by adding in the number of extra       *
-     * signals sharing a resource right now (i.e. after each complete iteration) *
-     * times acc_fac.  It also updates pres_cost, since pres_fac may have        *
-     * changed.  THIS ROUTINE ASSUMES THE OCCUPANCY VALUES IN RR_NODE ARE UP TO  *
-     * DATE.                                                                     */
+void pathfinder_update_acc_cost(float acc_fac) {
+    /* This routine recomputes the acc_cost (accumulated congestion cost) of each       *
+     * routing resource for the pathfinder algorithm after all nets have been routed.   *
+     * It updates the accumulated cost to by adding in the number of extra signals      *
+     * sharing a resource right now (i.e. after each complete iteration) times acc_fac. *
+     * THIS ROUTINE ASSUMES THE OCCUPANCY VALUES IN RR_NODE ARE UP TO DATE.             */
 
     int occ, capacity;
     auto& device_ctx = g_vpr_ctx.device();
@@ -454,14 +440,6 @@ void pathfinder_update_cost(float pres_fac, float acc_fac) {
 
         if (occ > capacity) {
             route_ctx.rr_node_route_inf[inode].acc_cost += (occ - capacity) * acc_fac;
-            //route_ctx.rr_node_route_inf[inode].pres_cost = 1.0 + (occ + 1 - capacity) * pres_fac;
-        }
-
-        /* If occ == capacity, we don't need to increase acc_cost, but a change    *
-         * in pres_fac could have made it necessary to recompute the cost anyway.  */
-
-        else if (occ == capacity) {
-            //route_ctx.rr_node_route_inf[inode].pres_cost = 1.0 + pres_fac;
         }
     }
 }
@@ -967,7 +945,6 @@ void reset_rr_node_route_structs() {
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         route_ctx.rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
         route_ctx.rr_node_route_inf[inode].prev_edge = RREdgeId::INVALID();
-        route_ctx.rr_node_route_inf[inode].pres_cost = 1.0;
         route_ctx.rr_node_route_inf[inode].acc_cost = 1.0;
         route_ctx.rr_node_route_inf[inode].path_cost = std::numeric_limits<float>::infinity();
         route_ctx.rr_node_route_inf[inode].backward_path_cost = std::numeric_limits<float>::infinity();
@@ -1372,7 +1349,7 @@ void print_route(const char* placement_file, const char* route_file) {
 //
 // To model this we 'reserve' these locally used outputs, ensuring that the router will not use them (as if it did
 // this would equate to duplicating a BLE into an already in-use BLE instance, which is clearly incorrect).
-void reserve_locally_used_opins_pres_fac(HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins) {
+void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins) {
     int num_local_opin, inode, from_node, iconn, num_edges, to_node;
     int iclass, ipin;
     float cost;
@@ -1396,7 +1373,7 @@ void reserve_locally_used_opins_pres_fac(HeapInterface* heap, float pres_fac, fl
                 for (ipin = 0; ipin < num_local_opin; ipin++) {
                     inode = route_ctx.clb_opins_used_locally[blk_id][iclass][ipin];
                     VTR_ASSERT(inode >= 0 && inode < (ssize_t)device_ctx.rr_nodes.size());
-                    adjust_one_rr_occ_and_apcost(inode, -1, pres_fac, acc_fac);
+                    adjust_one_rr_occ_and_apcost(inode, -1, acc_fac);
                 }
             }
         }
@@ -1441,7 +1418,7 @@ void reserve_locally_used_opins_pres_fac(HeapInterface* heap, float pres_fac, fl
 
                 VTR_ASSERT(device_ctx.rr_nodes[inode].type() == OPIN);
 
-                adjust_one_rr_occ_and_apcost(inode, 1, pres_fac, acc_fac);
+                adjust_one_rr_occ_and_apcost(inode, 1, acc_fac);
                 route_ctx.clb_opins_used_locally[blk_id][iclass][ipin] = inode;
                 heap->free(heap_head_ptr);
             }
@@ -1451,7 +1428,7 @@ void reserve_locally_used_opins_pres_fac(HeapInterface* heap, float pres_fac, fl
     }
 }
 
-static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub, float pres_fac, float acc_fac) {
+static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub, float acc_fac) {
     /* Increments or decrements (depending on add_or_sub) the occupancy of    *
      * one rr_node, and adjusts the present cost of that node appropriately.  */
 
@@ -1463,9 +1440,7 @@ static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub, float pres_f
     route_ctx.rr_node_route_inf[inode].set_occ(new_occ);
 
     if (new_occ < capacity) {
-        //route_ctx.rr_node_route_inf[inode].pres_cost = 1.0;
     } else {
-        //route_ctx.rr_node_route_inf[inode].pres_cost = 1.0 + (new_occ + 1 - capacity) * pres_fac;
         if (add_or_sub == 1) {
             route_ctx.rr_node_route_inf[inode].acc_cost += (new_occ - capacity) * acc_fac;
         }

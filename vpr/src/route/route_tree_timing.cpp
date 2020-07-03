@@ -1142,7 +1142,7 @@ t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf, std::vect
     return prune_route_tree_recurr(rt_root, connections_inf, false, non_config_node_set_usage);
 }
 
-void pathfinder_update_cost_from_route_tree(const t_rt_node* rt_root, int add_or_sub, float pres_fac) {
+void pathfinder_update_cost_from_route_tree(const t_rt_node* rt_root, int add_or_sub) {
     /* Update pathfinder cost of all nodes rooted at rt_root, including rt_root itself */
 
     VTR_ASSERT(rt_root != nullptr);
@@ -1151,7 +1151,7 @@ void pathfinder_update_cost_from_route_tree(const t_rt_node* rt_root, int add_or
 
     // update every node once, so even do it for sinks and branch points once
     for (;;) {
-        pathfinder_update_single_node_cost(rt_root->inode, add_or_sub, pres_fac);
+        pathfinder_update_single_node_occupancy(rt_root->inode, add_or_sub);
 
         // reached a sink
         if (!edge) {
@@ -1161,7 +1161,7 @@ void pathfinder_update_cost_from_route_tree(const t_rt_node* rt_root, int add_or
         else if (edge->next) {
             // recursively update for each of its sibling branches
             do {
-                pathfinder_update_cost_from_route_tree(edge->child, add_or_sub, pres_fac);
+                pathfinder_update_cost_from_route_tree(edge->child, add_or_sub);
                 edge = edge->next;
             } while (edge);
             return;

@@ -12,12 +12,11 @@ vtr::vector<ClusterNetId, t_bb> load_route_bb(int bb_factor);
 
 t_bb load_net_route_bb(ClusterNetId net_id, int bb_factor);
 
-void pathfinder_update_path_cost(t_trace* route_segment_start,
-                                 int add_or_sub,
-                                 float pres_fac);
-void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fac);
+void pathfinder_update_path_occupancy(t_trace* route_segment_start, int add_or_sub);
 
-void pathfinder_update_cost(float pres_fac, float acc_fac);
+void pathfinder_update_single_node_occupancy(int inode, int add_or_sub);
+
+void pathfinder_update_acc_cost(float acc_fac);
 
 t_trace* update_traceback(t_heap* hptr, ClusterNetId net_id);
 
@@ -44,7 +43,7 @@ void reset_rr_node_route_structs();
 
 void free_trace_structs();
 
-void reserve_locally_used_opins_pres_fac(HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins);
+void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins);
 
 void free_chunk_memory_trace();
 

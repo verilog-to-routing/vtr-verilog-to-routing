@@ -96,7 +96,7 @@ bool try_breadth_first_route(const t_router_opts& router_opts) {
         else
             rip_up_local_opins = true;
 
-        reserve_locally_used_opins_pres_fac(&heap, pres_fac, router_opts.acc_fac, rip_up_local_opins);
+        reserve_locally_used_opins(&heap, pres_fac, router_opts.acc_fac, rip_up_local_opins);
 
         success = feasible_routing();
         if (success) {
@@ -111,7 +111,7 @@ bool try_breadth_first_route(const t_router_opts& router_opts) {
 
         pres_fac = std::min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5));
 
-        pathfinder_update_cost(pres_fac, router_opts.acc_fac);
+        pathfinder_update_acc_cost(router_opts.acc_fac);
     }
 
     VTR_LOG("Routing failed.\n");
@@ -136,7 +136,7 @@ bool try_breadth_first_route_net(BinaryHeap& heap, ClusterNetId net_id, float pr
         is_routed = true;
 
     } else {
-        pathfinder_update_path_cost(route_ctx.trace[net_id].head, -1, pres_fac);
+        pathfinder_update_path_occupancy(route_ctx.trace[net_id].head, -1);
         is_routed = breadth_first_route_net(heap, net_id, router_opts.bend_cost, pres_fac);
 
         /* Impossible to route? (disconnected rr_graph) */
@@ -146,7 +146,7 @@ bool try_breadth_first_route_net(BinaryHeap& heap, ClusterNetId net_id, float pr
             VTR_LOG("Routing failed.\n");
         }
 
-        pathfinder_update_path_cost(route_ctx.trace[net_id].head, 1, pres_fac);
+        pathfinder_update_path_occupancy(route_ctx.trace[net_id].head, 1);
     }
     return (is_routed);
 }
