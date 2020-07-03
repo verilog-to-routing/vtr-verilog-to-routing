@@ -164,6 +164,7 @@
         "warnings": [
             "NETLIST Rounding memory <fifo_mem> of size <15> to closest power of two: 16."
         ],
+        "expectation": [],
         "max_rss(MiB)": 6.3,
         "exec_time(ms)": 6.2,
         "synthesis_time(ms)": 2.1,
@@ -520,6 +521,7 @@
             "PARSE_TO_AST LU8PEEng.v:2472 RAMNUMBYTES is redefined, overwritting its value",
             "PARSE_TO_AST LU8PEEng.v:2473 RAMSIZEWIDTH is redefined, overwritting its value"
         ],
+        "expectation": [],
         "max_rss(MiB)": 214.7,
         "exec_time(ms)": 2846.7,
         "synthesis_time(ms)": 2842.5,
@@ -549,6 +551,7 @@
             "NETLIST matmul.v:42 indexing into memory with matrix_multiplication has larger input than memory. Unused pins:",
             "NETLIST matmul.v:46 indexing into memory with matrix_multiplication has larger input than memory. Unused pins:"
         ],
+        "expectation": [],
         "max_rss(MiB)": 6.3,
         "exec_time(ms)": 5.8,
         "synthesis_time(ms)": 1.8,

@@ -34,6 +34,7 @@
         "warnings": [
             "NETLIST arm_core.v:5745 Could not resolve initial assignment to a constant value, skipping"
         ],
+        "expectation": [],
         "max_rss(MiB)": 132,
         "exec_time(ms)": 740,
         "synthesis_time(ms)": 735.7,
@@ -114,6 +115,7 @@
             "NETLIST boundtop.v:17 This output is undriven (paj_boundtop_hierarchy_no_mem^globalreset) and will be removed",
             "NETLIST Net paj_boundtop_hierarchy_no_mem^globalreset driving node paj_boundtop_hierarchy_no_mem^globalreset is itself undriven."
         ],
+        "expectation": [],
         "max_rss(MiB)": 41.5,
         "exec_time(ms)": 240.2,
         "synthesis_time(ms)": 236.1,
@@ -340,6 +342,7 @@
             "PARSE_TO_AST LU32PEEng.v:2846 RAMNUMBYTES is redefined, overwritting its value",
             "PARSE_TO_AST LU32PEEng.v:2847 RAMSIZEWIDTH is redefined, overwritting its value"
         ],
+        "expectation": [],
         "max_rss(MiB)": 756,
         "exec_time(ms)": 25507.6,
         "synthesis_time(ms)": 25503.5,
@@ -384,6 +387,7 @@
             "PARSE_TO_AST LU64PEEng.v:3312 RAMNUMBYTES is redefined, overwritting its value",
             "PARSE_TO_AST LU64PEEng.v:3313 RAMSIZEWIDTH is redefined, overwritting its value"
         ],
+        "expectation": [],
         "max_rss(MiB)": 1546.6,
         "exec_time(ms)": 86127.6,
         "synthesis_time(ms)": 86123.5,
@@ -428,6 +432,7 @@
             "PARSE_TO_AST LU8PEEng.v:2472 RAMNUMBYTES is redefined, overwritting its value",
             "PARSE_TO_AST LU8PEEng.v:2473 RAMSIZEWIDTH is redefined, overwritting its value"
         ],
+        "expectation": [],
         "max_rss(MiB)": 214.7,
         "exec_time(ms)": 2872.3,
         "synthesis_time(ms)": 2868.3,
@@ -534,6 +539,7 @@
             "PARSE_TO_AST mkDelayWorker32B.v:4844 awa is redefined, overwritting its value",
             "PARSE_TO_AST mkDelayWorker32B.v:5622 dwc is redefined, overwritting its value"
         ],
+        "expectation": [],
         "max_rss(MiB)": 75.5,
         "exec_time(ms)": 453.4,
         "synthesis_time(ms)": 449.4,
@@ -831,6 +837,7 @@
             "PARSE_TO_AST or1200.v:1848 OR1200_OR32_ALU is redefined, overwritting its value",
             "PARSE_TO_AST or1200.v:1849 OR1200_OR32_SFXX is redefined, overwritting its value"
         ],
+        "expectation": [],
         "max_rss(MiB)": 39.7,
         "exec_time(ms)": 226.5,
         "synthesis_time(ms)": 222,
@@ -859,6 +866,7 @@
             "NETLIST paj_boundtop_hierarchy_no_mem.v:17 This output is undriven (paj_boundtop_hierarchy_no_mem^globalreset) and will be removed",
             "NETLIST Net paj_boundtop_hierarchy_no_mem^globalreset driving node paj_boundtop_hierarchy_no_mem^globalreset is itself undriven."
         ],
+        "expectation": [],
         "max_rss(MiB)": 41.7,
         "exec_time(ms)": 241.3,
         "synthesis_time(ms)": 237.3,
@@ -1248,6 +1256,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 5.6,
         "exec_time(ms)": 6.1,
         "synthesis_time(ms)": 0.1,
@@ -1273,6 +1282,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 5.7,
         "exec_time(ms)": 5.9,
         "synthesis_time(ms)": 0.1,
