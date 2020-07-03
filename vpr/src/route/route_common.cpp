@@ -429,12 +429,12 @@ void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fa
     // can't have negative occupancy
     VTR_ASSERT(occ >= 0);
 
-    int capacity = device_ctx.rr_nodes[inode].capacity();
-    if (occ < capacity) {
-        route_ctx.rr_node_route_inf[inode].pres_cost = 1.0;
-    } else {
-        route_ctx.rr_node_route_inf[inode].pres_cost = 1.0 + (occ + 1 - capacity) * pres_fac;
-    }
+//    int capacity = device_ctx.rr_nodes[inode].capacity();
+//    if (occ < capacity) {
+//        route_ctx.rr_node_route_inf[inode].pres_cost = 1.0;
+//    } else {
+//        route_ctx.rr_node_route_inf[inode].pres_cost = 1.0 + (occ + 1 - capacity) * pres_fac;
+//    }
 }
 
 void pathfinder_update_cost(float pres_fac, float acc_fac) {
@@ -456,14 +456,14 @@ void pathfinder_update_cost(float pres_fac, float acc_fac) {
 
         if (occ > capacity) {
             route_ctx.rr_node_route_inf[inode].acc_cost += (occ - capacity) * acc_fac;
-            route_ctx.rr_node_route_inf[inode].pres_cost = 1.0 + (occ + 1 - capacity) * pres_fac;
+            //route_ctx.rr_node_route_inf[inode].pres_cost = 1.0 + (occ + 1 - capacity) * pres_fac;
         }
 
         /* If occ == capacity, we don't need to increase acc_cost, but a change    *
          * in pres_fac could have made it necessary to recompute the cost anyway.  */
 
         else if (occ == capacity) {
-            route_ctx.rr_node_route_inf[inode].pres_cost = 1.0 + pres_fac;
+            //route_ctx.rr_node_route_inf[inode].pres_cost = 1.0 + pres_fac;
         }
     }
 }
