@@ -7107,6 +7107,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 36.5,
         "exec_time(ms)": 104.1,
         "simulation_time(ms)": 0.5,

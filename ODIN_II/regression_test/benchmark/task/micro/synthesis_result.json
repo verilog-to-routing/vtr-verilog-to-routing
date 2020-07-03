@@ -5,9 +5,7 @@
         "verilog": "adder_hard_block.v",
         "exit": 0,
         "errors": [],
-        "warnings": [
-            "AST adder_hard_block.v:11 Attempting to convert this instance to a hard block (adder) - unnamed port connections will be matched according to hard block specification and may produce unexpected results"
-        ],
+        "warnings": [],
         "expectation": [],
         "max_rss(MiB)": 25.4,
         "exec_time(ms)": 51.4,
@@ -6990,6 +6988,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 36.1,
         "exec_time(ms)": 68.8,
         "synthesis_time(ms)": 2,
@@ -7017,6 +7016,7 @@
             "AST hard_adder_cin_propagation.v:9 Can't find module name adder"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -7044,6 +7044,7 @@
             "AST hard_adder_cin_propagation.v:9 Can't find module name adder"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -7071,6 +7072,7 @@
             "AST hard_adder_cin_propagation.v:9 Can't find module name adder"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
