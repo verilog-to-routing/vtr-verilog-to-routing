@@ -494,7 +494,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
 
         // Make sure any CLB OPINs used up by subblocks being hooked directly to them are reserved for that purpose
         bool rip_up_local_opins = (itry == 1 ? false : true);
-        reserve_locally_used_opins(&small_heap, pres_fac,
+        reserve_locally_used_opins_pres_fac(&small_heap, pres_fac,
                                    router_opts.acc_fac, rip_up_local_opins);
 
         /*

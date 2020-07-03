@@ -121,14 +121,14 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     /*Correctly set up the clb opins*/
     BinaryHeap small_heap;
     small_heap.init_heap(device_ctx.grid);
-    reserve_locally_used_opins(&small_heap, router_opts.initial_pres_fac,
+    reserve_locally_used_opins_pres_fac(&small_heap, router_opts.initial_pres_fac,
                                router_opts.acc_fac, false);
     recompute_occupancy_from_scratch();
 
     /* Note: This pres_fac is not necessarily correct since it isn't the first routing iteration*/
     pathfinder_update_cost(router_opts.initial_pres_fac, router_opts.acc_fac);
 
-    reserve_locally_used_opins(&small_heap, router_opts.initial_pres_fac,
+    reserve_locally_used_opins_pres_fac(&small_heap, router_opts.initial_pres_fac,
                                router_opts.acc_fac, true);
 
     /* Finished loading in the routing, now check it*/
