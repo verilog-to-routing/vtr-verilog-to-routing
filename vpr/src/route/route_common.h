@@ -23,8 +23,9 @@ t_trace* update_traceback(t_heap* hptr, ClusterNetId net_id);
 
 void reset_path_costs(const std::vector<int>& visited_rr_nodes);
 
-float get_rr_cong_cost(int inode);
 float get_rr_cong_cost(int inode, float pres_fac);
+
+float get_single_rr_cong_cost(int inode, float pres_fac);
 
 void mark_ends(ClusterNetId net_id);
 void mark_remaining_ends(const std::vector<int>& remaining_sinks);
@@ -43,7 +44,6 @@ void reset_rr_node_route_structs();
 
 void free_trace_structs();
 
-void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins);
 void reserve_locally_used_opins_pres_fac(HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins);
 
 void free_chunk_memory_trace();

@@ -1198,10 +1198,7 @@ static void draw_routing_costs(ezgl::renderer* g) {
         float cost = 0.;
         if (draw_state->show_routing_costs == DRAW_TOTAL_ROUTING_COSTS
             || draw_state->show_routing_costs == DRAW_LOG_TOTAL_ROUTING_COSTS) {
-            int cost_index = device_ctx.rr_nodes[inode].cost_index();
-            cost = device_ctx.rr_indexed_data[cost_index].base_cost
-                   + route_ctx.rr_node_route_inf[inode].acc_cost
-                   + route_ctx.rr_node_route_inf[inode].pres_cost;
+            cost = get_single_rr_cong_cost(inode, 1.0);
 
         } else if (draw_state->show_routing_costs == DRAW_BASE_ROUTING_COSTS) {
             int cost_index = device_ctx.rr_nodes[inode].cost_index();

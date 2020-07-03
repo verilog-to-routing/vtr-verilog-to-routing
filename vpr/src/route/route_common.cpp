@@ -97,8 +97,6 @@ static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub, float pres_f
 
 bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes);
 static bool validate_trace_nodes(t_trace* head, const std::unordered_set<int>& trace_nodes);
-static float get_single_rr_cong_cost(int inode);
-static float get_single_rr_cong_cost(int inode, float pres_fac);
 static vtr::vector<ClusterNetId, uint8_t> load_is_clock_net();
 
 /************************** Subroutine definitions ***************************/
@@ -721,32 +719,9 @@ float get_rr_cong_cost(int inode, float pres_fac) {
     return (cost);
 }
 
-/* Returns the *congestion* cost of using this rr_node. */
-float get_rr_cong_cost(int inode) {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& route_ctx = g_vpr_ctx.routing();
-
-    float cost = get_single_rr_cong_cost(inode);
-
-    if (route_ctx.non_configurable_bitset.get(inode)) {
-        // Access unordered_map only when the node is part of a non-configurable set
-        auto itr = device_ctx.rr_node_to_non_config_node_set.find(inode);
-        if (itr != device_ctx.rr_node_to_non_config_node_set.end()) {
-            for (int node : device_ctx.rr_non_config_node_sets[itr->second]) {
-                if (node == inode) {
-                    continue; //Already included above
-                }
-
-                cost += get_single_rr_cong_cost(node);
-            }
-        }
-    }
-    return (cost);
-}
-
 /* Returns the congestion cost of using this rr_node, *ignoring*
  * non-configurable edges */
-static float get_single_rr_cong_cost(int inode, float pres_fac) {
+float get_single_rr_cong_cost(int inode, float pres_fac) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
@@ -760,20 +735,6 @@ static float get_single_rr_cong_cost(int inode, float pres_fac) {
     if (occ >= capacity) {
         cost *= (1 + pres_fac * (occ + 1 - capacity));
     }
-
-    return cost;
-}
-
-/* Returns the congestion cost of using this rr_node, *ignoring*
- * non-configurable edges */
-static float get_single_rr_cong_cost(int inode) {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& route_ctx = g_vpr_ctx.routing();
-
-    auto cost_index = device_ctx.rr_nodes[inode].cost_index();
-    float cost = device_ctx.rr_indexed_data[cost_index].base_cost
-                 * route_ctx.rr_node_route_inf[inode].acc_cost
-                 * route_ctx.rr_node_route_inf[inode].pres_cost;
 
     return cost;
 }
@@ -1411,85 +1372,6 @@ void print_route(const char* placement_file, const char* route_file) {
 //
 // To model this we 'reserve' these locally used outputs, ensuring that the router will not use them (as if it did
 // this would equate to duplicating a BLE into an already in-use BLE instance, which is clearly incorrect).
-void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins) {
-    int num_local_opin, inode, from_node, iconn, num_edges, to_node;
-    int iclass, ipin;
-    float cost;
-    t_heap* heap_head_ptr;
-    t_physical_tile_type_ptr type;
-
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
-    auto& device_ctx = g_vpr_ctx.device();
-
-    if (rip_up_local_opins) {
-        for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-            type = physical_tile_type(blk_id);
-            for (iclass = 0; iclass < (int)type->class_inf.size(); iclass++) {
-                num_local_opin = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
-
-                if (num_local_opin == 0) continue;
-                VTR_ASSERT(type->class_inf[iclass].equivalence == PortEquivalence::INSTANCE);
-
-                /* Always 0 for pads and for RECEIVER (IPIN) classes */
-                for (ipin = 0; ipin < num_local_opin; ipin++) {
-                    inode = route_ctx.clb_opins_used_locally[blk_id][iclass][ipin];
-                    VTR_ASSERT(inode >= 0 && inode < (ssize_t)device_ctx.rr_nodes.size());
-                    adjust_one_rr_occ_and_apcost(inode, -1, pres_fac, acc_fac);
-                }
-            }
-        }
-    }
-
-    // Make sure heap is empty before we add nodes to the heap.
-    heap->empty_heap();
-
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        type = physical_tile_type(blk_id);
-        for (iclass = 0; iclass < (int)type->class_inf.size(); iclass++) {
-            num_local_opin = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
-
-            if (num_local_opin == 0) continue;
-
-            VTR_ASSERT(type->class_inf[iclass].equivalence == PortEquivalence::INSTANCE);
-
-            //From the SRC node we walk through it's out going edges to collect the
-            //OPIN nodes. We then push them onto a heap so the OPINs with lower
-            //congestion cost are popped-off/reserved first. (Intuitively, we want
-            //the reserved OPINs to move out of the way of congestion, by preferring
-            //to reserve OPINs with lower congestion costs).
-            from_node = route_ctx.rr_blk_source[blk_id][iclass];
-            num_edges = device_ctx.rr_nodes[from_node].num_edges();
-            for (iconn = 0; iconn < num_edges; iconn++) {
-                to_node = device_ctx.rr_nodes[from_node].edge_sink_node(iconn);
-
-                VTR_ASSERT(device_ctx.rr_nodes[to_node].type() == OPIN);
-
-                //Add the OPIN to the heap according to it's congestion cost
-                cost = get_rr_cong_cost(to_node);
-                add_node_to_heap(heap, route_ctx.rr_node_route_inf,
-                                 to_node, cost, OPEN, RREdgeId::INVALID(),
-                                 0., 0.);
-            }
-
-            for (ipin = 0; ipin < num_local_opin; ipin++) {
-                //Pop the nodes off the heap. We get them from the heap so we
-                //reserve those pins with lowest congestion cost first.
-                heap_head_ptr = heap->get_heap_head();
-                inode = heap_head_ptr->index;
-
-                VTR_ASSERT(device_ctx.rr_nodes[inode].type() == OPIN);
-
-                adjust_one_rr_occ_and_apcost(inode, 1, pres_fac, acc_fac);
-                route_ctx.clb_opins_used_locally[blk_id][iclass][ipin] = inode;
-                heap->free(heap_head_ptr);
-            }
-
-            heap->empty_heap();
-        }
-    }
-}
-
 void reserve_locally_used_opins_pres_fac(HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins) {
     int num_local_opin, inode, from_node, iconn, num_edges, to_node;
     int iclass, ipin;
@@ -1581,9 +1463,9 @@ static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub, float pres_f
     route_ctx.rr_node_route_inf[inode].set_occ(new_occ);
 
     if (new_occ < capacity) {
-        route_ctx.rr_node_route_inf[inode].pres_cost = 1.0;
+        //route_ctx.rr_node_route_inf[inode].pres_cost = 1.0;
     } else {
-        route_ctx.rr_node_route_inf[inode].pres_cost = 1.0 + (new_occ + 1 - capacity) * pres_fac;
+        //route_ctx.rr_node_route_inf[inode].pres_cost = 1.0 + (new_occ + 1 - capacity) * pres_fac;
         if (add_or_sub == 1) {
             route_ctx.rr_node_route_inf[inode].acc_cost += (new_occ - capacity) * acc_fac;
         }
