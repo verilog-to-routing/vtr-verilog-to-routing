@@ -8,8 +8,8 @@
  * As a note, looks into draw_global.c for understanding the data structures associated with drawing->
  *
  * 
- * Authors: Vaughn Betz, Long Yu (Mike) Wang, Dingyu (Tina) Yang
- * Last updated: June 2019
+ * Authors: Vaughn Betz, Long Yu (Mike) Wang, Dingyu (Tina) Yang, Bingran (Bill) Hu
+ * Last updated: July 2020
  */
 
 #include <cstdio>
@@ -45,6 +45,7 @@
 #include "save_graphics.h"
 #include "timing_info.h"
 #include "physical_types.h"
+#include "route_common.h"
 
 #ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
               * track CPU runtime.														   */
@@ -1194,24 +1195,27 @@ static void draw_routing_costs(ezgl::renderer* g) {
     float min_cost = std::numeric_limits<float>::infinity();
     float max_cost = -min_cost;
     std::vector<float> rr_node_costs(device_ctx.rr_nodes.size(), 0.);
+
+    /* For display purpose only, not an accurate value of the present congestion factor */
+    float approx_pres_fac = 1.;
+
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         float cost = 0.;
         if (draw_state->show_routing_costs == DRAW_TOTAL_ROUTING_COSTS
             || draw_state->show_routing_costs == DRAW_LOG_TOTAL_ROUTING_COSTS) {
-            cost = get_single_rr_cong_cost(inode, 1.0);
+            cost = get_single_rr_cong_cost(inode, approx_pres_fac);
 
         } else if (draw_state->show_routing_costs == DRAW_BASE_ROUTING_COSTS) {
-            int cost_index = device_ctx.rr_nodes[inode].cost_index();
-            cost = device_ctx.rr_indexed_data[cost_index].base_cost;
+            cost = get_single_rr_cong_base_cost(inode);
 
         } else if (draw_state->show_routing_costs == DRAW_ACC_ROUTING_COSTS
                    || draw_state->show_routing_costs == DRAW_LOG_ACC_ROUTING_COSTS) {
-            cost = route_ctx.rr_node_route_inf[inode].acc_cost;
+            cost = get_single_rr_cong_acc_cost(inode);
 
         } else {
             VTR_ASSERT(draw_state->show_routing_costs == DRAW_PRES_ROUTING_COSTS
                        || draw_state->show_routing_costs == DRAW_LOG_PRES_ROUTING_COSTS);
-            cost = route_ctx.rr_node_route_inf[inode].pres_cost;
+            cost = get_single_rr_cong_pres_cost(inode, approx_pres_fac);
         }
 
         if (draw_state->show_routing_costs == DRAW_LOG_TOTAL_ROUTING_COSTS

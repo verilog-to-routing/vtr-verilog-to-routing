@@ -26,6 +26,12 @@ float get_rr_cong_cost(int inode, float pres_fac);
 
 float get_single_rr_cong_cost(int inode, float pres_fac);
 
+float get_single_rr_cong_base_cost(int inode);
+
+float get_single_rr_cong_acc_cost(int inode);
+
+float get_single_rr_cong_pres_cost(int inode, float pres_fac);
+
 void mark_ends(ClusterNetId net_id);
 void mark_remaining_ends(const std::vector<int>& remaining_sinks);
 

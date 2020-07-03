@@ -1240,9 +1240,8 @@ static void print_node_congestion(const t_rt_node* rt_node) {
     int inode = rt_node->inode;
     const auto& node_inf = route_ctx.rr_node_route_inf[inode];
     const auto& node = device_ctx.rr_nodes[inode];
-    const auto& node_state = route_ctx.rr_node_route_inf[inode];
-    VTR_LOG("%2d %2d|%-6d-> ", node_inf.pres_cost, rt_node->Tdel,
-            node_state.occ(), node.capacity(), inode);
+    VTR_LOG("%2d %2d|%-6d-> ", node_inf.acc_cost, rt_node->Tdel,
+            node_inf.occ(), node.capacity(), inode);
 }
 
 void print_route_tree_inf(const t_rt_node* rt_root) {

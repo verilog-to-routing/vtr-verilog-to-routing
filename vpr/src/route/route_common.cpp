@@ -697,24 +697,42 @@ float get_rr_cong_cost(int inode, float pres_fac) {
     return (cost);
 }
 
-/* Returns the congestion cost of using this rr_node, *ignoring*
- * non-configurable edges */
+/* Returns the congestion cost of using this rr_node,
+ * *ignoring* non-configurable edges */
 float get_single_rr_cong_cost(int inode, float pres_fac) {
+    return get_single_rr_cong_base_cost(inode) *
+            get_single_rr_cong_acc_cost(inode) *
+            get_single_rr_cong_pres_cost(inode, pres_fac);
+}
+
+/* Returns the base cost of using this rr_node */
+float get_single_rr_cong_base_cost(int inode) {
     auto& device_ctx = g_vpr_ctx.device();
+    auto cost_index = device_ctx.rr_nodes[inode].cost_index();
+
+    return device_ctx.rr_indexed_data[cost_index].base_cost;
+}
+
+/* Returns the accumulated congestion cost of using this rr_node */
+float get_single_rr_cong_acc_cost(int inode) {
     auto& route_ctx = g_vpr_ctx.routing();
 
-    auto cost_index = device_ctx.rr_nodes[inode].cost_index();
-    float cost = device_ctx.rr_indexed_data[cost_index].base_cost
-                 * route_ctx.rr_node_route_inf[inode].acc_cost;
+    return route_ctx.rr_node_route_inf[inode].acc_cost;
+}
+
+/* Returns the present congestion cost of using this rr_node */
+float get_single_rr_cong_pres_cost(int inode, float pres_fac) {
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
 
     int occ = route_ctx.rr_node_route_inf[inode].occ();
     int capacity = device_ctx.rr_nodes[inode].capacity();
 
     if (occ >= capacity) {
-        cost *= (1 + pres_fac * (occ + 1 - capacity));
+        return (1. + pres_fac * (occ + 1 - capacity));
+    } else {
+        return 1.;
     }
-
-    return cost;
 }
 
 /* Mark all the SINKs of this net as targets by setting their target flags  *
@@ -943,13 +961,15 @@ void reset_rr_node_route_structs() {
     VTR_ASSERT(route_ctx.rr_node_route_inf.size() == size_t(device_ctx.rr_nodes.size()));
 
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        route_ctx.rr_node_route_inf[inode].prev_node = NO_PREVIOUS;
-        route_ctx.rr_node_route_inf[inode].prev_edge = RREdgeId::INVALID();
-        route_ctx.rr_node_route_inf[inode].acc_cost = 1.0;
-        route_ctx.rr_node_route_inf[inode].path_cost = std::numeric_limits<float>::infinity();
-        route_ctx.rr_node_route_inf[inode].backward_path_cost = std::numeric_limits<float>::infinity();
-        route_ctx.rr_node_route_inf[inode].target_flag = 0;
-        route_ctx.rr_node_route_inf[inode].set_occ(0);
+        auto& node_inf = route_ctx.rr_node_route_inf[inode];
+
+        node_inf.prev_node = NO_PREVIOUS;
+        node_inf.prev_edge = RREdgeId::INVALID();
+        node_inf.acc_cost = 1.0;
+        node_inf.path_cost = std::numeric_limits<float>::infinity();
+        node_inf.backward_path_cost = std::numeric_limits<float>::infinity();
+        node_inf.target_flag = 0;
+        node_inf.set_occ(0);
     }
 }
 
