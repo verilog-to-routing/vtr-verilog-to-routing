@@ -3180,6 +3180,7 @@ static void draw_crit_path(ezgl::renderer* g) {
             if (draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES || draw_state->show_crit_path == DRAW_CRIT_PATH_FLYLINES_DELAYS) {
                 g->set_color(color);
                 g->set_line_dash(ezgl::line_dash::none);
+                g->set_line_width(4);
                 draw_flyline_timing_edge(tnode_draw_coord(prev_node), tnode_draw_coord(node), delay, g);
             } else {
                 VTR_ASSERT(draw_state->show_crit_path != DRAW_NO_CRIT_PATH);
