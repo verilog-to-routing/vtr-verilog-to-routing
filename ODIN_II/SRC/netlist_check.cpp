@@ -560,7 +560,7 @@ void levelize_backwards(netlist_t* netlist) {
                             }
 
                             /* mark this entry as visited */
-                            if (fanout_net->driver_pin != NULL) {
+                            if (fanout_net->num_driver_pins != 0) {
                                 fanouts_visited[current_node->input_pins[j]->pin_net_idx] = cur_back_level;
                             }
 
@@ -573,19 +573,20 @@ void levelize_backwards(netlist_t* netlist) {
                                     && fanouts_visited[k] == -1));
                             }
 
-                            if (all_visited
-                                && fanout_net->driver_pin
-                                && fanout_net->driver_pin->node
-                                && fanout_net->driver_pin->node->type != FF_NODE) {
-                                /* This one has been visited by everyone */
-                                if (fanout_net->driver_pin->node->backward_level == -1) {
-                                    /* already added to a list...this means that we won't have the correct ordering */
-                                    netlist->backward_levels[cur_back_level + 1] = (nnode_t**)vtr::realloc(netlist->backward_levels[cur_back_level + 1], sizeof(nnode_t*) * (netlist->num_at_backward_level[cur_back_level + 1] + 1));
-                                    netlist->backward_levels[cur_back_level + 1][netlist->num_at_backward_level[cur_back_level + 1]] = fanout_net->driver_pin->node;
-                                    netlist->num_at_backward_level[cur_back_level + 1]++;
-                                }
+                            if (all_visited) {
+                                for (k = 0; k < fanout_net->num_driver_pins; k++) {
+                                    if (!fanout_net->driver_pins[k]->node || fanout_net->driver_pins[k]->node->type == FF_NODE)
+                                        continue;
+                                    /* This one has been visited by everyone */
+                                    if (fanout_net->driver_pins[k]->node->backward_level == -1) {
+                                        /* already added to a list...this means that we won't have the correct ordering */
+                                        netlist->backward_levels[cur_back_level + 1] = (nnode_t**)vtr::realloc(netlist->backward_levels[cur_back_level + 1], sizeof(nnode_t*) * (netlist->num_at_backward_level[cur_back_level + 1] + 1));
+                                        netlist->backward_levels[cur_back_level + 1][netlist->num_at_backward_level[cur_back_level + 1]] = fanout_net->driver_pins[k]->node;
+                                        netlist->num_at_backward_level[cur_back_level + 1]++;
+                                    }
 
-                                fanout_net->driver_pin->node->backward_level = cur_back_level + 1;
+                                    fanout_net->driver_pins[k]->node->backward_level = cur_back_level + 1;
+                                }
                             }
                         }
                     }
@@ -676,20 +677,20 @@ void levelize_backwards_clean_checking_for_liveness(netlist_t* netlist) {
  * (function: find_node_at_top_of_combo_loop)
  *-------------------------------------------------------------------------------------------*/
 nnode_t* find_node_at_top_of_combo_loop(nnode_t* start_node) {
-    int i;
-    int idx_missed;
-    nnode_t* next_node = start_node;
-    int* fanouts_visited;
-    short all_visited;
+    int stack_size = 1;
+    nnode_t** stack = (nnode_t**)vtr::calloc(stack_size, sizeof(nnode_t*));
+    stack[0] = start_node;
 
     while (true) {
+        nnode_t* next_node = stack[--stack_size];
         oassert(next_node->unique_node_data_id == LEVELIZE);
-        fanouts_visited = (int*)next_node->node_data;
+        int* fanouts_visited = (int*)next_node->node_data;
         next_node->node_data = NULL;
 
         /* check if they've all been marked */
-        all_visited = true;
-        for (i = 0; i < next_node->num_input_pins; i++) {
+        bool all_visited = true;
+        int idx_missed = -1;
+        for (int i = 0; i < next_node->num_input_pins; i++) {
             if (fanouts_visited[i] == -1) {
                 all_visited = false;
                 idx_missed = i;
@@ -697,14 +698,21 @@ nnode_t* find_node_at_top_of_combo_loop(nnode_t* start_node) {
             }
         }
 
-        if (all_visited == false) {
-            if (next_node->input_pins[idx_missed]->net->driver_pin->node->backward_level < next_node->backward_level)
-                /* IF - the next node has a lower backward level than this node suggests that it is
-                 * closer to primary outputs and not in the combo loop */
-                return next_node;
+        if (!all_visited) {
+            for (int i = 0; i < next_node->input_pins[idx_missed]->net->num_driver_pins; i++) {
+                if (next_node->input_pins[idx_missed]->net->driver_pins[i]->node->backward_level < next_node->backward_level) {
+                    /* IF - the next node has a lower backward level than this node suggests that it is
+                     * closer to primary outputs and not in the combo loop */
+                    vtr::free(stack);
+                    return next_node;
+                }
 
-            next_node = next_node->input_pins[idx_missed]->net->driver_pin->node;
+                stack_size++;
+                stack = (nnode_t**)vtr::realloc(stack, sizeof(nnode_t*) * stack_size);
+                stack[stack_size - 1] = next_node->input_pins[idx_missed]->net->driver_pins[i]->node;
+            }
         } else {
+            vtr::free(stack);
             return next_node;
         }
     }

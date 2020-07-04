@@ -201,6 +201,87 @@
         "Estimated LUTs": 1,
         "Total Node": 1
     },
+    "preprocessor/elsif_both_defined/no_arch": {
+        "test_name": "preprocessor/elsif_both_defined/no_arch",
+        "blif": "elsif_both_defined.blif",
+        "max_rss(MiB)": 35.6,
+        "exec_time(ms)": 6.4,
+        "simulation_time(ms)": 0.6,
+        "test_coverage(%)": 100,
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 4,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 4,
+        "Total Node": 4
+    },
+    "preprocessor/nested_ifdef_alldef/no_arch": {
+        "test_name": "preprocessor/nested_ifdef_alldef/no_arch",
+        "blif": "nested_ifdef_alldef.blif",
+        "exit": 134,
+        "errors": [
+            "[OUTPUT_BLIF] Vector files differ."
+        ],
+        "warnings": [
+            "[OUTPUT_BLIF] Vector 0 mismatch:",
+            "[OUTPUT_BLIF] Vector 1 mismatch:",
+            "[OUTPUT_BLIF] Vector 2 mismatch:"
+        ]
+    },
+    "preprocessor/nested_ifdef_middef/no_arch": {
+        "test_name": "preprocessor/nested_ifdef_middef/no_arch",
+        "blif": "nested_ifdef_middef.blif",
+        "exit": 134,
+        "errors": [
+            "[OUTPUT_BLIF] Vector files differ."
+        ],
+        "warnings": [
+            "[OUTPUT_BLIF] Vector 0 mismatch:",
+            "[OUTPUT_BLIF] Vector 1 mismatch:",
+            "[OUTPUT_BLIF] Vector 2 mismatch:"
+        ]
+    },
+    "preprocessor/nested_ifdef_nonedef/no_arch": {
+        "test_name": "preprocessor/nested_ifdef_nonedef/no_arch",
+        "blif": "nested_ifdef_nonedef.blif",
+        "max_rss(MiB)": 35.6,
+        "exec_time(ms)": 6.3,
+        "simulation_time(ms)": 0.6,
+        "test_coverage(%)": 100,
+        "Po": 3,
+        "logic element": 24,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 24,
+        "Total Node": 24
+    },
+    "preprocessor/nested_ifdef_outsidedef/no_arch": {
+        "test_name": "preprocessor/nested_ifdef_outsidedef/no_arch",
+        "blif": "nested_ifdef_outsidedef.blif",
+        "exit": 134,
+        "errors": [
+            "[OUTPUT_BLIF] Vector files differ."
+        ],
+        "warnings": [
+            "[OUTPUT_BLIF] Vector 0 mismatch:",
+            "[OUTPUT_BLIF] Vector 1 mismatch:",
+            "[OUTPUT_BLIF] Vector 2 mismatch:"
+        ]
+    },
+    "preprocessor/nested_ifdef_twodef/no_arch": {
+        "test_name": "preprocessor/nested_ifdef_twodef/no_arch",
+        "blif": "nested_ifdef_twodef.blif",
+        "exit": 134,
+        "errors": [
+            "[OUTPUT_BLIF] Vector files differ."
+        ],
+        "warnings": [
+            "[OUTPUT_BLIF] Vector 0 mismatch:",
+            "[OUTPUT_BLIF] Vector 1 mismatch:",
+            "[OUTPUT_BLIF] Vector 2 mismatch:"
+        ]
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

@@ -2312,6 +2312,33 @@
         "Estimated LUTs": 1020,
         "Total Node": 1315
     },
+    "syntax/multi_assignment/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "syntax/multi_assignment/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "blif": "multi_assignment.blif",
+        "exit": 134,
+        "errors": [
+            "[OUTPUT_BLIF] Vector files differ."
+        ],
+        "warnings": [
+            "[OUTPUT_BLIF] Vector 2 mismatch:",
+            "[OUTPUT_BLIF] Vector 3 mismatch:",
+            "[OUTPUT_BLIF] Vector 4 mismatch:"
+        ]
+    },
+    "syntax/multi_assignment/no_arch": {
+        "test_name": "syntax/multi_assignment/no_arch",
+        "blif": "multi_assignment.blif",
+        "exit": 134,
+        "errors": [
+            "[OUTPUT_BLIF] Vector files differ."
+        ],
+        "warnings": [
+            "[OUTPUT_BLIF] Vector 2 mismatch:",
+            "[OUTPUT_BLIF] Vector 3 mismatch:",
+            "[OUTPUT_BLIF] Vector 4 mismatch:"
+        ]
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

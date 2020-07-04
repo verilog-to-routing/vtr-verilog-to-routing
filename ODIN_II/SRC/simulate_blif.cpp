@@ -131,6 +131,8 @@ static int get_num_covered_nodes(stages_t* s);
 static int is_node_ready(nnode_t* node, int cycle);
 static int is_node_complete(nnode_t* node, int cycle);
 
+static bool pin_is_driver(npin_t* pin, nnet_t* net);
+
 static bool compute_and_store_value(nnode_t* node, int cycle);
 static void compute_memory_node(nnode_t* node, int cycle);
 static void compute_hard_ip_node(nnode_t* node, int cycle);
@@ -555,7 +557,11 @@ static int is_node_ready(nnode_t* node, int cycle) {
         for (i = 0; i < node->num_input_pins; i++) {
             npin_t* pin = node->input_pins[i];
 
-            if (!pin->net || !pin->net->driver_pin || !pin->net->driver_pin->node) {
+            bool has_missing_driver = false;
+            for (int j = 0; j < pin->net->num_driver_pins && !has_missing_driver; j++)
+                has_missing_driver = pin->net->driver_pins[j]->node == NULL;
+
+            if (!pin->net || has_missing_driver) {
                 bool already_flagged = false;
                 int j;
                 for (j = 0; j < node->num_undriven_pins; j++) {
@@ -1150,6 +1156,16 @@ int get_clock_ratio(nnode_t* node) {
     return node->ratio;
 }
 
+/**
+ * Checks if the pin is one of the drivers of the provided net
+ */
+static bool pin_is_driver(npin_t* pin, nnet_t* net) {
+    for (int j = 0; j < net->num_driver_pins; j++)
+        if (net->driver_pins[j] == pin)
+            return true;
+    return false;
+}
+
 /*
  * Gets the children of the given node. Returns the number of
  * children via the num_children parameter. Throws warnings
@@ -1164,25 +1180,27 @@ nnode_t** get_children_of(nnode_t* node, int* num_children) {
         nnet_t* net = pin->net;
         if (net) {
             /*
-             *  Detects a net that may be being driven by two
-             *  or more pins or has an incorrect driver pin assignment.
+             *  Detects a net that has an incorrect driver pin assignment.
              */
-            if (net->driver_pin != pin && global_args.all_warnings) {
+            if (!pin_is_driver(pin, net) && global_args.all_warnings) {
                 char* pin_name = get_pin_name(pin->name);
                 char* node_name = get_pin_name(node->name);
                 char* net_name = get_pin_name(net->name);
 
+                std::string format_message =
+                    "Found output pin \"%s\" (%ld) on node \"%s\" (%ld)\n"
+                    "             which is mapped to a net \"%s\" (%ld) whose driver pins are:\n";
+                for (int j = 0; j < net->num_driver_pins; j++)
+                    format_message += "             " + std::string(net->driver_pins[j]->name) + " (" + std::to_string(net->driver_pins[j]->unique_id) + ")\n";
+
                 warning_message(SIMULATION, node->loc,
-                                "Found output pin \"%s\" (%ld) on node \"%s\" (%ld)\n"
-                                "             which is mapped to a net \"%s\" (%ld) whose driver pin is \"%s\" (%ld) \n",
+                                format_message.c_str(),
                                 pin_name,
                                 pin->unique_id,
                                 node_name,
                                 node->unique_id,
                                 net_name,
-                                net->unique_id,
-                                net->driver_pin->name,
-                                net->driver_pin->unique_id);
+                                net->unique_id);
 
                 vtr::free(net_name);
                 vtr::free(pin_name);
@@ -1195,19 +1213,33 @@ nnode_t** get_children_of(nnode_t* node, int* num_children) {
                 if (fanout_pin && fanout_pin->type == INPUT && fanout_pin->node) {
                     nnode_t* child_node = fanout_pin->node;
 
+                    bool error = false;
                     // Check linkage for inconsistencies.
                     if (fanout_pin->net != net) {
                         print_ancestry(child_node, 0);
                         error_message(SIMULATION, node->loc, "Found mismapped node %s", node->name);
-                    } else if (fanout_pin->net->driver_pin->net != net) {
-                        print_ancestry(child_node, 0);
-                        error_message(SIMULATION, node->loc, "Found mismapped node %s", node->name);
+                        error = true;
+                    } else {
+                        oassert(fanout_pin->net->num_driver_pins > 0 && "Expected at least one driver pin");
+                        bool found_net = false;
+                        bool found_driver = false;
+                        for (int k = 0; k < fanout_pin->net->num_driver_pins; k++) {
+                            if (fanout_pin->net->driver_pins[k]->net == net) {
+                                found_net = true;
+                            }
+                            if (fanout_pin->net->driver_pins[k]->node == node) {
+                                found_driver = true;
+                            }
+                        }
+
+                        if (!found_net || !found_driver) {
+                            print_ancestry(child_node, 0);
+                            error_message(SIMULATION, node->loc, "Found mismapped node %s", node->name);
+                            error = true;
+                        }
                     }
 
-                    else if (fanout_pin->net->driver_pin->node != node) {
-                        print_ancestry(child_node, 0);
-                        error_message(SIMULATION, node->loc, "Found mismapped node %s", node->name);
-                    } else {
+                    if (!error) {
                         // Add child.
                         children = (nnode_t**)vtr::realloc(children, sizeof(nnode_t*) * (count + 1));
                         children[count++] = child_node;
@@ -1238,25 +1270,27 @@ nnode_t** get_children_of_nodepin(nnode_t* node, int* num_children, int output_p
     nnet_t* net = pin->net;
     if (net) {
         /*
-         *  Detects a net that may be being driven by two
-         *  or more pins or has an incorrect driver pin assignment.
+         *  Detects a net that has an incorrect driver pin assignment.
          */
-        if (net->driver_pin != pin && global_args.all_warnings) {
+        if (!pin_is_driver(pin, net) && global_args.all_warnings) {
             char* pin_name = get_pin_name(pin->name);
             char* node_name = get_pin_name(node->name);
             char* net_name = get_pin_name(net->name);
 
+            std::string format_message =
+                "Found output pin \"%s\" (%ld) on node \"%s\" (%ld)\n"
+                "             which is mapped to a net \"%s\" (%ld) whose driver pins are:\n";
+            for (int j = 0; j < net->num_driver_pins; j++)
+                format_message += "             " + std::string(net->driver_pins[j]->name) + " (" + std::to_string(net->driver_pins[j]->unique_id) + ")\n";
+
             warning_message(SIMULATION, node->loc,
-                            "Found output pin \"%s\" (%ld) on node \"%s\" (%ld)\n"
-                            "             which is mapped to a net \"%s\" (%ld) whose driver pin is \"%s\" (%ld) \n",
+                            format_message.c_str(),
                             pin_name,
                             pin->unique_id,
                             node_name,
                             node->unique_id,
                             net_name,
-                            net->unique_id,
-                            net->driver_pin->name,
-                            net->driver_pin->unique_id);
+                            net->unique_id);
 
             vtr::free(net_name);
             vtr::free(pin_name);
@@ -1269,19 +1303,33 @@ nnode_t** get_children_of_nodepin(nnode_t* node, int* num_children, int output_p
             if (fanout_pin && fanout_pin->type == INPUT && fanout_pin->node) {
                 nnode_t* child_node = fanout_pin->node;
 
+                bool error = false;
                 // Check linkage for inconsistencies.
                 if (fanout_pin->net != net) {
                     print_ancestry(child_node, 0);
                     error_message(SIMULATION, node->loc, "Found mismapped node %s", node->name);
-                } else if (fanout_pin->net->driver_pin->net != net) {
-                    print_ancestry(child_node, 0);
-                    error_message(SIMULATION, node->loc, "Found mismapped node %s", node->name);
+                    error = true;
+                } else {
+                    oassert(fanout_pin->net->num_driver_pins > 0 && "Expected at least one driver pin");
+                    bool found_net = false;
+                    bool found_driver = false;
+                    for (int k = 0; k < fanout_pin->net->num_driver_pins; k++) {
+                        if (fanout_pin->net->driver_pins[k]->net == net) {
+                            found_net = true;
+                        }
+                        if (fanout_pin->net->driver_pins[k]->node == node) {
+                            found_driver = true;
+                        }
+                    }
+
+                    if (!found_net || !found_driver) {
+                        print_ancestry(child_node, 0);
+                        error_message(SIMULATION, node->loc, "Found mismapped node %s", node->name);
+                        error = true;
+                    }
                 }
 
-                else if (fanout_pin->net->driver_pin->node != node) {
-                    print_ancestry(child_node, 0);
-                    error_message(SIMULATION, node->loc, "Found mismapped node %s", node->name);
-                } else {
+                if (!error) {
                     // Add child.
                     children = (nnode_t**)vtr::realloc(children, sizeof(nnode_t*) * (count + 1));
                     children[count++] = child_node;
@@ -1306,8 +1354,9 @@ nnode_t** get_children_of_nodepin(nnode_t* node, int* num_children, int output_p
  */
 static void initialize_pin(npin_t* pin) {
     // Initialise the driver pin if this pin is not the driver.
-    if (pin->net && pin->net->driver_pin && pin->net->driver_pin != pin)
-        initialize_pin(pin->net->driver_pin);
+    if (pin->net && !pin_is_driver(pin, pin->net))
+        for (int i = 0; i < pin->net->num_driver_pins; i++)
+            initialize_pin(pin->net->driver_pins[i]);
 
     // If initialising the driver initialised this pin, we're OK to return.
     if (pin->values)
@@ -1552,20 +1601,26 @@ static void compute_add_node(nnode_t* node, int cycle) {
     oassert(node->output_port_sizes[0] == node->input_port_sizes[0]);
     oassert(node->output_port_sizes[1] == 1);
 
+    BitSpace::bit_value_t carry = get_pin_value(node->input_pins[node->input_port_sizes[0] + node->input_port_sizes[1]], cycle);
+
     /**
      * TODO: this must be a bug, unconn is 'z' and pushing '1' is just a "patch"
-     *      We should not be forcing a value, it should result in the logic 
+     *      We should not be forcing a value, it should result in the logic
      */
-    BitSpace::bit_value_t carry = get_pin_value(node->input_pins[node->input_port_sizes[0] + node->input_port_sizes[1]], cycle);
     // check if the cin == unconn
-    if (node->input_pins[node->input_port_sizes[0] + node->input_port_sizes[1]]->net->driver_pin->node->type == PAD_NODE) {
+    nnet_t* carry_net = node->input_pins[node->input_port_sizes[0] + node->input_port_sizes[1]]->net;
+    if (carry_net->num_driver_pins == 1 && carry_net->driver_pins[0]->node->type == PAD_NODE) {
+        nnet_t* temp_net = node->input_pins[0]->net;
         // if a[0] is connected to gnd
-        if (node->input_pins[0]->net->driver_pin->node->type == GND_NODE) {
-            // we connect the carry to have usefull output
-            if (node->input_pins[node->input_port_sizes[0]]->net->driver_pin->node->type == GND_NODE) {
-                carry = BitSpace::_0;
-            } else if (node->input_pins[node->input_port_sizes[0]]->net->driver_pin->node->type == VCC_NODE) {
-                carry = BitSpace::_1;
+        if (temp_net->num_driver_pins == 1 && temp_net->driver_pins[0]->node->type == GND_NODE) {
+            temp_net = node->input_pins[node->input_port_sizes[0]]->net;
+            if (temp_net->num_driver_pins == 1) {
+                // we connect the carry to have usefull output
+                if (temp_net->driver_pins[0]->node->type == GND_NODE) {
+                    carry = BitSpace::_0;
+                } else if (temp_net->driver_pins[0]->node->type == VCC_NODE) {
+                    carry = BitSpace::_1;
+                }
             }
         }
     }
@@ -1594,18 +1649,23 @@ static void compute_unary_sub_node(nnode_t* node, int cycle) {
     oassert(node->output_port_sizes[0] == node->input_port_sizes[0]);
     oassert(node->output_port_sizes[1] == 1);
 
+    BitSpace::bit_value_t carry = get_pin_value(node->input_pins[node->input_port_sizes[0]], cycle);
+
     /**
      * TODO: this must be a bug, unconn is 'z' and pushing '1' is just a "patch"
-     *      We should not be forcing a value, it should result in the logic 
+     *      We should not be forcing a value, it should result in the logic
      */
-    BitSpace::bit_value_t carry = get_pin_value(node->input_pins[node->input_port_sizes[0]], cycle);
     // check if the cin == unconn
-    if (node->input_pins[node->input_port_sizes[0]]->net->driver_pin->node->type == PAD_NODE) {
-        // we connect the carry to have usefull output
-        if (node->input_pins[0]->net->driver_pin->node->type == GND_NODE) {
-            carry = BitSpace::_0;
-        } else if (node->input_pins[0]->net->driver_pin->node->type == VCC_NODE) {
-            carry = BitSpace::_1;
+    nnet_t* carry_net = node->input_pins[node->input_port_sizes[0]]->net;
+    if (carry_net->num_driver_pins == 1 && carry_net->driver_pins[0]->node->type == PAD_NODE) {
+        nnet_t* temp_net = node->input_pins[0]->net;
+        if (temp_net->num_driver_pins == 1) {
+            // we connect the carry to have usefull output
+            if (temp_net->driver_pins[0]->node->type == GND_NODE) {
+                carry = BitSpace::_0;
+            } else if (temp_net->driver_pins[0]->node->type == VCC_NODE) {
+                carry = BitSpace::_1;
+            }
         }
     }
 
@@ -1632,7 +1692,7 @@ static void compute_memory_node(nnode_t* node, int cycle) {
 }
 
 /**
- * compute the address 
+ * compute the address
  */
 static long compute_address(nnode_t* node, signal_list_t* input_address, int cycle) {
     long address = 0;
@@ -2881,13 +2941,17 @@ static void print_ancestry(nnode_t* bottom_node, int n) {
         int i;
         for (i = 0; i < node->num_input_pins; i++) {
             npin_t* pin = node->input_pins[i];
+            printf("\t%s:\t", pin->mapping);
             nnet_t* net = pin->net;
-            nnode_t* node2 = net->driver_pin->node;
-            queue.push(node2);
-            char* name2 = get_pin_name(node2->name);
-            printf("\t%s %s (%ld)\n", pin->mapping, name2, node2->unique_id);
+            // Print all the drivers
+            for (int j = 0; j < net->num_driver_pins; j++) {
+                nnode_t* node2 = net->driver_pins[j]->node;
+                queue.push(node2);
+                char* name2 = get_pin_name(node2->name);
+                printf("%s (%ld)%s", name2, node2->unique_id, j == net->num_driver_pins - 1 ? "\n" : ", ");
+                vtr::free(name2);
+            }
             fflush(stdout);
-            vtr::free(name2);
         }
 
         /*int count = 0;
@@ -2988,21 +3052,24 @@ static nnode_t* print_update_trace(nnode_t* bottom_node, int cycle) {
             for (i = 0; i < node->num_input_pins; i++) {
                 npin_t* pin = node->input_pins[i];
                 nnet_t* net = pin->net;
-                nnode_t* node2 = net->driver_pin->node;
 
-                // If an input is found which hasn't been updated since before cycle-1, traverse it.
-                bool is_undriven = false;
-                if (get_pin_cycle(pin) < cycle - 1) {
-                    // Only add each node for traversal once.
-                    if (!found_undriven_pin) {
-                        found_undriven_pin = true;
-                        queue.push(node2);
+                for (int j = 0; j < net->num_driver_pins; j++) {
+                    nnode_t* node2 = net->driver_pins[j]->node;
+
+                    // If an input is found which hasn't been updated since before cycle-1, traverse it.
+                    bool is_undriven = false;
+                    if (get_pin_cycle(pin) < cycle - 1) {
+                        // Only add each node for traversal once.
+                        if (!found_undriven_pin) {
+                            found_undriven_pin = true;
+                            queue.push(node2);
+                        }
+                        is_undriven = true;
                     }
-                    is_undriven = true;
+                    char* name2 = get_pin_name(node2->name);
+                    printf("\t(%s) %s (%ld) %ld %ld %s \n", pin->mapping, name2, node2->unique_id, node2->num_input_pins, node2->num_output_pins, is_undriven ? "*" : "");
+                    vtr::free(name2);
                 }
-                char* name2 = get_pin_name(node2->name);
-                printf("\t(%s) %s (%ld) %ld %ld %s \n", pin->mapping, name2, node2->unique_id, node2->num_input_pins, node2->num_output_pins, is_undriven ? "*" : "");
-                vtr::free(name2);
             }
             printf("  ------------\n");
         } else {
