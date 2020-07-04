@@ -350,7 +350,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
     /*
      * Routing parameters
      */
-    float pres_fac = router_opts.first_iter_pres_fac; /* Typically 0 -> ignore cong. */
+    float pres_fac = update_pres_fac(router_opts.first_iter_pres_fac); /* Typically 0 -> ignore cong. */
     int bb_fac = router_opts.bb_factor;
 
     //When routing conflicts are detected the bounding boxes are scaled
@@ -580,7 +580,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
             //Decrease pres_fac so that critical connections will take more direct routes
             //Note that we use first_iter_pres_fac here (typically zero), and switch to
             //use initial_pres_fac on the next iteration.
-            pres_fac = router_opts.first_iter_pres_fac;
+            pres_fac = update_pres_fac(router_opts.first_iter_pres_fac);
 
             //Reduce timing tolerances to re-route more delay-suboptimal signals
             connections_inf.set_connection_criticality_tolerance(0.7);
@@ -597,7 +597,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
             //after the first routing convergence. Since that is often zero,
             //we want to set pres_fac to a reasonable (i.e. typically non-zero)
             //value afterwards -- so it grows when multiplied by pres_fac_mult
-            pres_fac = router_opts.initial_pres_fac;
+            pres_fac = update_pres_fac(router_opts.initial_pres_fac);
         }
 
         //Have we converged the maximum number of times, did not make any changes, or does it seem
@@ -648,13 +648,13 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
 
         //Update pres_fac and resource costs
         if (itry == 1) {
-            pres_fac = router_opts.initial_pres_fac;
+            pres_fac = update_pres_fac(router_opts.initial_pres_fac);
             pathfinder_update_acc_cost(0.); /* Acc_fac=0 for first iter. */
         } else {
             pres_fac *= router_opts.pres_fac_mult;
 
             /* Avoid overflow for high iteration counts, even if acc_cost is big */
-            pres_fac = std::min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5));
+            pres_fac = update_pres_fac(std::min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5)));
 
             pathfinder_update_acc_cost(router_opts.acc_fac);
         }

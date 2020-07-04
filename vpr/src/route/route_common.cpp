@@ -38,6 +38,7 @@
 #include "tatum/echo_writer.hpp"
 #include "binary_heap.h"
 #include "bucket.h"
+#include "draw_global.h"
 
 /**************** Types local to route_common.c ******************/
 struct t_trace_branch {
@@ -93,7 +94,7 @@ static vtr::vector<ClusterNetId, std::vector<int>> load_net_rr_terminals(const t
 static vtr::vector<ClusterBlockId, std::vector<int>> load_rr_clb_sources(const t_rr_node_indices& L_rr_node_indices);
 
 static t_clb_opins_used alloc_and_load_clb_opins_used_locally();
-static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub, float acc_fac);
+static void adjust_one_rr_occ_and_acc_cost(int inode, int add_or_sub, float acc_fac);
 
 bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes);
 static bool validate_trace_nodes(t_trace* head, const std::unordered_set<int>& trace_nodes);
@@ -444,6 +445,20 @@ void pathfinder_update_acc_cost(float acc_fac) {
     }
 }
 
+float update_pres_fac(float new_pres_fac) {
+    /* This routine should take the new value of the present congestion factor *
+     * and propagate it to all the relevant data fields in the vpr flow.       *
+     * Currently, it only updates the pres_fac used by the drawing functions   */
+#ifndef NO_GRAPHICS
+
+    // Only updates the drawing pres_fac if graphics is enabled
+    set_draw_pres_fac(new_pres_fac);
+
+#endif // NO_GRAPHICS
+
+    return new_pres_fac;
+}
+
 /* Call this before you route any nets.  It frees any old traceback and   *
  * sets the list of rr_nodes touched to empty.                            */
 void init_route_structs(int bb_factor) {
@@ -468,12 +483,11 @@ void init_route_structs(int bb_factor) {
     route_ctx.net_status.resize(cluster_ctx.clb_nlist.nets().size());
 }
 
-t_trace*
-update_traceback(t_heap* hptr, ClusterNetId net_id) {
+t_trace* update_traceback(t_heap* hptr, ClusterNetId net_id) {
     /* This routine adds the most recently finished wire segment to the         *
      * traceback linked list.  The first connection starts with the net SOURCE  *
-     * and begins at the structure pointed to by route_ctx.trace[net_id].head. Each         *
-     * connection ends with a SINK.  After each SINK, the next connection       *
+     * and begins at the structure pointed to by route_ctx.trace[net_id].head.  *
+     * Each connection ends with a SINK.  After each SINK, the next connection  *
      * begins (if the net has more than 2 pins).  The first element after the   *
      * SINK gives the routing node on a previous piece of the routing, which is *
      * the link from the existing net to this new piece of the net.             *
@@ -674,7 +688,8 @@ void reset_path_costs(const std::vector<int>& visited_rr_nodes) {
     }
 }
 
-/* Returns the *congestion* cost of using this rr_node. */
+/* Returns the congestion cost of using this rr-node plus that of any      *
+ * non-configurably connected rr_nodes that must be used when it is used.  */
 float get_rr_cong_cost(int inode, float pres_fac) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
@@ -695,44 +710,6 @@ float get_rr_cong_cost(int inode, float pres_fac) {
         }
     }
     return (cost);
-}
-
-/* Returns the congestion cost of using this rr_node,
- * *ignoring* non-configurable edges */
-float get_single_rr_cong_cost(int inode, float pres_fac) {
-    return get_single_rr_cong_base_cost(inode) *
-            get_single_rr_cong_acc_cost(inode) *
-            get_single_rr_cong_pres_cost(inode, pres_fac);
-}
-
-/* Returns the base cost of using this rr_node */
-float get_single_rr_cong_base_cost(int inode) {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto cost_index = device_ctx.rr_nodes[inode].cost_index();
-
-    return device_ctx.rr_indexed_data[cost_index].base_cost;
-}
-
-/* Returns the accumulated congestion cost of using this rr_node */
-float get_single_rr_cong_acc_cost(int inode) {
-    auto& route_ctx = g_vpr_ctx.routing();
-
-    return route_ctx.rr_node_route_inf[inode].acc_cost;
-}
-
-/* Returns the present congestion cost of using this rr_node */
-float get_single_rr_cong_pres_cost(int inode, float pres_fac) {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& route_ctx = g_vpr_ctx.routing();
-
-    int occ = route_ctx.rr_node_route_inf[inode].occ();
-    int capacity = device_ctx.rr_nodes[inode].capacity();
-
-    if (occ >= capacity) {
-        return (1. + pres_fac * (occ + 1 - capacity));
-    } else {
-        return 1.;
-    }
 }
 
 /* Mark all the SINKs of this net as targets by setting their target flags  *
@@ -1393,7 +1370,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
                 for (ipin = 0; ipin < num_local_opin; ipin++) {
                     inode = route_ctx.clb_opins_used_locally[blk_id][iclass][ipin];
                     VTR_ASSERT(inode >= 0 && inode < (ssize_t)device_ctx.rr_nodes.size());
-                    adjust_one_rr_occ_and_apcost(inode, -1, acc_fac);
+                    adjust_one_rr_occ_and_acc_cost(inode, -1, acc_fac);
                 }
             }
         }
@@ -1438,7 +1415,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
 
                 VTR_ASSERT(device_ctx.rr_nodes[inode].type() == OPIN);
 
-                adjust_one_rr_occ_and_apcost(inode, 1, acc_fac);
+                adjust_one_rr_occ_and_acc_cost(inode, 1, acc_fac);
                 route_ctx.clb_opins_used_locally[blk_id][iclass][ipin] = inode;
                 heap->free(heap_head_ptr);
             }
@@ -1448,7 +1425,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
     }
 }
 
-static void adjust_one_rr_occ_and_apcost(int inode, int add_or_sub, float acc_fac) {
+static void adjust_one_rr_occ_and_acc_cost(int inode, int add_or_sub, float acc_fac) {
     /* Increments or decrements (depending on add_or_sub) the occupancy of    *
      * one rr_node, and adjusts the present cost of that node appropriately.  */
 

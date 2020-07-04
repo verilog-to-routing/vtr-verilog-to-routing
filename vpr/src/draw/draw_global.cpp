@@ -12,8 +12,8 @@
 
 #ifndef NO_GRAPHICS
 
-#    include "draw_global.h"
-#    include "draw_types.h"
+#include "draw_global.h"
+#include "draw_types.h"
 
 /*************************** Variables Definition ***************************/
 
@@ -25,6 +25,9 @@ static t_draw_state draw_state;
  * and logic blocks in the FPGA.
  */
 static t_draw_coords draw_coords;
+
+/* Global variable for storing pres_fac: present congestion cost factor */
+static float pres_fac = 1.;
 
 /*********************** Accessor Subroutines Definition ********************/
 
@@ -38,6 +41,16 @@ t_draw_coords* get_draw_coords_vars() {
 /* Use this function to access draw_state. */
 t_draw_state* get_draw_state_vars() {
     return &draw_state;
+}
+
+/* Use this function to access pres_fac. */
+float get_draw_pres_fac() {
+    return pres_fac;
+}
+
+/* Use this function to change pres_fac. */
+void set_draw_pres_fac(float new_pres_fac) {
+    pres_fac = new_pres_fac;
 }
 
 #endif // NO_GRAPHICS

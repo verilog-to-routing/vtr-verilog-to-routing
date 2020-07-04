@@ -63,7 +63,7 @@ bool try_breadth_first_route(const t_router_opts& router_opts) {
      * the shortest path and get a congestion map.  For fast compiles, I set  *
      * pres_fac high even for the first iteration.                            */
 
-    pres_fac = router_opts.first_iter_pres_fac;
+    pres_fac = update_pres_fac(router_opts.first_iter_pres_fac);
 
     if (router_opts.router_heap != e_heap_type::BINARY_HEAP) {
         VTR_LOG_WARN("Breadth-first router only uses the BINARY_HEAP.");
@@ -105,11 +105,11 @@ bool try_breadth_first_route(const t_router_opts& router_opts) {
         }
 
         if (itry == 1)
-            pres_fac = router_opts.initial_pres_fac;
+            pres_fac = update_pres_fac(router_opts.initial_pres_fac);
         else
             pres_fac *= router_opts.pres_fac_mult;
 
-        pres_fac = std::min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5));
+        pres_fac = update_pres_fac(std::min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5)));
 
         pathfinder_update_acc_cost(router_opts.acc_fac);
     }
