@@ -1431,7 +1431,7 @@ void instantiate_soft_single_port_ram(nnode_t* node, short mark, netlist_t* netl
         npin_t* address_pin = decoder->pins[i];
         /* Check that the input pin is driven */
         oassert(
-            address_pin->net->driver_pin != NULL
+            address_pin->net->num_driver_pins
             || address_pin->net == verilog_netlist->zero_net
             || address_pin->net == verilog_netlist->one_net
             || address_pin->net == verilog_netlist->pad_net);
@@ -1459,7 +1459,7 @@ void instantiate_soft_single_port_ram(nnode_t* node, short mark, netlist_t* netl
             npin_t* address_pin = decoder->pins[j];
             /* Check that the input pin is driven */
             oassert(
-                address_pin->net->driver_pin != NULL
+                address_pin->net->num_driver_pins
                 || address_pin->net == verilog_netlist->zero_net
                 || address_pin->net == verilog_netlist->one_net
                 || address_pin->net == verilog_netlist->pad_net);
@@ -1544,12 +1544,12 @@ void instantiate_soft_dual_port_ram(nnode_t* node, short mark, netlist_t* netlis
         npin_t* addr2_pin = decoder2->pins[i];
 
         oassert(
-            addr1_pin->net->driver_pin != NULL
+            addr1_pin->net->num_driver_pins
             || addr1_pin->net == verilog_netlist->zero_net
             || addr1_pin->net == verilog_netlist->one_net
             || addr1_pin->net == verilog_netlist->pad_net);
         oassert(
-            addr2_pin->net->driver_pin != NULL
+            addr2_pin->net->num_driver_pins
             || addr2_pin->net == verilog_netlist->zero_net
             || addr2_pin->net == verilog_netlist->one_net
             || addr2_pin->net == verilog_netlist->pad_net);
@@ -1597,12 +1597,12 @@ void instantiate_soft_dual_port_ram(nnode_t* node, short mark, netlist_t* netlis
             npin_t* addr2_pin = decoder2->pins[j];
 
             oassert(
-                addr1_pin->net->driver_pin != NULL
+                addr1_pin->net->num_driver_pins
                 || addr1_pin->net == verilog_netlist->zero_net
                 || addr1_pin->net == verilog_netlist->one_net
                 || addr1_pin->net == verilog_netlist->pad_net);
             oassert(
-                addr2_pin->net->driver_pin != NULL
+                addr2_pin->net->num_driver_pins
                 || addr2_pin->net == verilog_netlist->zero_net
                 || addr2_pin->net == verilog_netlist->one_net
                 || addr2_pin->net == verilog_netlist->pad_net);
@@ -1698,7 +1698,7 @@ signal_list_t* create_decoder(nnode_t* node, short mark, signal_list_t* input_li
     // Create NOT gates for all inputs and put the outputs in their own signal list.
     signal_list_t* not_gates = init_signal_list();
     for (long i = 0; i < num_inputs; i++) {
-        if (input_list->pins[i]->net->driver_pin == NULL
+        if (!input_list->pins[i]->net->num_driver_pins
             && input_list->pins[i]->net != verilog_netlist->zero_net
             && input_list->pins[i]->net != verilog_netlist->one_net
             && input_list->pins[i]->net != verilog_netlist->pad_net) {

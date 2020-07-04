@@ -491,18 +491,20 @@ void define_mult_function(nnode_t* node, FILE* out) {
 
     for (i = 0; i < node->num_input_pins; i++) {
         if (i < node->input_port_sizes[flip ? 1 : 0]) {
-            npin_t* driver_pin = flip
-                                     ? node->input_pins[i + node->input_port_sizes[0]]->net->driver_pin
-                                     : node->input_pins[i]->net->driver_pin;
+            int input_index = flip ? i + node->input_port_sizes[0] : i;
+            nnet_t* net = node->input_pins[input_index]->net;
+            oassert(net->num_driver_pins == 1);
+            npin_t* driver_pin = net->driver_pins[0];
 
             if (!driver_pin->name)
                 j = odin_sprintf(buffer, " %s[%ld]=%s", hard_multipliers->inputs->next->name, i, driver_pin->node->name);
             else
                 j = odin_sprintf(buffer, " %s[%ld]=%s", hard_multipliers->inputs->next->name, i, driver_pin->name);
         } else {
-            npin_t* driver_pin = flip
-                                     ? node->input_pins[i - node->input_port_sizes[1]]->net->driver_pin
-                                     : node->input_pins[i]->net->driver_pin;
+            int input_index = flip ? i - node->input_port_sizes[1] : i;
+            nnet_t* net = node->input_pins[input_index]->net;
+            oassert(net->num_driver_pins == 1);
+            npin_t* driver_pin = net->driver_pins[0];
 
             long index = flip
                              ? i - node->input_port_sizes[1]

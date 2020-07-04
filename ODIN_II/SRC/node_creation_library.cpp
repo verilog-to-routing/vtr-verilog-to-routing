@@ -286,12 +286,18 @@ char* hard_node_name(nnode_t* /*node*/, char* instance_name_prefix, char* hb_nam
  * 	This creates the unique node name
  *-------------------------------------------------------------------------------------------*/
 char* node_name(nnode_t* node, char* instance_name_prefix) {
+    return op_node_name(node->type, instance_name_prefix);
+}
+
+/*---------------------------------------------------------------------------------------------
+ * (function: node_name)
+ * 	This creates the unique node name
+ *-------------------------------------------------------------------------------------------*/
+char* op_node_name(operation_list op, char* instance_prefix_name) {
     char* return_node_name;
 
     /* create the unique name for this node */
-    return_node_name = make_full_ref_name(instance_name_prefix, NULL, NULL, node_name_based_on_op(node), unique_node_name_id);
-
-    //oassert(unique_node_name_id != 199803);
+    return_node_name = make_full_ref_name(instance_prefix_name, NULL, NULL, name_based_on_op(op), unique_node_name_id);
 
     unique_node_name_id++;
 
