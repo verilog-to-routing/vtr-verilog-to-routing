@@ -83,7 +83,7 @@ void create_all_driver_nets_in_this_scope(char* instance_name_prefix, sc_hierarc
 
 void create_top_driver_nets(ast_node_t* module, char* instance_name_prefix, sc_hierarchy* local_ref);
 void create_top_output_nodes(ast_node_t* module, char* instance_name_prefix, sc_hierarchy* local_ref);
-nnet_t* define_nets_with_driver(ast_node_t* var_declare, char* instance_name_prefix);
+void define_nets_with_driver(ast_node_t* var_declare, char* instance_name_prefix);
 nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char* instance_name_prefix);
 ast_node_t* resolve_top_module_parameters(ast_node_t* node, sc_hierarchy* top_sc_list);
 ast_node_t* resolve_top_parameters_defined_by_parameters(ast_node_t* node, sc_hierarchy* top_sc_list, int count);
@@ -733,6 +733,7 @@ void create_all_driver_nets_in_this_scope(char* instance_name_prefix, sc_hierarc
     /* use the symbol table to decide if driver */
     for (i = 0; i < num_local_symbol_table; i++) {
         oassert(local_symbol_table[i]->type == VAR_DECLARE || local_symbol_table[i]->type == BLOCKING_STATEMENT);
+        // TODO InOut
         if (
             /* all registers are drivers */
             (local_symbol_table[i]->types.variable.is_reg)
@@ -867,6 +868,7 @@ void create_top_output_nodes(ast_node_t* module, char* instance_name_prefix, sc_
     /* search the symbol table for outputs */
     if (local_symbol_table && num_local_symbol_table > 0) {
         for (i = 0; i < num_local_symbol_table; i++) {
+            // TODO InOut
             if (local_symbol_table[i]->types.variable.is_output) {
                 char* full_name;
                 ast_node_t* var_declare = local_symbol_table[i];
@@ -970,27 +972,27 @@ void create_top_output_nodes(ast_node_t* module, char* instance_name_prefix, sc_
  * (function: define_nets_with_driver)
  * Given a register declaration, this function defines it as a driver.
  *-------------------------------------------------------------------------------------------*/
-nnet_t* define_nets_with_driver(ast_node_t* var_declare, char* instance_name_prefix) {
-    int i;
-    char* temp_string = NULL;
-    long sc_spot;
-    nnet_t* new_net = NULL;
-
+void define_nets_with_driver(ast_node_t* var_declare, char* instance_name_prefix) {
     if (var_declare->children[0] == NULL || var_declare->type == BLOCKING_STATEMENT) {
         /* FOR single driver signal since spots 1, 2, 3, 4 are NULL */
 
-        /* create the net */
-        new_net = allocate_nnet();
-
         /* make the string to add to the string cache */
-        temp_string = make_full_ref_name(instance_name_prefix, NULL, NULL, var_declare->identifier_node->types.identifier, -1);
+        char* temp_string = make_full_ref_name(instance_name_prefix, NULL, NULL, var_declare->identifier_node->types.identifier, -1);
 
         /* look for that element */
-        sc_spot = sc_add_string(output_nets_sc, temp_string);
+        long sc_spot = sc_add_string(output_nets_sc, temp_string);
         if (output_nets_sc->data[sc_spot] != NULL) {
+            if( var_declare->types.variable.is_inout ) {
+                // Inout may already have been defined
+                vtr::free(temp_string);
+                return;
+            }
             error_message(NETLIST, var_declare->loc,
                           "Net (%s) with the same name already created\n", temp_string);
         }
+
+        /* create the net */
+        nnet_t* new_net = allocate_nnet();
         /* store the data which is an idx here */
         output_nets_sc->data[sc_spot] = (void*)new_net;
         new_net->name = temp_string;
@@ -1020,18 +1022,23 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char* instance_name_pre
 
         /* This register declaration is a range as opposed to a single bit so we need to define each element */
         /* assume digit 1 is largest */
-        for (i = min_value; i <= max_value; i++) {
-            /* create the net */
-            new_net = allocate_nnet();
-
+        for (long i = min_value; i <= max_value; i++) {
             /* create the string to add to the cache */
-            temp_string = make_full_ref_name(instance_name_prefix, NULL, NULL, var_declare->identifier_node->types.identifier, i);
+            char* temp_string = make_full_ref_name(instance_name_prefix, NULL, NULL, var_declare->identifier_node->types.identifier, i);
 
-            sc_spot = sc_add_string(output_nets_sc, temp_string);
+            long sc_spot = sc_add_string(output_nets_sc, temp_string);
             if (output_nets_sc->data[sc_spot] != NULL) {
+                if( var_declare->types.variable.is_inout ) {
+                    // Inout may already have been defined
+                    vtr::free(temp_string);
+                    continue;
+                }
                 error_message(NETLIST, var_declare->loc,
                               "Net (%s) with the same name already created\n", temp_string);
             }
+
+            /* create the net */
+            nnet_t* new_net = allocate_nnet();
             /* store the data which is an idx here */
             output_nets_sc->data[sc_spot] = (void*)new_net;
             new_net->name = temp_string;
@@ -1096,8 +1103,6 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char* instance_name_pre
 
         create_implicit_memory_block(data_width, address_width, name, instance_name_prefix, var_declare->loc);
     }
-
-    return new_net;
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -1248,7 +1253,7 @@ void create_symbol_table_for_scope(ast_node_t* module_items, sc_hierarchy* local
                         continue;
 
                     oassert(var_declare->type == VAR_DECLARE);
-                    oassert((var_declare->types.variable.is_input) || (var_declare->types.variable.is_output) || (var_declare->types.variable.is_reg) || (var_declare->types.variable.is_genvar) || (var_declare->types.variable.is_wire));
+                    oassert((var_declare->types.variable.is_input) || (var_declare->types.variable.is_output) || (var_declare->types.variable.is_inout) || (var_declare->types.variable.is_reg) || (var_declare->types.variable.is_genvar) || (var_declare->types.variable.is_wire));
 
                     if (var_declare->types.variable.is_input
                         && var_declare->types.variable.is_reg) {
@@ -1809,15 +1814,7 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
                     }
 
                     /* search for the old_input name */
-                    if ((sc_spot_input_old = sc_lookup_string(input_nets_sc, alias_name)) == -1) {
-                        /* doesn it have to exist since might only be used in module */
-                        if (port_size > 1) {
-                            warning_message(NETLIST, module_instance_var_node->loc, "This module port %s[%d] is unused in module %s\n", module_instance_var_node->types.identifier, j, module_node->identifier_node->types.identifier);
-                        } else {
-                            warning_message(NETLIST, module_instance_var_node->loc, "This module port %s is unused in module %s\n", module_instance_var_node->types.identifier, module_node->identifier_node->types.identifier);
-                        }
-
-                    } else {
+                    if ((sc_spot_input_old = sc_lookup_string(input_nets_sc, alias_name)) != -1) {
                         /* CMM - Check if this pin should be driven by the top level VCC or GND drivers	*/
                         if (strstr(full_name, ONE_VCC_CNS)) {
                             join_nets(verilog_netlist->one_net, (nnet_t*)input_nets_sc->data[sc_spot_input_old]);
@@ -1861,6 +1858,13 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
                                 output_nets_sc->data[sc_spot_output] = (void*)in_net;
                             }
                         }
+                    } else if( !module_var_node->types.variable.is_inout ) {
+                        /* doesn it have to exist since might only be used in module */
+                        if (port_size > 1) {
+                            warning_message(NETLIST, module_instance_var_node->loc, "This module port %s[%d] is unused in module %s\n", module_instance_var_node->types.identifier, j, module_node->identifier_node->types.identifier);
+                        } else {
+                            warning_message(NETLIST, module_instance_var_node->loc, "This module port %s is unused in module %s\n", module_instance_var_node->types.identifier, module_node->identifier_node->types.identifier);
+                        }
                     }
 
                     /* IF the designer uses port names then make sure they line up */
@@ -1877,7 +1881,9 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
 
                     vtr::free(full_name);
                     vtr::free(alias_name);
-                } else if (module_var_node->types.variable.is_output) {
+                }
+
+                if (module_var_node->types.variable.is_output) {
                     /* ELSE IF - this is an output pin from the module.  We need to alias this output
                      * pin with it's calling name here so that everyone can see it at this level */
                     char* name_of_module_instance_of_input = NULL;
@@ -1912,41 +1918,41 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
                     }
 
                     /* check if the instantiation pin exists. */
-                    if ((sc_spot_output = sc_lookup_string(output_nets_sc, alias_name)) == -1) {
+                    if ((sc_spot_output = sc_lookup_string(output_nets_sc, alias_name)) != -1) {
+                        /* can already be there */
+                        sc_spot_input_new = sc_add_string(output_nets_sc, full_name);
+
+                        /* Copy over the initial value data from the net alias to the corresponding
+                         * flip-flop node if one exists. This is necessary if an initial value is
+                         * assigned on a higher-level module since the flip-flop node will have
+                         * already been instantiated without any initial value. */
+                        nnet_t* output_net = (nnet_t*)output_nets_sc->data[sc_spot_output];
+                        nnet_t* input_new_net = (nnet_t*)output_nets_sc->data[sc_spot_input_new];
+                        for (int k = 0; k < output_net->num_driver_pins; k++) {
+                            if (output_net->driver_pins[k] && output_net->driver_pins[k]->node && input_new_net) {
+                                output_net->driver_pins[k]->node->initial_value = input_new_net->initial_value;
+                            }
+                        }
+
+                        /* clean up input_new_net */
+                        if (!(input_new_net) || !(input_new_net->num_driver_pins))
+                            input_new_net = free_nnet(input_new_net);
+
+                        /* add this alias for the net */
+                        output_nets_sc->data[sc_spot_input_new] = output_nets_sc->data[sc_spot_output];
+
+                        /* IF the designer users port names then make sure they line up */
+                        if (module_instance_list->children[i]->identifier_node != NULL) {
+                            if (strcmp(module_instance_list->children[i]->identifier_node->types.identifier, module_var_node->identifier_node->types.identifier) != 0) {
+                                error_message(NETLIST, module_var_node->loc,
+                                              "This module entry does not match up correctly (%s != %s).  Odin expects the order of ports to be the same\n",
+                                              module_instance_list->children[i]->identifier_node->types.identifier,
+                                              module_var_node->identifier_node->types.identifier);
+                            }
+                        }
+                    } else if (!module_var_node->types.variable.is_inout) {
                         error_message(NETLIST, module_var_node->loc,
                                       "This output (%s) must exist...must be an error\n", alias_name);
-                    }
-
-                    /* can already be there */
-                    sc_spot_input_new = sc_add_string(output_nets_sc, full_name);
-
-                    /* Copy over the initial value data from the net alias to the corresponding
-                     * flip-flop node if one exists. This is necessary if an initial value is
-                     * assigned on a higher-level module since the flip-flop node will have
-                     * already been instantiated without any initial value. */
-                    nnet_t* output_net = (nnet_t*)output_nets_sc->data[sc_spot_output];
-                    nnet_t* input_new_net = (nnet_t*)output_nets_sc->data[sc_spot_input_new];
-                    for (int k = 0; k < output_net->num_driver_pins; k++) {
-                        if (output_net->driver_pins[k] && output_net->driver_pins[k]->node && input_new_net) {
-                            output_net->driver_pins[k]->node->initial_value = input_new_net->initial_value;
-                        }
-                    }
-
-                    /* clean up input_new_net */
-                    if (!(input_new_net) || !(input_new_net->num_driver_pins))
-                        input_new_net = free_nnet(input_new_net);
-
-                    /* add this alias for the net */
-                    output_nets_sc->data[sc_spot_input_new] = output_nets_sc->data[sc_spot_output];
-
-                    /* IF the designer users port names then make sure they line up */
-                    if (module_instance_list->children[i]->identifier_node != NULL) {
-                        if (strcmp(module_instance_list->children[i]->identifier_node->types.identifier, module_var_node->identifier_node->types.identifier) != 0) {
-                            error_message(NETLIST, module_var_node->loc,
-                                          "This module entry does not match up correctly (%s != %s).  Odin expects the order of ports to be the same\n",
-                                          module_instance_list->children[i]->identifier_node->types.identifier,
-                                          module_var_node->identifier_node->types.identifier);
-                        }
                     }
 
                     vtr::free(full_name);
@@ -2004,6 +2010,7 @@ signal_list_t* connect_function_instantiation_and_alias(short PASS, ast_node_t* 
 
         if (i > 0) module_instance_var_node = module_instance_list->children[i]->children[0];
 
+        // TODO InOuts
         if (
             // skip inputs on pass 1
             ((PASS == INSTANTIATE_DRIVERS) && (module_var_node->types.variable.is_input))
@@ -2070,6 +2077,7 @@ signal_list_t* connect_function_instantiation_and_alias(short PASS, ast_node_t* 
             error_message(NETLIST, module_var_node->children[4]->loc, "%s\n", "Unhandled implicit memory in connect_module_instantiation_and_alias");
         }
         for (j = 0; j < port_size; j++) {
+            // TODO InOut
             if (i > 0 && module_var_node->types.variable.is_input) {
                 /* IF - this spot in the module list is an input, then we need to find it in the
                  * string cache (as its old name), check if the new_name (the instantiation name)
@@ -2306,6 +2314,7 @@ signal_list_t* connect_task_instantiation_and_alias(short PASS, ast_node_t* task
         ast_node_t* task_var_node = task_list->children[i];
         ast_node_t* task_instance_var_node = task_instance_list->children[i]->children[0];
 
+        // TODO InOuts
         if (
             // skip inputs on pass 1
             ((PASS == INSTANTIATE_DRIVERS) && (task_var_node->types.variable.is_input))
@@ -2371,6 +2380,7 @@ signal_list_t* connect_task_instantiation_and_alias(short PASS, ast_node_t* task
             /* Implicit memory */
             error_message(NETLIST, task_var_node->children[4]->loc, "%s\n", "Unhandled implicit memory in connect_task_instantiation_and_alias");
         }
+        // TODO InOuts
         if (task_var_node->types.variable.is_input) {
             for (j = 0; j < port_size; j++) {
                 /* IF - this spot in the task list is an input, then we need to find it in the

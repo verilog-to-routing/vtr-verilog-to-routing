@@ -353,7 +353,7 @@ bool eliminate_buffer(nnode_t* node, short, netlist_t*) {
     for (int i = 0; i < node->num_input_pins; i++) {
         int idx_2_buffer = node->input_pins[i]->pin_net_idx;
 
-        // Dont eliminate the buffer if there are multiple drivers or the AST included it
+        // Dont eliminate the buffer if there are multiple drivers
         if (node->output_pins[i]->net->num_driver_pins <= 1) {
             /* join all fanouts of the output net with the input pins net */
             join_nets(node->input_pins[i]->net, node->output_pins[i]->net);

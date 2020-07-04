@@ -296,7 +296,8 @@ nnet_t* allocate_nnet() {
  *-------------------------------------------------------------------------------------------*/
 nnet_t* free_nnet(nnet_t* to_free) {
     if (to_free) {
-        to_free->fanout_pins = (npin_t**)vtr::free(to_free->fanout_pins);
+        if (to_free->num_fanout_pins)
+            to_free->fanout_pins = (npin_t**)vtr::free(to_free->fanout_pins);
 
         if (to_free->name)
             vtr::free(to_free->name);
@@ -417,13 +418,13 @@ void add_driver_pin_to_net(nnet_t* net, npin_t* pin) {
  * 	The lasting one is input, and output disappears
  *-------------------------------------------------------------------------------------------*/
 void combine_nets(nnet_t* output_net, nnet_t* input_net, netlist_t* netlist) {
+    /* in case there are any fanouts in output net (should only be zero and one nodes) */
+    join_nets(input_net, output_net);
     /* copy the driver over to the new_net */
     for (int i = 0; i < output_net->num_driver_pins; i++) {
         /* IF - there is a pin assigned to this net, then copy it */
         add_driver_pin_to_net(input_net, output_net->driver_pins[i]);
     }
-    /* in case there are any fanouts in output net (should only be zero and one nodes) */
-    join_nets(input_net, output_net);
     /* mark that this is combined */
     input_net->combined = true;
 
@@ -465,11 +466,27 @@ void join_nets(nnet_t* join_to_net, nnet_t* other_net) {
         }
 
         error_message(NETLIST, unknown_location, "%s", "Found a combinational loop");
-    } else if (other_net->num_driver_pins > 1) {
-        if (other_net->name && join_to_net->name)
-            error_message(NETLIST, unknown_location, "Tried to join net %s to %s but this would lose %d drivers for net %s", other_net->name, join_to_net->name, other_net->num_driver_pins - 1, other_net->name);
-        else
-            error_message(NETLIST, unknown_location, "Tried to join nets but this would lose %d drivers", other_net->num_driver_pins - 1);
+    } else if (other_net->num_driver_pins > 1 && join_to_net->num_driver_pins != 0) {
+        bool drivers_match = true;
+        if(other_net->num_driver_pins == join_to_net->num_driver_pins) {
+            for (int i = 0; drivers_match && i < other_net->num_driver_pins; i++)
+            {
+                bool driver_match = false;
+                for (int j = 0; !driver_match && j < join_to_net->num_driver_pins; j++)
+                {
+                    driver_match = join_to_net->driver_pins[j] == other_net->driver_pins[i];
+                }
+                drivers_match &= driver_match;
+            }
+        }
+        // Either we tried to eliminate a buffer into a net with multiple drivers
+        // or we tried to combine nets that already had mismatching drivers
+        if(!drivers_match) {
+            if (other_net->name && join_to_net->name)
+                error_message(NETLIST, unknown_location, "Tried to join net %s to %s but this would lose %d drivers for net %s", other_net->name, join_to_net->name, other_net->num_driver_pins - 1, other_net->name);
+            else
+                error_message(NETLIST, unknown_location, "Tried to join nets but this would lose %d drivers", other_net->num_driver_pins - 1);
+        }
     }
 
     /* copy the driver over to the new_net */

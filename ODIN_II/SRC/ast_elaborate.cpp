@@ -2656,11 +2656,11 @@ void create_param_table_for_scope(ast_node_t* module_items, sc_hierarchy* local_
                     /* symbols are already dealt with */
                     if (var_declare->types.variable.is_input
                         || var_declare->types.variable.is_output
+                        || var_declare->types.variable.is_inout
                         || var_declare->types.variable.is_reg
                         || var_declare->types.variable.is_genvar
                         || var_declare->types.variable.is_wire
                         || var_declare->types.variable.is_defparam)
-
                         continue;
 
                     oassert(module_items->children[i]->children[j]->type == VAR_DECLARE);
