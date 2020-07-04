@@ -25,10 +25,6 @@ t_draw_coords* get_draw_coords_vars();
 
 t_draw_state* get_draw_state_vars();
 
-float get_draw_pres_fac();
-
-void set_draw_pres_fac(float new_pres_fac);
-
 #endif // NO_GRAPHICS
 
 #endif

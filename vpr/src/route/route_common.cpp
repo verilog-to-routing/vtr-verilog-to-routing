@@ -452,7 +452,7 @@ float update_pres_fac(float new_pres_fac) {
 #ifndef NO_GRAPHICS
 
     // Only updates the drawing pres_fac if graphics is enabled
-    set_draw_pres_fac(new_pres_fac);
+    get_draw_state_vars()->pres_fac = new_pres_fac;
 
 #endif // NO_GRAPHICS
 

@@ -1200,7 +1200,7 @@ static void draw_routing_costs(ezgl::renderer* g) {
         float cost = 0.;
         if (draw_state->show_routing_costs == DRAW_TOTAL_ROUTING_COSTS
             || draw_state->show_routing_costs == DRAW_LOG_TOTAL_ROUTING_COSTS) {
-            cost = get_single_rr_cong_cost(inode, get_draw_pres_fac());
+            cost = get_single_rr_cong_cost(inode, get_draw_state_vars()->pres_fac);
 
         } else if (draw_state->show_routing_costs == DRAW_BASE_ROUTING_COSTS) {
             cost = get_single_rr_cong_base_cost(inode);
@@ -1212,7 +1212,7 @@ static void draw_routing_costs(ezgl::renderer* g) {
         } else {
             VTR_ASSERT(draw_state->show_routing_costs == DRAW_PRES_ROUTING_COSTS
                        || draw_state->show_routing_costs == DRAW_LOG_PRES_ROUTING_COSTS);
-            cost = get_single_rr_cong_pres_cost(inode, get_draw_pres_fac());
+            cost = get_single_rr_cong_pres_cost(inode, get_draw_state_vars()->pres_fac);
         }
 
         if (draw_state->show_routing_costs == DRAW_LOG_TOTAL_ROUTING_COSTS
