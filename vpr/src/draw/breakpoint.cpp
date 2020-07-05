@@ -41,7 +41,7 @@ bool check_for_moves_breakpoints(int moves_to_proceed) {
     if (moves_to_proceed >= 1) {
         if (moveCount == moves_to_proceed) {
             moveCount = 0;
-            std::cout << "\nStopped at move_num += " << std::to_string(moves_to_proceed) << "\n";
+            std::cout << "\nStopped at move_num + " << std::to_string(moves_to_proceed) << "\n";
             print_current_info();
             return true;
         } else if (moveCount < moves_to_proceed) {
@@ -49,6 +49,7 @@ bool check_for_moves_breakpoints(int moves_to_proceed) {
             return false;
         }
     }
+    return stop;
 }
 
 //check for temperature breakpoint
@@ -57,7 +58,7 @@ bool check_for_temperature_breakpoints(int temps_to_proceed) {
     if (temps_to_proceed >= 1) {
         if (tempCount == temps_to_proceed) {
             tempCount = 0;
-            std::cout << "\nStopped at temp_num += " << std::to_string(temps_to_proceed) << "\n";
+            std::cout << "\nStopped at temp_num + " << std::to_string(temps_to_proceed) << "\n";
             print_current_info();
             return true;
         } else if (tempCount < temps_to_proceed) {
@@ -65,6 +66,7 @@ bool check_for_temperature_breakpoints(int temps_to_proceed) {
             return false;
         }
     }
+    return stop;
 }
 
 //check for block breakpoint
@@ -109,6 +111,7 @@ bool check_for_breakpoints(ClusterBlockId blockId) {
         if (draw_state->list_of_breakpoints[i].type.compare("temps") == 0 && draw_state->list_of_breakpoints[i].active)
             return check_for_temperature_breakpoints(draw_state->list_of_breakpoints[i].temps);
     }
+    return false;
 }
 
 //activates or deactivates a breakpoint given its index

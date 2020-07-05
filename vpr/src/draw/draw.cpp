@@ -3850,8 +3850,8 @@ void draw_debug_window() {
     GtkWidget* mainGrid = gtk_grid_new();
     gtk_widget_set_margin_top(mainGrid, 30);
     gtk_widget_set_margin_bottom(mainGrid, 30);
-    gtk_widget_set_margin_start(mainGrid, 30);
-    gtk_widget_set_margin_end(mainGrid, 20);
+    gtk_widget_set_margin_left(mainGrid, 30);
+    gtk_widget_set_margin_right(mainGrid, 20);
 
     //create all labels
     GtkWidget* placerOpts = gtk_label_new(NULL);
@@ -3867,13 +3867,13 @@ void draw_debug_window() {
     gtk_widget_set_margin_top(bplist, 30);
     GtkWidget* movesLabel = gtk_label_new("Number of moves to proceed");
     gtk_widget_set_halign(movesLabel, GTK_ALIGN_END);
-    gtk_widget_set_margin_end(movesLabel, 8);
+    gtk_widget_set_margin_right(movesLabel, 8);
     GtkWidget* tempsLabel = gtk_label_new("Temeratures to proceed");
     gtk_widget_set_halign(tempsLabel, GTK_ALIGN_END);
-    gtk_widget_set_margin_end(tempsLabel, 8);
+    gtk_widget_set_margin_right(tempsLabel, 8);
     GtkWidget* blockLabel = gtk_label_new("Stop at block ID");
     gtk_widget_set_halign(blockLabel, GTK_ALIGN_END);
-    gtk_widget_set_margin_end(blockLabel, 8);
+    gtk_widget_set_margin_right(blockLabel, 8);
     GtkWidget* star = gtk_label_new("*for handling multiple breakpoints at once using an expression can be more accurate");
     gtk_widget_set_margin_top(star, 15);
 
@@ -3881,17 +3881,17 @@ void draw_debug_window() {
     GtkWidget* setM = gtk_button_new_with_label("Set");
     gtk_widget_set_halign(setM, GTK_ALIGN_START);
     gtk_widget_set_margin_bottom(setM, 10);
-    gtk_widget_set_margin_start(setM, 10);
+    gtk_widget_set_margin_left(setM, 10);
     GtkWidget* setT = gtk_button_new_with_label("Set");
     gtk_widget_set_halign(setT, GTK_ALIGN_START);
     gtk_widget_set_margin_bottom(setT, 10);
-    gtk_widget_set_margin_start(setT, 10);
+    gtk_widget_set_margin_left(setT, 10);
     GtkWidget* setB = gtk_button_new_with_label("Set");
     gtk_widget_set_halign(setB, GTK_ALIGN_START);
-    gtk_widget_set_margin_start(setB, 10);
+    gtk_widget_set_margin_left(setB, 10);
     GtkWidget* advanced = gtk_button_new_with_label("Advanced");
-    gtk_widget_set_margin_start(advanced, 60);
-    gtk_widget_set_margin_end(advanced, 10);
+    gtk_widget_set_margin_left(advanced, 60);
+    gtk_widget_set_margin_right(advanced, 10);
     gtk_widget_set_margin_top(advanced, 20);
 
     //create all entries
@@ -3955,21 +3955,21 @@ void advanced_button_callback() {
     GtkWidget* set = gtk_button_new_with_label("set");
     GtkWidget* entry = gtk_entry_new();
     gtk_entry_set_width_chars((GtkEntry*)entry, 40);
-    GtkWidget* instructions = gtk_label_new("You can use == > < && || operators with temperature (temp_num), move number (move_num), net id (net_id) and block id (from_block) to set your desired breakpoint\nex. move_num = 4 | from_block = 83");
+    GtkWidget* instructions = gtk_label_new("You can use % == > < <= >= && || operators with temperature (temp_num), move number (move_num), net id (net_id) and block id (from_block) to set your desired breakpoint\nex. move_num == 4 || from_block == 83");
     gtk_label_set_justify((GtkLabel*)instructions, GTK_JUSTIFY_CENTER);
     gtk_label_set_line_wrap((GtkLabel*)instructions, TRUE);
     gtk_label_set_max_width_chars((GtkLabel*)instructions, 40);
     GtkWidget* expression_here = gtk_label_new("Write expression below:");
 
     //set margins
-    gtk_widget_set_margin_start(instructions, 30);
-    gtk_widget_set_margin_end(instructions, 30);
+    gtk_widget_set_margin_left(instructions, 30);
+    gtk_widget_set_margin_right(instructions, 30);
     gtk_widget_set_margin_top(instructions, 30);
     gtk_widget_set_margin_bottom(instructions, 30);
     gtk_widget_set_margin_bottom(expression_here, 5);
-    gtk_widget_set_margin_start(entry, 30);
-    gtk_widget_set_margin_end(set, 30);
-    gtk_widget_set_margin_start(set, 40);
+    gtk_widget_set_margin_left(entry, 30);
+    gtk_widget_set_margin_right(set, 30);
+    gtk_widget_set_margin_left(set, 40);
 
     //grid settings
     GtkWidget* advancedGrid = gtk_grid_new();
@@ -4010,7 +4010,7 @@ void refresh_bpList() {
         if (draw_state->list_of_breakpoints[i].active)
             gtk_toggle_button_set_active((GtkToggleButton*)checkbox, TRUE);
         gtk_grid_attach((GtkGrid*)bpGrid, checkbox, 1, i, 1, 1);
-        gtk_widget_set_margin_start(checkbox, 290 - bp_labels[i].size());
+        gtk_widget_set_margin_left(checkbox, 290 - bp_labels[i].size());
         gtk_widget_set_halign(checkbox, GTK_ALIGN_END);
         gtk_widget_set_valign(checkbox, GTK_ALIGN_CENTER);
 
@@ -4024,7 +4024,7 @@ void refresh_bpList() {
         gtk_grid_attach((GtkGrid*)bpGrid, deleteButton, 2, i, 1, 1);
         gtk_widget_set_halign(deleteButton, GTK_ALIGN_END);
         gtk_widget_set_valign(deleteButton, GTK_ALIGN_CENTER);
-        gtk_widget_set_margin_start(deleteButton, 10);
+        gtk_widget_set_margin_left(deleteButton, 10);
 
         gtk_widget_show_all(bpGrid);
     }
@@ -4045,7 +4045,7 @@ void add_to_bpList(std::string bpDescription) {
     gtk_widget_set_name(checkbox, c.c_str());
     gtk_toggle_button_set_active((GtkToggleButton*)checkbox, TRUE);
     gtk_grid_attach((GtkGrid*)bpGrid, checkbox, 1, bpList_row, 1, 1);
-    gtk_widget_set_margin_start(checkbox, 290 - bpDescription.size());
+    gtk_widget_set_margin_left(checkbox, 290 - bpDescription.size());
     gtk_widget_set_halign(checkbox, GTK_ALIGN_END);
     gtk_widget_set_valign(checkbox, GTK_ALIGN_CENTER);
 
@@ -4059,7 +4059,7 @@ void add_to_bpList(std::string bpDescription) {
     gtk_grid_attach((GtkGrid*)bpGrid, deleteButton, 2, bpList_row, 1, 1);
     gtk_widget_set_halign(deleteButton, GTK_ALIGN_END);
     gtk_widget_set_valign(deleteButton, GTK_ALIGN_CENTER);
-    gtk_widget_set_margin_start(deleteButton, 10);
+    gtk_widget_set_margin_left(deleteButton, 10);
 
     gtk_widget_show_all(bpGrid);
 }
@@ -4097,7 +4097,7 @@ void set_moves_button_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
     int moves = atoi(gtk_entry_get_text((GtkEntry*)entry));
     if (moves >= 1 && strchr(gtk_entry_get_text((GtkEntry*)entry), '.') == NULL) {
         draw_state->list_of_breakpoints.push_back(breakpoint("moves", moves));
-        std::string bpDescription = "Breakpoint at move_num += " + std::to_string(moves);
+        std::string bpDescription = "Breakpoint at move_num + " + std::to_string(moves);
         add_to_bpList(bpDescription);
     } else
         invalid_entry_window("Invalid Move Number");
@@ -4112,7 +4112,7 @@ void set_temp_button_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
     int temps = atoi(gtk_entry_get_text((GtkEntry*)entry));
     if (temps >= 1 && strchr(gtk_entry_get_text((GtkEntry*)entry), '.') == NULL) {
         draw_state->list_of_breakpoints.push_back(breakpoint("temps", temps));
-        std::string bpDescription = "Breakpoint at temp_num += " + std::to_string(temps);
+        std::string bpDescription = "Breakpoint at temp_num + " + std::to_string(temps);
         add_to_bpList(bpDescription);
     } else
         invalid_entry_window("Invalid temperature");
@@ -4156,8 +4156,8 @@ void invalid_entry_window(std::string error) {
 
     //label settings
     GtkWidget* label = gtk_label_new(error.c_str());
-    gtk_widget_set_margin_start(label, 30);
-    gtk_widget_set_margin_end(label, 30);
+    gtk_widget_set_margin_left(label, 30);
+    gtk_widget_set_margin_right(label, 30);
     gtk_widget_set_margin_top(label, 30);
     gtk_widget_set_margin_bottom(label, 30);
     gtk_grid_attach((GtkGrid*)grid, label, 0, 0, 1, 1);
@@ -4165,8 +4165,8 @@ void invalid_entry_window(std::string error) {
     //button settings
     GtkWidget* button = gtk_button_new_with_label("OK");
     gtk_widget_set_margin_bottom(button, 30);
-    gtk_widget_set_margin_end(button, 30);
-    gtk_widget_set_margin_start(button, 30);
+    gtk_widget_set_margin_right(button, 30);
+    gtk_widget_set_margin_left(button, 30);
     gtk_grid_attach((GtkGrid*)grid, button, 0, 1, 1, 1);
     g_signal_connect(button, "clicked", G_CALLBACK(ok_close_window), window);
 
@@ -4187,32 +4187,32 @@ void breakpoint_info_window(std::string bpDescription, int move, int temp, int b
 
     //label settings
     GtkWidget* label = gtk_label_new(bpDescription.c_str());
-    gtk_widget_set_margin_start(label, 30);
-    gtk_widget_set_margin_end(label, 30);
+    gtk_widget_set_margin_left(label, 30);
+    gtk_widget_set_margin_right(label, 30);
     gtk_widget_set_margin_top(label, 30);
     gtk_widget_set_margin_bottom(label, 30);
     gtk_grid_attach((GtkGrid*)grid, label, 0, 0, 1, 1);
 
     GtkWidget* curr_info = gtk_label_new(NULL);
     gtk_label_set_markup((GtkLabel*)curr_info, "<b>Current Information</b>");
-    gtk_widget_set_margin_start(curr_info, 30);
-    gtk_widget_set_margin_end(curr_info, 30);
+    gtk_widget_set_margin_left(curr_info, 30);
+    gtk_widget_set_margin_right(curr_info, 30);
     gtk_widget_set_margin_bottom(curr_info, 15);
     gtk_grid_attach((GtkGrid*)grid, curr_info, 0, 1, 1, 1);
 
     //info grid
     GtkWidget* info_grid = gtk_grid_new();
-    gtk_widget_set_margin_start(info_grid, 30);
-    gtk_widget_set_margin_end(info_grid, 30);
+    gtk_widget_set_margin_left(info_grid, 30);
+    gtk_widget_set_margin_right(info_grid, 30);
     gtk_widget_set_margin_bottom(info_grid, 20);
 
     //images
     GtkWidget* m = gtk_image_new_from_file("src/draw/m.png");
     GtkWidget* t = gtk_image_new_from_file("src/draw/t.png");
     GtkWidget* n = gtk_image_new_from_file("src/draw/n.png");
-    gtk_widget_set_margin_start(n, 18);
+    gtk_widget_set_margin_left(n, 18);
     GtkWidget* b = gtk_image_new_from_file("src/draw/b.png");
-    gtk_widget_set_margin_start(b, 18);
+    gtk_widget_set_margin_left(b, 18);
     gtk_grid_attach((GtkGrid*)info_grid, m, 0, 0, 1, 1);
     gtk_grid_attach((GtkGrid*)info_grid, t, 0, 1, 1, 1);
     gtk_grid_attach((GtkGrid*)info_grid, n, 2, 0, 1, 1);
@@ -4221,15 +4221,15 @@ void breakpoint_info_window(std::string bpDescription, int move, int temp, int b
     //info grid labels
     std::string move_num = "move_num: " + std::to_string(move);
     GtkWidget* move_info = gtk_label_new(move_num.c_str());
-    gtk_widget_set_margin_start(move_info, 5);
+    gtk_widget_set_margin_left(move_info, 5);
     std::string temp_num = "temp_num: " + std::to_string(temp);
     GtkWidget* temp_info = gtk_label_new(temp_num.c_str());
-    gtk_widget_set_margin_start(temp_info, 5);
+    gtk_widget_set_margin_left(temp_info, 5);
     std::string net_id = "net_id: " + std::to_string(net);
     GtkWidget* net_info = gtk_label_new(net_id.c_str());
     std::string block_id = "block_id: " + std::to_string(block);
     GtkWidget* block_info = gtk_label_new(block_id.c_str());
-    gtk_widget_set_margin_start(block_info, 5);
+    gtk_widget_set_margin_left(block_info, 5);
     gtk_grid_attach((GtkGrid*)info_grid, move_info, 1, 0, 1, 1);
     gtk_grid_attach((GtkGrid*)info_grid, temp_info, 1, 1, 1, 1);
     gtk_grid_attach((GtkGrid*)info_grid, net_info, 3, 0, 1, 1);
@@ -4239,8 +4239,8 @@ void breakpoint_info_window(std::string bpDescription, int move, int temp, int b
     //button settings
     GtkWidget* button = gtk_button_new_with_label("OK");
     gtk_widget_set_margin_bottom(button, 30);
-    gtk_widget_set_margin_end(button, 30);
-    gtk_widget_set_margin_start(button, 60);
+    gtk_widget_set_margin_right(button, 30);
+    gtk_widget_set_margin_left(button, 100);
     gtk_widget_set_halign(button, GTK_ALIGN_CENTER);
 
     gtk_grid_attach((GtkGrid*)grid, button, 0, 3, 1, 1);
