@@ -175,12 +175,13 @@ function display() {
 	esac
 
 	# check for uncaught errors
-
 	ERROR_CATCH="$(cat "${LOG_FILE}" | grep 'Odin exited with code: ' | awk '{print $5}' | grep -E '^\-?[0-9]+$')"
 	[ "_${ERROR_CATCH}" != "_" ] && EXIT_CODE="${ERROR_CATCH}"
 
 	EXIT_ERROR_TYPE=$( print_exit_type "${EXIT_CODE}" )
 
+	MISMATCH_CHECK="$(cat "${LOG_FILE}" | grep "Error::OUTPUT_BLIF Vector files differ.")"
+	[ "_${MISMATCH_CHECK}" != "_" ] && EXIT_ERROR_TYPE="MISMATCH"
 
 	if [ "_${EXIT_CODE}" == "_0" ] && [ "_${LEAK_MESSAGE}" == "_" ]
 	then

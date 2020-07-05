@@ -88,3 +88,18 @@ make build
 ```bash
 ./verify_odin.sh --dry_run -t <regression_test/benchmark/<path/to/config_file/difrectory>
 ```
+
+### Running a subset of tests in a suite
+
+The following commands will run only the tests matching `<test regex>`:
+
+```bash
+./verify_odin.sh -t <regression_test/benchmark/suite/<suite_name> <test regex>
+```
+
+You may specify as many test regular expressions as desired and the script will run any test that matches at least one regex
+
+> **NOTE**
+>
+> This uses grep's extended regular expression syntax for matching test names.  
+> Test names matched are of the form <suite_name>/<test_name>/<architecture>
