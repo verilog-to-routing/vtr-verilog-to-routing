@@ -6,6 +6,7 @@
 #include <stack>
 #include "arch_error.h"
 #include <cstring>
+#include <iostream>
 
 #include "vtr_string_view.h"
 #include "vtr_flat_map.h"
@@ -48,6 +49,7 @@ typedef enum e_formula_obj {
     E_FML_BRACKET,
     E_FML_COMMA,
     E_FML_OPERATOR,
+    E_FML_VARIABLE,
     E_FML_NUM_FORMULA_OBJS
 } t_formula_obj;
 
@@ -62,6 +64,12 @@ typedef enum e_operator {
     E_OP_MAX,
     E_OP_GCD,
     E_OP_LCM,
+    E_OP_AND,
+    E_OP_OR,
+    E_OP_GT,
+    E_OP_LT,
+    E_OP_EQ,
+    E_OP_MOD,
     E_OP_NUM_OPS
 } t_operator;
 
@@ -78,6 +86,7 @@ class Formula_Object {
         int num;           /*for number objects*/
         t_operator op;     /*for operator objects*/
         bool left_bracket; /*for bracket objects -- specifies if this is a left bracket*/
+        //std::string variable;
 
         u_Data() { memset(this, 0, sizeof(u_Data)); }
     } data;
@@ -87,7 +96,7 @@ class Formula_Object {
     }
 
     std::string to_string() const {
-        if (type == E_FML_NUMBER) {
+        if (type == E_FML_NUMBER || type == E_FML_VARIABLE) {
             return std::to_string(data.num);
         } else if (type == E_FML_BRACKET) {
             if (data.left_bracket) {
@@ -106,6 +115,18 @@ class Formula_Object {
                 return "*";
             } else if (data.op == E_OP_DIV) {
                 return "/";
+            } else if (data.op == E_OP_AND) {
+                return "&";
+            } else if (data.op == E_OP_OR) {
+                return "|";
+            } else if (data.op == E_OP_GT) {
+                return ">";
+            } else if (data.op == E_OP_LT) {
+                return "<";
+            } else if (data.op == E_OP_EQ) {
+                return "=";
+            } else if (data.op == E_OP_MOD) {
+                return "%";
             } else if (data.op == E_OP_MIN) {
                 return "min";
             } else if (data.op == E_OP_MAX) {
@@ -142,5 +163,17 @@ class FormulaParser {
     std::vector<Formula_Object> rpn_output_;
     std::stack<Formula_Object> op_stack_; /* stack for handling operators and brackets in formula */
 };
+
+//struct that holds all necessary current information about the placer
+struct current_information {
+    int moveNumber = 0;
+    int blockNumber;
+    int temperature;
+    int netNumber;
+};
+
+//function declarations
+void get_current_info_e(current_information ci);
+void is_a_breakpoint(bool aBreakpoint);
 
 #endif

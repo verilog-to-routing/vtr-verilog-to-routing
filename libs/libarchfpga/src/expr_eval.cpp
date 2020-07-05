@@ -2,6 +2,7 @@
 #include "arch_error.h"
 #include "vtr_util.h"
 #include "vtr_math.h"
+
 #include <string>
 #include <sstream>
 
@@ -9,6 +10,8 @@ using std::stack;
 using std::string;
 using std::stringstream;
 using std::vector;
+current_information current_info_e;
+bool is_breakpoint = false;
 
 /*---- Functions for Parsing the Symbolic Formulas ----*/
 
@@ -26,6 +29,9 @@ static bool op_associativity_is_left(const t_operator& op);
 
 /* used by the shunting-yard formula parser to deal with operators such as add and subtract */
 static void handle_operator(const Formula_Object& fobj, vector<Formula_Object>& rpn_output, stack<Formula_Object>& op_stack);
+
+/* takes a string and finds what variable it is */
+static void handle_variable(const Formula_Object& fobj, vector<Formula_Object>& rpn_output, stack<Formula_Object>& op_stack);
 
 /* used by the shunting-yard formula parser to deal with brackets, ie '(' and ')' */
 static void handle_bracket(const Formula_Object& fobj, vector<Formula_Object>& rpn_output, stack<Formula_Object>& op_stack);
@@ -45,14 +51,19 @@ static bool is_char_number(const char ch);
 // returns true if ch is an operator
 static bool is_operator(const char ch);
 
-// returns true if the specified name is an known function operator
+// returns true if the specified name is a known function operator
 static bool is_function(std::string name);
+
+// returns true if the specified name is a known variable
+static bool is_variable(std::string var);
 
 // returns the length of any identifier (e.g. name, function) starting at the beginning of str
 static int identifier_length(const char* str);
 
 /* increments str_ind until it reaches specified char is formula. returns true if character was found, false otherwise */
 static bool goto_next_char(int* str_ind, const string& pw_formula, char ch);
+
+bool same_string(std::string str1, std::string str2);
 
 /**** Function Implementations ****/
 /* returns integer result according to specified non-piece-wise formula and data */
@@ -236,6 +247,10 @@ static void formula_to_rpn(const char* formula, const t_formula_data& mydata, ve
                 case E_FML_COMMA:
                     handle_comma(fobj, rpn_output, op_stack);
                     break;
+                case E_FML_VARIABLE:
+                    /* add to output vector */
+                    rpn_output.push_back(fobj);
+                    break;
                 default:
                     archfpga_throw(__FILE__, __LINE__, "in formula_to_rpn: unknown formula object type: %d\n", fobj.type);
                     break;
@@ -269,11 +284,10 @@ static void get_formula_object(const char* ch, int& ichar, const t_formula_data&
      * here we have to account for both possibilities */
 
     int id_len = identifier_length(ch);
+    //We have a variable or function name
+    std::string var_name(ch, id_len);
 
     if (id_len != 0) {
-        //We have a variable or function name
-        std::string var_name(ch, id_len);
-
         if (is_function(var_name)) {
             fobj->type = E_FML_OPERATOR;
             if (var_name == "min")
@@ -288,13 +302,23 @@ static void get_formula_object(const char* ch, int& ichar, const t_formula_data&
                 archfpga_throw(__FILE__, __LINE__, "in get_formula_object: recognized function: %s\n", var_name.c_str());
             }
 
-        } else {
-            //A variable
+        } else if (!is_breakpoint) {
+            //A number
             fobj->type = E_FML_NUMBER;
             fobj->data.num = mydata.get_var_value(
                 vtr::string_view(
                     var_name.data(),
                     var_name.size()));
+        } else if (is_variable(var_name)) {
+            fobj->type = E_FML_VARIABLE;
+            if (same_string(var_name, "temperature") || same_string(var_name, "temp_num"))
+                fobj->data.num = current_info_e.temperature;
+            else if (same_string(var_name, "from_block"))
+                fobj->data.num = current_info_e.blockNumber;
+            else if (same_string(var_name, "move_num") || same_string(var_name, "move"))
+                fobj->data.num = current_info_e.moveNumber;
+            else if (same_string(var_name, "net_id") || same_string(var_name, "net"))
+                fobj->data.num = current_info_e.netNumber;
         }
 
         ichar += (id_len - 1); //-1 since ichar is incremented at end of loop in formula_to_rpn()
@@ -339,6 +363,30 @@ static void get_formula_object(const char* ch, int& ichar, const t_formula_data&
             case ',':
                 fobj->type = E_FML_COMMA;
                 break;
+            case '&':
+                fobj->type = E_FML_OPERATOR;
+                fobj->data.op = E_OP_AND;
+                break;
+            case '|':
+                fobj->type = E_FML_OPERATOR;
+                fobj->data.op = E_OP_OR;
+                break;
+            case '>':
+                fobj->type = E_FML_OPERATOR;
+                fobj->data.op = E_OP_GT;
+                break;
+            case '<':
+                fobj->type = E_FML_OPERATOR;
+                fobj->data.op = E_OP_LT;
+                break;
+            case '=':
+                fobj->type = E_FML_OPERATOR;
+                fobj->data.op = E_OP_EQ;
+                break;
+            case '%':
+                fobj->type = E_FML_OPERATOR;
+                fobj->data.op = E_OP_MOD;
+                break;
             default:
                 archfpga_throw(__FILE__, __LINE__, "in get_formula_object: unsupported character: %c\n", *ch);
                 break;
@@ -358,12 +406,20 @@ static int get_fobj_precedence(const Formula_Object& fobj) {
     } else if (E_FML_OPERATOR == fobj.type) {
         t_operator op = fobj.data.op;
         switch (op) {
+            case E_OP_AND: //fallthrough
+            case E_OP_OR:  //fallthrough
+                precedence = 1;
+                break;
             case E_OP_ADD: //fallthrough
-            case E_OP_SUB:
+            case E_OP_SUB: //fallthrough
+            case E_OP_GT:  //fallthrough
+            case E_OP_LT:  //fallthrough
+            case E_OP_EQ:  //fallthrough
                 precedence = 2;
                 break;
             case E_OP_MULT: //fallthrough
-            case E_OP_DIV:
+            case E_OP_DIV:  //fallthrough
+            case E_OP_MOD:  //fallthrough
                 precedence = 3;
                 break;
             case E_OP_MIN: //fallthrough
@@ -399,7 +455,6 @@ static void handle_operator(const Formula_Object& fobj, vector<Formula_Object>& 
     if (E_FML_OPERATOR != fobj.type) {
         archfpga_throw(__FILE__, __LINE__, "in handle_operator: passed in formula object not of type operator\n");
     }
-
     int op_pr = get_fobj_precedence(fobj);
     bool op_assoc_is_left = op_associativity_is_left(fobj.data.op);
 
@@ -454,8 +509,8 @@ static void handle_bracket(const Formula_Object& fobj, vector<Formula_Object>& r
 
             if (op_stack.empty()) {
                 /* didn't find an opening bracket - mismatched brackets */
-                archfpga_throw(__FILE__, __LINE__, "Ran out of stack while parsing brackets -- bracket mismatch in user-specified formula\n");
                 keep_going = false;
+                archfpga_throw(__FILE__, __LINE__, "Ran out of stack while parsing brackets -- bracket mismatch in user-specified formula\n");
             }
 
             Formula_Object next_fobj = op_stack.top();
@@ -466,8 +521,8 @@ static void handle_bracket(const Formula_Object& fobj, vector<Formula_Object>& r
                     keep_going = false;
                 } else {
                     /* should not find two right brackets without a left bracket in-between */
-                    archfpga_throw(__FILE__, __LINE__, "Mismatched brackets encountered in user-specified formula\n");
                     keep_going = false;
+                    archfpga_throw(__FILE__, __LINE__, "Mismatched brackets encountered in user-specified formula\n");
                 }
             } else if (E_FML_OPERATOR == next_fobj.type) {
                 /* pop operator off stack onto the back of rpn_output */
@@ -476,8 +531,8 @@ static void handle_bracket(const Formula_Object& fobj, vector<Formula_Object>& r
                 op_stack.pop();
                 keep_going = true;
             } else {
-                archfpga_throw(__FILE__, __LINE__, "Found unexpected formula object on operator stack: %d\n", next_fobj.type);
                 keep_going = false;
+                archfpga_throw(__FILE__, __LINE__, "Found unexpected formula object on operator stack: %d\n", next_fobj.type);
             }
         } while (keep_going);
     }
@@ -501,8 +556,8 @@ static void handle_comma(const Formula_Object& fobj, vector<Formula_Object>& rpn
 
         if (op_stack.empty()) {
             /* didn't find an opening bracket - mismatched brackets */
-            archfpga_throw(__FILE__, __LINE__, "Ran out of stack while parsing comma -- bracket mismatch in user-specified formula\n");
             keep_going = false;
+            archfpga_throw(__FILE__, __LINE__, "Ran out of stack while parsing comma -- bracket mismatch in user-specified formula\n");
         }
 
         Formula_Object next_fobj = op_stack.top();
@@ -512,8 +567,8 @@ static void handle_comma(const Formula_Object& fobj, vector<Formula_Object>& rpn
                 keep_going = false;
             } else {
                 /* should not find two right brackets without a left bracket in-between */
-                archfpga_throw(__FILE__, __LINE__, "Mismatched brackets encountered in user-specified formula\n");
                 keep_going = false;
+                archfpga_throw(__FILE__, __LINE__, "Mismatched brackets encountered in user-specified formula\n");
             }
         } else if (E_FML_OPERATOR == next_fobj.type) {
             /* pop operator off stack onto the back of rpn_output */
@@ -522,8 +577,8 @@ static void handle_comma(const Formula_Object& fobj, vector<Formula_Object>& rpn
             op_stack.pop();
             keep_going = true;
         } else {
-            archfpga_throw(__FILE__, __LINE__, "Found unexpected formula object on operator stack: %d\n", next_fobj.type);
             keep_going = false;
+            archfpga_throw(__FILE__, __LINE__, "Found unexpected formula object on operator stack: %d\n", next_fobj.type);
         }
 
     } while (keep_going);
@@ -534,12 +589,12 @@ static void handle_comma(const Formula_Object& fobj, vector<Formula_Object>& rpn
 static int parse_rpn_vector(vector<Formula_Object>& rpn_vec) {
     int result = -1;
 
-    /* first entry should always be a number */
-    if (E_FML_NUMBER != rpn_vec[0].type) {
-        archfpga_throw(__FILE__, __LINE__, "parse_rpn_vector: first entry is not a number (was %s)\n", rpn_vec[0].to_string().c_str());
+    /* first entry should always be a number or variable name*/
+    if (E_FML_NUMBER != rpn_vec[0].type && E_FML_VARIABLE != rpn_vec[0].type) {
+        archfpga_throw(__FILE__, __LINE__, "parse_rpn_vector: first entry is not a number or variable name (was %s)\n", rpn_vec[0].to_string().c_str());
     }
 
-    if (rpn_vec.size() == 1) {
+    if (rpn_vec.size() == 1 && rpn_vec[0].type == E_FML_NUMBER) {
         /* if the vector size is 1 then we just have a number (which was verified above) */
         result = rpn_vec[0].data.num;
     } else {
@@ -572,7 +627,6 @@ static int parse_rpn_vector(vector<Formula_Object>& rpn_vec) {
             }
         }
     }
-
     return result;
 }
 
@@ -580,9 +634,11 @@ static int parse_rpn_vector(vector<Formula_Object>& rpn_vec) {
 static int apply_rpn_op(const Formula_Object& arg1, const Formula_Object& arg2, const Formula_Object& op) {
     int result = -1;
 
-    /* arguments must be numbers */
+    /* arguments must be numbers or variables */
     if (E_FML_NUMBER != arg1.type || E_FML_NUMBER != arg2.type) {
-        archfpga_throw(__FILE__, __LINE__, "in apply_rpn_op: one of the arguments is not a number (was '%s %s %s')\n", arg1.to_string().c_str(), op.to_string().c_str(), arg2.to_string().c_str());
+        if (E_FML_VARIABLE != arg1.type && E_FML_VARIABLE != arg2.type) {
+            archfpga_throw(__FILE__, __LINE__, "in apply_rpn_op: one of the arguments is not a number or variable (was '%s %s %s')\n", arg1.to_string().c_str(), op.to_string().c_str(), arg2.to_string().c_str());
+        }
     }
 
     /* check that op is actually an operation */
@@ -616,6 +672,24 @@ static int apply_rpn_op(const Formula_Object& arg1, const Formula_Object& arg2, 
         case E_OP_LCM:
             result = vtr::lcm(arg1.data.num, arg2.data.num);
             break;
+        case E_OP_AND:
+            result = arg1.data.num && arg2.data.num;
+            break;
+        case E_OP_OR:
+            result = arg1.data.num || arg2.data.num;
+            break;
+        case E_OP_GT:
+            result = arg1.data.num > arg2.data.num;
+            break;
+        case E_OP_LT:
+            result = arg1.data.num < arg2.data.num;
+            break;
+        case E_OP_EQ:
+            result = arg1.data.num == arg2.data.num;
+            break;
+        case E_OP_MOD:
+            result = arg1.data.num % arg2.data.num;
+            break;
         default:
             archfpga_throw(__FILE__, __LINE__, "in apply_rpn_op: invalid operation: %d\n", op.data.op);
             break;
@@ -637,6 +711,7 @@ static bool is_char_number(const char ch) {
     return result;
 }
 
+//checks if entered char is a known operator
 static bool is_operator(const char ch) {
     switch (ch) {
         case '+': //fallthrough
@@ -645,18 +720,33 @@ static bool is_operator(const char ch) {
         case '*': //fallthrough
         case ')': //fallthrough
         case '(': //fallthrough
-        case ',':
+        case ',': //fallthrough
+        case '&': //fallthrough
+        case '|': //fallthrough
+        case '>': //fallthrough
+        case '<': //fallthrough
+        case '=': //fallthrough
+        case '%': //fallthrough
             return true;
         default:
             return false;
     }
 }
 
+//checks if entered string is a defined function
 static bool is_function(std::string name) {
     if (name == "min"
         || name == "max"
         || name == "gcd"
         || name == "lcm") {
+        return true;
+    }
+    return false;
+}
+
+//checks if the entered string is a known variable name
+static bool is_variable(std::string var_name) {
+    if (same_string(var_name, "from_block") || same_string(var_name, "temp_num") || same_string(var_name, "move_num") || same_string(var_name, "net_id")) {
         return true;
     }
     return false;
@@ -685,6 +775,19 @@ static int identifier_length(const char* str) {
     return ichar;
 }
 
+// compares two string ignoring case and white space
+bool same_string(std::string str1, std::string str2) {
+    //earse any white space in both strings
+    str1.erase(remove(str1.begin(), str1.end(), ' '), str1.end());
+    str2.erase(remove(str2.begin(), str2.end(), ' '), str2.end());
+
+    //converting both strings to lower case to eliminate case sensivity
+    std::transform(str1.begin(), str1.end(), str1.begin(), ::tolower);
+    std::transform(str2.begin(), str2.end(), str2.begin(), ::tolower);
+
+    return (str1.compare(str2) == 0);
+}
+
 /* checks if the specified formula is piece-wise defined */
 bool FormulaParser::is_piecewise_formula(const char* formula) {
     bool result = false;
@@ -695,4 +798,14 @@ bool FormulaParser::is_piecewise_formula(const char* formula) {
         result = false;
     }
     return result;
+}
+
+//gets current information from breakpoint.cpp
+void get_current_info_e(current_information ci) {
+    current_info_e = ci;
+}
+
+//checks if the expression being evaluated is a breakpoint
+void is_a_breakpoint(bool aBreakpoint) {
+    is_breakpoint = aBreakpoint;
 }
