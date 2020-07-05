@@ -58,10 +58,26 @@ inline float get_single_rr_cong_pres_cost(int inode, float pres_fac) {
 }
 
 /* Returns the congestion cost of using this rr_node,
- * *ignoring* non-configurable edges */
+* *ignoring* non-configurable edges */
 inline float get_single_rr_cong_cost(int inode, float pres_fac) {
-    return get_single_rr_cong_base_cost(inode) * get_single_rr_cong_acc_cost(inode) * get_single_rr_cong_pres_cost(inode, pres_fac);
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
+
+    auto cost_index = device_ctx.rr_nodes[inode].cost_index();
+
+    float cost = device_ctx.rr_indexed_data[cost_index].base_cost *
+                 route_ctx.rr_node_route_inf[inode].acc_cost;
+
+    int occ = route_ctx.rr_node_route_inf[inode].occ();
+    int capacity = device_ctx.rr_nodes[inode].capacity();
+
+    if (occ >= capacity) {
+        cost *= (1. + pres_fac * (occ + 1 - capacity));
+    }
+
+    return cost;
 }
+
 
 void mark_ends(ClusterNetId net_id);
 void mark_remaining_ends(const std::vector<int>& remaining_sinks);
