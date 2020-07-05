@@ -193,9 +193,7 @@ struct t_draw_state {
     bool forced_pause = false;
     int sequence_number = 0;
 
-    int bp_numToProceed = 0;
-    int bp_tempsToProceed = 0;
-    int bp_blockId;
+    std::vector<breakpoint> list_of_breakpoints;
 
     std::string save_graphics_file_base = "vpr";
 
@@ -212,9 +210,9 @@ struct t_draw_state {
     void reset_block_color(ClusterBlockId blk);
     void reset_block_colors();
 
-#ifdef VTR_ENABLE_DEBUG_LOGGING
+#    ifdef VTR_ENABLE_DEBUG_LOGGING
     std::vector<std::pair<t_pl_loc, ezgl::color>> colored_blocks;
-#endif
+#    endif
   private:
     friend void alloc_draw_structs(const t_arch* arch);
     vtr::vector<ClusterBlockId, ezgl::color> block_color_;

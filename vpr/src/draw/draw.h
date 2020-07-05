@@ -79,6 +79,8 @@ void toggle_placement_macros(GtkWidget* /*widget*/, gint /*response_id*/, gpoint
 
 ezgl::color get_block_type_color(t_physical_tile_type_ptr type);
 
+void breakpoint_info_window(std::string bpDescription, int move, int temp, int block, int net);
+
 #endif /* NO_GRAPHICS */
 
 #endif /* DRAW_H */
