@@ -6,6 +6,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 33.4,
         "exec_time(ms)": 75.3,
         "synthesis_time(ms)": 1.9,
@@ -31,6 +32,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 15.5,
         "exec_time(ms)": 8.6,
         "synthesis_time(ms)": 1.6,
@@ -56,6 +58,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 32.5,
         "exec_time(ms)": 91.3,
         "synthesis_time(ms)": 2.1,
@@ -81,6 +84,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 11.9,
         "exec_time(ms)": 3.5,
         "synthesis_time(ms)": 2,
@@ -106,6 +110,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 33.1,
         "exec_time(ms)": 84.2,
         "synthesis_time(ms)": 0.8,
@@ -131,6 +136,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 15.2,
         "exec_time(ms)": 9.2,
         "synthesis_time(ms)": 0.9,
@@ -156,6 +162,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 32.1,
         "exec_time(ms)": 80.5,
         "synthesis_time(ms)": 0.8,
@@ -181,6 +188,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 11,
         "exec_time(ms)": 2.6,
         "synthesis_time(ms)": 1.1,
@@ -206,6 +214,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 33.4,
         "exec_time(ms)": 84.6,
         "synthesis_time(ms)": 1.3,
@@ -231,6 +240,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 15.2,
         "exec_time(ms)": 7.2,
         "synthesis_time(ms)": 0.9,
@@ -256,6 +266,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 32.4,
         "exec_time(ms)": 78.7,
         "synthesis_time(ms)": 1.2,
@@ -281,6 +292,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 11.8,
         "exec_time(ms)": 2.9,
         "synthesis_time(ms)": 1.5,
@@ -306,6 +318,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 32.8,
         "exec_time(ms)": 83.1,
         "synthesis_time(ms)": 0.7,
@@ -331,6 +344,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 14.9,
         "exec_time(ms)": 9.4,
         "synthesis_time(ms)": 1.1,
@@ -356,6 +370,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 32,
         "exec_time(ms)": 68.3,
         "synthesis_time(ms)": 1,
@@ -381,6 +396,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 11.2,
         "exec_time(ms)": 2.7,
         "synthesis_time(ms)": 1.2,
@@ -406,6 +422,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 33.1,
         "exec_time(ms)": 77.7,
         "synthesis_time(ms)": 1.4,
@@ -431,6 +448,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 15.5,
         "exec_time(ms)": 8.1,
         "synthesis_time(ms)": 1.5,
@@ -456,6 +474,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 32.5,
         "exec_time(ms)": 74.8,
         "synthesis_time(ms)": 1.9,
@@ -481,6 +500,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 11.9,
         "exec_time(ms)": 4.6,
         "synthesis_time(ms)": 2.8,
@@ -510,6 +530,7 @@
         "warnings": [
             "PARSE_TO_AST wire_test.v:1 error in parsing: (syntax error, unexpected vAND, expecting vSYMBOL_ID or '#')"
         ],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -539,6 +560,7 @@
         "warnings": [
             "PARSE_TO_AST wire_test.v:1 error in parsing: (syntax error, unexpected vAND, expecting vSYMBOL_ID or '#')"
         ],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -568,6 +590,7 @@
         "warnings": [
             "PARSE_TO_AST wire_test.v:1 error in parsing: (syntax error, unexpected vAND, expecting vSYMBOL_ID or '#')"
         ],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -597,6 +620,7 @@
         "warnings": [
             "PARSE_TO_AST wire_test.v:1 error in parsing: (syntax error, unexpected vAND, expecting vSYMBOL_ID or '#')"
         ],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -622,6 +646,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 33.5,
         "exec_time(ms)": 69.4,
         "synthesis_time(ms)": 1.9,
@@ -647,6 +672,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 15.7,
         "exec_time(ms)": 9.9,
         "synthesis_time(ms)": 2,
@@ -672,6 +698,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 32.4,
         "exec_time(ms)": 65.7,
         "synthesis_time(ms)": 1.5,
@@ -697,6 +724,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 11.9,
         "exec_time(ms)": 3.7,
         "synthesis_time(ms)": 2,
@@ -722,6 +750,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 32.9,
         "exec_time(ms)": 80.3,
         "synthesis_time(ms)": 0.8,
@@ -747,6 +776,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 14.9,
         "exec_time(ms)": 9.9,
         "synthesis_time(ms)": 1.4,
@@ -772,6 +802,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 32,
         "exec_time(ms)": 68.3,
         "synthesis_time(ms)": 0.9,
@@ -797,6 +828,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 11.1,
         "exec_time(ms)": 2.5,
         "synthesis_time(ms)": 1,
@@ -822,6 +854,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 33.2,
         "exec_time(ms)": 83.5,
         "synthesis_time(ms)": 1.7,
@@ -847,6 +880,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 15.2,
         "exec_time(ms)": 9.3,
         "synthesis_time(ms)": 1.3,
@@ -872,6 +906,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 32.3,
         "exec_time(ms)": 81.7,
         "synthesis_time(ms)": 1.4,
@@ -897,6 +932,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 11.5,
         "exec_time(ms)": 4.8,
         "synthesis_time(ms)": 1.8,
@@ -922,6 +958,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 32.9,
         "exec_time(ms)": 86.3,
         "synthesis_time(ms)": 0.9,
@@ -947,6 +984,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 14.8,
         "exec_time(ms)": 10.5,
         "synthesis_time(ms)": 0.9,
@@ -972,6 +1010,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 32,
         "exec_time(ms)": 81.7,
         "synthesis_time(ms)": 0.8,
@@ -997,6 +1036,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 11.1,
         "exec_time(ms)": 2,
         "synthesis_time(ms)": 0.7,
@@ -1022,6 +1062,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 33.2,
         "exec_time(ms)": 80,
         "synthesis_time(ms)": 2,
@@ -1047,6 +1088,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 15.4,
         "exec_time(ms)": 11.2,
         "synthesis_time(ms)": 2.2,
@@ -1072,6 +1114,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 32.3,
         "exec_time(ms)": 80,
         "synthesis_time(ms)": 2,
@@ -1097,6 +1140,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 11.7,
         "exec_time(ms)": 3.7,
         "synthesis_time(ms)": 2.2,
@@ -1122,6 +1166,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 33.2,
         "exec_time(ms)": 74.4,
         "synthesis_time(ms)": 0.8,
@@ -1147,6 +1192,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 15.1,
         "exec_time(ms)": 9.8,
         "synthesis_time(ms)": 1.3,
@@ -1172,6 +1218,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 32.3,
         "exec_time(ms)": 78.6,
         "synthesis_time(ms)": 0.9,
@@ -1197,6 +1244,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 11.1,
         "exec_time(ms)": 2.2,
         "synthesis_time(ms)": 0.9,
@@ -1224,6 +1272,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -1251,6 +1300,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -1278,6 +1328,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -1305,6 +1356,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -1332,6 +1384,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -1359,6 +1412,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -1386,6 +1440,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -1413,6 +1468,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -1440,6 +1496,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -1467,6 +1524,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -1494,6 +1552,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -1521,6 +1580,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -1548,6 +1608,7 @@
             "PARSE_TO_AST range_any_width_unary_test.v:12 define `operator is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -1575,6 +1636,7 @@
             "PARSE_TO_AST range_any_width_unary_test.v:12 define `operator is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -1602,6 +1664,7 @@
             "PARSE_TO_AST range_any_width_unary_test.v:12 define `operator is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -1629,6 +1692,7 @@
             "PARSE_TO_AST range_any_width_unary_test.v:12 define `operator is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -1656,6 +1720,7 @@
             "PARSE_TO_AST range_any_width_unary_test.v:12 define `operator is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -1683,6 +1748,7 @@
             "PARSE_TO_AST range_any_width_unary_test.v:12 define `operator is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -1710,6 +1776,7 @@
             "PARSE_TO_AST range_any_width_unary_test.v:12 define `operator is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -1737,6 +1804,7 @@
             "PARSE_TO_AST range_any_width_unary_test.v:12 define `operator is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -1764,6 +1832,7 @@
             "PARSE_TO_AST range_any_width_unary_test.v:12 define `operator is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -1791,6 +1860,7 @@
             "PARSE_TO_AST range_any_width_unary_test.v:12 define `operator is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -1818,6 +1888,7 @@
             "PARSE_TO_AST range_any_width_unary_test.v:12 define `operator is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -1845,6 +1916,7 @@
             "PARSE_TO_AST range_any_width_unary_test.v:12 define `operator is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -1872,6 +1944,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -1899,6 +1972,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -1926,6 +2000,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -1953,6 +2028,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -1980,6 +2056,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2007,6 +2084,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2034,6 +2112,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2061,6 +2140,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2088,6 +2168,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2115,6 +2196,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2142,6 +2224,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2169,6 +2252,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2196,6 +2280,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2223,6 +2308,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2250,6 +2336,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2277,6 +2364,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2304,6 +2392,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2331,6 +2420,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2358,6 +2448,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2385,6 +2476,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2412,6 +2504,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2439,6 +2532,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2466,6 +2560,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2493,6 +2588,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2520,6 +2616,7 @@
             "PARSE_TO_AST range_any_width_unary_test.v:12 define `operator is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2547,6 +2644,7 @@
             "PARSE_TO_AST range_any_width_unary_test.v:12 define `operator is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2574,6 +2672,7 @@
             "PARSE_TO_AST range_any_width_unary_test.v:12 define `operator is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2601,6 +2700,7 @@
             "PARSE_TO_AST range_any_width_unary_test.v:12 define `operator is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2628,6 +2728,7 @@
             "PARSE_TO_AST range_any_width_unary_test.v:12 define `operator is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2655,6 +2756,7 @@
             "PARSE_TO_AST range_any_width_unary_test.v:12 define `operator is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2682,6 +2784,7 @@
             "PARSE_TO_AST range_any_width_unary_test.v:12 define `operator is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2709,6 +2812,7 @@
             "PARSE_TO_AST range_any_width_unary_test.v:12 define `operator is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2736,6 +2840,7 @@
             "PARSE_TO_AST range_any_width_unary_test.v:12 define `operator is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2763,6 +2868,7 @@
             "PARSE_TO_AST range_any_width_unary_test.v:12 define `operator is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2790,6 +2896,7 @@
             "PARSE_TO_AST range_any_width_unary_test.v:12 define `operator is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2817,6 +2924,7 @@
             "PARSE_TO_AST range_any_width_unary_test.v:12 define `operator is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2844,6 +2952,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2871,6 +2980,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2898,6 +3008,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2925,6 +3036,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2952,6 +3064,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -2979,6 +3092,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3006,6 +3120,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3033,6 +3148,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3060,6 +3176,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3087,6 +3204,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3114,6 +3232,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3141,6 +3260,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3168,6 +3288,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3195,6 +3316,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3222,6 +3344,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3249,6 +3372,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3276,6 +3400,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3303,6 +3428,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3330,6 +3456,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3357,6 +3484,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3384,6 +3512,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3411,6 +3540,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3438,6 +3568,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3465,6 +3596,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3492,6 +3624,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3519,6 +3652,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3546,6 +3680,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3573,6 +3708,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3600,6 +3736,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3627,6 +3764,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3654,6 +3792,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3681,6 +3820,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3708,6 +3848,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3735,6 +3876,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3762,6 +3904,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3789,6 +3932,7 @@
             "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3816,6 +3960,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3843,6 +3988,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3870,6 +4016,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3897,6 +4044,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3924,6 +4072,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3951,6 +4100,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -3978,6 +4128,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4005,6 +4156,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4032,6 +4184,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4059,6 +4212,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4086,6 +4240,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4113,6 +4268,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4140,6 +4296,7 @@
             "PARSE_TO_AST replicate_any_width_unary_test.v:12 define `RANGE is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4167,6 +4324,7 @@
             "PARSE_TO_AST replicate_any_width_unary_test.v:12 define `RANGE is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4194,6 +4352,7 @@
             "PARSE_TO_AST replicate_any_width_unary_test.v:12 define `RANGE is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4221,6 +4380,7 @@
             "PARSE_TO_AST replicate_any_width_unary_test.v:12 define `RANGE is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4248,6 +4408,7 @@
             "PARSE_TO_AST replicate_any_width_unary_test.v:12 define `RANGE is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4275,6 +4436,7 @@
             "PARSE_TO_AST replicate_any_width_unary_test.v:12 define `RANGE is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4302,6 +4464,7 @@
             "PARSE_TO_AST replicate_any_width_unary_test.v:12 define `RANGE is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4329,6 +4492,7 @@
             "PARSE_TO_AST replicate_any_width_unary_test.v:12 define `RANGE is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4356,6 +4520,7 @@
             "PARSE_TO_AST replicate_any_width_unary_test.v:12 define `RANGE is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4383,6 +4548,7 @@
             "PARSE_TO_AST replicate_any_width_unary_test.v:12 define `RANGE is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4410,6 +4576,7 @@
             "PARSE_TO_AST replicate_any_width_unary_test.v:12 define `RANGE is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4437,6 +4604,7 @@
             "PARSE_TO_AST replicate_any_width_unary_test.v:12 define `RANGE is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4464,6 +4632,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4491,6 +4660,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4518,6 +4688,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4545,6 +4716,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4572,6 +4744,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4599,6 +4772,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4626,6 +4800,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4653,6 +4828,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4680,6 +4856,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4707,6 +4884,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4734,6 +4912,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4761,6 +4940,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4788,6 +4968,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4815,6 +4996,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4842,6 +5024,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4869,6 +5052,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4896,6 +5080,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4923,6 +5108,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4950,6 +5136,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -4977,6 +5164,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5004,6 +5192,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5031,6 +5220,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5058,6 +5248,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5085,6 +5276,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5112,6 +5304,7 @@
             "PARSE_TO_AST replicate_any_width_unary_test.v:12 define `RANGE is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5139,6 +5332,7 @@
             "PARSE_TO_AST replicate_any_width_unary_test.v:12 define `RANGE is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5166,6 +5360,7 @@
             "PARSE_TO_AST replicate_any_width_unary_test.v:12 define `RANGE is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5193,6 +5388,7 @@
             "PARSE_TO_AST replicate_any_width_unary_test.v:12 define `RANGE is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5220,6 +5416,7 @@
             "PARSE_TO_AST replicate_any_width_unary_test.v:12 define `RANGE is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5247,6 +5444,7 @@
             "PARSE_TO_AST replicate_any_width_unary_test.v:12 define `RANGE is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5274,6 +5472,7 @@
             "PARSE_TO_AST replicate_any_width_unary_test.v:12 define `RANGE is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5301,6 +5500,7 @@
             "PARSE_TO_AST replicate_any_width_unary_test.v:12 define `RANGE is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5328,6 +5528,7 @@
             "PARSE_TO_AST replicate_any_width_unary_test.v:12 define `RANGE is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5355,6 +5556,7 @@
             "PARSE_TO_AST replicate_any_width_unary_test.v:12 define `RANGE is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5382,6 +5584,7 @@
             "PARSE_TO_AST replicate_any_width_unary_test.v:12 define `RANGE is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5409,6 +5612,7 @@
             "PARSE_TO_AST replicate_any_width_unary_test.v:12 define `RANGE is being used with too many arguments, Expected 0, got 2"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5436,6 +5640,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5463,6 +5668,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5490,6 +5696,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5517,6 +5724,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5544,6 +5752,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5571,6 +5780,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5598,6 +5808,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5625,6 +5836,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5652,6 +5864,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5679,6 +5892,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5706,6 +5920,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5733,6 +5948,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5760,6 +5976,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5787,6 +6004,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5814,6 +6032,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5841,6 +6060,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5868,6 +6088,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5895,6 +6116,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5922,6 +6144,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5949,6 +6172,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -5976,6 +6200,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -6003,6 +6228,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -6030,6 +6256,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -6057,6 +6284,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -6084,6 +6312,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -6111,6 +6340,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -6138,6 +6368,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -6165,6 +6396,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -6192,6 +6424,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -6219,6 +6452,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -6246,6 +6480,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -6273,6 +6508,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -6300,6 +6536,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -6327,6 +6564,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -6354,6 +6592,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -6381,6 +6620,7 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
@@ -6406,6 +6646,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 33.4,
         "exec_time(ms)": 85.1,
         "synthesis_time(ms)": 2.2,
@@ -6431,6 +6672,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 15.7,
         "exec_time(ms)": 11.4,
         "synthesis_time(ms)": 2.7,
@@ -6456,6 +6698,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 32.3,
         "exec_time(ms)": 85.7,
         "synthesis_time(ms)": 2,
@@ -6481,6 +6724,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 11.9,
         "exec_time(ms)": 7.3,
         "synthesis_time(ms)": 3.2,
@@ -6506,6 +6750,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 33,
         "exec_time(ms)": 97.9,
         "synthesis_time(ms)": 1.1,
@@ -6531,6 +6776,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 15,
         "exec_time(ms)": 8.4,
         "synthesis_time(ms)": 1.1,
@@ -6556,6 +6802,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 32.1,
         "exec_time(ms)": 87.6,
         "synthesis_time(ms)": 1,
@@ -6581,6 +6828,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 11,
         "exec_time(ms)": 2.8,
         "synthesis_time(ms)": 1.1,
@@ -6606,6 +6854,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 33.2,
         "exec_time(ms)": 73.2,
         "synthesis_time(ms)": 2.1,
@@ -6631,6 +6880,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 15.4,
         "exec_time(ms)": 10.6,
         "synthesis_time(ms)": 2.2,
@@ -6656,6 +6906,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 32.7,
         "exec_time(ms)": 82.4,
         "synthesis_time(ms)": 2,
@@ -6681,6 +6932,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 11.9,
         "exec_time(ms)": 4.2,
         "synthesis_time(ms)": 2.5,
@@ -6706,6 +6958,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 32.8,
         "exec_time(ms)": 78,
         "synthesis_time(ms)": 0.8,
@@ -6731,6 +6984,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 15.1,
         "exec_time(ms)": 9.7,
         "synthesis_time(ms)": 1.1,
@@ -6756,6 +7010,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 32,
         "exec_time(ms)": 80.6,
         "synthesis_time(ms)": 0.9,
@@ -6781,6 +7036,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 11.2,
         "exec_time(ms)": 3.2,
         "synthesis_time(ms)": 1.5,

@@ -6,6 +6,7 @@
         "exit": 0,
         "errors": [],
         "warnings": [],
+        "expectation": [],
         "max_rss(MiB)": 32.8,
         "exec_time(ms)": 90.4,
         "simulation_time(ms)": 63.2,

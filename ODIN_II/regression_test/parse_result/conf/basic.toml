@@ -12,6 +12,10 @@
     regex = 'Warning::(.*)'
     listing = true
 
+['expectation']
+    regex = 'Expect::(.*)'
+    listing = true
+
 ['max_rss(MiB)']
     # Memory usage can be very off depending on the number of cores
     range = [ 0.0, 100.0 ]
