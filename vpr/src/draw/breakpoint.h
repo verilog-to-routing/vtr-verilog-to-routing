@@ -67,9 +67,9 @@ class breakpoint {
 };
 
 //functions
-bool check_for_breakpoints(ClusterBlockId blockId);
+bool check_for_breakpoints(ClusterBlockId blockId, bool temp_check);
 bool check_for_block_breakpoints(ClusterBlockId current_blockId, int user_blockId);
-bool check_for_temperature_breakpoints(int temps_to_proceed);
+bool check_for_temperature_breakpoints(int temps_to_proceed, bool temp_check);
 bool check_for_moves_breakpoints(int moves_to_proceed);
 bool check_for_expression_breakpoints(std::string expression);
 void delete_reached_breakpoint(std::string type, int bp_info);

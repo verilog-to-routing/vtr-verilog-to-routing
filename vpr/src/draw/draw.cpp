@@ -4097,7 +4097,7 @@ void set_moves_button_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
     int moves = atoi(gtk_entry_get_text((GtkEntry*)entry));
     if (moves >= 1 && strchr(gtk_entry_get_text((GtkEntry*)entry), '.') == NULL) {
         draw_state->list_of_breakpoints.push_back(breakpoint("moves", moves));
-        std::string bpDescription = "Breakpoint at move_num + " + std::to_string(moves);
+        std::string bpDescription = "Breakpoint at move_num += " + std::to_string(moves);
         add_to_bpList(bpDescription);
     } else
         invalid_entry_window("Invalid Move Number");
@@ -4112,7 +4112,7 @@ void set_temp_button_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
     int temps = atoi(gtk_entry_get_text((GtkEntry*)entry));
     if (temps >= 1 && strchr(gtk_entry_get_text((GtkEntry*)entry), '.') == NULL) {
         draw_state->list_of_breakpoints.push_back(breakpoint("temps", temps));
-        std::string bpDescription = "Breakpoint at temp_num + " + std::to_string(temps);
+        std::string bpDescription = "Breakpoint at temp_num += " + std::to_string(temps);
         add_to_bpList(bpDescription);
     } else
         invalid_entry_window("Invalid temperature");
@@ -4136,12 +4136,12 @@ void set_expression_button_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
 
     //check input validity
     std::string expr = gtk_entry_get_text((GtkEntry*)entry);
-    if (valid_expression(expr)) {
-        draw_state->list_of_breakpoints.push_back(breakpoint("expression", expr));
-        std::string bpDescription = "Breakpoint at " + expr;
-        add_to_bpList(bpDescription);
-    } else
-        invalid_entry_window("Invalid expression");
+    //if (valid_expression(expr)) {
+    draw_state->list_of_breakpoints.push_back(breakpoint("expression", expr));
+    std::string bpDescription = "Breakpoint at " + expr;
+    add_to_bpList(bpDescription);
+    //} else
+    //invalid_entry_window("Invalid expression");
 }
 
 //window that pops up when an entry is not valid
@@ -4176,7 +4176,7 @@ void invalid_entry_window(std::string error) {
 
 //window that pops up when a breakpoint is reached
 //shows which breakpoint the program has stopped at and gives an info summary
-void breakpoint_info_window(std::string bpDescription, int move, int temp, int block, int net) {
+void breakpoint_info_window(std::string bpDescription, int move, float temp, int block, int net) {
     //window settings
     GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_position((GtkWindow*)window, GTK_WIN_POS_CENTER);
@@ -4222,14 +4222,18 @@ void breakpoint_info_window(std::string bpDescription, int move, int temp, int b
     std::string move_num = "move_num: " + std::to_string(move);
     GtkWidget* move_info = gtk_label_new(move_num.c_str());
     gtk_widget_set_margin_left(move_info, 5);
+    gtk_widget_set_halign(move_info, GTK_ALIGN_START);
     std::string temp_num = "temp_num: " + std::to_string(temp);
     GtkWidget* temp_info = gtk_label_new(temp_num.c_str());
     gtk_widget_set_margin_left(temp_info, 5);
+    gtk_widget_set_halign(temp_info, GTK_ALIGN_START);
     std::string net_id = "net_id: " + std::to_string(net);
     GtkWidget* net_info = gtk_label_new(net_id.c_str());
+    gtk_widget_set_halign(net_info, GTK_ALIGN_START);
     std::string block_id = "block_id: " + std::to_string(block);
     GtkWidget* block_info = gtk_label_new(block_id.c_str());
     gtk_widget_set_margin_left(block_info, 5);
+    gtk_widget_set_halign(block_info, GTK_ALIGN_START);
     gtk_grid_attach((GtkGrid*)info_grid, move_info, 1, 0, 1, 1);
     gtk_grid_attach((GtkGrid*)info_grid, temp_info, 1, 1, 1, 1);
     gtk_grid_attach((GtkGrid*)info_grid, net_info, 3, 0, 1, 1);
@@ -4239,8 +4243,6 @@ void breakpoint_info_window(std::string bpDescription, int move, int temp, int b
     //button settings
     GtkWidget* button = gtk_button_new_with_label("OK");
     gtk_widget_set_margin_bottom(button, 30);
-    gtk_widget_set_margin_right(button, 30);
-    gtk_widget_set_margin_left(button, 100);
     gtk_widget_set_halign(button, GTK_ALIGN_CENTER);
 
     gtk_grid_attach((GtkGrid*)grid, button, 0, 3, 1, 1);

@@ -37,11 +37,11 @@ void get_current_info_b(current_information ci) {
 
 //checks if there are any move breakpoints
 bool check_for_moves_breakpoints(int moves_to_proceed) {
-    bool stop;
+    bool stop = false;
     if (moves_to_proceed >= 1) {
         if (moveCount == moves_to_proceed) {
             moveCount = 0;
-            std::cout << "\nStopped at move_num + " << std::to_string(moves_to_proceed) << "\n";
+            std::cout << "\nStopped at move_num += " << std::to_string(moves_to_proceed) << "\n";
             print_current_info();
             return true;
         } else if (moveCount < moves_to_proceed) {
@@ -53,15 +53,15 @@ bool check_for_moves_breakpoints(int moves_to_proceed) {
 }
 
 //check for temperature breakpoint
-bool check_for_temperature_breakpoints(int temps_to_proceed) {
-    bool stop;
+bool check_for_temperature_breakpoints(int temps_to_proceed, bool temp_check) {
+    bool stop = false;
     if (temps_to_proceed >= 1) {
         if (tempCount == temps_to_proceed) {
             tempCount = 0;
-            std::cout << "\nStopped at temp_num + " << std::to_string(temps_to_proceed) << "\n";
+            std::cout << "\nStopped at temp_num += " << std::to_string(temps_to_proceed) << "\n";
             print_current_info();
             return true;
-        } else if (tempCount < temps_to_proceed) {
+        } else if (tempCount < temps_to_proceed && temp_check) {
             tempCount++;
             return false;
         }
@@ -71,7 +71,7 @@ bool check_for_temperature_breakpoints(int temps_to_proceed) {
 
 //check for block breakpoint
 bool check_for_block_breakpoints(ClusterBlockId current_blockId, int user_blockId) {
-    bool stop;
+    bool stop = false;
     ClusterBlockId bId(user_blockId);
     if (bId == current_blockId) {
         std::cout << "\nStopped at from_block == " << std::to_string(user_blockId) << "\n";
@@ -98,7 +98,7 @@ bool check_for_expression_breakpoints(std::string expression) {
 }
 
 //checks for all types of breakpoints
-bool check_for_breakpoints(ClusterBlockId blockId) {
+bool check_for_breakpoints(ClusterBlockId blockId, bool temp_check) {
     //goes through the breakpoints vector
     t_draw_state* draw_state = get_draw_state_vars();
     for (size_t i = 0; i < draw_state->list_of_breakpoints.size(); i++) {
@@ -109,7 +109,7 @@ bool check_for_breakpoints(ClusterBlockId blockId) {
         if (draw_state->list_of_breakpoints[i].type.compare("expression") == 0 && draw_state->list_of_breakpoints[i].active)
             return check_for_expression_breakpoints(draw_state->list_of_breakpoints[i].expression);
         if (draw_state->list_of_breakpoints[i].type.compare("temps") == 0 && draw_state->list_of_breakpoints[i].active)
-            return check_for_temperature_breakpoints(draw_state->list_of_breakpoints[i].temps);
+            return check_for_temperature_breakpoints(draw_state->list_of_breakpoints[i].temps, temp_check);
     }
     return false;
 }
