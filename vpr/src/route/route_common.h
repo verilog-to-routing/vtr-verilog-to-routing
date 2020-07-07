@@ -5,6 +5,7 @@
 #include "vtr_vector.h"
 #include "heap_type.h"
 #include "rr_node_fwd.h"
+#include "router_stats.h"
 #include "globals.h"
 
 /******* Subroutines in route_common used only by other router modules ******/
@@ -18,6 +19,11 @@ void pathfinder_update_path_occupancy(t_trace* route_segment_start, int add_or_s
 void pathfinder_update_single_node_occupancy(int inode, int add_or_sub);
 
 void pathfinder_update_acc_cost(float acc_fac);
+
+void pathfinder_incremental_update_acc_cost(float acc_fac,
+                                            const std::vector<ClusterNetId>& rerouted_nets,
+                                            const std::unordered_set<int>& overused_local_nodes,
+                                            OveruseInfo& overuse_info);
 
 float update_pres_fac(float new_pres_fac);
 
@@ -58,15 +64,14 @@ inline float get_single_rr_cong_pres_cost(int inode, float pres_fac) {
 }
 
 /* Returns the congestion cost of using this rr_node,
-* *ignoring* non-configurable edges */
+ * *ignoring* non-configurable edges */
 inline float get_single_rr_cong_cost(int inode, float pres_fac) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
     auto cost_index = device_ctx.rr_nodes[inode].cost_index();
 
-    float cost = device_ctx.rr_indexed_data[cost_index].base_cost *
-                 route_ctx.rr_node_route_inf[inode].acc_cost;
+    float cost = device_ctx.rr_indexed_data[cost_index].base_cost * route_ctx.rr_node_route_inf[inode].acc_cost;
 
     int occ = route_ctx.rr_node_route_inf[inode].occ();
     int capacity = device_ctx.rr_nodes[inode].capacity();
@@ -77,7 +82,6 @@ inline float get_single_rr_cong_cost(int inode, float pres_fac) {
 
     return cost;
 }
-
 
 void mark_ends(ClusterNetId net_id);
 void mark_remaining_ends(const std::vector<int>& remaining_sinks);
@@ -96,7 +100,11 @@ void reset_rr_node_route_structs();
 
 void free_trace_structs();
 
-void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins);
+void reserve_locally_used_opins(HeapInterface* heap,
+                                float pres_fac,
+                                float acc_fac,
+                                bool rip_up_local_opins,
+                                std::unordered_set<int>& overused_local_nodes);
 
 void free_chunk_memory_trace();
 

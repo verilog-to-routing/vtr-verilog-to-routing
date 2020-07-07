@@ -40,7 +40,7 @@ bool try_breadth_first_route(const t_router_opts& router_opts) {
         "*                         !!! WARNING !!!                            *\n"
         "*                                                                    *\n"
         "*      Routing with the DEPRECATED 'Breadth-First' router, which     *\n"
-        "*        is inferrior and may be removed in a future release.        *\n"
+        "*         is inferior and may be removed in a future release.        *\n"
         "*                                                                    *\n"
         "*     Use the 'Timing-Driven' router instead, which requires much    *\n"
         "*      less run-time (> 300x faster) and produces higher quality     *\n"
@@ -59,6 +59,8 @@ bool try_breadth_first_route(const t_router_opts& router_opts) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
+    OveruseInfo overuse_info(device_ctx.rr_nodes.size());
+
     /* Usually the first iteration uses a very small (or 0) pres_fac to find  *
      * the shortest path and get a congestion map.  For fast compiles, I set  *
      * pres_fac high even for the first iteration.                            */
@@ -74,6 +76,7 @@ bool try_breadth_first_route(const t_router_opts& router_opts) {
 
     for (itry = 1; itry <= router_opts.max_router_iterations; itry++) {
         VTR_LOG("Routing Iteration %d\n", itry);
+        std::vector<ClusterNetId> rerouted_nets;
 
         /* Reset "is_routed" and "is_fixed" flags to indicate nets not pre-routed (yet) */
         for (auto net_id : cluster_ctx.clb_nlist.nets()) {
@@ -82,21 +85,29 @@ bool try_breadth_first_route(const t_router_opts& router_opts) {
         }
 
         for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-            is_routable = try_breadth_first_route_net(heap, net_id, pres_fac, router_opts);
+            bool was_rerouted = false;
+
+            is_routable = try_breadth_first_route_net(heap, net_id, pres_fac, router_opts, was_rerouted);
+
             if (!is_routable) {
-                return (false);
+                return (false); //Impossible to route
+            }
+
+            if (was_rerouted) {
+                rerouted_nets.push_back(net_id);
             }
         }
 
         /* Make sure any CLB OPINs used up by subblocks being hooked directly     *
          * to them are reserved for that purpose.                                 */
-
-        if (itry == 1)
+        if (itry == 1) {
             rip_up_local_opins = false;
-        else
+        } else {
             rip_up_local_opins = true;
+        }
 
-        reserve_locally_used_opins(&heap, pres_fac, router_opts.acc_fac, rip_up_local_opins);
+        std::unordered_set<int> overused_local_nodes;
+        reserve_locally_used_opins(&heap, pres_fac, router_opts.acc_fac, rip_up_local_opins, overused_local_nodes);
 
         success = feasible_routing();
         if (success) {
@@ -104,14 +115,14 @@ bool try_breadth_first_route(const t_router_opts& router_opts) {
             return (true);
         }
 
-        if (itry == 1)
+        if (itry == 1) {
             pres_fac = update_pres_fac(router_opts.initial_pres_fac);
-        else
+        } else {
             pres_fac *= router_opts.pres_fac_mult;
+            pres_fac = update_pres_fac(std::min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5)));
+        }
 
-        pres_fac = update_pres_fac(std::min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5)));
-
-        pathfinder_update_acc_cost(router_opts.acc_fac);
+        pathfinder_incremental_update_acc_cost(router_opts.acc_fac, rerouted_nets, overused_local_nodes, overuse_info);
     }
 
     VTR_LOG("Routing failed.\n");
@@ -123,7 +134,11 @@ bool try_breadth_first_route(const t_router_opts& router_opts) {
     return (false);
 }
 
-bool try_breadth_first_route_net(BinaryHeap& heap, ClusterNetId net_id, float pres_fac, const t_router_opts& router_opts) {
+bool try_breadth_first_route_net(BinaryHeap& heap,
+                                 ClusterNetId net_id,
+                                 float pres_fac,
+                                 const t_router_opts& router_opts,
+                                 bool& was_rerouted) {
     bool is_routed = false;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -147,6 +162,8 @@ bool try_breadth_first_route_net(BinaryHeap& heap, ClusterNetId net_id, float pr
         }
 
         pathfinder_update_path_occupancy(route_ctx.trace[net_id].head, 1);
+
+        was_rerouted = true; //Flag to record whether routing was actually changed
     }
     return (is_routed);
 }
