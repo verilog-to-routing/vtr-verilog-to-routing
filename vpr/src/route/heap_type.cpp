@@ -58,7 +58,7 @@ HeapStorage::alloc(bool init_data_structs) {
             heap_path_free_head_ = vtr::chunk_new<t_heap_path>(&heap_ch_path_);
         }
         temp_ptr->path_data = heap_path_free_head_;
-        heap_path_free_head_ = temp_ptr->next_heap_item()->path_data;
+        heap_path_free_head_ = nullptr;
 
         temp_ptr->path_data->path_rr.clear();
         temp_ptr->path_data->edge.clear();

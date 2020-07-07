@@ -63,7 +63,7 @@ struct t_heap {
 
     int index = OPEN;
     // std::set<int> net_rr; // Getting refactored out of this data structure
-    // std::set<int> partial_path_nodes; // Not sure why this is needed so it's gettin yeeted
+    // std::set<int> partial_path_nodes;
     t_heap_path* path_data;
 
     struct t_prev {

@@ -1128,7 +1128,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
 
         // Only use the route_tree_nodes set if the RCV algorithm is enabled
         std::set<int>* route_tree_nodes_pointer = nullptr;
-        if (cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm == YOYO) route_tree_nodes_pointer = &route_tree_nodes;
+        if (router_opts.routing_budgets_algorithm == YOYO) route_tree_nodes_pointer = &route_tree_nodes;
 
         // build a branch in the route tree to the target
         if (!timing_driven_route_sink(router,

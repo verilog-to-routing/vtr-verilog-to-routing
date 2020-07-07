@@ -646,7 +646,8 @@
            25 ps to do so, we subtract 25 ps from the 100 ps delay of a feedback
            to get the part that should be marked on the crossbar. For the minimum delay,
   		   the value in Stratix IV is 93 ps, subtracting the 24 ps leaves 69 ps.-->
-        <complete name="crossbar" input="clb.I fle[9:0].out" output="fle[9:0].in">
+        <!-- <complete name="crossbar" input="clb.I fle[9:0].out" output="fle[9:0].in"> -->
+        <complete name="crossbar" input="clb.I" output="fle[9:0].in">
           <delay_constant max="95e-12" min="72e-12" in_port="clb.I" out_port="fle[9:0].in"/>
           <delay_constant max="75e-12" min="69e-12" in_port="fle[9:0].out" out_port="fle[9:0].in"/>
         </complete>
