@@ -68,8 +68,11 @@ typedef enum e_operator {
     E_OP_OR,
     E_OP_GT,
     E_OP_LT,
+    E_OP_GTE,
+    E_OP_LTE,
     E_OP_EQ,
     E_OP_MOD,
+    E_OP_AA,
     E_OP_NUM_OPS
 } t_operator;
 
@@ -116,15 +119,19 @@ class Formula_Object {
             } else if (data.op == E_OP_DIV) {
                 return "/";
             } else if (data.op == E_OP_AND) {
-                return "&";
+                return "&&";
             } else if (data.op == E_OP_OR) {
-                return "|";
+                return "||";
             } else if (data.op == E_OP_GT) {
                 return ">";
             } else if (data.op == E_OP_LT) {
                 return "<";
+            } else if (data.op == E_OP_GTE) {
+                return ">=";
+            } else if (data.op == E_OP_LTE) {
+                return "<=";
             } else if (data.op == E_OP_EQ) {
-                return "=";
+                return "==";
             } else if (data.op == E_OP_MOD) {
                 return "%";
             } else if (data.op == E_OP_MIN) {
@@ -135,6 +142,8 @@ class Formula_Object {
                 return "gcd";
             } else if (data.op == E_OP_LCM) {
                 return "lcm";
+            } else if (data.op == E_OP_AA) {
+                return "+=";
             } else {
                 return "???"; //Unkown
             }
@@ -167,8 +176,9 @@ class FormulaParser {
 //struct that holds all necessary current information about the placer
 struct current_information {
     int moveNumber = 0;
+    int routerIter = 0;
     int blockNumber;
-    int temperature;
+    float temperature = 0;
     int netNumber;
 };
 

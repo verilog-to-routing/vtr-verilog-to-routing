@@ -12,6 +12,7 @@ using std::stringstream;
 using std::vector;
 current_information current_info_e;
 bool is_breakpoint = false;
+int before_addition = 0;
 
 /*---- Functions for Parsing the Symbolic Formulas ----*/
 
@@ -54,6 +55,9 @@ static bool is_operator(const char ch);
 // returns true if the specified name is a known function operator
 static bool is_function(std::string name);
 
+// returns true if the specified name is a known compound operator
+int is_compound_op(const char* ch);
+
 // returns true if the specified name is a known variable
 static bool is_variable(std::string var);
 
@@ -65,6 +69,7 @@ static bool goto_next_char(int* str_ind, const string& pw_formula, char ch);
 
 bool same_string(std::string str1, std::string str2);
 
+bool additional_assignemnt_op(int arg1, int arg2);
 /**** Function Implementations ****/
 /* returns integer result according to specified non-piece-wise formula and data */
 int FormulaParser::parse_formula(std::string formula, const t_formula_data& mydata) {
@@ -311,13 +316,13 @@ static void get_formula_object(const char* ch, int& ichar, const t_formula_data&
                     var_name.size()));
         } else if (is_variable(var_name)) {
             fobj->type = E_FML_VARIABLE;
-            if (same_string(var_name, "temperature") || same_string(var_name, "temp_num"))
+            if (same_string(var_name, "temp_num"))
                 fobj->data.num = current_info_e.temperature;
             else if (same_string(var_name, "from_block"))
                 fobj->data.num = current_info_e.blockNumber;
-            else if (same_string(var_name, "move_num") || same_string(var_name, "move"))
+            else if (same_string(var_name, "move_num"))
                 fobj->data.num = current_info_e.moveNumber;
-            else if (same_string(var_name, "net_id") || same_string(var_name, "net"))
+            else if (same_string(var_name, "net_id"))
                 fobj->data.num = current_info_e.netNumber;
         }
 
@@ -334,6 +339,22 @@ static void get_formula_object(const char* ch, int& ichar, const t_formula_data&
         ichar--;
         fobj->type = E_FML_NUMBER;
         fobj->data.num = vtr::atoi(ss.str().c_str());
+    } else if (is_compound_op(ch) != 0) {
+        fobj->type = E_FML_OPERATOR;
+        int comp_op_code = is_compound_op(ch);
+        if (comp_op_code == 1)
+            fobj->data.op = E_OP_EQ;
+        else if (comp_op_code == 2)
+            fobj->data.op = E_OP_GTE;
+        else if (comp_op_code == 3)
+            fobj->data.op = E_OP_LTE;
+        else if (comp_op_code == 4)
+            fobj->data.op = E_OP_AND;
+        else if (comp_op_code == 5)
+            fobj->data.op = E_OP_OR;
+        else if (comp_op_code == 6)
+            fobj->data.op = E_OP_AA;
+        ichar++;
     } else {
         switch ((*ch)) {
             case '+':
@@ -363,14 +384,6 @@ static void get_formula_object(const char* ch, int& ichar, const t_formula_data&
             case ',':
                 fobj->type = E_FML_COMMA;
                 break;
-            case '&':
-                fobj->type = E_FML_OPERATOR;
-                fobj->data.op = E_OP_AND;
-                break;
-            case '|':
-                fobj->type = E_FML_OPERATOR;
-                fobj->data.op = E_OP_OR;
-                break;
             case '>':
                 fobj->type = E_FML_OPERATOR;
                 fobj->data.op = E_OP_GT;
@@ -378,10 +391,6 @@ static void get_formula_object(const char* ch, int& ichar, const t_formula_data&
             case '<':
                 fobj->type = E_FML_OPERATOR;
                 fobj->data.op = E_OP_LT;
-                break;
-            case '=':
-                fobj->type = E_FML_OPERATOR;
-                fobj->data.op = E_OP_EQ;
                 break;
             case '%':
                 fobj->type = E_FML_OPERATOR;
@@ -415,6 +424,9 @@ static int get_fobj_precedence(const Formula_Object& fobj) {
             case E_OP_GT:  //fallthrough
             case E_OP_LT:  //fallthrough
             case E_OP_EQ:  //fallthrough
+            case E_OP_GTE: //fallthrough
+            case E_OP_LTE: //fallthrough
+            case E_OP_AA:  //falthrough
                 precedence = 2;
                 break;
             case E_OP_MULT: //fallthrough
@@ -676,7 +688,7 @@ static int apply_rpn_op(const Formula_Object& arg1, const Formula_Object& arg2, 
             result = arg1.data.num && arg2.data.num;
             break;
         case E_OP_OR:
-            result = arg1.data.num || arg2.data.num;
+            result = (arg1.data.num || arg2.data.num);
             break;
         case E_OP_GT:
             result = arg1.data.num > arg2.data.num;
@@ -684,11 +696,20 @@ static int apply_rpn_op(const Formula_Object& arg1, const Formula_Object& arg2, 
         case E_OP_LT:
             result = arg1.data.num < arg2.data.num;
             break;
+        case E_OP_GTE:
+            result = (arg1.data.num >= arg2.data.num);
+            break;
+        case E_OP_LTE:
+            result = (arg1.data.num <= arg2.data.num);
+            break;
         case E_OP_EQ:
             result = arg1.data.num == arg2.data.num;
             break;
         case E_OP_MOD:
             result = arg1.data.num % arg2.data.num;
+            break;
+        case E_OP_AA:
+            result = additional_assignemnt_op(arg1.data.num, arg2.data.num);
             break;
         default:
             archfpga_throw(__FILE__, __LINE__, "in apply_rpn_op: invalid operation: %d\n", op.data.op);
@@ -744,6 +765,24 @@ static bool is_function(std::string name) {
     return false;
 }
 
+int is_compound_op(const char* ch) {
+    if (ch[1] != '\0') {
+        if (ch[0] == '=' && ch[1] == '=')
+            return 1;
+        else if (ch[0] == '>' && ch[1] == '=')
+            return 2;
+        else if (ch[0] == '<' && ch[1] == '=')
+            return 3;
+        else if (ch[0] == '&' && ch[1] == '&')
+            return 4;
+        else if (ch[0] == '|' && ch[1] == '|')
+            return 5;
+        else if (ch[0] == '+' && ch[1] == '=')
+            return 6;
+    }
+    return 0;
+}
+
 //checks if the entered string is a known variable name
 static bool is_variable(std::string var_name) {
     if (same_string(var_name, "from_block") || same_string(var_name, "temp_num") || same_string(var_name, "move_num") || same_string(var_name, "net_id")) {
@@ -797,6 +836,17 @@ bool FormulaParser::is_piecewise_formula(const char* formula) {
     } else {
         result = false;
     }
+    return result;
+}
+
+//the += operator
+bool additional_assignemnt_op(int arg1, int arg2) {
+    int result = 0;
+    if (before_addition == 0)
+        before_addition = arg1;
+    result = (arg1 == before_addition + arg2);
+    if (result)
+        before_addition = 0;
     return result;
 }
 
