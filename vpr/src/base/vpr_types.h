@@ -1053,6 +1053,7 @@ struct t_placer_opts {
     int place_dm_rlim;
     int place_timing_cost_func;
     int place_reward_num;
+    float place_crit_limit;
 
     /**
      * @brief Tile types that should be used during delay sampling.

@@ -583,6 +583,7 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->place_dm_rlim = Options.place_dm_rlim;
     PlacerOpts->place_timing_cost_func = Options.place_timing_cost_func;
     PlacerOpts->place_reward_num = Options.place_reward_num;
+    PlacerOpts->place_crit_limit = Options.place_crit_limit;
     PlacerOpts->place_agent_algorithm = Options.place_agent_algorithm;
 
 }

@@ -1,32 +1,5 @@
-#vpr_status;output.txt;vpr_status=(.*)
-#total_wirelength;vpr.out;Total wirelength:\s*(\d+)
-#crit_path_delay_(mcw);vpr.out;Final critical path: (.*) ns
-#crit_path_delay_(1.3mcw);vpr.crit_path.out;Final critical path: (.*) ns
-#total_wirelength_(mcw);vpr.out;Total wirelength:\s*(\d+)
-#total_wirelength_(1.3mcw);vpr.crit_path.out;Total wirelength:\s*(\d+)
-#total_runtime;vpr.out;The entire flow of VPR took (.*) seconds
-#pack_time;vpr.out;Packing took (.*) seconds
-#place_time;vpr.out;Placement took (.*) seconds
-#route_time;vpr.out;Routing took (.*) seconds
-#num_pre_packed_nets;vpr.out;Total Nets: (\d+)
-#num_pre_packed_blocks;vpr.out;Total Blocks: (\d+)
-#num_post_packed_nets;vpr.out;Netlist num_nets:\s*(\d+)
-#num_clb;vpr.out;Netlist clb blocks:\s*(\d+)
-#num_io;vpr.out;Netlist inputs pins:\s*(\d+)
-#num_outputs;vpr.out;Netlist output pins:\s*(\d+)
-#num_memories;vpr.out;Netlist memory blocks:\s*(\d+)
-#num_mult;vpr.out;Netlist mult_36 blocks:\s*(\d+)
-#min_chan_width;vpr.out;Best routing used a channel width factor of (\d+)
-#crit_path_delay;vpr.crit_path.out;Final critical path: (.*) ns
 vpr_status;output.txt;vpr_status=(.*)
-#total_wirelength;vpr.out;Total wirelength:\s*(\d+)
 num_clb;vpr.out;Netlist clb blocks:\s*(\d+)
 BB estimate of WL;vpr.out;BB estimate of min-dist \(placement\) wire length:\s*(\d+)
 place_time;vpr.out;Placement took (.*) seconds
-placement CPD;vpr.out;Placement estimated critical path delay (least slack):\s*(.*) ns
 geomean period;vpr.out;Placement estimated geomean non-virtual intra-domain period:\s*(.*) ns
-place_time;vpr.out;Placement took (.*) seconds
-Total swap attempts;vpr.out;Placement total # of swap attempts:\s*(\d+)
-swaps accepted;vpr.out;Swaps accepted:.*\((.*)\%\)
-swaps rejected;vpr.out;Swaps rejected:.*\((.*)\%\)
-swaps aborted;vpr.out;Swaps aborted :.*\((.*)\%\)

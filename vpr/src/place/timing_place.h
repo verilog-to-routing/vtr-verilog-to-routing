@@ -42,6 +42,8 @@
 #include "vpr_net_pins_matrix.h"
 
 extern std::vector<std::pair<ClusterNetId, int>> highly_crit_pins;
+extern std::unordered_set<ClusterBlockId> highly_crit_blocks;
+
 /**
  * @brief PlacerCriticalities returns the clustered netlist connection criticalities
  *        used by the placer ('sharpened' by a criticality exponent).
@@ -98,19 +100,12 @@ class PlacerCriticalities {
   public: //Accessors
     ///@brief Returns the criticality of the specified connection.
     float criticality(ClusterNetId net, int ipin) const { return timing_place_crit_[net][ipin]; }
+    float normalized_criticality(ClusterNetId net, int ipin) const { return timing_place_normalized_crit_[net][ipin]; }
 
-<<<<<<< HEAD
     /**
      * @brief Returns the range of clustered netlist pins (i.e. ClusterPinIds) which
      *        were modified by the last call to PlacerCriticalities::update_criticalities().
      */
-=======
-    //Returns the normalized criticality of the specified connection
-    float normalized_criticality(ClusterNetId net, int ipin) const { return timing_place_normalized_crit_[net][ipin]; }
-
-    //Returns the range of clustered netlist pins (i.e. ClusterPinIds) which were modified
-    //by the last call to update_criticalities()
->>>>>>> change the timing cost to delay budgets
     pin_range pins_with_modified_criticality() const;
 
   public: //Modifiers

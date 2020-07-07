@@ -1837,6 +1837,11 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument(args.place_crit_limit, "--place_crit_limit")
+        .help(
+            "The criticality limit to count a block as a critical one (or have a critical connection)")
+        .default_value("0.7")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.place_timing_cost_func, "--place_timing_cost_func")
         .help(
