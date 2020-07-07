@@ -110,10 +110,8 @@ struct t_placer_prev_inverse_costs {
     double timing_cost;
 };
 
-#ifdef VTR_ENABLE_DEBUG_LOGGING
 //a avriable of type current information to hold all curent values of move number, teperature, block id, for use in expression evalutaion
 current_information current_info_p;
-#endif
 
 constexpr float INVALID_DELAY = std::numeric_limits<float>::quiet_NaN();
 
@@ -711,15 +709,11 @@ void try_place(const t_placer_opts& placer_opts,
         ++num_temps;
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
-
-        //update temperature in the current information variable
-        current_info_p.temperature = t;
-        send_current_info_p();
         //checks for temperature breakpoints
         t_draw_state* draw_state = get_draw_state_vars();
         if (draw_state->list_of_breakpoints.size() != 0) {
             ClusterBlockId dummy(-1);
-            f_placer_debug = check_for_breakpoints(dummy);
+            f_placer_debug = check_for_breakpoints(dummy, true);
             if (f_placer_debug)
                 breakpoint_info_window("Stopped at breakpoint", current_info_p.moveNumber, current_info_p.temperature, current_info_p.blockNumber, -1);
         }
@@ -1134,6 +1128,9 @@ static void update_t(float* t, float rlim, float success_rat, t_annealing_sched 
             *t = (*t) * 0.8;
         }
     }
+    //update temperature in the current information variable
+    current_info_p.temperature = *t;
+    send_current_info_p();
 }
 
 static int exit_crit(float t, float cost, t_annealing_sched annealing_sched) {
@@ -1399,7 +1396,7 @@ static e_move_result try_swap(float t,
     //check for breakpoints
     t_draw_state* draw_state = get_draw_state_vars();
     if (draw_state->list_of_breakpoints.size() != 0)
-        f_placer_debug = check_for_breakpoints(blocks_affected.moved_blocks[0].block_num);
+        f_placer_debug = check_for_breakpoints(blocks_affected.moved_blocks[0].block_num, false);
     if (f_placer_debug)
         breakpoint_info_window("Stopped at breakpoint", current_info_p.moveNumber, current_info_p.temperature, current_info_p.blockNumber, -1);
 
