@@ -42,6 +42,8 @@ int yywrap(){	return 1;}
 int yylex(void);
 
 %}
+/* give detailed errors */
+%define parse.error verbose
 
 %locations
 
