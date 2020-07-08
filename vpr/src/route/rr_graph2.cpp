@@ -1082,13 +1082,67 @@ static void load_block_rr_indices(const DeviceGrid& grid,
                 VTR_ASSERT(indices[SOURCE][x][y][0].size() == type->class_inf.size());
                 VTR_ASSERT(indices[SINK][x][y][0].size() == type->class_inf.size());
 
+                /* Limited sides for grids
+                 *   The wanted side depends on the location of the grid.
+                 *   In particular for perimeter grid, 
+                 *   -------------------------------------------------------
+                 *   Grid location |  IPIN side
+                 *   -------------------------------------------------------
+                 *   TOP           |  BOTTOM     
+                 *   -------------------------------------------------------
+                 *   RIGHT         |  LEFT     
+                 *   -------------------------------------------------------
+                 *   BOTTOM        |  TOP   
+                 *   -------------------------------------------------------
+                 *   LEFT          |  RIGHT
+                 *   -------------------------------------------------------
+                 *   TOP-LEFT      |  BOTTOM & RIGHT
+                 *   -------------------------------------------------------
+                 *   TOP-RIGHT     |  BOTTOM & LEFT
+                 *   -------------------------------------------------------
+                 *   BOTTOM-LEFT   |  TOP & RIGHT
+                 *   -------------------------------------------------------
+                 *   BOTTOM-RIGHT  |  TOP & LEFT
+                 *   -------------------------------------------------------
+                 *   Other         |  First come first fit
+                 *   -------------------------------------------------------
+                 *
+                 * Special for IPINs:
+                 *   If there are multiple wanted sides, first come first fit is applied 
+                 *   This guarantee that there is only a unique rr_node 
+                 *   for the same input pin on multiple sides, and thus avoid multiple driver problems
+                 */
+                std::vector<e_side> wanted_sides;
+                if (grid.height() - 1 == y) { /* TOP side */
+                    wanted_sides.push_back(BOTTOM);
+                }
+                if (grid.width() - 1 == x) { /* RIGHT side */
+                    wanted_sides.push_back(LEFT);
+                }
+                if (0 == y) { /* BOTTOM side */
+                    wanted_sides.push_back(TOP);
+                }
+                if (0 == x) { /* LEFT side */
+                    wanted_sides.push_back(RIGHT);
+                }
+   
+                /* If wanted sides is empty still, this block does not have specific wanted sides,
+                 * Deposit all the sides
+                 */
+                if (true == wanted_sides.empty()) {
+                    for (e_side side : {TOP, BOTTOM, LEFT, RIGHT}) {
+                        wanted_sides.push_back(side);
+                    }
+                }
+
                 //Assign indices for IPINs and OPINs at all offsets from root
                 for (int ipin = 0; ipin < type->num_pins; ++ipin) {
-                    for (int width_offset = 0; width_offset < type->width; ++width_offset) {
-                        int x_tile = x + width_offset;
-                        for (int height_offset = 0; height_offset < type->height; ++height_offset) {
-                            int y_tile = y + height_offset;
-                            for (e_side side : SIDES) {
+                    bool found_ipin_node = false;
+                    for (e_side side : wanted_sides) {
+                        for (int width_offset = 0; width_offset < type->width; ++width_offset) {
+                            int x_tile = x + width_offset;
+                            for (int height_offset = 0; height_offset < type->height; ++height_offset) {
+                                int y_tile = y + height_offset;
                                 if (type->pinloc[width_offset][height_offset][side][ipin]) {
                                     int iclass = type->pin_class[ipin];
                                     auto class_type = type->class_inf[iclass].type;
@@ -1096,12 +1150,20 @@ static void load_block_rr_indices(const DeviceGrid& grid,
                                     if (class_type == DRIVER) {
                                         indices[OPIN][x_tile][y_tile][side].push_back(*index);
                                         indices[IPIN][x_tile][y_tile][side].push_back(OPEN);
+                                        ++(*index);
                                     } else {
                                         VTR_ASSERT(class_type == RECEIVER);
-                                        indices[IPIN][x_tile][y_tile][side].push_back(*index);
                                         indices[OPIN][x_tile][y_tile][side].push_back(OPEN);
+                                        if (false == found_ipin_node) {
+                                            indices[IPIN][x_tile][y_tile][side].push_back(*index);
+                                            ++(*index);
+                                            /* Found the input pin, no more indexing is required */
+                                            found_ipin_node = true;
+                                        } else {
+                                            VTR_ASSERT_SAFE(true == found_ipin_node);
+                                            indices[IPIN][x_tile][y_tile][side].push_back(OPEN);
+                                        }
                                     }
-                                    ++(*index);
                                 } else {
                                     indices[IPIN][x_tile][y_tile][side].push_back(OPEN);
                                     indices[OPIN][x_tile][y_tile][side].push_back(OPEN);
@@ -1117,8 +1179,10 @@ static void load_block_rr_indices(const DeviceGrid& grid,
                     for (int height_offset = 0; height_offset < type->height; ++height_offset) {
                         int y_tile = y + height_offset;
                         for (e_side side : SIDES) {
-                            VTR_ASSERT(indices[IPIN][x_tile][y_tile][side].size() == size_t(type->num_pins));
-                            VTR_ASSERT(indices[OPIN][x_tile][y_tile][side].size() == size_t(type->num_pins));
+                            VTR_ASSERT((indices[IPIN][x_tile][y_tile][side].size() == size_t(type->num_pins))
+                                       || (0 == indices[IPIN][x_tile][y_tile][side].size()));
+                            VTR_ASSERT((indices[OPIN][x_tile][y_tile][side].size() == size_t(type->num_pins))
+                                       || (0 == indices[OPIN][x_tile][y_tile][side].size()));
                         }
                     }
                 }
