@@ -71,13 +71,14 @@ inline float get_single_rr_cong_cost(int inode, float pres_fac) {
 
     auto cost_index = device_ctx.rr_nodes[inode].cost_index();
 
-    float cost = device_ctx.rr_indexed_data[cost_index].base_cost * route_ctx.rr_node_route_inf[inode].acc_cost;
+    float cost = device_ctx.rr_indexed_data[cost_index].base_cost
+                 * route_ctx.rr_node_route_inf[inode].acc_cost;
 
-    int occ = route_ctx.rr_node_route_inf[inode].occ();
-    int capacity = device_ctx.rr_nodes[inode].capacity();
-
-    if (occ >= capacity) {
-        cost *= (1. + pres_fac * (occ + 1 - capacity));
+    // Calculate pres_cost on the fly. Need to make sure to use the 
+    // float precision to match the previous data field and results.
+    int overuse = route_ctx.rr_node_route_inf[inode].occ() - device_ctx.rr_nodes[inode].capacity();
+    if (overuse >= 0) {
+        cost *= float(1. + (overuse + 1) * pres_fac);
     }
 
     return cost;

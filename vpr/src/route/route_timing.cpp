@@ -429,16 +429,10 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
         bool routing_is_feasible = feasible_routing();
         float est_success_iteration = routing_predictor.estimate_success_iteration();
 
-        //Update pres_fac and resource costs
-        std::unordered_set<int> overused_nodes;
+        //Update accumulated congestion costs (acc_cost)
         if (itry == 1) {
-            pres_fac = update_pres_fac(router_opts.initial_pres_fac);
             pathfinder_incremental_update_acc_cost(0., rerouted_nets, overused_local_nodes, overuse_info); /* Acc_fac=0 for first iter. */
         } else {
-            pres_fac *= router_opts.pres_fac_mult;
-
-            /* Avoid overflow for high iteration counts, even if acc_cost is big */
-            pres_fac = update_pres_fac(std::min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5)));
             pathfinder_incremental_update_acc_cost(router_opts.acc_fac, rerouted_nets, overused_local_nodes, overuse_info);
         }
 
@@ -470,7 +464,15 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
         float iter_elapsed_time = iter_cumm_time - prev_iter_cumm_time;
 
         //Output progress
-        print_route_status(itry, iter_elapsed_time, pres_fac, num_net_bounding_boxes_updated, router_iteration_stats, overuse_info, wirelength_info, timing_info, est_success_iteration);
+        print_route_status(itry,
+                           iter_elapsed_time,
+                           pres_fac,
+                           num_net_bounding_boxes_updated,
+                           router_iteration_stats,
+                           overuse_info,
+                           wirelength_info,
+                           timing_info,
+                           est_success_iteration);
 
         prev_iter_cumm_time = iter_cumm_time;
 
@@ -587,7 +589,15 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
             router_congestion_mode = RouterCongestionMode::CONFLICTED;
         }
 
-        // TO delete
+        //Update present congestion cost factor (pres_fac)
+        if (itry == 1) {
+            pres_fac = update_pres_fac(router_opts.initial_pres_fac);
+        } else {
+            pres_fac *= router_opts.pres_fac_mult;
+
+            /* Avoid overflow for high iteration counts, even if acc_cost is big */
+            pres_fac = update_pres_fac(std::min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5)));
+        }
 
         if (router_congestion_mode == RouterCongestionMode::CONFLICTED) {
             //The design appears to have routing conflicts which are difficult to resolve:
