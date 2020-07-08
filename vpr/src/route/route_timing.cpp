@@ -989,6 +989,8 @@ bool timing_driven_route_net(ConnectionRouter& router,
 
     VTR_LOGV_DEBUG(f_router_debug, "Routing Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
 
+    std::set<int> route_tree_nodes;
+
     t_rt_node* rt_root;
     if(router_opts.routing_budgets_algorithm == YOYO) {
         rt_root = setup_routing_resources(itry,
@@ -1011,8 +1013,6 @@ bool timing_driven_route_net(ConnectionRouter& router,
     }
 
     bool high_fanout = is_high_fanout(num_sinks, router_opts.high_fanout_threshold);
-
-    std::set<int> route_tree_nodes;
     
     SpatialRouteTreeLookup spatial_route_tree_lookup;
     if (high_fanout) {
@@ -1022,6 +1022,13 @@ bool timing_driven_route_net(ConnectionRouter& router,
     // after this point the route tree is correct
     // remaining_targets from this point on are the **pin indices** that have yet to be routed
     auto& remaining_targets = connections_inf.get_remaining_targets();
+
+    /* TODO: This can be initialized in setup_routing_resources
+     * Add the route tree to the route tree nodes set */
+
+    if (router_opts.routing_budgets_algorithm == YOYO) {
+        add_route_tree_to_set(rt_root, &route_tree_nodes);
+    }
 
     // calculate criticality of remaining target pins
     for (int ipin : remaining_targets) {

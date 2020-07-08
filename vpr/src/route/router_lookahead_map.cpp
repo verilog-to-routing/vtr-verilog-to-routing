@@ -272,26 +272,63 @@ float MapLookahead::get_expected_cost(int current_node, int target_node, const t
 }
 
 float MapLookahead::get_expected_delay(int inode, int target_node, const t_conn_cost_params& params, float R_upstream) const {
-    // TODO: This should return an actualy delay
-    // For now supress warnings
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& rr_graph = device_ctx.rr_nodes;
 
-    (void) inode;
-    (void) target_node;
-    (void) params;
-    (void) R_upstream;
-    
-    return 0.;
+    e_rr_type from_type = rr_graph.node_type(RRNodeId(inode));
+
+    if (inode == CHANX || from_type == CHANY) {
+        int delta_x, delta_y;
+        get_xy_deltas(RRNodeId(inode), RRNodeId(target_node), &delta_x, &delta_y);
+        delta_x = abs(delta_x);
+        delta_y = abs(delta_y);
+        //When estimating costs from a wire, we directly look-up the result in the wire lookahead (f_wire_cost_map)
+
+        int from_cost_index = rr_graph.node_cost_index(RRNodeId(inode));
+        int from_seg_index = device_ctx.rr_indexed_data[from_cost_index].seg_index;
+
+        VTR_ASSERT(from_seg_index >= 0);
+
+        /* now get the expected cost from our lookahead map */
+        Cost_Entry cost_entry = get_wire_cost_entry(from_type, from_seg_index, delta_x, delta_y);
+
+        float expected_delay = cost_entry.delay;
+
+        return params.criticality * expected_delay;
+    } else if (from_type == IPIN) { /* Change if you're allowing route-throughs */
+        return (device_ctx.rr_indexed_data[SINK_COST_INDEX].base_cost);
+    } else {
+        return 0.;
+    }
 }
 
 float MapLookahead::get_expected_cong(int inode, int target_node, const t_conn_cost_params& params, float R_upstream) const {
-    // TODO: Should return actual collected expected cong
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& rr_graph = device_ctx.rr_nodes;
 
-    (void) inode;
-    (void) target_node;
-    (void) params;
-    (void) R_upstream;
+    e_rr_type from_type = rr_graph.node_type(RRNodeId(inode));
 
-    return 0.;
+    if (inode == CHANX || from_type == CHANY) {
+        int delta_x, delta_y;
+        get_xy_deltas(RRNodeId(inode), RRNodeId(target_node), &delta_x, &delta_y);
+        delta_x = abs(delta_x);
+        delta_y = abs(delta_y);
+        //When estimating costs from a wire, we directly look-up the result in the wire lookahead (f_wire_cost_map)
+
+        int from_cost_index = rr_graph.node_cost_index(RRNodeId(inode));
+        int from_seg_index = device_ctx.rr_indexed_data[from_cost_index].seg_index;
+
+        VTR_ASSERT(from_seg_index >= 0);
+
+        /* now get the expected cost from our lookahead map */
+        Cost_Entry cost_entry = get_wire_cost_entry(from_type, from_seg_index, delta_x, delta_y);
+
+        float expected_congestion = cost_entry.congestion;
+
+        return (1.0 - params.criticality) * expected_congestion;
+    } else {
+        return 0.;
+    }
 }
 
 void MapLookahead::compute(const std::vector<t_segment_inf>& segment_inf) {

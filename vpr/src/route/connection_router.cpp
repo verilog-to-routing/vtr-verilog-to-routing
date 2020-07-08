@@ -41,7 +41,7 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_common_setup(
     const t_conn_cost_params cost_params,
     t_bb bounding_box,
     std::set<int>* route_tree_nodes) {
-    bool run_rcv = cost_params.delay_budget && route_tree_nodes == nullptr;
+    bool run_rcv = cost_params.delay_budget && route_tree_nodes != nullptr;
 
     //Re-add route nodes from the existing route tree to the heap.
     //They need to be repushed onto the heap since each node's cost is target specific.
@@ -449,6 +449,9 @@ bool ConnectionRouter<Heap>::node_exists_in_route_tree(t_heap* current,
                                                         RRNodeId& to_node,
                                                         const t_conn_cost_params& cost_params,
                                                         std::set<int>* route_tree_nodes) {
+    // Prevent seg faults for searching path data structures that haven't been created yet
+    if (!current->path_data) return false;
+
     // First check the smaller current path, the ordering of these checks might effect runtime slightly
     for (auto& node : current->path_data->path_rr) {
         if ((size_t)node == (size_t)to_node) {
@@ -459,7 +462,7 @@ bool ConnectionRouter<Heap>::node_exists_in_route_tree(t_heap* current,
     // Search through route tree set for nodes existance
     auto node_exists_in_route_tree = route_tree_nodes->find((size_t) to_node);
     
-    if (node_exists_in_route_tree == route_tree_nodes->end()) {
+    if (node_exists_in_route_tree != route_tree_nodes->end()) {
         return true;
     }
 
@@ -560,10 +563,18 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
                                                        const int target_node,
                                                        bool run_rcv) {
     t_heap next;
+    
+    if (run_rcv) next.path_data = new t_heap_path;
 
     //Costs initialized to current
     next.cost = std::numeric_limits<float>::infinity(); //Not used directly
     next.backward_path_cost = current->backward_path_cost;
+
+    if (run_rcv && current->path_data) {
+        next.path_data->backward_cong = current->path_data->backward_cong;
+        next.path_data->backward_delay = current->path_data->backward_delay;
+    }
+
     next.R_upstream = current->R_upstream;
 
     VTR_LOGV_DEBUG(router_debug_, "      Expanding to node %d (%s)\n", to_node, describe_rr_node(to_node).c_str());
@@ -601,8 +612,12 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
         next_ptr->set_prev_edge(from_edge);
         next_ptr->set_prev_node(from_node);
 
-        if (run_rcv) {
-            next_ptr->path_data = current->path_data;
+        if (run_rcv && current->path_data) {
+            next_ptr->path_data->backward_cong = next.path_data->backward_cong;
+            next_ptr->path_data->backward_delay = next.path_data->backward_delay;
+
+            next_ptr->path_data->path_rr = current->path_data->path_rr;
+            next_ptr->path_data->edge = current->path_data->path_rr;
             next_ptr->path_data->path_rr.emplace_back(from_node);
             next_ptr->path_data->edge.emplace_back((size_t) from_edge);
         }
@@ -730,8 +745,8 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
         float expected_delay = router_lookahead_.get_expected_delay(to_node, target_node, cost_params, to->R_upstream);
         float expected_cong = router_lookahead_.get_expected_cong(to_node, target_node, cost_params, to->R_upstream);
 
-        to->path_data->backward_delay += Tdel;
-        to->path_data->backward_cong += get_rr_cong_cost(to_node);
+        to->path_data->backward_delay += cost_params.criticality * Tdel;
+        to->path_data->backward_cong += (1. - cost_params.criticality) * get_rr_cong_cost(to_node);
         float expected_total_delay_cost; // = new_costs.backward_cost + cost_params.astar_fac * expected_cost;
         float expected_total_cong_cost;
 
@@ -748,7 +763,7 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
         expected_total_delay_cost += (delay_budget->short_path_criticality + cost_params.criticality) * std::max(0.f, delay_budget->target_delay - expected_total_delay);
         expected_total_delay_cost += std::pow(std::max(0.f, expected_total_delay - delay_budget->max_delay), 2) / 100e-12;
         expected_total_delay_cost += std::pow(std::max(0.f, delay_budget->min_delay - expected_total_delay), 2) / 100e-12;
-        expected_total_cong_cost = (1. - cost_params.criticality) * expected_total_cong;
+        expected_total_cong_cost = expected_total_cong;
         total_cost = expected_total_delay_cost + expected_total_cong_cost;
     } else {
         //Update total cost

@@ -122,9 +122,9 @@ class HeapStorage {
     /* For keeping track of the sudo malloc memory for the heap*/
     vtr::t_chunk heap_ch_;
 
-    // For the smaller path struct
-    vtr::t_chunk heap_ch_path_;
-    t_heap_path* heap_path_free_head_;
+    // // For the smaller path struct
+    // vtr::t_chunk heap_ch_path_;
+    // t_heap_path* heap_path_free_head_;
 
     t_heap* heap_free_head_;
     size_t num_heap_allocated_;

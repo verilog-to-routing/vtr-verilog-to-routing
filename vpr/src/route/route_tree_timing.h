@@ -30,6 +30,8 @@ void update_net_delays_from_route_tree(float* net_delay,
 void load_route_tree_Tdel(t_rt_node* rt_root, float Tarrival);
 void load_route_tree_rr_route_inf(t_rt_node* root);
 
+void add_route_tree_to_set(t_rt_node* rt_node, std::set<int>* route_tree_nodes);
+
 t_rt_node* init_route_tree_to_source_no_net(int inode);
 
 void add_route_tree_to_rr_node_lookup(t_rt_node* node);

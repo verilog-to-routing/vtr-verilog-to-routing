@@ -6,8 +6,7 @@
 #include "vpr_types.h"
 
 HeapStorage::HeapStorage()
-    : heap_path_free_head_(nullptr)
-    , heap_free_head_(nullptr)
+    : heap_free_head_(nullptr)
     , num_heap_allocated_(0) {}
 
 t_heap*
@@ -54,11 +53,10 @@ HeapStorage::alloc(bool init_data_structs) {
     temp_ptr->index = OPEN;
 
     if (init_data_structs) {
-        if (heap_path_free_head_ == nullptr) {
-            heap_path_free_head_ = vtr::chunk_new<t_heap_path>(&heap_ch_path_);
-        }
-        temp_ptr->path_data = heap_path_free_head_;
-        heap_path_free_head_ = nullptr;
+        // if (heap_path_free_head_ == nullptr) {
+        //     heap_path_free_head_ = vtr::chunk_new<t_heap_path>(&heap_ch_path_);
+        // }
+        temp_ptr->path_data = new t_heap_path;
 
         temp_ptr->path_data->path_rr.clear();
         temp_ptr->path_data->edge.clear();
@@ -93,8 +91,7 @@ void HeapStorage::free_all_memory() {
             curr = curr->next_heap_item();
 
             if (tmp->path_data != nullptr) {
-                vtr::chunk_delete(tmp->path_data, &heap_ch_path_);
-                free_path_heap = true;
+                delete tmp->path_data;
             }
 
             vtr::chunk_delete(tmp, &heap_ch_);
@@ -104,7 +101,6 @@ void HeapStorage::free_all_memory() {
     }
 
     /*free the memory chunks that were used by heap and linked f pointer */
-    free_chunk_memory(&heap_ch_path_);
     free_chunk_memory(&heap_ch_);
 }
 

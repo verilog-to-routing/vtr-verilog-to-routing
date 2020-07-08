@@ -421,6 +421,20 @@ static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bo
     return rt_node;
 }
 
+// Do a depth first addition of a route tree to the set
+void add_route_tree_to_set(t_rt_node* rt_node, std::set<int>* route_tree_nodes) {
+    route_tree_nodes->insert(rt_node->inode);
+
+    t_linked_rt_edge* next_edge = rt_node->u.child_list;
+
+    while (next_edge != nullptr) {
+        t_rt_node* node = next_edge->child;
+        add_route_tree_to_set(node, route_tree_nodes);
+
+        next_edge = next_edge->next;
+    }
+}
+
 void load_new_subtree_R_upstream(t_rt_node* rt_node) {
     /* Sets the R_upstream values of all the nodes in the new path to the
      * correct value by traversing down to SINK from the start of the new path. */
