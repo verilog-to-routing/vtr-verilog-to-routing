@@ -578,6 +578,10 @@ void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
+    /* Ensure we have a clean start with void net remapping information */
+    cluster_ctx.post_routing_clb_pin_nets.clear();
+    cluster_ctx.pre_routing_net_pin_mapping.clear();
+
     cluster_ctx.clb_nlist = read_netlist(vpr_setup.FileNameOpts.NetFile.c_str(),
                                          &arch,
                                          vpr_setup.FileNameOpts.verify_file_digests,
