@@ -341,6 +341,9 @@ size_t SoftmaxAgent::propose_action(){
     //VTR_LOG("@@@@@%f,%f,%f,%f,%f,%f,%f\n",cumm_action_prob_[0],cumm_action_prob_[1],cumm_action_prob_[2],cumm_action_prob_[3],cumm_action_prob_[4],cumm_action_prob_[5],cumm_action_prob_[6]);
     auto itr = std::lower_bound(cumm_action_prob_.begin(), cumm_action_prob_.end(), p);
     action = itr - cumm_action_prob_.begin();
+    //To take care that the last element in cumm_action_prob_ might be less than 1 by a small value
+    if(action == k_)
+        action = k_-1;
     VTR_ASSERT(action < k_);
 
     last_action_ = action;
