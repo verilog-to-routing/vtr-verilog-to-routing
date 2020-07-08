@@ -51,12 +51,14 @@ void EpsilonGreedyAgent::set_step(float gamma, int move_lim) {
 
 void EpsilonGreedyAgent::process_outcome(double reward) {
     ++n_[last_action_];
-    if(reward_num == 1 || reward_num == 3 ){
+    if(reward_num == 1 || reward_num == 4 ){
         reward = reward / time_elapsed_per_move[last_action_];
     }
-    else if(reward_num == 2 || reward_num == 4 ){
+    else if(reward_num == 2 || reward_num == 5 ){
         reward = reward / time_elapsed_per_accepted_move[last_action_];
     }
+    else
+        reward = reward / time_elapsed[last_action_];
     //Determine step size
     float step = 0.;
     if (exp_alpha_ < 0.) {
