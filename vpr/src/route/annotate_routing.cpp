@@ -24,7 +24,7 @@ vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const DeviceContext& d
     vtr::ScopedStartFinishTimer timer("Annotating rr_node with routed nets");
 
     vtr::vector<RRNodeId, ClusterNetId> rr_node_nets;
-    rr_node_nets.resize(device_ctx.rr_nodes.size());
+    rr_node_nets.resize(device_ctx.rr_nodes.size(), ClusterNetId::INVALID());
 
     for (auto net_id : clustering_ctx.clb_nlist.nets()) {
         if (true == clustering_ctx.clb_nlist.net_is_ignored(net_id)) {

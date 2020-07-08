@@ -26,12 +26,12 @@
  *     are properly set in VPR!!!
  *******************************************************************/
 static std::vector<e_side> find_physical_tile_pin_side(t_physical_tile_type_ptr physical_tile,
-                                                       const int& logical_pin) {
+                                                       const int& physical_pin) {
     std::vector<e_side> pin_sides;
     for (const e_side& side_cand : {TOP, RIGHT, BOTTOM, LEFT}) {
-        int pin_width_offset = physical_tile->pin_width_offset[logical_pin];
-        int pin_height_offset = physical_tile->pin_height_offset[logical_pin];
-        if (true == physical_tile->pinloc[pin_width_offset][pin_height_offset][side_cand][logical_pin]) {
+        int pin_width_offset = physical_tile->pin_width_offset[physical_pin];
+        int pin_height_offset = physical_tile->pin_height_offset[physical_pin];
+        if (true == physical_tile->pinloc[pin_width_offset][pin_height_offset][side_cand][physical_pin]) {
             pin_sides.push_back(side_cand);
         }
     }
@@ -117,6 +117,8 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
             }
         }
 
+        ClusterNetId routing_net_id = ClusterNetId::INVALID();
+        short valid_routing_net_cnt = 0;
         for (const e_side& pin_side : pin_sides) {
             /* Find the net mapped to this pin in routing results */
             const int& rr_node = get_rr_node_index(device_ctx.rr_node_indices,
@@ -129,57 +131,82 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
             }
             VTR_ASSERT((size_t)rr_node < device_ctx.rr_nodes.size());
 
-            /* Get the cluster net id which has been mapped to this net */
-            ClusterNetId routing_net_id = rr_node_nets[RRNodeId(rr_node)];
-
-            /* Find the net mapped to this pin in clustering results*/
-            ClusterNetId cluster_net_id = clustering_ctx.clb_nlist.block_net(blk_id, pb_type_pin);
-
-            /* Do NOT Ignore those net have never been routed!
-             * Net mapping is not reserved to any pin 
-             * Router will still swap these net mapping
-            if ((true == clustering_ctx.clb_nlist.valid_net_id(cluster_net_id))
-                && (true == clustering_ctx.clb_nlist.net_is_ignored(cluster_net_id))) {
-                continue;
-            }
+            /* Get the cluster net id which has been mapped to this net
+             * In general, there is only one valid rr_node among all the sides.
+             * However, we have an exception in the Stratix-IV arch modeling,
+             * where a pb_pin may exist in two different sides but
+             * router will only map to 1 rr_node 
+             * Therefore, it is better to compare the routing nets
+             * for all the sides and pick
+             * - The unique valid net id (others should be all invalid)
+             *   assume that this pin is used by router
+             * - A invalid net id (others should be all invalid as well)
+             *   assume that this pin is not used by router
              */
-
-            /* Ignore used in local cluster only, reserved one CLB pin */
-            if ((true == clustering_ctx.clb_nlist.valid_net_id(cluster_net_id))
-                && (0 == clustering_ctx.clb_nlist.net_sinks(cluster_net_id).size())) {
-                continue;
+            if (rr_node_nets[RRNodeId(rr_node)]) {
+                if (routing_net_id) {
+                    if (routing_net_id != rr_node_nets[RRNodeId(rr_node)]) {
+                        VTR_LOG_ERROR("Pin '%s' is mapped to two nets: '%s' and '%s'\n",
+                                      pb_graph_pin->to_string().c_str(),
+                                      clustering_ctx.clb_nlist.net_name(routing_net_id).c_str(),
+                                      clustering_ctx.clb_nlist.net_name(rr_node_nets[RRNodeId(rr_node)]).c_str());
+                    }
+                    VTR_ASSERT(routing_net_id == rr_node_nets[RRNodeId(rr_node)]);
+                }
+                routing_net_id = rr_node_nets[RRNodeId(rr_node)];
+                valid_routing_net_cnt++;
             }
-
-            /* If the net from the routing results matches the net from the packing results,
-             * nothing to be changed. Move on to the next net.
-             */
-            if (routing_net_id == cluster_net_id) {
-                continue;
-            }
-
-            /* Update the clustering context with net modification */
-            clustering_ctx.post_routing_clb_pin_nets[blk_id][pb_graph_pin->pin_count_in_cluster] = routing_net_id;
-
-            std::string routing_net_name("unmapped");
-            if (true == clustering_ctx.clb_nlist.valid_net_id(routing_net_id)) {
-                routing_net_name = clustering_ctx.clb_nlist.net_name(routing_net_id);
-            }
-
-            std::string cluster_net_name("unmapped");
-            if (true == clustering_ctx.clb_nlist.valid_net_id(cluster_net_id)) {
-                cluster_net_name = clustering_ctx.clb_nlist.net_name(cluster_net_id);
-            }
-
-            VTR_LOGV(verbose,
-                     "Fixed up net '%s' mapping mismatch at clustered block '%s' pin 'grid[%ld][%ld].%s.%s[%d]' (was net '%s')\n",
-                     routing_net_name.c_str(),
-                     clustering_ctx.clb_nlist.block_pb(blk_id)->name,
-                     grid_coord.x(), grid_coord.y(),
-                     clustering_ctx.clb_nlist.block_pb(blk_id)->pb_graph_node->pb_type->name,
-                     get_pb_graph_node_pin_from_block_pin(blk_id, physical_pin)->port->name,
-                     get_pb_graph_node_pin_from_block_pin(blk_id, physical_pin)->pin_number,
-                     cluster_net_name.c_str());
         }
+        if (!((0 == valid_routing_net_cnt) || (1 == valid_routing_net_cnt)))
+            VTR_ASSERT((0 == valid_routing_net_cnt) || (1 == valid_routing_net_cnt));
+
+        /* Find the net mapped to this pin in clustering results*/
+        ClusterNetId cluster_net_id = clustering_ctx.clb_nlist.block_net(blk_id, pb_type_pin);
+
+        /* Do NOT Ignore those net have never been routed!
+         * Net mapping is not reserved to any pin 
+         * Router will still swap these net mapping
+        if ((true == clustering_ctx.clb_nlist.valid_net_id(cluster_net_id))
+            && (true == clustering_ctx.clb_nlist.net_is_ignored(cluster_net_id))) {
+            continue;
+        }
+         */
+
+        /* Ignore used in local cluster only, reserved one CLB pin */
+        if ((true == clustering_ctx.clb_nlist.valid_net_id(cluster_net_id))
+            && (0 == clustering_ctx.clb_nlist.net_sinks(cluster_net_id).size())) {
+            continue;
+        }
+
+        /* If the net from the routing results matches the net from the packing results,
+         * nothing to be changed. Move on to the next net.
+         */
+        if (routing_net_id == cluster_net_id) {
+            continue;
+        }
+
+        /* Update the clustering context with net modification */
+        clustering_ctx.post_routing_clb_pin_nets[blk_id][pb_graph_pin->pin_count_in_cluster] = routing_net_id;
+
+        std::string routing_net_name("unmapped");
+        if (true == clustering_ctx.clb_nlist.valid_net_id(routing_net_id)) {
+            routing_net_name = clustering_ctx.clb_nlist.net_name(routing_net_id);
+        }
+
+        std::string cluster_net_name("unmapped");
+        if (true == clustering_ctx.clb_nlist.valid_net_id(cluster_net_id)) {
+            cluster_net_name = clustering_ctx.clb_nlist.net_name(cluster_net_id);
+        }
+
+        VTR_LOGV(verbose,
+                 "Fixed up net '%s' mapping mismatch at clustered block '%s' pin 'grid[%ld][%ld].%s.%s[%d]' (was net '%s')\n",
+                 routing_net_name.c_str(),
+                 clustering_ctx.clb_nlist.block_pb(blk_id)->name,
+                 grid_coord.x(), grid_coord.y(),
+                 clustering_ctx.clb_nlist.block_pb(blk_id)->pb_graph_node->pb_type->name,
+                 get_pb_graph_node_pin_from_block_pin(blk_id, physical_pin)->port->name,
+                 get_pb_graph_node_pin_from_block_pin(blk_id, physical_pin)->pin_number,
+                 cluster_net_name.c_str());
     }
 }
 
