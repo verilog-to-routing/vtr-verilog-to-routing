@@ -166,10 +166,10 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
         /* Do NOT Ignore those net have never been routed!
          * Net mapping is not reserved to any pin 
          * Router will still swap these net mapping
-        if ((true == clustering_ctx.clb_nlist.valid_net_id(cluster_net_id))
-            && (true == clustering_ctx.clb_nlist.net_is_ignored(cluster_net_id))) {
-            continue;
-        }
+         * if ((true == clustering_ctx.clb_nlist.valid_net_id(cluster_net_id))
+         *     && (true == clustering_ctx.clb_nlist.net_is_ignored(cluster_net_id))) {
+         *     continue;
+         * }
          */
 
         /* Ignore used in local cluster only, reserved one CLB pin */

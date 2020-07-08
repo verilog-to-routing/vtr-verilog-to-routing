@@ -230,7 +230,7 @@ struct ClusteringContext : public Context {
      *     Record the previous pin mapping for finding the correct pin index during timing analysis
      */
     std::map<ClusterBlockId, std::map<int, ClusterNetId>> post_routing_clb_pin_nets;
-    std::map<ClusterBlockId, std::map<int, int>> pre_routing_net_pin_mapping; 
+    std::map<ClusterBlockId, std::map<int, int>> pre_routing_net_pin_mapping;
 };
 
 //State relating to placement
