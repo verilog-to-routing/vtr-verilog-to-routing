@@ -1503,6 +1503,9 @@ static void build_rr_sinks_sources(const int i,
 
                             //Note that we store the grid tile location and side where the pin is located,
                             //which greatly simplifies the drawing code
+                            //For those pins located on multiple sides, we only allocate one rr_node and 
+                            //store the grid tile location and side for the first pin we find
+                            //As such, multipler driver problem can be avoided.
                             L_rr_node[inode].set_coordinates(i + width_offset, j + height_offset, i + width_offset, j + height_offset);
                             L_rr_node[inode].set_side(side);
 

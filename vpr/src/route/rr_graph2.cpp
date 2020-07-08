@@ -1179,6 +1179,11 @@ static void load_block_rr_indices(const DeviceGrid& grid,
                     for (int height_offset = 0; height_offset < type->height; ++height_offset) {
                         int y_tile = y + height_offset;
                         for (e_side side : SIDES) {
+                            //Note that the fast look-up stores all the indices for the pins on each side
+                            //It has a fixed size (either 0 or the number of pins)
+                            //Case 0 pins: the side is skipped as no pins are located on it
+                            //Case number of pins: there are pins on this side 
+                            //and data query can be applied any pin id on this side
                             VTR_ASSERT((indices[IPIN][x_tile][y_tile][side].size() == size_t(type->num_pins))
                                        || (0 == indices[IPIN][x_tile][y_tile][side].size()));
                             VTR_ASSERT((indices[OPIN][x_tile][y_tile][side].size() == size_t(type->num_pins))
