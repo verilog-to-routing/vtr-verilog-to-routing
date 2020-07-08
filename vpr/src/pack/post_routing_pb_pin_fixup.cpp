@@ -573,6 +573,7 @@ void sync_netlists_to_routing(const DeviceContext& device_ctx,
 
     /* Reset the database for post-routing clb net mapping */
     clustering_ctx.post_routing_clb_pin_nets.clear();
+    clustering_ctx.pre_routing_net_pin_mapping.clear();
 
     /* Create net-to-rr_node mapping */
     vtr::vector<RRNodeId, ClusterNetId> rr_node_nets = annotate_rr_node_nets(device_ctx,
