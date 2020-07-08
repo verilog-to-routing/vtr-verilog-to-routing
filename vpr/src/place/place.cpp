@@ -1616,7 +1616,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         move_generator.process_outcome(-1*delta_c);
         
     }
-    else if(reward_num == 2 || reward_num == 1){
+    else if(reward_num == 2 || reward_num == 1 || reward_num ==3 ){
         if(delta_c < 0){
             move_generator.process_outcome(-1*delta_c);
         }
