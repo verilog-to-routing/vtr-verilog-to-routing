@@ -38,7 +38,7 @@ vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const DeviceContext& d
         t_trace* tptr = routing_ctx.trace[net_id].head;
         while (tptr != nullptr) {
             const RRNodeId& rr_node = RRNodeId(tptr->index);
-            /* Ignore source and sink nodes, they are the common node multiple starting and ending points */ 
+            /* Ignore source and sink nodes, they are the common node multiple starting and ending points */
             if ((SOURCE != device_ctx.rr_nodes.node_type(rr_node))
                 && (SINK != device_ctx.rr_nodes.node_type(rr_node))) {
                 rr_node_nets[rr_node] = net_id;
