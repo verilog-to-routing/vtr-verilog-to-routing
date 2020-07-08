@@ -587,9 +587,36 @@ std::tuple<ClusterNetId, int, int> find_pb_route_clb_input_net_pin(ClusterBlockI
     //Walk back from the sink to the CLB input pin
     int curr_pb_pin_id = sink_pb_pin_id;
     int next_pb_pin_id = pb_routes[curr_pb_pin_id].driver_pb_pin_id;
+
+/* TODO: REMOVE AFTER DEBUGGING IS FINISHED
+*/
+    VTR_LOG("Backtracing clb '%lu' pb_route for net '%s' at pin '%s'...\n",
+            size_t(clb),
+            g_vpr_ctx.atom().nlist.net_name(pb_routes[sink_pb_pin_id].atom_net_id).c_str(),
+            pb_routes[curr_pb_pin_id].pb_graph_pin->to_string().c_str());
+
     while (next_pb_pin_id >= 0) {
         //Advance back towards the input
         curr_pb_pin_id = next_pb_pin_id;
+
+/* TODO: REMOVE AFTER DEBUGGING IS FINISHED
+        if (0 < pb_routes.count(next_pb_pin_id)) {
+            VTR_LOG("Backtracing clb '%lu' pb_route for net '%s' at pin '%s'...\n",
+                    size_t(clb),
+                    g_vpr_ctx.atom().nlist.net_name(pb_routes[sink_pb_pin_id].atom_net_id).c_str(),
+                    pb_routes[next_pb_pin_id].pb_graph_pin->to_string().c_str());
+        }
+
+        if (0 == pb_routes.count(next_pb_pin_id)) {
+            VTR_LOG("Invalid pb_routes[%d]!\n", next_pb_pin_id);
+        }
+
+        if (pb_routes[next_pb_pin_id].atom_net_id != pb_routes[sink_pb_pin_id].atom_net_id) {
+            VTR_LOG("Next pb_pin net '%s' does NOT match sink_pin net '%s'!\n",
+                    g_vpr_ctx.atom().nlist.net_name(pb_routes[next_pb_pin_id].atom_net_id).c_str(),
+                    g_vpr_ctx.atom().nlist.net_name(pb_routes[sink_pb_pin_id].atom_net_id).c_str());
+        }
+*/
 
         VTR_ASSERT_MSG(pb_routes[next_pb_pin_id].atom_net_id == pb_routes[sink_pb_pin_id].atom_net_id,
                        "Connected pb_routes should connect the same net");
@@ -606,8 +633,26 @@ std::tuple<ClusterNetId, int, int> find_pb_route_clb_input_net_pin(ClusterBlockI
     //curr_pb_pin should be a top-level CLB input
     ClusterNetId clb_net_idx = cluster_ctx.clb_nlist.block_net(clb, curr_pb_pin_id);
     int clb_net_pin_idx = cluster_ctx.clb_nlist.block_pin_net_index(clb, curr_pb_pin_id);
-    VTR_ASSERT(clb_net_idx != ClusterNetId::INVALID());
+
+    /* The net could be remapped, we should verify the remapped location */
+    auto remapped_clb = cluster_ctx.post_routing_clb_pin_nets.find(clb);
+    if (remapped_clb != cluster_ctx.post_routing_clb_pin_nets.end()) {
+        auto remapped_result = remapped_clb->second.find(curr_pb_pin_id);
+        if ( (remapped_result != remapped_clb->second.end())
+           && (remapped_result->second != clb_net_idx)) {
+            clb_net_idx = remapped_result->second; 
+            VTR_ASSERT(clb_net_idx);
+            clb_net_pin_idx = cluster_ctx.clb_nlist.block_pin_net_index(clb, cluster_ctx.pre_routing_net_pin_mapping.at(clb).at(curr_pb_pin_id));
+        }
+    }
     VTR_ASSERT(clb_net_pin_idx >= 0);
+
+/* TODO: REMOVE AFTER DEBUGGING IS FINISHED
+*/
+    VTR_LOG("Found clb '%lu' net '%s' at pin '%s'...\n",
+            size_t(clb),
+            cluster_ctx.clb_nlist.net_name(clb_net_idx).c_str(),
+            pb_routes[curr_pb_pin_id].pb_graph_pin->to_string().c_str());
 
     return std::tuple<ClusterNetId, int, int>(clb_net_idx, curr_pb_pin_id, clb_net_pin_idx);
 }

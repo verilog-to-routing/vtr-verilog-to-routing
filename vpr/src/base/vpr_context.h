@@ -222,8 +222,15 @@ struct ClusteringContext : public Context {
     /* New netlist class derived from Netlist */
     ClusteredNetlist clb_nlist;
 
-    /* Database for nets of each clb block pin after routing stage */
+    /* Database for nets of each clb block pin after routing stage
+     * - post_routing_clb_pin_nets:
+     *     mapping of pb_type pins to clustered net ids
+     * - pre_routing_net_pin_mapping:
+     *     a copy of mapping for current pb_route index to previous pb_route index
+     *     Record the previous pin mapping for finding the correct pin index during timing analysis
+     */
     std::map<ClusterBlockId, std::map<int, ClusterNetId>> post_routing_clb_pin_nets;
+    std::map<ClusterBlockId, std::map<int, int>> pre_routing_net_pin_mapping; 
 };
 
 //State relating to placement

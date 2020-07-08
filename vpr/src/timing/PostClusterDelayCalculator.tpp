@@ -260,6 +260,7 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
             if (net_id != ClusterNetId::INVALID() && sink_block_pin_index != -1 && sink_net_pin_index != -1) {
                 //Connection leaves the CLB
                 ClusterBlockId driver_block_id = cluster_ctx.clb_nlist.net_driver_block(net_id);
+                if (driver_block_id != clb_src_block)
                 VTR_ASSERT(driver_block_id == clb_src_block);
 
                 src_block_pin_index = cluster_ctx.clb_nlist.net_pin_logical_index(net_id, 0);

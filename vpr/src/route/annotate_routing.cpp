@@ -27,10 +27,10 @@ vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const DeviceContext& d
     rr_node_nets.resize(device_ctx.rr_nodes.size());
 
     for (auto net_id : clustering_ctx.clb_nlist.nets()) {
-        /* Ignore nets that are not routed */
         if (true == clustering_ctx.clb_nlist.net_is_ignored(net_id)) {
             continue;
         }
+
         /* Ignore used in local cluster only, reserved one CLB pin */
         if (false == clustering_ctx.clb_nlist.net_sinks(net_id).size()) {
             continue;
@@ -38,7 +38,7 @@ vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const DeviceContext& d
         t_trace* tptr = routing_ctx.trace[net_id].head;
         while (tptr != nullptr) {
             const RRNodeId& rr_node = RRNodeId(tptr->index);
-            /* Ignore source and sink nodes, they are the common node multiple starting and ending points */
+            /* Ignore source and sink nodes, they are the common node multiple starting and ending points */ 
             if ((SOURCE != device_ctx.rr_nodes.node_type(rr_node))
                 && (SINK != device_ctx.rr_nodes.node_type(rr_node))) {
                 rr_node_nets[rr_node] = net_id;
