@@ -370,7 +370,7 @@ void SoftmaxAgent::set_k(size_t k) {
     }
 }
 
-float my_exp (float x){return std::exp(x);}
+float my_exp (float x){return std::exp(std::max(1000000*x,float(3.0)));}
 
 void SoftmaxAgent::set_action_prob() {
     //float sum_q = accumulate(q_.begin(),q_.end(),0.0);
@@ -383,7 +383,8 @@ void SoftmaxAgent::set_action_prob() {
     else{
         for(size_t i=0; i<k_; ++i){
             //action_prob_[i] = std::max(std::min(q_[i]/sum_q, float(0.9)),float(0.02));
-            action_prob_[i] = std::max(std::min(exp_q_[i]/sum_q, float(0.9)),float(0.02));
+            //action_prob_[i] = std::max(std::min(exp_q_[i]/sum_q, float(0.7)),float(0.06));
+            action_prob_[i] = exp_q_[i]/sum_q;
             
         }
     }
