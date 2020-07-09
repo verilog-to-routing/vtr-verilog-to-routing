@@ -543,7 +543,7 @@ void try_place(const t_placer_opts& placer_opts,
         else{
             VTR_LOG("Using simple RL 'Softmax agent' for choosing move types\n");
             std::unique_ptr<SoftmaxAgent> karmed_bandit_agent;
-            karmed_bandit_agent = std::make_unique<SoftmaxAgent>(placer_opts.place_static_move_prob.size());
+            karmed_bandit_agent = std::make_unique<SoftmaxAgent>(placer_opts.place_static_move_prob.size()-1);
             karmed_bandit_agent->set_step(placer_opts.place_agent_gamma, move_lim);
             move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent);
         }

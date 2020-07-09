@@ -209,11 +209,11 @@ SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agen
 	std::unique_ptr<MoveGenerator> move_generator6;
 	move_generator6 = std::make_unique<CriticalUniformMoveGenerator>();
 	avail_moves.push_back(std::move(move_generator6));
-
+/*
 	std::unique_ptr<MoveGenerator> move_generator7;
 	move_generator7 = std::make_unique<CentroidMoveGenerator>();
 	avail_moves.push_back(std::move(move_generator7));
-    
+*/    
     karmed_bandit_agent = std::move(agent);
 }
 
@@ -244,11 +244,11 @@ SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>
 	std::unique_ptr<MoveGenerator> move_generator6;
 	move_generator6 = std::make_unique<CriticalUniformMoveGenerator>();
 	avail_moves.push_back(std::move(move_generator6));
-
+/*
 	std::unique_ptr<MoveGenerator> move_generator7;
 	move_generator7 = std::make_unique<CentroidMoveGenerator>();
 	avail_moves.push_back(std::move(move_generator7));
-    
+*/    
     karmed_bandit_agent = std::move(agent);
 }
 
@@ -353,6 +353,7 @@ size_t SoftmaxAgent::propose_action(){
 void SoftmaxAgent::set_k(size_t k) {
     k_ = k;
     q_ = std::vector<float>(k, 0.);
+    exp_q_ = std::vector<float>(k, 0.);
     n_ = std::vector<size_t>(k, 0);
     action_prob_ = std::vector<float>(k,0.);
 
@@ -369,14 +370,21 @@ void SoftmaxAgent::set_k(size_t k) {
     }
 }
 
+float my_exp (float x){return std::exp(x);}
+
 void SoftmaxAgent::set_action_prob() {
-    float sum_q = accumulate(q_.begin(),q_.end(),0.0);
+    //float sum_q = accumulate(q_.begin(),q_.end(),0.0);
+    std::transform(q_.begin(), q_.end(), exp_q_.begin(), my_exp);
+    float sum_q = accumulate(exp_q_.begin(), exp_q_.end(), 0.0);
+
     if(sum_q == 0.0){
         std::fill(action_prob_.begin(),action_prob_.end(),1.0/k_);        
     }
     else{
         for(size_t i=0; i<k_; ++i){
-            action_prob_[i] = std::max(std::min(q_[i]/sum_q, float(0.9)),float(0.02));
+            //action_prob_[i] = std::max(std::min(q_[i]/sum_q, float(0.9)),float(0.02));
+            action_prob_[i] = std::max(std::min(exp_q_[i]/sum_q, float(0.9)),float(0.02));
+            
         }
     }
 
