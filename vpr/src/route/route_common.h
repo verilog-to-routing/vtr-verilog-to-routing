@@ -71,15 +71,20 @@ inline float get_single_rr_cong_cost(int inode, float pres_fac) {
 
     auto cost_index = device_ctx.rr_nodes[inode].cost_index();
 
-    float cost = device_ctx.rr_indexed_data[cost_index].base_cost
-                 * route_ctx.rr_node_route_inf[inode].acc_cost;
-
     // Calculate pres_cost on the fly. Need to make sure to use the
     // float precision to match the previous data field and results.
     int overuse = route_ctx.rr_node_route_inf[inode].occ() - device_ctx.rr_nodes[inode].capacity();
+    float pres_cost;
     if (overuse >= 0) {
-        cost *= float(1. + (overuse + 1) * pres_fac);
+        pres_cost = 1. + (overuse + 1) * pres_fac;
+    } else {
+        pres_cost = 1.;
     }
+
+    // Calculate the congestion cost
+    float cost = device_ctx.rr_indexed_data[cost_index].base_cost
+                 * route_ctx.rr_node_route_inf[inode].acc_cost
+                 * pres_cost;
 
     VTR_ASSERT_DEBUG_MSG(
         cost == get_single_rr_cong_base_cost(inode) * get_single_rr_cong_base_cost(inode) * get_single_rr_cong_pres_cost(inode, pres_fac),
