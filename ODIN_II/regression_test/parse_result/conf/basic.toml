@@ -5,7 +5,8 @@
     default = -1
 
 ['errors']
-    regex = 'Error::(.*)'
+    # catch odin, lsan and valgrind errors
+    regex = '(?:Error::|.*SUMMARY:)(.*)'
     listing = true
 
 ['warnings']

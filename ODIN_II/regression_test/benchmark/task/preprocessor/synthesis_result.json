@@ -2228,7 +2228,9 @@
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "undef.v",
         "exit": 1,
-        "errors": [],
+        "errors": [
+            "LeakSanitizer: detected memory leaks"
+        ],
         "warnings": [],
         "expectation": [
             "NESTED_IFDEF this test is expected to pass, if it fails the `undef and `define functioning properly."
@@ -2256,7 +2258,9 @@
         "architecture": "k6_N10_40nm.xml",
         "verilog": "undef.v",
         "exit": 1,
-        "errors": [],
+        "errors": [
+            "LeakSanitizer: detected memory leaks"
+        ],
         "warnings": [],
         "expectation": [
             "NESTED_IFDEF this test is expected to pass, if it fails the `undef and `define functioning properly."
@@ -2284,7 +2288,9 @@
         "architecture": "k6_N10_mem32K_40nm.xml",
         "verilog": "undef.v",
         "exit": 1,
-        "errors": [],
+        "errors": [
+            "LeakSanitizer: detected memory leaks"
+        ],
         "warnings": [],
         "expectation": [
             "NESTED_IFDEF this test is expected to pass, if it fails the `undef and `define functioning properly."
@@ -2312,7 +2318,9 @@
         "architecture": "n/a",
         "verilog": "undef.v",
         "exit": 1,
-        "errors": [],
+        "errors": [
+            "LeakSanitizer: detected memory leaks"
+        ],
         "warnings": [],
         "expectation": [
             "NESTED_IFDEF this test is expected to pass, if it fails the `undef and `define functioning properly."

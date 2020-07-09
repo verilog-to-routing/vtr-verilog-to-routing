@@ -167,7 +167,12 @@ function display() {
 	LEAK_MESSAGE=""
 	
 	# check for valgrind leaks
-	LEAK_COUNT="$(cat ${LOG_FILE} | grep 'ERROR SUMMARY:' | awk '{print $4}' | grep -E '^\-?[0-9]+$')"
+	VALGRIND_LEAK_COUNT="$(cat ${LOG_FILE} | grep 'ERROR SUMMARY:' | awk '{print $4}' | grep -E '^\-?[0-9]+$')"
+	# check for LSAN leaks
+	LSAN_LEAK_COUNT="$(cat ${LOG_FILE} | grep 'SUMMARY: AddressSanitizer:' | awk '{print $7}' | grep -E '^\-?[0-9]+$')"
+
+	LEAK_COUNT=$(( VALGRIND_LEAK_COUNT + LSAN_LEAK_COUNT ))
+
 	case "_${LEAK_COUNT}" in
 		_|_0)	LEAK_MESSAGE=""
 		;;_1)	LEAK_MESSAGE="[${LEAK_COUNT}]Leak "
