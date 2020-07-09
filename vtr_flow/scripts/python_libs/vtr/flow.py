@@ -24,7 +24,10 @@ def run(architecture_file, circuit_file,
                  keep_intermediate_files=True,
                  keep_result_files=True,
                  min_hard_mult_size=3,
-                 check_equivalent=False):
+                 check_equivalent=False,
+                 min_hard_adder_size=1,
+                 use_old_abc_script=False,
+                 relax_W_factor=1.3):
     """
     Runs the VTR CAD flow to map the specificied circuit_file onto the target architecture_file
 
@@ -102,7 +105,8 @@ def run(architecture_file, circuit_file,
                      command_runner=command_runner, 
                      temp_dir=temp_dir,
                      odin_args=odin_args,
-                     min_hard_mult_size=min_hard_mult_size)
+                     min_hard_mult_size=min_hard_mult_size,
+                     min_hard_adder_size=min_hard_adder_size)
 
             next_stage_netlist = post_odin_netlist
 
@@ -118,7 +122,8 @@ def run(architecture_file, circuit_file,
                 command_runner=command_runner, 
                 temp_dir=temp_dir,
                 abc_args=abc_args,
-                keep_intermediate_files=keep_intermediate_files)
+                keep_intermediate_files=keep_intermediate_files,
+                use_old_abc_script=use_old_abc_script)
 
         next_stage_netlist = post_abc_netlist
 
@@ -178,6 +183,7 @@ def run(architecture_file, circuit_file,
             vtr.vpr.run_relax_W(architecture_copy, circuit_copy, pre_vpr_netlist, 
                             output_netlist=post_vpr_netlist,
                             command_runner=command_runner, 
+                            relax_W_factor=relax_W_factor,
                             temp_dir=temp_dir, 
                             verbosity=verbosity, 
                             vpr_args=vpr_args)

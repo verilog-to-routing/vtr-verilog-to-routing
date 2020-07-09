@@ -433,7 +433,7 @@ def create_jobs(args, configs):
                 executable = [config.script_path]
             else:
                 #Default flow script
-                executable = [find_vtr_file('vtr-flow.py', is_executable=True)]
+                executable = [find_vtr_file('run_vtr_flow.py', is_executable=True)]
 
             #Collect any extra script params from the config file
             script_params = [abs_arch_filepath, abs_circuit_filepath]

@@ -170,7 +170,7 @@ def vtr_command_argparser(prog=None):
     
     house_keeping.add_argument("-name",
                                default=None,
-                               help="Directory to run the flow in (will be created if non-existant).")
+                               help="Name for this run to be output.")
 
     house_keeping.add_argument("-track_memory_usage",
                                default=False,
@@ -182,7 +182,7 @@ def vtr_command_argparser(prog=None):
                                default=False,
                                action="store_true",
                                dest="show_failures",
-                               help="Show failures")#needs updating
+                               help="Tells the flow to display failures in the console.")
 
     house_keeping.add_argument("-limit_memory_usage",
                                default=None,
@@ -206,7 +206,7 @@ def vtr_command_argparser(prog=None):
     #
     # ABC arguments
     #
-    abc = parser.add_argument_group("abc", description="Iterative black-boxing flow for multi-clock circuits options")
+    abc = parser.add_argument_group("abc", description="Arguments used by ABC")
     abc.add_argument("-iterative_bb",
                             default=False,
                             action="store_true",
@@ -226,11 +226,15 @@ def vtr_command_argparser(prog=None):
                             default=False,
                             action="store_true",
                             dest="use_old_latches_restoration_script",
-                            help="Use the new latches restoration script")
+                            help="Use the old latches restoration script")
     abc.add_argument("-check_equivalent",
                             default=False,
                             action="store_true",
                             help="Enables Logical Equivalence Checks")
+    abc.add_argument("-use_old_abc_script",
+                            default=False,
+                            action="store_true",
+                            help="Enables use of legacy ABC script adapted for new ABC")
     abc.add_argument("-lut_size",
                                type=int,
                                help="Tells ABC the LUT size of the FPGA architecture")
@@ -240,7 +244,7 @@ def vtr_command_argparser(prog=None):
     odin = parser.add_argument_group("Odin", description="Arguments to be passed to ODIN II")
     odin.add_argument("-adder_type",
                             default="default",
-                            help="Odin adder type")
+                            help="Tells ODIN II the adder type used in this configuration")
     odin.add_argument("-adder_cin_global",
                             default=False,
                             action="store_true",
@@ -255,12 +259,16 @@ def vtr_command_argparser(prog=None):
                             default=False,
                             action="store_true",
                             dest="use_odin_simulation",
-                            help="Tells ODIN II to connect the first cin in an adder/subtractor chain to a global gnd/vdd net.")
+                            help="Tells odin to run simulation.")
     odin.add_argument("-min_hard_mult_size",
                                default=3,
                                type=int,
                                metavar="min_hard_mult_size",
                                help="Tells ODIN II the minimum multiplier size that should be implemented using hard multiplier (if available).")
+    odin.add_argument("-min_hard_adder_size",
+                               default=1,
+                               type=int,
+                               help="Tells ODIN II the minimum adder size that should be implemented using hard adder (if available).")
     #
     # VPR arguments
     #
@@ -268,10 +276,14 @@ def vtr_command_argparser(prog=None):
     vpr.add_argument("-crit_path_router_iterations",
                                type=int,
                                default=150,
-                               help="")
+                               help="Tells VPR the amount of iterations allowed to obtain the critical path.")
     vpr.add_argument("-fix_pins",
                                type=str,
-                               help="")
+                               help="Controls how the placer handles I/O pads during placement.")
+    vpr.add_argument("-relax_W_factor",
+                               type=float,
+                               default=1.3,
+                               help="Factor by which to relax minimum channel width for critical path delay routing")
     vpr.add_argument("-verify_rr_graph",
                             default=False,
                             action="store_true",
@@ -279,19 +291,19 @@ def vtr_command_argparser(prog=None):
     vpr.add_argument("-rr_graph_ext",
                                default=".xml",
                                type=str,
-                               help="")
+                               help="Determines the output rr_graph files' extention.")
     vpr.add_argument("-check_route",
                             default=False,
                             action="store_true",
-                            help="")
+                            help="Tells VPR to run final analysis stage.")
     vpr.add_argument("-check_place",
                             default=False,
                             action="store_true",
-                            help="")
+                            help="Tells VPR to run routing stage")
     vpr.add_argument("-sdc_file",
                                default=None,
                                type=str,
-                               help="")
+                               help="Path to SDC timing constraints file.")
                                
     return parser
 
@@ -401,7 +413,10 @@ def vtr_command_main(arg_list, prog=None):
                              keep_intermediate_files=args.keep_intermediate_files,
                              keep_result_files=args.keep_result_files,
                              min_hard_mult_size=args.min_hard_mult_size,
-                             check_equivalent = args.check_equivalent
+                             check_equivalent = args.check_equivalent,
+                             min_hard_adder_size = args.min_hard_adder_size,
+                             use_old_abc_script=args.use_old_abc_script,
+                             relax_W_factor=args.relax_W_factor
                              )
             except vtr.CommandError as e:
                 #An external command failed

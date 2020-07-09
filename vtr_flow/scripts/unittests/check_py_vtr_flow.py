@@ -11,7 +11,7 @@ scripts_path = pathlib.Path(__file__).resolve().parent.parent
 vtr_flow_path = scripts_path.parent
 temp_dir = pathlib.Path.cwd() / "temp"
 
-# run_vtr_flow.pl will be compared against vtr-flow.py using the following test cases as arguments:
+# run_vtr_flow.pl will be compared against run_vtr_flow.py using the following test cases as arguments:
 arg_list = ["benchmarks/verilog/ch_intrinsics.v arch/timing/k6_N10_mem32K_40nm.xml -track_memory_usage --router_heap binary --min_route_chan_width_hint 38",
             "benchmarks/verilog/diffeq1.v arch/timing/k6_N10_mem32K_40nm.xml -track_memory_usage --router_heap bucket --min_route_chan_width_hint 46"
             ]
@@ -65,7 +65,7 @@ def main():
         
         # Run with old and new flows
         run_vtr_flow("run_vtr_flow.pl", "old pl", temp_dir_pl, test_str)
-        run_vtr_flow("vtr-flow.py", "new py", temp_dir_py, test_str)
+        run_vtr_flow("run_vtr_flow.py", "new py", temp_dir_py, test_str)
        
         # Check that output files match
         for (pattern, skip_lines) in files_to_validate:
