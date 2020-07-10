@@ -32,6 +32,15 @@ stratixiv_arch.timing.xml:
     relatively minor architectural approximations to be compatible with VPR. It
     includes a timing model which has been calibrated to the Stratix IV timing
     model included in Altera's Quartus II CAD tools.
+    
+    Compared to the original (legacy) capture of Stratix IV, this architecture
+    better captures the routing architecture by modeling the hierarchical connections
+    between the L16 and L4 networks, and the custom switch patterns between them.
+    The L4 wires have 12-input muxes driving them, and the L16 wires have 40:1 muxes
+    driving them, roughly matching the Stratix IV mux sizes from the information available.
+
+    This is the architecture used to generate results in the VTR 8.0 TRETS paper,
+    and corresponds to architecture E in Table 3 in that paper.
 
     Use this architecture file, unless you have specific reasons to use the
     other ones in this directory.
@@ -60,6 +69,10 @@ see Section 5.4 of the paper, "VTR 8: High Performance CAD and Customizable FPGA
 
     stratixiv_arch.timing.legacy.xml:
         The old capture of Altera's Stratix IV FPGA architecture.
+        This architecture was used to generate the results in the Timing-driven Titan paper:
+        K. Murray et al, "Timing-Driven Titan: Enabling Large Benchmarks and Exploring the
+        Gap between Academic and Commercial CAD," ACM TRETS, March 2015,
+        <https://dl.acm.org/doi/10.1145/2629579>
 
     stratixiv_arch.timing.no_chain.xml (experimental):
         Like stratixiv_arch.timing.xml, but with carry chains disabled.
