@@ -19,6 +19,7 @@ Multiple examples of how this language can be used to describe different types o
    :maxdepth: 1
 
    classic_soft_logic
+   multi_mode_ble
    configurable_memory_bus
    fracturable_multiplier_bus
 

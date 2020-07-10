@@ -1,10 +1,10 @@
 #ifndef ATOM_NETLIST_H
 #define ATOM_NETLIST_H
-/*
- * Summary
- * ========
- * This file defines the AtomNetlist class used to store and manipulate the primitive (or atom) netlist.
- *
+
+/**
+ * @file
+ * @brief This file defines the AtomNetlist class used to store and manipulate
+ *        the primitive (or atom) netlist.
  *
  * Overview
  * ========
@@ -79,9 +79,12 @@
 
 class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId> {
   public:
-    //Constructs a netlist
-    // name: the name of the netlist (e.g. top-level module)
-    // id:   a unique identifier for the netlist (e.g. a secure digest of the input file)
+    /**
+     * @brief Constructs a netlist
+     *
+     *   @param name  the name of the netlist (e.g. top-level module)
+     *   @param id    a unique identifier for the netlist (e.g. a secure digest of the input file)
+     */
     AtomNetlist(std::string name = "", std::string id = "");
 
   public: //Public types
@@ -91,46 +94,65 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
     /*
      * Blocks
      */
-    //Returns the type of the specified block
+
+    ///@brief Returns the type of the specified block
     AtomBlockType block_type(const AtomBlockId id) const;
 
-    //Returns the model associated with the block
+    ///@brief Returns the model associated with the block
     const t_model* block_model(const AtomBlockId id) const;
 
-    //Returns the truth table associated with the block
-    // Note that this is only non-empty for LUTs and Flip-Flops/latches.
-    //
-    // For LUTs the truth table stores the single-output cover representing the
-    // logic function.
-    //
-    // For FF/Latches there is only a single entry representing the initial state
+    /**
+     * @brief Returns the truth table associated with the block
+     *
+     * @note This is only non-empty for LUTs and Flip-Flops/latches.
+     *
+     * For LUTs the truth table stores the single-output cover representing the
+     * logic function.
+     *
+     * For FF/Latches there is only a single entry representing the initial state
+     */
     const TruthTable& block_truth_table(const AtomBlockId id) const;
 
     /*
      * Ports
      */
-    //Returns the model port of the specified port or nullptr if not
-    //  id: The ID of the port to look for
+
+    /**
+     * @brief Returns the model port of the specified port or nullptr if not
+     *
+     *   @param id  The ID of the port to look for
+     */
     const t_model_ports* port_model(const AtomPortId id) const;
 
     /*
      * Lookups
      */
-    //Returns the AtomPortId of the specifed port if it exists or AtomPortId::INVALID() if not
-    //Note that this method is typically more efficient than searching by name
-    //  blk_id     : The ID of the block who's ports will be checked
-    //  model_port : The port model to look for
+
+    /**
+     * @brief Returns the AtomPortId of the specifed port if it exists or AtomPortId::INVALID() if not
+     * @note This method is typically more efficient than searching by name
+     *
+     *   @param blk_id The   ID of the block who's ports will be checked
+     *   @param model_port   The port model to look for
+     */
     AtomPortId find_atom_port(const AtomBlockId blk_id, const t_model_ports* model_port) const;
 
-    //Returns the AtomBlockId of the atom driving the specified pin if it exists or AtomBlockId::INVALID() if not
-    //  blk_id     : The ID of the block whose ports will be checked
-    //  model_port : The port model to look for
-    //  port_bit   : The pin number in this port
+    /**
+     * @brief Returns the AtomBlockId of the atom driving the specified pin if it exists or AtomBlockId::INVALID() if not
+     *
+     *   @param blk_id The   ID of the block whose ports will be checked
+     *   @param model_port   The port model to look for
+     *   @param port_bit     The pin number in this port
+     */
     AtomBlockId find_atom_pin_driver(const AtomBlockId blk_id, const t_model_ports* model_port, const BitIndex port_bit) const;
 
-    //Returns the a set of aliases relative to the net name.
-    //If no aliases are found, returns a set with the original net name.
-    //  net_name : name of the net from which the aliases are extracted
+    /**
+     * @brief Returns the a set of aliases relative to the net name.
+     *
+     * If no aliases are found, returns a set with the original net name.
+     *
+     *   @param net_name   name of the net from which the aliases are extracted
+     */
     std::unordered_set<std::string> net_aliases(const std::string net_name) const;
 
   public: //Public Mutators
@@ -138,41 +160,60 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
      * Note: all create_*() functions will silently return the appropriate ID if it has already been created
      */
 
-    //Create or return an existing block in the netlist
-    //  name        : The unique name of the block
-    //  model       : The primitive type of the block
-    //  truth_table : The single-output cover defining the block's logic function
-    //                The truth_table is optional and only relevant for LUTs (where it describes the logic function)
-    //                and Flip-Flops/latches (where it consists of a single entry defining the initial state).
+    /**
+     * @brief Create or return an existing block in the netlist
+     *
+     *   @param name          The unique name of the block
+     *   @param model         The primitive type of the block
+     *   @param truth_table   The single-output cover defining the block's logic function
+     *                        The truth_table is optional and only relevant for LUTs (where it describes the logic function)
+     *                        and Flip-Flops/latches (where it consists of a single entry defining the initial state).
+     */
     AtomBlockId create_block(const std::string name, const t_model* model, const TruthTable truth_table = TruthTable());
 
-    //Create or return an existing port in the netlist
-    //  blk_id      : The block the port is associated with
-    //  name        : The name of the port (must match the name of a port in the block's model)
+    /**
+     * @brief Create or return an existing port in the netlist
+     *
+     *   @param blk_id      The block the port is associated with
+     *   @param model_port  The model port the port is associated with
+     */
     AtomPortId create_port(const AtomBlockId blk_id, const t_model_ports* model_port);
 
-    //Create or return an existing pin in the netlist
-    //  port_id    : The port this pin is associated with
-    //  port_bit   : The bit index of the pin in the port
-    //  net_id     : The net the pin drives/sinks
-    //  pin_type   : The type of the pin (driver/sink)
-    //  is_const   : Indicates whether the pin holds a constant value (e. g. vcc/gnd)
+    /**
+     * @brief Create or return an existing pin in the netlist
+     *
+     *   @param port_id    The port this pin is associated with
+     *   @param port_bit   The bit index of the pin in the port
+     *   @param net_id     The net the pin drives/sinks
+     *   @param pin_type   The type of the pin (driver/sink)
+     *   @param is_const   Indicates whether the pin holds a constant value (e. g. vcc/gnd)
+     */
     AtomPinId create_pin(const AtomPortId port_id, BitIndex port_bit, const AtomNetId net_id, const PinType pin_type, bool is_const = false);
 
-    //Create an empty, or return an existing net in the netlist
-    //  name    : The unique name of the net
+    /**
+     * @brief Create an empty, or return an existing net in the netlist
+     *
+     *   @param name   The unique name of the net
+     */
     AtomNetId create_net(const std::string name); //An empty or existing net
 
-    //Create a completely specified net from specified driver and sinks
-    //  name    : The name of the net (Note: must not already exist)
-    //  driver  : The net's driver pin
-    //  sinks   : The net's sink pins
+    /**
+     * @brief Create a completely specified net from specified driver and sinks
+     *
+     *   @param name       The name of the net (Note: must not already exist)
+     *   @param driver     The net's driver pin
+     *   @param sinks      The net's sink pins
+     */
     AtomNetId add_net(const std::string name, AtomPinId driver, std::vector<AtomPinId> sinks);
 
-    //Adds a value to the net aliases set for a given net name in the net_aliases_map.
-    //If there is no key/value pair in the net_aliases_map, creates a new set and adds it to the map.
-    //  net_name        : The net to be added to the map
-    //  alias_net_name  : The alias of the assigned clock net id
+    /**
+     * @brief Adds a value to the net aliases set for a given net name in the net_aliases_map.
+     *
+     * If there is no key/value pair in the net_aliases_map, creates a new set and adds it to the map.
+     *
+     *   @param net_name        The net to be added to the map
+     *   @param alias_net_name  The alias of the assigned clock net id
+     */
     void add_net_alias(const std::string net_name, std::string alias_net_name);
 
   private: //Private members
@@ -187,6 +228,7 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
     /*
      * Netlist compression/optimization
      */
+
     //Removes invalid components and reorders them
     void clean_blocks_impl(const vtr::vector_map<AtomBlockId, AtomBlockId>& block_id_map) override;
     void clean_ports_impl(const vtr::vector_map<AtomPortId, AtomPortId>& port_id_map) override;
@@ -198,7 +240,7 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
     void rebuild_pin_refs_impl(const vtr::vector_map<AtomPortId, AtomPortId>& port_id_map, const vtr::vector_map<AtomNetId, AtomNetId>& net_id_map) override;
     void rebuild_net_refs_impl(const vtr::vector_map<AtomPinId, AtomPinId>& pin_id_map) override;
 
-    //Shrinks internal data structures to required size to reduce memory consumption
+    ///@brief Shrinks internal data structures to required size to reduce memory consumption
     void shrink_to_fit_impl() override;
 
     /*

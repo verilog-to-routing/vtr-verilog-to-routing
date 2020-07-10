@@ -212,9 +212,6 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         zero_string = vtr::strdup(ZERO_GND_ZERO);
         pad_string = vtr::strdup(ZERO_PAD_ZERO);
 
-        printf("--------------------------------------------------------------------\n");
-        printf("Welcome to ODIN II version 0.1 - the better High level synthesis tools++ targetting FPGAs (mainly VPR)\n");
-        printf("Email: jamieson.peter@gmail.com and ken@unb.ca for support issues\n\n");
     } catch (vtr::VtrError& vtr_error) {
         printf("Odin failed to initialize %s with exit code%d\n", vtr_error.what(), ERROR_INITIALIZATION);
         exit(ERROR_INITIALIZATION);

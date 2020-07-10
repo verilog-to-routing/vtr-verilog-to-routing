@@ -62,7 +62,7 @@ if ( $number_arguments < 2 ) {
 	exit(-1);
 }
 
-# Get Absolute Path of 'vtr_flow
+# Get Absolute Path of vtr_flow
 Cwd::abs_path($0) =~ m/(.*\/vtr_flow)\//;
 my $vtr_flow_path = $1;
 # my $vtr_flow_path = "./vtr_flow";
@@ -77,6 +77,8 @@ sub exe_for_platform;
 
 my $temp_dir = "./temp";
 my $diff_exec = "diff";
+my $copy_exec = "cp";
+my $move_exec = "mv";
 
 my $stage_idx_odin   = 1;
 my $stage_idx_abc    = 2;
@@ -110,7 +112,7 @@ my @memory_tracker_args     = ("time", "-v");
 my $limit_memory_usage      = -1;
 my $timeout                 = 14 * 24 * 60 * 60;         # 14 day execution timeout
 my $valgrind 		        = 0;
-my @valgrind_args	        = ("--leak-check=full", "--suppressions=$vtr_flow_path/../vpr/valgrind.supp", "--error-exitcode=1", "--errors-for-leak-kinds=none", "--track-origins=yes", "--log-file=valgrind.log","--error-limit=no");
+my @valgrind_args	        = ("--leak-check=full", "--suppressions=$vtr_flow_path/../vpr/valgrind.supp", "--error-exitcode=22", "--track-origins=yes", "--error-limit=no");
 my $abc_quote_addition      = 0;
 my @forwarded_vpr_args;   # VPR arguments that pass through the script
 my $verify_rr_graph         = 0;
@@ -118,6 +120,7 @@ my $rr_graph_ext            = ".xml";
 my $check_route             = 0;
 my $check_place             = 0;
 my $use_old_abc_script      = 0;
+my $check_incremental_sta_consistency = 0;
 my $run_name = "";
 my $expect_fail = undef;
 my $verbosity = 0;
@@ -126,10 +129,10 @@ my $odin_adder_cin_global = "";
 my $use_odin_xml_config = 1;
 my $relax_W_factor = 1.3;
 my $crit_path_router_iterations = 150; #We set a higher routing iterations (vs 50 default)
-                                       #to avoid spurious routing failures at relaxed W 
-                                       #caused by small perturbations in pattern or 
-                                       #placement. Usually these failures show up on small 
-                                       #circuits (with low W). Setting a higher value here 
+                                       #to avoid spurious routing failures at relaxed W
+                                       #caused by small perturbations in pattern or
+                                       #placement. Usually these failures show up on small
+                                       #circuits (with low W). Setting a higher value here
                                        #will help avoids them.
 my $show_failures = 0;
 
@@ -143,23 +146,23 @@ my $odin_run_simulation = 0;
 while ( scalar(@ARGV) != 0 ) { #While non-empty
     my $token = shift(@ARGV);
 	if ( $token eq "-sdc_file" ) {
-            $sdc_file_path = shift(@ARGV);#let us take the user input as an absolute path 
+            $sdc_file_path = shift(@ARGV);#let us take the user input as an absolute path
         if ( !-e $sdc_file_path) { #check if absolute path exists
             $sdc_file_path = "${vtr_flow_path}/${sdc_file_path}"; #assume this is a relative path
-        } 
+        }
         if ( !-e $sdc_file_path) { #check if relative path exists
-            die 
+            die
 		        "Error: Invalid SDC file specified";
-        } 
+        }
 	} elsif ( $token eq "-fix_pins" and $ARGV[0] ne "random") {
             $pad_file_path = shift(@ARGV);
         if ( !-e $pad_file_path) { #check if absolute path exists
             $pad_file_path = "${vtr_flow_path}/${pad_file_path}"; #assume this is a relative path
-        } 
+        }
         if ( !-e $pad_file_path) { #check if relative path exists
-            die 
+            die
 		        "Error: Invalid pad file specified";
-        } 
+        }
 	} elsif ( $token eq "-starting_stage" ) {
 		$starting_stage = stage_index( shift(@ARGV) );
 	} elsif ( $token eq "-ending_stage" ) {
@@ -248,6 +251,9 @@ while ( scalar(@ARGV) != 0 ) { #While non-empty
 	}
 	elsif ( $token eq "-crit_path_router_iterations" ){
 		$crit_path_router_iterations = shift(@ARGV);
+	}
+	elsif ( $token eq "-check_incremental_sta_consistency" ){
+		$check_incremental_sta_consistency = 1;
 	}
     # else forward the argument
 	else {
@@ -619,13 +625,13 @@ if (    $starting_stage <= $stage_idx_abc
 		{
 			# black box latches
 			$q = &system_with_timeout($blackbox_latches_script, $domain_itter."_blackboxing_latch.out", $timeout, $temp_dir,
-					"--input", $input_blif, "--output", $pre_abc_blif);	
+					"--input", $input_blif, "--output", $pre_abc_blif);
 
 			if ($q ne "success") {
 				$error_status = "failed: to black box the clocks for file_in: ".$input_blif." file_out: ".$pre_abc_blif;
 				$error_code = 1;
 				last ABC_OPTIMIZATION;
-			}	
+			}
 		}
 		elsif ( exists  $clock_list[$domain_itter] )
 		{
@@ -711,13 +717,13 @@ if (    $starting_stage <= $stage_idx_abc
 		if ($use_old_abc_script) {
 			#Legacy ABC script adapted for new ABC by moving scleanup before if
 			$abc_commands="
-			read $pre_abc_blif; 
-			time; 
-			resyn; 
-			resyn2; 
-			time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; 
-			if -K $lut_size; 
-			write_hie ${pre_abc_blif} ${post_abc_raw_blif}; 
+			read $pre_abc_blif;
+			time;
+			resyn;
+			resyn2;
+			time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time; scleanup; time;
+			if -K $lut_size;
+			write_hie ${pre_abc_blif} ${post_abc_raw_blif};
 			print_stats;
 			";
         }
@@ -1173,6 +1179,16 @@ if ( $ending_stage >= $stage_idx_vpr and !$error_code ) {
             }
         }
 
+        # Do a second-run of the incremental analysis to compare the result files
+        if ($check_incremental_sta_consistency) {
+            my $cmp_result = &cmp_full_vs_incr_STA;
+
+            if ($cmp_result ne "success") {
+                $error_status = $cmp_result;
+                $error_code = 1;
+            }
+        }
+
 		if (! $keep_intermediate_files)
 		{
 			system "rm -f $prevpr_output_file_name";
@@ -1304,9 +1320,7 @@ sub system_with_timeout {
 
 
 		open( STDOUT, "> $_[1]" );
-		if (!$valgrind) {
-			open( STDERR, ">&STDOUT" );
-		}
+        open( STDERR, ">&STDOUT" );
 
 		# Copy the args and cut out first four
 		my @VPRARGS = @_;
@@ -1687,3 +1701,74 @@ sub calculate_relaxed_W {
 
     return $relaxed_W;
 }
+
+sub cmp_full_vs_incr_STA {
+	#Sanity check that full STA and the incremental STA
+    #produce the same *.net, *.place, *.route files
+    #as well as identical timing report files
+
+	my @default_output_filenames = (
+			"$benchmark_name" . ".net",
+			"$benchmark_name" . ".place",
+			"$benchmark_name" . ".route",
+			"report_timing.setup.rpt",
+			"report_timing.hold.rpt",
+			"report_unconstrained_timing.setup.rpt",
+			"report_unconstrained_timing.hold.rpt"
+		);
+
+	# The full STA flow should have already been run
+    # directly rename the output files
+    foreach my $filename (@default_output_filenames) {
+    	system_with_timeout(
+            $move_exec, "move.out",
+            $timeout, $temp_dir,
+            $filename, "full_sta_" . $filename
+        );
+    }
+
+    # run incremental STA flow
+    my @incremental_vpr_args = @forwarded_vpr_args;
+    push(@incremental_vpr_args, ("--timing_update_type", "incremental"));
+    my $fixed_W_log_file = "vpr.incr_sta.out";
+
+    $q = run_vpr({
+            arch_name => $architecture_file_name,
+            circuit_name => $benchmark_name,
+            circuit_file => $prevpr_output_file_name,
+            sdc_file => $sdc_file_path,
+            pad_file => $pad_file_path,
+            extra_vpr_args => \@incremental_vpr_args,
+            log_file => $fixed_W_log_file,
+        });
+
+    # Rename the incremental STA output files
+    foreach my $filename (@default_output_filenames) {
+        system_with_timeout(
+            $move_exec, "move.out",
+            $timeout, $temp_dir,
+            $filename, "incremental_sta_" . $filename
+        );
+    }
+
+    # Run diff command on the two sets of outputs
+    my $failed_msg = "Failed with these files (not identical):";
+    my $identical = 1;
+
+    foreach my $filename (@default_output_filenames) {
+        my $diff_result = &system_with_timeout(
+            $diff_exec, "diff.out",
+            $timeout, $temp_dir,
+            "full_sta_" . $filename, "incremental_sta_" . $filename
+        );
+
+        # If different, set the flag and append filename to the error message
+        if ($diff_result ne "success") {
+            $identical = 0;
+        	$failed_msg = $failed_msg . " " . $filename;
+        }
+    }
+
+    return $identical ? "success" : $failed_msg;
+}
+

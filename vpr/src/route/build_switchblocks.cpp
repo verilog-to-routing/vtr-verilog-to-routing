@@ -140,7 +140,10 @@
 #include "build_switchblocks.h"
 #include "physical_types.h"
 #include "parse_switchblocks.h"
-#include "expr_eval.h"
+#include "vtr_expr_eval.h"
+
+using vtr::FormulaParser;
+using vtr::t_formula_data;
 
 /************ Defines ************/
 /* if defined, switch block patterns are loaded by first computing a row of switch blocks and then

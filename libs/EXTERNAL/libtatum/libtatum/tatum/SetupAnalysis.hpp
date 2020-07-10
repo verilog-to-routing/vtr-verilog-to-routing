@@ -132,7 +132,9 @@ class SetupAnalysis : public detail::CommonAnalysisVisitor<detail::SetupAnalysis
 
         TimingTags::tag_range setup_tags(const NodeId node) const { return ops_.get_tags(node); }
         TimingTags::tag_range setup_tags(const NodeId node, TagType type) const { return ops_.get_tags(node, type); }
+#ifdef TATUM_CALCULATE_EDGE_SLACKS
         TimingTags::tag_range setup_edge_slacks(const EdgeId edge) const { return ops_.get_edge_slacks(edge); }
+#endif
         TimingTags::tag_range setup_node_slacks(const NodeId node) const { return ops_.get_node_slacks(node); }
 };
 

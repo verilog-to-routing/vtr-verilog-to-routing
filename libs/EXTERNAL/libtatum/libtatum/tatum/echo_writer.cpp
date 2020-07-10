@@ -248,10 +248,12 @@ void write_analysis_result(std::ostream& os, const TimingGraph& tg, const std::s
             NodeId node_id(node_idx);
             write_tags(os, "SETUP_CAPTURE_CLOCK", setup_analyzer->setup_tags(node_id, TagType::CLOCK_CAPTURE), node_id);
         }
+#ifdef TATUM_CALCULATE_EDGE_SLACKS
         for(size_t edge_idx = 0; edge_idx < tg.edges().size(); ++edge_idx) {
             EdgeId edge_id(edge_idx);
             write_slacks(os, "SETUP_SLACK", setup_analyzer->setup_slacks(edge_id), edge_id);
         }
+#endif
         for(size_t node_idx = 0; node_idx < tg.nodes().size(); ++node_idx) {
             NodeId node_id(node_idx);
             write_slacks(os, "SETUP_SLACK", setup_analyzer->setup_slacks(node_id), node_id);
@@ -275,10 +277,12 @@ void write_analysis_result(std::ostream& os, const TimingGraph& tg, const std::s
             NodeId node_id(node_idx);
             write_tags(os, "HOLD_CAPTURE_CLOCK", hold_analyzer->hold_tags(node_id, TagType::CLOCK_CAPTURE), node_id);
         }
+#ifdef TATUM_CALCULATE_EDGE_SLACKS
         for(size_t edge_idx = 0; edge_idx < tg.edges().size(); ++edge_idx) {
             EdgeId edge_id(edge_idx);
             write_slacks(os, "HOLD_SLACK", hold_analyzer->hold_slacks(edge_id), edge_id);
         }
+#endif
         for(size_t node_idx = 0; node_idx < tg.nodes().size(); ++node_idx) {
             NodeId node_id(node_idx);
             write_slacks(os, "HOLD_SLACK", hold_analyzer->hold_slacks(node_id), node_id);

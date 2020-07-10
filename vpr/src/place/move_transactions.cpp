@@ -61,14 +61,12 @@ void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected) {
 
         //Remove from old location only if it hasn't already been updated by a previous block update
         if (place_ctx.grid_blocks[from.x][from.y].blocks[from.sub_tile] == blk) {
-            ;
             place_ctx.grid_blocks[from.x][from.y].blocks[from.sub_tile] = EMPTY_BLOCK_ID;
             --place_ctx.grid_blocks[from.x][from.y].usage;
         }
 
         //Add to new location
         if (place_ctx.grid_blocks[to.x][to.y].blocks[to.sub_tile] == EMPTY_BLOCK_ID) {
-            ;
             //Only need to increase usage if previously unused
             ++place_ctx.grid_blocks[to.x][to.y].usage;
         }
@@ -102,4 +100,6 @@ void clear_move_blocks(t_pl_blocks_to_be_moved& blocks_affected) {
     //For run-time we just reset num_moved_blocks to zero, but do not free the blocks_affected
     //array to avoid memory allocation
     blocks_affected.num_moved_blocks = 0;
+
+    blocks_affected.affected_pins.clear();
 }

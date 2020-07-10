@@ -1,7 +1,9 @@
 /**
- * Simple checks to make sure netlist data structures are consistent.  These include checking for duplicated names, dangling links, etc.
+ * @file
+ * @brief Simple checks to make sure netlist data structures are consistent.
+ *
+ * These include checking for duplicated names, dangling links, etc.
  */
-
 #include <cstdio>
 #include <cstring>
 
@@ -79,9 +81,12 @@ void check_netlist(int verbosity) {
     }
 }
 
-/* Checks that a global net (net_id) connects only to global CLB input pins  *
- * and that non-global nets never connects to a global CLB pin.  Either       *
- * global or non-global nets are allowed to connect to pads.                  */
+/**
+ * @brief Checks that a global net (net_id) connects only to global CLB input pin
+ *        and that non-global nets never connects to a global CLB pin.
+ *
+ * Either global or non-global nets are allowed to connect to pads.
+ */
 static int check_connections_to_global_clb_pins(ClusterNetId net_id, int verbosity) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -115,7 +120,7 @@ static int check_connections_to_global_clb_pins(ClusterNetId net_id, int verbosi
     return global_to_non_global_connection_count;
 }
 
-/* Checks that the connections into and out of the clb make sense.  */
+///@brief Checks that the connections into and out of the clb make sense.
 static int check_clb_conn(ClusterBlockId iblk, int num_conn) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& clb_nlist = cluster_ctx.clb_nlist;
@@ -160,7 +165,7 @@ static int check_clb_conn(ClusterBlockId iblk, int num_conn) {
     return (error);
 }
 
-/* Check that internal-to-logic-block connectivity is continuous and logically consistent */
+///@brief Check that internal-to-logic-block connectivity is continuous and logically consistent
 static int check_clb_internal_nets(ClusterBlockId iblk, const IntraLbPbPinLookup& pb_graph_pin_lookup) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 

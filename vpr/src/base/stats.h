@@ -14,7 +14,10 @@ void get_num_bends_and_length(ClusterNetId inet, int* bends, int* length, int* s
 
 int count_netlist_clocks();
 
-// template functions must be defined in header, or explicitely instantiated in definition file (defeats the point of template)
+/**
+ * @brief template functions must be defined in header, or explicitely
+ *        instantiated in definition file (defeats the point of template)
+ */
 template<typename T>
 double linear_regression_vector(const std::vector<T>& vals, size_t start_x = 0) {
     // returns slope; index is x, val is y

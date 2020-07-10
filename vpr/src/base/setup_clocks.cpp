@@ -1,7 +1,7 @@
 #include "setup_clocks.h"
 
 #include "globals.h"
-#include "expr_eval.h"
+#include "vtr_expr_eval.h"
 
 #include "vtr_assert.h"
 #include "vpr_error.h"
@@ -11,6 +11,9 @@
 #include <string>
 #include <iostream>
 #include <sstream>
+
+using vtr::FormulaParser;
+using vtr::t_formula_data;
 
 static MetalLayer get_metal_layer_from_name(
     std::string metal_layer_name,
@@ -26,8 +29,8 @@ void setup_clock_networks(const t_arch& Arch, std::vector<t_segment_inf>& segmen
 }
 
 /**
- * Parses the clock architecture information and modifies the architecture segment
- * information.
+ * @brief Parses the clock architecture information and modifies
+ *        the architecture segment information.
  */
 void setup_clock_network_wires(const t_arch& Arch, FormulaParser& p, std::vector<t_segment_inf>& segment_inf) {
     auto& device_ctx = g_vpr_ctx.mutable_device();

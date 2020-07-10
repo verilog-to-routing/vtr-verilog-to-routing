@@ -22,6 +22,7 @@ const char* ast_node_name_based_on_ids(ast_node_t* node);
 char* make_signal_name(char* signal_name, int bit);
 char* make_full_ref_name(const char* previous, const char* module_name, const char* module_instance_name, const char* signal_name, long bit);
 char* make_full_name_w_o_array_ref(const char* previous, const char* module_name, const char* module_instance_name);
+bool output_vector_headers_equal(char* buffer1, char* buffer2);
 
 char* twos_complement(char* str);
 int is_string_of_radix(char* string, int radix);

@@ -1,6 +1,13 @@
 %include "../common/vpr.place.txt"
 
 #VPR Place Timing Metrics
-placed_CPD_est;vpr.out;Placement estimated critical path delay: (.*) ns
+placed_CPD_est;vpr.out;Placement estimated critical path delay \(least slack\): (.*) ns
 placed_setup_TNS_est;vpr.out;Placement estimated setup Total Negative Slack \(sTNS\): (.*) ns
 placed_setup_WNS_est;vpr.out;Placement estimated setup Worst Negative Slack \(sWNS\): (.*) ns
+placed_geomean_nonvirtual_intradomain_critical_path_delay_est;vpr.out;Placement estimated geomean non-virtual intra-domain period: (.*) ns
+
+#VPR Place Timing Analysis Run-time Metrics
+place_quench_timing_analysis_time;vpr.out;Placement Quench timing analysis took (.*) seconds
+place_quench_sta_time;vpr.out;Placement Quench timing analysis took .* seconds \((.*) STA
+place_total_timing_analysis_time;vpr.out;Placement Total\s+timing analysis took (.*) seconds
+place_total_sta_time;vpr.out;Placement Total\s+timing analysis took .* seconds \((.*) STA

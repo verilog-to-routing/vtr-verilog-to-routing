@@ -307,9 +307,10 @@ bool try_route(int width_fac,
         success = try_breadth_first_route(router_opts);
     } else { /* TIMING_DRIVEN route */
         VTR_LOG("Confirming router algorithm: TIMING_DRIVEN.\n");
+        auto& atom_ctx = g_vpr_ctx.atom();
 
         IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
-        ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, intra_lb_pb_pin_lookup);
+        ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.nlist, intra_lb_pb_pin_lookup);
 
         success = try_timing_driven_route(
             router_opts,

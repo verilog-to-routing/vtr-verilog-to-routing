@@ -1,1 +1,5 @@
 %include "../common/vpr.route_min_chan_width.txt"
+
+#VPR Timing Analysis Run-time Metrics
+min_chan_width_total_timing_analysis_time;vpr.out;Flow timing analysis took (.*) seconds
+min_chan_width_total_sta_time;vpr.out;Flow timing analysis took .* seconds \((.*) STA

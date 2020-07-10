@@ -59,12 +59,20 @@ class SetupAnalysisOps : public CommonAnalysisOps {
 
         TimingTag const_gen_tag() { return TimingTag::CONST_GEN_TAG_SETUP(); }
 
-        void merge_req_tags(const NodeId node, const Time time, const NodeId origin, const TimingTag& ref_tag, bool arrival_must_be_valid=false) { 
-            node_tags_[node].min(time, origin, ref_tag, arrival_must_be_valid); 
+        bool merge_req_tags(const NodeId node, const TimingTag& ref_tag, bool arrival_must_be_valid=false) { 
+            return merge_req_tags(node, ref_tag.time(), ref_tag.origin_node(), ref_tag, arrival_must_be_valid);
         }
 
-        void merge_arr_tags(const NodeId node, const Time time, const NodeId origin, const TimingTag& ref_tag) { 
-            node_tags_[node].max(time, origin, ref_tag); 
+        bool merge_req_tags(const NodeId node, const Time time, const NodeId origin, const TimingTag& ref_tag, bool arrival_must_be_valid=false) { 
+            return node_tags_[node].min(time, origin, ref_tag, arrival_must_be_valid); 
+        }
+
+        bool merge_arr_tags(const NodeId node, const TimingTag& ref_tag) { 
+            return merge_arr_tags(node, ref_tag.time(), ref_tag.origin_node(), ref_tag);
+        }
+
+        bool merge_arr_tags(const NodeId node, const Time time, const NodeId origin, const TimingTag& ref_tag) { 
+            return node_tags_[node].max(time, origin, ref_tag); 
         }
 
         Time data_edge_delay(const DelayCalculator& dc, const TimingGraph& tg, const EdgeId edge_id) { 
@@ -100,6 +108,14 @@ class SetupAnalysisOps : public CommonAnalysisOps {
 
                 return tcq; 
             }
+        }
+
+        Time invalid_arrival_time() {
+            return Time(-std::numeric_limits<float>::infinity());
+        }
+
+        Time invalid_required_time() {
+            return Time(std::numeric_limits<float>::infinity());
         }
 
         Time calculate_slack(const Time required_time, const Time arrival_time) {

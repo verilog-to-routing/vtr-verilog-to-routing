@@ -54,11 +54,21 @@ struct Args {
     //Input file to load
     std::string input_file = "";
 
+    //Analysis type to perform
+    std::string analysis_type = "setuphold";
+
     //Concurrency (0 is machine concurrency)
     size_t num_workers = 0;
 
     //Number of serial runs to perform
     size_t num_serial_runs = 10;
+
+    //Number of serial incremental runs to perform
+    size_t num_serial_incr_runs = 10;
+
+    //What percentange of edges have delay changes
+    //for each serial incremental run
+    float edge_change_prob = 0.01;
 
     //Number of parallel runs to perform
     size_t num_parallel_runs = 30;
@@ -76,7 +86,7 @@ struct Args {
     size_t print_sizes = 0;
 
     //Verify results match reference
-    size_t verify = 0;
+    size_t verify = 1;
 
     //Print reports
     size_t report = 1;
@@ -94,6 +104,34 @@ Args parse_args(int argc, char** argv);
 double median(std::vector<double> values);
 double arithmean(std::vector<double> values);
 
+template<class I>
+double median(I begin, I end) {
+    std::sort(begin, end);
+
+    size_t size = std::distance(begin, end);
+    if(size % 2 == 0) {
+        return(*(begin + (size / 2) - 1) + *(begin + (size / 2))) / 2;
+    } else {
+        return *(begin + (size / 2));
+    }
+
+}
+
+template<class I>
+double arithmean(I begin, I end) {
+    return std::accumulate(begin, end, 0.) / std::distance(begin, end);
+}
+
+template<class T>
+double arithmean_skip_first(T values) {
+    return arithmean(std::begin(values) + 1, std::end(values));
+}
+
+template<class T>
+double median_skip_first(T values) {
+    return median(std::begin(values) + 1, std::end(values));
+}
+
 
 void usage(std::string prog) {
     Args default_args;
@@ -103,38 +141,45 @@ void usage(std::string prog) {
     cout << "    tg_file:                      The input file (or '-' for stdin)\n";
     cout << "\n";
     cout << "  Options:\n";
-    cout << "    --num_workers NUM_WORKERS:        Number of parallel workers.\n";
-    cout << "                                      0 implies machine concurrency.\n";
-    cout << "                                      (default " << default_args.num_workers << ")\n";
-    cout << "    --num_serial NUM_SERIAL_RUNS:     Number of serial runs to perform.\n";
-    cout << "                                      (default " << default_args.num_serial_runs << ")\n";
-    cout << "    --num_parallel NUM_PARALLEL_RUNS: Number of serial runs to perform.\n";
-    cout << "                                      (default " << default_args.num_parallel_runs << ")\n";
-    cout << "    --unit_delay UNIT_DELAY:          Use specified unit delay for all edges.\n";
-    cout << "                                      0 uses delay model from input.\n";
-    cout << "                                      (default " << default_args.unit_delay << ")\n";
-    cout << "    --write_echo WRITE_ECHO:          Write an echo file of restuls.\n";
-    cout << "                                      empty implies no, non-empty implies write to specified file.\n";
-    cout << "                                      (default " << default_args.write_echo << ")\n";
-    cout << "    --opt_graph_layout OPT_LAYOUT:    Optimize graph layout.\n";
-    cout << "                                      0 implies no, non-zero implies yes.\n";
-    cout << "                                      (default " << default_args.opt_graph_layout << ")\n";
-    cout << "    --print_sizes PRINT_SIZES:        Print various data structure sizes.\n";
-    cout << "                                      0 implies no, non-zero implies yes.\n";
-    cout << "                                      (default " << default_args.print_sizes << ")\n";
-    cout << "    --report REPORT:                  Generate various reports.\n";
-    cout << "                                      0 implies no, non-zero implies yes.\n";
-    cout << "                                      (default " << default_args.report << ")\n";
-    cout << "    --verify VERIFY:                  Verify calculated results match reference.\n";
-    cout << "                                      0 implies no, non-zero implies yes.\n";
-    cout << "                                      (default " << default_args.verify << ")\n";
-    cout << "    --debug_dot_node NODEID:          Specifies the timing graph node node whose transitive\n";
-    cout << "                                      connections are dumped to the .dot file (useful for debugging).\n";
-    cout << "                                      Values < -1 dump the entire graph,\n";
-    cout << "                                      Values == -1 do not dump dot file,\n";
-    cout << "                                      Values >= 0 dump the transitive connections of\n";
-    cout << "                                      the matching node.\n";
-    cout << "                                      (default " << default_args.debug_dot_node << ")\n";
+    cout << "    --analysis_type ANALYSIS_TYPE:             Type of analysis to perform\n";
+    cout << "                                               'setuphold', 'setup', or 'hold'\n";
+    cout << "                                               (default " << default_args.analysis_type << ")\n";
+    cout << "    --num_workers NUM_WORKERS:                 Number of parallel workers.\n";
+    cout << "                                               0 implies machine concurrency.\n";
+    cout << "                                               (default " << default_args.num_workers << ")\n";
+    cout << "    --num_serial NUM_SERIAL_RUNS:              Number of serial runs to perform.\n";
+    cout << "                                               (default " << default_args.num_serial_runs << ")\n";
+    cout << "    --num_serial_incr NUM_SERIAL_INCR_RUNS:    Number of serial incremental runs to perform.\n";
+    cout << "                                               (default " << default_args.num_serial_incr_runs << ")\n";
+    cout << "    --num_parallel NUM_PARALLEL_RUNS:          Number of serial runs to perform.\n";
+    cout << "                                               (default " << default_args.num_parallel_runs << ")\n";
+    cout << "    --edge_change_prob EDGE_CHANGE_PROB:       Probability of an edge delay changing in a serial incremental run\n";
+    cout << "                                               (default " << default_args.edge_change_prob << ")\n";
+    cout << "    --unit_delay UNIT_DELAY:                   Use specified unit delay for all edges.\n";
+    cout << "                                               0 uses delay model from input.\n";
+    cout << "                                               (default " << default_args.unit_delay << ")\n";
+    cout << "    --write_echo WRITE_ECHO:                   Write an echo file of restuls.\n";
+    cout << "                                               empty implies no, non-empty implies write to specified file.\n";
+    cout << "                                               (default " << default_args.write_echo << ")\n";
+    cout << "    --opt_graph_layout OPT_LAYOUT:             Optimize graph layout.\n";
+    cout << "                                               0 implies no, non-zero implies yes.\n";
+    cout << "                                               (default " << default_args.opt_graph_layout << ")\n";
+    cout << "    --print_sizes PRINT_SIZES:                 Print various data structure sizes.\n";
+    cout << "                                               0 implies no, non-zero implies yes.\n";
+    cout << "                                               (default " << default_args.print_sizes << ")\n";
+    cout << "    --report REPORT:                           Generate various reports.\n";
+    cout << "                                               0 implies no, non-zero implies yes.\n";
+    cout << "                                               (default " << default_args.report << ")\n";
+    cout << "    --verify VERIFY:                           Verify calculated results match reference.\n";
+    cout << "                                               0 implies no, non-zero implies yes.\n";
+    cout << "                                               (default " << default_args.verify << ")\n";
+    cout << "    --debug_dot_node NODEID:                   Specifies the timing graph node node whose transitive\n";
+    cout << "                                               connections are dumped to the .dot file (useful for debugging).\n";
+    cout << "                                               Values < -1 dump the entire graph,\n";
+    cout << "                                               Values == -1 do not dump dot file,\n";
+    cout << "                                               Values >= 0 dump the transitive connections of\n";
+    cout << "                                               the matching node.\n";
+    cout << "                                               (default " << default_args.debug_dot_node << ")\n";
 }
 
 void cmd_error(std::string prog, std::string msg) {
@@ -163,6 +208,8 @@ Args parse_args(int argc, char** argv) {
         } else if (arg_str.size() >= 2 && arg_str[0] == '-' && arg_str[1] == '-') {
             if (arg_str == "--write_echo") {
                 args.write_echo = argv[i+1];
+            } else if (arg_str == "--analysis_type") {
+                args.analysis_type = argv[i+1];
             } else {
 
                 std::istringstream ss(argv[i+1]);
@@ -178,8 +225,12 @@ Args parse_args(int argc, char** argv) {
                     args.num_workers = arg_val;
                 } else if (argv[i] == std::string("--num_serial")) { 
                     args.num_serial_runs = arg_val;
+                } else if (argv[i] == std::string("--num_serial_incr")) { 
+                    args.num_serial_incr_runs = arg_val;
                 } else if (argv[i] == std::string("--num_parallel")) { 
                     args.num_parallel_runs = arg_val;
+                } else if (argv[i] == std::string("--edge_change_prob")) { 
+                    args.edge_change_prob = arg_val;
                 } else if (argv[i] == std::string("--unit_delay")) { 
                     args.unit_delay = arg_val;
                 } else if (argv[i] == std::string("--opt_graph_layout")) { 
@@ -205,7 +256,7 @@ Args parse_args(int argc, char** argv) {
                 args.input_file = arg_str;
             } else {
                 std::stringstream msg;
-                msg << "Unrecognized positional argument '" << arg_str<< "'\n";
+                msg << "Unrecognized positional argument '" << arg_str<< "' (note: options must come before file)\n";
                 cmd_error(prog, msg.str());
             }
             i++;
@@ -363,7 +414,18 @@ int main(int argc, char** argv) {
     std::shared_ptr<tatum::TimingAnalyzer> setup_hold_analyzer = tatum::AnalyzerFactory<tatum::SetupHoldAnalysis>::make(*timing_graph, *timing_constraints, *delay_calculator);
 
     //Create the timing analyzer
-    std::shared_ptr<tatum::TimingAnalyzer> serial_analyzer = tatum::AnalyzerFactory<tatum::SetupHoldAnalysis>::make(*timing_graph, *timing_constraints, *delay_calculator);
+    std::shared_ptr<tatum::TimingAnalyzer> serial_analyzer;
+    if (args.analysis_type == "setuphold") {
+        serial_analyzer = tatum::AnalyzerFactory<tatum::SetupHoldAnalysis>::make(*timing_graph, *timing_constraints, *delay_calculator);
+    } else if (args.analysis_type == "setup") {
+        serial_analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis>::make(*timing_graph, *timing_constraints, *delay_calculator);
+    } else if (args.analysis_type == "hold") {
+        serial_analyzer = tatum::AnalyzerFactory<tatum::HoldAnalysis>::make(*timing_graph, *timing_constraints, *delay_calculator);
+    } else {
+        std::stringstream ss;
+        ss << "Unrecognized analysis type '" << args.analysis_type << "'";
+        cmd_error(argv[0], ss.str());
+    }
     auto serial_setup_analyzer = std::dynamic_pointer_cast<tatum::SetupTimingAnalyzer>(serial_analyzer);
     auto serial_hold_analyzer = std::dynamic_pointer_cast<tatum::HoldTimingAnalyzer>(serial_analyzer);
 
@@ -476,11 +538,11 @@ int main(int argc, char** argv) {
         cout << " (" << std::setprecision(2) << median(serial_prof_data["update_slack_sec"])/median(serial_prof_data["analysis_sec"]) << ")" << endl;
 
         cout << "Verifying Serial Analysis took: " << serial_verify_time << " sec" << endl;
-        if(serial_tags_verified != golden_reference->num_tags() && serial_tags_verified != golden_reference->num_tags() / 2) {
-            //Potentially alow / 2 for setup only analysis from setup/hold golden
-            cout << "WARNING: Expected tags (" << golden_reference->num_tags() << ") differs from tags checked (" << serial_tags_verified << ") , verification may not have occured!" << endl;
-        } else {
+        if(serial_tags_verified == golden_reference->num_tags() || serial_tags_verified == golden_reference->num_tags() / 2) {
+            //Potentially allow / 2 for setup only analysis from setup/hold golden
             cout << "\tVerified " << serial_tags_verified << " tags (expected " << golden_reference->num_tags() << " or " << golden_reference->num_tags()/2 << ") accross " << timing_graph->nodes().size() << " nodes" << endl;
+        } else {
+            cout << "WARNING: Expected tags (" << golden_reference->num_tags() << ") differs from tags checked (" << serial_tags_verified << ") , verification may not have occured!" << endl;
         }
         cout << endl;
         cout << endl << "Net Serial Analysis elapsed time: " << serial_analyzer->get_profiling_data("total_analysis_sec") << " sec over " << serial_analyzer->get_profiling_data("num_full_updates") << " full updates" << endl;
@@ -493,8 +555,104 @@ int main(int argc, char** argv) {
 
     std::cout << endl;
 
+    if (args.num_serial_incr_runs) {
+
+        std::shared_ptr<tatum::TimingAnalyzer> serial_incr_analyzer;
+        if (args.analysis_type == "setuphold") {
+            serial_incr_analyzer = tatum::AnalyzerFactory<tatum::SetupHoldAnalysis,tatum::SerialIncrWalker>::make(*timing_graph, *timing_constraints, *delay_calculator);
+        } else if (args.analysis_type == "setup") {
+            serial_incr_analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis,tatum::SerialIncrWalker>::make(*timing_graph, *timing_constraints, *delay_calculator);
+        } else if (args.analysis_type == "hold") {
+            serial_incr_analyzer = tatum::AnalyzerFactory<tatum::HoldAnalysis,tatum::SerialIncrWalker>::make(*timing_graph, *timing_constraints, *delay_calculator);
+        } else {
+            std::stringstream ss;
+            ss << "Unrecognized analysis type '" << args.analysis_type << "'";
+            cmd_error(argv[0], ss.str());
+        }
+        auto serial_incr_setup_analyzer = std::dynamic_pointer_cast<tatum::SetupTimingAnalyzer>(serial_incr_analyzer);
+        auto serial_incr_hold_analyzer = std::dynamic_pointer_cast<tatum::HoldTimingAnalyzer>(serial_incr_analyzer);
+
+        float serial_incr_verify_time = 0;
+        std::map<std::string,std::vector<double>> serial_incr_prof_data;
+        {
+            cout << "Running SerialIncr Analysis " << args.num_serial_incr_runs << " times" << endl;
+
+            //Analyze
+            bool equivalent = profile_incr(args.num_serial_incr_runs,
+                                           args.edge_change_prob,
+                                           args.verify,
+                                           *timing_graph,
+                                           serial_incr_analyzer,
+                                           serial_analyzer,
+                                           *delay_calculator,
+                                           serial_incr_prof_data);
+
+            if(!equivalent) {
+                cout << "Verification failed!\n";
+                exit_code = 1;
+            }
+
+            serial_incr_verify_time += std::accumulate(serial_incr_prof_data["verify_sec"].begin(), serial_incr_prof_data["verify_sec"].end(), 0.);
+
+            cout << endl;
+            cout << "SerialIncr Analysis took " << std::setprecision(6) << std::setw(6) << arithmean_skip_first(serial_incr_prof_data["analysis_sec"])*args.num_serial_incr_runs << " sec";
+            if(serial_incr_prof_data["analysis_sec"].size() > 0) {
+                cout << " AVG: " << arithmean_skip_first(serial_incr_prof_data["analysis_sec"]);
+                cout << " Median: " << median_skip_first(serial_incr_prof_data["analysis_sec"]);
+                cout << " Min: " << *std::min_element(serial_incr_prof_data["analysis_sec"].begin(), serial_incr_prof_data["analysis_sec"].end());
+                cout << " Max: " << *std::max_element(serial_incr_prof_data["analysis_sec"].begin(), serial_incr_prof_data["analysis_sec"].end());
+            }
+            cout << endl;
+
+            cout << "\tReset             Median: " << std::setprecision(6) << std::setw(6) << median_skip_first(serial_incr_prof_data["reset_sec"]) << " s";
+            cout << " (" << std::setprecision(2) << median_skip_first(serial_incr_prof_data["reset_sec"])/median_skip_first(serial_incr_prof_data["analysis_sec"]) << ")" << endl;
+
+            cout << "\tArr Pre-traversal Median: " << std::setprecision(6) << std::setw(6) << median_skip_first(serial_incr_prof_data["arrival_pre_traversal_sec"]) << " s";
+            cout << " (" << std::setprecision(2) << median_skip_first(serial_incr_prof_data["arrival_pre_traversal_sec"])/median_skip_first(serial_incr_prof_data["analysis_sec"]) << ")" << endl;
+
+            cout << "\tReq Pre-traversal Median: " << std::setprecision(6) << std::setw(6) << median_skip_first(serial_incr_prof_data["required_pre_traversal_sec"]) << " s";
+            cout << " (" << std::setprecision(2) << median_skip_first(serial_incr_prof_data["required_pre_traversal_sec"])/median_skip_first(serial_incr_prof_data["analysis_sec"]) << ")" << endl;
+
+            cout << "\tArr     traversal Median: " << std::setprecision(6) << std::setw(6) << median_skip_first(serial_incr_prof_data["arrival_traversal_sec"]) << " s";
+            cout << " (" << std::setprecision(2) << median_skip_first(serial_incr_prof_data["arrival_traversal_sec"])/median_skip_first(serial_incr_prof_data["analysis_sec"]) << ")" << endl;
+
+            cout << "\tReq     traversal Median: " << std::setprecision(6) << std::setw(6) << median_skip_first(serial_incr_prof_data["required_traversal_sec"]) << " s";
+            cout << " (" << std::setprecision(2) << median_skip_first(serial_incr_prof_data["required_traversal_sec"])/median_skip_first(serial_incr_prof_data["analysis_sec"]) << ")" << endl;
+
+            cout << "\tUpdate slack      Median: " << std::setprecision(6) << std::setw(6) << median_skip_first(serial_incr_prof_data["update_slack_sec"]) << " s";
+            cout << " (" << std::setprecision(2) << median_skip_first(serial_incr_prof_data["update_slack_sec"])/median_skip_first(serial_incr_prof_data["analysis_sec"]) << ")" << endl;
+
+            cout << "Verifying SerialIncr Analysis took: " <<  serial_incr_verify_time<< " sec" << endl;
+        }
+        cout << endl;
+
+
+        cout << "SerialIncr Speed-Up: " << std::fixed << median(serial_incr_prof_data["ref_analysis_sec"]) / median(serial_incr_prof_data["analysis_sec"]) << "x" << endl;
+        cout << "\t            Reset: " << std::fixed << median(serial_incr_prof_data["ref_reset_sec"]) / median(serial_incr_prof_data["reset_sec"]) << "x" << endl;
+        cout << "\tArr Pre-traversal: " << std::fixed << median(serial_incr_prof_data["ref_arrival_pre_traversal_sec"]) / median(serial_incr_prof_data["arrival_pre_traversal_sec"]) << "x" << endl;
+        cout << "\tReq Pre-traversal: " << std::fixed << median(serial_incr_prof_data["ref_required_pre_traversal_sec"]) / median(serial_incr_prof_data["required_pre_traversal_sec"]) << "x" << endl;
+        cout << "\t    Arr-traversal: " << std::fixed << median(serial_incr_prof_data["ref_arrival_traversal_sec"]) / median(serial_incr_prof_data["arrival_traversal_sec"]) << "x" << endl;
+        cout << "\t    Req-traversal: " << std::fixed << median(serial_incr_prof_data["ref_required_traversal_sec"]) / median(serial_incr_prof_data["required_traversal_sec"]) << "x" << endl;
+        cout << "\t     Update-slack: " << std::fixed << median(serial_incr_prof_data["ref_update_slack_sec"]) / median(serial_incr_prof_data["update_slack_sec"]) << "x" << endl;
+        cout << endl;
+
+        cout << endl << "Net SerialIncr Analysis elapsed time: " << serial_incr_analyzer->get_profiling_data("total_analysis_sec") << " sec over " << serial_incr_analyzer->get_profiling_data("num_full_updates") << " full updates" << endl;
+    }
+
     if (args.num_parallel_runs) {
-        std::shared_ptr<tatum::TimingAnalyzer> parallel_analyzer = tatum::AnalyzerFactory<tatum::SetupHoldAnalysis,tatum::ParallelWalker>::make(*timing_graph, *timing_constraints, *delay_calculator);
+        std::shared_ptr<tatum::TimingAnalyzer> parallel_analyzer;
+        if (args.analysis_type == "setuphold") {
+            parallel_analyzer = tatum::AnalyzerFactory<tatum::SetupHoldAnalysis,tatum::ParallelWalker>::make(*timing_graph, *timing_constraints, *delay_calculator);
+        } else if (args.analysis_type == "setup") {
+            parallel_analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis,tatum::ParallelWalker>::make(*timing_graph, *timing_constraints, *delay_calculator);
+        } else if (args.analysis_type == "hold") {
+            parallel_analyzer = tatum::AnalyzerFactory<tatum::HoldAnalysis,tatum::ParallelWalker>::make(*timing_graph, *timing_constraints, *delay_calculator);
+        } else {
+            std::stringstream ss;
+            ss << "Unrecognized analysis type '" << args.analysis_type << "'";
+            cmd_error(argv[0], ss.str());
+        }
+
         auto parallel_setup_analyzer = std::dynamic_pointer_cast<tatum::SetupTimingAnalyzer>(parallel_analyzer);
         auto parallel_hold_analyzer = std::dynamic_pointer_cast<tatum::HoldTimingAnalyzer>(parallel_analyzer);
 
@@ -502,7 +660,7 @@ int main(int argc, char** argv) {
         size_t parallel_tags_verified = 0;
         std::map<std::string,std::vector<double>> parallel_prof_data;
         {
-            cout << "Running Parrallel Analysis " << args.num_parallel_runs << " times" << endl;
+            cout << "Running Parallel Analysis " << args.num_parallel_runs << " times" << endl;
 
             //Analyze
             parallel_prof_data = profile(args.num_parallel_runs, parallel_analyzer);
@@ -554,11 +712,11 @@ int main(int argc, char** argv) {
             cout << " (" << std::setprecision(2) << median(parallel_prof_data["update_slack_sec"])/median(parallel_prof_data["analysis_sec"]) << ")" << endl;
 
             cout << "Verifying Parallel Analysis took: " <<  parallel_verify_time<< " sec" << endl;
-            if(parallel_tags_verified != golden_reference->num_tags() && parallel_tags_verified != golden_reference->num_tags()/2) {
-                //Potentially alow / 2 for setup only analysis from setup/hold golden
-                cout << "WARNING: Expected tags (" << golden_reference->num_tags() << ") differs from tags checked (" << serial_tags_verified << ") , verification may not have occured!" << endl;
-            } else {
+            if(parallel_tags_verified == golden_reference->num_tags() || parallel_tags_verified == golden_reference->num_tags()/2) {
+                //Potentially allow / 2 for setup only analysis from setup/hold golden
                 cout << "\tVerified " << serial_tags_verified << " tags (expected " << golden_reference->num_tags() << " or " << golden_reference->num_tags()/2 << ") accross " << timing_graph->nodes().size() << " nodes" << endl;
+            } else {
+                cout << "WARNING: Expected tags (" << golden_reference->num_tags() << ") differs from tags checked (" << parallel_tags_verified << ") , verification may not have occured!" << endl;
             }
         }
         cout << endl;
@@ -590,6 +748,10 @@ int main(int argc, char** argv) {
     auto cpds = find_critical_paths(*timing_graph, *timing_constraints, *serial_setup_analyzer); 
     for(auto cpd : cpds) {
         cout << "  " << cpd.launch_domain() << " -> " << cpd.capture_domain() << ": " << std::scientific << cpd.delay() << "\n";
+    }
+
+    if (exit_code) {
+        cout << "FAILED!\n";
     }
 
     clock_gettime(CLOCK_MONOTONIC, &prog_end);
