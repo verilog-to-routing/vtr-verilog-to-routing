@@ -1401,7 +1401,10 @@ bool verify_rr_node_indices(const DeviceGrid& grid, const t_rr_node_indices& rr_
                           count,
                           describe_rr_node(inode).c_str());
             }
-        } else {
+            /* As we allow a pin to be indexable on multiple sides,
+         * This check code should not be applied to input and output pins
+         */
+        } else if ((OPIN != rr_node.type()) && (IPIN != rr_node.type())) {
             if (count != rr_node.length() + 1) {
                 VPR_ERROR(VPR_ERROR_ROUTE, "Mismatch between RR node length (%d) and count within rr_node_indices (%d, should be length + 1): %s",
                           rr_node.length(),
