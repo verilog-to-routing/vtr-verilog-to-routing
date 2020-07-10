@@ -242,8 +242,6 @@ void route_budgets::allocate_slack_using_weights(ClbNetPinsMatrix<float>& net_de
     }
     /*budgets may go below minimum delay bound to optimize for setup time*/
     keep_budget_above_value(delay_min_budget, bottom_range);
-
-    print_route_budget();
 }
 
 void route_budgets::process_negative_slack_using_minimax(ClbNetPinsMatrix<float>& net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup) {
@@ -655,12 +653,12 @@ float route_budgets::get_crit_short_path(ClusterNetId net_id, int ipin) {
     return pow(((delay_target[net_id][ipin] - delay_lower_bound[net_id][ipin]) / delay_target[net_id][ipin]), SHORT_PATH_EXP);
 }
 
-void route_budgets::print_route_budget() {
+void route_budgets::print_route_budget(std::string filename) {
     /*Used for debugging. Prints out all the delay budget class variables to an external
      * file named route_budgets.txt*/
     auto& cluster_ctx = g_vpr_ctx.clustering();
     std::fstream fp;
-    fp.open("route_budget.txt", std::fstream::out | std::fstream::trunc);
+    fp.open(filename, std::fstream::out | std::fstream::trunc);
 
     /* Prints out general info for easy error checking*/
     if (!fp.is_open() || !fp.good()) {

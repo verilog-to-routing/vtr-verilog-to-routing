@@ -750,7 +750,7 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
         float expected_total_delay_cost; // = new_costs.backward_cost + cost_params.astar_fac * expected_cost;
         float expected_total_cong_cost;
 
-        float expected_total_cong = expected_cong + to->path_data->backward_cong;
+        float expected_total_cong = cost_params.astar_fac * expected_cong + to->path_data->backward_cong;
         float expected_total_delay = cost_params.astar_fac * expected_delay + to->path_data->backward_delay;
         //If budgets specified calculate cost as described by RCV paper:
         //    R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While

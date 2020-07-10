@@ -717,10 +717,11 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
 
                 //load budgets using information from uncongested delay information
                 budgeting_inf.load_route_budgets(net_delay, timing_info, netlist_pin_lookup, router_opts);
+                
                 /*for debugging purposes*/
-                //    if (budgeting_inf.if_set()) {
-                //        budgeting_inf.print_route_budget();
-                //    }
+                   if (budgeting_inf.if_set()) {
+                       budgeting_inf.print_route_budget(std::string("route_budgets_") + std::to_string(itry) + ".txt");
+                   }
 
             } else {
                 bool stable_routing_configuration = true;
@@ -829,11 +830,17 @@ bool try_timing_driven_route_net(ConnectionRouter& router,
 
     connections_inf.prepare_routing_for_net(net_id);
 
+    bool reroute_for_hold = false;
+    if (budgeting_inf.if_set() && itry > 1) {
+        reroute_for_hold = (budgeting_inf.get_should_reroute(net_id));
+        reroute_for_hold &= timing_info->hold_worst_negative_slack() != 0;
+    }
+
     if (route_ctx.net_status.is_fixed(net_id)) { /* Skip pre-routed nets. */
         is_routed = true;
     } else if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Skip ignored nets. */
         is_routed = true;
-    } else if (should_route_net(net_id, connections_inf, true) == false) {
+    } else if (!(reroute_for_hold) && should_route_net(net_id, connections_inf, true) == false) {
         is_routed = true;
     } else {
         // track time spent vs fanout
@@ -2027,7 +2034,7 @@ bool is_iteration_complete(bool routing_is_feasible, const t_router_opts& router
     if (routing_is_feasible) {
         if (router_opts.routing_budgets_algorithm != YOYO) {
             return true;
-        } else if (router_opts.routing_budgets_algorithm == YOYO && (itry == 1) && timing_info->hold_worst_negative_slack() == 0) {
+        } else if (router_opts.routing_budgets_algorithm == YOYO && timing_info->hold_worst_negative_slack() == 0) {
             return true;
         }
     }
@@ -2038,11 +2045,13 @@ bool should_setup_lower_bound_connection_delays(int itry, const t_router_opts& r
     //This function checks the iteration number to see if is neccessary to setup the lower bound connection delays for future comparison.
     //When VPR is normally run with the budgeting algorithm turned off, it the lower bound connection delays are set on the first iteration.
     //However, with the yoyo algorithm, the lower bound is set every after every 5 iterations, so long as it is below 25.
-    if (router_opts.routing_budgets_algorithm != YOYO && itry == 1) {
-        return true;
-    } else if (router_opts.routing_budgets_algorithm == YOYO && itry % 5 == 1 && itry < 25) {
-        return true;
-    }
+    // if (router_opts.routing_budgets_algorithm != YOYO && itry == 1) {
+    //     return true;
+    // } else if (router_opts.routing_budgets_algorithm == YOYO && itry % 5 == 1 && itry < 25) {
+    //     return true;
+    // }
+    if(itry == 1) return true;
+
     return false;
 }
 
