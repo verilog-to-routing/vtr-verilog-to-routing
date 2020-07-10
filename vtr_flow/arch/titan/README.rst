@@ -56,7 +56,7 @@ For more details about the new Altera's Stratix IV FPGA architecture capture var
 see Section 5.4 of the paper, "VTR 8: High Performance CAD and Customizable FPGA Architecture Modelling": 
 eecg.utoronto.ca/~kmurray/vtr/vtr8_trets.pdf
 
-legacy subdirectory:
+**legacy subdirectory:**
 
     stratixiv_arch.timing.legacy.xml:
         The old capture of Altera's Stratix IV FPGA architecture.
