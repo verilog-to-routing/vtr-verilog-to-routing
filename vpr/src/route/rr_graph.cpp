@@ -1510,6 +1510,9 @@ static void build_rr_sinks_sources(const int i,
                             L_rr_node[inode].set_side(side);
 
                             VTR_ASSERT(type->pinloc[width_offset][height_offset][L_rr_node[inode].side()][L_rr_node[inode].pin_num()]);
+
+                            /* Flip the flag as we have just processed the rr_node for the pin */
+                            first_pin = false;
                         }
                     }
                 }

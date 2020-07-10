@@ -123,9 +123,15 @@ void check_rr_graph(const t_graph_type graph_type,
 
             t_rr_type to_rr_type = device_ctx.rr_nodes[to_node].type();
 
-            //Only expect chan <-> chan connections to have multiple edges
-            if ((to_rr_type != CHANX && to_rr_type != CHANY)
-                || (rr_type != CHANX && rr_type != CHANY)) {
+            /* Only expect the following cases to have multiple edges
+             * - chan <-> chan connections 
+             * - IPIN <-> chan connections (unique rr_node for IPIN nodes on multiple sides)
+             * - OPIN <-> chan connections (unique rr_node for OPIN nodes on multiple sides)
+             */
+            if (((to_rr_type != CHANX && to_rr_type != CHANY && rr_type != IPIN)
+                 || (rr_type != CHANX && rr_type != CHANY))
+                && ((to_rr_type != CHANX && to_rr_type != CHANY)
+                    || (rr_type != CHANX && rr_type != CHANY && rr_type != OPIN))) {
                 VPR_ERROR(VPR_ERROR_ROUTE,
                           "in check_rr_graph: node %d (%s) connects to node %d (%s) %zu times - multi-connections only expected for CHAN->CHAN.\n",
                           inode, rr_node_typename[rr_type], to_node, rr_node_typename[to_rr_type], num_edges_to_node);
@@ -151,7 +157,12 @@ void check_rr_graph(const t_graph_type graph_type,
             for (auto kv : switch_counts) {
                 if (kv.second <= 1) continue;
 
-                auto switch_type = device_ctx.rr_switch_inf[kv.first].type();
+                /* Redundant edges are not allowed for chan <-> chan connections
+                 * but allowed for input pin <-> chan or output pin <-> chan connections 
+                 */
+                if ((to_rr_type == CHANX || to_rr_type == CHANY)
+                    && (rr_type == CHANX || rr_type == CHANY)) {
+                    auto switch_type = device_ctx.rr_switch_inf[kv.first].type();
 
                 VPR_ERROR(VPR_ERROR_ROUTE, "in check_rr_graph: node %d has %d redundant connections to node %d of switch type %d (%s)",
                           inode, kv.second, to_node, kv.first, SWITCH_TYPE_STRINGS[size_t(switch_type)]);
