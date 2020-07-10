@@ -63,7 +63,7 @@
             "PARSE_TO_AST Parser found (1) errors in your syntax, exiting"
         ],
         "warnings": [
-            "PARSE_TO_AST error in parsing: (syntax error, unexpected $end)"
+            "PARSE_TO_AST error in parsing: (syntax error, unexpected end of file)"
         ],
         "generic logic size": 4
     },
@@ -76,7 +76,7 @@
             "PARSE_TO_AST Parser found (1) errors in your syntax, exiting"
         ],
         "warnings": [
-            "PARSE_TO_AST error in parsing: (syntax error, unexpected $end)"
+            "PARSE_TO_AST error in parsing: (syntax error, unexpected end of file)"
         ],
         "generic logic size": 6
     },
@@ -89,7 +89,7 @@
             "PARSE_TO_AST Parser found (1) errors in your syntax, exiting"
         ],
         "warnings": [
-            "PARSE_TO_AST error in parsing: (syntax error, unexpected $end)"
+            "PARSE_TO_AST error in parsing: (syntax error, unexpected end of file)"
         ],
         "generic logic size": 6
     },
@@ -101,7 +101,7 @@
             "PARSE_TO_AST Parser found (1) errors in your syntax, exiting"
         ],
         "warnings": [
-            "PARSE_TO_AST error in parsing: (syntax error, unexpected $end)"
+            "PARSE_TO_AST error in parsing: (syntax error, unexpected end of file)"
         ]
     },
     "macromodule/multiple_macromodules/k6_frac_N10_frac_chain_mem32K_40nm": {
