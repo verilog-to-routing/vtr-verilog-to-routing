@@ -2,7 +2,6 @@
     auto-hide = true
     default = -1
     hide-if = ${default}
-    depend-on = [ "exit" ]
 
 ["exit"]
     # if it is expected to fail, dont look for different failure
@@ -10,7 +9,6 @@
     regex = "Odin exited with code: (\d+)"
     default = 50
     hide-if = 0
-    depends_on = []
 
 ["leaks"]
     regex = [ 
@@ -20,22 +18,18 @@
         "==[\d]+== ERROR SUMMARY: (\d)+ errors" 
         ]
     default = 0
-    depends_on = []
 
 ["errors"]
     regex = "Error::(.*)"
     default = []
-    depends_on = []
 
 ["warnings"]
     regex = "Warning::(.*)"
     default = []
-    depends_on = []
 
 ["expectation"]
     regex = "Expect::(.*)"
     default = []
-    depends_on = []
 
 ["max_rss(MiB)"]
     # Memory usage can be very off depending on the number of cores
