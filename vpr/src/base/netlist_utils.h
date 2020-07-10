@@ -10,7 +10,10 @@
  *
  */
 
-//Returns true if all elements are contiguously ascending values (i.e. equal to their index)
+/**
+ * @brief Returns true if all elements are contiguously ascending values
+ *        (i.e. equal to their index)
+ */
 template<typename T>
 bool are_contiguous(vtr::vector_map<T, T>& values) {
     size_t i = 0;
@@ -23,7 +26,7 @@ bool are_contiguous(vtr::vector_map<T, T>& values) {
     return true;
 }
 
-//Returns true if all elements in the vector 'values' evaluate true
+///@brief Returns true if all elements in the vector 'values' evaluate true
 template<typename Container>
 bool all_valid(const Container& values) {
     for (auto val : values) {
@@ -34,7 +37,7 @@ bool all_valid(const Container& values) {
     return true;
 }
 
-//Builds a mapping from old to new ids by skipping values marked invalid
+///@brief Builds a mapping from old to new ids by skipping values marked invalid
 template<typename Id>
 vtr::vector_map<Id, Id> compress_ids(const vtr::vector_map<Id, Id>& ids) {
     vtr::vector_map<Id, Id> id_map(ids.size());
@@ -50,12 +53,16 @@ vtr::vector_map<Id, Id> compress_ids(const vtr::vector_map<Id, Id>& ids) {
     return id_map;
 }
 
-//Returns a vector based on 'values', which has had entries dropped & re-ordered according according to 'id_map'.
-//Each entry in id_map corresponds to the assoicated element in 'values'.
-//The value of the id_map entry is the new ID of the entry in values.
-//
-//If it is an invalid ID, the element in values is dropped.
-//Otherwise the element is moved to the new ID location.
+/**
+ * @brief Returns a vector based on 'values', which has had entries
+ *        dropped & re-ordered according according to 'id_map'.
+ *
+ * Each entry in id_map corresponds to the assoicated element in 'values'.
+ * The value of the id_map entry is the new ID of the entry in values.
+ *
+ * If it is an invalid ID, the element in values is dropped.
+ * Otherwise the element is moved to the new ID location.
+ */
 template<typename Id, typename T>
 vtr::vector_map<Id, T> clean_and_reorder_values(const vtr::vector_map<Id, T>& values, const vtr::vector_map<Id, Id>& id_map) {
     VTR_ASSERT(values.size() == id_map.size());
@@ -77,8 +84,11 @@ vtr::vector_map<Id, T> clean_and_reorder_values(const vtr::vector_map<Id, T>& va
     return result;
 }
 
-//Returns the set of new valid Ids defined by 'id_map'
-//TODO: merge with clean_and_reorder_values
+/**
+ * @brief Returns the set of new valid Ids defined by 'id_map'
+ *
+ * TODO: merge with clean_and_reorder_values
+ */
 template<typename Id>
 vtr::vector_map<Id, Id> clean_and_reorder_ids(const vtr::vector_map<Id, Id>& id_map) {
     //For IDs, the values are the new id's stored in the map
@@ -99,8 +109,10 @@ vtr::vector_map<Id, Id> clean_and_reorder_ids(const vtr::vector_map<Id, Id>& id_
     return result;
 }
 
-//Count how many of the Id's referenced in 'range' have a valid
-//new mapping in 'id_map'
+/**
+ * @brief Count how many of the Id's referenced in 'range' have a valid
+ *        new mapping in 'id_map'
+ */
 template<typename R, typename Id>
 size_t count_valid_refs(R range, const vtr::vector_map<Id, Id>& id_map) {
     size_t valid_count = 0;
@@ -114,7 +126,10 @@ size_t count_valid_refs(R range, const vtr::vector_map<Id, Id>& id_map) {
     return valid_count;
 }
 
-//Updates the Ids in 'values' based on id_map, even if the original or new mapping is not valid
+/**
+ * @brief Updates the Ids in 'values' based on id_map,
+ *        even if the original or new mapping is not valid
+ */
 template<typename Container, typename ValId>
 Container update_all_refs(const Container& values, const vtr::vector_map<ValId, ValId>& id_map) {
     Container updated;

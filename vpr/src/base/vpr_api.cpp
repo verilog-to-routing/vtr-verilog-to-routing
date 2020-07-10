@@ -1,10 +1,14 @@
 /**
- * General API for VPR
- * Other software tools should generally call just the functions defined here
- * For advanced/power users, you can call functions defined elsewhere in VPR or modify the data structures directly at your discretion but be aware that doing so can break the correctness of VPR
+ * @file
+ * @author Jason Luu
+ * @date June 21, 2012
  *
- * Author: Jason Luu
- * June 21, 2012
+ * @brief General API for VPR
+ *
+ * Other software tools should generally call just the functions defined here
+ * For advanced/power users, you can call functions defined elsewhere in VPR or
+ * modify the data structures directly at your discretion but be aware
+ * that doing so can break the correctness of VPR
  */
 
 #include <cstdio>
@@ -101,7 +105,7 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
                                                     int* ipin_switch_fanin);
 /* Local subroutines end */
 
-/* Display general VPR information */
+///@brief Display general VPR information
 void vpr_print_title() {
     VTR_LOG("VPR FPGA Placement and Routing.\n");
     VTR_LOG("Version: %s\n", vtr::VERSION);
@@ -146,7 +150,9 @@ void vpr_initialize_logging() {
     }
 }
 
-/* Initialize VPR
+/**
+ * @brief Initialize VPR
+ *
  * 1. Read Options
  * 2. Read Arch
  * 3. Read Circuit
@@ -169,7 +175,9 @@ void vpr_init(const int argc, const char** argv, t_options* options, t_vpr_setup
     vpr_init_with_options(options, vpr_setup, arch);
 }
 
-/* Initialize VPR with options
+/**
+ * @brief  Initialize VPR with options
+ *
  * 1. Read Arch
  * 2. Read Circuit
  * 3. Sanity check all three
@@ -387,9 +395,11 @@ void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch) {
     }
 }
 
-/*
- * Allocs globals: chan_width_x, chan_width_y, device_ctx.grid
- * Depends on num_clbs, pins_per_clb */
+/**
+ * @brief Allocs globals: chan_width_x, chan_width_y, device_ctx.grid
+ *
+ * Depends on num_clbs, pins_per_clb
+ */
 void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     vtr::ScopedStartFinishTimer timer("Build Device Grid");
     /* Read in netlist file for placement and routing */
@@ -672,10 +682,11 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
     } else { //Do or load
         int chan_width = router_opts.fixed_channel_width;
 
-        //Initialize the delay calculator
-        vtr::t_chunk net_delay_ch;
-        vtr::vector<ClusterNetId, float*> net_delay = alloc_net_delay(&net_delay_ch);
+        auto& cluster_ctx = g_vpr_ctx.clustering();
 
+        ClbNetPinsMatrix<float> net_delay = make_net_pins_matrix<float>(cluster_ctx.clb_nlist);
+
+        //Initialize the delay calculator
         std::shared_ptr<SetupHoldTimingInfo> timing_info = nullptr;
         std::shared_ptr<RoutingDelayCalculator> routing_delay_calc = nullptr;
         if (vpr_setup.Timing.timing_analysis_enabled) {
@@ -683,7 +694,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
             routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay);
 
-            timing_info = make_setup_hold_timing_info(routing_delay_calc);
+            timing_info = make_setup_hold_timing_info(routing_delay_calc, router_opts.timing_update_type);
         }
 
         if (router_opts.doRouting == STAGE_DO) {
@@ -710,7 +721,7 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         std::string graphics_msg;
         if (route_status.success()) {
             //Sanity check the routing
-            check_route(router_opts.route_type);
+            check_route(router_opts.route_type, router_opts.check_route);
             get_serial_num();
 
             //Update status
@@ -741,7 +752,6 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
         //Update interactive graphics
         update_screen(ScreenUpdatePriority::MAJOR, graphics_msg.c_str(), ROUTING, timing_info);
-        free_net_delay(net_delay, &net_delay_ch);
     }
 
     return route_status;
@@ -752,7 +762,7 @@ RouteStatus vpr_route_fixed_W(t_vpr_setup& vpr_setup,
                               int fixed_channel_width,
                               std::shared_ptr<SetupHoldTimingInfo> timing_info,
                               std::shared_ptr<RoutingDelayCalculator> delay_calc,
-                              vtr::vector<ClusterNetId, float*>& net_delay) {
+                              ClbNetPinsMatrix<float>& net_delay) {
     if (router_needs_lookahead(vpr_setup.RouterOpts.router_algorithm)) {
         // Prime lookahead cache to avoid adding lookahead computation cost to
         // the routing timer.
@@ -788,7 +798,7 @@ RouteStatus vpr_route_min_W(t_vpr_setup& vpr_setup,
                             const t_arch& arch,
                             std::shared_ptr<SetupHoldTimingInfo> timing_info,
                             std::shared_ptr<RoutingDelayCalculator> delay_calc,
-                            vtr::vector<ClusterNetId, float*>& net_delay) {
+                            ClbNetPinsMatrix<float>& net_delay) {
     // Note that lookahead cache is not primed here because
     // binary_search_place_and_route will change the channel width, and result
     // in the lookahead cache being recomputed.
@@ -817,7 +827,7 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
                              const t_arch& /*arch*/,
                              int fixed_channel_width,
                              std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                             vtr::vector<ClusterNetId, float*>& net_delay) {
+                             ClbNetPinsMatrix<float>& net_delay) {
     vtr::ScopedStartFinishTimer timer("Load Routing");
     if (NO_FIXED_CHANNEL_WIDTH == fixed_channel_width) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Fixed channel width must be specified when loading routing (was %d)", fixed_channel_width);
@@ -892,14 +902,16 @@ void vpr_close_graphics(const t_vpr_setup& /*vpr_setup*/) {
     free_draw_structs();
 }
 
-/* Since the parameters of a switch may change as a function of its fanin,
+/**
+ * Since the parameters of a switch may change as a function of its fanin,
  * to get an estimation of inter-cluster delays we need a reasonable estimation
  * of the fan-ins of switches that connect clusters together. These switches are
  * 1) opin to wire switch
  * 2) wire to wire switch
  * 3) wire to ipin switch
  * We can estimate the fan-in of these switches based on the Fc_in/Fc_out of
- * a logic block, and the switch block Fs value */
+ * a logic block, and the switch block Fs value
+ */
 static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup,
                                                     const t_arch& arch,
                                                     const int wire_segment_length,
@@ -985,7 +997,7 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
     }
 }
 
-/* Free architecture data structures */
+///@brief Free architecture data structures
 void free_device(const t_det_routing_arch& routing_arch) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
@@ -1073,12 +1085,12 @@ void vpr_free_all(t_arch& Arch,
  *  Used when you need fine-grained control over VPR that the main VPR operations do not enable
  ****************************************************************************************************/
 
-/* Read in user options */
+///@brief Read in user options
 void vpr_read_options(const int argc, const char** argv, t_options* options) {
     *options = read_options(argc, argv);
 }
 
-/* Read in arch and circuit */
+///@brief Read in arch and circuit
 void vpr_setup_vpr(t_options* Options,
                    const bool TimingEnabled,
                    const bool readArchFile,
@@ -1129,7 +1141,7 @@ void vpr_check_arch(const t_arch& Arch) {
     CheckArch(Arch);
 }
 
-/* Verify settings don't conflict or otherwise not make sense */
+///@brief Verify settings don't conflict or otherwise not make sense
 void vpr_check_setup(const t_packer_opts& PackerOpts,
                      const t_placer_opts& PlacerOpts,
                      const t_router_opts& RouterOpts,
@@ -1141,7 +1153,7 @@ void vpr_check_setup(const t_packer_opts& PackerOpts,
                Segments, Timing, Chans);
 }
 
-/* Show current setup */
+///@brief Show current setup
 void vpr_show_setup(const t_vpr_setup& vpr_setup) {
     ShowSetup(vpr_setup);
 }
@@ -1188,16 +1200,15 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
                   vpr_setup.RoutingArch.wire_to_rr_ipin_switch);
 
     if (vpr_setup.TimingEnabled) {
-        vtr::vector<ClusterNetId, float*> net_delay;
-        vtr::t_chunk net_delay_ch;
-
         //Load the net delays
-        net_delay = alloc_net_delay(&net_delay_ch);
+        auto& cluster_ctx = g_vpr_ctx.clustering();
+
+        ClbNetPinsMatrix<float> net_delay = make_net_pins_matrix<float>(cluster_ctx.clb_nlist);
         load_net_delay_from_routing(net_delay);
 
         //Do final timing analysis
         auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay);
-        auto timing_info = make_setup_hold_timing_info(analysis_delay_calc);
+        auto timing_info = make_setup_hold_timing_info(analysis_delay_calc, vpr_setup.AnalysisOpts.timing_update_type);
         timing_info->update();
 
         if (isEchoFileEnabled(E_ECHO_ANALYSIS_TIMING_GRAPH)) {
@@ -1222,14 +1233,13 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
         if (vpr_setup.PowerOpts.do_power) {
             vpr_power_estimation(vpr_setup, Arch, *timing_info, route_status);
         }
-
-        //Clean-up the net delays
-        free_net_delay(net_delay, &net_delay_ch);
     }
 }
 
-/* This function performs power estimation. It relies on the
- * placement/routing results, as well as the critical path.
+/**
+ * @brief Performs power estimation.
+ *
+ * It relies on the placement/routing results, as well as the critical path.
  * Power estimation can be performed as part of a full or
  * partial flow. More information on the power estimation functions of
  * VPR can be found here:
@@ -1300,59 +1310,59 @@ void vpr_power_estimation(const t_vpr_setup& vpr_setup,
 
 void vpr_print_error(const VprError& vpr_error) {
     /* Determine the type of VPR error, To-do: can use some enum-to-string mechanism */
-    char* error_type = nullptr;
+    const char* error_type = nullptr;
     try {
         switch (vpr_error.type()) {
             case VPR_ERROR_UNKNOWN:
-                error_type = vtr::strdup("Unknown");
+                error_type = "Unknown";
                 break;
             case VPR_ERROR_ARCH:
-                error_type = vtr::strdup("Architecture file");
+                error_type = "Architecture file";
                 break;
             case VPR_ERROR_PACK:
-                error_type = vtr::strdup("Packing");
+                error_type = "Packing";
                 break;
             case VPR_ERROR_PLACE:
-                error_type = vtr::strdup("Placement");
+                error_type = "Placement";
                 break;
             case VPR_ERROR_ROUTE:
-                error_type = vtr::strdup("Routing");
+                error_type = "Routing";
                 break;
             case VPR_ERROR_TIMING:
-                error_type = vtr::strdup("Timing");
+                error_type = "Timing";
                 break;
             case VPR_ERROR_SDC:
-                error_type = vtr::strdup("SDC file");
+                error_type = "SDC file";
                 break;
             case VPR_ERROR_NET_F:
-                error_type = vtr::strdup("Netlist file");
+                error_type = "Netlist file";
                 break;
             case VPR_ERROR_BLIF_F:
-                error_type = vtr::strdup("Blif file");
+                error_type = "Blif file";
                 break;
             case VPR_ERROR_PLACE_F:
-                error_type = vtr::strdup("Placement file");
+                error_type = "Placement file";
                 break;
             case VPR_ERROR_IMPL_NETLIST_WRITER:
-                error_type = vtr::strdup("Implementation Netlist Writer");
+                error_type = "Implementation Netlist Writer";
                 break;
             case VPR_ERROR_ATOM_NETLIST:
-                error_type = vtr::strdup("Atom Netlist");
+                error_type = "Atom Netlist";
                 break;
             case VPR_ERROR_POWER:
-                error_type = vtr::strdup("Power");
+                error_type = "Power";
                 break;
             case VPR_ERROR_ANALYSIS:
-                error_type = vtr::strdup("Analysis");
+                error_type = "Analysis";
                 break;
             case VPR_ERROR_OTHER:
-                error_type = vtr::strdup("Other");
+                error_type = "Other";
                 break;
             case VPR_ERROR_INTERRUPTED:
-                error_type = vtr::strdup("Interrupted");
+                error_type = "Interrupted";
                 break;
             default:
-                error_type = vtr::strdup("Unrecognized Error");
+                error_type = "Unrecognized Error";
                 break;
         }
     } catch (const vtr::VtrError& e) {

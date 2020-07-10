@@ -494,7 +494,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
          * Initialize the timing analyzer
          */
         clustering_delay_calc = std::make_shared<PreClusterDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, packer_opts.inter_cluster_net_delay, expected_lowest_cost_pb_gnode);
-        timing_info = make_setup_timing_info(clustering_delay_calc);
+        timing_info = make_setup_timing_info(clustering_delay_calc, packer_opts.timing_update_type);
 
         //Calculate the initial timing
         timing_info->update();
@@ -1451,6 +1451,13 @@ static enum e_block_pack_status try_place_atom_block_rec(const t_pb_graph_node* 
         alloc_and_load_pb_stats(pb, feasible_block_array_size);
     }
     pb_type = pb_graph_node->pb_type;
+
+    /* Any pb_type under an mode, which is disabled for packing, should not be considerd for mapping 
+     * Early exit to flag failure
+     */
+    if (true == pb_type->parent_mode->disable_packing) {
+        return BLK_FAILED_FEASIBLE;
+    }
 
     is_primitive = (pb_type->num_modes == 0);
 

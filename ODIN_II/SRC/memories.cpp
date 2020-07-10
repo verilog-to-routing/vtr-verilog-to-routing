@@ -125,7 +125,7 @@ void remap_input_port_to_memory(nnode_t* node, signal_list_t* signals, const cha
     for (i = 0; i < j; i++) {
         npin_t* pin = node->input_pins[i];
         if (!strcmp(pin->mapping, port_name)) {
-            error_message(NETLIST_ERROR, -1, -1,
+            error_message(NETLIST, -1, -1,
                           "Attempted to reassign output port %s to memory %s.", port_name, node->name);
         }
     }
@@ -157,7 +157,7 @@ void add_input_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const ch
     for (i = 0; i < j; i++) {
         npin_t* pin = node->input_pins[i];
         if (!strcmp(pin->mapping, port_name)) {
-            error_message(NETLIST_ERROR, -1, -1,
+            error_message(NETLIST, -1, -1,
                           "Attempted to reassign input port %s to memory %s.", port_name, node->name);
         }
     }
@@ -193,7 +193,7 @@ void remap_output_port_to_memory(nnode_t* node, signal_list_t* signalsvar, char*
     for (i = 0; i < j; i++) {
         npin_t* pin = node->output_pins[i];
         if (!strcmp(pin->mapping, port_name)) {
-            error_message(NETLIST_ERROR, -1, -1,
+            error_message(NETLIST, -1, -1,
                           "Attempted to reassign output port %s to node %s.", port_name, node->name);
         }
     }
@@ -225,7 +225,7 @@ void add_output_port_to_memory(nnode_t* node, signal_list_t* signals, const char
     for (i = 0; i < j; i++) {
         npin_t* pin = node->output_pins[i];
         if (!strcmp(pin->mapping, port_name)) {
-            error_message(NETLIST_ERROR, -1, -1,
+            error_message(NETLIST, -1, -1,
                           "Attempted to reassign output port %s to node %s.", port_name, node->name);
         }
     }
@@ -270,7 +270,7 @@ void check_memories_and_report_distribution() {
         long depth = get_sp_ram_depth(node);
 
         if (depth > shift_left_value_with_overflow_check(0x1, HARD_RAM_ADDR_LIMIT))
-            error_message(NETLIST_ERROR, -1, -1, "Memory %s of depth %zu exceeds ODIN depth bound of 2^%d.", node->name, depth, HARD_RAM_ADDR_LIMIT);
+            error_message(NETLIST, -1, -1, "Memory %s of depth %zu exceeds ODIN depth bound of 2^%d.", node->name, depth, HARD_RAM_ADDR_LIMIT);
 
         printf("SPRAM: %zu width %zu depth\n", width, depth);
 
@@ -295,7 +295,7 @@ void check_memories_and_report_distribution() {
         long width = get_dp_ram_width(node);
         long depth = get_dp_ram_depth(node);
         if (depth > shift_left_value_with_overflow_check(0x1, HARD_RAM_ADDR_LIMIT))
-            error_message(NETLIST_ERROR, -1, -1, "Memory %s of depth %zu exceeds ODIN depth bound of 2^%d.", node->name, depth, HARD_RAM_ADDR_LIMIT);
+            error_message(NETLIST, -1, -1, "Memory %s of depth %zu exceeds ODIN depth bound of 2^%d.", node->name, depth, HARD_RAM_ADDR_LIMIT);
 
         printf("DPRAM: %zu width %zu depth\n", width, depth);
         total_memory_bits += width * depth;
@@ -1298,7 +1298,7 @@ sp_ram_signals* get_sp_ram_signals(nnode_t* node) {
         else if (!strcmp(pin->mapping, "clk"))
             signals->clk = pin;
         else
-            error_message(NETLIST_ERROR, ast_node->line_number, ast_node->file_number,
+            error_message(NETLIST, ast_node->line_number, ast_node->file_number,
                           "Unexpected input pin mapping \"%s\" on memory node: %s\n",
                           pin->mapping, node->name);
     }
@@ -1314,7 +1314,7 @@ sp_ram_signals* get_sp_ram_signals(nnode_t* node) {
         if (!strcmp(pin->mapping, "out"))
             add_pin_to_signal_list(signals->out, pin);
         else
-            error_message(NETLIST_ERROR, ast_node->line_number, ast_node->file_number,
+            error_message(NETLIST, ast_node->line_number, ast_node->file_number,
                           "Unexpected output pin mapping \"%s\" on memory node: %s\n",
                           pin->mapping, node->name);
     }
@@ -1367,7 +1367,7 @@ dp_ram_signals* get_dp_ram_signals(nnode_t* node) {
         else if (!strcmp(pin->mapping, "clk"))
             signals->clk = pin;
         else
-            error_message(NETLIST_ERROR, ast_node->line_number, ast_node->file_number,
+            error_message(NETLIST, ast_node->line_number, ast_node->file_number,
                           "Unexpected input pin mapping \"%s\" on memory node: %s\n",
                           pin->mapping, node->name);
     }
@@ -1389,7 +1389,7 @@ dp_ram_signals* get_dp_ram_signals(nnode_t* node) {
         else if (!strcmp(pin->mapping, "out2"))
             add_pin_to_signal_list(signals->out2, pin);
         else
-            error_message(NETLIST_ERROR, ast_node->line_number, ast_node->file_number,
+            error_message(NETLIST, ast_node->line_number, ast_node->file_number,
                           "Unexpected output pin mapping \"%s\" on memory node: %s\n",
                           pin->mapping, node->name);
     }
@@ -1690,7 +1690,7 @@ void instantiate_soft_dual_port_ram(nnode_t* node, short mark, netlist_t* netlis
 signal_list_t* create_decoder(nnode_t* node, short mark, signal_list_t* input_list) {
     long num_inputs = input_list->count;
     if (num_inputs > SOFT_RAM_ADDR_LIMIT)
-        error_message(NETLIST_ERROR, node->related_ast_node->line_number, node->related_ast_node->file_number, "Memory %s of depth 2^%ld exceeds ODIN bound of 2^%d.\nMust use an FPGA architecture that contains embedded hard block memories", node->name, num_inputs, SOFT_RAM_ADDR_LIMIT);
+        error_message(NETLIST, node->related_ast_node->line_number, node->related_ast_node->file_number, "Memory %s of depth 2^%ld exceeds ODIN bound of 2^%d.\nMust use an FPGA architecture that contains embedded hard block memories", node->name, num_inputs, SOFT_RAM_ADDR_LIMIT);
 
     // Number of outputs is 2^num_inputs
     long num_outputs = shift_left_value_with_overflow_check(0x1, num_inputs);
@@ -1702,7 +1702,7 @@ signal_list_t* create_decoder(nnode_t* node, short mark, signal_list_t* input_li
             && input_list->pins[i]->net != verilog_netlist->zero_net
             && input_list->pins[i]->net != verilog_netlist->one_net
             && input_list->pins[i]->net != verilog_netlist->pad_net) {
-            warning_message(NETLIST_ERROR, -1, -1, "Signal %s is not driven. padding with ground\n", input_list->pins[i]->name);
+            warning_message(NETLIST, -1, -1, "Signal %s is not driven. padding with ground\n", input_list->pins[i]->name);
             add_fanout_pin_to_net(verilog_netlist->zero_net, input_list->pins[i]);
         }
 

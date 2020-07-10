@@ -427,10 +427,39 @@
         </metadata>
       </pb_type>
       <interconnect>
-        <complete name="crossbar" input="clb.I fle[1:0].out" output="fle[1:0].in">
-          <delay_constant max="95e-12" in_port="clb.I" out_port="fle[1:0].in"/>
-          <delay_constant max="75e-12" in_port="fle[1:0].out" out_port="fle[1:0].in"/>
+        <complete name="crossbar1" input="clb.I fle[1:0].out" output="fle[1:1].in">
+          <delay_constant max="95e-12" in_port="clb.I" out_port="fle[1:1].in"/>
+          <delay_constant max="75e-12" in_port="fle[1:0].out" out_port="fle[1:1].in"/>
         </complete>
+        <complete name="crossbar0" input="clb.I fle[1:0].out" output="fle[0:0].in[5:1]">
+          <delay_constant max="95e-12" in_port="clb.I" out_port="fle[0:0].in[5:1]"/>
+          <delay_constant max="75e-12" in_port="fle[1:0].out" out_port="fle[0:0].in[5:1]"/>
+        </complete>
+        <mux name="mux_fle0_in0" output="fle[0].in[0]"
+            input="clb.I[0] clb.I[1] clb.I[2] clb.I[3] clb.I[4] clb.I[5] clb.I[6] clb.I[7] clb.I[8] clb.I[9] clb.I[10] clb.I[11] fle[0].out[0] fle[0].out[1] fle[1].out[0] fle[1].out[1]">
+          <delay_constant max="95e-12" in_port="clb.I" out_port="fle[0].in[0]"/>
+          <delay_constant max="75e-12" in_port="fle[1:0].out" out_port="fle[0].in[0]"/>
+          <metadata>
+              <meta name="fasm_mux">
+                  clb.I[0] :        FLE0{SING}_{LOC}.IN0_XBAR_I0
+                  clb.I[1] :        FLE0{SING}_{LOC}.IN0_XBAR_I1
+                  clb.I[2] :        FLE0{SING}_{LOC}.IN0_XBAR_I2
+                  clb.I[3] :        FLE0{SING}_{LOC}.IN0_XBAR_I3
+                  clb.I[4] :        FLE0{SING}_{LOC}.IN0_XBAR_I4
+                  clb.I[5] :        FLE0{SING}_{LOC}.IN0_XBAR_I5
+                  clb.I[6] :        FLE0{SING}_{LOC}.IN0_XBAR_I6
+                  clb.I[7] :        FLE0{SING}_{LOC}.IN0_XBAR_I7
+                  clb.I[8] :        FLE0{SING}_{LOC}.IN0_XBAR_I8
+                  clb.I[9] :        FLE0{SING}_{LOC}.IN0_XBAR_I9
+                  clb.I[10] :       FLE0{SING}_{LOC}.IN0_XBAR_I10
+                  clb.I[11] :       FLE0{SING}_{LOC}.IN0_XBAR_I11
+                  fle[0].out[0] :   FLE0{SING}_{LOC}.IN0_XBAR_FLE0_OUT0
+                  fle[0].out[1] :   FLE0{SING}_{LOC}.IN0_XBAR_FLE0_OUT1
+                  fle[1].out[0] :   FLE0{SING}_{LOC}.IN0_XBAR_FLE1_OUT0
+                  fle[1].out[1] :   FLE0{SING}_{LOC}.IN0_XBAR_FLE1_OUT1
+              </meta>
+          </metadata>
+        </mux>
         <complete name="clks" input="clb.clk" output="fle[1:0].clk">
         </complete>
         <direct name="clbouts1" input="fle[1:0].out[0:0]" output="clb.O[1:0]"/>

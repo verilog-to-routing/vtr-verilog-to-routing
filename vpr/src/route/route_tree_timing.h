@@ -4,6 +4,7 @@
 #include "connection_based_routing.h"
 #include "route_common.h"
 #include "spatial_route_tree_lookup.h"
+#include "timing_util.h"
 
 /**************** Subroutines exported by route_tree_timing.c ***************/
 
@@ -22,10 +23,9 @@ t_rt_node* update_route_tree(t_heap* hptr, SpatialRouteTreeLookup* spatial_rt_lo
 
 void update_net_delays_from_route_tree(float* net_delay,
                                        const t_rt_node* const* rt_node_of_sink,
-                                       ClusterNetId inet);
-void update_remaining_net_delays_from_route_tree(float* net_delay,
-                                                 const t_rt_node* const* rt_node_of_sink,
-                                                 const std::vector<int>& remaining_sinks);
+                                       ClusterNetId inet,
+                                       TimingInfo* timing_info,
+                                       ClusteredPinTimingInvalidator* pin_timing_invalidator);
 
 void load_route_tree_Tdel(t_rt_node* rt_root, float Tarrival);
 void load_route_tree_rr_route_inf(t_rt_node* root);

@@ -167,7 +167,12 @@ function display() {
 	LEAK_MESSAGE=""
 	
 	# check for valgrind leaks
-	LEAK_COUNT="$(cat ${LOG_FILE} | grep 'ERROR SUMMARY:' | awk '{print $4}' | grep -E '^\-?[0-9]+$')"
+	VALGRIND_LEAK_COUNT="$(cat ${LOG_FILE} | grep 'ERROR SUMMARY:' | awk '{print $4}' | grep -E '^\-?[0-9]+$')"
+	# check for LSAN leaks
+	LSAN_LEAK_COUNT="$(cat ${LOG_FILE} | grep 'SUMMARY: AddressSanitizer:' | awk '{print $7}' | grep -E '^\-?[0-9]+$')"
+
+	LEAK_COUNT=$(( VALGRIND_LEAK_COUNT + LSAN_LEAK_COUNT ))
+
 	case "_${LEAK_COUNT}" in
 		_|_0)	LEAK_MESSAGE=""
 		;;_1)	LEAK_MESSAGE="[${LEAK_COUNT}]Leak "
@@ -175,12 +180,13 @@ function display() {
 	esac
 
 	# check for uncaught errors
-
 	ERROR_CATCH="$(cat "${LOG_FILE}" | grep 'Odin exited with code: ' | awk '{print $5}' | grep -E '^\-?[0-9]+$')"
 	[ "_${ERROR_CATCH}" != "_" ] && EXIT_CODE="${ERROR_CATCH}"
 
 	EXIT_ERROR_TYPE=$( print_exit_type "${EXIT_CODE}" )
 
+	MISMATCH_CHECK="$(cat "${LOG_FILE}" | grep "Error::OUTPUT_BLIF Vector files differ.")"
+	[ "_${MISMATCH_CHECK}" != "_" ] && EXIT_ERROR_TYPE="MISMATCH"
 
 	if [ "_${EXIT_CODE}" == "_0" ] && [ "_${LEAK_MESSAGE}" == "_" ]
 	then

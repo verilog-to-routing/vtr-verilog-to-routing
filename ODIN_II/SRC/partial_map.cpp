@@ -268,7 +268,7 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
         case DIVIDE:
         case MODULO:
         default:
-            error_message(NETLIST_ERROR, 0, -1, "%s", "Partial map: node should have been converted to softer version.");
+            error_message(NETLIST, 0, -1, "%s", "Partial map: node should have been converted to softer version.");
             break;
     }
 }
@@ -725,7 +725,7 @@ void instantiate_GT(nnode_t* node, operation_list type, short mark, netlist_t* n
         port_B_offset = 0;
         port_A_index = 0;
         port_B_index = 0;
-        error_message(NETLIST_ERROR, node->related_ast_node->line_number, node->related_ast_node->file_number, "Invalid node type %s in instantiate_GT\n",
+        error_message(NETLIST, node->related_ast_node->line_number, node->related_ast_node->file_number, "Invalid node type %s in instantiate_GT\n",
                       node_name_based_on_op(node));
     }
 
@@ -915,7 +915,7 @@ void instantiate_shift_left_or_right(nnode_t* node, operation_list type, short m
         shift_size = node->related_ast_node->children[1]->types.vnumber->get_value();
     } else {
         shift_size = 0;
-        error_message(NETLIST_ERROR, node->related_ast_node->line_number, node->related_ast_node->file_number, "%s\n", "Odin only supports constant shifts at present");
+        error_message(NETLIST, node->related_ast_node->line_number, node->related_ast_node->file_number, "%s\n", "Odin only supports constant shifts at present");
     }
 
     buf_node = make_1port_gate(BUF_NODE, width, width, node, mark);
@@ -992,7 +992,7 @@ void instantiate_arithmetic_shift_right(nnode_t* node, short mark, netlist_t* ne
         shift_size = node->related_ast_node->children[1]->types.vnumber->get_value();
     } else {
         shift_size = 0;
-        error_message(NETLIST_ERROR, node->related_ast_node->line_number, node->related_ast_node->file_number, "%s\n", "Odin only supports constant shifts at present");
+        error_message(NETLIST, node->related_ast_node->line_number, node->related_ast_node->file_number, "%s\n", "Odin only supports constant shifts at present");
     }
     buf_node = make_1port_gate(BUF_NODE, width, width, node, mark);
     /* connect inputs to outputs */

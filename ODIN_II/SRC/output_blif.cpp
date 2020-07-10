@@ -58,7 +58,7 @@ static void print_input_pin(FILE* out, nnode_t* node, long pin_idx) {
     if (!net->driver_pin || !net->driver_pin->node) {
         // Add a warning for an undriven net.
         int line_number = node->related_ast_node ? node->related_ast_node->line_number : 0;
-        warning_message(NETLIST_ERROR, line_number, -1,
+        warning_message(NETLIST, line_number, -1,
                         "Net %s driving node %s is itself undriven.",
                         net->name, node->name);
 
@@ -118,7 +118,7 @@ FILE* create_blif(const char* file_name) {
     }
 
     if (out == NULL) {
-        error_message(NETLIST_ERROR, -1, -1, "Could not open output file %s\n", file_name);
+        error_message(NETLIST, -1, -1, "Could not open output file %s\n", file_name);
     }
     return out;
 }
@@ -143,7 +143,7 @@ void output_blif(FILE* out, netlist_t* netlist) {
     for (long i = 0; i < netlist->num_top_output_nodes; i++) {
         nnode_t* top_output_node = netlist->top_output_nodes[i];
         if (top_output_node->input_pins[0]->net->driver_pin == NULL) {
-            warning_message(NETLIST_ERROR,
+            warning_message(NETLIST,
                             top_output_node->related_ast_node->line_number,
                             top_output_node->related_ast_node->file_number,
                             "This output is undriven (%s) and will be removed\n",
@@ -162,7 +162,7 @@ void output_blif(FILE* out, netlist_t* netlist) {
     if (strcmp(configuration.output_type.c_str(), "blif") == 0) {
         depth_first_traversal_to_output(OUTPUT_TRAVERSE_VALUE, out, netlist);
     } else {
-        error_message(NETLIST_ERROR, 0, -1, "%s", "Invalid output file type.");
+        error_message(NETLIST, 0, -1, "%s", "Invalid output file type.");
     }
 
     /* connect all the outputs up to the last gate */
@@ -342,7 +342,7 @@ void output_node(nnode_t* node, short /*traverse_number*/, FILE* fp) {
         case LTE:
         default:
             /* these nodes should have been converted to softer versions */
-            error_message(NETLIST_ERROR, 0, -1, "%s", "Output blif: node should have been converted to softer version.");
+            error_message(NETLIST, 0, -1, "%s", "Output blif: node should have been converted to softer version.");
             break;
     }
 }

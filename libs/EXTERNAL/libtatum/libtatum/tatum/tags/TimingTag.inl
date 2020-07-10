@@ -35,7 +35,7 @@ inline TimingTag::TimingTag(const Time& time_val, NodeId origin, const TimingTag
     {}
 
 
-inline void TimingTag::update(const Time& new_time, const NodeId origin, const TimingTag& base_tag) {
+inline bool TimingTag::update(const Time& new_time, const NodeId origin, const TimingTag& base_tag) {
     TATUM_ASSERT(type() == base_tag.type()); //Type must be the same
 
     //Note that we check for a constant tag first, since we might 
@@ -57,25 +57,43 @@ inline void TimingTag::update(const Time& new_time, const NodeId origin, const T
     set_time(new_time);
     set_origin_node(origin);
 
+    return true; //Modified
 }
 
-inline void TimingTag::max(const Time& new_time, const NodeId origin, const TimingTag& base_tag) {
+inline bool TimingTag::max(const Time& new_time, const NodeId origin, const TimingTag& base_tag) {
+    bool modified = false;
+
     //Need to min with existing value
     if(!time().valid() || new_time > time()) {
         //New value is smaller, or no previous valid value existed
         //Update min
         
-        update(new_time, origin, base_tag);
+        modified |= update(new_time, origin, base_tag);
     }
+
+    return modified;
 }
 
-inline void TimingTag::min(const Time& new_time, const NodeId origin, const TimingTag& base_tag) {
+inline bool TimingTag::min(const Time& new_time, const NodeId origin, const TimingTag& base_tag) {
+    bool modified = false;
+
     //Need to min with existing value
     if(!time().valid() || new_time < time()) {
         //New value is smaller, or no previous valid value existed
         //Update min
-        update(new_time, origin, base_tag);
+        modified |= update(new_time, origin, base_tag);
     }
+
+    return modified;
+}
+
+inline bool operator==(const TimingTag& lhs, const TimingTag& rhs) {
+    return std::tie(lhs.time_, lhs.origin_node_, lhs.launch_clock_domain_, lhs.capture_clock_domain_, lhs.type_) 
+           == std::tie(rhs.time_, rhs.origin_node_, rhs.launch_clock_domain_, rhs.capture_clock_domain_, rhs.type_);
+}
+
+inline bool operator!=(const TimingTag& lhs, const TimingTag& rhs) {
+    return !(lhs == rhs);
 }
 
 inline std::ostream& operator<<(std::ostream& os, TagType type) {

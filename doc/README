@@ -42,6 +42,10 @@ For instance:
     $ firefox _build/html/index.html
 
 
+If you want to skip automatic Doxygen XML generation, you can set:
+
+    $ export SKIP_DOXYGEN=True
+
 Documentation Layout
 --------------------
 
@@ -58,10 +62,10 @@ Each of these files must be referred to in the sub-system's index.rst in order t
 Useful Resources:
 -----------------
 
-Re-Structured Text syntax: 
+Re-Structured Text syntax:
     http://www.sphinx-doc.org/en/stable/rest.html
 
-Paragraph-level markup: 
+Paragraph-level markup:
     http://www.sphinx-doc.org/en/stable/markup/para.html
 
 Inline markup:

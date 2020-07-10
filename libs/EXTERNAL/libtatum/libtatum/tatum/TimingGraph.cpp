@@ -167,6 +167,13 @@ EdgeId TimingGraph::node_clock_launch_edge(const NodeId node) const {
     return EdgeId::INVALID();
 }
 
+LevelId TimingGraph::node_level(const NodeId node) const {
+    if (!is_levelized_) {
+        return LevelId::INVALID();
+    }
+    return node_levels_[node];
+}
+
 
 NodeId TimingGraph::add_node(const NodeType type) {
     //Invalidate the levelization
@@ -329,6 +336,7 @@ void TimingGraph::force_levelize() {
     //Clear any previous levelization
     level_nodes_.clear();
     level_ids_.clear();
+    node_levels_.clear();
     primary_inputs_.clear();
     logical_outputs_.clear();
 
@@ -356,7 +364,7 @@ void TimingGraph::force_levelize() {
             if (node_type(node_id) == NodeType::SOURCE) {
                 //We require that all primary inputs (i.e. top-level circuit inputs) to
                 //be SOURCEs. Due to disconnected nodes we may have non-SOURCEs which 
-                //appear in the first level.
+                //otherwise appear in the first level.
                 primary_inputs_.push_back(node_id);
             }
         }
@@ -370,6 +378,8 @@ void TimingGraph::force_levelize() {
     //to the current level.
     int level_idx = 0;
     level_ids_.emplace_back(level_idx);
+
+    std::vector<NodeId> last_level;
 
     bool inserted_node_in_level = true;
     while(inserted_node_in_level) { //If nothing was inserted we are finished
@@ -388,31 +398,55 @@ void TimingGraph::force_levelize() {
 
                 //Add to the next level if all fanin has been seen
                 if(node_fanin_remaining[size_t(sink_node)] == 0) {
-                    //Ensure there is space by allocating the next level if required
-                    level_nodes_.resize(level_idx+2);
 
-                    //Add the node
-                    level_nodes_[LevelId(level_idx+1)].push_back(sink_node);
+                    if (node_out_edges(sink_node).size() != 0) {
+                        //Place into next level
+                        
+                        //Ensure there is space by allocating the next level if required
+                        level_nodes_.resize(level_idx+2);
 
-                    inserted_node_in_level = true;
+                        //Add the node
+                        level_nodes_[LevelId(level_idx+1)].push_back(sink_node);
+
+                        inserted_node_in_level = true;
+                    } else {
+                        //No fan-out
+                        //
+                        //We choose to put these nodes into the *last* level,
+                        //since it makes it easier to walk back from them in the
+                        //required time traversal
+                        TATUM_ASSERT(node_out_edges(sink_node).size() == 0);
+                        
+                        last_level.push_back(sink_node);
+                    }
                 }
-            }
-
-            //Also track the primary outputs (those with fan-in AND no fan-out)
-            //
-            // There may be some node with neither any fan-in or fan-out. 
-            // We will treat them as primary inputs, so they should not be to
-            // the primary outputs
-            if(   node_out_edges(node_id).size() == 0 
-               && node_in_edges(node_id).size() != 0
-               && node_type(node_id) == NodeType::SINK) {
-                logical_outputs_.push_back(node_id);
             }
         }
 
         if(inserted_node_in_level) {
             level_idx++;
             level_ids_.emplace_back(level_idx);
+        }
+    }
+
+    //Add the last level to the end of the levelization
+    level_nodes_.emplace_back(last_level);
+    level_idx++;
+    level_ids_.emplace_back(level_idx);
+
+    //Add SINK type nodes in the last level to logical outputs
+    //Note that we only do this for sinks, since non-sink nodes may end up
+    //in the last level (e.g. due to breaking combinational loops)
+    auto is_sink = [this](NodeId id) {
+        return this->node_type(id) == NodeType::SINK;
+    };
+    std::copy_if(last_level.begin(), last_level.end(), std::back_inserter(logical_outputs_), is_sink);
+
+    //Build the reverse node-to-level look-up
+    node_levels_.resize(nodes().size());
+    for (LevelId level : level_ids_) {
+        for(NodeId node : level_nodes_[level]) {
+            node_levels_[node] = level;
         }
     }
 
@@ -562,7 +596,8 @@ bool TimingGraph::valid_level_id(const LevelId level_id) const {
 bool TimingGraph::validate_sizes() const {
     if (   node_ids_.size() != node_types_.size()
         || node_ids_.size() != node_in_edges_.size()
-        || node_ids_.size() != node_out_edges_.size()) {
+        || node_ids_.size() != node_out_edges_.size()
+        || node_ids_.size() != node_levels_.size()) {
         throw tatum::Error("Inconsistent node attribute sizes");
     }
 
@@ -791,6 +826,15 @@ bool TimingGraph::validate_structure() const {
 
         if(node_type(node) != NodeType::SINK) {
             throw tatum::Error("Logical outputs should be only SINK nodes", node);
+        }
+    }
+
+    //Check levelization look-up is consistent with levelization
+    for (LevelId level : levels()) {
+        for(NodeId node : level_nodes(level)) {
+            if (node_level(node) != level) {
+                throw tatum::Error("Node level look-up does not match levelization", node);
+            }
         }
     }
 

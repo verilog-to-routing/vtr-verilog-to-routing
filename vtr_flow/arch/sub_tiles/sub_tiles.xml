@@ -4,6 +4,7 @@
     <model name="IO_0">
       <input_ports>
         <port name="in" combinational_sink_ports="out"/>
+        <port name="enable" combinational_sink_ports="out"/>
       </input_ports>
       <output_ports>
         <port name="out"/>
@@ -12,6 +13,7 @@
     <model name="IO_1">
       <input_ports>
         <port name="in" combinational_sink_ports="out"/>
+        <port name="enable" combinational_sink_ports="out"/>
       </input_ports>
       <output_ports>
         <port name="out"/>
@@ -89,7 +91,7 @@
       </sub_tile>
     </tile>
     <tile name="pass_through_tile">
-      <sub_tile name="pass_through_tile_0" capacity="2">
+      <sub_tile name="pass_through_tile_0" capacity="10">
         <input name="in" num_pins="1"/>
         <output name="out" num_pins="1"/>
         <equivalent_sites>
@@ -112,22 +114,25 @@
       </sub_tile>
       <sub_tile name="pass_through_tile_1" capacity="43">
         <input name="in" num_pins="1"/>
+        <input name="enable" num_pins="1"/>
         <output name="out" num_pins="1"/>
         <equivalent_sites>
           <site pb_type="io_site_0" pin_mapping="custom">
             <direct from="pass_through_tile_1.in" to="io_site_0.in"/>
+            <direct from="pass_through_tile_1.enable" to="io_site_0.enable"/>
             <direct from="pass_through_tile_1.out" to="io_site_0.out"/>
           </site>
           <site pb_type="io_site_1" pin_mapping="custom">
             <direct from="pass_through_tile_1.in" to="io_site_1.in"/>
+            <direct from="pass_through_tile_1.enable" to="io_site_1.enable"/>
             <direct from="pass_through_tile_1.out" to="io_site_1.out"/>
           </site>
         </equivalent_sites>
         <pinlocations pattern="custom">
-          <loc side="top" xoffset="0" yoffset="0">pass_through_tile_1.in pass_through_tile_1.out</loc>
-          <loc side="left" xoffset="0" yoffset="0">pass_through_tile_1.in pass_through_tile_1.out</loc>
-          <loc side="bottom" xoffset="0" yoffset="0">pass_through_tile_1.in pass_through_tile_1.out</loc>
-          <loc side="right" xoffset="0" yoffset="0">pass_through_tile_1.in pass_through_tile_1.out</loc>
+          <loc side="top" xoffset="0" yoffset="0">pass_through_tile_1.in pass_through_tile_1.enable pass_through_tile_1.out</loc>
+          <loc side="left" xoffset="0" yoffset="0">pass_through_tile_1.in pass_through_tile_1.enable pass_through_tile_1.out</loc>
+          <loc side="bottom" xoffset="0" yoffset="0">pass_through_tile_1.in pass_through_tile_1.enable pass_through_tile_1.out</loc>
+          <loc side="right" xoffset="0" yoffset="0">pass_through_tile_1.in pass_through_tile_1.enable pass_through_tile_1.out</loc>
         </pinlocations>
         <fc in_type="frac" in_val="1.0" out_type="frac" out_val="1.0"/>
       </sub_tile>
@@ -156,30 +161,36 @@
     </pb_type>
     <pb_type name="io_site_0">
       <input name="in" num_pins="1"/>
+      <input name="enable" num_pins="1"/>
       <output name="out" num_pins="1"/>
       <mode name="INOUT">
         <pb_type blif_model=".subckt IO_0" name="io_0" num_pb="1">
           <input name="in" num_pins="1"/>
+          <input name="enable" num_pins="1"/>
           <output name="out" num_pins="1"/>
           <delay_constant max="1.667e-9" in_port="io_0.in" out_port="io_0.out"/>
+          <delay_constant max="1.667e-9" in_port="io_0.enable" out_port="io_0.out"/>
         </pb_type>
         <interconnect>
-          <direct input="io_site_0.in" name="i_0" output="io_0.in"/>
+          <mux input="io_site_0.in io_site_0.enable" name="i_0" output="io_0.in"/>
           <direct input="io_0.out" name="o_0" output="io_site_0.out"/>
         </interconnect>
       </mode>
     </pb_type>
     <pb_type name="io_site_1">
       <input name="in" num_pins="1"/>
+      <input name="enable" num_pins="1"/>
       <output name="out" num_pins="1"/>
       <mode name="INOUT">
         <pb_type blif_model=".subckt IO_1" name="io_1" num_pb="1">
           <input name="in" num_pins="1"/>
+          <input name="enable" num_pins="1"/>
           <output name="out" num_pins="1"/>
           <delay_constant max="1.667e-9" in_port="io_1.in" out_port="io_1.out"/>
+          <delay_constant max="1.667e-9" in_port="io_1.enable" out_port="io_1.out"/>
         </pb_type>
         <interconnect>
-          <direct input="io_site_1.in" name="i_1" output="io_1.in"/>
+          <mux input="io_site_1.in io_site_1.enable" name="i_1" output="io_1.in"/>
           <direct input="io_1.out" name="o_1" output="io_site_1.out"/>
         </interconnect>
       </mode>

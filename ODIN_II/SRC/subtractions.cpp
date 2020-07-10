@@ -85,7 +85,7 @@ void declare_hard_adder_for_sub(nnode_t* node) {
 
     /* See if this size instance of adder exists?*/
     if (hard_adders == NULL) {
-        warning_message(NETLIST_ERROR, node->related_ast_node->line_number, node->related_ast_node->file_number, "%s\n", "Instantiating Substraction where hard adders do not exist");
+        warning_message(NETLIST, node->related_ast_node->line_number, node->related_ast_node->file_number, "%s\n", "Instantiating Substraction where hard adders do not exist");
     }
     tmp = (t_adder*)hard_adders->instances;
     width_a = node->input_port_sizes[0];

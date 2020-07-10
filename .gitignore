@@ -66,6 +66,12 @@ vgcore*
 *.place
 *.route
 *.out
+*.bin
+
+#
+# FASM result files
+#
+*.fasm
 
 #
 #Odin test outputs

@@ -112,16 +112,30 @@ test:
 	./verify_odin.sh -j $(NB_OF_PROCESS) \
 		-t regression_test/benchmark/suite/heavy_suite
 
-qor:
+generate_expectation:
 # rebuild with sanitize flags on to run the same test as travis
-	$(MAKE) sanitize
+	$(MAKE) sanitize 
 	./verify_odin.sh -j $(NB_OF_PROCESS) \
-		--regenerate_qor \
+		--generate_expectation\
 		-t regression_test/benchmark/suite/light_suite \
 		-t vtr_reg_basic \
-		-t vtr_reg_strong
-# larger test should run with regular flags to speed up the process
+		-t vtr_reg_strong || true
+ # larger test should run with regular flags to speed up the process
 	$(MAKE) build
 	./verify_odin.sh -j $(NB_OF_PROCESS) \
-		--regenerate_qor \
+		--generate_expectation \
+		-t regression_test/benchmark/suite/heavy_suite
+
+regenerate_expectation:
+# rebuild with sanitize flags on to run the same test as travis
+	$(MAKE) sanitize 
+	./verify_odin.sh -j $(NB_OF_PROCESS) \
+		--regenerate_expectation\
+		-t regression_test/benchmark/suite/light_suite \
+		-t vtr_reg_basic \
+		-t vtr_reg_strong || true
+ # larger test should run with regular flags to speed up the process
+	$(MAKE) build
+	./verify_odin.sh -j $(NB_OF_PROCESS) \
+		--regenerate_expectation \
 		-t regression_test/benchmark/suite/heavy_suite

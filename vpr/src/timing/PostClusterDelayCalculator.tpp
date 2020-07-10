@@ -12,10 +12,10 @@
 
 inline PostClusterDelayCalculator::PostClusterDelayCalculator(const AtomNetlist& netlist,
                                                               const AtomLookup& netlist_lookup,
-                                                              vtr::vector<ClusterNetId, float*>& net_delay)
+                                                              const ClbNetPinsMatrix<float>& net_delay)
     : netlist_(netlist)
     , netlist_lookup_(netlist_lookup)
-    , net_delay_()
+    , net_delay_(net_delay)
     , atom_delay_calc_(netlist, netlist_lookup)
     , edge_min_delay_cache_(g_vpr_ctx.timing().graph->edges().size(), tatum::Time(NAN))
     , edge_max_delay_cache_(g_vpr_ctx.timing().graph->edges().size(), tatum::Time(NAN))
@@ -25,7 +25,6 @@ inline PostClusterDelayCalculator::PostClusterDelayCalculator(const AtomNetlist&
     , sink_clb_max_delay_cache_(g_vpr_ctx.timing().graph->edges().size(), tatum::Time(NAN))
     , pin_cache_min_(g_vpr_ctx.timing().graph->edges().size(), std::pair<ClusterPinId, ClusterPinId>(ClusterPinId::INVALID(), ClusterPinId::INVALID()))
     , pin_cache_max_(g_vpr_ctx.timing().graph->edges().size(), std::pair<ClusterPinId, ClusterPinId>(ClusterPinId::INVALID(), ClusterPinId::INVALID())) {
-    net_delay_ = net_delay;
 }
 
 inline void PostClusterDelayCalculator::clear_cache() {

@@ -47,9 +47,8 @@ bool try_pack(t_packer_opts* packer_opts,
     std::unordered_map<AtomBlockId, t_pb_graph_node*> expected_lowest_cost_pb_gnode; //The molecules associated with each atom block
     const t_model* cur_model;
     int num_models;
-    t_pack_patterns* list_of_packing_patterns;
-    int num_packing_patterns;
-    t_pack_molecule *list_of_pack_molecules, *cur_pack_molecule;
+    std::vector<t_pack_patterns> list_of_packing_patterns;
+    std::unique_ptr<t_pack_molecule, decltype(&free_pack_molecules)> list_of_pack_molecules(nullptr, free_pack_molecules);
     VTR_LOG("Begin packing '%s'.\n", packer_opts->blif_file_name.c_str());
 
     /* determine number of models in the architecture */
@@ -86,11 +85,21 @@ bool try_pack(t_packer_opts* packer_opts,
             atom_ctx.nlist.blocks().size(), atom_ctx.nlist.nets().size(), num_p_inputs, num_p_outputs);
 
     VTR_LOG("Begin prepacking.\n");
-    list_of_packing_patterns = alloc_and_load_pack_patterns(&num_packing_patterns);
-    list_of_pack_molecules = alloc_and_load_pack_molecules(list_of_packing_patterns,
-                                                           atom_molecules,
-                                                           expected_lowest_cost_pb_gnode,
-                                                           num_packing_patterns);
+    list_of_packing_patterns = alloc_and_load_pack_patterns();
+
+    //To ensure the list of packing patterns gets freed in case of an error, we create
+    //a unique_ptr with custom deleter which will free the list at the end of the current
+    //scope.
+    auto list_of_packing_patterns_deleter = [](std::vector<t_pack_patterns>* ptr) {
+        free_list_of_pack_patterns(*ptr);
+    };
+    std::unique_ptr<std::vector<t_pack_patterns>, decltype(list_of_packing_patterns_deleter)> list_of_packing_patterns_cleanup_guard(&list_of_packing_patterns,
+                                                                                                                                     list_of_packing_patterns_deleter);
+
+    list_of_pack_molecules.reset(alloc_and_load_pack_molecules(list_of_packing_patterns.data(),
+                                                               atom_molecules,
+                                                               expected_lowest_cost_pb_gnode,
+                                                               list_of_packing_patterns.size()));
     VTR_LOG("Finish prepacking.\n");
 
     if (packer_opts->auto_compute_inter_cluster_net_delay) {
@@ -125,7 +134,7 @@ bool try_pack(t_packer_opts* packer_opts,
         auto num_type_instances = do_clustering(
             *packer_opts,
             *analysis_opts,
-            arch, list_of_pack_molecules, num_models,
+            arch, list_of_pack_molecules.get(), num_models,
             is_clock,
             atom_molecules,
             expected_lowest_cost_pb_gnode,
@@ -191,16 +200,6 @@ bool try_pack(t_packer_opts* packer_opts,
         }
 
         ++pack_iteration;
-    }
-
-    /*free list_of_pack_molecules*/
-    free_list_of_pack_patterns(list_of_packing_patterns, num_packing_patterns);
-
-    cur_pack_molecule = list_of_pack_molecules;
-    while (cur_pack_molecule != nullptr) {
-        cur_pack_molecule = list_of_pack_molecules->next;
-        delete list_of_pack_molecules;
-        list_of_pack_molecules = cur_pack_molecule;
     }
 
     VTR_LOG("\n");

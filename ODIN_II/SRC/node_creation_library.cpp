@@ -240,7 +240,7 @@ const char* edge_type_blif_str(nnode_t* node) {
         case ASYNCHRONOUS_SENSITIVITY:
             return "as";
         default:
-            error_message(NETLIST_ERROR, node->line_number, node->file_number,
+            error_message(NETLIST, node->line_number, node->file_number,
                           "undefined sensitivity kind for flip flop %s", edge_type_e_STR[node->edge_type]);
 
             return NULL;
@@ -259,7 +259,7 @@ edge_type_e edge_type_blif_enum(std::string edge_kind_str) {
     else if (edge_kind_str == "as")
         return ASYNCHRONOUS_SENSITIVITY;
     else {
-        error_message(NETLIST_ERROR, -1, -1,
+        error_message(NETLIST, -1, -1,
                       "undefined sensitivity kind for flip flop %s", edge_kind_str.c_str());
 
         return UNDEFINED_SENSITIVITY;

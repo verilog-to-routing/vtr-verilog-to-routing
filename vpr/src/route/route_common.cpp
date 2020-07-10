@@ -242,7 +242,7 @@ bool try_route(int width_fac,
                const t_analysis_opts& analysis_opts,
                t_det_routing_arch* det_routing_arch,
                std::vector<t_segment_inf>& segment_inf,
-               vtr::vector<ClusterNetId, float*>& net_delay,
+               ClbNetPinsMatrix<float>& net_delay,
                std::shared_ptr<SetupHoldTimingInfo> timing_info,
                std::shared_ptr<RoutingDelayCalculator> delay_calc,
                t_chan_width_dist chan_width_dist,
@@ -307,9 +307,10 @@ bool try_route(int width_fac,
         success = try_breadth_first_route(router_opts);
     } else { /* TIMING_DRIVEN route */
         VTR_LOG("Confirming router algorithm: TIMING_DRIVEN.\n");
+        auto& atom_ctx = g_vpr_ctx.atom();
 
         IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
-        ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, intra_lb_pb_pin_lookup);
+        ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.nlist, intra_lb_pb_pin_lookup);
 
         success = try_timing_driven_route(
             router_opts,

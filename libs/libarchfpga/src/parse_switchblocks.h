@@ -4,7 +4,7 @@
 #include <vector>
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
-#include "expr_eval.h"
+#include "vtr_expr_eval.h"
 
 /**** Function Declarations ****/
 /* Loads permutation funcs specified under Node into t_switchblock_inf */
@@ -17,6 +17,6 @@ void read_sb_wireconns(const t_arch_switch_inf* switches, int num_switches, pugi
 void check_switchblock(const t_switchblock_inf* sb, const t_arch* arch);
 
 /* returns integer result according to the specified formula and data */
-int get_sb_formula_raw_result(FormulaParser& formula_parser, const char* formula, const t_formula_data& mydata);
+int get_sb_formula_raw_result(vtr::FormulaParser& formula_parser, const char* formula, const vtr::t_formula_data& mydata);
 
 #endif /* PARSE_SWITCHBLOCKS_H */

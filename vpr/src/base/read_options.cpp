@@ -13,7 +13,7 @@
 using argparse::ConvertedValue;
 using argparse::Provenance;
 
-//Read and process VPR's command-line aruments
+///@brief Read and process VPR's command-line aruments
 t_options read_options(int argc, const char** argv) {
     t_options args = t_options(); //Explicitly initialize for zero initialization
 
@@ -858,6 +858,41 @@ struct ParseRouterHeap {
     }
 };
 
+struct ParseCheckRoute {
+    ConvertedValue<e_check_route_option> from_str(std::string str) {
+        ConvertedValue<e_check_route_option> conv_value;
+        if (str == "off")
+            conv_value.set_value(e_check_route_option::OFF);
+        else if (str == "quick")
+            conv_value.set_value(e_check_route_option::QUICK);
+        else if (str == "full")
+            conv_value.set_value(e_check_route_option::FULL);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_check_route_option (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_check_route_option val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_check_route_option::OFF)
+            conv_value.set_value("off");
+        else if (val == e_check_route_option::QUICK)
+            conv_value.set_value("quick");
+        else {
+            VTR_ASSERT(val == e_check_route_option::FULL);
+            conv_value.set_value("full");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"off", "quick", "full"};
+    }
+};
+
 struct ParsePlaceEfforScaling {
     ConvertedValue<e_place_effort_scaling> from_str(std::string str) {
         ConvertedValue<e_place_effort_scaling> conv_value;
@@ -886,6 +921,41 @@ struct ParsePlaceEfforScaling {
 
     std::vector<std::string> default_choices() {
         return {"circuit", "device_circuit"};
+    }
+};
+
+struct ParseTimingUpdateType {
+    ConvertedValue<e_timing_update_type> from_str(std::string str) {
+        ConvertedValue<e_timing_update_type> conv_value;
+        if (str == "auto")
+            conv_value.set_value(e_timing_update_type::AUTO);
+        else if (str == "full")
+            conv_value.set_value(e_timing_update_type::FULL);
+        else if (str == "incremental")
+            conv_value.set_value(e_timing_update_type::INCREMENTAL);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_timing_update_type (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_timing_update_type val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == e_timing_update_type::AUTO)
+            conv_value.set_value("auto");
+        if (val == e_timing_update_type::FULL)
+            conv_value.set_value("full");
+        else {
+            VTR_ASSERT(val == e_timing_update_type::INCREMENTAL);
+            conv_value.set_value("incremental");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"auto", "full", "incremental"};
     }
 };
 
@@ -1071,6 +1141,17 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     gen_grp.add_argument<bool, ParseOnOff>(args.timing_analysis, "--timing_analysis")
         .help("Controls whether timing analysis (and timing driven optimizations) are enabled.")
         .default_value("on");
+
+    gen_grp.add_argument<e_timing_update_type, ParseTimingUpdateType>(args.timing_update_type, "--timing_update_type")
+        .help(
+            "Controls how timing analysis updates are performed:\n"
+            " * auto: VPR decides\n"
+            " * full: Full timing updates are performed (may be faster \n"
+            "         if circuit timing has changed significantly)\n"
+            " * incr: Incremental timing updates are performed (may be \n"
+            "         faster in the face of smaller circuit timing changes)\n")
+        .default_value("auto")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     gen_grp.add_argument<bool, ParseOnOff>(args.CreateEchoFile, "--echo_file")
         .help(
@@ -1440,10 +1521,6 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_grp.add_argument<bool, ParseOnOff>(args.ShowPlaceTiming, "--enable_timing_computations")
-        .help("Displays delay statistics even if placement is not timing driven")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
     place_grp.add_argument<e_place_delta_delay_algorithm, ParsePlaceDeltaDelayAlgorithm>(
                  args.place_delta_delay_matrix_calculation_method,
                  "--place_delta_delay_matrix_calculation_method")
@@ -1548,6 +1625,13 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     place_timing_grp.add_argument(args.inner_loop_recompute_divider, "--inner_loop_recompute_divider")
         .help("Controls how many timing analysies are perform per temperature during placement")
+        .default_value("0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_timing_grp.add_argument(args.quench_recompute_divider, "--quench_recompute_divider")
+        .help(
+            "Controls how many timing analysies are perform during the final placement quench (t=0)."
+            " If unspecified, uses the value from --inner_loop_recompute_divider")
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -1887,6 +1971,15 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument<e_check_route_option, ParseCheckRoute>(args.check_route, "--check_route")
+        .help(
+            "Options to run check route in three different modes.\n"
+            " * off    : check route is completely disabled.\n"
+            " * quick  : runs check route with slow checks disabled.\n"
+            " * full   : runs the full check route step.\n")
+        .default_value("full")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_timing_grp.add_argument(args.router_debug_net, "--router_debug_net")
         .help(
             "Controls when router debugging is enabled for nets.\n"
@@ -2092,6 +2185,11 @@ void set_conditional_defaults(t_options& args) {
     //Do we calculate timing info during placement?
     if (args.ShowPlaceTiming.provenance() != Provenance::SPECIFIED) {
         args.ShowPlaceTiming.set(args.timing_analysis, Provenance::INFERRED);
+    }
+
+    //Slave quench recompute divider of inner loop recompute divider unless specified
+    if (args.quench_recompute_divider.provenance() != Provenance::SPECIFIED) {
+        args.quench_recompute_divider.set(args.inner_loop_recompute_divider, Provenance::INFERRED);
     }
 
     //Are we using the automatic, or user-specified annealing schedule?

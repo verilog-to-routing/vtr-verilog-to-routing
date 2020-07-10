@@ -137,7 +137,7 @@ netlist_t* read_blif() {
     /*Opening the blif file */
     FILE* file = vtr::fopen(configuration.list_of_file_names[current_parse_file].c_str(), "r");
     if (file == NULL) {
-        error_message(ARG_ERROR, -1, current_parse_file, "cannot open file: %s\n", configuration.list_of_file_names[current_parse_file].c_str());
+        error_message(PARSE_ARGS, -1, current_parse_file, "cannot open file: %s\n", configuration.list_of_file_names[current_parse_file].c_str());
     }
     int num_lines = count_blif_lines(file);
 
@@ -293,7 +293,7 @@ void create_latch_node_and_driver(FILE* file, Hashtable* output_nets_hash) {
                 line += " ";
             }
 
-            error_message(NETLIST_ERROR, file_line_number, current_parse_file, "This .latch Format not supported: <%s> \n\t required format :.latch <input> <output> [<type> <control/clock>] <initial val>",
+            error_message(PARSE_BLIF, file_line_number, current_parse_file, "This .latch Format not supported: <%s> \n\t required format :.latch <input> <output> [<type> <control/clock>] <initial val>",
                           line.c_str());
         }
     }
@@ -541,7 +541,7 @@ void create_hard_block_nodes(hard_block_models* models, FILE* file, Hashtable* o
         char* name = (char*)mapping_index->get(mapping);
 
         if (!name)
-            error_message(NETLIST_ERROR, file_line_number, current_parse_file, "Invalid hard block mapping: %s", mapping);
+            error_message(PARSE_BLIF, file_line_number, current_parse_file, "Invalid hard block mapping: %s", mapping);
 
         npin_t* new_pin = allocate_npin();
         new_pin->name = vtr::strdup(name);
@@ -556,7 +556,7 @@ void create_hard_block_nodes(hard_block_models* models, FILE* file, Hashtable* o
         char* mapping = model->outputs->names[i];
         char* name = (char*)mapping_index->get(mapping);
 
-        if (!name) error_message(NETLIST_ERROR, file_line_number, current_parse_file, "Invalid hard block mapping: %s", model->outputs->names[i]);
+        if (!name) error_message(PARSE_BLIF, file_line_number, current_parse_file, "Invalid hard block mapping: %s", model->outputs->names[i]);
 
         npin_t* new_pin = allocate_npin();
         new_pin->name = vtr::strdup(name);
@@ -1007,7 +1007,7 @@ static void build_top_input_node(const char* name_str, Hashtable* output_nets_ha
 
     //long sc_spot = sc_add_string(output_nets_sc, temp_string);
     //if (output_nets_sc->data[sc_spot])
-    //warning_message(NETLIST_ERROR,linenum,-1, "Net (%s) with the same name already created\n",temp_string);
+    //warning_message(NETLIST,linenum,-1, "Net (%s) with the same name already created\n",temp_string);
 
     //output_nets_sc->data[sc_spot] = new_net;
 
@@ -1189,7 +1189,7 @@ void hook_up_node(nnode_t* node, Hashtable* output_nets_hash) {
         nnet_t* output_net = (nnet_t*)output_nets_hash->get(input_pin->name);
 
         if (!output_net)
-            error_message(NETLIST_ERROR, file_line_number, current_parse_file, "Error: Could not hook up the pin %s: not available.", input_pin->name);
+            error_message(PARSE_BLIF, file_line_number, current_parse_file, "Error: Could not hook up the pin %s: not available.", input_pin->name);
 
         add_fanout_pin_to_net(output_net, input_pin);
     }
@@ -1253,7 +1253,7 @@ hard_block_model* read_hard_block_model(char* name_subckt, hard_block_ports* por
         }
 
         if (!model || feof(file))
-            error_message(NETLIST_ERROR, last_line, current_parse_file, "A subcircuit model for '%s' with matching ports was not found.", name_subckt);
+            error_message(PARSE_BLIF, last_line, current_parse_file, "A subcircuit model for '%s' with matching ports was not found.", name_subckt);
 
         // Sort the names.
         qsort(model->inputs->names, model->inputs->count, sizeof(char*), compare_hard_block_pin_names);
@@ -1476,7 +1476,7 @@ long get_hard_block_pin_number(char* original_name) {
     long pin_number = strtol(pin_number_string, &endptr, 10);
 
     if (pin_number_string == endptr)
-        error_message(NETLIST_ERROR, file_line_number, current_parse_file, "The given port name \"%s\" does not contain a valid pin number.", original_name);
+        error_message(PARSE_BLIF, file_line_number, current_parse_file, "The given port name \"%s\" does not contain a valid pin number.", original_name);
 
     vtr::free(name);
 
