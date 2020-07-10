@@ -236,13 +236,14 @@ def load_toml(toml_file_name):
 
 ###################################
 # build initial table from toml
-def create_tbl(toml_dict):
+def create_tbl(toml_dict, key):
 	# set the defaults
 	input_values = OrderedDict()
 	for header in toml_dict:
-		input_values[header] = toml_dict[header][_K_DFLT]
+		input_values[header] = toml_dict[header][key]
 
 	return input_values
+
 
 def hash_item(toml_dict, input_line):
 	keyed = []
@@ -261,12 +262,14 @@ def hash_item(toml_dict, input_line):
 
 def auto_hide_values(toml_dict, tbl):
 	for key in tbl:
-		for header in toml_dict:
-			if toml_dict[header][_K_AUTO_HIDE] is True and header in tbl[key]:
-				if tbl[key][header] is toml_dict[header][_K_HIDE_IF] \
-					or tbl[key][header] == toml_dict[header][_K_HIDE_IF]:
-					del tbl[key][header]
-
+		if key != _DFLT_HDR:
+			for header in toml_dict:
+				if toml_dict[header][_K_AUTO_HIDE] is True and header in tbl[key]:
+					if tbl[key][header] is toml_dict[header][_K_HIDE_IF] \
+						or tbl[key][header] == toml_dict[header][_K_HIDE_IF]:
+						del tbl[key][header]
+	
+	return tbl
 
 def print_as_csv(toml_dict, output_dict, file=sys.stdout):
 	# dump csv to stdout
@@ -283,8 +286,14 @@ def print_as_csv(toml_dict, output_dict, file=sys.stdout):
 		# figure out the pad
 		pad = len(str(header).strip())
 		for keys in output_dict:
-			if header in output_dict[keys]:
-				pad = max(pad, len(str(output_dict[keys][header]).strip()))
+			#dont print the defaults since we print all the outputs
+			if keys != _DFLT_HDR:
+				# print the default if there is no value
+				value_str = toml_dict[header][_K_HIDE_IF]
+				if header in output_dict[keys]:
+					value_str = output_dict[keys][header]
+
+				pad = max(pad, len(str(value_str).strip()))
 
 		header_line.append('{0:<{1}}'.format(header, pad))
 		index = 0
@@ -315,7 +324,7 @@ def load_csv_into_tbl(toml_dict, csv_file_name):
 		csv_reader = csv.reader(csvfile)
 		for row in csv_reader:
 			if row is not None and len(row) > 0:
-				input_row = create_tbl(toml_dict)
+				input_row = create_tbl(toml_dict, _K_DFLT)
 				index = 0
 				for element in row:
 					element = " ".join(element.split())
@@ -340,19 +349,54 @@ def load_json_into_tbl(toml_dict, file_name):
 		file_dict = json.load(json_file,object_pairs_hook=OrderedDict)
 	return file_dict
 
+def load_log_into_tbl(toml_dict, log_file_name):
+	# setup our output dict, print as csv expects a hashed table
+	parsed_dict = OrderedDict()
+
+	# for the first entry, we must add this in
+	parsed_dict[_DFLT_HDR] = create_tbl(toml_dict, _K_HIDE_IF)
+
+	#load log file and parse
+	with open(log_file_name) as log:
+		# set the defaults
+		input_values = create_tbl(toml_dict, _K_DFLT)
+
+		for line in log:
+			line = " ".join(line.split())
+			for header in toml_dict:
+				value = regex_line(toml_dict, header, line)
+				if value != "":
+					# append all the finds to the list
+					if isinstance(input_values[header],list):
+						input_values[header].append(value)
+					# keep overriding
+					else:
+						input_values[header] = value
+
+
+		# fill null entries with default values
+		for header in input_values:
+			if input_values is None:
+				input_values[header] = toml_dict[header][_K_DFLT]
+
+		# make a key from the user desired key items
+		key = hash_item(toml_dict, input_values)
+		parsed_dict[key] = input_values
+
+	return parsed_dict
+
 def load_into_tbl(toml_dict, file_name):
 	tbl = None
+
 	if file_name.endswith('.csv'):
 		tbl = load_csv_into_tbl(toml_dict, file_name)
 	elif file_name.endswith('.json'):
 		tbl = load_json_into_tbl(toml_dict, file_name)
 	else:
-		print(
-			"Unsupported file extension for file " + file_name + "\n" +
-			"please use .csv or .json"
-		)
-	auto_hide_values(toml_dict, tbl)
+		# we assume this is a log file
+		tbl = load_log_into_tbl(toml_dict, file_name)
 
+	tbl = auto_hide_values(toml_dict, tbl)
 	return tbl
 
 def range(header, toml_dict, value, golden_value):
@@ -449,39 +493,7 @@ def regex_line(toml_dict, header, line):
 def _parse(toml_file_name, log_file_name):
 	# load toml
 	toml_dict = load_toml(toml_file_name)
-
-	# setup our output dict, print as csv expects a hashed table
-	parsed_dict = OrderedDict()
-
-	#load log file and parse
-	with open(log_file_name) as log:
-		# set the defaults
-		input_values = create_tbl(toml_dict)
-
-		for line in log:
-			line = " ".join(line.split())
-			for header in toml_dict:
-				value = regex_line(toml_dict, header, line)
-				if value != "":
-					# append all the finds to the list
-					if isinstance(input_values[header],list):
-						input_values[header].append(value)
-					# keep overriding
-					else:
-						input_values[header] = value
-
-
-		# fill null entries with default values
-		for header in input_values:
-			if input_values is None:
-				input_values[header] = toml_dict[header][_K_DFLT]
-
-		# make a key from the user desired key items
-		key = hash_item(toml_dict, input_values)
-		parsed_dict[key] = input_values
-
-	auto_hide_values(toml_dict, parsed_dict)
-
+	parsed_dict = load_into_tbl(toml_dict, log_file_name)
 	pretty_print_tbl(toml_dict, parsed_dict)
 
 def _join(toml_file_name, file_list):

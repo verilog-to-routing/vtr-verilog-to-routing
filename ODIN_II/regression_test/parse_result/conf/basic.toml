@@ -1,13 +1,16 @@
 [DEFAULT]
     auto-hide = true
     default = -1
+    # hide all the values if they match their default
     hide-if = ${default}
 
 ["exit"]
     # if it is expected to fail, dont look for different failure
     range = [ 1.0, 255.0 ]
     regex = "Odin exited with code: (\d+)"
+    #default to an error code to catch this script failures
     default = 50
+    # hide the exit code if it is 0 (success)
     hide-if = 0
 
 ["leaks"]
@@ -18,6 +21,7 @@
         "==[\d]+== ERROR SUMMARY: (\d)+ errors" 
         ]
     default = 0
+    range = [ 1.0, 255.0 ]
 
 ["errors"]
     regex = "Error::(.*)"
