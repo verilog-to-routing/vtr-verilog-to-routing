@@ -2229,7 +2229,7 @@
         "verilog": "undef.v",
         "exit": 1,
         "errors": [
-            "LeakSanitizer: detected memory leaks"
+            "AddressSanitizer: 96 byte(s) leaked in 1 allocation(s)."
         ],
         "warnings": [],
         "expectation": [
@@ -2259,7 +2259,7 @@
         "verilog": "undef.v",
         "exit": 1,
         "errors": [
-            "LeakSanitizer: detected memory leaks"
+            "AddressSanitizer: 96 byte(s) leaked in 1 allocation(s)."
         ],
         "warnings": [],
         "expectation": [
@@ -2289,7 +2289,7 @@
         "verilog": "undef.v",
         "exit": 1,
         "errors": [
-            "LeakSanitizer: detected memory leaks"
+            "AddressSanitizer: 96 byte(s) leaked in 1 allocation(s)."
         ],
         "warnings": [],
         "expectation": [
@@ -2319,7 +2319,7 @@
         "verilog": "undef.v",
         "exit": 1,
         "errors": [
-            "LeakSanitizer: detected memory leaks"
+            "AddressSanitizer: 96 byte(s) leaked in 1 allocation(s)."
         ],
         "warnings": [],
         "expectation": [
