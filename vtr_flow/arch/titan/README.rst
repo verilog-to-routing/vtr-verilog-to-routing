@@ -28,7 +28,6 @@ Directory Structure
 --------------------------------------------------
 
 stratixiv_arch.timing.xml:
-
     A capture of Altera's Stratix IV FPGA architecture. It makes some 
     relatively minor architectural approximations to be compatible with
     VPR.  It includes a timing model which has been calibrated to the
@@ -38,22 +37,18 @@ stratixiv_arch.timing.xml:
     the other ones in this directory.
 
 stratixiv_arch.timing.complex_sb.12to1.xml:
-
     A variant of the enhanced architecture capture using customized switch-block
     with hierarchical wire connectivity and fixed 12:1 driver muxes (L4 and L16).
 
 stratixiv_arch.timing.complex_sb.L16_40to1.L4_turn-straight_rand_L4_L16.xml:
-
     A variant like stratixiv_arch.timing.complex_sb.12to1.xml, but increased the
     L16 driver muxes to 40:1.
 
 stratixiv_arch.timing.complex_sb.L16_72to1.L4_turn-straight_rand_L4_L16.xml:
-
     A variant like stratixiv_arch.timing.complex_sb.12to1.xml, but increased the
     L16 driver muxes to 72:1.
 
 stratixiv_arch.timing.complex_sb.L4_16to1.L16_72to1.L4_turn-straight_rand_L4_L16.xml:
-
     A variant like stratixiv_arch.timing.complex_sb.12to1.xml, but increased the
     L4 driver muxes to 16:1 and the L16 driver muxes to 72:1.
 
