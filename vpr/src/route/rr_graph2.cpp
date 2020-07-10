@@ -1137,7 +1137,7 @@ static void load_block_rr_indices(const DeviceGrid& grid,
 
                 //Assign indices for IPINs and OPINs at all offsets from root
                 for (int ipin = 0; ipin < type->num_pins; ++ipin) {
-                    bool found_ipin_node = false;
+                    bool assigned_to_rr_node = false;
                     for (e_side side : wanted_sides) {
                         for (int width_offset = 0; width_offset < type->width; ++width_offset) {
                             int x_tile = x + width_offset;
@@ -1150,19 +1150,12 @@ static void load_block_rr_indices(const DeviceGrid& grid,
                                     if (class_type == DRIVER) {
                                         indices[OPIN][x_tile][y_tile][side].push_back(*index);
                                         indices[IPIN][x_tile][y_tile][side].push_back(OPEN);
-                                        ++(*index);
+                                        assigned_to_rr_node = true;
                                     } else {
                                         VTR_ASSERT(class_type == RECEIVER);
                                         indices[OPIN][x_tile][y_tile][side].push_back(OPEN);
-                                        if (false == found_ipin_node) {
-                                            indices[IPIN][x_tile][y_tile][side].push_back(*index);
-                                            ++(*index);
-                                            /* Found the input pin, no more indexing is required */
-                                            found_ipin_node = true;
-                                        } else {
-                                            VTR_ASSERT_SAFE(true == found_ipin_node);
-                                            indices[IPIN][x_tile][y_tile][side].push_back(OPEN);
-                                        }
+                                        indices[IPIN][x_tile][y_tile][side].push_back(*index);
+                                        assigned_to_rr_node = true;
                                     }
                                 } else {
                                     indices[IPIN][x_tile][y_tile][side].push_back(OPEN);
@@ -1170,6 +1163,20 @@ static void load_block_rr_indices(const DeviceGrid& grid,
                                 }
                             }
                         }
+                    }
+                    /* A pin may locate on multiple sides of a tile.
+                     * Instead of allocating multiple rr_nodes for the pin,
+                     * we just create a rr_node and make it indexable on these sides
+                     * As such, we can avoid redundant rr_node to be allocated
+                     * and multiple nets to be mapped to the pin
+                     *
+                     * Considering that some pin could be just dangling, we do not need
+                     * to create a void rr_node for it.
+                     * As such, we only allocate a rr node when the pin is indeed located
+                     * on at least one side
+                     */
+                    if (true == assigned_to_rr_node) {
+                        ++(*index);
                     }
                 }
 
