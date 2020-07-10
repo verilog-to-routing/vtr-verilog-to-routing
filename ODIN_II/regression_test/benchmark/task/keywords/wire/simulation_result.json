@@ -127,51 +127,67 @@
         "test_name": "wire/wire/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "blif": "wire.blif",
-        "exit": 134,
-        "errors": [
-            "OUTPUT_BLIF Invalid vector header format in regression_test/benchmark/verilog/keywords/wire/wire_input."
-        ],
-        "warnings": [
-            "OUTPUT_BLIF Vector header mismatch:"
-        ],
-        "generic logic size": 4
+        "max_rss(MiB)": 55.1,
+        "exec_time(ms)": 68.8,
+        "simulation_time(ms)": 0.7,
+        "test_coverage(%)": 100,
+        "Pi": 1,
+        "Po": 1,
+        "logic element": 1,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
     },
     "wire/wire/k6_N10_40nm": {
         "test_name": "wire/wire/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "blif": "wire.blif",
-        "exit": 134,
-        "errors": [
-            "OUTPUT_BLIF Invalid vector header format in regression_test/benchmark/verilog/keywords/wire/wire_input."
-        ],
-        "warnings": [
-            "OUTPUT_BLIF Vector header mismatch:"
-        ],
-        "generic logic size": 6
+        "max_rss(MiB)": 38.2,
+        "exec_time(ms)": 9.7,
+        "simulation_time(ms)": 0.6,
+        "test_coverage(%)": 100,
+        "Pi": 1,
+        "Po": 1,
+        "logic element": 1,
+        "generic logic size": 6,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
     },
     "wire/wire/k6_N10_mem32K_40nm": {
         "test_name": "wire/wire/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "blif": "wire.blif",
-        "exit": 134,
-        "errors": [
-            "OUTPUT_BLIF Invalid vector header format in regression_test/benchmark/verilog/keywords/wire/wire_input."
-        ],
-        "warnings": [
-            "OUTPUT_BLIF Vector header mismatch:"
-        ],
-        "generic logic size": 6
+        "max_rss(MiB)": 54.5,
+        "exec_time(ms)": 100.7,
+        "simulation_time(ms)": 1.1,
+        "test_coverage(%)": 100,
+        "Pi": 1,
+        "Po": 1,
+        "logic element": 1,
+        "generic logic size": 6,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
     },
     "wire/wire/no_arch": {
         "test_name": "wire/wire/no_arch",
         "blif": "wire.blif",
-        "exit": 134,
-        "errors": [
-            "OUTPUT_BLIF Invalid vector header format in regression_test/benchmark/verilog/keywords/wire/wire_input."
-        ],
-        "warnings": [
-            "OUTPUT_BLIF Vector header mismatch:"
-        ]
+        "max_rss(MiB)": 34.7,
+        "exec_time(ms)": 7.6,
+        "simulation_time(ms)": 1.1,
+        "test_coverage(%)": 100,
+        "Pi": 1,
+        "Po": 1,
+        "logic element": 1,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
     },
     "DEFAULT": {
         "test_name": "n/a",
