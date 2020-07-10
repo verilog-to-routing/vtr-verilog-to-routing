@@ -2,8 +2,8 @@ Titan Benchmarks
 --------------------------------------------------
 This folder contains architecture files for use with Titan.
 
-The `Titan <http://www.eecg.utoronto.ca/~kmurray/titan/>` benchmarks and 
-architectures are distributed separately from VTR due to their large size.
+The `Titan <http://www.eecg.utoronto.ca/~kmurray/titan/>` benchmarks are distributed
+separately from VTR due to their large size.
 
 To integrate them into VTR run:
 
@@ -28,17 +28,17 @@ Directory Structure
 --------------------------------------------------
 
 stratixiv_arch.timing.xml:
-    A capture of Altera's Stratix IV FPGA architecture. It makes some 
-    relatively minor architectural approximations to be compatible with
-    VPR.  It includes a timing model which has been calibrated to the
-    Stratix IV timing model included in Altera's Quartus II CAD tools.
+    An enhanced capture of Altera's Stratix IV FPGA architecture. It makes some 
+    relatively minor architectural approximations to be compatible with VPR. It
+    includes a timing model which has been calibrated to the Stratix IV timing
+    model included in Altera's Quartus II CAD tools.
 
-    Use this architecture file, unless you have specific reasons to use 
-    the other ones in this directory.
+    Use this architecture file, unless you have specific reasons to use the
+    other ones in this directory.
 
 stratixiv_arch.timing.complex_sb.12to1.xml:
-    A variant of the enhanced architecture capture using customized switch-block
-    with hierarchical wire connectivity and fixed 12:1 driver muxes (L4 and L16).
+    A variant of the above architecture capture using customized switch-block
+    with hierarchical wire connectivity and fixed 12:1 L4 and L16 driver muxes.
 
 stratixiv_arch.timing.complex_sb.L16_40to1.L4_turn-straight_rand_L4_L16.xml:
     A variant like stratixiv_arch.timing.complex_sb.12to1.xml, but increased the
@@ -52,7 +52,7 @@ stratixiv_arch.timing.complex_sb.L4_16to1.L16_72to1.L4_turn-straight_rand_L4_L16
     A variant like stratixiv_arch.timing.complex_sb.12to1.xml, but increased the
     L4 driver muxes to 16:1 and the L16 driver muxes to 72:1.
 
-For more details about the new Altera's Stratix IV FPGA architecture capture variants,
+For more details about the Altera's Stratix IV FPGA architecture capture variants,
 see Section 5.4 of the paper, "VTR 8: High Performance CAD and Customizable FPGA Architecture Modelling": 
 eecg.utoronto.ca/~kmurray/vtr/vtr8_trets.pdf
 
