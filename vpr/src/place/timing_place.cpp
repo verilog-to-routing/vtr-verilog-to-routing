@@ -38,8 +38,8 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
         cluster_pins_with_modified_criticality_.clear();
         if (crit_exponent != last_crit_exponent_) {
             //Criticality exponent changed, must re-calculate criticalities for *all* sink pins
-            for (ClusterNetId net_id: clb_nlist_.nets()) {
-                for (ClusterPinId pin_id: clb_nlist_.net_sinks(net_id)) {
+            for (ClusterNetId net_id : clb_nlist_.nets()) {
+                for (ClusterPinId pin_id : clb_nlist_.net_sinks(net_id)) {
                     cluster_pins_with_modified_criticality_.insert(pin_id);
                 }
             }
@@ -71,8 +71,8 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
         }
     } else {
         //Non-incremental: all pins and nets need updating
-        for (ClusterNetId net_id: clb_nlist_.nets()) {
-            for (ClusterPinId pin_id: clb_nlist_.net_sinks(net_id)) {
+        for (ClusterNetId net_id : clb_nlist_.nets()) {
+            for (ClusterPinId pin_id : clb_nlist_.net_sinks(net_id)) {
                 cluster_pins_with_modified_criticality_.insert(pin_id);
             }
         }
