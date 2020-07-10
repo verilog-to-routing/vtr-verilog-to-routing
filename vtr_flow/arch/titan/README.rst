@@ -54,7 +54,7 @@ stratixiv_arch.timing.complex_sb.L4_16to1.L16_72to1.L4_turn-straight_rand_L4_L16
 
 For more details about the Altera's Stratix IV FPGA architecture capture variants,
 see Section 5.4 of the paper, "VTR 8: High Performance CAD and Customizable FPGA Architecture Modelling": 
-eecg.utoronto.ca/~kmurray/vtr/vtr8_trets.pdf
+<https://www.eecg.utoronto.ca/~kmurray/vtr/vtr8_trets.pdf>
 
 **legacy subdirectory:**
 
