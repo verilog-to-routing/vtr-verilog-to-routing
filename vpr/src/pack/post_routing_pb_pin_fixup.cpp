@@ -52,12 +52,57 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
                                                          const vtr::vector<RRNodeId, ClusterNetId>& rr_node_nets,
                                                          const vtr::Point<size_t>& grid_coord,
                                                          const ClusterBlockId& blk_id,
-                                                         const e_side& border_side,
                                                          const int& sub_tile_z,
                                                          const bool& verbose) {
     /* Handle each pin */
     auto logical_block = clustering_ctx.clb_nlist.block_type(blk_id);
     auto physical_tile = device_ctx.grid[grid_coord.x()][grid_coord.y()].type;
+
+    /* Narrow down side search for grids
+     *   The wanted side depends on the location of the grid.
+     *   In particular for perimeter grid, 
+     *   -------------------------------------------------------
+     *   Grid location |  IPIN side
+     *   -------------------------------------------------------
+     *   TOP           |  BOTTOM     
+     *   -------------------------------------------------------
+     *   RIGHT         |  LEFT     
+     *   -------------------------------------------------------
+     *   BOTTOM        |  TOP   
+     *   -------------------------------------------------------
+     *   LEFT          |  RIGHT
+     *   -------------------------------------------------------
+     *   TOP-LEFT      |  BOTTOM & RIGHT
+     *   -------------------------------------------------------
+     *   TOP-RIGHT     |  BOTTOM & LEFT
+     *   -------------------------------------------------------
+     *   BOTTOM-LEFT   |  TOP & RIGHT
+     *   -------------------------------------------------------
+     *   BOTTOM-RIGHT  |  TOP & LEFT
+     *   -------------------------------------------------------
+     */
+    std::vector<e_side> wanted_sides;
+    if (device_ctx.grid.height() - 1 == grid_coord.y()) { /* TOP side */
+        wanted_sides.push_back(BOTTOM);
+    }
+    if (device_ctx.grid.width() - 1 == grid_coord.x()) { /* RIGHT side */
+        wanted_sides.push_back(LEFT);
+    }
+    if (0 == grid_coord.y()) { /* BOTTOM side */
+        wanted_sides.push_back(TOP);
+    }
+    if (0 == grid_coord.x()) { /* LEFT side */
+        wanted_sides.push_back(RIGHT);
+    }
+
+    /* If wanted sides is empty still, this block does not have specific wanted sides,
+     * Deposit all the sides
+     */
+    if (true == wanted_sides.empty()) {
+        for (e_side side : {TOP, BOTTOM, LEFT, RIGHT}) {
+            wanted_sides.push_back(side);
+        }
+    }
 
     for (int pb_type_pin = 0; pb_type_pin < logical_block->pb_type->num_pins; ++pb_type_pin) {
         /* Skip non-equivalent ports, no need to do fix-up */
@@ -68,11 +113,6 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
 
         /* Get the ptc num for the pin in rr_graph, we need to consider the sub tile offset here
          * sub tile offset is the location in a sub tile whose capacity is larger than zero
-         * TODO:
-         * It seems that the get_physical_pin() function does not consider the offset z in the
-         * sub tile look-up.
-         * It is necessary to understand how we can consider 
-         * the offset in terms of capacity of each sub_tile
          */
         int physical_pin = get_physical_pin(physical_tile, logical_block, sub_tile_z, pb_type_pin);
         VTR_ASSERT(physical_pin < physical_tile->num_pins);
@@ -88,34 +128,23 @@ static void update_cluster_pin_with_post_routing_results(const DeviceContext& de
             rr_node_type = IPIN;
         }
 
-        std::vector<e_side> pin_sides = find_physical_tile_pin_side(physical_tile, physical_pin);
+        std::vector<e_side> pinloc_sides = find_physical_tile_pin_side(physical_tile, physical_pin);
         /* As some grid has height/width offset, we may not have the pin on any side */
-        if (0 == pin_sides.size()) {
+        if (0 == pinloc_sides.size()) {
             continue;
         }
 
-        /* Special for I/O grids: VPR creates the grid with duplicated pins on every side 
-         * but the expected side (only used side) will be opposite side of the border side!
+        /* Merge common part of the pin_sides and the wanted sides,
+         * which are sides we should iterate over
          */
-        if (NUM_SIDES != border_side) {
-            pin_sides.clear();
-            switch (border_side) {
-                case TOP:
-                    pin_sides.push_back(BOTTOM);
-                    break;
-                case RIGHT:
-                    pin_sides.push_back(LEFT);
-                    break;
-                case BOTTOM:
-                    pin_sides.push_back(TOP);
-                    break;
-                case LEFT:
-                    pin_sides.push_back(RIGHT);
-                    break;
-                default:
-                    VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Invalid side for logic blocks at FPGA border!\n");
+        std::vector<e_side> pin_sides;
+        for (const e_side& pinloc_side : pinloc_sides) {
+            if (wanted_sides.end() != std::find(wanted_sides.begin(), wanted_sides.end(), pinloc_side)) {
+                pin_sides.push_back(pinloc_side);
             }
         }
+        /* We should have at least one side now after merging */
+        VTR_ASSERT(!pin_sides.empty());
 
         ClusterNetId routing_net_id = ClusterNetId::INVALID();
         short valid_routing_net_cnt = 0;
@@ -582,95 +611,20 @@ void sync_netlists_to_routing(const DeviceContext& device_ctx,
                                                                              verbose);
 
     /* Update the core logic (center blocks of the FPGA) */
-    for (size_t x = 1; x < device_ctx.grid.width() - 1; ++x) {
-        for (size_t y = 1; y < device_ctx.grid.height() - 1; ++y) {
-            /* Bypass the EMPTY tiles */
-            if (true == is_empty_type(device_ctx.grid[x][y].type)) {
-                continue;
-            }
-            /* Only update multi-width multi-height block once! */
-            if ((0 != device_ctx.grid[x][y].width_offset)
-                || (0 != device_ctx.grid[x][y].height_offset)) {
-                continue;
-            }
-            /* Get the mapped blocks to this grid */
-            for (const ClusterBlockId& cluster_blk_id : placement_ctx.grid_blocks[x][y].blocks) {
-                /* Skip invalid ids */
-                if (false == clustering_ctx.clb_nlist.valid_block_id(cluster_blk_id)) {
-                    continue;
-                }
-                /* We know the entrance to grid info and mapping results, do the fix-up for this block */
-                vtr::Point<size_t> grid_coord(x, y);
-                update_cluster_pin_with_post_routing_results(device_ctx,
-                                                             clustering_ctx,
-                                                             rr_node_nets,
-                                                             grid_coord, cluster_blk_id, NUM_SIDES,
-                                                             placement_ctx.block_locs[cluster_blk_id].loc.sub_tile,
-                                                             verbose);
-                update_cluster_routing_traces_with_post_routing_results(atom_ctx,
-                                                                        clustering_ctx,
-                                                                        cluster_blk_id,
-                                                                        verbose);
-            }
-        }
-    }
+    for (const ClusterBlockId& cluster_blk_id : clustering_ctx.clb_nlist.blocks()) {
+        /* We know the entrance to grid info and mapping results, do the fix-up for this block */
+        vtr::Point<size_t> grid_coord(placement_ctx.block_locs[cluster_blk_id].loc.x,
+                                      placement_ctx.block_locs[cluster_blk_id].loc.y);
 
-    /* Update the periperal I/O blocks at fours sides of FPGA */
-    std::vector<e_side> io_sides{TOP, RIGHT, BOTTOM, LEFT};
-    std::map<e_side, std::vector<vtr::Point<size_t>>> io_coords;
-
-    /* TOP side */
-    for (size_t x = 1; x < device_ctx.grid.width() - 1; ++x) {
-        io_coords[TOP].push_back(vtr::Point<size_t>(x, device_ctx.grid.height() - 1));
-    }
-
-    /* RIGHT side */
-    for (size_t y = 1; y < device_ctx.grid.height() - 1; ++y) {
-        io_coords[RIGHT].push_back(vtr::Point<size_t>(device_ctx.grid.width() - 1, y));
-    }
-
-    /* BOTTOM side */
-    for (size_t x = 1; x < device_ctx.grid.width() - 1; ++x) {
-        io_coords[BOTTOM].push_back(vtr::Point<size_t>(x, 0));
-    }
-
-    /* LEFT side */
-    for (size_t y = 1; y < device_ctx.grid.height() - 1; ++y) {
-        io_coords[LEFT].push_back(vtr::Point<size_t>(0, y));
-    }
-
-    /* Walk through io grid on by one */
-    for (const e_side& io_side : io_sides) {
-        for (const vtr::Point<size_t>& io_coord : io_coords[io_side]) {
-            /* Bypass EMPTY grid */
-            if (true == is_empty_type(device_ctx.grid[io_coord.x()][io_coord.y()].type)) {
-                continue;
-            }
-
-            /* Only update multi-width multi-height block once! */
-            if ((0 != device_ctx.grid[io_coord.x()][io_coord.y()].width_offset)
-                || (0 != device_ctx.grid[io_coord.x()][io_coord.y()].height_offset)) {
-                continue;
-            }
-
-            /* Get the mapped blocks to this grid */
-            for (const ClusterBlockId& cluster_blk_id : placement_ctx.grid_blocks[io_coord.x()][io_coord.y()].blocks) {
-                /* Skip invalid ids */
-                if (false == clustering_ctx.clb_nlist.valid_block_id(cluster_blk_id)) {
-                    continue;
-                }
-                /* Update on I/O grid */
-                update_cluster_pin_with_post_routing_results(device_ctx,
-                                                             clustering_ctx,
-                                                             rr_node_nets,
-                                                             io_coord, cluster_blk_id, io_side,
-                                                             placement_ctx.block_locs[cluster_blk_id].loc.sub_tile,
-                                                             verbose);
-                update_cluster_routing_traces_with_post_routing_results(atom_ctx,
-                                                                        clustering_ctx,
-                                                                        cluster_blk_id,
-                                                                        verbose);
-            }
-        }
+        update_cluster_pin_with_post_routing_results(device_ctx,
+                                                     clustering_ctx,
+                                                     rr_node_nets,
+                                                     grid_coord, cluster_blk_id,
+                                                     placement_ctx.block_locs[cluster_blk_id].loc.sub_tile,
+                                                     verbose);
+        update_cluster_routing_traces_with_post_routing_results(atom_ctx,
+                                                                clustering_ctx,
+                                                                cluster_blk_id,
+                                                                verbose);
     }
 }
