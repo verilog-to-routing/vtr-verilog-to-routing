@@ -10,25 +10,7 @@
         "warnings": [
             "OUTPUT_BLIF Simulation produced fewer than 6 vectors."
         ],
-        "expectation": [],
-        "max_rss(MiB)": -1,
-        "exec_time(ms)": -1,
-        "simulation_time(ms)": -1,
-        "test_coverage(%)": -1,
-        "Latch Drivers": -1,
-        "Pi": -1,
-        "Po": -1,
-        "logic element": -1,
-        "latch": -1,
-        "Adder": -1,
-        "Multiplier": -1,
-        "Memory": -1,
-        "Hard Ip": -1,
-        "generic logic size": 4,
-        "Longest Path": -1,
-        "Average Path": -1,
-        "Estimated LUTs": -1,
-        "Total Node": -1
+        "generic logic size": 4
     },
     "initial/initial_delays/k6_N10_40nm": {
         "test_name": "initial/initial_delays/k6_N10_40nm",
@@ -41,25 +23,7 @@
         "warnings": [
             "OUTPUT_BLIF Simulation produced fewer than 6 vectors."
         ],
-        "expectation": [],
-        "max_rss(MiB)": -1,
-        "exec_time(ms)": -1,
-        "simulation_time(ms)": -1,
-        "test_coverage(%)": -1,
-        "Latch Drivers": -1,
-        "Pi": -1,
-        "Po": -1,
-        "logic element": -1,
-        "latch": -1,
-        "Adder": -1,
-        "Multiplier": -1,
-        "Memory": -1,
-        "Hard Ip": -1,
-        "generic logic size": 6,
-        "Longest Path": -1,
-        "Average Path": -1,
-        "Estimated LUTs": -1,
-        "Total Node": -1
+        "generic logic size": 6
     },
     "initial/initial_delays/k6_N10_mem32K_40nm": {
         "test_name": "initial/initial_delays/k6_N10_mem32K_40nm",
@@ -72,29 +36,10 @@
         "warnings": [
             "OUTPUT_BLIF Simulation produced fewer than 6 vectors."
         ],
-        "expectation": [],
-        "max_rss(MiB)": -1,
-        "exec_time(ms)": -1,
-        "simulation_time(ms)": -1,
-        "test_coverage(%)": -1,
-        "Latch Drivers": -1,
-        "Pi": -1,
-        "Po": -1,
-        "logic element": -1,
-        "latch": -1,
-        "Adder": -1,
-        "Multiplier": -1,
-        "Memory": -1,
-        "Hard Ip": -1,
-        "generic logic size": 6,
-        "Longest Path": -1,
-        "Average Path": -1,
-        "Estimated LUTs": -1,
-        "Total Node": -1
+        "generic logic size": 6
     },
     "initial/initial_delays/no_arch": {
         "test_name": "initial/initial_delays/no_arch",
-        "architecture": "n/a",
         "blif": "initial_delays.blif",
         "exit": 134,
         "errors": [
@@ -102,26 +47,7 @@
         ],
         "warnings": [
             "OUTPUT_BLIF Simulation produced fewer than 6 vectors."
-        ],
-        "expectation": [],
-        "max_rss(MiB)": -1,
-        "exec_time(ms)": -1,
-        "simulation_time(ms)": -1,
-        "test_coverage(%)": -1,
-        "Latch Drivers": -1,
-        "Pi": -1,
-        "Po": -1,
-        "logic element": -1,
-        "latch": -1,
-        "Adder": -1,
-        "Multiplier": -1,
-        "Memory": -1,
-        "Hard Ip": -1,
-        "generic logic size": -1,
-        "Longest Path": -1,
-        "Average Path": -1,
-        "Estimated LUTs": -1,
-        "Total Node": -1
+        ]
     },
     "initial/initial_multiple_blocks/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "initial/initial_multiple_blocks/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -134,25 +60,7 @@
         "warnings": [
             "OUTPUT_BLIF Simulation produced fewer than 8 vectors."
         ],
-        "expectation": [],
-        "max_rss(MiB)": -1,
-        "exec_time(ms)": -1,
-        "simulation_time(ms)": -1,
-        "test_coverage(%)": -1,
-        "Latch Drivers": -1,
-        "Pi": -1,
-        "Po": -1,
-        "logic element": -1,
-        "latch": -1,
-        "Adder": -1,
-        "Multiplier": -1,
-        "Memory": -1,
-        "Hard Ip": -1,
-        "generic logic size": 4,
-        "Longest Path": -1,
-        "Average Path": -1,
-        "Estimated LUTs": -1,
-        "Total Node": -1
+        "generic logic size": 4
     },
     "initial/initial_multiple_blocks/k6_N10_40nm": {
         "test_name": "initial/initial_multiple_blocks/k6_N10_40nm",
@@ -165,25 +73,7 @@
         "warnings": [
             "OUTPUT_BLIF Simulation produced fewer than 8 vectors."
         ],
-        "expectation": [],
-        "max_rss(MiB)": -1,
-        "exec_time(ms)": -1,
-        "simulation_time(ms)": -1,
-        "test_coverage(%)": -1,
-        "Latch Drivers": -1,
-        "Pi": -1,
-        "Po": -1,
-        "logic element": -1,
-        "latch": -1,
-        "Adder": -1,
-        "Multiplier": -1,
-        "Memory": -1,
-        "Hard Ip": -1,
-        "generic logic size": 6,
-        "Longest Path": -1,
-        "Average Path": -1,
-        "Estimated LUTs": -1,
-        "Total Node": -1
+        "generic logic size": 6
     },
     "initial/initial_multiple_blocks/k6_N10_mem32K_40nm": {
         "test_name": "initial/initial_multiple_blocks/k6_N10_mem32K_40nm",
@@ -196,29 +86,10 @@
         "warnings": [
             "OUTPUT_BLIF Simulation produced fewer than 8 vectors."
         ],
-        "expectation": [],
-        "max_rss(MiB)": -1,
-        "exec_time(ms)": -1,
-        "simulation_time(ms)": -1,
-        "test_coverage(%)": -1,
-        "Latch Drivers": -1,
-        "Pi": -1,
-        "Po": -1,
-        "logic element": -1,
-        "latch": -1,
-        "Adder": -1,
-        "Multiplier": -1,
-        "Memory": -1,
-        "Hard Ip": -1,
-        "generic logic size": 6,
-        "Longest Path": -1,
-        "Average Path": -1,
-        "Estimated LUTs": -1,
-        "Total Node": -1
+        "generic logic size": 6
     },
     "initial/initial_multiple_blocks/no_arch": {
         "test_name": "initial/initial_multiple_blocks/no_arch",
-        "architecture": "n/a",
         "blif": "initial_multiple_blocks.blif",
         "exit": 134,
         "errors": [
@@ -226,26 +97,7 @@
         ],
         "warnings": [
             "OUTPUT_BLIF Simulation produced fewer than 8 vectors."
-        ],
-        "expectation": [],
-        "max_rss(MiB)": -1,
-        "exec_time(ms)": -1,
-        "simulation_time(ms)": -1,
-        "test_coverage(%)": -1,
-        "Latch Drivers": -1,
-        "Pi": -1,
-        "Po": -1,
-        "logic element": -1,
-        "latch": -1,
-        "Adder": -1,
-        "Multiplier": -1,
-        "Memory": -1,
-        "Hard Ip": -1,
-        "generic logic size": -1,
-        "Longest Path": -1,
-        "Average Path": -1,
-        "Estimated LUTs": -1,
-        "Total Node": -1
+        ]
     },
     "initial/initial_multiple_statements/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "initial/initial_multiple_statements/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -258,25 +110,7 @@
         "warnings": [
             "OUTPUT_BLIF Simulation produced fewer than 2 vectors."
         ],
-        "expectation": [],
-        "max_rss(MiB)": -1,
-        "exec_time(ms)": -1,
-        "simulation_time(ms)": -1,
-        "test_coverage(%)": -1,
-        "Latch Drivers": -1,
-        "Pi": -1,
-        "Po": -1,
-        "logic element": -1,
-        "latch": -1,
-        "Adder": -1,
-        "Multiplier": -1,
-        "Memory": -1,
-        "Hard Ip": -1,
-        "generic logic size": 4,
-        "Longest Path": -1,
-        "Average Path": -1,
-        "Estimated LUTs": -1,
-        "Total Node": -1
+        "generic logic size": 4
     },
     "initial/initial_multiple_statements/k6_N10_40nm": {
         "test_name": "initial/initial_multiple_statements/k6_N10_40nm",
@@ -289,25 +123,7 @@
         "warnings": [
             "OUTPUT_BLIF Simulation produced fewer than 2 vectors."
         ],
-        "expectation": [],
-        "max_rss(MiB)": -1,
-        "exec_time(ms)": -1,
-        "simulation_time(ms)": -1,
-        "test_coverage(%)": -1,
-        "Latch Drivers": -1,
-        "Pi": -1,
-        "Po": -1,
-        "logic element": -1,
-        "latch": -1,
-        "Adder": -1,
-        "Multiplier": -1,
-        "Memory": -1,
-        "Hard Ip": -1,
-        "generic logic size": 6,
-        "Longest Path": -1,
-        "Average Path": -1,
-        "Estimated LUTs": -1,
-        "Total Node": -1
+        "generic logic size": 6
     },
     "initial/initial_multiple_statements/k6_N10_mem32K_40nm": {
         "test_name": "initial/initial_multiple_statements/k6_N10_mem32K_40nm",
@@ -320,29 +136,10 @@
         "warnings": [
             "OUTPUT_BLIF Simulation produced fewer than 2 vectors."
         ],
-        "expectation": [],
-        "max_rss(MiB)": -1,
-        "exec_time(ms)": -1,
-        "simulation_time(ms)": -1,
-        "test_coverage(%)": -1,
-        "Latch Drivers": -1,
-        "Pi": -1,
-        "Po": -1,
-        "logic element": -1,
-        "latch": -1,
-        "Adder": -1,
-        "Multiplier": -1,
-        "Memory": -1,
-        "Hard Ip": -1,
-        "generic logic size": 6,
-        "Longest Path": -1,
-        "Average Path": -1,
-        "Estimated LUTs": -1,
-        "Total Node": -1
+        "generic logic size": 6
     },
     "initial/initial_multiple_statements/no_arch": {
         "test_name": "initial/initial_multiple_statements/no_arch",
-        "architecture": "n/a",
         "blif": "initial_multiple_statements.blif",
         "exit": 134,
         "errors": [
@@ -350,25 +147,34 @@
         ],
         "warnings": [
             "OUTPUT_BLIF Simulation produced fewer than 2 vectors."
-        ],
+        ]
+    },
+    "DEFAULT": {
+        "test_name": "n/a",
+        "architecture": "n/a",
+        "blif": "n/a",
+        "exit": 0,
+        "leaks": 0,
+        "errors": [],
+        "warnings": [],
         "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "simulation_time(ms)": -1,
         "test_coverage(%)": -1,
-        "Latch Drivers": -1,
-        "Pi": -1,
-        "Po": -1,
-        "logic element": -1,
-        "latch": -1,
+        "Latch Drivers": 0,
+        "Pi": 0,
+        "Po": 0,
+        "logic element": 0,
+        "latch": 0,
         "Adder": -1,
         "Multiplier": -1,
         "Memory": -1,
         "Hard Ip": -1,
         "generic logic size": -1,
-        "Longest Path": -1,
-        "Average Path": -1,
-        "Estimated LUTs": -1,
-        "Total Node": -1
+        "Longest Path": 0,
+        "Average Path": 0,
+        "Estimated LUTs": 0,
+        "Total Node": 0
     }
 }

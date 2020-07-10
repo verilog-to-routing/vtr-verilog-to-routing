@@ -11,24 +11,7 @@
             "AST recursive_function.v:14 ODIN II does not (yet) differentiate between automatic and static tasks & functions.IGNORING",
             "AST recursive_function.v:14 ODIN_II does not fully support input/output integers in functions"
         ],
-        "expectation": [],
-        "max_rss(MiB)": -1,
-        "exec_time(ms)": -1,
-        "synthesis_time(ms)": -1,
-        "Latch Drivers": -1,
-        "Pi": -1,
-        "Po": -1,
-        "logic element": -1,
-        "latch": -1,
-        "Adder": -1,
-        "Multiplier": -1,
-        "Memory": -1,
-        "Hard Ip": -1,
-        "generic logic size": 4,
-        "Longest Path": -1,
-        "Average Path": -1,
-        "Estimated LUTs": -1,
-        "Total Node": -1
+        "generic logic size": 4
     },
     "automatic/recursive_function/k6_N10_40nm": {
         "test_name": "automatic/recursive_function/k6_N10_40nm",
@@ -42,24 +25,7 @@
             "AST recursive_function.v:14 ODIN II does not (yet) differentiate between automatic and static tasks & functions.IGNORING",
             "AST recursive_function.v:14 ODIN_II does not fully support input/output integers in functions"
         ],
-        "expectation": [],
-        "max_rss(MiB)": -1,
-        "exec_time(ms)": -1,
-        "synthesis_time(ms)": -1,
-        "Latch Drivers": -1,
-        "Pi": -1,
-        "Po": -1,
-        "logic element": -1,
-        "latch": -1,
-        "Adder": -1,
-        "Multiplier": -1,
-        "Memory": -1,
-        "Hard Ip": -1,
-        "generic logic size": 6,
-        "Longest Path": -1,
-        "Average Path": -1,
-        "Estimated LUTs": -1,
-        "Total Node": -1
+        "generic logic size": 6
     },
     "automatic/recursive_function/k6_N10_mem32K_40nm": {
         "test_name": "automatic/recursive_function/k6_N10_mem32K_40nm",
@@ -73,28 +39,10 @@
             "AST recursive_function.v:14 ODIN II does not (yet) differentiate between automatic and static tasks & functions.IGNORING",
             "AST recursive_function.v:14 ODIN_II does not fully support input/output integers in functions"
         ],
-        "expectation": [],
-        "max_rss(MiB)": -1,
-        "exec_time(ms)": -1,
-        "synthesis_time(ms)": -1,
-        "Latch Drivers": -1,
-        "Pi": -1,
-        "Po": -1,
-        "logic element": -1,
-        "latch": -1,
-        "Adder": -1,
-        "Multiplier": -1,
-        "Memory": -1,
-        "Hard Ip": -1,
-        "generic logic size": 6,
-        "Longest Path": -1,
-        "Average Path": -1,
-        "Estimated LUTs": -1,
-        "Total Node": -1
+        "generic logic size": 6
     },
     "automatic/recursive_function/no_arch": {
         "test_name": "automatic/recursive_function/no_arch",
-        "architecture": "n/a",
         "verilog": "recursive_function.v",
         "exit": 134,
         "errors": [
@@ -103,25 +51,7 @@
         "warnings": [
             "AST recursive_function.v:14 ODIN II does not (yet) differentiate between automatic and static tasks & functions.IGNORING",
             "AST recursive_function.v:14 ODIN_II does not fully support input/output integers in functions"
-        ],
-        "expectation": [],
-        "max_rss(MiB)": -1,
-        "exec_time(ms)": -1,
-        "synthesis_time(ms)": -1,
-        "Latch Drivers": -1,
-        "Pi": -1,
-        "Po": -1,
-        "logic element": -1,
-        "latch": -1,
-        "Adder": -1,
-        "Multiplier": -1,
-        "Memory": -1,
-        "Hard Ip": -1,
-        "generic logic size": -1,
-        "Longest Path": -1,
-        "Average Path": -1,
-        "Estimated LUTs": -1,
-        "Total Node": -1
+        ]
     },
     "automatic/recursive_task/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "automatic/recursive_task/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -134,24 +64,7 @@
         "warnings": [
             "PARSE_TO_AST recursive_task.v:9 error in parsing: (syntax error, unexpected vINTEGER, expecting vSYMBOL_ID)"
         ],
-        "expectation": [],
-        "max_rss(MiB)": -1,
-        "exec_time(ms)": -1,
-        "synthesis_time(ms)": -1,
-        "Latch Drivers": -1,
-        "Pi": -1,
-        "Po": -1,
-        "logic element": -1,
-        "latch": -1,
-        "Adder": -1,
-        "Multiplier": -1,
-        "Memory": -1,
-        "Hard Ip": -1,
-        "generic logic size": 4,
-        "Longest Path": -1,
-        "Average Path": -1,
-        "Estimated LUTs": -1,
-        "Total Node": -1
+        "generic logic size": 4
     },
     "automatic/recursive_task/k6_N10_40nm": {
         "test_name": "automatic/recursive_task/k6_N10_40nm",
@@ -164,24 +77,7 @@
         "warnings": [
             "PARSE_TO_AST recursive_task.v:9 error in parsing: (syntax error, unexpected vINTEGER, expecting vSYMBOL_ID)"
         ],
-        "expectation": [],
-        "max_rss(MiB)": -1,
-        "exec_time(ms)": -1,
-        "synthesis_time(ms)": -1,
-        "Latch Drivers": -1,
-        "Pi": -1,
-        "Po": -1,
-        "logic element": -1,
-        "latch": -1,
-        "Adder": -1,
-        "Multiplier": -1,
-        "Memory": -1,
-        "Hard Ip": -1,
-        "generic logic size": 6,
-        "Longest Path": -1,
-        "Average Path": -1,
-        "Estimated LUTs": -1,
-        "Total Node": -1
+        "generic logic size": 6
     },
     "automatic/recursive_task/k6_N10_mem32K_40nm": {
         "test_name": "automatic/recursive_task/k6_N10_mem32K_40nm",
@@ -194,28 +90,10 @@
         "warnings": [
             "PARSE_TO_AST recursive_task.v:9 error in parsing: (syntax error, unexpected vINTEGER, expecting vSYMBOL_ID)"
         ],
-        "expectation": [],
-        "max_rss(MiB)": -1,
-        "exec_time(ms)": -1,
-        "synthesis_time(ms)": -1,
-        "Latch Drivers": -1,
-        "Pi": -1,
-        "Po": -1,
-        "logic element": -1,
-        "latch": -1,
-        "Adder": -1,
-        "Multiplier": -1,
-        "Memory": -1,
-        "Hard Ip": -1,
-        "generic logic size": 6,
-        "Longest Path": -1,
-        "Average Path": -1,
-        "Estimated LUTs": -1,
-        "Total Node": -1
+        "generic logic size": 6
     },
     "automatic/recursive_task/no_arch": {
         "test_name": "automatic/recursive_task/no_arch",
-        "architecture": "n/a",
         "verilog": "recursive_task.v",
         "exit": 134,
         "errors": [
@@ -223,24 +101,33 @@
         ],
         "warnings": [
             "PARSE_TO_AST recursive_task.v:9 error in parsing: (syntax error, unexpected vINTEGER, expecting vSYMBOL_ID)"
-        ],
+        ]
+    },
+    "DEFAULT": {
+        "test_name": "n/a",
+        "architecture": "n/a",
+        "verilog": "n/a",
+        "exit": 0,
+        "leaks": 0,
+        "errors": [],
+        "warnings": [],
         "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
         "synthesis_time(ms)": -1,
-        "Latch Drivers": -1,
-        "Pi": -1,
-        "Po": -1,
-        "logic element": -1,
-        "latch": -1,
+        "Latch Drivers": 0,
+        "Pi": 0,
+        "Po": 0,
+        "logic element": 0,
+        "latch": 0,
         "Adder": -1,
         "Multiplier": -1,
         "Memory": -1,
         "Hard Ip": -1,
         "generic logic size": -1,
-        "Longest Path": -1,
-        "Average Path": -1,
-        "Estimated LUTs": -1,
-        "Total Node": -1
+        "Longest Path": 0,
+        "Average Path": 0,
+        "Estimated LUTs": 0,
+        "Total Node": 0
     }
 }
