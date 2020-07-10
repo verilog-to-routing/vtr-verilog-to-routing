@@ -1,34 +1,52 @@
-['exit']
+[DEFAULT]
+    auto-hide = true
+    default = -1
+    hide-if = ${default}
+    depend-on = [ "exit" ]
+
+["exit"]
     # if it is expected to fail, dont look for different failure
     range = [ 1.0, 255.0 ]
-    regex = 'Odin exited with code: (\d+)'
-    default = -1
+    regex = "Odin exited with code: (\d+)"
+    default = 50
+    hide-if = 0
+    depends_on = []
 
-['errors']
-    # catch odin, lsan and valgrind errors
-    regex = '(?:Error::|.*SUMMARY:)(.*)'
-    listing = true
+["leaks"]
+    regex = [ 
+        # asan errors
+        "SUMMARY: AddressSanitizer:.* leaked in (\d)+", 
+        # valgrind errors
+        "==[\d]+== ERROR SUMMARY: (\d)+ errors" 
+        ]
+    default = 0
+    depends_on = []
 
-['warnings']
-    regex = 'Warning::(.*)'
-    listing = true
+["errors"]
+    regex = "Error::(.*)"
+    default = []
+    depends_on = []
 
-['expectation']
-    regex = 'Expect::(.*)'
-    listing = true
+["warnings"]
+    regex = "Warning::(.*)"
+    default = []
+    depends_on = []
 
-['max_rss(MiB)']
+["expectation"]
+    regex = "Expect::(.*)"
+    default = []
+    depends_on = []
+
+["max_rss(MiB)"]
     # Memory usage can be very off depending on the number of cores
     range = [ 0.0, 100.0 ]
     # we cutoff anything bellow 250 MiB as it is subject to noise
     cutoff = 250.0
-    regex = 'Odin II took .* \(max_rss (\d+|\d+.\d+) MiB\)'
-    default = -1
+    regex = "Odin II took .* \(max_rss (\d+|\d+.\d+) MiB\)"
 
-['exec_time(ms)']
+["exec_time(ms)"]
     # timing can be very off due to how fast odin runs
     range = [ 0.0, 100.0 ]
     # we cutoff anything bellow 1 second as it is subject to noise
     cutoff = 1000.0
-    regex = 'Total time: (\d+|\d+.\d+)ms'
-    default = -1
+    regex = "Total time: (\d+|\d+.\d+)ms"
