@@ -1,0 +1,105 @@
+{
+    "localparam/localparam/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "localparam/localparam/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "verilog": "localparam.v",
+        "exit": 134,
+        "errors": [
+            "AST localparam.v:5 no match for parameter msb"
+        ],
+        "generic logic size": 4
+    },
+    "localparam/localparam/k6_N10_40nm": {
+        "test_name": "localparam/localparam/k6_N10_40nm",
+        "architecture": "k6_N10_40nm.xml",
+        "verilog": "localparam.v",
+        "exit": 134,
+        "errors": [
+            "AST localparam.v:5 no match for parameter msb"
+        ],
+        "generic logic size": 6
+    },
+    "localparam/localparam/k6_N10_mem32K_40nm": {
+        "test_name": "localparam/localparam/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "localparam.v",
+        "exit": 134,
+        "errors": [
+            "AST localparam.v:5 no match for parameter msb"
+        ],
+        "generic logic size": 6
+    },
+    "localparam/localparam/no_arch": {
+        "test_name": "localparam/localparam/no_arch",
+        "verilog": "localparam.v",
+        "exit": 134,
+        "errors": [
+            "AST localparam.v:5 no match for parameter msb"
+        ]
+    },
+    "localparam/parameter_define_localparam/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "localparam/parameter_define_localparam/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "verilog": "parameter_define_localparam.v",
+        "exit": 134,
+        "errors": [
+            "AST parameter_define_localparam.v:5 no match for parameter lsb"
+        ],
+        "generic logic size": 4
+    },
+    "localparam/parameter_define_localparam/k6_N10_40nm": {
+        "test_name": "localparam/parameter_define_localparam/k6_N10_40nm",
+        "architecture": "k6_N10_40nm.xml",
+        "verilog": "parameter_define_localparam.v",
+        "exit": 134,
+        "errors": [
+            "AST parameter_define_localparam.v:5 no match for parameter lsb"
+        ],
+        "generic logic size": 6
+    },
+    "localparam/parameter_define_localparam/k6_N10_mem32K_40nm": {
+        "test_name": "localparam/parameter_define_localparam/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "parameter_define_localparam.v",
+        "exit": 134,
+        "errors": [
+            "AST parameter_define_localparam.v:5 no match for parameter lsb"
+        ],
+        "generic logic size": 6
+    },
+    "localparam/parameter_define_localparam/no_arch": {
+        "test_name": "localparam/parameter_define_localparam/no_arch",
+        "verilog": "parameter_define_localparam.v",
+        "exit": 134,
+        "errors": [
+            "AST parameter_define_localparam.v:5 no match for parameter lsb"
+        ]
+    },
+    "DEFAULT": {
+        "test_name": "n/a",
+        "architecture": "n/a",
+        "verilog": "n/a",
+        "exit": 0,
+        "leaks": 0,
+        "errors": [],
+        "warnings": [],
+        "expectation": [],
+        "max_rss(MiB)": -1,
+        "exec_time(ms)": -1,
+        "synthesis_time(ms)": -1,
+        "Latch Drivers": 0,
+        "Pi": 0,
+        "Po": 0,
+        "logic element": 0,
+        "latch": 0,
+        "Adder": -1,
+        "Multiplier": -1,
+        "Memory": -1,
+        "Hard Ip": -1,
+        "generic logic size": -1,
+        "Longest Path": 0,
+        "Average Path": 0,
+        "Estimated LUTs": 0,
+        "Total Node": 0
+    }
+}
