@@ -1,6 +1,35 @@
-from vtr import find_vtr_file, verify_file
+from vtr import find_vtr_file, verify_file,CommandRunner
 from pathlib import Path
-def run(circuit_file, old_netlist, output_netlist, output_activity_file, command_runner, temp_dir=".", log_filename="ace.out", ace_exec=None, ace_seed = 1):
+def run(circuit_file, old_netlist, output_netlist, output_activity_file,
+            command_runner=CommandRunner(), temp_dir=".", log_filename="ace.out",
+            ace_exec=None, ace_seed = 1):
+    """
+    Runs ACE for activity estimation 
+
+    To run:
+        vtr.ace.run(args)
+
+    Required arguments:
+        circuit_file : Circuit file to optimize
+
+        old_netlist : netlist to be anylized
+        
+        output_netlist : File name to output the resulting circuit to
+
+        output_activity_file : The output activity file
+    
+    Options:
+        command_runner : A CommandRunner object used to run system commands
+        
+        temp_dir : Directory to run in (created if non-existent)
+        
+        log_filename : File to log result to
+        
+        ace_exec : ACE executable to be run
+        
+        ace_seed : The ACE seed
+    """
+
     verify_file(circuit_file, "Circuit")
     verify_file(old_netlist, "Previous netlist")
     verify_file(output_netlist, "Output netlist", False)

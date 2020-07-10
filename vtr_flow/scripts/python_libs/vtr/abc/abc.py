@@ -1,14 +1,46 @@
 import shutil
 from pathlib import Path
-from vtr import  mkdir_p, find_vtr_file, determine_lut_size, verify_file
+from vtr import  mkdir_p, find_vtr_file, determine_lut_size, verify_file, CommandRunner
 from vtr.error import VtrError, InspectError, CommandError
 
 def run(architecture_file, circuit_file,
-        output_netlist, command_runner,
+        output_netlist, command_runner=CommandRunner(),
         temp_dir=".", log_filename="abc.out",
         abc_exec=None, abc_script=None, abc_rc=None,
         use_old_abc_script = False, abc_args = None, keep_intermediate_files=1):
+    """
+    Runs ABC to optimize specified file.
 
+    To run:
+        vtr.abc.run(args)
+
+    Required arguments:
+        architecture_file : Architecture file to target
+        
+        circuit_file : Circuit file to optimize
+        
+        output_netlist : File name to output the resulting circuit to
+    
+    Options:
+        command_runner : A CommandRunner object used to run system commands
+        
+        temp_dir : Directory to run in (created if non-existent)
+        
+        log_filename : File to log result to
+        
+        abc_exec : ABC executable to be run
+        
+        abc_script : the script to be run on abc
+        
+        abc_rc : the ABC rc file
+        
+        use_old_abc_script : Enables the use of the old ABC script
+        
+        abc_args : A dictionary of keyword arguments to pass on to ABC
+        
+        keep_intermediate_files : Determines if intermediate files are kept or deleted
+
+    """
     mkdir_p(temp_dir)
 
     verify_file(architecture_file, "Architecture")
@@ -174,9 +206,27 @@ def populate_clock_list(circuit_file,blackbox_latches_script,clk_list,command_ru
         for line in f.readlines():
             clk_list.append(line.strip('\n'))
 
-def run_lec(reference_netlist, implementation_netlist, command_runner, temp_dir=".", log_filename="abc.dec.out", abc_exec=None):
+def run_lec(reference_netlist, implementation_netlist, command_runner=CommandRunner(), temp_dir=".", log_filename="abc.dec.out", abc_exec=None):
     """
     Run Logical Equivalence Checking (LEC) between two netlists using ABC
+
+    To run:
+        vtr.abc.run_lec(args)
+
+    Required arguments:
+        reference_netlist : The reference netlist to be commpared to
+        
+        implementation_netlist : The implemeted netlist to compare to the reference netlist
+    
+    Options:
+        command_runner : A CommandRunner object used to run system commands
+        
+        temp_dir : Directory to run in (created if non-existent)
+        
+        log_filename : File to log result to
+        
+        abc_exec : ABC executable to be run
+        
     """
     mkdir_p(temp_dir)
 

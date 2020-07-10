@@ -8,21 +8,35 @@ def run_relax_W(architecture, circuit_name, circuit, command_runner=CommandRunne
                     vpr_args=None, output_netlist=None):
     """
     Runs VPR twice:
+
       1st: To find the minimum channel width
+
       2nd: At relaxed channel width (e.g. for critical path delay)
+    
+    To run:
+        vtr.vpr.run_relax_W(args)
 
-    Arguments
-    ---------
+    Required arguments:
         architecture: Architecture file
+        
+        circuit_name: Curcuit netlist 
+        
         circuit: Input circuit netlist
+    Options:
         command_runner: CommandRunner object
+        
         temp_dir: Directory to run in
-
+        
         relax_W_factor: Factor by which to relax minimum channel width for critical path delay routing
-        verbosity: How much progress output to produce
-        logfile_base: Base name for log files (e.g. "vpr" produces vpr.min_W.out, vpr.relaxed_W.out)
-        vpr_args: Extra arguments for VPR
+        
         vpr_exec: Path to the VPR executable
+        
+        verbosity: How much progress output to produce
+        
+        logfile_base: Base name for log files (e.g. "vpr" produces vpr.min_W.out, vpr.relaxed_W.out)
+        
+        vpr_args: Extra arguments for VPR
+        
         output_netlist: Output implementation netlist to generate
     """
     if vpr_args is None:
@@ -71,9 +85,36 @@ def run_relax_W(architecture, circuit_name, circuit, command_runner=CommandRunne
     run(architecture, circuit_name, circuit, command_runner, temp_dir, log_filename=vpr_relaxed_W_log, vpr_exec=vpr_exec, vpr_args=vpr_args, check_for_second_run=False)
     
 
-def run(architecture, circuit_name, circuit, command_runner, temp_dir, output_netlist=None, log_filename="vpr.out", vpr_exec=None, vpr_args=None,check_for_second_run=True):
+def run(architecture, circuit_name, circuit, command_runner=CommandRunner(), temp_dir=".", output_netlist=None,
+ log_filename="vpr.out", vpr_exec=None, vpr_args=None,check_for_second_run=True):
     """
     Runs VPR with the specified configuration
+
+    To run:
+        vtr.vpr.run(args)
+
+    Required arguments:
+        architecture: Architecture file
+        
+        circuit_name: Curcuit netlist 
+        
+        circuit: Input circuit file
+    
+    Options:
+        command_runner: CommandRunner object
+        
+        temp_dir: Directory to run in
+
+        output_netlist: Output implementation netlist to generate
+        
+        log_filename : File to log result to
+        
+        vpr_exec: Path to the VPR executable
+        
+        vpr_args: Extra arguments for VPR
+        
+        check_for_second_run: enables checking for arguments in vpr_args that require a second run of VPR ie analysis
+
     """
     
     if vpr_args is None:

@@ -413,8 +413,8 @@ def vtr_command_main(arg_list, prog=None):
                              keep_intermediate_files=args.keep_intermediate_files,
                              keep_result_files=args.keep_result_files,
                              min_hard_mult_size=args.min_hard_mult_size,
-                             check_equivalent = args.check_equivalent,
                              min_hard_adder_size = args.min_hard_adder_size,
+                             check_equivalent = args.check_equivalent,
                              use_old_abc_script=args.use_old_abc_script,
                              relax_W_factor=args.relax_W_factor
                              )

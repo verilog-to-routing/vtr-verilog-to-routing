@@ -24,27 +24,56 @@ def run(architecture_file, circuit_file,
                  keep_intermediate_files=True,
                  keep_result_files=True,
                  min_hard_mult_size=3,
-                 check_equivalent=False,
                  min_hard_adder_size=1,
+                 check_equivalent=False,
                  use_old_abc_script=False,
                  relax_W_factor=1.3):
     """
-    Runs the VTR CAD flow to map the specificied circuit_file onto the target architecture_file
+    Runs the VTR CAD flow to map the specified circuit_file onto the target architecture_file
 
-    Arguments
-    ---------
-        architecture_file: Architecture file to target
+    To run:
+        vtr.run(args)
+
+    Required arguments:
+        architecture_file : Architecture file to target
+        
         circuit_file     : Circuit to implement
-
+    
+    Options:
         power_tech_file  : Technology power file.  Enables power analysis and runs ace
-
-        temp_dir         : Directory to run in (created if non-existant)
+        
         start_stage      : Stage of the flow to start at
+        
         end_stage        : Stage of the flow to finish at
+        
+        temp_dir         : Directory to run in (created if non-existent)
+        
         command_runner   : A CommandRunner object used to run system commands
-        parse_config_file: The configuration file defining how to parse metrics from results
+        
+        parse_config_file : The configuration file defining how to parse metrics from results
+        
         verbosity        : How much output to produce
-        vpr_args         : A dictionary of keywork arguments to pass on to VPR
+        
+        odin_args        : A dictionary of keyword arguments to pass on to ODIN II 
+        
+        abc_args         : A dictionary of keyword arguments to pass on to ABC
+        
+        vpr_args         : A dictionary of keyword arguments to pass on to VPR
+        
+        keep_intermediate_files : Determines if intermediate files are kept or deleted
+        
+        keep_result_files : Determines if the result files are kept or deleted
+        
+        min_hard_mult_size : Tells ODIN II the minimum multiplier size that should be implemented using hard multiplier (if available)
+        
+        min_hard_adder_size : Tells ODIN II the minimum adder size that should be implemented using hard adder (if available).
+        
+        check_equivalent  : Enables Logical Equivalence Checks
+        
+        use_old_abc_script : Enables the use of the old ABC script
+        
+        relax_W_factor    : Factor by which to relax minimum channel width for critical path delay routing
+        
     """
     if vpr_args == None:
         vpr_args = OrderedDict()
@@ -140,7 +169,7 @@ def run(architecture_file, circuit_file,
             power_tech_file=Path(power_tech_file)
 
         if should_run_stage(VTR_STAGE.ace, start_stage, end_stage):
-            vtr.ace_flow.run(next_stage_netlist, old_netlist = post_odin_netlist, output_netlist=post_ace_netlist, 
+            vtr.ace.run(next_stage_netlist, old_netlist = post_odin_netlist, output_netlist=post_ace_netlist, 
                     output_activity_file=post_ace_activity_file, 
                     command_runner=command_runner, 
                     temp_dir=temp_dir)

@@ -1,10 +1,10 @@
 import shutil
 from pathlib import Path
-from vtr import  mkdir_p, find_vtr_file, file_replace, determine_memory_addr_width, verify_file
+from vtr import  mkdir_p, find_vtr_file, file_replace, determine_memory_addr_width, verify_file, CommandRunner
 
 def run(architecture_file, circuit_file, 
              output_netlist, 
-             command_runner, 
+             command_runner=CommandRunner(),
              temp_dir=".", 
              odin_args="--adder_type default",
              log_filename="odin.out", 
@@ -12,6 +12,37 @@ def run(architecture_file, circuit_file,
              odin_config=None, 
              min_hard_mult_size=3, 
              min_hard_adder_size=1):
+    """
+    Runs ODIN II on the specified architecture file and circuit file
+
+    To run:
+        vtr.odin.run(args)
+
+    Required arguments:
+        architecture_file : Architecture file to target
+        
+        circuit_file : Circuit file to optimize
+        
+        output_netlist : File name to output the resulting circuit to
+
+    Options:
+        command_runner : A CommandRunner object used to run system commands
+        
+        temp_dir : Directory to run in (created if non-existent)
+        
+        odin_args: A dictionary of keyword arguments to pass on to ODIN II 
+        
+        log_filename : File to log result to
+        
+        odin_exec: ODIN II executable to be run
+        
+        odin_config: The ODIN II configuration file
+        
+        min_hard_mult_size : Tells ODIN II the minimum multiplier size that should be implemented using hard multiplier (if available)
+        
+        min_hard_adder_size : Tells ODIN II the minimum adder size that should be implemented using hard adder (if available).
+        
+    """
     mkdir_p(temp_dir)
 
     verify_file(architecture_file, "Architecture")
