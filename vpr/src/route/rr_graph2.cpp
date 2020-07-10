@@ -1339,19 +1339,22 @@ bool verify_rr_node_indices(const DeviceGrid& grid, const t_rr_node_indices& rr_
 
                         } else {
                             VTR_ASSERT(rr_node.type() == IPIN || rr_node.type() == OPIN);
-                            if (rr_node.xlow() != x) {
-                                VPR_ERROR(VPR_ERROR_ROUTE, "RR node xlow does not match between rr_nodes and rr_node_indices (%d/%d): %s",
-                                          rr_node.xlow(),
-                                          x,
-                                          describe_rr_node(inode).c_str());
-                            }
-
-                            if (rr_node.ylow() != y) {
-                                VPR_ERROR(VPR_ERROR_ROUTE, "RR node ylow does not match between rr_nodes and rr_node_indices (%d/%d): %s",
-                                          rr_node.ylow(),
-                                          y,
-                                          describe_rr_node(inode).c_str());
-                            }
+                            /* As we allow a pin to be indexable on multiple sides,
+                             * This check code should be invalid
+                             * if (rr_node.xlow() != x) {
+                             *     VPR_ERROR(VPR_ERROR_ROUTE, "RR node xlow does not match between rr_nodes and rr_node_indices (%d/%d): %s",
+                             *               rr_node.xlow(),
+                             *               x,
+                             *               describe_rr_node(inode).c_str());
+                             * }
+                             *
+                             * if (rr_node.ylow() != y) {
+                             *     VPR_ERROR(VPR_ERROR_ROUTE, "RR node ylow does not match between rr_nodes and rr_node_indices (%d/%d): %s",
+                             *               rr_node.ylow(),
+                             *               y,
+                             *               describe_rr_node(inode).c_str());
+                             * }
+                             */
                         }
 
                         if (rr_type == IPIN || rr_type == OPIN) {
@@ -1402,8 +1405,8 @@ bool verify_rr_node_indices(const DeviceGrid& grid, const t_rr_node_indices& rr_
                           describe_rr_node(inode).c_str());
             }
             /* As we allow a pin to be indexable on multiple sides,
-         * This check code should not be applied to input and output pins
-         */
+             * This check code should not be applied to input and output pins
+             */
         } else if ((OPIN != rr_node.type()) && (IPIN != rr_node.type())) {
             if (count != rr_node.length() + 1) {
                 VPR_ERROR(VPR_ERROR_ROUTE, "Mismatch between RR node length (%d) and count within rr_node_indices (%d, should be length + 1): %s",
