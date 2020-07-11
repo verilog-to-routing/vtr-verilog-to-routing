@@ -68,6 +68,7 @@ def is_json_str(value):
 #############################################
 # for TOML
 _DFLT_HDR='DEFAULT'
+_HOOK_HDR='HOOKS'
 
 _K_DFLT='default'
 _K_KEY='key'
@@ -76,10 +77,20 @@ _K_RANGE='range'
 _K_CUTOFF='cutoff'
 _K_HIDE_IF='hide-if'
 _K_AUTO_HIDE='auto-hide'
+_K_FILE='filename'
+
+_TOML_PATH=""
+HOOK_FILES=[]
 
 def preproc_toml(file):
+	global _TOML_PATH
+
 	current_dir = os.getcwd()
 	directory = os.path.dirname(file)
+
+	# add this path here to find hooks
+	sys.path.append(directory)
+
 	if directory != '':
 		os.chdir(directory)
 
@@ -185,6 +196,19 @@ def sanitize_toml(toml_dict):
 	if _DFLT_HDR in toml_dict:
 		defaults = toml_dict[_DFLT_HDR]
 		del toml_dict[_DFLT_HDR]
+
+	if _HOOK_HDR in toml_dict:
+		global HOOK_FILES
+		if _K_FILE in toml_dict[_HOOK_HDR]:
+
+			# we append the filenames and strip the .py extension
+			if not isinstance(toml_dict[_HOOK_HDR][_K_FILE], list):
+				HOOK_FILES.append(toml_dict[_HOOK_HDR][_K_FILE][:-3])
+			else:
+				for hook_files in toml_dict[_HOOK_HDR][_K_FILE]:
+					HOOK_FILES.append(hook_files[:-3])
+
+		del toml_dict[_HOOK_HDR]
 
 	for header in toml_dict:
 		# initialize all the key->values to the defaults provided
@@ -350,6 +374,16 @@ def load_json_into_tbl(toml_dict, file_name):
 	return file_dict
 
 def load_log_into_tbl(toml_dict, log_file_name):
+
+	# load the hooks if there are any
+	# run.py
+	hooks = []
+	for hook_file in HOOK_FILES:
+		module = __import__(hook_file)
+		module_hook_list = getattr(module, _HOOK_HDR)
+		for runtime_hook in module_hook_list:
+			hooks.append(getattr(module, runtime_hook))
+
 	# setup our output dict, print as csv expects a hashed table
 	parsed_dict = OrderedDict()
 
@@ -361,7 +395,12 @@ def load_log_into_tbl(toml_dict, log_file_name):
 		# set the defaults
 		input_values = create_tbl(toml_dict, _K_DFLT)
 
-		for line in log:
+		for line in log:	
+
+			# boostrap the preprocessor here
+			for fn in hooks:
+				line = fn(line)
+
 			line = " ".join(line.split())
 			for header in toml_dict:
 				value = regex_line(toml_dict, header, line)
@@ -493,6 +532,7 @@ def regex_line(toml_dict, header, line):
 def _parse(toml_file_name, log_file_name):
 	# load toml
 	toml_dict = load_toml(toml_file_name)
+
 	parsed_dict = load_into_tbl(toml_dict, log_file_name)
 	pretty_print_tbl(toml_dict, parsed_dict)
 

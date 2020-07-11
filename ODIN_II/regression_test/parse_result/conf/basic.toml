@@ -1,3 +1,6 @@
+[HOOKS]
+    filename = "hooks.py"
+
 [DEFAULT]
     auto-hide = true
     default = -1
