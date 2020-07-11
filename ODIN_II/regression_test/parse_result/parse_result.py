@@ -332,6 +332,11 @@ def print_as_csv(toml_dict, output_dict, file=sys.stdout):
 		print(', '.join(row), file=file)
 
 def print_as_json(toml_dict, output_dict, file=sys.stdout):
+	# hide the defaults
+	output_dict = auto_hide_values(toml_dict, output_dict)
+	# make sure that the defaults are printed as a separate table
+	output_dict[_DFLT_HDR] = create_tbl(toml_dict, _K_HIDE_IF)
+
 	print(json.dumps(output_dict, indent = 4), file=file)
 
 def pretty_print_tbl(toml_dict, output_dict, file=sys.stdout):
@@ -368,10 +373,28 @@ def load_csv_into_tbl(toml_dict, csv_file_name):
 	return file_dict
 
 def load_json_into_tbl(toml_dict, file_name):
+
 	file_dict = OrderedDict()
 	with open(file_name, newline='') as json_file:
 		file_dict = json.load(json_file,object_pairs_hook=OrderedDict)
+
+	if _DFLT_HDR not in file_dict:
+		# nothing to do
+		return file_dict
+
+	# once we have loaded the json file, we go through and fill back the default
+	# we will delete the default, then this way we could merge two json with different defaults 
+	# without issue
+	for header in file_dict:
+		if header != _DFLT_HDR:
+			for key in file_dict[_DFLT_HDR]:
+				if key not in file_dict[header] or file_dict[header][key] is None:
+					file_dict[header][key] = file_dict[_DFLT_HDR][key]
+
+	del file_dict[_DFLT_HDR]
+
 	return file_dict
+
 
 def load_log_into_tbl(toml_dict, log_file_name):
 
@@ -386,9 +409,6 @@ def load_log_into_tbl(toml_dict, log_file_name):
 
 	# setup our output dict, print as csv expects a hashed table
 	parsed_dict = OrderedDict()
-
-	# for the first entry, we must add this in
-	parsed_dict[_DFLT_HDR] = create_tbl(toml_dict, _K_HIDE_IF)
 
 	#load log file and parse
 	with open(log_file_name) as log:
@@ -435,7 +455,6 @@ def load_into_tbl(toml_dict, file_name):
 		# we assume this is a log file
 		tbl = load_log_into_tbl(toml_dict, file_name)
 
-	tbl = auto_hide_values(toml_dict, tbl)
 	return tbl
 
 def range(header, toml_dict, value, golden_value):
@@ -534,6 +553,7 @@ def _parse(toml_file_name, log_file_name):
 	toml_dict = load_toml(toml_file_name)
 
 	parsed_dict = load_into_tbl(toml_dict, log_file_name)
+	
 	pretty_print_tbl(toml_dict, parsed_dict)
 
 def _join(toml_file_name, file_list):
@@ -578,6 +598,7 @@ def _compare(toml_file_name, golden_result_file_name, result_file_name, diff_fil
 					pass
 
 				elif header not in golden_tbl[key] and header in tbl[key]:
+
 					error_str.append(mismatch_str(header, "null", tbl[key][header]))
 					diff[key][header] = tbl[key][header]
 
