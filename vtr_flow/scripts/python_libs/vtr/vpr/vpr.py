@@ -237,7 +237,7 @@ def cmp_full_vs_incr_STA(architecture,circuit_name,circuit,command_runner=Comman
     identical = True
 
     for filename in default_output_filenames:
-        cmd=[dif_exec,"full_sta_{}".format(filename),"incremental_sta_{}".filename]
+        cmd=[dif_exec,"full_sta_{}".format(filename),"incremental_sta_{}".format(filename)]
         cmd_output,cmd_return_code = command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename="diff.out", indent_depth=1)
         if(cmd_return_code):
             identical = False
