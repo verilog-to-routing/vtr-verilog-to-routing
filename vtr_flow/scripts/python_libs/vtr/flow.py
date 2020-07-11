@@ -26,6 +26,7 @@ def run(architecture_file, circuit_file,
                  min_hard_mult_size=3,
                  min_hard_adder_size=1,
                  check_equivalent=False,
+                 check_incremental_sta_consistency = False,
                  use_old_abc_script=False,
                  relax_W_factor=1.3):
     """
@@ -74,6 +75,8 @@ def run(architecture_file, circuit_file,
         
         relax_W_factor    : Factor by which to relax minimum channel width for critical path delay routing
         
+        check_incremental_sta_consistency :  Do a second-run of the incremental analysis to compare the result files
+        
     """
     if vpr_args == None:
         vpr_args = OrderedDict()
@@ -106,6 +109,7 @@ def run(architecture_file, circuit_file,
     post_vpr_netlist = Path(temp_dir)  / "vpr.out" #circuit_name + ".vpr.blif"
     lec_base_netlist = None #Reference netlist for LEC
     gen_postsynthesis_netlist = Path(temp_dir) / (circuit_name + "_post_synthesis." + netlist_ext)
+    rr_graph_ext=".xml"
 
     if "blif" in circuit_ext:
         #If the user provided a .blif netlist, we use that as the baseline for LEC
@@ -206,7 +210,8 @@ def run(architecture_file, circuit_file,
                     output_netlist=post_vpr_netlist,
                     command_runner=command_runner, 
                     temp_dir=temp_dir, 
-                    vpr_args=vpr_args)
+                    vpr_args=vpr_args,
+                    rr_graph_ext=rr_graph_ext)
         else:
             #First find minW and then re-route at a relaxed W
             vtr.vpr.run_relax_W(architecture_copy, circuit_copy, pre_vpr_netlist, 
@@ -228,7 +233,16 @@ def run(architecture_file, circuit_file,
             if "post_synthesis.blif" in str(file) :
                 gen_postsynthesis_netlist = file.name
                 break
-        vtr.abc.run_lec(lec_base_netlist, gen_postsynthesis_netlist, command_runner=command_runner, temp_dir=temp_dir)
+        vtr.abc.run_lec(lec_base_netlist, gen_postsynthesis_netlist, command_runner=command_runner, temp_dir=temp_dir,check_incremental_sta_consistency=check_incremental_sta_consistency)
+
+    if check_incremental_sta_consistency:
+        vtr.vpr.cmp_full_vs_incr_STA(architecture_copy, circuit_copy, pre_vpr_netlist, 
+                            command_runner=command_runner, 
+                            vpr_args=vpr_args,
+                            rr_graph_ext=rr_graph_ext,
+                            temp_dir=temp_dir
+                            )
+    
     if(not keep_intermediate_files):
         next_stage_netlist.unlink()
         exts = ('.xml','.sdf','.v')

@@ -304,6 +304,10 @@ def vtr_command_argparser(prog=None):
                                default=None,
                                type=str,
                                help="Path to SDC timing constraints file.")
+    vpr.add_argument("-check_incremental_sta_consistency",
+                                default=False,
+                                action="store_true",
+                                help="Do a second-run of the incremental analysis to compare the result files")
                                
     return parser
 
@@ -415,6 +419,7 @@ def vtr_command_main(arg_list, prog=None):
                              min_hard_mult_size=args.min_hard_mult_size,
                              min_hard_adder_size = args.min_hard_adder_size,
                              check_equivalent = args.check_equivalent,
+                             check_incremental_sta_consistency = args.check_incremental_sta_consistency,
                              use_old_abc_script=args.use_old_abc_script,
                              relax_W_factor=args.relax_W_factor
                              )

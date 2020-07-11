@@ -86,7 +86,7 @@ def run_relax_W(architecture, circuit_name, circuit, command_runner=CommandRunne
     
 
 def run(architecture, circuit_name, circuit, command_runner=CommandRunner(), temp_dir=".", output_netlist=None,
- log_filename="vpr.out", vpr_exec=None, vpr_args=None,check_for_second_run=True):
+ log_filename="vpr.out", vpr_exec=None, vpr_args=None,check_for_second_run=True,rr_graph_ext=".xml",):
     """
     Runs VPR with the specified configuration
 
@@ -166,7 +166,6 @@ def run(architecture, circuit_name, circuit, command_runner=CommandRunner(), tem
     command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename=log_filename, indent_depth=1)
 
     if(do_second_run):
-        rr_graph_ext=".xml"
         rr_graph_out_file = ""
         if "write_rr_graph" in second_run_args:
             rr_graph_out_file = second_run_args["write_rr_graph"]
@@ -196,4 +195,53 @@ def run(architecture, circuit_name, circuit, command_runner=CommandRunner(), tem
             if diff_result:
                 raise InspectError("failed: vpr (RR Graph XML output not consistent when reloaded)")
 
+def cmp_full_vs_incr_STA(architecture,circuit_name,circuit,command_runner=CommandRunner(),vpr_args=None,rr_graph_ext=".xml",temp_dir=".",vpr_exec=None):
+    """"
+    Sanity check that full STA and the incremental STA produce the same *.net, *.place, *.route files as well as identical timing report files
 
+    """
+    verify_file(architecture, "Architecture")
+    verify_file(circuit_name, "Circuit")
+    verify_file(circuit, "Circuit")
+
+    default_output_filenames = [
+            "{}.net".format(circuit_name.stem),
+            "{}.place".format(circuit_name.stem),
+            "{}.route".format(circuit_name.stem),
+            "report_timing.setup.rpt",
+			"report_timing.hold.rpt",
+			"report_unconstrained_timing.setup.rpt",
+			"report_unconstrained_timing.hold.rpt"]
+
+    dif_exec = "diff"
+    move_exec = "mv"
+    # The full STA flow should have already been run
+    # directly rename the output files
+    for filename in default_output_filenames:
+        cmd = [move_exec,filename,"full_sta_{}".format(filename)]
+        command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename="move.out", indent_depth=1)
+    
+    # run incremental STA flow
+    incremental_vpr_args = vpr_args
+    incremental_vpr_args["timing_update_type"]="incremental"
+    fixed_W_log_file = "vpr.incr_sta.out"
+
+    run(architecture, circuit_name, circuit, command_runner, temp_dir, log_filename=fixed_W_log_file, vpr_exec=vpr_exec, vpr_args=incremental_vpr_args, check_for_second_run=False)
+
+    # Rename the incremental STA output files
+    for filename in default_output_filenames:
+        cmd = [move_exec,filename,"incremental_sta_{}".format(filename)]
+        command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename="move.out", indent_depth=1)
+    
+    failed_msg = "Failed with these files (not identical):"
+    identical = True
+
+    for filename in default_output_filenames:
+        cmd=[dif_exec,"full_sta_{}".format(filename),"incremental_sta_{}".filename]
+        cmd_output,cmd_return_code = command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename="diff.out", indent_depth=1)
+        if(cmd_return_code):
+            identical = False
+            failed_msg += " {}".format(filename)
+    
+    if not identical:
+        raise InspectError(failed_msg)

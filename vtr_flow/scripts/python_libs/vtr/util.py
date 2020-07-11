@@ -317,7 +317,7 @@ def find_file_from_vtr_root(filename, vtr_root, is_executable=False):
         directory_path = (Path(vtr_root) / subdir)
         for file_path in directory_path.glob('**/*'):
             if file_path.name == filename:
-                if file_path.is_file:
+                if file_path.is_file():
                     if is_executable:
                         #Found an executable file as required
                         if os.access(str(file_path), os.X_OK):
