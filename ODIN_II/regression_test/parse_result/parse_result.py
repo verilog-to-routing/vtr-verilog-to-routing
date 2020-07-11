@@ -400,12 +400,18 @@ def load_log_into_tbl(toml_dict, log_file_name):
 
 	# load the hooks if there are any
 	# run.py
-	hooks = []
+	pre_hooks = []
+	post_hooks = []
 	for hook_file in HOOK_FILES:
 		module = __import__(hook_file)
-		module_hook_list = getattr(module, _HOOK_HDR)
+		module_hook_list = getattr(module, "PRE_HOOKS")
 		for runtime_hook in module_hook_list:
-			hooks.append(getattr(module, runtime_hook))
+			pre_hooks.append(getattr(module, runtime_hook))
+
+		module_hook_list = getattr(module, "POST_HOOKS")
+		for runtime_hook in module_hook_list:
+			post_hooks.append(getattr(module, runtime_hook))
+
 
 	# setup our output dict, print as csv expects a hashed table
 	parsed_dict = OrderedDict()
@@ -418,7 +424,7 @@ def load_log_into_tbl(toml_dict, log_file_name):
 		for line in log:	
 
 			# boostrap the preprocessor here
-			for fn in hooks:
+			for fn in pre_hooks:
 				line = fn(line)
 
 			line = " ".join(line.split())
@@ -438,9 +444,14 @@ def load_log_into_tbl(toml_dict, log_file_name):
 			if input_values is None:
 				input_values[header] = toml_dict[header][_K_DFLT]
 
+		# boostrap the post-processor here
+		for fn in post_hooks:
+			input_values = fn(input_values)
+			
 		# make a key from the user desired key items
 		key = hash_item(toml_dict, input_values)
 		parsed_dict[key] = input_values
+
 
 	return parsed_dict
 

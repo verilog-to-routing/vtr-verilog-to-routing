@@ -2,58 +2,105 @@ import os
 import pwd
 import re
 import sys
+from collections import OrderedDict
+import json
 
-HOOKS = [
-    'strip_paths',
-    'anonymize',
-    'make_expected_failures_pass',
-    'patch_logs'
+PRE_HOOKS = [
+    # nothing
     ]
 
-def strip_paths(line):
-    """
-    strip all path from known file extensions 
-    this can prevent broken test do to mismatch in path
-    """
-    # its a bit limiting, maybe a better regex would do
-    # but it seems to work fine for now
-    path_regex = r"[\/]?[a-zA-Z_.\-0-9]*\/"
-    file_regex = r"[^\/\s]*(_input|_output|\.xml|\.v|\.vh|\.blif|\.log|\.do|\.dot|_vectors|_activity)"
-    return re.sub(r"(" + path_regex + r")+(?=" + file_regex + r"[\s\n]+)", "", line)
+POST_HOOKS = [
+    'drop_entries_on_failure',
+    'patch_logs',
+    'inverse_result_from_expectation'
+    ]
 
-def anonymize(line):
+def do_something_on_the_raw_log(line: str):
     """
-    strip all occurance of this user in the log file
+    this is an example preprocessing hook.
     """
-    user_name = pwd.getpwuid(os.getuid()).pw_name
-    return re.sub(r"(" + user_name + r")", "",line)
-    
+    return line
 
-def patch_logs(line):
+def do_something_on_the_parsed_log(values: OrderedDict):
     """
-    Some librairies and tools Odin uses can have different display messages
-    we do replacements for possible mismatch to stop false positives
-    we don't use regex 
+    this is an example post-processing hook.
     """
-    for old_str, new_string in {
+    #     if 'exit' in values:
+    #         # do
+
+    return values
+
+
+def drop_entries_on_failure(values):
+    """
+    if we failed we drop the folowing sections
+    Failure may happen late in the log, so we may still end up parsing them
+    """
+    if 'exit' in values:
+        if values['exit'] != 0:
+            for sections in [
+                # all the statistical values are not relevant if we failed
+                'max_rss(MiB)',
+                'exec_time(ms)',
+                'synthesis_time(ms)',
+                'simulation_time(ms)',
+                'Latch Drivers',
+                'Pi',
+                'Po',
+                'logic element',
+                'latch',
+                'Adder',
+                'Multiplier',
+                'Memory',
+                'Hard Ip',
+                'generic logic size',
+                'Longest Path',
+                'Average Path',
+                'Estimated LUTs',
+                'Total Node',
+            ]:
+                if sections in values:
+                    del values[sections]
+    return values
+
+def patch_logs(values):
+    """
+    patch the string logs 
+    """
+    sub_re = {
+        # strip username from the logs
+        r"(" + pwd.getpwuid(os.getuid()).pw_name + r")": "",
+        # strip path from known file extensions
+        r"([\/]?[a-zA-Z_.\-0-9]*\/)(?=[^\/\s]*(_input|_output|\.xml|\.v|\.vh|\.blif|\.log|\.do|\.dot|_vectors|_activity)[\s\n]+)": "",
         # bison used to call EOF $end, but switched to end of file since 
-        r"syntax error, unexpected \$end": r"syntax error, unexpected end of file",
-    }.items():
-        line = re.sub(old_str, new_string,line)
+        r"syntax error, unexpected \$end": r"syntax error, unexpected end of file"
+    }
 
-    return line
+    if isinstance(values, str):
+        for old_str, new_string in sub_re.items():
+            values = re.sub(old_str, new_string, values)
+    elif isinstance(values, list):
+        values = [ patch_logs(log_entry) for log_entry in values ]
+    elif isinstance(values, ( OrderedDict, dict )):
+        for section in values:
+            values[section] = patch_logs(values[section])
 
+    return values
 
-IS_EXPECTED_TO_FAIL = False
-def make_expected_failures_pass(line):
-    # figure out if we expected this to fail
-    global IS_EXPECTED_TO_FAIL
-    if re.search(r"^EXPECT:: failure$",line) is not None:
-        IS_EXPECTED_TO_FAIL = True
+def inverse_result_from_expectation(values):
 
-    # if this was expected to fail
-    if IS_EXPECTED_TO_FAIL:
-        # make it pass
-        line = re.sub(r"(?!Odin exited with code: )(\d+)", "0",line)
-            
-    return line
+    should_fail = False
+    if 'expectation' in values:
+        for log in values['expectation']:
+            if log == "failure":
+                should_fail = True
+                break
+    
+    if 'exit' in values:
+        if values['exit'] == 0 and should_fail:
+            values['exit'] = 51
+        elif values['exit'] != 0 and should_fail:
+            values['exit'] = 0
+            values['expectation'].append("Failure caught and flipped to success by the post processor")
+    
+    return values
