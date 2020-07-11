@@ -1,34 +1,4 @@
 {
-    "integer/integer_failure/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "integer/integer_failure/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "integer_failure.v",
-        "exit": 134,
-        "errors": [
-            "AST integer_failure.v:3 Odin does not handle signed ports (a)"
-        ],
-        "generic logic size": 4
-    },
-    "integer/integer_failure/k6_N10_40nm": {
-        "test_name": "integer/integer_failure/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "integer_failure.v",
-        "exit": 134,
-        "errors": [
-            "AST integer_failure.v:3 Odin does not handle signed ports (a)"
-        ],
-        "generic logic size": 6
-    },
-    "integer/integer_failure/k6_N10_mem32K_40nm": {
-        "test_name": "integer/integer_failure/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "integer_failure.v",
-        "exit": 134,
-        "errors": [
-            "AST integer_failure.v:3 Odin does not handle signed ports (a)"
-        ],
-        "generic logic size": 6
-    },
     "integer/integer_failure/no_arch": {
         "test_name": "integer/integer_failure/no_arch",
         "verilog": "integer_failure.v",
@@ -37,36 +7,6 @@
             "AST integer_failure.v:3 Odin does not handle signed ports (a)"
         ]
     },
-    "integer/integer_outside/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "integer/integer_outside/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "integer_outside.v",
-        "exit": 134,
-        "errors": [
-            "AST integer_outside.v:3 Odin does not handle signed ports (a)"
-        ],
-        "generic logic size": 4
-    },
-    "integer/integer_outside/k6_N10_40nm": {
-        "test_name": "integer/integer_outside/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "integer_outside.v",
-        "exit": 134,
-        "errors": [
-            "AST integer_outside.v:3 Odin does not handle signed ports (a)"
-        ],
-        "generic logic size": 6
-    },
-    "integer/integer_outside/k6_N10_mem32K_40nm": {
-        "test_name": "integer/integer_outside/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "integer_outside.v",
-        "exit": 134,
-        "errors": [
-            "AST integer_outside.v:3 Odin does not handle signed ports (a)"
-        ],
-        "generic logic size": 6
-    },
     "integer/integer_outside/no_arch": {
         "test_name": "integer/integer_outside/no_arch",
         "verilog": "integer_outside.v",
@@ -74,36 +14,6 @@
         "errors": [
             "AST integer_outside.v:3 Odin does not handle signed ports (a)"
         ]
-    },
-    "integer/integer_port/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "integer/integer_port/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "integer_port.v",
-        "exit": 134,
-        "errors": [
-            "AST integer_port.v:3 Odin does not handle signed ports (a)"
-        ],
-        "generic logic size": 4
-    },
-    "integer/integer_port/k6_N10_40nm": {
-        "test_name": "integer/integer_port/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "integer_port.v",
-        "exit": 134,
-        "errors": [
-            "AST integer_port.v:3 Odin does not handle signed ports (a)"
-        ],
-        "generic logic size": 6
-    },
-    "integer/integer_port/k6_N10_mem32K_40nm": {
-        "test_name": "integer/integer_port/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "integer_port.v",
-        "exit": 134,
-        "errors": [
-            "AST integer_port.v:3 Odin does not handle signed ports (a)"
-        ],
-        "generic logic size": 6
     },
     "integer/integer_port/no_arch": {
         "test_name": "integer/integer_port/no_arch",

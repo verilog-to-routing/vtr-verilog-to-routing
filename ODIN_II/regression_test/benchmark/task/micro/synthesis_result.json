@@ -23,8 +23,7 @@
         "exit": 134,
         "errors": [
             "AST adder_hard_block.v:10 Can't find module name adder"
-        ],
-        "generic logic size": 6
+        ]
     },
     "micro/adder_hard_block/k6_N10_mem32K_40nm": {
         "test_name": "micro/adder_hard_block/k6_N10_mem32K_40nm",
@@ -33,8 +32,7 @@
         "exit": 134,
         "errors": [
             "AST adder_hard_block.v:10 Can't find module name adder"
-        ],
-        "generic logic size": 6
+        ]
     },
     "micro/adder_hard_block/no_arch": {
         "test_name": "micro/adder_hard_block/no_arch",
@@ -4407,8 +4405,7 @@
         "exit": 134,
         "errors": [
             "AST multiply_hard_block.v:8 Can't find module name multiply"
-        ],
-        "generic logic size": 6
+        ]
     },
     "micro/multiply_hard_block/k6_N10_mem32K_40nm": {
         "test_name": "micro/multiply_hard_block/k6_N10_mem32K_40nm",
@@ -4656,8 +4653,7 @@
         "exit": 134,
         "errors": [
             "AST hard_adder_cin_propagation.v:9 Can't find module name adder"
-        ],
-        "generic logic size": 6
+        ]
     },
     "micro/hard_adder_cin_propagation/k6_N10_mem32K_40nm": {
         "test_name": "micro/hard_adder_cin_propagation/k6_N10_mem32K_40nm",
@@ -4666,8 +4662,7 @@
         "exit": 134,
         "errors": [
             "AST hard_adder_cin_propagation.v:9 Can't find module name adder"
-        ],
-        "generic logic size": 6
+        ]
     },
     "micro/hard_adder_cin_propagation/no_arch": {
         "test_name": "micro/hard_adder_cin_propagation/no_arch",

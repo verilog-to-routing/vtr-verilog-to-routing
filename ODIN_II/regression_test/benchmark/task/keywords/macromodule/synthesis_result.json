@@ -1,48 +1,4 @@
 {
-    "macromodule/macromodules_modules/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "macromodule/macromodules_modules/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "macromodules_modules.v",
-        "max_rss(MiB)": 34.1,
-        "exec_time(ms)": 86.6,
-        "synthesis_time(ms)": 3.3,
-        "Pi": 10,
-        "Po": 10,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "macromodule/macromodules_modules/k6_N10_40nm": {
-        "test_name": "macromodule/macromodules_modules/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "macromodules_modules.v",
-        "max_rss(MiB)": 16.7,
-        "exec_time(ms)": 12.8,
-        "synthesis_time(ms)": 4.8,
-        "Pi": 10,
-        "Po": 10,
-        "generic logic size": 6,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "macromodule/macromodules_modules/k6_N10_mem32K_40nm": {
-        "test_name": "macromodule/macromodules_modules/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "macromodules_modules.v",
-        "max_rss(MiB)": 33.2,
-        "exec_time(ms)": 82.7,
-        "synthesis_time(ms)": 3.3,
-        "Pi": 10,
-        "Po": 10,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 6,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
     "macromodule/macromodules_modules/no_arch": {
         "test_name": "macromodule/macromodules_modules/no_arch",
         "verilog": "macromodules_modules.v",
@@ -53,45 +9,6 @@
         "Po": 10,
         "Longest Path": 2,
         "Average Path": 2
-    },
-    "macromodule/missing_endmodule_failure/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "macromodule/missing_endmodule_failure/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "missing_endmodule_failure.v",
-        "exit": 134,
-        "errors": [
-            "PARSE_TO_AST Parser found (1) errors in your syntax, exiting"
-        ],
-        "warnings": [
-            "PARSE_TO_AST error in parsing: (syntax error, unexpected end of file)"
-        ],
-        "generic logic size": 4
-    },
-    "macromodule/missing_endmodule_failure/k6_N10_40nm": {
-        "test_name": "macromodule/missing_endmodule_failure/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "missing_endmodule_failure.v",
-        "exit": 134,
-        "errors": [
-            "PARSE_TO_AST Parser found (1) errors in your syntax, exiting"
-        ],
-        "warnings": [
-            "PARSE_TO_AST error in parsing: (syntax error, unexpected end of file)"
-        ],
-        "generic logic size": 6
-    },
-    "macromodule/missing_endmodule_failure/k6_N10_mem32K_40nm": {
-        "test_name": "macromodule/missing_endmodule_failure/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "missing_endmodule_failure.v",
-        "exit": 134,
-        "errors": [
-            "PARSE_TO_AST Parser found (1) errors in your syntax, exiting"
-        ],
-        "warnings": [
-            "PARSE_TO_AST error in parsing: (syntax error, unexpected end of file)"
-        ],
-        "generic logic size": 6
     },
     "macromodule/missing_endmodule_failure/no_arch": {
         "test_name": "macromodule/missing_endmodule_failure/no_arch",
@@ -104,50 +21,6 @@
             "PARSE_TO_AST error in parsing: (syntax error, unexpected end of file)"
         ]
     },
-    "macromodule/multiple_macromodules/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "macromodule/multiple_macromodules/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "multiple_macromodules.v",
-        "max_rss(MiB)": 34.1,
-        "exec_time(ms)": 81.8,
-        "synthesis_time(ms)": 3.4,
-        "Pi": 10,
-        "Po": 10,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "macromodule/multiple_macromodules/k6_N10_40nm": {
-        "test_name": "macromodule/multiple_macromodules/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "multiple_macromodules.v",
-        "max_rss(MiB)": 16.2,
-        "exec_time(ms)": 11.5,
-        "synthesis_time(ms)": 3.5,
-        "Pi": 10,
-        "Po": 10,
-        "generic logic size": 6,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "macromodule/multiple_macromodules/k6_N10_mem32K_40nm": {
-        "test_name": "macromodule/multiple_macromodules/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "multiple_macromodules.v",
-        "max_rss(MiB)": 33.3,
-        "exec_time(ms)": 83.4,
-        "synthesis_time(ms)": 3.4,
-        "Pi": 10,
-        "Po": 10,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 6,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
     "macromodule/multiple_macromodules/no_arch": {
         "test_name": "macromodule/multiple_macromodules/no_arch",
         "verilog": "multiple_macromodules.v",
@@ -159,36 +32,6 @@
         "Longest Path": 2,
         "Average Path": 2
     },
-    "macromodule/multiple_topmodules/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "macromodule/multiple_topmodules/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "multiple_topmodules.v",
-        "exit": 134,
-        "errors": [
-            "AST Found multiple top level modules"
-        ],
-        "generic logic size": 4
-    },
-    "macromodule/multiple_topmodules/k6_N10_40nm": {
-        "test_name": "macromodule/multiple_topmodules/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "multiple_topmodules.v",
-        "exit": 134,
-        "errors": [
-            "AST Found multiple top level modules"
-        ],
-        "generic logic size": 6
-    },
-    "macromodule/multiple_topmodules/k6_N10_mem32K_40nm": {
-        "test_name": "macromodule/multiple_topmodules/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "multiple_topmodules.v",
-        "exit": 134,
-        "errors": [
-            "AST Found multiple top level modules"
-        ],
-        "generic logic size": 6
-    },
     "macromodule/multiple_topmodules/no_arch": {
         "test_name": "macromodule/multiple_topmodules/no_arch",
         "verilog": "multiple_topmodules.v",
@@ -196,36 +39,6 @@
         "errors": [
             "AST Found multiple top level modules"
         ]
-    },
-    "macromodule/repeated_macromodule_failure/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "macromodule/repeated_macromodule_failure/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "repeated_macromodule_failure.v",
-        "exit": 134,
-        "errors": [
-            "AST repeated_macromodule_failure.v:28 module names with the same name -> simple_op"
-        ],
-        "generic logic size": 4
-    },
-    "macromodule/repeated_macromodule_failure/k6_N10_40nm": {
-        "test_name": "macromodule/repeated_macromodule_failure/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "repeated_macromodule_failure.v",
-        "exit": 134,
-        "errors": [
-            "AST repeated_macromodule_failure.v:28 module names with the same name -> simple_op"
-        ],
-        "generic logic size": 6
-    },
-    "macromodule/repeated_macromodule_failure/k6_N10_mem32K_40nm": {
-        "test_name": "macromodule/repeated_macromodule_failure/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "repeated_macromodule_failure.v",
-        "exit": 134,
-        "errors": [
-            "AST repeated_macromodule_failure.v:28 module names with the same name -> simple_op"
-        ],
-        "generic logic size": 6
     },
     "macromodule/repeated_macromodule_failure/no_arch": {
         "test_name": "macromodule/repeated_macromodule_failure/no_arch",

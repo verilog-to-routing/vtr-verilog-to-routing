@@ -1,34 +1,4 @@
 {
-    "output/multiple_declarations/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "output/multiple_declarations/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "multiple_declarations.v",
-        "exit": 134,
-        "errors": [
-            "AST multiple_declarations.v:3 Odin does not handle signed nets (a)"
-        ],
-        "generic logic size": 4
-    },
-    "output/multiple_declarations/k6_N10_40nm": {
-        "test_name": "output/multiple_declarations/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "multiple_declarations.v",
-        "exit": 134,
-        "errors": [
-            "AST multiple_declarations.v:3 Odin does not handle signed nets (a)"
-        ],
-        "generic logic size": 6
-    },
-    "output/multiple_declarations/k6_N10_mem32K_40nm": {
-        "test_name": "output/multiple_declarations/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "multiple_declarations.v",
-        "exit": 134,
-        "errors": [
-            "AST multiple_declarations.v:3 Odin does not handle signed nets (a)"
-        ],
-        "generic logic size": 6
-    },
     "output/multiple_declarations/no_arch": {
         "test_name": "output/multiple_declarations/no_arch",
         "verilog": "multiple_declarations.v",
@@ -36,36 +6,6 @@
         "errors": [
             "AST multiple_declarations.v:3 Odin does not handle signed nets (a)"
         ]
-    },
-    "output/output_port_failure/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "output/output_port_failure/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "output_port_failure.v",
-        "exit": 134,
-        "errors": [
-            "AST output_port_failure.v:5 Module already has output with this name b"
-        ],
-        "generic logic size": 4
-    },
-    "output/output_port_failure/k6_N10_40nm": {
-        "test_name": "output/output_port_failure/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "output_port_failure.v",
-        "exit": 134,
-        "errors": [
-            "AST output_port_failure.v:5 Module already has output with this name b"
-        ],
-        "generic logic size": 6
-    },
-    "output/output_port_failure/k6_N10_mem32K_40nm": {
-        "test_name": "output/output_port_failure/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "output_port_failure.v",
-        "exit": 134,
-        "errors": [
-            "AST output_port_failure.v:5 Module already has output with this name b"
-        ],
-        "generic logic size": 6
     },
     "output/output_port_failure/no_arch": {
         "test_name": "output/output_port_failure/no_arch",
