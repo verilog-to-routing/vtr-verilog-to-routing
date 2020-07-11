@@ -1116,8 +1116,6 @@
         "test_name": "preprocessor/undef/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "undef.v",
-        "exit": 1,
-        "leaks": 1,
         "expectation": [
             "NESTED_IFDEF this test is expected to pass, if it fails the `undef and `define functioning properly."
         ],
@@ -1137,8 +1135,6 @@
         "test_name": "preprocessor/undef/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "verilog": "undef.v",
-        "exit": 1,
-        "leaks": 1,
         "expectation": [
             "NESTED_IFDEF this test is expected to pass, if it fails the `undef and `define functioning properly."
         ],
@@ -1155,8 +1151,6 @@
         "test_name": "preprocessor/undef/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "verilog": "undef.v",
-        "exit": 1,
-        "leaks": 1,
         "expectation": [
             "NESTED_IFDEF this test is expected to pass, if it fails the `undef and `define functioning properly."
         ],
@@ -1174,8 +1168,6 @@
     "preprocessor/undef/no_arch": {
         "test_name": "preprocessor/undef/no_arch",
         "verilog": "undef.v",
-        "exit": 1,
-        "leaks": 1,
         "expectation": [
             "NESTED_IFDEF this test is expected to pass, if it fails the `undef and `define functioning properly."
         ],
