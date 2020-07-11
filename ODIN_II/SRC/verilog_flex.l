@@ -68,6 +68,7 @@ void lex_string(const char * str);
 
 bool ifdef(const char* id);
 void new_define_t(const char* id);
+void free_define_t(const char* id);
 void free_define_map();
 void add_args_to_define(const char* str);
 void append_to_define_body(char c);
@@ -177,7 +178,7 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <PARSE_DEFINE>{defineWORD}			{ MP(); new_define_t(yytext); CHANGE_STATE(DEFINE_BODY);}
 <INITIAL>"`define"					{ MP(); PUSH_STATE(PARSE_DEFINE); }
 
-<DEFINE_REMOVAL>{vWORD}				{ MP(); defines_map.erase(yytext); POP_STATE();}
+<DEFINE_REMOVAL>{vWORD}				{ MP(); free_define_t(yytext); POP_STATE();}
 <INITIAL>"`undef"					{ MP(); PUSH_STATE(DEFINE_REMOVAL); }
 
 <CONDITION>{vWORD}					{ MP(); CHANGE_STATE( ((ifdef(yytext))?  INITIAL: SKIP) ); }
@@ -660,6 +661,16 @@ void new_define_t(const char* id)
 
 	defines_map[tmp] = new_define;
 	current_define = new_define;
+}
+
+void free_define_t(const char *id)
+{
+	std::string tmp(id);
+	if(defines_map.find(tmp) != defines_map.end())
+	{
+		delete defines_map[tmp];
+		defines_map.erase(tmp);
+	}
 }
 
 void free_define_map()
