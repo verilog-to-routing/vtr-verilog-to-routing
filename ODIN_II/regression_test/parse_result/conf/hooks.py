@@ -6,7 +6,8 @@ import sys
 HOOKS = [
     'strip_paths',
     'anonymize',
-    'make_expected_failures_pass'
+    'make_expected_failures_pass',
+    'patch_logs'
     ]
 
 def strip_paths(line):
@@ -27,6 +28,22 @@ def anonymize(line):
     user_name = pwd.getpwuid(os.getuid()).pw_name
     return re.sub(r"(" + user_name + r")", "",line)
     
+
+def patch_logs(line):
+    """
+    Some librairies and tools Odin uses can have different display messages
+    we do replacements for possible mismatch to stop false positives
+    we don't use regex 
+    """
+    for old_str, new_string in {
+        # bison used to call EOF $end, but switched to end of file since 
+        r"syntax error, unexpected \$end": r"syntax error, unexpected end of file",
+    }.items():
+        line = re.sub(old_str, new_string,line)
+
+    return line
+
+
 IS_EXPECTED_TO_FAIL = False
 def make_expected_failures_pass(line):
     # figure out if we expected this to fail
