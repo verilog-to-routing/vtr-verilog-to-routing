@@ -1,34 +1,4 @@
 {
-    "reg/reg_failure/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "reg/reg_failure/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "reg_failure.v",
-        "exit": 134,
-        "errors": [
-            "NETLIST reg_failure.v:3 Input cannot be defined as a reg"
-        ],
-        "generic logic size": 4
-    },
-    "reg/reg_failure/k6_N10_40nm": {
-        "test_name": "reg/reg_failure/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "reg_failure.v",
-        "exit": 134,
-        "errors": [
-            "NETLIST reg_failure.v:3 Input cannot be defined as a reg"
-        ],
-        "generic logic size": 6
-    },
-    "reg/reg_failure/k6_N10_mem32K_40nm": {
-        "test_name": "reg/reg_failure/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "reg_failure.v",
-        "exit": 134,
-        "errors": [
-            "NETLIST reg_failure.v:3 Input cannot be defined as a reg"
-        ],
-        "generic logic size": 6
-    },
     "reg/reg_failure/no_arch": {
         "test_name": "reg/reg_failure/no_arch",
         "verilog": "reg_failure.v",
@@ -36,50 +6,6 @@
         "errors": [
             "NETLIST reg_failure.v:3 Input cannot be defined as a reg"
         ]
-    },
-    "reg/reg/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "reg/reg/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "reg.v",
-        "max_rss(MiB)": 33,
-        "exec_time(ms)": 79.6,
-        "synthesis_time(ms)": 0.6,
-        "Pi": 1,
-        "Po": 1,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "reg/reg/k6_N10_40nm": {
-        "test_name": "reg/reg/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "reg.v",
-        "max_rss(MiB)": 14.5,
-        "exec_time(ms)": 9.8,
-        "synthesis_time(ms)": 0.8,
-        "Pi": 1,
-        "Po": 1,
-        "generic logic size": 6,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "reg/reg/k6_N10_mem32K_40nm": {
-        "test_name": "reg/reg/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "reg.v",
-        "max_rss(MiB)": 32.1,
-        "exec_time(ms)": 76.4,
-        "synthesis_time(ms)": 0.5,
-        "Pi": 1,
-        "Po": 1,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 6,
-        "Longest Path": 2,
-        "Average Path": 2
     },
     "reg/reg/no_arch": {
         "test_name": "reg/reg/no_arch",
@@ -91,36 +17,6 @@
         "Po": 1,
         "Longest Path": 2,
         "Average Path": 2
-    },
-    "reg/reg_port/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "reg/reg_port/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "reg_port.v",
-        "exit": 134,
-        "errors": [
-            "AST reg_port.v:1 No matching declaration for port b"
-        ],
-        "generic logic size": 4
-    },
-    "reg/reg_port/k6_N10_40nm": {
-        "test_name": "reg/reg_port/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "reg_port.v",
-        "exit": 134,
-        "errors": [
-            "AST reg_port.v:1 No matching declaration for port b"
-        ],
-        "generic logic size": 6
-    },
-    "reg/reg_port/k6_N10_mem32K_40nm": {
-        "test_name": "reg/reg_port/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "reg_port.v",
-        "exit": 134,
-        "errors": [
-            "AST reg_port.v:1 No matching declaration for port b"
-        ],
-        "generic logic size": 6
     },
     "reg/reg_port/no_arch": {
         "test_name": "reg/reg_port/no_arch",

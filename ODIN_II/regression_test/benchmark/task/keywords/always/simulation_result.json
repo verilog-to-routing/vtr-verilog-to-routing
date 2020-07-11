@@ -1,55 +1,4 @@
 {
-    "always/case_default/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "always/case_default/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "blif": "case_default.blif",
-        "max_rss(MiB)": 36.5,
-        "exec_time(ms)": 78.4,
-        "simulation_time(ms)": 1.4,
-        "test_coverage(%)": 100,
-        "Pi": 11,
-        "Po": 3,
-        "logic element": 16,
-        "generic logic size": 4,
-        "Longest Path": 7,
-        "Average Path": 5,
-        "Estimated LUTs": 22,
-        "Total Node": 16
-    },
-    "always/case_default/k6_N10_40nm": {
-        "test_name": "always/case_default/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "blif": "case_default.blif",
-        "max_rss(MiB)": 18.7,
-        "exec_time(ms)": 9.7,
-        "simulation_time(ms)": 1.6,
-        "test_coverage(%)": 100,
-        "Pi": 11,
-        "Po": 3,
-        "logic element": 16,
-        "generic logic size": 6,
-        "Longest Path": 7,
-        "Average Path": 5,
-        "Estimated LUTs": 22,
-        "Total Node": 16
-    },
-    "always/case_default/k6_N10_mem32K_40nm": {
-        "test_name": "always/case_default/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "case_default.blif",
-        "max_rss(MiB)": 35.4,
-        "exec_time(ms)": 60.3,
-        "simulation_time(ms)": 1.9,
-        "test_coverage(%)": 100,
-        "Pi": 11,
-        "Po": 3,
-        "logic element": 16,
-        "generic logic size": 6,
-        "Longest Path": 7,
-        "Average Path": 5,
-        "Estimated LUTs": 22,
-        "Total Node": 16
-    },
     "always/case_default/no_arch": {
         "test_name": "always/case_default/no_arch",
         "blif": "case_default.blif",
@@ -64,63 +13,6 @@
         "Average Path": 5,
         "Estimated LUTs": 16,
         "Total Node": 16
-    },
-    "always/posedge/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "always/posedge/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "blif": "posedge.blif",
-        "max_rss(MiB)": 36.3,
-        "exec_time(ms)": 60.6,
-        "simulation_time(ms)": 0.5,
-        "test_coverage(%)": 100,
-        "Latch Drivers": 1,
-        "Pi": 1,
-        "Po": 1,
-        "logic element": 1,
-        "latch": 1,
-        "generic logic size": 4,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 1,
-        "Total Node": 3
-    },
-    "always/posedge/k6_N10_40nm": {
-        "test_name": "always/posedge/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "blif": "posedge.blif",
-        "max_rss(MiB)": 18.1,
-        "exec_time(ms)": 12.3,
-        "simulation_time(ms)": 1.1,
-        "test_coverage(%)": 100,
-        "Latch Drivers": 1,
-        "Pi": 1,
-        "Po": 1,
-        "logic element": 1,
-        "latch": 1,
-        "generic logic size": 6,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 1,
-        "Total Node": 3
-    },
-    "always/posedge/k6_N10_mem32K_40nm": {
-        "test_name": "always/posedge/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "posedge.blif",
-        "max_rss(MiB)": 35.1,
-        "exec_time(ms)": 67.3,
-        "simulation_time(ms)": 0.5,
-        "test_coverage(%)": 100,
-        "Latch Drivers": 1,
-        "Pi": 1,
-        "Po": 1,
-        "logic element": 1,
-        "latch": 1,
-        "generic logic size": 6,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 1,
-        "Total Node": 3
     },
     "always/posedge/no_arch": {
         "test_name": "always/posedge/no_arch",
@@ -139,66 +31,6 @@
         "Estimated LUTs": 1,
         "Total Node": 3
     },
-    "always/always_clk/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "always/always_clk/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "blif": "always_clk.blif",
-        "exit": 134,
-        "errors": [
-            "OUTPUT_BLIF Vector files differ."
-        ],
-        "warnings": [
-            "OUTPUT_BLIF Vector 2 mismatch:",
-            "OUTPUT_BLIF Vector 3 mismatch:",
-            "OUTPUT_BLIF Vector 6 mismatch:",
-            "OUTPUT_BLIF Vector 7 mismatch:",
-            "OUTPUT_BLIF Vector 26 mismatch:",
-            "OUTPUT_BLIF Vector 27 mismatch:",
-            "OUTPUT_BLIF Vector 30 mismatch:",
-            "OUTPUT_BLIF Vector 31 mismatch:"
-        ],
-        "generic logic size": 4
-    },
-    "always/always_clk/k6_N10_40nm": {
-        "test_name": "always/always_clk/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "blif": "always_clk.blif",
-        "exit": 134,
-        "errors": [
-            "OUTPUT_BLIF Vector files differ."
-        ],
-        "warnings": [
-            "OUTPUT_BLIF Vector 2 mismatch:",
-            "OUTPUT_BLIF Vector 3 mismatch:",
-            "OUTPUT_BLIF Vector 6 mismatch:",
-            "OUTPUT_BLIF Vector 7 mismatch:",
-            "OUTPUT_BLIF Vector 26 mismatch:",
-            "OUTPUT_BLIF Vector 27 mismatch:",
-            "OUTPUT_BLIF Vector 30 mismatch:",
-            "OUTPUT_BLIF Vector 31 mismatch:"
-        ],
-        "generic logic size": 6
-    },
-    "always/always_clk/k6_N10_mem32K_40nm": {
-        "test_name": "always/always_clk/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "always_clk.blif",
-        "exit": 134,
-        "errors": [
-            "OUTPUT_BLIF Vector files differ."
-        ],
-        "warnings": [
-            "OUTPUT_BLIF Vector 2 mismatch:",
-            "OUTPUT_BLIF Vector 3 mismatch:",
-            "OUTPUT_BLIF Vector 6 mismatch:",
-            "OUTPUT_BLIF Vector 7 mismatch:",
-            "OUTPUT_BLIF Vector 26 mismatch:",
-            "OUTPUT_BLIF Vector 27 mismatch:",
-            "OUTPUT_BLIF Vector 30 mismatch:",
-            "OUTPUT_BLIF Vector 31 mismatch:"
-        ],
-        "generic logic size": 6
-    },
     "always/always_clk/no_arch": {
         "test_name": "always/always_clk/no_arch",
         "blif": "always_clk.blif",
@@ -216,66 +48,6 @@
             "OUTPUT_BLIF Vector 30 mismatch:",
             "OUTPUT_BLIF Vector 31 mismatch:"
         ]
-    },
-    "always/always_posedge_negedge/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "always/always_posedge_negedge/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "blif": "always_posedge_negedge.blif",
-        "exit": 134,
-        "errors": [
-            "OUTPUT_BLIF Vector files differ."
-        ],
-        "warnings": [
-            "OUTPUT_BLIF Vector 2 mismatch:",
-            "OUTPUT_BLIF Vector 3 mismatch:",
-            "OUTPUT_BLIF Vector 6 mismatch:",
-            "OUTPUT_BLIF Vector 7 mismatch:",
-            "OUTPUT_BLIF Vector 26 mismatch:",
-            "OUTPUT_BLIF Vector 27 mismatch:",
-            "OUTPUT_BLIF Vector 30 mismatch:",
-            "OUTPUT_BLIF Vector 31 mismatch:"
-        ],
-        "generic logic size": 4
-    },
-    "always/always_posedge_negedge/k6_N10_40nm": {
-        "test_name": "always/always_posedge_negedge/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "blif": "always_posedge_negedge.blif",
-        "exit": 134,
-        "errors": [
-            "OUTPUT_BLIF Vector files differ."
-        ],
-        "warnings": [
-            "OUTPUT_BLIF Vector 2 mismatch:",
-            "OUTPUT_BLIF Vector 3 mismatch:",
-            "OUTPUT_BLIF Vector 6 mismatch:",
-            "OUTPUT_BLIF Vector 7 mismatch:",
-            "OUTPUT_BLIF Vector 26 mismatch:",
-            "OUTPUT_BLIF Vector 27 mismatch:",
-            "OUTPUT_BLIF Vector 30 mismatch:",
-            "OUTPUT_BLIF Vector 31 mismatch:"
-        ],
-        "generic logic size": 6
-    },
-    "always/always_posedge_negedge/k6_N10_mem32K_40nm": {
-        "test_name": "always/always_posedge_negedge/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "blif": "always_posedge_negedge.blif",
-        "exit": 134,
-        "errors": [
-            "OUTPUT_BLIF Vector files differ."
-        ],
-        "warnings": [
-            "OUTPUT_BLIF Vector 2 mismatch:",
-            "OUTPUT_BLIF Vector 3 mismatch:",
-            "OUTPUT_BLIF Vector 6 mismatch:",
-            "OUTPUT_BLIF Vector 7 mismatch:",
-            "OUTPUT_BLIF Vector 26 mismatch:",
-            "OUTPUT_BLIF Vector 27 mismatch:",
-            "OUTPUT_BLIF Vector 30 mismatch:",
-            "OUTPUT_BLIF Vector 31 mismatch:"
-        ],
-        "generic logic size": 6
     },
     "always/always_posedge_negedge/no_arch": {
         "test_name": "always/always_posedge_negedge/no_arch",
