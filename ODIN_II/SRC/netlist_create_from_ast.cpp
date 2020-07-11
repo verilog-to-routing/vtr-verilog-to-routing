@@ -348,23 +348,14 @@ signal_list_t* netlist_expand_ast_of_module(ast_node_t** node_ref, char* instanc
                 oassert(false);
                 break;
             case MODULE:
-                oassert(child_skip_list);
-                /* set the skip list */
-                child_skip_list[0] = true; /* skip the identifier */
-                child_skip_list[1] = true; /* skip portlist ... we'll use where they're defined */
-                break;
             case FUNCTION:
-                oassert(child_skip_list);
-                /* set the skip list */
-                child_skip_list[0] = true; /* skip the identifier */
-                child_skip_list[1] = true; /* skip portlist ... we'll use where they're defined */
-                break;
-
             case TASK:
-                oassert(child_skip_list);
                 /* set the skip list */
-                child_skip_list[0] = true; /* skip the identifier */
-                child_skip_list[1] = true; /* skip portlist ... we'll use where they're defined */
+                if (node->num_children >= 2) {
+                    oassert(child_skip_list);
+                    child_skip_list[0] = true; /* skip the identifier */
+                    child_skip_list[1] = true; /* skip portlist ... we'll use where they're defined */
+                }
                 break;
 
             case MODULE_ITEMS:
@@ -515,10 +506,12 @@ signal_list_t* netlist_expand_ast_of_module(ast_node_t** node_ref, char* instanc
                 break;
             }
             case ALWAYS:
-                oassert(child_skip_list);
-                /* evaluate if this is a sensitivity list with posedges/negedges (=SEQUENTIAL) or none (=COMBINATIONAL) */
-                local_clock_list = evaluate_sensitivity_list(node->children[0], instance_name_prefix, local_ref);
-                child_skip_list[0] = true;
+                if (node->num_children >= 1) {
+                    oassert(child_skip_list);
+                    child_skip_list[0] = true;
+                    /* evaluate if this is a sensitivity list with posedges/negedges (=SEQUENTIAL) or none (=COMBINATIONAL) */
+                    local_clock_list = evaluate_sensitivity_list(node->children[0], instance_name_prefix, local_ref);
+                }
                 break;
             case CASE:
                 return_sig_list = create_case(node, instance_name_prefix, local_ref);
@@ -541,10 +534,12 @@ signal_list_t* netlist_expand_ast_of_module(ast_node_t** node_ref, char* instanc
                 skip_children = true;
                 break;
             case HARD_BLOCK:
-                oassert(child_skip_list);
                 /* set the skip list */
-                child_skip_list[0] = true; /* skip the identifier */
-                child_skip_list[1] = true; /* skip portlist ... we'll use where they're defined */
+                if (node->num_children >= 2) {
+                    oassert(child_skip_list);
+                    child_skip_list[0] = true; /* skip the identifier */
+                    child_skip_list[1] = true; /* skip portlist ... we'll use where they're defined */
+                }
                 return_sig_list = create_hard_block(node, instance_name_prefix, local_ref);
                 break;
             default:
@@ -2884,12 +2879,6 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
             int i;
             for (i = 0; i < output_size; i++) {
                 add_pin_to_signal_list(return_list, in_1->pins[i]);
-
-                /* free unused nnodes for related BLOCKING_STATEMENT nodes */
-                nnode_t* temp_node = in_1->pins[i]->node;
-                if (temp_node->related_ast_node->type == BLOCKING_STATEMENT && temp_node->type != MEMORY) {
-                    in_1->pins[i]->node = free_nnode(temp_node);
-                }
             }
             free_signal_list(in_1);
         } else {
@@ -2905,15 +2894,6 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
             // 		add_pin_to_signal_list(return_list, return_list->pins[i-1]);
             // 	}
             // }
-
-            /* free unused nnodes for related BLOCKING_STATEMENT nodes */
-            int i;
-            for (i = 0; i < output_size; i++) {
-                nnode_t* temp_node = in_1->pins[i]->node;
-                if (temp_node->related_ast_node->type == BLOCKING_STATEMENT && temp_node->type != MEMORY) {
-                    in_1->pins[i]->node = free_nnode(temp_node);
-                }
-            }
         }
 
         vtr::free(out_list->strings);
@@ -2933,14 +2913,7 @@ signal_list_t* assignment_alias(ast_node_t* assignment, char* instance_name_pref
             if (!left_memory) {
                 int output_size = alias_output_assign_pins_to_inputs(out_list, right_outputs, assignment);
                 for (i = 0; i < output_size; i++) {
-                    npin_t* pin = right_outputs->pins[i];
-                    add_pin_to_signal_list(return_list, pin);
-
-                    /* free unused nnodes for related BLOCKING_STATEMENT nodes */
-                    nnode_t* temp_node = right_outputs->pins[i]->node;
-                    if (temp_node->related_ast_node->type == BLOCKING_STATEMENT && temp_node->type != MEMORY) {
-                        right_outputs->pins[i]->node = free_nnode(temp_node);
-                    }
+                    add_pin_to_signal_list(return_list, right_outputs->pins[i]);
                 }
                 free_signal_list(right_outputs);
                 vtr::free(out_list->strings);
@@ -3279,8 +3252,6 @@ int alias_output_assign_pins_to_inputs(char_list_t* output_list, signal_list_t* 
 
         input_list->pins[i]->name = output_list->strings[i];
         free_nnode(input_list->pins[i]->node);
-        input_list->pins[i]->node = allocate_nnode();
-        input_list->pins[i]->node->related_ast_node = node;
     }
 
     if (global_args.all_warnings && output_list->num_strings < input_list->count)
