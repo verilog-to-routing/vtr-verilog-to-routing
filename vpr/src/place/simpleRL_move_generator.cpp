@@ -205,7 +205,7 @@ SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agen
 	std::unique_ptr<MoveGenerator> move_generator5;
 	move_generator5 = std::make_unique<FeasibleRegionMoveGenerator>();
 	avail_moves.push_back(std::move(move_generator5));
-	
+
 	std::unique_ptr<MoveGenerator> move_generator6;
 	move_generator6 = std::make_unique<CriticalUniformMoveGenerator>();
 	avail_moves.push_back(std::move(move_generator6));
@@ -213,7 +213,7 @@ SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<SoftmaxAgent>& agen
 	std::unique_ptr<MoveGenerator> move_generator7;
 	move_generator7 = std::make_unique<CentroidMoveGenerator>();
 	avail_moves.push_back(std::move(move_generator7));
-*/    
+*/
     karmed_bandit_agent = std::move(agent);
 }
 
@@ -240,7 +240,7 @@ SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>
 	std::unique_ptr<MoveGenerator> move_generator5;
 	move_generator5 = std::make_unique<FeasibleRegionMoveGenerator>();
 	avail_moves.push_back(std::move(move_generator5));
-	
+
 	std::unique_ptr<MoveGenerator> move_generator6;
 	move_generator6 = std::make_unique<CriticalUniformMoveGenerator>();
 	avail_moves.push_back(std::move(move_generator6));
@@ -248,7 +248,7 @@ SimpleRLMoveGenerator::SimpleRLMoveGenerator(std::unique_ptr<EpsilonGreedyAgent>
 	std::unique_ptr<MoveGenerator> move_generator7;
 	move_generator7 = std::make_unique<CentroidMoveGenerator>();
 	avail_moves.push_back(std::move(move_generator7));
-*/    
+*/
     karmed_bandit_agent = std::move(agent);
 }
 
@@ -282,7 +282,7 @@ SoftmaxAgent::~SoftmaxAgent() {
 }
 
 void SoftmaxAgent::process_outcome(double reward){
-    
+
     ++n_[last_action_];
     if(reward_num == 1 || reward_num == 4 ){
         reward = reward / time_elapsed_per_move[last_action_];
@@ -370,7 +370,7 @@ void SoftmaxAgent::set_k(size_t k) {
     }
 }
 
-float my_exp (float x){return std::exp(std::max(1000000*x,float(3.0)));}
+float my_exp (float x){return std::exp(std::min(1000000*x,float(3.0)));}
 
 void SoftmaxAgent::set_action_prob() {
     //float sum_q = accumulate(q_.begin(),q_.end(),0.0);
@@ -378,20 +378,20 @@ void SoftmaxAgent::set_action_prob() {
     float sum_q = accumulate(exp_q_.begin(), exp_q_.end(), 0.0);
 
     if(sum_q == 0.0){
-        std::fill(action_prob_.begin(),action_prob_.end(),1.0/k_);        
+        std::fill(action_prob_.begin(),action_prob_.end(),1.0/k_);
     }
     else{
         for(size_t i=0; i<k_; ++i){
             //action_prob_[i] = std::max(std::min(q_[i]/sum_q, float(0.9)),float(0.02));
             //action_prob_[i] = std::max(std::min(exp_q_[i]/sum_q, float(0.7)),float(0.06));
             action_prob_[i] = exp_q_[i]/sum_q;
-            
+
         }
     }
 
     float sum_prob = std::accumulate(action_prob_.begin(), action_prob_.end(),0.0);
     std::transform(action_prob_.begin(), action_prob_.end(), action_prob_.begin(),
-          bind2nd(std::plus<float>(),(1.0-sum_prob)/k_ ));  
+          bind2nd(std::plus<float>(),(1.0-sum_prob)/k_ ));
     float accum = 0;
     for (size_t i = 0; i < k_; ++i) {
         accum += action_prob_[i];
