@@ -121,7 +121,7 @@ def run(architecture, circuit_name, circuit, command_runner=CommandRunner(), tem
         vpr_args = OrderedDict()
 
     mkdir_p(temp_dir)
-    
+
     if vpr_exec == None:
         vpr_exec = find_vtr_file('vpr', is_executable=True)
 
@@ -177,7 +177,6 @@ def run(architecture, circuit_name, circuit, command_runner=CommandRunner(), tem
             second_run_args["write_rr_graph"] = rr_graph_out_file2
 
         second_run_log_file = "vpr_second_run.out"
-        
         cmd = [vpr_exec, architecture.name, circuit_name.stem, "--circuit_file", circuit.name]
 
         for arg, value in vpr_args.items():
@@ -200,6 +199,25 @@ def cmp_full_vs_incr_STA(architecture,circuit_name,circuit,command_runner=Comman
     """"
     Sanity check that full STA and the incremental STA produce the same *.net, *.place, *.route files as well as identical timing report files
 
+    To run:
+        vtr.vpr.cmp_full_vs_incr_STA(args)
+
+    Required arguments:
+        architecture: Architecture file
+        
+        circuit_name: Curcuit netlist 
+        
+        circuit: Input circuit file
+    
+    Options:
+        command_runner: CommandRunner object
+        
+        temp_dir: Directory to run in
+        
+        vpr_exec: Path to the VPR executable
+        
+        vpr_args: Extra arguments for VPR
+        
     """
     verify_file(architecture, "Architecture")
     verify_file(circuit_name, "Circuit")
