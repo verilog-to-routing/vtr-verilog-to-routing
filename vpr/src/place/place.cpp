@@ -88,9 +88,8 @@ std::map<int,std::string> available_move_types = {
         {5,"Critical_uniform"},
         {6,"Centroid"}
 };
-//#ifdef VTR_ENABLE_DEBUG_LOGGING
-#if 0
-void print_place_statisitics(const float &, const std::vector<int> &, const std::vector<int> &, const std::vector<int> &);
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+void print_place_statisitics(const int&, const float &, const std::vector<int> &, const std::vector<int> &, const std::vector<int> &);
 #endif
 
 /************** Types and defines local to place.c ***************************/
@@ -815,7 +814,7 @@ void try_place(const t_placer_opts& placer_opts,
 
         print_place_status(state, stats, temperature_timer.elapsed_sec(), critical_path.delay(), sTNS, sWNS, tot_iter);
 #ifdef VTR_ENABLE_DEBUG_LOGGING
-        print_place_statisitics(t,num_moves,accepted_moves,aborted_moves);
+        print_place_statisitics(num_temps, t,num_moves,accepted_moves,aborted_moves);
 #endif
 
         sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
@@ -2987,8 +2986,13 @@ bool placer_needs_lookahead(const t_vpr_setup& vpr_setup) {
 void print_place_statisitics(const float &t, const std::vector<int> & num_moves, const std::vector<int> & , const std::vector<int> &){
     FILE* f_ = vtr::fopen("moves_info.txt","a");
     fprintf(f_, "%1.9f", t);
+    fprintf(f_, ", %d", temp_nums);
     for(size_t i =0; i < num_moves.size(); i++){
         fprintf(f_,", %d",num_moves[i]);
+        if(num_moves[0] == 0)
+                fprintf(f_,", 0" );
+        else
+            fprintf(f_,", %f",100.0*accepted_moves[i]/float(num_moves[i]));
     }
     fprintf(f_,"\n");
     vtr::fclose(f_);
