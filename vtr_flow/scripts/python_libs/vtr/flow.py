@@ -8,7 +8,7 @@ from pathlib import Path
 from collections import OrderedDict
 from vtr import CommandError
 
-VTR_STAGE = vtr.make_enum("odin", "abc", 'ace', "vpr", "lec")
+VTR_STAGE = vtr.make_enum("odin", "abc", 'ace', "vpr")
 vtr_stages = VTR_STAGE.reverse_mapping.values()
 
 def run(architecture_file, circuit_file, 
@@ -78,23 +78,29 @@ def run(architecture_file, circuit_file,
         check_incremental_sta_consistency :  Do a second-run of the incremental analysis to compare the result files
         
     """
+    if odin_args == None:
+        odin_args = OrderedDict()
+    if abc_args == None:
+        abc_args = OrderedDict()
     if vpr_args == None:
         vpr_args = OrderedDict()
-
+        
     #
     #Initial setup
     #
+
+    #Verify that files are Paths or convert them to Paths and check that they exist
     vtr.util.verify_file(architecture_file, "Architecture")
     vtr.util.verify_file(circuit_file, "Circuit")
     if(power_tech_file):
         vtr.util.verify_file(power_tech_file, "Power tech")
+    
     architecture_file_basename =architecture_file.name
     circuit_file_basename = circuit_file.name
 
     circuit_name = circuit_file.stem
     circuit_ext = circuit_file.suffixes
     architecture_name = architecture_file.stem
-    architecture_ext = architecture_file.suffixes
 
     vtr.mkdir_p(temp_dir)
     netlist_ext = ".blif"
@@ -112,7 +118,7 @@ def run(architecture_file, circuit_file,
     rr_graph_ext=".xml"
 
     if "blif" in circuit_ext:
-        #If the user provided a .blif netlist, we use that as the baseline for LEC
+        #If the user provided a .blif or .eblif netlist, we use that as the baseline for LEC
         #(ABC can't LEC behavioural verilog)
         lec_base_netlist = circuit_file_basename
 
@@ -169,8 +175,8 @@ def run(architecture_file, circuit_file,
     #
     if power_tech_file:
         #The user provided a tech file, so do power analysis
-        if(not isinstance(power_tech_file,Path)):
-            power_tech_file=Path(power_tech_file)
+
+        verify_file(power_tech_file, "power tech file")
 
         if should_run_stage(VTR_STAGE.ace, start_stage, end_stage):
             vtr.ace.run(next_stage_netlist, old_netlist = post_odin_netlist, output_netlist=post_ace_netlist, 
@@ -182,7 +188,7 @@ def run(architecture_file, circuit_file,
             next_stage_netlist.unlink()
             post_odin_netlist.unlink()
 
-        #Use ACE's output netlistf
+        #Use ACE's output netlist
         next_stage_netlist = post_ace_netlist
 
         if not lec_base_netlist:
@@ -190,7 +196,6 @@ def run(architecture_file, circuit_file,
         
         #Enable power analysis in VPR
         vpr_args["power"] = True
-        #vpr_args["activity_file"] = post_ace_activity_file.name
         vpr_args["tech_properties"] = str(power_tech_file.resolve())
 
     #
@@ -235,6 +240,7 @@ def run(architecture_file, circuit_file,
                 break
         vtr.abc.run_lec(lec_base_netlist, gen_postsynthesis_netlist, command_runner=command_runner, temp_dir=temp_dir)
 
+    # Do a second-run of the incremental analysis to compare the result files
     if check_incremental_sta_consistency:
         vtr.vpr.cmp_full_vs_incr_STA(architecture_copy, circuit_copy, pre_vpr_netlist, 
                             command_runner=command_runner, 
@@ -243,17 +249,16 @@ def run(architecture_file, circuit_file,
                             temp_dir=temp_dir
                             )
     
-    if(not keep_intermediate_files):
+    if not keep_intermediate_files:
         next_stage_netlist.unlink()
         exts = ('.xml','.sdf','.v')
         if not keep_result_files:
             exts += ('.net', '.place', '.route')
-        files = []
+
         for file in Path(temp_dir).iterdir():
             if file.suffix in exts:
-                files.append(file)
-        for p in files:
-            p.unlink()
+                file.unlink()
+
         if power_tech_file:
             post_ace_activity_file.unlink()
 

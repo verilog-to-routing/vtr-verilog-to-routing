@@ -44,6 +44,7 @@ def run_relax_W(architecture, circuit_name, circuit, command_runner=CommandRunne
 
     mkdir_p(temp_dir)
 
+    #Verify that files are Paths or convert them to Paths and check that they exist
     verify_file(architecture, "Architecture")
     verify_file(circuit_name, "Circuit")
     verify_file(circuit, "Circuit")
@@ -64,6 +65,9 @@ def run_relax_W(architecture, circuit_name, circuit, command_runner=CommandRunne
 
     if "route" in vpr_args:
         del vpr_args["route"]
+
+    if vpr_exec == None:
+        vpr_exec = find_vtr_file('vpr', is_executable=True)
 
     run(architecture, circuit_name, circuit, command_runner, temp_dir, log_filename=vpr_min_W_log, vpr_exec=vpr_exec, vpr_args=vpr_args)
 
@@ -125,6 +129,7 @@ def run(architecture, circuit_name, circuit, command_runner=CommandRunner(), tem
     if vpr_exec == None:
         vpr_exec = find_vtr_file('vpr', is_executable=True)
 
+    #Verify that files are Paths or convert them to Paths and check that they exist
     verify_file(architecture, "Architecture")
     verify_file(circuit_name, "Circuit")
     verify_file(circuit, "Circuit")
@@ -219,6 +224,8 @@ def cmp_full_vs_incr_STA(architecture,circuit_name,circuit,command_runner=Comman
         vpr_args: Extra arguments for VPR
         
     """
+
+    #Verify that files are Paths or convert them to Paths and check that they exist
     verify_file(architecture, "Architecture")
     verify_file(circuit_name, "Circuit")
     verify_file(circuit, "Circuit")

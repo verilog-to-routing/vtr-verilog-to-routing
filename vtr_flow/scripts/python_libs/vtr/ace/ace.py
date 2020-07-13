@@ -30,19 +30,20 @@ def run(circuit_file, old_netlist, output_netlist, output_activity_file,
         ace_seed : The ACE seed
     """
 
+    #Verify that files are Paths or convert them to Paths and check that they exist
     verify_file(circuit_file, "Circuit")
     verify_file(old_netlist, "Previous netlist")
-    verify_file(output_netlist, "Output netlist", False)
-    verify_file(output_activity_file, "Output activity", False)
+    verify_file(output_netlist, "Output netlist", should_exist=False)
+    verify_file(output_activity_file, "Output activity", should_exist=False)
 
     ace_clk_file = Path(temp_dir) / "ace_clk.txt"
     ace_raw = Path(temp_dir) / (circuit_file.with_suffix('').stem + ".raw.ace.blif")
     if ace_exec is None:
         ace_exec = find_vtr_file('ace')
 
-    ace_extraction_file = Path(find_vtr_file("extract_clk_from_blif.py"))
+    ace_extraction_file = find_vtr_file("extract_clk_from_blif.py")
 
-    cmd =[str(ace_extraction_file), ace_clk_file.name, circuit_file.name]
+    cmd =[ace_extraction_file, ace_clk_file.name, circuit_file.name]
     command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename="ace_clk_extraction.out", indent_depth=1)
     ace_clk = ""
     with ace_clk_file.open('r') as f:

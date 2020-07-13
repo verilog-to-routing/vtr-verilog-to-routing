@@ -45,6 +45,10 @@ def run(architecture_file, circuit_file,
     """
     mkdir_p(temp_dir)
 
+    if odin_args == None:
+        odin_args = OrderedDict()
+
+    #Verify that files are Paths or convert them to Paths and check that they exist
     verify_file(architecture_file, "Architecture")
     verify_file(circuit_file, "Circuit")
     verify_file(output_netlist, "Output netlist", False)
@@ -86,9 +90,9 @@ def run(architecture_file, circuit_file,
             pass
         else:
             cmd += ["--" + arg, str(value)]
-    cmd.extend(["-U0"])
+    cmd += ["-U0"]
     if(disable_odin_xml):
-        cmd.extend(["-a",architecture_file.name, "-V", circuit_file.name, "-o",output_netlist.name])
+        cmd += ["-a",architecture_file.name, "-V", circuit_file.name, "-o",output_netlist.name])
 
     command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename=log_filename, indent_depth=1)
 

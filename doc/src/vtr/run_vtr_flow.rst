@@ -16,7 +16,7 @@ Basic Usage
 
 At a minimum ``run_vtr_flow.py`` requires two command-line arguments::
 
-    run_vtr_flow.p <circuit_file> <architecture_file>
+    run_vtr_flow.py <circuit_file> <architecture_file>
 
 where:
 

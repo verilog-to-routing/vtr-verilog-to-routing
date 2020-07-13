@@ -92,7 +92,6 @@ class CommandRunner(object):
 
         #Echo the command?
         if self._echo_cmd:
-            #print ' '.join(cmd)
             print(cmd)
 
         #Begin timing
@@ -425,11 +424,16 @@ def load_config_lines(filepath, allow_includes=True):
 
     return config_lines            
 
-def verify_file(file, file_type,check_is_file=True):
+def verify_file(file, file_type,should_exist=True):
+    """
+        Verifies that the file is a Pathlib object and if not makes it one. 
+        Ensures that the file exists by default.
+        This makes it possible to pass files into the various files as strings or as pathlib objects.
+    """
     if(not isinstance(file,Path)):
         file = Path(file)
 
-    if(check_is_file and not file.is_file()):
+    if(should_exist and not file.is_file()):
         raise Exception("{file_type} file does not exist: {file} ".format(file_type = file_type, file=file))
     
 def format_elapsed_time(time_delta):

@@ -7,7 +7,7 @@ def run(architecture_file, circuit_file,
         output_netlist, command_runner=CommandRunner(),
         temp_dir=".", log_filename="abc.out",
         abc_exec=None, abc_script=None, abc_rc=None,
-        use_old_abc_script = False, abc_args = None, keep_intermediate_files=1):
+        use_old_abc_script = False, abc_args = None, keep_intermediate_files=True):
     """
     Runs ABC to optimize specified file.
 
@@ -43,9 +43,13 @@ def run(architecture_file, circuit_file,
     """
     mkdir_p(temp_dir)
 
+    if abc_args == None:
+        abc_args = OrderedDict()
+
+    #Verify that files are Paths or convert them to Paths and check that they exist
     verify_file(architecture_file, "Architecture")
     verify_file(circuit_file, "Circuit")
-    verify_file(output_netlist, "Output netlist", False)
+    verify_file(output_netlist, "Output netlist", should_exist=False)
         
     blackbox_latches_script = find_vtr_file("blackbox_latches.pl")
     clk_list = []
@@ -57,25 +61,31 @@ def run(architecture_file, circuit_file,
     abc_run_args = ""
     use_old_latches_restoration_script = 0
     lut_size = None
+
+    if("iterative_bb" in abc_args):
+        abc_flow_type=2
+        del abc_args["iterative_bb"]
+    if("blanket_bb" in abc_args):
+        abc_flow_type=3
+        del abc_args["blanket_bb"]
+    if("once_bb" in abc_args):
+        abc_flow_type=1
+        del abc_args["once_bb"]
+    if("use_old_latches_restoration_script" in abc_args):
+        use_old_latches_restoration_script = 1
+        del abc_args["use_old_latches_restoration_script"]
+    if("lut_size" in abc_args):
+        lut_size=abc_args["lut_size"]
+        del abc_args["lut_size"]
+
     for  key, value in abc_args.items():
-        if(key=="iterative_bb"):
-            abc_flow_type=2
-        elif(key=="blanket_bb"):
-            abc_flow_type=3
-        elif(key=="once_bb"):
-            abc_flow_type=1
-        elif(key=="use_old_latches_restoration_script"):
-            use_old_latches_restoration_script = 1
-        elif(key=="lut_size"):
-            lut_size=value
+        if value == True:
+            abc_run_args += ["--" + arg]
+        elif value == False:
+            pass
         else:
-            if value == True:
-                abc_run_args += ["--" + arg]
-            elif value == False:
-                pass
-            else:
-                abc_run_args += ["--" + arg, str(value)]
-            
+            abc_run_args += ["--" + arg, str(value)]
+        
     if(lut_size == None):
         lut_size = determine_lut_size(str(architecture_file))
 

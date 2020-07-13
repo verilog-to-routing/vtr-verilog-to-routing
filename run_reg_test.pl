@@ -88,7 +88,7 @@ while ( $token = shift(@ARGV) ) {
 		$long_task_names = 1;
 	} elsif ( $token eq "-j" ) { #-j N
 		$num_cpu = int(shift(@ARGV));
-	} elsif ( $token eq "-script" ) { #-j N
+	} elsif ( $token eq "-script" ) {
 		$script = shift(@ARGV);
     } elsif ( $token =~ /^-j(\d+)$/ ) { #-jN
         $num_cpu = int($1);
