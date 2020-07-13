@@ -320,7 +320,7 @@ def vtr_command_main(arg_list, prog=None):
     args, unknown_args = vtr_command_argparser(prog).parse_known_args(arg_list)
     path_arch_file = Path(args.architecture_file)
     path_circuit_file = Path(args.circuit_file)
-    error_status = "OK"
+    error_status = "Error"
     if (args.temp_dir == None):
         temp_dir="./temp"
     else:
@@ -423,6 +423,7 @@ def vtr_command_main(arg_list, prog=None):
                              use_old_abc_script=args.use_old_abc_script,
                              relax_W_factor=args.relax_W_factor
                              )
+                error_status = "OK"
             except vtr.CommandError as e:
                 #An external command failed
                 return_status = 1

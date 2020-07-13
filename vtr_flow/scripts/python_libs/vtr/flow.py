@@ -233,7 +233,7 @@ def run(architecture_file, circuit_file,
             if "post_synthesis.blif" in str(file) :
                 gen_postsynthesis_netlist = file.name
                 break
-        vtr.abc.run_lec(lec_base_netlist, gen_postsynthesis_netlist, command_runner=command_runner, temp_dir=temp_dir,check_incremental_sta_consistency=check_incremental_sta_consistency)
+        vtr.abc.run_lec(lec_base_netlist, gen_postsynthesis_netlist, command_runner=command_runner, temp_dir=temp_dir)
 
     if check_incremental_sta_consistency:
         vtr.vpr.cmp_full_vs_incr_STA(architecture_copy, circuit_copy, pre_vpr_netlist, 

@@ -121,7 +121,7 @@ def run(architecture, circuit_name, circuit, command_runner=CommandRunner(), tem
         vpr_args = OrderedDict()
 
     mkdir_p(temp_dir)
-
+    
     if vpr_exec == None:
         vpr_exec = find_vtr_file('vpr', is_executable=True)
 
@@ -177,6 +177,7 @@ def run(architecture, circuit_name, circuit, command_runner=CommandRunner(), tem
             second_run_args["write_rr_graph"] = rr_graph_out_file2
 
         second_run_log_file = "vpr_second_run.out"
+        
         cmd = [vpr_exec, architecture.name, circuit_name.stem, "--circuit_file", circuit.name]
 
         for arg, value in vpr_args.items():
