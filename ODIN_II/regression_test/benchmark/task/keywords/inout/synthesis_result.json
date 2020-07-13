@@ -23,6 +23,33 @@
             "AST simple_inout.v:3 Odin does not handle inouts (in_out1)"
         ]
     },
+    "inout/double_assign_inout/k6_N10_mem32K_40nm": {
+        "test_name": "inout/double_assign_inout/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "double_assign_inout.v",
+        "exit": 134,
+        "errors": [
+            "AST double_assign_inout.v:2 Odin does not handle inouts (in_out1)"
+        ]
+    },
+    "inout/inout_failure/k6_N10_mem32K_40nm": {
+        "test_name": "inout/inout_failure/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "inout_failure.v",
+        "exit": 134,
+        "errors": [
+            "AST inout_failure.v:3 Odin does not handle inouts (in_out1)"
+        ]
+    },
+    "inout/simple_inout/k6_N10_mem32K_40nm": {
+        "test_name": "inout/simple_inout/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "simple_inout.v",
+        "exit": 134,
+        "errors": [
+            "AST simple_inout.v:3 Odin does not handle inouts (in_out1)"
+        ]
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

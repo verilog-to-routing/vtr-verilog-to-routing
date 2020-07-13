@@ -75,6 +75,96 @@
         "Estimated LUTs": 1,
         "Total Node": 1
     },
+    "xnor/range_xnor_int_wide/k6_N10_mem32K_40nm": {
+        "test_name": "xnor/range_xnor_int_wide/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "range_xnor_int_wide.vh",
+        "exit": 134,
+        "errors": [
+            "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
+        ]
+    },
+    "xnor/range_xnor_ultra_wide/k6_N10_mem32K_40nm": {
+        "test_name": "xnor/range_xnor_ultra_wide/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "range_xnor_ultra_wide.vh",
+        "exit": 134,
+        "errors": [
+            "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
+        ]
+    },
+    "xnor/range_xnor_wide/k6_N10_mem32K_40nm": {
+        "test_name": "xnor/range_xnor_wide/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "range_xnor_wide.vh",
+        "exit": 134,
+        "errors": [
+            "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
+        ]
+    },
+    "xnor/replicate_xnor_int_wide/k6_N10_mem32K_40nm": {
+        "test_name": "xnor/replicate_xnor_int_wide/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "replicate_xnor_int_wide.vh",
+        "exit": 134,
+        "errors": [
+            "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
+        ]
+    },
+    "xnor/replicate_xnor_ultra_wide/k6_N10_mem32K_40nm": {
+        "test_name": "xnor/replicate_xnor_ultra_wide/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "replicate_xnor_ultra_wide.vh",
+        "exit": 134,
+        "errors": [
+            "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
+        ]
+    },
+    "xnor/replicate_xnor_wide/k6_N10_mem32K_40nm": {
+        "test_name": "xnor/replicate_xnor_wide/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "replicate_xnor_wide.vh",
+        "exit": 134,
+        "errors": [
+            "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
+        ]
+    },
+    "xnor/xnor_indexed_port/k6_N10_mem32K_40nm": {
+        "test_name": "xnor/xnor_indexed_port/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "xnor_indexed_port.vh",
+        "max_rss(MiB)": 52.5,
+        "exec_time(ms)": 79.5,
+        "synthesis_time(ms)": 2.1,
+        "Pi": 4,
+        "Po": 2,
+        "logic element": 2,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 6,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 2,
+        "Total Node": 2
+    },
+    "xnor/xnor_wire/k6_N10_mem32K_40nm": {
+        "test_name": "xnor/xnor_wire/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "xnor_wire.vh",
+        "max_rss(MiB)": 52.7,
+        "exec_time(ms)": 86.1,
+        "synthesis_time(ms)": 1.6,
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 1,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 6,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

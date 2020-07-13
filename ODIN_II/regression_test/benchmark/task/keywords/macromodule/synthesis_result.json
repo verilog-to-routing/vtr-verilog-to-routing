@@ -48,6 +48,66 @@
             "AST repeated_macromodule_failure.v:28 module names with the same name -> simple_op"
         ]
     },
+    "macromodule/macromodules_modules/k6_N10_mem32K_40nm": {
+        "test_name": "macromodule/macromodules_modules/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "macromodules_modules.v",
+        "max_rss(MiB)": 53.8,
+        "exec_time(ms)": 91.8,
+        "synthesis_time(ms)": 4.4,
+        "Pi": 10,
+        "Po": 10,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 6,
+        "Longest Path": 2,
+        "Average Path": 2
+    },
+    "macromodule/missing_endmodule_failure/k6_N10_mem32K_40nm": {
+        "test_name": "macromodule/missing_endmodule_failure/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "missing_endmodule_failure.v",
+        "exit": 134,
+        "errors": [
+            "PARSE_TO_AST Parser found (1) errors in your syntax, exiting"
+        ],
+        "warnings": [
+            "PARSE_TO_AST error in parsing: (syntax error, unexpected end of file)"
+        ]
+    },
+    "macromodule/multiple_macromodules/k6_N10_mem32K_40nm": {
+        "test_name": "macromodule/multiple_macromodules/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "multiple_macromodules.v",
+        "max_rss(MiB)": 54.1,
+        "exec_time(ms)": 85.5,
+        "synthesis_time(ms)": 4.3,
+        "Pi": 10,
+        "Po": 10,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 6,
+        "Longest Path": 2,
+        "Average Path": 2
+    },
+    "macromodule/multiple_topmodules/k6_N10_mem32K_40nm": {
+        "test_name": "macromodule/multiple_topmodules/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "multiple_topmodules.v",
+        "exit": 134,
+        "errors": [
+            "AST Found multiple top level modules"
+        ]
+    },
+    "macromodule/repeated_macromodule_failure/k6_N10_mem32K_40nm": {
+        "test_name": "macromodule/repeated_macromodule_failure/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "repeated_macromodule_failure.v",
+        "exit": 134,
+        "errors": [
+            "AST repeated_macromodule_failure.v:28 module names with the same name -> simple_op"
+        ]
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

@@ -35,6 +35,45 @@
             "PARSE_TO_AST specify_edge_sensitive_vector.v:9 error in parsing: (syntax error, unexpected vPOSEDGE, expecting vSYMBOL_ID or '{')"
         ]
     },
+    "specify_endspecify/specify_conditional/k6_N10_mem32K_40nm": {
+        "test_name": "specify_endspecify/specify_conditional/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "specify_conditional.v",
+        "exit": 134,
+        "errors": [
+            "PARSE_TO_AST Parser found (4) errors in your syntax, exiting"
+        ],
+        "warnings": [
+            "PARSE_TO_AST specify_conditional.v:15 error in parsing: (syntax error, unexpected vIF, expecting vENDSPECIFY or vSPECPARAM or '(')",
+            "PARSE_TO_AST specify_conditional.v:16 error in parsing: (syntax error, unexpected '(')",
+            "PARSE_TO_AST specify_conditional.v:17 error in parsing: (syntax error, unexpected '(')",
+            "PARSE_TO_AST specify_conditional.v:18 error in parsing: (syntax error, unexpected '(')"
+        ]
+    },
+    "specify_endspecify/specify_edge_sensitive/k6_N10_mem32K_40nm": {
+        "test_name": "specify_endspecify/specify_edge_sensitive/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "specify_edge_sensitive.v",
+        "exit": 134,
+        "errors": [
+            "PARSE_TO_AST Parser found (1) errors in your syntax, exiting"
+        ],
+        "warnings": [
+            "PARSE_TO_AST specify_edge_sensitive.v:9 error in parsing: (syntax error, unexpected vPOSEDGE, expecting vSYMBOL_ID or '{')"
+        ]
+    },
+    "specify_endspecify/specify_edge_sensitive_vector/k6_N10_mem32K_40nm": {
+        "test_name": "specify_endspecify/specify_edge_sensitive_vector/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "specify_edge_sensitive_vector.v",
+        "exit": 134,
+        "errors": [
+            "PARSE_TO_AST Parser found (1) errors in your syntax, exiting"
+        ],
+        "warnings": [
+            "PARSE_TO_AST specify_edge_sensitive_vector.v:9 error in parsing: (syntax error, unexpected vPOSEDGE, expecting vSYMBOL_ID or '{')"
+        ]
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

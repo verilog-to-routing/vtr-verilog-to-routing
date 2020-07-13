@@ -13,6 +13,22 @@
         "Estimated LUTs": 3,
         "Total Node": 3
     },
+    "genvar/generate_for/k6_N10_mem32K_40nm": {
+        "test_name": "genvar/generate_for/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "blif": "generate_for.blif",
+        "max_rss(MiB)": 54,
+        "exec_time(ms)": 50,
+        "simulation_time(ms)": 0.2,
+        "test_coverage(%)": 100,
+        "Po": 3,
+        "logic element": 3,
+        "generic logic size": 6,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 3,
+        "Total Node": 3
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

@@ -15,6 +15,24 @@
             "AST parameter_define_localparam.v:5 no match for parameter lsb"
         ]
     },
+    "localparam/localparam/k6_N10_mem32K_40nm": {
+        "test_name": "localparam/localparam/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "localparam.v",
+        "exit": 134,
+        "errors": [
+            "AST localparam.v:5 no match for parameter msb"
+        ]
+    },
+    "localparam/parameter_define_localparam/k6_N10_mem32K_40nm": {
+        "test_name": "localparam/parameter_define_localparam/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "parameter_define_localparam.v",
+        "exit": 134,
+        "errors": [
+            "AST parameter_define_localparam.v:5 no match for parameter lsb"
+        ]
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

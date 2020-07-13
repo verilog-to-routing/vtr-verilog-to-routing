@@ -13,6 +13,24 @@
         "Estimated LUTs": 15,
         "Total Node": 15
     },
+    "case_endcase/case/k6_N10_mem32K_40nm": {
+        "test_name": "case_endcase/case/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "case.v",
+        "max_rss(MiB)": 53.1,
+        "exec_time(ms)": 52.1,
+        "synthesis_time(ms)": 1.8,
+        "Pi": 11,
+        "Po": 3,
+        "logic element": 15,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 6,
+        "Longest Path": 5,
+        "Average Path": 4,
+        "Estimated LUTs": 21,
+        "Total Node": 15
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

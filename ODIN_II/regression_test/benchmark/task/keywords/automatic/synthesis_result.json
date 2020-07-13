@@ -22,6 +22,31 @@
             "PARSE_TO_AST recursive_task.v:9 error in parsing: (syntax error, unexpected vINTEGER, expecting vSYMBOL_ID)"
         ]
     },
+    "automatic/recursive_function/k6_N10_mem32K_40nm": {
+        "test_name": "automatic/recursive_function/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "recursive_function.v",
+        "exit": 134,
+        "errors": [
+            "NETLIST recursive_function.v:8 This output (simple_op.function_instance_0.function_instance_1^factorial~0) must exist...must be an error"
+        ],
+        "warnings": [
+            "AST recursive_function.v:14 ODIN II does not (yet) differentiate between automatic and static tasks & functions.IGNORING",
+            "AST recursive_function.v:14 ODIN_II does not fully support input/output integers in functions"
+        ]
+    },
+    "automatic/recursive_task/k6_N10_mem32K_40nm": {
+        "test_name": "automatic/recursive_task/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "recursive_task.v",
+        "exit": 134,
+        "errors": [
+            "AST recursive_task.v:10 Module already has input with this name in"
+        ],
+        "warnings": [
+            "PARSE_TO_AST recursive_task.v:9 error in parsing: (syntax error, unexpected vINTEGER, expecting vSYMBOL_ID)"
+        ]
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

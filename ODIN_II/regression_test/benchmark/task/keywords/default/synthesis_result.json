@@ -24,6 +24,36 @@
             "PARSE_TO_AST multiple_defaults_failure.v:9 error in parsing: (syntax error, unexpected vALWAYS, expecting ';')"
         ]
     },
+    "default/case_default/k6_N10_mem32K_40nm": {
+        "test_name": "default/case_default/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "case_default.v",
+        "max_rss(MiB)": 53.4,
+        "exec_time(ms)": 51.5,
+        "synthesis_time(ms)": 1.9,
+        "Pi": 11,
+        "Po": 3,
+        "logic element": 13,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 6,
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 19,
+        "Total Node": 13
+    },
+    "default/multiple_defaults_failure/k6_N10_mem32K_40nm": {
+        "test_name": "default/multiple_defaults_failure/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "multiple_defaults_failure.v",
+        "exit": 134,
+        "errors": [
+            "PARSE_TO_AST Parser found (1) errors in your syntax, exiting"
+        ],
+        "warnings": [
+            "PARSE_TO_AST multiple_defaults_failure.v:9 error in parsing: (syntax error, unexpected vALWAYS, expecting ';')"
+        ]
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

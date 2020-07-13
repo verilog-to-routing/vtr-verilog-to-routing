@@ -75,6 +75,96 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ]
     },
+    "or/or_indexed_port/k6_N10_mem32K_40nm": {
+        "test_name": "or/or_indexed_port/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "or_indexed_port.vh",
+        "max_rss(MiB)": 52.8,
+        "exec_time(ms)": 82.7,
+        "synthesis_time(ms)": 2.5,
+        "Pi": 4,
+        "Po": 2,
+        "logic element": 2,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 6,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 2,
+        "Total Node": 2
+    },
+    "or/or_wire/k6_N10_mem32K_40nm": {
+        "test_name": "or/or_wire/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "or_wire.vh",
+        "max_rss(MiB)": 52.5,
+        "exec_time(ms)": 86.6,
+        "synthesis_time(ms)": 1.4,
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 1,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 6,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
+    },
+    "or/range_or_int_wide/k6_N10_mem32K_40nm": {
+        "test_name": "or/range_or_int_wide/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "range_or_int_wide.vh",
+        "exit": 134,
+        "errors": [
+            "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
+        ]
+    },
+    "or/range_or_ultra_wide/k6_N10_mem32K_40nm": {
+        "test_name": "or/range_or_ultra_wide/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "range_or_ultra_wide.vh",
+        "exit": 134,
+        "errors": [
+            "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
+        ]
+    },
+    "or/range_or_wide/k6_N10_mem32K_40nm": {
+        "test_name": "or/range_or_wide/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "range_or_wide.vh",
+        "exit": 134,
+        "errors": [
+            "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
+        ]
+    },
+    "or/replicate_or_int_wide/k6_N10_mem32K_40nm": {
+        "test_name": "or/replicate_or_int_wide/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "replicate_or_int_wide.vh",
+        "exit": 134,
+        "errors": [
+            "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
+        ]
+    },
+    "or/replicate_or_ultra_wide/k6_N10_mem32K_40nm": {
+        "test_name": "or/replicate_or_ultra_wide/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "replicate_or_ultra_wide.vh",
+        "exit": 134,
+        "errors": [
+            "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
+        ]
+    },
+    "or/replicate_or_wide/k6_N10_mem32K_40nm": {
+        "test_name": "or/replicate_or_wide/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "replicate_or_wide.vh",
+        "exit": 134,
+        "errors": [
+            "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
+        ]
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

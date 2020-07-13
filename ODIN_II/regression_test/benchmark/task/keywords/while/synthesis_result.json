@@ -7,6 +7,15 @@
             "AST while_loop.v:13 While statements are NOT supported"
         ]
     },
+    "while/while_loop/k6_N10_mem32K_40nm": {
+        "test_name": "while/while_loop/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "while_loop.v",
+        "exit": 134,
+        "errors": [
+            "AST while_loop.v:13 While statements are NOT supported"
+        ]
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

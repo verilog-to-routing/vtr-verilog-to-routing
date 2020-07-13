@@ -29,6 +29,45 @@
         "verilog": "parameter_override.v",
         "exit": 1
     },
+    "parameter/multiple_parameter/k6_N10_mem32K_40nm": {
+        "test_name": "parameter/multiple_parameter/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "multiple_parameter.v",
+        "max_rss(MiB)": 52.7,
+        "exec_time(ms)": 57,
+        "synthesis_time(ms)": 1.3,
+        "Pi": 3,
+        "Po": 3,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 6,
+        "Longest Path": 2,
+        "Average Path": 2
+    },
+    "parameter/parameter_define/k6_N10_mem32K_40nm": {
+        "test_name": "parameter/parameter_define/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "parameter_define.v",
+        "warnings": [
+            "NETLIST parameter_define.v:6 This output is undriven (simple_op^out~4) and will be removed",
+            "NETLIST Net simple_op^out~4 driving node simple_op^out~4 is itself undriven."
+        ],
+        "max_rss(MiB)": 53.6,
+        "exec_time(ms)": 56,
+        "synthesis_time(ms)": 2.6,
+        "Po": 5,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 6,
+        "Longest Path": 2,
+        "Average Path": 2
+    },
+    "parameter/parameter_override/k6_N10_mem32K_40nm": {
+        "test_name": "parameter/parameter_override/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "parameter_override.v",
+        "exit": 1
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

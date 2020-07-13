@@ -13,6 +13,24 @@
         "Average Path": 3,
         "Total Node": 2
     },
+    "negedge/negedge/k6_N10_mem32K_40nm": {
+        "test_name": "negedge/negedge/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "negedge.v",
+        "max_rss(MiB)": 52.3,
+        "exec_time(ms)": 52.5,
+        "synthesis_time(ms)": 0.9,
+        "Latch Drivers": 1,
+        "Pi": 1,
+        "Po": 1,
+        "latch": 1,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 6,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Total Node": 2
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

@@ -51,6 +51,70 @@
         "Average Path": 3,
         "Total Node": 2
     },
+    "defparam/defparam_failure/k6_N10_mem32K_40nm": {
+        "test_name": "defparam/defparam_failure/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "defparam_failure.v",
+        "warnings": [
+            "AST defparam_failure.v:30 there are no ports for the module (params)",
+            "NETLIST defparam_failure.v:8 This output is undriven (simple_op^out2~3) and will be removed",
+            "NETLIST defparam_failure.v:8 This output is undriven (simple_op^out2~4) and will be removed",
+            "NETLIST defparam_failure.v:8 This output is undriven (simple_op^out2~5) and will be removed",
+            "NETLIST Net simple_op^out2~3 driving node simple_op^out2~3 is itself undriven.",
+            "NETLIST Net simple_op^out2~4 driving node simple_op^out2~4 is itself undriven.",
+            "NETLIST Net simple_op^out2~5 driving node simple_op^out2~5 is itself undriven."
+        ],
+        "max_rss(MiB)": 54,
+        "exec_time(ms)": 73.5,
+        "synthesis_time(ms)": 4.2,
+        "Pi": 6,
+        "Po": 9,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 6,
+        "Longest Path": 2,
+        "Average Path": 2
+    },
+    "defparam/defparam/k6_N10_mem32K_40nm": {
+        "test_name": "defparam/defparam/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "defparam.v",
+        "warnings": [
+            "AST defparam.v:28 there are no ports for the module (params)",
+            "NETLIST defparam.v:8 This output is undriven (simple_op^out2~3) and will be removed",
+            "NETLIST Net simple_op^out2~3 driving node simple_op^out2~3 is itself undriven."
+        ],
+        "max_rss(MiB)": 54.2,
+        "exec_time(ms)": 65,
+        "synthesis_time(ms)": 3.5,
+        "Pi": 5,
+        "Po": 6,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 6,
+        "Longest Path": 2,
+        "Average Path": 2
+    },
+    "defparam/defparam_string/k6_N10_mem32K_40nm": {
+        "test_name": "defparam/defparam_string/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "defparam_string.v",
+        "warnings": [
+            "AST defparam_string.v:21 there are no ports for the module (param)"
+        ],
+        "max_rss(MiB)": 53,
+        "exec_time(ms)": 57.5,
+        "synthesis_time(ms)": 1.2,
+        "Latch Drivers": 1,
+        "Po": 1,
+        "latch": 1,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 6,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Total Node": 2
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

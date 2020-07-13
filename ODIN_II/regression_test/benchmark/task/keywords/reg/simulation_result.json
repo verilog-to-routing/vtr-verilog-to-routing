@@ -14,6 +14,23 @@
         "Estimated LUTs": 1,
         "Total Node": 1
     },
+    "reg/reg/k6_N10_mem32K_40nm": {
+        "test_name": "reg/reg/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "blif": "reg.blif",
+        "max_rss(MiB)": 54.5,
+        "exec_time(ms)": 53.9,
+        "simulation_time(ms)": 0.6,
+        "test_coverage(%)": 100,
+        "Pi": 1,
+        "Po": 1,
+        "logic element": 1,
+        "generic logic size": 6,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

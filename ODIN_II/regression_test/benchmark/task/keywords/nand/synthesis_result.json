@@ -72,6 +72,90 @@
             "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
         ]
     },
+    "nand/nand_indexed_port/k6_N10_mem32K_40nm": {
+        "test_name": "nand/nand_indexed_port/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "nand_indexed_port.vh",
+        "max_rss(MiB)": 53.1,
+        "exec_time(ms)": 91.2,
+        "synthesis_time(ms)": 2.7,
+        "Pi": 4,
+        "Po": 2,
+        "logic element": 2,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 6,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 2,
+        "Total Node": 2
+    },
+    "nand/nand_wire/k6_N10_mem32K_40nm": {
+        "test_name": "nand/nand_wire/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "nand_wire.vh",
+        "exit": 134,
+        "errors": [
+            "PARSE_TO_AST Parser found (1) errors in your syntax, exiting"
+        ],
+        "warnings": [
+            "PARSE_TO_AST wire_test.v:1 error in parsing: (syntax error, unexpected vAND, expecting vSYMBOL_ID or '#')"
+        ]
+    },
+    "nand/range_nand_int_wide/k6_N10_mem32K_40nm": {
+        "test_name": "nand/range_nand_int_wide/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "range_nand_int_wide.vh",
+        "exit": 134,
+        "errors": [
+            "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
+        ]
+    },
+    "nand/range_nand_ultra_wide/k6_N10_mem32K_40nm": {
+        "test_name": "nand/range_nand_ultra_wide/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "range_nand_ultra_wide.vh",
+        "exit": 134,
+        "errors": [
+            "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
+        ]
+    },
+    "nand/range_nand_wide/k6_N10_mem32K_40nm": {
+        "test_name": "nand/range_nand_wide/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "range_nand_wide.vh",
+        "exit": 134,
+        "errors": [
+            "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
+        ]
+    },
+    "nand/replicate_nand_int_wide/k6_N10_mem32K_40nm": {
+        "test_name": "nand/replicate_nand_int_wide/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "replicate_nand_int_wide.vh",
+        "exit": 134,
+        "errors": [
+            "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
+        ]
+    },
+    "nand/replicate_nand_ultra_wide/k6_N10_mem32K_40nm": {
+        "test_name": "nand/replicate_nand_ultra_wide/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "replicate_nand_ultra_wide.vh",
+        "exit": 134,
+        "errors": [
+            "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
+        ]
+    },
+    "nand/replicate_nand_wide/k6_N10_mem32K_40nm": {
+        "test_name": "nand/replicate_nand_wide/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "replicate_nand_wide.vh",
+        "exit": 134,
+        "errors": [
+            "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
+        ]
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

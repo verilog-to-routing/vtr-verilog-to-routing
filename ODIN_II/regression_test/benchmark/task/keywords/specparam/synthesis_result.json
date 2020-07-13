@@ -47,6 +47,61 @@
             "PARSE_TO_AST specparam_outside.v:12 error in parsing: (syntax error, unexpected ',')"
         ]
     },
+    "specparam/specparam_define_check/k6_N10_mem32K_40nm": {
+        "test_name": "specparam/specparam_define_check/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "specparam_define_check.v",
+        "max_rss(MiB)": 52.4,
+        "exec_time(ms)": 89.8,
+        "synthesis_time(ms)": 1.4,
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 1,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 6,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
+    },
+    "specparam/specparam_failure/k6_N10_mem32K_40nm": {
+        "test_name": "specparam/specparam_failure/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "specparam_failure.v",
+        "exit": 134,
+        "errors": [
+            "PARSE_TO_AST Parser found (1) errors in your syntax, exiting"
+        ],
+        "warnings": [
+            "PARSE_TO_AST specparam_failure.v:1 error in parsing: (syntax error, unexpected vSPECPARAM, expecting vMODULE or preDEFAULT_NETTYPE)"
+        ]
+    },
+    "specparam/specparam_inside/k6_N10_mem32K_40nm": {
+        "test_name": "specparam/specparam_inside/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "specparam_inside.v",
+        "exit": 134,
+        "errors": [
+            "PARSE_TO_AST Parser found (1) errors in your syntax, exiting"
+        ],
+        "warnings": [
+            "PARSE_TO_AST specparam_inside.v:11 error in parsing: (syntax error, unexpected ',')"
+        ]
+    },
+    "specparam/specparam_outside/k6_N10_mem32K_40nm": {
+        "test_name": "specparam/specparam_outside/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "specparam_outside.v",
+        "exit": 134,
+        "errors": [
+            "PARSE_TO_AST Parser found (2) errors in your syntax, exiting"
+        ],
+        "warnings": [
+            "PARSE_TO_AST specparam_outside.v:8 error in parsing: (syntax error, unexpected vSPECPARAM)",
+            "PARSE_TO_AST specparam_outside.v:12 error in parsing: (syntax error, unexpected ',')"
+        ]
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

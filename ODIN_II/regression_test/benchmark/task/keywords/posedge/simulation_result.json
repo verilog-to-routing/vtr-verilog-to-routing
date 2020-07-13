@@ -16,6 +16,25 @@
         "Estimated LUTs": 1,
         "Total Node": 3
     },
+    "posedge/posedge/k6_N10_mem32K_40nm": {
+        "test_name": "posedge/posedge/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "blif": "posedge.blif",
+        "max_rss(MiB)": 54.3,
+        "exec_time(ms)": 53.4,
+        "simulation_time(ms)": 0.7,
+        "test_coverage(%)": 100,
+        "Latch Drivers": 1,
+        "Pi": 1,
+        "Po": 1,
+        "logic element": 1,
+        "latch": 1,
+        "generic logic size": 6,
+        "Longest Path": 4,
+        "Average Path": 4,
+        "Estimated LUTs": 1,
+        "Total Node": 3
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

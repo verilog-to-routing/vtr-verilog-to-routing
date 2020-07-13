@@ -9,6 +9,20 @@
         "Longest Path": 2,
         "Average Path": 2
     },
+    "genvar/generate_for/k6_N10_mem32K_40nm": {
+        "test_name": "genvar/generate_for/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "generate_for.v",
+        "max_rss(MiB)": 53.1,
+        "exec_time(ms)": 48.6,
+        "synthesis_time(ms)": 1.6,
+        "Po": 3,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 6,
+        "Longest Path": 2,
+        "Average Path": 2
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

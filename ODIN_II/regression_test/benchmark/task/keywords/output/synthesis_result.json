@@ -15,6 +15,24 @@
             "AST output_port_failure.v:5 Module already has output with this name b"
         ]
     },
+    "output/multiple_declarations/k6_N10_mem32K_40nm": {
+        "test_name": "output/multiple_declarations/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "multiple_declarations.v",
+        "exit": 134,
+        "errors": [
+            "AST multiple_declarations.v:3 Odin does not handle signed nets (a)"
+        ]
+    },
+    "output/output_port_failure/k6_N10_mem32K_40nm": {
+        "test_name": "output/output_port_failure/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "output_port_failure.v",
+        "exit": 134,
+        "errors": [
+            "AST output_port_failure.v:5 Module already has output with this name b"
+        ]
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
