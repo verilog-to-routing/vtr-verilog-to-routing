@@ -15,7 +15,7 @@
         "verilog": "parameter_define.v",
         "warnings": [
             "NETLIST parameter_define.v:6 This output is undriven (simple_op^out~4) and will be removed",
-            "NETLIST Net simple_op^out~4 driving node simple_op^out~4 is itself undriven."
+            "NETLIST parameter_define.v:6 Net simple_op^out~4 driving node simple_op^out~4 is itself undriven."
         ],
         "max_rss(MiB)": 12.3,
         "exec_time(ms)": 4.4,

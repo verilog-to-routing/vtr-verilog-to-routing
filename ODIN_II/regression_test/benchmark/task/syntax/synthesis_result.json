@@ -555,7 +555,7 @@
         "verilog": "both_ram.v",
         "exit": 134,
         "errors": [
-            "NETLIST Memory pram.inst1 of depth 2^16 exceeds ODIN bound of 2^10."
+            "NETLIST both_ram.v:49 Memory pram.inst1 of depth 2^16 exceeds ODIN bound of 2^10."
         ]
     },
     "syntax/cf_fft_1024_16/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -829,7 +829,7 @@
         "verilog": "flip_flop_enable.v",
         "warnings": [
             "NETLIST flip_flop_enable.v:7 This output is undriven (edge_testing^q0) and will be removed",
-            "NETLIST Net edge_testing^q0 driving node edge_testing^q0 is itself undriven."
+            "NETLIST flip_flop_enable.v:7 Net edge_testing^q0 driving node edge_testing^q0 is itself undriven."
         ],
         "max_rss(MiB)": 25.4,
         "exec_time(ms)": 44.8,
@@ -847,7 +847,7 @@
         "verilog": "flip_flop_enable.v",
         "warnings": [
             "NETLIST flip_flop_enable.v:7 This output is undriven (edge_testing^q0) and will be removed",
-            "NETLIST Net edge_testing^q0 driving node edge_testing^q0 is itself undriven."
+            "NETLIST flip_flop_enable.v:7 Net edge_testing^q0 driving node edge_testing^q0 is itself undriven."
         ],
         "max_rss(MiB)": 12.7,
         "exec_time(ms)": 3.6,
@@ -862,7 +862,7 @@
         "verilog": "flip_flop_enable_w_begin_label.v",
         "warnings": [
             "NETLIST flip_flop_enable_w_begin_label.v:7 This output is undriven (edge_testing^q0) and will be removed",
-            "NETLIST Net edge_testing^q0 driving node edge_testing^q0 is itself undriven."
+            "NETLIST flip_flop_enable_w_begin_label.v:7 Net edge_testing^q0 driving node edge_testing^q0 is itself undriven."
         ],
         "max_rss(MiB)": 25.5,
         "exec_time(ms)": 47.8,
@@ -880,7 +880,7 @@
         "verilog": "flip_flop_enable_w_begin_label.v",
         "warnings": [
             "NETLIST flip_flop_enable_w_begin_label.v:7 This output is undriven (edge_testing^q0) and will be removed",
-            "NETLIST Net edge_testing^q0 driving node edge_testing^q0 is itself undriven."
+            "NETLIST flip_flop_enable_w_begin_label.v:7 Net edge_testing^q0 driving node edge_testing^q0 is itself undriven."
         ],
         "max_rss(MiB)": 12.4,
         "exec_time(ms)": 3.7,
@@ -1976,7 +1976,7 @@
         "verilog": "not_enough_wires.v",
         "warnings": [
             "NETLIST not_enough_wires.v:7 This output is undriven (bar^d) and will be removed",
-            "NETLIST Net bar^d driving node bar^d is itself undriven."
+            "NETLIST not_enough_wires.v:7 Net bar^d driving node bar^d is itself undriven."
         ],
         "max_rss(MiB)": 26.3,
         "exec_time(ms)": 48,
@@ -1994,7 +1994,7 @@
         "verilog": "not_enough_wires.v",
         "warnings": [
             "NETLIST not_enough_wires.v:7 This output is undriven (bar^d) and will be removed",
-            "NETLIST Net bar^d driving node bar^d is itself undriven."
+            "NETLIST not_enough_wires.v:7 Net bar^d driving node bar^d is itself undriven."
         ],
         "max_rss(MiB)": 13,
         "exec_time(ms)": 6.6,
@@ -2008,8 +2008,8 @@
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "part_select.v",
         "warnings": [
-            "NETLIST Net (null) driving node top.inst_3^bAND~0^lAND~7 is itself undriven.",
-            "NETLIST Net (null) driving node top.inst_3^bAND~0^lAND~8 is itself undriven."
+            "NETLIST part_select.v:15 Net (null) driving node top.inst_3^bAND~0^lAND~7 is itself undriven.",
+            "NETLIST part_select.v:15 Net (null) driving node top.inst_3^bAND~0^lAND~8 is itself undriven."
         ],
         "max_rss(MiB)": 25.6,
         "exec_time(ms)": 42.5,
@@ -2030,8 +2030,8 @@
         "test_name": "syntax/part_select/no_arch",
         "verilog": "part_select.v",
         "warnings": [
-            "NETLIST Net (null) driving node top.inst_3^bAND~0^lAND~7 is itself undriven.",
-            "NETLIST Net (null) driving node top.inst_3^bAND~0^lAND~8 is itself undriven."
+            "NETLIST part_select.v:15 Net (null) driving node top.inst_3^bAND~0^lAND~7 is itself undriven.",
+            "NETLIST part_select.v:15 Net (null) driving node top.inst_3^bAND~0^lAND~8 is itself undriven."
         ],
         "max_rss(MiB)": 12.4,
         "exec_time(ms)": 4,

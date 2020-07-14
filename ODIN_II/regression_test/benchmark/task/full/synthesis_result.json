@@ -122,7 +122,7 @@
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "bm_sfifo_rtl.v",
         "warnings": [
-            "NETLIST Rounding memory <fifo_mem> of size <15> to closest power of two: 16."
+            "NETLIST bm_sfifo_rtl.v:69 Rounding memory <fifo_mem> of size <15> to closest power of two: 16."
         ],
         "max_rss(MiB)": 6.3,
         "exec_time(ms)": 6.2,
