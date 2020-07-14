@@ -1383,8 +1383,10 @@ static bool timing_driven_route_sink(
         update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), ROUTING, nullptr);
     }
 
-    if (budgeting_inf.if_set() && cheapest.path_data->backward_delay < cost_params.delay_budget->min_delay) {
-        budgeting_inf.set_should_reroute(net_id, true);
+    if (budgeting_inf.if_set() && cheapest.path_data != nullptr && cost_params.delay_budget) {
+        if (cheapest.path_data->backward_delay < cost_params.delay_budget->min_delay) {
+            budgeting_inf.set_should_reroute(net_id, true);
+        }
     }
 
     pathfinder_update_path_cost(new_route_start_tptr, 1, pres_fac);

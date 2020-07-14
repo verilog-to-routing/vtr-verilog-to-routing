@@ -56,6 +56,10 @@ HeapStorage::alloc(bool init_data_structs) {
         // if (heap_path_free_head_ == nullptr) {
         //     heap_path_free_head_ = vtr::chunk_new<t_heap_path>(&heap_ch_path_);
         // }
+        if (temp_ptr->path_data != nullptr) {
+            delete temp_ptr->path_data;
+            temp_ptr->path_data = nullptr;
+        }
         temp_ptr->path_data = new t_heap_path;
 
         temp_ptr->path_data->path_rr.clear();
@@ -74,6 +78,11 @@ HeapStorage::alloc(bool init_data_structs) {
 }
 
 void HeapStorage::free(t_heap* hptr) {
+    if (hptr->path_data != nullptr) {
+        delete hptr->path_data;
+        hptr->path_data = nullptr;
+    }
+
     hptr->set_next_heap_item(heap_free_head_);
     heap_free_head_ = hptr;
     num_heap_allocated_--;
@@ -92,6 +101,7 @@ void HeapStorage::free_all_memory() {
 
             if (tmp->path_data != nullptr) {
                 delete tmp->path_data;
+                tmp->path_data = nullptr;
             }
 
             vtr::chunk_delete(tmp, &heap_ch_);
