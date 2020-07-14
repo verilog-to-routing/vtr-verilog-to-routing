@@ -398,6 +398,8 @@ struct typ {
 };
 
 struct ast_node_t {
+    loc_t loc;
+
     long unique_count;
     int far_tag;
     int high_number;
@@ -406,10 +408,6 @@ struct ast_node_t {
 
     ast_node_t** children;
     long num_children;
-
-    int line_number = -1;
-    int file_number = -1;
-    int related_module_id = -1;
 
     void* hb_port;
     void* net_node;
@@ -428,15 +426,14 @@ struct chain_information_t {
 /* DEFINTIONS for all the different types of nodes there are.  This is also used cross-referenced in utils.c so that I can get a string version
  * of these names, so if you add new tpyes in here, be sure to add those same types in utils.c */
 struct nnode_t {
+    loc_t loc;
+
     long unique_id;
     char* name;          // unique name of a node
     operation_list type; // the type of node
     int bit_width;       // Size of the operation (e.g. for adders/subtractors)
 
     ast_node_t* related_ast_node; // the abstract syntax node that made this node
-
-    int line_number = -1;
-    int file_number = -1;
 
     uintptr_t traverse_visited; // a way to mark if we've visited yet
     stat_t stat;

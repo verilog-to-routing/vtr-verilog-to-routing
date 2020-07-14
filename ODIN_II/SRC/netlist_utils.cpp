@@ -38,9 +38,10 @@ extern global_args_t global_args;
 /*---------------------------------------------------------------------------------------------
  * (function: allocate_nnode)
  *-------------------------------------------------------------------------------------------*/
-nnode_t* allocate_nnode() {
+nnode_t* allocate_nnode(loc_t loc) {
     nnode_t* new_node = (nnode_t*)my_malloc_struct(sizeof(nnode_t));
 
+    new_node->loc = loc;
     new_node->name = NULL;
     new_node->type = NO_OP;
     new_node->bit_width = 0;
@@ -139,7 +140,7 @@ void allocate_more_input_pins(nnode_t* node, int width) {
     int i;
 
     if (width <= 0) {
-        error_message(NETLIST, node->related_ast_node->line_number, node->related_ast_node->file_number, "tried adding input pins for width %d <= 0 %s\n", width, node->name);
+        error_message(NETLIST, node->loc, "tried adding input pins for width %d <= 0 %s\n", width, node->name);
         return;
     }
 
@@ -158,7 +159,7 @@ void allocate_more_output_pins(nnode_t* node, int width) {
     int i;
 
     if (width <= 0) {
-        error_message(NETLIST, -1, -1, "tried adding output pins for width %d <= 0 %s\n", width, node->name);
+        error_message(NETLIST, node->loc, "tried adding output pins for width %d <= 0 %s\n", width, node->name);
         return;
     }
 
@@ -440,17 +441,18 @@ void combine_nets(nnet_t* output_net, nnet_t* input_net, netlist_t* netlist) {
 /*---------------------------------------------------------------------------------------------
  * (function: join_nets)
  * 	Copies the fanouts from input net into net
+ * TODO: improve error message
  *-------------------------------------------------------------------------------------------*/
 void join_nets(nnet_t* join_to_net, nnet_t* other_net) {
     if (join_to_net == other_net) {
         if ((join_to_net->driver_pin) && (join_to_net->driver_pin->node != NULL) && join_to_net->driver_pin->node->related_ast_node != NULL)
-            error_message(NETLIST, join_to_net->driver_pin->node->related_ast_node->line_number, join_to_net->driver_pin->node->related_ast_node->file_number, "%s", "This is a combinational loop\n");
+            error_message(NETLIST, join_to_net->driver_pin->node->loc, "%s", "This is a combinational loop\n");
         else
-            error_message(NETLIST, -1, -1, "%s", "This is a combinational loop\n");
+            error_message(NETLIST, unknown_location, "%s", "This is a combinational loop\n");
         if ((join_to_net->fanout_pins[0] != NULL) && (join_to_net->fanout_pins[0]->node != NULL) && join_to_net->fanout_pins[0]->node->related_ast_node != NULL)
-            error_message(NETLIST, join_to_net->fanout_pins[0]->node->related_ast_node->line_number, join_to_net->fanout_pins[0]->node->related_ast_node->file_number, "%s", "This is a combinational loop with more info\n");
+            error_message(NETLIST, join_to_net->fanout_pins[0]->node->loc, "%s", "This is a combinational loop with more info\n");
         else
-            error_message(NETLIST, -1, -1, "%s", "Same error - This is a combinational loop\n");
+            error_message(NETLIST, unknown_location, "%s", "Same error - This is a combinational loop\n");
     }
 
     /* copy the driver over to the new_net */
@@ -694,7 +696,7 @@ void hookup_input_pins_from_signal_list(nnode_t* node, int n_start_idx, signal_l
             add_input_pin_to_node(node, get_zero_pin(netlist), n_start_idx + i);
 
             if (global_args.all_warnings)
-                warning_message(NETLIST, -1, -1, "padding an input port with 0 for node %s\n", node->name);
+                warning_message(NETLIST, node->loc, "padding an input port with 0 for node %s\n", node->name);
         }
     }
 }
@@ -716,7 +718,7 @@ void hookup_hb_input_pins_from_signal_list(nnode_t* node, int n_start_idx, signa
             add_input_pin_to_node(node, get_pad_pin(netlist), n_start_idx + i);
 
             if (global_args.all_warnings)
-                warning_message(NETLIST, -1, -1, "padding an input port with HB_PAD for node %s\n", node->name);
+                warning_message(NETLIST, node->loc, "padding an input port with HB_PAD for node %s\n", node->name);
         }
     }
 }
@@ -737,7 +739,7 @@ void hookup_output_pins_from_signal_list(nnode_t* node, int n_start_idx, signal_
 
         if ((sc_spot_output = sc_lookup_string(output_nets_sc, output_list->pins[ol_start_idx + i]->name)) == -1) {
             /* this output pin does not have a net OR we couldn't find it */
-            error_message(NETLIST, -1, -1, "Net for driver (%s) doesn't exist for node %s\n", output_list->pins[ol_start_idx + i]->name, node->name);
+            error_message(NETLIST, node->loc, "Net for driver (%s) doesn't exist for node %s\n", output_list->pins[ol_start_idx + i]->name, node->name);
         }
 
         /* hook the outpin into the net */
@@ -873,7 +875,7 @@ void add_node_to_netlist(netlist_t* netlist, nnode_t* node, operation_list speci
         /* add the node to the list */
         sc_spot = sc_add_string(netlist->nodes_sc, node->name);
         if (netlist->nodes_sc->data[sc_spot] != NULL) {
-            error_message(NETLIST, file_line_number, -1, "Two nodes with the same name (%s)\n", node->name);
+            error_message(NETLIST, node->loc, "Two nodes with the same name (%s)\n", node->name);
         }
         netlist->nodes_sc->data[sc_spot] = (void*)node;
     }
@@ -916,7 +918,7 @@ void mark_clock_node(
 
     /* lookup the node */
     if ((sc_spot = sc_lookup_string(netlist->nets_sc, clock_name)) == -1) {
-        error_message(NETLIST, file_line_number, -1, "clock input does not exist (%s)\n", clock_name);
+        error_message(NETLIST, unknown_location, "clock input does not exist (%s)\n", clock_name);
     }
     clock_net = (nnet_t*)netlist->nets_sc->data[sc_spot];
     clock_node = clock_net->driver_pin->node;
