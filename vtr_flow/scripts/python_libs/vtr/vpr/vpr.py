@@ -13,8 +13,8 @@ def run_relax_W(architecture, circuit_name, circuit, command_runner=CommandRunne
 
       2nd: At relaxed channel width (e.g. for critical path delay)
     
-    To run:
-        vtr.vpr.run_relax_W(args)
+    Usage:
+        vtr.vpr.run_relax_W(<architecture_file>,<circuit_name>,<circuit_file>,[OPTIONS])
 
     Required arguments:
         architecture: Architecture file

@@ -11,8 +11,8 @@ def run(architecture_file, circuit_file,
     """
     Runs ABC to optimize specified file.
 
-    To run:
-        vtr.abc.run(args)
+    Usage:
+        vtr.abc.run(<architecture_file>,<circuit_file>,<output_netlist>,[OPTIONS])
 
     Required arguments:
         architecture_file : Architecture file to target
@@ -30,9 +30,9 @@ def run(architecture_file, circuit_file,
         
         abc_exec : ABC executable to be run
         
-        abc_script : the script to be run on abc
+        abc_script : The script to be run on abc
         
-        abc_rc : the ABC rc file
+        abc_rc : The ABC rc file
         
         use_old_abc_script : Enables the use of the old ABC script
         

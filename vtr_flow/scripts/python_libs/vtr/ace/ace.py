@@ -6,8 +6,8 @@ def run(circuit_file, old_netlist, output_netlist, output_activity_file,
     """
     Runs ACE for activity estimation 
 
-    To run:
-        vtr.ace.run(args)
+    Usage:
+        vtr.ace.run(<circuit_file>,<output_netlist>,<output_activity_file>,[OPTIONS])
 
     Required arguments:
         circuit_file : Circuit file to optimize

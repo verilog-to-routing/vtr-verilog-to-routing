@@ -15,7 +15,6 @@ def run(architecture_file, circuit_file,
                  power_tech_file=None,
                  start_stage=VTR_STAGE.odin, end_stage=VTR_STAGE.vpr, 
                  command_runner=vtr.CommandRunner(), 
-                 parse_config_file=None,
                  temp_dir="./temp", 
                  verbosity=0,
                  odin_args=None,
@@ -32,8 +31,8 @@ def run(architecture_file, circuit_file,
     """
     Runs the VTR CAD flow to map the specified circuit_file onto the target architecture_file
 
-    To run:
-        vtr.run(args)
+    Usage:
+        vtr.run(<architecture_file>,<circuit_file>,[OPTIONS])
 
     Required arguments:
         architecture_file : Architecture file to target
@@ -50,8 +49,6 @@ def run(architecture_file, circuit_file,
         temp_dir         : Directory to run in (created if non-existent)
         
         command_runner   : A CommandRunner object used to run system commands
-        
-        parse_config_file : The configuration file defining how to parse metrics from results
         
         verbosity        : How much output to produce
         
@@ -259,57 +256,6 @@ def run(architecture_file, circuit_file,
 
         if power_tech_file:
             post_ace_activity_file.unlink()
-
-def parse_vtr_flow(temp_dir, parse_config_file=None, metrics_filepath=None, verbosity=1):
-    vtr.mkdir_p(temp_dir)
-    if parse_config_file is None:
-        parse_config_file = vtr.find_vtr_file("vtr_benchmarks.txt")
-
-    parse_patterns = vtr.load_parse_patterns(parse_config_file) 
-
-    metrics = OrderedDict()
-
-    #Set defaults
-    for parse_pattern in parse_patterns.values():
-
-        if parse_pattern.default_value() != None:
-            metrics[parse_pattern.name()] = parse_pattern.default_value()
-        else:
-            metrics[parse_pattern.name()] = ""
-
-    #Process each pattern
-    for parse_pattern in parse_patterns.values():
-
-        #We interpret the parse pattern's filename as a glob pattern
-        filepattern = str(Path(temp_dir)  / parse_pattern.filename())
-        filepaths = glob.glob(filepattern)
-
-        num_files = len(filepaths)
-
-        if num_files > 1:
-            raise vtr.InspectError("File pattern '{}' is ambiguous ({} files matched)".format(parse_pattern.filename()), num_files, filepaths)
-
-        elif num_files == 1:
-            filepath = filepaths[0]
-
-            assert Path(filepath).exists
-
-            with open(filepath) as f:
-                for line in f:
-                    match = parse_pattern.regex().match(line)
-                    if match:
-                        #Extract the first group value
-                        metrics[parse_pattern.name()] = match.groups()[0]
-        else:
-            #No matching file, skip
-            assert num_files == 0
-
-    if metrics_filepath is None:
-        metrics_filepath = str(Path(temp_dir)  / "parse_results.txt")
-
-    vtr.write_tab_delimitted_csv(metrics_filepath, [metrics])
-
-    return metrics
 
 def should_run_stage(stage, flow_start_stage, flow_end_stage):
     """

@@ -15,8 +15,8 @@ def run(architecture_file, circuit_file,
     """
     Runs ODIN II on the specified architecture file and circuit file
 
-    To run:
-        vtr.odin.run(args)
+    Usage:
+        vtr.odin.run(<architecture_file>,<circuit_file>,<output_netlist>,[OPTIONS])
 
     Required arguments:
         architecture_file : Architecture file to target

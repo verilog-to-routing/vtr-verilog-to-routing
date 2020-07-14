@@ -133,16 +133,6 @@ def vtr_command_argparser(prog=None):
                         dest="verbose",
                         help="Verbosity of the script.")
 
-    parser.add_argument("--parse_config_file",
-                        default=None,
-                        help="Parse file to run after flow completion")
-
-    parser.add_argument("--parse",
-                        default=False,
-                        action="store_true",
-                        dest="parse_only",
-                        help="Perform only parsing (assumes a previous run exists in work_dir)")
-
 
     #
     # Power arguments
@@ -363,122 +353,110 @@ def vtr_command_main(arg_list, prog=None):
 
     if(args.use_odin_simulation):
         odin_args["use_odin_simulation"] = True
-    
-
     try:
-        if not args.parse_only:
-            try:
-                vpr_args = process_unknown_args(unknown_args)
-                if(args.crit_path_router_iterations):
-                    vpr_args["max_router_iterations"] = args.crit_path_router_iterations
-                if(args.fix_pins):
-                    new_file = str(Path(temp_dir) / Path(args.fix_pins).name)
-                    shutil.copyfile(str((Path(prog).parent.parent / args.fix_pins)), new_file)
-                    vpr_args["fix_pins"] = new_file
-                if args.verify_rr_graph:
-                    rr_graph_out_file = "rr_graph" + args.rr_graph_ext
-                    vpr_args["write_rr_graph"] = rr_graph_out_file
-                if args.check_place:
-                    vpr_args["route"] = True
-                if args.check_route:
-                    vpr_args["analysis"] = True
-                if args.sdc_file:
-                    if not Path(args.sdc_file).exists():
-                        sdc_file = None
-                        if args.sdc_file.startswith("/"):
-                            sdc_file = Path(str(Path(prog).parent.parent) + args.sdc_file)
-                        else:
-                            sdc_file = Path(prog).parent.parent / args.sdc_file
-
-                        if sdc_file.exists():
-                            args.sdc_file = str(sdc_file)
-                        else:
-                            raise vtr.InspectError("Sdc file {arg},{sdc} was not found.".format(arg=args.sdc_file,sdc=str(sdc_file)))
-                    vpr_args["sdc_file"] = args.sdc_file
-
-                name = ""
-                if(args.name):
-                    name=args.name
+        vpr_args = process_unknown_args(unknown_args)
+        if(args.crit_path_router_iterations):
+            vpr_args["max_router_iterations"] = args.crit_path_router_iterations
+        if(args.fix_pins):
+            new_file = str(Path(temp_dir) / Path(args.fix_pins).name)
+            shutil.copyfile(str((Path(prog).parent.parent / args.fix_pins)), new_file)
+            vpr_args["fix_pins"] = new_file
+        if args.verify_rr_graph:
+            rr_graph_out_file = "rr_graph" + args.rr_graph_ext
+            vpr_args["write_rr_graph"] = rr_graph_out_file
+        if args.check_place:
+            vpr_args["route"] = True
+        if args.check_route:
+            vpr_args["analysis"] = True
+        if args.sdc_file:
+            if not Path(args.sdc_file).exists():
+                sdc_file = None
+                if args.sdc_file.startswith("/"):
+                    sdc_file = Path(str(Path(prog).parent.parent) + args.sdc_file)
                 else:
-                    name=path_arch_file.name+"/"+path_circuit_file.name
-                print(name, end ="\t\t")
-                #Run the flow
-                vtr.run(path_arch_file, 
-                             path_circuit_file, 
-                             power_tech_file=args.power_tech,
-                             temp_dir=temp_dir,
-                             start_stage=args.start, 
-                             end_stage=args.end,
-                             command_runner=command_runner,
-                             verbosity=args.verbose,
-                             vpr_args=vpr_args,
-                             abc_args=abc_args,
-                             odin_args=odin_args,
-                             keep_intermediate_files=args.keep_intermediate_files,
-                             keep_result_files=args.keep_result_files,
-                             min_hard_mult_size=args.min_hard_mult_size,
-                             min_hard_adder_size = args.min_hard_adder_size,
-                             check_equivalent = args.check_equivalent,
-                             check_incremental_sta_consistency = args.check_incremental_sta_consistency,
-                             use_old_abc_script=args.use_old_abc_script,
-                             relax_W_factor=args.relax_W_factor
-                             )
-                error_status = "OK"
-            except vtr.CommandError as e:
-                #An external command failed
-                return_status = 1
-                if args.expect_fail:
-                    expect_string = args.expect_fail
-                    actual_error = None
-                    if "exited with return code" in expect_string:
-                        actual_error = "exited with return code {}".format(e.returncode)
-                    else:
-                        actual_error = e.msg
-                    if expect_string != actual_error:
-                        error_status = "failed: expected to fail with '{expected}' but was '{actual}'".format(expected=expect_string,actual = actual_error)
-                        exit_status = 1
-                    else:
-                        error_status = "OK"
-                        return_status = 0
-                        if args.verbose:
-                            error_status += " (as expected {})".format(expect_string)
-                        else:
-                            error_status += "*"
+                    sdc_file = Path(prog).parent.parent / args.sdc_file
+
+                if sdc_file.exists():
+                    args.sdc_file = str(sdc_file)
                 else:
-                    error_status = "failed: {}".format(e.msg)
-                if not args.expect_fail or exit_status:
-                    print ("Error: {msg}".format(msg=e.msg))
-                    print ("\tfull command: ", ' '.join(e.cmd))
-                    print ("\treturncode  : ", e.returncode)
-                    print ("\tlog file    : ", e.log)
+                    raise vtr.InspectError("Sdc file {arg},{sdc} was not found.".format(arg=args.sdc_file,sdc=str(sdc_file)))
+            vpr_args["sdc_file"] = args.sdc_file
+
+        name = ""
+        if(args.name):
+            name=args.name
+        else:
+            name=path_arch_file.name+"/"+path_circuit_file.name
+        print(name, end ="\t\t")
+        #Run the flow
+        vtr.run(path_arch_file, 
+                        path_circuit_file, 
+                        power_tech_file=args.power_tech,
+                        temp_dir=temp_dir,
+                        start_stage=args.start, 
+                        end_stage=args.end,
+                        command_runner=command_runner,
+                        verbosity=args.verbose,
+                        vpr_args=vpr_args,
+                        abc_args=abc_args,
+                        odin_args=odin_args,
+                        keep_intermediate_files=args.keep_intermediate_files,
+                        keep_result_files=args.keep_result_files,
+                        min_hard_mult_size=args.min_hard_mult_size,
+                        min_hard_adder_size = args.min_hard_adder_size,
+                        check_equivalent = args.check_equivalent,
+                        check_incremental_sta_consistency = args.check_incremental_sta_consistency,
+                        use_old_abc_script=args.use_old_abc_script,
+                        relax_W_factor=args.relax_W_factor
+                        )
+        error_status = "OK"
+    except vtr.CommandError as e:
+        #An external command failed
+        return_status = 1
+        if args.expect_fail:
+            expect_string = args.expect_fail
+            actual_error = None
+            if "exited with return code" in expect_string:
+                actual_error = "exited with return code {}".format(e.returncode)
+            else:
+                actual_error = e.msg
+            if expect_string != actual_error:
+                error_status = "failed: expected to fail with '{expected}' but was '{actual}'".format(expected=expect_string,actual = actual_error)
                 exit_status = 1
-            except vtr.InspectError as e:
-                #Something went wrong gathering information
-                print ("Error: {msg}".format(msg=e.msg))
-                print ("\tfile        : ", e.filename)
-                exit_status = 2
-                return_status = exit_status
-                error_status = "failed: {}".format(e.msg)
-
-            except vtr.VtrError as e:
-                #Generic VTR errors
-                print ("Error: ", e.msg)
-                exit_status = 3
-                return_status = exit_status
-                error_status = "failed: {}".format(e.msg)
-
-            except KeyboardInterrupt as e:
-                print ("{} recieved keyboard interrupt".format(prog))
-                exit_status = 4
-                return_status = exit_status
-
-        #Parse the flow results
-        try:
-            vtr.parse_vtr_flow(temp_dir, args.parse_config_file, verbosity=args.verbose)
-        except vtr.InspectError as e:
+            else:
+                error_status = "OK"
+                return_status = 0
+                if args.verbose:
+                    error_status += " (as expected {})".format(expect_string)
+                else:
+                    error_status += "*"
+        else:
+            error_status = "failed: {}".format(e.msg)
+        if not args.expect_fail or exit_status:
             print ("Error: {msg}".format(msg=e.msg))
-            print ("\tfile        : ", e.filename)
-            exit_status = 2
+            print ("\tfull command: ", ' '.join(e.cmd))
+            print ("\treturncode  : ", e.returncode)
+            print ("\tlog file    : ", e.log)
+        exit_status = 1
+    except vtr.InspectError as e:
+        #Something went wrong gathering information
+        print ("Error: {msg}".format(msg=e.msg))
+        print ("\tfile        : ", e.filename)
+        exit_status = 2
+        return_status = exit_status
+        error_status = "failed: {}".format(e.msg)
+
+    except vtr.VtrError as e:
+        #Generic VTR errors
+        print ("Error: ", e.msg)
+        exit_status = 3
+        return_status = exit_status
+        error_status = "failed: {}".format(e.msg)
+
+    except KeyboardInterrupt as e:
+        print ("{} recieved keyboard interrupt".format(prog))
+        exit_status = 4
+        return_status = exit_status
 
     finally:
         seconds = datetime.now() - start
@@ -494,7 +472,7 @@ def vtr_command_main(arg_list, prog=None):
                 f.write("exited with return code {}\n".format(exit_status))
             f.write("vpr_seconds=%d\nrundir=%s\nhostname=%s\nerror=" % (seconds.total_seconds(), str(Path.cwd()), socket.gethostname()))
             f.write("\n")
-        
+    
     sys.exit(return_status)
 
 def process_unknown_args(unknown_args):
