@@ -92,7 +92,7 @@ def run(architecture_file, circuit_file,
             cmd += ["--" + arg, str(value)]
     cmd += ["-U0"]
     if(disable_odin_xml):
-        cmd += ["-a",architecture_file.name, "-V", circuit_file.name, "-o",output_netlist.name])
+        cmd += ["-a",architecture_file.name, "-V", circuit_file.name, "-o",output_netlist.name]
 
     command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename=log_filename, indent_depth=1)
 
