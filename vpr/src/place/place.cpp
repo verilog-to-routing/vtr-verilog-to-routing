@@ -2989,7 +2989,7 @@ void print_place_statisitics(const float &t, const std::vector<int> & num_moves,
     fprintf(f_, ", %d", temp_nums);
     for(size_t i =0; i < num_moves.size(); i++){
         fprintf(f_,", %d",num_moves[i]);
-        if(num_moves[0] == 0)
+        if(num_moves[i] == 0)
                 fprintf(f_,", 0" );
         else
             fprintf(f_,", %f",100.0*accepted_moves[i]/float(num_moves[i]));

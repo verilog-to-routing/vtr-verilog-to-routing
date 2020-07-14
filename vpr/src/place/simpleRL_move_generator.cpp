@@ -5,6 +5,7 @@
 
 #include "vtr_random.h"
 
+float my_exp (float );
 
 //EpsilonGreedyAgent member functions
 EpsilonGreedyAgent::EpsilonGreedyAgent(size_t k, float epsilon) {
