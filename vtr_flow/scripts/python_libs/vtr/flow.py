@@ -90,10 +90,10 @@ def run(architecture_file, circuit_file,
     #
 
     #Verify that files are Paths or convert them to Paths and check that they exist
-    vtr.util.verify_file(architecture_file, "Architecture")
-    vtr.util.verify_file(circuit_file, "Circuit")
-    if(power_tech_file):
-        vtr.util.verify_file(power_tech_file, "Power tech")
+    architecture_file = vtr.util.verify_file(architecture_file, "Architecture")
+    circuit_file = vtr.util.verify_file(circuit_file, "Circuit")
+    if power_tech_file != None:
+        power_tech_file = vtr.util.verify_file(power_tech_file, "Power tech")
     
     architecture_file_basename =architecture_file.name
     circuit_file_basename = circuit_file.name
@@ -175,8 +175,6 @@ def run(architecture_file, circuit_file,
     #
     if power_tech_file:
         #The user provided a tech file, so do power analysis
-
-        verify_file(power_tech_file, "power tech file")
 
         if should_run_stage(VTR_STAGE.ace, start_stage, end_stage):
             vtr.ace.run(next_stage_netlist, old_netlist = post_odin_netlist, output_netlist=post_ace_netlist, 

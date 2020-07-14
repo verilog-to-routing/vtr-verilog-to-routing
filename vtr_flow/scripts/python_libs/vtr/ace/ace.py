@@ -31,10 +31,10 @@ def run(circuit_file, old_netlist, output_netlist, output_activity_file,
     """
 
     #Verify that files are Paths or convert them to Paths and check that they exist
-    verify_file(circuit_file, "Circuit")
-    verify_file(old_netlist, "Previous netlist")
-    verify_file(output_netlist, "Output netlist", should_exist=False)
-    verify_file(output_activity_file, "Output activity", should_exist=False)
+    circuit_file = verify_file(circuit_file, "Circuit")
+    old_netlist = verify_file(old_netlist, "Previous netlist")
+    output_netlist = verify_file(output_netlist, "Output netlist", should_exist=False)
+    output_activity_file = verify_file(output_activity_file, "Output activity", should_exist=False)
 
     ace_clk_file = Path(temp_dir) / "ace_clk.txt"
     ace_raw = Path(temp_dir) / (circuit_file.with_suffix('').stem + ".raw.ace.blif")

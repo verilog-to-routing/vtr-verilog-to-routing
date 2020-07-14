@@ -47,9 +47,9 @@ def run(architecture_file, circuit_file,
         abc_args = OrderedDict()
 
     #Verify that files are Paths or convert them to Paths and check that they exist
-    verify_file(architecture_file, "Architecture")
-    verify_file(circuit_file, "Circuit")
-    verify_file(output_netlist, "Output netlist", should_exist=False)
+    architecture_file = verify_file(architecture_file, "Architecture")
+    circuit_file = verify_file(circuit_file, "Circuit")
+    output_netlist = verify_file(output_netlist, "Output netlist", should_exist=False)
         
     blackbox_latches_script = find_vtr_file("blackbox_latches.pl")
     clk_list = []

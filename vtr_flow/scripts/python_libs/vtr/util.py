@@ -432,9 +432,10 @@ def verify_file(file, file_type,should_exist=True):
     """
     if(not isinstance(file,Path)):
         file = Path(file)
-
     if(should_exist and not file.is_file()):
         raise Exception("{file_type} file does not exist: {file} ".format(file_type = file_type, file=file))
+
+    return file
     
 def format_elapsed_time(time_delta):
     return "%.2f seconds" % time_delta.total_seconds()

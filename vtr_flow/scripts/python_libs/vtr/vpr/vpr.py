@@ -45,9 +45,9 @@ def run_relax_W(architecture, circuit_name, circuit, command_runner=CommandRunne
     mkdir_p(temp_dir)
 
     #Verify that files are Paths or convert them to Paths and check that they exist
-    verify_file(architecture, "Architecture")
-    verify_file(circuit_name, "Circuit")
-    verify_file(circuit, "Circuit")
+    architecture = verify_file(architecture, "Architecture")
+    circuit_name = verify_file(circuit_name, "Circuit")
+    circuit = verify_file(circuit, "Circuit")
 
     vpr_min_W_log = '.'.join([logfile_base, "out"])
     vpr_relaxed_W_log = '.'.join([logfile_base, "crit_path", "out"])
@@ -130,9 +130,9 @@ def run(architecture, circuit_name, circuit, command_runner=CommandRunner(), tem
         vpr_exec = find_vtr_file('vpr', is_executable=True)
 
     #Verify that files are Paths or convert them to Paths and check that they exist
-    verify_file(architecture, "Architecture")
-    verify_file(circuit_name, "Circuit")
-    verify_file(circuit, "Circuit")
+    architecture = verify_file(architecture, "Architecture")
+    circuit_name = verify_file(circuit_name, "Circuit")
+    circuit = verify_file(circuit, "Circuit")
 
     cmd = [vpr_exec, architecture.name, circuit_name.stem, "--circuit_file", circuit.name]
 
@@ -226,9 +226,9 @@ def cmp_full_vs_incr_STA(architecture,circuit_name,circuit,command_runner=Comman
     """
 
     #Verify that files are Paths or convert them to Paths and check that they exist
-    verify_file(architecture, "Architecture")
-    verify_file(circuit_name, "Circuit")
-    verify_file(circuit, "Circuit")
+    architecture = verify_file(architecture, "Architecture")
+    circuit_name = verify_file(circuit_name, "Circuit")
+    circuit = verify_file(circuit, "Circuit")
 
     default_output_filenames = [
             "{}.net".format(circuit_name.stem),
