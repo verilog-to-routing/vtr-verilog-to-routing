@@ -8,17 +8,19 @@
 // how to void remap_input_pin_to_new_node(nnode_t *from_node, int from_node_pin, nnode_t *to_node, int to_node_pin)
 //	remap_int_to_new_node(from_node->input_pins[from_node_pin], to_node, to_node_pin);
 //
-nnode_t* allocate_nnode();
+nnode_t* allocate_nnode(loc_t loc);
 npin_t* allocate_npin();
+nnet_t* allocate_nnet();
+
+nnode_t* free_nnode(nnode_t* to_free);
+npin_t* free_npin(npin_t* to_free);
+nnet_t* free_nnet(nnet_t* to_free);
+
 npin_t* get_zero_pin(netlist_t* netlist);
 npin_t* get_pad_pin(netlist_t* netlist);
 npin_t* get_one_pin(netlist_t* netlist);
 npin_t* copy_input_npin(npin_t* copy_pin);
 npin_t* copy_output_npin(npin_t* copy_pin);
-nnet_t* allocate_nnet();
-nnode_t* free_nnode(nnode_t* to_free);
-npin_t* free_npin(npin_t* to_free);
-nnet_t* free_nnet(nnet_t* to_free);
 
 void allocate_more_input_pins(nnode_t* node, int width);
 void allocate_more_output_pins(nnode_t* node, int width);

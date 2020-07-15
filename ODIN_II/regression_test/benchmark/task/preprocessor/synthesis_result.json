@@ -70,7 +70,7 @@
         "verilog": "ifdef_undefined.v",
         "warnings": [
             "NETLIST ifdef_undefined.v:4 This output is undriven (simple_op^out) and will be removed",
-            "NETLIST Net simple_op^out driving node simple_op^out is itself undriven."
+            "NETLIST ifdef_undefined.v:4 Net simple_op^out driving node simple_op^out is itself undriven."
         ],
         "expectation": [
             "UNDEFINED_IFDEF this test is expected to pass, if it fails the `ifdef is not functioning properly or the output pin is being dropped."
@@ -87,7 +87,7 @@
         "verilog": "ifndef_defined.v",
         "warnings": [
             "NETLIST ifndef_defined.v:3 This output is undriven (simple_op^out) and will be removed",
-            "NETLIST Net simple_op^out driving node simple_op^out is itself undriven."
+            "NETLIST ifndef_defined.v:3 Net simple_op^out driving node simple_op^out is itself undriven."
         ],
         "expectation": [
             "DEFINED_IFNDEF this test is expected to pass, if it fails the `ifndef is not functioning properly or output pin is being dropped."
