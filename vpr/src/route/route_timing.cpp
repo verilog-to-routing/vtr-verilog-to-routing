@@ -719,9 +719,9 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
                 budgeting_inf.load_route_budgets(net_delay, timing_info, netlist_pin_lookup, router_opts);
                 
                 /*for debugging purposes*/
-                   if (budgeting_inf.if_set()) {
-                       budgeting_inf.print_route_budget(std::string("route_budgets_") + std::to_string(itry) + ".txt");
-                   }
+                if (budgeting_inf.if_set()) {
+                    budgeting_inf.print_route_budget(std::string("route_budgets_") + std::to_string(itry) + ".txt");
+                }
 
             } else {
                 bool stable_routing_configuration = true;
@@ -2047,12 +2047,12 @@ bool should_setup_lower_bound_connection_delays(int itry, const t_router_opts& r
     //This function checks the iteration number to see if is neccessary to setup the lower bound connection delays for future comparison.
     //When VPR is normally run with the budgeting algorithm turned off, it the lower bound connection delays are set on the first iteration.
     //However, with the yoyo algorithm, the lower bound is set every after every 5 iterations, so long as it is below 25.
-    // if (router_opts.routing_budgets_algorithm != YOYO && itry == 1) {
-    //     return true;
-    // } else if (router_opts.routing_budgets_algorithm == YOYO && itry % 5 == 1 && itry < 25) {
-    //     return true;
-    // }
-    if(itry == 1) return true;
+    if (router_opts.routing_budgets_algorithm != YOYO && itry == 1) {
+        return true;
+    } else if (router_opts.routing_budgets_algorithm == YOYO && itry % 5 == 1 && itry < 25) {
+        return true;
+    }
+    // if(itry == 1) return true;
 
     return false;
 }

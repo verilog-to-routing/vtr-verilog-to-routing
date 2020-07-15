@@ -564,7 +564,9 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
                                                        bool run_rcv) {
     t_heap next;
     
-    if (run_rcv) next.path_data = new t_heap_path;
+    if (run_rcv) {
+        next.path_data = new t_heap_path;
+    }
 
     //Costs initialized to current
     next.cost = std::numeric_limits<float>::infinity(); //Not used directly
@@ -624,6 +626,9 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
 
         heap_.add_to_heap(next_ptr);
         ++router_stats_->heap_pushes;
+    }
+    if (run_rcv) {
+        delete next.path_data;
     }
 }
 

@@ -78,11 +78,6 @@ HeapStorage::alloc(bool init_data_structs) {
 }
 
 void HeapStorage::free(t_heap* hptr) {
-    if (hptr->path_data != nullptr) {
-        delete hptr->path_data;
-        hptr->path_data = nullptr;
-    }
-
     hptr->set_next_heap_item(heap_free_head_);
     heap_free_head_ = hptr;
     num_heap_allocated_--;
