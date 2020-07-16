@@ -133,7 +133,8 @@ ast_node_t* finalize_ast(ast_node_t* node, ast_node_t* parent, sc_hierarchy* loc
 ast_node_t* reduce_expressions(ast_node_t* node, sc_hierarchy* local_ref, long* max_size, long assignment_size);
 
 void update_string_caches(sc_hierarchy* local_ref);
-void update_instance_parameter_table(ast_node_t* instance, STRING_CACHE* instance_param_table_sc);
+void update_instance_parameter_table_direct_instances(ast_node_t* instance, STRING_CACHE* instance_param_table_sc);
+void update_instance_parameter_table_defparams(ast_node_t* instance, STRING_CACHE* instance_param_table_sc);
 void override_parameters_for_all_instances(ast_node_t* module, sc_hierarchy* local_ref);
 
 void convert_2D_to_1D_array(ast_node_t** var_declare);
@@ -959,7 +960,8 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
                     if (data->pass == 2) {
                         /* make sure parameters are updated */
                         /* TODO apply remaining defparams and check for conflicts */
-                        update_instance_parameter_table(temp_instance, module_sc_hierarchy->local_param_table_sc);
+                        update_instance_parameter_table_direct_instances(temp_instance, module_sc_hierarchy->local_param_table_sc);
+                        update_instance_parameter_table_defparams(temp_instance, module_sc_hierarchy->local_param_table_sc);
                     }
                     instance = build_hierarchy(instance, NULL, -1, module_sc_hierarchy, true, true, data);
 
@@ -1475,7 +1477,8 @@ ast_node_t* finalize_ast(ast_node_t* node, ast_node_t* parent, sc_hierarchy* loc
 
                     /* update the parameter table for the instantiated module */
                     STRING_CACHE* instance_param_table_sc = module_sc_hierarchy->local_param_table_sc;
-                    update_instance_parameter_table(temp_instance, instance_param_table_sc);
+                    update_instance_parameter_table_direct_instances(temp_instance, instance_param_table_sc);
+                    update_instance_parameter_table_defparams(temp_instance, instance_param_table_sc);
 
                     /* elaboration */
                     update_string_caches(module_sc_hierarchy);
@@ -1506,7 +1509,8 @@ ast_node_t* finalize_ast(ast_node_t* node, ast_node_t* parent, sc_hierarchy* loc
 
                     /* update the parameter table for the instantiated module */
                     STRING_CACHE* instance_param_table_sc = function_sc_hierarchy->local_param_table_sc;
-                    update_instance_parameter_table(temp_instance, instance_param_table_sc);
+                    update_instance_parameter_table_direct_instances(temp_instance, instance_param_table_sc);
+                    update_instance_parameter_table_defparams(temp_instance, instance_param_table_sc);
 
                     /* elaboration */
                     update_string_caches(function_sc_hierarchy);
@@ -1538,7 +1542,8 @@ ast_node_t* finalize_ast(ast_node_t* node, ast_node_t* parent, sc_hierarchy* loc
 
                     /* update the parameter table for the instantiated module */
                     STRING_CACHE* instance_param_table_sc = task_sc_hierarchy->local_param_table_sc;
-                    update_instance_parameter_table(temp_instance, instance_param_table_sc);
+                    update_instance_parameter_table_direct_instances(temp_instance, instance_param_table_sc);
+                    update_instance_parameter_table_defparams(temp_instance, instance_param_table_sc);
 
                     /* elaboration */
                     update_string_caches(task_sc_hierarchy);
@@ -2157,7 +2162,7 @@ void update_string_caches(sc_hierarchy* local_ref) {
     }
 }
 
-void update_instance_parameter_table(ast_node_t* instance, STRING_CACHE* instance_param_table_sc) {
+void update_instance_parameter_table_direct_instances(ast_node_t* instance, STRING_CACHE* instance_param_table_sc) {
     if (instance->children[1]->children[2] && instance->children[1]->children[2]->num_children > 0) {
         long sc_spot;
         ast_node_t* parameter_override_list = instance->children[1]->children[2];
@@ -2206,6 +2211,13 @@ void update_instance_parameter_table(ast_node_t* instance, STRING_CACHE* instanc
                           "There are more parameters (%d) passed into %s than there are specified in the module (%ld)!",
                           param_count, instance->children[1]->children[0]->types.identifier, instance_param_table_sc->free);
         }
+    }
+}
+
+void update_instance_parameter_table_defparams(ast_node_t* instance, STRING_CACHE* instance_param_table_sc) {
+    if (instance->children[1]->children[2] && instance->children[1]->children[2]->num_children > 0) {
+        long sc_spot;
+        ast_node_t* parameter_override_list = instance->children[1]->children[2];
 
         /* fill out the overrides */
         for (int j = (parameter_override_list->num_children - 1); j >= 0; j--) {
@@ -2273,8 +2285,8 @@ void override_parameters_for_all_instances(ast_node_t* module, sc_hierarchy* loc
 
         /* update the parameter table for the instantiated module */
         STRING_CACHE* instance_param_table_sc = module_sc_hierarchy->local_param_table_sc;
-        update_instance_parameter_table(temp_instance, instance_param_table_sc);
-
+        update_instance_parameter_table_direct_instances(temp_instance, instance_param_table_sc);
+        update_instance_parameter_table_defparams(temp_instance, instance_param_table_sc);
         /* go through this instance's children */
         override_parameters_for_all_instances(instance, module_sc_hierarchy);
     }
