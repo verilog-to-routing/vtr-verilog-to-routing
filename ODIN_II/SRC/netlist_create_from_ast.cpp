@@ -56,6 +56,7 @@
 
 #define INSTANTIATE_DRIVERS 1
 #define ALIAS_INPUTS 2
+#define RECURSIVE_LIMIT 256
 
 STRING_CACHE* output_nets_sc;
 STRING_CACHE* input_nets_sc;
@@ -84,6 +85,8 @@ void create_top_driver_nets(ast_node_t* module, char* instance_name_prefix, sc_h
 void create_top_output_nodes(ast_node_t* module, char* instance_name_prefix, sc_hierarchy* local_ref);
 nnet_t* define_nets_with_driver(ast_node_t* var_declare, char* instance_name_prefix);
 nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char* instance_name_prefix);
+ast_node_t* resolve_top_module_parameters(ast_node_t* node, sc_hierarchy* top_sc_list);
+ast_node_t* resolve_top_parameters_defined_by_parameters(ast_node_t* node, sc_hierarchy* top_sc_list, int count);
 
 void connect_hard_block_and_alias(ast_node_t* hb_instance, char* instance_name_prefix, int outport_size, sc_hierarchy* local_ref);
 void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_instance, char* instance_name_prefix, sc_hierarchy* local_ref);
@@ -175,6 +178,7 @@ void create_netlist(ast_t* ast) {
         top_sc_list->scope_id = vtr::strdup(top_module->children[0]->types.identifier);
         verilog_netlist->identifier = vtr::strdup(top_module->children[0]->types.identifier);
         /* elaboration */
+        resolve_top_module_parameters(top_module, top_sc_list);
         simplify_ast_module(&top_module, top_sc_list);
 
         /* now recursively parse the modules by going through the tree of modules starting at top */
@@ -5143,4 +5147,70 @@ void reorder_connections_from_name(ast_node_t* instance_node_list, ast_node_t* i
     }
 
     delete[] arr_index;
+}
+/*--------------------------------------------------------------------------
+ * Resolves top module parameters and defparams defined by it's own parameters as those parameters cannot be overriden
+ * Technically the top module parameters can be overriden by defparams in a seperate module however that cannot be supported until
+ * Odin has full hierarchy support. Even Quartus doesn't allow defparams to override the top module parameters but the Verilog Standard 2005
+ * doesn't say its not allowed. It's not good practice to override top module parameters and Odin could choose not to allow it.
+ *-------------------------------------------------------------------------*/
+
+ast_node_t* resolve_top_module_parameters(ast_node_t* node, sc_hierarchy* top_sc_list) {
+    if (node->type == MODULE_PARAMETER) {
+        ast_node_t* child = node->children[5];
+        if (child->type != NUMBERS) {
+            node->children[5] = resolve_top_parameters_defined_by_parameters(child, top_sc_list, 0);
+        }
+        return (node);
+    }
+
+    int i = 0;
+
+    while (node->num_children > i) {
+        ast_node_t* new_child = node->children[i];
+        if (new_child != NULL) {
+            node->children[i] = resolve_top_module_parameters(new_child, top_sc_list);
+        }
+        i++;
+    }
+    return (node);
+}
+
+ast_node_t* resolve_top_parameters_defined_by_parameters(ast_node_t* node, sc_hierarchy* top_sc_list, int count) {
+    STRING_CACHE* local_param_table_sc = top_sc_list->local_param_table_sc;
+    STRING_CACHE* local_symbol_table_sc = top_sc_list->local_symbol_table_sc;
+
+    count++;
+
+    if (count > RECURSIVE_LIMIT) {
+        error_message(NETLIST, node->loc, "Exceeds recursion count limit of %s", RECURSIVE_LIMIT);
+    }
+
+    if (node->type == IDENTIFIERS) {
+        const char* string = node->types.identifier;
+        long sc_spot = sc_lookup_string(local_param_table_sc, string);
+        long sc_spot_symbol = sc_lookup_string(local_symbol_table_sc, string);
+
+        if ((sc_spot == -1) && (sc_spot_symbol == -1)) {
+            error_message(NETLIST, node->loc, "%s is not a valid parameter", string);
+        } else if (sc_spot_symbol != -1) {
+            return (node);
+        } else {
+            ast_node_t* newNode = ast_node_deep_copy((ast_node_t*)local_param_table_sc->data[sc_spot]);
+            if (newNode->type != NUMBERS) {
+                newNode = resolve_top_parameters_defined_by_parameters(newNode, top_sc_list, count);
+            }
+            node = free_whole_tree(node);
+            node = newNode;
+        }
+    }
+    if (node->type == BINARY_OPERATION) {
+        for (int i = 0; i < 2; i++) {
+            ast_node_t* child = node->children[i];
+            if (child->type != NUMBERS) {
+                node->children[i] = resolve_top_parameters_defined_by_parameters(node->children[i], top_sc_list, count);
+            }
+        }
+    }
+    return (node);
 }

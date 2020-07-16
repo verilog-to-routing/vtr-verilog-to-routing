@@ -107,6 +107,17 @@
         "Longest Path": 2,
         "Average Path": 2
     },
+    "defparam/override_same_param_name/no_arch": {
+        "test_name": "defparam/override_same_param_name/no_arch",
+        "verilog": "override_same_param_name.v",
+        "Pi": 10,
+        "Po": 7,
+        "logic element": 5,
+        "Longest Path": 5,
+        "Average Path": 3,
+        "Estimated LUTs": 5,
+        "Total Node": 5
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
