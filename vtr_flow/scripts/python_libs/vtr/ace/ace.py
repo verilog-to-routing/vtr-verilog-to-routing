@@ -6,28 +6,38 @@ def run(circuit_file, old_netlist, output_netlist, output_activity_file,
     """
     Runs ACE for activity estimation 
 
-    Usage:
-        vtr.ace.run(<circuit_file>,<output_netlist>,<output_activity_file>,[OPTIONS])
+    .. note :: Usage: vtr.ace.run(<circuit_file>,<output_netlist>,<output_activity_file>,[OPTIONS])
 
-    Required arguments:
-        circuit_file : Circuit file to optimize
+    Arguments
+    =========
+        circuit_file : 
+            Circuit file to optimize
 
-        old_netlist : netlist to be anylized
+        old_netlist : 
+            netlist to be anylized
         
-        output_netlist : File name to output the resulting circuit to
+        output_netlist : 
+            File name to output the resulting circuit to
 
-        output_activity_file : The output activity file
+        output_activity_file : 
+            The output activity file
     
-    Options:
-        command_runner : A CommandRunner object used to run system commands
+    Other Parameters
+    ----------------
+        command_runner : 
+            A CommandRunner object used to run system commands
         
-        temp_dir : Directory to run in (created if non-existent)
+        temp_dir :  
+            Directory to run in (created if non-existent)
         
-        log_filename : File to log result to
+        log_filename : 
+            File to log result to
         
-        ace_exec : ACE executable to be run
+        ace_exec : 
+            ACE executable to be run
         
-        ace_seed : The ACE seed
+        ace_seed : 
+            The ACE seed
     """
 
     #Verify that files are Paths or convert them to Paths and check that they exist

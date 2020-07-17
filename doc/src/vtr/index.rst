@@ -49,6 +49,7 @@ VTR also includes a set of benchmark designs known to work with the design flow.
    parse_vtr_task
    parse_config
    pass_requirements
+   python_libs/vtr
 
 
 

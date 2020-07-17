@@ -31,48 +31,68 @@ def run(architecture_file, circuit_file,
     """
     Runs the VTR CAD flow to map the specified circuit_file onto the target architecture_file
 
-    Usage:
-        vtr.run(<architecture_file>,<circuit_file>,[OPTIONS])
+    .. note :: Usage: vtr.run(<architecture_file>,<circuit_file>,[OPTIONS])
 
-    Required arguments:
-        architecture_file : Architecture file to target
+    Arguments
+    =========
+        architecture_file : 
+            Architecture file to target
         
-        circuit_file     : Circuit to implement
+        circuit_file     : 
+            Circuit to implement
     
-    Options:
-        power_tech_file  : Technology power file.  Enables power analysis and runs ace
+    Other Parameters
+    ----------------
+        power_tech_file  :  
+            Technology power file.  Enables power analysis and runs ace
         
-        start_stage      : Stage of the flow to start at
+        start_stage      : 
+            Stage of the flow to start at
         
-        end_stage        : Stage of the flow to finish at
+        end_stage        : 
+            Stage of the flow to finish at
         
-        temp_dir         : Directory to run in (created if non-existent)
+        temp_dir         : 
+            Directory to run in (created if non-existent)
         
-        command_runner   : A CommandRunner object used to run system commands
+        command_runner   : 
+            A CommandRunner object used to run system commands
         
-        verbosity        : How much output to produce
+        verbosity        : 
+            How much output to produce
         
-        odin_args        : A dictionary of keyword arguments to pass on to ODIN II 
+        odin_args        : 
+            A dictionary of keyword arguments to pass on to ODIN II 
         
-        abc_args         : A dictionary of keyword arguments to pass on to ABC
+        abc_args         : 
+            A dictionary of keyword arguments to pass on to ABC
         
-        vpr_args         : A dictionary of keyword arguments to pass on to VPR
+        vpr_args         : 
+            A dictionary of keyword arguments to pass on to VPR
         
-        keep_intermediate_files : Determines if intermediate files are kept or deleted
+        keep_intermediate_files : 
+            Determines if intermediate files are kept or deleted
         
-        keep_result_files : Determines if the result files are kept or deleted
+        keep_result_files : 
+            Determines if the result files are kept or deleted
         
-        min_hard_mult_size : Tells ODIN II the minimum multiplier size that should be implemented using hard multiplier (if available)
+        min_hard_mult_size : 
+            Tells ODIN II the minimum multiplier size that should be implemented using hard multiplier (if available)
         
-        min_hard_adder_size : Tells ODIN II the minimum adder size that should be implemented using hard adder (if available).
+        min_hard_adder_size : 
+            Tells ODIN II the minimum adder size that should be implemented using hard adder (if available).
         
-        check_equivalent  : Enables Logical Equivalence Checks
+        check_equivalent  : 
+            Enables Logical Equivalence Checks
         
-        use_old_abc_script : Enables the use of the old ABC script
+        use_old_abc_script : 
+            Enables the use of the old ABC script
         
-        relax_W_factor    : Factor by which to relax minimum channel width for critical path delay routing
+        relax_W_factor    : 
+            Factor by which to relax minimum channel width for critical path delay routing
         
-        check_incremental_sta_consistency :  Do a second-run of the incremental analysis to compare the result files
+        check_incremental_sta_consistency :  
+            Do a second-run of the incremental analysis to compare the result files
         
     """
     if odin_args == None:

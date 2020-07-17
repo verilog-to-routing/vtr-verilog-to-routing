@@ -15,32 +15,44 @@ def run(architecture_file, circuit_file,
     """
     Runs ODIN II on the specified architecture file and circuit file
 
-    Usage:
-        vtr.odin.run(<architecture_file>,<circuit_file>,<output_netlist>,[OPTIONS])
+    .. note :: Usage: vtr.odin.run(<architecture_file>,<circuit_file>,<output_netlist>,[OPTIONS])
 
-    Required arguments:
-        architecture_file : Architecture file to target
+    Arguments
+    =========
+        architecture_file : 
+            Architecture file to target
         
-        circuit_file : Circuit file to optimize
+        circuit_file : 
+            Circuit file to optimize
         
-        output_netlist : File name to output the resulting circuit to
+        output_netlist : 
+            File name to output the resulting circuit to
 
-    Options:
-        command_runner : A CommandRunner object used to run system commands
+    Other Parameters
+    ----------------
+        command_runner : 
+            A CommandRunner object used to run system commands
         
-        temp_dir : Directory to run in (created if non-existent)
+        temp_dir : 
+            Directory to run in (created if non-existent)
         
-        odin_args: A dictionary of keyword arguments to pass on to ODIN II 
+        odin_args: 
+            A dictionary of keyword arguments to pass on to ODIN II 
         
-        log_filename : File to log result to
+        log_filename : 
+            File to log result to
         
-        odin_exec: ODIN II executable to be run
+        odin_exec: 
+            ODIN II executable to be run
         
-        odin_config: The ODIN II configuration file
+        odin_config: 
+            The ODIN II configuration file
         
-        min_hard_mult_size : Tells ODIN II the minimum multiplier size that should be implemented using hard multiplier (if available)
+        min_hard_mult_size : 
+            Tells ODIN II the minimum multiplier size that should be implemented using hard multiplier (if available)
         
-        min_hard_adder_size : Tells ODIN II the minimum adder size that should be implemented using hard adder (if available).
+        min_hard_adder_size : 
+            Tells ODIN II the minimum adder size that should be implemented using hard adder (if available).
         
     """
     mkdir_p(temp_dir)

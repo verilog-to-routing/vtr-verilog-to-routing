@@ -11,34 +11,47 @@ def run(architecture_file, circuit_file,
     """
     Runs ABC to optimize specified file.
 
-    Usage:
-        vtr.abc.run(<architecture_file>,<circuit_file>,<output_netlist>,[OPTIONS])
+    .. note :: Usage: vtr.abc.run(<architecture_file>,<circuit_file>,<output_netlist>,[OPTIONS])
 
-    Required arguments:
-        architecture_file : Architecture file to target
+    Arguments
+    =========
+        architecture_file : 
+            Architecture file to target
         
-        circuit_file : Circuit file to optimize
+        circuit_file : 
+            Circuit file to optimize
         
-        output_netlist : File name to output the resulting circuit to
+        output_netlist : 
+            File name to output the resulting circuit to
     
-    Options:
-        command_runner : A CommandRunner object used to run system commands
+    Other Parameters
+    ----------------
+        command_runner : 
+            A CommandRunner object used to run system commands
         
-        temp_dir : Directory to run in (created if non-existent)
+        temp_dir : 
+            Directory to run in (created if non-existent)
         
-        log_filename : File to log result to
+        log_filename : 
+            File to log result to
         
-        abc_exec : ABC executable to be run
+        abc_exec : 
+            ABC executable to be run
         
-        abc_script : The script to be run on abc
+        abc_script : 
+            The script to be run on abc
         
-        abc_rc : The ABC rc file
+        abc_rc : 
+            The ABC rc file
         
-        use_old_abc_script : Enables the use of the old ABC script
+        use_old_abc_script : 
+            Enables the use of the old ABC script
         
-        abc_args : A dictionary of keyword arguments to pass on to ABC
+        abc_args : 
+            A dictionary of keyword arguments to pass on to ABC
         
-        keep_intermediate_files : Determines if intermediate files are kept or deleted
+        keep_intermediate_files : 
+            Determines if intermediate files are kept or deleted
 
     """
     mkdir_p(temp_dir)
@@ -220,22 +233,30 @@ def run_lec(reference_netlist, implementation_netlist, command_runner=CommandRun
     """
     Run Logical Equivalence Checking (LEC) between two netlists using ABC
 
-    To run:
-        vtr.abc.run_lec(args)
+    .. note :: Usage: vtr.abc.run_lec(<reference_netlist>,<implementation_netlist>,[OPTIONS])
 
-    Required arguments:
-        reference_netlist : The reference netlist to be commpared to
+    Arguments
+    =========
+        reference_netlist : 
+            The reference netlist to be commpared to
         
-        implementation_netlist : The implemeted netlist to compare to the reference netlist
+        implementation_netlist : 
+            The implemeted netlist to compare to the reference netlist
     
-    Options:
-        command_runner : A CommandRunner object used to run system commands
+
+    Other Parameters
+    ----------------
+        command_runner : 
+            A CommandRunner object used to run system commands
         
-        temp_dir : Directory to run in (created if non-existent)
+        temp_dir : 
+            Directory to run in (created if non-existent)
         
-        log_filename : File to log result to
+        log_filename : 
+            File to log result to
         
-        abc_exec : ABC executable to be run
+        abc_exec : 
+            ABC executable to be run
         
     """
     mkdir_p(temp_dir)

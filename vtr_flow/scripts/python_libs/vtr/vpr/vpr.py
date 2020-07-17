@@ -13,31 +13,44 @@ def run_relax_W(architecture, circuit_name, circuit, command_runner=CommandRunne
 
       2nd: At relaxed channel width (e.g. for critical path delay)
     
-    Usage:
-        vtr.vpr.run_relax_W(<architecture_file>,<circuit_name>,<circuit_file>,[OPTIONS])
+    .. note :: Usage: vtr.vpr.run_relax_W(<architecture_file>,<circuit_name>,<circuit_file>,[OPTIONS])
 
-    Required arguments:
-        architecture: Architecture file
+    Arguments
+    =========
+        architecture: 
+            Architecture file
         
-        circuit_name: Curcuit netlist 
+        circuit_name: 
+            Curcuit netlist 
         
-        circuit: Input circuit netlist
-    Options:
-        command_runner: CommandRunner object
+        circuit: 
+            Input circuit netlist
+
+    Other Parameters
+    ----------------
+        command_runner: 
+            CommandRunner object
         
-        temp_dir: Directory to run in
+        temp_dir: 
+            Directory to run in
         
-        relax_W_factor: Factor by which to relax minimum channel width for critical path delay routing
+        relax_W_factor: 
+            Factor by which to relax minimum channel width for critical path delay routing
         
-        vpr_exec: Path to the VPR executable
+        vpr_exec: 
+            Path to the VPR executable
         
-        verbosity: How much progress output to produce
+        verbosity: 
+            How much progress output to produce
         
-        logfile_base: Base name for log files (e.g. "vpr" produces vpr.min_W.out, vpr.relaxed_W.out)
+        logfile_base: 
+            Base name for log files (e.g. "vpr" produces vpr.min_W.out, vpr.relaxed_W.out)
         
-        vpr_args: Extra arguments for VPR
+        vpr_args: 
+            Extra arguments for VPR
         
-        output_netlist: Output implementation netlist to generate
+        output_netlist: 
+            Output implementation netlist to generate
     """
     if vpr_args is None:
         vpr_args = OrderedDict()
@@ -94,30 +107,41 @@ def run(architecture, circuit_name, circuit, command_runner=CommandRunner(), tem
     """
     Runs VPR with the specified configuration
 
-    To run:
-        vtr.vpr.run(args)
+    .. note :: Usage: vtr.vpr.run(<architecture>,<circuit_name>,<circuit>,[OPTIONS])
 
-    Required arguments:
-        architecture: Architecture file
+    Arguments
+    =========
+        architecture: 
+            Architecture file
         
-        circuit_name: Curcuit netlist 
+        circuit_name: 
+            Curcuit netlist 
         
-        circuit: Input circuit file
+        circuit:
+            Input circuit file
     
-    Options:
-        command_runner: CommandRunner object
+    Other Parameters
+    ----------------
+        command_runner: 
+            CommandRunner object
         
-        temp_dir: Directory to run in
+        temp_dir:
+            Directory to run in
 
-        output_netlist: Output implementation netlist to generate
+        output_netlist: 
+            Output implementation netlist to generate
         
-        log_filename : File to log result to
+        log_filename : 
+            File to log result to
         
-        vpr_exec: Path to the VPR executable
+        vpr_exec: 
+            Path to the VPR executable
         
-        vpr_args: Extra arguments for VPR
+        vpr_args: 
+            Extra arguments for VPR
         
-        check_for_second_run: enables checking for arguments in vpr_args that require a second run of VPR ie analysis
+        check_for_second_run: 
+            enables checking for arguments in vpr_args that require a second run of VPR ie analysis
 
     """
     
@@ -201,27 +225,35 @@ def run(architecture, circuit_name, circuit, command_runner=CommandRunner(), tem
                 raise InspectError("failed: vpr (RR Graph XML output not consistent when reloaded)")
 
 def cmp_full_vs_incr_STA(architecture,circuit_name,circuit,command_runner=CommandRunner(),vpr_args=None,rr_graph_ext=".xml",temp_dir=".",vpr_exec=None):
-    """"
+    """
     Sanity check that full STA and the incremental STA produce the same *.net, *.place, *.route files as well as identical timing report files
 
-    To run:
-        vtr.vpr.cmp_full_vs_incr_STA(args)
+    .. note :: Usage: vtr.vpr.cmp_full_vs_incr_STA(<architecture>,<circuit_name>,<circuit>,[OPTIONS])
 
-    Required arguments:
-        architecture: Architecture file
+    Arguments
+    =========
+        architecture: 
+            Architecture file
         
-        circuit_name: Curcuit netlist 
+        circuit_name: 
+            Curcuit netlist 
         
-        circuit: Input circuit file
+        circuit: 
+            Input circuit file
     
-    Options:
-        command_runner: CommandRunner object
+    Other Parameters
+    ----------------
+        command_runner: 
+            CommandRunner object
         
-        temp_dir: Directory to run in
+        temp_dir: 
+            Directory to run in
         
-        vpr_exec: Path to the VPR executable
+        vpr_exec: 
+            Path to the VPR executable
         
-        vpr_args: Extra arguments for VPR
+        vpr_args: 
+            Extra arguments for VPR
         
     """
 
