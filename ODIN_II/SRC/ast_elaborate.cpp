@@ -2212,40 +2212,36 @@ void update_instance_parameter_table(ast_node_t* instance, STRING_CACHE* instanc
             char* param_id = parameter_override_list->children[j]->children[0]->types.identifier;
             sc_spot = sc_lookup_string(instance_param_table_sc, param_id);
             if (sc_spot == -1) {
-                error_message(AST, parameter_override_list->loc,
-                              "Can't find parameter name %s in module %s\n",
-                              param_id, instance->children[0]->types.identifier);
+                warning_message(AST, parameter_override_list->loc,
+                                "Can't find parameter name %s in module %s\n",
+                                param_id, instance->children[0]->types.identifier);
             } else {
-                /* update this parameter and remove all other overrides with this name */
-                free_whole_tree(((ast_node_t*)instance_param_table_sc->data[sc_spot]));
-                instance_param_table_sc->data[sc_spot] = (void*)parameter_override_list->children[j]->children[5];
-                parameter_override_list->children[j]->children[5] = NULL;
+                ast_node_t* param_node = (ast_node_t*)instance_param_table_sc->data[sc_spot];
+                if (param_node == NULL) {
+                    instance_param_table_sc->data[sc_spot] = (void*)parameter_override_list->children[j]->children[5];
+                } else if (!param_node->types.variable.is_parameter) {
+                    warning_message(AST, parameter_override_list->loc,
+                                    "Defparam can only override parameters: %s\n",
+                                    parameter_override_list->children[j]->children[0]->types.identifier);
+                } else {
+                    /* update this parameter and remove all other overrides with this name */
+                    free_whole_tree(((ast_node_t*)instance_param_table_sc->data[sc_spot]));
+                    instance_param_table_sc->data[sc_spot] = (void*)parameter_override_list->children[j]->children[5];
+                    parameter_override_list->children[j]->children[5] = NULL;
+                }
 
                 for (int k = 0; k < j; k++) {
                     if (!strcmp(parameter_override_list->children[k]->children[0]->types.identifier, param_id)) {
-                        /**
-                         * TODO: is this needed?
-                         * ast_node_t* temp = parameter_override_list->children[k]; 
-                         * */
                         remove_child_from_node_at_index(parameter_override_list, k);
-                        //temp = NULL;
                         j--;
                         k--;
                     }
                 }
-                /**
-                 * TODO: is this needed?
-                 * ast_node_t* temp = parameter_override_list->children[j];
-                 * */
                 remove_child_from_node_at_index(parameter_override_list, j);
-                //temp = NULL;
             }
         }
         // check if there are still overrides in the list that haven't been deleted
-
-        if (parameter_override_list->num_children > 0) {
-            oassert(false); // not reachable???
-        }
+        oassert(parameter_override_list->num_children == 0);
     }
 }
 
