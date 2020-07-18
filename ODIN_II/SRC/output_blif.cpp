@@ -456,16 +456,6 @@ void define_ff(nnode_t* node, FILE* out) {
     oassert(node->num_output_pins == 1);
     oassert(node->num_input_pins == 2);
 
-    int initial_value = global_args.sim_initial_value;
-    if (node->has_initial_value)
-        initial_value = node->initial_value;
-
-    /* By default, latches value are unknown, represented by 3 in a BLIF file
-     * and by -1 internally in ODIN */
-    // TODO switch to default!! to avoid confusion
-    if (initial_value == -1)
-        initial_value = 3;
-
     // grab the edge sensitivity of the flip flop
     const char* edge_type_str = edge_type_blif_str(node);
 
@@ -488,7 +478,7 @@ void define_ff(nnode_t* node, FILE* out) {
     print_input_pin(out, node, 1);
 
     /* initial value */
-    fprintf(out, " %d\n\n", initial_value);
+    fprintf(out, " %d\n\n", node->initial_value);
 }
 
 /*--------------------------------------------------------------------------

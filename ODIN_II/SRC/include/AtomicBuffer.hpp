@@ -37,12 +37,6 @@ class AtomicBuffer {
         std::atomic_thread_fence(std::memory_order_relaxed);
     }
 
-    ///////////////////////////
-    // 2 bits are used per value
-    data_t val(uint8_t val_in) {
-        return ((val_in != 0 && val_in != 1) ? -1 : val_in);
-    }
-
     uint8_t get_bits(uint8_t index) {
         uint8_t modindex = index % (BUFFER_SIZE);
         uint8_t address = modindex / 4;
@@ -117,7 +111,7 @@ class AtomicBuffer {
     }
 
     data_t lock_free_get_value(int64_t cycle_in) {
-        return val(get_bits(cycle_in));
+        return get_bits(cycle_in);
     }
 
     void lock_free_update_value(data_t value_in, int64_t cycle_in) {

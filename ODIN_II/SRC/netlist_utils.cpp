@@ -83,8 +83,7 @@ nnode_t* allocate_nnode(loc_t loc) {
     new_node->ratio = 1;
     new_node->edge_type = UNDEFINED_SENSITIVITY;
 
-    new_node->has_initial_value = false;
-    new_node->initial_value = 0;
+    new_node->initial_value = init_value_e::undefined;
 
     new_node->generic_output = -1;
 
@@ -286,8 +285,7 @@ nnet_t* allocate_nnet() {
     new_net->net_data = NULL;
     new_net->unique_net_data_id = -1;
 
-    new_net->has_initial_value = false;
-    new_net->initial_value = 0;
+    new_net->initial_value = init_value_e::undefined;
 
     return new_net;
 }
@@ -424,7 +422,6 @@ void combine_nets(nnet_t* output_net, nnet_t* input_net, netlist_t* netlist) {
     input_net->combined = true;
 
     /* Need to keep the initial value data when we combine the nets */
-    input_net->has_initial_value = output_net->has_initial_value;
     input_net->initial_value = output_net->initial_value;
 
     /* special cases for global nets */

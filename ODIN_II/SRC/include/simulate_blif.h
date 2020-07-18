@@ -148,6 +148,7 @@ nnode_t** get_children_of(nnode_t* node, int* count);
 nnode_t** get_children_of_nodepin(nnode_t* node, int* num_children, int output_pin);
 
 signed char get_pin_value(npin_t* pin, int cycle);
+bool is_unknown(signed char value);
 
 int get_clock_ratio(nnode_t* node);
 void set_clock_ratio(int rat, nnode_t* node);
