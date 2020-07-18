@@ -1,7 +1,9 @@
 <!--
     This is the architecture file for a Stratix-10-like Architecture discussed in [1].
     Delays for routing and logic blocks come from COFFE runs for a 20 nm technology node.
-    Delays for DSP blocks and BRAMs come from Arria 10 (22 nm) delays.
+    Delays for DSP blocks come from Arria 10 (22 nm) delays while BRAM delays come from
+    Straitx IV (40 nm) delays. In addition, tile grid area comes from COFFE (20 nm) while
+    there is no area values provided for the ios, clbs, DSPs, or BRAMs.
 
     This architecture has 10 ALMs per cluster, where each ALM is a 6-LUT fracturable into
     two 5-LUTs. The ALM has 8 inputs and 4 optionally registered outputs.The two 5-LUTs should
@@ -23,9 +25,9 @@
     In addition, the architecture has a 27x27 DSP block that can be fractured into two 18x19 DSPs.
 
 
-    [1] M. Eldafrawy, A. Boutros, S. Yazdanshenas, and V. Betz, "FPGA Logic Block Architectures for efficient
-        multiplication and addition to enhance machine learning performance," in Transactions on Reconfigurable
-        Technology and Systems (TRETS), 2019
+    [1] M. Eldafrawy, A. Boutros, S. Yazdanshenas, and V. Betz, "FPGA Logic Block Architectures for
+        Efficient Deep Learning Inference," in Transactions on Reconfigurable Technology and Systems
+        (TRETS), 2020
 
 -->
 <architecture>
