@@ -424,25 +424,34 @@ void pathfinder_update_single_node_occupancy(int inode, int add_or_sub) {
     VTR_ASSERT(occ >= 0);
 }
 
-void pathfinder_update_acc_cost(float acc_fac) {
+void pathfinder_update_acc_cost_and_overuse_info(float acc_fac, OveruseInfo& overuse_info) {
     /* This routine recomputes the acc_cost (accumulated congestion cost) of each       *
      * routing resource for the pathfinder algorithm after all nets have been routed.   *
      * It updates the accumulated cost to by adding in the number of extra signals      *
      * sharing a resource right now (i.e. after each complete iteration) times acc_fac. *
      * THIS ROUTINE ASSUMES THE OCCUPANCY VALUES IN RR_NODE ARE UP TO DATE.             */
 
-    int occ, capacity;
+    int overuse;
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
+    size_t overused_nodes = 0, total_overuse = 0, worst_overuse = 0;
 
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        occ = route_ctx.rr_node_route_inf[inode].occ();
-        capacity = device_ctx.rr_nodes[inode].capacity();
+        overuse = route_ctx.rr_node_route_inf[inode].occ() - device_ctx.rr_nodes[inode].capacity();
 
-        if (occ > capacity) {
-            route_ctx.rr_node_route_inf[inode].acc_cost += (occ - capacity) * acc_fac;
+        if (overuse > 0) {
+            route_ctx.rr_node_route_inf[inode].acc_cost += overuse * acc_fac;
+
+            ++overused_nodes;
+            total_overuse += overuse;
+            worst_overuse = std::max(worst_overuse, size_t(overuse));
         }
     }
+
+    // Update overuse info
+    overuse_info.overused_nodes = overused_nodes;
+    overuse_info.total_overuse = total_overuse;
+    overuse_info.worst_overuse = worst_overuse;
 }
 
 float update_pres_fac(float new_pres_fac) {

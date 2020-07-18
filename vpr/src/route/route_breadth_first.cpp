@@ -72,6 +72,8 @@ bool try_breadth_first_route(const t_router_opts& router_opts) {
     BinaryHeap heap;
     heap.init_heap(device_ctx.grid);
 
+    OveruseInfo overuse_info(device_ctx.rr_nodes.size());
+
     for (itry = 1; itry <= router_opts.max_router_iterations; itry++) {
         VTR_LOG("Routing Iteration %d\n", itry);
 
@@ -111,7 +113,7 @@ bool try_breadth_first_route(const t_router_opts& router_opts) {
 
         pres_fac = update_pres_fac(std::min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5)));
 
-        pathfinder_update_acc_cost(router_opts.acc_fac);
+        pathfinder_update_acc_cost_and_overuse_info(router_opts.acc_fac, overuse_info);
     }
 
     VTR_LOG("Routing failed.\n");

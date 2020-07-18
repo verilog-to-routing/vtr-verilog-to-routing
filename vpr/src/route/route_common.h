@@ -5,6 +5,7 @@
 #include "vtr_vector.h"
 #include "heap_type.h"
 #include "rr_node_fwd.h"
+#include "router_stats.h"
 #include "globals.h"
 
 /******* Subroutines in route_common used only by other router modules ******/
@@ -17,7 +18,7 @@ void pathfinder_update_path_occupancy(t_trace* route_segment_start, int add_or_s
 
 void pathfinder_update_single_node_occupancy(int inode, int add_or_sub);
 
-void pathfinder_update_acc_cost(float acc_fac);
+void pathfinder_update_acc_cost_and_overuse_info(float acc_fac, OveruseInfo& overuse_info);
 
 float update_pres_fac(float new_pres_fac);
 
