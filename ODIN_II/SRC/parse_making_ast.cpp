@@ -285,7 +285,9 @@ static ast_node_t* resolve_symbol_node(ast_node_t* symbol_node) {
                 newNode = (ast_node_t*)current_scope->param_sc->data[sc_spot];
             }
 
-            if (newNode && newNode->types.variable.is_parameter == true) {
+            if (newNode
+                && (newNode->types.variable.is_localparam
+                    || newNode->types.variable.is_parameter)) {
                 to_return = symbol_node;
             } else {
                 error_message(AST, symbol_node->loc,
