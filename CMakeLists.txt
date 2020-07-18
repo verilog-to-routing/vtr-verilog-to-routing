@@ -409,3 +409,5 @@ list(APPEND DIRS_TO_FORMAT_CPP "${CMAKE_CURRENT_SOURCE_DIR}/ODIN_II")
 
 
 include(AutoClangFormat)
+
+include(AutoPyFormat)

@@ -12,6 +12,7 @@ import tempfile
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("Automated script for applying code reformatting. Automatically commits reformatting changes as 'VTR Robot' and adds them to .git-blame-ignore-revs (so they can be skipped with git hyper-blame). Should be run from the root of the source tree.")
     parser.add_argument("--skip_commit", action='store_true', default=False, help="Don't commit the autoformat changes. Default: %(default)s")
+    parser.add_argument("--python", action='store_true', default=False, help="Format Python code instead of C/C++. Default: %(default)s")
     args = parser.parse_args()
 
     git_commit_args = [
@@ -21,7 +22,11 @@ if __name__ == "__main__":
     ]
 
     # Run `make format`
-    subprocess.check_call("make format", shell=True)
+    if args.python:
+        cmd = "make format-py"
+    else:
+        cmd = "make format"
+    subprocess.check_call(cmd, shell=True)
 
     if not args.skip_commit:
         # Commit the changes caused by `make format`
