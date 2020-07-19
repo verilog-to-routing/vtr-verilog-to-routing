@@ -1326,7 +1326,6 @@ struct t_trace {
  *   @param prev_edge  Index of the edge (from 0 to num_edges-1 of prev_node)
  *                     that was used to reach this node from the previous node.
  *                     If there is no predecessor, prev_edge = NO_PREVIOUS.
- *   @param pres_cost  Present congestion cost term for this node.
  *   @param acc_cost   Accumulated cost term from previous Pathfinder iterations.
  *   @param path_cost  Total cost of the path up to and including this node +
  *                     the expected cost to the target if the timing_driven router
@@ -1341,7 +1340,6 @@ struct t_rr_node_route_inf {
     int prev_node;
     RREdgeId prev_edge;
 
-    float pres_cost;
     float acc_cost;
     float path_cost;
     float backward_path_cost;

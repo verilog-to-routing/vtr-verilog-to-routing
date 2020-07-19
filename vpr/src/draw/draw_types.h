@@ -159,6 +159,7 @@ typedef struct {
  * save_graphics: Whether to generate an output graphcis file
  * force_pause: Should we pause for user interaction (since the user requested it)
  * save_graphics_file_base: Base of save graphis file name (i.e. before extension)
+ * pres_fac: present congestion cost factor
  */
 struct t_draw_state {
     pic_type pic_on_screen = NO_PICTURE;
@@ -193,6 +194,7 @@ struct t_draw_state {
     bool forced_pause = false;
     int sequence_number = 0;
     float net_alpha = 0.1;
+    float pres_fac = 1.;
 
     std::string save_graphics_file_base = "vpr";
 
