@@ -1534,13 +1534,13 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.pad_loc_file, "--fix_clusters")
-		.help(
-			"Fixes block locations during placement. Valid options:\n"
-			" * 'free' allows placement to optimize block locations\n"
-			" * 'random' fixes block locations to arbitrary locations\n"
-			" * path to a file specifying block locations (.place format with only pads specified).")
-		.default_value("free")
-		.show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Fixes block locations during placement. Valid options:\n"
+            " * 'free' allows placement to optimize block locations\n"
+            " * 'random' fixes block locations to arbitrary locations\n"
+            " * path to a file specifying block locations (.place format with only pads specified).")
+        .default_value("free")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<e_place_algorithm, ParsePlaceAlgorithm>(args.PlaceAlgorithm, "--place_algorithm")
         .help("Controls which placement algorithm is used")
