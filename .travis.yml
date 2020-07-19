@@ -95,7 +95,8 @@ jobs:
         - ./dev/check-format.sh
     - stage: Test
       name: "Python Lint"
-      script:
+      script:        
+        - python3.6 -m pip install pylint
         - python3.6 ./dev/pylint_check.py
     - stage: Test
       name: "C++ Unit Tests"
@@ -236,6 +237,10 @@ jobs:
 before_script:
   - source .github/travis/common.sh
   - ./.github/travis/setup.sh
+
+  # Install pip
+  - curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+  - python3.6 get-pip.py
 
 after_script:
   - ./.github/travis/setup.sh
