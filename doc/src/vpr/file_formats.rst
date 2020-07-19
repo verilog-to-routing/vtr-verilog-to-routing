@@ -602,7 +602,7 @@ The ``block_name`` is the name of this block, as given in the input .net formatt
 .. note:: The blocks in a placement file can be listed in any order.
 
 Since we can have more than one block in a row or column when the block capacity is set to be greater than 1 in the architecture file, the subtile number specifies which of the several possible subtile locations in row x and column y contains this block.
-Note that the first blocks occupied at some (x, y) location are always those with the lowest subtile numbers -- i.e. if only one block at (x, y) is used, the subtile number of the block placed there will be zero.
+Note that the subtile number used should be in the range 0 - (grid[i][j].capacity - 1). The subtile numbers for a particular x,y location do not have to be used in order.
 
 The placement files output by VPR also include (as a comment) a fifth field:  the block number.
 This is the internal index used by VPR to identify a block -- it may be useful to know this index if you are modifying VPR and trying to debug something.
