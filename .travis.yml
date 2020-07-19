@@ -92,6 +92,10 @@ jobs:
       script:
         - ./dev/check-format.sh
     - stage: Test
+      name: "Python Lint"
+      script:
+        - ./dev/pylint_check.py
+    - stage: Test
       name: "C++ Unit Tests"
       env:
         - CMAKE_PARAMS="-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on"
