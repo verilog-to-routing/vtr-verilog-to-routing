@@ -429,16 +429,18 @@ void pathfinder_update_acc_cost_and_overuse_info(float acc_fac, OveruseInfo& ove
      * routing resource for the pathfinder algorithm after all nets have been routed.   *
      * It updates the accumulated cost to by adding in the number of extra signals      *
      * sharing a resource right now (i.e. after each complete iteration) times acc_fac. *
-     * THIS ROUTINE ASSUMES THE OCCUPANCY VALUES IN RR_NODE ARE UP TO DATE.             */
+     * THIS ROUTINE ASSUMES THE OCCUPANCY VALUES IN RR_NODE ARE UP TO DATE.             *
+     * This routine also creates a new overuse info for the current routing iteration.  */
 
-    int overuse;
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     size_t overused_nodes = 0, total_overuse = 0, worst_overuse = 0;
 
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        overuse = route_ctx.rr_node_route_inf[inode].occ() - device_ctx.rr_nodes[inode].capacity();
+        int overuse = route_ctx.rr_node_route_inf[inode].occ() - device_ctx.rr_nodes[inode].capacity();
 
+        // If overused, update the acc_cost and add this node to the overuse info
+        // If not, do nothing
         if (overuse > 0) {
             route_ctx.rr_node_route_inf[inode].acc_cost += overuse * acc_fac;
 

@@ -8,8 +8,8 @@
  * As a note, looks into draw_global.c for understanding the data structures associated with drawing->
  *
  * 
- * Authors: Vaughn Betz, Long Yu (Mike) Wang, Dingyu (Tina) Yang, Bingran (Bill) Hu
- * Last updated: July 2020
+ * Authors: Vaughn Betz, Long Yu (Mike) Wang, Dingyu (Tina) Yang
+ * Last updated: June 2019
  */
 
 #include <cstdio>
