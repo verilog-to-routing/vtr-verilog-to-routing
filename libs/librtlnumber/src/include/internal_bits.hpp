@@ -628,8 +628,7 @@ class VerilogBits {
         return other;
     }
 
-    VerilogBits twos_complement() {
-        BitSpace::bit_value_t previous_carry = BitSpace::_1;
+    VerilogBits twos_complement(BitSpace::bit_value_t previous_carry) {
         VerilogBits other(this->bit_size, _0);
 
         for (size_t i = 0; i < this->size(); i++) {
@@ -640,6 +639,10 @@ class VerilogBits {
         }
 
         return other;
+    }
+
+    VerilogBits twos_complement() {
+        return this->twos_complement(BitSpace::_1);
     }
 
     /**
@@ -750,6 +753,12 @@ class VNumber {
         this->sign = other.sign;
         this->bitstring = other.bitstring;
         this->defined_size = other.defined_size;
+    }
+
+    VNumber(VNumber* other) {
+        this->sign = other->sign;
+        this->bitstring = other->bitstring;
+        this->defined_size = other->defined_size;
     }
 
     VNumber(VNumber other, size_t length) {
@@ -1030,6 +1039,10 @@ class VNumber {
 
     bool is_false() {
         return this->bitstring.is_false();
+    }
+
+    VNumber twos_complement(BitSpace::bit_value_t carry) {
+        return VNumber(this->bitstring.twos_complement(carry), this->defined_size, this->sign);
     }
 
     VNumber twos_complement() {

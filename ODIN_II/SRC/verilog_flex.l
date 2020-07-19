@@ -297,7 +297,7 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL>"=>"						{ MP(); return voPAL;}
 <INITIAL>">="						{ MP(); return voGTE;}
 <INITIAL>"<<"						{ MP(); return voSLEFT;}
-<INITIAL>"<<<"						{ MP(); return voSLEFT;}
+<INITIAL>"<<<"						{ MP(); return voASLEFT;}
 <INITIAL>">>"						{ MP(); return voSRIGHT;}
 <INITIAL>">>>"						{ MP(); return voASRIGHT;}
 <INITIAL>"=="						{ MP(); return voEQUAL;}

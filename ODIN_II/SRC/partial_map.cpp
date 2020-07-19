@@ -210,6 +210,7 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
             instantiate_GT(node, node->type, traverse_number, netlist);
             break;
         case SL:
+        case ASL:
         case SR:
             instantiate_shift_left_or_right(node, node->type, traverse_number, netlist);
             break;
@@ -920,7 +921,7 @@ void instantiate_shift_left_or_right(nnode_t* node, operation_list type, short m
 
     buf_node = make_1port_gate(BUF_NODE, width, width, node, mark);
 
-    if (type == SL) {
+    if (type == SL || type == ASL) {
         /* IF shift left */
 
         /* connect inputs to outputs */
