@@ -227,6 +227,7 @@ enum operation_list {
     SR,             // >>
     ASR,            // >>>
     SL,             // <<
+    ASL,            // <<<
     CASE_EQUAL,     // ===
     CASE_NOT_EQUAL, // !==
     ADDER_FUNC,

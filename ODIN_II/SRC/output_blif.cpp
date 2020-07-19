@@ -330,6 +330,7 @@ void output_node(nnode_t* node, short /*traverse_number*/, FILE* fp) {
         case BITWISE_OR:
         case MULTI_PORT_MUX:
         case SL:
+        case ASL:
         case SR:
         case ASR:
         case CASE_EQUAL:

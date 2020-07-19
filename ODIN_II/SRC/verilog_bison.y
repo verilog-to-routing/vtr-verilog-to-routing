@@ -60,7 +60,7 @@ int yylex(void);
 %token vALWAYS vAUTOMATIC vINITIAL vSPECIFY vAND vASSIGN vBEGIN vCASE vDEFAULT vELSE vEND vENDCASE
 %token vENDMODULE vENDSPECIFY vENDGENERATE vENDFUNCTION vENDTASK vIF vINOUT vINPUT vMODULE vGENERATE vFUNCTION vTASK
 %token vOUTPUT vPARAMETER vLOCALPARAM vPOSEDGE vXNOR vXOR vDEFPARAM voANDAND vNAND vNEGEDGE vNOR vNOT vOR vFOR vBUF
-%token voOROR voLTE voGTE voPAL voSLEFT voSRIGHT voASRIGHT voEQUAL voNOTEQUAL voCASEEQUAL
+%token voOROR voLTE voGTE voPAL voSLEFT voSRIGHT voASLEFT voASRIGHT voEQUAL voNOTEQUAL voCASEEQUAL
 %token voCASENOTEQUAL voXNOR voNAND voNOR vWHILE vINTEGER vGENVAR
 %token vPLUS_COLON vMINUS_COLON vSPECPARAM voUNSIGNED voSIGNED vSIGNED 
 
@@ -84,7 +84,7 @@ int yylex(void);
 %left '&' voNAND
 %left voEQUAL voNOTEQUAL voCASEEQUAL voCASENOTEQUAL
 %left voGTE voLTE '<' '>'
-%left voSLEFT voSRIGHT voASRIGHT
+%left voSLEFT voSRIGHT voASLEFT voASRIGHT
 %left '+' '-'
 %left '*' '/' '%'
 %right voPOWER
@@ -769,6 +769,7 @@ expression:
 	| expression voSRIGHT expression				{$$ = newBinaryOperation(SR, $1, $3, my_location);}
 	| expression voASRIGHT expression				{$$ = newBinaryOperation(ASR, $1, $3, my_location);}
 	| expression voSLEFT expression					{$$ = newBinaryOperation(SL, $1, $3, my_location);}
+	| expression voASLEFT expression				{$$ = newBinaryOperation(ASL, $1, $3, my_location);}
 	| expression '<' expression						{$$ = newBinaryOperation(LT, $1, $3, my_location);}
 	| expression '>' expression						{$$ = newBinaryOperation(GT, $1, $3, my_location);}
 	| expression voLTE expression					{$$ = newBinaryOperation(LTE, $1, $3, my_location);}

@@ -1198,6 +1198,11 @@ ast_node_t* fold_binary(ast_node_t** node) {
                 success = true;
                 break;
 
+            case ASL:
+                vresult = V_SIGNED_SHIFT_LEFT(voperand_0, voperand_1);
+                success = true;
+                break;
+
             case SL:
                 vresult = V_SHIFT_LEFT(voperand_0, voperand_1);
                 success = true;

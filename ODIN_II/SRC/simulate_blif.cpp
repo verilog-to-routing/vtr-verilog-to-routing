@@ -134,9 +134,8 @@ static int is_node_complete(nnode_t* node, int cycle);
 static bool compute_and_store_value(nnode_t* node, int cycle);
 static void compute_memory_node(nnode_t* node, int cycle);
 static void compute_hard_ip_node(nnode_t* node, int cycle);
-static void compute_multiply_node(nnode_t* node, int cycle);
 static void compute_generic_node(nnode_t* node, int cycle);
-static void compute_add_node(nnode_t* node, int cycle, int type);
+static void compute_add_node(nnode_t* node, int cycle);
 static void compute_unary_sub_node(nnode_t* node, int cycle);
 
 static void update_pin_value(npin_t* pin, BitSpace::bit_value_t value, int cycle);
@@ -147,12 +146,6 @@ static int line_has_unknown_pin(line_t* line, int cycle);
 
 static void compute_flipflop_node(nnode_t* node, int cycle);
 static void compute_mux_2_node(nnode_t* node, int cycle);
-
-static BitSpace::bit_value_t* multiply_arrays(BitSpace::bit_value_t* a, int a_length, BitSpace::bit_value_t* b, int b_length);
-
-static BitSpace::bit_value_t* add_arrays(BitSpace::bit_value_t* a, int a_length, BitSpace::bit_value_t* b, int b_length, BitSpace::bit_value_t* c, int c_length, int flag);
-
-static BitSpace::bit_value_t* unary_sub_arrays(BitSpace::bit_value_t* a, int a_length, BitSpace::bit_value_t* c, int c_length);
 
 static void compute_single_port_memory(nnode_t* node, int cycle);
 static void compute_dual_port_memory(nnode_t* node, int cycle);
@@ -755,6 +748,15 @@ static stages_t* stage_ordered_nodes(nnode_t** ordered_nodes, int num_ordered_no
     return s;
 }
 
+static VNumber get_value(nnode_t* node, int start, int size, int cycle) {
+    VNumber a(size, BitSpace::_x, false, true);
+
+    for (int i = 0; i < size; i++)
+        a.set_bit_from_lsb(i, get_pin_value(node->input_pins[start + i], cycle));
+
+    return a;
+}
+
 /*
  * Given a node, this function will simulate that node's new outputs,
  * and updates those pins.
@@ -773,109 +775,53 @@ static bool compute_and_store_value(nnode_t* node, int cycle) {
         case MEMORY:
             compute_memory_node(node, cycle);
             break;
-        case MULTIPLY:
-            compute_multiply_node(node, cycle);
+        case MULTIPLY: {
+            oassert(node->num_input_port_sizes == 2);
+            oassert(node->num_output_port_sizes == 1);
+            VNumber a = get_value(node, 0, node->input_port_sizes[0], cycle);
+            VNumber b = get_value(node, node->input_port_sizes[0], node->input_port_sizes[1], cycle);
+            VNumber result = V_MULTIPLY(a, b);
+            for (int i = 0; i < node->num_output_pins; i++) {
+                update_pin_value(node->output_pins[i], result.get_bit_from_lsb(i), cycle);
+            }
             break;
+        }
         case BUF_NODE: // pass through the values
         {
             verify_i_o_availabilty(node, 1, 1);
             BitSpace::bit_value_t pin = get_pin_value(node->input_pins[0], cycle);
-            update_pin_value(node->output_pins[0], pin, cycle);
+            update_pin_value(node->output_pins[0], BitSpace::l_buf[pin], cycle);
             break;
         }
         case LOGICAL_AND: // &&
         {
             verify_i_o_availabilty(node, -1, 1);
-            bool unknown = false;
-            bool zero = false;
-            int i;
-            for (i = 0; i < node->num_input_pins; i++) {
-                BitSpace::bit_value_t pin = get_pin_value(node->input_pins[i], cycle);
-
-                if (BitSpace::is_unk[pin]) {
-                    unknown = true;
-                } else if (pin == BitSpace::_0) {
-                    zero = true;
-                    break;
-                }
-            }
-            if (zero)
-                update_pin_value(node->output_pins[0], BitSpace::_0, cycle);
-            else if (unknown)
-                update_pin_value(node->output_pins[0], BitSpace::_x, cycle);
-            else
-                update_pin_value(node->output_pins[0], BitSpace::_1, cycle);
+            VNumber value = get_value(node, 0, node->num_input_pins, cycle);
+            value = V_BITWISE_AND(value);
+            update_pin_value(node->output_pins[0], value.get_bit_from_lsb(0), cycle);
             break;
         }
         case LOGICAL_OR: { // ||
             verify_i_o_availabilty(node, -1, 1);
-            bool unknown = false;
-            bool one = false;
-            int i;
-            for (i = 0; i < node->num_input_pins; i++) {
-                BitSpace::bit_value_t pin = get_pin_value(node->input_pins[i], cycle);
-
-                if (BitSpace::is_unk[pin]) {
-                    unknown = true;
-                } else if (pin == BitSpace::_1) {
-                    one = true;
-                    break;
-                }
-            }
-            if (one)
-                update_pin_value(node->output_pins[0], BitSpace::_1, cycle);
-            else if (unknown)
-                update_pin_value(node->output_pins[0], BitSpace::_x, cycle);
-            else
-                update_pin_value(node->output_pins[0], BitSpace::_0, cycle);
+            VNumber value = get_value(node, 0, node->num_input_pins, cycle);
+            value = V_BITWISE_OR(value);
+            update_pin_value(node->output_pins[0], value.get_bit_from_lsb(0), cycle);
             break;
         }
         case LOGICAL_NAND: { // !&&
             verify_i_o_availabilty(node, -1, 1);
-            bool unknown = false;
-            bool one = false;
-            int i;
-            for (i = 0; i < node->num_input_pins; i++) {
-                BitSpace::bit_value_t pin = get_pin_value(node->input_pins[i], cycle);
-
-                if (BitSpace::is_unk[pin]) {
-                    unknown = true;
-                } else if (pin == BitSpace::_0) {
-                    one = true;
-                    break;
-                }
-            }
-            if (one)
-                update_pin_value(node->output_pins[0], BitSpace::_1, cycle);
-            else if (unknown)
-                update_pin_value(node->output_pins[0], BitSpace::_x, cycle);
-            else
-                update_pin_value(node->output_pins[0], BitSpace::_0, cycle);
+            VNumber value = get_value(node, 0, node->num_input_pins, cycle);
+            value = V_BITWISE_NAND(value);
+            update_pin_value(node->output_pins[0], value.get_bit_from_lsb(0), cycle);
             break;
         }
         case LOGICAL_NOT: // !
         case LOGICAL_NOR: // !|
         {
             verify_i_o_availabilty(node, -1, 1);
-            bool unknown = false;
-            bool zero = false;
-            int i;
-            for (i = 0; i < node->num_input_pins; i++) {
-                BitSpace::bit_value_t pin = get_pin_value(node->input_pins[i], cycle);
-
-                if (BitSpace::is_unk[pin]) {
-                    unknown = true;
-                } else if (pin == BitSpace::_1) {
-                    zero = true;
-                    break;
-                }
-            }
-            if (zero)
-                update_pin_value(node->output_pins[0], BitSpace::_0, cycle);
-            else if (unknown)
-                update_pin_value(node->output_pins[0], BitSpace::_x, cycle);
-            else
-                update_pin_value(node->output_pins[0], BitSpace::_1, cycle);
+            VNumber value = get_value(node, 0, node->num_input_pins, cycle);
+            value = V_BITWISE_NOR(value);
+            update_pin_value(node->output_pins[0], value.get_bit_from_lsb(0), cycle);
             break;
         }
         case LT: // < 010 1
@@ -919,17 +865,7 @@ static bool compute_and_store_value(nnode_t* node, int cycle) {
             BitSpace::bit_value_t pin0 = get_pin_value(node->input_pins[0], cycle);
             BitSpace::bit_value_t pin1 = get_pin_value(node->input_pins[1], cycle);
             BitSpace::bit_value_t pin2 = get_pin_value(node->input_pins[2], cycle);
-
-            if (BitSpace::is_unk[pin0] || BitSpace::is_unk[pin1] || BitSpace::is_unk[pin2])
-                update_pin_value(node->output_pins[0], BitSpace::_x, cycle);
-            else if (
-                (pin0 == BitSpace::_0 && pin1 == BitSpace::_0 && pin2 == BitSpace::_1)
-                || (pin0 == BitSpace::_0 && pin1 == BitSpace::_1 && pin2 == BitSpace::_0)
-                || (pin0 == BitSpace::_1 && pin1 == BitSpace::_0 && pin2 == BitSpace::_0)
-                || (pin0 == BitSpace::_1 && pin1 == BitSpace::_1 && pin2 == BitSpace::_1))
-                update_pin_value(node->output_pins[0], BitSpace::_1, cycle);
-            else
-                update_pin_value(node->output_pins[0], BitSpace::_0, cycle);
+            update_pin_value(node->output_pins[0], BitSpace::l_sum[pin0][pin1][pin2], cycle);
 
             break;
         }
@@ -940,15 +876,7 @@ static bool compute_and_store_value(nnode_t* node, int cycle) {
             BitSpace::bit_value_t pin0 = get_pin_value(node->input_pins[0], cycle);
             BitSpace::bit_value_t pin1 = get_pin_value(node->input_pins[1], cycle);
             BitSpace::bit_value_t pin2 = get_pin_value(node->input_pins[2], cycle);
-
-            if (BitSpace::is_unk[pin0] || BitSpace::is_unk[pin1] || BitSpace::is_unk[pin2])
-                update_pin_value(node->output_pins[0], BitSpace::_x, cycle);
-            else if (
-                (pin0 == BitSpace::_1 && (pin1 == BitSpace::_1 || pin2 == BitSpace::_1))
-                || (pin1 == BitSpace::_1 && pin2 == BitSpace::_1))
-                update_pin_value(node->output_pins[0], BitSpace::_1, cycle);
-            else
-                update_pin_value(node->output_pins[0], BitSpace::_0, cycle);
+            update_pin_value(node->output_pins[0], BitSpace::l_carry[pin0][pin1][pin2], cycle);
 
             break;
         }
@@ -956,62 +884,101 @@ static bool compute_and_store_value(nnode_t* node, int cycle) {
         case LOGICAL_XOR: // ^
         {
             verify_i_o_availabilty(node, -1, 1);
-            bool unknown = false;
-            int ones = 0;
-            int i;
-            for (i = 0; i < node->num_input_pins; i++) {
-                BitSpace::bit_value_t pin = get_pin_value(node->input_pins[i], cycle);
-
-                if (BitSpace::is_unk[pin]) {
-                    unknown = true;
-                    break;
-                } else if (pin == BitSpace::_1) {
-                    ones++;
-                }
-            }
-            if (unknown)
-                update_pin_value(node->output_pins[0], BitSpace::_x, cycle);
-            else if ((ones % 2) == BitSpace::_1)
-                update_pin_value(node->output_pins[0], BitSpace::_1, cycle);
-            else
-                update_pin_value(node->output_pins[0], BitSpace::_0, cycle);
+            VNumber value = get_value(node, 0, node->num_input_pins, cycle);
+            value = V_BITWISE_XOR(value);
+            update_pin_value(node->output_pins[0], value.get_bit_from_lsb(0), cycle);
             break;
         }
         case LOGICAL_EQUAL: // ==
         case LOGICAL_XNOR:  // !^
         {
             verify_i_o_availabilty(node, -1, 1);
-            bool unknown = false;
-            int ones = 0;
-            int i;
-            for (i = 0; i < node->num_input_pins; i++) {
-                BitSpace::bit_value_t pin = get_pin_value(node->input_pins[i], cycle);
-
-                if (BitSpace::is_unk[pin]) {
-                    unknown = true;
-                    break;
-                }
-                if (pin == BitSpace::_1) { ones++; }
-            }
-            if (unknown)
-                update_pin_value(node->output_pins[0], BitSpace::_x, cycle);
-            else if ((ones % 2) == BitSpace::_1)
-                update_pin_value(node->output_pins[0], BitSpace::_0, cycle);
-            else
-                update_pin_value(node->output_pins[0], BitSpace::_1, cycle);
+            VNumber value = get_value(node, 0, node->num_input_pins, cycle);
+            value = V_BITWISE_XNOR(value);
+            update_pin_value(node->output_pins[0], value.get_bit_from_lsb(0), cycle);
             break;
         }
         case BITWISE_NOT: {
             verify_i_o_availabilty(node, 1, 1);
-
             BitSpace::bit_value_t pin = get_pin_value(node->input_pins[0], cycle);
-
-            if (BitSpace::is_unk[pin])
-                update_pin_value(node->output_pins[0], BitSpace::_x, cycle);
-            else if (pin == BitSpace::_1)
-                update_pin_value(node->output_pins[0], BitSpace::_0, cycle);
-            else
-                update_pin_value(node->output_pins[0], BitSpace::_1, cycle);
+            update_pin_value(node->output_pins[0], BitSpace::l_not[pin], cycle);
+            break;
+        }
+        case ASL: {
+            oassert(node->num_input_port_sizes == 2);
+            oassert(node->num_output_port_sizes == 1);
+            VNumber a = get_value(node, 0, node->input_port_sizes[0], cycle);
+            VNumber b = get_value(node, node->input_port_sizes[0], node->input_port_sizes[1], cycle);
+            VNumber result = V_SIGNED_SHIFT_LEFT(a, b);
+            for (int i = 0; i < node->num_output_pins; i++) {
+                update_pin_value(node->output_pins[i], result.get_bit_from_lsb(i), cycle);
+            }
+            break;
+        }
+        case SL: {
+            oassert(node->num_input_port_sizes == 2);
+            oassert(node->num_output_port_sizes == 1);
+            VNumber a = get_value(node, 0, node->input_port_sizes[0], cycle);
+            VNumber b = get_value(node, node->input_port_sizes[0], node->input_port_sizes[1], cycle);
+            VNumber result = V_SHIFT_LEFT(a, b);
+            for (int i = 0; i < node->num_output_pins; i++) {
+                update_pin_value(node->output_pins[i], result.get_bit_from_lsb(i), cycle);
+            }
+            break;
+        }
+        case SR: {
+            oassert(node->num_input_port_sizes == 2);
+            oassert(node->num_output_port_sizes == 1);
+            VNumber a = get_value(node, 0, node->input_port_sizes[0], cycle);
+            VNumber b = get_value(node, node->input_port_sizes[0], node->input_port_sizes[1], cycle);
+            VNumber result = V_SHIFT_RIGHT(a, b);
+            for (int i = 0; i < node->num_output_pins; i++) {
+                update_pin_value(node->output_pins[i], result.get_bit_from_lsb(i), cycle);
+            }
+            break;
+        }
+        case ASR: {
+            oassert(node->num_input_port_sizes == 2);
+            oassert(node->num_output_port_sizes == 1);
+            VNumber a = get_value(node, 0, node->input_port_sizes[0], cycle);
+            VNumber b = get_value(node, node->input_port_sizes[0], node->input_port_sizes[1], cycle);
+            VNumber result = V_SIGNED_SHIFT_RIGHT(a, b);
+            for (int i = 0; i < node->num_output_pins; i++) {
+                update_pin_value(node->output_pins[i], result.get_bit_from_lsb(i), cycle);
+            }
+            break;
+        }
+        case DIVIDE: {
+            oassert(node->num_input_port_sizes == 2);
+            oassert(node->num_output_port_sizes == 1);
+            VNumber a = get_value(node, 0, node->input_port_sizes[0], cycle);
+            VNumber b = get_value(node, node->input_port_sizes[0], node->input_port_sizes[1], cycle);
+            VNumber result = V_DIV(a, b);
+            for (int i = 0; i < node->num_output_pins; i++) {
+                update_pin_value(node->output_pins[i], result.get_bit_from_lsb(i), cycle);
+            }
+            break;
+        }
+        case MODULO: {
+            oassert(node->num_input_port_sizes == 2);
+            oassert(node->num_output_port_sizes == 1);
+            VNumber a = get_value(node, 0, node->input_port_sizes[0], cycle);
+            VNumber b = get_value(node, node->input_port_sizes[0], node->input_port_sizes[1], cycle);
+            VNumber result = V_MOD(a, b);
+            for (int i = 0; i < node->num_output_pins; i++) {
+                update_pin_value(node->output_pins[i], result.get_bit_from_lsb(i), cycle);
+            }
+            break;
+        }
+        case POWER: {
+            oassert(node->num_input_port_sizes == 2);
+            oassert(node->num_output_port_sizes == 1);
+            VNumber a = get_value(node, 0, node->input_port_sizes[0], cycle);
+            VNumber b = get_value(node, node->input_port_sizes[0], node->input_port_sizes[1], cycle);
+            VNumber result = V_POWER(a, b);
+            for (int i = 0; i < node->num_output_pins; i++) {
+                update_pin_value(node->output_pins[i], result.get_bit_from_lsb(i), cycle);
+            }
             break;
         }
         case CLOCK_NODE: {
@@ -1027,12 +994,12 @@ static bool compute_and_store_value(nnode_t* node, int cycle) {
                         warning_message(SIMULATION, node->loc, "clock(%s) is internally driven, verify your circuit", node->name);
                     }
                     //toggle according to ratio
-                    BitSpace::bit_value_t prev_value = !CLOCK_INITIAL_VALUE;
+                    BitSpace::bit_value_t prev_value = BitSpace::l_not[CLOCK_INITIAL_VALUE];
                     if (cycle)
                         prev_value = get_pin_value(node->output_pins[0], cycle - 1);
 
                     if (BitSpace::is_unk[prev_value])
-                        prev_value = !CLOCK_INITIAL_VALUE;
+                        prev_value = BitSpace::l_not[CLOCK_INITIAL_VALUE];
 
                     int clk_ratio = get_clock_ratio(node);
                     if (clk_ratio == 0) {
@@ -1069,12 +1036,14 @@ static bool compute_and_store_value(nnode_t* node, int cycle) {
             break;
         case PAD_NODE:
             verify_i_o_availabilty(node, -1, 1);
+            // TODO: this is 'Z' since it is unconn
             update_pin_value(node->output_pins[0], BitSpace::_0, cycle);
             break;
         case INPUT_NODE:
             break;
         case OUTPUT_NODE:
             verify_i_o_availabilty(node, 1, 1);
+            // passthrough
             update_pin_value(node->output_pins[0], get_pin_value(node->input_pins[0], cycle), cycle);
             break;
         case HARD_IP:
@@ -1084,11 +1053,11 @@ static bool compute_and_store_value(nnode_t* node, int cycle) {
             compute_generic_node(node, cycle);
             break;
         case ADD:
-            compute_add_node(node, cycle, 0);
+            compute_add_node(node, cycle);
             break;
         case MINUS:
             if (node->num_input_port_sizes == 3)
-                compute_add_node(node, cycle, 1);
+                compute_add_node(node, cycle);
             else
                 compute_unary_sub_node(node, cycle);
             break;
@@ -1100,17 +1069,10 @@ static bool compute_and_store_value(nnode_t* node, int cycle) {
         case BITWISE_XOR:
         case BITWISE_OR:
         case MULTI_PORT_MUX:
-        case SL:
-        case SR:
-        case ASR:
         case CASE_EQUAL:
         case CASE_NOT_EQUAL:
-        case DIVIDE:
-        case MODULO:
         case GTE:
         case LTE:
-        //case ADD:
-        //case MINUS:
         default:
             error_message(SIMULATION, node->loc, "Node should have been converted to softer version: %s", node->name);
             break;
@@ -1536,47 +1498,6 @@ static void compute_hard_ip_node(nnode_t* node, int cycle) {
 #endif
 }
 
-/*
- * Computes the given multiply node for the given cycle.
- */
-static void compute_multiply_node(nnode_t* node, int cycle) {
-    oassert(node->num_input_port_sizes == 2);
-    oassert(node->num_output_port_sizes == 1);
-
-    int i;
-    bool unknown = false;
-    for (i = 0; i < node->input_port_sizes[0] + node->input_port_sizes[1]; i++) {
-        BitSpace::bit_value_t pin = get_pin_value(node->input_pins[i], cycle);
-        if (BitSpace::is_unk[pin]) {
-            unknown = true;
-            break;
-        }
-    }
-
-    if (unknown) {
-        for (i = 0; i < node->num_output_pins; i++)
-            update_pin_value(node->output_pins[i], BitSpace::_x, cycle);
-    } else {
-        BitSpace::bit_value_t* a = (BitSpace::bit_value_t*)vtr::malloc(sizeof(BitSpace::bit_value_t) * node->input_port_sizes[0]);
-        BitSpace::bit_value_t* b = (BitSpace::bit_value_t*)vtr::malloc(sizeof(BitSpace::bit_value_t) * node->input_port_sizes[1]);
-
-        for (i = 0; i < node->input_port_sizes[0]; i++)
-            a[i] = get_pin_value(node->input_pins[i], cycle);
-
-        for (i = 0; i < node->input_port_sizes[1]; i++)
-            b[i] = get_pin_value(node->input_pins[node->input_port_sizes[0] + i], cycle);
-
-        BitSpace::bit_value_t* result = multiply_arrays(a, node->input_port_sizes[0], b, node->input_port_sizes[1]);
-
-        for (i = 0; i < node->num_output_pins; i++)
-            update_pin_value(node->output_pins[i], result[i], cycle);
-
-        vtr::free(result);
-        vtr::free(a);
-        vtr::free(b);
-    }
-}
-
 // TODO: Needs to be verified.
 static void compute_generic_node(nnode_t* node, int cycle) {
     int line_count_bitmap = node->bit_map_line_count;
@@ -1618,146 +1539,46 @@ static void compute_generic_node(nnode_t* node, int cycle) {
 }
 
 /*
- * Takes two arrays of integers (1's and 0's) and returns an array
- * of integers (1's and 0's) that represent their product. The
- * length of the returned array is twice that of the two parameters.
- *
- * This array will need to be freed later!
- */
-static BitSpace::bit_value_t* multiply_arrays(BitSpace::bit_value_t* a, int a_length, BitSpace::bit_value_t* b, int b_length) {
-    int result_size = a_length + b_length;
-    BitSpace::bit_value_t* result = (BitSpace::bit_value_t*)vtr::calloc(sizeof(BitSpace::bit_value_t), result_size);
-
-    int i;
-    for (i = 0; i < a_length; i++) {
-        if (a[i] == BitSpace::_1) {
-            int j;
-            for (j = 0; j < b_length; j++)
-                result[i + j] += b[j];
-        }
-    }
-    for (i = 0; i < result_size; i++) {
-        while (result[i] > 1) {
-            result[i] -= 2;
-            result[i + 1]++;
-        }
-    }
-    return result;
-}
-
-/*
  * Computes the given add node for the given cycle.
  * add by Sen
  */
-static void compute_add_node(nnode_t* node, int cycle, int type) {
+static void compute_add_node(nnode_t* node, int cycle) {
     oassert(node->num_input_port_sizes == 3);
     oassert(node->num_output_port_sizes == 2);
 
-    int i, num;
-    int flag = 0;
+    oassert(node->input_port_sizes[0] == node->input_port_sizes[1]);
+    oassert(node->input_port_sizes[2] == 1);
 
-    BitSpace::bit_value_t* a = (BitSpace::bit_value_t*)vtr::malloc(sizeof(BitSpace::bit_value_t) * node->input_port_sizes[0]);
-    BitSpace::bit_value_t* b = (BitSpace::bit_value_t*)vtr::malloc(sizeof(BitSpace::bit_value_t) * node->input_port_sizes[1]);
-    BitSpace::bit_value_t* c = (BitSpace::bit_value_t*)vtr::malloc(sizeof(BitSpace::bit_value_t) * node->input_port_sizes[2]);
+    oassert(node->output_port_sizes[0] == node->input_port_sizes[0]);
+    oassert(node->output_port_sizes[1] == 1);
 
-    num = node->input_port_sizes[0] + node->input_port_sizes[1];
-    //if cin connect to unconn(PAD_NODE), a[0] connect to ground(GND_NODE) and b[0] connect to ground, flag = 0 the initial adder for addition
-    //if cin connect to unconn(PAD_NODE), a[0] connect to ground(GND_NODE) and b[0] connect to vcc, flag = 1 the initial adder for subtraction
-    if (node->input_pins[num]->net->driver_pin->node->type == PAD_NODE) {
-        if (node->input_pins[0]->net->driver_pin->node->type == GND_NODE && node->input_pins[node->input_port_sizes[0]]->net->driver_pin->node->type == GND_NODE)
-            flag = 0;
-        else if (node->input_pins[0]->net->driver_pin->node->type == GND_NODE && node->input_pins[node->input_port_sizes[0]]->net->driver_pin->node->type == VCC_NODE)
-            flag = 1;
-    } else
-        flag = 2;
-
-    for (i = 0; i < node->input_port_sizes[0]; i++)
-        a[i] = get_pin_value(node->input_pins[i], cycle);
-    for (i = 0; i < node->input_port_sizes[1]; i++)
-        b[i] = get_pin_value(node->input_pins[node->input_port_sizes[0] + i], cycle);
-
-    for (i = 0; i < node->input_port_sizes[2]; i++)
-        //the initial cin of carry chain subtractor should be 1
-        if (flag == 1)
-            c[i] = BitSpace::_1;
-        //the initial cin of carry chain adder should be 0
-        else if (flag == 0)
-            c[i] = BitSpace::_0;
-        else
-            c[i] = get_pin_value(node->input_pins[node->input_port_sizes[0] + node->input_port_sizes[1] + i], cycle);
-
-    BitSpace::bit_value_t* result = add_arrays(a, node->input_port_sizes[0], b, node->input_port_sizes[1], c, node->input_port_sizes[2], type);
-
-    //update the pin value of output
-    for (i = 1; i < node->num_output_pins; i++)
-        update_pin_value(node->output_pins[i], result[(i - 1)], cycle);
-
-    update_pin_value(node->output_pins[0], result[(node->num_output_pins - 1)], cycle);
-
-    vtr::free(result);
-    vtr::free(a);
-    vtr::free(b);
-    vtr::free(c);
-}
-
-/*
- * Takes two arrays of integers (1's and 0's) and returns an array
- * of integers (1's and 0's) that represent their sum. The
- * length of the returned array is the maximum of the two parameters plus one.
- * add by Sen
- * This array will need to be freed later!
- */
-static BitSpace::bit_value_t* add_arrays(BitSpace::bit_value_t* a, int a_length, BitSpace::bit_value_t* b, int b_length, BitSpace::bit_value_t* c, int /*c_length*/, int /*flag*/) {
-    int result_size = std::max(a_length, b_length) + 1;
-    BitSpace::bit_value_t* result = (BitSpace::bit_value_t*)vtr::calloc(sizeof(BitSpace::bit_value_t), result_size);
-
-    //least significant bit would use the input carryIn, the other bits would use the compute value
-    //if one of the number is unknown, then the answer should be unknown(same as ModelSim)
-    if (BitSpace::is_unk[a[0]] || BitSpace::is_unk[b[0]] || BitSpace::is_unk[c[0]]) {
-        result[0] = BitSpace::_x;
-        result[1] = BitSpace::_x;
-    } else {
-        result[0] = a[0] ^ b[0] ^ c[0];
-        result[1] = (a[0] & b[0]) | (c[0] & b[0]) | (a[0] & c[0]);
-    }
-
-    BitSpace::bit_value_t temp_carry_in = result[1];
-    if (result_size > 2) {
-        for (int i = 1; i < std::min(a_length, b_length); i++) {
-            if (BitSpace::is_unk[a[i]] || BitSpace::is_unk[b[i]] || BitSpace::is_unk[temp_carry_in]) {
-                result[i] = BitSpace::_x;
-                result[i + 1] = BitSpace::_x;
-            } else {
-                result[i] = a[i] ^ b[i] ^ temp_carry_in;
-                result[i + 1] = (a[i] & b[i]) | (a[i] & temp_carry_in) | (temp_carry_in & b[i]);
-            }
-            temp_carry_in = result[i + 1];
-        }
-        if (a_length >= b_length) {
-            for (int i = b_length; i < a_length; i++) {
-                if (BitSpace::is_unk[a[i]] || BitSpace::is_unk[temp_carry_in]) {
-                    result[i] = BitSpace::_x;
-                    result[i + 1] = BitSpace::_x;
-                } else {
-                    result[i] = a[i] ^ temp_carry_in;
-                    result[i + 1] = a[i] & temp_carry_in;
-                }
-                temp_carry_in = result[i + 1];
-            }
-        } else {
-            for (int i = a_length; i < b_length; i++) {
-                if (BitSpace::is_unk[b[i]] || BitSpace::is_unk[temp_carry_in]) {
-                    result[i] = BitSpace::_x;
-                    result[i + 1] = BitSpace::_x;
-                } else {
-                    result[i] = b[i] ^ temp_carry_in;
-                    result[i + 1] = b[i] & temp_carry_in;
-                }
-                temp_carry_in = result[i + 1];
+    /**
+     * TODO: this must be a bug, unconn is 'z' and pushing '1' is just a "patch"
+     *      We should not be forcing a value, it should result in the logic 
+     */
+    BitSpace::bit_value_t carry = get_pin_value(node->input_pins[node->input_port_sizes[0] + node->input_port_sizes[1]], cycle);
+    // check if the cin == unconn
+    if (node->input_pins[node->input_port_sizes[0] + node->input_port_sizes[1]]->net->driver_pin->node->type == PAD_NODE) {
+        // if a[0] is connected to gnd
+        if (node->input_pins[0]->net->driver_pin->node->type == GND_NODE) {
+            // we connect the carry to have usefull output
+            if (node->input_pins[node->input_port_sizes[0]]->net->driver_pin->node->type == GND_NODE) {
+                carry = BitSpace::_0;
+            } else if (node->input_pins[node->input_port_sizes[0]]->net->driver_pin->node->type == VCC_NODE) {
+                carry = BitSpace::_1;
             }
         }
     }
-    return result;
+
+    VNumber a = get_value(node, 0, node->input_port_sizes[0], cycle);
+    VNumber b = get_value(node, node->input_port_sizes[0], node->input_port_sizes[1], cycle);
+
+    VNumber result = V_ADD(a, b, carry);
+
+    for (int i = 0; i < node->output_port_sizes[0]; i++) {
+        update_pin_value(node->output_pins[node->output_port_sizes[1] + i], result.get_bit_from_lsb(i), cycle);
+    }
+    update_pin_value(node->output_pins[0], result.get_bit_from_lsb(node->output_port_sizes[0]), cycle);
 }
 
 /*
@@ -1768,72 +1589,33 @@ static void compute_unary_sub_node(nnode_t* node, int cycle) {
     oassert(node->num_input_port_sizes == 2);
     oassert(node->num_output_port_sizes == 2);
 
-    int i;
-    bool unknown = false;
-    for (i = 0; i < (node->input_port_sizes[0] + node->input_port_sizes[1]); i++) {
-        BitSpace::bit_value_t pin = get_pin_value(node->input_pins[i], cycle);
-        if (BitSpace::is_unk[pin]) {
-            unknown = true;
-            break;
+    oassert(node->input_port_sizes[1] == 1);
+
+    oassert(node->output_port_sizes[0] == node->input_port_sizes[0]);
+    oassert(node->output_port_sizes[1] == 1);
+
+    /**
+     * TODO: this must be a bug, unconn is 'z' and pushing '1' is just a "patch"
+     *      We should not be forcing a value, it should result in the logic 
+     */
+    BitSpace::bit_value_t carry = get_pin_value(node->input_pins[node->input_port_sizes[0]], cycle);
+    // check if the cin == unconn
+    if (node->input_pins[node->input_port_sizes[0]]->net->driver_pin->node->type == PAD_NODE) {
+        // we connect the carry to have usefull output
+        if (node->input_pins[0]->net->driver_pin->node->type == GND_NODE) {
+            carry = BitSpace::_0;
+        } else if (node->input_pins[0]->net->driver_pin->node->type == VCC_NODE) {
+            carry = BitSpace::_1;
         }
     }
 
-    if (unknown) {
-        for (i = 0; i < (node->output_port_sizes[0] + node->output_port_sizes[1]); i++)
-            update_pin_value(node->output_pins[i], BitSpace::_x, cycle);
-    } else {
-        BitSpace::bit_value_t* a = (BitSpace::bit_value_t*)vtr::malloc(sizeof(BitSpace::bit_value_t) * node->input_port_sizes[0]);
-        BitSpace::bit_value_t* c = (BitSpace::bit_value_t*)vtr::malloc(sizeof(BitSpace::bit_value_t) * node->input_port_sizes[1]);
+    VNumber a = get_value(node, 0, node->input_port_sizes[0], cycle);
+    VNumber result = a.twos_complement(carry);
 
-        for (i = 0; i < node->input_port_sizes[0]; i++)
-            a[i] = get_pin_value(node->input_pins[i], cycle);
-
-        for (i = 0; i < node->input_port_sizes[1]; i++)
-            if (node->input_pins[node->input_port_sizes[0] + node->input_port_sizes[1] + i]->net->driver_pin->node->type == PAD_NODE)
-                c[i] = 1;
-            else
-                c[i] = get_pin_value(node->input_pins[node->input_port_sizes[0] + i], cycle);
-
-        BitSpace::bit_value_t* result = unary_sub_arrays(a, node->input_port_sizes[0], c, node->input_port_sizes[1]);
-
-        for (i = 1; i < node->num_output_pins; i++)
-            update_pin_value(node->output_pins[i], result[(i - 1)], cycle);
-
-        update_pin_value(node->output_pins[0], result[(node->num_output_pins - 1)], cycle);
-
-        vtr::free(result);
-        vtr::free(a);
-        vtr::free(c);
+    for (int i = 0; i < node->output_port_sizes[0]; i++) {
+        update_pin_value(node->output_pins[node->output_port_sizes[1] + i], result.get_bit_from_lsb(i), cycle);
     }
-}
-
-/*
- * Takes two arrays of integers (1's and 0's) and returns an array
- * of integers (1's and 0's) that represent their sum. The
- * length of the returned array is the maximum of the two parameters plus one.
- * add by Sen
- * This array will need to be freed later!
- */
-static BitSpace::bit_value_t* unary_sub_arrays(BitSpace::bit_value_t* a, int a_length, BitSpace::bit_value_t* c, int /*c_length*/) {
-    int result_size = a_length + 1;
-    BitSpace::bit_value_t* result = (BitSpace::bit_value_t*)vtr::calloc(sizeof(BitSpace::bit_value_t), result_size);
-
-    int i;
-    BitSpace::bit_value_t temp_carry_in;
-
-    c[0] = 1;
-    result[0] = (!a[0]) ^ c[0] ^ 0;
-    result[1] = ((!a[0]) & 0) | (c[0] & 0) | ((!a[0]) & c[0]);
-
-    temp_carry_in = result[1];
-    if (result_size > 2) {
-        for (i = 1; i < a_length; i++) {
-            result[i] = (!a[i]) ^ 0 ^ temp_carry_in;
-            result[i + 1] = ((!a[i]) & 0) | ((!a[i]) & temp_carry_in) | (temp_carry_in & 0);
-            temp_carry_in = result[i + 1];
-        }
-    }
-    return result;
+    update_pin_value(node->output_pins[0], carry, cycle);
 }
 
 /*

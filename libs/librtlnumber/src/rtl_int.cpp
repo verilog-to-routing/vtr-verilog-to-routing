@@ -247,6 +247,10 @@ VNumber V_MINUS(VNumber& a) {
     return a.twos_complement();
 }
 
+VNumber V_MINUS(VNumber& a, BitSpace::bit_value_t carry) {
+    return a.twos_complement(carry);
+}
+
 VNumber V_UNSIGNED(VNumber& a) {
     return a.to_unsigned();
 }
@@ -442,11 +446,11 @@ VNumber V_SHIFT_RIGHT(VNumber& a, VNumber& b) {
     return shift_op(a, -1 * b.get_value(), false);
 }
 
-VNumber V_ADD(VNumber& a, VNumber& b) {
-    return sum_op(a, b, _0, /* is_twos_complement_subtraction */ false);
+VNumber V_ADD(VNumber& a, VNumber& b, BitSpace::bit_value_t carry_in) {
+    return sum_op(a, b, carry_in, /* is_twos_complement_subtraction */ false);
 }
 
-VNumber V_MINUS(VNumber& a, VNumber& b) {
+VNumber V_MINUS(VNumber& a, VNumber& b, BitSpace::bit_value_t carry_in) {
     size_t std_length = std::max(a.size(), b.size());
     VNumber padded_a(a, std_length);
     VNumber padded_b(b, std_length);
@@ -458,7 +462,15 @@ VNumber V_MINUS(VNumber& a, VNumber& b) {
         complement = V_MINUS(complement);
     }
 
-    return sum_op(padded_a, complement, _0, /* is_twos_complement_subtraction */ true);
+    return sum_op(padded_a, complement, carry_in, /* is_twos_complement_subtraction */ true);
+}
+
+VNumber V_ADD(VNumber& a, VNumber& b) {
+    return V_ADD(a, b, _0);
+}
+
+VNumber V_MINUS(VNumber& a, VNumber& b) {
+    return V_MINUS(a, b, _0);
 }
 
 VNumber V_MULTIPLY(VNumber& a_in, VNumber& b_in) {

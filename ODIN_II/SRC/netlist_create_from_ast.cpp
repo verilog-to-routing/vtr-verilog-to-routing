@@ -3409,7 +3409,8 @@ signal_list_t* create_operation_node(ast_node_t* op, signal_list_t** input_lists
             output_port_width = input_lists[0]->count;
             input_port_width = input_lists[0]->count;
             break;
-        case SL: // <<
+        case ASL: // <<<
+        case SL:  // <<
             /* Shifts doesn't matter about port size, but second input needs to be a number */
             //output_port_width = input_lists[0]->count + (shift_left_value_with_overflow_check(0x1, input_lists[1]->count)-1);
             output_port_width = input_lists[0]->count + (shift_left_value_with_overflow_check(0x1, log2(op->children[1]->types.vnumber->get_value()), op->loc));
@@ -3469,7 +3470,7 @@ signal_list_t* create_operation_node(ast_node_t* op, signal_list_t** input_lists
     oassert(output_port_width != -1);
 
     for (i = 0; i < list_size; i++) {
-        if ((operation_node->type == SR) || (operation_node->type == SL) || (operation_node->type == ASR)) {
+        if ((operation_node->type == SR) || (operation_node->type == ASL) || (operation_node->type == SL) || (operation_node->type == ASR)) {
             /* Need to check that 2nd operand is constant */
             ast_node_t* second = op->children[1];
             if (second->type != NUMBERS)
