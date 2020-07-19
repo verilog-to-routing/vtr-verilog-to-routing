@@ -96,7 +96,7 @@ jobs:
     - stage: Test
       name: "Python Lint"
       script:
-        - ./dev/pylint_check.py
+        - python3.6 ./dev/pylint_check.py
     - stage: Test
       name: "C++ Unit Tests"
       env:
