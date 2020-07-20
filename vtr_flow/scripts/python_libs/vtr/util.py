@@ -405,13 +405,13 @@ def load_config_lines(filepath, allow_includes=True):
                 if blank_regex.match(line):
                     continue
 
-                if line.startswith("@include"):
+                if line.startswith("%include"):
                     if allow_includes:
                         components = line.split()
                         assert len(components) == 2
 
                         include_file = components[1].strip('"') #Strip quotes
-                        include_file_abs = str(Path(filepath).paren / include_file)
+                        include_file_abs = str(Path(filepath).parent / include_file)
 
                         #Recursively load the config
                         config_lines += load_config_lines(include_file_abs, allow_includes=allow_includes) 
