@@ -263,11 +263,12 @@ def cmp_full_vs_incr_STA(architecture,circuit,circuit_name=None,command_runner=C
     #Verify that files are Paths or convert them to Paths and check that they exist
     architecture = verify_file(architecture, "Architecture")
     circuit = verify_file(circuit, "Circuit")
-
+    if not circuit_name:
+        circuit_name = circuit.stem
     default_output_filenames = [
-            "{}.net".format(circuit_name.stem),
-            "{}.place".format(circuit_name.stem),
-            "{}.route".format(circuit_name.stem),
+            "{}.net".format(circuit_name),
+            "{}.place".format(circuit_name),
+            "{}.route".format(circuit_name),
             "report_timing.setup.rpt",
 			"report_timing.hold.rpt",
 			"report_unconstrained_timing.setup.rpt",
