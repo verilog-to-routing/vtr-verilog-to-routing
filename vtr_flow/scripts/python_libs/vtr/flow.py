@@ -226,7 +226,7 @@ def run(architecture_file, circuit_file,
             
         if route_fixed_W:
             #The User specified a fixed channel width
-            vtr.vpr.run(architecture_copy, circuit_copy, pre_vpr_netlist, 
+            vtr.vpr.run(architecture_copy, pre_vpr_netlist, circuit_copy.stem,
                     output_netlist=post_vpr_netlist,
                     command_runner=command_runner, 
                     temp_dir=temp_dir, 
@@ -234,7 +234,7 @@ def run(architecture_file, circuit_file,
                     rr_graph_ext=rr_graph_ext)
         else:
             #First find minW and then re-route at a relaxed W
-            vtr.vpr.run_relax_W(architecture_copy, circuit_copy, pre_vpr_netlist, 
+            vtr.vpr.run_relax_W(architecture_copy, pre_vpr_netlist, circuit_copy.stem,
                             output_netlist=post_vpr_netlist,
                             command_runner=command_runner, 
                             relax_W_factor=relax_W_factor,
@@ -257,7 +257,7 @@ def run(architecture_file, circuit_file,
 
     # Do a second-run of the incremental analysis to compare the result files
     if check_incremental_sta_consistency:
-        vtr.vpr.cmp_full_vs_incr_STA(architecture_copy, circuit_copy, pre_vpr_netlist, 
+        vtr.vpr.cmp_full_vs_incr_STA(architecture_copy, pre_vpr_netlist, circuit_copy.stem,
                             command_runner=command_runner, 
                             vpr_args=vpr_args,
                             rr_graph_ext=rr_graph_ext,
