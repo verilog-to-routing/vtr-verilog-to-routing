@@ -23,7 +23,7 @@ class RawDefaultHelpFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.R
 
 class CommandRunner(object):
 
-    def __init__(self, timeout_sec=None, max_memory_mb=None, track_memory=True, verbose_error=False, verbose=False, echo_cmd=False, indent="\t", show_failures=False,valgrind=False):
+    def __init__(self, timeout_sec=None, max_memory_mb=None, track_memory=True, verbose_error=None, verbose=False, echo_cmd=None, indent="\t", show_failures=False,valgrind=False):
         """
         An object for running system commands with timeouts, memory limits and varying verbose-ness 
 
@@ -32,12 +32,17 @@ class CommandRunner(object):
             timeout_sec: maximum walk-clock-time of the command in seconds. Default: None
             max_memory_mb: maximum memory usage of the command in megabytes (if supported). Default: None
             track_memory: Whether to track usage of the command (disabled if not supported). Default: True
-            verbose_error: Produce more verbose output if the commadn fails. Default: False
+            verbose_error: Produce more verbose output if the commadn fails. Default: Equal to verbose
             verbose: Produce more verbose output. Default: False
-            echo_cmd: Echo the command before running. Default: False
+            echo_cmd: Echo the command before running. Default: Equal to verbose
             indent: The string specifying a single indent (used in verbose mode)
             valgrind: Indicates if commands should be run with valgrind
         """
+        if verbose_error==None:
+            verbose_error = verbose
+        if echo_cmd == None:
+            echo_cmd = verbose
+
         self._timeout_sec = timeout_sec
         self._max_memory_mb = max_memory_mb
         self._track_memory = track_memory

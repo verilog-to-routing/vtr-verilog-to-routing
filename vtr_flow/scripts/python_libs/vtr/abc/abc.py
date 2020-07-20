@@ -70,19 +70,19 @@ def run(architecture_file, circuit_file,
     #
     # Parse arguments
     #
-    abc_flow_type = 2
+    abc_flow_type = "iterative_bb"
     abc_run_args = ""
     use_old_latches_restoration_script = 0
     lut_size = None
 
     if("iterative_bb" in abc_args):
-        abc_flow_type=2
+        abc_flow_type="iterative_bb"
         del abc_args["iterative_bb"]
     if("blanket_bb" in abc_args):
-        abc_flow_type=3
+        abc_flow_type="blanket_bb"
         del abc_args["blanket_bb"]
     if("once_bb" in abc_args):
-        abc_flow_type=1
+        abc_flow_type="once_bb"
         del abc_args["once_bb"]
     if("use_old_latches_restoration_script" in abc_args):
         use_old_latches_restoration_script = 1
@@ -102,8 +102,7 @@ def run(architecture_file, circuit_file,
     if(lut_size == None):
         lut_size = determine_lut_size(str(architecture_file))
 
-    if(abc_flow_type):
-        populate_clock_list(circuit_file,blackbox_latches_script,clk_list,command_runner,temp_dir,"report_clocks.abc.out")
+    populate_clock_list(circuit_file,blackbox_latches_script,clk_list,command_runner,temp_dir,"report_clocks.abc.out")
 
     if abc_exec == None:
         abc_exec = find_vtr_file('abc', is_executable=True)
@@ -117,7 +116,7 @@ def run(architecture_file, circuit_file,
 
     iterations=len(clk_list)
     
-    if(iterations==0 or abc_flow_type != 2):
+    if(iterations==0 or abc_flow_type != "iterative_bb"):
         iterations=1
 
     original_script = abc_script
@@ -126,7 +125,7 @@ def run(architecture_file, circuit_file,
         pre_abc_blif= Path(temp_dir) / (str(i)+"_" + circuit_file.name)
         post_abc_blif = Path(temp_dir) / (str(i)+"_"+output_netlist.name)
         post_abc_raw_blif = Path(temp_dir) / (str(i)+"_"+output_netlist.with_suffix('').stem+".raw.abc.blif")
-        if(abc_flow_type==3):
+        if(abc_flow_type=="blanket_bb"):
             cmd = [blackbox_latches_script, "--input", input_file,"--output",pre_abc_blif.name]
             command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename=str(i)+"_blackboxing_latch.out", indent_depth=1)
         
@@ -192,7 +191,7 @@ def run(architecture_file, circuit_file,
         log_file = Path(log_filename)
         command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename=log_file.stem+str(i)+log_file.suffix, indent_depth=1)
         
-        if(abc_flow_type != 3 and len(clk_list)>i):
+        if(abc_flow_type != "blanket_bb" and len(clk_list)>i):
             cmd = [blackbox_latches_script,"--restore", clk_list[i], "--input", post_abc_raw_blif.name,"--output",post_abc_blif.name]
             command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename="restore_latch" + str(i) + ".out", indent_depth=1)
         else:
@@ -203,7 +202,7 @@ def run(architecture_file, circuit_file,
 
             cmd = [restore_multiclock_info_script, pre_abc_blif.name, post_abc_raw_blif.name ,post_abc_blif.name]
             command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename="restore_latch" + str(i) + ".out", indent_depth=1)
-        if(abc_flow_type != 2):
+        if(abc_flow_type != "iterative_bb"):
             break
         
         abc_script = original_script

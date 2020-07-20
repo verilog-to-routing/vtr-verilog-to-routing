@@ -16,7 +16,6 @@ def run(architecture_file, circuit_file,
                  start_stage=VTR_STAGE.odin, end_stage=VTR_STAGE.vpr, 
                  command_runner=vtr.CommandRunner(), 
                  temp_dir="./temp", 
-                 verbosity=0,
                  odin_args=None,
                  abc_args=None,
                  vpr_args=None,
@@ -59,7 +58,7 @@ def run(architecture_file, circuit_file,
             A CommandRunner object used to run system commands
         
         verbosity        : 
-            How much output to produce
+            Weather to output error description or not
         
         odin_args        : 
             A dictionary of keyword arguments to pass on to ODIN II 
@@ -239,7 +238,6 @@ def run(architecture_file, circuit_file,
                             command_runner=command_runner, 
                             relax_W_factor=relax_W_factor,
                             temp_dir=temp_dir, 
-                            verbosity=verbosity, 
                             vpr_args=vpr_args)
 
         if not lec_base_netlist:

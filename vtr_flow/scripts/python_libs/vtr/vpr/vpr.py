@@ -4,7 +4,7 @@ from vtr import  mkdir_p, find_vtr_file, CommandRunner, print_verbose, relax_W, 
 from vtr.error import InspectError
 
 def run_relax_W(architecture, circuit, circuit_name=None, command_runner=CommandRunner(), temp_dir=".", 
-                    relax_W_factor=1.3, vpr_exec=None, verbosity=1, logfile_base="vpr",
+                    relax_W_factor=1.3, vpr_exec=None, logfile_base="vpr",
                     vpr_args=None, output_netlist=None):
     """
     Runs VPR twice:
@@ -39,9 +39,6 @@ def run_relax_W(architecture, circuit, circuit_name=None, command_runner=Command
         
         vpr_exec: 
             Path to the VPR executable
-        
-        verbosity: 
-            How much progress output to produce
         
         logfile_base: 
             Base name for log files (e.g. "vpr" produces vpr.min_W.out, vpr.relaxed_W.out)

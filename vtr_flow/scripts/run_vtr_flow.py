@@ -319,9 +319,7 @@ def vtr_command_main(arg_list, prog=None):
     command_runner = vtr.CommandRunner(track_memory=True, 
                                    max_memory_mb=args.limit_memory_usage, 
                                    timeout_sec=args.timeout,
-                                   verbose_error=True if args.verbose == 2 else False,
-                                   verbose=True if args.verbose > 2 else False,
-                                   echo_cmd=True if args.verbose >= 4 else False,
+                                   verbose=args.verbose,
                                    show_failures = args.show_failures,
                                    valgrind = args.valgrind)
     exit_status = 0
@@ -396,7 +394,6 @@ def vtr_command_main(arg_list, prog=None):
                         start_stage=args.start, 
                         end_stage=args.end,
                         command_runner=command_runner,
-                        verbosity=args.verbose,
                         vpr_args=vpr_args,
                         abc_args=abc_args,
                         odin_args=odin_args,
