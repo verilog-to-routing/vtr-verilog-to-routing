@@ -174,7 +174,7 @@ def main():
         process = subprocess.run(cmd, check=False, stdout=subprocess.PIPE)
         if process.returncode:
             print(TermColor.RED + relpath_str, "has lint errors", TermColor.END)
-            # print(process.stdout.decode().strip())
+            print(process.stdout.decode().strip())
             num_error_files += 1
         else:
             print(TermColor.GREEN + relpath_str, "passed", TermColor.END)
