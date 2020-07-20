@@ -229,7 +229,7 @@ def populate_clock_list(circuit_file,blackbox_latches_script,clk_list,command_ru
         for line in f.readlines():
             clk_list.append(line.strip('\n'))
 
-def run_lec(reference_netlist, implementation_netlist, command_runner=CommandRunner(), temp_dir=".", log_filename="abc.dec.out", abc_exec=None):
+def run_lec(reference_netlist, implementation_netlist, command_runner=CommandRunner(), temp_dir=".", log_filename="abc.lec.out", abc_exec=None):
     """
     Run Logical Equivalence Checking (LEC) between two netlists using ABC
 
