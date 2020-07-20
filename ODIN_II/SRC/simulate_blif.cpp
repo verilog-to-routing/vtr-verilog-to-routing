@@ -1737,12 +1737,8 @@ static void assign_memory_from_mif_file(nnode_t* node, const char* filename, int
 
     FILE* mif = fopen(filename, "r");
     if (!mif) {
-        error_message(SIMULATION, temp_loc, "MIF file (%ldx%ld) not found. \n", width, address_width);
-    } else {
-        fclose(mif);
+        error_message(SIMULATION, temp_loc, "MIF file (%dx%ld) not found. \n", width, address_width);
     }
-
-    rewind(mif);
 
     std::unordered_map<std::string, std::string> symbols = std::unordered_map<std::string, std::string>();
 
@@ -1874,6 +1870,7 @@ static void assign_memory_from_mif_file(nnode_t* node, const char* filename, int
 
         vtr::free(buffer_in);
     }
+    fclose(mif);
 }
 
 /*
