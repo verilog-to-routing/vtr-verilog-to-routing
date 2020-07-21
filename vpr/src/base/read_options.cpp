@@ -1568,31 +1568,31 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     place_grp.add_argument(args.PlaceAlphaMin, "--alpha_min")
         .help(
-            "Minimum (starting) value of alpha.")
+            "For placement using Dusty's annealing schedule. Minimum (starting) value of alpha.")
         .default_value("0.2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceAlphaMax, "--alpha_max")
         .help(
-            "Maximum (stopping) value of alpha.")
+            "For placement using Dusty's annealing schedule. Maximum (stopping) value of alpha.")
         .default_value("0.9")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceAlphaDecay, "--alpha_decay")
         .help(
-            "The value that alpha is scaled by after reset.")
+            "For placement using Dusty's annealing schedule. The value that alpha is scaled by after reset.")
         .default_value("0.7")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceSuccessMin, "--anneal_success_min")
         .help(
-            "Minimum success ratio when annealing before resetting the temperature to maintain the target success ratio.")
+            "For placement using Dusty's annealing schedule. Minimum success ratio when annealing before resetting the temperature to maintain the target success ratio.")
         .default_value("0.1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceSuccessTarget, "--anneal_success_target")
         .help(
-            "Target success ratio when annealing.")
+            "For placement using Dusty's annealing schedule. Target success ratio when annealing.")
         .default_value("0.25")
         .show_in(argparse::ShowIn::HELP_ONLY);
 

@@ -107,7 +107,7 @@ struct t_placer_prev_inverse_costs {
     double timing_cost;
 };
 
-// Used by update_state()
+// Used by update_annealing_state()
 struct t_annealing_state {
     float t;                  // Temperature
     float rlim;               // Range limit for swaps
@@ -360,11 +360,11 @@ static float starting_t(t_placer_costs* costs,
                         t_pl_blocks_to_be_moved& blocks_affected,
                         const t_placer_opts& placer_opts);
 
-static bool update_state(t_annealing_state* state,
-                         float success_rat,
-                         const t_placer_costs& costs,
-                         const t_placer_opts& placer_opts,
-                         const t_annealing_sched& annealing_sched);
+static bool update_annealing_state(t_annealing_state* state,
+                                   float success_rat,
+                                   const t_placer_costs& costs,
+                                   const t_placer_opts& placer_opts,
+                                   const t_annealing_sched& annealing_sched);
 
 static void update_rlim(float* rlim, float success_rat, const DeviceGrid& grid);
 
@@ -814,7 +814,7 @@ void try_place(const t_placer_opts& placer_opts,
             print_clb_placement("first_iteration_clb_placement.echo");
         }
 #endif
-    } while (update_state(&state, success_rat, costs, placer_opts, annealing_sched));
+    } while (update_annealing_state(&state, success_rat, costs, placer_opts, annealing_sched));
     /* Outer loop of the simmulated annealing ends */
 
     auto pre_quench_timing_stats = timing_ctx.stats;
@@ -1206,12 +1206,18 @@ static void update_rlim(float* rlim, float success_rat, const DeviceGrid& grid) 
     *rlim = max(*rlim, (float)1.);
 }
 
-/* Update the temperature according to the annealing schedule selected. */
-static bool update_state(t_annealing_state* state,
-                         float success_rat,
-                         const t_placer_costs& costs,
-                         const t_placer_opts& placer_opts,
-                         const t_annealing_sched& annealing_sched) {
+/* Update the annealing state according to the annealing schedule selected.
+ *   USER_SCHED:  A manual fixed schedule with fixed alpha and exit criteria.
+ *   AUTO_SCHED:  A more sophisticated schedule where alpha varies based on success ratio.
+ *   DUSTY_SCHED: This schedule jumps backward and slows down in response to success ratio.
+ *                See doc/src/vpr/dusty_sa.rst for more details.
+ *
+ * Returns true until the schedule is finished. */
+static bool update_annealing_state(t_annealing_state* state,
+                                   float success_rat,
+                                   const t_placer_costs& costs,
+                                   const t_placer_opts& placer_opts,
+                                   const t_annealing_sched& annealing_sched) {
     /* Return `false` when the exit criterion is met. */
     if (annealing_sched.type == USER_SCHED) {
         state->t *= annealing_sched.alpha_t;
@@ -1253,6 +1259,8 @@ static bool update_state(t_annealing_state* state,
         if (state->t < t_exit || std::isnan(t_exit)) return false;
     }
 
+    // Gradually changes from the initial crit_exponent to the final crit_exponent based on how much the range limit has shrunk.
+    // The idea is that as the range limit shrinks (indicating we are fine-tuning a more optimized placement) we can focus more on a smaller number of critical connections, which a higher crit_exponent achieves.
     update_rlim(&state->rlim, success_rat, device_ctx.grid);
 
     if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
