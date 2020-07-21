@@ -62,6 +62,9 @@ class PlacerCriticalities {
     //by the last call to update_criticalities()
     pin_range pins_with_modified_criticality() const;
 
+    //Returns the cluster pin and atom pin lookup table
+    const ClusteredPinAtomPinsLookup& get_pin_lookup() const { return pin_lookup_; }
+
   public: //Modifiers
     //Incrementally updates criticalities based on the atom netlist criticalitites provied by
     //timing_info and the provided criticality_exponent.

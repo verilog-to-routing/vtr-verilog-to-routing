@@ -149,6 +149,15 @@ static ClbNetPinsMatrix<double> proposed_connection_timing_cost; //Costs for pro
                                                                  // move, otherwise INVALID_DELAY)
 
 /*
+ * Slack of connections (the worse one among atom pins)
+ * Index ranges: [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]
+ */
+static ClbNetPinsMatrix<float> connection_slack;          //Slacks based on commited block positions
+static ClbNetPinsMatrix<float> proposed_connection_slack; //Slacks for proposed block positions (only
+                                                          // for connections effected by move, otherwise
+                                                          // INVALID_DELAY)
+
+/*
  * Timing cost of nets (i.e. sum of criticality * delay for each net sink/connection).
  * Index ranges: [0..cluster_ctx.clb_nlist.nets().size()-1]
  */
@@ -385,6 +394,7 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb* bb_coord_new);
 static void update_bb(ClusterNetId net_id, t_bb* bb_coord_new, t_bb* bb_edge_new, int xold, int yold, int xnew, int ynew);
 
 static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm,
+                                               TimingInfo* timing_info,
                                                const PlaceDelayModel* delay_model,
                                                const PlacerCriticalities* criticalities,
                                                t_pl_blocks_to_be_moved& blocks_affected,
@@ -398,12 +408,14 @@ static void update_net_bb(const ClusterNetId net,
                           int iblk,
                           const ClusterBlockId blk,
                           const ClusterPinId blk_pin);
-static void update_td_delta_costs(const PlaceDelayModel* delay_model,
+
+static void update_td_delta_costs(TimingInfo* timing_info,
+                                  const PlaceDelayModel* delay_model,
                                   const PlacerCriticalities& criticalities,
                                   const ClusterNetId net,
                                   const ClusterPinId pin,
                                   t_pl_blocks_to_be_moved& blocks_affected,
-                                  double& delta_timing_cost);
+                                  double& delta_timing_cost)
 
 static double get_net_cost(ClusterNetId net_id, t_bb* bb_ptr);
 
@@ -1420,6 +1432,7 @@ static e_move_result try_swap(float t,
 
         // Find all the nets affected by this swap and update their costs
         int num_nets_affected = find_affected_nets_and_update_costs(place_algorithm,
+                                                                    timing_info,
                                                                     delay_model,
                                                                     criticalities,
                                                                     blocks_affected,
@@ -1507,6 +1520,7 @@ static e_move_result try_swap(float t,
 //
 //Returns the number of affected nets.
 static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm,
+                                               TimingInfo* timing_info,
                                                const PlaceDelayModel* delay_model,
                                                const PlacerCriticalities* criticalities,
                                                t_pl_blocks_to_be_moved& blocks_affected,
@@ -1541,7 +1555,7 @@ static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm
 
             if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
                 //Determine the change in timing costs if required
-                update_td_delta_costs(delay_model, *criticalities, net_id, blk_pin, blocks_affected, timing_delta_c);
+                update_td_delta_costs(timing_info, delay_model, *criticalities, net_id, blk_pin, blocks_affected, timing_delta_c);
             }
         }
     }
@@ -1602,7 +1616,8 @@ static void update_net_bb(const ClusterNetId net,
     }
 }
 
-static void update_td_delta_costs(const PlaceDelayModel* delay_model,
+static void update_td_delta_costs(TimingInfo* timing_info,
+                                  const PlaceDelayModel* delay_model,
                                   const PlacerCriticalities& criticalities,
                                   const ClusterNetId net,
                                   const ClusterPinId pin,
@@ -1619,6 +1634,20 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
 
             proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * temp_delay;
             delta_timing_cost += proposed_connection_timing_cost[net][ipin] - connection_timing_cost[net][ipin];
+
+            // Calculate slack
+            VTR_ASSERT(proposed_connection_slack[net][ipin] == INVALID_DELAY);
+            float pin_slack = INVALID_DELAY;
+            const ClusteredPinAtomPinsLookup& pin_lookup = criticalities.get_pin_lookup();
+            for (const auto atom_pin : pin_lookup.connected_atom_pins(pin)) {
+                if (pin_slack == INVALID_DELAY) {
+                    pin_slack = timing_info.setup_pin_slack(atom_pin);
+                } else {
+                    pin_slack = std::min(pin_slack, timing_info.setup_pin_slack(atom_pin));
+                }
+            }
+            VTR_ASSERT(pin_slack != INVALID_DELAY);
+            proposed_connection_slack[net][ipin] = pin_slack;
 
             ClusterPinId sink_pin = cluster_ctx.clb_nlist.net_pin(net, ipin);
             blocks_affected.affected_pins.push_back(sink_pin);
@@ -1641,6 +1670,20 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
 
             proposed_connection_timing_cost[net][net_pin] = criticalities.criticality(net, net_pin) * temp_delay;
             delta_timing_cost += proposed_connection_timing_cost[net][net_pin] - connection_timing_cost[net][net_pin];
+
+                        // Calculate slack
+            VTR_ASSERT(proposed_connection_slack[net][ipin] == INVALID_DELAY);
+            float pin_slack = INVALID_DELAY;
+            const ClusteredPinAtomPinsLookup& pin_lookup = criticalities.get_pin_lookup();
+            for (const auto atom_pin : pin_lookup.connected_atom_pins(pin)) {
+                if (pin_slack == INVALID_DELAY) {
+                    pin_slack = timing_info.setup_pin_slack(atom_pin);
+                } else {
+                    pin_slack = std::min(pin_slack, timing_info.setup_pin_slack(atom_pin));
+                }
+            }
+            VTR_ASSERT(pin_slack != INVALID_DELAY);
+            proposed_connection_slack[net][ipin] = pin_slack;
 
             blocks_affected.affected_pins.push_back(pin);
         }
@@ -1768,8 +1811,12 @@ static void commit_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
                 for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
                     connection_delay[net_id][ipin] = proposed_connection_delay[net_id][ipin];
                     proposed_connection_delay[net_id][ipin] = INVALID_DELAY;
+
                     connection_timing_cost[net_id][ipin] = proposed_connection_timing_cost[net_id][ipin];
                     proposed_connection_timing_cost[net_id][ipin] = INVALID_DELAY;
+
+                    connection_slack[net_id][ipin] = proposed_connection_slack[net_id][ipin];
+                    proposed_connection_slack[net_id][ipin] = INVALID_DELAY;
                 }
             } else {
                 //This pin is a net sink on a moved block
@@ -1781,8 +1828,12 @@ static void commit_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
 
                     connection_delay[net_id][net_pin] = proposed_connection_delay[net_id][net_pin];
                     proposed_connection_delay[net_id][net_pin] = INVALID_DELAY;
+
                     connection_timing_cost[net_id][net_pin] = proposed_connection_timing_cost[net_id][net_pin];
                     proposed_connection_timing_cost[net_id][net_pin] = INVALID_DELAY;
+
+                    connection_slack[net_id][ipin] = proposed_connection_slack[net_id][ipin];
+                    proposed_connection_slack[net_id][ipin] = INVALID_DELAY;
                 }
             }
         } /* Finished going through all the pins in the moved block */
@@ -1805,6 +1856,7 @@ static void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
         int ipin = clb_nlist.pin_net_index(pin);
         proposed_connection_delay[net][ipin] = INVALID_DELAY;
         proposed_connection_timing_cost[net][ipin] = INVALID_DELAY;
+        proposed_connection_slack[net][ipin] = INVALID_DELAY;
     }
 #endif
 }
@@ -2073,6 +2125,9 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
         proposed_connection_timing_cost = make_net_pins_matrix<double>(cluster_ctx.clb_nlist, 0.);
         net_timing_cost.resize(num_nets, 0.);
 
+        connection_slack = make_net_pins_matrix<float>(cluster_ctx.clb_nlist, 0.f);
+        proposed_connection_slack = make_net_pins_matrix<float>(cluster_ctx.clb_nlist, 0.f);
+
         for (auto net_id : cluster_ctx.clb_nlist.nets()) {
             for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
                 connection_delay[net_id][ipin] = 0;
@@ -2080,11 +2135,16 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
 
                 proposed_connection_timing_cost[net_id][ipin] = INVALID_DELAY;
 
+                connection_slack = INVALID_DELAY;
+                proposed_connection_slack = INVALID_DELAY;
+
                 if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) continue;
 
                 connection_timing_cost[net_id][ipin] = INVALID_DELAY;
             }
         }
+
+        
     }
 
     net_cost.resize(num_nets, -1.);
@@ -2110,8 +2170,10 @@ static void free_placement_structs(const t_placer_opts& placer_opts) {
     if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
         vtr::release_memory(connection_timing_cost);
         vtr::release_memory(connection_delay);
+        vtr::release_memory(connection_slack);
         vtr::release_memory(proposed_connection_timing_cost);
         vtr::release_memory(proposed_connection_delay);
+        vtr::release_memory(proposed_connection_slack);
 
         vtr::release_memory(net_timing_cost);
     }
