@@ -13,7 +13,7 @@ The effect of this is many fast, but slowing sweeps in temperature, focused wher
 
 In addition, move_lim (which controls the number of iterations in the inner loop) is scaled with the target success ratio over the current success ratio, which reduces the time to reach the target ratio.
 
-The schedule terminates when the maximum alpha (``--alpha_max``) is reached. Termination is ensured by the narrowing range between the recorded upper temperature and the minimum success ratio, which will eventually cause alpha to reach its minimum.
+The schedule terminates when the maximum alpha (``--alpha_max``) is reached. Termination is ensured by the narrowing range between the recorded upper temperature and the minimum success ratio, which will eventually cause alpha to reach its maximum.
 
 This algorithm was inspired by Lester Ingber's adaptive simulated annealing algorithm [ASA93]_.
 
