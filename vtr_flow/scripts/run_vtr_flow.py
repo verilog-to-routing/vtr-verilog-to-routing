@@ -211,7 +211,7 @@ def vtr_command_argparser(prog=None):
                             default=False,
                             action="store_true",
                             dest="blanket_bb",
-                            help="Use iterative black-boxing flow with out clocks") #not sure if this is a correct statement. 
+                            help="Use iterative black-boxing on all the clocks")
     abc.add_argument("-use_old_latches_restoration_script",
                             default=False,
                             action="store_true",
