@@ -138,8 +138,8 @@ void check_rr_graph(const t_graph_type graph_type,
             }
 
             //Between two wire segments
-            VTR_ASSERT_MSG(to_rr_type == CHANX || to_rr_type == CHANY, "Expect channel type");
-            VTR_ASSERT_MSG(rr_type == CHANX || rr_type == CHANY, "Expect channel type");
+            VTR_ASSERT_MSG(to_rr_type == CHANX || to_rr_type == CHANY || to_rr_type == IPIN, "Expect channel type or input pin type");
+            VTR_ASSERT_MSG(rr_type == CHANX || rr_type == CHANY || rr_type == OPIN, "Expect channel type or output pin type");
 
             //While multiple connections between the same wires can be electrically legal,
             //they are redundant if they are of the same switch type.
@@ -166,6 +166,7 @@ void check_rr_graph(const t_graph_type graph_type,
 
                 VPR_ERROR(VPR_ERROR_ROUTE, "in check_rr_graph: node %d has %d redundant connections to node %d of switch type %d (%s)",
                           inode, kv.second, to_node, kv.first, SWITCH_TYPE_STRINGS[size_t(switch_type)]);
+                }
             }
         }
 
