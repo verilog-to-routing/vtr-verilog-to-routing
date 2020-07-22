@@ -871,26 +871,25 @@ void is_a_breakpoint(bool aBreakpoint) {
 
 //first recognized the block_id to look for
 //then looks for that block_id and if it finds it, it returns the block id, else just -1
-int in_blocks_affected(std:: string expression_left){
-
+int in_blocks_affected(std::string expression_left) {
     int wanted_block = -1;
     int found_block;
     std::stringstream ss;
-    ss<<expression_left;
+    ss << expression_left;
     std::string s;
-    
+
     //finds block_id to look for
-    while(!ss.eof()) {
-        ss>>s;
-        if(stringstream(s)>>found_block) {
+    while (!ss.eof()) {
+        ss >> s;
+        if (stringstream(s) >> found_block) {
             s = "";
             break;
         }
     }
 
     //goes through blocks_affected
-    for(size_t i = 0; i<current_info_e.blocks_affected_vector.size(); i++) {
-        if(current_info_e.blocks_affected_vector[i]  == found_block) {
+    for (size_t i = 0; i < current_info_e.blocks_affected_vector.size(); i++) {
+        if (current_info_e.blocks_affected_vector[i] == found_block) {
             current_info_e.blocks_affected = found_block;
             return found_block;
         }
