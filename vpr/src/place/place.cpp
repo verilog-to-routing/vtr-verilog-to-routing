@@ -24,7 +24,6 @@
 #include "timing_place.h"
 #include "read_xml_arch_file.h"
 #include "echo_files.h"
-#include "vpr_utils.h"
 #include "place_macro.h"
 #include "histogram.h"
 #include "place_util.h"
@@ -431,7 +430,9 @@ static void print_place_status(const float t,
                                const float crit_exponent,
                                size_t tot_moves);
 static void print_resources_utilization();
+
 void send_current_info_p();
+void transform_blocks_affected(t_pl_blocks_to_be_moved blocksAffected);
 
 /*****************************************************************************/
 void try_place(const t_placer_opts& placer_opts,
@@ -707,17 +708,6 @@ void try_place(const t_placer_opts& placer_opts,
         oldt = t; /* for finding and printing alpha. */
         update_t(&t, rlim, success_rat, annealing_sched);
         ++num_temps;
-
-#ifdef VTR_ENABLE_DEBUG_LOGGING
-        //checks for temperature breakpoints
-        t_draw_state* draw_state = get_draw_state_vars();
-        if (draw_state->list_of_breakpoints.size() != 0) {
-            ClusterBlockId dummy(-1);
-            f_placer_debug = check_for_breakpoints(dummy, true);
-            if (f_placer_debug)
-                breakpoint_info_window("Stopped at breakpoint", current_info_p.moveNumber, current_info_p.temperature, current_info_p.blockNumber, -1);
-        }
-#endif
 
         if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
             critical_path = timing_info->least_slack_critical_path();
@@ -1128,9 +1118,12 @@ static void update_t(float* t, float rlim, float success_rat, t_annealing_sched 
             *t = (*t) * 0.8;
         }
     }
-    //update temperature in the current information variable
-    current_info_p.temperature = *t;
-    send_current_info_p();
+    t_draw_state* draw_state = get_draw_state_vars();
+    if(draw_state->list_of_breakpoints.size()!=0) {
+        //update temperature in the current information variable
+    	current_info_p.temp_count++;
+    	send_current_info_p();
+    }
 }
 
 static int exit_crit(float t, float cost, t_annealing_sched annealing_sched) {
@@ -1256,7 +1249,7 @@ static void reset_move_nets(int num_nets_affected) {
 
 //sends the current information to breakpoint.cpp
 void send_current_info_p() {
-    get_current_info_b(current_info_p);
+    send_current_info_b(current_info_p);
 }
 
 static e_move_result try_swap(float t,
@@ -1387,18 +1380,21 @@ static e_move_result try_swap(float t,
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 
-    //update current information
-    //current_info_p.netumber = net_id;
-    current_info_p.moveNumber++;
-    current_info_p.blockNumber = size_t(blocks_affected.moved_blocks[0].block_num);
-    send_current_info_p();
-
-    //check for breakpoints
     t_draw_state* draw_state = get_draw_state_vars();
-    if (draw_state->list_of_breakpoints.size() != 0)
-        f_placer_debug = check_for_breakpoints(blocks_affected.moved_blocks[0].block_num, false);
-    if (f_placer_debug)
-        breakpoint_info_window("Stopped at breakpoint", current_info_p.moveNumber, current_info_p.temperature, current_info_p.blockNumber, -1);
+    if(draw_state->list_of_breakpoints.size()!=0) {
+        //update current information
+        transform_blocks_affected(blocks_affected);
+        current_info_p.move_num++;
+        current_info_p.from_block = size_t(blocks_affected.moved_blocks[0].block_num);
+        send_current_info_p();
+
+        //check for breakpoints
+        f_placer_debug = check_for_breakpoints();
+        if (f_placer_debug)
+            breakpoint_info_window(get_current_info_b().bp_description, current_info_p);
+    }
+    else
+        f_placer_debug = false;
 
     if (f_placer_debug && draw_state->show_graphics) {
         std::string msg = available_move_types[0];
@@ -2753,4 +2749,11 @@ static void print_resources_utilization() {
 
 bool placer_needs_lookahead(const t_vpr_setup& vpr_setup) {
     return (vpr_setup.PlacerOpts.place_algorithm == PATH_TIMING_DRIVEN_PLACE);
+}
+
+//transforms the vector moved_blocks to a vector of ints and adds it in current_info_p
+void transform_blocks_affected(t_pl_blocks_to_be_moved blocksAffected) {
+    current_info_p.blocks_affected_vector.clear();
+    for( size_t  i =0; i<blocksAffected.moved_blocks.size(); i++)
+        current_info_p.blocks_affected_vector.push_back(size_t(blocksAffected.moved_blocks[i].block_num));
 }
