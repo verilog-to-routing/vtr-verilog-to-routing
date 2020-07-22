@@ -704,6 +704,7 @@ PinId Netlist<BlockId, PortId, PinId, NetId>::create_pin(const PortId port_id, B
 
     //See if the pin already exists
     PinId pin_id = find_pin(port_id, port_bit);
+
     if (!pin_id) {
         //Not found, create it
 
@@ -736,6 +737,7 @@ PinId Netlist<BlockId, PortId, PinId, NetId>::create_pin(const PortId port_id, B
     VTR_ASSERT(pin_port_bit(pin_id) == port_bit);
     VTR_ASSERT(pin_net(pin_id) == net_id);
     VTR_ASSERT(pin_is_constant(pin_id) == is_const);
+    VTR_ASSERT(pin_type(pin_id) == type);
     VTR_ASSERT_SAFE(find_pin(port_id, port_bit) == pin_id);
 
     return pin_id;
@@ -1696,7 +1698,9 @@ bool Netlist<BlockId, PortId, PinId, NetId>::validate_net_pin_refs() const {
                 if (pin_id) {
                     VTR_ASSERT(pin_index == NET_DRIVER_INDEX);
                     if (pin_type(pin_id) != PinType::DRIVER) {
-                        VPR_FATAL_ERROR(VPR_ERROR_NETLIST, "Driver pin not found at expected index in net");
+                        VPR_FATAL_ERROR(VPR_ERROR_NETLIST,
+                                        "Driver pin %zu not found at expected index in net %zu",
+                                        size_t(pin_id), size_t(net_id));
                     }
                 }
             } else {

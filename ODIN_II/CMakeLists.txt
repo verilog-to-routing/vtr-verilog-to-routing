@@ -64,7 +64,9 @@ if(ODIN_COVERAGE)
     )
 
     set(ODIN_EXTRA_LINK_FLAGS
-        "-lgcov --coverage"
+        "-lgcov"
+        "--coverage"
+        ${ODIN_EXTRA_LINK_FLAGS}
     )
 
 endif()
@@ -74,13 +76,23 @@ if(ODIN_SANITIZE)
     message("*** Compiling with Odin Coverage flags")
 
     set(ODIN_EXTRA_FLAGS
-        "-g"
+        "-O1"
+        "-fno-omit-frame-pointer"
         "-fsanitize=address"
+        "-fsanitize=leak"
+        "-fsanitize=undefined"
+        "-fuse-ld=gold"
         ${ODIN_EXTRA_FLAGS}
     )
 
     set(ODIN_EXTRA_LINK_FLAGS
+        "-O1"
+        "-fno-omit-frame-pointer"
         "-fsanitize=address"
+        "-fsanitize=leak"
+        "-fsanitize=undefined"        
+        "-fuse-ld=gold"
+        ${ODIN_EXTRA_LINK_FLAGS}
     )
 
 endif()
@@ -169,10 +181,10 @@ foreach(ODIN_FLAG ${ODIN_EXTRA_FLAGS})
 endforeach()
 
 #add extra link flags for odin
-if(ODIN_EXTRA_LINK_FLAGS)
-    set_target_properties(libodin_ii PROPERTIES LINK_FLAGS ${ODIN_EXTRA_LINK_FLAGS})
-    set_target_properties(odin_II PROPERTIES LINK_FLAGS ${ODIN_EXTRA_LINK_FLAGS})
-endif()
+foreach(ODIN_LINK_FLAG ${ODIN_EXTRA_LINK_FLAGS})
+        target_link_libraries(libodin_ii ${ODIN_LINK_FLAG})
+        target_link_libraries(odin_II ${ODIN_LINK_FLAG})
+endforeach()
 
 #Supress IPO link warnings if IPO is enabled
 get_target_property(ODIN_USES_IPO odin_II INTERPROCEDURAL_OPTIMIZATION)

@@ -126,7 +126,8 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
     recompute_occupancy_from_scratch();
 
     /* Note: This pres_fac is not necessarily correct since it isn't the first routing iteration*/
-    pathfinder_update_cost(router_opts.initial_pres_fac, router_opts.acc_fac);
+    OveruseInfo overuse_info(device_ctx.rr_nodes.size());
+    pathfinder_update_acc_cost_and_overuse_info(router_opts.acc_fac, overuse_info);
 
     reserve_locally_used_opins(&small_heap, router_opts.initial_pres_fac,
                                router_opts.acc_fac, true);

@@ -30,6 +30,7 @@ VNumber V_UNSIGNED(VNumber& a);
 VNumber V_SIGNED(VNumber& a);
 VNumber V_ADD(VNumber& a);
 VNumber V_MINUS(VNumber& a);
+VNumber V_MINUS(VNumber& a, BitSpace::bit_value_t carry);
 
 VNumber V_BITWISE_NOT(VNumber& a);
 VNumber V_BITWISE_AND(VNumber& a);
@@ -72,6 +73,8 @@ VNumber V_CASE_NOT_EQUAL(VNumber& a, VNumber& b);
 
 VNumber V_ADD(VNumber& a, VNumber& b);
 VNumber V_MINUS(VNumber& a, VNumber& b);
+VNumber V_ADD(VNumber& a, VNumber& b, BitSpace::bit_value_t carry_in);
+VNumber V_MINUS(VNumber& a, VNumber& b, BitSpace::bit_value_t carry_in);
 VNumber V_MULTIPLY(VNumber& a, VNumber& b);
 VNumber V_POWER(VNumber& a, VNumber& b);
 VNumber V_DIV(VNumber& a, VNumber& b);

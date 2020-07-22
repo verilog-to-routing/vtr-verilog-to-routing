@@ -162,6 +162,7 @@ class SdcParseCallback : public sdcparse::Callback {
 
                 AtomNetId clock_net = netlist_.pin_net(*netlist_clock_drivers_.begin());
                 std::string clock_name = netlist_.net_name(clock_net);
+
                 domain = tc_.find_clock_domain(clock_name);
             } else {
                 vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_,
@@ -911,18 +912,44 @@ class SdcParseCallback : public sdcparse::Callback {
 
             bool found = false;
             for (tatum::DomainId domain : tc_.clock_domains()) {
-                const std::string& clock_name = tc_.clock_domain_name(domain);
-                if (std::regex_match(clock_name, clock_regex)) {
-                    found = true;
+                const auto& clock_name = tc_.clock_domain_name(domain);
 
-                    domains.insert(domain);
+                // Clock net aliases are built  when reading the input circuit file.
+                // These aliases represent only real clock net names.
+                //
+                // If the SDC contains virtual clocks, the name of these does not
+                // appear in the net aliases data structure, therefore there is no
+                // need to iterate through the vector and a direct regex match can
+                // be applied.
+                //
+                // Furthermore, a virtual clock name would cause an error as there
+                // is no net associated with that when getting the net aliases from
+                // the netlist.
+                if (tc_.is_virtual_clock(domain)) {
+                    if (std::regex_match(clock_name, clock_regex)) {
+                        found = true;
+
+                        domains.insert(domain);
+                    }
+                } else {
+                    auto net_aliases = netlist_.net_aliases(clock_name);
+
+                    for (const auto& alias : net_aliases) {
+                        if (std::regex_match(alias, clock_regex)) {
+                            found = true;
+
+                            domains.insert(domain);
+                            // Exit the inner loop as the net is already being constrained
+                            break;
+                        }
+                    }
                 }
-            }
 
-            if (!found) {
-                VTR_LOGF_WARN(fname_.c_str(), lineno_,
-                              "get_clocks target name or pattern '%s' matched no clocks\n",
-                              clock_glob_pattern.c_str());
+                if (!found) {
+                    VTR_LOGF_WARN(fname_.c_str(), lineno_,
+                                  "get_clocks target name or pattern '%s' matched no clocks\n",
+                                  clock_glob_pattern.c_str());
+                }
             }
         }
 

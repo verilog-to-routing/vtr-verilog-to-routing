@@ -12,7 +12,7 @@ extern ids default_net_type;
 
 extern global_args_t global_args;
 extern config_t configuration;
-extern int current_parse_file;
+extern loc_t my_location;
 
 extern ast_t* verilog_ast;
 extern STRING_CACHE* module_names_to_idx;
@@ -45,7 +45,5 @@ extern netlist_t* blif_netlist;
 
 /* Global variable for read_blif function call */
 extern netlist_t* read_blif_netlist;
-
-extern long file_line_number;
 
 #endif

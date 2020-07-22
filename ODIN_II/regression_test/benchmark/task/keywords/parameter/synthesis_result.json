@@ -1,0 +1,59 @@
+{
+    "parameter/multiple_parameter/no_arch": {
+        "test_name": "parameter/multiple_parameter/no_arch",
+        "verilog": "multiple_parameter.v",
+        "max_rss(MiB)": 11.3,
+        "exec_time(ms)": 2.5,
+        "synthesis_time(ms)": 1.1,
+        "Pi": 3,
+        "Po": 3,
+        "Longest Path": 2,
+        "Average Path": 2
+    },
+    "parameter/parameter_define/no_arch": {
+        "test_name": "parameter/parameter_define/no_arch",
+        "verilog": "parameter_define.v",
+        "warnings": [
+            "NETLIST parameter_define.v:6 This output is undriven (simple_op^out~4) and will be removed",
+            "NETLIST parameter_define.v:6 Net simple_op^out~4 driving node simple_op^out~4 is itself undriven."
+        ],
+        "max_rss(MiB)": 12.3,
+        "exec_time(ms)": 4.4,
+        "synthesis_time(ms)": 2.6,
+        "Po": 5,
+        "Longest Path": 2,
+        "Average Path": 2
+    },
+    "parameter/parameter_override/no_arch": {
+        "test_name": "parameter/parameter_override/no_arch",
+        "verilog": "parameter_override.v",
+        "exit": 1
+    },
+    "DEFAULT": {
+        "test_name": "n/a",
+        "architecture": "n/a",
+        "verilog": "n/a",
+        "exit": 0,
+        "leaks": 0,
+        "errors": [],
+        "warnings": [],
+        "expectation": [],
+        "max_rss(MiB)": -1,
+        "exec_time(ms)": -1,
+        "synthesis_time(ms)": -1,
+        "Latch Drivers": 0,
+        "Pi": 0,
+        "Po": 0,
+        "logic element": 0,
+        "latch": 0,
+        "Adder": -1,
+        "Multiplier": -1,
+        "Memory": -1,
+        "Hard Ip": -1,
+        "generic logic size": -1,
+        "Longest Path": 0,
+        "Average Path": 0,
+        "Estimated LUTs": 0,
+        "Total Node": 0
+    }
+}
