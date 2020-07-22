@@ -62,8 +62,6 @@ struct t_heap {
     float R_upstream = 0.;
 
     int index = OPEN;
-    // std::set<int> net_rr; // Getting refactored out of this data structure
-    // std::set<int> partial_path_nodes;
     t_heap_path* path_data;
 
     struct t_prev {

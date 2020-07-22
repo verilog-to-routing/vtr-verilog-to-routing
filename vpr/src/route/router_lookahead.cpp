@@ -157,6 +157,10 @@ float ClassicLookahead::get_expected_cong(int inode, int target_node, const t_co
     }
 }
 
+std::pair<float, float> ClassicLookahead::get_expected_delay_and_cong(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const {
+    return std::make_pair(get_expected_delay(node, target_node, params, R_upstream), get_expected_cong(node, target_node, params, R_upstream));
+}
+
 float NoOpLookahead::get_expected_cost(int /*current_node*/, int /*target_node*/, const t_conn_cost_params& /*params*/, float /*R_upstream*/) const {
     return 0.;
 }
@@ -167,6 +171,10 @@ float NoOpLookahead::get_expected_delay(int inode, int target_node, const t_conn
 
 float NoOpLookahead::get_expected_cong(int inode, int target_node, const t_conn_cost_params& params, float R_upstream) const {
     return 0.;
+}
+
+std::pair<float, float> NoOpLookahead::get_expected_delay_and_cong(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const {
+    return std::make_pair(get_expected_delay(node, target_node, params, R_upstream), get_expected_cong(node, target_node, params, R_upstream));
 }
 
 /* Used below to ensure that fractions are rounded up, but floating   *

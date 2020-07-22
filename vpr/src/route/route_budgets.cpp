@@ -71,6 +71,7 @@ void route_budgets::free_budgets() {
         vtr::release_memory(delay_target);
         vtr::release_memory(delay_lower_bound);
         vtr::release_memory(delay_upper_bound);
+        vtr::release_memory(short_path_crit);
         vtr::release_memory(num_times_congested);
     }
     set = false;
@@ -86,6 +87,7 @@ void route_budgets::alloc_budget_memory() {
     delay_max_budget = make_net_pins_matrix<float>(cluster_ctx.clb_nlist);
     delay_lower_bound = make_net_pins_matrix<float>(cluster_ctx.clb_nlist);
     delay_upper_bound = make_net_pins_matrix<float>(cluster_ctx.clb_nlist);
+    short_path_crit = make_net_pins_matrix<float>(cluster_ctx.clb_nlist);
 }
 
 void route_budgets::load_initial_budgets() {
@@ -101,6 +103,8 @@ void route_budgets::load_initial_budgets() {
             delay_max_budget[net_id][ipin] = delay_lower_bound[net_id][ipin];
             delay_min_budget[net_id][ipin] = delay_lower_bound[net_id][ipin];
             should_reroute_for_hold[net_id] = false;
+
+            short_path_crit[net_id][ipin] = 1;
         }
     }
 }
@@ -155,7 +159,11 @@ void route_budgets::calculate_delay_targets(ClusterNetId net_id, ClusterPinId pi
     int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
 
     /*Target delay is calculated using equation in the RCV algorithm*/
-    delay_target[net_id][ipin] = std::min(0.5 * (delay_min_budget[net_id][ipin] + delay_max_budget[net_id][ipin]), delay_min_budget[net_id][ipin] + 0.1e-9);
+    if (delay_min_budget[net_id][ipin] != 0) {
+        delay_target[net_id][ipin] = std::min(0.5 * (delay_min_budget[net_id][ipin] + delay_max_budget[net_id][ipin]), delay_min_budget[net_id][ipin] + 0.1e-9);
+    } else {
+        delay_target[net_id][ipin] = 0;
+    }
 }
 
 void route_budgets::allocate_slack_using_weights(ClbNetPinsMatrix<float>& net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup, bool negative_hold_slack) {
@@ -173,7 +181,7 @@ void route_budgets::allocate_slack_using_weights(ClbNetPinsMatrix<float>& net_de
 
     /*Preprocessing algorithm in order to consider short paths when setting initial maximum budgets.
      * Not necessary unless budgets are really hard to meet*/
-    //process_negative_slack_using_minimax();
+    // process_negative_slack_using_minimax();
     if(negative_hold_slack) {
         process_negative_slack_using_minimax(net_delay, netlist_pin_lookup);
     }
@@ -182,7 +190,6 @@ void route_budgets::allocate_slack_using_weights(ClbNetPinsMatrix<float>& net_de
     max_budget_change = 900e-12;
 
     original_timing_info = perform_sta(net_delay);
-    // timing_info = perform_sta(delay_max_budget);
 
     /*This allocates long path slack and increases the budgets*/
     while ((iteration > 3 && max_budget_change > 5e-12) || iteration <= 3) {
@@ -613,13 +620,41 @@ void route_budgets::lower_budgets(float delay_decrement) {
         if (num_times_congested[net_id] >= 3) {
             for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
                 int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
-                if (delay_min_budget[net_id][ipin] - delay_lower_bound[net_id][ipin] >= 1e-9) {
-                    delay_min_budget[net_id][ipin] = delay_min_budget[net_id][ipin] - delay_decrement;
+                if (delay_min_budget[net_id][ipin] - delay_lower_bound[net_id][ipin] >= 1e-12) {
+                    delay_min_budget[net_id][ipin] *= delay_decrement;
                     keep_budget_in_bounds(delay_min_budget, net_id, pin_id);
                 }
             }
+            // num_times_congested[net_id] = 0;
         }
     }
+}
+
+void route_budgets::increase_short_crit(ClusterNetId net_id, float delay_decs) {
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    if (num_times_congested[net_id] >= 3) {
+        // VTR_LOG("Increasing short path crit for net %d\n", net_id);
+        for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+            int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
+            // if (!once) VTR_LOG("Net %d crit %f scrit %f \n", net_id, pin_criticality[pin_id], budgeting_inf.get_crit_short_path(net_id, ipin));
+            // once = true;
+            short_path_crit[net_id][ipin] *= delay_decs;
+        }
+        num_times_congested[net_id] = 0;
+    }
+
+    // if (num_times_congested[net_id] >= 9) {
+    //     for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+    //         int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
+    //         // if (!once) VTR_LOG("Net %d crit %f scrit %f \n", net_id, pin_criticality[pin_id], budgeting_inf.get_crit_short_path(net_id, ipin));
+    //         // once = true;
+    //         delay_min_budget[net_id][ipin] *= 1.5;
+    //         keep_budget_in_bounds(delay_min_budget, net_id, pin_id);
+    //     }
+        
+    //     num_times_congested[net_id] = 0;
+    // }
 }
 
 /*Getter functions*/
@@ -650,7 +685,8 @@ float route_budgets::get_crit_short_path(ClusterNetId net_id, int ipin) {
     if (delay_target[net_id][ipin] == 0) {
         return 0;
     }
-    return pow(((delay_target[net_id][ipin] - delay_lower_bound[net_id][ipin]) / delay_target[net_id][ipin]), SHORT_PATH_EXP);
+    // return pow(((delay_target[net_id][ipin] - delay_lower_bound[net_id][ipin]) / delay_target[net_id][ipin]), SHORT_PATH_EXP);
+    return short_path_crit[net_id][ipin];
 }
 
 void route_budgets::print_route_budget(std::string filename) {

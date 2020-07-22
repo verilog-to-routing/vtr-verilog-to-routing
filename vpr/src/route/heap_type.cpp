@@ -37,6 +37,7 @@ t_heap*
 HeapStorage::alloc(bool init_data_structs) {
     if (heap_free_head_ == nullptr) { /* No elements on the free list */
         heap_free_head_ = vtr::chunk_new<t_heap>(&heap_ch_);
+        heap_free_head_->path_data = nullptr;
     }
 
     //Extract the head
@@ -56,18 +57,15 @@ HeapStorage::alloc(bool init_data_structs) {
         // if (heap_path_free_head_ == nullptr) {
         //     heap_path_free_head_ = vtr::chunk_new<t_heap_path>(&heap_ch_path_);
         // }
-        if (temp_ptr->path_data != nullptr) {
-            delete temp_ptr->path_data;
-            temp_ptr->path_data = nullptr;
+        if (temp_ptr->path_data == nullptr) {
+            temp_ptr->path_data = new t_heap_path;
         }
-        temp_ptr->path_data = new t_heap_path;
-
+            
         temp_ptr->path_data->path_rr.clear();
         temp_ptr->path_data->edge.clear();
         temp_ptr->path_data->backward_delay = 0.;
         temp_ptr->path_data->backward_cong = 0.;
-        // temp_ptr->net_rr.clear();
-        // temp_ptr->partial_path_nodes.clear();
+
     } else {
         temp_ptr->path_data = nullptr;
     }

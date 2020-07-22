@@ -46,6 +46,7 @@ class route_budgets {
     /*lower budgets during congestion*/
     void update_congestion_times(ClusterNetId net_id);
     void lower_budgets(float delay_decrement);
+    void increase_short_crit(ClusterNetId net_id, float delay_decs);
     void not_congested_this_iteration(ClusterNetId net_id);
 
     bool get_should_reroute(ClusterNetId net_id);
@@ -101,6 +102,7 @@ class route_budgets {
     ClbNetPinsMatrix<float> delay_target;      //[0..num_nets][0..clb_net[inet].pins]
     ClbNetPinsMatrix<float> delay_lower_bound; //[0..num_nets][0..clb_net[inet].pins]
     ClbNetPinsMatrix<float> delay_upper_bound; //[0..num_nets][0..clb_net[inet].pins]
+    ClbNetPinsMatrix<float> short_path_crit;   //[0..num_nets][0..clb_net[inet].pins]
 
     /*used to keep count the number of continuous time this node was congested*/
     vtr::vector<ClusterNetId, int> num_times_congested; //[0..num_nets]

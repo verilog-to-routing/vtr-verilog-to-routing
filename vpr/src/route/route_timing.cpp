@@ -178,10 +178,15 @@ static t_rt_node* setup_routing_resources(int itry,
 
 static bool timing_driven_check_net_delays(ClbNetPinsMatrix<float>& net_delay);
 
-void reduce_budgets_if_congested(route_budgets& budgeting_inf,
+void reduce_budgets_if_congested(std::vector<ClusterNetId>& rerouted_nets,
+                                 route_budgets& budgeting_inf,
                                  CBRR& connections_inf,
-                                 float slope,
                                  int itry);
+
+void increase_short_path_crit_if_congested(std::vector<ClusterNetId>& rerouted_nets,
+                                            route_budgets& budgeting_inf,
+                                            CBRR& connections_inf,
+                                            int itry);
 
 static bool should_route_net(ClusterNetId net_id, CBRR& connections_inf, bool if_force_reroute);
 static bool early_exit_heuristic(const t_router_opts& router_opts, const WirelengthInfo& wirelength_info);
@@ -625,6 +630,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
             break;
         }
 
+
         //Estimate at what iteration we will converge to a legal routing
         if (overuse_info.overused_nodes() > ROUTING_PREDICTOR_MIN_ABSOLUTE_OVERUSE_THRESHOLD) {
             //Only consider aborting if we have a significant number of overused resources
@@ -666,6 +672,11 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
             pres_fac = std::min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5));
 
             pathfinder_update_cost(pres_fac, router_opts.acc_fac);
+            
+            // Increase short path criticality if it's having a hard time resolving hold violations due to congestion
+            // if (budgeting_inf.if_set()) {
+            //     increase_short_path_crit_if_congested(rerouted_nets, budgeting_inf, connections_inf, itry);
+            // }
         }
 
         if (router_congestion_mode == RouterCongestionMode::CONFLICTED) {
@@ -831,7 +842,7 @@ bool try_timing_driven_route_net(ConnectionRouter& router,
     connections_inf.prepare_routing_for_net(net_id);
 
     bool reroute_for_hold = false;
-    if (budgeting_inf.if_set() && itry > 1) {
+    if (budgeting_inf.if_set() && itry > 2) {
         reroute_for_hold = (budgeting_inf.get_should_reroute(net_id));
         reroute_for_hold &= timing_info->hold_worst_negative_slack() != 0;
     }
@@ -922,24 +933,42 @@ timing_driven_route_structs::~timing_driven_route_structs() {
                                      rt_node_of_sink);
 }
 
-void reduce_budgets_if_congested(route_budgets& budgeting_inf,
+void reduce_budgets_if_congested(std::vector<ClusterNetId>& rerouted_nets,
+                                 route_budgets& budgeting_inf,
                                  CBRR& connections_inf,
-                                 float slope,
                                  int itry) {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
-    if (budgeting_inf.if_set()) {
-        for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-            if (should_route_net(net_id, connections_inf, false)) {
+    if (budgeting_inf.if_set() && itry > 20) {
+        // for (auto net_id : rerouted_nets) {
+        //     if (budgeting_inf.get_should_reroute(net_id)) {
+        //         budgeting_inf.update_congestion_times(net_id);
+        //     } else {
+        //         budgeting_inf.not_congested_this_iteration(net_id);
+        //     }
+        // }
+
+        /*Problematic if the overuse nodes are positive or declining at a slow rate
+         * Must be more than 9 iterations to have a valid slope*/
+        // if (slope > CONGESTED_SLOPE_VAL && itry >= 9) {
+            // VTR_LOG("Lowering budgets\n");
+            budgeting_inf.lower_budgets(1.2);
+        // }
+    }
+}
+
+void increase_short_path_crit_if_congested(std::vector<ClusterNetId>& rerouted_nets,
+                                            route_budgets& budgeting_inf,
+                                            CBRR& connections_inf,
+                                            int itry) {
+    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
+    if (budgeting_inf.if_set() && itry > 9) {
+        for (auto net_id : rerouted_nets) {
+            if (budgeting_inf.get_should_reroute(net_id)) {
                 budgeting_inf.update_congestion_times(net_id);
             } else {
                 budgeting_inf.not_congested_this_iteration(net_id);
             }
-        }
-
-        /*Problematic if the overuse nodes are positive or declining at a slow rate
-         * Must be more than 9 iterations to have a valid slope*/
-        if (slope > CONGESTED_SLOPE_VAL && itry >= 9) {
-            budgeting_inf.lower_budgets(1e-9);
+            budgeting_inf.increase_short_crit(net_id, 2);
         }
     }
 }
@@ -999,25 +1028,14 @@ bool timing_driven_route_net(ConnectionRouter& router,
     std::set<int> route_tree_nodes;
 
     t_rt_node* rt_root;
-    if(router_opts.routing_budgets_algorithm == YOYO) {
-        rt_root = setup_routing_resources(itry,
-                                            net_id,
-                                            num_sinks,
-                                            pres_fac,
-                                            router_opts.min_incremental_reroute_fanout,
-                                            connections_inf,
-                                            rt_node_of_sink,
-                                            check_hold(router_opts, timing_info));
-    } else {
-        rt_root = setup_routing_resources(itry,
+    rt_root = setup_routing_resources(itry,
                                         net_id,
                                         num_sinks,
                                         pres_fac,
                                         router_opts.min_incremental_reroute_fanout,
                                         connections_inf,
                                         rt_node_of_sink,
-                                        false);
-    }
+                                        check_hold(router_opts, timing_info));
 
     bool high_fanout = is_high_fanout(num_sinks, router_opts.high_fanout_threshold);
     
@@ -1033,9 +1051,9 @@ bool timing_driven_route_net(ConnectionRouter& router,
     /* TODO: This can be initialized in setup_routing_resources
      * Add the route tree to the route tree nodes set */
 
-    if (router_opts.routing_budgets_algorithm == YOYO) {
-        add_route_tree_to_set(rt_root, &route_tree_nodes);
-    }
+    // if (router_opts.routing_budgets_algorithm == YOYO) {
+    //     add_route_tree_to_set(rt_root, &route_tree_nodes);
+    // }
 
     // calculate criticality of remaining target pins
     for (int ipin : remaining_targets) {
@@ -2047,12 +2065,12 @@ bool should_setup_lower_bound_connection_delays(int itry, const t_router_opts& r
     //This function checks the iteration number to see if is neccessary to setup the lower bound connection delays for future comparison.
     //When VPR is normally run with the budgeting algorithm turned off, it the lower bound connection delays are set on the first iteration.
     //However, with the yoyo algorithm, the lower bound is set every after every 5 iterations, so long as it is below 25.
-    if (router_opts.routing_budgets_algorithm != YOYO && itry == 1) {
-        return true;
-    } else if (router_opts.routing_budgets_algorithm == YOYO && itry % 5 == 1 && itry < 25) {
-        return true;
-    }
-    // if(itry == 1) return true;
+    // if (router_opts.routing_budgets_algorithm != YOYO && itry == 1) {
+    //     return true;
+    // } else if (router_opts.routing_budgets_algorithm == YOYO && itry % 5 == 1 && itry < 25) {
+    //     return true;
+    // }
+    if(itry == 1) return true;
 
     return false;
 }

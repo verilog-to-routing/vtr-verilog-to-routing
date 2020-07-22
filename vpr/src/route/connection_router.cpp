@@ -222,7 +222,7 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(int sin
 
         //Have we found the target?
         if (inode == sink_node) {
-            if (route_tree_nodes != nullptr) {
+            if (cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm == YOYO) {
                 for (unsigned i = 1; i < cheapest->path_data->edge.size() - 1; i++) {
                     int node_2 = cheapest->path_data->path_rr[i];
                     int edge = cheapest->path_data->edge[i - 1];
@@ -535,21 +535,22 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
     // Check if the node exists in the route tree, needed for RCV code
 
     bool node_exists = false;
-    if (route_tree_nodes != nullptr && cost_params.delay_budget) {
+    bool run_rcv = cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm == YOYO;
+    if (run_rcv) {
         node_exists = node_exists_in_route_tree(current,
                                                 to_node,
                                                 cost_params,
                                                 route_tree_nodes);
     }
 
-    if (!node_exists || route_tree_nodes == nullptr) {
+    if (!node_exists || run_rcv) {
         timing_driven_add_to_heap(cost_params,
                                 current,
                                 from_node,
                                 to_node_int,
                                 from_edge,
                                 target_node,
-                                route_tree_nodes != nullptr);
+                                run_rcv);
     }
 }
 
@@ -747,29 +748,37 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
     const t_conn_delay_budget* delay_budget = cost_params.delay_budget;
 
     if (delay_budget && delay_budget->routing_budgets_algorithm == YOYO) {
-        float expected_delay = router_lookahead_.get_expected_delay(to_node, target_node, cost_params, to->R_upstream);
-        float expected_cong = router_lookahead_.get_expected_cong(to_node, target_node, cost_params, to->R_upstream);
-
         to->path_data->backward_delay += cost_params.criticality * Tdel;
         to->path_data->backward_cong += (1. - cost_params.criticality) * get_rr_cong_cost(to_node);
-        float expected_total_delay_cost; // = new_costs.backward_cost + cost_params.astar_fac * expected_cost;
-        float expected_total_cong_cost;
 
-        float expected_total_cong = cost_params.astar_fac * expected_cong + to->path_data->backward_cong;
-        float expected_total_delay = cost_params.astar_fac * expected_delay + to->path_data->backward_delay;
-        //If budgets specified calculate cost as described by RCV paper:
-        //    R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While
-        //     Repairing Short-Path Violations," in IEEE Transactions on Computer-Aided Design of
-        //     Integrated Circuits and Systems, vol. 27, no. 4, pp. 686-697, April 2008.
+        if (delay_budget->max_delay == 0 || (delay_budget->max_delay < delay_budget->min_delay)) {
+            float expected_cost_reg = router_lookahead_.get_expected_cost(to_node, target_node, cost_params, to->R_upstream);
+            total_cost = to->backward_path_cost + cost_params.astar_fac * expected_cost_reg;
+        } else {
+            float expected_delay; // = router_lookahead_.get_expected_delay(to_node, target_node, cost_params, to->R_upstream);
+            float expected_cong; // = router_lookahead_.get_expected_cong(to_node, target_node, cost_params, to->R_upstream);
 
-        //TODO: Since these targets are delays, shouldn't we be using Tdel instead of new_costs.total_cost on RHS?
-        
-        expected_total_delay_cost = cost_params.criticality * expected_total_delay;
-        expected_total_delay_cost += (delay_budget->short_path_criticality + cost_params.criticality) * std::max(0.f, delay_budget->target_delay - expected_total_delay);
-        expected_total_delay_cost += std::pow(std::max(0.f, expected_total_delay - delay_budget->max_delay), 2) / 100e-12;
-        expected_total_delay_cost += std::pow(std::max(0.f, delay_budget->min_delay - expected_total_delay), 2) / 100e-12;
-        expected_total_cong_cost = expected_total_cong;
-        total_cost = expected_total_delay_cost + expected_total_cong_cost;
+            std::tie(expected_delay, expected_cong) = router_lookahead_.get_expected_delay_and_cong(to_node, target_node, cost_params, to->R_upstream);
+
+            float expected_total_delay_cost; // = new_costs.backward_cost + cost_params.astar_fac * expected_cost;
+            float expected_total_cong_cost;
+
+            float expected_total_cong = cost_params.astar_fac * expected_cong + to->path_data->backward_cong;
+            float expected_total_delay = cost_params.astar_fac * expected_delay + to->path_data->backward_delay;
+            //If budgets specified calculate cost as described by RCV paper:
+            //    R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While
+            //     Repairing Short-Path Violations," in IEEE Transactions on Computer-Aided Design of
+            //     Integrated Circuits and Systems, vol. 27, no. 4, pp. 686-697, April 2008.
+
+            //TODO: Since these targets are delays, shouldn't we be using Tdel instead of new_costs.total_cost on RHS?
+            
+            expected_total_delay_cost = expected_total_delay;
+            expected_total_delay_cost += (delay_budget->short_path_criticality + cost_params.criticality) * std::max(0.f, delay_budget->target_delay - expected_total_delay);
+            expected_total_delay_cost += std::pow(std::max(0.f, expected_total_delay - delay_budget->max_delay), 2) / 100e-12;
+            expected_total_delay_cost += std::pow(std::max(0.f, delay_budget->min_delay - expected_total_delay), 2) / 100e-12;
+            expected_total_cong_cost = expected_total_cong;
+            total_cost = expected_total_delay_cost + expected_total_cong_cost;
+        }
     } else {
         //Update total cost
         float expected_cost = router_lookahead_.get_expected_cost(to_node, target_node, cost_params, to->R_upstream);

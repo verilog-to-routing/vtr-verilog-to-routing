@@ -16,6 +16,7 @@ class RouterLookahead {
 
     virtual float get_expected_delay(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const = 0;
     virtual float get_expected_cong(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const = 0;
+    virtual std::pair<float, float> get_expected_delay_and_cong(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const = 0;
 
     // Compute router lookahead (if needed).
     virtual void compute(const std::vector<t_segment_inf>& segment_inf) = 0;
@@ -59,6 +60,8 @@ class ClassicLookahead : public RouterLookahead {
     float get_expected_cost(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
     float get_expected_delay(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
     float get_expected_cong(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
+    std::pair<float, float> get_expected_delay_and_cong(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
+
     void compute(const std::vector<t_segment_inf>& /*segment_inf*/) override {
     }
 
@@ -78,6 +81,8 @@ class NoOpLookahead : public RouterLookahead {
     float get_expected_cost(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
     float get_expected_delay(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
     float get_expected_cong(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
+    std::pair<float, float> get_expected_delay_and_cong(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
+
     void compute(const std::vector<t_segment_inf>& /*segment_inf*/) override {
     }
     void read(const std::string& /*file*/) override {
