@@ -175,15 +175,19 @@ class FormulaParser {
 
 //struct that holds all necessary current information about the placer
 struct current_information {
-    int moveNumber = 0;
-    int routerIter = 0;
-    int blockNumber;
-    float temperature = 0;
-    int netNumber;
+    int move_num = 0;
+    int router_iter = 0;
+    int from_block = -1;
+    int temp_count = 0;
+    int net_id = -1;
+    int blocks_affected = -1;
+    std::string bp_description;
+    std::vector<int> blocks_affected_vector;
 };
 
 //function declarations
 void get_current_info_e(current_information ci);
 void is_a_breakpoint(bool aBreakpoint);
+int get_current_info_e_ba();
 
 #endif

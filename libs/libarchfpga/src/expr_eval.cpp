@@ -5,6 +5,7 @@
 
 #include <string>
 #include <sstream>
+#include <iostream>
 
 using std::stack;
 using std::string;
@@ -68,8 +69,9 @@ static int identifier_length(const char* str);
 static bool goto_next_char(int* str_ind, const string& pw_formula, char ch);
 
 bool same_string(std::string str1, std::string str2);
-
 bool additional_assignemnt_op(int arg1, int arg2);
+int in_blocks_affected(std::string expression_left);
+
 /**** Function Implementations ****/
 /* returns integer result according to specified non-piece-wise formula and data */
 int FormulaParser::parse_formula(std::string formula, const t_formula_data& mydata) {
@@ -291,7 +293,6 @@ static void get_formula_object(const char* ch, int& ichar, const t_formula_data&
     int id_len = identifier_length(ch);
     //We have a variable or function name
     std::string var_name(ch, id_len);
-
     if (id_len != 0) {
         if (is_function(var_name)) {
             fobj->type = E_FML_OPERATOR;
@@ -316,14 +317,18 @@ static void get_formula_object(const char* ch, int& ichar, const t_formula_data&
                     var_name.size()));
         } else if (is_variable(var_name)) {
             fobj->type = E_FML_VARIABLE;
-            if (same_string(var_name, "temp_num"))
-                fobj->data.num = current_info_e.temperature;
+            if (same_string(var_name, "temp_count"))
+                fobj->data.num = current_info_e.temp_count;
             else if (same_string(var_name, "from_block"))
-                fobj->data.num = current_info_e.blockNumber;
+                fobj->data.num = current_info_e.from_block;
             else if (same_string(var_name, "move_num"))
-                fobj->data.num = current_info_e.moveNumber;
-            else if (same_string(var_name, "net_id"))
-                fobj->data.num = current_info_e.netNumber;
+                fobj->data.num = current_info_e.move_num;
+            else if (same_string(var_name, "route_net_id"))
+                fobj->data.num = current_info_e.net_id;
+            else if (same_string(var_name, "in_blocks_affected"))
+                fobj->data.num = in_blocks_affected(std::string(ch));
+            else if (same_string(var_name, "router_iter"))
+                fobj->data.num = current_info_e.router_iter;
         }
 
         ichar += (id_len - 1); //-1 since ichar is incremented at end of loop in formula_to_rpn()
@@ -785,7 +790,7 @@ int is_compound_op(const char* ch) {
 
 //checks if the entered string is a known variable name
 static bool is_variable(std::string var_name) {
-    if (same_string(var_name, "from_block") || same_string(var_name, "temp_num") || same_string(var_name, "move_num") || same_string(var_name, "net_id")) {
+    if (same_string(var_name, "from_block") || same_string(var_name, "temp_count") || same_string(var_name, "move_num") || same_string(var_name, "route_net_id") || same_string(var_name, "in_blocks_affected") || same_string(var_name, "router_iter")) {
         return true;
     }
     return false;
@@ -844,7 +849,7 @@ bool additional_assignemnt_op(int arg1, int arg2) {
     int result = 0;
     if (before_addition == 0)
         before_addition = arg1;
-    result = (arg1 == before_addition + arg2);
+    result = (arg1 == (before_addition + arg2));
     if (result)
         before_addition = 0;
     return result;
@@ -855,7 +860,40 @@ void get_current_info_e(current_information ci) {
     current_info_e = ci;
 }
 
+int get_current_info_e_ba() {
+    return current_info_e.blocks_affected;
+}
+
 //checks if the expression being evaluated is a breakpoint
 void is_a_breakpoint(bool aBreakpoint) {
     is_breakpoint = aBreakpoint;
+}
+
+//first recognized the block_id to look for
+//then looks for that block_id and if it finds it, it returns the block id, else just -1
+int in_blocks_affected(std:: string expression_left){
+
+    int wanted_block = -1;
+    int found_block;
+    std::stringstream ss;
+    ss<<expression_left;
+    std::string s;
+    
+    //finds block_id to look for
+    while(!ss.eof()) {
+        ss>>s;
+        if(stringstream(s)>>found_block) {
+            s = "";
+            break;
+        }
+    }
+
+    //goes through blocks_affected
+    for(size_t i = 0; i<current_info_e.blocks_affected_vector.size(); i++) {
+        if(current_info_e.blocks_affected_vector[i]  == found_block) {
+            current_info_e.blocks_affected = found_block;
+            return found_block;
+        }
+    }
+    return wanted_block;
 }
