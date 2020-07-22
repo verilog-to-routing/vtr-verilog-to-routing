@@ -2099,17 +2099,17 @@ static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahea
 //stops if a breakpoint is encountered
 void update_router_info_and_check(char type, int net_id) {
     t_draw_state* draw_state = get_draw_state_vars();
-    if(draw_state->list_of_breakpoints.size()!=0) {
-        if(type == 'r')
+    if (draw_state->list_of_breakpoints.size() != 0) {
+        if (type == 'r')
             current_info_r.router_iter++;
-        else if(type == 'n')
+        else if (type == 'n')
             current_info_r.net_id = net_id;
-    	send_current_info_r();
-    	f_router_debug = check_for_breakpoints();
-    	if(f_router_debug) {
-        	breakpoint_info_window(get_current_info_b().bp_description, current_info_r);
-        	update_screen(ScreenUpdatePriority::MAJOR, "Breakpoint Encountered", ROUTING, nullptr);
-    	}
+        send_current_info_r();
+        f_router_debug = check_for_breakpoints();
+        if (f_router_debug) {
+            breakpoint_info_window(get_current_info_b().bp_description, current_info_r);
+            update_screen(ScreenUpdatePriority::MAJOR, "Breakpoint Encountered", ROUTING, nullptr);
+        }
     }
 }
 
