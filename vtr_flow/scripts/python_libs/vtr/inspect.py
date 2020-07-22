@@ -78,11 +78,11 @@ class RangePassRequirement(PassRequirement):
         return self._max_value
 
     def check_passed(self, golden_value, check_value):
-        if golden_value == None and check_value == None:
+        if golden_value is None and check_value is None:
             return True, "both golden and check are None"
-        elif golden_value == None and check_value != None:
+        elif golden_value is None and check_value != None:
             return False, "golden value is None, but check value is {}".format(check_value)
-        elif golden_value != None and check_value == None:
+        elif golden_value != None and check_value is None:
             return False, "golden value is {}, but check value is None".format(golden_value)
 
         assert golden_value != None

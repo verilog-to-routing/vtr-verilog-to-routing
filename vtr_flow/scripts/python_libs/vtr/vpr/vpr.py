@@ -1,10 +1,10 @@
 import shutil
 from pathlib import Path
-from vtr import  mkdir_p, find_vtr_file, CommandRunner, print_verbose, relax_W, determine_lut_size, determine_min_W, verify_file
+from vtr import find_vtr_file, CommandRunner, print_verbose, relax_W, determine_lut_size, determine_min_W, verify_file
 from vtr.error import InspectError
 
-def run_relax_W(architecture, circuit, circuit_name=None, command_runner=CommandRunner(), temp_dir=".", 
-                    relax_W_factor=1.3, vpr_exec=None, logfile_base="vpr",
+def run_relax_W(architecture, circuit, circuit_name=None, command_runner=CommandRunner(), temp_dir=Path("."), 
+                    relax_w_factor=1.3, vpr_exec=None, logfile_base="vpr",
                     vpr_args=None, output_netlist=None):
     """
     Runs VPR twice:
@@ -34,7 +34,7 @@ def run_relax_W(architecture, circuit, circuit_name=None, command_runner=Command
         temp_dir: 
             Directory to run in
         
-        relax_W_factor: 
+        relax_w_factor: 
             Factor by which to relax minimum channel width for critical path delay routing
         
         vpr_exec: 
@@ -51,8 +51,8 @@ def run_relax_W(architecture, circuit, circuit_name=None, command_runner=Command
     """
     if vpr_args is None:
         vpr_args = OrderedDict()
-
-    mkdir_p(temp_dir)
+    temp_dir = Path(temp_dir) if not isinstance(temp_dir, Path) else temp_dir
+    temp_dir.mkdir(parents=True, exist_ok=True)
 
     #Verify that files are Paths or convert them to Paths and check that they exist
     architecture = verify_file(architecture, "Architecture")
@@ -75,7 +75,7 @@ def run_relax_W(architecture, circuit, circuit_name=None, command_runner=Command
     if "route" in vpr_args:
         del vpr_args["route"]
 
-    if vpr_exec == None:
+    if vpr_exec is None:
         vpr_exec = find_vtr_file('vpr', is_executable=True)
 
     run(architecture, circuit, circuit_name, command_runner, temp_dir, log_filename=vpr_min_W_log, vpr_exec=vpr_exec, vpr_args=vpr_args)
@@ -85,9 +85,9 @@ def run_relax_W(architecture, circuit, circuit_name=None, command_runner=Command
         return
     if max_router_iterations:
         vpr_args["max_router_iterations"]=max_router_iterations
-    min_W = determine_min_W(str(Path(temp_dir)  / vpr_min_W_log))
+    min_W = determine_min_W(str(temp_dir  / vpr_min_W_log))
 
-    relaxed_W = relax_W(min_W, relax_W_factor)
+    relaxed_W = relax_W(min_W, relax_w_factor)
 
     vpr_args['route'] = True #Re-route only
     vpr_args['route_chan_width'] = relaxed_W #At a fixed channel width
@@ -98,7 +98,7 @@ def run_relax_W(architecture, circuit, circuit_name=None, command_runner=Command
     run(architecture, circuit, circuit_name, command_runner, temp_dir, log_filename=vpr_relaxed_W_log, vpr_exec=vpr_exec, vpr_args=vpr_args, check_for_second_run=False)
     
 
-def run(architecture, circuit, circuit_name=None, command_runner=CommandRunner(), temp_dir=".", output_netlist=None,
+def run(architecture, circuit, circuit_name=None, command_runner=CommandRunner(), temp_dir=Path("."), output_netlist=None,
  log_filename="vpr.out", vpr_exec=None, vpr_args=None,check_for_second_run=True,rr_graph_ext=".xml",):
     """
     Runs VPR with the specified configuration
@@ -143,10 +143,10 @@ def run(architecture, circuit, circuit_name=None, command_runner=CommandRunner()
     
     if vpr_args is None:
         vpr_args = OrderedDict()
+    temp_dir = Path(temp_dir) if not isinstance(temp_dir, Path) else temp_dir
+    temp_dir.mkdir(parents=True, exist_ok=True)
 
-    mkdir_p(temp_dir)
-
-    if vpr_exec == None:
+    if vpr_exec is None:
         vpr_exec = find_vtr_file('vpr', is_executable=True)
 
     #Verify that files are Paths or convert them to Paths and check that they exist
@@ -224,7 +224,7 @@ def run(architecture, circuit, circuit_name=None, command_runner=CommandRunner()
             if diff_result:
                 raise InspectError("failed: vpr (RR Graph XML output not consistent when reloaded)")
 
-def cmp_full_vs_incr_STA(architecture,circuit,circuit_name=None,command_runner=CommandRunner(),vpr_args=None,rr_graph_ext=".xml",temp_dir=".",vpr_exec=None):
+def cmp_full_vs_incr_STA(architecture,circuit,circuit_name=None,command_runner=CommandRunner(),vpr_args=None,rr_graph_ext=".xml",temp_dir=Path("."),vpr_exec=None):
     """
     Sanity check that full STA and the incremental STA produce the same *.net, *.place, *.route files as well as identical timing report files
 

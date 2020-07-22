@@ -38,9 +38,9 @@ class CommandRunner(object):
             indent: The string specifying a single indent (used in verbose mode)
             valgrind: Indicates if commands should be run with valgrind
         """
-        if verbose_error==None:
+        if verbose_error is None:
             verbose_error = verbose
-        if echo_cmd == None:
+        if echo_cmd is None:
             echo_cmd = verbose
 
         self._timeout_sec = timeout_sec
@@ -71,9 +71,10 @@ class CommandRunner(object):
         """
         #Save the original command
         orig_cmd = cmd
+        temp_dir = Path(temp_dir) if not isinstance(temp_dir, Path) else temp_dir
 
         #If no log file is specified the name is based on the executed command
-        if log_filename == None:
+        if log_filename is None:
             log_filename = PurePath(orig_cmd[0]).name + '.out'
 
 
@@ -114,7 +115,7 @@ class CommandRunner(object):
                                     stdout=subprocess.PIPE, #We grab stdout
                                     stderr=stderr, #stderr redirected to stderr
                                     universal_newlines=True, #Lines always end in \n
-                                    cwd=temp_dir, #Where to run the command
+                                    cwd=str(temp_dir), #Where to run the command
                                     )
 
             # Read the output line-by-line and log it
@@ -122,7 +123,7 @@ class CommandRunner(object):
             #
             # We do this rather than use proc.communicate() 
             # to get interactive output
-            with (Path(temp_dir) / log_filename).open('w') as log_f:
+            with (temp_dir / log_filename).open('w') as log_f:
                 #Print the command at the top of the log
                 log_f.write(" ".join(cmd))
                 log_f.write("\n")
@@ -148,7 +149,7 @@ class CommandRunner(object):
         finally:
             #Clean-up if we did not exit cleanly
             if proc:
-                if proc.returncode == None:
+                if proc.returncode is None:
                     #Still running, stop it
                     proc.terminate()
 
@@ -165,7 +166,7 @@ class CommandRunner(object):
         if (self._show_failures and cmd_errored):
             raise CommandError(msg="Executable {exec_name} failed".format(exec_name=PurePath(orig_cmd[0]).name), 
                                cmd=cmd,
-                               log=str(PurePath(temp_dir).joinpath(log_filename)),
+                               log=str(temp_dir / log_filename),
                                returncode=cmd_returncode)
 
         return cmd_output, cmd_returncode
@@ -223,7 +224,7 @@ def load_tab_delimited_csv(filepath):
 
         header = None
         for csv_row in reader:
-            if header == None:
+            if header is None:
                 header = [val.strip() for val in csv_row]
             else:
                 data_row = OrderedDict()
@@ -234,30 +235,6 @@ def load_tab_delimited_csv(filepath):
                 data.append(data_row)
 
     return data
-
-def make_enum(*sequential, **named):
-    """
-    Makes an enumeration
-
-    >> MY_ENUM = enum(ONE, TWO, THREE)
-    """
-    enums = dict(zip(sequential, range(len(sequential))), **named)
-    reverse = dict((value, key) for key, value in enums.items())
-    enums['reverse_mapping'] = reverse
-    return type('Enum', (), enums)
-
-def mkdir_p(path):
-    """
-    Makes a directory (including parents) at the specified path
-    """
-    make_path = Path(path)
-    try:
-        make_path.mkdir(parents=True)
-    except OSError as exc:  # Python >2.5
-        if exc.errno == errno.EEXIST and make_path.is_dir():
-            pass
-        else:
-            raise
 
 def print_verbose(min_verbosity, curr_verbosity, string, endl=True):
     """
@@ -470,7 +447,7 @@ def get_latest_run_dir(base_dir):
     """
     latest_run_number = get_latest_run_number(base_dir)
 
-    if latest_run_number == None:
+    if latest_run_number is None:
         return None
 
     return str(PurePath(base_dir) / run_dir_name(latest_run_number))
@@ -481,7 +458,7 @@ def get_next_run_number(base_dir):
     """
     latest_run_number = get_latest_run_number(base_dir)
 
-    if latest_run_number == None:
+    if latest_run_number is None:
         next_run_number = 0
     else:
         next_run_number = latest_run_number + 1

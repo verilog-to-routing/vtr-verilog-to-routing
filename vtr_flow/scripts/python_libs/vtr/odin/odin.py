@@ -1,11 +1,11 @@
 import shutil
 from pathlib import Path
-from vtr import  mkdir_p, find_vtr_file, file_replace, determine_memory_addr_width, verify_file, CommandRunner
+from vtr import find_vtr_file, file_replace, determine_memory_addr_width, verify_file, CommandRunner
 
 def run(architecture_file, circuit_file, 
              output_netlist, 
              command_runner=CommandRunner(),
-             temp_dir=".", 
+             temp_dir=Path("."), 
              odin_args="--adder_type default",
              log_filename="odin.out", 
              odin_exec=None, 
@@ -55,9 +55,10 @@ def run(architecture_file, circuit_file,
             Tells ODIN II the minimum adder size that should be implemented using hard adder (if available).
         
     """
-    mkdir_p(temp_dir)
+    temp_dir = Path(temp_dir) if not isinstance(temp_dir, Path) else temp_dir
+    temp_dir.mkdir(parents=True, exist_ok=True)
 
-    if odin_args == None:
+    if odin_args is None:
         odin_args = OrderedDict()
 
     #Verify that files are Paths or convert them to Paths and check that they exist
@@ -65,15 +66,15 @@ def run(architecture_file, circuit_file,
     circuit_file = verify_file(circuit_file, "Circuit")
     output_netlist = verify_file(output_netlist, "Output netlist", False)
 
-    if odin_exec == None:
+    if odin_exec is None:
         odin_exec = find_vtr_file('odin_II', is_executable=True)
 
-    if odin_config == None:
+    if odin_config is None:
         odin_base_config = find_vtr_file('basic_odin_config_split.xml')
 
         #Copy the config file
         odin_config = "odin_config.xml"
-        odin_config_full_path = str(Path(temp_dir)  / odin_config)
+        odin_config_full_path = str(temp_dir / odin_config)
         shutil.copyfile(odin_base_config, odin_config_full_path)
 
         #Update the config file
@@ -109,7 +110,7 @@ def run(architecture_file, circuit_file,
     command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename=log_filename, indent_depth=1)
 
     if(use_odin_simulation):
-        sim_dir = Path(temp_dir) / "simulation_init"
+        sim_dir = temp_dir / "simulation_init"
         sim_dir.mkdir()
         cmd = [odin_exec, "-b", output_netlist.name, -a, architecture_file.name, "-sim_dir", str(sim_dir),"-g", "100", "--best_coverage", "-U0"]
         command_runner.run_system_command(cmd,temp_dir=temp_dir, log_filename="sim_produce_vector.out",indent_depth=1)

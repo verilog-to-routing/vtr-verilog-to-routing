@@ -1,7 +1,7 @@
 from vtr import find_vtr_file, verify_file,CommandRunner
 from pathlib import Path
 def run(circuit_file, old_netlist, output_netlist, output_activity_file,
-            command_runner=CommandRunner(), temp_dir=".", log_filename="ace.out",
+            command_runner=CommandRunner(), temp_dir=Path("."), log_filename="ace.out",
             ace_exec=None, ace_seed = 1):
     """
     Runs ACE for activity estimation 
@@ -39,15 +39,15 @@ def run(circuit_file, old_netlist, output_netlist, output_activity_file,
         ace_seed : 
             The ACE seed
     """
-
+    temp_dir = Path(temp_dir) if not isinstance(temp_dir, Path) else temp_dir
     #Verify that files are Paths or convert them to Paths and check that they exist
     circuit_file = verify_file(circuit_file, "Circuit")
     old_netlist = verify_file(old_netlist, "Previous netlist")
     output_netlist = verify_file(output_netlist, "Output netlist", should_exist=False)
     output_activity_file = verify_file(output_activity_file, "Output activity", should_exist=False)
 
-    ace_clk_file = Path(temp_dir) / "ace_clk.txt"
-    ace_raw = Path(temp_dir) / (circuit_file.with_suffix('').stem + ".raw.ace.blif")
+    ace_clk_file = temp_dir / "ace_clk.txt"
+    ace_raw = temp_dir / (circuit_file.with_suffix('').stem + ".raw.ace.blif")
     if ace_exec is None:
         ace_exec = find_vtr_file('ace')
 

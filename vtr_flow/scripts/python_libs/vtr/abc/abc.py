@@ -1,11 +1,11 @@
 import shutil
 from pathlib import Path
-from vtr import  mkdir_p, find_vtr_file, determine_lut_size, verify_file, CommandRunner
+from vtr import find_vtr_file, determine_lut_size, verify_file, CommandRunner
 from vtr.error import VtrError, InspectError, CommandError
 
 def run(architecture_file, circuit_file,
         output_netlist, command_runner=CommandRunner(),
-        temp_dir=".", log_filename="abc.out",
+        temp_dir=Path("."), log_filename="abc.out",
         abc_exec=None, abc_script=None, abc_rc=None,
         use_old_abc_script = False, abc_args = None, keep_intermediate_files=True):
     """
@@ -54,9 +54,10 @@ def run(architecture_file, circuit_file,
             Determines if intermediate files are kept or deleted
 
     """
-    mkdir_p(temp_dir)
+    temp_dir = Path(temp_dir) if not isinstance(temp_dir, Path) else temp_dir
+    temp_dir.mkdir(parents=True, exist_ok=True)
 
-    if abc_args == None:
+    if abc_args is None:
         abc_args = OrderedDict()
 
     #Verify that files are Paths or convert them to Paths and check that they exist
@@ -99,18 +100,18 @@ def run(architecture_file, circuit_file,
         else:
             abc_run_args += ["--" + arg, str(value)]
         
-    if(lut_size == None):
+    if(lut_size is None):
         lut_size = determine_lut_size(str(architecture_file))
 
     populate_clock_list(circuit_file,blackbox_latches_script,clk_list,command_runner,temp_dir,"report_clocks.abc.out")
 
-    if abc_exec == None:
+    if abc_exec is None:
         abc_exec = find_vtr_file('abc', is_executable=True)
     
-    if abc_rc == None:
+    if abc_rc is None:
         abc_rc = Path(abc_exec).parent / 'abc.rc'
 
-    shutil.copyfile(str(abc_rc), str(Path(temp_dir) / 'abc.rc'))
+    shutil.copyfile(str(abc_rc), str(temp_dir / 'abc.rc'))
 
     
 
@@ -122,9 +123,9 @@ def run(architecture_file, circuit_file,
     original_script = abc_script
     input_file = circuit_file.name
     for i in range(0, iterations):
-        pre_abc_blif= Path(temp_dir) / (str(i)+"_" + circuit_file.name)
-        post_abc_blif = Path(temp_dir) / (str(i)+"_"+output_netlist.name)
-        post_abc_raw_blif = Path(temp_dir) / (str(i)+"_"+output_netlist.with_suffix('').stem+".raw.abc.blif")
+        pre_abc_blif= temp_dir / (str(i)+"_" + circuit_file.name)
+        post_abc_blif = temp_dir / (str(i)+"_"+output_netlist.name)
+        post_abc_raw_blif = temp_dir / (str(i)+"_"+output_netlist.with_suffix('').stem+".raw.abc.blif")
         if(abc_flow_type=="blanket_bb"):
             cmd = [blackbox_latches_script, "--input", input_file,"--output",pre_abc_blif.name]
             command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename=str(i)+"_blackboxing_latch.out", indent_depth=1)
@@ -135,7 +136,7 @@ def run(architecture_file, circuit_file,
         else:
             pre_abc_blif = input_file
         
-        if abc_script == None:
+        if abc_script is None:
            
             abc_script = ['echo ""',
                         'echo "Load Netlist"',
@@ -213,7 +214,7 @@ def run(architecture_file, circuit_file,
     command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename="restore_latch" + str(i) + ".out", indent_depth=1)
     if(not keep_intermediate_files):
         files = []
-        for file in Path(temp_dir).iterdir():
+        for file in temp_dir.iterdir():
             if file.suffix in ('.dot','.v','.rc'):
                 files.append(file)
         for p in files:
@@ -221,14 +222,14 @@ def run(architecture_file, circuit_file,
 
 
 def populate_clock_list(circuit_file,blackbox_latches_script,clk_list,command_runner,temp_dir,log_filename):
-    clk_list_path = Path(temp_dir) / "report_clk.out"
+    clk_list_path = temp_dir / "report_clk.out"
     cmd = [blackbox_latches_script, "--input", circuit_file.name,"--output_list", clk_list_path.name]
     command_runner.run_system_command(cmd, temp_dir=temp_dir, log_filename=log_filename, indent_depth=1)
     with clk_list_path.open('r') as f:
         for line in f.readlines():
             clk_list.append(line.strip('\n'))
 
-def run_lec(reference_netlist, implementation_netlist, command_runner=CommandRunner(), temp_dir=".", log_filename="abc.lec.out", abc_exec=None):
+def run_lec(reference_netlist, implementation_netlist, command_runner=CommandRunner(), temp_dir=Path("."), log_filename="abc.lec.out", abc_exec=None):
     """
     Run Logical Equivalence Checking (LEC) between two netlists using ABC
 
@@ -258,9 +259,10 @@ def run_lec(reference_netlist, implementation_netlist, command_runner=CommandRun
             ABC executable to be run
         
     """
-    mkdir_p(temp_dir)
+    temp_dir = Path(temp_dir) if not isinstance(temp_dir, Path) else temp_dir
+    temp_dir.mkdir(parents=True, exist_ok=True)
 
-    if abc_exec == None:
+    if abc_exec is None:
         abc_exec = find_vtr_file('abc', is_executable=True)
 
         abc_script = 'dsec {ref} {imp}'.format(ref=reference_netlist, imp=implementation_netlist),
