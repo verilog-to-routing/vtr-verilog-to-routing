@@ -39,7 +39,7 @@ class breakpoint {
             bt_from_block = mtb;
         else if (ty.compare("bt_router_iter") == 0)
             bt_router_iter = mtb;
-       else if (ty.compare("bt_route_net_id") == 0)
+        else if (ty.compare("bt_route_net_id") == 0)
             bt_route_net_id = mtb;
     }
 

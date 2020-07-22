@@ -3849,141 +3849,141 @@ void setup_default_ezgl_callbacks(ezgl::application* app) {
 
 //draws main debugger window
 void draw_debug_window() {
-    if(!openWindows.debug_window) {
-        openWindows.debug_window = true;   
+    if (!openWindows.debug_window) {
+        openWindows.debug_window = true;
 
         // window settings
         GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    	gtk_window_set_title((GtkWindow*)window, "Debugger");
-    	gtk_window_set_position((GtkWindow*)window, GTK_WIN_POS_CENTER);
+        gtk_window_set_title((GtkWindow*)window, "Debugger");
+        gtk_window_set_position((GtkWindow*)window, GTK_WIN_POS_CENTER);
 
-    	//main grid settings
-    	GtkWidget* mainGrid = gtk_grid_new();
-    	gtk_widget_set_margin_top(mainGrid, 30);
-    	gtk_widget_set_margin_bottom(mainGrid, 30);
-    	gtk_widget_set_margin_left(mainGrid, 30);
-    	gtk_widget_set_margin_right(mainGrid, 20);
+        //main grid settings
+        GtkWidget* mainGrid = gtk_grid_new();
+        gtk_widget_set_margin_top(mainGrid, 30);
+        gtk_widget_set_margin_bottom(mainGrid, 30);
+        gtk_widget_set_margin_left(mainGrid, 30);
+        gtk_widget_set_margin_right(mainGrid, 20);
 
-    	//create all labels
-    	GtkWidget* placerOpts = gtk_label_new(NULL);
-    	gtk_label_set_markup((GtkLabel*)placerOpts, "<b>Placer Options</b>");
-    	gtk_widget_set_margin_bottom(placerOpts, 10);
-    	GtkWidget* routerOpts = gtk_label_new(NULL);
-    	gtk_label_set_markup((GtkLabel*)routerOpts, "<b>Router Options</b>");
-    	gtk_widget_set_margin_bottom(routerOpts, 10);
-    	gtk_widget_set_margin_top(routerOpts, 30);
-    	GtkWidget* bplist = gtk_label_new(NULL);
-    	gtk_label_set_markup((GtkLabel*)bplist, "<b>List of Breakpoints</b>");
-    	gtk_widget_set_margin_bottom(bplist, 10);
-    	gtk_widget_set_margin_top(bplist, 30);
-   	 GtkWidget* movesLabel = gtk_label_new("Number of moves to proceed");
-    	gtk_widget_set_halign(movesLabel, GTK_ALIGN_END);
-    	gtk_widget_set_margin_right(movesLabel, 8);
-    	GtkWidget* tempsLabel = gtk_label_new("Temperatures to proceed:");
-    	gtk_widget_set_halign(tempsLabel, GTK_ALIGN_END);
-    	gtk_widget_set_margin_right(tempsLabel, 8);
-    	GtkWidget* blockLabel = gtk_label_new("Stop at from_block");
-    	gtk_widget_set_halign(blockLabel, GTK_ALIGN_END);
-    	gtk_widget_set_margin_right(blockLabel, 8);
+        //create all labels
+        GtkWidget* placerOpts = gtk_label_new(NULL);
+        gtk_label_set_markup((GtkLabel*)placerOpts, "<b>Placer Options</b>");
+        gtk_widget_set_margin_bottom(placerOpts, 10);
+        GtkWidget* routerOpts = gtk_label_new(NULL);
+        gtk_label_set_markup((GtkLabel*)routerOpts, "<b>Router Options</b>");
+        gtk_widget_set_margin_bottom(routerOpts, 10);
+        gtk_widget_set_margin_top(routerOpts, 30);
+        GtkWidget* bplist = gtk_label_new(NULL);
+        gtk_label_set_markup((GtkLabel*)bplist, "<b>List of Breakpoints</b>");
+        gtk_widget_set_margin_bottom(bplist, 10);
+        gtk_widget_set_margin_top(bplist, 30);
+        GtkWidget* movesLabel = gtk_label_new("Number of moves to proceed");
+        gtk_widget_set_halign(movesLabel, GTK_ALIGN_END);
+        gtk_widget_set_margin_right(movesLabel, 8);
+        GtkWidget* tempsLabel = gtk_label_new("Temperatures to proceed:");
+        gtk_widget_set_halign(tempsLabel, GTK_ALIGN_END);
+        gtk_widget_set_margin_right(tempsLabel, 8);
+        GtkWidget* blockLabel = gtk_label_new("Stop at from_block");
+        gtk_widget_set_halign(blockLabel, GTK_ALIGN_END);
+        gtk_widget_set_margin_right(blockLabel, 8);
         GtkWidget* iterLabel = gtk_label_new("Stop at router iteration");
-    	gtk_widget_set_halign(iterLabel, GTK_ALIGN_END);
-    	gtk_widget_set_margin_right(iterLabel, 8);
+        gtk_widget_set_halign(iterLabel, GTK_ALIGN_END);
+        gtk_widget_set_margin_right(iterLabel, 8);
         GtkWidget* netLabel = gtk_label_new("Stop at route_net_id");
-    	gtk_widget_set_halign(netLabel, GTK_ALIGN_END);
-    	gtk_widget_set_margin_right(netLabel, 8);
-    	GtkWidget* star = gtk_label_new("*for handling multiple breakpoints at once using an expression can be more accurate");
-    	gtk_widget_set_margin_top(star, 15);
+        gtk_widget_set_halign(netLabel, GTK_ALIGN_END);
+        gtk_widget_set_margin_right(netLabel, 8);
+        GtkWidget* star = gtk_label_new("*for handling multiple breakpoints at once using an expression can be more accurate");
+        gtk_widget_set_margin_top(star, 15);
 
-    	//create all buttons
-    	GtkWidget* setM = gtk_button_new_with_label("Set");
-    	gtk_widget_set_halign(setM, GTK_ALIGN_START);
-    	gtk_widget_set_margin_bottom(setM, 10);
-    	gtk_widget_set_margin_left(setM, 10);
-    	GtkWidget* setT = gtk_button_new_with_label("Set");
-    	gtk_widget_set_halign(setT, GTK_ALIGN_START);
-    	gtk_widget_set_margin_bottom(setT, 10);
-    	gtk_widget_set_margin_left(setT, 10);
-    	GtkWidget* setB = gtk_button_new_with_label("Set");
-    	gtk_widget_set_halign(setB, GTK_ALIGN_START);
-    	gtk_widget_set_margin_left(setB, 10);
+        //create all buttons
+        GtkWidget* setM = gtk_button_new_with_label("Set");
+        gtk_widget_set_halign(setM, GTK_ALIGN_START);
+        gtk_widget_set_margin_bottom(setM, 10);
+        gtk_widget_set_margin_left(setM, 10);
+        GtkWidget* setT = gtk_button_new_with_label("Set");
+        gtk_widget_set_halign(setT, GTK_ALIGN_START);
+        gtk_widget_set_margin_bottom(setT, 10);
+        gtk_widget_set_margin_left(setT, 10);
+        GtkWidget* setB = gtk_button_new_with_label("Set");
+        gtk_widget_set_halign(setB, GTK_ALIGN_START);
+        gtk_widget_set_margin_left(setB, 10);
         GtkWidget* setI = gtk_button_new_with_label("Set");
-    	gtk_widget_set_halign(setI, GTK_ALIGN_START);
-    	gtk_widget_set_margin_left(setI, 10);
+        gtk_widget_set_halign(setI, GTK_ALIGN_START);
+        gtk_widget_set_margin_left(setI, 10);
         GtkWidget* setN = gtk_button_new_with_label("Set");
-    	gtk_widget_set_halign(setN, GTK_ALIGN_START);
-    	gtk_widget_set_margin_left(setN, 10);
-    	GtkWidget* advanced = gtk_button_new_with_label("Advanced");
-    	gtk_widget_set_margin_left(advanced, 60);
-    	gtk_widget_set_margin_right(advanced, 10);
-    	gtk_widget_set_margin_top(advanced, 20);
+        gtk_widget_set_halign(setN, GTK_ALIGN_START);
+        gtk_widget_set_margin_left(setN, 10);
+        GtkWidget* advanced = gtk_button_new_with_label("Advanced");
+        gtk_widget_set_margin_left(advanced, 60);
+        gtk_widget_set_margin_right(advanced, 10);
+        gtk_widget_set_margin_top(advanced, 20);
 
-    	//create all entries
-    	GtkWidget* movesEntry = gtk_entry_new();
-    	gtk_entry_set_text((GtkEntry*)movesEntry, "ex. 100");
-    	gtk_widget_set_margin_bottom(movesEntry, 10);
-    	GtkWidget* tempsEntry = gtk_entry_new();
-   	gtk_entry_set_text((GtkEntry*)tempsEntry, "ex. 5");
-    	gtk_widget_set_margin_bottom(tempsEntry, 10);
-    	GtkWidget* blockEntry = gtk_entry_new();
-    	gtk_entry_set_text((GtkEntry*)blockEntry, "ex. 83");
+        //create all entries
+        GtkWidget* movesEntry = gtk_entry_new();
+        gtk_entry_set_text((GtkEntry*)movesEntry, "ex. 100");
+        gtk_widget_set_margin_bottom(movesEntry, 10);
+        GtkWidget* tempsEntry = gtk_entry_new();
+        gtk_entry_set_text((GtkEntry*)tempsEntry, "ex. 5");
+        gtk_widget_set_margin_bottom(tempsEntry, 10);
+        GtkWidget* blockEntry = gtk_entry_new();
+        gtk_entry_set_text((GtkEntry*)blockEntry, "ex. 83");
         GtkWidget* iterEntry = gtk_entry_new();
-    	gtk_entry_set_text((GtkEntry*)iterEntry, "ex. 3");
+        gtk_entry_set_text((GtkEntry*)iterEntry, "ex. 3");
         GtkWidget* netEntry = gtk_entry_new();
-    	gtk_entry_set_text((GtkEntry*)netEntry, "ex. 12");
+        gtk_entry_set_text((GtkEntry*)netEntry, "ex. 12");
 
-    	//bpList grid
-    	bpGrid = gtk_grid_new();
-    	gtk_widget_set_margin_bottom(bpGrid, 20);
+        //bpList grid
+        bpGrid = gtk_grid_new();
+        gtk_widget_set_margin_bottom(bpGrid, 20);
 
-    	//attach existing breakopints to bp list (if any)
-    	refresh_bpList();
+        //attach existing breakopints to bp list (if any)
+        refresh_bpList();
 
-    	//scrolled window settings
-    	GtkWidget* scrolly = gtk_scrolled_window_new(NULL, NULL);
-    	gtk_container_add(GTK_CONTAINER(scrolly), bpGrid);
-    	gtk_scrolled_window_set_min_content_height((GtkScrolledWindow*)scrolly, 100);
+        //scrolled window settings
+        GtkWidget* scrolly = gtk_scrolled_window_new(NULL, NULL);
+        gtk_container_add(GTK_CONTAINER(scrolly), bpGrid);
+        gtk_scrolled_window_set_min_content_height((GtkScrolledWindow*)scrolly, 100);
 
-    	//attach everything to the grid
-    	gtk_grid_attach((GtkGrid*)mainGrid, placerOpts, 0, 0, 3, 1);
-    	gtk_grid_attach((GtkGrid*)mainGrid, movesLabel, 0, 1, 1, 1);
-    	gtk_grid_attach((GtkGrid*)mainGrid, movesEntry, 1, 1, 1, 1);
-    	gtk_grid_attach((GtkGrid*)mainGrid, setM, 2, 1, 1, 1);
-    	gtk_grid_attach((GtkGrid*)mainGrid, tempsLabel, 0, 2, 1, 1);
-    	gtk_grid_attach((GtkGrid*)mainGrid, tempsEntry, 1, 2, 1, 1);
-    	gtk_grid_attach((GtkGrid*)mainGrid, setT, 2, 2, 1, 1);
-    	gtk_grid_attach((GtkGrid*)mainGrid, blockLabel, 0, 3, 1, 1);
-    	gtk_grid_attach((GtkGrid*)mainGrid, blockEntry, 1, 3, 1, 1);
-    	gtk_grid_attach((GtkGrid*)mainGrid, setB, 2, 3, 1, 1);
-    	gtk_grid_attach((GtkGrid*)mainGrid, routerOpts, 0, 4, 3, 1);
+        //attach everything to the grid
+        gtk_grid_attach((GtkGrid*)mainGrid, placerOpts, 0, 0, 3, 1);
+        gtk_grid_attach((GtkGrid*)mainGrid, movesLabel, 0, 1, 1, 1);
+        gtk_grid_attach((GtkGrid*)mainGrid, movesEntry, 1, 1, 1, 1);
+        gtk_grid_attach((GtkGrid*)mainGrid, setM, 2, 1, 1, 1);
+        gtk_grid_attach((GtkGrid*)mainGrid, tempsLabel, 0, 2, 1, 1);
+        gtk_grid_attach((GtkGrid*)mainGrid, tempsEntry, 1, 2, 1, 1);
+        gtk_grid_attach((GtkGrid*)mainGrid, setT, 2, 2, 1, 1);
+        gtk_grid_attach((GtkGrid*)mainGrid, blockLabel, 0, 3, 1, 1);
+        gtk_grid_attach((GtkGrid*)mainGrid, blockEntry, 1, 3, 1, 1);
+        gtk_grid_attach((GtkGrid*)mainGrid, setB, 2, 3, 1, 1);
+        gtk_grid_attach((GtkGrid*)mainGrid, routerOpts, 0, 4, 3, 1);
         gtk_grid_attach((GtkGrid*)mainGrid, iterLabel, 0, 5, 1, 1);
-    	gtk_grid_attach((GtkGrid*)mainGrid, iterEntry, 1, 5, 1, 1);
-    	gtk_grid_attach((GtkGrid*)mainGrid, setI, 2, 5, 1, 1);
+        gtk_grid_attach((GtkGrid*)mainGrid, iterEntry, 1, 5, 1, 1);
+        gtk_grid_attach((GtkGrid*)mainGrid, setI, 2, 5, 1, 1);
         gtk_grid_attach((GtkGrid*)mainGrid, netLabel, 0, 6, 1, 1);
-    	gtk_grid_attach((GtkGrid*)mainGrid, netEntry, 1, 6, 1, 1);
-    	gtk_grid_attach((GtkGrid*)mainGrid, setN, 2, 6, 1, 1);
-    	gtk_grid_attach((GtkGrid*)mainGrid, bplist, 0, 7, 3, 1);
-    	gtk_grid_attach((GtkGrid*)mainGrid, scrolly, 0, 8, 3, 1);
-    	gtk_grid_attach((GtkGrid*)mainGrid, advanced, 2, 9, 1, 1);
-    	gtk_grid_attach((GtkGrid*)mainGrid, star, 0, 10, 3, 1);
+        gtk_grid_attach((GtkGrid*)mainGrid, netEntry, 1, 6, 1, 1);
+        gtk_grid_attach((GtkGrid*)mainGrid, setN, 2, 6, 1, 1);
+        gtk_grid_attach((GtkGrid*)mainGrid, bplist, 0, 7, 3, 1);
+        gtk_grid_attach((GtkGrid*)mainGrid, scrolly, 0, 8, 3, 1);
+        gtk_grid_attach((GtkGrid*)mainGrid, advanced, 2, 9, 1, 1);
+        gtk_grid_attach((GtkGrid*)mainGrid, star, 0, 10, 3, 1);
 
-    	//connect all signals
-    	g_signal_connect(setM, "clicked", G_CALLBACK(set_moves_button_callback), mainGrid);
-   	g_signal_connect(setT, "clicked", G_CALLBACK(set_temp_button_callback), mainGrid);
-   	g_signal_connect(setB, "clicked", G_CALLBACK(set_block_button_callback), mainGrid);
+        //connect all signals
+        g_signal_connect(setM, "clicked", G_CALLBACK(set_moves_button_callback), mainGrid);
+        g_signal_connect(setT, "clicked", G_CALLBACK(set_temp_button_callback), mainGrid);
+        g_signal_connect(setB, "clicked", G_CALLBACK(set_block_button_callback), mainGrid);
         g_signal_connect(setI, "clicked", G_CALLBACK(set_router_iter_button_callback), mainGrid);
-   	g_signal_connect(setN, "clicked", G_CALLBACK(set_net_id_button_callback), mainGrid);
-    	g_signal_connect(advanced, "clicked", G_CALLBACK(advanced_button_callback), NULL);
-    	g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(close_debug_window), NULL);
+        g_signal_connect(setN, "clicked", G_CALLBACK(set_net_id_button_callback), mainGrid);
+        g_signal_connect(advanced, "clicked", G_CALLBACK(advanced_button_callback), NULL);
+        g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(close_debug_window), NULL);
 
-    	//show window
-    	gtk_container_add(GTK_CONTAINER(window), mainGrid);
-    	gtk_widget_show_all(window);
+        //show window
+        gtk_container_add(GTK_CONTAINER(window), mainGrid);
+        gtk_widget_show_all(window);
     }
 }
 
 //window for setting advanced breakpoints
 void advanced_button_callback() {
-    if(!openWindows.advanced_window) {
+    if (!openWindows.advanced_window) {
         openWindows.advanced_window = true;
 
         // window settings
@@ -4000,7 +4000,7 @@ void advanced_button_callback() {
         gtk_label_set_line_wrap((GtkLabel*)instructions, TRUE);
         gtk_label_set_max_width_chars((GtkLabel*)instructions, 40);
         GtkWidget* expression_here = gtk_label_new("Write expression below:");
-  
+
         //expander settings
         GtkWidget* expander = gtk_expander_new("Variables");
         GtkWidget* varGrid = gtk_grid_new();
@@ -4030,7 +4030,7 @@ void advanced_button_callback() {
         gtk_grid_attach((GtkGrid*)varGrid, nLabel, 0, 7, 1, 1);
         gtk_container_add((GtkContainer*)expander, varGrid);
         gtk_widget_set_halign(expander, GTK_ALIGN_START);
-   
+
         //set margins
         gtk_widget_set_margin_left(instructions, 30);
         gtk_widget_set_margin_right(instructions, 30);
@@ -4380,11 +4380,10 @@ bool valid_expression(std::string exp) {
     //the comparing operators have code 0 and bool operators have code 1
     std::vector<int> ops;
     for (size_t i = 0; i < exp.size(); i++) {
-        if (exp[i+1]!='\0'&&((exp[i] == '=' && exp[i+1] == '=')|| (exp[i] == '>'&& exp[i+1] == '=') || (exp[i] == '<'&& exp[i+1] == '=')|| (exp[i] == '+'&& exp[i+1] == '='))) {
+        if (exp[i + 1] != '\0' && ((exp[i] == '=' && exp[i + 1] == '=') || (exp[i] == '>' && exp[i + 1] == '=') || (exp[i] == '<' && exp[i + 1] == '=') || (exp[i] == '+' && exp[i + 1] == '='))) {
             ops.push_back(0);
             i++;
-        }
-        else if (exp[i+1]!='\0'&&((exp[i] == '>'&& exp[i+1] != '=') || (exp[i] == '<'&& exp[i+1] != '=')))
+        } else if (exp[i + 1] != '\0' && ((exp[i] == '>' && exp[i + 1] != '=') || (exp[i] == '<' && exp[i + 1] != '=')))
             ops.push_back(0);
         else if (exp[i] == '&' || exp[i] == '|') {
             ops.push_back(1);

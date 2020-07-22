@@ -20,31 +20,31 @@ current_information get_current_info_b() {
 
 //checks if there are any move breakpoints
 bool check_for_moves_breakpoints(int moves_to_proceed) {
-    std::string expression = "move_num += "+ std::to_string(moves_to_proceed);
+    std::string expression = "move_num += " + std::to_string(moves_to_proceed);
     return check_for_expression_breakpoints(expression);
 }
 
 //check for temperature breakpoint
 bool check_for_temperature_breakpoints(int temps_to_proceed) {
-    std::string expression = "temp_count += "+ std::to_string(temps_to_proceed);
+    std::string expression = "temp_count += " + std::to_string(temps_to_proceed);
     return check_for_expression_breakpoints(expression);
 }
 
 //check for block breakpoint
 bool check_for_block_breakpoints(int user_blockId) {
-    std::string expression = "from_block == "+ std::to_string(user_blockId);
+    std::string expression = "from_block == " + std::to_string(user_blockId);
     return check_for_expression_breakpoints(expression);
 }
 
 //checks for router iteration breakpoint
 bool check_for_router_iter_breakpoints(int routerIter) {
-    std::string expression = "router_iter == "+ std::to_string(routerIter);
+    std::string expression = "router_iter == " + std::to_string(routerIter);
     return check_for_expression_breakpoints(expression);
 }
 
 //checks for router net id breakpoint
 bool check_for_route_net_id_iter_breakpoints(int net_id) {
-    std::string expression = "route_net_id == "+ std::to_string(net_id);
+    std::string expression = "route_net_id == " + std::to_string(net_id);
     return check_for_expression_breakpoints(expression);
 }
 
@@ -102,5 +102,5 @@ void delete_breakpoint_by_index(int index) {
 
 //prints the current placer information to the terminal
 void print_current_info() {
-    std::cout << "\nmove_num: " << current_info_b.move_num << "\ntemp_count: " << current_info_b.temp_count << "\nin_blocks_affected: " << get_current_info_e_ba() << "\nblock_id: " << current_info_b.from_block << "\nrouter_iter: "<<current_info_b.router_iter<<"\nnet_id: " <<current_info_b.net_id<<"\n----------------------------\n";
+    std::cout << "\nmove_num: " << current_info_b.move_num << "\ntemp_count: " << current_info_b.temp_count << "\nin_blocks_affected: " << get_current_info_e_ba() << "\nblock_id: " << current_info_b.from_block << "\nrouter_iter: " << current_info_b.router_iter << "\nnet_id: " << current_info_b.net_id << "\n----------------------------\n";
 }
