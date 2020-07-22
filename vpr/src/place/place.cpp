@@ -82,11 +82,11 @@ using std::min;
 std::map<int,std::string> available_move_types = {
         {0,"Uniform"},
         {1,"Median"},
-        {2,"Weighted_median"},
-        {3,"Weighted_centroid"},
-        {4,"Feasible_region"},
+        {2,"Weighted_centroid"},
+        {3,"Centroid"},
+        {4,"Weighted_median"},
         {5,"Critical_uniform"},
-        {6,"Centroid"}
+        {6,"Feasible_region"}
 };
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 void print_place_statisitics(const int&, const float &, const std::vector<int> &, const std::vector<int> &, const std::vector<int> &);
@@ -493,7 +493,9 @@ void try_place(const t_placer_opts& placer_opts,
     std::shared_ptr<PlacementDelayCalculator> placement_delay_calc;
     std::unique_ptr<PlaceDelayModel> place_delay_model;
     std::unique_ptr<MoveGenerator> move_generator;
+    std::unique_ptr<MoveGenerator> move_generator2;
     std::unique_ptr<PlacerSetupSlacks> placer_setup_slacks;
+
     std::unique_ptr<PlacerCriticalities> placer_criticalities;
     std::unique_ptr<ClusteredPinTimingInvalidator> pin_timing_invalidator;
 
@@ -546,6 +548,23 @@ void try_place(const t_placer_opts& placer_opts,
             karmed_bandit_agent->set_step(placer_opts.place_agent_gamma, move_lim);
             move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent);
         }
+
+        if(agent_algorithm == E_GREEDY){ 
+            VTR_LOG("Using simple RL 'Epsilon Greedy agent' for choosing move types\n");
+            std::unique_ptr<EpsilonGreedyAgent> karmed_bandit_agent;
+            karmed_bandit_agent = std::make_unique<EpsilonGreedyAgent>(7, placer_opts.place_agent_epsilon);
+            karmed_bandit_agent->set_step(placer_opts.place_agent_gamma, move_lim);
+            move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent);
+        }
+        else{
+            VTR_LOG("Using simple RL 'Softmax agent' for choosing move types\n");
+            std::unique_ptr<SoftmaxAgent> karmed_bandit_agent;
+            karmed_bandit_agent = std::make_unique<SoftmaxAgent>(7);
+            karmed_bandit_agent->set_step(placer_opts.place_agent_gamma, move_lim);
+            move_generator2 = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent);
+        }
+
+
         VTR_LOG("The reward function used is reward num: %d \n", reward_num);
     }
     width_fac = placer_opts.place_chan_width;
@@ -765,8 +784,12 @@ void try_place(const t_placer_opts& placer_opts,
     VTR_LOG("\n");
     print_place_status_header();
 
+    //RL agent state definition
+    int state = 1;
+
     /* Outer loop of the simulated annealing begins */
     do {
+
         vtr::Timer temperature_timer;
 
         outer_loop_update_timing_info(placer_opts,
@@ -784,7 +807,8 @@ void try_place(const t_placer_opts& placer_opts,
         std::fill(accepted_moves.begin(),accepted_moves.end(),0);
         std::fill(aborted_moves.begin(),aborted_moves.end(),0);
 
-        placement_inner_loop(&state, placer_opts,
+        if(state == 1){
+            placement_inner_loop(&state, placer_opts,
                              inner_recompute_limit, &stats,
                              &costs,
                              &moves_since_cost_recompute,
@@ -802,7 +826,26 @@ void try_place(const t_placer_opts& placer_opts,
                              accepted_moves,
                              aborted_moves,
                              timing_bb_factor);
-
+        }
+        else {
+            placement_inner_loop(state.t, num_temps, state.rlim, placer_opts,
+                             state.move_lim, state.crit_exponent, inner_recompute_limit, &stats,
+                             &costs,
+                             &prev_inverse_costs,
+                             &moves_since_cost_recompute,
+                             pin_timing_invalidator.get(),
+                             place_delay_model.get(),
+                             placer_criticalities.get(),
+                             *move_generator2,
+                             blocks_affected,
+                             timing_info.get(),
+                             X_coord,
+                             Y_coord,
+                             num_moves,
+                             accepted_moves,
+                             aborted_moves,
+                             timing_bb_factor);
+        }
         tot_iter += state.move_lim;
         ++state.num_temps;
 
@@ -840,6 +883,8 @@ quench:
 
     auto pre_quench_timing_stats = timing_ctx.stats;
     { /* Quench */
+    
+
         vtr::ScopedFinishTimer temperature_timer("Placement Quench");
 
         outer_loop_update_timing_info(placer_opts,
@@ -863,7 +908,7 @@ quench:
                              place_delay_model.get(),
                              placer_criticalities.get(),
                              placer_setup_slacks.get(),
-                             *move_generator,
+                             *move_generator2,
                              blocks_affected,
                              timing_info.get(),
                              placer_opts.place_quench_algorithm,
@@ -873,12 +918,6 @@ quench:
                              accepted_moves,
                              aborted_moves,
                              timing_bb_factor);
-
-        oldt = state.t;
-
-        tot_iter += move_lim;
-        ++num_temps;
->>>>>>> Fixing the issues of merging incremental STA into directed moves
 
         tot_iter += state.move_lim;
         ++state.num_temps;

@@ -88,7 +88,8 @@ class SoftmaxAgent : public KArmedBanditAgent {
     //std::vector<double> time_elapsed {1.0,3.87,6.4,2.8,2.29};
     std::vector<double> time_elapsed {1.0,3.6,5.4,2.5,2.1,0.8,2.2};
     std::vector<double> time_elapsed_per_move {1.0,3.7,6,3.0,2.0,1.0,2.6};
-    std::vector<double> time_elapsed_per_accepted_move {1.0,3.6,4.6,2.4,2.0,2.2,2.5};
+    //std::vector<double> time_elapsed_per_accepted_move {1.0,3.6,4.6,2.4,2.0,2.2,2.5};
+    std::vector<double> time_elapsed_per_accepted_move {1.0,3.6,4.6,2.4,1.0,1.0,1.0};
     //std::vector<double> time_elapsed {1.0, 4.11, 6.67, 3.22, 1.88, 0.81};
     //std::vector<int> time_elapsed {7,30,40,23};
     FILE* f_ = nullptr;
