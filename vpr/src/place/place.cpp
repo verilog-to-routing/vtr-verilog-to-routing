@@ -1119,10 +1119,10 @@ static void update_t(float* t, float rlim, float success_rat, t_annealing_sched 
         }
     }
     t_draw_state* draw_state = get_draw_state_vars();
-    if(draw_state->list_of_breakpoints.size()!=0) {
+    if (draw_state->list_of_breakpoints.size() != 0) {
         //update temperature in the current information variable
-    	current_info_p.temp_count++;
-    	send_current_info_p();
+        current_info_p.temp_count++;
+        send_current_info_p();
     }
 }
 
@@ -1381,7 +1381,7 @@ static e_move_result try_swap(float t,
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 
     t_draw_state* draw_state = get_draw_state_vars();
-    if(draw_state->list_of_breakpoints.size()!=0) {
+    if (draw_state->list_of_breakpoints.size() != 0) {
         //update current information
         transform_blocks_affected(blocks_affected);
         current_info_p.move_num++;
@@ -1392,8 +1392,7 @@ static e_move_result try_swap(float t,
         f_placer_debug = check_for_breakpoints();
         if (f_placer_debug)
             breakpoint_info_window(get_current_info_b().bp_description, current_info_p);
-    }
-    else
+    } else
         f_placer_debug = false;
 
     if (f_placer_debug && draw_state->show_graphics) {
@@ -2754,6 +2753,6 @@ bool placer_needs_lookahead(const t_vpr_setup& vpr_setup) {
 //transforms the vector moved_blocks to a vector of ints and adds it in current_info_p
 void transform_blocks_affected(t_pl_blocks_to_be_moved blocksAffected) {
     current_info_p.blocks_affected_vector.clear();
-    for( size_t  i =0; i<blocksAffected.moved_blocks.size(); i++)
+    for (size_t i = 0; i < blocksAffected.moved_blocks.size(); i++)
         current_info_p.blocks_affected_vector.push_back(size_t(blocksAffected.moved_blocks[i].block_num));
 }
