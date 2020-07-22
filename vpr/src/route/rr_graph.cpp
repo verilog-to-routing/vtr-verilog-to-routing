@@ -1456,6 +1456,7 @@ static void build_rr_sinks_sources(const int i,
     //We loop through all the pin locations on the block to initialize the IPINs/OPINs,
     //and hook-up the IPINs to sinks.
     for (int ipin = 0; ipin < num_pins; ++ipin) {
+        bool first_pin = true;
         for (e_side side : SIDES) {
             for (int width_offset = 0; width_offset < type->width; ++width_offset) {
                 for (int height_offset = 0; height_offset < type->height; ++height_offset) {
