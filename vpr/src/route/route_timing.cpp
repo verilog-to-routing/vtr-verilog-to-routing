@@ -4,6 +4,7 @@
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
+#include <iostream>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -22,6 +23,8 @@
 #include "stats.h"
 #include "echo_files.h"
 #include "draw.h"
+#include "breakpoint.h"
+#include "move_utils.h"
 #include "rr_graph.h"
 #include "routing_predictor.h"
 #include "VprTimingGraphResolver.h"
@@ -134,6 +137,7 @@ struct RoutingMetrics {
 //Run-time flag to control when router debug information is printed
 //Note only enables debug output if compiled with VTR_ENABLE_DEBUG_LOGGING defined
 bool f_router_debug = false;
+current_information current_info_r;
 
 /******************** Subroutines local to route_timing.c ********************/
 
@@ -232,6 +236,10 @@ static void prune_unused_non_configurable_nets(CBRR& connections_inf);
 
 static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
                                           vtr::vector<ClusterNetId, float*>& net_delay);
+
+//debug related functions
+void update_router_info_and_check(char type, int net_id);
+void send_current_info_r();
 
 // The reason that try_timing_driven_route_tmpl (and descendents) are being
 // templated over is because using a virtual interface instead fully templating
@@ -478,6 +486,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
 
             if (was_rerouted) {
                 rerouted_nets.push_back(net_id);
+                update_router_info_and_check('n', size_t(net_id));
             }
         }
 
@@ -596,6 +605,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
         if (legal_convergence_count >= router_opts.max_convergence_count
             || router_iteration_stats.connections_routed == 0
             || early_reconvergence_exit_heuristic(router_opts, itry_since_last_convergence, timing_info, best_routing_metrics)) {
+            update_router_info_and_check('r', -1);
             break; //Done routing
         }
 
@@ -604,6 +614,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
          */
         if (itry == 1 && early_exit_heuristic(router_opts, wirelength_info)) {
             //Abort
+            update_router_info_and_check('r', -1);
             break;
         }
 
@@ -613,12 +624,14 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
 
             if (!std::isnan(est_success_iteration) && est_success_iteration > abort_iteration_threshold) {
                 VTR_LOG("Routing aborted, the predicted iteration for a successful route (%.1f) is too high.\n", est_success_iteration);
+                update_router_info_and_check('r', -1);
                 break; //Abort
             }
         }
 
         if (itry == 1 && router_opts.exit_after_first_routing_iteration) {
             VTR_LOG("Exiting after first routing iteration as requested\n");
+            update_router_info_and_check('r', -1);
             break;
         }
 
@@ -2080,4 +2093,27 @@ static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahea
             net_delay[net_id][ipin] = est_delay;
         }
     }
+}
+
+//updates router iteration information and checks for breakpoints
+//stops if a breakpoint is encountered
+void update_router_info_and_check(char type, int net_id) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    if(draw_state->list_of_breakpoints.size()!=0) {
+        if(type == 'r')
+            current_info_r.router_iter++;
+        else if(type == 'n')
+            current_info_r.net_id = net_id;
+    	send_current_info_r();
+    	f_router_debug = check_for_breakpoints();
+    	if(f_router_debug) {
+        	breakpoint_info_window(get_current_info_b().bp_description, current_info_r);
+        	update_screen(ScreenUpdatePriority::MAJOR, "Breakpoint Encountered", ROUTING, nullptr);
+    	}
+    }
+}
+
+//sends router info to breakpoint.cpp to be sent to expr_eval.cpp
+void send_current_info_r() {
+    send_current_info_b(current_info_r);
 }
