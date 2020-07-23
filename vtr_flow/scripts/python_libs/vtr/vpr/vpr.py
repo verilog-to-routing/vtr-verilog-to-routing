@@ -1,9 +1,9 @@
 import shutil
 from pathlib import Path
-from vtr import find_vtr_file, CommandRunner, print_verbose, relax_W, determine_lut_size, determine_min_W, verify_file
+from vtr import find_vtr_file, CommandRunner, print_verbose, relax_w, determine_lut_size, determine_min_w, verify_file
 from vtr.error import InspectError
 
-def run_relax_W(architecture, circuit, circuit_name=None, command_runner=CommandRunner(), temp_dir=Path("."), 
+def run_relax_w(architecture, circuit, circuit_name=None, command_runner=CommandRunner(), temp_dir=Path("."), 
                     relax_w_factor=1.3, vpr_exec=None, logfile_base="vpr",
                     vpr_args=None, output_netlist=None):
     """
@@ -13,7 +13,7 @@ def run_relax_W(architecture, circuit, circuit_name=None, command_runner=Command
 
       2nd: At relaxed channel width (e.g. for critical path delay)
     
-    .. note :: Usage: vtr.vpr.run_relax_W(<architecture_file>,<circuit_name>,<circuit_file>,[OPTIONS])
+    .. note :: Usage: vtr.vpr.run_relax_w(<architecture_file>,<circuit_name>,<circuit_file>,[OPTIONS])
 
     Arguments
     =========
@@ -41,7 +41,7 @@ def run_relax_W(architecture, circuit, circuit_name=None, command_runner=Command
             Path to the VPR executable
         
         logfile_base: 
-            Base name for log files (e.g. "vpr" produces vpr.min_W.out, vpr.relaxed_W.out)
+            Base name for log files (e.g. "vpr" produces vpr.min_w.out, vpr.relaxed_W.out)
         
         vpr_args: 
             Extra arguments for VPR
@@ -58,7 +58,7 @@ def run_relax_W(architecture, circuit, circuit_name=None, command_runner=Command
     architecture = verify_file(architecture, "Architecture")
     circuit = verify_file(circuit, "Circuit")
 
-    vpr_min_W_log = '.'.join([logfile_base, "out"])
+    vpr_min_w_log = '.'.join([logfile_base, "out"])
     vpr_relaxed_W_log = '.'.join([logfile_base, "crit_path", "out"])
     max_router_iterations = None
 
@@ -78,16 +78,16 @@ def run_relax_W(architecture, circuit, circuit_name=None, command_runner=Command
     if vpr_exec is None:
         vpr_exec = find_vtr_file('vpr', is_executable=True)
 
-    run(architecture, circuit, circuit_name, command_runner, temp_dir, log_filename=vpr_min_W_log, vpr_exec=vpr_exec, vpr_args=vpr_args)
+    run(architecture, circuit, circuit_name, command_runner, temp_dir, log_filename=vpr_min_w_log, vpr_exec=vpr_exec, vpr_args=vpr_args)
 
     if ('pack' in vpr_args or 'place' in vpr_args) and 'route' not in vpr_args:
         #Don't look for min W if routing was not run
         return
     if max_router_iterations:
         vpr_args["max_router_iterations"]=max_router_iterations
-    min_W = determine_min_W(str(temp_dir  / vpr_min_W_log))
+    min_w = determine_min_w(str(temp_dir  / vpr_min_w_log))
 
-    relaxed_W = relax_W(min_W, relax_w_factor)
+    relaxed_W = relax_w(min_w, relax_w_factor)
 
     vpr_args['route'] = True #Re-route only
     vpr_args['route_chan_width'] = relaxed_W #At a fixed channel width

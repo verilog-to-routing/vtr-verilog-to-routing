@@ -247,7 +247,7 @@ def run(
             )
         else:
             # First find minW and then re-route at a relaxed W
-            vtr.vpr.run_relax_W(
+            vtr.vpr.run_relax_w(
                 architecture_copy,
                 pre_vpr_netlist,
                 circuit_copy.stem,

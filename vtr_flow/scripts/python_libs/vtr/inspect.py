@@ -186,13 +186,13 @@ def determine_memory_addr_width(architecture_file):
 
     return mem_addr_width
 
-def determine_min_W(log_filename):
-    min_W_regex = re.compile(r"\s*Best routing used a channel width factor of (?P<min_W>\d+).")
+def determine_min_w(log_filename):
+    min_w_regex = re.compile(r"\s*Best routing used a channel width factor of (?P<min_w>\d+).")
     with open(log_filename) as f:
         for line in f:
-            match = min_W_regex.match(line)
+            match = min_w_regex.match(line)
             if match:
-                return int(match.group("min_W"))
+                return int(match.group("min_w"))
 
     raise InspectError(msg="Failed to find minimum channel width.",
                       filename=log_filename)

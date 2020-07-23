@@ -1,10 +1,12 @@
+"""
+    Module to utilize many of the tools needed for VTR.
+"""
 import os
 from pathlib import PurePath
 from pathlib import Path
 import sys
 import re
 import time
-import errno
 import subprocess
 import distutils.spawn as distutils_spawn
 import argparse
@@ -15,29 +17,47 @@ from vtr.error import VtrError, InspectError, CommandError
 
 VERBOSITY_CHOICES = range(5)
 
-class RawDefaultHelpFormatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter):
-    """
-    An argparse formatter which supports both default arguments and raw formatting of description/epilog
-    """
-    pass
 
-class CommandRunner(object):
+class RawDefaultHelpFormatter(
+        argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter
+):
+    """
+    An argparse formatter which supports both default arguments and raw
+    formatting of description/epilog
+    """
 
-    def __init__(self, timeout_sec=None, max_memory_mb=None, track_memory=True, verbose_error=None, verbose=False, echo_cmd=None, indent="\t", show_failures=False,valgrind=False):
-        """
-        An object for running system commands with timeouts, memory limits and varying verbose-ness 
+#pylint: disable=too-many-arguments, too-many-instance-attributes, too-few-public-methods, too-many-locals
+class CommandRunner():
+    """
+        An object for running system commands with timeouts, memory limits and varying verbose-ness
 
         Arguments
         =========
             timeout_sec: maximum walk-clock-time of the command in seconds. Default: None
-            max_memory_mb: maximum memory usage of the command in megabytes (if supported). Default: None
-            track_memory: Whether to track usage of the command (disabled if not supported). Default: True
-            verbose_error: Produce more verbose output if the commadn fails. Default: Equal to verbose
+            max_memory_mb: maximum memory usage of the command in megabytes (if supported).
+                Default: None
+            track_memory: Whether to track usage of the command (disabled if not supported).
+                Default: True
+            verbose_error: Produce more verbose output if the command fails.
+                Default: Equal to verbose
             verbose: Produce more verbose output. Default: False
             echo_cmd: Echo the command before running. Default: Equal to verbose
             indent: The string specifying a single indent (used in verbose mode)
             valgrind: Indicates if commands should be run with valgrind
         """
+    def __init__(
+            self,
+            timeout_sec=None,
+            max_memory_mb=None,
+            track_memory=True,
+            verbose_error=None,
+            verbose=False,
+            echo_cmd=None,
+            indent="\t",
+            show_failures=False,
+            valgrind=False,
+    ):
+
         if verbose_error is None:
             verbose_error = verbose
         if echo_cmd is None:
@@ -53,7 +73,9 @@ class CommandRunner(object):
         self._show_failures = show_failures
         self._valgrind = valgrind
 
-    def run_system_command(self, cmd, temp_dir, log_filename=None, expected_return_code=0, indent_depth=0):
+    def run_system_command(
+            self, cmd, temp_dir, log_filename=None, expected_return_code=0, indent_depth=0
+    ):
         """
         Runs the specified command in the system shell.
 
@@ -64,120 +86,126 @@ class CommandRunner(object):
         Arguments
         =========
             cmd: list of tokens that form the command to be run
-            log_filename: name of the log file for the command's output. Default: derived from command
+            log_filename: the log fiel name for the command's output. Default: derived from command
             temp_dir: The directory to run the command in. Default: None (uses object default).
-            expected_return_code: The expected return code from the command. If the actula return code does not match, will generate an exception. Default: 0
+            expected_return_code: The expected return code from the command.
+            If the actula return code does not match, will generate an exception. Default: 0
             indent_depth: How deep to indent the tool output in verbose mode. Default 0
         """
-        #Save the original command
+        # Save the original command
         orig_cmd = cmd
         temp_dir = Path(temp_dir) if not isinstance(temp_dir, Path) else temp_dir
 
-        #If no log file is specified the name is based on the executed command
-        if log_filename is None:
-            log_filename = PurePath(orig_cmd[0]).name + '.out'
+        # If no log file is specified the name is based on the executed command
+        log_filename = PurePath(orig_cmd[0]).name + ".out" if log_filename is None else log_filename
 
-
-        #Limit memory usage?
+        # Limit memory usage?
         memory_limit = ["ulimit", "-Sv", "{val};".format(val=self._max_memory_mb)]
-        if self._max_memory_mb != None and self.check_command(memory_limit[0]):
-            cmd = memory_limit + cmd
+        cmd = memory_limit + cmd if self._max_memory_mb and check_cmd(memory_limit[0]) else cmd
 
-        #Enable memory tracking?
+        # Enable memory tracking?
         memory_tracking = ["/usr/bin/env", "time", "-v"]
-        if self._track_memory and self.check_command(memory_tracking[0]):
-            if self._valgrind:
-                valgrind_args = ["valgrind", "--leak-check=full", "--suppressions={}".format(find_vtr_file("valgrind.supp")), "--error-exitcode=1", "--errors-for-leak-kinds=none", "--track-origins=yes", "--log-file=valgrind.log","--error-limit=no"]
-                cmd = memory_tracking + valgrind_args + cmd
-            else:
-                cmd = memory_tracking + cmd
+        if self._track_memory and check_cmd(memory_tracking[0]):
+            cmd = memory_tracking + [
+                "valgrind",
+                "--leak-check=full",
+                "--suppressions={}".format(find_vtr_file("valgrind.supp")),
+                "--error-exitcode=1",
+                "--errors-for-leak-kinds=none",
+                "--track-origins=yes",
+                "--log-file=valgrind.log",
+                "--error-limit=no",
+            ] + cmd if self._valgrind else memory_tracking + cmd
 
-        #Flush before calling subprocess to ensure output is ordered
-        #correctly if stdout is buffered
+        # Flush before calling subprocess to ensure output is ordered
+        # correctly if stdout is buffered
         sys.stdout.flush()
 
-        #Echo the command?
+        # Echo the command?
         if self._echo_cmd:
             print(cmd)
 
-        #Begin timing
+        # Begin timing
         start_time = time.time()
 
-        cmd_output=[]
-        cmd_returncode=None
+        cmd_output = []
+        cmd_returncode = None
         proc = None
         try:
-            #Call the command
-            stderr = subprocess.STDOUT
-            if self._valgrind:
-                stderr = None
-            proc = subprocess.Popen(cmd,
-                                    stdout=subprocess.PIPE, #We grab stdout
-                                    stderr=stderr, #stderr redirected to stderr
-                                    universal_newlines=True, #Lines always end in \n
-                                    cwd=str(temp_dir), #Where to run the command
-                                    )
+            # Call the command
+            stderr = None if self._valgrind else subprocess.STDOUT
+            proc = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,  # We grab stdout
+                stderr=stderr,  # stderr redirected to stderr
+                universal_newlines=True,  # Lines always end in \n
+                cwd=str(temp_dir),  # Where to run the command
+            )
 
             # Read the output line-by-line and log it
             # to a file.
             #
-            # We do this rather than use proc.communicate() 
+            # We do this rather than use proc.communicate()
             # to get interactive output
-            with (temp_dir / log_filename).open('w') as log_f:
-                #Print the command at the top of the log
+            with (temp_dir / log_filename).open("w") as log_f:
+                # Print the command at the top of the log
                 log_f.write(" ".join(cmd))
                 log_f.write("\n")
 
-                #Read from subprocess output
+                # Read from subprocess output
                 for line in proc.stdout:
 
-                    #Send to log file
+                    # Send to log file
                     log_f.write(line)
 
-                    #Save the output
+                    # Save the output
                     cmd_output.append(line)
 
-                    #Abort if over time limit
+                    # Abort if over time limit
                     elapsed_time = time.time() - start_time
                     if self._timeout_sec and elapsed_time > self._timeout_sec:
                         proc.terminate()
 
-                #Should now be finished (since we stopped reading from proc.stdout),
-                #sets the return code
+                # Should now be finished (since we stopped reading from proc.stdout),
+                # sets the return code
                 proc.wait()
 
         finally:
-            #Clean-up if we did not exit cleanly
+            # Clean-up if we did not exit cleanly
             if proc:
                 if proc.returncode is None:
-                    #Still running, stop it
+                    # Still running, stop it
                     proc.terminate()
 
                 cmd_returncode = proc.returncode
 
-        cmd_errored = (cmd_returncode != expected_return_code)
+        cmd_errored = cmd_returncode != expected_return_code
 
-        #Send to stdout
-        if self._show_failures and (self._verbose or (cmd_errored and self._verbose_error)):
+        # Send to stdout
+        if self._show_failures and (
+                self._verbose or (cmd_errored and self._verbose_error)
+        ):
             for line in cmd_output:
-                print (indent_depth*self._indent + line,)
+                print(indent_depth * self._indent + line,)
 
-
-        if (self._show_failures and cmd_errored):
-            raise CommandError(msg="Executable {exec_name} failed".format(exec_name=PurePath(orig_cmd[0]).name), 
-                               cmd=cmd,
-                               log=str(temp_dir / log_filename),
-                               returncode=cmd_returncode)
+        if self._show_failures and cmd_errored:
+            raise CommandError(
+                msg="Executable {exec_name} failed".format(
+                    exec_name=PurePath(orig_cmd[0]).name
+                ),
+                cmd=cmd,
+                log=str(temp_dir / log_filename),
+                returncode=cmd_returncode,
+            )
 
         return cmd_output, cmd_returncode
+    #pylint: enable=too-many-arguments, too-many-instance-attributes, too-few-public-methods, too-many-locals
+def check_cmd(command):
+    """
+    Return True if command can be run, False otherwise.
+    """
 
-    def check_command(self, command):
-        """
-        Return True if command can be run, False otherwise.
-        """
-
-        #TODO: actually check for this
-        return True
+    return  Path(command).exists()
 
 
 def write_tab_delimitted_csv(filepath, rows):
@@ -185,11 +213,11 @@ def write_tab_delimitted_csv(filepath, rows):
     Write out the data provied in a tab-delimited CSV format
 
     filepath: The filepath to write the data to
-    rows: An iterable of dictionary-like elements; each element 
-          provides a set key-value pairs corresponding to a row 
+    rows: An iterable of dictionary-like elements; each element
+          provides a set key-value pairs corresponding to a row
           in the output file
     """
-    #Calculate the max width of each column
+    # Calculate the max width of each column
     columns = OrderedDict()
     for row in rows:
         for key, value in row.items():
@@ -199,32 +227,35 @@ def write_tab_delimitted_csv(filepath, rows):
             else:
                 columns[key] = max(columns[key], len(str(value)))
 
-    #Write the elements
-    with open(filepath, 'w+') as f:
-        writer = csv.writer(f, delimiter='\t')
+    # Write the elements
+    with open(filepath, "w+") as file:
+        writer = csv.writer(file, delimiter="\t")
 
-        #Write out the header
+        # Write out the header
         header = []
         for col_name, col_width in columns.items():
             header.append("{:{width}}".format(col_name, width=col_width))
         writer.writerow(header)
 
-        #Write rows
+        # Write rows
         for row in rows:
             values = []
             for col_name, col_width in columns.items():
                 values.append("{:{width}}".format(row[col_name], width=col_width))
             writer.writerow(values)
 
+
 def load_tab_delimited_csv(filepath):
-
+    """
+        loads a tab delimted csv as a list of ordered dictionaries
+    """
     data = []
-    with open(filepath) as f:
-        reader = csv.reader(f, delimiter='\t')
+    with open(filepath) as file:
+        reader = csv.reader(file, delimiter="\t")
 
-        header = None
+        header = []
         for csv_row in reader:
-            if header is None:
+            if len(header) == 0:
                 header = [val.strip() for val in csv_row]
             else:
                 data_row = OrderedDict()
@@ -236,6 +267,7 @@ def load_tab_delimited_csv(filepath):
 
     return data
 
+
 def print_verbose(min_verbosity, curr_verbosity, string, endl=True):
     """
     Print string if curr_verbosity is gteq min_verbosity
@@ -244,100 +276,119 @@ def print_verbose(min_verbosity, curr_verbosity, string, endl=True):
         if endl:
             print(string)
         else:
-            print (string,)
+            print(string,)
+
 
 def find_vtr_file(filename, is_executable=False):
     """
     Attempts to find a VTR related file by searching the environment.
-    
+
     Checking the following places:
         1) System path (if is_executable=True)
         2) The inferred vtr root from environment variables or the script file location
 
     """
-    #We assume exectuables are specified in the unix style (no .exe),
+    # We assume exectuables are specified in the unix style (no .exe),
     # if it was specified with .exe, strip it off
     file_path = PurePath(filename)
     if file_path.suffix == ".exe":
         filename = file_path.name
 
     #
-    #Check if it is on the path (provided it is executable)
+    # Check if it is on the path (provided it is executable)
     #
     if is_executable:
-        #Search first for the non-exe version
+        # Search first for the non-exe version
         result = distutils_spawn.find_executable(filename)
         if result:
             return result
 
-        #If not found try the .exe version
-        result = distutils_spawn.find_executable(filename + '.exe')
+        # If not found try the .exe version
+        result = distutils_spawn.find_executable(filename + ".exe")
         if result:
             return result
 
     vtr_root = find_vtr_root()
 
-    #Check the inferred VTR root
+    # Check the inferred VTR root
     result = find_file_from_vtr_root(filename, vtr_root, is_executable=is_executable)
     if result:
         return result
 
-    #Since we stripped off the .exe, try looking for the .exe version as a last resort (i.e. on Windows/cygwin)
+    # Since we stripped off the .exe, try looking for the .exe version
+    # as a last resort (i.e. on Windows/cygwin)
     if is_executable:
-        result = find_file_from_vtr_root(filename + '.exe', vtr_root, is_executable=is_executable)
+        result = find_file_from_vtr_root(
+            filename + ".exe", vtr_root, is_executable=is_executable
+        )
         if result:
             return result
 
-    raise ValueError("Could not find {type} {file}".format(type="executable" if is_executable else "file",file=filename))
+    raise ValueError(
+        "Could not find {type} {file}".format(
+            type="executable" if is_executable else "file", file=filename
+        )
+    )
+
 
 def find_file_from_vtr_root(filename, vtr_root, is_executable=False):
     """
-    Given a vtr_root and a filename searches for the file recursively under some common VTR directories
+    Given a vtr_root and a filename searches for the file recursively
+    under some common VTR directories
     """
-    for subdir in ['vpr', 'abc', 'abc_with_bb_support', 'ODIN_II', 'vtr_flow', 'ace2']:
-        directory_path = (Path(vtr_root) / subdir)
-        for file_path in directory_path.glob('**/*'):
+    for subdir in ["vpr", "abc", "abc_with_bb_support", "ODIN_II", "vtr_flow", "ace2"]:
+        directory_path = Path(vtr_root) / subdir
+        for file_path in directory_path.glob("**/*"):
             if file_path.name == filename:
                 if file_path.is_file():
-                    if is_executable:
-                        #Found an executable file as required
-                        if os.access(str(file_path), os.X_OK):
-                            return str(file_path)
-                    else:
-                        #Found a file as required
+                    if is_executable and os.access(str(file_path), os.X_OK):
+                        # Found an executable file as required
                         return str(file_path)
+                    # Found a file as required
+                    return str(file_path)
     return None
 
+
 def find_vtr_root():
-    for env_var in ['VTR_ROOT']:
+    """
+        finds the root directory of VTR
+    """
+    for env_var in ["VTR_ROOT"]:
         if env_var in os.environ:
             return os.environ[env_var]
 
-    #We assume that this file is in <vtr_root>/vtr_flow/python_libs/verilogtorouting
-    inferred_vtr_root = Path(__file__).parent / '../../../..'
+    # We assume that this file is in <vtr_root>/vtr_flow/python_libs/verilogtorouting
+    inferred_vtr_root = Path(__file__).parent / "../../../.."
 
-    if inferred_vtr_root.is_dir:
+    if inferred_vtr_root.is_dir():
         return str(inferred_vtr_root)
-    else:
-        raise VtrError("Could not find VTR root directory. Try setting VTR_ROOT environment variable.")
+    raise VtrError(
+        "Could not find VTR root directory. Try setting VTR_ROOT environment variable."
+    )
+
 
 def file_replace(filename, search_replace_dict):
+    """
+        searches file for specified values and replaces them with specified values.
+    """
     lines = []
-    with open(filename, 'r') as f:
-        lines = f.readlines()
+    with open(filename, "r") as file:
+        lines = file.readlines()
 
-    with open(filename, 'w') as f:
+    with open(filename, "w") as file:
         for line in lines:
             for search, replace in search_replace_dict.items():
                 line = line.replace(search, str(replace))
-            print (line,file=f)
+            print(line, file=file)
 
-def relax_W(min_W, relax_factor, base=2):
+
+def relax_w(min_w, relax_factor, base=2):
     """
-    Scale min_W by relax_factor and round to the nearest multiple of base.
+    Scale min_w by relax_factor and round to the nearest multiple of base.
     """
-    relaxed_W = int(base * round(min_W*relax_factor/base))
-    return relaxed_W
+    relaxed_w = int(base * round(min_w * relax_factor / base))
+    return relaxed_w
+
 
 def load_list_file(list_file):
     """
@@ -345,16 +396,17 @@ def load_list_file(list_file):
     potentially with '#' comments
     """
     values = []
-    with open(list_file) as f:
-        for line in f:
+    with open(list_file) as file:
+        for line in file:
             line = line.strip()
-            #Handle comments
-            if '#' in line:
-                line = line.split('#')[0]
+            # Handle comments
+            if "#" in line:
+                line = line.split("#")[0]
             if line == "":
                 continue
             values.append(line)
     return values
+
 
 def load_config_lines(filepath, allow_includes=True):
     """
@@ -374,16 +426,16 @@ def load_config_lines(filepath, allow_includes=True):
 
     blank_regex = re.compile(r"^\s*$")
     try:
-        with open(filepath) as f:
-            for line in f:
-                #Trim '\n'
+        with open(filepath) as file:
+            for line in file:
+                # Trim '\n'
                 line = line.strip()
 
-                #Trim comments
-                if '#' in line:
-                    line = line.split('#')[0]
+                # Trim comments
+                if "#" in line:
+                    line = line.split("#")[0]
 
-                #Skip blanks
+                # Skip blanks
                 if blank_regex.match(line):
                     continue
 
@@ -392,45 +444,60 @@ def load_config_lines(filepath, allow_includes=True):
                         components = line.split()
                         assert len(components) == 2
 
-                        include_file = components[1].strip('"') #Strip quotes
+                        include_file = components[1].strip('"')  # Strip quotes
                         include_file_abs = str(Path(filepath).parent / include_file)
 
-                        #Recursively load the config
-                        config_lines += load_config_lines(include_file_abs, allow_includes=allow_includes) 
+                        # Recursively load the config
+                        config_lines += load_config_lines(
+                            include_file_abs, allow_includes=allow_includes
+                        )
                     else:
-                        raise InspectError("@include not allowed in this file", filepath)
+                        raise InspectError(
+                            "@include not allowed in this file", filepath
+                        )
                 else:
                     config_lines.append(line)
-    except IOError as e:
-        raise InspectError("Error opening config file ({})".format(e))
+    except IOError as error:
+        raise InspectError("Error opening config file ({})".format(error))
 
-    return config_lines            
+    return config_lines
 
-def verify_file(file, file_type,should_exist=True):
+
+def verify_file(file, file_type, should_exist=True):
     """
-        Verifies that the file is a Pathlib object and if not makes it one. 
+        Verifies that the file is a Pathlib object and if not makes it one.
         Ensures that the file exists by default.
-        This makes it possible to pass files into the various files as strings or as pathlib objects.
+        This makes it possible to pass files into the various files as strings or as pathlib objects
     """
-    if(not isinstance(file,Path)):
+    if not isinstance(file, Path):
         file = Path(file)
-    if(should_exist and not file.is_file()):
-        raise Exception("{file_type} file does not exist: {file} ".format(file_type = file_type, file=file))
+    if should_exist and not file.is_file():
+        raise Exception(
+            "{file_type} file does not exist: {file} ".format(
+                file_type=file_type, file=file
+            )
+        )
 
     return file
-    
+
+
 def format_elapsed_time(time_delta):
+    """
+        formats a time into desired string format
+    """
     return "%.2f seconds" % time_delta.total_seconds()
-        
+
 
 def argparse_str2bool(str_val):
+    """
+        parses a string boolean to a boolean
+    """
     str_val = str_val.lower()
-    if str_val in ['yes', 'on', 'true', '1']:
+    if str_val in ["yes", "on", "true", "1"]:
         return True
-    elif str_val in ['no', 'off', 'false', '0']:
+    if str_val in ["no", "off", "false", "0"]:
         return False
-    else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
+    raise argparse.ArgumentTypeError("Boolean value expected.")
 
 
 def get_next_run_dir(base_dir):
@@ -440,6 +507,7 @@ def get_next_run_dir(base_dir):
     Does not create the directory
     """
     return str(PurePath(base_dir) / run_dir_name(get_next_run_number(base_dir)))
+
 
 def get_latest_run_dir(base_dir):
     """
@@ -451,6 +519,7 @@ def get_latest_run_dir(base_dir):
         return None
 
     return str(PurePath(base_dir) / run_dir_name(latest_run_number))
+
 
 def get_next_run_number(base_dir):
     """
@@ -465,6 +534,7 @@ def get_next_run_number(base_dir):
 
     return next_run_number
 
+
 def get_latest_run_number(base_dir):
     """
     Returns the highest run number of all run directories with in base_dir
@@ -473,15 +543,15 @@ def get_latest_run_number(base_dir):
     run_dir = Path(base_dir) / run_dir_name(run_number)
 
     if not run_dir.exists:
-        #No existing run directories
+        # No existing run directories
         return None
 
     while run_dir.exists:
         run_number += 1
         run_dir = Path(base_dir) / run_dir_name(run_number)
 
-    #Currently one-past the last existing run dir,
-    #to get latest existing, subtract one
+    # Currently one-past the last existing run dir,
+    # to get latest existing, subtract one
     return run_number - 1
 
 
