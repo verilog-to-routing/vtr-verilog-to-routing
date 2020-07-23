@@ -63,9 +63,9 @@ class PlacerCriticalities {
     pin_range pins_with_modified_criticality() const;
 
   public: //Modifiers
-    //Incrementally updates criticalities based on the atom netlist criticalitites provied by
+    //Updates criticalities based on the atom netlist criticalitites provided by
     //timing_info and the provided criticality_exponent.
-    void update_criticalities(const SetupTimingInfo* timing_info, float criticality_exponent);
+    void update_criticalities(const SetupTimingInfo* timing_info, float criticality_exponent, bool recompute);
 
     //Override the criticality of a particular connection
     void set_criticality(ClusterNetId net, int ipin, float val);
@@ -81,6 +81,70 @@ class PlacerCriticalities {
 
     //Set of pins with criticaltites modified by last call to update_criticalities()
     vtr::vec_id_set<ClusterPinId> cluster_pins_with_modified_criticality_;
+
+    //Updates criticalities: incremental V.S. from scratch 
+    void incr_update_criticalities(const SetupTimingInfo* timing_info);
+    void recompute_criticalities(const SetupTimingInfo* timing_info);
+};
+
+/* Usage
+ * =====
+ * PlacerSetupSlacks returns the clustered netlist connection setup slack used by 
+ * the placer. This also serves to map atom netlist level slack (i.e. on AtomPinIds) 
+ * to the clustered netlist (i.e. ClusterPinIds) used during placement.
+ *
+ * Setup slacks are calculated by calling update_setup_slacks(), which will 
+ * update setup slacks based on the atom netlist connection setup slacks provided by
+ * the passed in SetupTimingInfo. This is done incrementally, based on the modified
+ * connections/AtomPinIds returned by SetupTimingInfo.
+ *
+ * The setup slacks of individual connections can then be queried by calling the 
+ * setup_slack() member function.
+ *
+ * It also supports iterating via pins_with_modified_setup_slack() through the 
+ * clustered netlist pins/connections which have had their setup slacks modified by 
+ * the last call to update_setup_slacks().
+ */
+class PlacerSetupSlacks {
+  public: //Types
+    typedef vtr::vec_id_set<ClusterPinId>::iterator pin_iterator;
+    typedef vtr::vec_id_set<ClusterNetId>::iterator net_iterator;
+
+    typedef vtr::Range<pin_iterator> pin_range;
+    typedef vtr::Range<net_iterator> net_range;
+
+  public: //Lifetime
+    PlacerSetupSlacks(const ClusteredNetlist& clb_nlist, const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
+    PlacerSetupSlacks(const PlacerSetupSlacks& clb_nlist) = delete;
+    PlacerSetupSlacks& operator=(const PlacerSetupSlacks& clb_nlist) = delete;
+
+  public: //Accessors
+    //Returns the setup slack of the specified connection
+    float setup_slack(ClusterNetId net, int ipin) const { return timing_place_setup_slack_[net][ipin]; }
+
+    //Returns the range of clustered netlist pins (i.e. ClusterPinIds) which were modified
+    //by the last call to update_setup_slacks()
+    pin_range pins_with_modified_setup_slack() const;
+
+  public: //Modifiers
+    //Updates setup slacks based on the atom netlist setup slacks provided by timing_info
+    void update_setup_slacks(const SetupTimingInfo* timing_info, bool recompute);
+
+    //Override the setup slack of a particular connection
+    void set_setup_slack(ClusterNetId net, int ipin, float val);
+
+  private: //Data
+    const ClusteredNetlist& clb_nlist_;
+    const ClusteredPinAtomPinsLookup& pin_lookup_;
+
+    ClbNetPinsMatrix<float> timing_place_setup_slacks_; /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1] */
+
+    //Set of pins with criticaltites modified by last call to update_criticalities()
+    vtr::vec_id_set<ClusterPinId> cluster_pins_with_modified_setup_slack_;
+
+    //Updates setup slacks: incremental V.S. from scratch 
+    void incr_update_setup_slacks(const SetupTimingInfo* timing_info);
+    void recompute_setup_slacks(const SetupTimingInfo* timing_info);
 };
 
 /* Usage

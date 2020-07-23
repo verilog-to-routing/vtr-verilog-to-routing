@@ -579,6 +579,23 @@ float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info, cons
     return clb_pin_crit;
 }
 
+//Return the slack of a net's pin in the CLB netlist
+float calculate_clb_net_pin_setup_slack(const SetupTimingInfo& timing_info, const ClusteredPinAtomPinsLookup& pin_lookup, ClusterPinId clb_pin) {
+    //There may be multiple atom netlist pins connected to this CLB pin
+    float clb_pin_setup_slack = std::numeric_limits<float>::quiet_NaN();
+
+    for (const auto atom_pin : pin_lookup.connected_atom_pins(clb_pin)) {
+        //Take the worst of the atom pin slacks as the CLB pin slack
+        if (std::isnan(clb_pin_setup_slack)) {
+            clb_pin_setup_slack = timing_info.setup_pin_slack(atom_pin);
+        } else {
+            clb_pin_setup_slack = std::min(clb_pin_setup_slack, timing_info.setup_pin_slack(atom_pin));
+        }
+    }
+
+    return clb_pin_setup_slack;
+}
+
 //Returns the worst (maximum) criticality of the set of slack tags specified. Requires the maximum
 //required time and worst slack for all domain pairs represent by the slack tags
 //

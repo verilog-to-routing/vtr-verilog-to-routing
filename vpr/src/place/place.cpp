@@ -164,6 +164,10 @@ static vtr::vector<ClusterNetId, double> net_timing_cost; //Like connection_timi
 
 static vtr::vector<ClusterNetId, t_bb> bb_coords, bb_num_on_edges;
 
+/* Determines if slacks/criticalities need to be recomputed from scratch */
+static bool do_recompute_criticalities = false;
+static bool do_recompute_slacks = false;
+
 /* The arrays below are used to precompute the inverse of the average   *
  * number of tracks per channel between [subhigh] and [sublow].  Access *
  * them as chan?_place_cost_fac[subhigh][sublow].  They are used to     *
@@ -1103,7 +1107,7 @@ static void placement_inner_loop(float t,
 
         /* Lines below prevent too much round-off error from accumulating
          * in the cost over many iterations (due to incremental updates).
-         * This round-off can lead to  error checks failing because the cost
+         * This round-off can lead to error checks failing because the cost
          * is different from what you get when you recompute from scratch.
          */
         ++(*moves_since_cost_recompute);
@@ -1894,7 +1898,7 @@ static void update_td_costs(const PlaceDelayModel* delay_model, const PlacerCrit
             if (cluster_ctx.clb_nlist.net_is_ignored(clb_net)) continue;
 
             int ipin = clb_nlist.pin_net_index(clb_pin);
-            VTR_ASSERT_SAFE(ipin >= 0 && ipin < int(clb_nlist.net_pins(clb_net).size()));
+            VTR_ASSERT_SAFE(ipin >= 1 && ipin < int(clb_nlist.net_pins(clb_net).size()));
 
             double new_timing_cost = comp_td_connection_cost(delay_model, place_crit, clb_net, ipin);
 
