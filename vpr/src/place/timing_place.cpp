@@ -29,7 +29,7 @@ PlacerCriticalities::PlacerCriticalities(const ClusteredNetlist& clb_nlist, cons
 }
 
 void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_info, float crit_exponent, bool recompute) {
-    //If the criticalities are not updated immediately after each time we call 
+    //If the criticalities are not updated immediately after each time we call
     //timing_info->update(), then timing_info->pins_with_modified_setup_criticality()
     //cannot accurately account for all the pins that need to be updated.
     //In this case, we pass in recompute=true to update all criticalities from scratch.
@@ -40,7 +40,7 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
     if (!recompute && crit_exponent == last_crit_exponent_ && INCR_UPDATE_CRITICALITIES) {
         incr_update_criticalities(timing_info);
     } else {
-        recompute_criticalities(timing_info);
+        recompute_criticalities();
 
         //Record new criticality exponent
         last_crit_exponent_ = crit_exponent;
@@ -88,7 +88,7 @@ void PlacerCriticalities::incr_update_criticalities(const SetupTimingInfo* timin
     }
 }
 
-void PlacerCriticalities::recompute_criticalities(const SetupTimingInfo* timing_info) {
+void PlacerCriticalities::recompute_criticalities() {
     cluster_pins_with_modified_criticality_.clear();
 
     //Non-incremental: all sink pins need updating
@@ -117,14 +117,14 @@ PlacerSetupSlacks::PlacerSetupSlacks(const ClusteredNetlist& clb_nlist, const Cl
 }
 
 void PlacerSetupSlacks::update_setup_slacks(const SetupTimingInfo* timing_info, bool recompute) {
-    //If the setup slacks are not updated immediately after each time we call 
+    //If the setup slacks are not updated immediately after each time we call
     //timing_info->update(), then timing_info->pins_with_modified_setup_slack()
     //cannot accurately account for all the pins that need to be updated.
     //In this case, we pass in recompute=true to update all setup slacks from scratch.
     if (!recompute && INCR_UPDATE_SETUP_SLACKS) {
         incr_update_setup_slacks(timing_info);
     } else {
-        recompute_setup_slacks(timing_info);
+        recompute_setup_slacks();
     }
 
     //Update the effected pins
@@ -157,7 +157,7 @@ void PlacerSetupSlacks::incr_update_setup_slacks(const SetupTimingInfo* timing_i
     }
 }
 
-void PlacerSetupSlacks::recompute_setup_slacks(const SetupTimingInfo* timing_info) {
+void PlacerSetupSlacks::recompute_setup_slacks() {
     cluster_pins_with_modified_setup_slack_.clear();
 
     //Non-incremental: all sink pins need updating

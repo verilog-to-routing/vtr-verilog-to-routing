@@ -579,7 +579,7 @@ float calculate_clb_net_pin_criticality(const SetupTimingInfo& timing_info, cons
     return clb_pin_crit;
 }
 
-//Return the slack of a net's pin in the CLB netlist
+//Return the setup slack of a net's pin in the CLB netlist
 float calculate_clb_net_pin_setup_slack(const SetupTimingInfo& timing_info, const ClusteredPinAtomPinsLookup& pin_lookup, ClusterPinId clb_pin) {
     //There may be multiple atom netlist pins connected to this CLB pin
     float clb_pin_setup_slack = std::numeric_limits<float>::quiet_NaN();

@@ -82,9 +82,9 @@ class PlacerCriticalities {
     //Set of pins with criticaltites modified by last call to update_criticalities()
     vtr::vec_id_set<ClusterPinId> cluster_pins_with_modified_criticality_;
 
-    //Updates criticalities: incremental V.S. from scratch 
+    //Updates criticalities: incremental V.S. from scratch
     void incr_update_criticalities(const SetupTimingInfo* timing_info);
-    void recompute_criticalities(const SetupTimingInfo* timing_info);
+    void recompute_criticalities();
 };
 
 /* Usage
@@ -120,7 +120,7 @@ class PlacerSetupSlacks {
 
   public: //Accessors
     //Returns the setup slack of the specified connection
-    float setup_slack(ClusterNetId net, int ipin) const { return timing_place_setup_slack_[net][ipin]; }
+    float setup_slack(ClusterNetId net, int ipin) const { return timing_place_setup_slacks_[net][ipin]; }
 
     //Returns the range of clustered netlist pins (i.e. ClusterPinIds) which were modified
     //by the last call to update_setup_slacks()
@@ -142,9 +142,9 @@ class PlacerSetupSlacks {
     //Set of pins with criticaltites modified by last call to update_criticalities()
     vtr::vec_id_set<ClusterPinId> cluster_pins_with_modified_setup_slack_;
 
-    //Updates setup slacks: incremental V.S. from scratch 
+    //Updates setup slacks: incremental V.S. from scratch
     void incr_update_setup_slacks(const SetupTimingInfo* timing_info);
-    void recompute_setup_slacks(const SetupTimingInfo* timing_info);
+    void recompute_setup_slacks();
 };
 
 /* Usage
