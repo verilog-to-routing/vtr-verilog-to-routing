@@ -165,8 +165,8 @@ static vtr::vector<ClusterNetId, double> net_timing_cost; //Like connection_timi
 static vtr::vector<ClusterNetId, t_bb> bb_coords, bb_num_on_edges;
 
 /* Determines if slacks/criticalities need to be recomputed from scratch */
-static bool do_recompute_criticalities = false;
-static bool do_recompute_slacks = false;
+static bool do_recompute_criticalities = true;
+static bool do_recompute_setup_slacks = true;
 
 /* The arrays below are used to precompute the inverse of the average   *
  * number of tracks per channel between [subhigh] and [sublow].  Access *
@@ -417,16 +417,16 @@ static double get_net_wirelength_estimate(ClusterNetId net_id, t_bb* bbptr);
 
 static void free_try_swap_arrays();
 
-static void outer_loop_recompute_criticalities(const t_placer_opts& placer_opts,
-                                               t_placer_costs* costs,
-                                               t_placer_prev_inverse_costs* prev_inverse_costs,
-                                               int num_connections,
-                                               float crit_exponent,
-                                               int* outer_crit_iter_count,
-                                               const PlaceDelayModel* delay_model,
-                                               PlacerCriticalities* criticalities,
-                                               ClusteredPinTimingInvalidator* pin_timing_invalidator,
-                                               SetupTimingInfo* timing_info);
+static void outer_loop_update_criticalities(const t_placer_opts& placer_opts,
+                                            t_placer_costs* costs,
+                                            t_placer_prev_inverse_costs* prev_inverse_costs,
+                                            int num_connections,
+                                            float crit_exponent,
+                                            int* outer_crit_iter_count,
+                                            const PlaceDelayModel* delay_model,
+                                            PlacerCriticalities* criticalities,
+                                            ClusteredPinTimingInvalidator* pin_timing_invalidator,
+                                            SetupTimingInfo* timing_info);
 
 static void recompute_criticalities(float crit_exponent,
                                     const PlaceDelayModel* delay_model,
@@ -434,6 +434,25 @@ static void recompute_criticalities(float crit_exponent,
                                     ClusteredPinTimingInvalidator* pin_timing_invalidator,
                                     SetupTimingInfo* timing_info,
                                     t_placer_costs* costs);
+
+static void update_setup_slacks(PlacerSetupSlacks* setup_slacks,
+                                ClusteredPinTimingInvalidator* pin_timing_invalidator,
+                                SetupTimingInfo* timing_info);
+
+static void update_criticalities(float crit_exponent,
+                                 const PlaceDelayModel* delay_model,
+                                 PlacerCriticalities* criticalities,
+                                 ClusteredPinTimingInvalidator* pin_timing_invalidator,
+                                 SetupTimingInfo* timing_info,
+                                 t_placer_costs* costs);
+
+static void update_setup_slacks_and_criticalities(float crit_exponent,
+                                                  const PlaceDelayModel* delay_model,
+                                                  PlacerCriticalities* criticalities,
+                                                  PlacerSetupSlacks* setup_slacks,
+                                                  ClusteredPinTimingInvalidator* pin_timing_invalidator,
+                                                  SetupTimingInfo* timing_info,
+                                                  t_placer_costs* costs);
 
 static void placement_inner_loop(float t,
                                  int temp_num,
@@ -590,6 +609,8 @@ void try_place(const t_placer_opts& placer_opts,
 
         timing_info = make_setup_timing_info(placement_delay_calc, placer_opts.timing_update_type);
 
+        placer_setup_slacks = std::make_unique<PlacerSetupSlacks>(cluster_ctx.clb_nlist, netlist_pin_lookup);
+
         placer_criticalities = std::make_unique<PlacerCriticalities>(cluster_ctx.clb_nlist, netlist_pin_lookup);
 
         pin_timing_invalidator = std::make_unique<ClusteredPinTimingInvalidator>(cluster_ctx.clb_nlist,
@@ -598,12 +619,12 @@ void try_place(const t_placer_opts& placer_opts,
                                                                                  atom_ctx.lookup,
                                                                                  *timing_info->timing_graph());
         //Update timing and costs
-        recompute_criticalities(crit_exponent,
-                                place_delay_model.get(),
-                                placer_criticalities.get(),
-                                pin_timing_invalidator.get(),
-                                timing_info.get(),
-                                &costs);
+        update_criticalities(crit_exponent,
+                             place_delay_model.get(),
+                             placer_criticalities.get(),
+                             pin_timing_invalidator.get(),
+                             timing_info.get(),
+                             &costs);
 
         timing_info->set_warn_unconstrained(false); //Don't warn again about unconstrained nodes again during placement
 
@@ -754,14 +775,14 @@ void try_place(const t_placer_opts& placer_opts,
             costs.cost = 1;
         }
 
-        outer_loop_recompute_criticalities(placer_opts, &costs, &prev_inverse_costs,
-                                           num_connections,
-                                           crit_exponent,
-                                           &outer_crit_iter_count,
-                                           place_delay_model.get(),
-                                           placer_criticalities.get(),
-                                           pin_timing_invalidator.get(),
-                                           timing_info.get());
+        outer_loop_update_criticalities(placer_opts, &costs, &prev_inverse_costs,
+                                        num_connections,
+                                        crit_exponent,
+                                        &outer_crit_iter_count,
+                                        place_delay_model.get(),
+                                        placer_criticalities.get(),
+                                        pin_timing_invalidator.get(),
+                                        timing_info.get());
 
         placement_inner_loop(t, num_temps, rlim, placer_opts,
                              move_lim, crit_exponent, inner_recompute_limit, &stats,
@@ -818,15 +839,15 @@ void try_place(const t_placer_opts& placer_opts,
     { /* Quench */
         vtr::ScopedFinishTimer temperature_timer("Placement Quench");
 
-        outer_loop_recompute_criticalities(placer_opts, &costs,
-                                           &prev_inverse_costs,
-                                           num_connections,
-                                           crit_exponent,
-                                           &outer_crit_iter_count,
-                                           place_delay_model.get(),
-                                           placer_criticalities.get(),
-                                           pin_timing_invalidator.get(),
-                                           timing_info.get());
+        outer_loop_update_criticalities(placer_opts, &costs,
+                                        &prev_inverse_costs,
+                                        num_connections,
+                                        crit_exponent,
+                                        &outer_crit_iter_count,
+                                        place_delay_model.get(),
+                                        placer_criticalities.get(),
+                                        pin_timing_invalidator.get(),
+                                        timing_info.get());
 
         t = 0; /* freeze out */
 
@@ -892,12 +913,12 @@ void try_place(const t_placer_opts& placer_opts,
         VTR_ASSERT(timing_info);
 
         //Update timing and costs
-        recompute_criticalities(crit_exponent,
-                                place_delay_model.get(),
-                                placer_criticalities.get(),
-                                pin_timing_invalidator.get(),
-                                timing_info.get(),
-                                &costs);
+        update_criticalities(crit_exponent,
+                             place_delay_model.get(),
+                             placer_criticalities.get(),
+                             pin_timing_invalidator.get(),
+                             timing_info.get(),
+                             &costs);
 
         critical_path = timing_info->least_slack_critical_path();
 
@@ -950,17 +971,17 @@ void try_place(const t_placer_opts& placer_opts,
     VTR_LOG("update_td_costs: connections %g nets %g sum_nets %g total %g\n", f_update_td_costs_connections_elapsed_sec, f_update_td_costs_nets_elapsed_sec, f_update_td_costs_sum_nets_elapsed_sec, f_update_td_costs_total_elapsed_sec);
 }
 
-/* Function to recompute the criticalities before the inner loop of the annealing */
-static void outer_loop_recompute_criticalities(const t_placer_opts& placer_opts,
-                                               t_placer_costs* costs,
-                                               t_placer_prev_inverse_costs* prev_inverse_costs,
-                                               int num_connections,
-                                               float crit_exponent,
-                                               int* outer_crit_iter_count,
-                                               const PlaceDelayModel* delay_model,
-                                               PlacerCriticalities* criticalities,
-                                               ClusteredPinTimingInvalidator* pin_timing_invalidator,
-                                               SetupTimingInfo* timing_info) {
+/* Function to update the criticalities before the inner loop of the annealing */
+static void outer_loop_update_criticalities(const t_placer_opts& placer_opts,
+                                            t_placer_costs* costs,
+                                            t_placer_prev_inverse_costs* prev_inverse_costs,
+                                            int num_connections,
+                                            float crit_exponent,
+                                            int* outer_crit_iter_count,
+                                            const PlaceDelayModel* delay_model,
+                                            PlacerCriticalities* criticalities,
+                                            ClusteredPinTimingInvalidator* pin_timing_invalidator,
+                                            SetupTimingInfo* timing_info) {
     if (placer_opts.place_algorithm != PATH_TIMING_DRIVEN_PLACE)
         return;
 
@@ -975,12 +996,13 @@ static void outer_loop_recompute_criticalities(const t_placer_opts& placer_opts,
         VTR_ASSERT(num_connections > 0);
 
         //Update timing information
-        recompute_criticalities(crit_exponent,
-                                delay_model,
-                                criticalities,
-                                pin_timing_invalidator,
-                                timing_info,
-                                costs);
+        update_criticalities(crit_exponent,
+                             delay_model,
+                             criticalities,
+                             pin_timing_invalidator,
+                             timing_info,
+                             &costs);
+
         *outer_crit_iter_count = 0;
     }
     (*outer_crit_iter_count)++;
@@ -992,19 +1014,45 @@ static void outer_loop_recompute_criticalities(const t_placer_opts& placer_opts,
     prev_inverse_costs->timing_cost = min(1 / costs->timing_cost, MAX_INV_TIMING_COST);
 }
 
-//Update timing information based on current placement by running STA to get new slacks,
-//and calculate updated criticalities and timing costs
-static void recompute_criticalities(float crit_exponent,
-                                    const PlaceDelayModel* delay_model,
-                                    PlacerCriticalities* criticalities,
-                                    ClusteredPinTimingInvalidator* pin_timing_invalidator,
-                                    SetupTimingInfo* timing_info,
-                                    t_placer_costs* costs) {
+//Update timing information based on current placement by running STA
+//and record the new setup slack information
+static void update_setup_slacks(PlacerSetupSlacks* setup_slacks,
+                                ClusteredPinTimingInvalidator* pin_timing_invalidator,
+                                SetupTimingInfo* timing_info) {
+
     //Run STA to update slacks and adjusted/relaxed criticalities
     timing_info->update();
 
-    //Update placer'criticalities (e.g. sharpen with crit_exponent)
-    criticalities->update_criticalities(timing_info, crit_exponent);
+    //Update placer's setup slacks
+    setup_slacks->update_setup_slacks(timing_info, do_recompute_setup_slacks);
+
+    //Setup slacks are now in sync with the timing_info
+    //Can perform incremental updates next time
+    do_recompute_setup_slacks = false;
+
+    //Criticalities are now out of sync with the timing_info
+    //Must do from scratch recompute next time
+    do_recompute_criticalities = true;
+
+    //Clear invalidation state
+    pin_timing_invalidator->reset();
+}
+
+//Update timing information based on current placement by running STA
+//and calculate the updated criticalities and timing costs 
+//(based on the new setup slacks)
+static void update_criticalities(float crit_exponent,
+                                 const PlaceDelayModel* delay_model,
+                                 PlacerCriticalities* criticalities,
+                                 ClusteredPinTimingInvalidator* pin_timing_invalidator,
+                                 SetupTimingInfo* timing_info,
+                                 t_placer_costs* costs) {
+
+    //Run STA to update slacks and adjusted/relaxed criticalities
+    timing_info->update();
+
+    //Update placer's criticalities (e.g. sharpen with crit_exponent)
+    criticalities->update_criticalities(timing_info, crit_exponent, do_recompute_criticalities);
 
     //Update connection, net and total timing costs based on new criticalities
 #ifdef INCR_COMP_TD_COSTS
@@ -1013,9 +1061,58 @@ static void recompute_criticalities(float crit_exponent,
     comp_td_costs(delay_model, *criticalities, &costs->timing_cost);
 #endif
 
+    //Criticalities are now in sync with the timing_info
+    //Can perform incremental updates next time
+    do_recompute_criticalities = false;
+
+    //Setup slacks are now out of sync with the timing_info
+    //Must do from scratch recompute next time
+    do_recompute_setup_slacks = true;
+
     //Clear invalidation state
     pin_timing_invalidator->reset();
 }
+
+//Update timing information based on current placement by running STA.
+//Record the new slack information as well as calculate the updated 
+//criticalities and timing costs (based on the new setup slacks)
+//
+//If both setup slacks and criticalities need to be updated,
+//this routine should be called, instead of individual update routine.
+//This is to prevent unnecessary from scratch updates
+static void update_setup_slacks_and_criticalities(float crit_exponent,
+                                                  const PlaceDelayModel* delay_model,
+                                                  PlacerCriticalities* criticalities,
+                                                  PlacerSetupSlacks* setup_slacks,
+                                                  ClusteredPinTimingInvalidator* pin_timing_invalidator,
+                                                  SetupTimingInfo* timing_info,
+                                                  t_placer_costs* costs) {
+
+    //Run STA to update slacks and adjusted/relaxed criticalities
+    timing_info->update();
+
+    //Update placer's setup slacks
+    setup_slacks->update_setup_slacks(timing_info, do_recompute_setup_slacks);
+
+    //Update placer's criticalities (e.g. sharpen with crit_exponent)
+    criticalities->update_criticalities(timing_info, crit_exponent, do_recompute_criticalities);
+
+    //Update connection, net and total timing costs based on new criticalities
+#ifdef INCR_COMP_TD_COSTS
+    update_td_costs(delay_model, *criticalities, &costs->timing_cost);
+#else
+    comp_td_costs(delay_model, *criticalities, &costs->timing_cost);
+#endif
+
+    //Both Setup slacks and Criticalities are now in sync with the timing_info
+    //They can be both incrementally updated next time
+    do_recompute_setup_slacks = false;
+    do_recompute_criticalities = false;
+
+    //Clear invalidation state
+    pin_timing_invalidator->reset();
+}
+
 
 /* Function which contains the inner loop of the simulated annealing */
 static void placement_inner_loop(float t,
@@ -1088,12 +1185,13 @@ static void placement_inner_loop(float t,
                 /* Using the delays in connection_delay, do a timing analysis to update slacks and
                  * criticalities and update the timing cost since it will change.
                  */
-                recompute_criticalities(crit_exponent,
-                                        delay_model,
-                                        criticalities,
-                                        pin_timing_invalidator,
-                                        timing_info,
-                                        costs);
+                //Update timing information
+                update_criticalities(crit_exponent,
+                                     delay_model,
+                                     criticalities,
+                                     pin_timing_invalidator,
+                                     timing_info,
+                                     costs);
             }
             inner_crit_iter_count++;
         }
