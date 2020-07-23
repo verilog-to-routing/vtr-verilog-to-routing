@@ -164,8 +164,8 @@ void check_rr_graph(const t_graph_type graph_type,
                     && (rr_type == CHANX || rr_type == CHANY)) {
                     auto switch_type = device_ctx.rr_switch_inf[kv.first].type();
 
-                VPR_ERROR(VPR_ERROR_ROUTE, "in check_rr_graph: node %d has %d redundant connections to node %d of switch type %d (%s)",
-                          inode, kv.second, to_node, kv.first, SWITCH_TYPE_STRINGS[size_t(switch_type)]);
+                    VPR_ERROR(VPR_ERROR_ROUTE, "in check_rr_graph: node %d has %d redundant connections to node %d of switch type %d (%s)",
+                              inode, kv.second, to_node, kv.first, SWITCH_TYPE_STRINGS[size_t(switch_type)]);
                 }
             }
         }
