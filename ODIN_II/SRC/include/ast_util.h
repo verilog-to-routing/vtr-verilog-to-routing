@@ -9,15 +9,14 @@ ast_t* allocate_ast();
 ast_t* free_ast(ast_t* to_delete);
 void add_top_module_to_ast(ast_t* verilog_ast, ast_node_t* to_add);
 
-ast_node_t* create_node_w_type_no_count(ids id, int line_number, int file_number);
-ast_node_t* create_node_w_type(ids id, int line_number, int file_number);
-ast_node_t* create_tree_node_id(char* string, int line_number, int file_number);
+ast_node_t* create_node_w_type_no_count(ids id, loc_t loc);
+ast_node_t* create_node_w_type(ids id, loc_t loc);
+ast_node_t* create_tree_node_id(char* string, loc_t loc);
 
-ast_node_t* create_tree_node_number(char* input_number, int line_number, int file_number);
-ast_node_t* create_tree_node_number(VNumber& input_number, int line_number, int file_number);
-ast_node_t* create_tree_node_number(long input_number, int line_number, int file_number);
-
-void initial_node(ast_node_t* node, ids id, int line_number, int file_number, int counter);
+ast_node_t* create_tree_node_string(char* input_number, loc_t loc);
+ast_node_t* create_tree_node_number(char* input_number, loc_t loc);
+ast_node_t* create_tree_node_number(VNumber& input_number, loc_t loc);
+ast_node_t* create_tree_node_number(long input_number, loc_t loc);
 
 void allocate_children_to_node(ast_node_t* node, std::vector<ast_node_t*> children_list);
 void add_child_to_node(ast_node_t* node, ast_node_t* child);
@@ -52,6 +51,8 @@ ast_node_t* fold_binary(ast_node_t** node);
 ast_node_t* fold_unary(ast_node_t** node);
 
 long clog2(long value_in, int length);
+void c_display(ast_node_t* node);
+void c_finish(ast_node_t* node);
 long resolve_concat_sizes(ast_node_t* node_top, sc_hierarchy* local_ref);
 
 #endif

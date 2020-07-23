@@ -681,24 +681,27 @@ void print_route_tree(const t_rt_node* rt_node, int depth) {
 
 void update_net_delays_from_route_tree(float* net_delay,
                                        const t_rt_node* const* rt_node_of_sink,
-                                       ClusterNetId inet) {
+                                       ClusterNetId inet,
+                                       TimingInfo* timing_info,
+                                       ClusteredPinTimingInvalidator* pin_timing_invalidator) {
     /* Goes through all the sinks of this net and copies their delay values from
      * the route_tree to the net_delay array.                                    */
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& clb_nlist = cluster_ctx.clb_nlist;
+
     for (unsigned int isink = 1; isink < cluster_ctx.clb_nlist.net_pins(inet).size(); isink++) {
-        net_delay[isink] = rt_node_of_sink[isink]->Tdel;
+        float new_delay = rt_node_of_sink[isink]->Tdel;
+
+        if (pin_timing_invalidator && new_delay != net_delay[isink]) {
+            //Delay changed, invalidate for incremental timing update
+            VTR_ASSERT_SAFE(timing_info);
+            ClusterPinId pin = clb_nlist.net_pin(inet, isink);
+            pin_timing_invalidator->invalidate_connection(pin, timing_info);
+        }
+
+        net_delay[isink] = new_delay;
     }
-}
-
-void update_remaining_net_delays_from_route_tree(float* net_delay,
-                                                 const t_rt_node* const* rt_node_of_sink,
-                                                 const std::vector<int>& remaining_sinks) {
-    /* Like update_net_delays_from_route_tree, but only updates the sinks that were not already routed
-     * this function doesn't actually need to know about the net, just what sink pins need their net delays updated */
-
-    for (int sink_pin : remaining_sinks)
-        net_delay[sink_pin] = rt_node_of_sink[sink_pin]->Tdel;
 }
 
 /***************  Conversion between traceback and route tree *******************/
@@ -1139,7 +1142,7 @@ t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf, std::vect
     return prune_route_tree_recurr(rt_root, connections_inf, false, non_config_node_set_usage);
 }
 
-void pathfinder_update_cost_from_route_tree(const t_rt_node* rt_root, int add_or_sub, float pres_fac) {
+void pathfinder_update_cost_from_route_tree(const t_rt_node* rt_root, int add_or_sub) {
     /* Update pathfinder cost of all nodes rooted at rt_root, including rt_root itself */
 
     VTR_ASSERT(rt_root != nullptr);
@@ -1148,7 +1151,7 @@ void pathfinder_update_cost_from_route_tree(const t_rt_node* rt_root, int add_or
 
     // update every node once, so even do it for sinks and branch points once
     for (;;) {
-        pathfinder_update_single_node_cost(rt_root->inode, add_or_sub, pres_fac);
+        pathfinder_update_single_node_occupancy(rt_root->inode, add_or_sub);
 
         // reached a sink
         if (!edge) {
@@ -1158,7 +1161,7 @@ void pathfinder_update_cost_from_route_tree(const t_rt_node* rt_root, int add_or
         else if (edge->next) {
             // recursively update for each of its sibling branches
             do {
-                pathfinder_update_cost_from_route_tree(edge->child, add_or_sub, pres_fac);
+                pathfinder_update_cost_from_route_tree(edge->child, add_or_sub);
                 edge = edge->next;
             } while (edge);
             return;
@@ -1237,9 +1240,8 @@ static void print_node_congestion(const t_rt_node* rt_node) {
     int inode = rt_node->inode;
     const auto& node_inf = route_ctx.rr_node_route_inf[inode];
     const auto& node = device_ctx.rr_nodes[inode];
-    const auto& node_state = route_ctx.rr_node_route_inf[inode];
-    VTR_LOG("%2d %2d|%-6d-> ", node_inf.pres_cost, rt_node->Tdel,
-            node_state.occ(), node.capacity(), inode);
+    VTR_LOG("%2d %2d|%-6d-> ", node_inf.acc_cost, rt_node->Tdel,
+            node_inf.occ(), node.capacity(), inode);
 }
 
 void print_route_tree_inf(const t_rt_node* rt_root) {

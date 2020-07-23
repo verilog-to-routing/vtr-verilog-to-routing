@@ -3,16 +3,18 @@
 
 #include "vtr_string_interning.h"
 
-// MetadataStorage is a two phase data structure.  In the first phase,
-// metadata is added cheaply by simply pushing onto a vector.  This is
-// unsuitable for lookup, but is fast, and because strings are interned, not
-// too expensive memory wise.
-//
-// The second phase occurs after all data has been inserted.  When/if a lookup
-// is needed, the vector is sorted and the final metadata lookup is generated.
-// In the event that the lookup is never needed, this saves the time spent
-// building the lookup, and reduces the number of outstanding memory
-// allocations dramatically.
+/**
+ * MetadataStorage is a two phase data structure.  In the first phase,
+ * metadata is added cheaply by simply pushing onto a vector.  This is
+ * unsuitable for lookup, but is fast, and because strings are interned, not
+ * too expensive memory wise.
+ *
+ * The second phase occurs after all data has been inserted.  When/if a lookup
+ * is needed, the vector is sorted and the final metadata lookup is generated.
+ * In the event that the lookup is never needed, this saves the time spent
+ * building the lookup, and reduces the number of outstanding memory
+ * allocations dramatically.
+ */
 template<typename LookupKey>
 class MetadataStorage {
   public:

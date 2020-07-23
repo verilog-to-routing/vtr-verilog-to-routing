@@ -4,6 +4,7 @@
 #include "connection_based_routing.h"
 #include "route_common.h"
 #include "spatial_route_tree_lookup.h"
+#include "timing_util.h"
 
 /**************** Subroutines exported by route_tree_timing.c ***************/
 
@@ -22,10 +23,9 @@ t_rt_node* update_route_tree(t_heap* hptr, SpatialRouteTreeLookup* spatial_rt_lo
 
 void update_net_delays_from_route_tree(float* net_delay,
                                        const t_rt_node* const* rt_node_of_sink,
-                                       ClusterNetId inet);
-void update_remaining_net_delays_from_route_tree(float* net_delay,
-                                                 const t_rt_node* const* rt_node_of_sink,
-                                                 const std::vector<int>& remaining_sinks);
+                                       ClusterNetId inet,
+                                       TimingInfo* timing_info,
+                                       ClusteredPinTimingInvalidator* pin_timing_invalidator);
 
 void load_route_tree_Tdel(t_rt_node* rt_root, float Tarrival);
 void load_route_tree_rr_route_inf(t_rt_node* root);
@@ -68,7 +68,7 @@ t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf);
 //  non_config_node_set_usage after pruning.
 t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf, std::vector<int>* non_config_node_set_usage);
 
-void pathfinder_update_cost_from_route_tree(const t_rt_node* rt_root, int add_or_sub, float pres_fac);
+void pathfinder_update_cost_from_route_tree(const t_rt_node* rt_root, int add_or_sub);
 
 bool is_equivalent_route_tree(const t_rt_node* rt_root, const t_rt_node* cloned_rt_root);
 bool is_valid_skeleton_tree(const t_rt_node* rt_root);

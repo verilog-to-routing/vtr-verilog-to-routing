@@ -1,8 +1,10 @@
 /**
- * Author: Jason Luu
- * Date: May 2009
+ * @file
+ * @author Jason Luu
+ * @date   May 2009
  *
- * Read a circuit netlist in XML format and populate the netlist data structures for VPR
+ * @brief Read a circuit netlist in XML format and populate
+ *        the netlist data structures for VPR
  */
 
 #ifndef READ_NETLIST_H

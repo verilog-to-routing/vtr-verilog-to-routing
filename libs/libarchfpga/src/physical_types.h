@@ -871,6 +871,11 @@ struct t_pb_type {
  *      num_interconnect: Total number of interconnect tags specified by user
  *      parent_pb_type: Which parent contains this mode
  *      index: Index of mode in array with other modes
+ *      disable_packing: Specify if the mode is disabled/enabled for VPR packer.
+ *                       By default, every mode is enabled for VPR packer.
+ *                       Users can disable it for VPR packer through arch XML
+ *                       When flag is set true, the mode is invisible to VPR packer.
+ *                       No logic will be mapped to the pb_type under the mode
  *      t_mode_power: ???
  *      meta: Table storing extra arbitrary metadata attributes.
  */
@@ -882,6 +887,9 @@ struct t_mode {
     int num_interconnect = 0;
     t_pb_type* parent_pb_type = nullptr;
     int index = 0;
+
+    /* Packer-related switches */
+    bool disable_packing = false;
 
     /* Power related members */
     t_mode_power* mode_power = nullptr;
@@ -1389,6 +1397,17 @@ enum class SwitchType {
     NUM_SWITCH_TYPES
 };
 constexpr std::array<const char*, size_t(SwitchType::NUM_SWITCH_TYPES)> SWITCH_TYPE_STRINGS = {{"MUX", "TRISTATE", "PASS_GATE", "SHORT", "BUFFER", "INVALID"}};
+
+/* Constant/Reserved names for switches in architecture XML
+ * Delayless switch:
+ *   The zero-delay switch created by VPR internally 
+ *   This is a special switch just to ease CAD algorithms
+ *   It is mainly used in
+ *     - the edges between SOURCE and SINK nodes in routing resource graphs  
+ *     - the edges in CLB-to-CLB connections (defined by <directlist> in arch XML)
+ *   
+ */
+constexpr const char* VPR_DELAYLESS_SWITCH_NAME = "__vpr_delayless_switch__";
 
 enum class BufferSize {
     AUTO,

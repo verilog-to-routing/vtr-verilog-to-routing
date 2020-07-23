@@ -64,7 +64,8 @@
 
 #define DEFAULT_OUTPUT "."
 
-int current_parse_file = -1;
+loc_t my_location;
+
 t_arch Arch;
 global_args_t global_args;
 std::vector<t_physical_tile_type> physical_tile_types;
@@ -212,9 +213,6 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         zero_string = vtr::strdup(ZERO_GND_ZERO);
         pad_string = vtr::strdup(ZERO_PAD_ZERO);
 
-        printf("--------------------------------------------------------------------\n");
-        printf("Welcome to ODIN II version 0.1 - the better High level synthesis tools++ targetting FPGAs (mainly VPR)\n");
-        printf("Email: jamieson.peter@gmail.com and ken@unb.ca for support issues\n\n");
     } catch (vtr::VtrError& vtr_error) {
         printf("Odin failed to initialize %s with exit code%d\n", vtr_error.what(), ERROR_INITIALIZATION);
         exit(ERROR_INITIALIZATION);
@@ -250,7 +248,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
 
     /* read the FPGA architecture file */
     if (global_args.arch_file.provenance() == argparse::Provenance::SPECIFIED) {
-        printf("Architecture: %s\n", basename(global_args.arch_file.value().c_str()));
+        printf("Architecture: %s\n", vtr::basename(global_args.arch_file.value()).c_str());
         fflush(stdout);
 
         printf("Reading FPGA Architecture file\n");
@@ -267,7 +265,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
     /* do High level Synthesis */
     if (!configuration.list_of_file_names.empty() && configuration.is_verilog_input) {
         for (std::string v_file : global_args.verilog_files.value()) {
-            printf("Verilog: %s\n", basename(v_file.c_str()));
+            printf("Verilog: %s\n", vtr::basename(v_file).c_str());
         }
         fflush(stdout);
 
@@ -292,9 +290,9 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         // the simulator can only simulate blifs
         if (global_args.blif_file.provenance() != argparse::Provenance::SPECIFIED) {
             configuration.list_of_file_names = {global_args.output_file};
-            current_parse_file = 0;
+            my_location.file = 0;
         } else {
-            printf("Blif: %s\n", basename(global_args.blif_file.value().c_str()));
+            printf("Blif: %s\n", vtr::basename(global_args.blif_file.value()).c_str());
             fflush(stdout);
         }
 
@@ -409,6 +407,12 @@ void get_options(int argc, char** argv) {
         .help("VTR FPGA architecture description file (XML)")
         .metavar("ARCHITECTURE_FILE");
 
+    other_grp.add_argument(global_args.print_parse_tokens, "--debug_parser")
+        .help("print the parser tokens as they are parsed")
+        .default_value("false")
+        .action(argparse::Action::STORE_TRUE)
+        .metavar("PRINT_PARSE_TOKEN");
+
     other_grp.add_argument(global_args.permissive, "--permissive")
         .help("Turn possible_error_messages into warning_messages ... unexpected behaviour may occur")
         .default_value("false")
@@ -512,7 +516,7 @@ void get_options(int argc, char** argv) {
         .action(argparse::Action::STORE_TRUE);
 
     other_sim_grp.add_argument<int, ParseInitRegState>(global_args.sim_initial_value, "-U")
-        .help("Default initial register state")
+        .help("DEPRECATED")
         .default_value("X")
         .metavar("INIT_REG_STATE");
 
@@ -553,7 +557,7 @@ void get_options(int argc, char** argv) {
             global_args.verilog_files.value().size() > 0                             //have a verilog input list
         })) {
         parser.print_usage();
-        error_message(PARSE_ARGS, 0, -1, "%s", "Must include only one of either:\n\ta config file(-c)\n\ta blif file(-b)\n\ta verilog file(-V)\n");
+        error_message(PARSE_ARGS, unknown_location, "%s", "Must include only one of either:\n\ta config file(-c)\n\ta blif file(-b)\n\ta verilog file(-V)\n");
     }
 
     //adjust thread count
@@ -588,6 +592,10 @@ void get_options(int argc, char** argv) {
         configuration.adder_cin_global = global_args.adder_cin_global;
     }
 
+    if (global_args.print_parse_tokens.provenance() == argparse::Provenance::SPECIFIED) {
+        configuration.print_parse_tokens = global_args.print_parse_tokens;
+    }
+
     if (global_args.sim_directory.value() == DEFAULT_OUTPUT) {
         global_args.sim_directory.set(configuration.debug_output_path, argparse::Provenance::SPECIFIED);
     }
@@ -597,7 +605,7 @@ void get_options(int argc, char** argv) {
     }
 
     if (global_args.permissive.value()) {
-        warning_message(PARSE_ARGS, -1, -1, "%s", "Permissive flag is ON. Undefined behaviour may occur\n");
+        warning_message(PARSE_ARGS, unknown_location, "%s", "Permissive flag is ON. Undefined behaviour may occur\n");
     }
 }
 

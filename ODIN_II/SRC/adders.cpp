@@ -146,7 +146,7 @@ void declare_hard_adder(nnode_t* node) {
 
     /* See if this size instance of adder exists? */
     if (hard_adders == NULL)
-        warning_message(NETLIST, node->related_ast_node->line_number, node->related_ast_node->file_number, "%s\n", "Instantiating adder where adders do not exist");
+        warning_message(NETLIST, node->loc, "%s\n", "Instantiating adder where adders do not exist");
 
     tmp = (t_adder*)hard_adders->instances;
     width_a = node->input_port_sizes[0];
@@ -629,7 +629,7 @@ void split_adder(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int cin, in
     node = (nnode_t**)vtr::malloc(sizeof(nnode_t*) * (count));
 
     for (i = 0; i < count; i++) {
-        node[i] = allocate_nnode();
+        node[i] = allocate_nnode(nodeo->loc);
         node[i]->name = (char*)vtr::malloc(strlen(nodeo->name) + 20);
         odin_sprintf(node[i]->name, "%s-%d", nodeo->name, i);
         if (i == count - 1) {
@@ -675,7 +675,7 @@ void split_adder(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int cin, in
     // don't add a dummy adder in the beginning of the chain if the first cin will be connected to a global gnd
     if ((flag == 0 || count > 1) && !configuration.adder_cin_global) {
         //connect the a[0] and b[0] of first adder node to ground
-        connect_nodes(netlist->gnd_node, 0, node[0], 0);
+        connect_nodes(netlist->vcc_node, 0, node[0], 0);
         connect_nodes(netlist->gnd_node, 0, node[0], sizea);
         //hang the first sumout
         node[0]->output_pins[1] = allocate_npin();

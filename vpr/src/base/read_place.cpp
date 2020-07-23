@@ -139,9 +139,9 @@ void read_place(const char* net_file,
     place_ctx.placement_id = vtr::secure_digest_file(place_file);
 }
 
+
 void read_user_block_loc(const char* constraints_file) {
     /* Reads in the locations of the blocks from a file. */
-
     t_hash **hash_table, *h_ptr;
     int xtmp, ytmp;
     FILE* fp;
@@ -285,10 +285,12 @@ void read_user_block_loc(const char* constraints_file) {
     VTR_LOG("\n");
 }
 
-/* Prints out the placement of the circuit. The architecture and    *
- * netlist files used to generate this placement are recorded in the *
- * file to avoid loading a placement with the wrong support files    *
- * later.                                                            */
+/**
+ * @brief Prints out the placement of the circuit.
+ *
+ * The architecture and netlist files used to generate this placement are recorded
+ * in the file to avoid loading a placement with the wrong support file later.
+ */
 void print_place(const char* net_file,
                  const char* net_id,
                  const char* place_file) {

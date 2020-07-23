@@ -47,11 +47,11 @@
 #    include <sys/stat.h>
 #endif
 
-long shift_left_value_with_overflow_check(long input_value, long shift_by) {
+long shift_left_value_with_overflow_check(long input_value, long shift_by, loc_t loc) {
     if (shift_by < 0)
-        error_message(NETLIST, -1, -1, "requesting a shift left that is negative [%ld]\n", shift_by);
+        error_message(NETLIST, loc, "requesting a shift left that is negative [%ld]\n", shift_by);
     else if (shift_by >= (long)ODIN_STD_BITWIDTH - 1)
-        warning_message(NETLIST, -1, -1, "requesting a shift left that will overflow the maximum size of %ld [%ld]\n", shift_by, ODIN_STD_BITWIDTH - 1);
+        warning_message(NETLIST, loc, "requesting a shift left that will overflow the maximum size of %ld [%ld]\n", shift_by, ODIN_STD_BITWIDTH - 1);
 
     return input_value << shift_by;
 }
@@ -75,11 +75,11 @@ void create_directory(std::string path) {
 #endif
 
     if (error_code && errno != EEXIST) {
-        error_message(AST, -1, -1, "Odin Failed to create directory :%s with exit code%d\n", path.c_str(), errno);
+        error_message(AST, unknown_location, "Odin Failed to create directory :%s with exit code%d\n", path.c_str(), errno);
     }
 }
 
-void assert_supported_file_extension(std::string input_file, int line_number, int file_number) {
+void assert_supported_file_extension(std::string input_file, loc_t loc) {
     bool supported = false;
     std::string extension = get_file_extension(input_file);
     for (int i = 0; i < file_extension_supported_END && !supported; i++) {
@@ -93,7 +93,7 @@ void assert_supported_file_extension(std::string input_file, int line_number, in
             supported_extension_list += file_extension_supported_STR[i];
         }
 
-        possible_error_message(UTIL, line_number, file_number,
+        possible_error_message(UTIL, loc,
                                "File (%s) has an unsupported extension (%s), Odin only supports { %s }",
                                input_file.c_str(),
                                extension.c_str(),
@@ -104,7 +104,7 @@ void assert_supported_file_extension(std::string input_file, int line_number, in
 FILE* open_file(const char* file_name, const char* open_type) {
     FILE* opened_file = fopen(file_name, open_type);
     if (opened_file == NULL) {
-        error_message(UTIL, -1, -1, "cannot open file: %s\n", file_name);
+        error_message(UTIL, unknown_location, "cannot open file: %s\n", file_name);
     }
     return opened_file;
 }
@@ -282,23 +282,23 @@ char* convert_long_to_bit_string(long orig_long, int num_bits) {
  */
 long convert_dec_string_of_size_to_long(char* orig_string, int /*size*/) {
     if (!is_decimal_string(orig_string))
-        error_message(UTIL, -1, -1, "Invalid decimal number: %s.\n", orig_string);
+        error_message(UTIL, unknown_location, "Invalid decimal number: %s.\n", orig_string);
 
     errno = 0;
     long number = strtoll(orig_string, NULL, 10);
     if (errno == ERANGE)
-        error_message(UTIL, -1, -1, "This suspected decimal number (%s) is too long for Odin\n", orig_string);
+        error_message(UTIL, unknown_location, "This suspected decimal number (%s) is too long for Odin\n", orig_string);
 
     return number;
 }
 
 long convert_string_of_radix_to_long(char* orig_string, int radix) {
     if (!is_string_of_radix(orig_string, radix))
-        error_message(UTIL, -1, -1, "Invalid base %d number: %s.\n", radix, orig_string);
+        error_message(UTIL, unknown_location, "Invalid base %d number: %s.\n", radix, orig_string);
 
     long number = strtoll(orig_string, NULL, radix);
     if (number == LLONG_MAX || number == LLONG_MIN)
-        error_message(UTIL, -1, -1, "This base %d number (%s) is too long for Odin\n", radix, orig_string);
+        error_message(UTIL, unknown_location, "This base %d number (%s) is too long for Odin\n", radix, orig_string);
 
     return number;
 }
@@ -324,7 +324,7 @@ char* convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char* 
     char* return_string = NULL;
     if (is_dont_care_number == 0) {
         if (!is_hex_string(orig_string))
-            error_message(UTIL, -1, -1, "Invalid hex number: %s.\n", orig_string);
+            error_message(UTIL, unknown_location, "Invalid hex number: %s.\n", orig_string);
 
         char* bit_string = (char*)vtr::calloc(1, sizeof(char));
         char* string = vtr::strdup(orig_string);
@@ -417,7 +417,7 @@ char* convert_hex_string_of_size_to_bit_string(short is_dont_care_number, char* 
  */
 char* convert_oct_string_of_size_to_bit_string(char* orig_string, int binary_size) {
     if (!is_octal_string(orig_string))
-        error_message(UTIL, -1, -1, "Invalid octal number: %s.\n", orig_string);
+        error_message(UTIL, unknown_location, "Invalid octal number: %s.\n", orig_string);
 
     char* bit_string = (char*)vtr::calloc(1, sizeof(char));
     char* string = vtr::strdup(orig_string);
@@ -466,7 +466,7 @@ char* convert_oct_string_of_size_to_bit_string(char* orig_string, int binary_siz
  */
 char* convert_binary_string_of_size_to_bit_string(short is_dont_care_number, char* orig_string, int binary_size) {
     if (!is_binary_string(orig_string) && !is_dont_care_number)
-        error_message(UTIL, -1, -1, "Invalid binary number: %s.\n", orig_string);
+        error_message(UTIL, unknown_location, "Invalid binary number: %s.\n", orig_string);
 
     int count = strlen(orig_string);
     char* bit_string = (char*)vtr::calloc(count + 1, sizeof(char));
@@ -759,7 +759,7 @@ short get_bit(short in) {
 
 void passed_verify_i_o_availabilty(nnode_t* node, int expected_input_size, int expected_output_size, const char* current_src, int line_src) {
     if (!node)
-        error_message(UTIL, -1, -1, "node unavailable @%s::%d", current_src, line_src);
+        error_message(UTIL, unknown_location, "node unavailable @%s::%d", current_src, line_src);
 
     std::stringstream err_message;
     int error = 0;
@@ -783,7 +783,7 @@ void passed_verify_i_o_availabilty(nnode_t* node, int expected_input_size, int e
     }
 
     if (error)
-        error_message(UTIL, -1, -1, "failed for %s:%s %s\n", node_name_based_on_op(node), node->name, err_message.str().c_str());
+        error_message(UTIL, node->loc, "failed for %s:%s %s\n", node_name_based_on_op(node), node->name, err_message.str().c_str());
 }
 
 /*
@@ -909,6 +909,57 @@ void trim_string(char* string, const char* chars) {
     }
 }
 
+/*
+ * Tokenizes a string and returns an array where each element is a 
+ * token and a pointer (that needs to be passed through) with the 
+ * size of the array
+ */
+static char** string_to_token_array(char* string, int* size) {
+    char** arr = NULL;
+
+    char* token = strtok(string, " \n\t");
+    int i = 0;
+
+    while (token != NULL) {
+        arr = (char**)vtr::realloc(arr, sizeof(char*) * (i + 1));
+        arr[i] = token;
+        token = strtok(NULL, " \n\t");
+        i++;
+    }
+    *size = (i);
+    return arr;
+}
+
+/*
+ * Will seperate the headers from the inputs and compare them
+ * Will return value of 1 if they match and 0 if
+ * they don't match. Possible error if the vector headers match
+ * but are in different order
+ */
+bool output_vector_headers_equal(char* buffer1, char* buffer2) {
+    int size1 = 0;
+    int size2 = 0;
+    char* buffer1_copy = strdup(buffer1);
+    char* buffer2_copy = strdup(buffer2);
+
+    char** header1 = string_to_token_array(buffer1_copy, &size1);
+    char** header2 = string_to_token_array(buffer2_copy, &size2);
+
+    int i = 0;
+    bool header_matches;
+
+    header_matches = (size1 == size2);
+    for (i = 0; header_matches && i < (size1 - 1); i++) {
+        header_matches = (0 == strcmp(header1[i], header2[i]));
+    }
+
+    vtr::free(header1);
+    vtr::free(header2);
+    vtr::free(buffer1_copy);
+    vtr::free(buffer2_copy);
+    return (header_matches);
+}
+
 /**
  * verifies only one condition evaluates to true
  */
@@ -950,4 +1001,35 @@ int odin_sprintf(char* s, const char* format, ...) {
         va_end(args);
         return -1;
     }
+}
+
+/**
+ * This collate two strings together and destroys the original ones
+ */
+char* str_collate(char* str1, char* str2) {
+    char* buffer = NULL;
+    if (str1 && !str2) {
+        buffer = str1;
+    } else if (!str1 && str2) {
+        buffer = str2;
+    } else if (str1 && str2) {
+        std::string _s1(str1);
+        std::string _s2(str2);
+
+        size_t pos = _s1.find_last_of('"');
+        if (pos != std::string::npos) {
+            _s1 = _s1.substr(0, pos);
+        }
+
+        pos = _s2.find_first_of('"');
+        if (pos != std::string::npos) {
+            _s2 = _s2.substr(pos + 1);
+        }
+
+        std::string result = _s1 + _s2;
+        buffer = vtr::strdup(result.c_str());
+        vtr::free(str1);
+        vtr::free(str2);
+    }
+    return buffer;
 }

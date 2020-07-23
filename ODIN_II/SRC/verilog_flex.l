@@ -38,10 +38,10 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 #define RECURSIVE_LIMIT 256
 
-#define YY_USER_ACTION {my_yycolumn = current_yycolumn; current_yycolumn = yyleng;}
+#define YY_USER_ACTION {my_location.col = current_yycolumn; current_yycolumn = yyleng;}
 
 /* the define below helps with watching the parser go token by token */
-#define UNSUPPORTED_TOKEN 	{ delayed_error_message(PARSER, my_yycolumn, my_yylineno, current_parse_file, "%s", "Unsuported token"); }
+#define UNSUPPORTED_TOKEN 	{ delayed_error_message(PARSER, my_location, "%s", "Unsuported token"); }
 
 #define _STATE_TOP(str)		{ BEGIN(_state_top(str)); }
 #define POP_STATE()			{ _pop_state(); _STATE_TOP("Popped to "); }
@@ -50,6 +50,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 struct defines_t 
 {
+	std::string name;
+	bool use_va_args;
 	std::vector<std::string> args;
 	std::string body;
 };
@@ -66,6 +68,7 @@ void lex_string(const char * str);
 
 bool ifdef(const char* id);
 void new_define_t(const char* id);
+void free_define_t(const char* id);
 void free_define_map();
 void add_args_to_define(const char* str);
 void append_to_define_body(char c);
@@ -78,8 +81,8 @@ void define_arg_push_back(char c);
 void load_define(const char *str);
 void initialize_defaults();
 
-int my_yylineno = 0;
-int my_yycolumn = 1;
+extern loc_t my_location;
+
 int current_yycolumn = 1;
 std::unordered_map<std::string, defines_t*> defines_map;
 defines_t *current_define = NULL;
@@ -108,7 +111,7 @@ vHEX [Hh][_]*[ZzXx[:xdigit:]][ZzXx[:xdigit:]_]*
 vINT [[:digit:]][[:digit:]_]*
 vWORD [[:alpha:]_][[:alnum:]_$]*
 defineWORD [[:alnum:]_$]+
-vSTRING ["][^"]*["]  
+vSTR ["]([^\\\"]|\\.)*["]  
 vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 
 %%
@@ -168,13 +171,14 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 
 	/* preproc helpers */
 <VAR_PARSE>{vWORD}					{ MP(); add_args_to_define(yytext); }
+<VAR_PARSE>"..."					{ MP(); add_args_to_define(yytext); }
 <VAR_PARSE>[\,]						{  }
 <VAR_PARSE>[\)]						{ CHANGE_STATE(DEFINE_BODY); }
 <PARSE_DEFINE>{defineWORD}[\(]		{ MP(); new_define_t(yytext); CHANGE_STATE(VAR_PARSE);}
 <PARSE_DEFINE>{defineWORD}			{ MP(); new_define_t(yytext); CHANGE_STATE(DEFINE_BODY);}
 <INITIAL>"`define"					{ MP(); PUSH_STATE(PARSE_DEFINE); }
 
-<DEFINE_REMOVAL>{vWORD}				{ MP(); defines_map.erase(yytext); POP_STATE();}
+<DEFINE_REMOVAL>{vWORD}				{ MP(); free_define_t(yytext); POP_STATE();}
 <INITIAL>"`undef"					{ MP(); PUSH_STATE(DEFINE_REMOVAL); }
 
 <CONDITION>{vWORD}					{ MP(); CHANGE_STATE( ((ifdef(yytext))?  INITIAL: SKIP) ); }
@@ -196,7 +200,7 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL,SKIP>"`endif"				{ MP(); POP_STATE();}
 
 <INITIAL>"`include"             	{ MP(); PUSH_STATE(INCLUDE); }
-<INCLUDE>{vSTRING}      			{ MP(); push_include(yytext); POP_STATE(); }
+<INCLUDE>{vSTR}      				{ MP(); push_include(yytext); POP_STATE(); }
 
 <INITIAL>"`default_nettype"			{ MP(); return preDEFAULT_NETTYPE;}
 <INITIAL>"`resetall"				{ MP(); initialize_defaults();}
@@ -293,7 +297,7 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL>"=>"						{ MP(); return voPAL;}
 <INITIAL>">="						{ MP(); return voGTE;}
 <INITIAL>"<<"						{ MP(); return voSLEFT;}
-<INITIAL>"<<<"						{ MP(); return voSLEFT;}
+<INITIAL>"<<<"						{ MP(); return voASLEFT;}
 <INITIAL>">>"						{ MP(); return voSRIGHT;}
 <INITIAL>">>>"						{ MP(); return voASRIGHT;}
 <INITIAL>"=="						{ MP(); return voEQUAL;}
@@ -314,13 +318,15 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL>"$clog2"					{ MP(); return vCLOG2;}
 <INITIAL>"$unsigned"				{ MP(); return voUNSIGNED;}
 <INITIAL>"$signed"					{ MP(); return voSIGNED;}
-
+<INITIAL>"$finish"					{ MP(); return voFINISH;}
+<INITIAL>"$display"					{ MP(); return voDISPLAY;}
+	/* catch all C functions */
 <INITIAL>[\$]{vWORD}				{ MP(); return vCFUNC;}
 
 	/* Integers */
 <INITIAL>{vINT}						{ MP(); yylval.num_value = vtr::strdup(yytext); return vINT_NUMBER; }
 	/* Strings */
-<INITIAL>{vSTRING}					{ MP(); yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
+<INITIAL>{vSTR}						{ MP(); yylval.num_value = vtr::strdup(yytext); return vSTRING; }
 	/* Numbers */
 <INITIAL>[[:digit:]]*'[sS]?{vBIN}	{ MP(); yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
 <INITIAL>[[:digit:]]*'[sS]?{vHEX}	{ MP(); yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
@@ -371,12 +377,17 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 										{
 											append_to_define_body(' ');
 										}
+										else if(state == DEFINE_ARGS
+										|| 		state == BRACKET_MATCH)
+										{
+											define_arg_push_back(yytext[0]);
+										} 
 									}
 
 <*><<EOF>>							{ if ( ! pop_include() ){ free_define_map(); yyterminate(); } }
 
 	/* skip escapped newline */
-<*>\\\r?\n							{ my_yylineno++; my_yycolumn = 1; }
+<*>\\\r?\n							{ my_location.line++; my_location.col = 1; }
 
 	/* deal with new lines */
 <*>\r?\n							{ 
@@ -397,8 +408,8 @@ vPUNCT 	[\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 
 										}while(!done);
 
-										my_yylineno++;
-										my_yycolumn = 1;
+										my_location.line++;
+										my_location.col = 1;
 									}
 
 	/* catch all */
@@ -422,7 +433,7 @@ void MP()
 { 
 	if (configuration.print_parse_tokens) 
 	{
-		printf("%d %s\n", my_yylineno, yytext);
+		printf("%d %s\n", my_location.line, yytext);
 	} 
 }
 
@@ -467,8 +478,8 @@ void _push_state(int state)
 static bool has_current_parse_file()
 {
 	return (
-		current_parse_file < include_file_names.size()
-		&& current_parse_file >= 0
+		my_location.file < include_file_names.size()
+		&& my_location.file >= 0
 	);
 }
 
@@ -481,28 +492,29 @@ void lex_string(const char * str)
 	} 
 
 	if(has_current_parse_file() 
-	&& current_include_stack.back() == current_parse_file)
+	&& current_include_stack.back() == my_location.file)
 	{
-	 	include_file_names[current_parse_file].second = my_yylineno;
+	 	include_file_names[my_location.file].second = my_location.line;
 	}
 
 	/* check current depth, prevent too much macro recursion */
+	loc_t posible_error_location = {include_file_names[my_location.file].second, my_location.file, -1};
 	if(current_include_stack.size() > RECURSIVE_LIMIT)
 	{
-		error_message(PARSER, include_file_names[current_parse_file].second, current_parse_file, 
+		error_message(PARSER, posible_error_location,
 			"Reached upper macro recursion limit of %d", 
 			RECURSIVE_LIMIT);
 	}
 	else if(current_include_stack.size() > (RECURSIVE_LIMIT/2))
 	{
-		warning_message(PARSER, include_file_names[current_parse_file].second, current_parse_file, 
+		warning_message(PARSER, posible_error_location,
 			"Reached halfway to upper macro recursion limit of %d", 
 			RECURSIVE_LIMIT);
 	}
 
 
 	current_include_stack.push_back(-1);
-	my_yylineno = 0;
+	my_location.line = 0;
 
 	YY_BUFFER_STATE cur = YY_CURRENT_BUFFER;
 	YY_BUFFER_STATE yybuff = yy_scan_string(str);
@@ -531,10 +543,10 @@ void push_include(const char *file_name)
 	std::string current_file = "";
 	if(has_current_parse_file())
 	{
-		current_file = include_file_names[current_parse_file].first;
-		if(current_include_stack.back() == current_parse_file)
+		current_file = include_file_names[my_location.file].first;
+		if(current_include_stack.back() == my_location.file)
 		{
-	 		include_file_names[current_parse_file].second = my_yylineno;
+	 		include_file_names[my_location.file].second = my_location.line;
 		}
 	}
 
@@ -557,12 +569,12 @@ void push_include(const char *file_name)
 		yyin = open_file(current_file.c_str(), "r");
 	}
 	
-	my_yylineno = 0;
+	my_location.line = 0;
 	current_include_stack.push_back(include_file_names.size());
-	include_file_names.push_back({current_file,my_yylineno});
+	include_file_names.push_back({current_file,my_location.line});
 
-	current_parse_file = current_include_stack.back();
-	assert_supported_file_extension(include_file_names.back().first.c_str() , my_yylineno, current_parse_file); 
+	my_location.file = current_include_stack.back();
+	assert_supported_file_extension(include_file_names.back().first.c_str() , my_location); 
 
 	YY_BUFFER_STATE yybuff = yy_create_buffer( yyin, YY_BUF_SIZE );
 	yypush_buffer_state(yybuff);
@@ -575,7 +587,7 @@ bool pop_include()
 	{
 		if(configuration.print_parse_tokens)
 		{
-			printf("Poping file %s from parse list\n", include_file_names[current_parse_file].first.c_str());
+			printf("Poping file %s from parse list\n", include_file_names[my_location.file].first.c_str());
 		}
 		
 		if(yyin)
@@ -595,26 +607,26 @@ bool pop_include()
 	{
 		if(current_include_stack.back() != -1)
 		{
-			current_parse_file = current_include_stack.back();
+			my_location.file = current_include_stack.back();
 		}
 	}
 	else
 	{
-		current_parse_file = -1;
+		my_location.file = -1;
 	}
 
-	if(has_current_parse_file() && current_parse_file >= 0)
+	if(has_current_parse_file() && my_location.file >= 0)
 	{
-		my_yylineno = include_file_names[current_parse_file].second;
+		my_location.line = include_file_names[my_location.file].second;
 
 		if(configuration.print_parse_tokens)
 		{
-			printf("Reading file %s from line %d\n", include_file_names[current_parse_file].first.c_str(), my_yylineno);
+			printf("Reading file %s from line %d\n", include_file_names[my_location.file].first.c_str(), my_location.line);
 		}
 	}
 	else
 	{
-		my_yylineno = -1;
+		my_location.line = -1;
 	}
 	
 	yypop_buffer_state(); 
@@ -637,17 +649,29 @@ void new_define_t(const char* id)
 	}
 
 	defines_t *new_define = new defines_t();
+	new_define->name = tmp;
+	new_define->use_va_args = false;
 	new_define->args = std::vector<std::string>();
 	new_define->body = "";
 	
 	if(defines_map.find(tmp) != defines_map.end())
 	{
-		warning_message(PARSER, my_yylineno, current_parse_file, "%s is redefined, overwritting its value", id);
+		warning_message(PARSER, my_location, "%s is redefined, overwritting its value", id);
 		delete defines_map[tmp];	
 	}
 
 	defines_map[tmp] = new_define;
 	current_define = new_define;
+}
+
+void free_define_t(const char *id)
+{
+	std::string tmp(id);
+	if(defines_map.find(tmp) != defines_map.end())
+	{
+		delete defines_map[tmp];
+		defines_map.erase(tmp);
+	}
 }
 
 void free_define_map()
@@ -668,13 +692,40 @@ std::string get_complex_define()
 {
 	if(current_define)
 	{
-		if( current_args.size() != current_define->args.size())
+		std::string va_args_replacement = "";
+
+		if( current_args.size() < current_define->args.size())
 		{
-			error_message(PARSER, my_yylineno, current_parse_file, 
-				"define is being used with wrong number of arguments, Expected %ld, got %ld", 
-				current_args.size(), 
-				current_define->args.size());
+			error_message(PARSER, my_location, 
+				"define `%s is being used with too few arguments, Expected %ld, got %ld", 
+					current_define->name.c_str(), current_define->args.size(),current_args.size());
 		}
+		else if( current_args.size() > current_define->args.size())
+		{
+			if(! current_define->use_va_args) {
+				error_message(PARSER, my_location, 
+					"define `%s is being used with too many arguments, Expected %ld, got %ld", 
+						current_define->name.c_str(), current_define->args.size(),current_args.size());
+			} else {
+				while(current_define->args.size() != current_args.size())
+				{
+					if(va_args_replacement != "")
+					{
+						va_args_replacement = ", " + va_args_replacement;
+					}
+					va_args_replacement = current_args.back() + va_args_replacement;
+					current_args.pop_back();
+				}
+
+			}
+		}
+
+		if (current_define->use_va_args)
+		{
+			current_define->args.push_back("__VA_ARGS__");
+			current_args.push_back(va_args_replacement);
+		}
+
 
 		for(int i=0; i<current_define->args.size(); i++)
 		{
@@ -687,7 +738,7 @@ std::string get_complex_define()
 				current_define_body.erase(pos, original_arg.size());
 				current_define_body.insert( pos, replacement_arg );
 				pos += replacement_arg.size();
-				pos = current_define_body.find( replacement_arg, pos );
+				pos = current_define_body.find( original_arg, pos );
 			}
 		}
 
@@ -725,11 +776,11 @@ void load_define(const char *str)
 	// compiler specific macros
 	if(tmp == "`__LINE__") 
 	{
-		current_define_body = std::to_string(my_yylineno);
+		current_define_body = std::to_string(my_location.line + 1 /* 0 indexed */);
 	}
 	else if (tmp == "`__FILE__")
 	{
-		current_define_body = std::string(configuration.list_of_file_names[current_parse_file]);
+		current_define_body = "\"" + std::string(configuration.list_of_file_names[my_location.file]) + "\"";
 	}
 	else
 	{
@@ -746,9 +797,17 @@ void load_define(const char *str)
 		auto itter = defines_map.find(tmp);
 		if(itter == defines_map.end())
 		{
-			warning_message(PARSER, my_yylineno, current_parse_file, 
-				"%s define cannot be found, replacing with empty string and continuing synthesis", 
-				tmp.c_str());
+			if(tmp == "elif")
+			{
+				warning_message(PARSER, my_location, 
+					"%s", "using `elif, when you probably meant `elsif");
+			}
+			else
+			{
+				warning_message(PARSER, my_location, 
+					"%s define cannot be found, replacing with empty string and continuing synthesis", 
+					tmp.c_str());
+			}
 		}
 		else
 		{
@@ -766,16 +825,28 @@ void append_to_define_body(char c)
 void add_args_to_define(const char* str)
 {
 	std::string tmp(str);
-	for(int i=0; i < current_define->args.size(); i++)
+	if(current_define->use_va_args)
 	{
-		if(tmp == current_define->args[i])
-		{
-			error_message(PARSER, my_yylineno, current_parse_file, 
-				"%s","define has two argument with same name");
-		}
+		error_message(PARSER, my_location, 
+				"%s","... must be used as the last argument of a `define");
 	}
+	else if(tmp == "...")
+	{
+		current_define->use_va_args = true;
+	}
+	else
+	{
+		for(int i=0; i < current_define->args.size(); i++)
+		{
+			if(tmp == current_define->args[i])
+			{
+				error_message(PARSER, my_location, 
+					"%s","define has two argument with same name");
+			}
+		}
 
-	current_define->args.push_back(std::string(str));
+		current_define->args.push_back(std::string(str));
+	}
 }
 
 void finalize_define()

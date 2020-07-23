@@ -43,8 +43,12 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
 static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch);
 static int find_ipin_cblock_switch_index(const t_arch& Arch);
 
-/* Sets VPR parameters and defaults. Does not do any error checking
- * as this should have been done by the various input checkers */
+/**
+ * @brief Sets VPR parameters and defaults.
+ *
+ * Does not do any error checking as this should have been done by
+ * the various input checkers
+ */
 void SetupVPR(const t_options* Options,
               const bool TimingEnabled,
               const bool readArchFile,
@@ -253,8 +257,10 @@ static void SetupTiming(const t_options& Options, const bool TimingEnabled, t_ti
     Timing->SDCFile = Options.SDCFile;
 }
 
-/* This loads up VPR's arch_switch_inf data by combining the switches from
- * the arch file with the special switches that VPR needs. */
+/**
+ * @brief This loads up VPR's arch_switch_inf data by combining the switches
+ *        from the arch file with the special switches that VPR needs.
+ */
 static void SetupSwitches(const t_arch& Arch,
                           t_det_routing_arch* RoutingArch,
                           const t_arch_switch_inf* ArchSwitches,
@@ -277,7 +283,7 @@ static void SetupSwitches(const t_arch& Arch,
 
     /* Delayless switch for connecting sinks and sources with their pins. */
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].set_type(SwitchType::MUX);
-    device_ctx.arch_switch_inf[RoutingArch->delayless_switch].name = vtr::strdup("__vpr_delayless_switch__");
+    device_ctx.arch_switch_inf[RoutingArch->delayless_switch].name = vtr::strdup(VPR_DELAYLESS_SWITCH_NAME);
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].R = 0.;
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].Cin = 0.;
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].Cout = 0.;
@@ -301,8 +307,11 @@ static void SetupSwitches(const t_arch& Arch,
     }
 }
 
-/* Sets up routing structures. Since checks are already done, this
- * just copies values across */
+/**
+ * @brief Sets up routing structures.
+ *
+ * Since checks are already done, this just copies values across
+ */
 static void SetupRoutingArch(const t_arch& Arch,
                              t_det_routing_arch* RoutingArch) {
     RoutingArch->switch_block_type = Arch.SBType;
@@ -382,6 +391,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->exit_after_first_routing_iteration = Options.exit_after_first_routing_iteration;
 
     RouterOpts->check_route = Options.check_route;
+    RouterOpts->timing_update_type = Options.timing_update_type;
 }
 
 static void SetupAnnealSched(const t_options& Options,
@@ -413,8 +423,12 @@ static void SetupAnnealSched(const t_options& Options,
     AnnealSched->type = Options.anneal_sched_type;
 }
 
-/* Sets up the s_packer_opts structure baesd on users inputs and on the architecture specified.
- * Error checking, such as checking for conflicting params is assumed to be done beforehand
+/**
+ * @brief Sets up the s_packer_opts structure baesd on users inputs and
+ *        on the architecture specified.
+ *
+ * Error checking, such as checking for conflicting params is assumed
+ * to be done beforehand
  */
 void SetupPackerOpts(const t_options& Options,
                      t_packer_opts* PackerOpts) {
@@ -452,6 +466,8 @@ void SetupPackerOpts(const t_options& Options,
     PackerOpts->packer_algorithm = PACK_GREEDY; /* DEFAULT */
 
     PackerOpts->device_layout = Options.device_layout;
+
+    PackerOpts->timing_update_type = Options.timing_update_type;
 }
 
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts) {
@@ -464,14 +480,19 @@ static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOp
     NetlistOpts.netlist_verbosity = Options.netlist_verbosity;
 }
 
-/* Sets up the s_placer_opts structure based on users input. Error checking,
- * such as checking for conflicting params is assumed to be done beforehand */
+/**
+ * @brief Sets up the s_placer_opts structure based on users input.
+ *
+ * Error checking, such as checking for conflicting params
+ * is assumed to be done beforehand
+ */
 static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts) {
     if (Options.do_placement) {
         PlacerOpts->doPlacement = STAGE_DO;
     }
 
     PlacerOpts->inner_loop_recompute_divider = Options.inner_loop_recompute_divider;
+    PlacerOpts->quench_recompute_divider = Options.quench_recompute_divider;
 
     //TODO: document?
     PlacerOpts->place_cost_exp = 1;
@@ -494,8 +515,6 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->timing_tradeoff = Options.PlaceTimingTradeoff;
 
     /* Depends on PlacerOpts->place_algorithm */
-    PlacerOpts->enable_timing_computations = Options.ShowPlaceTiming;
-
     PlacerOpts->delay_offset = Options.place_delay_offset;
     PlacerOpts->delay_ramp_delta_threshold = Options.place_delay_ramp_delta_threshold;
     PlacerOpts->delay_ramp_slope = Options.place_delay_ramp_slope;
@@ -522,6 +541,7 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->allowed_tiles_for_delay_model = Options.allowed_tiles_for_delay_model;
 
     PlacerOpts->effort_scaling = Options.place_effort_scaling;
+    PlacerOpts->timing_update_type = Options.timing_update_type;
 }
 
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {
@@ -535,6 +555,8 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
     analysis_opts.timing_report_detail = Options.timing_report_detail;
     analysis_opts.timing_report_skew = Options.timing_report_skew;
     analysis_opts.echo_dot_timing_graph_node = Options.echo_dot_timing_graph_node;
+
+    analysis_opts.timing_update_type = Options.timing_update_type;
 }
 
 static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch) {

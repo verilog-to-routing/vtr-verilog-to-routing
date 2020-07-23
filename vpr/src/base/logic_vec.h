@@ -8,7 +8,7 @@
 
 std::ostream& operator<<(std::ostream& os, vtr::LogicValue val);
 
-//A vector-like object containing logic values.
+///@brief A vector-like object containing logic values.
 class LogicVec {
   public:
     LogicVec() = default;
@@ -18,14 +18,14 @@ class LogicVec {
     LogicVec(std::vector<vtr::LogicValue> values)
         : values_(values) {}
 
-    //Array indexing operator
+    ///@brief Array indexing operator
     const vtr::LogicValue& operator[](size_t i) const { return values_[i]; }
     vtr::LogicValue& operator[](size_t i) { return values_[i]; }
 
-    // Size accessor
+    ///@brief Size accessor
     size_t size() const { return values_.size(); }
 
-    //Output operator which writes the logic vector in verilog format
+    ///@brief Output operator which writes the logic vector in verilog format
     friend std::ostream& operator<<(std::ostream& os, LogicVec logic_vec) {
         os << logic_vec.values_.size() << "'b";
         //Print in reverse since th convention is MSB on the left, LSB on the right
@@ -43,7 +43,7 @@ class LogicVec {
     std::vector<vtr::LogicValue>::const_reverse_iterator end() const { return values_.crend(); }
 
   private:
-    std::vector<vtr::LogicValue> values_; //The logic values
+    std::vector<vtr::LogicValue> values_; ///<The logic values
 };
 
 #endif

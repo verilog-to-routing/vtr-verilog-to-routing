@@ -104,6 +104,10 @@ class TimingGraph {
         ///\returns The edge id corresponding to the incoming clock launch edge, or EdgeId::INVALID() if none
         EdgeId node_clock_launch_edge(const NodeId id) const;
 
+        ///\param id The node id
+        ///\returns The level id corresponding to specified node
+        LevelId node_level(const NodeId id) const;
+
         /*
          * Edge accessors
          */
@@ -280,6 +284,7 @@ class TimingGraph {
         tatum::util::linear_map<NodeId,NodeType> node_types_; //Type of node
         tatum::util::linear_map<NodeId,std::vector<EdgeId>> node_in_edges_; //Incomiing edge IDs for node
         tatum::util::linear_map<NodeId,std::vector<EdgeId>> node_out_edges_; //Out going edge IDs for node
+        tatum::util::linear_map<NodeId,LevelId> node_levels_; //Out going edge IDs for node
 
         //Edge data
         tatum::util::linear_map<EdgeId,EdgeId> edge_ids_; //The edge IDs in the graph

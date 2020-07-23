@@ -16,7 +16,7 @@ void generate_setup_timing_stats(const std::string& prefix, const SetupTimingInf
     auto& timing_ctx = g_vpr_ctx.timing();
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    print_setup_timing_summary(*timing_ctx.constraints, *timing_info.setup_analyzer());
+    print_setup_timing_summary(*timing_ctx.constraints, *timing_info.setup_analyzer(), "Final ");
 
     VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, delay_calc);
     resolver.set_detail_level(analysis_opts.timing_report_detail);
@@ -36,7 +36,7 @@ void generate_hold_timing_stats(const std::string& prefix, const HoldTimingInfo&
     auto& timing_ctx = g_vpr_ctx.timing();
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    print_hold_timing_summary(*timing_ctx.constraints, *timing_info.hold_analyzer());
+    print_hold_timing_summary(*timing_ctx.constraints, *timing_info.hold_analyzer(), "Final ");
 
     VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, delay_calc);
     resolver.set_detail_level(analysis_opts.timing_report_detail);

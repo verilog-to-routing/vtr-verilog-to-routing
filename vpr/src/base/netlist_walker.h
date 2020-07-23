@@ -25,20 +25,24 @@ class NetlistVisitor {
     void visit_top(const char* top_level_name) { visit_top_impl(top_level_name); }
     void visit_clb(ClusterBlockId blk_id, const t_pb* clb) { visit_clb_impl(blk_id, clb); }
 
-    // visit_atom is called on leaf pb nodes that map to a netlist element.
+    ///@brief visit_atom is called on leaf pb nodes that map to a netlist element.
     void visit_atom(const t_pb* atom) { visit_atom_impl(atom); }
 
-    // visit_route_through is called on leaf pb nodes that do not map to a
-    // netlist element.  This is generally used for route-through nodes.
+    /**
+     * @brief visit_route_through is called on leaf pb nodes that do not map to a netlist element.
+     *
+     * This is generally used for route-through nodes.
+     */
     void visit_route_through(const t_pb* atom) {
         visit_route_through_impl(atom);
     }
 
-    // visit_all is called on all t_pb nodes that are in use for any
-    // reason.
-    //
-    // top_pb_route is the pb_route for the cluster being visited.
-    // pb is the current element in the cluster being visited.
+    /**
+     * @brief  visit_all is called on all t_pb nodes that are in use for any reason.
+     *
+     *   @param top_pb_route   the pb_route for the cluster being visited.
+     *   @param pb             the current element in the cluster being visited.
+     */
     void visit_all(const t_pb_routes& top_pb_route, const t_pb* pb) {
         visit_all_impl(top_pb_route, pb);
     }

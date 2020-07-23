@@ -207,6 +207,10 @@ int max_pins_per_grid_tile();
 void pretty_print_uint(const char* prefix, size_t value, int num_digits, int scientific_precision);
 void pretty_print_float(const char* prefix, double value, int num_digits, int scientific_precision);
 
+void print_timing_stats(std::string name,
+                        const t_timing_analysis_profile_info& current,
+                        const t_timing_analysis_profile_info& past = t_timing_analysis_profile_info());
+
 // Make room in a vector, with amortized O(1) time by using a pow2 growth pattern.
 //
 // This enables potentially random insertion into a vector with amortized O(1)

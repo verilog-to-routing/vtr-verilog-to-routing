@@ -47,6 +47,7 @@
 #include <stdexcept>
 #include <climits>
 #include <algorithm>
+#include <array>
 
 #include "vtr_strong_id.h"
 #include "vtr_string_view.h"

@@ -2,7 +2,7 @@
 .inputs a b clk
 .outputs o_dff
 
-.names 1\a 3 a_-1234567890~|:*/\[\]\.\{\}^+$;'"?<>
+.names 1\a 3 a_-1234567890~|:*/\[\]\.\{\}^+$;'?<>
 
 .names a b \
   a_and_b
@@ -16,6 +16,8 @@
 .cname my_dff
 .param parama param_valuea
 .param attra attr_valuea
+.param paramb " A  B "
+.attr attrb "I have a space"
 
 .conn dff_q o_dff
 

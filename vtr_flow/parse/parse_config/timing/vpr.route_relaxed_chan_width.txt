@@ -8,12 +8,12 @@ crit_path_total_heap_pushes;vpr.crit_path.out;total_heap_pushes: (\d+)
 crit_path_total_heap_pops;vpr.crit_path.out;total_heap_pops: (\d+)
 
 #VPR Analysis (final implementation) Metrics
-critical_path_delay;vpr.crit_path.out;Final critical path: (.*) ns
-geomean_nonvirtual_intradomain_critical_path_delay;vpr.crit_path.out;Geometric mean non-virtual intra-domain period: (.*) ns
-setup_TNS;vpr.crit_path.out;Setup Total Negative Slack \(sTNS\): (.*) ns
-setup_WNS;vpr.crit_path.out;Setup Worst Negative Slack \(sWNS\): (.*) ns
-hold_TNS;vpr.crit_path.out;Hold Total Negative Slack \(hTNS\): (.*) ns
-hold_WNS;vpr.crit_path.out;Hold Worst Negative Slack \(hWNS\): (.*) ns
+critical_path_delay;vpr.crit_path.out;Final critical path delay \(least slack\): (.*) ns
+geomean_nonvirtual_intradomain_critical_path_delay;vpr.crit_path.out;Final geomean non-virtual intra-domain period: (.*) ns
+setup_TNS;vpr.crit_path.out;Final setup Total Negative Slack \(sTNS\): (.*) ns
+setup_WNS;vpr.crit_path.out;Final setup Worst Negative Slack \(sWNS\): (.*) ns
+hold_TNS;vpr.crit_path.out;Final hold Total Negative Slack \(hTNS\): (.*) ns
+hold_WNS;vpr.crit_path.out;Final hold Worst Negative Slack \(hWNS\): (.*) ns
 
 #Area Metrics
 crit_path_routing_area_total;vpr.crit_path.out;Total routing area: (.*), per logic tile: .*
@@ -21,3 +21,5 @@ crit_path_routing_area_per_tile;vpr.crit_path.out;Total routing area: .*, per lo
 
 #Run-time Metrics
 crit_path_route_time;vpr.crit_path.out;^#*\s*Routing took (.*) seconds
+crit_path_total_timing_analysis_time;vpr.crit_path.out;Flow timing analysis took (.*) seconds
+crit_path_total_sta_time;vpr.crit_path.out;Flow timing analysis took .* seconds \((.*) STA

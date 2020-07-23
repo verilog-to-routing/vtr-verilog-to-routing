@@ -14,15 +14,17 @@ class ClusteredPinAtomPinsLookup {
     typedef typename vtr::Range<atom_pin_iterator> atom_pin_range;
 
   public:
-    ClusteredPinAtomPinsLookup(const ClusteredNetlist& clustered_netlist, const IntraLbPbPinLookup& pb_gpin_lookup);
+    ClusteredPinAtomPinsLookup(const ClusteredNetlist& clustered_netlist, const AtomNetlist& atom_netlist, const IntraLbPbPinLookup& pb_gpin_lookup);
 
     atom_pin_range connected_atom_pins(ClusterPinId clustered_pin) const;
+    ClusterPinId connected_clb_pin(AtomPinId atom_pin) const;
 
   private:
-    void init_lookup(const ClusteredNetlist& clustered_netlist, const IntraLbPbPinLookup& pb_gpin_lookup);
+    void init_lookup(const ClusteredNetlist& clustered_netlist, const AtomNetlist& atom_netlist, const IntraLbPbPinLookup& pb_gpin_lookup);
 
   private:
     vtr::vector<ClusterPinId, std::vector<AtomPinId>> clustered_pin_connected_atom_pins_;
+    vtr::vector<AtomPinId, ClusterPinId> atom_pin_connected_cluster_pin_;
 };
 
 #endif

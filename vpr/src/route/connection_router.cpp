@@ -620,7 +620,7 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
 
     float cong_cost = 0.;
     if (reached_configurably) {
-        cong_cost = get_rr_cong_cost(to_node);
+        cong_cost = get_rr_cong_cost(to_node, cost_params.pres_fac);
     } else {
         //Reached by a non-configurable edge.
         //Therefore the from_node and to_node are part of the same non-configurable node set.

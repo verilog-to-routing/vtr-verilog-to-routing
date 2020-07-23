@@ -47,76 +47,6 @@ enum class RouterCongestionMode {
     CONFLICTED
 };
 
-class WirelengthInfo {
-  public:
-    WirelengthInfo(size_t available = 0u, size_t used = 0u)
-        : available_wirelength_(available)
-        , used_wirelength_(used) {
-    }
-
-    size_t available_wirelength() const {
-        return available_wirelength_;
-    }
-
-    size_t used_wirelength() const {
-        return used_wirelength_;
-    }
-
-    float used_wirelength_ratio() const {
-        if (available_wirelength() > 0) {
-            return float(used_wirelength()) / available_wirelength();
-        } else {
-            VTR_ASSERT(used_wirelength() == 0);
-            return 0.;
-        }
-    }
-
-  private:
-    size_t available_wirelength_;
-    size_t used_wirelength_;
-};
-
-class OveruseInfo {
-  public:
-    OveruseInfo(size_t total = 0u, size_t overused = 0u, size_t total_overuse_val = 0u, size_t worst_overuse_val = 0u)
-        : total_nodes_(total)
-        , overused_nodes_(overused)
-        , total_overuse_(total_overuse_val)
-        , worst_overuse_(worst_overuse_val) {
-    }
-
-    size_t total_nodes() const {
-        return total_nodes_;
-    }
-
-    size_t overused_nodes() const {
-        return overused_nodes_;
-    }
-
-    float overused_node_ratio() const {
-        if (total_nodes() > 0) {
-            return float(overused_nodes()) / total_nodes();
-        } else {
-            VTR_ASSERT(overused_nodes() == 0);
-            return 0.;
-        }
-    }
-
-    size_t total_overuse() const {
-        return total_overuse_;
-    }
-
-    size_t worst_overuse() const {
-        return worst_overuse_;
-    }
-
-  private:
-    size_t total_nodes_;
-    size_t overused_nodes_;
-    size_t total_overuse_;
-    size_t worst_overuse_;
-};
-
 struct RoutingMetrics {
     size_t used_wirelength = 0;
 
@@ -144,7 +74,6 @@ static bool timing_driven_route_sink(
     unsigned itarget,
     int target_pin,
     const t_conn_cost_params cost_params,
-    float pres_fac,
     int high_fanout_threshold,
     t_rt_node* rt_root,
     t_rt_node** rt_node_of_sink,
@@ -157,7 +86,6 @@ static bool timing_driven_pre_route_to_clock_root(
     ClusterNetId net_id,
     int sink_node,
     const t_conn_cost_params cost_params,
-    float pres_fac,
     int high_fanout_threshold,
     t_rt_node* rt_root,
     SpatialRouteTreeLookup& spatial_rt_lookup,
@@ -168,7 +96,6 @@ void disable_expansion_and_remove_sink_from_route_tree_nodes(t_rt_node* node);
 static t_rt_node* setup_routing_resources(int itry,
                                           ClusterNetId net_id,
                                           unsigned num_sinks,
-                                          float pres_fac,
                                           int min_incremental_reroute_fanout,
                                           CBRR& incremental_rerouting_res,
                                           t_rt_node** rt_node_of_sink);
@@ -192,7 +119,6 @@ struct more_sinks_than {
 
 static size_t calculate_wirelength_available();
 static WirelengthInfo calculate_wirelength_info(size_t available_wirelength);
-static OveruseInfo calculate_overuse_info();
 
 static void print_route_status_header();
 static void print_route_status(int itry,
@@ -298,7 +224,9 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
      * must have already been allocated, and net_delay must have been allocated. *
      * Returns true if the routing succeeds, false otherwise.                    */
 
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& atom_ctx = g_vpr_ctx.atom();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     //Initially, the router runs normally trying to reduce congestion while
@@ -352,7 +280,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
     /*
      * Routing parameters
      */
-    float pres_fac = router_opts.first_iter_pres_fac; /* Typically 0 -> ignore cong. */
+    float pres_fac = update_pres_fac(router_opts.first_iter_pres_fac); /* Typically 0 -> ignore cong. */
     int bb_fac = router_opts.bb_factor;
 
     //When routing conflicts are detected the bounding boxes are scaled
@@ -367,7 +295,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
      */
     bool routing_is_successful = false;
     WirelengthInfo wirelength_info;
-    OveruseInfo overuse_info;
+    OveruseInfo overuse_info(device_ctx.rr_nodes.size());
     tatum::TimingPathInfo critical_path;
     int itry; //Routing iteration number
     int itry_conflicted_mode = 0;
@@ -381,7 +309,6 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
     int legal_convergence_count = 0;
     std::vector<int> scratch;
 
-    const auto& device_ctx = g_vpr_ctx.device();
     ConnectionRouter router(
         device_ctx.grid,
         *router_lookahead,
@@ -427,6 +354,15 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
         print_router_criticality_histogram(*route_timing_info, netlist_pin_lookup);
     }
 
+    std::unique_ptr<ClusteredPinTimingInvalidator> pin_timing_invalidator;
+    if (timing_info) {
+        pin_timing_invalidator = std::make_unique<ClusteredPinTimingInvalidator>(cluster_ctx.clb_nlist,
+                                                                                 netlist_pin_lookup,
+                                                                                 atom_ctx.nlist,
+                                                                                 atom_ctx.lookup,
+                                                                                 *timing_info->timing_graph());
+    }
+
     RouterStats router_stats;
     timing_driven_route_structs route_structs;
     float prev_iter_cumm_time = 0;
@@ -470,6 +406,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
                                                            net_delay,
                                                            netlist_pin_lookup,
                                                            route_timing_info,
+                                                           pin_timing_invalidator.get(),
                                                            budgeting_inf,
                                                            was_rerouted);
             if (!is_routable) {
@@ -492,15 +429,22 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
         bool routing_is_feasible = feasible_routing();
         float est_success_iteration = routing_predictor.estimate_success_iteration();
 
-        overuse_info = calculate_overuse_info();
+        //Update resource costs and overuse info
+        if (itry == 1) {
+            pathfinder_update_acc_cost_and_overuse_info(0., overuse_info); /* Acc_fac=0 for first iter. */
+        } else {
+            pathfinder_update_acc_cost_and_overuse_info(router_opts.acc_fac, overuse_info);
+        }
+
         wirelength_info = calculate_wirelength_info(available_wirelength);
-        routing_predictor.add_iteration_overuse(itry, overuse_info.overused_nodes());
+        routing_predictor.add_iteration_overuse(itry, overuse_info.overused_nodes);
 
         if (timing_info) {
             //Update timing based on the new routing
             //Note that the net delays have already been updated by timing_driven_route_net
             timing_info->update();
             timing_info->set_warn_unconstrained(false); //Don't warn again about unconstrained nodes again during routing
+            pin_timing_invalidator->reset();
 
             //Use the real timing analysis criticalities for subsequent routing iterations
             //  'route_timing_info' is what is actually passed into the net/connection routers,
@@ -571,7 +515,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
             //Decrease pres_fac so that critical connections will take more direct routes
             //Note that we use first_iter_pres_fac here (typically zero), and switch to
             //use initial_pres_fac on the next iteration.
-            pres_fac = router_opts.first_iter_pres_fac;
+            pres_fac = update_pres_fac(router_opts.first_iter_pres_fac);
 
             //Reduce timing tolerances to re-route more delay-suboptimal signals
             connections_inf.set_connection_criticality_tolerance(0.7);
@@ -588,7 +532,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
             //after the first routing convergence. Since that is often zero,
             //we want to set pres_fac to a reasonable (i.e. typically non-zero)
             //value afterwards -- so it grows when multiplied by pres_fac_mult
-            pres_fac = router_opts.initial_pres_fac;
+            pres_fac = update_pres_fac(router_opts.initial_pres_fac);
         }
 
         //Have we converged the maximum number of times, did not make any changes, or does it seem
@@ -608,7 +552,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
         }
 
         //Estimate at what iteration we will converge to a legal routing
-        if (overuse_info.overused_nodes() > ROUTING_PREDICTOR_MIN_ABSOLUTE_OVERUSE_THRESHOLD) {
+        if (overuse_info.overused_nodes > ROUTING_PREDICTOR_MIN_ABSOLUTE_OVERUSE_THRESHOLD) {
             //Only consider aborting if we have a significant number of overused resources
 
             if (!std::isnan(est_success_iteration) && est_success_iteration > abort_iteration_threshold) {
@@ -637,17 +581,14 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
             router_congestion_mode = RouterCongestionMode::CONFLICTED;
         }
 
-        //Update pres_fac and resource costs
+        //Update pres_fac
         if (itry == 1) {
-            pres_fac = router_opts.initial_pres_fac;
-            pathfinder_update_cost(pres_fac, 0.); /* Acc_fac=0 for first iter. */
+            pres_fac = update_pres_fac(router_opts.initial_pres_fac);
         } else {
             pres_fac *= router_opts.pres_fac_mult;
 
             /* Avoid overflow for high iteration counts, even if acc_cost is big */
-            pres_fac = std::min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5));
-
-            pathfinder_update_cost(pres_fac, router_opts.acc_fac);
+            pres_fac = update_pres_fac(std::min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5)));
         }
 
         if (router_congestion_mode == RouterCongestionMode::CONFLICTED) {
@@ -759,8 +700,8 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
 
         /* Restore congestion from best route */
         for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-            pathfinder_update_path_cost(route_ctx.trace[net_id].head, -1, pres_fac);
-            pathfinder_update_path_cost(best_routing[net_id].head, 1, pres_fac);
+            pathfinder_update_path_occupancy(route_ctx.trace[net_id].head, -1);
+            pathfinder_update_path_occupancy(best_routing[net_id].head, 1);
         }
         router_ctx.trace = best_routing;
         router_ctx.clb_opins_used_locally = best_clb_opins_used_locally;
@@ -801,6 +742,7 @@ bool try_timing_driven_route_net(ConnectionRouter& router,
                                  ClbNetPinsMatrix<float>& net_delay,
                                  const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                  std::shared_ptr<SetupTimingInfo> timing_info,
+                                 ClusteredPinTimingInvalidator* pin_timing_invalidator,
                                  route_budgets& budgeting_inf,
                                  bool& was_rerouted) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -832,6 +774,7 @@ bool try_timing_driven_route_net(ConnectionRouter& router,
                                             net_delay[net_id].data(),
                                             netlist_pin_lookup,
                                             timing_info,
+                                            pin_timing_invalidator,
                                             budgeting_inf);
 
         profiling::net_fanout_end(cluster_ctx.clb_nlist.net_sinks(net_id).size());
@@ -954,7 +897,8 @@ bool timing_driven_route_net(ConnectionRouter& router,
                              t_rt_node** rt_node_of_sink,
                              float* net_delay,
                              const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                             std::shared_ptr<const SetupTimingInfo> timing_info,
+                             std::shared_ptr<SetupTimingInfo> timing_info,
+                             ClusteredPinTimingInvalidator* pin_timing_invalidator,
                              route_budgets& budgeting_inf) {
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
@@ -971,7 +915,6 @@ bool timing_driven_route_net(ConnectionRouter& router,
     t_rt_node* rt_root = setup_routing_resources(itry,
                                                  net_id,
                                                  num_sinks,
-                                                 pres_fac,
                                                  router_opts.min_incremental_reroute_fanout,
                                                  connections_inf,
                                                  rt_node_of_sink);
@@ -1035,6 +978,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
     t_conn_cost_params cost_params;
     cost_params.astar_fac = router_opts.astar_fac;
     cost_params.bend_cost = router_opts.bend_cost;
+    cost_params.pres_fac = pres_fac;
     cost_params.delay_budget = ((budgeting_inf.if_set()) ? &conn_delay_budget : nullptr);
 
     // Pre-route to clock source for clock nets (marked as global nets)
@@ -1054,7 +998,6 @@ bool timing_driven_route_net(ConnectionRouter& router,
                 net_id,
                 sink_node,
                 cost_params,
-                pres_fac,
                 router_opts.high_fanout_threshold,
                 rt_root,
                 spatial_route_tree_lookup,
@@ -1081,28 +1024,34 @@ bool timing_driven_route_net(ConnectionRouter& router,
             conn_delay_budget.short_path_criticality = budgeting_inf.get_crit_short_path(net_id, target_pin);
         }
 
+        profiling::conn_start();
+
         // build a branch in the route tree to the target
         if (!timing_driven_route_sink(router,
                                       net_id,
                                       itarget,
                                       target_pin,
                                       cost_params,
-                                      pres_fac,
                                       router_opts.high_fanout_threshold,
                                       rt_root, rt_node_of_sink,
                                       spatial_route_tree_lookup,
                                       router_stats))
             return false;
 
+        profiling::conn_finish(route_ctx.net_rr_terminals[net_id][0],
+                               sink_rr,
+                               pin_criticality[target_pin]);
+
         ++router_stats.connections_routed;
     } // finished all sinks
 
     ++router_stats.nets_routed;
+    profiling::net_finish();
 
     /* For later timing analysis. */
 
     // may have to update timing delay of the previously legally reached sinks since downstream capacitance could be changed
-    update_net_delays_from_route_tree(net_delay, rt_node_of_sink, net_id);
+    update_net_delays_from_route_tree(net_delay, rt_node_of_sink, net_id, timing_info.get(), pin_timing_invalidator);
 
     if (router_opts.update_lower_bound_delays) {
         for (int ipin : remaining_targets) {
@@ -1132,7 +1081,6 @@ static bool timing_driven_pre_route_to_clock_root(
     ClusterNetId net_id,
     int sink_node,
     const t_conn_cost_params cost_params,
-    float pres_fac,
     int high_fanout_threshold,
     t_rt_node* rt_root,
     SpatialRouteTreeLookup& spatial_rt_lookup,
@@ -1194,7 +1142,7 @@ static bool timing_driven_pre_route_to_clock_root(
         std::string msg = vtr::string_fmt("Routed Net %zu connection to RR node %d successfully", size_t(net_id), sink_node);
         update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), ROUTING, nullptr);
     }
-    pathfinder_update_path_cost(new_route_start_tptr, 1, pres_fac);
+    pathfinder_update_path_occupancy(new_route_start_tptr, 1);
 
     // need to guarantee ALL nodes' path costs are HUGE_POSITIVE_FLOAT at the start of routing to a sink
     // do this by resetting all the path_costs that have been touched while routing to the current sink
@@ -1223,7 +1171,6 @@ static bool timing_driven_route_sink(
     unsigned itarget,
     int target_pin,
     const t_conn_cost_params cost_params,
-    float pres_fac,
     int high_fanout_threshold,
     t_rt_node* rt_root,
     t_rt_node** rt_node_of_sink,
@@ -1307,7 +1254,7 @@ static bool timing_driven_route_sink(
         std::string msg = vtr::string_fmt("Routed Net %zu connection %d to RR node %d successfully", size_t(net_id), itarget, sink_node);
         update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), ROUTING, nullptr);
     }
-    pathfinder_update_path_cost(new_route_start_tptr, 1, pres_fac);
+    pathfinder_update_path_occupancy(new_route_start_tptr, 1);
 
     // need to guarantee ALL nodes' path costs are HUGE_POSITIVE_FLOAT at the start of routing to a sink
     // do this by resetting all the path_costs that have been touched while routing to the current sink
@@ -1320,7 +1267,6 @@ static bool timing_driven_route_sink(
 static t_rt_node* setup_routing_resources(int itry,
                                           ClusterNetId net_id,
                                           unsigned num_sinks,
-                                          float pres_fac,
                                           int min_incremental_reroute_fanout,
                                           CBRR& connections_inf,
                                           t_rt_node** rt_node_of_sink) {
@@ -1343,7 +1289,7 @@ static t_rt_node* setup_routing_resources(int itry,
         profiling::net_rerouted();
 
         // rip up the whole net
-        pathfinder_update_path_cost(route_ctx.trace[net_id].head, -1, pres_fac);
+        pathfinder_update_path_occupancy(route_ctx.trace[net_id].head, -1);
         free_traceback(net_id);
 
         rt_root = init_route_tree_to_source(net_id);
@@ -1378,7 +1324,7 @@ static t_rt_node* setup_routing_resources(int itry,
         //Now that the tree has been pruned, we can free the old traceback
         // NOTE: this must happen *after* pruning since it changes the
         //       recorded congestion
-        pathfinder_update_path_cost(route_ctx.trace[net_id].head, -1, pres_fac);
+        pathfinder_update_path_occupancy(route_ctx.trace[net_id].head, -1);
         free_traceback(net_id);
 
         if (rt_root) { //Partially pruned
@@ -1394,8 +1340,8 @@ static t_rt_node* setup_routing_resources(int itry,
             //Sanity check that route tree and traceback are equivalent after pruning
             VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
 
-            // put the updated costs of the route tree nodes back into pathfinder
-            pathfinder_update_path_cost(route_ctx.trace[net_id].head, 1, pres_fac);
+            // put the updated occupancies of the route tree nodes back into pathfinder
+            pathfinder_update_path_occupancy(route_ctx.trace[net_id].head, 1);
 
         } else { //Fully destroyed
             profiling::route_tree_pruned();
@@ -1586,47 +1532,6 @@ static bool early_exit_heuristic(const t_router_opts& router_opts, const Wirelen
     return false;
 }
 
-static OveruseInfo calculate_overuse_info() {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& route_ctx = g_vpr_ctx.routing();
-
-    std::unordered_set<int> checked_nodes;
-
-    size_t overused_nodes = 0;
-    size_t total_overuse = 0;
-    size_t worst_overuse = 0;
-
-    //We walk through the entire routing calculating the overuse for each node.
-    //Since in the presence of overuse multiple nets could be using a single node
-    //(and also since branch nodes show up multiple times in the traceback) we use
-    //checked_nodes to avoid double counting the overuse.
-    //
-    //Note that we walk through the entire routing and *not* the RR graph, which
-    //should be more efficient (since usually only a portion of the RR graph is
-    //used by routing, particularly on large devices).
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        for (t_trace* tptr = route_ctx.trace[net_id].head; tptr != nullptr; tptr = tptr->next) {
-            int inode = tptr->index;
-
-            auto result = checked_nodes.insert(inode);
-            if (!result.second) { //Already counted
-                continue;
-            }
-
-            int overuse = route_ctx.rr_node_route_inf[inode].occ() - device_ctx.rr_nodes[inode].capacity();
-            if (overuse > 0) {
-                overused_nodes += 1;
-
-                total_overuse += overuse;
-                worst_overuse = std::max(worst_overuse, size_t(overuse));
-            }
-        }
-    }
-
-    return OveruseInfo(device_ctx.rr_nodes.size(), overused_nodes, total_overuse, worst_overuse);
-}
-
 static size_t calculate_wirelength_available() {
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -1703,7 +1608,7 @@ static void print_route_status(int itry, double elapsed_sec, float pres_fac, int
     //Overused RR nodes
     constexpr int OVERUSE_DIGITS = 7;
     constexpr int OVERUSE_SCI_PRECISION = 2;
-    pretty_print_uint(" ", overuse_info.overused_nodes(), OVERUSE_DIGITS, OVERUSE_SCI_PRECISION);
+    pretty_print_uint(" ", overuse_info.overused_nodes, OVERUSE_DIGITS, OVERUSE_SCI_PRECISION);
     VTR_LOG(" (%6.3f%%)", overuse_info.overused_node_ratio() * 100);
 
     //Wirelength

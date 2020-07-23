@@ -1,0 +1,137 @@
+{
+    "defparam/defparam_failure/no_arch": {
+        "test_name": "defparam/defparam_failure/no_arch",
+        "verilog": "defparam_failure.v",
+        "warnings": [
+            "AST defparam_failure.v:30 there are no ports for the module (params)",
+            "NETLIST defparam_failure.v:8 This output is undriven (simple_op^out2~3) and will be removed",
+            "NETLIST defparam_failure.v:8 Net simple_op^out2~3 driving node simple_op^out2~3 is itself undriven."
+        ],
+        "max_rss(MiB)": 13.8,
+        "exec_time(ms)": 6.2,
+        "synthesis_time(ms)": 4.5,
+        "Pi": 6,
+        "Po": 7,
+        "Longest Path": 2,
+        "Average Path": 2
+    },
+    "defparam/defparam/no_arch": {
+        "test_name": "defparam/defparam/no_arch",
+        "verilog": "defparam.v",
+        "warnings": [
+            "AST defparam.v:28 there are no ports for the module (params)",
+            "NETLIST defparam.v:8 This output is undriven (simple_op^out2~3) and will be removed",
+            "NETLIST defparam.v:8 Net simple_op^out2~3 driving node simple_op^out2~3 is itself undriven."
+        ],
+        "max_rss(MiB)": 13.6,
+        "exec_time(ms)": 5.5,
+        "synthesis_time(ms)": 3.9,
+        "Pi": 5,
+        "Po": 6,
+        "Longest Path": 2,
+        "Average Path": 2
+    },
+    "defparam/defparam_string/no_arch": {
+        "test_name": "defparam/defparam_string/no_arch",
+        "verilog": "defparam_string.v",
+        "warnings": [
+            "AST defparam_string.v:21 there are no ports for the module (param)"
+        ],
+        "max_rss(MiB)": 11.4,
+        "exec_time(ms)": 3.1,
+        "synthesis_time(ms)": 1.5,
+        "Latch Drivers": 1,
+        "Po": 1,
+        "latch": 1,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Total Node": 2
+    },
+    "defparam/defparam_depth_1/no_arch": {
+        "test_name": "defparam/defparam_depth_1/no_arch",
+        "verilog": "defparam_depth_1.v",
+        "max_rss(MiB)": 32.7,
+        "exec_time(ms)": 6.2,
+        "synthesis_time(ms)": 4,
+        "Pi": 10,
+        "Po": 10,
+        "Longest Path": 2,
+        "Average Path": 2
+    },
+    "defparam/defparam_depth_1_failure/no_arch": {
+        "test_name": "defparam/defparam_depth_1_failure/no_arch",
+        "verilog": "defparam_depth_1_failure.v",
+        "warnings": [
+            "AST defparam_depth_1_failure.v:13 Defparam can only override parameters: width",
+            "AST defparam_depth_1_failure.v:14 Defparam can only override parameters: width",
+            "NETLIST defparam_depth_1_failure.v:8 This output is undriven (simple_op^out2~3) and will be removed",
+            "NETLIST defparam_depth_1_failure.v:8 This output is undriven (simple_op^out2~4) and will be removed",
+            "NETLIST defparam_depth_1_failure.v:8 This output is undriven (simple_op^out2~5) and will be removed",
+            "NETLIST defparam_depth_1_failure.v:8 This output is undriven (simple_op^out2~6) and will be removed",
+            "NETLIST defparam_depth_1_failure.v:8 This output is undriven (simple_op^out2~7) and will be removed",
+            "NETLIST defparam_depth_1_failure.v:8 Net simple_op^out2~3 driving node simple_op^out2~3 is itself undriven.",
+            "NETLIST defparam_depth_1_failure.v:8 Net simple_op^out2~4 driving node simple_op^out2~4 is itself undriven.",
+            "NETLIST defparam_depth_1_failure.v:8 Net simple_op^out2~5 driving node simple_op^out2~5 is itself undriven.",
+            "NETLIST defparam_depth_1_failure.v:8 Net simple_op^out2~6 driving node simple_op^out2~6 is itself undriven.",
+            "NETLIST defparam_depth_1_failure.v:8 Net simple_op^out2~7 driving node simple_op^out2~7 is itself undriven."
+        ],
+        "max_rss(MiB)": 33,
+        "exec_time(ms)": 6.4,
+        "synthesis_time(ms)": 4.2,
+        "Pi": 5,
+        "Po": 10,
+        "Longest Path": 2,
+        "Average Path": 2
+    },
+    "defparam/defparam_depth_2/no_arch": {
+        "test_name": "defparam/defparam_depth_2/no_arch",
+        "verilog": "defparam_depth_2.v",
+        "exit": 134,
+        "errors": [
+            "NETLIST defparam_depth_2.v:16 This module port simple_op.m2^in~2 is unused in module assg1"
+        ]
+    },
+    "defparam/defparam_simple_failure/no_arch": {
+        "test_name": "defparam/defparam_simple_failure/no_arch",
+        "verilog": "defparam_simple_failure.v",
+        "warnings": [
+            "AST defparam_simple_failure.v:23 there are no ports for the module (params)",
+            "NETLIST defparam_simple_failure.v:5 This output is undriven (simple_op^out1~3) and will be removed",
+            "NETLIST defparam_simple_failure.v:5 Net simple_op^out1~3 driving node simple_op^out1~3 is itself undriven."
+        ],
+        "max_rss(MiB)": 32.7,
+        "exec_time(ms)": 5.6,
+        "synthesis_time(ms)": 3.1,
+        "Pi": 3,
+        "Po": 4,
+        "Longest Path": 2,
+        "Average Path": 2
+    },
+    "DEFAULT": {
+        "test_name": "n/a",
+        "architecture": "n/a",
+        "verilog": "n/a",
+        "exit": 0,
+        "leaks": 0,
+        "errors": [],
+        "warnings": [],
+        "expectation": [],
+        "max_rss(MiB)": -1,
+        "exec_time(ms)": -1,
+        "synthesis_time(ms)": -1,
+        "Latch Drivers": 0,
+        "Pi": 0,
+        "Po": 0,
+        "logic element": 0,
+        "latch": 0,
+        "Adder": -1,
+        "Multiplier": -1,
+        "Memory": -1,
+        "Hard Ip": -1,
+        "generic logic size": -1,
+        "Longest Path": 0,
+        "Average Path": 0,
+        "Estimated LUTs": 0,
+        "Total Node": 0
+    }
+}

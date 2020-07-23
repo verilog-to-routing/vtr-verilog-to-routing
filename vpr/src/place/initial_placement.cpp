@@ -1,5 +1,6 @@
 #include "vtr_memory.h"
 #include "vtr_random.h"
+#include "vtr_time.h"
 
 #include "globals.h"
 #include "read_place.h"
@@ -391,7 +392,10 @@ static t_physical_tile_type_ptr pick_placement_type(t_logical_block_type_ptr log
     return nullptr;
 }
 
+
 void initial_placement(enum e_pad_loc_type pad_loc_type, enum e_block_loc_type block_loc_type, const char* constraints_file) {
+    vtr::ScopedStartFinishTimer timer("Initial Placement");
+
     /* Randomly places the blocks to create an initial placement. We rely on
      * the legal_pos array already being loaded.  That legal_pos[itype] is an
      * array that gives every legal value of (x,y,z) that can accommodate a block.
