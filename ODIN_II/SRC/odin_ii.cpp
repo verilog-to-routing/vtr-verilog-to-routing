@@ -64,7 +64,8 @@
 
 #define DEFAULT_OUTPUT "."
 
-int current_parse_file = -1;
+loc_t my_location;
+
 t_arch Arch;
 global_args_t global_args;
 std::vector<t_physical_tile_type> physical_tile_types;
@@ -289,7 +290,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         // the simulator can only simulate blifs
         if (global_args.blif_file.provenance() != argparse::Provenance::SPECIFIED) {
             configuration.list_of_file_names = {global_args.output_file};
-            current_parse_file = 0;
+            my_location.file = 0;
         } else {
             printf("Blif: %s\n", vtr::basename(global_args.blif_file.value()).c_str());
             fflush(stdout);
@@ -515,7 +516,7 @@ void get_options(int argc, char** argv) {
         .action(argparse::Action::STORE_TRUE);
 
     other_sim_grp.add_argument<int, ParseInitRegState>(global_args.sim_initial_value, "-U")
-        .help("Default initial register state")
+        .help("DEPRECATED")
         .default_value("X")
         .metavar("INIT_REG_STATE");
 
@@ -556,7 +557,7 @@ void get_options(int argc, char** argv) {
             global_args.verilog_files.value().size() > 0                             //have a verilog input list
         })) {
         parser.print_usage();
-        error_message(PARSE_ARGS, 0, -1, "%s", "Must include only one of either:\n\ta config file(-c)\n\ta blif file(-b)\n\ta verilog file(-V)\n");
+        error_message(PARSE_ARGS, unknown_location, "%s", "Must include only one of either:\n\ta config file(-c)\n\ta blif file(-b)\n\ta verilog file(-V)\n");
     }
 
     //adjust thread count
@@ -604,7 +605,7 @@ void get_options(int argc, char** argv) {
     }
 
     if (global_args.permissive.value()) {
-        warning_message(PARSE_ARGS, -1, -1, "%s", "Permissive flag is ON. Undefined behaviour may occur\n");
+        warning_message(PARSE_ARGS, unknown_location, "%s", "Permissive flag is ON. Undefined behaviour may occur\n");
     }
 }
 

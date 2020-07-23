@@ -85,7 +85,7 @@ void declare_hard_adder_for_sub(nnode_t* node) {
 
     /* See if this size instance of adder exists?*/
     if (hard_adders == NULL) {
-        warning_message(NETLIST, node->related_ast_node->line_number, node->related_ast_node->file_number, "%s\n", "Instantiating Substraction where hard adders do not exist");
+        warning_message(NETLIST, node->loc, "%s\n", "Instantiating Substraction where hard adders do not exist");
     }
     tmp = (t_adder*)hard_adders->instances;
     width_a = node->input_port_sizes[0];
@@ -349,7 +349,7 @@ void split_adder_for_sub(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int
     not_node = (nnode_t**)vtr::malloc(sizeof(nnode_t*) * (b));
 
     for (i = 0; i < b; i++) {
-        not_node[i] = allocate_nnode();
+        not_node[i] = allocate_nnode(nodeo->loc);
         nnode_t* temp = not_node[i];
         if (nodeo->num_input_port_sizes == 2)
             not_node[i] = make_not_gate_with_input(nodeo->input_pins[a + i], not_node[i], -1);
@@ -359,7 +359,7 @@ void split_adder_for_sub(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int
     }
 
     for (i = 0; i < count; i++) {
-        node[i] = allocate_nnode();
+        node[i] = allocate_nnode(nodeo->loc);
         node[i]->name = (char*)vtr::malloc(strlen(nodeo->name) + 20);
         odin_sprintf(node[i]->name, "%s-%d", nodeo->name, i);
         if (i == count - 1) {

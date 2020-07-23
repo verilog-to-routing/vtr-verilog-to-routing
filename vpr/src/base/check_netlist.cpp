@@ -40,6 +40,9 @@ void check_netlist(int verbosity) {
     /* This routine checks that the netlist makes sense. */
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
 
+    // Return internal netlist verification first.
+    cluster_ctx.clb_nlist.verify();
+
     net_hash_table = alloc_hash_table();
 
     /* Check that nets fanout and have a driver. */

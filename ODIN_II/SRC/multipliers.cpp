@@ -196,7 +196,7 @@ void instantiate_simple_soft_multiplier(nnode_t* node, short mark, netlist_t* ne
     for (i = 0; i < width; i++) {
         if (multiplicand_width == 1) {
             // this is undealt with
-            error_message(AST, -1, -1, "%s", "Cannot create soft multiplier with multiplicand width of 1.\n");
+            error_message(AST, node->loc, "%s", "Cannot create soft multiplier with multiplicand width of 1.\n");
         } else if (i == 0) {
             /* IF - this is the LSbit, then we use a pass through from the partial product */
             remap_pin_to_new_node(node->output_pins[i], partial_products[0][0], 0);
@@ -310,7 +310,7 @@ void declare_hard_multiplier(nnode_t* node) {
 
     /* See if this size instance of multiplier exists? */
     if (hard_multipliers == NULL)
-        warning_message(NETLIST, node->related_ast_node->line_number, node->related_ast_node->file_number, "%s\n", "Instantiating Mulitpliers where hard multipliers do not exist");
+        warning_message(NETLIST, node->loc, "%s\n", "Instantiating Mulitpliers where hard multipliers do not exist");
 
     tmp = (t_multiplier*)hard_multipliers->instances;
     width_a = node->input_port_sizes[0];
@@ -661,7 +661,7 @@ void split_multiplier(nnode_t* node, int a0, int b0, int a1, int b1, netlist_t* 
     oassert(node->input_port_sizes[1] == (b0 + b1));
 
     /* New node for small multiply */
-    a0b0 = allocate_nnode();
+    a0b0 = allocate_nnode(node->loc);
     a0b0->name = (char*)vtr::malloc(strlen(node->name) + 3);
     strcpy(a0b0->name, node->name);
     strcat(a0b0->name, "-0");
@@ -669,7 +669,7 @@ void split_multiplier(nnode_t* node, int a0, int b0, int a1, int b1, netlist_t* 
     mult_list = insert_in_vptr_list(mult_list, a0b0);
 
     /* New node for big multiply */
-    a1b1 = allocate_nnode();
+    a1b1 = allocate_nnode(node->loc);
     a1b1->name = (char*)vtr::malloc(strlen(node->name) + 3);
     strcpy(a1b1->name, node->name);
     strcat(a1b1->name, "-3");
@@ -677,7 +677,7 @@ void split_multiplier(nnode_t* node, int a0, int b0, int a1, int b1, netlist_t* 
     mult_list = insert_in_vptr_list(mult_list, a1b1);
 
     /* New node for 2nd multiply */
-    a0b1 = allocate_nnode();
+    a0b1 = allocate_nnode(node->loc);
     a0b1->name = (char*)vtr::malloc(strlen(node->name) + 3);
     strcpy(a0b1->name, node->name);
     strcat(a0b1->name, "-1");
@@ -685,7 +685,7 @@ void split_multiplier(nnode_t* node, int a0, int b0, int a1, int b1, netlist_t* 
     mult_list = insert_in_vptr_list(mult_list, a0b1);
 
     /* New node for 3rd multiply */
-    a1b0 = allocate_nnode();
+    a1b0 = allocate_nnode(node->loc);
     a1b0->name = (char*)vtr::malloc(strlen(node->name) + 3);
     strcpy(a1b0->name, node->name);
     strcat(a1b0->name, "-2");
@@ -693,7 +693,7 @@ void split_multiplier(nnode_t* node, int a0, int b0, int a1, int b1, netlist_t* 
     mult_list = insert_in_vptr_list(mult_list, a1b0);
 
     /* New node for the initial add */
-    addsmall = allocate_nnode();
+    addsmall = allocate_nnode(node->loc);
     addsmall->name = (char*)vtr::malloc(strlen(node->name) + 6);
     strcpy(addsmall->name, node->name);
     strcat(addsmall->name, "-add0");
@@ -701,7 +701,7 @@ void split_multiplier(nnode_t* node, int a0, int b0, int a1, int b1, netlist_t* 
     init_multiplier_adder(addsmall, a1b0, a1b0->num_output_pins + 1, a0b1->num_output_pins + 1);
 
     /* New node for the BIG add */
-    addbig = allocate_nnode();
+    addbig = allocate_nnode(node->loc);
     addbig->name = (char*)vtr::malloc(strlen(node->name) + 6);
     strcpy(addbig->name, node->name);
     strcat(addbig->name, "-add1");
@@ -777,7 +777,7 @@ void split_multiplier_a(nnode_t* node, int a0, int a1, int b) {
     oassert(node->input_port_sizes[1] == b);
 
     /* New node for a0b multiply */
-    a0b = allocate_nnode();
+    a0b = allocate_nnode(node->loc);
     a0b->name = (char*)vtr::malloc(strlen(node->name) + 3);
     strcpy(a0b->name, node->name);
     strcat(a0b->name, "-0");
@@ -785,7 +785,7 @@ void split_multiplier_a(nnode_t* node, int a0, int a1, int b) {
     mult_list = insert_in_vptr_list(mult_list, a0b);
 
     /* New node for a1b multiply */
-    a1b = allocate_nnode();
+    a1b = allocate_nnode(node->loc);
     a1b->name = (char*)vtr::malloc(strlen(node->name) + 3);
     strcpy(a1b->name, node->name);
     strcat(a1b->name, "-1");
@@ -793,7 +793,7 @@ void split_multiplier_a(nnode_t* node, int a0, int a1, int b) {
     mult_list = insert_in_vptr_list(mult_list, a1b);
 
     /* New node for the add */
-    addsmall = allocate_nnode();
+    addsmall = allocate_nnode(node->loc);
     addsmall->name = (char*)vtr::malloc(strlen(node->name) + 6);
     strcpy(addsmall->name, node->name);
     strcat(addsmall->name, "-add0");
@@ -850,7 +850,7 @@ void split_multiplier_b(nnode_t* node, int a, int b1, int b0) {
     oassert(node->input_port_sizes[1] == (b0 + b1));
 
     /* New node for ab0 multiply */
-    ab0 = allocate_nnode();
+    ab0 = allocate_nnode(node->loc);
     ab0->name = (char*)vtr::malloc(strlen(node->name) + 3);
     strcpy(ab0->name, node->name);
     strcat(ab0->name, "-0");
@@ -858,7 +858,7 @@ void split_multiplier_b(nnode_t* node, int a, int b1, int b0) {
     mult_list = insert_in_vptr_list(mult_list, ab0);
 
     /* New node for ab1 multiply */
-    ab1 = allocate_nnode();
+    ab1 = allocate_nnode(node->loc);
     ab1->name = (char*)vtr::malloc(strlen(node->name) + 3);
     strcpy(ab1->name, node->name);
     strcat(ab1->name, "-1");
@@ -866,7 +866,7 @@ void split_multiplier_b(nnode_t* node, int a, int b1, int b0) {
     mult_list = insert_in_vptr_list(mult_list, ab1);
 
     /* New node for the add */
-    addsmall = allocate_nnode();
+    addsmall = allocate_nnode(node->loc);
     addsmall->name = (char*)vtr::malloc(strlen(node->name) + 6);
     strcpy(addsmall->name, node->name);
     strcat(addsmall->name, "-add0");
@@ -1201,7 +1201,7 @@ void split_soft_multiplier(nnode_t* node, netlist_t* netlist) {
             if (first_row.bits.size() - shift_difference == second_row.bits.size()) adder_widths[level][add_id]++;
 
             // initialize this adder
-            adders[level][add_id] = allocate_nnode();
+            adders[level][add_id] = allocate_nnode(node->loc);
             init_multiplier_adder(adders[level][add_id], node, adder_widths[level][add_id], adder_widths[level][add_id]);
             adders[level][add_id]->name = node_name(adders[level][add_id], node->name);
 

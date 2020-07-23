@@ -1,0 +1,68 @@
+{
+    "signed_unsigned/signed_to_signed/no_arch": {
+        "test_name": "signed_unsigned/signed_to_signed/no_arch",
+        "verilog": "signed_to_signed.v",
+        "exit": 134,
+        "errors": [
+            "AST signed_to_signed.v:2 Odin does not handle signed ports (a)"
+        ]
+    },
+    "signed_unsigned/signed_to_unsigned/no_arch": {
+        "test_name": "signed_unsigned/signed_to_unsigned/no_arch",
+        "verilog": "signed_to_unsigned.v",
+        "exit": 134,
+        "errors": [
+            "AST signed_to_unsigned.v:2 Odin does not handle signed ports (a)"
+        ]
+    },
+    "signed_unsigned/unsigned_to_signed/no_arch": {
+        "test_name": "signed_unsigned/unsigned_to_signed/no_arch",
+        "verilog": "unsigned_to_signed.v",
+        "exit": 134,
+        "errors": [
+            "AST unsigned_to_signed.v:3 Odin does not handle signed ports (b)"
+        ],
+        "warnings": [
+            "PARSE_TO_AST unsigned_to_signed.v:2 error in parsing: (syntax error, unexpected '[', expecting ';' or ',')"
+        ]
+    },
+    "signed_unsigned/unsigned_to_unsigned/no_arch": {
+        "test_name": "signed_unsigned/unsigned_to_unsigned/no_arch",
+        "verilog": "unsigned_to_unsigned.v",
+        "exit": 134,
+        "errors": [
+            "AST unsigned_to_unsigned.v:1 No matching declaration for port a"
+        ],
+        "warnings": [
+            "PARSE_TO_AST unsigned_to_unsigned.v:2 error in parsing: (syntax error, unexpected '[', expecting ';' or ',')",
+            "PARSE_TO_AST unsigned_to_unsigned.v:3 error in parsing: (syntax error, unexpected '[', expecting ';' or ',')"
+        ]
+    },
+    "DEFAULT": {
+        "test_name": "n/a",
+        "architecture": "n/a",
+        "verilog": "n/a",
+        "exit": 0,
+        "leaks": 0,
+        "errors": [],
+        "warnings": [],
+        "expectation": [],
+        "max_rss(MiB)": -1,
+        "exec_time(ms)": -1,
+        "synthesis_time(ms)": -1,
+        "Latch Drivers": 0,
+        "Pi": 0,
+        "Po": 0,
+        "logic element": 0,
+        "latch": 0,
+        "Adder": -1,
+        "Multiplier": -1,
+        "Memory": -1,
+        "Hard Ip": -1,
+        "generic logic size": -1,
+        "Longest Path": 0,
+        "Average Path": 0,
+        "Estimated LUTs": 0,
+        "Total Node": 0
+    }
+}

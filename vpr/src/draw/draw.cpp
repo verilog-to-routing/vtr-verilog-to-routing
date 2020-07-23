@@ -45,6 +45,7 @@
 #include "save_graphics.h"
 #include "timing_info.h"
 #include "physical_types.h"
+#include "route_common.h"
 
 #ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
               * track CPU runtime.														   */
@@ -138,20 +139,20 @@ static void draw_router_expansion_costs(ezgl::renderer* g);
 
 static void draw_rr_costs(ezgl::renderer* g, const std::vector<float>& rr_costs, bool lowest_cost_first = true);
 
-void draw_main_canvas(ezgl::renderer* g);
-void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app, bool is_new_window);
-void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(ezgl::application* app, bool is_new_window);
-void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app, bool is_new_window);
-void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app, bool is_new_window);
-void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app, bool is_new_window);
-void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application* app, bool is_new_window);
-void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/);
-void setup_default_ezgl_callbacks(ezgl::application* app);
-void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
-void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
-void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
-void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
-void run_graphics_commands(std::string commands);
+static void draw_main_canvas(ezgl::renderer* g);
+static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app, bool is_new_window);
+static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(ezgl::application* app, bool is_new_window);
+static void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app, bool is_new_window);
+static void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app, bool is_new_window);
+static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app, bool is_new_window);
+static void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application* app, bool is_new_window);
+static void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/);
+static void setup_default_ezgl_callbacks(ezgl::application* app);
+static void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/);
+static void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
+static void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
+static void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
+static void run_graphics_commands(std::string commands);
 
 /************************** File Scope Variables ****************************/
 
@@ -233,7 +234,7 @@ void init_graphics_state(bool show_graphics_val, int gr_automode_val, enum e_rou
 }
 
 #ifndef NO_GRAPHICS
-void draw_main_canvas(ezgl::renderer* g) {
+static void draw_main_canvas(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     g->set_font_size(14);
@@ -300,7 +301,7 @@ void draw_main_canvas(ezgl::renderer* g) {
 /* function below intializes the interface window with a set of buttons and links 
  * signals to corresponding functions for situation where the window is opened from 
  * NO_PICTURE_to_PLACEMENT */
-void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app, bool is_new_window) {
+static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app, bool is_new_window) {
     if (!is_new_window) return;
 
     //button to enter window_mode, created in main.ui
@@ -337,7 +338,7 @@ void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app, bool is_new_w
 /* function below intializes the interface window with a set of buttons and links 
  * signals to corresponding functions for situation where the window is opened from 
  * NO_PICTURE_to_PLACEMENT_with_crit_path */
-void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(ezgl::application* app, bool is_new_window) {
+static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(ezgl::application* app, bool is_new_window) {
     initial_setup_NO_PICTURE_to_PLACEMENT(app, is_new_window);
     button_for_toggle_crit_path();
 }
@@ -345,7 +346,7 @@ void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(ezgl::application* app
 /* function below intializes the interface window with a set of buttons and links 
  * signals to corresponding functions for situation where the window is opened from 
  * PLACEMENT_to_ROUTING */
-void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app, bool is_new_window) {
+static void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app, bool is_new_window) {
     initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(app, is_new_window);
     button_for_toggle_rr();
     button_for_toggle_congestion();
@@ -358,7 +359,7 @@ void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app, bool is_new_wind
 /* function below intializes the interface window with a set of buttons and links 
  * signals to corresponding functions for situation where the window is opened from 
  * ROUTING_to_PLACEMENT */
-void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app, bool is_new_window) {
+static void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app, bool is_new_window) {
     initial_setup_PLACEMENT_to_ROUTING(app, is_new_window);
     std::string toggle_rr = "toggle_rr";
     std::string toggle_congestion = "toggle_congestion";
@@ -378,7 +379,7 @@ void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app, bool is_new_wind
 /* function below intializes the interface window with a set of buttons and links 
  * signals to corresponding functions for situation where the window is opened from 
  * NO_PICTURE_to_ROUTING */
-void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app, bool is_new_window) {
+static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app, bool is_new_window) {
     if (!is_new_window) return;
 
     GtkButton* window = (GtkButton*)app->get_object("Window");
@@ -416,7 +417,7 @@ void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app, bool is_new_win
 /* function below intializes the interface window with a set of buttons and links 
  * signals to corresponding functions for situation where the window is opened from 
  * NO_PICTURE_to_ROUTING_with_crit_path */
-void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application* app, bool is_new_window) {
+static void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application* app, bool is_new_window) {
     initial_setup_NO_PICTURE_to_ROUTING(app, is_new_window);
     button_for_toggle_crit_path();
 }
@@ -529,7 +530,7 @@ void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type
 }
 
 #ifndef NO_GRAPHICS
-void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/) {
+static void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/) {
     window_mode = true;
 }
 
@@ -1194,27 +1195,24 @@ static void draw_routing_costs(ezgl::renderer* g) {
     float min_cost = std::numeric_limits<float>::infinity();
     float max_cost = -min_cost;
     std::vector<float> rr_node_costs(device_ctx.rr_nodes.size(), 0.);
+
     for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
         float cost = 0.;
         if (draw_state->show_routing_costs == DRAW_TOTAL_ROUTING_COSTS
             || draw_state->show_routing_costs == DRAW_LOG_TOTAL_ROUTING_COSTS) {
-            int cost_index = device_ctx.rr_nodes[inode].cost_index();
-            cost = device_ctx.rr_indexed_data[cost_index].base_cost
-                   + route_ctx.rr_node_route_inf[inode].acc_cost
-                   + route_ctx.rr_node_route_inf[inode].pres_cost;
+            cost = get_single_rr_cong_cost(inode, get_draw_state_vars()->pres_fac);
 
         } else if (draw_state->show_routing_costs == DRAW_BASE_ROUTING_COSTS) {
-            int cost_index = device_ctx.rr_nodes[inode].cost_index();
-            cost = device_ctx.rr_indexed_data[cost_index].base_cost;
+            cost = get_single_rr_cong_base_cost(inode);
 
         } else if (draw_state->show_routing_costs == DRAW_ACC_ROUTING_COSTS
                    || draw_state->show_routing_costs == DRAW_LOG_ACC_ROUTING_COSTS) {
-            cost = route_ctx.rr_node_route_inf[inode].acc_cost;
+            cost = get_single_rr_cong_acc_cost(inode);
 
         } else {
             VTR_ASSERT(draw_state->show_routing_costs == DRAW_PRES_ROUTING_COSTS
                        || draw_state->show_routing_costs == DRAW_LOG_PRES_ROUTING_COSTS);
-            cost = route_ctx.rr_node_route_inf[inode].pres_cost;
+            cost = get_single_rr_cong_pres_cost(inode, get_draw_state_vars()->pres_fac);
         }
 
         if (draw_state->show_routing_costs == DRAW_LOG_TOTAL_ROUTING_COSTS
@@ -3913,7 +3911,7 @@ float get_net_alpha() {
     return draw_state->net_alpha;
 }
 
-void setup_default_ezgl_callbacks(ezgl::application* app) {
+static void setup_default_ezgl_callbacks(ezgl::application* app) {
     // Connect press_proceed function to the Proceed button
     GObject* proceed_button = app->get_object("ProceedButton");
     g_signal_connect(proceed_button, "clicked", G_CALLBACK(ezgl::press_proceed), app);
@@ -3940,7 +3938,7 @@ void setup_default_ezgl_callbacks(ezgl::application* app) {
 }
 
 // Callback function for Block Outline checkbox
-void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+static void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     // assign corresponding bool value to draw_state->draw_block_outlines
@@ -3954,7 +3952,7 @@ void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer /*data*
 }
 
 // Callback function for Block Text checkbox
-void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+static void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     // assign corresponding bool value to draw_state->draw_block_text
@@ -3969,7 +3967,7 @@ void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) 
 }
 
 // Callback function for Clip Routing Util checkbox
-void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
+static void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     // assign corresponding bool value to draw_state->clip_routing_util
@@ -3999,13 +3997,13 @@ void net_max_fanout(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data
     application.refresh_drawing();
 }
 
-void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
+static void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     draw_state->forced_pause = true;
 }
 
-void run_graphics_commands(std::string commands) {
+static void run_graphics_commands(std::string commands) {
     //A very simmple command interpreter for scripting graphics
     t_draw_state* draw_state = get_draw_state_vars();
 

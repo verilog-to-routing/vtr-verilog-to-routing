@@ -35,9 +35,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include "vtr_memory.h"
 #include "scope_util.h"
 
-extern int my_yylineno;
+extern loc_t my_location;
 
-void yyerror(const char *str){	delayed_error_message(PARSER, -1 , my_yylineno, current_parse_file,"error in parsing: (%s)\n",str);}
+void yyerror(const char *str){	delayed_error_message(PARSER, my_location, "error in parsing: (%s)\n",str);}
 int yywrap(){	return 1;}
 int yylex(void);
 
@@ -60,7 +60,7 @@ int yylex(void);
 %token vALWAYS vAUTOMATIC vINITIAL vSPECIFY vAND vASSIGN vBEGIN vCASE vDEFAULT vELSE vEND vENDCASE
 %token vENDMODULE vENDSPECIFY vENDGENERATE vENDFUNCTION vENDTASK vIF vINOUT vINPUT vMODULE vGENERATE vFUNCTION vTASK
 %token vOUTPUT vPARAMETER vLOCALPARAM vPOSEDGE vXNOR vXOR vDEFPARAM voANDAND vNAND vNEGEDGE vNOR vNOT vOR vFOR vBUF
-%token voOROR voLTE voGTE voPAL voSLEFT voSRIGHT voASRIGHT voEQUAL voNOTEQUAL voCASEEQUAL
+%token voOROR voLTE voGTE voPAL voSLEFT voSRIGHT voASLEFT voASRIGHT voEQUAL voNOTEQUAL voCASEEQUAL
 %token voCASENOTEQUAL voXNOR voNAND voNOR vWHILE vINTEGER vGENVAR
 %token vPLUS_COLON vMINUS_COLON vSPECPARAM voUNSIGNED voSIGNED vSIGNED 
 
@@ -84,7 +84,7 @@ int yylex(void);
 %left '&' voNAND
 %left voEQUAL voNOTEQUAL voCASEEQUAL voCASENOTEQUAL
 %left voGTE voLTE '<' '>'
-%left voSLEFT voSRIGHT voASRIGHT
+%left voSLEFT voSRIGHT voASLEFT voASRIGHT
 %left '+' '-'
 %left '*' '/' '%'
 %right voPOWER
@@ -136,8 +136,8 @@ source_text:
 	;
 
 items:
-	items item 									{ ($2 == NULL)? $$ = $1 : ( ($1 == NULL)? $$ = newList(FILE_ITEMS, $2, my_yylineno): newList_entry($1, $2) ); }
-	| item 										{ ($1 == NULL)? $$ = $1 : $$ = newList(FILE_ITEMS, $1, my_yylineno); }
+	items item 									{ ($2 == NULL)? $$ = $1 : ( ($1 == NULL)? $$ = newList(FILE_ITEMS, $2, my_location): newList_entry($1, $2) ); }
+	| item 										{ ($1 == NULL)? $$ = $1 : $$ = newList(FILE_ITEMS, $1, my_location); }
 	;
 
 item:
@@ -146,10 +146,10 @@ item:
 	;
 
 module:
-	vMODULE vSYMBOL_ID module_parameters module_ports ';' list_of_module_items vENDMODULE			{$$ = newModule($2, $3, $4, $6, my_yylineno);}
-	| vMODULE vSYMBOL_ID module_parameters ';' list_of_module_items vENDMODULE						{$$ = newModule($2, $3, NULL, $5, my_yylineno);}
-	| vMODULE vSYMBOL_ID module_ports ';' list_of_module_items vENDMODULE							{$$ = newModule($2, NULL, $3, $5, my_yylineno);}
-	| vMODULE vSYMBOL_ID ';' list_of_module_items vENDMODULE										{$$ = newModule($2, NULL, NULL, $4, my_yylineno);}
+	vMODULE vSYMBOL_ID module_parameters module_ports ';' list_of_module_items vENDMODULE			{$$ = newModule($2, $3, $4, $6, my_location);}
+	| vMODULE vSYMBOL_ID module_parameters ';' list_of_module_items vENDMODULE						{$$ = newModule($2, $3, NULL, $5, my_location);}
+	| vMODULE vSYMBOL_ID module_ports ';' list_of_module_items vENDMODULE							{$$ = newModule($2, NULL, $3, $5, my_location);}
+	| vMODULE vSYMBOL_ID ';' list_of_module_items vENDMODULE										{$$ = newModule($2, NULL, NULL, $4, my_location);}
 	;
 
 module_parameters:
@@ -162,8 +162,8 @@ list_of_parameter_declaration:
 	list_of_parameter_declaration ',' vPARAMETER vSIGNED variable	{$$ = newList_entry($1, markAndProcessParameterWith(PARAMETER, $5, true));}
 	| list_of_parameter_declaration ',' vPARAMETER variable			{$$ = newList_entry($1, markAndProcessParameterWith(PARAMETER, $4, false));}
 	| list_of_parameter_declaration ',' variable					{$$ = newList_entry($1, markAndProcessParameterWith(PARAMETER, $3, false));} 
-	| vPARAMETER vSIGNED variable									{$$ = newList(VAR_DECLARE_LIST, markAndProcessParameterWith(PARAMETER, $3, true), my_yylineno);}
-	| vPARAMETER variable											{$$ = newList(VAR_DECLARE_LIST, markAndProcessParameterWith(PARAMETER, $2, false), my_yylineno);}
+	| vPARAMETER vSIGNED variable									{$$ = newList(VAR_DECLARE_LIST, markAndProcessParameterWith(PARAMETER, $3, true), my_location);}
+	| vPARAMETER variable											{$$ = newList(VAR_DECLARE_LIST, markAndProcessParameterWith(PARAMETER, $2, false), my_location);}
 	;
 
 module_ports:
@@ -174,7 +174,7 @@ module_ports:
 
 list_of_port_declaration:
 	list_of_port_declaration ',' port_declaration		{$$ = newList_entry($1, $3);}
-	| port_declaration									{$$ = newList(VAR_DECLARE_LIST, $1, my_yylineno);}
+	| port_declaration									{$$ = newList(VAR_DECLARE_LIST, $1, my_location);}
 	;
 	
 port_declaration:
@@ -188,7 +188,7 @@ port_declaration:
 
 list_of_module_items:
 	list_of_module_items module_item	{$$ = newList_entry($1, $2);}
-	| module_item						{$$ = newList(MODULE_ITEMS, $1, my_yylineno);}
+	| module_item						{$$ = newList(MODULE_ITEMS, $1, my_location);}
 	;
 
 module_item:
@@ -202,7 +202,7 @@ module_item:
 
 list_of_generate_block_items:
 	list_of_generate_block_items generate_block_item	{$$ = newList_entry($1, $2);}
-	| generate_block_item								{$$ = newList(BLOCK, $1, my_yylineno);}
+	| generate_block_item								{$$ = newList(BLOCK, $1, my_location);}
 	;
 
 generate_item:
@@ -244,21 +244,21 @@ generate_block_item:
 	;
 
 function_declaration:
-	vFUNCTION function_return ';' list_of_function_items vENDFUNCTION									{$$ = newFunction($2, NULL, $4, my_yylineno, false);}
-	| vFUNCTION vAUTOMATIC function_return ';' list_of_function_items vENDFUNCTION						{$$ = newFunction($3, NULL, $5, my_yylineno, true);}
-	| vFUNCTION function_return function_port_list ';' list_of_function_items vENDFUNCTION				{$$ = newFunction($2, $3, $5, my_yylineno, false);}
-	| vFUNCTION vAUTOMATIC function_return function_port_list ';' list_of_function_items vENDFUNCTION	{$$ = newFunction($3, $4, $6, my_yylineno, true);}
+	vFUNCTION function_return ';' list_of_function_items vENDFUNCTION									{$$ = newFunction($2, NULL, $4, my_location, false);}
+	| vFUNCTION vAUTOMATIC function_return ';' list_of_function_items vENDFUNCTION						{$$ = newFunction($3, NULL, $5, my_location, true);}
+	| vFUNCTION function_return function_port_list ';' list_of_function_items vENDFUNCTION				{$$ = newFunction($2, $3, $5, my_location, false);}
+	| vFUNCTION vAUTOMATIC function_return function_port_list ';' list_of_function_items vENDFUNCTION	{$$ = newFunction($3, $4, $6, my_location, true);}
 	;
 
 task_declaration:
-	vTASK vSYMBOL_ID ';' list_of_task_items vENDTASK													{$$ = newTask($2, NULL, $4, my_yylineno, false);}
-	| vTASK vSYMBOL_ID module_ports ';' list_of_task_items vENDTASK										{$$ = newTask($2, $3, $5, my_yylineno, false);}
-	| vTASK vAUTOMATIC vSYMBOL_ID ';' list_of_task_items vENDTASK										{$$ = newTask($3, NULL, $5, my_yylineno, true);}
-	| vTASK vAUTOMATIC vSYMBOL_ID module_ports ';' list_of_task_items vENDTASK							{$$ = newTask($3, $4, $6, my_yylineno, true);}
+	vTASK vSYMBOL_ID ';' list_of_task_items vENDTASK													{$$ = newTask($2, NULL, $4, my_location, false);}
+	| vTASK vSYMBOL_ID module_ports ';' list_of_task_items vENDTASK										{$$ = newTask($2, $3, $5, my_location, false);}
+	| vTASK vAUTOMATIC vSYMBOL_ID ';' list_of_task_items vENDTASK										{$$ = newTask($3, NULL, $5, my_location, true);}
+	| vTASK vAUTOMATIC vSYMBOL_ID module_ports ';' list_of_task_items vENDTASK							{$$ = newTask($3, $4, $6, my_location, true);}
 	;
 
 initial_block:
-	vINITIAL statement	{$$ = newInitial($2, my_yylineno); }
+	vINITIAL statement	{$$ = newInitial($2, my_location); }
 	;
 
 	/* Specify is unsynthesizable, we discard everything within */
@@ -278,7 +278,7 @@ specparam_declaration:
 	
 list_of_function_items:
 	list_of_function_items function_item	{$$ = newList_entry($1, $2);}
-	| function_item				{$$ = newList(FUNCTION_ITEMS, $1, my_yylineno);}
+	| function_item				{$$ = newList(FUNCTION_ITEMS, $1, my_location);}
 	;
 
 task_input_declaration:
@@ -304,7 +304,7 @@ task_inout_declaration:
 
 list_of_task_items:
 	list_of_task_items task_item 	{$$ = newList_entry($1, $2); }
-	| task_item						{$$ = newList(TASK_ITEMS, $1, my_yylineno); }
+	| task_item						{$$ = newList(TASK_ITEMS, $1, my_location); }
 	;
 
 function_item: 
@@ -355,11 +355,11 @@ generate_localparam_declaration:
 	;
 
 defparam_declaration:
-	vDEFPARAM defparam_variable_list ';'	{$$ = newDefparam(MODULE, $2, my_yylineno);}
+	vDEFPARAM defparam_variable_list ';'	{$$ = newDefparam(MODULE, $2, my_location);}
 	;
 
 generate_defparam_declaration:
-	vDEFPARAM defparam_variable_list ';'	{$$ = newDefparam(BLOCK, $2, my_yylineno);}
+	vDEFPARAM defparam_variable_list ';'	{$$ = newDefparam(BLOCK, $2, my_location);}
 	;
 
 io_declaration:
@@ -389,12 +389,12 @@ function_return:
 	;
 
 list_of_function_return_variable:
-	function_return_variable			{$$ = newList(VAR_DECLARE_LIST, $1, my_yylineno);}
+	function_return_variable			{$$ = newList(VAR_DECLARE_LIST, $1, my_location);}
 	;
 
 function_return_variable:
-	vSYMBOL_ID											{$$ = newVarDeclare($1, NULL, NULL, NULL, NULL, NULL, my_yylineno);}								
-	| '[' expression ':' expression ']' vSYMBOL_ID		{$$ = newVarDeclare($6, $2, $4, NULL, NULL, NULL, my_yylineno);}
+	vSYMBOL_ID											{$$ = newVarDeclare($1, NULL, NULL, NULL, NULL, NULL, my_location);}								
+	| '[' expression ':' expression ']' vSYMBOL_ID		{$$ = newVarDeclare($6, $2, $4, NULL, NULL, NULL, my_location);}
 	;
 
 function_integer_declaration:
@@ -409,41 +409,41 @@ function_port_list:
 
 list_of_function_inputs:
 	list_of_function_inputs ',' function_input_declaration		{$$ = newList_entry($1, $3);}
-	| function_input_declaration									{$$ = newList(VAR_DECLARE_LIST, $1, my_yylineno);}
+	| function_input_declaration									{$$ = newList(VAR_DECLARE_LIST, $1, my_location);}
 	;
 	
 variable_list:
 	variable_list ',' variable						{$$ = newList_entry($1, $3);}
-	| variable										{$$ = newList(VAR_DECLARE_LIST, $1, my_yylineno);}
+	| variable										{$$ = newList(VAR_DECLARE_LIST, $1, my_location);}
 	;
 
 defparam_variable_list:
 	defparam_variable_list ',' defparam_variable    {$$ = newList_entry($1, $3);}
-	| defparam_variable								{$$ = newList(VAR_DECLARE_LIST, $1, my_yylineno);}
+	| defparam_variable								{$$ = newList(VAR_DECLARE_LIST, $1, my_location);}
 	;
 
 integer_type_variable_list:
 	integer_type_variable_list ',' integer_type_variable	{$$ = newList_entry($1, $3);}
-	| integer_type_variable									{$$ = newList(VAR_DECLARE_LIST, $1, my_yylineno);}
+	| integer_type_variable									{$$ = newList(VAR_DECLARE_LIST, $1, my_location);}
 	;
 
 variable:
-	vSYMBOL_ID														{$$ = newVarDeclare($1, NULL, NULL, NULL, NULL, NULL, my_yylineno);}
-	| '[' expression ':' expression ']' vSYMBOL_ID										{$$ = newVarDeclare($6, $2, $4, NULL, NULL, NULL, my_yylineno);}
-	| '[' expression ':' expression ']' vSYMBOL_ID '[' expression ':' expression ']'					{$$ = newVarDeclare($6, $2, $4, $8, $10, NULL, my_yylineno);}
-	| '[' expression ':' expression ']' vSYMBOL_ID '[' expression ':' expression ']' '[' expression ':' expression ']'	{$$ = newVarDeclare2D($6, $2, $4, $8, $10,$13,$15, NULL, my_yylineno);}
-	| '[' expression ':' expression ']' vSYMBOL_ID '=' expression								{$$ = newVarDeclare($6, $2, $4, NULL, NULL, $8, my_yylineno);}
-	| vSYMBOL_ID '=' expression												{$$ = newVarDeclare($1, NULL, NULL, NULL, NULL, $3, my_yylineno);}
+	vSYMBOL_ID														{$$ = newVarDeclare($1, NULL, NULL, NULL, NULL, NULL, my_location);}
+	| '[' expression ':' expression ']' vSYMBOL_ID										{$$ = newVarDeclare($6, $2, $4, NULL, NULL, NULL, my_location);}
+	| '[' expression ':' expression ']' vSYMBOL_ID '[' expression ':' expression ']'					{$$ = newVarDeclare($6, $2, $4, $8, $10, NULL, my_location);}
+	| '[' expression ':' expression ']' vSYMBOL_ID '[' expression ':' expression ']' '[' expression ':' expression ']'	{$$ = newVarDeclare2D($6, $2, $4, $8, $10,$13,$15, NULL, my_location);}
+	| '[' expression ':' expression ']' vSYMBOL_ID '=' expression								{$$ = newVarDeclare($6, $2, $4, NULL, NULL, $8, my_location);}
+	| vSYMBOL_ID '=' expression												{$$ = newVarDeclare($1, NULL, NULL, NULL, NULL, $3, my_location);}
 	;
 
 defparam_variable:
-	vSYMBOL_ID '=' expression				{$$ = newDefparamVarDeclare($1, NULL, NULL, NULL, NULL, $3, my_yylineno);}
+	vSYMBOL_ID '=' expression				{$$ = newDefparamVarDeclare($1, NULL, NULL, NULL, NULL, $3, my_location);}
 	;
 	
 integer_type_variable:
-	vSYMBOL_ID					{$$ = newIntegerTypeVarDeclare($1, NULL, NULL, NULL, NULL, NULL, my_yylineno);}
-	| vSYMBOL_ID '[' expression ':' expression ']'	{$$ = newIntegerTypeVarDeclare($1, NULL, NULL, $3, $5, NULL, my_yylineno);}
-	| vSYMBOL_ID '=' primary			{$$ = newIntegerTypeVarDeclare($1, NULL, NULL, NULL, NULL, $3, my_yylineno);} 
+	vSYMBOL_ID					{$$ = newIntegerTypeVarDeclare($1, NULL, NULL, NULL, NULL, NULL, my_location);}
+	| vSYMBOL_ID '[' expression ':' expression ']'	{$$ = newIntegerTypeVarDeclare($1, NULL, NULL, $3, $5, NULL, my_location);}
+	| vSYMBOL_ID '=' primary			{$$ = newIntegerTypeVarDeclare($1, NULL, NULL, NULL, NULL, $3, my_location);} 
 	;
 
 procedural_continuous_assignment:
@@ -452,120 +452,120 @@ procedural_continuous_assignment:
 
 list_of_blocking_assignment:
 	list_of_blocking_assignment ',' blocking_assignment	{$$ = newList_entry($1, $3);}
-	| blocking_assignment					{$$ = newList(ASSIGN, $1, my_yylineno);}
+	| blocking_assignment					{$$ = newList(ASSIGN, $1, my_location);}
 	;
 
 gate_declaration:
-	vAND list_of_multiple_inputs_gate_declaration_instance ';'	{$$ = newGate(BITWISE_AND, $2, my_yylineno);}
-	| vNAND	list_of_multiple_inputs_gate_declaration_instance ';'	{$$ = newGate(BITWISE_NAND, $2, my_yylineno);}
-	| vNOR list_of_multiple_inputs_gate_declaration_instance ';'	{$$ = newGate(BITWISE_NOR, $2, my_yylineno);}
-	| vNOT list_of_single_input_gate_declaration_instance ';'	{$$ = newGate(BITWISE_NOT, $2, my_yylineno);}
-	| vOR list_of_multiple_inputs_gate_declaration_instance ';'	{$$ = newGate(BITWISE_OR, $2, my_yylineno);}
-	| vXNOR list_of_multiple_inputs_gate_declaration_instance ';'	{$$ = newGate(BITWISE_XNOR, $2, my_yylineno);}
-	| vXOR list_of_multiple_inputs_gate_declaration_instance ';'	{$$ = newGate(BITWISE_XOR, $2, my_yylineno);}
-	| vBUF list_of_single_input_gate_declaration_instance ';'	{$$ = newGate(BUF_NODE, $2, my_yylineno);}
+	vAND list_of_multiple_inputs_gate_declaration_instance ';'	{$$ = newGate(BITWISE_AND, $2, my_location);}
+	| vNAND	list_of_multiple_inputs_gate_declaration_instance ';'	{$$ = newGate(BITWISE_NAND, $2, my_location);}
+	| vNOR list_of_multiple_inputs_gate_declaration_instance ';'	{$$ = newGate(BITWISE_NOR, $2, my_location);}
+	| vNOT list_of_single_input_gate_declaration_instance ';'	{$$ = newGate(BITWISE_NOT, $2, my_location);}
+	| vOR list_of_multiple_inputs_gate_declaration_instance ';'	{$$ = newGate(BITWISE_OR, $2, my_location);}
+	| vXNOR list_of_multiple_inputs_gate_declaration_instance ';'	{$$ = newGate(BITWISE_XNOR, $2, my_location);}
+	| vXOR list_of_multiple_inputs_gate_declaration_instance ';'	{$$ = newGate(BITWISE_XOR, $2, my_location);}
+	| vBUF list_of_single_input_gate_declaration_instance ';'	{$$ = newGate(BUF_NODE, $2, my_location);}
 	;
 
 list_of_multiple_inputs_gate_declaration_instance:
 	list_of_multiple_inputs_gate_declaration_instance ',' multiple_inputs_gate_instance	{$$ = newList_entry($1, $3);}
-	| multiple_inputs_gate_instance								{$$ = newList(ONE_GATE_INSTANCE, $1, my_yylineno);}
+	| multiple_inputs_gate_instance								{$$ = newList(ONE_GATE_INSTANCE, $1, my_location);}
 	;
 
 list_of_single_input_gate_declaration_instance:
 	list_of_single_input_gate_declaration_instance ',' single_input_gate_instance	{$$ = newList_entry($1, $3);}
-	| single_input_gate_instance							{$$ = newList(ONE_GATE_INSTANCE, $1, my_yylineno);}
+	| single_input_gate_instance							{$$ = newList(ONE_GATE_INSTANCE, $1, my_location);}
 	;
 
 single_input_gate_instance:
-	vSYMBOL_ID '(' expression ',' expression ')'	{$$ = newGateInstance($1, $3, $5, NULL, my_yylineno);}
-	| '(' expression ',' expression ')'		{$$ = newGateInstance(NULL, $2, $4, NULL, my_yylineno);}
+	vSYMBOL_ID '(' expression ',' expression ')'	{$$ = newGateInstance($1, $3, $5, NULL, my_location);}
+	| '(' expression ',' expression ')'		{$$ = newGateInstance(NULL, $2, $4, NULL, my_location);}
 	;
 
 multiple_inputs_gate_instance:
-	vSYMBOL_ID '(' expression ',' expression ',' list_of_multiple_inputs_gate_connections ')'	{$$ = newMultipleInputsGateInstance($1, $3, $5, $7, my_yylineno);}
-	| '(' expression ',' expression ',' list_of_multiple_inputs_gate_connections ')'	{$$ = newMultipleInputsGateInstance(NULL, $2, $4, $6, my_yylineno);}
+	vSYMBOL_ID '(' expression ',' expression ',' list_of_multiple_inputs_gate_connections ')'	{$$ = newMultipleInputsGateInstance($1, $3, $5, $7, my_location);}
+	| '(' expression ',' expression ',' list_of_multiple_inputs_gate_connections ')'	{$$ = newMultipleInputsGateInstance(NULL, $2, $4, $6, my_location);}
 	;
 
 list_of_multiple_inputs_gate_connections: list_of_multiple_inputs_gate_connections ',' expression	{$$ = newList_entry($1, $3);}
-	| expression											{$$ = newModuleConnection(NULL, $1, my_yylineno);}
+	| expression											{$$ = newModuleConnection(NULL, $1, my_location);}
 	;
 
 module_instantiation: 
-	vSYMBOL_ID list_of_module_instance ';' 							{$$ = newModuleInstance($1, $2, my_yylineno);}
+	vSYMBOL_ID list_of_module_instance ';' 							{$$ = newModuleInstance($1, $2, my_location);}
 	;
 
 task_instantiation:
-	vSYMBOL_ID '(' task_instance ')' ';'												{$$ = newTaskInstance($1, $3, NULL, my_yylineno);}
-	| vSYMBOL_ID '(' ')' ';'														{$$ = newTaskInstance($1, NULL, NULL, my_yylineno);}
-	| '#' '(' list_of_module_parameters ')' vSYMBOL_ID '(' task_instance ')' ';'		{$$ = newTaskInstance($5, $7, $3, my_yylineno);}
-	| '#' '(' list_of_module_parameters ')' vSYMBOL_ID '(' ')' ';'				{$$ = newTaskInstance($5, NULL, $3, my_yylineno);}
+	vSYMBOL_ID '(' task_instance ')' ';'												{$$ = newTaskInstance($1, $3, NULL, my_location);}
+	| vSYMBOL_ID '(' ')' ';'														{$$ = newTaskInstance($1, NULL, NULL, my_location);}
+	| '#' '(' list_of_module_parameters ')' vSYMBOL_ID '(' task_instance ')' ';'		{$$ = newTaskInstance($5, $7, $3, my_location);}
+	| '#' '(' list_of_module_parameters ')' vSYMBOL_ID '(' ')' ';'				{$$ = newTaskInstance($5, NULL, $3, my_location);}
 	;
 
 list_of_module_instance:
 	list_of_module_instance ',' module_instance                     {$$ = newList_entry($1, $3);}
-	| module_instance                                                {$$ = newList(ONE_MODULE_INSTANCE, $1, my_yylineno);}
+	| module_instance                                                {$$ = newList(ONE_MODULE_INSTANCE, $1, my_location);}
 	;
 
 function_instantiation: 
-	vSYMBOL_ID function_instance 									{$$ = newFunctionInstance($1, $2, my_yylineno);}
+	vSYMBOL_ID function_instance 									{$$ = newFunctionInstance($1, $2, my_location);}
 	;
 
 task_instance: 
-	list_of_task_connections											 {$$ = newTaskNamedInstance($1, my_yylineno);}
+	list_of_task_connections											 {$$ = newTaskNamedInstance($1, my_location);}
 	;
 
 function_instance:
-	'(' list_of_function_connections ')'	{$$ = newFunctionNamedInstance($2, NULL, my_yylineno);}
+	'(' list_of_function_connections ')'	{$$ = newFunctionNamedInstance($2, NULL, my_location);}
 	;
 
 module_instance:
-	vSYMBOL_ID '(' list_of_module_connections ')'						{$$ = newModuleNamedInstance($1, $3, NULL, my_yylineno);}
-	| '#' '(' list_of_module_parameters ')' vSYMBOL_ID '(' list_of_module_connections ')'	{$$ = newModuleNamedInstance($5, $7, $3, my_yylineno); }
-	| vSYMBOL_ID '(' ')'									{$$ = newModuleNamedInstance($1, NULL, NULL, my_yylineno);}
-	| '#' '(' list_of_module_parameters ')' vSYMBOL_ID '(' ')'				{$$ = newModuleNamedInstance($5, NULL, $3, my_yylineno);}
+	vSYMBOL_ID '(' list_of_module_connections ')'						{$$ = newModuleNamedInstance($1, $3, NULL, my_location);}
+	| '#' '(' list_of_module_parameters ')' vSYMBOL_ID '(' list_of_module_connections ')'	{$$ = newModuleNamedInstance($5, $7, $3, my_location); }
+	| vSYMBOL_ID '(' ')'									{$$ = newModuleNamedInstance($1, NULL, NULL, my_location);}
+	| '#' '(' list_of_module_parameters ')' vSYMBOL_ID '(' ')'				{$$ = newModuleNamedInstance($5, NULL, $3, my_location);}
 	;
 
 list_of_function_connections:
 	list_of_function_connections ',' tf_connection	{$$ = newList_entry($1, $3);}
-	| tf_connection					{$$ = newfunctionList(MODULE_CONNECT_LIST, $1, my_yylineno);}
+	| tf_connection					{$$ = newfunctionList(MODULE_CONNECT_LIST, $1, my_location);}
 	;
 
 list_of_task_connections:
 	list_of_task_connections ',' tf_connection	{$$ = newList_entry($1, $3);}
-	| tf_connection					{$$ = newList(MODULE_CONNECT_LIST, $1, my_yylineno);}
+	| tf_connection					{$$ = newList(MODULE_CONNECT_LIST, $1, my_location);}
 	;
 
 list_of_module_connections:
 	list_of_module_connections ',' module_connection	{$$ = newList_entry($1, $3);}
-	| list_of_module_connections ',' 					{$$ = newList_entry($1, newModuleConnection(NULL, NULL, my_yylineno));}
-	| module_connection					{$$ = newList(MODULE_CONNECT_LIST, $1, my_yylineno);}
+	| list_of_module_connections ',' 					{$$ = newList_entry($1, newModuleConnection(NULL, NULL, my_location));}
+	| module_connection					{$$ = newList(MODULE_CONNECT_LIST, $1, my_location);}
 	;
 
 tf_connection:
-	'.' vSYMBOL_ID '(' expression ')'	{$$ = newModuleConnection($2, $4, my_yylineno);}
-	| expression				{$$ = newModuleConnection(NULL, $1, my_yylineno);}
+	'.' vSYMBOL_ID '(' expression ')'	{$$ = newModuleConnection($2, $4, my_location);}
+	| expression				{$$ = newModuleConnection(NULL, $1, my_location);}
 	;
 
 module_connection:
-	'.' vSYMBOL_ID '(' expression ')'	{$$ = newModuleConnection($2, $4, my_yylineno);}
-	| '.' vSYMBOL_ID '(' ')'			{$$ = newModuleConnection($2, NULL, my_yylineno);}
-	| expression				{$$ = newModuleConnection(NULL, $1, my_yylineno);}
+	'.' vSYMBOL_ID '(' expression ')'	{$$ = newModuleConnection($2, $4, my_location);}
+	| '.' vSYMBOL_ID '(' ')'			{$$ = newModuleConnection($2, NULL, my_location);}
+	| expression				{$$ = newModuleConnection(NULL, $1, my_location);}
 	;
 
 list_of_module_parameters:
 	list_of_module_parameters ',' module_parameter	{$$ = newList_entry($1, $3);}
-	| module_parameter				{$$ = newList(MODULE_PARAMETER_LIST, $1, my_yylineno);}
+	| module_parameter				{$$ = newList(MODULE_PARAMETER_LIST, $1, my_location);}
 	;
 
 module_parameter:
-	'.' vSYMBOL_ID '(' expression ')'	{$$ = newModuleParameter($2, $4, my_yylineno);}
-	| '.' vSYMBOL_ID '(' ')'		{$$ = newModuleParameter($2, NULL, my_yylineno);}
-	| expression				{$$ = newModuleParameter(NULL, $1, my_yylineno);}
+	'.' vSYMBOL_ID '(' expression ')'	{$$ = newModuleParameter($2, $4, my_location);}
+	| '.' vSYMBOL_ID '(' ')'		{$$ = newModuleParameter($2, NULL, my_location);}
+	| expression				{$$ = newModuleParameter(NULL, $1, my_location);}
 	;
 
 always:
-	vALWAYS timing_control statement 					{$$ = newAlways($2, $3, my_yylineno);}
-	| vALWAYS statement									{$$ = newAlways(NULL, $2, my_yylineno);}
+	vALWAYS timing_control statement 					{$$ = newAlways($2, $3, my_location);}
+	| vALWAYS statement									{$$ = newAlways(NULL, $2, my_location);}
 	;
 
 generate:
@@ -573,40 +573,40 @@ generate:
 	;
 
 loop_generate_construct:
-	vFOR '(' blocking_assignment ';' expression ';' blocking_assignment ')' generate_block	{$$ = newFor($3, $5, $7, $9, my_yylineno);}
+	vFOR '(' blocking_assignment ';' expression ';' blocking_assignment ')' generate_block	{$$ = newFor($3, $5, $7, $9, my_location);}
 	;
 
 if_generate_construct:
-	vIF '(' expression ')' generate_block %prec LOWER_THAN_ELSE		{$$ = newIf($3, $5, NULL, my_yylineno);}
-	| vIF '(' expression ')' generate_block vELSE generate_block	{$$ = newIf($3, $5, $7, my_yylineno);}
+	vIF '(' expression ')' generate_block %prec LOWER_THAN_ELSE		{$$ = newIf($3, $5, NULL, my_location);}
+	| vIF '(' expression ')' generate_block vELSE generate_block	{$$ = newIf($3, $5, $7, my_location);}
 	;
 
 case_generate_construct:
-	vCASE '(' expression ')' case_generate_item_list vENDCASE			{$$ = newCase($3, $5, my_yylineno);}
+	vCASE '(' expression ')' case_generate_item_list vENDCASE			{$$ = newCase($3, $5, my_location);}
 	;
 
 case_generate_item_list:
 	case_generate_item_list case_generate_items	{$$ = newList_entry($1, $2);}
-	| case_generate_items			{$$ = newList(CASE_LIST, $1, my_yylineno);}
+	| case_generate_items			{$$ = newList(CASE_LIST, $1, my_location);}
 	;
 
 case_generate_items:
-	expression ':' generate_block	{$$ = newCaseItem($1, $3, my_yylineno);}
-	| vDEFAULT ':' generate_block	{$$ = newDefaultCase($3, my_yylineno);}
+	expression ':' generate_block	{$$ = newCaseItem($1, $3, my_location);}
+	| vDEFAULT ':' generate_block	{$$ = newDefaultCase($3, my_location);}
 	;
 
 generate_block:
 	vBEGIN ':' vSYMBOL_ID list_of_generate_block_items vEND		{$$ = newBlock($3, $4);}
 	| vBEGIN list_of_generate_block_items vEND					{$$ = newBlock(NULL, $2);}
-	| generate_block_item										{$$ = newBlock(NULL, newList(BLOCK, $1, my_yylineno));}
+	| generate_block_item										{$$ = newBlock(NULL, newList(BLOCK, $1, my_location));}
 	;
 
 function_statement:
-	function_statement_items				{$$ = newStatement($1, my_yylineno);}
+	function_statement_items				{$$ = newStatement($1, my_location);}
 	;
 
 task_statement:
-	statement	{$$ = newStatement($1, my_yylineno);}
+	statement	{$$ = newStatement($1, my_location);}
 	;
 
 statement:
@@ -618,7 +618,7 @@ statement:
 	| procedural_continuous_assignment							{$$ = $1;}
 	| conditional_statement										{$$ = $1;}
 	| case_statement											{$$ = $1;}
-	| loop_statement											{$$ = newList(BLOCK, $1, my_yylineno);}
+	| loop_statement											{$$ = newList(BLOCK, $1, my_location);}
 	| ';'														{$$ = NULL;}
 	;
 
@@ -628,7 +628,7 @@ function_statement_items:
 	| blocking_assignment ';'									{$$ = $1;}
 	| function_conditional_statement							{$$ = $1;}
 	| function_case_statement									{$$ = $1;}
-	| function_loop_statement									{$$ = newList(BLOCK, $1, my_yylineno);}
+	| function_loop_statement									{$$ = newList(BLOCK, $1, my_location);}
 	| ';'														{$$ = NULL;}
 	;
 
@@ -639,67 +639,67 @@ function_seq_block:
 
 function_stmt_list:
 	function_stmt_list function_statement_items 	{$$ = newList_entry($1, $2);}
-	| function_statement_items						{$$ = newList(BLOCK, $1, my_yylineno);}
+	| function_statement_items						{$$ = newList(BLOCK, $1, my_location);}
 	;
 
 function_loop_statement:
-	vFOR '(' blocking_assignment ';' expression ';' blocking_assignment ')' function_statement_items	{$$ = newFor($3, $5, $7, $9, my_yylineno);}
-	| vWHILE '(' expression ')' function_statement_items							{$$ = newWhile($3, $5, my_yylineno);}
+	vFOR '(' blocking_assignment ';' expression ';' blocking_assignment ')' function_statement_items	{$$ = newFor($3, $5, $7, $9, my_location);}
+	| vWHILE '(' expression ')' function_statement_items							{$$ = newWhile($3, $5, my_location);}
 	;
 
 loop_statement:
-	vFOR '(' blocking_assignment ';' expression ';' blocking_assignment ')' statement	{$$ = newFor($3, $5, $7, $9, my_yylineno);}
-	| vWHILE '(' expression ')' statement							{$$ = newWhile($3, $5, my_yylineno);}
+	vFOR '(' blocking_assignment ';' expression ';' blocking_assignment ')' statement	{$$ = newFor($3, $5, $7, $9, my_location);}
+	| vWHILE '(' expression ')' statement							{$$ = newWhile($3, $5, my_location);}
 	;
 
 case_statement:
-	vCASE '(' expression ')' case_item_list vENDCASE			{$$ = newCase($3, $5, my_yylineno);}
+	vCASE '(' expression ')' case_item_list vENDCASE			{$$ = newCase($3, $5, my_location);}
 	;
 
 function_case_statement:
-	vCASE '(' expression ')' function_case_item_list vENDCASE			{$$ = newCase($3, $5, my_yylineno);}
+	vCASE '(' expression ')' function_case_item_list vENDCASE			{$$ = newCase($3, $5, my_location);}
 	;
 
 function_conditional_statement:
-	vIF '(' expression ')' function_statement_items %prec LOWER_THAN_ELSE						{$$ = newIf($3, $5, NULL, my_yylineno);}
-	| vIF '(' expression ')' function_statement_items vELSE function_statement_items			{$$ = newIf($3, $5, $7, my_yylineno);}
+	vIF '(' expression ')' function_statement_items %prec LOWER_THAN_ELSE						{$$ = newIf($3, $5, NULL, my_location);}
+	| vIF '(' expression ')' function_statement_items vELSE function_statement_items			{$$ = newIf($3, $5, $7, my_location);}
 	;
 
 conditional_statement:
-	vIF '(' expression ')' statement %prec LOWER_THAN_ELSE	{$$ = newIf($3, $5, NULL, my_yylineno);}
-	| vIF '(' expression ')' statement vELSE statement			{$$ = newIf($3, $5, $7, my_yylineno);}
+	vIF '(' expression ')' statement %prec LOWER_THAN_ELSE	{$$ = newIf($3, $5, NULL, my_location);}
+	| vIF '(' expression ')' statement vELSE statement			{$$ = newIf($3, $5, $7, my_location);}
 	;
 
 blocking_assignment:
-	primary '=' expression						{$$ = newBlocking($1, $3, my_yylineno);}
-	| delay_control primary '=' expression		{$$ = newBlocking($2, $4, my_yylineno);}
-	| primary '=' delay_control expression		{$$ = newBlocking($1, $4, my_yylineno);}
+	primary '=' expression						{$$ = newBlocking($1, $3, my_location);}
+	| delay_control primary '=' expression		{$$ = newBlocking($2, $4, my_location);}
+	| primary '=' delay_control expression		{$$ = newBlocking($1, $4, my_location);}
 	;
 
 non_blocking_assignment:
-	primary voLTE expression					{$$ = newNonBlocking($1, $3, my_yylineno);}
-	| delay_control primary voLTE expression	{$$ = newNonBlocking($2, $4, my_yylineno);}
-	| primary voLTE delay_control expression	{$$ = newNonBlocking($1, $4, my_yylineno);}
+	primary voLTE expression					{$$ = newNonBlocking($1, $3, my_location);}
+	| delay_control primary voLTE expression	{$$ = newNonBlocking($2, $4, my_location);}
+	| primary voLTE delay_control expression	{$$ = newNonBlocking($1, $4, my_location);}
 	;
 
 case_item_list:
 	case_item_list case_items	{$$ = newList_entry($1, $2);}
-	| case_items			{$$ = newList(CASE_LIST, $1, my_yylineno);}
+	| case_items			{$$ = newList(CASE_LIST, $1, my_location);}
 	;
 
 function_case_item_list:
 	function_case_item_list function_case_items	{$$ = newList_entry($1, $2);}
-	| function_case_items			{$$ = newList(CASE_LIST, $1, my_yylineno);}
+	| function_case_items			{$$ = newList(CASE_LIST, $1, my_location);}
 	;
 
 function_case_items:
-	expression ':' function_statement_items	{$$ = newCaseItem($1, $3, my_yylineno);}
-	| vDEFAULT ':' function_statement_items	{$$ = newDefaultCase($3, my_yylineno);}
+	expression ':' function_statement_items	{$$ = newCaseItem($1, $3, my_location);}
+	| vDEFAULT ':' function_statement_items	{$$ = newDefaultCase($3, my_location);}
 	;
 
 case_items:
-	expression ':' statement	{$$ = newCaseItem($1, $3, my_yylineno);}
-	| vDEFAULT ':' statement	{$$ = newDefaultCase($3, my_yylineno);}
+	expression ':' statement	{$$ = newCaseItem($1, $3, my_location);}
+	| vDEFAULT ':' statement	{$$ = newDefaultCase($3, my_location);}
 	;
 	
 seq_block:
@@ -709,7 +709,7 @@ seq_block:
 
 stmt_list:
 	stmt_list statement	{$$ = newList_entry($1, $2);}
-	| statement		{$$ = newList(BLOCK, $1, my_yylineno);}
+	| statement		{$$ = newList(BLOCK, $1, my_location);}
 	;
 
 timing_control:
@@ -728,13 +728,13 @@ delay_control:
 event_expression_list:
 	event_expression_list vOR event_expression	{$$ = newList_entry($1, $3);}
 	| event_expression_list ',' event_expression	{$$ = newList_entry($1, $3);}
-	| event_expression				{$$ = newList(DELAY_CONTROL, $1, my_yylineno);}
+	| event_expression				{$$ = newList(DELAY_CONTROL, $1, my_location);}
 	;
 
 event_expression:
 	primary					{$$ = $1;}
-	| vPOSEDGE primary		{$$ = newPosedge($2, my_yylineno);}
-	| vNEGEDGE primary		{$$ = newNegedge($2, my_yylineno);}
+	| vPOSEDGE primary		{$$ = newPosedge($2, my_location);}
+	| vNEGEDGE primary		{$$ = newNegedge($2, my_location);}
 	;
 
 stringify:
@@ -743,74 +743,75 @@ stringify:
 	;
 
 expression:
-	vINT_NUMBER										{$$ = newNumberNode($1, my_yylineno);}
-	| vNUMBER										{$$ = newNumberNode($1, my_yylineno);}
-	| stringify										{$$ = newStringNode($1, my_yylineno);}
+	vINT_NUMBER										{$$ = newNumberNode($1, my_location);}
+	| vNUMBER										{$$ = newNumberNode($1, my_location);}
+	| stringify										{$$ = newStringNode($1, my_location);}
 	| primary										{$$ = $1;}
-	| '+' expression %prec UADD						{$$ = newUnaryOperation(ADD, $2, my_yylineno);}
-	| '-' expression %prec UMINUS					{$$ = newUnaryOperation(MINUS, $2, my_yylineno);}
-	| '~' expression %prec UNOT						{$$ = newUnaryOperation(BITWISE_NOT, $2, my_yylineno);}
-	| '&' expression %prec UAND						{$$ = newUnaryOperation(BITWISE_AND, $2, my_yylineno);}
-	| '|' expression %prec UOR						{$$ = newUnaryOperation(BITWISE_OR, $2, my_yylineno);}
-	| voNAND expression %prec UNAND					{$$ = newUnaryOperation(BITWISE_NAND, $2, my_yylineno);}
-	| voNOR expression %prec UNOR					{$$ = newUnaryOperation(BITWISE_NOR, $2, my_yylineno);}
-	| voXNOR  expression %prec UXNOR				{$$ = newUnaryOperation(BITWISE_XNOR, $2, my_yylineno);}
-	| '!' expression %prec ULNOT					{$$ = newUnaryOperation(LOGICAL_NOT, $2, my_yylineno);}
-	| '^' expression %prec UXOR						{$$ = newUnaryOperation(BITWISE_XOR, $2, my_yylineno);}
-	| vCLOG2 '(' expression ')'						{$$ = newUnaryOperation(CLOG2, $3, my_yylineno);}
-	| voUNSIGNED '(' expression ')'					{$$ = newUnaryOperation(UNSIGNED, $3, my_yylineno);}
-	| voSIGNED '(' expression ')'					{$$ = newUnaryOperation(SIGNED, $3, my_yylineno);}
-	| expression voPOWER expression					{$$ = newBinaryOperation(POWER,$1, $3, my_yylineno);}
-	| expression '*' expression						{$$ = newBinaryOperation(MULTIPLY, $1, $3, my_yylineno);}
-	| expression '/' expression						{$$ = newBinaryOperation(DIVIDE, $1, $3, my_yylineno);}
-	| expression '%' expression						{$$ = newBinaryOperation(MODULO, $1, $3, my_yylineno);}
-	| expression '+' expression						{$$ = newBinaryOperation(ADD, $1, $3, my_yylineno);}
-	| expression '-' expression						{$$ = newBinaryOperation(MINUS, $1, $3, my_yylineno);}
-	| expression voSRIGHT expression				{$$ = newBinaryOperation(SR, $1, $3, my_yylineno);}
-	| expression voASRIGHT expression				{$$ = newBinaryOperation(ASR, $1, $3, my_yylineno);}
-	| expression voSLEFT expression					{$$ = newBinaryOperation(SL, $1, $3, my_yylineno);}
-	| expression '<' expression						{$$ = newBinaryOperation(LT, $1, $3, my_yylineno);}
-	| expression '>' expression						{$$ = newBinaryOperation(GT, $1, $3, my_yylineno);}
-	| expression voLTE expression					{$$ = newBinaryOperation(LTE, $1, $3, my_yylineno);}
-	| expression voGTE expression					{$$ = newBinaryOperation(GTE, $1, $3, my_yylineno);}
-	| expression voEQUAL expression					{$$ = newBinaryOperation(LOGICAL_EQUAL, $1, $3, my_yylineno);}
-	| expression voNOTEQUAL expression				{$$ = newBinaryOperation(NOT_EQUAL, $1, $3, my_yylineno);}
-	| expression voCASEEQUAL expression				{$$ = newBinaryOperation(CASE_EQUAL, $1, $3, my_yylineno);}
-	| expression voCASENOTEQUAL expression			{$$ = newBinaryOperation(CASE_NOT_EQUAL, $1, $3, my_yylineno);}
-	| expression '&' expression						{$$ = newBinaryOperation(BITWISE_AND, $1, $3, my_yylineno);}
-	| expression voNAND expression					{$$ = newBinaryOperation(BITWISE_NAND, $1, $3, my_yylineno);}
-	| expression '^' expression						{$$ = newBinaryOperation(BITWISE_XOR, $1, $3, my_yylineno);}
-	| expression voXNOR expression					{$$ = newBinaryOperation(BITWISE_XNOR, $1, $3, my_yylineno);}
-	| expression '|' expression						{$$ = newBinaryOperation(BITWISE_OR, $1, $3, my_yylineno);}
-	| expression voNOR expression					{$$ = newBinaryOperation(BITWISE_NOR, $1, $3, my_yylineno);}
-	| expression voANDAND expression				{$$ = newBinaryOperation(LOGICAL_AND, $1, $3, my_yylineno);}
-	| expression voOROR expression					{$$ = newBinaryOperation(LOGICAL_OR, $1, $3, my_yylineno);}
-	| expression '?' expression ':' expression		{$$ = newIfQuestion($1, $3, $5, my_yylineno);}
+	| '+' expression %prec UADD						{$$ = newUnaryOperation(ADD, $2, my_location);}
+	| '-' expression %prec UMINUS					{$$ = newUnaryOperation(MINUS, $2, my_location);}
+	| '~' expression %prec UNOT						{$$ = newUnaryOperation(BITWISE_NOT, $2, my_location);}
+	| '&' expression %prec UAND						{$$ = newUnaryOperation(BITWISE_AND, $2, my_location);}
+	| '|' expression %prec UOR						{$$ = newUnaryOperation(BITWISE_OR, $2, my_location);}
+	| voNAND expression %prec UNAND					{$$ = newUnaryOperation(BITWISE_NAND, $2, my_location);}
+	| voNOR expression %prec UNOR					{$$ = newUnaryOperation(BITWISE_NOR, $2, my_location);}
+	| voXNOR  expression %prec UXNOR				{$$ = newUnaryOperation(BITWISE_XNOR, $2, my_location);}
+	| '!' expression %prec ULNOT					{$$ = newUnaryOperation(LOGICAL_NOT, $2, my_location);}
+	| '^' expression %prec UXOR						{$$ = newUnaryOperation(BITWISE_XOR, $2, my_location);}
+	| vCLOG2 '(' expression ')'						{$$ = newUnaryOperation(CLOG2, $3, my_location);}
+	| voUNSIGNED '(' expression ')'					{$$ = newUnaryOperation(UNSIGNED, $3, my_location);}
+	| voSIGNED '(' expression ')'					{$$ = newUnaryOperation(SIGNED, $3, my_location);}
+	| expression voPOWER expression					{$$ = newBinaryOperation(POWER,$1, $3, my_location);}
+	| expression '*' expression						{$$ = newBinaryOperation(MULTIPLY, $1, $3, my_location);}
+	| expression '/' expression						{$$ = newBinaryOperation(DIVIDE, $1, $3, my_location);}
+	| expression '%' expression						{$$ = newBinaryOperation(MODULO, $1, $3, my_location);}
+	| expression '+' expression						{$$ = newBinaryOperation(ADD, $1, $3, my_location);}
+	| expression '-' expression						{$$ = newBinaryOperation(MINUS, $1, $3, my_location);}
+	| expression voSRIGHT expression				{$$ = newBinaryOperation(SR, $1, $3, my_location);}
+	| expression voASRIGHT expression				{$$ = newBinaryOperation(ASR, $1, $3, my_location);}
+	| expression voSLEFT expression					{$$ = newBinaryOperation(SL, $1, $3, my_location);}
+	| expression voASLEFT expression				{$$ = newBinaryOperation(ASL, $1, $3, my_location);}
+	| expression '<' expression						{$$ = newBinaryOperation(LT, $1, $3, my_location);}
+	| expression '>' expression						{$$ = newBinaryOperation(GT, $1, $3, my_location);}
+	| expression voLTE expression					{$$ = newBinaryOperation(LTE, $1, $3, my_location);}
+	| expression voGTE expression					{$$ = newBinaryOperation(GTE, $1, $3, my_location);}
+	| expression voEQUAL expression					{$$ = newBinaryOperation(LOGICAL_EQUAL, $1, $3, my_location);}
+	| expression voNOTEQUAL expression				{$$ = newBinaryOperation(NOT_EQUAL, $1, $3, my_location);}
+	| expression voCASEEQUAL expression				{$$ = newBinaryOperation(CASE_EQUAL, $1, $3, my_location);}
+	| expression voCASENOTEQUAL expression			{$$ = newBinaryOperation(CASE_NOT_EQUAL, $1, $3, my_location);}
+	| expression '&' expression						{$$ = newBinaryOperation(BITWISE_AND, $1, $3, my_location);}
+	| expression voNAND expression					{$$ = newBinaryOperation(BITWISE_NAND, $1, $3, my_location);}
+	| expression '^' expression						{$$ = newBinaryOperation(BITWISE_XOR, $1, $3, my_location);}
+	| expression voXNOR expression					{$$ = newBinaryOperation(BITWISE_XNOR, $1, $3, my_location);}
+	| expression '|' expression						{$$ = newBinaryOperation(BITWISE_OR, $1, $3, my_location);}
+	| expression voNOR expression					{$$ = newBinaryOperation(BITWISE_NOR, $1, $3, my_location);}
+	| expression voANDAND expression				{$$ = newBinaryOperation(LOGICAL_AND, $1, $3, my_location);}
+	| expression voOROR expression					{$$ = newBinaryOperation(LOGICAL_OR, $1, $3, my_location);}
+	| expression '?' expression ':' expression		{$$ = newIfQuestion($1, $3, $5, my_location);}
 	| function_instantiation						{$$ = $1;}
 	| '(' expression ')'							{$$ = $2;}
-	| '{' expression '{' expression_list '}' '}'	{$$ = newListReplicate( $2, $4, my_yylineno); }
+	| '{' expression '{' expression_list '}' '}'	{$$ = newListReplicate( $2, $4, my_location); }
 	;
 
 primary:
-	vSYMBOL_ID												{$$ = newSymbolNode($1, my_yylineno);}
-	| vSYMBOL_ID '[' expression ']'							{$$ = newArrayRef($1, $3, my_yylineno);}
-	| vSYMBOL_ID '[' expression ']' '[' expression ']'		{$$ = newArrayRef2D($1, $3, $6, my_yylineno);}
-	| vSYMBOL_ID '[' expression vPLUS_COLON expression ']'	{$$ = newPlusColonRangeRef($1, $3, $5, my_yylineno);}
-	| vSYMBOL_ID '[' expression vMINUS_COLON expression ']'	{$$ = newMinusColonRangeRef($1, $3, $5, my_yylineno);}
-	| vSYMBOL_ID '[' expression ':' expression ']'			{$$ = newRangeRef($1, $3, $5, my_yylineno);}
-	| vSYMBOL_ID '[' expression ':' expression ']' '[' expression ':' expression ']'	{$$ = newRangeRef2D($1, $3, $5, $8, $10, my_yylineno);}
+	vSYMBOL_ID												{$$ = newSymbolNode($1, my_location);}
+	| vSYMBOL_ID '[' expression ']'							{$$ = newArrayRef($1, $3, my_location);}
+	| vSYMBOL_ID '[' expression ']' '[' expression ']'		{$$ = newArrayRef2D($1, $3, $6, my_location);}
+	| vSYMBOL_ID '[' expression vPLUS_COLON expression ']'	{$$ = newPlusColonRangeRef($1, $3, $5, my_location);}
+	| vSYMBOL_ID '[' expression vMINUS_COLON expression ']'	{$$ = newMinusColonRangeRef($1, $3, $5, my_location);}
+	| vSYMBOL_ID '[' expression ':' expression ']'			{$$ = newRangeRef($1, $3, $5, my_location);}
+	| vSYMBOL_ID '[' expression ':' expression ']' '[' expression ':' expression ']'	{$$ = newRangeRef2D($1, $3, $5, $8, $10, my_location);}
 	| '{' expression_list '}'								{$$ = $2; ($2)->types.concat.num_bit_strings = -1;}
 	;
 
 expression_list:
 	expression_list ',' expression	{$$ = newList_entry($1, $3); /* order is left to right as is given */ }
-	| expression					{$$ = newList(CONCATENATE, $1, my_yylineno);}
+	| expression					{$$ = newList(CONCATENATE, $1, my_location);}
 	;
 
 c_function:
-	voFINISH '(' expression ')'									{$$ = newCFunction(FINISH, $3, NULL, my_yylineno);}
-	| voDISPLAY '(' expression ')'									{$$ = newCFunction(DISPLAY, $3, NULL, my_yylineno);}
-	| voDISPLAY '(' expression ',' c_function_expression_list ')'	{$$ = newCFunction(DISPLAY, $3, $5, my_yylineno); /* this fails for now */}
+	voFINISH '(' expression ')'									{$$ = newCFunction(FINISH, $3, NULL, my_location);}
+	| voDISPLAY '(' expression ')'									{$$ = newCFunction(DISPLAY, $3, NULL, my_location);}
+	| voDISPLAY '(' expression ',' c_function_expression_list ')'	{$$ = newCFunction(DISPLAY, $3, $5, my_location); /* this fails for now */}
 	| vCFUNC '(' c_function_expression_list ')'					{$$ = free_whole_tree($3);}
 	| vCFUNC '(' ')'											{$$ = NULL;}
 	| vCFUNC													{$$ = NULL;}
@@ -818,7 +819,7 @@ c_function:
 
 c_function_expression_list:
 	c_function_expression_list ',' expression	{$$ = newList_entry($1, $3);}
-	| expression								{$$ = newList(C_ARG_LIST, $1, my_yylineno);}
+	| expression								{$$ = newList(C_ARG_LIST, $1, my_location);}
 	;
 
 wire_types: 
