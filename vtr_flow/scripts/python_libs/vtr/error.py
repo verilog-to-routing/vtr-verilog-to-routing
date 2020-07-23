@@ -17,7 +17,7 @@ class CommandError(VtrError):
         cmd == The command run
     """
     def __init__(self, msg, cmd, returncode, log=None):
-        super(CommandError, self).__init__(msg=msg)
+        super().__init__(msg=msg)
         self.returncode = returncode
         self.cmd = cmd
         self.log = log
@@ -27,6 +27,6 @@ class InspectError(VtrError):
     Raised when some query (inspection) result is not found.
     """
     def __init__(self, msg, filename=None):
-        super(InspectError, self).__init__(msg=msg)
+        super().__init__(msg=msg)
         self.filename=filename
 
