@@ -392,7 +392,6 @@ static t_physical_tile_type_ptr pick_placement_type(t_logical_block_type_ptr log
     return nullptr;
 }
 
-
 void initial_placement(enum e_pad_loc_type pad_loc_type, enum e_block_loc_type block_loc_type, const char* constraints_file) {
     vtr::ScopedStartFinishTimer timer("Initial Placement");
 

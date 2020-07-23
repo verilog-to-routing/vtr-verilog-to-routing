@@ -139,7 +139,6 @@ void read_place(const char* net_file,
     place_ctx.placement_id = vtr::secure_digest_file(place_file);
 }
 
-
 void read_user_block_loc(const char* constraints_file) {
     /* Reads in the locations of the blocks from a file. */
     t_hash **hash_table, *h_ptr;

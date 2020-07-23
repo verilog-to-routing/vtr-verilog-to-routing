@@ -513,7 +513,6 @@ enum e_pad_loc_type {
     USER
 };
 
-
 /*Are the blocks not locked (free to be moved) or locked in user-specified positions?*/
 enum e_block_loc_type {
     NOT_LOCKED,
