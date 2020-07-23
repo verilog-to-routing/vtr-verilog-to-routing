@@ -1526,20 +1526,17 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     place_grp.add_argument(args.pad_loc_file, "--fix_pins")
         .help(
-            "Fixes I/O pad locations during placement. Valid options:\n"
+            "Fixes I/O pad locations randomly during placement. Valid options:\n"
             " * 'free' allows placement to optimize pad locations\n"
-            " * 'random' fixes pad locations to arbitrary locations\n"
-            " * path to a file specifying pad locations (.place format with only pads specified).")
+            " * 'random' fixes pad locations to arbitrary locations\n.")
         .default_value("free")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_grp.add_argument(args.pad_loc_file, "--fix_clusters")
+    place_grp.add_argument(args.constraints_file, "--fix_clusters")
         .help(
             "Fixes block locations during placement. Valid options:\n"
-            " * 'free' allows placement to optimize block locations\n"
-            " * 'random' fixes block locations to arbitrary locations\n"
-            " * path to a file specifying block locations (.place format with only pads specified).")
-        .default_value("free")
+            " * path to a file specifying block locations (.place format with block locations specified).")
+        .default_value("not_locked")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<e_place_algorithm, ParsePlaceAlgorithm>(args.PlaceAlgorithm, "--place_algorithm")
@@ -2156,7 +2153,7 @@ void set_conditional_defaults(t_options& args) {
         args.anneal_sched_type.set(AUTO_SCHED, Provenance::INFERRED);
     }
 
-    //Are the pad locations specified?
+    //Are the pads free to be moved during placement or randomly locked to certain locations?
     if (std::string(args.pad_loc_file) == "free") {
         args.pad_loc_type.set(FREE, Provenance::INFERRED);
 
@@ -2168,6 +2165,14 @@ void set_conditional_defaults(t_options& args) {
     } else {
         args.pad_loc_type.set(USER, Provenance::INFERRED);
         VTR_ASSERT(!args.pad_loc_file.value().empty());
+    }
+
+    //Are the blocks locked to locations given by a constraints file?
+    if (std::string(args.constraints_file) == "not_locked") {
+        args.block_loc_type.set(NOT_LOCKED, Provenance::INFERRED);
+    } else {
+        args.block_loc_type.set(LOCKED, Provenance::INFERRED);
+        VTR_ASSERT(!args.constraints_file.value().empty());
     }
 
     /*
