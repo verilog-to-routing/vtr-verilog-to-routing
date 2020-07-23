@@ -101,7 +101,7 @@ struct thread_node_distribution {
 };
 
 struct test_vector {
-    signed char** values;
+    BitSpace::bit_value_t** values;
     int* counts;
     int count;
 };
@@ -147,7 +147,7 @@ void simulate_steps(sim_data_t* sim_data, double min_coverage);
 nnode_t** get_children_of(nnode_t* node, int* count);
 nnode_t** get_children_of_nodepin(nnode_t* node, int* num_children, int output_pin);
 
-signed char get_pin_value(npin_t* pin, int cycle);
+BitSpace::bit_value_t get_pin_value(npin_t* pin, int cycle);
 
 int get_clock_ratio(nnode_t* node);
 void set_clock_ratio(int rat, nnode_t* node);

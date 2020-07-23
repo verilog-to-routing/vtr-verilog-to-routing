@@ -35,7 +35,7 @@
 
 static const char* netlist_file_name = nullptr;
 
-static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route, const pugiutil::loc_data& loc_data);
+static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route, const pugiutil::loc_data& loc_data);
 
 static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* pb, t_pb_routes& pb_route, int* num_primitives, const pugiutil::loc_data& loc_data, ClusteredNetlist* clb_nlist);
 
@@ -395,13 +395,41 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* p
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
 
     auto inputs = pugiutil::get_single_child(Parent, "inputs", loc_data);
-    int num_in_ports = processPorts(inputs, pb, pb_route, loc_data);
+    processPorts(inputs, pb, pb_route, loc_data);
 
     auto outputs = pugiutil::get_single_child(Parent, "outputs", loc_data);
-    int num_out_ports = processPorts(outputs, pb, pb_route, loc_data);
+    processPorts(outputs, pb, pb_route, loc_data);
 
     auto clocks = pugiutil::get_single_child(Parent, "clocks", loc_data);
-    int num_clock_ports = processPorts(clocks, pb, pb_route, loc_data);
+    processPorts(clocks, pb, pb_route, loc_data);
+
+    int num_in_ports = 0;
+    int begin_out_port;
+    int end_out_port;
+    int begin_clock_port;
+    int end_clock_port;
+
+    {
+        int num_out_ports = 0;
+        int num_clock_ports = 0;
+        for (i = 0; i < pb->pb_graph_node->pb_type->num_ports; i++) {
+            if (pb->pb_graph_node->pb_type->ports[i].is_clock
+                && pb->pb_graph_node->pb_type->ports[i].type == IN_PORT) {
+                num_clock_ports++;
+            } else if (!pb->pb_graph_node->pb_type->ports[i].is_clock
+                       && pb->pb_graph_node->pb_type->ports[i].type == IN_PORT) {
+                num_in_ports++;
+            } else {
+                VTR_ASSERT(pb->pb_graph_node->pb_type->ports[i].type == OUT_PORT);
+                num_out_ports++;
+            }
+        }
+
+        begin_out_port = num_in_ports;
+        end_out_port = begin_out_port + num_out_ports;
+        begin_clock_port = end_out_port;
+        end_clock_port = begin_clock_port + num_clock_ports;
+    }
 
     auto attrs = pugiutil::get_single_child(Parent, "attributes", loc_data, pugiutil::OPTIONAL);
     auto params = pugiutil::get_single_child(Parent, "parameters", loc_data, pugiutil::OPTIONAL);
@@ -410,15 +438,13 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* p
 
     //Create the ports in the clb_nlist for the top-level pb
     if (pb->is_root()) {
-        VTR_ASSERT(num_in_ports <= num_out_ports);
-
         for (i = 0; i < num_in_ports; i++) {
             clb_nlist->create_port(index, pb_type->ports[i].name, pb_type->ports[i].num_pins, PortType::INPUT);
         }
-        for (i = num_in_ports; i < num_out_ports; i++) {
+        for (i = begin_out_port; i < end_out_port; i++) {
             clb_nlist->create_port(index, pb_type->ports[i].name, pb_type->ports[i].num_pins, PortType::OUTPUT);
         }
-        for (i = num_out_ports; i < num_clock_ports; i++) {
+        for (i = begin_clock_port; i < end_clock_port; i++) {
             clb_nlist->create_port(index, pb_type->ports[i].name, pb_type->ports[i].num_pins, PortType::CLOCK);
         }
 
@@ -576,7 +602,7 @@ static int add_net_to_hash(t_hash** nhash, const char* net_name, int* ncount) {
     return hash_value->index;
 }
 
-static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route, const pugiutil::loc_data& loc_data) {
+static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route, const pugiutil::loc_data& loc_data) {
     int i, j, num_tokens;
     int in_port = 0, out_port = 0, clock_port = 0;
     std::vector<std::string> pins;
@@ -852,10 +878,6 @@ static int processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route, 
             pb->set_atom_pin_bit_index(pb_gpin, atom_pin_index);
         }
     }
-
-    //Return the sum of the ports + 1, as we want to number of the ports
-    //E.g. If there is 1 input port, the in_port index is 0, but num_in_ports = 1
-    return in_port + out_port + clock_port + 1;
 }
 
 /**
@@ -876,6 +898,8 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
     t_logical_block_type_ptr block_type;
 
     /* Assumes that complex block pins are ordered inputs, outputs, globals */
+
+    clb_nlist.verify();
 
     /* Determine the external nets of complex block */
     for (auto blk_id : clb_nlist.blocks()) {
@@ -955,6 +979,8 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
             }
         }
     }
+
+    clb_nlist.verify();
 
     vtr::vector<ClusterNetId, int> count(ext_ncount);
 

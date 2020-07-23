@@ -70,6 +70,7 @@ const char* operation_list_STR[][2] = {
     {"SR", "SR"},               // >>
     {"ASR", "ASR"},             // >>>
     {"SL", "SL"},               // <<
+    {"ASL", "ASL"},             // <<<
     {"CASE_EQUAL", "cEQ"},      // ===
     {"CASE_NOT_EQUAL", "cNEQ"}, // !==
     {"ADDER_FUNC", "ADDER"},

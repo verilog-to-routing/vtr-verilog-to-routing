@@ -48,7 +48,7 @@
  *       This field is valid only for IPINs and OPINs and should be ignored  *
  *       otherwise.                                                          */
 struct alignas(16) t_rr_node_data {
-    int8_t cost_index_ = -1;
+    int16_t cost_index_ = -1;
     int16_t rc_index_ = -1;
 
     int16_t xlow_ = -1;

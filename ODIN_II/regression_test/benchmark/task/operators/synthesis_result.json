@@ -681,8 +681,7 @@
         "exit": 134,
         "errors": [
             "NETLIST binary_equal.v:21 Operation not supported by Odin"
-        ],
-        "generic logic size": 4
+        ]
     },
     "operators/binary_equal/k6_N10_40nm": {
         "test_name": "operators/binary_equal/k6_N10_40nm",
@@ -691,8 +690,7 @@
         "exit": 134,
         "errors": [
             "NETLIST binary_equal.v:21 Operation not supported by Odin"
-        ],
-        "generic logic size": 6
+        ]
     },
     "operators/binary_equal/k6_N10_mem32K_40nm": {
         "test_name": "operators/binary_equal/k6_N10_mem32K_40nm",
@@ -701,8 +699,7 @@
         "exit": 134,
         "errors": [
             "NETLIST binary_equal.v:21 Operation not supported by Odin"
-        ],
-        "generic logic size": 6
+        ]
     },
     "operators/binary_equal/no_arch": {
         "test_name": "operators/binary_equal/no_arch",
@@ -1469,8 +1466,7 @@
         "exit": 134,
         "errors": [
             "NETLIST binary_not_equal.v:21 Operation not supported by Odin"
-        ],
-        "generic logic size": 4
+        ]
     },
     "operators/binary_not_equal/k6_N10_40nm": {
         "test_name": "operators/binary_not_equal/k6_N10_40nm",
@@ -1479,8 +1475,7 @@
         "exit": 134,
         "errors": [
             "NETLIST binary_not_equal.v:21 Operation not supported by Odin"
-        ],
-        "generic logic size": 6
+        ]
     },
     "operators/binary_not_equal/k6_N10_mem32K_40nm": {
         "test_name": "operators/binary_not_equal/k6_N10_mem32K_40nm",
@@ -1489,8 +1484,7 @@
         "exit": 134,
         "errors": [
             "NETLIST binary_not_equal.v:21 Operation not supported by Odin"
-        ],
-        "generic logic size": 6
+        ]
     },
     "operators/binary_not_equal/no_arch": {
         "test_name": "operators/binary_not_equal/no_arch",
@@ -2909,8 +2903,7 @@
         "exit": 134,
         "errors": [
             "AST twobits_arithmetic_div.v:22 Odin only supports constant expressions as divisors"
-        ],
-        "generic logic size": 4
+        ]
     },
     "operators/twobits_arithmetic_div/k6_N10_40nm": {
         "test_name": "operators/twobits_arithmetic_div/k6_N10_40nm",
@@ -2919,8 +2912,7 @@
         "exit": 134,
         "errors": [
             "AST twobits_arithmetic_div.v:22 Odin only supports constant expressions as divisors"
-        ],
-        "generic logic size": 6
+        ]
     },
     "operators/twobits_arithmetic_div/k6_N10_mem32K_40nm": {
         "test_name": "operators/twobits_arithmetic_div/k6_N10_mem32K_40nm",
@@ -2929,8 +2921,7 @@
         "exit": 134,
         "errors": [
             "AST twobits_arithmetic_div.v:22 Odin only supports constant expressions as divisors"
-        ],
-        "generic logic size": 6
+        ]
     },
     "operators/twobits_arithmetic_div/no_arch": {
         "test_name": "operators/twobits_arithmetic_div/no_arch",
@@ -3022,8 +3013,7 @@
         "exit": 134,
         "errors": [
             "NETLIST twobits_arithmetic_mod.v:22 Modulo operation not supported by Odin"
-        ],
-        "generic logic size": 4
+        ]
     },
     "operators/twobits_arithmetic_mod/k6_N10_40nm": {
         "test_name": "operators/twobits_arithmetic_mod/k6_N10_40nm",
@@ -3032,8 +3022,7 @@
         "exit": 134,
         "errors": [
             "NETLIST twobits_arithmetic_mod.v:22 Modulo operation not supported by Odin"
-        ],
-        "generic logic size": 6
+        ]
     },
     "operators/twobits_arithmetic_mod/k6_N10_mem32K_40nm": {
         "test_name": "operators/twobits_arithmetic_mod/k6_N10_mem32K_40nm",
@@ -3042,8 +3031,7 @@
         "exit": 134,
         "errors": [
             "NETLIST twobits_arithmetic_mod.v:22 Modulo operation not supported by Odin"
-        ],
-        "generic logic size": 6
+        ]
     },
     "operators/twobits_arithmetic_mod/no_arch": {
         "test_name": "operators/twobits_arithmetic_mod/no_arch",
@@ -3210,8 +3198,7 @@
         "exit": 134,
         "errors": [
             "AST twobits_arithmetic_power.v:22 Odin only supports constant expressions as exponents"
-        ],
-        "generic logic size": 4
+        ]
     },
     "operators/twobits_arithmetic_power/k6_N10_40nm": {
         "test_name": "operators/twobits_arithmetic_power/k6_N10_40nm",
@@ -3220,8 +3207,7 @@
         "exit": 134,
         "errors": [
             "AST twobits_arithmetic_power.v:22 Odin only supports constant expressions as exponents"
-        ],
-        "generic logic size": 6
+        ]
     },
     "operators/twobits_arithmetic_power/k6_N10_mem32K_40nm": {
         "test_name": "operators/twobits_arithmetic_power/k6_N10_mem32K_40nm",
@@ -3230,8 +3216,7 @@
         "exit": 134,
         "errors": [
             "AST twobits_arithmetic_power.v:22 Odin only supports constant expressions as exponents"
-        ],
-        "generic logic size": 6
+        ]
     },
     "operators/twobits_arithmetic_power/no_arch": {
         "test_name": "operators/twobits_arithmetic_power/no_arch",
@@ -3670,6 +3655,81 @@
         "Average Path": 3,
         "Estimated LUTs": 5,
         "Total Node": 7
+    },
+    "operators/twobits_arithmetic_uminus/k6_N10_40nm": {
+        "test_name": "operators/twobits_arithmetic_uminus/k6_N10_40nm",
+        "architecture": "k6_N10_40nm.xml",
+        "verilog": "twobits_arithmetic_uminus.v",
+        "max_rss(MiB)": 35.1,
+        "exec_time(ms)": 13.7,
+        "synthesis_time(ms)": 3.9,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 4,
+        "logic element": 11,
+        "latch": 3,
+        "generic logic size": 6,
+        "Longest Path": 7,
+        "Average Path": 4,
+        "Estimated LUTs": 11,
+        "Total Node": 15
+    },
+    "operators/twobits_arithmetic_uminus/k6_N10_mem32K_40nm": {
+        "test_name": "operators/twobits_arithmetic_uminus/k6_N10_mem32K_40nm",
+        "architecture": "k6_N10_mem32K_40nm.xml",
+        "verilog": "twobits_arithmetic_uminus.v",
+        "max_rss(MiB)": 51.5,
+        "exec_time(ms)": 96,
+        "synthesis_time(ms)": 3.1,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 4,
+        "logic element": 11,
+        "latch": 3,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 6,
+        "Longest Path": 7,
+        "Average Path": 4,
+        "Estimated LUTs": 11,
+        "Total Node": 15
+    },
+    "operators/twobits_arithmetic_uminus/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "operators/twobits_arithmetic_uminus/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "verilog": "twobits_arithmetic_uminus.v",
+        "max_rss(MiB)": 52.2,
+        "exec_time(ms)": 105.4,
+        "synthesis_time(ms)": 3.2,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 4,
+        "logic element": 8,
+        "latch": 3,
+        "Adder": 3,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 7,
+        "Average Path": 4,
+        "Estimated LUTs": 8,
+        "Total Node": 15
+    },
+    "operators/twobits_arithmetic_uminus/no_arch": {
+        "test_name": "operators/twobits_arithmetic_uminus/no_arch",
+        "verilog": "twobits_arithmetic_uminus.v",
+        "max_rss(MiB)": 32.5,
+        "exec_time(ms)": 6.5,
+        "synthesis_time(ms)": 3.7,
+        "Latch Drivers": 1,
+        "Pi": 3,
+        "Po": 4,
+        "logic element": 11,
+        "latch": 3,
+        "Longest Path": 7,
+        "Average Path": 4,
+        "Estimated LUTs": 11,
+        "Total Node": 15
     },
     "DEFAULT": {
         "test_name": "n/a",

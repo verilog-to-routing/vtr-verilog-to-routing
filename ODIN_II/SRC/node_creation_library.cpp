@@ -88,7 +88,7 @@ nnode_t* make_not_gate_with_input(npin_t* input_pin, nnode_t* node, short mark) 
 nnode_t* make_not_gate(nnode_t* node, short mark) {
     nnode_t* logic_node;
 
-    logic_node = allocate_nnode();
+    logic_node = allocate_nnode(node->loc);
     logic_node->traverse_visited = mark;
     logic_node->type = LOGICAL_NOT;
     logic_node->name = node_name(logic_node, node->name);
@@ -107,7 +107,7 @@ nnode_t* make_not_gate(nnode_t* node, short mark) {
 nnode_t* make_1port_gate(operation_list type, int width_input, int width_output, nnode_t* node, short mark) {
     nnode_t* logic_node;
 
-    logic_node = allocate_nnode();
+    logic_node = allocate_nnode(node->loc);
     logic_node->traverse_visited = mark;
     logic_node->type = type;
     logic_node->name = node_name(logic_node, node->name);
@@ -155,7 +155,7 @@ nnode_t* make_1port_logic_gate_with_inputs(operation_list type, int width, signa
  * 	Make a 3 port gate all variable port widths.
  *-------------------------------------------------------------------------------------------*/
 nnode_t* make_3port_gate(operation_list type, int width_port1, int width_port2, int width_port3, int width_output, nnode_t* node, short mark) {
-    nnode_t* logic_node = allocate_nnode();
+    nnode_t* logic_node = allocate_nnode(node->loc);
     logic_node->traverse_visited = mark;
     logic_node->type = type;
     logic_node->name = node_name(logic_node, node->name);
@@ -180,7 +180,7 @@ nnode_t* make_3port_gate(operation_list type, int width_port1, int width_port2, 
  * 	Make a 2 port gate with variable sizes.  The first port will be input_pins index 0..width_port1.
  *-------------------------------------------------------------------------------------------*/
 nnode_t* make_2port_gate(operation_list type, int width_port1, int width_port2, int width_output, nnode_t* node, short mark) {
-    nnode_t* logic_node = allocate_nnode();
+    nnode_t* logic_node = allocate_nnode(node->loc);
     logic_node->traverse_visited = mark;
     logic_node->type = type;
     logic_node->name = node_name(logic_node, node->name);
@@ -204,7 +204,7 @@ nnode_t* make_2port_gate(operation_list type, int width_port1, int width_port2, 
  *-------------------------------------------------------------------------------------------*/
 nnode_t* make_nport_gate(operation_list type, int port_sizes, int width, int width_output, nnode_t* node, short mark) {
     int i;
-    nnode_t* logic_node = allocate_nnode();
+    nnode_t* logic_node = allocate_nnode(node->loc);
     logic_node->traverse_visited = mark;
     logic_node->type = type;
     logic_node->name = node_name(logic_node, node->name);
@@ -240,14 +240,14 @@ const char* edge_type_blif_str(nnode_t* node) {
         case ASYNCHRONOUS_SENSITIVITY:
             return "as";
         default:
-            error_message(NETLIST, node->line_number, node->file_number,
+            error_message(NETLIST, node->loc,
                           "undefined sensitivity kind for flip flop %s", edge_type_e_STR[node->edge_type]);
 
             return NULL;
     }
 }
 
-edge_type_e edge_type_blif_enum(std::string edge_kind_str) {
+edge_type_e edge_type_blif_enum(std::string edge_kind_str, loc_t loc) {
     if (edge_kind_str == "fe")
         return FALLING_EDGE_SENSITIVITY;
     else if (edge_kind_str == "re")
@@ -259,7 +259,7 @@ edge_type_e edge_type_blif_enum(std::string edge_kind_str) {
     else if (edge_kind_str == "as")
         return ASYNCHRONOUS_SENSITIVITY;
     else {
-        error_message(NETLIST, -1, -1,
+        error_message(NETLIST, loc,
                       "undefined sensitivity kind for flip flop %s", edge_kind_str.c_str());
 
         return UNDEFINED_SENSITIVITY;
@@ -305,7 +305,7 @@ char* node_name(nnode_t* node, char* instance_name_prefix) {
 nnode_t* make_mult_block(nnode_t* node, short mark) {
     nnode_t* logic_node;
 
-    logic_node = allocate_nnode();
+    logic_node = allocate_nnode(node->loc);
     logic_node->traverse_visited = mark;
     logic_node->type = MULTIPLY;
     logic_node->name = node_name(logic_node, node->name);

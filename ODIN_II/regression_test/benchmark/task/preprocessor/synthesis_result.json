@@ -1,48 +1,4 @@
 {
-    "preprocessor/default_net/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "preprocessor/default_net/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "default_net.v",
-        "max_rss(MiB)": 33,
-        "exec_time(ms)": 85.2,
-        "synthesis_time(ms)": 0.6,
-        "Pi": 1,
-        "Po": 1,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "preprocessor/default_net/k6_N10_40nm": {
-        "test_name": "preprocessor/default_net/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "default_net.v",
-        "max_rss(MiB)": 14.9,
-        "exec_time(ms)": 10.3,
-        "synthesis_time(ms)": 0.9,
-        "Pi": 1,
-        "Po": 1,
-        "generic logic size": 6,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "preprocessor/default_net/k6_N10_mem32K_40nm": {
-        "test_name": "preprocessor/default_net/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "default_net.v",
-        "max_rss(MiB)": 32.2,
-        "exec_time(ms)": 84,
-        "synthesis_time(ms)": 0.7,
-        "Pi": 1,
-        "Po": 1,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 6,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
     "preprocessor/default_net/no_arch": {
         "test_name": "preprocessor/default_net/no_arch",
         "verilog": "default_net.v",
@@ -53,45 +9,6 @@
         "Po": 1,
         "Longest Path": 2,
         "Average Path": 2
-    },
-    "preprocessor/elsif_both_defined/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "preprocessor/elsif_both_defined/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "elsif_both_defined.v",
-        "exit": 1,
-        "errors": [
-            "NETLIST elsif_both_defined.v:18 You've defined this driver simple_op^out twice."
-        ],
-        "expectation": [
-            "ELSIF this test is expected to pass, if it fails the `elsif are not functioning properly."
-        ],
-        "generic logic size": 4
-    },
-    "preprocessor/elsif_both_defined/k6_N10_40nm": {
-        "test_name": "preprocessor/elsif_both_defined/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "elsif_both_defined.v",
-        "exit": 1,
-        "errors": [
-            "NETLIST elsif_both_defined.v:18 You've defined this driver simple_op^out twice."
-        ],
-        "expectation": [
-            "ELSIF this test is expected to pass, if it fails the `elsif are not functioning properly."
-        ],
-        "generic logic size": 6
-    },
-    "preprocessor/elsif_both_defined/k6_N10_mem32K_40nm": {
-        "test_name": "preprocessor/elsif_both_defined/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "elsif_both_defined.v",
-        "exit": 1,
-        "errors": [
-            "NETLIST elsif_both_defined.v:18 You've defined this driver simple_op^out twice."
-        ],
-        "expectation": [
-            "ELSIF this test is expected to pass, if it fails the `elsif are not functioning properly."
-        ],
-        "generic logic size": 6
     },
     "preprocessor/elsif_both_defined/no_arch": {
         "test_name": "preprocessor/elsif_both_defined/no_arch",
@@ -104,50 +21,6 @@
             "ELSIF this test is expected to pass, if it fails the `elsif are not functioning properly."
         ]
     },
-    "preprocessor/elsif_defined/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "preprocessor/elsif_defined/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "elsif_defined.v",
-        "max_rss(MiB)": 33,
-        "exec_time(ms)": 84.7,
-        "synthesis_time(ms)": 0.8,
-        "Pi": 1,
-        "Po": 1,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "preprocessor/elsif_defined/k6_N10_40nm": {
-        "test_name": "preprocessor/elsif_defined/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "elsif_defined.v",
-        "max_rss(MiB)": 14.9,
-        "exec_time(ms)": 9.4,
-        "synthesis_time(ms)": 0.7,
-        "Pi": 1,
-        "Po": 1,
-        "generic logic size": 6,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "preprocessor/elsif_defined/k6_N10_mem32K_40nm": {
-        "test_name": "preprocessor/elsif_defined/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "elsif_defined.v",
-        "max_rss(MiB)": 32.1,
-        "exec_time(ms)": 80.4,
-        "synthesis_time(ms)": 0.7,
-        "Pi": 1,
-        "Po": 1,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 6,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
     "preprocessor/elsif_defined/no_arch": {
         "test_name": "preprocessor/elsif_defined/no_arch",
         "verilog": "elsif_defined.v",
@@ -156,50 +29,6 @@
         "synthesis_time(ms)": 1,
         "Pi": 1,
         "Po": 1,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "preprocessor/ifdef_defined/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "preprocessor/ifdef_defined/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "ifdef_defined.v",
-        "max_rss(MiB)": 32.8,
-        "exec_time(ms)": 80.6,
-        "synthesis_time(ms)": 0.6,
-        "Pi": 1,
-        "Po": 1,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "preprocessor/ifdef_defined/k6_N10_40nm": {
-        "test_name": "preprocessor/ifdef_defined/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "ifdef_defined.v",
-        "max_rss(MiB)": 14.8,
-        "exec_time(ms)": 8.5,
-        "synthesis_time(ms)": 0.7,
-        "Pi": 1,
-        "Po": 1,
-        "generic logic size": 6,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "preprocessor/ifdef_defined/k6_N10_mem32K_40nm": {
-        "test_name": "preprocessor/ifdef_defined/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "ifdef_defined.v",
-        "max_rss(MiB)": 31.9,
-        "exec_time(ms)": 75.4,
-        "synthesis_time(ms)": 0.8,
-        "Pi": 1,
-        "Po": 1,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 6,
         "Longest Path": 2,
         "Average Path": 2
     },
@@ -214,50 +43,6 @@
         "Longest Path": 2,
         "Average Path": 2
     },
-    "preprocessor/ifdef_else_defined/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "preprocessor/ifdef_else_defined/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "ifdef_else_defined.v",
-        "max_rss(MiB)": 33,
-        "exec_time(ms)": 63.3,
-        "synthesis_time(ms)": 0.5,
-        "Pi": 1,
-        "Po": 1,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "preprocessor/ifdef_else_defined/k6_N10_40nm": {
-        "test_name": "preprocessor/ifdef_else_defined/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "ifdef_else_defined.v",
-        "max_rss(MiB)": 14.8,
-        "exec_time(ms)": 7.8,
-        "synthesis_time(ms)": 0.6,
-        "Pi": 1,
-        "Po": 1,
-        "generic logic size": 6,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "preprocessor/ifdef_else_defined/k6_N10_mem32K_40nm": {
-        "test_name": "preprocessor/ifdef_else_defined/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "ifdef_else_defined.v",
-        "max_rss(MiB)": 32,
-        "exec_time(ms)": 79.6,
-        "synthesis_time(ms)": 0.7,
-        "Pi": 1,
-        "Po": 1,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 6,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
     "preprocessor/ifdef_else_defined/no_arch": {
         "test_name": "preprocessor/ifdef_else_defined/no_arch",
         "verilog": "ifdef_else_defined.v",
@@ -266,50 +51,6 @@
         "synthesis_time(ms)": 0.8,
         "Pi": 1,
         "Po": 1,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "preprocessor/ifdef_else_undefined/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "preprocessor/ifdef_else_undefined/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "ifdef_else_undefined.v",
-        "max_rss(MiB)": 33.1,
-        "exec_time(ms)": 79.3,
-        "synthesis_time(ms)": 0.7,
-        "Pi": 1,
-        "Po": 1,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "preprocessor/ifdef_else_undefined/k6_N10_40nm": {
-        "test_name": "preprocessor/ifdef_else_undefined/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "ifdef_else_undefined.v",
-        "max_rss(MiB)": 14.9,
-        "exec_time(ms)": 9.1,
-        "synthesis_time(ms)": 0.8,
-        "Pi": 1,
-        "Po": 1,
-        "generic logic size": 6,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "preprocessor/ifdef_else_undefined/k6_N10_mem32K_40nm": {
-        "test_name": "preprocessor/ifdef_else_undefined/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "ifdef_else_undefined.v",
-        "max_rss(MiB)": 31.9,
-        "exec_time(ms)": 81.1,
-        "synthesis_time(ms)": 0.7,
-        "Pi": 1,
-        "Po": 1,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 6,
         "Longest Path": 2,
         "Average Path": 2
     },
@@ -324,74 +65,12 @@
         "Longest Path": 2,
         "Average Path": 2
     },
-    "preprocessor/ifdef_undefined/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "preprocessor/ifdef_undefined/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "ifdef_undefined.v",
-        "warnings": [
-            "NETLIST ifdef_undefined.v:4 This output is undriven (simple_op^out) and will be removed",
-            "NETLIST Net simple_op^out driving node simple_op^out is itself undriven."
-        ],
-        "expectation": [
-            "UNDEFINED_IFDEF this test is expected to pass, if it fails the `ifdef is not functioning properly or the output pin is being dropped."
-        ],
-        "max_rss(MiB)": 51,
-        "exec_time(ms)": 76.9,
-        "synthesis_time(ms)": 1.5,
-        "Po": 1,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 1,
-        "Average Path": 1
-    },
-    "preprocessor/ifdef_undefined/k6_N10_40nm": {
-        "test_name": "preprocessor/ifdef_undefined/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "ifdef_undefined.v",
-        "warnings": [
-            "NETLIST ifdef_undefined.v:4 This output is undriven (simple_op^out) and will be removed",
-            "NETLIST Net simple_op^out driving node simple_op^out is itself undriven."
-        ],
-        "expectation": [
-            "UNDEFINED_IFDEF this test is expected to pass, if it fails the `ifdef is not functioning properly or the output pin is being dropped."
-        ],
-        "max_rss(MiB)": 33.9,
-        "exec_time(ms)": 14.9,
-        "synthesis_time(ms)": 6.4,
-        "Po": 1,
-        "generic logic size": 6,
-        "Longest Path": 1,
-        "Average Path": 1
-    },
-    "preprocessor/ifdef_undefined/k6_N10_mem32K_40nm": {
-        "test_name": "preprocessor/ifdef_undefined/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "ifdef_undefined.v",
-        "warnings": [
-            "NETLIST ifdef_undefined.v:4 This output is undriven (simple_op^out) and will be removed",
-            "NETLIST Net simple_op^out driving node simple_op^out is itself undriven."
-        ],
-        "expectation": [
-            "UNDEFINED_IFDEF this test is expected to pass, if it fails the `ifdef is not functioning properly or the output pin is being dropped."
-        ],
-        "max_rss(MiB)": 50.2,
-        "exec_time(ms)": 79.2,
-        "synthesis_time(ms)": 1.5,
-        "Po": 1,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 6,
-        "Longest Path": 1,
-        "Average Path": 1
-    },
     "preprocessor/ifdef_undefined/no_arch": {
         "test_name": "preprocessor/ifdef_undefined/no_arch",
         "verilog": "ifdef_undefined.v",
         "warnings": [
             "NETLIST ifdef_undefined.v:4 This output is undriven (simple_op^out) and will be removed",
-            "NETLIST Net simple_op^out driving node simple_op^out is itself undriven."
+            "NETLIST ifdef_undefined.v:4 Net simple_op^out driving node simple_op^out is itself undriven."
         ],
         "expectation": [
             "UNDEFINED_IFDEF this test is expected to pass, if it fails the `ifdef is not functioning properly or the output pin is being dropped."
@@ -403,74 +82,12 @@
         "Longest Path": 1,
         "Average Path": 1
     },
-    "preprocessor/ifndef_defined/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "preprocessor/ifndef_defined/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "ifndef_defined.v",
-        "warnings": [
-            "NETLIST ifndef_defined.v:3 This output is undriven (simple_op^out) and will be removed",
-            "NETLIST Net simple_op^out driving node simple_op^out is itself undriven."
-        ],
-        "expectation": [
-            "DEFINED_IFNDEF this test is expected to pass, if it fails the `ifndef is not functioning properly or output pin is being dropped."
-        ],
-        "max_rss(MiB)": 50.9,
-        "exec_time(ms)": 70.9,
-        "synthesis_time(ms)": 1.3,
-        "Po": 1,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 1,
-        "Average Path": 1
-    },
-    "preprocessor/ifndef_defined/k6_N10_40nm": {
-        "test_name": "preprocessor/ifndef_defined/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "ifndef_defined.v",
-        "warnings": [
-            "NETLIST ifndef_defined.v:3 This output is undriven (simple_op^out) and will be removed",
-            "NETLIST Net simple_op^out driving node simple_op^out is itself undriven."
-        ],
-        "expectation": [
-            "DEFINED_IFNDEF this test is expected to pass, if it fails the `ifndef is not functioning properly or output pin is being dropped."
-        ],
-        "max_rss(MiB)": 33.7,
-        "exec_time(ms)": 10,
-        "synthesis_time(ms)": 1.5,
-        "Po": 1,
-        "generic logic size": 6,
-        "Longest Path": 1,
-        "Average Path": 1
-    },
-    "preprocessor/ifndef_defined/k6_N10_mem32K_40nm": {
-        "test_name": "preprocessor/ifndef_defined/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "ifndef_defined.v",
-        "warnings": [
-            "NETLIST ifndef_defined.v:3 This output is undriven (simple_op^out) and will be removed",
-            "NETLIST Net simple_op^out driving node simple_op^out is itself undriven."
-        ],
-        "expectation": [
-            "DEFINED_IFNDEF this test is expected to pass, if it fails the `ifndef is not functioning properly or output pin is being dropped."
-        ],
-        "max_rss(MiB)": 49.9,
-        "exec_time(ms)": 82.4,
-        "synthesis_time(ms)": 1.5,
-        "Po": 1,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 6,
-        "Longest Path": 1,
-        "Average Path": 1
-    },
     "preprocessor/ifndef_defined/no_arch": {
         "test_name": "preprocessor/ifndef_defined/no_arch",
         "verilog": "ifndef_defined.v",
         "warnings": [
             "NETLIST ifndef_defined.v:3 This output is undriven (simple_op^out) and will be removed",
-            "NETLIST Net simple_op^out driving node simple_op^out is itself undriven."
+            "NETLIST ifndef_defined.v:3 Net simple_op^out driving node simple_op^out is itself undriven."
         ],
         "expectation": [
             "DEFINED_IFNDEF this test is expected to pass, if it fails the `ifndef is not functioning properly or output pin is being dropped."
@@ -482,50 +99,6 @@
         "Longest Path": 1,
         "Average Path": 1
     },
-    "preprocessor/ifndef_else_defined/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "preprocessor/ifndef_else_defined/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "ifndef_else_defined.v",
-        "max_rss(MiB)": 32.9,
-        "exec_time(ms)": 82.9,
-        "synthesis_time(ms)": 0.7,
-        "Pi": 1,
-        "Po": 1,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "preprocessor/ifndef_else_defined/k6_N10_40nm": {
-        "test_name": "preprocessor/ifndef_else_defined/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "ifndef_else_defined.v",
-        "max_rss(MiB)": 15.1,
-        "exec_time(ms)": 8.8,
-        "synthesis_time(ms)": 0.7,
-        "Pi": 1,
-        "Po": 1,
-        "generic logic size": 6,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "preprocessor/ifndef_else_defined/k6_N10_mem32K_40nm": {
-        "test_name": "preprocessor/ifndef_else_defined/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "ifndef_else_defined.v",
-        "max_rss(MiB)": 31.9,
-        "exec_time(ms)": 74.3,
-        "synthesis_time(ms)": 0.7,
-        "Pi": 1,
-        "Po": 1,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 6,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
     "preprocessor/ifndef_else_defined/no_arch": {
         "test_name": "preprocessor/ifndef_else_defined/no_arch",
         "verilog": "ifndef_else_defined.v",
@@ -534,50 +107,6 @@
         "synthesis_time(ms)": 0.8,
         "Pi": 1,
         "Po": 1,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "preprocessor/ifndef_else_undefined/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "preprocessor/ifndef_else_undefined/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "ifndef_else_undefined.v",
-        "max_rss(MiB)": 32.8,
-        "exec_time(ms)": 68.1,
-        "synthesis_time(ms)": 0.6,
-        "Pi": 1,
-        "Po": 1,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "preprocessor/ifndef_else_undefined/k6_N10_40nm": {
-        "test_name": "preprocessor/ifndef_else_undefined/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "ifndef_else_undefined.v",
-        "max_rss(MiB)": 14.8,
-        "exec_time(ms)": 7.9,
-        "synthesis_time(ms)": 0.9,
-        "Pi": 1,
-        "Po": 1,
-        "generic logic size": 6,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "preprocessor/ifndef_else_undefined/k6_N10_mem32K_40nm": {
-        "test_name": "preprocessor/ifndef_else_undefined/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "ifndef_else_undefined.v",
-        "max_rss(MiB)": 32.2,
-        "exec_time(ms)": 76.5,
-        "synthesis_time(ms)": 0.7,
-        "Pi": 1,
-        "Po": 1,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 6,
         "Longest Path": 2,
         "Average Path": 2
     },
@@ -592,50 +121,6 @@
         "Longest Path": 2,
         "Average Path": 2
     },
-    "preprocessor/ifndef_undefined/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "preprocessor/ifndef_undefined/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "ifndef_undefined.v",
-        "max_rss(MiB)": 32.8,
-        "exec_time(ms)": 66.5,
-        "synthesis_time(ms)": 0.5,
-        "Pi": 1,
-        "Po": 1,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "preprocessor/ifndef_undefined/k6_N10_40nm": {
-        "test_name": "preprocessor/ifndef_undefined/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "ifndef_undefined.v",
-        "max_rss(MiB)": 14.8,
-        "exec_time(ms)": 6.1,
-        "synthesis_time(ms)": 0.5,
-        "Pi": 1,
-        "Po": 1,
-        "generic logic size": 6,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "preprocessor/ifndef_undefined/k6_N10_mem32K_40nm": {
-        "test_name": "preprocessor/ifndef_undefined/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "ifndef_undefined.v",
-        "max_rss(MiB)": 32.1,
-        "exec_time(ms)": 76.5,
-        "synthesis_time(ms)": 0.7,
-        "Pi": 1,
-        "Po": 1,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 6,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
     "preprocessor/ifndef_undefined/no_arch": {
         "test_name": "preprocessor/ifndef_undefined/no_arch",
         "verilog": "ifndef_undefined.v",
@@ -644,50 +129,6 @@
         "synthesis_time(ms)": 0.9,
         "Pi": 1,
         "Po": 1,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "preprocessor/multiple_nested_define/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "preprocessor/multiple_nested_define/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "multiple_nested_define.v",
-        "max_rss(MiB)": 33.2,
-        "exec_time(ms)": 80.7,
-        "synthesis_time(ms)": 0.9,
-        "Pi": 3,
-        "Po": 3,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "preprocessor/multiple_nested_define/k6_N10_40nm": {
-        "test_name": "preprocessor/multiple_nested_define/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "multiple_nested_define.v",
-        "max_rss(MiB)": 15.2,
-        "exec_time(ms)": 9.4,
-        "synthesis_time(ms)": 1,
-        "Pi": 3,
-        "Po": 3,
-        "generic logic size": 6,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "preprocessor/multiple_nested_define/k6_N10_mem32K_40nm": {
-        "test_name": "preprocessor/multiple_nested_define/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "multiple_nested_define.v",
-        "max_rss(MiB)": 32.4,
-        "exec_time(ms)": 72.5,
-        "synthesis_time(ms)": 1.1,
-        "Pi": 3,
-        "Po": 3,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 6,
         "Longest Path": 2,
         "Average Path": 2
     },
@@ -702,50 +143,6 @@
         "Longest Path": 2,
         "Average Path": 2
     },
-    "preprocessor/nested_define/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "preprocessor/nested_define/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "nested_define.v",
-        "max_rss(MiB)": 33.3,
-        "exec_time(ms)": 79.3,
-        "synthesis_time(ms)": 0.9,
-        "Pi": 3,
-        "Po": 3,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "preprocessor/nested_define/k6_N10_40nm": {
-        "test_name": "preprocessor/nested_define/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "nested_define.v",
-        "max_rss(MiB)": 15.3,
-        "exec_time(ms)": 9.8,
-        "synthesis_time(ms)": 0.9,
-        "Pi": 3,
-        "Po": 3,
-        "generic logic size": 6,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "preprocessor/nested_define/k6_N10_mem32K_40nm": {
-        "test_name": "preprocessor/nested_define/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "nested_define.v",
-        "max_rss(MiB)": 32.1,
-        "exec_time(ms)": 77.8,
-        "synthesis_time(ms)": 0.9,
-        "Pi": 3,
-        "Po": 3,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 6,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
     "preprocessor/nested_define/no_arch": {
         "test_name": "preprocessor/nested_define/no_arch",
         "verilog": "nested_define.v",
@@ -756,45 +153,6 @@
         "Po": 3,
         "Longest Path": 2,
         "Average Path": 2
-    },
-    "preprocessor/nested_ifdef_alldef/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "preprocessor/nested_ifdef_alldef/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "nested_ifdef_alldef.v",
-        "exit": 1,
-        "errors": [
-            "NETLIST nested_ifdef.vh:18 You've defined this driver simple_op^out~0 twice."
-        ],
-        "expectation": [
-            "NESTED_IFDEF this test is expected to pass, if it fails the `ifdefs are not functioning properly."
-        ],
-        "generic logic size": 4
-    },
-    "preprocessor/nested_ifdef_alldef/k6_N10_40nm": {
-        "test_name": "preprocessor/nested_ifdef_alldef/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "nested_ifdef_alldef.v",
-        "exit": 1,
-        "errors": [
-            "NETLIST nested_ifdef.vh:18 You've defined this driver simple_op^out~0 twice."
-        ],
-        "expectation": [
-            "NESTED_IFDEF this test is expected to pass, if it fails the `ifdefs are not functioning properly."
-        ],
-        "generic logic size": 6
-    },
-    "preprocessor/nested_ifdef_alldef/k6_N10_mem32K_40nm": {
-        "test_name": "preprocessor/nested_ifdef_alldef/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "nested_ifdef_alldef.v",
-        "exit": 1,
-        "errors": [
-            "NETLIST nested_ifdef.vh:18 You've defined this driver simple_op^out~0 twice."
-        ],
-        "expectation": [
-            "NESTED_IFDEF this test is expected to pass, if it fails the `ifdefs are not functioning properly."
-        ],
-        "generic logic size": 6
     },
     "preprocessor/nested_ifdef_alldef/no_arch": {
         "test_name": "preprocessor/nested_ifdef_alldef/no_arch",
@@ -807,45 +165,6 @@
             "NESTED_IFDEF this test is expected to pass, if it fails the `ifdefs are not functioning properly."
         ]
     },
-    "preprocessor/nested_ifdef_middef/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "preprocessor/nested_ifdef_middef/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "nested_ifdef_middef.v",
-        "exit": 1,
-        "errors": [
-            "NETLIST nested_ifdef.vh:18 You've defined this driver simple_op^out~0 twice."
-        ],
-        "expectation": [
-            "NESTED_IFDEF this test is expected to pass, if it fails the `ifdefs are not functioning properly."
-        ],
-        "generic logic size": 4
-    },
-    "preprocessor/nested_ifdef_middef/k6_N10_40nm": {
-        "test_name": "preprocessor/nested_ifdef_middef/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "nested_ifdef_middef.v",
-        "exit": 1,
-        "errors": [
-            "NETLIST nested_ifdef.vh:18 You've defined this driver simple_op^out~0 twice."
-        ],
-        "expectation": [
-            "NESTED_IFDEF this test is expected to pass, if it fails the `ifdefs are not functioning properly."
-        ],
-        "generic logic size": 6
-    },
-    "preprocessor/nested_ifdef_middef/k6_N10_mem32K_40nm": {
-        "test_name": "preprocessor/nested_ifdef_middef/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "nested_ifdef_middef.v",
-        "exit": 1,
-        "errors": [
-            "NETLIST nested_ifdef.vh:18 You've defined this driver simple_op^out~0 twice."
-        ],
-        "expectation": [
-            "NESTED_IFDEF this test is expected to pass, if it fails the `ifdefs are not functioning properly."
-        ],
-        "generic logic size": 6
-    },
     "preprocessor/nested_ifdef_middef/no_arch": {
         "test_name": "preprocessor/nested_ifdef_middef/no_arch",
         "verilog": "nested_ifdef_middef.v",
@@ -856,45 +175,6 @@
         "expectation": [
             "NESTED_IFDEF this test is expected to pass, if it fails the `ifdefs are not functioning properly."
         ]
-    },
-    "preprocessor/nested_ifdef_nonedef/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "preprocessor/nested_ifdef_nonedef/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "nested_ifdef_nonedef.v",
-        "exit": 1,
-        "errors": [
-            "NETLIST nested_ifdef.vh:18 You've defined this driver simple_op^out~0 twice."
-        ],
-        "expectation": [
-            "NESTED_IFDEF this test is expected to pass, if it fails the `ifdefs are not functioning properly."
-        ],
-        "generic logic size": 4
-    },
-    "preprocessor/nested_ifdef_nonedef/k6_N10_40nm": {
-        "test_name": "preprocessor/nested_ifdef_nonedef/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "nested_ifdef_nonedef.v",
-        "exit": 1,
-        "errors": [
-            "NETLIST nested_ifdef.vh:18 You've defined this driver simple_op^out~0 twice."
-        ],
-        "expectation": [
-            "NESTED_IFDEF this test is expected to pass, if it fails the `ifdefs are not functioning properly."
-        ],
-        "generic logic size": 6
-    },
-    "preprocessor/nested_ifdef_nonedef/k6_N10_mem32K_40nm": {
-        "test_name": "preprocessor/nested_ifdef_nonedef/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "nested_ifdef_nonedef.v",
-        "exit": 1,
-        "errors": [
-            "NETLIST nested_ifdef.vh:18 You've defined this driver simple_op^out~0 twice."
-        ],
-        "expectation": [
-            "NESTED_IFDEF this test is expected to pass, if it fails the `ifdefs are not functioning properly."
-        ],
-        "generic logic size": 6
     },
     "preprocessor/nested_ifdef_nonedef/no_arch": {
         "test_name": "preprocessor/nested_ifdef_nonedef/no_arch",
@@ -907,45 +187,6 @@
             "NESTED_IFDEF this test is expected to pass, if it fails the `ifdefs are not functioning properly."
         ]
     },
-    "preprocessor/nested_ifdef_outsidedef/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "preprocessor/nested_ifdef_outsidedef/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "nested_ifdef_outsidedef.v",
-        "exit": 1,
-        "errors": [
-            "NETLIST nested_ifdef.vh:18 You've defined this driver simple_op^out~0 twice."
-        ],
-        "expectation": [
-            "NESTED_IFDEF this test is expected to pass, if it fails the `ifdefs are not functioning properly."
-        ],
-        "generic logic size": 4
-    },
-    "preprocessor/nested_ifdef_outsidedef/k6_N10_40nm": {
-        "test_name": "preprocessor/nested_ifdef_outsidedef/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "nested_ifdef_outsidedef.v",
-        "exit": 1,
-        "errors": [
-            "NETLIST nested_ifdef.vh:18 You've defined this driver simple_op^out~0 twice."
-        ],
-        "expectation": [
-            "NESTED_IFDEF this test is expected to pass, if it fails the `ifdefs are not functioning properly."
-        ],
-        "generic logic size": 6
-    },
-    "preprocessor/nested_ifdef_outsidedef/k6_N10_mem32K_40nm": {
-        "test_name": "preprocessor/nested_ifdef_outsidedef/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "nested_ifdef_outsidedef.v",
-        "exit": 1,
-        "errors": [
-            "NETLIST nested_ifdef.vh:18 You've defined this driver simple_op^out~0 twice."
-        ],
-        "expectation": [
-            "NESTED_IFDEF this test is expected to pass, if it fails the `ifdefs are not functioning properly."
-        ],
-        "generic logic size": 6
-    },
     "preprocessor/nested_ifdef_outsidedef/no_arch": {
         "test_name": "preprocessor/nested_ifdef_outsidedef/no_arch",
         "verilog": "nested_ifdef_outsidedef.v",
@@ -956,45 +197,6 @@
         "expectation": [
             "NESTED_IFDEF this test is expected to pass, if it fails the `ifdefs are not functioning properly."
         ]
-    },
-    "preprocessor/nested_ifdef_twodef/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "preprocessor/nested_ifdef_twodef/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "nested_ifdef_twodef.v",
-        "exit": 1,
-        "errors": [
-            "NETLIST nested_ifdef.vh:18 You've defined this driver simple_op^out~0 twice."
-        ],
-        "expectation": [
-            "NESTED_IFDEF this test is expected to pass, if it fails the `ifdefs are not functioning properly."
-        ],
-        "generic logic size": 4
-    },
-    "preprocessor/nested_ifdef_twodef/k6_N10_40nm": {
-        "test_name": "preprocessor/nested_ifdef_twodef/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "nested_ifdef_twodef.v",
-        "exit": 1,
-        "errors": [
-            "NETLIST nested_ifdef.vh:18 You've defined this driver simple_op^out~0 twice."
-        ],
-        "expectation": [
-            "NESTED_IFDEF this test is expected to pass, if it fails the `ifdefs are not functioning properly."
-        ],
-        "generic logic size": 6
-    },
-    "preprocessor/nested_ifdef_twodef/k6_N10_mem32K_40nm": {
-        "test_name": "preprocessor/nested_ifdef_twodef/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "nested_ifdef_twodef.v",
-        "exit": 1,
-        "errors": [
-            "NETLIST nested_ifdef.vh:18 You've defined this driver simple_op^out~0 twice."
-        ],
-        "expectation": [
-            "NESTED_IFDEF this test is expected to pass, if it fails the `ifdefs are not functioning properly."
-        ],
-        "generic logic size": 6
     },
     "preprocessor/nested_ifdef_twodef/no_arch": {
         "test_name": "preprocessor/nested_ifdef_twodef/no_arch",
@@ -1007,36 +209,6 @@
             "NESTED_IFDEF this test is expected to pass, if it fails the `ifdefs are not functioning properly."
         ]
     },
-    "preprocessor/nested_operation_define/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "preprocessor/nested_operation_define/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "nested_operation_define.v",
-        "exit": 134,
-        "errors": [
-            "PARSE_TO_AST nested_operation_define.v:1 define `operator is being used with too many arguments, Expected 0, got 2"
-        ],
-        "generic logic size": 4
-    },
-    "preprocessor/nested_operation_define/k6_N10_40nm": {
-        "test_name": "preprocessor/nested_operation_define/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "nested_operation_define.v",
-        "exit": 134,
-        "errors": [
-            "PARSE_TO_AST nested_operation_define.v:1 define `operator is being used with too many arguments, Expected 0, got 2"
-        ],
-        "generic logic size": 6
-    },
-    "preprocessor/nested_operation_define/k6_N10_mem32K_40nm": {
-        "test_name": "preprocessor/nested_operation_define/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "nested_operation_define.v",
-        "exit": 134,
-        "errors": [
-            "PARSE_TO_AST nested_operation_define.v:1 define `operator is being used with too many arguments, Expected 0, got 2"
-        ],
-        "generic logic size": 6
-    },
     "preprocessor/nested_operation_define/no_arch": {
         "test_name": "preprocessor/nested_operation_define/no_arch",
         "verilog": "nested_operation_define.v",
@@ -1044,59 +216,6 @@
         "errors": [
             "PARSE_TO_AST nested_operation_define.v:1 define `operator is being used with too many arguments, Expected 0, got 2"
         ]
-    },
-    "preprocessor/operation_define/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "preprocessor/operation_define/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "operation_define.v",
-        "max_rss(MiB)": 32.8,
-        "exec_time(ms)": 89.2,
-        "synthesis_time(ms)": 0.8,
-        "Pi": 1,
-        "Po": 1,
-        "logic element": 1,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Estimated LUTs": 1,
-        "Total Node": 1
-    },
-    "preprocessor/operation_define/k6_N10_40nm": {
-        "test_name": "preprocessor/operation_define/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "operation_define.v",
-        "max_rss(MiB)": 15,
-        "exec_time(ms)": 10.3,
-        "synthesis_time(ms)": 0.9,
-        "Pi": 1,
-        "Po": 1,
-        "logic element": 1,
-        "generic logic size": 6,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Estimated LUTs": 1,
-        "Total Node": 1
-    },
-    "preprocessor/operation_define/k6_N10_mem32K_40nm": {
-        "test_name": "preprocessor/operation_define/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "operation_define.v",
-        "max_rss(MiB)": 32.2,
-        "exec_time(ms)": 81,
-        "synthesis_time(ms)": 0.7,
-        "Pi": 1,
-        "Po": 1,
-        "logic element": 1,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 6,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Estimated LUTs": 1,
-        "Total Node": 1
     },
     "preprocessor/operation_define/no_arch": {
         "test_name": "preprocessor/operation_define/no_arch",
@@ -1112,70 +231,9 @@
         "Estimated LUTs": 1,
         "Total Node": 1
     },
-    "preprocessor/undef/k6_frac_N10_frac_chain_mem32K_40nm": {
-        "test_name": "preprocessor/undef/k6_frac_N10_frac_chain_mem32K_40nm",
-        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
-        "verilog": "undef.v",
-        "exit": 1,
-        "leaks": 1,
-        "expectation": [
-            "NESTED_IFDEF this test is expected to pass, if it fails the `undef and `define functioning properly."
-        ],
-        "max_rss(MiB)": 51.1,
-        "exec_time(ms)": 68.8,
-        "synthesis_time(ms)": 1.1,
-        "Pi": 1,
-        "Po": 1,
-        "Adder": 0,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 4,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "preprocessor/undef/k6_N10_40nm": {
-        "test_name": "preprocessor/undef/k6_N10_40nm",
-        "architecture": "k6_N10_40nm.xml",
-        "verilog": "undef.v",
-        "exit": 1,
-        "leaks": 1,
-        "expectation": [
-            "NESTED_IFDEF this test is expected to pass, if it fails the `undef and `define functioning properly."
-        ],
-        "max_rss(MiB)": 33.8,
-        "exec_time(ms)": 10.7,
-        "synthesis_time(ms)": 1.6,
-        "Pi": 1,
-        "Po": 1,
-        "generic logic size": 6,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
-    "preprocessor/undef/k6_N10_mem32K_40nm": {
-        "test_name": "preprocessor/undef/k6_N10_mem32K_40nm",
-        "architecture": "k6_N10_mem32K_40nm.xml",
-        "verilog": "undef.v",
-        "exit": 1,
-        "leaks": 1,
-        "expectation": [
-            "NESTED_IFDEF this test is expected to pass, if it fails the `undef and `define functioning properly."
-        ],
-        "max_rss(MiB)": 50.1,
-        "exec_time(ms)": 69.1,
-        "synthesis_time(ms)": 1.4,
-        "Pi": 1,
-        "Po": 1,
-        "Multiplier": 0,
-        "Memory": 0,
-        "generic logic size": 6,
-        "Longest Path": 2,
-        "Average Path": 2
-    },
     "preprocessor/undef/no_arch": {
         "test_name": "preprocessor/undef/no_arch",
         "verilog": "undef.v",
-        "exit": 1,
-        "leaks": 1,
         "expectation": [
             "NESTED_IFDEF this test is expected to pass, if it fails the `undef and `define functioning properly."
         ],

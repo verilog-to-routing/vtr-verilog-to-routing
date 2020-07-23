@@ -187,8 +187,7 @@
         "exit": 134,
         "errors": [
             "AST bm_dag5_mod.v:33 Cannot mix port connections by name and port connections by ordered list"
-        ],
-        "generic logic size": 4
+        ]
     },
     "syntax/bm_dag5_mod/no_arch": {
         "test_name": "syntax/bm_dag5_mod/no_arch",
@@ -205,8 +204,7 @@
         "exit": 134,
         "errors": [
             "AST bm_dag6_mod_log.v:33 Cannot mix port connections by name and port connections by ordered list"
-        ],
-        "generic logic size": 4
+        ]
     },
     "syntax/bm_dag6_mod_log/no_arch": {
         "test_name": "syntax/bm_dag6_mod_log/no_arch",
@@ -396,8 +394,7 @@
         "exit": 134,
         "errors": [
             "AST bm_function_1.v:40 Missing declaration of this symbol simple_func"
-        ],
-        "generic logic size": 4
+        ]
     },
     "syntax/bm_function_1/no_arch": {
         "test_name": "syntax/bm_function_1/no_arch",
@@ -414,8 +411,7 @@
         "exit": 134,
         "errors": [
             "AST bm_function_2.v:50 Missing declaration of this symbol simple_func"
-        ],
-        "generic logic size": 4
+        ]
     },
     "syntax/bm_function_2/no_arch": {
         "test_name": "syntax/bm_function_2/no_arch",
@@ -559,7 +555,7 @@
         "verilog": "both_ram.v",
         "exit": 134,
         "errors": [
-            "NETLIST Memory pram.inst1 of depth 2^16 exceeds ODIN bound of 2^10."
+            "NETLIST both_ram.v:49 Memory pram.inst1 of depth 2^16 exceeds ODIN bound of 2^10."
         ]
     },
     "syntax/cf_fft_1024_16/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -681,8 +677,7 @@
         "warnings": [
             "PARSE_TO_AST deassign.v:21 Unsuported token",
             "PARSE_TO_AST deassign.v:21 error in parsing: (syntax error, unexpected ';', expecting voLTE or '=')"
-        ],
-        "generic logic size": 4
+        ]
     },
     "syntax/deassign/no_arch": {
         "test_name": "syntax/deassign/no_arch",
@@ -814,8 +809,7 @@
         "warnings": [
             "PARSE_TO_AST fir_scu_rtl_restructured_for_cmm_exp.v:94 error in parsing: (syntax error, unexpected vSYMBOL_ID, expecting voLTE or '=')",
             "PARSE_TO_AST fir_scu_rtl_restructured_for_cmm_exp.v:109 error in parsing: (syntax error, unexpected voLTE, expecting vSYMBOL_ID or '#')"
-        ],
-        "generic logic size": 4
+        ]
     },
     "syntax/fir_scu_rtl_restructured_for_cmm_exp/no_arch": {
         "test_name": "syntax/fir_scu_rtl_restructured_for_cmm_exp/no_arch",
@@ -835,7 +829,7 @@
         "verilog": "flip_flop_enable.v",
         "warnings": [
             "NETLIST flip_flop_enable.v:7 This output is undriven (edge_testing^q0) and will be removed",
-            "NETLIST Net edge_testing^q0 driving node edge_testing^q0 is itself undriven."
+            "NETLIST flip_flop_enable.v:7 Net edge_testing^q0 driving node edge_testing^q0 is itself undriven."
         ],
         "max_rss(MiB)": 25.4,
         "exec_time(ms)": 44.8,
@@ -853,7 +847,7 @@
         "verilog": "flip_flop_enable.v",
         "warnings": [
             "NETLIST flip_flop_enable.v:7 This output is undriven (edge_testing^q0) and will be removed",
-            "NETLIST Net edge_testing^q0 driving node edge_testing^q0 is itself undriven."
+            "NETLIST flip_flop_enable.v:7 Net edge_testing^q0 driving node edge_testing^q0 is itself undriven."
         ],
         "max_rss(MiB)": 12.7,
         "exec_time(ms)": 3.6,
@@ -868,7 +862,7 @@
         "verilog": "flip_flop_enable_w_begin_label.v",
         "warnings": [
             "NETLIST flip_flop_enable_w_begin_label.v:7 This output is undriven (edge_testing^q0) and will be removed",
-            "NETLIST Net edge_testing^q0 driving node edge_testing^q0 is itself undriven."
+            "NETLIST flip_flop_enable_w_begin_label.v:7 Net edge_testing^q0 driving node edge_testing^q0 is itself undriven."
         ],
         "max_rss(MiB)": 25.5,
         "exec_time(ms)": 47.8,
@@ -886,7 +880,7 @@
         "verilog": "flip_flop_enable_w_begin_label.v",
         "warnings": [
             "NETLIST flip_flop_enable_w_begin_label.v:7 This output is undriven (edge_testing^q0) and will be removed",
-            "NETLIST Net edge_testing^q0 driving node edge_testing^q0 is itself undriven."
+            "NETLIST flip_flop_enable_w_begin_label.v:7 Net edge_testing^q0 driving node edge_testing^q0 is itself undriven."
         ],
         "max_rss(MiB)": 12.4,
         "exec_time(ms)": 3.7,
@@ -1060,8 +1054,7 @@
         "warnings": [
             "PARSE_TO_AST function_hdr.v:14 error in parsing: (syntax error, unexpected vINT_NUMBER, expecting vSYMBOL_ID or '{')",
             "AST function_hdr.vh:13 ODIN_II does not fully support input/output integers in functions"
-        ],
-        "generic logic size": 4
+        ]
     },
     "syntax/function_hdr/no_arch": {
         "test_name": "syntax/function_hdr/no_arch",
@@ -1366,8 +1359,7 @@
         "exit": 134,
         "errors": [
             "NETLIST instantiated_by_name_function_invalid_1.v:21 Function instantiation (func_out) and definition don't match in terms of ports"
-        ],
-        "generic logic size": 4
+        ]
     },
     "syntax/instantiated_by_name_function_invalid_1/no_arch": {
         "test_name": "syntax/instantiated_by_name_function_invalid_1/no_arch",
@@ -1384,8 +1376,7 @@
         "exit": 134,
         "errors": [
             "NETLIST instantiated_by_name_function_invalid.v:21 Module entry y1 does not exist"
-        ],
-        "generic logic size": 4
+        ]
     },
     "syntax/instantiated_by_name_function_invalid/no_arch": {
         "test_name": "syntax/instantiated_by_name_function_invalid/no_arch",
@@ -1439,8 +1430,7 @@
         "exit": 134,
         "errors": [
             "NETLIST instantiated_by_name_task_invalid_1.v:21 Task instantiation (my_task) and definition don't match in terms of ports"
-        ],
-        "generic logic size": 4
+        ]
     },
     "syntax/instantiated_by_name_task_invalid_1/no_arch": {
         "test_name": "syntax/instantiated_by_name_task_invalid_1/no_arch",
@@ -1457,8 +1447,7 @@
         "exit": 134,
         "errors": [
             "NETLIST instantiated_by_name_task_invalid.v:21 Module entry y1 does not exist"
-        ],
-        "generic logic size": 4
+        ]
     },
     "syntax/instantiated_by_name_task_invalid/no_arch": {
         "test_name": "syntax/instantiated_by_name_task_invalid/no_arch",
@@ -1512,8 +1501,7 @@
         "exit": 134,
         "errors": [
             "NETLIST instantiating_by_name_invalid_1.v:13 Module instantiation (and2) and definition don't match in terms of ports"
-        ],
-        "generic logic size": 4
+        ]
     },
     "syntax/instantiating_by_name_invalid_1/no_arch": {
         "test_name": "syntax/instantiating_by_name_invalid_1/no_arch",
@@ -1530,8 +1518,7 @@
         "exit": 134,
         "errors": [
             "NETLIST instantiating_by_name_invalid.v:13 Module entry in3 does not exist"
-        ],
-        "generic logic size": 4
+        ]
     },
     "syntax/instantiating_by_name_invalid_mix_ports/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/instantiating_by_name_invalid_mix_ports/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1540,8 +1527,7 @@
         "exit": 134,
         "errors": [
             "AST instantiating_by_name_invalid_mix_ports.v:13 Cannot mix port connections by name and port connections by ordered list"
-        ],
-        "generic logic size": 4
+        ]
     },
     "syntax/instantiating_by_name_invalid_mix_ports/no_arch": {
         "test_name": "syntax/instantiating_by_name_invalid_mix_ports/no_arch",
@@ -1670,8 +1656,7 @@
         "warnings": [
             "NETLIST matrix_multiplication.v:120 indexing into memory with matrix_multiplication has larger input than memory. Unused pins:",
             "NETLIST matrix_multiplication.v:121 indexing into memory with matrix_multiplication has larger input than memory. Unused pins:"
-        ],
-        "generic logic size": 4
+        ]
     },
     "syntax/matrix_multiplication/no_arch": {
         "test_name": "syntax/matrix_multiplication/no_arch",
@@ -1723,8 +1708,7 @@
         "test_name": "syntax/memory_combinational/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "memory_combinational.v",
-        "exit": 134,
-        "generic logic size": 4
+        "exit": 134
     },
     "syntax/memory_combinational/no_arch": {
         "test_name": "syntax/memory_combinational/no_arch",
@@ -1992,7 +1976,7 @@
         "verilog": "not_enough_wires.v",
         "warnings": [
             "NETLIST not_enough_wires.v:7 This output is undriven (bar^d) and will be removed",
-            "NETLIST Net bar^d driving node bar^d is itself undriven."
+            "NETLIST not_enough_wires.v:7 Net bar^d driving node bar^d is itself undriven."
         ],
         "max_rss(MiB)": 26.3,
         "exec_time(ms)": 48,
@@ -2010,7 +1994,7 @@
         "verilog": "not_enough_wires.v",
         "warnings": [
             "NETLIST not_enough_wires.v:7 This output is undriven (bar^d) and will be removed",
-            "NETLIST Net bar^d driving node bar^d is itself undriven."
+            "NETLIST not_enough_wires.v:7 Net bar^d driving node bar^d is itself undriven."
         ],
         "max_rss(MiB)": 13,
         "exec_time(ms)": 6.6,
@@ -2024,8 +2008,8 @@
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "part_select.v",
         "warnings": [
-            "NETLIST Net (null) driving node top.inst_3^bAND~0^lAND~7 is itself undriven.",
-            "NETLIST Net (null) driving node top.inst_3^bAND~0^lAND~8 is itself undriven."
+            "NETLIST part_select.v:15 Net (null) driving node top.inst_3^bAND~0^lAND~7 is itself undriven.",
+            "NETLIST part_select.v:15 Net (null) driving node top.inst_3^bAND~0^lAND~8 is itself undriven."
         ],
         "max_rss(MiB)": 25.6,
         "exec_time(ms)": 42.5,
@@ -2046,8 +2030,8 @@
         "test_name": "syntax/part_select/no_arch",
         "verilog": "part_select.v",
         "warnings": [
-            "NETLIST Net (null) driving node top.inst_3^bAND~0^lAND~7 is itself undriven.",
-            "NETLIST Net (null) driving node top.inst_3^bAND~0^lAND~8 is itself undriven."
+            "NETLIST part_select.v:15 Net (null) driving node top.inst_3^bAND~0^lAND~7 is itself undriven.",
+            "NETLIST part_select.v:15 Net (null) driving node top.inst_3^bAND~0^lAND~8 is itself undriven."
         ],
         "max_rss(MiB)": 12.4,
         "exec_time(ms)": 4,
@@ -2550,8 +2534,7 @@
         "exit": 134,
         "errors": [
             "AST top_and.v:19 Can't find module name and_primitive"
-        ],
-        "generic logic size": 4
+        ]
     },
     "syntax/top_and/no_arch": {
         "test_name": "syntax/top_and/no_arch",

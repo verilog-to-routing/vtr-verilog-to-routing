@@ -44,8 +44,6 @@ addons:
     - libxft-dev
     - libxml++2.6-dev
     - perl
-    - python
-    - python3.6
     - python-lxml
     - texinfo
     - time
@@ -230,9 +228,13 @@ jobs:
         - ./.github/travis/cron_build.sh
 
 before_script:
+  # Switch to python 3.6.3
+  - pyenv install -f 3.6.3
+  - pyenv global 3.6.3
+
   - source .github/travis/common.sh
   - ./.github/travis/setup.sh
-
+    
 after_script:
   - ./.github/travis/setup.sh
 

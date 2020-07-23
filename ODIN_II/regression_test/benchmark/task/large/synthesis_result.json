@@ -92,7 +92,7 @@
         "verilog": "boundtop.v",
         "warnings": [
             "NETLIST boundtop.v:17 This output is undriven (paj_boundtop_hierarchy_no_mem^globalreset) and will be removed",
-            "NETLIST Net paj_boundtop_hierarchy_no_mem^globalreset driving node paj_boundtop_hierarchy_no_mem^globalreset is itself undriven."
+            "NETLIST boundtop.v:17 Net paj_boundtop_hierarchy_no_mem^globalreset driving node paj_boundtop_hierarchy_no_mem^globalreset is itself undriven."
         ],
         "max_rss(MiB)": 41.5,
         "exec_time(ms)": 240.2,
@@ -742,7 +742,7 @@
         "verilog": "paj_boundtop_hierarchy_no_mem.v",
         "warnings": [
             "NETLIST paj_boundtop_hierarchy_no_mem.v:17 This output is undriven (paj_boundtop_hierarchy_no_mem^globalreset) and will be removed",
-            "NETLIST Net paj_boundtop_hierarchy_no_mem^globalreset driving node paj_boundtop_hierarchy_no_mem^globalreset is itself undriven."
+            "NETLIST paj_boundtop_hierarchy_no_mem.v:17 Net paj_boundtop_hierarchy_no_mem^globalreset driving node paj_boundtop_hierarchy_no_mem^globalreset is itself undriven."
         ],
         "max_rss(MiB)": 41.7,
         "exec_time(ms)": 241.3,

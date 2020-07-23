@@ -305,6 +305,14 @@ This regression test targets the functionality of different opertators. It check
 
 The syntax regression tests targets syntactic behaviour. It checks that functions work cohesively together and adhere to the verilog standard.
 
+### keywords
+
+This regression test targets the function of keywords. It has a folder or child for each keyword containing their respective benchmarks. Some folders have benchmarks for two keywords like task_endtask because they both are required together to function properly.
+
+### preprocessor
+
+This set of regression test includes benchmarks targetting compiler directives available in Verilog.
+
 ### Regression Tests Directory Tree
 
 ```bash
@@ -355,6 +363,46 @@ benchmark
       │     │   ├── simulation_result.json
       │     │   ├── synthesis_result.json
       │     │   └── task.conf
+      │     ├── keywords
+      |     |   ├── always
+      │     │   ├── and
+      |     |   ├── assign
+      |     |   ├── at_parenthathese
+      |     |   ├── automatic
+      |     |   ├── begin_end
+      |     |   ├── buf
+      |     |   ├── case_endcase
+      |     |   ├── default
+      |     |   ├── defparam
+      |     |   ├── else
+      |     |   ├── for
+      |     |   ├── function_endfunction
+      |     |   ├── generate
+      |     |   ├── genvar
+      |     |   ├── if
+      |     |   ├── initial
+      |     |   ├── inout
+      |     |   ├── input_output
+      |     |   ├── integer
+      |     |   ├── localparam
+      |     |   ├── macromodule
+      |     |   ├── nand
+      |     |   ├── negedge
+      |     |   ├── nor
+      |     |   ├── not
+      |     |   ├── or
+      |     |   ├── parameter
+      |     |   ├── posedge
+      |     |   ├── reg
+      |     |   ├── signed_unsigned
+      |     |   ├── specify_endspecify
+      |     |   ├── specparam
+      |     |   ├── star
+      |     |   ├── task_endtask
+      |     |   ├── while
+      |     |   ├── wire
+      |     |   ├── xnor
+      │     │   └── xor
       │     ├── large
       │     │   ├── synthesis_result.json
       │     │   └── task.conf
@@ -365,6 +413,10 @@ benchmark
       │     ├── operators
       │     │   ├── simulation_result.json
       │     │   ├── synthesis_result.json
+      │     │   └── task.conf
+      │     ├── preprocessor
+      │     │   ├── simulation_result.json
+      │     │   ├── synthesis_result.json
       │     │   └── task.conf
       │     ├── syntax
       │     │   ├── simulation_result.json
@@ -381,8 +433,10 @@ benchmark
             ├── ex1BT16_fir_20_input
             ├── FIR
             ├── full
+            ├── keywords
             ├── large
             ├── micro
             ├── operators
+            ├── preprocessor
             └── syntax
 ```

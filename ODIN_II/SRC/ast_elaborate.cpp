@@ -210,11 +210,11 @@ ast_node_t* find_top_module(ast_t* ast) {
 
     /* check atleast one module is top ... and only one */
     if (!found_desired_module) {
-        warning_message(AST, -1, -1, "Could not find the desired top level module: %s\n", desired_module.c_str());
+        warning_message(AST, unknown_location, "Could not find the desired top level module: %s\n", desired_module.c_str());
     }
 
     if (number_of_top_modules > 1) {
-        error_message(AST, -1, -1, "Found multiple top level modules\n%s", module_name_list.c_str());
+        error_message(AST, unknown_location, "Found multiple top level modules\n%s", module_name_list.c_str());
     } else {
         printf("==========================\nDetected Top Level Module: %s\n==========================\n", module_name_list.c_str());
     }
@@ -315,7 +315,7 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
                     for (int i = 1; i < connect_list->num_children; i++) {
                         if ((connect_list->children[i]->children[0] && is_ordered_list)
                             || (!connect_list->children[i]->children[0] && !is_ordered_list)) {
-                            error_message(AST, node->line_number, node->file_number,
+                            error_message(AST, node->loc,
                                           "%s", "Cannot mix port connections by name and port connections by ordered list\n");
                         }
                     }
@@ -393,7 +393,7 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
                     if (!(node_is_constant(initial->children[1]))
                         || !(node_is_constant(compare_expression->children[1]))
                         || !(verify_terminal(terminal->children[1], iterator))) {
-                        error_message(AST, node->line_number, node->file_number,
+                        error_message(AST, node->loc,
                                       "%s", "Loop generate construct conditions must be constant expressions");
                     }
                 }
@@ -442,14 +442,14 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
                         to_return = node->children[2];
                         node->children[2] = NULL;
                     } else if (is_generate_region) {
-                        error_message(AST, node->line_number, node->file_number,
+                        error_message(AST, node->loc,
                                       "%s", "Could not resolve conditional generate construct");
                     }
                     free_whole_tree(node);
                     node = to_return;
                     // otherwise we keep it as is to build the circuitry
                 } else if (is_generate_region) {
-                    error_message(AST, node->line_number, node->file_number,
+                    error_message(AST, node->loc,
                                   "%s", "Could not resolve conditional generate construct");
                 }
 
@@ -524,7 +524,7 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
                             item->children[0] = NULL;
                         } else {
                             if (item->type != CASE_ITEM) {
-                                error_message(AST, node->line_number, node->file_number,
+                                error_message(AST, node->loc,
                                               "%s", "Default case must only be the last case");
                             }
 
@@ -537,7 +537,7 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
                                     break;
                                 }
                             } else if (is_generate_region) {
-                                error_message(AST, node->line_number, node->file_number,
+                                error_message(AST, node->loc,
                                               "%s", "Could not resolve conditional generate construct");
                             } else {
                                 /* encountered non-constant item - don't continue searching */
@@ -582,11 +582,11 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
                         node = to_return;
                     } else if (is_generate_region) {
                         /* no case */
-                        error_message(AST, node->line_number, node->file_number,
+                        error_message(AST, node->loc,
                                       "%s", "Could not resolve conditional generate construct");
                     }
                 } else if (is_generate_region) {
-                    error_message(AST, node->line_number, node->file_number,
+                    error_message(AST, node->loc,
                                   "%s", "Could not resolve conditional generate construct");
                 }
 
@@ -596,17 +596,17 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
                 if (data->pass == 2) {
                     node->children[0] = build_hierarchy(node->children[0], node, 0, local_ref, is_generate_region, true, data);
                     if (!(node_is_constant(node->children[0]))) {
-                        error_message(AST, node->line_number, node->file_number,
+                        error_message(AST, node->loc,
                                       "%s", "Replication constant must be a constant expression");
                     } else if (node->children[0]->types.vnumber->is_dont_care_string()) {
-                        error_message(AST, node->line_number, node->file_number,
+                        error_message(AST, node->loc,
                                       "%s", "Replication constant cannot contain x or z");
                     }
 
                     ast_node_t* new_node = NULL;
                     int64_t value = node->children[0]->types.vnumber->get_value();
                     if (value > 0) {
-                        new_node = create_node_w_type(CONCATENATE, node->line_number, node->file_number);
+                        new_node = create_node_w_type(CONCATENATE, node->loc);
                         for (int64_t i = 0; i < value; i++) {
                             add_child_to_node(new_node, ast_node_deep_copy(node->children[1]));
                         }
@@ -639,7 +639,7 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
                             delete temp;
 
                             if (newNode->type != NUMBERS) {
-                                error_message(AST, node->line_number, node->file_number, "Parameter %s is not a constant expression\n", node->types.identifier);
+                                error_message(AST, node->loc, "Parameter %s is not a constant expression\n", node->types.identifier);
                             }
                         }
 
@@ -759,7 +759,7 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
                                 param_node->children[0]->types.identifier = vtr::strdup(param_ref.c_str());
 
                                 if (!instance_param_list) {
-                                    instance_param_list = create_node_w_type(MODULE_PARAMETER_LIST, instance_node->line_number, current_parse_file);
+                                    instance_param_list = create_node_w_type(MODULE_PARAMETER_LIST, instance_node->children[1]->loc);
                                     instance_node->children[1]->children[2] = instance_param_list;
                                 }
 
@@ -788,7 +788,7 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
                     long sc_spot;
                     /* lookup the name of the function associated with this instantiated point */
                     if ((sc_spot = sc_lookup_string(module_names_to_idx, temp_instance->children[0]->types.identifier)) == -1) {
-                        error_message(AST, node->line_number, node->file_number,
+                        error_message(AST, node->loc,
                                       "Can't find function name %s\n", temp_instance->children[0]->types.identifier);
                     }
 
@@ -837,7 +837,7 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
                     long sc_spot;
                     /* lookup the name of the task associated with this instantiated point */
                     if ((sc_spot = sc_lookup_string(module_names_to_idx, temp_instance->children[0]->types.identifier)) == -1) {
-                        error_message(AST, node->line_number, node->file_number,
+                        error_message(AST, node->loc,
                                       "Can't find task name %s\n", temp_instance->children[0]->types.identifier);
                     }
 
@@ -926,7 +926,7 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
                     long sc_spot;
                     /* lookup the name of the module associated with this instantiated point */
                     if ((sc_spot = sc_lookup_string(module_names_to_idx, temp_instance->children[0]->types.identifier)) == -1) {
-                        error_message(AST, node->line_number, node->file_number,
+                        error_message(AST, node->loc,
                                       "Can't find module name %s\n", temp_instance->children[0]->types.identifier);
                     }
 
@@ -971,7 +971,7 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
             case TERNARY_OPERATION: {
                 if (node->children[0] == NULL) {
                     /* resulting from replication of zero */
-                    error_message(AST, node->line_number, node->file_number,
+                    error_message(AST, node->loc,
                                   "%s", "Cannot perform operation with nonexistent value");
                 }
                 ast_node_t* child_condition = node->children[0];
@@ -993,7 +993,7 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
             case BINARY_OPERATION: {
                 if (node->children[0] == NULL || node->children[1] == NULL) {
                     /* resulting from replication of zero */
-                    error_message(AST, node->line_number, node->file_number,
+                    error_message(AST, node->loc,
                                   "%s", "Cannot perform operation with nonexistent value");
                 }
 
@@ -1020,7 +1020,7 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
             case UNARY_OPERATION: {
                 if (node->children[0] == NULL) {
                     /* resulting from replication of zero */
-                    error_message(AST, node->line_number, node->file_number,
+                    error_message(AST, node->loc,
                                   "%s", "Cannot perform operation with nonexistent value");
                 }
 
@@ -1080,7 +1080,7 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
                     if (node->num_children == 0) {
                         // could we simply warn and continue ? any ways we can recover rather than fail?
                         /* resulting replication(s) of zero */
-                        error_message(AST, node->line_number, node->file_number,
+                        error_message(AST, node->loc,
                                       "%s", "Cannot concatenate zero bitstrings");
                     }
 
@@ -1167,7 +1167,7 @@ ast_node_t* finalize_ast(ast_node_t* node, ast_node_t* parent, sc_hierarchy* loc
                 for (int i = 1; i < connect_list->num_children; i++) {
                     if ((connect_list->children[i]->children[0] && is_ordered_list)
                         || (!connect_list->children[i]->children[0] && !is_ordered_list)) {
-                        error_message(AST, node->line_number, node->file_number,
+                        error_message(AST, node->loc,
                                       "%s", "Cannot mix port connections by name and port connections by ordered list\n");
                     }
                 }
@@ -1198,7 +1198,7 @@ ast_node_t* finalize_ast(ast_node_t* node, ast_node_t* parent, sc_hierarchy* loc
                          && connect_list->children[i]->children)
                         && ((connect_list->children[i]->children[0] && is_ordered_list)
                             || (!connect_list->children[i]->children[0] && !is_ordered_list))) {
-                        error_message(AST, node->line_number, node->file_number,
+                        error_message(AST, node->loc,
                                       "%s", "Cannot mix port connections by name and port connections by ordered list\n");
                     }
                 }
@@ -1220,8 +1220,8 @@ ast_node_t* finalize_ast(ast_node_t* node, ast_node_t* parent, sc_hierarchy* loc
                         ast_node_t* val = var_declare->children[5];
                         var_declare->children[5] = NULL;
 
-                        ast_node_t* blocking_node = newBlocking(id, val, var_declare->line_number);
-                        ast_node_t* assign_node = newList(ASSIGN, blocking_node, var_declare->line_number);
+                        ast_node_t* blocking_node = newBlocking(id, val, var_declare->loc);
+                        ast_node_t* assign_node = newList(ASSIGN, blocking_node, var_declare->loc);
 
                         add_child_to_node(node, assign_node);
                     }
@@ -1252,7 +1252,7 @@ ast_node_t* finalize_ast(ast_node_t* node, ast_node_t* parent, sc_hierarchy* loc
                             delete temp;
 
                             if (newNode->type != NUMBERS) {
-                                error_message(AST, node->line_number, node->file_number, "Parameter %s is not a constant expression\n", node->types.identifier);
+                                error_message(AST, node->loc, "Parameter %s is not a constant expression\n", node->types.identifier);
                             }
                         }
 
@@ -1292,7 +1292,7 @@ ast_node_t* finalize_ast(ast_node_t* node, ast_node_t* parent, sc_hierarchy* loc
                     if (!(node_is_constant(initial->children[1]))
                         || !(node_is_constant(compare_expression->children[1]))
                         || !(verify_terminal(terminal->children[1], iterator))) {
-                        error_message(AST, node->line_number, node->file_number,
+                        error_message(AST, node->loc,
                                       "%s", "Loop generate construct conditions must be constant expressions");
                     }
                 }
@@ -1317,7 +1317,7 @@ ast_node_t* finalize_ast(ast_node_t* node, ast_node_t* parent, sc_hierarchy* loc
                         node->children[1] = finalize_ast(node->children[1], node, local_ref, is_generate_region, false);
                         if (node->children[1] == NULL) {
                             /* resulting from replication of zero */
-                            error_message(AST, node->line_number, node->file_number,
+                            error_message(AST, node->loc,
                                           "%s", "Cannot perform assignment with nonexistent value");
                         }
                     }
@@ -1329,17 +1329,17 @@ ast_node_t* finalize_ast(ast_node_t* node, ast_node_t* parent, sc_hierarchy* loc
             case REPLICATE: {
                 node->children[0] = finalize_ast(node->children[0], node, local_ref, is_generate_region, true);
                 if (!(node_is_constant(node->children[0]))) {
-                    error_message(AST, node->line_number, node->file_number,
+                    error_message(AST, node->loc,
                                   "%s", "Replication constant must be a constant expression");
                 } else if (node->children[0]->types.vnumber->is_dont_care_string()) {
-                    error_message(AST, node->line_number, node->file_number,
+                    error_message(AST, node->loc,
                                   "%s", "Replication constant cannot contain x or z");
                 }
 
                 ast_node_t* new_node = NULL;
                 int64_t value = node->children[0]->types.vnumber->get_value();
                 if (value > 0) {
-                    new_node = create_node_w_type(CONCATENATE, node->line_number, node->file_number);
+                    new_node = create_node_w_type(CONCATENATE, node->loc);
                     for (int64_t i = 0; i < value; i++) {
                         add_child_to_node(new_node, ast_node_deep_copy(node->children[1]));
                     }
@@ -1444,7 +1444,7 @@ ast_node_t* finalize_ast(ast_node_t* node, ast_node_t* parent, sc_hierarchy* loc
 
                         /* lookup the name of the module associated with this instantiated point */
                         if ((sc_spot_2 = sc_lookup_string(module_names_to_idx, temp_instance->children[0]->types.identifier)) == -1) {
-                            error_message(AST, node->line_number, node->file_number,
+                            error_message(AST, node->loc,
                                           "Can't find module name %s\n", temp_instance->children[0]->types.identifier);
                         }
 
@@ -1600,7 +1600,7 @@ ast_node_t* finalize_ast(ast_node_t* node, ast_node_t* parent, sc_hierarchy* loc
             case BINARY_OPERATION: {
                 if (node->children[0] == NULL || node->children[1] == NULL) {
                     /* resulting from replication of zero */
-                    error_message(AST, node->line_number, node->file_number,
+                    error_message(AST, node->loc,
                                   "%s", "Cannot perform operation with nonexistent value");
                 }
 
@@ -1627,7 +1627,7 @@ ast_node_t* finalize_ast(ast_node_t* node, ast_node_t* parent, sc_hierarchy* loc
             case UNARY_OPERATION: {
                 if (node->children[0] == NULL) {
                     /* resulting from replication of zero */
-                    error_message(AST, node->line_number, node->file_number,
+                    error_message(AST, node->loc,
                                   "%s", "Cannot perform operation with nonexistent value");
                 }
 
@@ -1684,7 +1684,7 @@ ast_node_t* finalize_ast(ast_node_t* node, ast_node_t* parent, sc_hierarchy* loc
                     if (node->num_children == 0) {
                         // could we simply warn and continue ? any ways we can recover rather than fail?
                         /* resulting replication(s) of zero */
-                        error_message(AST, node->line_number, node->file_number,
+                        error_message(AST, node->loc,
                                       "%s", "Cannot concatenate zero bitstrings");
                     }
 
@@ -1714,7 +1714,7 @@ ast_node_t* finalize_ast(ast_node_t* node, ast_node_t* parent, sc_hierarchy* loc
                     /* note: indexed part-selects (-: and +:) should support non-constant base expressions, 
                      * e.g. my_var[some_input+:3] = 4'b0101, but we don't support it right now... */
 
-                    error_message(AST, node->line_number, node->file_number,
+                    error_message(AST, node->loc,
                                   "%s", "Part-selects can only contain constant expressions");
                 }
 
@@ -1813,7 +1813,7 @@ ast_node_t* reduce_expressions(ast_node_t* node, sc_hierarchy* local_ref, long* 
                         node->children[1] = reduce_expressions(node->children[1], local_ref, max_size, assignment_size);
                         if (node->children[1] == NULL) {
                             /* resulting from replication of zero */
-                            error_message(AST, node->line_number, node->file_number,
+                            error_message(AST, node->loc,
                                           "%s", "Cannot perform assignment with nonexistent value");
                         }
                     } else {
@@ -1883,7 +1883,7 @@ ast_node_t* reduce_expressions(ast_node_t* node, sc_hierarchy* local_ref, long* 
                 // 		else
                 // 		{
                 // 			/* error - symbol either doesn't exist or is not accessible to this scope */
-                // 			error_message(AST, node->line_number, node->file_number,
+                // 			error_message(AST,  node->loc,
                 // 				"Missing declaration of this symbol %s\n", node->types.identifier);
                 // 		}
                 // 	}
@@ -1998,7 +1998,7 @@ ast_node_t* reduce_expressions(ast_node_t* node, sc_hierarchy* local_ref, long* 
             case BINARY_OPERATION: {
                 if (node->children[0] == NULL || node->children[1] == NULL) {
                     /* resulting from replication of zero */
-                    error_message(AST, node->line_number, node->file_number,
+                    error_message(AST, node->loc,
                                   "%s", "Cannot perform operation with nonexistent value");
                 }
 
@@ -2027,7 +2027,7 @@ ast_node_t* reduce_expressions(ast_node_t* node, sc_hierarchy* local_ref, long* 
             case UNARY_OPERATION: {
                 if (node->children[0] == NULL) {
                     /* resulting from replication of zero */
-                    error_message(AST, node->line_number, node->file_number,
+                    error_message(AST, node->loc,
                                   "%s", "Cannot perform operation with nonexistent value");
                 }
 
@@ -2171,14 +2171,14 @@ void update_instance_parameter_table(ast_node_t* instance, STRING_CACHE* instanc
             if (parameter_override_list->children[j]->types.variable.is_parameter) {
                 param_count++;
                 if (is_by_name != (parameter_override_list->children[j]->children[0] != NULL)) {
-                    error_message(AST, parameter_override_list->line_number, parameter_override_list->file_number,
+                    error_message(AST, parameter_override_list->loc,
                                   "%s", "Cannot mix parameters passed by name and parameters passed by ordered list\n");
                 } else if (is_by_name) {
                     char* param_id = parameter_override_list->children[j]->children[0]->types.identifier;
 
                     for (int k = 0; k < j; k++) {
                         if (!strcmp(param_id, parameter_override_list->children[k]->children[0]->types.identifier)) {
-                            error_message(AST, parameter_override_list->line_number, parameter_override_list->file_number,
+                            error_message(AST, parameter_override_list->loc,
                                           "Cannot override the same parameter twice (%s) within a module instance\n",
                                           parameter_override_list->children[j]->children[0]->types.identifier);
                         }
@@ -2186,13 +2186,13 @@ void update_instance_parameter_table(ast_node_t* instance, STRING_CACHE* instanc
 
                     sc_spot = sc_lookup_string(instance_param_table_sc, param_id);
                     if (sc_spot == -1) {
-                        error_message(AST, parameter_override_list->line_number, parameter_override_list->file_number,
+                        error_message(AST, parameter_override_list->loc,
                                       "Can't find parameter name %s in module %s\n",
                                       param_id, instance->children[0]->types.identifier);
                     }
                 } else {
                     char* param_id = vtr::strdup(instance_param_table_sc->string[j]);
-                    ast_node_t* param_symbol = newSymbolNode(param_id, parameter_override_list->children[j]->line_number);
+                    ast_node_t* param_symbol = newSymbolNode(param_id, parameter_override_list->children[j]->loc);
                     parameter_override_list->children[j]->children[0] = param_symbol;
                 }
             } else {
@@ -2202,7 +2202,7 @@ void update_instance_parameter_table(ast_node_t* instance, STRING_CACHE* instanc
         }
 
         if (!is_by_name && param_count > instance_param_table_sc->free) {
-            error_message(AST, parameter_override_list->line_number, parameter_override_list->file_number,
+            error_message(AST, parameter_override_list->loc,
                           "There are more parameters (%d) passed into %s than there are specified in the module (%ld)!",
                           param_count, instance->children[1]->children[0]->types.identifier, instance_param_table_sc->free);
         }
@@ -2212,40 +2212,36 @@ void update_instance_parameter_table(ast_node_t* instance, STRING_CACHE* instanc
             char* param_id = parameter_override_list->children[j]->children[0]->types.identifier;
             sc_spot = sc_lookup_string(instance_param_table_sc, param_id);
             if (sc_spot == -1) {
-                error_message(AST, parameter_override_list->line_number, parameter_override_list->file_number,
-                              "Can't find parameter name %s in module %s\n",
-                              param_id, instance->children[0]->types.identifier);
+                warning_message(AST, parameter_override_list->loc,
+                                "Can't find parameter name %s in module %s\n",
+                                param_id, instance->children[0]->types.identifier);
             } else {
-                /* update this parameter and remove all other overrides with this name */
-                free_whole_tree(((ast_node_t*)instance_param_table_sc->data[sc_spot]));
-                instance_param_table_sc->data[sc_spot] = (void*)parameter_override_list->children[j]->children[5];
-                parameter_override_list->children[j]->children[5] = NULL;
+                ast_node_t* param_node = (ast_node_t*)instance_param_table_sc->data[sc_spot];
+                if (param_node == NULL) {
+                    instance_param_table_sc->data[sc_spot] = (void*)parameter_override_list->children[j]->children[5];
+                } else if (!param_node->types.variable.is_parameter) {
+                    warning_message(AST, parameter_override_list->loc,
+                                    "Defparam can only override parameters: %s\n",
+                                    parameter_override_list->children[j]->children[0]->types.identifier);
+                } else {
+                    /* update this parameter and remove all other overrides with this name */
+                    free_whole_tree(((ast_node_t*)instance_param_table_sc->data[sc_spot]));
+                    instance_param_table_sc->data[sc_spot] = (void*)parameter_override_list->children[j]->children[5];
+                    parameter_override_list->children[j]->children[5] = NULL;
+                }
 
                 for (int k = 0; k < j; k++) {
                     if (!strcmp(parameter_override_list->children[k]->children[0]->types.identifier, param_id)) {
-                        /**
-                         * TODO: is this needed?
-                         * ast_node_t* temp = parameter_override_list->children[k]; 
-                         * */
                         remove_child_from_node_at_index(parameter_override_list, k);
-                        //temp = NULL;
                         j--;
                         k--;
                     }
                 }
-                /**
-                 * TODO: is this needed?
-                 * ast_node_t* temp = parameter_override_list->children[j];
-                 * */
                 remove_child_from_node_at_index(parameter_override_list, j);
-                //temp = NULL;
             }
         }
         // check if there are still overrides in the list that haven't been deleted
-
-        if (parameter_override_list->num_children > 0) {
-            oassert(false); // not reachable???
-        }
+        oassert(parameter_override_list->num_children == 0);
     }
 }
 
@@ -2301,17 +2297,17 @@ void convert_2D_to_1D_array(ast_node_t** var_declare) {
     long addr_max1 = node_max3->types.vnumber->get_value();
 
     if ((addr_min > addr_max) || (addr_min1 > addr_max1)) {
-        error_message(AST, (*var_declare)->children[0]->line_number, (*var_declare)->children[0]->file_number, "%s",
+        error_message(AST, (*var_declare)->children[0]->loc, "%s",
                       "Odin doesn't support arrays declared [m:n] where m is less than n.");
     } else if ((addr_min < 0 || addr_max < 0) || (addr_min1 < 0 || addr_max1 < 0)) {
-        error_message(AST, (*var_declare)->children[0]->line_number, (*var_declare)->children[0]->file_number, "%s",
+        error_message(AST, (*var_declare)->children[0]->loc, "%s",
                       "Odin doesn't support negative number in index.");
     }
 
     char* name = (*var_declare)->children[0]->types.identifier;
 
     if (addr_min != 0 || addr_min1 != 0) {
-        error_message(AST, (*var_declare)->children[0]->line_number, (*var_declare)->children[0]->file_number,
+        error_message(AST, (*var_declare)->children[0]->loc,
                       "%s: right memory address index must be zero\n", name);
     }
 
@@ -2350,8 +2346,8 @@ void convert_2D_to_1D_array_ref(ast_node_t** node, sc_hierarchy* local_ref) {
     ast_node_t* array_col = (*node)->children[2];
 
     // build the new AST
-    ast_node_t* new_node_1 = newBinaryOperation(MULTIPLY, array_row, array_size, (*node)->children[0]->line_number);
-    ast_node_t* new_node_2 = newBinaryOperation(ADD, new_node_1, array_col, (*node)->children[0]->line_number);
+    ast_node_t* new_node_1 = newBinaryOperation(MULTIPLY, array_row, array_size, (*node)->children[0]->loc);
+    ast_node_t* new_node_2 = newBinaryOperation(ADD, new_node_1, array_col, (*node)->children[0]->loc);
 
     vtr::free(temp_string);
 
@@ -2386,24 +2382,24 @@ void verify_genvars(ast_node_t* node, sc_hierarchy* local_ref, char*** other_gen
 
             if (strcmp(initial->children[0]->types.identifier, terminal->children[0]->types.identifier) != 0) {
                 /* must match */
-                error_message(AST, node->line_number, node->file_number,
+                error_message(AST, node->loc,
                               "%s", "Must use the same genvar for initial condition and iteration condition");
             }
 
             ast_node_t* var_declare = resolve_hierarchical_name_reference(local_ref, iterator->types.identifier);
 
             if (var_declare == NULL) {
-                error_message(AST, iterator->line_number, iterator->file_number,
+                error_message(AST, iterator->loc,
                               "Missing declaration of this symbol %s\n", iterator->types.identifier);
             } else if (!var_declare->types.variable.is_genvar) {
-                error_message(AST, node->line_number, node->file_number,
+                error_message(AST, node->loc,
                               "%s", "Iterator for loop generate construct must be declared as a genvar");
             }
 
             // check genvars that were already found
             for (int i = 0; i < num_genvars; i++) {
                 if (!strcmp(iterator->types.identifier, (*other_genvars)[i])) {
-                    error_message(AST, node->line_number, node->file_number,
+                    error_message(AST, node->loc,
                                   "%s", "Cannot reuse a genvar in a nested loop sequence");
                 }
             }
@@ -2492,7 +2488,7 @@ ast_node_t* look_for_matching_hard_block(ast_node_t* node, char* hard_block_name
              * this is risky, but we will try to do some "smart" mapping to mark inputs and outputs 
              * by evaluating the port connections to determine the order */
 
-            warning_message(AST, connect_list->line_number, connect_list->file_number,
+            warning_message(AST, connect_list->loc,
                             "Attempting to convert this instance to a hard block (%s) -	unnamed port connections will be matched according to hard block specification and may produce unexpected results\n", hard_block_name);
 
             t_model_ports *hb_ports_1 = NULL, *hb_ports_2 = NULL;
@@ -2594,13 +2590,13 @@ ast_node_t* look_for_matching_hard_block(ast_node_t* node, char* hard_block_name
             i = 0;
             while (hb_ports_1) {
                 oassert(connect_list->children[i] && !connect_list->children[i]->children[0]);
-                connect_list->children[i]->children[0] = newSymbolNode(vtr::strdup(hb_ports_1->name), connect_list->line_number);
+                connect_list->children[i]->children[0] = newSymbolNode(vtr::strdup(hb_ports_1->name), connect_list->loc);
                 hb_ports_1 = hb_ports_1->next;
                 i++;
             }
             while (hb_ports_2) {
                 oassert(connect_list->children[i] && !connect_list->children[i]->children[0]);
-                connect_list->children[i]->children[0] = newSymbolNode(vtr::strdup(hb_ports_2->name), connect_list->line_number);
+                connect_list->children[i]->children[0] = newSymbolNode(vtr::strdup(hb_ports_2->name), connect_list->loc);
                 hb_ports_2 = hb_ports_2->next;
                 i++;
             }
@@ -2611,7 +2607,7 @@ ast_node_t* look_for_matching_hard_block(ast_node_t* node, char* hard_block_name
         ast_node_t* instance = ast_node_deep_copy(node->children[1]);
         char* new_hard_block_name = vtr::strdup(hard_block_name);
 
-        return newHardBlockInstance(new_hard_block_name, instance, instance->line_number);
+        return newHardBlockInstance(new_hard_block_name, instance, instance->loc);
     } else {
         return look_for_matching_soft_logic(node, hard_block_name);
     }
@@ -2627,7 +2623,7 @@ ast_node_t* look_for_matching_soft_logic(ast_node_t* node, char* hard_block_name
     if (is_hb) {
         ast_node_t* instance = ast_node_deep_copy(node->children[1]);
         char* new_hard_block_name = vtr::strdup(hard_block_name);
-        return newHardBlockInstance(new_hard_block_name, instance, instance->line_number);
+        return newHardBlockInstance(new_hard_block_name, instance, instance->loc);
     } else {
         return node;
     }
@@ -2682,7 +2678,7 @@ void create_param_table_for_scope(ast_node_t* module_items, sc_hierarchy* local_
                         sc_spot = sc_add_string(local_param_table_sc, temp_string);
 
                         if (local_param_table_sc->data[sc_spot] != NULL) {
-                            error_message(AST, var_declare->line_number, var_declare->file_number,
+                            error_message(AST, var_declare->loc,
                                           "Block already has parameter with this name (%s)\n", var_declare->children[0]->types.identifier);
                         }
 
@@ -2693,7 +2689,7 @@ void create_param_table_for_scope(ast_node_t* module_items, sc_hierarchy* local_
                         sc_spot = sc_add_string(local_defparam_table_sc, temp_string);
 
                         if (local_defparam_table_sc->data[sc_spot] != NULL) {
-                            error_message(AST, var_declare->line_number, var_declare->file_number,
+                            error_message(AST, var_declare->loc,
                                           "Block already has defparam with this name (%s)\n", var_declare->children[0]->types.identifier);
                         }
 
@@ -2715,7 +2711,7 @@ void create_param_table_for_scope(ast_node_t* module_items, sc_hierarchy* local_
             }
         }
     } else {
-        error_message(AST, module_items->line_number, module_items->file_number, "%s", "Empty module\n");
+        error_message(AST, module_items->loc, "%s", "Empty module\n");
     }
 }
 
@@ -2746,7 +2742,7 @@ void create_param_table_for_scope(ast_node_t* module_items, sc_hierarchy* local_
 // 				enode *tail = find_tail(head);
 // 				free_whole_tree(list_assign[j]->children[1]);
 // 				T = (ast_node_t*)vtr::malloc(sizeof(ast_node_t));
-// 				construct_new_tree(tail, T, list_assign[j]->line_number, list_assign[j]->file_number);
+// 				construct_new_tree(tail, T,list_assign[j]->loc);
 // 				list_assign[j]->children[1] = T;
 // 			}
 // 			free_exp_list();

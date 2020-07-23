@@ -68,6 +68,7 @@ def is_json_str(value):
 #############################################
 # for TOML
 _DFLT_HDR='DEFAULT'
+_HOOK_HDR='HOOKS'
 
 _K_DFLT='default'
 _K_KEY='key'
@@ -76,10 +77,20 @@ _K_RANGE='range'
 _K_CUTOFF='cutoff'
 _K_HIDE_IF='hide-if'
 _K_AUTO_HIDE='auto-hide'
+_K_FILE='filename'
+
+_TOML_PATH=""
+HOOK_FILES=[]
 
 def preproc_toml(file):
+	global _TOML_PATH
+
 	current_dir = os.getcwd()
 	directory = os.path.dirname(file)
+
+	# add this path here to find hooks
+	sys.path.append(directory)
+
 	if directory != '':
 		os.chdir(directory)
 
@@ -185,6 +196,19 @@ def sanitize_toml(toml_dict):
 	if _DFLT_HDR in toml_dict:
 		defaults = toml_dict[_DFLT_HDR]
 		del toml_dict[_DFLT_HDR]
+
+	if _HOOK_HDR in toml_dict:
+		global HOOK_FILES
+		if _K_FILE in toml_dict[_HOOK_HDR]:
+
+			# we append the filenames and strip the .py extension
+			if not isinstance(toml_dict[_HOOK_HDR][_K_FILE], list):
+				HOOK_FILES.append(toml_dict[_HOOK_HDR][_K_FILE][:-3])
+			else:
+				for hook_files in toml_dict[_HOOK_HDR][_K_FILE]:
+					HOOK_FILES.append(hook_files[:-3])
+
+		del toml_dict[_HOOK_HDR]
 
 	for header in toml_dict:
 		# initialize all the key->values to the defaults provided
@@ -308,6 +332,11 @@ def print_as_csv(toml_dict, output_dict, file=sys.stdout):
 		print(', '.join(row), file=file)
 
 def print_as_json(toml_dict, output_dict, file=sys.stdout):
+	# hide the defaults
+	output_dict = auto_hide_values(toml_dict, output_dict)
+	# make sure that the defaults are printed as a separate table
+	output_dict[_DFLT_HDR] = create_tbl(toml_dict, _K_HIDE_IF)
+
 	print(json.dumps(output_dict, indent = 4), file=file)
 
 def pretty_print_tbl(toml_dict, output_dict, file=sys.stdout):
@@ -344,24 +373,60 @@ def load_csv_into_tbl(toml_dict, csv_file_name):
 	return file_dict
 
 def load_json_into_tbl(toml_dict, file_name):
+
 	file_dict = OrderedDict()
 	with open(file_name, newline='') as json_file:
 		file_dict = json.load(json_file,object_pairs_hook=OrderedDict)
+
+	if _DFLT_HDR not in file_dict:
+		# nothing to do
+		return file_dict
+
+	# once we have loaded the json file, we go through and fill back the default
+	# we will delete the default, then this way we could merge two json with different defaults 
+	# without issue
+	for header in file_dict:
+		if header != _DFLT_HDR:
+			for key in file_dict[_DFLT_HDR]:
+				if key not in file_dict[header] or file_dict[header][key] is None:
+					file_dict[header][key] = file_dict[_DFLT_HDR][key]
+
+	del file_dict[_DFLT_HDR]
+
 	return file_dict
 
+
 def load_log_into_tbl(toml_dict, log_file_name):
+
+	# load the hooks if there are any
+	# run.py
+	pre_hooks = []
+	post_hooks = []
+	for hook_file in HOOK_FILES:
+		module = __import__(hook_file)
+		module_hook_list = getattr(module, "PRE_HOOKS")
+		for runtime_hook in module_hook_list:
+			pre_hooks.append(getattr(module, runtime_hook))
+
+		module_hook_list = getattr(module, "POST_HOOKS")
+		for runtime_hook in module_hook_list:
+			post_hooks.append(getattr(module, runtime_hook))
+
+
 	# setup our output dict, print as csv expects a hashed table
 	parsed_dict = OrderedDict()
-
-	# for the first entry, we must add this in
-	parsed_dict[_DFLT_HDR] = create_tbl(toml_dict, _K_HIDE_IF)
 
 	#load log file and parse
 	with open(log_file_name) as log:
 		# set the defaults
 		input_values = create_tbl(toml_dict, _K_DFLT)
 
-		for line in log:
+		for line in log:	
+
+			# boostrap the preprocessor here
+			for fn in pre_hooks:
+				line = fn(line)
+
 			line = " ".join(line.split())
 			for header in toml_dict:
 				value = regex_line(toml_dict, header, line)
@@ -379,9 +444,14 @@ def load_log_into_tbl(toml_dict, log_file_name):
 			if input_values is None:
 				input_values[header] = toml_dict[header][_K_DFLT]
 
+		# boostrap the post-processor here
+		for fn in post_hooks:
+			input_values = fn(input_values)
+			
 		# make a key from the user desired key items
 		key = hash_item(toml_dict, input_values)
 		parsed_dict[key] = input_values
+
 
 	return parsed_dict
 
@@ -396,7 +466,6 @@ def load_into_tbl(toml_dict, file_name):
 		# we assume this is a log file
 		tbl = load_log_into_tbl(toml_dict, file_name)
 
-	tbl = auto_hide_values(toml_dict, tbl)
 	return tbl
 
 def range(header, toml_dict, value, golden_value):
@@ -493,7 +562,9 @@ def regex_line(toml_dict, header, line):
 def _parse(toml_file_name, log_file_name):
 	# load toml
 	toml_dict = load_toml(toml_file_name)
+
 	parsed_dict = load_into_tbl(toml_dict, log_file_name)
+	
 	pretty_print_tbl(toml_dict, parsed_dict)
 
 def _join(toml_file_name, file_list):
@@ -538,6 +609,7 @@ def _compare(toml_file_name, golden_result_file_name, result_file_name, diff_fil
 					pass
 
 				elif header not in golden_tbl[key] and header in tbl[key]:
+
 					error_str.append(mismatch_str(header, "null", tbl[key][header]))
 					diff[key][header] = tbl[key][header]
 
