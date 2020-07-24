@@ -639,7 +639,7 @@ def except_vtr_error(error, expect_fail, verbose):
             print("\treturncode  : ", error.returncode)
             print("\tlog file    : ", error.log)
         exit_status = 1
-    if isinstance(error, vtr.InspectError):
+    elif isinstance(error, vtr.InspectError):
         # Something went wrong gathering information
         print("Error: {msg}".format(msg=error.msg))
         print("\tfile        : ", error.filename)
@@ -647,13 +647,14 @@ def except_vtr_error(error, expect_fail, verbose):
         return_status = exit_status
         error_status = "failed: {}".format(error.msg)
 
-    if isinstance(error, vtr.VtrError):
+    elif isinstance(error, vtr.VtrError):
         # Generic VTR errors
         print("Error: ", error.msg)
         exit_status = 3
         return_status = exit_status
         error_status = "failed: {}".format(error.msg)
     return error_status, return_status, exit_status
+
 
 if __name__ == "__main__":
     retval = main()
