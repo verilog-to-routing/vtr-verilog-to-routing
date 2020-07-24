@@ -3229,7 +3229,15 @@ static void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, flo
         ss << 1e9 * incr_delay; //In nanoseconds
         std::string incr_delay_str = ss.str();
 
-        g->draw_text(text_bbox.center(), incr_delay_str.c_str(), text_bbox.width(), text_bbox.height());
+        // Set the text colour to black to differentiate it from the line
+        g->set_color(ezgl::color(0, 0, 0));
+        g->set_font_size(16);
+
+        ezgl::point2d offset_text_bbox(text_bbox.center().x + 2, text_bbox.center().y + 2);
+
+        g->draw_text(offset_text_bbox, incr_delay_str.c_str(), text_bbox.width(), text_bbox.height());
+
+        g->set_font_size(14);
     }
 }
 
