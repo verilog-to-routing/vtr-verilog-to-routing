@@ -7,23 +7,29 @@ from collections import OrderedDict
 from enum import Enum
 import vtr
 
+
 class VtrStage(Enum):
     """
         Enum class for the VTR stages\
     """
+
     odin = 1
     abc = 2
     ace = 3
     vpr = 4
+
     def __le__(self, other):
         if self.__class__ is other.__class__:
             return int(self.value) <= other.value
         return NotImplemented
+
     def __ge__(self, other):
         if self.__class__ is other.__class__:
             return int(self.value) >= other.value
         return NotImplemented
-#pylint: disable=too-many-arguments
+
+
+# pylint: disable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements
 def run(
         architecture_file,
         circuit_file,
@@ -124,10 +130,12 @@ def run(
     # Verify that files are Paths or convert them to Paths and check that they exist
     architecture_file = vtr.util.verify_file(architecture_file, "Architecture")
     circuit_file = vtr.util.verify_file(circuit_file, "Circuit")
-    power_tech_file = vtr.util.verify_file(power_tech_file, "Power") if power_tech_file else None
+    power_tech_file = (
+        vtr.util.verify_file(power_tech_file, "Power") if power_tech_file else None
+    )
     temp_dir = Path(temp_dir)
     temp_dir.mkdir(parents=True, exist_ok=True)
-    netlist_ext = ".blif" if ".eblif" not in circuit_file.suffixes else  ".eblif"
+    netlist_ext = ".blif" if ".eblif" not in circuit_file.suffixes else ".eblif"
 
     # Define useful filenames
     post_odin_netlist = temp_dir / (circuit_file.stem + ".odin" + netlist_ext)
@@ -143,7 +151,7 @@ def run(
     # Reference netlist for LEC
 
     gen_postsynthesis_netlist = temp_dir / (
-        circuit_file.stem + "_post_synthesis." + netlist_ext
+        circuit_file.stem + "_post_synthesis" + netlist_ext
     )
 
     # Copy the circuit and architecture
@@ -160,7 +168,10 @@ def run(
     #
     # RTL Elaboration & Synthesis
     #
-    if should_run_stage(VtrStage.odin, start_stage, end_stage) and circuit_file.suffixes != ".blif":
+    if (
+            should_run_stage(VtrStage.odin, start_stage, end_stage)
+            and circuit_file.suffixes != ".blif"
+    ):
         vtr.odin.run(
             architecture_copy,
             next_stage_netlist,
@@ -174,7 +185,9 @@ def run(
 
         next_stage_netlist = post_odin_netlist
 
-        lec_base_netlist = post_odin_netlist if not lec_base_netlist else lec_base_netlist
+        lec_base_netlist = (
+            post_odin_netlist if not lec_base_netlist else lec_base_netlist
+        )
 
     #
     # Logic Optimization & Technology Mapping
@@ -192,7 +205,9 @@ def run(
         )
 
         next_stage_netlist = post_abc_netlist
-        lec_base_netlist = post_abc_netlist if not lec_base_netlist else lec_base_netlist
+        lec_base_netlist = (
+            post_abc_netlist if not lec_base_netlist else lec_base_netlist
+        )
 
     #
     # Power Activity Estimation
@@ -216,7 +231,9 @@ def run(
 
         # Use ACE's output netlist
         next_stage_netlist = post_ace_netlist
-        lec_base_netlist = post_ace_netlist if not lec_base_netlist else lec_base_netlist
+        lec_base_netlist = (
+            post_ace_netlist if not lec_base_netlist else lec_base_netlist
+        )
 
         # Enable power analysis in VPR
         vpr_args["power"] = True
@@ -263,6 +280,10 @@ def run(
     # Logical Equivalence Checks (LEC)
     #
     if check_equivalent:
+        for file in Path(temp_dir).iterdir():
+            if "post_synthesis.blif" in str(file):
+                gen_postsynthesis_netlist = file.name
+                break
         vtr.abc.run_lec(
             lec_base_netlist,
             gen_postsynthesis_netlist,
@@ -272,7 +293,7 @@ def run(
 
     # Do a second-run of the incremental analysis to compare the result files
     if check_incremental_sta_consistency:
-        vtr.vpr.cmp_full_vs_incr_STA(
+        vtr.vpr.cmp_full_vs_incr_sta(
             architecture_copy,
             pre_vpr_netlist,
             circuit_copy.stem,
@@ -283,12 +304,25 @@ def run(
         )
 
     if not keep_intermediate_files:
-        delete_intermediate_files(next_stage_netlist, post_ace_activity_file,
-                                  keep_result_files, temp_dir, power_tech_file)
-#pylint: enable=too-many-arguments
+        delete_intermediate_files(
+            next_stage_netlist,
+            post_ace_activity_file,
+            keep_result_files,
+            temp_dir,
+            power_tech_file,
+        )
 
-def delete_intermediate_files(next_stage_netlist, post_ace_activity_file,
-                              keep_result_files, temp_dir, power_tech_file):
+
+# pylint: enable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements
+
+
+def delete_intermediate_files(
+        next_stage_netlist,
+        post_ace_activity_file,
+        keep_result_files,
+        temp_dir,
+        power_tech_file,
+):
     """
         delete intermediate files
     """
@@ -302,6 +336,7 @@ def delete_intermediate_files(next_stage_netlist, post_ace_activity_file,
 
     if power_tech_file:
         post_ace_activity_file.unlink()
+
 
 def should_run_stage(stage, flow_start_stage, flow_end_stage):
     """
