@@ -26,8 +26,9 @@ class RawDefaultHelpFormatter(
     formatting of description/epilog
     """
 
-#pylint: disable=too-many-arguments, too-many-instance-attributes, too-few-public-methods, too-many-locals
-class CommandRunner():
+
+# pylint: disable=too-many-arguments, too-many-instance-attributes, too-few-public-methods, too-many-locals
+class CommandRunner:
     """
         An object for running system commands with timeouts, memory limits and varying verbose-ness
 
@@ -45,6 +46,7 @@ class CommandRunner():
             indent: The string specifying a single indent (used in verbose mode)
             valgrind: Indicates if commands should be run with valgrind
         """
+
     def __init__(
             self,
             timeout_sec=None,
@@ -97,25 +99,39 @@ class CommandRunner():
         temp_dir = Path(temp_dir) if not isinstance(temp_dir, Path) else temp_dir
 
         # If no log file is specified the name is based on the executed command
-        log_filename = PurePath(orig_cmd[0]).name + ".out" if log_filename is None else log_filename
+        log_filename = (
+            PurePath(orig_cmd[0]).name + ".out"
+            if log_filename is None
+            else log_filename
+        )
 
         # Limit memory usage?
         memory_limit = ["ulimit", "-Sv", "{val};".format(val=self._max_memory_mb)]
-        cmd = memory_limit + cmd if self._max_memory_mb and check_cmd(memory_limit[0]) else cmd
+        cmd = (
+            memory_limit + cmd
+            if self._max_memory_mb and check_cmd(memory_limit[0])
+            else cmd
+        )
 
         # Enable memory tracking?
         memory_tracking = ["/usr/bin/env", "time", "-v"]
         if self._track_memory and check_cmd(memory_tracking[0]):
-            cmd = memory_tracking + [
-                "valgrind",
-                "--leak-check=full",
-                "--suppressions={}".format(find_vtr_file("valgrind.supp")),
-                "--error-exitcode=1",
-                "--errors-for-leak-kinds=none",
-                "--track-origins=yes",
-                "--log-file=valgrind.log",
-                "--error-limit=no",
-            ] + cmd if self._valgrind else memory_tracking + cmd
+            cmd = (
+                memory_tracking
+                + [
+                    "valgrind",
+                    "--leak-check=full",
+                    "--suppressions={}".format(find_vtr_file("valgrind.supp")),
+                    "--error-exitcode=1",
+                    "--errors-for-leak-kinds=none",
+                    "--track-origins=yes",
+                    "--log-file=valgrind.log",
+                    "--error-limit=no",
+                ]
+                + cmd
+                if self._valgrind
+                else memory_tracking + cmd
+            )
 
         # Flush before calling subprocess to ensure output is ordered
         # correctly if stdout is buffered
@@ -199,13 +215,16 @@ class CommandRunner():
             )
 
         return cmd_output, cmd_returncode
-    #pylint: enable=too-many-arguments, too-many-instance-attributes, too-few-public-methods, too-many-locals
+
+    # pylint: enable=too-many-arguments, too-many-instance-attributes, too-few-public-methods, too-many-locals
+
+
 def check_cmd(command):
     """
     Return True if command can be run, False otherwise.
     """
 
-    return  Path(command).exists()
+    return Path(command).exists()
 
 
 def write_tab_delimitted_csv(filepath, rows):

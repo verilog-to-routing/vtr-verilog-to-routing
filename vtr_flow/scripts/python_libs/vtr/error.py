@@ -1,6 +1,8 @@
 """
     Module to handle VTR flow erroring.
 """
+
+
 class VtrError(Exception):
     """
     Base class for VTR related exceptions
@@ -11,7 +13,7 @@ class VtrError(Exception):
 
     def __init__(self, msg=""):
         self.msg = msg
-        super().__init__(msg=msg)
+        super().__init__()
 
 
 class CommandError(VtrError):
