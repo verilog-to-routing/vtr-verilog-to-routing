@@ -26,6 +26,7 @@
 #    include "vpr_types.h"
 #    include "vtr_color_map.h"
 #    include "vtr_vector.h"
+#    include "breakpoint.h"
 
 #    include "ezgl/point.hpp"
 #    include "ezgl/rectangle.hpp"
@@ -196,6 +197,8 @@ struct t_draw_state {
     float net_alpha = 0.1;
     float pres_fac = 1.;
 
+    std::vector<breakpoint> list_of_breakpoints;
+
     std::string save_graphics_file_base = "vpr";
 
     t_draw_state() = default;
@@ -211,6 +214,9 @@ struct t_draw_state {
     void reset_block_color(ClusterBlockId blk);
     void reset_block_colors();
 
+#    ifdef VTR_ENABLE_DEBUG_LOGGING
+    std::vector<std::pair<t_pl_loc, ezgl::color>> colored_blocks;
+#    endif
   private:
     friend void alloc_draw_structs(const t_arch* arch);
     vtr::vector<ClusterBlockId, ezgl::color> block_color_;

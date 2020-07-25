@@ -11,6 +11,9 @@ To access detailed echo files from VPR’s operation, use the command-line optio
 After parsing the netlist and architecture files, VPR dumps out an image of its internal data structures into echo files (typically ending in ``.echo``).
 These files can be examined to be sure that VPR is parsing the input files as you expect.
 
+To display and debug the placement move generator, enable the f_placer_flag in move_utils.cpp file. The new location of the moving block for each proposed move will be highlighted with GREEN and the old location will be highlighted with GOLD. The fanin and fanout blocks will also be highlighted. The move type, move outcome and delta cost will be printed in the status bar.
+.. warning:: VPR must have been compiled with `VTR_ENABLE_DEBUG_LOGGING` on to get any debug output from this flag.   
+
 If the preprocessor flag ``DEBUG`` is defined in ``vpr_types.h``, some additional sanity checks are performed during a run.
 ``DEBUG`` only slows execution by 1 to 2%.
 The major sanity checks are always enabled, regardless of the state of ``DEBUG``.
