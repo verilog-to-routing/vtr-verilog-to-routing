@@ -4635,7 +4635,6 @@ void close_debug_window() {
 //sets boolean in openWindows to false when window closes so user can't open the same window twice
 void close_advanced_window() {
     openWindows.advanced_window = false;
->>>>>>> place_debug
 }
 //END OF DEBUGGER SETTINGS
 

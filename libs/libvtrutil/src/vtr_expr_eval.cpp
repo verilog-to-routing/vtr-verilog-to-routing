@@ -7,15 +7,16 @@
 #include <sstream>
 #include <iostream>
 
+current_information current_info_e;
+bool is_breakpoint = false;
+int before_addition = 0;
+
 namespace vtr {
 
 using std::stack;
 using std::string;
 using std::stringstream;
 using std::vector;
-current_information current_info_e;
-bool is_breakpoint = false;
-int before_addition = 0;
 
 /*---- Functions for Parsing the Symbolic Formulas ----*/
 
@@ -34,8 +35,6 @@ static bool op_associativity_is_left(const t_operator& op);
 /* used by the shunting-yard formula parser to deal with operators such as add and subtract */
 static void handle_operator(const Formula_Object& fobj, vector<Formula_Object>& rpn_output, stack<Formula_Object>& op_stack);
 
-/* takes a string and finds what variable it is */
-static void handle_variable(const Formula_Object& fobj, vector<Formula_Object>& rpn_output, stack<Formula_Object>& op_stack);
 
 /* used by the shunting-yard formula parser to deal with brackets, ie '(' and ')' */
 static void handle_bracket(const Formula_Object& fobj, vector<Formula_Object>& rpn_output, stack<Formula_Object>& op_stack);
@@ -72,7 +71,6 @@ static bool goto_next_char(int* str_ind, const string& pw_formula, char ch);
 
 bool same_string(std::string str1, std::string str2);
 bool additional_assignemnt_op(int arg1, int arg2);
-int in_blocks_affected(std::string expression_left);
 
 /**** Function Implementations ****/
 /* returns integer result according to specified non-piece-wise formula and data */
@@ -380,18 +378,6 @@ static void get_formula_object(const char* ch, int& ichar, const t_formula_data&
                 fobj->type = E_FML_OPERATOR;
                 fobj->data.op = E_OP_DIV;
                 break;
-            case '%':
-                fobj->type = E_FML_OPERATOR;
-                fobj->data.op = E_OP_MOD;
-                break;
-            case '>':
-                fobj->type = E_FML_OPERATOR;
-                fobj->data.op = E_OP_GT;
-                break;
-            case '<':
-                fobj->type = E_FML_OPERATOR;
-                fobj->data.op = E_OP_LT;
-                break;
             case '(':
                 fobj->type = E_FML_BRACKET;
                 fobj->data.left_bracket = true;
@@ -541,7 +527,7 @@ static void handle_bracket(const Formula_Object& fobj, vector<Formula_Object>& r
             if (op_stack.empty()) {
                 /* didn't find an opening bracket - mismatched brackets */
                 keep_going = false;
-                archfpga_throw(__FILE__, __LINE__, "Ran out of stack while parsing brackets -- bracket mismatch in user-specified formula\n");
+                throw vtr::VtrError(vtr::string_fmt("Ran out of stack while parsing brackets -- bracket mismatch in user-specified formula\n"), __FILE__, __LINE__);
             }
 
             Formula_Object next_fobj = op_stack.top();
@@ -553,7 +539,7 @@ static void handle_bracket(const Formula_Object& fobj, vector<Formula_Object>& r
                 } else {
                     /* should not find two right brackets without a left bracket in-between */
                     keep_going = false;
-                    archfpga_throw(__FILE__, __LINE__, "Mismatched brackets encountered in user-specified formula\n");
+                    throw vtr::VtrError(vtr::string_fmt("Mismatched brackets encountered in user-specified formula\n"), __FILE__, __LINE__);
                 }
             } else if (E_FML_OPERATOR == next_fobj.type) {
                 /* pop operator off stack onto the back of rpn_output */
@@ -564,7 +550,7 @@ static void handle_bracket(const Formula_Object& fobj, vector<Formula_Object>& r
             } else {
 
                 keep_going = false;
-                archfpga_throw(__FILE__, __LINE__, "Found unexpected formula object on operator stack: %d\n", next_fobj.type);
+                throw vtr::VtrError(vtr::string_fmt("Found unexpected formula object on operator stack: %d\n", next_fobj.type), __FILE__, __LINE__);
             }
         } while (keep_going);
     }
@@ -589,7 +575,8 @@ static void handle_comma(const Formula_Object& fobj, vector<Formula_Object>& rpn
         if (op_stack.empty()) {
             /* didn't find an opening bracket - mismatched brackets */
             keep_going = false;
-            archfpga_throw(__FILE__, __LINE__, "Ran out of stack while parsing comma -- bracket mismatch in user-specified formula\n");
+            throw vtr::VtrError(vtr::string_fmt("Ran out of stack while parsing comma -- bracket mismatch in user-specified formula\n"), __FILE__, __LINE__);
+            keep_going = false;
         }
 
         Formula_Object next_fobj = op_stack.top();
@@ -599,8 +586,8 @@ static void handle_comma(const Formula_Object& fobj, vector<Formula_Object>& rpn
                 keep_going = false;
             } else {
                 /* should not find two right brackets without a left bracket in-between */
+                throw vtr::VtrError(vtr::string_fmt("Mismatched brackets encountered in user-specified formula\n"), __FILE__, __LINE__);
                 keep_going = false;
-                archfpga_throw(__FILE__, __LINE__, "Mismatched brackets encountered in user-specified formula\n");
             }
         } else if (E_FML_OPERATOR == next_fobj.type) {
             /* pop operator off stack onto the back of rpn_output */
@@ -609,8 +596,8 @@ static void handle_comma(const Formula_Object& fobj, vector<Formula_Object>& rpn
             op_stack.pop();
             keep_going = true;
         } else {
+            throw vtr::VtrError(vtr::string_fmt("Found unexpected formula object on operator stack: %d\n", next_fobj.type), __FILE__, __LINE__);
             keep_going = false;
-            archfpga_throw(__FILE__, __LINE__, "Found unexpected formula object on operator stack: %d\n", next_fobj.type);
         }
 
     } while (keep_going);
@@ -623,7 +610,7 @@ static int parse_rpn_vector(vector<Formula_Object>& rpn_vec) {
 
     /* first entry should always be a number or variable name*/
     if (E_FML_NUMBER != rpn_vec[0].type && E_FML_VARIABLE != rpn_vec[0].type) {
-        archfpga_throw(__FILE__, __LINE__, "parse_rpn_vector: first entry is not a number or variable name (was %s)\n", rpn_vec[0].to_string().c_str());
+         throw vtr::VtrError(vtr::string_fmt("parse_rpn_vector: first entry is not a number or variable(was %s)\n", rpn_vec[0].to_string().c_str()), __FILE__, __LINE__);
     }
 
     if (rpn_vec.size() == 1 && rpn_vec[0].type == E_FML_NUMBER) {
@@ -669,7 +656,7 @@ static int apply_rpn_op(const Formula_Object& arg1, const Formula_Object& arg2, 
     /* arguments must be numbers or variables */
     if (E_FML_NUMBER != arg1.type || E_FML_NUMBER != arg2.type) {
         if (E_FML_VARIABLE != arg1.type && E_FML_VARIABLE != arg2.type) {
-            archfpga_throw(__FILE__, __LINE__, "in apply_rpn_op: one of the arguments is not a number or variable (was '%s %s %s')\n", arg1.to_string().c_str(), op.to_string().c_str(), arg2.to_string().c_str());
+            throw vtr::VtrError(vtr::string_fmt("in apply_rpn_op: one of the arguments is not a number or variable(was '%s %s %s')\n", arg1.to_string().c_str(), op.to_string().c_str(), arg2.to_string().c_str()), __FILE__, __LINE__);
         }
     }
 
@@ -691,15 +678,6 @@ static int apply_rpn_op(const Formula_Object& arg1, const Formula_Object& arg2, 
             break;
         case E_OP_DIV:
             result = arg1.data.num / arg2.data.num;
-            break;
-        case E_OP_MOD:
-            result = arg1.data.num % arg2.data.num;
-            break;
-        case E_OP_GT:
-            result = arg1.data.num > arg2.data.num;
-            break;
-        case E_OP_LT:
-            result = arg1.data.num < arg2.data.num;
             break;
         case E_OP_MAX:
             result = std::max(arg1.data.num, arg2.data.num);
@@ -768,10 +746,8 @@ static bool is_operator(const char ch) {
         case '-': //fallthrough
         case '*': //fallthrough
         case '/': //fallthrough
-        case '%': //fallthrough
         case ')': //fallthrough
         case '(': //fallthrough
-        case ',':
         case ',': //fallthrough
         case '&': //fallthrough
         case '|': //fallthrough
@@ -785,7 +761,6 @@ static bool is_operator(const char ch) {
     }
 }
 
-//checks if entered string is a defined function
 static bool is_function(std::string name) {
     if (name == "min"
         || name == "max"
@@ -845,6 +820,18 @@ static int identifier_length(const char* str) {
     return ichar;
 }
 
+/* checks if the specified formula is piece-wise defined */
+bool FormulaParser::is_piecewise_formula(const char* formula) {
+    bool result = false;
+    /* if formula is piecewise, we expect '{' to be the very first character */
+    if ('{' == formula[0]) {
+        result = true;
+    } else {
+        result = false;
+    }
+    return result;
+}
+
 // compares two string ignoring case and white space
 bool same_string(std::string str1, std::string str2) {
     //earse any white space in both strings
@@ -858,18 +845,6 @@ bool same_string(std::string str1, std::string str2) {
     return (str1.compare(str2) == 0);
 }
 
-/* checks if the specified formula is piece-wise defined */
-bool FormulaParser::is_piecewise_formula(const char* formula) {
-    bool result = false;
-    /* if formula is piecewise, we expect '{' to be the very first character */
-    if ('{' == formula[0]) {
-        result = true;
-    } else {
-        result = false;
-    }
-    return result;
-}
-
 //the += operator
 bool additional_assignemnt_op(int arg1, int arg2) {
     int result = 0;
@@ -880,6 +855,7 @@ bool additional_assignemnt_op(int arg1, int arg2) {
         before_addition = 0;
     return result;
 }
+} //namespace vtr
 
 //gets current information from breakpoint.cpp
 void get_current_info_e(current_information ci) {
@@ -907,7 +883,7 @@ int in_blocks_affected(std::string expression_left) {
     //finds block_id to look for
     while (!ss.eof()) {
         ss >> s;
-        if (stringstream(s) >> found_block) {
+        if (std::stringstream(s) >> found_block) {
             s = "";
             break;
         }
@@ -922,6 +898,4 @@ int in_blocks_affected(std::string expression_left) {
     }
     return wanted_block;
 }
-} //namespace vtr
-
 

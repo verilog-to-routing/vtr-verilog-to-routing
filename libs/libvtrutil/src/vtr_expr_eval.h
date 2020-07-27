@@ -62,9 +62,6 @@ typedef enum e_operator {
     E_OP_SUB,
     E_OP_MULT,
     E_OP_DIV,
-    E_OP_MOD,
-    E_OP_GT,
-    E_OP_LT,
     E_OP_MIN,
     E_OP_MAX,
     E_OP_GCD,
@@ -177,7 +174,7 @@ class FormulaParser {
     std::vector<Formula_Object> rpn_output_;
     std::stack<Formula_Object> op_stack_; /* stack for handling operators and brackets in formula */
 };
-
+}
 //struct that holds all necessary current information about the placer
 struct current_information {
     int move_num = 0;
@@ -194,6 +191,7 @@ struct current_information {
 void get_current_info_e(current_information ci);
 void is_a_breakpoint(bool aBreakpoint);
 int get_current_info_e_ba();
+int in_blocks_affected(std::string expression_left);
 
-}
+
 #endif
