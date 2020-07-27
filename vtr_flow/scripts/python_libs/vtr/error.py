@@ -11,8 +11,8 @@ class VtrError(Exception):
         msg -- An explanation of the error
     """
 
-    def __init__(self, msg=""):
-        self.msg = msg
+    def __init__(self, *msg):
+        self.msg = " ".join(str(item) for item in msg)
         super().__init__()
 
 
@@ -25,7 +25,7 @@ class CommandError(VtrError):
         cmd == The command run
     """
 
-    def __init__(self, msg, cmd, returncode, log=None):
+    def __init__(self, *msg, cmd, returncode, log=None):
         super().__init__(msg=msg)
         self.returncode = returncode
         self.cmd = cmd
@@ -37,6 +37,6 @@ class InspectError(VtrError):
     Raised when some query (inspection) result is not found.
     """
 
-    def __init__(self, msg, filename=None):
+    def __init__(self, *msg, filename=None):
         super().__init__(msg=msg)
         self.filename = filename
