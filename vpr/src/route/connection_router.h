@@ -10,6 +10,9 @@
 #include "router_stats.h"
 #include "spatial_route_tree_lookup.h"
 
+// Prune the heap when it contains 4x the number of nodes in the RR graph.
+constexpr size_t kHeapPruneFactor = 4;
+
 // This class encapsolates the timing driven connection router. This class
 // routes from some initial set of sources (via the input rt tree) to a
 // particular sink.
@@ -37,6 +40,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         , router_stats_(nullptr)
         , router_debug_(false) {
         heap_.init_heap(grid);
+        heap_.set_prune_limit(rr_nodes_.size(), kHeapPruneFactor * rr_nodes_.size());
     }
 
     // Clear's the modified list.  Should be called after reset_path_costs

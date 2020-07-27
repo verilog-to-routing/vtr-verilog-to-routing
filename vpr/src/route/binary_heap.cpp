@@ -9,7 +9,9 @@ static size_t right(size_t i) { return (i << 1) + 1; }
 BinaryHeap::BinaryHeap()
     : heap_(nullptr)
     , heap_size_(0)
-    , heap_tail_(0) {}
+    , heap_tail_(0)
+    , max_index_(std::numeric_limits<size_t>::max())
+    , prune_limit_(std::numeric_limits<size_t>::max()) {}
 
 BinaryHeap::~BinaryHeap() {
     free_all_memory();
@@ -26,7 +28,7 @@ void BinaryHeap::free(t_heap* hptr) {
 //       or realloc() must be eliminated from add_to_heap()
 //       because there is no C++ equivalent.
 void BinaryHeap::init_heap(const DeviceGrid& grid) {
-    ssize_t target_heap_size = (grid.width() - 1) * (grid.height() - 1);
+    size_t target_heap_size = (grid.width() - 1) * (grid.height() - 1);
     if (heap_ == nullptr || heap_size_ < target_heap_size) {
         if (heap_ != nullptr) {
             // coverity[offset_free : Intentional]
@@ -45,6 +47,11 @@ void BinaryHeap::add_to_heap(t_heap* hptr) {
     // start with undefined hole
     ++heap_tail_;
     sift_up(heap_tail_ - 1, hptr);
+
+    // If we have pruned, rebuild the heap now.
+    if (check_prune_limit()) {
+        build_heap();
+    }
 }
 
 bool BinaryHeap::is_empty_heap() const {
@@ -70,7 +77,7 @@ t_heap* BinaryHeap::get_heap_head() {
         hole = 1;
         child = 2;
         --heap_tail_;
-        while ((int)child < heap_tail_) {
+        while (child < heap_tail_) {
             if (heap_[child + 1]->cost < heap_[child]->cost)
                 ++child; // become right child
             heap_[hole] = heap_[child];
@@ -85,20 +92,20 @@ t_heap* BinaryHeap::get_heap_head() {
 }
 
 void BinaryHeap::empty_heap() {
-    for (int i = 1; i < heap_tail_; i++)
+    for (size_t i = 1; i < heap_tail_; i++)
         free(heap_[i]);
 
     heap_tail_ = 1;
 }
 
-size_t BinaryHeap::size() const { return static_cast<size_t>(heap_tail_ - 1); } // heap[0] is not valid element
+size_t BinaryHeap::size() const { return heap_tail_ - 1; } // heap[0] is not valid element
 
 // make a heap rooted at index hole by **sifting down** in O(lgn) time
 void BinaryHeap::sift_down(size_t hole) {
     t_heap* head{heap_[hole]};
     size_t child{left(hole)};
-    while ((int)child < heap_tail_) {
-        if ((int)child + 1 < heap_tail_ && heap_[child + 1]->cost < heap_[child]->cost)
+    while (child < heap_tail_) {
+        if (child + 1 < heap_tail_ && heap_[child + 1]->cost < heap_[child]->cost)
             ++child;
         if (heap_[child]->cost < head->cost) {
             heap_[hole] = heap_[child];
@@ -116,6 +123,14 @@ void BinaryHeap::build_heap() {
     // second half of heap are leaves
     for (size_t i = heap_tail_ >> 1; i != 0; --i)
         sift_down(i);
+}
+
+void BinaryHeap::set_prune_limit(size_t max_index, size_t prune_limit) {
+    if (prune_limit != std::numeric_limits<size_t>::max()) {
+        VTR_ASSERT(max_index < prune_limit);
+    }
+    max_index_ = max_index;
+    prune_limit_ = prune_limit;
 }
 
 // O(lgn) sifting up to maintain heap property after insertion (should sift down when building heap)
@@ -142,6 +157,8 @@ void BinaryHeap::push_back(t_heap* const hptr) {
     expand_heap_if_full();
     heap_[heap_tail_] = hptr;
     ++heap_tail_;
+
+    check_prune_limit();
 }
 
 bool BinaryHeap::is_valid() const {
@@ -149,9 +166,9 @@ bool BinaryHeap::is_valid() const {
         return false;
     }
 
-    for (size_t i = 1; (int)i <= heap_tail_ >> 1; ++i) {
-        if ((int)left(i) < heap_tail_ && heap_[left(i)]->cost < heap_[i]->cost) return false;
-        if ((int)right(i) < heap_tail_ && heap_[right(i)]->cost < heap_[i]->cost) return false;
+    for (size_t i = 1; i <= heap_tail_ >> 1; ++i) {
+        if (left(i) < heap_tail_ && heap_[left(i)]->cost < heap_[i]->cost) return false;
+        if (right(i) < heap_tail_ && heap_[right(i)]->cost < heap_[i]->cost) return false;
     }
     return true;
 }
@@ -166,7 +183,7 @@ void BinaryHeap::invalidate_heap_entries(int sink_node, int ipin_node) {
      * architectures.
      * */
 
-    for (int i = 1; i < heap_tail_; i++) {
+    for (size_t i = 1; i < heap_tail_; i++) {
         if (heap_[i]->index == sink_node) {
             if (heap_[i]->prev_node() == ipin_node) {
                 heap_[i]->index = OPEN; /* Invalid. */
@@ -187,4 +204,58 @@ void BinaryHeap::free_all_memory() {
     heap_ = nullptr; /* Defensive coding:  crash hard if I use these. */
 
     storage_.free_all_memory();
+}
+
+bool BinaryHeap::check_prune_limit() {
+    if (heap_tail_ > prune_limit_) {
+        prune_heap();
+        return true;
+    }
+
+    return false;
+}
+
+void BinaryHeap::prune_heap() {
+    VTR_ASSERT(max_index_ < prune_limit_);
+
+    std::vector<t_heap*> best_heap_item(max_index_, nullptr);
+
+    // Find the cheapest instance of each index and store it.
+    for (size_t i = 1; i < heap_tail_; i++) {
+        if (heap_[i] == nullptr) {
+            continue;
+        }
+
+        if (heap_[i]->index == OPEN) {
+            free(heap_[i]);
+            heap_[i] = nullptr;
+            continue;
+        }
+
+        VTR_ASSERT(static_cast<size_t>(heap_[i]->index) < max_index_);
+
+        if (best_heap_item[heap_[i]->index] == nullptr || best_heap_item[heap_[i]->index]->cost > heap_[i]->cost) {
+            best_heap_item[heap_[i]->index] = heap_[i];
+        }
+    }
+
+    // Free unused nodes.
+    for (size_t i = 1; i < heap_tail_; i++) {
+        if (heap_[i] == nullptr) {
+            continue;
+        }
+
+        if (best_heap_item[heap_[i]->index] != heap_[i]) {
+            free(heap_[i]);
+            heap_[i] = nullptr;
+        }
+    }
+
+    heap_tail_ = 1;
+
+    for (size_t i = 0; i < max_index_; ++i) {
+        if (best_heap_item[i] != nullptr) {
+            heap_[heap_tail_++] = best_heap_item[i];
+        }
+    }
 }
