@@ -62,39 +62,39 @@ You can also find the variables’ list in the Advanced Settings Window, on the 
 **Placer Variables**
 
   * move_num: every placer iteration counts as a move, so the user can stop the program after a certain number of moves. This breakpoint can be enabled through the entry field on the main debugger window or using an expression. It should be noted however, that using the entry field would proceed the specified number of moves. (as in the second example)
-    * Ex. move _num == 33
-    * Ex. move_num += 4
+          * Ex. move _num == 33
+          * Ex. move_num += 4
   * temp_count: every time the temperature is updated it counts as an increase to temp_count. This breakpoint can be enabled through the entry field on the main debugger window or using an expression. It should be noted however, that using the entry field would proceed the specified number of temperatures. (as in the second example)
-    * Ex. temp_count == 5
-    * Ex. temp_count += 5
+          * Ex. temp_count == 5
+          * Ex. temp_count += 5
   * from_block:  in every placer move one or more blocks are relocated. From_block specifies the first block that is relocated in every move. This breakpoint can be enabled through the entry field on the main debugger window or using an expression.
-    * Ex. from_block == 83
+          * Ex. from_block == 83
   * in_blocks_affected: this variable allows you to stop whenever your specified block was moved. Unlike from_block which only checks the first block moved in every move, in_blocks_affected looks through all the replicated blocks in that move. This breakpoint can only be enabled through the use of an expression.
-    * Ex. in_blocks_affected == 1
+          * Ex. in_blocks_affected == 1
     
 **Router Variables**
 
   * router_iter: every router iteration, whether failed or succeeded, counts as a router iteration. This breakpoint can be enabled through the entry field on the main debugger window or using an expression.
-    * Ex. router_iter == 2
+          * Ex. router_iter == 2
   * route_net_id: stops when the specified net is rerouted. This breakpoint can be enabled through the entry field on the main debugger window or using an expression.
-    * route_net_id == 12
+          * route_net_id == 12
     
 Available Operators
 ~~~~~~~~~~~~~~~~~~~
 
   * ==
-    * Ex. temp_count == 2
+          * Ex. temp_count == 2
   * >
-    * Ex. move_num > 94
+          * Ex. move_num > 94
   * <
-    * Ex. move_num < 94
+          * Ex. move_num < 94
   * >=
-    * Ex. router_iter >=2
+          * Ex. router_iter >=2
   * <=
-    * Ex. router_iter <=2
+          * Ex. router_iter <=2
   * &&
-    * Ex. from_block == 83 && move_num > 72
+          * Ex. from_block == 83 && move_num > 72
   * ||
-    * Ex. in_blocks_affected == 11 || temp_count == 9
+          * Ex. in_blocks_affected == 11 || temp_count == 9
   * +=
-    * Ex. move_num += 8
+          * Ex. move_num += 8
