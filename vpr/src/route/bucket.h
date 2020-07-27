@@ -197,6 +197,8 @@ class Bucket : public HeapInterface {
     void build_heap() final {
     }
 
+    void set_prune_limit(size_t max_index, size_t prune_limit) final;
+
     // Pop an item from the cheapest non-empty bucket.
     //
     // Returns nullptr if empty.
@@ -226,7 +228,7 @@ class Bucket : public HeapInterface {
     static constexpr float kDefaultConvFactor = 1e12;
 
     // Convert cost from float to integer bucket id.
-    int cost_to_int(float cost) {
+    int cost_to_int(float cost) const {
         return (int)(cost * conv_factor_);
     }
 
@@ -237,11 +239,15 @@ class Bucket : public HeapInterface {
     }
 
     void check_scaling();
+    float rescale_func() const;
+    void check_conv_factor() const;
 
     // Expand the number of buckets.
     //
     // Only call if insufficient buckets exist.
     void expand(size_t required_number_of_buckets);
+
+    void prune_heap();
 
     BucketItems items_; /* Item storage */
 
@@ -259,6 +265,10 @@ class Bucket : public HeapInterface {
 
     float min_cost_; /* Smallest cost seen */
     float max_cost_; /* Large cost seen */
+
+    size_t num_items_;
+    size_t max_index_;
+    size_t prune_limit_;
 };
 
 #endif /* _BUCKET_H */

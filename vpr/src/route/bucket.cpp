@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include "vtr_log.h"
+#include "vpr_error.h"
 
 BucketItems::BucketItems() noexcept
     : alloced_items_(0)
@@ -17,7 +18,10 @@ Bucket::Bucket() noexcept
     , heap_tail_(0)
     , conv_factor_(0.f)
     , min_cost_(0.f)
-    , max_cost_(0.f) {}
+    , max_cost_(0.f)
+    , num_items_(0)
+    , max_index_(std::numeric_limits<size_t>::max())
+    , prune_limit_(std::numeric_limits<size_t>::max()) {}
 
 Bucket::~Bucket() {
     free_all_memory();
@@ -33,6 +37,7 @@ void Bucket::init_heap(const DeviceGrid& grid) {
 
     heap_head_ = std::numeric_limits<size_t>::max();
     heap_tail_ = 0;
+    num_items_ = 0;
 
     conv_factor_ = kDefaultConvFactor;
 
@@ -60,7 +65,13 @@ void Bucket::verify() {
     for (size_t bucket = heap_head_; bucket <= heap_tail_; ++bucket) {
         for (BucketItem* data = heap_[bucket]; data != nullptr;
              data = data->next_bucket) {
-            VTR_ASSERT(data->item.cost > 0 && ((size_t)cost_to_int(data->item.cost)) == bucket);
+            VTR_ASSERT(data->item.cost >= 0);
+            int bucket_idx = cost_to_int(data->item.cost);
+            if (bucket_idx != static_cast<ssize_t>(bucket)) {
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                "Wrong bucket for cost %g bucket_idx %d bucket %zu conv_factor %g",
+                                data->item.cost, bucket_idx, bucket, conv_factor_);
+            }
         }
     }
 }
@@ -73,9 +84,20 @@ void Bucket::empty_heap() {
     }
     heap_head_ = std::numeric_limits<size_t>::max();
     heap_tail_ = 0;
+    num_items_ = 0;
 
     // Quickly reset all items to being free'd
     items_.clear();
+}
+
+float Bucket::rescale_func() const {
+    return 50000.f / max_cost_ / std::max(1.f, 1000.f / (max_cost_ / min_cost_));
+}
+
+void Bucket::check_conv_factor() const {
+    VTR_ASSERT(cost_to_int(min_cost_) >= 0);
+    VTR_ASSERT(cost_to_int(max_cost_) >= 0);
+    VTR_ASSERT(cost_to_int(max_cost_) < 1000000);
 }
 
 // Checks if the scaling factor for cost results in a reasonable
@@ -113,11 +135,8 @@ void Bucket::check_scaling() {
         // maximum cost increases.  The underlying assumption of this scaling
         // algorithm is that the maximum cost will not result in a poor
         // scaling factor such that all precision is lost.
-        conv_factor_ = 50000.f / max_cost_ / std::max(1.f, 1000.f / (max_cost_ / min_cost_));
-
-        VTR_ASSERT(cost_to_int(min_cost_) >= 0);
-        VTR_ASSERT(cost_to_int(max_cost_) >= 0);
-        VTR_ASSERT(cost_to_int(max_cost_) < 1000000);
+        conv_factor_ = rescale_func();
+        check_conv_factor();
 
         // Reheap after adjusting scaling.
         if (heap_head_ != std::numeric_limits<size_t>::max()) {
@@ -200,6 +219,11 @@ void Bucket::push_back(t_heap* hptr) {
     if (uint_cost > heap_tail_) {
         heap_tail_ = uint_cost;
     }
+
+    num_items_ += 1;
+    if (num_items_ > prune_limit_) {
+        prune_heap();
+    }
 }
 
 t_heap* Bucket::get_heap_head() {
@@ -245,6 +269,7 @@ t_heap* Bucket::get_heap_head() {
     }
 
     outstanding_items_ += 1;
+    num_items_ -= 1;
     return &next->item;
 }
 
@@ -262,4 +287,70 @@ void Bucket::print() {
         }
     }
     VTR_LOG("\n");
+}
+
+void Bucket::set_prune_limit(size_t max_index, size_t prune_limit) {
+    if (prune_limit != std::numeric_limits<size_t>::max()) {
+        VTR_ASSERT(max_index < prune_limit);
+    }
+    max_index_ = max_index;
+    prune_limit_ = prune_limit;
+}
+
+void Bucket::prune_heap() {
+    std::vector<BucketItem*> best_heap_item(max_index_, nullptr);
+
+    for (size_t bucket = heap_head_; bucket <= heap_tail_; ++bucket) {
+        for (BucketItem* item = heap_[bucket]; item != nullptr; item = item->next_bucket) {
+            VTR_ASSERT(static_cast<size_t>(item->item.index) < max_index_);
+            if (best_heap_item[item->item.index] == nullptr || best_heap_item[item->item.index]->item.cost > item->item.cost) {
+                best_heap_item[item->item.index] = item;
+            }
+        }
+    }
+
+    min_cost_ = std::numeric_limits<float>::max();
+    max_cost_ = std::numeric_limits<float>::min();
+    for (size_t bucket = heap_head_; bucket <= heap_tail_; ++bucket) {
+        BucketItem* item = heap_[bucket];
+        while (item != nullptr) {
+            BucketItem* next_item = item->next_bucket;
+
+            if (best_heap_item[item->item.index] != item) {
+                // This item isn't the cheapest, return it to the free list.
+                items_.free_item(item);
+            } else {
+                // Update min_cost_ and max_cost_
+                if (min_cost_ > item->item.cost) {
+                    min_cost_ = item->item.cost;
+                }
+                if (max_cost_ < item->item.cost) {
+                    max_cost_ = item->item.cost;
+                }
+            }
+
+            item = next_item;
+        }
+    }
+
+    // Rescale heap after pruning.
+    conv_factor_ = rescale_func();
+    check_conv_factor();
+
+    std::fill(heap_, heap_ + heap_size_, nullptr);
+    heap_head_ = std::numeric_limits<size_t>::max();
+    heap_tail_ = 0;
+    num_items_ = 0;
+
+    // Re-heap the pruned elements.
+    for (BucketItem* item : best_heap_item) {
+        if (item == nullptr) {
+            continue;
+        }
+
+        outstanding_items_ += 1;
+        push_back(&item->item);
+    }
+
+    verify();
 }
