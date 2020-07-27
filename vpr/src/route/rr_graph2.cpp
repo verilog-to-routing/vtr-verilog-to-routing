@@ -1358,14 +1358,17 @@ bool verify_rr_node_indices(const DeviceGrid& grid, const t_rr_node_indices& rr_
                         }
 
                         if (rr_type == IPIN || rr_type == OPIN) {
-                            if (rr_node.side() != side) {
-                                VPR_ERROR(VPR_ERROR_ROUTE, "RR node xlow does not match between rr_nodes and rr_node_indices (%s/%s): %s",
-                                          SIDE_STRING[rr_node.side()],
-                                          SIDE_STRING[side],
-                                          describe_rr_node(inode).c_str());
-                            } else {
-                                VTR_ASSERT(rr_node.side() == side);
-                            }
+                            /* As we allow a pin to be indexable on multiple sides,
+                             * This check code should be invalid
+                             * if (rr_node.side() != side) {
+                             *     VPR_ERROR(VPR_ERROR_ROUTE, "RR node xlow does not match between rr_nodes and rr_node_indices (%s/%s): %s",
+                             *               SIDE_STRING[rr_node.side()],
+                             *               SIDE_STRING[side],
+                             *               describe_rr_node(inode).c_str());
+                             * } else {
+                             *     VTR_ASSERT(rr_node.side() == side);
+                             * }
+                             */
                         } else { //Non-pin's don't have sides, and should only be in side 0
                             if (side != SIDES[0]) {
                                 VPR_ERROR(VPR_ERROR_ROUTE, "Non-Pin RR node in rr_node_indices found with non-default side %s: %s",
