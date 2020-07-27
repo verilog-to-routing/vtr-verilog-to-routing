@@ -377,7 +377,7 @@ def find_vtr_root():
             return os.environ[env_var]
 
     # We assume that this file is in <vtr_root>/vtr_flow/python_libs/verilogtorouting
-    inferred_vtr_root = Path(__file__).parent / "../../../.."
+    inferred_vtr_root = Path(__file__).parent.parent.parent.parent.parent
 
     if inferred_vtr_root.is_dir():
         return str(inferred_vtr_root)
