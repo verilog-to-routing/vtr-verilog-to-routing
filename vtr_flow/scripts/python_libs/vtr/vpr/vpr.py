@@ -203,16 +203,17 @@ def run(
     # Translate arbitrary keyword arguments into options for VPR
 
     for arg, value in vpr_args.items():
-        if isinstance(value, bool) and value:
+        if isinstance(value, bool):
+            if not value:
+                pass
             cmd += ["--" + arg]
-        elif isinstance(value, list):
-            cmd += ["--" + arg]
-            for i in enumerate(value):
-                cmd += [str(value[i])]
-        elif isinstance(value, (str, list, int,)):
-            cmd += ["--" + arg, str(value)]
         else:
-            pass
+            if isinstance(value, list):
+                cmd += ["--" + arg]
+                for item in value:
+                    cmd += [str(item)]
+            else:
+                cmd += ["--" + arg, str(value)]
 
     command_runner.run_system_command(
         cmd, temp_dir=temp_dir, log_filename=log_filename, indent_depth=1
