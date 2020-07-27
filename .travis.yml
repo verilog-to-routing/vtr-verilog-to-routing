@@ -44,6 +44,8 @@ addons:
     - libxft-dev
     - libxml++2.6-dev
     - perl
+    - python
+    - python3.6
     - python-lxml
     - texinfo
     - time
@@ -91,6 +93,14 @@ jobs:
       name: "Code Formatting"
       script:
         - ./dev/check-format.sh
+    - stage: Test
+      name: "Python Lint"
+      script:     
+        - curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+        - python3.6 get-pip.py   
+        - python3.6 -m pip install pylint
+        - rm get-pip.py
+        - python3.6 ./dev/pylint_check.py
     - stage: Test
       name: "C++ Unit Tests"
       env:
