@@ -44,8 +44,6 @@ addons:
     - libxft-dev
     - libxml++2.6-dev
     - perl
-    - python
-    - python3.6
     - python-lxml
     - texinfo
     - time
