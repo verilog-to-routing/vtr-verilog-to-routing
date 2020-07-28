@@ -119,7 +119,6 @@ struct t_placer_prev_inverse_costs {
     double timing_cost;
 };
 
-
 //a avriable of type current information to hold all curent values of move number, teperature, block id, for use in expression evalutaion
 current_information current_info_p;
 
@@ -1241,13 +1240,13 @@ static bool update_annealing_state(t_annealing_state* state,
         current_info_p.temp_count++;
         send_current_info_p();
     }
-  
+
     /* Return `false` when the exit criterion is met. */
     if (annealing_sched.type == USER_SCHED) {
         state->t *= annealing_sched.alpha_t;
         return state->t >= annealing_sched.exit_t;
     }
-  
+
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
