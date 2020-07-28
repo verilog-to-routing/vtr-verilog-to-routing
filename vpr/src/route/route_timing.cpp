@@ -131,7 +131,7 @@ static void print_route_status(int itry,
                                std::shared_ptr<const SetupHoldTimingInfo> timing_info,
                                float est_success_iteration);
 
-static void print_overused_nodes_status(OveruseInfo& overuse_info);
+static void print_overused_nodes_status(const OveruseInfo& overuse_info);
 static void print_overused_nodes_header();
 static void print_single_overused_node_status(int overuse_index, int inode);
 
@@ -1675,15 +1675,16 @@ static void print_route_status(int itry, double elapsed_sec, float pres_fac, int
     fflush(stdout);
 }
 
-static void print_overused_nodes_status(OveruseInfo& overuse_info) {
+static void print_overused_nodes_status(const OveruseInfo& overuse_info) {
+    //Display upper limit
     if (overuse_info.overused_nodes >= 1000) {
         return;
     }
 
-    //Print header
+    //Print overuse info header
     print_overused_nodes_header();
 
-    //Print overuse info
+    //Print overuse info body
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& route_ctx = g_vpr_ctx.routing();
 
@@ -1696,9 +1697,13 @@ static void print_overused_nodes_status(OveruseInfo& overuse_info) {
             overuse_index++;
         }
     }
+
+    VTR_LOG("Total number of overused nodes: %d\n", overuse_info.overused_nodes);
+    VTR_LOG("\n");
 }
 
 static void print_overused_nodes_header() {
+    VTR_LOG("\nRouting Failure Diagnostics: Printing Overused Nodes Information\n");
     VTR_LOG("------ ------- ---------- --------- -------- ------------ ------- ------- ------- ------- ------- ------- ------------ -----------------\n");
     VTR_LOG("   No.   Inode  Occupancy  Capacity  RR Node    Direction    Side     PTC    Xlow    Ylow   Xhigh   Yhigh   Resistance       Capacitance\n");
     VTR_LOG("                                        type                          NUM                                                               \n");
