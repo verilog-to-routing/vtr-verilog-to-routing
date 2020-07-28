@@ -213,7 +213,7 @@ class CommandRunner:
                 log=str(temp_dir / log_filename),
                 returncode=cmd_returncode,
             )
-        elif cmd_errored:
+        if cmd_errored:
             raise VtrError("{}".format(PurePath(orig_cmd[0]).name))
         return cmd_output, cmd_returncode
 
