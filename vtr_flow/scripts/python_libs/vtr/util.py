@@ -206,7 +206,7 @@ class CommandRunner:
 
         if self._show_failures and cmd_errored:
             raise CommandError(
-                msg="Executable {exec_name} failed".format(
+                "Executable {exec_name} failed".format(
                     exec_name=PurePath(orig_cmd[0]).name
                 ),
                 cmd=cmd,

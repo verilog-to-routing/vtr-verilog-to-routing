@@ -37,7 +37,7 @@ def determine_lut_size(architecture_file):
 
     if saw_blif_names and lut_size == 0:
         raise InspectError(
-            msg="Could not identify valid LUT size (K)", filename=architecture_file
+            "Could not identify valid LUT size (K)", filename=architecture_file
         )
 
     return lut_size
@@ -66,7 +66,7 @@ def determine_memory_addr_width(architecture_file):
 
     if saw_ram and mem_addr_width == 0:
         raise InspectError(
-            msg="Could not identify RAM block address width", filename=architecture_file
+            "Could not identify RAM block address width", filename=architecture_file
         )
 
     return mem_addr_width
@@ -86,5 +86,5 @@ def determine_min_w(log_filename):
                 return int(match.group("min_w"))
 
     raise InspectError(
-        msg="Failed to find minimum channel width.", filename=log_filename
+        "Failed to find minimum channel width.", filename=log_filename
     )
