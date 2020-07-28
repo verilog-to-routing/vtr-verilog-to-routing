@@ -65,6 +65,9 @@ struct RoutingMetrics {
 //Note only enables debug output if compiled with VTR_ENABLE_DEBUG_LOGGING defined
 bool f_router_debug = false;
 
+//Count the number of times the router has failed
+static int num_routing_failed = 0;
+
 /******************** Subroutines local to route_timing.c ********************/
 
 template<typename ConnectionRouter>
@@ -134,6 +137,7 @@ static void print_route_status(int itry,
 static void print_overused_nodes_status(const t_router_opts& router_opts, const OveruseInfo& overuse_info);
 static void print_overused_nodes_header();
 static void print_single_overused_node_status(int overuse_index, int inode);
+static void generate_overused_nodes_report(const t_router_opts& router_opts);
 
 static void print_router_criticality_histogram(const SetupTimingInfo& timing_info,
                                                const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
@@ -719,8 +723,17 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
         VTR_LOG("Successfully routed after %d routing iterations.\n", itry);
     } else {
         VTR_LOG("Routing failed.\n");
-        //If the routing fails, print the overused info
+
+        //If the routing fails, print the overused info, and generate report if specified
         print_overused_nodes_status(router_opts, overuse_info);
+
+        //Verify that the detailed report should be generated
+        if (router_opts.generate_rr_node_overuse_report) {
+            generate_overused_nodes_report(router_opts);
+        }
+
+        ++num_routing_failed;
+
 #ifdef VTR_ENABLE_DEBUG_LOGGING
         if (f_router_debug) print_invalid_routing_info();
 #endif
@@ -1676,9 +1689,12 @@ static void print_route_status(int itry, double elapsed_sec, float pres_fac, int
 }
 
 static void print_overused_nodes_status(const t_router_opts& router_opts, const OveruseInfo& overuse_info) {
+    //Print the index of this routing failure
+    VTR_LOG("\nRouting failure index #%d\n", num_routing_failed);
+
     //Overuse info display upper limit
     if (overuse_info.overused_nodes > router_opts.max_logged_overused_rr_nodes) {
-        VTR_LOG("\nTotal number of overused nodes is larger than the logging limit.\n");
+        VTR_LOG("Total number of overused nodes is larger than the logging limit.\n");
         VTR_LOG("For more detailed information, use the --generate_rr_node_overuse_report option.\n\n");
         return;
     }
@@ -1705,7 +1721,7 @@ static void print_overused_nodes_status(const t_router_opts& router_opts, const 
 }
 
 static void print_overused_nodes_header() {
-    VTR_LOG("\nRouting Failure Diagnostics: Printing Overused Nodes Information\n");
+    VTR_LOG("Routing Failure Diagnostics: Printing Overused Nodes Information\n");
     VTR_LOG("------ ------- ---------- --------- -------- ------------ ------- ------- ------- ------- ------- ------- ------------ -----------------\n");
     VTR_LOG("   No.   Inode  Occupancy  Capacity  RR Node    Direction    Side     PTC    Xlow    Ylow   Xhigh   Yhigh   Resistance       Capacitance\n");
     VTR_LOG("                                        type                          NUM                                                               \n");
@@ -1776,6 +1792,45 @@ static void print_single_overused_node_status(int overuse_index, int inode) {
     VTR_LOG("\n");
 
     fflush(stdout);
+}
+
+static void generate_overused_nodes_report(const t_router_opts& router_opts) {
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& route_ctx = g_vpr_ctx.routing();
+
+    //Append to the current report file
+    std::ofstream os("report_overused_nodes.rpt", std::ofstream::out | std::ofstream::app);
+    os << "----------------------------------------------------------------" << '\n';
+    os << "Routing failure index #" << num_routing_failed << '\n';
+
+    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
+        int overuse = route_ctx.rr_node_route_inf[inode].occ() - device_ctx.rr_nodes[inode].capacity();
+
+        // Skip nodes that are not overused
+        if (overuse <= 0) continue;
+
+        // Report Basic info
+        os << '\n';
+        os << "Overused RR node index #" << inode << '\n';
+        os << "Occupancy = " << route_ctx.rr_node_route_inf[inode].occ() << '\n';
+        os << "Capacity = " << device_ctx.rr_nodes[inode].capacity() << '\n';
+        os << "Node type = " << device_ctx.rr_nodes[inode].type_string() << '\n';
+        os << "PTC number = " << device_ctx.rr_nodes[inode].ptc_num() << '\n';
+        os << "Xlow = " << device_ctx.rr_nodes[inode].xlow() << ", Ylow = " << device_ctx.rr_nodes[inode].ylow() << '\n';
+        os << "Xhigh = " << device_ctx.rr_nodes[inode].xhigh() << ", Yhigh = " << device_ctx.rr_nodes[inode].yhigh() << '\n';
+
+        // Report Selective info
+        auto node_type = device_ctx.rr_nodes[inode].type();
+        if (node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY) {
+            os << "Direction = " << device_ctx.rr_nodes[inode].direction_string() << '\n';
+            os << "Resistance = " << device_ctx.rr_nodes[inode].R() << '\n';
+            os << "Capacitance = " << device_ctx.rr_nodes[inode].C() << '\n';
+        } else if (node_type == e_rr_type::IPIN || node_type == e_rr_type::OPIN) {
+            os << "Side = " << device_ctx.rr_nodes[inode].side_string() << '\n';
+        }
+    }
+
+    os.close();
 }
 
 static void print_router_criticality_histogram(const SetupTimingInfo& timing_info, const ClusteredPinAtomPinsLookup& netlist_pin_lookup) {

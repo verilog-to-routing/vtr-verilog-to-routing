@@ -1092,6 +1092,7 @@ struct t_router_opts {
     e_timing_update_type timing_update_type;
 
     size_t max_logged_overused_rr_nodes;
+    bool generate_rr_node_overuse_report;
 };
 
 struct t_analysis_opts {
