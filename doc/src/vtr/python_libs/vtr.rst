@@ -19,7 +19,7 @@ ABC
 ===
 
 .. automodule:: vtr.abc.abc
-    :members: 
+    :members: run, run_lec
 
 ACE
 ===
