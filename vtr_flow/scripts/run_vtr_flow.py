@@ -415,9 +415,9 @@ def vtr_command_main(arg_list, prog=None):
         if args.sdc_file:
             vpr_args["sdc_file"] = get_sdc_file(args.sdc_file, prog)
 
-        print(args.name if args.name else Path(args.architecture_file).name
+        print(args.name if args.name else Path(args.architecture_file).stem
               + "/"
-              + Path(args.circuit_file).name, end="\t\t")
+              + Path(args.circuit_file).stem, end="\t\t")
         # Run the flow
         vtr.run(
             Path(args.architecture_file),
@@ -641,7 +641,6 @@ def except_vtr_error(error, expect_fail, verbose):
         exit_status = 1
     elif isinstance(error, vtr.InspectError):
         # Something went wrong gathering information
-        print("Error: {msg}".format(msg=error.msg))
         print("\tfile        : ", error.filename)
         exit_status = 2
         return_status = exit_status
@@ -649,7 +648,6 @@ def except_vtr_error(error, expect_fail, verbose):
 
     elif isinstance(error, vtr.VtrError):
         # Generic VTR errors
-        print("Error: ", error.msg)
         exit_status = 3
         return_status = exit_status
         error_status = "failed: {}".format(error.msg)

@@ -26,7 +26,7 @@ class CommandError(VtrError):
     """
 
     def __init__(self, *msg, cmd, returncode, log=None):
-        super().__init__(msg)
+        super().__init__(*msg)
         self.returncode = returncode
         self.cmd = cmd
         self.log = log
@@ -38,5 +38,5 @@ class InspectError(VtrError):
     """
 
     def __init__(self, *msg, filename=None):
-        super().__init__(msg)
+        super().__init__(*msg)
         self.filename = filename
