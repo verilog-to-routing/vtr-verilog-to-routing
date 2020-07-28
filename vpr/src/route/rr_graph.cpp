@@ -3084,12 +3084,12 @@ static void create_edge_groups(EdgeGroups* groups) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_nodes = device_ctx.rr_nodes;
 
-    for (size_t iedge = 0; iedge < rr_nodes.edges_size(); ++iedge) {
-        RREdgeId edge(iedge);
-        if (!device_ctx.rr_switch_inf[rr_nodes.edge_switch(edge)].configurable()) {
-            groups->add_non_config_edge(size_t(rr_nodes.edge_source_node(edge)), size_t(rr_nodes.edge_sink_node(edge)));
-        }
-    }
+    rr_nodes.for_each_edge(
+        [&](RREdgeId edge, RRNodeId src, RRNodeId sink) {
+            if (!device_ctx.rr_switch_inf[rr_nodes.edge_switch(edge)].configurable()) {
+                groups->add_non_config_edge(size_t(src), size_t(sink));
+            }
+        });
 
     groups->create_sets();
 }

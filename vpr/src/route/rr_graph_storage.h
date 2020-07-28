@@ -293,9 +293,12 @@ class t_rr_graph_storage {
         return edge_dest_node_[edge];
     }
 
-    // Get the source node for the specified edge.
-    RRNodeId edge_source_node(const RREdgeId& edge) const {
-        return edge_src_node_[edge];
+    // Call the `apply` function with the edge id, source, and sink nodes of every edge.
+    void for_each_edge(std::function<void(RREdgeId, RRNodeId, RRNodeId)> apply) const {
+        for (size_t i = 0; i < edge_dest_node_.size(); i++) {
+            RREdgeId edge(i);
+            apply(edge, edge_src_node_[edge], edge_dest_node_[edge]);
+        }
     }
 
     // Get the destination node for the iedge'th edge from specified RRNodeId.
@@ -388,11 +391,6 @@ class t_rr_graph_storage {
     // Number of RR nodes that can be accessed.
     size_t size() const {
         return node_storage_.size();
-    }
-
-    // Number of RR nodes that can be accessed.
-    size_t edges_size() const {
-        return edge_dest_node_.size();
     }
 
     // Is the RR graph currently empty?
