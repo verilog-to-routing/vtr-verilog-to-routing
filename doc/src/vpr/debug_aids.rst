@@ -31,6 +31,11 @@ Placer and Router Debugger
 .. image:: https://github.com/verilog-to-routing/verilog-to-routing.github.io/blob/master/img/debuggerWindow.png
     :align: center
 
+Overview
+~~~~~~~~~~~~~~~~~
+
+It can be very useful to stop the program at a significant point and evaluate the circuit at that stage. This debugger allows setting breakpoints during placement and routing using a variety of variables and operations. For example the user can stop the placer after a certain number of perturbations, temperature changes, or when a specific block is moved. It can also stop after a net is routed in the routing process and other such scenarios. There are multiple ways to set and manipulate breakpoints which are all explained in detail below.
+
 Adding a breakpoint
 ~~~~~~~~~~~~~~~~~~~
 
@@ -61,22 +66,22 @@ You can also find the variables’ list in the Advanced Settings Window, on the 
 
 **Placer Variables**
 
-  * move_num: every placer iteration counts as a move, so the user can stop the program after a certain number of moves. This breakpoint can be enabled through the entry field on the main debugger window or using an expression. It should be noted however, that using the entry field would proceed the specified number of moves. (as in the second example)
+  * move_num: every placer perturbation counts as a move, so the user can stop the program after a certain number of moves. This breakpoint can be enabled through the entry field on the main debugger window or using an expression. It should be noted however, that using the entry field would proceed the specified number of moves. (as in the second example)
           * Ex. move _num == 33
           * Ex. move_num += 4
   * temp_count: every time the temperature is updated it counts as an increase to temp_count. This breakpoint can be enabled through the entry field on the main debugger window or using an expression. It should be noted however, that using the entry field would proceed the specified number of temperatures. (as in the second example)
           * Ex. temp_count == 5
           * Ex. temp_count += 5
-  * from_block:  in every placer move one or more blocks are relocated. From_block specifies the first block that is relocated in every move. This breakpoint can be enabled through the entry field on the main debugger window or using an expression.
+  * from_block:  in every placer move one or more blocks are relocated. from_block specifies the first block that is relocated in every move; and a breakpoint of this type stops the program when the first block moved is the one indicated by the user. This breakpoint can be enabled through the entry field on the main debugger window or using an expression.
           * Ex. from_block == 83
-  * in_blocks_affected: this variable allows you to stop whenever your specified block was moved. Unlike from_block which only checks the first block moved in every move, in_blocks_affected looks through all the replicated blocks in that move. This breakpoint can only be enabled through the use of an expression.
+  * in_blocks_affected: this variable allows you to stop after your specified block was moved. Unlike "from_block" which only checks the first block relocated in every move, in_blocks_affected looks through all the blocks whose locations were changed by that move. This breakpoint can only be enabled through the use of an expression.
           * Ex. in_blocks_affected == 1
     
 **Router Variables**
 
-  * router_iter: every router iteration, whether failed or succeeded, counts as a router iteration. This breakpoint can be enabled through the entry field on the main debugger window or using an expression.
+  * router_iter: Every pass through the whole netlist (with each unrouted or poorly routed net being re-routed) counts as a router iteration. This breakpoint can be enabled through the entry field on the main debugger window or using an expression.
           * Ex. router_iter == 2
-  * route_net_id: stops when the specified net is rerouted. This breakpoint can be enabled through the entry field on the main debugger window or using an expression.
+  * route_net_id: stops after the specified net is rerouted. This breakpoint can be enabled through the entry field on the main debugger window or using an expression.
           * route_net_id == 12
     
 Available Operators
