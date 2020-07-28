@@ -131,6 +131,10 @@ static void print_route_status(int itry,
                                std::shared_ptr<const SetupHoldTimingInfo> timing_info,
                                float est_success_iteration);
 
+static void print_overused_nodes_status(OveruseInfo& overuse_info);
+static void print_overused_nodes_header();
+static void print_single_overused_node_status(int overuse_index, int inode);
+
 static void print_router_criticality_histogram(const SetupTimingInfo& timing_info,
                                                const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
 
@@ -715,6 +719,8 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
         VTR_LOG("Successfully routed after %d routing iterations.\n", itry);
     } else {
         VTR_LOG("Routing failed.\n");
+        //If the routing fails, print the overused info
+        print_overused_nodes_status(overuse_info);
 #ifdef VTR_ENABLE_DEBUG_LOGGING
         if (f_router_debug) print_invalid_routing_info();
 #endif
@@ -1663,6 +1669,102 @@ static void print_route_status(int itry, double elapsed_sec, float pres_fac, int
     } else {
         VTR_LOG(" %8.0f", est_success_iteration);
     }
+
+    VTR_LOG("\n");
+
+    fflush(stdout);
+}
+
+static void print_overused_nodes_status(OveruseInfo& overuse_info) {
+    if (overuse_info.overused_nodes >= 1000) {
+        return;
+    }
+
+    //Print header
+    print_overused_nodes_header();
+
+    //Print overuse info
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& route_ctx = g_vpr_ctx.routing();
+
+    int overuse_index = 0;
+    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
+        int overuse = route_ctx.rr_node_route_inf[inode].occ() - device_ctx.rr_nodes[inode].capacity();
+
+        if (overuse > 0) {
+            print_single_overused_node_status(overuse_index, inode);
+            overuse_index++;
+        }
+    }
+}
+
+static void print_overused_nodes_header() {
+    VTR_LOG("------ ------- ---------- --------- -------- ------------ ------- ------- ------- ------- ------- ------- ------------ -----------------\n");
+    VTR_LOG("   No.   Inode  Occupancy  Capacity  RR Node    Direction    Side     PTC    Xlow    Ylow   Xhigh   Yhigh   Resistance       Capacitance\n");
+    VTR_LOG("                                        type                          NUM                                                               \n");
+    VTR_LOG("------ ------- ---------- --------- -------- ------------ ------- ------- ------- ------- ------- ------- ------------ -----------------\n");
+}
+
+static void print_single_overused_node_status(int overuse_index, int inode) {
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& route_ctx = g_vpr_ctx.routing();
+
+    //Determines if direction or side is available for printing
+    auto node_type = device_ctx.rr_nodes[inode].type();
+
+    //Overuse #
+    VTR_LOG("%6d", overuse_index);
+
+    //Inode
+    VTR_LOG(" %7d", inode);
+
+    //Occupancy
+    VTR_LOG(" %10d", route_ctx.rr_node_route_inf[inode].occ());
+
+    //Capacity
+    VTR_LOG(" %9d", device_ctx.rr_nodes[inode].capacity());
+
+    //RR node type
+    VTR_LOG(" %8s", device_ctx.rr_nodes[inode].type_string());
+
+    //Direction
+    if (node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY) {
+        VTR_LOG(" %12s", device_ctx.rr_nodes[inode].direction_string());
+    } else {
+        VTR_LOG(" %12s", "N/A");
+    }
+
+    //Side
+    if (node_type == e_rr_type::IPIN || node_type == e_rr_type::OPIN) {
+        VTR_LOG(" %7s", device_ctx.rr_nodes[inode].side_string());
+    } else {
+        VTR_LOG(" %7s", "N/A");
+    }
+
+    //PTC number
+    VTR_LOG(" %7d", device_ctx.rr_nodes[inode].ptc_num());
+
+    //X_low
+    VTR_LOG(" %7d", device_ctx.rr_nodes[inode].xlow());
+
+    //Y_low
+    VTR_LOG(" %7d", device_ctx.rr_nodes[inode].ylow());
+
+    //X_high
+    VTR_LOG(" %7d", device_ctx.rr_nodes[inode].xhigh());
+
+    //Y_high
+    VTR_LOG(" %7d", device_ctx.rr_nodes[inode].yhigh());
+
+    //Resistance
+    constexpr int RESISTANCE_OP_DIGITS = 12;
+    constexpr int RESISTANCE_OP_SCI_PRECISION = 2;
+    pretty_print_float(" ", device_ctx.rr_nodes[inode].R(), RESISTANCE_OP_DIGITS, RESISTANCE_OP_SCI_PRECISION);
+
+    //Capacitance
+    constexpr int CAPACITANCE_OP_DIGITS = 17;
+    constexpr int CAPACITANCE_OP_SCI_PRECISION = 14;
+    pretty_print_float(" ", device_ctx.rr_nodes[inode].C(), CAPACITANCE_OP_DIGITS, CAPACITANCE_OP_SCI_PRECISION);
 
     VTR_LOG("\n");
 
