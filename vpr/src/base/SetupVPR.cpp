@@ -393,7 +393,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->check_route = Options.check_route;
     RouterOpts->timing_update_type = Options.timing_update_type;
 
-    RouterOpts->max_reported_overused_rr_nodes = Options.max_reported_overused_rr_nodes;
+    RouterOpts->max_logged_overused_rr_nodes = Options.max_logged_overused_rr_nodes;
 }
 
 static void SetupAnnealSched(const t_options& Options,
