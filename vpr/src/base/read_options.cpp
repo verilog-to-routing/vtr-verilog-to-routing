@@ -1849,6 +1849,12 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_grp.add_argument(args.max_reported_overused_rr_nodes, "--max_reported_overused_rr_nodes")
+        .help(
+            "Maximum number of overused RR nodes printed when the routing fails")
+        .default_value("20")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& route_timing_grp = parser.add_argument_group("timing-driven routing options");
 
     route_timing_grp.add_argument(args.astar_fac, "--astar_fac")

@@ -131,7 +131,7 @@ static void print_route_status(int itry,
                                std::shared_ptr<const SetupHoldTimingInfo> timing_info,
                                float est_success_iteration);
 
-static void print_overused_nodes_status(const OveruseInfo& overuse_info);
+static void print_overused_nodes_status(const t_router_opts& router_opts, const OveruseInfo& overuse_info);
 static void print_overused_nodes_header();
 static void print_single_overused_node_status(int overuse_index, int inode);
 
@@ -720,7 +720,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
     } else {
         VTR_LOG("Routing failed.\n");
         //If the routing fails, print the overused info
-        print_overused_nodes_status(overuse_info);
+        print_overused_nodes_status(router_opts, overuse_info);
 #ifdef VTR_ENABLE_DEBUG_LOGGING
         if (f_router_debug) print_invalid_routing_info();
 #endif
@@ -1675,9 +1675,9 @@ static void print_route_status(int itry, double elapsed_sec, float pres_fac, int
     fflush(stdout);
 }
 
-static void print_overused_nodes_status(const OveruseInfo& overuse_info) {
+static void print_overused_nodes_status(const t_router_opts& router_opts, const OveruseInfo& overuse_info) {
     //Display upper limit
-    if (overuse_info.overused_nodes >= 1000) {
+    if (int(overuse_info.overused_nodes) > router_opts.max_reported_overused_rr_nodes) {
         return;
     }
 

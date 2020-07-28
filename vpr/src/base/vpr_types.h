@@ -1090,6 +1090,8 @@ struct t_router_opts {
 
     e_check_route_option check_route;
     e_timing_update_type timing_update_type;
+
+    int max_reported_overused_rr_nodes;
 };
 
 struct t_analysis_opts {
