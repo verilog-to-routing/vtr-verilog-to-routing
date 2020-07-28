@@ -10,7 +10,6 @@
 extern bool f_placer_debug;
 #endif
 
-
 /* This is for the placement swap routines. A swap attempt could be       *
  * rejected, accepted or aborted (due to the limitations placed on the    *
  * carry chain support at this point).                                    */

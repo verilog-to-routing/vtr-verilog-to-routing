@@ -174,7 +174,7 @@ class FormulaParser {
     std::vector<Formula_Object> rpn_output_;
     std::stack<Formula_Object> op_stack_; /* stack for handling operators and brackets in formula */
 };
-}
+} // namespace vtr
 //struct that holds all necessary current information about the placer
 struct current_information {
     int move_num = 0;
@@ -192,6 +192,5 @@ void get_current_info_e(current_information ci);
 void is_a_breakpoint(bool aBreakpoint);
 int get_current_info_e_ba();
 int in_blocks_affected(std::string expression_left);
-
 
 #endif

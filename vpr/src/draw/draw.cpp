@@ -3976,7 +3976,6 @@ float get_net_alpha() {
     return draw_state->net_alpha;
 }
 
-
 static void setup_default_ezgl_callbacks(ezgl::application* app) {
     // Connect press_proceed function to the Proceed button
     GObject* proceed_button = app->get_object("ProceedButton");

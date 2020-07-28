@@ -51,7 +51,7 @@ bool check_for_route_net_id_iter_breakpoints(int net_id) {
 //checks for expression breakpoint
 bool check_for_expression_breakpoints(std::string expression) {
     vtr::
-FormulaParser fp;
+        FormulaParser fp;
     vtr::t_formula_data dummy;
     is_a_breakpoint(true);
     int result = fp.parse_formula(expression, dummy);

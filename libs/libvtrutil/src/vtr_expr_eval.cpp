@@ -35,7 +35,6 @@ static bool op_associativity_is_left(const t_operator& op);
 /* used by the shunting-yard formula parser to deal with operators such as add and subtract */
 static void handle_operator(const Formula_Object& fobj, vector<Formula_Object>& rpn_output, stack<Formula_Object>& op_stack);
 
-
 /* used by the shunting-yard formula parser to deal with brackets, ie '(' and ')' */
 static void handle_bracket(const Formula_Object& fobj, vector<Formula_Object>& rpn_output, stack<Formula_Object>& op_stack);
 
@@ -548,7 +547,6 @@ static void handle_bracket(const Formula_Object& fobj, vector<Formula_Object>& r
                 op_stack.pop();
                 keep_going = true;
             } else {
-
                 keep_going = false;
                 throw vtr::VtrError(vtr::string_fmt("Found unexpected formula object on operator stack: %d\n", next_fobj.type), __FILE__, __LINE__);
             }
@@ -610,7 +608,7 @@ static int parse_rpn_vector(vector<Formula_Object>& rpn_vec) {
 
     /* first entry should always be a number or variable name*/
     if (E_FML_NUMBER != rpn_vec[0].type && E_FML_VARIABLE != rpn_vec[0].type) {
-         throw vtr::VtrError(vtr::string_fmt("parse_rpn_vector: first entry is not a number or variable(was %s)\n", rpn_vec[0].to_string().c_str()), __FILE__, __LINE__);
+        throw vtr::VtrError(vtr::string_fmt("parse_rpn_vector: first entry is not a number or variable(was %s)\n", rpn_vec[0].to_string().c_str()), __FILE__, __LINE__);
     }
 
     if (rpn_vec.size() == 1 && rpn_vec[0].type == E_FML_NUMBER) {
@@ -898,4 +896,3 @@ int in_blocks_affected(std::string expression_left) {
     }
     return wanted_block;
 }
-
