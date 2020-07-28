@@ -130,6 +130,10 @@ def run(
     # Verify that files are Paths or convert them to Paths and check that they exist
     architecture_file = vtr.util.verify_file(architecture_file, "Architecture")
     circuit_file = vtr.util.verify_file(circuit_file, "Circuit")
+    if architecture_file.suffix != ".xml":
+        raise vtr.VtrError(
+            "Expected Architecture file as second argument (was {})".format(architecture_file.name)
+            )
     power_tech_file = (
         vtr.util.verify_file(power_tech_file, "Power") if power_tech_file else None
     )
