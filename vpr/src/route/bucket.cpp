@@ -29,6 +29,7 @@ Bucket::Bucket() noexcept
     , num_items_(0)
     , max_index_(std::numeric_limits<size_t>::max())
     , prune_limit_(std::numeric_limits<size_t>::max())
+    , prune_count_(0)
     , front_head_(std::numeric_limits<size_t>::max()) {}
 
 Bucket::~Bucket() {
@@ -47,6 +48,7 @@ void Bucket::init_heap(const DeviceGrid& grid) {
     front_head_ = std::numeric_limits<size_t>::max();
     heap_tail_ = 0;
     num_items_ = 0;
+    prune_count_ = 0;
 
     conv_factor_ = kDefaultConvFactor;
     division_scaling_ = kInitialDivisionScaling;
@@ -97,6 +99,8 @@ void Bucket::empty_heap() {
     front_head_ = std::numeric_limits<size_t>::max();
     heap_tail_ = 0;
     num_items_ = 0;
+    prune_count_ = 0;
+    min_push_cost_.clear();
 
     // Quickly reset all items to being free'd
     items_.clear();
@@ -194,6 +198,16 @@ void Bucket::push_back(t_heap* hptr) {
         return;
     }
 
+    if (!min_push_cost_.empty()) {
+        if (hptr->cost > min_push_cost_[hptr->index]) {
+            BucketItem* item = reinterpret_cast<BucketItem*>(hptr);
+            items_.free_item(item);
+            return;
+        }
+
+        min_push_cost_[hptr->index] = hptr->cost;
+    }
+
     // Check to see if the range of costs observed by the heap has changed.
     bool check_scale = false;
 
@@ -281,7 +295,7 @@ t_heap* Bucket::get_heap_head() {
         // the division scaling to attempt to shrink the front bucket size.
         //
         // kMaxMaxBuckets prevents this scaling from continuing without limit.
-        if(front_list_.size() > kIncreaseFocusLimit && max_buckets_ < kMaxMaxBuckets) {
+        if (front_list_.size() > kIncreaseFocusLimit && max_buckets_ < kMaxMaxBuckets) {
             division_scaling_ *= 2;
             max_buckets_ *= 2;
             rescale();
@@ -423,6 +437,7 @@ void Bucket::prune_heap() {
     front_list_.empty();
     heap_tail_ = 0;
     num_items_ = 0;
+    prune_count_ += 1;
 
     // Re-heap the pruned elements.
     for (BucketItem* item : best_heap_item) {
@@ -435,6 +450,11 @@ void Bucket::prune_heap() {
     }
 
     verify();
+
+    if (prune_count_ >= 1) {
+        // If pruning is happening repeatedly, start pruning at entry.
+        min_push_cost_.resize(max_index_, std::numeric_limits<float>::infinity());
+    }
 }
 
 bool Bucket::check_front_list() const {
