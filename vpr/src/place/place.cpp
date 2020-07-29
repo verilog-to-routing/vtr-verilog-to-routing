@@ -487,7 +487,7 @@ void try_place(const t_placer_opts& placer_opts,
 
     char msg[vtr::bufsize];
     t_placer_statistics stats;
-    
+
 
     std::shared_ptr<SetupTimingInfo> timing_info;
     std::shared_ptr<PlacementDelayCalculator> placement_delay_calc;
@@ -532,9 +532,10 @@ void try_place(const t_placer_opts& placer_opts,
         VTR_LOG("Critical_uniform_move : %f \n",placer_opts.place_static_move_prob[5]);
         VTR_LOG("Centroid_move : %f \n",placer_opts.place_static_move_prob[6]);
         move_generator = std::make_unique<StaticMoveGenerator>(placer_opts.place_static_move_prob);
+        move_generator2= std::make_unique<StaticMoveGenerator>(placer_opts.place_static_move_prob);
     }
     else{
-        if(agent_algorithm == E_GREEDY){ 
+        if(agent_algorithm == E_GREEDY){
             VTR_LOG("Using simple RL 'Epsilon Greedy agent' for choosing move types\n");
             std::unique_ptr<EpsilonGreedyAgent> karmed_bandit_agent;
             karmed_bandit_agent = std::make_unique<EpsilonGreedyAgent>(4, placer_opts.place_agent_epsilon);
@@ -549,7 +550,7 @@ void try_place(const t_placer_opts& placer_opts,
             move_generator = std::make_unique<SimpleRLMoveGenerator>(karmed_bandit_agent);
         }
 
-        if(agent_algorithm == E_GREEDY){ 
+        if(agent_algorithm == E_GREEDY){
             VTR_LOG("Using simple RL 'Epsilon Greedy agent' for choosing move types\n");
             std::unique_ptr<EpsilonGreedyAgent> karmed_bandit_agent;
             karmed_bandit_agent = std::make_unique<EpsilonGreedyAgent>(7, placer_opts.place_agent_epsilon);
@@ -883,7 +884,7 @@ quench:
 
     auto pre_quench_timing_stats = timing_ctx.stats;
     { /* Quench */
-    
+
 
         vtr::ScopedFinishTimer temperature_timer("Placement Quench");
 
@@ -1007,7 +1008,7 @@ quench:
     VTR_LOG("\tSwaps rejected: %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_rejected, 100 * reject_rate);
     VTR_LOG("\tSwaps aborted : %*d (%4.1f %%)\n", num_swap_print_digits, num_swap_aborted, 100 * abort_rate);
 
-    
+
     float moves,accepted, rejected, aborted;
     float total_moves = std::accumulate(num_moves.begin(), num_moves.end(), 0.0);
 
@@ -1019,7 +1020,7 @@ quench:
         if(moves != 0){
             accepted = accepted_moves[i];
             aborted = aborted_moves[i];
-            rejected = moves - (accepted + aborted); 
+            rejected = moves - (accepted + aborted);
             move_name = available_move_types[int(i)];
             VTR_LOG("\t%.17s move: %2.2f %% (acc=%2.2f %%, rej=%2.2f %%, aborted=%2.2f %%)\n", move_name.c_str(), 100*moves/total_moves,100*accepted/moves, 100*rejected/moves, 100*aborted/moves);
         }
@@ -1639,7 +1640,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 */
     if(reward_num == 0){
         move_generator.process_outcome(-1*delta_c);
-        
+
     }
     else if(reward_num == 2 || reward_num == 1 || reward_num ==3 ){
         if(delta_c < 0){
@@ -1854,7 +1855,7 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
             proposed_connection_delay[net][ipin] = temp_delay;
             proposed_connection_timing_cost[net][ipin] = criticalities.criticality(net, ipin) * temp_delay;
             float delay_budget;
-            if(timing_cost_func == 0) 
+            if(timing_cost_func == 0)
                 delay_budget = temp_delay/(criticalities.normalized_criticality(net, ipin) + 0.4);
             else
                 delay_budget = 0.7 * temp_delay/(criticalities.normalized_criticality(net, ipin));
