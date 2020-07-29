@@ -518,11 +518,20 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
             case RANDOM:
                 VTR_LOG("RANDOM\n");
                 break;
-            case USER:
-                VTR_LOG("USER '%s'\n", PlacerOpts.pad_loc_file.c_str());
-                break;
             default:
                 VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown I/O pad location type\n");
+        }
+
+        VTR_LOG("PlacerOpts.block_loc_type: ");
+        switch (PlacerOpts.block_loc_type) {
+            case NOT_LOCKED:
+                VTR_LOG("NOT_LOCKED\n");
+                break;
+            case LOCKED:
+                VTR_LOG("LOCKED '%s'\n", PlacerOpts.constraints_file.c_str());
+                break;
+            default:
+                VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown block location type\n");
         }
 
         VTR_LOG("PlacerOpts.place_cost_exp: %f\n", PlacerOpts.place_cost_exp);
