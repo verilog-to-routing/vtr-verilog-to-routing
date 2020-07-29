@@ -241,6 +241,7 @@ class Bucket : public HeapInterface {
     void check_scaling();
     float rescale_func() const;
     void check_conv_factor() const;
+    bool check_front_list() const;
 
     // Expand the number of buckets.
     //
@@ -269,6 +270,9 @@ class Bucket : public HeapInterface {
     size_t num_items_;
     size_t max_index_;
     size_t prune_limit_;
+
+    size_t front_head_;
+    std::vector<BucketItem*> front_list_;
 };
 
 #endif /* _BUCKET_H */
