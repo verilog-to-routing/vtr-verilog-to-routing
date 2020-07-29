@@ -4,6 +4,9 @@
 #include "vtr_log.h"
 #include "vpr_error.h"
 
+static constexpr float kDivisionScaling = 100000.f;
+static constexpr ssize_t kMaxBuckets = 2000000;
+
 BucketItems::BucketItems() noexcept
     : alloced_items_(0)
     , num_heap_allocated_(0)
@@ -21,7 +24,8 @@ Bucket::Bucket() noexcept
     , max_cost_(0.f)
     , num_items_(0)
     , max_index_(std::numeric_limits<size_t>::max())
-    , prune_limit_(std::numeric_limits<size_t>::max()) {}
+    , prune_limit_(std::numeric_limits<size_t>::max())
+    , front_head_(std::numeric_limits<size_t>::max()) {}
 
 Bucket::~Bucket() {
     free_all_memory();
@@ -36,6 +40,7 @@ void Bucket::init_heap(const DeviceGrid& grid) {
     memset(heap_, 0, heap_size_ * sizeof(t_heap*));
 
     heap_head_ = std::numeric_limits<size_t>::max();
+    front_head_ = std::numeric_limits<size_t>::max();
     heap_tail_ = 0;
     num_items_ = 0;
 
@@ -83,21 +88,27 @@ void Bucket::empty_heap() {
         std::fill(heap_ + heap_head_, heap_ + heap_tail_ + 1, nullptr);
     }
     heap_head_ = std::numeric_limits<size_t>::max();
+    front_head_ = std::numeric_limits<size_t>::max();
     heap_tail_ = 0;
     num_items_ = 0;
 
     // Quickly reset all items to being free'd
     items_.clear();
+
+    conv_factor_ = kDefaultConvFactor;
+
+    min_cost_ = std::numeric_limits<float>::max();
+    max_cost_ = std::numeric_limits<float>::min();
 }
 
 float Bucket::rescale_func() const {
-    return 50000.f / max_cost_ / std::max(1.f, 1000.f / (max_cost_ / min_cost_));
+    return kDivisionScaling / max_cost_ / std::max(1.f, 1000.f / (max_cost_ / min_cost_));
 }
 
 void Bucket::check_conv_factor() const {
     VTR_ASSERT(cost_to_int(min_cost_) >= 0);
     VTR_ASSERT(cost_to_int(max_cost_) >= 0);
-    VTR_ASSERT(cost_to_int(max_cost_) < 1000000);
+    VTR_ASSERT(cost_to_int(max_cost_) < kMaxBuckets);
 }
 
 // Checks if the scaling factor for cost results in a reasonable
@@ -119,7 +130,7 @@ void Bucket::check_scaling() {
     auto max_bucket = cost_to_int(max_cost);
 
     // If scaling is invalid or more than 100k buckets are needed, rescale.
-    if (min_bucket < 0 || max_bucket < 0 || max_bucket > 1000000) {
+    if (min_bucket < 0 || max_bucket < 0 || max_bucket > kMaxBuckets) {
         // Choose a scaling factor that accomidates 50k buckets between
         // min_cost_ and max_cost_.
         //
@@ -137,6 +148,7 @@ void Bucket::check_scaling() {
         // scaling factor such that all precision is lost.
         conv_factor_ = rescale_func();
         check_conv_factor();
+        front_head_ = std::numeric_limits<size_t>::max();
 
         // Reheap after adjusting scaling.
         if (heap_head_ != std::numeric_limits<size_t>::max()) {
@@ -165,6 +177,8 @@ void Bucket::push_back(t_heap* hptr) {
 
     float cost = hptr->cost;
     if (!std::isfinite(cost)) {
+        BucketItem* item = reinterpret_cast<BucketItem*>(hptr);
+        items_.free_item(item);
         return;
     }
 
@@ -210,8 +224,16 @@ void Bucket::push_back(t_heap* hptr) {
     // so this cast is safe.
     BucketItem* item = reinterpret_cast<BucketItem*>(hptr);
 
-    item->next_bucket = prev;
-    heap_[uint_cost] = item;
+    if (front_head_ == uint_cost) {
+        VTR_ASSERT(prev != nullptr);
+        front_list_.back()->next_bucket = item;
+        item->next_bucket = nullptr;
+        front_list_.push_back(item);
+    } else {
+        // Otherwise just add to front list.
+        item->next_bucket = prev;
+        heap_[uint_cost] = item;
+    }
 
     if (uint_cost < heap_head_) {
         heap_head_ = uint_cost;
@@ -236,23 +258,57 @@ t_heap* Bucket::get_heap_head() {
         return nullptr;
     }
 
+    if (front_head_ != heap_head) {
+        front_list_.clear();
+        for (BucketItem* item = heap[heap_head]; item != nullptr; item = item->next_bucket) {
+            front_list_.push_back(item);
+            VTR_ASSERT(front_list_.size() <= num_items_);
+        }
+        VTR_ASSERT(!front_list_.empty());
+        front_head_ = heap_head;
+        VTR_ASSERT_DEBUG(check_front_list());
+    }
+
     // Find first non-empty bucket
 
     // Randomly remove element
-    size_t count = fast_rand() % 4;
+    size_t count = fast_rand() % front_list_.size();
+    BucketItem* item = front_list_[count];
 
-    BucketItem* prev = nullptr;
-    BucketItem* next = heap[heap_head];
-    for (size_t i = 0; i < count && next->next_bucket != nullptr; ++i) {
-        prev = next;
-        next = prev->next_bucket;
-    }
-
-    if (prev == nullptr) {
-        heap[heap_head] = next->next_bucket;
+    // If the element is the back of the list, just remove it.
+    if (count + 1 == front_list_.size()) {
+        if (front_list_.size() > 1) {
+            // Stitch into list.
+            front_list_[count - 1]->next_bucket = nullptr;
+        } else {
+            // List is now empty.
+            heap[heap_head] = nullptr;
+        }
     } else {
-        prev->next_bucket = next->next_bucket;
+        // This is not the back element, so swap the element we are popping
+        // with the back element, then remove it.
+        BucketItem* swap = front_list_.back();
+        if (front_list_.size() > 2) {
+            front_list_[front_list_.size() - 2]->next_bucket = nullptr;
+        }
+
+        // Update the front_list_
+        front_list_[count] = swap;
+
+        if (count == 0) {
+            // Swap this element to the front of the list.
+            heap[heap_head] = swap;
+        } else {
+            // Stitch this element back into the list
+            front_list_[count - 1]->next_bucket = swap;
+        }
+
+        swap->next_bucket = item->next_bucket;
     }
+
+    front_list_.pop_back();
+
+    VTR_ASSERT_DEBUG(check_front_list());
 
     // Update first non-empty bucket if bucket is now empty
     if (heap[heap_head] == nullptr) {
@@ -266,11 +322,12 @@ t_heap* Bucket::get_heap_head() {
         }
 
         heap_head_ = heap_head;
+        front_head_ = std::numeric_limits<size_t>::max();
     }
 
     outstanding_items_ += 1;
     num_items_ -= 1;
-    return &next->item;
+    return &item->item;
 }
 
 void Bucket::invalidate_heap_entries(int /*sink_node*/, int /*ipin_node*/) {
@@ -339,6 +396,8 @@ void Bucket::prune_heap() {
 
     std::fill(heap_, heap_ + heap_size_, nullptr);
     heap_head_ = std::numeric_limits<size_t>::max();
+    front_head_ = std::numeric_limits<size_t>::max();
+    front_list_.empty();
     heap_tail_ = 0;
     num_items_ = 0;
 
@@ -353,4 +412,21 @@ void Bucket::prune_heap() {
     }
 
     verify();
+}
+
+bool Bucket::check_front_list() const {
+    VTR_ASSERT(heap_head_ == front_head_);
+    size_t i = 0;
+    BucketItem* item = heap_[heap_head_];
+    while (item != nullptr) {
+        if (front_list_.at(i) != item) {
+            VTR_LOG(
+                "front_list_ (%p size %zu) [%zu] %p != item %p\n",
+                front_list_.data(), front_list_.size(), i, front_list_[i], item);
+            VTR_ASSERT(front_list_[i] == item);
+        }
+        i += 1;
+        item = item->next_bucket;
+    }
+    return false;
 }
