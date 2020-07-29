@@ -69,6 +69,7 @@
 #include "cluster.h"
 
 #include "pack_report.h"
+#include "overuse_report.h"
 
 #include "timing_graph_builder.h"
 #include "timing_reports.h"
@@ -731,6 +732,11 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
             //Update status
             VTR_LOG("Circuit is unroutable with a channel width factor of %d.\n", route_status.chan_width());
             graphics_msg = vtr::string_fmt("Routing failed with a channel width factor of %d. ILLEGAL routing shown.", route_status.chan_width());
+
+            //Generate a report on overused nodes if specified
+            if (router_opts.generate_rr_node_overuse_report) {
+                report_overused_nodes();
+            }
         }
 
         //Echo files

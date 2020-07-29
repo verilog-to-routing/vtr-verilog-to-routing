@@ -97,20 +97,21 @@ void report_overused_nodes() {
 
     //Create overused nodes to congested nets loop up
     //by traversing through the net trackbacks
-    std::unordered_map<size_t, std::vector<ClusterNetId>> overused_nodes_to_net_lookup;
+    std::unordered_map<size_t, std::unordered_set<ClusterNetId>> overused_nodes_to_net_lookup;
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
         for (t_trace* tptr = route_ctx.trace[net_id].head; tptr != nullptr; tptr = tptr->next) {
             size_t inode = size_t(tptr->index);
 
             int overuse = route_ctx.rr_node_route_inf[inode].occ() - device_ctx.rr_nodes[inode].capacity();
             if (overuse > 0) {
-                overused_nodes_to_net_lookup[inode].push_back(net_id);
+                overused_nodes_to_net_lookup[inode].insert(net_id);
             }
         }
     }
 
     //Append to the current report file
     std::ofstream os("report_overused_nodes.rpt");
+    os << "Overused nodes information report on the final failed routing attempt" << '\n';
 
     for (auto lookup_pair : overused_nodes_to_net_lookup) {
         size_t inode = lookup_pair.first;
