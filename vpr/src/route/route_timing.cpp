@@ -39,6 +39,7 @@
 #include "router_lookahead_map.h"
 
 #include "tatum/TimingReporter.hpp"
+#include "overuse_report.h"
 
 #define CONGESTED_SLOPE_VAL -0.04
 
@@ -135,9 +136,6 @@ static void print_route_status(int itry,
                                float est_success_iteration);
 
 static void print_overused_nodes_status(const t_router_opts& router_opts, const OveruseInfo& overuse_info);
-static void print_overused_nodes_header();
-static void print_single_overused_node_status(int overuse_index, int inode);
-static void generate_overused_nodes_report(const t_router_opts& router_opts);
 
 static void print_router_criticality_histogram(const SetupTimingInfo& timing_info,
                                                const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
@@ -724,13 +722,8 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
     } else {
         VTR_LOG("Routing failed.\n");
 
-        //If the routing fails, print the overused info, and generate report if specified
+        //If the routing fails, print the overused info
         print_overused_nodes_status(router_opts, overuse_info);
-
-        //Verify that the detailed report should be generated
-        if (router_opts.generate_rr_node_overuse_report) {
-            generate_overused_nodes_report(router_opts);
-        }
 
         ++num_routing_failed;
 
@@ -1695,162 +1688,12 @@ static void print_overused_nodes_status(const t_router_opts& router_opts, const 
     //Overuse info display upper limit
     if (overuse_info.overused_nodes > router_opts.max_logged_overused_rr_nodes) {
         VTR_LOG("Total number of overused nodes is larger than the logging limit.\n");
-        VTR_LOG("For more detailed information, use the --generate_rr_node_overuse_report option.\n\n");
-        return;
-    }
-
-    //Print overuse info header
-    print_overused_nodes_header();
-
-    //Print overuse info body
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& route_ctx = g_vpr_ctx.routing();
-
-    int overuse_index = 0;
-    for (size_t inode = 0; inode < device_ctx.rr_nodes.size(); inode++) {
-        int overuse = route_ctx.rr_node_route_inf[inode].occ() - device_ctx.rr_nodes[inode].capacity();
-
-        if (overuse > 0) {
-            print_single_overused_node_status(overuse_index, inode);
-            overuse_index++;
-        }
-    }
-
-    VTR_LOG("Total number of overused nodes: %d\n", overuse_info.overused_nodes);
-    VTR_LOG("For more detailed information, use the --generate_rr_node_overuse_report option.\n\n");
-}
-
-static void print_overused_nodes_header() {
-    VTR_LOG("Routing Failure Diagnostics: Printing Overused Nodes Information\n");
-    VTR_LOG("------ ------- ---------- --------- -------- ------------ ------- ------- ------- ------- ------- ------- ------------ -----------------\n");
-    VTR_LOG("   No.   Inode  Occupancy  Capacity  RR Node    Direction    Side     PTC    Xlow    Ylow   Xhigh   Yhigh   Resistance       Capacitance\n");
-    VTR_LOG("                                        type                          NUM                                                               \n");
-    VTR_LOG("------ ------- ---------- --------- -------- ------------ ------- ------- ------- ------- ------- ------- ------------ -----------------\n");
-}
-
-static void print_single_overused_node_status(int overuse_index, int inode) {
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& route_ctx = g_vpr_ctx.routing();
-
-    //Determines if direction or side is available for printing
-    auto node_type = device_ctx.rr_nodes[inode].type();
-
-    //Overuse #
-    VTR_LOG("%6d", overuse_index);
-
-    //Inode
-    VTR_LOG(" %7d", inode);
-
-    //Occupancy
-    VTR_LOG(" %10d", route_ctx.rr_node_route_inf[inode].occ());
-
-    //Capacity
-    VTR_LOG(" %9d", device_ctx.rr_nodes[inode].capacity());
-
-    //RR node type
-    VTR_LOG(" %8s", device_ctx.rr_nodes[inode].type_string());
-
-    //Direction
-    if (node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY) {
-        VTR_LOG(" %12s", device_ctx.rr_nodes[inode].direction_string());
     } else {
-        VTR_LOG(" %12s", "N/A");
+        log_overused_nodes_status();
+        VTR_LOG("Total number of overused nodes: %d\n", overuse_info.overused_nodes);
     }
-
-    //Side
-    if (node_type == e_rr_type::IPIN || node_type == e_rr_type::OPIN) {
-        VTR_LOG(" %7s", device_ctx.rr_nodes[inode].side_string());
-    } else {
-        VTR_LOG(" %7s", "N/A");
-    }
-
-    //PTC number
-    VTR_LOG(" %7d", device_ctx.rr_nodes[inode].ptc_num());
-
-    //X_low
-    VTR_LOG(" %7d", device_ctx.rr_nodes[inode].xlow());
-
-    //Y_low
-    VTR_LOG(" %7d", device_ctx.rr_nodes[inode].ylow());
-
-    //X_high
-    VTR_LOG(" %7d", device_ctx.rr_nodes[inode].xhigh());
-
-    //Y_high
-    VTR_LOG(" %7d", device_ctx.rr_nodes[inode].yhigh());
-
-    //Resistance
-    constexpr int RESISTANCE_OP_DIGITS = 12;
-    constexpr int RESISTANCE_OP_SCI_PRECISION = 2;
-    pretty_print_float(" ", device_ctx.rr_nodes[inode].R(), RESISTANCE_OP_DIGITS, RESISTANCE_OP_SCI_PRECISION);
-
-    //Capacitance
-    constexpr int CAPACITANCE_OP_DIGITS = 17;
-    constexpr int CAPACITANCE_OP_SCI_PRECISION = 14;
-    pretty_print_float(" ", device_ctx.rr_nodes[inode].C(), CAPACITANCE_OP_DIGITS, CAPACITANCE_OP_SCI_PRECISION);
 
     VTR_LOG("\n");
-
-    fflush(stdout);
-}
-
-static void generate_overused_nodes_report(const t_router_opts& router_opts) {
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& route_ctx = g_vpr_ctx.routing();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    //Create overused nodes to congested nets loop up
-    //by traversing through the net trackbacks
-    std::unordered_map<size_t, std::vector<ClusterNetId>> overused_nodes_to_net_lookup;
-    for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
-        for (t_trace* tptr = route_ctx.trace[net_id].head; tptr != nullptr; tptr = tptr->next) {
-            size_t inode = size_t(tptr->index);
-
-            int overuse = route_ctx.rr_node_route_inf[inode].occ() - device_ctx.rr_nodes[inode].capacity();
-            if (overuse > 0) {
-                overused_nodes_to_net_lookup[inode].push_back(net_id);
-            }
-        }
-    }
-
-    //Append to the current report file
-    std::ofstream os("report_overused_nodes.rpt", std::ofstream::out | std::ofstream::app);
-    os << "----------------------------------------------------------------" << '\n';
-    os << "Routing failure index #" << num_routing_failed << '\n';
-
-    for (auto lookup_pair : overused_nodes_to_net_lookup) {
-        size_t inode = lookup_pair.first;
-        const auto& congested_nets = lookup_pair.second;
-
-        //Report Basic info
-        os << '\n';
-        os << "Overused RR node index #" << inode << '\n';
-        os << "Occupancy = " << route_ctx.rr_node_route_inf[inode].occ() << '\n';
-        os << "Capacity = " << device_ctx.rr_nodes[inode].capacity() << '\n';
-        os << "Node type = " << device_ctx.rr_nodes[inode].type_string() << '\n';
-        os << "PTC number = " << device_ctx.rr_nodes[inode].ptc_num() << '\n';
-        os << "Xlow = " << device_ctx.rr_nodes[inode].xlow() << ", Ylow = " << device_ctx.rr_nodes[inode].ylow() << '\n';
-        os << "Xhigh = " << device_ctx.rr_nodes[inode].xhigh() << ", Yhigh = " << device_ctx.rr_nodes[inode].yhigh() << '\n';
-
-        //Report Selective info
-        auto node_type = device_ctx.rr_nodes[inode].type();
-        if (node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY) {
-            os << "Direction = " << device_ctx.rr_nodes[inode].direction_string() << '\n';
-            os << "Resistance = " << device_ctx.rr_nodes[inode].R() << '\n';
-            os << "Capacitance = " << device_ctx.rr_nodes[inode].C() << '\n';
-        } else if (node_type == e_rr_type::IPIN || node_type == e_rr_type::OPIN) {
-            os << "Side = " << device_ctx.rr_nodes[inode].side_string() << '\n';
-        }
-
-        //Reported corresponding congested nets
-        os << "Number of nets passing through this RR node = " << congested_nets.size() << '\n';
-        os << "Net IDs:" << '\n';
-        for (auto net_id : congested_nets) {
-            os << size_t(net_id) << '\n';
-        }
-    }
-
-    os.close();
 }
 
 static void print_router_criticality_histogram(const SetupTimingInfo& timing_info, const ClusteredPinAtomPinsLookup& netlist_pin_lookup) {
