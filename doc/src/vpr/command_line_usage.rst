@@ -1010,7 +1010,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
 .. option:: --generate_rr_node_overuse_report {on | off}
 
-    Generates a detailed report on the overused RR nodes' information.
+    Generates a detailed report on the overused RR nodes' information: **report_overused_nodes.rpt**.
 
     This report is generated only when the final routing attempt fails (i.e. the whole routing process has failed).
 
