@@ -2217,8 +2217,7 @@ void set_conditional_defaults(t_options& args) {
 
         args.pad_loc_file.set("", Provenance::SPECIFIED);
     } else {
-        args.pad_loc_type.set(USER, Provenance::INFERRED);
-        VTR_ASSERT(!args.pad_loc_file.value().empty());
+        VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown I/O pad location type\n");
     }
 
     //Are the blocks locked to locations given by a constraints file?

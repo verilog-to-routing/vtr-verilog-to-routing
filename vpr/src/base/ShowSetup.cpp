@@ -509,9 +509,6 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
             case RANDOM:
                 VTR_LOG("RANDOM\n");
                 break;
-            case USER:
-                VTR_LOG("USER '%s'\n", PlacerOpts.pad_loc_file.c_str());
-                break;
             default:
                 VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown I/O pad location type\n");
         }

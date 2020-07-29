@@ -504,13 +504,11 @@ enum pfreq {
 };
 
 /**
- * @brief  Are the pads free to be moved, locked in a random configuration, or
- *         locked in user-specified positions?
+ * @brief  Are the pads free to be moved or locked in a random configuration?
  */
 enum e_pad_loc_type {
     FREE,
-    RANDOM,
-    USER
+    RANDOM
 };
 
 /*Are the blocks not locked (free to be moved) or locked in user-specified positions?*/
