@@ -185,7 +185,6 @@ class ConnectionRouter : public ConnectionRouterInterface {
     bool node_exists_in_route_tree(
         t_heap* current,
         RRNodeId& to_node,
-        const t_conn_cost_params& cost_params,
         std::set<int>* route_tree_nodes);
 
     // Add to_node to the heap, and also add any nodes which are connected by

@@ -41,7 +41,7 @@ class route_budgets {
                             const t_router_opts& router_opts);
 
     /*debugging tools*/
-    void print_route_budget(std::string filename);
+    void print_route_budget(std::string filename, ClbNetPinsMatrix<float>& net_delay);
 
     /*lower budgets during congestion*/
     void update_congestion_times(ClusterNetId net_id);

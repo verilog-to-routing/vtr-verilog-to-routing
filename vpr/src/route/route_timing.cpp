@@ -660,7 +660,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
                 
                 /*for debugging purposes*/
                 if (budgeting_inf.if_set()) {
-                    budgeting_inf.print_route_budget(std::string("route_budgets_") + std::to_string(itry) + ".txt");
+                    budgeting_inf.print_route_budget(std::string("route_budgets_") + std::to_string(itry) + ".txt", net_delay);
                 }
 
             } else {
@@ -771,7 +771,7 @@ bool try_timing_driven_route_net(ConnectionRouter& router,
     connections_inf.prepare_routing_for_net(net_id);
 
     bool reroute_for_hold = false;
-    if (budgeting_inf.if_set() && itry > 2) {
+    if (budgeting_inf.if_set()) {
         reroute_for_hold = (budgeting_inf.get_should_reroute(net_id));
         reroute_for_hold &= timing_info->hold_worst_negative_slack() != 0;
     }
@@ -866,7 +866,6 @@ void reduce_budgets_if_congested(std::vector<ClusterNetId>& rerouted_nets,
                                  route_budgets& budgeting_inf,
                                  CBRR& connections_inf,
                                  int itry) {
-    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     if (budgeting_inf.if_set() && itry > 20) {
         // for (auto net_id : rerouted_nets) {
         //     if (budgeting_inf.get_should_reroute(net_id)) {
@@ -892,12 +891,12 @@ void increase_short_path_crit_if_congested(std::vector<ClusterNetId>& rerouted_n
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     if (budgeting_inf.if_set() && itry > 9) {
         for (auto net_id : rerouted_nets) {
-            if (budgeting_inf.get_should_reroute(net_id)) {
+            if (false) {//budgeting_inf.get_should_reroute(net_id)) {
                 budgeting_inf.update_congestion_times(net_id);
             } else {
                 budgeting_inf.not_congested_this_iteration(net_id);
             }
-            budgeting_inf.increase_short_crit(net_id, 2);
+            // budgeting_inf.increase_short_crit(net_id, 2);
         }
     }
 }
@@ -960,7 +959,6 @@ bool timing_driven_route_net(ConnectionRouter& router,
     rt_root = setup_routing_resources(itry,
                                         net_id,
                                         num_sinks,
-                                        pres_fac,
                                         router_opts.min_incremental_reroute_fanout,
                                         connections_inf,
                                         rt_node_of_sink,
@@ -1414,11 +1412,6 @@ static t_rt_node* setup_routing_resources(int itry,
             //we need to make sure the traceback is synchronized to the route tree
             traceback_from_route_tree(net_id, rt_root, reached_rt_sinks.size());
 
-            //Sanity check the traceback for self-consistency
-            VTR_ASSERT_DEBUG(validate_traceback(route_ctx.trace[net_id].head));
-
-            //Sanity check that route tree and traceback are equivalent after pruning
-            VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
 
             // put the updated occupancies of the route tree nodes back into pathfinder
             pathfinder_update_path_occupancy(route_ctx.trace[net_id].head, 1);
@@ -1621,48 +1614,48 @@ static bool check_hold(const t_router_opts& router_opts, std::shared_ptr<const S
     return false;
 }
 
-static OveruseInfo calculate_overuse_info(const std::vector<ClusterNetId>& rerouted_nets) {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& route_ctx = g_vpr_ctx.routing();
+// static OveruseInfo calculate_overuse_info(const std::vector<ClusterNetId>& rerouted_nets) {
+//     auto& device_ctx = g_vpr_ctx.device();
+//     auto& route_ctx = g_vpr_ctx.routing();
 
-    std::unordered_set<int> checked_nodes;
+//     std::unordered_set<int> checked_nodes;
 
-    size_t overused_nodes = 0;
-    size_t total_overuse = 0;
-    size_t worst_overuse = 0;
+//     size_t overused_nodes = 0;
+//     size_t total_overuse = 0;
+//     size_t worst_overuse = 0;
 
-    //We walk through the entire routing calculating the overuse for each node.
-    //Since in the presence of overuse multiple nets could be using a single node
-    //(and also since branch nodes show up multiple times in the traceback) we use
-    //checked_nodes to avoid double counting the overuse.
-    //
-    //Note that we walk through the entire routing and *not* the RR graph, which
-    //should be more efficient (since usually only a portion of the RR graph is
-    //used by routing, particularly on large devices).
-    //
-    //We skip the nets that have not been rerouted, since if a net should
-    //be rerouted if it already has overused nodes (congestion problem).
-    for (auto net_id : rerouted_nets) {
-        for (t_trace* tptr = route_ctx.trace[net_id].head; tptr != nullptr; tptr = tptr->next) {
-            int inode = tptr->index;
+//     //We walk through the entire routing calculating the overuse for each node.
+//     //Since in the presence of overuse multiple nets could be using a single node
+//     //(and also since branch nodes show up multiple times in the traceback) we use
+//     //checked_nodes to avoid double counting the overuse.
+//     //
+//     //Note that we walk through the entire routing and *not* the RR graph, which
+//     //should be more efficient (since usually only a portion of the RR graph is
+//     //used by routing, particularly on large devices).
+//     //
+//     //We skip the nets that have not been rerouted, since if a net should
+//     //be rerouted if it already has overused nodes (congestion problem).
+//     for (auto net_id : rerouted_nets) {
+//         for (t_trace* tptr = route_ctx.trace[net_id].head; tptr != nullptr; tptr = tptr->next) {
+//             int inode = tptr->index;
 
-            auto result = checked_nodes.insert(inode);
-            if (!result.second) { //Already counted
-                continue;
-            }
+//             auto result = checked_nodes.insert(inode);
+//             if (!result.second) { //Already counted
+//                 continue;
+//             }
 
-            int overuse = route_ctx.rr_node_route_inf[inode].occ() - device_ctx.rr_nodes[inode].capacity();
-            if (overuse > 0) {
-                overused_nodes += 1;
+//             int overuse = route_ctx.rr_node_route_inf[inode].occ() - device_ctx.rr_nodes[inode].capacity();
+//             if (overuse > 0) {
+//                 overused_nodes += 1;
 
-                total_overuse += overuse;
-                worst_overuse = std::max(worst_overuse, size_t(overuse));
-            }
-        }
-    }
+//                 total_overuse += overuse;
+//                 worst_overuse = std::max(worst_overuse, size_t(overuse));
+//             }
+//         }
+//     }
 
-    return OveruseInfo(device_ctx.rr_nodes.size(), overused_nodes, total_overuse, worst_overuse);
-}
+//     return OveruseInfo(device_ctx.rr_nodes.size(), overused_nodes, total_overuse, worst_overuse);
+// }
 
 static size_t calculate_wirelength_available() {
     auto& device_ctx = g_vpr_ctx.device();
@@ -1979,7 +1972,7 @@ bool is_iteration_complete(bool routing_is_feasible, const t_router_opts& router
     if (routing_is_feasible) {
         if (router_opts.routing_budgets_algorithm != YOYO) {
             return true;
-        } else if (router_opts.routing_budgets_algorithm == YOYO && timing_info->hold_worst_negative_slack() == 0) {
+        } else if (router_opts.routing_budgets_algorithm == YOYO && timing_info->hold_worst_negative_slack() == 0 && itry != 1) {
             return true;
         }
     }
