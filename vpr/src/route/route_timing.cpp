@@ -1683,16 +1683,19 @@ static void print_route_status(int itry, double elapsed_sec, float pres_fac, int
 
 static void print_overused_nodes_status(const t_router_opts& router_opts, const OveruseInfo& overuse_info) {
     //Print the index of this routing failure
-    VTR_LOG("\nRouting failure index #%d\n", num_routing_failed);
+    VTR_LOG("\nFailed routing attempt #%d\n", num_routing_failed);
 
-    //Overuse info display upper limit
-    if (overuse_info.overused_nodes > router_opts.max_logged_overused_rr_nodes) {
-        VTR_LOG("Total number of overused nodes is larger than the logging limit.\n");
-    } else {
-        log_overused_nodes_status();
-        VTR_LOG("Total number of overused nodes: %d\n", overuse_info.overused_nodes);
+    size_t num_overused = overuse_info.overused_nodes;
+    size_t max_logged_overused_rr_nodes = router_opts.max_logged_overused_rr_nodes;
+
+    //Overused nodes info logging upper limit
+    VTR_LOG("Total number of overused nodes: %d\n", num_overused);
+    if (num_overused > max_logged_overused_rr_nodes) {
+        VTR_LOG("Total number of overused nodes is larger than the logging limit (%d).\n", max_logged_overused_rr_nodes);
+        VTR_LOG("Displaying the first %d entries.\n", max_logged_overused_rr_nodes);
     }
 
+    log_overused_nodes_status(max_logged_overused_rr_nodes);
     VTR_LOG("\n");
 }
 

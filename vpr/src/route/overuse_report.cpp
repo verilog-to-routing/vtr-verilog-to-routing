@@ -7,7 +7,7 @@
 static void log_overused_nodes_header();
 static void log_single_overused_node_status(int overuse_index, RRNodeId inode);
 
-void log_overused_nodes_status() {
+void log_overused_nodes_status(int max_logged_overused_rr_nodes) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& route_ctx = g_vpr_ctx.routing();
 
@@ -21,7 +21,12 @@ void log_overused_nodes_status() {
 
         if (overuse > 0) {
             log_single_overused_node_status(overuse_index, RRNodeId(inode));
-            overuse_index++;
+            ++overuse_index;
+
+            //Reached the logging limit
+            if (overuse_index >= max_logged_overused_rr_nodes) {
+                return;
+            }
         }
     }
 }
