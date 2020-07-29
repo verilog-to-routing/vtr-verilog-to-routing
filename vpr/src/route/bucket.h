@@ -273,6 +273,8 @@ class Bucket : public HeapInterface {
     size_t num_items_;
     size_t max_index_;
     size_t prune_limit_;
+    size_t prune_count_;
+    std::vector<float> min_push_cost_;
 
     size_t front_head_;
     std::vector<BucketItem*> front_list_;
