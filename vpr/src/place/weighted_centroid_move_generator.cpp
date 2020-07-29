@@ -41,6 +41,16 @@ e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_move
     //iterate over the from block pins
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(b_from)) {
         net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
+        if(cluster_ctx.clb_nlist.net_sinks(net_id).size() == 1){
+            ClusterBlockId source, sink;
+            ClusterPinId sink_pin;
+            source = cluster_ctx.clb_nlist.net_driver_block(net_id);
+            sink_pin = *cluster_ctx.clb_nlist.net_sinks(net_id).begin();
+            sink = cluster_ctx.clb_nlist.pin_block(sink_pin);
+            if(sink == source){
+                continue;
+            }
+        }
 
         //if the pin is driver iterate over all the sinks
         if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::DRIVER) {

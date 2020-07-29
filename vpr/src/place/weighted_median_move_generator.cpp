@@ -54,6 +54,16 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
             continue;
         if(int(cluster_ctx.clb_nlist.net_pins(net_id).size()) >  place_high_fanout_net)
             continue;
+        if(cluster_ctx.clb_nlist.net_sinks(net_id).size() == 1){
+            ClusterBlockId source, sink;
+            ClusterPinId sink_pin;
+            source = cluster_ctx.clb_nlist.net_driver_block(net_id);
+            sink_pin = *cluster_ctx.clb_nlist.net_sinks(net_id).begin();
+            sink = cluster_ctx.clb_nlist.pin_block(sink_pin);
+            if(sink == source){
+                continue;
+            }
+        }
 /*
         //if the moving block is a sink, weight all the terminals of the input net by the criticality of the moving block net pin
         if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::DRIVER)

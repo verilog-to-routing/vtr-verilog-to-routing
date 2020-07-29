@@ -37,12 +37,22 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
     float acc_x = 0;
     float acc_y = 0;
     float fanout, center_x,center_y;
-  
+
     //iterate over the from block pins
 
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(b_from)) {
         net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
         //fanout = cluster_ctx.clb_nlist.block_pins(b_from).size();
+        if(cluster_ctx.clb_nlist.net_sinks(net_id).size() == 1){
+            ClusterBlockId source, sink;
+            ClusterPinId sink_pin;
+            source = cluster_ctx.clb_nlist.net_driver_block(net_id);
+            sink_pin = *cluster_ctx.clb_nlist.net_sinks(net_id).begin();
+            sink = cluster_ctx.clb_nlist.pin_block(sink_pin);
+            if(sink == source){
+                continue;
+            }
+        }
 
         //if the pin is driver iterate over all the sinks
         if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::DRIVER) {
@@ -111,7 +121,7 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
 
             x = std::max(std::min(x, (int)grid.width() - 2), 1);  //-2 for no perim channels
             y = std::max(std::min(y, (int)grid.height() - 2), 1); //-2 for no perim channels
-            
+
             acc_x += x;
             acc_y += y;
         }

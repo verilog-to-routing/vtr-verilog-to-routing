@@ -19,7 +19,7 @@ std::vector<int>& X_coord, std::vector<int>& Y_coord, int &, int place_high_fano
     /* Pick a random block to be swapped with another random block.   */
     ClusterBlockId b_from;
     b_from = pick_from_block();
-    
+
     if (!b_from) {
         return e_create_move::ABORT; //No movable block found
     }
@@ -43,7 +43,17 @@ std::vector<int>& X_coord, std::vector<int>& Y_coord, int &, int place_high_fano
             continue;
         if(int(cluster_ctx.clb_nlist.net_pins(net_id).size()) > place_high_fanout_net)
             continue;
-        if (cluster_ctx.clb_nlist.net_sinks(net_id).size() < 4){ 
+        if(cluster_ctx.clb_nlist.net_sinks(net_id).size() == 1){
+            ClusterBlockId source, sink;
+            ClusterPinId sink_pin;
+            source = cluster_ctx.clb_nlist.net_driver_block(net_id);
+            sink_pin = *cluster_ctx.clb_nlist.net_sinks(net_id).begin();
+            sink = cluster_ctx.clb_nlist.pin_block(sink_pin);
+            if(sink == source){
+                continue;
+            }
+        }
+        if (cluster_ctx.clb_nlist.net_sinks(net_id).size() < 4){
             get_non_updateable(net_id, &coords, b_from);
         }
         else{
@@ -77,7 +87,7 @@ std::vector<int>& X_coord, std::vector<int>& Y_coord, int &, int place_high_fano
         Y_coord.push_back(coords.ymin);
         Y_coord.push_back(coords.ymax);
     }
-    
+
 
     if((X_coord.size()==0) || (Y_coord.size()==0))
         return e_create_move::ABORT;
@@ -91,14 +101,14 @@ std::vector<int>& X_coord, std::vector<int>& Y_coord, int &, int place_high_fano
 
     limit_coords.ymin = Y_coord[floor((Y_coord.size()-1)/2)];
     limit_coords.ymax = Y_coord[floor((Y_coord.size()-1)/2)+1];
-    
+
     t_pl_loc median_point;
     median_point.x = (limit_coords.xmin + limit_coords.xmax) /2 ;
     median_point.y = (limit_coords.ymin + limit_coords.ymax) /2 ;
     if(!find_to_loc_centroid(cluster_from_type, rlim, from, median_point, to))
         return e_create_move::ABORT;
-    
-    
+
+
     return ::create_move(blocks_affected, b_from, to);
 }
 
@@ -132,7 +142,7 @@ static void get_non_updateable(ClusterNetId net_id, t_bb* bb_coord_new, ClusterB
         ymin = y;
         xmax = x;
         ymax = y;
-        
+
         first_block = true;
     }
 
