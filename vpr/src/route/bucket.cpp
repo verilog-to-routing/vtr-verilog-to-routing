@@ -4,8 +4,10 @@
 #include "vtr_log.h"
 #include "vpr_error.h"
 
-static constexpr float kDivisionScaling = 100000.f;
-static constexpr ssize_t kMaxBuckets = 2000000;
+static constexpr float kInitialDivisionScaling = 50000.f;
+static constexpr ssize_t kInitialMaxBuckets = 1000000;
+static constexpr ssize_t kMaxMaxBuckets = 16000000;
+static constexpr size_t kIncreaseFocusLimit = 2048;
 
 BucketItems::BucketItems() noexcept
     : alloced_items_(0)
@@ -20,6 +22,8 @@ Bucket::Bucket() noexcept
     , heap_head_(std::numeric_limits<size_t>::max())
     , heap_tail_(0)
     , conv_factor_(0.f)
+    , division_scaling_(kInitialDivisionScaling)
+    , max_buckets_(kInitialMaxBuckets)
     , min_cost_(0.f)
     , max_cost_(0.f)
     , num_items_(0)
@@ -45,6 +49,8 @@ void Bucket::init_heap(const DeviceGrid& grid) {
     num_items_ = 0;
 
     conv_factor_ = kDefaultConvFactor;
+    division_scaling_ = kInitialDivisionScaling;
+    max_buckets_ = kInitialMaxBuckets;
 
     min_cost_ = std::numeric_limits<float>::max();
     max_cost_ = std::numeric_limits<float>::min();
@@ -96,19 +102,21 @@ void Bucket::empty_heap() {
     items_.clear();
 
     conv_factor_ = kDefaultConvFactor;
+    division_scaling_ = kInitialDivisionScaling;
+    max_buckets_ = kInitialMaxBuckets;
 
     min_cost_ = std::numeric_limits<float>::max();
     max_cost_ = std::numeric_limits<float>::min();
 }
 
 float Bucket::rescale_func() const {
-    return kDivisionScaling / max_cost_ / std::max(1.f, 1000.f / (max_cost_ / min_cost_));
+    return division_scaling_ / max_cost_ / std::max(1.f, 1000.f / (max_cost_ / min_cost_));
 }
 
 void Bucket::check_conv_factor() const {
     VTR_ASSERT(cost_to_int(min_cost_) >= 0);
     VTR_ASSERT(cost_to_int(max_cost_) >= 0);
-    VTR_ASSERT(cost_to_int(max_cost_) < kMaxBuckets);
+    VTR_ASSERT(cost_to_int(max_cost_) < max_buckets_);
 }
 
 // Checks if the scaling factor for cost results in a reasonable
@@ -130,43 +138,47 @@ void Bucket::check_scaling() {
     auto max_bucket = cost_to_int(max_cost);
 
     // If scaling is invalid or more than 100k buckets are needed, rescale.
-    if (min_bucket < 0 || max_bucket < 0 || max_bucket > kMaxBuckets) {
-        // Choose a scaling factor that accomidates 50k buckets between
-        // min_cost_ and max_cost_.
-        //
-        // If min and max are close to each other, assume 3 orders of
-        // magnitude between min and max.  The goal is to rescale less often
-        // when the larger costs haven't been seen yet.
-        //
-        // If min and max are at least 3 orders of magnitude apart, scale
-        // soley based on max cost.  The goal at this point is to keep the
-        // number of buckets between 50k and 100k.
-        //
-        // NOTE:  The precision loss of the bucket approximation grows as the
-        // maximum cost increases.  The underlying assumption of this scaling
-        // algorithm is that the maximum cost will not result in a poor
-        // scaling factor such that all precision is lost.
-        conv_factor_ = rescale_func();
-        check_conv_factor();
-        front_head_ = std::numeric_limits<size_t>::max();
+    if (min_bucket < 0 || max_bucket < 0 || max_bucket > max_buckets_) {
+        rescale();
+    }
+}
 
-        // Reheap after adjusting scaling.
-        if (heap_head_ != std::numeric_limits<size_t>::max()) {
-            std::vector<BucketItem*> reheap;
-            for (size_t bucket = heap_head_; bucket <= heap_tail_; ++bucket) {
-                for (BucketItem* item = heap_[bucket]; item != nullptr; item = item->next_bucket) {
-                    reheap.push_back(item);
-                }
+void Bucket::rescale() {
+    // Choose a scaling factor that accomidates 50k buckets between
+    // min_cost_ and max_cost_.
+    //
+    // If min and max are close to each other, assume 3 orders of
+    // magnitude between min and max.  The goal is to rescale less often
+    // when the larger costs haven't been seen yet.
+    //
+    // If min and max are at least 3 orders of magnitude apart, scale
+    // soley based on max cost.  The goal at this point is to keep the
+    // number of buckets between 50k and 100k.
+    //
+    // NOTE:  The precision loss of the bucket approximation grows as the
+    // maximum cost increases.  The underlying assumption of this scaling
+    // algorithm is that the maximum cost will not result in a poor
+    // scaling factor such that all precision is lost.
+    conv_factor_ = rescale_func();
+    check_conv_factor();
+    front_head_ = std::numeric_limits<size_t>::max();
+
+    // Reheap after adjusting scaling.
+    if (heap_head_ != std::numeric_limits<size_t>::max()) {
+        std::vector<BucketItem*> reheap;
+        for (size_t bucket = heap_head_; bucket <= heap_tail_; ++bucket) {
+            for (BucketItem* item = heap_[bucket]; item != nullptr; item = item->next_bucket) {
+                reheap.push_back(item);
             }
+        }
 
-            std::fill(heap_ + heap_head_, heap_ + heap_tail_ + 1, nullptr);
-            heap_head_ = std::numeric_limits<size_t>::max();
-            heap_tail_ = 0;
+        std::fill(heap_ + heap_head_, heap_ + heap_tail_ + 1, nullptr);
+        heap_head_ = std::numeric_limits<size_t>::max();
+        heap_tail_ = 0;
 
-            for (BucketItem* item : reheap) {
-                outstanding_items_ += 1;
-                push_back(&item->item);
-            }
+        for (BucketItem* item : reheap) {
+            outstanding_items_ += 1;
+            push_back(&item->item);
         }
     }
 }
@@ -263,6 +275,17 @@ t_heap* Bucket::get_heap_head() {
         for (BucketItem* item = heap[heap_head]; item != nullptr; item = item->next_bucket) {
             front_list_.push_back(item);
             VTR_ASSERT(front_list_.size() <= num_items_);
+        }
+
+        // If the front bucket is more than kIncreaseFocusLimit, then change
+        // the division scaling to attempt to shrink the front bucket size.
+        //
+        // kMaxMaxBuckets prevents this scaling from continuing without limit.
+        if(front_list_.size() > kIncreaseFocusLimit && max_buckets_ < kMaxMaxBuckets) {
+            division_scaling_ *= 2;
+            max_buckets_ *= 2;
+            rescale();
+            return get_heap_head();
         }
         VTR_ASSERT(!front_list_.empty());
         front_head_ = heap_head;
