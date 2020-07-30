@@ -680,18 +680,26 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
     **Default:** ``0.8``
 
-.. option:: --fix_pins {free | random | <file.pads>}
+.. option:: --fix_pins {free | random}
 
     Controls how the placer handles I/O pads during placement.
     
     * ``free``: The placer can move I/O locations to optimize the placement.
     * ``random``: Fixes I/O pads to arbitrary locations and does not allow the placer to move them during the anneal (models the effect of poor board-level I/O constraints).
-    * ``<file.pads>``: A path to a file listing the desired location of each I/O block in the netlist.
-
-    This pad location file is in the same format as a :ref:`normal placement file <vpr_place_file>`, but only specifies the locations of I/O pads, rather than the locations of all blocks.
 
     **Default:** ``free``.
+    
+.. option:: --fix_clusters {not_locked | <file.place>}
 
+    Controls how the placer handles blocks (of any type) during placement.
+    
+    * ``not_locked``: The placer can move clustered block locations to optimize the placement.
+    * ``<file.place>``: A path to a file listing the desired location of each block in the netlist.
+    
+    This place location file is in the same format as a :ref:`normal placement file <vpr_place_file>`, but does not require the first two lines which are normally at the top of a placement file that specify the netlist file, netlist ID, and array size.
+    
+    **Default:** ``not_locked``.
+    
 .. option:: --place_algorithm {bounding_box | path_timing_driven}
 
     Controls the algorithm used by the placer.
