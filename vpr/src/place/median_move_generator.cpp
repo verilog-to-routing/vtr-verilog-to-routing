@@ -5,7 +5,7 @@
 //#include "math.h"
 static bool update_bb(ClusterNetId net_id, t_bb* bb_coord_new, int xold, int yold, int xnew, int ynew);
 
-static void get_non_updateable(ClusterNetId net_id, t_bb* bb_coord_new, ClusterBlockId block_id);
+static void get_non_updateable(ClusterNetId net_id, t_bb* bb_coord_new, ClusterBlockId block_id, bool & skip_net);
 
 
 e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim,
@@ -37,24 +37,18 @@ std::vector<int>& X_coord, std::vector<int>& Y_coord, int &, int place_high_fano
 
     X_coord.clear();
     Y_coord.clear();
+    bool skip_net;
+
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(b_from)) {
         ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
             continue;
         if(int(cluster_ctx.clb_nlist.net_pins(net_id).size()) > place_high_fanout_net)
             continue;
-        if(cluster_ctx.clb_nlist.net_sinks(net_id).size() == 1){
-            ClusterBlockId source, sink;
-            ClusterPinId sink_pin;
-            source = cluster_ctx.clb_nlist.net_driver_block(net_id);
-            sink_pin = *cluster_ctx.clb_nlist.net_sinks(net_id).begin();
-            sink = cluster_ctx.clb_nlist.pin_block(sink_pin);
-            if(sink == source){
-                continue;
-            }
-        }
         if (cluster_ctx.clb_nlist.net_sinks(net_id).size() < 4){
-            get_non_updateable(net_id, &coords, b_from);
+            get_non_updateable(net_id, &coords, b_from, skip_net);
+            if(skip_net)
+                continue;
         }
         else{
             bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
@@ -79,7 +73,9 @@ std::vector<int>& X_coord, std::vector<int>& Y_coord, int &, int place_high_fano
             }
 
             if(!update_bb(net_id, &coords, xold, yold, xnew, ynew)){
-                get_non_updateable(net_id, &coords, b_from);
+                get_non_updateable(net_id, &coords, b_from, skip_net);
+                if(skip_net)
+                    continue;
             }
         }
         X_coord.push_back(coords.xmin);
@@ -120,8 +116,10 @@ std::vector<int>& X_coord, std::vector<int>& Y_coord, int &, int place_high_fano
  * Currently assumes channels on both sides of the CLBs forming the   *
  * edges of the bounding box can be used.  Essentially, I am assuming *
  * the pins always lie on the outside of the bounding box.            */
-static void get_non_updateable(ClusterNetId net_id, t_bb* bb_coord_new, ClusterBlockId block_id) {
+static void get_non_updateable(ClusterNetId net_id, t_bb* bb_coord_new, ClusterBlockId block_id, bool & skip_net) {
     //TODO: account for multiple physical pin instances per logical pin
+
+    skip_net = true;
 
     int xmax, ymax, xmin, ymin, x, y;
     int pnum;
@@ -134,6 +132,7 @@ static void get_non_updateable(ClusterNetId net_id, t_bb* bb_coord_new, ClusterB
     bool first_block = false;
 
     if(bnum != block_id){
+        skip_net = false;
         pnum = net_pin_to_tile_pin_index(net_id, 0);
         x = place_ctx.block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
         y = place_ctx.block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
@@ -151,6 +150,7 @@ static void get_non_updateable(ClusterNetId net_id, t_bb* bb_coord_new, ClusterB
         pnum = tile_pin_index(pin_id);
         if(bnum == block_id)
             continue;
+        skip_net = false;
         x = place_ctx.block_locs[bnum].loc.x + physical_tile_type(bnum)->pin_width_offset[pnum];
         y = place_ctx.block_locs[bnum].loc.y + physical_tile_type(bnum)->pin_height_offset[pnum];
 
