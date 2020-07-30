@@ -1,6 +1,6 @@
 module simple_op(in1,in2,out1,out2);
 	parameter width1 = 3;
-	parameter width2 = 6;
+	parameter width2 = 4;
 	
 	input  [width1-1:0] in1;
 	input  [width2-1:0] in2;

@@ -486,6 +486,7 @@ enum class e_timing_update_type {
 /* Timing data structures end */
 enum sched_type {
     AUTO_SCHED,
+    DUSTY_SCHED,
     USER_SCHED
 };
 /* Annealing schedule */
@@ -504,16 +505,21 @@ enum pfreq {
 };
 
 /**
- * @brief  Are the pads free to be moved, locked in a random configuration, or
- *         locked in user-specified positions?
+ * @brief  Are the pads free to be moved or locked in a random configuration?
  */
 enum e_pad_loc_type {
     FREE,
-    RANDOM,
-    USER
+    RANDOM
+};
+
+/*Are the blocks not locked (free to be moved) or locked in user-specified positions?*/
+enum e_block_loc_type {
+    NOT_LOCKED,
+    LOCKED
 };
 
 ///@brief  Power data for t_netlist structure
+
 struct t_net_power {
     ///@brief Signal probability - long term probability that signal is logic-high
     float probability;
@@ -806,6 +812,18 @@ struct t_annealing_sched {
     float init_t;
     float alpha_t;
     float exit_t;
+
+    /* Parameters for DUSTY_SCHED                                         *
+     * The alpha ranges from alpha_min to alpha_max, decaying each        *
+     * iteration by `alpha_decay`.                                        *
+     * `restart_filter` is the low-pass coefficient (EWMA) for updating   *
+     * the new starting temperature for each alpha.                       *
+     * Give up after `wait` alphas.                                       */
+    float alpha_min;
+    float alpha_max;
+    float alpha_decay;
+    float success_min;
+    float success_target;
 };
 
 /* Various options for the placer.                                           *
@@ -816,8 +834,10 @@ struct t_annealing_sched {
  * place_chan_width:  The channel width assumed if only one placement is     *
  *                    performed.                                             *
  * pad_loc_type:  Are pins FREE, fixed randomly, or fixed from a file.       *
- * pad_loc_file:  File to read pin locations form if pad_loc_type            *
- *                     is USER.                                              *
+ * block_loc_type: Are blocks fixed from a file.                             *
+ * constraints_file:  File to read block locations from if block_loc_type    *
+ *                     is LOCKED.                                            *
+ * pad_loc_file: File to read pad locations from if pad_loc_type is USER.    *
  * place_freq:  Should the placement be skipped, done once, or done for each *
  *              channel width in the binary search.                          *
  * recompute_crit_iter: how many temperature stages pass before we recompute *
@@ -870,6 +890,8 @@ struct t_placer_opts {
     float place_cost_exp;
     int place_chan_width;
     enum e_pad_loc_type pad_loc_type;
+    enum e_block_loc_type block_loc_type;
+    std::string constraints_file;
     std::string pad_loc_file;
     enum pfreq place_freq;
     int recompute_crit_iter;
@@ -1326,7 +1348,6 @@ struct t_trace {
  *   @param prev_edge  Index of the edge (from 0 to num_edges-1 of prev_node)
  *                     that was used to reach this node from the previous node.
  *                     If there is no predecessor, prev_edge = NO_PREVIOUS.
- *   @param pres_cost  Present congestion cost term for this node.
  *   @param acc_cost   Accumulated cost term from previous Pathfinder iterations.
  *   @param path_cost  Total cost of the path up to and including this node +
  *                     the expected cost to the target if the timing_driven router
@@ -1341,7 +1362,6 @@ struct t_rr_node_route_inf {
     int prev_node;
     RREdgeId prev_edge;
 
-    float pres_cost;
     float acc_cost;
     float path_cost;
     float backward_path_cost;

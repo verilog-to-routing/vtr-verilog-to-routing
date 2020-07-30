@@ -135,6 +135,7 @@ struct global_args_t {
 
     argparse::ArgValue<int> parralelized_simulation;
     argparse::ArgValue<bool> parralelized_simulation_in_batch;
+    // deprecated since this should be defined when compiled
     argparse::ArgValue<int> sim_initial_value;
     // The seed for creating random simulation vector
     argparse::ArgValue<int> sim_random_seed;
@@ -180,6 +181,13 @@ enum circuit_type_e {
     circuit_type_e_END
 };
 
+enum init_value_e {
+    _0 = 0,
+    _1 = 1,
+    dont_care = 2,
+    undefined = 3,
+};
+
 enum operation_list {
     NO_OP,
     MULTI_PORT_MUX, // port 1 = control, port 2+ = mux options
@@ -219,6 +227,7 @@ enum operation_list {
     SR,             // >>
     ASR,            // >>>
     SL,             // <<
+    ASL,            // <<<
     CASE_EQUAL,     // ===
     CASE_NOT_EQUAL, // !==
     ADDER_FUNC,
@@ -369,8 +378,7 @@ struct typ {
         short is_genvar;
         short is_memory;
         short is_signed;
-        short is_initialized;
-        long initial_value;
+        VNumber* initial_value = nullptr;
     } variable;
     struct
     {
@@ -458,7 +466,7 @@ struct nnode_t {
 
     netlist_t* internal_netlist; // this is a point of having a subgraph in a node
 
-    std::vector<std::vector<signed char>> memory_data;
+    std::vector<std::vector<BitSpace::bit_value_t>> memory_data;
     //(int cycle, int num_input_pins, npin_t *inputs, int num_output_pins, npin_t *outputs);
     void (*simulate_block_cycle)(int, int, int*, int, int*);
 
@@ -471,9 +479,8 @@ struct nnode_t {
     int in_queue;           // Flag used by the simulator to avoid double queueing.
     npin_t** undriven_pins; // These pins have been found by the simulator to have no driver.
     int num_undriven_pins;
-    int ratio;                     //clock ratio for clock nodes
-    signed char has_initial_value; // initial value assigned?
-    signed char initial_value;     // initial net value
+    int ratio;                  //clock ratio for clock nodes
+    init_value_e initial_value; // initial net value
     bool internal_clk_warn = false;
     edge_type_e edge_type; //
     bool covered = false;
@@ -522,12 +529,10 @@ struct nnet_t {
     stat_t stat;
     /////////////////////
     // For simulation
-    std::shared_ptr<AtomicBuffer>
-        values;
+    std::shared_ptr<AtomicBuffer> values;
 
-    signed char has_initial_value; // initial value assigned?
-    signed char initial_value;     // initial net value
-                                   //////////////////////
+    init_value_e initial_value; // initial net value
+                                //////////////////////
 };
 
 struct signal_list_t {

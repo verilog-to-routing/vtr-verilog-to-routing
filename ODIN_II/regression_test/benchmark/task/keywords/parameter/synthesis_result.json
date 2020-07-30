@@ -27,7 +27,13 @@
     "parameter/parameter_override/no_arch": {
         "test_name": "parameter/parameter_override/no_arch",
         "verilog": "parameter_override.v",
-        "exit": 1
+        "Pi": 10,
+        "Po": 7,
+        "logic element": 5,
+        "Longest Path": 5,
+        "Average Path": 3,
+        "Estimated LUTs": 5,
+        "Total Node": 5
     },
     "DEFAULT": {
         "test_name": "n/a",

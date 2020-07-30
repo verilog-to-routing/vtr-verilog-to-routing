@@ -22,6 +22,7 @@ struct t_conn_cost_params {
     float criticality = 1.;
     float astar_fac = 1.2;
     float bend_cost = 1.;
+    float pres_fac = 1.;
     const t_conn_delay_budget* delay_budget = nullptr;
 
     //TODO: Eventually once delay budgets are working, t_conn_delay_budget

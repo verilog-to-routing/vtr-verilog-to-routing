@@ -22,6 +22,7 @@ import subprocess
 import recommonmark
 
 sys.path.append(".")
+sys.path.insert(0, os.path.abspath('../../vtr_flow/scripts/python_libs'))
 from markdown_code_symlinks import LinkParser, MarkdownSymlinksDomain
 
 # Cool looking ReadTheDocs theme
@@ -58,13 +59,16 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.mathjax',
     'sphinx.ext.imgmath',
+    'sphinx.ext.napoleon',
+    'sphinx.ext.coverage',
     'breathe',
     'notfound.extension',
     'sphinx_markdown_tables',
     'sdcdomain',
     'archdomain',
     'rrgraphdomain',
-    'recommonmark'
+    'recommonmark',
+    'sphinx.ext.autodoc'
 ]
 
 if have_sphinxcontrib_bibtex:

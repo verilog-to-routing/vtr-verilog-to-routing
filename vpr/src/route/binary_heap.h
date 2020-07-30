@@ -19,6 +19,7 @@ class BinaryHeap : public HeapInterface {
     void empty_heap() final;
     t_heap* get_heap_head() final;
     void build_heap() final;
+    void set_prune_limit(size_t max_index, size_t prune_limit) final;
 
     void invalidate_heap_entries(int sink_node, int ipin_node) final;
 
@@ -29,11 +30,16 @@ class BinaryHeap : public HeapInterface {
     void sift_up(size_t leaf, t_heap* const node);
     void sift_down(size_t hole);
     void expand_heap_if_full();
+    bool check_prune_limit();
+    void prune_heap();
 
     HeapStorage storage_;
-    t_heap** heap_; /* Indexed from [1..heap_size] */
-    int heap_size_; /* Number of slots in the heap array */
-    int heap_tail_; /* Index of first unused slot in the heap array */
+    t_heap** heap_;    /* Indexed from [1..heap_size] */
+    size_t heap_size_; /* Number of slots in the heap array */
+    size_t heap_tail_; /* Index of first unused slot in the heap array */
+
+    size_t max_index_;
+    size_t prune_limit_;
 };
 
 #endif /* _BINARY_HEAP_H */

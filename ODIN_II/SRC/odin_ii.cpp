@@ -516,7 +516,7 @@ void get_options(int argc, char** argv) {
         .action(argparse::Action::STORE_TRUE);
 
     other_sim_grp.add_argument<int, ParseInitRegState>(global_args.sim_initial_value, "-U")
-        .help("Default initial register state")
+        .help("DEPRECATED")
         .default_value("X")
         .metavar("INIT_REG_STATE");
 

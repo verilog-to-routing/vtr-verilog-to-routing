@@ -5,6 +5,8 @@
 #include "vtr_vector.h"
 #include "heap_type.h"
 #include "rr_node_fwd.h"
+#include "router_stats.h"
+#include "globals.h"
 
 /******* Subroutines in route_common used only by other router modules ******/
 
@@ -12,18 +14,75 @@ vtr::vector<ClusterNetId, t_bb> load_route_bb(int bb_factor);
 
 t_bb load_net_route_bb(ClusterNetId net_id, int bb_factor);
 
-void pathfinder_update_path_cost(t_trace* route_segment_start,
-                                 int add_or_sub,
-                                 float pres_fac);
-void pathfinder_update_single_node_cost(int inode, int add_or_sub, float pres_fac);
+void pathfinder_update_path_occupancy(t_trace* route_segment_start, int add_or_sub);
 
-void pathfinder_update_cost(float pres_fac, float acc_fac);
+void pathfinder_update_single_node_occupancy(int inode, int add_or_sub);
+
+void pathfinder_update_acc_cost_and_overuse_info(float acc_fac, OveruseInfo& overuse_info);
+
+float update_pres_fac(float new_pres_fac);
 
 t_trace* update_traceback(t_heap* hptr, ClusterNetId net_id);
 
 void reset_path_costs(const std::vector<int>& visited_rr_nodes);
 
-float get_rr_cong_cost(int inode);
+float get_rr_cong_cost(int inode, float pres_fac);
+
+/* Returns the base cost of using this rr_node */
+inline float get_single_rr_cong_base_cost(int inode) {
+    auto& device_ctx = g_vpr_ctx.device();
+    auto cost_index = device_ctx.rr_nodes[inode].cost_index();
+
+    return device_ctx.rr_indexed_data[cost_index].base_cost;
+}
+
+/* Returns the accumulated congestion cost of using this rr_node */
+inline float get_single_rr_cong_acc_cost(int inode) {
+    auto& route_ctx = g_vpr_ctx.routing();
+
+    return route_ctx.rr_node_route_inf[inode].acc_cost;
+}
+
+/* Returns the present congestion cost of using this rr_node */
+inline float get_single_rr_cong_pres_cost(int inode, float pres_fac) {
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
+
+    int occ = route_ctx.rr_node_route_inf[inode].occ();
+    int capacity = device_ctx.rr_nodes[inode].capacity();
+
+    if (occ >= capacity) {
+        return (1. + pres_fac * (occ + 1 - capacity));
+    } else {
+        return 1.;
+    }
+}
+
+/* Returns the congestion cost of using this rr_node,
+ * *ignoring* non-configurable edges */
+inline float get_single_rr_cong_cost(int inode, float pres_fac) {
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& route_ctx = g_vpr_ctx.routing();
+
+    float pres_cost;
+    int overuse = route_ctx.rr_node_route_inf[inode].occ() - device_ctx.rr_nodes[inode].capacity();
+
+    if (overuse >= 0) {
+        pres_cost = (1. + pres_fac * (overuse + 1));
+    } else {
+        pres_cost = 1.;
+    }
+
+    auto cost_index = device_ctx.rr_nodes[inode].cost_index();
+
+    float cost = device_ctx.rr_indexed_data[cost_index].base_cost * route_ctx.rr_node_route_inf[inode].acc_cost * pres_cost;
+
+    VTR_ASSERT_DEBUG_MSG(
+        cost == get_single_rr_cong_base_cost(inode) * get_single_rr_cong_base_cost(inode) * get_single_rr_cong_pres_cost(inode, pres_fac),
+        "Single rr node congestion cost is inaccurate");
+
+    return cost;
+}
 
 void mark_ends(ClusterNetId net_id);
 void mark_remaining_ends(const std::vector<int>& remaining_sinks);

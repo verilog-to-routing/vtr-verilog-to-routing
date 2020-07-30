@@ -170,7 +170,6 @@ ast_node_t* create_node_w_type(ids id, loc_t loc) {
     new_node->types.variable.is_genvar = false;
     new_node->types.variable.is_memory = false;
     new_node->types.variable.is_signed = false;
-    new_node->types.variable.is_initialized = false;
 
     return new_node;
 }
@@ -1196,6 +1195,11 @@ ast_node_t* fold_binary(ast_node_t** node) {
 
             case BITWISE_NOR:
                 vresult = V_BITWISE_NOR(voperand_0, voperand_1);
+                success = true;
+                break;
+
+            case ASL:
+                vresult = V_SIGNED_SHIFT_LEFT(voperand_0, voperand_1);
                 success = true;
                 break;
 

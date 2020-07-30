@@ -2,18 +2,18 @@
     "localparam/localparam/no_arch": {
         "test_name": "localparam/localparam/no_arch",
         "verilog": "localparam.v",
-        "exit": 134,
-        "errors": [
-            "AST localparam.v:5 no match for parameter msb"
-        ]
+        "Pi": 3,
+        "Po": 3,
+        "Longest Path": 2,
+        "Average Path": 2
     },
     "localparam/parameter_define_localparam/no_arch": {
         "test_name": "localparam/parameter_define_localparam/no_arch",
         "verilog": "parameter_define_localparam.v",
-        "exit": 134,
-        "errors": [
-            "AST parameter_define_localparam.v:5 no match for parameter lsb"
-        ]
+        "Pi": 3,
+        "Po": 3,
+        "Longest Path": 2,
+        "Average Path": 2
     },
     "DEFAULT": {
         "test_name": "n/a",

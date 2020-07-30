@@ -12,17 +12,17 @@
     <subtree 
         name="libblifparse" 
         internal_path="libs/EXTERNAL/libblifparse" 
-        external_url="https://github.com/kmurray/libblifparse.git" 
+        external_url="https://github.com/verilog-to-routing/libblifparse.git" 
         default_external_ref="master"/>
     <subtree 
         name="libsdcparse" 
         internal_path="libs/EXTERNAL/libsdcparse" 
-        external_url="https://github.com/kmurray/libsdcparse.git" 
+        external_url="https://github.com/verilog-to-routing/libsdcparse.git" 
         default_external_ref="master"/>
     <subtree 
         name="libtatum" 
         internal_path="libs/EXTERNAL/libtatum" 
-        external_url="https://github.com/kmurray/tatum.git" 
+        external_url="https://github.com/verilog-to-routing/tatum.git" 
         default_external_ref="master"/>
     <subtree 
         name="libezgl" 

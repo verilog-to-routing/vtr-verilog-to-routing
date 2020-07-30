@@ -56,6 +56,7 @@
 
 #define INSTANTIATE_DRIVERS 1
 #define ALIAS_INPUTS 2
+#define RECURSIVE_LIMIT 256
 
 STRING_CACHE* output_nets_sc;
 STRING_CACHE* input_nets_sc;
@@ -84,12 +85,14 @@ void create_top_driver_nets(ast_node_t* module, char* instance_name_prefix, sc_h
 void create_top_output_nodes(ast_node_t* module, char* instance_name_prefix, sc_hierarchy* local_ref);
 nnet_t* define_nets_with_driver(ast_node_t* var_declare, char* instance_name_prefix);
 nnet_t* define_nodes_and_nets_with_driver(ast_node_t* var_declare, char* instance_name_prefix);
+ast_node_t* resolve_top_module_parameters(ast_node_t* node, sc_hierarchy* top_sc_list);
+ast_node_t* resolve_top_parameters_defined_by_parameters(ast_node_t* node, sc_hierarchy* top_sc_list, int count);
 
 void connect_hard_block_and_alias(ast_node_t* hb_instance, char* instance_name_prefix, int outport_size, sc_hierarchy* local_ref);
 void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_instance, char* instance_name_prefix, sc_hierarchy* local_ref);
 signal_list_t* connect_function_instantiation_and_alias(short PASS, ast_node_t* module_instance, char* instance_name_prefix, sc_hierarchy* local_ref);
 signal_list_t* connect_task_instantiation_and_alias(short PASS, ast_node_t* task_instance, char* instance_name_prefix, sc_hierarchy* local_ref);
-int check_for_initial_reg_value(ast_node_t* var_declare, long* value);
+VNumber* get_init_value(ast_node_t* node);
 void define_latchs_initial_value_inside_initial_statement(ast_node_t* initial_node, sc_hierarchy* local_ref);
 
 signal_list_t* concatenate_signal_lists(signal_list_t** signal_lists, int num_signal_lists);
@@ -175,6 +178,7 @@ void create_netlist(ast_t* ast) {
         top_sc_list->scope_id = vtr::strdup(top_module->children[0]->types.identifier);
         verilog_netlist->identifier = vtr::strdup(top_module->children[0]->types.identifier);
         /* elaboration */
+        resolve_top_module_parameters(top_module, top_sc_list);
         simplify_ast_module(&top_module, top_sc_list);
 
         /* now recursively parse the modules by going through the tree of modules starting at top */
@@ -991,12 +995,10 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char* instance_name_pre
         output_nets_sc->data[sc_spot] = (void*)new_net;
         new_net->name = temp_string;
 
-        /* Check if this net should have an initial value */
-        if (var_declare->types.variable.is_initialized) {
-            new_net->has_initial_value = true;
-            /* Initial net value should only be either 1 or 0 */
-            new_net->initial_value = var_declare->types.variable.initial_value ? 1 : 0;
+        if (var_declare->types.variable.initial_value) {
+            new_net->initial_value = (init_value_e)var_declare->types.variable.initial_value->get_bit_from_lsb(0);
         }
+
     } else if (var_declare->children[3] == NULL) {
         ast_node_t* node_max = var_declare->children[1];
         ast_node_t* node_min = var_declare->children[2];
@@ -1014,12 +1016,6 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char* instance_name_pre
         if (min_value < 0 || max_value < 0) {
             warning_message(NETLIST, var_declare->children[0]->loc, "%s",
                             "Odin doesn't support negative number in index.");
-        }
-
-        /* Check if this array driver should have an initial value */
-        long initial_value = 0;
-        if (var_declare->types.variable.is_initialized) {
-            initial_value = var_declare->types.variable.initial_value;
         }
 
         /* This register declaration is a range as opposed to a single bit so we need to define each element */
@@ -1040,13 +1036,8 @@ nnet_t* define_nets_with_driver(ast_node_t* var_declare, char* instance_name_pre
             output_nets_sc->data[sc_spot] = (void*)new_net;
             new_net->name = temp_string;
 
-            /* Assign initial value to this net if it exists */
-            if (var_declare->types.variable.is_initialized) {
-                new_net->has_initial_value = true;
-                /* Grab LSB */
-                new_net->initial_value = initial_value & 0x01;
-                /* Shift out lowest bit */
-                initial_value >>= 1;
+            if (var_declare->types.variable.initial_value) {
+                new_net->initial_value = (init_value_e)var_declare->types.variable.initial_value->get_bit_from_lsb(i);
             }
         }
     }
@@ -1256,7 +1247,7 @@ void create_symbol_table_for_scope(ast_node_t* module_items, sc_hierarchy* local
 
                         continue;
 
-                    oassert(module_items->children[i]->children[j]->type == VAR_DECLARE);
+                    oassert(var_declare->type == VAR_DECLARE);
                     oassert((var_declare->types.variable.is_input) || (var_declare->types.variable.is_output) || (var_declare->types.variable.is_reg) || (var_declare->types.variable.is_integer) || (var_declare->types.variable.is_genvar) || (var_declare->types.variable.is_wire));
 
                     if (var_declare->types.variable.is_input
@@ -1269,6 +1260,8 @@ void create_symbol_table_for_scope(ast_node_t* module_items, sc_hierarchy* local
                     temp_string = make_full_ref_name(NULL, NULL, NULL, var_declare->children[0]->types.identifier, -1);
                     /* look for that element */
                     sc_spot = sc_add_string(local_symbol_table_sc, temp_string);
+                    VNumber* init_value = get_init_value(var_declare->children[5]);
+
                     if (local_symbol_table_sc->data[sc_spot] != NULL) {
                         /* ERROR checks here
                          * output with reg is fine
@@ -1286,11 +1279,7 @@ void create_symbol_table_for_scope(ast_node_t* module_items, sc_hierarchy* local
                             ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_output = true;
 
                             /* check for an initial value and copy it over if found */
-                            long initial_value;
-                            if (check_for_initial_reg_value(var_declare, &initial_value)) {
-                                ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_initialized = true;
-                                ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.initial_value = initial_value;
-                            }
+                            ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.initial_value = init_value;
                         } else if ((var_declare->types.variable.is_reg) || (var_declare->types.variable.is_wire)
                                    || (var_declare->types.variable.is_integer) || (var_declare->types.variable.is_genvar)) {
                             /* copy the output status over */
@@ -1299,11 +1288,7 @@ void create_symbol_table_for_scope(ast_node_t* module_items, sc_hierarchy* local
 
                             ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_integer = var_declare->types.variable.is_integer;
                             /* check for an initial value and copy it over if found */
-                            long initial_value;
-                            if (check_for_initial_reg_value(var_declare, &initial_value)) {
-                                ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_initialized = true;
-                                ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.initial_value = initial_value;
-                            }
+                            ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.initial_value = init_value;
                         } else if (!var_declare->types.variable.is_integer) {
                             abort();
                         }
@@ -1317,11 +1302,7 @@ void create_symbol_table_for_scope(ast_node_t* module_items, sc_hierarchy* local
                         num_local_symbol_table++;
 
                         /* check for an initial value and store it if found */
-                        long initial_value;
-                        if (check_for_initial_reg_value(var_declare, &initial_value)) {
-                            var_declare->types.variable.is_initialized = true;
-                            var_declare->types.variable.initial_value = initial_value;
-                        }
+                        var_declare->types.variable.initial_value = init_value;
                         module_items->children[i]->children[j] = NULL;
                     }
                     vtr::free(temp_string);
@@ -1406,20 +1387,20 @@ void create_symbol_table_for_scope(ast_node_t* module_items, sc_hierarchy* local
  *  Returns the initial value in *value if one is found.
  *  Added by Conor
  *-------------------------------------------------------------------------*/
-int check_for_initial_reg_value(ast_node_t* var_declare, long* value) {
-    oassert(var_declare->type == VAR_DECLARE);
 
+VNumber* get_init_value(ast_node_t* node) {
+    // by default it is always undefined
+    VNumber* init_value = nullptr;
     // Initial value is always the last child, if one exists
-    if (var_declare->children[5] != NULL) {
-        if (var_declare->children[5]->type == NUMBERS) {
-            *value = var_declare->children[5]->types.vnumber->get_value();
-            return true;
+    if (node != NULL) {
+        if (node->type == NUMBERS) {
+            init_value = new VNumber(node->types.vnumber);
         } else {
-            warning_message(NETLIST, var_declare->loc,
+            warning_message(NETLIST, node->loc,
                             "%s", "Could not resolve initial assignment to a constant value, skipping\n");
         }
     }
-    return false;
+    return init_value;
 }
 
 /*--------------------------------------------------------------------------
@@ -1950,11 +1931,8 @@ void connect_module_instantiation_and_alias(short PASS, ast_node_t* module_insta
                      * already been instantiated without any initial value. */
                     nnet_t* output_net = (nnet_t*)output_nets_sc->data[sc_spot_output];
                     nnet_t* input_new_net = (nnet_t*)output_nets_sc->data[sc_spot_input_new];
-                    if (output_net->driver_pin && output_net->driver_pin->node) {
-                        if (output_net->driver_pin->node->type == FF_NODE && input_new_net && input_new_net->has_initial_value) {
-                            output_net->driver_pin->node->has_initial_value = input_new_net->has_initial_value;
-                            output_net->driver_pin->node->initial_value = input_new_net->initial_value;
-                        }
+                    if (output_net->driver_pin && output_net->driver_pin->node && input_new_net) {
+                        output_net->driver_pin->node->initial_value = input_new_net->initial_value;
                     }
 
                     /* clean up input_new_net */
@@ -2261,11 +2239,8 @@ signal_list_t* connect_function_instantiation_and_alias(short PASS, ast_node_t* 
                 add_pin_to_signal_list(return_list, new_pin2);
                 nnet_t* input_new_net = (nnet_t*)output_nets_sc->data[sc_spot_input_new];
 
-                if (output_net->driver_pin && output_net->driver_pin->node) {
-                    if (output_net->driver_pin->node->type == FF_NODE && input_new_net->has_initial_value) {
-                        output_net->driver_pin->node->has_initial_value = input_new_net->has_initial_value;
-                        output_net->driver_pin->node->initial_value = input_new_net->initial_value;
-                    }
+                if (output_net->driver_pin && output_net->driver_pin->node && input_new_net) {
+                    output_net->driver_pin->node->initial_value = input_new_net->initial_value;
                 }
 
                 /* clean up input_new_net */
@@ -2945,9 +2920,6 @@ void define_latchs_initial_value_inside_initial_statement(ast_node_t* initial_no
          * a complex statement*/
         if ((initial_node->children[i]->type == BLOCKING_STATEMENT || initial_node->children[i]->type == NON_BLOCKING_STATEMENT)
             && initial_node->children[i]->children[1]->type == NUMBERS) {
-            //Value
-            int number = initial_node->children[i]->children[1]->types.vnumber->get_value();
-
             //Find corresponding register, set it's members to reflect initialization.
             if (initial_node->children[i]) {
                 /*if the identifier we found in the table matches the identifier of our blocking statement*/
@@ -2955,8 +2927,7 @@ void define_latchs_initial_value_inside_initial_statement(ast_node_t* initial_no
                 if (sc_spot == -1) {
                     warning_message(NETLIST, initial_node->children[i]->children[0]->loc, "Register [%s] used in initial block is not declared.\n", initial_node->children[i]->children[0]->types.identifier);
                 } else {
-                    local_symbol_table[sc_spot]->types.variable.is_initialized = 1;
-                    local_symbol_table[sc_spot]->types.variable.initial_value = number;
+                    local_symbol_table[sc_spot]->types.variable.initial_value = get_init_value(initial_node->children[i]->children[1]);
                 }
             }
         }
@@ -3053,16 +3024,12 @@ void terminate_registered_assignment(ast_node_t* always_node, signal_list_t* ass
             strcpy(ref_string, pin->name);
             strcat(ref_string, "_latch_initial_value");
 
-            STRING_CACHE* local_symbol_table_sc = local_ref->local_symbol_table_sc;
-            sc_spot = sc_lookup_string(local_symbol_table_sc, ref_string);
+            sc_spot = sc_lookup_string(local_ref->local_symbol_table_sc, ref_string);
             if (sc_spot != -1) {
-                ff_node->has_initial_value = 1;
-                ff_node->initial_value = ((char*)(local_symbol_table_sc->data[sc_spot]))[0];
+                ff_node->initial_value = ((nnode_t*)local_ref->local_symbol_table_sc->data[sc_spot])->initial_value;
             } else {
-                sc_spot = sc_add_string(local_symbol_table_sc, ref_string);
-                local_symbol_table_sc->data[sc_spot] = (void*)ff_node;
-
-                ff_node->has_initial_value = net->has_initial_value;
+                sc_spot = sc_add_string(local_ref->local_symbol_table_sc, ref_string);
+                local_ref->local_symbol_table_sc->data[sc_spot] = (void*)ff_node->initial_value;
                 ff_node->initial_value = net->initial_value;
             }
             /* free the reference string */
@@ -3446,7 +3413,8 @@ signal_list_t* create_operation_node(ast_node_t* op, signal_list_t** input_lists
             output_port_width = input_lists[0]->count;
             input_port_width = input_lists[0]->count;
             break;
-        case SL: // <<
+        case ASL: // <<<
+        case SL:  // <<
             /* Shifts doesn't matter about port size, but second input needs to be a number */
             //output_port_width = input_lists[0]->count + (shift_left_value_with_overflow_check(0x1, input_lists[1]->count)-1);
             output_port_width = input_lists[0]->count + (shift_left_value_with_overflow_check(0x1, log2(op->children[1]->types.vnumber->get_value()), op->loc));
@@ -3506,7 +3474,7 @@ signal_list_t* create_operation_node(ast_node_t* op, signal_list_t** input_lists
     oassert(output_port_width != -1);
 
     for (i = 0; i < list_size; i++) {
-        if ((operation_node->type == SR) || (operation_node->type == SL) || (operation_node->type == ASR)) {
+        if ((operation_node->type == SR) || (operation_node->type == ASL) || (operation_node->type == SL) || (operation_node->type == ASR)) {
             /* Need to check that 2nd operand is constant */
             ast_node_t* second = op->children[1];
             if (second->type != NUMBERS)
@@ -5179,4 +5147,70 @@ void reorder_connections_from_name(ast_node_t* instance_node_list, ast_node_t* i
     }
 
     delete[] arr_index;
+}
+/*--------------------------------------------------------------------------
+ * Resolves top module parameters and defparams defined by it's own parameters as those parameters cannot be overriden
+ * Technically the top module parameters can be overriden by defparams in a seperate module however that cannot be supported until
+ * Odin has full hierarchy support. Even Quartus doesn't allow defparams to override the top module parameters but the Verilog Standard 2005
+ * doesn't say its not allowed. It's not good practice to override top module parameters and Odin could choose not to allow it.
+ *-------------------------------------------------------------------------*/
+
+ast_node_t* resolve_top_module_parameters(ast_node_t* node, sc_hierarchy* top_sc_list) {
+    if (node->type == MODULE_PARAMETER) {
+        ast_node_t* child = node->children[5];
+        if (child->type != NUMBERS) {
+            node->children[5] = resolve_top_parameters_defined_by_parameters(child, top_sc_list, 0);
+        }
+        return (node);
+    }
+
+    int i = 0;
+
+    while (node->num_children > i) {
+        ast_node_t* new_child = node->children[i];
+        if (new_child != NULL) {
+            node->children[i] = resolve_top_module_parameters(new_child, top_sc_list);
+        }
+        i++;
+    }
+    return (node);
+}
+
+ast_node_t* resolve_top_parameters_defined_by_parameters(ast_node_t* node, sc_hierarchy* top_sc_list, int count) {
+    STRING_CACHE* local_param_table_sc = top_sc_list->local_param_table_sc;
+    STRING_CACHE* local_symbol_table_sc = top_sc_list->local_symbol_table_sc;
+
+    count++;
+
+    if (count > RECURSIVE_LIMIT) {
+        error_message(NETLIST, node->loc, "Exceeds recursion count limit of %s", RECURSIVE_LIMIT);
+    }
+
+    if (node->type == IDENTIFIERS) {
+        const char* string = node->types.identifier;
+        long sc_spot = sc_lookup_string(local_param_table_sc, string);
+        long sc_spot_symbol = sc_lookup_string(local_symbol_table_sc, string);
+
+        if ((sc_spot == -1) && (sc_spot_symbol == -1)) {
+            error_message(NETLIST, node->loc, "%s is not a valid parameter", string);
+        } else if (sc_spot_symbol != -1) {
+            return (node);
+        } else {
+            ast_node_t* newNode = ast_node_deep_copy((ast_node_t*)local_param_table_sc->data[sc_spot]);
+            if (newNode->type != NUMBERS) {
+                newNode = resolve_top_parameters_defined_by_parameters(newNode, top_sc_list, count);
+            }
+            node = free_whole_tree(node);
+            node = newNode;
+        }
+    }
+    if (node->type == BINARY_OPERATION) {
+        for (int i = 0; i < 2; i++) {
+            ast_node_t* child = node->children[i];
+            if (child->type != NUMBERS) {
+                node->children[i] = resolve_top_parameters_defined_by_parameters(node->children[i], top_sc_list, count);
+            }
+        }
+    }
+    return (node);
 }
