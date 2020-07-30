@@ -91,7 +91,7 @@ jobs:
       script:
         - ./dev/check-format.sh
     - state: Test
-      name: Code Formatting - Python"
+      name: "Code Formatting - Python"
       script:
         - python3 ./dev/check-format-py.sh
     - stage: Test
