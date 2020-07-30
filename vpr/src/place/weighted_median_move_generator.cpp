@@ -4,7 +4,7 @@
 #include "math.h"
 
 
-static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* coords, ClusterBlockId block_id, ClusterPinId moving_pin_id, const PlacerCriticalities* criticalities);
+static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* coords, ClusterBlockId block_id, ClusterPinId moving_pin_id, const PlacerCriticalities* criticalities, bool & skip_net);
 
 
 //static void get_bb_for_net_excluding_block(ClusterNetId net_id, t_bb* coords, ClusterBlockId block_id);
@@ -48,22 +48,14 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     t_bb temp_coords,limit_coords;
     X_coord.clear();
     Y_coord.clear();
+    bool skip_net;
+
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(b_from)) {
         ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
             continue;
         if(int(cluster_ctx.clb_nlist.net_pins(net_id).size()) >  place_high_fanout_net)
             continue;
-        if(cluster_ctx.clb_nlist.net_sinks(net_id).size() == 1){
-            ClusterBlockId source, sink;
-            ClusterPinId sink_pin;
-            source = cluster_ctx.clb_nlist.net_driver_block(net_id);
-            sink_pin = *cluster_ctx.clb_nlist.net_sinks(net_id).begin();
-            sink = cluster_ctx.clb_nlist.pin_block(sink_pin);
-            if(sink == source){
-                continue;
-            }
-        }
 /*
         //if the moving block is a sink, weight all the terminals of the input net by the criticality of the moving block net pin
         if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::DRIVER)
@@ -89,7 +81,9 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
             get_bb_cost_sink_for_net_excluding_block(net_id, &coords, b_from, pin_id);
 */
         //all net pins are weighted with their own crititcalities
-        get_bb_cost_for_net_excluding_block(net_id, &coords, b_from, pin_id, criticalities);
+        get_bb_cost_for_net_excluding_block(net_id, &coords, b_from, pin_id, criticalities, skip_net);
+        if(skip_net)
+            continue;
 
         X_coord.insert(X_coord.end(),ceil(coords.xmin.second*10), coords.xmin.first);
         X_coord.insert(X_coord.end(),ceil(coords.xmax.second*10), coords.xmax.first);
@@ -136,9 +130,12 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
 /* This routine finds the bounding box of a net from scratch excluding   *
  * a specific block. This is very useful in some directed moves.         *
  * It updates coordinates of the bb                                      */
-static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* coords, ClusterBlockId , ClusterPinId moving_pin_id, const PlacerCriticalities* criticalities) {
+static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* coords, ClusterBlockId , ClusterPinId moving_pin_id, const PlacerCriticalities* criticalities, bool& skip_net) {
     int pnum, x, y, xmin, xmax, ymin, ymax;
     float xmin_cost,xmax_cost,ymin_cost,ymax_cost, cost;
+
+    skip_net = true;
+
     xmin=0;
     xmax=0;
     ymin=0;
@@ -163,6 +160,7 @@ static void get_bb_cost_for_net_excluding_block(ClusterNetId net_id, t_bb_cost* 
         //if(bnum != block_id)
         if(pin_id != moving_pin_id)
         {
+            skip_net = false;
             pnum = tile_pin_index(pin_id);
             if(cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::DRIVER){
                 ipin = cluster_ctx.clb_nlist.pin_net_index(moving_pin_id);
