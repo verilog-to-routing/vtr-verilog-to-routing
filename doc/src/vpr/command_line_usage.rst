@@ -1004,7 +1004,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     Prints the information on overused RR nodes to the VPR log file after the each failed routing attempt.
 
-    This happens only when the number of overused nodes is below the given threshold.
+    If the number of overused nodes is above the given threshold ``N``, then only the first ``N`` entries are printed to the logfile.
 
     **Default:** ``20``
 
@@ -1014,7 +1014,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     This report is generated only when the final routing attempt fails (i.e. the whole routing process has failed).
 
-    In addition to the information that can be seen via ``--max_logged_overused_rr_nodes``, this report prints out all the net ids that associated with each overused node. Also, this report does not place a threshold upon the number of RR nodes printed.
+    In addition to the information that can be seen via ``--max_logged_overused_rr_nodes``, this report prints out all the net ids that are associated with each overused RR node. Also, this report does not place a threshold upon the number of RR nodes printed.
 
     **Default:** ``off``
 
