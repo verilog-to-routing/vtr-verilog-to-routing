@@ -43,8 +43,12 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
 static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch);
 static int find_ipin_cblock_switch_index(const t_arch& Arch);
 
-/* Sets VPR parameters and defaults. Does not do any error checking
- * as this should have been done by the various input checkers */
+/**
+ * @brief Sets VPR parameters and defaults.
+ *
+ * Does not do any error checking as this should have been done by
+ * the various input checkers
+ */
 void SetupVPR(const t_options* Options,
               const bool TimingEnabled,
               const bool readArchFile,
@@ -253,8 +257,10 @@ static void SetupTiming(const t_options& Options, const bool TimingEnabled, t_ti
     Timing->SDCFile = Options.SDCFile;
 }
 
-/* This loads up VPR's arch_switch_inf data by combining the switches from
- * the arch file with the special switches that VPR needs. */
+/**
+ * @brief This loads up VPR's arch_switch_inf data by combining the switches
+ *        from the arch file with the special switches that VPR needs.
+ */
 static void SetupSwitches(const t_arch& Arch,
                           t_det_routing_arch* RoutingArch,
                           const t_arch_switch_inf* ArchSwitches,
@@ -301,8 +307,11 @@ static void SetupSwitches(const t_arch& Arch,
     }
 }
 
-/* Sets up routing structures. Since checks are already done, this
- * just copies values across */
+/**
+ * @brief Sets up routing structures.
+ *
+ * Since checks are already done, this just copies values across
+ */
 static void SetupRoutingArch(const t_arch& Arch,
                              t_det_routing_arch* RoutingArch) {
     RoutingArch->switch_block_type = Arch.SBType;
@@ -383,6 +392,9 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
 
     RouterOpts->check_route = Options.check_route;
     RouterOpts->timing_update_type = Options.timing_update_type;
+
+    RouterOpts->max_logged_overused_rr_nodes = Options.max_logged_overused_rr_nodes;
+    RouterOpts->generate_rr_node_overuse_report = Options.generate_rr_node_overuse_report;
 }
 
 static void SetupAnnealSched(const t_options& Options,
@@ -411,11 +423,40 @@ static void SetupAnnealSched(const t_options& Options,
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "inner_num must be greater than 0.\n");
     }
 
+    AnnealSched->alpha_min = Options.PlaceAlphaMin;
+    if (AnnealSched->alpha_min >= 1 || AnnealSched->alpha_min <= 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "alpha_min must be between 0 and 1 exclusive.\n");
+    }
+
+    AnnealSched->alpha_max = Options.PlaceAlphaMax;
+    if (AnnealSched->alpha_max >= 1 || AnnealSched->alpha_max <= AnnealSched->alpha_min) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "alpha_max must be between alpha_min and 1 exclusive.\n");
+    }
+
+    AnnealSched->alpha_decay = Options.PlaceAlphaDecay;
+    if (AnnealSched->alpha_decay >= 1 || AnnealSched->alpha_decay <= 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "alpha_decay must be between 0 and 1 exclusive.\n");
+    }
+
+    AnnealSched->success_min = Options.PlaceSuccessMin;
+    if (AnnealSched->success_min >= 1 || AnnealSched->success_min <= 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "success_min must be between 0 and 1 exclusive.\n");
+    }
+
+    AnnealSched->success_target = Options.PlaceSuccessTarget;
+    if (AnnealSched->success_target >= 1 || AnnealSched->success_target <= 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "success_target must be between 0 and 1 exclusive.\n");
+    }
+
     AnnealSched->type = Options.anneal_sched_type;
 }
 
-/* Sets up the s_packer_opts structure baesd on users inputs and on the architecture specified.
- * Error checking, such as checking for conflicting params is assumed to be done beforehand
+/**
+ * @brief Sets up the s_packer_opts structure baesd on users inputs and
+ *        on the architecture specified.
+ *
+ * Error checking, such as checking for conflicting params is assumed
+ * to be done beforehand
  */
 void SetupPackerOpts(const t_options& Options,
                      t_packer_opts* PackerOpts) {
@@ -467,8 +508,12 @@ static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOp
     NetlistOpts.netlist_verbosity = Options.netlist_verbosity;
 }
 
-/* Sets up the s_placer_opts structure based on users input. Error checking,
- * such as checking for conflicting params is assumed to be done beforehand */
+/**
+ * @brief Sets up the s_placer_opts structure based on users input.
+ *
+ * Error checking, such as checking for conflicting params
+ * is assumed to be done beforehand
+ */
 static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts) {
     if (Options.do_placement) {
         PlacerOpts->doPlacement = STAGE_DO;
@@ -486,8 +531,10 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
 
     PlacerOpts->place_algorithm = Options.PlaceAlgorithm;
 
+    PlacerOpts->constraints_file = Options.constraints_file;
     PlacerOpts->pad_loc_file = Options.pad_loc_file;
     PlacerOpts->pad_loc_type = Options.pad_loc_type;
+    PlacerOpts->block_loc_type = Options.block_loc_type;
 
     PlacerOpts->place_chan_width = Options.PlaceChanWidth;
 

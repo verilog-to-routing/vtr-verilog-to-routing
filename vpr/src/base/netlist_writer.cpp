@@ -27,64 +27,65 @@
 #include "atom_netlist_utils.h"
 #include "logic_vec.h"
 
-//Overview
-//========
-//
-//This file implements the netlist writer which generates post-implementation (i.e. post-routing) netlists
-//in BLIF and Verilog formats, along with an SDF file which can be used for timing back-annotation (e.g. for
-//timing simulation).
-//
-//The externally facing function from this module is netlist_writer() which will generate the netlist and SDF
-//output files.  netlist_writer() assumes that a post-routing implementation is available and that there is a
-//valid timing graph with real delays annotated (these delays are used to create the SDF).
-//
-//Implementation
-//==============
-//
-//The netlist writer is primarily driven by the NetlistWriterVisitor class, which walks the netlist using the
-//NetlistWalker (see netlist_walker.h).  The netlist walker calls NetlistWriterVisitor's  visit_atom_impl()
-//method for every atom (i.e. primitive circuit element) in VPR's internal data structures.
-//
-//visit_atom_impl() then dispatches the atom to the appropriate NetlistWriterVisitor member function
-//(e.g. LUTs to make_lut_instance(), Latches to make_latch_instance(), etc.).  Each of the make_*_instance()
-//functions records the external nets the atom connects to (see make_inst_wire()) and constructs a concrete
-//'Instance' object to represent the primitive. NetlistWriterVisitor saves these representations for later
-//output.
-//
-//'Instance' is an abstract class representing objects which know how to create thier own representation in
-//BLIF, Verilog and SDF formats.  Most primitives can be represented by the BlackBoxInst class, but special
-//primitives like LUTs and Latchs have thier own implementations (LutInst, LatchInst) to handle some of their
-//unique requirements.
-//
-//Once the entire netlist has been traversed the netlist walker will call NetlistWriterVisitor's finish_impl()
-//method which kicks off the generation of the actual netlists and SDF files.  NetlistWriterVisitor's print_*()
-//methods setting up file-level global information (I/Os, net declarations etc.) and then ask each Instance to
-//print itself in the appropriate format to the appropriate file.
-//
-//Name Escaping
-//=============
-//One of the challenges in generating netlists is producing consistent naming of netlist elements.
-//In particular valid BLIF names, Verilog names and SDF names are not neccessarily the same.
-//As a result we must escape invalid characters/identifiers when producing some formats.
-//
-//All name escaping is handled at the output stage (i.e. in the print_*() functions) since it is
-//very format dependant.
-//
-//VPR stores names internally generally following BLIF conventions.  As a result these names need
-//to be escaped when generating Verilog or SDF.  This is handled with escape_verilog_identifier()
-//and escape_sdf_identifier() functions.
-//
-//Primitives
-//==========
-//Verilog netlist generation assumes the existance of appropriate primitives for the various
-//atom types (i.e. a LUT_K module, a DFF module etc.).  These are currently defined the file
-//<vtr>/vtr_flow/primitives.v, where <vtr> is the root of the VTR source tree.
-//
-//You will typically need to link with this file when attempting to simulate a post-implementation netlist.
-//Also see the comments in primitives.v for important notes related to performing SDF back-annotated timing
-//simulation.
+/**
+ * @file
+ *
+ * This file implements the netlist writer which generates post-implementation (i.e. post-routing) netlists
+ * in BLIF and Verilog formats, along with an SDF file which can be used for timing back-annotation (e.g. for
+ * timing simulation).
+ *
+ * The externally facing function from this module is netlist_writer() which will generate the netlist and SDF
+ * output files.  netlist_writer() assumes that a post-routing implementation is available and that there is a
+ * valid timing graph with real delays annotated (these delays are used to create the SDF).
+ *
+ * Implementation
+ * ==============
+ *
+ * The netlist writer is primarily driven by the NetlistWriterVisitor class, which walks the netlist using the
+ * NetlistWalker (see netlist_walker.h).  The netlist walker calls NetlistWriterVisitor's  visit_atom_impl()
+ * method for every atom (i.e. primitive circuit element) in VPR's internal data structures.
+ *
+ * visit_atom_impl() then dispatches the atom to the appropriate NetlistWriterVisitor member function
+ * (e.g. LUTs to make_lut_instance(), Latches to make_latch_instance(), etc.).  Each of the make_*_instance()
+ * functions records the external nets the atom connects to (see make_inst_wire()) and constructs a concrete
+ * 'Instance' object to represent the primitive. NetlistWriterVisitor saves these representations for later
+ * output.
+ *
+ * 'Instance' is an abstract class representing objects which know how to create thier own representation in
+ * BLIF, Verilog and SDF formats.  Most primitives can be represented by the BlackBoxInst class, but special
+ * primitives like LUTs and Latchs have thier own implementations (LutInst, LatchInst) to handle some of their
+ * unique requirements.
+ *
+ * Once the entire netlist has been traversed the netlist walker will call NetlistWriterVisitor's finish_impl()
+ * method which kicks off the generation of the actual netlists and SDF files.  NetlistWriterVisitor's print_*()
+ * methods setting up file-level global information (I/Os, net declarations etc.) and then ask each Instance to
+ * print itself in the appropriate format to the appropriate file.
+ *
+ * Name Escaping
+ * =============
+ * One of the challenges in generating netlists is producing consistent naming of netlist elements.
+ * In particular valid BLIF names, Verilog names and SDF names are not neccessarily the same.
+ * As a result we must escape invalid characters/identifiers when producing some formats.
+ *
+ * All name escaping is handled at the output stage (i.e. in the print_*() functions) since it is
+ * very format dependant.
+ *
+ * VPR stores names internally generally following BLIF conventions.  As a result these names need
+ * to be escaped when generating Verilog or SDF.  This is handled with escape_verilog_identifier()
+ * and escape_sdf_identifier() functions.
+ *
+ * Primitives
+ * ==========
+ * Verilog netlist generation assumes the existance of appropriate primitives for the various
+ * atom types (i.e. a LUT_K module, a DFF module etc.).  These are currently defined the file
+ * `<vtr>/vtr_flow/primitives.v`, where `<vtr>` is the root of the VTR source tree.
+ *
+ * You will typically need to link with this file when attempting to simulate a post-implementation netlist.
+ * Also see the comments in primitives.v for important notes related to performing SDF back-annotated timing
+ * simulation.
+ */
 
-//Enable for extra output while calculating LUT masks
+/* Enable for extra output while calculating LUT masks */
 //#define DEBUG_LUT_MASK
 
 //
@@ -121,12 +122,12 @@ std::string join_identifier(std::string lhs, std::string rhs);
 //A combinational timing arc
 class Arc {
   public:
-    Arc(std::string src_port,  //Source of the arc
-        int src_ipin,          //Source pin index
-        std::string snk_port,  //Sink of the arc
-        int snk_ipin,          //Sink pin index
-        float del,             //Delay on this arc
-        std::string cond = "") //Condition associated with the arc
+    Arc(std::string src_port,  ///<Source of the arc
+        int src_ipin,          ///<Source pin index
+        std::string snk_port,  ///<Sink of the arc
+        int snk_ipin,          ///<Sink pin index
+        float del,             ///<Delay on this arc
+        std::string cond = "") ///<Condition associated with the arc
         : source_name_(src_port)
         , source_ipin_(src_ipin)
         , sink_name_(snk_port)
@@ -151,44 +152,50 @@ class Arc {
     std::string condition_;
 };
 
-//Instance is an interface used to represent an element instantiated in a netlist
-//
-//Instances know how to describe themselves in BLIF, Verilog and SDF
-//
-//This should be subclassed to implement support for new primitive types (although
-//see BlackBoxInst for a general implementation for a black box primitive)
+/**
+ * @brief Instance is an interface used to represent an element instantiated in a netlist
+ *
+ * Instances know how to describe themselves in BLIF, Verilog and SDF
+ *
+ * This should be subclassed to implement support for new primitive types (although
+ * see BlackBoxInst for a general implementation for a black box primitive)
+ */
 class Instance {
   public:
     virtual ~Instance() = default;
 
-    //Print the current instance in blif format
-    //
-    //  os - The output stream to print to
-    //  unconn_count - The current count of unconnected nets.  BLIF has limitations requiring
-    //                 unconnected nets to be used to represent unconnected ports.  To allow
-    //                 unique naming of these nets unconn_count is used to uniquify these names.
-    //                 Whenever creating an unconnected net (and using unconn_count to uniquify
-    //                 its name in the file) unconn_count should be incremented.
-    //  depth - Current indentation depth.  This is used to figure-out how much indentation
-    //          should be applied.  This is purely for cosmetic formatting.  Use indent() for
-    //          generating consistent indentation.
+    /**
+     * @brief Print the current instance in blif format
+     *
+     *   @param os  The output stream to print to
+     *   @param unconn_count  The current count of unconnected nets.
+     *              BLIF has limitations requiring unconnected nets to be used to
+     *              represent unconnected ports. To allow unique naming of these nets
+     *              unconn_count is used to uniquify these names. Whenever creating
+     *              an unconnected net (and using unconn_count to uniquify its name
+     *              in the file) unconn_count should be incremented.
+     *
+     *   @param depth  Current indentation depth.  This is used to figure-out how much indentation
+     *                 should be applied. This is purely for cosmetic formatting.  Use indent() for
+     *                 generating consistent indentation.
+     */
     virtual void print_blif(std::ostream& os, size_t& unconn_count, int depth = 0) = 0;
 
-    //Print the current instanse in Verilog, see print_blif() for argument descriptions
+    ///@brief Print the current instanse in Verilog, see print_blif() for argument descriptions
     virtual void print_verilog(std::ostream& os, int depth = 0) = 0;
 
-    //Print the current instanse in SDF, see print_blif() for argument descriptions
+    ///@brief Print the current instanse in SDF, see print_blif() for argument descriptions
     virtual void print_sdf(std::ostream& os, int depth = 0) = 0;
 };
 
-//An instance representing a Look-Up Table
+///@brief An instance representing a Look-Up Table
 class LutInst : public Instance {
-  public:                                                               //Public methods
-    LutInst(size_t lut_size,                                            //The LUT size
-            LogicVec lut_mask,                                          //The LUT mask representing the logic function
-            std::string inst_name,                                      //The name of this instance
-            std::map<std::string, std::vector<std::string>> port_conns, //The port connections of this instance. Key: port name, Value: connected nets
-            std::vector<Arc> timing_arc_values)                         //The timing arcs of this instance
+  public:                                                               ///<Public methods
+    LutInst(size_t lut_size,                                            ///<The LUT size
+            LogicVec lut_mask,                                          ///<The LUT mask representing the logic function
+            std::string inst_name,                                      ///<The name of this instance
+            std::map<std::string, std::vector<std::string>> port_conns, ///<The port connections of this instance. Key: port name, Value: connected nets
+            std::vector<Arc> timing_arc_values)                         ///<The timing arcs of this instance
         : type_("LUT_K")
         , lut_size_(lut_size)
         , lut_mask_(lut_mask)
@@ -368,7 +375,7 @@ class LutInst : public Instance {
 
 class LatchInst : public Instance {
   public: //Public types
-    //Types of latches (defined by BLIF)
+    ///@brief Types of latches (defined by BLIF)
     enum class Type {
         RISING_EDGE,
         FALLING_EDGE,
@@ -410,13 +417,13 @@ class LatchInst : public Instance {
     }
 
   public:
-    LatchInst(std::string inst_name,                                  //Name of this instance
-              std::map<std::string, std::string> port_conns,          //Instance's port-to-net connections
-              Type type,                                              //Type of this latch
-              vtr::LogicValue init_value,                             //Initial value of the latch
-              double tcq = std::numeric_limits<double>::quiet_NaN(),  //Clock-to-Q delay
-              double tsu = std::numeric_limits<double>::quiet_NaN(),  //Setup time
-              double thld = std::numeric_limits<double>::quiet_NaN()) //Hold time
+    LatchInst(std::string inst_name,                                  ///<Name of this instance
+              std::map<std::string, std::string> port_conns,          ///<Instance's port-to-net connections
+              Type type,                                              ///<Type of this latch
+              vtr::LogicValue init_value,                             ///<Initial value of the latch
+              double tcq = std::numeric_limits<double>::quiet_NaN(),  ///<Clock-to-Q delay
+              double tsu = std::numeric_limits<double>::quiet_NaN(),  ///<Setup time
+              double thld = std::numeric_limits<double>::quiet_NaN()) ///<Hold time
         : instance_name_(inst_name)
         , port_connections_(port_conns)
         , type_(type)
@@ -532,22 +539,22 @@ class LatchInst : public Instance {
     std::map<std::string, std::string> port_connections_;
     Type type_;
     vtr::LogicValue initial_value_;
-    double tcq_;  //Clock delay + tcq
-    double tsu_;  //Setup time
-    double thld_; //Hold time
+    double tcq_;  ///<Clock delay + tcq
+    double tsu_;  ///<Setup time
+    double thld_; ///<Hold time
 };
 
 class BlackBoxInst : public Instance {
   public:
-    BlackBoxInst(std::string type_name,                                             //Instance type
-                 std::string inst_name,                                             //Instance name
-                 std::map<std::string, std::string> params,                         //Verilog parameters: Dictonary of <param_name,value>
-                 std::map<std::string, std::string> attrs,                          //Instance attributes: Dictonary of <attr_name,value>
-                 std::map<std::string, std::vector<std::string>> input_port_conns,  //Port connections: Dictionary of <port,nets>
-                 std::map<std::string, std::vector<std::string>> output_port_conns, //Port connections: Dictionary of <port,nets>
-                 std::vector<Arc> timing_arcs,                                      //Combinational timing arcs
-                 std::map<std::string, double> ports_tsu,                           //Port setup checks
-                 std::map<std::string, double> ports_tcq)                           //Port clock-to-q delays
+    BlackBoxInst(std::string type_name,                                             ///<Instance type
+                 std::string inst_name,                                             ///<Instance name
+                 std::map<std::string, std::string> params,                         ///<Verilog parameters: Dictonary of <param_name,value>
+                 std::map<std::string, std::string> attrs,                          ///<Instance attributes: Dictonary of <attr_name,value>
+                 std::map<std::string, std::vector<std::string>> input_port_conns,  ///<Port connections: Dictionary of <port,nets>
+                 std::map<std::string, std::vector<std::string>> output_port_conns, ///<Port connections: Dictionary of <port,nets>
+                 std::vector<Arc> timing_arcs,                                      ///<Combinational timing arcs
+                 std::map<std::string, double> ports_tsu,                           ///<Port setup checks
+                 std::map<std::string, double> ports_tcq)                           ///<Port clock-to-q delays
         : type_name_(type_name)
         , inst_name_(inst_name)
         , params_(params)
@@ -741,14 +748,16 @@ class BlackBoxInst : public Instance {
     std::map<std::string, double> ports_tcq_;
 };
 
-//Assignment represents the logical connection between two nets
-//
-//  This is synonomous with verilog's 'assign x = y' which connects
-//  two nets with logical identity, assigning the value of 'y' to 'x'
+/**
+ * @brief Assignment represents the logical connection between two nets
+ *
+ * This is synonomous with verilog's 'assign x = y' which connects
+ * two nets with logical identity, assigning the value of 'y' to 'x'
+ */
 class Assignment {
   public:
-    Assignment(std::string lval, //The left value (assigned to)
-               std::string rval) //The right value (assigned from)
+    Assignment(std::string lval, ///<The left value (assigned to)
+               std::string rval) ///<The right value (assigned from)
         : lval_(lval)
         , rval_(rval) {}
 
@@ -765,14 +774,16 @@ class Assignment {
     std::string rval_;
 };
 
-//A class which writes post-synthesis netlists (Verilog and BLIF) and the SDF
-//
-//It implements the NetlistVisitor interface used by NetlistWalker (see netlist_walker.h)
+/**
+ * @brief A class which writes post-synthesis netlists (Verilog and BLIF) and the SDF
+ *
+ * It implements the NetlistVisitor interface used by NetlistWalker (see netlist_walker.h)
+ */
 class NetlistWriterVisitor : public NetlistVisitor {
   public:                                          //Public interface
-    NetlistWriterVisitor(std::ostream& verilog_os, //Output stream for verilog netlist
-                         std::ostream& blif_os,    //Output stream for blif netlist
-                         std::ostream& sdf_os,     //Output stream for SDF
+    NetlistWriterVisitor(std::ostream& verilog_os, ///<Output stream for verilog netlist
+                         std::ostream& blif_os,    ///<Output stream for blif netlist
+                         std::ostream& sdf_os,     ///<Output stream for SDF
                          std::shared_ptr<const AnalysisDelayCalculator> delay_calc)
         : verilog_os_(verilog_os)
         , blif_os_(blif_os)
@@ -847,7 +858,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
     }
 
   private: //Internal Helper functions
-    //Writes out the verilog netlist
+    ///@brief Writes out the verilog netlist
     void print_verilog(int depth = 0) {
         verilog_os_ << indent(depth) << "//Verilog generated by VPR " << vtr::VERSION << " from post-place-and-route implementation\n";
         verilog_os_ << indent(depth) << "module " << top_module_name_ << " (\n";
@@ -919,7 +930,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         verilog_os_ << indent(depth) << "endmodule\n";
     }
 
-    //Writes out the blif netlist
+    ///@brief Writes out the blif netlist
     void print_blif(int depth = 0) {
         blif_os_ << indent(depth) << "#BLIF generated by VPR " << vtr::VERSION << " from post-place-and-route implementation\n";
         blif_os_ << indent(depth) << ".model " << top_module_name_ << "\n";
@@ -972,7 +983,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         blif_os_ << indent(depth) << ".end\n";
     }
 
-    //Writes out the SDF
+    ///@brief Writes out the SDF
     void print_sdf(int depth = 0) {
         sdf_os_ << indent(depth) << "(DELAYFILE\n";
         sdf_os_ << indent(depth + 1) << "(SDFVERSION \"2.1\")\n";
@@ -1023,14 +1034,17 @@ class NetlistWriterVisitor : public NetlistVisitor {
         sdf_os_ << indent(depth) << ")\n";
     }
 
-    //Returns the name of a wire connecting a primitive and global net.
-    //The wire is recorded and instantiated by the top level output routines.
-    std::string make_inst_wire(AtomNetId atom_net_id,  //The id of the net in the atom netlist
-                               tatum::NodeId tnode_id, //The tnode associated with the primitive pin
-                               std::string inst_name,  //The name of the instance associated with the pin
-                               PortType port_type,     //The port direction
-                               int port_idx,           //The instance port index
-                               int pin_idx) {          //The instance pin index
+    /**
+     * @brief Returns the name of a wire connecting a primitive and global net.
+     *
+     * The wire is recorded and instantiated by the top level output routines.
+     */
+    std::string make_inst_wire(AtomNetId atom_net_id,  ///<The id of the net in the atom netlist
+                               tatum::NodeId tnode_id, ///<The tnode associated with the primitive pin
+                               std::string inst_name,  ///<The name of the instance associated with the pin
+                               PortType port_type,     ///<The port direction
+                               int port_idx,           ///<The instance port index
+                               int pin_idx) {          ///<The instance pin index
 
         std::string wire_name = inst_name;
         if (port_type == PortType::INPUT) {
@@ -1061,11 +1075,15 @@ class NetlistWriterVisitor : public NetlistVisitor {
         return wire_name;
     }
 
-    //Returns the name of a circuit-level Input/Output
-    //The I/O is recorded and instantiated by the top level output routines
-    std::string make_io(const t_pb* atom, //The implementation primitive representing the I/O
-                        PortType dir) {   //The IO direction
-
+    /**
+     * @brief Returns the name of a circuit-level Input/Output
+     *
+     * The I/O is recorded and instantiated by the top level output routines
+     *   @param atom  The implementation primitive representing the I/O
+     *   @param dir   The IO direction
+     */
+    std::string make_io(const t_pb* atom,
+                        PortType dir) {
         const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
 
         std::string io_name;
@@ -1112,7 +1130,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         return io_name;
     }
 
-    //Returns an Instance object representing the LUT
+    ///@brief Returns an Instance object representing the LUT
     std::shared_ptr<Instance> make_lut_instance(const t_pb* atom) {
         //Determine what size LUT
         int lut_size = find_num_inputs(atom);
@@ -1189,7 +1207,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         return inst;
     }
 
-    //Returns an Instance object representing the Latch
+    ///@brief Returns an Instance object representing the Latch
     std::shared_ptr<Instance> make_latch_instance(const t_pb* atom) {
         std::string inst_name = join_identifier("latch", atom->name);
 
@@ -1240,9 +1258,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
         return std::make_shared<LatchInst>(inst_name, port_conns, type, init_value, tcq, tsu);
     }
 
-    //Returns an Instance object representing the RAM
-    // Note that the primtive interface to dual and single port rams is nearly identical,
-    // so we using a single function to handle both
+    /**
+     * @brief Returns an Instance object representing the RAM
+     * @note  the primtive interface to dual and single port rams is nearly identical,
+     *        so we using a single function to handle both
+     */
     std::shared_ptr<Instance> make_ram_instance(const t_pb* atom) {
         const auto& top_pb_route = find_top_pb_route(atom);
         const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
@@ -1384,7 +1404,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         return std::make_shared<BlackBoxInst>(type, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_tcq);
     }
 
-    //Returns an Instance object representing a Multiplier
+    ///@brief Returns an Instance object representing a Multiplier
     std::shared_ptr<Instance> make_multiply_instance(const t_pb* atom) {
         auto& timing_ctx = g_vpr_ctx.timing();
 
@@ -1479,7 +1499,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_tcq);
     }
 
-    //Returns an Instance object representing an Adder
+    ///@brief Returns an Instance object representing an Adder
     std::shared_ptr<Instance> make_adder_instance(const t_pb* atom) {
         auto& timing_ctx = g_vpr_ctx.timing();
 
@@ -1684,13 +1704,13 @@ class NetlistWriterVisitor : public NetlistVisitor {
         return std::make_shared<BlackBoxInst>(type_name, inst_name, params, attrs, input_port_conns, output_port_conns, timing_arcs, ports_tsu, ports_tcq);
     }
 
-    //Returns the top level pb_route associated with the given pb
+    ///@brief Returns the top level pb_route associated with the given pb
     const t_pb_routes& find_top_pb_route(const t_pb* curr) {
         const t_pb* top_pb = find_top_cb(curr);
         return top_pb->pb_route;
     }
 
-    //Returns the top complex block which contains the given pb
+    ///@brief Returns the top complex block which contains the given pb
     const t_pb* find_top_cb(const t_pb* curr) {
         //Walk up through the pb graph until curr
         //has no parent, at which point it will be the top pb
@@ -1702,7 +1722,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         return curr;
     }
 
-    //Returns the tnode ID of the given atom's connected cluster pin
+    ///@brief Returns the tnode ID of the given atom's connected cluster pin
     tatum::NodeId find_tnode(const t_pb* atom, int cluster_pin_idx) {
         auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -1719,7 +1739,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         return tnode_id;
     }
 
-    //Returns a LogicVec representing the LUT mask of the given LUT atom
+    ///@brief Returns a LogicVec representing the LUT mask of the given LUT atom
     LogicVec load_lut_mask(size_t num_inputs,  //LUT size
                            const t_pb* atom) { //LUT primitive
         auto& atom_ctx = g_vpr_ctx.atom();
@@ -1750,17 +1770,19 @@ class NetlistWriterVisitor : public NetlistVisitor {
         return lut_mask;
     }
 
-    //Helper function for load_lut_mask() which determines how the LUT inputs were
-    //permuted compared to the input BLIF
-    //
-    //  Since the LUT inputs may have been rotated from the input blif specification we need to
-    //  figure out this permutation to reflect the physical implementation connectivity.
-    //
-    //  We return a permutation map (which is a list of swaps from index to index)
-    //  which is then applied to do the rotation of the lutmask.
-    //
-    //  The net in the atom netlist which was originally connected to pin i, is connected
-    //  to pin permute[i] in the implementation.
+    /**
+     * @brief Helper function for load_lut_mask() which determines how the LUT inputs were
+     *        permuted compared to the input BLIF
+     *
+     * Since the LUT inputs may have been rotated from the input blif specification we need to
+     * figure out this permutation to reflect the physical implementation connectivity.
+     *
+     * We return a permutation map (which is a list of swaps from index to index)
+     * which is then applied to do the rotation of the lutmask.
+     *
+     * The net in the atom netlist which was originally connected to pin i, is connected
+     * to pin permute[i] in the implementation.
+     */
     std::vector<int> determine_lut_permutation(size_t num_inputs, const t_pb* atom_pb) {
         auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -1835,9 +1857,10 @@ class NetlistWriterVisitor : public NetlistVisitor {
         return permute;
     }
 
-    //Helper function for load_lut_mask() which determines if the
-    //names is encodeing the ON (returns true) or OFF (returns false)
-    //set.
+    /**
+     * @brief Helper function for load_lut_mask() which determines if the
+     *        names is encodeing the ON (returns true) or OFF (returns false) set.
+     */
     bool names_encodes_on_set(vtr::t_linked_vptr* names_row_ptr) {
         //Determine the truth (output value) for this row
         // By default we assume the on-set is encoded to correctly handle
@@ -1875,9 +1898,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
         return encoding_on_set;
     }
 
-    //Helper function for load_lut_mask()
-    //
-    //Converts the given names_row string to a LogicVec
+    /**
+     * @brief Helper function for load_lut_mask()
+     *
+     * Converts the given names_row string to a LogicVec
+     */
     LogicVec names_row_to_logic_vec(const std::string names_row, size_t num_inputs, bool encoding_on_set) {
         //Get an iterator to the last character (i.e. the output value)
         auto output_val_iter = names_row.end() - 1;
@@ -1919,7 +1944,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         return input_values;
     }
 
-    //Returns the total number of input pins on the given pb
+    ///@brief Returns the total number of input pins on the given pb
     int find_num_inputs(const t_pb* pb) {
         int count = 0;
         for (int i = 0; i < pb->pb_graph_node->num_input_ports; i++) {
@@ -1927,7 +1952,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         }
         return count;
     }
-    //Returns the logical net ID
+    ///@brief Returns the logical net ID
     AtomNetId find_atom_input_logical_net(const t_pb* atom, int atom_input_idx) {
         const t_pb_graph_node* pb_node = atom->pb_graph_node;
 
@@ -1940,7 +1965,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         return atom_net_id;
     }
 
-    //Returns the name of the routing segment between two wires
+    ///@brief Returns the name of the routing segment between two wires
     std::string interconnect_name(std::string driver_wire, std::string sink_wire) {
         std::string name = join_identifier("routing_segment", driver_wire);
         name = join_identifier(name, "to");
@@ -1949,7 +1974,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         return name;
     }
 
-    //Returns the delay in pico-seconds from source_tnode to sink_tnode
+    ///@brief Returns the delay in pico-seconds from source_tnode to sink_tnode
     double get_delay_ps(tatum::NodeId source_tnode, tatum::NodeId sink_tnode) {
         auto& timing_ctx = g_vpr_ctx.timing();
 
@@ -1962,11 +1987,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
     }
 
   private:                                                  //Data
-    std::string top_module_name_;                           //Name of the top level module (i.e. the circuit)
-    std::vector<std::string> inputs_;                       //Name of circuit inputs
-    std::vector<std::string> outputs_;                      //Name of circuit outputs
-    std::vector<Assignment> assignments_;                   //Set of assignments (i.e. net-to-net connections)
-    std::vector<std::shared_ptr<Instance>> cell_instances_; //Set of cell instances
+    std::string top_module_name_;                           ///<Name of the top level module (i.e. the circuit)
+    std::vector<std::string> inputs_;                       ///<Name of circuit inputs
+    std::vector<std::string> outputs_;                      ///<Name of circuit outputs
+    std::vector<Assignment> assignments_;                   ///<Set of assignments (i.e. net-to-net connections)
+    std::vector<std::shared_ptr<Instance>> cell_instances_; ///<Set of cell instances
 
     //Drivers of logical nets.
     // Key: logic net id, Value: pair of wire_name and tnode_id
@@ -1992,7 +2017,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 // Externally Accessible Functions
 //
 
-//Main routing for this file. See netlist_writer.h for details.
+///@brief Main routing for this file. See netlist_writer.h for details.
 void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc) {
     std::string verilog_filename = basename + "_post_synthesis.v";
     std::string blif_filename = basename + "_post_synthesis.blif";
@@ -2017,7 +2042,7 @@ void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDe
 // File-scope function implementations
 //
 
-//Returns a blank string for indenting the given depth
+///@brief Returns a blank string for indenting the given depth
 std::string indent(size_t depth) {
     std::string indent_ = "    ";
     std::string new_indent;
@@ -2027,21 +2052,23 @@ std::string indent(size_t depth) {
     return new_indent;
 }
 
-//Returns the delay in pico-seconds from a floating point delay
+///@brief Returns the delay in pico-seconds from a floating point delay
 double get_delay_ps(double delay_sec) {
     return delay_sec * 1e12; //Scale to picoseconds
 }
 
-//Returns the name of a unique unconnected net
+///@brief Returns the name of a unique unconnected net
 std::string create_unconn_net(size_t& unconn_count) {
     //We increment unconn_count by reference so each
     //call generates a unique name
     return "__vpr__unconn" + std::to_string(unconn_count++);
 }
 
-//Pretty-Prints a blif port to the given output stream
-//
-//  Handles special cases like multi-bit and disconnected ports
+/**
+ * @brief Pretty-Prints a blif port to the given output stream
+ *
+ * Handles special cases like multi-bit and disconnected ports
+ */
 void print_blif_port(std::ostream& os, size_t& unconn_count, const std::string& port_name, const std::vector<std::string>& nets, int depth) {
     if (nets.size() == 1) {
         //If only a single bit port, don't include port indexing
@@ -2071,9 +2098,11 @@ void print_blif_port(std::ostream& os, size_t& unconn_count, const std::string& 
     }
 }
 
-//Pretty-Prints a verilog port to the given output stream
-//
-//  Handles special cases like multi-bit and disconnected ports
+/**
+ * @brief Pretty-Prints a verilog port to the given output stream
+ *
+ * Handles special cases like multi-bit and disconnected ports
+ */
 void print_verilog_port(std::ostream& os, const std::string& port_name, const std::vector<std::string>& nets, PortType type, int depth) {
     //Port name
     os << indent(depth) << "." << port_name << "(";
@@ -2122,7 +2151,7 @@ void print_verilog_port(std::ostream& os, const std::string& port_name, const st
     os << ")";
 }
 
-//Escapes the given identifier to be safe for verilog
+///@brief Escapes the given identifier to be safe for verilog
 std::string escape_verilog_identifier(const std::string identifier) {
     //Verilog allows escaped identifiers
     //
@@ -2139,7 +2168,7 @@ std::string escape_verilog_identifier(const std::string identifier) {
     return escaped_name;
 }
 
-//Returns true if c is categorized as a special character in SDF
+///@brief Returns true if c is categorized as a special character in SDF
 bool is_special_sdf_char(char c) {
     //From section 3.2.5 of IEEE1497 Part 3 (i.e. the SDF spec)
     //Special characters run from:
@@ -2169,7 +2198,7 @@ bool is_special_sdf_char(char c) {
     return false;
 }
 
-//Escapes the given identifier to be safe for sdf
+///@brief Escapes the given identifier to be safe for sdf
 std::string escape_sdf_identifier(const std::string identifier) {
     //SDF allows escaped characters
     //
@@ -2188,7 +2217,7 @@ std::string escape_sdf_identifier(const std::string identifier) {
     return escaped_name;
 }
 
-//Joins two identifier strings
+///@brief Joins two identifier strings
 std::string join_identifier(std::string lhs, std::string rhs) {
     return lhs + '_' + rhs;
 }

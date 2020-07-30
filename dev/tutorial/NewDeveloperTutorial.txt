@@ -80,14 +80,14 @@ Task #5 - Open the Black Box
 
   1.  Using the custom Verilog circuit and architecture created in Task #4, 
   directly run Odin II on it to generate a blif netlist.  You may need to skim the Odin II
-  readme file and the vtr_flow/scripts/run_vtr_flow.pl.
+  readme file and the vtr_flow/scripts/run_vtr_flow.py.
 
   2.  Using the output netlist of Odin II, run ABC to generate a technology-mapped blif file.
-  You may need to skim vtr_flow/scripts/run_vtr_flow.pl.
+  You may need to skim vtr_flow/scripts/run_vtr_flow.py.
 
   3.  Using the output of ABC, run VPR to complete the mapping of a user circuit 
   to a target architecture.  You may need to consult the VPR User Manual and skim
-  You may need to skim vtr_flow/scripts/run_vtr_flow.pl.
+  You may need to skim vtr_flow/scripts/run_vtr_flow.py.
 
   4.  Read the VPR section of the online documentation.
 

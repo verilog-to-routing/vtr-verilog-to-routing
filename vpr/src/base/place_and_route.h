@@ -13,10 +13,10 @@
 #include "RoutingDelayCalculator.h"
 
 struct t_fmap_cell {
-    int fs;         /* at this fs */
-    int fc;         /* at this fc */
-    int wneed;      /* need wneed to route */
-    int wirelength; /* corresponding wirelength of successful routing at wneed */
+    int fs;         ///<at this fs
+    int fc;         ///<at this fc
+    int wneed;      ///<need wneed to route
+    int wirelength; ///<corresponding wirelength of successful routing at wneed
     int proc_time;
     t_fmap_cell* next;
 };

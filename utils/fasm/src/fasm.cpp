@@ -679,7 +679,20 @@ void FasmWriterVisitor::output_fasm_mux(std::string fasm_mux_str,
 
     bool have_prefix = false;
     std::string clb_prefix;
-    find_clb_prefix(mux_input_pin->parent_node, &have_prefix, &clb_prefix);
+
+    // If the MUX input is an input port, this MUX is in the same pb_type as the
+    // port, therefore we find the prefix up to the parent pb_graph node of the
+    // MUX input.
+    //
+    // If the MUX input is an output port, this MUX is in the pb_type on level
+    // above the port. In this case, we find the prefix up to the grandparent
+    // pb_graph node of the MUX input.
+    if (mux_input_pin->port->type == IN_PORT) {
+        find_clb_prefix(mux_input_pin->parent_node, &have_prefix, &clb_prefix);
+    } else {
+        VTR_ASSERT(mux_input_pin->port->type == OUT_PORT);
+        find_clb_prefix(mux_input_pin->parent_node->parent_pb_graph_node, &have_prefix, &clb_prefix);
+    }
 
     for(const auto &mux_input : mux_inputs) {
       auto mux_parts = split_fasm_entry(mux_input, "=:", "\t ");

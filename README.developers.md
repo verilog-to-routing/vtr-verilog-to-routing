@@ -169,6 +169,10 @@ This will automatically reformat your code to be compliant with formatting requi
 
 For large scale reformatting (should only be performed by VTR maintainers) the script `dev/autoformat.py` can be used to reformat the code and commit it as 'VTR Robot', which  keeps the revision history clearer and records metadata about reformatting commits (which allows `git hyper-blame` to skip such commits).
 
+## Python Linting
+
+Python files are automatically checked using `pylint` to ensure they follow established Python conventions.  You can check an individual Python file by running `pylint <your_python_file>`, or check the entire repository by running `./dev/pylint_check.py`.
+
 # Running Tests
 
 VTR has a variety of tests which are used to check for correctness, performance and Quality of Result (QoR).
@@ -992,6 +996,49 @@ For example, the following will re-build only VPR using 8 parallel jobs with IPO
 make CMAKE_PARAMS="-DVTR_IPO_BUILD=off" -j8 vpr
 ```
 
+# Profiling VTR
+
+1. Install `gprof`, `gprof2dot`, and `xdot`. Specifically, the previous two packages require python3, and you should install the last one with `sudo apt install` for all the dependencies you will need for visualizing your profile results.
+    ```
+    pip3 install gprof
+    pip3 install gprof2dot
+    sudo apt install xdot
+    ```
+
+    Contact your administrator if you do not have the `sudo` rights.
+
+2. Use the CMake option below to enable VPR profiler build.
+    ```
+    make CMAKE_PARAMS="-DVTR_ENABLE_PROFILING=ON" vpr
+    ```
+
+3. With the profiler build, each time you run the VTR flow script, it will produce an extra file `gmon.out` that contains the raw profile information. 
+    Run `gprof` to parse this file. You will need to specify the path to the VPR executable.
+    ```
+    gprof $VTR_ROOT/vpr/vpr gmon.out > gprof.txt
+    ```
+
+4. Next, use `gprof2dot` to transform the parsed results to a `.dot` file, which describes the graph of your final profile results. If you encounter long function names, specify the `-s` option for a cleaner graph.
+    ```
+    gprof2dot -s gprof.txt > vpr.dot
+    ```
+
+5. You can chain the above commands to directly produce the `.dot` file:
+    ```
+    gprof $VTR_ROOT/vpr/vpr gmon.out | gprof2dot -s > vpr.dot
+    ```
+
+6. Use `xdot` to view your results:
+    ```
+    xdot vpr.dot
+    ```
+
+7. To save your results as a `png` file:
+    ```
+    dot -Tpng -Gdpi=300 vpr.dot > vpr.png
+    ```
+    
+    Note that you can use the `-Gdpi` option to make your picture clearer if you find the default dpi settings not clear enough.
 
 # External Subtrees
 VTR includes some code which is developed in external repositories, and is integrated into the VTR source tree using [git subtrees](https://www.atlassian.com/blog/git/alternatives-to-git-submodule-git-subtree).

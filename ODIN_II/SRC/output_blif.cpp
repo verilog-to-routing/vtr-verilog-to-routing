@@ -57,8 +57,7 @@ static void print_input_pin(FILE* out, nnode_t* node, long pin_idx) {
     nnet_t* net = node->input_pins[pin_idx]->net;
     if (!net->driver_pin || !net->driver_pin->node) {
         // Add a warning for an undriven net.
-        int line_number = node->related_ast_node ? node->related_ast_node->line_number : 0;
-        warning_message(NETLIST, line_number, -1,
+        warning_message(NETLIST, node->loc,
                         "Net %s driving node %s is itself undriven.",
                         net->name, node->name);
 
@@ -118,7 +117,7 @@ FILE* create_blif(const char* file_name) {
     }
 
     if (out == NULL) {
-        error_message(NETLIST, -1, -1, "Could not open output file %s\n", file_name);
+        error_message(NETLIST, unknown_location, "Could not open output file %s\n", file_name);
     }
     return out;
 }
@@ -144,8 +143,7 @@ void output_blif(FILE* out, netlist_t* netlist) {
         nnode_t* top_output_node = netlist->top_output_nodes[i];
         if (top_output_node->input_pins[0]->net->driver_pin == NULL) {
             warning_message(NETLIST,
-                            top_output_node->related_ast_node->line_number,
-                            top_output_node->related_ast_node->file_number,
+                            top_output_node->loc,
                             "This output is undriven (%s) and will be removed\n",
                             top_output_node->name);
         } else {
@@ -162,7 +160,7 @@ void output_blif(FILE* out, netlist_t* netlist) {
     if (strcmp(configuration.output_type.c_str(), "blif") == 0) {
         depth_first_traversal_to_output(OUTPUT_TRAVERSE_VALUE, out, netlist);
     } else {
-        error_message(NETLIST, 0, -1, "%s", "Invalid output file type.");
+        error_message(NETLIST, unknown_location, "%s", "Invalid output file type.");
     }
 
     /* connect all the outputs up to the last gate */
@@ -332,6 +330,7 @@ void output_node(nnode_t* node, short /*traverse_number*/, FILE* fp) {
         case BITWISE_OR:
         case MULTI_PORT_MUX:
         case SL:
+        case ASL:
         case SR:
         case ASR:
         case CASE_EQUAL:
@@ -342,7 +341,7 @@ void output_node(nnode_t* node, short /*traverse_number*/, FILE* fp) {
         case LTE:
         default:
             /* these nodes should have been converted to softer versions */
-            error_message(NETLIST, 0, -1, "%s", "Output blif: node should have been converted to softer version.");
+            error_message(NETLIST, node->loc, "%s", "Output blif: node should have been converted to softer version.");
             break;
     }
 }
@@ -458,16 +457,6 @@ void define_ff(nnode_t* node, FILE* out) {
     oassert(node->num_output_pins == 1);
     oassert(node->num_input_pins == 2);
 
-    int initial_value = global_args.sim_initial_value;
-    if (node->has_initial_value)
-        initial_value = node->initial_value;
-
-    /* By default, latches value are unknown, represented by 3 in a BLIF file
-     * and by -1 internally in ODIN */
-    // TODO switch to default!! to avoid confusion
-    if (initial_value == -1)
-        initial_value = 3;
-
     // grab the edge sensitivity of the flip flop
     const char* edge_type_str = edge_type_blif_str(node);
 
@@ -490,7 +479,7 @@ void define_ff(nnode_t* node, FILE* out) {
     print_input_pin(out, node, 1);
 
     /* initial value */
-    fprintf(out, " %d\n\n", initial_value);
+    fprintf(out, " %d\n\n", node->initial_value);
 }
 
 /*--------------------------------------------------------------------------

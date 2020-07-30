@@ -594,17 +594,15 @@ This information is used to ensure you are warned if you accidentally route this
 The second line of the file gives the size of the logic block array used by this placement.
 All the following lines have the format::
 
-    block_name    x        y   subblock_number
+    block_name    x        y   subtile_number
 
 The ``block_name`` is the name of this block, as given in the input .net formatted netlist.
 ``x`` and ``y`` are the row and column in which the block is placed, respectively.
 
 .. note:: The blocks in a placement file can be listed in any order.
 
-The ``subblock number`` is meaningful only for I/O pads.
-Since we can have more than one pad in a row or column when io_rat is set to be greater than 1 in the architecture file, the subblock number specifies which of the several possible pad locations in row x and column y contains this pad.
-Note that the first pads occupied at some (x, y) location are always those with the lowest subblock numbers -- i.e. if only one pad at (x, y) is used, the subblock number of the I/O placed there will be zero.
-For CLBs, the subblock number is always zero.
+Since we can have more than one block in a row or column when the block capacity is set to be greater than 1 in the architecture file, the subtile number specifies which of the several possible subtile locations in row x and column y contains this block.
+Note that the subtile number used should be in the range 0 to (grid[i][j].capacity - 1). The subtile numbers for a particular x,y location do not have to be used in order.
 
 The placement files output by VPR also include (as a comment) a fifth field:  the block number.
 This is the internal index used by VPR to identify a block -- it may be useful to know this index if you are modifying VPR and trying to debug something.

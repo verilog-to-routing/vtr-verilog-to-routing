@@ -13,7 +13,7 @@ do
         echo
         echo "File: $blif_file"
         #valgrind --leak-check=full --track-origins=yes ./blifparse_test $blif_file
-        ./blifparse_test $blif_file 
+        ./blifparse_test $blif_file > blif_parse_test.log
         exit_code=$?
         if [[ $exit_code -ne 0 ]]; then
             echo "Error" >&2 

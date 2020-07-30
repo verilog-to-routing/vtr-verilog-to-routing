@@ -1,10 +1,14 @@
 /**
- * General API for VPR
- * Other software tools should generally call just the functions defined here
- * For advanced/power users, you can call functions defined elsewhere in VPR or modify the data structures directly at your discretion but be aware that doing so can break the correctness of VPR
+ * @file
+ * @author Jason Luu
+ * @date June 21, 2012
  *
- * Author: Jason Luu
- * June 21, 2012
+ * @brief General API for VPR
+ *
+ * Other software tools should generally call just the functions defined here
+ * For advanced/power users, you can call functions defined elsewhere in VPR or
+ * modify the data structures directly at your discretion but be aware
+ * that doing so can break the correctness of VPR
  */
 
 #include <cstdio>
@@ -65,6 +69,7 @@
 #include "cluster.h"
 
 #include "pack_report.h"
+#include "overuse_report.h"
 
 #include "timing_graph_builder.h"
 #include "timing_reports.h"
@@ -101,7 +106,7 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
                                                     int* ipin_switch_fanin);
 /* Local subroutines end */
 
-/* Display general VPR information */
+///@brief Display general VPR information
 void vpr_print_title() {
     VTR_LOG("VPR FPGA Placement and Routing.\n");
     VTR_LOG("Version: %s\n", vtr::VERSION);
@@ -146,7 +151,9 @@ void vpr_initialize_logging() {
     }
 }
 
-/* Initialize VPR
+/**
+ * @brief Initialize VPR
+ *
  * 1. Read Options
  * 2. Read Arch
  * 3. Read Circuit
@@ -169,7 +176,9 @@ void vpr_init(const int argc, const char** argv, t_options* options, t_vpr_setup
     vpr_init_with_options(options, vpr_setup, arch);
 }
 
-/* Initialize VPR with options
+/**
+ * @brief  Initialize VPR with options
+ *
  * 1. Read Arch
  * 2. Read Circuit
  * 3. Sanity check all three
@@ -387,9 +396,11 @@ void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch) {
     }
 }
 
-/*
- * Allocs globals: chan_width_x, chan_width_y, device_ctx.grid
- * Depends on num_clbs, pins_per_clb */
+/**
+ * @brief Allocs globals: chan_width_x, chan_width_y, device_ctx.grid
+ *
+ * Depends on num_clbs, pins_per_clb
+ */
 void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     vtr::ScopedStartFinishTimer timer("Build Device Grid");
     /* Read in netlist file for placement and routing */
@@ -716,12 +727,23 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
             //Update status
             VTR_LOG("Circuit successfully routed with a channel width factor of %d.\n", route_status.chan_width());
-            graphics_msg = vtr::string_fmt("Routing succeeded with a channel width factor of %d.", route_status.chan_width());
+            graphics_msg = vtr::string_fmt("Routing succeeded with a channel width factor of %d.\n", route_status.chan_width());
         } else {
             //Update status
             VTR_LOG("Circuit is unroutable with a channel width factor of %d.\n", route_status.chan_width());
             graphics_msg = vtr::string_fmt("Routing failed with a channel width factor of %d. ILLEGAL routing shown.", route_status.chan_width());
+
+            //Generate a report on overused nodes if specified
+            //Otherwise, remind the user of this possible report option
+            if (router_opts.generate_rr_node_overuse_report) {
+                VTR_LOG("See report_overused_nodes.rpt for a detailed report on the RR node overuse information.\n");
+                report_overused_nodes();
+            } else {
+                VTR_LOG("For a detailed report on the RR node overuse information (report_overused_nodes.rpt), specify --generate_rr_node_overuse_report on.\n");
+            }
         }
+
+        VTR_LOG("\n");
 
         //Echo files
         if (vpr_setup.Timing.timing_analysis_enabled) {
@@ -892,14 +914,16 @@ void vpr_close_graphics(const t_vpr_setup& /*vpr_setup*/) {
     free_draw_structs();
 }
 
-/* Since the parameters of a switch may change as a function of its fanin,
+/**
+ * Since the parameters of a switch may change as a function of its fanin,
  * to get an estimation of inter-cluster delays we need a reasonable estimation
  * of the fan-ins of switches that connect clusters together. These switches are
  * 1) opin to wire switch
  * 2) wire to wire switch
  * 3) wire to ipin switch
  * We can estimate the fan-in of these switches based on the Fc_in/Fc_out of
- * a logic block, and the switch block Fs value */
+ * a logic block, and the switch block Fs value
+ */
 static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup,
                                                     const t_arch& arch,
                                                     const int wire_segment_length,
@@ -985,7 +1009,7 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
     }
 }
 
-/* Free architecture data structures */
+///@brief Free architecture data structures
 void free_device(const t_det_routing_arch& routing_arch) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
@@ -1073,12 +1097,12 @@ void vpr_free_all(t_arch& Arch,
  *  Used when you need fine-grained control over VPR that the main VPR operations do not enable
  ****************************************************************************************************/
 
-/* Read in user options */
+///@brief Read in user options
 void vpr_read_options(const int argc, const char** argv, t_options* options) {
     *options = read_options(argc, argv);
 }
 
-/* Read in arch and circuit */
+///@brief Read in arch and circuit
 void vpr_setup_vpr(t_options* Options,
                    const bool TimingEnabled,
                    const bool readArchFile,
@@ -1129,7 +1153,7 @@ void vpr_check_arch(const t_arch& Arch) {
     CheckArch(Arch);
 }
 
-/* Verify settings don't conflict or otherwise not make sense */
+///@brief Verify settings don't conflict or otherwise not make sense
 void vpr_check_setup(const t_packer_opts& PackerOpts,
                      const t_placer_opts& PlacerOpts,
                      const t_router_opts& RouterOpts,
@@ -1141,7 +1165,7 @@ void vpr_check_setup(const t_packer_opts& PackerOpts,
                Segments, Timing, Chans);
 }
 
-/* Show current setup */
+///@brief Show current setup
 void vpr_show_setup(const t_vpr_setup& vpr_setup) {
     ShowSetup(vpr_setup);
 }
@@ -1224,8 +1248,10 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
     }
 }
 
-/* This function performs power estimation. It relies on the
- * placement/routing results, as well as the critical path.
+/**
+ * @brief Performs power estimation.
+ *
+ * It relies on the placement/routing results, as well as the critical path.
  * Power estimation can be performed as part of a full or
  * partial flow. More information on the power estimation functions of
  * VPR can be found here:
