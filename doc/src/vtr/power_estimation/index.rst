@@ -33,8 +33,8 @@ The easiest way to run the VTR flow is to use the :ref:`run_vtr_flow` script.
 
 In order to perform power estimation, you must add the following options:
 
-  * :option:`run_vtr_flow.pl -power`
-  * :option:`run_vtr_flow.pl -cmos_tech` ``<cmos_tech_properties_file>``
+  * :option:`run_vtr_flow.py -power`
+  * :option:`run_vtr_flow.py -cmos_tech` ``<cmos_tech_properties_file>``
 
 The CMOS technology properties file is an XML file that contains relevant process-dependent information needed for power estimation.
 XML files for 22nm, 45nm, and 130nm PTM models can be found here::

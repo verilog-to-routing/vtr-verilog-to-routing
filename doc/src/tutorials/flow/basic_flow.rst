@@ -46,7 +46,7 @@ The following steps show you to run the VTR design flow to map a sample circuit 
 
     Some also contain a ``golden_results.txt`` file that is used by the scripts to check for correctness.
 
-    The ``vtr_release/vtr_flow/scripts/run_vtr_flow.pl`` script describes the CAD flow employed in the test.
+    The ``vtr_release/vtr_flow/scripts/run_vtr_flow.py`` script describes the CAD flow employed in the test.
     You can modify the flow by editing this script.
 
     At this point, feel free to run any of the tasks pre-pended with "regression".

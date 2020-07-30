@@ -7,16 +7,16 @@ This script runs the VTR flow for a single benchmark circuit and architecture fi
 
 The script is located at::
 
-    $VTR_ROOT/vtr_flow/scripts/run_vtr_flow.pl
+    $VTR_ROOT/vtr_flow/scripts/run_vtr_flow.py
 
-.. program:: run_vtr_flow.pl
+.. program:: run_vtr_flow.py
 
 Basic Usage
 ~~~~~~~~~~~
 
-At a minimum ``run_vtr_flow.pl`` requires two command-line arguments::
+At a minimum ``run_vtr_flow.py`` requires two command-line arguments::
 
-    run_vtr_flow.pl <circuit_file> <architecture_file>
+    run_vtr_flow.py <circuit_file> <architecture_file>
 
 where:
 
@@ -44,20 +44,20 @@ The script will also produce an output files (\*.out) for each stage, containing
 Advanced Usage
 ~~~~~~~~~~~~~~
 
-Additional *optional* command arguments can also be passed to ``run_vtr_flow.pl``::
+Additional *optional* command arguments can also be passed to ``run_vtr_flow.py``::
 
-    run_vtr_flow.pl <circuit_file> <architecture_file> [<options>] [<vpr_options>]
+    run_vtr_flow.py <circuit_file> <architecture_file> [<options>] [<vpr_options>]
 
 where:
 
-  * ``<options>`` are additional arguments passed to ``run_vtr_flow.pl`` (described below),
-  * ``<vpr_options>`` are any arguments not recognized by ``run_vtr_flow.pl``. These will be forwarded to VPR.
+  * ``<options>`` are additional arguments passed to ``run_vtr_flow.py`` (described below),
+  * ``<vpr_options>`` are any arguments not recognized by ``run_vtr_flow.py``. These will be forwarded to VPR.
 
 For example::
 
-   run_vtr_flow.pl my_circuit.v my_arch.xml -track_memory_usage --pack --place
+   run_vtr_flow.py my_circuit.v my_arch.xml -track_memory_usage --pack --place
 
-will run the VTR flow to map the circuit ``my_circuit.v`` onto the architecture ``my_arch.xml``; the arguments ``--pack`` and ``--place`` will be passed to VPR (since they are unrecognized arguments to ``run_vtr_flow.pl``).
+will run the VTR flow to map the circuit ``my_circuit.v`` onto the architecture ``my_arch.xml``; the arguments ``--pack`` and ``--place`` will be passed to VPR (since they are unrecognized arguments to ``run_vtr_flow.py``).
 They will cause VPR to perform only :ref:`packing and placement <general_options>`.
 
 Detailed Command-line Options
