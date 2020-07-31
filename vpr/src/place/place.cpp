@@ -782,7 +782,6 @@ void try_place(const t_placer_opts& placer_opts,
             costs.cost = 1;
         }
 
-<<<<<<< HEAD
         outer_loop_update_criticalities(placer_opts, &costs, &prev_inverse_costs,
                                         num_connections,
                                         crit_exponent,
@@ -792,16 +791,6 @@ void try_place(const t_placer_opts& placer_opts,
                                         placer_setup_slacks.get(),
                                         pin_timing_invalidator.get(),
                                         timing_info.get());
-=======
-        outer_loop_recompute_criticalities(placer_opts, &costs, &prev_inverse_costs,
-                                           num_connections,
-                                           state.crit_exponent,
-                                           &outer_crit_iter_count,
-                                           place_delay_model.get(),
-                                           placer_criticalities.get(),
-                                           pin_timing_invalidator.get(),
-                                           timing_info.get());
->>>>>>> sync
 
         placement_inner_loop(state.t, num_temps, state.rlim, placer_opts,
                              state.move_lim, state.crit_exponent, inner_recompute_limit, &stats,
@@ -850,8 +839,7 @@ void try_place(const t_placer_opts& placer_opts,
     auto pre_quench_timing_stats = timing_ctx.stats;
     { /* Quench */
         vtr::ScopedFinishTimer temperature_timer("Placement Quench");
-
-<<<<<<< HEAD
+        
         outer_loop_update_criticalities(placer_opts, &costs,
                                         &prev_inverse_costs,
                                         num_connections,
@@ -862,17 +850,6 @@ void try_place(const t_placer_opts& placer_opts,
                                         placer_setup_slacks.get(),
                                         pin_timing_invalidator.get(),
                                         timing_info.get());
-=======
-        outer_loop_recompute_criticalities(placer_opts, &costs,
-                                           &prev_inverse_costs,
-                                           num_connections,
-                                           state.crit_exponent,
-                                           &outer_crit_iter_count,
-                                           place_delay_model.get(),
-                                           placer_criticalities.get(),
-                                           pin_timing_invalidator.get(),
-                                           timing_info.get());
->>>>>>> sync
 
         state.t = 0; /* freeze out */
 
@@ -938,7 +915,6 @@ void try_place(const t_placer_opts& placer_opts,
         VTR_ASSERT(timing_info);
 
         //Update timing and costs
-<<<<<<< HEAD
         do_update_criticalities = true;
         do_update_setup_slacks = false;
         update_setup_slacks_and_criticalities(crit_exponent,
@@ -948,14 +924,6 @@ void try_place(const t_placer_opts& placer_opts,
                                               pin_timing_invalidator.get(),
                                               timing_info.get(),
                                               &costs);
-=======
-        recompute_criticalities(state.crit_exponent,
-                                place_delay_model.get(),
-                                placer_criticalities.get(),
-                                pin_timing_invalidator.get(),
-                                timing_info.get(),
-                                &costs);
->>>>>>> sync
 
         critical_path = timing_info->least_slack_critical_path();
 
