@@ -628,7 +628,7 @@ void try_place(const t_placer_opts& placer_opts,
         //Update timing and costs
         do_update_criticalities = true;
         do_update_setup_slacks = false;
-        update_setup_slacks_and_criticalities(crit_exponent,
+        update_setup_slacks_and_criticalities(first_crit_exponent,
                                               place_delay_model.get(),
                                               placer_criticalities.get(),
                                               placer_setup_slacks.get(),
@@ -784,7 +784,7 @@ void try_place(const t_placer_opts& placer_opts,
 
         outer_loop_update_criticalities(placer_opts, &costs, &prev_inverse_costs,
                                         num_connections,
-                                        crit_exponent,
+                                        state.crit_exponent,
                                         &outer_crit_iter_count,
                                         place_delay_model.get(),
                                         placer_criticalities.get(),
@@ -843,7 +843,7 @@ void try_place(const t_placer_opts& placer_opts,
         outer_loop_update_criticalities(placer_opts, &costs,
                                         &prev_inverse_costs,
                                         num_connections,
-                                        crit_exponent,
+                                        state.crit_exponent,
                                         &outer_crit_iter_count,
                                         place_delay_model.get(),
                                         placer_criticalities.get(),
@@ -917,7 +917,7 @@ void try_place(const t_placer_opts& placer_opts,
         //Update timing and costs
         do_update_criticalities = true;
         do_update_setup_slacks = false;
-        update_setup_slacks_and_criticalities(crit_exponent,
+        update_setup_slacks_and_criticalities(state.crit_exponent,
                                               place_delay_model.get(),
                                               placer_criticalities.get(),
                                               placer_setup_slacks.get(),
