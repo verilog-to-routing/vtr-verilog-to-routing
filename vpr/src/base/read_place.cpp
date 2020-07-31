@@ -139,8 +139,8 @@ void read_place(const char* net_file,
     place_ctx.placement_id = vtr::secure_digest_file(place_file);
 }
 
-///@brief Reads in the locations of the IO pads from a file.
-void read_user_pad_loc(const char* pad_loc_file) {
+void read_user_block_loc(const char* constraints_file) {
+    /* Reads in the locations of the blocks from a file. */
     t_hash **hash_table, *h_ptr;
     int xtmp, ytmp;
     FILE* fp;
@@ -152,11 +152,11 @@ void read_user_pad_loc(const char* pad_loc_file) {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     VTR_LOG("\n");
-    VTR_LOG("Reading locations of IO pads from '%s'.\n", pad_loc_file);
-    fp = fopen(pad_loc_file, "r");
+    VTR_LOG("Reading locations of blocks from '%s'.\n", constraints_file);
+    fp = fopen(constraints_file, "r");
     if (!fp) VPR_FATAL_ERROR(VPR_ERROR_PLACE_F,
-                             "'%s' - Cannot find IO pads location file.\n",
-                             pad_loc_file);
+                             "'%s' - Cannot find block locations file.\n",
+                             constraints_file);
 
     hash_table = alloc_hash_table();
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
@@ -189,27 +189,27 @@ void read_user_pad_loc(const char* pad_loc_file) {
         if (strlen(ptr) + 1 < vtr::bufsize) {
             strcpy(bname, ptr);
         } else {
-            vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(),
+            vpr_throw(VPR_ERROR_PLACE_F, constraints_file, vtr::get_file_line_number_of_last_opened_file(),
                       "Block name exceeded buffer size of %zu characters", vtr::bufsize);
         }
 
         ptr = vtr::strtok(nullptr, TOKENS, fp, buf);
         if (ptr == nullptr) {
-            vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(),
+            vpr_throw(VPR_ERROR_PLACE_F, constraints_file, vtr::get_file_line_number_of_last_opened_file(),
                       "Incomplete.\n");
         }
         sscanf(ptr, "%d", &xtmp);
 
         ptr = vtr::strtok(nullptr, TOKENS, fp, buf);
         if (ptr == nullptr) {
-            vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(),
+            vpr_throw(VPR_ERROR_PLACE_F, constraints_file, vtr::get_file_line_number_of_last_opened_file(),
                       "Incomplete.\n");
         }
         sscanf(ptr, "%d", &ytmp);
 
         ptr = vtr::strtok(nullptr, TOKENS, fp, buf);
         if (ptr == nullptr) {
-            vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(),
+            vpr_throw(VPR_ERROR_PLACE_F, constraints_file, vtr::get_file_line_number_of_last_opened_file(),
                       "Incomplete.\n");
         }
         int k;
@@ -217,13 +217,13 @@ void read_user_pad_loc(const char* pad_loc_file) {
 
         ptr = vtr::strtok(nullptr, TOKENS, fp, buf);
         if (ptr != nullptr) {
-            vpr_throw(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(),
+            vpr_throw(VPR_ERROR_PLACE_F, constraints_file, vtr::get_file_line_number_of_last_opened_file(),
                       "Extra characters at end of line.\n");
         }
 
         h_ptr = get_hash_entry(hash_table, bname);
         if (h_ptr == nullptr) {
-            VTR_LOG_WARN("[Line %d] Block %s invalid, no such IO pad.\n",
+            VTR_LOG_WARN("[Line %d] Block %s invalid, no such block.\n",
                          vtr::get_file_line_number_of_last_opened_file(), bname);
             ptr = vtr::fgets(buf, vtr::bufsize, fp);
             continue;
@@ -233,12 +233,12 @@ void read_user_pad_loc(const char* pad_loc_file) {
         int j = ytmp;
 
         if (place_ctx.block_locs[bnum].loc.x != OPEN) {
-            VPR_THROW(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(),
-                      "Block %s is listed twice in pad file.\n", bname);
+            VPR_THROW(VPR_ERROR_PLACE_F, constraints_file, vtr::get_file_line_number_of_last_opened_file(),
+                      "Block %s is listed twice in constraints file.\n", bname);
         }
 
         if (i < 0 || i > int(device_ctx.grid.width() - 1) || j < 0 || j > int(device_ctx.grid.height() - 1)) {
-            VPR_THROW(VPR_ERROR_PLACE_F, pad_loc_file, 0,
+            VPR_THROW(VPR_ERROR_PLACE_F, constraints_file, 0,
                       "Block #%zu (%s) location, (%d,%d) is out of range.\n", size_t(bnum), bname, i, j);
         }
 
@@ -250,13 +250,13 @@ void read_user_pad_loc(const char* pad_loc_file) {
         auto physical_tile = device_ctx.grid[i][j].type;
         auto logical_block = cluster_ctx.clb_nlist.block_type(bnum);
         if (!is_sub_tile_compatible(physical_tile, logical_block, place_ctx.block_locs[bnum].loc.sub_tile)) {
-            VPR_THROW(VPR_ERROR_PLACE_F, pad_loc_file, 0,
+            VPR_THROW(VPR_ERROR_PLACE_F, constraints_file, 0,
                       "Attempt to place block %s at illegal location (%d, %d).\n", bname, i, j);
         }
 
         if (k >= physical_tile->capacity || k < 0) {
-            VPR_THROW(VPR_ERROR_PLACE_F, pad_loc_file, vtr::get_file_line_number_of_last_opened_file(),
-                      "Block %s subblock number (%d) is out of range.\n", bname, k);
+            VPR_THROW(VPR_ERROR_PLACE_F, constraints_file, vtr::get_file_line_number_of_last_opened_file(),
+                      "Block %s subtile number (%d) is out of range.\n", bname, k);
         }
         place_ctx.grid_blocks[i][j].blocks[k] = bnum;
         place_ctx.grid_blocks[i][j].usage++;
@@ -273,14 +273,14 @@ void read_user_pad_loc(const char* pad_loc_file) {
         }
 
         if (place_ctx.block_locs[blk_id].loc.x == OPEN) {
-            VPR_THROW(VPR_ERROR_PLACE_F, pad_loc_file, 0,
-                      "IO block %s location was not specified in the pad file.\n", cluster_ctx.clb_nlist.block_name(blk_id).c_str());
+            VPR_THROW(VPR_ERROR_PLACE_F, constraints_file, 0,
+                      "Block %s location was not specified in the constraints file.\n", cluster_ctx.clb_nlist.block_name(blk_id).c_str());
         }
     }
 
     fclose(fp);
     free_hash_table(hash_table);
-    VTR_LOG("Successfully read %s.\n", pad_loc_file);
+    VTR_LOG("Successfully read %s.\n", constraints_file);
     VTR_LOG("\n");
 }
 

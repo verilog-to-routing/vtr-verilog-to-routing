@@ -57,21 +57,6 @@
         "Estimated LUTs": 1,
         "Total Node": 3
     },
-    "defparam/defparam_depth_1/no_arch": {
-        "test_name": "defparam/defparam_depth_1/no_arch",
-        "blif": "defparam_depth_1.blif",
-        "max_rss(MiB)": 30,
-        "exec_time(ms)": 5.1,
-        "simulation_time(ms)": 1.7,
-        "test_coverage(%)": 100,
-        "Pi": 10,
-        "Po": 10,
-        "logic element": 10,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Estimated LUTs": 10,
-        "Total Node": 10
-    },
     "defparam/defparam_depth_1_failure/no_arch": {
         "test_name": "defparam/defparam_depth_1_failure/no_arch",
         "blif": "defparam_depth_1_failure.blif",
@@ -99,6 +84,36 @@
         "Average Path": 3,
         "Estimated LUTs": 3,
         "Total Node": 3
+    },
+    "defparam/defparam_depth_1/no_arch": {
+        "test_name": "defparam/defparam_depth_1/no_arch",
+        "blif": "defparam_depth_1.blif",
+        "max_rss(MiB)": 35.5,
+        "exec_time(ms)": 7.2,
+        "simulation_time(ms)": 2.5,
+        "test_coverage(%)": 100,
+        "Pi": 10,
+        "Po": 10,
+        "logic element": 10,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 10,
+        "Total Node": 10
+    },
+    "defparam/override_same_param_name/no_arch": {
+        "test_name": "defparam/override_same_param_name/no_arch",
+        "blif": "override_same_param_name.blif",
+        "max_rss(MiB)": 35.6,
+        "exec_time(ms)": 6.4,
+        "simulation_time(ms)": 2.3,
+        "test_coverage(%)": 100,
+        "Pi": 10,
+        "Po": 7,
+        "logic element": 12,
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "DEFAULT": {
         "test_name": "n/a",

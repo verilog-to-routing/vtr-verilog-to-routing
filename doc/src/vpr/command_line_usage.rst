@@ -680,18 +680,26 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
     **Default:** ``0.8``
 
-.. option:: --fix_pins {free | random | <file.pads>}
+.. option:: --fix_pins {free | random}
 
     Controls how the placer handles I/O pads during placement.
     
     * ``free``: The placer can move I/O locations to optimize the placement.
     * ``random``: Fixes I/O pads to arbitrary locations and does not allow the placer to move them during the anneal (models the effect of poor board-level I/O constraints).
-    * ``<file.pads>``: A path to a file listing the desired location of each I/O block in the netlist.
-
-    This pad location file is in the same format as a :ref:`normal placement file <vpr_place_file>`, but only specifies the locations of I/O pads, rather than the locations of all blocks.
 
     **Default:** ``free``.
+    
+.. option:: --fix_clusters {not_locked | <file.place>}
 
+    Controls how the placer handles blocks (of any type) during placement.
+    
+    * ``not_locked``: The placer can move clustered block locations to optimize the placement.
+    * ``<file.place>``: A path to a file listing the desired location of each block in the netlist.
+    
+    This place location file is in the same format as a :ref:`normal placement file <vpr_place_file>`, but does not require the first two lines which are normally at the top of a placement file that specify the netlist file, netlist ID, and array size.
+    
+    **Default:** ``not_locked``.
+    
 .. option:: --place_algorithm {bounding_box | path_timing_driven}
 
     Controls the algorithm used by the placer.
@@ -716,6 +724,44 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
     For example, a value of 0.1 means 10% of moves are allowed to ignore the region limit.
 
     **Default:** ``0.0``
+
+.. _dusty_sa_options:
+Setting any of the following options selects `Dusty's annealing schedule <dusty_sa.rst>`_.
+
+.. option:: --alpha_min <float>
+
+    The minimum (starting) update factor (alpha) used.
+    Ranges between 0 and alpha_max.
+
+    **Default:** ``0.2``
+
+.. option:: --alpha_max <float>
+
+    The maximum (stopping) update factor (alpha) used after which simulated annealing will complete.
+    Ranges between alpha_min and 1.
+
+    **Default:** ``0.9``
+
+.. option:: --alpha_decay <float>
+
+    The rate at which alpha will approach 1: alpha(n) = 1 - (1 - alpha(n-1)) * alpha_decay
+    Ranges between 0 and 1.
+
+    **Default:** ``0.7``
+
+.. option:: --anneal_success_min <float>
+
+   The minimum success ratio after which the temperature will reset to maintain the target success ratio.
+   Ranges between 0 and anneal_success_target.
+
+    **Default:** ``0.1``
+
+.. option:: --anneal_success_target <float>
+
+   The temperature after each reset is selected to keep this target success ratio.
+   Ranges between anneal_success_target and 1.
+
+    **Default:** ``0.25``
 
 .. _timing_driven_placer_options:
 
@@ -961,6 +1007,24 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
     To disable, set value to a value higher than the largest fanout of any net.
 
     **Default:** ``16``
+
+.. option:: --max_logged_overused_rr_nodes <int>
+
+    Prints the information on overused RR nodes to the VPR log file after the each failed routing attempt.
+
+    If the number of overused nodes is above the given threshold ``N``, then only the first ``N`` entries are printed to the logfile.
+
+    **Default:** ``20``
+
+.. option:: --generate_rr_node_overuse_report {on | off}
+
+    Generates a detailed report on the overused RR nodes' information: **report_overused_nodes.rpt**.
+
+    This report is generated only when the final routing attempt fails (i.e. the whole routing process has failed).
+
+    In addition to the information that can be seen via ``--max_logged_overused_rr_nodes``, this report prints out all the net ids that are associated with each overused RR node. Also, this report does not place a threshold upon the number of RR nodes printed.
+
+    **Default:** ``off``
 
 .. _timing_driven_router_options:
 

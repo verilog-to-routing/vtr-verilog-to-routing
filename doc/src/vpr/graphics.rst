@@ -135,6 +135,16 @@ Lighter colours (e.g. yellow) correspond to highly utilized channels, while dark
 
     Routing Utilization during placement and routing
 
+Toggle Block Internal
+-------------------------------
+During placement and routing you can adjust the level of block detail you visualize by using the **Toggle Block Internal**. Each block can contain a number of flip flops (ff), look up tables (lut), and other primitives. The higher the number, the deeper into the hierarchy within the cluster level block you see. 
+
+.. figure:: https://github.com/verilog-to-routing/verilog-to-routing.github.io/blob/master/img/ToggleBlockInternal.gif
+    :align: center
+
+    Visualizing Block Internals
+
+
 Button Description Table
 ------------------------
 +-------------------+-------------------+------------------------------+------------------------------+
@@ -144,6 +154,12 @@ Button Description Table
 |                   |                   | shown                        | more details; Click to reset |
 |                   |                   |                              | when reached maximum level   |
 |                   |                   |                              | of detail                    |
++-------------------+-------------------+------------------------------+------------------------------+
+| Toggle Block      | Placement/Routing | Adjusts the level of         | Click multiple times to      |
+| Internal          |                   | visualized block detail      | go deeper into the           |
+|                   |                   |                              | hierarchy within the cluster |
+|                   |                   |                              | level block                  |
+|                   |                   |                              |                              |
 +-------------------+-------------------+------------------------------+------------------------------+
 | Blk Pin Util      | Placement/Routing | Visualizes block pin         | Click multiple times to      |
 |                   |                   | utilization                  | visualize all block pin      |

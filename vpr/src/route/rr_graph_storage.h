@@ -155,6 +155,8 @@ class t_rr_graph_storage {
     int16_t node_rc_index(RRNodeId id) const {
         return node_storage_[id].rc_index_;
     }
+    float node_R(RRNodeId id) const;
+    float node_C(RRNodeId id) const;
 
     short node_xlow(RRNodeId id) const {
         return node_storage_[id].xlow_;
@@ -182,6 +184,7 @@ class t_rr_graph_storage {
                 node_storage_.data(), node_storage_.size()),
             id);
     }
+    const char* node_direction_string(RRNodeId id) const;
 
     e_side node_side(RRNodeId id) const {
         return get_node_side(
@@ -189,6 +192,7 @@ class t_rr_graph_storage {
                 node_storage_.data(), node_storage_.size()),
             id);
     }
+    const char* node_side_string(RRNodeId id) const;
 
     /* PTC get methods */
     short node_ptc_num(RRNodeId id) const;

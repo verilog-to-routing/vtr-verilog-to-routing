@@ -3,16 +3,16 @@
 ##############################################
 
 # Path to directory of circuits to use
-circuits_dir=benchmarks/verilog
+circuits_dir=benchmarks/blif
 
 # Path to directory of architectures to use
-archs_dir=arch/timing
+archs_dir=arch/reg_test_archs
 
 # Add circuits to list to sweep
-circuit_list_add=stereovision3.v
+circuit_list_add=apex2.blif
 
 # Add architectures to list to sweep
-arch_list_add=k6_N10_40nm.xml
+arch_list_add=fix_clusters_test_arch.xml
 
 # Parse info and how to parse
 parse_file=vpr_standard.txt
@@ -24,4 +24,4 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 # Script parameters
-script_params =-fix_pins tasks/regression_tests/vtr_reg_strong/strong_fix_pins_pad_file/stereovision3.pad
+script_params =-starting_stage vpr --fix_clusters ../../../../apex2_block_locations.place

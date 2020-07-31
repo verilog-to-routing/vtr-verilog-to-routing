@@ -1566,13 +1566,49 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("0.8")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument(args.PlaceAlphaMin, "--alpha_min")
+        .help(
+            "For placement using Dusty's annealing schedule. Minimum (starting) value of alpha.")
+        .default_value("0.2")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.PlaceAlphaMax, "--alpha_max")
+        .help(
+            "For placement using Dusty's annealing schedule. Maximum (stopping) value of alpha.")
+        .default_value("0.9")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.PlaceAlphaDecay, "--alpha_decay")
+        .help(
+            "For placement using Dusty's annealing schedule. The value that alpha is scaled by after reset.")
+        .default_value("0.7")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.PlaceSuccessMin, "--anneal_success_min")
+        .help(
+            "For placement using Dusty's annealing schedule. Minimum success ratio when annealing before resetting the temperature to maintain the target success ratio.")
+        .default_value("0.1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.PlaceSuccessTarget, "--anneal_success_target")
+        .help(
+            "For placement using Dusty's annealing schedule. Target success ratio when annealing.")
+        .default_value("0.25")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     place_grp.add_argument(args.pad_loc_file, "--fix_pins")
         .help(
-            "Fixes I/O pad locations during placement. Valid options:\n"
+            "Fixes I/O pad locations randomly during placement. Valid options:\n"
             " * 'free' allows placement to optimize pad locations\n"
-            " * 'random' fixes pad locations to arbitraray locations\n"
-            " * path to a file specifying pad locations (.place format with only pads specified).")
+            " * 'random' fixes pad locations to arbitrary locations\n.")
         .default_value("free")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.constraints_file, "--fix_clusters")
+        .help(
+            "Fixes block locations during placement. Valid options:\n"
+            " * path to a file specifying block locations (.place format with block locations specified).")
+        .default_value("not_locked")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<e_place_algorithm, ParsePlaceAlgorithm>(args.PlaceAlgorithm, "--place_algorithm")
@@ -1816,6 +1852,16 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     route_grp.add_argument<bool, ParseOnOff>(args.exit_after_first_routing_iteration, "--exit_after_first_routing_iteration")
         .help("Causes VPR to exit after the first routing iteration (useful for saving graphics)")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_grp.add_argument(args.max_logged_overused_rr_nodes, "--max_logged_overused_rr_nodes")
+        .help("Maximum number of overused RR nodes logged each time the routing fails")
+        .default_value("20")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_grp.add_argument<bool, ParseOnOff>(args.generate_rr_node_overuse_report, "--generate_rr_node_overuse_report")
+        .help("Generate detailed reports on overused rr nodes and congested nets should the routing fails")
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -2192,16 +2238,22 @@ void set_conditional_defaults(t_options& args) {
         args.quench_recompute_divider.set(args.inner_loop_recompute_divider, Provenance::INFERRED);
     }
 
-    //Are we using the automatic, or user-specified annealing schedule?
-    if (args.PlaceInitT.provenance() == Provenance::SPECIFIED
-        || args.PlaceExitT.provenance() == Provenance::SPECIFIED
-        || args.PlaceAlphaT.provenance() == Provenance::SPECIFIED) {
+    //Which schedule?
+    if (args.PlaceAlphaMin.provenance() == Provenance::SPECIFIED // Any of these flags select Dusty's schedule
+        || args.PlaceAlphaMax.provenance() == Provenance::SPECIFIED
+        || args.PlaceAlphaDecay.provenance() == Provenance::SPECIFIED
+        || args.PlaceSuccessMin.provenance() == Provenance::SPECIFIED
+        || args.PlaceSuccessTarget.provenance() == Provenance::SPECIFIED) {
+        args.anneal_sched_type.set(DUSTY_SCHED, Provenance::INFERRED);
+    } else if (args.PlaceInitT.provenance() == Provenance::SPECIFIED // Any of these flags select a manual schedule
+               || args.PlaceExitT.provenance() == Provenance::SPECIFIED
+               || args.PlaceAlphaT.provenance() == Provenance::SPECIFIED) {
         args.anneal_sched_type.set(USER_SCHED, Provenance::INFERRED);
     } else {
-        args.anneal_sched_type.set(AUTO_SCHED, Provenance::INFERRED);
+        args.anneal_sched_type.set(AUTO_SCHED, Provenance::INFERRED); // Otherwise use the automatic schedule
     }
 
-    //Are the pad locations specified?
+    //Are the pads free to be moved during placement or randomly locked to certain locations?
     if (std::string(args.pad_loc_file) == "free") {
         args.pad_loc_type.set(FREE, Provenance::INFERRED);
 
@@ -2211,8 +2263,15 @@ void set_conditional_defaults(t_options& args) {
 
         args.pad_loc_file.set("", Provenance::SPECIFIED);
     } else {
-        args.pad_loc_type.set(USER, Provenance::INFERRED);
-        VTR_ASSERT(!args.pad_loc_file.value().empty());
+        VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown I/O pad location type\n");
+    }
+
+    //Are the blocks locked to locations given by a constraints file?
+    if (std::string(args.constraints_file) == "not_locked") {
+        args.block_loc_type.set(NOT_LOCKED, Provenance::INFERRED);
+    } else {
+        args.block_loc_type.set(LOCKED, Provenance::INFERRED);
+        VTR_ASSERT(!args.constraints_file.value().empty());
     }
 
     /*

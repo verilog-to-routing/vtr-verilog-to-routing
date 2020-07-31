@@ -1,7 +1,7 @@
 #VPR metrics at minimum channel width
 
 #Routing Metrics
-min_chan_width;Range(0.80,1.30)
+min_chan_width;Range(0.25,1.30)
 routed_wirelength;RangeAbs(0.60,1.50,5)
 
 #Area metrics

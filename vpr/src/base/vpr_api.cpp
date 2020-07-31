@@ -69,6 +69,7 @@
 #include "cluster.h"
 
 #include "pack_report.h"
+#include "overuse_report.h"
 
 #include "timing_graph_builder.h"
 #include "timing_reports.h"
@@ -726,12 +727,23 @@ RouteStatus vpr_route_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
             //Update status
             VTR_LOG("Circuit successfully routed with a channel width factor of %d.\n", route_status.chan_width());
-            graphics_msg = vtr::string_fmt("Routing succeeded with a channel width factor of %d.", route_status.chan_width());
+            graphics_msg = vtr::string_fmt("Routing succeeded with a channel width factor of %d.\n", route_status.chan_width());
         } else {
             //Update status
             VTR_LOG("Circuit is unroutable with a channel width factor of %d.\n", route_status.chan_width());
             graphics_msg = vtr::string_fmt("Routing failed with a channel width factor of %d. ILLEGAL routing shown.", route_status.chan_width());
+
+            //Generate a report on overused nodes if specified
+            //Otherwise, remind the user of this possible report option
+            if (router_opts.generate_rr_node_overuse_report) {
+                VTR_LOG("See report_overused_nodes.rpt for a detailed report on the RR node overuse information.\n");
+                report_overused_nodes();
+            } else {
+                VTR_LOG("For a detailed report on the RR node overuse information (report_overused_nodes.rpt), specify --generate_rr_node_overuse_report on.\n");
+            }
         }
+
+        VTR_LOG("\n");
 
         //Echo files
         if (vpr_setup.Timing.timing_analysis_enabled) {
