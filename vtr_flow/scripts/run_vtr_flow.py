@@ -411,7 +411,7 @@ def vtr_command_main(arg_list, prog=None):
     return_status = 0
     try:
         vpr_args = process_unknown_args(unknown_args)
-        vpr_args.update(process_vpr_args(args, prog, temp_dir))
+        vpr_args = process_vpr_args(args, prog, temp_dir, vpr_args)
         if args.sdc_file:
             vpr_args["sdc_file"] = get_sdc_file(args.sdc_file, prog)
 
@@ -569,13 +569,13 @@ def process_odin_args(args):
     return odin_args
 
 
-def process_vpr_args(args, prog, temp_dir):
+def process_vpr_args(args, prog, temp_dir, vpr_args):
     """
         Finds arguments needed in the VPR stage of the flow
     """
-    vpr_args = OrderedDict()
     if args.crit_path_router_iterations:
-        vpr_args["max_router_iterations"] = args.crit_path_router_iterations
+        if "max_router_iterations" not in vpr_args:
+            vpr_args["max_router_iterations"] = args.crit_path_router_iterations
     if args.fix_pins:
         new_file = str(temp_dir / Path(args.fix_pins).name)
         shutil.copyfile(str((Path(prog).parent.parent / args.fix_pins)), new_file)
