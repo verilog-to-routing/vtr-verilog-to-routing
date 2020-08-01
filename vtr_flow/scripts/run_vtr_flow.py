@@ -10,14 +10,16 @@ import textwrap
 import socket
 from datetime import datetime
 from collections import OrderedDict
-#pylint: disable=wrong-import-position, import-error
+
+# pylint: disable=wrong-import-position, import-error
 sys.path.insert(0, str(Path(__file__).resolve().parent / "python_libs"))
 import vtr
-#pylint: enable=wrong-import-position, import-error
+
+# pylint: enable=wrong-import-position, import-error
 
 BASIC_VERBOSITY = 1
 
-#pylint: disable=too-few-public-methods
+# pylint: disable=too-few-public-methods
 class VtrStageArgparseAction(argparse.Action):
     """
         Class to parse the VTR stages to begin and end at.
@@ -34,7 +36,10 @@ class VtrStageArgparseAction(argparse.Action):
             setattr(namespace, self.dest, vtr.VtrStage.lec)
         else:
             raise argparse.ArgumentError(self, "Invalid VTR stage '" + value + "'")
-#pylint: enable=too-few-public-methods
+
+
+# pylint: enable=too-few-public-methods
+
 
 def vtr_command_argparser(prog=None):
     """
@@ -415,9 +420,12 @@ def vtr_command_main(arg_list, prog=None):
         if args.sdc_file:
             vpr_args["sdc_file"] = get_sdc_file(args.sdc_file, prog)
 
-        print(args.name if args.name else Path(args.architecture_file).stem
-              + "/"
-              + Path(args.circuit_file).stem, end="\t\t")
+        print(
+            args.name
+            if args.name
+            else Path(args.architecture_file).stem + "/" + Path(args.circuit_file).stem,
+            end="\t\t",
+        )
         # Run the flow
         vtr.run(
             Path(args.architecture_file),
@@ -442,9 +450,7 @@ def vtr_command_main(arg_list, prog=None):
         error_status = "OK"
     except vtr.VtrError as error:
         error_status, return_status, exit_status = except_vtr_error(
-            error,
-            args.expect_fail,
-            args.verbose
+            error, args.expect_fail, args.verbose
         )
 
     except KeyboardInterrupt as error:
@@ -509,7 +515,7 @@ def process_unknown_args(unknown_args):
 
         # Determine if there is a value associated with this argument
         if len(unknown_args) == 0 or (
-                unknown_args[0].startswith("-") and arg != "target_ext_pin_util"
+            unknown_args[0].startswith("-") and arg != "target_ext_pin_util"
         ):
             # Single value argument, we place these with value 'True'
             # in vpr_args
@@ -590,6 +596,7 @@ def process_vpr_args(args, prog, temp_dir, vpr_args):
 
     return vpr_args
 
+
 def get_sdc_file(sdc_file, prog):
     """
         takes in the sdc_file and returns a path to that file if it exists.
@@ -601,6 +608,7 @@ def get_sdc_file(sdc_file, prog):
             sdc_file = Path(prog).parent.parent / sdc_file
 
     return str(vtr.verify_file(sdc_file, "sdc file"))
+
 
 def except_vtr_error(error, expect_fail, verbose):
     """
