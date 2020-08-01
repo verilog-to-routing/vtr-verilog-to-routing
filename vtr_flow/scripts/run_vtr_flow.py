@@ -515,7 +515,7 @@ def process_unknown_args(unknown_args):
 
         # Determine if there is a value associated with this argument
         if len(unknown_args) == 0 or (
-            unknown_args[0].startswith("-") and arg != "target_ext_pin_util"
+                unknown_args[0].startswith("-") and arg != "target_ext_pin_util"
         ):
             # Single value argument, we place these with value 'True'
             # in vpr_args
