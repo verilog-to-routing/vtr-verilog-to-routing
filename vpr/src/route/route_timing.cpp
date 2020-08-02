@@ -603,9 +603,11 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
 
             /* Avoid overflow for high iteration counts, even if acc_cost is big */
             // Increase short path criticality if it's having a hard time resolving hold violations due to congestion
-            // if (budgeting_inf.if_set()) {
-            //     increase_short_path_crit_if_congested(rerouted_nets, budgeting_inf, connections_inf, itry);
-            // }
+            if (budgeting_inf.if_set()) {
+                increase_short_path_crit_if_congested(rerouted_nets, budgeting_inf, connections_inf, itry);
+                // if (itry > 5) budgeting_inf.lower_budgets(-300e-12, timing_info);
+            }
+
         }
 
         if (router_congestion_mode == RouterCongestionMode::CONFLICTED) {
@@ -879,7 +881,7 @@ void reduce_budgets_if_congested(std::vector<ClusterNetId>& rerouted_nets,
          * Must be more than 9 iterations to have a valid slope*/
         // if (slope > CONGESTED_SLOPE_VAL && itry >= 9) {
             // VTR_LOG("Lowering budgets\n");
-            budgeting_inf.lower_budgets(1.2);
+            // budgeting_inf.lower_budgets(1.2);
         // }
     }
 }
@@ -891,15 +893,23 @@ void increase_short_path_crit_if_congested(std::vector<ClusterNetId>& rerouted_n
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     if (budgeting_inf.if_set() && itry > 9) {
         for (auto net_id : rerouted_nets) {
-            if (false) {//budgeting_inf.get_should_reroute(net_id)) {
+            if (budgeting_inf.get_should_reroute(net_id)) {
                 budgeting_inf.update_congestion_times(net_id);
             } else {
                 budgeting_inf.not_congested_this_iteration(net_id);
             }
-            // budgeting_inf.increase_short_crit(net_id, 2);
+            budgeting_inf.increase_short_crit(net_id, 4);
         }
     }
 }
+
+// void increase_min_budget_for_hold(int itry,
+//                                     route_budgets& budgeting_inf,
+//                                     std::shared_ptr<SetupHoldTimingInfo> timing_info) {
+//     if (itry > 10 && itry % 5 == 0) {
+//         if()
+//     }
+// }
 
 int get_max_pins_per_net() {
     int max_pins_per_net = 0;
@@ -1985,7 +1995,7 @@ bool should_setup_lower_bound_connection_delays(int itry, const t_router_opts& r
     //However, with the yoyo algorithm, the lower bound is set every after every 5 iterations, so long as it is below 25.
     // if (router_opts.routing_budgets_algorithm != YOYO && itry == 1) {
     //     return true;
-    // } else if (router_opts.routing_budgets_algorithm == YOYO && itry % 5 == 1 && itry < 25) {
+    // } else if (router_opts.routing_budgets_algorithm == YOYO && itry % 10 == 1 && itry < 25) {
     //     return true;
     // }
     if(itry == 1) return true;

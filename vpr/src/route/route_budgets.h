@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <vector>
+#include <queue>
 #include "RoutingDelayCalculator.h"
 
 enum analysis_type {
@@ -45,7 +46,7 @@ class route_budgets {
 
     /*lower budgets during congestion*/
     void update_congestion_times(ClusterNetId net_id);
-    void lower_budgets(float delay_decrement);
+    void lower_budgets(float delay_decrement, std::shared_ptr<SetupHoldTimingInfo> timing_info);
     void increase_short_crit(ClusterNetId net_id, float delay_decs);
     void not_congested_this_iteration(ClusterNetId net_id);
 
@@ -106,6 +107,7 @@ class route_budgets {
 
     /*used to keep count the number of continuous time this node was congested*/
     vtr::vector<ClusterNetId, int> num_times_congested; //[0..num_nets]
+    std::queue<float> negative_hold_slacks;
 
     /*budgets only valid when loaded*/
     bool set;

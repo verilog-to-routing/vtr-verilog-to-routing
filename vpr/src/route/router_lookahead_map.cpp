@@ -573,8 +573,8 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(int inode, int
         float expected_delay = cost_entry.delay;
         float expected_cong = cost_entry.congestion;
 
-        expected_delay_cost = expected_delay;
-        expected_cong_cost = expected_cong;
+        expected_delay_cost = params.criticality * expected_delay;
+        expected_cong_cost = (1.0 - params.criticality) * expected_cong;
 
         VTR_ASSERT_SAFE_MSG(std::isfinite(expected_delay_cost),
                             vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
