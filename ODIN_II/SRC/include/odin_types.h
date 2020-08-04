@@ -493,6 +493,12 @@ struct nnode_t {
     edge_type_e edge_type; //
     bool covered = false;
 
+    // For mixing soft and hard logic optimizations
+    // a field that is used for storing weights towards the
+    // mixing optimization.
+    //  value of -1 is reserved for hardened blocks
+    long weight = 0;
+
     //Generic gate output
     unsigned char generic_output; //describes the output (1 or 0) of generic blocks
 };
