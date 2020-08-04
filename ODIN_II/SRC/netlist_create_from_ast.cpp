@@ -5183,7 +5183,7 @@ ast_node_t* resolve_top_parameters_defined_by_parameters(ast_node_t* node, sc_hi
     count++;
 
     if (count > RECURSIVE_LIMIT) {
-        error_message(NETLIST, node->loc, "Exceeds recursion count limit of %s", RECURSIVE_LIMIT);
+        error_message(NETLIST, node->loc, "Exceeds recursion count limit of %d", RECURSIVE_LIMIT);
     }
 
     if (node->type == IDENTIFIERS) {
