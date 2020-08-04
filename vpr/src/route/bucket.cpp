@@ -4,10 +4,26 @@
 #include "vtr_log.h"
 #include "vpr_error.h"
 
+// Initial bucket scaling.  A larger division scaling results in smaller cost
+// range per bucket.
 static constexpr float kInitialDivisionScaling = 50000.f;
+// Initial maximum number of buckets before bucket rescaling.
 static constexpr ssize_t kInitialMaxBuckets = 1000000;
-static constexpr ssize_t kMaxMaxBuckets = 16000000;
+// If the division scaling results in more than kIncreaseFocusLimit elements
+// in the first bucket, than division scaling is increased by 2x to try to
+// lower the size of the first bucket.
+//
+// This is an attempt to dynamically scale the bucket widths to prevent the
+// bucket heap from being too cost insenstive / imprecise.
+//
+// When the division scaling is increased by 2x, the maximum number of buckets
+// also is increased by 2x to prevent excessive rescaling during runtime.
 static constexpr size_t kIncreaseFocusLimit = 2048;
+// To prevent unbounded division scaling, the 2x when the first bucket is too
+// large is limited by kMaxMaxBuckets.  If increasing the division scaling
+// will result in max_buckets_ exceeding kMaxMaxBuckets, then division scaling
+// will not be increased again.
+static constexpr ssize_t kMaxMaxBuckets = 16000000;
 
 BucketItems::BucketItems() noexcept
     : alloced_items_(0)
