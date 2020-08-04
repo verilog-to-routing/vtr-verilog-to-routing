@@ -118,7 +118,7 @@ void increase_short_path_crit_if_congested(std::vector<ClusterNetId>& rerouted_n
 static bool should_route_net(ClusterNetId net_id, CBRR& connections_inf, bool if_force_reroute);
 static bool early_exit_heuristic(const t_router_opts& router_opts, const WirelengthInfo& wirelength_info);
 
- static bool check_hold(const t_router_opts& router_opts, std::shared_ptr<const SetupHoldTimingInfo> timing_info);
+ static bool check_hold(const t_router_opts& router_opts, std::shared_ptr<const SetupHoldTimingInfo> timing_info, float worst_neg_slack);
 
 struct more_sinks_than {
     inline bool operator()(const ClusterNetId net_index1, const ClusterNetId net_index2) {
@@ -400,6 +400,9 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
             ++itry_since_last_convergence;
         }
 
+        float worst_negative_slack = 0;
+        if (budgeting_inf.if_set()) worst_negative_slack = timing_info->hold_worst_negative_slack();
+
         /*
          * Route each net
          */
@@ -419,7 +422,8 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
                                                            route_timing_info,
                                                            pin_timing_invalidator.get(),
                                                            budgeting_inf,
-                                                           was_rerouted);
+                                                           was_rerouted,
+                                                           worst_negative_slack);
             if (!is_routable) {
                 return (false); //Impossible to route
             }
@@ -764,7 +768,8 @@ bool try_timing_driven_route_net(ConnectionRouter& router,
                                  std::shared_ptr<SetupHoldTimingInfo> timing_info,
                                  ClusteredPinTimingInvalidator* pin_timing_invalidator,
                                  route_budgets& budgeting_inf,
-                                 bool& was_rerouted) {
+                                 bool& was_rerouted,
+                                 float worst_negative_slack) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
@@ -775,7 +780,7 @@ bool try_timing_driven_route_net(ConnectionRouter& router,
     bool reroute_for_hold = false;
     if (budgeting_inf.if_set()) {
         reroute_for_hold = (budgeting_inf.get_should_reroute(net_id));
-        reroute_for_hold &= timing_info->hold_worst_negative_slack() != 0;
+        reroute_for_hold &= worst_negative_slack != 0;
     }
 
     if (route_ctx.net_status.is_fixed(net_id)) { /* Skip pre-routed nets. */
@@ -801,7 +806,8 @@ bool try_timing_driven_route_net(ConnectionRouter& router,
                                             netlist_pin_lookup,
                                             timing_info,
                                             pin_timing_invalidator,
-                                            budgeting_inf);
+                                            budgeting_inf,
+                                            worst_negative_slack);
 
         profiling::net_fanout_end(cluster_ctx.clb_nlist.net_sinks(net_id).size());
 
@@ -950,7 +956,8 @@ bool timing_driven_route_net(ConnectionRouter& router,
                              const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                              std::shared_ptr<SetupHoldTimingInfo> timing_info,
                              ClusteredPinTimingInvalidator* pin_timing_invalidator,
-                             route_budgets& budgeting_inf) {
+                             route_budgets& budgeting_inf, 
+                             float worst_neg_slack) {
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
      * to route this net, even ignoring congestion, it returns false.  In this  *
@@ -972,7 +979,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
                                         router_opts.min_incremental_reroute_fanout,
                                         connections_inf,
                                         rt_node_of_sink,
-                                        check_hold(router_opts, timing_info));
+                                        check_hold(router_opts, timing_info, worst_neg_slack));
 
     bool high_fanout = is_high_fanout(num_sinks, router_opts.high_fanout_threshold);
     
@@ -1615,10 +1622,10 @@ static bool early_exit_heuristic(const t_router_opts& router_opts, const Wirelen
     return false;
 }
 
-static bool check_hold(const t_router_opts& router_opts, std::shared_ptr<const SetupHoldTimingInfo> timing_info) {
+static bool check_hold(const t_router_opts& router_opts, std::shared_ptr<const SetupHoldTimingInfo> timing_info, float worst_neg_slack) {
     if (router_opts.routing_budgets_algorithm != YOYO) {
         return false;
-    } else if (timing_info->hold_worst_negative_slack() == 0) {
+    } else if (worst_neg_slack == 0) {
         return true;
     }
     return false;
