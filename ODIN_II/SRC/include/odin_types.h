@@ -141,6 +141,10 @@ struct global_args_t {
     argparse::ArgValue<int> sim_random_seed;
 
     argparse::ArgValue<bool> interactive_simulation;
+
+    // Arguments for mixing hard and soft logic
+    argparse::ArgValue<int> exact_mults;
+    argparse::ArgValue<float> mults_ratio;
 };
 
 /**
