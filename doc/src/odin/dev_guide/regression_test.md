@@ -297,7 +297,11 @@ This regression test targets cases that require a lot of ram and time.
 
 The micro regression tests targets hards blocks and pieces that can be easily instantiated in architectures.
 
-### opertators
+### mixing_optimization
+
+The mixing optimization regression tests targets mixing implementations for operations implementable in hard blocks and their soft logic counterparts that can be can be easily instantiated in architectures.
+
+### operators
 
 This regression test targets the functionality of different opertators. It checks bit size capacity and behaviour.  
 
@@ -318,6 +322,8 @@ This set of regression test includes benchmarks targetting compiler directives a
 ```bash
 benchmark
       ├── suite
+      │     ├── complex_synthesis_suite
+      │     │   └── task_list.conf
       │     ├── full_suite
       │     │   └── task_list.conf
       │     ├── heavy_suite
@@ -410,6 +416,19 @@ benchmark
       │     │   ├── simulation_result.json
       │     │   ├── synthesis_result.json
       │     │   └── task.conf
+      │     ├── mixing_optimization
+      |     |   ├── mults_auto_full
+      │     │   |   ├── simulation_result.json
+      │     │   |   |── synthesis_result.json
+      │     │   |   └── task.conf
+      |     |   ├── mults_auto_half
+      │     │   |   ├── simulation_result.json
+      │     │   |   |── synthesis_result.json
+      │     │   |   └── task.conf
+      |     |   ├── mults_auto_none
+      │     │   |   ├── simulation_result.json
+      │     │   |   |── synthesis_result.json
+      │     │   |   └── task.conf
       │     ├── operators
       │     │   ├── simulation_result.json
       │     │   ├── synthesis_result.json
