@@ -72,7 +72,7 @@ void netlist_cleanup (t_module* module){
 //============================================================================================
 //============================================================================================
 
-void build_netlist (t_module* module, busvec* buses, s_hash** hash_table){
+void build_netlist (t_module* module, busvec* buses, s_hash** hash_table, t_net*){
 
 	//Initialize all nets
 	init_nets(module->array_of_pins, module->number_of_pins, buses, hash_table);
@@ -110,6 +110,8 @@ void init_nets (t_pin_def** pins, int num_pins, busvec* buses, struct s_hash** h
 	t_net temp_net;
 	netvec temp_bus;
 
+	vcc_net = NULL;
+
 	for (int i = 0; i < num_pins; i++){
 		temp_bus.clear();	//reset the temporary bus 
 
@@ -131,6 +133,10 @@ void init_nets (t_pin_def** pins, int num_pins, busvec* buses, struct s_hash** h
 			//iterate through and flatten the buses into separate nets
 			temp_net.wire_index = j;	
 			temp_bus.push_back(temp_net);
+		}
+
+		if (temp_bus[0].pin->name == string("vcc")){    //Save location of the VCC net for one-LUT removal
+			vcc_net = &temp_bus[0];
 		}
 			
 		buses->push_back(temp_bus);
@@ -239,6 +245,13 @@ void add_subckts (t_node** nodes, int num_nodes, busvec* buses, struct s_hash** 
 //============================================================================================
 
 void remove_one_lut_nodes ( busvec* buses, struct s_hash** hash_table, t_node** nodes, int original_num_nodes, t_module* module ){
+/*
+	Go through all nodes, if a node's source net is the sink of a one-LUT, there are two cases:
+	  1. The one-LUT has an input and an output:
+             Re-associate the node with the source net of the one-LUT, then remove the one-LUT and the node's original source net
+	  2. The one-LUT just has an output (provides VCC to its sink):
+             Re-associate the node with the VCC net, then remove the one-LUT and the node's original source net
+*/
 	oneluts_elim = 0;
 
 	t_node* temp_node;
@@ -252,13 +265,10 @@ void remove_one_lut_nodes ( busvec* buses, struct s_hash** hash_table, t_node** 
 	netvec* prev_bus;
 	t_net* prev_net;
 
-	//Go through all nodes, if a node's source net is the sink of a one-LUT,
-	//re-associate the node with the source net of the one-LUT, then remove
-	//the one-LUT and the node's original source net
 	for (int i = 0; i < original_num_nodes; i++){
 		temp_node = nodes[i];
-		if (temp_node == NULL) {
-			continue; //Node was deleted during a previous iteration
+		if (temp_node == NULL) {   //Node was deleted during a previous iteration
+			continue;
 		}
 		for (int j = 0; j < temp_node->number_of_ports; j++){
 			temp_port = temp_node->array_of_ports[j];
@@ -267,25 +277,34 @@ void remove_one_lut_nodes ( busvec* buses, struct s_hash** hash_table, t_node** 
 			temp_net = &(temp_bus->at(temp_port->wire_index));
 
 			if (temp_port != (t_node_port_association*)temp_net->source){
-				//An input port
+				//Must be an input port
 				if (temp_net->driver == BLACKBOX && is_onelut(temp_net->block_src) && temp_net->num_children == 1){
+					source_port = (t_node_port_association*)temp_net->source;   //The output port of the one-LUT
+					source_node = temp_net->block_src;   //The one-LUT
 
-					//The one-lut can be removed
-					source_port = (t_node_port_association*)temp_net->source;	//The output port of the one-LUT
-					source_node = temp_net->block_src;	//The one-LUT
-					VTR_ASSERT(source_node->number_of_ports == 2); //if is_onelut==true, then there are only 2 ports
-					for (int k = 0; k < source_node->number_of_ports; k++){
-						prev_port = source_node->array_of_ports[k];
-						if(prev_port != source_port) {
-							//The input port of the one-LUT
-							prev_bus = get_bus_from_hash (hash_table, prev_port->associated_net->name, buses);
-							VTR_ASSERT((unsigned int)prev_port->wire_index < prev_bus->size());
-							prev_net = &(prev_bus->at(prev_port->wire_index)); //Net associated with the input port
+					//Re-associate temp_port with the appropriate net
+					if(source_node->number_of_ports == 2){
+						//For one-LUT with an input and an output, find the net before the one_LUT and associate temp_port with that net instead
+						VTR_ASSERT(source_node->number_of_ports == 2);
+						for (int k = 0; k < source_node->number_of_ports; k++){
+							prev_port = source_node->array_of_ports[k];
+							if(prev_port != source_port) {
+								//The input port of the one-LUT
+								prev_bus = get_bus_from_hash (hash_table, prev_port->associated_net->name, buses);
+								VTR_ASSERT((unsigned int)prev_port->wire_index < prev_bus->size());
+								prev_net = &(prev_bus->at(prev_port->wire_index)); //Net associated with the input port
+							}
 						}
+						temp_port->associated_net = prev_net->pin;
+						temp_port->wire_index = prev_net->wire_index;
+					} else {
+						//For one-LUT with just an output, associate temp_port with VCC instead
+						VTR_ASSERT(source_node->number_of_ports == 1); //If is_onelut==true, there are only 1 or 2 ports
+						VTR_ASSERT(vcc_net != NULL); //Should have a VCC
+						temp_port->associated_net = vcc_net->pin;
+						temp_port->wire_index = vcc_net->wire_index;
+						vcc_net->num_children++;
 					}
-					//Associate temp_port with prev_net instead
-					temp_port->associated_net = prev_net->pin;
-					temp_port->wire_index = prev_net->wire_index;
 
 					//Remove temp_net
 					temp_net->num_children--;
@@ -294,16 +313,17 @@ void remove_one_lut_nodes ( busvec* buses, struct s_hash** hash_table, t_node** 
 
 					//Free the LUT
 					remove_node(source_node, nodes, original_num_nodes);
+
 				}
 			}
 		}
 	}
 
-	//Regorganize nodes array by filling in gaps with the last available elements in the array
+	//Regorganize nodes array by filling in gaps with the last available elements in the array to save CPU time
 	int new_array_size = original_num_nodes - oneluts_elim;
 	int curr_node_index = 0;
 	int replacement_node_index = original_num_nodes - 1;
-	while (curr_node_index != replacement_node_index) {
+	while (curr_node_index < replacement_node_index) {
 		if (nodes[curr_node_index] == NULL) {
 			if (nodes[replacement_node_index] != NULL) {
 				//Replace gap with node
@@ -746,6 +766,8 @@ void print_all_nets ( busvec* buses, const char* filename ){
 //============================================================================================
 
 bool is_onelut ( t_node* node ) {
+	if(node == NULL) return false;
+	
 	//Hardcoded for Stratix IV
 	string node_name = node->name;
 	string node_name_ending;
@@ -759,9 +781,9 @@ bool is_onelut ( t_node* node ) {
 	cout << "\t\t Node Type: " << node->type << "\t" << "Node Name Ending: " << node_name_ending << "\t" << "Num of Ports: " << node->number_of_ports <<"\n";
 #endif
 
-	//Only LUTs with 2 ports (1 input and 1 output) are considered one-luts
-	if (node->number_of_ports == 2){
-		//Only stratixiv_lcell_comb one-LUTs that end in "feeder" can be removed
+	//Only LUTs with 1 port (1 output port) or 2 ports (1 input and 1 output) are considered one-luts
+	if (node->number_of_ports == 1 || node->number_of_ports == 2){
+		//Only stratixiv_lcell_comb one-LUTs that end in "feeder" can be removed at this stage
 		if (node->type == string("stratixiv_lcell_comb") && node_name_ending == string("feeder_I")) {
 			return true;
 		}
@@ -776,6 +798,9 @@ bool is_onelut ( t_node* node ) {
 void remove_node ( t_node* node, t_node** nodes, int original_num_nodes ) {
 	//Free node and assign it to NULL on the spot
 	//Array will be re-organized to fill in the gaps later
+
+	VTR_ASSERT(node != NULL);
+	VTR_ASSERT(nodes != NULL);
 
 #ifdef CLEAN_DEBUG
 	cout << "\t\t\t Removing " << node->name << "\n";

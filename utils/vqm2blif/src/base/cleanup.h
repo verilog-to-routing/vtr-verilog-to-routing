@@ -11,15 +11,6 @@
 #include "vqm_common.h"
 
 //============================================================================================
-//				GLOBALS
-//============================================================================================
-
-extern int buffer_count, invert_count, onelut_count;
-extern int buffers_elim, inverts_elim, oneluts_elim;
-
-void netlist_cleanup (t_module* module);
-
-//============================================================================================
 //				STRUCTURES & TYPEDEFS
 //============================================================================================
 typedef enum d_type {NODRIVE, BUFFER, INVERT, BLACKBOX, CONST} drive_type;
@@ -41,6 +32,17 @@ typedef struct s_net{
 
 typedef vector<t_net> netvec;
 typedef vector<netvec> busvec;
+
+//============================================================================================
+//				GLOBALS
+//============================================================================================
+
+extern int buffer_count, invert_count, onelut_count;
+extern int buffers_elim, inverts_elim, oneluts_elim;
+
+extern t_net* vcc_net;
+
+void netlist_cleanup (t_module* module);
 
 //============================================================================================
 //				CLEANUP DEFINES
