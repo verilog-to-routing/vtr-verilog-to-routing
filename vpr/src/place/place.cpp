@@ -569,7 +569,7 @@ void try_place(const t_placer_opts& placer_opts,
     alloc_and_load_placement_structs(placer_opts.place_cost_exp, placer_opts,
                                      directs, num_directs);
 
-    initial_placement(placer_opts.pad_loc_type, placer_opts.block_loc_type, placer_opts.constraints_file.c_str());
+    initial_placement(placer_opts.pad_loc_type, placer_opts.constraints_file.c_str());
 
     // Update physical pin values
     for (auto block_id : cluster_ctx.clb_nlist.blocks()) {

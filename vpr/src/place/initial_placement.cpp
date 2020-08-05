@@ -392,7 +392,7 @@ static t_physical_tile_type_ptr pick_placement_type(t_logical_block_type_ptr log
     return nullptr;
 }
 
-void initial_placement(std::string pad_loc_type, enum e_block_loc_type block_loc_type, const char* constraints_file) {
+void initial_placement(std::string pad_loc_type, const char* constraints_file) {
     vtr::ScopedStartFinishTimer timer("Initial Placement");
 
     /* Randomly places the blocks to create an initial placement. We rely on
@@ -445,8 +445,8 @@ void initial_placement(std::string pad_loc_type, enum e_block_loc_type block_loc
         place_ctx.block_locs[blk_id].loc = t_pl_loc();
     }
 
-    /*If the user specified block locations using a constraints file, read those locations in here*/
-    if (block_loc_type == LOCKED) {
+    /*If the constraints file is not NULL, read in the block locations from the constraints file here*/
+    if (constraints_file != "") {
         read_user_block_loc(constraints_file);
     }
 

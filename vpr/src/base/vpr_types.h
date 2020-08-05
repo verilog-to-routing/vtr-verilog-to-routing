@@ -504,12 +504,6 @@ enum pfreq {
     PLACE_ALWAYS
 };
 
-/*Are the blocks not locked (free to be moved) or locked in user-specified positions?*/
-enum e_block_loc_type {
-    NOT_LOCKED,
-    LOCKED
-};
-
 ///@brief  Power data for t_netlist structure
 
 struct t_net_power {
@@ -825,10 +819,8 @@ struct t_annealing_sched {
  * place_cost_exp:  Power to which denominator is raised for linear_cong.    *
  * place_chan_width:  The channel width assumed if only one placement is     *
  *                    performed.                                             *
- * pad_loc_type:  Are pins FREE or fixed randomly.                           *
- * block_loc_type: Are blocks fixed from a file.                             *
- * constraints_file:  File to read block locations from if block_loc_type    *
- *                     is LOCKED.                                            *
+ * pad_loc_type:  Are pins free to move during placement or fixed randomly.  *
+ * constraints_file:  File used to lock block locations during placement.    *
  * place_freq:  Should the placement be skipped, done once, or done for each *
  *              channel width in the binary search.                          *
  * recompute_crit_iter: how many temperature stages pass before we recompute *
@@ -881,7 +873,6 @@ struct t_placer_opts {
     float place_cost_exp;
     int place_chan_width;
     std::string pad_loc_type;
-    enum e_block_loc_type block_loc_type;
     std::string constraints_file;
     enum pfreq place_freq;
     int recompute_crit_iter;
