@@ -111,7 +111,6 @@ e_lut lut_mode;		//user-set flag dictating how to treat LUTs (as blackboxes or .
 
 int buffer_count, invert_count, onelut_count;
 int buffers_elim, inverts_elim, oneluts_elim;
-t_net* vcc_net;
 
 e_clean clean_mode;
 

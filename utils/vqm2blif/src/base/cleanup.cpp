@@ -72,7 +72,7 @@ void netlist_cleanup (t_module* module){
 //============================================================================================
 //============================================================================================
 
-void build_netlist (t_module* module, busvec* buses, s_hash** hash_table, t_net*){
+void build_netlist (t_module* module, busvec* buses, s_hash** hash_table){
 
 	//Initialize all nets
 	init_nets(module->array_of_pins, module->number_of_pins, buses, hash_table);
@@ -110,8 +110,6 @@ void init_nets (t_pin_def** pins, int num_pins, busvec* buses, struct s_hash** h
 	t_net temp_net;
 	netvec temp_bus;
 
-	vcc_net = NULL;
-
 	for (int i = 0; i < num_pins; i++){
 		temp_bus.clear();	//reset the temporary bus 
 
@@ -134,12 +132,9 @@ void init_nets (t_pin_def** pins, int num_pins, busvec* buses, struct s_hash** h
 			temp_net.wire_index = j;	
 			temp_bus.push_back(temp_net);
 		}
-
-		if (temp_bus[0].pin->name == string("vcc")){    //Save location of the VCC net for one-LUT removal
-			vcc_net = &temp_bus[0];
-		}
 			
 		buses->push_back(temp_bus);
+
 	}
 }
 
@@ -264,6 +259,10 @@ void remove_one_lut_nodes ( busvec* buses, struct s_hash** hash_table, t_node** 
 	t_node_port_association* prev_port;
 	netvec* prev_bus;
 	t_net* prev_net;
+
+	netvec* vcc_bus = get_bus_from_hash (hash_table, const_cast<char*>("vcc"), buses);
+	VTR_ASSERT(vcc_bus != NULL);
+	t_net* vcc_net = &(vcc_bus->at(0));   //Find any VCC net
 
 	for (int i = 0; i < original_num_nodes; i++){
 		temp_node = nodes[i];
