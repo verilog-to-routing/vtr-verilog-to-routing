@@ -787,20 +787,5 @@ void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
     }
 
     // Check that edges are still partitioned
-    if (partitioned_) {
-        auto& device_ctx = g_vpr_ctx.device();
-        for (size_t i = 0; i < size(); i++) {
-            RRNodeId n(i);
-            bool configurable_partition = true;
-            for (auto e = first_edge(n);
-                 e < last_edge(n);
-                 e = RREdgeId(size_t(e) + 1)) {
-                if (device_ctx.rr_switch_inf[edge_switch(e)].configurable()) {
-                    VTR_ASSERT(configurable_partition);
-                } else {
-                    configurable_partition = false;
-                }
-            }
-        }
-    }
+    VTR_ASSERT_SAFE(!partitioned_ || validate());
 }
