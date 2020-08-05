@@ -7,7 +7,7 @@
 
 #include "catch.hpp"
 
-#include "rr_graph.h"
+#include "edge_groups.h"
 
 namespace {
 
