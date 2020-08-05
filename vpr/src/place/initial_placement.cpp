@@ -445,7 +445,7 @@ void initial_placement(std::string pad_loc_type, const char* constraints_file) {
         place_ctx.block_locs[blk_id].loc = t_pl_loc();
     }
 
-    /*If the constraints file is not NULL, read in the block locations from the constraints file here*/
+    /*Check whether the constraint file is NULL, if it is not read in the block locations from the constraints file here*/
     if (constraints_file != "") {
         read_user_block_loc(constraints_file);
     }
