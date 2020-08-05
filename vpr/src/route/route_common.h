@@ -197,17 +197,16 @@ void push_back_node(
 }
 
 /* Puts an rr_node on the heap with the same condition as node_to_heap,
-     * but do not fix heap property yet as that is more efficiently done from
-     * bottom up with build_heap. Certain information is also added     */
+ * but do not fix heap property yet as that is more efficiently done from
+ * bottom up with build_heap. Certain information is also added     */
 template<typename T>
 void push_back_node_with_info(
     T* heap,
-    int inode, 
+    int inode,
     float total_cost,
-    float backward_path_cost, 
-    float R_upstream, 
+    float backward_path_cost,
+    float R_upstream,
     float backward_path_delay) {
-
     t_heap* hptr = heap->alloc(true);
     hptr->index = inode;
     hptr->cost = total_cost;

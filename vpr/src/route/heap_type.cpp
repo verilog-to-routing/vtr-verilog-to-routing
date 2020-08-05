@@ -60,7 +60,7 @@ HeapStorage::alloc(bool init_data_structs) {
         if (temp_ptr->path_data == nullptr) {
             temp_ptr->path_data = new t_heap_path;
         }
-            
+
         temp_ptr->path_data->path_rr.clear();
         temp_ptr->path_data->edge.clear();
         temp_ptr->path_data->backward_delay = 0.;
@@ -69,7 +69,7 @@ HeapStorage::alloc(bool init_data_structs) {
     } else {
         temp_ptr->path_data = nullptr;
     }
-    
+
     temp_ptr->set_prev_node(NO_PREVIOUS);
     temp_ptr->set_prev_edge(RREdgeId::INVALID());
     return (temp_ptr);

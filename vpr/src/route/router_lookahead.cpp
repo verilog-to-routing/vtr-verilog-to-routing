@@ -88,7 +88,7 @@ float ClassicLookahead::classic_wire_lookahead_cost(int inode, int target_node, 
 }
 
 float ClassicLookahead::get_expected_delay(int inode, int target_node, const t_conn_cost_params& params, float R_upstream) const {
-    (void) params;
+    (void)params;
 
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -113,7 +113,7 @@ float ClassicLookahead::get_expected_delay(int inode, int target_node, const t_c
                      + num_segs_same_dir * num_segs_same_dir * same_data.T_quadratic
                      + num_segs_ortho_dir * num_segs_ortho_dir * ortho_data.T_quadratic
                      + R_upstream * (num_segs_same_dir * same_data.C_load + num_segs_ortho_dir * ortho_data.C_load)
-                     +ipin_data.T_linear;
+                     + ipin_data.T_linear;
 
         return (Tdel);
     } else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */
@@ -160,7 +160,7 @@ float ClassicLookahead::get_expected_cong(int inode, int target_node, const t_co
 }
 
 std::pair<float, float> ClassicLookahead::get_expected_delay_and_cong(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const {
-    (void) R_upstream;
+    (void)R_upstream;
     return std::make_pair(get_expected_delay(node, target_node, params, R_upstream), get_expected_cong(node, target_node, params));
 }
 
@@ -169,17 +169,17 @@ float NoOpLookahead::get_expected_cost(int /*current_node*/, int /*target_node*/
 }
 
 float NoOpLookahead::get_expected_delay(int inode, int target_node, const t_conn_cost_params& params, float R_upstream) const {
-    (void) inode;
-    (void) target_node;
-    (void) params;
-    (void) R_upstream;
+    (void)inode;
+    (void)target_node;
+    (void)params;
+    (void)R_upstream;
     return 0.;
 }
 
 float NoOpLookahead::get_expected_cong(int inode, int target_node, const t_conn_cost_params& params) const {
-    (void) inode;
-    (void) target_node;
-    (void) params;
+    (void)inode;
+    (void)target_node;
+    (void)params;
     return 0.;
 }
 

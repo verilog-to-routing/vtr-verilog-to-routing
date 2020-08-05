@@ -272,7 +272,7 @@ float MapLookahead::get_expected_cost(int current_node, int target_node, const t
 }
 
 float MapLookahead::get_expected_delay(int inode, int target_node, const t_conn_cost_params& params, float R_upstream) const {
-    (void) R_upstream;
+    (void)R_upstream;
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_nodes;
 
@@ -481,7 +481,7 @@ float MapLookahead::get_expected_cong(int inode, int target_node, const t_conn_c
 }
 
 std::pair<float, float> MapLookahead::get_expected_delay_and_cong(int inode, int target_node, const t_conn_cost_params& params, float R_upstream) const {
-    (void) R_upstream;
+    (void)R_upstream;
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_nodes;
 

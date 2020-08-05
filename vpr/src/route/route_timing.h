@@ -56,7 +56,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
                              const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                              std::shared_ptr<const SetupHoldTimingInfo> timing_info,
                              ClusteredPinTimingInvalidator* pin_timing_invalidator,
-                             route_budgets& budgeting_inf, 
+                             route_budgets& budgeting_inf,
                              float worst_neg_slack);
 
 void alloc_timing_driven_route_structs(float** pin_criticality_ptr,

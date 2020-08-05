@@ -147,7 +147,7 @@ void route_budgets::calculate_delay_targets() {
         for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
             int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
             //cap max budget to be bigger or equal than min budget
-            if(delay_max_budget[net_id][ipin] < delay_min_budget[net_id][ipin])
+            if (delay_max_budget[net_id][ipin] < delay_min_budget[net_id][ipin])
                 delay_max_budget[net_id][ipin] = delay_min_budget[net_id][ipin];
             calculate_delay_targets(net_id, pin_id);
         }
@@ -182,7 +182,7 @@ void route_budgets::allocate_slack_using_weights(ClbNetPinsMatrix<float>& net_de
     /*Preprocessing algorithm in order to consider short paths when setting initial maximum budgets.
      * Not necessary unless budgets are really hard to meet*/
     // process_negative_slack_using_minimax();
-    if(negative_hold_slack) {
+    if (negative_hold_slack) {
         process_negative_slack_using_minimax(net_delay, netlist_pin_lookup);
     }
 
@@ -261,14 +261,13 @@ void route_budgets::process_negative_slack_using_minimax(ClbNetPinsMatrix<float>
     std::shared_ptr<SetupHoldTimingInfo> timing_info = nullptr;
     std::shared_ptr<SetupHoldTimingInfo> original_timing_info = nullptr;
 
-
     iteration = 0;
     max_budget_change = 900e-12;
     float second_max_budget_change = 900e-12;
     original_timing_info = perform_sta(net_delay);
 
     while (iteration < 20 && max_budget_change > 5e-12) {
-        if(iteration == 0) {
+        if (iteration == 0) {
             max_budget_change = minimax_PERT(original_timing_info, original_timing_info, delay_max_budget, net_delay, netlist_pin_lookup, HOLD, true, NEGATIVE);
             timing_info = perform_sta(delay_max_budget);
         } else {
@@ -276,7 +275,7 @@ void route_budgets::process_negative_slack_using_minimax(ClbNetPinsMatrix<float>
             max_budget_change = std::max(max_budget_change, second_max_budget_change);
             timing_info = perform_sta(delay_max_budget);
         }
-        
+
         iteration++;
     }
 }
@@ -385,7 +384,7 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> orig_timi
                     temp_budgets[net_id][ipin] += -1 * net_delay[net_id][ipin] * path_slack / total_path_delay;
                     max_budget_change = std::max(max_budget_change, std::abs(net_delay[net_id][ipin] * path_slack / total_path_delay));
                 } else {
-                    if((slack_type == POSITIVE) || (hold_path_slack > 0)) {
+                    if ((slack_type == POSITIVE) || (hold_path_slack > 0)) {
                         temp_budgets[net_id][ipin] += net_delay[net_id][ipin] * path_slack / total_path_delay;
                         max_budget_change = std::max(max_budget_change, std::abs(net_delay[net_id][ipin] * path_slack / total_path_delay));
                     }
@@ -665,7 +664,7 @@ void route_budgets::increase_short_crit(ClusterNetId net_id, float delay_decs) {
     //         delay_min_budget[net_id][ipin] *= 1.5;
     //         keep_budget_in_bounds(delay_min_budget, net_id, pin_id);
     //     }
-        
+
     //     num_times_congested[net_id] = 0;
     // }
 }

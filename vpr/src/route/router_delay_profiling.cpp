@@ -95,7 +95,6 @@ bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const 
 
 //Returns the shortest path delay from src_node to all RR nodes in the RR graph, or NaN if no path exists
 std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const t_router_opts& router_opts) {
-
     auto& device_ctx = g_vpr_ctx.device();
     auto& routing_ctx = g_vpr_ctx.mutable_routing();
 

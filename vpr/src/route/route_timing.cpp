@@ -110,13 +110,13 @@ void reduce_budgets_if_congested(std::vector<ClusterNetId>& rerouted_nets,
                                  int itry);
 
 void increase_short_path_crit_if_congested(std::vector<ClusterNetId>& rerouted_nets,
-                                            route_budgets& budgeting_inf,
-                                            int itry);
+                                           route_budgets& budgeting_inf,
+                                           int itry);
 
 static bool should_route_net(ClusterNetId net_id, CBRR& connections_inf, bool if_force_reroute);
 static bool early_exit_heuristic(const t_router_opts& router_opts, const WirelengthInfo& wirelength_info);
 
- static bool check_hold(const t_router_opts& router_opts, float worst_neg_slack);
+static bool check_hold(const t_router_opts& router_opts, float worst_neg_slack);
 
 struct more_sinks_than {
     inline bool operator()(const ClusterNetId net_index1, const ClusterNetId net_index2) {
@@ -881,15 +881,15 @@ void reduce_budgets_if_congested(std::vector<ClusterNetId>& rerouted_nets,
         /*Problematic if the overuse nodes are positive or declining at a slow rate
          * Must be more than 9 iterations to have a valid slope*/
         // if (slope > CONGESTED_SLOPE_VAL && itry >= 9) {
-            // VTR_LOG("Lowering budgets\n");
-            // budgeting_inf.lower_budgets(1.2);
+        // VTR_LOG("Lowering budgets\n");
+        // budgeting_inf.lower_budgets(1.2);
         // }
     }
 }
 
 void increase_short_path_crit_if_congested(std::vector<ClusterNetId>& rerouted_nets,
-                                            route_budgets& budgeting_inf,
-                                            int itry) {
+                                           route_budgets& budgeting_inf,
+                                           int itry) {
     if (budgeting_inf.if_set() && itry > 9) {
         for (auto net_id : rerouted_nets) {
             if (budgeting_inf.get_should_reroute(net_id)) {
@@ -941,7 +941,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
                              const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                              std::shared_ptr<SetupHoldTimingInfo> timing_info,
                              ClusteredPinTimingInvalidator* pin_timing_invalidator,
-                             route_budgets& budgeting_inf, 
+                             route_budgets& budgeting_inf,
                              float worst_neg_slack) {
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
@@ -959,15 +959,15 @@ bool timing_driven_route_net(ConnectionRouter& router,
 
     t_rt_node* rt_root;
     rt_root = setup_routing_resources(itry,
-                                        net_id,
-                                        num_sinks,
-                                        router_opts.min_incremental_reroute_fanout,
-                                        connections_inf,
-                                        rt_node_of_sink,
-                                        check_hold(router_opts, worst_neg_slack));
+                                      net_id,
+                                      num_sinks,
+                                      router_opts.min_incremental_reroute_fanout,
+                                      connections_inf,
+                                      rt_node_of_sink,
+                                      check_hold(router_opts, worst_neg_slack));
 
     bool high_fanout = is_high_fanout(num_sinks, router_opts.high_fanout_threshold);
-    
+
     SpatialRouteTreeLookup spatial_route_tree_lookup;
     if (high_fanout) {
         spatial_route_tree_lookup = build_route_tree_spatial_lookup(net_id, rt_root);
@@ -1076,7 +1076,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
             conn_delay_budget.short_path_criticality = budgeting_inf.get_crit_short_path(net_id, target_pin);
             conn_delay_budget.routing_budgets_algorithm = router_opts.routing_budgets_algorithm;
         }
-        
+
         // VTR_LOG_DEBUG("Routing Net %zu (%zu sinks) with delay budgets (%s): <%e, %e, %e> crit: %f\n", size_t(net_id), num_sinks, budgeting_inf.if_set() ? "true" : "false", conn_delay_budget.min_delay, conn_delay_budget.target_delay, conn_delay_budget.max_delay, conn_delay_budget.short_path_criticality);
         profiling::conn_start();
 
@@ -1405,7 +1405,6 @@ static t_rt_node* setup_routing_resources(int itry,
             //Since we have a valid partial routing (to at least one SINK)
             //we need to make sure the traceback is synchronized to the route tree
             traceback_from_route_tree(net_id, rt_root, reached_rt_sinks.size());
-
 
             // put the updated occupancies of the route tree nodes back into pathfinder
             pathfinder_update_path_occupancy(route_ctx.trace[net_id].head, 1);
@@ -1983,7 +1982,7 @@ bool should_setup_lower_bound_connection_delays(int itry, const t_router_opts& r
     //     return true;
     // }
     (void)router_opts;
-    if(itry == 1) return true;
+    if (itry == 1) return true;
 
     return false;
 }
