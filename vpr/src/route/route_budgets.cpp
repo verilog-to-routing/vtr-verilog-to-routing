@@ -769,8 +769,7 @@ void route_budgets::print_route_budget(std::string filename, ClbNetPinsMatrix<fl
         fp << std::endl
            << "Net: " << size_t(net_id) << "            ";
         for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
-            int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
-            fp << cluster_ctx.clb_nlist.net_sinks(net_id).size() << " ";
+            fp << cluster_ctx.clb_nlist.net_sinks(net_id).size() << " " << (size_t)pin_id;
         }
     }
 

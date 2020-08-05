@@ -84,8 +84,6 @@ void HeapStorage::free(t_heap* hptr) {
 void HeapStorage::free_all_memory() {
     VTR_ASSERT(num_heap_allocated_ == 0);
 
-    bool free_path_heap = false;
-
     if (heap_free_head_ != nullptr) {
         t_heap* curr = heap_free_head_;
         while (curr) {

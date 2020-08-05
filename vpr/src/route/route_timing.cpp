@@ -107,18 +107,16 @@ static bool timing_driven_check_net_delays(ClbNetPinsMatrix<float>& net_delay);
 
 void reduce_budgets_if_congested(std::vector<ClusterNetId>& rerouted_nets,
                                  route_budgets& budgeting_inf,
-                                 CBRR& connections_inf,
                                  int itry);
 
 void increase_short_path_crit_if_congested(std::vector<ClusterNetId>& rerouted_nets,
                                             route_budgets& budgeting_inf,
-                                            CBRR& connections_inf,
                                             int itry);
 
 static bool should_route_net(ClusterNetId net_id, CBRR& connections_inf, bool if_force_reroute);
 static bool early_exit_heuristic(const t_router_opts& router_opts, const WirelengthInfo& wirelength_info);
 
- static bool check_hold(const t_router_opts& router_opts, std::shared_ptr<const SetupHoldTimingInfo> timing_info, float worst_neg_slack);
+ static bool check_hold(const t_router_opts& router_opts, float worst_neg_slack);
 
 struct more_sinks_than {
     inline bool operator()(const ClusterNetId net_index1, const ClusterNetId net_index2) {
@@ -143,7 +141,6 @@ static void print_route_status(int itry,
 
 static void print_router_criticality_histogram(const SetupTimingInfo& timing_info,
                                                const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
-static void print_delay_budget_info(ClusterNetId net_id, route_budgets& budgeting_info);
 
 static bool is_high_fanout(int fanout, int fanout_threshold);
 
@@ -608,7 +605,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
             /* Avoid overflow for high iteration counts, even if acc_cost is big */
             // Increase short path criticality if it's having a hard time resolving hold violations due to congestion
             if (budgeting_inf.if_set()) {
-                increase_short_path_crit_if_congested(rerouted_nets, budgeting_inf, connections_inf, itry);
+                increase_short_path_crit_if_congested(rerouted_nets, budgeting_inf, itry);
                 // if (itry > 5) budgeting_inf.lower_budgets(-300e-12, timing_info);
             }
 
@@ -872,8 +869,8 @@ timing_driven_route_structs::~timing_driven_route_structs() {
 
 void reduce_budgets_if_congested(std::vector<ClusterNetId>& rerouted_nets,
                                  route_budgets& budgeting_inf,
-                                 CBRR& connections_inf,
                                  int itry) {
+    (void)rerouted_nets;
     if (budgeting_inf.if_set() && itry > 20) {
         // for (auto net_id : rerouted_nets) {
         //     if (budgeting_inf.get_should_reroute(net_id)) {
@@ -894,9 +891,7 @@ void reduce_budgets_if_congested(std::vector<ClusterNetId>& rerouted_nets,
 
 void increase_short_path_crit_if_congested(std::vector<ClusterNetId>& rerouted_nets,
                                             route_budgets& budgeting_inf,
-                                            CBRR& connections_inf,
                                             int itry) {
-    auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     if (budgeting_inf.if_set() && itry > 9) {
         for (auto net_id : rerouted_nets) {
             if (budgeting_inf.get_should_reroute(net_id)) {
@@ -979,7 +974,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
                                         router_opts.min_incremental_reroute_fanout,
                                         connections_inf,
                                         rt_node_of_sink,
-                                        check_hold(router_opts, timing_info, worst_neg_slack));
+                                        check_hold(router_opts, worst_neg_slack));
 
     bool high_fanout = is_high_fanout(num_sinks, router_opts.high_fanout_threshold);
     
@@ -1622,7 +1617,7 @@ static bool early_exit_heuristic(const t_router_opts& router_opts, const Wirelen
     return false;
 }
 
-static bool check_hold(const t_router_opts& router_opts, std::shared_ptr<const SetupHoldTimingInfo> timing_info, float worst_neg_slack) {
+static bool check_hold(const t_router_opts& router_opts, float worst_neg_slack) {
     if (router_opts.routing_budgets_algorithm != YOYO) {
         return false;
     } else if (worst_neg_slack == 0) {
@@ -2005,6 +2000,7 @@ bool should_setup_lower_bound_connection_delays(int itry, const t_router_opts& r
     // } else if (router_opts.routing_budgets_algorithm == YOYO && itry % 10 == 1 && itry < 25) {
     //     return true;
     // }
+    (void)router_opts;
     if(itry == 1) return true;
 
     return false;
@@ -2152,15 +2148,5 @@ static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahea
 
             net_delay[net_id][ipin] = est_delay;
         }
-    }
-}
-
-static void print_delay_budget_info(ClusterNetId net_id, route_budgets& budgeting_info) {
-    auto& route_ctx = g_vpr_ctx.routing();
-
-    VTR_LOG("Printing delay budget info for net %d\n", net_id);
-    
-    for(auto& pin : route_ctx.net_rr_terminals[net_id]) {
-        VTR_LOG("IPIN %d: <%f, %f, %f>\n", pin, budgeting_info.get_min_delay_budget(net_id, pin), budgeting_info.get_delay_target(net_id, pin), budgeting_info.get_max_delay_budget(net_id, pin));
     }
 }

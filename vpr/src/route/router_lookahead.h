@@ -15,7 +15,7 @@ class RouterLookahead {
     virtual float get_expected_cost(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const = 0;
 
     virtual float get_expected_delay(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const = 0;
-    virtual float get_expected_cong(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const = 0;
+    virtual float get_expected_cong(int node, int target_node, const t_conn_cost_params& params) const = 0;
     virtual std::pair<float, float> get_expected_delay_and_cong(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const = 0;
 
     // Compute router lookahead (if needed).
@@ -59,7 +59,7 @@ class ClassicLookahead : public RouterLookahead {
   public:
     float get_expected_cost(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
     float get_expected_delay(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
-    float get_expected_cong(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
+    float get_expected_cong(int node, int target_node, const t_conn_cost_params& params) const override;
     std::pair<float, float> get_expected_delay_and_cong(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
 
     void compute(const std::vector<t_segment_inf>& /*segment_inf*/) override {
@@ -80,7 +80,7 @@ class NoOpLookahead : public RouterLookahead {
   protected:
     float get_expected_cost(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
     float get_expected_delay(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
-    float get_expected_cong(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
+    float get_expected_cong(int node, int target_node, const t_conn_cost_params& params) const override;
     std::pair<float, float> get_expected_delay_and_cong(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const override;
 
     void compute(const std::vector<t_segment_inf>& /*segment_inf*/) override {
