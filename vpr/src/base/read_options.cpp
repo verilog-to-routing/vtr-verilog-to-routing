@@ -1608,7 +1608,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .help(
             "Fixes block locations during placement. Valid options:\n"
             " * path to a file specifying block locations (.place format with block locations specified).")
-        .default_value("not_locked")
+        .default_value("")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<e_place_algorithm, ParsePlaceAlgorithm>(args.PlaceAlgorithm, "--place_algorithm")
@@ -2254,10 +2254,7 @@ void set_conditional_defaults(t_options& args) {
     }
 
     //Are the blocks locked to locations given by a constraints file?
-    if (std::string(args.constraints_file) == "not_locked") {
-        args.block_loc_type.set(NOT_LOCKED, Provenance::INFERRED);
-    } else {
-        args.block_loc_type.set(LOCKED, Provenance::INFERRED);
+    if (std::string(args.constraints_file) != "") {
         VTR_ASSERT(!args.constraints_file.value().empty());
     }
 
