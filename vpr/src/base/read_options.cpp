@@ -1596,7 +1596,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("0.25")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_grp.add_argument(args.pad_loc_file, "--fix_pins")
+    place_grp.add_argument(args.pad_loc_type, "--fix_pins")
         .help(
             "Fixes I/O pad locations randomly during placement. Valid options:\n"
             " * 'free' allows placement to optimize pad locations\n"
@@ -2251,19 +2251,6 @@ void set_conditional_defaults(t_options& args) {
         args.anneal_sched_type.set(USER_SCHED, Provenance::INFERRED);
     } else {
         args.anneal_sched_type.set(AUTO_SCHED, Provenance::INFERRED); // Otherwise use the automatic schedule
-    }
-
-    //Are the pads free to be moved during placement or randomly locked to certain locations?
-    if (std::string(args.pad_loc_file) == "free") {
-        args.pad_loc_type.set(FREE, Provenance::INFERRED);
-
-        args.pad_loc_file.set("", Provenance::SPECIFIED);
-    } else if (std::string(args.pad_loc_file) == "random") {
-        args.pad_loc_type.set(RANDOM, Provenance::INFERRED);
-
-        args.pad_loc_file.set("", Provenance::SPECIFIED);
-    } else {
-        VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown I/O pad location type\n");
     }
 
     //Are the blocks locked to locations given by a constraints file?

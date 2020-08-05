@@ -511,15 +511,12 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
         }
 
         VTR_LOG("PlacerOpts.pad_loc_type: ");
-        switch (PlacerOpts.pad_loc_type) {
-            case FREE:
-                VTR_LOG("FREE\n");
-                break;
-            case RANDOM:
-                VTR_LOG("RANDOM\n");
-                break;
-            default:
-                VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown I/O pad location type\n");
+        if (PlacerOpts.pad_loc_type == "free") {
+        	VTR_LOG("FREE\n");
+        } else if (PlacerOpts.pad_loc_type == "random") {
+        	VTR_LOG("RANDOM\n");
+        } else {
+        	VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown I/O pad location type\n");
         }
 
         VTR_LOG("PlacerOpts.block_loc_type: ");
@@ -682,5 +679,6 @@ static void ShowPackerOpts(const t_packer_opts& PackerOpts) {
     VTR_LOG("PackerOpts.inter_cluster_net_delay: %f\n", PackerOpts.inter_cluster_net_delay);
     VTR_LOG("PackerOpts.timing_driven: %s", (PackerOpts.timing_driven ? "true\n" : "false\n"));
     VTR_LOG("PackerOpts.target_external_pin_util: %s", vtr::join(PackerOpts.target_external_pin_util, " ").c_str());
+    VTR_LOG("\n");
     VTR_LOG("\n");
 }
