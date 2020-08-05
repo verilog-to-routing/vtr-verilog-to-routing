@@ -152,6 +152,7 @@ struct t_options {
     argparse::ArgValue<bool> generate_rr_node_overuse_report;
     argparse::ArgValue<e_node_reorder_algorithm> reorder_rr_graph_nodes_algorithm;
     argparse::ArgValue<int> reorder_rr_graph_nodes_threshold;
+    argparse::ArgValue<int> reorder_rr_graph_nodes_seed;
 
     /* Timing-driven router options only */
     argparse::ArgValue<float> astar_fac;

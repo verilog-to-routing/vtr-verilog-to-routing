@@ -166,7 +166,9 @@ struct ParseRouterAlgorithm {
 struct ParseNodeReorderAlgorithm {
     ConvertedValue<e_node_reorder_algorithm> from_str(std::string str) {
         ConvertedValue<e_node_reorder_algorithm> conv_value;
-        if (str == "degree_bfs")
+        if (str == "none")
+            conv_value.set_value(DONT_REORDER);
+        else if (str == "degree_bfs")
             conv_value.set_value(DEGREE_BFS);
         else if (str == "random_shuffle")
             conv_value.set_value(RANDOM_SHUFFLE);
@@ -180,7 +182,9 @@ struct ParseNodeReorderAlgorithm {
 
     ConvertedValue<std::string> to_str(e_node_reorder_algorithm val) {
         ConvertedValue<std::string> conv_value;
-        if (val == DEGREE_BFS)
+        if (val == DONT_REORDER)
+            conv_value.set_value("none");
+        else if (val == DEGREE_BFS)
             conv_value.set_value("degree_bfs");
         else {
             VTR_ASSERT(val == RANDOM_SHUFFLE);
@@ -190,7 +194,7 @@ struct ParseNodeReorderAlgorithm {
     }
 
     std::vector<std::string> default_choices() {
-        return {"degree_bfs", "random_shuffle"};
+        return {"none", "degree_bfs", "random_shuffle"};
     }
 };
 
@@ -1931,16 +1935,23 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     route_grp.add_argument<e_node_reorder_algorithm, ParseNodeReorderAlgorithm>(args.reorder_rr_graph_nodes_algorithm, "--reorder_rr_graph_nodes_algorithm")
         .help(
             "Specifies the node reordering algorithm to use.\n"
+            " * none: don't reorder nodes\n"
             " * degree_bfs: sort by degree and then by BFS\n"
             " * random_shuffle: a random shuffle\n")
-        .default_value("degree_bfs")
-        .choices({"degree_bfs", "random_shuffle"})
+        .default_value("none")
+        .choices({"node", "degree_bfs", "random_shuffle"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument(args.reorder_rr_graph_nodes_threshold, "--reorder_rr_graph_nodes_threshold")
         .help(
-            "Reorder rr_graph nodes to optimize memory layout above this number of nodes, or -1 to disable.")
-        .default_value("-1")
+            "Reorder rr_graph nodes to optimize memory layout above this number of nodes.")
+        .default_value("0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_grp.add_argument(args.reorder_rr_graph_nodes_seed, "--reorder_rr_graph_nodes_seed")
+        .help(
+            "Pseudo-random number generator seed used for the random_shuffle reordering algorithm")
+        .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& route_timing_grp = parser.add_argument_group("timing-driven routing options");

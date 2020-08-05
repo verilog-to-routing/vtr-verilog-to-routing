@@ -86,6 +86,7 @@ void reorder_rr_graph_nodes(const t_router_opts& router_opts) {
     auto& graph = device_ctx.rr_nodes;
     size_t v_num = graph.size();
 
+    if (router_opts.reorder_rr_graph_nodes_algorithm == DONT_REORDER) return;
     if (router_opts.reorder_rr_graph_nodes_threshold < 0 || v_num < (size_t)router_opts.reorder_rr_graph_nodes_threshold) return;
 
     vtr::ScopedStartFinishTimer timer("Reordering rr_graph nodes");
@@ -127,8 +128,7 @@ void reorder_rr_graph_nodes(const t_router_opts& router_opts) {
                  return deg_a > deg_b || (deg_a == deg_b && bfs_idx[a] < bfs_idx[b]);
              });
     } else if (router_opts.reorder_rr_graph_nodes_algorithm == RANDOM_SHUFFLE) {
-        std::random_device rd;
-        std::mt19937 g(rd());
+        std::mt19937 g(router_opts.reorder_rr_graph_nodes_seed);
         std::shuffle(src_order.begin(), src_order.end(), g);
     }
     vtr::vector<RRNodeId, RRNodeId> dest_order(v_num);
