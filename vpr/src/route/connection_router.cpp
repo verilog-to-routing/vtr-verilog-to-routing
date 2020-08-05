@@ -752,7 +752,7 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
     float total_cost = 0.;
     const t_conn_delay_budget* delay_budget = cost_params.delay_budget;
 
-    if (delay_budget && delay_budget->routing_budgets_algorithm == YOYO) {
+    if (delay_budget && delay_budget->routing_budgets_algorithm == YOYO && to->path_data != nullptr) {
         to->path_data->backward_delay += cost_params.criticality * Tdel;
         to->path_data->backward_cong += (1. - cost_params.criticality) * get_rr_cong_cost(to_node, cost_params.pres_fac);
 
