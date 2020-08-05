@@ -41,7 +41,9 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_common_setup(
     const t_conn_cost_params cost_params,
     t_bb bounding_box,
     std::set<int>* route_tree_nodes) {
-    bool run_rcv = cost_params.delay_budget && route_tree_nodes != nullptr;
+
+    // Determine whether to use RCV data structures and functions or not
+    bool run_rcv = cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm == YOYO;
 
     //Re-add route nodes from the existing route tree to the heap.
     //They need to be repushed onto the heap since each node's cost is target specific.
@@ -222,6 +224,9 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(int sin
 
         //Have we found the target?
         if (inode == sink_node) {
+            // If we're running RCV, the path will be stored in the path_data->path_rr vector
+            // This is then placed into the traceback so that the correct path is returned
+            // TODO: This can be eliminated by modifying the actual traceback function in route_timing
             if (cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm == YOYO) {
                 for (unsigned i = 1; i < cheapest->path_data->edge.size() - 1; i++) {
                     int node_2 = cheapest->path_data->path_rr[i];
@@ -272,6 +277,8 @@ std::vector<t_heap> ConnectionRouter<Heap>::timing_driven_find_all_shortest_path
 
     //Add the route tree to the heap with no specific target node
     int target_node = OPEN;
+
+    // Don't need to run RCV when this is called, it's only called by the placer
     add_route_tree_to_heap(rt_root, target_node, cost_params, false);
     heap_.build_heap(); // via sifting down everything
 
@@ -563,6 +570,7 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
                                                        bool run_rcv) {
     t_heap next;
     
+    // Initalize RCV data struct if needed
     if (run_rcv) {
         next.path_data = new t_heap_path;
     }
@@ -571,6 +579,7 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
     next.cost = std::numeric_limits<float>::infinity(); //Not used directly
     next.backward_path_cost = current->backward_path_cost;
 
+    // path_data variables are initialized to current values
     if (run_rcv && current->path_data) {
         next.path_data->backward_cong = current->path_data->backward_cong;
         next.path_data->backward_delay = current->path_data->backward_delay;
@@ -599,6 +608,7 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
         //
         //Pre-heap prune to keep the heap small, by not putting paths which are known to be
         //sub-optimal (at this point in time) into the heap.
+        // Alloc(bool) allocates RCV structures, otherwise they're set to nullptr
         t_heap* next_ptr;
         if(run_rcv)
             next_ptr = heap_.alloc(true);
@@ -874,7 +884,6 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
                         inode, tot_cost, NO_PREVIOUS, RREdgeId::INVALID(), 
                         backward_path_cost, R_upstream);
     } else {
-        // TODO: Fix this code for RCV
 
         float expected_total_cost;
         float expected_delay = router_lookahead_.get_expected_delay(inode, target_node, cost_params, R_upstream);

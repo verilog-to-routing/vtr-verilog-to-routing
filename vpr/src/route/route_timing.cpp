@@ -397,6 +397,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
             ++itry_since_last_convergence;
         }
 
+        // Calculate this once and pass it into net routing to check if should reroute for hold
         float worst_negative_slack = 0;
         if (budgeting_inf.if_set()) worst_negative_slack = timing_info->hold_worst_negative_slack();
 
@@ -563,7 +564,6 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
             break;
         }
 
-
         //Estimate at what iteration we will converge to a legal routing
         if (overuse_info.overused_nodes > ROUTING_PREDICTOR_MIN_ABSOLUTE_OVERUSE_THRESHOLD) {
             //Only consider aborting if we have a significant number of overused resources
@@ -600,15 +600,14 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
         } else {
             pres_fac *= router_opts.pres_fac_mult;
 
+            /* Avoid overflow for high iteration counts, even if acc_cost is big */
             pres_fac = update_pres_fac(std::min(pres_fac, static_cast<float>(HUGE_POSITIVE_FLOAT / 1e5)));
 
-            /* Avoid overflow for high iteration counts, even if acc_cost is big */
             // Increase short path criticality if it's having a hard time resolving hold violations due to congestion
             if (budgeting_inf.if_set()) {
                 increase_short_path_crit_if_congested(rerouted_nets, budgeting_inf, itry);
                 // if (itry > 5) budgeting_inf.lower_budgets(-300e-12, timing_info);
             }
-
         }
 
         if (router_congestion_mode == RouterCongestionMode::CONFLICTED) {
@@ -660,11 +659,10 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
 
                 //load budgets using information from uncongested delay information
                 budgeting_inf.load_route_budgets(net_delay, timing_info, netlist_pin_lookup, router_opts);
-                
                 /*for debugging purposes*/
-                if (budgeting_inf.if_set()) {
-                    budgeting_inf.print_route_budget(std::string("route_budgets_") + std::to_string(itry) + ".txt", net_delay);
-                }
+                // if (budgeting_inf.if_set()) {
+                //     budgeting_inf.print_route_budget(std::string("route_budgets_") + std::to_string(itry) + ".txt", net_delay);
+                // }
 
             } else {
                 bool stable_routing_configuration = true;
@@ -904,14 +902,6 @@ void increase_short_path_crit_if_congested(std::vector<ClusterNetId>& rerouted_n
     }
 }
 
-// void increase_min_budget_for_hold(int itry,
-//                                     route_budgets& budgeting_inf,
-//                                     std::shared_ptr<SetupHoldTimingInfo> timing_info) {
-//     if (itry > 10 && itry % 5 == 0) {
-//         if()
-//     }
-// }
-
 int get_max_pins_per_net() {
     int max_pins_per_net = 0;
 
@@ -986,13 +976,6 @@ bool timing_driven_route_net(ConnectionRouter& router,
     // after this point the route tree is correct
     // remaining_targets from this point on are the **pin indices** that have yet to be routed
     auto& remaining_targets = connections_inf.get_remaining_targets();
-
-    /* TODO: This can be initialized in setup_routing_resources
-     * Add the route tree to the route tree nodes set */
-
-    // if (router_opts.routing_budgets_algorithm == YOYO) {
-    //     add_route_tree_to_set(rt_root, &route_tree_nodes);
-    // }
 
     // calculate criticality of remaining target pins
     for (int ipin : remaining_targets) {
@@ -1180,7 +1163,6 @@ static bool timing_driven_pre_route_to_clock_root(
 
     bool found_path;
     t_heap cheapest;
-
     std::tie(found_path, cheapest) = router.timing_driven_route_connection_from_route_tree(
         rt_root,
         sink_node,
