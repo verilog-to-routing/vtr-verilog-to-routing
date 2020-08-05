@@ -742,6 +742,7 @@ t_rr_graph_view t_rr_graph_storage::view() const {
 
 void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
                                  const vtr::vector<RRNodeId, RRNodeId>& inverse_order) {
+    VTR_ASSERT_SAFE(validate());
     {
         auto old_node_storage = node_storage_;
 
@@ -786,6 +787,5 @@ void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
         }
     }
 
-    // Check that edges are still partitioned
-    VTR_ASSERT_SAFE(!partitioned_ || validate());
+    VTR_ASSERT_SAFE(validate());
 }
