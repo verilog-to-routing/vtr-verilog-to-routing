@@ -4,15 +4,15 @@
         "blif": "integer_outside.blif",
         "exit": 134,
         "errors": [
-            "OUTPUT_BLIF Vector files differ."
+            "[OUTPUT_BLIF] Vector files differ."
         ],
         "warnings": [
-            "OUTPUT_BLIF Vector 0 mismatch:",
-            "OUTPUT_BLIF Vector 1 mismatch:",
-            "OUTPUT_BLIF Vector 2 mismatch:",
-            "OUTPUT_BLIF Vector 3 mismatch:",
-            "OUTPUT_BLIF Vector 4 mismatch:",
-            "OUTPUT_BLIF Vector 5 mismatch:"
+            "[OUTPUT_BLIF] Vector 0 mismatch:",
+            "[OUTPUT_BLIF] Vector 1 mismatch:",
+            "[OUTPUT_BLIF] Vector 2 mismatch:",
+            "[OUTPUT_BLIF] Vector 3 mismatch:",
+            "[OUTPUT_BLIF] Vector 4 mismatch:",
+            "[OUTPUT_BLIF] Vector 5 mismatch:"
         ]
     },
     "integer/integer_port/no_arch": {
@@ -20,14 +20,14 @@
         "blif": "integer_port.blif",
         "exit": 134,
         "errors": [
-            "OUTPUT_BLIF Vector files differ."
+            "[OUTPUT_BLIF] Vector files differ."
         ],
         "warnings": [
-            "OUTPUT_BLIF Vector 0 mismatch:",
-            "OUTPUT_BLIF Vector 1 mismatch:",
-            "OUTPUT_BLIF Vector 3 mismatch:",
-            "OUTPUT_BLIF Vector 4 mismatch:",
-            "OUTPUT_BLIF Vector 5 mismatch:"
+            "[OUTPUT_BLIF] Vector 0 mismatch:",
+            "[OUTPUT_BLIF] Vector 1 mismatch:",
+            "[OUTPUT_BLIF] Vector 3 mismatch:",
+            "[OUTPUT_BLIF] Vector 4 mismatch:",
+            "[OUTPUT_BLIF] Vector 5 mismatch:"
         ]
     },
     "DEFAULT": {

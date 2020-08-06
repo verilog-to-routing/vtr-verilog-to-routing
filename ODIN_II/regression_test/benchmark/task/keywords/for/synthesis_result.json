@@ -3,7 +3,7 @@
         "test_name": "for/generate_for_int/no_arch",
         "verilog": "generate_for_int.v",
         "warnings": [
-            "AST generate_for.vh:6 Odin does not handle signed GENVAR (i)"
+            "generate_for.vh:6:1 [AST] Odin does not handle signed GENVAR (i)"
         ],
         "max_rss(MiB)": 19.3,
         "exec_time(ms)": 14.4,
@@ -16,7 +16,7 @@
         "test_name": "for/generate_for_ultra_wide/no_arch",
         "verilog": "generate_for_ultra_wide.v",
         "warnings": [
-            "AST generate_for.vh:6 Odin does not handle signed GENVAR (i)"
+            "generate_for.vh:6:1 [AST] Odin does not handle signed GENVAR (i)"
         ],
         "max_rss(MiB)": 1521.5,
         "exec_time(ms)": 7026.5,
@@ -29,7 +29,7 @@
         "test_name": "for/generate_for_wide/no_arch",
         "verilog": "generate_for_wide.v",
         "warnings": [
-            "AST generate_for.vh:6 Odin does not handle signed GENVAR (i)"
+            "generate_for.vh:6:1 [AST] Odin does not handle signed GENVAR (i)"
         ],
         "max_rss(MiB)": 11.9,
         "exec_time(ms)": 3.8,

@@ -3,7 +3,7 @@
         "test_name": "genvar/generate_for/no_arch",
         "verilog": "generate_for.v",
         "warnings": [
-            "AST generate_for.v:7 Odin does not handle signed GENVAR (i)"
+            "generate_for.v:7:1 [AST] Odin does not handle signed GENVAR (i)"
         ],
         "max_rss(MiB)": 12.3,
         "exec_time(ms)": 2.6,

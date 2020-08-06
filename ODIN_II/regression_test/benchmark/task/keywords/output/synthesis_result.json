@@ -3,12 +3,12 @@
         "test_name": "output/multiple_declarations/no_arch",
         "verilog": "multiple_declarations.v",
         "warnings": [
-            "AST multiple_declarations.v:3 Odin does not handle signed WIRE (a)",
-            "AST multiple_declarations.v:3 Odin does not handle signed WIRE (b)",
-            "AST multiple_declarations.v:3 Odin does not handle signed WIRE (c)",
-            "AST multiple_declarations.v:7 Odin does not handle signed WIRE (h)",
-            "AST multiple_declarations.v:7 Odin does not handle signed WIRE (i)",
-            "AST multiple_declarations.v:7 Odin does not handle signed WIRE (j)"
+            "multiple_declarations.v:3:1 [AST] Odin does not handle signed WIRE (a)",
+            "multiple_declarations.v:3:1 [AST] Odin does not handle signed WIRE (b)",
+            "multiple_declarations.v:3:1 [AST] Odin does not handle signed WIRE (c)",
+            "multiple_declarations.v:7:1 [AST] Odin does not handle signed WIRE (h)",
+            "multiple_declarations.v:7:1 [AST] Odin does not handle signed WIRE (i)",
+            "multiple_declarations.v:7:1 [AST] Odin does not handle signed WIRE (j)"
         ],
         "Pi": 11,
         "Po": 11,
@@ -20,7 +20,7 @@
         "verilog": "output_port_failure.v",
         "exit": 134,
         "errors": [
-            "AST output_port_failure.v:5 Module already has output with this name b"
+            "output_port_failure.v:5:1 [AST] Module already has output with this name b"
         ]
     },
     "DEFAULT": {

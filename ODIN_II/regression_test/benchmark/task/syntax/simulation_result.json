@@ -1553,7 +1553,7 @@
         "blif": "no_input.blif",
         "exit": 134,
         "errors": [
-            "PARSE_BLIF Error: Could not hook up the pin and_primitive^BUF~1: not available."
+            "[PARSE_BLIF] Error: Could not hook up the pin and_primitive^BUF~1: not available."
         ]
     },
     "syntax/no_input/no_arch": {
@@ -1561,7 +1561,7 @@
         "blif": "no_input.blif",
         "exit": 134,
         "errors": [
-            "PARSE_BLIF Error: Could not hook up the pin and_primitive^BUF~1: not available."
+            "[PARSE_BLIF] Error: Could not hook up the pin and_primitive^BUF~1: not available."
         ]
     },
     "syntax/no_output/k6_frac_N10_frac_chain_mem32K_40nm": {
