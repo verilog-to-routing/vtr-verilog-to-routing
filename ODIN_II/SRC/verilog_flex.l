@@ -49,7 +49,7 @@ OTHER DEALINGS IN THE SOFTWARE.
     BEGIN(top_flex_state("Popped to ")); \
     }
 
-#define PUSH_STATE(state)	{            \
+#define PUSH_STATE(state)    {            \
     flex_state.push_back(state);         \
     BEGIN(top_flex_state("Pushed to ")); \
     }
@@ -148,260 +148,260 @@ vPUNCT [\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
     /*********************************
      * Preprocessor directives
      **/
-<VAR_PARSE>{vWORD}					{ MP(); add_args_to_define(yytext); }
-<VAR_PARSE>"..."					{ MP(); add_args_to_define(yytext); }
-<VAR_PARSE>[\,]						{  }
-<VAR_PARSE>[\)]						{ CHANGE_STATE(DEFINE_BODY); }
-<PARSE_DEFINE>{defineWORD}[\(]		{ MP(); new_define_t(yytext); CHANGE_STATE(VAR_PARSE); }
-<PARSE_DEFINE>{defineWORD}			{ MP(); new_define_t(yytext); CHANGE_STATE(DEFINE_BODY); }
-<INITIAL>"`define"					{ MP(); PUSH_STATE(PARSE_DEFINE); }
+<VAR_PARSE>{vWORD}                  { MP(); add_args_to_define(yytext); }
+<VAR_PARSE>"..."                    { MP(); add_args_to_define(yytext); }
+<VAR_PARSE>[\,]                     {  }
+<VAR_PARSE>[\)]                     { CHANGE_STATE(DEFINE_BODY); }
+<PARSE_DEFINE>{defineWORD}[\(]      { MP(); new_define_t(yytext); CHANGE_STATE(VAR_PARSE); }
+<PARSE_DEFINE>{defineWORD}          { MP(); new_define_t(yytext); CHANGE_STATE(DEFINE_BODY); }
+<INITIAL>"`define"                  { MP(); PUSH_STATE(PARSE_DEFINE); }
 
-<DEFINE_REMOVAL>{vWORD}				{ MP(); free_define_t(yytext); POP_STATE(); }
-<INITIAL>"`undef"					{ MP(); PUSH_STATE(DEFINE_REMOVAL); }
+<DEFINE_REMOVAL>{vWORD}             { MP(); free_define_t(yytext); POP_STATE(); }
+<INITIAL>"`undef"                   { MP(); PUSH_STATE(DEFINE_REMOVAL); }
 
-<CONDITION>{vWORD}					{ MP(); CHANGE_STATE( ((ifdef(yytext))?  INITIAL: SKIP) ); }
-<NEG_CONDITION>{vWORD}				{ MP(); CHANGE_STATE( ((ifdef(yytext))?  SKIP: INITIAL) ); }
+<CONDITION>{vWORD}                  { MP(); CHANGE_STATE( ((ifdef(yytext))?  INITIAL: SKIP) ); }
+<NEG_CONDITION>{vWORD}              { MP(); CHANGE_STATE( ((ifdef(yytext))?  SKIP: INITIAL) ); }
 
     /* since the condition did not hold true, we evaluate these statement */
-<SKIP>"`elsif"						{ MP(); CHANGE_STATE(CONDITION); }
-<SKIP>"`else"						{ MP(); CHANGE_STATE(INITIAL); }
+<SKIP>"`elsif"                      { MP(); CHANGE_STATE(CONDITION); }
+<SKIP>"`else"                       { MP(); CHANGE_STATE(INITIAL); }
 
     /* since the condition held true, we need to skip these */
-<INITIAL>"`elsif"					{ MP(); CHANGE_STATE(SKIP); }
-<INITIAL>"`else"					{ MP(); CHANGE_STATE(SKIP); }
+<INITIAL>"`elsif"                   { MP(); CHANGE_STATE(SKIP); }
+<INITIAL>"`else"                    { MP(); CHANGE_STATE(SKIP); }
 
     /* entry point */
-<INITIAL>"`ifdef"					{ MP(); PUSH_STATE(CONDITION); }
-<INITIAL>"`ifndef"					{ MP(); PUSH_STATE(NEG_CONDITION); }
+<INITIAL>"`ifdef"                   { MP(); PUSH_STATE(CONDITION); }
+<INITIAL>"`ifndef"                  { MP(); PUSH_STATE(NEG_CONDITION); }
 
     /* exit point */
-<INITIAL,SKIP>"`endif"				{ MP(); POP_STATE(); }
+<INITIAL,SKIP>"`endif"              { MP(); POP_STATE(); }
 
-<INITIAL>"`include"					{ MP(); PUSH_STATE(INCLUDE); }
-<INCLUDE>{vSTR}						{ MP(); push_include(yytext); POP_STATE(); }
+<INITIAL>"`include"                 { MP(); PUSH_STATE(INCLUDE); }
+<INCLUDE>{vSTR}                     { MP(); push_include(yytext); POP_STATE(); }
 
-<INITIAL>"`default_nettype"			{ MP(); return preDEFAULT_NETTYPE;}
-<INITIAL>"`resetall"				{ MP(); initialize_defaults(); }
+<INITIAL>"`default_nettype"         { MP(); return preDEFAULT_NETTYPE;}
+<INITIAL>"`resetall"                { MP(); initialize_defaults(); }
 
     /* unsupported commands, we skip the rest of the line */
-<INITIAL>"`timescale"				{ MP(); PUSH_STATE(COMMENT); }
-<INITIAL>"`pragma"					{ MP(); PUSH_STATE(COMMENT); }
-<INITIAL>"`line"					{ MP(); PUSH_STATE(COMMENT); }
-<INITIAL>"`celldefine"				{ MP(); PUSH_STATE(COMMENT); }
-<INITIAL>"`endcelldefine"			{ MP(); PUSH_STATE(COMMENT); }
-<INITIAL>"`nounconnected_drive"		{ MP(); PUSH_STATE(COMMENT); }
-<INITIAL>"`unconnected_drive"		{ MP(); PUSH_STATE(COMMENT); }
+<INITIAL>"`timescale"               { MP(); PUSH_STATE(COMMENT); }
+<INITIAL>"`pragma"                  { MP(); PUSH_STATE(COMMENT); }
+<INITIAL>"`line"                    { MP(); PUSH_STATE(COMMENT); }
+<INITIAL>"`celldefine"              { MP(); PUSH_STATE(COMMENT); }
+<INITIAL>"`endcelldefine"           { MP(); PUSH_STATE(COMMENT); }
+<INITIAL>"`nounconnected_drive"     { MP(); PUSH_STATE(COMMENT); }
+<INITIAL>"`unconnected_drive"       { MP(); PUSH_STATE(COMMENT); }
 
 
-<INITIAL>"‘begin_keywords"			{ MP(); PUSH_STATE(READ_IEEE); }
-<READ_IEEE>"\"1364-2005\""			{ MP(); ieee_state.push_back(ieee_2005);			POP_STATE(); }
-<READ_IEEE>"\"1364-2001-noconfig\""	{ MP(); ieee_state.push_back(ieee_2001_noconfig);	POP_STATE(); }
-<READ_IEEE>"\"1364-2001\""			{ MP(); ieee_state.push_back(ieee_2001);			POP_STATE(); }
-<READ_IEEE>"\"1364-1995\""			{ MP(); ieee_state.push_back(ieee_1995);			POP_STATE(); }
-<INITIAL>"`end_keywords"			{ MP(); ieee_state.pop_back(); }
+<INITIAL>"‘begin_keywords"          { MP(); PUSH_STATE(READ_IEEE); }
+<READ_IEEE>"\"1364-2005\""          { MP(); ieee_state.push_back(ieee_2005);            POP_STATE(); }
+<READ_IEEE>"\"1364-2001-noconfig\"" { MP(); ieee_state.push_back(ieee_2001_noconfig);    POP_STATE(); }
+<READ_IEEE>"\"1364-2001\""          { MP(); ieee_state.push_back(ieee_2001);            POP_STATE(); }
+<READ_IEEE>"\"1364-1995\""          { MP(); ieee_state.push_back(ieee_1995);            POP_STATE(); }
+<INITIAL>"`end_keywords"            { MP(); ieee_state.pop_back(); }
 
-<DEFINE_ARGS>[\)]					{ MP(); POP_STATE(); lex_string(get_complex_define().c_str()); }
-<DEFINE_ARGS>[\,]					{ MP(); next_define_arg(); }
-<BRACKET_MATCH>[\)]					{ MP(); POP_STATE(); define_arg_push_back(yytext[0]); }
-<DEFINE_ARGS,BRACKET_MATCH>[\(]		{ MP(); PUSH_STATE(BRACKET_MATCH); define_arg_push_back(yytext[0]); }
-<INITIAL>[\`]{vWORD}[\(]			{ MP(); load_define(yytext); PUSH_STATE(DEFINE_ARGS); }
-<INITIAL>[\`]{vWORD}				{ MP(); lex_string(get_simple_define(yytext).c_str()); }
+<DEFINE_ARGS>[\)]                   { MP(); POP_STATE(); lex_string(get_complex_define().c_str()); }
+<DEFINE_ARGS>[\,]                   { MP(); next_define_arg(); }
+<BRACKET_MATCH>[\)]                 { MP(); POP_STATE(); define_arg_push_back(yytext[0]); }
+<DEFINE_ARGS,BRACKET_MATCH>[\(]     { MP(); PUSH_STATE(BRACKET_MATCH); define_arg_push_back(yytext[0]); }
+<INITIAL>[\`]{vWORD}[\(]            { MP(); load_define(yytext); PUSH_STATE(DEFINE_ARGS); }
+<INITIAL>[\`]{vWORD}                { MP(); lex_string(get_simple_define(yytext).c_str()); }
 
     /**********************************
      * Verilog Keywords
      */
 
-    /*	unsupported Keywords		*/
-<INITIAL>"cell"						{ MP(); return ieee_filter(vCELL); }
-<INITIAL>"config"					{ MP(); return ieee_filter(vCONFIG); }
-<INITIAL>"design"					{ MP(); return ieee_filter(vDESIGN); }
-<INITIAL>"endconfig"				{ MP(); return ieee_filter(vENDCONFIG); }
-<INITIAL>"incdir"					{ MP(); return ieee_filter(vINCDIR); }
-<INITIAL>"include"					{ MP(); return ieee_filter(vINCLUDE); }
-<INITIAL>"instance"					{ MP(); return ieee_filter(vINSTANCE); }
-<INITIAL>"liblist"					{ MP(); return ieee_filter(vLIBLIST); }
-<INITIAL>"library"					{ MP(); return ieee_filter(vLIBRARY); }
-<INITIAL>"use"						{ MP(); return ieee_filter(vUSE); }
-<INITIAL>"noshowcancelled"			{ MP(); return ieee_filter(vNOSHOWCANCELLED); }
-<INITIAL>"pulsestyle_ondetect"		{ MP(); return ieee_filter(vPULSESTYLE_ONDETECT); }
-<INITIAL>"pulsestyle_onevent"		{ MP(); return ieee_filter(vPULSESTYLE_ONEVENT); }
-<INITIAL>"showcancelled"			{ MP(); return ieee_filter(vSHOWCANCELLED); }
-<INITIAL>"casex"					{ MP(); return ieee_filter(vCASEX); }
-<INITIAL>"casez"					{ MP(); return ieee_filter(vCASEZ); }
-<INITIAL>"disable"					{ MP(); return ieee_filter(vDISABLE); }
-<INITIAL>"edge"						{ MP(); return ieee_filter(vEDGE); }
-<INITIAL>"scalared"					{ MP(); return ieee_filter(vSCALARED); }
-<INITIAL>"bufif0"					{ MP(); return ieee_filter(vBUFIF0); }
-<INITIAL>"bufif1"					{ MP(); return ieee_filter(vBUFIF1); }
-<INITIAL>"cmos"						{ MP(); return ieee_filter(vCMOS); }
-<INITIAL>"deassign"					{ MP(); return ieee_filter(vDEASSIGN); }
-<INITIAL>"endprimitive"				{ MP(); return ieee_filter(vENDPRIMITIVE); }
-<INITIAL>"endtable"					{ MP(); return ieee_filter(vENDTABLE); }
-<INITIAL>"event"					{ MP(); return ieee_filter(vEVENT); }
-<INITIAL>"force"					{ MP(); return ieee_filter(vFORCE); }
-<INITIAL>"forever"					{ MP(); return ieee_filter(vFOREVER); }
-<INITIAL>"fork"						{ MP(); return ieee_filter(vFORK); }
-<INITIAL>"highz0"					{ MP(); return ieee_filter(vHIGHZ0); }
-<INITIAL>"highz1"					{ MP(); return ieee_filter(vHIGHZ1); }
-<INITIAL>"join"						{ MP(); return ieee_filter(vJOIN); }
-<INITIAL>"large"					{ MP(); return ieee_filter(vLARGE); }
-<INITIAL>"medium"					{ MP(); return ieee_filter(vMEDIUM); }
-<INITIAL>"nmos"						{ MP(); return ieee_filter(vNMOS); }
-<INITIAL>"notif0"					{ MP(); return ieee_filter(vNOTIF0); }
-<INITIAL>"notif1"					{ MP(); return ieee_filter(vNOTIF1); }
-<INITIAL>"pmos"						{ MP(); return ieee_filter(vPMOS); }
-<INITIAL>"primitive"				{ MP(); return ieee_filter(vPRIMITIVE); }
-<INITIAL>"pull0"					{ MP(); return ieee_filter(vPULL0); }
-<INITIAL>"pull1"					{ MP(); return ieee_filter(vPULL1); }
-<INITIAL>"pulldown"					{ MP(); return ieee_filter(vPULLDOWN); }
-<INITIAL>"pullup"					{ MP(); return ieee_filter(vPULLUP); }
-<INITIAL>"rcmos"					{ MP(); return ieee_filter(vRCMOS); }
-<INITIAL>"release"					{ MP(); return ieee_filter(vRELEASE); }
-<INITIAL>"repeat"					{ MP(); return ieee_filter(vREPEAT); }
-<INITIAL>"rnmos"					{ MP(); return ieee_filter(vRNMOS); }
-<INITIAL>"rpmos"					{ MP(); return ieee_filter(vRPMOS); }
-<INITIAL>"rtran"					{ MP(); return ieee_filter(vRTRAN); }
-<INITIAL>"rtranif0"					{ MP(); return ieee_filter(vRTRANIF0); }
-<INITIAL>"rtranif1"					{ MP(); return ieee_filter(vRTRANIF1); }
-<INITIAL>"small"					{ MP(); return ieee_filter(vSMALL); }
-<INITIAL>"strong0"					{ MP(); return ieee_filter(vSTRONG0); }
-<INITIAL>"strong1"					{ MP(); return ieee_filter(vSTRONG1); }
-<INITIAL>"supply0"					{ MP(); return ieee_filter(vSUPPLY0); }
-<INITIAL>"supply1"					{ MP(); return ieee_filter(vSUPPLY1); }
-<INITIAL>"table"					{ MP(); return ieee_filter(vTABLE); }
-<INITIAL>"time"						{ MP(); return ieee_filter(vTIME); }
-<INITIAL>"tran"						{ MP(); return ieee_filter(vTRAN); }
-<INITIAL>"tranif0"					{ MP(); return ieee_filter(vTRANIF0); }
-<INITIAL>"tranif1"					{ MP(); return ieee_filter(vTRANIF1); }
-<INITIAL>"vectored"					{ MP(); return ieee_filter(vVECTORED); }
-<INITIAL>"wait"						{ MP(); return ieee_filter(vWAIT); }
-<INITIAL>"weak0"					{ MP(); return ieee_filter(vWEAK0); }
-<INITIAL>"weak1"					{ MP(); return ieee_filter(vWEAK1); }
+    /*    unsupported Keywords        */
+<INITIAL>"cell"                      { MP(); return ieee_filter(vCELL); }
+<INITIAL>"config"                    { MP(); return ieee_filter(vCONFIG); }
+<INITIAL>"design"                    { MP(); return ieee_filter(vDESIGN); }
+<INITIAL>"endconfig"                 { MP(); return ieee_filter(vENDCONFIG); }
+<INITIAL>"incdir"                    { MP(); return ieee_filter(vINCDIR); }
+<INITIAL>"include"                   { MP(); return ieee_filter(vINCLUDE); }
+<INITIAL>"instance"                  { MP(); return ieee_filter(vINSTANCE); }
+<INITIAL>"liblist"                   { MP(); return ieee_filter(vLIBLIST); }
+<INITIAL>"library"                   { MP(); return ieee_filter(vLIBRARY); }
+<INITIAL>"use"                       { MP(); return ieee_filter(vUSE); }
+<INITIAL>"noshowcancelled"           { MP(); return ieee_filter(vNOSHOWCANCELLED); }
+<INITIAL>"pulsestyle_ondetect"       { MP(); return ieee_filter(vPULSESTYLE_ONDETECT); }
+<INITIAL>"pulsestyle_onevent"        { MP(); return ieee_filter(vPULSESTYLE_ONEVENT); }
+<INITIAL>"showcancelled"             { MP(); return ieee_filter(vSHOWCANCELLED); }
+<INITIAL>"casex"                     { MP(); return ieee_filter(vCASEX); }
+<INITIAL>"casez"                     { MP(); return ieee_filter(vCASEZ); }
+<INITIAL>"disable"                   { MP(); return ieee_filter(vDISABLE); }
+<INITIAL>"edge"                      { MP(); return ieee_filter(vEDGE); }
+<INITIAL>"scalared"                  { MP(); return ieee_filter(vSCALARED); }
+<INITIAL>"bufif0"                    { MP(); return ieee_filter(vBUFIF0); }
+<INITIAL>"bufif1"                    { MP(); return ieee_filter(vBUFIF1); }
+<INITIAL>"cmos"                      { MP(); return ieee_filter(vCMOS); }
+<INITIAL>"deassign"                  { MP(); return ieee_filter(vDEASSIGN); }
+<INITIAL>"endprimitive"              { MP(); return ieee_filter(vENDPRIMITIVE); }
+<INITIAL>"endtable"                  { MP(); return ieee_filter(vENDTABLE); }
+<INITIAL>"event"                     { MP(); return ieee_filter(vEVENT); }
+<INITIAL>"force"                     { MP(); return ieee_filter(vFORCE); }
+<INITIAL>"forever"                   { MP(); return ieee_filter(vFOREVER); }
+<INITIAL>"fork"                      { MP(); return ieee_filter(vFORK); }
+<INITIAL>"highz0"                    { MP(); return ieee_filter(vHIGHZ0); }
+<INITIAL>"highz1"                    { MP(); return ieee_filter(vHIGHZ1); }
+<INITIAL>"join"                      { MP(); return ieee_filter(vJOIN); }
+<INITIAL>"large"                     { MP(); return ieee_filter(vLARGE); }
+<INITIAL>"medium"                    { MP(); return ieee_filter(vMEDIUM); }
+<INITIAL>"nmos"                      { MP(); return ieee_filter(vNMOS); }
+<INITIAL>"notif0"                    { MP(); return ieee_filter(vNOTIF0); }
+<INITIAL>"notif1"                    { MP(); return ieee_filter(vNOTIF1); }
+<INITIAL>"pmos"                      { MP(); return ieee_filter(vPMOS); }
+<INITIAL>"primitive"                 { MP(); return ieee_filter(vPRIMITIVE); }
+<INITIAL>"pull0"                     { MP(); return ieee_filter(vPULL0); }
+<INITIAL>"pull1"                     { MP(); return ieee_filter(vPULL1); }
+<INITIAL>"pulldown"                  { MP(); return ieee_filter(vPULLDOWN); }
+<INITIAL>"pullup"                    { MP(); return ieee_filter(vPULLUP); }
+<INITIAL>"rcmos"                     { MP(); return ieee_filter(vRCMOS); }
+<INITIAL>"release"                   { MP(); return ieee_filter(vRELEASE); }
+<INITIAL>"repeat"                    { MP(); return ieee_filter(vREPEAT); }
+<INITIAL>"rnmos"                     { MP(); return ieee_filter(vRNMOS); }
+<INITIAL>"rpmos"                     { MP(); return ieee_filter(vRPMOS); }
+<INITIAL>"rtran"                     { MP(); return ieee_filter(vRTRAN); }
+<INITIAL>"rtranif0"                  { MP(); return ieee_filter(vRTRANIF0); }
+<INITIAL>"rtranif1"                  { MP(); return ieee_filter(vRTRANIF1); }
+<INITIAL>"small"                     { MP(); return ieee_filter(vSMALL); }
+<INITIAL>"strong0"                   { MP(); return ieee_filter(vSTRONG0); }
+<INITIAL>"strong1"                   { MP(); return ieee_filter(vSTRONG1); }
+<INITIAL>"supply0"                   { MP(); return ieee_filter(vSUPPLY0); }
+<INITIAL>"supply1"                   { MP(); return ieee_filter(vSUPPLY1); }
+<INITIAL>"table"                     { MP(); return ieee_filter(vTABLE); }
+<INITIAL>"time"                      { MP(); return ieee_filter(vTIME); }
+<INITIAL>"tran"                      { MP(); return ieee_filter(vTRAN); }
+<INITIAL>"tranif0"                   { MP(); return ieee_filter(vTRANIF0); }
+<INITIAL>"tranif1"                   { MP(); return ieee_filter(vTRANIF1); }
+<INITIAL>"vectored"                  { MP(); return ieee_filter(vVECTORED); }
+<INITIAL>"wait"                      { MP(); return ieee_filter(vWAIT); }
+<INITIAL>"weak0"                     { MP(); return ieee_filter(vWEAK0); }
+<INITIAL>"weak1"                     { MP(); return ieee_filter(vWEAK1); }
 
     /* Begin Scoped items */
-<INITIAL>"begin"					{ MP(); push_scope(); return ieee_filter(vBEGIN); }
-<INITIAL>"function"					{ MP(); push_scope(); return ieee_filter(vFUNCTION); }
-<INITIAL>"module"					{ MP(); push_scope(); return ieee_filter(vMODULE); }
-<INITIAL>"macromodule"				{ MP(); push_scope(); return ieee_filter(vMODULE); }
-<INITIAL>"task"						{ MP(); push_scope(); return ieee_filter(vTASK); }
+<INITIAL>"begin"                     { MP(); push_scope(); return ieee_filter(vBEGIN); }
+<INITIAL>"function"                  { MP(); push_scope(); return ieee_filter(vFUNCTION); }
+<INITIAL>"module"                    { MP(); push_scope(); return ieee_filter(vMODULE); }
+<INITIAL>"macromodule"               { MP(); push_scope(); return ieee_filter(vMODULE); }
+<INITIAL>"task"                      { MP(); push_scope(); return ieee_filter(vTASK); }
 
     /* End Scoped items */
-<INITIAL>"end"						{ MP(); return ieee_filter(vEND); }
-<INITIAL>"endfunction"				{ MP(); return ieee_filter(vENDFUNCTION); }
-<INITIAL>"endmodule"				{ MP(); return ieee_filter(vENDMODULE); }
-<INITIAL>"endtask"					{ MP(); return ieee_filter(vENDTASK); }
+<INITIAL>"end"                       { MP(); return ieee_filter(vEND); }
+<INITIAL>"endfunction"               { MP(); return ieee_filter(vENDFUNCTION); }
+<INITIAL>"endmodule"                 { MP(); return ieee_filter(vENDMODULE); }
+<INITIAL>"endtask"                   { MP(); return ieee_filter(vENDTASK); }
 
-    /*	Keywords	*/
-<INITIAL>"always"					{ MP(); return ieee_filter(vALWAYS); }
-<INITIAL>"and"						{ MP(); return ieee_filter(vAND); }
-<INITIAL>"assign"					{ MP(); return ieee_filter(vASSIGN); }
-<INITIAL>"automatic"				{ MP(); return ieee_filter(vAUTOMATIC); }
-<INITIAL>"case"						{ MP(); return ieee_filter(vCASE); }
-<INITIAL>"default"					{ MP(); return ieee_filter(vDEFAULT); }
-<INITIAL>"defparam"					{ MP(); return ieee_filter(vDEFPARAM); }
-<INITIAL>"else"						{ MP(); return ieee_filter(vELSE); }
-<INITIAL>"endcase"					{ MP(); return ieee_filter(vENDCASE); }
-<INITIAL>"endspecify"				{ MP(); return ieee_filter(vENDSPECIFY); }
-<INITIAL>"endgenerate"				{ MP(); return ieee_filter(vENDGENERATE); }
-<INITIAL>"for"						{ MP(); return ieee_filter(vFOR); }
-<INITIAL>"if"						{ MP(); return ieee_filter(vIF); }
-<INITIAL>"initial"					{ MP(); return ieee_filter(vINITIAL); }
-<INITIAL>"inout"					{ MP(); return ieee_filter(vINOUT); }
-<INITIAL>"input"					{ MP(); return ieee_filter(vINPUT); }
-<INITIAL>"integer"					{ MP(); return ieee_filter(vINTEGER); }
-<INITIAL>"generate"					{ MP(); return ieee_filter(vGENERATE); }
-<INITIAL>"genvar"					{ MP(); return ieee_filter(vGENVAR); }
-<INITIAL>"nand"						{ MP(); return ieee_filter(vNAND); }
-<INITIAL>"negedge"					{ MP(); return ieee_filter(vNEGEDGE); }
-<INITIAL>"nor"						{ MP(); return ieee_filter(vNOR); }
-<INITIAL>"not"						{ MP(); return ieee_filter(vNOT); }
-<INITIAL>"or"						{ MP(); return ieee_filter(vOR); }
-<INITIAL>"output"					{ MP(); return ieee_filter(vOUTPUT); }
-<INITIAL>"parameter"				{ MP(); return ieee_filter(vPARAMETER); }
-<INITIAL>"localparam"				{ MP(); return ieee_filter(vLOCALPARAM); }
-<INITIAL>"posedge"					{ MP(); return ieee_filter(vPOSEDGE); }
-<INITIAL>"signed"					{ MP(); return ieee_filter(vSIGNED); }
-<INITIAL>"unsigned"					{ MP(); return ieee_filter(vUNSIGNED); }
-<INITIAL>"specify"					{ MP(); return ieee_filter(vSPECIFY); }
-<INITIAL>"while"					{ MP(); return ieee_filter(vWHILE); }
-<INITIAL>"xnor"						{ MP(); return ieee_filter(vXNOR); }
-<INITIAL>"xor"						{ MP(); return ieee_filter(vXOR); }
-<INITIAL>"specparam"				{ MP(); return ieee_filter(vSPECPARAM); }
-<INITIAL>"buf"				        { MP(); return ieee_filter(vBUF); }
+    /*    Keywords    */
+<INITIAL>"always"                    { MP(); return ieee_filter(vALWAYS); }
+<INITIAL>"and"                       { MP(); return ieee_filter(vAND); }
+<INITIAL>"assign"                    { MP(); return ieee_filter(vASSIGN); }
+<INITIAL>"automatic"                 { MP(); return ieee_filter(vAUTOMATIC); }
+<INITIAL>"case"                      { MP(); return ieee_filter(vCASE); }
+<INITIAL>"default"                   { MP(); return ieee_filter(vDEFAULT); }
+<INITIAL>"defparam"                  { MP(); return ieee_filter(vDEFPARAM); }
+<INITIAL>"else"                      { MP(); return ieee_filter(vELSE); }
+<INITIAL>"endcase"                   { MP(); return ieee_filter(vENDCASE); }
+<INITIAL>"endspecify"                { MP(); return ieee_filter(vENDSPECIFY); }
+<INITIAL>"endgenerate"               { MP(); return ieee_filter(vENDGENERATE); }
+<INITIAL>"for"                       { MP(); return ieee_filter(vFOR); }
+<INITIAL>"if"                        { MP(); return ieee_filter(vIF); }
+<INITIAL>"initial"                   { MP(); return ieee_filter(vINITIAL); }
+<INITIAL>"inout"                     { MP(); return ieee_filter(vINOUT); }
+<INITIAL>"input"                     { MP(); return ieee_filter(vINPUT); }
+<INITIAL>"integer"                   { MP(); return ieee_filter(vINTEGER); }
+<INITIAL>"generate"                  { MP(); return ieee_filter(vGENERATE); }
+<INITIAL>"genvar"                    { MP(); return ieee_filter(vGENVAR); }
+<INITIAL>"nand"                      { MP(); return ieee_filter(vNAND); }
+<INITIAL>"negedge"                   { MP(); return ieee_filter(vNEGEDGE); }
+<INITIAL>"nor"                       { MP(); return ieee_filter(vNOR); }
+<INITIAL>"not"                       { MP(); return ieee_filter(vNOT); }
+<INITIAL>"or"                        { MP(); return ieee_filter(vOR); }
+<INITIAL>"output"                    { MP(); return ieee_filter(vOUTPUT); }
+<INITIAL>"parameter"                 { MP(); return ieee_filter(vPARAMETER); }
+<INITIAL>"localparam"                { MP(); return ieee_filter(vLOCALPARAM); }
+<INITIAL>"posedge"                   { MP(); return ieee_filter(vPOSEDGE); }
+<INITIAL>"signed"                    { MP(); return ieee_filter(vSIGNED); }
+<INITIAL>"unsigned"                  { MP(); return ieee_filter(vUNSIGNED); }
+<INITIAL>"specify"                   { MP(); return ieee_filter(vSPECIFY); }
+<INITIAL>"while"                     { MP(); return ieee_filter(vWHILE); }
+<INITIAL>"xnor"                      { MP(); return ieee_filter(vXNOR); }
+<INITIAL>"xor"                       { MP(); return ieee_filter(vXOR); }
+<INITIAL>"specparam"                 { MP(); return ieee_filter(vSPECPARAM); }
+<INITIAL>"buf"                       { MP(); return ieee_filter(vBUF); }
 
     /* Net types */
-<INITIAL>"wire"						{ MP(); return ieee_filter(vWIRE); }
-<INITIAL>"tri"						{ MP(); return ieee_filter(vTRI); }
-<INITIAL>"tri0"						{ MP(); return ieee_filter(vTRI0); }
-<INITIAL>"tri1"						{ MP(); return ieee_filter(vTRI1); }
-<INITIAL>"wand"						{ MP(); return ieee_filter(vWAND); }
-<INITIAL>"wor"						{ MP(); return ieee_filter(vWOR); }
-<INITIAL>"triand"					{ MP(); return ieee_filter(vTRIAND); }
-<INITIAL>"trior"					{ MP(); return ieee_filter(vTRIOR); }
-<INITIAL>"trireg"					{ MP(); return ieee_filter(vTRIREG); }
-<INITIAL>"uwire"					{ MP(); return ieee_filter(vUWIRE); }
-<INITIAL>"uwire"					{ MP(); return ieee_filter(vUWIRE); }
-<INITIAL>"none"						{ MP(); return ieee_filter(vNONE); }
-<INITIAL>"reg"						{ MP(); return ieee_filter(vREG); }
+<INITIAL>"wire"                      { MP(); return ieee_filter(vWIRE); }
+<INITIAL>"tri"                       { MP(); return ieee_filter(vTRI); }
+<INITIAL>"tri0"                      { MP(); return ieee_filter(vTRI0); }
+<INITIAL>"tri1"                      { MP(); return ieee_filter(vTRI1); }
+<INITIAL>"wand"                      { MP(); return ieee_filter(vWAND); }
+<INITIAL>"wor"                       { MP(); return ieee_filter(vWOR); }
+<INITIAL>"triand"                    { MP(); return ieee_filter(vTRIAND); }
+<INITIAL>"trior"                     { MP(); return ieee_filter(vTRIOR); }
+<INITIAL>"trireg"                    { MP(); return ieee_filter(vTRIREG); }
+<INITIAL>"uwire"                     { MP(); return ieee_filter(vUWIRE); }
+<INITIAL>"uwire"                     { MP(); return ieee_filter(vUWIRE); }
+<INITIAL>"none"                      { MP(); return ieee_filter(vNONE); }
+<INITIAL>"reg"                       { MP(); return ieee_filter(vREG); }
 
     /**********************************
      * Verilog Operators (vo)
      */
-<INITIAL>"&&&"						{ MP(); return ieee_filter(voANDANDAND); }
-<INITIAL>"**"						{ MP(); return ieee_filter(voPOWER); }
-<INITIAL>"&&"						{ MP(); return ieee_filter(voANDAND); }
-<INITIAL>"||"						{ MP(); return ieee_filter(voOROR); }
-<INITIAL>"<="						{ MP(); return ieee_filter(voLTE); }
-<INITIAL>"=>"						{ MP(); return ieee_filter(voEGT); }
-<INITIAL>">="						{ MP(); return ieee_filter(voGTE); }
-<INITIAL>"<<"						{ MP(); return ieee_filter(voSLEFT); }
-<INITIAL>"<<<"						{ MP(); return ieee_filter(voASLEFT); }
-<INITIAL>">>"						{ MP(); return ieee_filter(voSRIGHT); }
-<INITIAL>">>>"						{ MP(); return ieee_filter(voASRIGHT); }
-<INITIAL>"=="						{ MP(); return ieee_filter(voEQUAL); }
-<INITIAL>"!="						{ MP(); return ieee_filter(voNOTEQUAL); }
-<INITIAL>"==="						{ MP(); return ieee_filter(voCASEEQUAL); }
-<INITIAL>"!=="						{ MP(); return ieee_filter(voCASENOTEQUAL); }
-<INITIAL>"^~"						{ MP(); return ieee_filter(voXNOR); }
-<INITIAL>"~^"						{ MP(); return ieee_filter(voXNOR); }
-<INITIAL>"~&"						{ MP(); return ieee_filter(voNAND); }
-<INITIAL>"~|"						{ MP(); return ieee_filter(voNOR); }
-<INITIAL>"+:"						{ MP(); return ieee_filter(voPLUSCOLON); }
-<INITIAL>"-:"						{ MP(); return ieee_filter(voMINUSCOLON); }
+<INITIAL>"&&&"                       { MP(); return ieee_filter(voANDANDAND); }
+<INITIAL>"**"                        { MP(); return ieee_filter(voPOWER); }
+<INITIAL>"&&"                        { MP(); return ieee_filter(voANDAND); }
+<INITIAL>"||"                        { MP(); return ieee_filter(voOROR); }
+<INITIAL>"<="                        { MP(); return ieee_filter(voLTE); }
+<INITIAL>"=>"                        { MP(); return ieee_filter(voEGT); }
+<INITIAL>">="                        { MP(); return ieee_filter(voGTE); }
+<INITIAL>"<<"                        { MP(); return ieee_filter(voSLEFT); }
+<INITIAL>"<<<"                       { MP(); return ieee_filter(voASLEFT); }
+<INITIAL>">>"                        { MP(); return ieee_filter(voSRIGHT); }
+<INITIAL>">>>"                       { MP(); return ieee_filter(voASRIGHT); }
+<INITIAL>"=="                        { MP(); return ieee_filter(voEQUAL); }
+<INITIAL>"!="                        { MP(); return ieee_filter(voNOTEQUAL); }
+<INITIAL>"==="                       { MP(); return ieee_filter(voCASEEQUAL); }
+<INITIAL>"!=="                       { MP(); return ieee_filter(voCASENOTEQUAL); }
+<INITIAL>"^~"                        { MP(); return ieee_filter(voXNOR); }
+<INITIAL>"~^"                        { MP(); return ieee_filter(voXNOR); }
+<INITIAL>"~&"                        { MP(); return ieee_filter(voNAND); }
+<INITIAL>"~|"                        { MP(); return ieee_filter(voNOR); }
+<INITIAL>"+:"                        { MP(); return ieee_filter(voPLUSCOLON); }
+<INITIAL>"-:"                        { MP(); return ieee_filter(voMINUSCOLON); }
 
     /**********************************
      * Verilog System (vs) Functions
      */
-<INITIAL>"$clog2"					{ MP(); return ieee_filter(vsCLOG2); }
-<INITIAL>"$unsigned"				{ MP(); return ieee_filter(vsUNSIGNED); }
-<INITIAL>"$signed"					{ MP(); return ieee_filter(vsSIGNED); }
-<INITIAL>"$finish"					{ MP(); return ieee_filter(vsFINISH); }
-<INITIAL>"$display"					{ MP(); return ieee_filter(vsDISPLAY); }
+<INITIAL>"$clog2"                    { MP(); return ieee_filter(vsCLOG2); }
+<INITIAL>"$unsigned"                 { MP(); return ieee_filter(vsUNSIGNED); }
+<INITIAL>"$signed"                   { MP(); return ieee_filter(vsSIGNED); }
+<INITIAL>"$finish"                   { MP(); return ieee_filter(vsFINISH); }
+<INITIAL>"$display"                  { MP(); return ieee_filter(vsDISPLAY); }
     /* catch all C functions */
-<INITIAL>[\$]{vWORD}				{ MP(); return ieee_filter(vsFUNCTION); }
+<INITIAL>[\$]{vWORD}                 { MP(); return ieee_filter(vsFUNCTION); }
 
     /* Integers */
-<INITIAL>{vINT}						{ MP(); yylval.num_value = vtr::strdup(yytext); return vINT_NUMBER; }
+<INITIAL>{vINT}                      { MP(); yylval.num_value = vtr::strdup(yytext); return vINT_NUMBER; }
     /* Strings */
-<INITIAL>{vSTR}						{ MP(); yylval.num_value = vtr::strdup(yytext); return vSTRING; }
+<INITIAL>{vSTR}                      { MP(); yylval.num_value = vtr::strdup(yytext); return vSTRING; }
     /* Numbers */
-<INITIAL>[[:digit:]]*'[sS]?{vBIN}	{ MP(); yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
-<INITIAL>[[:digit:]]*'[sS]?{vHEX}	{ MP(); yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
-<INITIAL>[[:digit:]]*'[sS]?{vOCT}	{ MP(); yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
-<INITIAL>[[:digit:]]*'[sS]?{vDEC}	{ MP(); yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
+<INITIAL>[[:digit:]]*'[sS]?{vBIN}    { MP(); yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
+<INITIAL>[[:digit:]]*'[sS]?{vHEX}    { MP(); yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
+<INITIAL>[[:digit:]]*'[sS]?{vOCT}    { MP(); yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
+<INITIAL>[[:digit:]]*'[sS]?{vDEC}    { MP(); yylval.num_value = vtr::strdup(yytext); return vNUMBER; }
 
-    /*	operands	*/
-<INITIAL>{vWORD}(\.{vWORD})*		{ MP(); yylval.id_name = vtr::strdup(yytext); return vSYMBOL_ID; }
+    /*    operands    */
+<INITIAL>{vWORD}(\.{vWORD})*         { MP(); yylval.id_name = vtr::strdup(yytext); return vSYMBOL_ID; }
 
     /* return operators */
-<INITIAL>{vPUNCT}					{ MP(); return yytext[0]; }
+<INITIAL>{vPUNCT}                    { MP(); return yytext[0]; }
 
     /************
      * general stuff 
      **/
 
     /* single line comment */
-<*>[\/][\/]							{ 
+<*>[\/][\/]                         { 
                                         int state = TOP_STATE();
                                         if (state == DEFINE_BODY)
                                         {
@@ -419,7 +419,7 @@ vPUNCT [\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
                                         }
                                     }
     /* multi line comment */
-<*>[\/][\*]							{ 
+<*>[\/][\*]                         { 
                                         int state = TOP_STATE();
                                         if(state != COMMENT
                                         && state != MULTI_LINE_COMMENT)
@@ -428,28 +428,28 @@ vPUNCT [\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
                                         }
                                     }
 
-<MULTI_LINE_COMMENT>[\*][\/]		{ POP_STATE(); }
+<MULTI_LINE_COMMENT>[\*][\/]        { POP_STATE(); }
 
-<*>[[:blank:]]+						{	
+<*>[[:blank:]]+                     {    
                                         int state = TOP_STATE();
                                         if(state == DEFINE_BODY)
                                         {
                                             append_to_define_body(' ');
                                         }
                                         else if(state == DEFINE_ARGS
-                                        ||		state == BRACKET_MATCH)
+                                        ||        state == BRACKET_MATCH)
                                         {
                                             define_arg_push_back(yytext[0]);
                                         } 
                                     }
 
-<*><<EOF>>							{ if ( ! pop_include() ){ free_define_map(); yyterminate(); } }
+<*><<EOF>>                            { if ( ! pop_include() ){ free_define_map(); yyterminate(); } }
 
     /* skip escapped newline */
-<*>\\\r?\n							{ my_location.line++; my_location.col = 1; }
+<*>\\\r?\n                            { my_location.line++; my_location.col = 1; }
 
     /* deal with new lines */
-<*>\r?\n							{ 
+<*>\r?\n                            { 
                                         bool done = false;
                                         do{
                                             int state = TOP_STATE();
@@ -472,7 +472,7 @@ vPUNCT [\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
                                     }
 
     /* catch all */
-<*>.								{ 
+<*>.                                { 
                                         MP(); 
                                         int state = TOP_STATE();
                                         if(state == DEFINE_BODY)
@@ -480,7 +480,7 @@ vPUNCT [\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
                                             append_to_define_body(yytext[0]);
                                         }
                                         else if(state == DEFINE_ARGS
-                                        ||		state == BRACKET_MATCH)
+                                        ||        state == BRACKET_MATCH)
                                         {
                                             define_arg_push_back(yytext[0]);
                                         } 
@@ -489,11 +489,11 @@ vPUNCT [\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
                                             /* catch stuck parser */
                                             POP_STATE();
                                         }
-                                    }				
+                                    }                
 
 %%
 
-void MP()		
+void MP()        
 { 
     if (configuration.print_parse_tokens) 
     {
@@ -501,7 +501,7 @@ void MP()
     } 
 }
 
-int top_flex_state(const char *str)		
+int top_flex_state(const char *str)        
 { 
     if(flex_state.empty())
     {
@@ -511,18 +511,18 @@ int top_flex_state(const char *str)
     if (configuration.print_parse_tokens && strlen(str)) 
     {
         printf("%s state: %s\n", str,
-            (state == INCLUDE)?			"INCLUDE":
-            (state == COMMENT)?			"COMMENT":
-            (state == MULTI_LINE_COMMENT)?	"MULTI_LINE_COMMENT":
-            (state == DEFINE_BODY)?		"DEFINE_BODY":
-            (state == SKIP)?				"SKIP":
-            (state == ELIFCONDITION)?		"ELIFCONDITION":
-            (state == NEG_CONDITION)?		"NEG_CONDITION":
-            (state == CONDITION)?			"CONDITION":
-            (state == DEFINE_REMOVAL)?		"DEFINE_REMOVAL":
-            (state == VAR_PARSE)?			"VAR_PARSE":
-            (state == PARSE_DEFINE)?		"PARSE_DEFINE":
-            (state == DEFINE_ARGS)?		"DEFINE_ARGS":
+            (state == INCLUDE)?            "INCLUDE":
+            (state == COMMENT)?            "COMMENT":
+            (state == MULTI_LINE_COMMENT)?    "MULTI_LINE_COMMENT":
+            (state == DEFINE_BODY)?        "DEFINE_BODY":
+            (state == SKIP)?                "SKIP":
+            (state == ELIFCONDITION)?        "ELIFCONDITION":
+            (state == NEG_CONDITION)?        "NEG_CONDITION":
+            (state == CONDITION)?            "CONDITION":
+            (state == DEFINE_REMOVAL)?        "DEFINE_REMOVAL":
+            (state == VAR_PARSE)?            "VAR_PARSE":
+            (state == PARSE_DEFINE)?        "PARSE_DEFINE":
+            (state == DEFINE_ARGS)?        "DEFINE_ARGS":
                                             "INITIAL"
         );
     } 
@@ -712,7 +712,7 @@ void new_define_t(const char* id)
     if(defines_map.find(tmp) != defines_map.end())
     {
         warning_message(PARSER, my_location, "%s is redefined, overwritting its value", id);
-        delete defines_map[tmp];	
+        delete defines_map[tmp];    
     }
 
     defines_map[tmp] = new_define;
