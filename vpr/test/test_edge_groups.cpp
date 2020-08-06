@@ -31,10 +31,9 @@ TEST_CASE("edge_groups_create_sets", "[vpr]") {
     // Build the id map for node IDs
     std::vector<int> nodes(max_node_id + 1);
     std::iota(nodes.begin(), nodes.end(), 0);
-    std::random_device rd;
-    std::mt19937 g(rd());
+    std::mt19937 g(1);
 
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 1000; i++) {
         // Shuffle node IDs
         auto random_nodes = nodes;
         std::shuffle(random_nodes.begin(), random_nodes.end(), g);
