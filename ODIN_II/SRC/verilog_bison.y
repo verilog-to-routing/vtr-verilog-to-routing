@@ -1073,7 +1073,7 @@ int ieee_filter(int ieee_version, int return_type) {
 		case vSIGNED:	//fallthrough
 		case vUNSIGNED: {
 			if(ieee_version < ieee_2001_noconfig)
-				delayed_error_message(PARSER, my_location, "error in parsing: (%s) only exists in 2001-noconfig or newer\n",return_type)
+				delayed_error_message(PARSER, my_location, "error in parsing: (%s) only exists in ieee 2001-noconfig or newer\n",return_type)
 			break;
 		}
 		case vCELL:	//fallthrough
@@ -1087,12 +1087,12 @@ int ieee_filter(int ieee_version, int return_type) {
 		case vLIBRARY:	//fallthrough
 		case vUSE: {
 			if(ieee_version < ieee_2001)
-				delayed_error_message(PARSER, my_location, "error in parsing: (%s) only exists in 2001 or newer\n",return_type)
+				delayed_error_message(PARSER, my_location, "error in parsing: (%s) only exists in ieee 2001 or newer\n",return_type)
 			break;
 		}
 		case vUWIRE: {
 			if(ieee_version < ieee_2005)
-				delayed_error_message(PARSER, my_location, "error in parsing: (%s) only exists in 2005 or newer\n",return_type)
+				delayed_error_message(PARSER, my_location, "error in parsing: (%s) only exists in ieee 2005 or newer\n",return_type)
 			break;
 		}
 		/* unsorted. TODO: actually sort these */
