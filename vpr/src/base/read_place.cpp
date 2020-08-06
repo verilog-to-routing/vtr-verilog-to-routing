@@ -139,8 +139,11 @@ void read_place(const char* net_file,
     place_ctx.placement_id = vtr::secure_digest_file(place_file);
 }
 
+/** Reads in blocks whose locations are specified in a constraints file. Constraint file is in .place format.
+ * All blocks specified in this file will be locked down at their specified x, y, subtile locations.
+ * (Will not be moved by optimizers during placement
+ */
 void read_user_block_loc(const char* constraints_file) {
-    /* Reads in the locations of the blocks from a file. */
     t_hash **hash_table, *h_ptr;
     int xtmp, ytmp;
     FILE* fp;

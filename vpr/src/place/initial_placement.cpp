@@ -321,8 +321,12 @@ static void initial_placement_blocks(std::vector<std::vector<int>>& free_locatio
     }
 
     for (auto blk_id : sorted_blocks) {
-        if (place_ctx.block_locs[blk_id].loc.x != -1) { // -1 is a sentinel for an empty block
-            // block placed.
+        /* -1 is a sentinel for a non-placed block, which the code in this routine will choose a location for.
+         * If the x value is not -1, we assume something else has already placed this block and we should leave it there.
+         * For example, if the user constrained it to a certain location, the block has already been placed.
+         */
+        if (place_ctx.block_locs[blk_id].loc.x != -1) {
+            //put VTR assert
             continue;
         }
 
