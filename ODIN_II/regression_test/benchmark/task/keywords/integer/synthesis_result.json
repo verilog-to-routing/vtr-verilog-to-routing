@@ -4,24 +4,57 @@
         "verilog": "integer_failure.v",
         "exit": 134,
         "errors": [
-            "AST integer_failure.v:3 Odin does not handle signed ports (a)"
+            "NETLIST integer_failure.v:3 Input cannot be defined as a reg"
+        ],
+        "warnings": [
+            "AST integer_failure.v:3 Odin does not handle signed REG (a)",
+            "AST integer_failure.v:3 Odin does not handle signed INPUT (a)",
+            "AST integer_failure.v:3 Odin does not handle signed ports (a)",
+            "AST integer_failure.v:4 Odin does not handle signed REG (b)",
+            "AST integer_failure.v:4 Odin does not handle signed INPUT (b)",
+            "AST integer_failure.v:4 Odin does not handle signed ports (b)",
+            "AST integer_failure.v:6 Odin does not handle signed REG (c)",
+            "AST integer_failure.v:6 Odin does not handle signed OUTPUT (c)",
+            "AST integer_failure.v:6 Odin does not handle signed ports (c)"
         ]
     },
     "integer/integer_outside/no_arch": {
         "test_name": "integer/integer_outside/no_arch",
         "verilog": "integer_outside.v",
-        "exit": 134,
-        "errors": [
-            "AST integer_outside.v:3 Odin does not handle signed ports (a)"
-        ]
+        "warnings": [
+            "AST integer_outside.v:3 Odin does not handle signed INPUT (a)",
+            "AST integer_outside.v:3 Odin does not handle signed ports (a)",
+            "AST integer_outside.v:4 Odin does not handle signed INPUT (b)",
+            "AST integer_outside.v:4 Odin does not handle signed ports (b)",
+            "AST integer_outside.v:8 Odin does not handle signed REG (c)"
+        ],
+        "Pi": 2,
+        "Po": 1,
+        "logic element": 1,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
     },
     "integer/integer_port/no_arch": {
         "test_name": "integer/integer_port/no_arch",
         "verilog": "integer_port.v",
-        "exit": 134,
-        "errors": [
-            "AST integer_port.v:3 Odin does not handle signed ports (a)"
-        ]
+        "warnings": [
+            "AST integer_port.v:3 Odin does not handle signed INPUT (a)",
+            "AST integer_port.v:3 Odin does not handle signed ports (a)",
+            "AST integer_port.v:4 Odin does not handle signed INPUT (b)",
+            "AST integer_port.v:4 Odin does not handle signed ports (b)",
+            "AST integer_port.v:6 Odin does not handle signed REG (c)",
+            "AST integer_port.v:6 Odin does not handle signed OUTPUT (c)",
+            "AST integer_port.v:6 Odin does not handle signed ports (c)"
+        ],
+        "Pi": 32,
+        "Po": 32,
+        "logic element": 33,
+        "Longest Path": 19,
+        "Average Path": 3,
+        "Estimated LUTs": 33,
+        "Total Node": 33
     },
     "DEFAULT": {
         "test_name": "n/a",

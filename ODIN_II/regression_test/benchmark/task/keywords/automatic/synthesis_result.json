@@ -7,8 +7,8 @@
             "NETLIST recursive_function.v:8 This output (simple_op.function_instance_0.function_instance_1^factorial~0) must exist...must be an error"
         ],
         "warnings": [
-            "AST recursive_function.v:14 ODIN II does not (yet) differentiate between automatic and static tasks & functions.IGNORING",
-            "AST recursive_function.v:14 ODIN_II does not fully support input/output integers in functions"
+            "AST recursive_function.v:8 Odin does not handle signed REG (factorial)",
+            "AST recursive_function.v:14 ODIN II does not (yet) differentiate between automatic and static tasks & functions.IGNORING"
         ]
     },
     "automatic/recursive_task/no_arch": {

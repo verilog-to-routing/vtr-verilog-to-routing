@@ -7,7 +7,7 @@
             "PARSE_TO_AST Parser found (4) errors in your syntax, exiting"
         ],
         "warnings": [
-            "PARSE_TO_AST specify_conditional.v:15 error in parsing: (syntax error, unexpected vIF, expecting vENDSPECIFY or vSPECPARAM or '(')",
+            "PARSE_TO_AST specify_conditional.v:15 error in parsing: (syntax error, unexpected vIF, expecting vSPECPARAM or vENDSPECIFY or '(')",
             "PARSE_TO_AST specify_conditional.v:16 error in parsing: (syntax error, unexpected '(')",
             "PARSE_TO_AST specify_conditional.v:17 error in parsing: (syntax error, unexpected '(')",
             "PARSE_TO_AST specify_conditional.v:18 error in parsing: (syntax error, unexpected '(')"
