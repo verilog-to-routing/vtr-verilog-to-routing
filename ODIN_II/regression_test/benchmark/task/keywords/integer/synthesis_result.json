@@ -4,29 +4,29 @@
         "verilog": "integer_failure.v",
         "exit": 134,
         "errors": [
-            "NETLIST integer_failure.v:3 Input cannot be defined as a reg"
+            "integer_failure.v:3:1 [NETLIST] Input cannot be defined as a reg"
         ],
         "warnings": [
-            "AST integer_failure.v:3 Odin does not handle signed REG (a)",
-            "AST integer_failure.v:3 Odin does not handle signed INPUT (a)",
-            "AST integer_failure.v:3 Odin does not handle signed ports (a)",
-            "AST integer_failure.v:4 Odin does not handle signed REG (b)",
-            "AST integer_failure.v:4 Odin does not handle signed INPUT (b)",
-            "AST integer_failure.v:4 Odin does not handle signed ports (b)",
-            "AST integer_failure.v:6 Odin does not handle signed REG (c)",
-            "AST integer_failure.v:6 Odin does not handle signed OUTPUT (c)",
-            "AST integer_failure.v:6 Odin does not handle signed ports (c)"
+            "integer_failure.v:3:1 [AST] Odin does not handle signed REG (a)",
+            "integer_failure.v:3:1 [AST] Odin does not handle signed INPUT (a)",
+            "integer_failure.v:3:1 [AST] Odin does not handle signed ports (a)",
+            "integer_failure.v:4:1 [AST] Odin does not handle signed REG (b)",
+            "integer_failure.v:4:1 [AST] Odin does not handle signed INPUT (b)",
+            "integer_failure.v:4:1 [AST] Odin does not handle signed ports (b)",
+            "integer_failure.v:6:1 [AST] Odin does not handle signed REG (c)",
+            "integer_failure.v:6:1 [AST] Odin does not handle signed OUTPUT (c)",
+            "integer_failure.v:6:1 [AST] Odin does not handle signed ports (c)"
         ]
     },
     "integer/integer_outside/no_arch": {
         "test_name": "integer/integer_outside/no_arch",
         "verilog": "integer_outside.v",
         "warnings": [
-            "AST integer_outside.v:3 Odin does not handle signed INPUT (a)",
-            "AST integer_outside.v:3 Odin does not handle signed ports (a)",
-            "AST integer_outside.v:4 Odin does not handle signed INPUT (b)",
-            "AST integer_outside.v:4 Odin does not handle signed ports (b)",
-            "AST integer_outside.v:8 Odin does not handle signed REG (c)"
+            "integer_outside.v:3:1 [AST] Odin does not handle signed INPUT (a)",
+            "integer_outside.v:3:1 [AST] Odin does not handle signed ports (a)",
+            "integer_outside.v:4:1 [AST] Odin does not handle signed INPUT (b)",
+            "integer_outside.v:4:1 [AST] Odin does not handle signed ports (b)",
+            "integer_outside.v:8:1 [AST] Odin does not handle signed REG (c)"
         ],
         "Pi": 2,
         "Po": 1,
@@ -40,13 +40,13 @@
         "test_name": "integer/integer_port/no_arch",
         "verilog": "integer_port.v",
         "warnings": [
-            "AST integer_port.v:3 Odin does not handle signed INPUT (a)",
-            "AST integer_port.v:3 Odin does not handle signed ports (a)",
-            "AST integer_port.v:4 Odin does not handle signed INPUT (b)",
-            "AST integer_port.v:4 Odin does not handle signed ports (b)",
-            "AST integer_port.v:6 Odin does not handle signed REG (c)",
-            "AST integer_port.v:6 Odin does not handle signed OUTPUT (c)",
-            "AST integer_port.v:6 Odin does not handle signed ports (c)"
+            "integer_port.v:3:1 [AST] Odin does not handle signed INPUT (a)",
+            "integer_port.v:3:1 [AST] Odin does not handle signed ports (a)",
+            "integer_port.v:4:1 [AST] Odin does not handle signed INPUT (b)",
+            "integer_port.v:4:1 [AST] Odin does not handle signed ports (b)",
+            "integer_port.v:6:1 [AST] Odin does not handle signed REG (c)",
+            "integer_port.v:6:1 [AST] Odin does not handle signed OUTPUT (c)",
+            "integer_port.v:6:1 [AST] Odin does not handle signed ports (c)"
         ],
         "Pi": 32,
         "Po": 32,

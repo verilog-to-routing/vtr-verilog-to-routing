@@ -26,7 +26,7 @@
         "verilog": "task_call_function.v",
         "exit": 134,
         "errors": [
-            "NETLIST task_call_function.v:27 This output (simple_op.task_instance_0.function_instance_0^flip_one) must exist...must be an error"
+            "task_call_function.v:27:1 [NETLIST] This output (simple_op.task_instance_0.function_instance_0^flip_one) must exist...must be an error"
         ]
     },
     "task_endtask/task_call_task/no_arch": {
@@ -34,7 +34,7 @@
         "verilog": "task_call_task.v",
         "exit": 134,
         "errors": [
-            "NETLIST task_call_task.v:29 This output (simple_op.task_instance_0.task_instance_2^out) must exist...must be an error"
+            "task_call_task.v:29:3 [NETLIST] This output (simple_op.task_instance_0.task_instance_2^out) must exist...must be an error"
         ]
     },
     "DEFAULT": {
