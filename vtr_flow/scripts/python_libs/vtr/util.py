@@ -111,21 +111,25 @@ class CommandRunner:
         # Enable memory tracking?
         memory_tracking = ["/usr/bin/env", "time", "-v"]
         cmd = (
-            memory_tracking
-            + [
-                "valgrind",
-                "--leak-check=full",
-                "--suppressions={}".format(find_vtr_file("valgrind.supp")),
-                "--error-exitcode=1",
-                "--errors-for-leak-kinds=none",
-                "--track-origins=yes",
-                "--log-file=valgrind.log",
-                "--error-limit=no",
-            ]
-            + cmd
-            if self._valgrind
-            else memory_tracking + cmd
-            ) if self._track_memory and check_cmd(memory_tracking[0]) else cmd
+            (
+                memory_tracking
+                + [
+                    "valgrind",
+                    "--leak-check=full",
+                    "--suppressions={}".format(find_vtr_file("valgrind.supp")),
+                    "--error-exitcode=1",
+                    "--errors-for-leak-kinds=none",
+                    "--track-origins=yes",
+                    "--log-file=valgrind.log",
+                    "--error-limit=no",
+                ]
+                + cmd
+                if self._valgrind
+                else memory_tracking + cmd
+            )
+            if self._track_memory and check_cmd(memory_tracking[0])
+            else cmd
+        )
 
         # Flush before calling subprocess to ensure output is ordered
         # correctly if stdout is buffered
@@ -197,7 +201,11 @@ class CommandRunner:
                 print(indent_depth * self._indent + line, end="")
 
         if self._show_failures and cmd_errored:
-            print("\nFailed log file follows({}):".format(str((temp_dir / log_filename).resolve())))
+            print(
+                "\nFailed log file follows({}):".format(
+                    str((temp_dir / log_filename).resolve())
+                )
+            )
             for line in cmd_output:
                 print(indent_depth * self._indent + "<" + line, end="")
             raise CommandError(
@@ -213,7 +221,7 @@ class CommandRunner:
                 "{}".format(PurePath(orig_cmd[0]).name),
                 cmd=cmd,
                 log=str(temp_dir / log_filename),
-                returncode=cmd_returncode
+                returncode=cmd_returncode,
             )
         return cmd_output, cmd_returncode
 
