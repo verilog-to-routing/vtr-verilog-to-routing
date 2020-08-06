@@ -1840,15 +1840,14 @@ ast_node_t* reduce_expressions(ast_node_t* node, sc_hierarchy* local_ref, long* 
 
                         long sc_spot = sc_lookup_string(local_symbol_table_sc, id);
                         if (sc_spot > -1) {
-                            bool is_signed = ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_signed;
-                            if (!is_signed) {
-                                VNumber* temp = node->children[1]->types.vnumber;
-                                VNumber* to_unsigned = new VNumber(V_UNSIGNED(*temp));
-                                node->children[1]->types.vnumber = to_unsigned;
-                                delete temp;
+                            operation_list signedness = ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.signedness;
+                            VNumber* old_value = node->children[1]->types.vnumber;
+                            if (signedness == UNSIGNED) {
+                                node->children[1]->types.vnumber = new VNumber(V_UNSIGNED(*old_value));
                             } else {
-                                /* leave as is */
+                                node->children[1]->types.vnumber = new VNumber(V_SIGNED(*old_value));
                             }
+                            delete old_value;
                         }
                     } else {
                         /* signed keyword is not supported, meaning unresolved values will already be handled as
