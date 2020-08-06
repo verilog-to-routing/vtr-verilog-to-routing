@@ -110,23 +110,22 @@ class CommandRunner:
 
         # Enable memory tracking?
         memory_tracking = ["/usr/bin/env", "time", "-v"]
-        if self._track_memory and check_cmd(memory_tracking[0]):
-            cmd = (
-                memory_tracking
-                + [
-                    "valgrind",
-                    "--leak-check=full",
-                    "--suppressions={}".format(find_vtr_file("valgrind.supp")),
-                    "--error-exitcode=1",
-                    "--errors-for-leak-kinds=none",
-                    "--track-origins=yes",
-                    "--log-file=valgrind.log",
-                    "--error-limit=no",
-                ]
-                + cmd
-                if self._valgrind
-                else memory_tracking + cmd
-            )
+        cmd = (
+            memory_tracking
+            + [
+                "valgrind",
+                "--leak-check=full",
+                "--suppressions={}".format(find_vtr_file("valgrind.supp")),
+                "--error-exitcode=1",
+                "--errors-for-leak-kinds=none",
+                "--track-origins=yes",
+                "--log-file=valgrind.log",
+                "--error-limit=no",
+            ]
+            + cmd
+            if self._valgrind
+            else memory_tracking + cmd
+            ) if self._track_memory and check_cmd(memory_tracking[0]) else cmd
 
         # Flush before calling subprocess to ensure output is ordered
         # correctly if stdout is buffered
@@ -195,12 +194,12 @@ class CommandRunner:
         # Send to stdout
         if self._show_failures and self._verbose:
             for line in cmd_output:
-                print(indent_depth * self._indent + line,end="")
+                print(indent_depth * self._indent + line, end="")
 
         if self._show_failures and cmd_errored:
-            print("\nFailed log file follows ({}):".format(str((Path(temp_dir) / log_filename).resolve())))
+            print("\nFailed log file follows({}):".format(str((temp_dir / log_filename).resolve())))
             for line in cmd_output:
-                print(indent_depth * self._indent + "<" + line,end="")
+                print(indent_depth * self._indent + "<" + line, end="")
             raise CommandError(
                 "Executable {exec_name} failed".format(
                     exec_name=PurePath(orig_cmd[0]).name
