@@ -26,6 +26,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
+
 #include "odin_types.h"
 #include "odin_globals.h"
 #include "odin_error.h"
@@ -55,6 +57,7 @@ int yylex(void);
 	char *str_value;
 	ast_node_t *node;
 	ids id;
+	operation_list op;
 }
 
 /* base types */
@@ -204,6 +207,9 @@ int yylex(void);
 %type <node> list_of_generate_block_items generate_item generate_block_item generate loop_generate_construct if_generate_construct 
 %type <node> case_generate_construct case_generate_item_list case_generate_items generate_block generate_localparam_declaration generate_defparam_declaration
 
+/* capture wether an operation is signed or not */
+%type <op> var_signedness
+
 %%
 
 source_text:
@@ -234,11 +240,11 @@ module_parameters:
 	;
 
 list_of_parameter_declaration:
-	list_of_parameter_declaration ',' vPARAMETER vSIGNED variable	{$$ = newList_entry($1, markAndProcessParameterWith(PARAMETER, $5, true));}
-	| list_of_parameter_declaration ',' vPARAMETER variable			{$$ = newList_entry($1, markAndProcessParameterWith(PARAMETER, $4, false));}
-	| list_of_parameter_declaration ',' variable					{$$ = newList_entry($1, markAndProcessParameterWith(PARAMETER, $3, false));} 
-	| vPARAMETER vSIGNED variable									{$$ = newList(VAR_DECLARE_LIST, markAndProcessParameterWith(PARAMETER, $3, true), my_location);}
-	| vPARAMETER variable											{$$ = newList(VAR_DECLARE_LIST, markAndProcessParameterWith(PARAMETER, $2, false), my_location);}
+	list_of_parameter_declaration ',' vPARAMETER var_signedness variable	{$$ = newList_entry($1, markAndProcessParameterWith(PARAMETER, $5, $4));}
+	| list_of_parameter_declaration ',' vPARAMETER variable			{$$ = newList_entry($1, markAndProcessParameterWith(PARAMETER, $4, UNSIGNED));}
+	| list_of_parameter_declaration ',' variable					{$$ = newList_entry($1, markAndProcessParameterWith(PARAMETER, $3, UNSIGNED));} 
+	| vPARAMETER var_signedness variable									{$$ = newList(VAR_DECLARE_LIST, markAndProcessParameterWith(PARAMETER, $3, $2), my_location);}
+	| vPARAMETER variable											{$$ = newList(VAR_DECLARE_LIST, markAndProcessParameterWith(PARAMETER, $2, UNSIGNED), my_location);}
 	;
 
 module_ports:
@@ -253,11 +259,11 @@ list_of_port_declaration:
 	;
 	
 port_declaration:
-	net_direction net_types vSIGNED variable			{$$ = markAndProcessPortWith(MODULE, $1, $2, $4, true);}
-	| net_direction net_types variable					{$$ = markAndProcessPortWith(MODULE, $1, $2, $3, false);}
-	| net_direction variable							{$$ = markAndProcessPortWith(MODULE, $1, NO_ID, $2, false);}
-	| net_direction vINTEGER integer_type_variable		{$$ = markAndProcessPortWith(MODULE, $1, INTEGER, $3, true);}
-	| net_direction vSIGNED variable					{$$ = markAndProcessPortWith(MODULE, $1, NO_ID, $3, true);}
+	net_direction net_types var_signedness variable			{$$ = markAndProcessPortWith(MODULE, $1, $2, $4, $3);}
+	| net_direction net_types variable					{$$ = markAndProcessPortWith(MODULE, $1, $2, $3, UNSIGNED);}
+	| net_direction variable							{$$ = markAndProcessPortWith(MODULE, $1, NO_ID, $2, UNSIGNED);}
+	| net_direction vINTEGER integer_type_variable		{$$ = markAndProcessPortWith(MODULE, $1, INTEGER, $3, SIGNED);}
+	| net_direction var_signedness variable					{$$ = markAndProcessPortWith(MODULE, $1, NO_ID, $3, $2);}
 	| variable											{$$ = $1;}
 	;
 
@@ -357,24 +363,24 @@ list_of_function_items:
 	;
 
 task_input_declaration:
-	vINPUT net_declaration					{$$ = markAndProcessSymbolListWith(TASK,INPUT, $2, false);}
-	| vINPUT integer_declaration			{$$ = markAndProcessSymbolListWith(TASK,INPUT, $2, true);}
-	| vINPUT vSIGNED variable_list ';'		{$$ = markAndProcessSymbolListWith(TASK,INPUT, $3, true);}
-	| vINPUT variable_list ';'				{$$ = markAndProcessSymbolListWith(TASK,INPUT, $2, false);}
+	vINPUT net_declaration					{$$ = markAndProcessSymbolListWith(TASK,INPUT, $2, UNSIGNED);}
+	| vINPUT integer_declaration			{$$ = markAndProcessSymbolListWith(TASK,INPUT, $2, SIGNED);}
+	| vINPUT var_signedness variable_list ';'		{$$ = markAndProcessSymbolListWith(TASK,INPUT, $3, $2);}
+	| vINPUT variable_list ';'				{$$ = markAndProcessSymbolListWith(TASK,INPUT, $2, UNSIGNED);}
 	;
 
 task_output_declaration:
-	vOUTPUT net_declaration					{$$ = markAndProcessSymbolListWith(TASK,OUTPUT, $2, false);}
-	| vOUTPUT integer_declaration			{$$ = markAndProcessSymbolListWith(TASK,OUTPUT, $2, true);}
-	| vOUTPUT vSIGNED variable_list ';'		{$$ = markAndProcessSymbolListWith(TASK,OUTPUT, $3, true);}
-	| vOUTPUT variable_list ';'				{$$ = markAndProcessSymbolListWith(TASK,OUTPUT, $2, false);}
+	vOUTPUT net_declaration					{$$ = markAndProcessSymbolListWith(TASK,OUTPUT, $2, UNSIGNED);}
+	| vOUTPUT integer_declaration			{$$ = markAndProcessSymbolListWith(TASK,OUTPUT, $2, SIGNED);}
+	| vOUTPUT var_signedness variable_list ';'		{$$ = markAndProcessSymbolListWith(TASK,OUTPUT, $3, $2);}
+	| vOUTPUT variable_list ';'				{$$ = markAndProcessSymbolListWith(TASK,OUTPUT, $2, UNSIGNED);}
 	;
 
 task_inout_declaration:
-	vINOUT net_declaration					{$$ = markAndProcessSymbolListWith(TASK,INOUT, $2, false);}
-	| vINOUT integer_declaration			{$$ = markAndProcessSymbolListWith(TASK,INOUT, $2, true);}
-	| vINOUT vSIGNED variable_list ';'		{$$ = markAndProcessSymbolListWith(TASK,INOUT, $3, true);}
-	| vINOUT variable_list ';'				{$$ = markAndProcessSymbolListWith(TASK,INOUT, $2, false);}
+	vINOUT net_declaration					{$$ = markAndProcessSymbolListWith(TASK,INOUT, $2, UNSIGNED);}
+	| vINOUT integer_declaration			{$$ = markAndProcessSymbolListWith(TASK,INOUT, $2, SIGNED);}
+	| vINOUT var_signedness variable_list ';'		{$$ = markAndProcessSymbolListWith(TASK,INOUT, $3, $2);}
+	| vINOUT variable_list ';'				{$$ = markAndProcessSymbolListWith(TASK,INOUT, $2, UNSIGNED);}
 	;
 
 list_of_task_items:
@@ -404,29 +410,29 @@ task_item:
 	;
 
 function_input_declaration:
-	vINPUT vSIGNED variable_list ';'	{$$ = markAndProcessSymbolListWith(FUNCTION, INPUT, $3, true);}
-	| vINPUT variable_list ';'			{$$ = markAndProcessSymbolListWith(FUNCTION, INPUT, $2, false);}
-	| vINPUT function_integer_declaration ';' {$$ = markAndProcessSymbolListWith(FUNCTION, INPUT, $2, false);}
+	vINPUT var_signedness variable_list ';'          {$$ = markAndProcessSymbolListWith(FUNCTION, INPUT, $3, $2);}
+	| vINPUT variable_list ';'                {$$ = markAndProcessSymbolListWith(FUNCTION, INPUT, $2, UNSIGNED);}
+	| vINPUT function_integer_declaration ';' {$$ = markAndProcessSymbolListWith(FUNCTION, INPUT, $2, UNSIGNED);}
 	;
 
 parameter_declaration:
-	vPARAMETER vSIGNED variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,PARAMETER, $3, true);}
-	| vPARAMETER variable_list ';'			{$$ = markAndProcessSymbolListWith(MODULE,PARAMETER, $2, false);}
+	vPARAMETER var_signedness variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,PARAMETER, $3, $2);}
+	| vPARAMETER variable_list ';'			{$$ = markAndProcessSymbolListWith(MODULE,PARAMETER, $2, UNSIGNED);}
 	;
 
 task_parameter_declaration:
-	vPARAMETER vSIGNED variable_list ';'	{$$ = markAndProcessSymbolListWith(TASK,PARAMETER, $3, true);}
-	| vPARAMETER variable_list ';'			{$$ = markAndProcessSymbolListWith(TASK,PARAMETER, $2, false);}
+	vPARAMETER var_signedness variable_list ';'	{$$ = markAndProcessSymbolListWith(TASK,PARAMETER, $3, $2);}
+	| vPARAMETER variable_list ';'			{$$ = markAndProcessSymbolListWith(TASK,PARAMETER, $2, UNSIGNED);}
 	;
 
 localparam_declaration:
-	vLOCALPARAM vSIGNED variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,LOCALPARAM, $3, true);}
-	| vLOCALPARAM variable_list ';'			{$$ = markAndProcessSymbolListWith(MODULE,LOCALPARAM, $2, false);}
+	vLOCALPARAM var_signedness variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,LOCALPARAM, $3, $2);}
+	| vLOCALPARAM variable_list ';'			{$$ = markAndProcessSymbolListWith(MODULE,LOCALPARAM, $2, UNSIGNED);}
 	;
 
 generate_localparam_declaration:
-	vLOCALPARAM vSIGNED variable_list ';'	{$$ = markAndProcessSymbolListWith(BLOCK,LOCALPARAM, $3, true);}
-	| vLOCALPARAM variable_list ';'			{$$ = markAndProcessSymbolListWith(BLOCK,LOCALPARAM, $2, false);}
+	vLOCALPARAM var_signedness variable_list ';'	{$$ = markAndProcessSymbolListWith(BLOCK,LOCALPARAM, $3, $2);}
+	| vLOCALPARAM variable_list ';'			{$$ = markAndProcessSymbolListWith(BLOCK,LOCALPARAM, $2, UNSIGNED);}
 	;
 
 defparam_declaration:
@@ -438,29 +444,29 @@ generate_defparam_declaration:
 	;
 
 io_declaration:
-	net_direction net_declaration					{$$ = markAndProcessSymbolListWith(MODULE,$1, $2, false);}
-	| net_direction integer_declaration				{$$ = markAndProcessSymbolListWith(MODULE,$1, $2, true);}
-	| net_direction vSIGNED variable_list ';'		{$$ = markAndProcessSymbolListWith(MODULE,$1, $3, true);}
-	| net_direction variable_list ';'				{$$ = markAndProcessSymbolListWith(MODULE,$1, $2, false);}
+	net_direction net_declaration					{$$ = markAndProcessSymbolListWith(MODULE,$1, $2, UNSIGNED);}
+	| net_direction integer_declaration				{$$ = markAndProcessSymbolListWith(MODULE,$1, $2, SIGNED);}
+	| net_direction var_signedness variable_list ';'		{$$ = markAndProcessSymbolListWith(MODULE,$1, $3, $2);}
+	| net_direction variable_list ';'				{$$ = markAndProcessSymbolListWith(MODULE,$1, $2, UNSIGNED);}
 	;
 
 net_declaration:
-	net_types vSIGNED variable_list ';'				{$$ = markAndProcessSymbolListWith(MODULE, $1, $3, true);}
-	| net_types variable_list ';'					{$$ = markAndProcessSymbolListWith(MODULE, $1, $2, false);}
+	net_types var_signedness variable_list ';'				{$$ = markAndProcessSymbolListWith(MODULE, $1, $3, $2);}
+	| net_types variable_list ';'					{$$ = markAndProcessSymbolListWith(MODULE, $1, $2, UNSIGNED);}
 	;
 
 integer_declaration:
-	vINTEGER integer_type_variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,INTEGER, $2, true);}
+	vINTEGER integer_type_variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,INTEGER, $2, SIGNED);}
 	;
 
 genvar_declaration:
-	vGENVAR integer_type_variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,GENVAR, $2, true);}
+	vGENVAR integer_type_variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,GENVAR, $2, SIGNED);}
 	;
 
 function_return:
-	list_of_function_return_variable							{$$ = markAndProcessSymbolListWith(FUNCTION, OUTPUT, $1, false);}
-	| vSIGNED list_of_function_return_variable				{$$ = markAndProcessSymbolListWith(FUNCTION, OUTPUT, $2, true);}
-	| function_integer_declaration							{$$ = markAndProcessSymbolListWith(FUNCTION, OUTPUT, $1, false);}		
+	list_of_function_return_variable							{$$ = markAndProcessSymbolListWith(FUNCTION, OUTPUT, $1, UNSIGNED);}
+	| var_signedness list_of_function_return_variable				{$$ = markAndProcessSymbolListWith(FUNCTION, OUTPUT, $2, $1);}
+	| function_integer_declaration							{$$ = markAndProcessSymbolListWith(FUNCTION, OUTPUT, $1, UNSIGNED);}		
 	;
 
 list_of_function_return_variable:
@@ -473,7 +479,7 @@ function_return_variable:
 	;
 
 function_integer_declaration:
-	vINTEGER integer_type_variable_list 				{$$ = markAndProcessSymbolListWith(FUNCTION, INTEGER, $2, true);}
+	vINTEGER integer_type_variable_list 				{$$ = markAndProcessSymbolListWith(FUNCTION, INTEGER, $2, SIGNED);}
 	;
 
 function_port_list:
@@ -926,6 +932,11 @@ net_direction:
 	| vINOUT														{ $$ = INOUT; }
 	;
 
+var_signedness:
+	vUNSIGNED														{ $$ = UNSIGNED; }
+	| vSIGNED														{ $$ = SIGNED; }
+	;
+	
 %%
 
 

@@ -386,7 +386,7 @@ struct typ {
         short is_integer;
         short is_genvar;
         short is_memory;
-        short is_signed;
+        operation_list signedness;
         VNumber* initial_value = nullptr;
     } variable;
     struct

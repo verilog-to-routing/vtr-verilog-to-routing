@@ -169,7 +169,7 @@ ast_node_t* create_node_w_type(ids id, loc_t loc) {
     new_node->types.variable.is_integer = false;
     new_node->types.variable.is_genvar = false;
     new_node->types.variable.is_memory = false;
-    new_node->types.variable.is_signed = false;
+    new_node->types.variable.signedness = UNSIGNED;
 
     return new_node;
 }
