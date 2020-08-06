@@ -775,7 +775,7 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
 
         expected_total_delay_cost = expected_total_delay;
         expected_total_delay_cost += (delay_budget->short_path_criticality + cost_params.criticality) * std::max(0.f, delay_budget->target_delay - expected_total_delay);
-        expected_total_delay_cost += std::pow(std::max(0.f, expected_total_delay - delay_budget->max_delay), 2) / 100e-12;
+        // expected_total_delay_cost += std::pow(std::max(0.f, expected_total_delay - delay_budget->max_delay), 2) / 100e-12;
         expected_total_delay_cost += std::pow(std::max(0.f, delay_budget->min_delay - expected_total_delay), 2) / 100e-12;
         // if (expected_total_delay < delay_budget->min_delay) {
         //     VTR_LOG(" MIN Budget Exceeded min_delay %e Texpect %e\n", delay_budget->min_delay, expected_total_delay);
@@ -891,7 +891,7 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
 
         expected_total_delay_cost = expected_total_delay;
         expected_total_delay_cost += (delay_budget->short_path_criticality + cost_params.criticality) * std::max(0.f, delay_budget->target_delay - expected_total_delay);
-        expected_total_delay_cost += pow(std::max(0.f, expected_total_delay - delay_budget->max_delay), 2) / 100e-12;
+        // expected_total_delay_cost += pow(std::max(0.f, expected_total_delay - delay_budget->max_delay), 2) / 100e-12;
         expected_total_delay_cost += pow(std::max(0.f, delay_budget->min_delay - expected_total_delay), 2) / 100e-12;
         expected_total_cost = expected_total_delay_cost + expected_cong;
 
