@@ -1266,9 +1266,66 @@ static void placement_inner_loop(float t,
 
 //Evaluate if the new slack values are acceptable using weighted average cost functions
 static e_move_result do_setup_slack_cost_analysis(const PlacerSetupSlacks* setup_slacks) {
-    //TODO: implement the cost functions
-    int num = rand() % 2;
-    return num ? ACCEPTED : REJECTED;
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    const auto& clb_nlist = cluster_ctx.clb_nlist;
+
+    //Aggregating the total negative slack. Skip pins with positive slacks
+    float total_negative_slack = 0.f;
+    std::vector<ClusterPinId> pins_with_negative_slack;
+    size_t num_pins_with_negative_slack;
+
+    for (ClusterPinId pin_id : setup_slacks->pins_with_modified_setup_slack()) {
+        ClusterNetId net_id = clb_nlist.pin_net(pin_id);
+        size_t pin_index_in_net = clb_nlist.pin_net_index(pin_id);
+
+        if (connection_setup_slack[net_id][pin_index_in_net] < 0) {
+            pins_with_negative_slack.push_back(pin_id);
+            ++num_pins_with_negative_slack;
+            total_negative_slack += connection_setup_slack[net_id][pin_index_in_net];
+        }
+    }
+
+    //Variables for storing weights and values
+    float weight, frac_changed;
+    float total_cost = 0.f;
+
+    std::ofstream osa("a.out", std::ofstream::app);
+    std::ofstream osb("b.out", std::ofstream::app);
+
+    for (ClusterPinId pin_id : pins_with_negative_slack) {
+        ClusterNetId net_id = clb_nlist.pin_net(pin_id);
+        size_t pin_index_in_net = clb_nlist.pin_net_index(pin_id);
+
+        //The slack values in PlacerSetupSlacks have not been updated to connection_setup_slack
+        //These values are in the proposed state: they might be accepted or rejected
+        float proposed_setup_slack = setup_slacks->setup_slack(net_id, pin_index_in_net);
+        float original_setup_slack = connection_setup_slack[net_id][pin_index_in_net];
+
+        //The worse the slack of a pin, the more weight it is given
+        //Currently, first normalize, then apply the Softmax function,
+        //which takes the exponential of the opposite value of the
+        //normalized slack value and then normalize again. More negative
+        //slacks should take on a much larger weight.
+        weight = std::exp(original_setup_slack / total_negative_slack);
+        osa << weight << ' ';
+
+        //The fraction by which the slack value has changed.
+        //Positive->good, negative->bad.
+        frac_changed = (proposed_setup_slack - original_setup_slack) / original_setup_slack;
+        osb << frac_changed << ' ';
+
+        //Using minus due to the definition of cost: lower cost is better
+        total_cost -= frac_changed * weight;
+    }
+    osa << '\n';
+    osb << '\n';
+    osa.close();
+    osb.close();
+
+    //Currently, as long as the total cost is negative, the moves
+    //by the try_swap routine are accepted.
+    return total_cost < 0 ? ACCEPTED : REJECTED;
 }
 
 static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
