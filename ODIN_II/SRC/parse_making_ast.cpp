@@ -334,7 +334,6 @@ ast_node_t* resolve_ports(ids top_type, ast_node_t* symbol_list) {
                     /* net type */
                     symbol_list->children[j]->types.variable.is_wire = this_port->types.variable.is_wire;
                     symbol_list->children[j]->types.variable.is_reg = this_port->types.variable.is_reg;
-                    symbol_list->children[j]->types.variable.is_integer = this_port->types.variable.is_integer;
 
                     /* signedness */
                     symbol_list->children[j]->types.variable.signedness = this_port->types.variable.signedness;
@@ -478,24 +477,6 @@ ast_node_t* markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
             }
             port->types.variable.is_reg = true;
             port->types.variable.is_wire = false;
-            port->types.variable.is_integer = false;
-            break;
-
-        case INTEGER:
-            if (port_id == INPUT) {
-                error_message(AST, port->loc, "%s",
-                              "Input cannot be defined as an integer\n");
-            } else if (port_id == INOUT) {
-                error_message(AST, port->loc, "%s",
-                              "Inout cannot be defined as an integer\n");
-            } else if (port_id == OUTPUT) {
-                /* cannot support signed ports right now (integers are signed) */
-                error_message(AST, port->loc,
-                              "Odin does not handle signed ports (%s)\n", port->children[0]->types.identifier);
-            }
-            port->types.variable.is_integer = true;
-            port->types.variable.is_reg = false;
-            port->types.variable.is_wire = false;
             break;
 
         case WIRE:
@@ -506,7 +487,6 @@ ast_node_t* markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
             }
             port->types.variable.is_wire = true;
             port->types.variable.is_reg = false;
-            port->types.variable.is_integer = false;
             break;
 
         default:
@@ -517,20 +497,15 @@ ast_node_t* markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
             }
 
             if (port->types.variable.is_reg
-                && !(port->types.variable.is_wire)
-                && !(port->types.variable.is_integer)) {
+                && !(port->types.variable.is_wire)) {
                 temp_net_id = REG;
-            } else if (port->types.variable.is_integer
-                       && !(port->types.variable.is_wire)
-                       && !(port->types.variable.is_reg)) {
-                temp_net_id = INTEGER;
             } else if (port->types.variable.is_wire
-                       && !(port->types.variable.is_reg)
-                       && !(port->types.variable.is_integer)) {
+                       && !(port->types.variable.is_reg)) {
                 temp_net_id = WIRE;
             } else {
                 /* port cannot have more than one type */
-                oassert(!(port->types.variable.is_wire) && !(port->types.variable.is_reg) && !(port->types.variable.is_integer));
+                oassert(!(port->types.variable.is_wire)
+                        && !(port->types.variable.is_reg));
             }
 
             if (net_id == NO_ID) {
@@ -604,8 +579,8 @@ ast_node_t* markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
         warning_message(AST, port->loc,
                         "Odin does not handle signed ports (%s)\n", port->children[0]->types.identifier);
     }
-
     port->types.variable.signedness = signedness;
+
     port->types.variable.is_port = true;
 
     return port;
@@ -665,22 +640,30 @@ ast_node_t* markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t* symbo
                 symbol_list->children[i]->children[2] = ast_node_deep_copy(range_min);
             }
 
+            if (signedness == SIGNED) {
+                /* cannot support signed ports right now */
+                warning_message(AST, symbol_list->children[i]->loc,
+                                "Odin does not handle signed %s (%s)\n", ids_STR[id], symbol_list->children[i]->children[0]->types.identifier);
+            }
+            symbol_list->children[i]->types.variable.signedness = signedness;
+
             switch (id) {
                 case PARAMETER:
-                    oassert(top_type != BLOCK
-                            && "parameters are disalowed inside blocks");
+                    if (!(top_type == MODULE || top_type == FUNCTION || top_type == TASK)) {
+                        error_message(AST, symbol_list->children[i]->loc, "%s",
+                                      "parameters can only appear in modules functions or task\n");
+                    }
                     // fallthrough
                 case LOCALPARAM:
                     markAndProcessParameterWith(id, symbol_list->children[i], signedness);
                     break;
                 case OUTPUT:
                 case INOUT:
-                    oassert((top_type == MODULE || top_type == TASK)
-                            && "output and inout can only appear in modules or task");
-                    // fallthrough
                 case INPUT:
-                    oassert((top_type == MODULE || top_type == FUNCTION || top_type == TASK)
-                            && "ports can only appear in modules functions or task");
+                    if (!(top_type == MODULE || top_type == FUNCTION || top_type == TASK)) {
+                        error_message(AST, symbol_list->children[i]->loc, "%s",
+                                      "ports can only appear in modules functions or task\n");
+                    }
                     symbol_list->children[i] = markAndProcessPortWith(top_type, id, NO_ID, symbol_list->children[i], signedness);
                     break;
                 case WIRE:
@@ -695,37 +678,21 @@ ast_node_t* markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t* symbo
                                           "Nets cannot be initialized\n");
                         }
                     }
-                    if (signedness == SIGNED) {
-                        /* cannot support signed nets right now */
-                        warning_message(AST, symbol_list->children[i]->loc,
-                                        "Odin does not handle signed nets (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
-                    }
-                    symbol_list->children[i]->types.variable.signedness = signedness;
                     symbol_list->children[i]->types.variable.is_wire = true;
                     break;
                 case REG:
-                    if (signedness == SIGNED) {
-                        /* cannot support signed regs right now */
-                        warning_message(AST, symbol_list->children[i]->loc,
-                                        "Odin does not handle signed regs (%s)\n", symbol_list->children[i]->children[0]->types.identifier);
-                    }
-                    symbol_list->children[i]->types.variable.signedness = signedness;
                     symbol_list->children[i]->types.variable.is_reg = true;
-                    break;
-                case INTEGER:
-                    oassert(signedness == SIGNED && "Integers must always be signed");
-                    symbol_list->children[i]->types.variable.signedness = signedness;
-                    symbol_list->children[i]->types.variable.is_integer = true;
                     break;
                 case GENVAR:
                     /**
                      * TODO: BLOCK can be part of a function, so it would now accept it.
                      *  * This should be addressed more thoroughly than this
                      */
-                    oassert((top_type == MODULE || top_type == BLOCK || top_type == TASK)
-                            && "genvar can only appear in modules blocks or task");
+                    if (!(top_type == MODULE || top_type == BLOCK || top_type == TASK)) {
+                        error_message(AST, symbol_list->children[i]->loc, "%s",
+                                      "genvar can only appear in modules blocks or task\n");
+                    }
                     oassert(signedness == SIGNED && "Genvars must always be signed");
-                    symbol_list->children[i]->types.variable.signedness = signedness;
                     symbol_list->children[i]->types.variable.is_genvar = true;
                     break;
                 default:
@@ -1431,7 +1398,6 @@ ast_node_t* newVarDeclare(char* symbol, ast_node_t* expression1, ast_node_t* exp
 /*---------------------------------------------------------------------------------------------
  * (function: newIntegerTypeVarDeclare)
  *-------------------------------------------------------------------------------------------*/
-
 ast_node_t* newIntegerTypeVarDeclare(char* symbol, ast_node_t* /*expression1*/, ast_node_t* /*expression2*/, ast_node_t* expression3, ast_node_t* expression4, ast_node_t* value, loc_t loc) {
     if (!is_valid_identifier(symbol)) {
         error_message(AST, loc, "Invalid character in identifier (%s)\n", symbol);
@@ -1451,6 +1417,7 @@ ast_node_t* newIntegerTypeVarDeclare(char* symbol, ast_node_t* /*expression1*/, 
 
     return new_node;
 }
+
 /*-----------------------------------------
  * ----------------------------------------------------
  * (function: newModule)
@@ -1562,10 +1529,6 @@ ast_node_t* newFunction(ast_node_t* function_return, ast_node_t* list_of_ports, 
 
     if (automatic) {
         warning_message(AST, loc, "%s", "ODIN II does not (yet) differentiate between automatic and static tasks & functions.IGNORING ");
-    }
-
-    if (function_return->children[0]->types.variable.is_integer) {
-        warning_message(AST, loc, "%s", "ODIN_II does not fully support input/output integers in functions");
     }
 
     if (list_of_ports == NULL) {
