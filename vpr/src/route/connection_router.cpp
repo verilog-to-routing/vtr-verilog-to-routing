@@ -591,7 +591,8 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
                                       from_node,
                                       to_node,
                                       from_edge,
-                                      target_node);
+                                      target_node,
+                                      run_rcv);
 
     float best_total_cost = rr_node_route_inf_[to_node].path_cost;
     float best_back_cost = rr_node_route_inf_[to_node].backward_path_cost;
@@ -664,7 +665,8 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
                                                                const int from_node,
                                                                const int to_node,
                                                                const RREdgeId from_edge,
-                                                               const int target_node) {
+                                                               const int target_node,
+                                                               bool run_rcv) {
     /* new_costs.backward_cost: is the "known" part of the cost to this node -- the
      * congestion cost of all the routing resources back to the existing route
      * plus the known delay of the total path back to the source.
@@ -752,7 +754,7 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
     float total_cost = 0.;
     const t_conn_delay_budget* delay_budget = cost_params.delay_budget;
 
-    if (delay_budget && delay_budget->routing_budgets_algorithm == YOYO && to->path_data != nullptr) {
+    if (run_rcv && to->path_data != nullptr) {
         to->path_data->backward_delay += cost_params.criticality * Tdel;
         to->path_data->backward_cong += (1. - cost_params.criticality) * get_rr_cong_cost(to_node, cost_params.pres_fac);
 
