@@ -5,6 +5,9 @@
         "exit": 134,
         "errors": [
             "AST while_loop.v:13 While statements are NOT supported"
+        ],
+        "warnings": [
+            "AST while_loop.v:6 Odin does not handle signed REG (i)"
         ]
     },
     "DEFAULT": {

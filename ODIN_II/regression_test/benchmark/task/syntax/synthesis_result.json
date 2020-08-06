@@ -3,6 +3,9 @@
         "test_name": "syntax/8_bit_for_pass_through/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "8_bit_for_pass_through.v",
+        "warnings": [
+            "AST 8_bit_for_pass_through.v:11 Odin does not handle signed REG (i)"
+        ],
         "max_rss(MiB)": 26.8,
         "exec_time(ms)": 51.8,
         "synthesis_time(ms)": 5.3,
@@ -24,6 +27,9 @@
         "test_name": "syntax/8_bit_for_pass_through_module/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "8_bit_for_pass_through_module.v",
+        "warnings": [
+            "AST 8_bit_for_pass_through_module.v:5 Odin does not handle signed GENVAR (i)"
+        ],
         "max_rss(MiB)": 28.8,
         "exec_time(ms)": 44.5,
         "synthesis_time(ms)": 7.2,
@@ -44,6 +50,9 @@
     "syntax/8_bit_for_pass_through_module/no_arch": {
         "test_name": "syntax/8_bit_for_pass_through_module/no_arch",
         "verilog": "8_bit_for_pass_through_module.v",
+        "warnings": [
+            "AST 8_bit_for_pass_through_module.v:5 Odin does not handle signed GENVAR (i)"
+        ],
         "max_rss(MiB)": 16,
         "exec_time(ms)": 9.8,
         "synthesis_time(ms)": 8.4,
@@ -60,6 +69,9 @@
     "syntax/8_bit_for_pass_through/no_arch": {
         "test_name": "syntax/8_bit_for_pass_through/no_arch",
         "verilog": "8_bit_for_pass_through.v",
+        "warnings": [
+            "AST 8_bit_for_pass_through.v:11 Odin does not handle signed REG (i)"
+        ],
         "max_rss(MiB)": 13.6,
         "exec_time(ms)": 10.4,
         "synthesis_time(ms)": 8.4,
@@ -77,6 +89,9 @@
         "test_name": "syntax/8_bit_for_pass_through_off_by_1/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "8_bit_for_pass_through_off_by_1.v",
+        "warnings": [
+            "AST 8_bit_for_pass_through_off_by_1.v:11 Odin does not handle signed REG (i)"
+        ],
         "max_rss(MiB)": 27.8,
         "exec_time(ms)": 54.8,
         "synthesis_time(ms)": 6.5,
@@ -97,6 +112,9 @@
     "syntax/8_bit_for_pass_through_off_by_1/no_arch": {
         "test_name": "syntax/8_bit_for_pass_through_off_by_1/no_arch",
         "verilog": "8_bit_for_pass_through_off_by_1.v",
+        "warnings": [
+            "AST 8_bit_for_pass_through_off_by_1.v:11 Odin does not handle signed REG (i)"
+        ],
         "max_rss(MiB)": 15.2,
         "exec_time(ms)": 8.9,
         "synthesis_time(ms)": 7.5,
@@ -599,6 +617,9 @@
         "test_name": "syntax/complex_post_for_loop/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "complex_post_for_loop.v",
+        "warnings": [
+            "AST complex_post_for_loop.v:11 Odin does not handle signed REG (i)"
+        ],
         "max_rss(MiB)": 26.9,
         "exec_time(ms)": 49.6,
         "synthesis_time(ms)": 5.5,
@@ -619,6 +640,9 @@
     "syntax/complex_post_for_loop/no_arch": {
         "test_name": "syntax/complex_post_for_loop/no_arch",
         "verilog": "complex_post_for_loop.v",
+        "warnings": [
+            "AST complex_post_for_loop.v:11 Odin does not handle signed REG (i)"
+        ],
         "max_rss(MiB)": 13.8,
         "exec_time(ms)": 7.3,
         "synthesis_time(ms)": 5.9,
@@ -672,11 +696,10 @@
         "verilog": "deassign.v",
         "exit": 134,
         "errors": [
-            "PARSE_TO_AST Parser found (2) errors in your syntax, exiting"
+            "PARSE_TO_AST Parser found (1) errors in your syntax, exiting"
         ],
         "warnings": [
-            "PARSE_TO_AST deassign.v:21 Unsuported token",
-            "PARSE_TO_AST deassign.v:21 error in parsing: (syntax error, unexpected ';', expecting voLTE or '=')"
+            "PARSE_TO_AST deassign.v:21 error in parsing: (syntax error, unexpected vDEASSIGN)"
         ]
     },
     "syntax/deassign/no_arch": {
@@ -684,11 +707,10 @@
         "verilog": "deassign.v",
         "exit": 134,
         "errors": [
-            "PARSE_TO_AST Parser found (2) errors in your syntax, exiting"
+            "PARSE_TO_AST Parser found (1) errors in your syntax, exiting"
         ],
         "warnings": [
-            "PARSE_TO_AST deassign.v:21 Unsuported token",
-            "PARSE_TO_AST deassign.v:21 error in parsing: (syntax error, unexpected ';', expecting voLTE or '=')"
+            "PARSE_TO_AST deassign.v:21 error in parsing: (syntax error, unexpected vDEASSIGN)"
         ]
     },
     "syntax/delay_syntax/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -893,6 +915,9 @@
         "test_name": "syntax/for_loop_adv_post/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "for_loop_adv_post.v",
+        "warnings": [
+            "AST for_loop_adv_post.v:11 Odin does not handle signed REG (i)"
+        ],
         "max_rss(MiB)": 26.2,
         "exec_time(ms)": 48.7,
         "synthesis_time(ms)": 3.8,
@@ -913,6 +938,9 @@
     "syntax/for_loop_adv_post/no_arch": {
         "test_name": "syntax/for_loop_adv_post/no_arch",
         "verilog": "for_loop_adv_post.v",
+        "warnings": [
+            "AST for_loop_adv_post.v:11 Odin does not handle signed REG (i)"
+        ],
         "max_rss(MiB)": 13,
         "exec_time(ms)": 5.8,
         "synthesis_time(ms)": 4.4,
@@ -930,6 +958,9 @@
         "test_name": "syntax/for_loop_adv_pre/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "for_loop_adv_pre.v",
+        "warnings": [
+            "AST for_loop_adv_pre.v:11 Odin does not handle signed REG (i)"
+        ],
         "max_rss(MiB)": 26.9,
         "exec_time(ms)": 49.5,
         "synthesis_time(ms)": 5.2,
@@ -950,6 +981,9 @@
     "syntax/for_loop_adv_pre/no_arch": {
         "test_name": "syntax/for_loop_adv_pre/no_arch",
         "verilog": "for_loop_adv_pre.v",
+        "warnings": [
+            "AST for_loop_adv_pre.v:11 Odin does not handle signed REG (i)"
+        ],
         "max_rss(MiB)": 13.7,
         "exec_time(ms)": 7.2,
         "synthesis_time(ms)": 5.9,
@@ -1053,7 +1087,9 @@
         ],
         "warnings": [
             "PARSE_TO_AST function_hdr.v:14 error in parsing: (syntax error, unexpected vINT_NUMBER, expecting vSYMBOL_ID or '{')",
-            "AST function_hdr.vh:13 ODIN_II does not fully support input/output integers in functions"
+            "AST function_hdr.v:15 Odin does not handle signed REG (output_int)",
+            "AST function_hdr.vh:2 Odin does not handle signed REG (func_out)",
+            "AST function_hdr.vh:5 Odin does not handle signed REG (test_int)"
         ]
     },
     "syntax/function_hdr/no_arch": {
@@ -1065,7 +1101,9 @@
         ],
         "warnings": [
             "PARSE_TO_AST function_hdr.v:14 error in parsing: (syntax error, unexpected vINT_NUMBER, expecting vSYMBOL_ID or '{')",
-            "AST function_hdr.vh:13 ODIN_II does not fully support input/output integers in functions"
+            "AST function_hdr.v:15 Odin does not handle signed REG (output_int)",
+            "AST function_hdr.vh:2 Odin does not handle signed REG (func_out)",
+            "AST function_hdr.vh:5 Odin does not handle signed REG (test_int)"
         ]
     },
     "syntax/function_syntax/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1105,6 +1143,9 @@
         "test_name": "syntax/h7_of_8_bit_for_pass_through/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "h7_of_8_bit_for_pass_through.v",
+        "warnings": [
+            "AST h7_of_8_bit_for_pass_through.v:11 Odin does not handle signed REG (i)"
+        ],
         "max_rss(MiB)": 26.8,
         "exec_time(ms)": 45,
         "synthesis_time(ms)": 4.3,
@@ -1125,6 +1166,9 @@
     "syntax/h7_of_8_bit_for_pass_through/no_arch": {
         "test_name": "syntax/h7_of_8_bit_for_pass_through/no_arch",
         "verilog": "h7_of_8_bit_for_pass_through.v",
+        "warnings": [
+            "AST h7_of_8_bit_for_pass_through.v:11 Odin does not handle signed REG (i)"
+        ],
         "max_rss(MiB)": 13.4,
         "exec_time(ms)": 6.5,
         "synthesis_time(ms)": 5.2,
@@ -1582,6 +1626,9 @@
         "test_name": "syntax/l2_and_h2_of_8_bit_for_pass_through/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "l2_and_h2_of_8_bit_for_pass_through.v",
+        "warnings": [
+            "AST l2_and_h2_of_8_bit_for_pass_through.v:11 Odin does not handle signed REG (i)"
+        ],
         "max_rss(MiB)": 26.4,
         "exec_time(ms)": 47.4,
         "synthesis_time(ms)": 4,
@@ -1602,6 +1649,9 @@
     "syntax/l2_and_h2_of_8_bit_for_pass_through/no_arch": {
         "test_name": "syntax/l2_and_h2_of_8_bit_for_pass_through/no_arch",
         "verilog": "l2_and_h2_of_8_bit_for_pass_through.v",
+        "warnings": [
+            "AST l2_and_h2_of_8_bit_for_pass_through.v:11 Odin does not handle signed REG (i)"
+        ],
         "max_rss(MiB)": 13,
         "exec_time(ms)": 5.8,
         "synthesis_time(ms)": 4.4,

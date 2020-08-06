@@ -14,6 +14,7 @@
         "test_name": "parameter/parameter_define/no_arch",
         "verilog": "parameter_define.v",
         "warnings": [
+            "AST parameter_define.v:7 Odin does not handle signed REG (i)",
             "NETLIST parameter_define.v:6 This output is undriven (simple_op^out~4) and will be removed",
             "NETLIST parameter_define.v:6 Net simple_op^out~4 driving node simple_op^out~4 is itself undriven."
         ],

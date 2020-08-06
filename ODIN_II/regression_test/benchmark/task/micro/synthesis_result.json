@@ -4130,6 +4130,10 @@
         "test_name": "micro/case_generate/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "case_generate.v",
+        "warnings": [
+            "AST case_generate.v:8 Odin does not handle signed GENVAR (i)",
+            "AST case_generate.v:9 Odin does not handle signed GENVAR (j)"
+        ],
         "max_rss(MiB)": 29.4,
         "exec_time(ms)": 56.8,
         "synthesis_time(ms)": 11.4,
@@ -4145,6 +4149,10 @@
         "test_name": "micro/case_generate/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "verilog": "case_generate.v",
+        "warnings": [
+            "AST case_generate.v:8 Odin does not handle signed GENVAR (i)",
+            "AST case_generate.v:9 Odin does not handle signed GENVAR (j)"
+        ],
         "max_rss(MiB)": 20.1,
         "exec_time(ms)": 18,
         "synthesis_time(ms)": 12.3,
@@ -4157,6 +4165,10 @@
         "test_name": "micro/case_generate/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "verilog": "case_generate.v",
+        "warnings": [
+            "AST case_generate.v:8 Odin does not handle signed GENVAR (i)",
+            "AST case_generate.v:9 Odin does not handle signed GENVAR (j)"
+        ],
         "max_rss(MiB)": 28.9,
         "exec_time(ms)": 52.3,
         "synthesis_time(ms)": 11.6,
@@ -4170,6 +4182,10 @@
     "micro/case_generate/no_arch": {
         "test_name": "micro/case_generate/no_arch",
         "verilog": "case_generate.v",
+        "warnings": [
+            "AST case_generate.v:8 Odin does not handle signed GENVAR (i)",
+            "AST case_generate.v:9 Odin does not handle signed GENVAR (j)"
+        ],
         "max_rss(MiB)": 17.7,
         "exec_time(ms)": 14.1,
         "synthesis_time(ms)": 12.7,
@@ -4256,6 +4272,10 @@
         "test_name": "micro/generate/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "generate.v",
+        "warnings": [
+            "AST generate.v:10 Odin does not handle signed GENVAR (i)",
+            "AST generate.v:11 Odin does not handle signed GENVAR (j)"
+        ],
         "max_rss(MiB)": 29.5,
         "exec_time(ms)": 43.2,
         "synthesis_time(ms)": 8.1,
@@ -4277,6 +4297,10 @@
         "test_name": "micro/generate/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "verilog": "generate.v",
+        "warnings": [
+            "AST generate.v:10 Odin does not handle signed GENVAR (i)",
+            "AST generate.v:11 Odin does not handle signed GENVAR (j)"
+        ],
         "max_rss(MiB)": 20,
         "exec_time(ms)": 15.8,
         "synthesis_time(ms)": 10.2,
@@ -4295,6 +4319,10 @@
         "test_name": "micro/generate/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "verilog": "generate.v",
+        "warnings": [
+            "AST generate.v:10 Odin does not handle signed GENVAR (i)",
+            "AST generate.v:11 Odin does not handle signed GENVAR (j)"
+        ],
         "max_rss(MiB)": 29.2,
         "exec_time(ms)": 52,
         "synthesis_time(ms)": 11.2,
@@ -4314,6 +4342,10 @@
     "micro/generate/no_arch": {
         "test_name": "micro/generate/no_arch",
         "verilog": "generate.v",
+        "warnings": [
+            "AST generate.v:10 Odin does not handle signed GENVAR (i)",
+            "AST generate.v:11 Odin does not handle signed GENVAR (j)"
+        ],
         "max_rss(MiB)": 17.7,
         "exec_time(ms)": 13.6,
         "synthesis_time(ms)": 12.2,
@@ -4331,6 +4363,10 @@
         "test_name": "micro/if_generate/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "if_generate.v",
+        "warnings": [
+            "AST if_generate.v:8 Odin does not handle signed GENVAR (i)",
+            "AST if_generate.v:9 Odin does not handle signed GENVAR (j)"
+        ],
         "max_rss(MiB)": 30,
         "exec_time(ms)": 57.4,
         "synthesis_time(ms)": 12.4,
@@ -4346,6 +4382,10 @@
         "test_name": "micro/if_generate/k6_N10_40nm",
         "architecture": "k6_N10_40nm.xml",
         "verilog": "if_generate.v",
+        "warnings": [
+            "AST if_generate.v:8 Odin does not handle signed GENVAR (i)",
+            "AST if_generate.v:9 Odin does not handle signed GENVAR (j)"
+        ],
         "max_rss(MiB)": 20.1,
         "exec_time(ms)": 18.5,
         "synthesis_time(ms)": 12.8,
@@ -4358,6 +4398,10 @@
         "test_name": "micro/if_generate/k6_N10_mem32K_40nm",
         "architecture": "k6_N10_mem32K_40nm.xml",
         "verilog": "if_generate.v",
+        "warnings": [
+            "AST if_generate.v:8 Odin does not handle signed GENVAR (i)",
+            "AST if_generate.v:9 Odin does not handle signed GENVAR (j)"
+        ],
         "max_rss(MiB)": 29.4,
         "exec_time(ms)": 53.8,
         "synthesis_time(ms)": 12.4,
@@ -4371,6 +4415,10 @@
     "micro/if_generate/no_arch": {
         "test_name": "micro/if_generate/no_arch",
         "verilog": "if_generate.v",
+        "warnings": [
+            "AST if_generate.v:8 Odin does not handle signed GENVAR (i)",
+            "AST if_generate.v:9 Odin does not handle signed GENVAR (j)"
+        ],
         "max_rss(MiB)": 18.5,
         "exec_time(ms)": 12.7,
         "synthesis_time(ms)": 11.6,

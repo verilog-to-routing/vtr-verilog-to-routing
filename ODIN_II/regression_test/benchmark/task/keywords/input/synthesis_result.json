@@ -10,10 +10,18 @@
     "input/multiple_declarations/no_arch": {
         "test_name": "input/multiple_declarations/no_arch",
         "verilog": "multiple_declarations.v",
-        "exit": 134,
-        "errors": [
-            "AST multiple_declarations.v:3 Odin does not handle signed nets (a)"
-        ]
+        "warnings": [
+            "AST multiple_declarations.v:3 Odin does not handle signed WIRE (a)",
+            "AST multiple_declarations.v:3 Odin does not handle signed WIRE (b)",
+            "AST multiple_declarations.v:3 Odin does not handle signed WIRE (c)",
+            "AST multiple_declarations.v:7 Odin does not handle signed WIRE (h)",
+            "AST multiple_declarations.v:7 Odin does not handle signed WIRE (i)",
+            "AST multiple_declarations.v:7 Odin does not handle signed WIRE (j)"
+        ],
+        "Pi": 11,
+        "Po": 11,
+        "Longest Path": 2,
+        "Average Path": 2
     },
     "DEFAULT": {
         "test_name": "n/a",
