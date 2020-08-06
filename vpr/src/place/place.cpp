@@ -1029,7 +1029,7 @@ static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
                                               pin_timing_invalidator,
                                               timing_info,
                                               costs);
-        //Always record the setup slacks
+        //Always record the setup slacks when they are updated
         record_setup_slacks(setup_slacks);
 
         *outer_crit_iter_count = 0;
@@ -1167,14 +1167,15 @@ static void placement_inner_loop(float t,
                                                       timing_info,
                                                       costs);
 
-                //Currently, if we update the setup slacks within the inner loop
-                //We aim to evaluate moves based upon the cost functions
+                //Currently, if we update the setup slacks within the inner loop,
+                //we do so to evaluate moves based upon the cost functions
                 //related to these setup slacks
-                bool do_setup_slack_analysis = inner_loop_update_setup_slack;
-                if (do_setup_slack_analysis) {
-                    //Currently, we accept these new setup slacks right away
-                    //TODO: Consider situations where we reject the series of moves
-                    //that lead to the current slack values.
+                //
+                //If we do not update the setup slacks, we do not alter the values
+                //in the setup slacks matrix. Otherwise, the incremental update
+                //method of the routine record_setup_slacks will become dysfunctional.
+                if (inner_loop_update_setup_slack) {
+                    //TODO: add slack cost evaluation functions
                     record_setup_slacks(setup_slacks);
                 }
             }
@@ -1857,6 +1858,8 @@ static void comp_td_connection_delays(const PlaceDelayModel* delay_model) {
 }
 
 //Copy all the current setup slacks from the PlacerSetupSlacks class
+//This routine will always be incremental and correct, as it is called
+//if and only if the PlacerSetupSlacks class is updated with new slack values
 static void record_setup_slacks(const PlacerSetupSlacks* setup_slacks) {
     const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
