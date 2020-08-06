@@ -52,23 +52,18 @@ class CommandRunner:
             timeout_sec=None,
             max_memory_mb=None,
             track_memory=True,
-            verbose_error=None,
             verbose=False,
             echo_cmd=None,
             indent="\t",
             show_failures=False,
             valgrind=False,
     ):
-
-        if verbose_error is None:
-            verbose_error = verbose
         if echo_cmd is None:
             echo_cmd = verbose
 
         self._timeout_sec = timeout_sec
         self._max_memory_mb = max_memory_mb
         self._track_memory = track_memory
-        self._verbose_error = verbose_error
         self._verbose = verbose
         self._echo_cmd = echo_cmd
         self._indent = indent
@@ -198,13 +193,14 @@ class CommandRunner:
         cmd_errored = cmd_returncode != expected_return_code
 
         # Send to stdout
-        if self._show_failures and (
-                self._verbose or (cmd_errored and self._verbose_error)
-        ):
+        if self._show_failures and self._verbose:
             for line in cmd_output:
-                print(indent_depth * self._indent + line,)
+                print(indent_depth * self._indent + line,end="")
 
         if self._show_failures and cmd_errored:
+            print("\nFailed log file follows ({}):".format(str((Path(temp_dir) / log_filename).resolve())))
+            for line in cmd_output:
+                print(indent_depth * self._indent + "<" + line,end="")
             raise CommandError(
                 "Executable {exec_name} failed".format(
                     exec_name=PurePath(orig_cmd[0]).name
@@ -214,7 +210,12 @@ class CommandRunner:
                 returncode=cmd_returncode,
             )
         if cmd_errored:
-            raise VtrError("{}".format(PurePath(orig_cmd[0]).name))
+            raise CommandError(
+                "{}".format(PurePath(orig_cmd[0]).name),
+                cmd=cmd,
+                log=str(temp_dir / log_filename),
+                returncode=cmd_returncode
+            )
         return cmd_output, cmd_returncode
 
     # pylint: enable=too-many-arguments, too-many-instance-attributes, too-few-public-methods, too-many-locals
