@@ -390,6 +390,8 @@ static void comp_td_connection_delays(const PlaceDelayModel* delay_model);
 
 static void record_setup_slacks(const PlacerSetupSlacks* setup_slacks);
 
+static bool verify_connection_setup_slacks(const PlacerSetupSlacks* setup_slacks);
+
 static void commit_td_cost(const t_pl_blocks_to_be_moved& blocks_affected);
 
 static void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected);
@@ -513,6 +515,20 @@ static void print_place_status(const size_t num_temps,
 static void print_resources_utilization();
 
 static void init_annealing_state(t_annealing_state* state, const t_annealing_sched& annealing_sched, float t, float rlim, int move_lim_max, float crit_exponent);
+
+//Placement snapshot data structures. To be optimized.
+static ClbNetPinsMatrix<float> connection_delay_snapshot;
+static PlacerTimingCosts connection_timing_cost_snapshot;
+static vtr::vector<ClusterNetId, t_bb> bb_coords_snapshot, bb_num_on_edges_snapshot;
+static vtr::vector<ClusterNetId, double> net_cost_snapshot;
+static vtr::vector<ClusterNetId, char> bb_updated_before_snapshot;
+static vtr::vector_map<ClusterBlockId, t_block_loc> block_locs_snapshot;
+static vtr::Matrix<t_grid_blocks> grid_blocks_snapshot;
+
+static void take_placement_snapshot();
+static void revert_placement_snapshot(ClusteredPinTimingInvalidator* pin_tedges_invalidator, TimingInfo* timing_info);
+
+static e_move_result do_setup_slack_cost_analysis(const PlacerSetupSlacks* setup_slacks);
 
 /*****************************************************************************/
 void try_place(const t_placer_opts& placer_opts,
@@ -849,6 +865,11 @@ void try_place(const t_placer_opts& placer_opts,
     } while (update_annealing_state(&state, success_rat, costs, placer_opts, annealing_sched));
     /* Outer loop of the simmulated annealing ends */
 
+    if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+        //Take a snapshot of the current placer before doing placement quench
+        take_placement_snapshot();
+    }
+
     auto pre_quench_timing_stats = timing_ctx.stats;
     { /* Quench */
         vtr::ScopedFinishTimer temperature_timer("Placement Quench");
@@ -1175,8 +1196,39 @@ static void placement_inner_loop(float t,
                 //in the setup slacks matrix. Otherwise, the incremental update
                 //method of the routine record_setup_slacks will become dysfunctional.
                 if (inner_loop_update_setup_slack) {
-                    //TODO: add slack cost evaluation functions
-                    record_setup_slacks(setup_slacks);
+                    e_move_result slack_result = do_setup_slack_cost_analysis(setup_slacks);
+
+                    if (slack_result == ACCEPTED) {
+                        //If accepted, update the setup slack matrix
+                        //and take a snapshot of the current placement
+                        record_setup_slacks(setup_slacks);
+                        take_placement_snapshot();
+                    } else {
+                        VTR_ASSERT(slack_result == REJECTED);
+
+                        //If rejected, undo all the moves since the last timing info update
+                        //i.e., revert to the last placement snapshot
+                        //
+                        //Invalidate all the timing edges and do a new timing_info->update()
+                        //
+                        //Leave the setup slack matrix unchanged
+                        revert_placement_snapshot(pin_timing_invalidator, timing_info);
+
+                        //Update timing information
+                        do_update_criticalities = true;
+                        do_update_setup_slacks = true;
+                        update_setup_slacks_and_criticalities(crit_exponent,
+                                                              delay_model,
+                                                              criticalities,
+                                                              setup_slacks,
+                                                              pin_timing_invalidator,
+                                                              timing_info,
+                                                              costs);
+
+                        VTR_ASSERT_MSG(
+                            verify_connection_setup_slacks(setup_slacks),
+                            "The setup slacks should not change after reverting to the last placement snapshot and updating the timing info.");
+                    }
                 }
             }
             inner_crit_iter_count++;
@@ -1210,6 +1262,13 @@ static void placement_inner_loop(float t,
         }
     }
     /* Inner loop ends */
+}
+
+//Evaluate if the new slack values are acceptable using weighted average cost functions
+static e_move_result do_setup_slack_cost_analysis(const PlacerSetupSlacks* setup_slacks) {
+    //TODO: implement the cost functions
+    int num = rand() % 2;
+    return num ? ACCEPTED : REJECTED;
 }
 
 static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
@@ -1863,13 +1922,28 @@ static void comp_td_connection_delays(const PlaceDelayModel* delay_model) {
 static void record_setup_slacks(const PlacerSetupSlacks* setup_slacks) {
     const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
-    //Only go through pins with modified setup slack
+    //Only go through sink pins with modified setup slack
     for (ClusterPinId pin_id : setup_slacks->pins_with_modified_setup_slack()) {
         ClusterNetId net_id = clb_nlist.pin_net(pin_id);
         size_t pin_index_in_net = clb_nlist.pin_net_index(pin_id);
 
         connection_setup_slack[net_id][pin_index_in_net] = setup_slacks->setup_slack(net_id, pin_index_in_net);
     }
+}
+
+static bool verify_connection_setup_slacks(const PlacerSetupSlacks* setup_slacks) {
+    const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+
+    //Go through every single sink pin
+    for (ClusterNetId net_id : clb_nlist.nets()) {
+        for (size_t ipin = 1; ipin < clb_nlist.net_pins(net_id).size(); ++ipin) {
+            if (connection_setup_slack[net_id][ipin] != setup_slacks->setup_slack(net_id, ipin)) {
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 /* Update the connection_timing_cost values from the temporary *
@@ -3103,4 +3177,60 @@ static void init_annealing_state(t_annealing_state* state,
 
 bool placer_needs_lookahead(const t_vpr_setup& vpr_setup) {
     return (vpr_setup.PlacerOpts.place_algorithm == PATH_TIMING_DRIVEN_PLACE);
+}
+
+//Recording down all the info about the placer's current state
+static void take_placement_snapshot() {
+    const auto& place_ctx = g_vpr_ctx.placement();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    const auto& clb_nlist = cluster_ctx.clb_nlist;
+
+    connection_delay_snapshot = connection_delay;
+    //Go through every single sink pin to check if delay has been updated
+    for (ClusterNetId net_id : clb_nlist.nets()) {
+        for (size_t ipin = 1; ipin < clb_nlist.net_pins(net_id).size(); ++ipin) {
+            VTR_ASSERT_MSG(connection_delay[net_id][ipin] == connection_delay_snapshot[net_id][ipin],
+                           "Direct assignment of the delay has failed");
+        }
+    }
+
+    connection_timing_cost_snapshot = connection_timing_cost;
+    bb_coords_snapshot = bb_coords;
+    bb_num_on_edges_snapshot = bb_num_on_edges;
+    net_cost_snapshot = net_cost;
+    bb_updated_before_snapshot = bb_updated_before;
+
+    block_locs_snapshot = place_ctx.block_locs;
+    grid_blocks_snapshot = place_ctx.grid_blocks;
+}
+
+//Revert back to the recorded placer state, which is the state
+//of the placer when the last timing info update took place
+static void revert_placement_snapshot(ClusteredPinTimingInvalidator* pin_tedges_invalidator, TimingInfo* timing_info) {
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    const auto& clb_nlist = cluster_ctx.clb_nlist;
+
+    //Go through every single sink pin to check if delay has changed
+    for (ClusterNetId net_id : clb_nlist.nets()) {
+        for (size_t ipin = 1; ipin < clb_nlist.net_pins(net_id).size(); ++ipin) {
+            if (connection_delay[net_id][ipin] != connection_delay_snapshot[net_id][ipin]) {
+                //Delay changed, must invalidate
+                ClusterPinId pin_id = clb_nlist.net_pin(net_id, ipin);
+                pin_tedges_invalidator->invalidate_connection(pin_id, timing_info);
+                connection_delay[net_id][ipin] = connection_delay_snapshot[net_id][ipin];
+            }
+        }
+    }
+
+    connection_timing_cost = connection_timing_cost_snapshot;
+    bb_coords = bb_coords_snapshot;
+    bb_num_on_edges = bb_num_on_edges_snapshot;
+    net_cost = net_cost_snapshot;
+    bb_updated_before = bb_updated_before_snapshot;
+
+    place_ctx.block_locs = block_locs_snapshot;
+    place_ctx.grid_blocks = grid_blocks_snapshot;
 }
