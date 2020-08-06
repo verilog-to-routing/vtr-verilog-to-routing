@@ -69,7 +69,7 @@ int yylex(void);
  * Restricted keywords 
  */
 
-/* Unlabeled yet TODO: come up with labels */
+/* Unlabeled */
 %token vAUTOMATIC
 %token vDEFAULT
 %token vDESIGN
@@ -80,7 +80,6 @@ int yylex(void);
 %token vINCLUDE
 %token vINITIAL
 %token vINSTANCE
-%token vLARGE
 %token vLIBLIST
 %token vLIBRARY
 %token vNOSHOWCANCELLED
@@ -107,7 +106,7 @@ int yylex(void);
 %token vINTEGER vREAL vSCALARED vSIGNED vVECTORED vUNSIGNED
 
 /* power level */
-%token vSMALL vMEDIUM vHIGHZ0 vHIGHZ1 vPULL0 vPULL1 vPULLDOWN vPULLUP vSTRONG0 vSTRONG1 vSUPPLY0 vSUPPLY1 vWEAK0 vWEAK1
+%token vSMALL vMEDIUM vLARGE vHIGHZ0 vHIGHZ1 vPULL0 vPULL1 vPULLDOWN vPULLUP vSTRONG0 vSTRONG1 vSUPPLY0 vSUPPLY1 vWEAK0 vWEAK1
 
 /* Transistor level logic */
 %token vCMOS vNMOS vPMOS vRCMOS vRNMOS vRPMOS vRTRAN vRTRANIF0 vRTRANIF1 vTRAN vTRANIF0 vTRANIF1
@@ -262,7 +261,7 @@ port_declaration:
 	net_direction net_types var_signedness variable			{$$ = markAndProcessPortWith(MODULE, $1, $2, $4, $3);}
 	| net_direction net_types variable					{$$ = markAndProcessPortWith(MODULE, $1, $2, $3, UNSIGNED);}
 	| net_direction variable							{$$ = markAndProcessPortWith(MODULE, $1, NO_ID, $2, UNSIGNED);}
-	| net_direction vINTEGER integer_type_variable		{$$ = markAndProcessPortWith(MODULE, $1, INTEGER, $3, SIGNED);}
+	| net_direction vINTEGER integer_type_variable		{$$ = markAndProcessPortWith(MODULE, $1, REG, $3, SIGNED);}
 	| net_direction var_signedness variable					{$$ = markAndProcessPortWith(MODULE, $1, NO_ID, $3, $2);}
 	| variable											{$$ = $1;}
 	;
@@ -456,7 +455,7 @@ net_declaration:
 	;
 
 integer_declaration:
-	vINTEGER integer_type_variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,INTEGER, $2, SIGNED);}
+	vINTEGER integer_type_variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,REG, $2, SIGNED);}
 	;
 
 genvar_declaration:
@@ -479,7 +478,7 @@ function_return_variable:
 	;
 
 function_integer_declaration:
-	vINTEGER integer_type_variable_list 				{$$ = markAndProcessSymbolListWith(FUNCTION, INTEGER, $2, SIGNED);}
+	vINTEGER integer_type_variable_list 				{$$ = markAndProcessSymbolListWith(FUNCTION, REG, $2, SIGNED);}
 	;
 
 function_port_list:

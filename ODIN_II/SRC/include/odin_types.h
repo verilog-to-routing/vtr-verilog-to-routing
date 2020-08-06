@@ -266,7 +266,6 @@ enum ids {
     INOUT,
     WIRE,
     REG,
-    INTEGER,
     GENVAR,
     PARAMETER,
     LOCALPARAM,
@@ -383,7 +382,6 @@ struct typ {
         short is_inout;
         short is_wire;
         short is_reg;
-        short is_integer;
         short is_genvar;
         short is_memory;
         operation_list signedness;

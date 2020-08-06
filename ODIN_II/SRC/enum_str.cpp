@@ -108,7 +108,6 @@ const char* ids_STR[] = {
     "INOUT",
     "WIRE",
     "REG",
-    "INTEGER",
     "GENVAR",
     "PARAMETER",
     "LOCALPARAM",
