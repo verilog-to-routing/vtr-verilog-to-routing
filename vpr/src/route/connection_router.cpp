@@ -634,7 +634,7 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
         heap_.add_to_heap(next_ptr);
         ++router_stats_->heap_pushes;
     }
-    if (run_rcv) {
+    if (run_rcv && next.path_data != nullptr) {
         delete next.path_data;
     }
 }
