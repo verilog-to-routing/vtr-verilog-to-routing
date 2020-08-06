@@ -38,6 +38,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 extern loc_t my_location;
 
 void yyerror(const char *str){	delayed_error_message(PARSER, my_location, "error in parsing: (%s)\n",str);}
+int ieee_filter(int ieee_version, int return_type);
+
 int yywrap(){	return 1;}
 int yylex(void);
 
@@ -54,31 +56,104 @@ int yylex(void);
 	ast_node_t *node;
 	ids id;
 }
+
+/* base types */
 %token <id_name> vSYMBOL_ID
 %token <num_value> vNUMBER vINT_NUMBER
 %token <str_value> vSTRING
-%token vALWAYS vAUTOMATIC vINITIAL vSPECIFY vAND vASSIGN vBEGIN vCASE vDEFAULT vELSE vEND vENDCASE
-%token vENDMODULE vENDSPECIFY vENDGENERATE vENDFUNCTION vENDTASK vIF vINOUT vINPUT vMODULE vGENERATE vFUNCTION vTASK
-%token vOUTPUT vPARAMETER vLOCALPARAM vPOSEDGE vXNOR vXOR vDEFPARAM voANDAND vNAND vNEGEDGE vNOR vNOT vOR vFOR vBUF
-%token voOROR voLTE voGTE voPAL voSLEFT voSRIGHT voASLEFT voASRIGHT voEQUAL voNOTEQUAL voCASEEQUAL
-%token voCASENOTEQUAL voXNOR voNAND voNOR vWHILE vINTEGER vGENVAR
-%token vPLUS_COLON vMINUS_COLON vSPECPARAM voUNSIGNED voSIGNED vSIGNED 
+
+/********************
+ * Restricted keywords 
+ */
+
+/* Unlabeled yet TODO: come up with labels */
+%token vAUTOMATIC
+%token vDEFAULT
+%token vDESIGN
+%token vDISABLE
+%token vEVENT
+%token vFORCE
+%token vINCDIR
+%token vINCLUDE
+%token vINITIAL
+%token vINSTANCE
+%token vLARGE
+%token vLIBLIST
+%token vLIBRARY
+%token vNOSHOWCANCELLED
+%token vPULSESTYLE_ONDETECT
+%token vPULSESTYLE_ONEVENT
+%token vRELEASE
+%token vSHOWCANCELLED
+%token vCELL
+%token vUSE
+
+/* interconnect */
+%token vINOUT vINPUT vOUTPUT
+
+/* vars */
+%token vDEFPARAM vLOCALPARAM vPARAMETER vREALTIME vSPECPARAM vTIME
+
+/* control flow */
+%token vELSE vFOR vFOREVER vFORK vJOIN vIF vIFNONE vREPEAT vWAIT vWHILE 
+
+/* logic gates */
+%token vAND vBUF vBUFIF0 vBUFIF1 vNAND vNOR vNOT vNOTIF0 vNOTIF1 vOR vXOR vXNOR
+
+/* data types */
+%token vINTEGER vREAL vSCALARED vSIGNED vVECTORED vUNSIGNED
+
+/* power level */
+%token vSMALL vMEDIUM vHIGHZ0 vHIGHZ1 vPULL0 vPULL1 vPULLDOWN vPULLUP vSTRONG0 vSTRONG1 vSUPPLY0 vSUPPLY1 vWEAK0 vWEAK1
+
+/* Transistor level logic */
+%token vCMOS vNMOS vPMOS vRCMOS vRNMOS vRPMOS vRTRAN vRTRANIF0 vRTRANIF1 vTRAN vTRANIF0 vTRANIF1
+
+/* net types */
+%token vWIRE vWAND vWOR vTRI vTRI0 vTRI1 vTRIAND vTRIOR vTRIREG vUWIRE vNONE vREG
+
+/* Timing Related */
+%token vALWAYS vEDGE vNEGEDGE vPOSEDGE
+
+/* statements */
+%token vASSIGN vDEASSIGN
+
+/* Blocks */
+%token vBEGIN vEND
+%token vCASE vENDCASE /* related */ vCASEX vCASEZ
+%token vCONFIG vENDCONFIG
+%token vFUNCTION vENDFUNCTION
+%token vGENERATE vENDGENERATE /* related */  vGENVAR
+%token vMODULE vMACROMODULE vENDMODULE
+%token vPRIMITIVE vENDPRIMITIVE
+%token vSPECIFY vENDSPECIFY
+%token vTABLE vENDTABLE
+%token vTASK vENDTASK
+
+/* logical operators */
+%token voNOTEQUAL voEQUAL voCASEEQUAL voOROR voLTE voGTE voANDAND voANDANDAND voCASENOTEQUAL '!'
+
+/* bitwise operators */
+%token voXNOR voNAND voNOR '|' '^' '&' '~'
+
+/* arithmetic operators */
+%token voSLEFT voSRIGHT voASLEFT voASRIGHT '+' '-' '*' '/' '%'
+
+/* unclassified operator */
+%token voEGT voPLUSCOLON voMINUSCOLON '='
 
 /* catch special characters */
-%token '?' ':' '|' '^' '&' '<' '>' '+' '-' '*' '/' '%' '(' ')' '{' '}' '[' ']' '~' '!' ';' '#' ',' '.' '@' '='
+%token '?' ':' '<' '>' '(' ')' '{' '}' '[' ']' ';' '#' ',' '.' '@' 
 
 /* C functions */
-%token voFINISH voDISPLAY vCFUNC vCLOG2
+%token vsFINISH vsDISPLAY vsCLOG2 vsUNSIGNED vsSIGNED vsFUNCTION
 
-	/* preprocessor directives */
+/* preprocessor directives */
 %token preDEFAULT_NETTYPE
-
-	/* net types */
-%token netWIRE netTRI netTRI0 netTRI1 netWAND netWOR netTRIAND netTRIOR netTRIREG netUWIRE netNONE netREG
 
 %right '?' ':'
 %left voOROR
-%left voANDAND
+%left voANDAND voANDANDAND
 %left '|'
 %left '^' voXNOR voNOR
 %left '&' voNAND
@@ -272,7 +347,7 @@ list_of_specify_items:
 	;
 
 specparam_declaration:
-	'(' primary voPAL expression ')' '=' expression ';'	{free_whole_tree($2); free_whole_tree($4); free_whole_tree($7); $$ = NULL;}
+	'(' primary voEGT expression ')' '=' expression ';'	{free_whole_tree($2); free_whole_tree($4); free_whole_tree($7); $$ = NULL;}
 	| vSPECPARAM variable_list ';'						{free_whole_tree($2); $$ = NULL;}
 	;
 	
@@ -757,9 +832,9 @@ expression:
 	| voXNOR  expression %prec UXNOR				{$$ = newUnaryOperation(BITWISE_XNOR, $2, my_location);}
 	| '!' expression %prec ULNOT					{$$ = newUnaryOperation(LOGICAL_NOT, $2, my_location);}
 	| '^' expression %prec UXOR						{$$ = newUnaryOperation(BITWISE_XOR, $2, my_location);}
-	| vCLOG2 '(' expression ')'						{$$ = newUnaryOperation(CLOG2, $3, my_location);}
-	| voUNSIGNED '(' expression ')'					{$$ = newUnaryOperation(UNSIGNED, $3, my_location);}
-	| voSIGNED '(' expression ')'					{$$ = newUnaryOperation(SIGNED, $3, my_location);}
+	| vsCLOG2 '(' expression ')'					{$$ = newUnaryOperation(CLOG2, $3, my_location);}
+	| vsUNSIGNED '(' expression ')'					{$$ = newUnaryOperation(UNSIGNED, $3, my_location);}
+	| vsSIGNED '(' expression ')'					{$$ = newUnaryOperation(SIGNED, $3, my_location);}
 	| expression voPOWER expression					{$$ = newBinaryOperation(POWER,$1, $3, my_location);}
 	| expression '*' expression						{$$ = newBinaryOperation(MULTIPLY, $1, $3, my_location);}
 	| expression '/' expression						{$$ = newBinaryOperation(DIVIDE, $1, $3, my_location);}
@@ -796,8 +871,8 @@ primary:
 	vSYMBOL_ID												{$$ = newSymbolNode($1, my_location);}
 	| vSYMBOL_ID '[' expression ']'							{$$ = newArrayRef($1, $3, my_location);}
 	| vSYMBOL_ID '[' expression ']' '[' expression ']'		{$$ = newArrayRef2D($1, $3, $6, my_location);}
-	| vSYMBOL_ID '[' expression vPLUS_COLON expression ']'	{$$ = newPlusColonRangeRef($1, $3, $5, my_location);}
-	| vSYMBOL_ID '[' expression vMINUS_COLON expression ']'	{$$ = newMinusColonRangeRef($1, $3, $5, my_location);}
+	| vSYMBOL_ID '[' expression voPLUSCOLON expression ']'	{$$ = newPlusColonRangeRef($1, $3, $5, my_location);}
+	| vSYMBOL_ID '[' expression voMINUSCOLON expression ']'	{$$ = newMinusColonRangeRef($1, $3, $5, my_location);}
 	| vSYMBOL_ID '[' expression ':' expression ']'			{$$ = newRangeRef($1, $3, $5, my_location);}
 	| vSYMBOL_ID '[' expression ':' expression ']' '[' expression ':' expression ']'	{$$ = newRangeRef2D($1, $3, $5, $8, $10, my_location);}
 	| '{' expression_list '}'								{$$ = $2; ($2)->types.concat.num_bit_strings = -1;}
@@ -809,12 +884,12 @@ expression_list:
 	;
 
 c_function:
-	voFINISH '(' expression ')'									{$$ = newCFunction(FINISH, $3, NULL, my_location);}
-	| voDISPLAY '(' expression ')'									{$$ = newCFunction(DISPLAY, $3, NULL, my_location);}
-	| voDISPLAY '(' expression ',' c_function_expression_list ')'	{$$ = newCFunction(DISPLAY, $3, $5, my_location); /* this fails for now */}
-	| vCFUNC '(' c_function_expression_list ')'					{$$ = free_whole_tree($3);}
-	| vCFUNC '(' ')'											{$$ = NULL;}
-	| vCFUNC													{$$ = NULL;}
+	vsFINISH '(' expression ')'									{$$ = newCFunction(FINISH, $3, NULL, my_location);}
+	| vsDISPLAY '(' expression ')'									{$$ = newCFunction(DISPLAY, $3, NULL, my_location);}
+	| vsDISPLAY '(' expression ',' c_function_expression_list ')'	{$$ = newCFunction(DISPLAY, $3, $5, my_location); /* this fails for now */}
+	| vsFUNCTION '(' c_function_expression_list ')'					{$$ = free_whole_tree($3);}
+	| vsFUNCTION '(' ')'											{$$ = NULL;}
+	| vsFUNCTION													{$$ = NULL;}
 	;
 
 c_function_expression_list:
@@ -823,21 +898,21 @@ c_function_expression_list:
 	;
 
 wire_types: 
-	netWIRE 														{ $$ = WIRE; }
-	| netTRI 														{ $$ = WIRE; }
-	| netTRI0 														{ $$ = WIRE; }
-	| netTRI1 														{ $$ = WIRE; }
-	| netWAND 														{ $$ = WIRE; }
-	| netTRIAND 													{ $$ = WIRE; }
-	| netWOR 														{ $$ = WIRE; }
-	| netTRIOR 														{ $$ = WIRE; }
-	| netTRIREG 													{ $$ = WIRE; }
-	| netUWIRE 														{ $$ = WIRE; }
-	| netNONE														{ $$ = WIRE; }
+	vWIRE 															{ $$ = WIRE; }
+	| vTRI 															{ $$ = WIRE; }
+	| vTRI0 														{ $$ = WIRE; }
+	| vTRI1 														{ $$ = WIRE; }
+	| vWAND 														{ $$ = WIRE; }
+	| vTRIAND 														{ $$ = WIRE; }
+	| vWOR 															{ $$ = WIRE; }
+	| vTRIOR 														{ $$ = WIRE; }
+	| vTRIREG 														{ $$ = WIRE; }
+	| vUWIRE 														{ $$ = WIRE; }
+	| vNONE															{ $$ = NO_ID; /* no type here to force an error */ }
 	;
 
 reg_types: 
-	netREG 															{ $$ = REG; }
+	vREG 															{ $$ = REG; }
 	;
 
 net_types:
@@ -852,3 +927,185 @@ net_direction:
 	;
 
 %%
+
+
+/**
+ * This functions filters types based on the standard defined,
+ **/
+int ieee_filter(int ieee_version, int return_type) {
+
+	switch(return_type) {
+		case voANDANDAND:	//fallthrough
+		case voPOWER:	//fallthrough
+		case voANDAND:	//fallthrough
+		case voOROR:	//fallthrough
+		case voLTE:	//fallthrough
+		case voEGT:	//fallthrough
+		case voGTE:	//fallthrough
+		case voSLEFT:	//fallthrough
+		case voSRIGHT:	//fallthrough
+		case voEQUAL:	//fallthrough
+		case voNOTEQUAL:	//fallthrough
+		case voCASEEQUAL:	//fallthrough
+		case voCASENOTEQUAL:	//fallthrough
+		case voXNOR:	//fallthrough
+		case voNAND:	//fallthrough
+		case voNOR:	//fallthrough
+		case vALWAYS:	//fallthrough
+		case vAND:	//fallthrough
+		case vASSIGN:	//fallthrough
+		case vBEGIN:	//fallthrough
+		case vBUF:	//fallthrough
+		case vBUFIF0:	//fallthrough
+		case vBUFIF1:	//fallthrough
+		case vCASE:	//fallthrough
+		case vCASEX:	//fallthrough
+		case vCASEZ:	//fallthrough
+		case vCMOS:	//fallthrough
+		case vDEASSIGN:	//fallthrough
+		case vDEFAULT:	//fallthrough
+		case vDEFPARAM:	//fallthrough
+		case vDISABLE:	//fallthrough
+		case vEDGE:	//fallthrough
+		case vELSE:	//fallthrough
+		case vEND:	//fallthrough
+		case vENDCASE:	//fallthrough
+		case vENDFUNCTION:	//fallthrough
+		case vENDMODULE:	//fallthrough
+		case vENDPRIMITIVE:	//fallthrough
+		case vENDSPECIFY:	//fallthrough
+		case vENDTABLE:	//fallthrough
+		case vENDTASK:	//fallthrough
+		case vEVENT:	//fallthrough
+		case vFOR:	//fallthrough
+		case vFORCE:	//fallthrough
+		case vFOREVER:	//fallthrough
+		case vFORK:	//fallthrough
+		case vFUNCTION:	//fallthrough
+		case vHIGHZ0:	//fallthrough
+		case vHIGHZ1:	//fallthrough
+		case vIF:	//fallthrough
+		case vIFNONE:	//fallthrough
+		case vINITIAL:	//fallthrough
+		case vINOUT:	//fallthrough
+		case vINPUT:	//fallthrough
+		case vINTEGER:	//fallthrough
+		case vJOIN:	//fallthrough
+		case vLARGE:	//fallthrough
+		case vMACROMODULE:	//fallthrough
+		case vMEDIUM:	//fallthrough
+		case vMODULE:	//fallthrough
+		case vNAND:	//fallthrough
+		case vNEGEDGE:	//fallthrough
+		case vNMOS:	//fallthrough
+		case vNOR:	//fallthrough
+		case vNOT:	//fallthrough
+		case vNOTIF0:	//fallthrough
+		case vNOTIF1:	//fallthrough
+		case vOR:	//fallthrough
+		case vOUTPUT:	//fallthrough
+		case vPARAMETER:	//fallthrough
+		case vPMOS:	//fallthrough
+		case vPOSEDGE:	//fallthrough
+		case vPRIMITIVE:	//fallthrough
+		case vPULL0:	//fallthrough
+		case vPULL1:	//fallthrough
+		case vPULLDOWN:	//fallthrough
+		case vPULLUP:	//fallthrough
+		case vRCMOS:	//fallthrough
+		case vREAL:	//fallthrough
+		case vREALTIME:	//fallthrough
+		case vREG:	//fallthrough
+		case vRELEASE:	//fallthrough
+		case vREPEAT:	//fallthrough
+		case vRNMOS:	//fallthrough
+		case vRPMOS:	//fallthrough
+		case vRTRAN:	//fallthrough
+		case vRTRANIF0:	//fallthrough
+		case vRTRANIF1:	//fallthrough
+		case vSCALARED:	//fallthrough
+		case vSMALL:	//fallthrough
+		case vSPECIFY:	//fallthrough
+		case vSPECPARAM:	//fallthrough
+		case vSTRONG0:	//fallthrough
+		case vSTRONG1:	//fallthrough
+		case vSUPPLY0:	//fallthrough
+		case vSUPPLY1:	//fallthrough
+		case vTABLE:	//fallthrough
+		case vTASK:	//fallthrough
+		case vTIME:	//fallthrough
+		case vTRAN:	//fallthrough
+		case vTRANIF0:	//fallthrough
+		case vTRANIF1:	//fallthrough
+		case vTRI:	//fallthrough
+		case vTRI0:	//fallthrough
+		case vTRI1:	//fallthrough
+		case vTRIAND:	//fallthrough
+		case vTRIOR:	//fallthrough
+		case vTRIREG:	//fallthrough
+		case vVECTORED:	//fallthrough
+		case vWAIT:	//fallthrough
+		case vWAND:	//fallthrough
+		case vWEAK0:	//fallthrough
+		case vWEAK1:	//fallthrough
+		case vWHILE:	//fallthrough
+		case vWIRE:	//fallthrough
+		case vWOR:	//fallthrough
+		case vXNOR:	//fallthrough
+		case vXOR: {
+			if(ieee_version < ieee_1995)
+				delayed_error_message(PARSER, my_location, "error in parsing: (%s) only exists in ieee 1995 or newer\n",return_type)
+			break;
+		}
+		case voASLEFT:	//fallthrough
+		case voASRIGHT:	//fallthrough
+		case voPLUSCOLON:   //fallthrough
+		case voMINUSCOLON:   //fallthrough
+		case vAUTOMATIC:	//fallthrough
+		case vENDGENERATE:	//fallthrough
+		case vGENERATE:	//fallthrough
+		case vGENVAR:	//fallthrough
+		case vLOCALPARAM:	//fallthrough
+		case vNOSHOWCANCELLED:	//fallthrough
+		case vPULSESTYLE_ONDETECT:	//fallthrough
+		case vPULSESTYLE_ONEVENT:	//fallthrough
+		case vSHOWCANCELLED:	//fallthrough
+		case vSIGNED:	//fallthrough
+		case vUNSIGNED: {
+			if(ieee_version < ieee_2001_noconfig)
+				delayed_error_message(PARSER, my_location, "error in parsing: (%s) only exists in 2001-noconfig or newer\n",return_type)
+			break;
+		}
+		case vCELL:	//fallthrough
+		case vCONFIG:	//fallthrough
+		case vDESIGN:	//fallthrough
+		case vENDCONFIG:	//fallthrough
+		case vINCDIR:	//fallthrough
+		case vINCLUDE:	//fallthrough
+		case vINSTANCE:	//fallthrough
+		case vLIBLIST:	//fallthrough
+		case vLIBRARY:	//fallthrough
+		case vUSE: {
+			if(ieee_version < ieee_2001)
+				delayed_error_message(PARSER, my_location, "error in parsing: (%s) only exists in 2001 or newer\n",return_type)
+			break;
+		}
+		case vUWIRE: {
+			if(ieee_version < ieee_2005)
+				delayed_error_message(PARSER, my_location, "error in parsing: (%s) only exists in 2005 or newer\n",return_type)
+			break;
+		}
+		/* unsorted. TODO: actually sort these */
+		case vsCLOG2:
+		case vsUNSIGNED:	//fallthrough
+		case vsSIGNED:	//fallthrough
+		case vsFINISH:	//fallthrough
+		case vsDISPLAY:	//fallthrough
+		case vsFUNCTION:	//fallthrough
+		default: {
+			break;
+		}
+	}
+	return return_type;
+
+}
