@@ -153,7 +153,7 @@ class CommandRunner:
                 stdout=subprocess.PIPE,  # We grab stdout
                 stderr=stderr,  # stderr redirected to stderr
                 universal_newlines=True,  # Lines always end in \n
-                cwd=str(temp_dir),  # Where to run the command
+                cwd=str(temp_dir)  # Where to run the command
             )
 
             # Read the output line-by-line and log it
