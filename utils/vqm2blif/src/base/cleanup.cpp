@@ -134,7 +134,6 @@ void init_nets (t_pin_def** pins, int num_pins, busvec* buses, struct s_hash** h
 		}
 			
 		buses->push_back(temp_bus);
-
 	}
 }
 
