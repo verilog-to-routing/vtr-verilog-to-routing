@@ -121,7 +121,7 @@ class CommandRunner:
                     "--errors-for-leak-kinds=none",
                     "--track-origins=yes",
                     "--log-file=valgrind.log",
-                    "--error-limit=no",
+                    "--error-limit=no"
                 ]
                 + cmd
                 if self._valgrind
