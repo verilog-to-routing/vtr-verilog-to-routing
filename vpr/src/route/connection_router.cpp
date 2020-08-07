@@ -570,6 +570,8 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
     // Initalize RCV data struct if needed
     if (run_rcv) {
         next.path_data = new t_heap_path;
+    } else {
+        next.path_data = nullptr;
     }
 
     //Costs initialized to current
