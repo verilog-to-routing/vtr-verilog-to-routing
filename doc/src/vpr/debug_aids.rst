@@ -75,7 +75,7 @@ You can also find the variables’ list in the Advanced Settings Window, on the 
   * from_block:  in every placer move one or more blocks are relocated. from_block specifies the first block that is relocated in every move; and a breakpoint of this type stops the program when the first block moved is the one indicated by the user. This breakpoint can be enabled through the entry field on the main debugger window or using an expression.
           * Ex. from_block == 83
   * in_blocks_affected: this variable allows you to stop after your specified block was moved. Unlike "from_block" which only checks the first block relocated in every move, in_blocks_affected looks through all the blocks whose locations were changed by that move. This breakpoint can only be enabled through the use of an expression.
-          * Ex. in_blocks_affected == 1
+          * Ex. in_blocks_affected == 83
     
 **Router Variables**
 
