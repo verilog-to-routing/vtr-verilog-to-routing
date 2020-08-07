@@ -87,7 +87,7 @@ class CommandRunner:
             temp_dir: The directory to run the command in. Default: None (uses object default).
             expected_return_code: The expected return code from the command.
             If the actula return code does not match, will generate an exception. Default: 0
-            indent_depth: How deep to indent the tool output in verbose mode. Default 0
+            indent_depth: How deep to indent the tool output in verbose mode. Default: 0
         """
         # Save the original command
         orig_cmd = cmd
