@@ -101,41 +101,32 @@ test_coverage:
 	$(MAKE) gcovr
 
 test:
-# rebuild with sanitize flags on to run the same test as travis
-	$(MAKE) sanitize
-	./verify_odin.sh -j $(NB_OF_PROCESS) \
-		-t regression_test/benchmark/suite/light_suite \
-		-t vtr_reg_basic \
-		-t vtr_reg_strong
-# larger test should run with regular flags to speed up the process
-	$(MAKE) build
-	./verify_odin.sh -j $(NB_OF_PROCESS) \
-		-t regression_test/benchmark/suite/heavy_suite
+	$(MAKE) sanitize \
+	&& ./verify_odin.sh --no_report -j $(NB_OF_PROCESS) \
+			-t regression_test/benchmark/suite/light_suite \
+			-t regression_test/benchmark/suite/vtr_light_suite \
+	&& $(MAKE) build \
+	&& ./verify_odin.sh --no_report --continue -j $(NB_OF_PROCESS) \
+		-t regression_test/benchmark/suite/heavy_suite; \
+	./verify_odin.sh --status_only	
+
 
 generate_expectation:
-# rebuild with sanitize flags on to run the same test as travis
-	$(MAKE) sanitize 
-	./verify_odin.sh -j $(NB_OF_PROCESS) \
-		--generate_expectation\
-		-t regression_test/benchmark/suite/light_suite \
-		-t vtr_reg_basic \
-		-t vtr_reg_strong || true
- # larger test should run with regular flags to speed up the process
-	$(MAKE) build
-	./verify_odin.sh -j $(NB_OF_PROCESS) \
-		--generate_expectation \
-		-t regression_test/benchmark/suite/heavy_suite
+	$(MAKE) sanitize \
+	&& ./verify_odin.sh --$@ --no_report -j $(NB_OF_PROCESS) \
+			-t regression_test/benchmark/suite/light_suite \
+			-t regression_test/benchmark/suite/vtr_light_suite; \
+	$(MAKE) build \
+	&& ./verify_odin.sh --$@ --no_report --continue -j $(NB_OF_PROCESS) \
+		-t regression_test/benchmark/suite/heavy_suite; \
+	./verify_odin.sh --status_only	
 
 regenerate_expectation:
-# rebuild with sanitize flags on to run the same test as travis
-	$(MAKE) sanitize 
-	./verify_odin.sh -j $(NB_OF_PROCESS) \
-		--regenerate_expectation\
-		-t regression_test/benchmark/suite/light_suite \
-		-t vtr_reg_basic \
-		-t vtr_reg_strong || true
- # larger test should run with regular flags to speed up the process
-	$(MAKE) build
-	./verify_odin.sh -j $(NB_OF_PROCESS) \
-		--regenerate_expectation \
-		-t regression_test/benchmark/suite/heavy_suite
+	$(MAKE) sanitize \
+	&& ./verify_odin.sh --$@ --no_report -j $(NB_OF_PROCESS) \
+			-t regression_test/benchmark/suite/light_suite \
+			-t regression_test/benchmark/suite/vtr_light_suite; \
+	$(MAKE) build \
+	&& ./verify_odin.sh --$@ --no_report --continue -j $(NB_OF_PROCESS) \
+		-t regression_test/benchmark/suite/heavy_suite; \
+	./verify_odin.sh --status_only	
