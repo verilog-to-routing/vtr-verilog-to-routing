@@ -159,7 +159,7 @@ static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def>& grid_layo
             size_t count = inst.second;
             total_minimum_instance_counts += count;
         }
-        max_size = total_minimum_instance_counts * 10000;
+        max_size = total_minimum_instance_counts * 1000000;
 
         const auto& grid_def = *auto_layout_itr;
         VTR_ASSERT(grid_def.aspect_ratio >= 0.);
