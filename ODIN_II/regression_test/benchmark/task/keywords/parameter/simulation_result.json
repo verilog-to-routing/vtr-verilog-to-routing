@@ -28,6 +28,21 @@
         "Estimated LUTs": 4,
         "Total Node": 4
     },
+    "parameter/parameter_override/no_arch": {
+        "test_name": "parameter/parameter_override/no_arch",
+        "blif": "parameter_override.blif",
+        "max_rss(MiB)": 35.2,
+        "exec_time(ms)": 4.4,
+        "simulation_time(ms)": 0.6,
+        "test_coverage(%)": 100,
+        "Pi": 10,
+        "Po": 7,
+        "logic element": 12,
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",

@@ -65,6 +65,7 @@ my $display_qor = 0;
 my $skip_qor = 0;
 my $show_failures = 0;
 my $num_cpu = 1;
+my $script = "run_vtr_flow.py";
 my $long_task_names = 0;
 
 # Parse Input Arguments
@@ -87,6 +88,8 @@ while ( $token = shift(@ARGV) ) {
 		$long_task_names = 1;
 	} elsif ( $token eq "-j" ) { #-j N
 		$num_cpu = int(shift(@ARGV));
+	} elsif ( $token eq "-script" ) {
+		$script = shift(@ARGV);
     } elsif ( $token =~ /^-j(\d+)$/ ) { #-jN
         $num_cpu = int($1);
 	} elsif ($token eq "quick_test") {
@@ -337,10 +340,10 @@ sub run_single_test {
 
 	print "\nRunning $test\n";
 	print "-------------------------------------------------------------------------------\n";
-	print "scripts/run_vtr_task.pl $run_params \n";
+	print "scripts/run_vtr_task.pl $run_params -script $script \n";
 	print "\n";
 	chdir("$vtr_flow_path");
-	my $test_status = system("scripts/run_vtr_task.pl $run_params \n");
+	my $test_status = system("scripts/run_vtr_task.pl $run_params -script $script \n");
 	chdir("..");
 
     #Perl is obtuse, and requires you to manually shift the return value by 8 bits

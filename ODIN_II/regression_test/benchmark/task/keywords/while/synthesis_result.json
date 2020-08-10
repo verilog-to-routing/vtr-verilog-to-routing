@@ -4,7 +4,10 @@
         "verilog": "while_loop.v",
         "exit": 134,
         "errors": [
-            "AST while_loop.v:13 While statements are NOT supported"
+            "while_loop.v:13:4 [AST] While statements are NOT supported"
+        ],
+        "warnings": [
+            "while_loop.v:6:1 [AST] Odin does not handle signed REG (i)"
         ]
     },
     "DEFAULT": {

@@ -392,6 +392,9 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
 
     RouterOpts->check_route = Options.check_route;
     RouterOpts->timing_update_type = Options.timing_update_type;
+
+    RouterOpts->max_logged_overused_rr_nodes = Options.max_logged_overused_rr_nodes;
+    RouterOpts->generate_rr_node_overuse_report = Options.generate_rr_node_overuse_report;
 }
 
 static void SetupAnnealSched(const t_options& Options,
@@ -418,6 +421,31 @@ static void SetupAnnealSched(const t_options& Options,
     AnnealSched->inner_num = Options.PlaceInnerNum;
     if (AnnealSched->inner_num <= 0) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "inner_num must be greater than 0.\n");
+    }
+
+    AnnealSched->alpha_min = Options.PlaceAlphaMin;
+    if (AnnealSched->alpha_min >= 1 || AnnealSched->alpha_min <= 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "alpha_min must be between 0 and 1 exclusive.\n");
+    }
+
+    AnnealSched->alpha_max = Options.PlaceAlphaMax;
+    if (AnnealSched->alpha_max >= 1 || AnnealSched->alpha_max <= AnnealSched->alpha_min) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "alpha_max must be between alpha_min and 1 exclusive.\n");
+    }
+
+    AnnealSched->alpha_decay = Options.PlaceAlphaDecay;
+    if (AnnealSched->alpha_decay >= 1 || AnnealSched->alpha_decay <= 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "alpha_decay must be between 0 and 1 exclusive.\n");
+    }
+
+    AnnealSched->success_min = Options.PlaceSuccessMin;
+    if (AnnealSched->success_min >= 1 || AnnealSched->success_min <= 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "success_min must be between 0 and 1 exclusive.\n");
+    }
+
+    AnnealSched->success_target = Options.PlaceSuccessTarget;
+    if (AnnealSched->success_target >= 1 || AnnealSched->success_target <= 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "success_target must be between 0 and 1 exclusive.\n");
     }
 
     AnnealSched->type = Options.anneal_sched_type;
@@ -503,8 +531,10 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
 
     PlacerOpts->place_algorithm = Options.PlaceAlgorithm;
 
+    PlacerOpts->constraints_file = Options.constraints_file;
     PlacerOpts->pad_loc_file = Options.pad_loc_file;
     PlacerOpts->pad_loc_type = Options.pad_loc_type;
+    PlacerOpts->block_loc_type = Options.block_loc_type;
 
     PlacerOpts->place_chan_width = Options.PlaceChanWidth;
 

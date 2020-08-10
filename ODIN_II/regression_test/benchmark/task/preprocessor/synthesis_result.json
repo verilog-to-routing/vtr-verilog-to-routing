@@ -15,7 +15,7 @@
         "verilog": "elsif_both_defined.v",
         "exit": 1,
         "errors": [
-            "NETLIST elsif_both_defined.v:18 You've defined this driver simple_op^out twice."
+            "elsif_both_defined.v:18:3 [NETLIST] You've defined this driver simple_op^out twice."
         ],
         "expectation": [
             "ELSIF this test is expected to pass, if it fails the `elsif are not functioning properly."
@@ -69,8 +69,8 @@
         "test_name": "preprocessor/ifdef_undefined/no_arch",
         "verilog": "ifdef_undefined.v",
         "warnings": [
-            "NETLIST ifdef_undefined.v:4 This output is undriven (simple_op^out) and will be removed",
-            "NETLIST ifdef_undefined.v:4 Net simple_op^out driving node simple_op^out is itself undriven."
+            "ifdef_undefined.v:4:3 [NETLIST] This output is undriven (simple_op^out) and will be removed",
+            "ifdef_undefined.v:4:3 [NETLIST] Net simple_op^out driving node simple_op^out is itself undriven."
         ],
         "expectation": [
             "UNDEFINED_IFDEF this test is expected to pass, if it fails the `ifdef is not functioning properly or the output pin is being dropped."
@@ -86,8 +86,8 @@
         "test_name": "preprocessor/ifndef_defined/no_arch",
         "verilog": "ifndef_defined.v",
         "warnings": [
-            "NETLIST ifndef_defined.v:3 This output is undriven (simple_op^out) and will be removed",
-            "NETLIST ifndef_defined.v:3 Net simple_op^out driving node simple_op^out is itself undriven."
+            "ifndef_defined.v:3:3 [NETLIST] This output is undriven (simple_op^out) and will be removed",
+            "ifndef_defined.v:3:3 [NETLIST] Net simple_op^out driving node simple_op^out is itself undriven."
         ],
         "expectation": [
             "DEFINED_IFNDEF this test is expected to pass, if it fails the `ifndef is not functioning properly or output pin is being dropped."
@@ -159,7 +159,7 @@
         "verilog": "nested_ifdef_alldef.v",
         "exit": 1,
         "errors": [
-            "NETLIST nested_ifdef.vh:18 You've defined this driver simple_op^out~0 twice."
+            "nested_ifdef.vh:18:6 [NETLIST] You've defined this driver simple_op^out~0 twice."
         ],
         "expectation": [
             "NESTED_IFDEF this test is expected to pass, if it fails the `ifdefs are not functioning properly."
@@ -170,7 +170,7 @@
         "verilog": "nested_ifdef_middef.v",
         "exit": 1,
         "errors": [
-            "NETLIST nested_ifdef.vh:18 You've defined this driver simple_op^out~0 twice."
+            "nested_ifdef.vh:18:6 [NETLIST] You've defined this driver simple_op^out~0 twice."
         ],
         "expectation": [
             "NESTED_IFDEF this test is expected to pass, if it fails the `ifdefs are not functioning properly."
@@ -181,7 +181,7 @@
         "verilog": "nested_ifdef_nonedef.v",
         "exit": 1,
         "errors": [
-            "NETLIST nested_ifdef.vh:18 You've defined this driver simple_op^out~0 twice."
+            "nested_ifdef.vh:18:6 [NETLIST] You've defined this driver simple_op^out~0 twice."
         ],
         "expectation": [
             "NESTED_IFDEF this test is expected to pass, if it fails the `ifdefs are not functioning properly."
@@ -192,7 +192,7 @@
         "verilog": "nested_ifdef_outsidedef.v",
         "exit": 1,
         "errors": [
-            "NETLIST nested_ifdef.vh:18 You've defined this driver simple_op^out~0 twice."
+            "nested_ifdef.vh:18:6 [NETLIST] You've defined this driver simple_op^out~0 twice."
         ],
         "expectation": [
             "NESTED_IFDEF this test is expected to pass, if it fails the `ifdefs are not functioning properly."
@@ -203,7 +203,7 @@
         "verilog": "nested_ifdef_twodef.v",
         "exit": 1,
         "errors": [
-            "NETLIST nested_ifdef.vh:18 You've defined this driver simple_op^out~0 twice."
+            "nested_ifdef.vh:18:6 [NETLIST] You've defined this driver simple_op^out~0 twice."
         ],
         "expectation": [
             "NESTED_IFDEF this test is expected to pass, if it fails the `ifdefs are not functioning properly."
@@ -214,7 +214,7 @@
         "verilog": "nested_operation_define.v",
         "exit": 134,
         "errors": [
-            "PARSE_TO_AST nested_operation_define.v:1 define `operator is being used with too many arguments, Expected 0, got 2"
+            "nested_operation_define.v:1:1 [PARSE_TO_AST] define `operator is being used with too many arguments, Expected 0, got 2"
         ]
     },
     "preprocessor/operation_define/no_arch": {

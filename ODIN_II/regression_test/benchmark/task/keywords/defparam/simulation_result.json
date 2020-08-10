@@ -17,28 +17,28 @@
         "blif": "defparam.blif",
         "exit": 134,
         "errors": [
-            "OUTPUT_BLIF Vector files differ."
+            "[OUTPUT_BLIF] Vector files differ."
         ],
         "warnings": [
-            "OUTPUT_BLIF Vector 1 mismatch:",
-            "OUTPUT_BLIF Vector 2 mismatch:",
-            "OUTPUT_BLIF Vector 3 mismatch:",
-            "OUTPUT_BLIF Vector 4 mismatch:",
-            "OUTPUT_BLIF Vector 5 mismatch:",
-            "OUTPUT_BLIF Vector 6 mismatch:",
-            "OUTPUT_BLIF Vector 7 mismatch:",
-            "OUTPUT_BLIF Vector 9 mismatch:",
-            "OUTPUT_BLIF Vector 14 mismatch:",
-            "OUTPUT_BLIF Vector 17 mismatch:",
-            "OUTPUT_BLIF Vector 18 mismatch:",
-            "OUTPUT_BLIF Vector 21 mismatch:",
-            "OUTPUT_BLIF Vector 22 mismatch:",
-            "OUTPUT_BLIF Vector 24 mismatch:",
-            "OUTPUT_BLIF Vector 25 mismatch:",
-            "OUTPUT_BLIF Vector 28 mismatch:",
-            "OUTPUT_BLIF Vector 31 mismatch:",
-            "OUTPUT_BLIF Vector 32 mismatch:",
-            "OUTPUT_BLIF Vector 35 mismatch:"
+            "[OUTPUT_BLIF] Vector 1 mismatch:",
+            "[OUTPUT_BLIF] Vector 2 mismatch:",
+            "[OUTPUT_BLIF] Vector 3 mismatch:",
+            "[OUTPUT_BLIF] Vector 4 mismatch:",
+            "[OUTPUT_BLIF] Vector 5 mismatch:",
+            "[OUTPUT_BLIF] Vector 6 mismatch:",
+            "[OUTPUT_BLIF] Vector 7 mismatch:",
+            "[OUTPUT_BLIF] Vector 9 mismatch:",
+            "[OUTPUT_BLIF] Vector 14 mismatch:",
+            "[OUTPUT_BLIF] Vector 17 mismatch:",
+            "[OUTPUT_BLIF] Vector 18 mismatch:",
+            "[OUTPUT_BLIF] Vector 21 mismatch:",
+            "[OUTPUT_BLIF] Vector 22 mismatch:",
+            "[OUTPUT_BLIF] Vector 24 mismatch:",
+            "[OUTPUT_BLIF] Vector 25 mismatch:",
+            "[OUTPUT_BLIF] Vector 28 mismatch:",
+            "[OUTPUT_BLIF] Vector 31 mismatch:",
+            "[OUTPUT_BLIF] Vector 32 mismatch:",
+            "[OUTPUT_BLIF] Vector 35 mismatch:"
         ]
     },
     "defparam/defparam_string/no_arch": {
@@ -56,21 +56,6 @@
         "Average Path": 4,
         "Estimated LUTs": 1,
         "Total Node": 3
-    },
-    "defparam/defparam_depth_1/no_arch": {
-        "test_name": "defparam/defparam_depth_1/no_arch",
-        "blif": "defparam_depth_1.blif",
-        "max_rss(MiB)": 30,
-        "exec_time(ms)": 5.1,
-        "simulation_time(ms)": 1.7,
-        "test_coverage(%)": 100,
-        "Pi": 10,
-        "Po": 10,
-        "logic element": 10,
-        "Longest Path": 3,
-        "Average Path": 3,
-        "Estimated LUTs": 10,
-        "Total Node": 10
     },
     "defparam/defparam_depth_1_failure/no_arch": {
         "test_name": "defparam/defparam_depth_1_failure/no_arch",
@@ -99,6 +84,36 @@
         "Average Path": 3,
         "Estimated LUTs": 3,
         "Total Node": 3
+    },
+    "defparam/defparam_depth_1/no_arch": {
+        "test_name": "defparam/defparam_depth_1/no_arch",
+        "blif": "defparam_depth_1.blif",
+        "max_rss(MiB)": 35.5,
+        "exec_time(ms)": 7.2,
+        "simulation_time(ms)": 2.5,
+        "test_coverage(%)": 100,
+        "Pi": 10,
+        "Po": 10,
+        "logic element": 10,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 10,
+        "Total Node": 10
+    },
+    "defparam/override_same_param_name/no_arch": {
+        "test_name": "defparam/override_same_param_name/no_arch",
+        "blif": "override_same_param_name.blif",
+        "max_rss(MiB)": 35.6,
+        "exec_time(ms)": 6.4,
+        "simulation_time(ms)": 2.3,
+        "test_coverage(%)": 100,
+        "Pi": 10,
+        "Po": 7,
+        "logic element": 12,
+        "Longest Path": 6,
+        "Average Path": 4,
+        "Estimated LUTs": 12,
+        "Total Node": 12
     },
     "DEFAULT": {
         "test_name": "n/a",
