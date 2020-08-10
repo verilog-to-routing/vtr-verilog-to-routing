@@ -2253,11 +2253,6 @@ void set_conditional_defaults(t_options& args) {
         args.anneal_sched_type.set(AUTO_SCHED, Provenance::INFERRED); // Otherwise use the automatic schedule
     }
 
-    //Are the blocks locked to locations given by a constraints file?
-    if (std::string(args.constraints_file) != "") {
-        VTR_ASSERT(!args.constraints_file.value().empty());
-    }
-
     /*
      * Routing
      */
