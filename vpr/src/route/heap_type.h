@@ -9,7 +9,15 @@
 #include <set>
 
 /* Extra path data needed by RCV, seperated from t_heap struct for performance reasons
- * Can be accessed by a pointer, won't be initialized unless needed */
+ * Can be accessed by a pointer, won't be initialized unless needed
+ *
+ * path_rr: The entire partial path up until the route tree
+ * 
+ * edge: A list of edges from each node in the partial path to reach the next node
+ * 
+ * backward_delay: The delay of the partial path plus the path from route tree to source
+ * 
+ * backward_cong: The congestion estimate of the partial path plus the path from route tree to source */
 struct t_heap_path {
     std::vector<int> path_rr;
     std::vector<int> edge;
@@ -43,18 +51,6 @@ struct t_heap_path {
  *
  * u.next:  pointer to the next s_heap structure in the free
  *          linked list.  Not used when on the heap.
- *
- * * path_rr: The entire partial path up until the route tree
- * 
- * edge: A list of edges from each node in the partial path to reach the next node
- * 
- * net_rr: The entire route tree
- *
- * partial_path_nodes: The entire partial path up until the route tree, stored as a set. 
- * 
- * backward_delay: The delay of the partial path plus the path from route tree to source
- * 
- * backward_cong: The congestion estimate of the partial path plus the path from route tree to source
  */
 struct t_heap {
     float cost = 0.;
