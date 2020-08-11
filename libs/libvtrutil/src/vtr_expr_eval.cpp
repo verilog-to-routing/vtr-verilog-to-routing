@@ -69,7 +69,7 @@ static int identifier_length(const char* str);
 static bool goto_next_char(int* str_ind, const string& pw_formula, char ch);
 
 bool same_string(std::string str1, std::string str2);
-bool additional_assignemnt_op(int arg1, int arg2);
+bool additional_assignment_op(int arg1, int arg2);
 
 /**** Function Implementations ****/
 /* returns integer result according to specified non-piece-wise formula and data */
@@ -714,7 +714,7 @@ static int apply_rpn_op(const Formula_Object& arg1, const Formula_Object& arg2, 
             result = arg1.data.num % arg2.data.num;
             break;
         case E_OP_AA:
-            result = additional_assignemnt_op(arg1.data.num, arg2.data.num);
+            result = additional_assignment_op(arg1.data.num, arg2.data.num);
             break;
         default:
             throw vtr::VtrError(vtr::string_fmt("in apply_rpn_op: invalid operation: %d\n", op.data.op), __FILE__, __LINE__);
@@ -844,7 +844,7 @@ bool same_string(std::string str1, std::string str2) {
 }
 
 //the += operator
-bool additional_assignemnt_op(int arg1, int arg2) {
+bool additional_assignment_op(int arg1, int arg2) {
     int result = 0;
     if (before_addition == 0)
         before_addition = arg1;
