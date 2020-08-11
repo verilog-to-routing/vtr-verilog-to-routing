@@ -4,6 +4,63 @@
 #include "vtr_log.h"
 #include "vpr_error.h"
 
+/* Bucket spacing algorithm:
+ *
+ * The size in cost each bucket consumes is a fixed width determined by
+ * conv_factor_.  The bucket index equation is simply:
+ *
+ *  bucket index = cost * conv_factor_
+ *
+ * The default conv_factor_ is 1e12, e.g. each bucket is 1 picosecond wide.
+ *
+ * There two reasons to change conv_factor_:
+ *  - The maximum cost item in the bucket would require too many buckets in
+ *    heap_, and would cause memory usage to climb higher than desired.
+ *  - The front bucket contains too many items, making the pop operation too
+ *    cost insenstive.
+ *
+ * The other consideration is to avoid rescaling the buckets too often, as
+ * that operation consumes time without delivering useful work.
+ *
+ * To prevent rescaling constantly, the bucket heap determines if a rescaling
+ * is needed based on two conditions:
+ *
+ *  - The maximum item cost (max_cost_) would require a bucket index that is
+ *    greater than max_buckets_.  When this occurs, a rescaling is done to
+ *    make the width of the buckets larger so that the cost index for the
+ *    max_cost_ item fits within max_buckets_.
+ *
+ *     - A larger max_buckets_ results in more memory consumption, but
+ *       accomidates a wider range of items without needing to rescale.
+ *
+ *  - The number of items in the first bucket exceeds kIncreaseFocusLimit. In
+ *    this case, the bucket heap will shrink the width of the buckets so that
+ *    the number of entries in the first bucket drops below
+ *    kIncreaseFocusLimit.
+ *
+ * In both of the above cases, rescaling is determined by the following
+ * (simplified) equation:
+ *
+ *    conv_factor_ = division_scaling_ / max_cost_
+ *
+ * The default division_scaling_ is kInitialDivisionScaling (50k).  This
+ * can be read as using 50k buckets to evenly divided based on the
+ * maximum cost.  For example, if max cost = 100 ns, then each bucket would
+ * be 2 picosecond wide.
+ *
+ * When the number of elements in the first bucket exceeds
+ * kIncreaseFocusLimit, division_scaling_ is multiplied by two, effectively
+ * halving the bucket size for a given max_cost_.  In addition max_buckets_
+ * is also multiplied by two to result in a similiar rescaling rate as
+ * max_cost_ increases.
+ *
+ * This multiply by two logic could result in an unbounded memory consumption
+ * in the number of buckets. To limit this, the 2x scaling for
+ * division_scaling_ and max_buckets_ is limited such that max_buckets_ never
+ * exceeds kMaxMaxBuckets
+ *
+ */
+
 // Initial bucket scaling.  A larger division scaling results in smaller cost
 // range per bucket.
 static constexpr float kInitialDivisionScaling = 50000.f;
@@ -130,6 +187,16 @@ void Bucket::empty_heap() {
 }
 
 float Bucket::rescale_func() const {
+    // Choose a scaling factor that accomidates division_scaling_ buckets
+    // between min_cost_ and max_cost_.
+    //
+    // If min and max are close to each other, assume 3 orders of
+    // magnitude between min and max.  The goal is to rescale less often
+    // when the larger costs haven't been seen yet.
+    //
+    // If min and max are at least 3 orders of magnitude apart, scale
+    // soley based on max cost.  The goal at this point is to keep the
+    // number of buckets between division_scaling_ and division_scaling_*2.
     return division_scaling_ / max_cost_ / std::max(1.f, 1000.f / (max_cost_ / min_cost_));
 }
 
@@ -164,21 +231,6 @@ void Bucket::check_scaling() {
 }
 
 void Bucket::rescale() {
-    // Choose a scaling factor that accomidates 50k buckets between
-    // min_cost_ and max_cost_.
-    //
-    // If min and max are close to each other, assume 3 orders of
-    // magnitude between min and max.  The goal is to rescale less often
-    // when the larger costs haven't been seen yet.
-    //
-    // If min and max are at least 3 orders of magnitude apart, scale
-    // soley based on max cost.  The goal at this point is to keep the
-    // number of buckets between 50k and 100k.
-    //
-    // NOTE:  The precision loss of the bucket approximation grows as the
-    // maximum cost increases.  The underlying assumption of this scaling
-    // algorithm is that the maximum cost will not result in a poor
-    // scaling factor such that all precision is lost.
     conv_factor_ = rescale_func();
     check_conv_factor();
     front_head_ = std::numeric_limits<size_t>::max();

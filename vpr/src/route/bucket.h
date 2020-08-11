@@ -263,7 +263,14 @@ class Bucket : public HeapInterface {
     size_t heap_size_;       /* Number of buckets */
     size_t heap_head_;       /* First non-empty bucket */
     size_t heap_tail_;       /* Last non-empty bucket */
-    float conv_factor_;      /* Cost bucket scaling factor */
+    float conv_factor_;      /* Cost bucket scaling factor.
+                              *
+                              * Larger conv_factor_ means each bucket is
+                              * smaller.
+                              *
+                              * bucket index = cost * conv_factor_
+                              *
+                              */
     float division_scaling_; /* Scaling factor used during rescaling.
                               * Larger division scaling results in larger
                               * conversion factor.
@@ -273,7 +280,7 @@ class Bucket : public HeapInterface {
                               */
 
     float min_cost_; /* Smallest cost seen */
-    float max_cost_; /* Large cost seen */
+    float max_cost_; /* Largest cost seen */
 
     size_t num_items_;                 /* Number of items in the bucket heap. */
     size_t max_index_;                 /* Maximum value for index. */
