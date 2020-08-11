@@ -851,7 +851,8 @@ struct t_annealing_sched {
  * doPlacement: true if placement is supposed to be done in the CAD flow, false otherwise */
 enum e_place_algorithm {
     BOUNDING_BOX_PLACE,
-    PATH_TIMING_DRIVEN_PLACE
+    PATH_TIMING_DRIVEN_PLACE,
+    SETUP_SLACK_ANALYSIS_PLACE
 };
 
 enum e_place_effort_scaling {
