@@ -219,10 +219,13 @@ def run(
     #Extra options to fine-tune LeakSanitizer (LSAN) behaviour.
     #Note that if VPR was compiled without LSAN these have no effect
     # 'suppressions=...' Add the LeakSanitizer (LSAN) suppression file
-    # 'exitcode=12' Use a consistent exitcode (on some systems LSAN don't use the default exit code of 23)
+    # 'exitcode=12' Use a consistent exitcode
+    # (on some systems LSAN don't use the default exit code of 23)
     # 'fast_unwind_on_malloc=0' Provide more accurate leak stack traces
 
-    environ["LSAN_OPTIONS"] = "suppressions={} exitcode=23 fast_unwind_on_malloc=0".format(find_vtr_file("lsan.supp"))\
+    environ["LSAN_OPTIONS"] = (
+        "suppressions={} exitcode=23 fast_unwind_on_malloc=0".format(find_vtr_file("lsan.supp"))
+        )
 
     command_runner.run_system_command(
         cmd, temp_dir=temp_dir, log_filename=log_filename, indent_depth=1
