@@ -760,10 +760,10 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
         to->path_data->backward_delay += cost_params.criticality * Tdel;
         to->path_data->backward_cong += (1. - cost_params.criticality) * get_rr_cong_cost(to_node, cost_params.pres_fac);
 
-        float expected_delay = router_lookahead_.get_expected_delay(to_node, target_node, cost_params, to->R_upstream);
-        float expected_cong = router_lookahead_.get_expected_cong(to_node, target_node, cost_params);
+        float expected_delay; // = router_lookahead_.get_expected_delay(to_node, target_node, cost_params, to->R_upstream);
+        float expected_cong; // = router_lookahead_.get_expected_cong(to_node, target_node, cost_params);
 
-        // std::tie(expected_delay, expected_cong) = router_lookahead_.get_expected_delay_and_cong(to_node, target_node, cost_params, to->R_upstream);
+        std::tie(expected_delay, expected_cong) = router_lookahead_.get_expected_delay_and_cong(to_node, target_node, cost_params, to->R_upstream);
 
         float expected_total_delay_cost; // = new_costs.backward_cost + cost_params.astar_fac * expected_cost;
         float expected_total_cong_cost;
@@ -886,8 +886,10 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
                        backward_path_cost, R_upstream);
     } else {
         float expected_total_cost;
-        float expected_delay = router_lookahead_.get_expected_delay(inode, target_node, cost_params, R_upstream);
-        float expected_cong = router_lookahead_.get_expected_cong(inode, target_node, cost_params);
+        float expected_delay; // = router_lookahead_.get_expected_delay(inode, target_node, cost_params, R_upstream);
+        float expected_cong; // = router_lookahead_.get_expected_cong(inode, target_node, cost_params);
+
+        std::tie(expected_delay, expected_cong) = router_lookahead_.get_expected_delay_and_cong(inode, target_node, cost_params, R_upstream);
 
         float expected_total_delay_cost; // = new_costs.backward_cost + cost_params.astar_fac * expected_cost;
         // float expected_total_cong = expected_cong + get_rr_cong_cost(inode);
