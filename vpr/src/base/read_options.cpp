@@ -1939,7 +1939,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             " * degree_bfs: sort by degree and then by BFS\n"
             " * random_shuffle: a random shuffle\n")
         .default_value("none")
-        .choices({"node", "degree_bfs", "random_shuffle"})
+        .choices({"none", "degree_bfs", "random_shuffle"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument(args.reorder_rr_graph_nodes_threshold, "--reorder_rr_graph_nodes_threshold")
