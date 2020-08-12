@@ -366,20 +366,20 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> orig_timi
             /*calculate slack, save the pin that has min slack to calculate total path delay*/
             if (analysis_type == HOLD) {
                 path_slack = calculate_clb_pin_slack(net_id, ipin, timing_info, netlist_pin_lookup, HOLD, atom_pin);
-                // if(path_slack > 0) {
-                //     path_slack = path_slack * 0.70 - 300e-12;
-                // } else {
-                //     path_slack = path_slack - 100e-12;
-                // }
+                if(path_slack > 0) {
+                    path_slack = path_slack * 0.70 - 300e-12;
+                } else {
+                    path_slack = path_slack - 100e-12;
+                }
                 hold_path_slack = path_slack;
             } else {
                 path_slack = calculate_clb_pin_slack(net_id, ipin, timing_info, netlist_pin_lookup, SETUP, atom_pin);
                 hold_path_slack = calculate_clb_pin_slack(net_id, ipin, orig_timing_info, netlist_pin_lookup, HOLD, atom_pin);
-                // if(hold_path_slack > 0) {
-                //     hold_path_slack = hold_path_slack * 0.70 - 300e-12;
-                // } else {
-                //     hold_path_slack = hold_path_slack - 100e-12;
-                // }
+                if(hold_path_slack > 0) {
+                    hold_path_slack = hold_path_slack * 0.70 - 300e-12;
+                } else {
+                    hold_path_slack = hold_path_slack - 100e-12;
+                }
             }
 
             total_path_delay = get_total_path_delay(timing_analyzer, analysis_type, net_id, ipin, atom_pin);
@@ -688,6 +688,10 @@ void route_budgets::increase_min_budgets_if_struggling(float delay_decrement, st
                     // If the hold_slack on this pin is less than zero, decrement by a constant amount
                     if (update_budget) {
                         delay_min_budget[net_id][ipin] -= delay_decrement;
+                        if (delay_min_budget[net_id][ipin] > delay_max_budget[net_id][ipin]) {
+                            delay_max_budget[net_id][ipin] -= 4 * delay_decrement;
+                        }
+
                         short_path_crit[net_id][ipin] *= 4;
                         // VTR_LOG("Increasing budgets to net %d pin %d, new budget %e\n", net_id, ipin, delay_min_budget[net_id][ipin]);
                         // keep_budget_in_bounds(delay_min_budget, net_id, pin_id);
