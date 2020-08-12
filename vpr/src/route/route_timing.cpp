@@ -105,6 +105,7 @@ static t_rt_node* setup_routing_resources(int itry,
                                           int min_incremental_reroute_fanout,
                                           CBRR& incremental_rerouting_res,
                                           t_rt_node** rt_node_of_sink,
+                                          const t_router_opts& router_opts,
                                           bool hold);
 
 static bool timing_driven_check_net_delays(ClbNetPinsMatrix<float>& net_delay);
@@ -406,7 +407,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
         // Calculate this once and pass it into net routing to check if should reroute for hold
         float worst_negative_slack = 0;
         if (budgeting_inf.if_set()) { 
-            worst_negative_slack = timing_info->hold_worst_negative_slack();
+            worst_negative_slack = timing_info->hold_total_negative_slack();
         }
 
         /*
@@ -978,6 +979,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
                                       router_opts.min_incremental_reroute_fanout,
                                       connections_inf,
                                       rt_node_of_sink,
+                                      router_opts,
                                       check_hold(router_opts, worst_neg_slack));
 
     bool high_fanout = is_high_fanout(num_sinks, router_opts.high_fanout_threshold);
@@ -1297,6 +1299,8 @@ static bool timing_driven_route_sink(
                                                                                                route_tree_nodes);
     }
 
+    VTR_ASSERT(!(budgeting_inf.if_set()) || cheapest.path_data != nullptr);
+
     if (!found_path) {
         ClusterBlockId src_block = cluster_ctx.clb_nlist.net_driver_block(net_id);
         ClusterBlockId sink_block = cluster_ctx.clb_nlist.pin_block(*(cluster_ctx.clb_nlist.net_pins(net_id).begin() + target_pin));
@@ -1334,9 +1338,14 @@ static bool timing_driven_route_sink(
     }
 
     if (budgeting_inf.if_set() && cheapest.path_data != nullptr && cost_params.delay_budget) {
+        // if ((size_t)net_id == 4002) VTR_LOG("NET 4002 HAS BACKWARDS DELAY OF %e\n", cheapest.path_data->backward_delay);
         if (cheapest.path_data->backward_delay < cost_params.delay_budget->min_delay) {
             budgeting_inf.set_should_reroute(net_id, true);
         }
+    }
+
+    if (budgeting_inf.if_set() && cheapest.path_data == nullptr && cost_params.delay_budget) {
+        // VTR_LOG("!!! CRITICAL ERROR Net %d\n", net_id);
     }
 
     pathfinder_update_path_occupancy(new_route_start_tptr, 1);
@@ -1355,6 +1364,7 @@ static t_rt_node* setup_routing_resources(int itry,
                                           int min_incremental_reroute_fanout,
                                           CBRR& connections_inf,
                                           t_rt_node** rt_node_of_sink,
+                                          const t_router_opts& router_opts,
                                           bool hold) {
     /* Build and return a partial route tree from the legal connections from last iteration.
      * along the way do:
@@ -1367,6 +1377,8 @@ static t_rt_node* setup_routing_resources(int itry,
     auto& route_ctx = g_vpr_ctx.routing();
 
     t_rt_node* rt_root;
+
+    bool init_path_data_struct = router_opts.routing_budgets_algorithm == YOYO;
 
     // for nets below a certain size (min_incremental_reroute_fanout), rip up any old routing
     // otherwise, we incrementally reroute by reusing legal parts of the previous iteration
@@ -1402,7 +1414,7 @@ static t_rt_node* setup_routing_resources(int itry,
 
         // check for edge correctness
         VTR_ASSERT_SAFE(is_valid_skeleton_tree(rt_root));
-        VTR_ASSERT_SAFE(should_route_net(net_id, connections_inf, true));
+        VTR_ASSERT_SAFE(should_route_net(net_id, connections_inf, true) || init_path_data_struct);
 
         //Prune the branches of the tree that don't legally lead to sinks
         rt_root = prune_route_tree(rt_root, connections_inf);
