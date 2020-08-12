@@ -140,7 +140,7 @@ def run(
         temp_dir=Path("."),
         log_filename="vpr.out",
         vpr_exec=None,
-        vpr_args=None,
+        vpr_args=None
 ):
     """
     Runs VPR with the specified configuration
