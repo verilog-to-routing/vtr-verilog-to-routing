@@ -51,6 +51,7 @@
 #include "tatum/echo_writer.hpp"
 #include "net_delay.h"
 #include "route_budgets.h"
+#include "vtr_time.h"
 
 #define SHORT_PATH_EXP 0.5
 
@@ -73,6 +74,9 @@ void route_budgets::free_budgets() {
         vtr::release_memory(delay_upper_bound);
         vtr::release_memory(short_path_crit);
         vtr::release_memory(num_times_congested);
+
+        vtr::release_memory(total_path_delays_hold);
+        vtr::release_memory(total_path_delays_setup);
     }
     set = false;
 }
@@ -88,6 +92,9 @@ void route_budgets::alloc_budget_memory() {
     delay_lower_bound = make_net_pins_matrix<float>(cluster_ctx.clb_nlist);
     delay_upper_bound = make_net_pins_matrix<float>(cluster_ctx.clb_nlist);
     short_path_crit = make_net_pins_matrix<float>(cluster_ctx.clb_nlist);
+
+    total_path_delays_hold = make_net_pins_matrix<float>(cluster_ctx.clb_nlist);
+    total_path_delays_setup = make_net_pins_matrix<float>(cluster_ctx.clb_nlist);
 }
 
 void route_budgets::load_initial_budgets() {
@@ -105,6 +112,8 @@ void route_budgets::load_initial_budgets() {
             should_reroute_for_hold[net_id] = false;
 
             short_path_crit[net_id][ipin] = 1;
+            total_path_delays_hold[net_id][ipin] = -2;
+            total_path_delays_setup[net_id][ipin] = -2;
         }
     }
 }
@@ -113,6 +122,9 @@ void route_budgets::load_route_budgets(ClbNetPinsMatrix<float>& net_delay,
                                        std::shared_ptr<SetupTimingInfo> timing_info,
                                        const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                        const t_router_opts& router_opts) {
+    
+    vtr::ScopedFinishTimer budget_timer("Calculating Route Budgets");
+
     /*This function loads the routing budgets depending on the option selected by the user
      * the default is to use the minimax algorithm. Other options include disabling this feature
      * or scale the delay by the criticality*/
@@ -370,8 +382,11 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> orig_timi
                 // }
             }
 
-            tatum::NodeId timing_node = atom_ctx.lookup.atom_pin_tnode(atom_pin);
-            total_path_delay = get_total_path_delay(timing_analyzer, analysis_type, timing_node);
+            total_path_delay = get_total_path_delay(timing_analyzer, analysis_type, net_id, ipin, atom_pin);
+            if ((size_t)net_id == 10) {
+                VTR_LOG("NET 10 TOTAL PATH DELAY IS %e\n", total_path_delay);
+            }
+
             if (total_path_delay == -1) {
                 /*Delay node is not valid, leave the budgets as is*/
                 continue;
@@ -452,7 +467,9 @@ float route_budgets::calculate_clb_pin_slack(ClusterNetId net_id, int ipin, std:
 
 float route_budgets::get_total_path_delay(std::shared_ptr<const tatum::SetupHoldTimingAnalyzer> timing_analyzer,
                                           analysis_type analysis_type,
-                                          tatum::NodeId timing_node) {
+                                          ClusterNetId net_id,
+                                          int ipin,
+                                          AtomPinId& atom_pin) {
     /*The total path delay through a connection is calculated using the arrival and required time
      * Arrival time describes how long it took to arrive at this node and thus is the value for the
      * delay before this node. The required time describes the time it should arrive this node.
@@ -460,6 +477,17 @@ float route_budgets::get_total_path_delay(std::shared_ptr<const tatum::SetupHold
      * and subtract the required time of the current node from it. The combination of the past
      * and future path delays is the total path delay through this connection. Returns a value
      * of -1 if no total path is found*/
+
+
+    if (total_path_delays_hold[net_id][ipin] != -2 && analysis_type == HOLD) {
+        return total_path_delays_hold[net_id][ipin];
+    } else if (total_path_delays_setup[net_id][ipin] != -2 && analysis_type == SETUP) {
+        return total_path_delays_setup[net_id][ipin];
+    }
+
+
+    auto& atom_ctx = g_vpr_ctx.atom();
+    tatum::NodeId timing_node = atom_ctx.lookup.atom_pin_tnode(atom_pin);
 
     auto arrival_tags = timing_analyzer->setup_tags(timing_node, tatum::TagType::DATA_ARRIVAL);
     auto required_tags = timing_analyzer->setup_tags(timing_node, tatum::TagType::DATA_REQUIRED);
@@ -471,6 +499,8 @@ float route_budgets::get_total_path_delay(std::shared_ptr<const tatum::SetupHold
 
     /*Check if valid*/
     if (arrival_tags.empty() || required_tags.empty()) {
+        if (analysis_type == HOLD) total_path_delays_hold[net_id][ipin] = -1;
+        else if (analysis_type == SETUP) total_path_delays_setup[net_id][ipin] = -1;
         return -1;
     }
 
@@ -483,11 +513,15 @@ float route_budgets::get_total_path_delay(std::shared_ptr<const tatum::SetupHold
     auto& timing_ctx = g_vpr_ctx.timing();
     /*If its already a sink node, then the total path is the arrival time*/
     if (timing_ctx.graph->node_type(timing_node) == tatum::NodeType::SINK) {
+        if (analysis_type == HOLD) total_path_delays_hold[net_id][ipin] = max_arrival_tag_iter->time().value();
+        else if (analysis_type == SETUP) total_path_delays_setup[net_id][ipin] = max_arrival_tag_iter->time().value();
         return max_arrival_tag_iter->time().value();
     }
 
     tatum::NodeId sink_node = min_required_tag_iter->origin_node();
     if (sink_node == tatum::NodeId::INVALID()) {
+        if (analysis_type == HOLD) total_path_delays_hold[net_id][ipin] = -1;
+        else if (analysis_type == SETUP) total_path_delays_setup[net_id][ipin] = -1;
         return -1;
     }
 
@@ -498,6 +532,8 @@ float route_budgets::get_total_path_delay(std::shared_ptr<const tatum::SetupHold
     }
 
     if (sink_node_tags.empty()) {
+        if (analysis_type == HOLD) total_path_delays_hold[net_id][ipin] = -1;
+        else if (analysis_type == SETUP) total_path_delays_setup[net_id][ipin] = -1;
         return -1;
     }
 
@@ -510,8 +546,13 @@ float route_budgets::get_total_path_delay(std::shared_ptr<const tatum::SetupHold
         float future_path_delay = final_required_time - min_required_tag_iter->time().value();
         float past_path_delay = max_arrival_tag_iter->time().value();
 
+        if (analysis_type == HOLD) total_path_delays_hold[net_id][ipin] = past_path_delay + future_path_delay;
+        else if (analysis_type == SETUP) total_path_delays_setup[net_id][ipin] = past_path_delay + future_path_delay;
+
         return past_path_delay + future_path_delay;
     } else {
+        if (analysis_type == HOLD) total_path_delays_hold[net_id][ipin] = -1;
+        else if (analysis_type == SETUP) total_path_delays_setup[net_id][ipin] = -1;
         return -1;
     }
 }

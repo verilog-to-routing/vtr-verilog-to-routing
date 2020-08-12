@@ -87,7 +87,9 @@ class route_budgets {
     float calculate_clb_pin_slack(ClusterNetId net_id, int ipin, std::shared_ptr<SetupHoldTimingInfo> timing_info, const ClusteredPinAtomPinsLookup& netlist_pin_lookup, analysis_type type, AtomPinId& atom_pin);
     float get_total_path_delay(std::shared_ptr<const tatum::SetupHoldTimingAnalyzer> timing_analyzer,
                                analysis_type analysis_type,
-                               tatum::NodeId timing_node);
+                               ClusterNetId net_id,
+                               int ipin,
+                               AtomPinId& atom_pin);
     void set_min_max_budgets_equal();
     std::shared_ptr<RoutingDelayCalculator> get_routing_calc(ClbNetPinsMatrix<float>& net_delay);
     void calculate_delay_targets();
@@ -104,6 +106,9 @@ class route_budgets {
     ClbNetPinsMatrix<float> delay_lower_bound; //[0..num_nets][0..clb_net[inet].pins]
     ClbNetPinsMatrix<float> delay_upper_bound; //[0..num_nets][0..clb_net[inet].pins]
     ClbNetPinsMatrix<float> short_path_crit;   //[0..num_nets][0..clb_net[inet].pins]
+
+    ClbNetPinsMatrix<float> total_path_delays_hold;
+    ClbNetPinsMatrix<float> total_path_delays_setup;
 
     /*used to keep count the number of continuous time this node was congested*/
     vtr::vector<ClusterNetId, int> num_times_congested; //[0..num_nets]
