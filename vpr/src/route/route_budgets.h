@@ -46,7 +46,7 @@ class route_budgets {
 
     /*lower budgets during congestion*/
     void update_congestion_times(ClusterNetId net_id);
-    void lower_budgets(float delay_decrement, std::shared_ptr<SetupHoldTimingInfo> timing_info);
+    void increase_min_budgets_if_struggling(float delay_decrement, std::shared_ptr<SetupHoldTimingInfo> timing_info, float worst_neg_slack, const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
     void increase_short_crit(ClusterNetId net_id, float delay_decs);
     void not_congested_this_iteration(ClusterNetId net_id);
 

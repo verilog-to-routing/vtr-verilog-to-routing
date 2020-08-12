@@ -405,7 +405,9 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
 
         // Calculate this once and pass it into net routing to check if should reroute for hold
         float worst_negative_slack = 0;
-        if (budgeting_inf.if_set()) worst_negative_slack = timing_info->hold_worst_negative_slack();
+        if (budgeting_inf.if_set()) { 
+            worst_negative_slack = timing_info->hold_worst_negative_slack();
+        }
 
         /*
          * Route each net
@@ -611,8 +613,8 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
 
             // Increase short path criticality if it's having a hard time resolving hold violations due to congestion
             if (budgeting_inf.if_set()) {
-                increase_short_path_crit_if_congested(rerouted_nets, budgeting_inf, itry);
-                // if (itry > 5) budgeting_inf.lower_budgets(-300e-12, timing_info);
+                if (worst_negative_slack != 0) increase_short_path_crit_if_congested(rerouted_nets, budgeting_inf, itry);
+                if (itry > 5 && worst_negative_slack != 0) budgeting_inf.increase_min_budgets_if_struggling(-100e-12, timing_info, worst_negative_slack, netlist_pin_lookup);
             }
         }
 

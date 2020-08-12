@@ -122,8 +122,6 @@ void route_budgets::load_route_budgets(ClbNetPinsMatrix<float>& net_delay,
                                        std::shared_ptr<SetupTimingInfo> timing_info,
                                        const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                        const t_router_opts& router_opts) {
-    
-    vtr::ScopedFinishTimer budget_timer("Calculating Route Budgets");
 
     /*This function loads the routing budgets depending on the option selected by the user
      * the default is to use the minimax algorithm. Other options include disabling this feature
@@ -137,6 +135,8 @@ void route_budgets::load_route_budgets(ClbNetPinsMatrix<float>& net_delay,
         set = false;
         return;
     }
+
+    vtr::ScopedFinishTimer budget_timer("Calculating Route Budgets");
 
     /*allocate and load memory for budgets*/
     alloc_budget_memory();
@@ -383,9 +383,9 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> orig_timi
             }
 
             total_path_delay = get_total_path_delay(timing_analyzer, analysis_type, net_id, ipin, atom_pin);
-            if ((size_t)net_id == 10) {
-                VTR_LOG("NET 10 TOTAL PATH DELAY IS %e\n", total_path_delay);
-            }
+            // if ((size_t)net_id == 10) {
+            //     VTR_LOG("NET 10 TOTAL PATH DELAY IS %e\n", total_path_delay);
+            // }
 
             if (total_path_delay == -1) {
                 /*Delay node is not valid, leave the budgets as is*/
@@ -478,13 +478,11 @@ float route_budgets::get_total_path_delay(std::shared_ptr<const tatum::SetupHold
      * and future path delays is the total path delay through this connection. Returns a value
      * of -1 if no total path is found*/
 
-
     if (total_path_delays_hold[net_id][ipin] != -2 && analysis_type == HOLD) {
         return total_path_delays_hold[net_id][ipin];
     } else if (total_path_delays_setup[net_id][ipin] != -2 && analysis_type == SETUP) {
         return total_path_delays_setup[net_id][ipin];
     }
-
 
     auto& atom_ctx = g_vpr_ctx.atom();
     tatum::NodeId timing_node = atom_ctx.lookup.atom_pin_tnode(atom_pin);
@@ -657,26 +655,46 @@ void route_budgets::not_congested_this_iteration(ClusterNetId net_id) {
     num_times_congested[net_id] = 0;
 }
 
-void route_budgets::lower_budgets(float delay_decrement, std::shared_ptr<SetupHoldTimingInfo> timing_info) {
+/* If the router is failing to resolve worst hold slack, increase the min delay budgets on nets with negative hold slack */
+void route_budgets::increase_min_budgets_if_struggling(float delay_decrement, std::shared_ptr<SetupHoldTimingInfo> timing_info, float worst_neg_slack, const ClusteredPinAtomPinsLookup& netlist_pin_lookup) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    negative_hold_slacks.push(timing_info->hold_worst_negative_slack());
+    // Keep a history of previous neg slacks
+    // Instead track number of hold violating nets being resolved in the future?
+    negative_hold_slacks.push(worst_neg_slack);
 
-    if ((negative_hold_slacks.size() == 3)) {
+    if ((negative_hold_slacks.size() == 4)) {
         if (negative_hold_slacks.back() == negative_hold_slacks.front() && negative_hold_slacks.front() != 0) {
             /*Decrease the budgets by a delay increment when the congested times is high enough*/
             for (auto net_id : cluster_ctx.clb_nlist.nets()) {
                 for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
                     int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
-                    if (delay_min_budget[net_id][ipin] - delay_lower_bound[net_id][ipin] >= 0) {
+                    // For now, if there is any negative hold slack increase the budget of the pin
+                    // TODO look into smartly increasing budgets using calculated hold slack
+                    
+                    bool update_budget = false; 
+
+                    for (auto& atom_pin : netlist_pin_lookup.connected_atom_pins(pin_id)) {
+                        float hold_slack = timing_info->hold_pin_slack(atom_pin);
+
+                        if (hold_slack < 0) {
+                            update_budget = true;
+                            break;
+                        }
+                    }
+
+                    // If the hold_slack on this pin is less than zero, decrement by a constant amount
+                    if (update_budget) {
                         delay_min_budget[net_id][ipin] -= delay_decrement;
-                        keep_budget_in_bounds(delay_min_budget, net_id, pin_id);
+                        // VTR_LOG("Increasing budgets to net %d pin %d, new budget %e\n", net_id, ipin, delay_min_budget[net_id][ipin]);
+                        // keep_budget_in_bounds(delay_min_budget, net_id, pin_id);
                     }
                 }
-                // num_times_congested[net_id] = 0;
             }
 
-            VTR_LOG("Increasing budgets\n");
+            // Empty queue so we are giving the router time to re stabilize
+            std::queue<float> empty;
+            std::swap(empty, negative_hold_slacks);
         }
 
         negative_hold_slacks.pop();
