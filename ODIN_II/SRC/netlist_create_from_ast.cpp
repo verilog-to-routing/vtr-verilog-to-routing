@@ -735,7 +735,7 @@ void create_all_driver_nets_in_this_scope(char* instance_name_prefix, sc_hierarc
         oassert(local_symbol_table[i]->type == VAR_DECLARE || local_symbol_table[i]->type == BLOCKING_STATEMENT);
         if (
             /* all registers are drivers */
-            (local_symbol_table[i]->types.variable.is_reg) || (local_symbol_table[i]->types.variable.is_integer)
+            (local_symbol_table[i]->types.variable.is_reg)
             /* a wire that is an input can be a driver */
             || ((local_symbol_table[i]->types.variable.is_wire)
                 && (!local_symbol_table[i]->types.variable.is_input))
@@ -1248,7 +1248,7 @@ void create_symbol_table_for_scope(ast_node_t* module_items, sc_hierarchy* local
                         continue;
 
                     oassert(var_declare->type == VAR_DECLARE);
-                    oassert((var_declare->types.variable.is_input) || (var_declare->types.variable.is_output) || (var_declare->types.variable.is_reg) || (var_declare->types.variable.is_integer) || (var_declare->types.variable.is_genvar) || (var_declare->types.variable.is_wire));
+                    oassert((var_declare->types.variable.is_input) || (var_declare->types.variable.is_output) || (var_declare->types.variable.is_reg) || (var_declare->types.variable.is_genvar) || (var_declare->types.variable.is_wire));
 
                     if (var_declare->types.variable.is_input
                         && var_declare->types.variable.is_reg) {
@@ -1281,15 +1281,14 @@ void create_symbol_table_for_scope(ast_node_t* module_items, sc_hierarchy* local
                             /* check for an initial value and copy it over if found */
                             ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.initial_value = init_value;
                         } else if ((var_declare->types.variable.is_reg) || (var_declare->types.variable.is_wire)
-                                   || (var_declare->types.variable.is_integer) || (var_declare->types.variable.is_genvar)) {
+                                   || (var_declare->types.variable.is_genvar)) {
                             /* copy the output status over */
                             ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_wire = var_declare->types.variable.is_wire;
                             ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_reg = var_declare->types.variable.is_reg;
 
-                            ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_integer = var_declare->types.variable.is_integer;
                             /* check for an initial value and copy it over if found */
                             ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.initial_value = init_value;
-                        } else if (!var_declare->types.variable.is_integer) {
+                        } else {
                             abort();
                         }
                     } else {
@@ -1349,7 +1348,6 @@ void create_symbol_table_for_scope(ast_node_t* module_items, sc_hierarchy* local
                     var_declare->types.variable.is_wire = true;
                     var_declare->types.variable.is_reg = false;
 
-                    var_declare->types.variable.is_integer = false;
                     var_declare->types.variable.is_input = false;
 
                     allocate_children_to_node(var_declare, {node, NULL, NULL, NULL, NULL, NULL});
@@ -5183,7 +5181,7 @@ ast_node_t* resolve_top_parameters_defined_by_parameters(ast_node_t* node, sc_hi
     count++;
 
     if (count > RECURSIVE_LIMIT) {
-        error_message(NETLIST, node->loc, "Exceeds recursion count limit of %s", RECURSIVE_LIMIT);
+        error_message(NETLIST, node->loc, "Exceeds recursion count limit of %d", RECURSIVE_LIMIT);
     }
 
     if (node->type == IDENTIFIERS) {

@@ -150,6 +150,8 @@ struct t_options {
     argparse::ArgValue<bool> read_rr_edge_metadata;
     argparse::ArgValue<bool> exit_after_first_routing_iteration;
     argparse::ArgValue<e_check_route_option> check_route;
+    argparse::ArgValue<size_t> max_logged_overused_rr_nodes;
+    argparse::ArgValue<bool> generate_rr_node_overuse_report;
 
     /* Timing-driven router options only */
     argparse::ArgValue<float> astar_fac;

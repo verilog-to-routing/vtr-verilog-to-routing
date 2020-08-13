@@ -52,23 +52,18 @@ class CommandRunner:
             timeout_sec=None,
             max_memory_mb=None,
             track_memory=True,
-            verbose_error=None,
             verbose=False,
             echo_cmd=None,
             indent="\t",
             show_failures=False,
             valgrind=False,
     ):
-
-        if verbose_error is None:
-            verbose_error = verbose
         if echo_cmd is None:
             echo_cmd = verbose
 
         self._timeout_sec = timeout_sec
         self._max_memory_mb = max_memory_mb
         self._track_memory = track_memory
-        self._verbose_error = verbose_error
         self._verbose = verbose
         self._echo_cmd = echo_cmd
         self._indent = indent
@@ -92,7 +87,7 @@ class CommandRunner:
             temp_dir: The directory to run the command in. Default: None (uses object default).
             expected_return_code: The expected return code from the command.
             If the actula return code does not match, will generate an exception. Default: 0
-            indent_depth: How deep to indent the tool output in verbose mode. Default 0
+            indent_depth: How deep to indent the tool output in verbose mode. Default: 0
         """
         # Save the original command
         orig_cmd = cmd
@@ -115,8 +110,8 @@ class CommandRunner:
 
         # Enable memory tracking?
         memory_tracking = ["/usr/bin/env", "time", "-v"]
-        if self._track_memory and check_cmd(memory_tracking[0]):
-            cmd = (
+        cmd = (
+            (
                 memory_tracking
                 + [
                     "valgrind",
@@ -126,12 +121,15 @@ class CommandRunner:
                     "--errors-for-leak-kinds=none",
                     "--track-origins=yes",
                     "--log-file=valgrind.log",
-                    "--error-limit=no",
+                    "--error-limit=no"
                 ]
                 + cmd
                 if self._valgrind
                 else memory_tracking + cmd
             )
+            if self._track_memory and check_cmd(memory_tracking[0])
+            else cmd
+        )
 
         # Flush before calling subprocess to ensure output is ordered
         # correctly if stdout is buffered
@@ -155,7 +153,7 @@ class CommandRunner:
                 stdout=subprocess.PIPE,  # We grab stdout
                 stderr=stderr,  # stderr redirected to stderr
                 universal_newlines=True,  # Lines always end in \n
-                cwd=str(temp_dir),  # Where to run the command
+                cwd=str(temp_dir)  # Where to run the command
             )
 
             # Read the output line-by-line and log it
@@ -198,13 +196,18 @@ class CommandRunner:
         cmd_errored = cmd_returncode != expected_return_code
 
         # Send to stdout
-        if self._show_failures and (
-                self._verbose or (cmd_errored and self._verbose_error)
-        ):
+        if self._show_failures and self._verbose:
             for line in cmd_output:
-                print(indent_depth * self._indent + line,)
+                print(indent_depth * self._indent + line, end="")
 
         if self._show_failures and cmd_errored:
+            print(
+                "\nFailed log file follows({}):".format(
+                    str((temp_dir / log_filename).resolve())
+                )
+            )
+            for line in cmd_output:
+                print(indent_depth * self._indent + "<" + line, end="")
             raise CommandError(
                 "Executable {exec_name} failed".format(
                     exec_name=PurePath(orig_cmd[0]).name
@@ -214,7 +217,12 @@ class CommandRunner:
                 returncode=cmd_returncode,
             )
         if cmd_errored:
-            raise VtrError("{}".format(PurePath(orig_cmd[0]).name))
+            raise CommandError(
+                "{}".format(PurePath(orig_cmd[0]).name),
+                cmd=cmd,
+                log=str(temp_dir / log_filename),
+                returncode=cmd_returncode,
+            )
         return cmd_output, cmd_returncode
 
     # pylint: enable=too-many-arguments, too-many-instance-attributes, too-few-public-methods, too-many-locals

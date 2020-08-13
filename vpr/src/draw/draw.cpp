@@ -3229,7 +3229,30 @@ static void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, flo
         ss << 1e9 * incr_delay; //In nanoseconds
         std::string incr_delay_str = ss.str();
 
-        g->draw_text(text_bbox.center(), incr_delay_str.c_str(), text_bbox.width(), text_bbox.height());
+        // Get the angle of line, to rotate the text
+        float text_angle = (180 / M_PI) * atan((end.y - start.y) / (end.x - start.x));
+
+        // Get the screen coordinates for text drawing
+        ezgl::rectangle screen_coords = g->world_to_screen(text_bbox);
+        g->set_text_rotation(text_angle);
+
+        // Set the text colour to black to differentiate it from the line
+        g->set_font_size(16);
+        g->set_color(ezgl::color(0, 0, 0));
+
+        g->set_coordinate_system(ezgl::SCREEN);
+
+        // Find an offset so it is sitting on top/below of the line
+        float x_offset = screen_coords.center().x - 8 * sin(text_angle * (M_PI / 180));
+        float y_offset = screen_coords.center().y - 8 * cos(text_angle * (M_PI / 180));
+
+        ezgl::point2d offset_text_bbox(x_offset, y_offset);
+        g->draw_text(offset_text_bbox, incr_delay_str.c_str(), text_bbox.width(), text_bbox.height());
+
+        g->set_font_size(14);
+
+        g->set_text_rotation(0);
+        g->set_coordinate_system(ezgl::WORLD);
     }
 }
 

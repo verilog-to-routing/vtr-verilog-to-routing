@@ -27,11 +27,11 @@
     range = [ 1.0, 255.0 ]
 
 ["errors"]
-    regex = "Error::(.*)"
+    regex = "(?:.*/([^/]+):)?[\s]*error(\[[^:]*\]): (.*)"
     default = []
 
 ["warnings"]
-    regex = "Warning::(.*)"
+    regex = "(?:.*/([^/]+):)?[\s]*warning(\[[^:]*\]): (.*)"
     default = []
 
 ["expectation"]

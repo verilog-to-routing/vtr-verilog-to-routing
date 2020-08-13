@@ -18,10 +18,10 @@
         "verilog": "specparam_failure.v",
         "exit": 134,
         "errors": [
-            "PARSE_TO_AST Parser found (1) errors in your syntax, exiting"
+            "[PARSE_TO_AST] Parser found (1) errors in your syntax, exiting"
         ],
         "warnings": [
-            "PARSE_TO_AST specparam_failure.v:1 error in parsing: (syntax error, unexpected vSPECPARAM, expecting vMODULE or preDEFAULT_NETTYPE)"
+            "specparam_failure.v:1:1 [PARSE_TO_AST] error in parsing: (syntax error, unexpected vSPECPARAM, expecting vMODULE or preDEFAULT_NETTYPE)"
         ]
     },
     "specparam/specparam_inside/no_arch": {
@@ -29,10 +29,10 @@
         "verilog": "specparam_inside.v",
         "exit": 134,
         "errors": [
-            "PARSE_TO_AST Parser found (1) errors in your syntax, exiting"
+            "[PARSE_TO_AST] Parser found (1) errors in your syntax, exiting"
         ],
         "warnings": [
-            "PARSE_TO_AST specparam_inside.v:11 error in parsing: (syntax error, unexpected ',')"
+            "specparam_inside.v:11:7 [PARSE_TO_AST] error in parsing: (syntax error, unexpected ',')"
         ]
     },
     "specparam/specparam_outside/no_arch": {
@@ -40,11 +40,11 @@
         "verilog": "specparam_outside.v",
         "exit": 134,
         "errors": [
-            "PARSE_TO_AST Parser found (2) errors in your syntax, exiting"
+            "[PARSE_TO_AST] Parser found (2) errors in your syntax, exiting"
         ],
         "warnings": [
-            "PARSE_TO_AST specparam_outside.v:8 error in parsing: (syntax error, unexpected vSPECPARAM)",
-            "PARSE_TO_AST specparam_outside.v:12 error in parsing: (syntax error, unexpected ',')"
+            "specparam_outside.v:8:1 [PARSE_TO_AST] error in parsing: (syntax error, unexpected vSPECPARAM)",
+            "specparam_outside.v:12:7 [PARSE_TO_AST] error in parsing: (syntax error, unexpected ',')"
         ]
     },
     "DEFAULT": {

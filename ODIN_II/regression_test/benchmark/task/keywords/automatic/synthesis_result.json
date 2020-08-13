@@ -4,11 +4,11 @@
         "verilog": "recursive_function.v",
         "exit": 134,
         "errors": [
-            "NETLIST recursive_function.v:8 This output (simple_op.function_instance_0.function_instance_1^factorial~0) must exist...must be an error"
+            "recursive_function.v:8:9 [NETLIST] This output (simple_op.function_instance_0.function_instance_1^factorial~0) must exist...must be an error"
         ],
         "warnings": [
-            "AST recursive_function.v:14 ODIN II does not (yet) differentiate between automatic and static tasks & functions.IGNORING",
-            "AST recursive_function.v:14 ODIN_II does not fully support input/output integers in functions"
+            "recursive_function.v:8:9 [AST] Odin does not handle signed REG (factorial)",
+            "recursive_function.v:14:1 [AST] ODIN II does not (yet) differentiate between automatic and static tasks & functions.IGNORING"
         ]
     },
     "automatic/recursive_task/no_arch": {
@@ -16,10 +16,10 @@
         "verilog": "recursive_task.v",
         "exit": 134,
         "errors": [
-            "AST recursive_task.v:10 Module already has input with this name in"
+            "recursive_task.v:10:2 [AST] Module already has input with this name in"
         ],
         "warnings": [
-            "PARSE_TO_AST recursive_task.v:9 error in parsing: (syntax error, unexpected vINTEGER, expecting vSYMBOL_ID)"
+            "recursive_task.v:9:1 [PARSE_TO_AST] error in parsing: (syntax error, unexpected vINTEGER, expecting vSYMBOL_ID)"
         ]
     },
     "DEFAULT": {

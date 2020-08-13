@@ -15,10 +15,10 @@
         "verilog": "missing_endmodule_failure.v",
         "exit": 134,
         "errors": [
-            "PARSE_TO_AST Parser found (1) errors in your syntax, exiting"
+            "[PARSE_TO_AST] Parser found (1) errors in your syntax, exiting"
         ],
         "warnings": [
-            "PARSE_TO_AST error in parsing: (syntax error, unexpected end of file)"
+            "[PARSE_TO_AST] error in parsing: (syntax error, unexpected end of file)"
         ]
     },
     "macromodule/multiple_macromodules/no_arch": {
@@ -37,7 +37,7 @@
         "verilog": "multiple_topmodules.v",
         "exit": 134,
         "errors": [
-            "AST Found multiple top level modules"
+            "[AST] Found multiple top level modules"
         ]
     },
     "macromodule/repeated_macromodule_failure/no_arch": {
@@ -45,7 +45,7 @@
         "verilog": "repeated_macromodule_failure.v",
         "exit": 134,
         "errors": [
-            "AST repeated_macromodule_failure.v:28 module names with the same name -> simple_op"
+            "repeated_macromodule_failure.v:28:1 [AST] module names with the same name -> simple_op"
         ]
     },
     "DEFAULT": {

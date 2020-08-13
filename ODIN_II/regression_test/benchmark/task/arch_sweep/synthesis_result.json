@@ -5,7 +5,7 @@
         "verilog": "both_ram.v",
         "exit": 134,
         "errors": [
-            "NETLIST both_ram.v:49 Memory pram.inst1 of depth 2^16 exceeds ODIN bound of 2^10."
+            "both_ram.v:49:1 [NETLIST] Memory pram.inst1 of depth 2^16 exceeds ODIN bound of 2^10."
         ]
     },
     "arch_sweep/both_ram/k6_N10_mem32K_40nm": {
