@@ -23,7 +23,7 @@ static int check_macro_can_be_placed(t_pl_macro pl_macro, int itype, t_pl_loc he
 static int try_place_macro(int itype, int ipos, int isub_tile, t_pl_macro pl_macro);
 static void initial_placement_pl_macros(int macros_max_num_tries, std::vector<std::vector<int>>& free_locations);
 
-static void initial_placement_blocks(std::vector<std::vector<int>>& free_locations, std::string pad_loc_type);
+static void initial_placement_blocks(std::vector<std::vector<int>>& free_locations, enum e_pad_loc_type pad_loc_type);
 
 static t_physical_tile_type_ptr pick_placement_type(t_logical_block_type_ptr logical_block,
                                                     int num_needed_types,
@@ -296,7 +296,7 @@ static void initial_placement_pl_macros(int macros_max_num_tries, std::vector<st
 
 /* Place blocks that are NOT a part of any macro.
  * We'll randomly place each block in the clustered netlist, one by one. */
-static void initial_placement_blocks(std::vector<std::vector<int>>& free_locations, std::string pad_loc_type) {
+static void initial_placement_blocks(std::vector<std::vector<int>>& free_locations, enum e_pad_loc_type pad_loc_type) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
@@ -368,7 +368,7 @@ static void initial_placement_blocks(std::vector<std::vector<int>>& free_locatio
         place_ctx.block_locs[blk_id].loc = to;
 
         //Mark IOs as fixed if specifying a (fixed) random placement
-        if (is_io_type(pick_best_physical_type(logical_block)) && pad_loc_type == "random") {
+        if (is_io_type(pick_best_physical_type(logical_block)) && pad_loc_type == RANDOM) {
             place_ctx.block_locs[blk_id].is_fixed = true;
         }
 
@@ -396,7 +396,7 @@ static t_physical_tile_type_ptr pick_placement_type(t_logical_block_type_ptr log
     return nullptr;
 }
 
-void initial_placement(std::string pad_loc_type, const char* constraints_file) {
+void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints_file) {
     vtr::ScopedStartFinishTimer timer("Initial Placement");
 
     /* Randomly places the blocks to create an initial placement. We rely on

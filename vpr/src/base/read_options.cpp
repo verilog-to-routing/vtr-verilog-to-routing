@@ -343,6 +343,37 @@ struct ParsePlaceAlgorithm {
     }
 };
 
+struct ParseFixPins {
+    ConvertedValue<e_pad_loc_type> from_str(std::string str) {
+        ConvertedValue<e_pad_loc_type> conv_value;
+        if (str == "free")
+            conv_value.set_value(FREE);
+        else if (str == "random")
+            conv_value.set_value(RANDOM);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_router_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_pad_loc_type val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == FREE)
+            conv_value.set_value("free");
+        else {
+            VTR_ASSERT(val == RANDOM);
+            conv_value.set_value("random");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"free", "random"};
+    }
+};
+
 struct ParseClusterSeed {
     ConvertedValue<e_cluster_seed> from_str(std::string str) {
         ConvertedValue<e_cluster_seed> conv_value;
@@ -1596,12 +1627,13 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("0.25")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_grp.add_argument(args.pad_loc_type, "--fix_pins")
+    place_grp.add_argument<e_pad_loc_type, ParseFixPins>(args.pad_loc_type, "--fix_pins")
         .help(
             "Fixes I/O pad locations randomly during placement. Valid options:\n"
             " * 'free' allows placement to optimize pad locations\n"
             " * 'random' fixes pad locations to arbitrary locations\n.")
         .default_value("free")
+		.choices({"free", "random"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.constraints_file, "--fix_clusters")
