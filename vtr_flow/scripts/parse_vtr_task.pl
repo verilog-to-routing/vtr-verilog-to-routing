@@ -150,6 +150,7 @@ sub parse_single_task {
 	my $qor_parse_file;
         my $second_parse_file;
         my $counter = 0;
+	my $single_check_golden = $check_golden;
 	foreach my $line (@config_data) {
 
 		# Ignore comments
@@ -174,7 +175,7 @@ sub parse_single_task {
                                     $second_parse_file = expand_user_path($value);
                                     $counter = 0;
                                     #don't need to check golden, only compare between two files
-                                    $check_golden = 0;
+                                    $single_check_golden = 0;
                         }
                         else{
                             $parse_file = expand_user_path($value);
@@ -281,11 +282,10 @@ sub parse_single_task {
         return check_two_files ( $task_name, $task_path, $run_path, "$run_path/parse_results.txt", "$run_path/parse_results_2.txt", 0);
         
     }
-
-	if ($check_golden) {
+	if ($single_check_golden) {
         #Returns 1 if failed
         if ($second_parse_file eq ""){
-            return check_two_files( $task_name, $task_path, $run_path, "$run_path/parse_results.txt", "$task_path/config/golden_results.txt", $check_golden);
+            return check_two_files( $task_name, $task_path, $run_path, "$run_path/parse_results.txt", "$task_path/config/golden_results.txt", $single_check_golden);
         }
 	}
 
