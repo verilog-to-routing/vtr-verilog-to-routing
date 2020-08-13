@@ -130,9 +130,15 @@ if ($calc_geomean) {
 exit $num_golden_failures;
 
 sub parse_single_task {
+	# This routine can operate in a few different ways":
+		# Parse a result file and compare it to a golen (prior) result. This is the default functionality
+		# Parse two result files and check equivelence if a second file is provided in the config file. This option disables the comparison to the golden results.
+		# Optionally, in conjunction with either of the two above options, a qor_parse_file can be provided in the config file and also be compared to the first parsed result file
+
+
 	my $task_name = shift;
 	(my $task_path = $task_name) =~ s/\s+$//;
-
+	
     # first see if task_name is the task path
 	if (! -e "$task_path/config/config.txt") {
 	    ($task_path = "$vtr_flow_path/tasks/$task_name") =~ s/\s+$//;
@@ -150,7 +156,10 @@ sub parse_single_task {
 	my $qor_parse_file;
         my $second_parse_file;
         my $counter = 0;
+
+	#determine if this test individual test is compared to the golden values or not. 
 	my $single_check_golden = $check_golden;
+
 	foreach my $line (@config_data) {
 
 		# Ignore comments
@@ -174,7 +183,8 @@ sub parse_single_task {
                                     #second time parse file
                                     $second_parse_file = expand_user_path($value);
                                     $counter = 0;
-                                    #don't need to check golden, only compare between two files
+                                    #don't need to check golden for this test, only compare between two files
+									#If we used the check_golden vairable here, any test following this test would also not compare to golden values. 
                                     $single_check_golden = 0;
                         }
                         else{
