@@ -1299,8 +1299,6 @@ static bool timing_driven_route_sink(
                                                                                                route_tree_nodes);
     }
 
-    VTR_ASSERT(!(budgeting_inf.if_set()) || cheapest.path_data != nullptr);
-
     if (!found_path) {
         ClusterBlockId src_block = cluster_ctx.clb_nlist.net_driver_block(net_id);
         ClusterBlockId sink_block = cluster_ctx.clb_nlist.pin_block(*(cluster_ctx.clb_nlist.net_pins(net_id).begin() + target_pin));
@@ -1338,14 +1336,9 @@ static bool timing_driven_route_sink(
     }
 
     if (budgeting_inf.if_set() && cheapest.path_data != nullptr && cost_params.delay_budget) {
-        // if ((size_t)net_id == 4002) VTR_LOG("NET 4002 HAS BACKWARDS DELAY OF %e\n", cheapest.path_data->backward_delay);
         if (cheapest.path_data->backward_delay < cost_params.delay_budget->min_delay) {
             budgeting_inf.set_should_reroute(net_id, true);
         }
-    }
-
-    if (budgeting_inf.if_set() && cheapest.path_data == nullptr && cost_params.delay_budget) {
-        // VTR_LOG("!!! CRITICAL ERROR Net %d\n", net_id);
     }
 
     pathfinder_update_path_occupancy(new_route_start_tptr, 1);

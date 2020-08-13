@@ -680,7 +680,7 @@ void route_budgets::increase_min_budgets_if_struggling(float delay_decrement, st
                         if (hold_slack < 0) {
                             update_budget = true;
                             set_should_reroute(net_id, true);
-                            VTR_LOG("SLACK ON NET %d PIN %d slack: %e min_budget: %e short_crit: %e REROUTE?: %s\n", net_id, ipin, hold_slack, delay_min_budget[net_id][ipin], short_path_crit[net_id][ipin], get_should_reroute(net_id) ? "true" : "false");
+                            // VTR_LOG("SLACK ON NET %d PIN %d slack: %e min_budget: %e short_crit: %e REROUTE?: %s\n", net_id, ipin, hold_slack, delay_min_budget[net_id][ipin], short_path_crit[net_id][ipin], get_should_reroute(net_id) ? "true" : "false");
                             break;
                         }
                     }
