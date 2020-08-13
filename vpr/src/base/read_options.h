@@ -104,7 +104,7 @@ struct t_options {
     argparse::ArgValue<float> PlaceSuccessTarget;
     argparse::ArgValue<sched_type> anneal_sched_type;
     argparse::ArgValue<e_place_algorithm> PlaceAlgorithm;
-    argparse::ArgValue<std::string> pad_loc_type;
+    argparse::ArgValue<e_pad_loc_type> pad_loc_type;
     argparse::ArgValue<int> PlaceChanWidth;
     argparse::ArgValue<float> place_rlim_escape_fraction;
     argparse::ArgValue<std::string> place_move_stats_file;

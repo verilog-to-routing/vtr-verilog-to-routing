@@ -511,12 +511,15 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
         }
 
         VTR_LOG("PlacerOpts.pad_loc_type: ");
-        if (PlacerOpts.pad_loc_type == "free") {
-            VTR_LOG("FREE\n");
-        } else if (PlacerOpts.pad_loc_type == "random") {
-            VTR_LOG("RANDOM\n");
-        } else {
-            VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown I/O pad location type\n");
+        switch (PlacerOpts.pad_loc_type) {
+        	case FREE:
+        		VTR_LOG("FREE\n");
+        		break;
+        	case RANDOM:
+        		VTR_LOG("RANDOM\n");
+        		break;
+        	default:
+        		VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown I/O pad location type\n");
         }
 
         VTR_LOG("PlacerOpts.constraints_file: ");
