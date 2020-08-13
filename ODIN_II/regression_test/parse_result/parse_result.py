@@ -547,9 +547,11 @@ def regex_line(toml_dict, header, line):
 	entry_list = []
 
 	for regexes in toml_dict[header][_K_REGEX]:
-		entry = re.match(regexes, line)
-		if entry is not None:
-			entry_list = entry.groups()
+		matched_re = re.match(regexes, line)
+		if matched_re is not None:
+			for entry in matched_re.groups():
+				if entry is not None:
+					entry_list.append(entry)
 
 	entry_str = ""
 	if len(entry_list) > 0:

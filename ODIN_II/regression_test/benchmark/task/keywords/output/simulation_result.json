@@ -1,19 +1,16 @@
 {
-    "while/while_loop/no_arch": {
-        "test_name": "while/while_loop/no_arch",
-        "verilog": "while_loop.v",
+    "output/multiple_declarations/no_arch": {
+        "test_name": "output/multiple_declarations/no_arch",
+        "blif": "multiple_declarations.blif",
         "exit": 134,
         "errors": [
-            "while_loop.v:13:4 [AST] While statements are NOT supported"
-        ],
-        "warnings": [
-            "while_loop.v:6:1 [AST] Odin does not handle signed REG (i)"
+            "[OUTPUT_BLIF] More lines (8) than values (7)."
         ]
     },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
-        "verilog": "n/a",
+        "blif": "n/a",
         "exit": 0,
         "leaks": 0,
         "errors": [],
@@ -21,7 +18,8 @@
         "expectation": [],
         "max_rss(MiB)": -1,
         "exec_time(ms)": -1,
-        "synthesis_time(ms)": -1,
+        "simulation_time(ms)": -1,
+        "test_coverage(%)": -1,
         "Latch Drivers": 0,
         "Pi": 0,
         "Po": 0,

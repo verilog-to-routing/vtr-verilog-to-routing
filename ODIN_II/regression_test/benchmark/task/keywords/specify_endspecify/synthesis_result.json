@@ -4,13 +4,13 @@
         "verilog": "specify_conditional.v",
         "exit": 134,
         "errors": [
-            "PARSE_TO_AST Parser found (4) errors in your syntax, exiting"
+            "[PARSE_TO_AST] Parser found (4) errors in your syntax, exiting"
         ],
         "warnings": [
-            "PARSE_TO_AST specify_conditional.v:15 error in parsing: (syntax error, unexpected vIF, expecting vENDSPECIFY or vSPECPARAM or '(')",
-            "PARSE_TO_AST specify_conditional.v:16 error in parsing: (syntax error, unexpected '(')",
-            "PARSE_TO_AST specify_conditional.v:17 error in parsing: (syntax error, unexpected '(')",
-            "PARSE_TO_AST specify_conditional.v:18 error in parsing: (syntax error, unexpected '(')"
+            "specify_conditional.v:15:8 [PARSE_TO_AST] error in parsing: (syntax error, unexpected vIF, expecting vSPECPARAM or vENDSPECIFY or '(')",
+            "specify_conditional.v:16:1 [PARSE_TO_AST] error in parsing: (syntax error, unexpected '(')",
+            "specify_conditional.v:17:1 [PARSE_TO_AST] error in parsing: (syntax error, unexpected '(')",
+            "specify_conditional.v:18:1 [PARSE_TO_AST] error in parsing: (syntax error, unexpected '(')"
         ]
     },
     "specify_endspecify/specify_edge_sensitive/no_arch": {
@@ -18,10 +18,10 @@
         "verilog": "specify_edge_sensitive.v",
         "exit": 134,
         "errors": [
-            "PARSE_TO_AST Parser found (1) errors in your syntax, exiting"
+            "[PARSE_TO_AST] Parser found (1) errors in your syntax, exiting"
         ],
         "warnings": [
-            "PARSE_TO_AST specify_edge_sensitive.v:9 error in parsing: (syntax error, unexpected vPOSEDGE, expecting vSYMBOL_ID or '{')"
+            "specify_edge_sensitive.v:9:1 [PARSE_TO_AST] error in parsing: (syntax error, unexpected vPOSEDGE, expecting vSYMBOL_ID or '{')"
         ]
     },
     "specify_endspecify/specify_edge_sensitive_vector/no_arch": {
@@ -29,10 +29,10 @@
         "verilog": "specify_edge_sensitive_vector.v",
         "exit": 134,
         "errors": [
-            "PARSE_TO_AST Parser found (1) errors in your syntax, exiting"
+            "[PARSE_TO_AST] Parser found (1) errors in your syntax, exiting"
         ],
         "warnings": [
-            "PARSE_TO_AST specify_edge_sensitive_vector.v:9 error in parsing: (syntax error, unexpected vPOSEDGE, expecting vSYMBOL_ID or '{')"
+            "specify_edge_sensitive_vector.v:9:1 [PARSE_TO_AST] error in parsing: (syntax error, unexpected vPOSEDGE, expecting vSYMBOL_ID or '{')"
         ]
     },
     "DEFAULT": {

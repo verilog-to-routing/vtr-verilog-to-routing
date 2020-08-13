@@ -18,10 +18,10 @@
         "verilog": "multiple_defaults_failure.v",
         "exit": 134,
         "errors": [
-            "PARSE_TO_AST Parser found (1) errors in your syntax, exiting"
+            "[PARSE_TO_AST] Parser found (1) errors in your syntax, exiting"
         ],
         "warnings": [
-            "PARSE_TO_AST multiple_defaults_failure.v:9 error in parsing: (syntax error, unexpected vALWAYS, expecting ';')"
+            "multiple_defaults_failure.v:9:1 [PARSE_TO_AST] error in parsing: (syntax error, unexpected vALWAYS, expecting ';')"
         ]
     },
     "DEFAULT": {

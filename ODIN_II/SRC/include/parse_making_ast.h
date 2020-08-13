@@ -19,9 +19,9 @@ ast_node_t* newStringNode(char* num, loc_t loc);
 ast_node_t* newList(ids type_id, ast_node_t* expression, loc_t loc);
 ast_node_t* newList_entry(ast_node_t* concat_node, ast_node_t* expression);
 ast_node_t* newListReplicate(ast_node_t* exp, ast_node_t* child, loc_t loc);
-ast_node_t* markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_node_t* port, bool is_signed);
-ast_node_t* markAndProcessParameterWith(ids id, ast_node_t* parameter, bool is_signed);
-ast_node_t* markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t* symbol_list, bool is_signed);
+ast_node_t* markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_node_t* port, operation_list signedness);
+ast_node_t* markAndProcessParameterWith(ids id, ast_node_t* parameter, operation_list signedness);
+ast_node_t* markAndProcessSymbolListWith(ids top_type, ids id, ast_node_t* symbol_list, operation_list signedness);
 
 /* EXPRESSIONS */
 ast_node_t* newArrayRef(char* id, ast_node_t* expression, loc_t loc);

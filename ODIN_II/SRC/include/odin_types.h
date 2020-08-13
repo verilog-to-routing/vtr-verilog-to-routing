@@ -146,6 +146,8 @@ struct global_args_t {
 /**
  * defined in enum_str.cpp
  */
+extern const char* ieee_std_STR[];
+
 extern const char* file_extension_supported_STR[];
 
 extern const char* ZERO_GND_ZERO;
@@ -158,6 +160,13 @@ extern const char* DUAL_PORT_RAM_string;
 extern const char* edge_type_e_STR[];
 extern const char* operation_list_STR[][2];
 extern const char* ids_STR[];
+
+enum ieee_std {
+    ieee_1995,
+    ieee_2001_noconfig,
+    ieee_2001,
+    ieee_2005
+};
 
 enum file_extension_supported {
     VERILOG,
@@ -257,7 +266,6 @@ enum ids {
     INOUT,
     WIRE,
     REG,
-    INTEGER,
     GENVAR,
     PARAMETER,
     LOCALPARAM,
@@ -374,10 +382,9 @@ struct typ {
         short is_inout;
         short is_wire;
         short is_reg;
-        short is_integer;
         short is_genvar;
         short is_memory;
-        short is_signed;
+        operation_list signedness;
         VNumber* initial_value = nullptr;
     } variable;
     struct

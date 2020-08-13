@@ -17,28 +17,28 @@
         "blif": "defparam.blif",
         "exit": 134,
         "errors": [
-            "OUTPUT_BLIF Vector files differ."
+            "[OUTPUT_BLIF] Vector files differ."
         ],
         "warnings": [
-            "OUTPUT_BLIF Vector 1 mismatch:",
-            "OUTPUT_BLIF Vector 2 mismatch:",
-            "OUTPUT_BLIF Vector 3 mismatch:",
-            "OUTPUT_BLIF Vector 4 mismatch:",
-            "OUTPUT_BLIF Vector 5 mismatch:",
-            "OUTPUT_BLIF Vector 6 mismatch:",
-            "OUTPUT_BLIF Vector 7 mismatch:",
-            "OUTPUT_BLIF Vector 9 mismatch:",
-            "OUTPUT_BLIF Vector 14 mismatch:",
-            "OUTPUT_BLIF Vector 17 mismatch:",
-            "OUTPUT_BLIF Vector 18 mismatch:",
-            "OUTPUT_BLIF Vector 21 mismatch:",
-            "OUTPUT_BLIF Vector 22 mismatch:",
-            "OUTPUT_BLIF Vector 24 mismatch:",
-            "OUTPUT_BLIF Vector 25 mismatch:",
-            "OUTPUT_BLIF Vector 28 mismatch:",
-            "OUTPUT_BLIF Vector 31 mismatch:",
-            "OUTPUT_BLIF Vector 32 mismatch:",
-            "OUTPUT_BLIF Vector 35 mismatch:"
+            "[OUTPUT_BLIF] Vector 1 mismatch:",
+            "[OUTPUT_BLIF] Vector 2 mismatch:",
+            "[OUTPUT_BLIF] Vector 3 mismatch:",
+            "[OUTPUT_BLIF] Vector 4 mismatch:",
+            "[OUTPUT_BLIF] Vector 5 mismatch:",
+            "[OUTPUT_BLIF] Vector 6 mismatch:",
+            "[OUTPUT_BLIF] Vector 7 mismatch:",
+            "[OUTPUT_BLIF] Vector 9 mismatch:",
+            "[OUTPUT_BLIF] Vector 14 mismatch:",
+            "[OUTPUT_BLIF] Vector 17 mismatch:",
+            "[OUTPUT_BLIF] Vector 18 mismatch:",
+            "[OUTPUT_BLIF] Vector 21 mismatch:",
+            "[OUTPUT_BLIF] Vector 22 mismatch:",
+            "[OUTPUT_BLIF] Vector 24 mismatch:",
+            "[OUTPUT_BLIF] Vector 25 mismatch:",
+            "[OUTPUT_BLIF] Vector 28 mismatch:",
+            "[OUTPUT_BLIF] Vector 31 mismatch:",
+            "[OUTPUT_BLIF] Vector 32 mismatch:",
+            "[OUTPUT_BLIF] Vector 35 mismatch:"
         ]
     },
     "defparam/defparam_string/no_arch": {
