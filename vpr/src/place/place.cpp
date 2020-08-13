@@ -1557,7 +1557,7 @@ static e_move_result try_swap(float t,
         send_current_info_p();
 
         //check for breakpoints
-        f_placer_debug = check_for_breakpoints();
+        f_placer_debug = check_for_breakpoints(true);
         if (f_placer_debug)
             breakpoint_info_window(get_current_info_b().bp_description, current_info_p);
     } else
@@ -3076,6 +3076,9 @@ bool placer_needs_lookahead(const t_vpr_setup& vpr_setup) {
 //transforms the vector moved_blocks to a vector of ints and adds it in current_info_p
 void transform_blocks_affected(t_pl_blocks_to_be_moved blocksAffected) {
     current_info_p.blocks_affected_vector.clear();
-    for (size_t i = 0; i < blocksAffected.moved_blocks.size(); i++)
-        current_info_p.blocks_affected_vector.push_back(size_t(blocksAffected.moved_blocks[i].block_num));
+    for (size_t i = 0; i < blocksAffected.moved_blocks.size(); i++) {
+        //size_t conversion is required since block_num is of type ClusterBlockId and can't be cast to an int. And this vector has to be of type int to be recognized in expr_eval class
+       
+ current_info_p.blocks_affected_vector.push_back(size_t(blocksAffected.moved_blocks[i].block_num));
+    }
 }

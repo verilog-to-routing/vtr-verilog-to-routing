@@ -197,7 +197,7 @@ struct t_draw_state {
     float net_alpha = 0.1;
     float pres_fac = 1.;
 
-    std::vector<breakpoint> list_of_breakpoints;
+    std::vector<Breakpoint> list_of_breakpoints;
 
     std::string save_graphics_file_base = "vpr";
 

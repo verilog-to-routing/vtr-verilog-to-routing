@@ -78,6 +78,17 @@ typedef enum e_operator {
     E_OP_NUM_OPS
 } t_operator;
 
+typedef enum e_compound_operator {
+    E_COM_OP_UNDEFINED = 0,
+    E_COM_OP_AND,
+    E_COM_OP_OR,
+    E_COM_OP_EQ,
+    E_COM_OP_AA,
+    E_COM_OP_GTE,
+    E_COM_OP_LTE
+
+} t_compound_operator;
+
 /**** Class Definitions ****/
 /* This class is used to represent an object in a formula, such as
  * a number, a bracket, an operator, or a variable */

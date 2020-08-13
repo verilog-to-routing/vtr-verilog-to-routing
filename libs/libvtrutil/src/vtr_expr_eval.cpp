@@ -57,7 +57,7 @@ static bool is_operator(const char ch);
 static bool is_function(std::string name);
 
 // returns true if the specified name is a known compound operator
-int is_compound_op(const char* ch);
+t_compound_operator is_compound_op(const char* ch);
 
 // returns true if the specified name is a known variable
 static bool is_variable(std::string var);
@@ -343,20 +343,20 @@ static void get_formula_object(const char* ch, int& ichar, const t_formula_data&
         ichar--;
         fobj->type = E_FML_NUMBER;
         fobj->data.num = vtr::atoi(ss.str().c_str());
-    } else if (is_compound_op(ch) != 0) {
+    } else if (is_compound_op(ch) != E_COM_OP_UNDEFINED) {
         fobj->type = E_FML_OPERATOR;
-        int comp_op_code = is_compound_op(ch);
-        if (comp_op_code == 1)
+        t_compound_operator comp_op_code = is_compound_op(ch);
+        if (comp_op_code == E_COM_OP_EQ)
             fobj->data.op = E_OP_EQ;
-        else if (comp_op_code == 2)
+        else if (comp_op_code == E_COM_OP_GTE)
             fobj->data.op = E_OP_GTE;
-        else if (comp_op_code == 3)
+        else if (comp_op_code == E_COM_OP_LTE)
             fobj->data.op = E_OP_LTE;
-        else if (comp_op_code == 4)
+        else if (comp_op_code == E_COM_OP_AND)
             fobj->data.op = E_OP_AND;
-        else if (comp_op_code == 5)
+        else if (comp_op_code == E_COM_OP_OR)
             fobj->data.op = E_OP_OR;
-        else if (comp_op_code == 6)
+        else if (comp_op_code == E_COM_OP_AA)
             fobj->data.op = E_OP_AA;
         ichar++;
     } else {
@@ -737,7 +737,7 @@ static bool is_char_number(const char ch) {
     return result;
 }
 
-//checks if entered char is a known operator
+//checks if entered char is a known operator (e.g +,-,<,>,...)
 static bool is_operator(const char ch) {
     switch (ch) {
         case '+': //fallthrough
@@ -759,6 +759,7 @@ static bool is_operator(const char ch) {
     }
 }
 
+//returns true if string signifies a function e.g max, min
 static bool is_function(std::string name) {
     if (name == "min"
         || name == "max"
@@ -769,22 +770,24 @@ static bool is_function(std::string name) {
     return false;
 }
 
-int is_compound_op(const char* ch) {
+//returns enumerated code depending on the compound operator
+//compound operators are operators with more than one character e.g &&, >=
+t_compound_operator is_compound_op(const char* ch) {
     if (ch[1] != '\0') {
         if (ch[0] == '=' && ch[1] == '=')
-            return 1;
+            return E_COM_OP_EQ;
         else if (ch[0] == '>' && ch[1] == '=')
-            return 2;
+            return E_COM_OP_GTE;
         else if (ch[0] == '<' && ch[1] == '=')
-            return 3;
+            return E_COM_OP_LTE;
         else if (ch[0] == '&' && ch[1] == '&')
-            return 4;
+            return E_COM_OP_AND;
         else if (ch[0] == '|' && ch[1] == '|')
-            return 5;
+            return E_COM_OP_OR;
         else if (ch[0] == '+' && ch[1] == '=')
-            return 6;
+            return E_COM_OP_AA;
     }
-    return 0;
+    return E_COM_OP_UNDEFINED;
 }
 
 //checks if the entered string is a known variable name
