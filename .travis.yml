@@ -93,7 +93,7 @@ jobs:
     - state: Test
       name: "Code Formatting - Python"
       script:
-        - python3 ./dev/check-format-py.sh
+        - ./dev/check-format-py.sh
     - stage: Test
       name: "Python Lint"
       script:     
