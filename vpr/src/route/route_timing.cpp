@@ -1627,7 +1627,7 @@ static bool early_exit_heuristic(const t_router_opts& router_opts, const Wirelen
 static bool check_hold(const t_router_opts& router_opts, float worst_neg_slack) {
     if (router_opts.routing_budgets_algorithm != YOYO) {
         return false;
-    } else if (worst_neg_slack == 0) {
+    } else if (worst_neg_slack != 0) {
         return true;
     }
     return false;
