@@ -180,6 +180,7 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
 static void check_sink(int inode, ClusterNetId net_id, bool* pin_done) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.placement();
 
     VTR_ASSERT(device_ctx.rr_nodes[inode].type() == SINK);
     int i = device_ctx.rr_nodes[inode].xlow();
@@ -189,22 +190,25 @@ static void check_sink(int inode, ClusterNetId net_id, bool* pin_done) {
     int ptc_num = device_ctx.rr_nodes[inode].ptc_num();
     int ifound = 0;
 
-    // Check all the pins on this net, and find a pin that has not yet been reached that could match this SINK.
-    // Mark that found pin as done in the pin_done array.
-    unsigned int ipin = 1;
-    for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
-        int pin_index = tile_pin_index(pin_id);
-        int iclass = type->pin_class[pin_index];
-        if (iclass == ptc_num) {
-            /* Could connect to same pin class on the same clb more than once.  Only   *
-             * update pin_done for a pin that hasn't been reached yet.                 */
-            if (pin_done[ipin] == false) {
-                ifound++;
-                pin_done[ipin] = true;
-                break;
+    for (int iblk = 0; iblk < type->capacity; iblk++) {
+        ClusterBlockId bnum = place_ctx.grid_blocks[i][j].blocks[iblk]; /* Hardcoded to one cluster_ctx block*/
+        unsigned int ipin = 1;
+        for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
+            if (cluster_ctx.clb_nlist.pin_block(pin_id) == bnum) {
+                int pin_index = tile_pin_index(pin_id);
+                int iclass = type->pin_class[pin_index];
+                if (iclass == ptc_num) {
+                    /* Could connect to same pin class on the same clb more than once.  Only   *
+                     * update pin_done for a pin that hasn't been reached yet.                 */
+                    if (pin_done[ipin] == false) {
+                        ifound++;
+                        pin_done[ipin] = true;
+                        break;
+                    }
+                }
             }
+            ipin++;
         }
-        ipin++;
     }
 
     VTR_ASSERT(ifound <= 1);
