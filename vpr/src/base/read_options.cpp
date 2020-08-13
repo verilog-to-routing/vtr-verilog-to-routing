@@ -1633,7 +1633,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             " * 'free' allows placement to optimize pad locations\n"
             " * 'random' fixes pad locations to arbitrary locations\n.")
         .default_value("free")
-		.choices({"free", "random"})
+        .choices({"free", "random"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.constraints_file, "--fix_clusters")

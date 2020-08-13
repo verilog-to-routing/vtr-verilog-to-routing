@@ -838,8 +838,8 @@ enum e_place_algorithm {
 };
 
 enum e_pad_loc_type {
-	FREE,
-	RANDOM
+    FREE,
+    RANDOM
 };
 
 enum e_place_effort_scaling {
