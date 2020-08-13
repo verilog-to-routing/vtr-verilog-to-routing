@@ -7,25 +7,29 @@ from collections import OrderedDict
 
 from lxml import etree as ET
 
+
 class SequentialPort:
     def __init__(self, port, clock):
         self.port = port
         self.clock = clock
+
 
 class CombEdge:
     def __init__(self, src_port, sink_port):
         self.src_port = src_port
         self.sink_ports = sink_port
 
+
 class ModelTiming:
     def __init__(self):
         self.sequential_ports = set()
         self.comb_edges = {}
 
+
 INDENT = "    "
 
-#To add support for new upgrades/features add the identifier string here
-#and added a guarded call in main()
+# To add support for new upgrades/features add the identifier string here
+# and added a guarded call in main()
 supported_upgrades = [
     "add_model_timing",
     "upgrade_fc_overrides",
@@ -45,19 +49,30 @@ supported_upgrades = [
     "add_sub_tiles",
 ]
 
+
 def parse_args():
     parser = argparse.ArgumentParser(description="Upgrade Legacy VTR architecture files")
 
     parser.add_argument("xml_file", help="xml_file to update (modified in place)")
-    parser.add_argument("--features",
-                        nargs="*",
-                        help="List of features/upgrades to apply (default: %(default)s)",
-                        choices=supported_upgrades,
-                        default=supported_upgrades)
-    parser.add_argument("--debug", default=False, action="store_true", help="Print to stdout instead of modifying file inplace")
-    parser.add_argument("--pretty", default=True, help="Pretty print the output? (default: %(default)s)")
+    parser.add_argument(
+        "--features",
+        nargs="*",
+        help="List of features/upgrades to apply (default: %(default)s)",
+        choices=supported_upgrades,
+        default=supported_upgrades,
+    )
+    parser.add_argument(
+        "--debug",
+        default=False,
+        action="store_true",
+        help="Print to stdout instead of modifying file inplace",
+    )
+    parser.add_argument(
+        "--pretty", default=True, help="Pretty print the output? (default: %(default)s)"
+    )
 
     return parser.parse_args()
+
 
 def main():
     args = parse_args()
@@ -135,7 +150,6 @@ def main():
         if result:
             modified = True
 
-
     if "add_missing_comb_model_internal_timing_edges" in args.features:
         result = add_missing_comb_model_internal_timing_edges(arch)
         if result:
@@ -164,6 +178,7 @@ def main():
             with open(args.xml_file, "wb") as f:
                 root.write(f, pretty_print=args.pretty)
 
+
 def add_model_timing(arch):
     """
     Records the timing edges specified via timing annotationson primitive PB types,
@@ -172,30 +187,30 @@ def add_model_timing(arch):
     """
     models = arch.findall("./models/model")
 
-    #Find all primitive pb types
+    # Find all primitive pb types
     prim_pbs = arch.findall(".//pb_type[@blif_model]")
 
-    #Build up the timing specifications from
+    # Build up the timing specifications from
     default_models = frozenset([".input", ".output", ".latch", ".names"])
     primitive_timing_specs = {}
     for prim_pb in prim_pbs:
 
-        blif_model = prim_pb.attrib['blif_model']
+        blif_model = prim_pb.attrib["blif_model"]
 
         if blif_model in default_models:
             continue
 
         assert blif_model.startswith(".subckt ")
-        blif_model = blif_model[len(".subckt "):]
+        blif_model = blif_model[len(".subckt ") :]
 
         if blif_model not in primitive_timing_specs:
             primitive_timing_specs[blif_model] = ModelTiming()
 
-        #Find combinational edges
+        # Find combinational edges
         for xpath_pattern in ["./delay_constant", "./delay_matrix"]:
             for delay_const in prim_pb.findall(xpath_pattern):
-                iports = get_port_names(delay_const.attrib['in_port'])
-                oports = get_port_names(delay_const.attrib['out_port'])
+                iports = get_port_names(delay_const.attrib["in_port"])
+                oports = get_port_names(delay_const.attrib["out_port"])
 
                 for iport in iports:
                     if iport not in primitive_timing_specs[blif_model].comb_edges:
@@ -204,37 +219,38 @@ def add_model_timing(arch):
                     for oport in oports:
                         primitive_timing_specs[blif_model].comb_edges[iport].add(oport)
 
-        #Find sequential ports
+        # Find sequential ports
         for xpath_pattern in ["./T_setup", "./T_clock_to_Q", "./T_hold"]:
             for seq_tag in prim_pb.findall(xpath_pattern):
-                ports = get_port_names(seq_tag.attrib['port'])
+                ports = get_port_names(seq_tag.attrib["port"])
                 for port in ports:
-                    clk = seq_tag.attrib['clock']
+                    clk = seq_tag.attrib["clock"]
 
                     primitive_timing_specs[blif_model].sequential_ports.add((port, clk))
 
     changed = False
     for model in models:
-        if model.attrib['name'] not in primitive_timing_specs:
-            print("Warning: no timing specifications found for {}".format(mode.attrib['name']))
+        if model.attrib["name"] not in primitive_timing_specs:
+            print("Warning: no timing specifications found for {}".format(mode.attrib["name"]))
             continue
 
-        model_timing = primitive_timing_specs[model.attrib['name']]
+        model_timing = primitive_timing_specs[model.attrib["name"]]
 
-        #Mark model ports as sequential
+        # Mark model ports as sequential
         for port_name, clock_name in model_timing.sequential_ports:
             port = model.find(".//port[@name='{}']".format(port_name))
-            port.attrib['clock'] = clock_name
+            port.attrib["clock"] = clock_name
             changed = True
 
-        #Mark combinational edges from sources to sink ports
+        # Mark combinational edges from sources to sink ports
         for src_port, sink_ports in model_timing.comb_edges.items():
             xpath_pattern = "./input_ports/port[@name='{}']".format(src_port)
             port = model.find(xpath_pattern)
-            port.attrib['combinational_sink_ports'] = ' '.join(sink_ports)
+            port.attrib["combinational_sink_ports"] = " ".join(sink_ports)
             changed = True
 
     return changed
+
 
 def upgrade_fc_overrides(arch):
     """
@@ -250,13 +266,15 @@ def upgrade_fc_overrides(arch):
         old_fc_pin_overrides = fc_tag.findall("./pin")
         old_fc_seg_overrides = fc_tag.findall("./segment")
 
-        assert len(old_fc_pin_overrides) == 0 or len(old_fc_seg_overrides) == 0, "Can only have pin or seg overrides (not both)"
+        assert (
+            len(old_fc_pin_overrides) == 0 or len(old_fc_seg_overrides) == 0
+        ), "Can only have pin or seg overrides (not both)"
 
         for old_pin_override in old_fc_pin_overrides:
 
-            port = old_pin_override.attrib['name']
-            fc_type = old_pin_override.attrib['fc_type']
-            fc_val = old_pin_override.attrib['fc_val']
+            port = old_pin_override.attrib["name"]
+            fc_type = old_pin_override.attrib["fc_type"]
+            fc_val = old_pin_override.attrib["fc_val"]
 
             fc_tag.remove(old_pin_override)
 
@@ -270,14 +288,14 @@ def upgrade_fc_overrides(arch):
 
         for old_seg_override in old_fc_seg_overrides:
 
-            seg_name = old_seg_override.attrib['name']
-            in_val = old_seg_override.attrib['in_val']
-            out_val = old_seg_override.attrib['out_val']
+            seg_name = old_seg_override.attrib["name"]
+            in_val = old_seg_override.attrib["in_val"]
+            out_val = old_seg_override.attrib["out_val"]
 
             fc_tag.remove(old_seg_override)
 
-            fc_in_type = fc_tag.attrib['default_in_type']
-            fc_out_type = fc_tag.attrib['default_out_type']
+            fc_in_type = fc_tag.attrib["default_in_type"]
+            fc_out_type = fc_tag.attrib["default_out_type"]
 
             pb_type = fc_tag.find("..")
             assert pb_type.tag == "pb_type"
@@ -289,7 +307,7 @@ def upgrade_fc_overrides(arch):
             for input in inputs + clocks:
 
                 new_attrib = OrderedDict()
-                new_attrib["port_name"] = input.attrib['name']
+                new_attrib["port_name"] = input.attrib["name"]
                 new_attrib["segment_name"] = seg_name
                 new_attrib["fc_type"] = fc_in_type
                 new_attrib["fc_val"] = in_val
@@ -299,7 +317,7 @@ def upgrade_fc_overrides(arch):
             for output in outputs:
 
                 new_attrib = OrderedDict()
-                new_attrib["port_name"] = output.attrib['name']
+                new_attrib["port_name"] = output.attrib["name"]
                 new_attrib["segment_name"] = seg_name
                 new_attrib["fc_type"] = fc_out_type
                 new_attrib["fc_val"] = out_val
@@ -309,6 +327,7 @@ def upgrade_fc_overrides(arch):
             changed = True
     return changed
 
+
 def upgrade_device_layout(arch):
     """
     Upgrades the legacy <gridlocation> specifications (on each pb_type) to the new format
@@ -316,15 +335,15 @@ def upgrade_device_layout(arch):
     """
     changed = False
 
-    #Get the layout tag
+    # Get the layout tag
     layout = arch.find("./layout")
 
-    #Find all the top level pb_types
+    # Find all the top level pb_types
     top_pb_types = arch.findall("./complexblocklist/pb_type")
 
     type_to_grid_specs = OrderedDict()
     for top_pb_type in top_pb_types:
-        type_name = top_pb_type.attrib['name']
+        type_name = top_pb_type.attrib["name"]
 
         assert type_name not in type_to_grid_specs
         type_to_grid_specs[type_name] = []
@@ -339,35 +358,35 @@ def upgrade_device_layout(arch):
             assert child.tag == "loc"
             type_to_grid_specs[type_name].append(child)
 
-        #Remove the legacy gridlocations from the <pb_type>
+        # Remove the legacy gridlocations from the <pb_type>
         top_pb_type.remove(gridlocations)
         changed = True
 
     if not changed:
-        #No legacy specs to upgrade
+        # No legacy specs to upgrade
         return changed
 
     device_auto = None
-    if 'auto' in layout.attrib:
-        aspect_ratio = layout.attrib['auto']
+    if "auto" in layout.attrib:
+        aspect_ratio = layout.attrib["auto"]
 
-        del layout.attrib['auto']
+        del layout.attrib["auto"]
         change = True
 
-        device_auto = ET.SubElement(layout, 'auto_layout')
-        device_auto.attrib['aspect_ratio'] = str(aspect_ratio)
-    elif 'width' in layout.attrib and 'height' in layout.attrib:
-        width = layout.attrib['width']
-        height = layout.attrib['height']
+        device_auto = ET.SubElement(layout, "auto_layout")
+        device_auto.attrib["aspect_ratio"] = str(aspect_ratio)
+    elif "width" in layout.attrib and "height" in layout.attrib:
+        width = layout.attrib["width"]
+        height = layout.attrib["height"]
 
-        del layout.attrib['width']
-        del layout.attrib['height']
+        del layout.attrib["width"]
+        del layout.attrib["height"]
         changed = True
 
-        device_auto = ET.SubElement(layout, 'fixed_layout')
-        device_auto.attrib['name'] = "unnamed_device"
-        device_auto.attrib['width'] = width
-        device_auto.attrib['height'] = height
+        device_auto = ET.SubElement(layout, "fixed_layout")
+        device_auto.attrib["name"] = "unnamed_device"
+        device_auto.attrib["width"] = width
+        device_auto.attrib["height"] = height
     else:
         assert False, "Unrecognized <layout> specification"
 
@@ -381,141 +400,154 @@ def upgrade_device_layout(arch):
 
     for type_name, locs in type_to_grid_specs.items():
         for loc in locs:
-            if loc.attrib['type'] == "perimeter":
+            if loc.attrib["type"] == "perimeter":
                 have_perimeter = True
-
 
     if changed:
         layout.text = "\n" + INDENT
-        device_auto.text = "\n" + 2*INDENT
+        device_auto.text = "\n" + 2 * INDENT
         device_auto.tail = "\n"
-
 
     for type_name, locs in type_to_grid_specs.items():
         for loc in locs:
             assert loc.tag == "loc"
 
-            loc_type = loc.attrib['type']
+            loc_type = loc.attrib["type"]
 
-            #Note that we scale the priority by a factor of 10 to allow us to 'tweak'
-            #the priorities without causing conflicts with user defined priorities
-            priority = 10*int(loc.attrib['priority'])
+            # Note that we scale the priority by a factor of 10 to allow us to 'tweak'
+            # the priorities without causing conflicts with user defined priorities
+            priority = 10 * int(loc.attrib["priority"])
 
             if loc_type == "col":
-                start = loc.attrib['start']
+                start = loc.attrib["start"]
 
                 repeat = None
-                if 'repeat' in loc.attrib:
-                    repeat = loc.attrib['repeat']
+                if "repeat" in loc.attrib:
+                    repeat = loc.attrib["repeat"]
 
-                comment_str = "Column of '{}' with 'EMPTY' blocks wherever a '{}' does not fit.".format(type_name, type_name)
+                comment_str = "Column of '{}' with 'EMPTY' blocks wherever a '{}' does not fit.".format(
+                    type_name, type_name
+                )
 
                 if have_perimeter:
                     comment_str += " Vertical offset by 1 for perimeter."
 
                 comment = ET.Comment(comment_str)
                 device_auto.append(comment)
-                comment.tail = "\n" + 2*INDENT
+                comment.tail = "\n" + 2 * INDENT
 
-                col_spec = ET.SubElement(device_auto, 'col')
+                col_spec = ET.SubElement(device_auto, "col")
 
-                col_spec.attrib['type'] = type_name
-                col_spec.attrib['startx'] = start
+                col_spec.attrib["type"] = type_name
+                col_spec.attrib["startx"] = start
                 if have_perimeter:
-                    col_spec.attrib['starty'] = "1"
+                    col_spec.attrib["starty"] = "1"
                 if repeat:
-                    col_spec.attrib['repeatx'] = repeat
-                col_spec.attrib['priority'] = str(priority)
-                col_spec.tail = "\n" + 2*INDENT
+                    col_spec.attrib["repeatx"] = repeat
+                col_spec.attrib["priority"] = str(priority)
+                col_spec.tail = "\n" + 2 * INDENT
 
-                #Classic VPR fills blank spaces (e.g. where a height > 1 block won't fit) with "EMPTY"
-                #instead of with the underlying type. To replicate that we create a col spec with the same
-                #location information, but of type 'EMPTY' and with slightly lower priority than the real type.
+                # Classic VPR fills blank spaces (e.g. where a height > 1 block won't fit) with "EMPTY"
+                # instead of with the underlying type. To replicate that we create a col spec with the same
+                # location information, but of type 'EMPTY' and with slightly lower priority than the real type.
 
-                col_empty_spec = ET.SubElement(device_auto, 'col')
-                col_empty_spec.attrib['type'] = "EMPTY"
-                col_empty_spec.attrib['startx'] = start
+                col_empty_spec = ET.SubElement(device_auto, "col")
+                col_empty_spec.attrib["type"] = "EMPTY"
+                col_empty_spec.attrib["startx"] = start
                 if repeat:
-                    col_empty_spec.attrib['repeatx'] = repeat
+                    col_empty_spec.attrib["repeatx"] = repeat
                 if have_perimeter:
-                    col_empty_spec.attrib['starty'] = "1"
-                col_empty_spec.attrib['priority'] = str(priority - 1) #-1 so it won't override the 'real' col
-                col_empty_spec.tail = "\n" + 2*INDENT
+                    col_empty_spec.attrib["starty"] = "1"
+                col_empty_spec.attrib["priority"] = str(
+                    priority - 1
+                )  # -1 so it won't override the 'real' col
+                col_empty_spec.tail = "\n" + 2 * INDENT
 
             elif loc_type == "rel":
-                pos = loc.attrib['pos']
+                pos = loc.attrib["pos"]
 
-                div_factor = 1. / float(pos)
+                div_factor = 1.0 / float(pos)
 
                 int_div_factor = int(div_factor)
 
                 startx = "(W - 1) / {}".format(div_factor)
 
                 if float(int_div_factor) != div_factor:
-                    print("Warning: Relative position factor conversion is not exact. Original pos factor: {}. New startx expression: {}".format(pos, startx))
+                    print(
+                        "Warning: Relative position factor conversion is not exact. Original pos factor: {}. New startx expression: {}".format(
+                            pos, startx
+                        )
+                    )
 
-                comment_str = "Column of '{}' with 'EMPTY' blocks wherever a '{}' does not fit.".format(type_name, type_name)
+                comment_str = "Column of '{}' with 'EMPTY' blocks wherever a '{}' does not fit.".format(
+                    type_name, type_name
+                )
 
                 if have_perimeter:
                     comment_str += " Vertical offset by 1 for perimeter."
 
                 comment = ET.Comment(comment_str)
                 device_auto.append(comment)
-                comment.tail = "\n" + 2*INDENT
+                comment.tail = "\n" + 2 * INDENT
 
-                col_spec = ET.SubElement(device_auto, 'col')
-                col_spec.attrib['type'] = type_name
-                col_spec.attrib['startx'] = startx
+                col_spec = ET.SubElement(device_auto, "col")
+                col_spec.attrib["type"] = type_name
+                col_spec.attrib["startx"] = startx
                 if have_perimeter:
-                    col_spec.attrib['starty'] = "1"
-                col_spec.attrib['priority'] = str(priority)
-                col_spec.tail = "\n" + 2*INDENT
+                    col_spec.attrib["starty"] = "1"
+                col_spec.attrib["priority"] = str(priority)
+                col_spec.tail = "\n" + 2 * INDENT
 
-                #Classic VPR fills blank spaces (e.g. where a height > 1 block won't fit) with "EMPTY"
-                #instead of with the underlying type. To replicate that we create a col spec with the same
-                #location information, but of type 'EMPTY' and with slightly lower priority than the real type.
-                col_empty_spec = ET.SubElement(device_auto, 'col')
-                col_empty_spec.attrib['type'] = "EMPTY"
-                col_empty_spec.attrib['startx'] = startx
+                # Classic VPR fills blank spaces (e.g. where a height > 1 block won't fit) with "EMPTY"
+                # instead of with the underlying type. To replicate that we create a col spec with the same
+                # location information, but of type 'EMPTY' and with slightly lower priority than the real type.
+                col_empty_spec = ET.SubElement(device_auto, "col")
+                col_empty_spec.attrib["type"] = "EMPTY"
+                col_empty_spec.attrib["startx"] = startx
                 if have_perimeter:
-                    col_empty_spec.attrib['starty'] = "1"
-                col_empty_spec.attrib['priority'] = str(priority - 1) #-1 so it won't override the 'real' col
-                col_empty_spec.tail = "\n" + 2*INDENT
+                    col_empty_spec.attrib["starty"] = "1"
+                col_empty_spec.attrib["priority"] = str(
+                    priority - 1
+                )  # -1 so it won't override the 'real' col
+                col_empty_spec.tail = "\n" + 2 * INDENT
 
             elif loc_type == "fill":
 
                 comment = ET.Comment("Fill with '{}'".format(type_name))
                 device_auto.append(comment)
-                comment.tail = "\n" + 2*INDENT
+                comment.tail = "\n" + 2 * INDENT
 
-                fill_spec = ET.SubElement(device_auto, 'fill')
-                fill_spec.attrib['type'] = type_name
-                fill_spec.attrib['priority'] = str(priority)
-                fill_spec.tail = "\n" + 2*INDENT
+                fill_spec = ET.SubElement(device_auto, "fill")
+                fill_spec.attrib["type"] = type_name
+                fill_spec.attrib["priority"] = str(priority)
+                fill_spec.tail = "\n" + 2 * INDENT
 
             elif loc_type == "perimeter":
-                #The classic VPR perimeter specification did not include the corners (while the new version does)
+                # The classic VPR perimeter specification did not include the corners (while the new version does)
                 # As a result we specify a full perimeter (including corners), and then apply an EMPTY type override
                 # at the corners
 
-                comment = ET.Comment("Perimeter of '{}' blocks with 'EMPTY' blocks at corners".format(type_name))
+                comment = ET.Comment(
+                    "Perimeter of '{}' blocks with 'EMPTY' blocks at corners".format(type_name)
+                )
                 device_auto.append(comment)
-                comment.tail = "\n" + 2*INDENT
+                comment.tail = "\n" + 2 * INDENT
 
-                perim_spec = ET.SubElement(device_auto, 'perimeter')
-                perim_spec.attrib['type'] = type_name
-                perim_spec.attrib['priority'] = str(priority)
-                perim_spec.tail = "\n" + 2*INDENT
+                perim_spec = ET.SubElement(device_auto, "perimeter")
+                perim_spec.attrib["type"] = type_name
+                perim_spec.attrib["priority"] = str(priority)
+                perim_spec.tail = "\n" + 2 * INDENT
 
-                corners_spec = ET.SubElement(device_auto, 'corners')
-                corners_spec.attrib['type'] = "EMPTY"
-                corners_spec.attrib['priority'] = str(priority + 1) #+1 to ensure overrides
-                corners_spec.tail = "\n" + 2*INDENT
+                corners_spec = ET.SubElement(device_auto, "corners")
+                corners_spec.attrib["type"] = "EMPTY"
+                corners_spec.attrib["priority"] = str(priority + 1)  # +1 to ensure overrides
+                corners_spec.tail = "\n" + 2 * INDENT
 
             else:
                 assert False, "Unrecognzied <loc> type tag {}".format(loc_type)
 
     return changed
+
 
 def remove_io_chan_distr(arch):
     """
@@ -526,15 +558,20 @@ def remove_io_chan_distr(arch):
 
     io = chan_width_distr.find("./io")
     if io != None:
-        width = float(io.attrib['width'])
+        width = float(io.attrib["width"])
 
-        if width != 1.:
-            print("Found non-unity io width {}. This is no longer supported by VPR and must be manually correct. Exiting...".format(width))
+        if width != 1.0:
+            print(
+                "Found non-unity io width {}. This is no longer supported by VPR and must be manually correct. Exiting...".format(
+                    width
+                )
+            )
             sys.exit(1)
         else:
-            assert width == 1.
+            assert width == 1.0
             chan_width_distr.remove(io)
-            return True #Modified
+            return True  # Modified
+
 
 def upgrade_pinlocations(arch):
     """
@@ -552,14 +589,14 @@ def upgrade_pinlocations(arch):
 
         width = 1
         height = 1
-        if 'width' in pb_type.attrib:
-            width = int(pb_type.attrib['width'])
-        if 'height' in pb_type.attrib:
-            height = int(pb_type.attrib['height'])
+        if "width" in pb_type.attrib:
+            width = int(pb_type.attrib["width"])
+        if "height" in pb_type.attrib:
+            height = int(pb_type.attrib["height"])
 
         if width == 1:
 
-            if pinlocations.attrib['pattern'] == "custom":
+            if pinlocations.attrib["pattern"] == "custom":
 
                 for loc in pinlocations:
                     if loc.tag is ET.Comment:
@@ -567,23 +604,24 @@ def upgrade_pinlocations(arch):
 
                     assert loc.tag == "loc"
 
-                    if 'offset' in loc.attrib:
-                        offset = int(loc.attrib['offset'])
+                    if "offset" in loc.attrib:
+                        offset = int(loc.attrib["offset"])
 
                         assert offset < height
 
-                        #Remove the old attribute
-                        del loc.attrib['offset']
+                        # Remove the old attribute
+                        del loc.attrib["offset"]
 
-                        #Add the new attribute
-                        loc.attrib['yoffset'] = str(offset)
+                        # Add the new attribute
+                        loc.attrib["yoffset"] = str(offset)
 
                         modified = True
 
             else:
-                assert pinlocations.attrib['pattern'] == "spread"
+                assert pinlocations.attrib["pattern"] == "spread"
 
     return modified
+
 
 def uniqify_interconnect_names(arch):
     """
@@ -598,21 +636,22 @@ def uniqify_interconnect_names(arch):
             if child_tag.tag is ET.Comment:
                 continue
 
-            name = orig_name = child_tag.attrib['name']
+            name = orig_name = child_tag.attrib["name"]
 
             if orig_name in seen_names:
-                #Generate a unique name
+                # Generate a unique name
                 while name in seen_names:
                     name = orig_name + "_{}".format(cnt)
                     cnt += 1
 
                 assert name not in seen_names
-                child_tag.attrib['name'] = name
+                child_tag.attrib["name"] = name
                 modified = True
 
             seen_names.add(name)
 
     return modified
+
 
 def upgrade_connection_block_input_switch(arch):
     """
@@ -631,58 +670,63 @@ def upgrade_connection_block_input_switch(arch):
 
     if timing_tag is not None:
         assert sizing_tag is not None
-        assert 'ipin_mux_trans_size' in sizing_tag.attrib
-        assert 'C_ipin_cblock' in timing_tag.attrib
-        assert 'T_ipin_cblock' in timing_tag.attrib
+        assert "ipin_mux_trans_size" in sizing_tag.attrib
+        assert "C_ipin_cblock" in timing_tag.attrib
+        assert "T_ipin_cblock" in timing_tag.attrib
         assert not device_tag.find("./connection_block") is not None
         assert switchlist_tag is not None
 
-        R_minW_nmos = sizing_tag.attrib['R_minW_nmos']
-        ipin_switch_mux_trans_size = sizing_tag.attrib['ipin_mux_trans_size']
-        ipin_switch_cin = timing_tag.attrib['C_ipin_cblock']
-        ipin_switch_tdel = timing_tag.attrib['T_ipin_cblock']
+        R_minW_nmos = sizing_tag.attrib["R_minW_nmos"]
+        ipin_switch_mux_trans_size = sizing_tag.attrib["ipin_mux_trans_size"]
+        ipin_switch_cin = timing_tag.attrib["C_ipin_cblock"]
+        ipin_switch_tdel = timing_tag.attrib["T_ipin_cblock"]
 
         modified = True
 
-        #Remove the old attributes
-        del sizing_tag.attrib['ipin_mux_trans_size']
+        # Remove the old attributes
+        del sizing_tag.attrib["ipin_mux_trans_size"]
         device_tag.remove(timing_tag)
 
         #
-        #Create the switch
+        # Create the switch
         #
 
         switch_name = "ipin_cblock"
 
-        #Make sure the switch name doesn't already exist
+        # Make sure the switch name doesn't already exist
         for switch_tag in switchlist_tag.findall("./switch"):
-            assert switch_tag.attrib['name'] != switch_name
+            assert switch_tag.attrib["name"] != switch_name
 
-        #Comment the switch
-        comment = ET.Comment("switch {} resistance set to yeild for 4x minimum drive strength buffer".format(switch_name))
-        comment.tail = "\n" + 2*INDENT
+        # Comment the switch
+        comment = ET.Comment(
+            "switch {} resistance set to yeild for 4x minimum drive strength buffer".format(
+                switch_name
+            )
+        )
+        comment.tail = "\n" + 2 * INDENT
         switchlist_tag.append(comment)
-        #Create the switch
+        # Create the switch
         switch_tag = ET.SubElement(switchlist_tag, "switch")
-        switch_tag.attrib['type'] = 'mux'
-        switch_tag.attrib['name'] = switch_name
-        switch_tag.attrib['R'] = str(float(R_minW_nmos) / 4.)
-        switch_tag.attrib['Cout'] = "0."
-        switch_tag.attrib['Cin'] = ipin_switch_cin
-        switch_tag.attrib['Tdel'] = ipin_switch_tdel
-        switch_tag.attrib['mux_trans_size'] = ipin_switch_mux_trans_size
-        switch_tag.attrib['buf_size'] = "auto"
-        switch_tag.tail = "\n" + 2*INDENT
+        switch_tag.attrib["type"] = "mux"
+        switch_tag.attrib["name"] = switch_name
+        switch_tag.attrib["R"] = str(float(R_minW_nmos) / 4.0)
+        switch_tag.attrib["Cout"] = "0."
+        switch_tag.attrib["Cin"] = ipin_switch_cin
+        switch_tag.attrib["Tdel"] = ipin_switch_tdel
+        switch_tag.attrib["mux_trans_size"] = ipin_switch_mux_trans_size
+        switch_tag.attrib["buf_size"] = "auto"
+        switch_tag.tail = "\n" + 2 * INDENT
 
-        #Create the connection_block tag
+        # Create the connection_block tag
         connection_block_tag = ET.SubElement(device_tag, "connection_block")
-        connection_block_tag.attrib['input_switch_name'] = switch_name
-        connection_block_tag.tail = "\n" + 2*INDENT
+        connection_block_tag.attrib["input_switch_name"] = switch_name
+        connection_block_tag.tail = "\n" + 2 * INDENT
 
     else:
-        assert 'ipin_switch_mux_trans_size' not in sizing_tag.attrib
+        assert "ipin_switch_mux_trans_size" not in sizing_tag.attrib
 
     return modified
+
 
 def upgrade_switch_types(arch):
     """
@@ -694,19 +738,20 @@ def upgrade_switch_types(arch):
 
     for switch_tag in switchlist_tag.findall("./switch"):
 
-        switch_type = switch_tag.attrib['type']
+        switch_type = switch_tag.attrib["type"]
 
-        if switch_type in ['buffered', 'pass_trans']:
-            if switch_type == 'buffered':
+        if switch_type in ["buffered", "pass_trans"]:
+            if switch_type == "buffered":
                 switch_type = "tristate"
             else:
-                assert switch_type == 'pass_trans'
+                assert switch_type == "pass_trans"
                 switch_type = "pass_gate"
 
-            switch_tag.attrib['type'] = switch_type
+            switch_tag.attrib["type"] = switch_type
             modified = True
 
     return modified
+
 
 def rename_fc_attributes(arch):
     """
@@ -717,7 +762,12 @@ def rename_fc_attributes(arch):
     changed = False
     for fc_tag in fc_tags:
         assert fc_tag.tag == "fc"
-        attr_to_replace = ["default_in_type", "default_in_val", "default_out_type", "default_out_val"]
+        attr_to_replace = [
+            "default_in_type",
+            "default_in_val",
+            "default_out_type",
+            "default_out_val",
+        ]
         attr_list = list(fc_tag.attrib.keys())
         for attr in attr_list:
             if attr in attr_to_replace:
@@ -726,6 +776,7 @@ def rename_fc_attributes(arch):
                 fc_tag.attrib[attr.replace("default_", "")] = val
                 changed = True
     return changed
+
 
 def remove_longline_sb_cb(arch):
     """
@@ -738,19 +789,23 @@ def remove_longline_sb_cb(arch):
 
     changed = False
     for longline_segment_tag in longline_segment_tags:
-        assert longline_segment_tag.tag == 'segment'
-        assert longline_segment_tag.attrib['length'] == 'longline'
+        assert longline_segment_tag.tag == "segment"
+        assert longline_segment_tag.attrib["length"] == "longline"
 
         child_sb_tags = longline_segment_tag.findall("./sb")
         child_cb_tags = longline_segment_tag.findall("./cb")
 
         for cb_sb_tag in child_sb_tags + child_cb_tags:
-            assert cb_sb_tag.tag == 'cb' or cb_sb_tag.tag == 'sb'
-            print("Warning: Removing invalid {} tag for longline segment".format(cb_sb_tag.tag), file=sys.stderr)
+            assert cb_sb_tag.tag == "cb" or cb_sb_tag.tag == "sb"
+            print(
+                "Warning: Removing invalid {} tag for longline segment".format(cb_sb_tag.tag),
+                file=sys.stderr,
+            )
             longline_segment_tag.remove(cb_sb_tag)
             changed = True
 
     return changed
+
 
 def upgrade_port_equivalence(arch):
     """
@@ -768,48 +823,63 @@ def upgrade_port_equivalence(arch):
 
     for input_equivalent_tag in input_equivalent_tags:
         assert input_equivalent_tag.tag == "input"
-        assert 'equivalent' in input_equivalent_tag.attrib
+        assert "equivalent" in input_equivalent_tag.attrib
 
-        #For inputs, 'true' is upgraded to full, and 'false' to 'none'
-        if input_equivalent_tag.attrib['equivalent'] == "true":
-            input_equivalent_tag.attrib['equivalent'] = "full"
+        # For inputs, 'true' is upgraded to full, and 'false' to 'none'
+        if input_equivalent_tag.attrib["equivalent"] == "true":
+            input_equivalent_tag.attrib["equivalent"] = "full"
             changed = True
-        elif input_equivalent_tag.attrib['equivalent'] == "false":
-            input_equivalent_tag.attrib['equivalent'] = "none"
+        elif input_equivalent_tag.attrib["equivalent"] == "false":
+            input_equivalent_tag.attrib["equivalent"] = "none"
             changed = True
         else:
-            assert input_equivalent_tag.attrib['equivalent'] in ['none', 'full', 'instance'], "equivalence already upgraded"
+            assert input_equivalent_tag.attrib["equivalent"] in [
+                "none",
+                "full",
+                "instance",
+            ], "equivalence already upgraded"
 
     for output_equivalent_tag in output_equivalent_tags:
         assert output_equivalent_tag.tag == "output"
-        assert 'equivalent' in output_equivalent_tag.attrib
+        assert "equivalent" in output_equivalent_tag.attrib
 
-        #For outputs, 'true' is upgraded to full, and 'false' to 'none'
-        if output_equivalent_tag.attrib['equivalent'] == "true":
+        # For outputs, 'true' is upgraded to full, and 'false' to 'none'
+        if output_equivalent_tag.attrib["equivalent"] == "true":
             parent_tag = output_equivalent_tag.find("..[@name]")
-            print("Warning: Conservatively upgrading output port equivalence from 'true' to 'instance' on {}. The user should manually check whether this can be upgraded to 'full'".format(parent_tag.attrib['name']), file=sys.stderr)
-            output_equivalent_tag.attrib['equivalent'] = "instance" #Conservative
+            print(
+                "Warning: Conservatively upgrading output port equivalence from 'true' to 'instance' on {}. The user should manually check whether this can be upgraded to 'full'".format(
+                    parent_tag.attrib["name"]
+                ),
+                file=sys.stderr,
+            )
+            output_equivalent_tag.attrib["equivalent"] = "instance"  # Conservative
             changed = True
-        elif output_equivalent_tag.attrib['equivalent'] == "false":
-            output_equivalent_tag.attrib['equivalent'] = "none"
+        elif output_equivalent_tag.attrib["equivalent"] == "false":
+            output_equivalent_tag.attrib["equivalent"] = "none"
             changed = True
         else:
-            assert output_equivalent_tag.attrib['equivalent'] in ['none', 'full', 'instance'], "equivalence already upgraded"
+            assert output_equivalent_tag.attrib["equivalent"] in [
+                "none",
+                "full",
+                "instance",
+            ], "equivalence already upgraded"
 
     return changed
+
 
 def get_port_names(string):
     ports = []
 
     for elem in string.split():
-        #Split off the prefix
-        port = elem.split('.')[-1]
-        if '[' in port:
-            port = port[:port.find('[')]
+        # Split off the prefix
+        port = elem.split(".")[-1]
+        if "[" in port:
+            port = port[: port.find("[")]
 
         ports.append(port)
 
     return ports
+
 
 def upgrade_complex_sb_num_conns(arch):
     """
@@ -822,23 +892,24 @@ def upgrade_complex_sb_num_conns(arch):
 
     for wireconn_tag in wireconn_tags:
         assert wireconn_tag.tag == "wireconn"
-        assert 'num_conns_type' in wireconn_tag.attrib
+        assert "num_conns_type" in wireconn_tag.attrib
 
-        #For inputs, 'true' is upgraded to full, and 'false' to 'none'
-        num_conns_value = wireconn_tag.attrib['num_conns_type']
+        # For inputs, 'true' is upgraded to full, and 'false' to 'none'
+        num_conns_value = wireconn_tag.attrib["num_conns_type"]
 
-        del wireconn_tag.attrib['num_conns_type']
+        del wireconn_tag.attrib["num_conns_type"]
 
-        if num_conns_value == 'min':
-            num_conns_value = 'min(from,to)'
-        elif num_conns_value == 'max':
-            num_conns_value = 'max(from,to)'
+        if num_conns_value == "min":
+            num_conns_value = "min(from,to)"
+        elif num_conns_value == "max":
+            num_conns_value = "max(from,to)"
 
-        wireconn_tag.attrib['num_conns'] = num_conns_value
+        wireconn_tag.attrib["num_conns"] = num_conns_value
 
         changed = True
 
     return changed
+
 
 def add_missing_comb_model_internal_timing_edges(arch):
     """
@@ -860,32 +931,42 @@ def add_missing_comb_model_internal_timing_edges(arch):
 
         input_clock_tags = model_tag.findall("./input_ports/port[@is_clock='1']")
         if len(input_clock_tags) > 0:
-            continue #Sequential primitive -- no change
+            continue  # Sequential primitive -- no change
 
-        input_tags_with_timing_edges = model_tag.findall("./input_ports/port[@combinational_sink_ports]")
+        input_tags_with_timing_edges = model_tag.findall(
+            "./input_ports/port[@combinational_sink_ports]"
+        )
         if len(input_tags_with_timing_edges) > 0:
-            continue #Already has internal edges specified -- no change
+            continue  # Already has internal edges specified -- no change
 
-        #Collect the model port definitions
+        # Collect the model port definitions
         input_port_tags = model_tag.findall("./input_ports/port")
         output_port_tags = model_tag.findall("./output_ports/port")
 
-        #Collect output port names
+        # Collect output port names
         output_port_names = []
         for output_port_tag in output_port_tags:
-            output_port_names.append(output_port_tag.attrib['name'])
+            output_port_names.append(output_port_tag.attrib["name"])
 
         for input_port_tag in input_port_tags:
 
-            assert 'combinational_sink_ports' not in input_port_tag
+            assert "combinational_sink_ports" not in input_port_tag
 
-            input_port_tag.attrib['combinational_sink_ports'] = " ".join(output_port_names)
+            input_port_tag.attrib["combinational_sink_ports"] = " ".join(output_port_names)
 
-            print("Warning: Conservatively upgrading combinational sink dependencies for input port '{}' of model '{}' to '{}'. The user should manually check whether a reduced set of sink dependencies can be safely specified.".format(input_port_tag.attrib['name'], model_tag.attrib['name'], input_port_tag.attrib['combinational_sink_ports']), file=sys.stderr)
+            print(
+                "Warning: Conservatively upgrading combinational sink dependencies for input port '{}' of model '{}' to '{}'. The user should manually check whether a reduced set of sink dependencies can be safely specified.".format(
+                    input_port_tag.attrib["name"],
+                    model_tag.attrib["name"],
+                    input_port_tag.attrib["combinational_sink_ports"],
+                ),
+                file=sys.stderr,
+            )
 
             changed = True
 
     return changed
+
 
 def add_tile_tags(arch):
     """
@@ -929,9 +1010,9 @@ def add_tile_tags(arch):
 
     """
 
-    TAGS_TO_SWAP = ['fc', 'pinlocations', 'switchblock_locations']
-    TAGS_TO_COPY = ['input', 'output', 'clock']
-    ATTR_TO_SWAP = ['area', 'height', 'width', 'capacity']
+    TAGS_TO_SWAP = ["fc", "pinlocations", "switchblock_locations"]
+    TAGS_TO_COPY = ["input", "output", "clock"]
+    ATTR_TO_SWAP = ["area", "height", "width", "capacity"]
 
     def swap_tags(tile, pb_type):
         # Moving tags from top level pb_type to tile
@@ -943,22 +1024,21 @@ def add_tile_tags(arch):
                 child_copy = copy.deepcopy(child)
                 tile.append(child_copy)
 
+    if arch.findall("./tiles"):
+        return False
 
-    if arch.findall('./tiles'):
-            return False
+    models = arch.find("./models")
 
-    models = arch.find('./models')
-
-    tiles = ET.Element('tiles')
+    tiles = ET.Element("tiles")
     models.addnext(tiles)
 
     top_pb_types = []
-    for pb_type in arch.iter('pb_type'):
-        if pb_type.getparent().tag == 'complexblocklist':
+    for pb_type in arch.iter("pb_type"):
+        if pb_type.getparent().tag == "complexblocklist":
             top_pb_types.append(pb_type)
 
     for pb_type in top_pb_types:
-        tile = ET.SubElement(tiles, 'tile')
+        tile = ET.SubElement(tiles, "tile")
         attrs = pb_type.attrib
 
         for attr in attrs:
@@ -970,7 +1050,7 @@ def add_tile_tags(arch):
 
         equivalent_sites = ET.Element("equivalent_sites")
         site = ET.Element("site")
-        site.set("pb_type", attrs['name'])
+        site.set("pb_type", attrs["name"])
 
         equivalent_sites.append(site)
         tile.append(equivalent_sites)
@@ -978,6 +1058,7 @@ def add_tile_tags(arch):
         swap_tags(tile, pb_type)
 
     return True
+
 
 def add_site_directs(arch):
     """
@@ -1016,20 +1097,21 @@ def add_site_directs(arch):
     """
 
     top_pb_types = []
-    for pb_type in arch.iter('pb_type'):
-        if pb_type.getparent().tag == 'complexblocklist':
+    for pb_type in arch.iter("pb_type"):
+        if pb_type.getparent().tag == "complexblocklist":
             top_pb_types.append(pb_type)
 
     sites = []
-    for pb_type in arch.iter('site'):
+    for pb_type in arch.iter("site"):
         sites.append(pb_type)
 
     for pb_type in top_pb_types:
         for site in sites:
-            if 'pin_mapping' not in site.attrib:
-                site.attrib['pin_mapping'] = "direct"
+            if "pin_mapping" not in site.attrib:
+                site.attrib["pin_mapping"] = "direct"
 
     return True
+
 
 def add_sub_tiles(arch):
     """
@@ -1070,7 +1152,7 @@ def add_sub_tiles(arch):
 
     """
 
-    TAGS_TO_SWAP = ['fc', 'pinlocations', 'input', 'output', 'clock', 'equivalent_sites']
+    TAGS_TO_SWAP = ["fc", "pinlocations", "input", "output", "clock", "equivalent_sites"]
 
     def swap_tags(sub_tile, tile):
         # Moving tags from top level pb_type to tile
@@ -1081,19 +1163,19 @@ def add_sub_tiles(arch):
 
     modified = False
 
-    for tile in arch.iter('tile'):
-        if tile.findall('./sub_tile'):
+    for tile in arch.iter("tile"):
+        if tile.findall("./sub_tile"):
             continue
 
-        sub_tile_name = tile.attrib['name']
-        sub_tile = ET.Element('sub_tile', name='{}'.format(sub_tile_name))
+        sub_tile_name = tile.attrib["name"]
+        sub_tile = ET.Element("sub_tile", name="{}".format(sub_tile_name))
 
         # Transfer capacity to sub tile
-        if 'capacity' in tile.attrib.keys():
-            sub_tile.attrib['capacity'] = tile.attrib['capacity']
-            del tile.attrib['capacity']
+        if "capacity" in tile.attrib.keys():
+            sub_tile.attrib["capacity"] = tile.attrib["capacity"]
+            del tile.attrib["capacity"]
 
-        #Transfer tags to swap from tile to sub tile
+        # Transfer tags to swap from tile to sub tile
         swap_tags(sub_tile, tile)
 
         tile.append(sub_tile)
@@ -1101,6 +1183,7 @@ def add_sub_tiles(arch):
         modified = True
 
     return modified
+
 
 if __name__ == "__main__":
     main()

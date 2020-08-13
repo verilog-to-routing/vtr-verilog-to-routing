@@ -19,7 +19,7 @@ VERBOSITY_CHOICES = range(5)
 
 
 class RawDefaultHelpFormatter(
-        argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter
+    argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter
 ):
     """
     An argparse formatter which supports both default arguments and raw
@@ -48,15 +48,15 @@ class CommandRunner:
         """
 
     def __init__(
-            self,
-            timeout_sec=None,
-            max_memory_mb=None,
-            track_memory=True,
-            verbose=False,
-            echo_cmd=None,
-            indent="\t",
-            show_failures=False,
-            valgrind=False,
+        self,
+        timeout_sec=None,
+        max_memory_mb=None,
+        track_memory=True,
+        verbose=False,
+        echo_cmd=None,
+        indent="\t",
+        show_failures=False,
+        valgrind=False,
     ):
         if echo_cmd is None:
             echo_cmd = verbose
@@ -71,7 +71,7 @@ class CommandRunner:
         self._valgrind = valgrind
 
     def run_system_command(
-            self, cmd, temp_dir, log_filename=None, expected_return_code=0, indent_depth=0
+        self, cmd, temp_dir, log_filename=None, expected_return_code=0, indent_depth=0
     ):
         """
         Runs the specified command in the system shell.
@@ -94,19 +94,11 @@ class CommandRunner:
         temp_dir = Path(temp_dir) if not isinstance(temp_dir, Path) else temp_dir
 
         # If no log file is specified the name is based on the executed command
-        log_filename = (
-            PurePath(orig_cmd[0]).name + ".out"
-            if log_filename is None
-            else log_filename
-        )
+        log_filename = PurePath(orig_cmd[0]).name + ".out" if log_filename is None else log_filename
 
         # Limit memory usage?
         memory_limit = ["ulimit", "-Sv", "{val};".format(val=self._max_memory_mb)]
-        cmd = (
-            memory_limit + cmd
-            if self._max_memory_mb and check_cmd(memory_limit[0])
-            else cmd
-        )
+        cmd = memory_limit + cmd if self._max_memory_mb and check_cmd(memory_limit[0]) else cmd
 
         # Enable memory tracking?
         memory_tracking = ["/usr/bin/env", "time", "-v"]
@@ -121,7 +113,7 @@ class CommandRunner:
                     "--errors-for-leak-kinds=none",
                     "--track-origins=yes",
                     "--log-file=valgrind.log",
-                    "--error-limit=no"
+                    "--error-limit=no",
                 ]
                 + cmd
                 if self._valgrind
@@ -153,7 +145,7 @@ class CommandRunner:
                 stdout=subprocess.PIPE,  # We grab stdout
                 stderr=stderr,  # stderr redirected to stderr
                 universal_newlines=True,  # Lines always end in \n
-                cwd=str(temp_dir)  # Where to run the command
+                cwd=str(temp_dir),  # Where to run the command
             )
 
             # Read the output line-by-line and log it
@@ -201,17 +193,11 @@ class CommandRunner:
                 print(indent_depth * self._indent + line, end="")
 
         if self._show_failures and cmd_errored:
-            print(
-                "\nFailed log file follows({}):".format(
-                    str((temp_dir / log_filename).resolve())
-                )
-            )
+            print("\nFailed log file follows({}):".format(str((temp_dir / log_filename).resolve())))
             for line in cmd_output:
                 print(indent_depth * self._indent + "<" + line, end="")
             raise CommandError(
-                "Executable {exec_name} failed".format(
-                    exec_name=PurePath(orig_cmd[0]).name
-                ),
+                "Executable {exec_name} failed".format(exec_name=PurePath(orig_cmd[0]).name),
                 cmd=cmd,
                 log=str(temp_dir / log_filename),
                 returncode=cmd_returncode,
@@ -346,9 +332,7 @@ def find_vtr_file(filename, is_executable=False):
     # Since we stripped off the .exe, try looking for the .exe version
     # as a last resort (i.e. on Windows/cygwin)
     if is_executable:
-        result = find_file_from_vtr_root(
-            filename + ".exe", vtr_root, is_executable=is_executable
-        )
+        result = find_file_from_vtr_root(filename + ".exe", vtr_root, is_executable=is_executable)
         if result:
             return result
 
@@ -390,9 +374,7 @@ def find_vtr_root():
 
     if inferred_vtr_root.is_dir():
         return str(inferred_vtr_root)
-    raise VtrError(
-        "Could not find VTR root directory. Try setting VTR_ROOT environment variable."
-    )
+    raise VtrError("Could not find VTR root directory. Try setting VTR_ROOT environment variable.")
 
 
 def file_replace(filename, search_replace_dict):
@@ -480,9 +462,7 @@ def load_config_lines(filepath, allow_includes=True):
                             include_file_abs, allow_includes=allow_includes
                         )
                     else:
-                        raise InspectError(
-                            "@include not allowed in this file", filepath
-                        )
+                        raise InspectError("@include not allowed in this file", filepath)
                 else:
                     config_lines.append(line)
     except IOError as error:
@@ -501,9 +481,7 @@ def verify_file(file, file_type, should_exist=True):
         file = Path(file)
     if should_exist and not file.is_file():
         raise Exception(
-            "{file_type} file does not exist: {file} ".format(
-                file_type=file_type, file=file
-            )
+            "{file_type} file does not exist: {file} ".format(file_type=file_type, file=file)
         )
 
     return file

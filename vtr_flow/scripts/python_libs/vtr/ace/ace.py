@@ -3,17 +3,18 @@
 """
 from pathlib import Path
 from vtr import find_vtr_file, verify_file, CommandRunner
-#pylint: disable=too-many-arguments
+
+# pylint: disable=too-many-arguments
 def run(
-        circuit_file,
-        old_netlist,
-        output_netlist,
-        output_activity_file,
-        command_runner=CommandRunner(),
-        temp_dir=Path("."),
-        log_filename="ace.out",
-        ace_exec=None,
-        ace_seed=1,
+    circuit_file,
+    old_netlist,
+    output_netlist,
+    output_activity_file,
+    command_runner=CommandRunner(),
+    temp_dir=Path("."),
+    log_filename="ace.out",
+    ace_exec=None,
+    ace_seed=1,
 ):
     """
     Runs ACE for activity estimation
@@ -56,9 +57,7 @@ def run(
     circuit_file = verify_file(circuit_file, "Circuit")
     old_netlist = verify_file(old_netlist, "Previous netlist")
     output_netlist = verify_file(output_netlist, "Output netlist", should_exist=False)
-    output_activity_file = verify_file(
-        output_activity_file, "Output activity", should_exist=False
-    )
+    output_activity_file = verify_file(output_activity_file, "Output activity", should_exist=False)
 
     ace_clk_file = temp_dir / "ace_clk.txt"
     ace_raw = temp_dir / (circuit_file.with_suffix("").stem + ".raw.ace.blif")
@@ -96,4 +95,4 @@ def run(
     command_runner.run_system_command(
         cmd, temp_dir=temp_dir, log_filename="ace_clk_restore.out", indent_depth=1
     )
-    #pylint: enable=too-many-arguments
+    # pylint: enable=too-many-arguments
