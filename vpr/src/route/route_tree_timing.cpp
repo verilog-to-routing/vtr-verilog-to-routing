@@ -27,6 +27,14 @@
 /* Array below allows mapping from any rr_node to any rt_node currently in
  * the rt_tree.                                                              */
 
+/* In some cases (e.g. input pin equivalence applied to RAM and DSP blocks), the
+ * same SINK node is put into the tree multiple times in a single route. To model
+ * this, we are putting in separate rt_nodes in the route tree if we go to the
+ * same SINK more than once. rr_node_to_rt_node[inode] will therefore store the
+ * last rt_node created of all the SINK nodes with the same ID "inode". This is
+ * okay because the mapping is only used in this file to quickly figure out where
+ * rt_nodes that we are branching off of (for nets with fanout > 1) are, and we
+ * will never branch off a SINK. */
 static std::vector<t_rt_node*> rr_node_to_rt_node; /* [0..device_ctx.rr_nodes.size()-1] */
 
 /* Frees lists for fast addition and deletion of nodes and edges. */
@@ -39,8 +47,6 @@ static t_linked_rt_edge* rt_edge_free_list = nullptr;
 static t_rt_node* alloc_rt_node();
 
 static void free_rt_node(t_rt_node* rt_node);
-
-void free_route_tree_recurr(t_rt_node* rt_node, std::vector<t_rt_node*>& removed_nodes);
 
 static t_linked_rt_edge* alloc_linked_rt_edge();
 
@@ -55,13 +61,13 @@ static t_rt_node* update_unbuffered_ancestors_C_downstream(t_rt_node* start_of_n
 
 bool verify_route_tree_recurr(t_rt_node* node, std::set<int>& seen_nodes);
 
-static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool congested, std::vector<int>* non_config_node_set_usage, std::vector<t_rt_node*>& removed_nodes);
+static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool congested, std::vector<int>* non_config_node_set_usage);
 
 static t_trace* traceback_to_route_tree_branch(t_trace* trace, std::map<int, t_rt_node*>& rr_node_to_rt, std::vector<int>* non_config_node_set_usage);
 
 static std::pair<t_trace*, t_trace*> traceback_from_route_tree_recurr(t_trace* head, t_trace* tail, const t_rt_node* node);
 
-void collect_route_tree_connections(const t_rt_node* node, int prev_node, std::multiset<std::tuple<int, int, int>>& connections);
+void collect_route_tree_connections(const t_rt_node* node, std::multiset<std::tuple<int, int, int>>& connections);
 
 /************************** Subroutine definitions ***************************/
 
@@ -259,8 +265,6 @@ add_subtree_to_route_tree(t_heap* hptr, t_rt_node** sink_rt_node_ptr) {
      * to the routing tree.  It returns the first (most upstream) new rt_node,
      * and (via a pointer) the rt_node of the new SINK. Traverses up from SINK  */
 
-    VTR_LOG("\tAdding subtree to route tree...\n");
-
     t_rt_node *rt_node, *downstream_rt_node, *sink_rt_node;
     t_linked_rt_edge* linked_rt_edge;
 
@@ -279,8 +283,6 @@ add_subtree_to_route_tree(t_heap* hptr, t_rt_node** sink_rt_node_ptr) {
     sink_rt_node->u.child_list = nullptr;
     sink_rt_node->inode = inode;
     rr_node_to_rt_node[inode] = sink_rt_node;
-
-    VTR_LOG("\t\tSink node to be added: %d\n", inode);
 
     /* In the code below I'm marking SINKs and IPINs as not to be re-expanded.
      * It makes the code more efficient (though not vastly) to prune this way
@@ -630,18 +632,8 @@ bool verify_route_tree_recurr(t_rt_node* node, std::set<int>& seen_nodes) {
 }
 
 void free_route_tree(t_rt_node* rt_node) {
-    std::vector<t_rt_node*> removed_nodes;
-    VTR_LOG("  Freeing route tree...\n");
-    free_route_tree_recurr(rt_node, removed_nodes);
-    VTR_LOG("  Done freeing route tree...\n");
-}
-
-void free_route_tree_recurr(t_rt_node* rt_node, std::vector<t_rt_node*>& removed_nodes) {
     /* Puts the rt_nodes and edges in the tree rooted at rt_node back on the
      * free lists.  Recursive, depth-first post-order traversal.                */
-
-    auto& device_ctx = g_vpr_ctx.device();
-    VTR_LOG("\trt_node: %d (pointer: %p) (%s)\n", rt_node->inode, rt_node, device_ctx.rr_nodes[rt_node->inode].type_string());
 
     t_linked_rt_edge *rt_edge, *next_edge;
 
@@ -649,9 +641,7 @@ void free_route_tree_recurr(t_rt_node* rt_node, std::vector<t_rt_node*>& removed
 
     while (rt_edge != nullptr) { /* For all children */
         t_rt_node* child_node = rt_edge->child;
-        if (std::find(removed_nodes.begin(), removed_nodes.end(), child_node) == removed_nodes.end()) {
-            free_route_tree_recurr(child_node, removed_nodes);
-        }
+        free_route_tree(child_node);
         next_edge = rt_edge->next;
         free_linked_rt_edge(rt_edge);
         rt_edge = next_edge;
@@ -661,7 +651,6 @@ void free_route_tree_recurr(t_rt_node* rt_node, std::vector<t_rt_node*>& removed
         rr_node_to_rt_node.at(rt_node->inode) = nullptr;
     }
 
-    removed_nodes.push_back(rt_node);
     free_rt_node(rt_node);
 }
 
@@ -676,7 +665,7 @@ void print_route_tree(const t_rt_node* rt_node, int depth) {
     }
 
     auto& device_ctx = g_vpr_ctx.device();
-    VTR_LOG("%s  rt_node: %d (pointer: %p) (%s)", indent.c_str(), rt_node->inode, rt_node, device_ctx.rr_nodes[rt_node->inode].type_string());
+    VTR_LOG("%srt_node: %d (%s)", indent.c_str(), rt_node->inode, device_ctx.rr_nodes[rt_node->inode].type_string());
 
     if (rt_node->parent_switch != OPEN) {
         bool parent_edge_configurable = device_ctx.rr_switch_inf[rt_node->parent_switch].configurable();
@@ -781,12 +770,12 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace,
         int inode = trace->index;
         int iswitch = trace->iswitch;
 
-        // In some cases (e.g. input pin equivalence for RAM and DSP blocks),
+        // In some cases (e.g. input pin equivalence applied to RAM and DSP blocks),
         // the same SINK node is put into the tree multiple times in a single route.
-        // To model this, We are putting in separate rt_nodes in the route tree if
-        // we go to to the same SINK more than once. rr_node_to_rt[inode] will therefore
-        // store the last rt_node created of the same SINK node with ID inode. This is
-        // okay because we will never branch off a SINK.
+        // To model this, we are putting in separate rt_nodes in the route tree if
+        // we go to the same SINK more than once. rr_node_to_rt[inode] will therefore
+        // store the last rt_node created of all the SINK nodes with the same ID.
+        // This is okay because we will never branch off a SINK.
         auto& device_ctx = g_vpr_ctx.device();
         auto itr = rr_node_to_rt.find(inode);
         if (itr == rr_node_to_rt.end() || device_ctx.rr_nodes[inode].type() == SINK) {
@@ -825,8 +814,6 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace,
             node = itr->second;
         }
         VTR_ASSERT(node);
-
-        VTR_LOG("\ttraced to rt_node: %d (pointer: %p) (%s)\n", node->inode, node, device_ctx.rr_nodes[node->inode].type_string());
 
         next = trace->next;
         if (iswitch != OPEN) {
@@ -957,7 +944,7 @@ t_trace* traceback_from_route_tree(ClusterNetId inet, const t_rt_node* root, int
 //Prunes a route tree (recursively) based on congestion and the 'force_prune' argument
 //
 //Returns true if the current node was pruned
-static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool force_prune, std::vector<int>* non_config_node_set_usage, std::vector<t_rt_node*>& removed_nodes) {
+static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf, bool force_prune, std::vector<int>* non_config_node_set_usage) {
     //Recursively traverse the route tree rooted at node and remove any congested
     //sub-trees
 
@@ -988,41 +975,39 @@ static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf
     t_linked_rt_edge* prev_edge = nullptr;
     t_linked_rt_edge* edge = node->u.child_list;
     while (edge) {
-        if (std::find(removed_nodes.begin(), removed_nodes.end(), edge->child) == removed_nodes.end()) {
-            t_rt_node* child = prune_route_tree_recurr(edge->child,
-                                                       connections_inf, force_prune, non_config_node_set_usage, removed_nodes);
+        t_rt_node* child = prune_route_tree_recurr(edge->child,
+                                                   connections_inf, force_prune, non_config_node_set_usage);
 
-            if (!child) { //Child was pruned
+        if (!child) { //Child was pruned
 
-                //Remove the edge
-                if (edge == node->u.child_list) { //Was Head
-                    node->u.child_list = edge->next;
-                } else { //Was intermediate
-                    VTR_ASSERT(prev_edge);
-                    prev_edge->next = edge->next;
-                }
-
-                t_linked_rt_edge* old_edge = edge;
-                edge = edge->next;
-
-                // After removing an edge, check if non_config_node_set_usage
-                // needs an update.
-                if (non_config_node_set_usage != nullptr && node_set != -1 && device_ctx.rr_switch_inf[old_edge->iswitch].configurable()) {
-                    (*non_config_node_set_usage)[node_set] -= 1;
-                    VTR_ASSERT((*non_config_node_set_usage)[node_set] >= 0);
-                }
-
-                free_linked_rt_edge(old_edge);
-
-                //Note prev_edge is unchanged
-
-            } else { //Child not pruned
-                all_children_pruned = false;
-
-                //Edge not removed
-                prev_edge = edge;
-                edge = edge->next;
+            //Remove the edge
+            if (edge == node->u.child_list) { //Was Head
+                node->u.child_list = edge->next;
+            } else { //Was intermediate
+                VTR_ASSERT(prev_edge);
+                prev_edge->next = edge->next;
             }
+
+            t_linked_rt_edge* old_edge = edge;
+            edge = edge->next;
+
+            // After removing an edge, check if non_config_node_set_usage
+            // needs an update.
+            if (non_config_node_set_usage != nullptr && node_set != -1 && device_ctx.rr_switch_inf[old_edge->iswitch].configurable()) {
+                (*non_config_node_set_usage)[node_set] -= 1;
+                VTR_ASSERT((*non_config_node_set_usage)[node_set] >= 0);
+            }
+
+            free_linked_rt_edge(old_edge);
+
+            //Note prev_edge is unchanged
+
+        } else { //Child not pruned
+            all_children_pruned = false;
+
+            //Edge not removed
+            prev_edge = edge;
+            edge = edge->next;
         }
     }
 
@@ -1040,7 +1025,6 @@ static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf
             //Record as not reached
             connections_inf.toreach_rr_sink(node->inode);
 
-            removed_nodes.push_back(node);
             free_rt_node(node);
             return nullptr; //Pruned
         }
@@ -1087,7 +1071,6 @@ static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf
         if (reached_non_configurably && !force_prune) {
             return node; //Not pruned
         } else {
-            removed_nodes.push_back(node);
             free_rt_node(node);
             return nullptr; //Pruned
         }
@@ -1137,7 +1120,7 @@ static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf
             //  prune_route_tree_recurr visits 2, 3 and 4, the node set usage
             //  will be 0, so everything can be pruned.
             return prune_route_tree_recurr(node, connections_inf,
-                                           /*force_prune=*/false, non_config_node_set_usage, removed_nodes);
+                                           /*force_prune=*/false, non_config_node_set_usage);
         }
 
         //An unpruned intermediate node
@@ -1169,9 +1152,7 @@ t_rt_node* prune_route_tree(t_rt_node* rt_root, CBRR& connections_inf, std::vect
     VTR_ASSERT_MSG(route_ctx.rr_node_route_inf[rt_root->inode].occ() <= device_ctx.rr_nodes[rt_root->inode].capacity(),
                    "Route tree root/SOURCE should never be congested");
 
-    std::vector<t_rt_node*> removed_nodes;
-
-    return prune_route_tree_recurr(rt_root, connections_inf, false, non_config_node_set_usage, removed_nodes);
+    return prune_route_tree_recurr(rt_root, connections_inf, false, non_config_node_set_usage);
 }
 
 void pathfinder_update_cost_from_route_tree(const t_rt_node* rt_root, int add_or_sub, float pres_fac) {
@@ -1473,12 +1454,9 @@ init_route_tree_to_source_no_net(int inode) {
 }
 
 bool verify_traceback_route_tree_equivalent(const t_trace* head, const t_rt_node* rt_root) {
-    VTR_LOG("Printing node tree in verify traceback route tree quivalent...\n");
-    print_route_tree(rt_root);
-
     //Walk the route tree saving all the used connections
     std::multiset<std::tuple<int, int, int>> route_tree_connections;
-    collect_route_tree_connections(rt_root, OPEN, route_tree_connections);
+    collect_route_tree_connections(rt_root, route_tree_connections);
 
     //Remove the extra parent connection to root (not included in traceback)
     route_tree_connections.erase(std::make_tuple(OPEN, OPEN, rt_root->inode));
@@ -1487,20 +1465,17 @@ bool verify_traceback_route_tree_equivalent(const t_trace* head, const t_rt_node
     int prev_node = OPEN;
     int prev_switch = OPEN;
     int to_node = OPEN;
-    VTR_LOG("\tWalking the traceback...\n");
     for (const t_trace* trace = head; trace != nullptr; trace = trace->next) {
         to_node = trace->index;
-        VTR_LOG("\t\tprev_node: %d\tprev_switch: %d\tto_node: %d\n", prev_node, prev_switch, to_node);
 
         auto conn = std::make_tuple(prev_node, prev_switch, to_node);
         if (prev_switch != OPEN) {
             //Not end of branch
-            VTR_LOG("\t\t\tTuple count: %d\n", route_tree_connections.count(conn));
             if (!route_tree_connections.count(conn)) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Route tree missing traceback connection: node %d -> %d (switch %d)\n",
                                 prev_node, to_node, prev_switch);
             } else {
-                route_tree_connections.erase(route_tree_connections.lower_bound(conn)); //Remove found connections
+                route_tree_connections.erase(route_tree_connections.lower_bound(conn)); //Remove the first found connections
             }
         }
 
@@ -1521,12 +1496,14 @@ bool verify_traceback_route_tree_equivalent(const t_trace* head, const t_rt_node
     return true;
 }
 
-void collect_route_tree_connections(const t_rt_node* node, int prev_node, std::multiset<std::tuple<int, int, int>>& connections) {
+void collect_route_tree_connections(const t_rt_node* node, std::multiset<std::tuple<int, int, int>>& connections) {
     if (node) {
         //Record reaching connection
+        int prev_node = OPEN;
         int prev_switch = OPEN;
         int to_node = node->inode;
-        if (prev_node != OPEN) {
+        if (node->parent_node) {
+            prev_node = node->parent_node->inode;
             prev_switch = node->parent_switch;
         }
         auto conn = std::make_tuple(prev_node, prev_switch, to_node);
@@ -1534,7 +1511,7 @@ void collect_route_tree_connections(const t_rt_node* node, int prev_node, std::m
 
         //Recurse
         for (auto edge = node->u.child_list; edge != nullptr; edge = edge->next) {
-            collect_route_tree_connections(edge->child, to_node, connections);
+            collect_route_tree_connections(edge->child, connections);
         }
     }
 }
