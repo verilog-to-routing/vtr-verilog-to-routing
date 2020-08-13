@@ -351,7 +351,6 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> orig_timi
      * The weights are deteremined by how much delay of the whole path is present in this connection*/
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& atom_ctx = g_vpr_ctx.atom();
 
     std::shared_ptr<const tatum::SetupHoldTimingAnalyzer> timing_analyzer = orig_timing_info->setup_hold_analyzer();
     float total_path_delay = 0;
@@ -664,7 +663,12 @@ void route_budgets::increase_min_budgets_if_struggling(float delay_decrement, st
     negative_hold_slacks.push(worst_neg_slack);
 
     if ((negative_hold_slacks.size() == 3)) {
-        if (negative_hold_slacks.back() == negative_hold_slacks.front() && negative_hold_slacks.front() != 0) {
+        // Check if it's within a 1% difference, float equality is tricky
+        float d_slack = negative_hold_slacks.back() - negative_hold_slacks.front();
+        // VTR_LOG("D_SLACK IS %e THE DIFF IS %e\n", std::abs(d_slack), std::abs(negative_hold_slacks.front() * 0.01));
+        if (std::abs(d_slack) < std::abs(negative_hold_slacks.front() * 0.01) && negative_hold_slacks.front() != 0) {
+            // VTR_LOG("ACTIVATE LOWER BUDGET %e < %e\n", std::abs(d_slack), std::abs(negative_hold_slacks.front() * 0.01));
+
             /*Decrease the budgets by a delay increment when the congested times is high enough*/
             for (auto net_id : cluster_ctx.clb_nlist.nets()) {
                 for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
@@ -677,7 +681,7 @@ void route_budgets::increase_min_budgets_if_struggling(float delay_decrement, st
                     for (auto& atom_pin : netlist_pin_lookup.connected_atom_pins(pin_id)) {
                         float hold_slack = timing_info->hold_pin_slack(atom_pin);
 
-                        if (hold_slack < 0) {
+                        if (hold_slack <= 0) {
                             update_budget = true;
                             set_should_reroute(net_id, true);
                             // VTR_LOG("SLACK ON NET %d PIN %d slack: %e min_budget: %e short_crit: %e REROUTE?: %s\n", net_id, ipin, hold_slack, delay_min_budget[net_id][ipin], short_path_crit[net_id][ipin], get_should_reroute(net_id) ? "true" : "false");
@@ -688,11 +692,11 @@ void route_budgets::increase_min_budgets_if_struggling(float delay_decrement, st
                     // If the hold_slack on this pin is less than zero, decrement by a constant amount
                     if (update_budget) {
                         delay_min_budget[net_id][ipin] -= delay_decrement;
-                        if (delay_min_budget[net_id][ipin] > delay_max_budget[net_id][ipin]) {
-                            delay_max_budget[net_id][ipin] -= 4 * delay_decrement;
-                        }
+                        // if (delay_min_budget[net_id][ipin] > delay_max_budget[net_id][ipin]) {
+                            delay_max_budget[net_id][ipin] -= 2 * delay_decrement;
+                        // }
 
-                        short_path_crit[net_id][ipin] *= 4;
+                        short_path_crit[net_id][ipin] *= 2;
                         // VTR_LOG("Increasing budgets to net %d pin %d, new budget %e\n", net_id, ipin, delay_min_budget[net_id][ipin]);
                         // keep_budget_in_bounds(delay_min_budget, net_id, pin_id);
                     }
@@ -700,8 +704,8 @@ void route_budgets::increase_min_budgets_if_struggling(float delay_decrement, st
             }
 
             // Empty queue so we are giving the router time to re stabilize
-            std::queue<float> empty;
-            std::swap(empty, negative_hold_slacks);
+            // std::queue<float> empty;
+            // std::swap(empty, negative_hold_slacks);
         }
 
         negative_hold_slacks.pop();
