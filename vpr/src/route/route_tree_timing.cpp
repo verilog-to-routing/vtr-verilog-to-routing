@@ -259,6 +259,8 @@ add_subtree_to_route_tree(t_heap* hptr, t_rt_node** sink_rt_node_ptr) {
      * to the routing tree.  It returns the first (most upstream) new rt_node,
      * and (via a pointer) the rt_node of the new SINK. Traverses up from SINK  */
 
+    VTR_LOG("\tAdding subtree to route tree...\n");
+
     t_rt_node *rt_node, *downstream_rt_node, *sink_rt_node;
     t_linked_rt_edge* linked_rt_edge;
 
@@ -277,6 +279,8 @@ add_subtree_to_route_tree(t_heap* hptr, t_rt_node** sink_rt_node_ptr) {
     sink_rt_node->u.child_list = nullptr;
     sink_rt_node->inode = inode;
     rr_node_to_rt_node[inode] = sink_rt_node;
+
+    VTR_LOG("\t\tSink node to be added: %d\n", inode);
 
     /* In the code below I'm marking SINKs and IPINs as not to be re-expanded.
      * It makes the code more efficient (though not vastly) to prune this way
@@ -627,7 +631,9 @@ bool verify_route_tree_recurr(t_rt_node* node, std::set<int>& seen_nodes) {
 
 void free_route_tree(t_rt_node* rt_node) {
     std::vector<t_rt_node*> removed_nodes;
+    VTR_LOG("  Freeing route tree...\n");
     free_route_tree_recurr(rt_node, removed_nodes);
+    VTR_LOG("  Done freeing route tree...\n");
 }
 
 void free_route_tree_recurr(t_rt_node* rt_node, std::vector<t_rt_node*>& removed_nodes) {
@@ -635,7 +641,7 @@ void free_route_tree_recurr(t_rt_node* rt_node, std::vector<t_rt_node*>& removed
      * free lists.  Recursive, depth-first post-order traversal.                */
 
     auto& device_ctx = g_vpr_ctx.device();
-    VTR_LOG("\trt_node: %d (%s)\n", rt_node->inode, device_ctx.rr_nodes[rt_node->inode].type_string());
+    VTR_LOG("\trt_node: %d (pointer: %p) (%s)\n", rt_node->inode, rt_node, device_ctx.rr_nodes[rt_node->inode].type_string());
 
     t_linked_rt_edge *rt_edge, *next_edge;
 
@@ -670,7 +676,7 @@ void print_route_tree(const t_rt_node* rt_node, int depth) {
     }
 
     auto& device_ctx = g_vpr_ctx.device();
-    VTR_LOG("%srt_node: %d (%s)", indent.c_str(), rt_node->inode, device_ctx.rr_nodes[rt_node->inode].type_string());
+    VTR_LOG("%s  rt_node: %d (pointer: %p) (%s)", indent.c_str(), rt_node->inode, rt_node, device_ctx.rr_nodes[rt_node->inode].type_string());
 
     if (rt_node->parent_switch != OPEN) {
         bool parent_edge_configurable = device_ctx.rr_switch_inf[rt_node->parent_switch].configurable();
@@ -775,8 +781,15 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace,
         int inode = trace->index;
         int iswitch = trace->iswitch;
 
-        auto itr = rr_node_to_rt.find(trace->index);
-        if (itr == rr_node_to_rt.end()) {
+        // In some cases (e.g. input pin equivalence for RAM and DSP blocks),
+        // the same SINK node is put into the tree multiple times in a single route.
+        // To model this, We are putting in separate rt_nodes in the route tree if
+        // we go to to the same SINK more than once. rr_node_to_rt[inode] will therefore
+        // store the last rt_node created of the same SINK node with ID inode. This is
+        // okay because we will never branch off a SINK.
+        auto& device_ctx = g_vpr_ctx.device();
+        auto itr = rr_node_to_rt.find(inode);
+        if (itr == rr_node_to_rt.end() || device_ctx.rr_nodes[inode].type() == SINK) {
             //Create
 
             //Initialize route tree node
@@ -788,7 +801,6 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace,
             node->C_downstream = std::numeric_limits<float>::quiet_NaN();
             node->Tdel = std::numeric_limits<float>::quiet_NaN();
 
-            auto& device_ctx = g_vpr_ctx.device();
             auto node_type = device_ctx.rr_nodes[inode].type();
             if (node_type == IPIN || node_type == SINK)
                 node->re_expand = false;
@@ -814,6 +826,8 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace,
         }
         VTR_ASSERT(node);
 
+        VTR_LOG("\ttraced to rt_node: %d (pointer: %p) (%s)\n", node->inode, node, device_ctx.rr_nodes[node->inode].type_string());
+
         next = trace->next;
         if (iswitch != OPEN) {
             // Keep track of non-configurable set usage by looking for
@@ -821,7 +835,6 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace,
             //
             // Each configurable edges from the non-configurable set is a
             // usage of the set.
-            auto& device_ctx = g_vpr_ctx.device();
             auto set_itr = device_ctx.rr_node_to_non_config_node_set.find(inode);
             if (non_config_node_set_usage != nullptr && set_itr != device_ctx.rr_node_to_non_config_node_set.end()) {
                 if (device_ctx.rr_switch_inf[iswitch].configurable()) {
