@@ -158,7 +158,7 @@ static void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*d
 static void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 static void run_graphics_commands(std::string commands);
 
-void manual_move_generator_window ();
+void manual_move_generator_window();
 void move_generator_button_callback(GtkWidget* /*widget*/, GtkWidget* grid);
 
 /************************** File Scope Variables ****************************/
@@ -167,8 +167,6 @@ void move_generator_button_callback(GtkWidget* /*widget*/, GtkWidget* grid);
 constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
 constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
 constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
-
-
 
 //Kelly's maximum contrast colors are selected to be easily distinguishable as described in:
 //  Kenneth Kelly, "Twenty-Two Colors of Maximum Contrast", Color Eng. 3(6), 1943
@@ -4045,7 +4043,6 @@ void net_max_fanout(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data
     //redraw
     application.refresh_drawing();
 }
-
 
 static void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();

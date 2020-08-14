@@ -32,5 +32,4 @@ void close_advanced_window();
 void ok_close_window(GtkWidget* /*widget*/, GtkWidget* window);
 void invalid_breakpoint_entry_window(std::string error);
 bool valid_expression(std::string exp);
-void breakpoint_info_window(std::string bpDescription, current_information current_info_d);
-
+void breakpoint_info_window(std::string bpDescription, BreakpointState draw_breakpoint_state);

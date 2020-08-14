@@ -7,7 +7,8 @@
 #include <sstream>
 #include <iostream>
 
-current_information current_info_e;
+//global variables
+BreakpointState expr_breakpoint_state;
 bool is_breakpoint = false;
 int before_addition = 0;
 
@@ -68,7 +69,13 @@ static int identifier_length(const char* str);
 /* increments str_ind until it reaches specified char is formula. returns true if character was found, false otherwise */
 static bool goto_next_char(int* str_ind, const string& pw_formula, char ch);
 
+//compares two strings while ignoring white space and case
 bool same_string(std::string str1, std::string str2);
+
+//checks if the block indicated by the user was one of the moved blocks in the last perturbation
+int in_blocks_affected(std::string expression_left);
+
+//the function of += operator
 bool additional_assignment_op(int arg1, int arg2);
 
 /**** Function Implementations ****/
@@ -317,17 +324,17 @@ static void get_formula_object(const char* ch, int& ichar, const t_formula_data&
         } else if (is_variable(var_name)) {
             fobj->type = E_FML_VARIABLE;
             if (same_string(var_name, "temp_count"))
-                fobj->data.num = current_info_e.temp_count;
+                fobj->data.num = expr_breakpoint_state.temp_count;
             else if (same_string(var_name, "from_block"))
-                fobj->data.num = current_info_e.from_block;
+                fobj->data.num = expr_breakpoint_state.from_block;
             else if (same_string(var_name, "move_num"))
-                fobj->data.num = current_info_e.move_num;
+                fobj->data.num = expr_breakpoint_state.move_num;
             else if (same_string(var_name, "route_net_id"))
-                fobj->data.num = current_info_e.net_id;
+                fobj->data.num = expr_breakpoint_state.net_id;
             else if (same_string(var_name, "in_blocks_affected"))
                 fobj->data.num = in_blocks_affected(std::string(ch));
             else if (same_string(var_name, "router_iter"))
-                fobj->data.num = current_info_e.router_iter;
+                fobj->data.num = expr_breakpoint_state.router_iter;
         }
 
         ichar += (id_len - 1); //-1 since ichar is incremented at end of loop in formula_to_rpn()
@@ -856,21 +863,6 @@ bool additional_assignment_op(int arg1, int arg2) {
         before_addition = 0;
     return result;
 }
-} //namespace vtr
-
-//gets current information from breakpoint.cpp
-void get_current_info_e(current_information ci) {
-    current_info_e = ci;
-}
-
-int get_current_info_e_ba() {
-    return current_info_e.blocks_affected;
-}
-
-//checks if the expression being evaluated is a breakpoint
-void is_a_breakpoint(bool aBreakpoint) {
-    is_breakpoint = aBreakpoint;
-}
 
 //first recognized the block_id to look for
 //then looks for that block_id and if it finds it, it returns the block id, else just -1
@@ -891,11 +883,27 @@ int in_blocks_affected(std::string expression_left) {
     }
 
     //goes through blocks_affected
-    for (size_t i = 0; i < current_info_e.blocks_affected_vector.size(); i++) {
-        if (current_info_e.blocks_affected_vector[i] == found_block) {
-            current_info_e.blocks_affected = found_block;
+    for (size_t i = 0; i < expr_breakpoint_state.blocks_affected_vector.size(); i++) {
+        if (expr_breakpoint_state.blocks_affected_vector[i] == found_block) {
+            expr_breakpoint_state.blocks_affected = found_block;
             return found_block;
         }
     }
     return wanted_block;
+}
+
+} //namespace vtr
+
+//gets current information from breakpoint.cpp
+void get_current_info_e(BreakpointState ci) {
+    expr_breakpoint_state = ci;
+}
+
+int get_current_info_e_ba() {
+    return expr_breakpoint_state.blocks_affected;
+}
+
+//checks if the expression being evaluated is a breakpoint
+void is_a_breakpoint(bool aBreakpoint) {
+    is_breakpoint = aBreakpoint;
 }

@@ -12,6 +12,26 @@
 #include "vtr_string_view.h"
 #include "vtr_flat_map.h"
 
+//the BreakpointState struct holds all values that could possibly trigger a breakpoint
+//some variables such as move_num, from_block, temp_count, blocks_affected are related to the placer and router_iter and net_id are related to the router
+//there is also a string that holds the breakpoint description that are displayed in the UI and printed to the terminal
+//these values are updated in place.cpp and route.cpp and expr_eval.cpp and breakpoint.cpp use these values to look for breakpoints
+struct BreakpointState {
+    int move_num = 0;
+    int from_block = -1;
+    int temp_count = 0;
+    int blocks_affected = -1;
+    std::vector<int> blocks_affected_vector;
+    int net_id = -1;
+    int router_iter = 0;
+    std::string bp_description;
+};
+
+//function declarations
+void get_current_info_e(BreakpointState ci);
+void is_a_breakpoint(bool aBreakpoint);
+int get_current_info_e_ba();
+
 namespace vtr {
 
 /**** Structs ****/
@@ -185,23 +205,7 @@ class FormulaParser {
     std::vector<Formula_Object> rpn_output_;
     std::stack<Formula_Object> op_stack_; /* stack for handling operators and brackets in formula */
 };
-} // namespace vtr
-//struct that holds all necessary current information about the placer
-struct current_information {
-    int move_num = 0;
-    int router_iter = 0;
-    int from_block = -1;
-    int temp_count = 0;
-    int net_id = -1;
-    int blocks_affected = -1;
-    std::string bp_description;
-    std::vector<int> blocks_affected_vector;
-};
 
-//function declarations
-void get_current_info_e(current_information ci);
-void is_a_breakpoint(bool aBreakpoint);
-int get_current_info_e_ba();
-int in_blocks_affected(std::string expression_left);
+} // namespace vtr
 
 #endif

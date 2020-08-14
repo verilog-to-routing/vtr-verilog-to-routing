@@ -72,7 +72,7 @@ struct RoutingMetrics {
 //Run-time flag to control when router debug information is printed
 //Note only enables debug output if compiled with VTR_ENABLE_DEBUG_LOGGING defined
 bool f_router_debug = false;
-current_information current_info_r;
+BreakpointState route_breakpoint_state;
 
 /******************** Subroutines local to route_timing.c ********************/
 
@@ -2007,15 +2007,15 @@ void update_router_info_and_check_bp(bp_router_type type, int net_id) {
     t_draw_state* draw_state = get_draw_state_vars();
     if (draw_state->list_of_breakpoints.size() != 0) {
         if (type == BP_ROUTE_ITER)
-            current_info_r.router_iter++;
+            route_breakpoint_state.router_iter++;
         else if (type == BP_NET_ID)
-            current_info_r.net_id = net_id;
+            route_breakpoint_state.net_id = net_id;
         send_current_info_r();
 
         //checks for breakpoints and prints appropriate message if breakpoint was encountered
         f_router_debug = check_for_breakpoints(false);
         if (f_router_debug) {
-            breakpoint_info_window(get_current_info_b().bp_description, current_info_r);
+            breakpoint_info_window(get_current_info_b().bp_description, route_breakpoint_state);
             update_screen(ScreenUpdatePriority::MAJOR, "Breakpoint Encountered", ROUTING, nullptr);
         }
     }
@@ -2023,5 +2023,5 @@ void update_router_info_and_check_bp(bp_router_type type, int net_id) {
 
 //sends router info to breakpoint.cpp to be sent to expr_eval.cpp
 void send_current_info_r() {
-    send_current_info_b(current_info_r);
+    send_current_info_b(route_breakpoint_state);
 }

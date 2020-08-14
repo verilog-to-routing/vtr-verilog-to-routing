@@ -1,6 +1,5 @@
 #include "draw_debug.h"
 
-
 struct open_windows {
     bool debug_window = false;
     bool advanced_window = false;
@@ -13,11 +12,16 @@ typedef enum operator_type_in_expression {
 } op_type_in_expr;
 
 //debugger global variables
-struct debugger_global_vars {
-std::vector<std::string> bp_labels;
-GtkWidget* bpGrid;
-int bpList_row = -1;
-open_windows openWindows;
+class debugger_global_vars {
+  public:
+    std::vector<std::string> bp_labels;
+    GtkWidget* bpGrid;
+    int bpList_row = -1;
+    open_windows openWindows;
+
+    ~debugger_global_vars() {
+        bp_labels.clear();
+    }
 };
 
 debugger_global_vars debug_glob_vars;
@@ -346,7 +350,7 @@ void set_moves_button_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
     //check for input validity
     int moves = atoi(gtk_entry_get_text((GtkEntry*)entry));
     if (moves >= 1 && strchr(gtk_entry_get_text((GtkEntry*)entry), '.') == NULL) {
-        draw_state->list_of_breakpoints.push_back(Breakpoint("bt_moves", moves));
+        draw_state->list_of_breakpoints.push_back(Breakpoint(BT_MOVE_NUM, moves));
         std::string bpDescription = "Breakpoint at move_num += " + std::to_string(moves);
         add_to_bpList(bpDescription);
     } else
@@ -361,7 +365,7 @@ void set_temp_button_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
     //input validity
     int temps = atoi(gtk_entry_get_text((GtkEntry*)entry));
     if (temps >= 1 && strchr(gtk_entry_get_text((GtkEntry*)entry), '.') == NULL) {
-        draw_state->list_of_breakpoints.push_back(Breakpoint("bt_temps", temps));
+        draw_state->list_of_breakpoints.push_back(Breakpoint(BT_TEMP_NUM, temps));
         std::string bpDescription = "Breakpoint at temp_count += " + std::to_string(temps);
         add_to_bpList(bpDescription);
     } else
@@ -373,7 +377,7 @@ void set_block_button_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
     t_draw_state* draw_state = get_draw_state_vars();
     GtkWidget* entry = gtk_grid_get_child_at((GtkGrid*)grid, 1, 3);
 
-    draw_state->list_of_breakpoints.push_back(Breakpoint("bt_from_block", atoi(gtk_entry_get_text((GtkEntry*)entry))));
+    draw_state->list_of_breakpoints.push_back(Breakpoint(BT_FROM_BLOCK, atoi(gtk_entry_get_text((GtkEntry*)entry))));
     std::string s(gtk_entry_get_text((GtkEntry*)entry));
     std::string bpDescription = "Breakpoint from_block == " + s;
     add_to_bpList(bpDescription);
@@ -387,7 +391,7 @@ void set_router_iter_button_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
     //check for input validity
     int iters = atoi(gtk_entry_get_text((GtkEntry*)entry));
     if (iters >= 1 && strchr(gtk_entry_get_text((GtkEntry*)entry), '.') == NULL) {
-        draw_state->list_of_breakpoints.push_back(Breakpoint("bt_router_iter", iters));
+        draw_state->list_of_breakpoints.push_back(Breakpoint(BT_ROUTER_ITER, iters));
         std::string bpDescription = "Breakpoint at router_iter == " + std::to_string(iters);
         add_to_bpList(bpDescription);
     } else
@@ -399,7 +403,7 @@ void set_net_id_button_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
     t_draw_state* draw_state = get_draw_state_vars();
     GtkWidget* entry = gtk_grid_get_child_at((GtkGrid*)grid, 1, 6);
 
-    draw_state->list_of_breakpoints.push_back(Breakpoint("bt_route_net_id", atoi(gtk_entry_get_text((GtkEntry*)entry))));
+    draw_state->list_of_breakpoints.push_back(Breakpoint(BT_ROUTE_NET_ID, atoi(gtk_entry_get_text((GtkEntry*)entry))));
     std::string s(gtk_entry_get_text((GtkEntry*)entry));
     std::string bpDescription = "Breakpoint route_net_id == " + s;
     add_to_bpList(bpDescription);
@@ -413,7 +417,7 @@ void set_expression_button_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
     //check input validity
     std::string expr = gtk_entry_get_text((GtkEntry*)entry);
     if (valid_expression(expr)) {
-        draw_state->list_of_breakpoints.push_back(Breakpoint("bt_expression", expr));
+        draw_state->list_of_breakpoints.push_back(Breakpoint(BT_EXPRESSION, expr));
         std::string bpDescription = "Breakpoint at " + expr;
         add_to_bpList(bpDescription);
     } else
@@ -453,7 +457,7 @@ void invalid_breakpoint_entry_window(std::string error) {
 
 //window that pops up when a breakpoint is reached
 //shows which breakpoint the program has stopped at and gives an info summary
-void breakpoint_info_window(std::string bpDescription, current_information current_info_d) {
+void breakpoint_info_window(std::string bpDescription, BreakpointState draw_breakpoint_state) {
     //window settings
     GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_position((GtkWindow*)window, GTK_WIN_POS_CENTER);
@@ -501,26 +505,26 @@ void breakpoint_info_window(std::string bpDescription, current_information curre
     gtk_grid_attach((GtkGrid*)info_grid, r, 0, 2, 1, 1);
 
     //info grid labels
-    std::string move_num = "move_num: " + std::to_string(current_info_d.move_num);
+    std::string move_num = "move_num: " + std::to_string(draw_breakpoint_state.move_num);
     GtkWidget* move_info = gtk_label_new(move_num.c_str());
     gtk_widget_set_margin_left(move_info, 5);
     gtk_widget_set_halign(move_info, GTK_ALIGN_START);
-    std::string temp_count = "temp_count: " + std::to_string(current_info_d.temp_count);
+    std::string temp_count = "temp_count: " + std::to_string(draw_breakpoint_state.temp_count);
     GtkWidget* temp_info = gtk_label_new(temp_count.c_str());
     gtk_widget_set_margin_left(temp_info, 5);
     gtk_widget_set_halign(temp_info, GTK_ALIGN_START);
     std::string in_blocks_affected = "in_blocks_affected: " + std::to_string(get_current_info_e_ba());
     GtkWidget* ba_info = gtk_label_new(in_blocks_affected.c_str());
     gtk_widget_set_halign(ba_info, GTK_ALIGN_START);
-    std::string block_id = "from_block: " + std::to_string(current_info_d.from_block);
+    std::string block_id = "from_block: " + std::to_string(draw_breakpoint_state.from_block);
     GtkWidget* block_info = gtk_label_new(block_id.c_str());
     gtk_widget_set_margin_left(block_info, 5);
     gtk_widget_set_halign(block_info, GTK_ALIGN_START);
-    std::string router_iter = "router_iter: " + std::to_string(current_info_d.router_iter);
+    std::string router_iter = "router_iter: " + std::to_string(draw_breakpoint_state.router_iter);
     GtkWidget* ri_info = gtk_label_new(router_iter.c_str());
     gtk_widget_set_margin_left(ri_info, 5);
     gtk_widget_set_halign(ri_info, GTK_ALIGN_START);
-    std::string net_id = "rouet_net_id: " + std::to_string(current_info_d.net_id);
+    std::string net_id = "rouet_net_id: " + std::to_string(draw_breakpoint_state.net_id);
     GtkWidget* net_info = gtk_label_new(net_id.c_str());
     gtk_widget_set_margin_left(net_info, 5);
     gtk_widget_set_halign(net_info, GTK_ALIGN_START);

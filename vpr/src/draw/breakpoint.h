@@ -7,10 +7,19 @@
 #include "move_transactions.h"
 #include "vtr_expr_eval.h"
 
+typedef enum breakpoint_types {
+    BT_MOVE_NUM,
+    BT_TEMP_NUM,
+    BT_FROM_BLOCK,
+    BT_ROUTER_ITER,
+    BT_ROUTE_NET_ID,
+    BT_EXPRESSION
+} bp_type;
+
 class Breakpoint {
   public:
     //types include: bt_moves, bt_temps, bt_from_block, bt_router_iter, bt_route_net_id, bt_expression
-    std::string type;
+    bp_type type;
     int bt_moves = 0;
     int bt_temps = 0;
     int bt_from_block = -1;
@@ -29,42 +38,44 @@ class Breakpoint {
         active = true;
     }
 
-    //sets move_num/from_block/temp_num/router_iter/net_id type of breakpoint based on the type indicated by string ty. Also sets the corresponding breakpoint value indicated by int breakpoint_value
-    Breakpoint(std::string ty, int breakpoint_value) {
+    //sets the type of the breakpoint based on the indicated bp_type. the constructor then assigns the corresponding value e.g Breakpoint (BT_MOVE_NUM, 4) sets breakpoint type to BT_MOVE_NUM and the bt_moves value to 4
+    Breakpoint(bp_type ty, int breakpoint_value) {
         type = ty;
-        if (ty.compare("bt_moves") == 0)
+        if (ty == BT_MOVE_NUM)
             bt_moves = breakpoint_value;
-        else if (ty.compare("bt_temps") == 0)
+        else if (ty == BT_TEMP_NUM)
             bt_temps = breakpoint_value;
-        else if (ty.compare("bt_from_block") == 0)
+        else if (ty == BT_FROM_BLOCK)
             bt_from_block = breakpoint_value;
-        else if (ty.compare("bt_router_iter") == 0)
+        else if (ty == BT_ROUTER_ITER)
             bt_router_iter = breakpoint_value;
-        else if (ty.compare("bt_route_net_id") == 0)
+        else if (ty == BT_ROUTE_NET_ID)
             bt_route_net_id = breakpoint_value;
     }
 
-    Breakpoint(std::string ty, std::string expr) {
+    //sets the breakpoint type to BT_EXPRESSION and sets the string member bt_expression to the expresssion the user inputted. e.g Breakpoint(BT_EXPRESSION, "move_num==3")
+    //the user can set breakpoints, during routing or placement, using an expression with the available variables and operators
+    Breakpoint(bp_type ty, std::string expr) {
         type = ty;
         bt_expression = expr;
     }
 
     //overridden operators
     bool operator==(const Breakpoint& bp) {
-        if (bp.type.compare(this->type) != 0)
+        if (bp.type != this->type)
             return false;
         else {
-            if (bp.type.compare("bt_moves") == 0 && bp.bt_moves == this->bt_moves)
+            if (bp.type == BT_MOVE_NUM && bp.bt_moves == this->bt_moves)
                 return true;
-            else if (bp.type.compare("bt_temps") == 0 && bp.bt_temps == this->bt_temps)
+            else if (bp.type == BT_TEMP_NUM && bp.bt_temps == this->bt_temps)
                 return true;
-            else if (bp.type.compare("bt_from_block") == 0 && bp.bt_from_block == this->bt_from_block)
+            else if (bp.type == BT_FROM_BLOCK && bp.bt_from_block == this->bt_from_block)
                 return true;
-            else if (bp.type.compare("bt_router_iter") == 0 && bp.bt_router_iter == this->bt_router_iter)
+            else if (bp.type == BT_ROUTER_ITER && bp.bt_router_iter == this->bt_router_iter)
                 return true;
-            else if (bp.type.compare("bt_route_net_id") == 0 && bp.bt_route_net_id == this->bt_route_net_id)
+            else if (bp.type == BT_ROUTE_NET_ID && bp.bt_route_net_id == this->bt_route_net_id)
                 return true;
-            else if (bp.type.compare("bt_expression") == 0 && bp.bt_expression.compare(this->bt_expression) == 0)
+            else if (bp.type == BT_EXPRESSION && bp.bt_expression.compare(this->bt_expression) == 0)
                 return true;
             else
                 return false;
@@ -87,7 +98,6 @@ bool check_for_route_net_id_iter_breakpoints(int net_id);
 //using expr_eval functions parses breakpoint indicated by expression (through gtk entry in the debugger window) and returns true if breakpoint is encountered
 bool check_for_expression_breakpoints(std::string expression, bool in_placer);
 
-
 //deletes indicated breakpoint from the breakpoint list
 void delete_breakpoint_by_index(int index);
 
@@ -95,10 +105,10 @@ void delete_breakpoint_by_index(int index);
 void activate_breakpoint_by_index(int index, bool enabled);
 
 //sends the current BreakpointState to expre_eval.cpp
-void send_current_info_b(current_information ci);
+void send_current_info_b(BreakpointState ci);
 
 //returns current BreakpointState in the breakpoint class
-current_information get_current_info_b();
+BreakpointState get_current_info_b();
 
 //prints current BreakpointState information to terminal when breakpoint is reached
 void print_current_info(bool in_placer);
