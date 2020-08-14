@@ -406,7 +406,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
 
         // Calculate this once and pass it into net routing to check if should reroute for hold
         float worst_negative_slack = 0;
-        if (budgeting_inf.if_set()) { 
+        if (budgeting_inf.if_set()) {
             worst_negative_slack = timing_info->hold_total_negative_slack();
         }
 

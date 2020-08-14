@@ -122,7 +122,6 @@ void route_budgets::load_route_budgets(ClbNetPinsMatrix<float>& net_delay,
                                        std::shared_ptr<SetupTimingInfo> timing_info,
                                        const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                        const t_router_opts& router_opts) {
-
     /*This function loads the routing budgets depending on the option selected by the user
      * the default is to use the minimax algorithm. Other options include disabling this feature
      * or scale the delay by the criticality*/
@@ -365,7 +364,7 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> orig_timi
             /*calculate slack, save the pin that has min slack to calculate total path delay*/
             if (analysis_type == HOLD) {
                 path_slack = calculate_clb_pin_slack(net_id, ipin, timing_info, netlist_pin_lookup, HOLD, atom_pin);
-                if(path_slack > 0) {
+                if (path_slack > 0) {
                     path_slack = path_slack * 0.70 - 300e-12;
                 } else {
                     path_slack = path_slack - 100e-12;
@@ -374,7 +373,7 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> orig_timi
             } else {
                 path_slack = calculate_clb_pin_slack(net_id, ipin, timing_info, netlist_pin_lookup, SETUP, atom_pin);
                 hold_path_slack = calculate_clb_pin_slack(net_id, ipin, orig_timing_info, netlist_pin_lookup, HOLD, atom_pin);
-                if(hold_path_slack > 0) {
+                if (hold_path_slack > 0) {
                     hold_path_slack = hold_path_slack * 0.70 - 300e-12;
                 } else {
                     hold_path_slack = hold_path_slack - 100e-12;
@@ -496,8 +495,10 @@ float route_budgets::get_total_path_delay(std::shared_ptr<const tatum::SetupHold
 
     /*Check if valid*/
     if (arrival_tags.empty() || required_tags.empty()) {
-        if (analysis_type == HOLD) total_path_delays_hold[net_id][ipin] = -1;
-        else if (analysis_type == SETUP) total_path_delays_setup[net_id][ipin] = -1;
+        if (analysis_type == HOLD)
+            total_path_delays_hold[net_id][ipin] = -1;
+        else if (analysis_type == SETUP)
+            total_path_delays_setup[net_id][ipin] = -1;
         return -1;
     }
 
@@ -510,15 +511,19 @@ float route_budgets::get_total_path_delay(std::shared_ptr<const tatum::SetupHold
     auto& timing_ctx = g_vpr_ctx.timing();
     /*If its already a sink node, then the total path is the arrival time*/
     if (timing_ctx.graph->node_type(timing_node) == tatum::NodeType::SINK) {
-        if (analysis_type == HOLD) total_path_delays_hold[net_id][ipin] = max_arrival_tag_iter->time().value();
-        else if (analysis_type == SETUP) total_path_delays_setup[net_id][ipin] = max_arrival_tag_iter->time().value();
+        if (analysis_type == HOLD)
+            total_path_delays_hold[net_id][ipin] = max_arrival_tag_iter->time().value();
+        else if (analysis_type == SETUP)
+            total_path_delays_setup[net_id][ipin] = max_arrival_tag_iter->time().value();
         return max_arrival_tag_iter->time().value();
     }
 
     tatum::NodeId sink_node = min_required_tag_iter->origin_node();
     if (sink_node == tatum::NodeId::INVALID()) {
-        if (analysis_type == HOLD) total_path_delays_hold[net_id][ipin] = -1;
-        else if (analysis_type == SETUP) total_path_delays_setup[net_id][ipin] = -1;
+        if (analysis_type == HOLD)
+            total_path_delays_hold[net_id][ipin] = -1;
+        else if (analysis_type == SETUP)
+            total_path_delays_setup[net_id][ipin] = -1;
         return -1;
     }
 
@@ -529,8 +534,10 @@ float route_budgets::get_total_path_delay(std::shared_ptr<const tatum::SetupHold
     }
 
     if (sink_node_tags.empty()) {
-        if (analysis_type == HOLD) total_path_delays_hold[net_id][ipin] = -1;
-        else if (analysis_type == SETUP) total_path_delays_setup[net_id][ipin] = -1;
+        if (analysis_type == HOLD)
+            total_path_delays_hold[net_id][ipin] = -1;
+        else if (analysis_type == SETUP)
+            total_path_delays_setup[net_id][ipin] = -1;
         return -1;
     }
 
@@ -543,13 +550,17 @@ float route_budgets::get_total_path_delay(std::shared_ptr<const tatum::SetupHold
         float future_path_delay = final_required_time - min_required_tag_iter->time().value();
         float past_path_delay = max_arrival_tag_iter->time().value();
 
-        if (analysis_type == HOLD) total_path_delays_hold[net_id][ipin] = past_path_delay + future_path_delay;
-        else if (analysis_type == SETUP) total_path_delays_setup[net_id][ipin] = past_path_delay + future_path_delay;
+        if (analysis_type == HOLD)
+            total_path_delays_hold[net_id][ipin] = past_path_delay + future_path_delay;
+        else if (analysis_type == SETUP)
+            total_path_delays_setup[net_id][ipin] = past_path_delay + future_path_delay;
 
         return past_path_delay + future_path_delay;
     } else {
-        if (analysis_type == HOLD) total_path_delays_hold[net_id][ipin] = -1;
-        else if (analysis_type == SETUP) total_path_delays_setup[net_id][ipin] = -1;
+        if (analysis_type == HOLD)
+            total_path_delays_hold[net_id][ipin] = -1;
+        else if (analysis_type == SETUP)
+            total_path_delays_setup[net_id][ipin] = -1;
         return -1;
     }
 }
@@ -675,8 +686,8 @@ void route_budgets::increase_min_budgets_if_struggling(float delay_decrement, st
                     int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
                     // For now, if there is any negative hold slack increase the budget of the pin
                     // TODO look into smartly increasing budgets using calculated hold slack
-                    
-                    bool update_budget = false; 
+
+                    bool update_budget = false;
 
                     for (auto& atom_pin : netlist_pin_lookup.connected_atom_pins(pin_id)) {
                         float hold_slack = timing_info->hold_pin_slack(atom_pin);
