@@ -51,6 +51,10 @@ struct BlifAllocCallback : public blifparse::Callback {
         , blif_format_(blif_format) {
         VTR_ASSERT(blif_format_ == e_circuit_format::BLIF
                    || blif_format_ == e_circuit_format::EBLIF);
+        inpad_model_ = find_model(MODEL_INPUT);
+        outpad_model_ = find_model(MODEL_OUTPUT);
+
+        main_netlist_.set_block_types(inpad_model_, outpad_model_);
     }
 
     static constexpr const char* OUTPAD_NAME_PREFIX = "out:";
@@ -70,6 +74,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         //Create a new model, and set it's name
 
         blif_models_.emplace_back(model_name, netlist_id_);
+        blif_models_.back().set_block_types(inpad_model_, outpad_model_);
         blif_models_black_box_.emplace_back(false);
         ended_ = false;
         set_curr_block(AtomBlockId::INVALID()); //This statement doesn't define a block, so mark invalid
@@ -629,6 +634,8 @@ struct BlifAllocCallback : public blifparse::Callback {
     const std::string netlist_id_; ///<Unique identifier based on the contents of the blif file
     const t_model* user_arch_models_ = nullptr;
     const t_model* library_arch_models_ = nullptr;
+    const t_model* inpad_model_;
+    const t_model* outpad_model_;
 
     size_t unique_subckt_name_counter_ = 0;
 
