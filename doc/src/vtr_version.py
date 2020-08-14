@@ -3,6 +3,7 @@ from __future__ import print_function
 import os
 import re
 
+
 class VersionInfo:
     def __init__(self, major, minor, patch, prerelease):
         self.major = major
@@ -28,14 +29,17 @@ class VersionInfo:
 
         return release_str
 
+
 def get_vtr_version():
     return get_vtr_version_info().version_str()
+
 
 def get_vtr_release():
     return get_vtr_version_info().release_str()
 
+
 def get_vtr_version_info():
-    #Assumes called with CWD set to the doc/src directory
+    # Assumes called with CWD set to the doc/src directory
 
     root_cmakelists = os.getcwd() + "/../../CMakeLists.txt"
     root_cmakelists = os.path.abspath(root_cmakelists)
@@ -56,7 +60,7 @@ def get_vtr_version_info():
 
                 match = major_regex.match(line)
                 if match:
-                    major = match.group('major')
+                    major = match.group("major")
 
                 match = minor_regex.match(line)
                 if match:

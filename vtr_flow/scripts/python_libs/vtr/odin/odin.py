@@ -12,19 +12,19 @@ from vtr import (
     CommandRunner,
 )
 
-#pylint: disable=too-many-arguments, too-many-locals
+# pylint: disable=too-many-arguments, too-many-locals
 def run(
-        architecture_file,
-        circuit_file,
-        output_netlist,
-        command_runner=CommandRunner(),
-        temp_dir=Path("."),
-        odin_args="--adder_type default",
-        log_filename="odin.out",
-        odin_exec=None,
-        odin_config=None,
-        min_hard_mult_size=3,
-        min_hard_adder_size=1
+    architecture_file,
+    circuit_file,
+    output_netlist,
+    command_runner=CommandRunner(),
+    temp_dir=Path("."),
+    odin_args="--adder_type default",
+    log_filename="odin.out",
+    odin_exec=None,
+    odin_config=None,
+    min_hard_mult_size=3,
+    min_hard_adder_size=1,
 ):
     """
     Runs ODIN II on the specified architecture file and circuit file
@@ -154,9 +154,8 @@ def run(
             "-U0",
         ]
         command_runner.run_system_command(
-            cmd,
-            temp_dir=temp_dir,
-            log_filename="sim_produce_vector.out",
-            indent_depth=1,
+            cmd, temp_dir=temp_dir, log_filename="sim_produce_vector.out", indent_depth=1,
         )
-#pylint: enable=too-many-arguments, too-many-locals
+
+
+# pylint: enable=too-many-arguments, too-many-locals
