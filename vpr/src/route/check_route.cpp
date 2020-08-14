@@ -190,8 +190,7 @@ static void check_sink(int inode, ClusterNetId net_id, bool* pin_done) {
     int ptc_num = device_ctx.rr_nodes[inode].ptc_num();
     int ifound = 0;
 
-    for (int iblk = 0; iblk < type->capacity; iblk++) {
-        ClusterBlockId bnum = place_ctx.grid_blocks[i][j].blocks[iblk]; /* Hardcoded to one cluster_ctx block*/
+    for (auto bnum : place_ctx.grid_blocks[i][j].blocks) {
         unsigned int ipin = 1;
         for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
             if (cluster_ctx.clb_nlist.pin_block(pin_id) == bnum) {
