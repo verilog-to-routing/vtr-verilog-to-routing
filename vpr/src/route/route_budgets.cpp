@@ -704,7 +704,7 @@ void route_budgets::increase_min_budgets_if_struggling(float delay_decrement, st
                     if (update_budget) {
                         delay_min_budget[net_id][ipin] -= delay_decrement;
                         // if (delay_min_budget[net_id][ipin] > delay_max_budget[net_id][ipin]) {
-                            delay_max_budget[net_id][ipin] -= 2 * delay_decrement;
+                        delay_max_budget[net_id][ipin] -= 2 * delay_decrement;
                         // }
 
                         short_path_crit[net_id][ipin] *= 2;
