@@ -1423,12 +1423,6 @@ static t_rt_node* setup_routing_resources(int itry,
             //Since we have a valid partial routing (to at least one SINK)
             //we need to make sure the traceback is synchronized to the route tree
             traceback_from_route_tree(net_id, rt_root, reached_rt_sinks.size());
-            
-            //Sanity check the traceback for self-consistency
-            VTR_ASSERT_DEBUG(validate_traceback(route_ctx.trace[net_id].head));
-
-            //Sanity check that route tree and traceback are equivalent after pruning
-            VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
 
             // put the updated occupancies of the route tree nodes back into pathfinder
             pathfinder_update_path_occupancy(route_ctx.trace[net_id].head, 1);
