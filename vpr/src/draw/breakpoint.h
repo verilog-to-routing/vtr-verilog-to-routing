@@ -7,6 +7,8 @@
 #include "move_transactions.h"
 #include "vtr_expr_eval.h"
 
+/*This class holds the definiton of type Breakpoint as well as al realted functions. Each breakpoint has a type (BT_MOVE_NUM, BT_TEMP_NUM, BT_FROM_BLOCK, BT_ROUTER_ITER, BT_ROUTE_NET_ID, BT_EXPRESSION) and holds the values for corresponding to its type, as well as a boolean variable to activate and deactivate a breakpoint. Breakpoints can be create using 3 constructors, the default contructor that doesn't identify the type and sets all values to minimum, a constructor that takes in the type and an int value, and lastly a constructor that takes in the type and the sting that holds the expression. (e.g Breakpoint(BT_MOVE_NUM, 4) or Breakpoint(BT_EXPRESSION, "move_num += 3")) The == operator has also been provided which returns true when two breakpoints have the same type, and the same value corresponding to the type. Breakpoints can be set through the GUI anytime during placement or routing. Breakpoints can also be activated, deactivated, and deleted. */
+
 typedef enum breakpoint_types {
     BT_MOVE_NUM,
     BT_TEMP_NUM,

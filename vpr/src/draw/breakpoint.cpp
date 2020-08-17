@@ -3,20 +3,6 @@
 
 #include <iostream>
 
-//global variables
-BreakpointState bp_breakpoint_state;
-
-//gets current information from place.cpp
-void send_current_info_b(BreakpointState ci) {
-    get_current_info_e(ci);
-    bp_breakpoint_state = ci;
-}
-
-//for accessing get_current_info_b. specifically in place.cpp
-BreakpointState get_current_info_b() {
-    return bp_breakpoint_state;
-}
-
 //if the user adds a "proceed move" breakpoint using the entry field in the UI, this function converts it to the equivalent expression and calls the expression evaluator. Returns true if a breakpoint is encountered
 //the way the proceed moves breakpoint works is that it proceeds the indicated number of moves from where the placer currently is i.e if at move 3 and proceed 4 ends up at move 7
 bool check_for_moves_breakpoints(int moves_to_proceed) {
@@ -61,7 +47,7 @@ bool check_for_expression_breakpoints(std::string expression, bool in_placer) {
     is_a_breakpoint(false);
     if (result == 1) {
         std::cout << "\nStopped at " << expression << "\n";
-        bp_breakpoint_state.bp_description = expression;
+        get_bp_state_globals()->get_glob_breakpoint_state()->bp_description = expression;
         print_current_info(in_placer);
     }
 
@@ -101,10 +87,10 @@ void delete_breakpoint_by_index(int index) {
     draw_state->list_of_breakpoints.erase(draw_state->list_of_breakpoints.begin() + index);
 }
 
-//prints placement and router info to the terminal
+//prints the current placer information to the terminal
 void print_current_info(bool in_placer) {
     if (in_placer)
-        std::cout << "\nmove_num: " << bp_breakpoint_state.move_num << "\ntemp_count: " << bp_breakpoint_state.temp_count << "\nin_blocks_affected: " << get_current_info_e_ba() << "\nblock_id: " << bp_breakpoint_state.from_block << "\n----------------------------\n";
+        std::cout << "\nmove_num: " << get_bp_state_globals()->get_glob_breakpoint_state()->move_num << "\ntemp_count: " << get_bp_state_globals()->get_glob_breakpoint_state()->temp_count << "\nin_blocks_affected: " << get_bp_state_globals()->get_glob_breakpoint_state()->blocks_affected << "\nfrom_block: " << get_bp_state_globals()->get_glob_breakpoint_state()->from_block << "\n----------------------------\n";
     else
-        std::cout << "\nrouter_iter: " << bp_breakpoint_state.router_iter << "\nnet_id: " << bp_breakpoint_state.net_id << "\n----------------------------\n";
+        std::cout << "\nrouter_iter: " << get_bp_state_globals()->get_glob_breakpoint_state()->router_iter << "\nnet_id: " << get_bp_state_globals()->get_glob_breakpoint_state()->net_id << "\n----------------------------\n";
 }

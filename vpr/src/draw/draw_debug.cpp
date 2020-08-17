@@ -457,7 +457,7 @@ void invalid_breakpoint_entry_window(std::string error) {
 
 //window that pops up when a breakpoint is reached
 //shows which breakpoint the program has stopped at and gives an info summary
-void breakpoint_info_window(std::string bpDescription, BreakpointState draw_breakpoint_state) {
+void breakpoint_info_window(std::string bpDescription, BreakpointState draw_breakpoint_state, bool in_placer) {
     //window settings
     GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_position((GtkWindow*)window, GTK_WIN_POS_CENTER);
@@ -497,12 +497,6 @@ void breakpoint_info_window(std::string bpDescription, BreakpointState draw_brea
     gtk_widget_set_margin_left(i, 16);
     GtkWidget* b = gtk_image_new_from_file("src/draw/b.png");
     gtk_widget_set_margin_left(b, 18);
-    gtk_grid_attach((GtkGrid*)info_grid, m, 0, 0, 1, 1);
-    gtk_grid_attach((GtkGrid*)info_grid, t, 0, 1, 1, 1);
-    gtk_grid_attach((GtkGrid*)info_grid, i, 2, 0, 1, 1);
-    gtk_grid_attach((GtkGrid*)info_grid, b, 2, 1, 1, 1);
-    gtk_grid_attach((GtkGrid*)info_grid, n, 2, 2, 1, 1);
-    gtk_grid_attach((GtkGrid*)info_grid, r, 0, 2, 1, 1);
 
     //info grid labels
     std::string move_num = "move_num: " + std::to_string(draw_breakpoint_state.move_num);
@@ -513,7 +507,7 @@ void breakpoint_info_window(std::string bpDescription, BreakpointState draw_brea
     GtkWidget* temp_info = gtk_label_new(temp_count.c_str());
     gtk_widget_set_margin_left(temp_info, 5);
     gtk_widget_set_halign(temp_info, GTK_ALIGN_START);
-    std::string in_blocks_affected = "in_blocks_affected: " + std::to_string(get_current_info_e_ba());
+    std::string in_blocks_affected = "in_blocks_affected: " + std::to_string(get_bp_state_globals()->get_glob_breakpoint_state()->blocks_affected);
     GtkWidget* ba_info = gtk_label_new(in_blocks_affected.c_str());
     gtk_widget_set_halign(ba_info, GTK_ALIGN_START);
     std::string block_id = "from_block: " + std::to_string(draw_breakpoint_state.from_block);
@@ -528,12 +522,24 @@ void breakpoint_info_window(std::string bpDescription, BreakpointState draw_brea
     GtkWidget* net_info = gtk_label_new(net_id.c_str());
     gtk_widget_set_margin_left(net_info, 5);
     gtk_widget_set_halign(net_info, GTK_ALIGN_START);
-    gtk_grid_attach((GtkGrid*)info_grid, move_info, 1, 0, 1, 1);
-    gtk_grid_attach((GtkGrid*)info_grid, temp_info, 1, 1, 1, 1);
-    gtk_grid_attach((GtkGrid*)info_grid, ba_info, 3, 0, 1, 1);
-    gtk_grid_attach((GtkGrid*)info_grid, block_info, 3, 1, 1, 1);
-    gtk_grid_attach((GtkGrid*)info_grid, ri_info, 1, 2, 1, 1);
-    gtk_grid_attach((GtkGrid*)info_grid, net_info, 3, 2, 1, 1);
+
+    //attach to grid
+    if (in_placer) {
+        gtk_grid_attach((GtkGrid*)info_grid, m, 0, 0, 1, 1);
+        gtk_grid_attach((GtkGrid*)info_grid, t, 0, 1, 1, 1);
+        gtk_grid_attach((GtkGrid*)info_grid, i, 2, 0, 1, 1);
+        gtk_grid_attach((GtkGrid*)info_grid, b, 2, 1, 1, 1);
+        gtk_grid_attach((GtkGrid*)info_grid, move_info, 1, 0, 1, 1);
+        gtk_grid_attach((GtkGrid*)info_grid, temp_info, 1, 1, 1, 1);
+        gtk_grid_attach((GtkGrid*)info_grid, ba_info, 3, 0, 1, 1);
+        gtk_grid_attach((GtkGrid*)info_grid, block_info, 3, 1, 1, 1);
+    } else {
+        gtk_grid_attach((GtkGrid*)info_grid, n, 2, 2, 1, 1);
+        gtk_grid_attach((GtkGrid*)info_grid, r, 0, 2, 1, 1);
+        gtk_grid_attach((GtkGrid*)info_grid, ri_info, 1, 2, 1, 1);
+        gtk_grid_attach((GtkGrid*)info_grid, net_info, 3, 2, 1, 1);
+    }
+
     gtk_grid_attach((GtkGrid*)grid, info_grid, 0, 2, 1, 1);
 
     //button settings

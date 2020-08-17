@@ -119,9 +119,6 @@ struct t_placer_prev_inverse_costs {
     double timing_cost;
 };
 
-//a avriable of type current information to hold all curent values of move number, teperature, block id, for use in expression evalutaion
-BreakpointState place_breakpoint_state;
-
 // Used by update_annealing_state()
 struct t_annealing_state {
     float t;                  // Temperature
@@ -509,7 +506,6 @@ static void print_place_status(const size_t num_temps,
                                size_t tot_moves);
 static void print_resources_utilization();
 
-void send_current_info_p();
 void transform_blocks_affected(t_pl_blocks_to_be_moved blocksAffected);
 static void init_annealing_state(t_annealing_state* state, const t_annealing_sched& annealing_sched, float t, float rlim, int move_lim_max, float crit_exponent);
 
@@ -1235,11 +1231,9 @@ static bool update_annealing_state(t_annealing_state* state,
                                    const t_placer_opts& placer_opts,
                                    const t_annealing_sched& annealing_sched) {
     t_draw_state* draw_state = get_draw_state_vars();
-    if (draw_state->list_of_breakpoints.size() != 0) {
+    if (draw_state->list_of_breakpoints.size() != 0)
         //update temperature in the current information variable
-        place_breakpoint_state.temp_count++;
-        send_current_info_p();
-    }
+        get_bp_state_globals()->get_glob_breakpoint_state()->temp_count++;
 
     /* Return `false` when the exit criterion is met. */
     if (annealing_sched.type == USER_SCHED) {
@@ -1396,11 +1390,6 @@ static void reset_move_nets(int num_nets_affected) {
     }
 }
 
-//sends the current information to breakpoint.cpp
-void send_current_info_p() {
-    send_current_info_b(place_breakpoint_state);
-}
-
 static e_move_result try_swap(float t,
                               t_placer_costs* costs,
                               t_placer_prev_inverse_costs* prev_inverse_costs,
@@ -1552,14 +1541,13 @@ static e_move_result try_swap(float t,
     if (draw_state->list_of_breakpoints.size() != 0) {
         //update current information
         transform_blocks_affected(blocks_affected);
-        place_breakpoint_state.move_num++;
-        place_breakpoint_state.from_block = size_t(blocks_affected.moved_blocks[0].block_num);
-        send_current_info_p();
+        get_bp_state_globals()->get_glob_breakpoint_state()->move_num++;
+        get_bp_state_globals()->get_glob_breakpoint_state()->from_block = size_t(blocks_affected.moved_blocks[0].block_num);
 
         //check for breakpoints
         f_placer_debug = check_for_breakpoints(true);
         if (f_placer_debug)
-            breakpoint_info_window(get_current_info_b().bp_description, place_breakpoint_state);
+            breakpoint_info_window(get_bp_state_globals()->get_glob_breakpoint_state()->bp_description, *get_bp_state_globals()->get_glob_breakpoint_state(), true);
     } else
         f_placer_debug = false;
 
@@ -3073,12 +3061,12 @@ bool placer_needs_lookahead(const t_vpr_setup& vpr_setup) {
     return (vpr_setup.PlacerOpts.place_algorithm == PATH_TIMING_DRIVEN_PLACE);
 }
 
-//transforms the vector moved_blocks to a vector of ints and adds it in place_breakpoint_state
+//transforms the vector moved_blocks to a vector of ints and adds it in glob_breakpoint_state
 void transform_blocks_affected(t_pl_blocks_to_be_moved blocksAffected) {
-    place_breakpoint_state.blocks_affected_vector.clear();
+    get_bp_state_globals()->get_glob_breakpoint_state()->blocks_affected_vector.clear();
     for (size_t i = 0; i < blocksAffected.moved_blocks.size(); i++) {
         //size_t conversion is required since block_num is of type ClusterBlockId and can't be cast to an int. And this vector has to be of type int to be recognized in expr_eval class
 
-        place_breakpoint_state.blocks_affected_vector.push_back(size_t(blocksAffected.moved_blocks[i].block_num));
+        get_bp_state_globals()->get_glob_breakpoint_state()->blocks_affected_vector.push_back(size_t(blocksAffected.moved_blocks[i].block_num));
     }
 }

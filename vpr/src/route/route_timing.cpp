@@ -72,7 +72,6 @@ struct RoutingMetrics {
 //Run-time flag to control when router debug information is printed
 //Note only enables debug output if compiled with VTR_ENABLE_DEBUG_LOGGING defined
 bool f_router_debug = false;
-BreakpointState route_breakpoint_state;
 
 /******************** Subroutines local to route_timing.c ********************/
 
@@ -170,7 +169,6 @@ static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahea
 
 //debug related functions
 void update_router_info_and_check_bp(bp_router_type type, int net_id);
-void send_current_info_r();
 
 // The reason that try_timing_driven_route_tmpl (and descendents) are being
 // templated over is because using a virtual interface instead fully templating
@@ -2007,21 +2005,13 @@ void update_router_info_and_check_bp(bp_router_type type, int net_id) {
     t_draw_state* draw_state = get_draw_state_vars();
     if (draw_state->list_of_breakpoints.size() != 0) {
         if (type == BP_ROUTE_ITER)
-            route_breakpoint_state.router_iter++;
+            get_bp_state_globals()->get_glob_breakpoint_state()->router_iter++;
         else if (type == BP_NET_ID)
-            route_breakpoint_state.net_id = net_id;
-        send_current_info_r();
-
-        //checks for breakpoints and prints appropriate message if breakpoint was encountered
+            get_bp_state_globals()->get_glob_breakpoint_state()->net_id = net_id;
         f_router_debug = check_for_breakpoints(false);
         if (f_router_debug) {
-            breakpoint_info_window(get_current_info_b().bp_description, route_breakpoint_state);
+            breakpoint_info_window(get_bp_state_globals()->get_glob_breakpoint_state()->bp_description, *get_bp_state_globals()->get_glob_breakpoint_state(), false);
             update_screen(ScreenUpdatePriority::MAJOR, "Breakpoint Encountered", ROUTING, nullptr);
         }
     }
-}
-
-//sends router info to breakpoint.cpp to be sent to expr_eval.cpp
-void send_current_info_r() {
-    send_current_info_b(route_breakpoint_state);
 }

@@ -8,8 +8,14 @@
 #include <iostream>
 
 //global variables
-BreakpointState expr_breakpoint_state;
+
+//bp_state_globals is a variable of type BreakpointStateGlobals that holds a member of type BreakpointState. This member is altered by the breakpoint class, the placer, and router and holds the most updated values for variables that can trigger breakpoints (e.g move_num, temp_num etc.)
+BreakpointStateGlobals bp_state_globals;
+
+//this flag is set true if the expression evaluator is evaluating a breakpoint. when true, it skips over some expression evaluation checks that are unnecessary for breakpoints
 bool is_breakpoint = false;
+
+//this variables is used for the += operator and holds the initial value of the variable that is to be added to. after every addition, the related function compares with initial value to ensure correct incrementation
 int before_addition = 0;
 
 namespace vtr {
@@ -324,17 +330,17 @@ static void get_formula_object(const char* ch, int& ichar, const t_formula_data&
         } else if (is_variable(var_name)) {
             fobj->type = E_FML_VARIABLE;
             if (same_string(var_name, "temp_count"))
-                fobj->data.num = expr_breakpoint_state.temp_count;
+                fobj->data.num = bp_state_globals.get_glob_breakpoint_state()->temp_count;
             else if (same_string(var_name, "from_block"))
-                fobj->data.num = expr_breakpoint_state.from_block;
+                fobj->data.num = bp_state_globals.get_glob_breakpoint_state()->from_block;
             else if (same_string(var_name, "move_num"))
-                fobj->data.num = expr_breakpoint_state.move_num;
+                fobj->data.num = bp_state_globals.get_glob_breakpoint_state()->move_num;
             else if (same_string(var_name, "route_net_id"))
-                fobj->data.num = expr_breakpoint_state.net_id;
+                fobj->data.num = bp_state_globals.get_glob_breakpoint_state()->net_id;
             else if (same_string(var_name, "in_blocks_affected"))
                 fobj->data.num = in_blocks_affected(std::string(ch));
             else if (same_string(var_name, "router_iter"))
-                fobj->data.num = expr_breakpoint_state.router_iter;
+                fobj->data.num = bp_state_globals.get_glob_breakpoint_state()->router_iter;
         }
 
         ichar += (id_len - 1); //-1 since ichar is incremented at end of loop in formula_to_rpn()
@@ -883,9 +889,9 @@ int in_blocks_affected(std::string expression_left) {
     }
 
     //goes through blocks_affected
-    for (size_t i = 0; i < expr_breakpoint_state.blocks_affected_vector.size(); i++) {
-        if (expr_breakpoint_state.blocks_affected_vector[i] == found_block) {
-            expr_breakpoint_state.blocks_affected = found_block;
+    for (size_t i = 0; i < bp_state_globals.get_glob_breakpoint_state()->blocks_affected_vector.size(); i++) {
+        if (bp_state_globals.get_glob_breakpoint_state()->blocks_affected_vector[i] == found_block) {
+            bp_state_globals.get_glob_breakpoint_state()->blocks_affected = found_block;
             return found_block;
         }
     }
@@ -894,16 +900,11 @@ int in_blocks_affected(std::string expression_left) {
 
 } //namespace vtr
 
-//gets current information from breakpoint.cpp
-void get_current_info_e(BreakpointState ci) {
-    expr_breakpoint_state = ci;
-}
-
-int get_current_info_e_ba() {
-    return expr_breakpoint_state.blocks_affected;
-}
-
 //checks if the expression being evaluated is a breakpoint
 void is_a_breakpoint(bool aBreakpoint) {
     is_breakpoint = aBreakpoint;
+}
+
+BreakpointStateGlobals* get_bp_state_globals() {
+    return &bp_state_globals;
 }
