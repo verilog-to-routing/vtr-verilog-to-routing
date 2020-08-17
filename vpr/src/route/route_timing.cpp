@@ -614,7 +614,6 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
 
             // Increase short path criticality if it's having a hard time resolving hold violations due to congestion
             if (budgeting_inf.if_set()) {
-                // if (worst_negative_slack != 0) increase_short_path_crit_if_congested(rerouted_nets, budgeting_inf, itry);
                 if (itry > 5 && worst_negative_slack != 0) budgeting_inf.increase_min_budgets_if_struggling(-300e-12, timing_info, worst_negative_slack, netlist_pin_lookup);
             }
         }
@@ -1424,6 +1423,12 @@ static t_rt_node* setup_routing_resources(int itry,
             //Since we have a valid partial routing (to at least one SINK)
             //we need to make sure the traceback is synchronized to the route tree
             traceback_from_route_tree(net_id, rt_root, reached_rt_sinks.size());
+            
+            //Sanity check the traceback for self-consistency
+            VTR_ASSERT_DEBUG(validate_traceback(route_ctx.trace[net_id].head));
+
+            //Sanity check that route tree and traceback are equivalent after pruning
+            VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
 
             // put the updated occupancies of the route tree nodes back into pathfinder
             pathfinder_update_path_occupancy(route_ctx.trace[net_id].head, 1);
