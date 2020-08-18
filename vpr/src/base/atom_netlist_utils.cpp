@@ -917,6 +917,13 @@ bool is_removable_block(const AtomNetlist& netlist, const AtomBlockId blk_id, st
         }
     }
 
+    //If the model relative to this block is has the never prune flag set
+    //it cannot be removed, even if it does not have a fanout
+    auto blk_model = netlist.block_model(blk_id);
+    if (blk_model->never_prune == true) {
+        return false;
+    }
+
     if (reason) *reason = "has no fanout";
     return true;
 }
