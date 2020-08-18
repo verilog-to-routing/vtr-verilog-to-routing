@@ -20,7 +20,7 @@
 /******************** Subroutines local to this module **********************/
 static void check_node_and_range(int inode, enum e_route_type route_type);
 static void check_source(int inode, ClusterNetId net_id);
-static void check_sink(int inode, ClusterNetId net_id, std::set<vtr::StrongId<cluster_pin_id_tag>>& pin_done);
+static void check_sink(int inode, ClusterNetId net_id, bool* pin_done);
 static void check_switch(t_trace* tptr, int num_switch);
 static bool check_adjacent(int from_node, int to_node);
 static int chanx_chany_adjacent(int chanx_node, int chany_node);
@@ -47,6 +47,7 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
     }
 
     int max_pins, inode, prev_node;
+    unsigned int ipin;
     bool valid, connects;
     t_trace* tptr;
 
@@ -79,13 +80,14 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
     for (auto net_id : cluster_ctx.clb_nlist.nets())
         max_pins = std::max(max_pins, (int)cluster_ctx.clb_nlist.net_pins(net_id).size());
 
-    std::set<vtr::StrongId<cluster_pin_id_tag>> pin_done;
+    auto pin_done = std::make_unique<bool[]>(max_pins);
 
     /* Now check that all nets are indeed connected. */
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id) || cluster_ctx.clb_nlist.net_sinks(net_id).size() == 0) /* Skip ignored nets. */
             continue;
 
+        std::fill_n(pin_done.get(), cluster_ctx.clb_nlist.net_pins(net_id).size(), false);
 
         /* Check the SOURCE of the net. */
         tptr = route_ctx.trace[net_id].head;
@@ -100,8 +102,7 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
         connected_to_route[inode] = true; /* Mark as in path. */
 
         check_source(inode, net_id);
-        auto first_net_id = cluster_ctx.clb_nlist.net_pins(net_id).begin();
-        pin_done.insert(*first_net_id);
+        pin_done[0] = true;
 
         prev_node = inode;
         int prev_switch = tptr->iswitch;
@@ -134,7 +135,7 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
                 connected_to_route[inode] = true; /* Mark as in path. */
 
                 if (device_ctx.rr_nodes[inode].type() == SINK) {
-                    check_sink(inode, net_id, pin_done);
+                    check_sink(inode, net_id, pin_done.get());
                     num_sinks += 1;
                 }
 
@@ -151,11 +152,10 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
                             num_sinks, cluster_ctx.clb_nlist.net_sinks(net_id).size());
         }
 
-        for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
-            if (pin_done.find(pin_id) == pin_done.end()) {
-                int pin_index = tile_pin_index(pin_id);
+        for (ipin = 0; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
+            if (pin_done[ipin] == false) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                "in check_route: net %zu does not connect to pin %d.\n", size_t(net_id), pin_index);
+                                "in check_route: net %zu does not connect to pin %d.\n", size_t(net_id), ipin);
             }
         }
 
@@ -177,7 +177,7 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
 
 /* Checks that this SINK node is one of the terminals of inet, and marks   *
  * the appropriate pin as being reached.                                   */
-static void check_sink(int inode, ClusterNetId net_id, std::set<vtr::StrongId<cluster_pin_id_tag>>& pin_done) {
+static void check_sink(int inode, ClusterNetId net_id, bool* pin_done) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_ctx = g_vpr_ctx.placement();
@@ -190,7 +190,9 @@ static void check_sink(int inode, ClusterNetId net_id, std::set<vtr::StrongId<cl
     int ptc_num = device_ctx.rr_nodes[inode].ptc_num();
     int ifound = 0;
 
-    for (auto bnum : place_ctx.grid_blocks[i][j].blocks) {
+    for (int iblk = 0; iblk < type->capacity; iblk++) {
+        ClusterBlockId bnum = place_ctx.grid_blocks[i][j].blocks[iblk]; /* Hardcoded to one cluster_ctx block*/
+        unsigned int ipin = 1;
         for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
             if (cluster_ctx.clb_nlist.pin_block(pin_id) == bnum) {
                 int pin_index = tile_pin_index(pin_id);
@@ -198,17 +200,20 @@ static void check_sink(int inode, ClusterNetId net_id, std::set<vtr::StrongId<cl
                 if (iclass == ptc_num) {
                     /* Could connect to same pin class on the same clb more than once.  Only   *
                      * update pin_done for a pin that hasn't been reached yet.                 */
-                    if (pin_done.find(pin_id) == pin_done.end()) {
+                    if (pin_done[ipin] == false) {
                         ifound++;
-                        pin_done.insert(pin_id);
-                        break;
+                        pin_done[ipin] = true;
                     }
                 }
             }
+            ipin++;
         }
     }
 
-    VTR_ASSERT(ifound <= 1);
+    if (ifound > 1 && is_io_type(type)) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "in check_sink: found %d terminals of net %d of pad %d at location (%d, %d).\n", ifound, size_t(net_id), ptc_num, i, j);
+    }
 
     if (ifound < 1) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,

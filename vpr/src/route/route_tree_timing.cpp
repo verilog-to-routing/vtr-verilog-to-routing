@@ -27,14 +27,6 @@
 /* Array below allows mapping from any rr_node to any rt_node currently in
  * the rt_tree.                                                              */
 
-/* In some cases (e.g. input pin equivalence applied to RAM and DSP blocks), the
- * same SINK node is put into the tree multiple times in a single route. To model
- * this, we are putting in separate rt_nodes in the route tree if we go to the
- * same SINK more than once. rr_node_to_rt_node[inode] will therefore store the
- * last rt_node created of all the SINK nodes with the same ID "inode". This is
- * okay because the mapping is only used in this file to quickly figure out where
- * rt_nodes that we are branching off of (for nets with fanout > 1) are, and we
- * will never branch off a SINK. */
 static std::vector<t_rt_node*> rr_node_to_rt_node; /* [0..device_ctx.rr_nodes.size()-1] */
 
 /* Frees lists for fast addition and deletion of nodes and edges. */
@@ -67,7 +59,7 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace, std::map<int, t_r
 
 static std::pair<t_trace*, t_trace*> traceback_from_route_tree_recurr(t_trace* head, t_trace* tail, const t_rt_node* node);
 
-void collect_route_tree_connections(const t_rt_node* node, std::multiset<std::tuple<int, int, int>>& connections);
+void collect_route_tree_connections(const t_rt_node* node, std::set<std::tuple<int, int, int>>& connections);
 
 /************************** Subroutine definitions ***************************/
 
@@ -249,12 +241,7 @@ t_rt_node* update_route_tree(t_heap* hptr, SpatialRouteTreeLookup* spatial_rt_lo
 
 void add_route_tree_to_rr_node_lookup(t_rt_node* node) {
     if (node) {
-        auto& device_ctx = g_vpr_ctx.device();
-        if(device_ctx.rr_nodes[node->inode].type() == SINK) {  //Possibly two copies of the same SINK node
-            VTR_ASSERT(rr_node_to_rt_node[node->inode] == nullptr || rr_node_to_rt_node[node->inode]->inode == node->inode);
-        } else {
-            VTR_ASSERT(rr_node_to_rt_node[node->inode] == nullptr || rr_node_to_rt_node[node->inode] == node);
-        }
+        VTR_ASSERT(rr_node_to_rt_node[node->inode] == nullptr || rr_node_to_rt_node[node->inode] == node);
 
         rr_node_to_rt_node[node->inode] = node;
 
@@ -471,9 +458,6 @@ float load_new_subtree_C_downstream(t_rt_node* rt_node) {
         auto& device_ctx = g_vpr_ctx.device();
 
         C_downstream += device_ctx.rr_nodes[rt_node->inode].C();
-
-        std::set<int> child_visited;
-
         for (t_linked_rt_edge* edge = rt_node->u.child_list; edge != nullptr; edge = edge->next) {
             /*Similar to net_delay.cpp, this for loop traverses a rc subtree, whose edges represent enabled switches.
              * When switches such as multiplexers and tristate buffers are enabled, their fanout
@@ -484,9 +468,8 @@ float load_new_subtree_C_downstream(t_rt_node* rt_node) {
 
             float C_downstream_child = load_new_subtree_C_downstream(edge->child);
 
-            if (!device_ctx.rr_switch_inf[edge->iswitch].buffered() && child_visited.find(edge->child->inode) == child_visited.end()) {
+            if (!device_ctx.rr_switch_inf[edge->iswitch].buffered()) {
                 C_downstream += C_downstream_child;
-                child_visited.insert(edge->child->inode);
             }
         }
 
@@ -779,15 +762,8 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace,
         int inode = trace->index;
         int iswitch = trace->iswitch;
 
-        // In some cases (e.g. input pin equivalence applied to RAM and DSP blocks),
-        // the same SINK node is put into the tree multiple times in a single route.
-        // To model this, we are putting in separate rt_nodes in the route tree if
-        // we go to the same SINK more than once. rr_node_to_rt[inode] will therefore
-        // store the last rt_node created of all the SINK nodes with the same ID.
-        // This is okay because we will never branch off a SINK.
-        auto& device_ctx = g_vpr_ctx.device();
-        auto itr = rr_node_to_rt.find(inode);
-        if (itr == rr_node_to_rt.end() || device_ctx.rr_nodes[inode].type() == SINK) {
+        auto itr = rr_node_to_rt.find(trace->index);
+        if (itr == rr_node_to_rt.end()) {
             //Create
 
             //Initialize route tree node
@@ -799,6 +775,7 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace,
             node->C_downstream = std::numeric_limits<float>::quiet_NaN();
             node->Tdel = std::numeric_limits<float>::quiet_NaN();
 
+            auto& device_ctx = g_vpr_ctx.device();
             auto node_type = device_ctx.rr_nodes[inode].type();
             if (node_type == IPIN || node_type == SINK)
                 node->re_expand = false;
@@ -831,6 +808,7 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace,
             //
             // Each configurable edges from the non-configurable set is a
             // usage of the set.
+            auto& device_ctx = g_vpr_ctx.device();
             auto set_itr = device_ctx.rr_node_to_non_config_node_set.find(inode);
             if (non_config_node_set_usage != nullptr && set_itr != device_ctx.rr_node_to_non_config_node_set.end()) {
                 if (device_ctx.rr_switch_inf[iswitch].configurable()) {
@@ -1464,7 +1442,7 @@ init_route_tree_to_source_no_net(int inode) {
 
 bool verify_traceback_route_tree_equivalent(const t_trace* head, const t_rt_node* rt_root) {
     //Walk the route tree saving all the used connections
-    std::multiset<std::tuple<int, int, int>> route_tree_connections;
+    std::set<std::tuple<int, int, int>> route_tree_connections;
     collect_route_tree_connections(rt_root, route_tree_connections);
 
     //Remove the extra parent connection to root (not included in traceback)
@@ -1484,7 +1462,7 @@ bool verify_traceback_route_tree_equivalent(const t_trace* head, const t_rt_node
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Route tree missing traceback connection: node %d -> %d (switch %d)\n",
                                 prev_node, to_node, prev_switch);
             } else {
-                route_tree_connections.erase(route_tree_connections.lower_bound(conn)); //Remove the first found connections
+                route_tree_connections.erase(conn); //Remove found connections
             }
         }
 
@@ -1505,7 +1483,7 @@ bool verify_traceback_route_tree_equivalent(const t_trace* head, const t_rt_node
     return true;
 }
 
-void collect_route_tree_connections(const t_rt_node* node, std::multiset<std::tuple<int, int, int>>& connections) {
+void collect_route_tree_connections(const t_rt_node* node, std::set<std::tuple<int, int, int>>& connections) {
     if (node) {
         //Record reaching connection
         int prev_node = OPEN;
