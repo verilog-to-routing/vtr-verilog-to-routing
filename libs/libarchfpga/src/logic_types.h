@@ -49,6 +49,8 @@ struct t_model {
     vtr::t_linked_vptr* pb_types = nullptr; /* Physical block types that implement this model */
     t_model* next = nullptr;                /* next model (linked list) */
 
+    bool never_prune = false;
+
     int index = -1;
 };
 
