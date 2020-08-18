@@ -50,6 +50,7 @@ enum class RouterCongestionMode {
     CONFLICTED
 };
 
+//identifies the two breakpoint types in routing
 typedef enum router_breakpoint_type {
     BP_ROUTE_ITER,
     BP_NET_ID
@@ -167,7 +168,6 @@ static void prune_unused_non_configurable_nets(CBRR& connections_inf);
 static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
                                           ClbNetPinsMatrix<float>& net_delay);
 
-//debug related functions
 void update_router_info_and_check_bp(bp_router_type type, int net_id);
 
 // The reason that try_timing_driven_route_tmpl (and descendents) are being

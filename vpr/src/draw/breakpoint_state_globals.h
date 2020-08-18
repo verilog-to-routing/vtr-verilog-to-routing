@@ -20,9 +20,11 @@ struct BreakpointState {
 };
 
 class BreakpointStateGlobals {
+    //holds one global BreakpointState variable to be accessed and modified by the placer and router
     BreakpointState glob_breakpoint_state;
 
   public:
+    //accessor for glob_breakpoint_state
     BreakpointState* get_glob_breakpoint_state() {
         return &glob_breakpoint_state;
     }

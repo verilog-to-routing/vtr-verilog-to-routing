@@ -42,9 +42,7 @@ bool check_for_route_net_id_iter_breakpoints(int net_id) {
 bool check_for_expression_breakpoints(std::string expression, bool in_placer) {
     vtr::FormulaParser fp;
     vtr::t_formula_data dummy;
-    is_a_breakpoint(true);
-    int result = fp.parse_formula(expression, dummy);
-    is_a_breakpoint(false);
+    int result = fp.parse_formula(expression, dummy, true);
     if (result == 1) {
         std::cout << "\nStopped at " << expression << "\n";
         get_bp_state_globals()->get_glob_breakpoint_state()->bp_description = expression;

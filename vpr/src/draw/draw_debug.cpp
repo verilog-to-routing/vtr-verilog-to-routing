@@ -1,10 +1,12 @@
 #include "draw_debug.h"
 
+//keeps track of open windows to avoid reopenning windows that are alerady open
 struct open_windows {
     bool debug_window = false;
     bool advanced_window = false;
 };
 
+//categorizes operators into boolean operators (&&, ||) and comperators (>=, <=, >, <, ==). struct is used when checking an expresion's validity
 typedef enum operator_type_in_expression {
     BOOL_OP,
     COMP_OP
@@ -12,24 +14,26 @@ typedef enum operator_type_in_expression {
 } op_type_in_expr;
 
 //debugger global variables
-class debugger_global_vars {
+class DrawDebuggerGlobals {
   public:
-    std::vector<std::string> bp_labels;
-    GtkWidget* bpGrid;
-    int bpList_row = -1;
-    open_windows openWindows;
+    std::vector<std::string> bp_labels; ///holds all breakpoint labels to be displayed in the GUI
+    GtkWidget* bpGrid;                  ///holds the grid where all the labels are
+    int bpList_row = -1;                ///keeps track of where to insert the next breakpoint label in the list
+    open_windows openWindows;           ///keeps track of all open window (related to breakpoints)
 
-    ~debugger_global_vars() {
+    //destructor clears bp_labels to avoid memory leaks
+    ~DrawDebuggerGlobals() {
         bp_labels.clear();
     }
 };
 
-debugger_global_vars debug_glob_vars;
+//the global variable that holds all global variables realted to breakpoint graphics
+DrawDebuggerGlobals draw_debug_glob_vars;
 
 //draws main debugger window
 void draw_debug_window() {
-    if (!debug_glob_vars.openWindows.debug_window) {
-        debug_glob_vars.openWindows.debug_window = true;
+    if (!draw_debug_glob_vars.openWindows.debug_window) {
+        draw_debug_glob_vars.openWindows.debug_window = true;
 
         // window settings
         GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -111,15 +115,15 @@ void draw_debug_window() {
         gtk_entry_set_text((GtkEntry*)netEntry, "ex. 12");
 
         //bpList grid
-        debug_glob_vars.bpGrid = gtk_grid_new();
-        gtk_widget_set_margin_bottom(debug_glob_vars.bpGrid, 20);
+        draw_debug_glob_vars.bpGrid = gtk_grid_new();
+        gtk_widget_set_margin_bottom(draw_debug_glob_vars.bpGrid, 20);
 
         //attach existing breakopints to bp list (if any)
         refresh_bpList();
 
         //scrolled window settings
         GtkWidget* scrolly = gtk_scrolled_window_new(NULL, NULL);
-        gtk_container_add(GTK_CONTAINER(scrolly), debug_glob_vars.bpGrid);
+        gtk_container_add(GTK_CONTAINER(scrolly), draw_debug_glob_vars.bpGrid);
         gtk_scrolled_window_set_min_content_height((GtkScrolledWindow*)scrolly, 100);
 
         //attach everything to the grid
@@ -162,8 +166,8 @@ void draw_debug_window() {
 
 //window for setting advanced breakpoints
 void advanced_button_callback() {
-    if (!debug_glob_vars.openWindows.advanced_window) {
-        debug_glob_vars.openWindows.advanced_window = true;
+    if (!draw_debug_glob_vars.openWindows.advanced_window) {
+        draw_debug_glob_vars.openWindows.advanced_window = true;
 
         // window settings
         GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -243,16 +247,16 @@ void advanced_button_callback() {
 void refresh_bpList() {
     //delete all previous widgets in the bpGrid
     GList* iter;
-    GList* list = gtk_container_get_children(GTK_CONTAINER(debug_glob_vars.bpGrid));
+    GList* list = gtk_container_get_children(GTK_CONTAINER(draw_debug_glob_vars.bpGrid));
     for (iter = list; iter != NULL; iter = g_list_next(iter))
         gtk_widget_destroy(GTK_WIDGET(iter->data));
     g_list_free(list);
 
     //goes through all set breakpoints updates their index carrying names and locations
-    for (size_t i = 0; i < debug_glob_vars.bp_labels.size(); i++) {
+    for (size_t i = 0; i < draw_debug_glob_vars.bp_labels.size(); i++) {
         //label settings
-        GtkWidget* label = gtk_label_new(debug_glob_vars.bp_labels[i].c_str());
-        gtk_grid_attach((GtkGrid*)debug_glob_vars.bpGrid, label, 0, i, 1, 1);
+        GtkWidget* label = gtk_label_new(draw_debug_glob_vars.bp_labels[i].c_str());
+        gtk_grid_attach((GtkGrid*)draw_debug_glob_vars.bpGrid, label, 0, i, 1, 1);
         gtk_widget_set_halign(label, GTK_ALIGN_START);
 
         //checkbox setting
@@ -263,8 +267,8 @@ void refresh_bpList() {
         t_draw_state* draw_state = get_draw_state_vars();
         if (draw_state->list_of_breakpoints[i].active)
             gtk_toggle_button_set_active((GtkToggleButton*)checkbox, TRUE);
-        gtk_grid_attach((GtkGrid*)debug_glob_vars.bpGrid, checkbox, 1, i, 1, 1);
-        gtk_widget_set_margin_left(checkbox, 290 - debug_glob_vars.bp_labels[i].size());
+        gtk_grid_attach((GtkGrid*)draw_debug_glob_vars.bpGrid, checkbox, 1, i, 1, 1);
+        gtk_widget_set_margin_left(checkbox, 290 - draw_debug_glob_vars.bp_labels[i].size());
         gtk_widget_set_halign(checkbox, GTK_ALIGN_END);
         gtk_widget_set_valign(checkbox, GTK_ALIGN_CENTER);
 
@@ -275,30 +279,30 @@ void refresh_bpList() {
         g_signal_connect(deleteButton, "clicked", G_CALLBACK(delete_bp_callback), deleteButton);
         std::string d = "d" + std::to_string(i);
         gtk_widget_set_name(deleteButton, d.c_str());
-        gtk_grid_attach((GtkGrid*)debug_glob_vars.bpGrid, deleteButton, 2, i, 1, 1);
+        gtk_grid_attach((GtkGrid*)draw_debug_glob_vars.bpGrid, deleteButton, 2, i, 1, 1);
         gtk_widget_set_halign(deleteButton, GTK_ALIGN_END);
         gtk_widget_set_valign(deleteButton, GTK_ALIGN_CENTER);
         gtk_widget_set_margin_left(deleteButton, 10);
 
-        gtk_widget_show_all(debug_glob_vars.bpGrid);
+        gtk_widget_show_all(draw_debug_glob_vars.bpGrid);
     }
 }
 
 //adds new breakpoint to the breakpoint list in the ui
 void add_to_bpList(std::string bpDescription) {
     //create description label
-    debug_glob_vars.bp_labels.push_back(bpDescription);
+    draw_debug_glob_vars.bp_labels.push_back(bpDescription);
     GtkWidget* label = gtk_label_new(bpDescription.c_str());
-    gtk_grid_attach((GtkGrid*)debug_glob_vars.bpGrid, label, 0, ++debug_glob_vars.bpList_row, 1, 1);
+    gtk_grid_attach((GtkGrid*)draw_debug_glob_vars.bpGrid, label, 0, ++draw_debug_glob_vars.bpList_row, 1, 1);
     gtk_widget_set_halign(label, GTK_ALIGN_START);
 
     //create checkbox
     GtkWidget* checkbox = gtk_check_button_new();
     g_signal_connect(checkbox, "toggled", G_CALLBACK(checkbox_callback), checkbox);
-    std::string c = "c" + std::to_string(debug_glob_vars.bpList_row);
+    std::string c = "c" + std::to_string(draw_debug_glob_vars.bpList_row);
     gtk_widget_set_name(checkbox, c.c_str());
     gtk_toggle_button_set_active((GtkToggleButton*)checkbox, TRUE);
-    gtk_grid_attach((GtkGrid*)debug_glob_vars.bpGrid, checkbox, 1, debug_glob_vars.bpList_row, 1, 1);
+    gtk_grid_attach((GtkGrid*)draw_debug_glob_vars.bpGrid, checkbox, 1, draw_debug_glob_vars.bpList_row, 1, 1);
     gtk_widget_set_margin_left(checkbox, 290 - bpDescription.size());
     gtk_widget_set_halign(checkbox, GTK_ALIGN_END);
     gtk_widget_set_valign(checkbox, GTK_ALIGN_CENTER);
@@ -308,14 +312,14 @@ void add_to_bpList(std::string bpDescription) {
     GtkWidget* image = gtk_image_new_from_file("src/draw/trash.png");
     gtk_button_set_image((GtkButton*)deleteButton, image);
     g_signal_connect(deleteButton, "clicked", G_CALLBACK(delete_bp_callback), deleteButton);
-    std::string d = "d" + std::to_string(debug_glob_vars.bpList_row);
+    std::string d = "d" + std::to_string(draw_debug_glob_vars.bpList_row);
     gtk_widget_set_name(deleteButton, d.c_str());
-    gtk_grid_attach((GtkGrid*)debug_glob_vars.bpGrid, deleteButton, 2, debug_glob_vars.bpList_row, 1, 1);
+    gtk_grid_attach((GtkGrid*)draw_debug_glob_vars.bpGrid, deleteButton, 2, draw_debug_glob_vars.bpList_row, 1, 1);
     gtk_widget_set_halign(deleteButton, GTK_ALIGN_END);
     gtk_widget_set_valign(deleteButton, GTK_ALIGN_CENTER);
     gtk_widget_set_margin_left(deleteButton, 10);
 
-    gtk_widget_show_all(debug_glob_vars.bpGrid);
+    gtk_widget_show_all(draw_debug_glob_vars.bpGrid);
 }
 
 //enables and disables a breakpoint when the checkbox is activated
@@ -332,12 +336,12 @@ void checkbox_callback(GtkWidget* widget) {
 
 //deletes breakpoint when indicated by the user using the delete button in the ui
 void delete_bp_callback(GtkWidget* widget) {
-    debug_glob_vars.bpList_row--;
+    draw_debug_glob_vars.bpList_row--;
     std::string name = gtk_widget_get_name(widget);
     name.erase(name.begin());
     int location = stoi(name);
-    gtk_grid_remove_row((GtkGrid*)debug_glob_vars.bpGrid, location);
-    debug_glob_vars.bp_labels.erase(debug_glob_vars.bp_labels.begin() + location);
+    gtk_grid_remove_row((GtkGrid*)draw_debug_glob_vars.bpGrid, location);
+    draw_debug_glob_vars.bp_labels.erase(draw_debug_glob_vars.bp_labels.begin() + location);
     delete_breakpoint_by_index(location);
     refresh_bpList();
 }
@@ -593,10 +597,10 @@ bool valid_expression(std::string exp) {
 
 //sets boolean in openWindows to false when window closes so user can't open the same window twice
 void close_debug_window() {
-    debug_glob_vars.openWindows.debug_window = false;
+    draw_debug_glob_vars.openWindows.debug_window = false;
 }
 
 //sets boolean in openWindows to false when window closes so user can't open the same window twice
 void close_advanced_window() {
-    debug_glob_vars.openWindows.advanced_window = false;
+    draw_debug_glob_vars.openWindows.advanced_window = false;
 }

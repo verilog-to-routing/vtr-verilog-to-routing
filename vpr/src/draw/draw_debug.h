@@ -1,4 +1,4 @@
-/*This file contains all function declarations reagrding the graphics of setting and handling breakpoints*/
+/*This file contains all functions reagrding the graphics of setting and handling breakpoints*/
 
 #include "breakpoint.h"
 #include "draw_global.h"

@@ -7,7 +7,8 @@
 #include "move_transactions.h"
 #include "vtr_expr_eval.h"
 
-/*This class holds the definiton of type Breakpoint as well as al realted functions. Each breakpoint has a type (BT_MOVE_NUM, BT_TEMP_NUM, BT_FROM_BLOCK, BT_ROUTER_ITER, BT_ROUTE_NET_ID, BT_EXPRESSION) and holds the values for corresponding to its type, as well as a boolean variable to activate and deactivate a breakpoint. Breakpoints can be create using 3 constructors, the default contructor that doesn't identify the type and sets all values to minimum, a constructor that takes in the type and an int value, and lastly a constructor that takes in the type and the sting that holds the expression. (e.g Breakpoint(BT_MOVE_NUM, 4) or Breakpoint(BT_EXPRESSION, "move_num += 3")) The == operator has also been provided which returns true when two breakpoints have the same type, and the same value corresponding to the type. Breakpoints can be set through the GUI anytime during placement or routing. Breakpoints can also be activated, deactivated, and deleted. */
+/**This class holds the definiton of type Breakpoint as well as al realted functions. Breakpoints can be set through the GUI anytime during placement or routing. Breakpoints can also be activated, deactivated, and deleted. Each breakpoint has a type (BT_MOVE_NUM, BT_TEMP_NUM, BT_FROM_BLOCK, BT_ROUTER_ITER, BT_ROUTE_NET_ID, BT_EXPRESSION) and holds the values for corresponding to its type, as well as a boolean variable to activate and deactivate a breakpoint. It should be noted that each breakpoint can only have one type and hold one value corresponding to that type. More complicated breakpoints are set using an expression. (e.g move_num > 3 && block_id == 11) 
+ * Breakpoints can be create using 3 constructors, the default contructor that doesn't identify the type and sets a breakopint that is never reached, a constructor that takes in the type and an int value, and lastly a constructor that takes in the type and the sting that holds the expression. (e.g Breakpoint(BT_MOVE_NUM, 4) or Breakpoint(BT_EXPRESSION, "move_num += 3")) The == operator has also been provided which returns true when two breakpoints have the same type, and the same value corresponding to the type.**/
 
 typedef enum breakpoint_types {
     BT_MOVE_NUM,
@@ -15,28 +16,31 @@ typedef enum breakpoint_types {
     BT_FROM_BLOCK,
     BT_ROUTER_ITER,
     BT_ROUTE_NET_ID,
-    BT_EXPRESSION
+    BT_EXPRESSION,
+    BT_UNIDENTIFIED
 } bp_type;
 
 class Breakpoint {
   public:
-    //types include: bt_moves, bt_temps, bt_from_block, bt_router_iter, bt_route_net_id, bt_expression
     bp_type type;
-    int bt_moves = 0;
-    int bt_temps = 0;
-    int bt_from_block = -1;
-    int bt_router_iter = 0;
-    int bt_route_net_id = -1;
-    bool active = true;
-    std::string bt_expression;
+    int bt_moves = 0;          ///breaks after proceeding the indicated number of moves in placement
+    int bt_temps = 0;          ///breaks after proceeding the indicated number of temperature changes in placement
+    int bt_from_block = -1;    ///breaks after the first block moved in a placement perturbation matches the block id indicated by user
+    int bt_router_iter = 0;    ///breaks when reaching the indicated router iteration
+    int bt_route_net_id = -1;  ///breaks after the indicated net is routed
+    std::string bt_expression; ///breaks when expression returns true after parsing
+    bool active = true;        ///indicates whether a breakpoint is active or not
 
     //constructors
+    //sets a breakpoint that is never reached
     Breakpoint() {
-        bt_moves = 0;
-        bt_temps = 0;
+        type = BT_UNIDENTIFIED;
+        bt_moves = -1;
+        bt_temps = -1;
         bt_from_block = -1;
-        bt_router_iter = 0;
+        bt_router_iter = -1;
         bt_route_net_id = -1;
+        bt_expression = "";
         active = true;
     }
 

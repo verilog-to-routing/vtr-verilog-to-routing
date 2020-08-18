@@ -12,9 +12,6 @@
 //bp_state_globals is a variable of type BreakpointStateGlobals that holds a member of type BreakpointState. This member is altered by the breakpoint class, the placer, and router and holds the most updated values for variables that can trigger breakpoints (e.g move_num, temp_num etc.)
 BreakpointStateGlobals bp_state_globals;
 
-//this flag is set true if the expression evaluator is evaluating a breakpoint. when true, it skips over some expression evaluation checks that are unnecessary for breakpoints
-bool is_breakpoint = false;
-
 //this variables is used for the += operator and holds the initial value of the variable that is to be added to. after every addition, the related function compares with initial value to ensure correct incrementation
 int before_addition = 0;
 
@@ -28,9 +25,9 @@ using std::vector;
 /*---- Functions for Parsing the Symbolic Formulas ----*/
 
 /* converts specified formula to a vector in reverse-polish notation */
-static void formula_to_rpn(const char* formula, const t_formula_data& mydata, vector<Formula_Object>& rpn_output, stack<Formula_Object>& op_stack);
+static void formula_to_rpn(const char* formula, const t_formula_data& mydata, vector<Formula_Object>& rpn_output, stack<Formula_Object>& op_stack, bool is_breakpoint);
 
-static void get_formula_object(const char* ch, int& ichar, const t_formula_data& mydata, Formula_Object* fobj);
+static void get_formula_object(const char* ch, int& ichar, const t_formula_data& mydata, Formula_Object* fobj, bool is_breakpoint);
 
 /* returns integer specifying precedence of passed-in operator. higher integer
  * means higher precedence */
@@ -86,7 +83,7 @@ bool additional_assignment_op(int arg1, int arg2);
 
 /**** Function Implementations ****/
 /* returns integer result according to specified non-piece-wise formula and data */
-int FormulaParser::parse_formula(std::string formula, const t_formula_data& mydata) {
+int FormulaParser::parse_formula(std::string formula, const t_formula_data& mydata, bool is_breakpoint) {
     int result = -1;
 
     /* output in reverse-polish notation */
@@ -94,7 +91,7 @@ int FormulaParser::parse_formula(std::string formula, const t_formula_data& myda
     rpn_output.clear();
 
     /* now we have to run the shunting-yard algorithm to convert formula to reverse polish notation */
-    formula_to_rpn(formula.c_str(), mydata, rpn_output, op_stack_);
+    formula_to_rpn(formula.c_str(), mydata, rpn_output, op_stack_, is_breakpoint);
 
     /* then we run an RPN parser to get the final result */
     result = parse_rpn_vector(rpn_output);
@@ -228,7 +225,7 @@ static bool goto_next_char(int* str_ind, const string& pw_formula, char ch) {
 
 /* Parses the specified formula using a shunting yard algorithm (see wikipedia). The function's result
  * is stored in the rpn_output vector in reverse-polish notation */
-static void formula_to_rpn(const char* formula, const t_formula_data& mydata, vector<Formula_Object>& rpn_output, stack<Formula_Object>& op_stack) {
+static void formula_to_rpn(const char* formula, const t_formula_data& mydata, vector<Formula_Object>& rpn_output, stack<Formula_Object>& op_stack, bool is_breakpoint) {
     // Empty op_stack.
     while (!op_stack.empty()) {
         op_stack.pop();
@@ -249,7 +246,7 @@ static void formula_to_rpn(const char* formula, const t_formula_data& mydata, ve
             /* skip space */
         } else {
             /* parse the character */
-            get_formula_object(ch, ichar, mydata, &fobj);
+            get_formula_object(ch, ichar, mydata, &fobj, is_breakpoint);
             switch (fobj.type) {
                 case E_FML_NUMBER:
                     /* add to output vector */
@@ -298,7 +295,7 @@ static void formula_to_rpn(const char* formula, const t_formula_data& mydata, ve
  * which help determine which numeric value, if any, gets assigned to fobj
  * ichar is incremented by the corresponding count if the need to step through the
  * character array arises */
-static void get_formula_object(const char* ch, int& ichar, const t_formula_data& mydata, Formula_Object* fobj) {
+static void get_formula_object(const char* ch, int& ichar, const t_formula_data& mydata, Formula_Object* fobj, bool is_breakpoint) {
     /* the character can either be part of a number, or it can be an object like W, t, (, +, etc
      * here we have to account for both possibilities */
 
@@ -846,7 +843,7 @@ bool FormulaParser::is_piecewise_formula(const char* formula) {
     return result;
 }
 
-// compares two string ignoring case and white space
+//compares two string while ignoring case and white space. returns true if strings are the same
 bool same_string(std::string str1, std::string str2) {
     //earse any white space in both strings
     str1.erase(remove(str1.begin(), str1.end(), ' '), str1.end());
@@ -870,8 +867,9 @@ bool additional_assignment_op(int arg1, int arg2) {
     return result;
 }
 
-//first recognized the block_id to look for
-//then looks for that block_id and if it finds it, it returns the block id, else just -1
+//recognizes the block_id to look for (entered by the user)
+//then looks for that block_id in all the blocks moved in the last perturbation.
+//returns the block id if found, else just -1
 int in_blocks_affected(std::string expression_left) {
     int wanted_block = -1;
     int found_block;
@@ -900,11 +898,7 @@ int in_blocks_affected(std::string expression_left) {
 
 } //namespace vtr
 
-//checks if the expression being evaluated is a breakpoint
-void is_a_breakpoint(bool aBreakpoint) {
-    is_breakpoint = aBreakpoint;
-}
-
+//returns the global variable that holds all values that can trigger a breakpoint and are updated by the router and placer
 BreakpointStateGlobals* get_bp_state_globals() {
     return &bp_state_globals;
 }
