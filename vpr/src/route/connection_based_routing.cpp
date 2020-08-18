@@ -62,12 +62,13 @@ void Connection_based_routing_resources::convert_sink_nodes_to_net_pins(std::vec
 
     VTR_ASSERT(current_inet != ClusterNetId::INVALID()); // not uninitialized
 
-    const auto& node_to_pin_mapping = rr_sink_node_to_pin[current_inet];
+    auto node_to_pin_mapping = rr_sink_node_to_pin[current_inet];
 
     for (size_t s = 0; s < rr_sink_nodes.size(); ++s) {
         auto mapping = node_to_pin_mapping.find(rr_sink_nodes[s]);
         if (mapping != node_to_pin_mapping.end()) {
             rr_sink_nodes[s] = mapping->second;
+            node_to_pin_mapping.erase(mapping);
         } else {
             VTR_ASSERT_SAFE_MSG(false, "Should always expect it find a pin mapping for its own net");
         }

@@ -249,7 +249,12 @@ t_rt_node* update_route_tree(t_heap* hptr, SpatialRouteTreeLookup* spatial_rt_lo
 
 void add_route_tree_to_rr_node_lookup(t_rt_node* node) {
     if (node) {
-        VTR_ASSERT(rr_node_to_rt_node[node->inode] == nullptr || rr_node_to_rt_node[node->inode] == node);
+        auto& device_ctx = g_vpr_ctx.device();
+        if(device_ctx.rr_nodes[node->inode].type() == SINK) {  //Possibly two copies of the same SINK node
+            VTR_ASSERT(rr_node_to_rt_node[node->inode] == nullptr || rr_node_to_rt_node[node->inode]->inode == node->inode);
+        } else {
+            VTR_ASSERT(rr_node_to_rt_node[node->inode] == nullptr || rr_node_to_rt_node[node->inode] == node);
+        }
 
         rr_node_to_rt_node[node->inode] = node;
 
@@ -466,6 +471,9 @@ float load_new_subtree_C_downstream(t_rt_node* rt_node) {
         auto& device_ctx = g_vpr_ctx.device();
 
         C_downstream += device_ctx.rr_nodes[rt_node->inode].C();
+
+        std::set<int> child_visited;
+
         for (t_linked_rt_edge* edge = rt_node->u.child_list; edge != nullptr; edge = edge->next) {
             /*Similar to net_delay.cpp, this for loop traverses a rc subtree, whose edges represent enabled switches.
              * When switches such as multiplexers and tristate buffers are enabled, their fanout
@@ -476,8 +484,9 @@ float load_new_subtree_C_downstream(t_rt_node* rt_node) {
 
             float C_downstream_child = load_new_subtree_C_downstream(edge->child);
 
-            if (!device_ctx.rr_switch_inf[edge->iswitch].buffered()) {
+            if (!device_ctx.rr_switch_inf[edge->iswitch].buffered() && child_visited.find(edge->child->inode) == child_visited.end()) {
                 C_downstream += C_downstream_child;
+                child_visited.insert(edge->child->inode);
             }
         }
 
