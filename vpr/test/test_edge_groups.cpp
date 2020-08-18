@@ -15,6 +15,8 @@ TEST_CASE("edge_groups_create_sets", "[vpr]") {
     // Construct a set of edges that result in these connected sets
     std::vector<std::set<int>> connected_sets{{{1, 2, 3, 4, 5, 6, 7, 8},
                                                {9, 0}}};
+
+    // Build chains from the given connected sets
     int max_node_id = 0;
     std::vector<std::pair<int, int>> edges;
     for (auto set : connected_sets) {
@@ -30,9 +32,14 @@ TEST_CASE("edge_groups_create_sets", "[vpr]") {
 
     // Build the id map for node IDs
     std::vector<int> nodes(max_node_id + 1);
+
+    // Initialize nodes to [0, 1, ..., max_node_id]
     std::iota(nodes.begin(), nodes.end(), 0);
+
+    // Create a Mersenne Twister psuedo-random number generator with seed 1
     std::mt19937 g(1);
 
+    // Run the test many times, the PRNG will give differently shuffled inputs
     for (int i = 0; i < 1000; i++) {
         // Shuffle node IDs
         auto random_nodes = nodes;

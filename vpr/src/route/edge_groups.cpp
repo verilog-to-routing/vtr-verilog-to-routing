@@ -13,7 +13,7 @@ bool EdgeGroups::add_non_config_edge(int from_node, int to_node) {
 // will form groups of nodes that are connected via non-configurable
 // edges.
 void EdgeGroups::create_sets() {
-    rr_non_config_node_sets_map_.clear();
+    rr_non_config_node_sets_.clear();
 
     // https://en.wikipedia.org/wiki/Component_(graph_theory)#Algorithms
     std::vector<size_t> group_size;
@@ -34,12 +34,12 @@ void EdgeGroups::create_sets() {
     }
 
     // Create compact set of sets.
-    rr_non_config_node_sets_map_.resize(group_size.size());
+    rr_non_config_node_sets_.resize(group_size.size());
     for (size_t i = 0; i < group_size.size(); i++) {
-        rr_non_config_node_sets_map_[i].reserve(group_size[i]);
+        rr_non_config_node_sets_[i].reserve(group_size[i]);
     }
     for (const auto& node : graph_) {
-        rr_non_config_node_sets_map_[node.second.set].push_back(node.first);
+        rr_non_config_node_sets_[node.second.set].push_back(node.first);
     }
 }
 
@@ -47,7 +47,7 @@ void EdgeGroups::create_sets() {
 // NOTE: The stored graph is undirected, so this may generate reverse edges that don't exist.
 t_non_configurable_rr_sets EdgeGroups::output_sets() {
     t_non_configurable_rr_sets sets;
-    for (const auto& nodes : rr_non_config_node_sets_map_) {
+    for (const auto& nodes : rr_non_config_node_sets_) {
         std::set<t_node_edge> edge_set;
         std::set<int> node_set(nodes.begin(), nodes.end());
 
@@ -67,7 +67,7 @@ t_non_configurable_rr_sets EdgeGroups::output_sets() {
 // Set device context structures for non-configurable node sets.
 void EdgeGroups::set_device_context(DeviceContext& device_ctx) {
     std::vector<std::vector<int>> rr_non_config_node_sets;
-    for (const auto& item : rr_non_config_node_sets_map_) {
+    for (const auto& item : rr_non_config_node_sets_) {
         rr_non_config_node_sets.emplace_back(std::move(item));
     }
 

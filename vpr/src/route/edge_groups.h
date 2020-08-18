@@ -9,7 +9,16 @@
 #include "vpr_types.h"
 #include "vpr_context.h"
 
-// Class for building a group of connected edges.
+// Class for identifying the components of a graph as sets of nodes.
+// Each node is reachable from any other node in the same set, and
+// unreachable from nodes in any other set.
+// Note that edges are undirected.
+//
+// This is used by the router to group nodes connected by
+// non-configurable edges, because a connection to one node
+// must connect them all.
+//
+// https://en.wikipedia.org/wiki/Component_(graph_theory)
 class EdgeGroups {
   public:
     EdgeGroups() {}
@@ -33,8 +42,8 @@ class EdgeGroups {
 
   private:
     struct node_data {
-        std::unordered_set<int> edges;
-        int set = OPEN;
+        std::unordered_set<int> edges; // Set of indices into graph_
+        int set = OPEN;                // Index into rr_non_config_node_sets_
     };
 
     // Perform a DFS traversal marking everything reachable with the same set id
@@ -43,8 +52,9 @@ class EdgeGroups {
     // Set of non-configurable edges.
     std::unordered_map<int, node_data> graph_;
 
-    // Compact set of node sets. Map key is arbitrary.
-    std::vector<std::vector<int>> rr_non_config_node_sets_map_;
+    // Connected components, representing nodes connected by non-configurable edges.
+    // Order is arbitrary.
+    std::vector<std::vector<int>> rr_non_config_node_sets_;
 };
 
 #endif
