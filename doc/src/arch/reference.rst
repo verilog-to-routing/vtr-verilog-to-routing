@@ -28,9 +28,16 @@ The architecture tag contains the following tags:
 
 Recognized BLIF Models (<models>)
 ---------------------------------
-The ``<models>`` tag contains ``<model name="string">`` tags.
+The ``<models>`` tag contains ``<model name="string" never_prune="string">`` tags.
 Each ``<model>`` tag describes the BLIF ``.subckt`` model names that are accepted by the FPGA architecture.
 The name of the model must match the corresponding name of the BLIF model.
+
+The never_prune flag of the model is not strictly required and it can assume the following values:
+
+* false (default)
+* true
+
+A block with no output nets that is relative to the model with the never_prune flag active, does not get swept away during the netlist cleanup process.
 
 .. note::
     Standard blif structures (``.names``, ``.latch``, ``.input``, ``.output``) are accepted by default, so these models should not be described in the <models> tag.
