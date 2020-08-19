@@ -421,6 +421,7 @@ struct ast_node_t {
     ids type;
     typ types;
 
+    ast_node_t* identifier_node;
     ast_node_t** children;
     long num_children;
 

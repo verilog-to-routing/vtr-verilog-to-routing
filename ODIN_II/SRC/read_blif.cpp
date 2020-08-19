@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include "odin_globals.h"
 #include "odin_util.h"
+#include "ast_util.h"
 #include "read_blif.h"
 #include "string_cache.h"
 
@@ -566,8 +567,7 @@ void create_hard_block_nodes(hard_block_models* models, FILE* file, Hashtable* o
     // Create a fake ast node.
     new_node->related_ast_node = (ast_node_t*)vtr::calloc(1, sizeof(ast_node_t));
     new_node->related_ast_node->children = (ast_node_t**)vtr::calloc(1, sizeof(ast_node_t*));
-    new_node->related_ast_node->children[0] = (ast_node_t*)vtr::calloc(1, sizeof(ast_node_t));
-    new_node->related_ast_node->children[0]->types.identifier = vtr::strdup(subcircuit_name);
+    new_node->related_ast_node->identifier_node = create_tree_node_id(vtr::strdup(subcircuit_name), my_location);
 
     /*add this node to blif_netlist as an internal node */
     blif_netlist->internal_nodes = (nnode_t**)vtr::realloc(blif_netlist->internal_nodes, sizeof(nnode_t*) * (blif_netlist->num_internal_nodes + 1));
