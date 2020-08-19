@@ -15,10 +15,15 @@
 #include "read_place.h"
 #include "read_xml_arch_file.h"
 
-void read_place(const char* net_file,
-                const char* place_file,
-                bool verify_file_digests,
-                const DeviceGrid& grid) {
+/*This function reads the header of a placement file.
+ * The header has two lines:
+ * One for checking the netlist file
+ * And another for checking grid dimensions
+ */
+void read_place_header(const char* net_file,
+                       const char* place_file,
+                       bool verify_file_digests,
+                       const DeviceGrid& grid) {
     std::ifstream fstream(place_file);
     if (!fstream) {
         VPR_FATAL_ERROR(VPR_ERROR_PLACE_F,
@@ -27,13 +32,13 @@ void read_place(const char* net_file,
     }
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     std::string line;
     int lineno = 0;
     bool seen_netlist_id = false;
-    bool seen_grid_dimensions = false;
-    while (std::getline(fstream, line)) { //Parse line-by-line
+    bool read_header_lines = false;
+
+    while (std::getline(fstream, line) && !read_header_lines) { //Parse line-by-line
         ++lineno;
 
         std::vector<std::string> tokens = vtr::split(line);
@@ -84,11 +89,6 @@ void read_place(const char* net_file,
                    && tokens[6] == "blocks") {
             //Load the device grid dimensions
 
-            if (seen_grid_dimensions) {
-                vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno,
-                          "Duplicate device grid dimensions specification");
-            }
-
             size_t place_file_width = vtr::atou(tokens[2]);
             size_t place_file_height = vtr::atou(tokens[4]);
             if (grid.width() != place_file_width || grid.height() != place_file_height) {
@@ -97,19 +97,68 @@ void read_place(const char* net_file,
                           grid.width(), grid.height(), place_file_width, place_file_height);
             }
 
-            seen_grid_dimensions = true;
+            read_header_lines = true; //if you have read the grid dimensions you are done reading the place file header
+
+        } else {
+            //Unrecognized
+            vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno,
+                      "Invalid line '%s' in placement file header",
+                      line.c_str());
+        }
+    }
+}
+
+/*This function reads either the body of a placement file or a constraints file.
+ * If it is reading a constraints file it marks blocks as locked as it reads in their locations.
+ * The bool is_place_file indicates if the file should be read as a place file (is_place_file = true)
+ * or a constraints file (is_place_file = false).
+ */
+void read_place_body(const char* place_file,
+                     bool is_place_file) {
+    std::ifstream fstream(place_file);
+    if (!fstream) {
+        VPR_FATAL_ERROR(VPR_ERROR_PLACE_F,
+                        "'%s' - Cannot open place file.\n",
+                        place_file);
+    }
+
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+
+    std::string line;
+    int lineno = 0;
+
+    while (std::getline(fstream, line)) { //Parse line-by-line
+        ++lineno;
+
+        std::vector<std::string> tokens = vtr::split(line);
+
+        if (tokens.empty()) {
+            continue; //Skip blank lines
+
+        } else if (tokens[0][0] == '#') {
+            continue; //Skip commented lines
+
+        } else if (is_place_file
+                   && tokens.size() == 4
+                   && tokens[0] == "Netlist_File:"
+                   && tokens[2] == "Netlist_ID:") {
+            continue; //Skip netlist line if place file, already checked in read_place_header
+
+        } else if (is_place_file
+                   && tokens.size() == 7
+                   && tokens[0] == "Array"
+                   && tokens[1] == "size:"
+                   && tokens[3] == "x"
+                   && tokens[5] == "logic"
+                   && tokens[6] == "blocks") {
+            continue; //Skip checking grid dimensions if place file, already checked in read_place_header
 
         } else if (tokens.size() == 4 || (tokens.size() == 5 && tokens[4][0] == '#')) {
             //Load the block location
             //
             //We should have 4 tokens of actual data, with an optional 5th (commented) token indicating VPR's
             //internal block number
-
-            //Grid dimensions are required by this point
-            if (!seen_grid_dimensions) {
-                vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno,
-                          "Missing device grid size specification");
-            }
 
             std::string block_name = tokens[0];
             int block_x = vtr::atoi(tokens[1]);
@@ -128,6 +177,13 @@ void read_place(const char* net_file,
             place_ctx.block_locs[blk_id].loc.y = block_y;
             place_ctx.block_locs[blk_id].loc.sub_tile = sub_tile_index;
 
+            //need to lock down blocks  and mark grid block usage if it is a constraints file
+            if (!is_place_file) {
+                place_ctx.block_locs[blk_id].is_fixed = true;
+                place_ctx.grid_blocks[block_x][block_y].blocks[sub_tile_index] = blk_id;
+                place_ctx.grid_blocks[block_x][block_y].usage++;
+            }
+
         } else {
             //Unrecognized
             vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno,
@@ -136,155 +192,11 @@ void read_place(const char* net_file,
         }
     }
 
+    if (!is_place_file) {
+        VTR_LOG("Successfully read %s.\n", place_file);
+        VTR_LOG("\n");
+    }
     place_ctx.placement_id = vtr::secure_digest_file(place_file);
-}
-
-/** Reads in blocks whose locations are specified in a constraints file. Constraint file is in .place format.
- * All blocks specified in this file will be locked down at their specified x, y, subtile locations.
- * (Will not be moved by optimizers during placement
- */
-void read_user_block_loc(const char* constraints_file) {
-    t_hash **hash_table, *h_ptr;
-    int xtmp, ytmp;
-    FILE* fp;
-    char buf[vtr::bufsize], bname[vtr::bufsize], *ptr;
-    std::unordered_set<ClusterBlockId> constrained_blocks;
-
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-
-    VTR_LOG("\n");
-    VTR_LOG("Reading locations of blocks from '%s'.\n", constraints_file);
-    fp = fopen(constraints_file, "r");
-    if (!fp) VPR_FATAL_ERROR(VPR_ERROR_PLACE_F,
-                             "'%s' - Cannot find block locations file.\n",
-                             constraints_file);
-
-    hash_table = alloc_hash_table();
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        insert_in_hash_table(hash_table, cluster_ctx.clb_nlist.block_name(blk_id).c_str(), size_t(blk_id));
-        place_ctx.block_locs[blk_id].loc.x = OPEN; /* Mark as not seen yet. */
-    }
-
-    for (size_t i = 0; i < device_ctx.grid.width(); i++) {
-        for (size_t j = 0; j < device_ctx.grid.height(); j++) {
-            auto type = device_ctx.grid[i][j].type;
-            if (!is_empty_type(type)) {
-                for (int k = 0; k < type->capacity; k++) {
-                    if (place_ctx.grid_blocks[i][j].blocks[k] != INVALID_BLOCK_ID) {
-                        place_ctx.grid_blocks[i][j].blocks[k] = EMPTY_BLOCK_ID; /* Flag for err. check */
-                    }
-                }
-            }
-        }
-    }
-
-    ptr = vtr::fgets(buf, vtr::bufsize, fp);
-
-    while (ptr != nullptr) {
-        ptr = vtr::strtok(buf, TOKENS, fp, buf);
-        if (ptr == nullptr) {
-            ptr = vtr::fgets(buf, vtr::bufsize, fp);
-            continue; /* Skip blank or comment lines. */
-        }
-
-        if (strlen(ptr) + 1 < vtr::bufsize) {
-            strcpy(bname, ptr);
-        } else {
-            vpr_throw(VPR_ERROR_PLACE_F, constraints_file, vtr::get_file_line_number_of_last_opened_file(),
-                      "Block name exceeded buffer size of %zu characters", vtr::bufsize);
-        }
-
-        ptr = vtr::strtok(nullptr, TOKENS, fp, buf);
-        if (ptr == nullptr) {
-            vpr_throw(VPR_ERROR_PLACE_F, constraints_file, vtr::get_file_line_number_of_last_opened_file(),
-                      "Incomplete.\n");
-        }
-        sscanf(ptr, "%d", &xtmp);
-
-        ptr = vtr::strtok(nullptr, TOKENS, fp, buf);
-        if (ptr == nullptr) {
-            vpr_throw(VPR_ERROR_PLACE_F, constraints_file, vtr::get_file_line_number_of_last_opened_file(),
-                      "Incomplete.\n");
-        }
-        sscanf(ptr, "%d", &ytmp);
-
-        ptr = vtr::strtok(nullptr, TOKENS, fp, buf);
-        if (ptr == nullptr) {
-            vpr_throw(VPR_ERROR_PLACE_F, constraints_file, vtr::get_file_line_number_of_last_opened_file(),
-                      "Incomplete.\n");
-        }
-        int k;
-        sscanf(ptr, "%d", &k);
-
-        ptr = vtr::strtok(nullptr, TOKENS, fp, buf);
-        if (ptr != nullptr) {
-            vpr_throw(VPR_ERROR_PLACE_F, constraints_file, vtr::get_file_line_number_of_last_opened_file(),
-                      "Extra characters at end of line.\n");
-        }
-
-        h_ptr = get_hash_entry(hash_table, bname);
-        if (h_ptr == nullptr) {
-            VTR_LOG_WARN("[Line %d] Block %s invalid, no such block.\n",
-                         vtr::get_file_line_number_of_last_opened_file(), bname);
-            ptr = vtr::fgets(buf, vtr::bufsize, fp);
-            continue;
-        }
-        ClusterBlockId bnum(h_ptr->index);
-        int i = xtmp;
-        int j = ytmp;
-
-        if (place_ctx.block_locs[bnum].loc.x != OPEN) {
-            VPR_THROW(VPR_ERROR_PLACE_F, constraints_file, vtr::get_file_line_number_of_last_opened_file(),
-                      "Block %s is listed twice in constraints file.\n", bname);
-        }
-
-        if (i < 0 || i > int(device_ctx.grid.width() - 1) || j < 0 || j > int(device_ctx.grid.height() - 1)) {
-            VPR_THROW(VPR_ERROR_PLACE_F, constraints_file, 0,
-                      "Block #%zu (%s) location, (%d,%d) is out of range.\n", size_t(bnum), bname, i, j);
-        }
-
-        place_ctx.block_locs[bnum].loc.x = i; /* Will be reloaded by initial_placement anyway. */
-        place_ctx.block_locs[bnum].loc.y = j; /* We need to set .x only as a done flag.         */
-        place_ctx.block_locs[bnum].loc.sub_tile = k;
-        place_ctx.block_locs[bnum].is_fixed = true;
-
-        auto physical_tile = device_ctx.grid[i][j].type;
-        auto logical_block = cluster_ctx.clb_nlist.block_type(bnum);
-        if (!is_sub_tile_compatible(physical_tile, logical_block, place_ctx.block_locs[bnum].loc.sub_tile)) {
-            VPR_THROW(VPR_ERROR_PLACE_F, constraints_file, 0,
-                      "Attempt to place block %s at illegal location (%d, %d).\n", bname, i, j);
-        }
-
-        if (k >= physical_tile->capacity || k < 0) {
-            VPR_THROW(VPR_ERROR_PLACE_F, constraints_file, vtr::get_file_line_number_of_last_opened_file(),
-                      "Block %s subtile number (%d) is out of range.\n", bname, k);
-        }
-        place_ctx.grid_blocks[i][j].blocks[k] = bnum;
-        place_ctx.grid_blocks[i][j].usage++;
-
-        constrained_blocks.insert(bnum);
-
-        ptr = vtr::fgets(buf, vtr::bufsize, fp);
-    }
-
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        auto result = constrained_blocks.find(blk_id);
-        if (result == constrained_blocks.end()) {
-            continue;
-        }
-
-        if (place_ctx.block_locs[blk_id].loc.x == OPEN) {
-            VPR_THROW(VPR_ERROR_PLACE_F, constraints_file, 0,
-                      "Block %s location was not specified in the constraints file.\n", cluster_ctx.clb_nlist.block_name(blk_id).c_str());
-        }
-    }
-
-    fclose(fp);
-    free_hash_table(hash_table);
-    VTR_LOG("Successfully read %s.\n", constraints_file);
-    VTR_LOG("\n");
 }
 
 /**

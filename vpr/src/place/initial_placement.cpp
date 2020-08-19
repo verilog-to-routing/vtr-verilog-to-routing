@@ -449,9 +449,10 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints
         place_ctx.block_locs[blk_id].loc = t_pl_loc();
     }
 
-    /*Check whether the constraint file is NULL, if it is not read in the block locations from the constraints file here*/
+    /*Check whether the constraint file is NULL, if not, read in the block locations from the constraints file here*/
     if (strlen(constraints_file) != 0) {
-        read_user_block_loc(constraints_file);
+        bool is_a_place_file = false; //specifies to read_place_body function that this is a constraints file and should be read as such
+        read_place_body(constraints_file, is_a_place_file);
     }
 
     initial_placement_pl_macros(MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY, free_locations);
