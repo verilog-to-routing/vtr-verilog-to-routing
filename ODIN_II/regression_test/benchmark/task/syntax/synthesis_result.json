@@ -409,35 +409,23 @@
         "test_name": "syntax/bm_function_1/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "bm_function_1.v",
-        "exit": 134,
-        "errors": [
-            "bm_function_1.v:40:1 [AST] Missing declaration of this symbol simple_func"
-        ]
+        "exit": 134
     },
     "syntax/bm_function_1/no_arch": {
         "test_name": "syntax/bm_function_1/no_arch",
         "verilog": "bm_function_1.v",
-        "exit": 134,
-        "errors": [
-            "bm_function_1.v:40:1 [AST] Missing declaration of this symbol simple_func"
-        ]
+        "exit": 134
     },
     "syntax/bm_function_2/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/bm_function_2/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "bm_function_2.v",
-        "exit": 134,
-        "errors": [
-            "bm_function_2.v:50:1 [AST] Missing declaration of this symbol simple_func"
-        ]
+        "exit": 134
     },
     "syntax/bm_function_2/no_arch": {
         "test_name": "syntax/bm_function_2/no_arch",
         "verilog": "bm_function_2.v",
-        "exit": 134,
-        "errors": [
-            "bm_function_2.v:50:1 [AST] Missing declaration of this symbol simple_func"
-        ]
+        "exit": 134
     },
     "syntax/bm_jk_rtl/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/bm_jk_rtl/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1702,19 +1690,45 @@
         "test_name": "syntax/matrix_multiplication/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "matrix_multiplication.v",
-        "exit": 134,
+        "exit": 1,
+        "leaks": 4,
         "warnings": [
             "matrix_multiplication.v:120:1 [NETLIST] indexing into memory with matrix_multiplication has larger input than memory. Unused pins:",
-            "matrix_multiplication.v:121:1 [NETLIST] indexing into memory with matrix_multiplication has larger input than memory. Unused pins:"
+            "matrix_multiplication.v:121:1 [NETLIST] indexing into memory with matrix_multiplication has larger input than memory. Unused pins:",
+            "matrix_multiplication.v:125:1 [NETLIST] Assignment (matrix_multiplication^tmp1~0) is missing driver",
+            "matrix_multiplication.v:126:1 [NETLIST] Assignment (matrix_multiplication^tmp2~0) is missing driver",
+            "matrix_multiplication.v:127:1 [NETLIST] Assignment (matrix_multiplication^tmp3~0) is missing driver",
+            "matrix_multiplication.v:128:1 [NETLIST] Assignment (matrix_multiplication^tmp4~0) is missing driver",
+            "matrix_multiplication.v:130:1 [NETLIST] Assignment (matrix_multiplication^tmp5~0) is missing driver",
+            "matrix_multiplication.v:131:1 [NETLIST] Assignment (matrix_multiplication^tmp6~0) is missing driver",
+            "matrix_multiplication.v:132:1 [NETLIST] Assignment (matrix_multiplication^tmp7~0) is missing driver",
+            "matrix_multiplication.v:69:8 [NETLIST] This output is undriven (matrix_multiplication^data_out~16) and will be removed",
+            "matrix_multiplication.v:69:8 [NETLIST] This output is undriven (matrix_multiplication^data_out~17) and will be removed",
+            "matrix_multiplication.v:166:16 [NETLIST] Net (null) driving node matrix_multiplication^nMUX~49^MUX_2~318 is itself undriven.",
+            "matrix_multiplication.v:69:8 [NETLIST] Net matrix_multiplication^data_out~16 driving node matrix_multiplication^data_out~16 is itself undriven.",
+            "matrix_multiplication.v:69:8 [NETLIST] Net matrix_multiplication^data_out~17 driving node matrix_multiplication^data_out~17 is itself undriven."
         ]
     },
     "syntax/matrix_multiplication/no_arch": {
         "test_name": "syntax/matrix_multiplication/no_arch",
         "verilog": "matrix_multiplication.v",
-        "exit": 134,
+        "exit": 1,
+        "leaks": 4,
         "warnings": [
             "matrix_multiplication.v:120:1 [NETLIST] indexing into memory with matrix_multiplication has larger input than memory. Unused pins:",
-            "matrix_multiplication.v:121:1 [NETLIST] indexing into memory with matrix_multiplication has larger input than memory. Unused pins:"
+            "matrix_multiplication.v:121:1 [NETLIST] indexing into memory with matrix_multiplication has larger input than memory. Unused pins:",
+            "matrix_multiplication.v:125:1 [NETLIST] Assignment (matrix_multiplication^tmp1~0) is missing driver",
+            "matrix_multiplication.v:126:1 [NETLIST] Assignment (matrix_multiplication^tmp2~0) is missing driver",
+            "matrix_multiplication.v:127:1 [NETLIST] Assignment (matrix_multiplication^tmp3~0) is missing driver",
+            "matrix_multiplication.v:128:1 [NETLIST] Assignment (matrix_multiplication^tmp4~0) is missing driver",
+            "matrix_multiplication.v:130:1 [NETLIST] Assignment (matrix_multiplication^tmp5~0) is missing driver",
+            "matrix_multiplication.v:131:1 [NETLIST] Assignment (matrix_multiplication^tmp6~0) is missing driver",
+            "matrix_multiplication.v:132:1 [NETLIST] Assignment (matrix_multiplication^tmp7~0) is missing driver",
+            "matrix_multiplication.v:69:8 [NETLIST] This output is undriven (matrix_multiplication^data_out~16) and will be removed",
+            "matrix_multiplication.v:69:8 [NETLIST] This output is undriven (matrix_multiplication^data_out~17) and will be removed",
+            "matrix_multiplication.v:166:16 [NETLIST] Net (null) driving node matrix_multiplication^nMUX~49^MUX_2~6774 is itself undriven.",
+            "matrix_multiplication.v:69:8 [NETLIST] Net matrix_multiplication^data_out~16 driving node matrix_multiplication^data_out~16 is itself undriven.",
+            "matrix_multiplication.v:69:8 [NETLIST] Net matrix_multiplication^data_out~17 driving node matrix_multiplication^data_out~17 is itself undriven."
         ]
     },
     "syntax/memlooptesting/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -2703,6 +2717,61 @@
         "synthesis_time(ms)": 1.6,
         "Pi": 2,
         "Po": 2,
+        "Longest Path": 2,
+        "Average Path": 2
+    },
+    "syntax/bm_unused_input_pins/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "syntax/bm_unused_input_pins/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "verilog": "bm_unused_input_pins.v",
+        "warnings": [
+            "bm_unused_input_pins.v:15:4 [NETLIST] This module port in_1[4] is unused in module func",
+            "bm_unused_input_pins.v:15:4 [NETLIST] This module port in_1[5] is unused in module func",
+            "bm_unused_input_pins.v:15:4 [NETLIST] This module port in_1[6] is unused in module func",
+            "bm_unused_input_pins.v:15:4 [NETLIST] This module port in_1[7] is unused in module func",
+            "bm_unused_input_pins.v:12:5 [NETLIST] This output is undriven (simple_op^out_1~4) and will be removed",
+            "bm_unused_input_pins.v:12:5 [NETLIST] This output is undriven (simple_op^out_1~5) and will be removed",
+            "bm_unused_input_pins.v:12:5 [NETLIST] This output is undriven (simple_op^out_1~6) and will be removed",
+            "bm_unused_input_pins.v:12:5 [NETLIST] This output is undriven (simple_op^out_1~7) and will be removed",
+            "bm_unused_input_pins.v:12:5 [NETLIST] Net simple_op^out_1~4 driving node simple_op^out_1~4 is itself undriven.",
+            "bm_unused_input_pins.v:12:5 [NETLIST] Net simple_op^out_1~5 driving node simple_op^out_1~5 is itself undriven.",
+            "bm_unused_input_pins.v:12:5 [NETLIST] Net simple_op^out_1~6 driving node simple_op^out_1~6 is itself undriven.",
+            "bm_unused_input_pins.v:12:5 [NETLIST] Net simple_op^out_1~7 driving node simple_op^out_1~7 is itself undriven."
+        ],
+        "max_rss(MiB)": 55.1,
+        "exec_time(ms)": 52.1,
+        "synthesis_time(ms)": 2.8,
+        "Pi": 4,
+        "Po": 8,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 2,
+        "Average Path": 2
+    },
+    "syntax/bm_unused_input_pins/no_arch": {
+        "test_name": "syntax/bm_unused_input_pins/no_arch",
+        "verilog": "bm_unused_input_pins.v",
+        "warnings": [
+            "bm_unused_input_pins.v:15:4 [NETLIST] This module port in_1[4] is unused in module func",
+            "bm_unused_input_pins.v:15:4 [NETLIST] This module port in_1[5] is unused in module func",
+            "bm_unused_input_pins.v:15:4 [NETLIST] This module port in_1[6] is unused in module func",
+            "bm_unused_input_pins.v:15:4 [NETLIST] This module port in_1[7] is unused in module func",
+            "bm_unused_input_pins.v:12:5 [NETLIST] This output is undriven (simple_op^out_1~4) and will be removed",
+            "bm_unused_input_pins.v:12:5 [NETLIST] This output is undriven (simple_op^out_1~5) and will be removed",
+            "bm_unused_input_pins.v:12:5 [NETLIST] This output is undriven (simple_op^out_1~6) and will be removed",
+            "bm_unused_input_pins.v:12:5 [NETLIST] This output is undriven (simple_op^out_1~7) and will be removed",
+            "bm_unused_input_pins.v:12:5 [NETLIST] Net simple_op^out_1~4 driving node simple_op^out_1~4 is itself undriven.",
+            "bm_unused_input_pins.v:12:5 [NETLIST] Net simple_op^out_1~5 driving node simple_op^out_1~5 is itself undriven.",
+            "bm_unused_input_pins.v:12:5 [NETLIST] Net simple_op^out_1~6 driving node simple_op^out_1~6 is itself undriven.",
+            "bm_unused_input_pins.v:12:5 [NETLIST] Net simple_op^out_1~7 driving node simple_op^out_1~7 is itself undriven."
+        ],
+        "max_rss(MiB)": 35,
+        "exec_time(ms)": 4.9,
+        "synthesis_time(ms)": 3.3,
+        "Pi": 4,
+        "Po": 8,
         "Longest Path": 2,
         "Average Path": 2
     },

@@ -2242,6 +2242,38 @@
         "Estimated LUTs": 2,
         "Total Node": 2
     },
+    "syntax/bm_unused_input_pins/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "syntax/bm_unused_input_pins/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "blif": "bm_unused_input_pins.blif",
+        "max_rss(MiB)": 55.6,
+        "exec_time(ms)": 59.7,
+        "simulation_time(ms)": 1.9,
+        "test_coverage(%)": 100,
+        "Pi": 4,
+        "Po": 4,
+        "logic element": 4,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 4,
+        "Total Node": 4
+    },
+    "syntax/bm_unused_input_pins/no_arch": {
+        "test_name": "syntax/bm_unused_input_pins/no_arch",
+        "blif": "bm_unused_input_pins.blif",
+        "max_rss(MiB)": 35.3,
+        "exec_time(ms)": 6.5,
+        "simulation_time(ms)": 1.9,
+        "test_coverage(%)": 100,
+        "Pi": 4,
+        "Po": 4,
+        "logic element": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 4,
+        "Total Node": 4
+    },
     "DEFAULT": {
         "test_name": "n/a",
         "architecture": "n/a",
