@@ -86,10 +86,30 @@
     "defparam/defparam_depth_2/no_arch": {
         "test_name": "defparam/defparam_depth_2/no_arch",
         "verilog": "defparam_depth_2.v",
-        "exit": 134,
-        "errors": [
-            "defparam_depth_2.v:16:1 [NETLIST] This module port simple_op.m2^in~2 is unused in module assg1"
-        ]
+        "warnings": [
+            "defparam_depth_2.v:16:3 [NETLIST] This module port in2[2] is unused in module assg1",
+            "defparam_depth_2.v:16:3 [NETLIST] This module port in2[3] is unused in module assg1",
+            "defparam_depth_2.v:16:3 [NETLIST] This module port in2[4] is unused in module assg1",
+            "defparam_depth_2.v:16:3 [NETLIST] This module port in2[5] is unused in module assg1",
+            "defparam_depth_2.v:16:3 [NETLIST] This module port in2[6] is unused in module assg1",
+            "defparam_depth_2.v:16:3 [NETLIST] This module port in2[7] is unused in module assg1",
+            "defparam_depth_2.v:8:4 [NETLIST] This output is undriven (simple_op^out2~2) and will be removed",
+            "defparam_depth_2.v:8:4 [NETLIST] This output is undriven (simple_op^out2~3) and will be removed",
+            "defparam_depth_2.v:8:4 [NETLIST] This output is undriven (simple_op^out2~4) and will be removed",
+            "defparam_depth_2.v:8:4 [NETLIST] This output is undriven (simple_op^out2~5) and will be removed",
+            "defparam_depth_2.v:8:4 [NETLIST] This output is undriven (simple_op^out2~6) and will be removed",
+            "defparam_depth_2.v:8:4 [NETLIST] This output is undriven (simple_op^out2~7) and will be removed",
+            "defparam_depth_2.v:8:4 [NETLIST] Net simple_op.m2^out~2 driving node simple_op^out2~2 is itself undriven.",
+            "defparam_depth_2.v:8:4 [NETLIST] Net simple_op.m2^out~3 driving node simple_op^out2~3 is itself undriven.",
+            "defparam_depth_2.v:8:4 [NETLIST] Net simple_op.m2^out~4 driving node simple_op^out2~4 is itself undriven.",
+            "defparam_depth_2.v:8:4 [NETLIST] Net simple_op.m2^out~5 driving node simple_op^out2~5 is itself undriven.",
+            "defparam_depth_2.v:8:4 [NETLIST] Net simple_op.m2^out~6 driving node simple_op^out2~6 is itself undriven.",
+            "defparam_depth_2.v:8:4 [NETLIST] Net simple_op.m2^out~7 driving node simple_op^out2~7 is itself undriven."
+        ],
+        "Pi": 4,
+        "Po": 10,
+        "Longest Path": 2,
+        "Average Path": 1
     },
     "defparam/defparam_simple_failure/no_arch": {
         "test_name": "defparam/defparam_simple_failure/no_arch",
