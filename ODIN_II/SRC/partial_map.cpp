@@ -231,7 +231,7 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
         }
         case MEMORY: {
             ast_node_t* ast_node = node->related_ast_node;
-            char* identifier = ast_node->children[0]->types.identifier;
+            char* identifier = ast_node->identifier_node->types.identifier;
             if (find_hard_block(identifier)) {
                 long depth = is_sp_ram(node) ? get_sp_ram_depth(node) : get_dp_ram_depth(node);
                 long width = is_sp_ram(node) ? get_sp_ram_width(node) : get_dp_ram_width(node);

@@ -133,12 +133,12 @@ void define_hard_block(nnode_t* node, FILE* out) {
     oassert(node->output_port_sizes[0] > 0);
 
     //IF the hard_blocks is an adder or a multiplier, we ignore it.(Already print out in define_add_function and define_mult_function)
-    if (strcmp(node->related_ast_node->children[0]->types.identifier, "multiply") == 0 || strcmp(node->related_ast_node->children[0]->types.identifier, "adder") == 0)
+    if (strcmp(node->related_ast_node->identifier_node->types.identifier, "multiply") == 0 || strcmp(node->related_ast_node->identifier_node->types.identifier, "adder") == 0)
         return;
 
     count = fprintf(out, "\n.subckt ");
     count--;
-    count += fprintf(out, "%s", node->related_ast_node->children[0]->types.identifier);
+    count += fprintf(out, "%s", node->related_ast_node->identifier_node->types.identifier);
 
     /* print the input port mappings */
     port = index = 0;
