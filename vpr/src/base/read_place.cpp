@@ -127,10 +127,10 @@ void read_place_body(const char* place_file,
     auto& place_ctx = g_vpr_ctx.mutable_placement();
 
     //Mark unseen blocks for error-checking for constraints file
-    if (!is_place_file){
-    	for (auto block_id : cluster_ctx.clb_nlist.blocks()) {
-    		place_ctx.block_locs[block_id].loc.x = OPEN; //Mark as not seen yet
-    	}
+    if (!is_place_file) {
+        for (auto block_id : cluster_ctx.clb_nlist.blocks()) {
+            place_ctx.block_locs[block_id].loc.x = OPEN; //Mark as not seen yet
+        }
     }
 
     std::string line;
@@ -176,26 +176,24 @@ void read_place_body(const char* place_file,
             ClusterBlockId blk_id = cluster_ctx.clb_nlist.find_block(block_name);
 
             //Check if block is listed twice in constraints file
-            if(!is_place_file) {
-            	if (place_ctx.block_locs[blk_id].loc.x != OPEN) {
-            		VPR_THROW(VPR_ERROR_PLACE, "The block with ID %d is listed twice in the constraints file.\n", blk_id);
-            	}
+            if (!is_place_file) {
+                if (place_ctx.block_locs[blk_id].loc.x != OPEN) {
+                    VPR_THROW(VPR_ERROR_PLACE, "The block with ID %d is listed twice in the constraints file.\n", blk_id);
+                }
             }
 
             //Check if block location is out of range of grid dimensions
-            if(!is_place_file) {
-            	if (block_x < 0 || block_x > int(device_ctx.grid.width() - 1)
-            		|| block_y < 0 || block_y > int(device_ctx.grid.height() - 1)) {
-
-            		VPR_THROW(VPR_ERROR_PLACE, "The block with ID %d is out of range at location (%d, %d). \n", blk_id, block_x, block_y);
-            	}
+            if (!is_place_file) {
+                if (block_x < 0 || block_x > int(device_ctx.grid.width() - 1)
+                    || block_y < 0 || block_y > int(device_ctx.grid.height() - 1)) {
+                    VPR_THROW(VPR_ERROR_PLACE, "The block with ID %d is out of range at location (%d, %d). \n", blk_id, block_x, block_y);
+                }
             }
 
             if (place_ctx.block_locs.size() != cluster_ctx.clb_nlist.blocks().size()) {
                 //Resize if needed
                 place_ctx.block_locs.resize(cluster_ctx.clb_nlist.blocks().size());
             }
-
 
             //Set the location
             place_ctx.block_locs[blk_id].loc.x = block_x;
