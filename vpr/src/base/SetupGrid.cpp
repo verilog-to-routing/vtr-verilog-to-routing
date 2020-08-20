@@ -153,8 +153,8 @@ static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def>& grid_layo
         //Determine maximum device size to try before concluding that the circuit cannot fit on any device
         //Calculate total number of required instances
         //Then multiply by a factor of 100 as overhead
-	size_t max_size;
-	size_t total_minimum_instance_counts = 0;
+        size_t max_size;
+        size_t total_minimum_instance_counts = 0;
         for (auto& inst : minimum_instance_counts) {
             size_t count = inst.second;
             total_minimum_instance_counts += count;
@@ -196,7 +196,7 @@ static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def>& grid_layo
             limiting_resources = grid_overused_resources(grid, minimum_instance_counts);
 
             //Determine grid size
-            grid_size = width*height;
+            grid_size = width * height;
 
             //Increase the grid size
             width++;
@@ -204,8 +204,9 @@ static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def>& grid_layo
         } while (grid_size < max_size);
 
         //Maximum device size reached
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Device auto-fit aborted: device size already exceeds required resources count by 100 times yet still cannot fit the design. "
-            "Might be using more instances of a particular type of resource than the StratixIV devices can support (e.g. PLLs)\n");
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                        "Device auto-fit aborted: device size already exceeds required resources count by 100 times yet still cannot fit the design. "
+                        "Might be using more instances of a particular type of resource than the StratixIV devices can support (e.g. PLLs)\n");
 
     } else {
         VTR_ASSERT(auto_layout_itr == grid_layouts.end());
