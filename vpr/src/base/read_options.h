@@ -130,6 +130,7 @@ struct t_options {
     argparse::ArgValue<PlaceDelayModelType> place_delay_model;
     argparse::ArgValue<e_reducer> place_delay_model_reducer;
     argparse::ArgValue<std::string> allowed_tiles_for_delay_model;
+    argparse::ArgValue<e_place_quench_metric> place_quench_metric;
 
     /* Router Options */
     argparse::ArgValue<bool> check_rr_graph;

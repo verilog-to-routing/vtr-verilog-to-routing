@@ -885,6 +885,12 @@ enum class e_place_delta_delay_algorithm {
     DIJKSTRA_EXPANSION,
 };
 
+enum class e_place_quench_metric {
+    TIMING_COST,
+    SETUP_SLACK,
+    AUTO
+};
+
 struct t_placer_opts {
     enum e_place_algorithm place_algorithm;
     float timing_tradeoff;
@@ -933,6 +939,7 @@ struct t_placer_opts {
     std::string allowed_tiles_for_delay_model;
 
     e_place_delta_delay_algorithm place_delta_delay_matrix_calculation_method;
+    e_place_quench_metric place_quench_metric;
 };
 
 /* All the parameters controlling the router's operation are in this        *
