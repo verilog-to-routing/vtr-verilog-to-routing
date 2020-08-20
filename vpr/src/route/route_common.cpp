@@ -86,7 +86,7 @@ static int num_linked_f_pointer_allocated = 0;
  *                                                                          */
 
 /******************** Subroutines local to route_common.c *******************/
-static t_trace_branch traceback_branch(int node, std::unordered_set<int>& main_branch_visited);
+static t_trace_branch traceback_branch(int node, int target_pin, std::unordered_set<int>& main_branch_visited);
 static std::pair<t_trace*, t_trace*> add_trace_non_configurable(t_trace* head, t_trace* tail, int node, std::unordered_set<int>& visited);
 static std::pair<t_trace*, t_trace*> add_trace_non_configurable_recurr(int node, std::unordered_set<int>& visited, int depth = 0);
 
@@ -494,7 +494,7 @@ void init_route_structs(int bb_factor) {
     route_ctx.net_status.resize(cluster_ctx.clb_nlist.nets().size());
 }
 
-t_trace* update_traceback(t_heap* hptr, ClusterNetId net_id) {
+t_trace* update_traceback(t_heap* hptr, int target_pin, ClusterNetId net_id) {
     /* This routine adds the most recently finished wire segment to the         *
      * traceback linked list.  The first connection starts with the net SOURCE  *
      * and begins at the structure pointed to by route_ctx.trace[net_id].head.  *
@@ -513,7 +513,7 @@ t_trace* update_traceback(t_heap* hptr, ClusterNetId net_id) {
 
     VTR_ASSERT_SAFE(validate_trace_nodes(route_ctx.trace[net_id].head, trace_nodes));
 
-    t_trace_branch branch = traceback_branch(hptr->index, trace_nodes);
+    t_trace_branch branch = traceback_branch(hptr->index, target_pin, trace_nodes);
 
     VTR_ASSERT_SAFE(validate_trace_nodes(branch.head, trace_nodes));
 
@@ -532,7 +532,7 @@ t_trace* update_traceback(t_heap* hptr, ClusterNetId net_id) {
 
 //Traces back a new routing branch starting from the specified 'node' and working backwards to any existing routing.
 //Returns the new branch, and also updates trace_nodes for any new nodes which are included in the branches traceback.
-static t_trace_branch traceback_branch(int node, std::unordered_set<int>& trace_nodes) {
+static t_trace_branch traceback_branch(int node, int target_pin, std::unordered_set<int>& trace_nodes) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
@@ -547,6 +547,7 @@ static t_trace_branch traceback_branch(int node, std::unordered_set<int>& trace_
     t_trace* branch_head = alloc_trace_data();
     t_trace* branch_tail = branch_head;
     branch_head->index = node;
+    branch_head->ipin = target_pin;
     branch_head->iswitch = OPEN;
     branch_head->next = nullptr;
 
@@ -561,6 +562,7 @@ static t_trace_branch traceback_branch(int node, std::unordered_set<int>& trace_
         //Add the current node to the head of traceback
         t_trace* prev_ptr = alloc_trace_data();
         prev_ptr->index = inode;
+        prev_ptr->ipin = OPEN;
         prev_ptr->iswitch = device_ctx.rr_nodes.edge_switch(iedge);
         prev_ptr->next = branch_head;
         branch_head = prev_ptr;
@@ -741,11 +743,16 @@ void mark_ends(ClusterNetId net_id) {
     }
 }
 
-void mark_remaining_ends(const std::vector<int>& remaining_sinks) {
+void mark_remaining_ends(ClusterNetId net_id, const std::vector<int>& remaining_sinks) {
     // like mark_ends, but only performs it for the remaining sinks of a net
+    int inode;
+
     auto& route_ctx = g_vpr_ctx.mutable_routing();
-    for (int sink_node : remaining_sinks)
-        ++route_ctx.rr_node_route_inf[sink_node].target_flag;
+
+    for (int sink_pin : remaining_sinks) {
+        inode = route_ctx.net_rr_terminals[net_id][sink_pin];
+        ++route_ctx.rr_node_route_inf[inode].target_flag;
+    }
 }
 
 void drop_traceback_tail(ClusterNetId net_id) {
@@ -1192,6 +1199,7 @@ alloc_trace_data() {
         trace_free_head->next = nullptr;
     }
     temp_ptr = trace_free_head;
+    temp_ptr->ipin = OPEN; //default
     trace_free_head = trace_free_head->next;
     num_trace_allocated++;
     return (temp_ptr);

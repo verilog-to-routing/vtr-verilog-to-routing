@@ -1315,6 +1315,8 @@ typedef std::array<vtr::NdMatrix<std::vector<int>, 3>, NUM_RR_TYPES> t_rr_node_i
  * @brief Basic element used to store the traceback (routing) of each net.
  *
  *   @param index    Array index (ID) of this routing resource node.
+ *   @param index    Index of the pin for a sink node. Only used for rt_node
+ *                   tree traceback. Otherwise value is OPEN.
  *   @param iswitch  Index of the switch type used to go from this rr_node to
  *                   the next one in the routing.  OPEN if there is no next node
  *                   (i.e. this node is the last one (a SINK) in a branch of the
@@ -1324,6 +1326,7 @@ typedef std::array<vtr::NdMatrix<std::vector<int>, 3>, NUM_RR_TYPES> t_rr_node_i
 struct t_trace {
     t_trace* next;
     int index;
+    int ipin = OPEN;
     short iswitch;
 };
 

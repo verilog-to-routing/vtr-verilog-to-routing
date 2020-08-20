@@ -27,6 +27,8 @@ struct t_linked_rt_edge {
  * parent_switch:  Index of the switch type driving this node (by its        *
  *                 parent).                                                  *
  * inode:  index (ID) of the rr_node that corresponds to this rt_node.       *
+ * ipin:  Pin index associated with the rt_node. Gives an unique identifier  *
+ *        or each rt_node.                                                   *
  * C_downstream:  Total downstream capacitance from this rt_node.  That is,  *
  *                the total C of the subtree rooted at the current node,     *
  *                including the C of the current node.                       *
@@ -43,6 +45,7 @@ struct t_rt_node {
     short parent_switch;
     bool re_expand;
     int inode;
+    int ipin;
     float C_downstream;
     float R_upstream;
     float Tdel;

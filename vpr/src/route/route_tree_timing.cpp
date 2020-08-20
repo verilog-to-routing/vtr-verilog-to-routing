@@ -27,6 +27,13 @@
 /* Array below allows mapping from any rr_node to any rt_node currently in
  * the rt_tree.                                                              */
 
+/* In some cases the same SINK node is put into the tree multiple times in a     *
+ * single route. To model this, we are putting in separate rt_nodes in the route *
+ * tree if we go to the same SINK more than once. rr_node_to_rt_node[inode] will *
+ * therefore store the last rt_node created of all the SINK nodes with the same  *
+ * index "inode". This is okay because the mapping is only used in this file to  *
+ * quickly figure out where rt_nodes that we are branching off of (for nets with *
+ * fanout > 1) are, and we will never branch off a SINK.                         */
 static std::vector<t_rt_node*> rr_node_to_rt_node; /* [0..device_ctx.rr_nodes.size()-1] */
 
 /* Frees lists for fast addition and deletion of nodes and edges. */
@@ -45,6 +52,7 @@ static t_linked_rt_edge* alloc_linked_rt_edge();
 static void free_linked_rt_edge(t_linked_rt_edge* rt_edge);
 
 static t_rt_node* add_subtree_to_route_tree(t_heap* hptr,
+                                            int target_pin,
                                             t_rt_node** sink_rt_node_ptr);
 
 static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bool reached_by_non_configurable_edge, std::unordered_set<int>& visited);
@@ -59,7 +67,7 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace, std::map<int, t_r
 
 static std::pair<t_trace*, t_trace*> traceback_from_route_tree_recurr(t_trace* head, t_trace* tail, const t_rt_node* node);
 
-void collect_route_tree_connections(const t_rt_node* node, std::set<std::tuple<int, int, int>>& connections);
+void collect_route_tree_connections(const t_rt_node* node, std::multiset<std::tuple<int, int, int>>& connections);
 
 /************************** Subroutine definitions ***************************/
 
@@ -187,6 +195,7 @@ t_rt_node* init_route_tree_to_source(ClusterNetId inet) {
     inode = route_ctx.net_rr_terminals[inet][0]; /* Net source */
 
     rt_root->inode = inode;
+    rt_root->ipin = OPEN;
     rt_root->C_downstream = device_ctx.rr_nodes[inode].C();
     rt_root->R_upstream = device_ctx.rr_nodes[inode].R();
     rt_root->Tdel = 0.5 * device_ctx.rr_nodes[inode].R() * device_ctx.rr_nodes[inode].C();
@@ -199,7 +208,7 @@ t_rt_node* init_route_tree_to_source(ClusterNetId inet) {
  * updates the Tdel, etc. numbers for the rest of the routing tree.  hptr
  * is the heap pointer of the SINK that was reached.  This routine returns
  * a pointer to the rt_node of the SINK that it adds to the routing.        */
-t_rt_node* update_route_tree(t_heap* hptr, SpatialRouteTreeLookup* spatial_rt_lookup) {
+t_rt_node* update_route_tree(t_heap* hptr, int target_pin, SpatialRouteTreeLookup* spatial_rt_lookup) {
     t_rt_node *start_of_new_subtree_rt_node, *sink_rt_node;
     t_rt_node *unbuffered_subtree_rt_root, *subtree_parent_rt_node;
     float Tdel_start;
@@ -208,7 +217,7 @@ t_rt_node* update_route_tree(t_heap* hptr, SpatialRouteTreeLookup* spatial_rt_lo
     auto& device_ctx = g_vpr_ctx.device();
 
     //Create a new subtree from the target in hptr to existing routing
-    start_of_new_subtree_rt_node = add_subtree_to_route_tree(hptr, &sink_rt_node);
+    start_of_new_subtree_rt_node = add_subtree_to_route_tree(hptr, target_pin, &sink_rt_node);
 
     //Propagate R_upstream down into the new subtree
     load_new_subtree_R_upstream(start_of_new_subtree_rt_node);
@@ -241,7 +250,12 @@ t_rt_node* update_route_tree(t_heap* hptr, SpatialRouteTreeLookup* spatial_rt_lo
 
 void add_route_tree_to_rr_node_lookup(t_rt_node* node) {
     if (node) {
-        VTR_ASSERT(rr_node_to_rt_node[node->inode] == nullptr || rr_node_to_rt_node[node->inode] == node);
+        auto& device_ctx = g_vpr_ctx.device();
+        if (device_ctx.rr_nodes[node->inode].type() == SINK) {
+            VTR_ASSERT(rr_node_to_rt_node[node->inode] == nullptr || rr_node_to_rt_node[node->inode]->inode == node->inode);
+        } else {
+            VTR_ASSERT(rr_node_to_rt_node[node->inode] == nullptr || rr_node_to_rt_node[node->inode] == node);
+        }
 
         rr_node_to_rt_node[node->inode] = node;
 
@@ -252,7 +266,7 @@ void add_route_tree_to_rr_node_lookup(t_rt_node* node) {
 }
 
 static t_rt_node*
-add_subtree_to_route_tree(t_heap* hptr, t_rt_node** sink_rt_node_ptr) {
+add_subtree_to_route_tree(t_heap* hptr, int target_pin, t_rt_node** sink_rt_node_ptr) {
     /* Adds the most recent wire segment, ending at the SINK indicated by hptr,
      * to the routing tree.  It returns the first (most upstream) new rt_node,
      * and (via a pointer) the rt_node of the new SINK. Traverses up from SINK  */
@@ -274,6 +288,7 @@ add_subtree_to_route_tree(t_heap* hptr, t_rt_node** sink_rt_node_ptr) {
     sink_rt_node = alloc_rt_node();
     sink_rt_node->u.child_list = nullptr;
     sink_rt_node->inode = inode;
+    sink_rt_node->ipin = target_pin;
     rr_node_to_rt_node[inode] = sink_rt_node;
 
     /* In the code below I'm marking SINKs and IPINs as not to be re-expanded.
@@ -286,8 +301,8 @@ add_subtree_to_route_tree(t_heap* hptr, t_rt_node** sink_rt_node_ptr) {
 
     downstream_rt_node = sink_rt_node;
 
-    std::unordered_set<int> main_branch_visited;
-    std::unordered_set<int> all_visited;
+    std::unordered_set<int> main_branch_visited; //does not include sink
+    std::unordered_set<int> all_visited; //does not include sink
     inode = hptr->prev_node();
     RREdgeId edge = hptr->prev_edge();
     short iswitch = device_ctx.rr_nodes.edge_switch(edge);
@@ -316,6 +331,7 @@ add_subtree_to_route_tree(t_heap* hptr, t_rt_node** sink_rt_node_ptr) {
 
         rt_node->u.child_list = linked_rt_edge;
         rt_node->inode = inode;
+        rt_node->ipin = OPEN;
 
         rr_node_to_rt_node[inode] = rt_node;
 
@@ -347,6 +363,7 @@ add_subtree_to_route_tree(t_heap* hptr, t_rt_node** sink_rt_node_ptr) {
 
     //Expand (recursively) each of the main-branch nodes adding any
     //non-configurably connected nodes
+    //Sink is not included, so no need to pass in the node's ipin value.
     for (int rr_node : main_branch_visited) {
         add_non_configurable_to_route_tree(rr_node, false, all_visited);
     }
@@ -374,6 +391,7 @@ static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bo
                 rt_node = alloc_rt_node();
                 rt_node->u.child_list = nullptr;
                 rt_node->inode = rr_node;
+                rt_node->ipin = OPEN;
 
                 if (device_ctx.rr_nodes[rr_node].type() == IPIN) {
                     rt_node->re_expand = false;
@@ -657,7 +675,7 @@ void print_route_tree(const t_rt_node* rt_node, int depth) {
     }
 
     auto& device_ctx = g_vpr_ctx.device();
-    VTR_LOG("%srt_node: %d (%s)", indent.c_str(), rt_node->inode, device_ctx.rr_nodes[rt_node->inode].type_string());
+    VTR_LOG("%srt_node: %d (%s) \t ipin: %d", indent.c_str(), rt_node->inode, device_ctx.rr_nodes[rt_node->inode].type_string(), rt_node->ipin);
 
     if (rt_node->parent_switch != OPEN) {
         bool parent_edge_configurable = device_ctx.rr_switch_inf[rt_node->parent_switch].configurable();
@@ -760,22 +778,28 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace,
         t_rt_node* node = nullptr;
 
         int inode = trace->index;
+        int ipin = trace->ipin;
         int iswitch = trace->iswitch;
 
+        auto& device_ctx = g_vpr_ctx.device();
         auto itr = rr_node_to_rt.find(trace->index);
-        if (itr == rr_node_to_rt.end()) {
+
+        // In some cases, the same sink node is put into the tree multiple times in a single route.
+        // So it is possible to hit the same node index multiple times during traceback. Create a
+        // separate rt_node for each sink with the same node index.
+        if (itr == rr_node_to_rt.end() || device_ctx.rr_nodes[inode].type() == SINK) {
             //Create
 
             //Initialize route tree node
             node = alloc_rt_node();
             node->inode = inode;
+            node->ipin = ipin;
             node->u.child_list = nullptr;
 
             node->R_upstream = std::numeric_limits<float>::quiet_NaN();
             node->C_downstream = std::numeric_limits<float>::quiet_NaN();
             node->Tdel = std::numeric_limits<float>::quiet_NaN();
 
-            auto& device_ctx = g_vpr_ctx.device();
             auto node_type = device_ctx.rr_nodes[inode].type();
             if (node_type == IPIN || node_type == SINK)
                 node->re_expand = false;
@@ -808,7 +832,6 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace,
             //
             // Each configurable edges from the non-configurable set is a
             // usage of the set.
-            auto& device_ctx = g_vpr_ctx.device();
             auto set_itr = device_ctx.rr_node_to_non_config_node_set.find(inode);
             if (non_config_node_set_usage != nullptr && set_itr != device_ctx.rr_node_to_non_config_node_set.end()) {
                 if (device_ctx.rr_switch_inf[iswitch].configurable()) {
@@ -853,6 +876,7 @@ static std::pair<t_trace*, t_trace*> traceback_from_route_tree_recurr(t_trace* h
             for (t_linked_rt_edge* edge = node->u.child_list; edge != nullptr; edge = edge->next) {
                 t_trace* curr = alloc_trace_data();
                 curr->index = node->inode;
+                curr->ipin = node->ipin;
                 curr->iswitch = edge->iswitch;
                 curr->next = nullptr;
 
@@ -873,6 +897,7 @@ static std::pair<t_trace*, t_trace*> traceback_from_route_tree_recurr(t_trace* h
             //Leaf
             t_trace* curr = alloc_trace_data();
             curr->index = node->inode;
+            curr->ipin = node->ipin;
             curr->iswitch = OPEN;
             curr->next = nullptr;
 
@@ -1010,7 +1035,7 @@ static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf
             VTR_ASSERT(force_prune);
 
             //Record as not reached
-            connections_inf.toreach_rr_sink(node->inode);
+            connections_inf.toreach_rr_sink(node->ipin);
 
             free_rt_node(node);
             return nullptr; //Pruned
@@ -1431,6 +1456,7 @@ init_route_tree_to_source_no_net(int inode) {
     rt_root->parent_switch = OPEN;
     rt_root->re_expand = true;
     rt_root->inode = inode;
+    rt_root->ipin = OPEN;
     rt_root->C_downstream = device_ctx.rr_nodes[inode].C();
     rt_root->R_upstream = device_ctx.rr_nodes[inode].R();
     rt_root->Tdel = 0.5 * device_ctx.rr_nodes[inode].R() * device_ctx.rr_nodes[inode].C();
@@ -1441,7 +1467,7 @@ init_route_tree_to_source_no_net(int inode) {
 
 bool verify_traceback_route_tree_equivalent(const t_trace* head, const t_rt_node* rt_root) {
     //Walk the route tree saving all the used connections
-    std::set<std::tuple<int, int, int>> route_tree_connections;
+    std::multiset<std::tuple<int, int, int>> route_tree_connections;
     collect_route_tree_connections(rt_root, route_tree_connections);
 
     //Remove the extra parent connection to root (not included in traceback)
@@ -1461,7 +1487,7 @@ bool verify_traceback_route_tree_equivalent(const t_trace* head, const t_rt_node
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Route tree missing traceback connection: node %d -> %d (switch %d)\n",
                                 prev_node, to_node, prev_switch);
             } else {
-                route_tree_connections.erase(conn); //Remove found connections
+                route_tree_connections.erase(route_tree_connections.lower_bound(conn)); //Remove the first found connections
             }
         }
 
@@ -1482,7 +1508,7 @@ bool verify_traceback_route_tree_equivalent(const t_trace* head, const t_rt_node
     return true;
 }
 
-void collect_route_tree_connections(const t_rt_node* node, std::set<std::tuple<int, int, int>>& connections) {
+void collect_route_tree_connections(const t_rt_node* node, std::multiset<std::tuple<int, int, int>>& connections) {
     if (node) {
         //Record reaching connection
         int prev_node = OPEN;

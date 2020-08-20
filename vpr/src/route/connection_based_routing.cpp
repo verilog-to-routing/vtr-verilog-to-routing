@@ -56,45 +56,6 @@ Connection_based_routing_resources::Connection_based_routing_resources()
     }
 }
 
-void Connection_based_routing_resources::convert_sink_nodes_to_net_pins(std::vector<int>& rr_sink_nodes) const {
-    /* Turn a vector of device_ctx.rr_nodes indices, assumed to be of sinks for a net *
-     * into the pin indices of the same net. */
-
-    VTR_ASSERT(current_inet != ClusterNetId::INVALID()); // not uninitialized
-
-    const auto& node_to_pin_mapping = rr_sink_node_to_pin[current_inet];
-
-    for (size_t s = 0; s < rr_sink_nodes.size(); ++s) {
-        auto mapping = node_to_pin_mapping.find(rr_sink_nodes[s]);
-        if (mapping != node_to_pin_mapping.end()) {
-            rr_sink_nodes[s] = mapping->second;
-        } else {
-            VTR_ASSERT_SAFE_MSG(false, "Should always expect it find a pin mapping for its own net");
-        }
-    }
-}
-
-void Connection_based_routing_resources::put_sink_rt_nodes_in_net_pins_lookup(const std::vector<t_rt_node*>& sink_rt_nodes,
-                                                                              t_rt_node** rt_node_of_sink) const {
-    /* Load rt_node_of_sink (which maps a PIN index to a route tree node)
-     * with a vector of route tree sink nodes. */
-
-    VTR_ASSERT(current_inet != ClusterNetId::INVALID());
-
-    // a net specific mapping from node index to pin index
-    const auto& node_to_pin_mapping = rr_sink_node_to_pin[current_inet];
-
-    for (t_rt_node* rt_node : sink_rt_nodes) {
-        auto mapping = node_to_pin_mapping.find(rt_node->inode);
-
-        if (mapping != node_to_pin_mapping.end()) {
-            rt_node_of_sink[mapping->second] = rt_node;
-        } else {
-            VTR_ASSERT_SAFE_MSG(false, "element should be able to find itself");
-        }
-    }
-}
-
 bool Connection_based_routing_resources::sanity_check_lookup() const {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.routing();

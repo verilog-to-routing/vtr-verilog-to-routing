@@ -89,6 +89,7 @@ static bool timing_driven_pre_route_to_clock_root(
     ConnectionRouter& router,
     ClusterNetId net_id,
     int sink_node,
+    int sink_pin,
     const t_conn_cost_params cost_params,
     int high_fanout_threshold,
     t_rt_node* rt_root,
@@ -997,6 +998,8 @@ bool timing_driven_route_net(ConnectionRouter& router,
     if (cluster_ctx.clb_nlist.net_is_global(net_id) && router_opts.two_stage_clock_routing) {
         //VTR_ASSERT(router_opts.clock_modeling == DEDICATED_NETWORK);
         int sink_node = device_ctx.virtual_clock_network_root_idx;
+        auto& rr_sink_node_to_pin = connections_inf.get_rr_sink_node_to_pin();
+        int sink_pin = rr_sink_node_to_pin[net_id][sink_node]; //clock net sink nodes all have unique node IDs so this mapping can be used
 
         enable_router_debug(router_opts, net_id, sink_node, itry, &router);
 
@@ -1009,6 +1012,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
                 router,
                 net_id,
                 sink_node,
+                sink_pin,
                 cost_params,
                 router_opts.high_fanout_threshold,
                 rt_root,
@@ -1083,6 +1087,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
 
     // route tree is not kept persistent since building it from the traceback the next iteration takes almost 0 time
     VTR_LOGV_DEBUG(f_router_debug, "Routed Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
+
     free_route_tree(rt_root);
     return (true);
 }
@@ -1092,6 +1097,7 @@ static bool timing_driven_pre_route_to_clock_root(
     ConnectionRouter& router,
     ClusterNetId net_id,
     int sink_node,
+    int sink_pin,
     const t_conn_cost_params cost_params,
     int high_fanout_threshold,
     t_rt_node* rt_root,
@@ -1144,9 +1150,9 @@ static bool timing_driven_pre_route_to_clock_root(
      * lets me reuse all the routines written for breadth-first routing, which  *
      * all take a traceback structure as input.                                 */
 
-    t_trace* new_route_start_tptr = update_traceback(&cheapest, net_id);
+    t_trace* new_route_start_tptr = update_traceback(&cheapest, sink_pin, net_id);
     VTR_ASSERT_DEBUG(validate_traceback(route_ctx.trace[net_id].head));
-    update_route_tree(&cheapest, ((high_fanout) ? &spatial_rt_lookup : nullptr));
+    update_route_tree(&cheapest, sink_pin, ((high_fanout) ? &spatial_rt_lookup : nullptr));
     VTR_ASSERT_DEBUG(verify_route_tree(rt_root));
     VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
     VTR_ASSERT_DEBUG(!high_fanout || validate_route_tree_spatial_lookup(rt_root, spatial_rt_lookup));
@@ -1196,7 +1202,8 @@ static bool timing_driven_route_sink(
     profiling::sink_criticality_start();
 
     int sink_node = route_ctx.net_rr_terminals[net_id][target_pin];
-
+auto& device_ctx = g_vpr_ctx.device();
+VTR_ASSERT(device_ctx.rr_nodes[sink_node].type() == SINK);
     VTR_LOGV_DEBUG(f_router_debug, "Net %zu Target %d (%s)\n", size_t(net_id), itarget, describe_rr_node(sink_node).c_str());
 
     VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
@@ -1255,10 +1262,11 @@ static bool timing_driven_route_sink(
 
     int inode = cheapest.index;
     route_ctx.rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
-    t_trace* new_route_start_tptr = update_traceback(&cheapest, net_id);
+    t_trace* new_route_start_tptr = update_traceback(&cheapest, target_pin, net_id);
+
     VTR_ASSERT_DEBUG(validate_traceback(route_ctx.trace[net_id].head));
 
-    rt_node_of_sink[target_pin] = update_route_tree(&cheapest, ((high_fanout) ? &spatial_rt_lookup : nullptr));
+    rt_node_of_sink[target_pin] = update_route_tree(&cheapest, target_pin, ((high_fanout) ? &spatial_rt_lookup : nullptr));
     VTR_ASSERT_DEBUG(verify_route_tree(rt_root));
     VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
     VTR_ASSERT_DEBUG(!high_fanout || validate_route_tree_spatial_lookup(rt_root, spatial_rt_lookup));
@@ -1379,7 +1387,9 @@ static t_rt_node* setup_routing_resources(int itry,
         add_route_tree_to_rr_node_lookup(rt_root);
 
         // give lookup on the reached sinks
-        connections_inf.put_sink_rt_nodes_in_net_pins_lookup(reached_rt_sinks, rt_node_of_sink);
+        for (t_rt_node* sink_node : reached_rt_sinks) {
+            rt_node_of_sink[sink_node->ipin] = sink_node;
+        }
 
         profiling::net_rebuild_end(num_sinks, remaining_targets.size());
 
@@ -1388,11 +1398,8 @@ static t_rt_node* setup_routing_resources(int itry,
         // congestion should've been pruned away
         VTR_ASSERT_SAFE(is_uncongested_route_tree(rt_root));
 
-        // use the nodes to directly mark ends before they get converted to pins
-        mark_remaining_ends(remaining_targets);
-
-        // everything dealing with a net works with it in terms of its sink pins; need to convert its sink nodes to sink pins
-        connections_inf.convert_sink_nodes_to_net_pins(remaining_targets);
+        // mark remaining ends
+        mark_remaining_ends(net_id, remaining_targets);
 
         // still need to calculate the tree's time delay (0 Tarrival means from SOURCE)
         load_route_tree_Tdel(rt_root, 0);
