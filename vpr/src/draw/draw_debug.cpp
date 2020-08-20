@@ -16,10 +16,10 @@ typedef enum operator_type_in_expression {
 //debugger global variables
 class DrawDebuggerGlobals {
   public:
-    std::vector<std::string> bp_labels; ///holds all breakpoint labels to be displayed in the GUI
-    GtkWidget* bpGrid;                  ///holds the grid where all the labels are
-    int bpList_row = -1;                ///keeps track of where to insert the next breakpoint label in the list
-    open_windows openWindows;           ///keeps track of all open window (related to breakpoints)
+    std::vector<std::string> bp_labels;  ///holds all breakpoint labels to be displayed in the GUI
+    GtkWidget* bpGrid;                   ///holds the grid where all the labels are
+    int bpList_row = -1;                 ///keeps track of where to insert the next breakpoint label in the list
+    open_windows openWindows;            ///keeps track of all open window (related to breakpoints)
 
     //destructor clears bp_labels to avoid memory leaks
     ~DrawDebuggerGlobals() {

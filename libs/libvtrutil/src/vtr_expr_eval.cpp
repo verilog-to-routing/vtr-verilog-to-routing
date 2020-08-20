@@ -898,7 +898,8 @@ int in_blocks_affected(std::string expression_left) {
 
 } //namespace vtr
 
-//returns the global variable that holds all values that can trigger a breakpoint and are updated by the router and placer
+
+//returns the global variable that holds all values that can trigger a breakpoint and are updated by the router and placer 
 BreakpointStateGlobals* get_bp_state_globals() {
     return &bp_state_globals;
 }

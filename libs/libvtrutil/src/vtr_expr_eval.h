@@ -16,7 +16,7 @@
 /**The expression evaluator is capable of performing many operations on given variables, after parsing the expression. The parser goes character by character and identifies the type of char or chars. (e.g bracket, comma, number, operator, variable). The supported operations include addition, subtraction, multiplication, division, finding max, min, gcd, lcm, as well as boolean operators such as &&, ||, ==, >=, <= etc. The result is returned as an int value and operation precedance is taken into account. (e.g given 3-2*4, the result will be -5). This class is also used to parse expressions indicating breakpoints. The breakpoint expressions consist of variable names such as move_num, temp_num, from_block etc, and boolean operators (e.g move_num == 3). Multiple breakpoints can be expressed in one expression**/
 
 //function declarations
-//returns the global variable that holds all values that can trigger a breakpoint and are updated by the router and placer
+//returns the global variable that holds all values that can trigger a breakpoint and are updated by the router and placer 
 BreakpointStateGlobals* get_bp_state_globals();
 
 namespace vtr {
