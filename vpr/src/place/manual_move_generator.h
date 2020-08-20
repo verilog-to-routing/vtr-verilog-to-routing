@@ -3,7 +3,7 @@
 #include "move_generator.h"
 #include "globals.h"
 
-void get_manual_move_info_m(manual_move_info mmi);
+void mmg_get_manual_move_info(ManualMoveInfo mmi);
 
 class ManualMoveGenerator : public MoveGenerator {
     public:

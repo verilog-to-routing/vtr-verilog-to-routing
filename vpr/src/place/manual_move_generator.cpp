@@ -4,7 +4,7 @@
 t_pl_loc to;
 int block_id;
 
-void get_manual_move_info_m(manual_move_info mmi) {
+void mmg_get_manual_move_info(ManualMoveInfo mmi) {
     block_id = mmi.block_id;
     to = t_pl_loc(mmi.to_x, mmi.to_y, mmi.subtile);   
 }
