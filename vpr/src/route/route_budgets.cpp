@@ -364,20 +364,20 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> orig_timi
             /*calculate slack, save the pin that has min slack to calculate total path delay*/
             if (analysis_type == HOLD) {
                 path_slack = calculate_clb_pin_slack(net_id, ipin, timing_info, netlist_pin_lookup, HOLD, atom_pin);
-                // if (path_slack > 0) {
-                //     path_slack = path_slack * 0.70 - 300e-12;
-                // } else {
-                //     path_slack = path_slack - 100e-12;
-                // }
+                if (path_slack > 0) {
+                    path_slack = path_slack * 0.70 - 300e-12;
+                } else {
+                    path_slack = path_slack - 100e-12;
+                }
                 hold_path_slack = path_slack;
             } else {
                 path_slack = calculate_clb_pin_slack(net_id, ipin, timing_info, netlist_pin_lookup, SETUP, atom_pin);
                 hold_path_slack = calculate_clb_pin_slack(net_id, ipin, orig_timing_info, netlist_pin_lookup, HOLD, atom_pin);
-                // if (hold_path_slack > 0) {
-                //     hold_path_slack = hold_path_slack * 0.70 - 300e-12;
-                // } else {
-                //     hold_path_slack = hold_path_slack - 100e-12;
-                // }
+                if (hold_path_slack > 0) {
+                    hold_path_slack = hold_path_slack * 0.70 - 300e-12;
+                } else {
+                    hold_path_slack = hold_path_slack - 100e-12;
+                }
             }
 
             total_path_delay = get_total_path_delay(timing_analyzer, analysis_type, net_id, ipin, atom_pin);
@@ -666,22 +666,33 @@ void route_budgets::not_congested_this_iteration(ClusterNetId net_id) {
 }
 
 /* If the router is failing to resolve worst hold slack, increase the min delay budgets on nets with negative hold slack */
-void route_budgets::increase_min_budgets_if_struggling(float delay_decrement, std::shared_ptr<SetupHoldTimingInfo> timing_info, float worst_neg_slack, const ClusteredPinAtomPinsLookup& netlist_pin_lookup) {
+bool route_budgets::increase_min_budgets_if_struggling(float delay_decrement, std::shared_ptr<SetupHoldTimingInfo> timing_info, float worst_neg_slack, const ClusteredPinAtomPinsLookup& netlist_pin_lookup) {
+    
     auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    // This is so we can tell the router to exit early if it's only global nets that are not meeting hold
+    bool all_global_nets = true;
+
+    // This would indicate only intracluster nets are struggling
+    bool changed_any_nets = false;
+
+    int num_nets_with_hold = 0;
 
     // Keep a history of previous neg slacks
     // Instead track number of hold violating nets being resolved in the future?
     negative_hold_slacks.push(worst_neg_slack);
 
     if ((negative_hold_slacks.size() == 3)) {
-        // Check if it's within a 1% difference, float equality is tricky
+        // Check if it's within a 20% difference, float equality is tricky
         float d_slack = negative_hold_slacks.back() - negative_hold_slacks.front();
         // VTR_LOG("D_SLACK IS %e THE DIFF IS %e\n", std::abs(d_slack), std::abs(negative_hold_slacks.front() * 0.01));
-        if (std::abs(d_slack) < std::abs(negative_hold_slacks.front() * 0.01) && negative_hold_slacks.front() != 0) {
+        if (std::abs(d_slack) < std::abs(negative_hold_slacks.front() * 0.5) && negative_hold_slacks.front() != 0) {
+
             // VTR_LOG("ACTIVATE LOWER BUDGET %e < %e\n", std::abs(d_slack), std::abs(negative_hold_slacks.front() * 0.01));
 
             /*Decrease the budgets by a delay increment when the congested times is high enough*/
             for (auto net_id : cluster_ctx.clb_nlist.nets()) {
+
                 for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
                     int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
                     // For now, if there is any negative hold slack increase the budget of the pin
@@ -694,22 +705,32 @@ void route_budgets::increase_min_budgets_if_struggling(float delay_decrement, st
 
                         if (hold_slack <= 0) {
                             update_budget = true;
-                            set_should_reroute(net_id, true);
-                            // VTR_LOG("SLACK ON NET %d PIN %d slack: %e min_budget: %e short_crit: %e REROUTE?: %s\n", net_id, ipin, hold_slack, delay_min_budget[net_id][ipin], short_path_crit[net_id][ipin], get_should_reroute(net_id) ? "true" : "false");
+                            // if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) VTR_LOG("SLACK ON NET %d PIN %d slack: %e min_budget: %e short_crit: %e REROUTE?: %s ignored: %s\n", net_id, ipin, hold_slack, delay_min_budget[net_id][ipin], short_path_crit[net_id][ipin], get_should_reroute(net_id) ? "true" : "false", cluster_ctx.clb_nlist.net_is_ignored(net_id) ? "true" : "false");
                             break;
                         }
                     }
 
                     // If the hold_slack on this pin is less than zero, decrement by a constant amount
                     if (update_budget) {
-                        delay_min_budget[net_id][ipin] -= delay_decrement;
-                        // if (delay_min_budget[net_id][ipin] > delay_max_budget[net_id][ipin]) {
-                        delay_max_budget[net_id][ipin] -= 2 * delay_decrement;
-                        // }
+                        num_nets_with_hold++;
+                        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
+                            all_global_nets = false;
+                        } else {
+                            continue;
+                        }
 
-                        short_path_crit[net_id][ipin] *= 2;
+                        set_should_reroute(net_id, true);
+                        changed_any_nets = true;
+
+                        if (delay_min_budget[net_id][ipin] < 0.1 * delay_upper_bound[net_id][ipin]) {
+                            delay_min_budget[net_id][ipin] -= delay_decrement;
+                            delay_max_budget[net_id][ipin] -= 2 * delay_decrement;
+                        }
+
+                        if (short_path_crit[net_id][ipin] < 200) short_path_crit[net_id][ipin] *= 2;
                         // VTR_LOG("Increasing budgets to net %d pin %d, new budget %e\n", net_id, ipin, delay_min_budget[net_id][ipin]);
                         // keep_budget_in_bounds(delay_min_budget, net_id, pin_id);
+                        // VTR_LOG("SLACK ON NET %d PIN %d min_budget: %e short_crit: %e REROUTE?: %s NET_GLOBAL %s\n", net_id, ipin, delay_min_budget[net_id][ipin], short_path_crit[net_id][ipin], get_should_reroute(net_id) ? "true" : "false", cluster_ctx.clb_nlist.net_is_ignored(net_id) ? "true" : "false");
                     }
                 }
             }
@@ -720,7 +741,13 @@ void route_budgets::increase_min_budgets_if_struggling(float delay_decrement, st
         }
 
         negative_hold_slacks.pop();
+    } else {
+        return false;
     }
+
+    // If it hasn't changed any nets, or all the nets it has touched are global nets, than return true and tell the router it's done
+    // VTR_LOG("Changed any nets %s all global nets %s\n", changed_any_nets ? "true" : "false", all_global_nets ? "true" : "false");
+    return (!changed_any_nets || all_global_nets) && num_nets_with_hold != 0;
 }
 
 void route_budgets::increase_short_crit(ClusterNetId net_id, float delay_decs) {

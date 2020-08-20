@@ -389,6 +389,8 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
     BinaryHeap small_heap;
     small_heap.init_heap(device_ctx.grid);
 
+    int rcv_finished_count = 15;
+
     print_route_status_header();
     for (itry = 1; itry <= router_opts.max_router_iterations; ++itry) {
         RouterStats router_iteration_stats;
@@ -511,7 +513,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
         /*
          * Are we finished?
          */
-        if (is_iteration_complete(routing_is_feasible, router_opts, itry, timing_info)) {
+        if (is_iteration_complete(routing_is_feasible, router_opts, itry, timing_info, rcv_finished_count == 0)) {
             auto& router_ctx = g_vpr_ctx.routing();
 
             if (is_better_quality_routing(best_routing, best_routing_metrics, wirelength_info, timing_info)) {
@@ -577,7 +579,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
         if (overuse_info.overused_nodes > ROUTING_PREDICTOR_MIN_ABSOLUTE_OVERUSE_THRESHOLD) {
             //Only consider aborting if we have a significant number of overused resources
 
-            if (!std::isnan(est_success_iteration) && est_success_iteration > abort_iteration_threshold) {
+            if (!std::isnan(est_success_iteration) && est_success_iteration > abort_iteration_threshold && router_opts.routing_budgets_algorithm != YOYO) {
                 VTR_LOG("Routing aborted, the predicted iteration for a successful route (%.1f) is too high.\n", est_success_iteration);
                 break; //Abort
             }
@@ -614,7 +616,10 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
 
             // Increase short path criticality if it's having a hard time resolving hold violations due to congestion
             if (budgeting_inf.if_set()) {
-                if (itry > 5 && worst_negative_slack != 0) budgeting_inf.increase_min_budgets_if_struggling(-300e-12, timing_info, worst_negative_slack, netlist_pin_lookup);
+                bool rcv_finished = false;
+                if (itry > 5 && worst_negative_slack != 0) rcv_finished = budgeting_inf.increase_min_budgets_if_struggling(-300e-12, timing_info, worst_negative_slack, netlist_pin_lookup);
+                if (rcv_finished) rcv_finished_count--;
+                else rcv_finished_count = 15;
             }
         }
 
@@ -1024,6 +1029,13 @@ bool timing_driven_route_net(ConnectionRouter& router,
 
             /* Cut off pin criticality at max_criticality. */
             pin_criticality[ipin] = std::min(pin_criticality[ipin], router_opts.max_criticality);
+
+            // // Don't use a zero criticality in nets struggling to converge
+            // if (router_opts.routing_budgets_algorithm == YOYO && worst_neg_slack != 0 && itry > 5) {
+            //     if (budgeting_inf.get_should_reroute(net_id)) {
+            //         pin_criticality[ipin] = std::min(pin_criticality[ipin], 0.05f);
+            //     }
+            // }
         } else {
             //No timing info, implies we want a min delay routing, so use criticality of 1.
             pin_criticality[ipin] = 1.;
@@ -1998,7 +2010,7 @@ void enable_router_debug(
 #endif
 }
 
-bool is_iteration_complete(bool routing_is_feasible, const t_router_opts& router_opts, int itry, std::shared_ptr<const SetupHoldTimingInfo> timing_info) {
+bool is_iteration_complete(bool routing_is_feasible, const t_router_opts& router_opts, int itry, std::shared_ptr<const SetupHoldTimingInfo> timing_info, bool rcv_finished) {
     //This function checks if a routing iteration has completed.
     //When VPR is run normally, we check if routing_budgets_algorithm is disabled, and if the routing is legal
     //With the introduction of yoyo budgeting algorithm, we must check if there are no hold violations
@@ -2007,7 +2019,7 @@ bool is_iteration_complete(bool routing_is_feasible, const t_router_opts& router
     if (routing_is_feasible) {
         if (router_opts.routing_budgets_algorithm != YOYO) {
             return true;
-        } else if (router_opts.routing_budgets_algorithm == YOYO && timing_info->hold_worst_negative_slack() == 0 && itry != 1) {
+        } else if (router_opts.routing_budgets_algorithm == YOYO && (timing_info->hold_worst_negative_slack() == 0 || rcv_finished) && itry != 1) {
             return true;
         }
     }

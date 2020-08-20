@@ -66,7 +66,7 @@ void free_timing_driven_route_structs(float* pin_criticality, int* sink_order, t
 
 void enable_router_debug(const t_router_opts& router_opts, ClusterNetId net, int sink_rr, int router_iteration, ConnectionRouterInterface* router);
 
-bool is_iteration_complete(bool routing_is_feasible, const t_router_opts& router_opts, int itry, std::shared_ptr<const SetupHoldTimingInfo> timing_info);
+bool is_iteration_complete(bool routing_is_feasible, const t_router_opts& router_opts, int itry, std::shared_ptr<const SetupHoldTimingInfo> timing_info, bool rcv_finished);
 
 bool should_setup_lower_bound_connection_delays(int itry, const t_router_opts& router_opts);
 
