@@ -36,6 +36,7 @@
 #include "read_place.h"
 
 #include "uniform_move_generator.h"
+#include "manual_move_generator.h"
 
 #include "PlacementDelayCalculator.h"
 #include "VprTimingGraphResolver.h"
@@ -1378,6 +1379,7 @@ static e_move_result try_swap(float t,
                               t_placer_prev_inverse_costs* prev_inverse_costs,
                               float rlim,
                               MoveGenerator& move_generator,
+                              ManualMoveGenerator& manual_move_generator,
                               TimingInfo* timing_info,
                               ClusteredPinTimingInvalidator* pin_timing_invalidator,
                               t_pl_blocks_to_be_moved& blocks_affected,
@@ -1395,6 +1397,10 @@ static e_move_result try_swap(float t,
     num_ts_called++;
 
     MoveOutcomeStats move_outcome_stats;
+    
+    bool manual_move = get_manual_move_flag();  //whether the manual move info has been enabled or not
+    e_move_result manual_move_outcome;          //move_outcome from the user
+    ManualMoveInfo *manual_move_info;           //the struct that holds all relavant info (e.g block_id and to location)
 
     /* I'm using negative values of proposed_net_cost as a flag, so DO NOT   *
      * use cost functions that can go negative.                          */
@@ -1408,9 +1414,22 @@ static e_move_result try_swap(float t,
     if (rlim_escape_fraction > 0. && vtr::frand() < rlim_escape_fraction) {
         rlim = std::numeric_limits<float>::infinity();
     }
+    
+    if(manual_move) {
+        //pops up the manual move window for the user to input set their move
+        manual_move_generator_window("");
+        update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
+        manual_move_info = get_manual_move_info();
+        //sends info to the move generator class
+        mmg_get_manual_move_info(*manual_move_info);
+    }
 
     //Generate a new move (perturbation) used to explore the space of possible placements
-    e_create_move create_move_outcome = move_generator.propose_move(blocks_affected, rlim);
+    e_create_move create_move_outcome;
+    if(!manual_move)
+        create_move_outcome = move_generator.propose_move(blocks_affected, rlim);
+    else 
+        create_move_outcome = manual_move_generator.propose_move(blocks_affected, rlim);
 
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
 
@@ -1465,8 +1484,11 @@ static e_move_result try_swap(float t,
 
         /* 1 -> move accepted, 0 -> rejected. */
         move_outcome = assess_swap(delta_c, t);
+        
+        if(manual_move) {
+            manual_move_outcome = (manual_move_info->move_outcome == 0 ? REJECTED : ACCEPTED);}
 
-        if (move_outcome == ACCEPTED) {
+        if((!manual_move && move_outcome == ACCEPTED)||(manual_move && manual_move_outcome == ACCEPTED)) {
             costs->cost += delta_c;
             costs->bb_cost += bb_delta_c;
 
@@ -1491,7 +1513,7 @@ static e_move_result try_swap(float t,
             /* Update clb data structures since we kept the move. */
             commit_move_blocks(blocks_affected);
 
-        } else { /* Move was rejected.  */
+        } else if((!manual_move && move_outcome == REJECTED)||(manual_move && manual_move_outcome == REJECTED)){ /* Move was rejected.  */
                  /* Reset the net cost function flags first. */
             reset_move_nets(num_nets_affected);
 
@@ -1525,7 +1547,7 @@ static e_move_result try_swap(float t,
     //Check that each accepted swap yields a valid placement
     check_place(*costs, delay_model, place_algorithm);
 #endif
-
+    manual_move = false;
     return (move_outcome);
 }
 
