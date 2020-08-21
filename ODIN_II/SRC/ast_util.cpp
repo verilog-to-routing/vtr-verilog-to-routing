@@ -156,6 +156,8 @@ ast_node_t* create_node_w_type(ids id, loc_t loc) {
     new_node->types.hierarchy = NULL;
     new_node->chunk_size = 1;
     new_node->identifier_node = NULL;
+    /* init value */
+    new_node->types.variable.initial_value = nullptr;
     /* reset flags */
     new_node->types.variable.is_parameter = false;
     new_node->types.variable.is_string = false;
@@ -171,6 +173,9 @@ ast_node_t* create_node_w_type(ids id, loc_t loc) {
     new_node->types.variable.is_memory = false;
     new_node->types.variable.signedness = UNSIGNED;
 
+    new_node->types.concat.num_bit_strings = 0;
+    new_node->types.concat.bit_strings = NULL;
+
     return new_node;
 }
 
@@ -182,27 +187,29 @@ void free_assignement_of_node_keep_tree(ast_node_t* node) {
     if (node) {
         /* nuke the identifier node first */
         node->identifier_node = free_single_node(node->identifier_node);
-        /* then free up the actual ID */
+
+        /* free the identifier */
         vtr::free(node->types.identifier);
         node->types.identifier = NULL;
-        /* check the typ and free acordingly afterwards*/
-        switch (node->type) {
-            case NUMBERS:
-                if (node->types.vnumber != nullptr)
-                    delete node->types.vnumber;
-                node->types.vnumber = nullptr;
-                break;
 
-            case CONCATENATE:
-                for (int i = 0; i < node->types.concat.num_bit_strings; i++) {
-                    if (node->types.concat.bit_strings[i])
-                        vtr::free(node->types.concat.bit_strings[i]);
-                }
-                vtr::free(node->types.concat.bit_strings);
+        /* initialization vlalues */
+        if (node->types.variable.initial_value != nullptr)
+            delete node->types.variable.initial_value;
+        node->types.variable.initial_value = nullptr;
 
-            default:
-                break;
+        /* numbered values */
+        if (node->types.vnumber != nullptr)
+            delete node->types.vnumber;
+        node->types.vnumber = nullptr;
+
+        /* concats */
+        for (int i = 0; i < node->types.concat.num_bit_strings; i++) {
+            if (node->types.concat.bit_strings[i])
+                vtr::free(node->types.concat.bit_strings[i]);
         }
+        vtr::free(node->types.concat.bit_strings);
+        node->types.concat.bit_strings = NULL;
+        node->types.concat.num_bit_strings = 0;
     }
 }
 /*---------------------------------------------------------------------------
@@ -915,12 +922,14 @@ ast_node_t* ast_node_copy(ast_node_t* node) {
     }
 
     //Copy node
-    node_copy = (ast_node_t*)vtr::calloc(1, sizeof(ast_node_t));
+    node_copy = create_node_w_type(node->type, node->loc);
     memcpy(node_copy, node, sizeof(ast_node_t));
 
     //Copy contents
-    if (node->type == NUMBERS && node->types.vnumber)
+    if (node->types.vnumber)
         node_copy->types.vnumber = new VNumber((*node->types.vnumber));
+    if (node->types.variable.initial_value)
+        node_copy->types.variable.initial_value = new VNumber((*node->types.variable.initial_value));
 
     node_copy->types.identifier = vtr::strdup(node->types.identifier);
     node_copy->identifier_node = ast_node_deep_copy(node_copy->identifier_node);

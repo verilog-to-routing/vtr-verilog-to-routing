@@ -1259,7 +1259,6 @@ void create_symbol_table_for_scope(ast_node_t* module_items, sc_hierarchy* local
                     temp_string = make_full_ref_name(NULL, NULL, NULL, var_declare->identifier_node->types.identifier, -1);
                     /* look for that element */
                     sc_spot = sc_add_string(local_symbol_table_sc, temp_string);
-                    VNumber* init_value = get_init_value(var_declare->children[4]);
 
                     if (local_symbol_table_sc->data[sc_spot] != NULL) {
                         /* ERROR checks here
@@ -1276,19 +1275,13 @@ void create_symbol_table_for_scope(ast_node_t* module_items, sc_hierarchy* local
                         else if (var_declare->types.variable.is_output) {
                             /* copy all the reg and wire info over */
                             ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_output = true;
-
-                            /* check for an initial value and copy it over if found */
-                            ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.initial_value = init_value;
                         } else if ((var_declare->types.variable.is_reg) || (var_declare->types.variable.is_wire)
                                    || (var_declare->types.variable.is_genvar)) {
                             /* copy the output status over */
                             ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_wire = var_declare->types.variable.is_wire;
                             ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_reg = var_declare->types.variable.is_reg;
-
-                            /* check for an initial value and copy it over if found */
-                            ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.initial_value = init_value;
                         } else {
-                            abort();
+                            oassert(false && "invalid type");
                         }
                     } else {
                         /* store the data which is an idx here */
@@ -1299,10 +1292,13 @@ void create_symbol_table_for_scope(ast_node_t* module_items, sc_hierarchy* local
                         local_symbol_table[num_local_symbol_table] = (ast_node_t*)var_declare;
                         num_local_symbol_table++;
 
-                        /* check for an initial value and store it if found */
-                        var_declare->types.variable.initial_value = init_value;
                         module_items->children[i]->children[j] = NULL;
                     }
+
+                    /* check for an initial value and copy it over if found */
+                    VNumber* init_value = get_init_value(var_declare->children[4]);
+                    ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.initial_value = init_value;
+
                     vtr::free(temp_string);
 
                     remove_child_from_node_at_index(module_items->children[i], j);
@@ -1389,13 +1385,8 @@ VNumber* get_init_value(ast_node_t* node) {
     // by default it is always undefined
     VNumber* init_value = nullptr;
     // Initial value is always the last child, if one exists
-    if (node != NULL) {
-        if (node->type == NUMBERS) {
-            init_value = new VNumber(node->types.vnumber);
-        } else {
-            warning_message(NETLIST, node->loc,
-                            "%s", "Could not resolve initial assignment to a constant value, skipping\n");
-        }
+    if (node != NULL && node->types.vnumber != nullptr) {
+        init_value = new VNumber(node->types.vnumber);
     }
     return init_value;
 }
