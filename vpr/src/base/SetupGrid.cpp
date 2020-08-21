@@ -210,7 +210,8 @@ static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def>& grid_layo
         //Maximum device size reached
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "Device auto-fit aborted: device size already exceeds required resources count by %d times yet still cannot fit the design. "
-                        "This may be due to resources that do not grow as the grid size increases (e.g. PLLs in the Titan Stratix IV architecture capture).\n", MAX_SIZE_FACTOR);
+                        "This may be due to resources that do not grow as the grid size increases (e.g. PLLs in the Titan Stratix IV architecture capture).\n",
+                        MAX_SIZE_FACTOR);
 
     } else {
         VTR_ASSERT(auto_layout_itr == grid_layouts.end());
