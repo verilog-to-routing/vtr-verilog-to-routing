@@ -152,7 +152,9 @@ static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def>& grid_layo
 
         //Determine maximum device size to try before concluding that the circuit cannot fit on any device
         //Calculate total number of required instances
-        //Then multiply by a factor of 100 as overhead
+        //Then multiply by a factor of 10000 as overhead
+        //This is to avoid infinite loop if increasing the grid size never gets you more of the instance
+        //type you need and hence never lets you fit the design
         size_t max_size;
         size_t total_minimum_instance_counts = 0;
         for (auto& inst : minimum_instance_counts) {
