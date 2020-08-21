@@ -35,7 +35,7 @@ class MixingOpt {
      * @brief Construct a new Mixing Opt object for disabled optimization
      * usable for querying 'hardenable' condition
      */
-    MixingOpt() { _enabled = false; };
+    MixingOpt() { _enabled = false; }
 
     /**
      * @brief Construct a new Mixing Opt object
@@ -52,7 +52,7 @@ class MixingOpt {
     MixingOpt(float ratio, operation_list kind)
         : _kind(kind) {
         _ratio = ratio;
-    };
+    }
 
     /**
      * @brief Destroy the Mixing Opt object
@@ -158,7 +158,7 @@ class MultsOpt : public MixingOpt {
      * usable for querying 'hardenable' condition
      */
     MultsOpt()
-        : MixingOpt(){};
+        : MixingOpt() {}
 
     /**
      * @brief Construct a new Mults Opt object
