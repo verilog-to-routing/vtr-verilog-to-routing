@@ -1844,55 +1844,87 @@ void graphVizOutputAst_traverse_node(FILE* fp, ast_node_t* node, ast_node_t* fro
     int my_label = unique_label_count++;
     fprintf(fp, "\t%d [label=<", my_label);
 
-    if (node->identifier_node) {
-        fprintf(fp, "%s<br/>", node->identifier_node->types.identifier);
-    }
-    fprintf(fp, "%s", ids_STR[node->type]);
     switch (node->type) {
         case VAR_DECLARE: {
-            std::stringstream temp;
-            if (node->types.variable.is_input) temp << " INPUT";
-            if (node->types.variable.is_output) temp << " OUTPUT";
-            if (node->types.variable.is_inout) temp << " INOUT";
-            if (node->types.variable.is_port) temp << " PORT";
-            if (node->types.variable.is_parameter) temp << " PARAMETER";
-            if (node->types.variable.is_wire) temp << " WIRE";
-            if (node->types.variable.is_reg) temp << " REG";
+            if (node->types.variable.is_input)
+                fprintf(fp, " input");
+            else if (node->types.variable.is_output)
+                fprintf(fp, " output");
+            else if (node->types.variable.is_inout)
+                fprintf(fp, " inout");
+            else if (node->types.variable.is_parameter)
+                fprintf(fp, " parameter");
 
-            fprintf(fp, ": %s", temp.str().c_str());
+            if (node->types.variable.is_wire)
+                fprintf(fp, " wire");
+            else if (node->types.variable.is_reg)
+                fprintf(fp, " reg");
+
+            oassert(node->identifier_node != NULL);
+            fprintf(fp, " %s", node->identifier_node->types.identifier);
+
             break;
         }
         case NUMBERS:
-            fprintf(fp, ": %s (%s)",
+            fprintf(fp, " %s<br/>%s",
                     node->types.vnumber->to_vstring('h').c_str(),
-                    node->types.vnumber->to_vstring('s').c_str());
+                    node->types.vnumber->to_vstring('b').c_str());
             break;
 
         case UNARY_OPERATION: //fallthrough
         case BINARY_OPERATION:
-            fprintf(fp, ": %s", name_based_on_op(node->types.operation.op));
+            fprintf(fp, " %s", name_based_on_op(node->types.operation.op));
             break;
 
         case IDENTIFIERS:
-            fprintf(fp, ": %s", node->types.identifier);
+            oassert(node->types.identifier);
+            fprintf(fp, " %s", node->types.identifier);
             break;
 
         default:
+            fprintf(fp, " %s", ids_STR[node->type]);
+            if (node->identifier_node) {
+                fprintf(fp, "<br/>%s", node->identifier_node->types.identifier);
+            }
             break;
     }
+
     fprintf(fp, ">];\n");
 
     /* print out the connection with the previous node */
     if (from != NULL) {
         fprintf(fp, "\t%d -> %d;\n", from_num, my_label);
     }
-    //if (node->identifier_node) {
-    //   graphVizOutputAst_traverse_node(fp, node->identifier_node, node, my_label, 1);
-    //}
-    for (long i = 0; i < node->num_children; i++) {
-        graphVizOutputAst_traverse_node(fp, node->children[i], node, my_label);
+
+    if (node->type == VAR_DECLARE) {
+        graphVizOutputAst_Var_Declare(fp, node, my_label);
+    } else {
+        for (long i = 0; i < node->num_children; i++) {
+            graphVizOutputAst_traverse_node(fp, node->children[i], node, my_label);
+        }
     }
 }
+
+/*---------------------------------------------------------------------------------------------
+ * (function: graphVizOutputAst_Var_Declare)
+ *-------------------------------------------------------------------------------------------*/
+void graphVizOutputAst_Var_Declare(FILE* fp, ast_node_t* node, int from_num) {
+    for (int i = 0; i < 4; i += 2) {
+        /* range come in pairs so we go two at a time */
+        if (node->children[i] && node->children[i + 1]) {
+            /* increase the unique count for other nodes since ours is recorded */
+            int my_label = unique_label_count++;
+            fprintf(fp,
+                    "\t%d [label=<RANGE_REF>];\n"
+                    "\t%d -> %d;\n",
+                    my_label, from_num, my_label);
+
+            graphVizOutputAst_traverse_node(fp, node->children[i], node, my_label);
+            graphVizOutputAst_traverse_node(fp, node->children[i + 1], node, my_label);
+        }
+    }
+}
+
 /*---------------------------------------------------------------------------------------------
  * (function: newVarDeclare) for 2D Array
  *-------------------------------------------------------------------------------------------*/
