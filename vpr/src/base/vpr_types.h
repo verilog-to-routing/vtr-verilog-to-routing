@@ -706,8 +706,25 @@ struct t_block_loc {
 
 ///@brief Stores the clustered blocks placed at a particular grid location
 struct t_grid_blocks {
-    int usage;                          ///<How many valid blocks are in use at this location
-    std::vector<ClusterBlockId> blocks; ///<The clustered blocks associated with this grid location
+    int usage; ///<How many valid blocks are in use at this location
+
+    /**
+     * @brief The clustered blocks associated with this grid location.
+     *
+     * Index range: [0..device_ctx.grid[x_loc][y_loc].type->capacity]
+     */
+    std::vector<ClusterBlockId> blocks;
+
+    /**
+     * @brief Test if a subtile at a grid location is occupied by a block.
+     *
+     * Returns true if the subtile corresponds to the passed-in id is not
+     * occupied by a block at this grid location. The subtile id serves
+     * as the z-dimensional offset in the grid indexing.
+     */
+    inline bool subtile_empty(size_t isubtile) {
+        return blocks[isubtile] == EMPTY_BLOCK_ID;
+    }
 };
 
 ///@brief Names of various files
