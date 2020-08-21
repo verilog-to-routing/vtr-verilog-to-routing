@@ -55,6 +55,8 @@ void log_overused_nodes_status(int max_logged_overused_rr_nodes) {
  *
  * Print all the overused RR nodes' info in the report file report_overused_nodes.rpt.
  * The report generation is turned on by the VPR option: --generate_rr_node_overuse_report on.
+ * This report will be generated only if the last routing attempt fails, which
+ * causes the whole VPR flow to fail.
  */
 void report_overused_nodes() {
     const auto& device_ctx = g_vpr_ctx.device();
@@ -166,9 +168,9 @@ static void report_overused_ipin_opin(std::ostream& os, RRNodeId node_id) {
     os << "Number of blocks currently occupying this grid location = " << grid_info.usage << '\n';
 
     size_t iblock = 0;
-    for (size_t isubtile = 0; isubtile < grid_blocks.size(); ++isubtile) {
-        //Check if the block is empty
-        if (grid_info.subtile_empty[isubtile]) {
+    for (size_t isubtile = 0; isubtile < grid_info.blocks.size(); ++isubtile) {
+        //Check if there is a valid block at this subtile location
+        if (grid_info.subtile_empty(isubtile)) {
             continue;
         }
 

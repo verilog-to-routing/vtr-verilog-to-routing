@@ -722,7 +722,7 @@ struct t_grid_blocks {
      * occupied by a block at this grid location. The subtile id serves
      * as the z-dimensional offset in the grid indexing.
      */
-    inline bool subtile_empty(size_t isubtile) {
+    inline bool subtile_empty(size_t isubtile) const {
         return blocks[isubtile] == EMPTY_BLOCK_ID;
     }
 };
