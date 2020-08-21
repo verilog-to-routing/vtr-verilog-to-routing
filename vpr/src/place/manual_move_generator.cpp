@@ -6,7 +6,7 @@ int block_id;
 
 void mmg_get_manual_move_info(ManualMoveInfo mmi) {
     block_id = mmi.block_id;
-    to = t_pl_loc(mmi.to_x, mmi.to_y, mmi.subtile);   
+    to = t_pl_loc(mmi.to_x, mmi.to_y, mmi.subtile);
 }
 
 e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim) {
@@ -22,7 +22,6 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
     auto grid_from_type = g_vpr_ctx.device().grid[from.x][from.y].type;
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
-
 
     if (!find_to_loc_uniform(cluster_from_type, rlim, from, to)) {
         return e_create_move::ABORT;

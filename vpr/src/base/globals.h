@@ -19,7 +19,7 @@ struct ManualMoveInfo {
     int to_x;
     int to_y;
     int subtile = 0;
-    double delta_c = 0; 
+    double delta_c = 0;
     double bb_delta_c = 0;
     double timing_delta_c = 0;
     t_user_move_outcome move_outcome;

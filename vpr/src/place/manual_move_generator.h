@@ -6,8 +6,8 @@
 void mmg_get_manual_move_info(ManualMoveInfo mmi);
 
 class ManualMoveGenerator : public MoveGenerator {
-    public:
-        e_create_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float rlim);
+  public:
+    e_create_move propose_move(t_pl_blocks_to_be_moved& affected_blocks, float rlim);
 };
 
 #endif
