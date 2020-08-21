@@ -1690,8 +1690,6 @@
         "test_name": "syntax/matrix_multiplication/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "matrix_multiplication.v",
-        "exit": 1,
-        "leaks": 4,
         "warnings": [
             "matrix_multiplication.v:120:1 [NETLIST] indexing into memory with matrix_multiplication has larger input than memory. Unused pins:",
             "matrix_multiplication.v:121:1 [NETLIST] indexing into memory with matrix_multiplication has larger input than memory. Unused pins:",
@@ -1707,13 +1705,24 @@
             "matrix_multiplication.v:166:16 [NETLIST] Net (null) driving node matrix_multiplication^nMUX~49^MUX_2~318 is itself undriven.",
             "matrix_multiplication.v:69:8 [NETLIST] Net matrix_multiplication^data_out~16 driving node matrix_multiplication^data_out~16 is itself undriven.",
             "matrix_multiplication.v:69:8 [NETLIST] Net matrix_multiplication^data_out~17 driving node matrix_multiplication^data_out~17 is itself undriven."
-        ]
+        ],
+        "Latch Drivers": 1,
+        "Pi": 2,
+        "Po": 18,
+        "logic element": 123,
+        "latch": 38,
+        "Adder": 6,
+        "Multiplier": 0,
+        "Memory": 16,
+        "generic logic size": 4,
+        "Longest Path": 27,
+        "Average Path": 3,
+        "Estimated LUTs": 125,
+        "Total Node": 184
     },
     "syntax/matrix_multiplication/no_arch": {
         "test_name": "syntax/matrix_multiplication/no_arch",
         "verilog": "matrix_multiplication.v",
-        "exit": 1,
-        "leaks": 4,
         "warnings": [
             "matrix_multiplication.v:120:1 [NETLIST] indexing into memory with matrix_multiplication has larger input than memory. Unused pins:",
             "matrix_multiplication.v:121:1 [NETLIST] indexing into memory with matrix_multiplication has larger input than memory. Unused pins:",
@@ -1729,7 +1738,16 @@
             "matrix_multiplication.v:166:16 [NETLIST] Net (null) driving node matrix_multiplication^nMUX~49^MUX_2~6774 is itself undriven.",
             "matrix_multiplication.v:69:8 [NETLIST] Net matrix_multiplication^data_out~16 driving node matrix_multiplication^data_out~16 is itself undriven.",
             "matrix_multiplication.v:69:8 [NETLIST] Net matrix_multiplication^data_out~17 driving node matrix_multiplication^data_out~17 is itself undriven."
-        ]
+        ],
+        "Latch Drivers": 1,
+        "Pi": 2,
+        "Po": 18,
+        "logic element": 1004,
+        "latch": 294,
+        "Longest Path": 48,
+        "Average Path": 4,
+        "Estimated LUTs": 1004,
+        "Total Node": 1299
     },
     "syntax/memlooptesting/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/memlooptesting/k6_frac_N10_frac_chain_mem32K_40nm",
