@@ -24,24 +24,24 @@
 
 /********************** Variables local to this module ***********************/
 
-/* Unordered map below stores the pair whose key is the index of the rr_node *
- * that corresponds to the rt_node, and whose value is the time delay        *
- * associated with that node. The map will be used to store delays while     *
- * traversing the nodes of the route tree in load_one_net_delay_recurr.      */
+/* Unordered map below stores the pair whose key is either the index of the   *
+ * rr_node or the pin that corresponds to the rt_node, and whose value is the *
+ * time delay associated with that node. The map will be used to store delays *
+ * while traversing the nodes of the route tree in load_one_net_delay_recurr. */
 
-static std::unordered_map<int, float> inode_to_Tdel_map;
+static std::unordered_map<int, float> index_to_Tdel_map;
 
 /*********************** Subroutines local to this module ********************/
 
-static void load_one_net_delay(ClbNetPinsMatrix<float>& net_delay, ClusterNetId net_id);
+static void load_one_net_delay(ClbNetPinsMatrix<float>& net_delay, ClusterNetId net_id, bool analysis);
 
-static void load_one_net_delay_recurr(t_rt_node* node, ClusterNetId net_id);
+static void load_one_net_delay_recurr(t_rt_node* node, ClusterNetId net_id, bool analysis);
 
 static void load_one_constant_net_delay(ClbNetPinsMatrix<float>& net_delay, ClusterNetId net_id, float delay_value);
 
 /*************************** Subroutine definitions **************************/
 
-void load_net_delay_from_routing(ClbNetPinsMatrix<float>& net_delay) {
+void load_net_delay_from_routing(ClbNetPinsMatrix<float>& net_delay, bool analysis) {
     /* This routine loads net_delay[0..nets.size()-1][1..num_pins-1].  Each entry   *
      * is the Elmore delay from the net source to the appropriate sink. Both       *
      * the rr_graph and the routing traceback must be completely constructed        *
@@ -53,12 +53,12 @@ void load_net_delay_from_routing(ClbNetPinsMatrix<float>& net_delay) {
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
             load_one_constant_net_delay(net_delay, net_id, 0.);
         } else {
-            load_one_net_delay(net_delay, net_id);
+            load_one_net_delay(net_delay, net_id, analysis);
         }
     }
 }
 
-static void load_one_net_delay(ClbNetPinsMatrix<float>& net_delay, ClusterNetId net_id) {
+static void load_one_net_delay(ClbNetPinsMatrix<float>& net_delay, ClusterNetId net_id, bool analysis) {
     /* This routine loads delay values for one net in                            *
      * net_delay[net_id][1..num_pins-1]. First, from the traceback, it           *
      * constructs the route tree and computes its values for R, C, and Tdel.     *
@@ -66,7 +66,7 @@ static void load_one_net_delay(ClbNetPinsMatrix<float>& net_delay, ClusterNetId 
      * each node into the map inode_to_Tdel. Then, while looping through the     *
      * net_delay array we search for the inode corresponding to the pin          * 
      * identifiers, and correspondingly update the entry in net_delay.           *
-     * Finally, it frees the route tree and clears the inode_to_Tdel_map         *
+     * Finally, it frees the route tree and clears the index_to_Tdel_map         *
      * associated with that net.                                                 */
 
     auto& route_ctx = g_vpr_ctx.routing();
@@ -83,26 +83,35 @@ static void load_one_net_delay(ClbNetPinsMatrix<float>& net_delay, ClusterNetId 
     load_new_subtree_R_upstream(rt_root);                 // load in the resistance values for the route tree
     load_new_subtree_C_downstream(rt_root);               // load in the capacitance values for the route tree
     load_route_tree_Tdel(rt_root, 0.);                    // load the time delay values for the route tree
-    load_one_net_delay_recurr(rt_root, net_id);           // recursively traverse the tree and load entries into the inode_to_Tdel map
+    load_one_net_delay_recurr(rt_root, net_id, analysis);           // recursively traverse the tree and load entries into the inode_to_Tdel map
 
     for (unsigned int ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
         inode = route_ctx.net_rr_terminals[net_id][ipin]; // look for the index of the rr node that corresponds to the sink that was used to route a certain connection.
-        auto itr = inode_to_Tdel_map.find(inode);
-        VTR_ASSERT(itr != inode_to_Tdel_map.end());
+        std::unordered_map<int, float>::iterator itr;
+        if (analysis) {
+            itr = index_to_Tdel_map.find(inode);
+        } else {
+            itr = index_to_Tdel_map.find(ipin);
+        }
+        VTR_ASSERT(itr != index_to_Tdel_map.end());
 
         net_delay[net_id][ipin] = itr->second; // search for the value of Tdel in the inode map and load into net_delay
     }
     free_route_tree(rt_root);  // free the route tree
-    inode_to_Tdel_map.clear(); // clear the map
+    index_to_Tdel_map.clear(); // clear the map
 }
 
-static void load_one_net_delay_recurr(t_rt_node* node, ClusterNetId net_id) {
+static void load_one_net_delay_recurr(t_rt_node* node, ClusterNetId net_id, bool analysis) {
     /* This routine recursively traverses the route tree, and copies the Tdel of the node into the map.  */
 
-    inode_to_Tdel_map[node->inode] = node->Tdel; // add to the map, process current node
+    if (analysis) {
+        index_to_Tdel_map[node->inode] = node->Tdel; // add node index to the map, process current node during analysis
+    } else {
+        index_to_Tdel_map[node->ipin] = node->Tdel; // add pin index to the map, process current node during timing driven route net
+    }
 
     for (t_linked_rt_edge* edge = node->u.child_list; edge != nullptr; edge = edge->next) { // process children
-        load_one_net_delay_recurr(edge->child, net_id);
+        load_one_net_delay_recurr(edge->child, net_id, analysis);
     }
 }
 

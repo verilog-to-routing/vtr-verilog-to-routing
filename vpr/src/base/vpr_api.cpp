@@ -852,7 +852,7 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
 
     if (vpr_setup.Timing.timing_analysis_enabled) {
         //Update timing info
-        load_net_delay_from_routing(net_delay);
+        load_net_delay_from_routing(net_delay, true);
 
         timing_info->update();
     }
@@ -1216,7 +1216,7 @@ void vpr_analysis(t_vpr_setup& vpr_setup, const t_arch& Arch, const RouteStatus&
         auto& cluster_ctx = g_vpr_ctx.clustering();
 
         ClbNetPinsMatrix<float> net_delay = make_net_pins_matrix<float>(cluster_ctx.clb_nlist);
-        load_net_delay_from_routing(net_delay);
+        load_net_delay_from_routing(net_delay, true);
 
         //Do final timing analysis
         auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay);
