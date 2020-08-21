@@ -466,7 +466,7 @@ def load_config_lines(filepath, allow_includes=True):
                 else:
                     config_lines.append(line)
     except IOError as error:
-        raise InspectError("Error opening config file ({})".format(error))
+        raise InspectError("Error opening config file ({})".format(error)) from error
 
     return config_lines
 
