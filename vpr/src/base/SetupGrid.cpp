@@ -24,6 +24,8 @@
 #include "SetupGrid.h"
 #include "vtr_expr_eval.h"
 
+#define MAX_SIZE_FACTOR 10000
+
 using vtr::FormulaParser;
 using vtr::t_formula_data;
 
@@ -152,7 +154,7 @@ static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def>& grid_layo
 
         //Determine maximum device size to try before concluding that the circuit cannot fit on any device
         //Calculate total number of required instances
-        //Then multiply by a factor of 10000 as overhead
+        //Then multiply by a factor of MAX_SIZE_FACTOR as overhead
         //This is to avoid infinite loop if increasing the grid size never gets you more of the instance
         //type you need and hence never lets you fit the design
         size_t max_size;
@@ -161,7 +163,7 @@ static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def>& grid_layo
             size_t count = inst.second;
             total_minimum_instance_counts += count;
         }
-        max_size = total_minimum_instance_counts * 10000;
+        max_size = total_minimum_instance_counts * MAX_SIZE_FACTOR;
 
         const auto& grid_def = *auto_layout_itr;
         VTR_ASSERT(grid_def.aspect_ratio >= 0.);
@@ -207,8 +209,8 @@ static DeviceGrid auto_size_device_grid(const std::vector<t_grid_def>& grid_layo
 
         //Maximum device size reached
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                        "Device auto-fit aborted: device size already exceeds required resources count by 100 times yet still cannot fit the design. "
-                        "Might be using more instances of a particular type of resource than the StratixIV devices can support (e.g. PLLs)\n");
+                        "Device auto-fit aborted: device size already exceeds required resources count by %d times yet still cannot fit the design. "
+                        "This may be due to resources that do not grow as the grid size increases (e.g. PLLs in the Titan Stratix IV architecture capture).\n", MAX_SIZE_FACTOR);
 
     } else {
         VTR_ASSERT(auto_layout_itr == grid_layouts.end());
