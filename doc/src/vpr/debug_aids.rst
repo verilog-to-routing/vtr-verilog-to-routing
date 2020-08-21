@@ -121,12 +121,12 @@ First, you should make sure the manual move option is enabled, as seen in the fi
 .. image:: https://www.verilogtorouting.org/img/manualMoveCheckbox.png
     :align: center
     
-Then after pressing the “Proceed” button a window pops up that asks for the block you want to move, and the location you would want to move it to. 
+Then after pressing the “Proceed” button a window pops up that asks for the block you want to move, and the location you want to move it to. 
 
 .. image:: https://www.verilogtorouting.org/img/manualMoveWindow.png
     :align: center
     
-By pressing the “calculate costs” button you can see all the costs of your move, as well as the placer’s move_outcome and then decide to reject or accept the move. 
+If your move is legal, by pressing the “calculate costs” button you can see all the costs of your move, and then decide to reject or accept the move. The window will also indicate the placer's move_outcome, as in whether the placer would choose to accept or reject the move. If your proposed move is invalid however, a window pops up showing you the error (i.e x value out of bounds) and you can try again. Your move won't be passed into the placer until valid.
 
 .. image:: https://www.verilogtorouting.org/img/moveCosts.png
     :align: center
@@ -141,4 +141,4 @@ You can choose the block you want to move by entering its block id or block name
 Selecting the to location
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The “to location” of your move consists of the x location, y location, and subtile. If you’re unsure of the subtile value input 0.
+The “to location” of your move consists of the x location, y location, and subtile. If you’re unsure of the subtile value input 0, as most (x,y) locations in most devices have only a single subtile.
