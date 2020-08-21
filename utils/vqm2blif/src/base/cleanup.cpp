@@ -240,11 +240,42 @@ void add_subckts (t_node** nodes, int num_nodes, busvec* buses, struct s_hash** 
 
 void remove_one_lut_nodes ( busvec* buses, struct s_hash** hash_table, t_node** nodes, int original_num_nodes, t_module* module ){
 /*
-	Go through all nodes, if a node's source net is the sink of a one-LUT, there are two cases:
-	  1. The one-LUT has an input and an output:
-             Re-associate the node with the source net of the one-LUT, then remove the one-LUT and the node's original source net
-	  2. The one-LUT just has an output (provides VCC to its sink):
-             Re-associate the node with the VCC net, then remove the one-LUT and the node's original source net
+        Quartus fitter may have introduced some one-LUTs in the post-fit netlist that makes it harder for VPR to place and route.
+        For Stratix IV, the names of these one-LUTs all end with the substring "feeder". This function serves to remove the feeder
+        one LUTs from the netlist, if they exist, before converting it into the BLIF file format.
+
+	Go through all nodes, if a node's source net is driven by a one-LUT-type node and if this source net only has one
+        child (the node itself):
+
+	  1. If the one-LUT has an input and an output (signal passthrough):
+             Re-associate the node's input port with the source net of the one-LUT, then remove the one-LUT and the node's original
+             source net.
+
+             -----                -------                 -----
+             | X |---> net m ---> | LUT | ---> net n ---> | Y |
+             -----                -------                 -----
+
+             becomes
+
+             -----                -----
+             | X |---> net m ---> | Y |
+             -----                -----
+
+	  2. If the one-LUT has just an output (feeds VCC downstream):
+             Re-associate the node with the VCC net, then remove the one-LUT and the node's original source net.
+
+             -------                 -----
+             | LUT | ---> net m ---> | Y |
+             -------                 -----
+
+             becomes
+
+             -------                    -----
+             | VCC |---> net v -------> | Y |
+             -------            |       -----
+                                ---->
+                                |
+                                ---->
 */
 	oneluts_elim = 0;
 
