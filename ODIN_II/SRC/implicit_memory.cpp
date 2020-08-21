@@ -125,7 +125,7 @@ implicit_memory* create_implicit_memory_block(int data_width, long memory_depth,
     node->name = hard_node_name(node, instance_name_prefix, implicit_string, name);
 
     // Create a fake ast node.
-    node->related_ast_node = (ast_node_t*)vtr::calloc(1, sizeof(ast_node_t));
+    node->related_ast_node = create_node_w_type(RAM, node->loc);
     node->related_ast_node->children = (ast_node_t**)vtr::calloc(1, sizeof(ast_node_t*));
     node->related_ast_node->identifier_node = create_tree_node_id(vtr::strdup(DUAL_PORT_RAM_string), loc);
 
