@@ -49,6 +49,8 @@ def run(
         check_incremental_sta_consistency=False,
         use_old_abc_script=False,
         relax_w_factor=1.3,
+        check_route = False,
+        check_place = False,
 ):
     """
     Runs the VTR CAD flow to map the specified circuit_file onto the target architecture_file
@@ -249,7 +251,7 @@ def run(
         # Copy the input netlist for input to vpr
         shutil.copyfile(str(next_stage_netlist), str(pre_vpr_netlist))
         route_fixed_w = "route_chan_width" in vpr_args
-        if ("route" in vpr_args or "place" in vpr_args) and not route_fixed_w:
+        if (check_route or check_place) and not route_fixed_w:
             vpr_args["route_chan_width"] = 300
             route_fixed_w = True
 
@@ -258,16 +260,8 @@ def run(
             do_second_run = False
             second_run_args = vpr_args
 
-            if "write_rr_graph" in vpr_args:
+            if "write_rr_graph" in vpr_args or  "analysis" in vpr_args or "route" in vpr_args:
                 do_second_run = True
-
-            if "analysis" in vpr_args:
-                do_second_run = True
-                del vpr_args["analysis"]
-
-            if "route" in vpr_args:
-                do_second_run = True
-                del vpr_args["route"]
 
             vtr.vpr.run(
                 architecture_copy,
@@ -285,6 +279,10 @@ def run(
                     if "write_rr_graph" in second_run_args
                     else ".xml"
                 )
+                if check_place:
+                    second_run_args["route"] = True
+                if check_route:
+                    second_run_args["analysis"] = True
                 vtr.vpr.run_second_time(
                     architecture_copy,
                     pre_vpr_netlist,
