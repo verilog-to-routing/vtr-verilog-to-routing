@@ -58,10 +58,6 @@ using std::min;
  * cost computation. 0.01 means that there is a 1% error tolerance.       */
 #define ERROR_TOL .01
 
-/* The final rlim (range limit) is 1, which is the smallest value that can *
- * still make progress, since an rlim of 0 wouldn't allow any swaps.       */
-#define FINAL_RLIM 1
-
 /* This defines the maximum number of swap attempts before invoking the   *
  * once-in-a-while placement legality check as well as floating point     *
  * variables round-offs check.                                            */
@@ -90,104 +86,6 @@ struct t_placer_statistics {
     double av_cost, av_bb_cost, av_timing_cost,
         sum_of_squares;
     int success_sum;
-};
-
-/**
- * @brief Data structure that stores different cost values in the placer.
- *
- * Although we do cost calculations with float values, we use doubles
- * for the accumulated costs to avoid round-off, particularly on large
- * designs where the magnitude of a single move's delta cost is small
- * compared to the overall cost.
- *
- * The cost normalization factors are updated upon every temperature change
- * in the outer_loop_update_timing_info routine. They are the multiplicative
- * inverses of their respective cost values when the routine is called. They
- * serve to normalize the trade-off between timing and wirelength (bb).
- *
- *   @param cost The weighted average of the wiring cost and the timing cost.
- *   @param bb_cost The bounding box cost, aka the wiring cost.
- *   @param timing_cost The timing cost, which is connection delay * criticality.
- *
- *   @param bb_cost_norm The normalization factor for the wiring cost.
- *   @param timing_cost_norm The normalization factor for the timing cost, which
- *              is upper-bounded by the value of MAX_INV_TIMING_COST.
- *
- *   @param MAX_INV_TIMING_COST Stops inverse timing cost from going to infinity
- *              with very lax timing constraints, which avoids multiplying by a
- *              gigantic timing_cost_norm when auto-normalizing. The exact value
- *              of this cost has relatively little impact, but should not be large
- *              enough to be on the order of timing costs for normal constraints.
- *
- *   @param place_algorithm Determines how the member values are updated upon
- *              each temperature change during the placer annealing process.
- */
-class t_placer_costs {
-  public:
-    double cost;
-    double bb_cost;
-    double timing_cost;
-    double bb_cost_norm;
-    double timing_cost_norm;
-
-  private:
-    static constexpr double MAX_INV_TIMING_COST = 1.e9;
-    enum e_place_algorithm place_algorithm;
-
-  public:
-    ///@brief Constructor that takes in the current placer algorithm.
-    t_placer_costs(enum e_place_algorithm algo)
-        : place_algorithm(algo) {
-        if (place_algorithm != PATH_TIMING_DRIVEN_PLACE) {
-            VTR_ASSERT_MSG(
-                place_algorithm == BOUNDING_BOX_PLACE,
-                "Must pass a valid placer algorithm into the placer cost structure.");
-        }
-    }
-
-    /**
-     * @brief Mutator: updates the norm factors in the outer loop.
-     *
-     * At each temperature change we update these values to be used
-     * for normalizing the trade-off between timing and wirelength (bb)
-     */
-    void update_norm_factors() {
-        if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-            bb_cost_norm = 1 / bb_cost;
-            //Prevent the norm factor from going to infinity
-            timing_cost_norm = std::min(1 / timing_cost, MAX_INV_TIMING_COST);
-            cost = 1;       //The value of cost will be reset to 1 if timing driven
-        } else {            //place_algorithm == BOUNDING_BOX_PLACE
-            cost = bb_cost; //The cost value should be identical to the wirelength cost
-        }
-    }
-};
-
-/**
- * @brief Stores variables that are used by the annealing process.
- *
- * This structure is updated by update_annealing_state() on each outer
- * loop iteration. It stores various important variables that need to
- * be accessed during the placement inner loop.
- *
- *   @param t Temperature for simulated annealing.
- *   @param rlim Range limit for block swaps.
- *   @param inverse_delta_rlim Used to update crit_exponent.
- *   @param alpha Temperature decays factor (multiplied each outer loop iteration).
- *   @param restart_t Temperature used after restart due to minimum success ratio.
- *   @param crit_exponent Used by timing-driven placement to "sharpen" the timing criticality.
- *   @param move_lim_max Maximum block move limit.
- *   @param move_lim Current block move limit.
- */
-struct t_annealing_state {
-    float t;
-    float rlim;
-    float inverse_delta_rlim;
-    float alpha;
-    float restart_t;
-    float crit_exponent;
-    int move_lim_max;
-    int move_lim;
 };
 
 struct t_placer_timing_update_mode {
@@ -593,11 +491,7 @@ static void print_place_status(const size_t num_temps,
                                size_t tot_moves);
 static void print_resources_utilization();
 
-static void init_annealing_state(t_annealing_state* state, const t_annealing_sched& annealing_sched, float t, float rlim, int move_lim_max, float crit_exponent);
-
 static e_place_algorithm get_placement_quench_algorithm(const t_placer_opts& placer_opts);
-
-static int get_initial_move_lim(const t_placer_opts& placer_opts, const t_annealing_sched& annealing_sched);
 
 /*****************************************************************************/
 void try_place(const t_placer_opts& placer_opts,
@@ -822,8 +716,8 @@ void try_place(const t_placer_opts& placer_opts,
     /* when trying to determine the starting temp for placement inner loop. */
     float first_t = HUGE_POSITIVE_FLOAT;
 
-    t_annealing_state state;
-    init_annealing_state(&state, annealing_sched, first_t, first_rlim, first_move_lim, first_crit_exponent);
+    /* Initialize annealing state variables */
+    t_annealing_state state(annealing_sched, first_t, first_rlim, first_move_lim, first_crit_exponent);
 
     /* Update the starting temperature for placement annealing to a more appropriate value */
     state.t = starting_t(&state,
@@ -1449,7 +1343,7 @@ static bool update_annealing_state(t_annealing_state* state,
     update_rlim(&state->rlim, success_rat, device_ctx.grid);
 
     if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-        state->crit_exponent = (1 - (state->rlim - FINAL_RLIM) * state->inverse_delta_rlim)
+        state->crit_exponent = (1 - (state->rlim - state->final_rlim()) * state->inverse_delta_rlim)
                                    * (placer_opts.td_place_exp_last - placer_opts.td_place_exp_first)
                                + placer_opts.td_place_exp_first;
     }
@@ -3313,26 +3207,6 @@ static void print_resources_utilization() {
     VTR_LOG("\n");
 }
 
-static void init_annealing_state(t_annealing_state* state,
-                                 const t_annealing_sched& annealing_sched,
-                                 float t,
-                                 float rlim,
-                                 int move_lim_max,
-                                 float crit_exponent) {
-    state->alpha = annealing_sched.alpha_min;
-    state->t = t;
-    state->restart_t = t;
-    state->rlim = rlim;
-    state->inverse_delta_rlim = 1 / (rlim - FINAL_RLIM);
-    state->move_lim_max = std::max(1, move_lim_max);
-    if (annealing_sched.type == DUSTY_SCHED) {
-        state->move_lim = std::max(1, (int)(state->move_lim_max * annealing_sched.success_target));
-    } else {
-        state->move_lim = state->move_lim_max;
-    }
-    state->crit_exponent = crit_exponent;
-}
-
 static e_place_algorithm get_placement_quench_algorithm(const t_placer_opts& placer_opts) {
     e_place_algorithm place_algo = placer_opts.place_algorithm;
     e_place_quench_metric quench_metric = placer_opts.place_quench_metric;
@@ -3352,45 +3226,4 @@ static e_place_algorithm get_placement_quench_algorithm(const t_placer_opts& pla
 
 bool placer_needs_lookahead(const t_vpr_setup& vpr_setup) {
     return (vpr_setup.PlacerOpts.place_algorithm == PATH_TIMING_DRIVEN_PLACE);
-}
-
-/**
- * @brief Get the initial limit for inner loop block move attempt limit.
- *
- * There are two ways to scale the move limit.
- * e_place_effort_scaling::CIRCUIT
- *      scales the move limit proportional to num_blocks ^ (4/3)
- * e_place_effort_scaling::DEVICE_CIRCUIT
- *      scales the move limit proportional to device_size ^ (2/3) * num_blocks ^ (2/3)
- *
- * The second method is almost identical to the first one when the device
- * is highly utilized (device_size ~ num_blocks). For low utilization devices
- * (device_size >> num_blocks), the search space is larger, so the second method
- * performs more moves to ensure better optimization.
- */
-
-static int get_initial_move_lim(const t_placer_opts& placer_opts, const t_annealing_sched& annealing_sched) {
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    auto device_size = device_ctx.grid.width() * device_ctx.grid.height();
-    auto num_blocks = cluster_ctx.clb_nlist.blocks().size();
-
-    int move_lim;
-    if (placer_opts.effort_scaling == e_place_effort_scaling::CIRCUIT) {
-        move_lim = int(annealing_sched.inner_num * pow(num_blocks, 4. / 3.));
-    } else {
-        VTR_ASSERT_MSG(
-            placer_opts.effort_scaling == e_place_effort_scaling::DEVICE_CIRCUIT,
-            "Unrecognized placer effort scaling");
-
-        move_lim = int(annealing_sched.inner_num * pow(device_size, 2. / 3.) * pow(num_blocks, 2. / 3.));
-    }
-
-    /* Avoid having a non-positive move_lim */
-    move_lim = std::max(move_lim, 1);
-
-    VTR_LOG("Moves per temperature: %d\n", move_lim);
-
-    return move_lim;
 }
