@@ -1,3 +1,9 @@
+/**
+ * @file
+ * @brief This file contains all the class and function declarations related to
+ *        the placer delay model. For implementations, see place_delay_model.cpp.
+ */
+
 #ifndef PLACE_DELAY_MODEL_H
 #define PLACE_DELAY_MODEL_H
 
@@ -20,12 +26,30 @@
 #    define ALWAYS_INLINE inline
 #endif
 
-//Abstract interface to a placement delay model
+///@brief Forward declarations.
+class PlaceDelayModel;
+
+///@brief Initialize the placer delay model.
+std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(t_chan_width_dist chan_width_dist,
+                                                               const t_placer_opts& place_opts,
+                                                               const t_router_opts& router_opts,
+                                                               t_det_routing_arch* det_routing_arch,
+                                                               std::vector<t_segment_inf>& segment_inf,
+                                                               const t_direct_inf* directs,
+                                                               const int num_directs);
+
+///@brief Returns the delay of one point to point connection.
+float comp_td_single_connection_delay(const PlaceDelayModel* delay_model, ClusterNetId net_id, int ipin);
+
+///@brief Recompute all point to point delays, updating `connection_delay` matrix.
+void comp_td_connection_delays(const PlaceDelayModel* delay_model);
+
+///@brief Abstract interface to a placement delay model.
 class PlaceDelayModel {
   public:
     virtual ~PlaceDelayModel() = default;
 
-    // Computes place delay model.
+    ///@brief Computes place delay model.
     virtual void compute(
         RouterDelayProfiler& route_profiler,
         const t_placer_opts& placer_opts,
@@ -33,25 +57,32 @@ class PlaceDelayModel {
         int longest_length)
         = 0;
 
-    //Returns the delay estimate between the specified block pins
-    //
-    // Either compute or read methods must be invoked before invoking
-    // delay.
+    /**
+     * @brief Returns the delay estimate between the specified block pins.
+     *
+     * Either compute or read methods must be invoked before invoking delay.
+     */
     virtual float delay(int from_x, int from_y, int from_pin, int to_x, int to_y, int to_pin) const = 0;
 
-    //Dumps the delay model to an echo file
+    ///@brief Dumps the delay model to an echo file.
     virtual void dump_echo(std::string filename) const = 0;
 
-    // Write place delay model to specified file.
-    // May be unimplemented, in which case method should throw an exception.
+    /**
+     * @brief Write place delay model to specified file.
+     *
+     * May be unimplemented, in which case method should throw an exception.
+     */
     virtual void write(const std::string& file) const = 0;
 
-    // Read place delay model from specified file.
-    // May be unimplemented, in which case method should throw an exception.
+    /**
+     * @brief Read place delay model from specified file.
+     *
+     * May be unimplemented, in which case method should throw an exception.
+     */
     virtual void read(const std::string& file) = 0;
 };
 
-//A simple delay model based on the distance (delta) between block locations
+///@brief A simple delay model based on the distance (delta) between block locations.
 class DeltaDelayModel : public PlaceDelayModel {
   public:
     DeltaDelayModel() {}
@@ -109,10 +140,13 @@ class OverrideDelayModel : public PlaceDelayModel {
         short delta_x;
         short delta_y;
 
-        //A combination of ALWAYS_INLINE attribute and std::lexicographical_compare
-        //is required for operator< to be inlined by compiler.
-        //Proper inlining of the function reduces place time by around 5%.
-        //For more information: https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/1225
+        /**
+         * A combination of ALWAYS_INLINE attribute and std::lexicographical_compare
+         * is required for operator< to be inlined by compiler. Proper inlining of the
+         * function reduces place time by around 5%.
+         *
+         * For more information: https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/1225
+         */
         friend ALWAYS_INLINE bool operator<(const t_override& lhs, const t_override& rhs) {
             const short* left = reinterpret_cast<const short*>(&lhs);
             const short* right = reinterpret_cast<const short*>(&rhs);
@@ -123,8 +157,11 @@ class OverrideDelayModel : public PlaceDelayModel {
 
     vtr::flat_map2<t_override, float> delay_overrides_;
 
-    //operator< treats memory layout of t_override as an array of short
-    //this requires all members of t_override are shorts and there is no padding between members of t_override
+    /**
+     * operator< treats memory layout of t_override as an array of short.
+     * This requires all members of t_override are shorts and there is no
+     * padding between members of t_override.
+     */
     static_assert(sizeof(t_override) == sizeof(t_override::from_type) + sizeof(t_override::to_type) + sizeof(t_override::from_class) + sizeof(t_override::to_class) + sizeof(t_override::delta_x) + sizeof(t_override::delta_y), "Expect t_override to have a memory layout equivalent to an array of short (no padding)");
     static_assert(sizeof(t_override::from_type) == sizeof(short), "Expect all t_override data members to be shorts");
     static_assert(sizeof(t_override::to_type) == sizeof(short), "Expect all t_override data members to be shorts");

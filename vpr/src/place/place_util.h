@@ -1,11 +1,22 @@
 #pragma once
 #include "vpr_types.h"
 
+///@brief Forward declarations.
+class t_placer_costs;
+class t_annealing_state;
+
 ///@brief Initialize the placement context
 void init_placement_context();
 
 ///@brief Get the initial limit for inner loop block move attempt limit.
 int get_initial_move_lim(const t_placer_opts& placer_opts, const t_annealing_sched& annealing_sched);
+
+///@brief Update the annealing state according to the annealing schedule selected.
+bool update_annealing_state(t_annealing_state* state,
+                            float success_rat,
+                            const t_placer_costs& costs,
+                            const t_placer_opts& placer_opts,
+                            const t_annealing_sched& annealing_sched);
 
 /**
  * @brief Data structure that stores different cost values in the placer.

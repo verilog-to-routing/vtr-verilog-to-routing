@@ -2,6 +2,7 @@
 #include "globals.h"
 
 static vtr::Matrix<t_grid_blocks> init_grid_blocks();
+static void update_rlim(float* rlim, float success_rat, const DeviceGrid& grid);
 
 void init_placement_context() {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
@@ -118,4 +119,85 @@ int get_initial_move_lim(const t_placer_opts& placer_opts, const t_annealing_sch
     VTR_LOG("Moves per temperature: %d\n", move_lim);
 
     return move_lim;
+}
+
+/**
+ * @brief Update the annealing state according to the annealing schedule selected.
+ *
+ *   USER_SCHED:  A manual fixed schedule with fixed alpha and exit criteria.
+ *   AUTO_SCHED:  A more sophisticated schedule where alpha varies based on success ratio.
+ *   DUSTY_SCHED: This schedule jumps backward and slows down in response to success ratio.
+ *                See doc/src/vpr/dusty_sa.rst for more details.
+ *
+ * Returns true until the schedule is finished.
+ */
+bool update_annealing_state(t_annealing_state* state,
+                            float success_rat,
+                            const t_placer_costs& costs,
+                            const t_placer_opts& placer_opts,
+                            const t_annealing_sched& annealing_sched) {
+    /* Return `false` when the exit criterion is met. */
+    if (annealing_sched.type == USER_SCHED) {
+        state->t *= annealing_sched.alpha_t;
+        return state->t >= annealing_sched.exit_t;
+    }
+
+    auto& device_ctx = g_vpr_ctx.device();
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    /* Automatic annealing schedule */
+    float t_exit = 0.005 * costs.cost / cluster_ctx.clb_nlist.nets().size();
+
+    if (annealing_sched.type == DUSTY_SCHED) {
+        bool restart_temp = state->t < t_exit || std::isnan(t_exit); //May get nan if there are no nets
+        if (success_rat < annealing_sched.success_min || restart_temp) {
+            if (state->alpha > annealing_sched.alpha_max) return false;
+            state->t = state->restart_t / sqrt(state->alpha); // Take a half step from the restart temperature.
+            state->alpha = 1.0 - ((1.0 - state->alpha) * annealing_sched.alpha_decay);
+        } else {
+            if (success_rat > annealing_sched.success_target) {
+                state->restart_t = state->t;
+            }
+            state->t *= state->alpha;
+        }
+        state->move_lim = std::max(1, std::min(state->move_lim_max, (int)(state->move_lim_max * (annealing_sched.success_target / success_rat))));
+    } else { /* annealing_sched.type == AUTO_SCHED */
+        if (success_rat > 0.96) {
+            state->alpha = 0.5;
+        } else if (success_rat > 0.8) {
+            state->alpha = 0.9;
+        } else if (success_rat > 0.15 || state->rlim > 1.) {
+            state->alpha = 0.95;
+        } else {
+            state->alpha = 0.8;
+        }
+        state->t *= state->alpha;
+
+        // Must be duplicated to retain previous behavior
+        if (state->t < t_exit || std::isnan(t_exit)) return false;
+    }
+
+    // Gradually changes from the initial crit_exponent to the final crit_exponent based on how much the range limit has shrunk.
+    // The idea is that as the range limit shrinks (indicating we are fine-tuning a more optimized placement) we can focus more on a smaller number of critical connections, which a higher crit_exponent achieves.
+    update_rlim(&state->rlim, success_rat, device_ctx.grid);
+
+    if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+        state->crit_exponent = (1 - (state->rlim - state->final_rlim()) * state->inverse_delta_rlim)
+                                   * (placer_opts.td_place_exp_last - placer_opts.td_place_exp_first)
+                               + placer_opts.td_place_exp_first;
+    }
+
+    return true;
+}
+
+/**
+ * @brief Update the range limited to keep acceptance prob. near 0.44.
+ *
+ * Use a floating point rlim to allow gradual transitions at low temps.
+ */
+static void update_rlim(float* rlim, float success_rat, const DeviceGrid& grid) {
+    float upper_lim = std::max(grid.width() - 1, grid.height() - 1);
+
+    *rlim *= (1. - 0.44 + success_rat);
+    *rlim = std::max(std::min(*rlim, upper_lim), 1.f);
 }

@@ -7,13 +7,6 @@
 #include "place_delay_model.h"
 #include "vpr_net_pins_matrix.h"
 
-std::unique_ptr<PlaceDelayModel> alloc_lookups_and_criticalities(t_chan_width_dist chan_width_dist,
-                                                                 const t_placer_opts& place_opts,
-                                                                 const t_router_opts& router_opts,
-                                                                 t_det_routing_arch* det_routing_arch,
-                                                                 std::vector<t_segment_inf>& segment_inf,
-                                                                 const t_direct_inf* directs,
-                                                                 const int num_directs);
 /* Usage
  * =====
  * PlacerCriticalities returns the clustered netlist connection criticalities used by 
