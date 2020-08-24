@@ -84,8 +84,6 @@ def run_relax_w(
     if "write_rr_graph" in vpr_args:
         del vpr_args["write_rr_graph"]
 
-    
-
     if vpr_exec is None:
         vpr_exec = find_vtr_file("vpr", is_executable=True)
 
@@ -99,8 +97,8 @@ def run_relax_w(
         vpr_exec=vpr_exec,
         vpr_args=vpr_args,
     )
-
-    if ("pack" in vpr_args or "place" in vpr_args or "analysis" in vpr_args) and "route" not in vpr_args:
+    explicit = "pack" in vpr_args or "place" in vpr_args or "analysis" in vpr_args
+    if explicit and "route" not in vpr_args:
         # Don't look for min W if routing was not run
         return
     if max_router_iterations:
