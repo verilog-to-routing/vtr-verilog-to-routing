@@ -59,7 +59,7 @@ digraph G {
     7->11
     7->10 [color=purple]
     4->8  [style=dotted] [color=purple]
-    4->10 [style=dotted]
+    4->10 [style=dotted] [color=purple]
     2->10 [color=purple]
     10->3 [color=purple]
 }
