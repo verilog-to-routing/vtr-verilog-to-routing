@@ -1301,12 +1301,12 @@ void split_soft_multiplier(nnode_t* node, netlist_t* netlist) {
 
 bool is_ast_multiplier(ast_node_t* node) {
     bool is_mult;
-    ast_node_t* instance = node->children[1];
+    ast_node_t* instance = node->children[0];
     is_mult = (!strcmp(node->children[0]->types.identifier, "multiply"))
-              && (instance->children[1]->num_children == 3);
+              && (instance->children[0]->num_children == 3);
 
-    ast_node_t* connect_list = instance->children[1];
-    if (is_mult && connect_list->children[0]->children[0]) {
+    ast_node_t* connect_list = instance->children[0];
+    if (is_mult && connect_list->children[0]->identifier_node) {
         /* port connections were passed by name; verify port names */
         for (int i = 0; i < connect_list->num_children && is_mult; i++) {
             char* id = connect_list->children[i]->children[0]->types.identifier;

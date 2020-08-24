@@ -221,17 +221,12 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
             instantiate_multi_port_mux(node, traverse_number, netlist);
             break;
         case MULTIPLY: {
-            int mult_size = std::max<int>(node->input_port_sizes[0], node->input_port_sizes[1]);
-            if (hard_multipliers && mult_size >= min_mult) {
-                instantiate_hard_multiplier(node, traverse_number, netlist);
-            } else if (!hard_adders) {
-                instantiate_simple_soft_multiplier(node, traverse_number, netlist);
-            }
+            mixer->partial_map_node(node, traverse_number, netlist);
             break;
         }
         case MEMORY: {
             ast_node_t* ast_node = node->related_ast_node;
-            char* identifier = ast_node->children[0]->types.identifier;
+            char* identifier = ast_node->identifier_node->types.identifier;
             if (find_hard_block(identifier)) {
                 long depth = is_sp_ram(node) ? get_sp_ram_depth(node) : get_dp_ram_depth(node);
                 long width = is_sp_ram(node) ? get_sp_ram_width(node) : get_dp_ram_width(node);

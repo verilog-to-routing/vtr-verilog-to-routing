@@ -41,6 +41,7 @@ extern loc_t my_location;
 
 void yyerror(const char *str){	delayed_error_message(PARSER, my_location, "error in parsing: (%s)\n",str);}
 int ieee_filter(int ieee_version, int return_type);
+std::string ieee_string(int return_type);
 
 int yywrap(){	return 1;}
 int yylex(void);
@@ -941,7 +942,7 @@ var_signedness:
 
 /**
  * This functions filters types based on the standard defined,
- **/
+ */ 
 int ieee_filter(int ieee_version, int return_type) {
 
 	switch(return_type) {
@@ -1064,7 +1065,7 @@ int ieee_filter(int ieee_version, int return_type) {
 		case vXNOR:	//fallthrough
 		case vXOR: {
 			if(ieee_version < ieee_1995)
-				delayed_error_message(PARSER, my_location, "error in parsing: (%s) only exists in ieee 1995 or newer\n",return_type)
+				delayed_error_message(PARSER, my_location, "error in parsing: (%s) only exists in ieee 1995 or newer\n",ieee_string(return_type).c_str())
 			break;
 		}
 		case voASLEFT:	//fallthrough
@@ -1083,7 +1084,7 @@ int ieee_filter(int ieee_version, int return_type) {
 		case vSIGNED:	//fallthrough
 		case vUNSIGNED: {
 			if(ieee_version < ieee_2001_noconfig)
-				delayed_error_message(PARSER, my_location, "error in parsing: (%s) only exists in ieee 2001-noconfig or newer\n",return_type)
+				delayed_error_message(PARSER, my_location, "error in parsing: (%s) only exists in ieee 2001-noconfig or newer\n",ieee_string(return_type).c_str())
 			break;
 		}
 		case vCELL:	//fallthrough
@@ -1097,25 +1098,183 @@ int ieee_filter(int ieee_version, int return_type) {
 		case vLIBRARY:	//fallthrough
 		case vUSE: {
 			if(ieee_version < ieee_2001)
-				delayed_error_message(PARSER, my_location, "error in parsing: (%s) only exists in ieee 2001 or newer\n",return_type)
+				delayed_error_message(PARSER, my_location, "error in parsing: (%s) only exists in ieee 2001 or newer\n",ieee_string(return_type).c_str())
 			break;
 		}
 		case vUWIRE: {
 			if(ieee_version < ieee_2005)
-				delayed_error_message(PARSER, my_location, "error in parsing: (%s) only exists in ieee 2005 or newer\n",return_type)
+				delayed_error_message(PARSER, my_location, "error in parsing: (%s) only exists in ieee 2005 or newer\n",ieee_string(return_type).c_str())
 			break;
 		}
-		/* unsorted. TODO: actually sort these */
 		case vsCLOG2:
 		case vsUNSIGNED:	//fallthrough
 		case vsSIGNED:	//fallthrough
 		case vsFINISH:	//fallthrough
 		case vsDISPLAY:	//fallthrough
 		case vsFUNCTION:	//fallthrough
+			/* unsorted. TODO: actually sort these */
+			break;
 		default: {
+			delayed_error_message(PARSER, my_location, "error in parsing: keyword index: %d is not a supported keyword.\n",return_type)
 			break;
 		}
 	}
 	return return_type;
 
 }
+
+std::string ieee_string(int return_type) {
+
+	switch(return_type) {
+		case vALWAYS: return "vALWAYS";
+		case vAND: return "vAND";
+		case vASSIGN: return "vASSIGN";
+		case vAUTOMATIC: return "vAUTOMATIC";
+		case vBEGIN: return "vBEGIN";
+		case vBUF: return "vBUF";
+		case vBUFIF0: return "vBUFIF0";
+		case vBUFIF1: return "vBUFIF1";
+		case vCASE: return "vCASE";
+		case vCASEX: return "vCASEX";
+		case vCASEZ: return "vCASEZ";
+		case vCELL: return "vCELL";
+		case vCMOS: return "vCMOS";
+		case vCONFIG: return "vCONFIG";
+		case vDEASSIGN: return "vDEASSIGN";
+		case vDEFAULT: return "vDEFAULT";
+		case vDEFPARAM: return "vDEFPARAM";
+		case vDESIGN: return "vDESIGN";
+		case vDISABLE: return "vDISABLE";
+		case vEDGE: return "vEDGE";
+		case vELSE: return "vELSE";
+		case vEND: return "vEND";
+		case vENDCASE: return "vENDCASE";
+		case vENDCONFIG: return "vENDCONFIG";
+		case vENDFUNCTION: return "vENDFUNCTION";
+		case vENDGENERATE: return "vENDGENERATE";
+		case vENDMODULE: return "vENDMODULE";
+		case vENDPRIMITIVE: return "vENDPRIMITIVE";
+		case vENDSPECIFY: return "vENDSPECIFY";
+		case vENDTABLE: return "vENDTABLE";
+		case vENDTASK: return "vENDTASK";
+		case vEVENT: return "vEVENT";
+		case vFOR: return "vFOR";
+		case vFORCE: return "vFORCE";
+		case vFOREVER: return "vFOREVER";
+		case vFORK: return "vFORK";
+		case vFUNCTION: return "vFUNCTION";
+		case vGENERATE: return "vGENERATE";
+		case vGENVAR: return "vGENVAR";
+		case vHIGHZ0: return "vHIGHZ0";
+		case vHIGHZ1: return "vHIGHZ1";
+		case vIF: return "vIF";
+		case vINCDIR: return "vINCDIR";
+		case vINCLUDE: return "vINCLUDE";
+		case vINITIAL: return "vINITIAL";
+		case vINOUT: return "vINOUT";
+		case vINPUT: return "vINPUT";
+		case vINSTANCE: return "vINSTANCE";
+		case vINTEGER: return "vINTEGER";
+		case vJOIN: return "vJOIN";
+		case vLARGE: return "vLARGE";
+		case vLIBLIST: return "vLIBLIST";
+		case vLIBRARY: return "vLIBRARY";
+		case vLOCALPARAM: return "vLOCALPARAM";
+		case vMEDIUM: return "vMEDIUM";
+		case vMODULE: return "vMODULE";
+		case vNAND: return "vNAND";
+		case vNEGEDGE: return "vNEGEDGE";
+		case vNMOS: return "vNMOS";
+		case vNONE: return "vNONE";
+		case vNOR: return "vNOR";
+		case vNOSHOWCANCELLED: return "vNOSHOWCANCELLED";
+		case vNOT: return "vNOT";
+		case vNOTIF0: return "vNOTIF0";
+		case vNOTIF1: return "vNOTIF1";
+		case vOR: return "vOR";
+		case vOUTPUT: return "vOUTPUT";
+		case vPARAMETER: return "vPARAMETER";
+		case vPMOS: return "vPMOS";
+		case vPOSEDGE: return "vPOSEDGE";
+		case vPRIMITIVE: return "vPRIMITIVE";
+		case vPULL0: return "vPULL0";
+		case vPULL1: return "vPULL1";
+		case vPULLDOWN: return "vPULLDOWN";
+		case vPULLUP: return "vPULLUP";
+		case vPULSESTYLE_ONDETECT: return "vPULSESTYLE_ONDETECT";
+		case vPULSESTYLE_ONEVENT: return "vPULSESTYLE_ONEVENT";
+		case vRCMOS: return "vRCMOS";
+		case vREG: return "vREG";
+		case vRELEASE: return "vRELEASE";
+		case vREPEAT: return "vREPEAT";
+		case vRNMOS: return "vRNMOS";
+		case vRPMOS: return "vRPMOS";
+		case vRTRAN: return "vRTRAN";
+		case vRTRANIF0: return "vRTRANIF0";
+		case vRTRANIF1: return "vRTRANIF1";
+		case vSCALARED: return "vSCALARED";
+		case vSHOWCANCELLED: return "vSHOWCANCELLED";
+		case vSIGNED: return "vSIGNED";
+		case vSMALL: return "vSMALL";
+		case vSPECIFY: return "vSPECIFY";
+		case vSPECPARAM: return "vSPECPARAM";
+		case vSTRONG0: return "vSTRONG0";
+		case vSTRONG1: return "vSTRONG1";
+		case vSUPPLY0: return "vSUPPLY0";
+		case vSUPPLY1: return "vSUPPLY1";
+		case vTABLE: return "vTABLE";
+		case vTASK: return "vTASK";
+		case vTIME: return "vTIME";
+		case vTRAN: return "vTRAN";
+		case vTRANIF0: return "vTRANIF0";
+		case vTRANIF1: return "vTRANIF1";
+		case vTRI0: return "vTRI0";
+		case vTRI1: return "vTRI1";
+		case vTRI: return "vTRI";
+		case vTRIAND: return "vTRIAND";
+		case vTRIOR: return "vTRIOR";
+		case vTRIREG: return "vTRIREG";
+		case vUNSIGNED: return "vUNSIGNED";
+		case vUSE: return "vUSE";
+		case vUWIRE: return "vUWIRE";
+		case vVECTORED: return "vVECTORED";
+		case vWAIT: return "vWAIT";
+		case vWAND: return "vWAND";
+		case vWEAK0: return "vWEAK0";
+		case vWEAK1: return "vWEAK1";
+		case vWHILE: return "vWHILE";
+		case vWIRE: return "vWIRE";
+		case vWOR: return "vWOR";
+		case vXNOR: return "vXNOR";
+		case vXOR: return "vXOR";
+		case voANDAND: return "voANDAND";
+		case voANDANDAND: return "voANDANDAND";
+		case voASLEFT: return "voASLEFT";
+		case voASRIGHT: return "voASRIGHT";
+		case voCASEEQUAL: return "voCASEEQUAL";
+		case voCASENOTEQUAL: return "voCASENOTEQUAL";
+		case voEGT: return "voEGT";
+		case voEQUAL: return "voEQUAL";
+		case voGTE: return "voGTE";
+		case voLTE: return "voLTE";
+		case voMINUSCOLON: return "voMINUSCOLON";
+		case voNAND: return "voNAND";
+		case voNOR: return "voNOR";
+		case voNOTEQUAL: return "voNOTEQUAL";
+		case voOROR: return "voOROR";
+		case voPLUSCOLON: return "voPLUSCOLON";
+		case voPOWER: return "voPOWER";
+		case voSLEFT: return "voSLEFT";
+		case voSRIGHT: return "voSRIGHT";
+		case voXNOR: return "voXNOR";
+		case vsCLOG2: return "vsCLOG2";
+		case vsDISPLAY: return "vsDISPLAY";
+		case vsFINISH: return "vsFINISH";
+		case vsFUNCTION: return "vsFUNCTION";
+		case vsSIGNED: return "vsSIGNED";
+		case vsUNSIGNED: return "vsUNSIGNED";
+		default: break;
+	}
+	return "";
+}
+

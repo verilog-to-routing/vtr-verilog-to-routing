@@ -10,11 +10,13 @@ from subprocess import Popen, PIPE, STDOUT
 my_dir = ""
 
 if len(sys.argv) < 9:
-    print ("Usage: spice.py <tech_file> <tech_size> <Vdd> <P/N> <temp> <activity [hz]> <component_type> <size> <nmos_size>")
-    sys.exit();
-    
-my_dir = os.path.dirname(os.path.realpath(__file__));
-    
+    print (
+        "Usage: spice.py <tech_file> <tech_size> <Vdd> <P/N> <temp> <activity [hz]> <component_type> <size> <nmos_size>"
+    )
+    sys.exit()
+
+my_dir = os.path.dirname(os.path.realpath(__file__))
+
 tech_file = sys.argv[1]
 tech_file = os.path.abspath(tech_file)
 tech_size = sys.argv[2]
@@ -30,14 +32,14 @@ if len(sys.argv) > 9:
     do_nmos_size = True
     nmos_size = sys.argv[9]
 
-if (activity == "h"):
+if activity == "h":
     na = 0
-elif (activity == "z"):
+elif activity == "z":
     na = 1
 else:
-    print("Invalid activity type\n");
+    print ("Invalid activity type\n")
     sys.exit()
-    
+
 base_dir = os.path.join(my_dir)
 temp_dir = os.path.join(base_dir, "temp")
 
@@ -45,19 +47,19 @@ temp_dir = os.path.join(base_dir, "temp")
 if not os.path.exists(temp_dir):
     os.mkdir(temp_dir)
 
-file_name = type + "_" + str(size) 
+file_name = type + "_" + str(size)
 
 if na:
     file_path = os.path.join(temp_dir, file_name + "_na.sp")
 else:
     file_path = os.path.join(temp_dir, file_name + ".sp")
 
-f = open(file_path, 'w')
+f = open(file_path, "w")
 
-f.write ("Auto Spice\n")
-f.write (".include \"" + tech_file + "\"\n")
+f.write("Auto Spice\n")
+f.write('.include "' + tech_file + '"\n')
 
-f.write (".param tech = " + str(tech_size) + "e-9\n")
+f.write(".param tech = " + str(tech_size) + "e-9\n")
 f.write(".param tempr = " + temp + "\n")
 f.write(".param simt = 5n\n")
 
@@ -85,31 +87,27 @@ else:
     read_file_path = os.path.join(base_dir, type, size + ".spz")
 
 
-
 fr = open(read_file_path)
 f.write(fr.read())
 fr.close()
 f.close()
 
 cmd = "hspice " + file_path
-# print cmd 
+# print cmd
 
 p = Popen(cmd, shell=True, stdout=PIPE, stderr=STDOUT, cwd=temp_dir)
 stdout, stderr = p.communicate()
 
 if re.search("error", stdout):
-    print "Error" 
+    print "Error"
 
 else:
     m = re.search("^\s*power=\s*(\S*).*$", stdout, re.MULTILINE)
-    if (m):
+    if m:
         print m.group(1)
 
 
 # f = open("~/spice_modeling/" + sys.argv[1] + ".spx")
-
-
-
 
 
 # hspice ~/spice_modeling/$1 2>&1 | grep -P "^\s+e=|\s+tech_size="

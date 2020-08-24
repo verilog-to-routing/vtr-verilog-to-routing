@@ -33,6 +33,9 @@ The following examples are being performed in the ODIN_II directory:
 
 ### Generating Results for a New Task
 
+To generate new results, `synthesis_parse_file` and `simulation_parse_file` must be specified
+in task.conf file.
+
 The following commands will generate the results of a new regression test using N processors:
 
 ```bash

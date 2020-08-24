@@ -24,7 +24,6 @@ struct t_options {
 
     argparse::ArgValue<std::string> out_file_prefix;
     argparse::ArgValue<std::string> constraints_file;
-    argparse::ArgValue<std::string> pad_loc_file;
     argparse::ArgValue<std::string> write_rr_graph_file;
     argparse::ArgValue<std::string> read_rr_graph_file;
 
@@ -106,7 +105,6 @@ struct t_options {
     argparse::ArgValue<sched_type> anneal_sched_type;
     argparse::ArgValue<e_place_algorithm> PlaceAlgorithm;
     argparse::ArgValue<e_pad_loc_type> pad_loc_type;
-    argparse::ArgValue<e_block_loc_type> block_loc_type;
     argparse::ArgValue<int> PlaceChanWidth;
     argparse::ArgValue<float> place_rlim_escape_fraction;
     argparse::ArgValue<std::string> place_move_stats_file;

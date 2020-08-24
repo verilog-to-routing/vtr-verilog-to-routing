@@ -7,20 +7,20 @@ from pathlib import Path
 from vtr import find_vtr_file, determine_lut_size, verify_file, CommandRunner
 from vtr.error import InspectError
 
-#pylint: disable=too-many-arguments, too-many-locals
+# pylint: disable=too-many-arguments, too-many-locals
 def run(
-        architecture_file,
-        circuit_file,
-        output_netlist,
-        command_runner=CommandRunner(),
-        temp_dir=Path("."),
-        log_filename="abc.out",
-        abc_exec=None,
-        abc_script=None,
-        abc_rc=None,
-        use_old_abc_script=False,
-        abc_args=None,
-        keep_intermediate_files=True,
+    architecture_file,
+    circuit_file,
+    output_netlist,
+    command_runner=CommandRunner(),
+    temp_dir=Path("."),
+    log_filename="abc.out",
+    abc_exec=None,
+    abc_script=None,
+    abc_rc=None,
+    use_old_abc_script=False,
+    abc_args=None,
+    keep_intermediate_files=True,
 ):
     """
     Runs ABC to optimize specified file.
@@ -83,22 +83,17 @@ def run(
     #
     # Parse arguments
     #
-    (abc_args,
-     abc_flow_type,
-     lut_size,
-     abc_run_args,
-     use_old_latches_restoration_script) = parse_abc_args(abc_args)
-
+    (
+        abc_args,
+        abc_flow_type,
+        lut_size,
+        abc_run_args,
+        use_old_latches_restoration_script,
+    ) = parse_abc_args(abc_args)
 
     lut_size = determine_lut_size(str(architecture_file)) if lut_size is None else lut_size
 
-    populate_clock_list(
-        circuit_file,
-        blackbox_latches_script,
-        clk_list,
-        command_runner,
-        temp_dir
-    )
+    populate_clock_list(circuit_file, blackbox_latches_script, clk_list, command_runner, temp_dir)
 
     abc_exec = find_vtr_file("abc", is_executable=True) if abc_exec is None else abc_exec
     abc_rc = Path(abc_exec).parent / "abc.rc" if abc_rc is None else abc_rc
@@ -118,13 +113,7 @@ def run(
         )
         if abc_flow_type == "blanket_bb":
             command_runner.run_system_command(
-                [
-                    blackbox_latches_script,
-                    "--input",
-                    input_file,
-                    "--output",
-                    pre_abc_blif.name,
-                ],
+                [blackbox_latches_script, "--input", input_file, "--output", pre_abc_blif.name,],
                 temp_dir=temp_dir,
                 log_filename=str(i) + "_blackboxing_latch.out",
                 indent_depth=1,
@@ -149,65 +138,66 @@ def run(
             pre_abc_blif = input_file
 
         abc_script = (
-            "; ".join([
-                'echo ""',
-                'echo "Load Netlist"',
-                'echo "============"',
-                "read {pre_abc_blif}".format(pre_abc_blif=pre_abc_blif.name),
-                "time",
-                'echo ""',
-                'echo "Circuit Info"',
-                'echo "=========="',
-                "print_stats",
-                "print_latch",
-                "time",
-                'echo ""',
-                'echo "LUT Costs"',
-                'echo "========="',
-                "print_lut",
-                "time",
-                'echo ""',
-                'echo "Logic Opt + Techmap"',
-                'echo "==================="',
-                "strash",
-                "ifraig -v",
-                "scorr -v",
-                "dc2 -v",
-                "dch -f",
-                "if -K {lut_size} -v".format(lut_size=lut_size),
-                "mfs2 -v",
-                "print_stats",
-                "time",
-                'echo ""',
-                'echo "Output Netlist"',
-                'echo "=============="',
-                "write_hie {pre_abc_blif} {post_abc_raw_blif}".format(
-                    pre_abc_blif=pre_abc_blif.name,
-                    post_abc_raw_blif=post_abc_raw_blif.name,
-                ),
-                "time;"
-            ])
+            "; ".join(
+                [
+                    'echo ""',
+                    'echo "Load Netlist"',
+                    'echo "============"',
+                    "read {pre_abc_blif}".format(pre_abc_blif=pre_abc_blif.name),
+                    "time",
+                    'echo ""',
+                    'echo "Circuit Info"',
+                    'echo "=========="',
+                    "print_stats",
+                    "print_latch",
+                    "time",
+                    'echo ""',
+                    'echo "LUT Costs"',
+                    'echo "========="',
+                    "print_lut",
+                    "time",
+                    'echo ""',
+                    'echo "Logic Opt + Techmap"',
+                    'echo "==================="',
+                    "strash",
+                    "ifraig -v",
+                    "scorr -v",
+                    "dc2 -v",
+                    "dch -f",
+                    "if -K {lut_size} -v".format(lut_size=lut_size),
+                    "mfs2 -v",
+                    "print_stats",
+                    "time",
+                    'echo ""',
+                    'echo "Output Netlist"',
+                    'echo "=============="',
+                    "write_hie {pre_abc_blif} {post_abc_raw_blif}".format(
+                        pre_abc_blif=pre_abc_blif.name, post_abc_raw_blif=post_abc_raw_blif.name,
+                    ),
+                    "time;",
+                ]
+            )
             if abc_script is None
-            else
-            "; ".join([
-                "read {pre_abc_blif}".format(pre_abc_blif=pre_abc_blif.name),
-                "time",
-                "resyn",
-                "resyn2",
-                "if -K {lut_size}".format(lut_size=lut_size),
-                "time",
-                "scleanup",
-                "write_hie {pre_abc_blif} {post_abc_raw_blif}".format(
-                    pre_abc_blif=pre_abc_blif.name,
-                    post_abc_raw_blif=post_abc_raw_blif.name,
-                ),
-                "print_stats"
-            ])
+            else "; ".join(
+                [
+                    "read {pre_abc_blif}".format(pre_abc_blif=pre_abc_blif.name),
+                    "time",
+                    "resyn",
+                    "resyn2",
+                    "if -K {lut_size}".format(lut_size=lut_size),
+                    "time",
+                    "scleanup",
+                    "write_hie {pre_abc_blif} {post_abc_raw_blif}".format(
+                        pre_abc_blif=pre_abc_blif.name, post_abc_raw_blif=post_abc_raw_blif.name,
+                    ),
+                    "print_stats",
+                ]
+            )
             if use_old_abc_script
             else abc_script
         )
 
-        cmd = [abc_exec, '-c', abc_script]
+        cmd = [abc_exec, "-c", abc_script]
         if abc_run_args:
             cmd.append(abc_run_args)
 
@@ -235,14 +225,9 @@ def run(
             )
         else:
             restore_multiclock_info_script = (
-                find_vtr_file(
-                    "restore_multiclock_latch_information.pl"
-                )
+                find_vtr_file("restore_multiclock_latch_information.pl")
                 if use_old_latches_restoration_script
-                else
-                find_vtr_file(
-                    "restore_multiclock_latch.pl"
-                )
+                else find_vtr_file("restore_multiclock_latch.pl")
             )
             command_runner.run_system_command(
                 [
@@ -278,7 +263,9 @@ def run(
         for file in temp_dir.iterdir():
             if file.suffix in (".dot", ".v", ".rc"):
                 file.unlink()
-#pylint: enable=too-many-arguments, too-many-locals
+
+
+# pylint: enable=too-many-arguments, too-many-locals
 def parse_abc_args(abc_args):
     """
         function to parse abc_args
@@ -312,13 +299,8 @@ def parse_abc_args(abc_args):
             pass
     return abc_args, abc_flow_type, lut_size, abc_run_args, use_old_latches_restoration_script
 
-def populate_clock_list(
-        circuit_file,
-        blackbox_latches_script,
-        clk_list,
-        command_runner,
-        temp_dir
-):
+
+def populate_clock_list(circuit_file, blackbox_latches_script, clk_list, command_runner, temp_dir):
     """
         function to populate the clock list
     """
@@ -337,14 +319,15 @@ def populate_clock_list(
         for line in file.readlines():
             clk_list.append(line.strip("\n"))
 
-#pylint: disable=too-many-arguments
+
+# pylint: disable=too-many-arguments
 def run_lec(
-        reference_netlist,
-        implementation_netlist,
-        command_runner=CommandRunner(),
-        temp_dir=Path("."),
-        log_filename="abc.lec.out",
-        abc_exec=None,
+    reference_netlist,
+    implementation_netlist,
+    command_runner=CommandRunner(),
+    temp_dir=Path("."),
+    log_filename="abc.lec.out",
+    abc_exec=None,
 ):
     """
     Run Logical Equivalence Checking (LEC) between two netlists using ABC
@@ -381,11 +364,7 @@ def run_lec(
     if abc_exec is None:
         abc_exec = find_vtr_file("abc", is_executable=True)
 
-        abc_script = (
-            "dsec {ref} {imp}".format(
-                ref=reference_netlist, imp=implementation_netlist
-            ),
-        )
+        abc_script = ("dsec {ref} {imp}".format(ref=reference_netlist, imp=implementation_netlist),)
         abc_script = "; ".join(abc_script)
 
     cmd = [abc_exec, "-c", abc_script]
@@ -397,9 +376,7 @@ def run_lec(
     # Check if ABC's LEC engine passed
     lec_passed, errored = check_abc_lec_status(output)
     if errored:
-        abc_script = (
-            "cec {ref} {imp}".format(ref=reference_netlist, imp=implementation_netlist),
-        )
+        abc_script = ("cec {ref} {imp}".format(ref=reference_netlist, imp=implementation_netlist),)
         abc_script = "; ".join(abc_script)
         cmd = [abc_exec, "-c", abc_script]
         output, _ = command_runner.run_system_command(
@@ -422,7 +399,10 @@ def run_lec(
         )
 
     assert lec_passed
-#pylint: enable=too-many-arguments
+
+
+# pylint: enable=too-many-arguments
+
 
 def check_abc_lec_status(output):
     """
