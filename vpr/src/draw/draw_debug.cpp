@@ -511,7 +511,7 @@ void breakpoint_info_window(std::string bpDescription, BreakpointState draw_brea
     GtkWidget* temp_info = gtk_label_new(temp_count.c_str());
     gtk_widget_set_margin_left(temp_info, 5);
     gtk_widget_set_halign(temp_info, GTK_ALIGN_START);
-    std::string in_blocks_affected = "in_blocks_affected: " + std::to_string(get_bp_state_globals()->get_glob_breakpoint_state()->blocks_affected);
+    std::string in_blocks_affected = "in_blocks_affected: " + std::to_string(get_bp_state_globals()->get_glob_breakpoint_state()->block_affected);
     GtkWidget* ba_info = gtk_label_new(in_blocks_affected.c_str());
     gtk_widget_set_halign(ba_info, GTK_ALIGN_START);
     std::string block_id = "from_block: " + std::to_string(draw_breakpoint_state.from_block);
@@ -522,7 +522,7 @@ void breakpoint_info_window(std::string bpDescription, BreakpointState draw_brea
     GtkWidget* ri_info = gtk_label_new(router_iter.c_str());
     gtk_widget_set_margin_left(ri_info, 5);
     gtk_widget_set_halign(ri_info, GTK_ALIGN_START);
-    std::string net_id = "rouet_net_id: " + std::to_string(draw_breakpoint_state.net_id);
+    std::string net_id = "rouet_net_id: " + std::to_string(draw_breakpoint_state.route_net_id);
     GtkWidget* net_info = gtk_label_new(net_id.c_str());
     gtk_widget_set_margin_left(net_info, 5);
     gtk_widget_set_halign(net_info, GTK_ALIGN_START);

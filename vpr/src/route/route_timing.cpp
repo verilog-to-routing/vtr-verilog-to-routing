@@ -2007,7 +2007,7 @@ void update_router_info_and_check_bp(bp_router_type type, int net_id) {
         if (type == BP_ROUTE_ITER)
             get_bp_state_globals()->get_glob_breakpoint_state()->router_iter++;
         else if (type == BP_NET_ID)
-            get_bp_state_globals()->get_glob_breakpoint_state()->net_id = net_id;
+            get_bp_state_globals()->get_glob_breakpoint_state()->route_net_id = net_id;
         f_router_debug = check_for_breakpoints(false);
         if (f_router_debug) {
             breakpoint_info_window(get_bp_state_globals()->get_glob_breakpoint_state()->bp_description, *get_bp_state_globals()->get_glob_breakpoint_state(), false);

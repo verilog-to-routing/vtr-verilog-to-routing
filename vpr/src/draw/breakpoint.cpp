@@ -88,7 +88,7 @@ void delete_breakpoint_by_index(int index) {
 //prints the current placer information to the terminal
 void print_current_info(bool in_placer) {
     if (in_placer)
-        std::cout << "\nmove_num: " << get_bp_state_globals()->get_glob_breakpoint_state()->move_num << "\ntemp_count: " << get_bp_state_globals()->get_glob_breakpoint_state()->temp_count << "\nin_blocks_affected: " << get_bp_state_globals()->get_glob_breakpoint_state()->blocks_affected << "\nfrom_block: " << get_bp_state_globals()->get_glob_breakpoint_state()->from_block << "\n----------------------------\n";
+        std::cout << "\nmove_num: " << get_bp_state_globals()->get_glob_breakpoint_state()->move_num << "\ntemp_count: " << get_bp_state_globals()->get_glob_breakpoint_state()->temp_count << "\nin_blocks_affected: " << get_bp_state_globals()->get_glob_breakpoint_state()->block_affected << "\nfrom_block: " << get_bp_state_globals()->get_glob_breakpoint_state()->from_block << "\n----------------------------\n";
     else
-        std::cout << "\nrouter_iter: " << get_bp_state_globals()->get_glob_breakpoint_state()->router_iter << "\nnet_id: " << get_bp_state_globals()->get_glob_breakpoint_state()->net_id << "\n----------------------------\n";
+        std::cout << "\nrouter_iter: " << get_bp_state_globals()->get_glob_breakpoint_state()->router_iter << "\nnet_id: " << get_bp_state_globals()->get_glob_breakpoint_state()->route_net_id << "\n----------------------------\n";
 }

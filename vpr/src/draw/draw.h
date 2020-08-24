@@ -84,19 +84,6 @@ float get_net_alpha();
 
 ezgl::color get_block_type_color(t_physical_tile_type_ptr type);
 
-//void breakpoint_info_window(std::string bpDescription, current_information current_info_d);
-
-/*struct open_windows {
- * bool debug_window = false;
- * bool advanced_window = false;
- * };*/
-
-typedef enum operator_type_in_expression {
-    BOOL_OP,
-    COMP_OP
-
-} op_type_in_expr;
-
 #endif /* NO_GRAPHICS */
 
 #endif /* DRAW_H */

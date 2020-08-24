@@ -1,4 +1,4 @@
-/*This file contains all functions reagrding the graphics of setting and handling breakpoints*/
+/** This file contains all functions reagrding the graphics related to the setting of place and route breakpoints **/
 
 #include "breakpoint.h"
 #include "draw_global.h"
@@ -14,7 +14,7 @@
 #include <array>
 #include <iostream>
 
-//debugger functions
+/** debugger functions **/
 void draw_debug_window();
 void refresh_bpList();
 void add_to_bpList(std::string bpDescription);

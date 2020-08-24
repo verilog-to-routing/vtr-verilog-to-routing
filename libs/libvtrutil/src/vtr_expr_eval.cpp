@@ -7,13 +7,10 @@
 #include <sstream>
 #include <iostream>
 
-//global variables
+/** global variables **/
 
-//bp_state_globals is a variable of type BreakpointStateGlobals that holds a member of type BreakpointState. This member is altered by the breakpoint class, the placer, and router and holds the most updated values for variables that can trigger breakpoints (e.g move_num, temp_num etc.)
+/** bp_state_globals is a variable that holds a member of type BreakpointState. This member is altered by the breakpoint class, the placer, and router and holds the most updated values for variables that can trigger breakpoints (e.g move_num, temp_num etc.) **/
 BreakpointStateGlobals bp_state_globals;
-
-//this variables is used for the += operator and holds the initial value of the variable that is to be added to. after every addition, the related function compares with initial value to ensure correct incrementation
-int before_addition = 0;
 
 namespace vtr {
 
@@ -21,6 +18,9 @@ using std::stack;
 using std::string;
 using std::stringstream;
 using std::vector;
+
+/**this variables is used for the += operator and holds the initial value of the variable that is to be added to. after every addition, the related function compares with initial value to ensure correct incrementation **/
+static int before_addition = 0;
 
 /*---- Functions for Parsing the Symbolic Formulas ----*/
 
@@ -54,7 +54,7 @@ static int apply_rpn_op(const Formula_Object& arg1, const Formula_Object& arg2, 
 /* checks if specified character represents an ASCII number */
 static bool is_char_number(const char ch);
 
-// returns true if ch is an operator
+// returns true if ch is an operator (e.g +,-, *, etc.)
 static bool is_operator(const char ch);
 
 // returns true if the specified name is a known function operator
@@ -333,7 +333,7 @@ static void get_formula_object(const char* ch, int& ichar, const t_formula_data&
             else if (same_string(var_name, "move_num"))
                 fobj->data.num = bp_state_globals.get_glob_breakpoint_state()->move_num;
             else if (same_string(var_name, "route_net_id"))
-                fobj->data.num = bp_state_globals.get_glob_breakpoint_state()->net_id;
+                fobj->data.num = bp_state_globals.get_glob_breakpoint_state()->route_net_id;
             else if (same_string(var_name, "in_blocks_affected"))
                 fobj->data.num = in_blocks_affected(std::string(ch));
             else if (same_string(var_name, "router_iter"))
@@ -887,9 +887,9 @@ int in_blocks_affected(std::string expression_left) {
     }
 
     //goes through blocks_affected
-    for (size_t i = 0; i < bp_state_globals.get_glob_breakpoint_state()->blocks_affected_vector.size(); i++) {
-        if (bp_state_globals.get_glob_breakpoint_state()->blocks_affected_vector[i] == found_block) {
-            bp_state_globals.get_glob_breakpoint_state()->blocks_affected = found_block;
+    for (size_t i = 0; i < bp_state_globals.get_glob_breakpoint_state()->blocks_affected_by_move.size(); i++) {
+        if (bp_state_globals.get_glob_breakpoint_state()->blocks_affected_by_move[i] == found_block) {
+            bp_state_globals.get_glob_breakpoint_state()->block_affected = found_block;
             return found_block;
         }
     }
