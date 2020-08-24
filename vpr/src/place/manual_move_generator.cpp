@@ -13,6 +13,7 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     /* Pick the user indicated block to be swapped with user indicated block.   */
     ClusterBlockId b_from = ClusterBlockId(block_id);
     if (!b_from) {
+        std::cout<<"Move aborted because block wasn't found\n";
         return e_create_move::ABORT; //No movable block found
     }
     auto& place_ctx = g_vpr_ctx.placement();
@@ -23,7 +24,16 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     auto grid_from_type = g_vpr_ctx.device().grid[from.x][from.y].type;
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
 
-    if (!find_to_loc_uniform(cluster_from_type, rlim, from, to)) {
+
+    //Retrieve the compressed block grid for this block type
+    const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[cluster_from_type->index];
+
+    //Each x/y location possibly contains multiple sub tiles, so we need to pick
+    //a z location within a compatible sub tile.
+    auto to_type = g_vpr_ctx.device().grid[to.x][to.y].type;
+    auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(to_type->index);
+    if(std::find(compatible_sub_tiles.begin(),compatible_sub_tiles.end(),to.sub_tile) == compatible_sub_tiles.end()){
+        std::cout<<"Move aborted due to uncompatible subtile\n";
         return e_create_move::ABORT;
     }
 
@@ -39,6 +49,5 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     }
     VTR_LOG("\n");
 #endif
-
     return ::create_move(blocks_affected, b_from, to);
 }

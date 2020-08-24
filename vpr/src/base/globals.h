@@ -9,10 +9,11 @@
 
 extern VprContext g_vpr_ctx;
 
-typedef enum UserMoveOutcome {
+typedef enum MoveOutcome {
     MOVE_REJECTED,
-    MOVE_ACCEPTED
-} t_user_move_outcome;
+    MOVE_ACCEPTED,
+    MOVE_ABORTED
+} t_move_outcome;
 
 struct ManualMoveInfo {
     int block_id;
@@ -22,7 +23,9 @@ struct ManualMoveInfo {
     double delta_c = 0;
     double bb_delta_c = 0;
     double timing_delta_c = 0;
-    t_user_move_outcome move_outcome;
+    t_move_outcome user_move_outcome;
+    t_move_outcome placer_move_outcome;
+    bool valid_input;
 };
 
 #endif

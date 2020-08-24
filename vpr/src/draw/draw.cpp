@@ -4103,42 +4103,6 @@ void manual_move_generator_window(std::string block_id) {
     }
 }
 
-//closes the "invalid entry" window
-void ok_close_window(GtkWidget* /*widget*/, GtkWidget* window) {
-    gtk_window_close((GtkWindow*)window);
-}
-
-//window that pops up when an entry is not valid
-void invalid_breakpoint_entry_window(std::string error) {
-    //window settings
-    GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_position((GtkWindow*)window, GTK_WIN_POS_CENTER);
-    gtk_window_set_title((GtkWindow*)window, "ERROR");
-    gtk_window_set_modal((GtkWindow*)window, TRUE);
-
-    //grid settings
-    GtkWidget* grid = gtk_grid_new();
-
-    //label settings
-    GtkWidget* label = gtk_label_new(error.c_str());
-    gtk_widget_set_margin_left(label, 30);
-    gtk_widget_set_margin_right(label, 30);
-    gtk_widget_set_margin_top(label, 30);
-    gtk_widget_set_margin_bottom(label, 30);
-    gtk_grid_attach((GtkGrid*)grid, label, 0, 0, 1, 1);
-
-    //button settings
-    GtkWidget* button = gtk_button_new_with_label("OK");
-    gtk_widget_set_margin_bottom(button, 30);
-    gtk_widget_set_margin_right(button, 30);
-    gtk_widget_set_margin_left(button, 30);
-    gtk_grid_attach((GtkGrid*)grid, button, 0, 1, 1, 1);
-    g_signal_connect(button, "clicked", G_CALLBACK(ok_close_window), window);
-
-    gtk_container_add(GTK_CONTAINER(window), grid);
-    gtk_widget_show_all(window);
-}
-
 //after the user presses the calculate costs button, this function retrievs all the data in the window, such as block id and to location, checks if they are valid values, and if valid updates the draw_manual_move_info variable, highlights the indicated block id and proceeds in placement
 void move_generator_button_callback(GtkWidget* /*widget*/, GtkWidget* oldGrid) {
     int block_id;
@@ -4172,19 +4136,20 @@ void move_generator_button_callback(GtkWidget* /*widget*/, GtkWidget* oldGrid) {
         invalid_breakpoint_entry_window("y value out of bounds");
         valid_input = false;
     }
-    if (to_subtile < 0) {
+    if (to_subtile < 0 || to_subtile > int(device_ctx.grid[to_loc_x][to_loc_y].type->capacity )) {
         invalid_breakpoint_entry_window("invalid subtile value");
         valid_input = false;
     }
 
     //checks if all entries are full
-    if (std::string(gtk_entry_get_text((GtkEntry*)block_entry)).size() == 0 || std::string(gtk_entry_get_text((GtkEntry*)to_x_entry)).size() == 0 || std::string(gtk_entry_get_text((GtkEntry*)to_y_entry)).size() == 0 || std::string(gtk_entry_get_text((GtkEntry*)subtile_entry)).size() == 0) {
+    if (std::string(gtk_entry_get_text((GtkEntry*)block_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)to_x_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)to_y_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)subtile_entry)).empty()) {
         invalid_breakpoint_entry_window("Not all fields are complete");
         valid_input = false;
     }
 
     if (valid_input) {
         //update draw_manual_move_info
+        manual_move_globals.draw_manual_move_info.valid_input = true;
         manual_move_globals.draw_manual_move_info.to_x = to_loc_x;
         manual_move_globals.draw_manual_move_info.to_y = to_loc_y;
         manual_move_globals.draw_manual_move_info.subtile = to_subtile;
@@ -4198,6 +4163,8 @@ void move_generator_button_callback(GtkWidget* /*widget*/, GtkWidget* oldGrid) {
         GtkWidget* proceed = find_button("ProceedButton");
         ezgl::press_proceed(proceed, &application);
     }
+    else
+        manual_move_globals.draw_manual_move_info.valid_input = false;
 }
 
 //this window displays all move costs and the placer move_outcome and let's the user accept or reject the move
@@ -4218,7 +4185,7 @@ void cost_summary_window() {
     std::string dtcn_label = "Delta Timing Cost Norm: " + std::to_string(manual_move_globals.draw_manual_move_info.timing_delta_c);
     GtkWidget* dtcn = gtk_label_new(dtcn_label.c_str());
     std::string outcome;
-    manual_move_globals.draw_manual_move_info.move_outcome == 0 ? outcome = "Rejected" : outcome = "Accepted";
+    manual_move_globals.draw_manual_move_info.placer_move_outcome == MOVE_REJECTED ? outcome = "Rejected" : outcome = "Accepted";
     std::string mo_label = "Move Outcome: " + outcome;
     GtkWidget* mo = gtk_label_new(mo_label.c_str());
     GtkWidget* accept = gtk_button_new_with_label("Accept");
@@ -4251,12 +4218,14 @@ void cost_summary_window() {
     g_signal_connect(reject, "clicked", G_CALLBACK(reject_manual_move), window);
 
     gtk_container_add(GTK_CONTAINER(window), grid);
-    gtk_widget_show_all(window);
+
+    if(manual_move_globals.manual_move_window_is_open)
+        gtk_widget_show_all(window);
 }
 
 //if the user decides to accept the manual move, this function sets the user move outcome to accpeted and closes manual move and cost windows
 void accept_manual_move(GtkWidget* /*widget*/, GtkWidget* window) {
-    manual_move_globals.draw_manual_move_info.move_outcome = MOVE_ACCEPTED;
+    manual_move_globals.draw_manual_move_info.user_move_outcome = MOVE_ACCEPTED;
     manual_move_globals.manual_move_window_is_open = false;
     gtk_widget_destroy(manual_move_globals.manual_move_window);
     gtk_widget_destroy((GtkWidget*)window);
@@ -4264,7 +4233,7 @@ void accept_manual_move(GtkWidget* /*widget*/, GtkWidget* window) {
 
 //if the user decides to reject the manual move, this function sets the user move outcome to rejected and closes manual move and cost windows
 void reject_manual_move(GtkWidget* /*widget*/, GtkWidget* window) {
-    manual_move_globals.draw_manual_move_info.move_outcome = MOVE_REJECTED;
+    manual_move_globals.draw_manual_move_info.user_move_outcome = MOVE_REJECTED;
     manual_move_globals.manual_move_window_is_open = false;
     gtk_widget_destroy(manual_move_globals.manual_move_window);
     gtk_widget_destroy((GtkWidget*)window);
@@ -4278,8 +4247,8 @@ ManualMoveInfo* get_manual_move_info() {
 //returns true when a string only contains numbers and no letters or symbols
 //this function is used to differentiate between block_id and block_name
 bool string_is_a_number(std::string block_id) {
-    for (int i = 0; i < block_id.size(); i++) {
-        if (isdigit(block_id[i]) == 0)
+    for (size_t i = 0; i < block_id.size(); i++) {
+        if (isdigit(block_id[i])==0)
             return false;
     }
     return true;

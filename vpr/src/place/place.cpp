@@ -1444,10 +1444,9 @@ static e_move_result try_swap(float t,
         create_move_outcome = manual_move_generator.propose_move(blocks_affected, rlim);
 
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
-
     e_move_result move_outcome = ABORTED;
 
-    if (create_move_outcome == e_create_move::ABORT) {
+    if (create_move_outcome == e_create_move::ABORT || !manual_move_info->valid_input) {
         //Proposed move is not legal -- give up on this move
         clear_move_blocks(blocks_affected);
 
@@ -1457,6 +1456,7 @@ static e_move_result try_swap(float t,
                                "ABORTED", "illegal move");
 
         move_outcome = ABORTED;
+        manual_move_outcome = ABORTED;
     } else {
         VTR_ASSERT(create_move_outcome == e_create_move::VALID);
 
@@ -1493,21 +1493,27 @@ static e_move_result try_swap(float t,
         } else {
             delta_c = bb_delta_c;
         }
-
-        if (manual_move) {
+     
+        /* 1 -> move accepted, 0 -> rejected. */
+        move_outcome = assess_swap(delta_c, t);
+ 
+        if (manual_move && manual_move_info->valid_input) {
             //update all the costs in the manual_move_info variable and open cost summary window
             manual_move_info->delta_c = delta_c;
             manual_move_info->bb_delta_c = bb_delta_c;
             manual_move_info->timing_delta_c = timing_delta_c;
+            if (move_outcome == REJECTED)
+                manual_move_info->placer_move_outcome = MOVE_REJECTED;
+            else if (move_outcome == ACCEPTED)
+                 manual_move_info->placer_move_outcome = MOVE_ACCEPTED;
+            else
+                 manual_move_info->placer_move_outcome = MOVE_ABORTED;
             cost_summary_window();
             update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
         }
 
-        /* 1 -> move accepted, 0 -> rejected. */
-        move_outcome = assess_swap(delta_c, t);
-
-        if (manual_move) {
-            manual_move_outcome = (manual_move_info->move_outcome == 0 ? REJECTED : ACCEPTED);
+        if (manual_move && manual_move_info->valid_input) {
+            manual_move_outcome = (manual_move_info->user_move_outcome == MOVE_REJECTED ? REJECTED : ACCEPTED);
         }
 
         if ((!manual_move && move_outcome == ACCEPTED) || (manual_move && manual_move_outcome == ACCEPTED)) {
@@ -1558,7 +1564,10 @@ static e_move_result try_swap(float t,
                                (move_outcome ? "ACCEPTED" : "REJECTED"), "");
     }
 
-    move_outcome_stats.outcome = move_outcome;
+    if(!manual_move)
+        move_outcome_stats.outcome = move_outcome;
+    else
+        move_outcome_stats.outcome = manual_move_outcome;
 
     move_generator.process_outcome(move_outcome_stats);
 
@@ -1569,8 +1578,12 @@ static e_move_result try_swap(float t,
     //Check that each accepted swap yields a valid placement
     check_place(*costs, delay_model, place_algorithm);
 #endif
-    manual_move = false;
-    return (move_outcome);
+
+    manual_move_info->valid_input = true;
+    if(manual_move)
+        return manual_move_outcome;
+    else 
+        return (move_outcome);
 }
 
 //Puts all the nets changed by the current swap into nets_to_update,
