@@ -22,7 +22,7 @@ netvec* get_bus_from_hash (struct s_hash** hash_table, char* temp_name, busvec* 
 void verify_netlist ( t_node** nodes, int num_nodes, busvec* buses, struct s_hash** hash_table);
 void print_all_nets ( busvec* buses, const char* filename );
 
-bool is_onelut ( t_node* node );
+bool is_feeder_onelut ( t_node* node );
 void remove_node ( t_node* node, t_node** nodes, int original_num_nodes );
 
 //============================================================================================
@@ -209,7 +209,7 @@ void add_subckts (t_node** nodes, int num_nodes, busvec* buses, struct s_hash** 
 
 	for (int i = 0; i < num_nodes; i++){
 		temp_node = nodes[i];
-		if(is_onelut(temp_node)){
+		if(is_feeder_onelut(temp_node)){
 			onelut_count++;
 		}
 		for (int j = 0; j < temp_node->number_of_ports; j++){
@@ -241,13 +241,15 @@ void add_subckts (t_node** nodes, int num_nodes, busvec* buses, struct s_hash** 
 void remove_one_lut_nodes ( busvec* buses, struct s_hash** hash_table, t_node** nodes, int original_num_nodes, t_module* module ){
 /*
         Quartus fitter may have introduced some one-LUTs in the post-fit netlist that makes it harder for VPR to place and route.
-        For Stratix IV, the names of these one-LUTs all end with the substring "feeder". This function serves to remove the feeder
-        one LUTs from the netlist, if they exist, before converting it into the BLIF file format.
+        Generally, these one-LUTs are inserted by the Quartus router in order to pass a signal through a LUT to the FF in the same
+        BLE. For Stratix IV, the names of these one-LUTs all end with the substring "feeder". This function serves to remove the
+        feeder one LUTs from the netlist, if they exist, before converting it into the BLIF file format.
 
 	Go through all nodes, if a node's source net is driven by a one-LUT-type node and if this source net only has one
         child (the node itself):
 
-	  1. If the one-LUT has an input and an output (signal passthrough):
+	  1. If the one-LUT has an input and an output, the one-LUT acts as either a buffer LUT or as an inverter, but we do not
+             check as we only care about structure in this converter, not logical functionality.
              Re-associate the node's input port with the source net of the one-LUT, then remove the one-LUT and the node's original
              source net.
 
@@ -307,7 +309,7 @@ void remove_one_lut_nodes ( busvec* buses, struct s_hash** hash_table, t_node** 
 
 			if (temp_port != (t_node_port_association*)temp_net->source){
 				//Must be an input port
-				if (temp_net->driver == BLACKBOX && is_onelut(temp_net->block_src) && temp_net->num_children == 1){
+				if (temp_net->driver == BLACKBOX && is_feeder_onelut(temp_net->block_src) && temp_net->num_children == 1){
 					source_port = (t_node_port_association*)temp_net->source;   //The output port of the one-LUT
 					source_node = temp_net->block_src;   //The one-LUT
 
@@ -328,7 +330,7 @@ void remove_one_lut_nodes ( busvec* buses, struct s_hash** hash_table, t_node** 
 						temp_port->wire_index = prev_net->wire_index;
 					} else {
 						//For one-LUT with just an output, associate temp_port with VCC instead
-						VTR_ASSERT(source_node->number_of_ports == 1); //If is_onelut==true, there are only 1 or 2 ports
+						VTR_ASSERT(source_node->number_of_ports == 1); //If is_feeder_onelut==true, there are only 1 or 2 ports
 						VTR_ASSERT(vcc_net != NULL); //Should have a VCC
 						temp_port->associated_net = vcc_net->pin;
 						temp_port->wire_index = vcc_net->wire_index;
@@ -794,7 +796,7 @@ void print_all_nets ( busvec* buses, const char* filename ){
 //============================================================================================
 //============================================================================================
 
-bool is_onelut ( t_node* node ) {
+bool is_feeder_onelut ( t_node* node ) {
 	if(node == NULL) return false;
 	
 	//Hardcoded for Stratix IV
