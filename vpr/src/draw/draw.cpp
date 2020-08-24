@@ -4136,7 +4136,7 @@ void move_generator_button_callback(GtkWidget* /*widget*/, GtkWidget* oldGrid) {
         invalid_breakpoint_entry_window("y value out of bounds");
         valid_input = false;
     }
-    if (to_subtile < 0 || to_subtile > int(device_ctx.grid[to_loc_x][to_loc_y].type->capacity )) {
+    if (to_subtile < 0 || to_subtile > int(device_ctx.grid[to_loc_x][to_loc_y].type->capacity)) {
         invalid_breakpoint_entry_window("invalid subtile value");
         valid_input = false;
     }
@@ -4162,8 +4162,7 @@ void move_generator_button_callback(GtkWidget* /*widget*/, GtkWidget* oldGrid) {
 
         GtkWidget* proceed = find_button("ProceedButton");
         ezgl::press_proceed(proceed, &application);
-    }
-    else
+    } else
         manual_move_globals.draw_manual_move_info.valid_input = false;
 }
 
@@ -4219,7 +4218,7 @@ void cost_summary_window() {
 
     gtk_container_add(GTK_CONTAINER(window), grid);
 
-    if(manual_move_globals.manual_move_window_is_open)
+    if (manual_move_globals.manual_move_window_is_open)
         gtk_widget_show_all(window);
 }
 
@@ -4248,7 +4247,7 @@ ManualMoveInfo* get_manual_move_info() {
 //this function is used to differentiate between block_id and block_name
 bool string_is_a_number(std::string block_id) {
     for (size_t i = 0; i < block_id.size(); i++) {
-        if (isdigit(block_id[i])==0)
+        if (isdigit(block_id[i]) == 0)
             return false;
     }
     return true;

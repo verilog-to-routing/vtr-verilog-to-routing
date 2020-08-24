@@ -35,4 +35,3 @@ void invalid_breakpoint_entry_window(std::string error) {
 void ok_close_window(GtkWidget* /*widget*/, GtkWidget* window) {
     gtk_window_close((GtkWindow*)window);
 }
-

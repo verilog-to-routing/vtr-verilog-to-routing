@@ -1493,10 +1493,10 @@ static e_move_result try_swap(float t,
         } else {
             delta_c = bb_delta_c;
         }
-     
+
         /* 1 -> move accepted, 0 -> rejected. */
         move_outcome = assess_swap(delta_c, t);
- 
+
         if (manual_move && manual_move_info->valid_input) {
             //update all the costs in the manual_move_info variable and open cost summary window
             manual_move_info->delta_c = delta_c;
@@ -1505,9 +1505,9 @@ static e_move_result try_swap(float t,
             if (move_outcome == REJECTED)
                 manual_move_info->placer_move_outcome = MOVE_REJECTED;
             else if (move_outcome == ACCEPTED)
-                 manual_move_info->placer_move_outcome = MOVE_ACCEPTED;
+                manual_move_info->placer_move_outcome = MOVE_ACCEPTED;
             else
-                 manual_move_info->placer_move_outcome = MOVE_ABORTED;
+                manual_move_info->placer_move_outcome = MOVE_ABORTED;
             cost_summary_window();
             update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
         }
@@ -1564,7 +1564,7 @@ static e_move_result try_swap(float t,
                                (move_outcome ? "ACCEPTED" : "REJECTED"), "");
     }
 
-    if(!manual_move)
+    if (!manual_move)
         move_outcome_stats.outcome = move_outcome;
     else
         move_outcome_stats.outcome = manual_move_outcome;
@@ -1580,9 +1580,9 @@ static e_move_result try_swap(float t,
 #endif
 
     manual_move_info->valid_input = true;
-    if(manual_move)
+    if (manual_move)
         return manual_move_outcome;
-    else 
+    else
         return (move_outcome);
 }
 
