@@ -3,7 +3,7 @@
 Regression tests are tests that are repeatedly executed to assess functionality.
 Each regression test targets a specific function of Odin II.
 There are two main components of a regression test; benchmarks and a configuration file.
-The benchmarks are comprised of verilog files, input vector files and output vector files.  
+The benchmarks are comprised of verilog files, input vector files and output vector files.
 The configuration file calls upon each benchmark and synthesizes them with different architectures.
 The current regression tests of Odin II can be found in regression_test/benchmarks.
 
@@ -246,6 +246,10 @@ For more examples of task_list.conf configuration files look at the already exis
 
 ### Regenerating Results
 
+> **WARNING**
+>
+> **BEFORE** regenerating the result, run `make test` to ensure any changes in the code don't affect the results of benchmarks beside your own. If they do, the failing benchmarks will be listed.
+
 Regenerating results is necessary if any regression test is changed (added benchmarks), if a regression test is added, or if a bug fix was implemented that changes the results of a regression test.
 For all cases, it is necessary to regenerate the results of the task corresponding to said change.
 The following commands illustrate how to do so:
@@ -268,9 +272,9 @@ For more on regenerating results, refer to the [Verify Script](./verify_script.m
 
 ## Regression Test Summaries
 
-### Binary
+### c_functions
 
-This regression test targets low level binary and unary logic gates. It tests the bit size capacity, as well as different syntaxes set in the verilog standard.
+This regression test targets c functions supported by Verilog such as clog_2.
 
 ### cmd_line_args
 
@@ -287,7 +291,7 @@ They test a method of implementing high speed FIR filters on FPGAs discussed in 
 ### full
 
 The full regression test is designed to test real user behaviour.  
-It does this by simulating flip flop, muxes and other common uses of verilog.  
+It does this by simulating flip flop, muxes and other common uses of Verilog.  
 
 ### large
 
