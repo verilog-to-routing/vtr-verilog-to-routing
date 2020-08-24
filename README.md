@@ -84,7 +84,7 @@ Developers checkout a local copy of the code at the start of development, then d
 When a developer has a tested, working change to put back into the trunk, he/she performs a `git push` operation.
 Unstable code should remain in the developer's local copy.
 
-We do automated testing of the trunk using BuildBot to verify functionality and Quality of Results (QoR).
+We do automated testing of the trunk using BuildBot to verify functionality and Quality of Results (QoR). The QoR tests indicate insignificant change in vtr_flow_elapsed_time. 
 * [Trunk Status](http://builds.verilogtorouting.org:8080/waterfall)
 * [QoR Tracking](http://builds.verilogtorouting.org:8080/)
 
