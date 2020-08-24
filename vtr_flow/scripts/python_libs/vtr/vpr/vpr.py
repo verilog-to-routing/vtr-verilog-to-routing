@@ -59,7 +59,7 @@ def run_relax_w(
             Path to the VPR executable
 
         logfile_base:
-            Base name for log files (e.g. "vpr" produces vpr.min_w.out, vpr.relaxed_w.out)
+            Base name for log files (e.g. "vpr" produces vpr.out, vpr.crit_path.out)
 
         vpr_args:
             Extra arguments for VPR
