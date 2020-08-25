@@ -132,10 +132,9 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
         case BITWISE_NOT:
             instantiate_not_logic(node, traverse_number, netlist);
             break;
-        case BUF_NODE:
+        case BUF:
             instantiate_buffer(node, traverse_number, netlist);
             break;
-
         case BITWISE_AND:
         case BITWISE_OR:
         case BITWISE_NAND:
@@ -247,9 +246,14 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
             instantiate_hard_block(node, traverse_number, netlist);
 
             break;
+        case BUFIF0:
+        case BUFIF1:
+        case NOTIF0:
+        case NOTIF1:
+        case DECODED_MUX:
+        case MULTIPLEXER:
         case ADDER_FUNC:
         case CARRY_FUNC:
-        case MUX_2:
         case INPUT_NODE:
         case CLOCK_NODE:
         case OUTPUT_NODE:
@@ -280,7 +284,7 @@ void instantiate_soft_logic_ram(nnode_t* node, short mark, netlist_t* netlist) {
 
 /*---------------------------------------------------------------------------------------------
  * (function: instantiate_multi_port_mux )
- * 	Makes the multiport into a series of 2-Mux-decoded
+ * 	Makes the multiport into a series of decoded multiplexer
  *-------------------------------------------------------------------------------------------*/
 void instantiate_multi_port_mux(nnode_t* node, short mark, netlist_t* /*netlist*/) {
     int i, j;
@@ -296,7 +300,7 @@ void instantiate_multi_port_mux(nnode_t* node, short mark, netlist_t* /*netlist*
 
     muxes = (nnode_t**)vtr::malloc(sizeof(nnode_t*) * (num_ports - 1));
     for (i = 0; i < num_ports - 1; i++) {
-        muxes[i] = make_2port_gate(MUX_2, width_of_one_hot_logic, width_of_one_hot_logic, 1, node, mark);
+        muxes[i] = make_2port_gate(DECODED_MUX, width_of_one_hot_logic, width_of_one_hot_logic, 1, node, mark);
     }
 
     for (j = 0; j < num_ports - 1; j++) {
@@ -914,7 +918,7 @@ void instantiate_shift_left_or_right(nnode_t* node, operation_list type, short m
         error_message(NETLIST, node->loc, "%s\n", "Odin only supports constant shifts at present");
     }
 
-    buf_node = make_1port_gate(BUF_NODE, width, width, node, mark);
+    buf_node = make_1port_gate(BUF, width, width, node, mark);
 
     if (type == SL || type == ASL) {
         /* IF shift left */
@@ -990,7 +994,7 @@ void instantiate_arithmetic_shift_right(nnode_t* node, short mark, netlist_t* ne
         shift_size = 0;
         error_message(NETLIST, node->loc, "%s\n", "Odin only supports constant shifts at present");
     }
-    buf_node = make_1port_gate(BUF_NODE, width, width, node, mark);
+    buf_node = make_1port_gate(BUF, width, width, node, mark);
     /* connect inputs to outputs */
     for (i = width - 1; i >= shift_size; i--) {
         // connect higher input pin to lower output pin

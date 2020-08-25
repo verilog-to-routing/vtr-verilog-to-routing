@@ -43,7 +43,11 @@ const char* operation_list_STR[][2] = {
     {"NO_OP", "nOP"},
     {"MULTI_PORT_MUX", "nMUX"}, // port 1 = control, port 2+ = mux options
     {"FF_NODE", "FF"},
-    {"BUF_NODE", "BUF"},
+    {"BUF", "BUF"},
+    {"BUFIF1", "Bif1"},
+    {"BUFIF0", "Bif0"},
+    {"NOTIF1", "Nif1"},
+    {"NOTIF0", "Nif0"},
     {"INPUT_NODE", "IN"},
     {"OUTPUT_NODE", "OUT"},
     {"GND_NODE", "GND"},
@@ -83,9 +87,8 @@ const char* operation_list_STR[][2] = {
     {"CASE_NOT_EQUAL", "cNEQ"}, // !==
     {"ADDER_FUNC", "ADDER"},
     {"CARRY_FUNC", "CARRY"},
-    {"MUX_2", "MUX_2"},
-    {"BLIF_FUNCTION", "BLIFf"},
-    {"NETLIST_FUNCTION", "NETf"},
+    {"DECODED_MUX", "DECODED_MUX"},
+    {"MULTIPLEXER", "MUX"},
     {"MEMORY", "MEM"},
     {"PAD_NODE", "PAD"},
     {"HARD_IP", "HARD"},
@@ -125,11 +128,10 @@ const char* ids_STR[] = {
     "TASK",
     "TASK_ITEMS",
     /* primitives */
-    "GATE",
     "GATE_INSTANCE",
-    "ONE_GATE_INSTANCE",
+    "GATE_INSTANCE_LIST",
     /* Module instances */
-    "MODULE_CONNECT_LIST",
+    "CONNECTION_LIST",
     "MODULE_CONNECT",
     "MODULE_PARAMETER_LIST",
     "MODULE_PARAMETER",

@@ -462,19 +462,51 @@ void join_nets(nnet_t* join_to_net, nnet_t* other_net) {
 }
 
 /*---------------------------------------------------------------------------------------------
+ * (function: unmap_pin_from_net)
+ *-------------------------------------------------------------------------------------------*/
+void unmap_pin_from_net(npin_t* pin) {
+    if (pin->net) {
+        if (pin->type == INPUT) {
+            if (pin->pin_net_idx >= 0 && pin->pin_net_idx < pin->net->num_fanout_pins) {
+                /* clean out the entry in the old net */
+                pin->net->fanout_pins[pin->pin_net_idx] = NULL;
+            }
+        } else if (pin->type == OUTPUT) {
+            /* clean out the entry in the old net */
+            pin->net->driver_pin = NULL;
+        }
+    }
+}
+/*---------------------------------------------------------------------------------------------
  * (function: remap_pin_to_new_net)
  *-------------------------------------------------------------------------------------------*/
 void remap_pin_to_new_net(npin_t* pin, nnet_t* new_net) {
+    unmap_pin_from_net(pin);
     if (pin->type == INPUT) {
-        /* clean out the entry in the old net */
-        pin->net->fanout_pins[pin->pin_net_idx] = NULL;
         /* do the new addition */
         add_fanout_pin_to_net(new_net, pin);
     } else if (pin->type == OUTPUT) {
-        /* clean out the entry in the old net */
-        pin->net->driver_pin = NULL;
         /* do the new addition */
         add_driver_pin_to_net(new_net, pin);
+    }
+}
+
+/*-------------------------------------------------------------------------
+ * (function: unmap_pin_from_node)
+ *-----------------------------------------------------------------------*/
+void unmap_pin_from_node(npin_t* pin) {
+    if (pin->node) {
+        if (pin->type == INPUT) {
+            /* clean out the entry in the old net */
+            if (pin->pin_node_idx >= 0 && pin->pin_node_idx < pin->node->num_input_pins) {
+                pin->node->input_pins[pin->pin_node_idx] = NULL;
+            }
+        } else if (pin->type == OUTPUT) {
+            /* clean out the entry in the old net */
+            if (pin->pin_node_idx >= 0 && pin->pin_node_idx < pin->node->num_output_pins) {
+                pin->node->output_pins[pin->pin_node_idx] = NULL;
+            }
+        }
     }
 }
 
@@ -482,6 +514,7 @@ void remap_pin_to_new_net(npin_t* pin, nnet_t* new_net) {
  * (function: remap_pin_to_new_node)
  *-----------------------------------------------------------------------*/
 void remap_pin_to_new_node(npin_t* pin, nnode_t* new_node, int pin_idx) {
+    unmap_pin_from_node(pin);
     if (pin->type == INPUT) {
         /* clean out the entry in the old net */
         pin->node->input_pins[pin->pin_node_idx] = NULL;

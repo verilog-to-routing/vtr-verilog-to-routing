@@ -187,16 +187,25 @@ int yylex(void);
 %type <node> source_text item items module list_of_module_items list_of_task_items list_of_function_items module_item function_item task_item module_parameters module_ports
 %type <node> list_of_parameter_declaration parameter_declaration task_parameter_declaration specparam_declaration list_of_port_declaration port_declaration
 %type <node> defparam_declaration defparam_variable_list defparam_variable function_declaration function_port_list list_of_function_inputs function_input_declaration 
-%type <node> task_declaration task_input_declaration task_output_declaration task_inout_declaration
+%type <node>  task_input_declaration task_output_declaration task_inout_declaration
 %type <node> io_declaration variable_list function_return list_of_function_return_variable function_return_variable function_integer_declaration
 %type <node> integer_type_variable_list variable integer_type_variable
-%type <node> net_declaration integer_declaration function_instantiation task_instantiation genvar_declaration
-%type <node> procedural_continuous_assignment multiple_inputs_gate_instance list_of_single_input_gate_declaration_instance
-%type <node> list_of_multiple_inputs_gate_declaration_instance list_of_module_instance
-%type <node> gate_declaration single_input_gate_instance
-%type <node> module_instantiation module_instance function_instance task_instance list_of_module_connections list_of_function_connections list_of_task_connections
-%type <node> list_of_multiple_inputs_gate_connections
-%type <node> module_connection tf_connection always statement function_statement function_statement_items task_statement blocking_assignment
+%type <node> net_declaration integer_declaration function_instantiation  genvar_declaration
+%type <node> procedural_continuous_assignment task_declaration 
+
+/* gate instances rules */
+%type <node> gate_instantiation list_of_gate_instances gate_instance instance_connection
+
+/* module instances rules */
+%type <node> module_instantiation list_of_module_instance module_instance list_of_module_connections module_connection
+
+/* function instances rules */
+%type <node> /* only appear a one at a time*/ function_instance list_of_function_connections tf_connection
+
+/* task instances rules */
+%type <node> task_instantiation task_instance list_of_task_connections 
+
+%type <node> always statement function_statement function_statement_items task_statement blocking_assignment
 %type <node> non_blocking_assignment conditional_statement function_conditional_statement case_statement function_case_statement case_item_list function_case_item_list case_items function_case_items seq_block function_seq_block
 %type <node> stmt_list function_stmt_list timing_control delay_control event_expression_list event_expression loop_statement function_loop_statement
 %type <node> expression primary expression_list module_parameter
@@ -292,7 +301,7 @@ generate_item:
 	| genvar_declaration				{$$ = $1;}
 	| integer_declaration 				{$$ = $1;}
 	| procedural_continuous_assignment	{$$ = $1;}
-	| gate_declaration					{$$ = $1;}
+	| gate_instantiation					{$$ = $1;}
 	| module_instantiation				{$$ = $1;}
 	| function_declaration				{$$ = $1;}
 	| task_declaration					{$$ = $1;}
@@ -311,7 +320,7 @@ generate_block_item:
 	| genvar_declaration					{$$ = $1;}
 	| integer_declaration 					{$$ = $1;}
 	| procedural_continuous_assignment		{$$ = $1;}
-	| gate_declaration						{$$ = $1;}
+	| gate_instantiation						{$$ = $1;}
 	| module_instantiation					{$$ = $1;}
 	| function_declaration					{$$ = $1;}
 	| task_declaration						{$$ = $1;}
@@ -536,39 +545,36 @@ list_of_blocking_assignment:
 	| blocking_assignment					{$$ = newList(ASSIGN, $1, my_location);}
 	;
 
-gate_declaration:
-	vAND list_of_multiple_inputs_gate_declaration_instance ';'	{$$ = newGate(BITWISE_AND, $2, my_location);}
-	| vNAND	list_of_multiple_inputs_gate_declaration_instance ';'	{$$ = newGate(BITWISE_NAND, $2, my_location);}
-	| vNOR list_of_multiple_inputs_gate_declaration_instance ';'	{$$ = newGate(BITWISE_NOR, $2, my_location);}
-	| vNOT list_of_single_input_gate_declaration_instance ';'	{$$ = newGate(BITWISE_NOT, $2, my_location);}
-	| vOR list_of_multiple_inputs_gate_declaration_instance ';'	{$$ = newGate(BITWISE_OR, $2, my_location);}
-	| vXNOR list_of_multiple_inputs_gate_declaration_instance ';'	{$$ = newGate(BITWISE_XNOR, $2, my_location);}
-	| vXOR list_of_multiple_inputs_gate_declaration_instance ';'	{$$ = newGate(BITWISE_XOR, $2, my_location);}
-	| vBUF list_of_single_input_gate_declaration_instance ';'	{$$ = newGate(BUF_NODE, $2, my_location);}
+gate_instantiation:
+	vAND list_of_gate_instances ';'        {$$ = assignGateType(BITWISE_AND, $2, my_location);}
+	| vNAND list_of_gate_instances ';'     {$$ = assignGateType(BITWISE_NAND, $2, my_location);}
+	| vNOR list_of_gate_instances ';'      {$$ = assignGateType(BITWISE_NOR, $2, my_location);}
+	| vOR list_of_gate_instances ';'       {$$ = assignGateType(BITWISE_OR, $2, my_location);}
+	| vXNOR list_of_gate_instances ';'     {$$ = assignGateType(BITWISE_XNOR, $2, my_location);}
+	| vXOR list_of_gate_instances ';'      {$$ = assignGateType(BITWISE_XOR, $2, my_location);}
+	| vNOTIF0 list_of_gate_instances ';'   {$$ = assignGateType(NOTIF0, $2, my_location);}
+	| vNOTIF1 list_of_gate_instances ';'   {$$ = assignGateType(NOTIF1, $2, my_location);}
+	| vBUFIF0 list_of_gate_instances ';'   {$$ = assignGateType(BUFIF0, $2, my_location);}
+	| vBUFIF1 list_of_gate_instances ';'   {$$ = assignGateType(BUFIF1, $2, my_location);}
+	| vNOT list_of_gate_instances ';'      {$$ = assignGateType(BITWISE_NOT, $2, my_location);}
+	| vBUF list_of_gate_instances ';'      {$$ = assignGateType(BUF, $2, my_location);}
 	;
 
-list_of_multiple_inputs_gate_declaration_instance:
-	list_of_multiple_inputs_gate_declaration_instance ',' multiple_inputs_gate_instance	{$$ = newList_entry($1, $3);}
-	| multiple_inputs_gate_instance								{$$ = newList(ONE_GATE_INSTANCE, $1, my_location);}
+list_of_gate_instances:
+	list_of_gate_instances ',' gate_instance  {$$ = newList_entry($1, $3);}
+	| gate_instance                           {$$ = newList(GATE_INSTANCE_LIST, $1, my_location);}
 	;
 
-list_of_single_input_gate_declaration_instance:
-	list_of_single_input_gate_declaration_instance ',' single_input_gate_instance	{$$ = newList_entry($1, $3);}
-	| single_input_gate_instance							{$$ = newList(ONE_GATE_INSTANCE, $1, my_location);}
+gate_instance:
+	vSYMBOL_ID '(' instance_connection ')'    {$$ = newGateInstance($1, $3, my_location);}
+	| vSYMBOL_ID '(' ')'                      {$$ = newGateInstance($1, NULL, my_location);}
+	| '(' instance_connection ')'             {$$ = newGateInstance(NULL, $2, my_location);}
+	| '(' ')'                                 {$$ = newGateInstance(NULL, NULL, my_location);}
 	;
 
-single_input_gate_instance:
-	vSYMBOL_ID '(' expression ',' expression ')'	{$$ = newGateInstance($1, $3, $5, NULL, my_location);}
-	| '(' expression ',' expression ')'		{$$ = newGateInstance(NULL, $2, $4, NULL, my_location);}
-	;
-
-multiple_inputs_gate_instance:
-	vSYMBOL_ID '(' expression ',' expression ',' list_of_multiple_inputs_gate_connections ')'	{$$ = newMultipleInputsGateInstance($1, $3, $5, $7, my_location);}
-	| '(' expression ',' expression ',' list_of_multiple_inputs_gate_connections ')'	{$$ = newMultipleInputsGateInstance(NULL, $2, $4, $6, my_location);}
-	;
-
-list_of_multiple_inputs_gate_connections: list_of_multiple_inputs_gate_connections ',' expression	{$$ = newList_entry($1, $3);}
-	| expression											{$$ = newModuleConnection(NULL, $1, my_location);}
+instance_connection:
+	instance_connection ',' expression	           {$$ = newList_entry($1, $3);}
+	| expression                                   {$$ = newList(CONNECTION_LIST, $1, my_location);}
 	;
 
 module_instantiation: 
@@ -578,8 +584,6 @@ module_instantiation:
 task_instantiation:
 	vSYMBOL_ID '(' task_instance ')' ';'												{$$ = newTaskInstance($1, $3, NULL, my_location);}
 	| vSYMBOL_ID '(' ')' ';'														{$$ = newTaskInstance($1, NULL, NULL, my_location);}
-	| '#' '(' list_of_module_parameters ')' vSYMBOL_ID '(' task_instance ')' ';'		{$$ = newTaskInstance($5, $7, $3, my_location);}
-	| '#' '(' list_of_module_parameters ')' vSYMBOL_ID '(' ')' ';'				{$$ = newTaskInstance($5, NULL, $3, my_location);}
 	;
 
 list_of_module_instance:
@@ -608,18 +612,18 @@ module_instance:
 
 list_of_function_connections:
 	list_of_function_connections ',' tf_connection	{$$ = newList_entry($1, $3);}
-	| tf_connection					{$$ = newfunctionList(MODULE_CONNECT_LIST, $1, my_location);}
+	| tf_connection					{$$ = newfunctionList(CONNECTION_LIST, $1, my_location);}
 	;
 
 list_of_task_connections:
 	list_of_task_connections ',' tf_connection	{$$ = newList_entry($1, $3);}
-	| tf_connection					{$$ = newList(MODULE_CONNECT_LIST, $1, my_location);}
+	| tf_connection					{$$ = newList(CONNECTION_LIST, $1, my_location);}
 	;
 
 list_of_module_connections:
 	list_of_module_connections ',' module_connection	{$$ = newList_entry($1, $3);}
 	| list_of_module_connections ',' 					{$$ = newList_entry($1, newModuleConnection(NULL, NULL, my_location));}
-	| module_connection					{$$ = newList(MODULE_CONNECT_LIST, $1, my_location);}
+	| module_connection					{$$ = newList(CONNECTION_LIST, $1, my_location);}
 	;
 
 tf_connection:

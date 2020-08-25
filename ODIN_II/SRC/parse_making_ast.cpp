@@ -1293,96 +1293,49 @@ ast_node_t* newFunctionInstance(char* function_ref_name, ast_node_t* function_na
 /*---------------------------------------------------------------------------------------------
  * (function: newGateInstance)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t* newGateInstance(char* gate_instance_name, ast_node_t* expression1, ast_node_t* expression2, ast_node_t* expression3, loc_t loc) {
+ast_node_t* newGateInstance(char* gate_instance_name, ast_node_t* connection_list, loc_t loc) {
+    static size_t gate_count = 0;
+    gate_count += 1;
+    oassert(connection_list->type == CONNECTION_LIST);
+
+    // need at least 2 (1 in 1 out minimum)
+    oassert(connection_list->num_children >= 2);
+
     if (!is_valid_identifier(gate_instance_name)) {
         error_message(AST, loc, "Invalid character in identifier (%s)\n", gate_instance_name);
     }
 
-    /* create a node for this array reference */
+    if (gate_instance_name == NULL) {
+        // make a placeholder name
+        std::string gate_name = "__gate__" + std::to_string(gate_count);
+        gate_instance_name = vtr::strdup(gate_name.c_str());
+    }
+
+    /* create a node for this gate instance */
     ast_node_t* new_node = create_node_w_type(GATE_INSTANCE, loc);
-    ast_node_t* symbol_node = NULL;
 
-    if (gate_instance_name != NULL) {
-        symbol_node = newSymbolNode(gate_instance_name, loc);
-    }
-
-    char* newChar = vtr::strdup(get_identifier(expression1));
-    ast_node_t* newVar = newVarDeclare(newChar, NULL, NULL, NULL, NULL, NULL, loc);
-    ast_node_t* newVarList = newList(VAR_DECLARE_LIST, newVar, loc);
-    ast_node_t* newVarMaked = markAndProcessSymbolListWith(MODULE, WIRE, newVarList, UNSIGNED);
-    if (size_module_variables_not_defined == 0) {
-        module_variables_not_defined = (ast_node_t**)vtr::calloc(1, sizeof(ast_node_t*));
-    } else {
-        module_variables_not_defined = (ast_node_t**)vtr::realloc(module_variables_not_defined, sizeof(ast_node_t*) * (size_module_variables_not_defined + 1));
-    }
-    module_variables_not_defined[size_module_variables_not_defined] = newVarMaked;
-    size_module_variables_not_defined++;
     /* allocate identifier to identifier_node */
-    new_node->identifier_node = symbol_node;
-    /* allocate child nodes to this node */
-    allocate_children_to_node(new_node, {expression1, expression2, expression3});
+    new_node->identifier_node = newSymbolNode(gate_instance_name, loc);
+
+    /* move the connectivity list child nodes to this node */
+    for (long i = 0; i < connection_list->num_children; i++)
+        add_child_to_node(new_node, connection_list->children[i]);
+
+    connection_list = free_single_node(connection_list);
 
     return new_node;
 }
 
-ast_node_t* newMultipleInputsGateInstance(char* gate_instance_name, ast_node_t* expression1, ast_node_t* expression2, ast_node_t* expression3, loc_t loc) {
-    if (!is_valid_identifier(gate_instance_name)) {
-        error_message(AST, loc, "Invalid character in identifier (%s)\n", gate_instance_name);
-    }
-
-    long i;
-    /* create a node for this array reference */
-    ast_node_t* new_node = create_node_w_type(GATE_INSTANCE, loc);
-
-    ast_node_t* symbol_node = NULL;
-
-    if (gate_instance_name != NULL) {
-        symbol_node = newSymbolNode(gate_instance_name, loc);
-    }
-    /* allocate identifier to identifier_node */
-    new_node->identifier_node = symbol_node;
-
-    char* newChar = vtr::strdup(get_identifier(expression1));
-
-    ast_node_t* newVar = newVarDeclare(newChar, NULL, NULL, NULL, NULL, NULL, loc);
-
-    ast_node_t* newVarList = newList(VAR_DECLARE_LIST, newVar, loc);
-
-    ast_node_t* newVarMarked = markAndProcessSymbolListWith(MODULE, WIRE, newVarList, UNSIGNED);
-
-    if (size_module_variables_not_defined == 0) {
-        module_variables_not_defined = (ast_node_t**)vtr::calloc(1, sizeof(ast_node_t*));
-    } else {
-        module_variables_not_defined = (ast_node_t**)vtr::realloc(module_variables_not_defined, sizeof(ast_node_t*) * (size_module_variables_not_defined + 1));
-    }
-
-    module_variables_not_defined[size_module_variables_not_defined] = newVarMarked;
-
-    size_module_variables_not_defined++;
-
-    allocate_children_to_node(new_node, {expression1, expression2});
-
-    /* allocate n children nodes to this node */
-    for (i = 0; i < expression3->num_children; i++)
-        add_child_to_node(new_node, expression3->children[i]);
-
-    /* clean up */
-    if (expression3->type == MODULE_CONNECT) expression3 = free_single_node(expression3);
-
-    return new_node;
-}
 /*---------------------------------------------------------------------------------------------
- * (function: newGate)
+ * (function: assignGateType)
  *-------------------------------------------------------------------------------------------*/
-ast_node_t* newGate(operation_list op_id, ast_node_t* gate_instance, loc_t loc) {
-    /* create a node for this array reference */
-    ast_node_t* new_node = create_node_w_type(GATE, loc);
-    /* store the operation type */
-    new_node->types.operation.op = op_id;
-    /* allocate child nodes to this node */
-    allocate_children_to_node(new_node, {gate_instance});
+ast_node_t* assignGateType(operation_list op_id, ast_node_t* gate_instance_list, loc_t /* loc */) {
+    // assign the gate type to each gate instance in the gate instance list
+    for (int i = 0; i < gate_instance_list->num_children; i += 1) {
+        gate_instance_list->children[i]->types.operation.op = op_id;
+    }
 
-    return new_node;
+    return gate_instance_list;
 }
 
 /*---------------------------------------------------------------------------------------------

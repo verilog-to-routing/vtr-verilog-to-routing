@@ -40,7 +40,7 @@
 #include "subtractions.h"
 
 #include "vtr_memory.h"
-
+#include "vtr_util.h"
 #include "vtr_list.h"
 
 using vtr::t_linked_vptr;
@@ -996,14 +996,10 @@ int match_ports(nnode_t* node, nnode_t* next_node, operation_list oper) {
             }
         }
         for (int i = 0; i < ast_node->num_children; i++) {
-            if (ast_node->children[i]->type != IDENTIFIERS) {
-                vtr::free(component_s[i]);
-            }
+            vtr::free(component_s[i]);
         }
         for (int i = 0; i < ast_node_next->num_children; i++) {
-            if (ast_node_next->children[i]->type != IDENTIFIERS) {
-                vtr::free(component_o[i]);
-            }
+            vtr::free(component_o[i]);
         }
     }
 
@@ -1029,12 +1025,9 @@ void traverse_operation_node(ast_node_t* node, char* component[], operation_list
                 break;
             } else {
                 if (node->children[i]->type == IDENTIFIERS) {
-                    component[i] = node->children[i]->types.identifier;
+                    component[i] = vtr::strdup(node->children[i]->types.identifier);
                 } else if (node->children[i]->type == NUMBERS) {
-                    long value = node->children[i]->types.vnumber->get_value();
-                    long len = snprintf(NULL, 0, "%ld", value);
-                    component[i] = (char*)vtr::calloc(len + 1, sizeof(char));
-                    odin_sprintf(component[i], "%ld", value);
+                    component[i] = vtr::strdup(node->children[i]->types.vnumber->to_vstring('b').c_str());
                 }
             }
         }

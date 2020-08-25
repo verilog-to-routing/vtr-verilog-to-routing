@@ -69,9 +69,8 @@ ast_node_t* newfunctionList(ids node_type, ast_node_t* child, loc_t loc);
 ast_node_t* newParallelConnection(ast_node_t* expression1, ast_node_t* expression2, loc_t loc);
 
 /* GATE INSTANCE */
-ast_node_t* newGateInstance(char* gate_instance_name, ast_node_t* expression1, ast_node_t* expression2, ast_node_t* expression3, loc_t loc);
-ast_node_t* newMultipleInputsGateInstance(char* gate_instance_name, ast_node_t* expression1, ast_node_t* expression2, ast_node_t* expression3, loc_t loc);
-ast_node_t* newGate(operation_list gate_type, ast_node_t* gate_instance, loc_t loc);
+ast_node_t* newGateInstance(char* gate_instance_name, ast_node_t* connection_list, loc_t loc);
+ast_node_t* assignGateType(operation_list gate_type, ast_node_t* gate_instance, loc_t loc);
 
 /* MODULE ITEMS */
 ast_node_t* newAssign(ast_node_t* statement, loc_t loc);

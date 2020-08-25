@@ -196,6 +196,16 @@ static void count_node_type(operation_list op, nnode_t* node, netlist_t* netlist
             /* These are irrelevent so we dont output */
             break;
 
+        case BUFIF0:
+        case BUFIF1:
+        case NOTIF0:
+        case NOTIF1:
+            /* these fit into a single lut, but are counted separatly */
+            netlist->num_logic_element += 1;
+            increment_type_count(op, netlist);
+            netlist->num_of_node += 1;
+            break;
+
         case INPUT_NODE:
         case OUTPUT_NODE:
             /* these stay untouched but are not added to the total*/

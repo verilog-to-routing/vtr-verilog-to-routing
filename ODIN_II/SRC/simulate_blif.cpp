@@ -144,9 +144,11 @@ static int get_pin_cycle(npin_t* pin);
 BitSpace::bit_value_t get_line_pin_value(line_t* line, int pin_num, int cycle);
 static int line_has_unknown_pin(line_t* line, int cycle);
 
+static void compute_tristate_node(nnode_t* node, int cycle);
 static void compute_flipflop_node(nnode_t* node, int cycle);
-static void compute_mux_2_node(nnode_t* node, int cycle);
-
+static void compute_decoded_multiplexer_node(nnode_t* node, int cycle);
+static void compute_multiplexer_node(nnode_t* node, int cycle);
+static long compute_address(nnode_t* node, npin_t** pins, long num_pins, int cycle);
 static void compute_single_port_memory(nnode_t* node, int cycle);
 static void compute_dual_port_memory(nnode_t* node, int cycle);
 
@@ -766,8 +768,11 @@ static bool compute_and_store_value(nnode_t* node, int cycle) {
     is_node_ready(node, cycle);
     operation_list type = is_clock_node(node) ? CLOCK_NODE : node->type;
     switch (type) {
-        case MUX_2:
-            compute_mux_2_node(node, cycle);
+        case DECODED_MUX:
+            compute_decoded_multiplexer_node(node, cycle);
+            break;
+        case MULTIPLEXER:
+            compute_multiplexer_node(node, cycle);
             break;
         case FF_NODE:
             compute_flipflop_node(node, cycle);
@@ -786,11 +791,18 @@ static bool compute_and_store_value(nnode_t* node, int cycle) {
             }
             break;
         }
-        case BUF_NODE: // pass through the values
+        case BUF: // pass through the values
         {
             verify_i_o_availabilty(node, 1, 1);
             BitSpace::bit_value_t pin = get_pin_value(node->input_pins[0], cycle);
             update_pin_value(node->output_pins[0], BitSpace::l_buf[pin], cycle);
+            break;
+        }
+        case BUFIF0:
+        case BUFIF1:
+        case NOTIF0:
+        case NOTIF1: {
+            compute_tristate_node(node, cycle);
             break;
         }
         case LOGICAL_AND: // &&
@@ -1037,7 +1049,7 @@ static bool compute_and_store_value(nnode_t* node, int cycle) {
         case PAD_NODE:
             verify_i_o_availabilty(node, -1, 1);
             // TODO: this is 'Z' since it is unconn
-            update_pin_value(node->output_pins[0], BitSpace::_0, cycle);
+            update_pin_value(node->output_pins[0], BitSpace::_z, cycle);
             break;
         case INPUT_NODE:
             break;
@@ -1061,20 +1073,12 @@ static bool compute_and_store_value(nnode_t* node, int cycle) {
             else
                 compute_unary_sub_node(node, cycle);
             break;
-        /* These should have already been converted to softer versions. */
-        case BITWISE_AND:
-        case BITWISE_NAND:
-        case BITWISE_NOR:
-        case BITWISE_XNOR:
-        case BITWISE_XOR:
-        case BITWISE_OR:
-        case MULTI_PORT_MUX:
-        case CASE_EQUAL:
-        case CASE_NOT_EQUAL:
-        case GTE:
-        case LTE:
+        /* The other nodes should have already been converted to softer versions. */
         default:
-            error_message(SIMULATION, node->loc, "Node should have been converted to softer version: %s", node->name);
+            error_message(SIMULATION, node->loc,
+                          "Node [%s] should have been converted to softer version: %s",
+                          node_name_based_on_op(node),
+                          node->name);
             break;
     }
 
@@ -1375,9 +1379,63 @@ static void compute_flipflop_node(nnode_t* node, int cycle) {
 }
 
 /*
- * Computes a node of type MUX_2 for the given cycle.
+ * Computes a node of type MULTIPLEXER for the given cycle.
  */
-static void compute_mux_2_node(nnode_t* node, int cycle) {
+static void compute_multiplexer_node(nnode_t* node, int cycle) {
+    verify_i_o_availabilty(node, -1, 1);
+    oassert(node->num_input_port_sizes == 2);
+
+    BitSpace::bit_value_t value = BitSpace::_x;
+    long address = compute_address(node, node->input_pins, node->input_port_sizes[0], cycle);
+    // if the address is valid go get the value
+    if (address >= 0 && address < node->input_port_sizes[1]) {
+        /**
+         * we buffer the output since the output should be a logical value,
+         * if we simply passed through the value, it would not be equivalent 
+         * to computing the PLA table if the 
+         */
+        value = BitSpace::l_buf[get_pin_value(
+            node->input_pins[node->input_port_sizes[0] + address], cycle)];
+    }
+
+    update_pin_value(node->output_pins[0], value, cycle);
+}
+
+/*
+ * Computes a node of type tristate for the given cycle.
+ */
+static void compute_tristate_node(nnode_t* node, int cycle) {
+    verify_i_o_availabilty(node, 3, 1);
+    BitSpace::bit_value_t input = get_pin_value(node->input_pins[0], cycle);
+    BitSpace::bit_value_t select = get_pin_value(node->input_pins[1], cycle);
+    BitSpace::bit_value_t value = BitSpace::_x;
+    switch (node->type) {
+        case BUFIF0: {
+            value = BitSpace::l_bufif0[input][select];
+            break;
+        }
+        case BUFIF1: {
+            value = BitSpace::l_bufif1[input][select];
+            break;
+        }
+        case NOTIF0: {
+            value = BitSpace::l_notif0[input][select];
+            break;
+        }
+        case NOTIF1: {
+            value = BitSpace::l_notif1[input][select];
+            break;
+        }
+        default:
+            oassert(false);
+    }
+    update_pin_value(node->output_pins[0], value, cycle);
+}
+
+/*
+ * Computes a node of type DECODED_MUX for the given cycle.
+ */
+static void compute_decoded_multiplexer_node(nnode_t* node, int cycle) {
     verify_i_o_availabilty(node, -1, 1);
     oassert(node->num_input_port_sizes >= 2);
     oassert(node->input_port_sizes[0] == node->input_port_sizes[1]);
@@ -1634,11 +1692,11 @@ static void compute_memory_node(nnode_t* node, int cycle) {
 /**
  * compute the address 
  */
-static long compute_address(nnode_t* node, signal_list_t* input_address, int cycle) {
+static long compute_address(nnode_t* node, npin_t** pins, long num_pins, int cycle) {
     long address = 0;
-    for (long i = 0; i < input_address->count && address >= 0; i++) {
+    for (long i = 0; i < num_pins && address >= 0; i++) {
         // If any address pins are x's, write x's we return -1.
-        BitSpace::bit_value_t value = get_pin_value(input_address->pins[i], cycle);
+        BitSpace::bit_value_t value = get_pin_value(pins[i], cycle);
         if (BitSpace::is_unk[value])
             address = -1;
         else
@@ -1648,7 +1706,7 @@ static long compute_address(nnode_t* node, signal_list_t* input_address, int cyc
 }
 
 static void read_write_to_memory(nnode_t* node, signal_list_t* input_address, signal_list_t* data_out, signal_list_t* data_in, bool trigger, npin_t* write_enabled, int cycle) {
-    long address = compute_address(node, input_address, cycle);
+    long address = compute_address(node, input_address->pins, input_address->count, cycle);
 
     //make a single trigger out of write_enable pin and if it was a positive edge
     BitSpace::bit_value_t we = get_pin_value(write_enabled, cycle);
@@ -2360,51 +2418,14 @@ static void write_cycle_to_file(lines_t* l, FILE* file, int cycle) {
  * for the given cycle.
  */
 static void write_vector_to_file(lines_t* l, FILE* file, int cycle) {
-    std::stringstream buffer;
-    int i;
-
-    for (i = 0; i < l->count; i++) {
-        buffer.str(std::string());
-        line_t* line = l->lines[i];
-        int num_pins = line->number_of_pins;
-
-        if (line_has_unknown_pin(line, cycle) || num_pins == 1) {
-            int j;
-            for (j = num_pins - 1; j >= 0; j--) {
-                BitSpace::bit_value_t value = get_line_pin_value(line, j, cycle);
-
-                if (BitSpace::is_unk[value]) {
-                    buffer << "x";
-                } else {
-                    buffer << std::dec << (int)value;
-                }
-            }
-            // If there are no known values, print a single capital X.
-            // (Only for testing. Breaks machine readability.)
-            //if (!known_values && num_pins > 1)
-            //	odin_sprintf(buffer, "X");
-        } else {
-            buffer << "0X";
-
-            int hex_digit = 0;
-            int j;
-            for (j = num_pins - 1; j >= 0; j--) {
-                BitSpace::bit_value_t value = get_line_pin_value(line, j, cycle);
-
-                hex_digit += value << j % 4;
-
-                if (!(j % 4)) {
-                    buffer << std::hex << hex_digit;
-                    hex_digit = 0;
-                }
-            }
+    for (int i = 0; i < l->count; i++) {
+        VNumber line_value(l->lines[i]->number_of_pins, BitSpace::_x, false, true);
+        for (int j = 0; j < l->lines[i]->number_of_pins; j += 1) {
+            line_value.set_bit_from_lsb(j, get_line_pin_value(l->lines[i], j, cycle));
         }
-        buffer << " ";
-        // Expand the value to fill to space under the header. (Gets ugly sometimes.)
-        //while (strlen(buffer) < strlen(l->lines[i]->name))
-        //	strcat(buffer," ");
 
-        fprintf(file, "%s", buffer.str().c_str());
+        //internally handles unknowns
+        fprintf(file, "%s ", line_value.to_vstring('H').c_str());
     }
     fprintf(file, "\n");
 }

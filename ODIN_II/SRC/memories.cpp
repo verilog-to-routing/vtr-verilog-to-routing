@@ -408,11 +408,8 @@ void split_sp_memory_depth(nnode_t* node, int split_size) {
 
     /* Copy over the output pins for the new memory */
     for (i = 0; i < signals->data->count; i++) {
-        nnode_t* mux = make_2port_gate(MUX_2, 2, 2, 1, new_mem_node1, new_mem_node1->traverse_visited);
-        nnode_t* not_g = make_not_gate(new_mem_node1, new_mem_node1->traverse_visited);
+        nnode_t* mux = make_2port_gate(MULTIPLEXER, 1, 2, 1, new_mem_node1, new_mem_node1->traverse_visited);
         add_input_pin_to_node(mux, copy_input_npin(signals->addr->pins[0]), 0);
-        add_input_pin_to_node(not_g, copy_input_npin(signals->addr->pins[0]), 0);
-        connect_nodes(not_g, 0, mux, 1);
 
         npin_t* pin = signals->out->pins[i];
         if (pin->name)
@@ -425,13 +422,16 @@ void split_sp_memory_depth(nnode_t* node, int split_size) {
 
         remap_pin_to_new_node(pin, mux, 0);
 
+        /**
+         * the pin is used as an index into port 2 with the mux, (select, low, high, ...)
+         */
         connect_nodes(new_mem_node1, i, mux, 2);
         if (new_mem_node1->output_pins[i]->mapping) {
             vtr::free(new_mem_node1->output_pins[i]->mapping);
         }
         new_mem_node1->output_pins[i]->mapping = vtr::strdup("out");
 
-        connect_nodes(new_mem_node2, i, mux, 3);
+        connect_nodes(new_mem_node2, i, mux, 1);
         if (new_mem_node2->output_pins[i]->mapping) {
             vtr::free(new_mem_node2->output_pins[i]->mapping);
         }
@@ -561,11 +561,8 @@ void split_dp_memory_depth(nnode_t* node, int split_size) {
 
     /* Copy over the output pins for the new memory */
     for (i = 0; i < signals->data1->count; i++) {
-        nnode_t* mux = make_2port_gate(MUX_2, 2, 2, 1, new_mem_node1, new_mem_node1->traverse_visited);
-        nnode_t* not_g = make_not_gate(new_mem_node1, new_mem_node1->traverse_visited);
+        nnode_t* mux = make_2port_gate(MULTIPLEXER, 1, 2, 1, new_mem_node1, new_mem_node1->traverse_visited);
         add_input_pin_to_node(mux, copy_input_npin(signals->addr1->pins[0]), 0);
-        add_input_pin_to_node(not_g, copy_input_npin(signals->addr1->pins[0]), 0);
-        connect_nodes(not_g, 0, mux, 1);
 
         npin_t* pin = signals->out1->pins[i];
         if (pin->name) {
@@ -579,13 +576,15 @@ void split_dp_memory_depth(nnode_t* node, int split_size) {
 
         remap_pin_to_new_node(pin, mux, 0);
 
+        // select if addr is high
         connect_nodes(new_mem_node1, i, mux, 2);
         if (new_mem_node1->output_pins[i]->mapping) {
             vtr::free(new_mem_node1->output_pins[i]->mapping);
         }
         new_mem_node1->output_pins[i]->mapping = vtr::strdup("out1");
 
-        connect_nodes(new_mem_node2, i, mux, 3);
+        // select if addr is low
+        connect_nodes(new_mem_node2, i, mux, 1);
         if (new_mem_node2->output_pins[i]->mapping) {
             vtr::free(new_mem_node2->output_pins[i]->mapping);
         }
@@ -594,11 +593,8 @@ void split_dp_memory_depth(nnode_t* node, int split_size) {
 
     /* Copy over the output pins for the new memory */
     for (i = 0; i < signals->data1->count; i++) {
-        nnode_t* mux = make_2port_gate(MUX_2, 2, 2, 1, new_mem_node1, new_mem_node1->traverse_visited);
-        nnode_t* not_g = make_not_gate(new_mem_node1, new_mem_node1->traverse_visited);
+        nnode_t* mux = make_2port_gate(MULTIPLEXER, 1, 2, 1, new_mem_node1, new_mem_node1->traverse_visited);
         add_input_pin_to_node(mux, copy_input_npin(signals->addr2->pins[0]), 0);
-        add_input_pin_to_node(not_g, copy_input_npin(signals->addr2->pins[0]), 0);
-        connect_nodes(not_g, 0, mux, 1);
 
         int pin_index = new_mem_node1->output_port_sizes[0] + i;
 
@@ -614,13 +610,15 @@ void split_dp_memory_depth(nnode_t* node, int split_size) {
 
         remap_pin_to_new_node(pin, mux, 0);
 
+        // select if addr is high
         connect_nodes(new_mem_node1, pin_index, mux, 2);
         if (new_mem_node1->output_pins[pin_index]->mapping) {
             vtr::free(new_mem_node1->output_pins[pin_index]->mapping);
         }
         new_mem_node1->output_pins[pin_index]->mapping = vtr::strdup("out2");
 
-        connect_nodes(new_mem_node2, pin_index, mux, 3);
+        // select if addr is low
+        connect_nodes(new_mem_node2, pin_index, mux, 1);
         if (new_mem_node2->output_pins[pin_index]->mapping) {
             vtr::free(new_mem_node2->output_pins[pin_index]->mapping);
         }
@@ -1420,7 +1418,7 @@ void instantiate_soft_single_port_ram(nnode_t* node, short mark, netlist_t* netl
     sp_ram_signals* signals = get_sp_ram_signals(node);
 
     // Construct an address decoder.
-    signal_list_t* decoder = create_decoder(node, mark, signals->addr);
+    signal_list_t* decoder = create_decoder(node, signals->addr, mark, netlist);
 
     // The total number of memory addresses. (2^address_bits)
     long num_addr = decoder->count;
@@ -1465,11 +1463,9 @@ void instantiate_soft_single_port_ram(nnode_t* node, short mark, netlist_t* netl
                 || address_pin->net == verilog_netlist->pad_net);
 
             // A multiplexer switches between accepting incoming data and keeping existing data.
-            nnode_t* mux = make_2port_gate(MUX_2, 2, 2, 1, node, mark);
-            nnode_t* not_g = make_not_gate(node, mark);
-            connect_nodes(and_gates[j], 0, not_g, 0);
+            nnode_t* mux = make_2port_gate(MULTIPLEXER, 1, 2, 1, node, mark);
             connect_nodes(and_gates[j], 0, mux, 0);
-            connect_nodes(not_g, 0, mux, 1);
+            // only when select is high do we select the data
             if (!j)
                 remap_pin_to_new_node(data_pin, mux, 2);
             else
@@ -1484,7 +1480,7 @@ void instantiate_soft_single_port_ram(nnode_t* node, short mark, netlist_t* netl
                 add_input_pin_to_node(ff, copy_input_npin(signals->clk), 1);
 
             // The output of the flipflop connects back to the multiplexer (to hold the value.)
-            connect_nodes(ff, 0, mux, 3);
+            connect_nodes(ff, 0, mux, 1);
 
             // The flipflop connects to the output multiplexer.
             connect_nodes(ff, 0, output_mux, num_addr + j);
@@ -1524,8 +1520,8 @@ void instantiate_soft_dual_port_ram(nnode_t* node, short mark, netlist_t* netlis
     dp_ram_signals* signals = get_dp_ram_signals(node);
 
     // Construct the address decoders.
-    signal_list_t* decoder1 = create_decoder(node, mark, signals->addr1);
-    signal_list_t* decoder2 = create_decoder(node, mark, signals->addr2);
+    signal_list_t* decoder1 = create_decoder(node, signals->addr1, mark, netlist);
+    signal_list_t* decoder2 = create_decoder(node, signals->addr2, mark, netlist);
 
     oassert(decoder1->count == decoder2->count);
 
@@ -1608,7 +1604,7 @@ void instantiate_soft_dual_port_ram(nnode_t* node, short mark, netlist_t* netlis
                 || addr2_pin->net == verilog_netlist->pad_net);
 
             // The data mux selects between the two data lines for this address.
-            nnode_t* data_mux = make_2port_gate(MUX_2, 2, 2, 1, node, mark);
+            nnode_t* data_mux = make_2port_gate(DECODED_MUX, 2, 2, 1, node, mark);
             // Port 2 before 1 to mimic the simulator's behaviour when the addresses are the same.
             connect_nodes(and2_gates[j], 0, data_mux, 0);
             connect_nodes(and1_gates[j], 0, data_mux, 1);
@@ -1621,13 +1617,10 @@ void instantiate_soft_dual_port_ram(nnode_t* node, short mark, netlist_t* netlis
             else
                 add_input_pin_to_node(data_mux, copy_input_npin(data1_pin), 3);
 
-            nnode_t* not_g = make_not_gate(node, mark);
-            connect_nodes(or_gates[j], 0, not_g, 0);
-
             // A multiplexer switches between accepting incoming data and keeping existing data.
-            nnode_t* mux = make_2port_gate(MUX_2, 2, 2, 1, node, mark);
+            nnode_t* mux = make_2port_gate(MULTIPLEXER, 1, 2, 1, node, mark);
             connect_nodes(or_gates[j], 0, mux, 0);
-            connect_nodes(not_g, 0, mux, 1);
+            // only when mux is high do we select the data in
             connect_nodes(data_mux, 0, mux, 2);
 
             // A flipflop holds the value of each memory cell.
@@ -1639,7 +1632,7 @@ void instantiate_soft_dual_port_ram(nnode_t* node, short mark, netlist_t* netlis
                 add_input_pin_to_node(ff, copy_input_npin(signals->clk), 1);
 
             // The output of the flipflop connects back to the multiplexer (to hold the value.)
-            connect_nodes(ff, 0, mux, 3);
+            connect_nodes(ff, 0, mux, 1);
 
             // Connect the flipflop to both output muxes.
             connect_nodes(ff, 0, output_mux1, num_addr + j);
@@ -1666,7 +1659,7 @@ void instantiate_soft_dual_port_ram(nnode_t* node, short mark, netlist_t* netlis
         remap_pin_to_new_node(out1_pin, output_mux1, 0);
         remap_pin_to_new_node(out2_pin, output_mux2, 0);
 
-        // Convert the output muxes to MUX_2 nodes.
+        // Convert the output muxes to DECODED_MUX nodes.
         instantiate_multi_port_mux(output_mux1, mark, netlist);
         instantiate_multi_port_mux(output_mux2, mark, netlist);
     }
@@ -1687,77 +1680,53 @@ void instantiate_soft_dual_port_ram(nnode_t* node, short mark, netlist_t* netlis
 /*
  * Creates an n to 2^n decoder from the input signal list.
  */
-signal_list_t* create_decoder(nnode_t* node, short mark, signal_list_t* input_list) {
-    long num_inputs = input_list->count;
-    if (num_inputs > SOFT_RAM_ADDR_LIMIT)
-        error_message(NETLIST, node->loc, "Memory %s of depth 2^%ld exceeds ODIN bound of 2^%d.\nMust use an FPGA architecture that contains embedded hard block memories", node->name, num_inputs, SOFT_RAM_ADDR_LIMIT);
+signal_list_t* create_decoder(nnode_t* node, signal_list_t* input_list, short mark, netlist_t* /* netlist */) {
+    if (input_list->count > SOFT_RAM_ADDR_LIMIT)
+        error_message(NETLIST, node->loc,
+                      "Memory %s of depth 2^%ld exceeds ODIN bound of 2^%d.\n"
+                      "Must use an FPGA architecture that contains embedded hard block memories",
+                      node->name,
+                      input_list->count,
+                      SOFT_RAM_ADDR_LIMIT);
 
     // Number of outputs is 2^num_inputs
-    long num_outputs = shift_left_value_with_overflow_check(0x1, num_inputs, node->loc);
+    long num_outputs = shift_left_value_with_overflow_check(0x1, input_list->count, node->loc);
 
-    // Create NOT gates for all inputs and put the outputs in their own signal list.
-    signal_list_t* not_gates = init_signal_list();
-    for (long i = 0; i < num_inputs; i++) {
-        if (input_list->pins[i]->net->driver_pin == NULL
-            && input_list->pins[i]->net != verilog_netlist->zero_net
-            && input_list->pins[i]->net != verilog_netlist->one_net
-            && input_list->pins[i]->net != verilog_netlist->pad_net) {
+    for (long i = 0; i < input_list->count; i++) {
+        // unmap this pin
+        unmap_pin_from_node(input_list->pins[i]);
+        if (input_list->pins[i]->net->driver_pin == NULL) {
             warning_message(NETLIST, node->loc, "Signal %s is not driven. padding with ground\n", input_list->pins[i]->name);
             add_fanout_pin_to_net(verilog_netlist->zero_net, input_list->pins[i]);
         }
-
-        nnode_t* not_g = make_not_gate(node, mark);
-        remap_pin_to_new_node(input_list->pins[i], not_g, 0);
-        npin_t* not_output = allocate_npin();
-        add_output_pin_to_node(not_g, not_output, 0);
-        nnet_t* net = allocate_nnet();
-        add_driver_pin_to_net(net, not_output);
-        not_output = allocate_npin();
-        add_fanout_pin_to_net(net, not_output);
-        add_pin_to_signal_list(not_gates, not_output);
-
-        npin_t* pin = allocate_npin();
-        net = input_list->pins[i]->net;
-
-        add_fanout_pin_to_net(net, pin);
-
-        input_list->pins[i] = pin;
     }
 
     // Create AND gates and assign signals.
     signal_list_t* return_list = init_signal_list();
     for (long i = 0; i < num_outputs; i++) {
         // Each output is connected to an and gate which is driven by a single permutation of the inputs.
-        nnode_t* and_g = make_1port_logic_gate(LOGICAL_AND, num_inputs, node, mark);
-
-        for (long j = 0; j < num_inputs; j++) {
-            // Look at the jth bit of i. If it's 0, take the negated signal.
-            long value = shift_left_value_with_overflow_check(0x1, j, and_g->loc);
-            value &= i;
-            value >>= j;
-
-            npin_t* pin = value ? input_list->pins[j] : not_gates->pins[j];
-
-            // Use the original not pins on the first iteration and the original input pins on the last.
-            if (i > 0 && i < num_outputs - 1)
-                pin = copy_input_npin(pin);
-
-            // Connect the signal to the output and gate.
-            add_input_pin_to_node(and_g, pin, j);
+        nnode_t* lut = make_1port_logic_gate_with_inputs(GENERIC, input_list->count, input_list, node, mark);
+        // setup the bitmap
+        lut->bit_map = (char**)vtr::calloc(1, sizeof(char*));
+        lut->bit_map_line_count = 1;
+        lut->bit_map[0] = (char*)vtr::calloc(input_list->count, sizeof(char));
+        for (long j = 0; j < input_list->count; j++) {
+            lut->bit_map[0][j] = (char)('0' + ((i >> j) & 0x1));
         }
 
-        // Add output pin, net, and fanout pin.
-        npin_t* output = allocate_npin();
-        nnet_t* net = allocate_nnet();
-        add_output_pin_to_node(and_g, output, 0);
-        add_driver_pin_to_net(net, output);
-        output = allocate_npin();
-        add_fanout_pin_to_net(net, output);
-
         // Add the fanout pin (decoder output) to the return list.
-        add_pin_to_signal_list(return_list, output);
+        signal_list_t* output_list = make_output_pins_for_existing_node(lut, 1);
+        add_pin_to_signal_list(return_list, output_list->pins[0]);
+        free_signal_list(output_list);
+
+        signal_list_t* current_list = input_list;
+        if (i < num_outputs - 1) {
+            input_list = copy_input_signals(input_list);
+        }
+        if (i > 0) {
+            free_signal_list(current_list);
+        }
     }
 
-    free_signal_list(not_gates);
     return return_list;
 }

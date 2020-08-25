@@ -344,7 +344,7 @@ void declare_hard_multiplier(nnode_t* node) {
  *-------------------------------------------------------------------------*/
 void instantiate_hard_multiplier(nnode_t* node, short mark, netlist_t* /*netlist*/) {
     oassert(node
-            && "node is NULL to instanciate hard multiplier");
+            && "node is NULL to instantiate hard multiplier");
 
     declare_hard_multiplier(node);
 

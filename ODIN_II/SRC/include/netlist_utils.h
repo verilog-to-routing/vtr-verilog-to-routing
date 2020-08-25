@@ -37,7 +37,9 @@ void add_input_port_information(nnode_t* node, int port_width);
 void combine_nets(nnet_t* output_net, nnet_t* input_net, netlist_t* netlist);
 void join_nets(nnet_t* net, nnet_t* input_net);
 
+void unmap_pin_from_net(npin_t* pin);
 void remap_pin_to_new_net(npin_t* pin, nnet_t* new_net);
+void unmap_pin_from_node(npin_t* pin);
 void remap_pin_to_new_node(npin_t* pin, nnode_t* new_node, int pin_idx);
 
 signal_list_t* init_signal_list();

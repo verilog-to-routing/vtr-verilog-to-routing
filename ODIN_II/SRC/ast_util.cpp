@@ -1061,8 +1061,8 @@ ast_node_t* fold_unary(ast_node_t** node) {
                 success = true;
                 break;
 
-            case BUF_NODE:
-                vresult = voperand_0;
+            case BUF:
+                vresult = V_BITWISE_BUF(voperand_0);
                 success = true;
                 break;
 
@@ -1178,6 +1178,26 @@ ast_node_t* fold_binary(ast_node_t** node) {
                 success = true;
                 break;
 
+            case BUFIF1: {
+                vresult = V_BITWISE_BUFIF1(voperand_0, voperand_1);
+                success = true;
+                break;
+            }
+            case BUFIF0: {
+                vresult = V_BITWISE_BUFIF0(voperand_0, voperand_1);
+                success = true;
+                break;
+            }
+            case NOTIF1: {
+                vresult = V_BITWISE_NOTIF1(voperand_0, voperand_1);
+                success = true;
+                break;
+            }
+            case NOTIF0: {
+                vresult = V_BITWISE_NOTIF0(voperand_0, voperand_1);
+                success = true;
+                break;
+            }
             case BITWISE_XOR:
                 vresult = V_BITWISE_XOR(voperand_0, voperand_1);
                 success = true;

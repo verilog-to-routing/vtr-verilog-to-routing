@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <cmath>
 #include "odin_globals.h"
 #include "odin_util.h"
 #include "ast_util.h"
@@ -112,6 +113,7 @@ Hashtable* index_names(char** names, int count);
 Hashtable* associate_names(char** names1, char** names2, int count);
 void free_hard_block_pins(hard_block_pins* p);
 void free_hard_block_ports(hard_block_ports* p);
+operation_list look_for_tristates(nnode_t* node, long input_count, char** names);
 
 hard_block_model* get_hard_block_model(char* name, hard_block_ports* ports, hard_block_models* models);
 void add_hard_block_model(hard_block_model* m, hard_block_ports* ports, hard_block_models* models);
@@ -580,10 +582,102 @@ void create_hard_block_nodes(hard_block_models* models, FILE* file, Hashtable* o
 }
 
 /*---------------------------------------------------------------------------------------------
+ * function:look_for_tristates
+ * evaluates an entry to figure out wich type of tristate gate it is.
+ * this is important since tristate gates bahave differently than 
+ * other types, we go through a lot of effort to map it, we try to figure out
+ * wich pin is wich with the truth table and using the unconn 
+ *-------------------------------------------------------------------------------------------*/
+operation_list look_for_tristates(nnode_t* node, long input_count, char** names) {
+    operation_list type = node->type;
+    /**
+         * look for tristate
+         * should have 3 input (input, select and unconn)
+         * and a 2 row lookup table
+         */
+    if (input_count == 3
+        && node->bit_map_line_count == 2) {
+        int unconn_id = 0;
+        for (unconn_id = 0; unconn_id < input_count; unconn_id += 1) {
+            if (0 == strcmp(names[unconn_id], "unconn")) {
+                break;
+            }
+        }
+        if (unconn_id < input_count
+            && ((node->bit_map[0][unconn_id] == '1' && node->bit_map[1][unconn_id] == '-')
+                || (node->bit_map[0][unconn_id] == '-' && node->bit_map[1][unconn_id] == '1'))) {
+            /**
+                 * now that we have the unconn pin we can check 
+                 * the lut of the other two input
+                 */
+            int select_id = unconn_id;
+            for (select_id = ((unconn_id + 1) % 3); select_id != unconn_id; select_id = ((select_id + 1) % 3)) {
+                if ((node->bit_map[0][select_id] == '0' && node->bit_map[1][select_id] == '1')
+                    || (node->bit_map[0][select_id] == '1' && node->bit_map[1][select_id] == '0')) {
+                    break;
+                }
+            }
+            if (select_id != unconn_id) {
+                /**
+                     * we have both the select and the unconn pin
+                     * we can assume the input pin
+                     * but we dont know were it is
+                     */
+                int input_id = ((unconn_id + 1) % 3);
+                if (input_id == select_id) {
+                    input_id = ((select_id + 1) % 3);
+                }
+                /* we flip the tables to make our life easier */
+                if (node->bit_map[0][unconn_id] == '1' && node->bit_map[1][unconn_id] == '-') {
+                    char* tmp = node->bit_map[0];
+                    node->bit_map[0] = node->bit_map[1];
+                    node->bit_map[1] = tmp;
+                }
+                /** 
+                     * now we check that the input makes sense 
+                     * we know unconn is '-' then '1'
+                     * input should be '[01]' then '-'
+                     */
+                if (node->bit_map[1][input_id] == '-') {
+                    /**
+                         * now that we know that it is a tristate,
+                         * we look for wich type
+                         */
+                    if (node->bit_map[0][input_id] == '1') {
+                        if (node->bit_map[0][select_id] == '1') {
+                            type = BUFIF1;
+                        } else {
+                            type = BUFIF0;
+                        }
+                    } else if (node->bit_map[0][input_id] == '0') {
+                        if (node->bit_map[0][select_id] == '1') {
+                            type = NOTIF1;
+                        } else {
+                            type = NOTIF0;
+                        }
+                    }
+                    /**
+                         * we know this is a tristate, we rearange the input
+                         * order to match ours, input, select, unconn
+                         */
+                    char* names_replace[3] = {
+                        names[input_id],
+                        names[select_id],
+                        names[unconn_id],
+                    };
+                    for (int i = 0; i < 3; i += 1) {
+                        names[i] = names_replace[i];
+                    }
+                }
+            }
+        }
+    }
+    return type;
+}
+/*---------------------------------------------------------------------------------------------
  * function:create_internal_node_and_driver
  * to create an internal node and driver from that node
  *-------------------------------------------------------------------------------------------*/
-
 void create_internal_node_and_driver(FILE* file, Hashtable* output_nets_hash) {
     /* Storing the names of the input and the final output in array names */
     char* ptr = NULL;
@@ -598,27 +692,28 @@ void create_internal_node_and_driver(FILE* file, Hashtable* output_nets_hash) {
     /* assigning the new_node */
     nnode_t* new_node = allocate_nnode(my_location);
     new_node->related_ast_node = NULL;
+    skip_reading_bit_map = true;
 
     /* gnd vcc unconn already created as top module so ignore them */
     if (
         !strcmp(names[input_count - 1], "gnd")
         || !strcmp(names[input_count - 1], "vcc")
         || !strcmp(names[input_count - 1], "unconn")) {
-        skip_reading_bit_map = true;
         free_nnode(new_node);
     } else {
         /* assign the node type by seeing the name */
-        operation_list node_type = (operation_list)assign_node_type_from_node_name(names[input_count - 1]);
+        new_node->type = (operation_list)assign_node_type_from_node_name(names[input_count - 1]);
 
-        if (node_type != GENERIC) {
-            new_node->type = node_type;
-            skip_reading_bit_map = true;
-        }
         /* Check for GENERIC type , change the node by reading the bit map */
-        else if (node_type == GENERIC) {
+        if (new_node->type == GENERIC) {
             new_node->type = (operation_list)read_bit_map_find_unknown_gate(input_count - 1, new_node, file);
-            skip_reading_bit_map = true;
         }
+
+        /**
+         * Check for tristates type , change the node by evaluating the bitmap and the input port 
+         * we try mapping it no matter what.
+         */
+        new_node->type = (operation_list)look_for_tristates(new_node, input_count - 1, names);
 
         /* allocate the input pin (= input_count-1)*/
         if (input_count - 1 > 0) // check if there is any input pins
@@ -626,9 +721,15 @@ void create_internal_node_and_driver(FILE* file, Hashtable* output_nets_hash) {
             allocate_more_input_pins(new_node, input_count - 1);
 
             /* add the port information */
-            if (new_node->type == MUX_2) {
+            if (new_node->type == DECODED_MUX) {
                 add_input_port_information(new_node, (input_count - 1) / 2);
                 add_input_port_information(new_node, (input_count - 1) / 2);
+            } else if (new_node->type == MULTIPLEXER) {
+                long address_width = (long)log2((input_count - 1));
+                long address_depth = shift_left_value_with_overflow_check(1, address_width, my_location);
+                oassert((address_width + address_depth) == (input_count - 1));
+                add_input_port_information(new_node, address_width);
+                add_input_port_information(new_node, address_depth);
             } else {
                 int i;
                 for (i = 0; i < input_count - 1; i++)
@@ -892,7 +993,7 @@ operation_list read_bit_map_find_unknown_gate(int input_count, nnode_t* node, FI
                 }
             }
 
-            /* MUX_2 */
+            /* DECODED_MUX */
             if (line_count_bitmap * 2 == input_count && to_return == operation_list_END) {
                 int i;
                 for (i = 0; i < line_count_bitmap; i++) {
@@ -915,7 +1016,43 @@ operation_list read_bit_map_find_unknown_gate(int input_count, nnode_t* node, FI
                 }
 
                 if (i == line_count_bitmap) {
-                    to_return = MUX_2;
+                    to_return = DECODED_MUX;
+                }
+            }
+
+            /**
+             * MULTIPLEXER 
+             * input width is (n+2^n) and the table is 2^n long
+             * so to figure out if this is a mux table, log2(the table length) to get the selector size 'n'
+             */
+            long selector_width = log2(line_count_bitmap);
+            if ((selector_width + line_count_bitmap) == input_count
+                && shift_left_value_with_overflow_check(1, selector_width, my_location) == line_count_bitmap
+                && to_return == operation_list_END) {
+                /**
+                 * the line number is the selector value, 
+                 * so figure out if the n first bit is the big endian binary string 
+                 * for the line number
+                 */
+                bool matches = true;
+                for (int address = 0; address < line_count_bitmap && matches; address += 1) {
+                    // check the select bits
+                    for (int i = 0; i < selector_width && matches; i += 1) {
+                        char address_bit = '0' + ((address >> i) & 0x1);
+                        matches = (bit_map[address][i] == address_bit);
+                    }
+
+                    for (int i = selector_width; i < input_count && matches; i += 1) {
+                        if (i == selector_width + address) {
+                            matches = (bit_map[address][i] == '1');
+                        } else {
+                            matches = (bit_map[address][i] == '-');
+                        }
+                    }
+                }
+
+                if (matches) {
+                    to_return = MULTIPLEXER;
                 }
             }
         } else {
@@ -937,7 +1074,7 @@ operation_list read_bit_map_find_unknown_gate(int input_count, nnode_t* node, FI
     if (output_bit_map) {
         vtr::free(output_bit_map);
     }
-    if (bit_map) {
+    if (node->bit_map != bit_map) {
         for (int i = 0; i < line_count_bitmap; i++) {
             vtr::free(bit_map[i]);
         }

@@ -97,7 +97,7 @@ void define_latchs_initial_value_inside_initial_statement(ast_node_t* initial_no
 
 signal_list_t* concatenate_signal_lists(signal_list_t** signal_lists, int num_signal_lists);
 
-signal_list_t* create_gate(ast_node_t* gate, char* instance_name_prefix, sc_hierarchy* local_ref);
+void connect_gate_instantiation(ast_node_t* gate, char* instance_name_prefix, sc_hierarchy* local_ref);
 signal_list_t* create_hard_block(ast_node_t* block, char* instance_name_prefix, sc_hierarchy* local_ref);
 signal_list_t* create_pins(ast_node_t* var_declare, char* name, char* instance_name_prefix, sc_hierarchy* local_ref);
 signal_list_t* create_output_pin(ast_node_t* var_declare, char* instance_name_prefix, sc_hierarchy* local_ref);
@@ -130,7 +130,7 @@ signal_list_t* create_soft_single_port_ram_block(ast_node_t* block, char* instan
 signal_list_t* create_soft_dual_port_ram_block(ast_node_t* block, char* instance_name_prefix, sc_hierarchy* local_ref);
 
 void look_for_clocks(netlist_t* netlist);
-void reorder_connections_from_name(ast_node_t* instance_node, ast_node_t* instanciated_instance, ids type);
+void reorder_connections_from_name(ast_node_t* instance_node, ast_node_t* instantiated_instance, ids type);
 
 /*---------------------------------------------------------------------------------------------
  * (function: create_netlist)
@@ -476,10 +476,10 @@ signal_list_t* netlist_expand_ast_of_module(ast_node_t** node_ref, char* instanc
                 return_sig_list = connect_task_instantiation_and_alias(INSTANTIATE_DRIVERS, node, instance_name_prefix, local_ref);
                 skip_children = true;
                 break;
-            case GATE:
+            case GATE_INSTANCE:
                 /* create gate instances */
-                return_sig_list = create_gate(node, instance_name_prefix, local_ref);
-                /* create_gate does it's own instantiations so skip the children in the traverse */
+                connect_gate_instantiation(node, instance_name_prefix, local_ref);
+                /* connect_gate_instantiation does it's own instantiations so skip the children in the traverse */
                 skip_children = true;
                 break;
             /* ---------------------- */
@@ -2058,7 +2058,10 @@ signal_list_t* connect_function_instantiation_and_alias(short PASS, ast_node_t* 
             /* assume all arrays declared [largest:smallest] */
             oassert(node2->types.vnumber->get_value() <= node1->types.vnumber->get_value());
             oassert(node4->types.vnumber->get_value() <= node3->types.vnumber->get_value());
-            port_size = node1->types.vnumber->get_value() * node3->types.vnumber->get_value() - 1;
+
+            int port_1 = node1->types.vnumber->get_value() - node2->types.vnumber->get_value() + 1;
+            int port_2 = node3->types.vnumber->get_value() - node4->types.vnumber->get_value() + 1;
+            port_size = port_1 * port_2;
         }
 
         //-----------------------------------------------------------------------------------
@@ -2358,7 +2361,9 @@ signal_list_t* connect_task_instantiation_and_alias(short PASS, ast_node_t* task
             /* assume all arrays declared [largest:smallest] */
             oassert(node2->types.vnumber->get_value() <= node1->types.vnumber->get_value());
             oassert(node4->types.vnumber->get_value() <= node3->types.vnumber->get_value());
-            port_size = node1->types.vnumber->get_value() * node3->types.vnumber->get_value() - 1;
+            int port_1 = node1->types.vnumber->get_value() - node2->types.vnumber->get_value() + 1;
+            int port_2 = node3->types.vnumber->get_value() - node4->types.vnumber->get_value() + 1;
+            port_size = port_1 * port_2;
         }
 
         //-----------------------------------------------------------------------------------
@@ -3134,7 +3139,7 @@ void terminate_continuous_assignment(ast_node_t* node, signal_list_t* assignment
                     net->name = pin->name;
 
                 nnode_t* buf_node = allocate_nnode(node->loc);
-                buf_node->type = BUF_NODE;
+                buf_node->type = BUF;
                 /* create the unique name for this gate */
                 buf_node->name = node_name(buf_node, instance_name_prefix);
 
@@ -3216,106 +3221,126 @@ int alias_output_assign_pins_to_inputs(char_list_t* output_list, signal_list_t* 
 }
 
 /*--------------------------------------------------------------------------
- * (function: create_gate)
- * 	This function creates a gate node in the netlist and hooks up the inputs
+ * (function: connect_gate_instantiation)
+ * 	This function connect a gate node in the netlist and hooks up the inputs
  * 	and outputs.
  *------------------------------------------------------------------------*/
-signal_list_t* create_gate(ast_node_t* gate, char* instance_name_prefix, sc_hierarchy* local_ref) {
-    signal_list_t* out_1 = NULL;
+void connect_gate_instantiation(ast_node_t* gate, char* instance_name_prefix, sc_hierarchy* local_ref) {
+    // must at least have a name
+    oassert(gate->num_children >= 1);
 
-    for (long j = 0; j < gate->children[0]->num_children; j++) {
-        /* free the previous list since it was not the last itteration */
-        if (out_1 != NULL) {
-            free_signal_list(out_1);
-            out_1 = NULL;
+    signal_list_t** input_list = NULL;
+    size_t input_size = 0;
+
+    signal_list_t** output_list = NULL;
+    size_t output_size = 0;
+
+    switch (gate->types.operation.op) {
+        case BUFIF0:
+        case BUFIF1:
+        case NOTIF0:
+        case NOTIF1: {
+            if (gate->num_children != 3) {
+                //error expected 1 output and 2 input
+                oassert(false);
+            }
+            input_size = 2;
+            output_size = 1;
+
+            break;
         }
-
-        ast_node_t* gate_instance = gate->children[0]->children[j];
-
-        if (gate_instance->children[2] == NULL) {
-            /* IF one input gate */
-
-            /* process the signal for the input gate */
-            signal_list_t* in_1 = netlist_expand_ast_of_module(&(gate_instance->children[1]), instance_name_prefix, local_ref);
-            /* process the signal for the input ga$te */
-            out_1 = create_output_pin(gate_instance->children[0], instance_name_prefix, local_ref);
-
-            oassert(in_1 != NULL);
-            oassert(out_1 != NULL);
-
-            /* create the node */
-            nnode_t* gate_node = allocate_nnode(gate->loc);
-            /* store all the relevant info */
-            gate_node->related_ast_node = gate;
-            gate_node->type = gate->types.operation.op;
-            oassert(gate_node->type > 0);
-            gate_node->name = node_name(gate_node, instance_name_prefix);
-            /* allocate the pins needed */
-            allocate_more_input_pins(gate_node, 1);
-            add_input_port_information(gate_node, 1);
-            allocate_more_output_pins(gate_node, 1);
-            add_output_port_information(gate_node, 1);
-
-            /* hookup the input pins */
-            hookup_input_pins_from_signal_list(gate_node, 0, in_1, 0, 1, verilog_netlist);
-            /* hookup the output pins */
-            hookup_output_pins_from_signal_list(gate_node, 0, out_1, 0, 1);
-
-            free_signal_list(in_1);
-        } else {
-            /* ELSE 2 input gate */
-
-            /* process the signal for the input gate */
-
-            signal_list_t** in = (signal_list_t**)vtr::calloc(gate_instance->num_children - 1, sizeof(signal_list_t*));
-            for (long i = 0; i < gate_instance->num_children - 1; i++) {
-                in[i] = netlist_expand_ast_of_module(&(gate_instance->children[i + 1]), instance_name_prefix, local_ref);
+        case BITWISE_NOT: //fallthrough
+        case BUF: {
+            if (gate->num_children < 3) {
+                //error expected at least n+ output and 1 input
+                oassert(false);
             }
+            input_size = 1;
+            output_size = gate->num_children - 2;
 
-            /* process the signal for the input gate */
-            out_1 = create_output_pin(gate_instance->children[0], instance_name_prefix, local_ref);
-
-            for (long i = 0; i < gate_instance->num_children - 1; i++) {
-                oassert((in[i] != NULL));
+            break;
+        }
+        case BITWISE_AND:  //fallthrough
+        case BITWISE_NAND: //fallthrough
+        case BITWISE_NOR:  //fallthrough
+        case BITWISE_OR:   //fallthrough
+        case BITWISE_XNOR: //fallthrough
+        case BITWISE_XOR: {
+            if (gate->num_children < 3) {
+                //error expected at least 1 output and n+ input
+                oassert(false);
             }
+            input_size = gate->num_children - 2;
+            output_size = 1;
 
-            oassert((out_1 != NULL));
-
-            /* create the node */
-            nnode_t* gate_node = allocate_nnode(gate->loc);
-            /* store all the relevant info */
-            gate_node->related_ast_node = gate;
-            gate_node->type = gate->types.operation.op;
-
-            oassert(gate_node->type > 0);
-
-            gate_node->name = node_name(gate_node, instance_name_prefix);
-
-            /* allocate the needed pins */
-            allocate_more_input_pins(gate_node, gate_instance->num_children - 1);
-            for (long i = 0; i < gate_instance->num_children - 1; i++) {
-                add_input_port_information(gate_node, 1);
-            }
-
-            allocate_more_output_pins(gate_node, 1);
-            add_output_port_information(gate_node, 1);
-
-            /* hookup the input pins */
-            for (long i = 0; i < gate_instance->num_children - 1; i++) {
-                hookup_input_pins_from_signal_list(gate_node, i, in[i], 0, 1, verilog_netlist);
-            }
-
-            /* hookup the output pins */
-            hookup_output_pins_from_signal_list(gate_node, 0, out_1, 0, 1);
-
-            for (long i = 0; i < gate_instance->num_children - 1; i++) {
-                free_signal_list(in[i]);
-            }
-            vtr::free(in);
+            break;
+        }
+        default: {
+            oassert(false
+                    && "Unrecognized type of gate passed");
+            break;
         }
     }
 
-    return out_1;
+    output_list = (signal_list_t**)vtr::calloc(output_size, sizeof(signal_list_t*));
+    input_list = (signal_list_t**)vtr::calloc(input_size, sizeof(signal_list_t*));
+
+    size_t child_id = 0;
+    for (size_t i = 0; i < output_size; i += 1) {
+        output_list[i] = create_output_pin(gate->children[child_id], instance_name_prefix, local_ref);
+        oassert(output_list[i]);
+        child_id += 1;
+    }
+    for (size_t i = 0; i < input_size; i += 1) {
+        input_list[i] = netlist_expand_ast_of_module(&(gate->children[child_id]), instance_name_prefix, local_ref);
+        oassert(input_list[i]);
+        child_id += 1;
+    }
+
+    /**
+     * May need to replicate the input over multiple output using the operation
+     * this requires us to duplicate the gate n times, n being the number of output ports.
+     */
+    for (size_t i = 0; i < output_size; i += 1) {
+        /* create the node */
+        nnode_t* gate_node = allocate_nnode(gate->loc);
+        /* store all the relevant info */
+        gate_node->related_ast_node = gate;
+        gate_node->type = gate->types.operation.op;
+        gate_node->name = node_name(gate_node, instance_name_prefix);
+
+        /**
+         * hookup the input pins 
+         * this compresses multiple input into one output
+         */
+        for (size_t j = 0; j < input_size; j += 1) {
+            /* allocate the pins needed */
+            allocate_more_input_pins(gate_node, 1);
+            add_input_port_information(gate_node, 1);
+            hookup_input_pins_from_signal_list(gate_node, j, input_list[j], 0, 1, verilog_netlist);
+            if (i < output_size - 1) {
+                // copy the signal list such that we can suplicate that port if there is more inputs coming in
+                signal_list_t* new_signal_list = copy_input_signals(input_list[j]);
+                free_signal_list(input_list[i]);
+                input_list[i] = new_signal_list;
+            }
+        }
+
+        allocate_more_output_pins(gate_node, 1);
+        add_output_port_information(gate_node, 1);
+        /* hookup the output pins */
+        hookup_output_pins_from_signal_list(gate_node, 0, output_list[i], 0, 1);
+    }
+
+    for (size_t i = 0; i < input_size; i++) {
+        free_signal_list(input_list[i]);
+    }
+    vtr::free(input_list);
+
+    for (size_t i = 0; i < output_size; i++) {
+        free_signal_list(output_list[i]);
+    }
+    vtr::free(output_list);
 }
 
 /*----------------------------------------------------------------------------
@@ -3352,9 +3377,17 @@ signal_list_t* create_operation_node(ast_node_t* op, signal_list_t** input_lists
             output_port_width = max_input_port_width;
             input_port_width = output_port_width;
             break;
-        case BUF_NODE:
+        case BUF:
             output_port_width = max_input_port_width;
             input_port_width = output_port_width;
+            break;
+        case BUFIF0:
+        case BUFIF1:
+        case NOTIF0:
+        case NOTIF1:
+            output_port_width = 1;
+            // input, then trigger
+            input_port_width = 2;
             break;
         case ADD: // +
             /* add the largest bit width + the other input padded with 0's */

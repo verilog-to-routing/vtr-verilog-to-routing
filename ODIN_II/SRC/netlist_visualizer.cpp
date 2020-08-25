@@ -99,7 +99,7 @@ void depth_first_traverse_visualize(nnode_t* node, FILE* fp, uintptr_t traverse_
         node->traverse_visited = traverse_mark_number;
 
         temp_string = vtr::strdup(make_simple_name(node->name, "^-+.", '_').c_str());
-        if ((node->type == FF_NODE) || (node->type == BUF_NODE)) {
+        if ((node->type == FF_NODE) || (node->type == BUF)) {
             fprintf(fp, "\t\"%s\" [shape=box];\n", temp_string);
         } else if (node->type == INPUT_NODE) {
             fprintf(fp, "\t\"%s\" [shape=triangle];\n", temp_string);
@@ -207,7 +207,7 @@ void forward_traversal_net_graph_display(FILE* fp, uintptr_t marker_value, nnode
         temp_string = vtr::strdup(make_simple_name(current_node->name, "^-+.", '_').c_str());
         if (index_in_stack == 0) {
             fprintf(fp, "\t%s [shape=box,color=red];\n", temp_string);
-        } else if ((current_node->type == FF_NODE) || (current_node->type == BUF_NODE)) {
+        } else if ((current_node->type == FF_NODE) || (current_node->type == BUF)) {
             fprintf(fp, "\t%s [shape=box];\n", temp_string);
         } else if (current_node->type == INPUT_NODE) {
             fprintf(fp, "\t%s [shape=triangle];\n", temp_string);
@@ -295,7 +295,7 @@ void backward_traversal_net_graph_display(FILE* fp, uintptr_t marker_value, nnod
         /* printout the details of it */
         temp_string = vtr::strdup(make_simple_name(current_node->name, "^-+.", '_').c_str());
         if (index_in_stack != 0) {
-            if ((current_node->type == FF_NODE) || (current_node->type == BUF_NODE)) {
+            if ((current_node->type == FF_NODE) || (current_node->type == BUF)) {
                 fprintf(fp, "\t%s [shape=box];\n", temp_string);
             } else if (current_node->type == INPUT_NODE) {
                 fprintf(fp, "\t%s [shape=triangle];\n", temp_string);
