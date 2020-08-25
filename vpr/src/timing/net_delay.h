@@ -5,6 +5,6 @@
 #include "vtr_vector.h"
 #include "vpr_net_pins_matrix.h"
 
-void load_net_delay_from_routing(ClbNetPinsMatrix<float>& net_delay, bool analysis);
+void load_net_delay_from_routing(ClbNetPinsMatrix<float>& net_delay);
 
 #endif
