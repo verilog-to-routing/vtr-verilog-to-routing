@@ -1294,6 +1294,11 @@ void print_route(FILE* fp, const vtr::vector<ClusterNetId, t_traceback>& traceba
                      * used in the routing.                                                      */
                     fprintf(fp, "Switch: %d", tptr->iswitch);
 
+                    //Save net pin index for sinks
+                    if (rr_type == SINK) {
+                        fprintf(fp, " Net_pin_index: %d", tptr->ipin);
+                    }
+
                     fprintf(fp, "\n");
 
                     tptr = tptr->next;
