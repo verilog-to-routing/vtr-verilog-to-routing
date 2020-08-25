@@ -977,7 +977,8 @@ enum e_router_algorithm {
     TIMING_DRIVEN,
 };
 
-enum e_node_reorder_algorithm {
+// Node reordering algorithms for rr_nodes
+enum e_rr_node_reorder_algorithm {
     DONT_REORDER,
     DEGREE_BFS,
     RANDOM_SHUFFLE,
@@ -1035,9 +1036,6 @@ enum class e_incr_reroute_delay_ripup {
 constexpr int NO_FIXED_CHANNEL_WIDTH = -1;
 
 struct t_router_opts {
-    e_node_reorder_algorithm reorder_rr_graph_nodes_algorithm = DONT_REORDER;
-    int reorder_rr_graph_nodes_threshold = 0;
-    int reorder_rr_graph_nodes_seed = 1;
     bool read_rr_edge_metadata = false;
     bool do_check_rr_graph = true;
     float first_iter_pres_fac;
@@ -1097,6 +1095,11 @@ struct t_router_opts {
 
     size_t max_logged_overused_rr_nodes;
     bool generate_rr_node_overuse_report;
+
+    // Options related to rr_node reordering, for testing and possible cache optimization
+    e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm = DONT_REORDER;
+    int reorder_rr_graph_nodes_threshold = 0;
+    int reorder_rr_graph_nodes_seed = 1;
 };
 
 struct t_analysis_opts {

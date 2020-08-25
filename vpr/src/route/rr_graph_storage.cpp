@@ -740,9 +740,24 @@ t_rr_graph_view t_rr_graph_storage::view() const {
         vtr::make_const_array_view_id(edge_switch_));
 }
 
+// Given `order`, a vector mapping each RRNodeId to a new one (old -> new),
+// and `inverse_order`, its inverse (new -> old), update the t_rr_graph_storage
+// data structure to an isomorphic graph using the new RRNodeId's.
+//
+// Because the RRNodeId's affect the memory layout, this can be used to
+// optimize cache locality.
+//
+// Preconditions:
+//   order[inverse_order[x]] == x
+//   inverse_order[order[x]] == x
+//   x != y <===> order[x] != order[y]
+//
+// NOTE: Re-ordering will invalidate any external references, so this
+//       should generally be called before creating such references.
 void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
                                  const vtr::vector<RRNodeId, RRNodeId>& inverse_order) {
     VTR_ASSERT_SAFE(validate());
+    VTR_ASSERT(order.size() == inverse_order.size());
     {
         auto old_node_storage = node_storage_;
 

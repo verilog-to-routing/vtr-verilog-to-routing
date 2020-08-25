@@ -164,8 +164,8 @@ struct ParseRouterAlgorithm {
 };
 
 struct ParseNodeReorderAlgorithm {
-    ConvertedValue<e_node_reorder_algorithm> from_str(std::string str) {
-        ConvertedValue<e_node_reorder_algorithm> conv_value;
+    ConvertedValue<e_rr_node_reorder_algorithm> from_str(std::string str) {
+        ConvertedValue<e_rr_node_reorder_algorithm> conv_value;
         if (str == "none")
             conv_value.set_value(DONT_REORDER);
         else if (str == "degree_bfs")
@@ -174,13 +174,13 @@ struct ParseNodeReorderAlgorithm {
             conv_value.set_value(RANDOM_SHUFFLE);
         else {
             std::stringstream msg;
-            msg << "Invalid conversion from '" << str << "' to e_node_reorder_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            msg << "Invalid conversion from '" << str << "' to e_rr_node_reorder_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
             conv_value.set_error(msg.str());
         }
         return conv_value;
     }
 
-    ConvertedValue<std::string> to_str(e_node_reorder_algorithm val) {
+    ConvertedValue<std::string> to_str(e_rr_node_reorder_algorithm val) {
         ConvertedValue<std::string> conv_value;
         if (val == DONT_REORDER)
             conv_value.set_value("none");
@@ -1932,7 +1932,7 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    route_grp.add_argument<e_node_reorder_algorithm, ParseNodeReorderAlgorithm>(args.reorder_rr_graph_nodes_algorithm, "--reorder_rr_graph_nodes_algorithm")
+    route_grp.add_argument<e_rr_node_reorder_algorithm, ParseNodeReorderAlgorithm>(args.reorder_rr_graph_nodes_algorithm, "--reorder_rr_graph_nodes_algorithm")
         .help(
             "Specifies the node reordering algorithm to use.\n"
             " * none: don't reorder nodes\n"

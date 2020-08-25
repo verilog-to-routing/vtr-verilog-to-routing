@@ -435,6 +435,12 @@ class t_rr_graph_storage {
         node_storage_.emplace_back();
         node_ptc_.emplace_back();
     }
+
+    // Given `order`, a vector mapping each RRNodeId to a new one (old -> new),
+    // and `inverse_order`, its inverse (new -> old), update the t_rr_graph_storage
+    // data structure to an isomorphic graph using the new RRNodeId's.
+    // NOTE: Re-ordering will invalidate any external references, so this
+    //       should generally be called before creating such references.
     void reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
                  const vtr::vector<RRNodeId, RRNodeId>& inverse_order);
 

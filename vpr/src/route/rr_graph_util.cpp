@@ -81,6 +81,18 @@ int seg_index_of_sblock(int from_node, int to_node) {
     }
 }
 
+// Reorder RRNodeId's using one of these algorithms:
+//   - DONT_REORDER: The identity reordering (does nothing.)
+//   - DEGREE_BFS: Order by degree primarily, and BFS traversal order secondarily.
+//   - RANDOM_SHUFFLE: Shuffle using the specified seed. Great for testing.
+// The DEGREE_BFS algorithm was selected because it had the best performance of seven
+// existing algorithms here: https://github.com/SymbiFlow/vtr-rrgraph-reordering-tool
+// It might be worth further research, as the DEGREE_BFS algorithm is simple and
+// makes some arbitrary choices, such as the starting node.
+// Nonetheless, it does improve performance ~7% for the SymbiFlow Xilinx Artix 7 graph.
+//
+// NOTE: Re-ordering will invalidate any references to rr_graph nodes, so this
+//       should generally be called before creating such references.
 void reorder_rr_graph_nodes(const t_router_opts& router_opts) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& graph = device_ctx.rr_nodes;
@@ -97,11 +109,15 @@ void reorder_rr_graph_nodes(const t_router_opts& router_opts) {
         n = RRNodeId(cur_idx++);
     }
 
+    // This method works well. The intution is that highly connected nodes are enumerated first (together),
+    // and since there will be a lot of nodes with the same degree, they are then ordered based on some
+    // distance from the starting node.
     if (router_opts.reorder_rr_graph_nodes_algorithm == DEGREE_BFS) {
         vtr::vector<RRNodeId, size_t> bfs_idx(v_num);
         vtr::vector<RRNodeId, size_t> degree(v_num);
         std::queue<RRNodeId> que;
 
+        // Compute both degree (in + out) and an index based on the BFS traversal
         cur_idx = 0;
         for (size_t i = 0; i < v_num; ++i) {
             if (bfs_idx[RRNodeId(i)]) continue;
@@ -121,6 +137,7 @@ void reorder_rr_graph_nodes(const t_router_opts& router_opts) {
             }
         }
 
+        // Sort by degree primarily, and BFS order secondarily
         sort(src_order.begin(), src_order.end(),
              [&](auto a, auto b) -> bool {
                  auto deg_a = degree[a];
@@ -138,7 +155,7 @@ void reorder_rr_graph_nodes(const t_router_opts& router_opts) {
 
     graph.reorder(dest_order, src_order);
 
-    // update rr_node_indices
+    // update rr_node_indices, a map to optimize rr_index lookups
     for (auto& grid : device_ctx.rr_node_indices) {
         for (size_t x = 0; x < grid.dim_size(0); x++) {
             for (size_t y = 0; y < grid.dim_size(1); y++) {
