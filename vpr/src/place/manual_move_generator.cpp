@@ -35,7 +35,7 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         std::cout << "Move aborted due to uncompatible subtile\n";
         return e_create_move::ABORT;
     }
-
+    rlim += 0;
 #if 0
     auto& grid = g_vpr_ctx.device().grid;
 	VTR_LOG( "swap [%d][%d][%d] %s block %zu \"%s\" <=> [%d][%d][%d] %s block ",
