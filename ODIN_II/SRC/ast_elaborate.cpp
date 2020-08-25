@@ -597,7 +597,7 @@ ast_node_t* build_hierarchy(ast_node_t* node, ast_node_t* parent, int index, sc_
                     if (!(node_is_constant(node->children[0]))) {
                         error_message(AST, node->loc,
                                       "%s", "Replication constant must be a constant expression");
-                    } else if (node->children[0]->types.vnumber->is_dont_care_string()) {
+                    } else if (node->children[0]->types.vnumber->has_unknown()) {
                         error_message(AST, node->loc,
                                       "%s", "Replication constant cannot contain x or z");
                     }
@@ -1326,7 +1326,7 @@ ast_node_t* finalize_ast(ast_node_t* node, ast_node_t* parent, sc_hierarchy* loc
                 if (!(node_is_constant(node->children[0]))) {
                     error_message(AST, node->loc,
                                   "%s", "Replication constant must be a constant expression");
-                } else if (node->children[0]->types.vnumber->is_dont_care_string()) {
+                } else if (node->children[0]->types.vnumber->has_unknown()) {
                     error_message(AST, node->loc,
                                   "%s", "Replication constant cannot contain x or z");
                 }
@@ -1700,12 +1700,12 @@ ast_node_t* finalize_ast(ast_node_t* node, ast_node_t* parent, sc_hierarchy* loc
             case RANGE_REF: {
                 bool is_constant_ref = node_is_constant(node->children[0]);
                 if (is_constant_ref) {
-                    is_constant_ref = is_constant_ref && !(node->children[0]->types.vnumber->is_dont_care_string());
+                    is_constant_ref = is_constant_ref && !(node->children[0]->types.vnumber->has_unknown());
                 }
 
                 is_constant_ref = is_constant_ref && node_is_constant(node->children[1]);
                 if (is_constant_ref) {
-                    is_constant_ref = is_constant_ref && !(node->children[1]->types.vnumber->is_dont_care_string());
+                    is_constant_ref = is_constant_ref && !(node->children[1]->types.vnumber->has_unknown());
                 }
 
                 if (!is_constant_ref) {
@@ -1721,13 +1721,13 @@ ast_node_t* finalize_ast(ast_node_t* node, ast_node_t* parent, sc_hierarchy* loc
             case ARRAY_REF: {
                 bool is_constant_ref = node_is_constant(node->children[0]);
                 if (is_constant_ref) {
-                    is_constant_ref = is_constant_ref && !(node->children[0]->types.vnumber->is_dont_care_string());
+                    is_constant_ref = is_constant_ref && !(node->children[0]->types.vnumber->has_unknown());
                 }
 
                 if (node->num_children == 2) {
                     is_constant_ref = is_constant_ref && node_is_constant(node->children[1]);
                     if (is_constant_ref) {
-                        is_constant_ref = is_constant_ref && !(node->children[1]->types.vnumber->is_dont_care_string());
+                        is_constant_ref = is_constant_ref && !(node->children[1]->types.vnumber->has_unknown());
                     }
                 }
 

@@ -1389,7 +1389,7 @@ void c_display(ast_node_t* node) {
      * but we will just assume, the programmer should know to use a string
      * and internally both are just numbers
      */
-    std::string format_str = node->children[0]->types.vnumber->to_printable();
+    std::string format_str = node->children[0]->types.vnumber->to_vstring('s');
     ast_node_t* argv_nodes = node->children[1];
     long argc_node = 0;
     while (!format_str.empty()) {
