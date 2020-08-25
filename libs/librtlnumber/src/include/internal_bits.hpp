@@ -136,9 +136,6 @@ _static_unused(l_xor)
     = unroll_2d_invert(l_xor);
 _static_unused(l_xnor)
 
-    /*****************************************************
-     *  Tran NO SUPPORT FOR THESE YET 
-     */
     constexpr bit_value_t l_notif1[4][4]
     = {
         /* in /	 0   1   x   z 	<-control */
@@ -175,6 +172,9 @@ _static_unused(l_bufif1)
         /* z */ {_x, _z, _x, _x}};
 _static_unused(l_bufif0)
 
+    /*****************************************************
+     *  Tran NO SUPPORT FOR THESE YET 
+     */
     /* cmos gates */
     constexpr bit_value_t l_rpmos[4][4]
     = {
@@ -357,9 +357,14 @@ static bit_value_t c_to_bit(char c) {
             return _1;
         case 'z':
             return _z;
-        default:
+        case 'x':
             return _x;
+        default:
+            break;
     }
+    assert_Werr(0,
+                "Invalid bits input " + std::string(1, c));
+    return 0;
 }
 
 template<typename T>
@@ -502,55 +507,6 @@ class VerilogBits {
         (this->get_bitfield(to_index(address))->set_bit(address, value));
     }
 
-    std::string to_string(bool big_endian, bool uppercase) {
-        // make a big endian string
-        std::string to_return = "";
-        for (size_t address = 0x0; address < this->size(); address++) {
-            char value = BitSpace::bit_to_c(this->get_bit(address), uppercase);
-            if (big_endian) {
-                to_return.push_back(value);
-            } else {
-                to_return.insert(0, 1, value);
-            }
-        }
-
-        return to_return;
-    }
-
-    std::string to_Ustring(bool big_endian) {
-        // make a big endian string
-        std::string to_return = "";
-        for (size_t address = 0x0; address < this->size(); address++) {
-            char value = BitSpace::bit_to_u(this->get_bit(address));
-            if (big_endian) {
-                to_return.push_back(value);
-            } else {
-                to_return.insert(0, 1, value);
-            }
-        }
-
-        return to_return;
-    }
-
-    std::string to_log2radix(short bit_count, bool uppercase) {
-        std::string to_return = "";
-        int temp = 0;
-        int i = 0;
-        for (size_t address = 0x0; address < this->size(); address++) {
-            temp &= this->get_bit(address) << i;
-            i += 1;
-            // 3 bit for octal value
-            if (i == bit_count) {
-                // share the same digits so we use hex
-                char value = bits_to_hex_c(temp, uppercase);
-                to_return.insert(0, 1, value);
-                i = 0;
-            }
-        }
-
-        return to_return;
-    }
-
     std::string to_printable() {
         std::string to_return = "";
 
@@ -561,7 +517,12 @@ class VerilogBits {
         return to_return;
     }
 
-    bool has_unknowns() {
+    char getc() {
+        size_t last_index = this->size() - 1;
+        return this->get_bitfield(to_index(last_index))->get_as_char(last_index);
+    }
+
+    bool has_unknown() {
         for (size_t address = 0x0; address < this->size(); address++) {
             if (is_unk[this->get_bit(address)])
                 return true;
@@ -619,11 +580,14 @@ class VerilogBits {
         return VerilogBits(1, result);
     }
 
-    VerilogBits invert() {
+    /**
+     * Unary Bitwise operations
+     */
+    VerilogBits bitwise(const bit_value_t lut[4]) {
         VerilogBits other(this->bit_size, _0);
 
         for (size_t i = 0; i < this->size(); i++)
-            other.set_bit(i, BitSpace::l_not[this->get_bit(i)]);
+            other.set_bit(i, lut[this->get_bit(i)]);
 
         return other;
     }
@@ -787,8 +751,8 @@ class VNumber {
     int64_t get_value() {
         size_t bit_size = 8 * sizeof(integer_t);
 
-        assert_Werr((!this->bitstring.has_unknowns()),
-                    "Invalid Number contains dont care values. number: " + this->to_vstring('B'));
+        assert_Werr((!this->bitstring.has_unknown()),
+                    "Invalid Number contains dont care values. number: " + this->to_verilog_bitstring());
 
         size_t end = this->size();
         if (end > integer_t_size) {
@@ -810,64 +774,126 @@ class VNumber {
         return result;
     }
 
+    std::string to_string(bool big_endian, bool uppercase) {
+        // make a big endian string
+        std::string to_return = "";
+        for (size_t address = 0x0; address < this->size(); address++) {
+            char value = BitSpace::bit_to_c(this->get_bit_from_lsb(address), uppercase);
+            if (big_endian) {
+                to_return.push_back(value);
+            } else {
+                to_return.insert(0, 1, value);
+            }
+        }
+
+        return to_return;
+    }
+
+    std::string to_Ustring(bool big_endian) {
+        // make a big endian string
+        std::string to_return = "";
+        for (size_t address = 0x0; address < this->size(); address++) {
+            char value = BitSpace::bit_to_u(this->get_bit_from_lsb(address));
+            if (big_endian) {
+                to_return.push_back(value);
+            } else {
+                to_return.insert(0, 1, value);
+            }
+        }
+
+        return to_return;
+    }
+
+    std::string to_log2radix(short bit_count, bool big_endian, bool uppercase) {
+        std::string to_return = "";
+        int temp = 0;
+        int i = 0;
+        for (size_t address = 0x0; address < this->size(); address++) {
+            temp |= (this->get_bit_from_lsb(address) << i);
+            i += 1;
+
+            // 3 bit for octal value
+            if (i >= bit_count || address == this->size() - 1) {
+                // share the same digits so we use hex
+                char value = BitSpace::bits_to_hex_c(temp, uppercase);
+                if (big_endian) {
+                    to_return.push_back(value);
+                } else {
+                    to_return.insert(0, 1, value);
+                }
+                temp = 0;
+                i = 0;
+            }
+        }
+
+        return to_return;
+    }
+
+    std::string to_base10(bool big_endian, bool uppercase) {
+        VNumber temp(this);
+        std::string to_return = "";
+        while (!temp.is_false()) {
+            int carry = 0;
+            for (size_t address = 0x0; address < temp.size(); address++) {
+                // we read from msb to lsb
+                int temp_value = temp.get_bit_from_msb(address);
+                temp_value += carry << 1;
+                carry = temp_value % 10;
+                temp_value = temp_value / 10;
+                temp.set_bit_from_msb(address, temp_value);
+            }
+            char value = BitSpace::bits_to_hex_c(carry, uppercase);
+
+            if (big_endian) {
+                to_return.push_back(value);
+            } else {
+                to_return.insert(0, 1, value);
+            }
+        }
+        return to_return;
+    }
+
     // convert lsb_msb bitstring to verilog
-    std::string to_full_string() {
+    std::string to_verilog_bitstring() {
         std::string out = this->to_vstring('b');
         size_t len = this->bitstring.size();
 
         return std::to_string(len) + ((this->is_signed()) ? "\'sb" : "\'b") + out;
     }
 
-    std::string to_vstring(char base) {
+    std::string to_vstring(char input_base) {
         std::string out = "";
-        if (this->bitstring.has_unknowns() && (tolower(base) == 'o' || tolower(base) == 'h' || tolower(base) == 'd')) {
+        char base = tolower(input_base);
+        bool upercase = (base != input_base);
+        if (this->has_unknown() && (base == 'o' || base == 'h' || base == 'd')) {
             // hot swap to binary since that is all we can print
             base = 'b';
-        } else if (base == 'd' && this->bitstring.size() > integer_t_size) {
-            // hot swap to hex since we bust the max int value
-            base = 'h';
         }
 
         switch (base) {
             case 'b':
-                return this->bitstring.to_string(false, false);
-            case 'B':
-                return this->bitstring.to_string(false, true);
+                return this->to_string(false, upercase);
             case 'z':
-                return this->bitstring.to_string(true, false);
-            case 'Z':
-                return this->bitstring.to_string(true, true);
-            case 'u': // fallthrough
-            case 'U':
-                return this->bitstring.to_Ustring(true);
-            case 'o': // fallthrough
-            case 'O':
-                return this->bitstring.to_log2radix(3, true);
+                return this->to_string(false, upercase);
+            case 'u':
+                return this->to_Ustring(false);
+            case 'o':
+                return this->to_log2radix(3, false, upercase);
             case 'd':
-            case 'D': // fallthrough
-                return std::to_string(this->get_value());
+                return this->to_base10(false, upercase);
             case 'h':
-                return this->bitstring.to_log2radix(4, false);
-            case 'H':
-                return this->bitstring.to_log2radix(4, true);
+                return this->to_log2radix(4, false, upercase);
             case 's':
-            case 'S':
                 return this->bitstring.to_printable();
-            case 'c': // fallthrough
-            case 'C':
+            case 'c':
                 // forcefully truncate to a char
-                return std::string(1, (char)this->get_value());
+                return std::string(1, this->bitstring.getc());
             default:
                 assert_Werr(0,
                             "Invalid base for conversion");
                 break;
         }
         std::abort();
-    }
-
-    std::string to_printable() {
-        std::string out = this->bitstring.to_printable();
-        return out;
     }
 
     /***
@@ -1021,8 +1047,8 @@ class VNumber {
         return (this->get_bit_from_msb(0) == BitSpace::_1 && this->sign);
     }
 
-    bool is_dont_care_string() {
-        return this->bitstring.has_unknowns();
+    bool has_unknown() {
+        return this->bitstring.has_unknown();
     }
 
     bool is_z() {
@@ -1057,16 +1083,19 @@ class VNumber {
         return VNumber(this->bitstring, this->defined_size, false);
     }
 
-    VNumber invert() {
-        return VNumber(this->bitstring.invert(), this->defined_size, this->sign);
-    }
-
     VNumber bitwise_reduce(const BitSpace::bit_value_t lut[4][4]) {
         return VNumber(this->bitstring.bitwise_reduce(lut), this->defined_size, false);
     }
 
     /**
-     * Binary Reduction operations
+     * Unary operations
+     */
+    VNumber bitwise(const BitSpace::bit_value_t lut[4]) {
+        return VNumber(this->bitstring.bitwise(lut), this->defined_size, false);
+    }
+
+    /**
+     * Binary operations
      */
     VNumber bitwise(VNumber& b, const BitSpace::bit_value_t lut[4][4]) {
         size_t std_length = std::max(this->size(), b.size());
