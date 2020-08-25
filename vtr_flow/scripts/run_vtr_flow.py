@@ -627,7 +627,7 @@ def except_vtr_error(error, expect_fail, verbose):
             print("\tfull command: ", " ".join(error.cmd))
             print("\treturncode  : ", error.returncode)
             print("\tlog file    : ", error.log)
-        exit_status = 1
+        exit_status = error.returncode
     elif isinstance(error, vtr.InspectError):
         # Something went wrong gathering information
         print("\tfile        : ", error.filename)
