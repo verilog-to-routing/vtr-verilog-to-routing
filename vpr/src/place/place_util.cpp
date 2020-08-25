@@ -1,19 +1,29 @@
+/**
+ * @file place_util.cpp
+ * @brief Definitions of structure routines declared in place_util.h.
+ */
+
 #include "place_util.h"
 #include "globals.h"
 
+///<File-scope routines.
 static vtr::Matrix<t_grid_blocks> init_grid_blocks();
 static void update_rlim(float* rlim, float success_rat, const DeviceGrid& grid);
 
+///@brief Initialize the placement context.
 void init_placement_context() {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
+    /* Intialize the lookup of CLB block positions */
     place_ctx.block_locs.clear();
     place_ctx.block_locs.resize(cluster_ctx.clb_nlist.blocks().size());
 
+    /* Initialize the reverse lookup of CLB block positions */
     place_ctx.grid_blocks = init_grid_blocks();
 }
 
+///@brief Initialize `grid_blocks`, the inverse structure of `block_locs`.
 static vtr::Matrix<t_grid_blocks> init_grid_blocks() {
     auto& device_ctx = g_vpr_ctx.device();
 

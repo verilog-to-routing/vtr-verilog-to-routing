@@ -31,4 +31,6 @@ extern ClbNetPinsMatrix<double> proposed_connection_timing_cost;
 extern vtr::vector<ClusterNetId, double> net_timing_cost;
 extern vtr::vector<ClusterNetId, t_bb> bb_coords, bb_num_on_edges;
 extern vtr::vector<ClusterNetId, t_bb> ts_bb_coord_new, ts_bb_edge_new;
+extern float** chanx_place_cost_fac;
+extern float** chany_place_cost_fac;
 extern std::vector<ClusterNetId> ts_nets_to_update;

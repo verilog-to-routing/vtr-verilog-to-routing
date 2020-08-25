@@ -1,3 +1,32 @@
+/**
+ * @file timing_place.h
+ * @brief Interface used by the VPR placer to query information
+ *        from the Tatum timing analyzer.
+ *
+ *   @class PlacerSetupSlacks
+ *              Queries connection **RAW** setup slacks, which can
+ *              range from negative to positive values. Also maps
+ *              atom pin setup slacks to clb pin setup slacks.
+ *   @class PlacerCriticalities
+ *              Query connection criticalities, which are calculuated
+ *              based on the raw setup slacks and ranges from 0 to 1.
+ *              Also maps atom pin crit. to clb pin crit.
+ *   @class PlacerTimingCosts
+ *              Hierarchical structure used by update_td_costs() to
+ *              maintain the order of addition operation of float values
+ *              (to avoid round-offs) while doing incremental updates.
+ *
+ * Calculating criticalities:
+ *      All the raw setup slack values across a single clock domain are gathered, shifted,
+ *      and rated from best to worst. The best shifted slack value (the most positive one)
+ *      will have a criticality of 0, while the worse shifted slack value (always 0)
+ *      will have a criticality of 1. Criticalities are used to calculated timing costs
+ *      for each connection (delay * criticality).
+ *
+ *      For a more detailed description on how criticalities are calculated, see
+ *      calc_relaxed_criticality() in `timing_util.cpp`.
+ */
+
 #ifndef TIMING_PLACE
 #define TIMING_PLACE
 
@@ -7,32 +36,42 @@
 #include "place_delay_model.h"
 #include "vpr_net_pins_matrix.h"
 
-/* Usage
+/**
+ * @brief PlacerCriticalities returns the clustered netlist connection criticalities
+ *        used by the placer ('sharpened' by a criticality exponent).
+ *
+ * Usage
  * =====
- * PlacerCriticalities returns the clustered netlist connection criticalities used by 
- * the placer ('sharpened' by a criticality exponent). This also serves to map atom 
- * netlist level criticalites (i.e. on AtomPinIds) to the clustered netlist (i.e. 
- * ClusterPinIds) used during placement.
+ * This class also serves to map atom netlist level criticalites (i.e. on AtomPinIds)
+ * to the clustered netlist (i.e. ClusterPinIds) used during placement.
  *
- * Criticalities are calculated by calling update_criticalities(), which will 
- * update criticalities based on the atom netlist connection criticalities provided by
- * the passed in SetupTimingInfo. This is done incrementally, based on the modified
- * connections/AtomPinIds returned by SetupTimingInfo.
+ * Criticalities are calculated by calling update_setup_slacks_and_criticalities() and
+ * setting t_placer_timing_update_mode::update_criticalities to true. It will update
+ * criticalities based on the atom netlist connection criticalities provided by the
+ * passed in SetupTimingInfo.
  *
- * The criticalities of individual connections can then be queried by calling the 
- * criticality() member function.
+ * This process can be done incrementally, based on the modified connections/AtomPinIds
+ * returned by SetupTimingInfo. But sometimes a recomputation is required. For detailed
+ * information please see the description of `t_placer_timing_update_mode` structure.
  *
- * It also supports iterating via pins_with_modified_criticalities() through the 
- * clustered netlist pins/connections which have had their criticality modified by 
- * the last call to update_criticalities(), which is useful for incrementally 
+ * It also supports iterating via pins_with_modified_criticalities() through the
+ * clustered netlist pins/connections which have had their criticality modified by
+ * the last call to update_criticalities(), which is useful for incrementally
  * re-calculating timing costs.
+ *
+ * The criticalities of individual connections can then be queried by calling the
+ * criticality() member function.
  *
  * Implementation
  * ==============
- * To support incremental re-calculation the class saves the last criticality exponent
- * passed to update_criticalites(). If the next update uses the same exponent criticalities
- * can be incrementally updated. Otherwise they must be re-calculated from scratch, since
- * a change in exponent changes *all* criticalities.
+ * To support incremental re-calculation, the class saves the last criticality exponent
+ * passed to PlacerCriticalities::update_criticalites(). If the next update uses the same
+ * exponent, criticalities can be incrementally updated. Otherwise, they must be re-calculated
+ * from scratch, since a change in exponent changes *all* criticalities.
+ *
+ * If the timing graph is updated while t_placer_timing_update_mode::update_criticalities is
+ * set to false, a re-calculation of *all* criticalities is required as well (since we don't
+ * know exactly which pins have changed after multiple timing updates have been performed).
  */
 class PlacerCriticalities {
   public: //Types
@@ -48,55 +87,79 @@ class PlacerCriticalities {
     PlacerCriticalities& operator=(const PlacerCriticalities& clb_nlist) = delete;
 
   public: //Accessors
-    //Returns the criticality of the specified connection
+    ///@brief Returns the criticality of the specified connection.
     float criticality(ClusterNetId net, int ipin) const { return timing_place_crit_[net][ipin]; }
 
-    //Returns the range of clustered netlist pins (i.e. ClusterPinIds) which were modified
-    //by the last call to update_criticalities()
+    /**
+     * @brief Returns the range of clustered netlist pins (i.e. ClusterPinIds) which
+     *        were modified by the last call to PlacerCriticalities::update_criticalities().
+     */
     pin_range pins_with_modified_criticality() const;
 
   public: //Modifiers
-    //Updates criticalities based on the atom netlist criticalitites provided by
-    //timing_info and the provided criticality_exponent.
+    /**
+     * @brief Updates criticalities based on the atom netlist criticalitites
+     *        provided by timing_info and the provided criticality_exponent.
+     */
     void update_criticalities(const SetupTimingInfo* timing_info, float criticality_exponent, bool recompute);
 
-    //Override the criticality of a particular connection
+    ///@brief Override the criticality of a particular connection.
     void set_criticality(ClusterNetId net, int ipin, float val);
 
   private: //Data
+    ///@brief The clb netlist in the placement context.
     const ClusteredNetlist& clb_nlist_;
+
+    ///@brief The lookup table that maps atom pins to clb pins.
     const ClusteredPinAtomPinsLookup& pin_lookup_;
 
-    ClbNetPinsMatrix<float> timing_place_crit_; /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1] */
+    /**
+     * @brief The matrix that stores criticality value for each connection.
+     *
+     * Index range: [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]
+     */
+    ClbNetPinsMatrix<float> timing_place_crit_;
 
-    //The criticality exponent when update_criticalites() was last called (used to detect if incremental update can be used)
+    /**
+     * The criticality exponent when update_criticalites() was last called
+     * (used to detect if incremental update can be used).
+     */
     float last_crit_exponent_ = std::numeric_limits<float>::quiet_NaN();
 
-    //Set of pins with criticaltites modified by last call to update_criticalities()
+    ///@brief Set of pins with criticaltites modified by last call to update_criticalities().
     vtr::vec_id_set<ClusterPinId> cluster_pins_with_modified_criticality_;
 
-    //Updates criticalities: incremental V.S. from scratch
+    ///@brief Updates criticalities: incremental V.S. from scratch
     void incr_update_criticalities(const SetupTimingInfo* timing_info);
     void recompute_criticalities();
 };
 
-/* Usage
+/**
+ * @brief PlacerSetupSlacks returns the RAW setup slacks of clustered netlist connection.
+ *
+ * Usage
  * =====
- * PlacerSetupSlacks returns the clustered netlist connection setup slack used by 
- * the placer. This also serves to map atom netlist level slack (i.e. on AtomPinIds) 
- * to the clustered netlist (i.e. ClusterPinIds) used during placement.
+ * This also serves to map atom netlist level setup slacks (i.e. on AtomPinIds) to the
+ * clustered netlist (i.e. ClusterPinIds) used during placement.
  *
- * Setup slacks are calculated by calling update_setup_slacks(), which will 
- * update setup slacks based on the atom netlist connection setup slacks provided by
- * the passed in SetupTimingInfo. This is done incrementally, based on the modified
- * connections/AtomPinIds returned by SetupTimingInfo.
+ * Setup slacks are calculated by calling update_setup_slacks_and_criticalities(),
+ * with t_placer_timing_update_mode::update_setup_slacks to true. It will update setup
+ * slacks based on the atom netlist connection setup slacks provided by the passed in
+ * SetupTimingInfo.
  *
- * The setup slacks of individual connections can then be queried by calling the 
+ * This process can be done incrementally, based on the modified connections/AtomPinIds
+ * returned by SetupTimingInfo. But sometimes a recomputation is required. For detailed
+ * information please see the description of `t_placer_timing_update_mode` structure.
+ *
+ * It also supports iterating via pins_with_modified_setup_slack() through the clustered
+ * netlist pins/connections which have had their setup slacks modified by the last call
+ * to update_setup_slacks().
+ *
+ * The RAW setup slacks of individual connections can then be queried by calling the
  * setup_slack() member function.
  *
- * It also supports iterating via pins_with_modified_setup_slack() through the 
- * clustered netlist pins/connections which have had their setup slacks modified by 
- * the last call to update_setup_slacks().
+ * Note: RAW setup slacks are unlike criticalities. Their values are not confined between
+ * 0 and 1. Their values can be either positive or negative.
  */
 class PlacerSetupSlacks {
   public: //Types
@@ -112,40 +175,46 @@ class PlacerSetupSlacks {
     PlacerSetupSlacks& operator=(const PlacerSetupSlacks& clb_nlist) = delete;
 
   public: //Accessors
-    //Returns the setup slack of the specified connection
+    ///@brief Returns the setup slack of the specified connection.
     float setup_slack(ClusterNetId net, int ipin) const { return timing_place_setup_slacks_[net][ipin]; }
 
-    //Returns the range of clustered netlist pins (i.e. ClusterPinIds) which were modified
-    //by the last call to update_setup_slacks()
+    /**
+     * @brief Returns the range of clustered netlist pins (i.e. ClusterPinIds)
+     *        which were modified by the last call to PlacerSetupSlacks::update_setup_slacks().
+     */
     pin_range pins_with_modified_setup_slack() const;
 
   public: //Modifiers
-    //Updates setup slacks based on the atom netlist setup slacks provided by timing_info
+    ///@brief Updates setup slacks based on the atom netlist setup slacks provided by timing_info.
     void update_setup_slacks(const SetupTimingInfo* timing_info, bool recompute);
 
-    //Override the setup slack of a particular connection
+    ///@brief Override the setup slack of a particular connection.
     void set_setup_slack(ClusterNetId net, int ipin, float val);
 
   private: //Data
     const ClusteredNetlist& clb_nlist_;
     const ClusteredPinAtomPinsLookup& pin_lookup_;
 
-    ClbNetPinsMatrix<float> timing_place_setup_slacks_; /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1] */
+    /**
+     * @brief The matrix that stores raw setup slack values for each connection.
+     *
+     * Index range: [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]
+     */
+    ClbNetPinsMatrix<float> timing_place_setup_slacks_;
 
-    //Set of pins with criticaltites modified by last call to update_criticalities()
+    ///@brief Set of pins with raw setup slacks modified by last call to update_criticalities()
     vtr::vec_id_set<ClusterPinId> cluster_pins_with_modified_setup_slack_;
 
-    //Updates setup slacks: incremental V.S. from scratch
+    ///@brief Updates setup slacks: incremental V.S. from scratch.
     void incr_update_setup_slacks(const SetupTimingInfo* timing_info);
     void recompute_setup_slacks();
 };
 
-/* Usage
- * =====
- * PlacerTimingCosts mimics a 2D array of connection timing costs running from:
- *      [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]
+/**
+ * @brief PlacerTimingCosts mimics a 2D array of connection timing costs running from:
+ *        [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1].
  *
- * So it can be used similar to:
+ * It can be used similar to:
  *
  *      PlacerTimingCosts connection_timing_costs(cluster_ctx.clb_nlist); //Construct
  *
@@ -156,53 +225,53 @@ class PlacerSetupSlacks {
  *
  *      //Potentially other modifications...
  *
- *      //Calculate the updated timing cost, of all connections, incrementally based 
- *      //on modifications
+ *      //Calculate the updated timing cost, of all connections,
+ *      //incrementally based on modifications
  *      float total_timing_cost = connection_timing_costs.total_cost();
- *      
+ *
  * However behind the scenes PlacerTimingCosts tracks when connection costs are modified,
  * and efficiently re-calculates the total timing cost incrementally based on the connections
  * which have had their cost modified.
  *
- * Implementaion
- * =============
- * Internally, PlacerTimingCosts stores all connection costs in a flat array in the last part 
+ * Implementation
+ * ==============
+ * Internally, PlacerTimingCosts stores all connection costs in a flat array in the last part
  * of connection_costs_.  To mimic 2d-array like access PlacerTimingCosts also uses two proxy
  * classes which allow indexing in the net and pin dimensions (NetProxy and ConnectionProxy
  * respectively).
  *
  * The first part of connection_costs_ stores intermediate sums of the connection costs for
- * efficient incremental re-calculation. More concretely, connection_costs_ stores a binary 
+ * efficient incremental re-calculation. More concretely, connection_costs_ stores a binary
  * tree, where leaves correspond to individual connection costs and intermediate nodes the
- * partial sums of the connection costs. (The binary tree is stored implicitly in the 
- * connection_costs_  vector, using Eytzinger's/BFS layout.) By summing the entire binary 
+ * partial sums of the connection costs. (The binary tree is stored implicitly in the
+ * connection_costs_  vector, using Eytzinger's/BFS layout.) By summing the entire binary
  * tree we calculate the total timing cost over all connections.
  *
  * Using a binary tree allows us to efficiently re-calculate the timing costs when only a subset
  * of connections are changed. This is done by 'invalidating' intermediate nodes (from leaves up
- * to the root) which have ancestors (leaves) with modified connection costs. When the 
+ * to the root) which have ancestors (leaves) with modified connection costs. When the
  * total_cost() method is called, it recursively walks the binary tree to re-calculate the cost.
- * Only invalidated nodes are traversed, with valid nodes just returning their previously 
+ * Only invalidated nodes are traversed, with valid nodes just returning their previously
  * calculated (and unchanged) value.
  *
- * For a circuit with 'K' connections, of which 'k' have changed (typically k << K), this can 
+ * For a circuit with 'K' connections, of which 'k' have changed (typically k << K), this can
  * be done in O(k log K) time.
  *
- * It is important to note that due to limited floating point precision, floating point 
+ * It is important to note that due to limited floating point precision, floating point
  * arithmetic has an order dependence (due to round-off). Using a binary tree to total
  * the timing connection costs allows us to incrementally update the total timign cost while
- * maintianing the *same order of operations* as if it was re-computed from scratch. This 
+ * maintianing the *same order of operations* as if it was re-computed from scratch. This
  * ensures we *always* get consistent results regardless of what/when connections are changed.
  *
  * Proxy Classes
- * -------------
+ * =============
  * NetProxy is returned by PlacerTimingCost's operator[], and stores a pointer to the start of
  * internal storage of that net's connection costs.
  *
- * ConnectionProxy is returnd by NetProxy's operator[], and holds a reference to a particular 
- * element of the internal storage pertaining to a specific connection's cost. ConnectionProxy 
- * supports assignment, allowing clients to modify the connection cost. It also detects if the 
- * assigned value differs from the previous value and if so, calls PlacerTimingCosts's 
+ * ConnectionProxy is returnd by NetProxy's operator[], and holds a reference to a particular
+ * element of the internal storage pertaining to a specific connection's cost. ConnectionProxy
+ * supports assignment, allowing clients to modify the connection cost. It also detects if the
+ * assigned value differs from the previous value and if so, calls PlacerTimingCosts's
  * invalidate() method on that connection cost.
  *
  * PlacerTimingCosts's invalidate() method marks the cost element's ancestors as invalid (NaN)
@@ -250,7 +319,9 @@ class PlacerTimingCosts {
         size_t num_level_before_leaves = num_nodes_in_level(ilevel - 1);
 
         VTR_ASSERT_MSG(num_leaves >= num_connections, "Need at least as many leaves as connections");
-        VTR_ASSERT_MSG(num_connections == 0 || num_level_before_leaves < num_connections, "Level before should have fewer nodes than connections (to ensure using the smallest binary tree)");
+        VTR_ASSERT_MSG(
+            num_connections == 0 || num_level_before_leaves < num_connections,
+            "Level before should have fewer nodes than connections (to ensure using the smallest binary tree)");
 
         //We don't need to store all possible leaves if we have fewer connections
         //(i.e. bottom-right of tree is empty)
@@ -270,16 +341,19 @@ class PlacerTimingCosts {
         }
     }
 
-    //Proxy class representing a connection cost
-    // Supports modification of connection cost while detecting changes and
-    // reporting them up to PlacerTimingCosts
+    /**
+     * @brief Proxy class representing a connection cost.
+     *
+     * Supports modification of connection cost while detecting
+     * changes and reporting them up to PlacerTimingCosts.
+     */
     class ConnectionProxy {
       public:
         ConnectionProxy(PlacerTimingCosts* timing_costs, double& connection_cost)
             : timing_costs_(timing_costs)
             , connection_cost_(connection_cost) {}
 
-        //Allow clients to modify the connection cost via assignment
+        ///@brief Allow clients to modify the connection cost via assignment.
         ConnectionProxy& operator=(double new_cost) {
             if (new_cost != connection_cost_) {
                 //If connection cost changed, update it, and mark it
@@ -290,9 +364,11 @@ class PlacerTimingCosts {
             return *this;
         }
 
-        //Support getting the current connection cost as a double
-        // Useful for client code operating on the cost values (e.g.
-        // difference between costs)
+        /**
+         * @brief Support getting the current connection cost as a double.
+         *
+         * Useful for client code operating on the cost values (e.g. difference between costs).
+         */
         operator double() {
             return connection_cost_;
         }
@@ -302,15 +378,18 @@ class PlacerTimingCosts {
         double& connection_cost_;
     };
 
-    //Proxy class representing the connection costs of a net
-    // Supports indexing by pin index to retrieve the ConnectionProxy for that pin/connection
+    /**
+     * @brief Proxy class representing the connection costs of a net.
+     *
+     * Supports indexing by pin index to retrieve the ConnectionProxy for that pin/connection.
+     */
     class NetProxy {
       public:
         NetProxy(PlacerTimingCosts* timing_costs, double* net_sink_costs)
             : timing_costs_(timing_costs)
             , net_sink_costs_(net_sink_costs) {}
 
-        //Indexes into the specific net pin/connection
+        ///@brief Indexes into the specific net pin/connection.
         ConnectionProxy operator[](size_t ipin) {
             return ConnectionProxy(timing_costs_, net_sink_costs_[ipin]);
         }
@@ -320,7 +399,7 @@ class PlacerTimingCosts {
         double* net_sink_costs_;
     };
 
-    //Indexes into the specific net
+    ///@brief Indexes into the specific net.
     NetProxy operator[](ClusterNetId net_id) {
         VTR_ASSERT_SAFE(net_start_indicies_[net_id] >= 0);
 
@@ -339,8 +418,10 @@ class PlacerTimingCosts {
         std::swap(num_levels_, other.num_levels_);
     }
 
-    //Calculates the total cost of all connections efficiently
-    //in the face of modified connection costs
+    /**
+     * @brief Calculates the total cost of all connections efficiently
+     *        in the face of modified connection costs.
+     */
     double total_cost() {
         float cost = total_cost_recurr(0); //Root
 
@@ -351,7 +432,7 @@ class PlacerTimingCosts {
     }
 
   private:
-    //Recursively calculate and update the timing cost rooted at inode
+    ///@brief Recursively calculate and update the timing cost rooted at inode.
     double total_cost_recurr(size_t inode) {
         //Prune out-of-tree
         if (inode > connection_costs_.size() - 1) {
@@ -386,12 +467,18 @@ class PlacerTimingCosts {
         return node_cost;
     }
 
-    friend ConnectionProxy; //So it can call invalidate()
+    ///@brief Friend-ed so it can call invalidate().
+    friend ConnectionProxy;
 
     void invalidate(double* invalidated_cost) {
         //Check pointer within range of internal storage
-        VTR_ASSERT_SAFE_MSG(invalidated_cost >= &connection_costs_[0], "Connection cost pointer should be after start of internal storage");
-        VTR_ASSERT_SAFE_MSG(invalidated_cost <= &connection_costs_[connection_costs_.size() - 1], "Connection cost pointer should be before end of internal storage");
+        VTR_ASSERT_SAFE_MSG(
+            invalidated_cost >= &connection_costs_[0],
+            "Connection cost pointer should be after start of internal storage");
+
+        VTR_ASSERT_SAFE_MSG(
+            invalidated_cost <= &connection_costs_[connection_costs_.size() - 1],
+            "Connection cost pointer should be before end of internal storage");
 
         size_t icost = invalidated_cost - &connection_costs_[0];
 
@@ -400,7 +487,7 @@ class PlacerTimingCosts {
         //Invalidate parent intermediate costs up to root or first
         //already-invalidated parent
         size_t iparent = parent(icost);
-        ;
+
         while (!std::isnan(connection_costs_[iparent])) {
             //Invalidate
             connection_costs_[iparent] = std::numeric_limits<double>::quiet_NaN();
@@ -428,33 +515,41 @@ class PlacerTimingCosts {
         return (i - 1) / 2;
     }
 
-    //Returns the number of nodes in ilevel'th level
-    //If ilevel is negative, return 0, since the root shouldn't be counted
-    //as a leaf node candidate
+    /**
+     * @brief Returns the number of nodes in ilevel'th level.
+     *
+     * If ilevel is negative, return 0, since the root shouldn't
+     * be counted as a leaf node candidate.
+     */
     size_t num_nodes_in_level(int ilevel) const {
         return ilevel < 0 ? 0 : (2 << (ilevel));
     }
 
-    //Returns the total number of nodes in levels [0..ilevel] (inclusive)
+    ///@brief Returns the total number of nodes in levels [0..ilevel] (inclusive).
     size_t num_nodes_up_to_level(int ilevel) const {
         return (2 << (ilevel + 1)) - 1;
     }
 
   private:
-    //Vector storing the implicit binary tree of connection costs
-    // The actual connections are stored at the end of the vector
-    // (last level of the binary tree). The earlier portions of
-    // the tree are the intermediate nodes.
-    //
-    // The methods left_child()/right_child()/parent() can be used
-    // to traverse the tree by indicies into this vector
+    /**
+     * @brief Vector storing the implicit binary tree of connection costs.
+     *
+     * The actual connections are stored at the end of the vector
+     * (last level of the binary tree). The earlier portions of
+     * the tree are the intermediate nodes.
+     *
+     * The methods left_child()/right_child()/parent() can be used
+     * to traverse the tree by indicies into this vector.
+     */
     std::vector<double> connection_costs_;
 
-    //Vector storing the indicies of the first connection for
-    //each net in the netlist, used for indexing by net.
+    /**
+     * @brief Vector storing the indicies of the first connection
+     *        for each net in the netlist, used for indexing by net.
+     */
     vtr::vector<ClusterNetId, int> net_start_indicies_;
 
-    //Number of levels in the binary tree
+    ///@brief Number of levels in the binary tree.
     size_t num_levels_ = 0;
 };
 

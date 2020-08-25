@@ -92,6 +92,26 @@ void initialize_timing_info(float crit_exponent,
  * All the pins with changed connection delays have already been added into
  * the ClusteredPinTimingInvalidator to allow incremental STA update. These
  * changed connection delays are a direct result of moved blocks in try_swap().
+ *
+ * @param crit_exponent            Used to calculate `sharpened` criticalities.
+ *
+ * @param delay_model              Used to calculate the delay between two locations.
+ *
+ * @param criticalities            Mapping interface between atom pin criticalities
+ *                                 and clb pin criticalities.
+ *
+ * @param setup_slacks             Mapping interface between atom pin raw setup slacks
+ *                                 and clb pin raw setup slacks.
+ *
+ * @param pin_timing_invalidator   Stores all the pins that have their delay value changed
+ *                                 and needs to be updated in the timing graph.
+ *
+ * @param timing_info              Stores the timing graph and other important timing info.
+ *
+ * @param timing_update_mode       Determines what should be updated when this routine is
+ *                                 called, and using incremental techniques is appropriate.
+ *
+ * @param costs                    Stores the updated timing cost for the whole placement.
  */
 void update_setup_slacks_and_criticalities(float crit_exponent,
                                            const PlaceDelayModel* delay_model,
@@ -284,9 +304,19 @@ static double sum_td_costs() {
  * @brief Commit all the setup slack values from the PlacerSetupSlacks
  *        class to a vtr matrix.
  *
- * This incremental routine will be correct if and only if it is called
- * immediately after each time update_setup_slacks_and_criticalities
- * updates the setup slacks (i.e. update_setup_slacks = true).
+ * This routine is incremental since it relies on the pins_with_modified_setup_slack()
+ * to detect which pins need to be updated and which pins do not.
+ *
+ * Therefore, it is assumed that this routine is always called immediately after
+ * each time update_setup_slacks_and_criticalities() updates the setup slacks
+ * (i.e. t_placer_timing_update_mode::update_setup_slacks = true). Otherwise,
+ * pins_with_modified_setup_slack() cannot accurately account for all the pins
+ * that have their setup slacks changed, making this routine incorrect.
+ *
+ * Currently, the only exception to the rule above is when setup slack analysis is used
+ * during the placement quench. The new setup slacks might be either accepted or
+ * rejected, so for efficiency reasons, this routine is not called if the slacks are
+ * rejected in the end. For more detailed info, see the try_swap() routine.
  */
 void commit_setup_slacks(const PlacerSetupSlacks* setup_slacks) {
     const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
@@ -305,6 +335,12 @@ void commit_setup_slacks(const PlacerSetupSlacks* setup_slacks) {
  * @brief Verify that the values in the vtr matrix matches the PlacerSetupSlacks class.
  *
  * Return true if all values are identical. Otherwise, return false.
+ * Used to check if the timing update has been succesfully revereted if a proposed move
+ * is rejected when applying setup slack analysis during the placement quench.
+ * If successful, the setup slacks in the timing analyzer should be the same as
+ * the setup slacks in connection_setup_slack matrix without running commit_setup_slacks().
+ *
+ * For more detailed info, see the try_swap() routine.
  */
 bool verify_connection_setup_slacks(const PlacerSetupSlacks* setup_slacks) {
     const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;

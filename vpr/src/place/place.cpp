@@ -187,6 +187,28 @@ vtr::vector<ClusterNetId, double> net_timing_cost;
 vtr::vector<ClusterNetId, t_bb> bb_coords, bb_num_on_edges;
 
 /**
+ * @brief 2D arrays used to precompute the inverse of the average
+ *        number of tracks per channel between [subhigh] and [sublow].
+ *
+ * Access them as chan?_place_cost_fac[subhigh][sublow].
+ * They are used to speed up the computation of the cost function that
+ * takes the length of the net bounding box in each dimension, divided
+ * by the average number of tracks in that direction.
+ *
+ * For other cost functions they will never be used.
+ *
+ *   @param chanx_place_cost_fac
+ *              1st dimension index range: [0...device_ctx.grid.width()-2]
+ *   @param chany_place_cost_fac
+ *              1st dimension index range: [0...device_ctx.grid.height()-2]
+ *
+ * For more detailed structure allocation process and index ranges, see
+ * alloc_and_load_for_fast_cost_update().
+ */
+float** chanx_place_cost_fac;
+float** chany_place_cost_fac;
+
+/**
  * @brief The following arrays are used by the try_swap function for speed.
  *
  * Index range: [0...cluster_ctx.clb_nlist.nets().size()-1]
@@ -195,17 +217,6 @@ vtr::vector<ClusterNetId, t_bb> ts_bb_coord_new, ts_bb_edge_new;
 std::vector<ClusterNetId> ts_nets_to_update;
 
 /********** End of definitions of variables in place_global.h **********/
-
-/* The arrays below are used to precompute the inverse of the average   *
- * number of tracks per channel between [subhigh] and [sublow].  Access *
- * them as chan?_place_cost_fac[subhigh][sublow].  They are used to     *
- * speed up the computation of the cost function that takes the length  *
- * of the net bounding box in each dimension, divided by the average    *
- * number of tracks in that direction; for other cost functions they    *
- * will never be used.                                                  *
- */
-static float** chanx_place_cost_fac; //[0...device_ctx.grid.width()-2]
-static float** chany_place_cost_fac; //[0...device_ctx.grid.height()-2]
 
 /* These file-scoped variables keep track of the number of swaps       *
  * rejected, accepted or aborted. The total number of swap attempts    *

@@ -1,3 +1,9 @@
+/**
+ * @file place_util.h
+ * @brief Utility structures representing various states of the
+ *        placement. Also contains declarations of related routines.
+ */
+
 #pragma once
 #include "vpr_types.h"
 
@@ -5,7 +11,7 @@
 class t_placer_costs;
 class t_annealing_state;
 
-///@brief Initialize the placement context
+///@brief Initialize the placement context.
 void init_placement_context();
 
 ///@brief Get the initial limit for inner loop block move attempt limit.
@@ -57,7 +63,7 @@ class t_placer_costs {
     double timing_cost_norm;
 
   private:
-    static constexpr double MAX_INV_TIMING_COST = 1.e9;
+    double MAX_INV_TIMING_COST = 1.e9;
     enum e_place_algorithm place_algorithm;
 
   public: //Constructor
@@ -98,7 +104,7 @@ class t_annealing_state {
     int move_lim;
 
   private:
-    static constexpr float FINAL_RLIM = 1.;
+    float FINAL_RLIM = 1.;
 
   public: //Constructor
     t_annealing_state(const t_annealing_sched& annealing_sched,
