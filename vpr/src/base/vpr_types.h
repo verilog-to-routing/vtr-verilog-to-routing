@@ -935,6 +935,8 @@ struct t_placer_opts {
     std::string allowed_tiles_for_delay_model;
 
     e_place_delta_delay_algorithm place_delta_delay_matrix_calculation_method;
+
+    bool enable_analytic_placer;
 };
 
 /* All the parameters controlling the router's operation are in this        *

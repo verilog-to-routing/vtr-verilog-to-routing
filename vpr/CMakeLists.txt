@@ -51,7 +51,7 @@ add_library(libvpr STATIC
              ${LIB_SOURCES}
 )
 
-target_include_directories(libvpr PUBLIC ${LIB_INCLUDE_DIRS})
+target_include_directories(libvpr PUBLIC ${LIB_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/../libs/EXTERNAL/libeigen)
 set_target_properties(libvpr PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
 #Specify link-time dependancies
@@ -62,7 +62,8 @@ target_link_libraries(libvpr
                         libblifparse
                         libtatum
                         libargparse
-                        libpugixml)
+                        libpugixml
+)
 
 #link graphics library only when graphics set to on
 if (VPR_USE_EZGL STREQUAL "on")

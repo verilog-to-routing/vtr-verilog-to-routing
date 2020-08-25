@@ -29,6 +29,7 @@
 #include "place_macro.h"
 #include "histogram.h"
 #include "place_util.h"
+#include "analytic_placer.h" //my code
 #include "initial_placement.h"
 #include "place_delay_model.h"
 #include "move_transactions.h"
@@ -584,6 +585,16 @@ void try_place(const t_placer_opts& placer_opts,
 
     initial_placement(placer_opts.pad_loc_type, placer_opts.constraints_file.c_str());
 
+    /*
+     * Analytic Placer:
+     *  Passes in the initial_placement via vpr_context, and passes its placement back via locations marked on
+     *  both the clb_netlist and the gird.
+     *  Most of anneal is disabled later by setting initial temperature to 0 and only further optimizes in quench
+     */
+    if (placer_opts.enable_analytic_placer) {
+        AnalyticPlacer{g_vpr_ctx}.ap_place();
+    }
+
     // Update physical pin values
     for (auto block_id : cluster_ctx.clb_nlist.blocks()) {
         place_sync_external_block_connections(block_id);
@@ -745,15 +756,19 @@ void try_place(const t_placer_opts& placer_opts,
 
     first_rlim = (float)max(device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
 
-    float first_t = starting_t(&costs, &prev_inverse_costs,
-                               annealing_sched, move_lim, first_rlim,
-                               place_delay_model.get(),
-                               placer_criticalities.get(),
-                               timing_info.get(),
-                               *move_generator,
-                               pin_timing_invalidator.get(),
-                               blocks_affected,
-                               placer_opts);
+    // Analytic placer: When enabled, disables most of the anneal by setting first_t = 0 and goes strait to quench
+    float first_t = 0;
+    if (!placer_opts.enable_analytic_placer) {
+        first_t = starting_t(&costs, &prev_inverse_costs,
+                             annealing_sched, move_lim, first_rlim,
+                             place_delay_model.get(),
+                             placer_criticalities.get(),
+                             timing_info.get(),
+                             *move_generator,
+                             pin_timing_invalidator.get(),
+                             blocks_affected,
+                             placer_opts);
+    }
 
     t_annealing_state state;
     init_annealing_state(&state, annealing_sched, first_t, first_rlim, move_lim, first_crit_exponent);
