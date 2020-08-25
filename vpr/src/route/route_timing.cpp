@@ -89,7 +89,6 @@ static bool timing_driven_pre_route_to_clock_root(
     ConnectionRouter& router,
     ClusterNetId net_id,
     int sink_node,
-    int sink_pin,
     const t_conn_cost_params cost_params,
     int high_fanout_threshold,
     t_rt_node* rt_root,
@@ -998,8 +997,6 @@ bool timing_driven_route_net(ConnectionRouter& router,
     if (cluster_ctx.clb_nlist.net_is_global(net_id) && router_opts.two_stage_clock_routing) {
         //VTR_ASSERT(router_opts.clock_modeling == DEDICATED_NETWORK);
         int sink_node = device_ctx.virtual_clock_network_root_idx;
-        auto& rr_sink_node_to_pin = connections_inf.get_rr_sink_node_to_pin();
-        int sink_pin = rr_sink_node_to_pin[net_id][sink_node]; //clock net sink nodes all have unique node IDs so this mapping can be used
 
         enable_router_debug(router_opts, net_id, sink_node, itry, &router);
 
@@ -1012,7 +1009,6 @@ bool timing_driven_route_net(ConnectionRouter& router,
                 router,
                 net_id,
                 sink_node,
-                sink_pin,
                 cost_params,
                 router_opts.high_fanout_threshold,
                 rt_root,
@@ -1097,7 +1093,6 @@ static bool timing_driven_pre_route_to_clock_root(
     ConnectionRouter& router,
     ClusterNetId net_id,
     int sink_node,
-    int sink_pin,
     const t_conn_cost_params cost_params,
     int high_fanout_threshold,
     t_rt_node* rt_root,
@@ -1150,9 +1145,14 @@ static bool timing_driven_pre_route_to_clock_root(
      * lets me reuse all the routines written for breadth-first routing, which  *
      * all take a traceback structure as input.                                 */
 
-    t_trace* new_route_start_tptr = update_traceback(&cheapest, sink_pin, net_id);
+    /* This is a special pre-route to a sink that does not correspond to any    *
+     * netlist pin, but which can be reached from the global clock root drive   *
+     * points. Therefore, we can set the net pin index of the sink node to      *
+     * OPEN (meaning illegal) as it is not meaningful for this sink.            */
+
+    t_trace* new_route_start_tptr = update_traceback(&cheapest, OPEN, net_id);
     VTR_ASSERT_DEBUG(validate_traceback(route_ctx.trace[net_id].head));
-    update_route_tree(&cheapest, sink_pin, ((high_fanout) ? &spatial_rt_lookup : nullptr));
+    update_route_tree(&cheapest, OPEN, ((high_fanout) ? &spatial_rt_lookup : nullptr));
     VTR_ASSERT_DEBUG(verify_route_tree(rt_root));
     VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
     VTR_ASSERT_DEBUG(!high_fanout || validate_route_tree_spatial_lookup(rt_root, spatial_rt_lookup));
