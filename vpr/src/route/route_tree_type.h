@@ -27,8 +27,13 @@ struct t_linked_rt_edge {
  * parent_switch:  Index of the switch type driving this node (by its        *
  *                 parent).                                                  *
  * inode:  index (ID) of the rr_node that corresponds to this rt_node.       *
- * ipin:  Pin index associated with the rt_node. Gives an unique identifier  *
- *        or each rt_node.                                                   *
+ * ipin:  Net pin index associated with the rt_node. This value ranges from  *
+ *        1 to fanout [1..num_pins-1]. For cases when different speed paths  *
+ *        are taken to the same sink for different pins, inode cannot        *
+ *        uniquely identify each sink, so the net pin index guarentees an    *
+ *        unique identification for each sink-type rt_node. For non-sink-    *
+ *        type nodes and for sink-type nodes with no associated net pin      *
+ *        index, the value for this member should be set to OPEN (-1).       *
  * C_downstream:  Total downstream capacitance from this rt_node.  That is,  *
  *                the total C of the subtree rooted at the current node,     *
  *                including the C of the current node.                       *
