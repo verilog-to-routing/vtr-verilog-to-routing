@@ -1470,7 +1470,7 @@ static bool timing_driven_check_net_delays(ClbNetPinsMatrix<float>& net_delay) {
     unsigned int ipin;
     ClbNetPinsMatrix<float> net_delay_check = make_net_pins_matrix<float>(cluster_ctx.clb_nlist);
 
-    load_net_delay_from_routing(net_delay_check, false);
+    load_net_delay_from_routing(net_delay_check);
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         for (ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
