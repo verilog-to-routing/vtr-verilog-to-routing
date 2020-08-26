@@ -103,6 +103,8 @@ constexpr double INVALID_COST = std::numeric_limits<double>::quiet_NaN();
  * place_global.h. These variables were originally local to the current file.  *
  * However, they were moved so as to facilitate moving some of the routines    *
  * in the current file into other source files.                                *
+ * TODO: Create a single extern variable that allows access to all these data  *
+ * structures so that these structures don't have to be declared as extern.    *
  *******************************************************************************/
 
 /**
@@ -641,10 +643,12 @@ void try_place(const t_placer_opts& placer_opts,
         costs.cost = 1;
 
     } else { //placer_opts.place_algorithm == BOUNDING_BOX_PLACE
-        costs.bb_cost = comp_bb_cost(NORMAL);
-        costs.cost = costs.bb_cost; ///<cost is the same as wirelength cost
 
-        ///<Timing cost and normalization factors are not used
+        //cost is the same as wirelength cost
+        costs.bb_cost = comp_bb_cost(NORMAL);
+        costs.cost = costs.bb_cost;
+
+        //Timing cost and normalization factors are not used
         costs.timing_cost = INVALID_COST;
         costs.timing_cost_norm = INVALID_COST;
         costs.bb_cost_norm = INVALID_COST;
@@ -1292,6 +1296,22 @@ static void reset_move_nets(int num_nets_affected) {
     }
 }
 
+/**
+ * @brief Pick some block and moves it to another spot.
+ *
+ * If the new location is empty, directly move the block. If the new location
+ * is occupied, switch the blocks. Due to the different sizes of the blocks,
+ * this block switching may occur for multiple times. It might also cause the
+ * current swap attempt to abort due to inability to find suitable locations
+ * for moved blocks.
+ *
+ * The move generator will record all the switched blocks in the variable
+ * `blocks_affected`. Afterwards, the move will be assessed by the chosen
+ * cost formulation. Currently, there are three ways to assess move cost,
+ * which are stored in the enum type `e_place_algorithm`.
+ *
+ * @return Whether the block swap is accepted, rejected or aborted.
+ */
 static e_move_result try_swap(const t_annealing_state* state,
                               t_placer_timing_update_mode* timing_update_mode,
                               t_placer_costs* costs,
@@ -1305,25 +1325,19 @@ static e_move_result try_swap(const t_annealing_state* state,
                               float rlim_escape_fraction,
                               enum e_place_algorithm place_algorithm,
                               float timing_tradeoff) {
-    /* Picks some block and moves it to another spot.  If this spot is   *
-     * occupied, switch the blocks.  Assess the change in cost function. *
-     * rlim is the range limiter.                                        *
-     * Returns whether the swap is accepted, rejected or aborted.        *
-     * Passes back the new value of the cost functions.                  */
-
     num_ts_called++;
 
     MoveOutcomeStats move_outcome_stats;
 
-    /* I'm using negative values of proposed_net_cost as a flag, so DO NOT   *
-     * use cost functions that can go negative.                          */
+    /* I'm using negative values of proposed_net_cost as a flag, */
+    /* so DO NOT use cost functions that can go negative.        */
 
-    double delta_c = 0; /* Change in cost due to this swap. */
-    double bb_delta_c = 0;
-    double timing_delta_c = 0;
+    double delta_c = 0;        //Change in cost due to this swap.
+    double bb_delta_c = 0;     //Change in the bounding box (wiring) cost.
+    double timing_delta_c = 0; //Change in the timing cost (delay * criticality).
 
-    //Allow some fraction of moves to not be restricted by rlim,
-    //in the hopes of better escaping local minima
+    /*Allow some fraction of moves to not be restricted by rlim, */
+    /*in the hopes of better escaping local minima.              */
     float rlim;
     if (rlim_escape_fraction > 0. && vtr::frand() < rlim_escape_fraction) {
         rlim = std::numeric_limits<float>::infinity();
@@ -1331,7 +1345,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         rlim = state->rlim;
     }
 
-    //Generate a new move (perturbation) used to explore the space of possible placements
+    /* Generate a new move (perturbation) used to explore the space of possible placements */
     e_create_move create_move_outcome = move_generator.propose_move(blocks_affected, rlim);
 
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
@@ -1339,7 +1353,7 @@ static e_move_result try_swap(const t_annealing_state* state,
     e_move_result move_outcome = ABORTED;
 
     if (create_move_outcome == e_create_move::ABORT) {
-        //Proposed move is not legal -- give up on this move
+        /* Proposed move is not legal -- give up on this move */
         clear_move_blocks(blocks_affected);
 
         LOG_MOVE_STATS_OUTCOME(std::numeric_limits<float>::quiet_NaN(),
@@ -1348,64 +1362,154 @@ static e_move_result try_swap(const t_annealing_state* state,
                                "ABORTED", "illegal move");
 
         move_outcome = ABORTED;
-    } else {
-        VTR_ASSERT(create_move_outcome == e_create_move::VALID);
 
-        /*
-         * To make evaluating the move simpler (e.g. calculating changed bounding box),
-         * we first move the blocks to thier new locations (apply the move to
-         * place_ctx.block_locs) and then computed the change in cost. If the move is
-         * accepted, the inverse look-up in place_ctx.grid_blocks is updated (committing
-         * the move). If the move is rejected the blocks are returned to their original
-         * positions (reverting place_ctx.block_locs to its original state).
-         *
-         * Note that the inverse look-up place_ctx.grid_blocks is only updated
-         * after move acceptance is determined, and so should not be used when
-         * evaluating a move.
-         */
+        return move_outcome;
+    }
 
-        //Update the block positions
-        apply_move_blocks(blocks_affected);
+    /* Move is valid. Proceed to analyze cost. */
+    VTR_ASSERT(create_move_outcome == e_create_move::VALID);
 
-        //Find all the nets affected by this swap and update their costs
-        //This routine calculates new connection delays and timing costs
-        //and store them in proposed_* data structures
-        //This routine also calculates the wiring cost, which doesn't
-        //depend on the timing driven data
-        int num_nets_affected = find_affected_nets_and_update_costs(place_algorithm,
-                                                                    delay_model,
-                                                                    criticalities,
-                                                                    blocks_affected,
-                                                                    bb_delta_c,
-                                                                    timing_delta_c);
+    /*
+     * To make evaluating the move simpler (e.g. calculating changed bounding box),
+     * we first move the blocks to thier new locations (apply the move to
+     * place_ctx.block_locs) and then computed the change in cost. If the move is
+     * accepted, the inverse look-up in place_ctx.grid_blocks is updated (committing
+     * the move). If the move is rejected the blocks are returned to their original
+     * positions (reverting place_ctx.block_locs to its original state).
+     *
+     * Note that the inverse look-up place_ctx.grid_blocks is only updated
+     * after move acceptance is determined, and so should not be used when
+     * evaluating a move.
+     */
 
-        //Find all the sink pins with changed connection delays from the affected blocks.
-        //These sink pins will be passed into the pin_timing_invalidator for timing update.
-        //They will also be added to the pin invalidator when we wish to revert a timing update.
-        std::vector<ClusterPinId> sink_pins_affected;
-        find_affected_sink_pins(blocks_affected, sink_pins_affected);
+    //Update the block positions
+    apply_move_blocks(blocks_affected);
+
+    //Find all the nets affected by this swap and update the wiring costs.
+    //This cost value doesn't depend on the timing info.
+    //Also find all the pins affected by the swap, and calculates new connection
+    //delays and timing costs and store them in proposed_* data structures.
+    int num_nets_affected = find_affected_nets_and_update_costs(place_algorithm,
+                                                                delay_model,
+                                                                criticalities,
+                                                                blocks_affected,
+                                                                bb_delta_c,
+                                                                timing_delta_c);
+
+    //Find all the sink pins with changed connection delays from the affected blocks.
+    //These sink pins will be passed into the pin_timing_invalidator for timing update.
+    //They will also be added to the pin invalidator when we wish to revert a timing update.
+    std::vector<ClusterPinId> sink_pins_affected;
+    find_affected_sink_pins(blocks_affected, sink_pins_affected);
+
+    if (place_algorithm == SETUP_SLACK_ANALYSIS_PLACE) {
+        //Invalidates timing of modified connections for incremental timing updates.
+        invalidate_affected_connection_delays(sink_pins_affected,
+                                              pin_timing_invalidator,
+                                              timing_info);
+
+        //Update the connection_timing_cost and connection_delay
+        //values from the temporary values.
+        //This step is necessary for performing timing update.
+        commit_td_cost(blocks_affected);
+
+        //Update timing information. Since we are analyzing setup slacks,
+        //we only update those values and keep the criticalities stale
+        //so as not to interfere with the original timing cost algorithm.
+        //
+        //Note: the timing info must be called after applying block moves
+        //and committing the timing driven delays and costs.
+        //If we wish to revert this timing update due to move rejection,
+        //we need to first revert block moves and restore timing values.
+        timing_update_mode->update_criticalities = false;
+        timing_update_mode->update_setup_slacks = true;
+        update_setup_slacks_and_criticalities(state->crit_exponent,
+                                              delay_model,
+                                              criticalities,
+                                              setup_slacks,
+                                              pin_timing_invalidator,
+                                              timing_info,
+                                              timing_update_mode,
+                                              costs);
+
+        /* Get the setup slack analysis cost */
+        //TODO: calculate a weighted average of the slack cost and wiring cost
+        delta_c = analyze_setup_slack_cost(setup_slacks);
+
+    } else if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+        /*in this case we redefine delta_c as a combination of timing and bb.  *
+         *additionally, we normalize all values, therefore delta_c is in       *
+         *relation to 1*/
+
+        delta_c = (1 - timing_tradeoff) * bb_delta_c * costs->bb_cost_norm
+                  + timing_tradeoff * timing_delta_c * costs->timing_cost_norm;
+
+    } else { //place_algorithm == BOUNDING_BOX_PLACE (wiring cost)
+        delta_c = bb_delta_c;
+    }
+
+    /* 1 -> move accepted, 0 -> rejected. */
+    move_outcome = assess_swap(delta_c, state->t);
+
+    if (move_outcome == ACCEPTED) {
+        costs->cost += delta_c;
+        costs->bb_cost += bb_delta_c;
 
         if (place_algorithm == SETUP_SLACK_ANALYSIS_PLACE) {
-            //Invalidates timing of modified connections for incremental timing updates
-            //This routine relies on comparing proposed_connection_delay and connection_delay
+            /* Update the timing driven cost as usual */
+            costs->timing_cost += timing_delta_c;
+
+            //Commit the setup slack information
+            //The timing delay and cost values should be committed already
+            commit_setup_slacks(setup_slacks);
+        }
+
+        if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+            costs->timing_cost += timing_delta_c;
+
+            //Invalidates timing of modified connections for incremental timing
+            //updates. This routine relies on comparing proposed_connection_delay
+            //and connection_delay. If the setup slack analysis was not performed,
+            //the sink pins are yet to be invalidated.
             invalidate_affected_connection_delays(sink_pins_affected,
                                                   pin_timing_invalidator,
                                                   timing_info);
 
             //Update the connection_timing_cost and connection_delay
-            //values from the temporary values.
+            //values from the temporary values
             commit_td_cost(blocks_affected);
+        }
 
-            //Update timing information. Since we are analyzing setup slacks,
-            //we only update those values and keep the criticalities stale
-            //so as not to interfere with the original timing driven algorithm.
+        /* Update net cost functions and reset flags. */
+        update_move_nets(num_nets_affected);
+
+        /* Update clb data structures since we kept the move. */
+        commit_move_blocks(blocks_affected);
+
+    } else { //move_outcome == REJECTED
+
+        /* Reset the net cost function flags first. */
+        reset_move_nets(num_nets_affected);
+
+        /* Restore the place_ctx.block_locs data structures to their state before the move. */
+        revert_move_blocks(blocks_affected);
+
+        if (place_algorithm == SETUP_SLACK_ANALYSIS_PLACE) {
+            //Revert the timing delays and costs to pre-update values.
+            //These routines must be called after reverting the block moves
+            //if we wish to perform a reversion of the previous timing update.
             //
-            //Note: the timing info must be called after applying block moves
-            //and committing the timing driven delays and costs.
-            //If we wish to revert this timing update due to move rejection,
-            //we need to revert block moves and restore the timing values.
-            timing_update_mode->update_criticalities = false;
-            timing_update_mode->update_setup_slacks = true;
+            //TODO: make this process incremental. Currently, all the delays
+            //are recomputed before all the timing costs are recomputed.
+            comp_td_connection_delays(delay_model);
+            comp_td_costs(delay_model, *criticalities, &costs->timing_cost);
+
+            /* Re-invalidate the affected sink pins */
+            invalidate_affected_connection_delays(sink_pins_affected,
+                                                  pin_timing_invalidator,
+                                                  timing_info);
+
+            /* Revert the timing update */
             update_setup_slacks_and_criticalities(state->crit_exponent,
                                                   delay_model,
                                                   criticalities,
@@ -1415,116 +1519,34 @@ static e_move_result try_swap(const t_annealing_state* state,
                                                   timing_update_mode,
                                                   costs);
 
-            /* Get the setup slack analysis cost */
-            //TODO: calculate a weighted average of the slack cost and wiring cost
-            delta_c = analyze_setup_slack_cost(setup_slacks);
-
-        } else if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-            /*in this case we redefine delta_c as a combination of timing and bb.  *
-             *additionally, we normalize all values, therefore delta_c is in       *
-             *relation to 1*/
-
-            delta_c = (1 - timing_tradeoff) * bb_delta_c * costs->bb_cost_norm
-                      + timing_tradeoff * timing_delta_c * costs->timing_cost_norm;
-
-        } else { //place_algorithm == BOUNDING_BOX_PLACE (wiring cost)
-            delta_c = bb_delta_c;
+            /* Check the consistency of the setup slack values */
+            VTR_ASSERT_SAFE_MSG(
+                verify_connection_setup_slacks(setup_slacks),
+                "The current setup slacks should be identical to the values before the try swap timing info update.");
         }
 
-        /* 1 -> move accepted, 0 -> rejected. */
-        move_outcome = assess_swap(delta_c, state->t);
-
-        if (move_outcome == ACCEPTED) {
-            costs->cost += delta_c;
-            costs->bb_cost += bb_delta_c;
-
-            if (place_algorithm == SETUP_SLACK_ANALYSIS_PLACE) {
-                /* Update the timing driven cost as usual */
-                costs->timing_cost += timing_delta_c;
-
-                //Commit the setup slack information
-                //The timing delay and cost values should be committed already
-                commit_setup_slacks(setup_slacks);
-            }
-
-            if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-                costs->timing_cost += timing_delta_c;
-
-                //Invalidates timing of modified connections for incremental timing updates
-                //This routine relies on comparing proposed_connection_delay and connection_delay
-                //If the setup slack analysis was not performed, the
-                //sink pins are yet to be invalidated.
-                invalidate_affected_connection_delays(sink_pins_affected,
-                                                      pin_timing_invalidator,
-                                                      timing_info);
-
-                //update the connection_timing_cost and connection_delay
-                //values from the temporary values
-                commit_td_cost(blocks_affected);
-            }
-
-            /* update net cost functions and reset flags. */
-            update_move_nets(num_nets_affected);
-
-            /* Update clb data structures since we kept the move. */
-            commit_move_blocks(blocks_affected);
-
-        } else { //move_outcome == REJECTED
-
-            /* Reset the net cost function flags first. */
-            reset_move_nets(num_nets_affected);
-
-            /* Restore the place_ctx.block_locs data structures to their state before the move. */
-            revert_move_blocks(blocks_affected);
-
-            if (place_algorithm == SETUP_SLACK_ANALYSIS_PLACE) {
-                //Revert the timing delays and costs to pre-update values
-                //These routines must be called after reverting the block moves
-                //TODO: make this process incremental
-                comp_td_connection_delays(delay_model);
-                comp_td_costs(delay_model, *criticalities, &costs->timing_cost);
-
-                //Re-invalidate the affected sink pins
-                invalidate_affected_connection_delays(sink_pins_affected,
-                                                      pin_timing_invalidator,
-                                                      timing_info);
-
-                /* Revert the timing update */
-                update_setup_slacks_and_criticalities(state->crit_exponent,
-                                                      delay_model,
-                                                      criticalities,
-                                                      setup_slacks,
-                                                      pin_timing_invalidator,
-                                                      timing_info,
-                                                      timing_update_mode,
-                                                      costs);
-
-                VTR_ASSERT_SAFE_MSG(
-                    verify_connection_setup_slacks(setup_slacks),
-                    "The current setup slacks should be identical to the values before the try swap timing info update.");
-            }
-
-            if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
-                /* Unstage the values stored in proposed_* data structures */
-                revert_td_cost(blocks_affected);
-            }
+        if (place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
+            /* Discard the values stored in proposed_* data structures */
+            revert_td_cost(blocks_affected);
         }
-
-        move_outcome_stats.delta_cost_norm = delta_c;
-        move_outcome_stats.delta_bb_cost_norm = bb_delta_c * costs->bb_cost_norm;
-        move_outcome_stats.delta_timing_cost_norm = timing_delta_c * costs->timing_cost_norm;
-
-        move_outcome_stats.delta_bb_cost_abs = bb_delta_c;
-        move_outcome_stats.delta_timing_cost_abs = timing_delta_c;
-
-        LOG_MOVE_STATS_OUTCOME(delta_c, bb_delta_c, timing_delta_c,
-                               (move_outcome ? "ACCEPTED" : "REJECTED"), "");
     }
+
+    /* Record the costs in the move outcome stats */
+    move_outcome_stats.delta_cost_norm = delta_c;
+    move_outcome_stats.delta_bb_cost_norm = bb_delta_c * costs->bb_cost_norm;
+    move_outcome_stats.delta_timing_cost_norm = timing_delta_c * costs->timing_cost_norm;
+
+    move_outcome_stats.delta_bb_cost_abs = bb_delta_c;
+    move_outcome_stats.delta_timing_cost_abs = timing_delta_c;
+
+    LOG_MOVE_STATS_OUTCOME(delta_c, bb_delta_c, timing_delta_c,
+                           (move_outcome ? "ACCEPTED" : "REJECTED"), "");
 
     move_outcome_stats.outcome = move_outcome;
 
     move_generator.process_outcome(move_outcome_stats);
 
+    /* Clear the data structure containing block move info */
     clear_move_blocks(blocks_affected);
 
     //VTR_ASSERT(check_macro_placement_consistency() == 0);
@@ -1536,10 +1558,22 @@ static e_move_result try_swap(const t_annealing_state* state,
     return move_outcome;
 }
 
-//Puts all the nets changed by the current swap into nets_to_update,
-//and updates their bounding box.
-//
-//Returns the number of affected nets.
+/**
+ * @brief Find all the nets and pins affected by this swap and update costs.
+ *
+ * Find all the nets affected by this swap and update the bouding box (wiring)
+ * costs. This cost function doesn't depend on the timing info.
+ *
+ * Find all the pins affected by this swap and update the timing cost.
+ * The timing costs are calculated by getting the new connection delays, multiplied
+ * by the connection criticalities returned by the timing analyzer.
+ * These timing costs are stored in the proposed_* data structures.
+ *
+ * The change in the bounding box cost is stored in `bb_delta_c`.
+ * The change in the timing cost is stored in `timing_delta_c`.
+ *
+ * @return The number of affected nets.
+ */
 static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm,
                                                const PlaceDelayModel* delay_model,
                                                const PlacerCriticalities* criticalities,
@@ -1593,6 +1627,7 @@ static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm
     return num_affected_nets;
 }
 
+///@brief Stores all the nets affected by the block moves (avoid duplicates).
 static void record_affected_net(const ClusterNetId net, int& num_affected_nets) {
     //Record effected nets
     if (proposed_net_cost[net] < 0.) {
@@ -1605,6 +1640,7 @@ static void record_affected_net(const ClusterNetId net, int& num_affected_nets) 
     }
 }
 
+///@brief Update the net bounding box.
 static void update_net_bb(const ClusterNetId net,
                           const t_pl_blocks_to_be_moved& blocks_affected,
                           int iblk,
@@ -1636,6 +1672,16 @@ static void update_net_bb(const ClusterNetId net,
     }
 }
 
+/**
+ * @brief Get the proposed timing delay and cost based on the current block moves.
+ *
+ * Only considers the sink pins on the moved blocks, and the sink pins of the nets
+ * driven by the driver pins on the moved blocks.
+ * Add all these pins into blocks_affected.affected_pins so that we don't have to
+ * go through the moved blocks and gather them again in other routines.
+ *
+ * Also calculates the change in the timing cost by the proposed block moves.
+ */
 static void update_td_delta_costs(const PlaceDelayModel* delay_model,
                                   const PlacerCriticalities& criticalities,
                                   const ClusterNetId net,
@@ -1681,19 +1727,23 @@ static void update_td_delta_costs(const PlaceDelayModel* delay_model,
     }
 }
 
+/**
+ * @brief Find all the sink pins with changed connection delays from the affected blocks.
+ *
+ * These sink pins will be passed into the pin_timing_invalidator for timing update.
+ * They will also be added to the pin invalidator when we wish to revert a timing update.
+ *
+ * It is possible that some connections may not have changed delay. For instance, if
+ * using a dx/dy delay model, this could occur if a sink moved to a new position with
+ * the same dx/dy from it's driver. To minimize work during the incremental STA update
+ * we do not invalidate such unchanged connections.
+ */
 static void find_affected_sink_pins(const t_pl_blocks_to_be_moved& blocks_affected,
                                     std::vector<ClusterPinId>& sink_pins_affected) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& clb_nlist = cluster_ctx.clb_nlist;
 
     for (ClusterPinId clb_pin : blocks_affected.affected_pins) {
-        //It is possible that some connections may not have changed delay.(e.g.
-        //For instance, if using a dx/dy delay model, this could occur if a sink
-        //moved to a new position with the same dx/dy from it's driver.
-        //
-        //To minimize work during the incremental STA update we do not invalidate
-        //such unchanged connections.
-
         ClusterNetId net = clb_nlist.pin_net(clb_pin);
         int ipin = clb_nlist.pin_net_index(clb_pin);
 
@@ -1704,6 +1754,24 @@ static void find_affected_sink_pins(const t_pl_blocks_to_be_moved& blocks_affect
     }
 }
 
+/**
+ * @brief Check if the setup slack has gotten better or worse due to block swap.
+ *
+ * Get all the modified slack values via the PlacerSetupSlacks class, and compare
+ * then with the original values at these connections. Sort them and compare them
+ * one by one, and return the difference of the first different pair.
+ *
+ * If the new slack value is larger(better), than return a negative value so that
+ * the move will be accepted. If the new slack value is smaller(worse), return a
+ * positive value so that the move will be rejected.
+ *
+ * If no slack values have changed, then return an arbitrary positive number. A
+ * move resulting in no change in the slack values should probably be unnecessary.
+ *
+ * The sorting is need to prevent in the unlikely circumstances that a bad slack
+ * value suddenly got very good due to the block move, while a good slack value
+ * got very bad, perhaps even worse than the original worse slack value.
+ */
 static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& clb_nlist = cluster_ctx.clb_nlist;
@@ -1739,16 +1807,24 @@ static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks) {
     return 1;
 }
 
+/**
+ * @brief Decide whether to accept a move based on the probability
+ *        calculated from the current annealing temperature.
+ *
+ * Returns: 1 -> move accepted, 0 -> rejected.
+ */
 static e_move_result assess_swap(double delta_c, double t) {
-    /* Returns: 1 -> move accepted, 0 -> rejected. */
+    /* A non-positive cost will always be accepted */
     if (delta_c <= 0) {
         return ACCEPTED;
     }
 
+    /* If temperature is 0 and the cost is positive, guaranteed rejection */
     if (t == 0.) {
         return REJECTED;
     }
 
+    /* Calculated the probability using temp and decide */
     float fnum = vtr::frand();
     float prob_fac = std::exp(-delta_c / t);
     if (prob_fac > fnum) {
@@ -1758,27 +1834,31 @@ static e_move_result assess_swap(double delta_c, double t) {
     return REJECTED;
 }
 
+/**
+ * @brief Recomputes the wiring cost to eliminate round-off that may have accrued.
+ *
+ * This process assumes that all the net costs have been updated.
+ */
 static double recompute_bb_cost() {
-    /* Recomputes the cost to eliminate roundoff that may have accrued.  *
-     * This routine does as little work as possible to compute this new  *
-     * cost.                                                             */
-
-    double cost = 0;
-
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
+    double cost = 0;
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {       /* for each net ... */
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) { /* Do only if not ignored. */
             /* Bounding boxes don't have to be recomputed; they're correct. */
             cost += net_cost[net_id];
         }
     }
-
-    return (cost);
+    return cost;
 }
 
-/* Update the connection_timing_cost values from the temporary *
- * values for all connections that have changed.               */
+/**
+ * @brief Update the connection_timing_cost values from the temporary
+ *        values for all connections that have/haven't changed.
+ *
+ * All the connections have already been gathered by blocks_affected.affected_pins
+ * after running the routine find_affected_nets_and_update_costs().
+ */
 static void commit_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& clb_nlist = cluster_ctx.clb_nlist;
@@ -1796,8 +1876,10 @@ static void commit_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
     }
 }
 
-//Reverts modifications to proposed_connection_delay and proposed_connection_timing_cost based on
-//the move proposed in blocks_affected
+/**
+ * @brief Reverts modifications to proposed_connection_delay and proposed_connection_timing_cost
+ *        based on the move proposed in blocks_affected.
+ */
 static void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
 #ifndef VTR_ASSERT_SAFE_ENABLED
     static_cast<void>(blocks_affected);
@@ -1816,10 +1898,15 @@ static void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected) {
 #endif
 }
 
-//Invalidates the delays of connections effected by the specified move
-//
-//Relies on proposed_connection_delay and connection_delay to detect
-//which connections have actually had their delay changed.
+/**
+ * @brief Invalidates the delays of connections effected by the specified move.
+ *
+ * Relies on find_affected_sink_pins() to find all the connections with different
+ * `proposed_connection_delay` and `connection_delay`.
+ *
+ * Invalidate all the timing graph edges associated with these sink pins via the
+ * ClusteredPinTimingInvalidator class.
+ */
 static void invalidate_affected_connection_delays(const std::vector<ClusterPinId>& sink_pins_affected,
                                                   ClusteredPinTimingInvalidator* pin_tedges_invalidator,
                                                   TimingInfo* timing_info) {
@@ -1828,17 +1915,11 @@ static void invalidate_affected_connection_delays(const std::vector<ClusterPinId
 
     //Invalidate timing graph edges affected by the move
     for (ClusterPinId clb_pin : sink_pins_affected) {
-        //It is possible that some connections may not have changed delay.
-        //For instance, if using a dx/dy delay model, this could occur if a sink
-        //moved to a new position with the same dx/dy from it's driver.
-        //
-        //To minimize work during the incremental STA update we do not invalidate
-        //such unchanged connections.
         pin_tedges_invalidator->invalidate_connection(clb_pin, timing_info);
     }
 }
 
-//Returns true if 'net' is driven by one of the blocks in 'blocks_affected'
+///@brief Returns true if 'net' is driven by one of the blocks in 'blocks_affected'.
 static bool driven_by_moved_block(const ClusterNetId net, const t_pl_blocks_to_be_moved& blocks_affected) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -1851,14 +1932,23 @@ static bool driven_by_moved_block(const ClusterNetId net, const t_pl_blocks_to_b
     return false;
 }
 
-/* Finds the cost from scratch.  Done only when the placement   *
- * has been radically changed (i.e. after initial placement).   *
- * Otherwise find the cost change incrementally.  If method     *
- * check is NORMAL, we find bounding boxes that are updateable  *
- * for the larger nets.  If method is CHECK, all bounding boxes *
- * are found via the non_updateable_bb routine, to provide a    *
- * cost which can be used to check the correctness of the       *
- * other routine.                                               */
+/**
+ * @brief Find the wiring cost.
+ *
+ * Find the wiring cost from scratch only when the placement has
+ * been radically changed (i.e. after the initial placement).
+ * Otherwise, find the cost change incrementally.
+ *
+ *   @param method
+ *
+ *   NORMAL  If the method check is NORMAL, we find boudning
+ *           boxes that are updateable for the larger nets.
+ *
+ *   CHECK   If the method check is CHECK, all bounding boxes
+ *           are found via the non_updateable_bb routine to
+ *           provide a cost which can be used to check the
+ *           correctness of the other routine.
+ */
 static double comp_bb_cost(e_cost_methods method) {
     double cost = 0;
     double expected_wirelength = 0.0;

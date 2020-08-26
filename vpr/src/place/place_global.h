@@ -13,6 +13,9 @@
  *
  * For detailed descriptions on what each data structure stores, please see
  * place.cpp, where these variables are defined.
+ *
+ * TODO: Create a single extern variable that allows access to all these data
+ * structures so that these structures don't have to be declared as extern.
  */
 
 #pragma once
