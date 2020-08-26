@@ -4043,7 +4043,9 @@ static void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointe
 //checks if the maual move checkbox is toggled and returns true if it was toggled
 bool get_manual_move_flag() {
     GObject* manual_move_button = application.get_object("ManualMove");
-    return gtk_toggle_button_get_active((GtkToggleButton*)manual_move_button);
+    bool manual_move_flag = gtk_toggle_button_get_active((GtkToggleButton*)manual_move_button);
+    delete manual_move_button;
+    return manual_move_flag;
 }
 
 //this window lets the user input bock_id/block_name, and to location of their manual move
@@ -4152,7 +4154,7 @@ void move_generator_button_callback(GtkWidget* /*widget*/, GtkWidget* oldGrid) {
         manual_move_globals.draw_manual_move_info.valid_input = true;
         manual_move_globals.draw_manual_move_info.to_x = to_loc_x;
         manual_move_globals.draw_manual_move_info.to_y = to_loc_y;
-        manual_move_globals.draw_manual_move_info.subtile = to_subtile;
+        manual_move_globals.draw_manual_move_info.to_subtile = to_subtile;
         manual_move_globals.draw_manual_move_info.block_id = block_id;
 
         //highlight blocks
@@ -4179,12 +4181,11 @@ void cost_summary_window() {
     gtk_label_set_markup((GtkLabel*)info, "<b>Move Costs and Outcomes</b>");
     std::string dc_label = "Delta Cost: " + std::to_string(manual_move_globals.draw_manual_move_info.delta_c);
     GtkWidget* dc = gtk_label_new(dc_label.c_str());
-    std::string dcn_label = "Delta Cost Norm: " + std::to_string(manual_move_globals.draw_manual_move_info.bb_delta_c);
+    std::string dcn_label = "Delta Bounding Box Cost: " + std::to_string(manual_move_globals.draw_manual_move_info.bb_delta_c);
     GtkWidget* dcn = gtk_label_new(dcn_label.c_str());
-    std::string dtcn_label = "Delta Timing Cost Norm: " + std::to_string(manual_move_globals.draw_manual_move_info.timing_delta_c);
+    std::string dtcn_label = "Delta Timing Cost: " + std::to_string(manual_move_globals.draw_manual_move_info.timing_delta_c);
     GtkWidget* dtcn = gtk_label_new(dtcn_label.c_str());
-    std::string outcome;
-    manual_move_globals.draw_manual_move_info.placer_move_outcome == MOVE_REJECTED ? outcome = "Rejected" : outcome = "Accepted";
+    std::string outcome = e_move_result_to_string(manual_move_globals.draw_manual_move_info.placer_move_outcome);
     std::string mo_label = "Move Outcome: " + outcome;
     GtkWidget* mo = gtk_label_new(mo_label.c_str());
     GtkWidget* accept = gtk_button_new_with_label("Accept");
@@ -4224,7 +4225,7 @@ void cost_summary_window() {
 
 //if the user decides to accept the manual move, this function sets the user move outcome to accpeted and closes manual move and cost windows
 void accept_manual_move(GtkWidget* /*widget*/, GtkWidget* window) {
-    manual_move_globals.draw_manual_move_info.user_move_outcome = MOVE_ACCEPTED;
+    manual_move_globals.draw_manual_move_info.user_move_outcome = ACCEPTED;
     manual_move_globals.manual_move_window_is_open = false;
     gtk_widget_destroy(manual_move_globals.manual_move_window);
     gtk_widget_destroy((GtkWidget*)window);
@@ -4232,7 +4233,7 @@ void accept_manual_move(GtkWidget* /*widget*/, GtkWidget* window) {
 
 //if the user decides to reject the manual move, this function sets the user move outcome to rejected and closes manual move and cost windows
 void reject_manual_move(GtkWidget* /*widget*/, GtkWidget* window) {
-    manual_move_globals.draw_manual_move_info.user_move_outcome = MOVE_REJECTED;
+    manual_move_globals.draw_manual_move_info.user_move_outcome = REJECTED;
     manual_move_globals.manual_move_window_is_open = false;
     gtk_widget_destroy(manual_move_globals.manual_move_window);
     gtk_widget_destroy((GtkWidget*)window);

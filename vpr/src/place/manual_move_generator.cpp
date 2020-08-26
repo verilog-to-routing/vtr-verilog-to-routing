@@ -4,12 +4,13 @@
 t_pl_loc to;
 int block_id;
 
+/** gets the block_id of the block to be moved, and the values for the to location from the placer. The placer gets these values from the user in draw.cpp. after the placer gets these values it sends them here by passing in the ManualMoveInfo as an argument **/
 void mmg_get_manual_move_info(ManualMoveInfo mmi) {
     block_id = mmi.block_id;
-    to = t_pl_loc(mmi.to_x, mmi.to_y, mmi.subtile);
+    to = t_pl_loc(mmi.to_x, mmi.to_y, mmi.to_subtile);
 }
 
-e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float rlim) {
+e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected, float /*rlim*/) {
     /* Pick the user indicated block to be swapped with user indicated block.   */
     ClusterBlockId b_from = ClusterBlockId(block_id);
     if (!b_from) {
@@ -35,7 +36,6 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         std::cout << "Move aborted due to uncompatible subtile\n";
         return e_create_move::ABORT;
     }
-    rlim += 0;
 #if 0
     auto& grid = g_vpr_ctx.device().grid;
 	VTR_LOG( "swap [%d][%d][%d] %s block %zu \"%s\" <=> [%d][%d][%d] %s block ",
@@ -48,5 +48,6 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     }
     VTR_LOG("\n");
 #endif
+    std::cout << "block_id: " << size_t(b_from) << " to_x: " << to.x << " to_y: " << to.y << " to_subtile: " << to.sub_tile << std::endl;
     return ::create_move(blocks_affected, b_from, to);
 }

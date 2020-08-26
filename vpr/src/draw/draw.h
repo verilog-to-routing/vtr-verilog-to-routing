@@ -3,6 +3,7 @@
 
 #include "timing_info.h"
 #include "physical_types.h"
+#include "move_utils.h"
 
 #ifndef NO_GRAPHICS
 

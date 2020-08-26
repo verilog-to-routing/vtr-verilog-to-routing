@@ -4,6 +4,7 @@
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
+#include <iostream>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -22,6 +23,7 @@
 #include "stats.h"
 #include "echo_files.h"
 #include "draw.h"
+#include "move_utils.h"
 #include "rr_graph.h"
 #include "routing_predictor.h"
 #include "VprTimingGraphResolver.h"
@@ -39,7 +41,6 @@
 #include "router_lookahead_map.h"
 
 #include "tatum/TimingReporter.hpp"
-#include "overuse_report.h"
 
 #define CONGESTED_SLOPE_VAL -0.04
 
@@ -47,6 +48,12 @@ enum class RouterCongestionMode {
     NORMAL,
     CONFLICTED
 };
+
+//identifies the two breakpoint types in routing
+typedef enum router_breakpoint_type {
+    BP_ROUTE_ITER,
+    BP_NET_ID
+} bp_router_type;
 
 struct RoutingMetrics {
     size_t used_wirelength = 0;
@@ -64,10 +71,8 @@ struct RoutingMetrics {
 
 //Run-time flag to control when router debug information is printed
 //Note only enables debug output if compiled with VTR_ENABLE_DEBUG_LOGGING defined
+//f_router_debug is used to stop the router when a breakpoint is reached. When a breakpoint is reached, this flag is set to true.
 bool f_router_debug = false;
-
-//Count the number of times the router has failed
-static int num_routing_failed = 0;
 
 /******************** Subroutines local to route_timing.c ********************/
 
@@ -134,8 +139,6 @@ static void print_route_status(int itry,
                                const WirelengthInfo& wirelength_info,
                                std::shared_ptr<const SetupHoldTimingInfo> timing_info,
                                float est_success_iteration);
-
-static void print_overused_nodes_status(const t_router_opts& router_opts, const OveruseInfo& overuse_info);
 
 static void print_router_criticality_histogram(const SetupTimingInfo& timing_info,
                                                const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
@@ -545,17 +548,15 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
         //unlikely additional convergences will improve QoR?
         if (legal_convergence_count >= router_opts.max_convergence_count
             || router_iteration_stats.connections_routed == 0
-            || early_reconvergence_exit_heuristic(router_opts, itry_since_last_convergence, timing_info, best_routing_metrics)) {
+            || early_reconvergence_exit_heuristic(router_opts, itry_since_last_convergence, timing_info, best_routing_metrics))
             break; //Done routing
-        }
 
         /*
          * Abort checks: Should we give-up because this routing problem is unlikely to converge to a legal routing?
          */
-        if (itry == 1 && early_exit_heuristic(router_opts, wirelength_info)) {
+        if (itry == 1 && early_exit_heuristic(router_opts, wirelength_info))
             //Abort
             break;
-        }
 
         //Estimate at what iteration we will converge to a legal routing
         if (overuse_info.overused_nodes > ROUTING_PREDICTOR_MIN_ABSOLUTE_OVERUSE_THRESHOLD) {
@@ -721,12 +722,6 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
         VTR_LOG("Successfully routed after %d routing iterations.\n", itry);
     } else {
         VTR_LOG("Routing failed.\n");
-
-        //If the routing fails, print the overused info
-        print_overused_nodes_status(router_opts, overuse_info);
-
-        ++num_routing_failed;
-
 #ifdef VTR_ENABLE_DEBUG_LOGGING
         if (f_router_debug) print_invalid_routing_info();
 #endif
@@ -1679,24 +1674,6 @@ static void print_route_status(int itry, double elapsed_sec, float pres_fac, int
     VTR_LOG("\n");
 
     fflush(stdout);
-}
-
-static void print_overused_nodes_status(const t_router_opts& router_opts, const OveruseInfo& overuse_info) {
-    //Print the index of this routing failure
-    VTR_LOG("\nFailed routing attempt #%d\n", num_routing_failed);
-
-    size_t num_overused = overuse_info.overused_nodes;
-    size_t max_logged_overused_rr_nodes = router_opts.max_logged_overused_rr_nodes;
-
-    //Overused nodes info logging upper limit
-    VTR_LOG("Total number of overused nodes: %d\n", num_overused);
-    if (num_overused > max_logged_overused_rr_nodes) {
-        VTR_LOG("Total number of overused nodes is larger than the logging limit (%d).\n", max_logged_overused_rr_nodes);
-        VTR_LOG("Displaying the first %d entries.\n", max_logged_overused_rr_nodes);
-    }
-
-    log_overused_nodes_status(max_logged_overused_rr_nodes);
-    VTR_LOG("\n");
 }
 
 static void print_router_criticality_histogram(const SetupTimingInfo& timing_info, const ClusteredPinAtomPinsLookup& netlist_pin_lookup) {
