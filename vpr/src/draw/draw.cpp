@@ -4043,9 +4043,9 @@ static void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointe
 //checks if the maual move checkbox is toggled and returns true if it was toggled
 bool get_manual_move_flag() {
     /*GObject* manual_move_button = application.get_object("ManualMove");
-    bool manual_move_flag = gtk_toggle_button_get_active((GtkToggleButton*)manual_move_button);
-    delete manual_move_button;
-    return manual_move_flag;*/
+     * bool manual_move_flag = gtk_toggle_button_get_active((GtkToggleButton*)manual_move_button);
+     * delete manual_move_button;
+     * return manual_move_flag;*/
     return true;
 }
 
