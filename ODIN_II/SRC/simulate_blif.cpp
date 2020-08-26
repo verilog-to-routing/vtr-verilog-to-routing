@@ -2021,7 +2021,11 @@ static int verify_test_vector_headers(FILE* in, lines_t* l) {
             return false;
         } else if (next == ' ' || next == '\t' || next == '\n') {
             if (buffer_length) {
-                if (strcmp(l->lines[current_line]->name, buffer)) {
+                if (current_line > l->count) {
+                    warning_message(SIMULATION, unknown_location,
+                                    "%s\n",
+                                    "Vector header mismatch: the number of header is shorter than in your vector file!\n");
+                } else if (strcmp(l->lines[current_line]->name, buffer)) {
                     char* expected_header = generate_vector_header(l);
                     warning_message(SIMULATION, unknown_location,
                                     "Vector header mismatch: \n "

@@ -3,9 +3,9 @@
         "test_name": "defparam/defparam_failure/no_arch",
         "verilog": "defparam_failure.v",
         "warnings": [
-            "AST defparam_failure.v:30 there are no ports for the module (params)",
-            "NETLIST defparam_failure.v:8 This output is undriven (simple_op^out2~3) and will be removed",
-            "NETLIST defparam_failure.v:8 Net simple_op^out2~3 driving node simple_op^out2~3 is itself undriven."
+            "defparam_failure.v:30:1 [AST] there are no ports for the module (params)",
+            "defparam_failure.v:8:4 [NETLIST] This output is undriven (simple_op^out2~3) and will be removed",
+            "defparam_failure.v:8:4 [NETLIST] Net simple_op^out2~3 driving node simple_op^out2~3 is itself undriven."
         ],
         "max_rss(MiB)": 13.8,
         "exec_time(ms)": 6.2,
@@ -19,9 +19,9 @@
         "test_name": "defparam/defparam/no_arch",
         "verilog": "defparam.v",
         "warnings": [
-            "AST defparam.v:28 there are no ports for the module (params)",
-            "NETLIST defparam.v:8 This output is undriven (simple_op^out2~3) and will be removed",
-            "NETLIST defparam.v:8 Net simple_op^out2~3 driving node simple_op^out2~3 is itself undriven."
+            "defparam.v:28:1 [AST] there are no ports for the module (params)",
+            "defparam.v:8:4 [NETLIST] This output is undriven (simple_op^out2~3) and will be removed",
+            "defparam.v:8:4 [NETLIST] Net simple_op^out2~3 driving node simple_op^out2~3 is itself undriven."
         ],
         "max_rss(MiB)": 13.6,
         "exec_time(ms)": 5.5,
@@ -35,7 +35,7 @@
         "test_name": "defparam/defparam_string/no_arch",
         "verilog": "defparam_string.v",
         "warnings": [
-            "AST defparam_string.v:21 there are no ports for the module (param)"
+            "defparam_string.v:21:1 [AST] there are no ports for the module (param)"
         ],
         "max_rss(MiB)": 11.4,
         "exec_time(ms)": 3.1,
@@ -62,18 +62,18 @@
         "test_name": "defparam/defparam_depth_1_failure/no_arch",
         "verilog": "defparam_depth_1_failure.v",
         "warnings": [
-            "AST defparam_depth_1_failure.v:13 Defparam can only override parameters: width",
-            "AST defparam_depth_1_failure.v:14 Defparam can only override parameters: width",
-            "NETLIST defparam_depth_1_failure.v:8 This output is undriven (simple_op^out2~3) and will be removed",
-            "NETLIST defparam_depth_1_failure.v:8 This output is undriven (simple_op^out2~4) and will be removed",
-            "NETLIST defparam_depth_1_failure.v:8 This output is undriven (simple_op^out2~5) and will be removed",
-            "NETLIST defparam_depth_1_failure.v:8 This output is undriven (simple_op^out2~6) and will be removed",
-            "NETLIST defparam_depth_1_failure.v:8 This output is undriven (simple_op^out2~7) and will be removed",
-            "NETLIST defparam_depth_1_failure.v:8 Net simple_op^out2~3 driving node simple_op^out2~3 is itself undriven.",
-            "NETLIST defparam_depth_1_failure.v:8 Net simple_op^out2~4 driving node simple_op^out2~4 is itself undriven.",
-            "NETLIST defparam_depth_1_failure.v:8 Net simple_op^out2~5 driving node simple_op^out2~5 is itself undriven.",
-            "NETLIST defparam_depth_1_failure.v:8 Net simple_op^out2~6 driving node simple_op^out2~6 is itself undriven.",
-            "NETLIST defparam_depth_1_failure.v:8 Net simple_op^out2~7 driving node simple_op^out2~7 is itself undriven."
+            "defparam_depth_1_failure.v:13:4 [AST] Defparam can only override parameters: width",
+            "defparam_depth_1_failure.v:14:4 [AST] Defparam can only override parameters: width",
+            "defparam_depth_1_failure.v:8:4 [NETLIST] This output is undriven (simple_op^out2~3) and will be removed",
+            "defparam_depth_1_failure.v:8:4 [NETLIST] This output is undriven (simple_op^out2~4) and will be removed",
+            "defparam_depth_1_failure.v:8:4 [NETLIST] This output is undriven (simple_op^out2~5) and will be removed",
+            "defparam_depth_1_failure.v:8:4 [NETLIST] This output is undriven (simple_op^out2~6) and will be removed",
+            "defparam_depth_1_failure.v:8:4 [NETLIST] This output is undriven (simple_op^out2~7) and will be removed",
+            "defparam_depth_1_failure.v:8:4 [NETLIST] Net simple_op^out2~3 driving node simple_op^out2~3 is itself undriven.",
+            "defparam_depth_1_failure.v:8:4 [NETLIST] Net simple_op^out2~4 driving node simple_op^out2~4 is itself undriven.",
+            "defparam_depth_1_failure.v:8:4 [NETLIST] Net simple_op^out2~5 driving node simple_op^out2~5 is itself undriven.",
+            "defparam_depth_1_failure.v:8:4 [NETLIST] Net simple_op^out2~6 driving node simple_op^out2~6 is itself undriven.",
+            "defparam_depth_1_failure.v:8:4 [NETLIST] Net simple_op^out2~7 driving node simple_op^out2~7 is itself undriven."
         ],
         "max_rss(MiB)": 33,
         "exec_time(ms)": 6.4,
@@ -86,18 +86,38 @@
     "defparam/defparam_depth_2/no_arch": {
         "test_name": "defparam/defparam_depth_2/no_arch",
         "verilog": "defparam_depth_2.v",
-        "exit": 134,
-        "errors": [
-            "NETLIST defparam_depth_2.v:16 This module port simple_op.m2^in~2 is unused in module assg1"
-        ]
+        "warnings": [
+            "defparam_depth_2.v:16:3 [NETLIST] This module port in2[2] is unused in module assg1",
+            "defparam_depth_2.v:16:3 [NETLIST] This module port in2[3] is unused in module assg1",
+            "defparam_depth_2.v:16:3 [NETLIST] This module port in2[4] is unused in module assg1",
+            "defparam_depth_2.v:16:3 [NETLIST] This module port in2[5] is unused in module assg1",
+            "defparam_depth_2.v:16:3 [NETLIST] This module port in2[6] is unused in module assg1",
+            "defparam_depth_2.v:16:3 [NETLIST] This module port in2[7] is unused in module assg1",
+            "defparam_depth_2.v:8:4 [NETLIST] This output is undriven (simple_op^out2~2) and will be removed",
+            "defparam_depth_2.v:8:4 [NETLIST] This output is undriven (simple_op^out2~3) and will be removed",
+            "defparam_depth_2.v:8:4 [NETLIST] This output is undriven (simple_op^out2~4) and will be removed",
+            "defparam_depth_2.v:8:4 [NETLIST] This output is undriven (simple_op^out2~5) and will be removed",
+            "defparam_depth_2.v:8:4 [NETLIST] This output is undriven (simple_op^out2~6) and will be removed",
+            "defparam_depth_2.v:8:4 [NETLIST] This output is undriven (simple_op^out2~7) and will be removed",
+            "defparam_depth_2.v:8:4 [NETLIST] Net simple_op.m2^out~2 driving node simple_op^out2~2 is itself undriven.",
+            "defparam_depth_2.v:8:4 [NETLIST] Net simple_op.m2^out~3 driving node simple_op^out2~3 is itself undriven.",
+            "defparam_depth_2.v:8:4 [NETLIST] Net simple_op.m2^out~4 driving node simple_op^out2~4 is itself undriven.",
+            "defparam_depth_2.v:8:4 [NETLIST] Net simple_op.m2^out~5 driving node simple_op^out2~5 is itself undriven.",
+            "defparam_depth_2.v:8:4 [NETLIST] Net simple_op.m2^out~6 driving node simple_op^out2~6 is itself undriven.",
+            "defparam_depth_2.v:8:4 [NETLIST] Net simple_op.m2^out~7 driving node simple_op^out2~7 is itself undriven."
+        ],
+        "Pi": 4,
+        "Po": 10,
+        "Longest Path": 2,
+        "Average Path": 1
     },
     "defparam/defparam_simple_failure/no_arch": {
         "test_name": "defparam/defparam_simple_failure/no_arch",
         "verilog": "defparam_simple_failure.v",
         "warnings": [
-            "AST defparam_simple_failure.v:23 there are no ports for the module (params)",
-            "NETLIST defparam_simple_failure.v:5 This output is undriven (simple_op^out1~3) and will be removed",
-            "NETLIST defparam_simple_failure.v:5 Net simple_op^out1~3 driving node simple_op^out1~3 is itself undriven."
+            "defparam_simple_failure.v:23:1 [AST] there are no ports for the module (params)",
+            "defparam_simple_failure.v:5:4 [NETLIST] This output is undriven (simple_op^out1~3) and will be removed",
+            "defparam_simple_failure.v:5:4 [NETLIST] Net simple_op^out1~3 driving node simple_op^out1~3 is itself undriven."
         ],
         "max_rss(MiB)": 32.7,
         "exec_time(ms)": 5.6,

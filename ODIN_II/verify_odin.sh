@@ -29,7 +29,7 @@ ODIN_EXEC="${THIS_DIR}/odin_II"
 
 BENCHMARK_DIR="${REGRESSION_DIR}/benchmark"
 
-VTR_REG_PREFIX="vtr_reg_"
+VTR_REG_PREFIX="vtr::"
 VTR_REG_DIR="${VTR_DIR}/vtr_flow/tasks/regression_tests"
 
 SUITE_DIR="${BENCHMARK_DIR}/suite"
@@ -44,39 +44,6 @@ PREVIOUS_RUN_DIR=""
 NEW_RUN_DIR="${REGRESSION_DIR}/run001/"
 
 global_failure="test_failures.log"
-##############################################
-# Exit Functions
-function exit_program() {
-
-	FAIL_COUNT="0"
-	if [ -f "${NEW_RUN_DIR}/${global_failure}" ]; then
-		FAIL_COUNT=$(wc -l "${NEW_RUN_DIR}/${global_failure}" | cut -d ' ' -f 1)
-	fi
-
-	FAILURE=$(( FAIL_COUNT ))
-
-	if [ "_${FAILURE}" != "_0" ]
-	then
-		echo "Failed ${FAILURE} benchmarks"
-		echo ""
-		cat "${NEW_RUN_DIR}/${global_failure}"
-		echo ""
-		echo "View Failure log in ${NEW_RUN_DIR}/${global_failure}"
-
-	else
-		echo "no run failure!"
-	fi
-
-	exit ${FAILURE}
-}
-
-##############################################
-# Help Print helper
-_prt_cur_arg() {
-	arg="[ $1 ]"
-	line="                      "
-	printf "%s%s" "${arg}" "${line:${#arg}}"
-}
 
 ##############
 # defaults
@@ -95,6 +62,46 @@ _DRY_RUN="off"
 _RANDOM_DRY_RUN="off"
 _REGENERATE_EXPECTATION="off"
 _GENERATE_EXPECTATION="off"
+_CONTINUE="off"
+_REPORT="on"
+_STATUS_ONLY="off"
+
+##############################################
+# Exit Functions
+function exit_program() {
+
+	FAIL_COUNT="0"
+	if [ -f "${NEW_RUN_DIR}/${global_failure}" ]; then
+		FAIL_COUNT=$(wc -l "${NEW_RUN_DIR}/${global_failure}" | cut -d ' ' -f 1)
+	fi
+
+	FAILURE=$(( FAIL_COUNT ))
+
+	if [ "_${_REPORT}" == "_on" ]
+	then
+		if [ "_${FAILURE}" != "_0" ]
+		then
+			echo "Failed ${FAILURE} benchmarks"
+			echo ""
+			cat "${NEW_RUN_DIR}/${global_failure}"
+			echo ""
+			echo "View Failure log in ${NEW_RUN_DIR}/${global_failure}"
+
+		else
+			echo "no run failure!"
+		fi
+	fi
+
+	exit ${FAILURE}
+}
+
+##############################################
+# Help Print helper
+_prt_cur_arg() {
+	arg="[ $1 ]"
+	line="                      "
+	printf "%s%s" "${arg}" "${line:${#arg}}"
+}
 
 function help() {
 
@@ -118,6 +125,9 @@ printf "Called program with $INPUT
 		--randomize                     $(_prt_cur_arg ${_RANDOM_DRY_RUN}) performs a dry run randomly to check the validity of the task and flow 
 		--regenerate_expectation        $(_prt_cur_arg ${_REGENERATE_EXPECTATION}) regenerate the expectation and overrides the expected value mismatches only
 		--generate_expectation          $(_prt_cur_arg ${_GENERATE_EXPECTATION}) generate the expectation and overrides the expectation file
+		--continue						$(_prt_cur_arg ${_CONTINUE}) continue running test in the same directory as the last run
+		--no_report						printing report is: $(_prt_cur_arg ${_REPORT})
+		--status_only					$(_prt_cur_arg ${_STATUS_ONLY}) print the report and exit
 	OPTIONS
 		-h|--help                       $(_prt_cur_arg off) print this
 		-j|--nb_of_process < N >        $(_prt_cur_arg ${_NUMBER_OF_PROCESS}) Number of process requested to be used
@@ -193,14 +203,18 @@ function init_temp() {
 	if [ "_${PREVIOUS_RUN_DIR}" != "_" ]
 	then
 		n=$(echo "${PREVIOUS_RUN_DIR##${OUTPUT_DIRECTORY}/run}" | awk '{print $0 + 1}')
+		if [ "_${_CONTINUE}" == "_on" ]
+		then
+			n=$(( n - 1 ))
+		fi
 	fi
 
 	NEW_RUN_DIR=${OUTPUT_DIRECTORY}/run$(printf "%03d" "${n}")
+	echo "Benchmark result location: ${NEW_RUN_DIR}"
 }
 
 function create_temp() {
 	if [ ! -d "${NEW_RUN_DIR}" ]; then
-		echo "Benchmark result location: ${NEW_RUN_DIR}"
 		mkdir -p "${NEW_RUN_DIR}"
 
 		unlink "${REGRESSION_DIR}/latest" &> /dev/null || /bin/true
@@ -375,6 +389,19 @@ function parse_args() {
 					_GENERATE_EXPECTATION="on"
 					echo "generating new expected values"
 
+				;;--no_report)
+					_REPORT="off"
+					echo "don't generate the report at the end"
+
+				;;--continue)
+					_CONTINUE="on"
+					echo "run this test in the same directory as the previous test"
+
+				;;--status_only)
+					_STATUS_ONLY="on"
+					_CONTINUE="on"
+					echo "print the previous test report"
+
 				;;*) 
 					PARSE_SUBTEST="on"
 			esac
@@ -395,16 +422,6 @@ function format_line() {
 
 function warn_is_defined() {
 	[ "_$1" != "_" ] && echo "Specifying more than one ${2} in config file"
-}
-
-function reg_diff() {
-	git --no-pager diff --no-index --word-diff-regex="[^[:space:],]+" "$1" "$2" > "$3"
-	short_name="$(realapath_from "$1" "${VTR_DIR}")"
-	sed -i \
-		-e "s+a$1[[:space:]]*b$2+a/${short_name}+g" \
-		-e "s+a$1+a/${short_name}+g" \
-		-e "s+b$2+b/${short_name}+g" \
-			"$3"
 }
 
 _regression_params=""
@@ -1234,27 +1251,57 @@ function run_task() {
 	fi
 }
 
+FILTERED_VTR_TASK_PATH="${NEW_RUN_DIR}/vtr/task_list.txt"
 function run_vtr_reg() {
-	pushd "${VTR_DIR}"
-	/usr/bin/env perl run_reg_test.pl -j "${_NUMBER_OF_PROCESS}" "$1"
-	popd
+	pushd "${VTR_DIR}"  &> /dev/null
+	RELATIVE_PATH_TO_TEST=$(realapath_from "${FILTERED_VTR_TASK_PATH}" "${VTR_REG_DIR}")
+	/usr/bin/env perl run_reg_test.pl -j "${_NUMBER_OF_PROCESS}" "${RELATIVE_PATH_TO_TEST}"
+	popd  &> /dev/null
+}
+
+##########################
+# This function filters vtr test to only contain
+# tests using verilog files since Odin is unused 
+# in blif tests
+function filter_vtr_test() {
+	# filter test prefix i.e vtr::
+	VTR_TEST_NAME="${1/${VTR_REG_PREFIX}/}"
+	VTR_TASK_PATH="${VTR_REG_DIR}/${VTR_TEST_NAME}/task_list.txt"
+
+	if [ ! -f "${VTR_TASK_PATH}" ]
+	then
+		echo "${VTR_TASK_PATH} does not exist, skipping test $1"
+	else
+		mkdir -p $(dirname ${FILTERED_VTR_TASK_PATH})
+
+		pushd "${VTR_REG_DIR}"  &> /dev/null
+		for test in $(cat "${VTR_TASK_PATH}")
+		do 
+			if grep -E "circuit_list_add=.*\.v" "${test/regression_tests\//}/config/config.txt" &> "/dev/null"
+			then 
+				echo $test >> "${FILTERED_VTR_TASK_PATH}"; 
+			fi
+		done
+		popd &> /dev/null
+	fi
 }
 
 function run_rtl_reg() {
-	pushd "${VTR_DIR}/libs/librtlnumber"
+	pushd "${VTR_DIR}/libs/librtlnumber"  &> /dev/null
 	./verify_librtlnumber.sh
-	popd
+	popd  &> /dev/null
 }
 
 function build_test() {
-	pushd "$1"
+	pushd "$1"  &> /dev/null
 	make -f task.mk build
-	popd
+	popd  &> /dev/null
 }
 
 task_list=()
-vtr_reg_list=()
+vtr_reg="off"
 rtl_lib_test="off"
+
 
 function run_suite() {
 	current_test_list=( "${_TEST_INPUT_LIST[@]}" )
@@ -1266,7 +1313,8 @@ function run_suite() {
 		case "_${current_input}" in
 			_);;
 			_${VTR_REG_PREFIX}*)
-				vtr_reg_list+=( "${current_input}" )
+				vtr_reg="on"
+				filter_vtr_test "${current_input}"
 				;;
 			_${RTL_REG_PREFIX})
 				rtl_lib_test="on"
@@ -1323,11 +1371,11 @@ function run_suite() {
 		TEST_COUNT=$(( TEST_COUNT + 1 ))
 	done
 
-	for vtr_reg in "${vtr_reg_list[@]}"
-	do
-		run_vtr_reg "${vtr_reg}"
+	if [ "_${vtr_reg}" == "_on" ];
+	then
+		run_vtr_reg
 		TEST_COUNT=$(( TEST_COUNT + 1 ))
-	done
+	fi
 
 	if [ "_${TEST_COUNT}" == "_0" ];
 	then
@@ -1340,27 +1388,30 @@ function run_suite() {
 
 START=$(get_current_time)
 
-init_temp
-
 parse_args "$@"
 
-if [ ! -x "${ODIN_EXEC}" ]
+init_temp
+
+if [ "${_STATUS_ONLY}" == "off" ]
 then
-	echo "Unable to find ${ODIN_EXEC}"
-	_exit_with_code "-1"
+	if [ ! -x "${ODIN_EXEC}" ]
+	then
+		echo "Unable to find ${ODIN_EXEC}"
+		_exit_with_code "-1"
+	fi
+
+	if [ ! -x "${WRAPPER_EXEC}" ]
+	then
+		echo "Unable to find ${WRAPPER_EXEC}"
+		_exit_with_code "-1"
+	fi
+
+	echo "Task: ${_TEST_INPUT_LIST[*]}"
+
+	run_suite
+
+	print_time_since "${START}"
 fi
-
-if [ ! -x "${WRAPPER_EXEC}" ]
-then
-	echo "Unable to find ${WRAPPER_EXEC}"
-	_exit_with_code "-1"
-fi
-
-echo "Task: ${_TEST_INPUT_LIST[*]}"
-
-run_suite
-
-print_time_since "${START}"
 
 exit_program
 ### end here

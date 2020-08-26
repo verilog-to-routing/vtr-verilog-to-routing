@@ -370,8 +370,8 @@ ast_node_t* dup_and_fill_body(ast_node_t* body, ast_node_t* pre, ast_node_t** va
                 }
             } else if (child->type == MODULE_INSTANCE && child->children[0]->type != MODULE_INSTANCE) {
                 /* find and replace iteration symbol for port connections and parameters */
-                ast_node_t* named_instance = child->children[1];
-                copy->children[i]->children[1] = dup_and_fill_body(named_instance, pre, value, error_code);
+                ast_node_t* named_instance = child->children[0];
+                copy->children[i]->children[0] = dup_and_fill_body(named_instance, pre, value, error_code);
                 free_whole_tree(named_instance);
 
                 is_unrolled = true;

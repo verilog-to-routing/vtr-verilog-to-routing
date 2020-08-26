@@ -293,6 +293,14 @@ class t_rr_graph_storage {
         return edge_dest_node_[edge];
     }
 
+    // Call the `apply` function with the edge id, source, and sink nodes of every edge.
+    void for_each_edge(std::function<void(RREdgeId, RRNodeId, RRNodeId)> apply) const {
+        for (size_t i = 0; i < edge_dest_node_.size(); i++) {
+            RREdgeId edge(i);
+            apply(edge, edge_src_node_[edge], edge_dest_node_[edge]);
+        }
+    }
+
     // Get the destination node for the iedge'th edge from specified RRNodeId.
     //
     // This method should generally not be used, and instead first_edge and
@@ -427,6 +435,14 @@ class t_rr_graph_storage {
         node_storage_.emplace_back();
         node_ptc_.emplace_back();
     }
+
+    // Given `order`, a vector mapping each RRNodeId to a new one (old -> new),
+    // and `inverse_order`, its inverse (new -> old), update the t_rr_graph_storage
+    // data structure to an isomorphic graph using the new RRNodeId's.
+    // NOTE: Re-ordering will invalidate any external references, so this
+    //       should generally be called before creating such references.
+    void reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
+                 const vtr::vector<RRNodeId, RRNodeId>& inverse_order);
 
     /* PTC set methods */
     void set_node_ptc_num(RRNodeId id, short);

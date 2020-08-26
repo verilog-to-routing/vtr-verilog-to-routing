@@ -19,7 +19,7 @@ VERBOSITY_CHOICES = range(5)
 
 
 class RawDefaultHelpFormatter(
-        argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter
+    argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter
 ):
     """
     An argparse formatter which supports both default arguments and raw
@@ -48,27 +48,22 @@ class CommandRunner:
         """
 
     def __init__(
-            self,
-            timeout_sec=None,
-            max_memory_mb=None,
-            track_memory=True,
-            verbose_error=None,
-            verbose=False,
-            echo_cmd=None,
-            indent="\t",
-            show_failures=False,
-            valgrind=False,
+        self,
+        timeout_sec=None,
+        max_memory_mb=None,
+        track_memory=True,
+        verbose=False,
+        echo_cmd=None,
+        indent="\t",
+        show_failures=False,
+        valgrind=False,
     ):
-
-        if verbose_error is None:
-            verbose_error = verbose
         if echo_cmd is None:
             echo_cmd = verbose
 
         self._timeout_sec = timeout_sec
         self._max_memory_mb = max_memory_mb
         self._track_memory = track_memory
-        self._verbose_error = verbose_error
         self._verbose = verbose
         self._echo_cmd = echo_cmd
         self._indent = indent
@@ -76,7 +71,7 @@ class CommandRunner:
         self._valgrind = valgrind
 
     def run_system_command(
-            self, cmd, temp_dir, log_filename=None, expected_return_code=0, indent_depth=0
+        self, cmd, temp_dir, log_filename=None, expected_return_code=0, indent_depth=0
     ):
         """
         Runs the specified command in the system shell.
@@ -92,31 +87,23 @@ class CommandRunner:
             temp_dir: The directory to run the command in. Default: None (uses object default).
             expected_return_code: The expected return code from the command.
             If the actula return code does not match, will generate an exception. Default: 0
-            indent_depth: How deep to indent the tool output in verbose mode. Default 0
+            indent_depth: How deep to indent the tool output in verbose mode. Default: 0
         """
         # Save the original command
         orig_cmd = cmd
         temp_dir = Path(temp_dir) if not isinstance(temp_dir, Path) else temp_dir
 
         # If no log file is specified the name is based on the executed command
-        log_filename = (
-            PurePath(orig_cmd[0]).name + ".out"
-            if log_filename is None
-            else log_filename
-        )
+        log_filename = PurePath(orig_cmd[0]).name + ".out" if log_filename is None else log_filename
 
         # Limit memory usage?
         memory_limit = ["ulimit", "-Sv", "{val};".format(val=self._max_memory_mb)]
-        cmd = (
-            memory_limit + cmd
-            if self._max_memory_mb and check_cmd(memory_limit[0])
-            else cmd
-        )
+        cmd = memory_limit + cmd if self._max_memory_mb and check_cmd(memory_limit[0]) else cmd
 
         # Enable memory tracking?
         memory_tracking = ["/usr/bin/env", "time", "-v"]
-        if self._track_memory and check_cmd(memory_tracking[0]):
-            cmd = (
+        cmd = (
+            (
                 memory_tracking
                 + [
                     "valgrind",
@@ -132,6 +119,9 @@ class CommandRunner:
                 if self._valgrind
                 else memory_tracking + cmd
             )
+            if self._track_memory and check_cmd(memory_tracking[0])
+            else cmd
+        )
 
         # Flush before calling subprocess to ensure output is ordered
         # correctly if stdout is buffered
@@ -198,23 +188,27 @@ class CommandRunner:
         cmd_errored = cmd_returncode != expected_return_code
 
         # Send to stdout
-        if self._show_failures and (
-                self._verbose or (cmd_errored and self._verbose_error)
-        ):
+        if self._show_failures and self._verbose:
             for line in cmd_output:
-                print(indent_depth * self._indent + line,)
+                print(indent_depth * self._indent + line, end="")
 
         if self._show_failures and cmd_errored:
+            print("\nFailed log file follows({}):".format(str((temp_dir / log_filename).resolve())))
+            for line in cmd_output:
+                print(indent_depth * self._indent + "<" + line, end="")
             raise CommandError(
-                "Executable {exec_name} failed".format(
-                    exec_name=PurePath(orig_cmd[0]).name
-                ),
+                "Executable {exec_name} failed".format(exec_name=PurePath(orig_cmd[0]).name),
                 cmd=cmd,
                 log=str(temp_dir / log_filename),
                 returncode=cmd_returncode,
             )
         if cmd_errored:
-            raise VtrError("{}".format(PurePath(orig_cmd[0]).name))
+            raise CommandError(
+                "{}".format(PurePath(orig_cmd[0]).name),
+                cmd=cmd,
+                log=str(temp_dir / log_filename),
+                returncode=cmd_returncode,
+            )
         return cmd_output, cmd_returncode
 
     # pylint: enable=too-many-arguments, too-many-instance-attributes, too-few-public-methods, too-many-locals
@@ -338,9 +332,7 @@ def find_vtr_file(filename, is_executable=False):
     # Since we stripped off the .exe, try looking for the .exe version
     # as a last resort (i.e. on Windows/cygwin)
     if is_executable:
-        result = find_file_from_vtr_root(
-            filename + ".exe", vtr_root, is_executable=is_executable
-        )
+        result = find_file_from_vtr_root(filename + ".exe", vtr_root, is_executable=is_executable)
         if result:
             return result
 
@@ -382,9 +374,7 @@ def find_vtr_root():
 
     if inferred_vtr_root.is_dir():
         return str(inferred_vtr_root)
-    raise VtrError(
-        "Could not find VTR root directory. Try setting VTR_ROOT environment variable."
-    )
+    raise VtrError("Could not find VTR root directory. Try setting VTR_ROOT environment variable.")
 
 
 def file_replace(filename, search_replace_dict):
@@ -472,13 +462,11 @@ def load_config_lines(filepath, allow_includes=True):
                             include_file_abs, allow_includes=allow_includes
                         )
                     else:
-                        raise InspectError(
-                            "@include not allowed in this file", filepath
-                        )
+                        raise InspectError("@include not allowed in this file", filepath)
                 else:
                     config_lines.append(line)
     except IOError as error:
-        raise InspectError("Error opening config file ({})".format(error))
+        raise InspectError("Error opening config file ({})".format(error)) from error
 
     return config_lines
 
@@ -493,9 +481,7 @@ def verify_file(file, file_type, should_exist=True):
         file = Path(file)
     if should_exist and not file.is_file():
         raise Exception(
-            "{file_type} file does not exist: {file} ".format(
-                file_type=file_type, file=file
-            )
+            "{file_type} file does not exist: {file} ".format(file_type=file_type, file=file)
         )
 
     return file

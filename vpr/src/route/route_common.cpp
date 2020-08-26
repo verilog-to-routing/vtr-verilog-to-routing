@@ -227,14 +227,9 @@ void try_graph(int width_fac, const t_router_opts& router_opts, t_det_routing_ar
                     device_ctx.num_arch_switches,
                     det_routing_arch,
                     segment_inf,
-                    router_opts.base_cost_type,
-                    router_opts.trim_empty_channels,
-                    router_opts.trim_obs_channels,
-                    router_opts.clock_modeling,
+                    router_opts,
                     directs, num_directs,
-                    &warning_count,
-                    router_opts.read_rr_edge_metadata,
-                    router_opts.do_check_rr_graph);
+                    &warning_count);
 }
 
 bool try_route(int width_fac,
@@ -279,14 +274,9 @@ bool try_route(int width_fac,
                     device_ctx.num_arch_switches,
                     det_routing_arch,
                     segment_inf,
-                    router_opts.base_cost_type,
-                    router_opts.trim_empty_channels,
-                    router_opts.trim_obs_channels,
-                    router_opts.clock_modeling,
+                    router_opts,
                     directs, num_directs,
-                    &warning_count,
-                    router_opts.read_rr_edge_metadata,
-                    router_opts.do_check_rr_graph);
+                    &warning_count);
 
     //Initialize drawing, now that we have an RR graph
     init_draw_coords(width_fac);

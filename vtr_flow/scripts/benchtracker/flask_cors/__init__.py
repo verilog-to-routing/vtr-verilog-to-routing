@@ -12,4 +12,4 @@ from .decorator import cross_origin
 from .extension import CORS
 from .version import __version__
 
-__all__ = ['CORS', 'cross_origin']
+__all__ = ["CORS", "cross_origin"]

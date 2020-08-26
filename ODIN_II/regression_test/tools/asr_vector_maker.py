@@ -2,7 +2,7 @@ import sys
 
 
 def make_output_file(filename, vector):
-    with open(filename, 'w') as out_file:
+    with open(filename, "w") as out_file:
         out_file.write("c\n")
         for output in vector:
             out_file.write(hex(output))
@@ -16,7 +16,7 @@ def make_output_vector(bits, length, inputs):
     height = len(inputs[0])
     shift_flag = 1
     for i in range(0, height):
-        if i%2 == shift_flag:
+        if i % 2 == shift_flag:
             if inputs[2][i] != 1:
                 output = shift(bits, length, inputs[0][i])
             else:
@@ -27,10 +27,10 @@ def make_output_vector(bits, length, inputs):
 
 def shift(bits, length, value):
     new_value = value >> length
-    msb_mask = (1 << (bits - 1))
+    msb_mask = 1 << (bits - 1)
     if (value & msb_mask) != 0 and length > 0:
         padding = msb_mask
-        for i in range(0, length-1):
+        for i in range(0, length - 1):
             padding = padding >> 1
             padding = padding | msb_mask
         new_value = new_value | padding
@@ -38,9 +38,9 @@ def shift(bits, length, value):
 
 
 def make_input_file(filename, inputs):
-    with open(filename, 'w') as in_file:
+    with open(filename, "w") as in_file:
         height = len(inputs[0])
-        if(height < 1):
+        if height < 1:
             return False
         in_file.write("a clk rst\n")
         for i in range(0, height):
@@ -60,37 +60,38 @@ def make_input_vector(bits):
     reset_index = 2
     value = 0
     inputs = []
-    #Three columns
+    # Three columns
     inputs.append([])
     inputs.append([])
     inputs.append([])
-    #One for each value (2^bits)
-    #a rising edge for each line ( * 2)
-    #a line for reset ( + 1)
+    # One for each value (2^bits)
+    # a rising edge for each line ( * 2)
+    # a line for reset ( + 1)
     lines = ((2 ** bits) * 2) + 2
     for i in range(0, lines):
         if i < (lines - 1):
             inputs[0].append(value)
-            inputs[1].append(i%2)
+            inputs[1].append(i % 2)
             inputs[2].append(0)
         else:
             value -= 1
             inputs[0].append(value)
-            inputs[1].append(i%2)
+            inputs[1].append(i % 2)
             inputs[2].append(1)
-        value += i%2
+        value += i % 2
     return inputs
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 5:
-        print("Usage: asr_vector_maker.py <input_vector_filename> <output_vector_filename> <number_of_bits> <shift_amount>")
+        print(
+            "Usage: asr_vector_maker.py <input_vector_filename> <output_vector_filename> <number_of_bits> <shift_amount>"
+        )
     bits = int(sys.argv[3])
     length = int(sys.argv[4])
     inputs = make_input_vector(bits)
     outputs = make_output_vector(bits, length, inputs)
-    if(make_input_file(sys.argv[1], inputs)):
+    if make_input_file(sys.argv[1], inputs):
         make_output_file(sys.argv[2], outputs)
     else:
         print("Failed to create input file")
-

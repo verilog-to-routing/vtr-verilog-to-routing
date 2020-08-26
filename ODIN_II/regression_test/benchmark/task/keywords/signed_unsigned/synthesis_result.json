@@ -2,41 +2,48 @@
     "signed_unsigned/signed_to_signed/no_arch": {
         "test_name": "signed_unsigned/signed_to_signed/no_arch",
         "verilog": "signed_to_signed.v",
-        "exit": 134,
-        "errors": [
-            "AST signed_to_signed.v:2 Odin does not handle signed ports (a)"
-        ]
+        "warnings": [
+            "signed_to_signed.v:2:1 [AST] Odin does not handle signed INPUT (a)",
+            "signed_to_signed.v:2:1 [AST] Odin does not handle signed ports (a)",
+            "signed_to_signed.v:3:1 [AST] Odin does not handle signed OUTPUT (b)",
+            "signed_to_signed.v:3:1 [AST] Odin does not handle signed ports (b)"
+        ],
+        "Pi": 4,
+        "Po": 6,
+        "Longest Path": 2,
+        "Average Path": 2
     },
     "signed_unsigned/signed_to_unsigned/no_arch": {
         "test_name": "signed_unsigned/signed_to_unsigned/no_arch",
         "verilog": "signed_to_unsigned.v",
-        "exit": 134,
-        "errors": [
-            "AST signed_to_unsigned.v:2 Odin does not handle signed ports (a)"
-        ]
+        "warnings": [
+            "signed_to_unsigned.v:2:1 [AST] Odin does not handle signed INPUT (a)",
+            "signed_to_unsigned.v:2:1 [AST] Odin does not handle signed ports (a)"
+        ],
+        "Pi": 4,
+        "Po": 6,
+        "Longest Path": 2,
+        "Average Path": 2
     },
     "signed_unsigned/unsigned_to_signed/no_arch": {
         "test_name": "signed_unsigned/unsigned_to_signed/no_arch",
         "verilog": "unsigned_to_signed.v",
-        "exit": 134,
-        "errors": [
-            "AST unsigned_to_signed.v:3 Odin does not handle signed ports (b)"
-        ],
         "warnings": [
-            "PARSE_TO_AST unsigned_to_signed.v:2 error in parsing: (syntax error, unexpected '[', expecting ';' or ',')"
-        ]
+            "unsigned_to_signed.v:3:1 [AST] Odin does not handle signed OUTPUT (b)",
+            "unsigned_to_signed.v:3:1 [AST] Odin does not handle signed ports (b)"
+        ],
+        "Pi": 4,
+        "Po": 6,
+        "Longest Path": 2,
+        "Average Path": 2
     },
     "signed_unsigned/unsigned_to_unsigned/no_arch": {
         "test_name": "signed_unsigned/unsigned_to_unsigned/no_arch",
         "verilog": "unsigned_to_unsigned.v",
-        "exit": 134,
-        "errors": [
-            "AST unsigned_to_unsigned.v:1 No matching declaration for port a"
-        ],
-        "warnings": [
-            "PARSE_TO_AST unsigned_to_unsigned.v:2 error in parsing: (syntax error, unexpected '[', expecting ';' or ',')",
-            "PARSE_TO_AST unsigned_to_unsigned.v:3 error in parsing: (syntax error, unexpected '[', expecting ';' or ',')"
-        ]
+        "Pi": 4,
+        "Po": 6,
+        "Longest Path": 2,
+        "Average Path": 2
     },
     "DEFAULT": {
         "test_name": "n/a",

@@ -504,20 +504,6 @@ enum pfreq {
     PLACE_ALWAYS
 };
 
-/**
- * @brief  Are the pads free to be moved or locked in a random configuration?
- */
-enum e_pad_loc_type {
-    FREE,
-    RANDOM
-};
-
-/*Are the blocks not locked (free to be moved) or locked in user-specified positions?*/
-enum e_block_loc_type {
-    NOT_LOCKED,
-    LOCKED
-};
-
 ///@brief  Power data for t_netlist structure
 
 struct t_net_power {
@@ -720,8 +706,25 @@ struct t_block_loc {
 
 ///@brief Stores the clustered blocks placed at a particular grid location
 struct t_grid_blocks {
-    int usage;                          ///<How many valid blocks are in use at this location
-    std::vector<ClusterBlockId> blocks; ///<The clustered blocks associated with this grid location
+    int usage; ///<How many valid blocks are in use at this location
+
+    /**
+     * @brief The clustered blocks associated with this grid location.
+     *
+     * Index range: [0..device_ctx.grid[x_loc][y_loc].type->capacity]
+     */
+    std::vector<ClusterBlockId> blocks;
+
+    /**
+     * @brief Test if a subtile at a grid location is occupied by a block.
+     *
+     * Returns true if the subtile corresponds to the passed-in id is not
+     * occupied by a block at this grid location. The subtile id serves
+     * as the z-dimensional offset in the grid indexing.
+     */
+    inline bool subtile_empty(size_t isubtile) const {
+        return blocks[isubtile] == EMPTY_BLOCK_ID;
+    }
 };
 
 ///@brief Names of various files
@@ -833,11 +836,8 @@ struct t_annealing_sched {
  * place_cost_exp:  Power to which denominator is raised for linear_cong.    *
  * place_chan_width:  The channel width assumed if only one placement is     *
  *                    performed.                                             *
- * pad_loc_type:  Are pins FREE, fixed randomly, or fixed from a file.       *
- * block_loc_type: Are blocks fixed from a file.                             *
- * constraints_file:  File to read block locations from if block_loc_type    *
- *                     is LOCKED.                                            *
- * pad_loc_file: File to read pad locations from if pad_loc_type is USER.    *
+ * pad_loc_type:  Are pins free to move during placement or fixed randomly.  *
+ * constraints_file:  File used to lock block locations during placement.    *
  * place_freq:  Should the placement be skipped, done once, or done for each *
  *              channel width in the binary search.                          *
  * recompute_crit_iter: how many temperature stages pass before we recompute *
@@ -853,6 +853,11 @@ enum e_place_algorithm {
     BOUNDING_BOX_PLACE,
     PATH_TIMING_DRIVEN_PLACE,
     SETUP_SLACK_ANALYSIS_PLACE
+};
+
+enum e_pad_loc_type {
+    FREE,
+    RANDOM
 };
 
 enum e_place_effort_scaling {
@@ -897,9 +902,7 @@ struct t_placer_opts {
     float place_cost_exp;
     int place_chan_width;
     enum e_pad_loc_type pad_loc_type;
-    enum e_block_loc_type block_loc_type;
     std::string constraints_file;
-    std::string pad_loc_file;
     enum pfreq place_freq;
     int recompute_crit_iter;
     int inner_loop_recompute_divider;
@@ -997,6 +1000,13 @@ enum e_route_type {
 enum e_router_algorithm {
     BREADTH_FIRST,
     TIMING_DRIVEN,
+};
+
+// Node reordering algorithms for rr_nodes
+enum e_rr_node_reorder_algorithm {
+    DONT_REORDER,
+    DEGREE_BFS,
+    RANDOM_SHUFFLE,
 };
 
 enum e_base_cost_type {
@@ -1110,6 +1120,11 @@ struct t_router_opts {
 
     size_t max_logged_overused_rr_nodes;
     bool generate_rr_node_overuse_report;
+
+    // Options related to rr_node reordering, for testing and possible cache optimization
+    e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm = DONT_REORDER;
+    int reorder_rr_graph_nodes_threshold = 0;
+    int reorder_rr_graph_nodes_seed = 1;
 };
 
 struct t_analysis_opts {

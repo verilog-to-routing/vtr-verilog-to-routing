@@ -49,6 +49,8 @@ struct t_model {
     vtr::t_linked_vptr* pb_types = nullptr; /* Physical block types that implement this model */
     t_model* next = nullptr;                /* next model (linked list) */
 
+    bool never_prune = false; /* Don't remove from the netlist even if a block of this type has no output ports used and, therefore, unconnected to the rest of the netlist */
+
     int index = -1;
 };
 

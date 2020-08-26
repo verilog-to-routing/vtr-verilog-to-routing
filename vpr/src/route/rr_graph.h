@@ -33,15 +33,10 @@ void create_rr_graph(const t_graph_type graph_type,
                      const int num_arch_switches,
                      t_det_routing_arch* det_routing_arch,
                      const std::vector<t_segment_inf>& segment_inf,
-                     const enum e_base_cost_type base_cost_type,
-                     const bool trim_empty_channels,
-                     const bool trim_obs_channels,
-                     const enum e_clock_modeling clock_modeling,
+                     const t_router_opts& router_opts,
                      const t_direct_inf* directs,
                      const int num_directs,
-                     int* Warnings,
-                     bool read_rr_edge_metadata,
-                     bool do_check_rr_graph);
+                     int* Warnings);
 
 void free_rr_graph();
 

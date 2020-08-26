@@ -7,14 +7,14 @@
     default = -1
 
 ["Multiplier"]
-    regex = "Number of <MULTIPLY> node: (\d+)"
+    regex = "Number of <(?:MULTIPLY|MUL)> node: (\d+)"
     default = -1
 
 ["Memory"]
-    regex = "Number of <MEMORY> node: (\d+)"
+    regex = "Number of <(?:MEMORY|MEM)> node: (\d+)"
     default = -1
 
 ["Hard Ip"]
-    regex = "Number of <HARD_IP> node: (\d+)"
+    regex = "Number of <(?:HARD_IP|HB)> node: (\d+)"
     default = -1
 

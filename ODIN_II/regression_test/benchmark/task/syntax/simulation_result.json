@@ -1553,7 +1553,7 @@
         "blif": "no_input.blif",
         "exit": 134,
         "errors": [
-            "PARSE_BLIF Error: Could not hook up the pin and_primitive^BUF~1: not available."
+            "[PARSE_BLIF] Error: Could not hook up the pin and_primitive^BUF~1: not available."
         ]
     },
     "syntax/no_input/no_arch": {
@@ -1561,7 +1561,7 @@
         "blif": "no_input.blif",
         "exit": 134,
         "errors": [
-            "PARSE_BLIF Error: Could not hook up the pin and_primitive^BUF~1: not available."
+            "[PARSE_BLIF] Error: Could not hook up the pin and_primitive^BUF~1: not available."
         ]
     },
     "syntax/no_output/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -2241,6 +2241,76 @@
         "Average Path": 3,
         "Estimated LUTs": 2,
         "Total Node": 2
+    },
+    "syntax/bm_unused_input_pins/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "syntax/bm_unused_input_pins/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "blif": "bm_unused_input_pins.blif",
+        "max_rss(MiB)": 55.6,
+        "exec_time(ms)": 59.7,
+        "simulation_time(ms)": 1.9,
+        "test_coverage(%)": 100,
+        "Pi": 4,
+        "Po": 4,
+        "logic element": 4,
+        "generic logic size": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 4,
+        "Total Node": 4
+    },
+    "syntax/bm_unused_input_pins/no_arch": {
+        "test_name": "syntax/bm_unused_input_pins/no_arch",
+        "blif": "bm_unused_input_pins.blif",
+        "max_rss(MiB)": 35.3,
+        "exec_time(ms)": 6.5,
+        "simulation_time(ms)": 1.9,
+        "test_coverage(%)": 100,
+        "Pi": 4,
+        "Po": 4,
+        "logic element": 4,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 4,
+        "Total Node": 4
+    },
+    "syntax/matrix_multiplication/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "syntax/matrix_multiplication/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "blif": "matrix_multiplication.blif",
+        "max_rss(MiB)": 88.4,
+        "exec_time(ms)": 136.5,
+        "simulation_time(ms)": 75.2,
+        "test_coverage(%)": 98.5,
+        "Latch Drivers": 1,
+        "Pi": 2,
+        "Po": 16,
+        "logic element": 139,
+        "latch": 38,
+        "Adder": 6,
+        "Memory": 16,
+        "generic logic size": 4,
+        "Longest Path": 28,
+        "Average Path": 5,
+        "Estimated LUTs": 141,
+        "Total Node": 200
+    },
+    "syntax/matrix_multiplication/no_arch": {
+        "test_name": "syntax/matrix_multiplication/no_arch",
+        "blif": "matrix_multiplication.blif",
+        "max_rss(MiB)": 59.5,
+        "exec_time(ms)": 42.5,
+        "simulation_time(ms)": 17.2,
+        "test_coverage(%)": 99.7,
+        "Latch Drivers": 1,
+        "Pi": 2,
+        "Po": 16,
+        "logic element": 1020,
+        "latch": 294,
+        "Longest Path": 49,
+        "Average Path": 5,
+        "Estimated LUTs": 1020,
+        "Total Node": 1315
     },
     "DEFAULT": {
         "test_name": "n/a",
