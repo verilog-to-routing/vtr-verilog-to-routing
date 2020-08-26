@@ -508,6 +508,7 @@ static void print_resources_utilization();
 
 void transform_blocks_affected(t_pl_blocks_to_be_moved blocksAffected);
 static void init_annealing_state(t_annealing_state* state, const t_annealing_sched& annealing_sched, float t, float rlim, int move_lim_max, float crit_exponent);
+void stop_placement_and_check_breakopints(t_pl_blocks_to_be_moved& blocks_affected, bool& f_place_debug, e_move_result move_outcome, double delta_c, double bb_delta_c, double timing_delta_c);
 
 /*****************************************************************************/
 void try_place(const t_placer_opts& placer_opts,
@@ -1536,43 +1537,7 @@ static e_move_result try_swap(float t,
     move_generator.process_outcome(move_outcome_stats);
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
-
-    t_draw_state* draw_state = get_draw_state_vars();
-    if (draw_state->list_of_breakpoints.size() != 0) {
-        //update current information
-        transform_blocks_affected(blocks_affected);
-        get_bp_state_globals()->get_glob_breakpoint_state()->move_num++;
-        get_bp_state_globals()->get_glob_breakpoint_state()->from_block = size_t(blocks_affected.moved_blocks[0].block_num);
-
-        //check for breakpoints
-        f_placer_debug = check_for_breakpoints(true);
-        if (f_placer_debug)
-            breakpoint_info_window(get_bp_state_globals()->get_glob_breakpoint_state()->bp_description, *get_bp_state_globals()->get_glob_breakpoint_state(), true);
-    } else
-        f_placer_debug = false;
-
-    if (f_placer_debug && draw_state->show_graphics) {
-        std::string msg = available_move_types[0];
-        if (move_outcome == 0)
-            msg += vtr::string_fmt(", Rejected");
-        else if (move_outcome == 1)
-            msg += vtr::string_fmt(", Accepted");
-        else
-            msg += vtr::string_fmt(", Aborted");
-
-        msg += vtr::string_fmt(", Delta_cost: %1.6f (bb_delta_cost= %1.5f , timing_delta_c= %6.1e)", delta_c, bb_delta_c, timing_delta_c);
-
-        auto& cluster_ctx = g_vpr_ctx.clustering();
-
-        deselect_all();
-        draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(blocks_affected.moved_blocks[0].block_num), blocks_affected.moved_blocks[0].block_num);
-        draw_state->colored_blocks.clear();
-
-        draw_state->colored_blocks.push_back(std::make_pair(blocks_affected.moved_blocks[0].old_loc, blk_GOLD));
-        draw_state->colored_blocks.push_back(std::make_pair(blocks_affected.moved_blocks[0].new_loc, blk_GREEN));
-
-        update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), PLACEMENT, nullptr);
-    }
+    stop_placement_and_check_breakopints(blocks_affected, f_placer_debug, move_outcome, delta_c, bb_delta_c, timing_delta_c);
 #endif
     clear_move_blocks(blocks_affected);
 
@@ -3068,5 +3033,44 @@ void transform_blocks_affected(t_pl_blocks_to_be_moved blocksAffected) {
         //size_t conversion is required since block_num is of type ClusterBlockId and can't be cast to an int. And this vector has to be of type int to be recognized in expr_eval class
 
         get_bp_state_globals()->get_glob_breakpoint_state()->blocks_affected_by_move.push_back(size_t(blocksAffected.moved_blocks[i].block_num));
+    }
+}
+
+void stop_placement_and_check_breakopints(t_pl_blocks_to_be_moved& blocks_affected, bool& f_place_debug, e_move_result move_outcome, double delta_c, double bb_delta_c, double timing_delta_c) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    if (draw_state->list_of_breakpoints.size() != 0) {
+        //update current information
+        transform_blocks_affected(blocks_affected);
+        get_bp_state_globals()->get_glob_breakpoint_state()->move_num++;
+        get_bp_state_globals()->get_glob_breakpoint_state()->from_block = size_t(blocks_affected.moved_blocks[0].block_num);
+
+        //check for breakpoints
+        f_place_debug = check_for_breakpoints(true);
+        if (f_place_debug)
+            breakpoint_info_window(get_bp_state_globals()->get_glob_breakpoint_state()->bp_description, *get_bp_state_globals()->get_glob_breakpoint_state(), true);
+    } else
+        f_place_debug = false;
+
+    if (f_place_debug && draw_state->show_graphics) {
+        std::string msg = available_move_types[0];
+        if (move_outcome == 0)
+            msg += vtr::string_fmt(", Rejected");
+        else if (move_outcome == 1)
+            msg += vtr::string_fmt(", Accepted");
+        else
+            msg += vtr::string_fmt(", Aborted");
+
+        msg += vtr::string_fmt(", Delta_cost: %1.6f (bb_delta_cost= %1.5f , timing_delta_c= %6.1e)", delta_c, bb_delta_c, timing_delta_c);
+
+        auto& cluster_ctx = g_vpr_ctx.clustering();
+
+        deselect_all();
+        draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(blocks_affected.moved_blocks[0].block_num), blocks_affected.moved_blocks[0].block_num);
+        draw_state->colored_blocks.clear();
+
+        draw_state->colored_blocks.push_back(std::make_pair(blocks_affected.moved_blocks[0].old_loc, blk_GOLD));
+        draw_state->colored_blocks.push_back(std::make_pair(blocks_affected.moved_blocks[0].new_loc, blk_GREEN));
+
+        update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), PLACEMENT, nullptr);
     }
 }
