@@ -502,7 +502,7 @@ void Bucket::prune_heap() {
     std::fill(heap_, heap_ + heap_size_, nullptr);
     heap_head_ = std::numeric_limits<size_t>::max();
     front_head_ = std::numeric_limits<size_t>::max();
-    front_list_.empty();
+    front_list_.clear();
     heap_tail_ = 0;
     num_items_ = 0;
     prune_count_ += 1;
