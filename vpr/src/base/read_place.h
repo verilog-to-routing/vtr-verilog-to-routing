@@ -1,14 +1,21 @@
 #ifndef READ_PLACE_H
 #define READ_PLACE_H
 
-void read_place_header(
+/**
+ * This function is used to read a placement file.
+ */
+void read_place(
     const char* net_file,
     const char* place_file,
     bool verify_file_hashes,
-    const DeviceGrid& grid);
+    const DeviceGrid& grid,
+    bool is_place_file);
 
-void read_place_body(
-    const char* place_file,
+/**
+ * This function is used to read a constraints file.
+ */
+void read_constraints(
+    const char* constraints_file,
     bool is_place_file);
 
 void print_place(const char* net_file,
