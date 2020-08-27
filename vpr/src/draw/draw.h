@@ -3,6 +3,7 @@
 
 #include "timing_info.h"
 #include "physical_types.h"
+#include "move_utils.h"
 
 #ifndef NO_GRAPHICS
 
@@ -13,6 +14,7 @@
 #    include "ezgl/graphics.hpp"
 #    include "draw_color.h"
 #    include "search_bar.h"
+#    include "draw_debug.h"
 
 extern ezgl::application::settings settings;
 extern ezgl::application application;
@@ -82,6 +84,12 @@ void set_net_alpha_value_with_enter(GtkWidget* widget, gint /*response_id*/, gpo
 float get_net_alpha();
 
 ezgl::color get_block_type_color(t_physical_tile_type_ptr type);
+
+//manual move functions
+ManualMoveInfo* get_manual_move_info();
+void manual_move_generator_window(std::string block_id);
+void cost_summary_window();
+bool get_manual_move_flag();
 
 #endif /* NO_GRAPHICS */
 

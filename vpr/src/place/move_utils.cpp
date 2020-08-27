@@ -651,3 +651,16 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
 
     return true;
 }
+
+std::string e_move_result_to_string(e_move_result move_outcome) {
+    std::string converted_string;
+
+    if (move_outcome == REJECTED)
+        converted_string = "Rejected";
+    else if (move_outcome == ACCEPTED)
+        converted_string = "Accepted";
+    else
+        converted_string = "Aborted";
+
+    return converted_string;
+}
