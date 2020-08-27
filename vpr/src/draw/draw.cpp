@@ -46,6 +46,7 @@
 #include "timing_info.h"
 #include "physical_types.h"
 #include "route_common.h"
+#include "move_utils.h"
 
 #ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
               * track CPU runtime.														   */
