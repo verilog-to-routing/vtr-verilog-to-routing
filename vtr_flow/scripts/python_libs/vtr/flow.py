@@ -119,9 +119,10 @@ def run(
 
         check_incremental_sta_consistency :
             Do a second-run of the incremental analysis to compare the result files
-        
+
         check_route:
             Check first placement by enabling VPR analysis.
+
         check_place:
             Route existing placement by enabling VPR routing.
     """
