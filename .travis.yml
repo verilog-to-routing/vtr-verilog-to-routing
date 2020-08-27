@@ -90,7 +90,7 @@ jobs:
       name: "Code Formatting - C/C++"
       script:
         - ./dev/check-format.sh
-    - state: Test
+    - stage: Test
       name: "Code Formatting - Python"
       script:
         - ./dev/check-format-py.sh
