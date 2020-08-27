@@ -3036,8 +3036,8 @@ void transform_blocks_affected(t_pl_blocks_to_be_moved blocksAffected) {
     }
 }
 
-void stop_placement_and_check_breakopints(t_pl_blocks_to_be_moved& blocks_affected, bool& f_place_debug, e_move_result move_outcome, double delta_c, double bb_delta_c, double timing_delta_c) {
 #ifdef VTR_ENABLE_DEBUG_LOGGING
+void stop_placement_and_check_breakopints(t_pl_blocks_to_be_moved& blocks_affected, bool& f_place_debug, e_move_result move_outcome, double delta_c, double bb_delta_c, double timing_delta_c) {
     t_draw_state* draw_state = get_draw_state_vars();
     if (draw_state->list_of_breakpoints.size() != 0) {
         //update current information
@@ -3074,5 +3074,5 @@ void stop_placement_and_check_breakopints(t_pl_blocks_to_be_moved& blocks_affect
 
         update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), PLACEMENT, nullptr);
     }
-#endif
 }
+#endif
