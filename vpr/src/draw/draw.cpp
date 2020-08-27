@@ -155,10 +155,10 @@ static void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer 
 static void run_graphics_commands(std::string commands);
 
 //manual move functions
-void move_generator_button_callback(GtkWidget* /*widget*/, GtkWidget* grid);
-void accept_manual_move(GtkWidget* /*widget*/, GtkWidget* window);
-void reject_manual_move(GtkWidget* /*widget*/, GtkWidget* window);
-bool string_is_a_number(std::string block_id);
+//void move_generator_button_callback(GtkWidget* /*widget*/, GtkWidget* grid);
+//void accept_manual_move(GtkWidget* /*widget*/, GtkWidget* window);
+//void reject_manual_move(GtkWidget* /*widget*/, GtkWidget* window);
+//bool string_is_a_number(std::string block_id);
 
 /************************** File Scope Variables ****************************/
 
@@ -173,7 +173,7 @@ struct ManualMoveGlobals {
     GtkWidget* manual_move_window;           //the window that takes the user's input for setting a manual move
     bool manual_move_window_is_open = false; //flag that tracks whether the manual move window is open or not
 };
-ManualMoveGlobals manual_move_globals;
+//ManualMoveGlobals manual_move_globals;
 
 //Kelly's maximum contrast colors are selected to be easily distinguishable as described in:
 //  Kenneth Kelly, "Twenty-Two Colors of Maximum Contrast", Color Eng. 3(6), 1943
@@ -4041,16 +4041,16 @@ static void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointe
 }
 
 //checks if the maual move checkbox is toggled and returns true if it was toggled
-bool get_manual_move_flag() {
+/*bool get_manual_move_flag() {
     /*GObject* manual_move_button = application.get_object("ManualMove");
      * bool manual_move_flag = gtk_toggle_button_get_active((GtkToggleButton*)manual_move_button);
      * delete manual_move_button;
      * return manual_move_flag;*/
     return true;
-}
+}*/
 
 //this window lets the user input bock_id/block_name, and to location of their manual move
-void manual_move_generator_window(std::string block_id) {
+/*void manual_move_generator_window(std::string block_id) {
     if (!manual_move_globals.manual_move_window_is_open) {
         manual_move_globals.manual_move_window_is_open = true;
 
@@ -4104,11 +4104,11 @@ void manual_move_generator_window(std::string block_id) {
         gtk_container_add(GTK_CONTAINER(manual_move_globals.manual_move_window), grid);
         gtk_widget_show_all(manual_move_globals.manual_move_window);
     }
-}
+}*/
 
 //after the user presses the calculate costs button, this function retrievs all the data in the window, such as block id and to location, checks if they are valid values, and if valid updates the draw_manual_move_info variable, highlights the indicated block id and proceeds in placement
-void move_generator_button_callback(GtkWidget* /*widget*/, GtkWidget* oldGrid) {
-    int block_id;
+//void move_generator_button_callback(GtkWidget* /*widget*/, GtkWidget* oldGrid) {
+    /*int block_id;
     bool valid_input = true;
     auto& cluster_ctx = g_vpr_ctx.clustering();
     //get entry values
@@ -4222,19 +4222,19 @@ void cost_summary_window() {
 
     if (manual_move_globals.manual_move_window_is_open)
         gtk_widget_show_all(window);
-}
+}*/
 
 //if the user decides to accept the manual move, this function sets the user move outcome to accpeted and closes manual move and cost windows
-void accept_manual_move(GtkWidget* /*widget*/, GtkWidget* window) {
-    manual_move_globals.draw_manual_move_info.user_move_outcome = ACCEPTED;
+//void accept_manual_move(GtkWidget* /*widget*/, GtkWidget* window) {
+    /*manual_move_globals.draw_manual_move_info.user_move_outcome = ACCEPTED;
     manual_move_globals.manual_move_window_is_open = false;
     gtk_widget_destroy(manual_move_globals.manual_move_window);
     gtk_widget_destroy((GtkWidget*)window);
-}
+}*/
 
 //if the user decides to reject the manual move, this function sets the user move outcome to rejected and closes manual move and cost windows
-void reject_manual_move(GtkWidget* /*widget*/, GtkWidget* window) {
-    manual_move_globals.draw_manual_move_info.user_move_outcome = REJECTED;
+//void reject_manual_move(GtkWidget* /*widget*/, GtkWidget* window) {
+    /*manual_move_globals.draw_manual_move_info.user_move_outcome = REJECTED;
     manual_move_globals.manual_move_window_is_open = false;
     gtk_widget_destroy(manual_move_globals.manual_move_window);
     gtk_widget_destroy((GtkWidget*)window);
@@ -4243,7 +4243,7 @@ void reject_manual_move(GtkWidget* /*widget*/, GtkWidget* window) {
 //returns a pointer to the global variable draw_manual_move_info so that the placer can modify it
 ManualMoveInfo* get_manual_move_info() {
     return &manual_move_globals.draw_manual_move_info;
-}
+}*/
 
 //returns true when a string only contains numbers and no letters or symbols
 //this function is used to differentiate between block_id and block_name
