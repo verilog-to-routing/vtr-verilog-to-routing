@@ -90,7 +90,7 @@ static void load_one_net_delay(ClbNetPinsMatrix<float>& net_delay, ClusterNetId 
 
         net_delay[net_id][ipin] = itr->second; // search for the value of Tdel in the ipin map and load into net_delay
     }
-    free_route_tree(rt_root);  // free the route tree
+    free_route_tree(rt_root); // free the route tree
     ipin_to_Tdel_map.clear(); // clear the map
 }
 

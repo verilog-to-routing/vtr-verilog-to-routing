@@ -1202,8 +1202,6 @@ static bool timing_driven_route_sink(
     profiling::sink_criticality_start();
 
     int sink_node = route_ctx.net_rr_terminals[net_id][target_pin];
-auto& device_ctx = g_vpr_ctx.device();
-VTR_ASSERT(device_ctx.rr_nodes[sink_node].type() == SINK);
     VTR_LOGV_DEBUG(f_router_debug, "Net %zu Target %d (%s)\n", size_t(net_id), itarget, describe_rr_node(sink_node).c_str());
 
     VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
