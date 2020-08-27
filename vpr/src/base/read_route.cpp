@@ -356,6 +356,8 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
                     vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                               "%d (sink) node does not have net pin index", inode);
                 }
+            } else {
+                net_pin_id = OPEN;
             }
 
             /* Allocate and load correct values to trace.head*/
