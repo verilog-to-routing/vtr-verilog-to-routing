@@ -225,11 +225,11 @@ void read_place_body(std::ifstream& placement_file,
             auto physical_tile = device_ctx.grid[block_x][block_y].type;
             auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
             if (!is_sub_tile_compatible(physical_tile, logical_block, place_ctx.block_locs[blk_id].loc.sub_tile)) {
-                VPR_THROW(VPR_ERROR_PLACE, place_file, 0, "Attempt to place block %s at illegal location (%d, %d). \n", block_name, block_x, block_y);
+                VPR_THROW(VPR_ERROR_PLACE, place_file, 0, "Attempt to place block %d at illegal location (%d, %d). \n", blk_id, block_x, block_y);
             }
 
             if (sub_tile_index >= physical_tile->capacity || sub_tile_index < 0) {
-                VPR_THROW(VPR_ERROR_PLACE, place_file, vtr::get_file_line_number_of_last_opened_file(), "Block %s subtile number (%d) is out of range. \n", block_name, sub_tile_index);
+                VPR_THROW(VPR_ERROR_PLACE, place_file, vtr::get_file_line_number_of_last_opened_file(), "Block %d subtile number (%d) is out of range. \n", blk_id, sub_tile_index);
             }
 
             //need to lock down blocks  and mark grid block usage if it is a constraints file
