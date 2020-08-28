@@ -249,23 +249,25 @@ t_rt_node* update_route_tree(t_heap* hptr, int target_net_pin_index, SpatialRout
     return (sink_rt_node);
 }
 
-/* Records all nodes from the rt_tree into the rr_node_to_rt_node lookup, which
- * maps the node's corresponding rr_node index (inode) to the node itself. This
- * is done recursively, starting from the root of the tree to its leafs (SINKs)
- * in a depth-first traversal. The rt_node we are currently processing should not
- * have had its rr_node index mapped previously, with the exception of SINK nodes.
- * Some netlists and input pin equivalence can lead to us routing to the same SINK
- * more than once on a net (resulting in different rt_nodes sharing the same rr_node
- * index). Hence for SINKs we assert on a weaker condition that if the rr_node index
- * corresponding to this SINK is already mapped, the rr_node_to_rt_node mapping
- * structure must be pointing to a different rt_node containing the SINK. */
+/* Records all nodes from the current routing (rt_tree) into the rr_node_to_rt_node
+ * lookup, which maps the node's corresponding rr_node index (inode) to the node
+ * itself. This is done recursively, starting from the root of the tree to its leafs
+ * (SINKs) in a depth-first traversal. The rt_node we are currently processing has
+ * either not been added to the routing for this net before or if it was added, the
+ * rr_node_to_rt_node mapping structure should point back at the rt_node itself so
+ * we are just branching off that point. Exceptions are the SINK nodes, some
+ * netlists and input pin equivalence can lead to us routing to the same SINK more
+ * than once on a net (resulting in different rt_nodes sharing the same rr_node index).
+ * Hence for SINKs we assert on a weaker condition that if this SINK is already in the
+ * rt_tree, the rr_node_to_rt_node mapping structure points to a legal rt_node (but
+ * not necessarily the only one) containing the SINK */
 void add_route_tree_to_rr_node_lookup(t_rt_node* node) {
     if (node) {
         auto& device_ctx = g_vpr_ctx.device();
         if (device_ctx.rr_nodes[node->inode].type() == SINK) {
-            VTR_ASSERT(rr_node_to_rt_node[node->inode] == nullptr || rr_node_to_rt_node[node->inode] != node);
+            VTR_ASSERT(rr_node_to_rt_node[node->inode] == nullptr || rr_node_to_rt_node[node->inode]->inode == node->inode);
         } else {
-            VTR_ASSERT(rr_node_to_rt_node[node->inode] == nullptr);
+            VTR_ASSERT(rr_node_to_rt_node[node->inode] == nullptr || rr_node_to_rt_node[node->inode] == node);
         }
 
         rr_node_to_rt_node[node->inode] = node;
