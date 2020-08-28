@@ -155,12 +155,26 @@ static void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*d
 static void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 static void run_graphics_commands(std::string commands);
 
+//manual move functions
+void move_generator_button_callback(GtkWidget* /*widget*/, GtkWidget* grid);
+void accept_manual_move(GtkWidget* /*widget*/, GtkWidget* window);
+void reject_manual_move(GtkWidget* /*widget*/, GtkWidget* window);
+bool string_is_a_number(std::string block_id);
+
 /************************** File Scope Variables ****************************/
 
 //The arrow head position for turning/straight-thru connections in a switch box
 constexpr float SB_EDGE_TURN_ARROW_POSITION = 0.2;
 constexpr float SB_EDGE_STRAIGHT_ARROW_POSITION = 0.95;
 constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
+
+//the manual_move_globals is a variable that holds all global variables needed for the manual move generator graphics
+struct ManualMoveGlobals {
+    ManualMoveInfo draw_manual_move_info;    //holds all manual move information such as block id, and to location
+    GtkWidget* manual_move_window;           //the window that takes the user's input for setting a manual move
+    bool manual_move_window_is_open = false; //flag that tracks whether the manual move window is open or not
+};
+ManualMoveGlobals manual_move_globals;
 
 //Kelly's maximum contrast colors are selected to be easily distinguishable as described in:
 //  Kenneth Kelly, "Twenty-Two Colors of Maximum Contrast", Color Eng. 3(6), 1943
