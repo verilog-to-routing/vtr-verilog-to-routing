@@ -18,7 +18,6 @@ enum class e_create_move {
     ABORT, //Unable to perform move
 };
 
-
 /** This struct holds all necessary values to set a manual move. Some of the membres such as block_id, to_x, to_y, and to_subtile are obtained from the user, whereas the delta costs are calculated by the placer**/
 struct ManualMoveInfo {
     int block_id = -1;                           ///block id of the block the user wants to move
