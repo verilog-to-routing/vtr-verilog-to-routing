@@ -46,6 +46,7 @@
 #include "timing_info.h"
 #include "physical_types.h"
 #include "route_common.h"
+
 #include "breakpoint.h"
 #include "move_utils.h"
 
@@ -4075,6 +4076,139 @@ void net_max_fanout(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data
     application.refresh_drawing();
 }
 
+//this window lets the user input bock_id/block_name, and to location of their manual move
+void manual_move_generator_window(std::string block_id) {
+    if (!manual_move_globals.manual_move_window_is_open) {
+        manual_move_globals.manual_move_window_is_open = true;
+
+        //window settings
+        manual_move_globals.manual_move_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+        gtk_window_set_position((GtkWindow*)manual_move_globals.manual_move_window, GTK_WIN_POS_CENTER);
+        gtk_window_set_title((GtkWindow*)manual_move_globals.manual_move_window, "Manual Move Generator");
+        gtk_widget_set_name(manual_move_globals.manual_move_window, "manual_move_window");
+
+        //create all widgets
+        GtkWidget* grid = gtk_grid_new();
+        GtkWidget* block_entry = gtk_entry_new();
+        gtk_entry_set_text((GtkEntry*)block_entry, block_id.c_str());
+        GtkWidget* to_x_entry = gtk_entry_new();
+        GtkWidget* to_y_entry = gtk_entry_new();
+        GtkWidget* subtile_entry = gtk_entry_new();
+        GtkWidget* block_label = gtk_label_new("block_id/block_name:");
+        GtkWidget* to_label = gtk_label_new("to location:");
+        GtkWidget* x = gtk_label_new("x:");
+        GtkWidget* y = gtk_label_new("y:");
+        GtkWidget* subtile = gtk_label_new("subtile:");
+        GtkWidget* button = gtk_button_new_with_label("Calculate Costs");
+
+        //add all to grid
+        gtk_grid_attach((GtkGrid*)grid, block_label, 0, 0, 1, 1);
+        gtk_grid_attach((GtkGrid*)grid, block_entry, 0, 1, 1, 1);
+        gtk_grid_attach((GtkGrid*)grid, to_label, 2, 0, 1, 1);
+        gtk_grid_attach((GtkGrid*)grid, x, 1, 1, 1, 1);
+        gtk_grid_attach((GtkGrid*)grid, to_x_entry, 2, 1, 1, 1);
+        gtk_grid_attach((GtkGrid*)grid, y, 1, 2, 1, 1);
+        gtk_grid_attach((GtkGrid*)grid, to_y_entry, 2, 2, 1, 1);
+        gtk_grid_attach((GtkGrid*)grid, subtile, 1, 3, 1, 1);
+        gtk_grid_attach((GtkGrid*)grid, subtile_entry, 2, 3, 1, 1);
+        gtk_grid_attach((GtkGrid*)grid, button, 0, 4, 3, 1);
+
+        //set margins
+        gtk_widget_set_margin_bottom(grid, 20);
+        gtk_widget_set_margin_top(grid, 20);
+        gtk_widget_set_margin_left(grid, 20);
+        gtk_widget_set_margin_right(grid, 20);
+        gtk_widget_set_margin_bottom(block_label, 5);
+        gtk_widget_set_margin_bottom(to_label, 5);
+        gtk_widget_set_margin_top(button, 15);
+        gtk_widget_set_margin_left(x, 13);
+        gtk_widget_set_margin_left(y, 13);
+        gtk_widget_set_halign(button, GTK_ALIGN_CENTER);
+
+        //connect signals
+        g_signal_connect(button, "clicked", G_CALLBACK(move_generator_button_callback), grid);
+
+        gtk_container_add(GTK_CONTAINER(manual_move_globals.manual_move_window), grid);
+        gtk_widget_show_all(manual_move_globals.manual_move_window);
+    }
+}
+
+//this window displays all move costs and the placer move_outcome and let's the user accept or reject the move
+void cost_summary_window() {
+    //window settings
+    GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_position((GtkWindow*)window, GTK_WIN_POS_CENTER);
+    gtk_window_set_title((GtkWindow*)window, "Move Costs");
+
+    //create all widgets
+    GtkWidget* grid = gtk_grid_new();
+    GtkWidget* info = gtk_label_new(NULL);
+    gtk_label_set_markup((GtkLabel*)info, "<b>Move Costs and Outcomes</b>");
+    std::string dc_label = "Delta Cost: " + std::to_string(manual_move_globals.draw_manual_move_info.delta_c);
+    GtkWidget* dc = gtk_label_new(dc_label.c_str());
+    std::string dcn_label = "Delta Bounding Box Cost: " + std::to_string(manual_move_globals.draw_manual_move_info.bb_delta_c);
+    GtkWidget* dcn = gtk_label_new(dcn_label.c_str());
+    std::string dtcn_label = "Delta Timing Cost: " + std::to_string(manual_move_globals.draw_manual_move_info.timing_delta_c);
+    GtkWidget* dtcn = gtk_label_new(dtcn_label.c_str());
+    std::string outcome = e_move_result_to_string(manual_move_globals.draw_manual_move_info.placer_move_outcome);
+    std::string mo_label = "Move Outcome: " + outcome;
+    GtkWidget* mo = gtk_label_new(mo_label.c_str());
+    GtkWidget* accept = gtk_button_new_with_label("Accept");
+    GtkWidget* reject = gtk_button_new_with_label("Reject");
+
+    //add widgets to grid
+    gtk_grid_attach((GtkGrid*)grid, info, 0, 0, 2, 1);
+    gtk_grid_attach((GtkGrid*)grid, dc, 0, 1, 2, 1);
+    gtk_grid_attach((GtkGrid*)grid, dcn, 0, 2, 2, 1);
+    gtk_grid_attach((GtkGrid*)grid, dtcn, 0, 3, 2, 1);
+    gtk_grid_attach((GtkGrid*)grid, mo, 0, 4, 2, 1);
+    gtk_grid_attach((GtkGrid*)grid, accept, 0, 5, 1, 1);
+    gtk_grid_attach((GtkGrid*)grid, reject, 1, 5, 1, 1);
+
+    //set margins
+    gtk_widget_set_halign(accept, GTK_ALIGN_CENTER);
+    gtk_widget_set_halign(reject, GTK_ALIGN_CENTER);
+    gtk_widget_set_margin_bottom(grid, 20);
+    gtk_widget_set_margin_top(grid, 20);
+    gtk_widget_set_margin_right(grid, 20);
+    gtk_widget_set_margin_left(grid, 20);
+    gtk_widget_set_margin_bottom(info, 15);
+    gtk_widget_set_margin_bottom(dc, 5);
+    gtk_widget_set_margin_bottom(dcn, 5);
+    gtk_widget_set_margin_bottom(dtcn, 5);
+    gtk_widget_set_margin_bottom(mo, 20);
+
+    //connect signals
+    g_signal_connect(accept, "clicked", G_CALLBACK(accept_manual_move), window);
+    g_signal_connect(reject, "clicked", G_CALLBACK(reject_manual_move), window);
+
+    gtk_container_add(GTK_CONTAINER(window), grid);
+
+    if (manual_move_globals.manual_move_window_is_open)
+        gtk_widget_show_all(window);
+}
+
+//if the user decides to accept the manual move, this function sets the user move outcome to accpeted and closes manual move and cost windows
+void accept_manual_move(GtkWidget* /*widget*/, GtkWidget* window) {
+    manual_move_globals.draw_manual_move_info.user_move_outcome = ACCEPTED;
+    manual_move_globals.manual_move_window_is_open = false;
+    gtk_widget_destroy(manual_move_globals.manual_move_window);
+    gtk_widget_destroy((GtkWidget*)window);
+}
+
+//if the user decides to reject the manual move, this function sets the user move outcome to rejected and closes manual move and cost windows
+void reject_manual_move(GtkWidget* /*widget*/, GtkWidget* window) {
+    manual_move_globals.draw_manual_move_info.user_move_outcome = REJECTED;
+    manual_move_globals.manual_move_window_is_open = false;
+    gtk_widget_destroy(manual_move_globals.manual_move_window);
+    gtk_widget_destroy((GtkWidget*)window);
+}
+
+//returns a pointer to the global variable draw_manual_move_info so that the placer can modify it
+ManualMoveInfo* get_manual_move_info() {
+    return &manual_move_globals.draw_manual_move_info;
+}
+
 //after the user presses the calculate costs button, this function retrievs all the data in the window, such as block id and to location, checks if they are valid values, and if valid updates the draw_manual_move_info variable, highlights the indicated block id and proceeds in placement
 void move_generator_button_callback(GtkWidget* /*widget*/, GtkWidget* oldGrid) {
     int block_id;
@@ -4137,7 +4271,6 @@ void move_generator_button_callback(GtkWidget* /*widget*/, GtkWidget* oldGrid) {
     } else
         manual_move_globals.draw_manual_move_info.valid_input = false;
 }
-
 
 //returns true when a string only contains numbers and no letters or symbols
 //this function is used to differentiate between block_id and block_name

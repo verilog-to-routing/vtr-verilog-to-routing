@@ -3,6 +3,7 @@
 
 #include "timing_info.h"
 #include "physical_types.h"
+#include "move_utils.h"
 
 #ifndef NO_GRAPHICS
 
@@ -83,6 +84,11 @@ void set_net_alpha_value_with_enter(GtkWidget* widget, gint /*response_id*/, gpo
 float get_net_alpha();
 
 ezgl::color get_block_type_color(t_physical_tile_type_ptr type);
+
+/** manual move generator functions **/
+ManualMoveInfo* get_manual_move_info();
+void manual_move_generator_window(std::string block_id);
+void cost_summary_window();
 
 #endif /* NO_GRAPHICS */
 
