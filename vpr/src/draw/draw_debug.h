@@ -1,10 +1,5 @@
-<<<<<<< HEAD
 /** This file contains all functions reagrding the graphics related to the setting of place and route breakpoints **/
-=======
-/*This file contains all function declarations reagrding the graphics of setting and handling breakpoints*/
->>>>>>> added the draw_debug files and the callback function in draw
 
-#include "breakpoint.h"
 #include "draw_global.h"
 #include "ezgl/application.hpp"
 #include "ezgl/graphics.hpp"
@@ -35,5 +30,8 @@ void close_debug_window();
 void close_advanced_window();
 void ok_close_window(GtkWidget* /*widget*/, GtkWidget* window);
 void invalid_breakpoint_entry_window(std::string error);
+<<<<<<< HEAD
 bool valid_expression(std::string exp);
 void breakpoint_info_window(std::string bpDescription, BreakpointState draw_breakpoint_state, bool in_placer);
+=======
+>>>>>>> fixed errors and formatting
