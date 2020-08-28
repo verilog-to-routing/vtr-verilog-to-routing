@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 /** This file contains all functions reagrding the graphics related to the setting of place and route breakpoints **/
+=======
+/*This file contains all function declarations reagrding the graphics of setting and handling breakpoints*/
+>>>>>>> added the draw_debug files and the callback function in draw
 
 #include "breakpoint.h"
 #include "draw_global.h"

@@ -4075,6 +4075,69 @@ void net_max_fanout(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data
     application.refresh_drawing();
 }
 
+//after the user presses the calculate costs button, this function retrievs all the data in the window, such as block id and to location, checks if they are valid values, and if valid updates the draw_manual_move_info variable, highlights the indicated block id and proceeds in placement
+void move_generator_button_callback(GtkWidget* /*widget*/, GtkWidget* oldGrid) {
+    int block_id;
+    bool valid_input = true;
+    auto& cluster_ctx = g_vpr_ctx.clustering();
+    //get entry values
+    GtkWidget* block_entry = gtk_grid_get_child_at((GtkGrid*)oldGrid, 0, 1);
+    std::string block_id_string = gtk_entry_get_text((GtkEntry*)block_entry);
+    if (string_is_a_number(block_id_string))
+        block_id = std::atoi(block_id_string.c_str());
+    else
+        block_id = size_t(cluster_ctx.clb_nlist.find_block(gtk_entry_get_text((GtkEntry*)block_entry)));
+    if (!cluster_ctx.clb_nlist.valid_block_id(ClusterBlockId(block_id))) {
+        invalid_breakpoint_entry_window("invalid block name/id");
+        valid_input = false;
+    }
+    GtkWidget* to_x_entry = gtk_grid_get_child_at((GtkGrid*)oldGrid, 2, 1);
+    GtkWidget* to_y_entry = gtk_grid_get_child_at((GtkGrid*)oldGrid, 2, 2);
+    GtkWidget* subtile_entry = gtk_grid_get_child_at((GtkGrid*)oldGrid, 2, 3);
+    int to_loc_x = std::atoi(gtk_entry_get_text((GtkEntry*)to_x_entry));
+    int to_loc_y = std::atoi(gtk_entry_get_text((GtkEntry*)to_y_entry));
+    int to_subtile = std::atoi(gtk_entry_get_text((GtkEntry*)subtile_entry));
+
+    //check for input validity
+    auto& device_ctx = g_vpr_ctx.device();
+    if (to_loc_x < 0 || to_loc_x > int(device_ctx.grid.width())) {
+        invalid_breakpoint_entry_window("x value out of bounds");
+        valid_input = false;
+    }
+    if (to_loc_y < 0 || to_loc_y > int(device_ctx.grid.height())) {
+        invalid_breakpoint_entry_window("y value out of bounds");
+        valid_input = false;
+    }
+    if (to_subtile < 0 || to_subtile > int(device_ctx.grid[to_loc_x][to_loc_y].type->capacity)) {
+        invalid_breakpoint_entry_window("invalid subtile value");
+        valid_input = false;
+    }
+
+    //checks if all entries are full
+    if (std::string(gtk_entry_get_text((GtkEntry*)block_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)to_x_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)to_y_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)subtile_entry)).empty()) {
+        invalid_breakpoint_entry_window("Not all fields are complete");
+        valid_input = false;
+    }
+
+    if (valid_input) {
+        //update draw_manual_move_info
+        manual_move_globals.draw_manual_move_info.valid_input = true;
+        manual_move_globals.draw_manual_move_info.to_x = to_loc_x;
+        manual_move_globals.draw_manual_move_info.to_y = to_loc_y;
+        manual_move_globals.draw_manual_move_info.to_subtile = to_subtile;
+        manual_move_globals.draw_manual_move_info.block_id = block_id;
+
+        //highlight blocks
+        ClusterBlockId clb_index = ClusterBlockId(block_id);
+        draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(clb_index), clb_index);
+        application.refresh_drawing();
+
+        GtkWidget* proceed = find_button("ProceedButton");
+        ezgl::press_proceed(proceed, &application);
+    } else
+        manual_move_globals.draw_manual_move_info.valid_input = false;
+}
+
 static void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
 
