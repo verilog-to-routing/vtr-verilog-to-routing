@@ -4167,6 +4167,12 @@ ManualMoveInfo* get_manual_move_info() {
     return &manual_move_globals.draw_manual_move_info;
 }
 
+//checks if the maual move checkbox is toggled and returns true if it was toggled
+bool get_manual_move_flag() {
+    GObject* manual_move_button = application.get_object("ManualMove");
+    return gtk_toggle_button_get_active((GtkToggleButton*)manual_move_button);
+}
+
 //after the user presses the calculate costs button, this function retrievs all the data in the window, such as block id and to location, checks if they are valid values, and if valid updates the draw_manual_move_info variable, highlights the indicated block id and proceeds in placement
 void move_generator_button_callback(GtkWidget* /*widget*/, GtkWidget* oldGrid) {
     int block_id;

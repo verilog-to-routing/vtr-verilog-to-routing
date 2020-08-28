@@ -87,6 +87,7 @@ ezgl::color get_block_type_color(t_physical_tile_type_ptr type);
 
 /** manual move generator functions **/
 ManualMoveInfo* get_manual_move_info();
+bool get_manual_move_flag();
 void manual_move_generator_window(std::string block_id);
 void cost_summary_window();
 
