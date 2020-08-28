@@ -72,4 +72,5 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
                          float rlim,
                          const t_pl_loc from,
                          t_pl_loc& to);
+std::string e_move_result_to_string(e_move_result move_outcome);
 #endif
