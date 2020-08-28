@@ -2,6 +2,7 @@
 #include <cmath>
 #include <memory>
 #include <fstream>
+#include <iostream>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -25,7 +26,6 @@
 #include "timing_place.h"
 #include "read_xml_arch_file.h"
 #include "echo_files.h"
-#include "vpr_utils.h"
 #include "place_macro.h"
 #include "histogram.h"
 #include "place_util.h"
@@ -43,6 +43,16 @@
 #include "timing_info.h"
 #include "tatum/echo_writer.hpp"
 #include "tatum/TimingReporter.hpp"
+
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+#    include "draw_types.h"
+#    include "draw_global.h"
+#    include "draw_color.h"
+#    include "breakpoint.h"
+//map of the available move types and their corresponding type number
+std::map<int, std::string> available_move_types = {
+    {0, "Uniform"}};
+#endif
 
 using std::max;
 using std::min;
@@ -80,7 +90,9 @@ using std::min;
 /* For comp_cost.  NORMAL means use the method that generates updateable  *
  * bounding boxes for speed.  CHECK means compute all bounding boxes from *
  * scratch using a very simple routine to allow checks of the other       *
- * costs.                                                                 */
+ * costs.                                   
+ */
+
 enum e_cost_methods {
     NORMAL,
     CHECK
@@ -223,8 +235,7 @@ static float f_update_td_costs_total_elapsed_sec = 0.;
 
 std::unique_ptr<FILE, decltype(&vtr::fclose)> f_move_stats_file(nullptr, vtr::fclose);
 
-#ifdef VTR_ENABLE_DEBUG_LOGGING
-
+#ifdef VTR_ENABLE_DEBUG_LOGGIING
 #    define LOG_MOVE_STATS_HEADER()                               \
         do {                                                      \
             if (f_move_stats_file) {                              \
@@ -495,7 +506,9 @@ static void print_place_status(const size_t num_temps,
                                size_t tot_moves);
 static void print_resources_utilization();
 
+void transform_blocks_affected(t_pl_blocks_to_be_moved blocksAffected);
 static void init_annealing_state(t_annealing_state* state, const t_annealing_sched& annealing_sched, float t, float rlim, int move_lim_max, float crit_exponent);
+void stop_placement_and_check_breakopints(t_pl_blocks_to_be_moved& blocks_affected, bool& f_place_debug, e_move_result move_outcome, double delta_c, double bb_delta_c, double timing_delta_c);
 
 /*****************************************************************************/
 void try_place(const t_placer_opts& placer_opts,
@@ -1218,6 +1231,11 @@ static bool update_annealing_state(t_annealing_state* state,
                                    const t_placer_costs& costs,
                                    const t_placer_opts& placer_opts,
                                    const t_annealing_sched& annealing_sched) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    if (draw_state->list_of_breakpoints.size() != 0)
+        //update temperature in the current information variable
+        get_bp_state_globals()->get_glob_breakpoint_state()->temp_count++;
+
     /* Return `false` when the exit criterion is met. */
     if (annealing_sched.type == USER_SCHED) {
         state->t *= annealing_sched.alpha_t;
@@ -1518,6 +1536,9 @@ static e_move_result try_swap(float t,
 
     move_generator.process_outcome(move_outcome_stats);
 
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+    stop_placement_and_check_breakopints(blocks_affected, f_placer_debug, move_outcome, delta_c, bb_delta_c, timing_delta_c);
+#endif
     clear_move_blocks(blocks_affected);
 
     //VTR_ASSERT(check_macro_placement_consistency() == 0);
@@ -3004,3 +3025,54 @@ static void init_annealing_state(t_annealing_state* state,
 bool placer_needs_lookahead(const t_vpr_setup& vpr_setup) {
     return (vpr_setup.PlacerOpts.place_algorithm == PATH_TIMING_DRIVEN_PLACE);
 }
+
+//transforms the vector moved_blocks to a vector of ints and adds it in glob_breakpoint_state
+void transform_blocks_affected(t_pl_blocks_to_be_moved blocksAffected) {
+    get_bp_state_globals()->get_glob_breakpoint_state()->blocks_affected_by_move.clear();
+    for (size_t i = 0; i < blocksAffected.moved_blocks.size(); i++) {
+        //size_t conversion is required since block_num is of type ClusterBlockId and can't be cast to an int. And this vector has to be of type int to be recognized in expr_eval class
+
+        get_bp_state_globals()->get_glob_breakpoint_state()->blocks_affected_by_move.push_back(size_t(blocksAffected.moved_blocks[i].block_num));
+    }
+}
+
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+void stop_placement_and_check_breakopints(t_pl_blocks_to_be_moved& blocks_affected, bool& f_place_debug, e_move_result move_outcome, double delta_c, double bb_delta_c, double timing_delta_c) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    if (draw_state->list_of_breakpoints.size() != 0) {
+        //update current information
+        transform_blocks_affected(blocks_affected);
+        get_bp_state_globals()->get_glob_breakpoint_state()->move_num++;
+        get_bp_state_globals()->get_glob_breakpoint_state()->from_block = size_t(blocks_affected.moved_blocks[0].block_num);
+
+        //check for breakpoints
+        f_place_debug = check_for_breakpoints(true);
+        if (f_place_debug)
+            breakpoint_info_window(get_bp_state_globals()->get_glob_breakpoint_state()->bp_description, *get_bp_state_globals()->get_glob_breakpoint_state(), true);
+    } else
+        f_place_debug = false;
+
+    if (f_place_debug && draw_state->show_graphics) {
+        std::string msg = available_move_types[0];
+        if (move_outcome == 0)
+            msg += vtr::string_fmt(", Rejected");
+        else if (move_outcome == 1)
+            msg += vtr::string_fmt(", Accepted");
+        else
+            msg += vtr::string_fmt(", Aborted");
+
+        msg += vtr::string_fmt(", Delta_cost: %1.6f (bb_delta_cost= %1.5f , timing_delta_c= %6.1e)", delta_c, bb_delta_c, timing_delta_c);
+
+        auto& cluster_ctx = g_vpr_ctx.clustering();
+
+        deselect_all();
+        draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(blocks_affected.moved_blocks[0].block_num), blocks_affected.moved_blocks[0].block_num);
+        draw_state->colored_blocks.clear();
+
+        draw_state->colored_blocks.push_back(std::make_pair(blocks_affected.moved_blocks[0].old_loc, blk_GOLD));
+        draw_state->colored_blocks.push_back(std::make_pair(blocks_affected.moved_blocks[0].new_loc, blk_GREEN));
+
+        update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), PLACEMENT, nullptr);
+    }
+}
+#endif

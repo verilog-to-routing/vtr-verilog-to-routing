@@ -4,6 +4,7 @@
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
+#include <iostream>
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -22,6 +23,8 @@
 #include "stats.h"
 #include "echo_files.h"
 #include "draw.h"
+#include "breakpoint.h"
+#include "move_utils.h"
 #include "rr_graph.h"
 #include "routing_predictor.h"
 #include "VprTimingGraphResolver.h"
@@ -48,6 +51,12 @@ enum class RouterCongestionMode {
     CONFLICTED
 };
 
+//identifies the two breakpoint types in routing
+typedef enum router_breakpoint_type {
+    BP_ROUTE_ITER,
+    BP_NET_ID
+} bp_router_type;
+
 struct RoutingMetrics {
     size_t used_wirelength = 0;
 
@@ -64,6 +73,7 @@ struct RoutingMetrics {
 
 //Run-time flag to control when router debug information is printed
 //Note only enables debug output if compiled with VTR_ENABLE_DEBUG_LOGGING defined
+//f_router_debug is used to stop the router when a breakpoint is reached. When a breakpoint is reached, this flag is set to true.
 bool f_router_debug = false;
 
 //Count the number of times the router has failed
@@ -164,6 +174,8 @@ static void prune_unused_non_configurable_nets(CBRR& connections_inf);
 
 static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
                                           ClbNetPinsMatrix<float>& net_delay);
+
+void update_router_info_and_check_bp(bp_router_type type, int net_id);
 
 // The reason that try_timing_driven_route_tmpl (and descendents) are being
 // templated over is because using a virtual interface instead fully templating
@@ -421,6 +433,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
 
             if (was_rerouted) {
                 rerouted_nets.push_back(net_id);
+                update_router_info_and_check_bp(BP_NET_ID, size_t(net_id));
             }
         }
 
@@ -546,6 +559,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
         if (legal_convergence_count >= router_opts.max_convergence_count
             || router_iteration_stats.connections_routed == 0
             || early_reconvergence_exit_heuristic(router_opts, itry_since_last_convergence, timing_info, best_routing_metrics)) {
+            update_router_info_and_check_bp(BP_ROUTE_ITER, -1);
             break; //Done routing
         }
 
@@ -554,6 +568,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
          */
         if (itry == 1 && early_exit_heuristic(router_opts, wirelength_info)) {
             //Abort
+            update_router_info_and_check_bp(BP_ROUTE_ITER, -1);
             break;
         }
 
@@ -563,12 +578,14 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
 
             if (!std::isnan(est_success_iteration) && est_success_iteration > abort_iteration_threshold) {
                 VTR_LOG("Routing aborted, the predicted iteration for a successful route (%.1f) is too high.\n", est_success_iteration);
+                update_router_info_and_check_bp(BP_ROUTE_ITER, -1);
                 break; //Abort
             }
         }
 
         if (itry == 1 && router_opts.exit_after_first_routing_iteration) {
             VTR_LOG("Exiting after first routing iteration as requested\n");
+            update_router_info_and_check_bp(BP_ROUTE_ITER, -1);
             break;
         }
 
@@ -2009,6 +2026,23 @@ static void init_net_delay_from_lookahead(const RouterLookahead& router_lookahea
             VTR_ASSERT(std::isfinite(est_delay) && est_delay < std::numeric_limits<float>::max());
 
             net_delay[net_id][ipin] = est_delay;
+        }
+    }
+}
+
+//updates router iteration information and checks for router iteration and net id breakpoints
+//stops after the specified router iteration or net id is encountered
+void update_router_info_and_check_bp(bp_router_type type, int net_id) {
+    t_draw_state* draw_state = get_draw_state_vars();
+    if (draw_state->list_of_breakpoints.size() != 0) {
+        if (type == BP_ROUTE_ITER)
+            get_bp_state_globals()->get_glob_breakpoint_state()->router_iter++;
+        else if (type == BP_NET_ID)
+            get_bp_state_globals()->get_glob_breakpoint_state()->route_net_id = net_id;
+        f_router_debug = check_for_breakpoints(false);
+        if (f_router_debug) {
+            breakpoint_info_window(get_bp_state_globals()->get_glob_breakpoint_state()->bp_description, *get_bp_state_globals()->get_glob_breakpoint_state(), false);
+            update_screen(ScreenUpdatePriority::MAJOR, "Breakpoint Encountered", ROUTING, nullptr);
         }
     }
 }
