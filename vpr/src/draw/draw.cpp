@@ -4098,6 +4098,17 @@ void move_generator_button_callback(GtkWidget* /*widget*/, GtkWidget* oldGrid) {
         manual_move_globals.draw_manual_move_info.valid_input = false;
 }
 
+
+//returns true when a string only contains numbers and no letters or symbols
+//this function is used to differentiate between block_id and block_name
+bool string_is_a_number(std::string block_id) {
+    for (size_t i = 0; i < block_id.size(); i++) {
+        if (isdigit(block_id[i]) == 0)
+            return false;
+    }
+    return true;
+}
+
 static void set_force_pause(GtkWidget* /*widget*/, gint /*response_id*/, gpointer /*data*/) {
     t_draw_state* draw_state = get_draw_state_vars();
 
