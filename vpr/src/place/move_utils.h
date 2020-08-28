@@ -25,6 +25,21 @@ enum class e_create_move {
     ABORT, //Unable to perform move
 };
 
+
+/** This struct holds all necessary values to set a manual move. Some of the membres such as block_id, to_x, to_y, and to_subtile are obtained from the user, whereas the delta costs are calculated by the placer**/
+struct ManualMoveInfo {
+    int block_id = -1;                           ///block id of the block the user wants to move
+    int to_x = -1;                               //the x value of the to location entered by the user
+    int to_y = -1;                               //the y value of the to location entered by the user
+    int to_subtile = 0;                          //the subtile value of the to location entered by the user
+    double delta_c = 0;                          //the delta cost of the move calculated by the placer
+    double bb_delta_c = 0;                       //the delta bounding box cost calculated by the placer
+    double timing_delta_c = 0;                   //the telta timing cost calculated by the placer
+    e_move_result user_move_outcome = ABORTED;   //whether the user decides to reject/accept the move
+    e_move_result placer_move_outcome = ABORTED; //whether the placer decides to reject/accept the move
+    bool valid_input = true;                     //whether the user input was valid
+};
+
 //Records a reasons for an aborted move
 void log_move_abort(std::string reason);
 
