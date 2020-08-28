@@ -15,15 +15,6 @@
 // reroute only the connections to the ones that did not have a legal connection the previous time
 class Connection_based_routing_resources {
     // Incremental reroute resources --------------
-    // conceptually works like rr_sink_node_to_pin[inet][sink_rr_node_index] to get the pin index for that net
-    // each net maps SINK node index -> PIN index for net
-    // only need to be built once at the start since the SINK nodes never change
-    // the reverse lookup of route_ctx.net_rr_terminals
-    // be careful: it is possible for multiple sinks to share the same node index in some cases.
-    //             rt_nodes already have pin index stored as a member, so in most cases, you do not
-    //             need this lookup. Only use this if necessary and if you are sure that a node index
-    //             can uniquely identify the node.
-    vtr::vector<ClusterNetId, std::unordered_map<int, int>> rr_sink_node_to_pin;
 
     // a property of each net, but only valid after pruning the previous route tree
     // the "targets" in question can be either rr_node indices or pin indices, the
@@ -46,7 +37,6 @@ class Connection_based_routing_resources {
     // get a handle on the resources
     std::vector<int>& get_remaining_targets() { return remaining_targets; }
     std::vector<t_rt_node*>& get_reached_rt_sinks() { return reached_rt_sinks; }
-    vtr::vector<ClusterNetId, std::unordered_map<int, int>>& get_rr_sink_node_to_pin() { return rr_sink_node_to_pin; };
 
     bool sanity_check_lookup() const;
 

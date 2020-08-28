@@ -273,7 +273,6 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
     }
 
     CBRR connections_inf{};
-    VTR_ASSERT_SAFE(connections_inf.sanity_check_lookup());
 
     route_budgets budgeting_inf;
 
@@ -1386,7 +1385,7 @@ static t_rt_node* setup_routing_resources(int itry,
 
         // give lookup on the reached sinks
         for (t_rt_node* sink_node : reached_rt_sinks) {
-            rt_node_of_sink[sink_node->ipin] = sink_node;
+            rt_node_of_sink[sink_node->net_pin_index] = sink_node;
         }
 
         profiling::net_rebuild_end(num_sinks, remaining_targets.size());

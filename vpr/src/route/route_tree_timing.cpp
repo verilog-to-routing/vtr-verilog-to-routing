@@ -52,7 +52,7 @@ static t_linked_rt_edge* alloc_linked_rt_edge();
 static void free_linked_rt_edge(t_linked_rt_edge* rt_edge);
 
 static t_rt_node* add_subtree_to_route_tree(t_heap* hptr,
-                                            int target_pin,
+                                            int target_net_pin_index,
                                             t_rt_node** sink_rt_node_ptr);
 
 static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bool reached_by_non_configurable_edge, std::unordered_set<int>& visited);
@@ -195,7 +195,7 @@ t_rt_node* init_route_tree_to_source(ClusterNetId inet) {
     inode = route_ctx.net_rr_terminals[inet][0]; /* Net source */
 
     rt_root->inode = inode;
-    rt_root->ipin = OPEN;
+    rt_root->net_pin_index = OPEN;
     rt_root->C_downstream = device_ctx.rr_nodes[inode].C();
     rt_root->R_upstream = device_ctx.rr_nodes[inode].R();
     rt_root->Tdel = 0.5 * device_ctx.rr_nodes[inode].R() * device_ctx.rr_nodes[inode].C();
@@ -206,9 +206,10 @@ t_rt_node* init_route_tree_to_source(ClusterNetId inet) {
 
 /* Adds the most recently finished wire segment to the routing tree, and
  * updates the Tdel, etc. numbers for the rest of the routing tree.  hptr
- * is the heap pointer of the SINK that was reached.  This routine returns
- * a pointer to the rt_node of the SINK that it adds to the routing.        */
-t_rt_node* update_route_tree(t_heap* hptr, int target_pin, SpatialRouteTreeLookup* spatial_rt_lookup) {
+ * is the heap pointer of the SINK that was reached, and target_net_pin_index
+ * is the net pin index corresponding to the SINK that was reached. This routine
+ * returns a pointer to the rt_node of the SINK that it adds to the routing.        */
+t_rt_node* update_route_tree(t_heap* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup) {
     t_rt_node *start_of_new_subtree_rt_node, *sink_rt_node;
     t_rt_node *unbuffered_subtree_rt_root, *subtree_parent_rt_node;
     float Tdel_start;
@@ -217,7 +218,7 @@ t_rt_node* update_route_tree(t_heap* hptr, int target_pin, SpatialRouteTreeLooku
     auto& device_ctx = g_vpr_ctx.device();
 
     //Create a new subtree from the target in hptr to existing routing
-    start_of_new_subtree_rt_node = add_subtree_to_route_tree(hptr, target_pin, &sink_rt_node);
+    start_of_new_subtree_rt_node = add_subtree_to_route_tree(hptr, target_net_pin_index, &sink_rt_node);
 
     //Propagate R_upstream down into the new subtree
     load_new_subtree_R_upstream(start_of_new_subtree_rt_node);
@@ -248,13 +249,23 @@ t_rt_node* update_route_tree(t_heap* hptr, int target_pin, SpatialRouteTreeLooku
     return (sink_rt_node);
 }
 
+/* Records all nodes from the rt_tree into the rr_node_to_rt_node lookup, which
+ * maps the node's corresponding rr_node index (inode) to the node itself. This
+ * is done recursively, starting from the root of the tree to its leafs (SINKs)
+ * in a depth-first traversal. The rt_node we are currently processing should not
+ * have had its rr_node index mapped previously, with the exception of SINK nodes.
+ * Some netlists and input pin equivalence can lead to us routing to the same SINK
+ * more than once on a net (resulting in different rt_nodes sharing the same rr_node
+ * index). Hence for SINKs we assert on a weaker condition that if the rr_node index
+ * corresponding to this SINK is already mapped, the rr_node_to_rt_node mapping
+ * structure must be pointing to a different rt_node containing the SINK. */
 void add_route_tree_to_rr_node_lookup(t_rt_node* node) {
     if (node) {
         auto& device_ctx = g_vpr_ctx.device();
         if (device_ctx.rr_nodes[node->inode].type() == SINK) {
-            VTR_ASSERT(rr_node_to_rt_node[node->inode] == nullptr || rr_node_to_rt_node[node->inode]->inode == node->inode);
+            VTR_ASSERT(rr_node_to_rt_node[node->inode] == nullptr || rr_node_to_rt_node[node->inode] != node);
         } else {
-            VTR_ASSERT(rr_node_to_rt_node[node->inode] == nullptr || rr_node_to_rt_node[node->inode] == node);
+            VTR_ASSERT(rr_node_to_rt_node[node->inode] == nullptr);
         }
 
         rr_node_to_rt_node[node->inode] = node;
@@ -265,12 +276,12 @@ void add_route_tree_to_rr_node_lookup(t_rt_node* node) {
     }
 }
 
+/* Adds the most recent wire segment, ending at the SINK indicated by hptr,
+ * to the routing tree. target_net_pin_index is the net pin index correspinding
+ * to the SINK indicated by hptr. Returns the first (most upstream) new rt_node,
+ * and (via a pointer) the rt_node of the new SINK. Traverses up from SINK  */
 static t_rt_node*
-add_subtree_to_route_tree(t_heap* hptr, int target_pin, t_rt_node** sink_rt_node_ptr) {
-    /* Adds the most recent wire segment, ending at the SINK indicated by hptr,
-     * to the routing tree.  It returns the first (most upstream) new rt_node,
-     * and (via a pointer) the rt_node of the new SINK. Traverses up from SINK  */
-
+add_subtree_to_route_tree(t_heap* hptr, int target_net_pin_index, t_rt_node** sink_rt_node_ptr) {
     t_rt_node *rt_node, *downstream_rt_node, *sink_rt_node;
     t_linked_rt_edge* linked_rt_edge;
 
@@ -288,7 +299,7 @@ add_subtree_to_route_tree(t_heap* hptr, int target_pin, t_rt_node** sink_rt_node
     sink_rt_node = alloc_rt_node();
     sink_rt_node->u.child_list = nullptr;
     sink_rt_node->inode = inode;
-    sink_rt_node->ipin = target_pin;
+    sink_rt_node->net_pin_index = target_net_pin_index; //hptr is the heap pointer of the SINK that was reached, which corresponds to the target pin
     rr_node_to_rt_node[inode] = sink_rt_node;
 
     /* In the code below I'm marking SINKs and IPINs as not to be re-expanded.
@@ -331,7 +342,7 @@ add_subtree_to_route_tree(t_heap* hptr, int target_pin, t_rt_node** sink_rt_node
 
         rt_node->u.child_list = linked_rt_edge;
         rt_node->inode = inode;
-        rt_node->ipin = OPEN;
+        rt_node->net_pin_index = OPEN; //net pin index is invalid for non-SINK nodes
 
         rr_node_to_rt_node[inode] = rt_node;
 
@@ -391,7 +402,7 @@ static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bo
                 rt_node = alloc_rt_node();
                 rt_node->u.child_list = nullptr;
                 rt_node->inode = rr_node;
-                rt_node->ipin = OPEN;
+                rt_node->net_pin_index = OPEN;
 
                 if (device_ctx.rr_nodes[rr_node].type() == IPIN) {
                     rt_node->re_expand = false;
@@ -676,7 +687,7 @@ void print_route_tree(const t_rt_node* rt_node, int depth) {
 
     auto& device_ctx = g_vpr_ctx.device();
     VTR_LOG("%srt_node: %d (%s) \t ipin: %d \t R: %g \t C: %g \t delay: %g",
-            indent.c_str(), rt_node->inode, device_ctx.rr_nodes[rt_node->inode].type_string(), rt_node->ipin, rt_node->R_upstream, rt_node->C_downstream, rt_node->Tdel);
+            indent.c_str(), rt_node->inode, device_ctx.rr_nodes[rt_node->inode].type_string(), rt_node->net_pin_index, rt_node->R_upstream, rt_node->C_downstream, rt_node->Tdel);
 
     if (rt_node->parent_switch != OPEN) {
         bool parent_edge_configurable = device_ctx.rr_switch_inf[rt_node->parent_switch].configurable();
@@ -779,7 +790,7 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace,
         t_rt_node* node = nullptr;
 
         int inode = trace->index;
-        int ipin = trace->ipin;
+        int ipin = trace->net_pin_index;
         int iswitch = trace->iswitch;
 
         auto& device_ctx = g_vpr_ctx.device();
@@ -794,7 +805,7 @@ static t_trace* traceback_to_route_tree_branch(t_trace* trace,
             //Initialize route tree node
             node = alloc_rt_node();
             node->inode = inode;
-            node->ipin = ipin;
+            node->net_pin_index = ipin;
             node->u.child_list = nullptr;
 
             node->R_upstream = std::numeric_limits<float>::quiet_NaN();
@@ -877,7 +888,7 @@ static std::pair<t_trace*, t_trace*> traceback_from_route_tree_recurr(t_trace* h
             for (t_linked_rt_edge* edge = node->u.child_list; edge != nullptr; edge = edge->next) {
                 t_trace* curr = alloc_trace_data();
                 curr->index = node->inode;
-                curr->ipin = node->ipin;
+                curr->net_pin_index = node->net_pin_index;
                 curr->iswitch = edge->iswitch;
                 curr->next = nullptr;
 
@@ -898,7 +909,7 @@ static std::pair<t_trace*, t_trace*> traceback_from_route_tree_recurr(t_trace* h
             //Leaf
             t_trace* curr = alloc_trace_data();
             curr->index = node->inode;
-            curr->ipin = node->ipin;
+            curr->net_pin_index = node->net_pin_index;
             curr->iswitch = OPEN;
             curr->next = nullptr;
 
@@ -1036,7 +1047,7 @@ static t_rt_node* prune_route_tree_recurr(t_rt_node* node, CBRR& connections_inf
             VTR_ASSERT(force_prune);
 
             //Record as not reached
-            connections_inf.toreach_rr_sink(node->ipin);
+            connections_inf.toreach_rr_sink(node->net_pin_index);
 
             free_rt_node(node);
             return nullptr; //Pruned
@@ -1457,7 +1468,7 @@ init_route_tree_to_source_no_net(int inode) {
     rt_root->parent_switch = OPEN;
     rt_root->re_expand = true;
     rt_root->inode = inode;
-    rt_root->ipin = OPEN;
+    rt_root->net_pin_index = OPEN;
     rt_root->C_downstream = device_ctx.rr_nodes[inode].C();
     rt_root->R_upstream = device_ctx.rr_nodes[inode].R();
     rt_root->Tdel = 0.5 * device_ctx.rr_nodes[inode].R() * device_ctx.rr_nodes[inode].C();

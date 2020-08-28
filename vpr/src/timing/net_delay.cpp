@@ -97,8 +97,8 @@ static void load_one_net_delay(ClbNetPinsMatrix<float>& net_delay, ClusterNetId 
 static void load_one_net_delay_recurr(t_rt_node* node, ClusterNetId net_id) {
     /* This routine recursively traverses the route tree, and copies the Tdel of the sink_type nodes *
      * into the map.                                                                                 */
-    if (node->ipin != OPEN) {
-        ipin_to_Tdel_map[node->ipin] = node->Tdel; // add to the map, process current sink-type node
+    if (node->net_pin_index != OPEN) { // value of OPEN indicates a non-SINK
+        ipin_to_Tdel_map[node->net_pin_index] = node->Tdel; // add to the map, process current sink-type node
     }
 
     for (t_linked_rt_edge* edge = node->u.child_list; edge != nullptr; edge = edge->next) { // process children
