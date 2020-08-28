@@ -1,21 +1,11 @@
 version: ~> 1.0
 language: cpp
 
-dist: trusty
+dist: bionic
 addons:
   apt:
     sources:
-    - sourceline: 'ppa:george-edison55/precise-backports' # For cmake
-    - sourceline: 'deb http://apt.llvm.org/precise llvm-toolchain-precise-3.6 main'
-      key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
-    - sourceline: 'deb http://apt.llvm.org/trusty llvm-toolchain-trusty-6.0 main'
-      key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
-    - sourceline: 'deb http://apt.llvm.org/trusty llvm-toolchain-trusty-7 main' # For clang-format-7
-      key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
-    - sourceline: 'deb http://apt.llvm.org/trusty llvm-toolchain-trusty-8 main'
-      key_url: 'https://apt.llvm.org/llvm-snapshot.gpg.key'
     - sourceline: 'ppa:ubuntu-toolchain-r/test'
-    - sourceline: 'ppa:deadsnakes/ppa' # For python3.6
     packages:
     - autoconf
     - automake
@@ -96,7 +86,7 @@ jobs:
         - ./dev/check-format-py.sh
     - stage: Test
       name: "Python Lint"
-      script:     
+      script:
         - python3 ./dev/pylint_check.py
     - stage: Test
       name: "C++ Unit Tests"
@@ -238,18 +228,16 @@ before_script:
   # Switch to python 3.6.3
   - pyenv install -f 3.6.3
   - pyenv global 3.6.3
-
   # Install python modules
   - curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-  - python3 get-pip.py   
+  - python3 get-pip.py
   - rm get-pip.py
-  - python3 -m pip install \ 
+  - python3 -m pip install \
       pylint \
       black
-
   - source .github/travis/common.sh
   - ./.github/travis/setup.sh
-    
+
 after_script:
   - ./.github/travis/setup.sh
 
