@@ -862,6 +862,16 @@ The following options are only valid when the placement engine is in timing-driv
 
     Name of the post-placement timing report file to generate (not generated if unspecfied).
 
+.. option:: --place_quench_metric {auto, timing_cost, setup_slack}
+
+    Specifies which cost formulation the placer uses during the quench stage.
+
+     * ``auto`` VPR makes the choice. Currently, VPR uses ``timing_cost`` by default.
+     * ``timing_cost`` Use the timing cost: connection delay * criticality.
+     * ``setup_slack`` Directly checks the raw setup slack returned by the timing analyzer.
+
+    **Default:** ``auto``
+
 .. _router_options:
 
 Router Options
