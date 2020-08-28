@@ -1,3 +1,8 @@
+/**
+ * @file timing_place.cpp
+ * @brief Stores the method definitions of classes defined in timing_place.h.
+ */
+
 #include <cstdio>
 #include <cmath>
 
@@ -14,35 +19,41 @@
 
 #include "timing_info.h"
 
-//Use an incremental approach to updating criticalities and setup slacks?
-constexpr bool INCR_UPDATE_CRITICALITIES = true;
-constexpr bool INCR_UPDATE_SETUP_SLACKS = true;
+///@brief Use an incremental approach to updating criticalities and setup slacks?
+static constexpr bool INCR_UPDATE_CRITICALITIES = true, INCR_UPDATE_SETUP_SLACKS = true;
 
-/**************************************/
-
-/* Allocates space for the timing_place_crit_ data structure *
- * I chunk the data to save space on large problems.           */
+///@brief Allocates space for the timing_place_crit_ data structure.
 PlacerCriticalities::PlacerCriticalities(const ClusteredNetlist& clb_nlist, const ClusteredPinAtomPinsLookup& netlist_pin_lookup)
     : clb_nlist_(clb_nlist)
     , pin_lookup_(netlist_pin_lookup)
     , timing_place_crit_(make_net_pins_matrix(clb_nlist_, std::numeric_limits<float>::quiet_NaN())) {
 }
 
-void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_info, float crit_exponent, bool recompute) {
-    //If the criticalities are not updated immediately after each time we call
-    //timing_info->update(), then timing_info->pins_with_modified_setup_criticality()
-    //cannot accurately account for all the pins that need to be updated.
-    //In this case, we pass in recompute=true to update all criticalities from scratch.
-    //
-    //If the criticality exponent has changed, we also need to update from scratch.
+/**
+ * @brief Updated the criticalities in the timing_place_crit_ data structure.
+ *
+ * If the criticalities are not updated immediately after each time we call
+ * timing_info->update(), then timing_info->pins_with_modified_setup_criticality()
+ * cannot accurately account for all the pins that need to be updated. In this case,
+ * `recompute_required` would be true, and we update all criticalities from scratch.
+ *
+ * If the criticality exponent has changed, we also need to update from scratch.
+ */
+void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_info, float crit_exponent) {
+    /* If update is not enabled, exit the routine. */
+    if (!update_enabled) {
+        /* re-computation is required on the next iteration */
+        recompute_required = true;
+        return;
+    }
 
-    //Determine what pins need updating
-    if (!recompute && crit_exponent == last_crit_exponent_ && INCR_UPDATE_CRITICALITIES) {
+    /* Determine what pins need updating */
+    if (!recompute_required && crit_exponent == last_crit_exponent_ && INCR_UPDATE_CRITICALITIES) {
         incr_update_criticalities(timing_info);
     } else {
         recompute_criticalities();
 
-        //Record new criticality exponent
+        /* Record new criticality exponent */
         last_crit_exponent_ = crit_exponent;
     }
 
@@ -50,7 +61,7 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
      * For every pin on every net (or, equivalently, for every tedge ending
      * in that pin), timing_place_crit_ = criticality^(criticality exponent) */
 
-    // Update the effected pins
+    /* Update the affected pins */
     for (ClusterPinId clb_pin : cluster_pins_with_modified_criticality_) {
         ClusterNetId clb_net = clb_nlist_.pin_net(clb_pin);
         int pin_index_in_net = clb_nlist_.pin_net_index(clb_pin);
@@ -62,19 +73,26 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
          * criticality by taking it to some power, crit_exponent (between 1 and 8 by default). */
         timing_place_crit_[clb_net][pin_index_in_net] = pow(clb_pin_crit, crit_exponent);
     }
+
+    /* Criticalities updated. In sync with timing info.   */
+    /* Can be incrementally updated on the next iteration */
+    recompute_required = false;
 }
+
+/**
+ * @brief Collect the cluster pins which need to be updated based on the latest timing
+ *        analysis so that incremental updates to criticalities can be performed.
+ *
+ * Note we use the set of pins reported by the *timing_info* as having modified
+ * criticality, rather than those marked as modified by the timing analyzer.
+ *
+ * Since timing_info uses shifted/relaxed criticality (which depends on max required
+ * time and worst case slacks), additional nodes may be modified when updating the
+ * atom pin criticalities.
+ */
 
 void PlacerCriticalities::incr_update_criticalities(const SetupTimingInfo* timing_info) {
     cluster_pins_with_modified_criticality_.clear();
-
-    //Collect the cluster pins which need to be updated based on the latest timing
-    //analysis
-    //
-    //Note we use the set of pins reported by the *timing_info* as having modified
-    //criticality, rather than those marked as modified by the timing analyzer.
-    //Since timing_info uses shifted/relaxed criticality (which depends on max
-    //required time and worst case slacks), additional nodes may be modified
-    //when updating the atom pin criticalities.
 
     for (AtomPinId atom_pin : timing_info->pins_with_modified_setup_criticality()) {
         ClusterPinId clb_pin = pin_lookup_.connected_clb_pin(atom_pin);
@@ -88,10 +106,15 @@ void PlacerCriticalities::incr_update_criticalities(const SetupTimingInfo* timin
     }
 }
 
+/**
+ * @brief Collect all the sink pins in the netlist and prepare them update.
+ *
+ * For the incremental version, see PlacerCriticalities::incr_update_criticalities().
+ */
 void PlacerCriticalities::recompute_criticalities() {
     cluster_pins_with_modified_criticality_.clear();
 
-    //Non-incremental: all sink pins need updating
+    /* Non-incremental: all sink pins need updating */
     for (ClusterNetId net_id : clb_nlist_.nets()) {
         for (ClusterPinId pin_id : clb_nlist_.net_sinks(net_id)) {
             cluster_pins_with_modified_criticality_.insert(pin_id);
@@ -99,35 +122,54 @@ void PlacerCriticalities::recompute_criticalities() {
     }
 }
 
+///@brief Override the criticality of a particular connection.
 void PlacerCriticalities::set_criticality(ClusterNetId net_id, int ipin, float val) {
     timing_place_crit_[net_id][ipin] = val;
 }
 
+/**
+ * @brief Returns the range of clustered netlist pins (i.e. ClusterPinIds) which
+ *        were modified by the last call to PlacerCriticalities::update_criticalities().
+ */
 PlacerCriticalities::pin_range PlacerCriticalities::pins_with_modified_criticality() const {
     return vtr::make_range(cluster_pins_with_modified_criticality_);
 }
 
 /**************************************/
 
-/* Allocates space for the timing_place_setup_slacks_ data structure */
+///@brief Allocates space for the timing_place_setup_slacks_ data structure.
 PlacerSetupSlacks::PlacerSetupSlacks(const ClusteredNetlist& clb_nlist, const ClusteredPinAtomPinsLookup& netlist_pin_lookup)
     : clb_nlist_(clb_nlist)
     , pin_lookup_(netlist_pin_lookup)
     , timing_place_setup_slacks_(make_net_pins_matrix(clb_nlist_, std::numeric_limits<float>::quiet_NaN())) {
 }
 
-void PlacerSetupSlacks::update_setup_slacks(const SetupTimingInfo* timing_info, bool recompute) {
-    //If the setup slacks are not updated immediately after each time we call
-    //timing_info->update(), then timing_info->pins_with_modified_setup_slack()
-    //cannot accurately account for all the pins that need to be updated.
-    //In this case, we pass in recompute=true to update all setup slacks from scratch.
-    if (!recompute && INCR_UPDATE_SETUP_SLACKS) {
+/**
+ * @brief Updated the setup slacks in the timing_place_setup_slacks_ data structure.
+ *
+ * If the setup slacks are not updated immediately after each time we call
+ * timing_info->update(), then timing_info->pins_with_modified_setup_slack()
+ * cannot accurately account for all the pins that need to be updated.
+ *
+ * In this case, `recompute_required` would be true, and we update all setup slacks
+ * from scratch.
+ */
+void PlacerSetupSlacks::update_setup_slacks(const SetupTimingInfo* timing_info) {
+    /* If update is not enabled, exit the routine. */
+    if (!update_enabled) {
+        /* re-computation is required on the next iteration */
+        recompute_required = true;
+        return;
+    }
+
+    /* Determine what pins need updating */
+    if (!recompute_required && INCR_UPDATE_SETUP_SLACKS) {
         incr_update_setup_slacks(timing_info);
     } else {
         recompute_setup_slacks();
     }
 
-    //Update the effected pins
+    /* Update the affected pins */
     for (ClusterPinId clb_pin : cluster_pins_with_modified_setup_slack_) {
         ClusterNetId clb_net = clb_nlist_.pin_net(clb_pin);
         int pin_index_in_net = clb_nlist_.pin_net_index(clb_pin);
@@ -136,15 +178,22 @@ void PlacerSetupSlacks::update_setup_slacks(const SetupTimingInfo* timing_info, 
 
         timing_place_setup_slacks_[clb_net][pin_index_in_net] = clb_pin_setup_slack;
     }
+
+    /* Setup slacks updated. In sync with timing info.     */
+    /* Can be incrementally updated on the next iteration. */
+    recompute_required = false;
 }
 
+/**
+ * @brief Collect the cluster pins which need to be updated based on the latest timing
+ *        analysis so that incremental updates to setup slacks can be performed.
+ *
+ * Note we use the set of pins reported by the *timing_info* as having modified
+ * setup slacks, rather than those marked as modified by the timing analyzer.
+ */
 void PlacerSetupSlacks::incr_update_setup_slacks(const SetupTimingInfo* timing_info) {
     cluster_pins_with_modified_setup_slack_.clear();
 
-    //Collect the cluster pins which need to be updated based on the latest timing analysis
-    //
-    //Note we use the set of pins reported by the *timing_info* as having modified
-    //setup slacks, rather than those marked as modified by the timing analyzer.
     for (AtomPinId atom_pin : timing_info->pins_with_modified_setup_slack()) {
         ClusterPinId clb_pin = pin_lookup_.connected_clb_pin(atom_pin);
 
@@ -157,10 +206,15 @@ void PlacerSetupSlacks::incr_update_setup_slacks(const SetupTimingInfo* timing_i
     }
 }
 
+/**
+ * @brief Collect all the sink pins in the netlist and prepare them update.
+ *
+ * For the incremental version, see PlacerSetupSlacks::incr_update_setup_slacks().
+ */
 void PlacerSetupSlacks::recompute_setup_slacks() {
     cluster_pins_with_modified_setup_slack_.clear();
 
-    //Non-incremental: all sink pins need updating
+    /* Non-incremental: all sink pins need updating */
     for (ClusterNetId net_id : clb_nlist_.nets()) {
         for (ClusterPinId pin_id : clb_nlist_.net_sinks(net_id)) {
             cluster_pins_with_modified_setup_slack_.insert(pin_id);
@@ -168,10 +222,15 @@ void PlacerSetupSlacks::recompute_setup_slacks() {
     }
 }
 
+///@brief Override the setup slack of a particular connection.
 void PlacerSetupSlacks::set_setup_slack(ClusterNetId net_id, int ipin, float val) {
     timing_place_setup_slacks_[net_id][ipin] = val;
 }
 
+/**
+ * @brief Returns the range of clustered netlist pins (i.e. ClusterPinIds)
+ *        which were modified by the last call to PlacerSetupSlacks::update_setup_slacks().
+ */
 PlacerSetupSlacks::pin_range PlacerSetupSlacks::pins_with_modified_setup_slack() const {
     return vtr::make_range(cluster_pins_with_modified_setup_slack_);
 }

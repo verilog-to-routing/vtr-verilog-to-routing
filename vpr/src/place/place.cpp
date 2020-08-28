@@ -119,16 +119,6 @@ struct t_annealing_state {
     int move_lim;             // Current move limit
 };
 
-struct t_placer_timing_update_mode {
-    /* Determines if slacks/criticalities need to be updated */
-    bool do_update_criticalities;
-    bool do_update_setup_slacks;
-
-    /* Determines if slacks/criticalities need to be recomputed from scratch */
-    bool do_recompute_criticalities;
-    bool do_recompute_setup_slacks;
-};
-
 constexpr float INVALID_DELAY = std::numeric_limits<float>::quiet_NaN();
 
 constexpr double MAX_INV_TIMING_COST = 1.e9;
@@ -334,7 +324,6 @@ static void reset_move_nets(int num_nets_affected);
 
 static e_move_result try_swap(float t,
                               float crit_exponent,
-                              t_placer_timing_update_mode* timing_update_mode,
                               t_placer_costs* costs,
                               t_placer_prev_inverse_costs* prev_inverse_costs,
                               float rlim,
@@ -363,7 +352,6 @@ static int check_block_placement_consistency();
 static int check_macro_placement_consistency();
 
 static float starting_t(float crit_exponent,
-                        t_placer_timing_update_mode* timing_update_mode,
                         t_placer_costs* costs,
                         t_placer_prev_inverse_costs* prev_inverse_costs,
                         t_annealing_sched annealing_sched,
@@ -459,7 +447,6 @@ static double get_net_wirelength_estimate(ClusterNetId net_id, t_bb* bbptr);
 static void free_try_swap_arrays();
 
 static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
-                                          t_placer_timing_update_mode* timing_update_mode,
                                           t_placer_costs* costs,
                                           t_placer_prev_inverse_costs* prev_inverse_costs,
                                           int num_connections,
@@ -477,17 +464,25 @@ static void initialize_timing_info(float crit_exponent,
                                    PlacerSetupSlacks* setup_slacks,
                                    ClusteredPinTimingInvalidator* pin_timing_invalidator,
                                    SetupTimingInfo* timing_info,
-                                   t_placer_timing_update_mode* timing_update_mode,
                                    t_placer_costs* costs);
 
-static void update_setup_slacks_and_criticalities(float crit_exponent,
-                                                  const PlaceDelayModel* delay_model,
-                                                  PlacerCriticalities* criticalities,
-                                                  PlacerSetupSlacks* setup_slacks,
-                                                  ClusteredPinTimingInvalidator* pin_timing_invalidator,
-                                                  SetupTimingInfo* timing_info,
-                                                  t_placer_timing_update_mode* timing_update_mode,
-                                                  t_placer_costs* costs);
+static void update_timing_classes(float crit_exponent,
+                                  SetupTimingInfo* timing_info,
+                                  PlacerCriticalities* criticalities,
+                                  PlacerSetupSlacks* setup_slacks,
+                                  ClusteredPinTimingInvalidator* pin_timing_invalidator);
+
+static void update_timing_cost(const PlaceDelayModel* delay_model,
+                               const PlacerCriticalities* criticalities,
+                               double* timing_cost);
+
+static void perform_full_timing_update(float crit_exponent,
+                                       const PlaceDelayModel* delay_model,
+                                       PlacerCriticalities* criticalities,
+                                       PlacerSetupSlacks* setup_slacks,
+                                       ClusteredPinTimingInvalidator* pin_timing_invalidator,
+                                       SetupTimingInfo* timing_info,
+                                       t_placer_costs* costs);
 
 static void placement_inner_loop(float t,
                                  int temp_num,
@@ -497,7 +492,6 @@ static void placement_inner_loop(float t,
                                  float crit_exponent,
                                  int inner_recompute_limit,
                                  t_placer_statistics* stats,
-                                 t_placer_timing_update_mode* timing_update_mode,
                                  t_placer_costs* costs,
                                  t_placer_prev_inverse_costs* prev_inverse_costs,
                                  int* moves_since_cost_recompute,
@@ -587,7 +581,6 @@ void try_place(const t_placer_opts& placer_opts,
     std::unique_ptr<ClusteredPinTimingInvalidator> pin_timing_invalidator;
 
     t_pl_blocks_to_be_moved blocks_affected(cluster_ctx.clb_nlist.blocks().size());
-    t_placer_timing_update_mode timing_update_mode;
 
     /* Allocated here because it goes into timing critical code where each memory allocation is expensive */
     IntraLbPbPinLookup pb_gpin_lookup(device_ctx.logical_block_types);
@@ -667,7 +660,6 @@ void try_place(const t_placer_opts& placer_opts,
                                placer_setup_slacks.get(),
                                pin_timing_invalidator.get(),
                                timing_info.get(),
-                               &timing_update_mode,
                                &costs);
 
         critical_path = timing_info->least_slack_critical_path();
@@ -781,7 +773,7 @@ void try_place(const t_placer_opts& placer_opts,
 
     first_rlim = (float)max(device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
 
-    float first_t = starting_t(first_crit_exponent, &timing_update_mode,
+    float first_t = starting_t(first_crit_exponent,
                                &costs, &prev_inverse_costs,
                                annealing_sched, move_lim, first_rlim,
                                place_delay_model.get(),
@@ -816,7 +808,7 @@ void try_place(const t_placer_opts& placer_opts,
             costs.cost = 1;
         }
 
-        outer_loop_update_timing_info(placer_opts, &timing_update_mode,
+        outer_loop_update_timing_info(placer_opts,
                                       &costs, &prev_inverse_costs,
                                       num_connections,
                                       state.crit_exponent,
@@ -829,7 +821,7 @@ void try_place(const t_placer_opts& placer_opts,
 
         placement_inner_loop(state.t, num_temps, state.rlim, placer_opts,
                              state.move_lim, state.crit_exponent, inner_recompute_limit, &stats,
-                             &timing_update_mode, &costs, &prev_inverse_costs,
+                             &costs, &prev_inverse_costs,
                              &moves_since_cost_recompute,
                              pin_timing_invalidator.get(),
                              place_delay_model.get(),
@@ -875,7 +867,7 @@ void try_place(const t_placer_opts& placer_opts,
     { /* Quench */
         vtr::ScopedFinishTimer temperature_timer("Placement Quench");
 
-        outer_loop_update_timing_info(placer_opts, &timing_update_mode,
+        outer_loop_update_timing_info(placer_opts,
                                       &costs, &prev_inverse_costs,
                                       num_connections,
                                       state.crit_exponent,
@@ -897,7 +889,7 @@ void try_place(const t_placer_opts& placer_opts,
          * which reduce the cost of the placement */
         placement_inner_loop(state.t, num_temps, state.rlim, placer_opts,
                              move_lim, state.crit_exponent, quench_recompute_limit, &stats,
-                             &timing_update_mode, &costs, &prev_inverse_costs,
+                             &costs, &prev_inverse_costs,
                              &moves_since_cost_recompute,
                              pin_timing_invalidator.get(),
                              place_delay_model.get(),
@@ -953,20 +945,13 @@ void try_place(const t_placer_opts& placer_opts,
     if (placer_opts.place_algorithm == PATH_TIMING_DRIVEN_PLACE) {
         //Final timing estimate
         VTR_ASSERT(timing_info);
-
-        //Update timing and costs
-        timing_update_mode.do_update_criticalities = true;
-        timing_update_mode.do_update_setup_slacks = true;
-        update_setup_slacks_and_criticalities(state.crit_exponent,
-                                              place_delay_model.get(),
-                                              placer_criticalities.get(),
-                                              placer_setup_slacks.get(),
-                                              pin_timing_invalidator.get(),
-                                              timing_info.get(),
-                                              &timing_update_mode,
-                                              &costs);
-
-        commit_setup_slacks(placer_setup_slacks.get());
+        perform_full_timing_update(state.crit_exponent,
+                                   place_delay_model.get(),
+                                   placer_criticalities.get(),
+                                   placer_setup_slacks.get(),
+                                   pin_timing_invalidator.get(),
+                                   timing_info.get(),
+                                   &costs);
 
         critical_path = timing_info->least_slack_critical_path();
 
@@ -1021,7 +1006,6 @@ void try_place(const t_placer_opts& placer_opts,
 
 /* Function to update the setup slacks and criticalities before the inner loop of the annealing/quench */
 static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
-                                          t_placer_timing_update_mode* timing_update_mode,
                                           t_placer_costs* costs,
                                           t_placer_prev_inverse_costs* prev_inverse_costs,
                                           int num_connections,
@@ -1046,20 +1030,14 @@ static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
         num_connections = std::max(num_connections, 1); //Avoid division by zero
         VTR_ASSERT(num_connections > 0);
 
-        //Update all timing information
-        timing_update_mode->do_update_criticalities = true;
-        timing_update_mode->do_update_setup_slacks = true;
-        update_setup_slacks_and_criticalities(crit_exponent,
-                                              delay_model,
-                                              criticalities,
-                                              setup_slacks,
-                                              pin_timing_invalidator,
-                                              timing_info,
-                                              timing_update_mode,
-                                              costs);
-
-        //Always commit the setup slacks when they are updated
-        commit_setup_slacks(setup_slacks);
+        //Update all timing related classes
+        perform_full_timing_update(crit_exponent,
+                                   delay_model,
+                                   criticalities,
+                                   setup_slacks,
+                                   pin_timing_invalidator,
+                                   timing_info,
+                                   costs);
 
         *outer_crit_iter_count = 0;
     }
@@ -1078,17 +1056,9 @@ static void initialize_timing_info(float crit_exponent,
                                    PlacerSetupSlacks* setup_slacks,
                                    ClusteredPinTimingInvalidator* pin_timing_invalidator,
                                    SetupTimingInfo* timing_info,
-                                   t_placer_timing_update_mode* timing_update_mode,
                                    t_placer_costs* costs) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& clb_nlist = cluster_ctx.clb_nlist;
-
-    //Initialize the timing update mode. Update both
-    //setup slacks and criticalities from scratch
-    timing_update_mode->do_update_criticalities = true;
-    timing_update_mode->do_update_setup_slacks = true;
-    timing_update_mode->do_recompute_criticalities = true;
-    timing_update_mode->do_recompute_setup_slacks = true;
 
     //As a safety measure, for the first time update,
     //invalidate all timing edges via the pin invalidator
@@ -1099,62 +1069,116 @@ static void initialize_timing_info(float crit_exponent,
         }
     }
 
-    //Perform timing info update
-    update_setup_slacks_and_criticalities(crit_exponent,
-                                          delay_model,
-                                          criticalities,
-                                          setup_slacks,
-                                          pin_timing_invalidator,
-                                          timing_info,
-                                          timing_update_mode,
-                                          costs);
-
-    //Initialize the data structure that stores committed placer setup slacks
-    commit_setup_slacks(setup_slacks);
+    //Perform first time update for all timing related classes
+    perform_full_timing_update(crit_exponent,
+                               delay_model,
+                               criticalities,
+                               setup_slacks,
+                               pin_timing_invalidator,
+                               timing_info,
+                               costs);
 
     //Don't warn again about unconstrained nodes again during placement
     timing_info->set_warn_unconstrained(false);
 }
 
-//Update timing information based on current placement by running STA.
-//Record the new slack information as well as calculate the updated
-//criticalities and timing costs (based on the new setup slacks)
-static void update_setup_slacks_and_criticalities(float crit_exponent,
-                                                  const PlaceDelayModel* delay_model,
-                                                  PlacerCriticalities* criticalities,
-                                                  PlacerSetupSlacks* setup_slacks,
-                                                  ClusteredPinTimingInvalidator* pin_timing_invalidator,
-                                                  SetupTimingInfo* timing_info,
-                                                  t_placer_timing_update_mode* timing_update_mode,
-                                                  t_placer_costs* costs) {
-    //Run STA to update slacks and adjusted/relaxed criticalities
+/**
+ * @brief Update timing information based on the current block positions.
+ *
+ * Run STA to update the timing info class.
+ *
+ * Update the values stored in PlacerCriticalities and PlacerSetupSlacks
+ * if they are enabled to update. To enable updating, call their respective
+ * enable_update() method. See their documentation for more detailed info.
+ *
+ * If criticalities are updated, the timing driven costs should be updated
+ * as well by calling update_timing_cost(). Calling this routine to update
+ * timing_cost will produce round-off error in the long run due to its
+ * incremental nature, so the timing cost value will be recomputed once in
+ * a while, via other timing driven routines.
+ *
+ * If setup slacks are updated, then normally they should be committed to
+ * `connection_setup_slack` via commit_setup_slacks() routine. However,
+ * sometimes new setup slack values are not committed immediately if we
+ * expect to revert the current timing update in the near future, or if
+ * we wish to compare the new slack values to the original ones.
+ *
+ * All the pins with changed connection delays have already been added into
+ * the ClusteredPinTimingInvalidator to allow incremental STA update. These
+ * changed connection delays are a direct result of moved blocks in try_swap().
+ */
+static void update_timing_classes(float crit_exponent,
+                                  SetupTimingInfo* timing_info,
+                                  PlacerCriticalities* criticalities,
+                                  PlacerSetupSlacks* setup_slacks,
+                                  ClusteredPinTimingInvalidator* pin_timing_invalidator) {
+    /* Run STA to update slacks and adjusted/relaxed criticalities. */
     timing_info->update();
 
-    if (timing_update_mode->do_update_setup_slacks) {
-        //Update placer's setup slacks
-        setup_slacks->update_setup_slacks(timing_info, timing_update_mode->do_recompute_setup_slacks);
-    }
+    /* Update the placer's criticalities (e.g. sharpen with crit_exponent). */
+    criticalities->update_criticalities(timing_info, crit_exponent);
 
-    if (timing_update_mode->do_update_criticalities) {
-        //Update placer's criticalities (e.g. sharpen with crit_exponent)
-        criticalities->update_criticalities(timing_info, crit_exponent, timing_update_mode->do_recompute_criticalities);
+    /* Update the placer's raw setup slacks. */
+    setup_slacks->update_setup_slacks(timing_info);
 
-        //Update connection, net and total timing costs based on new criticalities
-#ifdef INCR_COMP_TD_COSTS
-        update_td_costs(delay_model, *criticalities, &costs->timing_cost);
-#else
-        comp_td_costs(delay_model, *criticalities, &costs->timing_cost);
-#endif
-    }
-
-    //Setup slacks and criticalities need to be in sync with the timing_info.
-    //if they are to be incrementally updated on the next iteration.
-    //Otherwise, a re-computation for all clb sink pins is required.
-    timing_update_mode->do_recompute_setup_slacks = !timing_update_mode->do_update_setup_slacks;
-    timing_update_mode->do_recompute_criticalities = !timing_update_mode->do_update_criticalities;
-
-    //Clear invalidation state
+    /* Clear invalidation state. */
     pin_timing_invalidator->reset();
+}
+
+/**
+ * @brief Update the timing driven (td) costs.
+ *
+ * This routine either uses incremental update_td_costs(), or updates
+ * from scratch using comp_td_costs(). By default, it is incremental
+ * by iterating over the set of clustered netlist connections/pins
+ * returned by PlacerCriticalities::pins_with_modified_criticality().
+ *
+ * Hence, this routine should always be called when PlacerCriticalites
+ * is enabled to be updated in update_timing_classes(). Otherwise, the
+ * incremental method will no longer be correct.
+ */
+static void update_timing_cost(const PlaceDelayModel* delay_model,
+                               const PlacerCriticalities* criticalities,
+                               double* timing_cost) {
+#ifdef INCR_COMP_TD_COSTS
+    update_td_costs(delay_model, *criticalities, timing_cost);
+#else
+    comp_td_costs(delay_model, *criticalities, timing_cost);
+#endif
+}
+
+/**
+ * @brief Updates every timing related classes, variables and structures.
+ *
+ * This routine exists to reduce code duplication, as the placer routines
+ * often require updating every timing related stuff.
+ *
+ * Updates: SetupTimingInfo, PlacerCriticalities, PlacerSetupSlacks,
+ *          timing_cost, connection_setup_slack.
+ */
+static void perform_full_timing_update(float crit_exponent,
+                                       const PlaceDelayModel* delay_model,
+                                       PlacerCriticalities* criticalities,
+                                       PlacerSetupSlacks* setup_slacks,
+                                       ClusteredPinTimingInvalidator* pin_timing_invalidator,
+                                       SetupTimingInfo* timing_info,
+                                       t_placer_costs* costs) {
+    /* Update all timing related classes. */
+    criticalities->enable_update();
+    setup_slacks->enable_update();
+    update_timing_classes(crit_exponent,
+                          timing_info,
+                          criticalities,
+                          setup_slacks,
+                          pin_timing_invalidator);
+
+    /* Update the timing cost with new connection criticalities. */
+    update_timing_cost(delay_model,
+                       criticalities,
+                       &costs->timing_cost);
+
+    /* Commit the setup slacks since they are updated. */
+    commit_setup_slacks(setup_slacks);
 }
 
 /* Function which contains the inner loop of the simulated annealing */
@@ -1166,7 +1190,6 @@ static void placement_inner_loop(float t,
                                  float crit_exponent,
                                  int inner_recompute_limit,
                                  t_placer_statistics* stats,
-                                 t_placer_timing_update_mode* timing_update_mode,
                                  t_placer_costs* costs,
                                  t_placer_prev_inverse_costs* prev_inverse_costs,
                                  int* moves_since_cost_recompute,
@@ -1194,7 +1217,6 @@ static void placement_inner_loop(float t,
     for (inner_iter = 0; inner_iter < move_lim; inner_iter++) {
         e_move_result swap_result = try_swap(t,
                                              crit_exponent,
-                                             timing_update_mode,
                                              costs,
                                              prev_inverse_costs,
                                              rlim,
@@ -1234,22 +1256,14 @@ static void placement_inner_loop(float t,
 #ifdef VERBOSE
                 VTR_LOG("Inner loop recompute criticalities\n");
 #endif
-                /* Using the delays in connection_delay, do a timing analysis to update slacks and
-                 * criticalities and update the timing cost since they will change.
-                 */
-                timing_update_mode->do_update_criticalities = true;
-                timing_update_mode->do_update_setup_slacks = true;
-                update_setup_slacks_and_criticalities(crit_exponent,
-                                                      delay_model,
-                                                      criticalities,
-                                                      setup_slacks,
-                                                      pin_timing_invalidator,
-                                                      timing_info,
-                                                      timing_update_mode,
-                                                      costs);
-
-                //Always commit the setup slacks when they are updated
-                commit_setup_slacks(setup_slacks);
+                //Update all timing related classes
+                perform_full_timing_update(crit_exponent,
+                                           delay_model,
+                                           criticalities,
+                                           setup_slacks,
+                                           pin_timing_invalidator,
+                                           timing_info,
+                                           costs);
             }
             inner_crit_iter_count++;
         }
@@ -1427,7 +1441,6 @@ static bool update_annealing_state(t_annealing_state* state,
 }
 
 static float starting_t(float crit_exponent,
-                        t_placer_timing_update_mode* timing_update_mode,
                         t_placer_costs* costs,
                         t_placer_prev_inverse_costs* prev_inverse_costs,
                         t_annealing_sched annealing_sched,
@@ -1464,7 +1477,6 @@ static float starting_t(float crit_exponent,
         //Will not deploy setup slack analysis, so omit crit_exponenet and setup_slack
         e_move_result swap_result = try_swap(t,
                                              crit_exponent,
-                                             timing_update_mode,
                                              costs,
                                              prev_inverse_costs,
                                              rlim,
@@ -1540,7 +1552,6 @@ static void reset_move_nets(int num_nets_affected) {
 
 static e_move_result try_swap(float t,
                               float crit_exponent,
-                              t_placer_timing_update_mode* timing_update_mode,
                               t_placer_costs* costs,
                               t_placer_prev_inverse_costs* prev_inverse_costs,
                               float rlim,
@@ -1646,20 +1657,17 @@ static e_move_result try_swap(float t,
             //we only update those values and keep the criticalities stale
             //so as not to interfere with the original timing driven algorithm.
             //
-            //Note: the timing info must be called after applying block moves
+            //Note: the timing info must be updated after applying block moves
             //and committing the timing driven delays and costs.
             //If we wish to revert this timing update due to move rejection,
             //we need to revert block moves and restore the timing values.
-            timing_update_mode->do_update_criticalities = false;
-            timing_update_mode->do_update_setup_slacks = true;
-            update_setup_slacks_and_criticalities(crit_exponent,
-                                                  delay_model,
-                                                  criticalities,
-                                                  setup_slacks,
-                                                  pin_timing_invalidator,
-                                                  timing_info,
-                                                  timing_update_mode,
-                                                  costs);
+            criticalities->disable_update();
+            setup_slacks->enable_update();
+            update_timing_classes(crit_exponent,
+                                  timing_info,
+                                  criticalities,
+                                  setup_slacks,
+                                  pin_timing_invalidator);
 
             /* Get the setup slack analysis cost */
             //TODO: calculate a weighted average of the slack cost and wiring cost
@@ -1736,14 +1744,11 @@ static e_move_result try_swap(float t,
                                                       timing_info);
 
                 /* Revert the timing update */
-                update_setup_slacks_and_criticalities(crit_exponent,
-                                                      delay_model,
-                                                      criticalities,
-                                                      setup_slacks,
-                                                      pin_timing_invalidator,
-                                                      timing_info,
-                                                      timing_update_mode,
-                                                      costs);
+                update_timing_classes(crit_exponent,
+                                      timing_info,
+                                      criticalities,
+                                      setup_slacks,
+                                      pin_timing_invalidator);
 
                 VTR_ASSERT_SAFE_MSG(
                     verify_connection_setup_slacks(setup_slacks),
@@ -1950,6 +1955,24 @@ static void find_affected_sink_pins(const t_pl_blocks_to_be_moved& blocks_affect
     }
 }
 
+/**
+ * @brief Check if the setup slack has gotten better or worse due to block swap.
+ *
+ * Get all the modified slack values via the PlacerSetupSlacks class, and compare
+ * then with the original values at these connections. Sort them and compare them
+ * one by one, and return the difference of the first different pair.
+ *
+ * If the new slack value is larger(better), than return a negative value so that
+ * the move will be accepted. If the new slack value is smaller(worse), return a
+ * positive value so that the move will be rejected.
+ *
+ * If no slack values have changed, then return an arbitrary positive number. A
+ * move resulting in no change in the slack values should probably be unnecessary.
+ *
+ * The sorting is need to prevent in the unlikely circumstances that a bad slack
+ * value suddenly got very good due to the block move, while a good slack value
+ * got very bad, perhaps even worse than the original worse slack value.
+ */
 static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& clb_nlist = cluster_ctx.clb_nlist;
@@ -1966,7 +1989,7 @@ static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks) {
         proposed_setup_slacks.push_back(setup_slacks->setup_slack(net_id, ipin));
     }
 
-    //Sort in ascending order, from worse slack value to best
+    //Sort in ascending order, from the worse slack value to the best
     std::sort(original_setup_slacks.begin(), original_setup_slacks.end());
     std::sort(proposed_setup_slacks.begin(), proposed_setup_slacks.end());
 
@@ -1980,8 +2003,8 @@ static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks) {
         }
     }
 
-    //If all slack values are identical(or no modified slack values),
-    //reject this move by returning an arbitrary positive number as cost
+    //If all slack values are identical (or no modified slack values),
+    //reject this move by returning an arbitrary positive number as cost.
     return 1;
 }
 
@@ -2086,10 +2109,23 @@ static void comp_td_connection_delays(const PlaceDelayModel* delay_model) {
     }
 }
 
-//Commit all the setup slack values from the PlacerSetupSlacks class.
-//This incremental routine will be correct if and only if it is called
-//immediately after each time update_setup_slacks_and_criticalities
-//updates the setup slacks (i.e. do_update_setup_slacks = true)
+/**
+ * @brief Commit all the setup slack values from the PlacerSetupSlacks
+ *        class to `connection_setup_slack`.
+ *
+ * This routine is incremental since it relies on the pins_with_modified_setup_slack()
+ * to detect which pins need to be updated and which pins do not.
+ *
+ * Therefore, it is assumed that this routine is always called immediately after
+ * each time update_timing_classes() is called with setup slack update enabled.
+ * Otherwise, pins_with_modified_setup_slack() cannot accurately account for all
+ * the pins that have their setup slacks changed, making this routine incorrect.
+ *
+ * Currently, the only exception to the rule above is when setup slack analysis is used
+ * during the placement quench. The new setup slacks might be either accepted or
+ * rejected, so for efficiency reasons, this routine is not called if the slacks are
+ * rejected in the end. For more detailed info, see the try_swap() routine.
+ */
 static void commit_setup_slacks(const PlacerSetupSlacks* setup_slacks) {
     const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
@@ -2103,6 +2139,17 @@ static void commit_setup_slacks(const PlacerSetupSlacks* setup_slacks) {
     }
 }
 
+/**
+ * @brief Verify that the values in `connection_setup_slack` matches PlacerSetupSlacks.
+ *
+ * Return true if all connection values are identical. Otherwise, return false.
+ *
+ * Currently, this routine is called to check if the timing update has been successfully
+ * reverted after a proposed move is rejected when applying setup slack analysis during
+ * the placement quench. If successful, the setup slacks in PlacerSetupSlacks should be
+ * the same as the values in `connection_setup_slack` without running commit_setup_slacks().
+ * For more detailed info, see the try_swap() routine.
+ */
 static bool verify_connection_setup_slacks(const PlacerSetupSlacks* setup_slacks) {
     const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
@@ -2114,7 +2161,6 @@ static bool verify_connection_setup_slacks(const PlacerSetupSlacks* setup_slacks
             }
         }
     }
-
     return true;
 }
 
