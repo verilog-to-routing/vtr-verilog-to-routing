@@ -1426,7 +1426,17 @@ static e_move_result try_swap(float t,
         rlim = std::numeric_limits<float>::infinity();
     }
 
-    bool manual_move = false;
+    bool manual_move = get_manual_move_flag(); //whether the manual move info has been enabled or not
+    ManualMoveInfo* manual_move_info;
+
+    if (manual_move) {
+        //pops up the manual move window for the user to input set their move
+        manual_move_info_from_user_and_open_window(manual_move_info);
+        manual_move_info = get_manual_move_info();
+        //sends info to the move generator class
+        mmg_get_manual_move_info(*manual_move_info);
+    }
+
     //Generate a new move (perturbation) used to explore the space of possible placements
     e_create_move create_move_outcome;
     if (manual_move)
