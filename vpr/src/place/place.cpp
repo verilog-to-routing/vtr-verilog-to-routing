@@ -36,7 +36,7 @@
 #include "read_place.h"
 
 #include "uniform_move_generator.h"
-#include "manual_move_generator"
+#include "manual_move_generator.h"
 
 #include "PlacementDelayCalculator.h"
 #include "VprTimingGraphResolver.h"
@@ -557,6 +557,7 @@ void try_place(const t_placer_opts& placer_opts,
     std::shared_ptr<PlacementDelayCalculator> placement_delay_calc;
     std::unique_ptr<PlaceDelayModel> place_delay_model;
     std::unique_ptr<MoveGenerator> move_generator;
+    std::unique_ptr<ManualMoveGenerator> manual_move_generator;
     std::unique_ptr<PlacerCriticalities> placer_criticalities;
     std::unique_ptr<ClusteredPinTimingInvalidator> pin_timing_invalidator;
 
@@ -581,6 +582,7 @@ void try_place(const t_placer_opts& placer_opts,
     }
 
     move_generator = std::make_unique<UniformMoveGenerator>();
+    manual_move_generator = std::make_unique<ManualMoveGenerator>();
 
     width_fac = placer_opts.place_chan_width;
 
@@ -1442,8 +1444,13 @@ static e_move_result try_swap(float t,
         rlim = std::numeric_limits<float>::infinity();
     }
 
+    bool manual_move = false;
     //Generate a new move (perturbation) used to explore the space of possible placements
-    e_create_move create_move_outcome = move_generator.propose_move(blocks_affected, rlim);
+    e_create_move create_move_outcome;
+    if (manual_move)
+        create_move_outcome = manual_move_generator.propose_move(blocks_affected, rlim);
+    else
+        create_move_outcome = move_generator.propose_move(blocks_affected, rlim);
 
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
 
