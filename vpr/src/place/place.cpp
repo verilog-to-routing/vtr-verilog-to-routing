@@ -36,6 +36,7 @@
 #include "read_place.h"
 
 #include "uniform_move_generator.h"
+#include "manual_move_generator"
 
 #include "PlacementDelayCalculator.h"
 #include "VprTimingGraphResolver.h"
@@ -336,6 +337,7 @@ static e_move_result try_swap(float t,
                               t_placer_prev_inverse_costs* prev_inverse_costs,
                               float rlim,
                               MoveGenerator& move_generator,
+                              ManualMoveGenerator& manual_move_generator,
                               TimingInfo* timing_info,
                               ClusteredPinTimingInvalidator* pin_timing_invalidator,
                               t_pl_blocks_to_be_moved& blocks_affected,
@@ -367,6 +369,7 @@ static float starting_t(t_placer_costs* costs,
                         const PlacerCriticalities* criticalities,
                         TimingInfo* timing_info,
                         MoveGenerator& move_generator,
+                        ManualMoveGenerator& manual_move_generator,
                         ClusteredPinTimingInvalidator* pin_timing_invalidator,
                         t_pl_blocks_to_be_moved& blocks_affected,
                         const t_placer_opts& placer_opts);
@@ -475,6 +478,7 @@ static void placement_inner_loop(float t,
                                  const PlaceDelayModel* delay_model,
                                  PlacerCriticalities* criticalities,
                                  MoveGenerator& move_generator,
+                                 ManualMoveGenerator& manual_move_generator,
                                  t_pl_blocks_to_be_moved& blocks_affected,
                                  SetupTimingInfo* timing_info);
 
@@ -754,6 +758,7 @@ void try_place(const t_placer_opts& placer_opts,
                                placer_criticalities.get(),
                                timing_info.get(),
                                *move_generator,
+                               *manual_move_generator,
                                pin_timing_invalidator.get(),
                                blocks_affected,
                                placer_opts);
@@ -799,6 +804,7 @@ void try_place(const t_placer_opts& placer_opts,
                              place_delay_model.get(),
                              placer_criticalities.get(),
                              *move_generator,
+                             *manual_move_generator,
                              blocks_affected,
                              timing_info.get());
 
@@ -860,6 +866,7 @@ void try_place(const t_placer_opts& placer_opts,
                              place_delay_model.get(),
                              placer_criticalities.get(),
                              *move_generator,
+                             *manual_move_generator,
                              blocks_affected,
                              timing_info.get());
 
@@ -1051,6 +1058,7 @@ static void placement_inner_loop(float t,
                                  const PlaceDelayModel* delay_model,
                                  PlacerCriticalities* criticalities,
                                  MoveGenerator& move_generator,
+                                 ManualMoveGenerator& manual_move_generator,
                                  t_pl_blocks_to_be_moved& blocks_affected,
                                  SetupTimingInfo* timing_info) {
     int inner_crit_iter_count, inner_iter;
@@ -1069,6 +1077,7 @@ static void placement_inner_loop(float t,
     for (inner_iter = 0; inner_iter < move_lim; inner_iter++) {
         e_move_result swap_result = try_swap(t, costs, prev_inverse_costs, rlim,
                                              move_generator,
+                                             manual_move_generator,
                                              timing_info,
                                              pin_timing_invalidator,
                                              blocks_affected,
@@ -1302,6 +1311,7 @@ static float starting_t(t_placer_costs* costs,
                         const PlacerCriticalities* criticalities,
                         TimingInfo* timing_info,
                         MoveGenerator& move_generator,
+                        ManualMoveGenerator& manual_move_generator,
                         ClusteredPinTimingInvalidator* pin_timing_invalidator,
                         t_pl_blocks_to_be_moved& blocks_affected,
                         const t_placer_opts& placer_opts) {
@@ -1326,6 +1336,7 @@ static float starting_t(t_placer_costs* costs,
     for (i = 0; i < move_lim; i++) {
         e_move_result swap_result = try_swap(HUGE_POSITIVE_FLOAT, costs, prev_inverse_costs, rlim,
                                              move_generator,
+                                             manual_move_generator,
                                              timing_info,
                                              pin_timing_invalidator,
                                              blocks_affected,
@@ -1399,6 +1410,7 @@ static e_move_result try_swap(float t,
                               t_placer_prev_inverse_costs* prev_inverse_costs,
                               float rlim,
                               MoveGenerator& move_generator,
+                              ManualMoveGenerator& manual_move_generator,
                               TimingInfo* timing_info,
                               ClusteredPinTimingInvalidator* pin_timing_invalidator,
                               t_pl_blocks_to_be_moved& blocks_affected,
