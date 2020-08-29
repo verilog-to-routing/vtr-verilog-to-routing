@@ -12,8 +12,8 @@ import distutils.spawn as distutils_spawn
 import argparse
 import csv
 from collections import OrderedDict
-
-from vtr.error import VtrError, InspectError, CommandError
+import vtr.error
+from vtr.error import VtrError, CommandError
 
 VERBOSITY_CHOICES = range(5)
 
@@ -462,11 +462,13 @@ def load_config_lines(filepath, allow_includes=True):
                             include_file_abs, allow_includes=allow_includes
                         )
                     else:
-                        raise InspectError("@include not allowed in this file", filepath)
+                        raise vtr.error.InspectError(
+                            "@include not allowed in this file", filepath
+                        )
                 else:
                     config_lines.append(line)
     except IOError as error:
-        raise InspectError("Error opening config file ({})".format(error)) from error
+        raise vtr.error.InspectError("Error opening config file ({})".format(error))
 
     return config_lines
 

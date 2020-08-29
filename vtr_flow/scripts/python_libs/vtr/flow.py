@@ -31,24 +31,26 @@ class VtrStage(Enum):
 
 # pylint: disable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements
 def run(
-    architecture_file,
-    circuit_file,
-    power_tech_file=None,
-    start_stage=VtrStage.odin,
-    end_stage=VtrStage.vpr,
-    command_runner=vtr.CommandRunner(),
-    temp_dir=Path("./temp"),
-    odin_args=None,
-    abc_args=None,
-    vpr_args=None,
-    keep_intermediate_files=True,
-    keep_result_files=True,
-    min_hard_mult_size=3,
-    min_hard_adder_size=1,
-    check_equivalent=False,
-    check_incremental_sta_consistency=False,
-    use_old_abc_script=False,
-    relax_w_factor=1.3,
+        architecture_file,
+        circuit_file,
+        power_tech_file=None,
+        start_stage=VtrStage.odin,
+        end_stage=VtrStage.vpr,
+        command_runner=vtr.CommandRunner(),
+        temp_dir=Path("./temp"),
+        odin_args=None,
+        abc_args=None,
+        vpr_args=None,
+        keep_intermediate_files=True,
+        keep_result_files=True,
+        min_hard_mult_size=3,
+        min_hard_adder_size=1,
+        check_equivalent=False,
+        check_incremental_sta_consistency=False,
+        use_old_abc_script=False,
+        relax_w_factor=1.3,
+        check_route = False,
+        check_place = False,
 ):
     """
     Runs the VTR CAD flow to map the specified circuit_file onto the target architecture_file
@@ -118,6 +120,11 @@ def run(
         check_incremental_sta_consistency :
             Do a second-run of the incremental analysis to compare the result files
 
+        check_route:
+            Check first placement and routing by enabling VPR analysis
+
+        check_place:
+            Route existing placement by enabling VPR routing.
     """
 
     #
@@ -236,7 +243,7 @@ def run(
         # Copy the input netlist for input to vpr
         shutil.copyfile(str(next_stage_netlist), str(pre_vpr_netlist))
         route_fixed_w = "route_chan_width" in vpr_args
-        if ("route" in vpr_args or "place" in vpr_args) and not route_fixed_w:
+        if (check_route or check_place) and not route_fixed_w:
             vpr_args["route_chan_width"] = 300
             route_fixed_w = True
 
@@ -245,16 +252,8 @@ def run(
             do_second_run = False
             second_run_args = vpr_args
 
-            if "write_rr_graph" in vpr_args:
+            if "write_rr_graph" in vpr_args or  "analysis" in vpr_args or "route" in vpr_args:
                 do_second_run = True
-
-            if "analysis" in vpr_args:
-                do_second_run = True
-                del vpr_args["analysis"]
-
-            if "route" in vpr_args:
-                do_second_run = True
-                del vpr_args["route"]
 
             vtr.vpr.run(
                 architecture_copy,
@@ -272,6 +271,10 @@ def run(
                     if "write_rr_graph" in second_run_args
                     else ".xml"
                 )
+                if check_place:
+                    second_run_args["route"] = True
+                if check_route:
+                    second_run_args["analysis"] = True
                 vtr.vpr.run_second_time(
                     architecture_copy,
                     pre_vpr_netlist,
