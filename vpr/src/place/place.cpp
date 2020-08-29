@@ -510,6 +510,9 @@ void transform_blocks_affected(t_pl_blocks_to_be_moved blocksAffected);
 static void init_annealing_state(t_annealing_state* state, const t_annealing_sched& annealing_sched, float t, float rlim, int move_lim_max, float crit_exponent);
 void stop_placement_and_check_breakopints(t_pl_blocks_to_be_moved& blocks_affected, bool& f_place_debug, e_move_result move_outcome, double delta_c, double bb_delta_c, double timing_delta_c);
 
+void manual_move_info_from_user_and_open_window(ManualMoveInfo* /*manual_move_info*/);
+void update_manual_move_costs_and_open_window(ManualMoveInfo* manual_move_info, e_move_result& move_outcome, double delta_c, double bb_delta_c, double timing_delta_c);
+
 /*****************************************************************************/
 void try_place(const t_placer_opts& placer_opts,
                t_annealing_sched annealing_sched,
@@ -3076,3 +3079,23 @@ void stop_placement_and_check_breakopints(t_pl_blocks_to_be_moved& blocks_affect
     }
 }
 #endif
+
+/** pops up the manual move window for the user to input set their move **/
+void manual_move_info_from_user_and_open_window(ManualMoveInfo* /*manual_move_info*/) {
+    manual_move_generator_window("");
+    update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
+    //manual_move_info = get_manual_move_info();
+    //sends info to the move generator class
+    //mmg_get_manual_move_info(*manual_move_info);
+}
+
+/** updates all the costs in the manual_move_info variable and open cost summary window **/
+void update_manual_move_costs_and_open_window(ManualMoveInfo* manual_move_info, e_move_result& move_outcome, double delta_c, double bb_delta_c, double timing_delta_c) {
+    manual_move_info->delta_c = delta_c;
+    manual_move_info->bb_delta_c = bb_delta_c;
+    manual_move_info->timing_delta_c = timing_delta_c;
+    manual_move_info->placer_move_outcome = move_outcome;
+    cost_summary_window();
+    update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
+    move_outcome = manual_move_info->user_move_outcome;
+}
