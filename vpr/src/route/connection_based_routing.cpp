@@ -36,7 +36,7 @@ Connection_based_routing_resources::Connection_based_routing_resources()
         auto& net_lower_bound_connection_delay = lower_bound_connection_delay[net_id];
         auto& net_forcible_reroute_connection_flag = forcible_reroute_connection_flag[net_id];
 
-        unsigned int num_pins = cluster_ctx.clb_nlist.net_pins(net_id).size();                                                 // not looking up on the SOURCE pin
+        unsigned int num_pins = cluster_ctx.clb_nlist.net_pins(net_id).size();                     // not looking up on the SOURCE pin
         net_lower_bound_connection_delay.resize(num_pins, std::numeric_limits<float>::infinity()); // will be filled in after the 1st iteration's
         net_forcible_reroute_connection_flag.reserve(num_pins);                                    // all false to begin with
 
