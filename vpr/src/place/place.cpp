@@ -1449,7 +1449,9 @@ static e_move_result try_swap(float t,
     //if (manual_move) {
         ManualMoveInfo *manual_move_info;
         //pops up the manual move window for the user to input set their move
-        manual_move_info_from_user_and_open_window(manual_move_info);
+        //manual_move_info_from_user_and_open_window(manual_move_info);
+        manual_move_generator_window("");
+        update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
         manual_move_info = get_manual_move_info();
         //sends info to the move generator class
         mmg_get_manual_move_info(*manual_move_info);
