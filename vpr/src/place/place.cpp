@@ -1445,7 +1445,7 @@ static e_move_result try_swap(float t,
     }
 
     bool manual_move = false /*get_manual_move_flag()*/; //whether the manual move info has been enabled or not
-    //ManualMoveInfo* manual_move_info;
+    ManualMoveInfo* manual_move_info;
 
     /*if (manual_move) {
      * //pops up the manual move window for the user to input set their move
