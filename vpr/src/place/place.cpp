@@ -1452,9 +1452,9 @@ static e_move_result try_swap(float t,
         //manual_move_info_from_user_and_open_window(manual_move_info);
         manual_move_generator_window("");
         update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
-        manual_move_info = get_manual_move_info();
+        //manual_move_info = get_manual_move_info();
         //sends info to the move generator class
-        mmg_get_manual_move_info(*manual_move_info);
+        //mmg_get_manual_move_info(*manual_move_info);
     //}
 
     //Generate a new move (perturbation) used to explore the space of possible placements
