@@ -1427,7 +1427,7 @@ static e_move_result try_swap(float t,
     }
 
     //Generate a new move (perturbation) used to explore the space of possible placements
-    e_create_move create_move_outcome = manual_move_generator.propose_move(blocks_affected, rlim);
+    e_create_move create_move_outcome = move_generator.propose_move(blocks_affected, rlim);
 
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
 
