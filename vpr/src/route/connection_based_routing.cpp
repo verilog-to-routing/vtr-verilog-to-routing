@@ -12,8 +12,6 @@ Connection_based_routing_resources::Connection_based_routing_resources()
     , connection_criticality_tolerance{0.9f}
     , connection_delay_optimality_tolerance{1.1f} {
     /* Initialize the persistent data structures for incremental rerouting
-     * this includes rr_sink_node_to_pin, which provides pin lookup given a
-     * sink node for a specific net.
      *
      * remaining_targets will reserve enough space to ensure it won't need
      * to grow while storing the sinks that still need routing after pruning
@@ -31,18 +29,14 @@ Connection_based_routing_resources::Connection_based_routing_resources()
     reached_rt_sinks.reserve(max_sink_pins_per_net);
 
     size_t routing_num_nets = cluster_ctx.clb_nlist.nets().size();
-    rr_sink_node_to_pin.resize(routing_num_nets);
     lower_bound_connection_delay.resize(routing_num_nets);
     forcible_reroute_connection_flag.resize(routing_num_nets);
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        // unordered_map<int,int> net_node_to_pin;
-        auto& net_node_to_pin = rr_sink_node_to_pin[net_id];
         auto& net_lower_bound_connection_delay = lower_bound_connection_delay[net_id];
         auto& net_forcible_reroute_connection_flag = forcible_reroute_connection_flag[net_id];
 
-        unsigned int num_pins = cluster_ctx.clb_nlist.net_pins(net_id).size();
-        net_node_to_pin.reserve(num_pins);                                                         // not looking up on the SOURCE pin
+        unsigned int num_pins = cluster_ctx.clb_nlist.net_pins(net_id).size();                     // not looking up on the SOURCE pin
         net_lower_bound_connection_delay.resize(num_pins, std::numeric_limits<float>::infinity()); // will be filled in after the 1st iteration's
         net_forcible_reroute_connection_flag.reserve(num_pins);                                    // all false to begin with
 
@@ -50,68 +44,9 @@ Connection_based_routing_resources::Connection_based_routing_resources()
             // rr sink node index corresponding to this connection terminal
             auto rr_sink_node = route_ctx.net_rr_terminals[net_id][ipin];
 
-            net_node_to_pin.insert({rr_sink_node, ipin});
             net_forcible_reroute_connection_flag.insert({rr_sink_node, false});
         }
     }
-}
-
-void Connection_based_routing_resources::convert_sink_nodes_to_net_pins(std::vector<int>& rr_sink_nodes) const {
-    /* Turn a vector of device_ctx.rr_nodes indices, assumed to be of sinks for a net *
-     * into the pin indices of the same net. */
-
-    VTR_ASSERT(current_inet != ClusterNetId::INVALID()); // not uninitialized
-
-    const auto& node_to_pin_mapping = rr_sink_node_to_pin[current_inet];
-
-    for (size_t s = 0; s < rr_sink_nodes.size(); ++s) {
-        auto mapping = node_to_pin_mapping.find(rr_sink_nodes[s]);
-        if (mapping != node_to_pin_mapping.end()) {
-            rr_sink_nodes[s] = mapping->second;
-        } else {
-            VTR_ASSERT_SAFE_MSG(false, "Should always expect it find a pin mapping for its own net");
-        }
-    }
-}
-
-void Connection_based_routing_resources::put_sink_rt_nodes_in_net_pins_lookup(const std::vector<t_rt_node*>& sink_rt_nodes,
-                                                                              t_rt_node** rt_node_of_sink) const {
-    /* Load rt_node_of_sink (which maps a PIN index to a route tree node)
-     * with a vector of route tree sink nodes. */
-
-    VTR_ASSERT(current_inet != ClusterNetId::INVALID());
-
-    // a net specific mapping from node index to pin index
-    const auto& node_to_pin_mapping = rr_sink_node_to_pin[current_inet];
-
-    for (t_rt_node* rt_node : sink_rt_nodes) {
-        auto mapping = node_to_pin_mapping.find(rt_node->inode);
-
-        if (mapping != node_to_pin_mapping.end()) {
-            rt_node_of_sink[mapping->second] = rt_node;
-        } else {
-            VTR_ASSERT_SAFE_MSG(false, "element should be able to find itself");
-        }
-    }
-}
-
-bool Connection_based_routing_resources::sanity_check_lookup() const {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& route_ctx = g_vpr_ctx.routing();
-
-    for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        const auto& net_node_to_pin = rr_sink_node_to_pin[net_id];
-
-        for (auto mapping : net_node_to_pin) {
-            auto sanity = net_node_to_pin.find(mapping.first);
-            if (sanity == net_node_to_pin.end()) {
-                VTR_LOG("%d cannot find itself (net %lu)\n", mapping.first, size_t(net_id));
-                return false;
-            }
-            VTR_ASSERT(route_ctx.net_rr_terminals[net_id][mapping.second] == mapping.first);
-        }
-    }
-    return true;
 }
 
 void Connection_based_routing_resources::set_lower_bound_connection_delays(ClbNetPinsMatrix<float>& net_delay) {

@@ -190,8 +190,7 @@ static void check_sink(int inode, ClusterNetId net_id, bool* pin_done) {
     int ptc_num = device_ctx.rr_nodes[inode].ptc_num();
     int ifound = 0;
 
-    for (int iblk = 0; iblk < type->capacity; iblk++) {
-        ClusterBlockId bnum = place_ctx.grid_blocks[i][j].blocks[iblk]; /* Hardcoded to one cluster_ctx block*/
+    for (auto bnum : place_ctx.grid_blocks[i][j].blocks) {
         unsigned int ipin = 1;
         for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
             if (cluster_ctx.clb_nlist.pin_block(pin_id) == bnum) {
@@ -203,6 +202,7 @@ static void check_sink(int inode, ClusterNetId net_id, bool* pin_done) {
                     if (pin_done[ipin] == false) {
                         ifound++;
                         pin_done[ipin] = true;
+                        break;
                     }
                 }
             }
@@ -210,10 +210,7 @@ static void check_sink(int inode, ClusterNetId net_id, bool* pin_done) {
         }
     }
 
-    if (ifound > 1 && is_io_type(type)) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                        "in check_sink: found %d terminals of net %d of pad %d at location (%d, %d).\n", ifound, size_t(net_id), ptc_num, i, j);
-    }
+    VTR_ASSERT(ifound <= 1);
 
     if (ifound < 1) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,

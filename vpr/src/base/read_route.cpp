@@ -216,7 +216,7 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
 
     /*remember the position of the last line in order to go back*/
     std::streampos oldpos = fp.tellg();
-    int inode, x, y, x2, y2, ptc, switch_id, offset;
+    int inode, x, y, x2, y2, ptc, switch_id, net_pin_index, offset;
     std::string prev_type;
     int node_count = 0;
     std::string input;
@@ -348,10 +348,26 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
                 switch_id = atoi(tokens[7 + offset].c_str());
             }
 
+            /* Process net pin index for sinks                                   *
+             * If you have an old .route file, it may not have this information  *
+             * Please check your .route file to see if it contains Net_pin_index *
+             * information for sinks. If not, plrase re-generate the routing.    */
+            if (tokens[2] == "SINK") {
+                if (tokens[8 + offset] == "Net_pin_index:") {
+                    net_pin_index = atoi(tokens[9 + offset].c_str());
+                } else {
+                    vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
+                              "%d (sink) node does not have net pin index. If you are using an old .route file without this information, please re-generate the routing.", inode);
+                }
+            } else {
+                net_pin_index = OPEN; //net pin index is invalid for non-SINKs
+            }
+
             /* Allocate and load correct values to trace.head*/
             if (node_count == 0) {
                 route_ctx.trace[inet].head = alloc_trace_data();
                 route_ctx.trace[inet].head->index = inode;
+                route_ctx.trace[inet].head->net_pin_index = net_pin_index;
                 route_ctx.trace[inet].head->iswitch = switch_id;
                 route_ctx.trace[inet].head->next = nullptr;
                 tptr = route_ctx.trace[inet].head;
@@ -360,6 +376,7 @@ static void process_nodes(std::ifstream& fp, ClusterNetId inet, const char* file
                 tptr->next = alloc_trace_data();
                 tptr = tptr->next;
                 tptr->index = inode;
+                tptr->net_pin_index = net_pin_index;
                 tptr->iswitch = switch_id;
                 tptr->next = nullptr;
                 node_count++;
