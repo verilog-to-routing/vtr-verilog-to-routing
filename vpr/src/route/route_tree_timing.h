@@ -19,7 +19,7 @@ void free_route_tree(t_rt_node* rt_node);
 void print_route_tree(const t_rt_node* rt_node);
 void print_route_tree(const t_rt_node* rt_node, int depth);
 
-t_rt_node* update_route_tree(t_heap* hptr, SpatialRouteTreeLookup* spatial_rt_lookup, std::set<int>* route_tree_nodes = nullptr);
+t_rt_node* update_route_tree(t_heap* hptr, SpatialRouteTreeLookup* spatial_rt_lookup, PathManager& rcv_path_manager);
 
 void update_net_delays_from_route_tree(float* net_delay,
                                        const t_rt_node* const* rt_node_of_sink,
@@ -29,8 +29,6 @@ void update_net_delays_from_route_tree(float* net_delay,
 
 void load_route_tree_Tdel(t_rt_node* rt_root, float Tarrival);
 void load_route_tree_rr_route_inf(t_rt_node* root);
-
-void add_route_tree_to_set(t_rt_node* rt_node, std::set<int>* route_tree_nodes);
 
 t_rt_node* init_route_tree_to_source_no_net(int inode);
 

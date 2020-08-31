@@ -6,24 +6,8 @@
 #include "vtr_memory.h"
 #include "vtr_array_view.h"
 #include "rr_graph_fwd.h"
+#include "route_path_manager.h"
 #include <set>
-
-/* Extra path data needed by RCV, seperated from t_heap struct for performance reasons
- * Can be accessed by a pointer, won't be initialized unless needed
- *
- * path_rr: The entire partial path up until the route tree
- * 
- * edge: A list of edges from each node in the partial path to reach the next node
- * 
- * backward_delay: The delay of the partial path plus the path from route tree to source
- * 
- * backward_cong: The congestion estimate of the partial path plus the path from route tree to source */
-struct t_heap_path {
-    std::vector<RRNodeId> path_rr;
-    std::vector<RREdgeId> edge;
-    float backward_delay = 0.;
-    float backward_cong = 0.;
-};
 
 /* Used by the heap as its fundamental data structure.
  * Each heap element represents a partial route.
@@ -58,6 +42,8 @@ struct t_heap {
     float R_upstream = 0.;
 
     int index = OPEN;
+
+    // Management class to handle extra RCV structures
     t_heap_path* path_data;
 
     struct t_prev {

@@ -62,6 +62,8 @@ bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const 
     router_.clear_modified_rr_node_info();
     RouterStats router_stats;
 
+    PathManager empty_manager(/*init_rcv_structs=*/false);
+
     bool found_path;
     t_heap cheapest;
     std::tie(found_path, cheapest) = router_.timing_driven_route_connection_from_route_tree(
@@ -69,12 +71,13 @@ bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const 
         sink_node,
         cost_params,
         bounding_box,
-        router_stats);
+        router_stats,
+        empty_manager);
 
     if (found_path) {
         VTR_ASSERT(cheapest.index == sink_node);
 
-        t_rt_node* rt_node_of_sink = update_route_tree(&cheapest, nullptr);
+        t_rt_node* rt_node_of_sink = update_route_tree(&cheapest, nullptr, empty_manager);
 
         //find delay
         *net_delay = rt_node_of_sink->Tdel;
@@ -132,6 +135,8 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
 
     free_route_tree(rt_root);
 
+    PathManager empty_manager(/*init_rcv_structs=*/false);
+
     VTR_ASSERT(shortest_paths.size() == device_ctx.rr_nodes.size());
     for (int sink_rr_node = 0; sink_rr_node < (int)device_ctx.rr_nodes.size(); ++sink_rr_node) {
         if (sink_rr_node == src_rr_node) {
@@ -143,7 +148,7 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
 
             //Build the routing tree to get the delay
             rt_root = setup_routing_resources_no_net(src_rr_node);
-            t_rt_node* rt_node_of_sink = update_route_tree(&shortest_paths[sink_rr_node], nullptr);
+            t_rt_node* rt_node_of_sink = update_route_tree(&shortest_paths[sink_rr_node], nullptr, empty_manager);
 
             VTR_ASSERT(rt_node_of_sink->inode == sink_rr_node);
 

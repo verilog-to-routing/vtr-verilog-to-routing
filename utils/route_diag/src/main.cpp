@@ -107,12 +107,13 @@ static void do_one_route(int source_node, int sink_node,
     enable_router_debug(router_opts, ClusterNetId(), sink_node, 1, &router);
     bool found_path;
     t_heap cheapest;
-    std::tie(found_path, cheapest) = router.timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, bounding_box, router_stats);
+    PathManager empty_manager(/*init_rcv_structs=*/false);
+    std::tie(found_path, cheapest) = router.timing_driven_route_connection_from_route_tree(rt_root, sink_node, cost_params, bounding_box, router_stats, empty_manager);
 
     if (found_path) {
         VTR_ASSERT(cheapest.index == sink_node);
 
-        t_rt_node* rt_node_of_sink = update_route_tree(&cheapest, nullptr);
+        t_rt_node* rt_node_of_sink = update_route_tree(&cheapest, nullptr, empty_manager);
 
         //find delay
         float net_delay = rt_node_of_sink->Tdel;
