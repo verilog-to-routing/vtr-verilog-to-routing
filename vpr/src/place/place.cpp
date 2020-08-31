@@ -1426,6 +1426,8 @@ static e_move_result try_swap(float t,
         rlim = std::numeric_limits<float>::infinity();
     }
 
+    bool manual_move = get_manual_move_flag();
+
     //Generate a new move (perturbation) used to explore the space of possible placements
     e_create_move create_move_outcome = move_generator.propose_move(blocks_affected, rlim);
 
