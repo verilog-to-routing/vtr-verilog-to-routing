@@ -1427,6 +1427,7 @@ static e_move_result try_swap(float t,
     }
 
     //bool manual_move = get_manual_move_flag();
+    ManualMoveInfo *manual_move_info;
     //if(manual_move)
         //manual_move_generator_window("");
         update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
