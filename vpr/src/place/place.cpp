@@ -1436,11 +1436,12 @@ static e_move_result try_swap(float t,
         //sends info to the move generator class
         mmg_get_manual_move_info(*manual_move_info);
 
+    e_create_move create_move_outcome;
     //Generate a new move (perturbation) used to explore the space of possible placements
     if(manual_move)
-        e_create_move create_move_outcome = manual_move_generator.propose_move(blocks_affected, rlim);
+        create_move_outcome = manual_move_generator.propose_move(blocks_affected, rlim);
     else
-        e_create_move create_move_outcome = move_generator.propose_move(blocks_affected, rlim);
+        create_move_outcome = move_generator.propose_move(blocks_affected, rlim);
 
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
 
