@@ -36,18 +36,15 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         std::cout << "Move aborted due to uncompatible subtile\n";
         return e_create_move::ABORT;
     }
-#if 0
-    auto& grid = g_vpr_ctx.device().grid;
-	VTR_LOG( "swap [%d][%d][%d] %s block %zu \"%s\" <=> [%d][%d][%d] %s block ",
-		from.x, from.y, from.sub_tile, grid[from.x][from.y].type->name, size_t(b_from), (b_from ? cluster_ctx.clb_nlist.block_name(b_from).c_str() : ""),
-		to.x, to.y, to.sub_tile, grid[to.x][to.y].type->name);
-    if (b_to) {
-        VTR_LOG("%zu \"%s\"", size_t(b_to), cluster_ctx.clb_nlist.block_name(b_to).c_str());
-    } else {
-        VTR_LOG("(EMPTY)");
+
+    int imacro_from;
+    auto& pl_macros = place_ctx.pl_macros;
+    get_imacro_from_iblk(&imacro_from, b_from, pl_macros);
+    if (imacro_from != OPEN) {
+        std::cout << "Blocks that are part of a placement macro cannot be moved manually. Move aborted\n";
+        return e_create_move::ABORT;
     }
-    VTR_LOG("\n");
-#endif
+
     std::cout << "block_id: " << size_t(b_from) << " to_x: " << to.x << " to_y: " << to.y << " to_subtile: " << to.sub_tile << std::endl;
     return ::create_move(blocks_affected, b_from, to);
 }
