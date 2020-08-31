@@ -520,6 +520,7 @@ void try_place(const t_placer_opts& placer_opts,
     }
 
 //    const size_t avail_moves = 5;
+    int move_lim = 1 ;
     move_lim = (int)(annealing_sched.inner_num * pow(cluster_ctx.clb_nlist.blocks().size(), 1.3333));
 
     if(!placer_opts.simpleRL_agent_placement){
@@ -762,7 +763,11 @@ void try_place(const t_placer_opts& placer_opts,
                          blocks_affected,
                          placer_opts,
                          X_coord,
-                         Y_coord);
+                         Y_coord,
+                         num_moves,
+                         accepted_moves,
+                         aborted_moves,
+                         placer_opts.place_high_fanout_net);
 
 
     if (!placer_opts.move_stats_file.empty()) {
@@ -786,7 +791,12 @@ void try_place(const t_placer_opts& placer_opts,
     print_place_status_header();
 
     //RL agent state definition
-    int state = 1;
+    int agent_state = 1;
+
+
+    std::fill(num_moves.begin(),num_moves.end(),0);
+    std::fill(accepted_moves.begin(),accepted_moves.end(),0);
+    std::fill(aborted_moves.begin(),aborted_moves.end(),0);
 
     /* Outer loop of the simulated annealing begins */
     do {
@@ -804,9 +814,6 @@ void try_place(const t_placer_opts& placer_opts,
                                       pin_timing_invalidator.get(),
                                       timing_info.get());
 
-        std::fill(num_moves.begin(),num_moves.end(),0);
-        std::fill(accepted_moves.begin(),accepted_moves.end(),0);
-        std::fill(aborted_moves.begin(),aborted_moves.end(),0);
 
         if(state == 1){
             placement_inner_loop(&state, placer_opts,
@@ -858,7 +865,7 @@ void try_place(const t_placer_opts& placer_opts,
 
         print_place_status(state, stats, temperature_timer.elapsed_sec(), critical_path.delay(), sTNS, sWNS, tot_iter);
 #ifdef VTR_ENABLE_DEBUG_LOGGING
-        print_place_statisitics(num_temps, t,num_moves,accepted_moves,aborted_moves);
+        print_place_statisitics(num_temps, state.t,num_moves,accepted_moves,aborted_moves);
 #endif
 
         sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
@@ -1041,7 +1048,7 @@ quench:
         p_runtime_ctx.f_update_td_costs_sum_nets_elapsed_sec,
         p_runtime_ctx.f_update_td_costs_total_elapsed_sec);
 
-#if 1
+#if 0
     //measure time of each move type
     VTR_LOG("time of uniform move = %f \n", time_of_moves[0]/num_of_moves[0]);
     VTR_LOG("time of median move = %f \n", time_of_moves[1]/num_of_moves[0]);
@@ -1438,14 +1445,14 @@ static e_move_result try_swap(const t_annealing_state* state,
     }
 
     //Generate a new move (perturbation) used to explore the space of possible placements
-#if 1
+#if 0
     auto start = std::chrono::high_resolution_clock::now();
 #endif
     e_create_move create_move_outcome = move_generator.propose_move(blocks_affected
       , rlim, X_coord, Y_coord, type, high_fanout_net, criticalities);
 
     ++num_moves[type];
-#if 1
+#if 0
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::nanoseconds>(stop - start);
 
