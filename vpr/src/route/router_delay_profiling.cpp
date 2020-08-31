@@ -14,12 +14,12 @@ static t_rt_node* setup_routing_resources_no_net(int source_node);
 RouterDelayProfiler::RouterDelayProfiler(
     const RouterLookahead* lookahead)
     : router_(
-          g_vpr_ctx.device().grid,
-          *lookahead,
-          g_vpr_ctx.device().rr_nodes,
-          g_vpr_ctx.device().rr_rc_data,
-          g_vpr_ctx.device().rr_switch_inf,
-          g_vpr_ctx.mutable_routing().rr_node_route_inf) {}
+        g_vpr_ctx.device().grid,
+        *lookahead,
+        g_vpr_ctx.device().rr_nodes,
+        g_vpr_ctx.device().rr_rc_data,
+        g_vpr_ctx.device().rr_switch_inf,
+        g_vpr_ctx.mutable_routing().rr_node_route_inf) {}
 
 bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const t_router_opts& router_opts, float* net_delay) {
     /* Returns true as long as found some way to hook up this net, even if that *

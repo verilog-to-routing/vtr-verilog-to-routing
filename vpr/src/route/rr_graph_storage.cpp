@@ -130,8 +130,8 @@ class edge_sort_iterator {
 
     edge_sort_iterator(const edge_sort_iterator& other)
         : swapper_(
-              other.swapper_.storage_,
-              other.swapper_.idx_) {
+            other.swapper_.storage_,
+            other.swapper_.idx_) {
     }
 
     edge_sort_iterator& operator=(const edge_sort_iterator& other) {
