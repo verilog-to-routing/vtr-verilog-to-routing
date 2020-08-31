@@ -227,10 +227,10 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(int sin
             // TODO: This can be eliminated by modifying the actual traceback function in route_timing
             if (cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm == YOYO) {
                 for (unsigned i = 1; i < cheapest->path_data->edge.size() - 1; i++) {
-                    int node_2 = cheapest->path_data->path_rr[i];
-                    int edge = cheapest->path_data->edge[i - 1];
-                    route_ctx.rr_node_route_inf[node_2].prev_node = cheapest->path_data->path_rr[i - 1];
-                    route_ctx.rr_node_route_inf[node_2].prev_edge = RREdgeId(edge);
+                    size_t node_2 = (size_t) cheapest->path_data->path_rr[i];
+                    RREdgeId edge = cheapest->path_data->edge[i - 1];
+                    route_ctx.rr_node_route_inf[node_2].prev_node = (size_t) cheapest->path_data->path_rr[i - 1];
+                    route_ctx.rr_node_route_inf[node_2].prev_edge = edge;
                     route_ctx.rr_node_route_inf[node_2].path_cost = cheapest->cost;
                     route_ctx.rr_node_route_inf[node_2].backward_path_cost = cheapest->backward_path_cost;
                 }
@@ -458,7 +458,7 @@ bool ConnectionRouter<Heap>::node_exists_in_route_tree(t_heap* current,
 
     // First check the smaller current path, the ordering of these checks might effect runtime slightly
     for (auto& node : current->path_data->path_rr) {
-        if ((size_t)node == (size_t)to_node) {
+        if (node == to_node) {
             return true;
         }
     }
@@ -630,7 +630,7 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
             next_ptr->path_data->path_rr = current->path_data->path_rr;
             next_ptr->path_data->edge = current->path_data->path_rr;
             next_ptr->path_data->path_rr.emplace_back(from_node);
-            next_ptr->path_data->edge.emplace_back((size_t)from_edge);
+            next_ptr->path_data->edge.emplace_back(from_edge);
         }
 
         heap_.add_to_heap(next_ptr);

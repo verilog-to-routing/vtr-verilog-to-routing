@@ -19,8 +19,8 @@
  * 
  * backward_cong: The congestion estimate of the partial path plus the path from route tree to source */
 struct t_heap_path {
-    std::vector<int> path_rr;
-    std::vector<int> edge;
+    std::vector<RRNodeId> path_rr;
+    std::vector<RREdgeId> edge;
     float backward_delay = 0.;
     float backward_cong = 0.;
 };
