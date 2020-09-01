@@ -12,7 +12,7 @@ void read_place(
     bool is_place_file);
 
 /**
- * This function is used to read a constraints file.
+ * This function is used to read a constraints file that specifies the desired locations of blocks.
  */
 void read_constraints(
     const char* constraints_file,

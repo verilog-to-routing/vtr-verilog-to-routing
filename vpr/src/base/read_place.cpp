@@ -71,9 +71,11 @@ void read_constraints(const char* constraints_file,
 
 /**
  * This function reads the header (first two lines) of a placement file.
+ * The header consists of two lines that specify the netlist file and grid size that were used when generating placement.
  * It checks whether the packed netlist file that generated the placement matches the current netlist file.
  * It also checks whether the FPGA grid size has stayed the same from when the placement was generated.
  * The verify_file_digests bool is used to decide whether to give a warning or an error if the netlist files do not match.
+ * An error is given if the grid size has changed.
  */
 void read_place_header(std::ifstream& placement_file,
                        const char* net_file,
@@ -146,7 +148,7 @@ void read_place_header(std::ifstream& placement_file,
                           grid.width(), grid.height(), place_file_width, place_file_height);
             }
 
-            seen_grid_dimensions = true; //if you have read the grid dimensions you are done reading the place file header
+            seen_grid_dimensions = true;
 
         } else {
             //Unrecognized
@@ -159,6 +161,7 @@ void read_place_header(std::ifstream& placement_file,
 
 /**
  * This function reads either the body of a placement file or a constraints file.
+ * A constraints file is in the same format as a placement file, but without the first two header lines.
  * If it is reading a place file it sets the x, y, and subtile locations of the blocks in the placement context.
  * If it is reading a constraints file it does the same and also marks the blocks as locked and marks the grid usage.
  * The bool is_place_file indicates if the file should be read as a place file (is_place_file = true)
@@ -174,7 +177,19 @@ void read_place_body(std::ifstream& placement_file,
     std::string line;
     int lineno = 0;
 
-    std::vector<ClusterBlockId> seen_blocks;
+    if (place_ctx.block_locs.size() != cluster_ctx.clb_nlist.blocks().size()) {
+        //Resize if needed
+        place_ctx.block_locs.resize(cluster_ctx.clb_nlist.blocks().size());
+    }
+
+    //used to count how many times a block has been seen in the place/constraints file so duplicate blocks can be detected
+    vtr::vector_map<ClusterBlockId, int> seen_blocks;
+
+    //initialize seen_blocks
+    for (auto block_id : cluster_ctx.clb_nlist.blocks()) {
+        int seen_count = 0;
+        seen_blocks.insert(block_id, seen_count);
+    }
 
     while (std::getline(placement_file, line)) { //Parse line-by-line
         ++lineno;
@@ -198,22 +213,25 @@ void read_place_body(std::ifstream& placement_file,
             int block_y = vtr::atoi(tokens[2]);
             int sub_tile_index = vtr::atoi(tokens[3]);
 
+            //c-style block name needed for printing block name in error messages
+            char const* c_block_name = block_name.c_str();
+
             ClusterBlockId blk_id = cluster_ctx.clb_nlist.find_block(block_name);
 
+            //Check if block name is valid
+            if (blk_id == ClusterBlockId::INVALID()) {
+                VPR_THROW(VPR_ERROR_PLACE, "Block %s has an invalid name.\n", c_block_name);
+            }
+
             //Check if block is listed twice in constraints file
-            if (find(seen_blocks.begin(), seen_blocks.end(), blk_id) != seen_blocks.end()) {
-                VPR_THROW(VPR_ERROR_PLACE, "The block with ID %d is listed twice in the constraints file.\n", blk_id);
+            if (seen_blocks[blk_id] != 0) {
+                VPR_THROW(VPR_ERROR_PLACE, "Block %s with ID %d is listed twice in the constraints file.\n", c_block_name, blk_id);
             }
 
             //Check if block location is out of range of grid dimensions
             if (block_x < 0 || block_x > int(device_ctx.grid.width() - 1)
                 || block_y < 0 || block_y > int(device_ctx.grid.height() - 1)) {
-                VPR_THROW(VPR_ERROR_PLACE, "The block with ID %d is out of range at location (%d, %d). \n", blk_id, block_x, block_y);
-            }
-
-            if (place_ctx.block_locs.size() != cluster_ctx.clb_nlist.blocks().size()) {
-                //Resize if needed
-                place_ctx.block_locs.resize(cluster_ctx.clb_nlist.blocks().size());
+                VPR_THROW(VPR_ERROR_PLACE, "Block %s with ID %d is out of range at location (%d, %d). \n", c_block_name, blk_id, block_x, block_y);
             }
 
             //Set the location
@@ -222,14 +240,16 @@ void read_place_body(std::ifstream& placement_file,
             place_ctx.block_locs[blk_id].loc.sub_tile = sub_tile_index;
 
             //Check if block is at an illegal location
+
             auto physical_tile = device_ctx.grid[block_x][block_y].type;
             auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
-            if (!is_sub_tile_compatible(physical_tile, logical_block, place_ctx.block_locs[blk_id].loc.sub_tile)) {
-                VPR_THROW(VPR_ERROR_PLACE, place_file, 0, "Attempt to place block %d at illegal location (%d, %d). \n", blk_id, block_x, block_y);
-            }
 
             if (sub_tile_index >= physical_tile->capacity || sub_tile_index < 0) {
-                VPR_THROW(VPR_ERROR_PLACE, place_file, vtr::get_file_line_number_of_last_opened_file(), "Block %d subtile number (%d) is out of range. \n", blk_id, sub_tile_index);
+                VPR_THROW(VPR_ERROR_PLACE, "Block %s subtile number (%d) is out of range. \n", c_block_name, sub_tile_index);
+            }
+
+            if (!is_sub_tile_compatible(physical_tile, logical_block, place_ctx.block_locs[blk_id].loc.sub_tile)) {
+                VPR_THROW(VPR_ERROR_PLACE, "Attempt to place block %s with ID %d at illegal location (%d, %d). \n", c_block_name, blk_id, block_x, block_y);
             }
 
             //need to lock down blocks  and mark grid block usage if it is a constraints file
@@ -239,14 +259,23 @@ void read_place_body(std::ifstream& placement_file,
                 place_ctx.grid_blocks[block_x][block_y].usage++;
             }
 
-            //add to vector of blocks that have been seen
-            seen_blocks.push_back(blk_id);
+            //mark the block as seen
+            seen_blocks[blk_id] = 1;
 
         } else {
             //Unrecognized
             vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno,
                       "Invalid line '%s' in file",
                       line.c_str());
+        }
+    }
+
+    //For place files, check that all blocks have been read
+    if (is_place_file) {
+        for (auto block_id : cluster_ctx.clb_nlist.blocks()) {
+            if (seen_blocks[block_id] == 0) {
+                VPR_THROW(VPR_ERROR_PLACE, "Block %d has not been read from the place file. \n", block_id);
+            }
         }
     }
 
