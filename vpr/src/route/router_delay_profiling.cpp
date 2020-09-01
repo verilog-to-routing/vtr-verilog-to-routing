@@ -20,7 +20,7 @@ RouterDelayProfiler::RouterDelayProfiler(
           g_vpr_ctx.device().rr_rc_data,
           g_vpr_ctx.device().rr_switch_inf,
           g_vpr_ctx.mutable_routing().rr_node_route_inf,
-          PathManager(false)) {}
+          PathManager(/*run_rcv=*/ false)) {}
 
 bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const t_router_opts& router_opts, float* net_delay) {
     /* Returns true as long as found some way to hook up this net, even if that *
@@ -124,7 +124,7 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
         device_ctx.rr_rc_data,
         device_ctx.rr_switch_inf,
         routing_ctx.rr_node_route_inf,
-        PathManager(false));
+        PathManager(/*run_rcv=*/ false));
     RouterStats router_stats;
 
     std::vector<t_heap> shortest_paths = router.timing_driven_find_all_shortest_paths_from_route_tree(rt_root,

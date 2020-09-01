@@ -337,7 +337,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
         device_ctx.rr_rc_data,
         device_ctx.rr_switch_inf,
         route_ctx.rr_node_route_inf,
-        PathManager(router_opts.routing_budgets_algorithm == YOYO));
+        PathManager(/*run_rcv=*/ false));
 
     // Make sure template type ConnectionRouter is a ConnectionRouterInterface.
     static_assert(std::is_base_of<ConnectionRouterInterface, ConnectionRouter>::value, "ConnectionRouter must implement the ConnectionRouterInterface");
@@ -702,6 +702,8 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
                 // if (budgeting_inf.if_set()) {
                 //     budgeting_inf.print_route_budget(std::string("route_budgets_") + std::to_string(itry) + ".txt", net_delay);
                 // }
+
+                router.rcv_path_manager.set_enabled(true);
 
             } else {
                 bool stable_routing_configuration = true;

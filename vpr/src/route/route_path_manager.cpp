@@ -63,6 +63,10 @@ bool PathManager::is_enabled() {
     return is_enabled_;
 }
 
+void PathManager::set_enabled(bool enable) {
+    is_enabled_ = enable;
+}
+
 void PathManager::alloc_path_struct(t_heap_path*& tptr) {
     // TODO: Use arena allocation for this part
     

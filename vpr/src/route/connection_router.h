@@ -186,8 +186,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         const int from_node,
         const int to_node,
         const RREdgeId from_edge,
-        const int target_node,
-        bool run_rcv);
+        const int target_node);
 
     // Calculates the cost of reaching to_node
     void evaluate_timing_driven_node_costs(
@@ -196,8 +195,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         const int from_node,
         const int to_node,
         const RREdgeId from_edge,
-        const int target_node,
-        bool run_rcv);
+        const int target_node);
 
     // Find paths from current heap to all nodes in the RR graph
     std::vector<t_heap> timing_driven_find_all_shortest_paths_from_heap(
@@ -210,8 +208,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
     //used as branch-points for further routing.
     void add_route_tree_to_heap(t_rt_node* rt_node,
                                 int target_node,
-                                const t_conn_cost_params cost_params,
-                                bool run_rcv);
+                                const t_conn_cost_params cost_params);
     
     // Evaluate node costs using the RCV algorith 
     float compute_node_cost_using_rcv(const t_conn_cost_params cost_params,
@@ -228,8 +225,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
     void add_route_tree_node_to_heap(
         t_rt_node* rt_node,
         int target_node,
-        const t_conn_cost_params cost_params,
-        bool run_rcv);
+        const t_conn_cost_params cost_params);
 
     t_bb add_high_fanout_route_tree_to_heap(
         t_rt_node* rt_root,

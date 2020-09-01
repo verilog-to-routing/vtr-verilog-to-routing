@@ -46,6 +46,9 @@ class PathManager {
     // Check if this structure is enabled/is RCV enabled
     bool is_enabled();
 
+    // Enable/disable path manager class
+    void set_enabled(bool enable);
+
     // Insert the backwards path back into the main route context traceback
     void insert_backwards_path_into_traceback(t_heap_path* path_data, float cost, float backward_path_cost);
 
