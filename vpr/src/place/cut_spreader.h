@@ -103,7 +103,7 @@
  * https://github.com/YosysHQ/nextpnr
  *
  */
-#include "vpr_context.h"
+#    include "vpr_context.h"
 
 // declaration of used types;
 class AnalyticPlacer;

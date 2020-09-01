@@ -81,9 +81,9 @@
  * https://github.com/YosysHQ/nextpnr
  */
 
-#include "vpr_context.h"
-#include "timing_place.h"
-#include "PlacementDelayCalculator.h"
+#    include "vpr_context.h"
+#    include "timing_place.h"
+#    include "PlacementDelayCalculator.h"
 
 typedef signed long int wirelen_t;
 
