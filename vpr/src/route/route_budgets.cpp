@@ -667,7 +667,6 @@ void route_budgets::not_congested_this_iteration(ClusterNetId net_id) {
 
 /* If the router is failing to resolve worst hold slack, increase the min delay budgets on nets with negative hold slack */
 bool route_budgets::increase_min_budgets_if_struggling(float delay_decrement, std::shared_ptr<SetupHoldTimingInfo> timing_info, float worst_neg_slack, const ClusteredPinAtomPinsLookup& netlist_pin_lookup) {
-    
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     // This is so we can tell the router to exit early if it's only global nets that are not meeting hold
@@ -687,12 +686,10 @@ bool route_budgets::increase_min_budgets_if_struggling(float delay_decrement, st
         float d_slack = negative_hold_slacks.back() - negative_hold_slacks.front();
         // VTR_LOG("D_SLACK IS %e THE DIFF IS %e\n", std::abs(d_slack), std::abs(negative_hold_slacks.front() * 0.01));
         if (std::abs(d_slack) < std::abs(negative_hold_slacks.front() * 0.5) && negative_hold_slacks.front() != 0) {
-
             // VTR_LOG("ACTIVATE LOWER BUDGET %e < %e\n", std::abs(d_slack), std::abs(negative_hold_slacks.front() * 0.01));
 
             /*Decrease the budgets by a delay increment when the congested times is high enough*/
             for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-
                 for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
                     int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
                     // For now, if there is any negative hold slack increase the budget of the pin

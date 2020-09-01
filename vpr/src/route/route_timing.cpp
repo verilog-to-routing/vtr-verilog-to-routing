@@ -618,8 +618,10 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
             if (budgeting_inf.if_set()) {
                 bool rcv_finished = false;
                 if (itry > 5 && worst_negative_slack != 0) rcv_finished = budgeting_inf.increase_min_budgets_if_struggling(-300e-12, timing_info, worst_negative_slack, netlist_pin_lookup);
-                if (rcv_finished) rcv_finished_count--;
-                else rcv_finished_count = 15;
+                if (rcv_finished)
+                    rcv_finished_count--;
+                else
+                    rcv_finished_count = 15;
             }
         }
 
