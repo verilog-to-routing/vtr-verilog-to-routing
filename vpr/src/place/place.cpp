@@ -589,7 +589,7 @@ void try_place(const t_placer_opts& placer_opts,
     num_swap_aborted = 0;
     num_ts_called = 0;
 
-    if (placer_opts.place_algorithm == CRITICALITY_TIMING_PLACE) {
+    if (placer_opts.place_algorithm.is_timing_driven()) {
         /*do this before the initial placement to avoid messing up the initial placement */
         place_delay_model = alloc_lookups_and_criticalities(chan_width_dist, placer_opts, router_opts, det_routing_arch, segment_inf, directs, num_directs);
 
@@ -620,7 +620,7 @@ void try_place(const t_placer_opts& placer_opts,
 
     /* Gets initial cost and loads bounding boxes. */
 
-    if (placer_opts.place_algorithm == CRITICALITY_TIMING_PLACE) {
+    if (placer_opts.place_algorithm.is_timing_driven()) {
         costs.bb_cost = comp_bb_cost(NORMAL);
 
         first_crit_exponent = placer_opts.td_place_exp_first; /*this will be modified when rlim starts to change */
@@ -696,7 +696,7 @@ void try_place(const t_placer_opts& placer_opts,
     //Initial pacement statistics
     VTR_LOG("Initial placement cost: %g bb_cost: %g td_cost: %g\n",
             costs.cost, costs.bb_cost, costs.timing_cost);
-    if (placer_opts.place_algorithm == CRITICALITY_TIMING_PLACE) {
+    if (placer_opts.place_algorithm.is_timing_driven()) {
         VTR_LOG("Initial placement estimated Critical Path Delay (CPD): %g ns\n",
                 1e9 * critical_path.delay());
         VTR_LOG("Initial placement estimated setup Total Negative Slack (sTNS): %g ns\n",
@@ -802,7 +802,7 @@ void try_place(const t_placer_opts& placer_opts,
     /* Outer loop of the simulated annealing begins */
     do {
         vtr::Timer temperature_timer;
-        if (placer_opts.place_algorithm == CRITICALITY_TIMING_PLACE) {
+        if (placer_opts.place_algorithm.is_timing_driven()) {
             costs.cost = 1;
         }
 
@@ -836,7 +836,7 @@ void try_place(const t_placer_opts& placer_opts,
 
         ++num_temps;
 
-        if (placer_opts.place_algorithm == CRITICALITY_TIMING_PLACE) {
+        if (placer_opts.place_algorithm.is_timing_driven()) {
             critical_path = timing_info->least_slack_critical_path();
             sTNS = timing_info->setup_total_negative_slack();
             sWNS = timing_info->setup_worst_negative_slack();
@@ -898,7 +898,7 @@ void try_place(const t_placer_opts& placer_opts,
 
         calc_placer_stats(stats, success_rat, std_dev, costs, move_lim);
 
-        if (placer_opts.place_quench_algorithm == CRITICALITY_TIMING_PLACE) {
+        if (placer_opts.place_quench_algorithm.is_timing_driven()) {
             critical_path = timing_info->least_slack_critical_path();
             sTNS = timing_info->setup_total_negative_slack();
             sWNS = timing_info->setup_worst_negative_slack();
@@ -935,7 +935,7 @@ void try_place(const t_placer_opts& placer_opts,
     VTR_LOG("Swaps called: %d\n", num_ts_called);
     report_aborted_moves();
 
-    if (placer_opts.place_algorithm == CRITICALITY_TIMING_PLACE) {
+    if (placer_opts.place_algorithm.is_timing_driven()) {
         //Final timing estimate
         VTR_ASSERT(timing_info);
         perform_full_timing_update(state.crit_exponent,
@@ -1009,7 +1009,7 @@ static void outer_loop_update_timing_info(const t_placer_opts& placer_opts,
                                           PlacerSetupSlacks* setup_slacks,
                                           ClusteredPinTimingInvalidator* pin_timing_invalidator,
                                           SetupTimingInfo* timing_info) {
-    if (placer_opts.place_algorithm != CRITICALITY_TIMING_PLACE) {
+    if (!placer_opts.place_algorithm.is_timing_driven()) {
         return;
     }
 
@@ -1238,7 +1238,7 @@ static void placement_inner_loop(float t,
             num_swap_rejected++;
         }
 
-        if (placer_opts.place_algorithm == CRITICALITY_TIMING_PLACE) {
+        if (placer_opts.place_algorithm.is_timing_driven()) {
             /* Do we want to re-timing analyze the circuit to get updated slack and criticality values?
              * We do this only once in a while, since it is expensive.
              */
@@ -1303,7 +1303,7 @@ static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
     }
     costs->bb_cost = new_bb_cost;
 
-    if (placer_opts.place_algorithm == CRITICALITY_TIMING_PLACE) {
+    if (placer_opts.place_algorithm.is_timing_driven()) {
         double new_timing_cost = 0.;
         comp_td_costs(delay_model, *criticalities, &new_timing_cost);
         if (fabs(new_timing_cost - costs->timing_cost) > costs->timing_cost * ERROR_TOL) {
@@ -1424,7 +1424,7 @@ static bool update_annealing_state(t_annealing_state* state,
     // The idea is that as the range limit shrinks (indicating we are fine-tuning a more optimized placement) we can focus more on a smaller number of critical connections, which a higher crit_exponent achieves.
     update_rlim(&state->rlim, success_rat, device_ctx.grid);
 
-    if (placer_opts.place_algorithm == CRITICALITY_TIMING_PLACE) {
+    if (placer_opts.place_algorithm.is_timing_driven()) {
         state->crit_exponent = (1 - (state->rlim - FINAL_RLIM) * state->inverse_delta_rlim)
                                    * (placer_opts.td_place_exp_last - placer_opts.td_place_exp_first)
                                + placer_opts.td_place_exp_first;
@@ -1817,7 +1817,7 @@ static int find_affected_nets_and_update_costs(const t_place_algorithm& place_al
             //once per net, not once per pin.
             update_net_bb(net_id, blocks_affected, iblk, blk, blk_pin);
 
-            if (place_algorithm == CRITICALITY_TIMING_PLACE || place_algorithm == SLACK_TIMING_PLACE) {
+            if (place_algorithm.is_timing_driven()) {
                 //Determine the change in timing costs if required
                 update_td_delta_costs(delay_model, *criticalities, net_id, blk_pin, blocks_affected, timing_delta_c);
             }
@@ -2440,7 +2440,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
         max_pins_per_clb = max(max_pins_per_clb, type.num_pins);
     }
 
-    if (placer_opts.place_algorithm == CRITICALITY_TIMING_PLACE) {
+    if (placer_opts.place_algorithm.is_timing_driven()) {
         /* Allocate structures associated with timing driven placement */
         /* [0..cluster_ctx.clb_nlist.nets().size()-1][1..num_pins-1]  */
         connection_delay = make_net_pins_matrix<float>(cluster_ctx.clb_nlist, 0.f);
@@ -2486,7 +2486,7 @@ static void alloc_and_load_placement_structs(float place_cost_exp,
 /* Frees the major structures needed by the placer (and not needed       *
  * elsewhere).   */
 static void free_placement_structs(const t_placer_opts& placer_opts) {
-    if (placer_opts.place_algorithm == CRITICALITY_TIMING_PLACE) {
+    if (placer_opts.place_algorithm.is_timing_driven()) {
         vtr::release_memory(connection_timing_cost);
         vtr::release_memory(connection_delay);
         vtr::release_memory(connection_setup_slack);
@@ -3085,7 +3085,7 @@ static int check_placement_costs(const t_placer_costs& costs,
         error++;
     }
 
-    if (place_algorithm == CRITICALITY_TIMING_PLACE) {
+    if (place_algorithm.is_timing_driven()) {
         comp_td_costs(delay_model, *criticalities, &timing_cost_check);
         //VTR_LOG("timing_cost recomputed from scratch: %g\n", timing_cost_check);
         if (fabs(timing_cost_check - costs.timing_cost) > costs.timing_cost * ERROR_TOL) {
@@ -3355,5 +3355,5 @@ static void init_annealing_state(t_annealing_state* state,
 }
 
 bool placer_needs_lookahead(const t_vpr_setup& vpr_setup) {
-    return (vpr_setup.PlacerOpts.place_algorithm == CRITICALITY_TIMING_PLACE);
+    return (vpr_setup.PlacerOpts.place_algorithm.is_timing_driven());
 }

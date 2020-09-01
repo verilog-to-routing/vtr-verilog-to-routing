@@ -886,7 +886,7 @@ class t_place_algorithm {
     bool operator!=(e_place_algorithm rhs) const { return algo != rhs; }
 
     ///@brief Check if the algorithm belongs to the timing driven category.
-    inline bool isTimingDriven() const {
+    inline bool is_timing_driven() const {
         return algo == CRITICALITY_TIMING_PLACE || algo == SLACK_TIMING_PLACE;
     }
 
