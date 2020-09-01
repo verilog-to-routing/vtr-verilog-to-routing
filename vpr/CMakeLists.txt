@@ -54,8 +54,17 @@ add_library(libvpr STATIC
 
 target_include_directories(libvpr PUBLIC ${LIB_INCLUDE_DIRS})
 
+#Handle analytic placer setup
+set(AP_DEFINES "")
+
 #Add Eigen header directories, and suppress warning with SYSTEM
-target_include_directories(libvpr SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../libs/EXTERNAL/eigen)
+if(${VPR_ANALYTIC_PLACE} AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../libs/EXTERNAL/eigen)
+	target_include_directories(libvpr SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../libs/EXTERNAL/eigen)
+	list(APPEND AP_DEFINES "-DENABLE_ANALYTIC_PLACE")
+endif()
+
+target_compile_definitions(libvpr PUBLIC ${AP_DEFINES})
+
 set_target_properties(libvpr PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
 #Specify link-time dependancies

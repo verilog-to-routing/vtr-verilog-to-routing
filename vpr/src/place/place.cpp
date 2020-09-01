@@ -585,6 +585,7 @@ void try_place(const t_placer_opts& placer_opts,
 
     initial_placement(placer_opts.pad_loc_type, placer_opts.constraints_file.c_str());
 
+#ifdef ENABLE_ANALYTIC_PLACE
     /*
      * Analytic Placer:
      *  Passes in the initial_placement via vpr_context, and passes its placement back via locations marked on
@@ -594,6 +595,7 @@ void try_place(const t_placer_opts& placer_opts,
     if (placer_opts.enable_analytic_placer) {
         AnalyticPlacer{}.ap_place();
     }
+#endif /* ENABLE_ANALYTIC_PLACE */
 
     // Update physical pin values
     for (auto block_id : cluster_ctx.clb_nlist.blocks()) {
@@ -756,9 +758,11 @@ void try_place(const t_placer_opts& placer_opts,
 
     first_rlim = (float)max(device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
 
-    // Analytic placer: When enabled, disables most of the anneal by setting first_t = 0 and goes strait to quench
     float first_t = 0;
-    if (!placer_opts.enable_analytic_placer) {
+#ifdef ENABLE_ANALYTIC_PLACE
+    // Analytic placer: When enabled, disables most of the anneal by setting first_t = 0 and goes strait to quench
+    if (!placer_opts.enable_analytic_placer)
+#endif /* ENABLE_ANALYTIC_PLACE */
         first_t = starting_t(&costs, &prev_inverse_costs,
                              annealing_sched, move_lim, first_rlim,
                              place_delay_model.get(),
@@ -768,7 +772,6 @@ void try_place(const t_placer_opts& placer_opts,
                              pin_timing_invalidator.get(),
                              blocks_affected,
                              placer_opts);
-    }
 
     t_annealing_state state;
     init_annealing_state(&state, annealing_sched, first_t, first_rlim, move_lim, first_crit_exponent);
