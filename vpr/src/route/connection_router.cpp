@@ -17,19 +17,20 @@ std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_f
     int sink_node,
     const t_conn_cost_params cost_params,
     t_bb bounding_box,
-    RouterStats& router_stats,
-    PathManager& rcv_path_manager) {
+    RouterStats& router_stats) {
     router_stats_ = &router_stats;
-    t_heap* cheapest = timing_driven_route_connection_common_setup(rt_root, sink_node, cost_params, bounding_box, rcv_path_manager);
+    t_heap* cheapest = timing_driven_route_connection_common_setup(rt_root, sink_node, cost_params, bounding_box);
 
     if (cheapest != nullptr) {
         update_cheapest(cheapest);
         t_heap out = *cheapest;
         heap_.free(cheapest);
         heap_.empty_heap();
+        rcv_path_manager.empty_heap();
         return std::make_pair(true, out);
     } else {
         heap_.empty_heap();
+        rcv_path_manager.empty_heap();
         return std::make_pair(false, t_heap());
     }
 }
@@ -39,8 +40,7 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_common_setup(
     t_rt_node* rt_root,
     int sink_node,
     const t_conn_cost_params cost_params,
-    t_bb bounding_box,
-    PathManager& rcv_path_manager) {
+    t_bb bounding_box) {
     // Determine whether to use RCV data structures and functions or not
     bool run_rcv = cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm == YOYO;
 
@@ -64,8 +64,7 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_common_setup(
 
     t_heap* cheapest = timing_driven_route_connection_from_heap(sink_node,
                                                                 cost_params,
-                                                                bounding_box,
-                                                                rcv_path_manager);
+                                                                bounding_box);
 
     if (cheapest == nullptr) {
         //Found no path found within the current bounding box.
@@ -98,6 +97,7 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_common_setup(
         reset_path_costs();
         modified_rr_node_inf_.clear();
         heap_.empty_heap();
+        rcv_path_manager.empty_heap();
 
         //Re-initialize the heap since it was emptied by the previous call to
         //timing_driven_route_connection_from_heap()
@@ -107,8 +107,7 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_common_setup(
         //Try finding the path again with the relaxed bounding box
         cheapest = timing_driven_route_connection_from_heap(sink_node,
                                                             cost_params,
-                                                            full_device_bounding_box,
-                                                            rcv_path_manager);
+                                                            full_device_bounding_box);
     }
 
     if (cheapest == nullptr) {
@@ -132,8 +131,7 @@ std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_f
     const t_conn_cost_params cost_params,
     t_bb net_bounding_box,
     const SpatialRouteTreeLookup& spatial_rt_lookup,
-    RouterStats& router_stats,
-    PathManager& rcv_path_manager) {
+    RouterStats& router_stats) {
     router_stats_ = &router_stats;
 
     // re-explore route tree from root to add any new nodes (buildheap afterwards)
@@ -156,8 +154,7 @@ std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_f
 
     t_heap* cheapest = timing_driven_route_connection_from_heap(sink_node,
                                                                 cost_params,
-                                                                high_fanout_bb,
-                                                                rcv_path_manager);
+                                                                high_fanout_bb);
 
     if (cheapest == nullptr) {
         //Found no path, that may be due to an unlucky choice of existing route tree sub-set,
@@ -172,8 +169,7 @@ std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_f
         cheapest = timing_driven_route_connection_common_setup(rt_root,
                                                                sink_node,
                                                                cost_params,
-                                                               net_bounding_box,
-                                                               rcv_path_manager);
+                                                               net_bounding_box);
     }
 
     if (cheapest == nullptr) {
@@ -181,6 +177,7 @@ std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_f
 
         free_route_tree(rt_root);
         heap_.empty_heap();
+        rcv_path_manager.empty_heap();
         return std::make_pair(false, t_heap());
     }
 
@@ -189,6 +186,7 @@ std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_f
     t_heap out = *cheapest;
     heap_.free(cheapest);
     heap_.empty_heap();
+    rcv_path_manager.empty_heap();
 
     return std::make_pair(true, out);
 }
@@ -201,8 +199,7 @@ std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_f
 template<typename Heap>
 t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(int sink_node,
                                                                          const t_conn_cost_params cost_params,
-                                                                         t_bb bounding_box,
-                                                                         PathManager& rcv_path_manager) {
+                                                                         t_bb bounding_box) {
     VTR_ASSERT_SAFE(heap_.is_valid());
 
     if (heap_.is_empty_heap()) { //No source
@@ -236,9 +233,9 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(int sin
         timing_driven_expand_cheapest(cheapest,
                                       sink_node,
                                       cost_params,
-                                      bounding_box,
-                                      rcv_path_manager);
+                                      bounding_box);
 
+        rcv_path_manager.free_path_struct(cheapest->path_data);
         heap_.free(cheapest);
         cheapest = nullptr;
     }
@@ -268,7 +265,6 @@ std::vector<t_heap> ConnectionRouter<Heap>::timing_driven_find_all_shortest_path
     //Add the route tree to the heap with no specific target node
     int target_node = OPEN;
 
-    // Don't need to run RCV when this is called, it's only called by the placer
     add_route_tree_to_heap(rt_root, target_node, cost_params, false);
     heap_.build_heap(); // via sifting down everything
 
@@ -293,8 +289,6 @@ std::vector<t_heap> ConnectionRouter<Heap>::timing_driven_find_all_shortest_path
 
     VTR_ASSERT_SAFE(heap_.is_valid());
 
-    PathManager empty_manager(/*init_rcv_structs=*/false);
-
     if (heap_.is_empty_heap()) { //No source
         VTR_LOGV_DEBUG(router_debug_, "  Initial heap empty (no source)\n");
     }
@@ -318,8 +312,7 @@ std::vector<t_heap> ConnectionRouter<Heap>::timing_driven_find_all_shortest_path
         timing_driven_expand_cheapest(cheapest,
                                       target_node,
                                       cost_params,
-                                      bounding_box,
-                                      empty_manager);
+                                      bounding_box);
 
         if (cheapest_paths[inode].index == OPEN || cheapest_paths[inode].cost >= cheapest->cost) {
             VTR_LOGV_DEBUG(router_debug_, "  Better cost to node %d: %g (was %g)\n", inode, cheapest->cost, cheapest_paths[inode].cost);
@@ -328,6 +321,7 @@ std::vector<t_heap> ConnectionRouter<Heap>::timing_driven_find_all_shortest_path
             VTR_LOGV_DEBUG(router_debug_, "  Worse cost to node %d: %g (better %g)\n", inode, cheapest->cost, cheapest_paths[inode].cost);
         }
 
+        rcv_path_manager.free_path_struct(cheapest->path_data);
         heap_.free(cheapest);
     }
 
@@ -338,8 +332,7 @@ template<typename Heap>
 void ConnectionRouter<Heap>::timing_driven_expand_cheapest(t_heap* cheapest,
                                                            int target_node,
                                                            const t_conn_cost_params cost_params,
-                                                           t_bb bounding_box,
-                                                           PathManager& rcv_path_manager) {
+                                                           t_bb bounding_box) {
     int inode = cheapest->index;
 
     t_rr_node_route_inf* route_inf = &rr_node_route_inf_[inode];
@@ -371,7 +364,7 @@ void ConnectionRouter<Heap>::timing_driven_expand_cheapest(t_heap* cheapest,
         update_cheapest(cheapest, route_inf);
 
         timing_driven_expand_neighbours(cheapest, cost_params, bounding_box,
-                                        target_node, rcv_path_manager);
+                                        target_node);
     } else {
         //Post-heap prune, do not re-explore from the current/new partial path as it
         //has worse cost than the best partial path to this node found so far
@@ -387,8 +380,7 @@ template<typename Heap>
 void ConnectionRouter<Heap>::timing_driven_expand_neighbours(t_heap* current,
                                                              const t_conn_cost_params cost_params,
                                                              t_bb bounding_box,
-                                                             int target_node,
-                                                             PathManager& rcv_path_manager) {
+                                                             int target_node) {
     /* Puts all the rr_nodes adjacent to current on the heap.
      */
 
@@ -439,8 +431,7 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbours(t_heap* current,
                                        cost_params,
                                        bounding_box,
                                        target_node,
-                                       target_bb,
-                                       rcv_path_manager);
+                                       target_bb);
     }
 }
 
@@ -457,8 +448,7 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
                                                             const t_conn_cost_params cost_params,
                                                             const t_bb bounding_box,
                                                             int target_node,
-                                                            const t_bb target_bb,
-                                                            PathManager& rcv_path_manager) {
+                                                            const t_bb target_bb) {
     RRNodeId to_node(to_node_int);
     int to_xlow = rr_nodes_.node_xlow(to_node);
     int to_ylow = rr_nodes_.node_ylow(to_node);
@@ -514,7 +504,8 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
 
     bool node_exists = false;
     if (run_rcv) {
-        node_exists = rcv_path_manager.node_exists_in_tree(current->path_data, to_node);
+        node_exists = rcv_path_manager.node_exists_in_tree(current->path_data, 
+                                                            to_node);
     }
 
     if (!node_exists || !run_rcv) {
@@ -539,12 +530,8 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
                                                        bool run_rcv) {
     t_heap next;
 
-    // Initalize RCV data struct if needed
-    if (run_rcv) {
-        next.path_data = new t_heap_path;
-    } else {
-        next.path_data = nullptr;
-    }
+    // Initalize RCV data struct if needed, otherwise it's set to nullptr
+    if (run_rcv) rcv_path_manager.alloc_path_struct(next.path_data);
 
     //Costs initialized to current
     next.cost = std::numeric_limits<float>::infinity(); //Not used directly
@@ -580,12 +567,10 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
         //
         //Pre-heap prune to keep the heap small, by not putting paths which are known to be
         //sub-optimal (at this point in time) into the heap.
-        // Alloc(bool) allocates RCV structures, otherwise they're set to nullptr
-        t_heap* next_ptr;
-        if (run_rcv)
-            next_ptr = heap_.alloc(true);
-        else
-            next_ptr = heap_.alloc();
+        t_heap* next_ptr = heap_.alloc();
+
+        // Allocate structures if RCV is enabled, otherwise give a nullptr
+        if (run_rcv) rcv_path_manager.alloc_path_struct(next_ptr->path_data);
 
         //Record how we reached this node
         next_ptr->cost = next.cost;
@@ -608,8 +593,9 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
         heap_.add_to_heap(next_ptr);
         ++router_stats_->heap_pushes;
     }
+
     if (run_rcv && next.path_data != nullptr) {
-        delete next.path_data;
+        rcv_path_manager.free_path_struct(next.path_data);
     }
 }
 
@@ -786,6 +772,7 @@ void ConnectionRouter<Heap>::empty_heap_annotating_node_route_inf() {
         rr_node_route_inf_[tmp->index].backward_path_cost = tmp->backward_path_cost;
         modified_rr_node_inf_.push_back(tmp->index);
 
+        rcv_path_manager.free_path_struct(tmp->path_data);
         heap_.free(tmp);
     }
 }
@@ -874,7 +861,7 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
         expected_total_cost = expected_total_delay_cost + expected_cong;
 
         push_back_node_with_info(&heap_, inode, expected_total_cost,
-                                 backward_path_cost, R_upstream, rt_node->Tdel);
+                                 backward_path_cost, R_upstream, rt_node->Tdel, rcv_path_manager);
     }
 
     ++router_stats_->heap_pushes;
@@ -1007,7 +994,8 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(
                 rr_nodes,
                 rr_rc_data,
                 rr_switch_inf,
-                rr_node_route_inf);
+                rr_node_route_inf,
+                PathManager(false));
         case e_heap_type::BUCKET_HEAP_APPROXIMATION:
             return std::make_unique<ConnectionRouter<Bucket>>(
                 grid,
@@ -1015,7 +1003,8 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(
                 rr_nodes,
                 rr_rc_data,
                 rr_switch_inf,
-                rr_node_route_inf);
+                rr_node_route_inf,
+                PathManager(false));
         default:
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unknown heap_type %d",
                             heap_type);

@@ -91,9 +91,6 @@ class HeapStorage {
     // Allocate a heap item.
     t_heap* alloc();
 
-    // Allocate a heap item initializing RCV data structures
-    t_heap* alloc(bool init_data_structs);
-
     // Free a heap item.
     void free(t_heap* hptr);
     void free_all_memory();
@@ -125,8 +122,6 @@ class HeapInterface {
     // This transfers ownership of the t_heap object from HeapInterface to the
     // caller.
     virtual t_heap* alloc() = 0;
-
-    virtual t_heap* alloc(bool init_data_structs) = 0;
 
     // Free a heap item.
     //

@@ -83,8 +83,7 @@ static bool timing_driven_route_sink(
     t_rt_node** rt_node_of_sink,
     SpatialRouteTreeLookup& spatial_rt_lookup,
     RouterStats& router_stats,
-    route_budgets& budgeting_inf,
-    PathManager& rcv_path_manager);
+    route_budgets& budgeting_inf);
 
 template<typename ConnectionRouter>
 static bool timing_driven_pre_route_to_clock_root(
@@ -330,7 +329,8 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
         device_ctx.rr_nodes,
         device_ctx.rr_rc_data,
         device_ctx.rr_switch_inf,
-        route_ctx.rr_node_route_inf);
+        route_ctx.rr_node_route_inf,
+        PathManager(router_opts.routing_budgets_algorithm == YOYO));
 
     // Make sure template type ConnectionRouter is a ConnectionRouterInterface.
     static_assert(std::is_base_of<ConnectionRouterInterface, ConnectionRouter>::value, "ConnectionRouter must implement the ConnectionRouterInterface");
@@ -974,9 +974,6 @@ bool timing_driven_route_net(ConnectionRouter& router,
 
     VTR_LOGV_DEBUG(f_router_debug, "Routing Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
 
-    // Extra managing object to handle RCV structures only if RCV is active
-    PathManager rcv_path_manager(router_opts.routing_budgets_algorithm == YOYO);
-
     t_rt_node* rt_root;
     rt_root = setup_routing_resources(itry,
                                       net_id,
@@ -1118,8 +1115,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
                                       rt_root, rt_node_of_sink,
                                       spatial_route_tree_lookup,
                                       router_stats,
-                                      budgeting_inf,
-                                      rcv_path_manager))
+                                      budgeting_inf))
             return false;
 
         profiling::conn_finish(route_ctx.net_rr_terminals[net_id][0],
@@ -1156,6 +1152,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
     // route tree is not kept persistent since building it from the traceback the next iteration takes almost 0 time
     VTR_LOGV_DEBUG(f_router_debug, "Routed Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
     free_route_tree(rt_root);
+    router.rcv_path_manager.empty_route_tree_nodes();
     return (true);
 }
 
@@ -1185,8 +1182,6 @@ static bool timing_driven_pre_route_to_clock_root(
 
     router.clear_modified_rr_node_info();
 
-    PathManager empty_manager(/*init_rcv_structs=*/false);
-
     bool found_path;
     t_heap cheapest;
     std::tie(found_path, cheapest) = router.timing_driven_route_connection_from_route_tree(
@@ -1194,8 +1189,7 @@ static bool timing_driven_pre_route_to_clock_root(
         sink_node,
         cost_params,
         bounding_box,
-        router_stats,
-        empty_manager);
+        router_stats);
 
     // TODO: Parts of the rest of this function are repetitive to code in timing_driven_route_sink. Should refactor.
     if (!found_path) {
@@ -1221,7 +1215,7 @@ static bool timing_driven_pre_route_to_clock_root(
 
     t_trace* new_route_start_tptr = update_traceback(&cheapest, net_id);
     VTR_ASSERT_DEBUG(validate_traceback(route_ctx.trace[net_id].head));
-    update_route_tree(&cheapest, ((high_fanout) ? &spatial_rt_lookup : nullptr), empty_manager);
+    update_route_tree(&cheapest, ((high_fanout) ? &spatial_rt_lookup : nullptr), router.rcv_path_manager);
     VTR_ASSERT_DEBUG(verify_route_tree(rt_root));
     VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
     VTR_ASSERT_DEBUG(!high_fanout || validate_route_tree_spatial_lookup(rt_root, spatial_rt_lookup));
@@ -1263,8 +1257,7 @@ static bool timing_driven_route_sink(
     t_rt_node** rt_node_of_sink,
     SpatialRouteTreeLookup& spatial_rt_lookup,
     RouterStats& router_stats,
-    route_budgets& budgeting_inf,
-    PathManager& rcv_path_manager) {
+    route_budgets& budgeting_inf) {
     /* Build a path from the existing route tree rooted at rt_root to the target_node
      * add this branch to the existing route tree and update pathfinder costs and rr_node_route_inf to reflect this */
     auto& route_ctx = g_vpr_ctx.mutable_routing();
@@ -1299,15 +1292,13 @@ static bool timing_driven_route_sink(
                                                                                                            cost_params,
                                                                                                            bounding_box,
                                                                                                            spatial_rt_lookup,
-                                                                                                           router_stats,
-                                                                                                           rcv_path_manager);
+                                                                                                           router_stats);
     } else {
         std::tie(found_path, cheapest) = router.timing_driven_route_connection_from_route_tree(rt_root,
                                                                                                sink_node,
                                                                                                cost_params,
                                                                                                bounding_box,
-                                                                                               router_stats,
-                                                                                               rcv_path_manager);
+                                                                                               router_stats);
     }
 
     if (!found_path) {
@@ -1337,7 +1328,7 @@ static bool timing_driven_route_sink(
     t_trace* new_route_start_tptr = update_traceback(&cheapest, net_id);
     VTR_ASSERT_DEBUG(validate_traceback(route_ctx.trace[net_id].head));
 
-    rt_node_of_sink[target_pin] = update_route_tree(&cheapest, ((high_fanout) ? &spatial_rt_lookup : nullptr), rcv_path_manager);
+    rt_node_of_sink[target_pin] = update_route_tree(&cheapest, ((high_fanout) ? &spatial_rt_lookup : nullptr), router.rcv_path_manager);
     VTR_ASSERT_DEBUG(verify_route_tree(rt_root));
     VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
     VTR_ASSERT_DEBUG(!high_fanout || validate_route_tree_spatial_lookup(rt_root, spatial_rt_lookup));

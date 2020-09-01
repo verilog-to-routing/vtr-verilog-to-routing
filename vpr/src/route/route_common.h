@@ -206,16 +206,18 @@ void push_back_node_with_info(
     float total_cost,
     float backward_path_cost,
     float R_upstream,
-    float backward_path_delay) {
-    t_heap* hptr = heap->alloc(true);
+    float backward_path_delay,
+    PathManager& rcv_path_manager) {
+
+    t_heap* hptr = heap->alloc();
+    rcv_path_manager.alloc_path_struct(hptr->path_data);
+
     hptr->index = inode;
     hptr->cost = total_cost;
     hptr->backward_path_cost = backward_path_cost;
     hptr->R_upstream = R_upstream;
-    hptr->path_data->path_rr.clear();
-    hptr->path_data->edge.clear();
-    // hptr->net_rr = net_rr;
+
     hptr->path_data->backward_delay = backward_path_delay;
-    hptr->path_data->backward_cong = 0;
+    
     heap->push_back(hptr);
 }

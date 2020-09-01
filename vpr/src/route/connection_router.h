@@ -30,7 +30,8 @@ class ConnectionRouter : public ConnectionRouterInterface {
         const t_rr_graph_storage& rr_nodes,
         const std::vector<t_rr_rc_data>& rr_rc_data,
         const std::vector<t_rr_switch_inf>& rr_switch_inf,
-        std::vector<t_rr_node_route_inf>& rr_node_route_inf)
+        std::vector<t_rr_node_route_inf>& rr_node_route_inf,
+        PathManager path_manager)
         : grid_(grid)
         , router_lookahead_(router_lookahead)
         , rr_nodes_(rr_nodes.view())
@@ -38,7 +39,8 @@ class ConnectionRouter : public ConnectionRouterInterface {
         , rr_switch_inf_(rr_switch_inf.data(), rr_switch_inf.size())
         , rr_node_route_inf_(rr_node_route_inf.data(), rr_node_route_inf.size())
         , router_stats_(nullptr)
-        , router_debug_(false) {
+        , router_debug_(false)
+        , rcv_path_manager(path_manager) {
         heap_.init_heap(grid);
         heap_.set_prune_limit(rr_nodes_.size(), kHeapPruneFactor * rr_nodes_.size());
     }
@@ -66,8 +68,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         int sink_node,
         const t_conn_cost_params cost_params,
         t_bb bounding_box,
-        RouterStats& router_stats,
-        PathManager& rcv_path_manager) final;
+        RouterStats& router_stats) final;
 
     // Finds a path from the route tree rooted at rt_root to sink_node for a
     // high fanout net.
@@ -80,8 +81,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         const t_conn_cost_params cost_params,
         t_bb bounding_box,
         const SpatialRouteTreeLookup& spatial_rt_lookup,
-        RouterStats& router_stats,
-        PathManager& rcv_path_manager) final;
+        RouterStats& router_stats) final;
 
     // Finds a path from the route tree rooted at rt_root to all sinks
     // available.
@@ -133,8 +133,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         t_rt_node* rt_root,
         int sink_node,
         const t_conn_cost_params cost_params,
-        t_bb bounding_box,
-        PathManager& rcv_path_manager);
+        t_bb bounding_box);
 
     // Finds a path to sink_node, starting from the elements currently in the
     // heap.
@@ -148,24 +147,21 @@ class ConnectionRouter : public ConnectionRouterInterface {
     t_heap* timing_driven_route_connection_from_heap(
         int sink_node,
         const t_conn_cost_params cost_params,
-        t_bb bounding_box,
-        PathManager& rcv_path_manager);
+        t_bb bounding_box);
 
     // Expand this current node if it is a cheaper path.
     void timing_driven_expand_cheapest(
         t_heap* cheapest,
         int target_node,
         const t_conn_cost_params cost_params,
-        t_bb bounding_box,
-        PathManager& rcv_path_manager);
+        t_bb bounding_box);
 
     // Expand each neighbor of the current node.
     void timing_driven_expand_neighbours(
         t_heap* current,
         const t_conn_cost_params cost_params,
         t_bb bounding_box,
-        int target_node,
-        PathManager& rcv_path_manager);
+        int target_node);
 
     // Conditionally adds to_node to the router heap (via path from from_node
     // via from_edge).
@@ -180,8 +176,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         const t_conn_cost_params cost_params,
         const t_bb bounding_box,
         int target_node,
-        const t_bb target_bb,
-        PathManager& rcv_path_manager);
+        const t_bb target_bb);
 
     // Add to_node to the heap, and also add any nodes which are connected by
     // non-configurable edges
@@ -245,6 +240,10 @@ class ConnectionRouter : public ConnectionRouterInterface {
     RouterStats* router_stats_;
     HeapImplementation heap_;
     bool router_debug_;
+
+    public:
+    // The path manager for RCV, keeps track of the route tree as a set, also manages the allocation of the heap types
+    PathManager rcv_path_manager;
 };
 
 // Construct a connection router that uses the specified heap type.

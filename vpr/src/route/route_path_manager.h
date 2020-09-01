@@ -2,6 +2,7 @@
 #include "vtr_assert.h"
 
 #include <set>
+#include <list>
 #include <vector>
 
 #ifndef _PATH_MANAGER_H
@@ -43,12 +44,31 @@ class PathManager {
 
     bool is_enabled();
 
+    // Insert the backwards path back into the main route context traceback
     void insert_backwards_path_into_traceback(t_heap_path* path_data, float cost, float backward_path_cost);
+
+    // Dynamically create a t_heap_path structure to be used in the heap
+    void alloc_path_struct(t_heap_path*& tptr);
+
+    // Free the path structure if it's initialized
+    void free_path_struct(t_heap_path*& tptr);
+
+    void free_all_memory();
+
+    void empty_heap();
+
+    void empty_route_tree_nodes();
 
     private:
 
     // Is RCV enabled and thus route_tree_nodes in use
     bool _is_enabled;
+
+    // This is a list of all currently allocated heap path pointers
+    std::vector<t_heap_path*> _alloc_list;
+
+    // A list of freed nodes, to be used where possible to avoid unnecessary news
+    std::list<t_heap_path*> _freed_nodes;
 
     std::set<RRNodeId> route_tree_nodes;
 };

@@ -168,12 +168,6 @@ class Bucket : public HeapInterface {
         return hptr;
     }
 
-    t_heap* alloc(bool init_data_structs) {
-        // Supress unused warning
-        (void)init_data_structs;
-        return alloc();
-    }
-
     void free(t_heap* hptr) final {
         // Static assert ensures that BucketItem::item is at offset 0,
         // so this cast is safe.
