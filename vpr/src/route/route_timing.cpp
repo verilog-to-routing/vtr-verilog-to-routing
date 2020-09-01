@@ -703,7 +703,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
                 //     budgeting_inf.print_route_budget(std::string("route_budgets_") + std::to_string(itry) + ".txt", net_delay);
                 // }
 
-                router.rcv_path_manager.set_enabled(true);
+                if (router_opts.routing_budgets_algorithm == YOYO) router.rcv_path_manager.set_enabled(true);
 
             } else {
                 bool stable_routing_configuration = true;
