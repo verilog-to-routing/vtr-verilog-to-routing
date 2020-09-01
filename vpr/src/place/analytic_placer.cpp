@@ -1,3 +1,5 @@
+#ifdef ENABLE_ANALYTIC_PLACE
+
 #include "analytic_placer.h"
 #include <Eigen/Core>
 #include <Eigen/IterativeLinearSolvers>
@@ -699,3 +701,5 @@ void AnalyticPlacer::print_iter_stats(const int iter,
         stall);
     VTR_LOG("                                    |\n");
 }
+
+#endif /* ENABLE_ANALYTIC_PLACE */

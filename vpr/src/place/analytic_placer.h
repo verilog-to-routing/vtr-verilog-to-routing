@@ -1,6 +1,7 @@
 #ifndef VPR_ANALYTIC_PLACEMENT_H
 #define VPR_ANALYTIC_PLACEMENT_H
 
+#ifdef ENABLE_ANALYTIC_PLACE
 /**
  * @file
  * @brief This file implements the analytic placer, described as lower-bound placement in SimPL. It formulates
@@ -243,4 +244,6 @@ class AnalyticPlacer {
                           const int stall);
 };
 
-#endif
+#endif /* ENABLE_ANALYTIC_PLACE */
+
+#endif /* VPR_ANALYTIC_PLACEMENT_H */

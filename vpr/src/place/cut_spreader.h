@@ -1,6 +1,8 @@
 #ifndef VPR_SRC_PLACE_LEGALIZER_H_
 #define VPR_SRC_PLACE_LEGALIZER_H_
 
+#ifdef ENABLE_ANALYTIC_PLACE
+
 /**
  * @file
  * @brief This file defines the cut-spreader class with a greedy legalizer as a member method.
@@ -251,5 +253,7 @@ class CutSpreader {
      */
     std::pair<int, int> cut_region(SpreaderRegion& r, bool dir);
 };
+
+#endif /* ENABLE_ANALYTIC_PLACE */
 
 #endif /* VPR_SRC_PLACE_LEGALIZER_H_ */

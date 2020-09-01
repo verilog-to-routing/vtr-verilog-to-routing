@@ -1,3 +1,5 @@
+#ifdef ENABLE_ANALYTIC_PLACE
+
 #include "cut_spreader.h"
 #include <iostream>
 #include <vector>
@@ -851,3 +853,5 @@ void CutSpreader::strict_legalize() {
         }
     }
 }
+
+#endif /* ENABLE_ANALYTIC_PLACE */
