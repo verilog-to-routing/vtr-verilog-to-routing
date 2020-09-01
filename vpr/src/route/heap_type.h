@@ -35,6 +35,7 @@
  *
  * u.next:  pointer to the next s_heap structure in the free
  *          linked list.  Not used when on the heap.
+ * 
  */
 struct t_heap {
     float cost = 0.;
@@ -71,8 +72,8 @@ struct t_heap {
         return RREdgeId(u.prev.edge);
     }
 
-    void set_prev_edge(RREdgeId edges) {
-        u.prev.edge = (size_t)edges;
+    void set_prev_edge(RREdgeId edge) {
+        u.prev.edge = (size_t)edge;
     }
 
   private:

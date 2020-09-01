@@ -167,7 +167,6 @@ class Bucket : public HeapInterface {
         t_heap* hptr = &items_.alloc_item()->item;
         return hptr;
     }
-
     void free(t_heap* hptr) final {
         // Static assert ensures that BucketItem::item is at offset 0,
         // so this cast is safe.

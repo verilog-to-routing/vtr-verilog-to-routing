@@ -924,16 +924,6 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
             for (t_rt_node* rt_node : spatial_rt_lookup[bin_x][bin_y]) {
                 if (!rt_node->re_expand) continue; //Some nodes (like IPINs) shouldn't be re-expanded
 
-                // if (run_rcv) {
-                //     // trace_path.clear();
-                //     // trace_path.insert(rt_node->inode);
-                //     t_rt_node* parent = rt_node->parent_node;
-                //     while (parent != nullptr) {
-                //         // trace_path.insert(parent->inode);
-                //         parent = parent->parent_node;
-                //     }
-                // }
-
                 //Put the node onto the heap
                 add_route_tree_node_to_heap(rt_node, target_node, cost_params, run_rcv);
 

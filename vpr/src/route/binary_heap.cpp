@@ -20,7 +20,6 @@ BinaryHeap::~BinaryHeap() {
 t_heap* BinaryHeap::alloc() {
     return storage_.alloc();
 }
-
 void BinaryHeap::free(t_heap* hptr) {
     storage_.free(hptr);
 }
