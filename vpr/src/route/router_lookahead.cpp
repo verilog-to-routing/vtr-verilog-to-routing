@@ -92,7 +92,7 @@ float NoOpLookahead::get_expected_cost(int /*current_node*/, int /*target_node*/
     return 0.;
 }
 
-std::pair<float, float> NoOpLookahead::get_expected_delay_and_cong(int node, int target_node, const t_conn_cost_params& params, float R_upstream) const {
+std::pair<float, float> NoOpLookahead::get_expected_delay_and_cong(int /*node*/, int /*target_node*/, const t_conn_cost_params& /*params*/, float /*R_upstream*/) const {
     return std::make_pair(0., 0.);
 }
 
