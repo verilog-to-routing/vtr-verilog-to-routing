@@ -6,20 +6,20 @@ PathManager::PathManager(bool init_rcv_structures) {
     // TODO: Use arena allocation method in the future, which would be setup here
 
     if (init_rcv_structures) {
-        _is_enabled = true;
+        is_enabled_ = true;
     } else {
-        _is_enabled = false;
+        is_enabled_ = false;
     }
 }
 
 PathManager::~PathManager() {
-    if (_is_enabled) free_all_memory();
+    if (is_enabled_) free_all_memory();
 }
 
 bool PathManager::node_exists_in_tree(t_heap_path* path_data,
                                       RRNodeId& to_node) {
     // Prevent seg faults for searching path data structures that haven't been created yet
-    if (!path_data || !_is_enabled) return false;
+    if (!path_data || !is_enabled_) return false;
 
     // First check the smaller current path, the ordering of these checks might effect runtime slightly
     for (auto& node : path_data->path_rr) {
@@ -29,9 +29,9 @@ bool PathManager::node_exists_in_tree(t_heap_path* path_data,
     }
 
     // Search through route tree set for nodes existance
-    auto node_exists_in_route_tree = route_tree_nodes.find(to_node);
+    auto node_exists_in_route_tree = route_tree_nodes_.find(to_node);
 
-    if (node_exists_in_route_tree != route_tree_nodes.end()) {
+    if (node_exists_in_route_tree != route_tree_nodes_.end()) {
         return true;
     }
 
@@ -39,13 +39,13 @@ bool PathManager::node_exists_in_tree(t_heap_path* path_data,
 }
 
 void PathManager::insert_node(RRNodeId node) {
-    if (_is_enabled) {
-        route_tree_nodes.insert(node);
+    if (is_enabled_) {
+        route_tree_nodes_.insert(node);
     }
 }
 
 void PathManager::insert_backwards_path_into_traceback(t_heap_path* path_data, float cost, float backward_path_cost) {
-    if (!_is_enabled) return;
+    if (!is_enabled_) return;
 
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     
@@ -60,26 +60,26 @@ void PathManager::insert_backwards_path_into_traceback(t_heap_path* path_data, f
 }
 
 bool PathManager::is_enabled() {
-    return _is_enabled;
+    return is_enabled_;
 }
 
 void PathManager::alloc_path_struct(t_heap_path*& tptr) {
     // TODO: Use arena allocation for this part
     
     // If RCV isn't enabled return a nullptr
-    if (!_is_enabled) {
+    if (!is_enabled_) {
         return;
     }
 
     // if (tptr == nullptr) {
         // Use a free node list to avoid unnecessary data allocation
         // If there are unused data structures in memory use these
-        if (_freed_nodes.size() > 0) {
-            tptr = _freed_nodes.back();
-            _freed_nodes.pop_back();
+        if (freed_nodes_.size() > 0) {
+            tptr = freed_nodes_.back();
+            freed_nodes_.pop_back();
         } else {
             tptr = new t_heap_path;
-            _alloc_list.push_back(tptr);
+            alloc_list_.push_back(tptr);
         }
     // }
     
@@ -90,21 +90,21 @@ void PathManager::alloc_path_struct(t_heap_path*& tptr) {
 }
 
 void PathManager::free_path_struct(t_heap_path*& tptr) {
-    if (!_is_enabled) return;
+    if (!is_enabled_) return;
 
     // Put freed structs in a freed array to be used later
     if (tptr != nullptr) {
-        _freed_nodes.push_back(tptr);
+        freed_nodes_.push_back(tptr);
         tptr = nullptr;
     }
 }
 
 void PathManager::free_all_memory() {
-    if (!_is_enabled) return;
+    if (!is_enabled_) return;
 
     // Only delete freed nodes because doing a partial arena alloc scheme
     // Actually delete in heap_type
-    for (t_heap_path* node : _alloc_list) {
+    for (t_heap_path* node : alloc_list_) {
         if (node != nullptr) delete node;
     }
 }
@@ -112,19 +112,19 @@ void PathManager::free_all_memory() {
 void PathManager::empty_heap() {
     // Don't use this, it's a significant time sink
     return;
-    if (!_is_enabled) return;
+    if (!is_enabled_) return;
 
-    _freed_nodes.clear();
+    freed_nodes_.clear();
 
     // Push all nodes onto the freed_nodes list
-    for (auto& node : _alloc_list)
-        _freed_nodes.push_back(node);
+    for (auto& node : alloc_list_)
+        freed_nodes_.push_back(node);
 }
 
 void PathManager::empty_route_tree_nodes() {
-    if (!_is_enabled) return;
+    if (!is_enabled_) return;
 
-    route_tree_nodes.clear();
+    route_tree_nodes_.clear();
 }
 
 void PathManager::move(t_heap_path*& dest, t_heap_path*& src) {

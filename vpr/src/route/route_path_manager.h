@@ -65,15 +65,15 @@ class PathManager {
     private:
 
     // Is RCV enabled and thus route_tree_nodes in use
-    bool _is_enabled;
+    bool is_enabled_;
 
     // This is a list of all currently allocated heap path pointers
-    std::vector<t_heap_path*> _alloc_list;
+    std::vector<t_heap_path*> alloc_list_;
 
     // A list of freed nodes, to be used where possible to avoid unnecessary news
-    std::list<t_heap_path*> _freed_nodes;
+    std::vector<t_heap_path*> freed_nodes_;
 
-    std::set<RRNodeId> route_tree_nodes;
+    std::set<RRNodeId> route_tree_nodes_;
 };
 
 #endif
