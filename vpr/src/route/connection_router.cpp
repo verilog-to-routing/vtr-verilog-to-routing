@@ -613,6 +613,41 @@ static bool same_non_config_node_set(int from_node, int to_node) {
 
 #endif
 
+template<typename Heap>
+float ConnectionRouter<Heap>::compute_node_cost_using_rcv(const t_conn_cost_params cost_params,
+                                                            const int to_node,
+                                                            const int target_node,
+                                                            const float backwards_delay,
+                                                            const float backwards_cong,
+                                                            const float R_upstream) {
+    float expected_delay;
+    float expected_cong;
+
+    const t_conn_delay_budget* delay_budget = cost_params.delay_budget;
+
+    std::tie(expected_delay, expected_cong) = router_lookahead_.get_expected_delay_and_cong(to_node, target_node, cost_params, R_upstream);
+
+    float expected_total_delay_cost;
+    float expected_total_cong_cost;
+
+    float expected_total_cong = cost_params.astar_fac * expected_cong + backwards_cong;
+    float expected_total_delay = cost_params.astar_fac * expected_delay + backwards_delay;
+    
+    //If budgets specified calculate cost as described by RCV paper:
+    //    R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While
+    //     Repairing Short-Path Violations," in IEEE Transactions on Computer-Aided Design of
+    //     Integrated Circuits and Systems, vol. 27, no. 4, pp. 686-697, April 2008.
+    expected_total_delay_cost = expected_total_delay;
+    expected_total_delay_cost += (delay_budget->short_path_criticality + cost_params.criticality) * std::max(0.f, delay_budget->target_delay - expected_total_delay);
+    // expected_total_delay_cost += std::pow(std::max(0.f, expected_total_delay - delay_budget->max_delay), 2) / 100e-12;
+    expected_total_delay_cost += std::pow(std::max(0.f, delay_budget->min_delay - expected_total_delay), 2) / 100e-12;
+    expected_total_cong_cost = expected_total_cong;
+    
+    float total_cost = expected_total_delay_cost + expected_total_cong_cost;
+
+    return total_cost;
+}
+
 //Calculates the cost of reaching to_node
 template<typename Heap>
 void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
@@ -707,38 +742,12 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
     }
 
     float total_cost = 0.;
-    const t_conn_delay_budget* delay_budget = cost_params.delay_budget;
 
     if (run_rcv && to->path_data != nullptr) {
         to->path_data->backward_delay += cost_params.criticality * Tdel;
         to->path_data->backward_cong += (1. - cost_params.criticality) * get_rr_cong_cost(to_node, cost_params.pres_fac);
 
-        float expected_delay; // = router_lookahead_.get_expected_delay(to_node, target_node, cost_params, to->R_upstream);
-        float expected_cong;  // = router_lookahead_.get_expected_cong(to_node, target_node, cost_params);
-
-        std::tie(expected_delay, expected_cong) = router_lookahead_.get_expected_delay_and_cong(to_node, target_node, cost_params, to->R_upstream);
-
-        float expected_total_delay_cost; // = new_costs.backward_cost + cost_params.astar_fac * expected_cost;
-        float expected_total_cong_cost;
-
-        float expected_total_cong = cost_params.astar_fac * expected_cong + to->path_data->backward_cong;
-        float expected_total_delay = cost_params.astar_fac * expected_delay + to->path_data->backward_delay;
-        //If budgets specified calculate cost as described by RCV paper:
-        //    R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While
-        //     Repairing Short-Path Violations," in IEEE Transactions on Computer-Aided Design of
-        //     Integrated Circuits and Systems, vol. 27, no. 4, pp. 686-697, April 2008.
-
-        //TODO: Since these targets are delays, shouldn't we be using Tdel instead of new_costs.total_cost on RHS?
-
-        expected_total_delay_cost = expected_total_delay;
-        expected_total_delay_cost += (delay_budget->short_path_criticality + cost_params.criticality) * std::max(0.f, delay_budget->target_delay - expected_total_delay);
-        // expected_total_delay_cost += std::pow(std::max(0.f, expected_total_delay - delay_budget->max_delay), 2) / 100e-12;
-        expected_total_delay_cost += std::pow(std::max(0.f, delay_budget->min_delay - expected_total_delay), 2) / 100e-12;
-        // if (expected_total_delay < delay_budget->min_delay) {
-        //     VTR_LOG(" MIN Budget Exceeded min_delay %e Texpect %e\n", delay_budget->min_delay, expected_total_delay);
-        // }
-        expected_total_cong_cost = expected_total_cong;
-        total_cost = expected_total_delay_cost + expected_total_cong_cost;
+        total_cost = compute_node_cost_using_rcv(cost_params, to_node, target_node, to->path_data->backward_delay, to->path_data->backward_cong, to->R_upstream);
     } else {
         //Update total cost
         float expected_cost = router_lookahead_.get_expected_cost(to_node, target_node, cost_params, to->R_upstream);
@@ -825,7 +834,6 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
     /*R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While
      * Repairing Short-Path Violations," in IEEE Transactions on Computer-Aided Design of
      * Integrated Circuits and Systems, vol. 27, no. 4, pp. 686-697, April 2008.*/
-    const t_conn_delay_budget* delay_budget = cost_params.delay_budget;
     // float expected_cost = router_lookahead_.get_expected_cost(inode, target_node, cost_params, R_upstream);
 
     if (!run_rcv) {
@@ -839,21 +847,7 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
                        inode, tot_cost, NO_PREVIOUS, RREdgeId::INVALID(),
                        backward_path_cost, R_upstream);
     } else {
-        float expected_total_cost;
-        float expected_delay; // = router_lookahead_.get_expected_delay(inode, target_node, cost_params, R_upstream);
-        float expected_cong;  // = router_lookahead_.get_expected_cong(inode, target_node, cost_params);
-
-        std::tie(expected_delay, expected_cong) = router_lookahead_.get_expected_delay_and_cong(inode, target_node, cost_params, R_upstream);
-
-        float expected_total_delay_cost; // = new_costs.backward_cost + cost_params.astar_fac * expected_cost;
-        // float expected_total_cong = expected_cong + get_rr_cong_cost(inode);
-        float expected_total_delay = expected_delay * cost_params.astar_fac + rt_node->Tdel;
-
-        expected_total_delay_cost = expected_total_delay;
-        expected_total_delay_cost += (delay_budget->short_path_criticality + cost_params.criticality) * std::max(0.f, delay_budget->target_delay - expected_total_delay);
-        // expected_total_delay_cost += pow(std::max(0.f, expected_total_delay - delay_budget->max_delay), 2) / 100e-12;
-        expected_total_delay_cost += pow(std::max(0.f, delay_budget->min_delay - expected_total_delay), 2) / 100e-12;
-        expected_total_cost = expected_total_delay_cost + expected_cong;
+        float expected_total_cost = compute_node_cost_using_rcv(cost_params, inode, target_node, rt_node->Tdel, 0, R_upstream);
 
         push_back_node_with_info(&heap_, inode, expected_total_cost,
                                  backward_path_cost, R_upstream, rt_node->Tdel, &rcv_path_manager);
