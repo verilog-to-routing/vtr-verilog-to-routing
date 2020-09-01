@@ -1,10 +1,6 @@
 #include "analytic_placer.h"
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wctor-dtor-privacy"
-#pragma GCC diagnostic ignored "-Wduplicated-branches"
 #include <Eigen/Core>
 #include <Eigen/IterativeLinearSolvers>
-#pragma GCC diagnostic pop
 #include <iostream>
 #include <vector>
 #include <stdint.h>

@@ -51,7 +51,11 @@ add_library(libvpr STATIC
              ${LIB_SOURCES}
 )
 
-target_include_directories(libvpr PUBLIC ${LIB_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/../libs/EXTERNAL/eigen)
+
+target_include_directories(libvpr PUBLIC ${LIB_INCLUDE_DIRS})
+
+#Add Eigen header directories, and suppress warning with SYSTEM
+target_include_directories(libvpr SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../libs/EXTERNAL/eigen)
 set_target_properties(libvpr PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
 #Specify link-time dependancies
