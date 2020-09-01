@@ -3925,17 +3925,15 @@ static void highlight_blocks(double x, double y) {
         sprintf(msg, "Block #%zu (%s) at (%d, %d) selected.", size_t(clb_index), cluster_ctx.clb_nlist.block_name(clb_index).c_str(), place_ctx.block_locs[clb_index].loc.x, place_ctx.block_locs[clb_index].loc.y);
     }
 
-    if(get_manual_move_flag()) {
-        
-    	if (!manual_move_globals.manual_move_window_is_open) {
+    if (get_manual_move_flag()) {
+        if (!manual_move_globals.manual_move_window_is_open) {
             GtkWidget* proceed = find_button("ProceedButton");
-    	    ezgl::press_proceed(proceed,&application);
-        }
-        else {
+            ezgl::press_proceed(proceed, &application);
+        } else {
             gtk_widget_destroy((GtkWidget*)manual_move_globals.manual_move_window);
             manual_move_globals.manual_move_window_is_open = false;
         }
-    	manual_move_generator_window (std::to_string(size_t(clb_index)));
+        manual_move_generator_window(std::to_string(size_t(clb_index)));
     }
 
     application.update_message(msg);
@@ -4182,8 +4180,13 @@ ManualMoveInfo* get_manual_move_info() {
 
 //checks if the maual move checkbox is toggled and returns true if it was toggled
 bool get_manual_move_flag() {
+#    ifndef NO_GRAPHICS
     GObject* manual_move_button = application.get_object("ManualMove");
     return gtk_toggle_button_get_active((GtkToggleButton*)manual_move_button);
+
+#    else
+    return false;
+#    endif // NO_GRAPHICS
 }
 
 //after the user presses the calculate costs button, this function retrievs all the data in the window, such as block id and to location, checks if they are valid values, and if valid updates the draw_manual_move_info variable, highlights the indicated block id and proceeds in placement
