@@ -1428,8 +1428,8 @@ static e_move_result try_swap(float t,
 
     bool manual_move = get_manual_move_flag();
     //bool manual_move = true;
-    ManualMoveInfo *manual_move_info;
-    if(manual_move){
+    ManualMoveInfo* manual_move_info;
+    if (manual_move) {
         //manual_move_generator_window("");
         update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
         manual_move_info = get_manual_move_info();
@@ -1439,7 +1439,7 @@ static e_move_result try_swap(float t,
 
     e_create_move create_move_outcome;
     //Generate a new move (perturbation) used to explore the space of possible placements
-    if(manual_move)
+    if (manual_move)
         create_move_outcome = manual_move_generator.propose_move(blocks_affected, rlim);
     else
         create_move_outcome = move_generator.propose_move(blocks_affected, rlim);
