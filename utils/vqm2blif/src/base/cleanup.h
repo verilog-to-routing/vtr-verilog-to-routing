@@ -8,13 +8,14 @@
 
 #include "vqm2blif_util.h"
 #include "lut_recog.h"
+#include "vqm_common.h"
 
 //============================================================================================
 //				GLOBALS
 //============================================================================================
 
-extern int buffer_count, invert_count;
-extern int buffers_elim, inverts_elim;
+extern int buffer_count, invert_count, onelut_count;
+extern int buffers_elim, inverts_elim, oneluts_elim;
 
 void netlist_cleanup (t_module* module);
 

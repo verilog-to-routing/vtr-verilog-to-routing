@@ -4,6 +4,7 @@
 #include "odin_types.h"
 #include "string_cache.h"
 #include "read_xml_arch_file.h"
+#include "HardSoftLogicMixer.hpp"
 
 extern t_logical_block_type* type_descriptors;
 
@@ -45,5 +46,10 @@ extern netlist_t* blif_netlist;
 
 /* Global variable for read_blif function call */
 extern netlist_t* read_blif_netlist;
+
+/* logic optimization mixer, once ODIN is classy, could remove that
+ * and pass as member variable
+ */
+extern HardSoftLogicMixer* mixer;
 
 #endif

@@ -61,6 +61,7 @@
 #include "vtr_util.h"
 #include "vtr_path.h"
 #include "vtr_memory.h"
+#include "HardSoftLogicMixer.hpp"
 
 #define DEFAULT_OUTPUT "."
 
@@ -73,6 +74,7 @@ std::vector<t_logical_block_type> logical_block_types;
 short physical_lut_size = -1;
 int block_tag = -1;
 ids default_net_type = WIRE;
+HardSoftLogicMixer* mixer;
 
 enum ODIN_ERROR_CODE {
     SUCCESS,
@@ -165,6 +167,7 @@ static ODIN_ERROR_CODE synthesize_verilog() {
         /* point where we convert netlist to FPGA or other hardware target compatible format */
         printf("Performing Partial Map to target device\n");
         partial_map_top(verilog_netlist);
+        mixer->perform_optimizations(verilog_netlist);
 
         /* Find any unused logic in the netlist and remove it */
         remove_unused_logic(verilog_netlist);
@@ -217,7 +220,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
         printf("Odin failed to initialize %s with exit code%d\n", vtr_error.what(), ERROR_INITIALIZATION);
         exit(ERROR_INITIALIZATION);
     }
-
+    mixer = new HardSoftLogicMixer();
     try {
         /* Set up the global arguments to their default. */
         set_default_config();
@@ -322,7 +325,7 @@ netlist_t* start_odin_ii(int argc, char** argv) {
     printf("\n");
     printf("Odin ran with exit status: %d\n", SUCCESS);
     fflush(stdout);
-
+    delete mixer;
     return odin_netlist;
 }
 
@@ -548,6 +551,18 @@ void get_options(int argc, char** argv) {
         .nargs('+')
         .metavar("PINS_TO_MONITOR");
 
+    auto& mixing_opt_grp = parser.add_argument_group("mixing hard and soft logic optimization");
+
+    mixing_opt_grp.add_argument(global_args.exact_mults, "--exact_mults")
+        .help("To enable mixing hard block and soft logic implementation of adders")
+        .default_value("-1")
+        .action(argparse::Action::STORE);
+
+    mixing_opt_grp.add_argument(global_args.mults_ratio, "--mults_ratio")
+        .help("To enable mixing hard block and soft logic implementation of adders")
+        .default_value("-1.0")
+        .action(argparse::Action::STORE);
+
     parser.parse_args(argc, argv);
 
     //Check required options
@@ -606,6 +621,13 @@ void get_options(int argc, char** argv) {
 
     if (global_args.permissive.value()) {
         warning_message(PARSE_ARGS, unknown_location, "%s", "Permissive flag is ON. Undefined behaviour may occur\n");
+    }
+    if (global_args.mults_ratio >= 0.0 && global_args.mults_ratio <= 1.0) {
+        delete mixer->_opts[MULTIPLY];
+        mixer->_opts[MULTIPLY] = new MultsOpt(global_args.mults_ratio);
+    } else if (global_args.exact_mults >= 0) {
+        delete mixer->_opts[MULTIPLY];
+        mixer->_opts[MULTIPLY] = new MultsOpt(global_args.exact_mults);
     }
 }
 

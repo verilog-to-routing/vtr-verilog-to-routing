@@ -26,6 +26,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
+
 #include "odin_types.h"
 #include "odin_globals.h"
 #include "odin_error.h"
@@ -38,6 +40,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 extern loc_t my_location;
 
 void yyerror(const char *str){	delayed_error_message(PARSER, my_location, "error in parsing: (%s)\n",str);}
+int ieee_filter(int ieee_version, int return_type);
+std::string ieee_string(int return_type);
+
 int yywrap(){	return 1;}
 int yylex(void);
 
@@ -53,32 +58,105 @@ int yylex(void);
 	char *str_value;
 	ast_node_t *node;
 	ids id;
+	operation_list op;
 }
+
+/* base types */
 %token <id_name> vSYMBOL_ID
 %token <num_value> vNUMBER vINT_NUMBER
 %token <str_value> vSTRING
-%token vALWAYS vAUTOMATIC vINITIAL vSPECIFY vAND vASSIGN vBEGIN vCASE vDEFAULT vELSE vEND vENDCASE
-%token vENDMODULE vENDSPECIFY vENDGENERATE vENDFUNCTION vENDTASK vIF vINOUT vINPUT vMODULE vGENERATE vFUNCTION vTASK
-%token vOUTPUT vPARAMETER vLOCALPARAM vPOSEDGE vXNOR vXOR vDEFPARAM voANDAND vNAND vNEGEDGE vNOR vNOT vOR vFOR vBUF
-%token voOROR voLTE voGTE voPAL voSLEFT voSRIGHT voASLEFT voASRIGHT voEQUAL voNOTEQUAL voCASEEQUAL
-%token voCASENOTEQUAL voXNOR voNAND voNOR vWHILE vINTEGER vGENVAR
-%token vPLUS_COLON vMINUS_COLON vSPECPARAM voUNSIGNED voSIGNED vSIGNED 
+
+/********************
+ * Restricted keywords 
+ */
+
+/* Unlabeled */
+%token vAUTOMATIC
+%token vDEFAULT
+%token vDESIGN
+%token vDISABLE
+%token vEVENT
+%token vFORCE
+%token vINCDIR
+%token vINCLUDE
+%token vINITIAL
+%token vINSTANCE
+%token vLIBLIST
+%token vLIBRARY
+%token vNOSHOWCANCELLED
+%token vPULSESTYLE_ONDETECT
+%token vPULSESTYLE_ONEVENT
+%token vRELEASE
+%token vSHOWCANCELLED
+%token vCELL
+%token vUSE
+
+/* interconnect */
+%token vINOUT vINPUT vOUTPUT
+
+/* vars */
+%token vDEFPARAM vLOCALPARAM vPARAMETER vREALTIME vSPECPARAM vTIME
+
+/* control flow */
+%token vELSE vFOR vFOREVER vFORK vJOIN vIF vIFNONE vREPEAT vWAIT vWHILE 
+
+/* logic gates */
+%token vAND vBUF vBUFIF0 vBUFIF1 vNAND vNOR vNOT vNOTIF0 vNOTIF1 vOR vXOR vXNOR
+
+/* data types */
+%token vINTEGER vREAL vSCALARED vSIGNED vVECTORED vUNSIGNED
+
+/* power level */
+%token vSMALL vMEDIUM vLARGE vHIGHZ0 vHIGHZ1 vPULL0 vPULL1 vPULLDOWN vPULLUP vSTRONG0 vSTRONG1 vSUPPLY0 vSUPPLY1 vWEAK0 vWEAK1
+
+/* Transistor level logic */
+%token vCMOS vNMOS vPMOS vRCMOS vRNMOS vRPMOS vRTRAN vRTRANIF0 vRTRANIF1 vTRAN vTRANIF0 vTRANIF1
+
+/* net types */
+%token vWIRE vWAND vWOR vTRI vTRI0 vTRI1 vTRIAND vTRIOR vTRIREG vUWIRE vNONE vREG
+
+/* Timing Related */
+%token vALWAYS vEDGE vNEGEDGE vPOSEDGE
+
+/* statements */
+%token vASSIGN vDEASSIGN
+
+/* Blocks */
+%token vBEGIN vEND
+%token vCASE vENDCASE /* related */ vCASEX vCASEZ
+%token vCONFIG vENDCONFIG
+%token vFUNCTION vENDFUNCTION
+%token vGENERATE vENDGENERATE /* related */  vGENVAR
+%token vMODULE vMACROMODULE vENDMODULE
+%token vPRIMITIVE vENDPRIMITIVE
+%token vSPECIFY vENDSPECIFY
+%token vTABLE vENDTABLE
+%token vTASK vENDTASK
+
+/* logical operators */
+%token voNOTEQUAL voEQUAL voCASEEQUAL voOROR voLTE voGTE voANDAND voANDANDAND voCASENOTEQUAL '!'
+
+/* bitwise operators */
+%token voXNOR voNAND voNOR '|' '^' '&' '~'
+
+/* arithmetic operators */
+%token voSLEFT voSRIGHT voASLEFT voASRIGHT '+' '-' '*' '/' '%'
+
+/* unclassified operator */
+%token voEGT voPLUSCOLON voMINUSCOLON '='
 
 /* catch special characters */
-%token '?' ':' '|' '^' '&' '<' '>' '+' '-' '*' '/' '%' '(' ')' '{' '}' '[' ']' '~' '!' ';' '#' ',' '.' '@' '='
+%token '?' ':' '<' '>' '(' ')' '{' '}' '[' ']' ';' '#' ',' '.' '@' 
 
 /* C functions */
-%token voFINISH voDISPLAY vCFUNC vCLOG2
+%token vsFINISH vsDISPLAY vsCLOG2 vsUNSIGNED vsSIGNED vsFUNCTION
 
-	/* preprocessor directives */
+/* preprocessor directives */
 %token preDEFAULT_NETTYPE
-
-	/* net types */
-%token netWIRE netTRI netTRI0 netTRI1 netWAND netWOR netTRIAND netTRIOR netTRIREG netUWIRE netNONE netREG
 
 %right '?' ':'
 %left voOROR
-%left voANDAND
+%left voANDAND voANDANDAND
 %left '|'
 %left '^' voXNOR voNOR
 %left '&' voNAND
@@ -129,6 +207,9 @@ int yylex(void);
 %type <node> list_of_generate_block_items generate_item generate_block_item generate loop_generate_construct if_generate_construct 
 %type <node> case_generate_construct case_generate_item_list case_generate_items generate_block generate_localparam_declaration generate_defparam_declaration
 
+/* capture wether an operation is signed or not */
+%type <op> var_signedness
+
 %%
 
 source_text:
@@ -159,11 +240,11 @@ module_parameters:
 	;
 
 list_of_parameter_declaration:
-	list_of_parameter_declaration ',' vPARAMETER vSIGNED variable	{$$ = newList_entry($1, markAndProcessParameterWith(PARAMETER, $5, true));}
-	| list_of_parameter_declaration ',' vPARAMETER variable			{$$ = newList_entry($1, markAndProcessParameterWith(PARAMETER, $4, false));}
-	| list_of_parameter_declaration ',' variable					{$$ = newList_entry($1, markAndProcessParameterWith(PARAMETER, $3, false));} 
-	| vPARAMETER vSIGNED variable									{$$ = newList(VAR_DECLARE_LIST, markAndProcessParameterWith(PARAMETER, $3, true), my_location);}
-	| vPARAMETER variable											{$$ = newList(VAR_DECLARE_LIST, markAndProcessParameterWith(PARAMETER, $2, false), my_location);}
+	list_of_parameter_declaration ',' vPARAMETER var_signedness variable	{$$ = newList_entry($1, markAndProcessParameterWith(PARAMETER, $5, $4));}
+	| list_of_parameter_declaration ',' vPARAMETER variable			{$$ = newList_entry($1, markAndProcessParameterWith(PARAMETER, $4, UNSIGNED));}
+	| list_of_parameter_declaration ',' variable					{$$ = newList_entry($1, markAndProcessParameterWith(PARAMETER, $3, UNSIGNED));} 
+	| vPARAMETER var_signedness variable									{$$ = newList(VAR_DECLARE_LIST, markAndProcessParameterWith(PARAMETER, $3, $2), my_location);}
+	| vPARAMETER variable											{$$ = newList(VAR_DECLARE_LIST, markAndProcessParameterWith(PARAMETER, $2, UNSIGNED), my_location);}
 	;
 
 module_ports:
@@ -178,11 +259,11 @@ list_of_port_declaration:
 	;
 	
 port_declaration:
-	net_direction net_types vSIGNED variable			{$$ = markAndProcessPortWith(MODULE, $1, $2, $4, true);}
-	| net_direction net_types variable					{$$ = markAndProcessPortWith(MODULE, $1, $2, $3, false);}
-	| net_direction variable							{$$ = markAndProcessPortWith(MODULE, $1, NO_ID, $2, false);}
-	| net_direction vINTEGER integer_type_variable		{$$ = markAndProcessPortWith(MODULE, $1, INTEGER, $3, true);}
-	| net_direction vSIGNED variable					{$$ = markAndProcessPortWith(MODULE, $1, NO_ID, $3, true);}
+	net_direction net_types var_signedness variable			{$$ = markAndProcessPortWith(MODULE, $1, $2, $4, $3);}
+	| net_direction net_types variable					{$$ = markAndProcessPortWith(MODULE, $1, $2, $3, UNSIGNED);}
+	| net_direction variable							{$$ = markAndProcessPortWith(MODULE, $1, NO_ID, $2, UNSIGNED);}
+	| net_direction vINTEGER integer_type_variable		{$$ = markAndProcessPortWith(MODULE, $1, REG, $3, SIGNED);}
+	| net_direction var_signedness variable					{$$ = markAndProcessPortWith(MODULE, $1, NO_ID, $3, $2);}
 	| variable											{$$ = $1;}
 	;
 
@@ -272,7 +353,7 @@ list_of_specify_items:
 	;
 
 specparam_declaration:
-	'(' primary voPAL expression ')' '=' expression ';'	{free_whole_tree($2); free_whole_tree($4); free_whole_tree($7); $$ = NULL;}
+	'(' primary voEGT expression ')' '=' expression ';'	{free_whole_tree($2); free_whole_tree($4); free_whole_tree($7); $$ = NULL;}
 	| vSPECPARAM variable_list ';'						{free_whole_tree($2); $$ = NULL;}
 	;
 	
@@ -282,24 +363,24 @@ list_of_function_items:
 	;
 
 task_input_declaration:
-	vINPUT net_declaration					{$$ = markAndProcessSymbolListWith(TASK,INPUT, $2, false);}
-	| vINPUT integer_declaration			{$$ = markAndProcessSymbolListWith(TASK,INPUT, $2, true);}
-	| vINPUT vSIGNED variable_list ';'		{$$ = markAndProcessSymbolListWith(TASK,INPUT, $3, true);}
-	| vINPUT variable_list ';'				{$$ = markAndProcessSymbolListWith(TASK,INPUT, $2, false);}
+	vINPUT net_declaration					{$$ = markAndProcessSymbolListWith(TASK,INPUT, $2, UNSIGNED);}
+	| vINPUT integer_declaration			{$$ = markAndProcessSymbolListWith(TASK,INPUT, $2, SIGNED);}
+	| vINPUT var_signedness variable_list ';'		{$$ = markAndProcessSymbolListWith(TASK,INPUT, $3, $2);}
+	| vINPUT variable_list ';'				{$$ = markAndProcessSymbolListWith(TASK,INPUT, $2, UNSIGNED);}
 	;
 
 task_output_declaration:
-	vOUTPUT net_declaration					{$$ = markAndProcessSymbolListWith(TASK,OUTPUT, $2, false);}
-	| vOUTPUT integer_declaration			{$$ = markAndProcessSymbolListWith(TASK,OUTPUT, $2, true);}
-	| vOUTPUT vSIGNED variable_list ';'		{$$ = markAndProcessSymbolListWith(TASK,OUTPUT, $3, true);}
-	| vOUTPUT variable_list ';'				{$$ = markAndProcessSymbolListWith(TASK,OUTPUT, $2, false);}
+	vOUTPUT net_declaration					{$$ = markAndProcessSymbolListWith(TASK,OUTPUT, $2, UNSIGNED);}
+	| vOUTPUT integer_declaration			{$$ = markAndProcessSymbolListWith(TASK,OUTPUT, $2, SIGNED);}
+	| vOUTPUT var_signedness variable_list ';'		{$$ = markAndProcessSymbolListWith(TASK,OUTPUT, $3, $2);}
+	| vOUTPUT variable_list ';'				{$$ = markAndProcessSymbolListWith(TASK,OUTPUT, $2, UNSIGNED);}
 	;
 
 task_inout_declaration:
-	vINOUT net_declaration					{$$ = markAndProcessSymbolListWith(TASK,INOUT, $2, false);}
-	| vINOUT integer_declaration			{$$ = markAndProcessSymbolListWith(TASK,INOUT, $2, true);}
-	| vINOUT vSIGNED variable_list ';'		{$$ = markAndProcessSymbolListWith(TASK,INOUT, $3, true);}
-	| vINOUT variable_list ';'				{$$ = markAndProcessSymbolListWith(TASK,INOUT, $2, false);}
+	vINOUT net_declaration					{$$ = markAndProcessSymbolListWith(TASK,INOUT, $2, UNSIGNED);}
+	| vINOUT integer_declaration			{$$ = markAndProcessSymbolListWith(TASK,INOUT, $2, SIGNED);}
+	| vINOUT var_signedness variable_list ';'		{$$ = markAndProcessSymbolListWith(TASK,INOUT, $3, $2);}
+	| vINOUT variable_list ';'				{$$ = markAndProcessSymbolListWith(TASK,INOUT, $2, UNSIGNED);}
 	;
 
 list_of_task_items:
@@ -329,29 +410,29 @@ task_item:
 	;
 
 function_input_declaration:
-	vINPUT vSIGNED variable_list ';'	{$$ = markAndProcessSymbolListWith(FUNCTION, INPUT, $3, true);}
-	| vINPUT variable_list ';'			{$$ = markAndProcessSymbolListWith(FUNCTION, INPUT, $2, false);}
-	| vINPUT function_integer_declaration ';' {$$ = markAndProcessSymbolListWith(FUNCTION, INPUT, $2, false);}
+	vINPUT var_signedness variable_list ';'          {$$ = markAndProcessSymbolListWith(FUNCTION, INPUT, $3, $2);}
+	| vINPUT variable_list ';'                {$$ = markAndProcessSymbolListWith(FUNCTION, INPUT, $2, UNSIGNED);}
+	| vINPUT function_integer_declaration ';' {$$ = markAndProcessSymbolListWith(FUNCTION, INPUT, $2, UNSIGNED);}
 	;
 
 parameter_declaration:
-	vPARAMETER vSIGNED variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,PARAMETER, $3, true);}
-	| vPARAMETER variable_list ';'			{$$ = markAndProcessSymbolListWith(MODULE,PARAMETER, $2, false);}
+	vPARAMETER var_signedness variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,PARAMETER, $3, $2);}
+	| vPARAMETER variable_list ';'			{$$ = markAndProcessSymbolListWith(MODULE,PARAMETER, $2, UNSIGNED);}
 	;
 
 task_parameter_declaration:
-	vPARAMETER vSIGNED variable_list ';'	{$$ = markAndProcessSymbolListWith(TASK,PARAMETER, $3, true);}
-	| vPARAMETER variable_list ';'			{$$ = markAndProcessSymbolListWith(TASK,PARAMETER, $2, false);}
+	vPARAMETER var_signedness variable_list ';'	{$$ = markAndProcessSymbolListWith(TASK,PARAMETER, $3, $2);}
+	| vPARAMETER variable_list ';'			{$$ = markAndProcessSymbolListWith(TASK,PARAMETER, $2, UNSIGNED);}
 	;
 
 localparam_declaration:
-	vLOCALPARAM vSIGNED variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,LOCALPARAM, $3, true);}
-	| vLOCALPARAM variable_list ';'			{$$ = markAndProcessSymbolListWith(MODULE,LOCALPARAM, $2, false);}
+	vLOCALPARAM var_signedness variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,LOCALPARAM, $3, $2);}
+	| vLOCALPARAM variable_list ';'			{$$ = markAndProcessSymbolListWith(MODULE,LOCALPARAM, $2, UNSIGNED);}
 	;
 
 generate_localparam_declaration:
-	vLOCALPARAM vSIGNED variable_list ';'	{$$ = markAndProcessSymbolListWith(BLOCK,LOCALPARAM, $3, true);}
-	| vLOCALPARAM variable_list ';'			{$$ = markAndProcessSymbolListWith(BLOCK,LOCALPARAM, $2, false);}
+	vLOCALPARAM var_signedness variable_list ';'	{$$ = markAndProcessSymbolListWith(BLOCK,LOCALPARAM, $3, $2);}
+	| vLOCALPARAM variable_list ';'			{$$ = markAndProcessSymbolListWith(BLOCK,LOCALPARAM, $2, UNSIGNED);}
 	;
 
 defparam_declaration:
@@ -363,29 +444,29 @@ generate_defparam_declaration:
 	;
 
 io_declaration:
-	net_direction net_declaration					{$$ = markAndProcessSymbolListWith(MODULE,$1, $2, false);}
-	| net_direction integer_declaration				{$$ = markAndProcessSymbolListWith(MODULE,$1, $2, true);}
-	| net_direction vSIGNED variable_list ';'		{$$ = markAndProcessSymbolListWith(MODULE,$1, $3, true);}
-	| net_direction variable_list ';'				{$$ = markAndProcessSymbolListWith(MODULE,$1, $2, false);}
+	net_direction net_declaration					{$$ = markAndProcessSymbolListWith(MODULE,$1, $2, UNSIGNED);}
+	| net_direction integer_declaration				{$$ = markAndProcessSymbolListWith(MODULE,$1, $2, SIGNED);}
+	| net_direction var_signedness variable_list ';'		{$$ = markAndProcessSymbolListWith(MODULE,$1, $3, $2);}
+	| net_direction variable_list ';'				{$$ = markAndProcessSymbolListWith(MODULE,$1, $2, UNSIGNED);}
 	;
 
 net_declaration:
-	net_types vSIGNED variable_list ';'				{$$ = markAndProcessSymbolListWith(MODULE, $1, $3, true);}
-	| net_types variable_list ';'					{$$ = markAndProcessSymbolListWith(MODULE, $1, $2, false);}
+	net_types var_signedness variable_list ';'				{$$ = markAndProcessSymbolListWith(MODULE, $1, $3, $2);}
+	| net_types variable_list ';'					{$$ = markAndProcessSymbolListWith(MODULE, $1, $2, UNSIGNED);}
 	;
 
 integer_declaration:
-	vINTEGER integer_type_variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,INTEGER, $2, true);}
+	vINTEGER integer_type_variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,REG, $2, SIGNED);}
 	;
 
 genvar_declaration:
-	vGENVAR integer_type_variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,GENVAR, $2, true);}
+	vGENVAR integer_type_variable_list ';'	{$$ = markAndProcessSymbolListWith(MODULE,GENVAR, $2, SIGNED);}
 	;
 
 function_return:
-	list_of_function_return_variable							{$$ = markAndProcessSymbolListWith(FUNCTION, OUTPUT, $1, false);}
-	| vSIGNED list_of_function_return_variable				{$$ = markAndProcessSymbolListWith(FUNCTION, OUTPUT, $2, true);}
-	| function_integer_declaration							{$$ = markAndProcessSymbolListWith(FUNCTION, OUTPUT, $1, false);}		
+	list_of_function_return_variable							{$$ = markAndProcessSymbolListWith(FUNCTION, OUTPUT, $1, UNSIGNED);}
+	| var_signedness list_of_function_return_variable				{$$ = markAndProcessSymbolListWith(FUNCTION, OUTPUT, $2, $1);}
+	| function_integer_declaration							{$$ = markAndProcessSymbolListWith(FUNCTION, OUTPUT, $1, UNSIGNED);}		
 	;
 
 list_of_function_return_variable:
@@ -398,7 +479,7 @@ function_return_variable:
 	;
 
 function_integer_declaration:
-	vINTEGER integer_type_variable_list 				{$$ = markAndProcessSymbolListWith(FUNCTION, INTEGER, $2, true);}
+	vINTEGER integer_type_variable_list 				{$$ = markAndProcessSymbolListWith(FUNCTION, REG, $2, SIGNED);}
 	;
 
 function_port_list:
@@ -757,9 +838,9 @@ expression:
 	| voXNOR  expression %prec UXNOR				{$$ = newUnaryOperation(BITWISE_XNOR, $2, my_location);}
 	| '!' expression %prec ULNOT					{$$ = newUnaryOperation(LOGICAL_NOT, $2, my_location);}
 	| '^' expression %prec UXOR						{$$ = newUnaryOperation(BITWISE_XOR, $2, my_location);}
-	| vCLOG2 '(' expression ')'						{$$ = newUnaryOperation(CLOG2, $3, my_location);}
-	| voUNSIGNED '(' expression ')'					{$$ = newUnaryOperation(UNSIGNED, $3, my_location);}
-	| voSIGNED '(' expression ')'					{$$ = newUnaryOperation(SIGNED, $3, my_location);}
+	| vsCLOG2 '(' expression ')'					{$$ = newUnaryOperation(CLOG2, $3, my_location);}
+	| vsUNSIGNED '(' expression ')'					{$$ = newUnaryOperation(UNSIGNED, $3, my_location);}
+	| vsSIGNED '(' expression ')'					{$$ = newUnaryOperation(SIGNED, $3, my_location);}
 	| expression voPOWER expression					{$$ = newBinaryOperation(POWER,$1, $3, my_location);}
 	| expression '*' expression						{$$ = newBinaryOperation(MULTIPLY, $1, $3, my_location);}
 	| expression '/' expression						{$$ = newBinaryOperation(DIVIDE, $1, $3, my_location);}
@@ -796,8 +877,8 @@ primary:
 	vSYMBOL_ID												{$$ = newSymbolNode($1, my_location);}
 	| vSYMBOL_ID '[' expression ']'							{$$ = newArrayRef($1, $3, my_location);}
 	| vSYMBOL_ID '[' expression ']' '[' expression ']'		{$$ = newArrayRef2D($1, $3, $6, my_location);}
-	| vSYMBOL_ID '[' expression vPLUS_COLON expression ']'	{$$ = newPlusColonRangeRef($1, $3, $5, my_location);}
-	| vSYMBOL_ID '[' expression vMINUS_COLON expression ']'	{$$ = newMinusColonRangeRef($1, $3, $5, my_location);}
+	| vSYMBOL_ID '[' expression voPLUSCOLON expression ']'	{$$ = newPlusColonRangeRef($1, $3, $5, my_location);}
+	| vSYMBOL_ID '[' expression voMINUSCOLON expression ']'	{$$ = newMinusColonRangeRef($1, $3, $5, my_location);}
 	| vSYMBOL_ID '[' expression ':' expression ']'			{$$ = newRangeRef($1, $3, $5, my_location);}
 	| vSYMBOL_ID '[' expression ':' expression ']' '[' expression ':' expression ']'	{$$ = newRangeRef2D($1, $3, $5, $8, $10, my_location);}
 	| '{' expression_list '}'								{$$ = $2; ($2)->types.concat.num_bit_strings = -1;}
@@ -809,12 +890,12 @@ expression_list:
 	;
 
 c_function:
-	voFINISH '(' expression ')'									{$$ = newCFunction(FINISH, $3, NULL, my_location);}
-	| voDISPLAY '(' expression ')'									{$$ = newCFunction(DISPLAY, $3, NULL, my_location);}
-	| voDISPLAY '(' expression ',' c_function_expression_list ')'	{$$ = newCFunction(DISPLAY, $3, $5, my_location); /* this fails for now */}
-	| vCFUNC '(' c_function_expression_list ')'					{$$ = free_whole_tree($3);}
-	| vCFUNC '(' ')'											{$$ = NULL;}
-	| vCFUNC													{$$ = NULL;}
+	vsFINISH '(' expression ')'									{$$ = newCFunction(FINISH, $3, NULL, my_location);}
+	| vsDISPLAY '(' expression ')'									{$$ = newCFunction(DISPLAY, $3, NULL, my_location);}
+	| vsDISPLAY '(' expression ',' c_function_expression_list ')'	{$$ = newCFunction(DISPLAY, $3, $5, my_location); /* this fails for now */}
+	| vsFUNCTION '(' c_function_expression_list ')'					{$$ = free_whole_tree($3);}
+	| vsFUNCTION '(' ')'											{$$ = NULL;}
+	| vsFUNCTION													{$$ = NULL;}
 	;
 
 c_function_expression_list:
@@ -823,21 +904,21 @@ c_function_expression_list:
 	;
 
 wire_types: 
-	netWIRE 														{ $$ = WIRE; }
-	| netTRI 														{ $$ = WIRE; }
-	| netTRI0 														{ $$ = WIRE; }
-	| netTRI1 														{ $$ = WIRE; }
-	| netWAND 														{ $$ = WIRE; }
-	| netTRIAND 													{ $$ = WIRE; }
-	| netWOR 														{ $$ = WIRE; }
-	| netTRIOR 														{ $$ = WIRE; }
-	| netTRIREG 													{ $$ = WIRE; }
-	| netUWIRE 														{ $$ = WIRE; }
-	| netNONE														{ $$ = WIRE; }
+	vWIRE 															{ $$ = WIRE; }
+	| vTRI 															{ $$ = WIRE; }
+	| vTRI0 														{ $$ = WIRE; }
+	| vTRI1 														{ $$ = WIRE; }
+	| vWAND 														{ $$ = WIRE; }
+	| vTRIAND 														{ $$ = WIRE; }
+	| vWOR 															{ $$ = WIRE; }
+	| vTRIOR 														{ $$ = WIRE; }
+	| vTRIREG 														{ $$ = WIRE; }
+	| vUWIRE 														{ $$ = WIRE; }
+	| vNONE															{ $$ = NO_ID; /* no type here to force an error */ }
 	;
 
 reg_types: 
-	netREG 															{ $$ = REG; }
+	vREG 															{ $$ = REG; }
 	;
 
 net_types:
@@ -851,4 +932,349 @@ net_direction:
 	| vINOUT														{ $$ = INOUT; }
 	;
 
+var_signedness:
+	vUNSIGNED														{ $$ = UNSIGNED; }
+	| vSIGNED														{ $$ = SIGNED; }
+	;
+	
 %%
+
+
+/**
+ * This functions filters types based on the standard defined,
+ */ 
+int ieee_filter(int ieee_version, int return_type) {
+
+	switch(return_type) {
+		case voANDANDAND:	//fallthrough
+		case voPOWER:	//fallthrough
+		case voANDAND:	//fallthrough
+		case voOROR:	//fallthrough
+		case voLTE:	//fallthrough
+		case voEGT:	//fallthrough
+		case voGTE:	//fallthrough
+		case voSLEFT:	//fallthrough
+		case voSRIGHT:	//fallthrough
+		case voEQUAL:	//fallthrough
+		case voNOTEQUAL:	//fallthrough
+		case voCASEEQUAL:	//fallthrough
+		case voCASENOTEQUAL:	//fallthrough
+		case voXNOR:	//fallthrough
+		case voNAND:	//fallthrough
+		case voNOR:	//fallthrough
+		case vALWAYS:	//fallthrough
+		case vAND:	//fallthrough
+		case vASSIGN:	//fallthrough
+		case vBEGIN:	//fallthrough
+		case vBUF:	//fallthrough
+		case vBUFIF0:	//fallthrough
+		case vBUFIF1:	//fallthrough
+		case vCASE:	//fallthrough
+		case vCASEX:	//fallthrough
+		case vCASEZ:	//fallthrough
+		case vCMOS:	//fallthrough
+		case vDEASSIGN:	//fallthrough
+		case vDEFAULT:	//fallthrough
+		case vDEFPARAM:	//fallthrough
+		case vDISABLE:	//fallthrough
+		case vEDGE:	//fallthrough
+		case vELSE:	//fallthrough
+		case vEND:	//fallthrough
+		case vENDCASE:	//fallthrough
+		case vENDFUNCTION:	//fallthrough
+		case vENDMODULE:	//fallthrough
+		case vENDPRIMITIVE:	//fallthrough
+		case vENDSPECIFY:	//fallthrough
+		case vENDTABLE:	//fallthrough
+		case vENDTASK:	//fallthrough
+		case vEVENT:	//fallthrough
+		case vFOR:	//fallthrough
+		case vFORCE:	//fallthrough
+		case vFOREVER:	//fallthrough
+		case vFORK:	//fallthrough
+		case vFUNCTION:	//fallthrough
+		case vHIGHZ0:	//fallthrough
+		case vHIGHZ1:	//fallthrough
+		case vIF:	//fallthrough
+		case vIFNONE:	//fallthrough
+		case vINITIAL:	//fallthrough
+		case vINOUT:	//fallthrough
+		case vINPUT:	//fallthrough
+		case vINTEGER:	//fallthrough
+		case vJOIN:	//fallthrough
+		case vLARGE:	//fallthrough
+		case vMACROMODULE:	//fallthrough
+		case vMEDIUM:	//fallthrough
+		case vMODULE:	//fallthrough
+		case vNAND:	//fallthrough
+		case vNEGEDGE:	//fallthrough
+		case vNMOS:	//fallthrough
+		case vNOR:	//fallthrough
+		case vNOT:	//fallthrough
+		case vNOTIF0:	//fallthrough
+		case vNOTIF1:	//fallthrough
+		case vOR:	//fallthrough
+		case vOUTPUT:	//fallthrough
+		case vPARAMETER:	//fallthrough
+		case vPMOS:	//fallthrough
+		case vPOSEDGE:	//fallthrough
+		case vPRIMITIVE:	//fallthrough
+		case vPULL0:	//fallthrough
+		case vPULL1:	//fallthrough
+		case vPULLDOWN:	//fallthrough
+		case vPULLUP:	//fallthrough
+		case vRCMOS:	//fallthrough
+		case vREAL:	//fallthrough
+		case vREALTIME:	//fallthrough
+		case vREG:	//fallthrough
+		case vRELEASE:	//fallthrough
+		case vREPEAT:	//fallthrough
+		case vRNMOS:	//fallthrough
+		case vRPMOS:	//fallthrough
+		case vRTRAN:	//fallthrough
+		case vRTRANIF0:	//fallthrough
+		case vRTRANIF1:	//fallthrough
+		case vSCALARED:	//fallthrough
+		case vSMALL:	//fallthrough
+		case vSPECIFY:	//fallthrough
+		case vSPECPARAM:	//fallthrough
+		case vSTRONG0:	//fallthrough
+		case vSTRONG1:	//fallthrough
+		case vSUPPLY0:	//fallthrough
+		case vSUPPLY1:	//fallthrough
+		case vTABLE:	//fallthrough
+		case vTASK:	//fallthrough
+		case vTIME:	//fallthrough
+		case vTRAN:	//fallthrough
+		case vTRANIF0:	//fallthrough
+		case vTRANIF1:	//fallthrough
+		case vTRI:	//fallthrough
+		case vTRI0:	//fallthrough
+		case vTRI1:	//fallthrough
+		case vTRIAND:	//fallthrough
+		case vTRIOR:	//fallthrough
+		case vTRIREG:	//fallthrough
+		case vVECTORED:	//fallthrough
+		case vWAIT:	//fallthrough
+		case vWAND:	//fallthrough
+		case vWEAK0:	//fallthrough
+		case vWEAK1:	//fallthrough
+		case vWHILE:	//fallthrough
+		case vWIRE:	//fallthrough
+		case vWOR:	//fallthrough
+		case vXNOR:	//fallthrough
+		case vXOR: {
+			if(ieee_version < ieee_1995)
+				delayed_error_message(PARSER, my_location, "error in parsing: (%s) only exists in ieee 1995 or newer\n",ieee_string(return_type).c_str())
+			break;
+		}
+		case voASLEFT:	//fallthrough
+		case voASRIGHT:	//fallthrough
+		case voPLUSCOLON:   //fallthrough
+		case voMINUSCOLON:   //fallthrough
+		case vAUTOMATIC:	//fallthrough
+		case vENDGENERATE:	//fallthrough
+		case vGENERATE:	//fallthrough
+		case vGENVAR:	//fallthrough
+		case vLOCALPARAM:	//fallthrough
+		case vNOSHOWCANCELLED:	//fallthrough
+		case vPULSESTYLE_ONDETECT:	//fallthrough
+		case vPULSESTYLE_ONEVENT:	//fallthrough
+		case vSHOWCANCELLED:	//fallthrough
+		case vSIGNED:	//fallthrough
+		case vUNSIGNED: {
+			if(ieee_version < ieee_2001_noconfig)
+				delayed_error_message(PARSER, my_location, "error in parsing: (%s) only exists in ieee 2001-noconfig or newer\n",ieee_string(return_type).c_str())
+			break;
+		}
+		case vCELL:	//fallthrough
+		case vCONFIG:	//fallthrough
+		case vDESIGN:	//fallthrough
+		case vENDCONFIG:	//fallthrough
+		case vINCDIR:	//fallthrough
+		case vINCLUDE:	//fallthrough
+		case vINSTANCE:	//fallthrough
+		case vLIBLIST:	//fallthrough
+		case vLIBRARY:	//fallthrough
+		case vUSE: {
+			if(ieee_version < ieee_2001)
+				delayed_error_message(PARSER, my_location, "error in parsing: (%s) only exists in ieee 2001 or newer\n",ieee_string(return_type).c_str())
+			break;
+		}
+		case vUWIRE: {
+			if(ieee_version < ieee_2005)
+				delayed_error_message(PARSER, my_location, "error in parsing: (%s) only exists in ieee 2005 or newer\n",ieee_string(return_type).c_str())
+			break;
+		}
+		case vsCLOG2:
+		case vsUNSIGNED:	//fallthrough
+		case vsSIGNED:	//fallthrough
+		case vsFINISH:	//fallthrough
+		case vsDISPLAY:	//fallthrough
+		case vsFUNCTION:	//fallthrough
+			/* unsorted. TODO: actually sort these */
+			break;
+		default: {
+			delayed_error_message(PARSER, my_location, "error in parsing: keyword index: %d is not a supported keyword.\n",return_type)
+			break;
+		}
+	}
+	return return_type;
+
+}
+
+std::string ieee_string(int return_type) {
+
+	switch(return_type) {
+		case vALWAYS: return "vALWAYS";
+		case vAND: return "vAND";
+		case vASSIGN: return "vASSIGN";
+		case vAUTOMATIC: return "vAUTOMATIC";
+		case vBEGIN: return "vBEGIN";
+		case vBUF: return "vBUF";
+		case vBUFIF0: return "vBUFIF0";
+		case vBUFIF1: return "vBUFIF1";
+		case vCASE: return "vCASE";
+		case vCASEX: return "vCASEX";
+		case vCASEZ: return "vCASEZ";
+		case vCELL: return "vCELL";
+		case vCMOS: return "vCMOS";
+		case vCONFIG: return "vCONFIG";
+		case vDEASSIGN: return "vDEASSIGN";
+		case vDEFAULT: return "vDEFAULT";
+		case vDEFPARAM: return "vDEFPARAM";
+		case vDESIGN: return "vDESIGN";
+		case vDISABLE: return "vDISABLE";
+		case vEDGE: return "vEDGE";
+		case vELSE: return "vELSE";
+		case vEND: return "vEND";
+		case vENDCASE: return "vENDCASE";
+		case vENDCONFIG: return "vENDCONFIG";
+		case vENDFUNCTION: return "vENDFUNCTION";
+		case vENDGENERATE: return "vENDGENERATE";
+		case vENDMODULE: return "vENDMODULE";
+		case vENDPRIMITIVE: return "vENDPRIMITIVE";
+		case vENDSPECIFY: return "vENDSPECIFY";
+		case vENDTABLE: return "vENDTABLE";
+		case vENDTASK: return "vENDTASK";
+		case vEVENT: return "vEVENT";
+		case vFOR: return "vFOR";
+		case vFORCE: return "vFORCE";
+		case vFOREVER: return "vFOREVER";
+		case vFORK: return "vFORK";
+		case vFUNCTION: return "vFUNCTION";
+		case vGENERATE: return "vGENERATE";
+		case vGENVAR: return "vGENVAR";
+		case vHIGHZ0: return "vHIGHZ0";
+		case vHIGHZ1: return "vHIGHZ1";
+		case vIF: return "vIF";
+		case vINCDIR: return "vINCDIR";
+		case vINCLUDE: return "vINCLUDE";
+		case vINITIAL: return "vINITIAL";
+		case vINOUT: return "vINOUT";
+		case vINPUT: return "vINPUT";
+		case vINSTANCE: return "vINSTANCE";
+		case vINTEGER: return "vINTEGER";
+		case vJOIN: return "vJOIN";
+		case vLARGE: return "vLARGE";
+		case vLIBLIST: return "vLIBLIST";
+		case vLIBRARY: return "vLIBRARY";
+		case vLOCALPARAM: return "vLOCALPARAM";
+		case vMEDIUM: return "vMEDIUM";
+		case vMODULE: return "vMODULE";
+		case vNAND: return "vNAND";
+		case vNEGEDGE: return "vNEGEDGE";
+		case vNMOS: return "vNMOS";
+		case vNONE: return "vNONE";
+		case vNOR: return "vNOR";
+		case vNOSHOWCANCELLED: return "vNOSHOWCANCELLED";
+		case vNOT: return "vNOT";
+		case vNOTIF0: return "vNOTIF0";
+		case vNOTIF1: return "vNOTIF1";
+		case vOR: return "vOR";
+		case vOUTPUT: return "vOUTPUT";
+		case vPARAMETER: return "vPARAMETER";
+		case vPMOS: return "vPMOS";
+		case vPOSEDGE: return "vPOSEDGE";
+		case vPRIMITIVE: return "vPRIMITIVE";
+		case vPULL0: return "vPULL0";
+		case vPULL1: return "vPULL1";
+		case vPULLDOWN: return "vPULLDOWN";
+		case vPULLUP: return "vPULLUP";
+		case vPULSESTYLE_ONDETECT: return "vPULSESTYLE_ONDETECT";
+		case vPULSESTYLE_ONEVENT: return "vPULSESTYLE_ONEVENT";
+		case vRCMOS: return "vRCMOS";
+		case vREG: return "vREG";
+		case vRELEASE: return "vRELEASE";
+		case vREPEAT: return "vREPEAT";
+		case vRNMOS: return "vRNMOS";
+		case vRPMOS: return "vRPMOS";
+		case vRTRAN: return "vRTRAN";
+		case vRTRANIF0: return "vRTRANIF0";
+		case vRTRANIF1: return "vRTRANIF1";
+		case vSCALARED: return "vSCALARED";
+		case vSHOWCANCELLED: return "vSHOWCANCELLED";
+		case vSIGNED: return "vSIGNED";
+		case vSMALL: return "vSMALL";
+		case vSPECIFY: return "vSPECIFY";
+		case vSPECPARAM: return "vSPECPARAM";
+		case vSTRONG0: return "vSTRONG0";
+		case vSTRONG1: return "vSTRONG1";
+		case vSUPPLY0: return "vSUPPLY0";
+		case vSUPPLY1: return "vSUPPLY1";
+		case vTABLE: return "vTABLE";
+		case vTASK: return "vTASK";
+		case vTIME: return "vTIME";
+		case vTRAN: return "vTRAN";
+		case vTRANIF0: return "vTRANIF0";
+		case vTRANIF1: return "vTRANIF1";
+		case vTRI0: return "vTRI0";
+		case vTRI1: return "vTRI1";
+		case vTRI: return "vTRI";
+		case vTRIAND: return "vTRIAND";
+		case vTRIOR: return "vTRIOR";
+		case vTRIREG: return "vTRIREG";
+		case vUNSIGNED: return "vUNSIGNED";
+		case vUSE: return "vUSE";
+		case vUWIRE: return "vUWIRE";
+		case vVECTORED: return "vVECTORED";
+		case vWAIT: return "vWAIT";
+		case vWAND: return "vWAND";
+		case vWEAK0: return "vWEAK0";
+		case vWEAK1: return "vWEAK1";
+		case vWHILE: return "vWHILE";
+		case vWIRE: return "vWIRE";
+		case vWOR: return "vWOR";
+		case vXNOR: return "vXNOR";
+		case vXOR: return "vXOR";
+		case voANDAND: return "voANDAND";
+		case voANDANDAND: return "voANDANDAND";
+		case voASLEFT: return "voASLEFT";
+		case voASRIGHT: return "voASRIGHT";
+		case voCASEEQUAL: return "voCASEEQUAL";
+		case voCASENOTEQUAL: return "voCASENOTEQUAL";
+		case voEGT: return "voEGT";
+		case voEQUAL: return "voEQUAL";
+		case voGTE: return "voGTE";
+		case voLTE: return "voLTE";
+		case voMINUSCOLON: return "voMINUSCOLON";
+		case voNAND: return "voNAND";
+		case voNOR: return "voNOR";
+		case voNOTEQUAL: return "voNOTEQUAL";
+		case voOROR: return "voOROR";
+		case voPLUSCOLON: return "voPLUSCOLON";
+		case voPOWER: return "voPOWER";
+		case voSLEFT: return "voSLEFT";
+		case voSRIGHT: return "voSRIGHT";
+		case voXNOR: return "voXNOR";
+		case vsCLOG2: return "vsCLOG2";
+		case vsDISPLAY: return "vsDISPLAY";
+		case vsFINISH: return "vsFINISH";
+		case vsFUNCTION: return "vsFUNCTION";
+		case vsSIGNED: return "vsSIGNED";
+		case vsUNSIGNED: return "vsUNSIGNED";
+		default: break;
+	}
+	return "";
+}
+

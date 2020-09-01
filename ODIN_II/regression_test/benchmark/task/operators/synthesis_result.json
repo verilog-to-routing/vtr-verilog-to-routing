@@ -680,7 +680,7 @@
         "verilog": "binary_equal.v",
         "exit": 134,
         "errors": [
-            "NETLIST binary_equal.v:21 Operation not supported by Odin"
+            "binary_equal.v:21:1 [NETLIST] Operation not supported by Odin"
         ]
     },
     "operators/binary_equal/k6_N10_40nm": {
@@ -689,7 +689,7 @@
         "verilog": "binary_equal.v",
         "exit": 134,
         "errors": [
-            "NETLIST binary_equal.v:21 Operation not supported by Odin"
+            "binary_equal.v:21:1 [NETLIST] Operation not supported by Odin"
         ]
     },
     "operators/binary_equal/k6_N10_mem32K_40nm": {
@@ -698,7 +698,7 @@
         "verilog": "binary_equal.v",
         "exit": 134,
         "errors": [
-            "NETLIST binary_equal.v:21 Operation not supported by Odin"
+            "binary_equal.v:21:1 [NETLIST] Operation not supported by Odin"
         ]
     },
     "operators/binary_equal/no_arch": {
@@ -706,7 +706,7 @@
         "verilog": "binary_equal.v",
         "exit": 134,
         "errors": [
-            "NETLIST binary_equal.v:21 Operation not supported by Odin"
+            "binary_equal.v:21:1 [NETLIST] Operation not supported by Odin"
         ]
     },
     "operators/binary_logical_and/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1465,7 +1465,7 @@
         "verilog": "binary_not_equal.v",
         "exit": 134,
         "errors": [
-            "NETLIST binary_not_equal.v:21 Operation not supported by Odin"
+            "binary_not_equal.v:21:1 [NETLIST] Operation not supported by Odin"
         ]
     },
     "operators/binary_not_equal/k6_N10_40nm": {
@@ -1474,7 +1474,7 @@
         "verilog": "binary_not_equal.v",
         "exit": 134,
         "errors": [
-            "NETLIST binary_not_equal.v:21 Operation not supported by Odin"
+            "binary_not_equal.v:21:1 [NETLIST] Operation not supported by Odin"
         ]
     },
     "operators/binary_not_equal/k6_N10_mem32K_40nm": {
@@ -1483,7 +1483,7 @@
         "verilog": "binary_not_equal.v",
         "exit": 134,
         "errors": [
-            "NETLIST binary_not_equal.v:21 Operation not supported by Odin"
+            "binary_not_equal.v:21:1 [NETLIST] Operation not supported by Odin"
         ]
     },
     "operators/binary_not_equal/no_arch": {
@@ -1491,7 +1491,7 @@
         "verilog": "binary_not_equal.v",
         "exit": 134,
         "errors": [
-            "NETLIST binary_not_equal.v:21 Operation not supported by Odin"
+            "binary_not_equal.v:21:1 [NETLIST] Operation not supported by Odin"
         ]
     },
     "operators/binary_or/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -2902,7 +2902,7 @@
         "verilog": "twobits_arithmetic_div.v",
         "exit": 134,
         "errors": [
-            "AST twobits_arithmetic_div.v:22 Odin only supports constant expressions as divisors"
+            "twobits_arithmetic_div.v:22:1 [AST] Odin only supports constant expressions as divisors"
         ]
     },
     "operators/twobits_arithmetic_div/k6_N10_40nm": {
@@ -2911,7 +2911,7 @@
         "verilog": "twobits_arithmetic_div.v",
         "exit": 134,
         "errors": [
-            "AST twobits_arithmetic_div.v:22 Odin only supports constant expressions as divisors"
+            "twobits_arithmetic_div.v:22:1 [AST] Odin only supports constant expressions as divisors"
         ]
     },
     "operators/twobits_arithmetic_div/k6_N10_mem32K_40nm": {
@@ -2920,7 +2920,7 @@
         "verilog": "twobits_arithmetic_div.v",
         "exit": 134,
         "errors": [
-            "AST twobits_arithmetic_div.v:22 Odin only supports constant expressions as divisors"
+            "twobits_arithmetic_div.v:22:1 [AST] Odin only supports constant expressions as divisors"
         ]
     },
     "operators/twobits_arithmetic_div/no_arch": {
@@ -2928,7 +2928,7 @@
         "verilog": "twobits_arithmetic_div.v",
         "exit": 134,
         "errors": [
-            "AST twobits_arithmetic_div.v:22 Odin only supports constant expressions as divisors"
+            "twobits_arithmetic_div.v:22:1 [AST] Odin only supports constant expressions as divisors"
         ]
     },
     "operators/twobits_arithmetic_minus/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -3012,7 +3012,7 @@
         "verilog": "twobits_arithmetic_mod.v",
         "exit": 134,
         "errors": [
-            "NETLIST twobits_arithmetic_mod.v:22 Modulo operation not supported by Odin"
+            "twobits_arithmetic_mod.v:22:1 [NETLIST] Modulo operation not supported by Odin"
         ]
     },
     "operators/twobits_arithmetic_mod/k6_N10_40nm": {
@@ -3021,7 +3021,7 @@
         "verilog": "twobits_arithmetic_mod.v",
         "exit": 134,
         "errors": [
-            "NETLIST twobits_arithmetic_mod.v:22 Modulo operation not supported by Odin"
+            "twobits_arithmetic_mod.v:22:1 [NETLIST] Modulo operation not supported by Odin"
         ]
     },
     "operators/twobits_arithmetic_mod/k6_N10_mem32K_40nm": {
@@ -3030,7 +3030,7 @@
         "verilog": "twobits_arithmetic_mod.v",
         "exit": 134,
         "errors": [
-            "NETLIST twobits_arithmetic_mod.v:22 Modulo operation not supported by Odin"
+            "twobits_arithmetic_mod.v:22:1 [NETLIST] Modulo operation not supported by Odin"
         ]
     },
     "operators/twobits_arithmetic_mod/no_arch": {
@@ -3038,7 +3038,7 @@
         "verilog": "twobits_arithmetic_mod.v",
         "exit": 134,
         "errors": [
-            "NETLIST twobits_arithmetic_mod.v:22 Modulo operation not supported by Odin"
+            "twobits_arithmetic_mod.v:22:1 [NETLIST] Modulo operation not supported by Odin"
         ]
     },
     "operators/twobits_arithmetic_multiply/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -3197,7 +3197,7 @@
         "verilog": "twobits_arithmetic_power.v",
         "exit": 134,
         "errors": [
-            "AST twobits_arithmetic_power.v:22 Odin only supports constant expressions as exponents"
+            "twobits_arithmetic_power.v:22:1 [AST] Odin only supports constant expressions as exponents"
         ]
     },
     "operators/twobits_arithmetic_power/k6_N10_40nm": {
@@ -3206,7 +3206,7 @@
         "verilog": "twobits_arithmetic_power.v",
         "exit": 134,
         "errors": [
-            "AST twobits_arithmetic_power.v:22 Odin only supports constant expressions as exponents"
+            "twobits_arithmetic_power.v:22:1 [AST] Odin only supports constant expressions as exponents"
         ]
     },
     "operators/twobits_arithmetic_power/k6_N10_mem32K_40nm": {
@@ -3215,7 +3215,7 @@
         "verilog": "twobits_arithmetic_power.v",
         "exit": 134,
         "errors": [
-            "AST twobits_arithmetic_power.v:22 Odin only supports constant expressions as exponents"
+            "twobits_arithmetic_power.v:22:1 [AST] Odin only supports constant expressions as exponents"
         ]
     },
     "operators/twobits_arithmetic_power/no_arch": {
@@ -3223,7 +3223,7 @@
         "verilog": "twobits_arithmetic_power.v",
         "exit": 134,
         "errors": [
-            "AST twobits_arithmetic_power.v:22 Odin only supports constant expressions as exponents"
+            "twobits_arithmetic_power.v:22:1 [AST] Odin only supports constant expressions as exponents"
         ]
     },
     "operators/twobits_logical_greater_equal_than/k6_frac_N10_frac_chain_mem32K_40nm": {

@@ -163,6 +163,41 @@ struct ParseRouterAlgorithm {
     }
 };
 
+struct ParseNodeReorderAlgorithm {
+    ConvertedValue<e_rr_node_reorder_algorithm> from_str(std::string str) {
+        ConvertedValue<e_rr_node_reorder_algorithm> conv_value;
+        if (str == "none")
+            conv_value.set_value(DONT_REORDER);
+        else if (str == "degree_bfs")
+            conv_value.set_value(DEGREE_BFS);
+        else if (str == "random_shuffle")
+            conv_value.set_value(RANDOM_SHUFFLE);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_rr_node_reorder_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_rr_node_reorder_algorithm val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == DONT_REORDER)
+            conv_value.set_value("none");
+        else if (val == DEGREE_BFS)
+            conv_value.set_value("degree_bfs");
+        else {
+            VTR_ASSERT(val == RANDOM_SHUFFLE);
+            conv_value.set_value("random_shuffle");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"none", "degree_bfs", "random_shuffle"};
+    }
+};
+
 struct RouteBudgetsAlgorithm {
     ConvertedValue<e_routing_budgets_algorithm> from_str(std::string str) {
         ConvertedValue<e_routing_budgets_algorithm> conv_value;
@@ -340,6 +375,37 @@ struct ParsePlaceAlgorithm {
 
     std::vector<std::string> default_choices() {
         return {"bounding_box", "path_timing_driven"};
+    }
+};
+
+struct ParseFixPins {
+    ConvertedValue<e_pad_loc_type> from_str(std::string str) {
+        ConvertedValue<e_pad_loc_type> conv_value;
+        if (str == "free")
+            conv_value.set_value(FREE);
+        else if (str == "random")
+            conv_value.set_value(RANDOM);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_router_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_pad_loc_type val) {
+        ConvertedValue<std::string> conv_value;
+        if (val == FREE)
+            conv_value.set_value("free");
+        else {
+            VTR_ASSERT(val == RANDOM);
+            conv_value.set_value("random");
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"free", "random"};
     }
 };
 
@@ -1596,19 +1662,20 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .default_value("0.25")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_grp.add_argument(args.pad_loc_file, "--fix_pins")
+    place_grp.add_argument<e_pad_loc_type, ParseFixPins>(args.pad_loc_type, "--fix_pins")
         .help(
             "Fixes I/O pad locations randomly during placement. Valid options:\n"
             " * 'free' allows placement to optimize pad locations\n"
             " * 'random' fixes pad locations to arbitrary locations\n.")
         .default_value("free")
+        .choices({"free", "random"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.constraints_file, "--fix_clusters")
         .help(
             "Fixes block locations during placement. Valid options:\n"
             " * path to a file specifying block locations (.place format with block locations specified).")
-        .default_value("not_locked")
+        .default_value("")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument<e_place_algorithm, ParsePlaceAlgorithm>(args.PlaceAlgorithm, "--place_algorithm")
@@ -1863,6 +1930,28 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
     route_grp.add_argument<bool, ParseOnOff>(args.generate_rr_node_overuse_report, "--generate_rr_node_overuse_report")
         .help("Generate detailed reports on overused rr nodes and congested nets should the routing fails")
         .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_grp.add_argument<e_rr_node_reorder_algorithm, ParseNodeReorderAlgorithm>(args.reorder_rr_graph_nodes_algorithm, "--reorder_rr_graph_nodes_algorithm")
+        .help(
+            "Specifies the node reordering algorithm to use.\n"
+            " * none: don't reorder nodes\n"
+            " * degree_bfs: sort by degree and then by BFS\n"
+            " * random_shuffle: a random shuffle\n")
+        .default_value("none")
+        .choices({"none", "degree_bfs", "random_shuffle"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_grp.add_argument(args.reorder_rr_graph_nodes_threshold, "--reorder_rr_graph_nodes_threshold")
+        .help(
+            "Reorder rr_graph nodes to optimize memory layout above this number of nodes.")
+        .default_value("0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_grp.add_argument(args.reorder_rr_graph_nodes_seed, "--reorder_rr_graph_nodes_seed")
+        .help(
+            "Pseudo-random number generator seed used for the random_shuffle reordering algorithm")
+        .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& route_timing_grp = parser.add_argument_group("timing-driven routing options");
@@ -2251,27 +2340,6 @@ void set_conditional_defaults(t_options& args) {
         args.anneal_sched_type.set(USER_SCHED, Provenance::INFERRED);
     } else {
         args.anneal_sched_type.set(AUTO_SCHED, Provenance::INFERRED); // Otherwise use the automatic schedule
-    }
-
-    //Are the pads free to be moved during placement or randomly locked to certain locations?
-    if (std::string(args.pad_loc_file) == "free") {
-        args.pad_loc_type.set(FREE, Provenance::INFERRED);
-
-        args.pad_loc_file.set("", Provenance::SPECIFIED);
-    } else if (std::string(args.pad_loc_file) == "random") {
-        args.pad_loc_type.set(RANDOM, Provenance::INFERRED);
-
-        args.pad_loc_file.set("", Provenance::SPECIFIED);
-    } else {
-        VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown I/O pad location type\n");
-    }
-
-    //Are the blocks locked to locations given by a constraints file?
-    if (std::string(args.constraints_file) == "not_locked") {
-        args.block_loc_type.set(NOT_LOCKED, Provenance::INFERRED);
-    } else {
-        args.block_loc_type.set(LOCKED, Provenance::INFERRED);
-        VTR_ASSERT(!args.constraints_file.value().empty());
     }
 
     /*

@@ -102,9 +102,7 @@ def vtr_command_argparser(prog=None):
     #
     # Major arguments
     #
-    parser.add_argument(
-        "circuit_file", help="The circuit to map to the target architecture."
-    )
+    parser.add_argument("circuit_file", help="The circuit to map to the target architecture.")
     parser.add_argument("architecture_file", help="The FPGA architecture to target.")
     parser.add_argument(
         "-start",
@@ -148,9 +146,7 @@ def vtr_command_argparser(prog=None):
     #
     # Power arguments
     #
-    power = parser.add_argument_group(
-        "Power", description="Power Analysis Related Options"
-    )
+    power = parser.add_argument_group("Power", description="Power Analysis Related Options")
     power.add_argument(
         "-power",
         default=False,
@@ -182,9 +178,7 @@ def vtr_command_argparser(prog=None):
         help="Directory to run the flow in (will be created if non-existant).",
     )
 
-    house_keeping.add_argument(
-        "-name", default=None, help="Name for this run to be output."
-    )
+    house_keeping.add_argument("-name", default=None, help="Name for this run to be output.")
 
     house_keeping.add_argument(
         "-track_memory_usage",
@@ -275,15 +269,11 @@ def vtr_command_argparser(prog=None):
         action="store_true",
         help="Enables use of legacy ABC script adapted for new ABC",
     )
-    abc.add_argument(
-        "-lut_size", type=int, help="Tells ABC the LUT size of the FPGA architecture"
-    )
+    abc.add_argument("-lut_size", type=int, help="Tells ABC the LUT size of the FPGA architecture")
     #
     # ODIN II arguments
     #
-    odin = parser.add_argument_group(
-        "Odin", description="Arguments to be passed to ODIN II"
-    )
+    odin = parser.add_argument_group("Odin", description="Arguments to be passed to ODIN II")
     odin.add_argument(
         "-adder_type",
         default="default",
@@ -337,9 +327,7 @@ def vtr_command_argparser(prog=None):
         help="Tells VPR the amount of iterations allowed to obtain the critical path.",
     )
     vpr.add_argument(
-        "-fix_pins",
-        type=str,
-        help="Controls how the placer handles I/O pads during placement.",
+        "-fix_pins", type=str, help="Controls how the placer handles I/O pads during placement.",
     )
     vpr.add_argument(
         "-relax_w_factor",
@@ -366,10 +354,7 @@ def vtr_command_argparser(prog=None):
         help="Tells VPR to run final analysis stage.",
     )
     vpr.add_argument(
-        "-check_place",
-        default=False,
-        action="store_true",
-        help="Tells VPR to run routing stage",
+        "-check_place", default=False, action="store_true", help="Tells VPR to run routing stage",
     )
     vpr.add_argument(
         "-sdc_file", default=None, type=str, help="Path to SDC timing constraints file."
@@ -446,6 +431,8 @@ def vtr_command_main(arg_list, prog=None):
             check_incremental_sta_consistency=args.check_incremental_sta_consistency,
             use_old_abc_script=args.use_old_abc_script,
             relax_w_factor=args.relax_w_factor,
+            check_route = args.check_route,
+            check_place = args.check_place,
         )
         error_status = "OK"
     except vtr.VtrError as error:
@@ -498,9 +485,7 @@ def process_unknown_args(unknown_args):
 
         if not arg.startswith("-"):
             raise vtr.VtrError(
-                "Extra argument '{}' intended for VPR does not start with '-'".format(
-                    arg
-                )
+                "Extra argument '{}' intended for VPR does not start with '-'".format(arg)
             )
 
         # To make it a valid kwargs dictionary we trim the initial '-' or '--' from the
@@ -515,7 +500,7 @@ def process_unknown_args(unknown_args):
 
         # Determine if there is a value associated with this argument
         if len(unknown_args) == 0 or (
-                unknown_args[0].startswith("-") and arg != "target_ext_pin_util"
+            unknown_args[0].startswith("-") and arg != "target_ext_pin_util"
         ):
             # Single value argument, we place these with value 'True'
             # in vpr_args
@@ -589,10 +574,6 @@ def process_vpr_args(args, prog, temp_dir, vpr_args):
     if args.verify_rr_graph:
         rr_graph_out_file = "rr_graph" + args.rr_graph_ext
         vpr_args["write_rr_graph"] = rr_graph_out_file
-    if args.check_place:
-        vpr_args["route"] = True
-    if args.check_route:
-        vpr_args["analysis"] = True
 
     return vpr_args
 
@@ -646,7 +627,7 @@ def except_vtr_error(error, expect_fail, verbose):
             print("\tfull command: ", " ".join(error.cmd))
             print("\treturncode  : ", error.returncode)
             print("\tlog file    : ", error.log)
-        exit_status = 1
+        exit_status = error.returncode
     elif isinstance(error, vtr.InspectError):
         # Something went wrong gathering information
         print("\tfile        : ", error.filename)

@@ -522,16 +522,11 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
                 VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown I/O pad location type\n");
         }
 
-        VTR_LOG("PlacerOpts.block_loc_type: ");
-        switch (PlacerOpts.block_loc_type) {
-            case NOT_LOCKED:
-                VTR_LOG("NOT_LOCKED\n");
-                break;
-            case LOCKED:
-                VTR_LOG("LOCKED '%s'\n", PlacerOpts.constraints_file.c_str());
-                break;
-            default:
-                VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown block location type\n");
+        VTR_LOG("PlacerOpts.constraints_file: ");
+        if (PlacerOpts.constraints_file == "") {
+            VTR_LOG("No constraints file given\n");
+        } else {
+            VTR_LOG("Using constraints file '%s'\n", PlacerOpts.constraints_file.c_str());
         }
 
         VTR_LOG("PlacerOpts.place_cost_exp: %f\n", PlacerOpts.place_cost_exp);
@@ -682,5 +677,6 @@ static void ShowPackerOpts(const t_packer_opts& PackerOpts) {
     VTR_LOG("PackerOpts.inter_cluster_net_delay: %f\n", PackerOpts.inter_cluster_net_delay);
     VTR_LOG("PackerOpts.timing_driven: %s", (PackerOpts.timing_driven ? "true\n" : "false\n"));
     VTR_LOG("PackerOpts.target_external_pin_util: %s", vtr::join(PackerOpts.target_external_pin_util, " ").c_str());
+    VTR_LOG("\n");
     VTR_LOG("\n");
 }

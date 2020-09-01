@@ -36,9 +36,7 @@ def determine_lut_size(architecture_file):
             lut_size = max(lut_size, input_width)
 
     if saw_blif_names and lut_size == 0:
-        raise InspectError(
-            "Could not identify valid LUT size (K)", filename=architecture_file
-        )
+        raise InspectError("Could not identify valid LUT size (K)", filename=architecture_file)
 
     return lut_size
 
@@ -65,9 +63,7 @@ def determine_memory_addr_width(architecture_file):
                     mem_addr_width = max(mem_addr_width, input_width)
 
     if saw_ram and mem_addr_width == 0:
-        raise InspectError(
-            "Could not identify RAM block address width", filename=architecture_file
-        )
+        raise InspectError("Could not identify RAM block address width", filename=architecture_file)
 
     return mem_addr_width
 
@@ -76,15 +72,11 @@ def determine_min_w(log_filename):
     """
         determines the miniumum width.
     """
-    min_w_regex = re.compile(
-        r"\s*Best routing used a channel width factor of (?P<min_w>\d+)."
-    )
+    min_w_regex = re.compile(r"\s*Best routing used a channel width factor of (?P<min_w>\d+).")
     with open(log_filename) as file:
         for line in file:
             match = min_w_regex.match(line)
             if match:
                 return int(match.group("min_w"))
 
-    raise InspectError(
-        "Failed to find minimum channel width.", filename=log_filename
-    )
+    raise InspectError("Failed to find minimum channel width.", filename=log_filename)

@@ -109,8 +109,8 @@ e_elab elab_mode;		//user-set flag dictating how to elaborate a VQM Primitive
 e_lut lut_mode;		//user-set flag dictating how to treat LUTs (as blackboxes or .names)
 
 
-int buffer_count, invert_count;
-int buffers_elim, inverts_elim;
+int buffer_count, invert_count, onelut_count;
+int buffers_elim, inverts_elim, oneluts_elim;
 
 e_clean clean_mode;
 

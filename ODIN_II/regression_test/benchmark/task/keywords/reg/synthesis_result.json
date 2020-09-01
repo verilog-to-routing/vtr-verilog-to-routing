@@ -4,7 +4,7 @@
         "verilog": "reg_failure.v",
         "exit": 134,
         "errors": [
-            "NETLIST reg_failure.v:3 Input cannot be defined as a reg"
+            "reg_failure.v:3:1 [NETLIST] Input cannot be defined as a reg"
         ]
     },
     "reg/reg/no_arch": {
@@ -23,7 +23,7 @@
         "verilog": "reg_port.v",
         "exit": 134,
         "errors": [
-            "AST reg_port.v:1 No matching declaration for port b"
+            "reg_port.v:1:1 [AST] No matching declaration for port b"
         ]
     },
     "DEFAULT": {

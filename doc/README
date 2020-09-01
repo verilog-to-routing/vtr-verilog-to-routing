@@ -1,7 +1,7 @@
 Overview
 --------------------------
 
-The VTR documentaion is generated using sphinx, a python based documentation generator.
+The VTR documentation is generated using sphinx, a python based documentation generator.
 
 The documentation itself is written in re-structured text (files ending in .rst), which
 is a lightwieght mark-up language for text documents.
