@@ -164,13 +164,23 @@ def main():
 
         if (path in grandfathered_files) and not args.check_grandfathered:
             print(
-                TermColor.YELLOW + relpath_str,
-                "skipped (grandfathered)",
-                TermColor.END,
+                TermColor.YELLOW + relpath_str, "skipped (grandfathered)", TermColor.END,
             )
             continue
 
-        cmd = ["pylint", path, "-s", "n"]
+        # Pylint checks to ignore
+        ignore_list = []
+
+        # Ignore function argument indenting, which is currently incompabile with black
+        # https://github.com/psf/black/issues/48
+        ignore_list.append("C0330")
+
+        # Build pylint command
+        cmd = ["pylint", path, "-s", "n", "--disable=C0330"]
+        if ignore_list:
+            cmd.append("--disable=" + ",".join(ignore_list))
+
+        # Run pylint and check output
         process = subprocess.run(cmd, check=False, stdout=subprocess.PIPE)
         if process.returncode:
             print(TermColor.RED + relpath_str, "has lint errors", TermColor.END)

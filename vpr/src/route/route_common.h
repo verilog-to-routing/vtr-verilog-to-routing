@@ -22,7 +22,10 @@ void pathfinder_update_acc_cost_and_overuse_info(float acc_fac, OveruseInfo& ove
 
 float update_pres_fac(float new_pres_fac);
 
-t_trace* update_traceback(t_heap* hptr, ClusterNetId net_id);
+/* Pass in the hptr starting at a SINK with target_net_pin_index, which is the net pin index corresonding *
+ * to the sink (ranging from 1 to fanout). Returns a pointer to the first "new" node in the traceback     *
+ * (node not previously in trace).                                                                        */
+t_trace* update_traceback(t_heap* hptr, int target_net_pin_index, ClusterNetId net_id);
 
 void reset_path_costs(const std::vector<int>& visited_rr_nodes);
 
@@ -85,7 +88,7 @@ inline float get_single_rr_cong_cost(int inode, float pres_fac) {
 }
 
 void mark_ends(ClusterNetId net_id);
-void mark_remaining_ends(const std::vector<int>& remaining_sinks);
+void mark_remaining_ends(ClusterNetId net_id, const std::vector<int>& remaining_sinks);
 
 void free_traceback(ClusterNetId net_id);
 void drop_traceback_tail(ClusterNetId net_id);

@@ -5,6 +5,12 @@
 
 #include "vtr_random.h"
 
+//Run-time flag to control when placer debug information is printed
+//Note : only enables debug output if compiled with VTR_ENABLE_DEBUG_LOGGING is defined
+//f_placer_debug is used to stop the placer when a breakpoint is reached. When this flag is true, it stops the placer after the current perturbation. Thus, when a breakpoint is reached, this flag is set to true.
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+bool f_placer_debug = false;
+#endif
 //Records counts of reasons for aborted moves
 static std::map<std::string, size_t> f_move_abort_reasons;
 

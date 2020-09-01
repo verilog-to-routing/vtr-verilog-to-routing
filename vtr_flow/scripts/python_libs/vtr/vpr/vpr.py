@@ -3,26 +3,21 @@
 """
 from collections import OrderedDict
 from pathlib import Path
-from vtr import (
-    find_vtr_file,
-    CommandRunner,
-    relax_w,
-    determine_min_w,
-    verify_file
-)
+from os import environ
+from vtr import find_vtr_file, CommandRunner, relax_w, determine_min_w, verify_file
 from vtr.error import InspectError
 
-#pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments
 def run_relax_w(
-        architecture,
-        circuit,
-        circuit_name=None,
-        command_runner=CommandRunner(),
-        temp_dir=Path("."),
-        relax_w_factor=1.3,
-        vpr_exec=None,
-        logfile_base="vpr",
-        vpr_args=None,
+    architecture,
+    circuit,
+    circuit_name=None,
+    command_runner=CommandRunner(),
+    temp_dir=Path("."),
+    relax_w_factor=1.3,
+    vpr_exec=None,
+    logfile_base="vpr",
+    vpr_args=None,
 ):
     """
     Runs VPR twice:
@@ -59,7 +54,7 @@ def run_relax_w(
             Path to the VPR executable
 
         logfile_base:
-            Base name for log files (e.g. "vpr" produces vpr.min_w.out, vpr.relaxed_w.out)
+            Base name for log files (e.g. "vpr" produces vpr.out, vpr.crit_path.out)
 
         vpr_args:
             Extra arguments for VPR
@@ -84,12 +79,6 @@ def run_relax_w(
     if "write_rr_graph" in vpr_args:
         del vpr_args["write_rr_graph"]
 
-    if "analysis" in vpr_args:
-        del vpr_args["analysis"]
-
-    if "route" in vpr_args:
-        del vpr_args["route"]
-
     if vpr_exec is None:
         vpr_exec = find_vtr_file("vpr", is_executable=True)
 
@@ -103,8 +92,8 @@ def run_relax_w(
         vpr_exec=vpr_exec,
         vpr_args=vpr_args,
     )
-
-    if ("pack" in vpr_args or "place" in vpr_args) and "route" not in vpr_args:
+    explicit = "pack" in vpr_args or "place" in vpr_args or "analysis" in vpr_args
+    if explicit and "route" not in vpr_args:
         # Don't look for min W if routing was not run
         return
     if max_router_iterations:
@@ -132,14 +121,14 @@ def run_relax_w(
 
 
 def run(
-        architecture,
-        circuit,
-        circuit_name=None,
-        command_runner=CommandRunner(),
-        temp_dir=Path("."),
-        log_filename="vpr.out",
-        vpr_exec=None,
-        vpr_args=None,
+    architecture,
+    circuit,
+    circuit_name=None,
+    command_runner=CommandRunner(),
+    temp_dir=Path("."),
+    log_filename="vpr.out",
+    vpr_exec=None,
+    vpr_args=None,
 ):
     """
     Runs VPR with the specified configuration
@@ -215,19 +204,31 @@ def run(
             else:
                 cmd += ["--" + arg, str(value)]
 
+    # Extra options to fine-tune LeakSanitizer (LSAN) behaviour.
+    # Note that if VPR was compiled without LSAN these have no effect
+    # 'suppressions=...' Add the LeakSanitizer (LSAN) suppression file
+    # 'exitcode=12' Use a consistent exitcode
+    # (on some systems LSAN don't use the default exit code of 23)
+    # 'fast_unwind_on_malloc=0' Provide more accurate leak stack traces
+
+    environ["LSAN_OPTIONS"] = "suppressions={} exitcode=23 fast_unwind_on_malloc=0".format(
+        find_vtr_file("lsan.supp")
+    )
+
     command_runner.run_system_command(
         cmd, temp_dir=temp_dir, log_filename=log_filename, indent_depth=1
     )
 
+
 def run_second_time(
-        architecture,
-        circuit,
-        circuit_name=None,
-        command_runner=CommandRunner(),
-        temp_dir=Path("."),
-        vpr_exec=None,
-        second_run_args=None,
-        rr_graph_ext=".xml",
+    architecture,
+    circuit,
+    circuit_name=None,
+    command_runner=CommandRunner(),
+    temp_dir=Path("."),
+    vpr_exec=None,
+    second_run_args=None,
+    rr_graph_ext=".xml",
 ):
     """
     Run vpr again with additional parameters.
@@ -277,7 +278,7 @@ def run_second_time(
         second_run_args["read_rr_graph"] = rr_graph_out_file
         second_run_args["write_rr_graph"] = rr_graph_out_file2
 
-    #run VPR
+    # run VPR
     run(
         architecture,
         circuit,
@@ -295,18 +296,17 @@ def run_second_time(
             cmd, temp_dir, log_filename="diff.rr_graph.out", indent_depth=1
         )
         if diff_result:
-            raise InspectError(
-                "failed: vpr (RR Graph XML output not consistent when reloaded)"
-            )
+            raise InspectError("failed: vpr (RR Graph XML output not consistent when reloaded)")
+
 
 def cmp_full_vs_incr_sta(
-                architecture,
-                circuit,
-                circuit_name=None,
-                command_runner=CommandRunner(),
-                vpr_args=None,
-                temp_dir=Path("."),
-                vpr_exec=None,
+    architecture,
+    circuit,
+    circuit_name=None,
+    command_runner=CommandRunner(),
+    vpr_args=None,
+    temp_dir=Path("."),
+    vpr_exec=None,
 ):
     """
     Sanity check that full STA and the incremental STA produce the same *.net, *.place, *.route
@@ -403,4 +403,6 @@ def cmp_full_vs_incr_sta(
 
     if not identical:
         raise InspectError(failed_msg)
-#pylint: disable=too-many-arguments
+
+
+# pylint: disable=too-many-arguments

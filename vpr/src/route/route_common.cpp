@@ -86,7 +86,7 @@ static int num_linked_f_pointer_allocated = 0;
  *                                                                          */
 
 /******************** Subroutines local to route_common.c *******************/
-static t_trace_branch traceback_branch(int node, std::unordered_set<int>& main_branch_visited);
+static t_trace_branch traceback_branch(int node, int target_net_pin_index, std::unordered_set<int>& main_branch_visited);
 static std::pair<t_trace*, t_trace*> add_trace_non_configurable(t_trace* head, t_trace* tail, int node, std::unordered_set<int>& visited);
 static std::pair<t_trace*, t_trace*> add_trace_non_configurable_recurr(int node, std::unordered_set<int>& visited, int depth = 0);
 
@@ -227,14 +227,9 @@ void try_graph(int width_fac, const t_router_opts& router_opts, t_det_routing_ar
                     device_ctx.num_arch_switches,
                     det_routing_arch,
                     segment_inf,
-                    router_opts.base_cost_type,
-                    router_opts.trim_empty_channels,
-                    router_opts.trim_obs_channels,
-                    router_opts.clock_modeling,
+                    router_opts,
                     directs, num_directs,
-                    &warning_count,
-                    router_opts.read_rr_edge_metadata,
-                    router_opts.do_check_rr_graph);
+                    &warning_count);
 }
 
 bool try_route(int width_fac,
@@ -279,14 +274,9 @@ bool try_route(int width_fac,
                     device_ctx.num_arch_switches,
                     det_routing_arch,
                     segment_inf,
-                    router_opts.base_cost_type,
-                    router_opts.trim_empty_channels,
-                    router_opts.trim_obs_channels,
-                    router_opts.clock_modeling,
+                    router_opts,
                     directs, num_directs,
-                    &warning_count,
-                    router_opts.read_rr_edge_metadata,
-                    router_opts.do_check_rr_graph);
+                    &warning_count);
 
     //Initialize drawing, now that we have an RR graph
     init_draw_coords(width_fac);
@@ -494,26 +484,28 @@ void init_route_structs(int bb_factor) {
     route_ctx.net_status.resize(cluster_ctx.clb_nlist.nets().size());
 }
 
-t_trace* update_traceback(t_heap* hptr, ClusterNetId net_id) {
-    /* This routine adds the most recently finished wire segment to the         *
-     * traceback linked list.  The first connection starts with the net SOURCE  *
-     * and begins at the structure pointed to by route_ctx.trace[net_id].head.  *
-     * Each connection ends with a SINK.  After each SINK, the next connection  *
-     * begins (if the net has more than 2 pins).  The first element after the   *
-     * SINK gives the routing node on a previous piece of the routing, which is *
-     * the link from the existing net to this new piece of the net.             *
-     * In each traceback I start at the end of a path and trace back through    *
-     * its predecessors to the beginning.  I have stored information on the     *
-     * predecesser of each node to make traceback easy -- this sacrificies some *
-     * memory for easier code maintenance.  This routine returns a pointer to   *
-     * the first "new" node in the traceback (node not previously in trace).    */
+/* This routine adds the most recently finished wire segment to the         *
+ * traceback linked list.  The first connection starts with the net SOURCE  *
+ * and begins at the structure pointed to by route_ctx.trace[net_id].head.  *
+ * Each connection ends with a SINK.  After each SINK, the next connection  *
+ * begins (if the net has more than 2 pins).  The first element after the   *
+ * SINK gives the routing node on a previous piece of the routing, which is *
+ * the link from the existing net to this new piece of the net.             *
+ * In each traceback I start at the end of a path, which is a SINK with     *
+ * target_net_pin_index (net pin index corresponding to the SINK, ranging   *
+ * from 1 to fanout), and trace back through its predecessors to the        *
+ * beginning.  I have stored information on the predecesser of each node to *
+ * make traceback easy -- this sacrificies some memory for easier code      *
+ * maintenance.  This routine returns a pointer to the first "new" node in  *
+ * the traceback (node not previously in trace).                            */
+t_trace* update_traceback(t_heap* hptr, int target_net_pin_index, ClusterNetId net_id) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     auto& trace_nodes = route_ctx.trace_nodes[net_id];
 
     VTR_ASSERT_SAFE(validate_trace_nodes(route_ctx.trace[net_id].head, trace_nodes));
 
-    t_trace_branch branch = traceback_branch(hptr->index, trace_nodes);
+    t_trace_branch branch = traceback_branch(hptr->index, target_net_pin_index, trace_nodes);
 
     VTR_ASSERT_SAFE(validate_trace_nodes(branch.head, trace_nodes));
 
@@ -530,9 +522,10 @@ t_trace* update_traceback(t_heap* hptr, ClusterNetId net_id) {
     return (ret_ptr);
 }
 
-//Traces back a new routing branch starting from the specified 'node' and working backwards to any existing routing.
+//Traces back a new routing branch starting from the specified SINK 'node' with target_net_pin_index, which is the
+//net pin index corresponding to the SINK (ranging from 1 to fanout), and working backwards to any existing routing.
 //Returns the new branch, and also updates trace_nodes for any new nodes which are included in the branches traceback.
-static t_trace_branch traceback_branch(int node, std::unordered_set<int>& trace_nodes) {
+static t_trace_branch traceback_branch(int node, int target_net_pin_index, std::unordered_set<int>& trace_nodes) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
 
@@ -547,6 +540,7 @@ static t_trace_branch traceback_branch(int node, std::unordered_set<int>& trace_
     t_trace* branch_head = alloc_trace_data();
     t_trace* branch_tail = branch_head;
     branch_head->index = node;
+    branch_head->net_pin_index = target_net_pin_index; //The first node is the SINK node, so store its net pin index
     branch_head->iswitch = OPEN;
     branch_head->next = nullptr;
 
@@ -561,6 +555,7 @@ static t_trace_branch traceback_branch(int node, std::unordered_set<int>& trace_
         //Add the current node to the head of traceback
         t_trace* prev_ptr = alloc_trace_data();
         prev_ptr->index = inode;
+        prev_ptr->net_pin_index = OPEN; //Net pin index is invalid for Non-SINK nodes
         prev_ptr->iswitch = device_ctx.rr_nodes.edge_switch(iedge);
         prev_ptr->next = branch_head;
         branch_head = prev_ptr;
@@ -741,11 +736,16 @@ void mark_ends(ClusterNetId net_id) {
     }
 }
 
-void mark_remaining_ends(const std::vector<int>& remaining_sinks) {
+void mark_remaining_ends(ClusterNetId net_id, const std::vector<int>& remaining_sinks) {
     // like mark_ends, but only performs it for the remaining sinks of a net
+    int inode;
+
     auto& route_ctx = g_vpr_ctx.mutable_routing();
-    for (int sink_node : remaining_sinks)
-        ++route_ctx.rr_node_route_inf[sink_node].target_flag;
+
+    for (int sink_pin : remaining_sinks) {
+        inode = route_ctx.net_rr_terminals[net_id][sink_pin];
+        ++route_ctx.rr_node_route_inf[inode].target_flag;
+    }
 }
 
 void drop_traceback_tail(ClusterNetId net_id) {
@@ -1192,6 +1192,7 @@ alloc_trace_data() {
         trace_free_head->next = nullptr;
     }
     temp_ptr = trace_free_head;
+    temp_ptr->net_pin_index = OPEN; //default
     trace_free_head = trace_free_head->next;
     num_trace_allocated++;
     return (temp_ptr);
@@ -1285,6 +1286,11 @@ void print_route(FILE* fp, const vtr::vector<ClusterNetId, t_traceback>& traceba
                     /* Uncomment line below if you're debugging and want to see the switch types *
                      * used in the routing.                                                      */
                     fprintf(fp, "Switch: %d", tptr->iswitch);
+
+                    //Save net pin index for sinks
+                    if (rr_type == SINK) {
+                        fprintf(fp, " Net_pin_index: %d", tptr->net_pin_index);
+                    }
 
                     fprintf(fp, "\n");
 

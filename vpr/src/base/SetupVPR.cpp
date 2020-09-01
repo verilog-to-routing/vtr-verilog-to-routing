@@ -352,6 +352,9 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->fixed_channel_width = Options.RouteChanWidth;
     RouterOpts->min_channel_width_hint = Options.min_route_chan_width_hint;
     RouterOpts->read_rr_edge_metadata = Options.read_rr_edge_metadata;
+    RouterOpts->reorder_rr_graph_nodes_algorithm = Options.reorder_rr_graph_nodes_algorithm;
+    RouterOpts->reorder_rr_graph_nodes_threshold = Options.reorder_rr_graph_nodes_threshold;
+    RouterOpts->reorder_rr_graph_nodes_seed = Options.reorder_rr_graph_nodes_seed;
 
     //TODO document these?
     RouterOpts->trim_empty_channels = false; /* DEFAULT */
@@ -532,9 +535,8 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->place_algorithm = Options.PlaceAlgorithm;
 
     PlacerOpts->constraints_file = Options.constraints_file;
-    PlacerOpts->pad_loc_file = Options.pad_loc_file;
+
     PlacerOpts->pad_loc_type = Options.pad_loc_type;
-    PlacerOpts->block_loc_type = Options.block_loc_type;
 
     PlacerOpts->place_chan_width = Options.PlaceChanWidth;
 

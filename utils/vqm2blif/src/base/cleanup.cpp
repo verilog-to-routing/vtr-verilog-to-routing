@@ -12,6 +12,7 @@ void build_netlist (t_module* module, busvec* buses, s_hash** hash_table);
 void init_nets (t_pin_def** pins, int num_pins, busvec* buses, struct s_hash** hash_table);
 void set_net_assigns (t_assign** assignments, int num_assigns, busvec* buses, struct s_hash** hash_table);
 void add_subckts (t_node** nodes, int num_nodes, busvec* buses, struct s_hash** hash_table);
+void remove_one_lut_nodes ( busvec* buses, struct s_hash** hash_table, t_node** nodes, int original_num_nodes, t_module* module );
 void clean_netlist ( busvec* buses, struct s_hash** hash_table, t_node** nodes, int num_nodes );
 void reassign_net_source (t_net* net);
 void print_to_module ( t_module* module, busvec* buses, struct s_hash** hash_table );
@@ -20,6 +21,9 @@ netvec* get_bus_from_hash (struct s_hash** hash_table, char* temp_name, busvec* 
 
 void verify_netlist ( t_node** nodes, int num_nodes, busvec* buses, struct s_hash** hash_table);
 void print_all_nets ( busvec* buses, const char* filename );
+
+bool is_feeder_onelut ( t_node* node );
+void remove_node ( t_node* node, t_node** nodes, int original_num_nodes );
 
 //============================================================================================
 //============================================================================================
@@ -39,9 +43,14 @@ void netlist_cleanup (t_module* module){
 
 	cout << "\t>> VQM Netlist contains " << buffer_count << " buffers.\n" ;
 	cout << "\t>> VQM Netlist contains " << invert_count << " invertors.\n" ;
+	cout << "\t>> VQM Netlist contains " << onelut_count << " one-LUTs.\n" ;
 
     //Verify that the initial netlist is ok
 	verify_netlist ( module->array_of_nodes, module->number_of_nodes, &buses, hash_table );
+
+	cout << "\t>> Removing One-LUTs" << "...\n";
+
+	remove_one_lut_nodes ( &buses, hash_table, module->array_of_nodes, module->number_of_nodes, module );
 
 	cout << "\t>> Removing buffered nets" << ((clean_mode == CL_BUFF)? "":" and inverted subckt inputs") << "...\n";
 
@@ -49,6 +58,7 @@ void netlist_cleanup (t_module* module){
 
 	cout << "\t>> Removed " << buffers_elim << " buffers of " << buffer_count << ".\n" ;
 	cout << "\t>> Removed " << inverts_elim << " invertors of " << invert_count << ".\n" ;
+	cout << "\t>> Removed " << oneluts_elim << " one-LUTs of " << onelut_count << ".\n" ;
 
     //Verify that the final modified netlist is ok
 	verify_netlist ( module->array_of_nodes, module->number_of_nodes, &buses, hash_table );
@@ -195,8 +205,13 @@ void add_subckts (t_node** nodes, int num_nodes, busvec* buses, struct s_hash** 
 	t_node* temp_node;
 	t_node_port_association* temp_port;
 
+	onelut_count = 0;
+
 	for (int i = 0; i < num_nodes; i++){
 		temp_node = nodes[i];
+		if(is_feeder_onelut(temp_node)){
+			onelut_count++;
+		}
 		for (int j = 0; j < temp_node->number_of_ports; j++){
 			temp_port = temp_node->array_of_ports[j];
 
@@ -218,6 +233,156 @@ void add_subckts (t_node** nodes, int num_nodes, busvec* buses, struct s_hash** 
 			}
 		}
 	}
+}
+
+//============================================================================================
+//============================================================================================
+
+void remove_one_lut_nodes ( busvec* buses, struct s_hash** hash_table, t_node** nodes, int original_num_nodes, t_module* module ){
+/*
+        Quartus fitter may have introduced some one-LUTs in the post-fit netlist that makes it harder for VPR to place and route.
+        Generally, these one-LUTs are inserted by the Quartus router in order to pass a signal through a LUT to the FF in the same
+        BLE. For Stratix IV, the names of these one-LUTs all end with the substring "feeder". This function serves to remove the
+        feeder one LUTs from the netlist, if they exist, before converting it into the BLIF file format.
+
+	Go through all nodes, if a node's source net is driven by a one-LUT-type node and if this source net only has one
+        child (the node itself):
+
+	  1. If the one-LUT has an input and an output, the one-LUT acts as either a buffer LUT or as an inverter, but we do not
+             check as we only care about structure in this converter, not logical functionality.
+             Re-associate the node's input port with the source net of the one-LUT, then remove the one-LUT and the node's original
+             source net.
+
+             -----                -------                 -----
+             | X |---> net m ---> | LUT | ---> net n ---> | Y |
+             -----                -------                 -----
+
+             becomes
+
+             -----                -----
+             | X |---> net m ---> | Y |
+             -----                -----
+
+	  2. If the one-LUT has just an output (feeds VCC downstream):
+             Re-associate the node with the VCC net, then remove the one-LUT and the node's original source net.
+
+             -------                 -----
+             | LUT | ---> net m ---> | Y |
+             -------                 -----
+
+             becomes
+
+             -------                    -----
+             | VCC |---> net v -------> | Y |
+             -------            |       -----
+                                ---->
+                                |
+                                ---->
+*/
+	oneluts_elim = 0;
+
+	t_node* temp_node;
+	t_node_port_association* temp_port;
+	netvec* temp_bus;
+	t_net* temp_net;
+
+	t_node* source_node;
+	t_node_port_association* source_port;
+	t_node_port_association* prev_port;
+	netvec* prev_bus;
+	t_net* prev_net;
+
+	netvec* vcc_bus = get_bus_from_hash (hash_table, const_cast<char*>("vcc"), buses);
+	VTR_ASSERT(vcc_bus != NULL);
+	t_net* vcc_net = &(vcc_bus->at(0));   //Find any VCC net
+
+	for (int i = 0; i < original_num_nodes; i++){
+		temp_node = nodes[i];
+		if (temp_node == NULL) {   //Node was deleted during a previous iteration
+			continue;
+		}
+		for (int j = 0; j < temp_node->number_of_ports; j++){
+			temp_port = temp_node->array_of_ports[j];
+			temp_bus = get_bus_from_hash (hash_table, temp_port->associated_net->name, buses);
+			VTR_ASSERT((unsigned int)temp_port->wire_index < temp_bus->size());
+			temp_net = &(temp_bus->at(temp_port->wire_index));
+
+			if (temp_port != (t_node_port_association*)temp_net->source){
+				//Must be an input port
+				if (temp_net->driver == BLACKBOX && is_feeder_onelut(temp_net->block_src) && temp_net->num_children == 1){
+					source_port = (t_node_port_association*)temp_net->source;   //The output port of the one-LUT
+					source_node = temp_net->block_src;   //The one-LUT
+
+					//Re-associate temp_port with the appropriate net
+					if(source_node->number_of_ports == 2){
+						//For one-LUT with an input and an output, find the net before the one_LUT and associate temp_port with that net instead
+						VTR_ASSERT(source_node->number_of_ports == 2);
+						for (int k = 0; k < source_node->number_of_ports; k++){
+							prev_port = source_node->array_of_ports[k];
+							if(prev_port != source_port) {
+								//The input port of the one-LUT
+								prev_bus = get_bus_from_hash (hash_table, prev_port->associated_net->name, buses);
+								VTR_ASSERT((unsigned int)prev_port->wire_index < prev_bus->size());
+								prev_net = &(prev_bus->at(prev_port->wire_index)); //Net associated with the input port
+							}
+						}
+						temp_port->associated_net = prev_net->pin;
+						temp_port->wire_index = prev_net->wire_index;
+					} else {
+						//For one-LUT with just an output, associate temp_port with VCC instead
+						VTR_ASSERT(source_node->number_of_ports == 1); //If is_feeder_onelut==true, there are only 1 or 2 ports
+						VTR_ASSERT(vcc_net != NULL); //Should have a VCC
+						temp_port->associated_net = vcc_net->pin;
+						temp_port->wire_index = vcc_net->wire_index;
+						vcc_net->num_children++;
+					}
+
+					//Remove temp_net
+					temp_net->num_children--;
+					temp_net->source = NULL;
+					temp_net->driver = NODRIVE;
+
+					//Free the LUT
+					remove_node(source_node, nodes, original_num_nodes);
+
+				}
+			}
+		}
+	}
+
+	//Regorganize nodes array by filling in gaps with the last available elements in the array to save CPU time
+	int new_array_size = original_num_nodes - oneluts_elim;
+	int curr_node_index = 0;
+	int replacement_node_index = original_num_nodes - 1;
+	while (curr_node_index < replacement_node_index) {
+		if (nodes[curr_node_index] == NULL) {
+			if (nodes[replacement_node_index] != NULL) {
+				//Replace gap with node
+				nodes[curr_node_index] = nodes[replacement_node_index];
+				nodes[replacement_node_index] = NULL;
+				curr_node_index++;
+			}
+			replacement_node_index--;
+		} else {
+			curr_node_index++;
+		}
+	}
+	if (nodes[curr_node_index] == NULL) {
+		VTR_ASSERT(curr_node_index == new_array_size); //check array size
+	} else {
+		VTR_ASSERT(curr_node_index == new_array_size - 1); //check array size
+	}
+
+	//Update array bounds
+	module -> number_of_nodes = new_array_size;
+
+    //Reduce run-time by only verifying at the end
+	//verify_netlist (nodes, module->number_of_nodes, buses, hash_table);
+
+#ifdef CLEAN_DEBUG
+	cout << "\t\t>> Dumping to all_buff.out\n" ;
+	print_all_nets(buses, "all_buff.out");
+#endif
 }
 
 //============================================================================================
@@ -627,5 +792,64 @@ void print_all_nets ( busvec* buses, const char* filename ){
 
 	outfile.close();
 }
+
+//============================================================================================
+//============================================================================================
+
+bool is_feeder_onelut ( t_node* node ) {
+	if(node == NULL) return false;
+	
+	//Hardcoded for Stratix IV
+	string node_name = node->name;
+	string node_name_ending;
+	if (node_name.length() >= 8){
+		node_name_ending = node_name.substr(node_name.length()-8);
+	} else {
+		node_name_ending = node_name;
+	}
+
+#ifdef CLEAN_DEBUG
+	cout << "\t\t Node Type: " << node->type << "\t" << "Node Name Ending: " << node_name_ending << "\t" << "Num of Ports: " << node->number_of_ports <<"\n";
+#endif
+
+	//Only LUTs with 1 port (1 output port) or 2 ports (1 input and 1 output) are considered one-luts
+	if (node->number_of_ports == 1 || node->number_of_ports == 2){
+		//Only stratixiv_lcell_comb one-LUTs that end in "feeder" can be removed at this stage
+		if (node->type == string("stratixiv_lcell_comb") && node_name_ending == string("feeder_I")) {
+			return true;
+		}
+	}
+
+    return false;
+}
+
+//============================================================================================
+//============================================================================================
+
+void remove_node ( t_node* node, t_node** nodes, int original_num_nodes ) {
+	//Free node and assign it to NULL on the spot
+	//Array will be re-organized to fill in the gaps later
+
+	VTR_ASSERT(node != NULL);
+	VTR_ASSERT(nodes != NULL);
+
+#ifdef CLEAN_DEBUG
+	cout << "\t\t\t Removing " << node->name << "\n";
+#endif
+	bool found = false;
+
+	for (int i = 0; i < original_num_nodes; i++){
+		if(nodes[i] == node){
+			free_node( (void*)nodes[i] );
+			nodes[i] = NULL;
+			found = true;
+			break;
+		}
+	}
+	
+	VTR_ASSERT(found);
+	oneluts_elim++;
+}
+
 //============================================================================================
 //============================================================================================

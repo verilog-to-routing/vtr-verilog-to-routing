@@ -75,7 +75,7 @@ bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const 
     if (found_path) {
         VTR_ASSERT(cheapest.index == sink_node);
 
-        t_rt_node* rt_node_of_sink = update_route_tree(&cheapest, nullptr, router_.rcv_path_manager);
+        t_rt_node* rt_node_of_sink = update_route_tree(&cheapest, OPEN, nullptr, router_.rcv_path_manager);
 
         //find delay
         *net_delay = rt_node_of_sink->Tdel;
@@ -147,7 +147,7 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
 
             //Build the routing tree to get the delay
             rt_root = setup_routing_resources_no_net(src_rr_node);
-            t_rt_node* rt_node_of_sink = update_route_tree(&shortest_paths[sink_rr_node], nullptr, empty_manager);
+            t_rt_node* rt_node_of_sink = update_route_tree(&shortest_paths[sink_rr_node], OPEN, nullptr, empty_manager);
 
             VTR_ASSERT(rt_node_of_sink->inode == sink_rr_node);
 
@@ -225,14 +225,9 @@ void alloc_routing_structs(t_chan_width chan_width,
                     device_ctx.num_arch_switches,
                     det_routing_arch,
                     segment_inf,
-                    router_opts.base_cost_type,
-                    router_opts.trim_empty_channels,
-                    router_opts.trim_obs_channels,
-                    router_opts.clock_modeling,
+                    router_opts,
                     directs, num_directs,
-                    &warnings,
-                    router_opts.read_rr_edge_metadata,
-                    router_opts.do_check_rr_graph);
+                    &warnings);
 
     alloc_and_load_rr_node_route_structs();
 

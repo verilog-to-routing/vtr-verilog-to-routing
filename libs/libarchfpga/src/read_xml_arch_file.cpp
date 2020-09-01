@@ -2311,11 +2311,18 @@ static void ProcessModels(pugi::xml_node Node, t_arch* arch, const pugiutil::loc
 
             //Process the <model> tag attributes
             for (pugi::xml_attribute attr : model.attributes()) {
-                if (attr.name() != std::string("name")) {
-                    bad_attribute(attr, model, loc_data);
-                } else {
-                    VTR_ASSERT(attr.name() == std::string("name"));
+                if (attr.name() == std::string("never_prune")) {
+                    auto model_type_str = vtr::strdup(attr.value());
 
+                    if (std::strcmp(model_type_str, "true") == 0) {
+                        temp->never_prune = true;
+                    } else if (std::strcmp(model_type_str, "false") == 0) {
+                        temp->never_prune = false;
+                    } else {
+                        archfpga_throw(loc_data.filename_c_str(), loc_data.line(model),
+                                       "Unsupported never prune attribute value.");
+                    }
+                } else if (attr.name() == std::string("name")) {
                     if (!temp->name) {
                         //First name attr. seen
                         temp->name = vtr::strdup(attr.value());
@@ -2324,6 +2331,8 @@ static void ProcessModels(pugi::xml_node Node, t_arch* arch, const pugiutil::loc
                         archfpga_throw(loc_data.filename_c_str(), loc_data.line(model),
                                        "Duplicate 'name' attribute on <model> tag.");
                     }
+                } else {
+                    bad_attribute(attr, model, loc_data);
                 }
             }
 

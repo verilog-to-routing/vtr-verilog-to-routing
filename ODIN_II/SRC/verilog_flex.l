@@ -340,7 +340,6 @@ vPUNCT [\?\:\|\^\&\<\>\-\*\/\%\(\)\{\}\[\]\~\!\;\#\,\.\@\=\+]
 <INITIAL>"trior"                     { MP(); return ieee_filter(vTRIOR); }
 <INITIAL>"trireg"                    { MP(); return ieee_filter(vTRIREG); }
 <INITIAL>"uwire"                     { MP(); return ieee_filter(vUWIRE); }
-<INITIAL>"uwire"                     { MP(); return ieee_filter(vUWIRE); }
 <INITIAL>"none"                      { MP(); return ieee_filter(vNONE); }
 <INITIAL>"reg"                       { MP(); return ieee_filter(vREG); }
 

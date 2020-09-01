@@ -5,11 +5,19 @@
 #include <vector>
 #include <stack>
 #include <cstring>
+#include <iostream>
 
 #include "vtr_util.h"
 #include "vtr_error.h"
 #include "vtr_string_view.h"
 #include "vtr_flat_map.h"
+#include "../../../vpr/src/draw/breakpoint_state_globals.h"
+
+/**The expression evaluator is capable of performing many operations on given variables, after parsing the expression. The parser goes character by character and identifies the type of char or chars. (e.g bracket, comma, number, operator, variable). The supported operations include addition, subtraction, multiplication, division, finding max, min, gcd, lcm, as well as boolean operators such as &&, ||, ==, >=, <= etc. The result is returned as an int value and operation precedance is taken into account. (e.g given 3-2*4, the result will be -5). This class is also used to parse expressions indicating breakpoints. The breakpoint expressions consist of variable names such as move_num, temp_num, from_block etc, and boolean operators (e.g move_num == 3). Multiple breakpoints can be expressed in one expression**/
+
+//function declarations
+//returns the global variable that holds all values that can trigger a breakpoint and are updated by the router and placer
+BreakpointStateGlobals* get_bp_state_globals();
 
 namespace vtr {
 
@@ -50,6 +58,7 @@ typedef enum e_formula_obj {
     E_FML_BRACKET,
     E_FML_COMMA,
     E_FML_OPERATOR,
+    E_FML_VARIABLE,
     E_FML_NUM_FORMULA_OBJS
 } t_formula_obj;
 
@@ -60,15 +69,33 @@ typedef enum e_operator {
     E_OP_SUB,
     E_OP_MULT,
     E_OP_DIV,
-    E_OP_MOD,
-    E_OP_GT,
-    E_OP_LT,
     E_OP_MIN,
     E_OP_MAX,
     E_OP_GCD,
     E_OP_LCM,
+    E_OP_AND,
+    E_OP_OR,
+    E_OP_GT,
+    E_OP_LT,
+    E_OP_GTE,
+    E_OP_LTE,
+    E_OP_EQ,
+    E_OP_MOD,
+    E_OP_AA,
     E_OP_NUM_OPS
 } t_operator;
+
+/* Used to identify operators with more than one character */
+typedef enum e_compound_operator {
+    E_COM_OP_UNDEFINED = 0,
+    E_COM_OP_AND,
+    E_COM_OP_OR,
+    E_COM_OP_EQ,
+    E_COM_OP_AA,
+    E_COM_OP_GTE,
+    E_COM_OP_LTE
+
+} t_compound_operator;
 
 /**** Class Definitions ****/
 /* This class is used to represent an object in a formula, such as
@@ -83,6 +110,7 @@ class Formula_Object {
         int num;           /*for number objects*/
         t_operator op;     /*for operator objects*/
         bool left_bracket; /*for bracket objects -- specifies if this is a left bracket*/
+        //std::string variable;
 
         u_Data() { memset(this, 0, sizeof(u_Data)); }
     } data;
@@ -92,7 +120,7 @@ class Formula_Object {
     }
 
     std::string to_string() const {
-        if (type == E_FML_NUMBER) {
+        if (type == E_FML_NUMBER || type == E_FML_VARIABLE) {
             return std::to_string(data.num);
         } else if (type == E_FML_BRACKET) {
             if (data.left_bracket) {
@@ -113,10 +141,20 @@ class Formula_Object {
                 return "/";
             } else if (data.op == E_OP_MOD) {
                 return "%";
+            } else if (data.op == E_OP_AND) {
+                return "&&";
+            } else if (data.op == E_OP_OR) {
+                return "||";
             } else if (data.op == E_OP_GT) {
                 return ">";
             } else if (data.op == E_OP_LT) {
                 return "<";
+            } else if (data.op == E_OP_GTE) {
+                return ">=";
+            } else if (data.op == E_OP_LTE) {
+                return "<=";
+            } else if (data.op == E_OP_EQ) {
+                return "==";
             } else if (data.op == E_OP_MIN) {
                 return "min";
             } else if (data.op == E_OP_MAX) {
@@ -125,6 +163,8 @@ class Formula_Object {
                 return "gcd";
             } else if (data.op == E_OP_LCM) {
                 return "lcm";
+            } else if (data.op == E_OP_AA) {
+                return "+=";
             } else {
                 return "???"; //Unkown
             }
@@ -141,7 +181,7 @@ class FormulaParser {
     FormulaParser& operator=(const FormulaParser&) = delete;
 
     /* returns integer result according to specified formula and data */
-    int parse_formula(std::string formula, const t_formula_data& mydata);
+    int parse_formula(std::string formula, const t_formula_data& mydata, bool is_breakpoint = false);
 
     /* returns integer result according to specified piece-wise formula and data */
     int parse_piecewise_formula(const char* formula, const t_formula_data& mydata);
@@ -154,5 +194,6 @@ class FormulaParser {
     std::stack<Formula_Object> op_stack_; /* stack for handling operators and brackets in formula */
 };
 
-} //namespace vtr
+} // namespace vtr
+
 #endif

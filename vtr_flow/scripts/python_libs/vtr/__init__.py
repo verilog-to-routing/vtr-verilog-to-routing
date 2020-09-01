@@ -20,11 +20,13 @@ from .util import (
     verify_file,
 )
 from .inspect import determine_lut_size, determine_min_w, determine_memory_addr_width
-#pylint: disable=reimported
+
+# pylint: disable=reimported
 from .abc import run, run_lec
 from .vpr import run, run_relax_w, cmp_full_vs_incr_sta, run_second_time
 from .odin import run
 from .ace import run
 from .error import *
 from .flow import run, VtrStage
-#pylint: enable=reimported
+
+# pylint: enable=reimported
