@@ -1516,6 +1516,10 @@ static e_move_result try_swap(float t,
         /* 1 -> move accepted, 0 -> rejected. */
         move_outcome = assess_swap(delta_c, t);
 
+        if (manual_move && manual_move_info->valid_input)
+            //update all the costs in the manual_move_info variable and open cost summary window
+            update_manual_move_costs_and_open_window(manual_move_info, move_outcome, delta_c, bb_delta_c, timing_delta_c);
+
         if (move_outcome == ACCEPTED) {
             costs->cost += delta_c;
             costs->bb_cost += bb_delta_c;
