@@ -23,7 +23,7 @@ void CheckSetup(const t_packer_opts& PackerOpts,
     }
 
     if ((GLOBAL == RouterOpts.route_type)
-        && (BOUNDING_BOX_PLACE != PlacerOpts.place_algorithm)) {
+        && (PlacerOpts.place_algorithm != BOUNDING_BOX_PLACE)) {
         /* Works, but very weird.  Can't optimize timing well, since you're
          * not doing proper architecture delay modelling. */
         VTR_LOG_WARN(

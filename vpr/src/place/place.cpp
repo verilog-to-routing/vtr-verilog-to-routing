@@ -335,18 +335,18 @@ static e_move_result try_swap(float t,
                               PlacerCriticalities* criticalities,
                               PlacerSetupSlacks* setup_slacks,
                               float rlim_escape_fraction,
-                              enum e_place_algorithm place_algorithm,
+                              const t_place_algorithm& place_algorithm,
                               float timing_tradeoff);
 
 static void check_place(const t_placer_costs& costs,
                         const PlaceDelayModel* delay_model,
                         const PlacerCriticalities* criticalities,
-                        enum e_place_algorithm place_algorithm);
+                        const t_place_algorithm& place_algorithm);
 
 static int check_placement_costs(const t_placer_costs& costs,
                                  const PlaceDelayModel* delay_model,
                                  const PlacerCriticalities* criticalities,
-                                 enum e_place_algorithm place_algorithm);
+                                 const t_place_algorithm& place_algorithm);
 static int check_placement_consistency();
 static int check_block_placement_consistency();
 static int check_macro_placement_consistency();
@@ -417,7 +417,7 @@ static void get_non_updateable_bb(ClusterNetId net_id, t_bb* bb_coord_new);
 
 static void update_bb(ClusterNetId net_id, t_bb* bb_coord_new, t_bb* bb_edge_new, int xold, int yold, int xnew, int ynew);
 
-static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm,
+static int find_affected_nets_and_update_costs(const t_place_algorithm& place_algorithm,
                                                const PlaceDelayModel* delay_model,
                                                const PlacerCriticalities* criticalities,
                                                t_pl_blocks_to_be_moved& blocks_affected,
@@ -502,7 +502,7 @@ static void placement_inner_loop(float t,
                                  MoveGenerator& move_generator,
                                  t_pl_blocks_to_be_moved& blocks_affected,
                                  SetupTimingInfo* timing_info,
-                                 enum e_place_algorithm place_algorithm);
+                                 const t_place_algorithm& place_algorithm);
 
 static void recompute_costs_from_scratch(const t_placer_opts& placer_opts,
                                          const PlaceDelayModel* delay_model,
@@ -1193,7 +1193,7 @@ static void placement_inner_loop(float t,
                                  MoveGenerator& move_generator,
                                  t_pl_blocks_to_be_moved& blocks_affected,
                                  SetupTimingInfo* timing_info,
-                                 enum e_place_algorithm place_algorithm) {
+                                 const t_place_algorithm& place_algorithm) {
     int inner_crit_iter_count, inner_iter;
 
     int inner_placement_save_count = 0; //How many times have we dumped placement to a file this temperature?
@@ -1556,7 +1556,7 @@ static e_move_result try_swap(float t,
                               PlacerCriticalities* criticalities,
                               PlacerSetupSlacks* setup_slacks,
                               float rlim_escape_fraction,
-                              enum e_place_algorithm place_algorithm,
+                              const t_place_algorithm& place_algorithm,
                               float timing_tradeoff) {
     /* Picks some block and moves it to another spot.  If this spot is   *
      * occupied, switch the blocks.  Assess the change in cost function. *
@@ -1784,7 +1784,7 @@ static e_move_result try_swap(float t,
 //and updates their bounding box.
 //
 //Returns the number of affected nets.
-static int find_affected_nets_and_update_costs(e_place_algorithm place_algorithm,
+static int find_affected_nets_and_update_costs(const t_place_algorithm& place_algorithm,
                                                const PlaceDelayModel* delay_model,
                                                const PlacerCriticalities* criticalities,
                                                t_pl_blocks_to_be_moved& blocks_affected,
@@ -3046,7 +3046,7 @@ static void alloc_and_load_for_fast_cost_update(float place_cost_exp) {
 static void check_place(const t_placer_costs& costs,
                         const PlaceDelayModel* delay_model,
                         const PlacerCriticalities* criticalities,
-                        enum e_place_algorithm place_algorithm) {
+                        const t_place_algorithm& place_algorithm) {
     /* Checks that the placement has not confused our data structures. *
      * i.e. the clb and block structures agree about the locations of  *
      * every block, blocks are in legal spots, etc.  Also recomputes   *
@@ -3073,7 +3073,7 @@ static void check_place(const t_placer_costs& costs,
 static int check_placement_costs(const t_placer_costs& costs,
                                  const PlaceDelayModel* delay_model,
                                  const PlacerCriticalities* criticalities,
-                                 enum e_place_algorithm place_algorithm) {
+                                 const t_place_algorithm& place_algorithm) {
     int error = 0;
     double bb_cost_check;
     double timing_cost_check;
