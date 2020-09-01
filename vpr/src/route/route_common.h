@@ -207,10 +207,10 @@ void push_back_node_with_info(
     float backward_path_cost,
     float R_upstream,
     float backward_path_delay,
-    PathManager& rcv_path_manager) {
+    PathManager* rcv_path_manager) {
 
     t_heap* hptr = heap->alloc();
-    rcv_path_manager.alloc_path_struct(hptr->path_data);
+    rcv_path_manager->alloc_path_struct(hptr->path_data);
 
     hptr->index = inode;
     hptr->cost = total_cost;

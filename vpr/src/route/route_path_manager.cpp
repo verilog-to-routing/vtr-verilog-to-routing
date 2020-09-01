@@ -71,7 +71,7 @@ void PathManager::alloc_path_struct(t_heap_path*& tptr) {
         return;
     }
 
-    if (tptr != nullptr) {
+    // if (tptr == nullptr) {
         // Use a free node list to avoid unnecessary data allocation
         // If there are unused data structures in memory use these
         if (_freed_nodes.size() > 0) {
@@ -81,7 +81,7 @@ void PathManager::alloc_path_struct(t_heap_path*& tptr) {
             tptr = new t_heap_path;
             _alloc_list.push_back(tptr);
         }
-    }
+    // }
     
     tptr->path_rr.clear();
     tptr->edge.clear();
@@ -110,6 +110,8 @@ void PathManager::free_all_memory() {
 }
 
 void PathManager::empty_heap() {
+    // Don't use this, it's a significant time sink
+    return;
     if (!_is_enabled) return;
 
     _freed_nodes.clear();

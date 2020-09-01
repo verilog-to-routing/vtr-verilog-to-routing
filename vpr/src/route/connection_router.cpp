@@ -26,11 +26,9 @@ std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_f
         t_heap out = *cheapest;
         heap_.free(cheapest);
         heap_.empty_heap();
-        rcv_path_manager.empty_heap();
         return std::make_pair(true, out);
     } else {
         heap_.empty_heap();
-        rcv_path_manager.empty_heap();
         return std::make_pair(false, t_heap());
     }
 }
@@ -97,7 +95,6 @@ t_heap* ConnectionRouter<Heap>::timing_driven_route_connection_common_setup(
         reset_path_costs();
         modified_rr_node_inf_.clear();
         heap_.empty_heap();
-        rcv_path_manager.empty_heap();
 
         //Re-initialize the heap since it was emptied by the previous call to
         //timing_driven_route_connection_from_heap()
@@ -177,7 +174,6 @@ std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_f
 
         free_route_tree(rt_root);
         heap_.empty_heap();
-        rcv_path_manager.empty_heap();
         return std::make_pair(false, t_heap());
     }
 
@@ -186,7 +182,6 @@ std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_f
     t_heap out = *cheapest;
     heap_.free(cheapest);
     heap_.empty_heap();
-    rcv_path_manager.empty_heap();
 
     return std::make_pair(true, out);
 }
@@ -861,7 +856,7 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
         expected_total_cost = expected_total_delay_cost + expected_cong;
 
         push_back_node_with_info(&heap_, inode, expected_total_cost,
-                                 backward_path_cost, R_upstream, rt_node->Tdel, rcv_path_manager);
+                                 backward_path_cost, R_upstream, rt_node->Tdel, &rcv_path_manager);
     }
 
     ++router_stats_->heap_pushes;
