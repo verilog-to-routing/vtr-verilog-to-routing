@@ -329,7 +329,7 @@ add_subtree_to_route_tree(t_heap* hptr, int target_net_pin_index, t_rt_node** si
     while (rr_node_to_rt_node[inode] == nullptr) { //Not connected to existing routing
         main_branch_visited.insert(inode);
         all_visited.insert(inode);
-        rcv_path_manager.insert_node(RRNodeId(inode));
+        rcv_path_manager.mark_node_visited(RRNodeId(inode));
 
         linked_rt_edge = alloc_linked_rt_edge();
         linked_rt_edge->child = downstream_rt_node;
@@ -393,7 +393,7 @@ static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bo
 
     if (!visited.count(rr_node) || !reached_by_non_configurable_edge) {
         visited.insert(rr_node);
-        rcv_path_manager.insert_node(RRNodeId(rr_node));
+        rcv_path_manager.mark_node_visited(RRNodeId(rr_node));
 
         auto& device_ctx = g_vpr_ctx.device();
 

@@ -7,7 +7,6 @@
 #include "vtr_array_view.h"
 #include "rr_graph_fwd.h"
 #include "route_path_manager.h"
-#include <set>
 
 /* Used by the heap as its fundamental data structure.
  * Each heap element represents a partial route.

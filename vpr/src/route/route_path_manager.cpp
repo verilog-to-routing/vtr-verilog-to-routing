@@ -38,7 +38,7 @@ bool PathManager::node_exists_in_tree(t_heap_path* path_data,
     return false;
 }
 
-void PathManager::insert_node(RRNodeId node) {
+void PathManager::mark_node_visited(RRNodeId node) {
     if (is_enabled_) {
         route_tree_nodes_.insert(node);
     }
