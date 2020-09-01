@@ -5,14 +5,14 @@
         "max_rss(MiB)": 14.8,
         "exec_time(ms)": 2.9,
         "simulation_time(ms)": 0.2,
-        "test_coverage(%)": 66.7,
+        "test_coverage(%)": 75,
         "Pi": 2,
         "Po": 1,
-        "logic element": 2,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 2,
-        "Total Node": 2
+        "logic element": 1,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
     },
     "DEFAULT": {
         "test_name": "n/a",

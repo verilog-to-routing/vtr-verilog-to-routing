@@ -10,13 +10,13 @@
         "Latch Drivers": 2,
         "Pi": 4,
         "Po": 4,
-        "logic element": 144,
+        "logic element": 140,
         "latch": 34,
         "generic logic size": 6,
-        "Longest Path": 27,
-        "Average Path": 5,
-        "Estimated LUTs": 250,
-        "Total Node": 180
+        "Longest Path": 26,
+        "Average Path": 4,
+        "Estimated LUTs": 246,
+        "Total Node": 176
     },
     "coverage/multi_clock_reader_writer/k6_N10_mem32K_40nm": {
         "test_name": "coverage/multi_clock_reader_writer/k6_N10_mem32K_40nm",
@@ -29,13 +29,13 @@
         "Latch Drivers": 2,
         "Pi": 4,
         "Po": 4,
-        "logic element": 144,
+        "logic element": 140,
         "latch": 34,
         "generic logic size": 6,
-        "Longest Path": 27,
-        "Average Path": 5,
-        "Estimated LUTs": 250,
-        "Total Node": 180
+        "Longest Path": 26,
+        "Average Path": 4,
+        "Estimated LUTs": 246,
+        "Total Node": 176
     },
     "coverage/multi_clock_reader_writer/no_arch": {
         "test_name": "coverage/multi_clock_reader_writer/no_arch",
@@ -47,12 +47,12 @@
         "Latch Drivers": 2,
         "Pi": 4,
         "Po": 4,
-        "logic element": 144,
+        "logic element": 140,
         "latch": 34,
-        "Longest Path": 27,
-        "Average Path": 5,
-        "Estimated LUTs": 144,
-        "Total Node": 180
+        "Longest Path": 26,
+        "Average Path": 4,
+        "Estimated LUTs": 140,
+        "Total Node": 176
     },
     "DEFAULT": {
         "test_name": "n/a",

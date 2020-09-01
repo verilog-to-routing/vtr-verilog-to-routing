@@ -8,11 +8,11 @@
         "test_coverage(%)": 100,
         "Pi": 4,
         "Po": 2,
-        "logic element": 4,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 4,
-        "Total Node": 4
+        "logic element": 2,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 2,
+        "Total Node": 2
     },
     "xnor/xnor_wire/no_arch": {
         "test_name": "xnor/xnor_wire/no_arch",
@@ -23,11 +23,11 @@
         "test_coverage(%)": 100,
         "Pi": 2,
         "Po": 1,
-        "logic element": 2,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 2,
-        "Total Node": 2
+        "logic element": 1,
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Estimated LUTs": 1,
+        "Total Node": 1
     },
     "DEFAULT": {
         "test_name": "n/a",

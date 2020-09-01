@@ -50,12 +50,10 @@
         "test_coverage(%)": 100,
         "Latch Drivers": 1,
         "Po": 1,
-        "logic element": 1,
         "latch": 1,
-        "Longest Path": 4,
-        "Average Path": 4,
-        "Estimated LUTs": 1,
-        "Total Node": 3
+        "Longest Path": 3,
+        "Average Path": 3,
+        "Total Node": 2
     },
     "defparam/defparam_depth_1_failure/no_arch": {
         "test_name": "defparam/defparam_depth_1_failure/no_arch",
