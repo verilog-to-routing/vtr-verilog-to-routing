@@ -126,3 +126,13 @@ void PathManager::empty_route_tree_nodes() {
 
     route_tree_nodes.clear();
 }
+
+void PathManager::move(t_heap_path*& dest, t_heap_path*& src) {
+    // Free the current dest structure if it exists
+    free_path_struct(dest);
+
+    dest = src;
+
+    // Invalidate the source pointer to ensure it isn't double 'freed'
+    src = nullptr;
+}

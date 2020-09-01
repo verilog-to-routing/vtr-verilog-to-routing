@@ -567,8 +567,8 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
         //sub-optimal (at this point in time) into the heap.
         t_heap* next_ptr = heap_.alloc();
 
-        // Allocate structures if RCV is enabled, otherwise give a nullptr
-        if (run_rcv) rcv_path_manager.alloc_path_struct(next_ptr->path_data);
+        // Use the already created next path structure pointer when RCV is enabled
+        if (run_rcv) rcv_path_manager.move(next_ptr->path_data, next.path_data);
 
         //Record how we reached this node
         next_ptr->cost = next.cost;
@@ -579,9 +579,6 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
         next_ptr->set_prev_node(from_node);
 
         if (run_rcv && current->path_data) {
-            next_ptr->path_data->backward_cong = next.path_data->backward_cong;
-            next_ptr->path_data->backward_delay = next.path_data->backward_delay;
-
             next_ptr->path_data->path_rr = current->path_data->path_rr;
             next_ptr->path_data->edge = current->path_data->edge;
             next_ptr->path_data->path_rr.emplace_back(from_node);

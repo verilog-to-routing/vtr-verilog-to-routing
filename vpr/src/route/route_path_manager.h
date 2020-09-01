@@ -53,6 +53,9 @@ class PathManager {
     // Free the path structure if it's initialized
     void free_path_struct(t_heap_path*& tptr);
 
+    // Move the structure from src to dest
+    void move(t_heap_path*& dest, t_heap_path*& src);
+
     void free_all_memory();
 
     void empty_heap();
