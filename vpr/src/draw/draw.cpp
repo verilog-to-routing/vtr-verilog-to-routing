@@ -3925,6 +3925,19 @@ static void highlight_blocks(double x, double y) {
         sprintf(msg, "Block #%zu (%s) at (%d, %d) selected.", size_t(clb_index), cluster_ctx.clb_nlist.block_name(clb_index).c_str(), place_ctx.block_locs[clb_index].loc.x, place_ctx.block_locs[clb_index].loc.y);
     }
 
+    if(get_manual_move_flag()) {
+        
+    	if (!manual_move_globals.manual_move_window_is_open) {
+            GtkWidget* proceed = find_button("ProceedButton");
+    	    ezgl::press_proceed(proceed,&application);
+        }
+        else {
+            gtk_widget_destroy((GtkWidget*)manual_move_globals.manual_move_window);
+            manual_move_globals.manual_move_window_is_open = false;
+        }
+    	manual_move_generator_window (std::to_string(size_t(clb_index)));
+    }
+
     application.update_message(msg);
 
     application.refresh_drawing();
