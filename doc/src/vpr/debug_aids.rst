@@ -136,7 +136,7 @@ If you want to make another manual move simply press proceed again and repeat th
 Selecting the block to move
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can choose the block you want to move by entering its block id or block name in the corresponding entry field, or you can simply click on that specific block. For better visualization, once you indicate your block through the entry field and press proceed, your block will be highlighted on the GUI.
+You can choose the block you want to move by entering its block id or block name in the corresponding entry field, or you can simply click on that specific block. For better visualization, once you indicate your block through the entry field and press proceed, your block will be highlighted on the GUI. Note: You cannot move blocks that are part of a placement macro, when trying to do so, the proposed move will get aborted and you'll get the error message.
 
 Selecting the to location
 ~~~~~~~~~~~~~~~~~~~~~~~~~
