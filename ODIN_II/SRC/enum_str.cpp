@@ -1,8 +1,16 @@
 #include "odin_types.h"
 
+const char* ieee_std_STR[] = {
+    "1364-1995",
+    "1364-2001-noconfig",
+    "1364-2001",
+    "1364-2005",
+};
+
 const char* file_extension_supported_STR[] = {
     ".v",
-    ".vh"};
+    ".vh",
+};
 
 const char* edge_type_e_STR[] = {
     "UNDEFINED_SENSITIVITY",
@@ -100,7 +108,6 @@ const char* ids_STR[] = {
     "INOUT",
     "WIRE",
     "REG",
-    "INTEGER",
     "GENVAR",
     "PARAMETER",
     "LOCALPARAM",

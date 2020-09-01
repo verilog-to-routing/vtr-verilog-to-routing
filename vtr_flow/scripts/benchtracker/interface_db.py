@@ -11,7 +11,8 @@ import textwrap
 import csv
 import StringIO
 
-def list_tasks(dbname = "results.db"):
+
+def list_tasks(dbname="results.db"):
     """Return a list of all task names in a database"""
     db = connect_db(dbname)
     cursor = db.cursor()
@@ -19,28 +20,28 @@ def list_tasks(dbname = "results.db"):
     return [row[0] for row in cursor.fetchall()]
 
 
-def describe_tasks(tasks, dbname = "results.db"):
+def describe_tasks(tasks, dbname="results.db"):
     """Return a list of all shared parameters for some tasks of a database"""
     db = connect_db(dbname)
     cursor = db.cursor()
-    if not isinstance(tasks,list):
+    if not isinstance(tasks, list):
         tasks = [tasks]
 
     # only the shared columns will remain
     shared_params = []
     for task in tasks:
-        query_command = "pragma table_info([{}])".format(task);
-        cursor.execute(query_command);
+        query_command = "pragma table_info([{}])".format(task)
+        cursor.execute(query_command)
         task_params = [" ".join((row[1], row[2])) for row in cursor.fetchall()]
         if shared_params:
             shared_params = intersection(shared_params, task_params)
         else:
             shared_params = task_params
-        
-    return shared_params
-    
 
-def retrieve_data(x_param, y_param, filters, tasks, dbname = "results.db"):
+    return shared_params
+
+
+def retrieve_data(x_param, y_param, filters, tasks, dbname="results.db"):
     """
     Return a list of selected parameters and a data structure (list of list of tuples),
 
@@ -73,10 +74,12 @@ def retrieve_data(x_param, y_param, filters, tasks, dbname = "results.db"):
     sql_val_args = []
     filter_command = ""
     for t in range(len(tasks)):
-        select_command = "SELECT DISTINCT {} FROM {} ".format(','.join(cols_to_select), task_name(tasks[t]))
+        select_command = "SELECT DISTINCT {} FROM {} ".format(
+            ",".join(cols_to_select), task_name(tasks[t])
+        )
         if filters:
             # first time, still need to populate sql_val_args and make filter_command
-            if t == 0: 
+            if t == 0:
                 filter_command = "WHERE "
                 for f in range(len(filters)):
 
@@ -87,14 +90,15 @@ def retrieve_data(x_param, y_param, filters, tasks, dbname = "results.db"):
                         filter_command += " AND "
 
         select_command += filter_command
-        select_command += ';'
+        select_command += ";"
 
         print(select_command)
         cursor = db.cursor()
         cursor.execute(select_command, sql_val_args)
-        data.append(tuple(tuple(row) for row in cursor.fetchall()));
-        
+        data.append(tuple(tuple(row) for row in cursor.fetchall()))
+
     return cols_to_select, data
+
 
 def export_data_csv(selected_cols, data):
     """
@@ -114,7 +118,7 @@ def export_data_csv(selected_cols, data):
         yield csvf
 
 
-def export_data_csv_todisk(selected_cols, data, tasks, dir = "benchtracker_data"):
+def export_data_csv_todisk(selected_cols, data, tasks, dir="benchtracker_data"):
     """
     Exports retrieved data as csv files on export_data_csv_todisk
 
@@ -124,17 +128,16 @@ def export_data_csv_todisk(selected_cols, data, tasks, dir = "benchtracker_data"
         makedirs(dir)
     t = 0
     for csvf in export_data_csv(selected_cols, data):
-        with open("".join([dir, '/', tasks[t].replace('/','.'), '.csv']), 'w') as f:
+        with open("".join([dir, "/", tasks[t].replace("/", "."), ".csv"]), "w") as f:
             csvf.seek(0)
-            buf = csvf.read(1048576) # 1 MB
+            buf = csvf.read(1048576)  # 1 MB
             while buf:
                 f.write(buf)
                 buf = csvf.read(1048576)
             t += 1
 
 
-
-def describe_param(param, mode, tasks, dbname = "results.db"):
+def describe_param(param, mode, tasks, dbname="results.db"):
     """
     Give back metainformation about a parameter to allow for easier filtering.
     
@@ -148,46 +151,47 @@ def describe_param(param, mode, tasks, dbname = "results.db"):
 
     (param_name, param_type) = param.split()
     if param_type == "TEXT":
-        mode = 'categorical'
-    elif mode not in {'categorical', 'range'}:
+        mode = "categorical"
+    elif mode not in {"categorical", "range"}:
         raise ValueError
 
     subquery = ""
     min_param = "min_p"
     max_param = "max_p"
-    if not isinstance(tasks,list):
+    if not isinstance(tasks, list):
         subquery = task_name(tasks)
         min_param = max_param = param_name
     else:
-        subquery += '('
+        subquery += "("
         for t in range(len(tasks)):
             if mode == "categorical":
                 subquery += "SELECT DISTINCT {} FROM {}".format(param_name, task_name(tasks[t]))
             else:
-                subquery += "SELECT MIN({0}) as min_p, MAX({0}) as max_p FROM {1}".format(param_name, task_name(tasks[t]))
-            
+                subquery += "SELECT MIN({0}) as min_p, MAX({0}) as max_p FROM {1}".format(
+                    param_name, task_name(tasks[t])
+                )
+
             if t < len(tasks) - 1:
                 subquery += " UNION ALL "
-        subquery += ')'
+        subquery += ")"
 
     print(subquery)
 
     # categorical data, return a list of all distinct values
-    if mode == 'categorical':
+    if mode == "categorical":
         cursor.execute("SELECT DISTINCT {} FROM {};".format(param_name, subquery))
-        return (mode,tuple(row[0] for row in cursor.fetchall()))
+        return (mode, tuple(row[0] for row in cursor.fetchall()))
     # ranged data, return (min, max)
     else:
         cursor.execute("SELECT MIN({}), MAX({}) FROM {};".format(min_param, max_param, subquery))
-        return (mode,tuple(cursor.fetchone()))
+        return (mode, tuple(cursor.fetchone()))
 
 
-
-def connect_db(dbname = "results.db"):
+def connect_db(dbname="results.db"):
     """Attempt a database connection, exiting with 1 if dbname does not exist, else return with db connection"""
     if not os.path.isfile(dbname):
         print("{} does not exist".format(dbname))
-        raise IOError(dbname) 
+        raise IOError(dbname)
     db = sqlite3.connect(dbname)
     db.row_factory = sqlite3.Row
     return db
@@ -195,6 +199,8 @@ def connect_db(dbname = "results.db"):
 
 # filter object
 valid_filter_methods = {"IN", "BETWEEN", "LIKE", "=", "<>", "!=", ">", "<", ">=", "<="}
+
+
 class Task_filter:
     def __init__(self, param, method, args):
         self.param = param
@@ -204,25 +210,30 @@ class Task_filter:
             print(method, "is not a supported filter method")
             raise ValueError
         self.args = args
+
     def __str__(self):
         substitutions = sql_substitute(self.args)
         if self.method == "BETWEEN":
             substitutions = "? AND ?"
         elif self.method == "IN":
-            substitutions = '('+substitutions+')'
+            substitutions = "(" + substitutions + ")"
         return "({} {} {})".format(self.param, self.method, substitutions)
-        
+
 
 # internal utilities
 def task_name(task):
-    return '['+task+']'
+    return "[" + task + "]"
+
+
 def intersection(first, other):
     intersection_set = set.intersection(set(first), set(other))
     # reimpose order
     return [item for item in first if item in intersection_set]
 
+
 def sql_substitute(args):
-    return ('?,'*len(args)).rstrip(',')
+    return ("?," * len(args)).rstrip(",")
+
 
 def retrieve_primary_keys(task, db):
     cursor = db.cursor()
@@ -236,4 +247,3 @@ def retrieve_primary_keys(task, db):
             primary_keys.append(info[1])
 
     return primary_keys
-

@@ -42,6 +42,7 @@
 #endif
 
 std::string string_of_radix_to_bitstring(std::string orig_string, size_t radix);
+std::string convert_between_bases(std::string str, uint8_t base_from, uint8_t base_to, bool uppercase, bool big_endian);
 
 inline void _assert_Werr(bool cond, const char* FUNCT, int LINE, std::string error_string) {
     if (!cond) {

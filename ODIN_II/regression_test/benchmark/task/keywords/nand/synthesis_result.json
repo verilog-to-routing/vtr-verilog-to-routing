@@ -18,10 +18,10 @@
         "verilog": "nand_wire.vh",
         "exit": 134,
         "errors": [
-            "PARSE_TO_AST Parser found (1) errors in your syntax, exiting"
+            "[PARSE_TO_AST] Parser found (1) errors in your syntax, exiting"
         ],
         "warnings": [
-            "PARSE_TO_AST wire_test.v:1 error in parsing: (syntax error, unexpected vAND, expecting vSYMBOL_ID or '#')"
+            "wire_test.v:1:1 [PARSE_TO_AST] error in parsing: (syntax error, unexpected vAND, expecting vSYMBOL_ID or '#')"
         ]
     },
     "nand/range_nand_int_wide/no_arch": {
@@ -29,7 +29,7 @@
         "verilog": "range_nand_int_wide.vh",
         "exit": 134,
         "errors": [
-            "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
+            "range_any_width_binary_test.v:13:1 [PARSE_TO_AST] define `operator is being used with too many arguments, Expected 0, got 3"
         ]
     },
     "nand/range_nand_ultra_wide/no_arch": {
@@ -37,7 +37,7 @@
         "verilog": "range_nand_ultra_wide.vh",
         "exit": 134,
         "errors": [
-            "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
+            "range_any_width_binary_test.v:13:1 [PARSE_TO_AST] define `operator is being used with too many arguments, Expected 0, got 3"
         ]
     },
     "nand/range_nand_wide/no_arch": {
@@ -45,7 +45,7 @@
         "verilog": "range_nand_wide.vh",
         "exit": 134,
         "errors": [
-            "PARSE_TO_AST range_any_width_binary_test.v:13 define `operator is being used with too many arguments, Expected 0, got 3"
+            "range_any_width_binary_test.v:13:1 [PARSE_TO_AST] define `operator is being used with too many arguments, Expected 0, got 3"
         ]
     },
     "nand/replicate_nand_int_wide/no_arch": {
@@ -53,7 +53,7 @@
         "verilog": "replicate_nand_int_wide.vh",
         "exit": 134,
         "errors": [
-            "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
+            "replicate_any_width_binary_test.v:13:1 [PARSE_TO_AST] define `RANGE is being used with too many arguments, Expected 0, got 3"
         ]
     },
     "nand/replicate_nand_ultra_wide/no_arch": {
@@ -61,7 +61,7 @@
         "verilog": "replicate_nand_ultra_wide.vh",
         "exit": 134,
         "errors": [
-            "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
+            "replicate_any_width_binary_test.v:13:1 [PARSE_TO_AST] define `RANGE is being used with too many arguments, Expected 0, got 3"
         ]
     },
     "nand/replicate_nand_wide/no_arch": {
@@ -69,7 +69,7 @@
         "verilog": "replicate_nand_wide.vh",
         "exit": 134,
         "errors": [
-            "PARSE_TO_AST replicate_any_width_binary_test.v:13 define `RANGE is being used with too many arguments, Expected 0, got 3"
+            "replicate_any_width_binary_test.v:13:1 [PARSE_TO_AST] define `RANGE is being used with too many arguments, Expected 0, got 3"
         ]
     },
     "DEFAULT": {

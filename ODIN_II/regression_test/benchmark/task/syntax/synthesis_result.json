@@ -3,6 +3,9 @@
         "test_name": "syntax/8_bit_for_pass_through/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "8_bit_for_pass_through.v",
+        "warnings": [
+            "8_bit_for_pass_through.v:11:1 [AST] Odin does not handle signed REG (i)"
+        ],
         "max_rss(MiB)": 26.8,
         "exec_time(ms)": 51.8,
         "synthesis_time(ms)": 5.3,
@@ -24,6 +27,9 @@
         "test_name": "syntax/8_bit_for_pass_through_module/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "8_bit_for_pass_through_module.v",
+        "warnings": [
+            "8_bit_for_pass_through_module.v:5:1 [AST] Odin does not handle signed GENVAR (i)"
+        ],
         "max_rss(MiB)": 28.8,
         "exec_time(ms)": 44.5,
         "synthesis_time(ms)": 7.2,
@@ -44,6 +50,9 @@
     "syntax/8_bit_for_pass_through_module/no_arch": {
         "test_name": "syntax/8_bit_for_pass_through_module/no_arch",
         "verilog": "8_bit_for_pass_through_module.v",
+        "warnings": [
+            "8_bit_for_pass_through_module.v:5:1 [AST] Odin does not handle signed GENVAR (i)"
+        ],
         "max_rss(MiB)": 16,
         "exec_time(ms)": 9.8,
         "synthesis_time(ms)": 8.4,
@@ -60,6 +69,9 @@
     "syntax/8_bit_for_pass_through/no_arch": {
         "test_name": "syntax/8_bit_for_pass_through/no_arch",
         "verilog": "8_bit_for_pass_through.v",
+        "warnings": [
+            "8_bit_for_pass_through.v:11:1 [AST] Odin does not handle signed REG (i)"
+        ],
         "max_rss(MiB)": 13.6,
         "exec_time(ms)": 10.4,
         "synthesis_time(ms)": 8.4,
@@ -77,6 +89,9 @@
         "test_name": "syntax/8_bit_for_pass_through_off_by_1/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "8_bit_for_pass_through_off_by_1.v",
+        "warnings": [
+            "8_bit_for_pass_through_off_by_1.v:11:1 [AST] Odin does not handle signed REG (i)"
+        ],
         "max_rss(MiB)": 27.8,
         "exec_time(ms)": 54.8,
         "synthesis_time(ms)": 6.5,
@@ -97,6 +112,9 @@
     "syntax/8_bit_for_pass_through_off_by_1/no_arch": {
         "test_name": "syntax/8_bit_for_pass_through_off_by_1/no_arch",
         "verilog": "8_bit_for_pass_through_off_by_1.v",
+        "warnings": [
+            "8_bit_for_pass_through_off_by_1.v:11:1 [AST] Odin does not handle signed REG (i)"
+        ],
         "max_rss(MiB)": 15.2,
         "exec_time(ms)": 8.9,
         "synthesis_time(ms)": 7.5,
@@ -186,7 +204,7 @@
         "verilog": "bm_dag5_mod.v",
         "exit": 134,
         "errors": [
-            "AST bm_dag5_mod.v:33 Cannot mix port connections by name and port connections by ordered list"
+            "bm_dag5_mod.v:33:1 [AST] Cannot mix port connections by name and port connections by ordered list"
         ]
     },
     "syntax/bm_dag5_mod/no_arch": {
@@ -194,7 +212,7 @@
         "verilog": "bm_dag5_mod.v",
         "exit": 134,
         "errors": [
-            "AST bm_dag5_mod.v:33 Cannot mix port connections by name and port connections by ordered list"
+            "bm_dag5_mod.v:33:1 [AST] Cannot mix port connections by name and port connections by ordered list"
         ]
     },
     "syntax/bm_dag6_mod_log/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -203,7 +221,7 @@
         "verilog": "bm_dag6_mod_log.v",
         "exit": 134,
         "errors": [
-            "AST bm_dag6_mod_log.v:33 Cannot mix port connections by name and port connections by ordered list"
+            "bm_dag6_mod_log.v:33:1 [AST] Cannot mix port connections by name and port connections by ordered list"
         ]
     },
     "syntax/bm_dag6_mod_log/no_arch": {
@@ -211,7 +229,7 @@
         "verilog": "bm_dag6_mod_log.v",
         "exit": 134,
         "errors": [
-            "AST bm_dag6_mod_log.v:33 Cannot mix port connections by name and port connections by ordered list"
+            "bm_dag6_mod_log.v:33:1 [AST] Cannot mix port connections by name and port connections by ordered list"
         ]
     },
     "syntax/bm_dag7_mod_log/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -391,35 +409,23 @@
         "test_name": "syntax/bm_function_1/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "bm_function_1.v",
-        "exit": 134,
-        "errors": [
-            "AST bm_function_1.v:40 Missing declaration of this symbol simple_func"
-        ]
+        "exit": 134
     },
     "syntax/bm_function_1/no_arch": {
         "test_name": "syntax/bm_function_1/no_arch",
         "verilog": "bm_function_1.v",
-        "exit": 134,
-        "errors": [
-            "AST bm_function_1.v:40 Missing declaration of this symbol simple_func"
-        ]
+        "exit": 134
     },
     "syntax/bm_function_2/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/bm_function_2/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "bm_function_2.v",
-        "exit": 134,
-        "errors": [
-            "AST bm_function_2.v:50 Missing declaration of this symbol simple_func"
-        ]
+        "exit": 134
     },
     "syntax/bm_function_2/no_arch": {
         "test_name": "syntax/bm_function_2/no_arch",
         "verilog": "bm_function_2.v",
-        "exit": 134,
-        "errors": [
-            "AST bm_function_2.v:50 Missing declaration of this symbol simple_func"
-        ]
+        "exit": 134
     },
     "syntax/bm_jk_rtl/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/bm_jk_rtl/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -496,8 +502,8 @@
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "bm_simple_memory.v",
         "warnings": [
-            "NETLIST bm_simple_memory.v:24 indexing into memory with bm_simple_memory has larger input than memory. Unused pins: bm_simple_memory^address_in~3",
-            "NETLIST bm_simple_memory.v:27 indexing into memory with bm_simple_memory has larger input than memory. Unused pins: bm_simple_memory^address_out~3"
+            "bm_simple_memory.v:24:10 [NETLIST] indexing into memory with bm_simple_memory has larger input than memory. Unused pins: bm_simple_memory^address_in~3",
+            "bm_simple_memory.v:27:1 [NETLIST] indexing into memory with bm_simple_memory has larger input than memory. Unused pins: bm_simple_memory^address_out~3"
         ],
         "max_rss(MiB)": 25.8,
         "exec_time(ms)": 46.6,
@@ -516,8 +522,8 @@
         "test_name": "syntax/bm_simple_memory/no_arch",
         "verilog": "bm_simple_memory.v",
         "warnings": [
-            "NETLIST bm_simple_memory.v:24 indexing into memory with bm_simple_memory has larger input than memory. Unused pins: bm_simple_memory^address_in~3",
-            "NETLIST bm_simple_memory.v:27 indexing into memory with bm_simple_memory has larger input than memory. Unused pins: bm_simple_memory^address_out~3"
+            "bm_simple_memory.v:24:10 [NETLIST] indexing into memory with bm_simple_memory has larger input than memory. Unused pins: bm_simple_memory^address_in~3",
+            "bm_simple_memory.v:27:1 [NETLIST] indexing into memory with bm_simple_memory has larger input than memory. Unused pins: bm_simple_memory^address_out~3"
         ],
         "max_rss(MiB)": 12.8,
         "exec_time(ms)": 5.6,
@@ -555,7 +561,7 @@
         "verilog": "both_ram.v",
         "exit": 134,
         "errors": [
-            "NETLIST both_ram.v:49 Memory pram.inst1 of depth 2^16 exceeds ODIN bound of 2^10."
+            "both_ram.v:49:1 [NETLIST] Memory pram.inst1 of depth 2^16 exceeds ODIN bound of 2^10."
         ]
     },
     "syntax/cf_fft_1024_16/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -599,6 +605,9 @@
         "test_name": "syntax/complex_post_for_loop/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "complex_post_for_loop.v",
+        "warnings": [
+            "complex_post_for_loop.v:11:1 [AST] Odin does not handle signed REG (i)"
+        ],
         "max_rss(MiB)": 26.9,
         "exec_time(ms)": 49.6,
         "synthesis_time(ms)": 5.5,
@@ -619,6 +628,9 @@
     "syntax/complex_post_for_loop/no_arch": {
         "test_name": "syntax/complex_post_for_loop/no_arch",
         "verilog": "complex_post_for_loop.v",
+        "warnings": [
+            "complex_post_for_loop.v:11:1 [AST] Odin does not handle signed REG (i)"
+        ],
         "max_rss(MiB)": 13.8,
         "exec_time(ms)": 7.3,
         "synthesis_time(ms)": 5.9,
@@ -672,11 +684,10 @@
         "verilog": "deassign.v",
         "exit": 134,
         "errors": [
-            "PARSE_TO_AST Parser found (2) errors in your syntax, exiting"
+            "[PARSE_TO_AST] Parser found (1) errors in your syntax, exiting"
         ],
         "warnings": [
-            "PARSE_TO_AST deassign.v:21 Unsuported token",
-            "PARSE_TO_AST deassign.v:21 error in parsing: (syntax error, unexpected ';', expecting voLTE or '=')"
+            "deassign.v:21:4 [PARSE_TO_AST] error in parsing: (syntax error, unexpected vDEASSIGN)"
         ]
     },
     "syntax/deassign/no_arch": {
@@ -684,11 +695,10 @@
         "verilog": "deassign.v",
         "exit": 134,
         "errors": [
-            "PARSE_TO_AST Parser found (2) errors in your syntax, exiting"
+            "[PARSE_TO_AST] Parser found (1) errors in your syntax, exiting"
         ],
         "warnings": [
-            "PARSE_TO_AST deassign.v:21 Unsuported token",
-            "PARSE_TO_AST deassign.v:21 error in parsing: (syntax error, unexpected ';', expecting voLTE or '=')"
+            "deassign.v:21:4 [PARSE_TO_AST] error in parsing: (syntax error, unexpected vDEASSIGN)"
         ]
     },
     "syntax/delay_syntax/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -804,11 +814,11 @@
         "verilog": "fir_scu_rtl_restructured_for_cmm_exp.v",
         "exit": 134,
         "errors": [
-            "PARSE_TO_AST Parser found (2) errors in your syntax, exiting"
+            "[PARSE_TO_AST] Parser found (2) errors in your syntax, exiting"
         ],
         "warnings": [
-            "PARSE_TO_AST fir_scu_rtl_restructured_for_cmm_exp.v:94 error in parsing: (syntax error, unexpected vSYMBOL_ID, expecting voLTE or '=')",
-            "PARSE_TO_AST fir_scu_rtl_restructured_for_cmm_exp.v:109 error in parsing: (syntax error, unexpected voLTE, expecting vSYMBOL_ID or '#')"
+            "fir_scu_rtl_restructured_for_cmm_exp.v:94:1 [PARSE_TO_AST] error in parsing: (syntax error, unexpected vSYMBOL_ID, expecting voLTE or '=')",
+            "fir_scu_rtl_restructured_for_cmm_exp.v:109:8 [PARSE_TO_AST] error in parsing: (syntax error, unexpected voLTE, expecting vSYMBOL_ID or '#')"
         ]
     },
     "syntax/fir_scu_rtl_restructured_for_cmm_exp/no_arch": {
@@ -816,11 +826,11 @@
         "verilog": "fir_scu_rtl_restructured_for_cmm_exp.v",
         "exit": 134,
         "errors": [
-            "PARSE_TO_AST Parser found (2) errors in your syntax, exiting"
+            "[PARSE_TO_AST] Parser found (2) errors in your syntax, exiting"
         ],
         "warnings": [
-            "PARSE_TO_AST fir_scu_rtl_restructured_for_cmm_exp.v:94 error in parsing: (syntax error, unexpected vSYMBOL_ID, expecting voLTE or '=')",
-            "PARSE_TO_AST fir_scu_rtl_restructured_for_cmm_exp.v:109 error in parsing: (syntax error, unexpected voLTE, expecting vSYMBOL_ID or '#')"
+            "fir_scu_rtl_restructured_for_cmm_exp.v:94:1 [PARSE_TO_AST] error in parsing: (syntax error, unexpected vSYMBOL_ID, expecting voLTE or '=')",
+            "fir_scu_rtl_restructured_for_cmm_exp.v:109:8 [PARSE_TO_AST] error in parsing: (syntax error, unexpected voLTE, expecting vSYMBOL_ID or '#')"
         ]
     },
     "syntax/flip_flop_enable/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -828,8 +838,8 @@
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "flip_flop_enable.v",
         "warnings": [
-            "NETLIST flip_flop_enable.v:7 This output is undriven (edge_testing^q0) and will be removed",
-            "NETLIST flip_flop_enable.v:7 Net edge_testing^q0 driving node edge_testing^q0 is itself undriven."
+            "flip_flop_enable.v:7:2 [NETLIST] This output is undriven (edge_testing^q0) and will be removed",
+            "flip_flop_enable.v:7:2 [NETLIST] Net edge_testing^q0 driving node edge_testing^q0 is itself undriven."
         ],
         "max_rss(MiB)": 25.4,
         "exec_time(ms)": 44.8,
@@ -846,8 +856,8 @@
         "test_name": "syntax/flip_flop_enable/no_arch",
         "verilog": "flip_flop_enable.v",
         "warnings": [
-            "NETLIST flip_flop_enable.v:7 This output is undriven (edge_testing^q0) and will be removed",
-            "NETLIST flip_flop_enable.v:7 Net edge_testing^q0 driving node edge_testing^q0 is itself undriven."
+            "flip_flop_enable.v:7:2 [NETLIST] This output is undriven (edge_testing^q0) and will be removed",
+            "flip_flop_enable.v:7:2 [NETLIST] Net edge_testing^q0 driving node edge_testing^q0 is itself undriven."
         ],
         "max_rss(MiB)": 12.7,
         "exec_time(ms)": 3.6,
@@ -861,8 +871,8 @@
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "flip_flop_enable_w_begin_label.v",
         "warnings": [
-            "NETLIST flip_flop_enable_w_begin_label.v:7 This output is undriven (edge_testing^q0) and will be removed",
-            "NETLIST flip_flop_enable_w_begin_label.v:7 Net edge_testing^q0 driving node edge_testing^q0 is itself undriven."
+            "flip_flop_enable_w_begin_label.v:7:2 [NETLIST] This output is undriven (edge_testing^q0) and will be removed",
+            "flip_flop_enable_w_begin_label.v:7:2 [NETLIST] Net edge_testing^q0 driving node edge_testing^q0 is itself undriven."
         ],
         "max_rss(MiB)": 25.5,
         "exec_time(ms)": 47.8,
@@ -879,8 +889,8 @@
         "test_name": "syntax/flip_flop_enable_w_begin_label/no_arch",
         "verilog": "flip_flop_enable_w_begin_label.v",
         "warnings": [
-            "NETLIST flip_flop_enable_w_begin_label.v:7 This output is undriven (edge_testing^q0) and will be removed",
-            "NETLIST flip_flop_enable_w_begin_label.v:7 Net edge_testing^q0 driving node edge_testing^q0 is itself undriven."
+            "flip_flop_enable_w_begin_label.v:7:2 [NETLIST] This output is undriven (edge_testing^q0) and will be removed",
+            "flip_flop_enable_w_begin_label.v:7:2 [NETLIST] Net edge_testing^q0 driving node edge_testing^q0 is itself undriven."
         ],
         "max_rss(MiB)": 12.4,
         "exec_time(ms)": 3.7,
@@ -893,6 +903,9 @@
         "test_name": "syntax/for_loop_adv_post/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "for_loop_adv_post.v",
+        "warnings": [
+            "for_loop_adv_post.v:11:1 [AST] Odin does not handle signed REG (i)"
+        ],
         "max_rss(MiB)": 26.2,
         "exec_time(ms)": 48.7,
         "synthesis_time(ms)": 3.8,
@@ -913,6 +926,9 @@
     "syntax/for_loop_adv_post/no_arch": {
         "test_name": "syntax/for_loop_adv_post/no_arch",
         "verilog": "for_loop_adv_post.v",
+        "warnings": [
+            "for_loop_adv_post.v:11:1 [AST] Odin does not handle signed REG (i)"
+        ],
         "max_rss(MiB)": 13,
         "exec_time(ms)": 5.8,
         "synthesis_time(ms)": 4.4,
@@ -930,6 +946,9 @@
         "test_name": "syntax/for_loop_adv_pre/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "for_loop_adv_pre.v",
+        "warnings": [
+            "for_loop_adv_pre.v:11:1 [AST] Odin does not handle signed REG (i)"
+        ],
         "max_rss(MiB)": 26.9,
         "exec_time(ms)": 49.5,
         "synthesis_time(ms)": 5.2,
@@ -950,6 +969,9 @@
     "syntax/for_loop_adv_pre/no_arch": {
         "test_name": "syntax/for_loop_adv_pre/no_arch",
         "verilog": "for_loop_adv_pre.v",
+        "warnings": [
+            "for_loop_adv_pre.v:11:1 [AST] Odin does not handle signed REG (i)"
+        ],
         "max_rss(MiB)": 13.7,
         "exec_time(ms)": 7.2,
         "synthesis_time(ms)": 5.9,
@@ -1005,7 +1027,7 @@
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "function_automatic.v",
         "warnings": [
-            "AST function_automatic.v:33 ODIN II does not (yet) differentiate between automatic and static tasks & functions.IGNORING"
+            "function_automatic.v:33:1 [AST] ODIN II does not (yet) differentiate between automatic and static tasks & functions.IGNORING"
         ],
         "max_rss(MiB)": 25.6,
         "exec_time(ms)": 33.7,
@@ -1028,7 +1050,7 @@
         "test_name": "syntax/function_automatic/no_arch",
         "verilog": "function_automatic.v",
         "warnings": [
-            "AST function_automatic.v:33 ODIN II does not (yet) differentiate between automatic and static tasks & functions.IGNORING"
+            "function_automatic.v:33:1 [AST] ODIN II does not (yet) differentiate between automatic and static tasks & functions.IGNORING"
         ],
         "max_rss(MiB)": 12.4,
         "exec_time(ms)": 4.1,
@@ -1049,11 +1071,13 @@
         "verilog": "function_hdr.v",
         "exit": 134,
         "errors": [
-            "PARSE_TO_AST Parser found (1) errors in your syntax, exiting"
+            "[PARSE_TO_AST] Parser found (1) errors in your syntax, exiting"
         ],
         "warnings": [
-            "PARSE_TO_AST function_hdr.v:14 error in parsing: (syntax error, unexpected vINT_NUMBER, expecting vSYMBOL_ID or '{')",
-            "AST function_hdr.vh:13 ODIN_II does not fully support input/output integers in functions"
+            "function_hdr.v:14:1 [PARSE_TO_AST] error in parsing: (syntax error, unexpected vINT_NUMBER, expecting vSYMBOL_ID or '{')",
+            "function_hdr.v:15:10 [AST] Odin does not handle signed REG (output_int)",
+            "function_hdr.vh:2:8 [AST] Odin does not handle signed REG (func_out)",
+            "function_hdr.vh:5:8 [AST] Odin does not handle signed REG (test_int)"
         ]
     },
     "syntax/function_hdr/no_arch": {
@@ -1061,11 +1085,13 @@
         "verilog": "function_hdr.v",
         "exit": 134,
         "errors": [
-            "PARSE_TO_AST Parser found (1) errors in your syntax, exiting"
+            "[PARSE_TO_AST] Parser found (1) errors in your syntax, exiting"
         ],
         "warnings": [
-            "PARSE_TO_AST function_hdr.v:14 error in parsing: (syntax error, unexpected vINT_NUMBER, expecting vSYMBOL_ID or '{')",
-            "AST function_hdr.vh:13 ODIN_II does not fully support input/output integers in functions"
+            "function_hdr.v:14:1 [PARSE_TO_AST] error in parsing: (syntax error, unexpected vINT_NUMBER, expecting vSYMBOL_ID or '{')",
+            "function_hdr.v:15:10 [AST] Odin does not handle signed REG (output_int)",
+            "function_hdr.vh:2:8 [AST] Odin does not handle signed REG (func_out)",
+            "function_hdr.vh:5:8 [AST] Odin does not handle signed REG (test_int)"
         ]
     },
     "syntax/function_syntax/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1105,6 +1131,9 @@
         "test_name": "syntax/h7_of_8_bit_for_pass_through/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "h7_of_8_bit_for_pass_through.v",
+        "warnings": [
+            "h7_of_8_bit_for_pass_through.v:11:1 [AST] Odin does not handle signed REG (i)"
+        ],
         "max_rss(MiB)": 26.8,
         "exec_time(ms)": 45,
         "synthesis_time(ms)": 4.3,
@@ -1125,6 +1154,9 @@
     "syntax/h7_of_8_bit_for_pass_through/no_arch": {
         "test_name": "syntax/h7_of_8_bit_for_pass_through/no_arch",
         "verilog": "h7_of_8_bit_for_pass_through.v",
+        "warnings": [
+            "h7_of_8_bit_for_pass_through.v:11:1 [AST] Odin does not handle signed REG (i)"
+        ],
         "max_rss(MiB)": 13.4,
         "exec_time(ms)": 6.5,
         "synthesis_time(ms)": 5.2,
@@ -1358,7 +1390,7 @@
         "verilog": "instantiated_by_name_function_invalid_1.v",
         "exit": 134,
         "errors": [
-            "NETLIST instantiated_by_name_function_invalid_1.v:21 Function instantiation (func_out) and definition don't match in terms of ports"
+            "instantiated_by_name_function_invalid_1.v:21:1 [NETLIST] Function instantiation (func_out) and definition don't match in terms of ports"
         ]
     },
     "syntax/instantiated_by_name_function_invalid_1/no_arch": {
@@ -1366,7 +1398,7 @@
         "verilog": "instantiated_by_name_function_invalid_1.v",
         "exit": 134,
         "errors": [
-            "NETLIST instantiated_by_name_function_invalid_1.v:21 Function instantiation (func_out) and definition don't match in terms of ports"
+            "instantiated_by_name_function_invalid_1.v:21:1 [NETLIST] Function instantiation (func_out) and definition don't match in terms of ports"
         ]
     },
     "syntax/instantiated_by_name_function_invalid/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1375,7 +1407,7 @@
         "verilog": "instantiated_by_name_function_invalid.v",
         "exit": 134,
         "errors": [
-            "NETLIST instantiated_by_name_function_invalid.v:21 Module entry y1 does not exist"
+            "instantiated_by_name_function_invalid.v:21:1 [NETLIST] Module entry y1 does not exist"
         ]
     },
     "syntax/instantiated_by_name_function_invalid/no_arch": {
@@ -1383,7 +1415,7 @@
         "verilog": "instantiated_by_name_function_invalid.v",
         "exit": 134,
         "errors": [
-            "NETLIST instantiated_by_name_function_invalid.v:21 Module entry y1 does not exist"
+            "instantiated_by_name_function_invalid.v:21:1 [NETLIST] Module entry y1 does not exist"
         ]
     },
     "syntax/instantiated_by_name_function_valid/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1429,7 +1461,7 @@
         "verilog": "instantiated_by_name_task_invalid_1.v",
         "exit": 134,
         "errors": [
-            "NETLIST instantiated_by_name_task_invalid_1.v:21 Task instantiation (my_task) and definition don't match in terms of ports"
+            "instantiated_by_name_task_invalid_1.v:21:1 [NETLIST] Task instantiation (my_task) and definition don't match in terms of ports"
         ]
     },
     "syntax/instantiated_by_name_task_invalid_1/no_arch": {
@@ -1437,7 +1469,7 @@
         "verilog": "instantiated_by_name_task_invalid_1.v",
         "exit": 134,
         "errors": [
-            "NETLIST instantiated_by_name_task_invalid_1.v:21 Task instantiation (my_task) and definition don't match in terms of ports"
+            "instantiated_by_name_task_invalid_1.v:21:1 [NETLIST] Task instantiation (my_task) and definition don't match in terms of ports"
         ]
     },
     "syntax/instantiated_by_name_task_invalid/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1446,7 +1478,7 @@
         "verilog": "instantiated_by_name_task_invalid.v",
         "exit": 134,
         "errors": [
-            "NETLIST instantiated_by_name_task_invalid.v:21 Module entry y1 does not exist"
+            "instantiated_by_name_task_invalid.v:21:1 [NETLIST] Module entry y1 does not exist"
         ]
     },
     "syntax/instantiated_by_name_task_invalid/no_arch": {
@@ -1454,7 +1486,7 @@
         "verilog": "instantiated_by_name_task_invalid.v",
         "exit": 134,
         "errors": [
-            "NETLIST instantiated_by_name_task_invalid.v:21 Module entry y1 does not exist"
+            "instantiated_by_name_task_invalid.v:21:1 [NETLIST] Module entry y1 does not exist"
         ]
     },
     "syntax/instantiated_by_name_task_valid/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1500,7 +1532,7 @@
         "verilog": "instantiating_by_name_invalid_1.v",
         "exit": 134,
         "errors": [
-            "NETLIST instantiating_by_name_invalid_1.v:13 Module instantiation (and2) and definition don't match in terms of ports"
+            "instantiating_by_name_invalid_1.v:13:1 [NETLIST] Module instantiation (and2) and definition don't match in terms of ports"
         ]
     },
     "syntax/instantiating_by_name_invalid_1/no_arch": {
@@ -1508,7 +1540,7 @@
         "verilog": "instantiating_by_name_invalid_1.v",
         "exit": 134,
         "errors": [
-            "NETLIST instantiating_by_name_invalid_1.v:13 Module instantiation (and2) and definition don't match in terms of ports"
+            "instantiating_by_name_invalid_1.v:13:1 [NETLIST] Module instantiation (and2) and definition don't match in terms of ports"
         ]
     },
     "syntax/instantiating_by_name_invalid/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1517,7 +1549,7 @@
         "verilog": "instantiating_by_name_invalid.v",
         "exit": 134,
         "errors": [
-            "NETLIST instantiating_by_name_invalid.v:13 Module entry in3 does not exist"
+            "instantiating_by_name_invalid.v:13:1 [NETLIST] Module entry in3 does not exist"
         ]
     },
     "syntax/instantiating_by_name_invalid_mix_ports/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1526,7 +1558,7 @@
         "verilog": "instantiating_by_name_invalid_mix_ports.v",
         "exit": 134,
         "errors": [
-            "AST instantiating_by_name_invalid_mix_ports.v:13 Cannot mix port connections by name and port connections by ordered list"
+            "instantiating_by_name_invalid_mix_ports.v:13:1 [AST] Cannot mix port connections by name and port connections by ordered list"
         ]
     },
     "syntax/instantiating_by_name_invalid_mix_ports/no_arch": {
@@ -1534,7 +1566,7 @@
         "verilog": "instantiating_by_name_invalid_mix_ports.v",
         "exit": 134,
         "errors": [
-            "AST instantiating_by_name_invalid_mix_ports.v:13 Cannot mix port connections by name and port connections by ordered list"
+            "instantiating_by_name_invalid_mix_ports.v:13:1 [AST] Cannot mix port connections by name and port connections by ordered list"
         ]
     },
     "syntax/instantiating_by_name_invalid/no_arch": {
@@ -1542,7 +1574,7 @@
         "verilog": "instantiating_by_name_invalid.v",
         "exit": 134,
         "errors": [
-            "NETLIST instantiating_by_name_invalid.v:13 Module entry in3 does not exist"
+            "instantiating_by_name_invalid.v:13:1 [NETLIST] Module entry in3 does not exist"
         ]
     },
     "syntax/instantiating_by_name_valid/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -1582,6 +1614,9 @@
         "test_name": "syntax/l2_and_h2_of_8_bit_for_pass_through/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "l2_and_h2_of_8_bit_for_pass_through.v",
+        "warnings": [
+            "l2_and_h2_of_8_bit_for_pass_through.v:11:1 [AST] Odin does not handle signed REG (i)"
+        ],
         "max_rss(MiB)": 26.4,
         "exec_time(ms)": 47.4,
         "synthesis_time(ms)": 4,
@@ -1602,6 +1637,9 @@
     "syntax/l2_and_h2_of_8_bit_for_pass_through/no_arch": {
         "test_name": "syntax/l2_and_h2_of_8_bit_for_pass_through/no_arch",
         "verilog": "l2_and_h2_of_8_bit_for_pass_through.v",
+        "warnings": [
+            "l2_and_h2_of_8_bit_for_pass_through.v:11:1 [AST] Odin does not handle signed REG (i)"
+        ],
         "max_rss(MiB)": 13,
         "exec_time(ms)": 5.8,
         "synthesis_time(ms)": 4.4,
@@ -1652,20 +1690,64 @@
         "test_name": "syntax/matrix_multiplication/k6_frac_N10_frac_chain_mem32K_40nm",
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "matrix_multiplication.v",
-        "exit": 134,
         "warnings": [
-            "NETLIST matrix_multiplication.v:120 indexing into memory with matrix_multiplication has larger input than memory. Unused pins:",
-            "NETLIST matrix_multiplication.v:121 indexing into memory with matrix_multiplication has larger input than memory. Unused pins:"
-        ]
+            "matrix_multiplication.v:120:1 [NETLIST] indexing into memory with matrix_multiplication has larger input than memory. Unused pins:",
+            "matrix_multiplication.v:121:1 [NETLIST] indexing into memory with matrix_multiplication has larger input than memory. Unused pins:",
+            "matrix_multiplication.v:125:1 [NETLIST] Assignment (matrix_multiplication^tmp1~0) is missing driver",
+            "matrix_multiplication.v:126:1 [NETLIST] Assignment (matrix_multiplication^tmp2~0) is missing driver",
+            "matrix_multiplication.v:127:1 [NETLIST] Assignment (matrix_multiplication^tmp3~0) is missing driver",
+            "matrix_multiplication.v:128:1 [NETLIST] Assignment (matrix_multiplication^tmp4~0) is missing driver",
+            "matrix_multiplication.v:130:1 [NETLIST] Assignment (matrix_multiplication^tmp5~0) is missing driver",
+            "matrix_multiplication.v:131:1 [NETLIST] Assignment (matrix_multiplication^tmp6~0) is missing driver",
+            "matrix_multiplication.v:132:1 [NETLIST] Assignment (matrix_multiplication^tmp7~0) is missing driver",
+            "matrix_multiplication.v:69:8 [NETLIST] This output is undriven (matrix_multiplication^data_out~16) and will be removed",
+            "matrix_multiplication.v:69:8 [NETLIST] This output is undriven (matrix_multiplication^data_out~17) and will be removed",
+            "matrix_multiplication.v:166:16 [NETLIST] Net (null) driving node matrix_multiplication^nMUX~49^MUX_2~318 is itself undriven.",
+            "matrix_multiplication.v:69:8 [NETLIST] Net matrix_multiplication^data_out~16 driving node matrix_multiplication^data_out~16 is itself undriven.",
+            "matrix_multiplication.v:69:8 [NETLIST] Net matrix_multiplication^data_out~17 driving node matrix_multiplication^data_out~17 is itself undriven."
+        ],
+        "Latch Drivers": 1,
+        "Pi": 2,
+        "Po": 18,
+        "logic element": 123,
+        "latch": 38,
+        "Adder": 6,
+        "Multiplier": 0,
+        "Memory": 16,
+        "generic logic size": 4,
+        "Longest Path": 27,
+        "Average Path": 3,
+        "Estimated LUTs": 125,
+        "Total Node": 184
     },
     "syntax/matrix_multiplication/no_arch": {
         "test_name": "syntax/matrix_multiplication/no_arch",
         "verilog": "matrix_multiplication.v",
-        "exit": 134,
         "warnings": [
-            "NETLIST matrix_multiplication.v:120 indexing into memory with matrix_multiplication has larger input than memory. Unused pins:",
-            "NETLIST matrix_multiplication.v:121 indexing into memory with matrix_multiplication has larger input than memory. Unused pins:"
-        ]
+            "matrix_multiplication.v:120:1 [NETLIST] indexing into memory with matrix_multiplication has larger input than memory. Unused pins:",
+            "matrix_multiplication.v:121:1 [NETLIST] indexing into memory with matrix_multiplication has larger input than memory. Unused pins:",
+            "matrix_multiplication.v:125:1 [NETLIST] Assignment (matrix_multiplication^tmp1~0) is missing driver",
+            "matrix_multiplication.v:126:1 [NETLIST] Assignment (matrix_multiplication^tmp2~0) is missing driver",
+            "matrix_multiplication.v:127:1 [NETLIST] Assignment (matrix_multiplication^tmp3~0) is missing driver",
+            "matrix_multiplication.v:128:1 [NETLIST] Assignment (matrix_multiplication^tmp4~0) is missing driver",
+            "matrix_multiplication.v:130:1 [NETLIST] Assignment (matrix_multiplication^tmp5~0) is missing driver",
+            "matrix_multiplication.v:131:1 [NETLIST] Assignment (matrix_multiplication^tmp6~0) is missing driver",
+            "matrix_multiplication.v:132:1 [NETLIST] Assignment (matrix_multiplication^tmp7~0) is missing driver",
+            "matrix_multiplication.v:69:8 [NETLIST] This output is undriven (matrix_multiplication^data_out~16) and will be removed",
+            "matrix_multiplication.v:69:8 [NETLIST] This output is undriven (matrix_multiplication^data_out~17) and will be removed",
+            "matrix_multiplication.v:166:16 [NETLIST] Net (null) driving node matrix_multiplication^nMUX~49^MUX_2~6774 is itself undriven.",
+            "matrix_multiplication.v:69:8 [NETLIST] Net matrix_multiplication^data_out~16 driving node matrix_multiplication^data_out~16 is itself undriven.",
+            "matrix_multiplication.v:69:8 [NETLIST] Net matrix_multiplication^data_out~17 driving node matrix_multiplication^data_out~17 is itself undriven."
+        ],
+        "Latch Drivers": 1,
+        "Pi": 2,
+        "Po": 18,
+        "logic element": 1004,
+        "latch": 294,
+        "Longest Path": 48,
+        "Average Path": 4,
+        "Estimated LUTs": 1004,
+        "Total Node": 1299
     },
     "syntax/memlooptesting/k6_frac_N10_frac_chain_mem32K_40nm": {
         "test_name": "syntax/memlooptesting/k6_frac_N10_frac_chain_mem32K_40nm",
@@ -1757,8 +1839,8 @@
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "multi_edge_reader_writer.v",
         "warnings": [
-            "NETLIST multi_edge_reader_writer.v:32 indexing into memory with multiclock_reader_writer has larger input than memory. Unused pins: multiclock_reader_writer^addr_read~2",
-            "NETLIST multi_edge_reader_writer.v:36 indexing into memory with multiclock_reader_writer has larger input than memory. Unused pins: multiclock_reader_writer^addr_write~2"
+            "multi_edge_reader_writer.v:32:1 [NETLIST] indexing into memory with multiclock_reader_writer has larger input than memory. Unused pins: multiclock_reader_writer^addr_read~2",
+            "multi_edge_reader_writer.v:36:2 [NETLIST] indexing into memory with multiclock_reader_writer has larger input than memory. Unused pins: multiclock_reader_writer^addr_write~2"
         ],
         "max_rss(MiB)": 26.8,
         "exec_time(ms)": 50.6,
@@ -1779,8 +1861,8 @@
         "test_name": "syntax/multi_edge_reader_writer/no_arch",
         "verilog": "multi_edge_reader_writer.v",
         "warnings": [
-            "NETLIST multi_edge_reader_writer.v:32 indexing into memory with multiclock_reader_writer has larger input than memory. Unused pins: multiclock_reader_writer^addr_read~2",
-            "NETLIST multi_edge_reader_writer.v:36 indexing into memory with multiclock_reader_writer has larger input than memory. Unused pins: multiclock_reader_writer^addr_write~2"
+            "multi_edge_reader_writer.v:32:1 [NETLIST] indexing into memory with multiclock_reader_writer has larger input than memory. Unused pins: multiclock_reader_writer^addr_read~2",
+            "multi_edge_reader_writer.v:36:2 [NETLIST] indexing into memory with multiclock_reader_writer has larger input than memory. Unused pins: multiclock_reader_writer^addr_write~2"
         ],
         "max_rss(MiB)": 14.6,
         "exec_time(ms)": 7.4,
@@ -1953,7 +2035,7 @@
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "no_port.v",
         "warnings": [
-            "AST no_port.v:11 there are no ports for the module (and_primitive)"
+            "no_port.v:11:1 [AST] there are no ports for the module (and_primitive)"
         ],
         "max_rss(MiB)": 24,
         "exec_time(ms)": 38,
@@ -1964,7 +2046,7 @@
         "test_name": "syntax/no_port/no_arch",
         "verilog": "no_port.v",
         "warnings": [
-            "AST no_port.v:11 there are no ports for the module (and_primitive)"
+            "no_port.v:11:1 [AST] there are no ports for the module (and_primitive)"
         ],
         "max_rss(MiB)": 10.4,
         "exec_time(ms)": 1.8,
@@ -1975,8 +2057,8 @@
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "not_enough_wires.v",
         "warnings": [
-            "NETLIST not_enough_wires.v:7 This output is undriven (bar^d) and will be removed",
-            "NETLIST not_enough_wires.v:7 Net bar^d driving node bar^d is itself undriven."
+            "not_enough_wires.v:7:1 [NETLIST] This output is undriven (bar^d) and will be removed",
+            "not_enough_wires.v:7:1 [NETLIST] Net bar^d driving node bar^d is itself undriven."
         ],
         "max_rss(MiB)": 26.3,
         "exec_time(ms)": 48,
@@ -1993,8 +2075,8 @@
         "test_name": "syntax/not_enough_wires/no_arch",
         "verilog": "not_enough_wires.v",
         "warnings": [
-            "NETLIST not_enough_wires.v:7 This output is undriven (bar^d) and will be removed",
-            "NETLIST not_enough_wires.v:7 Net bar^d driving node bar^d is itself undriven."
+            "not_enough_wires.v:7:1 [NETLIST] This output is undriven (bar^d) and will be removed",
+            "not_enough_wires.v:7:1 [NETLIST] Net bar^d driving node bar^d is itself undriven."
         ],
         "max_rss(MiB)": 13,
         "exec_time(ms)": 6.6,
@@ -2008,8 +2090,8 @@
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "part_select.v",
         "warnings": [
-            "NETLIST part_select.v:15 Net (null) driving node top.inst_3^bAND~0^lAND~7 is itself undriven.",
-            "NETLIST part_select.v:15 Net (null) driving node top.inst_3^bAND~0^lAND~8 is itself undriven."
+            "part_select.v:15:1 [NETLIST] Net (null) driving node top.inst_3^bAND~0^lAND~7 is itself undriven.",
+            "part_select.v:15:1 [NETLIST] Net (null) driving node top.inst_3^bAND~0^lAND~8 is itself undriven."
         ],
         "max_rss(MiB)": 25.6,
         "exec_time(ms)": 42.5,
@@ -2030,8 +2112,8 @@
         "test_name": "syntax/part_select/no_arch",
         "verilog": "part_select.v",
         "warnings": [
-            "NETLIST part_select.v:15 Net (null) driving node top.inst_3^bAND~0^lAND~7 is itself undriven.",
-            "NETLIST part_select.v:15 Net (null) driving node top.inst_3^bAND~0^lAND~8 is itself undriven."
+            "part_select.v:15:1 [NETLIST] Net (null) driving node top.inst_3^bAND~0^lAND~7 is itself undriven.",
+            "part_select.v:15:1 [NETLIST] Net (null) driving node top.inst_3^bAND~0^lAND~8 is itself undriven."
         ],
         "max_rss(MiB)": 12.4,
         "exec_time(ms)": 4,
@@ -2419,7 +2501,7 @@
         "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
         "verilog": "task_automatic.v",
         "warnings": [
-            "AST task_automatic.v:35 ODIN II does not (yet) differentiate between automatic and static tasks & functions. IGNORING"
+            "task_automatic.v:35:1 [AST] ODIN II does not (yet) differentiate between automatic and static tasks & functions. IGNORING"
         ],
         "max_rss(MiB)": 25.4,
         "exec_time(ms)": 48.8,
@@ -2442,7 +2524,7 @@
         "test_name": "syntax/task_automatic/no_arch",
         "verilog": "task_automatic.v",
         "warnings": [
-            "AST task_automatic.v:35 ODIN II does not (yet) differentiate between automatic and static tasks & functions. IGNORING"
+            "task_automatic.v:35:1 [AST] ODIN II does not (yet) differentiate between automatic and static tasks & functions. IGNORING"
         ],
         "max_rss(MiB)": 12.1,
         "exec_time(ms)": 4.4,
@@ -2533,7 +2615,7 @@
         "verilog": "top_and.v",
         "exit": 134,
         "errors": [
-            "AST top_and.v:19 Can't find module name and_primitive"
+            "top_and.v:19:1 [AST] Can't find module name and_primitive"
         ]
     },
     "syntax/top_and/no_arch": {
@@ -2541,7 +2623,7 @@
         "verilog": "top_and.v",
         "exit": 134,
         "errors": [
-            "AST top_and.v:19 Can't find module name and_primitive"
+            "top_and.v:19:1 [AST] Can't find module name and_primitive"
         ]
     },
     "syntax/unconnected_input/k6_frac_N10_frac_chain_mem32K_40nm": {
@@ -2653,6 +2735,61 @@
         "synthesis_time(ms)": 1.6,
         "Pi": 2,
         "Po": 2,
+        "Longest Path": 2,
+        "Average Path": 2
+    },
+    "syntax/bm_unused_input_pins/k6_frac_N10_frac_chain_mem32K_40nm": {
+        "test_name": "syntax/bm_unused_input_pins/k6_frac_N10_frac_chain_mem32K_40nm",
+        "architecture": "k6_frac_N10_frac_chain_mem32K_40nm.xml",
+        "verilog": "bm_unused_input_pins.v",
+        "warnings": [
+            "bm_unused_input_pins.v:15:4 [NETLIST] This module port in_1[4] is unused in module func",
+            "bm_unused_input_pins.v:15:4 [NETLIST] This module port in_1[5] is unused in module func",
+            "bm_unused_input_pins.v:15:4 [NETLIST] This module port in_1[6] is unused in module func",
+            "bm_unused_input_pins.v:15:4 [NETLIST] This module port in_1[7] is unused in module func",
+            "bm_unused_input_pins.v:12:5 [NETLIST] This output is undriven (simple_op^out_1~4) and will be removed",
+            "bm_unused_input_pins.v:12:5 [NETLIST] This output is undriven (simple_op^out_1~5) and will be removed",
+            "bm_unused_input_pins.v:12:5 [NETLIST] This output is undriven (simple_op^out_1~6) and will be removed",
+            "bm_unused_input_pins.v:12:5 [NETLIST] This output is undriven (simple_op^out_1~7) and will be removed",
+            "bm_unused_input_pins.v:12:5 [NETLIST] Net simple_op^out_1~4 driving node simple_op^out_1~4 is itself undriven.",
+            "bm_unused_input_pins.v:12:5 [NETLIST] Net simple_op^out_1~5 driving node simple_op^out_1~5 is itself undriven.",
+            "bm_unused_input_pins.v:12:5 [NETLIST] Net simple_op^out_1~6 driving node simple_op^out_1~6 is itself undriven.",
+            "bm_unused_input_pins.v:12:5 [NETLIST] Net simple_op^out_1~7 driving node simple_op^out_1~7 is itself undriven."
+        ],
+        "max_rss(MiB)": 55.1,
+        "exec_time(ms)": 52.1,
+        "synthesis_time(ms)": 2.8,
+        "Pi": 4,
+        "Po": 8,
+        "Adder": 0,
+        "Multiplier": 0,
+        "Memory": 0,
+        "generic logic size": 4,
+        "Longest Path": 2,
+        "Average Path": 2
+    },
+    "syntax/bm_unused_input_pins/no_arch": {
+        "test_name": "syntax/bm_unused_input_pins/no_arch",
+        "verilog": "bm_unused_input_pins.v",
+        "warnings": [
+            "bm_unused_input_pins.v:15:4 [NETLIST] This module port in_1[4] is unused in module func",
+            "bm_unused_input_pins.v:15:4 [NETLIST] This module port in_1[5] is unused in module func",
+            "bm_unused_input_pins.v:15:4 [NETLIST] This module port in_1[6] is unused in module func",
+            "bm_unused_input_pins.v:15:4 [NETLIST] This module port in_1[7] is unused in module func",
+            "bm_unused_input_pins.v:12:5 [NETLIST] This output is undriven (simple_op^out_1~4) and will be removed",
+            "bm_unused_input_pins.v:12:5 [NETLIST] This output is undriven (simple_op^out_1~5) and will be removed",
+            "bm_unused_input_pins.v:12:5 [NETLIST] This output is undriven (simple_op^out_1~6) and will be removed",
+            "bm_unused_input_pins.v:12:5 [NETLIST] This output is undriven (simple_op^out_1~7) and will be removed",
+            "bm_unused_input_pins.v:12:5 [NETLIST] Net simple_op^out_1~4 driving node simple_op^out_1~4 is itself undriven.",
+            "bm_unused_input_pins.v:12:5 [NETLIST] Net simple_op^out_1~5 driving node simple_op^out_1~5 is itself undriven.",
+            "bm_unused_input_pins.v:12:5 [NETLIST] Net simple_op^out_1~6 driving node simple_op^out_1~6 is itself undriven.",
+            "bm_unused_input_pins.v:12:5 [NETLIST] Net simple_op^out_1~7 driving node simple_op^out_1~7 is itself undriven."
+        ],
+        "max_rss(MiB)": 35,
+        "exec_time(ms)": 4.9,
+        "synthesis_time(ms)": 3.3,
+        "Pi": 4,
+        "Po": 8,
         "Longest Path": 2,
         "Average Path": 2
     },

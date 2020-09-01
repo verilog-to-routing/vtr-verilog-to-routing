@@ -4,6 +4,7 @@ import sys
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
+
 def make_output_vector(power):
     if power < 0 or int(power) != power:
         eprint("Bad value for exponent: ", power)
@@ -13,7 +14,7 @@ def make_output_vector(power):
         value = next_a ** power
         output = f"{value:#0{4}x}"
         print(output[0:2] + output[-2:])
-        if i%2 == 1:
+        if i % 2 == 1:
             next_a += 1
     value = next_a ** power
     output = f"{value:#0{4}x}"

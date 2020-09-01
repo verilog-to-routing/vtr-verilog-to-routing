@@ -299,15 +299,13 @@ int main(
     place_grp.add_argument(args.fix_pins, "--fix_pins")
             .help("Fixes I/O pad locations during placement."
                   " Can be 'random' for a random initial assignment,"
-                  " 'off' to allow the place to optimize pad locations,"
-                  " or a file specifying the pad locations.")
+                  " or 'off' to allow the placer to optimize pad locations.")
             .default_value("off")
             .show_in(argparse::ShowIn::HELP_ONLY);
     place_grp.add_argument(args.fix_clusters, "--fix_clusters")
             .help("Fixes block locations during placement."
-                  " Can be 'random' for a random initial assignment,"
-                  " 'off' to allow the place to optimize block locations,"
-                  " or a file specifying the block locations.")
+                  " Can be a file specifying the block locations,"
+                  " or 'off' to allow the placer to optimize block locations.")
             .default_value("off")
             .show_in(argparse::ShowIn::HELP_ONLY);
     place_grp.add_argument(args.place_algorithm, "--place_algorithm")

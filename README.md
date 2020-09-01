@@ -75,16 +75,11 @@ This is the development trunk for the Verilog-to-Routing project.
 Unlike the nicely packaged releases that we create, you are working with code in a constant state of flux.
 You should expect that the tools are not always stable and that more work is needed to get the flow to run.
 
-For new developers, please [do the tutorial](dev/tutorial/NewDeveloperTutorial.txt).
-You will be directed back here once you ramp up.
+For new developers, please follow the [quickstart guide](https://docs.verilogtorouting.org/en/latest/quickstart/).
 
-VTR development follows a classic centralized repository (svn-like) workflow.
-The 'master' branch is supposed to be the most current stable version of the project.
-Developers checkout a local copy of the code at the start of development, then do regular updates (e.g. `git pull --rebase`) to keep in sync with the GitHub master.
-When a developer has a tested, working change to put back into the trunk, he/she performs a `git push` operation.
-Unstable code should remain in the developer's local copy.
+We follow a feature branch flow, where you create a new branch for new code, test it, measure its Quality of Results, and eventually produce a pull request for review by other developers. Pull requests that meet all the quality and review criteria are then merged into the master branch by a developer with the authority to do so.
 
-We do automated testing of the trunk using BuildBot to verify functionality and Quality of Results (QoR).
+In addition to measuring QoR and functionality automatically on pull requests, we do periodic automated testing of the master using BuildBot, and the results can be viewed below to track QoR and stability.
 * [Trunk Status](http://builds.verilogtorouting.org:8080/waterfall)
 * [QoR Tracking](http://builds.verilogtorouting.org:8080/)
 

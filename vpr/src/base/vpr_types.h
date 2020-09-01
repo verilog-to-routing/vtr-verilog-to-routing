@@ -504,20 +504,6 @@ enum pfreq {
     PLACE_ALWAYS
 };
 
-/**
- * @brief  Are the pads free to be moved or locked in a random configuration?
- */
-enum e_pad_loc_type {
-    FREE,
-    RANDOM
-};
-
-/*Are the blocks not locked (free to be moved) or locked in user-specified positions?*/
-enum e_block_loc_type {
-    NOT_LOCKED,
-    LOCKED
-};
-
 ///@brief  Power data for t_netlist structure
 
 struct t_net_power {
@@ -720,8 +706,25 @@ struct t_block_loc {
 
 ///@brief Stores the clustered blocks placed at a particular grid location
 struct t_grid_blocks {
-    int usage;                          ///<How many valid blocks are in use at this location
-    std::vector<ClusterBlockId> blocks; ///<The clustered blocks associated with this grid location
+    int usage; ///<How many valid blocks are in use at this location
+
+    /**
+     * @brief The clustered blocks associated with this grid location.
+     *
+     * Index range: [0..device_ctx.grid[x_loc][y_loc].type->capacity]
+     */
+    std::vector<ClusterBlockId> blocks;
+
+    /**
+     * @brief Test if a subtile at a grid location is occupied by a block.
+     *
+     * Returns true if the subtile corresponds to the passed-in id is not
+     * occupied by a block at this grid location. The subtile id serves
+     * as the z-dimensional offset in the grid indexing.
+     */
+    inline bool subtile_empty(size_t isubtile) const {
+        return blocks[isubtile] == EMPTY_BLOCK_ID;
+    }
 };
 
 ///@brief Names of various files
@@ -898,6 +901,11 @@ class t_place_algorithm {
     e_place_algorithm algo = e_place_algorithm::CRITICALITY_TIMING_PLACE;
 };
 
+enum e_pad_loc_type {
+    FREE,
+    RANDOM
+};
+
 ///@brief Used to calculate the inner placer loop's block swapping limit move_lim.
 enum e_place_effort_scaling {
     CIRCUIT,       ///<Effort scales based on circuit size only
@@ -978,9 +986,7 @@ struct t_placer_opts {
     float place_cost_exp;
     int place_chan_width;
     enum e_pad_loc_type pad_loc_type;
-    enum e_block_loc_type block_loc_type;
     std::string constraints_file;
-    std::string pad_loc_file;
     enum pfreq place_freq;
     int recompute_crit_iter;
     int inner_loop_recompute_divider;
@@ -1077,6 +1083,13 @@ enum e_route_type {
 enum e_router_algorithm {
     BREADTH_FIRST,
     TIMING_DRIVEN,
+};
+
+// Node reordering algorithms for rr_nodes
+enum e_rr_node_reorder_algorithm {
+    DONT_REORDER,
+    DEGREE_BFS,
+    RANDOM_SHUFFLE,
 };
 
 enum e_base_cost_type {
@@ -1190,6 +1203,11 @@ struct t_router_opts {
 
     size_t max_logged_overused_rr_nodes;
     bool generate_rr_node_overuse_report;
+
+    // Options related to rr_node reordering, for testing and possible cache optimization
+    e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm = DONT_REORDER;
+    int reorder_rr_graph_nodes_threshold = 0;
+    int reorder_rr_graph_nodes_seed = 1;
 };
 
 struct t_analysis_opts {
@@ -1417,6 +1435,16 @@ typedef std::array<vtr::NdMatrix<std::vector<int>, 3>, NUM_RR_TYPES> t_rr_node_i
  * @brief Basic element used to store the traceback (routing) of each net.
  *
  *   @param index    Array index (ID) of this routing resource node.
+ *   @param net_pin_index:    Net pin index associated with the node. This value       
+ *                            ranges from 1 to fanout [1..num_pins-1]. For cases when  
+ *                            different speed paths are taken to the same SINK for     
+ *                            different pins, node index cannot uniquely identify      
+ *                            each SINK, so the net pin index guarantees an unique     
+ *                            identification for each SINK node. For non-SINK nodes    
+ *                            and for SINK nodes with no associated net pin index      
+ *                            (i.e. special SINKs like the source of a clock tree      
+ *                            which do not correspond to an actual netlist connection),
+ *                            the value for this member should be set to OPEN (-1).
  *   @param iswitch  Index of the switch type used to go from this rr_node to
  *                   the next one in the routing.  OPEN if there is no next node
  *                   (i.e. this node is the last one (a SINK) in a branch of the
@@ -1426,6 +1454,7 @@ typedef std::array<vtr::NdMatrix<std::vector<int>, 3>, NUM_RR_TYPES> t_rr_node_i
 struct t_trace {
     t_trace* next;
     int index;
+    int net_pin_index = OPEN;
     short iswitch;
 };
 

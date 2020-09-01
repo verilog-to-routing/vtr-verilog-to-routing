@@ -1254,17 +1254,22 @@ void instantiate_add_w_carry_block(int* width, nnode_t* node, short mark, netlis
     }
 }
 
+/*---------------------------------------------------------------------------------------------
+ * instance name = node->identifier_node
+ * instance list = instance->children[0]
+ * named port connections = connect list->children[n]->identifier_node
+ *-------------------------------------------------------------------------------------------*/
 bool is_ast_adder(ast_node_t* node) {
     bool is_adder;
-    ast_node_t* instance = node->children[1];
-    is_adder = (!strcmp(node->children[0]->types.identifier, "adder"))
-               && (instance->children[1]->num_children == 5);
+    ast_node_t* instance = node->children[0];
+    is_adder = (!strcmp(node->identifier_node->types.identifier, "adder"))
+               && (instance->children[0]->num_children == 4);
 
-    ast_node_t* connect_list = instance->children[1];
-    if (is_adder && connect_list->children[0]->children[0]) {
+    ast_node_t* connect_list = instance->children[0];
+    if (is_adder && connect_list->children[0]->identifier_node) {
         /* port connections were passed by name; verify port names */
         for (int i = 0; i < connect_list->num_children && is_adder; i++) {
-            char* id = connect_list->children[i]->children[0]->types.identifier;
+            char* id = connect_list->children[i]->identifier_node->types.identifier;
 
             if ((strcmp(id, "a") != 0) && (strcmp(id, "b") != 0) && (strcmp(id, "cin") != 0) && (strcmp(id, "cout") != 0) && (strcmp(id, "sumout") != 0)) {
                 is_adder = false;

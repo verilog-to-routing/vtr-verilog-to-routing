@@ -46,6 +46,11 @@
 #include "timing_info.h"
 #include "physical_types.h"
 #include "route_common.h"
+#include "breakpoint.h"
+
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+#    include "move_utils.h"
+#endif
 
 #ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
               * track CPU runtime.														   */
@@ -138,7 +143,6 @@ static float get_router_expansion_cost(const t_rr_node_route_inf node_inf, e_dra
 static void draw_router_expansion_costs(ezgl::renderer* g);
 
 static void draw_rr_costs(ezgl::renderer* g, const std::vector<float>& rr_costs, bool lowest_cost_first = true);
-
 static void draw_main_canvas(ezgl::renderer* g);
 static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app, bool is_new_window);
 static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(ezgl::application* app, bool is_new_window);
@@ -153,6 +157,9 @@ static void set_block_outline(GtkWidget* widget, gint /*response_id*/, gpointer 
 static void set_block_text(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 static void clip_routing_util(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 static void run_graphics_commands(std::string commands);
+
+void manual_move_generator_window();
+void move_generator_button_callback(GtkWidget* /*widget*/, GtkWidget* grid);
 
 /************************** File Scope Variables ****************************/
 
@@ -990,6 +997,41 @@ static void drawplace(ezgl::renderer* g) {
                 //Determine the block color
                 ezgl::color block_color;
                 t_logical_block_type_ptr logical_block_type = nullptr;
+#    ifdef VTR_ENABLE_DEBUG_LOGGING
+                if (f_placer_debug) {
+                    t_pl_loc curr_loc;
+                    curr_loc.x = i;
+                    curr_loc.y = j;
+                    auto it = std::find_if(draw_state->colored_blocks.begin(), draw_state->colored_blocks.end(), [&curr_loc](const std::pair<t_pl_loc, ezgl::color>& a) { return (a.first.x == curr_loc.x && a.first.y == curr_loc.y); });
+                    if (it != draw_state->colored_blocks.end()) {
+                        block_color = it->second;
+                        auto tile_type = device_ctx.grid[i][j].type;
+                        logical_block_type = pick_best_logical_type(tile_type);
+                    } else {
+                        if (bnum != EMPTY_BLOCK_ID) {
+                            block_color = draw_state->block_color(bnum);
+                            logical_block_type = cluster_ctx.clb_nlist.block_type(bnum);
+                        } else {
+                            block_color = get_block_type_color(device_ctx.grid[i][j].type);
+                            block_color = lighten_color(block_color, EMPTY_BLOCK_LIGHTEN_FACTOR);
+
+                            auto tile_type = device_ctx.grid[i][j].type;
+                            logical_block_type = pick_best_logical_type(tile_type);
+                        }
+                    }
+                } else {
+                    if (bnum != EMPTY_BLOCK_ID) {
+                        block_color = draw_state->block_color(bnum);
+                        logical_block_type = cluster_ctx.clb_nlist.block_type(bnum);
+                    } else {
+                        block_color = get_block_type_color(device_ctx.grid[i][j].type);
+                        block_color = lighten_color(block_color, EMPTY_BLOCK_LIGHTEN_FACTOR);
+
+                        auto tile_type = device_ctx.grid[i][j].type;
+                        logical_block_type = pick_best_logical_type(tile_type);
+                    }
+                }
+#    else
                 if (bnum != EMPTY_BLOCK_ID) {
                     block_color = draw_state->block_color(bnum);
                     logical_block_type = cluster_ctx.clb_nlist.block_type(bnum);
@@ -1000,6 +1042,7 @@ static void drawplace(ezgl::renderer* g) {
                     auto tile_type = device_ctx.grid[i][j].type;
                     logical_block_type = pick_best_logical_type(tile_type);
                 }
+#    endif
                 g->set_color(block_color);
                 /* Get coords of current sub_tile */
                 ezgl::rectangle abs_clb_bbox = draw_coords->get_absolute_clb_bbox(i, j, k, logical_block_type);
@@ -3229,7 +3272,30 @@ static void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, flo
         ss << 1e9 * incr_delay; //In nanoseconds
         std::string incr_delay_str = ss.str();
 
-        g->draw_text(text_bbox.center(), incr_delay_str.c_str(), text_bbox.width(), text_bbox.height());
+        // Get the angle of line, to rotate the text
+        float text_angle = (180 / M_PI) * atan((end.y - start.y) / (end.x - start.x));
+
+        // Get the screen coordinates for text drawing
+        ezgl::rectangle screen_coords = g->world_to_screen(text_bbox);
+        g->set_text_rotation(text_angle);
+
+        // Set the text colour to black to differentiate it from the line
+        g->set_font_size(16);
+        g->set_color(ezgl::color(0, 0, 0));
+
+        g->set_coordinate_system(ezgl::SCREEN);
+
+        // Find an offset so it is sitting on top/below of the line
+        float x_offset = screen_coords.center().x - 8 * sin(text_angle * (M_PI / 180));
+        float y_offset = screen_coords.center().y - 8 * cos(text_angle * (M_PI / 180));
+
+        ezgl::point2d offset_text_bbox(x_offset, y_offset);
+        g->draw_text(offset_text_bbox, incr_delay_str.c_str(), text_bbox.width(), text_bbox.height());
+
+        g->set_font_size(14);
+
+        g->set_text_rotation(0);
+        g->set_coordinate_system(ezgl::WORLD);
     }
 }
 
@@ -3935,6 +4001,10 @@ static void setup_default_ezgl_callbacks(ezgl::application* app) {
     // Connect Clip Routing Util checkbox
     GObject* clip_routing = app->get_object("clipRoutingUtil");
     g_signal_connect(clip_routing, "toggled", G_CALLBACK(clip_routing_util), app);
+
+    // Connect Debug Button
+    GObject* debugger = app->get_object("debugButton");
+    g_signal_connect(debugger, "clicked", G_CALLBACK(draw_debug_window), NULL);
 }
 
 // Callback function for Block Outline checkbox

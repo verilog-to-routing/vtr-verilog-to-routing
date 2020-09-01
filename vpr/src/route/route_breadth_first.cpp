@@ -265,7 +265,8 @@ static bool breadth_first_route_net(BinaryHeap& heap, ClusterNetId net_id, float
 
         route_ctx.rr_node_route_inf[inode].target_flag--; /* Connected to this SINK. */
         remaining_connections_to_sink = route_ctx.rr_node_route_inf[inode].target_flag;
-        tptr = update_traceback(current, net_id);
+        size_t ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
+        tptr = update_traceback(current, ipin, net_id);
         heap.free(current);
     }
 

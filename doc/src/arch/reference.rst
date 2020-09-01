@@ -28,9 +28,17 @@ The architecture tag contains the following tags:
 
 Recognized BLIF Models (<models>)
 ---------------------------------
-The ``<models>`` tag contains ``<model name="string">`` tags.
+The ``<models>`` tag contains ``<model name="string" never_prune="string">`` tags.
 Each ``<model>`` tag describes the BLIF ``.subckt`` model names that are accepted by the FPGA architecture.
 The name of the model must match the corresponding name of the BLIF model.
+
+The never_prune flag is optional and can be either:
+
+* false (default)
+* true
+
+Normally blocks with no output nets are pruned away by the netlist sweepers in vpr (removed from the netlist); this is the default behaviour. If never_prune = "true" is set on a model, then blocks that are instances of that model will not be swept away during netlist cleanup. This can be helpful for some special blocks that do have only input nets and are required to be placed on the device for some features to be active, so space on the chip is still reserved for them, despite them not driving any connection.
+One example is the IDELAYCTRL of the Series7 devices, which takes as input a reference clock and internally controls and synchronizes all the IDELAYs in a specific clock region, with no output net necessary for it to function correctly.
 
 .. note::
     Standard blif structures (``.names``, ``.latch``, ``.input``, ``.output``) are accepted by default, so these models should not be described in the <models> tag.

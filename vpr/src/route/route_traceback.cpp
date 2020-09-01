@@ -8,10 +8,11 @@ t_traceback::t_traceback(const t_traceback& other) {
     //Deep-copy of traceback
     t_trace* prev = nullptr;
     for (t_trace* other_curr = other.head; other_curr; other_curr = other_curr->next) {
-        //VTR_LOG("Copying trace %p node: %d switch: %d\n", other_curr, other_curr->index, other_curr->iswitch);
+        //VTR_LOG("Copying trace %p node: %d switch: %d pin(for sink): %d\n", other_curr, other_curr->index, other_curr->iswitch. other_curr->net_pin_index);
         t_trace* curr = alloc_trace_data();
 
         curr->index = other_curr->index;
+        curr->net_pin_index = other_curr->net_pin_index;
         curr->iswitch = other_curr->iswitch;
 
         if (prev) {

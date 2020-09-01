@@ -321,8 +321,12 @@ static void initial_placement_blocks(std::vector<std::vector<int>>& free_locatio
     }
 
     for (auto blk_id : sorted_blocks) {
-        if (place_ctx.block_locs[blk_id].loc.x != -1) { // -1 is a sentinel for an empty block
-            // block placed.
+        /* -1 is a sentinel for a non-placed block, which the code in this routine will choose a location for.
+         * If the x value is not -1, we assume something else has already placed this block and we should leave it there.
+         * For example, if the user constrained it to a certain location, the block has already been placed.
+         */
+        if (place_ctx.block_locs[blk_id].loc.x != -1) {
+            //put VTR assert
             continue;
         }
 
@@ -392,7 +396,7 @@ static t_physical_tile_type_ptr pick_placement_type(t_logical_block_type_ptr log
     return nullptr;
 }
 
-void initial_placement(enum e_pad_loc_type pad_loc_type, enum e_block_loc_type block_loc_type, const char* constraints_file) {
+void initial_placement(enum e_pad_loc_type pad_loc_type, const char* constraints_file) {
     vtr::ScopedStartFinishTimer timer("Initial Placement");
 
     /* Randomly places the blocks to create an initial placement. We rely on
@@ -445,8 +449,8 @@ void initial_placement(enum e_pad_loc_type pad_loc_type, enum e_block_loc_type b
         place_ctx.block_locs[blk_id].loc = t_pl_loc();
     }
 
-    /*If the user specified block locations using a constraints file, read those locations in here*/
-    if (block_loc_type == LOCKED) {
+    /*Check whether the constraint file is NULL, if it is not read in the block locations from the constraints file here*/
+    if (strlen(constraints_file) != 0) {
         read_user_block_loc(constraints_file);
     }
 

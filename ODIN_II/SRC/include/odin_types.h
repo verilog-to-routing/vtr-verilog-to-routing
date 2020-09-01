@@ -141,11 +141,17 @@ struct global_args_t {
     argparse::ArgValue<int> sim_random_seed;
 
     argparse::ArgValue<bool> interactive_simulation;
+
+    // Arguments for mixing hard and soft logic
+    argparse::ArgValue<int> exact_mults;
+    argparse::ArgValue<float> mults_ratio;
 };
 
 /**
  * defined in enum_str.cpp
  */
+extern const char* ieee_std_STR[];
+
 extern const char* file_extension_supported_STR[];
 
 extern const char* ZERO_GND_ZERO;
@@ -158,6 +164,13 @@ extern const char* DUAL_PORT_RAM_string;
 extern const char* edge_type_e_STR[];
 extern const char* operation_list_STR[][2];
 extern const char* ids_STR[];
+
+enum ieee_std {
+    ieee_1995,
+    ieee_2001_noconfig,
+    ieee_2001,
+    ieee_2005
+};
 
 enum file_extension_supported {
     VERILOG,
@@ -257,7 +270,6 @@ enum ids {
     INOUT,
     WIRE,
     REG,
-    INTEGER,
     GENVAR,
     PARAMETER,
     LOCALPARAM,
@@ -374,10 +386,9 @@ struct typ {
         short is_inout;
         short is_wire;
         short is_reg;
-        short is_integer;
         short is_genvar;
         short is_memory;
-        short is_signed;
+        operation_list signedness;
         VNumber* initial_value = nullptr;
     } variable;
     struct
@@ -414,6 +425,7 @@ struct ast_node_t {
     ids type;
     typ types;
 
+    ast_node_t* identifier_node;
     ast_node_t** children;
     long num_children;
 
@@ -484,6 +496,12 @@ struct nnode_t {
     bool internal_clk_warn = false;
     edge_type_e edge_type; //
     bool covered = false;
+
+    // For mixing soft and hard logic optimizations
+    // a field that is used for storing weights towards the
+    // mixing optimization.
+    //  value of -1 is reserved for hardened blocks
+    long weight = 0;
 
     //Generic gate output
     unsigned char generic_output; //describes the output (1 or 0) of generic blocks
