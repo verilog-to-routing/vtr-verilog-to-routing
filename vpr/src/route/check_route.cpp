@@ -20,7 +20,7 @@
 /******************** Subroutines local to this module **********************/
 static void check_node_and_range(int inode, enum e_route_type route_type);
 static void check_source(int inode, ClusterNetId net_id);
-static void check_sink(int inode, ClusterNetId net_id, std::set<vtr::StrongId<cluster_pin_id_tag>>& pin_done);
+static void check_sink(int inode, int net_pin_index, ClusterNetId net_id, bool* pin_done);
 static void check_switch(t_trace* tptr, int num_switch);
 static bool check_adjacent(int from_node, int to_node);
 static int chanx_chany_adjacent(int chanx_node, int chany_node);
@@ -46,7 +46,8 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
         return;
     }
 
-    int max_pins, inode, prev_node;
+    int max_pins, inode, net_pin_index, prev_node;
+    unsigned int ipin;
     bool valid, connects;
     t_trace* tptr;
 
@@ -79,12 +80,14 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
     for (auto net_id : cluster_ctx.clb_nlist.nets())
         max_pins = std::max(max_pins, (int)cluster_ctx.clb_nlist.net_pins(net_id).size());
 
-    std::set<vtr::StrongId<cluster_pin_id_tag>> pin_done;
+    auto pin_done = std::make_unique<bool[]>(max_pins);
 
     /* Now check that all nets are indeed connected. */
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         if (cluster_ctx.clb_nlist.net_is_ignored(net_id) || cluster_ctx.clb_nlist.net_sinks(net_id).size() == 0) /* Skip ignored nets. */
             continue;
+
+        std::fill_n(pin_done.get(), cluster_ctx.clb_nlist.net_pins(net_id).size(), false);
 
         /* Check the SOURCE of the net. */
         tptr = route_ctx.trace[net_id].head;
@@ -99,8 +102,7 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
         connected_to_route[inode] = true; /* Mark as in path. */
 
         check_source(inode, net_id);
-        auto first_net_id = cluster_ctx.clb_nlist.net_pins(net_id).begin();
-        pin_done.insert(*first_net_id); /* Insert the source */
+        pin_done[0] = true;
 
         prev_node = inode;
         int prev_switch = tptr->iswitch;
@@ -110,6 +112,7 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
         size_t num_sinks = 0;
         while (tptr != nullptr) {
             inode = tptr->index;
+            net_pin_index = tptr->net_pin_index;
             check_node_and_range(inode, route_type);
             check_switch(tptr, num_switches);
 
@@ -133,7 +136,7 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
                 connected_to_route[inode] = true; /* Mark as in path. */
 
                 if (device_ctx.rr_nodes[inode].type() == SINK) {
-                    check_sink(inode, net_id, pin_done);
+                    check_sink(inode, net_pin_index, net_id, pin_done.get());
                     num_sinks += 1;
                 }
 
@@ -150,11 +153,10 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
                             num_sinks, cluster_ctx.clb_nlist.net_sinks(net_id).size());
         }
 
-        for (auto pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
-            if (pin_done.find(pin_id) == pin_done.end()) {
-                int net_pin_index = tile_pin_index(pin_id);
+        for (ipin = 0; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
+            if (pin_done[ipin] == false) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                "in check_route: net %zu does not connect to pin %d.\n", size_t(net_id), net_pin_index);
+                                "in check_route: net %zu does not connect to pin %d.\n", size_t(net_id), ipin);
             }
         }
 
@@ -176,46 +178,22 @@ void check_route(enum e_route_type route_type, e_check_route_option check_route_
 
 /* Checks that this SINK node is one of the terminals of inet, and marks   *
  * the appropriate pin as being reached.                                   */
-static void check_sink(int inode, ClusterNetId net_id, std::set<vtr::StrongId<cluster_pin_id_tag>>& pin_done) {
+static void check_sink(int inode, int net_pin_index, ClusterNetId net_id, bool* pin_done) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
 
     VTR_ASSERT(device_ctx.rr_nodes[inode].type() == SINK);
-    int i = device_ctx.rr_nodes[inode].xlow();
-    int j = device_ctx.rr_nodes[inode].ylow();
-    auto type = device_ctx.grid[i][j].type;
-    /* For sinks, ptc_num is the class */
-    int ptc_num = device_ctx.rr_nodes[inode].ptc_num();
-    int ifound = 0;
 
-    for (auto bnum : place_ctx.grid_blocks[i][j].blocks) {
-        for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
-            if (cluster_ctx.clb_nlist.pin_block(pin_id) == bnum) {
-                int pin_index = tile_pin_index(pin_id);
-                int iclass = type->pin_class[pin_index];
-                if (iclass == ptc_num) {
-                    /* Could connect to same pin class on the same clb more than once.  Only   *
-                     * update pin_done for a pin that hasn't been reached yet.                 */
-                    if (pin_done.find(pin_id) == pin_done.end()) {
-                        ifound++;
-                        pin_done.insert(pin_id);
-                        break;
-                    }
-                }
-            }
-        }
-    }
-
-    VTR_ASSERT(ifound <= 1);
-
-    if (ifound < 1) {
+    if (net_pin_index == OPEN) { /* If there is no legal net pin index associated with this sink node */
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "in check_sink: node %d does not connect to any terminal of net %s #%lu.\n"
                         "This error is usually caused by incorrectly specified logical equivalence in your architecture file.\n"
                         "You should try to respecify what pins are equivalent or turn logical equivalence off.\n",
                         inode, cluster_ctx.clb_nlist.net_name(net_id).c_str(), size_t(net_id));
     }
+
+    VTR_ASSERT(!pin_done[net_pin_index]); /* Should not have found a routed cnnection to it before */
+    pin_done[net_pin_index] = true;
 }
 
 /* Checks that the node passed in is a valid source for this net. */
