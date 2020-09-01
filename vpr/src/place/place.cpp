@@ -534,8 +534,6 @@ static void print_resources_utilization();
 
 static void init_annealing_state(t_annealing_state* state, const t_annealing_sched& annealing_sched, float t, float rlim, int move_lim_max, float crit_exponent);
 
-static e_place_algorithm get_placement_quench_algorithm(const t_placer_opts& placer_opts);
-
 /*****************************************************************************/
 void try_place(const t_placer_opts& placer_opts,
                t_annealing_sched annealing_sched,
@@ -880,11 +878,6 @@ void try_place(const t_placer_opts& placer_opts,
 
         state.t = 0; /* freeze out */
 
-        //Use setup slack analysis if the placer is timing driven
-        //and the quench metric is SETUP_SLACK. Otherwise, use the
-        //same cost formulation as the annealing stage
-        auto quench_algorithm = get_placement_quench_algorithm(placer_opts);
-
         /* Run inner loop again with temperature = 0 so as to accept only swaps
          * which reduce the cost of the placement */
         placement_inner_loop(state.t, num_temps, state.rlim, placer_opts,
@@ -898,7 +891,7 @@ void try_place(const t_placer_opts& placer_opts,
                              *move_generator,
                              blocks_affected,
                              timing_info.get(),
-                             quench_algorithm);
+                             placer_opts.place_algorithm);
 
         tot_iter += move_lim;
         ++num_temps;
@@ -3359,23 +3352,6 @@ static void init_annealing_state(t_annealing_state* state,
         state->move_lim = state->move_lim_max;
     }
     state->crit_exponent = crit_exponent;
-}
-
-static e_place_algorithm get_placement_quench_algorithm(const t_placer_opts& placer_opts) {
-    e_place_algorithm place_algo = placer_opts.place_algorithm;
-    e_place_quench_metric quench_metric = placer_opts.place_quench_metric;
-
-    if (place_algo == e_place_algorithm::PATH_TIMING_DRIVEN_PLACE) {
-        if (quench_metric == e_place_quench_metric::AUTO || quench_metric == e_place_quench_metric::TIMING_COST) {
-            return PATH_TIMING_DRIVEN_PLACE;
-        } else {
-            VTR_ASSERT(quench_metric == e_place_quench_metric::SETUP_SLACK);
-            return SETUP_SLACK_ANALYSIS_PLACE;
-        }
-    } else {
-        VTR_ASSERT(place_algo == e_place_algorithm::BOUNDING_BOX_PLACE);
-        return BOUNDING_BOX_PLACE;
-    }
 }
 
 bool placer_needs_lookahead(const t_vpr_setup& vpr_setup) {

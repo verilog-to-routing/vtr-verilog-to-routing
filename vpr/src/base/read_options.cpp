@@ -959,41 +959,6 @@ struct ParseTimingUpdateType {
     }
 };
 
-struct ParsePlaceQuenchMetric {
-    ConvertedValue<e_place_quench_metric> from_str(std::string str) {
-        ConvertedValue<e_place_quench_metric> conv_value;
-        if (str == "auto")
-            conv_value.set_value(e_place_quench_metric::AUTO);
-        else if (str == "timing_cost")
-            conv_value.set_value(e_place_quench_metric::TIMING_COST);
-        else if (str == "setup_slack")
-            conv_value.set_value(e_place_quench_metric::SETUP_SLACK);
-        else {
-            std::stringstream msg;
-            msg << "Invalid conversion from '" << str << "' to e_place_quench_metric (expected one of: " << argparse::join(default_choices(), ", ") << ")";
-            conv_value.set_error(msg.str());
-        }
-        return conv_value;
-    }
-
-    ConvertedValue<std::string> to_str(e_place_quench_metric val) {
-        ConvertedValue<std::string> conv_value;
-        if (val == e_place_quench_metric::AUTO)
-            conv_value.set_value("auto");
-        if (val == e_place_quench_metric::TIMING_COST)
-            conv_value.set_value("timing_cost");
-        else {
-            VTR_ASSERT(val == e_place_quench_metric::SETUP_SLACK);
-            conv_value.set_value("setup_slack");
-        }
-        return conv_value;
-    }
-
-    std::vector<std::string> default_choices() {
-        return {"auto", "timing_cost", "setup_slack"};
-    }
-};
-
 argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& args) {
     std::string description =
         "Implements the specified circuit onto the target FPGA architecture"
@@ -1780,17 +1745,6 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
             "modelling.  Default is to allow all tiles. Can be used to "
             "exclude specialized tiles from placer delay sampling.")
         .default_value("")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    place_timing_grp.add_argument<e_place_quench_metric, ParsePlaceQuenchMetric>(args.place_quench_metric, "--place_quench_metric")
-        .help(
-            "Controls which cost function the placer uses during the quench stage:\n"
-            " * auto: VPR decides\n"
-            " * timing_cost: The same cost formulation as the one used during\n"
-            "                the annealing stage (more stable)\n"
-            " * setup_slack: Directly uses setup slacks (in combination with wiring)\n"
-            "                to check if the block moves should be accepted\n")
-        .default_value("auto")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& route_grp = parser.add_argument_group("routing options");
