@@ -182,7 +182,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
     // non-configurable edges
     void timing_driven_add_to_heap(
         const t_conn_cost_params cost_params,
-        t_heap* current,
+        const t_heap* current,
         const int from_node,
         const int to_node,
         const RREdgeId from_edge,

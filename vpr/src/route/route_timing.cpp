@@ -396,7 +396,13 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
     BinaryHeap small_heap;
     small_heap.init_heap(device_ctx.grid);
 
-    int rcv_finished_count = 15;
+    // When RCV is enabled the router will not stop unless negative hold slack is 0
+    // In some cases this isn't doable, due to global nets or intracluster routing issues
+    // In these cases RCV will finish early if it goes RCV_FINISH_EARLY_COUNTDOWN iterations without detecting resolvable negative hold slack
+    // Increasing this will make the router fail occasionally, decreasing will sometimes not let all hold violations be resolved
+    constexpr int RCV_FINISH_EARLY_COUNTDOWN = 15;
+
+    int rcv_finished_count = RCV_FINISH_EARLY_COUNTDOWN;
 
     print_route_status_header();
     for (itry = 1; itry <= router_opts.max_router_iterations; ++itry) {
@@ -629,11 +635,17 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
             // Increase short path criticality if it's having a hard time resolving hold violations due to congestion
             if (budgeting_inf.if_set()) {
                 bool rcv_finished = false;
-                if (itry > 5 && worst_negative_slack != 0) rcv_finished = budgeting_inf.increase_min_budgets_if_struggling(-300e-12, timing_info, worst_negative_slack, netlist_pin_lookup);
+
+                /* This constant represents how much extra delay the budget increaser adds to the minimum and maximum delay budgets
+                 * Experimentally this value delivers fast hold slack resolution, while not overwhelming the router 
+                 * Increasing this will make it resolve hold faster, but could result in lower circuit quality */
+                constexpr float budget_increase_factor = 300e-12;
+
+                if (itry > 5 && worst_negative_slack != 0) rcv_finished = budgeting_inf.increase_min_budgets_if_struggling(budget_increase_factor, timing_info, worst_negative_slack, netlist_pin_lookup);
                 if (rcv_finished)
                     rcv_finished_count--;
                 else
-                    rcv_finished_count = 15;
+                    rcv_finished_count = RCV_FINISH_EARLY_COUNTDOWN;
             }
         }
 

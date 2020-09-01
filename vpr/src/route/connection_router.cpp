@@ -260,7 +260,7 @@ std::vector<t_heap> ConnectionRouter<Heap>::timing_driven_find_all_shortest_path
     //Add the route tree to the heap with no specific target node
     int target_node = OPEN;
 
-    add_route_tree_to_heap(rt_root, target_node, cost_params, false);
+    add_route_tree_to_heap(rt_root, target_node, cost_params, /*run_rcv=*/ false);
     heap_.build_heap(); // via sifting down everything
 
     auto res = timing_driven_find_all_shortest_paths_from_heap(cost_params, bounding_box);
@@ -452,11 +452,14 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
 
     bool run_rcv = cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm == YOYO;
 
+    // BB-pruning
+    // Disable BB-pruning if RCV is enabled, as this can make it harder for circuits with high negative hold slack to resolve this
+    // TODO: Only disable pruning if the net has negative hold slack, maybe go off budgets
     if ((to_xhigh < bounding_box.xmin    //Strictly left of BB left-edge
          || to_xlow > bounding_box.xmax  //Strictly right of BB right-edge
          || to_yhigh < bounding_box.ymin //Strictly below BB bottom-edge
-         || to_ylow > bounding_box.ymax)
-        && !run_rcv) { //Strictly above BB top-edge
+         || to_ylow > bounding_box.ymax) //Strictly above BB top-edge
+        && !run_rcv) {
         VTR_LOGV_DEBUG(router_debug_,
                        "      Pruned expansion of node %d edge %zu -> %d"
                        " (to node location %d,%dx%d,%d outside of expanded"
@@ -495,8 +498,8 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
     VTR_LOGV_DEBUG(router_debug_, "      Expanding node %d edge %zu -> %d\n",
                    from_node, size_t(from_edge), to_node_int);
 
-    // Check if the node exists in the route tree, needed for RCV code
-
+    // Check if the node exists in the route tree when RCV is enabled
+    // Other pruning methods have been disabled when RCV is on, so this method is required to prevent "loops" from being created
     bool node_exists = false;
     if (run_rcv) {
         node_exists = rcv_path_manager.node_exists_in_tree(current->path_data, 
@@ -517,7 +520,7 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(t_heap* current,
 //Add to_node to the heap, and also add any nodes which are connected by non-configurable edges
 template<typename Heap>
 void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params cost_params,
-                                                       t_heap* current,
+                                                       const t_heap* current,
                                                        const int from_node,
                                                        const int to_node,
                                                        const RREdgeId from_edge,

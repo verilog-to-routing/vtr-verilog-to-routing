@@ -20,6 +20,8 @@ enum slack_allocated_type {
     BOTH
 };
 
+#define UNINITIALIZED_PATH_DELAY -2.
+
 class route_budgets {
   public:
     route_budgets();
@@ -69,7 +71,15 @@ class route_budgets {
     void allocate_slack_using_weights(ClbNetPinsMatrix<float>& net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup, bool negative_hold_slack);
     /*Sometimes want to allocate only positive or negative slack.
      * By default, allocate both*/
-    float minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> orig_timing_info, std::shared_ptr<SetupHoldTimingInfo> timing_info, ClbNetPinsMatrix<float>& temp_budgets, ClbNetPinsMatrix<float>& net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup, analysis_type analysis_type, bool keep_in_bounds, slack_allocated_type slack_type = BOTH);
+    float minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> orig_timing_info, 
+                        std::shared_ptr<SetupHoldTimingInfo> timing_info, 
+                        ClbNetPinsMatrix<float>& temp_budgets, 
+                        ClbNetPinsMatrix<float>& net_delay, 
+                        const ClusteredPinAtomPinsLookup& netlist_pin_lookup, 
+                        analysis_type analysis_type, 
+                        bool keep_in_bounds, 
+                        slack_allocated_type slack_type = BOTH);
+
     void process_negative_slack_using_minimax(ClbNetPinsMatrix<float>& net_delay, const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
 
     /*Perform static timing analysis*/
@@ -84,7 +94,13 @@ class route_budgets {
     void keep_budget_above_value(ClbNetPinsMatrix<float>& temp_budgets, float bottom_range);
 
     /*helper functions*/
-    float calculate_clb_pin_slack(ClusterNetId net_id, int ipin, std::shared_ptr<SetupHoldTimingInfo> timing_info, const ClusteredPinAtomPinsLookup& netlist_pin_lookup, analysis_type type, AtomPinId& atom_pin);
+    float calculate_clb_pin_slack(ClusterNetId net_id, 
+                                  int ipin, 
+                                  std::shared_ptr<SetupHoldTimingInfo> timing_info, 
+                                  const ClusteredPinAtomPinsLookup& netlist_pin_lookup, 
+                                  analysis_type type, 
+                                  AtomPinId& atom_pin);
+                                  
     float get_total_path_delay(std::shared_ptr<const tatum::SetupHoldTimingAnalyzer> timing_analyzer,
                                analysis_type analysis_type,
                                ClusterNetId net_id,

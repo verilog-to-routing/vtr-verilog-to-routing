@@ -112,8 +112,8 @@ void route_budgets::load_initial_budgets() {
             should_reroute_for_hold[net_id] = false;
 
             short_path_crit[net_id][ipin] = 1;
-            total_path_delays_hold[net_id][ipin] = -2;
-            total_path_delays_setup[net_id][ipin] = -2;
+            total_path_delays_hold[net_id][ipin] = UNINITIALIZED_PATH_DELAY;
+            total_path_delays_setup[net_id][ipin] = UNINITIALIZED_PATH_DELAY;
         }
     }
 }
@@ -143,7 +143,9 @@ void route_budgets::load_route_budgets(ClbNetPinsMatrix<float>& net_delay,
 
     /*go to the associated function depending on user input/default settings*/
     if (router_opts.routing_budgets_algorithm == MINIMAX || router_opts.routing_budgets_algorithm == YOYO) {
-        allocate_slack_using_weights(net_delay, netlist_pin_lookup, (router_opts.routing_budgets_algorithm == YOYO));
+        bool use_negative_hold_slacks = router_opts.routing_budgets_algorithm == YOYO;
+
+        allocate_slack_using_weights(net_delay, netlist_pin_lookup, use_negative_hold_slacks);
         calculate_delay_targets();
     } else if (router_opts.routing_budgets_algorithm == SCALE_DELAY) {
         allocate_slack_using_delays_and_criticalities(net_delay, timing_info, netlist_pin_lookup, router_opts);
@@ -476,9 +478,9 @@ float route_budgets::get_total_path_delay(std::shared_ptr<const tatum::SetupHold
      * and future path delays is the total path delay through this connection. Returns a value
      * of -1 if no total path is found*/
 
-    if (total_path_delays_hold[net_id][ipin] != -2 && analysis_type == HOLD) {
+    if (total_path_delays_hold[net_id][ipin] != UNINITIALIZED_PATH_DELAY && analysis_type == HOLD) {
         return total_path_delays_hold[net_id][ipin];
-    } else if (total_path_delays_setup[net_id][ipin] != -2 && analysis_type == SETUP) {
+    } else if (total_path_delays_setup[net_id][ipin] != UNINITIALIZED_PATH_DELAY && analysis_type == SETUP) {
         return total_path_delays_setup[net_id][ipin];
     }
 
@@ -720,8 +722,8 @@ bool route_budgets::increase_min_budgets_if_struggling(float delay_decrement, st
                         changed_any_nets = true;
 
                         if (delay_min_budget[net_id][ipin] < 0.1 * delay_upper_bound[net_id][ipin]) {
-                            delay_min_budget[net_id][ipin] -= delay_decrement;
-                            delay_max_budget[net_id][ipin] -= 2 * delay_decrement;
+                            delay_min_budget[net_id][ipin] += delay_decrement;
+                            delay_max_budget[net_id][ipin] += 2 * delay_decrement;
                         }
 
                         if (short_path_crit[net_id][ipin] < 200) short_path_crit[net_id][ipin] *= 2;
@@ -876,34 +878,6 @@ void route_budgets::print_route_budget(std::string filename, ClbNetPinsMatrix<fl
             fp << cluster_ctx.clb_nlist.net_sinks(net_id).size() << " " << (size_t)pin_id;
         }
     }
-
-    // fp << std::endl
-    //    << std::endl
-    //    << "Delay lower_bound:" << std::endl;
-    // for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-    //     fp << std::endl
-    //        << "Net: " << size_t(net_id) << "            ";
-    //     for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
-    //         int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
-    //         fp << delay_lower_bound[net_id][ipin] << " ";
-    //     }
-
-    //     if ((size_t)net_id > 500) break;
-    // }
-
-    // fp << std::endl
-    //    << std::endl
-    //    << "Delay upper_bound:" << std::endl;
-    // for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-    //     fp << std::endl
-    //        << "Net: " << size_t(net_id) << "            ";
-    //     for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
-    //         int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
-    //         fp << delay_upper_bound[net_id][ipin] << " ";
-    //     }
-
-    //     if ((size_t)net_id > 500) break;
-    // }
 
     fp.close();
 }
