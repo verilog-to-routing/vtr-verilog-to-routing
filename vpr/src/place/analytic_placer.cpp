@@ -1,19 +1,19 @@
 #ifdef ENABLE_ANALYTIC_PLACE
 
-#include "analytic_placer.h"
-#include <Eigen/Core>
-#include <Eigen/IterativeLinearSolvers>
-#include <iostream>
-#include <vector>
-#include <stdint.h>
+#    include "analytic_placer.h"
+#    include <Eigen/Core>
+#    include <Eigen/IterativeLinearSolvers>
+#    include <iostream>
+#    include <vector>
+#    include <stdint.h>
 
-#include "vpr_types.h"
-#include "vtr_time.h"
-#include "read_place.h"
-#include "globals.h"
-#include "vtr_log.h"
-#include "cut_spreader.h"
-#include "vpr_utils.h"
+#    include "vpr_types.h"
+#    include "vtr_time.h"
+#    include "read_place.h"
+#    include "globals.h"
+#    include "vtr_log.h"
+#    include "cut_spreader.h"
+#    include "vpr_utils.h"
 
 // Templated struct for constructing and solving matrix equations in analytic placer
 template<typename T>

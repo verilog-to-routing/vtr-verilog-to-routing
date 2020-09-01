@@ -1,16 +1,16 @@
 #ifdef ENABLE_ANALYTIC_PLACE
 
-#include "cut_spreader.h"
-#include <iostream>
-#include <vector>
-#include <queue>
-#include <cstdlib>
+#    include "cut_spreader.h"
+#    include <iostream>
+#    include <vector>
+#    include <queue>
+#    include <cstdlib>
 
-#include "analytic_placer.h"
-#include "vpr_types.h"
-#include "vtr_time.h"
-#include "globals.h"
-#include "vtr_log.h"
+#    include "analytic_placer.h"
+#    include "vpr_types.h"
+#    include "vtr_time.h"
+#    include "globals.h"
+#    include "vtr_log.h"
 
 CutSpreader::CutSpreader(AnalyticPlacer* analytic_placer, t_logical_block_type_ptr blk_t)
     : ap(analytic_placer)
