@@ -700,16 +700,24 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
     
     **Default:** ``not_locked``.
     
-.. option:: --place_algorithm {bounding_box | path_timing_driven}
+.. option:: --place_algorithm {bounding_box | criticality_timing | slack_timing}
 
     Controls the algorithm used by the placer.
 
-    ``bounding_box`` focuses purely on minimizing the bounding box wirelength of the circuit.
+    ``bounding_box`` Focuses purely on minimizing the bounding box wirelength of the circuit. Turns off timing analysis if specified.
 
-    ``path_timing_driven`` focuses on minimizing both wirelength and the critical path delay.
+    ``criticality_timing`` Focuses on minimizing both the wirelength and the connection timing costs (criticality * delay).
 
+    ``slack_timing`` Focuses on improving the circuit slack values to reduce critical path delay.
 
-    **Default:**  ``path_timing_driven``
+    **Default:**  ``criticality_timing``
+
+.. option:: --place_quench_algorithm {bounding_box | criticality_timing | slack_timing}
+
+    Controls the algorithm used by the placer during placement quench.
+    The algorithm options have identical functionality as the ones used by the option ``--place_algorithm``.
+
+    **Default:**  ``criticality_timing``
 
 .. option:: --place_chan_width <int>
 
@@ -861,16 +869,6 @@ The following options are only valid when the placement engine is in timing-driv
 .. option:: --post_place_timing_report <file>
 
     Name of the post-placement timing report file to generate (not generated if unspecfied).
-
-.. option:: --place_quench_metric {auto, timing_cost, setup_slack}
-
-    Specifies which cost formulation the placer uses during the quench stage.
-
-     * ``auto`` VPR makes the choice. Currently, VPR uses ``timing_cost`` by default.
-     * ``timing_cost`` Use the timing cost: connection delay * criticality.
-     * ``setup_slack`` Directly checks the raw setup slack returned by the timing analyzer.
-
-    **Default:** ``auto``
 
 .. _router_options:
 

@@ -315,13 +315,15 @@ struct ParsePlaceDeltaDelayAlgorithm {
 struct ParsePlaceAlgorithm {
     ConvertedValue<e_place_algorithm> from_str(std::string str) {
         ConvertedValue<e_place_algorithm> conv_value;
-        if (str == "bounding_box")
+        if (str == "bounding_box") {
             conv_value.set_value(BOUNDING_BOX_PLACE);
-        else if (str == "path_timing_driven")
-            conv_value.set_value(PATH_TIMING_DRIVEN_PLACE);
-        else {
+        } else if (str == "criticality_timing") {
+            conv_value.set_value(CRITICALITY_TIMING_PLACE);
+        } else if (str == "slack_timing") {
+            conv_value.set_value(SLACK_TIMING_PLACE);
+        } else {
             std::stringstream msg;
-            msg << "Invalid conversion from '" << str << "' to e_router_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            msg << "Invalid conversion from '" << str << "' to e_place_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
             conv_value.set_error(msg.str());
         }
         return conv_value;
@@ -329,17 +331,19 @@ struct ParsePlaceAlgorithm {
 
     ConvertedValue<std::string> to_str(e_place_algorithm val) {
         ConvertedValue<std::string> conv_value;
-        if (val == BOUNDING_BOX_PLACE)
+        if (val == BOUNDING_BOX_PLACE) {
             conv_value.set_value("bounding_box");
-        else {
-            VTR_ASSERT(val == PATH_TIMING_DRIVEN_PLACE);
-            conv_value.set_value("path_timing_driven");
+        } else if (val == CRITICALITY_TIMING_PLACE) {
+            conv_value.set_value("criticality_timing");
+        } else {
+            VTR_ASSERT(val == SLACK_TIMING_PLACE);
+            conv_value.set_value("slack_timing");
         }
         return conv_value;
     }
 
     std::vector<std::string> default_choices() {
-        return {"bounding_box", "path_timing_driven"};
+        return {"bounding_box", "criticality_timing", "slack_timing"};
     }
 };
 
@@ -1613,8 +1617,8 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
 
     place_grp.add_argument<e_place_algorithm, ParsePlaceAlgorithm>(args.PlaceAlgorithm, "--place_algorithm")
         .help("Controls which placement algorithm is used")
-        .default_value("path_timing_driven")
-        .choices({"bounding_box", "path_timing_driven"})
+        .default_value("criticality_timing")
+        .choices({"bounding_box", "criticality_timing", "slack_timing"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_grp.add_argument(args.PlaceChanWidth, "--place_chan_width")
@@ -2217,7 +2221,7 @@ void set_conditional_defaults(t_options& args) {
     //Which placement algorithm to use?
     if (args.PlaceAlgorithm.provenance() != Provenance::SPECIFIED) {
         if (args.timing_analysis) {
-            args.PlaceAlgorithm.set(PATH_TIMING_DRIVEN_PLACE, Provenance::INFERRED);
+            args.PlaceAlgorithm.set(CRITICALITY_TIMING_PLACE, Provenance::INFERRED);
         } else {
             args.PlaceAlgorithm.set(BOUNDING_BOX_PLACE, Provenance::INFERRED);
         }

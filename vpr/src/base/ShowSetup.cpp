@@ -503,8 +503,11 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
             case BOUNDING_BOX_PLACE:
                 VTR_LOG("BOUNDING_BOX_PLACE\n");
                 break;
-            case PATH_TIMING_DRIVEN_PLACE:
-                VTR_LOG("PATH_TIMING_DRIVEN_PLACE\n");
+            case CRITICALITY_TIMING_PLACE:
+                VTR_LOG("CRITICALITY_TIMING_PLACE\n");
+                break;
+            case SLACK_TIMING_PLACE:
+                VTR_LOG("SLACK_TIMING_PLACE\n");
                 break;
             default:
                 VTR_LOG_ERROR("Unknown placement algorithm\n");
@@ -538,7 +541,7 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
 
         VTR_LOG("PlacerOpts.place_chan_width: %d\n", PlacerOpts.place_chan_width);
 
-        if (PATH_TIMING_DRIVEN_PLACE == PlacerOpts.place_algorithm) {
+        if (CRITICALITY_TIMING_PLACE == PlacerOpts.place_algorithm) {
             VTR_LOG("PlacerOpts.inner_loop_recompute_divider: %d\n", PlacerOpts.inner_loop_recompute_divider);
             VTR_LOG("PlacerOpts.recompute_crit_iter: %d\n", PlacerOpts.recompute_crit_iter);
             VTR_LOG("PlacerOpts.timing_tradeoff: %f\n", PlacerOpts.timing_tradeoff);

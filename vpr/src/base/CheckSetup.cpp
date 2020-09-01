@@ -32,7 +32,7 @@ void CheckSetup(const t_packer_opts& PackerOpts,
     }
 
     if ((false == Timing.timing_analysis_enabled)
-        && (PlacerOpts.place_algorithm == PATH_TIMING_DRIVEN_PLACE)) {
+        && (PlacerOpts.place_algorithm == CRITICALITY_TIMING_PLACE)) {
         /* May work, not tested */
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "Timing analysis must be enabled for timing-driven placement.\n");
