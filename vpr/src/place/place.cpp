@@ -891,14 +891,14 @@ void try_place(const t_placer_opts& placer_opts,
                              *move_generator,
                              blocks_affected,
                              timing_info.get(),
-                             placer_opts.place_algorithm);
+                             placer_opts.place_quench_algorithm);
 
         tot_iter += move_lim;
         ++num_temps;
 
         calc_placer_stats(stats, success_rat, std_dev, costs, move_lim);
 
-        if (placer_opts.place_algorithm == CRITICALITY_TIMING_PLACE) {
+        if (placer_opts.place_quench_algorithm == CRITICALITY_TIMING_PLACE) {
             critical_path = timing_info->least_slack_critical_path();
             sTNS = timing_info->setup_total_negative_slack();
             sWNS = timing_info->setup_worst_negative_slack();

@@ -530,6 +530,7 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->td_place_exp_last = Options.place_exp_last;
 
     PlacerOpts->place_algorithm = Options.PlaceAlgorithm;
+    PlacerOpts->place_quench_algorithm = Options.PlaceQuenchAlgorithm;
 
     PlacerOpts->constraints_file = Options.constraints_file;
     PlacerOpts->pad_loc_file = Options.pad_loc_file;

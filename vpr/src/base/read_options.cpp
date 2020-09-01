@@ -1621,6 +1621,12 @@ argparse::ArgumentParser create_arg_parser(std::string prog_name, t_options& arg
         .choices({"bounding_box", "criticality_timing", "slack_timing"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument<e_place_algorithm, ParsePlaceAlgorithm>(args.PlaceQuenchAlgorithm, "--place_quench_algorithm")
+        .help("Controls which placement algorithm is used during placement quench")
+        .default_value("criticality_timing")
+        .choices({"bounding_box", "criticality_timing", "slack_timing"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     place_grp.add_argument(args.PlaceChanWidth, "--place_chan_width")
         .help(
             "Sets the assumed channel width during placement. "
@@ -2225,6 +2231,11 @@ void set_conditional_defaults(t_options& args) {
         } else {
             args.PlaceAlgorithm.set(BOUNDING_BOX_PLACE, Provenance::INFERRED);
         }
+    }
+
+    //Which placement algorithm to use during placement quench?
+    if (args.PlaceQuenchAlgorithm.provenance() != Provenance::SPECIFIED) {
+        args.PlaceQuenchAlgorithm.set(args.PlaceAlgorithm, Provenance::INFERRED);
     }
 
     //Place chan width follows Route chan width if unspecified
