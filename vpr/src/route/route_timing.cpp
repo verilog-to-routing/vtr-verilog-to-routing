@@ -1630,49 +1630,6 @@ static bool check_hold(const t_router_opts& router_opts, float worst_neg_slack) 
     return false;
 }
 
-static OveruseInfo calculate_overuse_info(const std::vector<ClusterNetId>& rerouted_nets) {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& route_ctx = g_vpr_ctx.routing();
-
-    std::unordered_set<int> checked_nodes;
-
-    size_t overused_nodes = 0;
-    size_t total_overuse = 0;
-    size_t worst_overuse = 0;
-
-    //We walk through the entire routing calculating the overuse for each node.
-    //Since in the presence of overuse multiple nets could be using a single node
-    //(and also since branch nodes show up multiple times in the traceback) we use
-    //checked_nodes to avoid double counting the overuse.
-    //
-    //Note that we walk through the entire routing and *not* the RR graph, which
-    //should be more efficient (since usually only a portion of the RR graph is
-    //used by routing, particularly on large devices).
-    //
-    //We skip the nets that have not been rerouted, since if a net should
-    //be rerouted if it already has overused nodes (congestion problem).
-    for (auto net_id : rerouted_nets) {
-        for (t_trace* tptr = route_ctx.trace[net_id].head; tptr != nullptr; tptr = tptr->next) {
-            int inode = tptr->index;
-
-            auto result = checked_nodes.insert(inode);
-            if (!result.second) { //Already counted
-                continue;
-            }
-
-            int overuse = route_ctx.rr_node_route_inf[inode].occ() - device_ctx.rr_nodes[inode].capacity();
-            if (overuse > 0) {
-                overused_nodes += 1;
-
-                total_overuse += overuse;
-                worst_overuse = std::max(worst_overuse, size_t(overuse));
-            }
-        }
-    }
-
-    return OveruseInfo(device_ctx.rr_nodes.size(), overused_nodes, total_overuse, worst_overuse);
-}
-
 static size_t calculate_wirelength_available() {
     auto& device_ctx = g_vpr_ctx.device();
 
