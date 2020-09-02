@@ -1450,17 +1450,17 @@ static e_move_result try_swap(float t,
 
     if (manual_move) {
         //manual_move_generator_window("");
-        update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
-        manual_move_info = get_manual_move_info();
+        //update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
+        //manual_move_info = get_manual_move_info();
         //sends info to the move generator class
-        mmg_get_manual_move_info(*manual_move_info);
+        //mmg_get_manual_move_info(*manual_move_info);
     }
 
     e_create_move create_move_outcome;
     //Generate a new move (perturbation) used to explore the space of possible placements
-    if (manual_move)
+    //if (manual_move)
         create_move_outcome = manual_move_generator.propose_move(blocks_affected, rlim);
-    else
+    //else
         create_move_outcome = move_generator.propose_move(blocks_affected, rlim);
 
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
@@ -1519,7 +1519,7 @@ static e_move_result try_swap(float t,
 
         if (manual_move && manual_move_info->valid_input)
             //update all the costs in the manual_move_info variable and open cost summary window
-            update_manual_move_costs_and_open_window(manual_move_info, move_outcome, delta_c, bb_delta_c, timing_delta_c);
+            //update_manual_move_costs_and_open_window(manual_move_info, move_outcome, delta_c, bb_delta_c, timing_delta_c);
 
         if (move_outcome == ACCEPTED) {
             costs->cost += delta_c;
@@ -1584,7 +1584,7 @@ static e_move_result try_swap(float t,
     check_place(*costs, delay_model, place_algorithm);
 #endif
     if (manual_move)
-        manual_move_info->valid_input = true;
+        //manual_move_info->valid_input = true;
 
     return (move_outcome);
 }
