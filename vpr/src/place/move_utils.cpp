@@ -658,4 +658,10 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
 }
 
 //Accessor for f_placer_debug
-bool placer_debug_enabled() {return f_placer_debug; }
+bool placer_debug_enabled() {
+    return f_placer_debug;
+ }
+
+void set_placer_debug(bool flag){
+    f_placer_debug = flag;
+}

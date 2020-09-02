@@ -52,6 +52,7 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
                          const t_pl_loc from,
                          t_pl_loc& to);
 
-//Accessor for f_placer_debug
+//Accessor and setter for f_placer_debug
 bool placer_debug_enabled();
+void set_placer_debug(bool );
 #endif
