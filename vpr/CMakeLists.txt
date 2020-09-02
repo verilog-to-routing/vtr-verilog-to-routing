@@ -54,38 +54,21 @@ add_library(libvpr STATIC
 
 target_include_directories(libvpr PUBLIC ${LIB_INCLUDE_DIRS})
 
-#Handle analytic placer setup
-set(AP_DEFINES "")
-
-#Add Eigen header directories, and suppress warning with SYSTEM
-#if(${VPR_ANALYTIC_PLACE} AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../libs/EXTERNAL/eigen)
+#VPR_ANALYTIC_PLACE is inisitalized in the root CMakeLists
+#Check eigen dependency
 if(${VPR_ANALYTIC_PLACE})
-	#target_include_directories(libvpr SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../libs/EXTERNAL/eigen)
 	message(STATUS "VPR Analytic Placement: Requested")
 	find_package(Eigen3 3.3 NO_MODULE)
 	if (TARGET Eigen3::Eigen)
-		message(STATUS "VPR Analytic Placement dependency (Eigen): Found")
+		message(STATUS "VPR Analytic Placement dependency (Eigen3): Found")
+		message(STATUS "VPR Analytic Placement: Enabled")
 		target_link_libraries (libvpr Eigen3::Eigen)
-		list(APPEND AP_DEFINES "-DENABLE_ANALYTIC_PLACE")
-		message(${Eigen3_CONFIG})
+		target_compile_definitions(libvpr PUBLIC -DENABLE_ANALYTIC_PLACE)
 	else ()
-		message(STATUS "VPR Analytic Placement dependency (Eigen): Not Found")
-		message(STATUS "Downloading Eigen dependency ...")
-		execute_process(COMMAND sudo apt install libeigen3-dev)
-		find_package(Eigen3 3.3 NO_MODULE)
-		if (TARGET Eigen3::Eigen)
-			message(STATUS "Eigen dependecy download: Successful")
-			message(STATUS "VPR Analytic Placement: Enabled")
-			target_link_libraries (libvpr Eigen3::Eigen)
-			list(APPEND AP_DEFINES "-DENABLE_ANALYTIC_PLACE")
-		else()
-			message(STATUS "Eigen dependency download: Failed")
-			message(STATUS "VPR Analytic Placement: Disabled (Dependency download failed, try installing eigen manually)")
-		endif()
+		message(STATUS "VPR Analytic Placement dependency (Eigen3): Not Found (Download manually with sudo apt install libeigen3-dev, and rebuild)")
+		message(STATUS "VPR Analytic Placement: Disabled")
 	endif(TARGET Eigen3::Eigen)
 endif()
-
-target_compile_definitions(libvpr PUBLIC ${AP_DEFINES})
 
 set_target_properties(libvpr PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
