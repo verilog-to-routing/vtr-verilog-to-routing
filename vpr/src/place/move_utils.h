@@ -4,12 +4,6 @@
 #include "move_transactions.h"
 #include "compressed_grid.h"
 
-//Run-time flag to control when placer debug information is printed
-//Note : only enables debug output if compiled with VTR_ENABLE_DEBUG_LOGGING is defined
-//f_placer_debug is used to stop the placer when a breakpoint is reached. When this flag is true, it stops the placer after the current perturbation. Thus, when a breakpoint is reached, this flag is set to true.
-#ifdef VTR_ENABLE_DEBUG_LOGGING
-extern bool f_placer_debug;
-#endif
 
 /* This is for the placement swap routines. A swap attempt could be       *
  * rejected, accepted or aborted (due to the limitations placed on the    *
@@ -57,4 +51,7 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
                          float rlim,
                          const t_pl_loc from,
                          t_pl_loc& to);
+
+//Accessor for f_placer_debug
+bool placer_debug_enabled();
 #endif

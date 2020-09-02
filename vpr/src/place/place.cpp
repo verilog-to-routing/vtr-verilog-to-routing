@@ -1537,7 +1537,7 @@ static e_move_result try_swap(float t,
     move_generator.process_outcome(move_outcome_stats);
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
-    stop_placement_and_check_breakopints(blocks_affected, f_placer_debug, move_outcome, delta_c, bb_delta_c, timing_delta_c);
+    stop_placement_and_check_breakopints(blocks_affected, placer_debug_enabled(), move_outcome, delta_c, bb_delta_c, timing_delta_c);
 #endif
     clear_move_blocks(blocks_affected);
 
