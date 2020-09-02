@@ -1447,6 +1447,7 @@ static e_move_result try_swap(float t,
     //bool manual_move = get_manual_move_flag();
     bool manual_move = false;
     ManualMoveInfo* manual_move_info;
+
     if (manual_move) {
         //manual_move_generator_window("");
         update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
@@ -1466,7 +1467,7 @@ static e_move_result try_swap(float t,
 
     e_move_result move_outcome = ABORTED;
 
-    if (create_move_outcome == e_create_move::ABORT || !manual_move_info->valid_input) {
+    if (create_move_outcome == e_create_move::ABORT || (manual_move && !manual_move_info->valid_input)) {
         //Proposed move is not legal -- give up on this move
         clear_move_blocks(blocks_affected);
 
@@ -1582,7 +1583,9 @@ static e_move_result try_swap(float t,
     //Check that each accepted swap yields a valid placement
     check_place(*costs, delay_model, place_algorithm);
 #endif
-    manual_move_info->valid_input = true;
+    if (manual_move)
+        manual_move_info->valid_input = true;
+
     return (move_outcome);
 }
 
