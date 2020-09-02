@@ -55,7 +55,7 @@ add_library(libvpr STATIC
 target_include_directories(libvpr PUBLIC ${LIB_INCLUDE_DIRS})
 
 #VPR_ANALYTIC_PLACE is inisitalized in the root CMakeLists
-#Check eigen dependency
+#Check Eigen dependency
 if(${VPR_ANALYTIC_PLACE})
 	message(STATUS "VPR Analytic Placement: Requested")
 	find_package(Eigen3 3.3 NO_MODULE)
