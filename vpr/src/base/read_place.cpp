@@ -173,6 +173,7 @@ void read_place_body(std::ifstream& placement_file,
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
+    auto& atom_ctx = g_vpr_ctx.atom();
 
     std::string line;
     int lineno = 0;
@@ -218,9 +219,15 @@ void read_place_body(std::ifstream& placement_file,
 
             ClusterBlockId blk_id = cluster_ctx.clb_nlist.find_block(block_name);
 
-            //Check if block name is valid
+            //If block name is not found in cluster netlist check if it is in atom netlist
             if (blk_id == ClusterBlockId::INVALID()) {
-                VPR_THROW(VPR_ERROR_PLACE, "Block %s has an invalid name.\n", c_block_name);
+                AtomBlockId atom_blk_id = atom_ctx.nlist.find_block(block_name);
+
+                if (atom_blk_id == AtomBlockId::INVALID()) {
+                    VPR_THROW(VPR_ERROR_PLACE, "Block %s has an invalid name.\n", c_block_name);
+                } else {
+                    blk_id = atom_ctx.lookup.atom_clb(atom_blk_id);
+                }
             }
 
             //Check if block is listed twice in constraints file
