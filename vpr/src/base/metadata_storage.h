@@ -28,6 +28,26 @@ class MetadataStorage {
         data_.push_back(std::make_tuple(lookup_key, meta_key, meta_value));
     }
 
+    // Use the given mapping function to change the keys
+    void remap_keys(std::function<LookupKey(LookupKey)> key_map) {
+        if (map_.empty()) {
+            for (auto& entry : data_) {
+                std::get<0>(entry) = key_map(std::get<0>(entry));
+            }
+        } else {
+            VTR_ASSERT(data_.empty());
+            for (auto& dict : map_) {
+                for (auto& entry : dict.second) {
+                    for (auto& value : entry.second) {
+                        data_.push_back(std::make_tuple(key_map(dict.first), entry.first, value.as_string()));
+                    }
+                }
+            }
+            map_.clear();
+            build_map();
+        }
+    }
+
     typename vtr::flat_map<LookupKey, t_metadata_dict>::const_iterator find(const LookupKey& lookup_key) const {
         check_for_map();
 
