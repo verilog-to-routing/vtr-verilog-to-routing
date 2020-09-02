@@ -1426,8 +1426,8 @@ static e_move_result try_swap(float t,
         rlim = std::numeric_limits<float>::infinity();
     }
 
-    //bool manual_move = get_manual_move_flag();
-    bool manual_move = false;
+    bool manual_move = get_manual_move_flag();
+    //bool manual_move = false;
     ManualMoveInfo* manual_move_info;
 
     if (manual_move) {
