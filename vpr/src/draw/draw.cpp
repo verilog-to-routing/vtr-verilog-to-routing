@@ -4135,4 +4135,16 @@ static void run_graphics_commands(std::string commands) {
     ++draw_state->sequence_number;
 }
 
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+// location highlighting functions 
+void set_draw_loc_color(t_pl_loc loc, ezgl::color clr){
+    t_draw_state* draw_state = get_draw_state_vars();
+    draw_state->colored_blocks.push_back(std::make_pair(loc,clr));    
+}
+void clear_colored_blocks(){
+    t_draw_state* draw_state = get_draw_state_vars();
+    draw_state->colored_blocks.clear();
+}
+#endif
+
 #endif /* NO_GRAPHICS */

@@ -84,6 +84,12 @@ float get_net_alpha();
 
 ezgl::color get_block_type_color(t_physical_tile_type_ptr type);
 
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+// location highlighting functions 
+void set_draw_loc_color(t_pl_loc , ezgl::color );                                                                                  
+void clear_colored_blocks();
+#endif
+
 #endif /* NO_GRAPHICS */
 
 #endif /* DRAW_H */

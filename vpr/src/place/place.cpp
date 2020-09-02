@@ -45,6 +45,7 @@
 #include "tatum/TimingReporter.hpp"
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
+#    include "draw.h"
 #    include "draw_types.h"
 #    include "draw_global.h"
 #    include "draw_color.h"
@@ -52,6 +53,9 @@
 //map of the available move types and their corresponding type number
 std::map<int, std::string> available_move_types = {
     {0, "Uniform"}};
+
+#define OLD_BLK_LOC_COLOR blk_GOLD
+#define NEW_BLK_LOC_COLOR blk_GREEN
 #endif
 
 using std::max;
@@ -3067,6 +3071,10 @@ void stop_placement_and_check_breakopints(t_pl_blocks_to_be_moved& blocks_affect
 
         deselect_all();
         draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(blocks_affected.moved_blocks[0].block_num), blocks_affected.moved_blocks[0].block_num);
+        
+        clear_colored_blocks();
+        set_draw_loc_color(blocks_affected.moved_blocks[0].old_loc, OLD_BLK_LOC_COLOR);
+        set_draw_loc_color(blocks_affected.moved_blocks[0].old_loc, NEW_BLK_LOC_COLOR);
         draw_state->colored_blocks.clear();
 
         draw_state->colored_blocks.push_back(std::make_pair(blocks_affected.moved_blocks[0].old_loc, blk_GOLD));
