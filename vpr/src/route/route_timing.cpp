@@ -88,11 +88,12 @@ static bool timing_driven_route_sink(
     unsigned itarget,
     int target_pin,
     const t_conn_cost_params cost_params,
-    int high_fanout_threshold,
+    const t_router_opts& router_opts,
     t_rt_node* rt_root,
     t_rt_node** rt_node_of_sink,
     SpatialRouteTreeLookup& spatial_rt_lookup,
-    RouterStats& router_stats);
+    RouterStats& router_stats,
+    const RoutingPredictor& routing_predictor);
 
 template<typename ConnectionRouter>
 static bool timing_driven_pre_route_to_clock_root(
@@ -425,7 +426,8 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
                                                            route_timing_info,
                                                            pin_timing_invalidator.get(),
                                                            budgeting_inf,
-                                                           was_rerouted);
+                                                           was_rerouted,
+                                                           routing_predictor);
             if (!is_routable) {
                 return (false); //Impossible to route
             }
@@ -772,7 +774,8 @@ bool try_timing_driven_route_net(ConnectionRouter& router,
                                  std::shared_ptr<SetupTimingInfo> timing_info,
                                  ClusteredPinTimingInvalidator* pin_timing_invalidator,
                                  route_budgets& budgeting_inf,
-                                 bool& was_rerouted) {
+                                 bool& was_rerouted,
+                                 const RoutingPredictor& routing_predictor) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
@@ -803,7 +806,8 @@ bool try_timing_driven_route_net(ConnectionRouter& router,
                                             netlist_pin_lookup,
                                             timing_info,
                                             pin_timing_invalidator,
-                                            budgeting_inf);
+                                            budgeting_inf,
+                                            routing_predictor);
 
         profiling::net_fanout_end(cluster_ctx.clb_nlist.net_sinks(net_id).size());
 
@@ -927,7 +931,8 @@ bool timing_driven_route_net(ConnectionRouter& router,
                              const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                              std::shared_ptr<SetupTimingInfo> timing_info,
                              ClusteredPinTimingInvalidator* pin_timing_invalidator,
-                             route_budgets& budgeting_inf) {
+                             route_budgets& budgeting_inf,
+                             const RoutingPredictor& routing_predictor) {
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
      * to route this net, even ignoring congestion, it returns false.  In this  *
@@ -1060,10 +1065,11 @@ bool timing_driven_route_net(ConnectionRouter& router,
                                       itarget,
                                       target_pin,
                                       cost_params,
-                                      router_opts.high_fanout_threshold,
+                                      router_opts,
                                       rt_root, rt_node_of_sink,
                                       spatial_route_tree_lookup,
-                                      router_stats))
+                                      router_stats,
+                                      routing_predictor))
             return false;
 
         profiling::conn_finish(route_ctx.net_rr_terminals[net_id][0],
@@ -1205,11 +1211,12 @@ static bool timing_driven_route_sink(
     unsigned itarget,
     int target_pin,
     const t_conn_cost_params cost_params,
-    int high_fanout_threshold,
+    const t_router_opts& router_opts,
     t_rt_node* rt_root,
     t_rt_node** rt_node_of_sink,
     SpatialRouteTreeLookup& spatial_rt_lookup,
-    RouterStats& router_stats) {
+    RouterStats& router_stats,
+    const RoutingPredictor& routing_predictor) {
     /* Build a path from the existing route tree rooted at rt_root to the target_node
      * add this branch to the existing route tree and update pathfinder costs and rr_node_route_inf to reflect this */
     auto& route_ctx = g_vpr_ctx.mutable_routing();
@@ -1229,7 +1236,7 @@ static bool timing_driven_route_sink(
     t_bb bounding_box = route_ctx.route_bb[net_id];
 
     bool net_is_global = cluster_ctx.clb_nlist.net_is_global(net_id);
-    bool high_fanout = is_high_fanout(cluster_ctx.clb_nlist.net_sinks(net_id).size(), high_fanout_threshold);
+    bool high_fanout = is_high_fanout(cluster_ctx.clb_nlist.net_sinks(net_id).size(), router_opts.high_fanout_threshold);
     constexpr float HIGH_FANOUT_CRITICALITY_THRESHOLD = 0.9;
     bool sink_critical = (cost_params.criticality > HIGH_FANOUT_CRITICALITY_THRESHOLD);
     bool net_is_clock = route_ctx.is_clock_net[net_id] != 0;
@@ -1237,7 +1244,7 @@ static bool timing_driven_route_sink(
     //We normally route high fanout nets by only adding spatially close-by routing to the heap (reduces run-time).
     //However, if the current sink is 'critical' from a timing perspective, we put the entire route tree back onto
     //the heap to ensure it has more flexibility to find the best path.
-    if (high_fanout && !sink_critical && !net_is_global && !net_is_clock) {
+    if (high_fanout && !sink_critical && !net_is_global && !net_is_clock && -routing_predictor.get_slope() > router_opts.high_fanout_max_slope) {
         std::tie(found_path, cheapest) = router.timing_driven_route_connection_from_route_tree_high_fanout(rt_root,
                                                                                                            sink_node,
                                                                                                            cost_params,

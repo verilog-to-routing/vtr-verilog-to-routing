@@ -1089,6 +1089,7 @@ struct t_router_opts {
     enum e_clock_modeling clock_modeling; ///<How clock pins and nets should be handled
     bool two_stage_clock_routing;         ///<How clock nets on dedicated networks should be routed
     int high_fanout_threshold;
+    float high_fanout_max_slope;
     int router_debug_net;
     int router_debug_sink_rr;
     int router_debug_iteration;
