@@ -12,8 +12,17 @@
 #    include "serdes_utils.h"
 #endif
 
-// Distance penalties filling are calculated based on available samples, but can be adjusted with this factor.
+// Lookahead penalties constants
+// Penalities are added for deltas that are outside of a specific segment bounding box region.
+// These penalties are calculated based on the distance of the requested delta to a valid closest point of the bounding
+// box.
+
+///@brief Factor to adjust the penalty calculation for deltas outside the segment bounding box:
+//      factor < 1.0: penalty has less impact on the final returned delay
+//      factor > 1.0: penalty has more impact on the final returned delay
 static constexpr float PENALTY_FACTOR = 1.f;
+
+///@brief Minimum penalty cost that is added when penalizing a delta outside the segment bounding box.
 static constexpr float PENALTY_MIN = 1e-12f;
 
 // also known as the L1 norm
@@ -21,6 +30,7 @@ static int manhattan_distance(const vtr::Point<int>& a, const vtr::Point<int>& b
     return abs(b.x() - a.x()) + abs(b.y() - a.y());
 }
 
+// clamps v to be between low (lo) and high (hi), inclusive.
 template<class T>
 static constexpr const T& clamp(const T& v, const T& lo, const T& hi) {
     return std::min(std::max(v, lo), hi);
@@ -72,27 +82,135 @@ static util::Cost_Entry penalize(const util::Cost_Entry& entry, int distance, fl
                             entry.congestion, entry.fill);
 }
 
-// get a cost entry for a segment type, chan type, and offset
+/**
+ * @brief Gets a cost entry for a segment type, and delta_x, delta_y coordinates.
+ * @note Cost entries are pre-computed during the lookahead map generation.
+ *
+ *   @param from_seg_index Index of the segment corresponding to the current expansion node
+ *   @param delta_x x coordinate corresponding to the distance between the source and destination nodes
+ *   @param delta_y y coordinate corresponding to the distance between the source and destination nodes
+ *   @return The requested cost entry in the lookahead map.
+ *
+ * */
 util::Cost_Entry CostMap::find_cost(int from_seg_index, int delta_x, int delta_y) const {
     VTR_ASSERT(from_seg_index >= 0 && from_seg_index < (ssize_t)offset_.size());
     const auto& cost_map = cost_map_[0][from_seg_index];
+    // Check whether the cost map corresponding to the input segment is empty.
+    // This can be due to an absence of samples during the lookahead generation.
+    // This check is required to avoid unexpected behavior when querying an empty map.
     if (cost_map.dim_size(0) == 0 || cost_map.dim_size(1) == 0) {
         return util::Cost_Entry();
     }
 
+    // Delta coordinate with the offset adjusted to fit the segment bounding box
     vtr::Point<int> coord(delta_x - offset_[0][from_seg_index].first,
                           delta_y - offset_[0][from_seg_index].second);
     vtr::Rect<int> bounds(0, 0, cost_map.dim_size(0), cost_map.dim_size(1));
+
+    // Get the closest point in the bounding box:
+    //      - If the coordinate is within the bounding box, the closest point will coincide with the original coordinates.
+    //      - If the coordinate is outside the bounding box, the chosen point will be the one within the bounding box that is
+    //        closest to the original coordinates.
     auto closest = closest_point_in_rect(bounds, coord);
+
+    // Get the cost entry from the cost map at the deltas values
     auto cost = cost_map_[0][from_seg_index][closest.x()][closest.y()];
+
+    // Get the base penalty corresponding to the current segment.
     float penalty = penalty_[0][from_seg_index];
+
+    // Get the distance between the closest point in the bounding box and the original coordinates.
+    // Note that if the original coordinates are within the bounding box, the distance will be equal to zero.
     auto distance = manhattan_distance(closest, coord);
+
+    // Return the penalized cost (no penalty is added if the coordinates are within the bounding box).
     return penalize(cost, distance, penalty);
+}
+
+// finds the penalty delay corresponding to a segment
+float CostMap::get_penalty(vtr::NdMatrix<util::Cost_Entry, 2>& matrix) const {
+    float min_delay = std::numeric_limits<float>::infinity(), max_delay = 0.f;
+    vtr::Point<int> min_location(0, 0), max_location(0, 0);
+    for (unsigned ix = 0; ix < matrix.dim_size(0); ix++) {
+        for (unsigned iy = 0; iy < matrix.dim_size(1); iy++) {
+            util::Cost_Entry& cost_entry = matrix[ix][iy];
+            if (cost_entry.valid()) {
+                if (cost_entry.delay < min_delay) {
+                    min_delay = cost_entry.delay;
+                    min_location = vtr::Point<int>(ix, iy);
+                }
+                if (cost_entry.delay > max_delay) {
+                    max_delay = cost_entry.delay;
+                    max_location = vtr::Point<int>(ix, iy);
+                }
+            }
+        }
+    }
+
+    float delay_penalty = (max_delay - min_delay) / static_cast<float>(std::max(1, manhattan_distance(max_location, min_location)));
+
+    return delay_penalty;
+}
+
+// fills the holes in the cost map matrix
+void CostMap::fill_holes(vtr::NdMatrix<util::Cost_Entry, 2>& matrix, int seg_index, int bounding_box_width, int bounding_box_height, float delay_penalty) {
+    // find missing cost entries and fill them in by copying a nearby cost entry
+    std::vector<std::tuple<unsigned, unsigned, util::Cost_Entry>> missing;
+    bool couldnt_fill = false;
+    auto shifted_bounds = vtr::Rect<int>(0, 0, bounding_box_width, bounding_box_height);
+    int max_fill = 0;
+    for (unsigned ix = 0; ix < matrix.dim_size(0); ix++) {
+        for (unsigned iy = 0; iy < matrix.dim_size(1); iy++) {
+            util::Cost_Entry& cost_entry = matrix[ix][iy];
+            if (!cost_entry.valid()) {
+                // maximum search radius
+                util::Cost_Entry filler;
+                int distance;
+                std::tie(filler, distance) = get_nearby_cost_entry(matrix, ix, iy, shifted_bounds);
+                if (filler.valid()) {
+                    missing.push_back(std::make_tuple(ix, iy, penalize(filler, distance, delay_penalty)));
+                    max_fill = std::max(max_fill, distance);
+                } else {
+                    couldnt_fill = true;
+                }
+            }
+        }
+        if (couldnt_fill) {
+            // give up trying to fill an empty matrix
+            break;
+        }
+    }
+
+    if (!couldnt_fill) {
+        VTR_LOG("At %d: max_fill = %d, delay_penalty = %e\n", seg_index, max_fill, delay_penalty);
+    }
+
+    // write back the missing entries
+    for (auto& xy_entry : missing) {
+        matrix[std::get<0>(xy_entry)][std::get<1>(xy_entry)] = std::get<2>(xy_entry);
+    }
+
+    if (couldnt_fill) {
+        VTR_LOG_WARN("Couldn't fill holes in the cost matrix for %ld, %d x %d bounding box\n",
+                     seg_index, bounding_box_width, bounding_box_height);
+        for (unsigned y = 0; y < matrix.dim_size(1); y++) {
+            for (unsigned x = 0; x < matrix.dim_size(0); x++) {
+                VTR_ASSERT(!matrix[x][y].valid());
+            }
+        }
+    }
 }
 
 // set the cost map for a segment type and chan type, filling holes
 void CostMap::set_cost_map(const util::RoutingCosts& delay_costs, const util::RoutingCosts& base_costs) {
-    // calculate the bounding boxes
+    // Calculate the bounding boxes
+    // Bounding boxes are used to reduce the cost map size. They are generated based on the minimum
+    // and maximum coordinates of the x/y delta delays obtained for each segment.
+    //
+    // There is one bounding box for each segment type.
+    //
+    // In case the lookahead is queried to return a cost that is outside of the bounding box, the closest
+    // cost within the bounding box is returned, with the addition of a calculated penalty cost.
     vtr::Matrix<vtr::Rect<int>> bounds({1, seg_count_});
     for (const auto& entry : delay_costs) {
         bounds[0][entry.first.seg_index].expand_bounding_box(vtr::Rect<int>(entry.first.delta));
@@ -101,7 +219,9 @@ void CostMap::set_cost_map(const util::RoutingCosts& delay_costs, const util::Ro
         bounds[0][entry.first.seg_index].expand_bounding_box(vtr::Rect<int>(entry.first.delta));
     }
 
-    // store bounds
+    // Adds the above generated bounds to the cost map.
+    // Also the offset_ data is stored, to allow the application of the adjustment factor to the
+    // delta x/y coordinates.
     for (size_t seg = 0; seg < seg_count_; seg++) {
         const auto& seg_bounds = bounds[0][seg];
         if (seg_bounds.empty()) {
@@ -117,7 +237,7 @@ void CostMap::set_cost_map(const util::RoutingCosts& delay_costs, const util::Ro
         }
     }
 
-    // store entries into the matrices
+    // Fill the cost map entries with the delay and congestion costs obtained in the dijkstra expansion step.
     for (const auto& entry : delay_costs) {
         int seg = entry.first.seg_index;
         const auto& seg_bounds = bounds[0][seg];
@@ -133,7 +253,12 @@ void CostMap::set_cost_map(const util::RoutingCosts& delay_costs, const util::Ro
         cost_map_[0][seg][x][y].congestion = entry.second;
     }
 
-    // fill the holes
+    // Adjust the cost map in two steps.
+    //      1. penalty calculation: value used to add a penalty cost to the delta x/y that fall
+    //                              outside of the bounding box for a specific segment
+    //      2. holes filling: some entries might miss delay/congestion data. These holes are being
+    //                        filled in a spiral fashion, starting from the hole, to find the nearby
+    //                        valid cost.
     for (size_t seg = 0; seg < seg_count_; seg++) {
         penalty_[0][seg] = std::numeric_limits<float>::infinity();
         const auto& seg_bounds = bounds[0][seg];
@@ -142,72 +267,12 @@ void CostMap::set_cost_map(const util::RoutingCosts& delay_costs, const util::Ro
         }
         auto& matrix = cost_map_[0][seg];
 
-        // calculate delay penalty
-        float min_delay = std::numeric_limits<float>::infinity(), max_delay = 0.f;
-        vtr::Point<int> min_location(0, 0), max_location(0, 0);
-        for (unsigned ix = 0; ix < matrix.dim_size(0); ix++) {
-            for (unsigned iy = 0; iy < matrix.dim_size(1); iy++) {
-                util::Cost_Entry& cost_entry = matrix[ix][iy];
-                if (cost_entry.valid()) {
-                    if (cost_entry.delay < min_delay) {
-                        min_delay = cost_entry.delay;
-                        min_location = vtr::Point<int>(ix, iy);
-                    }
-                    if (cost_entry.delay > max_delay) {
-                        max_delay = cost_entry.delay;
-                        max_location = vtr::Point<int>(ix, iy);
-                    }
-                }
-            }
-        }
-        float delay_penalty = (max_delay - min_delay) / static_cast<float>(std::max(1, manhattan_distance(max_location, min_location)));
+        // Penalty factor calculation for the current segment
+        float delay_penalty = this->get_penalty(matrix);
         penalty_[0][seg] = delay_penalty;
 
-        // find missing cost entries and fill them in by copying a nearby cost entry
-        std::vector<std::tuple<unsigned, unsigned, util::Cost_Entry>> missing;
-        bool couldnt_fill = false;
-        auto shifted_bounds = vtr::Rect<int>(0, 0, seg_bounds.width(), seg_bounds.height());
-        int max_fill = 0;
-        for (unsigned ix = 0; ix < matrix.dim_size(0); ix++) {
-            for (unsigned iy = 0; iy < matrix.dim_size(1); iy++) {
-                util::Cost_Entry& cost_entry = matrix[ix][iy];
-                if (!cost_entry.valid()) {
-                    // maximum search radius
-                    util::Cost_Entry filler;
-                    int distance;
-                    std::tie(filler, distance) = get_nearby_cost_entry(matrix, ix, iy, shifted_bounds);
-                    if (filler.valid()) {
-                        missing.push_back(std::make_tuple(ix, iy, penalize(filler, distance, delay_penalty)));
-                        max_fill = std::max(max_fill, distance);
-                    } else {
-                        couldnt_fill = true;
-                    }
-                }
-            }
-            if (couldnt_fill) {
-                // give up trying to fill an empty matrix
-                break;
-            }
-        }
-
-        if (!couldnt_fill) {
-            VTR_LOG("At %d: max_fill = %d, delay_penalty = %e\n", seg, max_fill, delay_penalty);
-        }
-
-        // write back the missing entries
-        for (auto& xy_entry : missing) {
-            matrix[std::get<0>(xy_entry)][std::get<1>(xy_entry)] = std::get<2>(xy_entry);
-        }
-
-        if (couldnt_fill) {
-            VTR_LOG_WARN("Couldn't fill holes in the cost matrix for %ld, %d x %d bounding box\n",
-                         seg, seg_bounds.width(), seg_bounds.height());
-            for (unsigned y = 0; y < matrix.dim_size(1); y++) {
-                for (unsigned x = 0; x < matrix.dim_size(0); x++) {
-                    VTR_ASSERT(!matrix[x][y].valid());
-                }
-            }
-        }
+        // Holes filling
+        this->fill_holes(matrix, seg, seg_bounds.width(), seg_bounds.height(), delay_penalty);
     }
 }
 
@@ -310,6 +375,11 @@ std::pair<util::Cost_Entry, int> CostMap::get_nearby_cost_entry(const vtr::NdMat
     }
     return std::make_pair(fill, n);
 }
+
+/*
+ * The following static functions are used to have a fast read and write access to
+ * the cost map data structures, exploiting the capnp serialization.
+ */
 
 static void ToCostEntry(util::Cost_Entry* out, const VprCostEntry::Reader& in) {
     out->delay = in.getDelay();
