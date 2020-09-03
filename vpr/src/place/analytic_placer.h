@@ -1,7 +1,7 @@
 #ifndef VPR_ANALYTIC_PLACEMENT_H
 #define VPR_ANALYTIC_PLACEMENT_H
 
-#ifdef ENABLE_ANALYTIC_PLACE
+// #ifdef ENABLE_ANALYTIC_PLACE
 /**
  * @file
  * @brief This file implements the analytic placer, described as lower-bound placement in SimPL. It formulates
@@ -115,7 +115,7 @@ class AnalyticPlacer {
     AnalyticPlacer();
 
     /*
-     * @brief top function of analytic placement
+     * @brief main function of analytic placement
      * Takes the random initial placement from place.cpp through g_vpr_ctx
      * Repeat the following until stopping criteria is met:
      * 	* Formulate and solve equations in x, y directions for 1 type of logial block
@@ -149,7 +149,8 @@ class AnalyticPlacer {
     int32_t dont_solve = std::numeric_limits<int32_t>::max();
 
     // row number in the system of linear equations for each block
-    std::unordered_map<ClusterBlockId, int32_t> blk_row_num;
+    // which corresponds to the equation produced by differentiating objective function w.r.t that block location
+    std::unordered_map<ClusterBlockId, int32_t> row_num;
 
     // Encapsulates 3 types of locations for each logic block
     struct BlockLocation {
@@ -166,7 +167,7 @@ class AnalyticPlacer {
     std::vector<ClusterBlockId> place_blks;
 
     // blocks being solved in the current equation
-    // subset of all blocks being placed
+    // which are a subset of all blocks being placed
     std::vector<ClusterBlockId> solve_blks;
 
     /*
@@ -244,6 +245,6 @@ class AnalyticPlacer {
                           const int stall);
 };
 
-#endif /* ENABLE_ANALYTIC_PLACE */
+// #endif /* ENABLE_ANALYTIC_PLACE */
 
 #endif /* VPR_ANALYTIC_PLACEMENT_H */

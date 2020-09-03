@@ -1,4 +1,4 @@
-#ifdef ENABLE_ANALYTIC_PLACE
+//#ifdef ENABLE_ANALYTIC_PLACE
 
 #    include "analytic_placer.h"
 #    include <Eigen/Core>
@@ -86,7 +86,8 @@ struct EquationSystem {
 };
 
 // helper function to find the index of macro that contains blk
-// returns index in placementCtx.pl_macros, -1 if blk not in any macros
+// returns index in placementCtx.pl_macros,
+// returns -1 if blk not in any macros
 int imacro(ClusterBlockId blk) {
     int macro_index;
     get_imacro_from_iblk(&macro_index, blk, g_vpr_ctx.mutable_placement().pl_macros);
@@ -102,14 +103,14 @@ ClusterBlockId macro_head(ClusterBlockId blk) {
 
 /*
  * AnalyticPlacer constructor
- * Currently passing in block locations from initial plament,
- * device information etc. by VprContext
+ * Currently only initializing AP configuration parameters
+ * Placement & device info is accessed via g_vpr_ctx, doesn't need constructor to deal with it
  */
 AnalyticPlacer::AnalyticPlacer() {
     //Eigen::initParallel();
 
     // TODO: PlacerHeapCfg should be externally configured & supplied
-    // TODO: tune these parameters for better qor
+    // TODO: tune these parameters for better performance
     tmpCfg.alpha = 0.1;            // anchoring strength
     tmpCfg.beta = 1;               // utilization factor
     tmpCfg.solverTolerance = 1e-5; // solver parameter
@@ -119,29 +120,43 @@ AnalyticPlacer::AnalyticPlacer() {
     tmpCfg.timingWeight = 10; // refer to AnalyticPlacer::build_equiations(), currently no timing
 }
 
+/*
+ * Main function of analytic placement
+ * Takes the random initial placement from place.cpp through g_vpr_ctx
+ * Repeat the following until stopping criteria is met:
+ * 	* Formulate and solve equations in x, y directions for 1 type of logial block
+ * 	* Instantiate CutSpreader to spread and strict_legalize
+ *
+ * The final legal placement is passed back to annealer in g_vpr_ctx.mutable_placement()
+ */
 void AnalyticPlacer::ap_place() {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     vtr::ScopedStartFinishTimer timer("Analytic Placement");
 
-    init();
+    init();	// transfer placement from g_vpr_ctx to AnalyticPlacer data members
     build_legal_locations();
     wirelen_t hpwl = total_hpwl();
     VTR_LOG("Creating analytic placement for %d cells, random placement hpwl = %d.\n",
             int(clb_nlist.blocks().size()), int(hpwl));
 
-    std::vector<t_logical_block_type_ptr> heap_runs;
-    std::unordered_set<t_logical_block_type_ptr> all_blktypes;
+    // the order in which different logical block types are placed
+    // going through ap_runs once completes 1 iteration of AP
+    std::vector<t_logical_block_type_ptr> ap_runs;
+    std::unordered_set<t_logical_block_type_ptr> all_blktypes; // set of all logical block types
 
+    // setup ap_runs
     for (auto blk : place_blks) {
         if (!all_blktypes.count(clb_nlist.block_type(blk))) {
-            heap_runs.push_back(clb_nlist.block_type(blk));
+            ap_runs.push_back(clb_nlist.block_type(blk));
             all_blktypes.insert(clb_nlist.block_type(blk));
         }
     }
 
-    for (int i = 0; i < 1; i++) {
-        for (auto run : heap_runs) {
+    // setup and solve matrix multiple times for all logic block types
+    // this helps eliminating randomness from initial placement, providing a good starting point for main AP loop
+    for (int i = 0; i < 1; i++) { // can tune number of iterations
+        for (auto run : ap_runs) {
             setup_solve_blks(run);
             build_solve_direction(false, -1, 5); // can tune build_solve_iter
             build_solve_direction(true, -1, 5);
@@ -149,31 +164,37 @@ void AnalyticPlacer::ap_place() {
         }
     }
 
-    wirelen_t solved_hpwl = 0, spread_hpwl = 0, legal_hpwl = 0, best_hpwl = std::numeric_limits<wirelen_t>::max();
     int iter = 0, stalled = 0;
+    // variables for stats
+    wirelen_t solved_hpwl = 0, spread_hpwl = 0, legal_hpwl = 0, best_hpwl = std::numeric_limits<wirelen_t>::max();
     float iter_start, iter_t, run_start, run_t, solve_t, spread_start, spread_t, legal_start, legal_t;
 
     print_AP_status_header();
 
     // main loop for AP
-    while (stalled < 15) { // stopping criteria
+    while (stalled < 15) { // stopping criteria: stop after 15 iterations of no improvement
+    // TODO: investigate better stopping criteria
         iter_start = timer.elapsed_sec();
 
-        for (auto run : heap_runs) {
+        for (auto run : ap_runs) {
             run_start = timer.elapsed_sec();
 
             setup_solve_blks(run);
             if (solve_blks.empty()) continue;
             build_solve_direction(false, (iter == 0) ? -1 : iter, 5);
-            build_solve_direction(true, (iter == 0) ? -1 : iter, 5);
-            update_macros();
+            build_solve_direction(true, (iter == 0) ? -1 : iter, 5);  // build and solve matrix equation for both x, y
+            update_macros();	// update macro member locations, since only macro head is solved
             solve_t = timer.elapsed_sec() - run_start;
 
             solved_hpwl = total_hpwl();
 
             spread_start = timer.elapsed_sec();
-            CutSpreader spreader{this, run};
+            CutSpreader spreader{this, run}; // Legalizer
             if (strcmp(run->name, "io") != 0) {
+            /* skip cut-spreading for IO blocks; they tend to cluster on 1 edge of the FPGA due to how cut-spreader works
+             * in HeAP, cut-spreading is invoked only on LUT, DSP, RAM etc.
+             * here, greedy legalization by spreader.strict_legalize() should be sufficient for IOs
+             */
                 spreader.cutSpread();
                 update_macros();
                 spread_hpwl = total_hpwl();
@@ -184,7 +205,7 @@ void AnalyticPlacer::ap_place() {
             }
 
             legal_start = timer.elapsed_sec();
-            spreader.strict_legalize();
+            spreader.strict_legalize();	// greedy, strict legalization
             update_macros();
             legal_t = timer.elapsed_sec() - legal_start;
             legal_hpwl = total_hpwl();
@@ -202,6 +223,8 @@ void AnalyticPlacer::ap_place() {
         } else {
             ++stalled;
         }
+
+        // update legal locations for all blocks for pseudo-connections in next iteration
         for (auto& bl : blk_locs) {
             bl.second.legal_loc = bl.second.loc;
         }
@@ -212,62 +235,8 @@ void AnalyticPlacer::ap_place() {
     free_placement_macros_structs();
 }
 
-/*
- * Prints the location of each block, and a simple drawing of FPGA fabric, showing num of blocks on each tile
- * Very useful for debugging
- * Usage:
- *   std::string filename = vtr::string_fmt("%s.post_AP.place", clb_nlist.netlist_name().substr(0, clb_nlist.netlist_name().size()-4).c_str());
- *   print_place(filename.c_str());
- */
-void AnalyticPlacer::print_place(const char* place_file) {
-    const DeviceContext& device_ctx = g_vpr_ctx.device();
-    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    PlacementContext& place_ctx = g_vpr_ctx.mutable_placement();
-
-    FILE* fp;
-
-    fp = fopen(place_file, "w");
-
-    fprintf(fp, "Netlist_File: %s Netlist_ID: %s\n",
-            clb_nlist.netlist_name().c_str(),
-            clb_nlist.netlist_id().c_str());
-    fprintf(fp, "Array size: %zu x %zu logic blocks\n\n", device_ctx.grid.width(), device_ctx.grid.height());
-    fprintf(fp, "#block name\t\tlogic block type\tpb_type\tpb_name\t\tx\ty\tsubblk\tblock number\tis_fixed\n");
-    fprintf(fp, "#----------\t\t----------------\t-------\t-------\t\t--\t--\t------\t------------\t---------\n");
-
-    if (!place_ctx.block_locs.empty()) { //Only if placement exists
-        for (auto blk_id : clb_nlist.blocks()) {
-            fprintf(fp, "%s\t", clb_nlist.block_name(blk_id).c_str());
-            if (strlen(clb_nlist.block_name(blk_id).c_str()) >= 14)
-                ;
-            else if (strlen(clb_nlist.block_name(blk_id).c_str()) < 7)
-                fprintf(fp, "\t\t");
-            else
-                fprintf(fp, "\t");
-
-            fprintf(fp, "%s\t\t\t", clb_nlist.block_type(blk_id)->name);
-            fprintf(fp, "%s\t\t", clb_nlist.block_type(blk_id)->pb_type->name);
-
-            fprintf(fp, "%s\t", clb_nlist.block_pb(blk_id)->name);
-            if (strlen(clb_nlist.block_pb(blk_id)->name) < 7)
-                fprintf(fp, "\t\t");
-            else if (strlen(clb_nlist.block_pb(blk_id)->name) >= 14)
-                ;
-            else
-                fprintf(fp, "\t");
-            // fprintf(fp, "%s\t\t", cluster_ctx.clb_nlist.block_type(blk_id)->)
-            fprintf(fp, "%d\t%d\t%d", blk_locs[blk_id].loc.x, blk_locs[blk_id].loc.y, blk_locs[blk_id].loc.sub_tile);
-            fprintf(fp, "\t#%zu", size_t(blk_id));
-            fprintf(fp, "\t\t%d\n", place_ctx.block_locs[blk_id].is_fixed);
-        }
-        fprintf(fp, "\ntotal_HPWL: %ld\n", total_hpwl());
-        fprintf(fp, "overlap: %f\n", find_overlap());
-        fprintf(fp, "%s", print_overlap().c_str());
-    }
-    fclose(fp);
-}
-
-// build num_legal_pos, legal_pos like initial_placement.cpp
+// build legal_pos similar to initial_placement.cpp
+// legal_pos provides fast lookup of all compatible sub_tiles by tile_type, sub_tile_type.
 void AnalyticPlacer::build_legal_locations() {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     PlacementContext& place_ctx = g_vpr_ctx.mutable_placement();
@@ -275,10 +244,10 @@ void AnalyticPlacer::build_legal_locations() {
     int max_y = device_ctx.grid.height();
 
     std::vector<std::vector<int>> index; // helps in building legal_pos
-    int num_tile_type = device_ctx.physical_tile_types.size();
+    int num_tile_type = device_ctx.physical_tile_types.size(); // number of types of physical tiles
 
     legal_pos.resize(num_tile_type);
-    num_legal_pos.resize(num_tile_type);
+    num_legal_pos.resize(num_tile_type); // used to resize legal_pos
     index.resize(num_tile_type);
 
     for (const auto& tile : device_ctx.physical_tile_types) {
@@ -286,6 +255,7 @@ void AnalyticPlacer::build_legal_locations() {
         index[tile.index].resize(tile.sub_tiles.size());
     }
 
+    // go through every tile location to find number of legal positions for each sub_tile
     for (int i = 0; i < max_x; i++) {
         for (int j = 0; j < max_y; j++) {
             auto tile = device_ctx.grid[i][j].type;
@@ -294,10 +264,10 @@ void AnalyticPlacer::build_legal_locations() {
                 auto capacity = sub_tile.capacity;
 
                 for (int k = 0; k < capacity.total(); k++) {
-                    if (place_ctx.grid_blocks[i][j].blocks[k + capacity.low] != INVALID_BLOCK_ID) {
-                        if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
-                            num_legal_pos[tile->index][sub_tile.index]++;
-                        }
+                    if (place_ctx.grid_blocks[i][j].blocks[k + capacity.low] != INVALID_BLOCK_ID
+                        	&& device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
+                    		// for larger tiles occupying more than one grid location, only the base (offset == 0) is considered
+                    	num_legal_pos[tile->index][sub_tile.index]++;
                     }
                 }
             }
@@ -312,6 +282,7 @@ void AnalyticPlacer::build_legal_locations() {
         }
     }
 
+    // go through all tiles again to record all legal sub_tile locations in legal_pos
     for (size_t i = 0; i < device_ctx.grid.width(); i++) {
         for (size_t j = 0; j < device_ctx.grid.height(); j++) {
             auto tile = device_ctx.grid[i][j].type;
@@ -320,11 +291,9 @@ void AnalyticPlacer::build_legal_locations() {
                 auto capacity = sub_tile.capacity;
 
                 for (int k = 0; k < capacity.total(); k++) {
-                    if (place_ctx.grid_blocks[i][j].blocks[k + capacity.low] == INVALID_BLOCK_ID) {
-                        continue;
-                    }
-
-                    if (device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
+                    if (place_ctx.grid_blocks[i][j].blocks[k + capacity.low] != INVALID_BLOCK_ID
+                    		&& device_ctx.grid[i][j].width_offset == 0 && device_ctx.grid[i][j].height_offset == 0) {
+                		// for larger tiles occupying more than one grid location, only the base (offset == 0) is considered
                         int itype = tile->index;
                         int isub_tile = sub_tile.index;
                         legal_pos[itype][isub_tile][index[itype][isub_tile]].x = i;
@@ -338,17 +307,18 @@ void AnalyticPlacer::build_legal_locations() {
     }
 }
 
-// build blk_locs based on initial placement;
-// build place_blks;
+// transfer initial placement from g_vpr_ctx to AnalyticPlacer data members, such as: blk_locs, place_blks
+// initialize other data members
 void AnalyticPlacer::init() {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     PlacementContext& place_ctx = g_vpr_ctx.mutable_placement();
 
     for (auto blk_id : clb_nlist.blocks()) {
-        blk_locs[blk_id].loc = place_ctx.block_locs[blk_id].loc;
-        blk_row_num[blk_id] = dont_solve;
+        blk_locs[blk_id].loc = place_ctx.block_locs[blk_id].loc; // transfer of initial placement
+        row_num[blk_id] = dont_solve;
     }
 
+    // only blocks with connections are considered
     auto has_connections = [&](ClusterBlockId blk_id) {
         for (auto pin : clb_nlist.block_pins(blk_id)) {
             int logical_pin_index = clb_nlist.pin_logical_index(pin);
@@ -369,42 +339,24 @@ void AnalyticPlacer::init() {
 // get hpwl of a net, taken from place.cpp get_bb_from_scratch()
 wirelen_t AnalyticPlacer::get_net_hpwl(ClusterNetId net_id) {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-
-    int xmax, ymax, xmin, ymin, x, y;
+    int max_x = g_vpr_ctx.device().grid.width();
+    int max_y = g_vpr_ctx.device().grid.height();
 
     ClusterBlockId bnum = clb_nlist.net_driver_block(net_id);
-    x = blk_locs[bnum].loc.x;
-    y = blk_locs[bnum].loc.y;
+    int x = std::max<int>(std::min<int>(blk_locs[bnum].loc.x, max_x-1), 1);
+    int y = std::max<int>(std::min<int>(blk_locs[bnum].loc.y, max_y-1), 1);
 
-    xmin = x;
-    ymin = y;
-    xmax = x;
-    ymax = y;
+    vtr::Rect<int> bb = {x, y, x, y};
 
     for (auto pin_id : clb_nlist.net_sinks(net_id)) {
         bnum = clb_nlist.pin_block(pin_id);
-        x = blk_locs[bnum].loc.x;
-        y = blk_locs[bnum].loc.y;
+        x = std::max<int>(std::min<int>(blk_locs[bnum].loc.x, max_x-1), 1);
+        y = std::max<int>(std::min<int>(blk_locs[bnum].loc.y, max_y-1), 1);
 
-        if (x < xmin) {
-            xmin = x;
-        } else if (x > xmax) {
-            xmax = x;
-        }
-
-        if (y < ymin) {
-            ymin = y;
-        } else if (y > ymax) {
-            ymax = y;
-        }
+        bb.expand_bounding_box({x, y, x, y});
     }
 
-    xmin = std::max<int>(xmin, 1);
-    ymin = std::max<int>(ymin, 1);
-    xmax = std::max<int>(xmax, 1);
-    ymax = std::max<int>(ymax, 1);
-
-    return (ymax - ymin) + (xmax - xmin);
+    return (bb.ymax() - bb.ymin()) + (bb.xmax() - bb.xmin());
 }
 
 wirelen_t AnalyticPlacer::total_hpwl() {
@@ -426,21 +378,21 @@ int AnalyticPlacer::setup_solve_blks(t_logical_block_type_ptr blkTypes) {
 
     int row = 0;
     solve_blks.clear();
-    // clear udata of all cells
-    for (auto& blk : blk_row_num) {
+    // clear row_num of all cells
+    for (auto& blk : row_num) {
         blk.second = dont_solve;
     }
-    // update cells to be placed, excluding cell children
+    // update blks to be placed, excluding macro members (macro head included)
     for (auto blk_id : place_blks) {
-        if (blkTypes != (clb_nlist.block_type(blk_id)))
-            continue;
-        blk_row_num[blk_id] = row++;
-        solve_blks.push_back(blk_id);
+        if (blkTypes == (clb_nlist.block_type(blk_id))){
+        	row_num[blk_id] = row++;
+        	solve_blks.push_back(blk_id);
+        }
     }
-    // update udata of children
+    // update row_num of macro members
     for (auto& macro : place_ctx.pl_macros)
         for (auto& member : macro.members)
-            blk_row_num[member.blk_index] = blk_row_num[macro_head(member.blk_index)];
+            row_num[member.blk_index] = row_num[macro_head(member.blk_index)];
 
     return row;
 }
@@ -455,7 +407,11 @@ void AnalyticPlacer::update_macros() {
     }
 }
 
-// Build and solve in one direction
+/* Build and solve in one direction
+ * @param yaxis: 			indicates directions in x, y
+ * @param iter:				iterations, used to increased pseudo-connection strength
+ * @param build_solve_iter: iterations of solving, more iterations gives better results
+ */
 void AnalyticPlacer::build_solve_direction(bool yaxis, int iter, int build_solve_iter) {
     for (int i = 0; i < build_solve_iter; i++) {
         EquationSystem<double> esx(solve_blks.size(), solve_blks.size());
@@ -475,13 +431,20 @@ void AnalyticPlacer::build_equations(EquationSystem<double>& es, bool yaxis, int
     auto legal_p = [&](ClusterBlockId blk_id) { return yaxis ? blk_locs.at(blk_id).legal_loc.y : blk_locs.at(blk_id).legal_loc.x; };
     es.reset();
 
+    /*
+     * Bound2bound model is used in HeAP:
+     * For each net, the left-most and right-most (down, up in y direction) are bound blocks
+     * These 2 blocks form connections with each other and all the other blocks (internal blocks)
+     * These connections are used to formulate the matrix equation
+     */
     for (auto net_id : clb_nlist.nets()) {
-        if (clb_nlist.net_is_ignored(net_id)) continue;
-        VTR_ASSERT(clb_nlist.net_driver(net_id) != ClusterPinId::INVALID());
-        VTR_ASSERT(!clb_nlist.net_sinks(net_id).empty());
-        if (clb_nlist.net_driver(net_id) == ClusterPinId::INVALID()) continue;
-        if (clb_nlist.net_sinks(net_id).empty()) continue;
+        if (clb_nlist.net_is_ignored(net_id) || clb_nlist.net_driver(net_id) == ClusterPinId::INVALID()
+        || clb_nlist.net_sinks(net_id).empty()) {
+        // ensure net is not ignored (ex. clk), has valid driver, has at least 1 sink
+        	continue;
+        }
 
+        // find bound block locations
         ClusterPinId lbpin = ClusterPinId::INVALID(), ubpin = ClusterPinId::INVALID();
         int lbpos = std::numeric_limits<int>::max(), ubpos = std::numeric_limits<int>::min();
         for (auto pin_id : clb_nlist.net_pins(net_id)) {
@@ -498,18 +461,27 @@ void AnalyticPlacer::build_equations(EquationSystem<double>& es, bool yaxis, int
         VTR_ASSERT(lbpin != ClusterPinId::INVALID());
         VTR_ASSERT(ubpin != ClusterPinId::INVALID());
 
+        /*
+         * lambda function to stamp weight for 1 connection on matrix or rhs vector
+         * if var is movable objects, weight is added on matrix
+         * if var is immovable objects, weight*-var_pos is added on rhs
+         * if var is a macro member (not macro head), weight*-offset_from_macro_head is added on rhs
+         *
+         * for detailed derivation and examples, please read HeAP paper
+         */
         auto stamp_equation = [&](ClusterPinId var, ClusterPinId eqn, double weight) {
-            int eqn_row = blk_row_num[clb_nlist.pin_block(eqn)];
-            if (eqn_row == dont_solve) return;
+            int eqn_row = row_num[clb_nlist.pin_block(eqn)];
+            if (eqn_row == dont_solve)
+            	return;
             ClusterBlockId var_blk = clb_nlist.pin_block(var);
             int v_pos = blk_p(var_blk);
-            int var_row = blk_row_num[var_blk];
-            if (var_row != dont_solve) { // var is movable
+            int var_row = row_num[var_blk];
+            if (var_row != dont_solve) { // var is movable, stamp weight on matrix
                 es.add_coeff(eqn_row, var_row, weight);
-            } else { // var is not movable
+            } else { // var is not movable, stamp weight on rhs vector
                 es.add_rhs(eqn_row, -v_pos * weight);
             }
-            if (imacro(var_blk) != -1) { // var is part of a macro
+            if (imacro(var_blk) != -1) { // var is part of a macro, stamp on rhs vector
                 auto& members = place_ctx.pl_macros[imacro(var_blk)].members;
                 for (auto& member : members) {
                     if (member.blk_index == var_blk)
@@ -518,6 +490,7 @@ void AnalyticPlacer::build_equations(EquationSystem<double>& es, bool yaxis, int
             }
         };
 
+        // setup matrix equation for all connections in the net, following bound2bound model
         int pin_n = clb_nlist.net_pins(net_id).size();
         for (int ipin = 0; ipin < pin_n; ipin++) {
             int this_pos = blk_p(clb_nlist.net_pin_block(net_id, ipin));
@@ -538,17 +511,20 @@ void AnalyticPlacer::build_equations(EquationSystem<double>& es, bool yaxis, int
                 stamp_equation(other, other, weight);
                 stamp_equation(other, pin_id, -weight);
             };
+            // bound2bound model
             process_arc(lbpin);
             process_arc(ubpin);
         }
     }
+
+    // add psudo-connections after first iteration
     if (iter != -1) {
         for (size_t row = 0; row < solve_blks.size(); row++) {
             int l_pos = legal_p(solve_blks.at(row));
             int b_pos = blk_p(solve_blks.at(row));
 
+            // weight increases with iteration --> psudo-connection strength increases
             double weight = tmpCfg.alpha * iter / std::max<double>(1, std::abs(l_pos - b_pos));
-            // Add psudo-connections for legalization
             es.add_coeff(row, row, weight);
             es.add_rhs(row, weight * l_pos);
         }
@@ -556,6 +532,7 @@ void AnalyticPlacer::build_equations(EquationSystem<double>& es, bool yaxis, int
 }
 
 // Solve the system of equations
+// Solved solution is moved to loc, rawx, rawy in blk_locs for each block
 void AnalyticPlacer::solve_equations(EquationSystem<double>& es, bool yaxis) {
     int max_x = g_vpr_ctx.device().grid.width();
     int max_y = g_vpr_ctx.device().grid.height();
@@ -575,7 +552,8 @@ void AnalyticPlacer::solve_equations(EquationSystem<double>& es, bool yaxis) {
         }
 }
 
-// Debug use, finds # of blocks on 1 tile for all tiles
+// Debug use, finds # of blocks on each tile location
+// @return:	total # of logic blocks / # of occupied tiles (>1 means there's overlapping)
 float AnalyticPlacer::find_overlap() {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     int max_x = g_vpr_ctx.device().grid.width();
@@ -592,13 +570,12 @@ float AnalyticPlacer::find_overlap() {
         overlap.at(blk_locs[blk].loc.y).at(blk_locs[blk].loc.x) += 1;
     }
 
-    std::cout << "overlap:" << std::endl;
     for (auto& row : overlap) {
         for (int count : row) {
-            if (count > 0) OL++;
+            if (count > 0)
+            	OL++;
         }
     }
-
     return ((float)clb_nlist.blocks().size()) / (float)OL;
 }
 
@@ -635,6 +612,68 @@ std::string AnalyticPlacer::print_overlap() {
     out.append(4, ' ');
     out.append(5 * max_x + 2, '-');
     return out;
+}
+
+/*
+ * Prints the location of each block, and a simple drawing of FPGA fabric, showing num of blocks on each tile
+ * Very useful for debugging
+ * Usage:
+ *   std::string filename = vtr::string_fmt("%s.post_AP.place", clb_nlist.netlist_name().substr(0, clb_nlist.netlist_name().size()-4).c_str());
+ *   print_place(filename.c_str());
+ */
+void AnalyticPlacer::print_place(const char* place_file) {
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    PlacementContext& place_ctx = g_vpr_ctx.mutable_placement();
+
+    FILE* fp;
+
+    fp = fopen(place_file, "w");
+
+    fprintf(fp, "Netlist_File: %s Netlist_ID: %s\n",
+            clb_nlist.netlist_name().c_str(),
+            clb_nlist.netlist_id().c_str());
+    fprintf(fp, "Array size: %zu x %zu logic blocks\n\n", device_ctx.grid.width(), device_ctx.grid.height());
+    fprintf(fp, "%-25s %-18s %-12s %-25s %-5s %-5s %-10s %-14s %-8s\n",
+    		"block name",
+			"logic block type",
+			"pb_type",
+			"pb_name",
+			"x",
+			"y",
+			"subblk",
+			"block number",
+			"is_fixed");
+    fprintf(fp, "%-25s %-18s %-12s %-25s %-5s %-5s %-10s %-14s %-8s\n",
+    		"----------",
+			"----------------",
+			"-------",
+			"-------",
+			"--",
+			"--",
+			"------",
+			"------------",
+			"--------");
+
+    if (!place_ctx.block_locs.empty()) { //Only if placement exists
+        for (auto blk_id : clb_nlist.blocks()) {
+        	fprintf(fp, "%-25s %-18s %-12s %-25s %-5d %-5d %-10d #%-13zu %-8s\n",
+        			clb_nlist.block_name(blk_id).c_str(),
+					clb_nlist.block_type(blk_id)->name,
+					clb_nlist.block_type(blk_id)->pb_type->name,
+					clb_nlist.block_pb(blk_id)->name,
+					blk_locs[blk_id].loc.x,
+					blk_locs[blk_id].loc.y,
+					blk_locs[blk_id].loc.sub_tile,
+					size_t(blk_id),
+					(place_ctx.block_locs[blk_id].is_fixed ? "true" : "false"));
+        }
+        fprintf(fp, "\ntotal_HPWL: %ld\n", total_hpwl());
+        fprintf(fp, "overlap: %f\n", find_overlap());
+        fprintf(fp, "Occupancy diagram: \n");
+        fprintf(fp, "%s", print_overlap().c_str());
+    }
+    fclose(fp);
 }
 
 void AnalyticPlacer::print_AP_status_header() {
@@ -702,4 +741,4 @@ void AnalyticPlacer::print_iter_stats(const int iter,
     VTR_LOG("                                    |\n");
 }
 
-#endif /* ENABLE_ANALYTIC_PLACE */
+//#endif /* ENABLE_ANALYTIC_PLACE */

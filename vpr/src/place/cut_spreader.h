@@ -1,7 +1,7 @@
 #ifndef VPR_SRC_PLACE_LEGALIZER_H_
 #define VPR_SRC_PLACE_LEGALIZER_H_
 
-#ifdef ENABLE_ANALYTIC_PLACE
+// #ifdef ENABLE_ANALYTIC_PLACE
 
 /**
  * @file
@@ -160,15 +160,10 @@ class CutSpreader {
     // block type to legalize
     t_logical_block_type_ptr blk_type;
 
-    // struct that specifies the region occupied by a macro
-    struct MacroExtent {
-        int x0, y0, x1, y1;
-    };
-
     // struct describing regions on FPGA to cut_spread
     struct SpreaderRegion {
         int id;              // index of regions in regions vector
-        int x0, y0, x1, y1;  // extent of the region
+        vtr::Rect<int> bb; 	 // bounding box of the region
         int n_blks, n_tiles; // number of blocks and compatible tiles
         bool overused(float beta) const {
             // determines whether region is overutilized:
@@ -179,13 +174,14 @@ class CutSpreader {
     };
 
     // Utilization of each tile, indexed by x, y
-    std::vector<std::vector<int>> occupancy;
+    vtr::Matrix<int> occupancy;
 
     // Region ID of each tile, indexed by x, y. -1 if not covered by any region
-    std::vector<std::vector<int>> groups;
+    // Used to check ownership of a grid position by region.
+    vtr::Matrix<int> groups;
 
-    // Extent of macro at x, y location. If blk is not in any macros, MacroExtent only covers a single locations
-    std::vector<std::vector<MacroExtent>> macros;
+    // Extent of macro at x, y location. If blk is not in any macros, it only covers a single locations
+    vtr::Matrix<vtr::Rect<int>> macros;
 
     // List of logic blocks of blk_type at x, y location, indexed by x, y
     std::vector<std::vector<std::vector<ClusterBlockId>>> blks_at_location;
@@ -200,8 +196,8 @@ class CutSpreader {
     // recursively cur_spreading. Each entry is the region's ID, which is also the index into the regions vector
     std::unordered_set<int> merged_regions;
 
-    // Lookup of macro's extent by block ID. If block is a single block, MacroExtent contains only 1 tile location
-    std::map<ClusterBlockId, MacroExtent> blk_extents;
+    // Lookup of macro's extent by block ID. If block is a single block, it contains only 1 tile location
+    std::map<ClusterBlockId, vtr::Rect<int>> blk_extents;
 
     // Setup CutSpreader data structures using information from AnalyticPlacer
     // including blks_at_location, macros, groups, etc.
@@ -222,10 +218,10 @@ class CutSpreader {
     void merge_regions(SpreaderRegion& merged, SpreaderRegion& mergee);
 
     /*
-     * Grow region r to include a rectangular region (x0, y0, x1, y1)
+     * Grow region r to include a rectangular region
      * Pass init = true if first time calling for a newly created region
      */
-    void grow_region(SpreaderRegion& r, int x0, int y0, int x1, int y1, bool init = false);
+    void grow_region(SpreaderRegion& r, vtr::Rect<int> rect_to_include, bool init = false);
 
     /*
      * Expand all utilized regions until they satisfy n_tiles * beta >= n_blocks
@@ -239,6 +235,8 @@ class CutSpreader {
      * non-overutilized regions.
      */
     void find_overused_regions();
+
+    std::pair<int, int> trim_region(SpreaderRegion&r, bool dir);
 
     /*
      * Recursive cut-based spreading in HeAP paper
@@ -254,6 +252,6 @@ class CutSpreader {
     std::pair<int, int> cut_region(SpreaderRegion& r, bool dir);
 };
 
-#endif /* ENABLE_ANALYTIC_PLACE */
+// #endif /* ENABLE_ANALYTIC_PLACE */
 
 #endif /* VPR_SRC_PLACE_LEGALIZER_H_ */
