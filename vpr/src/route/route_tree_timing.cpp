@@ -54,10 +54,9 @@ static void free_linked_rt_edge(t_linked_rt_edge* rt_edge);
 
 static t_rt_node* add_subtree_to_route_tree(t_heap* hptr,
                                             int target_net_pin_index,
-                                            t_rt_node** sink_rt_node_ptr,
-                                            PathManager& rcv_path_manager);
+                                            t_rt_node** sink_rt_node_ptr);
 
-static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bool reached_by_non_configurable_edge, std::unordered_set<int>& visited, PathManager& rcv_path_manager);
+static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bool reached_by_non_configurable_edge, std::unordered_set<int>& visited);
 
 static t_rt_node* update_unbuffered_ancestors_C_downstream(t_rt_node* start_of_new_subtree_rt_node);
 
@@ -211,7 +210,7 @@ t_rt_node* init_route_tree_to_source(ClusterNetId inet) {
  * is the heap pointer of the SINK that was reached, and target_net_pin_index
  * is the net pin index corresponding to the SINK that was reached. This routine
  * returns a pointer to the rt_node of the SINK that it adds to the routing.        */
-t_rt_node* update_route_tree(t_heap* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup, PathManager& rcv_path_manager) {
+t_rt_node* update_route_tree(t_heap* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup) {
     t_rt_node *start_of_new_subtree_rt_node, *sink_rt_node;
     t_rt_node *unbuffered_subtree_rt_root, *subtree_parent_rt_node;
     float Tdel_start;
@@ -220,7 +219,7 @@ t_rt_node* update_route_tree(t_heap* hptr, int target_net_pin_index, SpatialRout
     auto& device_ctx = g_vpr_ctx.device();
 
     //Create a new subtree from the target in hptr to existing routing
-    start_of_new_subtree_rt_node = add_subtree_to_route_tree(hptr, target_net_pin_index, &sink_rt_node, rcv_path_manager);
+    start_of_new_subtree_rt_node = add_subtree_to_route_tree(hptr, target_net_pin_index, &sink_rt_node);
 
     //Propagate R_upstream down into the new subtree
     load_new_subtree_R_upstream(start_of_new_subtree_rt_node);
@@ -285,7 +284,7 @@ void add_route_tree_to_rr_node_lookup(t_rt_node* node) {
  * to the SINK indicated by hptr. Returns the first (most upstream) new rt_node,
  * and (via a pointer) the rt_node of the new SINK. Traverses up from SINK  */
 static t_rt_node* 
-add_subtree_to_route_tree(t_heap* hptr, int target_net_pin_index, t_rt_node** sink_rt_node_ptr, PathManager& rcv_path_manager) {
+add_subtree_to_route_tree(t_heap* hptr, int target_net_pin_index, t_rt_node** sink_rt_node_ptr) {
     t_rt_node *rt_node, *downstream_rt_node, *sink_rt_node;
     t_linked_rt_edge* linked_rt_edge;
 
@@ -329,7 +328,6 @@ add_subtree_to_route_tree(t_heap* hptr, int target_net_pin_index, t_rt_node** si
     while (rr_node_to_rt_node[inode] == nullptr) { //Not connected to existing routing
         main_branch_visited.insert(inode);
         all_visited.insert(inode);
-        rcv_path_manager.mark_node_visited(RRNodeId(inode));
 
         linked_rt_edge = alloc_linked_rt_edge();
         linked_rt_edge->child = downstream_rt_node;
@@ -381,19 +379,18 @@ add_subtree_to_route_tree(t_heap* hptr, int target_net_pin_index, t_rt_node** si
     //non-configurably connected nodes
     //Sink is not included, so no need to pass in the node's ipin value.
     for (int rr_node : main_branch_visited) {
-        add_non_configurable_to_route_tree(rr_node, false, all_visited, rcv_path_manager);
+        add_non_configurable_to_route_tree(rr_node, false, all_visited);
     }
 
     *sink_rt_node_ptr = sink_rt_node;
     return (downstream_rt_node);
 }
 
-static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bool reached_by_non_configurable_edge, std::unordered_set<int>& visited, PathManager& rcv_path_manager) {
+static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bool reached_by_non_configurable_edge, std::unordered_set<int>& visited) {
     t_rt_node* rt_node = nullptr;
 
     if (!visited.count(rr_node) || !reached_by_non_configurable_edge) {
         visited.insert(rr_node);
-        rcv_path_manager.mark_node_visited(RRNodeId(rr_node));
 
         auto& device_ctx = g_vpr_ctx.device();
 
@@ -427,7 +424,7 @@ static t_rt_node* add_non_configurable_to_route_tree(const int rr_node, const bo
             int to_rr_node = device_ctx.rr_nodes[rr_node].edge_sink_node(iedge);
 
             //Recurse
-            t_rt_node* child_rt_node = add_non_configurable_to_route_tree(to_rr_node, true, visited, rcv_path_manager);
+            t_rt_node* child_rt_node = add_non_configurable_to_route_tree(to_rr_node, true, visited);
 
             if (!child_rt_node) continue;
 

@@ -30,8 +30,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         const t_rr_graph_storage& rr_nodes,
         const std::vector<t_rr_rc_data>& rr_rc_data,
         const std::vector<t_rr_switch_inf>& rr_switch_inf,
-        std::vector<t_rr_node_route_inf>& rr_node_route_inf,
-        PathManager path_manager)
+        std::vector<t_rr_node_route_inf>& rr_node_route_inf)
         : grid_(grid)
         , router_lookahead_(router_lookahead)
         , rr_nodes_(rr_nodes.view())
@@ -39,8 +38,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
         , rr_switch_inf_(rr_switch_inf.data(), rr_switch_inf.size())
         , rr_node_route_inf_(rr_node_route_inf.data(), rr_node_route_inf.size())
         , router_stats_(nullptr)
-        , router_debug_(false)
-        , rcv_path_manager(path_manager) {
+        , router_debug_(false) {
         heap_.init_heap(grid);
         heap_.set_prune_limit(rr_nodes_.size(), kHeapPruneFactor * rr_nodes_.size());
     }
@@ -101,6 +99,17 @@ class ConnectionRouter : public ConnectionRouterInterface {
     void set_router_debug(bool router_debug) final {
         router_debug_ = router_debug;
     }
+
+    // Empty the route tree set used for RCV node detection
+    // Will return if RCV is disabled
+    // Called after each net is finished routing to flush the set
+    void empty_rcv_route_tree_set() final;
+
+    // Enable or disable RCV in connection router
+    // Enabling this will utilize extra path structures, as well as the RCV cost function
+    // 
+    // Ensure route budgets have been calculated before enabling this
+    void set_rcv_enabled(bool enable) final;
 
   private:
     // Mark that data associated with rr_node "inode" has been modified, and
@@ -245,7 +254,6 @@ class ConnectionRouter : public ConnectionRouterInterface {
     HeapImplementation heap_;
     bool router_debug_;
 
-    public:
     // The path manager for RCV, keeps track of the route tree as a set, also manages the allocation of the heap types
     PathManager rcv_path_manager;
 };

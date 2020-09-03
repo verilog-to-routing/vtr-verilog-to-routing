@@ -22,6 +22,7 @@ std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_f
     t_heap* cheapest = timing_driven_route_connection_common_setup(rt_root, sink_node, cost_params, bounding_box);
 
     if (cheapest != nullptr) {
+        rcv_path_manager.update_route_tree_set(cheapest->path_data);
         update_cheapest(cheapest);
         t_heap out = *cheapest;
         heap_.free(cheapest);
@@ -175,6 +176,7 @@ std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_f
         return std::make_pair(false, t_heap());
     }
 
+    rcv_path_manager.update_route_tree_set(cheapest->path_data);
     update_cheapest(cheapest);
 
     t_heap out = *cheapest;
@@ -641,6 +643,18 @@ float ConnectionRouter<Heap>::compute_node_cost_using_rcv(const t_conn_cost_para
     return total_cost;
 }
 
+// Empty the route tree set node, use this after each net is routed
+template<typename Heap>
+void ConnectionRouter<Heap>::empty_rcv_route_tree_set() {
+    rcv_path_manager.empty_route_tree_nodes();
+}
+
+// Enable or disable RCV
+template<typename Heap>
+void ConnectionRouter<Heap>::set_rcv_enabled(bool enable) {
+    rcv_path_manager.set_enabled(enable);
+}
+
 //Calculates the cost of reaching to_node
 template<typename Heap>
 void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(t_heap* to,
@@ -960,8 +974,7 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(
                 rr_nodes,
                 rr_rc_data,
                 rr_switch_inf,
-                rr_node_route_inf,
-                PathManager(/*run_rcv=*/ false));
+                rr_node_route_inf);
         case e_heap_type::BUCKET_HEAP_APPROXIMATION:
             return std::make_unique<ConnectionRouter<Bucket>>(
                 grid,
@@ -969,8 +982,7 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(
                 rr_nodes,
                 rr_rc_data,
                 rr_switch_inf,
-                rr_node_route_inf,
-                PathManager(/*run_rcv=*/ false));
+                rr_node_route_inf);
         default:
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unknown heap_type %d",
                             heap_type);

@@ -336,8 +336,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
         device_ctx.rr_nodes,
         device_ctx.rr_rc_data,
         device_ctx.rr_switch_inf,
-        route_ctx.rr_node_route_inf,
-        PathManager(/*run_rcv=*/ false));
+        route_ctx.rr_node_route_inf);
 
     // Make sure template type ConnectionRouter is a ConnectionRouterInterface.
     static_assert(std::is_base_of<ConnectionRouterInterface, ConnectionRouter>::value, "ConnectionRouter must implement the ConnectionRouterInterface");
@@ -703,7 +702,7 @@ bool try_timing_driven_route_tmpl(const t_router_opts& router_opts,
                 //     budgeting_inf.print_route_budget(std::string("route_budgets_") + std::to_string(itry) + ".txt", net_delay);
                 // }
 
-                if (router_opts.routing_budgets_algorithm == YOYO) router.rcv_path_manager.set_enabled(true);
+                if (router_opts.routing_budgets_algorithm == YOYO) router.set_rcv_enabled(true);
 
             } else {
                 bool stable_routing_configuration = true;
@@ -1148,7 +1147,7 @@ bool timing_driven_route_net(ConnectionRouter& router,
     VTR_LOGV_DEBUG(f_router_debug, "Routed Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
 
     free_route_tree(rt_root);
-    router.rcv_path_manager.empty_route_tree_nodes();
+    router.empty_rcv_route_tree_set();
     return (true);
 }
 
@@ -1216,7 +1215,7 @@ static bool timing_driven_pre_route_to_clock_root(
 
     t_trace* new_route_start_tptr = update_traceback(&cheapest, OPEN, net_id);
     VTR_ASSERT_DEBUG(validate_traceback(route_ctx.trace[net_id].head));
-    update_route_tree(&cheapest, OPEN, ((high_fanout) ? &spatial_rt_lookup : nullptr), router.rcv_path_manager);
+    update_route_tree(&cheapest, OPEN, ((high_fanout) ? &spatial_rt_lookup : nullptr));
     VTR_ASSERT_DEBUG(verify_route_tree(rt_root));
     VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
     VTR_ASSERT_DEBUG(!high_fanout || validate_route_tree_spatial_lookup(rt_root, spatial_rt_lookup));
@@ -1329,7 +1328,7 @@ static bool timing_driven_route_sink(
 
     VTR_ASSERT_DEBUG(validate_traceback(route_ctx.trace[net_id].head));
 
-    rt_node_of_sink[target_pin] = update_route_tree(&cheapest, target_pin, ((high_fanout) ? &spatial_rt_lookup : nullptr), router.rcv_path_manager);
+    rt_node_of_sink[target_pin] = update_route_tree(&cheapest, target_pin, ((high_fanout) ? &spatial_rt_lookup : nullptr));
     VTR_ASSERT_DEBUG(verify_route_tree(rt_root));
     VTR_ASSERT_DEBUG(verify_traceback_route_tree_equivalent(route_ctx.trace[net_id].head, rt_root));
     VTR_ASSERT_DEBUG(!high_fanout || validate_route_tree_spatial_lookup(rt_root, spatial_rt_lookup));

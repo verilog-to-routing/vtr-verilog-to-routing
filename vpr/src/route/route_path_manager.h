@@ -30,7 +30,7 @@ struct t_heap_path {
  * This class also manages the extra memory allocation required for the t_heap_path structure */
 class PathManager {
     public:
-    PathManager(bool init_rcv_structures);
+    PathManager();
     ~PathManager();
 
     // Checks if the target node exists in the route tree, or current backwards path variable
@@ -72,6 +72,9 @@ class PathManager {
 
     // Clear the route tree nodes set, before moving onto the next net
     void empty_route_tree_nodes();
+
+    // Update the route tree set using the last routing
+    void update_route_tree_set(t_heap_path* cheapest_path_struct);
 
     private:
 

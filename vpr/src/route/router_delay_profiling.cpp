@@ -19,8 +19,7 @@ RouterDelayProfiler::RouterDelayProfiler(
           g_vpr_ctx.device().rr_nodes,
           g_vpr_ctx.device().rr_rc_data,
           g_vpr_ctx.device().rr_switch_inf,
-          g_vpr_ctx.mutable_routing().rr_node_route_inf,
-          PathManager(/*run_rcv=*/ false)) {}
+          g_vpr_ctx.mutable_routing().rr_node_route_inf) {}
 
 bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const t_router_opts& router_opts, float* net_delay) {
     /* Returns true as long as found some way to hook up this net, even if that *
@@ -75,7 +74,7 @@ bool RouterDelayProfiler::calculate_delay(int source_node, int sink_node, const 
     if (found_path) {
         VTR_ASSERT(cheapest.index == sink_node);
 
-        t_rt_node* rt_node_of_sink = update_route_tree(&cheapest, OPEN, nullptr, router_.rcv_path_manager);
+        t_rt_node* rt_node_of_sink = update_route_tree(&cheapest, OPEN, nullptr);
 
         //find delay
         *net_delay = rt_node_of_sink->Tdel;
@@ -123,8 +122,7 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
         device_ctx.rr_nodes,
         device_ctx.rr_rc_data,
         device_ctx.rr_switch_inf,
-        routing_ctx.rr_node_route_inf,
-        PathManager(/*run_rcv=*/ false));
+        routing_ctx.rr_node_route_inf);
     RouterStats router_stats;
 
     std::vector<t_heap> shortest_paths = router.timing_driven_find_all_shortest_paths_from_route_tree(rt_root,
@@ -133,8 +131,6 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
                                                                                                       router_stats);
 
     free_route_tree(rt_root);
-
-    PathManager empty_manager(/*init_rcv_structs=*/false);
 
     VTR_ASSERT(shortest_paths.size() == device_ctx.rr_nodes.size());
     for (int sink_rr_node = 0; sink_rr_node < (int)device_ctx.rr_nodes.size(); ++sink_rr_node) {
@@ -147,7 +143,7 @@ std::vector<float> calculate_all_path_delays_from_rr_node(int src_rr_node, const
 
             //Build the routing tree to get the delay
             rt_root = setup_routing_resources_no_net(src_rr_node);
-            t_rt_node* rt_node_of_sink = update_route_tree(&shortest_paths[sink_rr_node], OPEN, nullptr, empty_manager);
+            t_rt_node* rt_node_of_sink = update_route_tree(&shortest_paths[sink_rr_node], OPEN, nullptr);
 
             VTR_ASSERT(rt_node_of_sink->inode == sink_rr_node);
 

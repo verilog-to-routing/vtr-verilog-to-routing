@@ -103,8 +103,7 @@ static void do_one_route(int source_node, int sink_node,
             device_ctx.rr_nodes,
             device_ctx.rr_rc_data,
             device_ctx.rr_switch_inf,
-            g_vpr_ctx.mutable_routing().rr_node_route_inf,
-            PathManager(/*run_rcv=*/false));
+            g_vpr_ctx.mutable_routing().rr_node_route_inf);
     enable_router_debug(router_opts, ClusterNetId(), sink_node, 1, &router);
     bool found_path;
     t_heap cheapest;
@@ -113,7 +112,7 @@ static void do_one_route(int source_node, int sink_node,
     if (found_path) {
         VTR_ASSERT(cheapest.index == sink_node);
 
-        t_rt_node* rt_node_of_sink = update_route_tree(&cheapest, OPEN, nullptr, router.rcv_path_manager);
+        t_rt_node* rt_node_of_sink = update_route_tree(&cheapest, OPEN, nullptr);
 
         //find delay
         float net_delay = rt_node_of_sink->Tdel;

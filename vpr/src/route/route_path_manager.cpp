@@ -1,15 +1,10 @@
 #include "route_path_manager.h"
 #include "globals.h"
 
-PathManager::PathManager(bool init_rcv_structures) {
+PathManager::PathManager() {
     // Only init data structure if required by RCV
-    // TODO: Use arena allocation method in the future, which would be setup here
-
-    if (init_rcv_structures) {
-        is_enabled_ = true;
-    } else {
-        is_enabled_ = false;
-    }
+    // Is disabled by default
+    is_enabled_ = false;
 }
 
 PathManager::~PathManager() {
@@ -123,6 +118,15 @@ void PathManager::empty_heap() {
     // Push all nodes onto the freed_nodes list
     for (auto& node : alloc_list_)
         freed_nodes_.push_back(node);
+}
+
+void PathManager::update_route_tree_set(t_heap_path* cheapest_path_struct) {
+    if (!is_enabled_) return;
+
+    // Add all values in path struct to the route tree nodes set
+    for (RRNodeId& inode : cheapest_path_struct->path_rr) {
+        route_tree_nodes_.insert(inode);
+    }
 }
 
 void PathManager::empty_route_tree_nodes() {
