@@ -364,7 +364,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(int inode, int
                                             describe_rr_node(size_t(inode)).c_str())
                                 .c_str());
     } else if (from_type == IPIN) { /* Change if you're allowing route-throughs */
-        return std::make_pair(device_ctx.rr_indexed_data[SINK_COST_INDEX].base_cost, 0.);
+        return std::make_pair(0., device_ctx.rr_indexed_data[SINK_COST_INDEX].base_cost);
     } else { /* Change this if you want to investigate route-throughs */
         return std::make_pair(0., 0.);
     }

@@ -81,7 +81,7 @@ std::pair<float, float> ClassicLookahead::get_expected_delay_and_cong(int node, 
 
         return std::make_pair(params.criticality * Tdel, (1 - params.criticality) * cong_cost);
     } else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */
-        return std::make_pair(device_ctx.rr_indexed_data[SINK_COST_INDEX].base_cost, 0.);
+        return std::make_pair(0., device_ctx.rr_indexed_data[SINK_COST_INDEX].base_cost);
 
     } else { /* Change this if you want to investigate route-throughs */
         return std::make_pair(0., 0.);

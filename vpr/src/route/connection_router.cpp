@@ -27,6 +27,7 @@ std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_f
         t_heap out = *cheapest;
         heap_.free(cheapest);
         heap_.empty_heap();
+        rcv_path_manager.empty_heap();
         return std::make_pair(true, out);
     } else {
         heap_.empty_heap();
@@ -172,6 +173,7 @@ std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_f
 
         free_route_tree(rt_root);
         heap_.empty_heap();
+        rcv_path_manager.empty_heap();
         return std::make_pair(false, t_heap());
     }
 
@@ -181,6 +183,7 @@ std::pair<bool, t_heap> ConnectionRouter<Heap>::timing_driven_route_connection_f
     t_heap out = *cheapest;
     heap_.free(cheapest);
     heap_.empty_heap();
+    rcv_path_manager.empty_heap();
 
     return std::make_pair(true, out);
 }
@@ -551,7 +554,7 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params 
     float new_total_cost = next.cost;
     float new_back_cost = next.backward_path_cost;
 
-    if (new_total_cost < best_total_cost && ((new_back_cost < best_back_cost) || (rcv_path_manager.is_enabled()))) {
+    if (new_total_cost < best_total_cost && ((rcv_path_manager.is_enabled()) || (new_back_cost < best_back_cost))) {
         //Add node to the heap only if the cost via the current partial path is less than the
         //best known cost, since there is no reason for the router to expand more expensive paths.
         //
@@ -906,7 +909,6 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     //Add existing routing starting from the target bin.
     //If the target's bin has insufficient existing routing add from the surrounding bins
     bool done = false;
-    // std::set<int> trace_path;
     for (int dx : {0, -1, +1}) {
         size_t bin_x = target_bin_x + dx;
 

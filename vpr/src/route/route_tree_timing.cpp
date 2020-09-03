@@ -6,7 +6,6 @@
 #include "vtr_log.h"
 #include "vtr_memory.h"
 #include "vtr_math.h"
-#include "vtr_time.h"
 
 #include "vpr_types.h"
 #include "vpr_utils.h"

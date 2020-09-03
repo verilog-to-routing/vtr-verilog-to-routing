@@ -8,7 +8,7 @@ PathManager::PathManager() {
 }
 
 PathManager::~PathManager() {
-    if (is_enabled_) free_all_memory();
+    free_all_memory();
 }
 
 bool PathManager::node_exists_in_tree(t_heap_path* path_data,
@@ -70,6 +70,8 @@ void PathManager::alloc_path_struct(t_heap_path*& tptr) {
         return;
     }
 
+    VTR_ASSERT(tptr == nullptr);
+
     // if (tptr == nullptr) {
     // Use a free node list to avoid unnecessary data allocation
     // If there are unused data structures in memory use these
@@ -89,8 +91,6 @@ void PathManager::alloc_path_struct(t_heap_path*& tptr) {
 }
 
 void PathManager::free_path_struct(t_heap_path*& tptr) {
-    if (!is_enabled_) return;
-
     // Put freed structs in a freed array to be used later
     if (tptr != nullptr) {
         freed_nodes_.push_back(tptr);
@@ -99,8 +99,6 @@ void PathManager::free_path_struct(t_heap_path*& tptr) {
 }
 
 void PathManager::free_all_memory() {
-    if (!is_enabled_) return;
-
     // Only delete freed nodes because doing a partial arena alloc scheme
     // Actually delete in heap_type
     for (t_heap_path* node : alloc_list_) {
@@ -109,24 +107,19 @@ void PathManager::free_all_memory() {
 }
 
 void PathManager::empty_heap() {
-    // Don't use this, it's a significant time sink
-    return;
     if (!is_enabled_) return;
 
-    freed_nodes_.clear();
+    freed_nodes_.resize(alloc_list_.size());
 
-    // Push all nodes onto the freed_nodes list
-    for (auto& node : alloc_list_)
-        freed_nodes_.push_back(node);
+    // Copy alloc_list_ into the freed nodes list
+    std::copy(alloc_list_.begin(), alloc_list_.end(), freed_nodes_.begin());
 }
 
 void PathManager::update_route_tree_set(t_heap_path* cheapest_path_struct) {
     if (!is_enabled_) return;
 
     // Add all values in path struct to the route tree nodes set
-    for (RRNodeId& inode : cheapest_path_struct->path_rr) {
-        route_tree_nodes_.insert(inode);
-    }
+    route_tree_nodes_.insert(cheapest_path_struct->path_rr.begin(), cheapest_path_struct->path_rr.end());
 }
 
 void PathManager::empty_route_tree_nodes() {
