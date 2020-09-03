@@ -347,7 +347,7 @@ void ConnectionRouter<Heap>::timing_driven_expand_cheapest(t_heap* cheapest,
      * than one with higher cost.  Test whether or not I should disallow   *
      * re-expansion based on a higher total cost.                          */
 
-    if (best_total_cost > new_total_cost && (best_back_cost > new_back_cost || (cost_params.delay_budget && cost_params.delay_budget->routing_budgets_algorithm == YOYO))) {
+    if (best_total_cost > new_total_cost && ((rcv_path_manager.is_enabled()) || best_back_cost > new_back_cost)) {
         //Explore from this node, since the current/new partial path has the best cost
         //found so far
         VTR_LOGV_DEBUG(router_debug_, "    Better cost to %d\n", inode);
